@@ -4,6 +4,19 @@
 
 <a id="v1-0-1"></a>
 
+<a id="v1-0-2"></a>
+
+## [v1.0.2] - 31/03/2026
+
+### Fixed
+* restore mobile nav and remove repo status copy
+  
+  Remove the leftover active repository status copy from the public site and README surfaces.
+  
+  Add a shared mobile aware nav for the home and docs pages so the menu works on small screens.
+  
+  Show both Live and Latest deployment pills in the shared nav to match the deployment status layout.
+
 ## [v1.0.1] - 31/03/2026
 
 ### Documentation
