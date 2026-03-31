@@ -38,7 +38,7 @@ export default function ConfiguratorPage() {
         <section id="preview" className="xrdb-section scroll-mt-24">
           <div className="rounded-[32px] border border-violet-500/15 bg-[radial-gradient(ellipse_at_top,_rgba(139,92,246,0.12),_transparent_60%),linear-gradient(180deg,rgba(30,22,42,0.95),rgba(14,10,22,0.98))] p-4 md:p-5 xl:p-6">
             <ConfiguratorWorkspaceIntro />
-            <div className="mt-4 xrdb-surface-grid grid items-start gap-4 xl:grid-cols-[minmax(0,1.18fr)_minmax(0,1fr)_minmax(20rem,0.86fr)] xl:gap-4">
+            <div className="mt-4 xrdb-surface-grid xrdb-workspace-grid grid items-start gap-4">
               <ConfiguratorInputsPanel {...inputsPanelProps} />
               <ConfiguratorWorkspaceColumns {...workspaceColumnsProps} />
             </div>

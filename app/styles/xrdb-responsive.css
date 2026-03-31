@@ -1,3 +1,23 @@
+@media (min-width: 1280px) {
+	.xrdb-workspace-grid {
+		grid-template-columns: minmax(19rem, 0.94fr) minmax(0, 1.16fr);
+	}
+
+	.xrdb-workspace-side-rail {
+		grid-column: 1 / -1;
+	}
+}
+
+@media (min-width: 1680px) {
+	.xrdb-workspace-grid {
+		grid-template-columns: minmax(19rem, 0.92fr) minmax(0, 1.04fr) minmax(23rem, 0.82fr);
+	}
+
+	.xrdb-workspace-side-rail {
+		grid-column: auto;
+	}
+}
+
 @media (max-width: 1100px) {
 	.xrdb-hero-grid {
 		grid-template-columns: minmax(0, 1fr);

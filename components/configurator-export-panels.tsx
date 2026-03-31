@@ -227,7 +227,7 @@ export function ConfiguratorExportPanels({
                   These presets keep background and logo on type aware TMDB IDs. Poster follows the selected poster mode. Episode thumbs follow the selected episode mode and carry their own thumbnail rating order.
                 </p>
                 <div className="mt-4 space-y-4 rounded-2xl border border-white/10 bg-black/35 p-4">
-                  <div className="grid gap-4 md:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
+                  <div className="grid gap-4">
                     <div className="rounded-xl border border-white/10 bg-zinc-950/70 p-3">
                       <div className="text-[11px] font-semibold text-zinc-200">Poster ID source</div>
                       <p className="mt-2 text-[10px] leading-4 text-zinc-500 mb-3">

@@ -154,14 +154,14 @@ export function ConfiguratorCenterStage({
       <div
         className={
           stickyPreviewEnabled
-            ? 'xl:sticky xl:top-[var(--workspace-sticky-top)] xl:z-10'
+            ? '2xl:sticky 2xl:top-[var(--workspace-sticky-top)] 2xl:z-10'
             : ''
         }
       >
         <div
           className={`xrdb-panel xrdb-panel-preview rounded-3xl border border-white/10 bg-zinc-900/60 p-4 ${
             stickyPreviewEnabled
-              ? 'xl:max-h-[calc(100vh-var(--workspace-sticky-top)-20px)] xl:overflow-auto'
+              ? '2xl:max-h-[calc(100vh-var(--workspace-sticky-top)-20px)] 2xl:overflow-auto'
               : ''
           }`}
         >

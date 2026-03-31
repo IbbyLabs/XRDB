@@ -17,9 +17,13 @@ export function ConfiguratorWorkspaceColumns({
 }) {
   return (
     <>
-      <ConfiguratorCenterStage {...centerStageProps} />
-      <ConfiguratorExportPanels {...exportPanelsProps} />
-      <ConfiguratorSupportPanels {...supportPanelsProps} />
+      <div className="min-w-0">
+        <ConfiguratorCenterStage {...centerStageProps} />
+      </div>
+      <div className="xrdb-workspace-side-rail">
+        <ConfiguratorExportPanels {...exportPanelsProps} />
+        <ConfiguratorSupportPanels {...supportPanelsProps} />
+      </div>
     </>
   );
 }

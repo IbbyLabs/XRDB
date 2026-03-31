@@ -631,6 +631,13 @@
 	min-width: 0;
 }
 
+.xrdb-workspace-side-rail {
+	display: grid;
+	gap: 1rem;
+	min-width: 0;
+	align-content: start;
+}
+
 .workspace-showcase-grid {
 	display: grid;
 	gap: 1rem;
