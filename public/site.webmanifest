@@ -1,0 +1,24 @@
+{
+  "name": "XRDB | eXtended Ratings DataBase",
+  "short_name": "XRDB",
+  "description": "Stateless artwork engine for posters, backdrops, thumbnails, logos, and addon integrations.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#020108",
+  "theme_color": "#020108",
+  "icons": [
+    {
+      "src": "/web-app-manifest-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/web-app-manifest-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,1133 @@
+'use client';
+
+import { hexToRgbaCss } from '@/lib/hexToRgbaCss';
+import {
+  DEFAULT_POSTER_EDGE_OFFSET,
+  MAX_POSTER_EDGE_OFFSET,
+  normalizePosterEdgeOffset,
+} from '@/lib/posterEdgeOffset';
+import {
+  AGGREGATE_ACCENT_MODE_OPTIONS,
+  AGGREGATE_RATING_SOURCE_ACCENTS,
+  AGGREGATE_RATING_SOURCE_OPTIONS,
+  RATING_PRESENTATION_OPTIONS,
+  usesDualAggregateRatingPresentation,
+  type AggregateAccentMode,
+  type AggregateRatingSource,
+  type RatingPresentation,
+} from '@/lib/ratingPresentation';
+import {
+  BACKDROP_RATING_LAYOUT_OPTIONS,
+  type BackdropRatingLayout,
+} from '@/lib/backdropLayoutOptions';
+import {
+  DEFAULT_POSTER_RATINGS_MAX_PER_SIDE,
+  POSTER_RATING_LAYOUT_OPTIONS,
+  POSTER_RATINGS_MAX_PER_SIDE_MIN,
+  isVerticalPosterRatingLayout,
+  type PosterRatingLayout,
+} from '@/lib/posterLayoutOptions';
+import {
+  DEFAULT_BADGE_SCALE_PERCENT,
+  MAX_BADGE_SCALE_PERCENT,
+  MAX_GENRE_BADGE_SCALE_PERCENT,
+  MIN_BADGE_SCALE_PERCENT,
+  QUALITY_BADGE_OPTIONS,
+  normalizeBadgeScalePercent,
+  normalizeGenreBadgeScalePercent,
+} from '@/lib/badgeCustomization';
+import {
+  DEFAULT_QUALITY_BADGES_STYLE,
+  QUALITY_BADGE_STYLE_OPTIONS,
+  RATING_STYLE_OPTIONS,
+  type QualityBadgeStyle,
+  type RatingStyle,
+} from '@/lib/ratingAppearance';
+import {
+  DEFAULT_GENRE_BADGE_ANIME_GROUPING,
+  DEFAULT_GENRE_BADGE_MODE,
+  DEFAULT_GENRE_BADGE_POSITION,
+  DEFAULT_GENRE_BADGE_STYLE,
+  GENRE_BADGE_MODE_OPTIONS,
+  GENRE_BADGE_POSITION_OPTIONS,
+  GENRE_BADGE_STYLE_OPTIONS,
+  type GenreBadgeAnimeGrouping,
+  type GenreBadgeMode,
+  type GenreBadgePosition,
+  type GenreBadgeStyle,
+} from '@/lib/genreBadge';
+import {
+  DEFAULT_RATING_VALUE_MODE,
+  RATING_VALUE_MODE_OPTIONS,
+  type RatingValueMode,
+} from '@/lib/ratingDisplay';
+import {
+  DEFAULT_SIDE_RATING_OFFSET,
+  SIDE_RATING_POSITION_OPTIONS,
+  type SideRatingPosition,
+} from '@/lib/sideRatingPosition';
+import type {
+  ArtworkSource,
+  BackdropImageTextPreference,
+  LogoBackground,
+  PosterImageSize,
+  PosterImageTextPreference,
+} from '@/lib/uiConfig';
+
+type PreviewType = 'poster' | 'backdrop' | 'logo';
+type SelectionOption<T extends string> = {
+  id: T;
+  label: string;
+};
+type DetailedSelectionOption<T extends string> = SelectionOption<T> & {
+  description?: string;
+};
+type QualityBadgeOptionId = (typeof QUALITY_BADGE_OPTIONS)[number]['id'];
+
+const selectorGroupClass = 'flex flex-wrap gap-1 rounded-lg border border-white/10 bg-zinc-900 p-1';
+const selectorButtonClass = (active: boolean) =>
+  `rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+    active ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+  }`;
+const settingsCardClass = 'rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-2';
+
+const normalizeOptionalBadgeCountInput = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed)) return null;
+  const normalized = Math.trunc(parsed);
+  if (normalized < POSTER_RATINGS_MAX_PER_SIDE_MIN) return null;
+  return normalized;
+};
+
+export function PresentationSection({
+  presentationOrder,
+  previewType,
+  activeRatingPresentation,
+  layoutPlacementHelp,
+  isEditorialPresentation,
+  activePresentationPreservesLayout,
+  usesAggregatePresentation,
+  showsAggregateRatingSource,
+  showsAggregateAccentBarOffset,
+  activeAggregateAccent,
+  activeAggregateRatingSource,
+  aggregateAccentMode,
+  aggregateAccentColor,
+  aggregateCriticsAccentColor,
+  aggregateAudienceAccentColor,
+  aggregateAccentBarVisible,
+  aggregateAccentBarOffset,
+  onSelectRatingPresentation,
+  onSelectAggregateRatingSource,
+  onSelectAggregateAccentMode,
+  onSelectAggregateAccentColor,
+  onSelectAggregateCriticsAccentColor,
+  onSelectAggregateAudienceAccentColor,
+  onToggleAggregateAccentBarVisible,
+  onSelectAggregateAccentBarOffset,
+}: {
+  presentationOrder: RatingPresentation[];
+  previewType: PreviewType;
+  activeRatingPresentation: RatingPresentation;
+  layoutPlacementHelp: string | null;
+  isEditorialPresentation: boolean;
+  activePresentationPreservesLayout: boolean;
+  usesAggregatePresentation: boolean;
+  showsAggregateRatingSource: boolean;
+  showsAggregateAccentBarOffset: boolean;
+  activeAggregateAccent: string;
+  activeAggregateRatingSource: AggregateRatingSource;
+  aggregateAccentMode: AggregateAccentMode;
+  aggregateAccentColor: string;
+  aggregateCriticsAccentColor: string;
+  aggregateAudienceAccentColor: string;
+  aggregateAccentBarVisible: boolean;
+  aggregateAccentBarOffset: number;
+  onSelectRatingPresentation: (value: RatingPresentation) => void;
+  onSelectAggregateRatingSource: (value: AggregateRatingSource) => void;
+  onSelectAggregateAccentMode: (value: AggregateAccentMode) => void;
+  onSelectAggregateAccentColor: (value: string) => void;
+  onSelectAggregateCriticsAccentColor: (value: string) => void;
+  onSelectAggregateAudienceAccentColor: (value: string) => void;
+  onToggleAggregateAccentBarVisible: () => void;
+  onSelectAggregateAccentBarOffset: (value: number) => void;
+}) {
+  return (
+    <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
+      <div className="text-[11px] font-semibold text-zinc-400">Presentation</div>
+      <div className="grid gap-2 md:grid-cols-2">
+        {presentationOrder.map((id) => {
+          const option = RATING_PRESENTATION_OPTIONS.find((entry) => entry.id === id);
+          if (!option) return null;
+          return (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => onSelectRatingPresentation(option.id)}
+              className={`rounded-xl border p-3 text-left transition-colors ${
+                activeRatingPresentation === option.id
+                  ? 'border-violet-500/60 bg-violet-500/10 text-white'
+                  : 'border-white/10 bg-zinc-900/60 text-zinc-300 hover:border-white/20 hover:bg-zinc-900'
+              }`}
+            >
+              <div className="flex min-h-[3rem] flex-col items-start gap-2">
+                <span className="min-w-0 break-words text-sm font-semibold">{option.label}</span>
+                {activeRatingPresentation === option.id ? (
+                  <span className="shrink-0 whitespace-nowrap rounded-full border border-violet-400/40 bg-violet-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-200">
+                    Selected
+                  </span>
+                ) : null}
+              </div>
+              <p className="mt-1 text-[11px] leading-relaxed text-zinc-400">
+                {option.description}
+              </p>
+            </button>
+          );
+        })}
+      </div>
+      {layoutPlacementHelp ? (
+        <p className="text-[11px] leading-relaxed text-zinc-500">
+          {isEditorialPresentation
+            ? previewType === 'poster'
+              ? 'Editorial uses a fixed top left score mark that feels printed into the poster. Layout controls stay saved for when you switch back to another mode.'
+              : 'Editorial has its custom treatment on posters. Here it falls back to one clean average badge.'
+            : activePresentationPreservesLayout
+              ? `This mode still respects the selected layout below, so you can move ratings to ${layoutPlacementHelp}.`
+              : `Blockbuster uses a fixed ${previewType === 'poster' ? 'left/right poster stack' : 'right vertical backdrop stack'}. Switch to another presentation to use ${layoutPlacementHelp}.`}
+        </p>
+      ) : (
+        <p className="text-[11px] leading-relaxed text-zinc-500">
+          {isEditorialPresentation
+            ? 'Editorial keeps its unique treatment on posters. Logo output falls back to one clean average badge.'
+            : 'Logo presentation keeps the output controls below available.'}
+        </p>
+      )}
+      {usesAggregatePresentation ? (
+        <div
+          className="rounded-xl border bg-zinc-900/50 p-3 space-y-2"
+          style={{
+            borderColor: hexToRgbaCss(activeAggregateAccent, 0.24),
+            backgroundImage: `linear-gradient(145deg, ${hexToRgbaCss(activeAggregateAccent, 0.12)}, rgba(24,24,27,0.78) 58%)`,
+          }}
+        >
+          {showsAggregateRatingSource ? (
+            <>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Average Source</div>
+              <div className="flex flex-wrap gap-1">
+                {AGGREGATE_RATING_SOURCE_OPTIONS.map((option) => {
+                  const accentColor = AGGREGATE_RATING_SOURCE_ACCENTS[option.id];
+                  const isSelected = activeAggregateRatingSource === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => onSelectAggregateRatingSource(option.id)}
+                      className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                        isSelected
+                          ? 'bg-zinc-800 text-white'
+                          : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                      }`}
+                      style={
+                        isSelected
+                          ? {
+                              borderColor: hexToRgbaCss(accentColor, 0.7),
+                              backgroundImage: `linear-gradient(135deg, ${hexToRgbaCss(accentColor, 0.28)}, rgba(24,24,27,0.96))`,
+                              boxShadow: `inset 0 1px 0 rgba(255,255,255,0.08), 0 0 0 1px ${hexToRgbaCss(accentColor, 0.12)}`,
+                            }
+                          : undefined
+                      }
+                    >
+                      <span className="inline-flex items-center gap-1.5">
+                        <span
+                          className="h-2 w-2 rounded-full"
+                          style={{
+                            backgroundColor: accentColor,
+                            boxShadow: `0 0 0 2px ${hexToRgbaCss(accentColor, 0.16)}`,
+                          }}
+                        />
+                        {option.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] leading-relaxed text-zinc-500">
+                {AGGREGATE_RATING_SOURCE_OPTIONS.find((option) => option.id === activeAggregateRatingSource)?.description}
+              </p>
+            </>
+          ) : null}
+          <div className="pt-1">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Accent</div>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {AGGREGATE_ACCENT_MODE_OPTIONS.map((option) => {
+                const isSelected = aggregateAccentMode === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => onSelectAggregateAccentMode(option.id)}
+                    className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                      isSelected
+                        ? 'bg-zinc-800 text-white'
+                        : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+              {AGGREGATE_ACCENT_MODE_OPTIONS.find((option) => option.id === aggregateAccentMode)?.description}
+              {aggregateAccentMode === 'genre'
+                ? ' Editorial already behaves like this on posters; this extends genre matching to the other aggregate badge styles too.'
+                : ''}
+            </p>
+          </div>
+          {aggregateAccentMode === 'custom' ? (
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <ColorField
+                label="Custom Accent"
+                value={aggregateAccentColor}
+                onChange={onSelectAggregateAccentColor}
+              >
+                <div className="px-5 pb-4 pt-3 text-[11px] text-zinc-500">
+                  Mapped anime IDs such as AniList, MAL, TVDB, and AniDB resolve when mapping data is available for the title.
+                </div>
+              </ColorField>
+              {usesDualAggregateRatingPresentation(activeRatingPresentation) ? (
+                <>
+                  <ColorField
+                    label="Critics Accent"
+                    value={aggregateCriticsAccentColor}
+                    onChange={onSelectAggregateCriticsAccentColor}
+                  />
+                  <ColorField
+                    label="Audience Accent"
+                    value={aggregateAudienceAccentColor}
+                    onChange={onSelectAggregateAudienceAccentColor}
+                  />
+                </>
+              ) : null}
+            </div>
+          ) : null}
+          {showsAggregateAccentBarOffset ? (
+            <div className="pt-1">
+              <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-white/10 bg-zinc-950/60 px-3 py-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                  Accent Bar
+                </span>
+                <button
+                  type="button"
+                  onClick={onToggleAggregateAccentBarVisible}
+                  className={`rounded-md border px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                    aggregateAccentBarVisible
+                      ? 'border-violet-500/60 bg-violet-500/20 text-white'
+                      : 'border-white/10 bg-black text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  {aggregateAccentBarVisible ? 'Visible' : 'Hidden'}
+                </button>
+              </div>
+              <RangeField
+                label="Accent Bar Offset"
+                value={aggregateAccentBarOffset}
+                min={-24}
+                max={24}
+                suffix="px"
+                onChange={onSelectAggregateAccentBarOffset}
+              />
+              <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+                Negative values move the aggregate accent bar upward a few pixels. You can hide the line entirely with the toggle above in compact and labeled average badge layouts.
+              </p>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export function LookSection({
+  previewType,
+  styleLabel,
+  textLabel,
+  activeRatingStyle,
+  activeImageTextOptions,
+  activeImageText,
+  activeImageTextDescription,
+  ratingValueMode,
+  activeGenreBadgeMode,
+  activeGenreBadgeStyle,
+  activeGenreBadgePosition,
+  activeGenreBadgeAnimeGrouping,
+  activeArtworkSourceOptions,
+  activeArtworkSource,
+  activeArtworkSourceDescription,
+  posterImageSizeOptions,
+  posterImageSize,
+  activePosterImageSizeDescription,
+  posterRatingsLayout,
+  posterRatingsMaxPerSide,
+  posterRatingsMax,
+  backdropRatingsLayout,
+  backdropRatingsMax,
+  posterEdgeOffset,
+  shouldShowSideRatingPlacement,
+  activeSideRatingsPosition,
+  activeSideRatingsOffset,
+  logoArtworkSourceOptions,
+  logoArtworkSource,
+  activeLogoSourceDescription,
+  logoBackground,
+  logoRatingsMax,
+  logoQualityBadgesStyle,
+  logoQualityBadgesMax,
+  logoQualityBadgePreferences,
+  activeRatingBadgeScale,
+  activeGenreBadgeScale,
+  activeQualityBadgeScale,
+  onSelectRatingStyle,
+  onSelectImageText,
+  onSelectRatingValueMode,
+  onSelectGenreBadgeMode,
+  onSelectGenreBadgeStyle,
+  onSelectGenreBadgePosition,
+  onSelectGenreBadgeAnimeGrouping,
+  onSelectBackdropArtworkSource,
+  onSelectPosterArtworkSource,
+  onSelectPosterImageSize,
+  onSelectPosterRatingsLayout,
+  onSelectPosterRatingsMaxPerSide,
+  onSelectPosterRatingsMax,
+  onSelectBackdropRatingsLayout,
+  onSelectBackdropRatingsMax,
+  onSelectPosterEdgeOffset,
+  onResetPosterEdgeOffset,
+  onSelectSideRatingsPosition,
+  onSelectSideRatingsOffset,
+  onSelectLogoArtworkSource,
+  onSelectLogoBackground,
+  onSelectLogoRatingsMax,
+  onSelectLogoQualityBadgesStyle,
+  onSelectLogoQualityBadgesMax,
+  onToggleQualityBadgePreference,
+  onSelectRatingBadgeScale,
+  onSelectGenreBadgeScale,
+  onSelectQualityBadgeScale,
+}: {
+  previewType: PreviewType;
+  styleLabel: string;
+  textLabel: string;
+  activeRatingStyle: RatingStyle;
+  activeImageTextOptions: Array<
+    DetailedSelectionOption<PosterImageTextPreference | BackdropImageTextPreference>
+  >;
+  activeImageText: PosterImageTextPreference | BackdropImageTextPreference;
+  activeImageTextDescription: string | null;
+  ratingValueMode: RatingValueMode;
+  activeGenreBadgeMode: GenreBadgeMode;
+  activeGenreBadgeStyle: GenreBadgeStyle;
+  activeGenreBadgePosition: GenreBadgePosition;
+  activeGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
+  activeArtworkSourceOptions: Array<DetailedSelectionOption<ArtworkSource>>;
+  activeArtworkSource: ArtworkSource;
+  activeArtworkSourceDescription: string | null;
+  posterImageSizeOptions: Array<DetailedSelectionOption<PosterImageSize>>;
+  posterImageSize: PosterImageSize;
+  activePosterImageSizeDescription: string;
+  posterRatingsLayout: PosterRatingLayout;
+  posterRatingsMaxPerSide: number | null;
+  posterRatingsMax: number | null;
+  backdropRatingsLayout: BackdropRatingLayout;
+  backdropRatingsMax: number | null;
+  posterEdgeOffset: number;
+  shouldShowSideRatingPlacement: boolean;
+  activeSideRatingsPosition: SideRatingPosition;
+  activeSideRatingsOffset: number;
+  logoArtworkSourceOptions: Array<DetailedSelectionOption<ArtworkSource>>;
+  logoArtworkSource: ArtworkSource;
+  activeLogoSourceDescription: string | null;
+  logoBackground: LogoBackground;
+  logoRatingsMax: number | null;
+  logoQualityBadgesStyle: QualityBadgeStyle;
+  logoQualityBadgesMax: number | null;
+  logoQualityBadgePreferences: QualityBadgeOptionId[];
+  activeRatingBadgeScale: number;
+  activeGenreBadgeScale: number;
+  activeQualityBadgeScale: number;
+  onSelectRatingStyle: (value: RatingStyle) => void;
+  onSelectImageText: (
+    value: PosterImageTextPreference | BackdropImageTextPreference,
+  ) => void;
+  onSelectRatingValueMode: (value: RatingValueMode) => void;
+  onSelectGenreBadgeMode: (value: GenreBadgeMode) => void;
+  onSelectGenreBadgeStyle: (value: GenreBadgeStyle) => void;
+  onSelectGenreBadgePosition: (value: GenreBadgePosition) => void;
+  onSelectGenreBadgeAnimeGrouping: (value: GenreBadgeAnimeGrouping) => void;
+  onSelectBackdropArtworkSource: (value: ArtworkSource) => void;
+  onSelectPosterArtworkSource: (value: ArtworkSource) => void;
+  onSelectPosterImageSize: (value: PosterImageSize) => void;
+  onSelectPosterRatingsLayout: (value: PosterRatingLayout) => void;
+  onSelectPosterRatingsMaxPerSide: (value: number | null) => void;
+  onSelectPosterRatingsMax: (value: number | null) => void;
+  onSelectBackdropRatingsLayout: (value: BackdropRatingLayout) => void;
+  onSelectBackdropRatingsMax: (value: number | null) => void;
+  onSelectPosterEdgeOffset: (value: number) => void;
+  onResetPosterEdgeOffset: () => void;
+  onSelectSideRatingsPosition: (value: SideRatingPosition) => void;
+  onSelectSideRatingsOffset: (value: number) => void;
+  onSelectLogoArtworkSource: (value: ArtworkSource) => void;
+  onSelectLogoBackground: (value: LogoBackground) => void;
+  onSelectLogoRatingsMax: (value: number | null) => void;
+  onSelectLogoQualityBadgesStyle: (value: QualityBadgeStyle) => void;
+  onSelectLogoQualityBadgesMax: (value: number | null) => void;
+  onToggleQualityBadgePreference: (value: QualityBadgeOptionId) => void;
+  onSelectRatingBadgeScale: (value: number) => void;
+  onSelectGenreBadgeScale: (value: number) => void;
+  onSelectQualityBadgeScale: (value: number) => void;
+}) {
+  return (
+    <>
+      <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
+        <div className="text-[11px] font-semibold text-zinc-400">Appearance</div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className={settingsCardClass}>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">{styleLabel}</span>
+            <div className={selectorGroupClass}>
+              {RATING_STYLE_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => onSelectRatingStyle(option.id)}
+                  className={selectorButtonClass(activeRatingStyle === option.id)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {previewType !== 'logo' ? (
+            <div className={settingsCardClass}>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">{textLabel}</span>
+              <div className={selectorGroupClass}>
+                {activeImageTextOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => onSelectImageText(option.id)}
+                    className={selectorButtonClass(activeImageText === option.id)}
+                    title={option.description}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          <div className={settingsCardClass}>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Rating Values</span>
+            <div className={selectorGroupClass}>
+              {RATING_VALUE_MODE_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => onSelectRatingValueMode(option.id)}
+                  className={selectorButtonClass(ratingValueMode === option.id)}
+                  title={option.description}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className={settingsCardClass}>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge</span>
+            <div className={selectorGroupClass}>
+              {GENRE_BADGE_MODE_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => onSelectGenreBadgeMode(option.id)}
+                  className={selectorButtonClass(activeGenreBadgeMode === option.id)}
+                  title={option.description}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className={settingsCardClass}>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge Style</span>
+            <div className={selectorGroupClass}>
+              {GENRE_BADGE_STYLE_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => onSelectGenreBadgeStyle(option.id)}
+                  className={selectorButtonClass(activeGenreBadgeStyle === option.id)}
+                  title={option.description}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className={settingsCardClass}>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge Position</span>
+            <div className={selectorGroupClass}>
+              {GENRE_BADGE_POSITION_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => onSelectGenreBadgePosition(option.id)}
+                  className={selectorButtonClass(activeGenreBadgePosition === option.id)}
+                  title={option.description}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className={settingsCardClass}>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Anime Grouping</span>
+            <div className={selectorGroupClass}>
+              {[
+                { id: 'split', label: 'Split', description: 'Keep anime separate from animation.' },
+                { id: 'merge', label: 'Merge', description: 'Treat anime like the broader animation family.' },
+              ].map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => onSelectGenreBadgeAnimeGrouping(option.id as GenreBadgeAnimeGrouping)}
+                  className={selectorButtonClass(activeGenreBadgeAnimeGrouping === option.id)}
+                  title={option.description}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <p className="text-[11px] leading-relaxed text-zinc-500">
+          {RATING_VALUE_MODE_OPTIONS.find((option) => option.id === ratingValueMode)?.description}{' '}
+          Genre badges use a small curated bucket set. Clear genres such as horror, comedy, drama, sci fi, fantasy, crime, documentary, animation, and anime resolve. When drama appears beside a stronger supported family, the more specific bucket still wins. The active preview type keeps its own badge mode, style, position, and scale.
+        </p>
+        {previewType === 'poster' || previewType === 'backdrop' ? (
+          <div className={settingsCardClass}>
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Artwork Source</div>
+            <div className={selectorGroupClass}>
+              {activeArtworkSourceOptions.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => {
+                    if (previewType === 'backdrop') {
+                      onSelectBackdropArtworkSource(option.id);
+                      return;
+                    }
+                    onSelectPosterArtworkSource(option.id);
+                  }}
+                  className={selectorButtonClass(activeArtworkSource === option.id)}
+                  title={option.description}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            {activeArtworkSourceDescription ? (
+              <p className="text-[11px] leading-relaxed text-zinc-500">
+                {previewType === 'backdrop'
+                  ? activeArtworkSourceDescription.replace('poster', 'backdrop')
+                  : activeArtworkSourceDescription}
+                {activeArtworkSource === 'fanart'
+                  ? ' Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.'
+                  : ''}
+              </p>
+            ) : null}
+            {previewType === 'poster' ? (
+              <>
+                <div className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                  Poster Size
+                </div>
+                <div className={selectorGroupClass}>
+                  {posterImageSizeOptions.map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => onSelectPosterImageSize(option.id)}
+                      className={selectorButtonClass(posterImageSize === option.id)}
+                      title={option.description}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] leading-relaxed text-zinc-500">
+                  {activePosterImageSizeDescription}
+                </p>
+              </>
+            ) : null}
+          </div>
+        ) : null}
+        {previewType !== 'logo' && activeImageTextDescription ? (
+          <p className="text-[11px] leading-relaxed text-zinc-500">
+            {activeImageTextDescription}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
+        <div className="text-[11px] font-semibold text-zinc-400">Layouts</div>
+        {previewType === 'poster' ? (
+          <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-2">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Poster Layout</div>
+            <div className="flex flex-wrap gap-3 items-end">
+              <div>
+                <div className="flex flex-wrap gap-1">
+                  {POSTER_RATING_LAYOUT_OPTIONS.map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => onSelectPosterRatingsLayout(option.id)}
+                      className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                        posterRatingsLayout === option.id
+                          ? 'border-violet-500/60 bg-zinc-800 text-white'
+                          : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {isVerticalPosterRatingLayout(posterRatingsLayout) ? (
+                <OptionalCountField
+                  label="Max/side"
+                  value={posterRatingsMaxPerSide}
+                  buttonLabel="Auto"
+                  onChange={onSelectPosterRatingsMaxPerSide}
+                />
+              ) : null}
+              <OptionalCountField
+                label="Max ratings"
+                value={posterRatingsMax}
+                buttonLabel="Auto"
+                onChange={onSelectPosterRatingsMax}
+              />
+            </div>
+            <p className="text-[11px] leading-relaxed text-zinc-500">
+              Use this to cap how many rating badges render after ordering. Keep the provider list below enabled for the sources you still want available.
+            </p>
+          </div>
+        ) : null}
+
+        {previewType === 'backdrop' ? (
+          <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-2">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Backdrop Layout</div>
+            <div className="flex flex-wrap gap-1">
+              {BACKDROP_RATING_LAYOUT_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => onSelectBackdropRatingsLayout(option.id)}
+                  className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                    backdropRatingsLayout === option.id
+                      ? 'border-violet-500/60 bg-zinc-800 text-white'
+                      : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <OptionalCountField
+              label="Max ratings"
+              value={backdropRatingsMax}
+              buttonLabel="Auto"
+              onChange={onSelectBackdropRatingsMax}
+            />
+            <p className="text-[11px] leading-relaxed text-zinc-500">
+              Backdrop output can stay dense, but this cap gives users a cleaner badge row when they only want the top few sources.
+            </p>
+          </div>
+        ) : null}
+
+        {previewType === 'poster' ? (
+          <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-3">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+              Poster Edge Offset
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <input
+                type="range"
+                min={0}
+                max={MAX_POSTER_EDGE_OFFSET}
+                step={1}
+                value={posterEdgeOffset}
+                onChange={(event) => onSelectPosterEdgeOffset(Number(event.target.value))}
+                className="h-2 w-40 accent-violet-500"
+              />
+              <input
+                type="number"
+                min={0}
+                max={MAX_POSTER_EDGE_OFFSET}
+                step={1}
+                value={posterEdgeOffset}
+                onChange={(event) => {
+                  onSelectPosterEdgeOffset(normalizePosterEdgeOffset(event.target.value));
+                }}
+                className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
+              />
+              <button
+                type="button"
+                onClick={onResetPosterEdgeOffset}
+                className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800"
+              >
+                Reset
+              </button>
+              <span className="text-[11px] text-zinc-500">Extra inset from poster edges</span>
+            </div>
+            <p className="text-[11px] leading-relaxed text-zinc-500">
+              Moves poster side rating stacks, side quality columns, and corner genre badges inward so external app buttons are less likely to cover them.
+            </p>
+          </div>
+        ) : null}
+
+        {shouldShowSideRatingPlacement ? (
+          <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-3">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+              Side Rating Placement
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {SIDE_RATING_POSITION_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => onSelectSideRatingsPosition(option.id)}
+                  className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                    activeSideRatingsPosition === option.id
+                      ? 'border-violet-500/60 bg-zinc-800 text-white'
+                      : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            {activeSideRatingsPosition === 'custom' ? (
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                  Vertical Offset
+                </label>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={activeSideRatingsOffset}
+                  onChange={(event) => onSelectSideRatingsOffset(Number(event.target.value))}
+                  className="h-2 w-40 accent-violet-500"
+                />
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={activeSideRatingsOffset}
+                  onChange={(event) => {
+                    const parsed = Number(event.target.value);
+                    onSelectSideRatingsOffset(
+                      Number.isFinite(parsed)
+                        ? Math.max(0, Math.min(100, Math.round(parsed)))
+                        : DEFAULT_SIDE_RATING_OFFSET
+                    );
+                  }}
+                  className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
+                />
+                <span className="text-[11px] text-zinc-500">0 = top, 100 = bottom</span>
+              </div>
+            ) : null}
+            <p className="text-[11px] leading-relaxed text-zinc-500">
+              {previewType === 'backdrop'
+                ? 'Applies only to the backdrop right vertical stack, including blockbuster mode.'
+                : 'Applies only to poster side stacks, including blockbuster mode.'}
+            </p>
+          </div>
+        ) : null}
+
+        {previewType === 'logo' ? (
+          <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-3">
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Logo Output</div>
+            <div className="flex flex-wrap gap-3 items-end">
+              <div>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Artwork Source</span>
+                <div className="xrdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+                  {logoArtworkSourceOptions.map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => onSelectLogoArtworkSource(option.id)}
+                      className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                        logoArtworkSource === option.id ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+                      }`}
+                      title={option.description}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Background</span>
+                <div className="xrdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+                  {(['transparent', 'dark'] as const).map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => onSelectLogoBackground(option)}
+                      className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                        logoBackground === option ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      {option === 'dark' ? 'Dark' : 'Transparent'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <OptionalCountField
+                label="Max ratings"
+                value={logoRatingsMax}
+                buttonLabel="Default"
+                widthClassName="w-20"
+                onChange={onSelectLogoRatingsMax}
+              />
+            </div>
+            <div className="space-y-2 rounded-xl border border-white/10 bg-black/30 p-3">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Logo Quality Badges</div>
+              <div>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Quality Badge Style</span>
+                <div className="flex flex-wrap gap-1">
+                  {QUALITY_BADGE_STYLE_OPTIONS.map((option) => (
+                    <button
+                      key={`logo-quality-style-${option.id}`}
+                      type="button"
+                      onClick={() => onSelectLogoQualityBadgesStyle(option.id)}
+                      className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                        logoQualityBadgesStyle === option.id
+                          ? 'border-violet-500/60 bg-zinc-800 text-white'
+                          : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <OptionalCountField
+                label="Max badges"
+                value={logoQualityBadgesMax}
+                buttonLabel="Auto"
+                onChange={onSelectLogoQualityBadgesMax}
+              />
+              <div>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Visible Quality Badges</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {QUALITY_BADGE_OPTIONS.map((option) => (
+                    <button
+                      key={`logo-quality-${option.id}`}
+                      type="button"
+                      onClick={() => onToggleQualityBadgePreference(option.id)}
+                      className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                        logoQualityBadgePreferences.includes(option.id)
+                          ? 'border-violet-500/60 bg-zinc-800 text-white'
+                          : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {activeLogoSourceDescription ? (
+              <p className="text-[11px] leading-relaxed text-zinc-500">
+                {activeLogoSourceDescription.replace('artwork', 'logo assets')}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+
+        <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-3">
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Badge Sizing</div>
+          <div className="grid gap-3 md:grid-cols-3">
+            <ScaleField
+              label="Rating badges"
+              value={activeRatingBadgeScale}
+              min={MIN_BADGE_SCALE_PERCENT}
+              max={MAX_BADGE_SCALE_PERCENT}
+              onChange={(value) => onSelectRatingBadgeScale(normalizeBadgeScalePercent(String(value)))}
+            />
+            <ScaleField
+              label="Genre badge"
+              value={activeGenreBadgeScale}
+              min={MIN_BADGE_SCALE_PERCENT}
+              max={MAX_GENRE_BADGE_SCALE_PERCENT}
+              onChange={(value) => onSelectGenreBadgeScale(normalizeGenreBadgeScalePercent(String(value)))}
+            />
+            <ScaleField
+              label="Quality badges"
+              value={activeQualityBadgeScale}
+              min={MIN_BADGE_SCALE_PERCENT}
+              max={MAX_BADGE_SCALE_PERCENT}
+              onChange={(value) => onSelectQualityBadgeScale(normalizeBadgeScalePercent(String(value)))}
+            />
+          </div>
+          <p className="text-[11px] leading-relaxed text-zinc-500">
+            These sliders let people increase badge and tag legibility without forcing a new layout. XRDB will still fit the final output back into the selected poster, backdrop, or logo frame.
+          </p>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function ColorField({
+  label,
+  value,
+  onChange,
+  children,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
+        {label}
+      </label>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-10 w-14 rounded-md border border-white/10 bg-black"
+        />
+        <div className="rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-zinc-300">
+          {value}
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function OptionalCountField({
+  label,
+  value,
+  buttonLabel,
+  widthClassName = 'w-16',
+  onChange,
+}: {
+  label: string;
+  value: number | null;
+  buttonLabel: string;
+  widthClassName?: string;
+  onChange: (value: number | null) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">{label}</span>
+      <input
+        type="number"
+        value={value ?? ''}
+        onChange={(event) => onChange(normalizeOptionalBadgeCountInput(event.target.value))}
+        placeholder="Auto"
+        min={POSTER_RATINGS_MAX_PER_SIDE_MIN}
+        className={`${widthClassName} bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none`}
+      />
+      <button
+        type="button"
+        onClick={() => onChange(null)}
+        className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800"
+      >
+        {buttonLabel}
+      </button>
+    </div>
+  );
+}
+
+function RangeField({
+  label,
+  value,
+  min,
+  max,
+  suffix,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  suffix: string;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+          {label}
+        </span>
+        <span className="text-[11px] text-zinc-400">
+          {value}
+          {suffix}
+        </span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={1}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="mt-2 h-2 w-full accent-violet-500"
+      />
+    </>
+  );
+}
+
+function ScaleField({
+  label,
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">{label}</span>
+        <span className="text-[11px] text-zinc-400">{value}%</span>
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={1}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+        className="h-2 w-full accent-violet-500"
+      />
+    </div>
+  );
+}

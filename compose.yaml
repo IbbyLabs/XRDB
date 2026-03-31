@@ -1,0 +1,32 @@
+services:
+  xrdb:
+    container_name: xrdb
+    image: ghcr.io/ibbylabs/xrdb:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      PREVIEW_INTERNAL_ORIGIN: ${PREVIEW_INTERNAL_ORIGIN:-http://127.0.0.1:3000}
+      HTTP_PROXY: ${HTTP_PROXY:-}
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+    expose:
+      - 3000
+    volumes:
+      - ${DOCKER_DATA_DIR:-./data}/xrdb:/app/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.xrdb.rule=Host(`${XRDB_HOSTNAME?}`)"
+      - "traefik.http.routers.xrdb.entrypoints=${XRDB_TRAEFIK_ENTRYPOINTS:-websecure}"
+      - "traefik.http.routers.xrdb.tls.certresolver=${XRDB_TRAEFIK_CERTRESOLVER:-letsencrypt}"
+      - "traefik.http.services.xrdb.loadbalancer.server.port=3000"
+    profiles:
+      - xrdb
+      - all
+
+networks:
+  default:
+    name: ${DOCKER_NETWORK:-aio_default}
+    external: ${DOCKER_NETWORK_EXTERNAL:-true}

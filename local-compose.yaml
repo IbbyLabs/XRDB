@@ -1,0 +1,23 @@
+services:
+  xrdb:
+    container_name: xrdb
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    init: true
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3000
+      HOSTNAME: 0.0.0.0
+      PREVIEW_INTERNAL_ORIGIN: ${PREVIEW_INTERNAL_ORIGIN:-http://127.0.0.1:3000}
+      HTTP_PROXY: ${HTTP_PROXY:-}
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+    ports:
+      - "${XRDB_PORT:-3000}:3000"
+    expose:
+      - 3000
+    volumes:
+      - ${XRDB_DATA_DIR:-./data}:/app/data

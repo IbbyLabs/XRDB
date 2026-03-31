@@ -1,0 +1,46 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard"
+  ],
+  "enabled": true,
+  "forkProcessing": "enabled",
+  "labels": ["dependencies"],
+  "timezone": "Europe/London",
+  "schedule": ["before 6am on monday"],
+  "prConcurrentLimit": 3,
+  "minimumReleaseAge": "7 days",
+  "rebaseWhen": "behind-base-branch",
+  "configMigration": true,
+  "postUpdateOptions": ["npmDedupe"],
+  "packageRules": [
+    {
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "groupName": "npm non-major updates",
+      "automerge": false
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "groupName": "github actions non-major updates",
+      "automerge": false
+    },
+    {
+      "matchManagers": ["dockerfile", "docker-compose"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "groupName": "docker non-major updates",
+      "automerge": false
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencies", "major-update"]
+    }
+  ],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"]
+  }
+}

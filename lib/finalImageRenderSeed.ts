@@ -1,0 +1,145 @@
+import {
+  encodeRatingProviderAppearanceOverrides,
+  type RatingProviderAppearanceOverrides,
+} from './badgeCustomization.ts';
+import { DEFAULT_GENRE_BADGE_MODE } from './genreBadge.ts';
+
+type FinalImageRenderSeedInput = {
+  cacheVersion: string;
+  imageType: 'poster' | 'backdrop' | 'thumbnail' | 'logo';
+  outputFormat: string;
+  cleanId: string;
+  requestedImageLang: string;
+  posterTextPreference: string;
+  posterImageSize: string;
+  posterArtworkSource: string;
+  backdropArtworkSource: string;
+  logoArtworkSource: string;
+  posterRatingsLayout: string;
+  posterRatingsMaxPerSide: number | null;
+  posterRatingsMax: number | null;
+  posterEdgeOffset: number;
+  backdropRatingsLayout: string;
+  backdropRatingsMax: number | null;
+  logoRatingsMax: number | null;
+  qualityBadgesSide: string;
+  posterQualityBadgesPosition: string;
+  qualityBadgesStyle: string;
+  qualityBadgesMax: number | null;
+  qualityBadgePreferences: string[];
+  posterSideRatingsPosition: string;
+  posterSideRatingsOffset: number;
+  backdropSideRatingsPosition: string;
+  backdropSideRatingsOffset: number;
+  ratingPresentation: string;
+  blockbusterDensity: string;
+  aggregateRatingSource: string;
+  aggregateAccentMode: string;
+  aggregateAccentColor: string | null;
+  aggregateCriticsAccentColor: string | null;
+  aggregateAudienceAccentColor: string | null;
+  aggregateAccentBarOffset: number;
+  aggregateAccentBarVisible: boolean;
+  artworkSelectionSeed: string;
+  ratingStyle: string;
+  ratingValueMode: string;
+  posterRatingBadgeScale: number;
+  backdropRatingBadgeScale: number;
+  logoRatingBadgeScale: number;
+  posterQualityBadgeScale: number;
+  backdropQualityBadgeScale: number;
+  genreBadgeMode: string;
+  genreBadgeStyle: string;
+  genreBadgePosition: string;
+  genreBadgeScale: number;
+  genreBadgeAnimeGrouping: string;
+  logoBackground: string;
+  effectiveRatingPreferences: string[];
+  providerAppearanceOverrides: RatingProviderAppearanceOverrides;
+  mdblistStateKey: string;
+  simklStateKey: string;
+  streamBadgesCacheKeySeed: string;
+  fanartKeyHash: string;
+  fanartClientKeyHash: string;
+  sourceFallbackKey: string;
+  renderCacheBuster: string;
+};
+
+export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) => {
+  const isPoster = input.imageType === 'poster';
+  const isBackdrop = input.imageType === 'backdrop' || input.imageType === 'thumbnail';
+  const isLogo = input.imageType === 'logo';
+  const ratingBadgeScale =
+    input.imageType === 'poster'
+      ? input.posterRatingBadgeScale
+      : input.imageType === 'backdrop' || input.imageType === 'thumbnail'
+        ? input.backdropRatingBadgeScale
+        : input.logoRatingBadgeScale;
+  const qualityBadgeScale =
+    input.imageType === 'backdrop'
+      ? input.backdropQualityBadgeScale
+      : input.posterQualityBadgeScale;
+  const providerAppearanceKey =
+    encodeRatingProviderAppearanceOverrides(input.providerAppearanceOverrides) || '-';
+
+  return [
+    input.cacheVersion,
+    input.imageType,
+    input.outputFormat,
+    input.cleanId,
+    input.requestedImageLang,
+    input.posterTextPreference,
+    isPoster ? input.posterImageSize : '-',
+    isPoster ? input.posterArtworkSource : '-',
+    isBackdrop ? input.backdropArtworkSource : '-',
+    isLogo ? input.logoArtworkSource : '-',
+    isPoster ? input.posterRatingsLayout : '-',
+    isPoster ? String(input.posterRatingsMaxPerSide ?? 'auto') : '-',
+    isPoster ? String(input.posterRatingsMax ?? 'auto') : '-',
+    isPoster ? String(input.posterEdgeOffset) : '-',
+    isBackdrop ? String(input.backdropRatingsMax ?? 'auto') : '-',
+    isLogo ? String(input.logoRatingsMax ?? 'auto') : '-',
+    isPoster ? input.qualityBadgesSide : '-',
+    isPoster && (input.posterRatingsLayout === 'top' || input.posterRatingsLayout === 'bottom')
+      ? input.posterQualityBadgesPosition
+      : '-',
+    isLogo ? '-' : input.qualityBadgesStyle,
+    isLogo ? '-' : String(input.qualityBadgesMax ?? 'auto'),
+    isLogo ? '-' : input.qualityBadgePreferences.join(',') || 'none',
+    isLogo ? '-' : String(qualityBadgeScale),
+    isBackdrop ? input.backdropRatingsLayout : '-',
+    isPoster ? input.posterSideRatingsPosition : '-',
+    isPoster ? String(input.posterSideRatingsOffset) : '-',
+    isBackdrop ? input.backdropSideRatingsPosition : '-',
+    isBackdrop ? String(input.backdropSideRatingsOffset) : '-',
+    input.ratingPresentation,
+    isPoster ? input.blockbusterDensity : '-',
+    input.aggregateRatingSource,
+    input.aggregateAccentMode,
+    input.aggregateAccentColor || '-',
+    input.aggregateCriticsAccentColor || '-',
+    input.aggregateAudienceAccentColor || '-',
+    String(input.aggregateAccentBarOffset),
+    input.aggregateAccentBarVisible ? 'on' : 'off',
+    input.artworkSelectionSeed || '-',
+    input.ratingStyle,
+    input.ratingValueMode,
+    String(ratingBadgeScale),
+    input.genreBadgeMode,
+    input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ? input.genreBadgeStyle : '-',
+    input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ? input.genreBadgePosition : '-',
+    String(input.genreBadgeScale),
+    input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ? input.genreBadgeAnimeGrouping : '-',
+    isLogo ? input.logoBackground : '-',
+    input.effectiveRatingPreferences.join(',') || 'none',
+    providerAppearanceKey,
+    input.mdblistStateKey || '-',
+    input.simklStateKey || '-',
+    input.streamBadgesCacheKeySeed,
+    input.fanartKeyHash || '-',
+    input.fanartClientKeyHash || '-',
+    input.sourceFallbackKey || '-',
+    input.renderCacheBuster || '-',
+    'v8',
+  ].join('|');
+};

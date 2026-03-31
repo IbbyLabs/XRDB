@@ -1,0 +1,106 @@
+{
+  "name": "xrdb",
+  "version": "1.0.0",
+  "private": true,
+  "description": "XRDB, eXtended Ratings DataBase, is a dynamic media artwork service with live ratings, badges, and proxy tooling.",
+  "packageManager": "pnpm@10.32.1",
+  "engines": {
+    "node": "22.x"
+  },
+  "homepage": "https://github.com/IbbyLabs/XRDB#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IbbyLabs/XRDB.git"
+  },
+  "bugs": {
+    "url": "https://github.com/IbbyLabs/XRDB/issues"
+  },
+  "keywords": [
+    "artwork",
+    "media",
+    "metadata",
+    "nextjs",
+    "ratings"
+  ],
+  "scripts": {
+    "ensure:native": "node scripts/ensure-native-deps.mjs",
+    "clean": "next clean",
+    "commits:generate": "node scripts/generate-commits-json.mjs",
+    "dev": "next dev -p 3000",
+    "prebuild": "npm run ensure:native",
+    "build": "npm run commits:generate && next build",
+    "prestart": "npm run ensure:native",
+    "start": "node .next/standalone/server.js",
+    "predev": "npm run ensure:native && npm run commits:generate",
+    "pretest": "npm run ensure:native",
+    "test": "node --experimental-strip-types --test tests/**/*.test.mjs",
+    "lint": "eslint .",
+    "docker:up": "docker compose -f local-compose.yaml up -d --build",
+    "docker:down": "docker compose -f local-compose.yaml down",
+    "docker:up:local": "docker compose -f local-compose.yaml up -d --build",
+    "docker:down:local": "docker compose -f local-compose.yaml down",
+    "docker:up:stack": "docker compose -f compose.yaml --profile xrdb up -d",
+    "docker:down:stack": "docker compose -f compose.yaml --profile xrdb down",
+    "fonts:install": "bash scripts/setup-linux-fonts.sh",
+    "fonts:install:win": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-windows-fonts.ps1",
+    "postinstall": "node scripts/run-postinstall-fonts.js",
+    "docs:refresh-assets": "node scripts/refresh-doc-static-assets.mjs all",
+    "predocs:refresh-assets:boards": "npm run ensure:native",
+    "docs:refresh-assets:boards": "node scripts/refresh-doc-static-assets.mjs boards",
+    "predocs:refresh-assets:metadata": "npm run ensure:native",
+    "docs:refresh-assets:metadata": "node scripts/refresh-doc-static-assets.mjs metadata",
+    "predocs:refresh-assets": "npm run ensure:native",
+    "preimdb:import": "npm run ensure:native",
+    "imdb:import": "node scripts/imdb-dataset-import.js",
+    "release": "node scripts/release.mjs",
+    "release:patch": "node scripts/release.mjs patch",
+    "release:minor": "node scripts/release.mjs minor",
+    "release:major": "node scripts/release.mjs major",
+    "verify:proxy-meta": "node scripts/verify-proxy-metadata-translation.mjs",
+    "preversion": "npm run docs:refresh-assets",
+    "version": "node scripts/update-changelog.mjs && node scripts/refresh-readme-changelog-links.mjs && node scripts/refresh-readme-preview-cache-busters.mjs && git add CHANGELOG.md README.md docs/images"
+  },
+  "dependencies": {
+    "@dnd-kit/core": "^6.3.1",
+    "@dnd-kit/sortable": "^10.0.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@hookform/resolvers": "^5.2.1",
+    "autoprefixer": "^10.4.21",
+    "better-sqlite3": "^12.6.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.553.0",
+    "motion": "^12.23.24",
+    "next": "^15.4.9",
+    "postcss": "^8.5.6",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "sharp": "^0.34.5",
+    "tailwind-merge": "^3.3.1",
+    "undici": "^7.24.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.1.11",
+    "@tailwindcss/typography": "^0.5.19",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "9.39.1",
+    "eslint-config-next": "16.0.8",
+    "firebase-tools": "^15.0.0",
+    "tailwindcss": "4.1.11",
+    "tw-animate-css": "^1.4.0",
+    "typescript": "5.9.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@tailwindcss/oxide",
+      "better-sqlite3",
+      "protobufjs",
+      "re2",
+      "sharp",
+      "unrs-resolver"
+    ]
+  }
+}

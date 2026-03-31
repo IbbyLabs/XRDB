@@ -1,0 +1,52 @@
+name: Notify Discord On Release
+run-name: >-
+  ${{
+    format(
+      'Post Discord release {0}',
+      github.event.inputs.tag != '' && github.event.inputs.tag || 'latest published release'
+    )
+  }}
+
+"on":
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to post. Leave empty to use the latest published release.
+        required: false
+        type: string
+
+jobs:
+  discord-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve release tag
+        id: release_tag
+        run: |
+          echo "value=${{ github.event.inputs.tag }}" >> "$GITHUB_OUTPUT"
+
+      - name: Check Discord webhook secret
+        id: webhook
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+        run: |
+          if [ -n "${WEBHOOK_URL}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "WEBHOOK_URL secret is not configured. Skipping Discord release notification."
+          fi
+
+      - name: Post release to Discord
+        if: ${{ steps.webhook.outputs.enabled == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: ${{ steps.release_tag.outputs.value }}
+        run: ./.github/scripts/post-discord-release.sh

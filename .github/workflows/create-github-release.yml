@@ -1,0 +1,97 @@
+name: Create GitHub Release
+run-name: ${{ format('Publish GitHub release {0}', github.event.workflow_run.head_branch) }}
+
+"on":
+  workflow_run:
+    workflows: ["Build and Push Docker"]
+    types:
+      - completed
+
+concurrency:
+  group: create-github-release-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' && startsWith(github.event.workflow_run.head_branch, 'v') }}
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Determine whether this should become the latest published release
+        id: latest_tag
+        env:
+          CURRENT_TAG: ${{ github.event.workflow_run.head_branch }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          releases_json="$(curl -fsSL \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/${REPOSITORY}/releases?per_page=100")"
+
+          latest_tag="$(
+            {
+              printf '%s\n' "${CURRENT_TAG}"
+              printf '%s\n' "${releases_json}" | jq -r '.[] | select(.draft == false and .prerelease == false and (.tag_name | type == "string")) | .tag_name'
+            } | awk 'NF' | sort -V | tail -n 1
+          )"
+
+          echo "current_tag=${CURRENT_TAG}" >> "$GITHUB_OUTPUT"
+          echo "latest_tag=${latest_tag}" >> "$GITHUB_OUTPUT"
+
+          if [ "${CURRENT_TAG}" = "${latest_tag}" ]; then
+            echo "make_latest=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "make_latest=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate release notes from changelog
+        run: node scripts/generate-github-release-notes.mjs "${{ github.event.workflow_run.head_branch }}" .github/release-notes.md
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.workflow_run.head_branch }}
+          body_path: .github/release-notes.md
+          make_latest: ${{ steps.latest_tag.outputs.make_latest }}
+
+      - name: Reconcile latest release marker
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+        run: node .github/scripts/reconcile-github-release-latest.mjs
+
+      - name: Check Discord webhook secret
+        id: webhook
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+        run: |
+          if [ -n "${WEBHOOK_URL}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "WEBHOOK_URL secret is not configured. Skipping Discord release notification."
+          fi
+
+      - name: Post release to Discord
+        if: ${{ steps.webhook.outputs.enabled == 'true' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.workflow_run.head_branch }}
+        run: ./.github/scripts/post-discord-release.sh

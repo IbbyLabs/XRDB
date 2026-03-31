@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "allowImportingTsExtensions": true,
+    "baseUrl": "..",
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    },
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "noEmit": true,
+    "incremental": true,
+    "target": "ES2017"
+  }
+}

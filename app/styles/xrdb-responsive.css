@@ -1,0 +1,215 @@
+@media (max-width: 1100px) {
+	.xrdb-hero-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.xrdb-hero-copy {
+		max-width: none;
+	}
+}
+
+@media (max-width: 860px) {
+	.xrdb-chrome {
+		position: relative;
+		top: auto;
+	}
+
+	.xrdb-nav-shell {
+		padding-inline: 1rem;
+	}
+
+	.xrdb-nav-desktop {
+		display: none;
+	}
+
+	.xrdb-nav-mobile-row {
+		display: flex;
+		width: 100%;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+
+	.xrdb-nav-mobile-status {
+		display: grid;
+		width: 100%;
+		gap: 0.75rem;
+	}
+
+	.xrdb-nav-mobile-row .site-brand-lockup {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+
+	.xrdb-nav-mobile-row .site-brand-copy {
+		min-width: 0;
+	}
+
+	.xrdb-mobile-nav-drawer {
+		display: grid;
+	}
+
+	.xrdb-mobile-nav-links .xrdb-nav-link {
+		width: 100%;
+		justify-content: flex-start;
+		padding-inline: 1rem;
+	}
+
+	.xrdb-mobile-nav-links .site-status-pill,
+	.xrdb-mobile-nav-links .site-support-pill,
+	.xrdb-mobile-nav-status .xrdb-deployment-pill,
+	.xrdb-mobile-nav-status .xrdb-release-pill {
+		width: 100%;
+		justify-content: center;
+	}
+
+	.xrdb-panel-form :where(.flex.flex-wrap.items-center.gap-3, .flex.flex-wrap.items-end.gap-3, .flex.flex-wrap.items-end.gap-2) > div {
+		flex: 1 1 100%;
+		min-width: 0;
+	}
+
+	.xrdb-panel-form :where(.flex.items-center.gap-2) {
+		flex-wrap: wrap;
+	}
+
+	.xrdb-brand-tag {
+		display: none;
+	}
+}
+
+@media (max-width: 720px) {
+	.xrdb-chrome .site-brand-copy {
+		gap: 0;
+	}
+
+	.xrdb-chrome .site-brand-eyebrow {
+		display: none;
+	}
+
+	.xrdb-chrome .site-brand-name {
+		font-size: 0.9rem;
+	}
+
+	.xrdb-hero-meta .xrdb-version-pill-group {
+		width: 100%;
+	}
+
+	.xrdb-hero-meta .xrdb-deployment-pill,
+	.xrdb-hero-meta .xrdb-release-pill {
+		width: 100%;
+		justify-content: center;
+	}
+
+	.xrdb-commit-window {
+		left: 50%;
+		transform: translateX(-50%);
+		width: min(40rem, calc(100vw - 1rem));
+		max-width: calc(100vw - 1rem);
+	}
+
+	.xrdb-main {
+		gap: 2.75rem;
+	}
+
+	.xrdb-section {
+		gap: 1rem;
+	}
+
+	.xrdb-hero-section {
+		padding: calc(1.35rem - 0.35rem * var(--scroll-compact-progress));
+		border-radius: calc(1.55rem - 0.12rem * var(--scroll-compact-progress));
+		min-height: auto;
+	}
+
+	.xrdb-section-title {
+		font-size: 1.7rem;
+	}
+
+	.xrdb-hero-primary,
+	.xrdb-hero-secondary {
+		width: 100%;
+	}
+
+	.xrdb-hero-strip {
+		gap: 0.5rem;
+	}
+
+	.xrdb-hero-chip {
+		width: 100%;
+		justify-content: center;
+	}
+
+	.site-discord-callout-actions {
+		align-items: flex-start;
+	}
+
+	.site-discord-pill {
+		width: 100%;
+		justify-content: center;
+	}
+
+	.xrdb-panel {
+		border-radius: 1.35rem;
+	}
+
+	.xrdb-hero-flow-step {
+		padding: calc(0.85rem - 0.06rem * var(--scroll-compact-progress))
+			calc(0.9rem - 0.06rem * var(--scroll-compact-progress));
+	}
+
+	.site-page-footer-top {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+
+	.site-page-footer-copy {
+		font-size: 0.92rem;
+	}
+
+	.xrdb-footer-link,
+	.xrdb-nav-link {
+		min-height: calc(2.35rem - 0.18rem * var(--scroll-compact-progress));
+		padding-inline: calc(0.9rem - 0.08rem * var(--scroll-compact-progress));
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.xrdb-chrome,
+	.xrdb-nav-shell,
+	.xrdb-nav-desktop,
+	.xrdb-nav-primary,
+	.xrdb-nav-links,
+	.xrdb-nav-menu-button,
+	.xrdb-mobile-nav-drawer,
+	.xrdb-brand-tag,
+	.xrdb-deployment-pill,
+	.xrdb-deployment-pill-label,
+	.xrdb-deployment-pill-value,
+	.xrdb-release-pill,
+	.xrdb-release-pill-label,
+	.xrdb-release-pill-value,
+	.xrdb-nav-link,
+	.xrdb-chrome .site-brand-lockup,
+	.xrdb-chrome .site-brand-logo,
+	.xrdb-chrome .site-brand-eyebrow,
+	.xrdb-chrome .site-brand-name,
+	.site-status-pill,
+	.site-support-pill,
+	.site-discord-callout,
+	.xrdb-hero-section,
+	.xrdb-hero-grid,
+	.xrdb-hero-copy,
+	.xrdb-hero-meta,
+	.xrdb-hero-title,
+	.xrdb-hero-subtitle,
+	.xrdb-hero-version-note,
+	.xrdb-hero-actions,
+	.xrdb-hero-primary,
+	.xrdb-hero-secondary,
+	.xrdb-hero-strip,
+	.xrdb-hero-chip,
+	.xrdb-hero-panel,
+	.xrdb-hero-flow-step {
+		transition: none;
+	}
+}
