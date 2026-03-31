@@ -3,9 +3,9 @@ import { BRAND_DISPLAY_NAME, BRAND_FULL_NAME, BRAND_NAME } from './siteBrand.ts'
 
 const DEFAULT_APP_URL = 'http://localhost:3000';
 const SITE_DESCRIPTION =
-  'This XRDB repository is archived. Visit the active XRDB repo for current releases, docs, and updates.';
+  'XRDB, eXtended Ratings DataBase, is the active repository for releases, docs, and deployment updates.';
 const SITE_SOCIAL_DESCRIPTION =
-  'This XRDB repository is archived. Visit the active XRDB repo for current releases, docs, and updates.';
+  'XRDB, eXtended Ratings DataBase, is the active repository for releases, docs, and deployment updates.';
 
 const resolveMetadataBase = (appUrl?: string) => new URL(appUrl || DEFAULT_APP_URL);
 

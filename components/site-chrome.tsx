@@ -191,11 +191,11 @@ export function ProjectArchiveNotice({ compact = false }: { compact?: boolean })
       className={`rounded-[28px] border border-amber-400/20 bg-[linear-gradient(180deg,rgba(61,34,9,0.96),rgba(22,12,5,0.98))] shadow-[0_28px_80px_-50px_rgba(245,158,11,0.55)] ${
         compact ? 'p-4 md:p-5' : 'p-5 md:p-6'
       }`}
-      aria-label="Archive notice"
+      aria-label="Project status"
     >
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-1.5">
-          <p className="site-section-eyebrow font-mono text-amber-200">Archive notice</p>
+          <p className="site-section-eyebrow font-mono text-amber-200">Project status</p>
           <h2 className="text-lg font-semibold text-white">{BRAND_ARCHIVE_TITLE}</h2>
           <p className="max-w-3xl text-sm leading-6 text-amber-50/80">{BRAND_ARCHIVE_COPY}</p>
         </div>

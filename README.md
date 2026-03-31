@@ -3,9 +3,8 @@
 XRDB, eXtended Ratings DataBase, generates poster, backdrop, thumbnail, and logo artwork with dynamic ratings, quality badges, and export ready integrations.
 
 > [!IMPORTANT]
-> This repository is archived.
-> New releases, fixes, docs, and active development now live in [IbbyLabs/XRDB](https://github.com/IbbyLabs/XRDB).
-> Use that repo for current updates, installs, and issue tracking.
+> This is the active XRDB repository.
+> Use it for releases, fixes, docs, installs, and issue tracking.
 
 > [!NOTE]
 > XRDB, eXtended Ratings DataBase, is built by IbbyLabs for artwork workflows, media tools, and addon integrations.
@@ -13,7 +12,7 @@ XRDB, eXtended Ratings DataBase, generates poster, backdrop, thumbnail, and logo
 <!-- changelog-links:start -->
 
 > [!TIP]
-> **Changelog:** read the [full changelog](CHANGELOG.md) or jump straight to the [latest entry](CHANGELOG.md#v3-0-0).
+> **Changelog:** read the [full changelog](CHANGELOG.md) or jump straight to the [latest entry](CHANGELOG.md#v1-0-0).
 
 <!-- changelog-links:end -->
 
@@ -39,7 +38,7 @@ Current priorities for XRDB, eXtended Ratings DataBase:
 
 ## Quick Start
 
-## Install From Active Repo
+## Install From GitHub
 
 ```bash
 git clone https://github.com/IbbyLabs/XRDB
