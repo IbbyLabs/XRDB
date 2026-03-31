@@ -412,7 +412,7 @@ export function buildDiscordReleasePayload({
     embeds: [
       {
         author: {
-          name: 'Easy Ratings Database',
+          name: 'XRDB, eXtended Ratings DataBase',
           url: repositoryUrl,
           icon_url: AVATAR_URL,
         },

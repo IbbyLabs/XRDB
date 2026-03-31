@@ -29,6 +29,7 @@ test('buildDiscordReleasePayload creates a branded embed with release links and 
   assert.equal(payload.username, 'XRDB Releases');
   assert.equal(payload.embeds.length, 1);
   assert.equal(payload.embeds[0].color, 0x7c3aed);
+  assert.equal(payload.embeds[0].author.name, 'XRDB, eXtended Ratings DataBase');
   assert.equal(payload.embeds[0].title, 'v2.31.0');
   assert.match(payload.embeds[0].description, /v2\.31\.0/);
 
