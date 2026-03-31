@@ -8,11 +8,6 @@ export const BRAND_GITHUB_URL =
   process.env.NEXT_PUBLIC_BRAND_GITHUB_URL || 'https://github.com/IbbyLabs/XRDB';
 export const BRAND_GITHUB_LABEL =
   process.env.NEXT_PUBLIC_BRAND_GITHUB_LABEL || 'XRDB Repo';
-export const BRAND_ARCHIVE_TITLE =
-  process.env.NEXT_PUBLIC_BRAND_ARCHIVE_TITLE || 'This is the active XRDB repository';
-export const BRAND_ARCHIVE_COPY =
-  process.env.NEXT_PUBLIC_BRAND_ARCHIVE_COPY ||
-  'Use this repository for current releases, fixes, docs, installs, and issue tracking.';
 export const BRAND_SUPPORT_URL =
   process.env.NEXT_PUBLIC_BRAND_SUPPORT_URL || 'https://kofi.ibbylabs.dev';
 export const BRAND_UPTIME_URL =

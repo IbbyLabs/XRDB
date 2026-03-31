@@ -3,7 +3,6 @@ import Link from 'next/link';
 import type { MouseEvent } from 'react';
 
 import {
-  BRAND_ARCHIVE_COPY,
   BRAND_DISPLAY_NAME,
   BRAND_DISCORD_AIO_URL,
   BRAND_DISCORD_OFFICIAL_URL,
@@ -74,9 +73,6 @@ export function SitePageOutro({
             <Image src="/favicon.png" alt="" aria-hidden="true" width={20} height={20} />
             <span>{BRAND_DISPLAY_NAME} is built by IbbyLabs for artwork and addon workflows.</span>
           </div>
-          <p className="text-sm text-zinc-400 text-center md:text-left">
-            {BRAND_ARCHIVE_COPY}
-          </p>
           <p className="text-sm text-zinc-500 text-center md:text-left">
             © 2026 {BRAND_DISPLAY_NAME}. Stateless artwork engine for addons and media tools.
           </p>

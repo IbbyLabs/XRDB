@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { BookOpenText, Bot, Code2, Layers3, Route, Wand2 } from 'lucide-react';
 
-import { BrandLockup, DeploymentVersionPill, ProjectArchiveNotice, SupportPill, UptimePill } from '@/components/site-chrome';
+import { SitePrimaryNav } from '@/components/site-primary-nav';
 import { SitePageOutro } from '@/components/site-page-outro';
 import { BRAND_DISPLAY_NAME, BRAND_FULL_NAME, BRAND_GITHUB_LABEL, BRAND_GITHUB_URL, BRAND_NAME } from '@/lib/siteBrand';
 
@@ -43,28 +43,15 @@ const docCards = [
 export default function DocsPage() {
   return (
     <div className="xrdb-page min-h-screen bg-transparent text-zinc-300 selection:bg-violet-500/30">
-      <nav className="xrdb-chrome sticky top-0 z-50">
-        <div className="xrdb-nav-shell w-full px-6 py-4 2xl:px-8">
-          <div className="xrdb-nav-desktop flex flex-wrap items-center justify-between gap-4">
-            <div className="xrdb-nav-primary min-w-0">
-              <BrandLockup compact />
-              <span className="xrdb-brand-tag">Reference docs</span>
-              <DeploymentVersionPill compact />
-            </div>
-            <div className="xrdb-nav-links flex flex-wrap items-center gap-2 text-sm font-medium">
-              <Link href="/configurator" className="xrdb-nav-link">Configurator</Link>
-              <Link href="/docs" className="xrdb-nav-link">Docs</Link>
-              <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="xrdb-nav-link">{BRAND_GITHUB_LABEL}</a>
-              <UptimePill label="Uptime Tracker" />
-              <SupportPill label="Support" />
-            </div>
-          </div>
-        </div>
-      </nav>
+      <SitePrimaryNav
+        brandTag="Reference docs"
+        items={[
+          { href: '/configurator', label: 'Configurator' },
+          { href: '/docs', label: 'Docs' },
+        ]}
+      />
 
       <main className="xrdb-main w-full px-6 py-10 md:py-14 2xl:px-8">
-        <ProjectArchiveNotice />
-
         <section className="xrdb-hero-section relative">
           <div className="xrdb-hero-orb absolute inset-0 rounded-[3rem] pointer-events-none" />
           <div className="xrdb-hero-grid">

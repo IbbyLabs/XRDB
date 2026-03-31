@@ -22,7 +22,6 @@ import {
   DeploymentVersionPill,
   DiscordPill,
   LatestReleasePill,
-  ProjectArchiveNotice,
   RecentChanges,
   SectionHeader,
   SupportPill,
@@ -151,8 +150,6 @@ export function ConfiguratorHero({
 }) {
   return (
     <>
-      <ProjectArchiveNotice compact />
-
       <section ref={heroRef} className="xrdb-hero-section relative">
         <div className="xrdb-hero-orb absolute inset-0 rounded-[3rem] pointer-events-none" />
         <div className="xrdb-hero-grid">
