@@ -38,6 +38,8 @@ const NATIVE_SCALE_SUFFIX_RATING_PROVIDERS: Partial<Record<RatingPreference, str
   metacritic: '/100',
   tmdb: '/10',
   imdb: '/10',
+  allocine: '/5',
+  allocinepress: '/5',
   trakt: '/10',
   simkl: '/10',
   metacriticuser: '/10',

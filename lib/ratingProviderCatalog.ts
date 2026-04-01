@@ -1,4 +1,9 @@
-import { METACRITIC_LOGO_DATA_URI, TRAKT_LOGO_DATA_URI } from './ratingProviderBrandAssets.ts';
+import {
+  ALLOCINE_LOGO_DATA_URI,
+  ALLOCINE_PRESS_LOGO_DATA_URI,
+  METACRITIC_LOGO_DATA_URI,
+  TRAKT_LOGO_DATA_URI,
+} from './ratingProviderBrandAssets.ts';
 
 const providerCatalog = [
   {
@@ -19,6 +24,18 @@ const providerCatalog = [
     iconUrl: 'https://www.google.com/s2/favicons?domain=imdb.com&sz=64',
     accentColor: '#f5c518',
     iconCornerRadius: 8,
+  },
+  {
+    id: 'allocine',
+    label: 'AlloCiné',
+    iconUrl: ALLOCINE_LOGO_DATA_URI,
+    accentColor: '#38bdf8',
+  },
+  {
+    id: 'allocinepress',
+    label: 'AlloCiné Press',
+    iconUrl: ALLOCINE_PRESS_LOGO_DATA_URI,
+    accentColor: '#f59e0b',
   },
   {
     id: 'tomatoes',
@@ -99,6 +116,8 @@ const aliasGroups: ReadonlyArray<readonly [RatingPreference, readonly string[]]>
   ['tmdb', ['tmdb']],
   ['mdblist', ['mdblist', 'mdb']],
   ['imdb', ['imdb']],
+  ['allocine', ['allocine', 'allocineaudience', 'allocinespectators', 'allocinespectateur', 'allocinespectateurs', 'allocineuser']],
+  ['allocinepress', ['allocinepress', 'allocinepresse', 'allocinecritic', 'allocinecritics']],
   ['tomatoes', ['tomatoes', 'rottentomatoes', 'rottentomato', 'tomatoescritics', 'tomatoescritic', 'rottentomatoescritics', 'rt']],
   ['tomatoesaudience', ['tomatoesaudience', 'rottentomatoesaudience', 'rtaudiencescore', 'rtaudience', 'popcorntime']],
   ['letterboxd', ['letterboxd']],

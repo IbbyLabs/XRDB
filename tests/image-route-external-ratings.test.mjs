@@ -6,6 +6,10 @@ import {
   SIMKL_APP_NAME,
   SIMKL_APP_VERSION,
   buildSimklRequiredQuery,
+  decodeAllocinePathFromClassName,
+  extractAllocineRatings,
+  extractAllocineSearchCandidates,
+  fetchAllocineRatings,
   fetchSimklId,
   fetchSimklRating,
   fetchTraktRating,
@@ -65,6 +69,112 @@ test('image route external ratings fetch Trakt ratings through the cached fetch 
   assert.equal(requests[0].phase, 'mdb');
   assert.equal(requests[0].init.headers['user-agent'], BROWSER_LIKE_USER_AGENT);
   assert.equal(requests[0].fetchImpl, undiciFetchImpl);
+});
+
+test('image route external ratings decode Allociné search paths and extract candidates', () => {
+  assert.equal(
+    decodeAllocinePathFromClassName('ACrL2ZACrpbG0vZmljaGVmaWxtX2dlbl9jZmlsbT0xOTc3Ni5odG1s meta-title-link'),
+    '/film/fichefilm_gen_cfilm=19776.html',
+  );
+
+  const movieHtml = `
+    <div class="meta">
+      <h2 class="meta-title">
+        <span class="ACrL2ZACrpbG0vZmljaGVmaWxtX2dlbl9jZmlsbT0xOTc3Ni5odG1s meta-title-link">Matrix</span>
+      </h2>
+      <div class="meta-body">
+        <div class="meta-body-item meta-body-info">
+          <span class="date">23 juin 1999</span>
+        </div>
+      </div>
+    </div>
+  `;
+  const seriesHtml = `
+    <div class="meta">
+      <h2 class="meta-title">
+        <span class="ACrL3NACrlcmllcy9maWNoZXNlcmllX2dlbl9jc2VyaWU9MzUxNy5odG1s meta-title-link">Breaking Bad</span>
+      </h2>
+    </div>
+  `;
+
+  assert.deepEqual(extractAllocineSearchCandidates(movieHtml, 'movie'), [
+    {
+      path: '/film/fichefilm_gen_cfilm=19776.html',
+      title: 'Matrix',
+      year: 1999,
+    },
+  ]);
+  assert.deepEqual(extractAllocineSearchCandidates(seriesHtml, 'tv'), [
+    {
+      path: '/series/ficheserie_gen_cserie=3517.html',
+      title: 'Breaking Bad',
+      year: null,
+    },
+  ]);
+});
+
+test('image route external ratings extract Allociné audience and press values from detail pages', () => {
+  const html = `
+    <span class="rating-title"> Presse </span>
+    <div class="stareval"><span class="stareval-note">3,4</span></div>
+    <span class="rating-title"> Spectateurs </span>
+    <div class="stareval"><span class="stareval-note">4,4</span></div>
+  `;
+
+  assert.deepEqual(extractAllocineRatings(html), {
+    allocine: '4.4',
+    allocinepress: '3.4',
+  });
+});
+
+test('image route external ratings fetch Allociné search and detail pages through the text cache path', async () => {
+  const requested = [];
+  const metadata = new Map();
+  const fetchImpl = async (url) => {
+    requested.push(String(url));
+    if (String(url).includes('/rechercher/movie/')) {
+      return new Response(`
+        <span class="ACrL2ZACrpbG0vZmljaGVmaWxtX2dlbl9jZmlsbT0xOTc3Ni5odG1s meta-title-link">Matrix</span>
+        <span class="date">23 juin 1999</span>
+      `, {
+        status: 200,
+        headers: {
+          'content-type': 'text/html; charset=utf-8',
+        },
+      });
+    }
+    return new Response(`
+      <span class="rating-title"> Presse </span>
+      <span class="stareval-note">3,4</span>
+      <span class="rating-title"> Spectateurs </span>
+      <span class="stareval-note">4,4</span>
+    `, {
+      status: 200,
+      headers: {
+        'content-type': 'text/html; charset=utf-8',
+      },
+    });
+  };
+
+  const ratings = await fetchAllocineRatings({
+    mediaType: 'movie',
+    title: 'Matrix',
+    originalTitle: 'The Matrix',
+    releaseDate: '1999-03-31',
+    cacheTtlMs: 5000,
+    phases,
+    getMetadata: (key) => metadata.get(key),
+    setMetadata: (key, value) => metadata.set(key, value),
+    fetchImpl,
+  });
+
+  assert.deepEqual(ratings, {
+    allocine: '4.4',
+    allocinepress: '3.4',
+  });
+  assert.equal(requested.length, 2);
+  assert.match(requested[0], /\/rechercher\/movie\/\?q=Matrix/);
+  assert.match(requested[1], /\/film\/fichefilm_gen_cfilm=19776\.html$/);
 });
 
 test('image route external ratings treat zero Trakt ratings as missing', async () => {

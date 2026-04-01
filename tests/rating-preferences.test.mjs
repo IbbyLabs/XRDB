@@ -91,6 +91,9 @@ test('rating preference normalization accepts RPDB critic and audience aliases',
   assert.equal(normalizeRatingPreference('tomatoes-audience'), 'tomatoesaudience');
   assert.equal(normalizeRatingPreference('metacritic-critics'), 'metacritic');
   assert.equal(normalizeRatingPreference('metacritic-audience'), 'metacriticuser');
+  assert.equal(normalizeRatingPreference('allocine'), 'allocine');
+  assert.equal(normalizeRatingPreference('allocine-spectateurs'), 'allocine');
+  assert.equal(normalizeRatingPreference('allocine-presse'), 'allocinepress');
 });
 
 test('strict parsing falls back to the full provider list when input is unusable', () => {

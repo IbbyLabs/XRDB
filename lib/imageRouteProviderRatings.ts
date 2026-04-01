@@ -18,7 +18,11 @@ import {
   type AnimeMappingProvider,
   type BadgeKey,
 } from './imageRouteConfig.ts';
-import { fetchSimklRating, fetchTraktRating } from './imageRouteExternalRatings.ts';
+import {
+  fetchAllocineRatings,
+  fetchSimklRating,
+  fetchTraktRating,
+} from './imageRouteExternalRatings.ts';
 import { fetchMdbListRatings } from './imageRouteMdbFetch.ts';
 import { getMdbListCacheTtlMs, getRatingCacheTtlMs } from './imageRouteMdbList.ts';
 import { normalizeRatingValue } from './imageRouteMedia.ts';
@@ -49,6 +53,10 @@ type MediaRecord = {
   imdb_id?: string | null;
   release_date?: string | null;
   first_air_date?: string | null;
+  title?: string | null;
+  original_title?: string | null;
+  name?: string | null;
+  original_name?: string | null;
 };
 
 type BundledExternalIds = {
@@ -68,6 +76,7 @@ type ProviderRatingsDeps = {
   fetchMyAnimeListRating: typeof fetchMyAnimeListRating;
   fetchTraktRating: typeof fetchTraktRating;
   fetchSimklRating: typeof fetchSimklRating;
+  fetchAllocineRatings: typeof fetchAllocineRatings;
   fetchMdbListRatings: typeof fetchMdbListRatings;
   getImdbRatingFromDataset: (imdbId: string) => ImdbDatasetRating | null;
   normalizeRatingValue: typeof normalizeRatingValue;
@@ -82,6 +91,7 @@ const DEFAULT_DEPS: ProviderRatingsDeps = {
   fetchMyAnimeListRating,
   fetchTraktRating,
   fetchSimklRating,
+  fetchAllocineRatings,
   fetchMdbListRatings,
   getImdbRatingFromDataset,
   normalizeRatingValue,
@@ -148,6 +158,8 @@ export const resolveImageRouteProviderRatings = async (
   const needsMyAnimeListRating = input.requestedExternalRatings.has('myanimelist');
   const needsTraktRating = input.requestedExternalRatings.has('trakt');
   const needsSimklRating = input.requestedExternalRatings.has('simkl');
+  const needsAllocineRating = input.requestedExternalRatings.has('allocine');
+  const needsAllocinePressRating = input.requestedExternalRatings.has('allocinepress');
   const needsResolvableImdbId =
     needsImdbRating ||
     Boolean(input.mdblistKey) ||
@@ -155,6 +167,11 @@ export const resolveImageRouteProviderRatings = async (
     needsTraktRating ||
     needsSimklRating ||
     input.shouldAttemptAnimeMapping;
+  const allocineTitle =
+    input.media?.title || input.media?.name || input.media?.original_title || input.media?.original_name || null;
+  const allocineOriginalTitle =
+    input.media?.original_title || input.media?.original_name || input.media?.title || input.media?.name || null;
+  const needsTitleBasedRating = (needsAllocineRating || needsAllocinePressRating) && Boolean(allocineTitle);
 
   const setAnimeMappingState = () => {
     if (kitsuId || aniListId || malId) {
@@ -185,7 +202,7 @@ export const resolveImageRouteProviderRatings = async (
     await ensureImdbId();
   }
 
-  if (!imdbId && !kitsuId && !aniListId && !needsAnimeOnlyRatings) {
+  if (!imdbId && !kitsuId && !aniListId && !needsAnimeOnlyRatings && !needsTitleBasedRating) {
     return {
       ratings: combinedRatings,
       allowAnimeOnlyRatings,
@@ -404,6 +421,38 @@ export const resolveImageRouteProviderRatings = async (
       if (simklRating) {
         combinedRatings.set('simkl', simklRating);
         input.renderedRatingTtlByProvider.set('simkl', simklCacheTtlMs);
+      }
+    } catch {
+    }
+  }
+
+  if (needsAllocineRating || needsAllocinePressRating) {
+    try {
+      const allocineCacheTtlMs = getRatingCacheTtlMs({
+        id: `allocine:${input.resolvedRatingMediaType}:${allocineTitle || input.cleanId}`,
+        mediaType: input.resolvedRatingMediaType,
+        releaseDate: input.releaseDate,
+        defaultTtlMs: MDBLIST_CACHE_TTL_MS,
+        oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
+      });
+      const allocineRatings = await runtimeDeps.fetchAllocineRatings({
+        mediaType: input.resolvedRatingMediaType,
+        title: allocineTitle,
+        originalTitle: allocineOriginalTitle,
+        releaseDate: input.releaseDate,
+        cacheTtlMs: allocineCacheTtlMs,
+        phases: input.phases,
+        getMetadata: input.getMetadata,
+        setMetadata: input.setMetadata,
+        fetchImpl: input.undiciFetchImpl,
+      });
+      if (allocineRatings?.allocine && needsAllocineRating) {
+        combinedRatings.set('allocine', allocineRatings.allocine);
+        input.renderedRatingTtlByProvider.set('allocine', allocineCacheTtlMs);
+      }
+      if (allocineRatings?.allocinepress && needsAllocinePressRating) {
+        combinedRatings.set('allocinepress', allocineRatings.allocinepress);
+        input.renderedRatingTtlByProvider.set('allocinepress', allocineCacheTtlMs);
       }
     } catch {
     }

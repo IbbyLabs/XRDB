@@ -7,10 +7,11 @@ import {
 import type {
   CachedJsonNetworkObserver,
   CachedJsonResponse,
+  CachedTextResponse,
   JsonFetchImpl,
   PhaseDurations,
 } from './imageRouteRuntime.ts';
-import { sha1Hex } from './imageRouteRuntime.ts';
+import { measurePhase, sha1Hex, withDedupe } from './imageRouteRuntime.ts';
 import { isNegativeRatingValue, normalizeRatingValue } from './imageRouteMedia.ts';
 
 export const BROWSER_LIKE_USER_AGENT =
@@ -36,6 +37,241 @@ type ExternalRatingsFetchJson = (
 
 type MetadataReader = <T>(key: string) => T | null | undefined;
 type MetadataWriter = (key: string, value: any, ttlMs: number) => void;
+type AllocineRatingValues = {
+  allocine: string | null;
+  allocinepress: string | null;
+};
+
+const externalTextMetadataInFlight = new Map<string, Promise<CachedTextResponse>>();
+const ALLOCINE_BASE_URL = 'https://www.allocine.fr';
+const ALLOCINE_REQUEST_HEADERS = {
+  'user-agent': BROWSER_LIKE_USER_AGENT,
+  accept:
+    'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'accept-language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+};
+
+const decodeHtmlEntities = (value: string) =>
+  value
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, '\'')
+    .replace(/&apos;/g, '\'')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#(\d+);/g, (_match, codePoint) => {
+      const parsed = Number(codePoint);
+      return Number.isFinite(parsed) ? String.fromCodePoint(parsed) : '';
+    })
+    .replace(/&#x([0-9a-f]+);/gi, (_match, codePoint) => {
+      const parsed = Number.parseInt(codePoint, 16);
+      return Number.isFinite(parsed) ? String.fromCodePoint(parsed) : '';
+    });
+
+const normalizeAllocineTitle = (value: string) =>
+  decodeHtmlEntities(String(value || ''))
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '');
+
+export const decodeAllocinePathFromClassName = (className: string) => {
+  const classTokens = String(className || '')
+    .split(/\s+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+
+  for (const token of classTokens) {
+    if (!token.startsWith('ACr')) continue;
+    const payload = token.replace(/ACr/g, '');
+    if (!payload) continue;
+    try {
+      const decoded = Buffer.from(payload, 'base64').toString('utf8').trim();
+      if (decoded.startsWith('/')) {
+        return decoded;
+      }
+    } catch {
+    }
+  }
+
+  return null;
+};
+
+export const extractAllocineSearchCandidates = (
+  html: string,
+  mediaType: 'movie' | 'tv',
+) => {
+  const expectedPrefix = mediaType === 'movie' ? '/film/' : '/series/';
+  const pathMarker =
+    mediaType === 'movie' ? 'fichefilm_gen_cfilm=' : 'ficheserie_gen_cserie=';
+  const result: Array<{ path: string; title: string; year: number | null }> = [];
+  const seen = new Set<string>();
+  const pattern = /<span class="([^"]*\bmeta-title-link\b[^"]*)">([\s\S]*?)<\/span>/gi;
+  let match: RegExpExecArray | null = null;
+
+  while ((match = pattern.exec(html))) {
+    const path = decodeAllocinePathFromClassName(match[1]);
+    if (!path || !path.startsWith(expectedPrefix) || !path.includes(pathMarker) || seen.has(path)) {
+      continue;
+    }
+    const title = decodeHtmlEntities(match[2].replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+    if (!title) continue;
+    const context = html.slice(match.index, match.index + 800);
+    const yearMatch = context.match(/class="date">[^<]*(\d{4})/i);
+    const year = yearMatch ? Number(yearMatch[1]) : null;
+    result.push({ path, title, year: Number.isFinite(year) ? year : null });
+    seen.add(path);
+  }
+
+  return result;
+};
+
+export const extractAllocineRatings = (html: string): AllocineRatingValues => {
+  const result: AllocineRatingValues = {
+    allocine: null,
+    allocinepress: null,
+  };
+  const pattern =
+    /<span class="[^"]*\brating-title\b[^"]*">\s*(Presse|Spectateurs)\s*<\/span>[\s\S]{0,500}?<span class="stareval-note(?: [^"]*)?">([^<]+)<\/span>/gi;
+  let match: RegExpExecArray | null = null;
+
+  while ((match = pattern.exec(html))) {
+    const label = match[1].trim().toLowerCase();
+    const value = normalizeRatingValue(decodeHtmlEntities(match[2]));
+    if (!value) continue;
+    if (label === 'presse' && !result.allocinepress) {
+      result.allocinepress = value;
+      continue;
+    }
+    if (label === 'spectateurs' && !result.allocine) {
+      result.allocine = value;
+    }
+  }
+
+  return result;
+};
+
+const fetchExternalTextCached = async ({
+  key,
+  url,
+  ttlMs,
+  phases,
+  phase,
+  getMetadata,
+  setMetadata,
+  fetchImpl,
+  init,
+}: {
+  key: string;
+  url: string;
+  ttlMs: number;
+  phases: PhaseDurations;
+  phase: keyof PhaseDurations;
+  getMetadata: MetadataReader;
+  setMetadata: MetadataWriter;
+  fetchImpl: JsonFetchImpl;
+  init?: RequestInit;
+}): Promise<CachedTextResponse> => {
+  const cached = getMetadata<CachedTextResponse>(key);
+  if (cached) return cached;
+
+  return withDedupe(externalTextMetadataInFlight, key, async () => {
+    const fromCache = getMetadata<CachedTextResponse>(key);
+    if (fromCache) return fromCache;
+
+    const response = await measurePhase(phases, phase, () =>
+      fetchImpl(url, {
+        cache: 'no-store',
+        redirect: 'follow',
+        ...init,
+      }),
+    );
+
+    let data: string | null = null;
+    try {
+      data = await response.text();
+    } catch {
+      data = null;
+    }
+
+    const payload: CachedTextResponse = {
+      ok: response.ok,
+      status: response.status,
+      data,
+    };
+    const failureTtlMs = Math.min(ttlMs, 2 * 60 * 1000);
+    setMetadata(key, payload, response.ok ? ttlMs : failureTtlMs);
+    return payload;
+  });
+};
+
+const dedupeAllocineTitleVariants = (values: Array<string | null | undefined>) => {
+  const result: string[] = [];
+  const seen = new Set<string>();
+
+  for (const value of values) {
+    const normalized = String(value || '').trim();
+    if (!normalized) continue;
+    const normalizedKey = normalizeAllocineTitle(normalized);
+    if (!normalizedKey || seen.has(normalizedKey)) continue;
+    seen.add(normalizedKey);
+    result.push(normalized);
+  }
+
+  return result;
+};
+
+const selectAllocineSearchCandidate = ({
+  candidates,
+  titles,
+  year,
+}: {
+  candidates: Array<{ path: string; title: string; year: number | null }>;
+  titles: string[];
+  year: number | null;
+}) => {
+  const normalizedTitles = titles.map((title) => normalizeAllocineTitle(title)).filter(Boolean);
+  const ranked = candidates
+    .map((candidate) => {
+      const normalizedCandidateTitle = normalizeAllocineTitle(candidate.title);
+      let score = 0;
+      if (normalizedTitles.includes(normalizedCandidateTitle)) {
+        score += 120;
+      } else if (
+        normalizedTitles.some(
+          (title) =>
+            normalizedCandidateTitle.startsWith(title) ||
+            title.startsWith(normalizedCandidateTitle),
+        )
+      ) {
+        score += 75;
+      } else if (
+        normalizedTitles.some(
+          (title) =>
+            normalizedCandidateTitle.includes(title) || title.includes(normalizedCandidateTitle),
+        )
+      ) {
+        score += 35;
+      }
+
+      if (year !== null && candidate.year !== null) {
+        if (candidate.year === year) {
+          score += 30;
+        } else {
+          score -= Math.min(25, Math.abs(candidate.year - year) * 3);
+        }
+      }
+
+      return {
+        candidate,
+        score,
+      };
+    })
+    .sort((left, right) => right.score - left.score);
+
+  return ranked[0]?.score > 0 ? ranked[0].candidate : null;
+};
 
 export const buildSimklRequiredQuery = (clientId: string) => {
   const query = new URLSearchParams();
@@ -126,6 +362,105 @@ export const fetchTraktRating = async ({
   } catch {
     return null;
   }
+};
+
+export const fetchAllocineRatings = async ({
+  mediaType,
+  title,
+  originalTitle,
+  releaseDate,
+  cacheTtlMs,
+  phases,
+  getMetadata,
+  setMetadata,
+  fetchImpl,
+}: {
+  mediaType: 'movie' | 'tv';
+  title?: string | null;
+  originalTitle?: string | null;
+  releaseDate?: string | null;
+  cacheTtlMs: number;
+  phases: PhaseDurations;
+  getMetadata: MetadataReader;
+  setMetadata: MetadataWriter;
+  fetchImpl: JsonFetchImpl;
+}) => {
+  const titleVariants = dedupeAllocineTitleVariants([title, originalTitle]).slice(0, 3);
+  if (titleVariants.length === 0) {
+    return null;
+  }
+
+  const releaseYearMatch = String(releaseDate || '').match(/\b(\d{4})\b/);
+  const releaseYear = releaseYearMatch ? Number(releaseYearMatch[1]) : null;
+  const searchPath = mediaType === 'movie' ? 'movie' : 'series';
+  let selectedPath: string | null = null;
+
+  for (const titleVariant of titleVariants) {
+    const searchKey = `allocine:search:v1:${searchPath}:${sha1Hex(titleVariant)}`;
+    const searchUrl = `${ALLOCINE_BASE_URL}/rechercher/${searchPath}/?q=${encodeURIComponent(titleVariant)}`;
+    let response: CachedTextResponse;
+
+    try {
+      response = await fetchExternalTextCached({
+        key: searchKey,
+        url: searchUrl,
+        ttlMs: cacheTtlMs,
+        phases,
+        phase: 'mdb',
+        getMetadata,
+        setMetadata,
+        fetchImpl,
+        init: {
+          headers: ALLOCINE_REQUEST_HEADERS,
+        },
+      });
+    } catch {
+      continue;
+    }
+
+    if (!response.ok || !response.data) continue;
+    const candidates = extractAllocineSearchCandidates(response.data, mediaType);
+    const selectedCandidate = selectAllocineSearchCandidate({
+      candidates,
+      titles: titleVariants,
+      year: releaseYear,
+    });
+    if (selectedCandidate?.path) {
+      selectedPath = selectedCandidate.path;
+      break;
+    }
+  }
+
+  if (!selectedPath) {
+    return null;
+  }
+
+  const detailUrl = new URL(selectedPath, ALLOCINE_BASE_URL).toString();
+  let detailResponse: CachedTextResponse;
+  try {
+    detailResponse = await fetchExternalTextCached({
+      key: `allocine:page:v1:${sha1Hex(selectedPath)}`,
+      url: detailUrl,
+      ttlMs: cacheTtlMs,
+      phases,
+      phase: 'mdb',
+      getMetadata,
+      setMetadata,
+      fetchImpl,
+      init: {
+        headers: ALLOCINE_REQUEST_HEADERS,
+      },
+    });
+  } catch {
+    return null;
+  }
+
+  if (!detailResponse.ok || !detailResponse.data) {
+    return null;
+  }
+
+  const ratings = extractAllocineRatings(detailResponse.data);
+  return ratings.allocine || ratings.allocinepress ? ratings : null;
 };
 
 export const fetchSimklId = async ({
