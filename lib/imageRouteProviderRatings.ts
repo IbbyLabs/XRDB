@@ -148,6 +148,13 @@ export const resolveImageRouteProviderRatings = async (
   const needsMyAnimeListRating = input.requestedExternalRatings.has('myanimelist');
   const needsTraktRating = input.requestedExternalRatings.has('trakt');
   const needsSimklRating = input.requestedExternalRatings.has('simkl');
+  const needsResolvableImdbId =
+    needsImdbRating ||
+    Boolean(input.mdblistKey) ||
+    input.hasMdbListApiKey ||
+    needsTraktRating ||
+    needsSimklRating ||
+    input.shouldAttemptAnimeMapping;
 
   const setAnimeMappingState = () => {
     if (kitsuId || aniListId || malId) {
@@ -173,6 +180,10 @@ export const resolveImageRouteProviderRatings = async (
     }
     return imdbId;
   };
+
+  if (!imdbId && needsResolvableImdbId) {
+    await ensureImdbId();
+  }
 
   if (!imdbId && !kitsuId && !aniListId && !needsAnimeOnlyRatings) {
     return {
@@ -237,15 +248,17 @@ export const resolveImageRouteProviderRatings = async (
   }
   setAnimeMappingState();
 
-  if (imdbId && (input.mdblistKey || input.hasMdbListApiKey)) {
+  const resolvedImdbIdForMdbList =
+    input.mdblistKey || input.hasMdbListApiKey ? await ensureImdbId() : null;
+  if (resolvedImdbIdForMdbList && (input.mdblistKey || input.hasMdbListApiKey)) {
     try {
       const mdbListCacheTtlMs = getMdbListCacheTtlMs({
-        imdbId,
+        imdbId: resolvedImdbIdForMdbList,
         mediaType: input.resolvedRatingMediaType,
         releaseDate: input.releaseDate,
       });
       const mdbRatings = await runtimeDeps.fetchMdbListRatings({
-        imdbId,
+        imdbId: resolvedImdbIdForMdbList,
         cacheTtlMs: mdbListCacheTtlMs,
         phases: input.phases,
         requestSource: 'addon',

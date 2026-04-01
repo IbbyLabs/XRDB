@@ -191,3 +191,100 @@ test('image route provider ratings resolve all anime providers for typed TMDB in
   assert.equal(result.ratings.get('kitsu'), '81.2');
   assert.equal(result.ratings.get('imdb'), '9.0');
 });
+
+test('image route provider ratings resolve imdb dependent providers from bundled external ids', async () => {
+  const mdbCalls = [];
+  const traktCalls = [];
+  const simklCalls = [];
+  const renderedRatingTtlByProvider = new Map();
+
+  const result = await resolveImageRouteProviderRatings(
+    {
+      cleanId: 'tt15239678',
+      imageType: 'poster',
+      mediaType: 'movie',
+      media: {
+        id: 693134,
+        release_date: '2024-02-27',
+      },
+      mediaId: 'tt15239678',
+      isTmdb: false,
+      isKitsu: false,
+      isAniListInput: false,
+      idPrefix: 'imdb',
+      season: null,
+      mappedImdbId: null,
+      inputAnimeMappingProvider: null,
+      inputAnimeMappingExternalId: null,
+      requestedExternalRatings: new Set([
+        'imdb',
+        'mdblist',
+        'tomatoes',
+        'letterboxd',
+        'trakt',
+        'simkl',
+      ]),
+      shouldAttemptAnimeMapping: false,
+      initialAllowAnimeOnlyRatings: false,
+      initialHasConfirmedAnimeMapping: false,
+      resolvedRatingMediaType: 'movie',
+      releaseDate: '2024-02-27',
+      mdblistKey: 'mdblist-key',
+      hasMdbListApiKey: false,
+      simklClientId: 'simkl-client',
+      phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+      fetchJsonCached: async () => createEmptyResponse(),
+      getMetadata: () => null,
+      setMetadata: () => {},
+      detailsBundlePromise: Promise.resolve({
+        bundledExternalIds: {
+          imdb_id: 'tt15239678',
+        },
+      }),
+      renderedRatingTtlByProvider,
+      undiciFetchImpl: async () => {
+        throw new Error('unexpected undici fetch');
+      },
+    },
+    {
+      fetchAniListRating: async () => null,
+      fetchKitsuRating: async () => null,
+      fetchMyAnimeListRating: async () => null,
+      fetchTraktRating: async ({ imdbId }) => {
+        traktCalls.push(imdbId);
+        return '8.3';
+      },
+      fetchSimklRating: async ({ imdbId }) => {
+        simklCalls.push(imdbId);
+        return '8.4';
+      },
+      fetchMdbListRatings: async ({ imdbId }) => {
+        mdbCalls.push(imdbId);
+        return new Map([
+          ['mdblist', '86'],
+          ['tomatoes', '92'],
+          ['letterboxd', '4.4'],
+        ]);
+      },
+      getImdbRatingFromDataset: () => ({ rating: 8.4, votes: 1200 }),
+      normalizeRatingValue: (value) => {
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? numeric.toFixed(1) : null;
+      },
+    },
+  );
+
+  assert.deepEqual(mdbCalls, ['tt15239678']);
+  assert.deepEqual(traktCalls, ['tt15239678']);
+  assert.deepEqual(simklCalls, ['tt15239678']);
+  assert.equal(result.ratings.get('imdb'), '8.4');
+  assert.equal(result.ratings.get('mdblist'), '86');
+  assert.equal(result.ratings.get('tomatoes'), '92');
+  assert.equal(result.ratings.get('letterboxd'), '4.4');
+  assert.equal(result.ratings.get('trakt'), '8.3');
+  assert.equal(result.ratings.get('simkl'), '8.4');
+  assert.ok(renderedRatingTtlByProvider.has('imdb'));
+  assert.ok(renderedRatingTtlByProvider.has('mdblist'));
+  assert.ok(renderedRatingTtlByProvider.has('trakt'));
+  assert.ok(renderedRatingTtlByProvider.has('simkl'));
+});
