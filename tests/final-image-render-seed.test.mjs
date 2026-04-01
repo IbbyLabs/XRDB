@@ -95,6 +95,15 @@ test('final image render seed changes when poster rating badge scale changes', (
   assert.notEqual(baseKey, scaledKey);
 });
 
+test('final image render seed changes when cache version changes', () => {
+  const baseKey = buildFinalImageRenderSeedKey(createInput());
+  const changedKey = buildFinalImageRenderSeedKey(
+    createInput({ cacheVersion: 'poster-backdrop-logo-v73' }),
+  );
+
+  assert.notEqual(baseKey, changedKey);
+});
+
 test('final image render seed changes when backdrop rating badge scale changes', () => {
   const baseKey = buildFinalImageRenderSeedKey(createInput({ imageType: 'backdrop' }));
   const scaledKey = buildFinalImageRenderSeedKey(
