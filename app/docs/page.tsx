@@ -9,16 +9,16 @@ const DOCS_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://xrdb.example.c
 
 const routeExamples = [
   {
-    title: 'Movie poster',
-    value: `${DOCS_BASE_URL}/poster/tt0133093.jpg?tmdbKey={tmdbKey}&mdblistKey={mdblistKey}&ratings=imdb,tmdb`,
+    title: 'Movie poster with OMDb + AlloCiné',
+    value: `${DOCS_BASE_URL}/poster/tt0133093.jpg?tmdbKey={tmdbKey}&mdblistKey={mdblistKey}&posterArtworkSource=omdb&posterRatings=imdb,allocine,allocinepress`,
   },
   {
-    title: 'Typed TMDB backdrop',
-    value: `${DOCS_BASE_URL}/backdrop/tmdb:movie:603.jpg?tmdbKey={tmdbKey}&mdblistKey={mdblistKey}&backdropRatingsLayout=right%20vertical`,
+    title: 'Typed TMDB backdrop with Bottom Row',
+    value: `${DOCS_BASE_URL}/backdrop/tmdb:tv:1399.jpg?tmdbKey={tmdbKey}&mdblistKey={mdblistKey}&backdropRatings=tmdb,imdb&backdropBottomRatingsRow=true`,
   },
   {
     title: 'Episode thumb with XRDBID',
-    value: `${DOCS_BASE_URL}/poster/xrdbid:tt0944947:1:1.jpg?tmdbKey={tmdbKey}&mdblistKey={mdblistKey}`,
+    value: `${DOCS_BASE_URL}/thumbnail/xrdbid:tt0944947/S01E01.jpg?tmdbKey={tmdbKey}&mdblistKey={mdblistKey}&thumbnailRatings=tmdb,imdb`,
   },
 ];
 
@@ -137,7 +137,8 @@ export default function DocsPage() {
                   <p><span className="font-semibold text-zinc-200">IMDb</span> uses `tt...` values.</p>
                   <p><span className="font-semibold text-zinc-200">TMDB</span> works best with typed IDs such as `tmdb:movie:603` and `tmdb:tv:1399`.</p>
                   <p><span className="font-semibold text-zinc-200">Anime</span> routes accept providers such as `anilist:`, `mal:`, `tvdb:`, `anidb:`, and `kitsu:`.</p>
-                  <p><span className="font-semibold text-zinc-200">Episodes</span> can use `xrdbid:` when the source needs a stronger match.</p>
+                  <p><span className="font-semibold text-zinc-200">Episodes</span> use `/thumbnail/{'{id}'}/S{'{season}'}E{'{episode}'}.jpg` and accept base IDs such as plain IMDb, `xrdbid:`, `tvdb:`, `kitsu:`, `anilist:`, `mal:`, and `anidb:`.</p>
+                  <p><span className="font-semibold text-zinc-200">Thumbnail ratings</span> use their own `thumbnailRatings` order and currently support `tmdb` and `imdb`.</p>
                 </div>
               </article>
 

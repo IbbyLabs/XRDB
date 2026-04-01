@@ -72,7 +72,7 @@ const README_PREVIEW_DEFINITIONS: ReadonlyArray<ReadmePreviewDefinition> = [
     params: {
       lang: 'en',
       backdropRatings: 'tmdb,imdb',
-      backdropRatingsLayout: 'left vertical',
+      backdropRatingsLayout: 'right vertical',
       backdropStreamBadges: 'on',
       ratingStyle: 'square',
       imageText: 'clean',

@@ -59,7 +59,7 @@ This means that the XRDB server itself does not permanently store or centrally m
 
 This intentional design allows you to host public XRDB proxy instances without paying for massive shared API usage, as every connected addon or user brings their own API key and rate limits. The visibility of keys in URLs and the configurator UI is expected behavior.
 
-The configurator includes an AIOMetadata export section that generates ready to use URL patterns for custom art override fields in AIOMetadata compatible addons. The `Hide credentials` toggle masks exported AIOMetadata patterns with placeholders without changing live XRDB request URLs. The `Poster ID source` selector controls whether poster URLs use auto mode (typed TMDB IDs for the broadest coverage), explicit TMDB, or IMDb IDs for compatibility. Background and logo patterns always use type aware TMDB IDs, and episode thumbnails use IMDb IDs with season and episode placeholders.
+The configurator includes an AIOMetadata export section that generates ready to use URL patterns for custom art override fields in AIOMetadata compatible addons. The `Hide credentials` toggle masks exported AIOMetadata patterns with placeholders without changing live XRDB request URLs. The `Poster ID source` selector controls whether poster URLs use auto mode (typed TMDB IDs for the broadest coverage), explicit TMDB, or IMDb IDs for compatibility. Background and logo patterns always use type aware TMDB IDs, and episode thumbnails use the selected episode ID mode with season and episode placeholders plus their own `thumbnailRatings` order.
 
 Optional server side client ids can extend a few providers beyond the BYOK flow. `XRDB_MAL_CLIENT_ID` enables the official MyAnimeList API path for direct `myanimelist` ratings, `XRDB_TRAKT_CLIENT_ID` enables direct `trakt` ratings, and `SIMKL_CLIENT_ID` (or `XRDB_SIMKL_CLIENT_ID`) enables direct `simkl` ratings server wide. A user supplied `simklClientId` query parameter takes precedence over the server key for SIMKL. When the MAL client id is not configured, XRDB falls back to Jikan for direct `myanimelist` lookups before falling back to MDBList whenever a `mdblistKey` is present. Fanart backed artwork can also use a server fallback key from `XRDB_FANART_API_KEY` or `FANART_API_KEY`, but a user supplied `fanartKey` is preferred when available. OMDb poster lookups use the server side `OMDB_KEY` by default and also accept `OMDB_API_KEY` or `XRDB_OMDB_API_KEY`.
 
@@ -93,7 +93,7 @@ Each preview URL includes a `cb` cache buster token. The release flow refreshes 
 <table>
   <tr>
     <td><strong>Game of Thrones</strong><br>French backdrop, right side ratings</td>
-    <td><strong>Stranger Things</strong><br>Square ratings, stream badges, left side stack</td>
+    <td><strong>Stranger Things</strong><br>Square ratings, stream badges, right side stack</td>
   </tr>
   <tr>
     <td><a href="https://xrdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readme-preview-game-of-thrones-backdrop-v1-0-6"><img src="https://xrdb.ibbylabs.dev/preview/game-of-thrones-backdrop?cb=readme-preview-game-of-thrones-backdrop-v1-0-6" alt="Game of Thrones backdrop live preview" width="320"></a></td>
@@ -272,8 +272,11 @@ the ratings list to `imdb,tmdb`.
 
 ## API Usage
 
-Main endpoint:
+Main image endpoint:
 `GET /{type}/{id}.jpg?ratings={providers}&lang={lang}&ratingStyle={style}...`
+
+Episode thumbnail endpoint:
+`GET /thumbnail/{id}/S{season}E{episode}.jpg?thumbnailRatings=tmdb,imdb&lang={lang}...`
 
 Response format note:
 - Poster and backdrop responses are returned as JPEG.
@@ -282,12 +285,16 @@ Response format note:
 ### Examples
 - **Poster with IMDb and TMDB**: `/poster/tt0133093.jpg?ratings=imdb,tmdb&lang=en`
 - **Plain backdrop**: `/backdrop/tmdb:movie:603.jpg?ratings=mdblist&style=plain&backdropRatingsLayout=right vertical`
+- **Backdrop with Bottom Row**: `/backdrop/tmdb:tv:1399.jpg?backdropRatings=tmdb,imdb&backdropBottomRatingsRow=true&lang=en`
+- **Episode thumbnail with XRDBID**: `/thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb&lang=en`
+
+Episode thumbnails use the dedicated `/thumbnail/{id}/S{season}E{episode}.jpg` route. They follow the backdrop rendering controls for style, artwork, presentation, and layout, but their badge order comes from `thumbnailRatings`, which defaults to `tmdb,imdb`.
 
 ### Supported Query Parameters
 
 | Parameter | Description | Supported Values | Default |
 |-----------|-------------|------------------|---------|
-| `type` | Image type (Path) | `poster`, `backdrop`, `logo` | - |
+| `type` | Image type (Path) | `poster`, `backdrop`, `logo` (`thumbnail` uses its own route) | - |
 | `id` | Media ID (Path) | IMDb (`tt...`), TMDB (`tmdb:id`, `tmdb:movie:id`, `tmdb:tv:id`), Kitsu (`kitsu:id`), anime IDs such as `anilist:123`, `mal:456`, `tvdb:12345`, or `anidb:6789` | - |
 | `tmdbIdScope` | TMDB ID collision handling mode | `soft`, `strict` | `soft` |
 | `lang` | Image language | Any TMDB ISO 639-1 code (e.g. `it`, `en`, `es`, `fr`, `de`, `ru`, `ja`) | `en` |
@@ -322,10 +329,11 @@ Response format note:
 | `aggregateAccentMode` | Aggregate accent source | `source`, `genre`, `custom` | `source` |
 | `aggregateAccentColor` | Aggregate accent color when `aggregateAccentMode=custom` | Hex color | `#a78bfa` |
 | `aggregateAccentBarOffset` | Average badge accent bar offset | Number (-12 to 12) | `0` |
-| `ratings` | Rating providers (global fallback) | `tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist, anilist, kitsu` | `all` |
-| `posterRatings` | Poster rating providers | `tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist, anilist, kitsu` | `all` |
-| `backdropRatings` | Backdrop rating providers | `tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist, anilist, kitsu` | `all` |
-| `logoRatings` | Logo rating providers | `tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist, anilist, kitsu` | `all` |
+| `ratings` | Rating providers (global fallback) | `tmdb, mdblist, imdb, allocine, allocinepress, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist, anilist, kitsu` | `all` |
+| `posterRatings` | Poster rating providers | `tmdb, mdblist, imdb, allocine, allocinepress, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist, anilist, kitsu` | `all` |
+| `backdropRatings` | Backdrop rating providers | `tmdb, mdblist, imdb, allocine, allocinepress, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist, anilist, kitsu` | `all` |
+| `thumbnailRatings` | Episode thumbnail rating providers | `tmdb, imdb` | `tmdb,imdb` |
+| `logoRatings` | Logo rating providers | `tmdb, mdblist, imdb, allocine, allocinepress, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist, anilist, kitsu` | `all` |
 | `ratingValueMode` | Rating display scaling | `native`, `normalized`, `normalized100` | `native` |
 | `ratingStyle` (or `posterRatingStyle` / `backdropRatingStyle` / `logoRatingStyle`, or `style` legacy) | Badge style | `glass` (Pill), `square` (Dark), `plain` (No BG) | `glass` (poster/backdrop), `plain` (logo) |
 | `tmdbKey` | TMDB v3 API Key (Stateless) | String (e.g. `your_key`) | **Required** |
@@ -338,7 +346,9 @@ Response format note:
 | `posterRatingsLayout` | Poster layout | `top`, `bottom`, `left`, `right`, `top bottom`, `left right` | `top bottom` |
 | `posterRatingsMaxPerSide` | Max badges per side | Number (1+) | `auto` |
 | `backdropRatingsLayout` | Backdrop layout | `center`, `right`, `right vertical` | `center` |
+| `backdropBottomRatingsRow` | Force backdrop ratings into one Bottom Row | `true`, `false` | `false` |
 | `logoRatingsMax` | Logo badge limit | Number (1+) | `auto` |
+| `logoBottomRatingsRow` | Force logo ratings into one Bottom Row | `true`, `false` | `false` |
 | `logoBackground` | Logo canvas background | `transparent`, `dark` | `transparent` |
 | `logoArtworkSource` | Logo artwork source | `tmdb`, `fanart`, `cinemeta`, `random` | `tmdb` |
 
@@ -347,6 +357,8 @@ In the configurator UI, `minimal` is labeled as `Compact Average`, `average` is 
 RPDB compatibility aliases are accepted where they map cleanly in XRDB: `order`/`ratingOrder` (rating provider order), `ratingBarPos` (mapped to poster/backdrop layout + side position), `fontScale` (mapped to rating badge scale), `imageSize=verylarge` (mapped to `posterImageSize=4k`), and `textless`/`posterType=textless-*` (mapped to clean poster text mode).
 
 `myanimelist` and `trakt` can render directly when the server has `XRDB_MAL_CLIENT_ID` or `XRDB_TRAKT_CLIENT_ID`. Without the MAL client id, XRDB falls back to Jikan for direct `myanimelist` ratings. When direct lookups are unavailable, XRDB still falls back to MDBList when `mdblistKey` is present.
+
+`allocine` and `allocinepress` add AlloCiné audience and press scores for movie and series titles. They render on the native `/5` scale by default and still respect `ratingValueMode` normalization when you want everything shown on a shared `/10` or `/100` scale.
 
 `tmdbIdScope=soft` is the default for compatibility and accepts bare `tmdb:id`. Set `tmdbIdScope=strict` to require `tmdb:movie:id` or `tmdb:tv:id` for backdrop and logo requests to avoid movie versus TV collisions.
 
@@ -360,9 +372,13 @@ Poster sources support `tmdb`, `fanart`, `cinemeta`, `omdb`, and `random`. `post
 
 Backdrop sources support `tmdb`, `fanart`, `cinemeta`, and `random`. `backdropArtworkSource=fanart` uses fanart.tv `moviebackground` or `showbackground` art for `original`, `clean`, and `alternative`. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists. `backdropArtworkSource=cinemeta` uses the MetaHub Cinemeta backdrop when an IMDb id is available. `backdropArtworkSource=random` picks a seeded source across TMDB, fanart, and Cinemeta when those candidates exist. Logo sources support `tmdb`, `fanart`, `cinemeta`, and `random`. `logoArtworkSource=fanart` uses fanart.tv HD or clear logo assets for logo output, `logoArtworkSource=cinemeta` uses the MetaHub Cinemeta logo when an IMDb id is available, and `logoArtworkSource=random` picks a seeded source across TMDB, fanart, and Cinemeta when those candidates exist.
 
+Use `backdropBottomRatingsRow=true` or `logoBottomRatingsRow=true` to collapse those badges into one Bottom Row. When the backdrop Bottom Row is enabled, XRDB ignores the saved backdrop side layout and side offset controls for rendering and omits those inactive params from lean exports such as AIOMetadata patterns.
+
 Future work: season aware fanart support is a strong next step for TV because fanart.tv exposes `seasonposter` and `seasonthumb` assets.
 
 Rendered ratings keep provider native scales by default. Set `ratingValueMode=normalized` to convert everything to a 0 to 10 display scale, or `ratingValueMode=normalized100` to convert everything to a rounded whole number out of 100. Providers that already use `/10` are shown without the suffix in ten point mode, percentage sources are converted to decimal (`69%` -> `6.9`) or whole number (`69`), `/5` sources are doubled (`4.2/5` -> `8.4`) or multiplied by twenty (`84`), and `/4` sources are multiplied by `2.5` (`3.5/4` -> `8.8` or `88`).
+
+Episode thumbnails now use the episode level TMDB and IMDb ratings instead of inheriting the parent series rating stack. Keep `thumbnailRatings=tmdb,imdb` if you want the default episode specific pairing.
 
 When no explicit max is set, XRDB now renders all badges that fit the layout instead of applying a fixed poster or logo badge cap. Use the max params only when you want to intentionally tighten the visible badge count.
 
@@ -374,20 +390,22 @@ XRDB supports multiple formats to identify media:
 - **TMDB**: `tmdb:603` or explicit `tmdb:movie:603` / `tmdb:tv:1399`
 - **Kitsu**: `kitsu:1` (prefix `kitsu:` followed by the ID)
 - **Anime Mappings**: `provider:id` (e.g. `anilist:123`, `myanimelist:456`)
+- **Episode Thumbnails**: `/thumbnail/{episodeBaseId}/S01E01.jpg` where `episodeBaseId` can be plain IMDb, `xrdbid:{imdb_id}`, `tvdb:{tvdb_id}`, `kitsu:{kitsu_id}`, `anilist:{anilist_id}`, `mal:{mal_id}`, or `anidb:{anidb_id}`
 
 ## Addon Developer Guide
 
 To integrate XRDB into your addon:
 
 1. **Config String**: use a single `xrdbConfig` string (base64url) generated by the XRDB configurator. It contains `baseUrl`, `tmdbKey`, `mdblistKey`, optional `fanartKey`, the per type style/text/layout fields, and any optional overrides currently enabled. Defaults are usually omitted.
-2. **Addon UI**: show ONLY the toggles to enable/disable `poster`, `backdrop`, `logo`. No modal and no extra settings panels.
+2. **Addon UI**: show ONLY the toggles to enable/disable `poster`, `backdrop`, `thumbnail`, `logo`. No modal and no extra settings panels.
 3. **Fallback**: if a type is disabled, keep the original artwork (do not call XRDB for that type).
 4. **Decode**: decode `xrdbConfig` (base64url -> JSON) once and reuse it.
-5. **URL build**: start with `{baseUrl}/{type}/{id}.jpg`, add `tmdbKey` and `mdblistKey`, then pass through any optional XRDB fields present in `cfg` such as `fanartKey`, `ratings`, `posterRatings`, `backdropRatings`, `logoRatings`, `lang`, `ratingValueMode`, `genreBadge`, `genreBadgeStyle`, `genreBadgePosition`, `genreBadgeScale`, `posterGenreBadge`, `backdropGenreBadge`, `logoGenreBadge`, `posterGenreBadgeStyle`, `backdropGenreBadgeStyle`, `logoGenreBadgeStyle`, `posterGenreBadgePosition`, `backdropGenreBadgePosition`, `logoGenreBadgePosition`, `posterGenreBadgeScale`, `backdropGenreBadgeScale`, `logoGenreBadgeScale`, `streamBadges`, `posterStreamBadges`, `backdropStreamBadges`, `qualityBadgesSide`, `posterQualityBadgesPosition`, `qualityBadgesStyle`, `posterQualityBadgesStyle`, `backdropQualityBadgesStyle`, `posterQualityBadgesMax`, `backdropQualityBadgesMax`, `ratingPresentation`, `aggregateRatingSource`, `posterRatingsLayout`, `posterRatingsMaxPerSide`, `backdropRatingsLayout`, `logoRatingsMax`, `logoBackground`, `posterArtworkSource`, `backdropArtworkSource`, and `logoArtworkSource`. Then apply the per type config fields:
+5. **URL build**: use `{baseUrl}/{type}/{id}.jpg` for poster, backdrop, and logo, and use `{baseUrl}/thumbnail/{episodeBaseId}/S{season}E{episode}.jpg` for episode thumbnails. Add `tmdbKey` and `mdblistKey`, then pass through any optional XRDB fields present in `cfg` such as `fanartKey`, `ratings`, `posterRatings`, `backdropRatings`, `thumbnailRatings`, `logoRatings`, `lang`, `ratingValueMode`, `genreBadge`, `genreBadgeStyle`, `genreBadgePosition`, `genreBadgeScale`, `posterGenreBadge`, `backdropGenreBadge`, `logoGenreBadge`, `posterGenreBadgeStyle`, `backdropGenreBadgeStyle`, `logoGenreBadgeStyle`, `posterGenreBadgePosition`, `backdropGenreBadgePosition`, `logoGenreBadgePosition`, `posterGenreBadgeScale`, `backdropGenreBadgeScale`, `logoGenreBadgeScale`, `streamBadges`, `posterStreamBadges`, `backdropStreamBadges`, `qualityBadgesSide`, `posterQualityBadgesPosition`, `qualityBadgesStyle`, `posterQualityBadgesStyle`, `backdropQualityBadgesStyle`, `posterQualityBadgesMax`, `backdropQualityBadgesMax`, `ratingPresentation`, `aggregateRatingSource`, `posterRatingsLayout`, `posterRatingsMaxPerSide`, `backdropRatingsLayout`, `backdropBottomRatingsRow`, `logoRatingsMax`, `logoBottomRatingsRow`, `logoBackground`, `posterArtworkSource`, `backdropArtworkSource`, and `logoArtworkSource`. Then apply the per type config fields:
    - `poster`: `posterRatingStyle`, `posterImageText`
    - `poster artwork source`: `posterArtworkSource`
    - `backdrop`: `backdropRatingStyle`, `backdropImageText`
    - `backdrop artwork source`: `backdropArtworkSource`
+   - `episode thumbnail`: `thumbnailRatings` plus the backdrop scoped style, presentation, artwork source, layout, and Bottom Row settings
    - `logo`: `logoRatingStyle`, `logoBackground`, `logoArtworkSource` (omit `imageText`)
 
 The generated configurator payload usually emits the per type fields and omits unchanged defaults. Global fallback params such as `ratings`, `streamBadges`, or `qualityBadgesStyle` are still supported if you build configs manually.
@@ -407,23 +425,29 @@ Do NOT hardcode API keys or base URL. Always use cfg.baseUrl from xrdbConfig.
 Node/JS: const cfg = JSON.parse(Buffer.from(xrdbConfig, 'base64url').toString('utf8'));
 
 --- FULL API REFERENCE ---
-Endpoint: GET /{type}/{id}.jpg?...queryParams
+Poster, backdrop, and logo endpoint: GET /{type}/{id}.jpg?...queryParams
+Episode thumbnail endpoint: GET /thumbnail/{id}/S{season}E{episode}.jpg?...queryParams
 
 Parameter               | Values                                                              | Default
 type (path)             | poster, backdrop, logo                                               | -
 id (path)               | IMDb (tt...), TMDB (tmdb:id / tmdb:movie:id / tmdb:tv:id), Kitsu (kitsu:id), AniList, MAL                            | -
 tmdbIdScope             | soft, strict                                                                                                           | soft
-ratings                 | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist,   |
+ratings                 | tmdb, mdblist, imdb, allocine, allocinepress, tomatoes,              | all
+                        | tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt,     |
+                        | simkl, rogerebert, myanimelist,                                      |
                         | anilist, kitsu (global fallback)                                     |
-posterRatings           | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist,   |
+posterRatings           | tmdb, mdblist, imdb, allocine, allocinepress, tomatoes,              | all
+                        | tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt,     |
+                        | simkl, rogerebert, myanimelist,                                      |
                         | anilist, kitsu (poster only)                                         |
-backdropRatings         | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist,   |
+backdropRatings         | tmdb, mdblist, imdb, allocine, allocinepress, tomatoes,              | all
+                        | tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt,     |
+                        | simkl, rogerebert, myanimelist,                                      |
                         | anilist, kitsu (backdrop only)                                       |
-logoRatings             | tmdb, mdblist, imdb, tomatoes, tomatoesaudience, letterboxd,         | all
-                        | metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist,   |
+thumbnailRatings        | tmdb, imdb (episode thumbnail only)                                  | tmdb,imdb
+logoRatings             | tmdb, mdblist, imdb, allocine, allocinepress, tomatoes,              | all
+                        | tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt,     |
+                        | simkl, rogerebert, myanimelist,                                      |
                         | anilist, kitsu (logo only)                                           |
 lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, etc.)            | en
 genreBadge             | off, text, icon, both (global fallback)                              | off
@@ -440,7 +464,7 @@ posterQualityBadgesStyle| glass, square, plain, media (poster only)             
 backdropQualityBadgesStyle| glass, square, plain, media (backdrop only)                        | glass
 posterQualityBadgesMax  | Number (1+)                                                          | auto
 backdropQualityBadgesMax| Number (1+)                                                          | auto
-ratingPresentation      | standard, minimal, average, blockbuster, none                        | standard
+ratingPresentation      | standard, minimal, average, dual, blockbuster, none                  | standard
 aggregateRatingSource   | overall, critics, audience                                           | overall
 ratingStyle             | glass, square, plain                                                 | glass
 imageText               | original, clean, alternative                                         | original
@@ -449,7 +473,9 @@ backdropArtworkSource   | tmdb, fanart, cinemeta, random                        
 posterRatingsLayout     | top, bottom, left, right, top bottom, left right                     | top bottom
 posterRatingsMaxPerSide | Number (1+)                                                          | auto
 backdropRatingsLayout   | center, right, right vertical                                        | center
+backdropBottomRatingsRow| true, false                                                          | false
 logoRatingsMax          | Number (1+)                                                          | auto
+logoBottomRatingsRow    | true, false                                                          | false
 logoBackground          | transparent, dark                                                    | transparent
 logoArtworkSource       | tmdb, fanart, cinemeta, random                                       | tmdb
 tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | -
@@ -463,11 +489,14 @@ FANART NOTE: fanartKey is optional. If present, XRDB uses your key first for fan
 POSTER NOTE: `posterArtworkSource` supports `tmdb`, `fanart`, `cinemeta`, `omdb`, and `random`. Fanart uses fanart.tv poster art when a fanart key is available, Cinemeta uses MetaHub when an IMDb id is available, OMDb uses the server OMDb key plus IMDb id, and random picks a seeded source across the available poster candidates.
 BACKDROP NOTE: `backdropArtworkSource` supports `tmdb`, `fanart`, `cinemeta`, and `random`. Fanart uses fanart.tv moviebackground or showbackground art when a fanart key is available, Cinemeta uses MetaHub when an IMDb id is available, and random picks a seeded source across the available backdrop candidates.
 LOGO NOTE: `logoArtworkSource` supports `tmdb`, `fanart`, `cinemeta`, and `random`. Fanart uses fanart.tv HD or clear logo assets when a fanart key is available, Cinemeta uses MetaHub when an IMDb id is available, and random picks a seeded source across the available logo candidates.
+THUMBNAIL NOTE: Episode thumbnails use `/thumbnail/{id}/S{season}E{episode}.jpg`, default to `thumbnailRatings=tmdb,imdb`, accept base ids such as plain IMDb, `xrdbid`, `tvdb`, `kitsu`, `anilist`, `mal`, and `anidb`, and otherwise follow the backdrop scoped style, presentation, artwork source, and Bottom Row settings.
+BOTTOM ROW NOTE: `backdropBottomRatingsRow=true` and `logoBottomRatingsRow=true` collapse those badges into one Bottom Row. The backdrop Bottom Row intentionally overrides side stack layout and side offset settings.
+ALLOCINE NOTE: `allocine` and `allocinepress` provide AlloCiné audience and press scores on their native `/5` scale unless you normalize them through `ratingValueMode`.
 FUTURE NOTE: season aware fanart support is a good next step for TV because fanart.tv exposes seasonposter and seasonthumb assets.
 
 --- INTEGRATION REQUIREMENTS ---
 1. Use ONLY the "xrdbConfig" field (no modal and no extra settings panels).
-2. Add toggles to enable/disable: poster, backdrop, logo.
+2. Add toggles to enable/disable: poster, backdrop, thumbnail, logo.
 3. If a type is disabled, keep the original artwork (do not call XRDB for that type).
 4. Build XRDB URLs using the decoded config and inject them into both catalog and meta responses.
 
@@ -481,7 +510,7 @@ all      -> genreBadge = cfg.genreBadge, genreBadgeStyle = cfg.genreBadgeStyle, 
 poster   -> genreBadge = cfg.posterGenreBadge, genreBadgeStyle = cfg.posterGenreBadgeStyle, genreBadgePosition = cfg.posterGenreBadgePosition, genreBadgeScale = cfg.posterGenreBadgeScale
 backdrop -> genreBadge = cfg.backdropGenreBadge, genreBadgeStyle = cfg.backdropGenreBadgeStyle, genreBadgePosition = cfg.backdropGenreBadgePosition, genreBadgeScale = cfg.backdropGenreBadgeScale
 logo     -> genreBadge = cfg.logoGenreBadge, genreBadgeStyle = cfg.logoGenreBadgeStyle, genreBadgePosition = cfg.logoGenreBadgePosition, genreBadgeScale = cfg.logoGenreBadgeScale
-Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRatings / cfg.logoRatings (fallback to cfg.ratings).
+Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRatings / cfg.thumbnailRatings / cfg.logoRatings (fallback to cfg.ratings).
 Rating presentation can be set per type via cfg.posterRatingPresentation / cfg.backdropRatingPresentation / cfg.logoRatingPresentation (fallback to cfg.ratingPresentation).
 Aggregate source can be set per type via cfg.posterAggregateRatingSource / cfg.backdropAggregateRatingSource / cfg.logoAggregateRatingSource (fallback to cfg.aggregateRatingSource).
 Use cfg.aggregateAccentMode to keep source colours, match the genre badge, or force a custom aggregate accent through cfg.aggregateAccentColor.
@@ -489,6 +518,7 @@ Use cfg.aggregateAccentBarOffset to nudge the average badge accent bar up or dow
 Quality badges can be set per type via cfg.posterStreamBadges / cfg.backdropStreamBadges (fallback to cfg.streamBadges).
 Use cfg.qualityBadgesSide for poster top bottom layouts and cfg.posterQualityBadgesPosition for poster top or bottom layouts.
 Quality badges style/max can be set per type via cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle and cfg.posterQualityBadgesMax / cfg.backdropQualityBadgesMax.
+Episode thumbnails use /thumbnail/{episodeBaseId}/S{season}E{episode}.jpg, keep their own cfg.thumbnailRatings order, and otherwise follow the backdrop scoped style, presentation, artwork source, layout, and Bottom Row settings.
 
 --- URL BUILD ---
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : cfg.logoRatingStyle;
