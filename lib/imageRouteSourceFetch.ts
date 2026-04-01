@@ -5,7 +5,10 @@ import {
   putCachedImageToObjectStorage,
 } from './imageObjectStorage.ts';
 import { assertSafeSourceUrl } from './networkSecurity.ts';
-import { buildSourceImageFallbackCacheControl, isTmdbSourceImageUrl } from './imageRouteSourceUrls.ts';
+import {
+  buildSourceImageFallbackCacheControl,
+  isSharedCacheableSourceImageUrl,
+} from './imageRouteSourceUrls.ts';
 import {
   HttpError,
   sha1Hex,
@@ -43,7 +46,7 @@ export const getSourceImagePayload = async (
     throw new HttpError('Image not found', 404);
   }
 
-  const sharedCacheable = isTmdbSourceImageUrl(normalizedImgUrl);
+  const sharedCacheable = isSharedCacheableSourceImageUrl(normalizedImgUrl);
   if (!sharedCacheable) {
     return fetchSourceImageUncached(normalizedImgUrl, fallbackTtlMs, fetchImpl);
   }

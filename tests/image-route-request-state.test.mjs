@@ -66,6 +66,26 @@ test('image route request state defaults thumbnail backdrop requests to TMDB and
   assert.deepEqual([...state.selectedRatings], ['tmdb', 'imdb']);
 });
 
+test('image route request state keeps OMDb poster artwork poster only', async () => {
+  const posterState = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&posterArtworkSource=omdb',
+    ),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+  const backdropState = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/backdrop/tt0133093.jpg?tmdbKey=tmdb-key&backdropArtworkSource=omdb',
+    ),
+    imageType: 'backdrop',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(posterState.posterArtworkSource, 'omdb');
+  assert.equal(backdropState.backdropArtworkSource, 'tmdb');
+});
+
 test('image route request state requires a TMDB key', async () => {
   await assert.rejects(
     () =>

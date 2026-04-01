@@ -31,6 +31,7 @@ test('image route config keeps poster aliases stable', () => {
 
 test('image route config normalizes artwork and boolean flags safely', () => {
   assert.equal(normalizeArtworkSource('fanart'), 'fanart');
+  assert.equal(normalizeArtworkSource('omdb'), 'omdb');
   assert.equal(normalizeArtworkSource('mystery'), 'tmdb');
   assert.equal(normalizeBooleanSearchFlag('yes'), true);
   assert.equal(normalizeBooleanSearchFlag('off'), false);

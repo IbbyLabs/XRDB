@@ -13,9 +13,10 @@ export const buildSourceImageFallbackCacheControl = (ttlMs: number) => {
   return `public, max-age=${ttlSeconds}, s-maxage=${ttlSeconds}, stale-while-revalidate=3600`;
 };
 
-export const isTmdbSourceImageUrl = (value: string) => {
+export const isSharedCacheableSourceImageUrl = (value: string) => {
   try {
-    return new URL(value).hostname === 'image.tmdb.org';
+    const hostname = new URL(value).hostname;
+    return hostname === 'image.tmdb.org' || hostname === 'm.media-amazon.com';
   } catch {
     return false;
   }

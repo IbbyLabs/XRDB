@@ -99,6 +99,52 @@ test('image route artwork selection can source poster art from fanart', async ()
   assert.equal(result.posterIsTextless, false);
 });
 
+test('image route artwork selection can source poster art from OMDb', async () => {
+  const selectArtwork = createImageRouteArtworkSelector(
+    {
+      imageType: 'poster',
+      isThumbnailRequest: false,
+      mediaType: 'movie',
+      media: { id: 19, imdb_id: 'tt0099999' },
+      details: { poster_path: '/tmdb-poster.jpg' },
+      requestedImageLang: 'en',
+      fallbackImageLang: 'en',
+      posterTextPreference: 'clean',
+      posterArtworkSource: 'omdb',
+      backdropArtworkSource: 'tmdb',
+      logoArtworkSource: 'tmdb',
+      artworkSelectionSeed: 'seed-omdb',
+      cleanId: 'tmdb:movie:19',
+      season: null,
+      episode: null,
+      isKitsu: false,
+      tmdbKey: 'tmdb-key',
+      fanartKey: '',
+      fanartClientKey: '',
+      fanartTvdbId: null,
+      phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+      fetchJsonCached: async () => createEmptyResponse(),
+      getRemoteImageAspectRatio: async () => 2.2,
+      resolveImdbId: async () => 'tt0099999',
+    },
+    {
+      resolveOmdbPosterUrl: async ({ imdbId }) =>
+        imdbId === 'tt0099999' ? 'https://m.media-amazon.com/images/M/test.jpg' : null,
+    },
+  );
+
+  const result = await selectArtwork({
+    posters: [],
+    backdrops: [],
+    logos: [{ file_path: '/tmdb-logo.png', iso_639_1: 'en', aspect_ratio: 2.0 }],
+  });
+
+  assert.equal(result.imgPath, '');
+  assert.equal(result.imgUrlOverride, 'https://m.media-amazon.com/images/M/test.jpg');
+  assert.equal(result.logoPath, '/tmdb-logo.png');
+  assert.equal(result.posterIsTextless, false);
+});
+
 test('image route artwork selection measures TMDB logo aspect ratio from the visible logo image', async () => {
   const measuredLogoUrls = [];
   const selectArtwork = createImageRouteArtworkSelector({

@@ -9,7 +9,7 @@ import {
   buildProviderIconStorageKey,
   buildSourceImageFallbackCacheControl,
   buildTmdbImageUrl,
-  isTmdbSourceImageUrl,
+  isSharedCacheableSourceImageUrl,
   pickTmdbImageSize,
   toImageContentType,
 } from '../lib/imageRouteSourceUrls.ts';
@@ -23,10 +23,11 @@ test('image route source urls normalize content types and cache headers', () => 
   );
 });
 
-test('image route source urls detect shared TMDB sources', () => {
-  assert.equal(isTmdbSourceImageUrl('https://image.tmdb.org/t/p/w500/a.jpg'), true);
-  assert.equal(isTmdbSourceImageUrl('https://example.com/a.jpg'), false);
-  assert.equal(isTmdbSourceImageUrl('not a url'), false);
+test('image route source urls detect shared cacheable source hosts', () => {
+  assert.equal(isSharedCacheableSourceImageUrl('https://image.tmdb.org/t/p/w500/a.jpg'), true);
+  assert.equal(isSharedCacheableSourceImageUrl('https://m.media-amazon.com/images/I/51y2h75fMoL.png'), true);
+  assert.equal(isSharedCacheableSourceImageUrl('https://example.com/a.jpg'), false);
+  assert.equal(isSharedCacheableSourceImageUrl('not a url'), false);
 });
 
 test('image route source urls build stable provider icon keys', () => {
