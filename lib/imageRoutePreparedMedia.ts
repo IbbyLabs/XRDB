@@ -76,6 +76,14 @@ type PreparedMediaFetchJson = (
   init?: RequestInit,
 ) => Promise<CachedJsonResponse>;
 
+type PreparedMediaDeps = {
+  resolveImageRouteProviderRatings: typeof resolveImageRouteProviderRatings;
+};
+
+const DEFAULT_DEPS: PreparedMediaDeps = {
+  resolveImageRouteProviderRatings,
+};
+
 export type PreparedImageRouteMediaState = {
   allowAnimeOnlyRatings: boolean;
   hasConfirmedAnimeMapping: boolean;
@@ -149,7 +157,8 @@ export const prepareImageRouteMediaState = async (input: {
   rawFallbackKitsuRating: string | null;
   rawFallbackTitle: string | null;
   rawFallbackLogoAspectRatio: number | null;
-}): Promise<PreparedImageRouteMediaState> => {
+}, deps: Partial<PreparedMediaDeps> = {}): Promise<PreparedImageRouteMediaState> => {
+  const runtimeDeps = { ...DEFAULT_DEPS, ...deps };
   let {
     media,
     mediaType,
@@ -209,7 +218,7 @@ const mediaLooksAnimated = media ? isTmdbAnimationTitle(media) : false;
 if (!hasNativeAnimeInput) {
   allowAnimeOnlyRatings = hasConfirmedAnimeMapping;
 }
-const isAnimeContent = hasNativeAnimeInput || hasConfirmedAnimeMapping;
+const resolveIsAnimeContent = () => hasNativeAnimeInput || hasConfirmedAnimeMapping;
 const resolvePrimaryGenreFamily = (
   genres: Array<{ id?: number | null; name?: string | null } | string | null | undefined>,
   genreIds: Array<number | string | null | undefined> = [],
@@ -217,7 +226,7 @@ const resolvePrimaryGenreFamily = (
   resolveGenreBadgeFamily({
     genres,
     genreIds,
-    isAnimeContent,
+    isAnimeContent: resolveIsAnimeContent(),
     animeGrouping: genreBadgeAnimeGrouping,
   });
 const buildResolvedGenreBadge = (
@@ -241,6 +250,8 @@ let primaryGenreFamily = resolvePrimaryGenreFamily(
   Array.isArray(media?.genre_ids) ? media.genre_ids : [],
 );
 let genreBadge = buildResolvedGenreBadge(primaryGenreFamily);
+let resolvedGenres = Array.isArray(media?.genres) ? media.genres : [];
+let resolvedGenreIds = Array.isArray(media?.genre_ids) ? media.genre_ids : [];
 
 let imgPath = '';
 let imgUrl = rawFallbackImageUrl;
@@ -268,7 +279,7 @@ const hasMdbListApiKey = MDBLIST_API_KEYS.length > 0;
 const shouldRenderRawKitsuFallbackRating =
   useRawKitsuFallback && needsKitsuRating && typeof rawFallbackKitsuRating === 'string' && rawFallbackKitsuRating.length > 0;
 const shouldRenderRatings = shouldApplyRatings;
-const shouldRenderStreamBadges = shouldApplyStreamBadges && !isAnimeContent;
+const shouldRenderStreamBadges = shouldApplyStreamBadges && !resolveIsAnimeContent();
 const shouldRenderBadges =
   shouldRenderRatings ||
   shouldRenderStreamBadges ||
@@ -380,7 +391,7 @@ const providerRatingsPromise =
       needsTraktRating ||
       needsSimklRating
     )
-    ? resolveImageRouteProviderRatings({
+    ? runtimeDeps.resolveImageRouteProviderRatings({
       cleanId,
       imageType,
       mediaType: resolvedRatingMediaType,
@@ -508,6 +519,12 @@ if (!useRawKitsuFallback && detailsBundlePromise) {
     ],
     Array.isArray(media?.genre_ids) ? media.genre_ids : [],
   );
+  resolvedGenres = [
+    ...(Array.isArray(details?.genres) ? details.genres : []),
+    ...(Array.isArray(fallbackDetails?.genres) ? fallbackDetails.genres : []),
+    ...(Array.isArray(media?.genres) ? media.genres : []),
+  ];
+  resolvedGenreIds = Array.isArray(media?.genre_ids) ? media.genre_ids : [];
   genreBadge = buildResolvedGenreBadge(primaryGenreFamily);
   const fanartTvdbId =
     mediaType === 'tv'
@@ -663,6 +680,8 @@ if (providerRatingsPromise) {
   providerRatings = providerRatingResult.ratings;
   allowAnimeOnlyRatings = providerRatingResult.allowAnimeOnlyRatings;
   hasConfirmedAnimeMapping = providerRatingResult.hasConfirmedAnimeMapping;
+  primaryGenreFamily = resolvePrimaryGenreFamily(resolvedGenres, resolvedGenreIds);
+  genreBadge = buildResolvedGenreBadge(primaryGenreFamily);
 }
 if (streamBadgesPromise) {
   const streamBadgeResult = await streamBadgesPromise;
