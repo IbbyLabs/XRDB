@@ -61,7 +61,7 @@ This intentional design allows you to host public XRDB proxy instances without p
 
 The configurator includes an AIOMetadata export section that generates ready to use URL patterns for custom art override fields in AIOMetadata compatible addons. The `Hide credentials` toggle masks exported AIOMetadata patterns with placeholders without changing live XRDB request URLs. The `Poster ID source` selector controls whether poster URLs use auto mode (typed TMDB IDs for the broadest coverage), explicit TMDB, or IMDb IDs for compatibility. Background and logo patterns always use type aware TMDB IDs, and episode thumbnails use IMDb IDs with season and episode placeholders.
 
-Optional server side client ids can extend a few providers beyond the BYOK flow. `XRDB_MAL_CLIENT_ID` enables the official MyAnimeList API path for direct `myanimelist` ratings, `XRDB_TRAKT_CLIENT_ID` enables direct `trakt` ratings, and `SIMKL_CLIENT_ID` (or `XRDB_SIMKL_CLIENT_ID`) enables direct `simkl` ratings server wide. A user supplied `simklClientId` query parameter takes precedence over the server key for SIMKL. When the MAL client id is not configured, XRDB falls back to Jikan for direct `myanimelist` lookups before falling back to MDBList whenever a `mdblistKey` is present. Fanart backed artwork can also use a server fallback key from `XRDB_FANART_API_KEY` or `FANART_API_KEY`, but a user supplied `fanartKey` is preferred when available.
+Optional server side client ids can extend a few providers beyond the BYOK flow. `XRDB_MAL_CLIENT_ID` enables the official MyAnimeList API path for direct `myanimelist` ratings, `XRDB_TRAKT_CLIENT_ID` enables direct `trakt` ratings, and `SIMKL_CLIENT_ID` (or `XRDB_SIMKL_CLIENT_ID`) enables direct `simkl` ratings server wide. A user supplied `simklClientId` query parameter takes precedence over the server key for SIMKL. When the MAL client id is not configured, XRDB falls back to Jikan for direct `myanimelist` lookups before falling back to MDBList whenever a `mdblistKey` is present. Fanart backed artwork can also use a server fallback key from `XRDB_FANART_API_KEY` or `FANART_API_KEY`, but a user supplied `fanartKey` is preferred when available. OMDb poster lookups use the server side `OMDB_KEY` by default and also accept `OMDB_API_KEY` or `XRDB_OMDB_API_KEY`.
 
 For `simkl`, XRDB resolves a Simkl item id using `https://api.simkl.com/redirect` and then loads the summary from `https://api.simkl.com/movies/{id}`, `https://api.simkl.com/tv/{id}`, or `https://api.simkl.com/anime/{id}` based on media type hints. Every Simkl request includes `client_id`, `app-name`, and `app-version` query parameters, plus `simkl-api-key` and a browser style `User-Agent` header.
 
@@ -333,14 +333,14 @@ Response format note:
 | `fanartKey` | Fanart API Key for fanart poster, backdrop, and logo sources | String (e.g. `your_key`) | Server fallback when available |
 | `simklClientId` | SIMKL client id for direct SIMKL ratings | String (e.g. `your_client_id`) | None |
 | `imageText` | Image text (poster/backdrop only) | `original`, `clean`, `alternative` | `original` (poster), `clean` (backdrop) |
-| `posterArtworkSource` | Poster artwork source | `tmdb`, `fanart` | `tmdb` |
-| `backdropArtworkSource` | Backdrop artwork source | `tmdb`, `fanart` | `tmdb` |
+| `posterArtworkSource` | Poster artwork source | `tmdb`, `fanart`, `cinemeta`, `omdb`, `random` | `tmdb` |
+| `backdropArtworkSource` | Backdrop artwork source | `tmdb`, `fanart`, `cinemeta`, `random` | `tmdb` |
 | `posterRatingsLayout` | Poster layout | `top`, `bottom`, `left`, `right`, `top bottom`, `left right` | `top bottom` |
 | `posterRatingsMaxPerSide` | Max badges per side | Number (1+) | `auto` |
 | `backdropRatingsLayout` | Backdrop layout | `center`, `right`, `right vertical` | `center` |
 | `logoRatingsMax` | Logo badge limit | Number (1+) | `auto` |
 | `logoBackground` | Logo canvas background | `transparent`, `dark` | `transparent` |
-| `logoArtworkSource` | Logo artwork source | `tmdb`, `fanart` | `tmdb` |
+| `logoArtworkSource` | Logo artwork source | `tmdb`, `fanart`, `cinemeta`, `random` | `tmdb` |
 
 In the configurator UI, `minimal` is labeled as `Compact Average`, `average` is labeled as `Labeled Average`, and `dual` is labeled as `Critics + Audience`. The underlying query values stay `minimal`, `average`, and `dual`.
 
@@ -356,9 +356,9 @@ Genre badges resolve from a curated family set instead of trying to icon map eve
 
 `fanartKey` is optional. If present, XRDB uses your key first for fanart requests. If it is blank, XRDB falls back to `XRDB_FANART_API_KEY` or `FANART_API_KEY` when the server has one.
 
-Poster `posterArtworkSource=fanart` uses fanart.tv poster art for `original`, `clean`, and `alternative`. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.
+Poster sources support `tmdb`, `fanart`, `cinemeta`, `omdb`, and `random`. `posterArtworkSource=fanart` uses fanart.tv poster art for `original`, `clean`, and `alternative`. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists. `posterArtworkSource=cinemeta` uses the MetaHub Cinemeta poster when an IMDb id is available. `posterArtworkSource=omdb` uses the OMDb poster when a server OMDb key and IMDb id are available. `posterArtworkSource=random` picks a seeded source across TMDB, fanart, Cinemeta, and OMDb when those candidates exist.
 
-Backdrop `backdropArtworkSource=fanart` uses fanart.tv `moviebackground` or `showbackground` art for `original`, `clean`, and `alternative`. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists. `logoArtworkSource=fanart` uses fanart.tv HD or clear logo assets for logo output.
+Backdrop sources support `tmdb`, `fanart`, `cinemeta`, and `random`. `backdropArtworkSource=fanart` uses fanart.tv `moviebackground` or `showbackground` art for `original`, `clean`, and `alternative`. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists. `backdropArtworkSource=cinemeta` uses the MetaHub Cinemeta backdrop when an IMDb id is available. `backdropArtworkSource=random` picks a seeded source across TMDB, fanart, and Cinemeta when those candidates exist. Logo sources support `tmdb`, `fanart`, `cinemeta`, and `random`. `logoArtworkSource=fanart` uses fanart.tv HD or clear logo assets for logo output, `logoArtworkSource=cinemeta` uses the MetaHub Cinemeta logo when an IMDb id is available, and `logoArtworkSource=random` picks a seeded source across TMDB, fanart, and Cinemeta when those candidates exist.
 
 Future work: season aware fanart support is a strong next step for TV because fanart.tv exposes `seasonposter` and `seasonthumb` assets.
 
@@ -444,14 +444,14 @@ ratingPresentation      | standard, minimal, average, blockbuster, none         
 aggregateRatingSource   | overall, critics, audience                                           | overall
 ratingStyle             | glass, square, plain                                                 | glass
 imageText               | original, clean, alternative                                         | original
-posterArtworkSource     | tmdb, fanart                                                         | tmdb
-backdropArtworkSource   | tmdb, fanart                                                         | tmdb
+posterArtworkSource     | tmdb, fanart, cinemeta, omdb, random                                 | tmdb
+backdropArtworkSource   | tmdb, fanart, cinemeta, random                                       | tmdb
 posterRatingsLayout     | top, bottom, left, right, top bottom, left right                     | top bottom
 posterRatingsMaxPerSide | Number (1+)                                                          | auto
 backdropRatingsLayout   | center, right, right vertical                                        | center
 logoRatingsMax          | Number (1+)                                                          | auto
 logoBackground          | transparent, dark                                                    | transparent
-logoArtworkSource       | tmdb, fanart                                                         | tmdb
+logoArtworkSource       | tmdb, fanart, cinemeta, random                                       | tmdb
 tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | -
 mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | -
 fanartKey               | Your Fanart API Key (used first for fanart sources)                  | server fallback when available
@@ -460,9 +460,9 @@ simklClientId           | Your SIMKL client id for direct SIMKL ratings         
 TMDB NOTE: Default tmdbIdScope=soft keeps compatibility and accepts tmdb:id. Set tmdbIdScope=strict to require tmdb:movie:id or tmdb:tv:id for backdrop and logo.
 STYLE NOTE: Transparent provider icons stay transparent in every style. In glass, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring to avoid accent color bleed through.
 FANART NOTE: fanartKey is optional. If present, XRDB uses your key first for fanart poster, backdrop, and logo requests. If fanartKey is blank, XRDB falls back to XRDB_FANART_API_KEY or FANART_API_KEY when the server has one.
-POSTER NOTE: posterArtworkSource=fanart uses fanart.tv poster art for original, clean, and alternative poster modes when a fanart key is available. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.
-BACKDROP NOTE: backdropArtworkSource=fanart uses fanart.tv moviebackground or showbackground art for original, clean, and alternative backdrop modes when a fanart key is available. Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.
-LOGO NOTE: logoArtworkSource=fanart uses fanart.tv HD or clear logo assets when a fanart key is available.
+POSTER NOTE: `posterArtworkSource` supports `tmdb`, `fanart`, `cinemeta`, `omdb`, and `random`. Fanart uses fanart.tv poster art when a fanart key is available, Cinemeta uses MetaHub when an IMDb id is available, OMDb uses the server OMDb key plus IMDb id, and random picks a seeded source across the available poster candidates.
+BACKDROP NOTE: `backdropArtworkSource` supports `tmdb`, `fanart`, `cinemeta`, and `random`. Fanart uses fanart.tv moviebackground or showbackground art when a fanart key is available, Cinemeta uses MetaHub when an IMDb id is available, and random picks a seeded source across the available backdrop candidates.
+LOGO NOTE: `logoArtworkSource` supports `tmdb`, `fanart`, `cinemeta`, and `random`. Fanart uses fanart.tv HD or clear logo assets when a fanart key is available, Cinemeta uses MetaHub when an IMDb id is available, and random picks a seeded source across the available logo candidates.
 FUTURE NOTE: season aware fanart support is a good next step for TV because fanart.tv exposes seasonposter and seasonthumb assets.
 
 --- INTEGRATION REQUIREMENTS ---
@@ -659,12 +659,14 @@ Copy `env.template` to `.env` and adjust as needed. All cache TTL values are in 
 | `XRDB_KITSU_API_BASE_URL` | `https://kitsu.io/api/edge` | Optional Kitsu API base URL override used by image rendering and proxy translation |
 | `XRDB_MAL_CLIENT_ID` | (empty) | Optional MyAnimeList v2 client id used for direct `myanimelist` ratings |
 | `XRDB_TRAKT_CLIENT_ID` | (empty) | Optional Trakt client id used for direct `trakt` ratings |
+| `OMDB_KEY` | (empty) | Optional server side OMDb key used for `posterArtworkSource=omdb` (also `OMDB_API_KEY` and `XRDB_OMDB_API_KEY`) |
 | `SIMKL_CLIENT_ID` | (empty) | Optional SIMKL client id used for direct `simkl` ratings (also `XRDB_SIMKL_CLIENT_ID`) |
 | `XRDB_SIMKL_APP_NAME` | `xrdb` | Simkl app name sent in required `app-name` query parameter |
 | `XRDB_SIMKL_APP_VERSION` | `1.0` | Simkl app version sent in required `app-version` query parameter |
 | `XRDB_MAL_API_BASE_URL` | `https://api.myanimelist.net/v2` | Optional MyAnimeList API base URL override |
 | `XRDB_JIKAN_API_BASE_URL` | `https://api.jikan.moe/v4` | Optional Jikan API base URL override for unauthenticated MAL fallback |
 | `XRDB_TRAKT_API_BASE_URL` | `https://api.trakt.tv` | Optional Trakt API base URL override |
+| `XRDB_OMDB_API_BASE_URL` | `https://www.omdbapi.com` | Optional OMDb API base URL override used for OMDb poster lookups |
 
 ### Cache TTLs
 
@@ -677,6 +679,7 @@ hardcoding separate cache TTL values.
 | `XRDB_TMDB_CACHE_TTL_MS` | 3 days | 10 min | 30 days | TMDB metadata |
 | `XRDB_MDBLIST_CACHE_TTL_MS` | 3 days | 10 min | 30 days | MDBList ratings |
 | `XRDB_KITSU_CACHE_TTL_MS` | 3 days | 10 min | 30 days | Kitsu anime |
+| `XRDB_OMDB_CACHE_TTL_MS` | 3 days | 10 min | 30 days | OMDb poster lookups |
 | `XRDB_SIMKL_CACHE_TTL_MS` | 3 days | 10 min | 30 days | SIMKL ratings |
 | `XRDB_SIMKL_ID_CACHE_TTL_MS` | 30 days | 10 min | 30 days | Simkl id resolution cache |
 | `XRDB_SIMKL_ID_EMPTY_CACHE_TTL_MS` | 1 day | 10 min | 30 days | Simkl empty id lookup cache |
