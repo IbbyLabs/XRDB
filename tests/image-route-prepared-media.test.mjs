@@ -138,3 +138,42 @@ test('prepared media state keeps TV network badges when stream badges use the de
     ['netflix'],
   );
 });
+
+test('prepared media state recomputes split anime genre badges after late mapping confirmation', async () => {
+  const state = await prepareImageRouteMediaState(
+    {
+      ...createBaseInput(),
+      imageType: 'poster',
+      mediaType: 'tv',
+      media: {
+        id: 1429,
+        name: 'Attack on Titan',
+        imdb_id: 'tt2560140',
+        genres: [{ id: 16, name: 'Animation' }],
+      },
+      mediaId: 'tt2560140',
+      isKitsu: false,
+      idPrefix: 'imdb',
+      selectedRatings: new Set(['myanimelist']),
+      hasNativeAnimeInput: false,
+      allowAnimeOnlyRatings: false,
+      hasConfirmedAnimeMapping: false,
+      shouldApplyRatings: true,
+      genreBadgeMode: 'text',
+      useRawKitsuFallback: true,
+      rawFallbackImageUrl: 'https://example.com/poster.jpg',
+      rawFallbackKitsuRating: null,
+    },
+    {
+      resolveImageRouteProviderRatings: async () => ({
+        ratings: new Map([['myanimelist', '8.6']]),
+        allowAnimeOnlyRatings: true,
+        hasConfirmedAnimeMapping: true,
+      }),
+    },
+  );
+
+  assert.equal(state.primaryGenreFamily?.id, 'anime');
+  assert.equal(state.genreBadge?.familyId, 'anime');
+  assert.equal(state.providerRatings.get('myanimelist'), '8.6');
+});
