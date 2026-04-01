@@ -20,6 +20,7 @@ type SharpResizeChain = {
 
 type SharpImageLike = {
   metadata(): Promise<SharpMetadata>;
+  trim?: (options?: { background?: { r: number; g: number; b: number; alpha: number } }) => SharpImageLike;
   resize(width: number, height: number, options: { fit: 'fill' }): SharpResizeChain;
 };
 
@@ -54,7 +55,12 @@ export const buildPosterCleanOverlayAsset = async ({
     try {
       const logoPayload = await getSourceImagePayload(posterLogoUrl);
       const logoBuffer = Buffer.from(logoPayload.body);
-      const logoMeta = await sharp(logoBuffer).metadata();
+      const sourceLogoImage = sharp(logoBuffer);
+      const measuredLogoImage =
+        typeof sourceLogoImage.trim === 'function'
+          ? sourceLogoImage.trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
+          : sourceLogoImage;
+      const logoMeta = await measuredLogoImage.metadata();
       if (logoMeta.width && logoMeta.height) {
         const maxLogoWidth = Math.min(posterRowRegionWidth, Math.round(outputWidth * 0.78));
         const maxLogoHeight = Math.max(48, Math.round(outputHeight * 0.16));
@@ -65,7 +71,7 @@ export const buildPosterCleanOverlayAsset = async ({
         );
         const logoWidth = Math.max(1, Math.round(logoMeta.width * scale));
         const logoHeight = Math.max(1, Math.round(logoMeta.height * scale));
-        const resizedLogoBuffer = await sharp(logoBuffer)
+        const resizedLogoBuffer = await measuredLogoImage
           .resize(logoWidth, logoHeight, { fit: 'fill' })
           .png()
           .toBuffer();
