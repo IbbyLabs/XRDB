@@ -11,6 +11,7 @@ import {
   buildCinemetaBackdropUrl,
   buildCinemetaLogoUrl,
   buildCinemetaPosterUrl,
+  buildTmdbImageUrl,
 } from './imageRouteSourceUrls.ts';
 import {
   isTextlessPosterSelection,
@@ -494,12 +495,26 @@ export const createImageRouteArtworkSelector = (
       };
     }
 
-    const tmdbLogoAspectRatio =
-      typeof randomLogoCandidate?.aspect_ratio === 'number' && randomLogoCandidate.aspect_ratio > 0
-        ? randomLogoCandidate.aspect_ratio
-        : typeof selectedLogo?.aspect_ratio === 'number' && selectedLogo.aspect_ratio > 0
-          ? selectedLogo.aspect_ratio
-          : null;
+    const resolveTmdbLogoAspectRatio = async (candidate?: TmdbImageAsset | null) => {
+      const filePath = String(candidate?.file_path || '').trim();
+      if (filePath) {
+        const measuredAspectRatio = await input.getRemoteImageAspectRatio(
+          buildTmdbImageUrl('logo', filePath, 500),
+        );
+        if (typeof measuredAspectRatio === 'number' && measuredAspectRatio > 0) {
+          return measuredAspectRatio;
+        }
+      }
+
+      return typeof candidate?.aspect_ratio === 'number' && candidate.aspect_ratio > 0
+        ? candidate.aspect_ratio
+        : null;
+    };
+    const tmdbLogoAspectRatio = await resolveTmdbLogoAspectRatio(
+      (input.logoArtworkSource === 'random' ? randomLogoCandidate : selectedLogo) ||
+        selectedLogo ||
+        randomLogoCandidate,
+    );
 
     if ((input.logoArtworkSource === 'fanart' || input.logoArtworkSource === 'random') && (input.mediaType === 'movie' || input.mediaType === 'tv')) {
       const fanartArtwork = await getFanartArtwork();

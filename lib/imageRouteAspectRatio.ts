@@ -7,6 +7,7 @@ type SharpMetadata = {
 };
 type SharpInstance = {
   metadata: () => Promise<SharpMetadata>;
+  trim?: (options?: { background?: { r: number; g: number; b: number; alpha: number } }) => SharpInstance;
 };
 type SharpFactory = (input: Buffer) => SharpInstance;
 type SharpFactoryLoader = () => Promise<SharpFactory>;
@@ -26,7 +27,12 @@ export const createRemoteImageAspectRatioReader = ({
       const sourcePayload = await getSourceImagePayload(normalizedImgUrl);
       const sourceBuffer = Buffer.from(sourcePayload.body);
       const sharp = await getSharpFactory();
-      const metadata = await sharp(sourceBuffer).metadata();
+      const image = sharp(sourceBuffer);
+      const measuredImage =
+        typeof image.trim === 'function'
+          ? image.trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
+          : image;
+      const metadata = await measuredImage.metadata();
       if (!metadata.width || !metadata.height || metadata.height <= 0) {
         return null;
       }

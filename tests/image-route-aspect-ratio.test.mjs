@@ -36,6 +36,37 @@ test('image route aspect ratio reader returns width divided by height', async ()
   assert.equal(await getRemoteImageAspectRatio('https://img.example/logo.png'), 2);
 });
 
+test('image route aspect ratio reader trims transparent borders before measuring logos', async () => {
+  let trimBackground = null;
+  const getRemoteImageAspectRatio = createRemoteImageAspectRatioReader({
+    getSourceImagePayload: async () => ({
+      body: new Uint8Array([1, 2, 3]).buffer,
+      contentType: 'image/png',
+      cacheControl: 'public, max-age=60',
+    }),
+    getSharpFactory: async () => {
+      return () => ({
+        trim: (options) => {
+          trimBackground = options?.background ?? null;
+          return {
+            metadata: async () => ({
+              width: 240,
+              height: 160,
+            }),
+          };
+        },
+        metadata: async () => ({
+          width: 480,
+          height: 160,
+        }),
+      });
+    },
+  });
+
+  assert.equal(await getRemoteImageAspectRatio('https://img.example/logo.png'), 1.5);
+  assert.deepEqual(trimBackground, { r: 0, g: 0, b: 0, alpha: 0 });
+});
+
 test('image route aspect ratio reader returns null for invalid metadata and source failures', async () => {
   const invalidReader = createRemoteImageAspectRatioReader({
     getSourceImagePayload: async () => ({
