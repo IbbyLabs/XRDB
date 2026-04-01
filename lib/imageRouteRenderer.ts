@@ -161,6 +161,7 @@ export type FastRenderInput = {
   posterRatingsMaxPerSide: number | null;
   posterEdgeOffset: number;
   backdropRatingsLayout: BackdropRatingLayout;
+  backdropBottomRatingsRow: boolean;
   sideRatingsPosition: SideRatingPosition;
   sideRatingsOffset: number;
   ratingStyle: RatingStyle;
@@ -832,7 +833,7 @@ export const renderWithSharp = async (
 	      (input.imageType === 'poster' && posterCleanOverlayAsset)
 	    ) {
       if (input.imageType === 'backdrop') {
-        if (input.backdropRatingsLayout === 'right-vertical') {
+        if (!input.backdropBottomRatingsRow && input.backdropRatingsLayout === 'right-vertical') {
           const maxBadgeWidth = Math.max(180, Math.floor(input.outputWidth * 0.28));
           composeBadgeColumn(
             input.rightBadges,
@@ -842,12 +843,22 @@ export const renderWithSharp = async (
             resolveSideBadgeStartY(input.rightBadges)
           );
         } else {
-          const backdropRegion = getBackdropBadgeRegion(input.outputWidth, input.backdropRatingsLayout);
+          const backdropRegion = input.backdropBottomRatingsRow
+            ? { left: 0, width: input.outputWidth }
+            : getBackdropBadgeRegion(input.outputWidth, input.backdropRatingsLayout);
           const backdropRows =
             input.backdropRows && input.backdropRows.length > 0
               ? input.backdropRows
               : [input.topBadges, input.bottomBadges].filter((row) => row.length > 0);
-          let rowY = input.badgeTopOffset;
+          const backdropRowsHeight =
+            backdropRows.length * ratingBadgeHeight +
+            Math.max(0, backdropRows.length - 1) * input.badgeGap;
+          let rowY = input.backdropBottomRatingsRow
+            ? Math.max(
+                input.badgeTopOffset,
+                input.outputHeight - input.badgeBottomOffset - backdropRowsHeight,
+              )
+            : input.badgeTopOffset;
           for (const row of backdropRows) {
             composeBadgeRow(row, rowY, {
               regionLeft: backdropRegion.left,
@@ -1136,7 +1147,8 @@ export const renderWithSharp = async (
           }
         }
         const ratingsOnRight =
-          input.backdropRatingsLayout === 'right' || input.backdropRatingsLayout === 'right-vertical';
+          !input.backdropBottomRatingsRow &&
+          (input.backdropRatingsLayout === 'right' || input.backdropRatingsLayout === 'right-vertical');
         const startY = input.badgeTopOffset;
         const columnGap = Math.max(8, Math.round(input.badgeGap * 0.8));
 
@@ -1150,7 +1162,9 @@ export const renderWithSharp = async (
           });
           const singleX = Math.round(centerX - singleColumnWidth / 2);
           const ratingRows =
-            input.backdropRatingsLayout === 'right-vertical'
+            input.backdropBottomRatingsRow
+              ? 0
+              : input.backdropRatingsLayout === 'right-vertical'
               ? 0
               : input.backdropRows && input.backdropRows.length > 0
                 ? input.backdropRows.length
@@ -1201,10 +1215,9 @@ export const renderWithSharp = async (
               paddingY: input.badgePaddingY,
               gap: input.badgeGap,
             };
-            const backdropRegion = getBackdropBadgeRegion(
-              input.outputWidth,
-              input.backdropRatingsLayout
-            );
+            const backdropRegion = input.backdropBottomRatingsRow
+              ? { left: 0, width: input.outputWidth }
+              : getBackdropBadgeRegion(input.outputWidth, input.backdropRatingsLayout);
             const effectiveMaxWidth = Math.max(0, backdropRegion.width - 24);
             const backdropRows =
               input.backdropRows && input.backdropRows.length > 0

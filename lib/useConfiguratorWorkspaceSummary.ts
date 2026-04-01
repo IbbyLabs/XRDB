@@ -57,6 +57,7 @@ export function useConfiguratorWorkspaceSummary({
   backdropImageText,
   backdropImageTextOptions,
   backdropRatingsLayout,
+  backdropBottomRatingsRow,
   backdropSideRatingsOffset,
   backdropSideRatingsPosition,
   genrePreviewCards,
@@ -122,6 +123,7 @@ export function useConfiguratorWorkspaceSummary({
   backdropRatingPresentation: RatingPresentation;
   backdropRatingStyle: RatingStyle;
   backdropRatingsLayout: string;
+  backdropBottomRatingsRow: boolean;
   backdropSideRatingsOffset: number;
   backdropSideRatingsPosition: SideRatingPosition;
   genrePreviewCards: Array<{ sample: GenreBadgePreviewSample; url: string }>;
@@ -213,7 +215,8 @@ export function useConfiguratorWorkspaceSummary({
     previewType === 'poster'
       ? isVerticalPosterRatingLayout(posterRatingsLayout) || activeRatingPresentation === 'blockbuster'
       : previewType === 'backdrop'
-        ? backdropRatingsLayout === 'right-vertical' || activeRatingPresentation === 'blockbuster'
+        ? !backdropBottomRatingsRow &&
+          (backdropRatingsLayout === 'right-vertical' || activeRatingPresentation === 'blockbuster')
         : false;
   const activeSideRatingsPosition =
     previewType === 'backdrop' ? backdropSideRatingsPosition : posterSideRatingsPosition;
@@ -246,7 +249,9 @@ export function useConfiguratorWorkspaceSummary({
     previewType === 'poster'
       ? 'top, bottom, left, or right'
       : previewType === 'backdrop'
-        ? 'center, right, or right vertical'
+        ? backdropBottomRatingsRow
+          ? 'a single bottom row'
+          : 'center, right, or right vertical'
         : null;
   const selectedPresetMeta = selectedPresetId ? getConfiguratorPreset(selectedPresetId) : null;
   const wizardActiveQuestionId = CONFIGURATOR_WIZARD_QUESTION_ORDER[wizardQuestionIndex] || null;

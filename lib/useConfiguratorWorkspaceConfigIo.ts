@@ -40,6 +40,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   backdropRatingStyle: WorkspaceSettings['backdropRatingStyle'];
   backdropRatingsLayout: WorkspaceSettings['backdropRatingsLayout'];
   backdropRatingsMax: WorkspaceSettings['backdropRatingsMax'];
+  backdropBottomRatingsRow: WorkspaceSettings['backdropBottomRatingsRow'];
   backdropSideRatingsOffset: WorkspaceSettings['backdropSideRatingsOffset'];
   backdropSideRatingsPosition: WorkspaceSettings['backdropSideRatingsPosition'];
   backdropStreamBadges: WorkspaceSettings['backdropStreamBadges'];
@@ -65,6 +66,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   logoRatingRows: RatingProviderRow[];
   logoRatingStyle: WorkspaceSettings['logoRatingStyle'];
   logoRatingsMax: WorkspaceSettings['logoRatingsMax'];
+  logoBottomRatingsRow: WorkspaceSettings['logoBottomRatingsRow'];
   mdblistKey: WorkspaceSettings['mdblistKey'];
   posterAggregateRatingSource: WorkspaceSettings['posterAggregateRatingSource'];
   posterArtworkSource: WorkspaceSettings['posterArtworkSource'];
@@ -124,6 +126,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setBackdropRatingStyle: Setter<WorkspaceSettings['backdropRatingStyle']>;
   setBackdropRatingsLayout: Setter<WorkspaceSettings['backdropRatingsLayout']>;
   setBackdropRatingsMax: Setter<WorkspaceSettings['backdropRatingsMax']>;
+  setBackdropBottomRatingsRow: Setter<WorkspaceSettings['backdropBottomRatingsRow']>;
   setBackdropSideRatingsOffset: Setter<WorkspaceSettings['backdropSideRatingsOffset']>;
   setBackdropSideRatingsPosition: Setter<WorkspaceSettings['backdropSideRatingsPosition']>;
   setBackdropStreamBadges: Setter<WorkspaceSettings['backdropStreamBadges']>;
@@ -148,6 +151,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setLogoRatingRows: Setter<RatingProviderRow[]>;
   setLogoRatingStyle: Setter<WorkspaceSettings['logoRatingStyle']>;
   setLogoRatingsMax: Setter<WorkspaceSettings['logoRatingsMax']>;
+  setLogoBottomRatingsRow: Setter<WorkspaceSettings['logoBottomRatingsRow']>;
   setMdblistKey: Setter<WorkspaceSettings['mdblistKey']>;
   setPosterAggregateRatingSource: Setter<WorkspaceSettings['posterAggregateRatingSource']>;
   setPosterArtworkSource: Setter<WorkspaceSettings['posterArtworkSource']>;
@@ -218,6 +222,7 @@ export function useConfiguratorWorkspaceConfigIo({
   backdropRatingStyle,
   backdropRatingsLayout,
   backdropRatingsMax,
+  backdropBottomRatingsRow,
   backdropSideRatingsOffset,
   backdropSideRatingsPosition,
   backdropStreamBadges,
@@ -243,6 +248,7 @@ export function useConfiguratorWorkspaceConfigIo({
   logoRatingRows,
   logoRatingStyle,
   logoRatingsMax,
+  logoBottomRatingsRow,
   mdblistKey,
   posterAggregateRatingSource,
   posterArtworkSource,
@@ -302,6 +308,7 @@ export function useConfiguratorWorkspaceConfigIo({
   setBackdropRatingStyle,
   setBackdropRatingsLayout,
   setBackdropRatingsMax,
+  setBackdropBottomRatingsRow,
   setBackdropSideRatingsOffset,
   setBackdropSideRatingsPosition,
   setBackdropStreamBadges,
@@ -326,6 +333,7 @@ export function useConfiguratorWorkspaceConfigIo({
   setLogoRatingRows,
   setLogoRatingStyle,
   setLogoRatingsMax,
+  setLogoBottomRatingsRow,
   setMdblistKey,
   setPosterAggregateRatingSource,
   setPosterArtworkSource,
@@ -422,6 +430,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setBackdropRatingsLayout(normalized.settings.backdropRatingsLayout);
       setPosterRatingsMax(normalized.settings.posterRatingsMax);
       setBackdropRatingsMax(normalized.settings.backdropRatingsMax);
+      setBackdropBottomRatingsRow(normalized.settings.backdropBottomRatingsRow);
       setPosterEdgeOffset(normalized.settings.posterEdgeOffset);
       setPosterSideRatingsPosition(normalized.settings.posterSideRatingsPosition);
       setPosterSideRatingsOffset(normalized.settings.posterSideRatingsOffset);
@@ -451,6 +460,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setPosterRatingsMaxPerSide(normalized.settings.posterRatingsMaxPerSide);
       setLogoRatingsMax(normalized.settings.logoRatingsMax);
       setLogoBackground(normalized.settings.logoBackground);
+      setLogoBottomRatingsRow(normalized.settings.logoBottomRatingsRow);
       setLogoArtworkSource(normalized.settings.logoArtworkSource);
       setRatingProviderAppearanceOverrides(normalized.settings.ratingProviderAppearanceOverrides);
       setProxyManifestUrl(normalized.proxy.manifestUrl);
@@ -485,6 +495,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setBackdropRatingStyle,
       setBackdropRatingsLayout,
       setBackdropRatingsMax,
+      setBackdropBottomRatingsRow,
       setBackdropSideRatingsOffset,
       setBackdropSideRatingsPosition,
       setBackdropStreamBadges,
@@ -509,6 +520,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setLogoRatingRows,
       setLogoRatingStyle,
       setLogoRatingsMax,
+      setLogoBottomRatingsRow,
       setMdblistKey,
       setPosterAggregateRatingSource,
       setPosterArtworkSource,
@@ -603,6 +615,7 @@ export function useConfiguratorWorkspaceConfigIo({
         backdropRatingsLayout,
         posterRatingsMax,
         backdropRatingsMax,
+        backdropBottomRatingsRow,
         posterEdgeOffset,
         posterSideRatingsPosition,
         posterSideRatingsOffset,
@@ -634,6 +647,7 @@ export function useConfiguratorWorkspaceConfigIo({
         posterRatingsMaxPerSide,
         logoRatingsMax,
         logoBackground,
+        logoBottomRatingsRow,
         logoArtworkSource,
         ratingProviderAppearanceOverrides,
       },
@@ -671,6 +685,7 @@ export function useConfiguratorWorkspaceConfigIo({
       backdropRatingStyle,
       backdropRatingsLayout,
       backdropRatingsMax,
+      backdropBottomRatingsRow,
       backdropSideRatingsOffset,
       backdropSideRatingsPosition,
       backdropStreamBadges,
@@ -695,6 +710,7 @@ export function useConfiguratorWorkspaceConfigIo({
       logoRatingPresentation,
       logoRatingStyle,
       logoRatingsMax,
+      logoBottomRatingsRow,
       mdblistKey,
       posterAggregateRatingSource,
       posterArtworkSource,

@@ -205,6 +205,7 @@ export function useConfiguratorOutputs({
   backdropRatingStyle,
   backdropRatingsLayout,
   backdropRatingsMax,
+  backdropBottomRatingsRow,
   backdropSideRatingsOffset,
   backdropSideRatingsPosition,
   backdropStreamBadges,
@@ -233,6 +234,7 @@ export function useConfiguratorOutputs({
   logoRatingPresentation,
   logoRatingStyle,
   logoRatingsMax,
+  logoBottomRatingsRow,
   mdblistKey,
   mediaId,
   pendingReleaseTag,
@@ -300,6 +302,7 @@ export function useConfiguratorOutputs({
   backdropRatingStyle: RatingStyle;
   backdropRatingsLayout: BackdropRatingLayout;
   backdropRatingsMax: number | null;
+  backdropBottomRatingsRow: boolean;
   backdropSideRatingsOffset: number;
   backdropSideRatingsPosition: SideRatingPosition;
   backdropStreamBadges: StreamBadgesSetting;
@@ -328,6 +331,7 @@ export function useConfiguratorOutputs({
   logoRatingPresentation: RatingPresentation;
   logoRatingStyle: RatingStyle;
   logoRatingsMax: number | null;
+  logoBottomRatingsRow: boolean;
   mdblistKey: string;
   mediaId: string;
   pendingReleaseTag: string;
@@ -603,9 +607,14 @@ export function useConfiguratorOutputs({
         query.set('posterEdgeOffset', String(posterEdgeOffset));
       }
     } else if (previewType === 'backdrop') {
-      query.set('backdropRatingsLayout', backdropRatingsLayout);
+      if (!backdropBottomRatingsRow) {
+        query.set('backdropRatingsLayout', backdropRatingsLayout);
+      }
       if (ratingsMaxForType !== null) {
         query.set('backdropRatingsMax', String(ratingsMaxForType));
+      }
+      if (backdropBottomRatingsRow) {
+        query.set('backdropBottomRatingsRow', 'true');
       }
     } else {
       if (ratingsMaxForType !== null) {
@@ -613,6 +622,9 @@ export function useConfiguratorOutputs({
       }
       if (logoBackground !== 'transparent') {
         query.set('logoBackground', logoBackground);
+      }
+      if (logoBottomRatingsRow) {
+        query.set('logoBottomRatingsRow', 'true');
       }
       if (logoArtworkSource !== 'tmdb') {
         query.set('logoArtworkSource', logoArtworkSource);
@@ -649,6 +661,7 @@ export function useConfiguratorOutputs({
         (isVerticalPosterRatingLayout(posterRatingsLayout) ||
           posterRatingPresentation === 'blockbuster')) ||
       (previewType === 'backdrop' &&
+        !backdropBottomRatingsRow &&
         (backdropRatingsLayout === 'right-vertical' ||
           backdropRatingPresentation === 'blockbuster'));
     if (usesVerticalSideRatings) {
@@ -694,6 +707,7 @@ export function useConfiguratorOutputs({
     backdropRatingStyle,
     backdropRatingsLayout,
     backdropRatingsMax,
+    backdropBottomRatingsRow,
     backdropSideRatingsOffset,
     backdropSideRatingsPosition,
     backdropStreamBadges,
@@ -712,6 +726,7 @@ export function useConfiguratorOutputs({
     logoRatingPresentation,
     logoRatingStyle,
     logoRatingsMax,
+    logoBottomRatingsRow,
     mdblistKey,
     mediaId,
     posterAggregateRatingSource,

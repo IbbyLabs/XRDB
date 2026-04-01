@@ -185,7 +185,9 @@ export type ImageRouteRequestState = {
   posterEdgeOffset: number;
   backdropRatingsLayout: BackdropRatingLayout;
   backdropRatingsMax: number | null;
+  backdropBottomRatingsRow: boolean;
   logoRatingsMax: number | null;
+  logoBottomRatingsRow: boolean;
   posterSideRatingsPosition: SideRatingPosition;
   posterSideRatingsOffset: number;
   backdropSideRatingsPosition: SideRatingPosition;
@@ -527,6 +529,10 @@ export const resolveImageRouteRequestState = async ({
   const backdropRatingsLayout = normalizeBackdropRatingLayout(
     searchParams.get('backdropRatingsLayout') ?? rpdbRatingBarAliases.backdropRatingsLayout,
   );
+  const backdropBottomRatingsRow =
+    normalizeBooleanSearchFlag(searchParams.get('backdropBottomRatingsRow')) === true;
+  const logoBottomRatingsRow =
+    normalizeBooleanSearchFlag(searchParams.get('logoBottomRatingsRow')) === true;
   const posterSideRatingsPosition = normalizeSideRatingPosition(
     searchParams.get('posterSideRatingsPosition') ??
       searchParams.get('sideRatingsPosition') ??
@@ -867,7 +873,9 @@ export const resolveImageRouteRequestState = async ({
     posterEdgeOffset,
     backdropRatingsLayout,
     backdropRatingsMax,
+    backdropBottomRatingsRow,
     logoRatingsMax,
+    logoBottomRatingsRow,
     qualityBadgesSide,
     posterQualityBadgesPosition,
     qualityBadgesStyle,
@@ -931,7 +939,9 @@ export const resolveImageRouteRequestState = async ({
     posterEdgeOffset,
     backdropRatingsLayout,
     backdropRatingsMax,
+    backdropBottomRatingsRow,
     logoRatingsMax,
+    logoBottomRatingsRow,
     posterSideRatingsPosition,
     posterSideRatingsOffset,
     backdropSideRatingsPosition,
