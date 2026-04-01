@@ -12,6 +12,41 @@
 
 <a id="v1-0-5"></a>
 
+<a id="v1-0-6"></a>
+
+## [v1.0.6] - 01/04/2026
+
+### Fixed
+* BUG 23 recompute split anime badges after mapping
+  
+  Resolve poster genre families from the current anime mapping state instead of the initial prepared media snapshot.
+  
+  Rebuild the resolved genre badge after provider rating lookups can confirm anime mappings for IMDb and TMDB inputs.
+  
+  Add a prepared media regression that simulates late anime mapping confirmation for split grouping.
+* BUG 24 trim poster touchup logo padding
+  
+  Measure poster touchup logo overlays from trimmed visible artwork instead of padded source bounds.
+  
+  Resize the trimmed logo asset directly so centered poster branding stays correctly scaled and positioned.
+  
+  Add a regression that fails if the overlay path falls back to untrimmed logo sizing again.
+* BUG 25 correct XRDB logo sizing from visible artwork ratio
+  
+  Measure logo aspect ratios from the visible trimmed artwork instead of relying on raw source metadata so XRDB logo canvases do not end up excessively wide and look undersized inside AIOM.
+  
+  Update TMDB logo selection to prefer the measured visible ratio, add regressions for transparent border trimming and TMDB logo ratio resolution, and keep the fix scoped to XRDB behavior.
+* BUG 30 refresh vertical stacked badge design
+  
+  Refine the stacked badge chrome used in vertical rating columns with a calmer body surface, gradient accent cap, lifted icon plate, and a dedicated score shelf for clearer scan hierarchy.
+  
+  Extend the badge svg regression to cover the new stacked rail and score shelf gradients so the refreshed vertical treatment stays locked in.
+* BUG 31 ignore zero value provider payloads
+  
+  Treat zero and rounded zero provider ratings as missing data during shared normalization so phantom scores do not enter resolved provider maps or aggregate calculations.
+  
+  Add regressions for shared rating normalization, MDBList provider payload filtering, and Trakt zero value responses.
+
 ## [v1.0.5] - 01/04/2026
 
 ### Fixed
