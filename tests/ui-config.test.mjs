@@ -7,7 +7,10 @@ import {
   isAmbiguousTmdbXrdbId,
   normalizeXrdbId,
 } from '../lib/proxyConfigBridge.ts';
-import { encodeRatingProviderAppearanceOverrides } from '../lib/badgeCustomization.ts';
+import {
+  DEFAULT_QUALITY_BADGE_PREFERENCES,
+  encodeRatingProviderAppearanceOverrides,
+} from '../lib/badgeCustomization.ts';
 import {
   buildAiometadataUrlPatterns,
   buildConfigString,
@@ -168,15 +171,7 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       posterQualityBadgesPosition: 'auto',
       posterQualityBadgePreferences: ['certification', 'hdr', 'remux'],
       backdropQualityBadgePreferences: ['4k', 'dolbyatmos'],
-      logoQualityBadgePreferences: [
-        'certification',
-        '4k',
-        'bluray',
-        'hdr',
-        'dolbyvision',
-        'dolbyatmos',
-        'remux',
-      ],
+      logoQualityBadgePreferences: [...DEFAULT_QUALITY_BADGE_PREFERENCES],
       posterQualityBadgesStyle: 'media',
       backdropQualityBadgesStyle: 'plain',
       logoQualityBadgesStyle: 'glass',

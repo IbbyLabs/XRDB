@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   buildNetworkBadgesFromTvNetworks,
+  buildNetworkBadgesFromWatchProviderResults,
   buildMediaFeatureBadgesFromFlags,
   buildCertificationBadgeMeta,
   collectMediaFeatureFlags,
@@ -198,5 +199,42 @@ test('tv networks resolve to distinct network badges in media badge order', () =
   assert.deepEqual(
     badges.map((badge) => badge.key),
     ['netflix', 'hbo', 'primevideo'],
+  );
+});
+
+test('watch providers prefer the requested region and ignore rent only entries', () => {
+  const badges = buildNetworkBadgesFromWatchProviderResults(
+    {
+      US: {
+        flatrate: [{ provider_name: 'Netflix' }],
+      },
+      GB: {
+        flatrate: [{ provider_name: 'Prime Video' }],
+        rent: [{ provider_name: 'Apple TV' }],
+      },
+    },
+    'en-GB',
+  );
+
+  assert.deepEqual(
+    badges.map((badge) => badge.key),
+    ['primevideo'],
+  );
+});
+
+test('watch providers normalize ads variants and max channel names into badge keys', () => {
+  const badges = buildNetworkBadgesFromWatchProviderResults({
+    US: {
+      flatrate: [
+        { provider_name: 'Netflix Standard with Ads' },
+        { provider_name: 'Max Amazon Channel' },
+        { provider_name: 'Peacock Premium' },
+      ],
+    },
+  });
+
+  assert.deepEqual(
+    badges.map((badge) => badge.key),
+    ['netflix', 'hbo', 'peacock'],
   );
 });

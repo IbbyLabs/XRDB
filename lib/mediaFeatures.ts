@@ -278,35 +278,51 @@ const normalizeNetworkName = (value: unknown) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '');
 
-const resolveTvNetworkBadgeKey = (networkName: string): MediaFeatureBadgeKey | null => {
-  if (!networkName) return null;
-  if (networkName.includes('netflix')) return 'netflix';
-  if (networkName.includes('hbomax') || networkName === 'max' || networkName.includes('hbo')) {
+const resolveStreamingProviderBadgeKey = (
+  normalizedProviderName: string,
+): MediaFeatureBadgeKey | null => {
+  if (!normalizedProviderName) return null;
+  if (normalizedProviderName.includes('netflix')) return 'netflix';
+  if (
+    normalizedProviderName.includes('hbomax') ||
+    normalizedProviderName === 'max' ||
+    normalizedProviderName.startsWith('max') ||
+    normalizedProviderName.includes('hbo')
+  ) {
     return 'hbo';
   }
   if (
-    networkName.includes('primevideo') ||
-    networkName.includes('amazonprimevideo') ||
-    networkName.includes('primeamazon')
+    normalizedProviderName.includes('primevideo') ||
+    normalizedProviderName.includes('amazonprimevideo') ||
+    normalizedProviderName.includes('primeamazon')
   ) {
     return 'primevideo';
   }
-  if (networkName.includes('disneyplus') || networkName.includes('disney')) return 'disneyplus';
-  if (networkName.includes('appletvplus') || networkName.includes('appletv')) return 'appletvplus';
-  if (networkName.includes('hulu')) return 'hulu';
-  if (networkName.includes('paramountplus') || networkName === 'paramount') return 'paramountplus';
-  if (networkName.includes('peacock')) return 'peacock';
+  if (normalizedProviderName.includes('disneyplus') || normalizedProviderName.includes('disney')) {
+    return 'disneyplus';
+  }
+  if (
+    normalizedProviderName.includes('appletvplus') ||
+    normalizedProviderName.includes('appletv')
+  ) {
+    return 'appletvplus';
+  }
+  if (normalizedProviderName.includes('hulu')) return 'hulu';
+  if (
+    normalizedProviderName.includes('paramountplus') ||
+    normalizedProviderName === 'paramount'
+  ) {
+    return 'paramountplus';
+  }
+  if (normalizedProviderName.includes('peacock')) return 'peacock';
   return null;
 };
 
-export const buildNetworkBadgesFromTvNetworks = (networks: unknown): MediaFeatureBadgeMeta[] => {
-  if (!Array.isArray(networks) || networks.length === 0) return [];
+const buildOrderedProviderBadgesFromNames = (providerNames: unknown[]): MediaFeatureBadgeMeta[] => {
   const matchedKeys = new Set<MediaFeatureBadgeKey>();
-  for (const network of networks) {
-    const normalizedName = normalizeNetworkName(
-      network && typeof network === 'object' && 'name' in network ? (network as { name?: unknown }).name : '',
-    );
-    const key = resolveTvNetworkBadgeKey(normalizedName);
+  for (const providerName of providerNames) {
+    const normalizedName = normalizeNetworkName(providerName);
+    const key = resolveStreamingProviderBadgeKey(normalizedName);
     if (key) {
       matchedKeys.add(key);
     }
@@ -314,6 +330,70 @@ export const buildNetworkBadgesFromTvNetworks = (networks: unknown): MediaFeatur
   return MEDIA_FEATURE_BADGE_ORDER.flatMap((key) =>
     matchedKeys.has(key) ? [MEDIA_FEATURE_META_BY_KEY[key]] : [],
   );
+};
+
+export const buildNetworkBadgesFromTvNetworks = (networks: unknown): MediaFeatureBadgeMeta[] => {
+  if (!Array.isArray(networks) || networks.length === 0) return [];
+  return buildOrderedProviderBadgesFromNames(
+    networks.map((network) =>
+      network && typeof network === 'object' && 'name' in network
+        ? (network as { name?: unknown }).name
+        : '',
+    ),
+  );
+};
+
+const STREAM_PROVIDER_BUCKETS = ['flatrate', 'free', 'ads'] as const;
+
+const hasWatchProviderEntries = (regionResult: unknown) =>
+  Boolean(
+    regionResult &&
+      typeof regionResult === 'object' &&
+      STREAM_PROVIDER_BUCKETS.some((bucket) =>
+        Array.isArray((regionResult as Record<string, unknown>)[bucket]) &&
+        ((regionResult as Record<string, unknown>)[bucket] as unknown[]).length > 0,
+      ),
+  );
+
+export const buildNetworkBadgesFromWatchProviderResults = (
+  watchProviderResults: unknown,
+  requestedLanguage?: string | null,
+): MediaFeatureBadgeMeta[] => {
+  if (!watchProviderResults || typeof watchProviderResults !== 'object') return [];
+
+  const results = watchProviderResults as Record<string, unknown>;
+  const regionOrder = buildCertificationRegionOrder(requestedLanguage);
+  const normalizedResultEntries = Object.entries(results).flatMap(([regionCode, regionResult]) => {
+    const normalizedRegion = normalizeRegionCode(regionCode);
+    return normalizedRegion ? [[normalizedRegion, regionResult] as const] : [];
+  });
+
+  let selectedRegionResult =
+    regionOrder
+      .map((regionCode) =>
+        normalizedResultEntries.find(([candidateRegion]) => candidateRegion === regionCode)?.[1],
+      )
+      .find((regionResult) => hasWatchProviderEntries(regionResult)) || null;
+
+  if (!selectedRegionResult) {
+    selectedRegionResult =
+      normalizedResultEntries.find(([, regionResult]) => hasWatchProviderEntries(regionResult))?.[1] ||
+      null;
+  }
+
+  if (!selectedRegionResult || typeof selectedRegionResult !== 'object') return [];
+
+  const providerNames = STREAM_PROVIDER_BUCKETS.flatMap((bucket) => {
+    const providers = (selectedRegionResult as Record<string, unknown>)[bucket];
+    if (!Array.isArray(providers)) return [];
+    return providers.map((provider) =>
+      provider && typeof provider === 'object' && 'provider_name' in provider
+        ? (provider as { provider_name?: unknown }).provider_name
+        : '',
+    );
+  });
+
+  return buildOrderedProviderBadgesFromNames(providerNames);
 };
 
 const getMovieCertificationCandidates = (result: any) => {
