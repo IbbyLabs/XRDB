@@ -507,6 +507,10 @@
 	overflow: hidden;
 }
 
+.xrdb-panel-preview .xrdb-accordion-body[data-open='true'] > .xrdb-accordion-inner {
+	overflow: visible;
+}
+
 .xrdb-toggle-group {
 	display: flex;
 	flex-wrap: wrap;

@@ -82,6 +82,9 @@ export function ConfiguratorCenterStage({
   const centerViewMeta =
     workspaceCenterViewOptions.find((option) => option.id === workspaceCenterView) ||
     workspaceCenterViewOptions[0];
+  const stickyRailClass = stickyPreviewEnabled
+    ? 'xl:sticky xl:top-[var(--workspace-sticky-top)] xl:z-10 xl:self-start'
+    : '';
 
   const previewFrame = (
     <div className="rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(139,92,246,0.12),_transparent_58%),linear-gradient(180deg,rgba(12,10,20,0.92),rgba(6,6,10,0.96))] p-4">
@@ -151,20 +154,7 @@ export function ConfiguratorCenterStage({
 
   return (
     <div id="workspace-preview" className="space-y-3 scroll-mt-24">
-      <div
-        className={
-          stickyPreviewEnabled
-            ? '2xl:sticky 2xl:top-[var(--workspace-sticky-top)] 2xl:z-10'
-            : ''
-        }
-      >
-        <div
-          className={`xrdb-panel xrdb-panel-preview rounded-3xl border border-white/10 bg-zinc-900/60 p-4 ${
-            stickyPreviewEnabled
-              ? '2xl:max-h-[calc(100vh-var(--workspace-sticky-top)-20px)] 2xl:overflow-auto'
-              : ''
-          }`}
-        >
+      <div className="xrdb-panel xrdb-panel-preview rounded-3xl border border-white/10 bg-zinc-900/60 p-4">
           <button type="button" onClick={onToggle} className="xrdb-panel-head flex w-full items-center justify-between gap-4 text-left">
             <div>
               <p className="xrdb-panel-eyebrow font-mono">Output</p>
@@ -247,7 +237,7 @@ export function ConfiguratorCenterStage({
               </div>
               {workspaceCenterView === 'showcase' ? (
                 <div className="workspace-showcase-grid mt-3">
-                  <div className="space-y-4">
+                  <div className={`space-y-4 ${stickyRailClass}`.trim()}>
                     {previewFrame}
                     <div className="workspace-showcase-meta-grid">
                       <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-3">
@@ -362,24 +352,42 @@ export function ConfiguratorCenterStage({
                   </div>
                 </div>
               ) : workspaceCenterView === 'preview' ? (
-                <div className="mt-3 space-y-3">
-                  {previewFrame}
-                  <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(19,15,33,0.92),rgba(10,8,18,0.98))] p-4">
-                    <div className="flex flex-wrap gap-2">
-                      {currentSetupItems.map((item) => (
-                        <div key={item.label} className="rounded-full border border-white/10 bg-zinc-950/70 px-3 py-2">
-                          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">{item.label}</span>
-                          <span className="ml-2 text-[11px] font-semibold text-white">{item.value}</span>
-                        </div>
-                      ))}
+                <div className="mt-3">
+                  <div className={`space-y-3 ${stickyRailClass}`.trim()}>
+                    {previewFrame}
+                    <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(19,15,33,0.92),rgba(10,8,18,0.98))] p-4">
+                      <div className="flex flex-wrap gap-2">
+                        {currentSetupItems.map((item) => (
+                          <div key={item.label} className="rounded-full border border-white/10 bg-zinc-950/70 px-3 py-2">
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">{item.label}</span>
+                            <span className="ml-2 text-[11px] font-semibold text-white">{item.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="mt-3 text-[12px] leading-6 text-zinc-400">
+                        Preview stays focused on the live render so badge balance, artwork crop, and spacing stay easy to judge without the sample board competing for attention.
+                      </p>
                     </div>
-                    <p className="mt-3 text-[12px] leading-6 text-zinc-400">
-                      Preview stays focused on the live render so badge balance, artwork crop, and spacing stay easy to judge without the sample board competing for attention.
-                    </p>
                   </div>
                 </div>
               ) : (
                 <div className="mt-3 space-y-3">
+                  <div className={stickyRailClass}>
+                    <div className="space-y-3">
+                      {previewFrame}
+                      <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(22,16,37,0.94),rgba(11,9,21,0.98))] p-4">
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Current setup</div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {currentSetupItems.map((item) => (
+                            <div key={item.label} className="rounded-full border border-white/10 bg-zinc-950/70 px-3 py-2">
+                              <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">{item.label}</span>
+                              <span className="ml-2 text-[11px] font-semibold text-white">{item.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-4">
                       <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Preset</div>
@@ -545,7 +553,6 @@ export function ConfiguratorCenterStage({
               )}
             </div>
           </div>
-        </div>
       </div>
     </div>
   );

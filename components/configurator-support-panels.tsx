@@ -188,15 +188,15 @@ export function ConfiguratorSupportPanels({
   };
 
   return (
-    <div id="proxy" className="space-y-3 scroll-mt-24">
-      <div
-        className={
-          stickyPreviewEnabled
-            ? '2xl:sticky 2xl:top-[var(--workspace-sticky-top)] 2xl:z-10 2xl:max-h-[calc(100vh-var(--workspace-sticky-top)-20px)] 2xl:overflow-auto'
-            : ''
-        }
-      >
-        <div className="space-y-3">
+    <div
+      id="proxy"
+      className={`space-y-3 scroll-mt-24${
+        stickyPreviewEnabled
+          ? ' 2xl:sticky 2xl:top-[var(--workspace-sticky-top)] 2xl:self-start 2xl:z-10'
+          : ''
+      }`}
+    >
+      <div className="space-y-3">
           <div className="xrdb-panel xrdb-panel-form rounded-3xl border border-white/10 bg-zinc-900/60 p-4">
             <button
               type="button"
@@ -578,7 +578,6 @@ export function ConfiguratorSupportPanels({
             </div>
           </div>
         </div>
-      </div>
     </div>
   );
 }

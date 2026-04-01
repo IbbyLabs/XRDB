@@ -39,7 +39,8 @@ pre {
 
 .xrdb-page {
 	position: relative;
-	overflow: clip;
+	overflow-x: clip;
+	overflow-y: visible;
 	--scroll-compact-progress: 0;
 	--workspace-sticky-top: 96px;
 }
