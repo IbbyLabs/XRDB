@@ -421,6 +421,7 @@ const providerRatingsPromise =
       isAniListInput,
       idPrefix,
       season,
+      episode,
       mappedImdbId,
       inputAnimeMappingProvider,
       inputAnimeMappingExternalId,
