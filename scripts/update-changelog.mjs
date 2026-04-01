@@ -87,6 +87,7 @@ function generateSection(version, date, commits) {
     docs: [],
     refactor: [],
     perf: [],
+    revert: [],
     chore: [],
     other: []
   };
@@ -106,6 +107,7 @@ function generateSection(version, date, commits) {
     else if (normalized.type === 'docs') groups.docs.push(message);
     else if (normalized.type === 'refactor') groups.refactor.push(message);
     else if (normalized.type === 'perf') groups.perf.push(message);
+    else if (normalized.type === 'revert') groups.revert.push(message);
     else if (normalized.type === 'chore') groups.chore.push(message);
     else groups.other.push(message);
   }
@@ -116,6 +118,7 @@ function generateSection(version, date, commits) {
   if (groups.fix.length) section += `### Fixed\n${formatEntries(groups.fix)}\n\n`;
   if (groups.docs.length) section += `### Documentation\n${formatEntries(groups.docs)}\n\n`;
   if (groups.perf.length) section += `### Performance\n${formatEntries(groups.perf)}\n\n`;
+  if (groups.revert.length) section += `### Reverted\n${formatEntries(groups.revert)}\n\n`;
 
   const otherChanges = [...groups.other, ...groups.refactor, ...groups.chore];
   if (otherChanges.length) section += `### Other Changes\n${formatEntries(otherChanges)}\n\n`;

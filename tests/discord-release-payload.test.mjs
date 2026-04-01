@@ -20,8 +20,8 @@ test('buildDiscordReleasePayload creates a branded embed with release links and 
         '- add optional XRDB request protection',
         '- add XRDB community Discord links',
         '',
-        '## Other Changes',
-        '- notify Discord after release workflow completes',
+        '## Reverted',
+        '- revert release 1.0.4',
       ].join('\n'),
     },
   });
@@ -45,7 +45,7 @@ test('buildDiscordReleasePayload creates a branded embed with release links and 
   assert.ok(addedField);
   assert.match(addedField.value, /optional XRDB request protection/);
 
-  const changesField = fields.find((field) => field.name === 'Other Changes');
-  assert.ok(changesField);
-  assert.match(changesField.value, /notify Discord/);
+  const revertedField = fields.find((field) => field.name === 'Reverted');
+  assert.ok(revertedField);
+  assert.match(revertedField.value, /revert release 1\.0\.4/);
 });

@@ -39,8 +39,8 @@
   
   Include supported network badges in the default quality badge set and add regression coverage for anime provider mapping and default stream badge rendering.
 
-### Other Changes
-* "chore: release 1.0.4"
+### Reverted
+* revert release 1.0.4
   
   This reverts commit 90405bcb5202183aeefeae981bf8908a74b69093.
 

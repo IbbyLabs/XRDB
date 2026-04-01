@@ -140,3 +140,15 @@ test('preserves standard technical hyphens such as ISO 639-1', () => {
   assert.equal(normalized.title, 'restore standard ISO 639-1 notation');
   assert.equal(normalized.body, 'Bring back ISO 639-1 labels in the docs.');
 });
+
+test('normalizes conventional revert subjects into user facing copy', () => {
+  const normalized = normalizeCommitForDisplay({
+    subject: 'revert: "chore: release 1.0.4"',
+    body: 'This reverts commit 90405bcb5202183aeefeae981bf8908a74b69093.',
+    files: ['CHANGELOG.md', 'README.md', 'package.json'],
+  });
+
+  assert.equal(normalized.type, 'revert');
+  assert.equal(normalized.title, 'revert release 1.0.4');
+  assert.equal(normalized.body, 'This reverts commit 90405bcb5202183aeefeae981bf8908a74b69093.');
+});

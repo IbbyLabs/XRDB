@@ -240,6 +240,20 @@ function parseConventionalSubject(subject) {
   };
 }
 
+function normalizeRevertTitle(title) {
+  const normalized = String(title || '').trim();
+  if (!normalized) {
+    return 'revert project update';
+  }
+
+  const quotedMatch = normalized.match(/^["'](.+)["']$/);
+  const innerTitle = quotedMatch ? quotedMatch[1].trim() : normalized;
+  const parsedInner = parseConventionalSubject(innerTitle);
+  const displayTitle = parsedInner?.title || innerTitle.replace(/^revert\s+/i, '').trim();
+
+  return `revert ${displayTitle || 'project update'}`.trim();
+}
+
 function inferAreaFromFile(file) {
   for (const rule of AREA_RULES) {
     if (rule.matcher(file)) {
@@ -407,9 +421,11 @@ export function normalizeCommitForDisplay(commit) {
 
   const conventional = parseConventionalSubject(subject);
   if (conventional) {
-    const conventionalTitle = isLowSignalTitle(conventional.title)
-      ? buildGenericTitle(inferGenericAction(conventional.title) || 'update', buildAreaSummary(files))
-      : conventional.title;
+    const conventionalTitle = conventional.type === 'revert'
+      ? normalizeRevertTitle(conventional.title)
+      : isLowSignalTitle(conventional.title)
+        ? buildGenericTitle(inferGenericAction(conventional.title) || 'update', buildAreaSummary(files))
+        : conventional.title;
 
     if (/^(?:merge upstream\/main(?:.*)?|synchroni[sz]e with upstream\/main(?:.*)?)$/i.test(conventional.title)) {
       return {
@@ -441,6 +457,16 @@ export function normalizeCommitForDisplay(commit) {
     return {
       type: 'chore',
       title: removeUserFacingHyphens('bootstrap XRDB project'),
+      body: sanitizeDisplayBody(body),
+      files,
+    };
+  }
+
+  const revertMatch = subject.match(/^revert\s+["'](.+)["']$/i);
+  if (revertMatch) {
+    return {
+      type: 'revert',
+      title: removeUserFacingHyphens(normalizeRevertTitle(revertMatch[1])),
       body: sanitizeDisplayBody(body),
       files,
     };
