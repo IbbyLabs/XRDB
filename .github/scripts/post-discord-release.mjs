@@ -6,6 +6,7 @@ const DISCORD_EMBED_COLOR = 0x7c3aed;
 const MAX_RELEASE_LOOKUP_ATTEMPTS = Number(process.env.RELEASE_LOOKUP_ATTEMPTS || 5);
 const RELEASE_LOOKUP_DELAY_SECONDS = Number(process.env.RELEASE_LOOKUP_DELAY_SECONDS || 2);
 const AVATAR_URL = 'https://raw.githubusercontent.com/IbbyLabs/xrdb/main/public/favicon-96x96.png';
+const DISCORD_ROLE_ID_RE = /^\d+$/;
 
 function normalizeReleaseTag(value) {
   if (typeof value !== 'string') {
@@ -146,6 +147,14 @@ function requireEnv(name) {
     throw new Error(`${name} is required`);
   }
   return value;
+}
+
+function normalizeDiscordRoleId(value) {
+  const trimmed = String(value || '').trim();
+  if (!trimmed || !DISCORD_ROLE_ID_RE.test(trimmed)) {
+    return '';
+  }
+  return trimmed;
 }
 
 function stripMarkdown(value) {
@@ -373,6 +382,7 @@ export function buildDiscordReleasePayload({
   release,
   previousReleaseTag = '',
   isTagFallback = false,
+  discordRoleId = '',
 }) {
   const repositoryUrl = `https://github.com/${repository}`;
   const compareUrl = resolveCompareUrl(repository, release.tag_name, previousReleaseTag);
@@ -381,6 +391,8 @@ export function buildDiscordReleasePayload({
   const publishedTimestamp = Number.isFinite(Date.parse(publishedAt))
     ? Math.floor(Date.parse(publishedAt) / 1000)
     : null;
+  const normalizedRoleId = normalizeDiscordRoleId(discordRoleId);
+  const mentionContent = normalizedRoleId ? `<@&${normalizedRoleId}>` : '';
 
   const fields = [
     {
@@ -409,9 +421,12 @@ export function buildDiscordReleasePayload({
   ].filter((field) => field.value);
 
   return {
+    ...(mentionContent ? { content: mentionContent } : {}),
     username: 'XRDB Releases',
     avatar_url: AVATAR_URL,
-    allowed_mentions: { parse: [] },
+    allowed_mentions: normalizedRoleId
+      ? { roles: [normalizedRoleId] }
+      : { parse: [] },
     embeds: [
       {
         author: {
@@ -632,6 +647,7 @@ export async function main() {
   const webhookUrl = requireEnv('WEBHOOK_URL');
   const repository = requireEnv('REPOSITORY');
   const releaseTag = String(process.env.RELEASE_TAG || '').trim();
+  const discordRoleId = normalizeDiscordRoleId(process.env.DISCORD_ROLE_ID);
   const apiUrl = `https://api.github.com/repos/${repository}`;
 
   const lookup = await lookupRelease({ apiUrl, releaseTag, token });
@@ -665,6 +681,7 @@ export async function main() {
     release,
     previousReleaseTag,
     isTagFallback,
+    discordRoleId,
   });
 
   await postToDiscord(webhookUrl, payload);

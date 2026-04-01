@@ -5,6 +5,7 @@ import { buildDiscordReleasePayload } from '../.github/scripts/post-discord-rele
 
 test('buildDiscordReleasePayload creates a branded embed with release links and parsed sections', () => {
   const payload = buildDiscordReleasePayload({
+    discordRoleId: '1486091164913238129',
     repository: 'IbbyLabs/xrdb',
     previousReleaseTag: 'v2.30.0',
     release: {
@@ -26,6 +27,10 @@ test('buildDiscordReleasePayload creates a branded embed with release links and 
     },
   });
 
+  assert.equal(payload.content, '<@&1486091164913238129>');
+  assert.deepEqual(payload.allowed_mentions, {
+    roles: ['1486091164913238129'],
+  });
   assert.equal(payload.username, 'XRDB Releases');
   assert.equal(payload.embeds.length, 1);
   assert.equal(payload.embeds[0].color, 0x7c3aed);
@@ -48,4 +53,21 @@ test('buildDiscordReleasePayload creates a branded embed with release links and 
   const revertedField = fields.find((field) => field.name === 'Reverted');
   assert.ok(revertedField);
   assert.match(revertedField.value, /revert release 1\.0\.4/);
+});
+
+test('buildDiscordReleasePayload keeps mentions disabled when no role id is configured', () => {
+  const payload = buildDiscordReleasePayload({
+    repository: 'IbbyLabs/xrdb',
+    previousReleaseTag: 'v2.30.0',
+    release: {
+      tag_name: 'v2.31.0',
+      name: 'v2.31.0',
+      html_url: 'https://github.com/IbbyLabs/xrdb/releases/tag/v2.31.0',
+      published_at: '2026-03-25T01:05:37Z',
+      body: '## Added\n- add XRDB community Discord links',
+    },
+  });
+
+  assert.equal(payload.content, undefined);
+  assert.deepEqual(payload.allowed_mentions, { parse: [] });
 });
