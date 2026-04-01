@@ -64,7 +64,8 @@ export const isTmdbAnimationTitle = (media: any) => {
 export const normalizeRatingValue = (value: unknown): string | null => {
   if (typeof value === 'number') {
     if (!Number.isFinite(value)) return null;
-    return formatRatingNumber(value);
+    const formatted = formatRatingNumber(value);
+    return shouldRenderRatingValue(formatted) ? formatted : null;
   }
 
   if (typeof value === 'string') {
@@ -72,7 +73,8 @@ export const normalizeRatingValue = (value: unknown): string | null => {
     if (!trimmed) return null;
     const normalized = Number(trimmed.replace(',', '.'));
     if (!Number.isNaN(normalized) && Number.isFinite(normalized)) {
-      return formatRatingNumber(normalized);
+      const formatted = formatRatingNumber(normalized);
+      return shouldRenderRatingValue(formatted) ? formatted : null;
     }
   }
 

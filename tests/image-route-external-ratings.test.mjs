@@ -67,6 +67,29 @@ test('image route external ratings fetch Trakt ratings through the cached fetch 
   assert.equal(requests[0].fetchImpl, undiciFetchImpl);
 });
 
+test('image route external ratings treat zero Trakt ratings as missing', async () => {
+  const rating = await fetchTraktRating({
+    imdbId: 'tt1234567',
+    mediaType: 'movie',
+    phases,
+    fetchJsonCached: async () => ({
+      ok: true,
+      status: 200,
+      data: {
+        trakt: {
+          rating: 0,
+        },
+      },
+    }),
+    undiciFetchImpl: async () => {
+      throw new Error('should not be called directly');
+    },
+    traktClientId: 'trakt-key',
+  });
+
+  assert.equal(rating, null);
+});
+
 test('image route external ratings resolve and cache Simkl ids from redirects', async () => {
   const writes = [];
   const metadata = new Map();

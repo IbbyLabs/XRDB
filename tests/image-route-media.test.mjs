@@ -22,6 +22,8 @@ test('image route media picks output formats predictably', () => {
 test('image route media normalizes rating values and skips empty render values', () => {
   assert.equal(normalizeRatingValue(7.34), '7.3');
   assert.equal(normalizeRatingValue({ score: '8,1' }), '8.1');
+  assert.equal(normalizeRatingValue(0), null);
+  assert.equal(normalizeRatingValue('0.04'), null);
   assert.equal(normalizeRatingValue(''), null);
   assert.equal(shouldRenderRatingValue('N/A'), false);
   assert.equal(shouldRenderRatingValue('0'), false);
@@ -47,4 +49,20 @@ test('image route media collects MDBList ratings safely', () => {
   assert.equal(ratings.get('imdb'), '7.4');
   assert.equal(ratings.get('tomatoes'), '91');
   assert.equal(ratings.get('mdblist'), '82');
+});
+
+test('image route media drops zero MDBList provider entries that represent missing titles', () => {
+  const ratings = collectMDBListRatings({
+    ratings: [
+      { source: 'IMDb', value: '0' },
+      { source: 'Rotten Tomatoes', value: '0.04' },
+      { source: 'Metacritic', value: '61' },
+    ],
+    mdblist_score: '0',
+  });
+
+  assert.equal(ratings.has('imdb'), false);
+  assert.equal(ratings.has('tomatoes'), false);
+  assert.equal(ratings.has('mdblist'), false);
+  assert.equal(ratings.get('metacritic'), '61');
 });
