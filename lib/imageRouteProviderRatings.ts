@@ -123,6 +123,7 @@ export const resolveImageRouteProviderRatings = async (
     isAniListInput: boolean;
     idPrefix: string;
     season: string | null;
+    episode: string | null;
     mappedImdbId: string | null;
     inputAnimeMappingProvider: AnimeMappingProvider | null;
     inputAnimeMappingExternalId: string | null;
