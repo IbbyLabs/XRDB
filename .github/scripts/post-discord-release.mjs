@@ -5,6 +5,10 @@ import { pathToFileURL } from 'node:url';
 const DISCORD_EMBED_COLOR = 0x7c3aed;
 const MAX_RELEASE_LOOKUP_ATTEMPTS = Number(process.env.RELEASE_LOOKUP_ATTEMPTS || 5);
 const RELEASE_LOOKUP_DELAY_SECONDS = Number(process.env.RELEASE_LOOKUP_DELAY_SECONDS || 2);
+const MAX_EMBED_FIELD_LENGTH = 1024;
+const MAX_EMBED_DESCRIPTION_LENGTH = 4096;
+const MAX_SUMMARY_INTRO_LENGTH = 320;
+const MAX_SUMMARY_SECTION_COUNT = 3;
 const AVATAR_URL = 'https://raw.githubusercontent.com/IbbyLabs/xrdb/main/public/favicon-96x96.png';
 const DISCORD_ROLE_ID_RE = /^\d+$/;
 
@@ -165,7 +169,7 @@ function stripMarkdown(value) {
     .trim();
 }
 
-function trimField(value, maxLength = 1024) {
+function trimField(value, maxLength = MAX_EMBED_FIELD_LENGTH) {
   const trimmed = String(value || '').trim();
   if (!trimmed) {
     return '';
@@ -176,6 +180,163 @@ function trimField(value, maxLength = 1024) {
   }
 
   return `${trimmed.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
+}
+
+function appendEllipsis(value, maxLength) {
+  const trimmed = String(value || '').trimEnd();
+  if (!trimmed) {
+    return maxLength > 0 ? '…' : '';
+  }
+
+  if (trimmed.length + 2 <= maxLength) {
+    return `${trimmed}\n…`;
+  }
+
+  if (maxLength <= 1) {
+    return '…';
+  }
+
+  return `${trimmed.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
+}
+
+function fitLines(lines, maxLength) {
+  const normalized = (Array.isArray(lines) ? lines : [])
+    .map((line) => String(line || '').trim())
+    .filter(Boolean);
+
+  if (!normalized.length) {
+    return {
+      text: '',
+      consumedLines: 0,
+      truncated: false,
+    };
+  }
+
+  let value = '';
+  let consumedLines = 0;
+
+  for (const line of normalized) {
+    const candidate = value ? `${value}\n${line}` : line;
+    if (candidate.length <= maxLength) {
+      value = candidate;
+      consumedLines += 1;
+      continue;
+    }
+
+    if (!value) {
+      return {
+        text: trimField(line, maxLength),
+        consumedLines: 0,
+        truncated: line.length > maxLength || normalized.length > 1,
+      };
+    }
+
+    return {
+      text: appendEllipsis(value, maxLength),
+      consumedLines,
+      truncated: true,
+    };
+  }
+
+  return {
+    text: value,
+    consumedLines,
+    truncated: false,
+  };
+}
+
+function splitLongLine(line, maxLength) {
+  const normalized = String(line || '').trim();
+  if (!normalized) {
+    return [];
+  }
+
+  if (normalized.length <= maxLength) {
+    return [normalized];
+  }
+
+  if (maxLength <= 1) {
+    return ['…'];
+  }
+
+  const parts = [];
+  let remaining = normalized;
+
+  while (remaining.length > maxLength) {
+    let splitIndex = remaining.lastIndexOf(' ', maxLength - 1);
+    if (splitIndex <= 0) {
+      splitIndex = maxLength - 1;
+    }
+
+    const head = remaining.slice(0, splitIndex).trimEnd();
+    parts.push(`${head}…`);
+    remaining = `…${remaining.slice(splitIndex).trimStart()}`;
+  }
+
+  if (remaining) {
+    parts.push(remaining);
+  }
+
+  return parts;
+}
+
+function splitPlainTextIntoBlocks(text, maxLength) {
+  return splitLongLine(String(text || '').replace(/\s+/g, ' ').trim(), maxLength);
+}
+
+function splitSectionIntoBlocks(title, items, maxLength) {
+  const heading = `**${title}**`;
+  const blocks = [];
+  const maxBulletLength = Math.max(1, maxLength - heading.length - 1);
+  let current = heading;
+
+  for (const item of items) {
+    const parts = splitLongLine(`• ${item}`, maxBulletLength);
+    for (const part of parts) {
+      const candidate = `${current}\n${part}`;
+      if (candidate.length <= maxLength) {
+        current = candidate;
+        continue;
+      }
+
+      if (current !== heading) {
+        blocks.push(current);
+      }
+
+      current = `${heading}\n${part}`;
+    }
+  }
+
+  if (current !== heading) {
+    blocks.push(current);
+  }
+
+  return blocks;
+}
+
+function packBlocksIntoDescriptions(blocks, maxLength = MAX_EMBED_DESCRIPTION_LENGTH) {
+  const descriptions = [];
+  let current = '';
+
+  for (const block of blocks.filter(Boolean)) {
+    const candidate = current ? `${current}\n\n${block}` : block;
+    if (candidate.length <= maxLength) {
+      current = candidate;
+      continue;
+    }
+
+    if (current) {
+      descriptions.push(current);
+    }
+
+    current = block;
+  }
+
+  if (current) {
+    descriptions.push(current);
+  }
+
+  return descriptions;
 }
 
 function normalizeSectionTitle(value) {
@@ -267,7 +428,7 @@ function parseReleaseBodySections(body) {
   }
 
   return {
-    intro: trimField(intro.join(' '), 320),
+    intro: intro.join(' ').trim(),
     sections: sections.filter((section) => section.items.length > 0),
   };
 }
@@ -279,18 +440,17 @@ function buildSectionFields(body) {
   if (intro) {
     fields.push({
       name: 'Summary',
-      value: intro,
+      value: trimField(intro, MAX_SUMMARY_INTRO_LENGTH),
       inline: false,
     });
   }
 
-  for (const section of sections.slice(0, 3)) {
-    const bullets = [];
-    for (const item of section.items) {
-      bullets.push(`• ${item}`);
-    }
-
-    const value = trimField(bullets.join('\n'));
+  for (const section of sections.slice(0, MAX_SUMMARY_SECTION_COUNT)) {
+    const preview = fitLines(
+      section.items.map((item) => `• ${item}`),
+      MAX_EMBED_FIELD_LENGTH,
+    );
+    const value = preview.text;
     if (value) {
       fields.push({
         name: section.title,
@@ -309,6 +469,41 @@ function buildSectionFields(body) {
   }
 
   return fields;
+}
+
+function buildContinuationDescriptions(body) {
+  const { intro, sections } = parseReleaseBodySections(body);
+  const blocks = [];
+
+  if (intro.length > MAX_SUMMARY_INTRO_LENGTH) {
+    blocks.push(...splitPlainTextIntoBlocks(intro, MAX_EMBED_DESCRIPTION_LENGTH));
+  }
+
+  sections.forEach((section, index) => {
+    if (index >= MAX_SUMMARY_SECTION_COUNT) {
+      blocks.push(...splitSectionIntoBlocks(section.title, section.items, MAX_EMBED_DESCRIPTION_LENGTH));
+      return;
+    }
+
+    const preview = fitLines(
+      section.items.map((item) => `• ${item}`),
+      MAX_EMBED_FIELD_LENGTH,
+    );
+
+    if (!preview.truncated) {
+      return;
+    }
+
+    blocks.push(
+      ...splitSectionIntoBlocks(
+        section.title,
+        section.items.slice(preview.consumedLines),
+        MAX_EMBED_DESCRIPTION_LENGTH,
+      ),
+    );
+  });
+
+  return packBlocksIntoDescriptions(blocks);
 }
 
 function resolveCompareUrl(repository, currentTag, previousTag) {
@@ -452,6 +647,71 @@ export function buildDiscordReleasePayload({
       },
     ],
   };
+}
+
+function buildDiscordContinuationPayloads({ repository, release, descriptions }) {
+  if (!Array.isArray(descriptions) || !descriptions.length) {
+    return [];
+  }
+
+  const repositoryUrl = `https://github.com/${repository}`;
+  const publishedAt = String(release.published_at || release.created_at || '').trim();
+  const total = descriptions.length;
+  const releaseName = String(release.name || release.tag_name || 'XRDB release').trim();
+
+  return descriptions.map((description, index) => ({
+    username: 'XRDB Releases',
+    avatar_url: AVATAR_URL,
+    allowed_mentions: { parse: [] },
+    embeds: [
+      {
+        author: {
+          name: 'XRDB, eXtended Ratings DataBase',
+          url: repositoryUrl,
+          icon_url: AVATAR_URL,
+        },
+        title: total > 1
+          ? `${releaseName} release notes continued ${index + 1}/${total}`
+          : `${releaseName} release notes continued`,
+        url: release.html_url || repositoryUrl,
+        description,
+        color: DISCORD_EMBED_COLOR,
+        footer: {
+          text: total > 1
+            ? `${repository} • release notes ${index + 1}/${total}`
+            : `${repository} • release notes`,
+          icon_url: AVATAR_URL,
+        },
+        ...(publishedAt ? { timestamp: publishedAt } : {}),
+      },
+    ],
+  }));
+}
+
+export function buildDiscordReleasePayloads({
+  repository,
+  release,
+  previousReleaseTag = '',
+  isTagFallback = false,
+  discordRoleId = '',
+}) {
+  const summaryPayload = buildDiscordReleasePayload({
+    repository,
+    release,
+    previousReleaseTag,
+    isTagFallback,
+    discordRoleId,
+  });
+  const descriptions = buildContinuationDescriptions(release.body || '');
+
+  return [
+    summaryPayload,
+    ...buildDiscordContinuationPayloads({
+      repository,
+      release,
+      descriptions,
+    }),
+  ];
 }
 
 async function fetchJson(url, token) {
@@ -676,7 +936,7 @@ export async function main() {
     ? await resolvePreviousTagFromRepositoryTags({ apiUrl, token, currentTag })
     : await resolvePreviousPublishedReleaseTag({ apiUrl, token, currentTag });
 
-  const payload = buildDiscordReleasePayload({
+  const payloads = buildDiscordReleasePayloads({
     repository,
     release,
     previousReleaseTag,
@@ -684,9 +944,11 @@ export async function main() {
     discordRoleId,
   });
 
-  await postToDiscord(webhookUrl, payload);
+  for (const payload of payloads) {
+    await postToDiscord(webhookUrl, payload);
+  }
 
-  console.log(`Sent Discord release notification for ${currentTag}`);
+  console.log(`Sent Discord release notification for ${currentTag} in ${payloads.length} message${payloads.length === 1 ? '' : 's'}`);
 }
 
 const isDirectRun = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
