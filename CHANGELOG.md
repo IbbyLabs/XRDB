@@ -14,6 +14,83 @@
 
 <a id="v1-0-6"></a>
 
+<a id="v1-1-0"></a>
+
+## [v1.1.0] - 01/04/2026
+
+### Added
+* FR 17 add OMDb poster source support
+  
+  Add OMDb as a poster only artwork source across the runtime and configurator.
+  
+  • add OMDb server key and base URL support plus cached OMDb poster lookups
+  • wire omdb through poster selection, proxy exports, and AIOMetadata patterns
+  • keep backdrop and logo normalization on supported artwork sources only
+  • shared cache OMDb Amazon poster assets and cover the flow with focused tests
+* FR 19 add Allociné provider support
+  
+  Add Allociné audience and press providers with native /5 display handling, aliases, and embedded brand assets.
+  
+  Implement cached Allociné search and detail page scraping for movie and TV ratings, then wire those values into provider resolution and render TTL tracking.
+  
+  Expand targeted coverage for provider normalization, rating display, icon assets, external fetch parsing, and provider resolution.
+* FR 21 add optional bottom ratings rows
+  
+  Add separate backdrop and logo bottom row settings to the configurator and persisted workspace state.
+  
+  Keep config string and AIOMetadata exports lean by omitting overridden backdrop layout and side placement params while the bottom row override is enabled.
+  
+  Cover the new request parsing, render seed, layout, and export behavior with targeted tests.
+
+### Fixed
+* align episode provider rating inputs
+  
+  Add the missing episode field to the provider rating resolver input type.
+  
+  Pass episode through prepared media when resolving provider ratings so the production build and CI type checks stay green.
+* BUG 32 use episode ratings for thumbnails
+  
+  Default thumbnail requests back to the dedicated TMDB and IMDb stack when thumbnail ratings are not explicitly provided.
+  Resolve episode IMDb dataset ratings for episodic requests and use TMDB episode vote averages for thumbnail backdrops instead of the parent show score.
+  
+  Verification:
+  • npx eslint lib/imageRouteRequestState.ts lib/imageRouteProviderRatings.ts lib/imageRoutePreparedMedia.ts tests/image route request state.test.mjs tests/image route provider ratings.test.mjs tests/image route prepared media.test.mjs
+  • node experimental strip types test tests/image route request state.test.mjs tests/image route provider ratings.test.mjs tests/image route prepared media.test.mjs
+* FR 19 update Allocine brand artwork
+  
+  Replace the temporary Allocine inline SVG with the provided brand image.
+  Keep the press provider on the same artwork with a readable badge overlay.
+  
+  Verification:
+  • npx eslint lib/ratingProviderBrandAssets.ts tests/rating provider icons.test.mjs
+  • node experimental strip types test tests/rating provider icons.test.mjs
+* FR 21 normalize Bottom Row copy
+  
+  Capitalize the Bottom Row label for the backdrop and logo FR 21 controls.
+  
+  Replace the old single bottom row wording in helper copy and workspace summary text so the setting reads as a cleaner shared term across the configurator.
+* split overflow release note posts
+  
+  Keep the first Discord release message as the summary post and retain the role mention there.
+  
+  Send overflow changelog sections as continuation embeds with versioned titles and disabled mentions.
+  
+  Add regression coverage for multi message payload generation.
+
+### Documentation
+* FR 17 FR 19 FR 21 BUG 32 align public docs
+  
+  Align the README and in app docs with OMDb poster source support, AlloCiné ratings, Bottom Row controls, and episode thumbnail routing and rating behavior.
+  
+  Update the docs page route examples, correct the README preview backdrop layout example, and document thumbnailRatings plus the dedicated thumbnail route shape for addon and AIOMetadata integrations.
+* FR 17 align OMDb artwork docs
+  
+  Update the README artwork source and environment sections to match the shipped OMDb poster support.
+  
+  • document poster OMDb support and the server side OMDb key names
+  • align poster, backdrop, and logo artwork source lists with runtime support
+  • add OMDb base URL and cache TTL entries to the environment reference
+
 ## [v1.0.6] - 01/04/2026
 
 ### Fixed
