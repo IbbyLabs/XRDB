@@ -8,27 +8,6 @@
 
 <a id="v1-0-3"></a>
 
-<a id="v1-0-4"></a>
-
-## [v1.0.4] - 01/04/2026
-
-### Fixed
-* hide sticky rail toggle on mobile
-  
-  Only show the sticky rail control at the xl breakpoint and above where the sticky preview mode can actually apply.
-  
-  This removes a dead mobile control without changing the saved sticky preference for desktop users.
-* restore desktop sticky preview rails
-  
-  Move sticky positioning onto the live preview rail instead of clipping it inside nested scroll containers.
-  
-  Keep vertical overflow available for the page and preview accordion so showcase, preview, and guide can follow the viewport again on desktop layouts.
-* restore anime ratings and stream badges
-  
-  Send browser like headers for anime rating requests so public instances keep resolving MAL, AniList, Kitsu, and Jikan responses more reliably.
-  
-  Include supported network badges in the default quality badge set and add regression coverage for anime provider mapping and default stream badge rendering.
-
 ## [v1.0.3] - 01/04/2026
 
 ### Fixed
