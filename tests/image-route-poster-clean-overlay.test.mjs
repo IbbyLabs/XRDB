@@ -57,6 +57,46 @@ test('image route poster clean overlay prefers resized logo art when the logo re
   assert.equal(overlay.height, 90);
 });
 
+test('image route poster clean overlay trims transparent logo padding before sizing and resizing', async () => {
+  const overlay = await buildPosterCleanOverlayAsset({
+    imageType: 'poster',
+    posterTitleText: 'Fallback Title',
+    posterLogoUrl: 'https://cdn.example.com/logo.png',
+    posterRowRegionWidth: 360,
+    outputWidth: 500,
+    outputHeight: 800,
+    sharp: () => {
+      const trimmedImage = {
+        metadata: async () => ({ width: 900, height: 300 }),
+        resize: (width, height) => ({
+          png: () => ({
+            toBuffer: async () => Buffer.from(`trimmed:${width}x${height}`),
+          }),
+        }),
+      };
+      return {
+        metadata: async () => ({ width: 1600, height: 600 }),
+        trim: () => trimmedImage,
+        resize: (width, height) => ({
+          png: () => ({
+            toBuffer: async () => Buffer.from(`original:${width}x${height}`),
+          }),
+        }),
+      };
+    },
+    getSourceImagePayload: async () => ({
+      body: new Uint8Array([1, 2, 3]).buffer,
+      contentType: 'image/png',
+      cacheControl: 'public, max-age=60',
+    }),
+  });
+
+  assert.ok(overlay);
+  assert.deepEqual(overlay.buffer, Buffer.from('trimmed:360x120'));
+  assert.equal(overlay.width, 360);
+  assert.equal(overlay.height, 120);
+});
+
 test('image route poster clean overlay placement centers art above the bottom block', () => {
   const placement = resolvePosterCleanOverlayPlacement({
     overlay: {
