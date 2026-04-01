@@ -79,7 +79,11 @@ import {
   buildIncludeImageLanguage,
   normalizeImageLanguage,
 } from './imageLanguage.ts';
-import { XRDBID_PREFIX, parseKitsuEpisodeInput } from './episodeIdentity.ts';
+import {
+  THUMBNAIL_RATING_PREFERENCES,
+  XRDBID_PREFIX,
+  parseKitsuEpisodeInput,
+} from './episodeIdentity.ts';
 import { normalizeSafeFallbackImageUrl } from './imageRouteSourceFetch.ts';
 import {
   ALLOWED_IMAGE_TYPES,
@@ -420,7 +424,8 @@ export const resolveImageRouteRequestState = async ({
     searchParams.get('ratingOrder');
   const posterRatings = searchParams.get('posterRatings') ?? globalRatings;
   const backdropRatings = searchParams.get('backdropRatings') ?? globalRatings;
-  const thumbnailRatings = searchParams.get('thumbnailRatings') ?? backdropRatings;
+  const thumbnailRatings =
+    searchParams.get('thumbnailRatings') ?? THUMBNAIL_RATING_PREFERENCES.join(',');
   const logoRatings = searchParams.get('logoRatings') ?? globalRatings;
   const globalRatingPresentation = normalizeRatingPresentation(
     searchParams.get('ratingPresentation'),

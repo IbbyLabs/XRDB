@@ -139,6 +139,69 @@ test('prepared media state keeps TV network badges when stream badges use the de
   );
 });
 
+test('prepared media state uses episode TMDB ratings for thumbnail backdrops', async () => {
+  const state = await prepareImageRouteMediaState({
+    ...createBaseInput(),
+    imageType: 'backdrop',
+    isThumbnailRequest: true,
+    mediaType: 'tv',
+    media: {
+      id: 1399,
+      name: 'Example Show',
+      imdb_id: 'tt0944947',
+      genres: [],
+    },
+    mediaId: 'tt0944947',
+    season: '1',
+    episode: '2',
+    isKitsu: false,
+    idPrefix: 'tt0944947',
+    hasNativeAnimeInput: false,
+    allowAnimeOnlyRatings: false,
+    hasConfirmedAnimeMapping: false,
+    shouldApplyRatings: true,
+    selectedRatings: new Set(['tmdb']),
+    useRawKitsuFallback: false,
+    rawFallbackImageUrl: null,
+    rawFallbackKitsuRating: null,
+    fetchJsonCached: async (key) => {
+      if (key.includes(':details:en:bundle:v2:')) {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            vote_average: 8.8,
+            genres: [],
+            images: {
+              posters: [],
+              backdrops: [],
+              logos: [],
+            },
+            external_ids: {
+              imdb_id: 'tt0944947',
+            },
+          },
+        };
+      }
+
+      if (key.includes(':season:1:episode:2:details') || key.includes(':season:1:episode:2:en')) {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            still_path: '/episode-still.jpg',
+            vote_average: 7.4,
+          },
+        };
+      }
+
+      throw new Error(`unexpected fetch ${key}`);
+    },
+  });
+
+  assert.equal(state.tmdbRating, '7.4');
+});
+
 test('prepared media state recomputes split anime genre badges after late mapping confirmation', async () => {
   const state = await prepareImageRouteMediaState(
     {

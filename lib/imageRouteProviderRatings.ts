@@ -1,4 +1,8 @@
-import { getImdbRatingFromDataset, type ImdbDatasetRating } from './imdbDatasetLookup.ts';
+import {
+  findImdbEpisodeBySeriesSeasonEpisode,
+  getImdbRatingFromDataset,
+  type ImdbDatasetRating,
+} from './imdbDatasetLookup.ts';
 import {
   fetchAniListIdFromReverseMapping,
   fetchKitsuIdFromReverseMapping,
@@ -78,6 +82,7 @@ type ProviderRatingsDeps = {
   fetchSimklRating: typeof fetchSimklRating;
   fetchAllocineRatings: typeof fetchAllocineRatings;
   fetchMdbListRatings: typeof fetchMdbListRatings;
+  findImdbEpisodeBySeriesSeasonEpisode: typeof findImdbEpisodeBySeriesSeasonEpisode;
   getImdbRatingFromDataset: (imdbId: string) => ImdbDatasetRating | null;
   normalizeRatingValue: typeof normalizeRatingValue;
 };
@@ -93,6 +98,7 @@ const DEFAULT_DEPS: ProviderRatingsDeps = {
   fetchSimklRating,
   fetchAllocineRatings,
   fetchMdbListRatings,
+  findImdbEpisodeBySeriesSeasonEpisode,
   getImdbRatingFromDataset,
   normalizeRatingValue,
 };
@@ -198,6 +204,26 @@ export const resolveImageRouteProviderRatings = async (
     return imdbId;
   };
 
+  const ensureEpisodeScopedImdbId = async () => {
+    const resolvedImdbId = await ensureImdbId();
+    if (!resolvedImdbId || !input.season || !input.episode || input.resolvedRatingMediaType !== 'tv') {
+      return resolvedImdbId;
+    }
+
+    const seasonNumber = Number(input.season);
+    const episodeNumber = Number(input.episode);
+    if (!Number.isFinite(seasonNumber) || !Number.isFinite(episodeNumber)) {
+      return resolvedImdbId;
+    }
+
+    const episodeMatch = runtimeDeps.findImdbEpisodeBySeriesSeasonEpisode(
+      resolvedImdbId,
+      seasonNumber,
+      episodeNumber,
+    );
+    return episodeMatch?.imdbId || resolvedImdbId;
+  };
+
   if (!imdbId && needsResolvableImdbId) {
     await ensureImdbId();
   }
@@ -298,7 +324,7 @@ export const resolveImageRouteProviderRatings = async (
   }
 
   if (needsImdbRating) {
-    const resolvedImdbId = await ensureImdbId();
+    const resolvedImdbId = await ensureEpisodeScopedImdbId();
     if (resolvedImdbId && !combinedRatings.has('imdb')) {
       const datasetRating = runtimeDeps.getImdbRatingFromDataset(resolvedImdbId);
       if (datasetRating) {

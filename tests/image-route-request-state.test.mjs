@@ -52,6 +52,20 @@ test('image route request state prefers thumbnail ratings for thumbnail backdrop
   assert.deepEqual([...state.selectedRatings], ['kitsu']);
 });
 
+test('image route request state defaults thumbnail backdrop requests to TMDB and IMDb ratings', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/backdrop/xrdbid:tt1234567:1:2.jpg?thumbnail=1&tmdbKey=tmdb-key&ratings=tomatoes&backdropRatings=tomatoes',
+    ),
+    imageType: 'backdrop',
+    id: 'xrdbid:tt1234567:1:2.jpg',
+  });
+
+  assert.equal(state.isThumbnailRequest, true);
+  assert.deepEqual(state.effectiveRatingPreferences, ['tmdb', 'imdb']);
+  assert.deepEqual([...state.selectedRatings], ['tmdb', 'imdb']);
+});
+
 test('image route request state requires a TMDB key', async () => {
   await assert.rejects(
     () =>
