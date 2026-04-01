@@ -38,6 +38,8 @@ test('image route badge svg builds a stacked badge with escaped content', () => 
   });
 
   assert.match(svg, /stacked-surface-fill/);
+  assert.match(svg, /stacked-rail-fill/);
+  assert.match(svg, /stacked-value-fill/);
   assert.match(svg, /A&amp;B/);
   assert.match(svg, /8&amp;7/);
 });

@@ -291,24 +291,78 @@ ${variantChrome}
       Math.min(1, stackedSurfaceOpacityPercent / 100),
     );
     const useLogoOnlyAccent = stackedAccentMode === 'logo';
-    const iconSurfaceFill = hexColorToRgba(accentColor, 0.22, 'rgba(167,139,250,0.22)');
-    const iconSurfaceStroke = hexColorToRgba(accentColor, 0.54, 'rgba(167,139,250,0.54)');
+    const iconSurfaceFill = hexColorToRgba(accentColor, 0.18, 'rgba(167,139,250,0.18)');
+    const iconSurfaceStroke = hexColorToRgba(accentColor, 0.46, 'rgba(167,139,250,0.46)');
     const stackedSurfaceStartColor = useLogoOnlyAccent ? '#ffffff' : accentColor;
     const stackedSurfaceEndColor = useLogoOnlyAccent ? '#94a3b8' : accentColor;
-    const stackedSurfaceStartOpacity = (useLogoOnlyAccent ? 0.06 : 0.14) * surfaceOpacityRatio;
-    const stackedSurfaceEndOpacity = (useLogoOnlyAccent ? 0.015 : 0.04) * surfaceOpacityRatio;
-    const stackedBodyFillOpacity = 0.9 * surfaceOpacityRatio;
+    const stackedSurfaceStartOpacity = (useLogoOnlyAccent ? 0.05 : 0.12) * surfaceOpacityRatio;
+    const stackedSurfaceEndOpacity = (useLogoOnlyAccent ? 0.014 : 0.035) * surfaceOpacityRatio;
+    const stackedBodyFillOpacity = Math.min(0.94, 0.88 + surfaceOpacityRatio * 0.05);
     const stackedBodyStroke = useLogoOnlyAccent
-      ? 'rgba(255,255,255,0.22)'
-      : hexColorToRgba(accentColor, 0.28, 'rgba(255,255,255,0.22)');
+      ? 'rgba(255,255,255,0.18)'
+      : hexColorToRgba(accentColor, 0.24, 'rgba(255,255,255,0.18)');
+    const railFillStart = useLogoOnlyAccent ? '#f8fafc' : accentColor;
+    const railFillEnd = useLogoOnlyAccent ? '#cbd5e1' : '#ffffff';
+    const railGlowColor = hexColorToRgba(accentColor, useLogoOnlyAccent ? 0.34 : 0.42, 'rgba(167,139,250,0.42)');
+    const valuePlateWidth = Math.max(
+      Math.min(width - stackedLayout.outerPadding * 2, Math.round(width * 0.7)),
+      Math.min(
+        width - stackedLayout.outerPadding * 2,
+        valueTextWidth + Math.max(18, Math.round(stackedLayout.valueFontSize * 1.1)),
+      ),
+    );
+    const valuePlateHeight = Math.max(
+      Math.round(stackedLayout.valueFontSize * 1.52),
+      Math.round(height * 0.22),
+    );
+    const valuePlateBottomInset = Math.max(5, Math.round(height * 0.08));
+    const valuePlateY = Math.max(
+      stackedLayout.iconPlateY + stackedLayout.iconPlateSize + Math.max(4, Math.round(height * 0.04)),
+      Math.min(
+        height - valuePlateBottomInset - valuePlateHeight,
+        stackedLayout.valueTopY - Math.max(4, Math.round(stackedLayout.valueFontSize * 0.26)),
+      ),
+    );
+    const valuePlateX = Math.round((width - valuePlateWidth) / 2);
+    const valuePlateRadius = Math.max(9, Math.round(valuePlateHeight / 2));
+    const valueCenterY = Math.round(valuePlateY + valuePlateHeight / 2);
+    const valueTextLengthForPlate =
+      valueTextWidth > valuePlateWidth - Math.max(16, Math.round(stackedLayout.valueFontSize * 1.1))
+        ? ` textLength="${Math.max(0, valuePlateWidth - Math.max(16, Math.round(stackedLayout.valueFontSize * 1.1)))}" lengthAdjust="spacingAndGlyphs"`
+        : '';
+    const topHighlightInsetX = stackedInnerInset + 1.6;
+    const topHighlightInsetY = stackedInnerInset + 1.6;
+    const topHighlightWidth = Math.max(0, width - topHighlightInsetX * 2);
+    const topHighlightHeight = Math.max(8, Math.round(height * 0.18));
     const stackedDefs = `<defs>
 <linearGradient id="stacked-surface-fill" x1="0%" y1="0%" x2="100%" y2="100%">
 <stop offset="0%" stop-color="${stackedSurfaceStartColor}" stop-opacity="${stackedSurfaceStartOpacity}" />
 <stop offset="100%" stop-color="${stackedSurfaceEndColor}" stop-opacity="${stackedSurfaceEndOpacity}" />
 </linearGradient>
+<linearGradient id="stacked-rail-fill" x1="0%" y1="50%" x2="100%" y2="50%">
+<stop offset="0%" stop-color="${railFillStart}" stop-opacity="${useLogoOnlyAccent ? '0.82' : '0.94'}" />
+<stop offset="100%" stop-color="${railFillEnd}" stop-opacity="${useLogoOnlyAccent ? '0.48' : '0.2'}" />
+</linearGradient>
+<linearGradient id="stacked-icon-plate-fill" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" stop-color="${iconSurfaceFill}" />
+<stop offset="100%" stop-color="rgba(255,255,255,0.04)" />
+</linearGradient>
+<linearGradient id="stacked-value-fill" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" stop-color="${hexColorToRgba(accentColor, useLogoOnlyAccent ? 0.09 : 0.12, 'rgba(167,139,250,0.12)')}" />
+<stop offset="100%" stop-color="rgba(255,255,255,0.03)" />
+</linearGradient>
 <clipPath id="stacked-icon-clip">
 <rect x="${stackedLayout.iconX}" y="${stackedLayout.iconY}" width="${renderIconSize}" height="${renderIconSize}" rx="${Math.max(6, stackedLayout.iconRadius - 4)}" />
 </clipPath>
+<filter id="stacked-soft-shadow" x="-28%" y="-28%" width="156%" height="180%" color-interpolation-filters="sRGB">
+<feDropShadow dx="0" dy="1.8" stdDeviation="2.6" flood-color="#020617" flood-opacity="0.66" />
+</filter>
+<filter id="stacked-rail-glow" x="-40%" y="-200%" width="180%" height="420%" color-interpolation-filters="sRGB">
+<feDropShadow dx="0" dy="0" stdDeviation="1.8" flood-color="${railGlowColor}" flood-opacity="1" />
+</filter>
+<filter id="stacked-value-shadow" x="-20%" y="-30%" width="140%" height="180%" color-interpolation-filters="sRGB">
+<feDropShadow dx="0" dy="1" stdDeviation="1.3" flood-color="#020617" flood-opacity="0.64" />
+</filter>
 </defs>`;
     const iconImage = iconDataUri
       ? `<image href="${iconDataUri}" x="${stackedLayout.iconX}" y="${stackedLayout.iconY}" width="${renderIconSize}" height="${renderIconSize}" preserveAspectRatio="xMidYMid meet" clip-path="url(#stacked-icon-clip)" />`
@@ -320,11 +374,13 @@ ${variantChrome}
 ${stackedDefs}
 <rect x="${stackedOuterInset}" y="${stackedOuterInset}" width="${stackedOuterWidth}" height="${stackedOuterHeight}" rx="${radius}" fill="rgba(8,11,16,${stackedBodyFillOpacity.toFixed(3)})" stroke="${stackedBodyStroke}" stroke-width="1.15" />
 <rect x="${stackedInnerInset}" y="${stackedInnerInset}" width="${stackedInnerWidth}" height="${stackedInnerHeight}" rx="${Math.max(10, radius - 3)}" fill="url(#stacked-surface-fill)" />
-${stackedLayout.showAccentRail ? `<rect x="${stackedLayout.accentRailX}" y="${stackedLayout.accentRailY}" width="${stackedLayout.accentRailWidth}" height="${stackedLayout.accentRailHeight}" rx="${Math.max(2, Math.round(stackedLayout.accentRailHeight / 2))}" fill="${accentColor}" />` : ''}
-<rect x="${stackedLayout.iconPlateX}" y="${stackedLayout.iconPlateY}" width="${stackedLayout.iconPlateSize}" height="${stackedLayout.iconPlateSize}" rx="${Math.max(10, Math.round(stackedLayout.iconPlateSize * 0.28))}" fill="${iconSurfaceFill}" stroke="${iconSurfaceStroke}" stroke-width="1.05" />
+<rect x="${topHighlightInsetX}" y="${topHighlightInsetY}" width="${topHighlightWidth}" height="${topHighlightHeight}" rx="${Math.max(8, Math.round(topHighlightHeight / 2))}" fill="rgba(255,255,255,0.04)" />
+${stackedLayout.showAccentRail ? `<rect x="${stackedLayout.accentRailX}" y="${stackedLayout.accentRailY}" width="${stackedLayout.accentRailWidth}" height="${stackedLayout.accentRailHeight}" rx="${Math.max(2, Math.round(stackedLayout.accentRailHeight / 2))}" fill="url(#stacked-rail-fill)" filter="url(#stacked-rail-glow)" />` : ''}
+<rect x="${stackedLayout.iconPlateX}" y="${stackedLayout.iconPlateY}" width="${stackedLayout.iconPlateSize}" height="${stackedLayout.iconPlateSize}" rx="${Math.max(10, Math.round(stackedLayout.iconPlateSize * 0.28))}" fill="url(#stacked-icon-plate-fill)" stroke="${iconSurfaceStroke}" stroke-width="1.05" filter="url(#stacked-soft-shadow)" />
+<rect x="${valuePlateX}" y="${valuePlateY}" width="${valuePlateWidth}" height="${valuePlateHeight}" rx="${valuePlateRadius}" fill="url(#stacked-value-fill)" stroke="rgba(255,255,255,0.08)" stroke-width="0.9" />
 ${iconImage}
 ${monogramText}
-<text x="${stackedLayout.valueX}" y="${stackedLayout.valueTopY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${stackedLayout.valueFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="hanging" fill="white"${valueTextLength}${valueNumericStyle}>${escapeXml(value)}</text>
+<text x="${stackedLayout.valueX}" y="${valueCenterY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${stackedLayout.valueFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="white" filter="url(#stacked-value-shadow)"${valueTextLengthForPlate || valueTextLength}${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
   }
   const outerPadding = Math.max(6, Math.round(paddingX * 0.7));
