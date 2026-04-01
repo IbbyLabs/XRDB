@@ -185,7 +185,7 @@ export function ConfiguratorCenterStage({
                     </button>
                   ))}
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="hidden xl:flex items-center gap-3">
                   <span className="text-[11px] text-zinc-500">Sticky rail</span>
                   <button
                     type="button"
