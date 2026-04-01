@@ -8,6 +8,42 @@
 
 <a id="v1-0-3"></a>
 
+<a id="v1-0-4"></a>
+
+## [v1.0.4] - 01/04/2026
+
+### Fixed
+* resolve mdblist backed sources after imdb lookup
+  
+  Resolve IMDb dependent provider fetches after the route can hydrate external_ids from the bundled TMDB details response.
+  
+  This restores MDBList backed sources such as Rotten Tomatoes, Letterboxd, Metacritic, Roger Ebert, and the MDBList aggregate for inputs that do not start with a direct IMDb id on the media record. It also adds regression coverage for bundled external id resolution so the provider stack stays available when the route must discover IMDb ids before fetching dependent ratings.
+* source service badges from tmdb watch providers
+  
+  Use tmdb watch provider results for movie and TV service badges instead of relying only on TV network metadata.
+  
+  Keep Torrentio focused on quality badges, add regression coverage for provider name normalization and region selection, and align the UI config round trip test with the current default quality badge preferences so CI matches the shipped defaults.
+* hide sticky rail toggle on mobile
+  
+  Only show the sticky rail control at the xl breakpoint and above where the sticky preview mode can actually apply.
+  
+  This removes a dead mobile control without changing the saved sticky preference for desktop users.
+* restore desktop sticky preview rails
+  
+  Move sticky positioning onto the live preview rail instead of clipping it inside nested scroll containers.
+  
+  Keep vertical overflow available for the page and preview accordion so showcase, preview, and guide can follow the viewport again on desktop layouts.
+* restore anime ratings and stream badges
+  
+  Send browser like headers for anime rating requests so public instances keep resolving MAL, AniList, Kitsu, and Jikan responses more reliably.
+  
+  Include supported network badges in the default quality badge set and add regression coverage for anime provider mapping and default stream badge rendering.
+
+### Other Changes
+* "chore: release 1.0.4"
+  
+  This reverts commit 90405bcb5202183aeefeae981bf8908a74b69093.
+
 ## [v1.0.3] - 01/04/2026
 
 ### Fixed
