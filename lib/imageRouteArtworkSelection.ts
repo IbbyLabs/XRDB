@@ -4,6 +4,7 @@ import {
   type ArtworkSource,
   type PosterTextPreference,
 } from './imageRouteConfig.ts';
+import { resolveOmdbPosterUrl } from './imageRouteOmdb.ts';
 import { pickByLanguageWithFallback } from './imageLanguage.ts';
 import { fetchFanartArtwork } from './imageRouteFanart.ts';
 import type { PhaseDurations, CachedJsonResponse } from './imageRouteRuntime.ts';
@@ -70,10 +71,12 @@ export type ArtworkSelectionResult = {
 
 type ArtworkSelectorDeps = {
   fetchFanartArtwork: typeof fetchFanartArtwork;
+  resolveOmdbPosterUrl: typeof resolveOmdbPosterUrl;
 };
 
 const DEFAULT_DEPS: ArtworkSelectorDeps = {
   fetchFanartArtwork,
+  resolveOmdbPosterUrl,
 };
 
 export const createImageRouteArtworkSelector = (
@@ -110,6 +113,7 @@ export const createImageRouteArtworkSelector = (
   const buildArtworkSeed = (scope: string) =>
     `${scope}:${input.artworkSelectionSeed || `${input.cleanId}:${input.imageType}`}`;
   let fanartArtworkPromise: Promise<FanartArtworkPayload | null> | null = null;
+  let omdbPosterUrlPromise: Promise<string | null> | null = null;
 
   const getFanartArtwork = async () => {
     if (!(input.mediaType === 'movie' || input.mediaType === 'tv')) return null;
@@ -126,6 +130,20 @@ export const createImageRouteArtworkSelector = (
       fetchJsonCached: input.fetchJsonCached,
     });
     return fanartArtworkPromise;
+  };
+
+  const getOmdbPosterUrl = async () => {
+    if (omdbPosterUrlPromise) return omdbPosterUrlPromise;
+    omdbPosterUrlPromise = (async () => {
+      const imdbId = await input.resolveImdbId();
+      if (!imdbId) return null;
+      return runtimeDeps.resolveOmdbPosterUrl({
+        imdbId,
+        phases: input.phases,
+        fetchJsonCached: input.fetchJsonCached,
+      });
+    })();
+    return omdbPosterUrlPromise;
   };
 
   return async (selectionInput: ArtworkSelectionInput): Promise<ArtworkSelectionResult> => {
@@ -304,6 +322,15 @@ export const createImageRouteArtworkSelector = (
           });
         }
 
+        const omdbPosterUrl = await getOmdbPosterUrl();
+        if (omdbPosterUrl) {
+          randomPosterCandidates.push({
+            imgUrlOverride: omdbPosterUrl,
+            logoPath,
+            posterIsTextless: false,
+          });
+        }
+
         const randomPosterChoice = pickDeterministicItemBySeed(
           randomPosterCandidates,
           buildArtworkSeed('poster-source'),
@@ -325,6 +352,19 @@ export const createImageRouteArtworkSelector = (
           return {
             imgPath: '',
             imgUrlOverride: buildCinemetaPosterUrl(imdbId),
+            logoAspectRatio: null,
+            logoPath,
+            posterIsTextless: false,
+          };
+        }
+      }
+
+      if (input.posterArtworkSource === 'omdb') {
+        const omdbPosterUrl = await getOmdbPosterUrl();
+        if (omdbPosterUrl) {
+          return {
+            imgPath: '',
+            imgUrlOverride: omdbPosterUrl,
             logoAspectRatio: null,
             logoPath,
             posterIsTextless: false,

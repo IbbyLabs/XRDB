@@ -744,6 +744,26 @@ test('AIOMetadata export keeps bottom row overrides and omits overridden backdro
   assert.match(patterns?.logoUrlPattern ?? '', /logoBottomRatingsRow=true/);
 });
 
+test('AIOMetadata export keeps OMDb poster source lean and poster scoped', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      fanartKey: 'fanart-key-789',
+      posterArtworkSource: 'omdb',
+    },
+  });
+
+  const patterns = buildAiometadataUrlPatterns('https://xrdb.example.com/', config.settings, {
+    hideCredentials: true,
+  });
+
+  assert.match(patterns?.posterUrlPattern ?? '', /posterArtworkSource=omdb/);
+  assert.equal((patterns?.posterUrlPattern ?? '').includes('fanartKey='), false);
+  assert.equal((patterns?.backgroundUrlPattern ?? '').includes('posterArtworkSource=omdb'), false);
+  assert.equal((patterns?.logoUrlPattern ?? '').includes('posterArtworkSource=omdb'), false);
+});
+
 test('proxy manifest generation stops when required inputs are missing', () => {
   const config = buildSampleSettings();
 
@@ -857,6 +877,20 @@ test('workspace normalization accepts cinemeta as a poster artwork source', () =
   assert.equal(config.settings.posterArtworkSource, 'cinemeta');
   assert.equal(config.settings.backdropArtworkSource, 'cinemeta');
   assert.equal(config.settings.logoArtworkSource, 'cinemeta');
+});
+
+test('workspace normalization keeps OMDb poster artwork poster only', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      posterArtworkSource: 'omdb',
+      backdropArtworkSource: 'omdb',
+      logoArtworkSource: 'omdb',
+    },
+  });
+
+  assert.equal(config.settings.posterArtworkSource, 'omdb');
+  assert.equal(config.settings.backdropArtworkSource, 'tmdb');
+  assert.equal(config.settings.logoArtworkSource, 'tmdb');
 });
 
 test('workspace normalization maps RPDB order, bar position, and font scale aliases', () => {

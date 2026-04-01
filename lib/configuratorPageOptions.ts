@@ -60,7 +60,8 @@ export const POSTER_ARTWORK_SOURCE_OPTIONS: Array<{
   { id: 'tmdb', label: 'TMDB', description: 'Use the normal TMDB clean poster selection.' },
   { id: 'fanart', label: 'Fanart', description: 'Prefer fanart.tv artwork when a fanart key is available, then fall back to TMDB.' },
   { id: 'cinemeta', label: 'Cinemeta', description: 'Use the official MetaHub Cinemeta poster when an IMDb ID is available, then fall back to TMDB.' },
-  { id: 'random', label: 'Random', description: 'Pick a seeded random poster source between TMDB, fanart, and Cinemeta when available.' },
+  { id: 'omdb', label: 'OMDb', description: 'Use the OMDb poster when a server OMDb key and IMDb ID are available, then fall back to TMDB.' },
+  { id: 'random', label: 'Random', description: 'Pick a seeded random poster source between TMDB, fanart, Cinemeta, and OMDb when available.' },
 ];
 
 export const BACKDROP_ARTWORK_SOURCE_OPTIONS: Array<{

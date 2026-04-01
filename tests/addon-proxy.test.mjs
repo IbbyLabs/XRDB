@@ -359,6 +359,41 @@ test('proxy image rewrites preserve cinemeta as a poster artwork source', () => 
   assert.equal(rewrittenPosterUrl.searchParams.get('posterArtworkSource'), 'cinemeta');
 });
 
+test('proxy image rewrites preserve OMDb as a poster artwork source', () => {
+  const uiConfig = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      posterImageText: 'clean',
+      posterArtworkSource: 'omdb',
+      posterRatingPreferences: ['imdb'],
+    },
+    proxy: {
+      manifestUrl: 'https://addon.example.com/manifest.json',
+    },
+  });
+
+  const proxyUrl = buildProxyUrl('https://xrdb.example.com', uiConfig.proxy, uiConfig.settings);
+  const encodedConfig = proxyUrl.split('/proxy/')[1]?.replace('/manifest.json', '');
+  assert.ok(encodedConfig);
+
+  const decodedProxyConfig = decodeProxyConfig(encodedConfig);
+  assert.ok(decodedProxyConfig);
+
+  const rewrittenPosterUrl = new URL(
+    buildXrdbImageUrl({
+      reqUrl: new URL('https://proxy.example.net/proxy/example/meta/movie/example.json'),
+      imageType: 'poster',
+      xrdbId: 'tt0133093',
+      tmdbKey: decodedProxyConfig.tmdbKey,
+      mdblistKey: decodedProxyConfig.mdblistKey,
+      config: decodedProxyConfig,
+    }),
+  );
+
+  assert.equal(rewrittenPosterUrl.searchParams.get('posterArtworkSource'), 'omdb');
+});
+
 test('proxy image rewrites preserve cinemeta as a backdrop artwork source', () => {
   const uiConfig = normalizeSavedUiConfig({
     settings: {

@@ -63,6 +63,7 @@ type FinalImageRenderSeedInput = {
   streamBadgesCacheKeySeed: string;
   fanartKeyHash: string;
   fanartClientKeyHash: string;
+  omdbKeyHash: string;
   sourceFallbackKey: string;
   renderCacheBuster: string;
 };
@@ -144,6 +145,9 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.streamBadgesCacheKeySeed,
     input.fanartKeyHash || '-',
     input.fanartClientKeyHash || '-',
+    isPoster && (input.posterArtworkSource === 'omdb' || input.posterArtworkSource === 'random')
+      ? input.omdbKeyHash || '-'
+      : '-',
     input.sourceFallbackKey || '-',
     input.renderCacheBuster || '-',
     'v8',

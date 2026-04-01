@@ -53,6 +53,7 @@ const createInput = (overrides = {}) => ({
   streamBadgesCacheKeySeed: 'off',
   fanartKeyHash: 'fanart-hash',
   fanartClientKeyHash: 'fanart-client-hash',
+  omdbKeyHash: 'omdb-hash',
   sourceFallbackKey: '-',
   renderCacheBuster: '',
   ...overrides,
@@ -213,6 +214,17 @@ test('final image render seed changes when quality badge settings change', () =>
 
   assert.notEqual(baseKey, changedPreferenceKey);
   assert.notEqual(baseKey, changedScaleKey);
+});
+
+test('final image render seed changes when the OMDb key state changes for OMDb poster sources', () => {
+  const baseKey = buildFinalImageRenderSeedKey(
+    createInput({ posterArtworkSource: 'omdb' }),
+  );
+  const changedKey = buildFinalImageRenderSeedKey(
+    createInput({ posterArtworkSource: 'omdb', omdbKeyHash: 'different-omdb-hash' }),
+  );
+
+  assert.notEqual(baseKey, changedKey);
 });
 
 test('final image render seed includes canonical provider appearance overrides', () => {

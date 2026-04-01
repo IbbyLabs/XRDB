@@ -9,7 +9,7 @@ import { resolveTorrentioBaseUrl } from './torrentioUrl.ts';
 
 export type PosterTextPreference = 'original' | 'clean' | 'alternative' | 'random';
 export type PosterImageSize = 'normal' | 'large' | '4k';
-export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta' | 'random';
+export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta' | 'omdb' | 'random';
 export type AnimeMappingProvider = 'mal' | 'anilist' | 'imdb' | 'tmdb' | 'tvdb' | 'anidb';
 export type AggregateBadgeKey = 'aggregate-overall' | 'aggregate-critics' | 'aggregate-audience';
 export type BadgeKey = RatingPreference | MediaFeatureBadgeKey | AggregateBadgeKey;
@@ -40,7 +40,7 @@ const ANIME_MAPPING_PROVIDER_SET = new Set<AnimeMappingProvider>([
   'tvdb',
   'anidb',
 ]);
-const ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta', 'random']);
+const ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta', 'omdb', 'random']);
 const POSTER_IMAGE_SIZE_SET = new Set<PosterImageSize>(['normal', 'large', '4k']);
 
 export const FALLBACK_IMAGE_LANGUAGE = 'en';
@@ -74,6 +74,11 @@ export const FANART_API_KEY =
   process.env.XRDB_FANART_API_KEY?.trim() || process.env.FANART_API_KEY?.trim() || '';
 export const FANART_CLIENT_KEY =
   process.env.XRDB_FANART_CLIENT_KEY?.trim() || process.env.FANART_CLIENT_KEY?.trim() || '';
+export const OMDB_API_KEY =
+  process.env.XRDB_OMDB_API_KEY?.trim() ||
+  process.env.OMDB_API_KEY?.trim() ||
+  process.env.OMDB_KEY?.trim() ||
+  '';
 export const ANILIST_MEDIA_RATING_QUERY = `
   query XrdbAnimeRating($id: Int) {
     Media(id: $id, type: ANIME) {
@@ -280,6 +285,12 @@ export const IMDB_DATASET_CACHE_TTL_MS = parseCacheTtlMs(
 );
 export const KITSU_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.XRDB_KITSU_CACHE_TTL_MS,
+  3 * 24 * 60 * 60 * 1000,
+  10 * 60 * 1000,
+  30 * 24 * 60 * 60 * 1000,
+);
+export const OMDB_CACHE_TTL_MS = parseCacheTtlMs(
+  process.env.XRDB_OMDB_CACHE_TTL_MS,
   3 * 24 * 60 * 60 * 1000,
   10 * 60 * 1000,
   30 * 24 * 60 * 60 * 1000,

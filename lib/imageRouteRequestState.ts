@@ -97,6 +97,7 @@ import {
   FANART_CLIENT_KEY,
   FINAL_IMAGE_RENDERER_CACHE_VERSION,
   MDBLIST_API_KEYS,
+  OMDB_API_KEY,
   RAW_IMDB_ID_RE,
   SIMKL_CLIENT_ID,
   TORRENTIO_CACHE_TTL_MS,
@@ -507,12 +508,16 @@ export const resolveImageRouteRequestState = async ({
     : normalizeArtworkSource(
         searchParams.get('posterArtworkSource') ?? searchParams.get('posterCleanSource'),
       );
+  const normalizeNonPosterArtworkSource = (value: string | null) => {
+    const normalized = normalizeArtworkSource(value);
+    return normalized === 'omdb' ? 'tmdb' : normalized;
+  };
   const backdropArtworkSource = legacyFanartCleanMode
     ? 'fanart'
-    : normalizeArtworkSource(
+    : normalizeNonPosterArtworkSource(
         searchParams.get('backdropArtworkSource') ?? searchParams.get('backdropCleanSource'),
       );
-  const logoArtworkSource = normalizeArtworkSource(
+  const logoArtworkSource = normalizeNonPosterArtworkSource(
     searchParams.get('logoArtworkSource') ?? searchParams.get('logoSource'),
   );
   const fanartKey = searchParams.get('fanartKey') || FANART_API_KEY;
@@ -854,6 +859,9 @@ export const resolveImageRouteRequestState = async ({
   const fanartClientKeyHash = usesFanartArtwork
     ? sha1Hex(fanartClientKey || '').slice(0, 12)
     : '-';
+  const usesOmdbArtwork =
+    imageType === 'poster' && (posterArtworkSource === 'omdb' || posterArtworkSource === 'random');
+  const omdbKeyHash = usesOmdbArtwork ? sha1Hex(OMDB_API_KEY || '').slice(0, 12) : '-';
 
   if (!tmdbKey) {
     throw new HttpError('TMDB API Key (tmdbKey) is required', 400);
@@ -920,6 +928,7 @@ export const resolveImageRouteRequestState = async ({
     streamBadgesCacheKeySeed,
     fanartKeyHash,
     fanartClientKeyHash,
+    omdbKeyHash,
     sourceFallbackKey,
     renderCacheBuster,
   });

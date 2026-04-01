@@ -106,7 +106,7 @@ export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
 export type PosterImageSize = 'normal' | 'large' | '4k';
 export type PosterImageTextPreference = 'original' | 'clean' | 'alternative' | 'random';
 export type BackdropImageTextPreference = 'original' | 'clean' | 'alternative' | 'random';
-export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta' | 'random';
+export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta' | 'omdb' | 'random';
 export type LogoBackground = 'transparent' | 'dark';
 export type TmdbIdScopeMode = 'soft' | 'strict';
 type XrdbImageType = 'poster' | 'backdrop' | 'logo';
@@ -235,7 +235,8 @@ const BACKDROP_IMAGE_TEXT_PREFERENCE_SET = new Set<BackdropImageTextPreference>(
   'alternative',
   'random',
 ]);
-const ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta', 'random']);
+const POSTER_ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta', 'omdb', 'random']);
+const NON_POSTER_ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta', 'random']);
 const STREAM_BADGES_SETTING_SET = new Set<StreamBadgesSetting>(['auto', 'on', 'off']);
 const QUALITY_BADGES_SIDE_SET = new Set<QualityBadgesSide>(['left', 'right']);
 const POSTER_QUALITY_BADGES_POSITION_SET = new Set<PosterQualityBadgesPosition>(['auto', 'left', 'right']);
@@ -508,12 +509,22 @@ const normalizeBackdropImageTextPreference = (
     : fallback;
 };
 
-const normalizeArtworkSource = (
+const normalizePosterArtworkSource = (
   value: unknown,
   fallback: ArtworkSource,
 ): ArtworkSource => {
   const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
-  return ARTWORK_SOURCE_SET.has(normalized as ArtworkSource)
+  return POSTER_ARTWORK_SOURCE_SET.has(normalized as ArtworkSource)
+    ? (normalized as ArtworkSource)
+    : fallback;
+};
+
+const normalizeNonPosterArtworkSource = (
+  value: unknown,
+  fallback: ArtworkSource,
+): ArtworkSource => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return NON_POSTER_ARTWORK_SOURCE_SET.has(normalized as ArtworkSource)
     ? (normalized as ArtworkSource)
     : fallback;
 };
@@ -626,13 +637,13 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
     : normalizeBackdropImageTextPreference(candidate.backdropImageText, defaults.backdropImageText);
   const posterArtworkSource = legacyFanartPosterMode
     ? 'fanart'
-    : normalizeArtworkSource(
+    : normalizePosterArtworkSource(
         candidate.posterArtworkSource ?? candidate.posterCleanSource,
         defaults.posterArtworkSource
       );
   const backdropArtworkSource = legacyFanartBackdropMode
     ? 'fanart'
-    : normalizeArtworkSource(
+    : normalizeNonPosterArtworkSource(
         candidate.backdropArtworkSource ?? candidate.backdropCleanSource,
         defaults.backdropArtworkSource
       );
@@ -683,7 +694,7 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
     backdropImageText,
     posterArtworkSource,
     backdropArtworkSource,
-    logoArtworkSource: normalizeArtworkSource(
+    logoArtworkSource: normalizeNonPosterArtworkSource(
       candidate.logoArtworkSource ?? candidate.logoSource,
       defaults.logoArtworkSource
     ),
