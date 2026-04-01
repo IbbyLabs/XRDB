@@ -380,6 +380,21 @@ const detailsBundlePromise = !useRawKitsuFallback
     };
   })()
   : null;
+const episodeDetailsPromise =
+  !useRawKitsuFallback &&
+  isThumbnailRequest &&
+  mediaType === 'tv' &&
+  season &&
+  episode &&
+  media?.id != null
+    ? fetchJsonCached(
+      `tmdb:tv:${media.id}:season:${season}:episode:${episode}:details`,
+      `${TMDB_API_BASE_URL}/tv/${media.id}/season/${season}/episode/${episode}?api_key=${tmdbKey}`,
+      TMDB_CACHE_TTL_MS,
+      phases,
+      'tmdb'
+    )
+    : null;
 const providerRatingsPromise =
   shouldRenderRatings &&
     needsExternalRatings &&
@@ -505,6 +520,12 @@ if (!useRawKitsuFallback && detailsBundlePromise) {
   } = await detailsBundlePromise;
   bundledWatchProviderResults = watchProviderResults;
   tmdbRating = bundledRating;
+  if (episodeDetailsPromise) {
+    const episodeDetailsResponse = await episodeDetailsPromise;
+    if (episodeDetailsResponse.ok) {
+      tmdbRating = normalizeRatingValue(episodeDetailsResponse.data?.vote_average) || 'N/A';
+    }
+  }
   if (shouldRenderStreamBadges) {
     movieHasPhysicalMediaRelease =
       mediaType === 'movie' ? hasMoviePhysicalMediaRelease(bundledCertificationPayload) : null;
