@@ -6,6 +6,22 @@
 
 <a id="v1-0-2"></a>
 
+<a id="v1-0-3"></a>
+
+## [v1.0.3] - 01/04/2026
+
+### Fixed
+* rebalance workspace layout at desktop widths
+  
+  Keep the side rail below the primary workspace until very wide screens.
+  Move sticky preview behavior to 2xl so the center stage content does not clip.
+  Stack AIOMetadata source panels vertically so the right rail stays readable.
+* rename Discord release embed branding
+  
+  Update the Discord release embed author label to XRDB, eXtended Ratings DataBase.
+  
+  Keep the release notification tests aligned so the old project name does not return in future release posts.
+
 ## [v1.0.2] - 31/03/2026
 
 ### Fixed
