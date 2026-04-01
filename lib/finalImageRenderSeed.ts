@@ -21,7 +21,9 @@ type FinalImageRenderSeedInput = {
   posterEdgeOffset: number;
   backdropRatingsLayout: string;
   backdropRatingsMax: number | null;
+  backdropBottomRatingsRow: boolean;
   logoRatingsMax: number | null;
+  logoBottomRatingsRow: boolean;
   qualityBadgesSide: string;
   posterQualityBadgesPosition: string;
   qualityBadgesStyle: string;
@@ -98,7 +100,9 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     isPoster ? String(input.posterRatingsMax ?? 'auto') : '-',
     isPoster ? String(input.posterEdgeOffset) : '-',
     isBackdrop ? String(input.backdropRatingsMax ?? 'auto') : '-',
+    isBackdrop ? (input.backdropBottomRatingsRow ? 'bottom-row' : 'auto') : '-',
     isLogo ? String(input.logoRatingsMax ?? 'auto') : '-',
+    isLogo ? (input.logoBottomRatingsRow ? 'bottom-row' : 'auto') : '-',
     isPoster ? input.qualityBadgesSide : '-',
     isPoster && (input.posterRatingsLayout === 'top' || input.posterRatingsLayout === 'bottom')
       ? input.posterQualityBadgesPosition
@@ -107,11 +111,13 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     isLogo ? '-' : String(input.qualityBadgesMax ?? 'auto'),
     isLogo ? '-' : input.qualityBadgePreferences.join(',') || 'none',
     isLogo ? '-' : String(qualityBadgeScale),
-    isBackdrop ? input.backdropRatingsLayout : '-',
+    isBackdrop && !input.backdropBottomRatingsRow ? input.backdropRatingsLayout : '-',
     isPoster ? input.posterSideRatingsPosition : '-',
     isPoster ? String(input.posterSideRatingsOffset) : '-',
-    isBackdrop ? input.backdropSideRatingsPosition : '-',
-    isBackdrop ? String(input.backdropSideRatingsOffset) : '-',
+    isBackdrop && !input.backdropBottomRatingsRow ? input.backdropSideRatingsPosition : '-',
+    isBackdrop && !input.backdropBottomRatingsRow
+      ? String(input.backdropSideRatingsOffset)
+      : '-',
     input.ratingPresentation,
     isPoster ? input.blockbusterDensity : '-',
     input.aggregateRatingSource,

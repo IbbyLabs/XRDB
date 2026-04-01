@@ -374,6 +374,7 @@ export function LookSection({
   posterRatingsMax,
   backdropRatingsLayout,
   backdropRatingsMax,
+  backdropBottomRatingsRow,
   posterEdgeOffset,
   shouldShowSideRatingPlacement,
   activeSideRatingsPosition,
@@ -383,6 +384,7 @@ export function LookSection({
   activeLogoSourceDescription,
   logoBackground,
   logoRatingsMax,
+  logoBottomRatingsRow,
   logoQualityBadgesStyle,
   logoQualityBadgesMax,
   logoQualityBadgePreferences,
@@ -404,6 +406,7 @@ export function LookSection({
   onSelectPosterRatingsMax,
   onSelectBackdropRatingsLayout,
   onSelectBackdropRatingsMax,
+  onToggleBackdropBottomRatingsRow,
   onSelectPosterEdgeOffset,
   onResetPosterEdgeOffset,
   onSelectSideRatingsPosition,
@@ -411,6 +414,7 @@ export function LookSection({
   onSelectLogoArtworkSource,
   onSelectLogoBackground,
   onSelectLogoRatingsMax,
+  onToggleLogoBottomRatingsRow,
   onSelectLogoQualityBadgesStyle,
   onSelectLogoQualityBadgesMax,
   onToggleQualityBadgePreference,
@@ -443,6 +447,7 @@ export function LookSection({
   posterRatingsMax: number | null;
   backdropRatingsLayout: BackdropRatingLayout;
   backdropRatingsMax: number | null;
+  backdropBottomRatingsRow: boolean;
   posterEdgeOffset: number;
   shouldShowSideRatingPlacement: boolean;
   activeSideRatingsPosition: SideRatingPosition;
@@ -452,6 +457,7 @@ export function LookSection({
   activeLogoSourceDescription: string | null;
   logoBackground: LogoBackground;
   logoRatingsMax: number | null;
+  logoBottomRatingsRow: boolean;
   logoQualityBadgesStyle: QualityBadgeStyle;
   logoQualityBadgesMax: number | null;
   logoQualityBadgePreferences: QualityBadgeOptionId[];
@@ -475,6 +481,7 @@ export function LookSection({
   onSelectPosterRatingsMax: (value: number | null) => void;
   onSelectBackdropRatingsLayout: (value: BackdropRatingLayout) => void;
   onSelectBackdropRatingsMax: (value: number | null) => void;
+  onToggleBackdropBottomRatingsRow: () => void;
   onSelectPosterEdgeOffset: (value: number) => void;
   onResetPosterEdgeOffset: () => void;
   onSelectSideRatingsPosition: (value: SideRatingPosition) => void;
@@ -482,6 +489,7 @@ export function LookSection({
   onSelectLogoArtworkSource: (value: ArtworkSource) => void;
   onSelectLogoBackground: (value: LogoBackground) => void;
   onSelectLogoRatingsMax: (value: number | null) => void;
+  onToggleLogoBottomRatingsRow: () => void;
   onSelectLogoQualityBadgesStyle: (value: QualityBadgeStyle) => void;
   onSelectLogoQualityBadgesMax: (value: number | null) => void;
   onToggleQualityBadgePreference: (value: QualityBadgeOptionId) => void;
@@ -743,6 +751,33 @@ export function LookSection({
                 </button>
               ))}
             </div>
+            <div>
+              <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Ratings Row</div>
+              <div className={selectorGroupClass}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (backdropBottomRatingsRow) {
+                      onToggleBackdropBottomRatingsRow();
+                    }
+                  }}
+                  className={selectorButtonClass(!backdropBottomRatingsRow)}
+                >
+                  Auto
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!backdropBottomRatingsRow) {
+                      onToggleBackdropBottomRatingsRow();
+                    }
+                  }}
+                  className={selectorButtonClass(backdropBottomRatingsRow)}
+                >
+                  Single bottom row
+                </button>
+              </div>
+            </div>
             <OptionalCountField
               label="Max ratings"
               value={backdropRatingsMax}
@@ -750,7 +785,9 @@ export function LookSection({
               onChange={onSelectBackdropRatingsMax}
             />
             <p className="text-[11px] leading-relaxed text-zinc-500">
-              Backdrop output can stay dense, but this cap gives users a cleaner badge row when they only want the top few sources.
+              {backdropBottomRatingsRow
+                ? 'Single bottom row overrides the saved backdrop layout until you switch it off.'
+                : 'Backdrop output can stay dense, but this cap gives users a cleaner badge row when they only want the top few sources.'}
             </p>
           </div>
         ) : null}
@@ -904,6 +941,37 @@ export function LookSection({
                 widthClassName="w-20"
                 onChange={onSelectLogoRatingsMax}
               />
+              <div>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Ratings Row</span>
+                <div className="xrdb-toggle-group flex gap-1 p-1 bg-zinc-900 rounded-lg border border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (logoBottomRatingsRow) {
+                        onToggleLogoBottomRatingsRow();
+                      }
+                    }}
+                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                      !logoBottomRatingsRow ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    Auto
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!logoBottomRatingsRow) {
+                        onToggleLogoBottomRatingsRow();
+                      }
+                    }}
+                    className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                      logoBottomRatingsRow ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    Single bottom row
+                  </button>
+                </div>
+              </div>
             </div>
             <div className="space-y-2 rounded-xl border border-white/10 bg-black/30 p-3">
               <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Logo Quality Badges</div>
@@ -955,6 +1023,9 @@ export function LookSection({
             {activeLogoSourceDescription ? (
               <p className="text-[11px] leading-relaxed text-zinc-500">
                 {activeLogoSourceDescription.replace('artwork', 'logo assets')}
+                {logoBottomRatingsRow
+                  ? ' Ratings stay on one bottom row, which is most noticeable in denser presentations.'
+                  : ''}
               </p>
             ) : null}
           </div>

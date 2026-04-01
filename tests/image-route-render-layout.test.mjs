@@ -33,6 +33,8 @@ test('image route render layout expands logo canvases to fit badge rows', async 
     effectivePosterRatingsLayout: 'top',
     effectivePosterRatingsMaxPerSide: 3,
     effectiveBackdropRatingsLayout: 'top',
+    backdropBottomRatingsRow: false,
+    logoBottomRatingsRow: false,
     posterRatingBadgeScale: 100,
     backdropRatingBadgeScale: 100,
     logoRatingBadgeScale: 100,
@@ -56,4 +58,88 @@ test('image route render layout expands logo canvases to fit badge rows', async 
   assert.ok(layout.finalOutputWidth >= 420);
   assert.ok(layout.finalOutputHeight > 120);
   assert.ok(layout.logoBadgeBandHeight > 0);
+});
+
+test('image route render layout collapses backdrop ratings into one bottom row when enabled', async () => {
+  const layout = await resolveImageRouteRenderLayout({
+    imageType: 'backdrop',
+    ratingPresentation: 'standard',
+    outputWidth: 1280,
+    outputHeight: 720,
+    overlayAutoScale: 1,
+    displayRatingBadges: [
+      createBadge('imdb', '7.5'),
+      createBadge('tmdb', '8.0'),
+      createBadge('tomatoes', '91'),
+    ],
+    streamBadges: [],
+    effectivePosterRatingsLayout: 'top',
+    effectivePosterRatingsMaxPerSide: 3,
+    effectiveBackdropRatingsLayout: 'right-vertical',
+    backdropBottomRatingsRow: true,
+    logoBottomRatingsRow: false,
+    posterRatingBadgeScale: 100,
+    backdropRatingBadgeScale: 100,
+    logoRatingBadgeScale: 100,
+    posterQualityBadgeScale: 100,
+    backdropQualityBadgeScale: 100,
+    ratingStyle: 'plain',
+    qualityBadgesMax: null,
+    mediaType: 'movie',
+    media: { id: 1 },
+    tmdbKey: 'tmdb-key',
+    requestedImageLang: 'en',
+    phases: { ...phases },
+    fetchJsonCached: async () => {
+      throw new Error('unexpected fetch');
+    },
+  });
+
+  assert.equal(layout.backdropBottomRatingsRow, true);
+  assert.equal(layout.backdropRows.length, 1);
+  assert.deepEqual(
+    layout.backdropRows[0].map((badge) => badge.key),
+    ['imdb', 'tmdb', 'tomatoes'],
+  );
+  assert.deepEqual(layout.rightRatingBadges, []);
+});
+
+test('image route render layout keeps logo ratings on one row in blockbuster mode when enabled', async () => {
+  const layout = await resolveImageRouteRenderLayout({
+    imageType: 'logo',
+    ratingPresentation: 'blockbuster',
+    outputWidth: 420,
+    outputHeight: 120,
+    overlayAutoScale: 1,
+    displayRatingBadges: [
+      createBadge('imdb', '7.5'),
+      createBadge('tmdb', '8.0'),
+      createBadge('tomatoes', '91'),
+      createBadge('metacritic', '68'),
+      createBadge('letterboxd', '4.1'),
+    ],
+    streamBadges: [],
+    effectivePosterRatingsLayout: 'top',
+    effectivePosterRatingsMaxPerSide: 3,
+    effectiveBackdropRatingsLayout: 'top',
+    backdropBottomRatingsRow: false,
+    logoBottomRatingsRow: true,
+    posterRatingBadgeScale: 100,
+    backdropRatingBadgeScale: 100,
+    logoRatingBadgeScale: 100,
+    posterQualityBadgeScale: 100,
+    backdropQualityBadgeScale: 100,
+    ratingStyle: 'plain',
+    qualityBadgesMax: null,
+    mediaType: 'movie',
+    media: { id: 1 },
+    tmdbKey: 'tmdb-key',
+    requestedImageLang: 'en',
+    phases: { ...phases },
+    fetchJsonCached: async () => {
+      throw new Error('unexpected fetch');
+    },
+  });
+
+  assert.equal(layout.logoBadgesPerRow, 5);
 });

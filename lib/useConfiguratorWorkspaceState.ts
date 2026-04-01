@@ -106,6 +106,7 @@ export function useConfiguratorWorkspaceState() {
   const [backdropRatingsLayout, setBackdropRatingsLayout] = useState<BackdropRatingLayout>(DEFAULT_BACKDROP_RATING_LAYOUT);
   const [posterRatingsMax, setPosterRatingsMax] = useState<number | null>(null);
   const [backdropRatingsMax, setBackdropRatingsMax] = useState<number | null>(null);
+  const [backdropBottomRatingsRow, setBackdropBottomRatingsRow] = useState(false);
   const [posterEdgeOffset, setPosterEdgeOffset] = useState<number>(DEFAULT_POSTER_EDGE_OFFSET);
   const [posterSideRatingsPosition, setPosterSideRatingsPosition] = useState<SideRatingPosition>('top');
   const [posterSideRatingsOffset, setPosterSideRatingsOffset] = useState<number>(DEFAULT_SIDE_RATING_OFFSET);
@@ -135,6 +136,7 @@ export function useConfiguratorWorkspaceState() {
   const [posterRatingsMaxPerSide, setPosterRatingsMaxPerSide] = useState<number | null>(DEFAULT_POSTER_RATINGS_MAX_PER_SIDE);
   const [logoRatingsMax, setLogoRatingsMax] = useState<number | null>(null);
   const [logoBackground, setLogoBackground] = useState<LogoBackground>('transparent');
+  const [logoBottomRatingsRow, setLogoBottomRatingsRow] = useState(false);
   const [logoArtworkSource, setLogoArtworkSource] = useState<ArtworkSource>('tmdb');
   const [ratingProviderAppearanceOverrides, setRatingProviderAppearanceOverrides] = useState<RatingProviderAppearanceOverrides>({});
   const [activeProviderEditorId, setActiveProviderEditorId] = useState<RatingPreference>('tmdb');
@@ -196,6 +198,7 @@ export function useConfiguratorWorkspaceState() {
     backdropRatingStyle,
     backdropRatingsLayout,
     backdropRatingsMax,
+    backdropBottomRatingsRow,
     backdropSideRatingsOffset,
     backdropSideRatingsPosition,
     backdropStreamBadges,
@@ -225,6 +228,7 @@ export function useConfiguratorWorkspaceState() {
     logoRatingRows,
     logoRatingStyle,
     logoRatingsMax,
+    logoBottomRatingsRow,
     mdblistKey,
     mediaId,
     posterAggregateRatingSource,
@@ -289,6 +293,7 @@ export function useConfiguratorWorkspaceState() {
     setBackdropRatingStyle,
     setBackdropRatingsLayout,
     setBackdropRatingsMax,
+    setBackdropBottomRatingsRow,
     setBackdropSideRatingsOffset,
     setBackdropSideRatingsPosition,
     setBackdropStreamBadges,
@@ -317,6 +322,7 @@ export function useConfiguratorWorkspaceState() {
     setLogoRatingRows,
     setLogoRatingStyle,
     setLogoRatingsMax,
+    setLogoBottomRatingsRow,
     setMdblistKey,
     setMediaId,
     setPosterAggregateRatingSource,

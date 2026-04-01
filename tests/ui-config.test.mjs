@@ -82,6 +82,7 @@ const buildSampleSettings = () =>
       backdropRatingsLayout: 'right-vertical',
       posterRatingsMax: 5,
       backdropRatingsMax: 4,
+      backdropBottomRatingsRow: false,
       posterEdgeOffset: 24,
       posterSideRatingsPosition: 'custom',
       posterSideRatingsOffset: 62,
@@ -112,6 +113,7 @@ const buildSampleSettings = () =>
       posterRatingsMaxPerSide: 7,
       logoRatingsMax: 4,
       logoBackground: 'dark',
+      logoBottomRatingsRow: false,
       ratingProviderAppearanceOverrides: SAMPLE_PROVIDER_APPEARANCE,
     },
     proxy: {
@@ -182,6 +184,7 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       backdropRatingsLayout: 'right-vertical',
       posterRatingsMax: 5,
       backdropRatingsMax: 4,
+      backdropBottomRatingsRow: false,
       posterEdgeOffset: 24,
       posterSideRatingsPosition: 'custom',
       posterSideRatingsOffset: 62,
@@ -213,6 +216,7 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       posterRatingsMaxPerSide: 7,
       logoRatingsMax: 4,
       logoBackground: 'dark',
+      logoBottomRatingsRow: false,
       ratingProviderAppearanceOverrides: SAMPLE_PROVIDER_APPEARANCE,
     },
     proxy: {
@@ -235,6 +239,30 @@ test('workspace serialization round-trips shared settings and proxy state', () =
   assert.equal(decodedConfig.backdropSideRatingsOffset, 62);
   assert.equal('sideRatingsPosition' in decodedConfig, false);
   assert.equal('sideRatingsOffset' in decodedConfig, false);
+});
+
+test('config payload keeps bottom row overrides lean and type scoped', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      backdropRatingsLayout: 'right-vertical',
+      backdropSideRatingsPosition: 'custom',
+      backdropSideRatingsOffset: 62,
+      backdropBottomRatingsRow: true,
+      logoBottomRatingsRow: true,
+    },
+  });
+
+  const configString = buildConfigString('https://xrdb.example.com', config.settings);
+  assert.notEqual(configString, '');
+
+  const decodedConfig = JSON.parse(decodeBase64Url(configString));
+  assert.equal(decodedConfig.backdropBottomRatingsRow, true);
+  assert.equal(decodedConfig.logoBottomRatingsRow, true);
+  assert.equal('backdropRatingsLayout' in decodedConfig, false);
+  assert.equal('backdropSideRatingsPosition' in decodedConfig, false);
+  assert.equal('backdropSideRatingsOffset' in decodedConfig, false);
 });
 
 test('workspace normalization ignores legacy proxy enabled flags', () => {
@@ -690,6 +718,30 @@ test('AIOMetadata export supports IMDb poster ID mode override', () => {
   assert.equal((patterns?.posterUrlPattern ?? '').includes('idSource=tmdb'), false);
   assert.match(patterns?.backgroundUrlPattern ?? '', /idSource=tmdb/);
   assert.match(patterns?.logoUrlPattern ?? '', /idSource=tmdb/);
+});
+
+test('AIOMetadata export keeps bottom row overrides and omits overridden backdrop layout params', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      backdropRatingsLayout: 'right-vertical',
+      backdropSideRatingsPosition: 'custom',
+      backdropSideRatingsOffset: 62,
+      backdropBottomRatingsRow: true,
+      logoBottomRatingsRow: true,
+    },
+  });
+
+  const patterns = buildAiometadataUrlPatterns('https://xrdb.example.com/', config.settings, {
+    hideCredentials: true,
+  });
+
+  assert.match(patterns?.backgroundUrlPattern ?? '', /backdropBottomRatingsRow=true/);
+  assert.equal((patterns?.backgroundUrlPattern ?? '').includes('backdropRatingsLayout='), false);
+  assert.equal((patterns?.backgroundUrlPattern ?? '').includes('backdropSideRatingsPosition='), false);
+  assert.equal((patterns?.backgroundUrlPattern ?? '').includes('backdropSideRatingsOffset='), false);
+  assert.match(patterns?.logoUrlPattern ?? '', /logoBottomRatingsRow=true/);
 });
 
 test('proxy manifest generation stops when required inputs are missing', () => {

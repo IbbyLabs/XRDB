@@ -84,6 +84,7 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'backdropRatingPresentation',
     'backdropAggregateRatingSource',
     'backdropArtworkSource',
+    'backdropBottomRatingsRow',
   ],
   thumbnail: [
     'backdropGenreBadge',
@@ -103,6 +104,7 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'backdropArtworkSource',
     'backdropRatingsLayout',
     'backdropRatingsMax',
+    'backdropBottomRatingsRow',
     'backdropSideRatingsPosition',
     'backdropSideRatingsOffset',
   ],
@@ -119,6 +121,7 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'logoAggregateRatingSource',
     'logoArtworkSource',
     'logoRatingBadgeScale',
+    'logoBottomRatingsRow',
   ],
 } as const;
 
@@ -244,6 +247,7 @@ export type ProxyConfig = {
   posterEdgeOffset?: string;
   backdropRatingsLayout?: string;
   backdropRatingsMax?: string;
+  backdropBottomRatingsRow?: string;
   posterSideRatingsPosition?: string;
   posterSideRatingsOffset?: string;
   backdropSideRatingsPosition?: string;
@@ -252,6 +256,7 @@ export type ProxyConfig = {
   sideRatingsOffset?: string;
   logoRatingsMax?: string;
   logoBackground?: string;
+  logoBottomRatingsRow?: string;
   logoSource?: string;
   xrdbBase?: string;
   posterEnabled?: boolean;
@@ -364,6 +369,7 @@ const CONFIG_STRING_KEYS = [
   'posterEdgeOffset',
   'backdropRatingsLayout',
   'backdropRatingsMax',
+  'backdropBottomRatingsRow',
   'posterSideRatingsPosition',
   'posterSideRatingsOffset',
   'backdropSideRatingsPosition',
@@ -372,6 +378,7 @@ const CONFIG_STRING_KEYS = [
   'sideRatingsOffset',
   'logoRatingsMax',
   'logoBackground',
+  'logoBottomRatingsRow',
   'logoSource',
   'xrdbBase',
   'catalogPlan',

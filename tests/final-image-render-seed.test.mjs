@@ -19,7 +19,9 @@ const createInput = (overrides = {}) => ({
   posterEdgeOffset: 0,
   backdropRatingsLayout: 'right-vertical',
   backdropRatingsMax: 2,
+  backdropBottomRatingsRow: false,
   logoRatingsMax: 3,
+  logoBottomRatingsRow: false,
   qualityBadgesSide: 'left',
   posterQualityBadgesPosition: 'auto',
   qualityBadgesStyle: 'plain',
@@ -181,6 +183,23 @@ test('final image render seed isolates backdrop side placement from poster side 
 
   assert.notEqual(baseKey, backdropSideChangedKey);
   assert.equal(baseKey, posterSideChangedKey);
+});
+
+test('backdrop bottom row render seed ignores saved side stack layout tokens', () => {
+  const baseKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'backdrop', backdropBottomRatingsRow: true }),
+  );
+  const changedLayoutKey = buildFinalImageRenderSeedKey(
+    createInput({
+      imageType: 'backdrop',
+      backdropBottomRatingsRow: true,
+      backdropRatingsLayout: 'right',
+      backdropSideRatingsPosition: 'custom',
+      backdropSideRatingsOffset: 41,
+    }),
+  );
+
+  assert.equal(baseKey, changedLayoutKey);
 });
 
 test('final image render seed changes when quality badge settings change', () => {

@@ -170,6 +170,7 @@ export type SharedXrdbSettings = {
   backdropRatingsLayout: BackdropRatingLayout;
   posterRatingsMax: number | null;
   backdropRatingsMax: number | null;
+  backdropBottomRatingsRow: boolean;
   posterRatingStyle: RatingStyle;
   backdropRatingStyle: RatingStyle;
   logoRatingStyle: RatingStyle;
@@ -201,6 +202,7 @@ export type SharedXrdbSettings = {
   sideRatingsOffset: number;
   logoRatingsMax: number | null;
   logoBackground: LogoBackground;
+  logoBottomRatingsRow: boolean;
   ratingProviderAppearanceOverrides: RatingProviderAppearanceOverrides;
 };
 
@@ -303,6 +305,7 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   backdropRatingsLayout: DEFAULT_BACKDROP_RATING_LAYOUT,
   posterRatingsMax: null,
   backdropRatingsMax: null,
+  backdropBottomRatingsRow: false,
   posterRatingStyle: DEFAULT_RATING_STYLE,
   backdropRatingStyle: DEFAULT_RATING_STYLE,
   logoRatingStyle: 'plain',
@@ -334,6 +337,7 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   sideRatingsOffset: DEFAULT_SIDE_RATING_OFFSET,
   logoRatingsMax: null,
   logoBackground: 'transparent',
+  logoBottomRatingsRow: false,
   ratingProviderAppearanceOverrides: {},
 });
 
@@ -816,6 +820,10 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
     ),
     posterRatingsMax: normalizeOptionalBadgeCount(candidate.posterRatingsMax),
     backdropRatingsMax: normalizeOptionalBadgeCount(candidate.backdropRatingsMax),
+    backdropBottomRatingsRow: normalizeBoolean(
+      candidate.backdropBottomRatingsRow,
+      defaults.backdropBottomRatingsRow,
+    ),
     posterRatingStyle: normalizeRatingStyle(candidate.posterRatingStyle as string | null | undefined),
     backdropRatingStyle: normalizeRatingStyle(candidate.backdropRatingStyle as string | null | undefined),
     posterRatingPresentation: normalizeRatingPresentation(
@@ -913,6 +921,10 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
     sideRatingsOffset: legacySideRatingsOffset,
     logoRatingsMax: normalizeOptionalBadgeCount(candidate.logoRatingsMax),
     logoBackground: normalizeLogoBackground(candidate.logoBackground, defaults.logoBackground),
+    logoBottomRatingsRow: normalizeBoolean(
+      candidate.logoBottomRatingsRow,
+      defaults.logoBottomRatingsRow,
+    ),
     ratingProviderAppearanceOverrides: normalizeRatingProviderAppearanceOverrides(
       candidate.ratingProviderAppearanceOverrides,
     ),
@@ -1197,6 +1209,9 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   if (settings.backdropRatingsMax !== null) {
     payload.backdropRatingsMax = settings.backdropRatingsMax;
   }
+  if (settings.backdropBottomRatingsRow) {
+    payload.backdropBottomRatingsRow = true;
+  }
 
   payload.posterRatingStyle = settings.posterRatingStyle;
   payload.backdropRatingStyle = settings.backdropRatingStyle;
@@ -1292,7 +1307,10 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
       payload.posterSideRatingsOffset = settings.posterSideRatingsOffset;
     }
   }
-  if (settings.backdropSideRatingsPosition !== DEFAULT_SIDE_RATING_POSITION) {
+  if (
+    !settings.backdropBottomRatingsRow &&
+    settings.backdropSideRatingsPosition !== DEFAULT_SIDE_RATING_POSITION
+  ) {
     payload.backdropSideRatingsPosition = settings.backdropSideRatingsPosition;
     if (settings.backdropSideRatingsPosition === 'custom') {
       payload.backdropSideRatingsOffset = settings.backdropSideRatingsOffset;
@@ -1304,14 +1322,18 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   if (settings.logoBackground !== 'transparent') {
     payload.logoBackground = settings.logoBackground;
   }
+  if (settings.logoBottomRatingsRow) {
+    payload.logoBottomRatingsRow = true;
+  }
   const providerAppearance = encodeRatingProviderAppearanceOverrides(
     settings.ratingProviderAppearanceOverrides,
   );
   if (providerAppearance) {
     payload.providerAppearance = providerAppearance;
   }
-
-  payload.backdropRatingsLayout = settings.backdropRatingsLayout;
+  if (!settings.backdropBottomRatingsRow) {
+    payload.backdropRatingsLayout = settings.backdropRatingsLayout;
+  }
 
   return payload;
 };

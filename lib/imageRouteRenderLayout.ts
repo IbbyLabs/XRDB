@@ -44,6 +44,7 @@ export type ImageRouteRenderLayout = {
   posterTopRows: RatingBadge[][];
   posterBottomRows: RatingBadge[][];
   backdropRows: RatingBadge[][];
+  backdropBottomRatingsRow: boolean;
   blockbusterBlurbs: BlockbusterBlurb[];
   badgeIconSize: number;
   badgeFontSize: number;
@@ -75,6 +76,8 @@ export const resolveImageRouteRenderLayout = async (input: {
   effectivePosterRatingsLayout: PosterRatingLayout;
   effectivePosterRatingsMaxPerSide: number | null;
   effectiveBackdropRatingsLayout: BackdropRatingLayout;
+  backdropBottomRatingsRow: boolean;
+  logoBottomRatingsRow: boolean;
   posterRatingBadgeScale: number;
   backdropRatingBadgeScale: number;
   logoRatingBadgeScale: number;
@@ -100,6 +103,8 @@ export const resolveImageRouteRenderLayout = async (input: {
     effectivePosterRatingsLayout,
     effectivePosterRatingsMaxPerSide,
     effectiveBackdropRatingsLayout,
+    backdropBottomRatingsRow,
+    logoBottomRatingsRow,
     posterRatingBadgeScale,
     backdropRatingBadgeScale,
     logoRatingBadgeScale,
@@ -125,13 +130,21 @@ export const resolveImageRouteRenderLayout = async (input: {
       effectivePosterRatingsLayout === 'bottom' ||
       effectivePosterRatingsLayout === 'top-bottom');
   const usePosterRowLayoutLarge = usePosterBadgeLayout && usePosterRowLayout;
+  const useBackdropBottomRatingsRow = useBackdropBadgeLayout && backdropBottomRatingsRow;
   const useBackdropRightVerticalLayout =
-    useBackdropBadgeLayout && effectiveBackdropRatingsLayout === 'right-vertical';
+    useBackdropBadgeLayout &&
+    !useBackdropBottomRatingsRow &&
+    effectiveBackdropRatingsLayout === 'right-vertical';
+  const useLogoBottomRatingsRow = useLogoBadgeLayout && logoBottomRatingsRow;
 
   let cappedRatingBadges = [...displayRatingBadges];
   const backdropRows =
     useBackdropBadgeLayout && !useBackdropRightVerticalLayout
-      ? (() => {
+      ? useBackdropBottomRatingsRow
+        ? cappedRatingBadges.length > 0
+          ? [cappedRatingBadges]
+          : []
+        : (() => {
           const firstRowCount = Math.ceil(cappedRatingBadges.length / 2);
           return [cappedRatingBadges.slice(0, firstRowCount), cappedRatingBadges.slice(firstRowCount)];
         })()
@@ -432,9 +445,11 @@ export const resolveImageRouteRenderLayout = async (input: {
       rightRatingBadges = rightRatingBadges.slice(0, maxPerColumn);
       cappedRatingBadges = [...rightRatingBadges];
     } else {
-      const backdropRegion = getBackdropBadgeRegion(outputWidth, effectiveBackdropRatingsLayout);
+      const backdropRegion = useBackdropBottomRatingsRow
+        ? { left: 0, width: outputWidth }
+        : getBackdropBadgeRegion(outputWidth, effectiveBackdropRatingsLayout);
       fittedBackdropMetrics = fitBadgeMetricsToWidth(
-        [topRatingBadges, bottomRatingBadges].filter((row) => row.length > 0),
+        backdropRows,
         backdropRegion.width,
         {
           iconSize: badgeIconSize,
@@ -457,7 +472,9 @@ export const resolveImageRouteRenderLayout = async (input: {
   }
 
   const logoBadgesPerRow = useLogoBadgeLayout
-    ? useBlockbusterPresentation
+    ? useLogoBottomRatingsRow
+      ? Math.max(1, cappedRatingBadges.length)
+      : useBlockbusterPresentation
       ? Math.max(2, Math.min(4, Math.ceil(Math.sqrt(cappedRatingBadges.length || 1))))
       : Math.max(1, cappedRatingBadges.length)
     : 0;
@@ -523,6 +540,7 @@ export const resolveImageRouteRenderLayout = async (input: {
     posterTopRows,
     posterBottomRows,
     backdropRows,
+    backdropBottomRatingsRow: useBackdropBottomRatingsRow,
     blockbusterBlurbs,
     badgeIconSize,
     badgeFontSize,

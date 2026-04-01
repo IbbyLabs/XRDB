@@ -246,6 +246,7 @@ export function buildConfiguratorPageProps({
         posterRatingsMax: workspaceState.posterRatingsMax,
         backdropRatingsLayout: workspaceState.backdropRatingsLayout,
         backdropRatingsMax: workspaceState.backdropRatingsMax,
+        backdropBottomRatingsRow: workspaceState.backdropBottomRatingsRow,
         posterEdgeOffset: workspaceState.posterEdgeOffset,
         shouldShowSideRatingPlacement: workspaceSummary.shouldShowSideRatingPlacement,
         activeSideRatingsPosition: workspaceSummary.activeSideRatingsPosition,
@@ -255,6 +256,7 @@ export function buildConfiguratorPageProps({
         activeLogoSourceDescription: workspaceSummary.activeLogoSourceOptionMeta?.description || null,
         logoBackground: workspaceState.logoBackground,
         logoRatingsMax: workspaceState.logoRatingsMax,
+        logoBottomRatingsRow: workspaceState.logoBottomRatingsRow,
         logoQualityBadgesStyle: workspaceState.logoQualityBadgesStyle,
         logoQualityBadgesMax: workspaceState.logoQualityBadgesMax,
         logoQualityBadgePreferences: workspaceState.logoQualityBadgePreferences,
@@ -276,6 +278,8 @@ export function buildConfiguratorPageProps({
         onSelectPosterRatingsMax: workspaceState.setPosterRatingsMax,
         onSelectBackdropRatingsLayout: workspaceState.setBackdropRatingsLayout,
         onSelectBackdropRatingsMax: workspaceState.setBackdropRatingsMax,
+        onToggleBackdropBottomRatingsRow: () =>
+          workspaceState.setBackdropBottomRatingsRow((current) => !current),
         onSelectPosterEdgeOffset: workspaceState.setPosterEdgeOffset,
         onResetPosterEdgeOffset: () =>
           workspaceState.setPosterEdgeOffset(DEFAULT_POSTER_EDGE_OFFSET),
@@ -284,6 +288,8 @@ export function buildConfiguratorPageProps({
         onSelectLogoArtworkSource: workspaceState.setLogoArtworkSource,
         onSelectLogoBackground: workspaceState.setLogoBackground,
         onSelectLogoRatingsMax: workspaceState.setLogoRatingsMax,
+        onToggleLogoBottomRatingsRow: () =>
+          workspaceState.setLogoBottomRatingsRow((current) => !current),
         onSelectLogoQualityBadgesStyle: workspaceState.setLogoQualityBadgesStyle,
         onSelectLogoQualityBadgesMax: workspaceState.setLogoQualityBadgesMax,
         onToggleQualityBadgePreference: workspaceActions.toggleQualityBadgePreference,
