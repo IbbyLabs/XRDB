@@ -13,6 +13,8 @@ test('provider default rating display keeps native scales by default', () => {
   assert.equal(formatDisplayRatingValue('trakt', '76'), '7.6');
   assert.equal(formatDisplayRatingValue('metacritic', '84'), '84');
   assert.equal(formatDisplayRatingValue('mdblist', '79'), '79');
+  assert.equal(formatDisplayRatingValue('allocine', '4.4'), '4.4');
+  assert.equal(formatDisplayRatingValue('allocinepress', '3.4'), '3.4');
   assert.equal(formatDisplayRatingValue('tomatoes', '93'), '93%');
   assert.equal(formatDisplayRatingValue('kitsu', '82'), '82%');
   assert.equal(formatDisplayRatingValue('letterboxd', '3.9'), '3.9');
@@ -39,12 +41,14 @@ test('rating value mode normalization accepts supported options only', () => {
 });
 
 test('numeric normalization exports the 0 to 10 values used by aggregate modes', () => {
+  assert.equal(normalizeRatingToTenPointValue('allocine', '4.4'), 8.8);
   assert.equal(normalizeRatingToTenPointValue('tomatoes', '93'), 9.3);
   assert.equal(normalizeRatingToTenPointValue('rogerebert', '3.5'), 8.75);
   assert.equal(normalizeRatingToTenPointValue('trakt', '76'), 7.6);
 });
 
 test('numeric normalization can export rounded 0 to 100 values for compact badges', () => {
+  assert.equal(normalizeRatingToHundredPointValue('allocinepress', '3.4'), 68);
   assert.equal(normalizeRatingToHundredPointValue('tomatoes', '93'), 93);
   assert.equal(normalizeRatingToHundredPointValue('rogerebert', '3.5'), 88);
   assert.equal(normalizeRatingToHundredPointValue('trakt', '76'), 76);

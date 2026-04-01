@@ -270,6 +270,8 @@ const requestedExternalRatings = new Set([...selectedRatings]);
 const shouldAttemptAnimeMapping = hasNativeAnimeInput || mediaLooksAnimated;
 const needsExternalRatings = [...requestedExternalRatings].some((provider) => provider !== 'tmdb');
 const needsImdbRating = requestedExternalRatings.has('imdb');
+const needsAllocineRating = requestedExternalRatings.has('allocine');
+const needsAllocinePressRating = requestedExternalRatings.has('allocinepress');
 const needsAniListRating = requestedExternalRatings.has('anilist');
 const needsKitsuRating = requestedExternalRatings.has('kitsu');
 const needsMyAnimeListRating = requestedExternalRatings.has('myanimelist');
@@ -386,6 +388,8 @@ const providerRatingsPromise =
       hasMdbListApiKey ||
       needsKitsuRating ||
       needsImdbRating ||
+      needsAllocineRating ||
+      needsAllocinePressRating ||
       needsAniListRating ||
       needsMyAnimeListRating ||
       needsTraktRating ||

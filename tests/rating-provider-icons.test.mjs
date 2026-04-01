@@ -4,7 +4,12 @@ import assert from 'node:assert/strict';
 import sharp from 'sharp';
 
 import { RATING_PROVIDER_OPTIONS } from '../lib/ratingProviderCatalog.ts';
-import { METACRITIC_LOGO_DATA_URI, TRAKT_LOGO_DATA_URI } from '../lib/ratingProviderBrandAssets.ts';
+import {
+  ALLOCINE_LOGO_DATA_URI,
+  ALLOCINE_PRESS_LOGO_DATA_URI,
+  METACRITIC_LOGO_DATA_URI,
+  TRAKT_LOGO_DATA_URI,
+} from '../lib/ratingProviderBrandAssets.ts';
 import { resolveRatingProviderBadgeAppearance } from '../lib/ratingProviderIcons.ts';
 
 const decodeSvgDataUri = (value) =>
@@ -37,6 +42,14 @@ test('kitsu embedded icon keeps transparent corners for plain badge rendering', 
 });
 
 test('smart provider icons switch embedded art for rotten tomatoes, metacritic, and trakt', () => {
+  assert.equal(
+    RATING_PROVIDER_OPTIONS.find((provider) => provider.id === 'allocine')?.iconUrl,
+    ALLOCINE_LOGO_DATA_URI,
+  );
+  assert.equal(
+    RATING_PROVIDER_OPTIONS.find((provider) => provider.id === 'allocinepress')?.iconUrl,
+    ALLOCINE_PRESS_LOGO_DATA_URI,
+  );
   assert.equal(
     RATING_PROVIDER_OPTIONS.find((provider) => provider.id === 'metacritic')?.iconUrl,
     METACRITIC_LOGO_DATA_URI,
