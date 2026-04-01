@@ -78,6 +78,14 @@ export const QUALITY_BADGE_OPTIONS: Array<{ id: MediaFeatureBadgeKey; label: str
 
 export const DEFAULT_QUALITY_BADGE_PREFERENCES: MediaFeatureBadgeKey[] = [
   'certification',
+  'netflix',
+  'hbo',
+  'primevideo',
+  'disneyplus',
+  'appletvplus',
+  'hulu',
+  'paramountplus',
+  'peacock',
   '4k',
   'bluray',
   'hdr',

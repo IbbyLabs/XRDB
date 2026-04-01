@@ -12,9 +12,17 @@ test('genre badge scale normalization clamps to 70 to 200', () => {
   assert.equal(normalizeGenreBadgeScalePercent('40'), 70);
 });
 
-test('default quality badge preferences stay focused on core quality badges', () => {
+test('default quality badge preferences include network and core quality badges', () => {
   assert.deepEqual(DEFAULT_QUALITY_BADGE_PREFERENCES, [
     'certification',
+    'netflix',
+    'hbo',
+    'primevideo',
+    'disneyplus',
+    'appletvplus',
+    'hulu',
+    'paramountplus',
+    'peacock',
     '4k',
     'bluray',
     'hdr',

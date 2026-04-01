@@ -7,6 +7,7 @@ import {
   DEFAULT_GENRE_BADGE_POSITION,
   DEFAULT_GENRE_BADGE_STYLE,
 } from '../lib/genreBadge.ts';
+import { DEFAULT_QUALITY_BADGE_PREFERENCES } from '../lib/badgeCustomization.ts';
 import { KITSU_CACHE_TTL_MS } from '../lib/imageRouteConfig.ts';
 import { prepareImageRouteMediaState } from '../lib/imageRoutePreparedMedia.ts';
 import {
@@ -111,4 +112,29 @@ test('prepared media state derives logo width from fallback aspect ratio', async
     ),
   );
   assert.equal(state.imgUrl, 'https://kitsu.example/fallback.jpg');
+});
+
+test('prepared media state keeps TV network badges when stream badges use the defaults', async () => {
+  const state = await prepareImageRouteMediaState({
+    ...createBaseInput(),
+    imageType: 'poster',
+    mediaType: 'tv',
+    media: {
+      name: 'Stream Example',
+      networks: [{ name: 'Netflix' }],
+    },
+    mediaId: 'tt0000001',
+    isKitsu: false,
+    idPrefix: 'tt0000001',
+    hasNativeAnimeInput: false,
+    allowAnimeOnlyRatings: false,
+    hasConfirmedAnimeMapping: false,
+    shouldApplyStreamBadges: true,
+    qualityBadgePreferences: [...DEFAULT_QUALITY_BADGE_PREFERENCES],
+  });
+
+  assert.deepEqual(
+    state.streamBadges.map((badge) => badge.key),
+    ['netflix'],
+  );
 });

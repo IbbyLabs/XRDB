@@ -126,3 +126,68 @@ test('image route provider ratings stay empty without identifiers', async () => 
   assert.equal(result.allowAnimeOnlyRatings, false);
   assert.equal(result.hasConfirmedAnimeMapping, false);
 });
+
+test('image route provider ratings resolve all anime providers for typed TMDB inputs', async () => {
+  const result = await resolveImageRouteProviderRatings(
+    {
+      cleanId: 'tmdb:tv:1429',
+      imageType: 'poster',
+      mediaType: 'tv',
+      media: {
+        id: 1429,
+        imdb_id: 'tt2560140',
+        first_air_date: '2013-04-07',
+      },
+      mediaId: '1429',
+      isTmdb: true,
+      isKitsu: false,
+      isAniListInput: false,
+      idPrefix: 'tmdb',
+      season: null,
+      mappedImdbId: null,
+      inputAnimeMappingProvider: 'tmdb',
+      inputAnimeMappingExternalId: '1429',
+      requestedExternalRatings: new Set(['myanimelist', 'anilist', 'kitsu', 'imdb']),
+      shouldAttemptAnimeMapping: true,
+      initialAllowAnimeOnlyRatings: false,
+      initialHasConfirmedAnimeMapping: false,
+      resolvedRatingMediaType: 'tv',
+      releaseDate: '2013-04-07',
+      mdblistKey: null,
+      hasMdbListApiKey: false,
+      simklClientId: '',
+      phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+      fetchJsonCached: async () => createEmptyResponse(),
+      getMetadata: () => null,
+      setMetadata: () => {},
+      detailsBundlePromise: null,
+      renderedRatingTtlByProvider: new Map(),
+      undiciFetchImpl: async () => {
+        throw new Error('unexpected undici fetch');
+      },
+    },
+    {
+      fetchMalIdFromReverseMapping: async () => '16498',
+      fetchKitsuIdFromReverseMapping: async () => '7442',
+      fetchAniListIdFromReverseMapping: async () => '16498',
+      fetchAniListRating: async () => '86',
+      fetchKitsuRating: async () => '81.2',
+      fetchMyAnimeListRating: async () => '8.6',
+      fetchTraktRating: async () => null,
+      fetchSimklRating: async () => null,
+      fetchMdbListRatings: async () => null,
+      getImdbRatingFromDataset: () => ({ rating: 9.0, votes: 2000 }),
+      normalizeRatingValue: (value) => {
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? numeric.toFixed(1) : null;
+      },
+    },
+  );
+
+  assert.equal(result.allowAnimeOnlyRatings, true);
+  assert.equal(result.hasConfirmedAnimeMapping, true);
+  assert.equal(result.ratings.get('myanimelist'), '8.6');
+  assert.equal(result.ratings.get('anilist'), '86');
+  assert.equal(result.ratings.get('kitsu'), '81.2');
+  assert.equal(result.ratings.get('imdb'), '9.0');
+});

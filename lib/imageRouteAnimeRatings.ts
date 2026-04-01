@@ -10,6 +10,7 @@ import type { CachedJsonResponse, PhaseDurations } from './imageRouteRuntime.ts'
 import { sha1Hex } from './imageRouteRuntime.ts';
 import { normalizeRatingValue } from './imageRouteMedia.ts';
 import { normalizeMalId } from './animeMappingPayload.ts';
+import { BROWSER_LIKE_USER_AGENT } from './imageRouteExternalRatings.ts';
 import { KITSU_API_BASE_URL } from './serviceBaseUrls.ts';
 
 type AnimeRatingsJsonFetch = (
@@ -39,6 +40,7 @@ export const fetchKitsuAnimeAttributes = async (
       {
         headers: {
           Accept: 'application/vnd.api+json',
+          'User-Agent': BROWSER_LIKE_USER_AGENT,
         },
       }
     );
@@ -80,6 +82,7 @@ export const fetchAniListRating = async (
         headers: {
           'content-type': 'application/json',
           accept: 'application/json',
+          'User-Agent': BROWSER_LIKE_USER_AGENT,
         },
         body: JSON.stringify({
           query: ANILIST_MEDIA_RATING_QUERY,
@@ -117,6 +120,7 @@ export const fetchMyAnimeListRating = async (
           headers: {
             accept: 'application/json',
             'X-MAL-CLIENT-ID': MYANIMELIST_CLIENT_ID,
+            'User-Agent': BROWSER_LIKE_USER_AGENT,
           },
         }
       );
@@ -136,7 +140,13 @@ export const fetchMyAnimeListRating = async (
       `${JIKAN_API_BASE_URL}/anime/${encodeURIComponent(normalizedMalId)}`,
       KITSU_CACHE_TTL_MS,
       phases,
-      'mdb'
+      'mdb',
+      {
+        headers: {
+          accept: 'application/json',
+          'User-Agent': BROWSER_LIKE_USER_AGENT,
+        },
+      }
     );
     if (!response.ok) return null;
 

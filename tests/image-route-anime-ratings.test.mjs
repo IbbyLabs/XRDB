@@ -8,6 +8,7 @@ import {
   fetchMyAnimeListRating,
 } from '../lib/imageRouteAnimeRatings.ts';
 import { KITSU_CACHE_TTL_MS, MYANIMELIST_CLIENT_ID } from '../lib/imageRouteConfig.ts';
+import { BROWSER_LIKE_USER_AGENT } from '../lib/imageRouteExternalRatings.ts';
 
 const phases = {
   auth: 0,
@@ -50,6 +51,7 @@ test('image route anime ratings loads Kitsu attributes and rating values', async
     init: {
       headers: {
         Accept: 'application/vnd.api+json',
+        'User-Agent': BROWSER_LIKE_USER_AGENT,
       },
     },
   });
@@ -80,6 +82,7 @@ test('image route anime ratings posts the AniList query and normalizes the score
   assert.equal(requests[0].ttlMs, KITSU_CACHE_TTL_MS);
   assert.equal(requests[0].phase, 'mdb');
   assert.equal(requests[0].init.method, 'POST');
+  assert.equal(requests[0].init.headers['User-Agent'], BROWSER_LIKE_USER_AGENT);
   assert.match(String(requests[0].init.body), /averageScore/);
   assert.match(String(requests[0].init.body), /\"id\":99/);
 });
@@ -87,8 +90,8 @@ test('image route anime ratings posts the AniList query and normalizes the score
 test('image route anime ratings use MAL API when configured and fall back to Jikan otherwise', async () => {
   const requests = [];
   let malOk = true;
-  const fetchJsonCached = async (key, url) => {
-    requests.push({ key, url });
+  const fetchJsonCached = async (key, url, _ttlMs, _phases, _phase, init) => {
+    requests.push({ key, url, init });
     if (key.startsWith('mal:anime:')) {
       return {
         ok: malOk,
@@ -116,9 +119,16 @@ test('image route anime ratings use MAL API when configured and fall back to Jik
   if (MYANIMELIST_CLIENT_ID) {
     assert.match(requests[0].key, /^mal:anime:123:rating:/);
     assert.equal(/^mal:anime:123:rating:/.test(requests[1].key), true);
+    assert.equal(requests[0].init.headers['User-Agent'], BROWSER_LIKE_USER_AGENT);
     assert.deepEqual(requests[2], {
       key: 'jikan:anime:123:score',
       url: 'https://api.jikan.moe/v4/anime/123',
+      init: {
+        headers: {
+          accept: 'application/json',
+          'User-Agent': BROWSER_LIKE_USER_AGENT,
+        },
+      },
     });
     return;
   }
@@ -126,9 +136,21 @@ test('image route anime ratings use MAL API when configured and fall back to Jik
   assert.deepEqual(requests[0], {
     key: 'jikan:anime:123:score',
     url: 'https://api.jikan.moe/v4/anime/123',
+    init: {
+      headers: {
+        accept: 'application/json',
+        'User-Agent': BROWSER_LIKE_USER_AGENT,
+      },
+    },
   });
   assert.deepEqual(requests[1], {
     key: 'jikan:anime:123:score',
     url: 'https://api.jikan.moe/v4/anime/123',
+    init: {
+      headers: {
+        accept: 'application/json',
+        'User-Agent': BROWSER_LIKE_USER_AGENT,
+      },
+    },
   });
 });
