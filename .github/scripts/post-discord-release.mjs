@@ -11,6 +11,7 @@ const MAX_SUMMARY_INTRO_LENGTH = 320;
 const MAX_SUMMARY_SECTION_COUNT = 3;
 const AVATAR_URL = 'https://raw.githubusercontent.com/IbbyLabs/xrdb/main/public/favicon-96x96.png';
 const DISCORD_ROLE_ID_RE = /^\d+$/;
+const TRACKED_RELEASE_ITEM_RE = /^(FR|BUG)\s+(\d+)\b/i;
 
 function normalizeReleaseTag(value) {
   if (typeof value !== 'string') {
@@ -284,16 +285,89 @@ function splitPlainTextIntoBlocks(text, maxLength) {
   return splitLongLine(String(text || '').replace(/\s+/g, ' ').trim(), maxLength);
 }
 
-function splitSectionIntoBlocks(title, items, maxLength) {
+function getReleaseItemSummary(item) {
+  if (typeof item === 'string') {
+    return String(item).trim();
+  }
+
+  return String(item?.summary || '').trim();
+}
+
+function getReleaseItemDetails(item) {
+  if (!item || typeof item === 'string' || !Array.isArray(item.details)) {
+    return [];
+  }
+
+  return item.details
+    .map((detail) => String(detail || '').trim())
+    .filter(Boolean);
+}
+
+function splitLinesIntoBlocks(lines, maxLength) {
+  const normalizedLines = [];
+
+  for (const line of Array.isArray(lines) ? lines : []) {
+    const parts = splitLongLine(line, maxLength);
+    if (parts.length) {
+      normalizedLines.push(...parts);
+    }
+  }
+
+  const blocks = [];
+  let current = '';
+
+  for (const line of normalizedLines) {
+    const candidate = current ? `${current}\n${line}` : line;
+    if (candidate.length <= maxLength) {
+      current = candidate;
+      continue;
+    }
+
+    if (current) {
+      blocks.push(current);
+    }
+
+    current = line;
+  }
+
+  if (current) {
+    blocks.push(current);
+  }
+
+  return blocks;
+}
+
+function formatDetailedReleaseItemLines(item) {
+  const summary = getReleaseItemSummary(item);
+  if (!summary) {
+    return [];
+  }
+
+  const lines = [`• ${summary}`];
+
+  for (const detail of getReleaseItemDetails(item)) {
+    if (/^[•*-]\s+/.test(detail)) {
+      lines.push(`  - ${detail.replace(/^[•*-]\s+/, '')}`);
+      continue;
+    }
+
+    lines.push(`  ${detail}`);
+  }
+
+  return lines;
+}
+
+function splitDetailedSectionIntoBlocks(title, items, maxLength) {
   const heading = `**${title}**`;
   const blocks = [];
-  const maxBulletLength = Math.max(1, maxLength - heading.length - 1);
+  const maxBodyLength = Math.max(1, maxLength - heading.length - 1);
   let current = heading;
 
   for (const item of items) {
-    const parts = splitLongLine(`• ${item}`, maxBulletLength);
-    for (const part of parts) {
-      const candidate = `${current}\n${part}`;
+    const itemBlocks = splitLinesIntoBlocks(formatDetailedReleaseItemLines(item), maxBodyLength);
+
+    for (const itemBlock of itemBlocks) {
+      const candidate = current === heading ? `${current}\n${itemBlock}` : `${current}\n\n${itemBlock}`;
       if (candidate.length <= maxLength) {
         current = candidate;
         continue;
@@ -303,7 +377,7 @@ function splitSectionIntoBlocks(title, items, maxLength) {
         blocks.push(current);
       }
 
-      current = `${heading}\n${part}`;
+      current = `${heading}\n${itemBlock}`;
     }
   }
 
@@ -312,31 +386,6 @@ function splitSectionIntoBlocks(title, items, maxLength) {
   }
 
   return blocks;
-}
-
-function packBlocksIntoDescriptions(blocks, maxLength = MAX_EMBED_DESCRIPTION_LENGTH) {
-  const descriptions = [];
-  let current = '';
-
-  for (const block of blocks.filter(Boolean)) {
-    const candidate = current ? `${current}\n\n${block}` : block;
-    if (candidate.length <= maxLength) {
-      current = candidate;
-      continue;
-    }
-
-    if (current) {
-      descriptions.push(current);
-    }
-
-    current = block;
-  }
-
-  if (current) {
-    descriptions.push(current);
-  }
-
-  return descriptions;
 }
 
 function normalizeSectionTitle(value) {
@@ -364,10 +413,109 @@ function normalizeSectionTitle(value) {
   return aliases.get(normalized.toLowerCase()) || normalized;
 }
 
+function getSectionPriority(title) {
+  const normalized = String(title || '').trim().toLowerCase();
+
+  if (normalized === 'added') {
+    return 0;
+  }
+
+  if (normalized === 'fixed') {
+    return 1;
+  }
+
+  return 2;
+}
+
+function extractTrackedReleaseItem(value) {
+  const match = getReleaseItemSummary(value).match(TRACKED_RELEASE_ITEM_RE);
+  if (!match) {
+    return {
+      kind: '',
+      id: Number.POSITIVE_INFINITY,
+    };
+  }
+
+  return {
+    kind: String(match[1] || '').toUpperCase(),
+    id: Number(match[2]),
+  };
+}
+
+function getSectionItemPriority(sectionTitle, item) {
+  const normalizedTitle = String(sectionTitle || '').trim().toLowerCase();
+  const trackedItem = extractTrackedReleaseItem(item);
+
+  if (normalizedTitle === 'added') {
+    return trackedItem.kind === 'FR' ? 0 : 1;
+  }
+
+  if (normalizedTitle === 'fixed') {
+    if (trackedItem.kind === 'BUG') {
+      return 0;
+    }
+
+    if (trackedItem.kind === 'FR') {
+      return 1;
+    }
+
+    return 2;
+  }
+
+  return 0;
+}
+
+function orderReleaseSections(sections) {
+  return (Array.isArray(sections) ? sections : [])
+    .map((section, index) => ({
+      section,
+      index,
+    }))
+    .sort((left, right) => {
+      const priorityDifference =
+        getSectionPriority(left.section?.title) - getSectionPriority(right.section?.title);
+      if (priorityDifference !== 0) {
+        return priorityDifference;
+      }
+
+      return left.index - right.index;
+    })
+    .map(({ section }) => section);
+}
+
+function orderSectionItems(sectionTitle, items) {
+  return (Array.isArray(items) ? items : [])
+    .map((item, index) => ({
+      item,
+      index,
+      tracked: extractTrackedReleaseItem(item),
+    }))
+    .sort((left, right) => {
+      const priorityDifference =
+        getSectionItemPriority(sectionTitle, left.item) - getSectionItemPriority(sectionTitle, right.item);
+      if (priorityDifference !== 0) {
+        return priorityDifference;
+      }
+
+      if (
+        Number.isFinite(left.tracked.id) &&
+        Number.isFinite(right.tracked.id) &&
+        left.tracked.kind === right.tracked.kind &&
+        left.tracked.id !== right.tracked.id
+      ) {
+        return left.tracked.id - right.tracked.id;
+      }
+
+      return left.index - right.index;
+    })
+    .map(({ item }) => item);
+}
+
 function parseReleaseBodySections(body) {
   const sections = [];
   const intro = [];
   let currentSection = null;
+  let currentItem = null;
 
   const ensureSection = (title) => {
     const normalizedTitle = normalizeSectionTitle(title);
@@ -385,6 +533,22 @@ function parseReleaseBodySections(body) {
     return next;
   };
 
+  const pushSectionItem = (summary) => {
+    const normalizedSummary = String(summary || '').trim();
+    if (!normalizedSummary || !currentSection) {
+      currentItem = null;
+      return;
+    }
+
+    const item = {
+      summary: normalizedSummary,
+      details: [],
+    };
+
+    currentSection.items.push(item);
+    currentItem = item;
+  };
+
   for (const rawLine of String(body || '').split(/\r?\n/)) {
     const line = rawLine.trim();
     if (!line) {
@@ -398,17 +562,23 @@ function parseReleaseBodySections(body) {
     const headingMatch = line.match(/^#{1,6}\s+(.+)$/);
     if (headingMatch) {
       currentSection = ensureSection(headingMatch[1]);
+      currentItem = null;
       continue;
     }
 
-    const bulletMatch = line.match(/^[-*]\s+(.+)$/) || line.match(/^\d+\.\s+(.+)$/);
-    if (bulletMatch) {
-      const item = stripMarkdown(bulletMatch[1]);
+    const indentLength = rawLine.match(/^\s*/)?.[0].length || 0;
+    const topLevelBulletMatch =
+      indentLength === 0
+        ? rawLine.match(/^[-*]\s+(.+)$/) || rawLine.match(/^\d+\.\s+(.+)$/)
+        : null;
+
+    if (topLevelBulletMatch) {
+      const item = stripMarkdown(topLevelBulletMatch[1]);
       if (!item) {
         continue;
       }
       if (currentSection) {
-        currentSection.items.push(item);
+        pushSectionItem(item);
       } else {
         intro.push(item);
       }
@@ -421,15 +591,27 @@ function parseReleaseBodySections(body) {
     }
 
     if (currentSection) {
-      currentSection.items.push(plainText);
-    } else {
-      intro.push(plainText);
+      if (indentLength === 0) {
+        pushSectionItem(plainText);
+      } else if (currentItem) {
+        currentItem.details.push(plainText);
+      }
+      continue;
     }
+
+    intro.push(plainText);
   }
 
   return {
     intro: intro.join(' ').trim(),
-    sections: sections.filter((section) => section.items.length > 0),
+    sections: orderReleaseSections(
+      sections
+        .filter((section) => section.items.length > 0)
+        .map((section) => ({
+          ...section,
+          items: orderSectionItems(section.title, section.items),
+        })),
+    ),
   };
 }
 
@@ -447,7 +629,7 @@ function buildSectionFields(body) {
 
   for (const section of sections.slice(0, MAX_SUMMARY_SECTION_COUNT)) {
     const preview = fitLines(
-      section.items.map((item) => `• ${item}`),
+      section.items.map((item) => `• ${getReleaseItemSummary(item)}`),
       MAX_EMBED_FIELD_LENGTH,
     );
     const value = preview.text;
@@ -473,37 +655,27 @@ function buildSectionFields(body) {
 
 function buildContinuationDescriptions(body) {
   const { intro, sections } = parseReleaseBodySections(body);
-  const blocks = [];
+  const descriptions = [];
 
   if (intro.length > MAX_SUMMARY_INTRO_LENGTH) {
-    blocks.push(...splitPlainTextIntoBlocks(intro, MAX_EMBED_DESCRIPTION_LENGTH));
+    descriptions.push(...splitPlainTextIntoBlocks(intro, MAX_EMBED_DESCRIPTION_LENGTH));
   }
 
   sections.forEach((section, index) => {
-    if (index >= MAX_SUMMARY_SECTION_COUNT) {
-      blocks.push(...splitSectionIntoBlocks(section.title, section.items, MAX_EMBED_DESCRIPTION_LENGTH));
-      return;
-    }
-
     const preview = fitLines(
-      section.items.map((item) => `• ${item}`),
+      section.items.map((item) => `• ${getReleaseItemSummary(item)}`),
       MAX_EMBED_FIELD_LENGTH,
     );
 
-    if (!preview.truncated) {
+    const hasDetails = section.items.some((item) => getReleaseItemDetails(item).length > 0);
+    if (index < MAX_SUMMARY_SECTION_COUNT && !preview.truncated && !hasDetails) {
       return;
     }
 
-    blocks.push(
-      ...splitSectionIntoBlocks(
-        section.title,
-        section.items.slice(preview.consumedLines),
-        MAX_EMBED_DESCRIPTION_LENGTH,
-      ),
-    );
+    descriptions.push(...splitDetailedSectionIntoBlocks(section.title, section.items, MAX_EMBED_DESCRIPTION_LENGTH));
   });
 
-  return packBlocksIntoDescriptions(blocks);
+  return descriptions;
 }
 
 function resolveCompareUrl(repository, currentTag, previousTag) {
@@ -704,12 +876,22 @@ export function buildDiscordReleasePayloads({
   });
   const descriptions = buildContinuationDescriptions(release.body || '');
 
+  if (descriptions.length) {
+    const firstEmbed = summaryPayload.embeds?.[0];
+    if (firstEmbed) {
+      firstEmbed.description = descriptions[0];
+      firstEmbed.fields = (Array.isArray(firstEmbed.fields) ? firstEmbed.fields : []).filter((field) =>
+        ['Tag', 'Published', 'Links', 'Summary'].includes(field?.name),
+      );
+    }
+  }
+
   return [
     summaryPayload,
     ...buildDiscordContinuationPayloads({
       repository,
       release,
-      descriptions,
+      descriptions: descriptions.slice(1),
     }),
   ];
 }
