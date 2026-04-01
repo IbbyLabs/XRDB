@@ -774,7 +774,7 @@ export function LookSection({
                   }}
                   className={selectorButtonClass(backdropBottomRatingsRow)}
                 >
-                  Single bottom row
+                  Bottom Row
                 </button>
               </div>
             </div>
@@ -786,7 +786,7 @@ export function LookSection({
             />
             <p className="text-[11px] leading-relaxed text-zinc-500">
               {backdropBottomRatingsRow
-                ? 'Single bottom row overrides the saved backdrop layout until you switch it off.'
+                ? 'Bottom Row overrides the saved backdrop layout until you switch it off.'
                 : 'Backdrop output can stay dense, but this cap gives users a cleaner badge row when they only want the top few sources.'}
             </p>
           </div>
@@ -968,7 +968,7 @@ export function LookSection({
                       logoBottomRatingsRow ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
                     }`}
                   >
-                    Single bottom row
+                    Bottom Row
                   </button>
                 </div>
               </div>
@@ -1024,7 +1024,7 @@ export function LookSection({
               <p className="text-[11px] leading-relaxed text-zinc-500">
                 {activeLogoSourceDescription.replace('artwork', 'logo assets')}
                 {logoBottomRatingsRow
-                  ? ' Ratings stay on one bottom row, which is most noticeable in denser presentations.'
+                  ? ' Ratings stay on the Bottom Row, which is most noticeable in denser presentations.'
                   : ''}
               </p>
             ) : null}
