@@ -45,7 +45,7 @@ jobs:
       - name: Post release to Discord
         if: ${{ steps.webhook.outputs.enabled == 'true' }}
         env:
-          DISCORD_ROLE_ID: '1486091164913238129'
+          DISCORD_ROLE_ID: '1488958352590635078'
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
           REPOSITORY: ${{ github.repository }}
