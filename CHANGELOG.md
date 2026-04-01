@@ -10,6 +10,23 @@
 
 <a id="v1-0-4"></a>
 
+<a id="v1-0-5"></a>
+
+## [v1.0.5] - 01/04/2026
+
+### Fixed
+* invalidate stale finals on release
+  
+  Bump the final image render cache version to clear stale cached poster outputs that could hide non IMDb and TMDB providers.
+  
+  Automate future cache version bumps in the release flow, add focused regression coverage, and document the release behavior in the README.
+* restore Discord role mentions
+  
+  Wire release notifications to mention the configured Discord role in the webhook content.
+  
+  Quote the workflow role id so GitHub Actions preserves the full snowflake value and send explicit role allowlists without the conflicting parse field.
+* 'revert:' messages not showing in changelog'
+
 ## [v1.0.4] - 01/04/2026
 
 ### Fixed
