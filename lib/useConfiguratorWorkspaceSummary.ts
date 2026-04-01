@@ -250,7 +250,7 @@ export function useConfiguratorWorkspaceSummary({
       ? 'top, bottom, left, or right'
       : previewType === 'backdrop'
         ? backdropBottomRatingsRow
-          ? 'a single bottom row'
+          ? 'the Bottom Row'
           : 'center, right, or right vertical'
         : null;
   const selectedPresetMeta = selectedPresetId ? getConfiguratorPreset(selectedPresetId) : null;
