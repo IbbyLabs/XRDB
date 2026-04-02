@@ -9,8 +9,14 @@ import {
   type AnimeMappingProvider,
 } from './imageRouteConfig.ts';
 import { ANIME_MAPPING_BASE_URL, TMDB_API_BASE_URL } from './serviceBaseUrls.ts';
-import { extractAnimeSubtypeFromAnimemapping } from './animeMappingPayload.ts';
 import {
+  extractAnimeSubtypeFromAnimemapping,
+  extractKitsuIdFromAnimemapping,
+  extractTmdbEpisodeTargetFromAnimemapping,
+  extractTmdbIdFromAnimemapping,
+} from './animeMappingPayload.ts';
+import {
+  fetchAnimeReverseMappingPayload,
   fetchKitsuIdFromReverseMapping,
   fetchTmdbIdFromReverseMapping,
 } from './imageRouteAnimeReverse.ts';
@@ -291,11 +297,11 @@ if (isTmdb) {
   }
 
   let tmdbId = '';
-  const tmdbEpisode = mappingData.mappings?.tmdb_episode || mappingData.tmdb_episode;
-  if (episode && tmdbEpisode) {
-    tmdbId = tmdbEpisode.id;
-    season = tmdbEpisode.season;
-    episode = tmdbEpisode.episode;
+  const tmdbEpisodeTarget = extractTmdbEpisodeTargetFromAnimemapping(mappingData);
+  if (episode && tmdbEpisodeTarget) {
+    tmdbId = tmdbEpisodeTarget.id;
+    season = tmdbEpisodeTarget.season;
+    episode = tmdbEpisodeTarget.episode;
   } else if (mappingData.mappings?.ids?.tmdb) {
     tmdbId = mappingData.mappings.ids.tmdb;
   }
@@ -309,9 +315,9 @@ if (isTmdb) {
       'tmdb'
     );
     const seasonProbeData = seasonProbeResponse.data;
-    const seasonProbeEpisode = seasonProbeData?.mappings?.tmdb_episode || seasonProbeData?.tmdb_episode;
-    if (seasonProbeEpisode?.season) {
-      season = seasonProbeEpisode.season;
+    const seasonProbeEpisodeTarget = extractTmdbEpisodeTargetFromAnimemapping(seasonProbeData);
+    if (seasonProbeEpisodeTarget?.season) {
+      season = seasonProbeEpisodeTarget.season;
     }
   }
 
@@ -365,21 +371,43 @@ if (isTmdb) {
   inputAnimeMappingProvider !== 'imdb' &&
   inputAnimeMappingProvider !== 'tmdb'
 ) {
+  const reverseMappingPayload = await fetchAnimeReverseMappingPayload({
+    provider: inputAnimeMappingProvider,
+    externalId: inputAnimeMappingExternalId,
+    season,
+    episode,
+    phases,
+    fetchJsonCached,
+    cacheNamespace: 'tmdb',
+  });
+  const reverseMappedTmdbId = reverseMappingPayload
+    ? extractTmdbIdFromAnimemapping(reverseMappingPayload)
+    : null;
+  const reverseMappedKitsuId = reverseMappingPayload
+    ? extractKitsuIdFromAnimemapping(reverseMappingPayload)
+    : null;
+  const reverseMappedEpisodeTarget = reverseMappingPayload
+    ? extractTmdbEpisodeTargetFromAnimemapping(reverseMappingPayload)
+    : null;
   const reverseMappedAnimeTarget = await resolveReverseMappedAnimeImageTarget({
     imageType,
-    fetchTmdbId: () =>
+    fetchTmdbId: async () =>
+      reverseMappedTmdbId ||
       fetchTmdbIdFromReverseMapping({
         provider: inputAnimeMappingProvider,
         externalId: inputAnimeMappingExternalId,
         season,
+        episode,
         phases,
         fetchJsonCached,
       }),
-    fetchKitsuId: () =>
+    fetchKitsuId: async () =>
+      reverseMappedKitsuId ||
       fetchKitsuIdFromReverseMapping({
         provider: inputAnimeMappingProvider,
         externalId: inputAnimeMappingExternalId,
         season,
+        episode,
         phases,
         fetchJsonCached,
       }),
@@ -400,6 +428,14 @@ if (isTmdb) {
   if (reverseMappedAnimeTarget.kind === 'tmdb') {
     media = reverseMappedAnimeTarget.media;
     mediaType = reverseMappedAnimeTarget.mediaType;
+    if (
+      reverseMappedEpisodeTarget &&
+      reverseMappedAnimeTarget.mediaType === 'tv' &&
+      String(reverseMappedAnimeTarget.media?.id || '') === reverseMappedEpisodeTarget.id
+    ) {
+      season = reverseMappedEpisodeTarget.season;
+      episode = reverseMappedEpisodeTarget.episode;
+    }
     allowAnimeOnlyRatings = true;
     hasConfirmedAnimeMapping = true;
   } else if (reverseMappedAnimeTarget.kind === 'kitsu-fallback') {

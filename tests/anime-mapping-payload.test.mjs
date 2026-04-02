@@ -6,6 +6,7 @@ import {
   extractAnimeSubtypeFromAnimemapping,
   extractKitsuIdFromAnimemapping,
   extractMalIdFromAnimemapping,
+  extractTmdbEpisodeTargetFromAnimemapping,
   extractTmdbIdFromAnimemapping,
   normalizeKitsuId,
   normalizeMalId,
@@ -54,4 +55,24 @@ test('anime mapping payload extracts a normalized subtype', () => {
     'tv',
   );
   assert.equal(extractAnimeSubtypeFromAnimemapping({}), null);
+});
+
+test('anime mapping payload extracts TMDB episode targets from reverse mapping payloads', () => {
+  const payload = {
+    mappings: {
+      tmdb_episode: {
+        id: '46298',
+        season: 2,
+        episode: 1,
+        rawEpisodeNumber: 63,
+        episodeUrl: 'https://www.themoviedb.org/tv/46298/season/2/episode/63',
+      },
+    },
+  };
+
+  assert.deepEqual(extractTmdbEpisodeTargetFromAnimemapping(payload), {
+    id: '46298',
+    season: '2',
+    episode: '63',
+  });
 });

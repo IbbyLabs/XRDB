@@ -105,3 +105,83 @@ test('image route media target prefers TV matches for episodic IMDb lookups', as
     },
   ]);
 });
+
+test('image route media target remaps reverse-mapped anime episodes to TMDB episode numbers', async () => {
+  const requests = [];
+  const result = await resolveImageRouteMediaTarget({
+    imageType: 'backdrop',
+    isThumbnailRequest: true,
+    tmdbKey: 'tmdb-key',
+    phases: { ...phases },
+    fetchJsonCached: async (key, url) => {
+      requests.push({ key, url });
+      if (key === 'tmdb:reverse:mal:11061:s:2:e:1') {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            requested: {
+              provider: 'mal',
+              externalId: '11061',
+              resolvedKitsuId: '6448',
+              season: 2,
+              episode: 1,
+            },
+            mappings: {
+              ids: {
+                tmdb: '46298',
+              },
+              tmdb_episode: {
+                id: '46298',
+                season: 2,
+                episode: 1,
+                rawEpisodeNumber: 63,
+                episodeUrl: 'https://www.themoviedb.org/tv/46298/season/2/episode/63',
+              },
+            },
+          },
+        };
+      }
+      if (key === 'tmdb:tv:46298') {
+        return {
+          ok: true,
+          status: 200,
+          data: { id: 46298, name: 'Hunter x Hunter' },
+        };
+      }
+      throw new Error(`unexpected request ${key}`);
+    },
+    fetchTextCached: async () => createTextResponse(),
+    mediaId: '11061',
+    season: '2',
+    episode: '1',
+    isTmdb: false,
+    isTvdb: false,
+    isCanonId: false,
+    isKitsu: false,
+    inputAnimeMappingProvider: 'mal',
+    inputAnimeMappingExternalId: '11061',
+    explicitTmdbMediaType: null,
+    tvdbSeriesId: null,
+    hasNativeAnimeInput: false,
+    allowAnimeOnlyRatings: false,
+    hasConfirmedAnimeMapping: false,
+  });
+
+  assert.equal(result.mediaType, 'tv');
+  assert.equal(result.media.id, 46298);
+  assert.equal(result.season, '2');
+  assert.equal(result.episode, '63');
+  assert.equal(result.allowAnimeOnlyRatings, true);
+  assert.equal(result.hasConfirmedAnimeMapping, true);
+  assert.deepEqual(requests, [
+    {
+      key: 'tmdb:reverse:mal:11061:s:2:e:1',
+      url: 'https://animemapping.stremio.dpdns.org/mal/11061?s=2&ep=1',
+    },
+    {
+      key: 'tmdb:tv:46298',
+      url: 'https://api.themoviedb.org/3/tv/46298?api_key=tmdb-key',
+    },
+  ]);
+});

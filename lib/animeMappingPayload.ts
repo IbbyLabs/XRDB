@@ -26,6 +26,31 @@ export const normalizeTmdbId = (value: unknown) => {
   return match ? match[0] : null;
 };
 
+const normalizePositiveInteger = (value: unknown) => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const asInt = Math.trunc(value);
+    return asInt > 0 ? String(asInt) : null;
+  }
+
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (!/^\d+$/.test(trimmed)) return null;
+  const asInt = Number.parseInt(trimmed, 10);
+  return Number.isFinite(asInt) && asInt > 0 ? String(asInt) : null;
+};
+
+const extractTmdbEpisodeTargetFromUrl = (value: unknown) => {
+  if (typeof value !== 'string') return null;
+  const match = value.match(/\/tv\/(\d+)\/season\/(\d+)\/episode\/(\d+)/i);
+  if (!match) return null;
+  return {
+    id: match[1],
+    season: match[2],
+    episode: match[3],
+  };
+};
+
 export const normalizeMalId = (value: unknown) => {
   if (typeof value === 'number' && Number.isFinite(value)) {
     const asInt = Math.trunc(value);
@@ -108,6 +133,46 @@ export const extractTmdbIdFromAnimemapping = (payload: any) => {
   for (const candidate of candidates) {
     const tmdbId = normalizeTmdbId(candidate);
     if (tmdbId) return tmdbId;
+  }
+
+  return null;
+};
+
+export const extractTmdbEpisodeTargetFromAnimemapping = (payload: any) => {
+  const candidates = [
+    payload?.mappings?.tmdb_episode,
+    payload?.tmdb_episode,
+    payload?.data?.mappings?.tmdb_episode,
+    payload?.data?.tmdb_episode,
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate || typeof candidate !== 'object') continue;
+
+    const urlTarget = extractTmdbEpisodeTargetFromUrl(
+      candidate.episodeUrl ?? candidate.episode_url,
+    );
+    const id = urlTarget?.id || normalizeTmdbId(candidate.id);
+    const season =
+      urlTarget?.season ||
+      normalizePositiveInteger(candidate.season_number) ||
+      normalizePositiveInteger(candidate.season);
+    const episode =
+      urlTarget?.episode ||
+      normalizePositiveInteger(candidate.rawEpisodeNumber) ||
+      normalizePositiveInteger(candidate.raw_episode_number) ||
+      normalizePositiveInteger(candidate.absoluteEpisode) ||
+      normalizePositiveInteger(candidate.absolute_episode) ||
+      normalizePositiveInteger(candidate.episode_number) ||
+      normalizePositiveInteger(candidate.episode);
+
+    if (id && season && episode) {
+      return {
+        id,
+        season,
+        episode,
+      };
+    }
   }
 
   return null;
