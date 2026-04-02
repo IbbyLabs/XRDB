@@ -198,7 +198,7 @@ function removeUserFacingHyphens(text) {
   }
 
   const preservedTerms = [];
-  normalized = normalized.replace(/\bISO 639-1\b/gi, (match) => {
+  normalized = normalized.replace(/\b(?:BUG|FR)-\d+\b/gi, (match) => {
     const token = `__XRDB_PRESERVE_${preservedTerms.length}__`;
     preservedTerms.push(match);
     return token;

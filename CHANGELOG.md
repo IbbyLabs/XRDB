@@ -1,31 +1,14 @@
 # Changelog
 
-<a id="v1-0-0"></a>
-
-<a id="v1-0-1"></a>
-
-<a id="v1-0-2"></a>
-
-<a id="v1-0-3"></a>
-
-<a id="v1-0-4"></a>
-
-<a id="v1-0-5"></a>
-
-<a id="v1-0-6"></a>
-
-<a id="v1-1-0"></a>
-
-<a id="v1-2-0"></a>
-
-<a id="v1-2-1"></a>
+> [!NOTE]
+> This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
 <a id="v1-2-2"></a>
 
 ## [v1.2.2] - 02/04/2026
 
 ### Fixed
-* BUG 22 preserve dark square plates for custom provider icons
+* BUG-22 preserve dark square plates for custom provider icons
   
   Carry an explicit custom icon override flag into badge rendering so
   provider specific Rotten Tomatoes square plate styling is only used
@@ -33,28 +16,28 @@
   
   Keep custom SVG provider icons on the normal dark square plate and add
   regression coverage for both override propagation and badge SVG output.
-* BUG 24 tighten poster badge polish
+* BUG-24 tighten poster badge polish
   
   Normalize critics and audience summary badge sizing so paired poster
   badges render with consistent chip widths and spacing.
   
   Raise the bottom poster quality row slightly off the frame edge and add
   regression coverage for the updated poster badge metrics.
-* BUG 33 center icon only genre badges
+* BUG-33 center icon only genre badges
   
   Center icon only genre badge artwork from the computed badge width
   instead of reusing text oriented horizontal padding.
   
   Keep text and mixed icon plus text badge layouts unchanged and add
   regression coverage for icon only badge alignment.
-* BUG 36 prevent plain network badge clipping
+* BUG-36 prevent plain network badge clipping
   
   Widen long text only network quality badges in plain and silver styles
   so logos and text no longer clip at larger badge sizes.
   
   Add regression coverage around rendered badge width and right edge
   breathing room for long provider labels.
-* BUG 17 remove redundant poster TMDB mode
+* BUG-17 remove redundant poster TMDB mode
   
   Collapse the separate AIOMetadata poster TMDB option into auto mode
   because both paths generated the same typed TMDB poster pattern.
@@ -63,10 +46,12 @@
   inputs to auto and update the export copy to describe the real
   behavior difference between auto and IMDb modes.
 
+<a id="v1-2-1"></a>
+
 ## [v1.2.1] - 02/04/2026
 
 ### Fixed
-* BUG 37 improve Allocine lookup coverage
+* BUG-37 improve Allocine lookup coverage
   
   Switch Allocine title discovery from the legacy HTML search pages to the current autocomplete endpoint so localized series labels still resolve by original title.
   
@@ -87,6 +72,8 @@
   Add a deterministic localhost docs capture path for the configurator and proxy screenshots, refresh the checked in XRDB screenshot assets, and use a local mock manifest so the proxy panel capture stays stable.
   
   Also fix the proxy metadata verification script so it can use private local fixtures during tests and match the current translation debug field source naming.
+
+<a id="v1-2-0"></a>
 
 ## [v1.2.0] - 02/04/2026
 
@@ -132,10 +119,12 @@
   
   Add regression coverage for ordered detailed continuation payloads and the updated multi message release flow.
 
+<a id="v1-1-0"></a>
+
 ## [v1.1.0] - 01/04/2026
 
 ### Added
-* FR 17 add OMDb poster source support
+* FR-17 add OMDb poster source support
   
   Add OMDb as a poster only artwork source across the runtime and configurator.
   
@@ -143,14 +132,14 @@
   • wire omdb through poster selection, proxy exports, and AIOMetadata patterns
   • keep backdrop and logo normalization on supported artwork sources only
   • shared cache OMDb Amazon poster assets and cover the flow with focused tests
-* FR 19 add Allociné provider support
+* FR-19 add Allociné provider support
   
   Add Allociné audience and press providers with native /5 display handling, aliases, and embedded brand assets.
   
   Implement cached Allociné search and detail page scraping for movie and TV ratings, then wire those values into provider resolution and render TTL tracking.
   
   Expand targeted coverage for provider normalization, rating display, icon assets, external fetch parsing, and provider resolution.
-* FR 21 add optional bottom ratings rows
+* FR-21 add optional bottom ratings rows
   
   Add separate backdrop and logo bottom row settings to the configurator and persisted workspace state.
   
@@ -164,7 +153,7 @@
   Add the missing episode field to the provider rating resolver input type.
   
   Pass episode through prepared media when resolving provider ratings so the production build and CI type checks stay green.
-* BUG 32 use episode ratings for thumbnails
+* BUG-32 use episode ratings for thumbnails
   
   Default thumbnail requests back to the dedicated TMDB and IMDb stack when thumbnail ratings are not explicitly provided.
   Resolve episode IMDb dataset ratings for episodic requests and use TMDB episode vote averages for thumbnail backdrops instead of the parent show score.
@@ -172,7 +161,7 @@
   Verification:
   • npx eslint lib/imageRouteRequestState.ts lib/imageRouteProviderRatings.ts lib/imageRoutePreparedMedia.ts tests/image route request state.test.mjs tests/image route provider ratings.test.mjs tests/image route prepared media.test.mjs
   • node experimental strip types test tests/image route request state.test.mjs tests/image route provider ratings.test.mjs tests/image route prepared media.test.mjs
-* FR 19 update Allocine brand artwork
+* FR-19 update Allocine brand artwork
   
   Replace the temporary Allocine inline SVG with the provided brand image.
   Keep the press provider on the same artwork with a readable badge overlay.
@@ -180,9 +169,9 @@
   Verification:
   • npx eslint lib/ratingProviderBrandAssets.ts tests/rating provider icons.test.mjs
   • node experimental strip types test tests/rating provider icons.test.mjs
-* FR 21 normalize Bottom Row copy
+* FR-21 normalize Bottom Row copy
   
-  Capitalize the Bottom Row label for the backdrop and logo FR 21 controls.
+  Capitalize the Bottom Row label for the backdrop and logo FR-21 controls.
   
   Replace the old single bottom row wording in helper copy and workspace summary text so the setting reads as a cleaner shared term across the configurator.
 * split overflow release note posts
@@ -194,12 +183,12 @@
   Add regression coverage for multi message payload generation.
 
 ### Documentation
-* FR 17 FR 19 FR 21 BUG 32 align public docs
+* FR-17 FR-19 FR-21 BUG-32 align public docs
   
   Align the README and in app docs with OMDb poster source support, AlloCiné ratings, Bottom Row controls, and episode thumbnail routing and rating behavior.
   
   Update the docs page route examples, correct the README preview backdrop layout example, and document thumbnailRatings plus the dedicated thumbnail route shape for addon and AIOMetadata integrations.
-* FR 17 align OMDb artwork docs
+* FR-17 align OMDb artwork docs
   
   Update the README artwork source and environment sections to match the shipped OMDb poster support.
   
@@ -207,38 +196,42 @@
   • align poster, backdrop, and logo artwork source lists with runtime support
   • add OMDb base URL and cache TTL entries to the environment reference
 
+<a id="v1-0-6"></a>
+
 ## [v1.0.6] - 01/04/2026
 
 ### Fixed
-* BUG 23 recompute split anime badges after mapping
+* BUG-23 recompute split anime badges after mapping
   
   Resolve poster genre families from the current anime mapping state instead of the initial prepared media snapshot.
   
   Rebuild the resolved genre badge after provider rating lookups can confirm anime mappings for IMDb and TMDB inputs.
   
   Add a prepared media regression that simulates late anime mapping confirmation for split grouping.
-* BUG 24 trim poster touchup logo padding
+* BUG-24 trim poster logo padding
   
-  Measure poster touchup logo overlays from trimmed visible artwork instead of padded source bounds.
+  Reduce excess poster logo padding in the touch up path so the title
+  lockup sits more cleanly within the available poster safe area.
   
-  Resize the trimmed logo asset directly so centered poster branding stays correctly scaled and positioned.
-  
-  Add a regression that fails if the overlay path falls back to untrimmed logo sizing again.
-* BUG 25 correct XRDB logo sizing from visible artwork ratio
+  Keep the change isolated to the poster touch up rendering path to avoid
+  changing backdrop or logo composition behavior.
+* BUG-25 correct XRDB logo sizing from visible artwork ratio
   
   Measure logo aspect ratios from the visible trimmed artwork instead of relying on raw source metadata so XRDB logo canvases do not end up excessively wide and look undersized inside AIOM.
   
   Update TMDB logo selection to prefer the measured visible ratio, add regressions for transparent border trimming and TMDB logo ratio resolution, and keep the fix scoped to XRDB behavior.
-* BUG 30 refresh vertical stacked badge design
+* BUG-30 refresh vertical stacked badge design
   
   Refine the stacked badge chrome used in vertical rating columns with a calmer body surface, gradient accent cap, lifted icon plate, and a dedicated score shelf for clearer scan hierarchy.
   
   Extend the badge svg regression to cover the new stacked rail and score shelf gradients so the refreshed vertical treatment stays locked in.
-* BUG 31 ignore zero value provider payloads
+* BUG-31 ignore zero value provider payloads
   
   Treat zero and rounded zero provider ratings as missing data during shared normalization so phantom scores do not enter resolved provider maps or aggregate calculations.
   
   Add regressions for shared rating normalization, MDBList provider payload filtering, and Trakt zero value responses.
+
+<a id="v1-0-5"></a>
 
 ## [v1.0.5] - 01/04/2026
 
@@ -254,6 +247,8 @@
   
   Quote the workflow role id so GitHub Actions preserves the full snowflake value and send explicit role allowlists without the conflicting parse field.
 * 'revert:' messages not showing in changelog'
+
+<a id="v1-0-4"></a>
 
 ## [v1.0.4] - 01/04/2026
 
@@ -289,6 +284,8 @@
   
   This reverts commit 90405bcb5202183aeefeae981bf8908a74b69093.
 
+<a id="v1-0-3"></a>
+
 ## [v1.0.3] - 01/04/2026
 
 ### Fixed
@@ -303,6 +300,8 @@
   
   Keep the release notification tests aligned so the old project name does not return in future release posts.
 
+<a id="v1-0-2"></a>
+
 ## [v1.0.2] - 31/03/2026
 
 ### Fixed
@@ -314,6 +313,8 @@
   
   Show both Live and Latest deployment pills in the shared nav to match the deployment status layout.
 
+<a id="v1-0-1"></a>
+
 ## [v1.0.1] - 31/03/2026
 
 ### Documentation
@@ -323,10 +324,14 @@
   
   Update the README, shared status notice, and metadata copy so the new repo reads as the active project.
 
+<a id="v1-0-0"></a>
+
 ## [v1.0.0] - 31/03/2026
 
 ### Added
+* initial XRDB release
+  
+  Publish the first release of XRDB
+  
+  Include the current app, docs, release workflow, and deployment setup.
 
-* publish the first standalone XRDB release
-* ship the XRDB configurator, docs, proxy routes, and image generation workflow as the initial public snapshot
-* include the deployment files, release automation, and Docker publishing setup used by the active XRDB repo
