@@ -53,3 +53,22 @@ test('image route genre badge builds glass style text output', () => {
   assert.match(spec.svg, /stroke="#facc15"/);
   assert.match(spec.svg, /DOC/);
 });
+
+test('image route genre badge centers icon-only badges within the rendered width', () => {
+  const spec = buildGenreBadgeSvg(
+    {
+      familyId: 'scifi',
+      label: 'Sci Fi',
+      accentColor: '#22d3ee',
+      mode: 'icon',
+      style: 'glass',
+      scalePercent: 140,
+    },
+    'poster',
+  );
+
+  const translateMatch = spec.svg.match(/transform="translate\(([\d.]+) ([\d.]+)\) scale/);
+
+  assert.ok(translateMatch);
+  assert.ok(Math.abs(Number.parseFloat(translateMatch[1]) - spec.width / 2) <= 1);
+});

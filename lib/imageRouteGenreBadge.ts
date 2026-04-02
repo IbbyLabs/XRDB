@@ -116,7 +116,7 @@ export const buildGenreBadgeSvg = (
     height,
     paddingX * 2 + (showIcon ? iconSize : 0) + iconGap + labelWidth,
   );
-  const iconX = paddingX;
+  const iconX = showText ? paddingX : Math.round((width - iconSize) / 2);
   const iconY = Math.round((height - iconSize) / 2);
   const iconCenterX = Math.round(iconX + iconSize / 2);
   const iconCenterY = Math.round(iconY + iconSize / 2);
