@@ -39,6 +39,7 @@ export function ConfiguratorCenterStage({
   previewErrorDetails,
   tmdbKeyPresent,
   onPreviewImageError,
+  onPreviewImageLoad,
   activeTypeLabel,
   activePresentationLabel,
   activeRatingStyleLabel,
@@ -66,6 +67,7 @@ export function ConfiguratorCenterStage({
   previewErrorDetails: string;
   tmdbKeyPresent: boolean;
   onPreviewImageError: (url: string) => void | Promise<void>;
+  onPreviewImageLoad: (url: string) => void;
   activeTypeLabel: string;
   activePresentationLabel: string;
   activeRatingStyleLabel: string;
@@ -113,6 +115,9 @@ export function ConfiguratorCenterStage({
                 unoptimized
                 fill
                 className={previewType === 'logo' ? 'object-contain' : 'object-cover'}
+                onLoad={() => {
+                  onPreviewImageLoad(previewUrl);
+                }}
                 onError={() => {
                   void onPreviewImageError(previewUrl);
                 }}

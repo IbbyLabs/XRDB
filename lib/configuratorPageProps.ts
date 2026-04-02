@@ -387,6 +387,7 @@ export function buildConfiguratorPageProps({
         previewErrorDetails: outputs.visiblePreviewErrorDetails,
         tmdbKeyPresent: Boolean(workspaceState.tmdbKey.trim()),
         onPreviewImageError: outputs.handlePreviewImageError,
+        onPreviewImageLoad: outputs.handlePreviewImageLoad,
         activeTypeLabel: workspaceSummary.activeTypeLabel,
         activePresentationLabel: workspaceSummary.activePresentationOptionMeta?.label || 'Standard',
         activeRatingStyleLabel: workspaceSummary.activeRatingStyleLabel,

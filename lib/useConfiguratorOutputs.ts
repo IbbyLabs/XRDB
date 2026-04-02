@@ -435,6 +435,7 @@ export function useConfiguratorOutputs({
 }) {
   const [previewErroredForUrl, setPreviewErroredForUrl] = useState('');
   const [previewErrorDetails, setPreviewErrorDetails] = useState('');
+  const [previewLoadedForUrl, setPreviewLoadedForUrl] = useState('');
 
   const previewUrl = useMemo(() => {
     const normalizedXrdbKey = xrdbKey.trim();
@@ -937,6 +938,7 @@ export function useConfiguratorOutputs({
   ]);
 
   const previewErrored = Boolean(previewUrl) && previewErroredForUrl === previewUrl;
+  const previewLoaded = Boolean(previewUrl) && previewLoadedForUrl === previewUrl;
 
   const genrePreviewCards = useMemo(
     () =>
@@ -1006,6 +1008,7 @@ export function useConfiguratorOutputs({
       : 'Live shows the running container. The latest release is unavailable right now.';
 
   const handlePreviewImageError = useCallback(async (url: string) => {
+    setPreviewLoadedForUrl('');
     setPreviewErroredForUrl(url);
 
     try {
@@ -1060,6 +1063,12 @@ export function useConfiguratorOutputs({
     } catch {
       setPreviewErrorDetails('Could not reach the preview endpoint. Check network and base URL.');
     }
+  }, []);
+
+  const handlePreviewImageLoad = useCallback((url: string) => {
+    setPreviewLoadedForUrl(url);
+    setPreviewErroredForUrl('');
+    setPreviewErrorDetails('');
   }, []);
 
   const currentUiConfig = useMemo(() => buildCurrentUiConfig(), [buildCurrentUiConfig]);
@@ -1142,9 +1151,11 @@ export function useConfiguratorOutputs({
     displayedProxyUrl,
     genrePreviewCards,
     handlePreviewImageError,
+    handlePreviewImageLoad,
     isConfigStringVisible,
     isProxyUrlVisible,
     previewErrored,
+    previewLoaded,
     previewUrl,
     proxyUrl,
     versionStatusNote,

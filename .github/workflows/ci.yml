@@ -34,6 +34,38 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify legacy naming is absent
+        run: pnpm run verify:legacy-name
+
+      - name: Verify README doc asset manifest
+        run: pnpm run docs:verify-manifest
+
+      - name: Check docs refresh prerequisites
+        id: docs_refresh
+        env:
+          XRDB_README_PREVIEW_TMDB_KEY: ${{ secrets.XRDB_README_PREVIEW_TMDB_KEY }}
+          XRDB_README_PREVIEW_MDBLIST_KEY: ${{ secrets.XRDB_README_PREVIEW_MDBLIST_KEY }}
+        run: |
+          if [ -n "${XRDB_README_PREVIEW_TMDB_KEY}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "XRDB_README_PREVIEW_TMDB_KEY is not configured. Skipping full docs refresh diff."
+          fi
+
+      - name: Install Playwright browser for docs refresh
+        if: ${{ steps.docs_refresh.outputs.enabled == 'true' }}
+        run: npx --yes playwright install --with-deps chromium
+
+      - name: Verify refreshed doc assets are clean
+        if: ${{ steps.docs_refresh.outputs.enabled == 'true' }}
+        env:
+          XRDB_README_PREVIEW_TMDB_KEY: ${{ secrets.XRDB_README_PREVIEW_TMDB_KEY }}
+          XRDB_README_PREVIEW_MDBLIST_KEY: ${{ secrets.XRDB_README_PREVIEW_MDBLIST_KEY }}
+        run: |
+          pnpm run docs:refresh-assets
+          git diff --exit-code -- README.md docs/images
+
       - name: Lint
         run: pnpm run lint
 
