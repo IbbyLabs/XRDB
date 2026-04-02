@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   buildDiscordReleasePayload,
   buildDiscordReleasePayloads,
+  resolveDiscordWebhookPostUrl,
 } from '../.github/scripts/post-discord-release.mjs';
 
 test('buildDiscordReleasePayload creates a branded embed with release links and parsed sections', () => {
@@ -73,6 +74,16 @@ test('buildDiscordReleasePayload keeps mentions disabled when no role id is conf
 
   assert.equal(payload.content, undefined);
   assert.deepEqual(payload.allowed_mentions, { parse: [] });
+});
+
+test('resolveDiscordWebhookPostUrl preserves thread params and forces wait mode', () => {
+  const resolved = resolveDiscordWebhookPostUrl(
+    'https://discord.com/api/webhooks/123/token?thread_id=456&wait=false',
+  );
+  const url = new URL(resolved);
+
+  assert.equal(url.searchParams.get('thread_id'), '456');
+  assert.equal(url.searchParams.get('wait'), 'true');
 });
 
 test('buildDiscordReleasePayload orders sections and tracked items for Discord summaries', () => {
