@@ -22,6 +22,55 @@ import {
 import { getBadgeIconRadius, getBadgeOuterRadius } from './imageRouteQualityBadge.ts';
 import { hexColorToRgba } from './imageRouteBlockbusterLayout.ts';
 
+const clampNumber = (value: number, min: number, max: number) =>
+  Math.max(min, Math.min(max, value));
+
+const resolveCenteredAccentRailRect = ({
+  badgeWidth,
+  badgeHeight,
+  centerX,
+  baseY,
+  desiredWidth,
+  minWidth,
+  maxWidth,
+  desiredHeight,
+  minHeight,
+  offset = 0,
+  topInset = 4,
+  bottomInset = 4,
+}: {
+  badgeWidth: number;
+  badgeHeight: number;
+  centerX: number;
+  baseY: number;
+  desiredWidth: number;
+  minWidth: number;
+  maxWidth: number;
+  desiredHeight: number;
+  minHeight: number;
+  offset?: number;
+  topInset?: number;
+  bottomInset?: number;
+}) => {
+  const width = clampNumber(
+    Math.round(desiredWidth),
+    minWidth,
+    Math.min(maxWidth, Math.max(minWidth, badgeWidth - topInset * 2)),
+  );
+  const height = Math.max(minHeight, Math.round(desiredHeight));
+  const x = clampNumber(
+    Math.round(centerX - width / 2),
+    topInset,
+    Math.max(topInset, badgeWidth - width - topInset),
+  );
+  const y = clampNumber(
+    Math.round(baseY + offset),
+    topInset,
+    Math.max(topInset, badgeHeight - height - bottomInset),
+  );
+  return { x, y, width, height };
+};
+
 export type BuildBadgeSvgInput = {
   width: number;
   height: number;
@@ -130,18 +179,23 @@ export const buildBadgeSvg = ({
     if (ratingStyle === 'plain') {
       const plainDefs = `<defs><filter id="plain-variant-text-shadow" x="-20%" y="-25%" width="140%" height="150%"><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#000000" flood-opacity="0.64" /></filter><filter id="plain-variant-surface-shadow" x="-30%" y="-45%" width="160%" height="200%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="2" stdDeviation="3.6" flood-color="#020617" flood-opacity="0.74" /></filter></defs>`;
       if (badgeVariant === 'minimal') {
-        const accentRailWidth = Math.max(28, Math.round(width * 0.42));
-        const accentRailHeight = Math.max(5, Math.round(height * 0.12));
-        const accentRailX = Math.round((width - accentRailWidth) / 2);
-        const accentRailY = Math.max(
-          4,
-          Math.min(height - accentRailHeight - 4, Math.round(height * 0.16) + accentBarOffset),
-        );
+        const accentRailRect = resolveCenteredAccentRailRect({
+          badgeWidth: width,
+          badgeHeight: height,
+          centerX,
+          baseY: Math.round(height * 0.16),
+          desiredWidth: width * 0.42,
+          minWidth: 28,
+          maxWidth: width - 8,
+          desiredHeight: height * 0.12,
+          minHeight: 5,
+          offset: accentBarOffset,
+        });
         const valueFontSize = Math.max(18, Math.round(fontSize * 1.05));
         const valueY = Math.round(centerY + 1);
         return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 ${plainDefs}
-${accentBarVisible ? `<rect x="${accentRailX}" y="${accentRailY}" width="${accentRailWidth}" height="${accentRailHeight}" rx="${Math.max(2, Math.round(accentRailHeight / 2))}" fill="${accentColor}" fill-opacity="0.78" filter="url(#plain-variant-surface-shadow)" />` : ''}
+${accentBarVisible ? `<rect x="${accentRailRect.x}" y="${accentRailRect.y}" width="${accentRailRect.width}" height="${accentRailRect.height}" rx="${Math.max(2, Math.round(accentRailRect.height / 2))}" fill="${accentColor}" fill-opacity="0.78" filter="url(#plain-variant-surface-shadow)" />` : ''}
 <text x="${centerX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${valueFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="white" filter="url(#plain-variant-text-shadow)"${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
       }
@@ -161,18 +215,26 @@ ${accentBarVisible ? `<rect x="${accentRailX}" y="${accentRailY}" width="${accen
         Math.round(height * 0.38),
         Math.round(centerY - summaryLabelFontSize * 0.25),
       );
-      const valueX = contentLeft + contentWidth;
+      const valueSlotX = contentLeft + chipWidth + contentGap;
+      const valueX = Math.round(valueSlotX + valueWidth / 2);
       const valueY = Math.round(centerY + fontSize * 0.22);
-      const accentRailWidth = Math.max(24, Math.round(width * 0.14));
-      const accentRailY = Math.max(
-        4,
-        Math.min(height - 7, Math.round(height * 0.16) + accentBarOffset),
-      );
+      const accentRailRect = resolveCenteredAccentRailRect({
+        badgeWidth: width,
+        badgeHeight: height,
+        centerX: labelX,
+        baseY: labelY - summaryLabelFontSize - 1,
+        desiredWidth: chipWidth * 0.82,
+        minWidth: 48,
+        maxWidth: chipWidth,
+        desiredHeight: height * 0.08,
+        minHeight: 3,
+        offset: accentBarOffset,
+      });
       return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 ${plainDefs}
-${accentBarVisible ? `<rect x="${sideInset}" y="${accentRailY}" width="${accentRailWidth}" height="3" rx="1.5" fill="${accentColor}" fill-opacity="0.82" filter="url(#plain-variant-surface-shadow)" />` : ''}
+${accentBarVisible ? `<rect x="${accentRailRect.x}" y="${accentRailRect.y}" width="${accentRailRect.width}" height="${accentRailRect.height}" rx="${Math.max(1.5, Math.round(accentRailRect.height / 2))}" fill="${accentColor}" fill-opacity="0.82" filter="url(#plain-variant-surface-shadow)" />` : ''}
 <text x="${labelX}" y="${labelY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${summaryLabelFontSize}" font-weight="800" text-anchor="middle" fill="${accentColor}" filter="url(#plain-variant-text-shadow)">${escapeXml(summaryLabel)}</text>
-<text x="${valueX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="800" text-anchor="end" dominant-baseline="middle" fill="white" filter="url(#plain-variant-text-shadow)"${valueNumericStyle}>${escapeXml(value)}</text>
+<text x="${valueX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="white" filter="url(#plain-variant-text-shadow)"${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
     }
     const accentStrokeOpacity = ratingStyle === 'square' ? 0.9 : 0.86;
@@ -211,17 +273,22 @@ ${accentBarVisible ? `<rect x="${sideInset}" y="${accentRailY}" width="${accentR
     if (badgeVariant === 'minimal') {
       const valueFontSize = Math.max(18, Math.round(fontSize * 1.05));
       const valueY = Math.round(centerY + 1);
-      const accentRailWidth = Math.max(24, Math.round(width * 0.4));
-      const accentRailHeight = Math.max(3, Math.round(height * 0.08));
-      const accentRailX = Math.round((width - accentRailWidth) / 2);
-      const accentRailY = Math.max(
-        4,
-        Math.min(height - accentRailHeight - 4, Math.round(height * 0.18) + accentBarOffset),
-      );
+      const accentRailRect = resolveCenteredAccentRailRect({
+        badgeWidth: width,
+        badgeHeight: height,
+        centerX,
+        baseY: Math.round(height * 0.18),
+        desiredWidth: width * 0.4,
+        minWidth: 24,
+        maxWidth: width - 8,
+        desiredHeight: height * 0.08,
+        minHeight: 3,
+        offset: accentBarOffset,
+      });
       return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 ${variantDefs}
 ${variantChrome}
-${accentBarVisible ? `<rect x="${accentRailX}" y="${accentRailY}" width="${accentRailWidth}" height="${accentRailHeight}" rx="${Math.max(1, Math.round(accentRailHeight / 2))}" fill="${accentColor}" />` : ''}
+${accentBarVisible ? `<rect x="${accentRailRect.x}" y="${accentRailRect.y}" width="${accentRailRect.width}" height="${accentRailRect.height}" rx="${Math.max(1, Math.round(accentRailRect.height / 2))}" fill="${accentColor}" />` : ''}
 <text x="${centerX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${valueFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="white"${valueFilter}${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
     }
@@ -241,14 +308,15 @@ ${accentBarVisible ? `<rect x="${accentRailX}" y="${accentRailY}" width="${accen
     const chipX = Math.max(sideInset, Math.round((width - contentWidth) / 2));
     const labelX = Math.round(chipX + chipWidth / 2);
     const labelY = Math.round(chipY + chipHeight / 2 + 1);
-    const valueX = chipX + contentWidth;
+    const valueSlotX = chipX + chipWidth + contentGap;
+    const valueX = Math.round(valueSlotX + valueWidth / 2);
     const valueY = Math.round(centerY + 1);
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 ${variantDefs}
 ${variantChrome}
 <rect x="${chipX}" y="${chipY}" width="${chipWidth}" height="${chipHeight}" rx="${chipRadius}" fill="${accentColor}" fill-opacity="0.94" />
 <text x="${labelX}" y="${labelY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${summaryLabelFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="white"${valueFilter}>${escapeXml(summaryLabel)}</text>
-<text x="${valueX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="800" text-anchor="end" dominant-baseline="middle" fill="white"${valueFilter}${valueNumericStyle}>${escapeXml(value)}</text>
+<text x="${valueX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="white"${valueFilter}${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
   }
   if (ratingStyle === 'stacked') {
@@ -407,7 +475,6 @@ ${monogramText}
     compactText && valueTextWidth > valueAvailableWidth
       ? ` textLength="${valueAvailableWidth}" lengthAdjust="spacingAndGlyphs"`
       : '';
-  const shouldCenterValueInSlot = /^\d+(?:\.0)?$/.test(value.trim());
   const valueFontFamily = compactText
     ? `'Noto Sans','DejaVu Sans','Arial Narrow','Liberation Sans Narrow','Nimbus Sans Narrow','Roboto Condensed',Arial,sans-serif`
     : `'Noto Sans','DejaVu Sans',Arial,sans-serif`;
@@ -456,10 +523,8 @@ ${monogramText}
       : `<text x="${iconCx}" y="${Math.round(iconCy + iconFontSize * 0.34)}" font-family="Arial, sans-serif" font-size="${iconFontSize}" font-weight="700" text-anchor="middle" fill="${monogramFill}"${plainIconFilter}>${escapeXml(monogram)}</text>${iconBorder}`;
   const valueNumericStyle =
     ' style="font-variant-numeric: tabular-nums lining-nums; font-feature-settings: \'tnum\' 1, \'lnum\' 1;"';
-  const valueAnchor = shouldCenterValueInSlot ? 'middle' : 'start';
-  const valueRenderX = shouldCenterValueInSlot
-    ? Math.round(valueX + valueAvailableWidth / 2)
-    : valueX;
+  const valueAnchor = 'middle';
+  const valueRenderX = Math.round(valueX + valueAvailableWidth / 2);
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 ${plainBadgeDefs}
 ${plainBadgeSurface}
