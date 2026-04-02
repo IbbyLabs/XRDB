@@ -45,6 +45,27 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   backdropSideRatingsOffset: WorkspaceSettings['backdropSideRatingsOffset'];
   backdropSideRatingsPosition: WorkspaceSettings['backdropSideRatingsPosition'];
   backdropStreamBadges: WorkspaceSettings['backdropStreamBadges'];
+  thumbnailAggregateRatingSource: WorkspaceSettings['thumbnailAggregateRatingSource'];
+  thumbnailArtworkSource: WorkspaceSettings['thumbnailArtworkSource'];
+  thumbnailBottomRatingsRow: WorkspaceSettings['thumbnailBottomRatingsRow'];
+  thumbnailGenreBadgeAnimeGrouping: WorkspaceSettings['thumbnailGenreBadgeAnimeGrouping'];
+  thumbnailGenreBadgeMode: WorkspaceSettings['thumbnailGenreBadgeMode'];
+  thumbnailGenreBadgePosition: WorkspaceSettings['thumbnailGenreBadgePosition'];
+  thumbnailGenreBadgeScale: WorkspaceSettings['thumbnailGenreBadgeScale'];
+  thumbnailGenreBadgeStyle: WorkspaceSettings['thumbnailGenreBadgeStyle'];
+  thumbnailImageText: WorkspaceSettings['thumbnailImageText'];
+  thumbnailQualityBadgePreferences: WorkspaceSettings['thumbnailQualityBadgePreferences'];
+  thumbnailQualityBadgeScale: WorkspaceSettings['thumbnailQualityBadgeScale'];
+  thumbnailQualityBadgesStyle: WorkspaceSettings['thumbnailQualityBadgesStyle'];
+  thumbnailQualityBadgesMax: WorkspaceSettings['thumbnailQualityBadgesMax'];
+  thumbnailRatingBadgeScale: WorkspaceSettings['thumbnailRatingBadgeScale'];
+  thumbnailRatingPresentation: WorkspaceSettings['thumbnailRatingPresentation'];
+  thumbnailRatingStyle: WorkspaceSettings['thumbnailRatingStyle'];
+  thumbnailRatingsLayout: WorkspaceSettings['thumbnailRatingsLayout'];
+  thumbnailRatingsMax: WorkspaceSettings['thumbnailRatingsMax'];
+  thumbnailSideRatingsOffset: WorkspaceSettings['thumbnailSideRatingsOffset'];
+  thumbnailSideRatingsPosition: WorkspaceSettings['thumbnailSideRatingsPosition'];
+  thumbnailStreamBadges: WorkspaceSettings['thumbnailStreamBadges'];
   episodeIdMode: EpisodeIdMode;
   xrdbKey: WorkspaceSettings['xrdbKey'];
   fanartKey: WorkspaceSettings['fanartKey'];
@@ -132,6 +153,27 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setBackdropSideRatingsOffset: Setter<WorkspaceSettings['backdropSideRatingsOffset']>;
   setBackdropSideRatingsPosition: Setter<WorkspaceSettings['backdropSideRatingsPosition']>;
   setBackdropStreamBadges: Setter<WorkspaceSettings['backdropStreamBadges']>;
+  setThumbnailAggregateRatingSource: Setter<WorkspaceSettings['thumbnailAggregateRatingSource']>;
+  setThumbnailArtworkSource: Setter<WorkspaceSettings['thumbnailArtworkSource']>;
+  setThumbnailBottomRatingsRow: Setter<WorkspaceSettings['thumbnailBottomRatingsRow']>;
+  setThumbnailGenreBadgeAnimeGrouping: Setter<WorkspaceSettings['thumbnailGenreBadgeAnimeGrouping']>;
+  setThumbnailGenreBadgeMode: Setter<WorkspaceSettings['thumbnailGenreBadgeMode']>;
+  setThumbnailGenreBadgePosition: Setter<WorkspaceSettings['thumbnailGenreBadgePosition']>;
+  setThumbnailGenreBadgeScale: Setter<WorkspaceSettings['thumbnailGenreBadgeScale']>;
+  setThumbnailGenreBadgeStyle: Setter<WorkspaceSettings['thumbnailGenreBadgeStyle']>;
+  setThumbnailImageText: Setter<WorkspaceSettings['thumbnailImageText']>;
+  setThumbnailQualityBadgePreferences: Setter<WorkspaceSettings['thumbnailQualityBadgePreferences']>;
+  setThumbnailQualityBadgeScale: Setter<WorkspaceSettings['thumbnailQualityBadgeScale']>;
+  setThumbnailQualityBadgesStyle: Setter<WorkspaceSettings['thumbnailQualityBadgesStyle']>;
+  setThumbnailQualityBadgesMax: Setter<WorkspaceSettings['thumbnailQualityBadgesMax']>;
+  setThumbnailRatingBadgeScale: Setter<WorkspaceSettings['thumbnailRatingBadgeScale']>;
+  setThumbnailRatingPresentation: Setter<WorkspaceSettings['thumbnailRatingPresentation']>;
+  setThumbnailRatingStyle: Setter<WorkspaceSettings['thumbnailRatingStyle']>;
+  setThumbnailRatingsLayout: Setter<WorkspaceSettings['thumbnailRatingsLayout']>;
+  setThumbnailRatingsMax: Setter<WorkspaceSettings['thumbnailRatingsMax']>;
+  setThumbnailSideRatingsOffset: Setter<WorkspaceSettings['thumbnailSideRatingsOffset']>;
+  setThumbnailSideRatingsPosition: Setter<WorkspaceSettings['thumbnailSideRatingsPosition']>;
+  setThumbnailStreamBadges: Setter<WorkspaceSettings['thumbnailStreamBadges']>;
   setEpisodeIdMode: Setter<EpisodeIdMode>;
   setXrdbKey: Setter<WorkspaceSettings['xrdbKey']>;
   setFanartKey: Setter<WorkspaceSettings['fanartKey']>;
@@ -231,6 +273,27 @@ export function useConfiguratorWorkspaceConfigIo({
   backdropSideRatingsOffset,
   backdropSideRatingsPosition,
   backdropStreamBadges,
+  thumbnailAggregateRatingSource,
+  thumbnailArtworkSource,
+  thumbnailBottomRatingsRow,
+  thumbnailGenreBadgeAnimeGrouping,
+  thumbnailGenreBadgeMode,
+  thumbnailGenreBadgePosition,
+  thumbnailGenreBadgeScale,
+  thumbnailGenreBadgeStyle,
+  thumbnailImageText,
+  thumbnailQualityBadgePreferences,
+  thumbnailQualityBadgeScale,
+  thumbnailQualityBadgesStyle,
+  thumbnailQualityBadgesMax,
+  thumbnailRatingBadgeScale,
+  thumbnailRatingPresentation,
+  thumbnailRatingStyle,
+  thumbnailRatingsLayout,
+  thumbnailRatingsMax,
+  thumbnailSideRatingsOffset,
+  thumbnailSideRatingsPosition,
+  thumbnailStreamBadges,
   episodeIdMode,
   xrdbKey,
   fanartKey,
@@ -318,6 +381,27 @@ export function useConfiguratorWorkspaceConfigIo({
   setBackdropSideRatingsOffset,
   setBackdropSideRatingsPosition,
   setBackdropStreamBadges,
+  setThumbnailAggregateRatingSource,
+  setThumbnailArtworkSource,
+  setThumbnailBottomRatingsRow,
+  setThumbnailGenreBadgeAnimeGrouping,
+  setThumbnailGenreBadgeMode,
+  setThumbnailGenreBadgePosition,
+  setThumbnailGenreBadgeScale,
+  setThumbnailGenreBadgeStyle,
+  setThumbnailImageText,
+  setThumbnailQualityBadgePreferences,
+  setThumbnailQualityBadgeScale,
+  setThumbnailQualityBadgesStyle,
+  setThumbnailQualityBadgesMax,
+  setThumbnailRatingBadgeScale,
+  setThumbnailRatingPresentation,
+  setThumbnailRatingStyle,
+  setThumbnailRatingsLayout,
+  setThumbnailRatingsMax,
+  setThumbnailSideRatingsOffset,
+  setThumbnailSideRatingsPosition,
+  setThumbnailStreamBadges,
   setEpisodeIdMode,
   setXrdbKey,
   setFanartKey,
@@ -399,24 +483,31 @@ export function useConfiguratorWorkspaceConfigIo({
       setPosterImageSize(normalized.settings.posterImageSize);
       setPosterImageText(normalized.settings.posterImageText);
       setBackdropImageText(normalized.settings.backdropImageText);
+      setThumbnailImageText(normalized.settings.thumbnailImageText);
       setPosterArtworkSource(normalized.settings.posterArtworkSource);
       setBackdropArtworkSource(normalized.settings.backdropArtworkSource);
+      setThumbnailArtworkSource(normalized.settings.thumbnailArtworkSource);
       setBackdropEpisodeArtwork(normalized.settings.backdropEpisodeArtwork);
       setRatingValueMode(normalized.settings.ratingValueMode);
       setPosterGenreBadgeMode(normalized.settings.posterGenreBadgeMode);
       setBackdropGenreBadgeMode(normalized.settings.backdropGenreBadgeMode);
+      setThumbnailGenreBadgeMode(normalized.settings.thumbnailGenreBadgeMode);
       setLogoGenreBadgeMode(normalized.settings.logoGenreBadgeMode);
       setPosterGenreBadgeStyle(normalized.settings.posterGenreBadgeStyle);
       setBackdropGenreBadgeStyle(normalized.settings.backdropGenreBadgeStyle);
+      setThumbnailGenreBadgeStyle(normalized.settings.thumbnailGenreBadgeStyle);
       setLogoGenreBadgeStyle(normalized.settings.logoGenreBadgeStyle);
       setPosterGenreBadgePosition(normalized.settings.posterGenreBadgePosition);
       setBackdropGenreBadgePosition(normalized.settings.backdropGenreBadgePosition);
+      setThumbnailGenreBadgePosition(normalized.settings.thumbnailGenreBadgePosition);
       setLogoGenreBadgePosition(normalized.settings.logoGenreBadgePosition);
       setPosterGenreBadgeScale(normalized.settings.posterGenreBadgeScale);
       setBackdropGenreBadgeScale(normalized.settings.backdropGenreBadgeScale);
+      setThumbnailGenreBadgeScale(normalized.settings.thumbnailGenreBadgeScale);
       setLogoGenreBadgeScale(normalized.settings.logoGenreBadgeScale);
       setPosterGenreBadgeAnimeGrouping(normalized.settings.posterGenreBadgeAnimeGrouping);
       setBackdropGenreBadgeAnimeGrouping(normalized.settings.backdropGenreBadgeAnimeGrouping);
+      setThumbnailGenreBadgeAnimeGrouping(normalized.settings.thumbnailGenreBadgeAnimeGrouping);
       setLogoGenreBadgeAnimeGrouping(normalized.settings.logoGenreBadgeAnimeGrouping);
       setPosterRatingRows(enabledOrderedToRows(normalized.settings.posterRatingPreferences));
       setBackdropRatingRows(enabledOrderedToRows(normalized.settings.backdropRatingPreferences));
@@ -424,41 +515,55 @@ export function useConfiguratorWorkspaceConfigIo({
       setLogoRatingRows(enabledOrderedToRows(normalized.settings.logoRatingPreferences));
       setPosterStreamBadges(normalized.settings.posterStreamBadges);
       setBackdropStreamBadges(normalized.settings.backdropStreamBadges);
+      setThumbnailStreamBadges(normalized.settings.thumbnailStreamBadges);
       setQualityBadgesSide(normalized.settings.qualityBadgesSide);
       setPosterQualityBadgesPosition(normalized.settings.posterQualityBadgesPosition);
       setPosterQualityBadgePreferences(normalized.settings.posterQualityBadgePreferences);
       setBackdropQualityBadgePreferences(normalized.settings.backdropQualityBadgePreferences);
+      setThumbnailQualityBadgePreferences(normalized.settings.thumbnailQualityBadgePreferences);
       setLogoQualityBadgePreferences(normalized.settings.logoQualityBadgePreferences);
       setPosterQualityBadgesStyle(normalized.settings.posterQualityBadgesStyle);
       setBackdropQualityBadgesStyle(normalized.settings.backdropQualityBadgesStyle);
+      setThumbnailQualityBadgesStyle(normalized.settings.thumbnailQualityBadgesStyle);
       setLogoQualityBadgesStyle(normalized.settings.logoQualityBadgesStyle);
       setPosterQualityBadgesMax(normalized.settings.posterQualityBadgesMax);
       setBackdropQualityBadgesMax(normalized.settings.backdropQualityBadgesMax);
+      setThumbnailQualityBadgesMax(normalized.settings.thumbnailQualityBadgesMax);
       setLogoQualityBadgesMax(normalized.settings.logoQualityBadgesMax);
       setPosterRatingsLayout(normalized.settings.posterRatingsLayout);
       setBackdropRatingsLayout(normalized.settings.backdropRatingsLayout);
+      setThumbnailRatingsLayout(normalized.settings.thumbnailRatingsLayout);
       setPosterRatingsMax(normalized.settings.posterRatingsMax);
       setBackdropRatingsMax(normalized.settings.backdropRatingsMax);
+      setThumbnailRatingsMax(normalized.settings.thumbnailRatingsMax);
       setBackdropBottomRatingsRow(normalized.settings.backdropBottomRatingsRow);
+      setThumbnailBottomRatingsRow(normalized.settings.thumbnailBottomRatingsRow);
       setPosterEdgeOffset(normalized.settings.posterEdgeOffset);
       setPosterSideRatingsPosition(normalized.settings.posterSideRatingsPosition);
       setPosterSideRatingsOffset(normalized.settings.posterSideRatingsOffset);
       setBackdropSideRatingsPosition(normalized.settings.backdropSideRatingsPosition);
       setBackdropSideRatingsOffset(normalized.settings.backdropSideRatingsOffset);
+      setThumbnailSideRatingsPosition(normalized.settings.thumbnailSideRatingsPosition);
+      setThumbnailSideRatingsOffset(normalized.settings.thumbnailSideRatingsOffset);
       setPosterRatingStyle(normalized.settings.posterRatingStyle);
       setBackdropRatingStyle(normalized.settings.backdropRatingStyle);
+      setThumbnailRatingStyle(normalized.settings.thumbnailRatingStyle);
       setLogoRatingStyle(normalized.settings.logoRatingStyle);
       setPosterRatingBadgeScale(normalized.settings.posterRatingBadgeScale);
       setBackdropRatingBadgeScale(normalized.settings.backdropRatingBadgeScale);
+      setThumbnailRatingBadgeScale(normalized.settings.thumbnailRatingBadgeScale);
       setLogoRatingBadgeScale(normalized.settings.logoRatingBadgeScale);
       setPosterQualityBadgeScale(normalized.settings.posterQualityBadgeScale);
       setBackdropQualityBadgeScale(normalized.settings.backdropQualityBadgeScale);
+      setThumbnailQualityBadgeScale(normalized.settings.thumbnailQualityBadgeScale);
       setLogoQualityBadgeScale(normalized.settings.logoQualityBadgeScale);
       setPosterRatingPresentation(normalized.settings.posterRatingPresentation);
       setBackdropRatingPresentation(normalized.settings.backdropRatingPresentation);
+      setThumbnailRatingPresentation(normalized.settings.thumbnailRatingPresentation);
       setLogoRatingPresentation(normalized.settings.logoRatingPresentation);
       setPosterAggregateRatingSource(normalized.settings.posterAggregateRatingSource);
       setBackdropAggregateRatingSource(normalized.settings.backdropAggregateRatingSource);
+      setThumbnailAggregateRatingSource(normalized.settings.thumbnailAggregateRatingSource);
       setLogoAggregateRatingSource(normalized.settings.logoAggregateRatingSource);
       setAggregateAccentMode(normalized.settings.aggregateAccentMode);
       setAggregateAccentColor(normalized.settings.aggregateAccentColor);
@@ -510,6 +615,27 @@ export function useConfiguratorWorkspaceConfigIo({
       setBackdropSideRatingsOffset,
       setBackdropSideRatingsPosition,
       setBackdropStreamBadges,
+      setThumbnailAggregateRatingSource,
+      setThumbnailArtworkSource,
+      setThumbnailBottomRatingsRow,
+      setThumbnailGenreBadgeAnimeGrouping,
+      setThumbnailGenreBadgeMode,
+      setThumbnailGenreBadgePosition,
+      setThumbnailGenreBadgeScale,
+      setThumbnailGenreBadgeStyle,
+      setThumbnailImageText,
+      setThumbnailQualityBadgePreferences,
+      setThumbnailQualityBadgeScale,
+      setThumbnailQualityBadgesStyle,
+      setThumbnailQualityBadgesMax,
+      setThumbnailRatingBadgeScale,
+      setThumbnailRatingPresentation,
+      setThumbnailRatingStyle,
+      setThumbnailRatingsLayout,
+      setThumbnailRatingsMax,
+      setThumbnailSideRatingsOffset,
+      setThumbnailSideRatingsPosition,
+      setThumbnailStreamBadges,
       setEpisodeIdMode,
       setXrdbKey,
       setFanartKey,
@@ -588,25 +714,32 @@ export function useConfiguratorWorkspaceConfigIo({
         posterImageSize,
         posterImageText,
         backdropImageText,
+        thumbnailImageText,
         posterArtworkSource,
         backdropArtworkSource,
+        thumbnailArtworkSource,
         thumbnailEpisodeArtwork,
         backdropEpisodeArtwork,
         ratingValueMode,
         posterGenreBadgeMode,
         backdropGenreBadgeMode,
+        thumbnailGenreBadgeMode,
         logoGenreBadgeMode,
         posterGenreBadgeStyle,
         backdropGenreBadgeStyle,
+        thumbnailGenreBadgeStyle,
         logoGenreBadgeStyle,
         posterGenreBadgePosition,
         backdropGenreBadgePosition,
+        thumbnailGenreBadgePosition,
         logoGenreBadgePosition,
         posterGenreBadgeScale,
         backdropGenreBadgeScale,
+        thumbnailGenreBadgeScale,
         logoGenreBadgeScale,
         posterGenreBadgeAnimeGrouping,
         backdropGenreBadgeAnimeGrouping,
+        thumbnailGenreBadgeAnimeGrouping,
         logoGenreBadgeAnimeGrouping,
         posterRatingPreferences,
         backdropRatingPreferences,
@@ -614,43 +747,57 @@ export function useConfiguratorWorkspaceConfigIo({
         logoRatingPreferences,
         posterStreamBadges,
         backdropStreamBadges,
+        thumbnailStreamBadges,
         qualityBadgesSide,
         posterQualityBadgesPosition,
         posterQualityBadgePreferences,
         backdropQualityBadgePreferences,
+        thumbnailQualityBadgePreferences,
         logoQualityBadgePreferences,
         posterQualityBadgesStyle,
         backdropQualityBadgesStyle,
+        thumbnailQualityBadgesStyle,
         logoQualityBadgesStyle,
         posterQualityBadgesMax,
         backdropQualityBadgesMax,
+        thumbnailQualityBadgesMax,
         logoQualityBadgesMax,
         posterRatingsLayout,
         backdropRatingsLayout,
+        thumbnailRatingsLayout,
         posterRatingsMax,
         backdropRatingsMax,
+        thumbnailRatingsMax,
         backdropBottomRatingsRow,
+        thumbnailBottomRatingsRow,
         posterEdgeOffset,
         posterSideRatingsPosition,
         posterSideRatingsOffset,
         backdropSideRatingsPosition,
         backdropSideRatingsOffset,
+        thumbnailSideRatingsPosition,
+        thumbnailSideRatingsOffset,
         sideRatingsPosition: posterSideRatingsPosition,
         sideRatingsOffset: posterSideRatingsOffset,
         posterRatingStyle,
         backdropRatingStyle,
+        thumbnailRatingStyle,
         logoRatingStyle,
         posterRatingBadgeScale,
         backdropRatingBadgeScale,
+        thumbnailRatingBadgeScale,
         logoRatingBadgeScale,
         posterQualityBadgeScale,
         backdropQualityBadgeScale,
+        thumbnailQualityBadgeScale,
         logoQualityBadgeScale,
         posterRatingPresentation,
         backdropRatingPresentation,
+        thumbnailRatingPresentation,
         logoRatingPresentation,
         posterAggregateRatingSource,
         backdropAggregateRatingSource,
+        thumbnailAggregateRatingSource,
         logoAggregateRatingSource,
         aggregateAccentMode,
         aggregateAccentColor,
@@ -704,6 +851,28 @@ export function useConfiguratorWorkspaceConfigIo({
       backdropSideRatingsOffset,
       backdropSideRatingsPosition,
       backdropStreamBadges,
+      thumbnailAggregateRatingSource,
+      thumbnailArtworkSource,
+      thumbnailBottomRatingsRow,
+      thumbnailGenreBadgeAnimeGrouping,
+      thumbnailGenreBadgeMode,
+      thumbnailGenreBadgePosition,
+      thumbnailGenreBadgeScale,
+      thumbnailGenreBadgeStyle,
+      thumbnailImageText,
+      thumbnailQualityBadgePreferences,
+      thumbnailQualityBadgeScale,
+      thumbnailQualityBadgesStyle,
+      thumbnailQualityBadgesMax,
+      thumbnailRatingBadgeScale,
+      thumbnailRatingPreferences,
+      thumbnailRatingPresentation,
+      thumbnailRatingStyle,
+      thumbnailRatingsLayout,
+      thumbnailRatingsMax,
+      thumbnailSideRatingsOffset,
+      thumbnailSideRatingsPosition,
+      thumbnailStreamBadges,
       episodeIdMode,
       xrdbKey,
       fanartKey,

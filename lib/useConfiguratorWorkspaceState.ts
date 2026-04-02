@@ -57,7 +57,7 @@ import {
 } from '@/lib/uiConfig';
 import { SAMPLE_GENRE_BADGE_MODE_DEFAULT } from '@/lib/configuratorPageOptions';
 
-type ProxyType = 'poster' | 'backdrop' | 'logo';
+type ProxyType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 type WorkspaceCenterView = 'showcase' | 'preview' | 'guide';
 
 export function useConfiguratorWorkspaceState() {
@@ -67,25 +67,32 @@ export function useConfiguratorWorkspaceState() {
   const [posterImageSize, setPosterImageSize] = useState<PosterImageSize>('normal');
   const [posterImageText, setPosterImageText] = useState<PosterImageTextPreference>('clean');
   const [backdropImageText, setBackdropImageText] = useState<BackdropImageTextPreference>('clean');
+  const [thumbnailImageText, setThumbnailImageText] = useState<BackdropImageTextPreference>('clean');
   const [posterArtworkSource, setPosterArtworkSource] = useState<ArtworkSource>('tmdb');
   const [backdropArtworkSource, setBackdropArtworkSource] = useState<ArtworkSource>('tmdb');
+  const [thumbnailArtworkSource, setThumbnailArtworkSource] = useState<ArtworkSource>('tmdb');
   const [thumbnailEpisodeArtwork, setThumbnailEpisodeArtwork] = useState<EpisodeArtworkMode>('still');
   const [backdropEpisodeArtwork, setBackdropEpisodeArtwork] = useState<EpisodeArtworkMode>('series');
   const [ratingValueMode, setRatingValueMode] = useState<RatingValueMode>(DEFAULT_RATING_VALUE_MODE);
   const [posterGenreBadgeMode, setPosterGenreBadgeMode] = useState<GenreBadgeMode>(DEFAULT_GENRE_BADGE_MODE);
   const [backdropGenreBadgeMode, setBackdropGenreBadgeMode] = useState<GenreBadgeMode>(DEFAULT_GENRE_BADGE_MODE);
+  const [thumbnailGenreBadgeMode, setThumbnailGenreBadgeMode] = useState<GenreBadgeMode>(DEFAULT_GENRE_BADGE_MODE);
   const [logoGenreBadgeMode, setLogoGenreBadgeMode] = useState<GenreBadgeMode>(DEFAULT_GENRE_BADGE_MODE);
   const [posterGenreBadgeStyle, setPosterGenreBadgeStyle] = useState<GenreBadgeStyle>(DEFAULT_GENRE_BADGE_STYLE);
   const [backdropGenreBadgeStyle, setBackdropGenreBadgeStyle] = useState<GenreBadgeStyle>(DEFAULT_GENRE_BADGE_STYLE);
+  const [thumbnailGenreBadgeStyle, setThumbnailGenreBadgeStyle] = useState<GenreBadgeStyle>(DEFAULT_GENRE_BADGE_STYLE);
   const [logoGenreBadgeStyle, setLogoGenreBadgeStyle] = useState<GenreBadgeStyle>(DEFAULT_GENRE_BADGE_STYLE);
   const [posterGenreBadgePosition, setPosterGenreBadgePosition] = useState<GenreBadgePosition>(DEFAULT_GENRE_BADGE_POSITION);
   const [backdropGenreBadgePosition, setBackdropGenreBadgePosition] = useState<GenreBadgePosition>(DEFAULT_GENRE_BADGE_POSITION);
+  const [thumbnailGenreBadgePosition, setThumbnailGenreBadgePosition] = useState<GenreBadgePosition>(DEFAULT_GENRE_BADGE_POSITION);
   const [logoGenreBadgePosition, setLogoGenreBadgePosition] = useState<GenreBadgePosition>(DEFAULT_GENRE_BADGE_POSITION);
   const [posterGenreBadgeScale, setPosterGenreBadgeScale] = useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
   const [backdropGenreBadgeScale, setBackdropGenreBadgeScale] = useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
+  const [thumbnailGenreBadgeScale, setThumbnailGenreBadgeScale] = useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
   const [logoGenreBadgeScale, setLogoGenreBadgeScale] = useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
   const [posterGenreBadgeAnimeGrouping, setPosterGenreBadgeAnimeGrouping] = useState<GenreBadgeAnimeGrouping>(DEFAULT_GENRE_BADGE_ANIME_GROUPING);
   const [backdropGenreBadgeAnimeGrouping, setBackdropGenreBadgeAnimeGrouping] = useState<GenreBadgeAnimeGrouping>(DEFAULT_GENRE_BADGE_ANIME_GROUPING);
+  const [thumbnailGenreBadgeAnimeGrouping, setThumbnailGenreBadgeAnimeGrouping] = useState<GenreBadgeAnimeGrouping>(DEFAULT_GENRE_BADGE_ANIME_GROUPING);
   const [logoGenreBadgeAnimeGrouping, setLogoGenreBadgeAnimeGrouping] = useState<GenreBadgeAnimeGrouping>(DEFAULT_GENRE_BADGE_ANIME_GROUPING);
   const [genrePreviewMode, setGenrePreviewMode] = useState<GenreBadgeMode>(SAMPLE_GENRE_BADGE_MODE_DEFAULT);
   const [posterRatingRows, setPosterRatingRows] = useState<RatingProviderRow[]>(buildDefaultRatingRows);
@@ -94,41 +101,55 @@ export function useConfiguratorWorkspaceState() {
   const [logoRatingRows, setLogoRatingRows] = useState<RatingProviderRow[]>(buildDefaultRatingRows);
   const [posterStreamBadges, setPosterStreamBadges] = useState<StreamBadgesSetting>('auto');
   const [backdropStreamBadges, setBackdropStreamBadges] = useState<StreamBadgesSetting>('auto');
+  const [thumbnailStreamBadges, setThumbnailStreamBadges] = useState<StreamBadgesSetting>('auto');
   const [qualityBadgesSide, setQualityBadgesSide] = useState<QualityBadgesSide>('left');
   const [posterQualityBadgesPosition, setPosterQualityBadgesPosition] = useState<PosterQualityBadgesPosition>('auto');
   const [posterQualityBadgesStyle, setPosterQualityBadgesStyle] = useState<QualityBadgeStyle>(DEFAULT_QUALITY_BADGES_STYLE);
   const [backdropQualityBadgesStyle, setBackdropQualityBadgesStyle] = useState<QualityBadgeStyle>(DEFAULT_QUALITY_BADGES_STYLE);
+  const [thumbnailQualityBadgesStyle, setThumbnailQualityBadgesStyle] = useState<QualityBadgeStyle>(DEFAULT_QUALITY_BADGES_STYLE);
   const [logoQualityBadgesStyle, setLogoQualityBadgesStyle] = useState<QualityBadgeStyle>(DEFAULT_QUALITY_BADGES_STYLE);
   const [posterQualityBadgePreferences, setPosterQualityBadgePreferences] = useState(QUALITY_BADGE_OPTIONS.map((option) => option.id));
   const [backdropQualityBadgePreferences, setBackdropQualityBadgePreferences] = useState(QUALITY_BADGE_OPTIONS.map((option) => option.id));
+  const [thumbnailQualityBadgePreferences, setThumbnailQualityBadgePreferences] = useState(QUALITY_BADGE_OPTIONS.map((option) => option.id));
   const [logoQualityBadgePreferences, setLogoQualityBadgePreferences] = useState(QUALITY_BADGE_OPTIONS.map((option) => option.id));
   const [posterQualityBadgesMax, setPosterQualityBadgesMax] = useState<number | null>(null);
   const [backdropQualityBadgesMax, setBackdropQualityBadgesMax] = useState<number | null>(null);
+  const [thumbnailQualityBadgesMax, setThumbnailQualityBadgesMax] = useState<number | null>(null);
   const [logoQualityBadgesMax, setLogoQualityBadgesMax] = useState<number | null>(null);
   const [posterRatingsLayout, setPosterRatingsLayout] = useState<PosterRatingLayout>('bottom');
   const [backdropRatingsLayout, setBackdropRatingsLayout] = useState<BackdropRatingLayout>(DEFAULT_BACKDROP_RATING_LAYOUT);
+  const [thumbnailRatingsLayout, setThumbnailRatingsLayout] = useState<BackdropRatingLayout>(DEFAULT_BACKDROP_RATING_LAYOUT);
   const [posterRatingsMax, setPosterRatingsMax] = useState<number | null>(null);
   const [backdropRatingsMax, setBackdropRatingsMax] = useState<number | null>(null);
+  const [thumbnailRatingsMax, setThumbnailRatingsMax] = useState<number | null>(null);
   const [backdropBottomRatingsRow, setBackdropBottomRatingsRow] = useState(false);
+  const [thumbnailBottomRatingsRow, setThumbnailBottomRatingsRow] = useState(false);
   const [posterEdgeOffset, setPosterEdgeOffset] = useState<number>(DEFAULT_POSTER_EDGE_OFFSET);
   const [posterSideRatingsPosition, setPosterSideRatingsPosition] = useState<SideRatingPosition>('top');
   const [posterSideRatingsOffset, setPosterSideRatingsOffset] = useState<number>(DEFAULT_SIDE_RATING_OFFSET);
   const [backdropSideRatingsPosition, setBackdropSideRatingsPosition] = useState<SideRatingPosition>('top');
   const [backdropSideRatingsOffset, setBackdropSideRatingsOffset] = useState<number>(DEFAULT_SIDE_RATING_OFFSET);
+  const [thumbnailSideRatingsPosition, setThumbnailSideRatingsPosition] = useState<SideRatingPosition>('top');
+  const [thumbnailSideRatingsOffset, setThumbnailSideRatingsOffset] = useState<number>(DEFAULT_SIDE_RATING_OFFSET);
   const [posterRatingStyle, setPosterRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
   const [backdropRatingStyle, setBackdropRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
+  const [thumbnailRatingStyle, setThumbnailRatingStyle] = useState<RatingStyle>(DEFAULT_RATING_STYLE);
   const [logoRatingStyle, setLogoRatingStyle] = useState<RatingStyle>('plain');
   const [posterRatingBadgeScale, setPosterRatingBadgeScale] = useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
   const [backdropRatingBadgeScale, setBackdropRatingBadgeScale] = useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
+  const [thumbnailRatingBadgeScale, setThumbnailRatingBadgeScale] = useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
   const [logoRatingBadgeScale, setLogoRatingBadgeScale] = useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
   const [posterQualityBadgeScale, setPosterQualityBadgeScale] = useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
   const [backdropQualityBadgeScale, setBackdropQualityBadgeScale] = useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
+  const [thumbnailQualityBadgeScale, setThumbnailQualityBadgeScale] = useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
   const [logoQualityBadgeScale, setLogoQualityBadgeScale] = useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
   const [posterRatingPresentation, setPosterRatingPresentation] = useState<RatingPresentation>(DEFAULT_RATING_PRESENTATION);
   const [backdropRatingPresentation, setBackdropRatingPresentation] = useState<RatingPresentation>(DEFAULT_RATING_PRESENTATION);
+  const [thumbnailRatingPresentation, setThumbnailRatingPresentation] = useState<RatingPresentation>(DEFAULT_RATING_PRESENTATION);
   const [logoRatingPresentation, setLogoRatingPresentation] = useState<RatingPresentation>(DEFAULT_RATING_PRESENTATION);
   const [posterAggregateRatingSource, setPosterAggregateRatingSource] = useState<AggregateRatingSource>(DEFAULT_AGGREGATE_RATING_SOURCE);
   const [backdropAggregateRatingSource, setBackdropAggregateRatingSource] = useState<AggregateRatingSource>(DEFAULT_AGGREGATE_RATING_SOURCE);
+  const [thumbnailAggregateRatingSource, setThumbnailAggregateRatingSource] = useState<AggregateRatingSource>(DEFAULT_AGGREGATE_RATING_SOURCE);
   const [logoAggregateRatingSource, setLogoAggregateRatingSource] = useState<AggregateRatingSource>(DEFAULT_AGGREGATE_RATING_SOURCE);
   const [aggregateAccentMode, setAggregateAccentMode] = useState<AggregateAccentMode>(DEFAULT_AGGREGATE_ACCENT_MODE);
   const [aggregateAccentColor, setAggregateAccentColor] = useState<string>(DEFAULT_AGGREGATE_ACCENT_COLOR);
@@ -206,6 +227,27 @@ export function useConfiguratorWorkspaceState() {
     backdropSideRatingsOffset,
     backdropSideRatingsPosition,
     backdropStreamBadges,
+    thumbnailAggregateRatingSource,
+    thumbnailArtworkSource,
+    thumbnailBottomRatingsRow,
+    thumbnailGenreBadgeAnimeGrouping,
+    thumbnailGenreBadgeMode,
+    thumbnailGenreBadgePosition,
+    thumbnailGenreBadgeScale,
+    thumbnailGenreBadgeStyle,
+    thumbnailImageText,
+    thumbnailQualityBadgePreferences,
+    thumbnailQualityBadgeScale,
+    thumbnailQualityBadgesMax,
+    thumbnailQualityBadgesStyle,
+    thumbnailRatingBadgeScale,
+    thumbnailRatingPresentation,
+    thumbnailRatingStyle,
+    thumbnailRatingsLayout,
+    thumbnailRatingsMax,
+    thumbnailSideRatingsOffset,
+    thumbnailSideRatingsPosition,
+    thumbnailStreamBadges,
     episodeIdMode,
     xrdbKey,
     experienceMode,
@@ -302,6 +344,27 @@ export function useConfiguratorWorkspaceState() {
     setBackdropSideRatingsOffset,
     setBackdropSideRatingsPosition,
     setBackdropStreamBadges,
+    setThumbnailAggregateRatingSource,
+    setThumbnailArtworkSource,
+    setThumbnailBottomRatingsRow,
+    setThumbnailGenreBadgeAnimeGrouping,
+    setThumbnailGenreBadgeMode,
+    setThumbnailGenreBadgePosition,
+    setThumbnailGenreBadgeScale,
+    setThumbnailGenreBadgeStyle,
+    setThumbnailImageText,
+    setThumbnailQualityBadgePreferences,
+    setThumbnailQualityBadgeScale,
+    setThumbnailQualityBadgesMax,
+    setThumbnailQualityBadgesStyle,
+    setThumbnailRatingBadgeScale,
+    setThumbnailRatingPresentation,
+    setThumbnailRatingStyle,
+    setThumbnailRatingsLayout,
+    setThumbnailRatingsMax,
+    setThumbnailSideRatingsOffset,
+    setThumbnailSideRatingsPosition,
+    setThumbnailStreamBadges,
     setEpisodeIdMode,
     setXrdbKey,
     setExperienceMode,

@@ -31,7 +31,7 @@ import { enabledOrderedToRows, rowsToEnabledOrdered, type RatingProviderRow } fr
 import { type RatingPreference } from '@/lib/ratingProviderCatalog';
 import { type SavedUiConfig } from '@/lib/uiConfig';
 
-type ProxyType = 'poster' | 'backdrop' | 'logo';
+type ProxyType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 
 type QualityBadgePreferenceId = (typeof QUALITY_BADGE_OPTIONS)[number]['id'];
 
@@ -70,9 +70,13 @@ export function useConfiguratorWorkspaceActions({
         setBackdropRatingRows(updater);
         return;
       }
+      if (type === 'thumbnail') {
+        setThumbnailRatingRows(updater);
+        return;
+      }
       setLogoRatingRows(updater);
     },
-    [setBackdropRatingRows, setLogoRatingRows, setPosterRatingRows],
+    [setBackdropRatingRows, setLogoRatingRows, setPosterRatingRows, setThumbnailRatingRows],
   );
 
   const toggleRatingPreference = useCallback(

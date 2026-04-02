@@ -69,12 +69,13 @@ import {
 import type {
   ArtworkSource,
   BackdropImageTextPreference,
+  EpisodeArtworkMode,
   LogoBackground,
   PosterImageSize,
   PosterImageTextPreference,
 } from '@/lib/uiConfig';
 
-type PreviewType = 'poster' | 'backdrop' | 'logo';
+type PreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 type SelectionOption<T extends string> = {
   id: T;
   label: string;
@@ -375,6 +376,10 @@ export function LookSection({
   backdropRatingsLayout,
   backdropRatingsMax,
   backdropBottomRatingsRow,
+  thumbnailRatingsLayout,
+  thumbnailRatingsMax,
+  thumbnailBottomRatingsRow,
+  thumbnailEpisodeArtwork,
   posterEdgeOffset,
   shouldShowSideRatingPlacement,
   activeSideRatingsPosition,
@@ -399,6 +404,7 @@ export function LookSection({
   onSelectGenreBadgePosition,
   onSelectGenreBadgeAnimeGrouping,
   onSelectBackdropArtworkSource,
+  onSelectThumbnailArtworkSource,
   onSelectPosterArtworkSource,
   onSelectPosterImageSize,
   onSelectPosterRatingsLayout,
@@ -407,6 +413,10 @@ export function LookSection({
   onSelectBackdropRatingsLayout,
   onSelectBackdropRatingsMax,
   onToggleBackdropBottomRatingsRow,
+  onSelectThumbnailRatingsLayout,
+  onSelectThumbnailRatingsMax,
+  onToggleThumbnailBottomRatingsRow,
+  onSelectThumbnailEpisodeArtwork,
   onSelectPosterEdgeOffset,
   onResetPosterEdgeOffset,
   onSelectSideRatingsPosition,
@@ -448,6 +458,10 @@ export function LookSection({
   backdropRatingsLayout: BackdropRatingLayout;
   backdropRatingsMax: number | null;
   backdropBottomRatingsRow: boolean;
+  thumbnailRatingsLayout: BackdropRatingLayout;
+  thumbnailRatingsMax: number | null;
+  thumbnailBottomRatingsRow: boolean;
+  thumbnailEpisodeArtwork: EpisodeArtworkMode;
   posterEdgeOffset: number;
   shouldShowSideRatingPlacement: boolean;
   activeSideRatingsPosition: SideRatingPosition;
@@ -474,6 +488,7 @@ export function LookSection({
   onSelectGenreBadgePosition: (value: GenreBadgePosition) => void;
   onSelectGenreBadgeAnimeGrouping: (value: GenreBadgeAnimeGrouping) => void;
   onSelectBackdropArtworkSource: (value: ArtworkSource) => void;
+  onSelectThumbnailArtworkSource: (value: ArtworkSource) => void;
   onSelectPosterArtworkSource: (value: ArtworkSource) => void;
   onSelectPosterImageSize: (value: PosterImageSize) => void;
   onSelectPosterRatingsLayout: (value: PosterRatingLayout) => void;
@@ -482,6 +497,10 @@ export function LookSection({
   onSelectBackdropRatingsLayout: (value: BackdropRatingLayout) => void;
   onSelectBackdropRatingsMax: (value: number | null) => void;
   onToggleBackdropBottomRatingsRow: () => void;
+  onSelectThumbnailRatingsLayout: (value: BackdropRatingLayout) => void;
+  onSelectThumbnailRatingsMax: (value: number | null) => void;
+  onToggleThumbnailBottomRatingsRow: () => void;
+  onSelectThumbnailEpisodeArtwork: (value: EpisodeArtworkMode) => void;
   onSelectPosterEdgeOffset: (value: number) => void;
   onResetPosterEdgeOffset: () => void;
   onSelectSideRatingsPosition: (value: SideRatingPosition) => void;
@@ -623,7 +642,7 @@ export function LookSection({
           {RATING_VALUE_MODE_OPTIONS.find((option) => option.id === ratingValueMode)?.description}{' '}
           Genre badges use a small curated bucket set. Clear genres such as horror, comedy, drama, sci fi, fantasy, crime, documentary, animation, and anime resolve. When drama appears beside a stronger supported family, the more specific bucket still wins. The active preview type keeps its own badge mode, style, position, and scale.
         </p>
-        {previewType === 'poster' || previewType === 'backdrop' ? (
+        {previewType === 'poster' || previewType === 'backdrop' || previewType === 'thumbnail' ? (
           <div className={settingsCardClass}>
             <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Artwork Source</div>
             <div className={selectorGroupClass}>
@@ -634,6 +653,10 @@ export function LookSection({
                   onClick={() => {
                     if (previewType === 'backdrop') {
                       onSelectBackdropArtworkSource(option.id);
+                      return;
+                    }
+                    if (previewType === 'thumbnail') {
+                      onSelectThumbnailArtworkSource(option.id);
                       return;
                     }
                     onSelectPosterArtworkSource(option.id);
@@ -649,11 +672,38 @@ export function LookSection({
               <p className="text-[11px] leading-relaxed text-zinc-500">
                 {previewType === 'backdrop'
                   ? activeArtworkSourceDescription.replace('poster', 'backdrop')
+                  : previewType === 'thumbnail'
+                    ? activeArtworkSourceDescription.replace('poster', 'thumbnail')
                   : activeArtworkSourceDescription}
                 {activeArtworkSource === 'fanart'
                   ? ' Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.'
                   : ''}
               </p>
+            ) : null}
+            {previewType === 'thumbnail' ? (
+              <>
+                <div className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                  Episode Artwork
+                </div>
+                <div className={selectorGroupClass}>
+                  {[
+                    { id: 'still', label: 'Still' },
+                    { id: 'series', label: 'Series' },
+                  ].map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => onSelectThumbnailEpisodeArtwork(option.id as EpisodeArtworkMode)}
+                      className={selectorButtonClass(thumbnailEpisodeArtwork === option.id)}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] leading-relaxed text-zinc-500">
+                  Still keeps episode thumbnails tied to the TMDB episode frame when one exists. Series uses the normal backdrop artwork stack instead.
+                </p>
+              </>
             ) : null}
             {previewType === 'poster' ? (
               <>
@@ -732,17 +782,23 @@ export function LookSection({
           </div>
         ) : null}
 
-        {previewType === 'backdrop' ? (
+        {previewType === 'backdrop' || previewType === 'thumbnail' ? (
           <div className="rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-2">
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Backdrop Layout</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+              {previewType === 'thumbnail' ? 'Thumbnail Layout' : 'Backdrop Layout'}
+            </div>
             <div className="flex flex-wrap gap-1">
               {BACKDROP_RATING_LAYOUT_OPTIONS.map((option) => (
                 <button
                   key={option.id}
                   type="button"
-                  onClick={() => onSelectBackdropRatingsLayout(option.id)}
+                  onClick={() =>
+                    previewType === 'thumbnail'
+                      ? onSelectThumbnailRatingsLayout(option.id)
+                      : onSelectBackdropRatingsLayout(option.id)
+                  }
                   className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
-                    backdropRatingsLayout === option.id
+                    (previewType === 'thumbnail' ? thumbnailRatingsLayout : backdropRatingsLayout) === option.id
                       ? 'border-violet-500/60 bg-zinc-800 text-white'
                       : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
                   }`}
@@ -757,22 +813,38 @@ export function LookSection({
                 <button
                   type="button"
                   onClick={() => {
+                    if (previewType === 'thumbnail') {
+                      if (thumbnailBottomRatingsRow) {
+                        onToggleThumbnailBottomRatingsRow();
+                      }
+                      return;
+                    }
                     if (backdropBottomRatingsRow) {
                       onToggleBackdropBottomRatingsRow();
                     }
                   }}
-                  className={selectorButtonClass(!backdropBottomRatingsRow)}
+                  className={selectorButtonClass(
+                    !(previewType === 'thumbnail' ? thumbnailBottomRatingsRow : backdropBottomRatingsRow),
+                  )}
                 >
                   Auto
                 </button>
                 <button
                   type="button"
                   onClick={() => {
+                    if (previewType === 'thumbnail') {
+                      if (!thumbnailBottomRatingsRow) {
+                        onToggleThumbnailBottomRatingsRow();
+                      }
+                      return;
+                    }
                     if (!backdropBottomRatingsRow) {
                       onToggleBackdropBottomRatingsRow();
                     }
                   }}
-                  className={selectorButtonClass(backdropBottomRatingsRow)}
+                  className={selectorButtonClass(
+                    previewType === 'thumbnail' ? thumbnailBottomRatingsRow : backdropBottomRatingsRow,
+                  )}
                 >
                   Bottom Row
                 </button>
@@ -780,14 +852,22 @@ export function LookSection({
             </div>
             <OptionalCountField
               label="Max ratings"
-              value={backdropRatingsMax}
+              value={previewType === 'thumbnail' ? thumbnailRatingsMax : backdropRatingsMax}
               buttonLabel="Auto"
-              onChange={onSelectBackdropRatingsMax}
+              onChange={
+                previewType === 'thumbnail'
+                  ? onSelectThumbnailRatingsMax
+                  : onSelectBackdropRatingsMax
+              }
             />
             <p className="text-[11px] leading-relaxed text-zinc-500">
-              {backdropBottomRatingsRow
-                ? 'Bottom Row overrides the saved backdrop layout until you switch it off.'
-                : 'Backdrop output can stay dense, but this cap gives users a cleaner badge row when they only want the top few sources.'}
+              {previewType === 'thumbnail'
+                ? thumbnailBottomRatingsRow
+                  ? 'Bottom Row overrides the saved thumbnail layout until you switch it off.'
+                  : 'Thumbnail output can stay dense, but this cap keeps badge stacks inside the episode frame when you only want the strongest sources.'
+                : backdropBottomRatingsRow
+                  ? 'Bottom Row overrides the saved backdrop layout until you switch it off.'
+                  : 'Backdrop output can stay dense, but this cap gives users a cleaner badge row when they only want the top few sources.'}
             </p>
           </div>
         ) : null}
@@ -890,6 +970,8 @@ export function LookSection({
             <p className="text-[11px] leading-relaxed text-zinc-500">
               {previewType === 'backdrop'
                 ? 'Applies only to the backdrop right vertical stack, including blockbuster mode.'
+                : previewType === 'thumbnail'
+                  ? 'Applies only to the thumbnail right vertical stack, including blockbuster mode.'
                 : 'Applies only to poster side stacks, including blockbuster mode.'}
             </p>
           </div>

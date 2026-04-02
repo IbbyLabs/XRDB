@@ -43,7 +43,7 @@ import {
   type StreamBadgesSetting,
   type TmdbIdScopeMode,
 } from '@/lib/uiConfig';
-import { DEFAULT_EPISODE_ID_MODE, type EpisodeIdMode } from '@/lib/episodeIdentity';
+import { buildEpisodeToken, DEFAULT_EPISODE_ID_MODE, type EpisodeIdMode } from '@/lib/episodeIdentity';
 import { isVerticalPosterRatingLayout, type PosterRatingLayout } from '@/lib/posterLayoutOptions';
 import { type BackdropRatingLayout } from '@/lib/backdropLayoutOptions';
 import { DEFAULT_POSTER_EDGE_OFFSET } from '@/lib/posterEdgeOffset';
@@ -69,6 +69,13 @@ const GENRE_BADGE_QUERY_KEYS = {
     position: 'backdropGenreBadgePosition',
     scale: 'backdropGenreBadgeScale',
     animeGrouping: 'backdropGenreBadgeAnimeGrouping',
+  },
+  thumbnail: {
+    mode: 'thumbnailGenreBadge',
+    style: 'thumbnailGenreBadgeStyle',
+    position: 'thumbnailGenreBadgePosition',
+    scale: 'thumbnailGenreBadgeScale',
+    animeGrouping: 'thumbnailGenreBadgeAnimeGrouping',
   },
   logo: {
     mode: 'logoGenreBadge',
@@ -100,7 +107,7 @@ const appendGenreBadgeQueryParams = ({
   animeGrouping,
 }: {
   query: URLSearchParams;
-  type: 'poster' | 'backdrop' | 'logo';
+  type: 'poster' | 'backdrop' | 'thumbnail' | 'logo';
   mode: GenreBadgeMode;
   style: GenreBadgeStyle;
   position: GenreBadgePosition;
@@ -176,6 +183,19 @@ const buildGenreSamplePreviewUrl = ({
   return `${normalizedBaseUrl}/${sample.previewType}/${encodeURIComponent(sample.mediaId)}.jpg?${query.toString()}`;
 };
 
+const parseEpisodePreviewMediaTarget = (value: string) => {
+  const match = /^(.*?):(\d+):(\d+)$/.exec(value.trim());
+  if (!match) {
+    return null;
+  }
+  const [, id, season, episode] = match;
+  const episodeToken = buildEpisodeToken(Number(season), Number(episode));
+  if (!id || !episodeToken) {
+    return null;
+  }
+  return { id, episodeToken };
+};
+
 export function useConfiguratorOutputs({
   activeGenreBadgeAnimeGrouping,
   activeGenreBadgeMode,
@@ -209,6 +229,27 @@ export function useConfiguratorOutputs({
   backdropSideRatingsOffset,
   backdropSideRatingsPosition,
   backdropStreamBadges,
+  thumbnailAggregateRatingSource,
+  thumbnailArtworkSource,
+  thumbnailBottomRatingsRow,
+  thumbnailEpisodeArtwork,
+  thumbnailGenreBadgeAnimeGrouping,
+  thumbnailGenreBadgePosition,
+  thumbnailGenreBadgeScale,
+  thumbnailGenreBadgeStyle,
+  thumbnailImageText,
+  thumbnailQualityBadgePreferences,
+  thumbnailQualityBadgeScale,
+  thumbnailQualityBadgesStyle,
+  thumbnailRatingBadgeScale,
+  thumbnailRatingPreferences,
+  thumbnailRatingPresentation,
+  thumbnailRatingStyle,
+  thumbnailRatingsLayout,
+  thumbnailRatingsMax,
+  thumbnailSideRatingsOffset,
+  thumbnailSideRatingsPosition,
+  thumbnailStreamBadges,
   baseUrl,
   buildCurrentUiConfig,
   episodeIdMode = DEFAULT_EPISODE_ID_MODE,
@@ -306,6 +347,27 @@ export function useConfiguratorOutputs({
   backdropSideRatingsOffset: number;
   backdropSideRatingsPosition: SideRatingPosition;
   backdropStreamBadges: StreamBadgesSetting;
+  thumbnailAggregateRatingSource: AggregateRatingSource;
+  thumbnailArtworkSource: ArtworkSource;
+  thumbnailBottomRatingsRow: boolean;
+  thumbnailEpisodeArtwork: 'still' | 'series';
+  thumbnailGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
+  thumbnailGenreBadgePosition: GenreBadgePosition;
+  thumbnailGenreBadgeScale: number;
+  thumbnailGenreBadgeStyle: GenreBadgeStyle;
+  thumbnailImageText: BackdropImageTextPreference;
+  thumbnailQualityBadgePreferences: string[];
+  thumbnailQualityBadgeScale: number;
+  thumbnailQualityBadgesStyle: QualityBadgeStyle;
+  thumbnailRatingBadgeScale: number;
+  thumbnailRatingPreferences: RatingPreference[];
+  thumbnailRatingPresentation: RatingPresentation;
+  thumbnailRatingStyle: RatingStyle;
+  thumbnailRatingsLayout: BackdropRatingLayout;
+  thumbnailRatingsMax: number | null;
+  thumbnailSideRatingsOffset: number;
+  thumbnailSideRatingsPosition: SideRatingPosition;
+  thumbnailStreamBadges: StreamBadgesSetting;
   baseUrl: string;
   buildCurrentUiConfig: () => SavedUiConfig;
   episodeIdMode?: EpisodeIdMode;
@@ -359,7 +421,7 @@ export function useConfiguratorOutputs({
   posterSideRatingsOffset: number;
   posterSideRatingsPosition: SideRatingPosition;
   posterStreamBadges: StreamBadgesSetting;
-  previewType: 'poster' | 'backdrop' | 'logo';
+  previewType: 'poster' | 'backdrop' | 'thumbnail' | 'logo';
   proxyUrlVisible: boolean;
   qualityBadgesSide: QualityBadgesSide;
   ratingProviderAppearanceOverrides: RatingProviderAppearanceOverrides;
@@ -382,12 +444,19 @@ export function useConfiguratorOutputs({
     if (!baseUrl || !normalizedTmdbKey || !normalizedMediaId) {
       return '';
     }
+    const thumbnailTarget =
+      previewType === 'thumbnail' ? parseEpisodePreviewMediaTarget(normalizedMediaId) : null;
+    if (previewType === 'thumbnail' && !thumbnailTarget) {
+      return '';
+    }
 
     const ratingPreferencesForType =
       previewType === 'poster'
         ? posterRatingPreferences
         : previewType === 'backdrop'
           ? backdropRatingPreferences
+          : previewType === 'thumbnail'
+            ? thumbnailRatingPreferences
           : logoRatingPreferences;
     const ratingsQuery = stringifyRatingPreferencesAllowEmpty(ratingPreferencesForType);
     const ratingStyleForType =
@@ -395,30 +464,50 @@ export function useConfiguratorOutputs({
         ? posterRatingStyle
         : previewType === 'backdrop'
           ? backdropRatingStyle
+          : previewType === 'thumbnail'
+            ? thumbnailRatingStyle
           : logoRatingStyle;
     const ratingPresentationForType =
       previewType === 'poster'
         ? posterRatingPresentation
         : previewType === 'backdrop'
           ? backdropRatingPresentation
+          : previewType === 'thumbnail'
+            ? thumbnailRatingPresentation
           : logoRatingPresentation;
     const aggregateRatingSourceForType =
       previewType === 'poster'
         ? posterAggregateRatingSource
         : previewType === 'backdrop'
           ? backdropAggregateRatingSource
+          : previewType === 'thumbnail'
+            ? thumbnailAggregateRatingSource
           : logoAggregateRatingSource;
-    const imageTextForType = previewType === 'backdrop' ? backdropImageText : posterImageText;
-    const streamBadgesForType = previewType === 'backdrop' ? backdropStreamBadges : posterStreamBadges;
+    const imageTextForType =
+      previewType === 'backdrop'
+        ? backdropImageText
+        : previewType === 'thumbnail'
+          ? thumbnailImageText
+          : posterImageText;
+    const streamBadgesForType =
+      previewType === 'backdrop'
+        ? backdropStreamBadges
+        : previewType === 'thumbnail'
+          ? thumbnailStreamBadges
+          : posterStreamBadges;
     const qualityBadgesStyleForType =
       previewType === 'backdrop'
         ? backdropQualityBadgesStyle
+        : previewType === 'thumbnail'
+          ? thumbnailQualityBadgesStyle
         : previewType === 'logo'
           ? logoQualityBadgesStyle
           : posterQualityBadgesStyle;
     const qualityBadgePreferencesForType =
       previewType === 'backdrop'
         ? backdropQualityBadgePreferences
+        : previewType === 'thumbnail'
+          ? thumbnailQualityBadgePreferences
         : previewType === 'logo'
           ? logoQualityBadgePreferences
           : posterQualityBadgePreferences;
@@ -427,10 +516,14 @@ export function useConfiguratorOutputs({
         ? posterRatingBadgeScale
         : previewType === 'backdrop'
           ? backdropRatingBadgeScale
+          : previewType === 'thumbnail'
+            ? thumbnailRatingBadgeScale
           : logoRatingBadgeScale;
     const qualityBadgeScaleForType =
       previewType === 'backdrop'
         ? backdropQualityBadgeScale
+        : previewType === 'thumbnail'
+          ? thumbnailQualityBadgeScale
         : previewType === 'logo'
           ? logoQualityBadgeScale
           : posterQualityBadgeScale;
@@ -439,6 +532,8 @@ export function useConfiguratorOutputs({
         ? posterRatingsMax
         : previewType === 'backdrop'
           ? backdropRatingsMax
+          : previewType === 'thumbnail'
+            ? thumbnailRatingsMax
           : logoRatingsMax;
     const query = new URLSearchParams({
       ratingStyle: ratingStyleForType,
@@ -465,6 +560,8 @@ export function useConfiguratorOutputs({
           ? 'posterRatingPresentation'
           : previewType === 'backdrop'
             ? 'backdropRatingPresentation'
+            : previewType === 'thumbnail'
+              ? 'thumbnailRatingPresentation'
             : 'logoRatingPresentation',
         ratingPresentationForType,
       );
@@ -475,6 +572,8 @@ export function useConfiguratorOutputs({
           ? 'posterAggregateRatingSource'
           : previewType === 'backdrop'
             ? 'backdropAggregateRatingSource'
+            : previewType === 'thumbnail'
+              ? 'thumbnailAggregateRatingSource'
             : 'logoAggregateRatingSource',
         aggregateRatingSourceForType,
       );
@@ -518,12 +617,18 @@ export function useConfiguratorOutputs({
       query.set('posterRatings', ratingsQuery);
     } else if (previewType === 'backdrop') {
       query.set('backdropRatings', ratingsQuery);
+    } else if (previewType === 'thumbnail') {
+      query.set('thumbnailRatings', ratingsQuery);
     } else {
       query.set('logoRatings', ratingsQuery);
     }
     if (previewType !== 'logo' && streamBadgesForType !== 'auto') {
       query.set(
-        previewType === 'backdrop' ? 'backdropStreamBadges' : 'posterStreamBadges',
+        previewType === 'backdrop'
+          ? 'backdropStreamBadges'
+          : previewType === 'thumbnail'
+            ? 'thumbnailStreamBadges'
+            : 'posterStreamBadges',
         streamBadgesForType,
       );
     }
@@ -537,6 +642,8 @@ export function useConfiguratorOutputs({
       query.set(
         previewType === 'backdrop'
           ? 'backdropQualityBadgesStyle'
+          : previewType === 'thumbnail'
+            ? 'thumbnailQualityBadgesStyle'
           : previewType === 'logo'
             ? 'logoQualityBadgesStyle'
             : 'posterQualityBadgesStyle',
@@ -546,6 +653,8 @@ export function useConfiguratorOutputs({
     query.set(
       previewType === 'backdrop'
         ? 'backdropQualityBadges'
+        : previewType === 'thumbnail'
+          ? 'thumbnailQualityBadges'
         : previewType === 'logo'
           ? 'logoQualityBadges'
           : 'posterQualityBadges',
@@ -555,6 +664,8 @@ export function useConfiguratorOutputs({
       query.set(
         previewType === 'backdrop'
           ? 'backdropQualityBadgesMax'
+          : previewType === 'thumbnail'
+            ? 'thumbnailQualityBadgesMax'
           : previewType === 'logo'
             ? 'logoQualityBadgesMax'
             : 'posterQualityBadgesMax',
@@ -577,13 +688,15 @@ export function useConfiguratorOutputs({
         (posterArtworkSource === 'fanart' || posterArtworkSource === 'random')) ||
       (previewType === 'backdrop' &&
         (backdropArtworkSource === 'fanart' || backdropArtworkSource === 'random')) ||
+      (previewType === 'thumbnail' &&
+        (thumbnailArtworkSource === 'fanart' || thumbnailArtworkSource === 'random')) ||
       (previewType === 'logo' &&
         (logoArtworkSource === 'fanart' || logoArtworkSource === 'random'));
     if (normalizedFanartKey && shouldSendFanartKey) {
       query.set('fanartKey', normalizedFanartKey);
     }
 
-    if (previewType === 'poster' || previewType === 'backdrop') {
+    if (previewType === 'poster' || previewType === 'backdrop' || previewType === 'thumbnail') {
       query.set('imageText', imageTextForType);
       if (previewType === 'poster' && posterImageSize !== 'normal') {
         query.set('posterImageSize', posterImageSize);
@@ -593,6 +706,9 @@ export function useConfiguratorOutputs({
       }
       if (previewType === 'backdrop' && backdropArtworkSource !== 'tmdb') {
         query.set('backdropArtworkSource', backdropArtworkSource);
+      }
+      if (previewType === 'thumbnail' && thumbnailArtworkSource !== 'tmdb') {
+        query.set('thumbnailArtworkSource', thumbnailArtworkSource);
       }
     }
     if (previewType === 'poster') {
@@ -616,6 +732,19 @@ export function useConfiguratorOutputs({
       if (backdropBottomRatingsRow) {
         query.set('backdropBottomRatingsRow', 'true');
       }
+    } else if (previewType === 'thumbnail') {
+      if (!thumbnailBottomRatingsRow) {
+        query.set('thumbnailRatingsLayout', thumbnailRatingsLayout);
+      }
+      if (ratingsMaxForType !== null) {
+        query.set('thumbnailRatingsMax', String(ratingsMaxForType));
+      }
+      if (thumbnailBottomRatingsRow) {
+        query.set('thumbnailBottomRatingsRow', 'true');
+      }
+      if (thumbnailEpisodeArtwork !== 'still') {
+        query.set('thumbnailEpisodeArtwork', thumbnailEpisodeArtwork);
+      }
     } else {
       if (ratingsMaxForType !== null) {
         query.set('logoRatingsMax', String(ratingsMaxForType));
@@ -636,6 +765,8 @@ export function useConfiguratorOutputs({
           ? 'posterRatingBadgeScale'
           : previewType === 'backdrop'
             ? 'backdropRatingBadgeScale'
+            : previewType === 'thumbnail'
+              ? 'thumbnailRatingBadgeScale'
             : 'logoRatingBadgeScale',
         String(ratingBadgeScaleForType),
       );
@@ -644,6 +775,8 @@ export function useConfiguratorOutputs({
       query.set(
         previewType === 'backdrop'
           ? 'backdropQualityBadgeScale'
+          : previewType === 'thumbnail'
+            ? 'thumbnailQualityBadgeScale'
           : previewType === 'logo'
             ? 'logoQualityBadgeScale'
             : 'posterQualityBadgeScale',
@@ -663,17 +796,37 @@ export function useConfiguratorOutputs({
       (previewType === 'backdrop' &&
         !backdropBottomRatingsRow &&
         (backdropRatingsLayout === 'right-vertical' ||
-          backdropRatingPresentation === 'blockbuster'));
+          backdropRatingPresentation === 'blockbuster')) ||
+      (previewType === 'thumbnail' &&
+        !thumbnailBottomRatingsRow &&
+        (thumbnailRatingsLayout === 'right-vertical' ||
+          thumbnailRatingPresentation === 'blockbuster'));
     if (usesVerticalSideRatings) {
       const activeSidePosition =
-        previewType === 'backdrop' ? backdropSideRatingsPosition : posterSideRatingsPosition;
+        previewType === 'backdrop'
+          ? backdropSideRatingsPosition
+          : previewType === 'thumbnail'
+            ? thumbnailSideRatingsPosition
+            : posterSideRatingsPosition;
       const activeSideOffset =
-        previewType === 'backdrop' ? backdropSideRatingsOffset : posterSideRatingsOffset;
+        previewType === 'backdrop'
+          ? backdropSideRatingsOffset
+          : previewType === 'thumbnail'
+            ? thumbnailSideRatingsOffset
+            : posterSideRatingsOffset;
       if (activeSidePosition !== 'top') {
         const positionParam =
-          previewType === 'poster' ? 'posterSideRatingsPosition' : 'backdropSideRatingsPosition';
+          previewType === 'poster'
+            ? 'posterSideRatingsPosition'
+            : previewType === 'thumbnail'
+              ? 'thumbnailSideRatingsPosition'
+              : 'backdropSideRatingsPosition';
         const offsetParam =
-          previewType === 'poster' ? 'posterSideRatingsOffset' : 'backdropSideRatingsOffset';
+          previewType === 'poster'
+            ? 'posterSideRatingsOffset'
+            : previewType === 'thumbnail'
+              ? 'thumbnailSideRatingsOffset'
+              : 'backdropSideRatingsOffset';
         query.set(positionParam, activeSidePosition);
         if (activeSidePosition === 'custom') {
           query.set(offsetParam, String(activeSideOffset));
@@ -681,6 +834,9 @@ export function useConfiguratorOutputs({
       }
     }
 
+    if (previewType === 'thumbnail' && thumbnailTarget) {
+      return `${baseUrl}/thumbnail/${encodeURIComponent(thumbnailTarget.id)}/${thumbnailTarget.episodeToken}.jpg?${query.toString()}`;
+    }
     return `${baseUrl}/${previewType}/${normalizedMediaId}.jpg?${query.toString()}`;
   }, [
     activeGenreBadgeAnimeGrouping,
@@ -711,6 +867,27 @@ export function useConfiguratorOutputs({
     backdropSideRatingsOffset,
     backdropSideRatingsPosition,
     backdropStreamBadges,
+    thumbnailAggregateRatingSource,
+    thumbnailArtworkSource,
+    thumbnailBottomRatingsRow,
+    thumbnailEpisodeArtwork,
+    thumbnailGenreBadgeAnimeGrouping,
+    thumbnailGenreBadgePosition,
+    thumbnailGenreBadgeScale,
+    thumbnailGenreBadgeStyle,
+    thumbnailImageText,
+    thumbnailQualityBadgePreferences,
+    thumbnailQualityBadgeScale,
+    thumbnailQualityBadgesStyle,
+    thumbnailRatingBadgeScale,
+    thumbnailRatingPreferences,
+    thumbnailRatingPresentation,
+    thumbnailRatingStyle,
+    thumbnailRatingsLayout,
+    thumbnailRatingsMax,
+    thumbnailSideRatingsOffset,
+    thumbnailSideRatingsPosition,
+    thumbnailStreamBadges,
     baseUrl,
     xrdbKey,
     fanartKey,

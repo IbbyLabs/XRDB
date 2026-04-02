@@ -338,6 +338,10 @@ export const resolveImageRouteRequestState = async ({
     searchParams.get('backdropGenreBadge') ?? searchParams.get('genreBadge'),
     globalGenreBadgeMode,
   );
+  const thumbnailGenreBadgeMode = normalizeGenreBadgeMode(
+    searchParams.get('thumbnailGenreBadge') ?? searchParams.get('backdropGenreBadge') ?? searchParams.get('genreBadge'),
+    backdropGenreBadgeMode,
+  );
   const logoGenreBadgeMode = normalizeGenreBadgeMode(
     searchParams.get('logoGenreBadge') ?? searchParams.get('genreBadge'),
     globalGenreBadgeMode,
@@ -349,6 +353,12 @@ export const resolveImageRouteRequestState = async ({
   const backdropGenreBadgeStyle = normalizeGenreBadgeStyle(
     searchParams.get('backdropGenreBadgeStyle') ?? searchParams.get('genreBadgeStyle'),
     globalGenreBadgeStyle,
+  );
+  const thumbnailGenreBadgeStyle = normalizeGenreBadgeStyle(
+    searchParams.get('thumbnailGenreBadgeStyle') ??
+      searchParams.get('backdropGenreBadgeStyle') ??
+      searchParams.get('genreBadgeStyle'),
+    backdropGenreBadgeStyle,
   );
   const logoGenreBadgeStyle = normalizeGenreBadgeStyle(
     searchParams.get('logoGenreBadgeStyle') ?? searchParams.get('genreBadgeStyle'),
@@ -362,6 +372,12 @@ export const resolveImageRouteRequestState = async ({
     searchParams.get('backdropGenreBadgePosition') ?? searchParams.get('genreBadgePosition'),
     globalGenreBadgePosition,
   );
+  const thumbnailGenreBadgePosition = normalizeGenreBadgePosition(
+    searchParams.get('thumbnailGenreBadgePosition') ??
+      searchParams.get('backdropGenreBadgePosition') ??
+      searchParams.get('genreBadgePosition'),
+    backdropGenreBadgePosition,
+  );
   const logoGenreBadgePosition = normalizeGenreBadgePosition(
     searchParams.get('logoGenreBadgePosition') ?? searchParams.get('genreBadgePosition'),
     globalGenreBadgePosition,
@@ -373,6 +389,12 @@ export const resolveImageRouteRequestState = async ({
   const backdropGenreBadgeScale = normalizeGenreBadgeScalePercent(
     searchParams.get('backdropGenreBadgeScale') ?? searchParams.get('genreBadgeScale'),
     globalGenreBadgeScale,
+  );
+  const thumbnailGenreBadgeScale = normalizeGenreBadgeScalePercent(
+    searchParams.get('thumbnailGenreBadgeScale') ??
+      searchParams.get('backdropGenreBadgeScale') ??
+      searchParams.get('genreBadgeScale'),
+    backdropGenreBadgeScale,
   );
   const logoGenreBadgeScale = normalizeGenreBadgeScalePercent(
     searchParams.get('logoGenreBadgeScale') ?? searchParams.get('genreBadgeScale'),
@@ -388,6 +410,12 @@ export const resolveImageRouteRequestState = async ({
       searchParams.get('genreBadgeAnimeGrouping'),
     globalGenreBadgeAnimeGrouping,
   );
+  const thumbnailGenreBadgeAnimeGrouping = normalizeGenreBadgeAnimeGrouping(
+    searchParams.get('thumbnailGenreBadgeAnimeGrouping') ??
+      searchParams.get('backdropGenreBadgeAnimeGrouping') ??
+      searchParams.get('genreBadgeAnimeGrouping'),
+    backdropGenreBadgeAnimeGrouping,
+  );
   const logoGenreBadgeAnimeGrouping = normalizeGenreBadgeAnimeGrouping(
     searchParams.get('logoGenreBadgeAnimeGrouping') ?? searchParams.get('genreBadgeAnimeGrouping'),
     globalGenreBadgeAnimeGrouping,
@@ -395,31 +423,41 @@ export const resolveImageRouteRequestState = async ({
   const genreBadgeMode =
     imageType === 'poster'
       ? posterGenreBadgeMode
-      : imageType === 'backdrop'
+      : isThumbnailRequest
+        ? thumbnailGenreBadgeMode
+        : imageType === 'backdrop'
         ? backdropGenreBadgeMode
         : logoGenreBadgeMode;
   const genreBadgeStyle =
     imageType === 'poster'
       ? posterGenreBadgeStyle
-      : imageType === 'backdrop'
+      : isThumbnailRequest
+        ? thumbnailGenreBadgeStyle
+        : imageType === 'backdrop'
         ? backdropGenreBadgeStyle
         : logoGenreBadgeStyle;
   const genreBadgePosition =
     imageType === 'poster'
       ? posterGenreBadgePosition
-      : imageType === 'backdrop'
+      : isThumbnailRequest
+        ? thumbnailGenreBadgePosition
+        : imageType === 'backdrop'
         ? backdropGenreBadgePosition
         : logoGenreBadgePosition;
   const genreBadgeScale =
     imageType === 'poster'
       ? posterGenreBadgeScale
-      : imageType === 'backdrop'
+      : isThumbnailRequest
+        ? thumbnailGenreBadgeScale
+        : imageType === 'backdrop'
         ? backdropGenreBadgeScale
         : logoGenreBadgeScale;
   const genreBadgeAnimeGrouping =
     imageType === 'poster'
       ? posterGenreBadgeAnimeGrouping
-      : imageType === 'backdrop'
+      : isThumbnailRequest
+        ? thumbnailGenreBadgeAnimeGrouping
+        : imageType === 'backdrop'
         ? backdropGenreBadgeAnimeGrouping
         : logoGenreBadgeAnimeGrouping;
   const effectiveGenreBadgeScale = genreBadgeScale;
@@ -444,6 +482,12 @@ export const resolveImageRouteRequestState = async ({
     searchParams.get('backdropRatingPresentation') ?? searchParams.get('ratingPresentation'),
     globalRatingPresentation,
   );
+  const thumbnailRatingPresentation = normalizeRatingPresentation(
+    searchParams.get('thumbnailRatingPresentation') ??
+      searchParams.get('backdropRatingPresentation') ??
+      searchParams.get('ratingPresentation'),
+    backdropRatingPresentation,
+  );
   const logoRatingPresentation = normalizeRatingPresentation(
     searchParams.get('logoRatingPresentation') ?? searchParams.get('ratingPresentation'),
     globalRatingPresentation,
@@ -460,6 +504,12 @@ export const resolveImageRouteRequestState = async ({
     searchParams.get('backdropAggregateRatingSource') ??
       searchParams.get('aggregateRatingSource'),
     globalAggregateRatingSource,
+  );
+  const thumbnailAggregateRatingSource = normalizeAggregateRatingSource(
+    searchParams.get('thumbnailAggregateRatingSource') ??
+      searchParams.get('backdropAggregateRatingSource') ??
+      searchParams.get('aggregateRatingSource'),
+    backdropAggregateRatingSource,
   );
   const logoAggregateRatingSource = normalizeAggregateRatingSource(
     searchParams.get('logoAggregateRatingSource') ?? searchParams.get('aggregateRatingSource'),
@@ -487,6 +537,10 @@ export const resolveImageRouteRequestState = async ({
     ['0', 'false', 'off', 'no'].includes(aggregateAccentBarVisibleParam.trim().toLowerCase())
   );
   const imageTextParam = searchParams.get('imageText') || searchParams.get('posterText');
+  const thumbnailImageTextParam =
+    searchParams.get('thumbnailImageText') ??
+    searchParams.get('backdropImageText') ??
+    imageTextParam;
   const rpdbPosterTypeParam = searchParams.get('posterType');
   const hasTextlessPosterType =
     typeof rpdbPosterTypeParam === 'string' &&
@@ -496,7 +550,7 @@ export const resolveImageRouteRequestState = async ({
   const textlessEnabled =
     explicitTextlessFlag === null ? hasTextlessPosterType : explicitTextlessFlag;
   const imageText =
-    imageTextParam ||
+    (isThumbnailRequest ? thumbnailImageTextParam : imageTextParam) ||
     (imageType === 'backdrop' ? 'clean' : textlessEnabled ? 'clean' : 'original');
   const posterImageSize = normalizePosterImageSize(
     searchParams.get('posterImageSize') ??
@@ -520,6 +574,13 @@ export const resolveImageRouteRequestState = async ({
     ? 'fanart'
     : normalizeNonPosterArtworkSource(
         searchParams.get('backdropArtworkSource') ?? searchParams.get('backdropCleanSource'),
+      );
+  const thumbnailArtworkSource = legacyFanartCleanMode
+    ? 'fanart'
+    : normalizeNonPosterArtworkSource(
+        searchParams.get('thumbnailArtworkSource') ??
+          searchParams.get('backdropArtworkSource') ??
+          searchParams.get('backdropCleanSource'),
       );
   const logoArtworkSource = normalizeNonPosterArtworkSource(
     searchParams.get('logoArtworkSource') ?? searchParams.get('logoSource'),
@@ -551,8 +612,17 @@ export const resolveImageRouteRequestState = async ({
   const backdropRatingsLayout = normalizeBackdropRatingLayout(
     searchParams.get('backdropRatingsLayout') ?? rpdbRatingBarAliases.backdropRatingsLayout,
   );
+  const thumbnailRatingsLayout = normalizeBackdropRatingLayout(
+    searchParams.get('thumbnailRatingsLayout') ??
+      searchParams.get('backdropRatingsLayout') ??
+      rpdbRatingBarAliases.backdropRatingsLayout,
+  );
   const backdropBottomRatingsRow =
     normalizeBooleanSearchFlag(searchParams.get('backdropBottomRatingsRow')) === true;
+  const thumbnailBottomRatingsRow =
+    normalizeBooleanSearchFlag(
+      searchParams.get('thumbnailBottomRatingsRow') ?? searchParams.get('backdropBottomRatingsRow'),
+    ) === true;
   const logoBottomRatingsRow =
     normalizeBooleanSearchFlag(searchParams.get('logoBottomRatingsRow')) === true;
   const posterSideRatingsPosition = normalizeSideRatingPosition(
@@ -571,14 +641,33 @@ export const resolveImageRouteRequestState = async ({
       rpdbRatingBarAliases.sideRatingsPosition,
     DEFAULT_SIDE_RATING_POSITION,
   );
+  const thumbnailSideRatingsPosition = normalizeSideRatingPosition(
+    searchParams.get('thumbnailSideRatingsPosition') ??
+      searchParams.get('backdropSideRatingsPosition') ??
+      searchParams.get('sideRatingsPosition') ??
+      rpdbRatingBarAliases.sideRatingsPosition,
+    DEFAULT_SIDE_RATING_POSITION,
+  );
   const backdropSideRatingsOffset = normalizeSideRatingOffset(
     searchParams.get('backdropSideRatingsOffset') ?? searchParams.get('sideRatingsOffset'),
     DEFAULT_SIDE_RATING_OFFSET,
   );
+  const thumbnailSideRatingsOffset = normalizeSideRatingOffset(
+    searchParams.get('thumbnailSideRatingsOffset') ??
+      searchParams.get('backdropSideRatingsOffset') ??
+      searchParams.get('sideRatingsOffset'),
+    DEFAULT_SIDE_RATING_OFFSET,
+  );
+  const effectiveBackdropSideRatingsPosition = isThumbnailRequest
+    ? thumbnailSideRatingsPosition
+    : backdropSideRatingsPosition;
+  const effectiveBackdropSideRatingsOffset = isThumbnailRequest
+    ? thumbnailSideRatingsOffset
+    : backdropSideRatingsOffset;
   const sideRatingsPosition =
-    imageType === 'backdrop' ? backdropSideRatingsPosition : posterSideRatingsPosition;
+    imageType === 'backdrop' ? effectiveBackdropSideRatingsPosition : posterSideRatingsPosition;
   const sideRatingsOffset =
-    imageType === 'backdrop' ? backdropSideRatingsOffset : posterSideRatingsOffset;
+    imageType === 'backdrop' ? effectiveBackdropSideRatingsOffset : posterSideRatingsOffset;
   const globalStreamBadgesSetting = normalizeStreamBadgesSetting(searchParams.get('streamBadges'));
   const posterStreamBadgesSetting = normalizeStreamBadgesSetting(
     searchParams.get('posterStreamBadges') || searchParams.get('streamBadges'),
@@ -586,10 +675,17 @@ export const resolveImageRouteRequestState = async ({
   const backdropStreamBadgesSetting = normalizeStreamBadgesSetting(
     searchParams.get('backdropStreamBadges') || searchParams.get('streamBadges'),
   );
+  const thumbnailStreamBadgesSetting = normalizeStreamBadgesSetting(
+    searchParams.get('thumbnailStreamBadges') ||
+      searchParams.get('backdropStreamBadges') ||
+      searchParams.get('streamBadges'),
+  );
   const streamBadgesSetting =
     imageType === 'poster'
       ? posterStreamBadgesSetting
-      : imageType === 'backdrop'
+      : isThumbnailRequest
+        ? thumbnailStreamBadgesSetting
+        : imageType === 'backdrop'
         ? backdropStreamBadgesSetting
         : globalStreamBadgesSetting;
   const qualityBadgesSide = normalizeQualityBadgesSide(
@@ -604,6 +700,9 @@ export const resolveImageRouteRequestState = async ({
   const backdropQualityBadgePreferences = parseQualityBadgePreferencesAllowEmpty(
     searchParams.get('backdropQualityBadges'),
   );
+  const thumbnailQualityBadgePreferences = parseQualityBadgePreferencesAllowEmpty(
+    searchParams.get('thumbnailQualityBadges') ?? searchParams.get('backdropQualityBadges'),
+  );
   const globalQualityBadgesStyle = normalizeQualityBadgesStyle(
     searchParams.get('qualityBadgesStyle'),
   );
@@ -613,36 +712,62 @@ export const resolveImageRouteRequestState = async ({
   const backdropQualityBadgesStyle = normalizeQualityBadgesStyle(
     searchParams.get('backdropQualityBadgesStyle') || searchParams.get('qualityBadgesStyle'),
   );
+  const thumbnailQualityBadgesStyle = normalizeQualityBadgesStyle(
+    searchParams.get('thumbnailQualityBadgesStyle') ??
+      searchParams.get('backdropQualityBadgesStyle') ??
+      searchParams.get('qualityBadgesStyle'),
+  );
   const posterQualityBadgesMax = normalizeOptionalBadgeCount(
     searchParams.get('posterQualityBadgesMax'),
   );
   const backdropQualityBadgesMax = normalizeOptionalBadgeCount(
     searchParams.get('backdropQualityBadgesMax'),
   );
+  const thumbnailQualityBadgesMax = normalizeOptionalBadgeCount(
+    searchParams.get('thumbnailQualityBadgesMax') ?? searchParams.get('backdropQualityBadgesMax'),
+  );
+  const thumbnailRatingsMax = normalizeOptionalBadgeCount(
+    searchParams.get('thumbnailRatingsMax') ?? searchParams.get('backdropRatingsMax'),
+  );
   const posterRatingsMax = normalizeOptionalBadgeCount(searchParams.get('posterRatingsMax'));
   const backdropRatingsMax = normalizeOptionalBadgeCount(searchParams.get('backdropRatingsMax'));
+  const effectiveBackdropRatingsMax = isThumbnailRequest ? thumbnailRatingsMax : backdropRatingsMax;
+  const effectiveBackdropRatingsLayout = isThumbnailRequest
+    ? thumbnailRatingsLayout
+    : backdropRatingsLayout;
+  const effectiveBackdropBottomRatingsRow = isThumbnailRequest
+    ? thumbnailBottomRatingsRow
+    : backdropBottomRatingsRow;
   const qualityBadgesStyle =
     imageType === 'poster'
       ? posterQualityBadgesStyle
-      : imageType === 'backdrop'
+      : isThumbnailRequest
+        ? thumbnailQualityBadgesStyle
+        : imageType === 'backdrop'
         ? backdropQualityBadgesStyle
         : globalQualityBadgesStyle;
   const qualityBadgesMax =
     imageType === 'poster'
       ? posterQualityBadgesMax
-      : imageType === 'backdrop'
-        ? backdropQualityBadgesMax
+      : isThumbnailRequest
+        ? thumbnailQualityBadgesMax
+        : imageType === 'backdrop'
+          ? backdropQualityBadgesMax
         : null;
   const qualityBadgePreferences =
     imageType === 'poster'
       ? posterQualityBadgePreferences
-      : imageType === 'backdrop'
-        ? backdropQualityBadgePreferences
+      : isThumbnailRequest
+        ? thumbnailQualityBadgePreferences
+        : imageType === 'backdrop'
+          ? backdropQualityBadgePreferences
         : [];
   const typeRatingStyleParam =
     imageType === 'poster'
       ? searchParams.get('posterRatingStyle') ?? searchParams.get('posterRatingsStyle')
-      : imageType === 'backdrop'
+      : isThumbnailRequest
+        ? searchParams.get('thumbnailRatingStyle') ?? searchParams.get('thumbnailRatingsStyle')
+        : imageType === 'backdrop'
         ? searchParams.get('backdropRatingStyle') ?? searchParams.get('backdropRatingsStyle')
         : searchParams.get('logoRatingStyle') ?? searchParams.get('logoRatingsStyle');
   const ratingStyleParam =
@@ -668,6 +793,12 @@ export const resolveImageRouteRequestState = async ({
     searchParams.get('backdropRatingBadgeScale') ?? rpdbFontScalePercent,
     DEFAULT_BADGE_SCALE_PERCENT,
   );
+  const thumbnailRatingBadgeScale = normalizeBadgeScalePercent(
+    searchParams.get('thumbnailRatingBadgeScale') ??
+      searchParams.get('backdropRatingBadgeScale') ??
+      rpdbFontScalePercent,
+    DEFAULT_BADGE_SCALE_PERCENT,
+  );
   const logoRatingBadgeScale = normalizeBadgeScalePercent(
     searchParams.get('logoRatingBadgeScale') ?? rpdbFontScalePercent,
     DEFAULT_BADGE_SCALE_PERCENT,
@@ -680,6 +811,16 @@ export const resolveImageRouteRequestState = async ({
     searchParams.get('backdropQualityBadgeScale'),
     DEFAULT_BADGE_SCALE_PERCENT,
   );
+  const thumbnailQualityBadgeScale = normalizeBadgeScalePercent(
+    searchParams.get('thumbnailQualityBadgeScale') ?? searchParams.get('backdropQualityBadgeScale'),
+    DEFAULT_BADGE_SCALE_PERCENT,
+  );
+  const effectiveBackdropRatingBadgeScale = isThumbnailRequest
+    ? thumbnailRatingBadgeScale
+    : backdropRatingBadgeScale;
+  const effectiveBackdropQualityBadgeScale = isThumbnailRequest
+    ? thumbnailQualityBadgeScale
+    : backdropQualityBadgeScale;
   const mdblistKey =
     searchParams.get('mdblistKey') || searchParams.get('mdblist_key');
   const tmdbKey = searchParams.get('tmdbKey') || searchParams.get('tmdb_key') || '';
@@ -790,7 +931,9 @@ export const resolveImageRouteRequestState = async ({
   const requestedRatingPresentation =
     imageType === 'poster'
       ? posterRatingPresentation
-      : imageType === 'backdrop'
+      : isThumbnailRequest
+        ? thumbnailRatingPresentation
+        : imageType === 'backdrop'
         ? backdropRatingPresentation
         : logoRatingPresentation;
   const ratingPresentation = resolveEffectiveRatingPresentation(
@@ -804,7 +947,9 @@ export const resolveImageRouteRequestState = async ({
   const aggregateRatingSource =
     imageType === 'poster'
       ? posterAggregateRatingSource
-      : imageType === 'backdrop'
+      : isThumbnailRequest
+        ? thumbnailAggregateRatingSource
+        : imageType === 'backdrop'
         ? backdropAggregateRatingSource
         : logoAggregateRatingSource;
   const hasExplicitRatingOrder = ratingsForType !== null && ratingsForType !== undefined;
@@ -814,12 +959,15 @@ export const resolveImageRouteRequestState = async ({
     (streamBadgesSetting === 'on' || streamBadgesSetting === 'auto') &&
     !hasNativeAnimeInput;
   const posterUsesFanartArtwork = FANART_ARTWORK_SOURCE_SET.has(posterArtworkSource);
-  const backdropUsesFanartArtwork = FANART_ARTWORK_SOURCE_SET.has(backdropArtworkSource);
+  const effectiveBackdropArtworkSource = isThumbnailRequest
+    ? thumbnailArtworkSource
+    : backdropArtworkSource;
+  const backdropUsesFanartArtwork = FANART_ARTWORK_SOURCE_SET.has(effectiveBackdropArtworkSource);
   const logoUsesFanartArtwork = FANART_ARTWORK_SOURCE_SET.has(logoArtworkSource);
   const hasRandomArtworkSelection =
     posterTextPreference === 'random' ||
     posterArtworkSource === 'random' ||
-    backdropArtworkSource === 'random' ||
+    effectiveBackdropArtworkSource === 'random' ||
     logoArtworkSource === 'random';
   const artworkSelectionSeed = hasRandomArtworkSelection
     ? artworkSelectionSeedParam.trim() ||
@@ -890,7 +1038,7 @@ export const resolveImageRouteRequestState = async ({
     posterTextPreference,
     posterImageSize,
     posterArtworkSource,
-    backdropArtworkSource,
+    backdropArtworkSource: effectiveBackdropArtworkSource,
     logoArtworkSource,
     thumbnailEpisodeArtwork,
     backdropEpisodeArtwork,
@@ -898,9 +1046,9 @@ export const resolveImageRouteRequestState = async ({
     posterRatingsMaxPerSide,
     posterRatingsMax,
     posterEdgeOffset,
-    backdropRatingsLayout,
-    backdropRatingsMax,
-    backdropBottomRatingsRow,
+    backdropRatingsLayout: effectiveBackdropRatingsLayout,
+    backdropRatingsMax: effectiveBackdropRatingsMax,
+    backdropBottomRatingsRow: effectiveBackdropBottomRatingsRow,
     logoRatingsMax,
     logoBottomRatingsRow,
     qualityBadgesSide,
@@ -910,8 +1058,8 @@ export const resolveImageRouteRequestState = async ({
     qualityBadgePreferences,
     posterSideRatingsPosition,
     posterSideRatingsOffset,
-    backdropSideRatingsPosition,
-    backdropSideRatingsOffset,
+    backdropSideRatingsPosition: effectiveBackdropSideRatingsPosition,
+    backdropSideRatingsOffset: effectiveBackdropSideRatingsOffset,
     ratingPresentation,
     blockbusterDensity,
     aggregateRatingSource,
@@ -925,10 +1073,10 @@ export const resolveImageRouteRequestState = async ({
     ratingStyle,
     ratingValueMode,
     posterRatingBadgeScale,
-    backdropRatingBadgeScale,
+    backdropRatingBadgeScale: effectiveBackdropRatingBadgeScale,
     logoRatingBadgeScale,
     posterQualityBadgeScale,
-    backdropQualityBadgeScale,
+    backdropQualityBadgeScale: effectiveBackdropQualityBadgeScale,
     genreBadgeMode,
     genreBadgeStyle,
     genreBadgePosition,
@@ -965,15 +1113,15 @@ export const resolveImageRouteRequestState = async ({
     posterRatingsMaxPerSide,
     posterRatingsMax,
     posterEdgeOffset,
-    backdropRatingsLayout,
-    backdropRatingsMax,
-    backdropBottomRatingsRow,
+    backdropRatingsLayout: effectiveBackdropRatingsLayout,
+    backdropRatingsMax: effectiveBackdropRatingsMax,
+    backdropBottomRatingsRow: effectiveBackdropBottomRatingsRow,
     logoRatingsMax,
     logoBottomRatingsRow,
     posterSideRatingsPosition,
     posterSideRatingsOffset,
-    backdropSideRatingsPosition,
-    backdropSideRatingsOffset,
+    backdropSideRatingsPosition: effectiveBackdropSideRatingsPosition,
+    backdropSideRatingsOffset: effectiveBackdropSideRatingsOffset,
     sideRatingsPosition,
     sideRatingsOffset,
     qualityBadgesSide,
@@ -985,10 +1133,10 @@ export const resolveImageRouteRequestState = async ({
     logoBackground,
     providerAppearanceOverrides,
     posterRatingBadgeScale,
-    backdropRatingBadgeScale,
+    backdropRatingBadgeScale: effectiveBackdropRatingBadgeScale,
     logoRatingBadgeScale,
     posterQualityBadgeScale,
-    backdropQualityBadgeScale,
+    backdropQualityBadgeScale: effectiveBackdropQualityBadgeScale,
     mdblistKey,
     tmdbKey,
     simklClientId,
@@ -1027,7 +1175,7 @@ export const resolveImageRouteRequestState = async ({
     shouldCacheFinalImage,
     posterImageSize,
     posterArtworkSource,
-    backdropArtworkSource,
+    backdropArtworkSource: effectiveBackdropArtworkSource,
     logoArtworkSource,
     thumbnailEpisodeArtwork,
     backdropEpisodeArtwork,

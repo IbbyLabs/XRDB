@@ -247,6 +247,10 @@ export function buildConfiguratorPageProps({
         backdropRatingsLayout: workspaceState.backdropRatingsLayout,
         backdropRatingsMax: workspaceState.backdropRatingsMax,
         backdropBottomRatingsRow: workspaceState.backdropBottomRatingsRow,
+        thumbnailRatingsLayout: workspaceState.thumbnailRatingsLayout,
+        thumbnailRatingsMax: workspaceState.thumbnailRatingsMax,
+        thumbnailBottomRatingsRow: workspaceState.thumbnailBottomRatingsRow,
+        thumbnailEpisodeArtwork: workspaceState.thumbnailEpisodeArtwork,
         posterEdgeOffset: workspaceState.posterEdgeOffset,
         shouldShowSideRatingPlacement: workspaceSummary.shouldShowSideRatingPlacement,
         activeSideRatingsPosition: workspaceSummary.activeSideRatingsPosition,
@@ -271,6 +275,7 @@ export function buildConfiguratorPageProps({
         onSelectGenreBadgePosition: activeWorkspaceSettings.setActiveGenreBadgePosition,
         onSelectGenreBadgeAnimeGrouping: activeWorkspaceSettings.setActiveGenreBadgeAnimeGrouping,
         onSelectBackdropArtworkSource: workspaceState.setBackdropArtworkSource,
+        onSelectThumbnailArtworkSource: workspaceState.setThumbnailArtworkSource,
         onSelectPosterArtworkSource: workspaceState.setPosterArtworkSource,
         onSelectPosterImageSize: workspaceState.setPosterImageSize,
         onSelectPosterRatingsLayout: workspaceState.setPosterRatingsLayout,
@@ -280,6 +285,11 @@ export function buildConfiguratorPageProps({
         onSelectBackdropRatingsMax: workspaceState.setBackdropRatingsMax,
         onToggleBackdropBottomRatingsRow: () =>
           workspaceState.setBackdropBottomRatingsRow((current) => !current),
+        onSelectThumbnailRatingsLayout: workspaceState.setThumbnailRatingsLayout,
+        onSelectThumbnailRatingsMax: workspaceState.setThumbnailRatingsMax,
+        onToggleThumbnailBottomRatingsRow: () =>
+          workspaceState.setThumbnailBottomRatingsRow((current) => !current),
+        onSelectThumbnailEpisodeArtwork: workspaceState.setThumbnailEpisodeArtwork,
         onSelectPosterEdgeOffset: workspaceState.setPosterEdgeOffset,
         onResetPosterEdgeOffset: () =>
           workspaceState.setPosterEdgeOffset(DEFAULT_POSTER_EDGE_OFFSET),
@@ -354,6 +364,7 @@ export function buildConfiguratorPageProps({
         onSelectPosterImageSize: workspaceState.setPosterImageSize,
         onSelectLogoArtworkSource: workspaceState.setLogoArtworkSource,
         onSelectBackdropArtworkSource: workspaceState.setBackdropArtworkSource,
+        onSelectThumbnailArtworkSource: workspaceState.setThumbnailArtworkSource,
         onSelectPosterArtworkSource: workspaceState.setPosterArtworkSource,
         onSelectGenreBadgeMode: activeWorkspaceSettings.setActiveGenreBadgeMode,
         onSelectStreamBadges: activeWorkspaceSettings.setActiveStreamBadges,
