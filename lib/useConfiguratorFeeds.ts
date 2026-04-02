@@ -8,15 +8,19 @@ import {
   type RecentCommit,
 } from '@/lib/recentCommits';
 
-export function useConfiguratorFeeds() {
+export function useConfiguratorFeeds({
+  disabled = false,
+}: {
+  disabled?: boolean;
+} = {}) {
   const [recentCommits, setRecentCommits] = useState<RecentCommit[]>([]);
   const [recentCommitsError, setRecentCommitsError] = useState('');
-  const [isRecentCommitsLoading, setIsRecentCommitsLoading] = useState(true);
+  const [isRecentCommitsLoading, setIsRecentCommitsLoading] = useState(!disabled);
   const [visibleRecentCommitCount, setVisibleRecentCommitCount] = useState(COMMIT_PAGE_SIZE);
   const [latestReleaseTag, setLatestReleaseTag] = useState('');
   const [latestReleaseUrl, setLatestReleaseUrl] = useState('');
   const [pendingReleaseTag, setPendingReleaseTag] = useState('');
-  const [isLatestReleaseLoading, setIsLatestReleaseLoading] = useState(true);
+  const [isLatestReleaseLoading, setIsLatestReleaseLoading] = useState(!disabled);
   const [nowMs, setNowMs] = useState(Date.now());
 
   useEffect(() => {
@@ -29,6 +33,14 @@ export function useConfiguratorFeeds() {
   }, []);
 
   useEffect(() => {
+    if (disabled) {
+      setRecentCommits([]);
+      setRecentCommitsError('');
+      setVisibleRecentCommitCount(COMMIT_PAGE_SIZE);
+      setIsRecentCommitsLoading(false);
+      return;
+    }
+
     let active = true;
     const controller = new AbortController();
 
@@ -93,9 +105,17 @@ export function useConfiguratorFeeds() {
       active = false;
       controller.abort();
     };
-  }, []);
+  }, [disabled]);
 
   useEffect(() => {
+    if (disabled) {
+      setLatestReleaseTag('');
+      setLatestReleaseUrl('');
+      setPendingReleaseTag('');
+      setIsLatestReleaseLoading(false);
+      return;
+    }
+
     let active = true;
     const controller = new AbortController();
 
@@ -146,7 +166,7 @@ export function useConfiguratorFeeds() {
       active = false;
       controller.abort();
     };
-  }, []);
+  }, [disabled]);
 
   return {
     recentCommits,

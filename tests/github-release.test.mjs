@@ -236,3 +236,24 @@ test('fetchLatestGitHubRelease falls back to null when the release is unavailabl
 
   assert.equal(release, null);
 });
+
+test('fetchLatestGitHubRelease falls back to null when the GitHub API times out', async () => {
+  const release = await fetchLatestGitHubRelease({
+    repository: parseGitHubRepositoryUrl('https://github.com/IbbyLabs/xrdb'),
+    timeoutMs: 10,
+    fetchImpl: async (_url, init) =>
+      new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener(
+          'abort',
+          () => {
+            const error = new Error('aborted');
+            error.name = 'AbortError';
+            reject(error);
+          },
+          { once: true }
+        );
+      }),
+  });
+
+  assert.equal(release, null);
+});

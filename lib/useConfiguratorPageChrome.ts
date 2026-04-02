@@ -9,9 +9,11 @@ import { type SupportedLanguageOption } from '@/lib/configuratorPageOptions';
 import { buildTmdbSupportedLanguageOptions } from '@/lib/configuratorLanguageOptions.ts';
 
 export function useConfiguratorPageChrome({
+  disableRemoteLookups = false,
   initialSupportedLanguages,
   tmdbKey,
 }: {
+  disableRemoteLookups?: boolean;
   initialSupportedLanguages: SupportedLanguageOption[];
   tmdbKey: string;
 }) {
@@ -71,6 +73,10 @@ export function useConfiguratorPageChrome({
   );
 
   useEffect(() => {
+    if (disableRemoteLookups) {
+      return;
+    }
+
     if (!tmdbKey || tmdbKey.length <= 10) {
       return;
     }
@@ -96,7 +102,7 @@ export function useConfiguratorPageChrome({
         }
       })
       .catch(() => {});
-  }, [tmdbKey]);
+  }, [disableRemoteLookups, tmdbKey]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {

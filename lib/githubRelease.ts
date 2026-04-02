@@ -1,4 +1,5 @@
 export const LATEST_GITHUB_RELEASE_TTL_SECONDS = 60;
+const DEFAULT_GITHUB_RELEASE_TIMEOUT_MS = 4_000;
 const DEFAULT_GITHUB_REPOSITORY_URL = 'https://github.com/IbbyLabs/XRDB';
 
 export type GitHubRepository = {
@@ -295,18 +296,37 @@ export function resolveGitHubRepository(): GitHubRepository | null {
   return null;
 }
 
+function normalizeGitHubReleaseTimeoutMs(value: unknown): number {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    return value;
+  }
+
+  if (typeof value === 'string' && /^\d+$/.test(value.trim())) {
+    const parsed = Number(value.trim());
+    if (Number.isFinite(parsed) && parsed > 0) {
+      return parsed;
+    }
+  }
+
+  return DEFAULT_GITHUB_RELEASE_TIMEOUT_MS;
+}
+
 export async function fetchLatestGitHubRelease({
   repository = resolveGitHubRepository(),
   fetchImpl = fetch,
+  timeoutMs = process.env.XRDB_GITHUB_RELEASE_TIMEOUT_MS,
 }: {
   repository?: GitHubRepository | null;
   fetchImpl?: typeof fetch;
+  timeoutMs?: number | string;
 } = {}): Promise<LatestGitHubRelease | null> {
   if (!repository) {
     return null;
   }
 
   let response: Response;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), normalizeGitHubReleaseTimeoutMs(timeoutMs));
 
   try {
     response = await fetchImpl(repository.releasesApiUrl, {
@@ -314,12 +334,15 @@ export async function fetchLatestGitHubRelease({
         accept: 'application/vnd.github+json',
         'user-agent': 'xrdb/latest-release',
       },
+      signal: controller.signal,
       next: {
         revalidate: LATEST_GITHUB_RELEASE_TTL_SECONDS,
       },
     } as NextFetchInit);
   } catch {
     return null;
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   if (!response.ok) {

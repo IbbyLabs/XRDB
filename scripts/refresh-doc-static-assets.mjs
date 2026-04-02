@@ -20,6 +20,8 @@ const RENDER_NEXT_PORT = Number.parseInt(process.env.DOC_RENDER_PORT || '3216', 
 const FIXTURE_NEXT_PORT = Number.parseInt(process.env.DOC_METADATA_FIXTURE_PORT || '3217', 10);
 const CAPTURE_NEXT_PORT = Number.parseInt(process.env.DOC_CAPTURE_PORT || '3218', 10);
 const PLAYWRIGHT_WAIT_TIMEOUT_MS = Number.parseInt(process.env.DOC_CAPTURE_WAIT_MS || '1800', 10);
+const PLAYWRIGHT_COMMAND_TIMEOUT_MS = Number.parseInt(process.env.DOC_CAPTURE_COMMAND_TIMEOUT_MS || '300000', 10);
+const DOC_USE_TURBOPACK = process.env.DOC_USE_TURBOPACK !== 'false';
 const CAPTURE_DATE = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
 const tmdbKey = process.env.XRDB_README_PREVIEW_TMDB_KEY || process.env.TMDB_KEY || '';
@@ -30,6 +32,10 @@ const ensureDir = async (targetPath) => {
 };
 
 const resolveDocAssetPath = (assetPath) => path.join(ROOT_DIR, assetPath);
+
+const logRefreshStep = (message) => {
+  console.log(`[docs:refresh-assets] ${message}`);
+};
 
 const readPreviewEnvKeys = () => {
   if (!tmdbKey) {
@@ -321,6 +327,8 @@ const runCommand = async ({
   args,
   cwd = ROOT_DIR,
   env = {},
+  timeoutMs = 0,
+  label = `${command} ${args.join(' ')}`,
 }) =>
   new Promise((resolve, reject) => {
     const child = spawn(command, args, {
@@ -333,19 +341,45 @@ const runCommand = async ({
     });
 
     let output = '';
+    let settled = false;
+    let timeoutId = null;
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      callback(value);
+    };
     child.stdout.on('data', (chunk) => {
       output += String(chunk);
     });
     child.stderr.on('data', (chunk) => {
       output += String(chunk);
     });
-    child.on('error', reject);
+    if (timeoutMs > 0) {
+      timeoutId = setTimeout(() => {
+        if (child.exitCode !== null) {
+          return;
+        }
+        child.kill('SIGTERM');
+        setTimeout(() => {
+          if (child.exitCode === null) {
+            child.kill('SIGKILL');
+          }
+        }, 5_000);
+        finish(reject, new Error(`${label} timed out after ${timeoutMs}ms\n\n${output}`));
+      }, timeoutMs);
+    }
+    child.on('error', (error) => {
+      finish(reject, error);
+    });
     child.on('exit', (code) => {
       if (code === 0) {
-        resolve(output);
+        finish(resolve, output);
         return;
       }
-      reject(new Error(`${command} ${args.join(' ')} exited with code ${String(code)}\n\n${output}`));
+      finish(reject, new Error(`${label} exited with code ${String(code)}\n\n${output}`));
     });
   });
 
@@ -353,9 +387,10 @@ const startNextDevServer = async ({
   port,
   env = {},
 }) => {
+  logRefreshStep(`Starting local Next dev server on port ${port}${DOC_USE_TURBOPACK ? ' with Turbopack' : ''}`);
   const nextProcess = spawn(
     process.platform === 'win32' ? 'npx.cmd' : 'npx',
-    ['next', 'dev', '-p', String(port), '-H', '127.0.0.1'],
+    ['next', 'dev', ...(DOC_USE_TURBOPACK ? ['--turbo'] : []), '-p', String(port), '-H', '127.0.0.1'],
     {
       cwd: ROOT_DIR,
       env: {
@@ -382,6 +417,7 @@ const startNextDevServer = async ({
     throw new Error(`${String(error)}\n\n${nextLogs}`);
   }
 
+  logRefreshStep(`Next dev server ready on ${origin}`);
   return {
     origin,
     nextProcess,
@@ -409,7 +445,10 @@ const captureScreenshot = async ({
   waitTimeoutMs = PLAYWRIGHT_WAIT_TIMEOUT_MS,
 }) => {
   const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+  const captureName = path.basename(outputPath);
+  const captureCommandTimeoutMs = Math.max(waitTimeoutMs + 30_000, PLAYWRIGHT_COMMAND_TIMEOUT_MS);
   await ensureDir(outputPath);
+  logRefreshStep(`Capturing ${captureName}`);
   await runCommand({
     command: npxCommand,
     args: [
@@ -422,7 +461,10 @@ const captureScreenshot = async ({
       url,
       outputPath,
     ],
+    timeoutMs: captureCommandTimeoutMs,
+    label: `Playwright capture for ${captureName}`,
   });
+  logRefreshStep(`Saved ${captureName}`);
 };
 
 const jsonResponse = (res, payload, status = 200) => {
@@ -818,6 +860,7 @@ const sanitizePayload = (payload) => {
 };
 
 const generateMetadataExamples = async () => {
+  logRefreshStep('Generating metadata translation examples');
   const mockServer = await startMockServer();
   const mockAddress = mockServer.address();
   const mockPort = typeof mockAddress === 'object' && mockAddress ? mockAddress.port : 0;
@@ -892,6 +935,7 @@ const generateMetadataExamples = async () => {
       text: buildPrettyJson(buildAnimeMetadataExcerpt(animePayload)),
       outputPath: resolveDocAssetPath(DOC_STATIC_ASSET_PATHS.proxyTranslationAnimeFallbackEnGb),
     });
+    logRefreshStep('Finished metadata translation examples');
   } catch (error) {
     throw new Error(`${String(error)}\n\n${nextServer.getLogs()}`);
   } finally {
@@ -999,6 +1043,7 @@ const generateComparisonBoards = async ({
 
   try {
     if (includeBoards) {
+      logRefreshStep('Generating render comparison boards');
       const posterCards = [
         {
           title: 'Glass poster stack',
@@ -1076,6 +1121,7 @@ const generateComparisonBoards = async ({
         imageHeight: 720,
         imageFit: 'cover',
       });
+      logRefreshStep('Saved movie poster comparison board');
 
       const backdropCards = [
         {
@@ -1152,6 +1198,7 @@ const generateComparisonBoards = async ({
         imageHeight: 290,
         imageFit: 'cover',
       });
+      logRefreshStep('Saved show backdrop comparison board');
 
       const logoCards = [
         {
@@ -1222,9 +1269,11 @@ const generateComparisonBoards = async ({
         imageHeight: 230,
         imageFit: 'contain',
       });
+      logRefreshStep('Saved anime logo comparison board');
     }
 
     if (includeCaptures) {
+      logRefreshStep('Generating workspace captures');
       if (RENDER_ORIGIN_OVERRIDE) {
         const captureServer = await startNextDevServer({
           port: CAPTURE_NEXT_PORT,
@@ -1260,6 +1309,7 @@ const main = async () => {
     throw new Error(`Unknown mode "${mode}". Use "all", "boards", "captures", or "metadata".`);
   }
 
+  logRefreshStep(`Starting static doc asset refresh (${mode})`);
   if (mode === 'all') {
     await generateComparisonBoards({
       includeBoards: true,
@@ -1280,7 +1330,7 @@ const main = async () => {
     await generateMetadataExamples();
   }
 
-  console.log(`Refreshed static doc assets (${mode}).`);
+  logRefreshStep(`Refreshed static doc assets (${mode})`);
 };
 
 await main();
