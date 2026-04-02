@@ -88,27 +88,27 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'backdropBottomRatingsRow',
   ],
   thumbnail: [
-    'backdropGenreBadge',
-    'backdropGenreBadgeStyle',
-    'backdropGenreBadgePosition',
-    'backdropGenreBadgeScale',
-    'backdropGenreBadgeAnimeGrouping',
-    'backdropStreamBadges',
-    'backdropQualityBadges',
-    'backdropQualityBadgesStyle',
-    'backdropQualityBadgeScale',
-    'backdropQualityBadgesMax',
+    'thumbnailGenreBadge',
+    'thumbnailGenreBadgeStyle',
+    'thumbnailGenreBadgePosition',
+    'thumbnailGenreBadgeScale',
+    'thumbnailGenreBadgeAnimeGrouping',
+    'thumbnailStreamBadges',
+    'thumbnailQualityBadges',
+    'thumbnailQualityBadgesStyle',
+    'thumbnailQualityBadgeScale',
+    'thumbnailQualityBadgesMax',
     'thumbnailRatings',
-    'backdropRatingBadgeScale',
-    'backdropRatingPresentation',
-    'backdropAggregateRatingSource',
-    'backdropArtworkSource',
+    'thumbnailRatingBadgeScale',
+    'thumbnailRatingPresentation',
+    'thumbnailAggregateRatingSource',
+    'thumbnailArtworkSource',
     'thumbnailEpisodeArtwork',
-    'backdropRatingsLayout',
-    'backdropRatingsMax',
-    'backdropBottomRatingsRow',
-    'backdropSideRatingsPosition',
-    'backdropSideRatingsOffset',
+    'thumbnailRatingsLayout',
+    'thumbnailRatingsMax',
+    'thumbnailBottomRatingsRow',
+    'thumbnailSideRatingsPosition',
+    'thumbnailSideRatingsOffset',
   ],
   logo: [
     'logoGenreBadge',
@@ -137,8 +137,8 @@ const STYLE_QUERY_KEYS_BY_TYPE = {
     imageText: ['backdropImageText', 'imageText'],
   },
   thumbnail: {
-    ratingStyle: ['backdropRatingStyle', 'backdropRatingsStyle', 'ratingStyle', 'ratingsStyle'],
-    imageText: ['backdropImageText', 'imageText'],
+    ratingStyle: ['thumbnailRatingStyle', 'thumbnailRatingsStyle', 'ratingStyle', 'ratingsStyle'],
+    imageText: ['thumbnailImageText', 'imageText'],
   },
   logo: {
     ratingStyle: ['logoRatingStyle', 'logoRatingsStyle', 'ratingStyle', 'ratingsStyle'],
@@ -181,22 +181,28 @@ export type ProxyConfig = {
   genreBadgeAnimeGrouping?: string;
   posterGenreBadge?: string;
   backdropGenreBadge?: string;
+  thumbnailGenreBadge?: string;
   logoGenreBadge?: string;
   posterGenreBadgeStyle?: string;
   backdropGenreBadgeStyle?: string;
+  thumbnailGenreBadgeStyle?: string;
   logoGenreBadgeStyle?: string;
   posterGenreBadgePosition?: string;
   backdropGenreBadgePosition?: string;
+  thumbnailGenreBadgePosition?: string;
   logoGenreBadgePosition?: string;
   posterGenreBadgeScale?: string;
   backdropGenreBadgeScale?: string;
+  thumbnailGenreBadgeScale?: string;
   logoGenreBadgeScale?: string;
   posterGenreBadgeAnimeGrouping?: string;
   backdropGenreBadgeAnimeGrouping?: string;
+  thumbnailGenreBadgeAnimeGrouping?: string;
   logoGenreBadgeAnimeGrouping?: string;
   streamBadges?: string;
   posterStreamBadges?: string;
   backdropStreamBadges?: string;
+  thumbnailStreamBadges?: string;
   qualityBadgesSide?: string;
   posterQualityBadgesPosition?: string;
   qualityBadgesStyle?: string;
@@ -215,31 +221,42 @@ export type ProxyConfig = {
   backdropQualityBadges?: string;
   backdropQualityBadgesStyle?: string;
   backdropQualityBadgeScale?: string;
+  thumbnailQualityBadges?: string;
+  thumbnailQualityBadgesStyle?: string;
+  thumbnailQualityBadgeScale?: string;
   posterQualityBadgesMax?: string;
   backdropQualityBadgesMax?: string;
+  thumbnailQualityBadgesMax?: string;
   ratingStyle?: string;
   ratingsStyle?: string;
   imageText?: string;
   posterRatingBadgeScale?: string;
   backdropRatingBadgeScale?: string;
+  thumbnailRatingBadgeScale?: string;
   logoRatingBadgeScale?: string;
   posterRatingStyle?: string;
   posterRatingsStyle?: string;
   backdropRatingStyle?: string;
   backdropRatingsStyle?: string;
+  thumbnailRatingStyle?: string;
+  thumbnailRatingsStyle?: string;
   logoRatingStyle?: string;
   logoRatingsStyle?: string;
   posterRatingPresentation?: string;
   backdropRatingPresentation?: string;
+  thumbnailRatingPresentation?: string;
   logoRatingPresentation?: string;
   posterAggregateRatingSource?: string;
   backdropAggregateRatingSource?: string;
+  thumbnailAggregateRatingSource?: string;
   logoAggregateRatingSource?: string;
   posterImageText?: string;
   posterImageSize?: string;
   backdropImageText?: string;
+  thumbnailImageText?: string;
   posterArtworkSource?: string;
   backdropArtworkSource?: string;
+  thumbnailArtworkSource?: string;
   thumbnailEpisodeArtwork?: string;
   backdropEpisodeArtwork?: string;
   logoArtworkSource?: string;
@@ -252,10 +269,15 @@ export type ProxyConfig = {
   backdropRatingsLayout?: string;
   backdropRatingsMax?: string;
   backdropBottomRatingsRow?: string;
+  thumbnailRatingsLayout?: string;
+  thumbnailRatingsMax?: string;
+  thumbnailBottomRatingsRow?: string;
   posterSideRatingsPosition?: string;
   posterSideRatingsOffset?: string;
   backdropSideRatingsPosition?: string;
   backdropSideRatingsOffset?: string;
+  thumbnailSideRatingsPosition?: string;
+  thumbnailSideRatingsOffset?: string;
   sideRatingsPosition?: string;
   sideRatingsOffset?: string;
   logoRatingsMax?: string;
@@ -305,22 +327,28 @@ const CONFIG_STRING_KEYS = [
   'genreBadgeScale',
   'posterGenreBadge',
   'backdropGenreBadge',
+  'thumbnailGenreBadge',
   'logoGenreBadge',
   'posterGenreBadgeStyle',
   'backdropGenreBadgeStyle',
+  'thumbnailGenreBadgeStyle',
   'logoGenreBadgeStyle',
   'posterGenreBadgePosition',
   'backdropGenreBadgePosition',
+  'thumbnailGenreBadgePosition',
   'logoGenreBadgePosition',
   'posterGenreBadgeScale',
   'backdropGenreBadgeScale',
+  'thumbnailGenreBadgeScale',
   'logoGenreBadgeScale',
   'posterGenreBadgeAnimeGrouping',
   'backdropGenreBadgeAnimeGrouping',
+  'thumbnailGenreBadgeAnimeGrouping',
   'logoGenreBadgeAnimeGrouping',
   'streamBadges',
   'posterStreamBadges',
   'backdropStreamBadges',
+  'thumbnailStreamBadges',
   'qualityBadgesSide',
   'posterQualityBadgesPosition',
   'qualityBadgesStyle',
@@ -339,31 +367,42 @@ const CONFIG_STRING_KEYS = [
   'backdropQualityBadges',
   'backdropQualityBadgesStyle',
   'backdropQualityBadgeScale',
+  'thumbnailQualityBadges',
+  'thumbnailQualityBadgesStyle',
+  'thumbnailQualityBadgeScale',
   'posterQualityBadgesMax',
   'backdropQualityBadgesMax',
+  'thumbnailQualityBadgesMax',
   'ratingStyle',
   'ratingsStyle',
   'imageText',
   'posterRatingBadgeScale',
   'backdropRatingBadgeScale',
+  'thumbnailRatingBadgeScale',
   'logoRatingBadgeScale',
   'posterRatingStyle',
   'posterRatingsStyle',
   'backdropRatingStyle',
   'backdropRatingsStyle',
+  'thumbnailRatingStyle',
+  'thumbnailRatingsStyle',
   'logoRatingStyle',
   'logoRatingsStyle',
   'posterRatingPresentation',
   'backdropRatingPresentation',
+  'thumbnailRatingPresentation',
   'logoRatingPresentation',
   'posterAggregateRatingSource',
   'backdropAggregateRatingSource',
+  'thumbnailAggregateRatingSource',
   'logoAggregateRatingSource',
   'posterImageText',
   'posterImageSize',
   'backdropImageText',
+  'thumbnailImageText',
   'posterArtworkSource',
   'backdropArtworkSource',
+  'thumbnailArtworkSource',
   'thumbnailEpisodeArtwork',
   'backdropEpisodeArtwork',
   'logoArtworkSource',
@@ -376,10 +415,15 @@ const CONFIG_STRING_KEYS = [
   'backdropRatingsLayout',
   'backdropRatingsMax',
   'backdropBottomRatingsRow',
+  'thumbnailRatingsLayout',
+  'thumbnailRatingsMax',
+  'thumbnailBottomRatingsRow',
   'posterSideRatingsPosition',
   'posterSideRatingsOffset',
   'backdropSideRatingsPosition',
   'backdropSideRatingsOffset',
+  'thumbnailSideRatingsPosition',
+  'thumbnailSideRatingsOffset',
   'sideRatingsPosition',
   'sideRatingsOffset',
   'logoRatingsMax',
@@ -444,12 +488,15 @@ export const XRDB_RESERVED_PARAMS = new Set<string>([
   'logoRatingPresentation',
   'posterAggregateRatingSource',
   'backdropAggregateRatingSource',
+  'thumbnailAggregateRatingSource',
   'logoAggregateRatingSource',
   'posterImageText',
   'posterImageSize',
   'backdropImageText',
+  'thumbnailImageText',
   'posterArtworkSource',
   'backdropArtworkSource',
+  'thumbnailArtworkSource',
   'logoArtworkSource',
   'posterCleanSource',
   'backdropCleanSource',

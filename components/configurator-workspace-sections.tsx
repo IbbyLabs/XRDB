@@ -69,7 +69,7 @@ const RatingProviderSortableList = dynamic(
   }
 );
 
-type PreviewType = 'poster' | 'backdrop' | 'logo';
+type PreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 type SelectionOption<T extends string> = {
   id: T;
   label: string;
@@ -774,6 +774,7 @@ export function SimpleQuickTuneSection({
   onSelectPosterImageSize,
   onSelectLogoArtworkSource,
   onSelectBackdropArtworkSource,
+  onSelectThumbnailArtworkSource,
   onSelectPosterArtworkSource,
   onSelectGenreBadgeMode,
   onSelectStreamBadges,
@@ -805,6 +806,7 @@ export function SimpleQuickTuneSection({
   onSelectPosterImageSize: (value: PosterImageSize) => void;
   onSelectLogoArtworkSource: (value: ArtworkSource) => void;
   onSelectBackdropArtworkSource: (value: ArtworkSource) => void;
+  onSelectThumbnailArtworkSource: (value: ArtworkSource) => void;
   onSelectPosterArtworkSource: (value: ArtworkSource) => void;
   onSelectGenreBadgeMode: (value: GenreBadgeMode) => void;
   onSelectStreamBadges: (value: StreamBadgesSetting) => void;
@@ -944,6 +946,10 @@ export function SimpleQuickTuneSection({
                   }
                   if (previewType === 'backdrop') {
                     onSelectBackdropArtworkSource(option.id);
+                    return;
+                  }
+                  if (previewType === 'thumbnail') {
+                    onSelectThumbnailArtworkSource(option.id);
                     return;
                   }
                   onSelectPosterArtworkSource(option.id);

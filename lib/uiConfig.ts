@@ -131,26 +131,33 @@ export type SharedXrdbSettings = {
   posterImageSize: PosterImageSize;
   posterImageText: PosterImageTextPreference;
   backdropImageText: BackdropImageTextPreference;
+  thumbnailImageText: BackdropImageTextPreference;
   posterArtworkSource: ArtworkSource;
   backdropArtworkSource: ArtworkSource;
+  thumbnailArtworkSource: ArtworkSource;
   logoArtworkSource: ArtworkSource;
   thumbnailEpisodeArtwork: EpisodeArtworkMode;
   backdropEpisodeArtwork: EpisodeArtworkMode;
   ratingValueMode: RatingValueMode;
   posterGenreBadgeMode: GenreBadgeMode;
   backdropGenreBadgeMode: GenreBadgeMode;
+  thumbnailGenreBadgeMode: GenreBadgeMode;
   logoGenreBadgeMode: GenreBadgeMode;
   posterGenreBadgeStyle: GenreBadgeStyle;
   backdropGenreBadgeStyle: GenreBadgeStyle;
+  thumbnailGenreBadgeStyle: GenreBadgeStyle;
   logoGenreBadgeStyle: GenreBadgeStyle;
   posterGenreBadgePosition: GenreBadgePosition;
   backdropGenreBadgePosition: GenreBadgePosition;
+  thumbnailGenreBadgePosition: GenreBadgePosition;
   logoGenreBadgePosition: GenreBadgePosition;
   posterGenreBadgeScale: number;
   backdropGenreBadgeScale: number;
+  thumbnailGenreBadgeScale: number;
   logoGenreBadgeScale: number;
   posterGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   backdropGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
+  thumbnailGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   logoGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   posterRatingPreferences: RatingPreference[];
   backdropRatingPreferences: RatingPreference[];
@@ -158,36 +165,48 @@ export type SharedXrdbSettings = {
   logoRatingPreferences: RatingPreference[];
   posterStreamBadges: StreamBadgesSetting;
   backdropStreamBadges: StreamBadgesSetting;
+  thumbnailStreamBadges: StreamBadgesSetting;
   qualityBadgesSide: QualityBadgesSide;
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
   posterQualityBadgePreferences: MediaFeatureBadgeKey[];
   backdropQualityBadgePreferences: MediaFeatureBadgeKey[];
+  thumbnailQualityBadgePreferences: MediaFeatureBadgeKey[];
   logoQualityBadgePreferences: MediaFeatureBadgeKey[];
   posterQualityBadgesStyle: QualityBadgeStyle;
   backdropQualityBadgesStyle: QualityBadgeStyle;
+  thumbnailQualityBadgesStyle: QualityBadgeStyle;
   logoQualityBadgesStyle: QualityBadgeStyle;
   posterQualityBadgesMax: number | null;
   backdropQualityBadgesMax: number | null;
+  thumbnailQualityBadgesMax: number | null;
   logoQualityBadgesMax: number | null;
   posterRatingsLayout: PosterRatingLayout;
   backdropRatingsLayout: BackdropRatingLayout;
+  thumbnailRatingsLayout: BackdropRatingLayout;
   posterRatingsMax: number | null;
   backdropRatingsMax: number | null;
+  thumbnailRatingsMax: number | null;
   backdropBottomRatingsRow: boolean;
+  thumbnailBottomRatingsRow: boolean;
   posterRatingStyle: RatingStyle;
   backdropRatingStyle: RatingStyle;
+  thumbnailRatingStyle: RatingStyle;
   logoRatingStyle: RatingStyle;
   posterRatingBadgeScale: number;
   backdropRatingBadgeScale: number;
+  thumbnailRatingBadgeScale: number;
   logoRatingBadgeScale: number;
   posterQualityBadgeScale: number;
   backdropQualityBadgeScale: number;
+  thumbnailQualityBadgeScale: number;
   logoQualityBadgeScale: number;
   posterRatingPresentation: RatingPresentation;
   backdropRatingPresentation: RatingPresentation;
+  thumbnailRatingPresentation: RatingPresentation;
   logoRatingPresentation: RatingPresentation;
   posterAggregateRatingSource: AggregateRatingSource;
   backdropAggregateRatingSource: AggregateRatingSource;
+  thumbnailAggregateRatingSource: AggregateRatingSource;
   logoAggregateRatingSource: AggregateRatingSource;
   aggregateAccentMode: AggregateAccentMode;
   aggregateAccentColor: string;
@@ -201,6 +220,8 @@ export type SharedXrdbSettings = {
   posterSideRatingsOffset: number;
   backdropSideRatingsPosition: SideRatingPosition;
   backdropSideRatingsOffset: number;
+  thumbnailSideRatingsPosition: SideRatingPosition;
+  thumbnailSideRatingsOffset: number;
   sideRatingsPosition: SideRatingPosition;
   sideRatingsOffset: number;
   logoRatingsMax: number | null;
@@ -280,26 +301,33 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   posterImageSize: 'normal',
   posterImageText: 'clean',
   backdropImageText: 'clean',
+  thumbnailImageText: 'clean',
   posterArtworkSource: 'tmdb',
   backdropArtworkSource: 'tmdb',
+  thumbnailArtworkSource: 'tmdb',
   logoArtworkSource: 'tmdb',
   thumbnailEpisodeArtwork: 'still',
   backdropEpisodeArtwork: 'series',
   ratingValueMode: DEFAULT_RATING_VALUE_MODE,
   posterGenreBadgeMode: DEFAULT_GENRE_BADGE_MODE,
   backdropGenreBadgeMode: DEFAULT_GENRE_BADGE_MODE,
+  thumbnailGenreBadgeMode: DEFAULT_GENRE_BADGE_MODE,
   logoGenreBadgeMode: DEFAULT_GENRE_BADGE_MODE,
   posterGenreBadgeStyle: DEFAULT_GENRE_BADGE_STYLE,
   backdropGenreBadgeStyle: DEFAULT_GENRE_BADGE_STYLE,
+  thumbnailGenreBadgeStyle: DEFAULT_GENRE_BADGE_STYLE,
   logoGenreBadgeStyle: DEFAULT_GENRE_BADGE_STYLE,
   posterGenreBadgePosition: DEFAULT_GENRE_BADGE_POSITION,
   backdropGenreBadgePosition: DEFAULT_GENRE_BADGE_POSITION,
+  thumbnailGenreBadgePosition: DEFAULT_GENRE_BADGE_POSITION,
   logoGenreBadgePosition: DEFAULT_GENRE_BADGE_POSITION,
   posterGenreBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   backdropGenreBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
+  thumbnailGenreBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   logoGenreBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   posterGenreBadgeAnimeGrouping: DEFAULT_GENRE_BADGE_ANIME_GROUPING,
   backdropGenreBadgeAnimeGrouping: DEFAULT_GENRE_BADGE_ANIME_GROUPING,
+  thumbnailGenreBadgeAnimeGrouping: DEFAULT_GENRE_BADGE_ANIME_GROUPING,
   logoGenreBadgeAnimeGrouping: DEFAULT_GENRE_BADGE_ANIME_GROUPING,
   posterRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
   backdropRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
@@ -307,36 +335,48 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   logoRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
   posterStreamBadges: 'auto',
   backdropStreamBadges: 'auto',
+  thumbnailStreamBadges: 'auto',
   qualityBadgesSide: 'left',
   posterQualityBadgesPosition: 'auto',
   posterQualityBadgePreferences: [...DEFAULT_QUALITY_BADGE_PREFERENCES],
   backdropQualityBadgePreferences: [...DEFAULT_QUALITY_BADGE_PREFERENCES],
+  thumbnailQualityBadgePreferences: [...DEFAULT_QUALITY_BADGE_PREFERENCES],
   logoQualityBadgePreferences: [...DEFAULT_QUALITY_BADGE_PREFERENCES],
   posterQualityBadgesStyle: DEFAULT_QUALITY_BADGES_STYLE,
   backdropQualityBadgesStyle: DEFAULT_QUALITY_BADGES_STYLE,
+  thumbnailQualityBadgesStyle: DEFAULT_QUALITY_BADGES_STYLE,
   logoQualityBadgesStyle: DEFAULT_QUALITY_BADGES_STYLE,
   posterQualityBadgesMax: null,
   backdropQualityBadgesMax: null,
+  thumbnailQualityBadgesMax: null,
   logoQualityBadgesMax: null,
   posterRatingsLayout: 'bottom',
   backdropRatingsLayout: DEFAULT_BACKDROP_RATING_LAYOUT,
+  thumbnailRatingsLayout: DEFAULT_BACKDROP_RATING_LAYOUT,
   posterRatingsMax: null,
   backdropRatingsMax: null,
+  thumbnailRatingsMax: null,
   backdropBottomRatingsRow: false,
+  thumbnailBottomRatingsRow: false,
   posterRatingStyle: DEFAULT_RATING_STYLE,
   backdropRatingStyle: DEFAULT_RATING_STYLE,
+  thumbnailRatingStyle: DEFAULT_RATING_STYLE,
   logoRatingStyle: 'plain',
   posterRatingBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   backdropRatingBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
+  thumbnailRatingBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   logoRatingBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   posterQualityBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   backdropQualityBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
+  thumbnailQualityBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   logoQualityBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   posterRatingPresentation: DEFAULT_RATING_PRESENTATION,
   backdropRatingPresentation: DEFAULT_RATING_PRESENTATION,
+  thumbnailRatingPresentation: DEFAULT_RATING_PRESENTATION,
   logoRatingPresentation: DEFAULT_RATING_PRESENTATION,
   posterAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
   backdropAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
+  thumbnailAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
   logoAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
   aggregateAccentMode: DEFAULT_AGGREGATE_ACCENT_MODE,
   aggregateAccentColor: DEFAULT_AGGREGATE_ACCENT_COLOR,
@@ -350,6 +390,8 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   posterSideRatingsOffset: DEFAULT_SIDE_RATING_OFFSET,
   backdropSideRatingsPosition: DEFAULT_SIDE_RATING_POSITION,
   backdropSideRatingsOffset: DEFAULT_SIDE_RATING_OFFSET,
+  thumbnailSideRatingsPosition: DEFAULT_SIDE_RATING_POSITION,
+  thumbnailSideRatingsOffset: DEFAULT_SIDE_RATING_OFFSET,
   sideRatingsPosition: DEFAULT_SIDE_RATING_POSITION,
   sideRatingsOffset: DEFAULT_SIDE_RATING_OFFSET,
   logoRatingsMax: null,
@@ -651,6 +693,10 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
   const backdropImageText = legacyFanartBackdropMode
     ? 'clean'
     : normalizeBackdropImageTextPreference(candidate.backdropImageText, defaults.backdropImageText);
+  const thumbnailImageText = normalizeBackdropImageTextPreference(
+    candidate.thumbnailImageText ?? candidate.backdropImageText,
+    defaults.thumbnailImageText,
+  );
   const posterArtworkSource = legacyFanartPosterMode
     ? 'fanart'
     : normalizePosterArtworkSource(
@@ -663,6 +709,12 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
         candidate.backdropArtworkSource ?? candidate.backdropCleanSource,
         defaults.backdropArtworkSource
       );
+  const thumbnailArtworkSource = normalizeNonPosterArtworkSource(
+    candidate.thumbnailArtworkSource ??
+      candidate.backdropArtworkSource ??
+      candidate.backdropCleanSource,
+    defaults.thumbnailArtworkSource,
+  );
   const rpdbRatingBarAliases = resolveRpdbRatingBarPositionAliases(candidate.ratingBarPos);
   const sharedRatingsInput = candidate.ratings ?? candidate.order;
   const rpdbFontScalePercent = normalizeRpdbFontScalePercent(candidate.fontScale);
@@ -708,8 +760,10 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
     ),
     posterImageText,
     backdropImageText,
+    thumbnailImageText,
     posterArtworkSource,
     backdropArtworkSource,
+    thumbnailArtworkSource,
     logoArtworkSource: normalizeNonPosterArtworkSource(
       candidate.logoArtworkSource ?? candidate.logoSource,
       defaults.logoArtworkSource
@@ -731,6 +785,12 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
       candidate.backdropGenreBadgeMode ?? candidate.backdropGenreBadge,
       globalGenreBadgeMode,
     ),
+    thumbnailGenreBadgeMode: normalizeGenreBadgeMode(
+      candidate.thumbnailGenreBadgeMode ??
+        candidate.thumbnailGenreBadge ??
+        candidate.backdropGenreBadge,
+      defaults.thumbnailGenreBadgeMode,
+    ),
     logoGenreBadgeMode: normalizeGenreBadgeMode(
       candidate.logoGenreBadgeMode ?? candidate.logoGenreBadge,
       globalGenreBadgeMode,
@@ -742,6 +802,10 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
     backdropGenreBadgeStyle: normalizeGenreBadgeStyle(
       candidate.backdropGenreBadgeStyle,
       globalGenreBadgeStyle,
+    ),
+    thumbnailGenreBadgeStyle: normalizeGenreBadgeStyle(
+      candidate.thumbnailGenreBadgeStyle ?? candidate.backdropGenreBadgeStyle,
+      defaults.thumbnailGenreBadgeStyle,
     ),
     logoGenreBadgeStyle: normalizeGenreBadgeStyle(
       candidate.logoGenreBadgeStyle,
@@ -755,6 +819,10 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
       candidate.backdropGenreBadgePosition,
       globalGenreBadgePosition,
     ),
+    thumbnailGenreBadgePosition: normalizeGenreBadgePosition(
+      candidate.thumbnailGenreBadgePosition ?? candidate.backdropGenreBadgePosition,
+      defaults.thumbnailGenreBadgePosition,
+    ),
     logoGenreBadgePosition: normalizeGenreBadgePosition(
       candidate.logoGenreBadgePosition,
       globalGenreBadgePosition,
@@ -767,6 +835,10 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
       candidate.backdropGenreBadgeScale,
       globalGenreBadgeScale,
     ),
+    thumbnailGenreBadgeScale: normalizeGenreBadgeScalePercent(
+      candidate.thumbnailGenreBadgeScale ?? candidate.backdropGenreBadgeScale,
+      defaults.thumbnailGenreBadgeScale,
+    ),
     logoGenreBadgeScale: normalizeGenreBadgeScalePercent(
       candidate.logoGenreBadgeScale,
       globalGenreBadgeScale,
@@ -778,6 +850,10 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
     backdropGenreBadgeAnimeGrouping: normalizeGenreBadgeAnimeGrouping(
       candidate.backdropGenreBadgeAnimeGrouping,
       globalGenreBadgeAnimeGrouping,
+    ),
+    thumbnailGenreBadgeAnimeGrouping: normalizeGenreBadgeAnimeGrouping(
+      candidate.thumbnailGenreBadgeAnimeGrouping ?? candidate.backdropGenreBadgeAnimeGrouping,
+      defaults.thumbnailGenreBadgeAnimeGrouping,
     ),
     logoGenreBadgeAnimeGrouping: normalizeGenreBadgeAnimeGrouping(
       candidate.logoGenreBadgeAnimeGrouping,
@@ -809,6 +885,10 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
       candidate.backdropStreamBadges,
       defaults.backdropStreamBadges,
     ),
+    thumbnailStreamBadges: normalizeStreamBadgesSetting(
+      candidate.thumbnailStreamBadges ?? candidate.backdropStreamBadges,
+      defaults.thumbnailStreamBadges,
+    ),
     qualityBadgesSide: normalizeQualityBadgesSide(
       candidate.qualityBadgesSide,
       defaults.qualityBadgesSide,
@@ -825,6 +905,10 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
       candidate.backdropQualityBadgePreferences,
       defaults.backdropQualityBadgePreferences,
     ),
+    thumbnailQualityBadgePreferences: normalizeQualityBadgePreferencesList(
+      candidate.thumbnailQualityBadgePreferences ?? candidate.backdropQualityBadgePreferences,
+      defaults.thumbnailQualityBadgePreferences,
+    ),
     logoQualityBadgePreferences: normalizeQualityBadgePreferencesList(
       candidate.logoQualityBadgePreferences,
       defaults.logoQualityBadgePreferences,
@@ -835,11 +919,20 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
     backdropQualityBadgesStyle: normalizeQualityBadgeStyle(
       candidate.backdropQualityBadgesStyle as string | null | undefined,
     ),
+    thumbnailQualityBadgesStyle: normalizeQualityBadgeStyle(
+      (candidate.thumbnailQualityBadgesStyle ?? candidate.backdropQualityBadgesStyle) as
+        | string
+        | null
+        | undefined,
+    ),
     logoQualityBadgesStyle: normalizeQualityBadgeStyle(
       candidate.logoQualityBadgesStyle as string | null | undefined,
     ),
     posterQualityBadgesMax: normalizeOptionalBadgeCount(candidate.posterQualityBadgesMax),
     backdropQualityBadgesMax: normalizeOptionalBadgeCount(candidate.backdropQualityBadgesMax),
+    thumbnailQualityBadgesMax: normalizeOptionalBadgeCount(
+      candidate.thumbnailQualityBadgesMax ?? candidate.backdropQualityBadgesMax,
+    ),
     logoQualityBadgesMax: normalizeOptionalBadgeCount(candidate.logoQualityBadgesMax),
     posterRatingsLayout: normalizePosterRatingLayout(
       (candidate.posterRatingsLayout ?? rpdbRatingBarAliases.posterRatingsLayout) as
@@ -853,14 +946,32 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
         | null
         | undefined,
     ),
+    thumbnailRatingsLayout: normalizeBackdropRatingLayout(
+      (candidate.thumbnailRatingsLayout ??
+        candidate.backdropRatingsLayout ??
+        rpdbRatingBarAliases.backdropRatingsLayout) as string | null | undefined,
+    ),
     posterRatingsMax: normalizeOptionalBadgeCount(candidate.posterRatingsMax),
     backdropRatingsMax: normalizeOptionalBadgeCount(candidate.backdropRatingsMax),
+    thumbnailRatingsMax: normalizeOptionalBadgeCount(
+      candidate.thumbnailRatingsMax ?? candidate.backdropRatingsMax,
+    ),
     backdropBottomRatingsRow: normalizeBoolean(
       candidate.backdropBottomRatingsRow,
       defaults.backdropBottomRatingsRow,
     ),
+    thumbnailBottomRatingsRow: normalizeBoolean(
+      candidate.thumbnailBottomRatingsRow ?? candidate.backdropBottomRatingsRow,
+      defaults.thumbnailBottomRatingsRow,
+    ),
     posterRatingStyle: normalizeRatingStyle(candidate.posterRatingStyle as string | null | undefined),
     backdropRatingStyle: normalizeRatingStyle(candidate.backdropRatingStyle as string | null | undefined),
+    thumbnailRatingStyle: normalizeRatingStyle(
+      (candidate.thumbnailRatingStyle ?? candidate.backdropRatingStyle) as
+        | string
+        | null
+        | undefined,
+    ),
     posterRatingPresentation: normalizeRatingPresentation(
       candidate.posterRatingPresentation,
       defaults.posterRatingPresentation,
@@ -868,6 +979,10 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
     backdropRatingPresentation: normalizeRatingPresentation(
       candidate.backdropRatingPresentation,
       defaults.backdropRatingPresentation,
+    ),
+    thumbnailRatingPresentation: normalizeRatingPresentation(
+      candidate.thumbnailRatingPresentation ?? candidate.backdropRatingPresentation,
+      defaults.thumbnailRatingPresentation,
     ),
     logoRatingPresentation: normalizeRatingPresentation(
       candidate.logoRatingPresentation,
@@ -880,6 +995,10 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
     backdropAggregateRatingSource: normalizeAggregateRatingSource(
       candidate.backdropAggregateRatingSource,
       defaults.backdropAggregateRatingSource,
+    ),
+    thumbnailAggregateRatingSource: normalizeAggregateRatingSource(
+      candidate.thumbnailAggregateRatingSource ?? candidate.backdropAggregateRatingSource,
+      defaults.thumbnailAggregateRatingSource,
     ),
     logoAggregateRatingSource: normalizeAggregateRatingSource(
       candidate.logoAggregateRatingSource,
@@ -922,6 +1041,12 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
       candidate.backdropRatingBadgeScale ?? rpdbFontScalePercent,
       defaults.backdropRatingBadgeScale,
     ),
+    thumbnailRatingBadgeScale: normalizeBadgeScalePercent(
+      candidate.thumbnailRatingBadgeScale ??
+        candidate.backdropRatingBadgeScale ??
+        rpdbFontScalePercent,
+      defaults.thumbnailRatingBadgeScale,
+    ),
     logoRatingBadgeScale: normalizeBadgeScalePercent(
       candidate.logoRatingBadgeScale ?? rpdbFontScalePercent,
       defaults.logoRatingBadgeScale,
@@ -933,6 +1058,10 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
     backdropQualityBadgeScale: normalizeBadgeScalePercent(
       candidate.backdropQualityBadgeScale,
       defaults.backdropQualityBadgeScale,
+    ),
+    thumbnailQualityBadgeScale: normalizeBadgeScalePercent(
+      candidate.thumbnailQualityBadgeScale ?? candidate.backdropQualityBadgeScale,
+      defaults.thumbnailQualityBadgeScale,
     ),
     logoQualityBadgeScale: normalizeBadgeScalePercent(
       candidate.logoQualityBadgeScale,
@@ -951,6 +1080,12 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
     ),
     backdropSideRatingsOffset: normalizeSideRatingOffset(
       candidate.backdropSideRatingsOffset ?? legacySideRatingsOffset,
+    ),
+    thumbnailSideRatingsPosition: normalizeSideRatingPosition(
+      candidate.thumbnailSideRatingsPosition ?? candidate.backdropSideRatingsPosition ?? legacySideRatingsPosition,
+    ),
+    thumbnailSideRatingsOffset: normalizeSideRatingOffset(
+      candidate.thumbnailSideRatingsOffset ?? candidate.backdropSideRatingsOffset ?? legacySideRatingsOffset,
     ),
     sideRatingsPosition: legacySideRatingsPosition,
     sideRatingsOffset: legacySideRatingsOffset,
@@ -1178,11 +1313,29 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
     },
     defaultValue: DEFAULT_GENRE_BADGE_ANIME_GROUPING,
   });
+  if (settings.thumbnailGenreBadgeMode !== DEFAULT_GENRE_BADGE_MODE) {
+    payload.thumbnailGenreBadge = settings.thumbnailGenreBadgeMode;
+  }
+  if (settings.thumbnailGenreBadgeStyle !== DEFAULT_GENRE_BADGE_STYLE) {
+    payload.thumbnailGenreBadgeStyle = settings.thumbnailGenreBadgeStyle;
+  }
+  if (settings.thumbnailGenreBadgePosition !== DEFAULT_GENRE_BADGE_POSITION) {
+    payload.thumbnailGenreBadgePosition = settings.thumbnailGenreBadgePosition;
+  }
+  if (settings.thumbnailGenreBadgeScale !== DEFAULT_BADGE_SCALE_PERCENT) {
+    payload.thumbnailGenreBadgeScale = settings.thumbnailGenreBadgeScale;
+  }
+  if (settings.thumbnailGenreBadgeAnimeGrouping !== DEFAULT_GENRE_BADGE_ANIME_GROUPING) {
+    payload.thumbnailGenreBadgeAnimeGrouping = settings.thumbnailGenreBadgeAnimeGrouping;
+  }
   if (settings.posterStreamBadges !== 'auto') {
     payload.posterStreamBadges = settings.posterStreamBadges;
   }
   if (settings.backdropStreamBadges !== 'auto') {
     payload.backdropStreamBadges = settings.backdropStreamBadges;
+  }
+  if (settings.thumbnailStreamBadges !== 'auto') {
+    payload.thumbnailStreamBadges = settings.thumbnailStreamBadges;
   }
   if (settings.posterRatingsLayout === 'top-bottom' && settings.qualityBadgesSide !== 'left') {
     payload.qualityBadgesSide = settings.qualityBadgesSide;
@@ -1198,6 +1351,9 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   );
   const backdropQualityBadges = stringifyQualityBadgePreferencesAllowEmpty(
     settings.backdropQualityBadgePreferences,
+  );
+  const thumbnailQualityBadges = stringifyQualityBadgePreferencesAllowEmpty(
+    settings.thumbnailQualityBadgePreferences,
   );
   const logoQualityBadges = stringifyQualityBadgePreferencesAllowEmpty(
     settings.logoQualityBadgePreferences,
@@ -1215,6 +1371,12 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
     payload.backdropQualityBadges = backdropQualityBadges;
   }
   if (
+    thumbnailQualityBadges !==
+    stringifyQualityBadgePreferencesAllowEmpty(DEFAULT_QUALITY_BADGE_PREFERENCES)
+  ) {
+    payload.thumbnailQualityBadges = thumbnailQualityBadges;
+  }
+  if (
     logoQualityBadges !==
     stringifyQualityBadgePreferencesAllowEmpty(DEFAULT_QUALITY_BADGE_PREFERENCES)
   ) {
@@ -1226,6 +1388,9 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   if (settings.backdropQualityBadgesStyle !== DEFAULT_QUALITY_BADGES_STYLE) {
     payload.backdropQualityBadgesStyle = settings.backdropQualityBadgesStyle;
   }
+  if (settings.thumbnailQualityBadgesStyle !== DEFAULT_QUALITY_BADGES_STYLE) {
+    payload.thumbnailQualityBadgesStyle = settings.thumbnailQualityBadgesStyle;
+  }
   if (settings.logoQualityBadgesStyle !== DEFAULT_QUALITY_BADGES_STYLE) {
     payload.logoQualityBadgesStyle = settings.logoQualityBadgesStyle;
   }
@@ -1234,6 +1399,9 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   }
   if (settings.backdropQualityBadgesMax !== null) {
     payload.backdropQualityBadgesMax = settings.backdropQualityBadgesMax;
+  }
+  if (settings.thumbnailQualityBadgesMax !== null) {
+    payload.thumbnailQualityBadgesMax = settings.thumbnailQualityBadgesMax;
   }
   if (settings.logoQualityBadgesMax !== null) {
     payload.logoQualityBadgesMax = settings.logoQualityBadgesMax;
@@ -1244,18 +1412,28 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   if (settings.backdropRatingsMax !== null) {
     payload.backdropRatingsMax = settings.backdropRatingsMax;
   }
+  if (settings.thumbnailRatingsMax !== null) {
+    payload.thumbnailRatingsMax = settings.thumbnailRatingsMax;
+  }
   if (settings.backdropBottomRatingsRow) {
     payload.backdropBottomRatingsRow = true;
+  }
+  if (settings.thumbnailBottomRatingsRow) {
+    payload.thumbnailBottomRatingsRow = true;
   }
 
   payload.posterRatingStyle = settings.posterRatingStyle;
   payload.backdropRatingStyle = settings.backdropRatingStyle;
+  payload.thumbnailRatingStyle = settings.thumbnailRatingStyle;
   payload.logoRatingStyle = settings.logoRatingStyle;
   if (settings.posterRatingBadgeScale !== DEFAULT_BADGE_SCALE_PERCENT) {
     payload.posterRatingBadgeScale = settings.posterRatingBadgeScale;
   }
   if (settings.backdropRatingBadgeScale !== DEFAULT_BADGE_SCALE_PERCENT) {
     payload.backdropRatingBadgeScale = settings.backdropRatingBadgeScale;
+  }
+  if (settings.thumbnailRatingBadgeScale !== DEFAULT_BADGE_SCALE_PERCENT) {
+    payload.thumbnailRatingBadgeScale = settings.thumbnailRatingBadgeScale;
   }
   if (settings.logoRatingBadgeScale !== DEFAULT_BADGE_SCALE_PERCENT) {
     payload.logoRatingBadgeScale = settings.logoRatingBadgeScale;
@@ -1266,16 +1444,23 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   if (settings.backdropQualityBadgeScale !== DEFAULT_BADGE_SCALE_PERCENT) {
     payload.backdropQualityBadgeScale = settings.backdropQualityBadgeScale;
   }
+  if (settings.thumbnailQualityBadgeScale !== DEFAULT_BADGE_SCALE_PERCENT) {
+    payload.thumbnailQualityBadgeScale = settings.thumbnailQualityBadgeScale;
+  }
   if (settings.logoQualityBadgeScale !== DEFAULT_BADGE_SCALE_PERCENT) {
     payload.logoQualityBadgeScale = settings.logoQualityBadgeScale;
   }
   payload.posterImageText = settings.posterImageText;
   payload.backdropImageText = settings.backdropImageText;
+  payload.thumbnailImageText = settings.thumbnailImageText;
   if (settings.posterArtworkSource !== 'tmdb') {
     payload.posterArtworkSource = settings.posterArtworkSource;
   }
   if (settings.backdropArtworkSource !== 'tmdb') {
     payload.backdropArtworkSource = settings.backdropArtworkSource;
+  }
+  if (settings.thumbnailArtworkSource !== 'tmdb') {
+    payload.thumbnailArtworkSource = settings.thumbnailArtworkSource;
   }
   if (settings.logoArtworkSource !== 'tmdb') {
     payload.logoArtworkSource = settings.logoArtworkSource;
@@ -1293,6 +1478,9 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   if (settings.backdropRatingPresentation !== DEFAULT_RATING_PRESENTATION) {
     payload.backdropRatingPresentation = settings.backdropRatingPresentation;
   }
+  if (settings.thumbnailRatingPresentation !== DEFAULT_RATING_PRESENTATION) {
+    payload.thumbnailRatingPresentation = settings.thumbnailRatingPresentation;
+  }
   if (settings.logoRatingPresentation !== DEFAULT_RATING_PRESENTATION) {
     payload.logoRatingPresentation = settings.logoRatingPresentation;
   }
@@ -1301,6 +1489,9 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   }
   if (settings.backdropAggregateRatingSource !== DEFAULT_AGGREGATE_RATING_SOURCE) {
     payload.backdropAggregateRatingSource = settings.backdropAggregateRatingSource;
+  }
+  if (settings.thumbnailAggregateRatingSource !== DEFAULT_AGGREGATE_RATING_SOURCE) {
+    payload.thumbnailAggregateRatingSource = settings.thumbnailAggregateRatingSource;
   }
   if (settings.logoAggregateRatingSource !== DEFAULT_AGGREGATE_RATING_SOURCE) {
     payload.logoAggregateRatingSource = settings.logoAggregateRatingSource;
@@ -1357,6 +1548,15 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
       payload.backdropSideRatingsOffset = settings.backdropSideRatingsOffset;
     }
   }
+  if (
+    !settings.thumbnailBottomRatingsRow &&
+    settings.thumbnailSideRatingsPosition !== DEFAULT_SIDE_RATING_POSITION
+  ) {
+    payload.thumbnailSideRatingsPosition = settings.thumbnailSideRatingsPosition;
+    if (settings.thumbnailSideRatingsPosition === 'custom') {
+      payload.thumbnailSideRatingsOffset = settings.thumbnailSideRatingsOffset;
+    }
+  }
   if (settings.logoRatingsMax !== null) {
     payload.logoRatingsMax = settings.logoRatingsMax;
   }
@@ -1374,6 +1574,9 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   }
   if (!settings.backdropBottomRatingsRow) {
     payload.backdropRatingsLayout = settings.backdropRatingsLayout;
+  }
+  if (!settings.thumbnailBottomRatingsRow) {
+    payload.thumbnailRatingsLayout = settings.thumbnailRatingsLayout;
   }
 
   return payload;
@@ -1523,11 +1726,11 @@ export const buildAiometadataUrlPatterns = (
   const payloadEntries = Object.entries(payload).map(([key, value]) => [key, String(value)] as [string, string]);
   const buildScopedEntries = (scope: 'poster' | 'backdrop' | 'logo' | 'thumbnail') => {
     if (scope === 'thumbnail') {
-      return payloadEntries.filter(([key]) => key !== 'backdropEpisodeArtwork');
+      return payloadEntries.filter(([key]) => !key.startsWith('backdrop'));
     }
 
     return payloadEntries.filter(([key]) => {
-      if (key === 'thumbnailEpisodeArtwork') {
+      if (key.startsWith('thumbnail')) {
         return false;
       }
 

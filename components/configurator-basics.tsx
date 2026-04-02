@@ -8,7 +8,7 @@ import type {
 } from '@/lib/configuratorPresets';
 import type { TmdbIdScopeMode } from '@/lib/uiConfig';
 
-type ProxyType = 'poster' | 'backdrop' | 'logo';
+type ProxyType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 
 export function SetupModeSection({
   experienceMode,
@@ -313,10 +313,11 @@ export function MediaTargetSection({
         <div>
           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Type</span>
           <div className="xrdb-toggle-group flex gap-1 rounded-lg border border-white/10 bg-zinc-900 p-1">
-            {(['poster', 'backdrop', 'logo'] as const).map((type) => (
+            {(['poster', 'backdrop', 'thumbnail', 'logo'] as const).map((type) => (
               <button key={type} onClick={() => onPreviewTypeChange(type)} className={`flex items-center gap-1 rounded px-2 py-1.5 text-xs font-medium transition-colors ${previewType === type ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'}`}>
                 {type === 'poster' && <ImageIcon className="h-3.5 w-3.5" />}
                 {type === 'backdrop' && <MonitorPlay className="h-3.5 w-3.5" />}
+                {type === 'thumbnail' && <ImageIcon className="h-3.5 w-3.5" />}
                 {type === 'logo' && <Layers className="h-3.5 w-3.5" />}
                 {type.charAt(0).toUpperCase() + type.slice(1)}
               </button>
@@ -325,7 +326,13 @@ export function MediaTargetSection({
         </div>
         <div className="min-w-[140px] flex-1">
           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Media ID</span>
-          <input type="text" value={mediaId} onChange={(event) => onMediaIdChange(event.target.value)} placeholder="tt0133093" className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-white outline-none focus:border-violet-500/50" />
+          <input
+            type="text"
+            value={mediaId}
+            onChange={(event) => onMediaIdChange(event.target.value)}
+            placeholder={previewType === 'thumbnail' ? 'tt0944947:1:1' : 'tt0133093'}
+            className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-white outline-none focus:border-violet-500/50"
+          />
         </div>
         {tmdbKey ? (
           <div className="w-32">
@@ -347,6 +354,11 @@ export function MediaTargetSection({
           </div>
         )}
       </div>
+      {previewType === 'thumbnail' ? (
+        <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+          Thumbnail previews need an episode target in `seriesId:season:episode` form, for example `tt0944947:1:1` or `tmdb:tv:1399:1:1`.
+        </p>
+      ) : null}
     </div>
   );
 }

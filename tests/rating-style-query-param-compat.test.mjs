@@ -10,7 +10,7 @@ const requestStateSource = readFileSync(
 test('rating style query param precedence keeps canonical and legacy aliases', () => {
   assert.match(
     requestStateSource,
-    /const typeRatingStyleParam =\s*imageType === 'poster'\s*\?\s*searchParams\.get\('posterRatingStyle'\)\s*\?\?\s*searchParams\.get\('posterRatingsStyle'\)\s*:\s*imageType === 'backdrop'\s*\?\s*searchParams\.get\('backdropRatingStyle'\)\s*\?\?\s*searchParams\.get\('backdropRatingsStyle'\)\s*:\s*searchParams\.get\('logoRatingStyle'\)\s*\?\?\s*searchParams\.get\('logoRatingsStyle'\);/,
+    /const typeRatingStyleParam =[\s\S]*imageType === 'poster'[\s\S]*searchParams\.get\('posterRatingStyle'\)\s*\?\?\s*searchParams\.get\('posterRatingsStyle'\)[\s\S]*isThumbnailRequest[\s\S]*searchParams\.get\('thumbnailRatingStyle'\)\s*\?\?\s*searchParams\.get\('thumbnailRatingsStyle'\)[\s\S]*imageType === 'backdrop'[\s\S]*searchParams\.get\('backdropRatingStyle'\)\s*\?\?\s*searchParams\.get\('backdropRatingsStyle'\)[\s\S]*searchParams\.get\('logoRatingStyle'\)\s*\?\?\s*searchParams\.get\('logoRatingsStyle'\);/,
   );
   assert.match(
     requestStateSource,

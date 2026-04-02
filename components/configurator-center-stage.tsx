@@ -12,7 +12,7 @@ import {
 } from '@/lib/genreBadge';
 import { hexToRgbaCss } from '@/lib/hexToRgbaCss';
 
-type PreviewType = 'poster' | 'backdrop' | 'logo';
+type PreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 type WorkspaceCenterView = 'showcase' | 'preview' | 'guide';
 type WorkspaceCenterViewOption = {
   id: WorkspaceCenterView;
@@ -211,7 +211,7 @@ export function ConfiguratorCenterStage({
               </div>
               <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-wrap gap-2">
-                  {(['poster', 'backdrop', 'logo'] as const).map((type) => (
+                  {(['poster', 'backdrop', 'thumbnail', 'logo'] as const).map((type) => (
                     <button
                       key={`preview-pill-${type}`}
                       type="button"

@@ -40,7 +40,7 @@ import {
   type PosterImageTextPreference,
 } from '@/lib/uiConfig';
 
-type ProxyType = 'poster' | 'backdrop' | 'logo';
+type ProxyType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 
 const SIMPLE_PRESENTATION_IDS: RatingPresentation[] = [
   'standard',
@@ -54,12 +54,22 @@ export function useConfiguratorWorkspaceSummary({
   backdropAggregateRatingSource,
   backdropArtworkSource,
   backdropArtworkSourceOptions,
+  thumbnailBottomRatingsRow,
   backdropImageText,
   backdropImageTextOptions,
   backdropRatingsLayout,
   backdropBottomRatingsRow,
   backdropSideRatingsOffset,
   backdropSideRatingsPosition,
+  thumbnailAggregateRatingSource,
+  thumbnailArtworkSource,
+  thumbnailImageText,
+  thumbnailRatingPresentation,
+  thumbnailRatingRows,
+  thumbnailRatingStyle,
+  thumbnailRatingsLayout,
+  thumbnailSideRatingsOffset,
+  thumbnailSideRatingsPosition,
   genrePreviewCards,
   genrePreviewMode,
   logoAggregateRatingSource,
@@ -88,6 +98,12 @@ export function useConfiguratorWorkspaceSummary({
   setBackdropRatingStyle,
   setBackdropSideRatingsOffset,
   setBackdropSideRatingsPosition,
+  setThumbnailAggregateRatingSource,
+  setThumbnailImageText,
+  setThumbnailRatingPresentation,
+  setThumbnailRatingStyle,
+  setThumbnailSideRatingsOffset,
+  setThumbnailSideRatingsPosition,
   setLogoAggregateRatingSource,
   setLogoRatingPresentation,
   setLogoRatingStyle,
@@ -118,6 +134,7 @@ export function useConfiguratorWorkspaceSummary({
   backdropAggregateRatingSource: AggregateRatingSource;
   backdropArtworkSource: ArtworkSource;
   backdropArtworkSourceOptions: Array<{ id: ArtworkSource; label: string; description: string }>;
+  thumbnailBottomRatingsRow: boolean;
   backdropImageText: BackdropImageTextPreference;
   backdropImageTextOptions: Array<{ id: BackdropImageTextPreference; label: string; description: string }>;
   backdropRatingPresentation: RatingPresentation;
@@ -126,6 +143,15 @@ export function useConfiguratorWorkspaceSummary({
   backdropBottomRatingsRow: boolean;
   backdropSideRatingsOffset: number;
   backdropSideRatingsPosition: SideRatingPosition;
+  thumbnailAggregateRatingSource: AggregateRatingSource;
+  thumbnailArtworkSource: ArtworkSource;
+  thumbnailImageText: BackdropImageTextPreference;
+  thumbnailRatingPresentation: RatingPresentation;
+  thumbnailRatingRows: RatingProviderRow[];
+  thumbnailRatingStyle: RatingStyle;
+  thumbnailRatingsLayout: string;
+  thumbnailSideRatingsOffset: number;
+  thumbnailSideRatingsPosition: SideRatingPosition;
   genrePreviewCards: Array<{ sample: GenreBadgePreviewSample; url: string }>;
   genrePreviewMode: GenreBadgeMode;
   logoAggregateRatingSource: AggregateRatingSource;
@@ -158,6 +184,12 @@ export function useConfiguratorWorkspaceSummary({
   setBackdropRatingStyle: (value: RatingStyle) => void;
   setBackdropSideRatingsOffset: (value: number) => void;
   setBackdropSideRatingsPosition: (value: SideRatingPosition) => void;
+  setThumbnailAggregateRatingSource: (value: AggregateRatingSource) => void;
+  setThumbnailImageText: (value: BackdropImageTextPreference) => void;
+  setThumbnailRatingPresentation: (value: RatingPresentation) => void;
+  setThumbnailRatingStyle: (value: RatingStyle) => void;
+  setThumbnailSideRatingsOffset: (value: number) => void;
+  setThumbnailSideRatingsPosition: (value: SideRatingPosition) => void;
   setLogoAggregateRatingSource: (value: AggregateRatingSource) => void;
   setLogoRatingPresentation: (value: RatingPresentation) => void;
   setLogoRatingStyle: (value: RatingStyle) => void;
@@ -175,18 +207,24 @@ export function useConfiguratorWorkspaceSummary({
       ? posterRatingStyle
       : previewType === 'backdrop'
         ? backdropRatingStyle
-        : logoRatingStyle;
+        : previewType === 'thumbnail'
+          ? thumbnailRatingStyle
+          : logoRatingStyle;
   const activeRatingPresentation =
     previewType === 'poster'
       ? posterRatingPresentation
       : previewType === 'backdrop'
         ? backdropRatingPresentation
-        : logoRatingPresentation;
+        : previewType === 'thumbnail'
+          ? thumbnailRatingPresentation
+          : logoRatingPresentation;
   const activeAggregateRatingSource =
     previewType === 'poster'
       ? posterAggregateRatingSource
       : previewType === 'backdrop'
         ? backdropAggregateRatingSource
+        : previewType === 'thumbnail'
+          ? thumbnailAggregateRatingSource
         : logoAggregateRatingSource;
   const usesAggregatePresentation = usesAggregateRatingPresentation(activeRatingPresentation);
   const activeAggregateAccent =
@@ -197,14 +235,28 @@ export function useConfiguratorWorkspaceSummary({
       : usesDualAggregateRatingPresentation(activeRatingPresentation)
         ? AGGREGATE_RATING_SOURCE_ACCENTS.critics
         : AGGREGATE_RATING_SOURCE_ACCENTS[activeAggregateRatingSource];
-  const activeImageText = previewType === 'backdrop' ? backdropImageText : posterImageText;
+  const activeImageText =
+    previewType === 'backdrop'
+      ? backdropImageText
+      : previewType === 'thumbnail'
+        ? thumbnailImageText
+        : posterImageText;
   const activeImageTextOptions =
-    previewType === 'backdrop' ? backdropImageTextOptions : posterImageTextOptions;
+    previewType === 'backdrop' || previewType === 'thumbnail'
+      ? backdropImageTextOptions
+      : posterImageTextOptions;
   const activeImageTextOptionMeta =
     activeImageTextOptions.find((option) => option.id === activeImageText) || null;
   const activeArtworkSourceOptions =
-    previewType === 'backdrop' ? backdropArtworkSourceOptions : posterArtworkSourceOptions;
-  const activeArtworkSource = previewType === 'backdrop' ? backdropArtworkSource : posterArtworkSource;
+    previewType === 'backdrop' || previewType === 'thumbnail'
+      ? backdropArtworkSourceOptions
+      : posterArtworkSourceOptions;
+  const activeArtworkSource =
+    previewType === 'backdrop'
+      ? backdropArtworkSource
+      : previewType === 'thumbnail'
+        ? thumbnailArtworkSource
+        : posterArtworkSource;
   const activePosterImageSizeOptionMeta =
     posterImageSizeOptions.find((option) => option.id === posterImageSize) || posterImageSizeOptions[0];
   const activeArtworkSourceOptionMeta =
@@ -217,29 +269,51 @@ export function useConfiguratorWorkspaceSummary({
       : previewType === 'backdrop'
         ? !backdropBottomRatingsRow &&
           (backdropRatingsLayout === 'right-vertical' || activeRatingPresentation === 'blockbuster')
+        : previewType === 'thumbnail'
+          ? !thumbnailBottomRatingsRow &&
+            (thumbnailRatingsLayout === 'right-vertical' || activeRatingPresentation === 'blockbuster')
         : false;
   const activeSideRatingsPosition =
-    previewType === 'backdrop' ? backdropSideRatingsPosition : posterSideRatingsPosition;
+    previewType === 'backdrop'
+      ? backdropSideRatingsPosition
+      : previewType === 'thumbnail'
+        ? thumbnailSideRatingsPosition
+        : posterSideRatingsPosition;
   const activeSideRatingsOffset =
-    previewType === 'backdrop' ? backdropSideRatingsOffset : posterSideRatingsOffset;
+    previewType === 'backdrop'
+      ? backdropSideRatingsOffset
+      : previewType === 'thumbnail'
+        ? thumbnailSideRatingsOffset
+        : posterSideRatingsOffset;
   const styleLabel =
     previewType === 'poster'
       ? 'Poster Ratings Style'
       : previewType === 'backdrop'
         ? 'Backdrop Ratings Style'
+        : previewType === 'thumbnail'
+          ? 'Thumbnail Ratings Style'
         : 'Logo Ratings Style';
-  const textLabel = previewType === 'backdrop' ? 'Backdrop Text' : 'Poster Text';
+  const textLabel =
+    previewType === 'backdrop'
+      ? 'Backdrop Text'
+      : previewType === 'thumbnail'
+        ? 'Thumbnail Text'
+        : 'Poster Text';
   const providersLabel =
     previewType === 'poster'
       ? 'Poster Providers'
       : previewType === 'backdrop'
         ? 'Backdrop Providers'
+        : previewType === 'thumbnail'
+          ? 'Thumbnail Providers'
         : 'Logo Providers';
   const ratingProviderRows =
     previewType === 'poster'
       ? posterRatingRows
       : previewType === 'backdrop'
         ? backdropRatingRows
+        : previewType === 'thumbnail'
+          ? thumbnailRatingRows
         : logoRatingRows;
   const showsAggregateRatingSource = usesAggregateRatingSource(activeRatingPresentation);
   const showsAggregateAccentBarOffset = usesAggregateAccentBar(activeRatingPresentation);
@@ -252,6 +326,10 @@ export function useConfiguratorWorkspaceSummary({
         ? backdropBottomRatingsRow
           ? 'the Bottom Row'
           : 'center, right, or right vertical'
+        : previewType === 'thumbnail'
+          ? thumbnailBottomRatingsRow
+            ? 'the Bottom Row'
+            : 'center, right, or right vertical'
         : null;
   const selectedPresetMeta = selectedPresetId ? getConfiguratorPreset(selectedPresetId) : null;
   const wizardActiveQuestionId = CONFIGURATOR_WIZARD_QUESTION_ORDER[wizardQuestionIndex] || null;
@@ -279,7 +357,13 @@ export function useConfiguratorWorkspaceSummary({
   const enabledProviderCount = ratingProviderRows.filter((row) => row.enabled).length;
   const showcaseGenreCards = genrePreviewCards.slice(0, 4);
   const activeTypeLabel =
-    previewType === 'poster' ? 'Poster' : previewType === 'backdrop' ? 'Backdrop' : 'Logo';
+    previewType === 'poster'
+      ? 'Poster'
+      : previewType === 'backdrop'
+        ? 'Backdrop'
+        : previewType === 'thumbnail'
+          ? 'Thumbnail'
+          : 'Logo';
   const currentSetupItems = [
     { label: 'Artwork', value: activeArtworkSourceSummary?.label || 'Default' },
     { label: 'Text', value: previewType === 'logo' ? 'Logo' : activeImageTextOptionMeta?.label || 'Clean' },
@@ -304,9 +388,13 @@ export function useConfiguratorWorkspaceSummary({
         setBackdropRatingStyle(value);
         return;
       }
+      if (previewType === 'thumbnail') {
+        setThumbnailRatingStyle(value);
+        return;
+      }
       setLogoRatingStyle(value);
     },
-    [previewType, setBackdropRatingStyle, setLogoRatingStyle, setPosterRatingStyle],
+    [previewType, setBackdropRatingStyle, setLogoRatingStyle, setPosterRatingStyle, setThumbnailRatingStyle],
   );
 
   const setRatingPresentationForType = useCallback(
@@ -319,9 +407,13 @@ export function useConfiguratorWorkspaceSummary({
         setBackdropRatingPresentation(value);
         return;
       }
+      if (previewType === 'thumbnail') {
+        setThumbnailRatingPresentation(value);
+        return;
+      }
       setLogoRatingPresentation(value);
     },
-    [previewType, setBackdropRatingPresentation, setLogoRatingPresentation, setPosterRatingPresentation],
+    [previewType, setBackdropRatingPresentation, setLogoRatingPresentation, setPosterRatingPresentation, setThumbnailRatingPresentation],
   );
 
   const setAggregateRatingSourceForType = useCallback(
@@ -334,9 +426,13 @@ export function useConfiguratorWorkspaceSummary({
         setBackdropAggregateRatingSource(value);
         return;
       }
+      if (previewType === 'thumbnail') {
+        setThumbnailAggregateRatingSource(value);
+        return;
+      }
       setLogoAggregateRatingSource(value);
     },
-    [previewType, setBackdropAggregateRatingSource, setLogoAggregateRatingSource, setPosterAggregateRatingSource],
+    [previewType, setBackdropAggregateRatingSource, setLogoAggregateRatingSource, setPosterAggregateRatingSource, setThumbnailAggregateRatingSource],
   );
 
   const setImageTextForType = useCallback(
@@ -345,17 +441,27 @@ export function useConfiguratorWorkspaceSummary({
         setBackdropImageText(value);
         return;
       }
+      if (previewType === 'thumbnail') {
+        setThumbnailImageText(value);
+        return;
+      }
       setPosterImageText(value);
     },
-    [previewType, setBackdropImageText, setPosterImageText],
+    [previewType, setBackdropImageText, setPosterImageText, setThumbnailImageText],
   );
 
-  const setActiveSideRatingsPosition = previewType === 'backdrop'
-    ? setBackdropSideRatingsPosition
-    : setPosterSideRatingsPosition;
-  const setActiveSideRatingsOffset = previewType === 'backdrop'
-    ? setBackdropSideRatingsOffset
-    : setPosterSideRatingsOffset;
+  const setActiveSideRatingsPosition =
+    previewType === 'backdrop'
+      ? setBackdropSideRatingsPosition
+      : previewType === 'thumbnail'
+        ? setThumbnailSideRatingsPosition
+        : setPosterSideRatingsPosition;
+  const setActiveSideRatingsOffset =
+    previewType === 'backdrop'
+      ? setBackdropSideRatingsOffset
+      : previewType === 'thumbnail'
+        ? setThumbnailSideRatingsOffset
+        : setPosterSideRatingsOffset;
 
   return {
     activeAggregateAccent,

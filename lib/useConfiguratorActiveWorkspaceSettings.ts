@@ -5,7 +5,7 @@ import { type PosterRatingLayout } from '@/lib/posterLayoutOptions';
 import { type QualityBadgeStyle } from '@/lib/ratingAppearance';
 import { type QualityBadgesSide, type PosterQualityBadgesPosition, type StreamBadgesSetting } from '@/lib/uiConfig';
 
-type PreviewType = 'poster' | 'backdrop' | 'logo';
+type PreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 type Setter<T> = Dispatch<SetStateAction<T>>;
 
 export function useConfiguratorActiveWorkspaceSettings({
@@ -20,6 +20,17 @@ export function useConfiguratorActiveWorkspaceSettings({
   backdropQualityBadgesStyle,
   backdropRatingBadgeScale,
   backdropStreamBadges,
+  thumbnailGenreBadgeAnimeGrouping,
+  thumbnailGenreBadgeMode,
+  thumbnailGenreBadgePosition,
+  thumbnailGenreBadgeScale,
+  thumbnailGenreBadgeStyle,
+  thumbnailQualityBadgePreferences,
+  thumbnailQualityBadgeScale,
+  thumbnailQualityBadgesMax,
+  thumbnailQualityBadgesStyle,
+  thumbnailRatingBadgeScale,
+  thumbnailStreamBadges,
   logoGenreBadgeAnimeGrouping,
   logoGenreBadgeMode,
   logoGenreBadgePosition,
@@ -54,6 +65,17 @@ export function useConfiguratorActiveWorkspaceSettings({
   setBackdropQualityBadgesStyle,
   setBackdropRatingBadgeScale,
   setBackdropStreamBadges,
+  setThumbnailGenreBadgeAnimeGrouping,
+  setThumbnailGenreBadgeMode,
+  setThumbnailGenreBadgePosition,
+  setThumbnailGenreBadgeScale,
+  setThumbnailGenreBadgeStyle,
+  setThumbnailQualityBadgePreferences,
+  setThumbnailQualityBadgeScale,
+  setThumbnailQualityBadgesMax,
+  setThumbnailQualityBadgesStyle,
+  setThumbnailRatingBadgeScale,
+  setThumbnailStreamBadges,
   setLogoGenreBadgeAnimeGrouping,
   setLogoGenreBadgeMode,
   setLogoGenreBadgePosition,
@@ -87,6 +109,17 @@ export function useConfiguratorActiveWorkspaceSettings({
   backdropQualityBadgesStyle: QualityBadgeStyle;
   backdropRatingBadgeScale: number;
   backdropStreamBadges: StreamBadgesSetting;
+  thumbnailGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
+  thumbnailGenreBadgeMode: GenreBadgeMode;
+  thumbnailGenreBadgePosition: GenreBadgePosition;
+  thumbnailGenreBadgeScale: number;
+  thumbnailGenreBadgeStyle: GenreBadgeStyle;
+  thumbnailQualityBadgePreferences: MediaFeatureBadgeKey[];
+  thumbnailQualityBadgeScale: number;
+  thumbnailQualityBadgesMax: number | null;
+  thumbnailQualityBadgesStyle: QualityBadgeStyle;
+  thumbnailRatingBadgeScale: number;
+  thumbnailStreamBadges: StreamBadgesSetting;
   logoGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   logoGenreBadgeMode: GenreBadgeMode;
   logoGenreBadgePosition: GenreBadgePosition;
@@ -121,6 +154,17 @@ export function useConfiguratorActiveWorkspaceSettings({
   setBackdropQualityBadgesStyle: Setter<QualityBadgeStyle>;
   setBackdropRatingBadgeScale: Setter<number>;
   setBackdropStreamBadges: Setter<StreamBadgesSetting>;
+  setThumbnailGenreBadgeAnimeGrouping: Setter<GenreBadgeAnimeGrouping>;
+  setThumbnailGenreBadgeMode: Setter<GenreBadgeMode>;
+  setThumbnailGenreBadgePosition: Setter<GenreBadgePosition>;
+  setThumbnailGenreBadgeScale: Setter<number>;
+  setThumbnailGenreBadgeStyle: Setter<GenreBadgeStyle>;
+  setThumbnailQualityBadgePreferences: Setter<MediaFeatureBadgeKey[]>;
+  setThumbnailQualityBadgeScale: Setter<number>;
+  setThumbnailQualityBadgesMax: Setter<number | null>;
+  setThumbnailQualityBadgesStyle: Setter<QualityBadgeStyle>;
+  setThumbnailRatingBadgeScale: Setter<number>;
+  setThumbnailStreamBadges: Setter<StreamBadgesSetting>;
   setLogoGenreBadgeAnimeGrouping: Setter<GenreBadgeAnimeGrouping>;
   setLogoGenreBadgeMode: Setter<GenreBadgeMode>;
   setLogoGenreBadgePosition: Setter<GenreBadgePosition>;
@@ -153,52 +197,70 @@ export function useConfiguratorActiveWorkspaceSettings({
         ? posterGenreBadgeAnimeGrouping
         : previewType === 'backdrop'
           ? backdropGenreBadgeAnimeGrouping
+          : previewType === 'thumbnail'
+            ? thumbnailGenreBadgeAnimeGrouping
           : logoGenreBadgeAnimeGrouping,
     activeGenreBadgeMode:
       previewType === 'poster'
         ? posterGenreBadgeMode
         : previewType === 'backdrop'
           ? backdropGenreBadgeMode
+          : previewType === 'thumbnail'
+            ? thumbnailGenreBadgeMode
           : logoGenreBadgeMode,
     activeGenreBadgePosition:
       previewType === 'poster'
         ? posterGenreBadgePosition
         : previewType === 'backdrop'
           ? backdropGenreBadgePosition
+          : previewType === 'thumbnail'
+            ? thumbnailGenreBadgePosition
           : logoGenreBadgePosition,
     activeGenreBadgeScale:
       previewType === 'poster'
         ? posterGenreBadgeScale
         : previewType === 'backdrop'
           ? backdropGenreBadgeScale
+          : previewType === 'thumbnail'
+            ? thumbnailGenreBadgeScale
           : logoGenreBadgeScale,
     activeGenreBadgeStyle:
       previewType === 'poster'
         ? posterGenreBadgeStyle
         : previewType === 'backdrop'
           ? backdropGenreBadgeStyle
+          : previewType === 'thumbnail'
+            ? thumbnailGenreBadgeStyle
           : logoGenreBadgeStyle,
     activeQualityBadgePreferences:
       previewType === 'backdrop'
         ? backdropQualityBadgePreferences
+        : previewType === 'thumbnail'
+          ? thumbnailQualityBadgePreferences
         : previewType === 'logo'
           ? logoQualityBadgePreferences
           : posterQualityBadgePreferences,
     activeQualityBadgeScale:
       previewType === 'backdrop'
         ? backdropQualityBadgeScale
+        : previewType === 'thumbnail'
+          ? thumbnailQualityBadgeScale
         : previewType === 'logo'
           ? logoQualityBadgeScale
           : posterQualityBadgeScale,
     activeQualityBadgesMax:
       previewType === 'backdrop'
         ? backdropQualityBadgesMax
+        : previewType === 'thumbnail'
+          ? thumbnailQualityBadgesMax
         : previewType === 'logo'
           ? logoQualityBadgesMax
           : posterQualityBadgesMax,
     activeQualityBadgesStyle:
       previewType === 'backdrop'
         ? backdropQualityBadgesStyle
+        : previewType === 'thumbnail'
+          ? thumbnailQualityBadgesStyle
         : previewType === 'logo'
           ? logoQualityBadgesStyle
           : posterQualityBadgesStyle,
@@ -207,61 +269,92 @@ export function useConfiguratorActiveWorkspaceSettings({
         ? posterRatingBadgeScale
         : previewType === 'backdrop'
           ? backdropRatingBadgeScale
+          : previewType === 'thumbnail'
+            ? thumbnailRatingBadgeScale
           : logoRatingBadgeScale,
-    activeStreamBadges: previewType === 'backdrop' ? backdropStreamBadges : posterStreamBadges,
+    activeStreamBadges:
+      previewType === 'backdrop'
+        ? backdropStreamBadges
+        : previewType === 'thumbnail'
+          ? thumbnailStreamBadges
+          : posterStreamBadges,
     qualityBadgeTypeLabel:
-      previewType === 'backdrop' ? 'Backdrop' : previewType === 'logo' ? 'Logo' : 'Poster',
+      previewType === 'backdrop'
+        ? 'Backdrop'
+        : previewType === 'thumbnail'
+          ? 'Thumbnail'
+          : previewType === 'logo'
+            ? 'Logo'
+            : 'Poster',
     setActiveGenreBadgeAnimeGrouping:
       previewType === 'poster'
         ? setPosterGenreBadgeAnimeGrouping
         : previewType === 'backdrop'
           ? setBackdropGenreBadgeAnimeGrouping
+          : previewType === 'thumbnail'
+            ? setThumbnailGenreBadgeAnimeGrouping
           : setLogoGenreBadgeAnimeGrouping,
     setActiveGenreBadgeMode:
       previewType === 'poster'
         ? setPosterGenreBadgeMode
         : previewType === 'backdrop'
           ? setBackdropGenreBadgeMode
+          : previewType === 'thumbnail'
+            ? setThumbnailGenreBadgeMode
           : setLogoGenreBadgeMode,
     setActiveGenreBadgePosition:
       previewType === 'poster'
         ? setPosterGenreBadgePosition
         : previewType === 'backdrop'
           ? setBackdropGenreBadgePosition
+          : previewType === 'thumbnail'
+            ? setThumbnailGenreBadgePosition
           : setLogoGenreBadgePosition,
     setActiveGenreBadgeScale:
       previewType === 'poster'
         ? setPosterGenreBadgeScale
         : previewType === 'backdrop'
           ? setBackdropGenreBadgeScale
+          : previewType === 'thumbnail'
+            ? setThumbnailGenreBadgeScale
           : setLogoGenreBadgeScale,
     setActiveGenreBadgeStyle:
       previewType === 'poster'
         ? setPosterGenreBadgeStyle
         : previewType === 'backdrop'
           ? setBackdropGenreBadgeStyle
+          : previewType === 'thumbnail'
+            ? setThumbnailGenreBadgeStyle
           : setLogoGenreBadgeStyle,
     setActiveQualityBadgePreferences:
       previewType === 'backdrop'
         ? setBackdropQualityBadgePreferences
+        : previewType === 'thumbnail'
+          ? setThumbnailQualityBadgePreferences
         : previewType === 'logo'
           ? setLogoQualityBadgePreferences
           : setPosterQualityBadgePreferences,
     setActiveQualityBadgeScale:
       previewType === 'backdrop'
         ? setBackdropQualityBadgeScale
+        : previewType === 'thumbnail'
+          ? setThumbnailQualityBadgeScale
         : previewType === 'logo'
           ? setLogoQualityBadgeScale
           : setPosterQualityBadgeScale,
     setActiveQualityBadgesMax:
       previewType === 'backdrop'
         ? setBackdropQualityBadgesMax
+        : previewType === 'thumbnail'
+          ? setThumbnailQualityBadgesMax
         : previewType === 'logo'
           ? setLogoQualityBadgesMax
           : setPosterQualityBadgesMax,
     setActiveQualityBadgesStyle:
       previewType === 'backdrop'
         ? setBackdropQualityBadgesStyle
+        : previewType === 'thumbnail'
+          ? setThumbnailQualityBadgesStyle
         : previewType === 'logo'
           ? setLogoQualityBadgesStyle
           : setPosterQualityBadgesStyle,
@@ -270,8 +363,15 @@ export function useConfiguratorActiveWorkspaceSettings({
         ? setPosterRatingBadgeScale
         : previewType === 'backdrop'
           ? setBackdropRatingBadgeScale
+          : previewType === 'thumbnail'
+            ? setThumbnailRatingBadgeScale
           : setLogoRatingBadgeScale,
-    setActiveStreamBadges: previewType === 'backdrop' ? setBackdropStreamBadges : setPosterStreamBadges,
+    setActiveStreamBadges:
+      previewType === 'backdrop'
+        ? setBackdropStreamBadges
+        : previewType === 'thumbnail'
+          ? setThumbnailStreamBadges
+          : setPosterStreamBadges,
     shouldShowQualityBadgesPosition:
       previewType === 'poster' && shouldShowPosterQualityBadgesPosition,
     shouldShowQualityBadgesSide:
