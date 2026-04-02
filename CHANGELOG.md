@@ -5,6 +5,44 @@
 
 <a id="v1-2-2"></a>
 
+<a id="v1-2-3"></a>
+
+## [v1.2.3] - 03/04/2026
+
+### Fixed
+* restore docs capture quality badge typing
+  
+  Type the docs capture quality badge preference constant as MediaFeatureBadgeKey[] so the workspace runtime setters match their state shape during production type checking.
+  
+  This restores Next.js build validation in CI without changing runtime behavior.
+* FR-27 keep Normalised to Ten scores on one decimal place
+  
+  Render Normalised to Ten values with a fixed single decimal so whole scores display as 8.0 and 4.0 instead of collapsing to integers.
+  
+  Add regression coverage for whole number normalized outputs while keeping native and normalized hundred displays unchanged.
+* BUG-40 remap anime episode thumbnails to TMDB episode targets
+  
+  Use reverse mapping payload episode context for MAL and AniList episode requests so later anime seasons resolve the correct TMDB episode number before artwork selection.
+  
+  Parse TMDB episode targets from anime mapping responses, thread episode query params into reverse mapping requests, and cover the remap flow with payload, request, and media target regressions.
+* speed up asset refresh captures
+  
+  Run the temporary docs refresh Next servers with Turbopack so the first capture no longer stalls on long webpack cold compiles.
+  
+  Disable unrelated configurator remote lookups during docs capture, trim docs preview providers to TMDB only, bound latest release fetch timeouts, and refresh the generated doc assets.
+* BUG-39 center rating badge values and align aggregate accents
+  
+  Center shared badge values within their rendered slots for standard and summary variants so provider and aggregate scores stop hugging the right edge.
+  
+  Refactor aggregate accent rail placement through one centered helper so plain average, plain minimal, and minimal glass treatments stay visually consistent while keeping the AUDIENCE overline aligned above its label.
+  
+  Add focused badge SVG regressions for centered values, plain summary overlines, and minimal accent centering, and verify the change with eslint, focused badge tests, and fresh localhost renders.
+* preserve BUG-{ID} and FR-{ID} in release notes
+  
+  Keep BUG-{ID} and FR-{ID} tokens hyphenated through commit display normalization while removing all other user facing hyphens.
+  
+  Update Discord release parsing to accept the hyphenated tracking ids, rebuild CHANGELOG.md with the corrected formatting, and refresh coverage for both the new default and legacy spaced release items.
+
 ## [v1.2.2] - 02/04/2026
 
 ### Fixed
