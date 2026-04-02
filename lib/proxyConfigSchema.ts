@@ -84,6 +84,7 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'backdropRatingPresentation',
     'backdropAggregateRatingSource',
     'backdropArtworkSource',
+    'backdropEpisodeArtwork',
     'backdropBottomRatingsRow',
   ],
   thumbnail: [
@@ -102,6 +103,7 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'backdropRatingPresentation',
     'backdropAggregateRatingSource',
     'backdropArtworkSource',
+    'thumbnailEpisodeArtwork',
     'backdropRatingsLayout',
     'backdropRatingsMax',
     'backdropBottomRatingsRow',
@@ -238,6 +240,8 @@ export type ProxyConfig = {
   backdropImageText?: string;
   posterArtworkSource?: string;
   backdropArtworkSource?: string;
+  thumbnailEpisodeArtwork?: string;
+  backdropEpisodeArtwork?: string;
   logoArtworkSource?: string;
   posterCleanSource?: string;
   backdropCleanSource?: string;
@@ -360,6 +364,8 @@ const CONFIG_STRING_KEYS = [
   'backdropImageText',
   'posterArtworkSource',
   'backdropArtworkSource',
+  'thumbnailEpisodeArtwork',
+  'backdropEpisodeArtwork',
   'logoArtworkSource',
   'posterCleanSource',
   'backdropCleanSource',
@@ -415,6 +421,8 @@ export const XRDB_RESERVED_PARAMS = new Set<string>([
   'translateMeta',
   'translateMetaMode',
   'episodeIdMode',
+  'thumbnailEpisodeArtwork',
+  'backdropEpisodeArtwork',
   'debugMetaTranslation',
   'posterEnabled',
   'backdropEnabled',

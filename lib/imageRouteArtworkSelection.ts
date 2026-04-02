@@ -2,6 +2,7 @@ import {
   FALLBACK_IMAGE_LANGUAGE,
   TMDB_CACHE_TTL_MS,
   type ArtworkSource,
+  type EpisodeArtworkMode,
   type PosterTextPreference,
 } from './imageRouteConfig.ts';
 import { resolveOmdbPosterUrl } from './imageRouteOmdb.ts';
@@ -92,6 +93,8 @@ export const createImageRouteArtworkSelector = (
     posterArtworkSource: ArtworkSource;
     backdropArtworkSource: ArtworkSource;
     logoArtworkSource: ArtworkSource;
+    thumbnailEpisodeArtwork: EpisodeArtworkMode;
+    backdropEpisodeArtwork: EpisodeArtworkMode;
     artworkSelectionSeed: string;
     cleanId: string;
     season: string | null;
@@ -183,7 +186,14 @@ export const createImageRouteArtworkSelector = (
       pickByLanguageWithFallback(backdropCollection, input.requestedImageLang, fallbackImageLang)?.file_path || null;
     let episodeStillPath: string | null = null;
 
-    if (input.imageType === 'backdrop' && input.mediaType === 'tv' && input.season && input.episode) {
+    if (
+      input.imageType === 'backdrop' &&
+      !input.isThumbnailRequest &&
+      input.backdropEpisodeArtwork === 'still' &&
+      input.mediaType === 'tv' &&
+      input.season &&
+      input.episode
+    ) {
       const episodeDetailsResponse = await input.fetchJsonCached(
         `tmdb:tv:${input.media.id}:season:${input.season}:episode:${input.episode}:details`,
         `https://api.themoviedb.org/3/tv/${input.media.id}/season/${input.season}/episode/${input.episode}?api_key=${input.tmdbKey}`,
@@ -405,7 +415,13 @@ export const createImageRouteArtworkSelector = (
     }
 
     if (input.imageType === 'backdrop') {
-      if (input.isThumbnailRequest && input.mediaType === 'tv' && input.season && input.episode) {
+      if (
+        input.isThumbnailRequest &&
+        input.thumbnailEpisodeArtwork === 'still' &&
+        input.mediaType === 'tv' &&
+        input.season &&
+        input.episode
+      ) {
         const episodeCacheKeyBase = `tmdb:tv:${input.media.id}:season:${input.season}:episode:${input.episode}`;
         const episodeResponse = await input.fetchJsonCached(
           `${episodeCacheKeyBase}:${input.requestedImageLang}`,

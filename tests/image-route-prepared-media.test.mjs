@@ -63,6 +63,8 @@ const createBaseInput = () => ({
   posterArtworkSource: 'tmdb',
   backdropArtworkSource: 'tmdb',
   logoArtworkSource: 'tmdb',
+  thumbnailEpisodeArtwork: 'still',
+  backdropEpisodeArtwork: 'series',
   artworkSelectionSeed: 'seed-1',
   cleanId: 'kitsu:100',
   fanartKey: '',

@@ -104,6 +104,7 @@ import {
   normalizeArtworkSource,
   normalizeBlockbusterDensity,
   normalizeBooleanSearchFlag,
+  normalizeEpisodeArtworkMode,
   normalizeOptionalBadgeCount,
   normalizePosterImageSize,
   normalizeRpdbFontScalePercent,
@@ -113,6 +114,7 @@ import {
   type ArtworkSource,
   type BadgeKey,
   type BlockbusterDensity,
+  type EpisodeArtworkMode,
   type LogoBackground,
   type PosterImageSize,
   type PosterQualityBadgesPosition,
@@ -252,6 +254,8 @@ export type ImageRouteRequestState = {
   posterArtworkSource: ArtworkSource;
   backdropArtworkSource: ArtworkSource;
   logoArtworkSource: ArtworkSource;
+  thumbnailEpisodeArtwork: EpisodeArtworkMode;
+  backdropEpisodeArtwork: EpisodeArtworkMode;
   artworkSelectionSeed: string;
   fanartKey: string;
   fanartClientKey: string;
@@ -519,6 +523,14 @@ export const resolveImageRouteRequestState = async ({
       );
   const logoArtworkSource = normalizeNonPosterArtworkSource(
     searchParams.get('logoArtworkSource') ?? searchParams.get('logoSource'),
+  );
+  const thumbnailEpisodeArtwork = normalizeEpisodeArtworkMode(
+    searchParams.get('thumbnailEpisodeArtwork'),
+    'still',
+  );
+  const backdropEpisodeArtwork = normalizeEpisodeArtworkMode(
+    searchParams.get('backdropEpisodeArtwork'),
+    'series',
   );
   const fanartKey = searchParams.get('fanartKey') || FANART_API_KEY;
   const fanartClientKey = searchParams.get('fanartClientKey') || FANART_CLIENT_KEY;
@@ -880,6 +892,8 @@ export const resolveImageRouteRequestState = async ({
     posterArtworkSource,
     backdropArtworkSource,
     logoArtworkSource,
+    thumbnailEpisodeArtwork,
+    backdropEpisodeArtwork,
     posterRatingsLayout,
     posterRatingsMaxPerSide,
     posterRatingsMax,
@@ -1015,6 +1029,8 @@ export const resolveImageRouteRequestState = async ({
     posterArtworkSource,
     backdropArtworkSource,
     logoArtworkSource,
+    thumbnailEpisodeArtwork,
+    backdropEpisodeArtwork,
     artworkSelectionSeed,
     fanartKey,
     fanartClientKey,

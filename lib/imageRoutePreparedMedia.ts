@@ -19,6 +19,7 @@ import {
   type AnimeMappingProvider,
   type ArtworkSource,
   type BadgeKey,
+  type EpisodeArtworkMode,
   type PosterImageSize,
   type PosterTextPreference,
 } from './imageRouteConfig.ts';
@@ -143,6 +144,8 @@ export const prepareImageRouteMediaState = async (input: {
   posterArtworkSource: ArtworkSource;
   backdropArtworkSource: ArtworkSource;
   logoArtworkSource: ArtworkSource;
+  thumbnailEpisodeArtwork: EpisodeArtworkMode;
+  backdropEpisodeArtwork: EpisodeArtworkMode;
   artworkSelectionSeed: string;
   cleanId: string;
   fanartKey: string;
@@ -203,6 +206,8 @@ export const prepareImageRouteMediaState = async (input: {
     posterArtworkSource,
     backdropArtworkSource,
     logoArtworkSource,
+    thumbnailEpisodeArtwork,
+    backdropEpisodeArtwork,
     artworkSelectionSeed,
     cleanId,
     fanartKey,
@@ -587,6 +592,8 @@ if (!useRawKitsuFallback && detailsBundlePromise) {
     posterArtworkSource,
     backdropArtworkSource,
     logoArtworkSource,
+    thumbnailEpisodeArtwork,
+    backdropEpisodeArtwork,
     artworkSelectionSeed,
     cleanId,
     season,

@@ -10,6 +10,7 @@ import { resolveTorrentioBaseUrl } from './torrentioUrl.ts';
 export type PosterTextPreference = 'original' | 'clean' | 'alternative' | 'random';
 export type PosterImageSize = 'normal' | 'large' | '4k';
 export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta' | 'omdb' | 'random';
+export type EpisodeArtworkMode = 'still' | 'series';
 export type AnimeMappingProvider = 'mal' | 'anilist' | 'imdb' | 'tmdb' | 'tvdb' | 'anidb';
 export type AggregateBadgeKey = 'aggregate-overall' | 'aggregate-critics' | 'aggregate-audience';
 export type BadgeKey = RatingPreference | MediaFeatureBadgeKey | AggregateBadgeKey;
@@ -41,6 +42,7 @@ const ANIME_MAPPING_PROVIDER_SET = new Set<AnimeMappingProvider>([
   'anidb',
 ]);
 const ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta', 'omdb', 'random']);
+const EPISODE_ARTWORK_MODE_SET = new Set<EpisodeArtworkMode>(['still', 'series']);
 const POSTER_IMAGE_SIZE_SET = new Set<PosterImageSize>(['normal', 'large', '4k']);
 
 export const FALLBACK_IMAGE_LANGUAGE = 'en';
@@ -111,6 +113,16 @@ export const normalizeArtworkSource = (
   const normalized = (value || '').trim().toLowerCase();
   return ARTWORK_SOURCE_SET.has(normalized as ArtworkSource)
     ? (normalized as ArtworkSource)
+    : fallback;
+};
+
+export const normalizeEpisodeArtworkMode = (
+  value?: string | null,
+  fallback: EpisodeArtworkMode = 'series',
+): EpisodeArtworkMode => {
+  const normalized = (value || '').trim().toLowerCase();
+  return EPISODE_ARTWORK_MODE_SET.has(normalized as EpisodeArtworkMode)
+    ? (normalized as EpisodeArtworkMode)
     : fallback;
 };
 

@@ -23,6 +23,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   aggregateCriticsAccentColor: WorkspaceSettings['aggregateCriticsAccentColor'];
   backdropAggregateRatingSource: WorkspaceSettings['backdropAggregateRatingSource'];
   backdropArtworkSource: WorkspaceSettings['backdropArtworkSource'];
+  backdropEpisodeArtwork: WorkspaceSettings['backdropEpisodeArtwork'];
   backdropGenreBadgeAnimeGrouping: WorkspaceSettings['backdropGenreBadgeAnimeGrouping'];
   backdropGenreBadgeMode: WorkspaceSettings['backdropGenreBadgeMode'];
   backdropGenreBadgePosition: WorkspaceSettings['backdropGenreBadgePosition'];
@@ -110,6 +111,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setAggregateCriticsAccentColor: Setter<WorkspaceSettings['aggregateCriticsAccentColor']>;
   setBackdropAggregateRatingSource: Setter<WorkspaceSettings['backdropAggregateRatingSource']>;
   setBackdropArtworkSource: Setter<WorkspaceSettings['backdropArtworkSource']>;
+  setBackdropEpisodeArtwork: Setter<WorkspaceSettings['backdropEpisodeArtwork']>;
   setBackdropGenreBadgeAnimeGrouping: Setter<WorkspaceSettings['backdropGenreBadgeAnimeGrouping']>;
   setBackdropGenreBadgeMode: Setter<WorkspaceSettings['backdropGenreBadgeMode']>;
   setBackdropGenreBadgePosition: Setter<WorkspaceSettings['backdropGenreBadgePosition']>;
@@ -188,9 +190,11 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setRatingValueMode: Setter<WorkspaceSettings['ratingValueMode']>;
   setSimklClientId: Setter<WorkspaceSettings['simklClientId']>;
   setThumbnailRatingRows: Setter<RatingProviderRow[]>;
+  setThumbnailEpisodeArtwork: Setter<WorkspaceSettings['thumbnailEpisodeArtwork']>;
   setTmdbIdScope: Setter<WorkspaceSettings['tmdbIdScope']>;
   setTmdbKey: Setter<WorkspaceSettings['tmdbKey']>;
   simklClientId: WorkspaceSettings['simklClientId'];
+  thumbnailEpisodeArtwork: WorkspaceSettings['thumbnailEpisodeArtwork'];
   thumbnailRatingPreferences: WorkspaceSettings['thumbnailRatingPreferences'];
   tmdbIdScope: WorkspaceSettings['tmdbIdScope'];
   tmdbKey: WorkspaceSettings['tmdbKey'];
@@ -205,6 +209,7 @@ export function useConfiguratorWorkspaceConfigIo({
   aggregateCriticsAccentColor,
   backdropAggregateRatingSource,
   backdropArtworkSource,
+  backdropEpisodeArtwork,
   backdropGenreBadgeAnimeGrouping,
   backdropGenreBadgeMode,
   backdropGenreBadgePosition,
@@ -292,6 +297,7 @@ export function useConfiguratorWorkspaceConfigIo({
   setAggregateCriticsAccentColor,
   setBackdropAggregateRatingSource,
   setBackdropArtworkSource,
+  setBackdropEpisodeArtwork,
   setBackdropGenreBadgeAnimeGrouping,
   setBackdropGenreBadgeMode,
   setBackdropGenreBadgePosition,
@@ -370,9 +376,11 @@ export function useConfiguratorWorkspaceConfigIo({
   setRatingValueMode,
   setSimklClientId,
   setThumbnailRatingRows,
+  setThumbnailEpisodeArtwork,
   setTmdbIdScope,
   setTmdbKey,
   simklClientId,
+  thumbnailEpisodeArtwork,
   thumbnailRatingPreferences,
   tmdbIdScope,
   tmdbKey,
@@ -393,6 +401,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setBackdropImageText(normalized.settings.backdropImageText);
       setPosterArtworkSource(normalized.settings.posterArtworkSource);
       setBackdropArtworkSource(normalized.settings.backdropArtworkSource);
+      setBackdropEpisodeArtwork(normalized.settings.backdropEpisodeArtwork);
       setRatingValueMode(normalized.settings.ratingValueMode);
       setPosterGenreBadgeMode(normalized.settings.posterGenreBadgeMode);
       setBackdropGenreBadgeMode(normalized.settings.backdropGenreBadgeMode);
@@ -462,6 +471,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setLogoBackground(normalized.settings.logoBackground);
       setLogoBottomRatingsRow(normalized.settings.logoBottomRatingsRow);
       setLogoArtworkSource(normalized.settings.logoArtworkSource);
+      setThumbnailEpisodeArtwork(normalized.settings.thumbnailEpisodeArtwork);
       setRatingProviderAppearanceOverrides(normalized.settings.ratingProviderAppearanceOverrides);
       setProxyManifestUrl(normalized.proxy.manifestUrl);
       setProxyTranslateMeta(normalized.proxy.translateMeta);
@@ -479,6 +489,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setAggregateCriticsAccentColor,
       setBackdropAggregateRatingSource,
       setBackdropArtworkSource,
+      setBackdropEpisodeArtwork,
       setBackdropGenreBadgeAnimeGrouping,
       setBackdropGenreBadgeMode,
       setBackdropGenreBadgePosition,
@@ -557,6 +568,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setRatingValueMode,
       setSimklClientId,
       setThumbnailRatingRows,
+      setThumbnailEpisodeArtwork,
       setTmdbIdScope,
       setTmdbKey,
     ],
@@ -578,6 +590,8 @@ export function useConfiguratorWorkspaceConfigIo({
         backdropImageText,
         posterArtworkSource,
         backdropArtworkSource,
+        thumbnailEpisodeArtwork,
+        backdropEpisodeArtwork,
         ratingValueMode,
         posterGenreBadgeMode,
         backdropGenreBadgeMode,
@@ -669,6 +683,7 @@ export function useConfiguratorWorkspaceConfigIo({
       aggregateCriticsAccentColor,
       backdropAggregateRatingSource,
       backdropArtworkSource,
+      backdropEpisodeArtwork,
       backdropGenreBadgeAnimeGrouping,
       backdropGenreBadgeMode,
       backdropGenreBadgePosition,
@@ -746,6 +761,7 @@ export function useConfiguratorWorkspaceConfigIo({
       ratingProviderAppearanceOverrides,
       ratingValueMode,
       simklClientId,
+      thumbnailEpisodeArtwork,
       thumbnailRatingPreferences,
       tmdbIdScope,
       tmdbKey,

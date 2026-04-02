@@ -46,6 +46,7 @@ import { DEFAULT_SIDE_RATING_OFFSET, type SideRatingPosition } from '@/lib/sideR
 import {
   type ArtworkSource,
   type BackdropImageTextPreference,
+  type EpisodeArtworkMode,
   type LogoBackground,
   type PosterImageSize,
   type PosterImageTextPreference,
@@ -68,6 +69,8 @@ export function useConfiguratorWorkspaceState() {
   const [backdropImageText, setBackdropImageText] = useState<BackdropImageTextPreference>('clean');
   const [posterArtworkSource, setPosterArtworkSource] = useState<ArtworkSource>('tmdb');
   const [backdropArtworkSource, setBackdropArtworkSource] = useState<ArtworkSource>('tmdb');
+  const [thumbnailEpisodeArtwork, setThumbnailEpisodeArtwork] = useState<EpisodeArtworkMode>('still');
+  const [backdropEpisodeArtwork, setBackdropEpisodeArtwork] = useState<EpisodeArtworkMode>('series');
   const [ratingValueMode, setRatingValueMode] = useState<RatingValueMode>(DEFAULT_RATING_VALUE_MODE);
   const [posterGenreBadgeMode, setPosterGenreBadgeMode] = useState<GenreBadgeMode>(DEFAULT_GENRE_BADGE_MODE);
   const [backdropGenreBadgeMode, setBackdropGenreBadgeMode] = useState<GenreBadgeMode>(DEFAULT_GENRE_BADGE_MODE);
@@ -181,6 +184,7 @@ export function useConfiguratorWorkspaceState() {
     aggregateCriticsAccentColor,
     backdropAggregateRatingSource,
     backdropArtworkSource,
+    backdropEpisodeArtwork,
     backdropGenreBadgeAnimeGrouping,
     backdropGenreBadgeMode,
     backdropGenreBadgePosition,
@@ -277,6 +281,7 @@ export function useConfiguratorWorkspaceState() {
     setAggregateCriticsAccentColor,
     setBackdropAggregateRatingSource,
     setBackdropArtworkSource,
+    setBackdropEpisodeArtwork,
     setBackdropGenreBadgeAnimeGrouping,
     setBackdropGenreBadgeMode,
     setBackdropGenreBadgePosition,
@@ -366,6 +371,7 @@ export function useConfiguratorWorkspaceState() {
     setShowProxyUrl,
     setSimklClientId,
     setStickyPreviewEnabled,
+    setThumbnailEpisodeArtwork,
     setThumbnailRatingRows,
     setTmdbIdScope,
     setTmdbKey,
@@ -375,6 +381,7 @@ export function useConfiguratorWorkspaceState() {
     showProxyUrl,
     simklClientId,
     stickyPreviewEnabled,
+    thumbnailEpisodeArtwork,
     thumbnailRatingPreferences,
     thumbnailRatingRows,
     tmdbIdScope,

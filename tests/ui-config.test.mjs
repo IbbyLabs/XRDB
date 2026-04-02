@@ -54,6 +54,8 @@ const buildSampleSettings = () =>
       posterArtworkSource: 'fanart',
       backdropArtworkSource: 'fanart',
       logoArtworkSource: 'fanart',
+      thumbnailEpisodeArtwork: 'still',
+      backdropEpisodeArtwork: 'series',
       ratingValueMode: 'normalized',
       posterGenreBadgeMode: 'both',
       posterGenreBadgeStyle: 'square',
@@ -147,6 +149,8 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       posterArtworkSource: 'fanart',
       backdropArtworkSource: 'fanart',
       logoArtworkSource: 'fanart',
+      thumbnailEpisodeArtwork: 'still',
+      backdropEpisodeArtwork: 'series',
       ratingValueMode: 'normalized',
       posterGenreBadgeMode: 'both',
       backdropGenreBadgeMode: 'off',
@@ -635,11 +639,14 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
   assert.match(patterns?.backgroundUrlPattern ?? '', /backdropRatingsLayout=right-vertical/);
   assert.match(patterns?.backgroundUrlPattern ?? '', /backdropSideRatingsPosition=custom/);
   assert.match(patterns?.backgroundUrlPattern ?? '', /backdropSideRatingsOffset=62/);
+  assert.equal((patterns?.backgroundUrlPattern ?? '').includes('backdropEpisodeArtwork='), false);
   assert.equal((patterns?.backgroundUrlPattern ?? '').includes('posterRatings='), false);
   assert.equal((patterns?.backgroundUrlPattern ?? '').includes('logoRatings='), false);
   assert.equal((patterns?.backgroundUrlPattern ?? '').includes('qualityBadgesSide='), false);
 
   assert.match(patterns?.logoUrlPattern ?? '', /logoRatings=/);
+  assert.equal((patterns?.logoUrlPattern ?? '').includes('backdropEpisodeArtwork='), false);
+  assert.equal((patterns?.logoUrlPattern ?? '').includes('thumbnailEpisodeArtwork='), false);
   assert.equal((patterns?.logoUrlPattern ?? '').includes('posterRatings='), false);
   assert.equal((patterns?.logoUrlPattern ?? '').includes('backdropRatings='), false);
   assert.equal((patterns?.logoUrlPattern ?? '').includes('qualityBadgesSide='), false);
@@ -648,6 +655,10 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
   assert.match(patterns?.logoUrlPattern ?? '', /idSource=tmdb/);
   assert.match(patterns?.posterUrlPattern ?? '', /idSource=tmdb/);
   assert.match(patterns?.posterUrlPattern ?? '', /posterImageSize=large/);
+  assert.equal((patterns?.posterUrlPattern ?? '').includes('backdropEpisodeArtwork='), false);
+  assert.equal((patterns?.posterUrlPattern ?? '').includes('thumbnailEpisodeArtwork='), false);
+  assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('thumbnailEpisodeArtwork='), false);
+  assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('backdropEpisodeArtwork='), false);
 });
 
 test('AIOMetadata export can keep live credentials while preserving live AIOM defaults', () => {
@@ -1010,6 +1021,45 @@ test('AIOMetadata export supports tvdb and xrdbid episode thumbnail patterns', (
     ),
     true,
   );
+});
+
+test('episode artwork overrides stay type scoped across config and AIOMetadata exports', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      thumbnailEpisodeArtwork: 'series',
+      backdropEpisodeArtwork: 'still',
+    },
+    proxy: {
+      manifestUrl: 'https://addon.example.com/manifest.json',
+    },
+  });
+
+  const configString = buildConfigString('https://xrdb.example.com', config.settings);
+  const decodedConfig = JSON.parse(decodeBase64Url(configString));
+  assert.equal(decodedConfig.thumbnailEpisodeArtwork, 'series');
+  assert.equal(decodedConfig.backdropEpisodeArtwork, 'still');
+
+  const proxyUrl = buildProxyUrl('https://xrdb.example.com', config.proxy, config.settings);
+  const encodedConfig = proxyUrl.split('/proxy/')[1]?.replace('/manifest.json', '');
+  assert.ok(encodedConfig);
+  const decodedProxy = decodeProxyConfig(encodedConfig);
+  assert.equal(decodedProxy.thumbnailEpisodeArtwork, 'series');
+  assert.equal(decodedProxy.backdropEpisodeArtwork, 'still');
+
+  const patterns = buildAiometadataUrlPatterns('https://xrdb.example.com/', config.settings, {
+    hideCredentials: true,
+  });
+
+  assert.match(patterns?.backgroundUrlPattern ?? '', /backdropEpisodeArtwork=still/);
+  assert.equal((patterns?.backgroundUrlPattern ?? '').includes('thumbnailEpisodeArtwork='), false);
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailEpisodeArtwork=series/);
+  assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('backdropEpisodeArtwork='), false);
+  assert.equal((patterns?.posterUrlPattern ?? '').includes('thumbnailEpisodeArtwork='), false);
+  assert.equal((patterns?.posterUrlPattern ?? '').includes('backdropEpisodeArtwork='), false);
+  assert.equal((patterns?.logoUrlPattern ?? '').includes('thumbnailEpisodeArtwork='), false);
+  assert.equal((patterns?.logoUrlPattern ?? '').includes('backdropEpisodeArtwork='), false);
 });
 
 test('TMDB ID scope helpers detect explicit and ambiguous forms', () => {

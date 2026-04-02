@@ -11,6 +11,7 @@ import {
 import {
   RATING_PROVIDER_OPTIONS,
 } from '@/lib/ratingProviderCatalog';
+import { type EpisodeArtworkMode } from '@/lib/uiConfig';
 
 type PosterIdMode = 'auto' | 'tmdb' | 'imdb';
 
@@ -56,6 +57,23 @@ const EPISODE_ID_MODE_OPTIONS: Array<{
   },
 ];
 
+const EPISODE_ARTWORK_MODE_OPTIONS: Array<{
+  id: EpisodeArtworkMode;
+  label: string;
+  description: string;
+}> = [
+  {
+    id: 'still',
+    label: 'Episode still',
+    description: 'Use the TMDB episode still when one exists.',
+  },
+  {
+    id: 'series',
+    label: 'Series backdrop',
+    description: 'Use the normal series backdrop selection instead.',
+  },
+];
+
 export type AiometadataPatternRow = {
   key: string;
   label: string;
@@ -81,6 +99,10 @@ export function ConfiguratorExportPanels({
   onSelectPosterIdMode,
   episodeIdMode,
   onSelectEpisodeIdMode,
+  thumbnailEpisodeArtwork,
+  onSelectThumbnailEpisodeArtwork,
+  backdropEpisodeArtwork,
+  onSelectBackdropEpisodeArtwork,
   thumbnailRatingPreferences,
   onToggleThumbnailRatingPreference,
   hideAiometadataCredentials,
@@ -103,6 +125,10 @@ export function ConfiguratorExportPanels({
   onSelectPosterIdMode: (value: PosterIdMode) => void;
   episodeIdMode: EpisodeIdMode;
   onSelectEpisodeIdMode: (value: EpisodeIdMode) => void;
+  thumbnailEpisodeArtwork: EpisodeArtworkMode;
+  onSelectThumbnailEpisodeArtwork: (value: EpisodeArtworkMode) => void;
+  backdropEpisodeArtwork: EpisodeArtworkMode;
+  onSelectBackdropEpisodeArtwork: (value: EpisodeArtworkMode) => void;
   thumbnailRatingPreferences: ThumbnailRatingPreference[];
   onToggleThumbnailRatingPreference: (providerId: ThumbnailRatingPreference) => void;
   hideAiometadataCredentials: boolean;
@@ -282,6 +308,54 @@ export function ConfiguratorExportPanels({
                         ))}
                       </div>
                       <div className="mt-4 border-t border-white/10 pt-3">
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Thumbnail episode artwork</div>
+                        <p className="mt-2 text-[10px] leading-4 text-zinc-600">
+                          Default is episode still for thumbnails so they stay distinct from normal backdrops.
+                        </p>
+                        <div className="mt-3 space-y-3">
+                          {EPISODE_ARTWORK_MODE_OPTIONS.map((option) => (
+                            <label key={`thumbnail-${option.id}`} className="flex items-start gap-3 cursor-pointer group">
+                              <input
+                                type="radio"
+                                name="thumbnailEpisodeArtwork"
+                                value={option.id}
+                                checked={thumbnailEpisodeArtwork === option.id}
+                                onChange={(event) => onSelectThumbnailEpisodeArtwork(event.target.value as EpisodeArtworkMode)}
+                                className="mt-1 h-4 w-4 rounded-full border-white/20 bg-black accent-violet-500"
+                              />
+                              <span className="space-y-1">
+                                <span className="block text-[11px] font-medium text-zinc-300">{option.label}</span>
+                                <span className="block text-[10px] text-zinc-600">{option.description}</span>
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="mt-4 border-t border-white/10 pt-3">
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Backdrop episode artwork</div>
+                        <p className="mt-2 text-[10px] leading-4 text-zinc-600">
+                          Default is series backdrop for episodic backdrops. Switch this on only if you want backdrop and thumbnail to share the still.
+                        </p>
+                        <div className="mt-3 space-y-3">
+                          {EPISODE_ARTWORK_MODE_OPTIONS.map((option) => (
+                            <label key={`backdrop-${option.id}`} className="flex items-start gap-3 cursor-pointer group">
+                              <input
+                                type="radio"
+                                name="backdropEpisodeArtwork"
+                                value={option.id}
+                                checked={backdropEpisodeArtwork === option.id}
+                                onChange={(event) => onSelectBackdropEpisodeArtwork(event.target.value as EpisodeArtworkMode)}
+                                className="mt-1 h-4 w-4 rounded-full border-white/20 bg-black accent-violet-500"
+                              />
+                              <span className="space-y-1">
+                                <span className="block text-[11px] font-medium text-zinc-300">{option.label}</span>
+                                <span className="block text-[10px] text-zinc-600">{option.description}</span>
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="mt-4 border-t border-white/10 pt-3">
                         <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Thumbnail Ratings</div>
                         <p className="mt-2 text-[10px] leading-4 text-zinc-600">
                           Episode thumbs only support TMDB and IMDb today.
@@ -339,6 +413,12 @@ export function ConfiguratorExportPanels({
                                       : '{imdb_id}'}
                         </span>
                         , <span className="font-mono text-zinc-300">{'{season}'}</span>, <span className="font-mono text-zinc-300">{'{episode}'}</span>
+                      </p>
+                      <p className="mt-1 text-[11px] leading-5 text-zinc-500">
+                        Thumbnail episode artwork: <span className="font-mono text-zinc-300">{thumbnailEpisodeArtwork}</span>
+                      </p>
+                      <p className="mt-1 text-[11px] leading-5 text-zinc-500">
+                        Backdrop episode artwork: <span className="font-mono text-zinc-300">{backdropEpisodeArtwork}</span>
                       </p>
                       <p className="mt-1 text-[11px] leading-5 text-zinc-500">
                         Thumbnail ratings: <span className="font-mono text-zinc-300">{thumbnailRatingPreferences.join(',') || '(off)'}</span>
