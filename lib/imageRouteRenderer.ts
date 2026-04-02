@@ -1014,9 +1014,11 @@ export const renderWithSharp = async (
           qualityBadgeScalePercent: input.qualityBadgeScalePercent,
           layout: 'row',
         });
+        const bottomQualityInset =
+          input.badgeBottomOffset + Math.max(4, Math.round(bottomQualityHeight * 0.14));
         const bottomY = Math.max(
           input.badgeTopOffset,
-          input.outputHeight - input.badgeBottomOffset - bottomQualityHeight
+          input.outputHeight - bottomQualityInset - bottomQualityHeight
         );
         appendQualityBadgeOverlays(
           buildQualityBadgeRowOverlays({

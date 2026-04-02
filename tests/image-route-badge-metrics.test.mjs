@@ -77,6 +77,32 @@ test('image route badge metrics build summary label metrics and rendered widths'
   assert.ok(summaryWidth > standardWidth);
 });
 
+test('image route badge metrics keep critics and audience summary chips aligned', () => {
+  const critics = getSummaryBadgeHorizontalMetrics('Critics', 18, 8);
+  const audience = getSummaryBadgeHorizontalMetrics('Audience', 18, 8);
+  const criticsWidth = estimateRenderedBadgeWidth(
+    { value: '8.3', label: 'Critics', variant: 'summary', stackedWidthPercent: 100 },
+    18,
+    8,
+    24,
+    6,
+    false,
+    'glass',
+  );
+  const audienceWidth = estimateRenderedBadgeWidth(
+    { value: '8.3', label: 'Audience', variant: 'summary', stackedWidthPercent: 100 },
+    18,
+    8,
+    24,
+    6,
+    false,
+    'glass',
+  );
+
+  assert.equal(critics.chipWidth, audience.chipWidth);
+  assert.equal(criticsWidth, audienceWidth);
+});
+
 test('image route badge metrics derive compressed widths for standard and minimal badges', () => {
   const standard = getMinimumCompressedRenderedBadgeWidth(
     { value: '84', label: 'IMDb', variant: 'standard', stackedWidthPercent: 100 },
