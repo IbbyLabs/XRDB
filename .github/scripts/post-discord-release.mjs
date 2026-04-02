@@ -11,7 +11,7 @@ const MAX_SUMMARY_INTRO_LENGTH = 320;
 const MAX_SUMMARY_SECTION_COUNT = 3;
 const AVATAR_URL = 'https://raw.githubusercontent.com/IbbyLabs/xrdb/main/public/favicon-96x96.png';
 const DISCORD_ROLE_ID_RE = /^\d+$/;
-const TRACKED_RELEASE_ITEM_RE = /^(FR|BUG)\s+(\d+)\b/i;
+const TRACKED_RELEASE_ITEM_RE = /^(FR|BUG)[-\s]+(\d+)\b/i;
 
 function normalizeReleaseTag(value) {
   if (typeof value !== 'string') {

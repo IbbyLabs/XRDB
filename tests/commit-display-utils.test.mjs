@@ -39,6 +39,20 @@ test('removes user facing hyphens from conventional titles and bodies', () => {
   );
 });
 
+test('preserves only BUG and FR tracking ids when removing user facing hyphens', () => {
+  const normalized = normalizeCommitForDisplay({
+    subject: 'fix(release): BUG-17 keep BUG-17 and FR-21 while removing ISO 639-1 copy',
+    body: 'Keep BUG-17 and FR-21 visible while converting ISO 639-1 and proxy-side wording.',
+    files: ['CHANGELOG.md'],
+  });
+
+  assert.equal(normalized.title, 'BUG-17 keep BUG-17 and FR-21 while removing ISO 639 to 1 copy');
+  assert.equal(
+    normalized.body,
+    'Keep BUG-17 and FR-21 visible while converting ISO 639 to 1 and proxy side wording.'
+  );
+});
+
 test('normalizes placeholder subjects by summarizing the touched areas', () => {
   const normalized = normalizeCommitForDisplay({
     subject: '.',
@@ -128,17 +142,6 @@ test('rewrites low signal conventional titles into area based copy', () => {
   assert.equal(normalized.type, 'docs');
   assert.equal(normalized.title, 'refresh README guide');
   assert.equal(normalized.body, null);
-});
-
-test('preserves standard technical hyphens such as ISO 639-1', () => {
-  const normalized = normalizeCommitForDisplay({
-    subject: 'docs: restore standard ISO 639-1 notation',
-    body: 'Bring back ISO 639-1 labels in the docs.',
-    files: ['app/page.tsx'],
-  });
-
-  assert.equal(normalized.title, 'restore standard ISO 639-1 notation');
-  assert.equal(normalized.body, 'Bring back ISO 639-1 labels in the docs.');
 });
 
 test('normalizes conventional revert subjects into user facing copy', () => {
