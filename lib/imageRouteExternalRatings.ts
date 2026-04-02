@@ -41,6 +41,20 @@ type AllocineRatingValues = {
   allocine: string | null;
   allocinepress: string | null;
 };
+type AllocineAutocompleteResult = {
+  entity_type?: string | null;
+  entity_id?: string | number | null;
+  label?: string | null;
+  original_label?: string | null;
+  last_release?: string | null;
+  data?: {
+    id?: string | number | null;
+    year?: string | number | null;
+  } | null;
+};
+type AllocineAutocompleteResponse = {
+  results?: AllocineAutocompleteResult[] | null;
+};
 
 const externalTextMetadataInFlight = new Map<string, Promise<CachedTextResponse>>();
 const ALLOCINE_BASE_URL = 'https://www.allocine.fr';
@@ -222,6 +236,102 @@ const dedupeAllocineTitleVariants = (values: Array<string | null | undefined>) =
   return result;
 };
 
+const scoreAllocineTitleMatch = (candidateTitle: string, titles: string[]) => {
+  const normalizedCandidateTitle = normalizeAllocineTitle(candidateTitle);
+  const normalizedTitles = titles.map((title) => normalizeAllocineTitle(title)).filter(Boolean);
+
+  if (!normalizedCandidateTitle || normalizedTitles.length === 0) {
+    return 0;
+  }
+  if (normalizedTitles.includes(normalizedCandidateTitle)) {
+    return 120;
+  }
+  if (
+    normalizedTitles.some(
+      (title) => normalizedCandidateTitle.startsWith(title) || title.startsWith(normalizedCandidateTitle),
+    )
+  ) {
+    return 75;
+  }
+  if (
+    normalizedTitles.some(
+      (title) => normalizedCandidateTitle.includes(title) || title.includes(normalizedCandidateTitle),
+    )
+  ) {
+    return 35;
+  }
+
+  return 0;
+};
+
+const selectAllocineAutocompleteTitle = ({
+  label,
+  originalLabel,
+  titles,
+}: {
+  label?: string | null;
+  originalLabel?: string | null;
+  titles: string[];
+}) => {
+  const candidates = dedupeAllocineTitleVariants([originalLabel, label]);
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  const ranked = candidates
+    .map((candidate) => ({
+      candidate,
+      score: scoreAllocineTitleMatch(candidate, titles),
+    }))
+    .sort((left, right) => right.score - left.score);
+
+  return ranked[0]?.candidate || null;
+};
+
+const extractAllocineAutocompleteCandidates = ({
+  payload,
+  mediaType,
+  titles,
+}: {
+  payload: AllocineAutocompleteResponse;
+  mediaType: 'movie' | 'tv';
+  titles: string[];
+}) => {
+  const expectedEntityType = mediaType === 'movie' ? 'movie' : 'series';
+  const results = Array.isArray(payload?.results) ? payload.results : [];
+  const candidates: Array<{ path: string; title: string; year: number | null }> = [];
+
+  for (const result of results) {
+    const entityType = String(result?.entity_type || '').trim().toLowerCase();
+    if (entityType !== expectedEntityType) continue;
+
+    const entityId = String(result?.entity_id ?? result?.data?.id ?? '').trim();
+    if (!/^\d+$/.test(entityId)) continue;
+
+    const title = selectAllocineAutocompleteTitle({
+      label: result?.label,
+      originalLabel: result?.original_label,
+      titles,
+    });
+    if (!title) continue;
+
+    const yearMatch = String(result?.data?.year ?? result?.last_release ?? '').match(/\b(\d{4})\b/);
+    const year = yearMatch ? Number(yearMatch[1]) : null;
+    const path =
+      expectedEntityType === 'movie'
+        ? `/film/fichefilm_gen_cfilm=${entityId}.html`
+        : `/series/ficheserie_gen_cserie=${entityId}.html`;
+
+    candidates.push({
+      path,
+      title,
+      year: Number.isFinite(year) ? year : null,
+    });
+  }
+
+  return candidates;
+};
+
 const selectAllocineSearchCandidate = ({
   candidates,
   titles,
@@ -234,26 +344,7 @@ const selectAllocineSearchCandidate = ({
   const normalizedTitles = titles.map((title) => normalizeAllocineTitle(title)).filter(Boolean);
   const ranked = candidates
     .map((candidate) => {
-      const normalizedCandidateTitle = normalizeAllocineTitle(candidate.title);
-      let score = 0;
-      if (normalizedTitles.includes(normalizedCandidateTitle)) {
-        score += 120;
-      } else if (
-        normalizedTitles.some(
-          (title) =>
-            normalizedCandidateTitle.startsWith(title) ||
-            title.startsWith(normalizedCandidateTitle),
-        )
-      ) {
-        score += 75;
-      } else if (
-        normalizedTitles.some(
-          (title) =>
-            normalizedCandidateTitle.includes(title) || title.includes(normalizedCandidateTitle),
-        )
-      ) {
-        score += 35;
-      }
+      let score = scoreAllocineTitleMatch(candidate.title, normalizedTitles);
 
       if (year !== null && candidate.year !== null) {
         if (candidate.year === year) {
@@ -396,8 +487,8 @@ export const fetchAllocineRatings = async ({
   let selectedPath: string | null = null;
 
   for (const titleVariant of titleVariants) {
-    const searchKey = `allocine:search:v1:${searchPath}:${sha1Hex(titleVariant)}`;
-    const searchUrl = `${ALLOCINE_BASE_URL}/rechercher/${searchPath}/?q=${encodeURIComponent(titleVariant)}`;
+    const searchKey = `allocine:search:v2:${searchPath}:${sha1Hex(titleVariant)}`;
+    const searchUrl = `${ALLOCINE_BASE_URL}/_/autocomplete/${searchPath}/${encodeURIComponent(titleVariant)}`;
     let response: CachedTextResponse;
 
     try {
@@ -419,7 +510,17 @@ export const fetchAllocineRatings = async ({
     }
 
     if (!response.ok || !response.data) continue;
-    const candidates = extractAllocineSearchCandidates(response.data, mediaType);
+    let payload: AllocineAutocompleteResponse;
+    try {
+      payload = JSON.parse(response.data) as AllocineAutocompleteResponse;
+    } catch {
+      continue;
+    }
+    const candidates = extractAllocineAutocompleteCandidates({
+      payload,
+      mediaType,
+      titles: titleVariants,
+    });
     const selectedCandidate = selectAllocineSearchCandidate({
       candidates,
       titles: titleVariants,
