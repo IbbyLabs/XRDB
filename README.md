@@ -178,6 +178,7 @@ npm run release:patch
 ```
 
 The release flow also bumps `FINAL_IMAGE_RENDERER_CACHE_VERSION` automatically so each new release invalidates stale final image renders on first request.
+Release automation now regenerates every tracked README doc image and CI fails if the checked in doc assets drift from the generator output.
 
 Store `XRDB_README_PREVIEW_TMDB_KEY` and `XRDB_README_PREVIEW_MDBLIST_KEY` in local `.env` or `.env.local` if you want the release/doc asset scripts to pick them up automatically. Shell exported vars still win if both are set.
 

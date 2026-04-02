@@ -1,3 +1,5 @@
+import { useEffect, useMemo } from 'react';
+
 import {
   DEFAULT_BADGE_SCALE_PERCENT,
   DEFAULT_STACKED_ACCENT_MODE,
@@ -51,7 +53,11 @@ import {
   MIN_AGGREGATE_ACCENT_BAR_OFFSET,
 } from '@/lib/ratingPresentation';
 import { type RatingPreference } from '@/lib/ratingProviderCatalog';
-import { METADATA_TRANSLATION_MODE_OPTIONS } from '@/lib/metadataTranslation';
+import {
+  DEFAULT_METADATA_TRANSLATION_MODE,
+  METADATA_TRANSLATION_MODE_OPTIONS,
+  normalizeMetadataTranslationMode,
+} from '@/lib/metadataTranslation';
 import {
   GENRE_BADGE_MODE_OPTIONS,
   GENRE_BADGE_POSITION_OPTIONS,
@@ -76,6 +82,7 @@ import {
   SAMPLE_GENRE_BADGE_MODE_DEFAULT,
   SUPPORTED_LANGUAGES,
 } from '@/lib/configuratorPageOptions';
+import { isConfiguratorExperienceMode } from '@/lib/configuratorPresets';
 import { buildConfiguratorPageProps } from '@/lib/configuratorPageProps';
 import { normalizeBaseUrl } from '@/lib/uiConfig';
 import { useClientOrigin } from '@/lib/useClientOrigin';
@@ -107,8 +114,110 @@ type WorkspaceSectionId =
   | 'quicktune'
   | 'presets';
 
+type WorkspaceCenterView = 'showcase' | 'preview' | 'guide';
+type PreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
+
+const DOCS_CAPTURE_ENABLED = process.env.NEXT_PUBLIC_XRDB_ENABLE_DOCS_CAPTURE === 'true';
+const WORKSPACE_PANEL_IDS = new Set<WorkspacePanelId>([
+  'configurator',
+  'center-view',
+  'config-string',
+  'aio-urls',
+  'addon-proxy',
+  'current-setup',
+  'quick-actions',
+]);
+const WORKSPACE_CENTER_VIEWS = new Set<WorkspaceCenterView>(['showcase', 'preview', 'guide']);
+const PREVIEW_TYPES = new Set<PreviewType>(['poster', 'backdrop', 'thumbnail', 'logo']);
+
+const readBooleanSearchParam = (
+  params: URLSearchParams,
+  key: string,
+  fallback: boolean,
+) => {
+  const normalized = String(params.get(key) || '').trim().toLowerCase();
+  if (!normalized) {
+    return fallback;
+  }
+  return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on';
+};
+
+const readListSearchParam = (params: URLSearchParams, key: string) =>
+  String(params.get(key) || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+const isWorkspacePanelId = (value: string): value is WorkspacePanelId => WORKSPACE_PANEL_IDS.has(value as WorkspacePanelId);
+
+const isWorkspaceCenterView = (value: string): value is WorkspaceCenterView =>
+  WORKSPACE_CENTER_VIEWS.has(value as WorkspaceCenterView);
+
+const isPreviewType = (value: string): value is PreviewType => PREVIEW_TYPES.has(value as PreviewType);
+
+const areSetsEqual = (left: Set<string>, right: Set<string>) => {
+  if (left.size !== right.size) {
+    return false;
+  }
+
+  for (const value of left) {
+    if (!right.has(value)) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const readDocsCaptureConfig = () => {
+  if (!DOCS_CAPTURE_ENABLED || typeof window === 'undefined') {
+    return null;
+  }
+
+  const url = new URL(window.location.href);
+  if (!readBooleanSearchParam(url.searchParams, 'docsCapture', false)) {
+    return null;
+  }
+
+  const requestedPanels = readListSearchParam(url.searchParams, 'capturePanels').filter(isWorkspacePanelId);
+  const panels = new Set<WorkspacePanelId>(
+    requestedPanels.length > 0
+      ? requestedPanels
+      : ['configurator', 'center-view', 'quick-actions'],
+  );
+  const requestedCenterView = String(url.searchParams.get('captureWorkspaceCenterView') || '').trim().toLowerCase();
+  const requestedExperienceMode = String(url.searchParams.get('captureExperience') || '').trim().toLowerCase();
+  const requestedPreviewType = String(url.searchParams.get('capturePreviewType') || '').trim().toLowerCase();
+
+  return {
+    experienceMode: isConfiguratorExperienceMode(requestedExperienceMode)
+      ? requestedExperienceMode
+      : 'advanced',
+    workspaceCenterView: isWorkspaceCenterView(requestedCenterView)
+      ? requestedCenterView
+      : 'showcase',
+    previewType: isPreviewType(requestedPreviewType) ? requestedPreviewType : 'poster',
+    requirePreview: readBooleanSearchParam(url.searchParams, 'captureRequirePreview', false),
+    panels,
+    tmdbKey: String(url.searchParams.get('captureTmdbKey') || '').trim(),
+    mdblistKey: String(url.searchParams.get('captureMdblistKey') || '').trim(),
+    proxyManifestUrl: String(url.searchParams.get('captureProxyManifestUrl') || '').trim(),
+    proxyTranslateMeta: readBooleanSearchParam(url.searchParams, 'captureProxyTranslateMeta', false),
+    proxyTranslateMetaMode: normalizeMetadataTranslationMode(
+      url.searchParams.get('captureProxyTranslateMetaMode'),
+      DEFAULT_METADATA_TRANSLATION_MODE,
+    ),
+    proxyDebugMetaTranslation: readBooleanSearchParam(
+      url.searchParams,
+      'captureProxyDebugMetaTranslation',
+      false,
+    ),
+  };
+};
+
 export function useConfiguratorWorkspaceRuntime() {
   const baseUrl = normalizeBaseUrl(useClientOrigin());
+  const docsCaptureConfig = useMemo(() => readDocsCaptureConfig(), []);
   const workspaceState = useConfiguratorWorkspaceState();
   const {
     activeProviderEditorId,
@@ -836,7 +945,7 @@ export function useConfiguratorWorkspaceRuntime() {
     tmdbIdScope,
     tmdbKey,
   });
-  const { aiometadataCopyBlock, configString, genrePreviewCards, proxyUrl } = workspaceOutputs;
+  const { aiometadataCopyBlock, configString, genrePreviewCards, previewLoaded, proxyUrl } = workspaceOutputs;
 
   const workspaceUi = useConfiguratorWorkspaceUi<WorkspacePanelId, WorkspaceSectionId>({
     aiometadataCopyBlock,
@@ -853,7 +962,109 @@ export function useConfiguratorWorkspaceRuntime() {
     showExperienceModal,
     showProxyUrl,
   });
-  const { handleContinueExperienceMode, handleExitWizard } = workspaceUi;
+  const {
+    handleContinueExperienceMode,
+    handleExitWizard,
+    openWorkspacePanels,
+    setOpenWorkspacePanels,
+  } = workspaceUi;
+
+  useEffect(() => {
+    if (!docsCaptureConfig) {
+      return;
+    }
+
+    if (experienceMode !== docsCaptureConfig.experienceMode) {
+      setExperienceMode(docsCaptureConfig.experienceMode);
+    }
+
+    if (experienceModeDraft !== docsCaptureConfig.experienceMode) {
+      setExperienceModeDraft(docsCaptureConfig.experienceMode);
+    }
+
+    if (showExperienceModal) {
+      setShowExperienceModal(false);
+    }
+
+    if (workspaceCenterView !== docsCaptureConfig.workspaceCenterView) {
+      setWorkspaceCenterView(docsCaptureConfig.workspaceCenterView);
+    }
+
+    if (previewType !== docsCaptureConfig.previewType) {
+      setPreviewType(docsCaptureConfig.previewType);
+    }
+
+    if (tmdbKey.trim() !== docsCaptureConfig.tmdbKey) {
+      setTmdbKey(docsCaptureConfig.tmdbKey);
+    }
+
+    if (mdblistKey.trim() !== docsCaptureConfig.mdblistKey) {
+      setMdblistKey(docsCaptureConfig.mdblistKey);
+    }
+
+    if (proxyManifestUrl.trim() !== docsCaptureConfig.proxyManifestUrl) {
+      setProxyManifestUrl(docsCaptureConfig.proxyManifestUrl);
+    }
+
+    if (proxyTranslateMeta !== docsCaptureConfig.proxyTranslateMeta) {
+      setProxyTranslateMeta(docsCaptureConfig.proxyTranslateMeta);
+    }
+
+    if (proxyTranslateMetaMode !== docsCaptureConfig.proxyTranslateMetaMode) {
+      setProxyTranslateMetaMode(docsCaptureConfig.proxyTranslateMetaMode);
+    }
+
+    if (proxyDebugMetaTranslation !== docsCaptureConfig.proxyDebugMetaTranslation) {
+      setProxyDebugMetaTranslation(docsCaptureConfig.proxyDebugMetaTranslation);
+    }
+
+    if (!areSetsEqual(openWorkspacePanels, docsCaptureConfig.panels)) {
+      setOpenWorkspacePanels(new Set(docsCaptureConfig.panels));
+    }
+  }, [
+    docsCaptureConfig,
+    experienceMode,
+    experienceModeDraft,
+    mdblistKey,
+    previewType,
+    proxyDebugMetaTranslation,
+    proxyManifestUrl,
+    proxyTranslateMeta,
+    proxyTranslateMetaMode,
+    setExperienceMode,
+    setExperienceModeDraft,
+    setMdblistKey,
+    setPreviewType,
+    setProxyDebugMetaTranslation,
+    setProxyManifestUrl,
+    setProxyTranslateMeta,
+    setProxyTranslateMetaMode,
+    setShowExperienceModal,
+    setOpenWorkspacePanels,
+    setTmdbKey,
+    setWorkspaceCenterView,
+    showExperienceModal,
+    tmdbKey,
+    workspaceCenterView,
+    openWorkspacePanels,
+  ]);
+
+  const docsCaptureReady = Boolean(
+    docsCaptureConfig
+    && !showExperienceModal
+    && experienceMode === docsCaptureConfig.experienceMode
+    && experienceModeDraft === docsCaptureConfig.experienceMode
+    && workspaceCenterView === docsCaptureConfig.workspaceCenterView
+    && previewType === docsCaptureConfig.previewType
+    && tmdbKey.trim() === docsCaptureConfig.tmdbKey
+    && mdblistKey.trim() === docsCaptureConfig.mdblistKey
+    && proxyManifestUrl.trim() === docsCaptureConfig.proxyManifestUrl
+    && proxyTranslateMeta === docsCaptureConfig.proxyTranslateMeta
+    && proxyTranslateMetaMode === docsCaptureConfig.proxyTranslateMetaMode
+    && proxyDebugMetaTranslation === docsCaptureConfig.proxyDebugMetaTranslation
+    && (!docsCaptureConfig.requirePreview || previewLoaded)
+    && areSetsEqual(openWorkspacePanels, docsCaptureConfig.panels),
+  );
 
   const workspaceActions = useConfiguratorWorkspaceActions({
     applyWorkspaceConfig,
@@ -967,6 +1178,7 @@ export function useConfiguratorWorkspaceRuntime() {
   });
 
   return {
+    docsCaptureReady,
     experienceModeDraft,
     handleContinueExperienceMode,
     heroProps,

@@ -349,6 +349,7 @@ const main = async () => {
       cwd: process.cwd(),
       env: {
         ...process.env,
+        XRDB_ALLOW_PRIVATE_SOURCES_FOR_TESTS: 'true',
         XRDB_ALLOW_PRIVATE_UPSTREAMS_FOR_TESTS: 'true',
         XRDB_TMDB_API_BASE_URL: `http://127.0.0.1:${mockPort}/tmdb/3`,
         XRDB_ANIME_MAPPING_BASE_URL: `http://127.0.0.1:${mockPort}/anime-mapping`,
@@ -408,7 +409,7 @@ const main = async () => {
     assert.equal(showPayload.meta._xrdbMetaTranslation.fields.title.reason, 'preferred-requested-language');
     assert.equal(showPayload.meta.videos[0].title, 'Pilot original');
     assert.equal(showPayload.meta.videos[0].description, 'Original ep description');
-    assert.equal(showPayload.meta.videos[0]._xrdbMetaTranslation.fields.title.source, 'upstream');
+    assert.equal(showPayload.meta.videos[0]._xrdbMetaTranslation.fields.title.source, 'source');
     assert.deepEqual(showPayload.meta.videos[0]._xrdbMetaTranslation.tmdbTarget.requestedLanguage, {
       title: false,
       overview: false,

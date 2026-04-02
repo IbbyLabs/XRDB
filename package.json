@@ -47,8 +47,11 @@
     "docs:refresh-assets": "node scripts/refresh-doc-static-assets.mjs all",
     "predocs:refresh-assets:boards": "npm run ensure:native",
     "docs:refresh-assets:boards": "node scripts/refresh-doc-static-assets.mjs boards",
+    "predocs:refresh-assets:captures": "npm run ensure:native",
+    "docs:refresh-assets:captures": "node scripts/refresh-doc-static-assets.mjs captures",
     "predocs:refresh-assets:metadata": "npm run ensure:native",
     "docs:refresh-assets:metadata": "node scripts/refresh-doc-static-assets.mjs metadata",
+    "docs:verify-manifest": "node scripts/verify-doc-asset-manifest.mjs",
     "predocs:refresh-assets": "npm run ensure:native",
     "preimdb:import": "npm run ensure:native",
     "imdb:import": "node scripts/imdb-dataset-import.js",
@@ -56,8 +59,9 @@
     "release:patch": "node scripts/release.mjs patch",
     "release:minor": "node scripts/release.mjs minor",
     "release:major": "node scripts/release.mjs major",
+    "verify:legacy-name": "node scripts/verify-no-legacy-brand.mjs",
     "verify:proxy-meta": "node scripts/verify-proxy-metadata-translation.mjs",
-    "preversion": "npm run docs:refresh-assets",
+    "preversion": "npm run verify:legacy-name && npm run docs:refresh-assets && npm run docs:verify-manifest",
     "version": "node scripts/bump-final-render-cache-version.mjs && node scripts/update-changelog.mjs && node scripts/refresh-readme-changelog-links.mjs && node scripts/refresh-readme-preview-cache-busters.mjs && git add CHANGELOG.md README.md docs/images lib/imageRouteConfig.ts"
   },
   "dependencies": {
