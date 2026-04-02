@@ -250,7 +250,7 @@ export function ConfiguratorExportPanels({
               </div>
               <div className="mt-3 border-t border-white/10 pt-3">
                 <p className="mt-3 text-[11px] leading-5 text-zinc-500">
-                  These presets keep background and logo on type aware TMDB IDs. Poster follows the selected poster mode. Episode thumbs follow the selected episode mode and carry their own thumbnail rating order.
+                  These presets keep background and logo on type aware TMDB IDs. Poster follows the selected poster mode. Episode thumbs follow the selected episode mode and keep their own thumbnail ratings, artwork, text, and layout settings.
                 </p>
                 <div className="mt-4 space-y-4 rounded-2xl border border-white/10 bg-black/35 p-4">
                   <div className="grid gap-4">

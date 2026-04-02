@@ -1112,7 +1112,7 @@ export function useConfiguratorOutputs({
               label: 'Episode Thumbnail URL Pattern',
               value: aiometadataPatterns.episodeThumbnailUrlPattern,
               description:
-                'Matches the live AIOMetadata episode thumb preset and uses the configured thumbnail episode artwork mode.',
+                'Matches the live AIOMetadata episode thumb preset and keeps the configured thumbnail scoped artwork, text, rating, and layout settings.',
             },
           ]
         : [],
