@@ -96,6 +96,7 @@ import { useConfiguratorWorkspaceState } from '@/lib/useConfiguratorWorkspaceSta
 import { useConfiguratorWorkspaceStorage } from '@/lib/useConfiguratorWorkspaceStorage';
 import { useConfiguratorWorkspaceSummary } from '@/lib/useConfiguratorWorkspaceSummary';
 import { useConfiguratorWorkspaceUi } from '@/lib/useConfiguratorWorkspaceUi';
+import { enabledOrderedToRows } from '@/lib/ratingProviderRows';
 
 type WorkspacePanelId =
   | 'configurator'
@@ -118,6 +119,8 @@ type WorkspaceCenterView = 'showcase' | 'preview' | 'guide';
 type PreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 
 const DOCS_CAPTURE_ENABLED = process.env.NEXT_PUBLIC_XRDB_ENABLE_DOCS_CAPTURE === 'true';
+const DOCS_CAPTURE_RATING_ROWS = enabledOrderedToRows(['tmdb']);
+const DOCS_CAPTURE_QUALITY_BADGE_PREFERENCES: string[] = [];
 const WORKSPACE_PANEL_IDS = new Set<WorkspacePanelId>([
   'configurator',
   'center-view',
@@ -218,6 +221,7 @@ const readDocsCaptureConfig = () => {
 export function useConfiguratorWorkspaceRuntime() {
   const baseUrl = normalizeBaseUrl(useClientOrigin());
   const docsCaptureConfig = useMemo(() => readDocsCaptureConfig(), []);
+  const disableRemoteLookups = Boolean(docsCaptureConfig);
   const workspaceState = useConfiguratorWorkspaceState();
   const {
     activeProviderEditorId,
@@ -476,7 +480,9 @@ export function useConfiguratorWorkspaceRuntime() {
     workspaceCenterView,
   } = workspaceState;
 
-  const feeds = useConfiguratorFeeds();
+  const feeds = useConfiguratorFeeds({
+    disabled: disableRemoteLookups,
+  });
 
   const activeWorkspaceSettings = useConfiguratorActiveWorkspaceSettings({
     backdropGenreBadgeAnimeGrouping,
@@ -579,6 +585,7 @@ export function useConfiguratorWorkspaceRuntime() {
   } = activeWorkspaceSettings;
 
   const pageChrome = useConfiguratorPageChrome({
+    disableRemoteLookups,
     initialSupportedLanguages: SUPPORTED_LANGUAGES,
     tmdbKey,
   });
@@ -1018,10 +1025,30 @@ export function useConfiguratorWorkspaceRuntime() {
       setProxyDebugMetaTranslation(docsCaptureConfig.proxyDebugMetaTranslation);
     }
 
+    setPosterRatingRows(DOCS_CAPTURE_RATING_ROWS);
+    setBackdropRatingRows(DOCS_CAPTURE_RATING_ROWS);
+    setThumbnailRatingRows(DOCS_CAPTURE_RATING_ROWS);
+    setLogoRatingRows(DOCS_CAPTURE_RATING_ROWS);
+    setPosterQualityBadgePreferences(DOCS_CAPTURE_QUALITY_BADGE_PREFERENCES);
+    setBackdropQualityBadgePreferences(DOCS_CAPTURE_QUALITY_BADGE_PREFERENCES);
+    setThumbnailQualityBadgePreferences(DOCS_CAPTURE_QUALITY_BADGE_PREFERENCES);
+    setLogoQualityBadgePreferences(DOCS_CAPTURE_QUALITY_BADGE_PREFERENCES);
+    setPosterStreamBadges('off');
+    setBackdropStreamBadges('off');
+    setThumbnailStreamBadges('off');
+    setPosterRatingsMax(1);
+    setBackdropRatingsMax(1);
+    setThumbnailRatingsMax(1);
+    setLogoRatingsMax(1);
+
     if (!areSetsEqual(openWorkspacePanels, docsCaptureConfig.panels)) {
       setOpenWorkspacePanels(new Set(docsCaptureConfig.panels));
     }
   }, [
+    setBackdropQualityBadgePreferences,
+    setBackdropRatingRows,
+    setBackdropRatingsMax,
+    setBackdropStreamBadges,
     docsCaptureConfig,
     experienceMode,
     experienceModeDraft,
@@ -1033,7 +1060,14 @@ export function useConfiguratorWorkspaceRuntime() {
     proxyTranslateMetaMode,
     setExperienceMode,
     setExperienceModeDraft,
+    setLogoQualityBadgePreferences,
+    setLogoRatingRows,
+    setLogoRatingsMax,
     setMdblistKey,
+    setPosterQualityBadgePreferences,
+    setPosterRatingRows,
+    setPosterRatingsMax,
+    setPosterStreamBadges,
     setPreviewType,
     setProxyDebugMetaTranslation,
     setProxyManifestUrl,
@@ -1041,6 +1075,10 @@ export function useConfiguratorWorkspaceRuntime() {
     setProxyTranslateMetaMode,
     setShowExperienceModal,
     setOpenWorkspacePanels,
+    setThumbnailQualityBadgePreferences,
+    setThumbnailRatingRows,
+    setThumbnailRatingsMax,
+    setThumbnailStreamBadges,
     setTmdbKey,
     setWorkspaceCenterView,
     showExperienceModal,
