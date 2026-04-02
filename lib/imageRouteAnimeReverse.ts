@@ -23,16 +23,25 @@ const buildAnimeReverseMappingRequest = (
   provider: AnimeMappingProvider,
   externalId: string,
   season?: string | null,
+  episode?: string | null,
   cacheNamespace = 'anime',
 ) => {
   const normalizedExternalId = externalId.trim();
   if (!normalizedExternalId) return null;
 
   const normalizedSeason = normalizeAnimeMappingSeason(season);
-  const seasonQuery = normalizedSeason ? `?s=${encodeURIComponent(normalizedSeason)}` : '';
+  const normalizedEpisode = normalizeAnimeMappingSeason(episode);
+  const searchParams = new URLSearchParams();
+  if (normalizedSeason) {
+    searchParams.set('s', normalizedSeason);
+  }
+  if (normalizedEpisode) {
+    searchParams.set('ep', normalizedEpisode);
+  }
+  const query = searchParams.toString();
   return {
-    cacheKey: `${cacheNamespace}:reverse:${provider}:${normalizedExternalId}:s:${normalizedSeason || '-'}`,
-    url: `${ANIME_MAPPING_BASE_URL}/${provider}/${encodeURIComponent(normalizedExternalId)}${seasonQuery}`,
+    cacheKey: `${cacheNamespace}:reverse:${provider}:${normalizedExternalId}:s:${normalizedSeason || '-'}${normalizedEpisode ? `:e:${normalizedEpisode}` : ''}`,
+    url: `${ANIME_MAPPING_BASE_URL}/${provider}/${encodeURIComponent(normalizedExternalId)}${query ? `?${query}` : ''}`,
   };
 };
 
@@ -40,6 +49,7 @@ export const fetchAnimeReverseMappingPayload = async ({
   provider,
   externalId,
   season,
+  episode,
   phases,
   fetchJsonCached,
   cacheNamespace = 'anime',
@@ -47,11 +57,18 @@ export const fetchAnimeReverseMappingPayload = async ({
   provider: AnimeMappingProvider;
   externalId: string;
   season?: string | null;
+  episode?: string | null;
   phases: PhaseDurations;
   fetchJsonCached: ReverseMappingFetchJson;
   cacheNamespace?: string;
 }) => {
-  const request = buildAnimeReverseMappingRequest(provider, externalId, season, cacheNamespace);
+  const request = buildAnimeReverseMappingRequest(
+    provider,
+    externalId,
+    season,
+    episode,
+    cacheNamespace,
+  );
   if (!request) return null;
 
   try {
@@ -75,6 +92,7 @@ export const fetchKitsuIdFromReverseMapping = async (input: {
   provider: AnimeMappingProvider;
   externalId: string;
   season?: string | null;
+  episode?: string | null;
   phases: PhaseDurations;
   fetchJsonCached: ReverseMappingFetchJson;
 }) => {
@@ -86,6 +104,7 @@ export const fetchAniListIdFromReverseMapping = async (input: {
   provider: AnimeMappingProvider;
   externalId: string;
   season?: string | null;
+  episode?: string | null;
   phases: PhaseDurations;
   fetchJsonCached: ReverseMappingFetchJson;
 }) => {
@@ -97,6 +116,7 @@ export const fetchMalIdFromReverseMapping = async (input: {
   provider: AnimeMappingProvider;
   externalId: string;
   season?: string | null;
+  episode?: string | null;
   phases: PhaseDurations;
   fetchJsonCached: ReverseMappingFetchJson;
 }) => {
@@ -108,6 +128,7 @@ export const fetchTmdbIdFromReverseMapping = async (input: {
   provider: AnimeMappingProvider;
   externalId: string;
   season?: string | null;
+  episode?: string | null;
   phases: PhaseDurations;
   fetchJsonCached: ReverseMappingFetchJson;
 }) => {

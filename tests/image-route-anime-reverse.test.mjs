@@ -85,6 +85,54 @@ test('image route anime reverse builds payload requests and returns ids', async 
   assert.equal(calls.at(-1)?.key, 'tmdb:reverse:mal:456:s:2');
 });
 
+test('image route anime reverse includes episode context when provided', async () => {
+  const calls = [];
+  const fetchJsonCached = async (key, url) => {
+    calls.push({ key, url });
+    return {
+      ok: true,
+      status: 200,
+      data: {
+        mappings: {
+          ids: {
+            tmdb: '46298',
+          },
+        },
+      },
+    };
+  };
+
+  const payload = await fetchAnimeReverseMappingPayload({
+    provider: 'mal',
+    externalId: '11061',
+    season: '2',
+    episode: '1',
+    phases,
+    fetchJsonCached,
+  });
+  const tmdbId = await fetchTmdbIdFromReverseMapping({
+    provider: 'mal',
+    externalId: '11061',
+    season: '2',
+    episode: '1',
+    phases,
+    fetchJsonCached,
+  });
+
+  assert.equal(payload?.mappings?.ids?.tmdb, '46298');
+  assert.equal(tmdbId, '46298');
+  assert.deepEqual(calls, [
+    {
+      key: 'anime:reverse:mal:11061:s:2:e:1',
+      url: 'https://animemapping.stremio.dpdns.org/mal/11061?s=2&ep=1',
+    },
+    {
+      key: 'tmdb:reverse:mal:11061:s:2:e:1',
+      url: 'https://animemapping.stremio.dpdns.org/mal/11061?s=2&ep=1',
+    },
+  ]);
+});
+
 test('image route anime reverse returns null for blank ids and failed payloads', async () => {
   const fetchJsonCached = async () => ({
     ok: false,
