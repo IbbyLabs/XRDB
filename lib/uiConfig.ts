@@ -1726,7 +1726,13 @@ export const buildAiometadataUrlPatterns = (
   const payloadEntries = Object.entries(payload).map(([key, value]) => [key, String(value)] as [string, string]);
   const buildScopedEntries = (scope: 'poster' | 'backdrop' | 'logo' | 'thumbnail') => {
     if (scope === 'thumbnail') {
-      return payloadEntries.filter(([key]) => !key.startsWith('backdrop'));
+      return payloadEntries.filter(
+        ([key]) =>
+          !key.startsWith('poster') &&
+          !key.startsWith('backdrop') &&
+          !key.startsWith('logo') &&
+          key !== 'qualityBadgesSide',
+      );
     }
 
     return payloadEntries.filter(([key]) => {

@@ -726,6 +726,21 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
   assert.equal((patterns?.logoUrlPattern ?? '').includes('backdropRatings='), false);
   assert.equal((patterns?.logoUrlPattern ?? '').includes('qualityBadgesSide='), false);
 
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailRatings=tmdb%2Cimdb/);
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailRatingsLayout=right-vertical/);
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailSideRatingsPosition=custom/);
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailSideRatingsOffset=62/);
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailRatingStyle=plain/);
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailImageText=clean/);
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailArtworkSource=fanart/);
+  assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('posterRatings='), false);
+  assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('backdropRatings='), false);
+  assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('logoRatings='), false);
+  assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('posterRatingStyle='), false);
+  assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('logoRatingStyle='), false);
+  assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('posterImageText='), false);
+  assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('qualityBadgesSide='), false);
+
   assert.match(patterns?.backgroundUrlPattern ?? '', /idSource=tmdb/);
   assert.match(patterns?.logoUrlPattern ?? '', /idSource=tmdb/);
   assert.match(patterns?.posterUrlPattern ?? '', /idSource=tmdb/);
