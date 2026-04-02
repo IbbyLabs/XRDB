@@ -141,3 +141,20 @@ test('image route display state keeps explicit XRDB provider overrides over defa
 
   assert.equal(state.displayRatingBadges[0]?.iconScalePercent, 132);
 });
+
+test('image route display state marks custom provider icon overrides for downstream rendering', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    imageType: 'poster',
+    ratingPresentation: 'standard',
+    effectiveRatingPreferences: ['tomatoes'],
+    providerRatings: new Map([['tomatoes', '93']]),
+    providerAppearanceOverrides: {
+      tomatoes: { iconUrl: 'https://cdn.example.com/custom-rt.svg' },
+    },
+    genreBadge: null,
+  });
+
+  assert.equal(state.displayRatingBadges[0]?.iconUrl, 'https://cdn.example.com/custom-rt.svg');
+  assert.equal(state.displayRatingBadges[0]?.hasCustomIconOverride, true);
+});

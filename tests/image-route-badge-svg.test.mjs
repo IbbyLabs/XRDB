@@ -64,3 +64,43 @@ test('image route badge svg builds a glass badge with an icon image', () => {
   assert.match(svg, /clipPath id="icon-clip"/);
   assert.match(svg, /data:image\/svg\+xml;base64,PHN2Zy8\+/);
 });
+
+test('image route badge svg keeps the default light square plate for rotten tomatoes badges', () => {
+  const svg = buildBadgeSvg({
+    width: 128,
+    height: 42,
+    iconSize: 24,
+    fontSize: 18,
+    paddingX: 14,
+    gap: 10,
+    accentColor: '#000000',
+    monogram: 'RT',
+    iconDataUri: 'data:image/svg+xml;base64,PHN2Zy8+',
+    iconKey: 'tomatoes',
+    value: '93',
+    ratingStyle: 'square',
+  });
+
+  assert.match(svg, /fill="rgba\(255,248,240,0\.96\)"/);
+});
+
+test('image route badge svg keeps custom square icon overrides on a dark plate', () => {
+  const svg = buildBadgeSvg({
+    width: 128,
+    height: 42,
+    iconSize: 24,
+    fontSize: 18,
+    paddingX: 14,
+    gap: 10,
+    accentColor: '#000000',
+    monogram: 'CU',
+    iconDataUri: 'data:image/svg+xml;base64,PHN2Zy8+',
+    hasCustomIconOverride: true,
+    iconKey: 'tomatoes',
+    value: '93',
+    ratingStyle: 'square',
+  });
+
+  assert.match(svg, /fill="rgb\(10,10,10\)"/);
+  assert.doesNotMatch(svg, /fill="rgba\(255,248,240,0\.96\)"/);
+});

@@ -210,6 +210,7 @@ export const resolveImageRouteDisplayState = (input: {
       sourceValue,
       iconUrl: providerAppearance?.iconUrl || appearance.iconUrl,
       accentColor: providerAppearance?.accentColor || appearance.accentColor,
+      hasCustomIconOverride: Boolean(providerAppearance?.iconUrl),
       iconCornerRadius: 'iconCornerRadius' in meta ? meta.iconCornerRadius : undefined,
       iconScalePercent:
         providerAppearance?.iconScalePercent ??

@@ -32,6 +32,7 @@ export type BuildBadgeSvgInput = {
   accentColor: string;
   monogram: string;
   iconDataUri?: string | null;
+  hasCustomIconOverride?: boolean;
   iconCornerRadius?: number;
   iconKey?: BadgeKey;
   labelText?: string;
@@ -68,6 +69,7 @@ export const buildBadgeSvg = ({
   accentColor,
   monogram,
   iconDataUri,
+  hasCustomIconOverride = false,
   iconCornerRadius = 0,
   iconKey,
   labelText,
@@ -412,11 +414,15 @@ ${monogramText}
   const valueLetterSpacing = compactText ? ' letter-spacing="-0.04em"' : '';
   const iconY = Math.round((height - renderIconSize) / 2);
   const useNeutralGlassPlate = ratingStyle === 'glass' && preferNeutralGlassPlate;
+  const useLightSquareIconPlate =
+    ratingStyle === 'square' &&
+    !hasCustomIconOverride &&
+    (iconKey === 'tomatoes' || iconKey === 'tomatoesaudience');
   const iconShape =
     ratingStyle === 'plain'
       ? ''
       : ratingStyle === 'square'
-        ? `<rect x="${iconX + 0.75}" y="${iconY + 0.75}" width="${Math.max(0, renderIconSize - 1.5)}" height="${Math.max(0, renderIconSize - 1.5)}" rx="${Math.max(4, iconCornerRadius || iconRadius)}" fill="${iconKey === 'tomatoes' || iconKey === 'tomatoesaudience' ? 'rgba(255,248,240,0.96)' : 'rgb(10,10,10)'}" />`
+        ? `<rect x="${iconX + 0.75}" y="${iconY + 0.75}" width="${Math.max(0, renderIconSize - 1.5)}" height="${Math.max(0, renderIconSize - 1.5)}" rx="${Math.max(4, iconCornerRadius || iconRadius)}" fill="${useLightSquareIconPlate ? 'rgba(255,248,240,0.96)' : 'rgb(10,10,10)'}" />`
         : useNeutralGlassPlate
           ? `<circle cx="${iconCx}" cy="${iconCy}" r="${iconRadius}" fill="rgba(15,23,42,0.92)" stroke="${accentColor}" stroke-width="1.5" />`
           : `<circle cx="${iconCx}" cy="${iconCy}" r="${iconRadius}" fill="${accentColor}" stroke="rgba(255,255,255,0.45)" />`;
