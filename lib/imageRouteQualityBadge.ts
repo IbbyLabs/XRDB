@@ -12,7 +12,6 @@ import {
   normalizeUserFacingMediaBadgeLabel,
   type MediaFeatureBadgeKey,
 } from './mediaFeatures.ts';
-import { estimateSummaryLabelWidth } from './imageRouteBadgeMetrics.ts';
 import { escapeXml, estimateGeneratedLogoLineWidth } from './imageRouteText.ts';
 
 export type QualityBadgeInput = {
@@ -181,6 +180,18 @@ export const buildQualityBadgeSvg = (
     const safetyWidth = Math.max(8, Math.round(textSize * 0.46));
     return Math.round(estimateGeneratedLogoLineWidth(collapsed, textSize) + trackingWidth + sidePadding * 2 + safetyWidth);
   };
+  const estimateQualityTextBadgeWidth = (labelText: string, textSize: number, sidePadding = 0) => {
+    const collapsed = labelText.trim().toUpperCase();
+    if (!collapsed) return Math.max(Math.round(h * 1.45), sidePadding * 2);
+    return Math.max(
+      Math.round(h * 1.45),
+      Math.round(
+        estimateGeneratedLogoLineWidth(collapsed, textSize) +
+          sidePadding * 2 +
+          Math.max(12, Math.round(textSize * 0.78))
+      ),
+    );
+  };
   const resolveChrome = (accentColor: string) => {
     if (style === 'plain' || style === 'media' || style === 'silver') return null;
     if (style === 'glass') {
@@ -299,10 +310,7 @@ ${buildCenteredBadgeAssetImage({
     if (key === 'certification') {
       const textSize = Math.round(h * 0.42);
       const sidePadding = Math.max(10, Math.round(h * 0.18));
-      const width = widthOverride ?? Math.max(
-        Math.round(h * 0.9),
-        estimateSummaryLabelWidth(label, textSize) + sidePadding * 2,
-      );
+      const width = widthOverride ?? estimateQualityTextBadgeWidth(label, textSize, sidePadding);
       const certRadius = Math.max(8, Math.round(h * 0.22));
       const textY = Math.round(h * 0.66);
       return {
@@ -324,10 +332,11 @@ ${buildSilverQualityTextDefs('quality-badge-silver-text')}
     const badgeTypeLabel = 'AGE';
     const badgeTypeSize = Math.max(9, Math.round(h * 0.2));
     const textSize = Math.round(h * 0.36);
+    const sidePadding = Math.max(8, Math.round(h * 0.18));
     const width = widthOverride ?? Math.max(
       Math.round(h * 1.08),
-      estimateSummaryLabelWidth(label, textSize) + 16,
-      estimateSummaryLabelWidth(badgeTypeLabel, badgeTypeSize) + 16,
+      estimateQualityTextBadgeWidth(label, textSize, sidePadding),
+      estimateQualityTextBadgeWidth(badgeTypeLabel, badgeTypeSize, sidePadding),
     );
     const badgeTypeY = Math.round(h * 0.31);
     const textY = Math.round(h * 0.72);
@@ -379,10 +388,7 @@ ${style === 'plain' ? plainStroke : rect}
   const accentColor = mediaFrameByKey[key as MediaFeatureBadgeKey]?.stroke ?? 'rgba(255,255,255,0.68)';
   const textSize = Math.round(h * 0.33);
   const sidePadding = Math.max(10, Math.round(h * 0.24));
-  const textWidth = widthOverride ?? Math.max(
-    Math.round(h * 1.45),
-    estimateSummaryLabelWidth(label, textSize) + sidePadding * 2,
-  );
+  const textWidth = widthOverride ?? estimateQualityTextBadgeWidth(label, textSize, sidePadding);
   const textY = Math.round(h * 0.66);
   if (style === 'media') {
     return {

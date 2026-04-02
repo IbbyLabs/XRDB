@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import sharp from 'sharp';
+
 import {
   buildQualityBadgeSvg,
   getBadgeIconRadius,
@@ -44,4 +46,37 @@ test('image route quality badge builds asset backed plain output', () => {
 
 test('image route quality badge returns null for unsupported keys', () => {
   assert.equal(buildQualityBadgeSvg({ key: 'unknown', label: 'Unknown' }, 40, undefined, 'glass'), null);
+});
+
+test('image route quality badge leaves extra width for long plain and silver network labels', async () => {
+  const badgeCases = [
+    { key: 'appletvplus', label: 'Apple TV Plus', minWidth: 126 },
+    { key: 'primevideo', label: 'Prime Video', minWidth: 118 },
+  ];
+
+  for (const style of ['plain', 'silver']) {
+    for (const badgeCase of badgeCases) {
+      const spec = buildQualityBadgeSvg({ key: badgeCase.key, label: badgeCase.label }, 44, undefined, style);
+
+      assert.ok(spec);
+      assert.ok(spec.width >= badgeCase.minWidth, `${style} ${badgeCase.key} width ${spec.width}`);
+
+      const { data, info } = await sharp(Buffer.from(spec.svg))
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      let maxOpaqueX = -1;
+      for (let y = 0; y < info.height; y += 1) {
+        for (let x = 0; x < info.width; x += 1) {
+          const alpha = data[(y * info.width + x) * info.channels + 3];
+          if (alpha > 160 && x > maxOpaqueX) {
+            maxOpaqueX = x;
+          }
+        }
+      }
+
+      assert.ok(maxOpaqueX >= 0);
+      assert.ok(info.width - 1 - maxOpaqueX >= 14, `${style} ${badgeCase.key} right margin ${info.width - 1 - maxOpaqueX}`);
+    }
+  }
 });
