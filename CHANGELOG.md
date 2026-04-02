@@ -16,6 +16,52 @@
 
 <a id="v1-1-0"></a>
 
+<a id="v1-2-0"></a>
+
+## [v1.2.0] - 02/04/2026
+
+### Added
+* add thumbnail configurator controls
+  
+  Add thumbnail as a first class configurator target with dedicated AIOMetadata and query export support.
+  
+  Expose thumbnail specific artwork, badge sizing, ratings layout, and episode artwork controls across workspace state, outputs, and appearance panels.
+  
+  Update config schema and request parsing so thumbnail settings remain type scoped and preserve compatibility fallbacks.
+  
+  Expand tests for UI config normalization and thumbnail specific rating param handling.
+* split episode thumbnail and backdrop artwork modes
+  
+  Add type scoped thumbnailEpisodeArtwork and backdropEpisodeArtwork settings through request parsing, config export, render seeding, artwork selection, and configurator export controls.
+  
+  Keep thumbnail defaults on episode stills, keep episodic backdrop defaults on series backdrops, and add regression coverage for request state, render seeds, artwork selection, and AIOMetadata output scoping.
+
+### Fixed
+* align thumbnail docs and export copy
+  
+  Update README guidance so episode thumbnails are documented as thumbnail scoped settings rather than backdrop scoped behavior.
+  
+  Refresh AIOMetadata export copy to mention thumbnail specific ratings, artwork, text, and layout settings.
+  
+  Leave the local rule and support context updates out of git as local only guidance.
+* keep thumbnail AIOMetadata export type scoped
+  
+  Restrict the episode thumbnail URL pattern to thumbnail specific and shared query params so poster, backdrop, and logo settings do not leak into the export.
+  
+  Add assertions covering thumbnail specific URL pattern content and exclusion of poster, backdrop, logo, and quality side params.
+* target updates role for release notifications
+  
+  Point automated and manual Discord release notifications at the Updates role instead of the previous role mention.
+  
+  Keep both release workflows aligned so publish and replay paths notify the same audience.
+* order discord release notes by section
+  
+  Keep Discord release posts ordered end to end so Added content appears first, Fixed content follows, and the remaining sections come after that across continuation embeds.
+  
+  Preserve nested changelog detail inside each top level entry instead of flattening those lines into a mixed stream, and prioritize tracked FR and BUG entries within their matching sections.
+  
+  Add regression coverage for ordered detailed continuation payloads and the updated multi message release flow.
+
 ## [v1.1.0] - 01/04/2026
 
 ### Added
