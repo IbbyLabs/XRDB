@@ -20,6 +20,49 @@
 
 <a id="v1-2-1"></a>
 
+<a id="v1-2-2"></a>
+
+## [v1.2.2] - 02/04/2026
+
+### Fixed
+* BUG 22 preserve dark square plates for custom provider icons
+  
+  Carry an explicit custom icon override flag into badge rendering so
+  provider specific Rotten Tomatoes square plate styling is only used
+  for the built in artwork.
+  
+  Keep custom SVG provider icons on the normal dark square plate and add
+  regression coverage for both override propagation and badge SVG output.
+* BUG 24 tighten poster badge polish
+  
+  Normalize critics and audience summary badge sizing so paired poster
+  badges render with consistent chip widths and spacing.
+  
+  Raise the bottom poster quality row slightly off the frame edge and add
+  regression coverage for the updated poster badge metrics.
+* BUG 33 center icon only genre badges
+  
+  Center icon only genre badge artwork from the computed badge width
+  instead of reusing text oriented horizontal padding.
+  
+  Keep text and mixed icon plus text badge layouts unchanged and add
+  regression coverage for icon only badge alignment.
+* BUG 36 prevent plain network badge clipping
+  
+  Widen long text only network quality badges in plain and silver styles
+  so logos and text no longer clip at larger badge sizes.
+  
+  Add regression coverage around rendered badge width and right edge
+  breathing room for long provider labels.
+* BUG 17 remove redundant poster TMDB mode
+  
+  Collapse the separate AIOMetadata poster TMDB option into auto mode
+  because both paths generated the same typed TMDB poster pattern.
+  
+  Keep backward compatibility by normalizing legacy tmdb poster mode
+  inputs to auto and update the export copy to describe the real
+  behavior difference between auto and IMDb modes.
+
 ## [v1.2.1] - 02/04/2026
 
 ### Fixed
