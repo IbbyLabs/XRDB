@@ -25,6 +25,8 @@ test('normalized display mode is opt in', () => {
   assert.equal(formatDisplayRatingValue('trakt', '73', { valueMode: 'normalized' }), '7.3');
   assert.equal(formatDisplayRatingValue('tomatoes', '93', { valueMode: 'normalized' }), '9.3');
   assert.equal(formatDisplayRatingValue('kitsu', '82', { valueMode: 'normalized' }), '8.2');
+  assert.equal(formatDisplayRatingValue('imdb', '8', { valueMode: 'normalized' }), '8.0');
+  assert.equal(formatDisplayRatingValue('allocine', '2', { valueMode: 'normalized' }), '4.0');
 });
 
 test('hundred point normalized display mode is opt in', () => {
