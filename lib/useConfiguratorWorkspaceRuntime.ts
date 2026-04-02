@@ -84,6 +84,7 @@ import {
 } from '@/lib/configuratorPageOptions';
 import { isConfiguratorExperienceMode } from '@/lib/configuratorPresets';
 import { buildConfiguratorPageProps } from '@/lib/configuratorPageProps';
+import type { MediaFeatureBadgeKey } from '@/lib/mediaFeatures';
 import { normalizeBaseUrl } from '@/lib/uiConfig';
 import { useClientOrigin } from '@/lib/useClientOrigin';
 import { useConfiguratorActiveWorkspaceSettings } from '@/lib/useConfiguratorActiveWorkspaceSettings';
@@ -120,7 +121,7 @@ type PreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 
 const DOCS_CAPTURE_ENABLED = process.env.NEXT_PUBLIC_XRDB_ENABLE_DOCS_CAPTURE === 'true';
 const DOCS_CAPTURE_RATING_ROWS = enabledOrderedToRows(['tmdb']);
-const DOCS_CAPTURE_QUALITY_BADGE_PREFERENCES: string[] = [];
+const DOCS_CAPTURE_QUALITY_BADGE_PREFERENCES: MediaFeatureBadgeKey[] = [];
 const WORKSPACE_PANEL_IDS = new Set<WorkspacePanelId>([
   'configurator',
   'center-view',
