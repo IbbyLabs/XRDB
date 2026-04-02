@@ -18,6 +18,33 @@
 
 <a id="v1-2-0"></a>
 
+<a id="v1-2-1"></a>
+
+## [v1.2.1] - 02/04/2026
+
+### Fixed
+* BUG 37 improve Allocine lookup coverage
+  
+  Switch Allocine title discovery from the legacy HTML search pages to the current autocomplete endpoint so localized series labels still resolve by original title.
+  
+  Update the default Allocine provider artwork to the new logo and add focused regression coverage for the reported series case and embedded icon asset.
+* wait for webhook posts before continuations
+  
+  Force Discord webhook execute calls to append wait=true so the summary message is confirmed before continuation embeds are posted.
+  
+  Preserve existing webhook query parameters such as thread_id and add focused regression coverage for the webhook URL normalization helper.
+  
+  Verified with: node test tests/discord release payload.test.mjs
+
+### Documentation
+* harden generated doc asset verification
+  
+  Track the README image outputs in a manifest and verify them in tests, release hooks, and CI before changes ship.
+  
+  Add a deterministic localhost docs capture path for the configurator and proxy screenshots, refresh the checked in XRDB screenshot assets, and use a local mock manifest so the proxy panel capture stays stable.
+  
+  Also fix the proxy metadata verification script so it can use private local fixtures during tests and match the current translation debug field source naming.
+
 ## [v1.2.0] - 02/04/2026
 
 ### Added
