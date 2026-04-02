@@ -119,7 +119,7 @@ export const formatNormalizedRatingValue = (
   if (valueMode === 'normalized100') {
     return String(Math.max(0, Math.min(100, Math.round(normalizedTenPointValue * 10))));
   }
-  return formatRatingNumber(normalizedTenPointValue);
+  return normalizedTenPointValue.toFixed(1);
 };
 
 const formatNativeProviderValue = (
