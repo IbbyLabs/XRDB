@@ -120,8 +120,16 @@ test('smart provider icons switch embedded art for rotten tomatoes, metacritic, 
   assert.match(trakt.iconUrl, /^data:image\/svg\+xml;charset=utf-8,/);
 });
 
+test('allocine embedded icon uses the updated svg artwork', () => {
+  assert.match(ALLOCINE_LOGO_DATA_URI, /^data:image\/svg\+xml;charset=utf-8,/);
+  const svg = decodeSvgDataUri(ALLOCINE_LOGO_DATA_URI).toString('utf8');
+
+  assert.match(svg, /fill="#fecc00"/);
+  assert.match(svg, /stroke="#000000"/);
+});
+
 test('trakt embedded icon uses the official hosted favicon art', () => {
-  const svg = decodeURIComponent(TRAKT_LOGO_DATA_URI.slice('data:image/svg+xml;charset=utf-8,'.length));
+  const svg = decodeSvgDataUri(TRAKT_LOGO_DATA_URI).toString('utf8');
 
   assert.match(svg, /id="logomark\.square\.gradient"/);
   assert.match(svg, /id="checkbox"/);

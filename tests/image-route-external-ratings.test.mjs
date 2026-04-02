@@ -132,14 +132,25 @@ test('image route external ratings fetch Allociné search and detail pages throu
   const metadata = new Map();
   const fetchImpl = async (url) => {
     requested.push(String(url));
-    if (String(url).includes('/rechercher/movie/')) {
-      return new Response(`
-        <span class="ACrL2ZACrpbG0vZmljaGVmaWxtX2dlbl9jZmlsbT0xOTc3Ni5odG1s meta-title-link">Matrix</span>
-        <span class="date">23 juin 1999</span>
-      `, {
+    if (String(url).includes('/_/autocomplete/movie/Matrix')) {
+      return new Response(JSON.stringify({
+        error: false,
+        message: null,
+        results: [
+          {
+            entity_type: 'movie',
+            entity_id: '19776',
+            label: 'Matrix',
+            original_label: 'The Matrix',
+            data: {
+              year: '1999',
+            },
+          },
+        ],
+      }), {
         status: 200,
         headers: {
-          'content-type': 'text/html; charset=utf-8',
+          'content-type': 'application/json; charset=utf-8',
         },
       });
     }
@@ -173,8 +184,72 @@ test('image route external ratings fetch Allociné search and detail pages throu
     allocinepress: '3.4',
   });
   assert.equal(requested.length, 2);
-  assert.match(requested[0], /\/rechercher\/movie\/\?q=Matrix/);
+  assert.match(requested[0], /\/_\/autocomplete\/movie\/Matrix$/);
   assert.match(requested[1], /\/film\/fichefilm_gen_cfilm=19776\.html$/);
+});
+
+test('image route external ratings match Allociné series by original title when the surfaced label is localized', async () => {
+  const requested = [];
+  const metadata = new Map();
+  const fetchImpl = async (url) => {
+    requested.push(String(url));
+    if (String(url).includes('/_/autocomplete/series/Law%20%26%20Order%20Special%20Victims%20Unit')) {
+      return new Response(JSON.stringify({
+        error: false,
+        message: null,
+        results: [
+          {
+            entity_type: 'series',
+            entity_id: '74',
+            label: 'New York Unité Spéciale',
+            original_label: 'Law & Order: Special Victims Unit',
+            data: {
+              year: '1999',
+            },
+          },
+        ],
+      }), {
+        status: 200,
+        headers: {
+          'content-type': 'application/json; charset=utf-8',
+        },
+      });
+    }
+    return new Response(`
+      <span class="rating-title"> Presse </span>
+      <span class="stareval-note">3,9</span>
+      <span class="rating-title"> Spectateurs </span>
+      <span class="stareval-note">4,2</span>
+    `, {
+      status: 200,
+      headers: {
+        'content-type': 'text/html; charset=utf-8',
+      },
+    });
+  };
+
+  const ratings = await fetchAllocineRatings({
+    mediaType: 'tv',
+    title: 'Law & Order Special Victims Unit',
+    originalTitle: null,
+    releaseDate: '1999-09-20',
+    cacheTtlMs: 5000,
+    phases,
+    getMetadata: (key) => metadata.get(key),
+    setMetadata: (key, value) => metadata.set(key, value),
+    fetchImpl,
+  });
+
+  assert.deepEqual(ratings, {
+    allocine: '4.2',
+    allocinepress: '3.9',
+  });
+  assert.equal(requested.length, 2);
+  assert.match(
+    requested[0],
+    /\/_\/autocomplete\/series\/Law%20%26%20Order%20Special%20Victims%20Unit$/,
+  );
+  assert.match(requested[1], /\/series\/ficheserie_gen_cserie=74\.html$/);
 });
 
 test('image route external ratings treat zero Trakt ratings as missing', async () => {
