@@ -1672,7 +1672,7 @@ export const buildAiometadataUrlPatterns = (
   }
 
   const hideCredentials = options?.hideCredentials ?? true;
-  const posterIdMode = options?.posterIdMode ?? 'auto';
+  const posterIdMode = options?.posterIdMode === 'imdb' ? 'imdb' : 'auto';
   const episodeIdMode = normalizeEpisodeIdMode(options?.episodeIdMode, DEFAULT_EPISODE_ID_MODE);
   const useTmdbPosterIds = posterIdMode === 'imdb' ? false : true;
   const needsFanartKey =
