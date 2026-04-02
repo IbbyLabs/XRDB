@@ -107,6 +107,7 @@ export type PosterImageSize = 'normal' | 'large' | '4k';
 export type PosterImageTextPreference = 'original' | 'clean' | 'alternative' | 'random';
 export type BackdropImageTextPreference = 'original' | 'clean' | 'alternative' | 'random';
 export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta' | 'omdb' | 'random';
+export type EpisodeArtworkMode = 'still' | 'series';
 export type LogoBackground = 'transparent' | 'dark';
 export type TmdbIdScopeMode = 'soft' | 'strict';
 type XrdbImageType = 'poster' | 'backdrop' | 'logo';
@@ -133,6 +134,8 @@ export type SharedXrdbSettings = {
   posterArtworkSource: ArtworkSource;
   backdropArtworkSource: ArtworkSource;
   logoArtworkSource: ArtworkSource;
+  thumbnailEpisodeArtwork: EpisodeArtworkMode;
+  backdropEpisodeArtwork: EpisodeArtworkMode;
   ratingValueMode: RatingValueMode;
   posterGenreBadgeMode: GenreBadgeMode;
   backdropGenreBadgeMode: GenreBadgeMode;
@@ -237,6 +240,7 @@ const BACKDROP_IMAGE_TEXT_PREFERENCE_SET = new Set<BackdropImageTextPreference>(
 ]);
 const POSTER_ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta', 'omdb', 'random']);
 const NON_POSTER_ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta', 'random']);
+const EPISODE_ARTWORK_MODE_SET = new Set<EpisodeArtworkMode>(['still', 'series']);
 const STREAM_BADGES_SETTING_SET = new Set<StreamBadgesSetting>(['auto', 'on', 'off']);
 const QUALITY_BADGES_SIDE_SET = new Set<QualityBadgesSide>(['left', 'right']);
 const POSTER_QUALITY_BADGES_POSITION_SET = new Set<PosterQualityBadgesPosition>(['auto', 'left', 'right']);
@@ -255,6 +259,16 @@ const normalizeBoolean = (value: unknown, fallback = false) => {
   return fallback;
 };
 
+const normalizeEpisodeArtworkMode = (
+  value: unknown,
+  fallback: EpisodeArtworkMode,
+): EpisodeArtworkMode => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return EPISODE_ARTWORK_MODE_SET.has(normalized as EpisodeArtworkMode)
+    ? (normalized as EpisodeArtworkMode)
+    : fallback;
+};
+
 export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   xrdbKey: '',
   tmdbKey: '',
@@ -269,6 +283,8 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   posterArtworkSource: 'tmdb',
   backdropArtworkSource: 'tmdb',
   logoArtworkSource: 'tmdb',
+  thumbnailEpisodeArtwork: 'still',
+  backdropEpisodeArtwork: 'series',
   ratingValueMode: DEFAULT_RATING_VALUE_MODE,
   posterGenreBadgeMode: DEFAULT_GENRE_BADGE_MODE,
   backdropGenreBadgeMode: DEFAULT_GENRE_BADGE_MODE,
@@ -697,6 +713,14 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
     logoArtworkSource: normalizeNonPosterArtworkSource(
       candidate.logoArtworkSource ?? candidate.logoSource,
       defaults.logoArtworkSource
+    ),
+    thumbnailEpisodeArtwork: normalizeEpisodeArtworkMode(
+      candidate.thumbnailEpisodeArtwork,
+      defaults.thumbnailEpisodeArtwork,
+    ),
+    backdropEpisodeArtwork: normalizeEpisodeArtworkMode(
+      candidate.backdropEpisodeArtwork,
+      defaults.backdropEpisodeArtwork,
     ),
     ratingValueMode: normalizeRatingValueMode(candidate.ratingValueMode, defaults.ratingValueMode),
     posterGenreBadgeMode: normalizeGenreBadgeMode(
@@ -1256,6 +1280,12 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   if (settings.logoArtworkSource !== 'tmdb') {
     payload.logoArtworkSource = settings.logoArtworkSource;
   }
+  if (settings.thumbnailEpisodeArtwork !== 'still') {
+    payload.thumbnailEpisodeArtwork = settings.thumbnailEpisodeArtwork;
+  }
+  if (settings.backdropEpisodeArtwork !== 'series') {
+    payload.backdropEpisodeArtwork = settings.backdropEpisodeArtwork;
+  }
   payload.posterRatingsLayout = settings.posterRatingsLayout;
   if (settings.posterRatingPresentation !== DEFAULT_RATING_PRESENTATION) {
     payload.posterRatingPresentation = settings.posterRatingPresentation;
@@ -1493,10 +1523,14 @@ export const buildAiometadataUrlPatterns = (
   const payloadEntries = Object.entries(payload).map(([key, value]) => [key, String(value)] as [string, string]);
   const buildScopedEntries = (scope: 'poster' | 'backdrop' | 'logo' | 'thumbnail') => {
     if (scope === 'thumbnail') {
-      return payloadEntries;
+      return payloadEntries.filter(([key]) => key !== 'backdropEpisodeArtwork');
     }
 
     return payloadEntries.filter(([key]) => {
+      if (key === 'thumbnailEpisodeArtwork') {
+        return false;
+      }
+
       if (scope === 'poster') {
         return !key.startsWith('backdrop') && !key.startsWith('logo');
       }

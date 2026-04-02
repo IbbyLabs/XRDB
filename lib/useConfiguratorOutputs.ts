@@ -935,7 +935,7 @@ export function useConfiguratorOutputs({
               label: 'Episode Thumbnail URL Pattern',
               value: aiometadataPatterns.episodeThumbnailUrlPattern,
               description:
-                'Matches the live AIOMetadata episode thumb preset and uses TMDB episode stills when they exist, then falls back to the series backdrop.',
+                'Matches the live AIOMetadata episode thumb preset and uses the configured thumbnail episode artwork mode.',
             },
           ]
         : [],

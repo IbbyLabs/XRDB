@@ -64,6 +64,8 @@ test('image route request state defaults thumbnail backdrop requests to TMDB and
   assert.equal(state.isThumbnailRequest, true);
   assert.deepEqual(state.effectiveRatingPreferences, ['tmdb', 'imdb']);
   assert.deepEqual([...state.selectedRatings], ['tmdb', 'imdb']);
+  assert.equal(state.thumbnailEpisodeArtwork, 'still');
+  assert.equal(state.backdropEpisodeArtwork, 'series');
 });
 
 test('image route request state keeps OMDb poster artwork poster only', async () => {
@@ -84,6 +86,19 @@ test('image route request state keeps OMDb poster artwork poster only', async ()
 
   assert.equal(posterState.posterArtworkSource, 'omdb');
   assert.equal(backdropState.backdropArtworkSource, 'tmdb');
+});
+
+test('image route request state normalizes type scoped episode artwork overrides', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/backdrop/xrdbid:tt1234567:1:2.jpg?thumbnail=1&tmdbKey=tmdb-key&thumbnailEpisodeArtwork=series&backdropEpisodeArtwork=still',
+    ),
+    imageType: 'backdrop',
+    id: 'xrdbid:tt1234567:1:2.jpg',
+  });
+
+  assert.equal(state.thumbnailEpisodeArtwork, 'series');
+  assert.equal(state.backdropEpisodeArtwork, 'still');
 });
 
 test('image route request state requires a TMDB key', async () => {

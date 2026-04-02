@@ -15,6 +15,8 @@ type FinalImageRenderSeedInput = {
   posterArtworkSource: string;
   backdropArtworkSource: string;
   logoArtworkSource: string;
+  thumbnailEpisodeArtwork: string;
+  backdropEpisodeArtwork: string;
   posterRatingsLayout: string;
   posterRatingsMaxPerSide: number | null;
   posterRatingsMax: number | null;
@@ -95,6 +97,8 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     isPoster ? input.posterImageSize : '-',
     isPoster ? input.posterArtworkSource : '-',
     isBackdrop ? input.backdropArtworkSource : '-',
+    input.imageType === 'thumbnail' ? input.thumbnailEpisodeArtwork : '-',
+    input.imageType === 'backdrop' ? input.backdropEpisodeArtwork : '-',
     isLogo ? input.logoArtworkSource : '-',
     isPoster ? input.posterRatingsLayout : '-',
     isPoster ? String(input.posterRatingsMaxPerSide ?? 'auto') : '-',

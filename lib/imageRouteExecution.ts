@@ -178,6 +178,8 @@ export const executeImageRouteRender = async ({
         posterArtworkSource: requestState.posterArtworkSource,
         backdropArtworkSource: requestState.backdropArtworkSource,
         logoArtworkSource: requestState.logoArtworkSource,
+        thumbnailEpisodeArtwork: requestState.thumbnailEpisodeArtwork,
+        backdropEpisodeArtwork: requestState.backdropEpisodeArtwork,
         artworkSelectionSeed: requestState.artworkSelectionSeed,
         cleanId: requestState.cleanId,
         fanartKey: requestState.fanartKey,

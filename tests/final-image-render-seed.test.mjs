@@ -13,6 +13,8 @@ const createInput = (overrides = {}) => ({
   posterArtworkSource: 'fanart',
   backdropArtworkSource: 'tmdb',
   logoArtworkSource: 'tmdb',
+  thumbnailEpisodeArtwork: 'still',
+  backdropEpisodeArtwork: 'series',
   posterRatingsLayout: 'left-right',
   posterRatingsMaxPerSide: 2,
   posterRatingsMax: 3,
@@ -114,6 +116,34 @@ test('final image render seed changes when backdrop rating badge scale changes',
   );
 
   assert.notEqual(baseKey, scaledKey);
+});
+
+test('final image render seed scopes thumbnail episode artwork to thumbnail renders', () => {
+  const baseThumbnailKey = buildFinalImageRenderSeedKey(createInput({ imageType: 'thumbnail' }));
+  const changedThumbnailKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'thumbnail', thumbnailEpisodeArtwork: 'series' }),
+  );
+  const baseBackdropKey = buildFinalImageRenderSeedKey(createInput({ imageType: 'backdrop' }));
+  const changedBackdropKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'backdrop', thumbnailEpisodeArtwork: 'series' }),
+  );
+
+  assert.notEqual(baseThumbnailKey, changedThumbnailKey);
+  assert.equal(baseBackdropKey, changedBackdropKey);
+});
+
+test('final image render seed scopes backdrop episode artwork to backdrop renders', () => {
+  const baseBackdropKey = buildFinalImageRenderSeedKey(createInput({ imageType: 'backdrop' }));
+  const changedBackdropKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'backdrop', backdropEpisodeArtwork: 'still' }),
+  );
+  const baseThumbnailKey = buildFinalImageRenderSeedKey(createInput({ imageType: 'thumbnail' }));
+  const changedThumbnailKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'thumbnail', backdropEpisodeArtwork: 'still' }),
+  );
+
+  assert.notEqual(baseBackdropKey, changedBackdropKey);
+  assert.equal(baseThumbnailKey, changedThumbnailKey);
 });
 
 test('final image render seed changes when logo rating badge scale changes', () => {
