@@ -162,6 +162,18 @@ function normalizeDiscordRoleId(value) {
   return trimmed;
 }
 
+export function resolveDiscordWebhookPostUrl(webhookUrl) {
+  const normalized = String(webhookUrl || '').trim();
+
+  try {
+    const url = new URL(normalized);
+    url.searchParams.set('wait', 'true');
+    return url.toString();
+  } catch {
+    return normalized;
+  }
+}
+
 function stripMarkdown(value) {
   return String(value || '')
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
@@ -1070,7 +1082,7 @@ async function resolvePreviousTagFromRepositoryTags({ apiUrl, token, currentTag 
 }
 
 async function postToDiscord(webhookUrl, payload) {
-  const response = await fetch(webhookUrl, {
+  const response = await fetch(resolveDiscordWebhookPostUrl(webhookUrl), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
