@@ -134,6 +134,8 @@ export function ConfiguratorExportPanels({
   hideAiometadataCredentials: boolean;
   onToggleHideAiometadataCredentials: (value: boolean) => void;
 }) {
+  const effectivePosterIdMode = posterIdMode === 'tmdb' ? 'auto' : posterIdMode;
+
   return (
     <div id="workspace-export" className="scroll-mt-24">
       <div className="space-y-3">
@@ -257,26 +259,19 @@ export function ConfiguratorExportPanels({
                     <div className="rounded-xl border border-white/10 bg-zinc-950/70 p-3">
                       <div className="text-[11px] font-semibold text-zinc-200">Poster ID source</div>
                       <p className="mt-2 text-[10px] leading-4 text-zinc-500 mb-3">
-                        Determines which database ID to include in poster URLs. Most users should leave this on auto for the broadest poster coverage.
+                        Determines which database ID to include in poster URLs. Auto and typed TMDB are the same export mode, so the UI only shows the two distinct behaviors.
                       </p>
                       <div className="space-y-3">
                         <PosterModeOption
                           mode="auto"
-                          currentMode={posterIdMode}
-                          label="Auto (typed TMDB)"
-                          description="Pick this if posters fail to load or you want the most reliable behavior. Defaults to TMDB IDs with type prefix."
-                          onSelect={onSelectPosterIdMode}
-                        />
-                        <PosterModeOption
-                          mode="tmdb"
-                          currentMode={posterIdMode}
-                          label="TMDB"
-                          description="Same as auto but explicit. Use this if you want to be sure you are always using TMDB IDs."
+                          currentMode={effectivePosterIdMode}
+                          label="Auto"
+                          description="Uses typed TMDB IDs for poster URLs. This is the recommended mode for broader poster coverage."
                           onSelect={onSelectPosterIdMode}
                         />
                         <PosterModeOption
                           mode="imdb"
-                          currentMode={posterIdMode}
+                          currentMode={effectivePosterIdMode}
                           label="IMDb"
                           description="Only use this if your setup requires IMDb compatibility. Poster delivery may fail if IMDb IDs are not available."
                           onSelect={onSelectPosterIdMode}
@@ -387,7 +382,7 @@ export function ConfiguratorExportPanels({
                     <div className="rounded-xl border border-white/10 bg-zinc-950/70 p-3">
                       <div className="text-[11px] font-semibold text-zinc-200">Preset mapping</div>
                       <p className="mt-2 text-[11px] leading-5 text-zinc-500">
-                        Poster: <span className="font-mono text-zinc-300">{posterIdMode === 'imdb' ? '{imdb_id}' : 'tmdb:{type}:{tmdb_id}'}</span>
+                        Poster: <span className="font-mono text-zinc-300">{effectivePosterIdMode === 'imdb' ? '{imdb_id}' : 'tmdb:{type}:{tmdb_id}'}</span>
                       </p>
                       <p className="mt-1 text-[11px] leading-5 text-zinc-500">
                         Background: <span className="font-mono text-zinc-300">tmdb:{'{type}'}:{'{tmdb_id}'}</span>

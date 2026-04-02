@@ -807,6 +807,22 @@ test('AIOMetadata export auto poster ID mode resolves to typed TMDB poster URLs'
   );
 });
 
+test('AIOMetadata export keeps tmdb poster ID mode as an auto alias for older workspaces', () => {
+  const config = buildSampleSettings();
+
+  const patterns = buildAiometadataUrlPatterns('https://xrdb.example.com/', config.settings, {
+    hideCredentials: true,
+    posterIdMode: 'tmdb',
+  });
+
+  assert.equal(
+    patterns?.posterUrlPattern.startsWith(
+      'https://xrdb.example.com/poster/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb&',
+    ),
+    true,
+  );
+});
+
 test('AIOMetadata export supports IMDb poster ID mode override', () => {
   const config = buildSampleSettings();
 

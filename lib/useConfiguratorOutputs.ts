@@ -1100,7 +1100,7 @@ export function useConfiguratorOutputs({
               key: 'poster',
               label: 'Poster URL Pattern',
               value: aiometadataPatterns.posterUrlPattern,
-              description: 'Defaults to typed TMDB IDs in auto mode for broader poster coverage.',
+              description: 'Auto uses typed TMDB poster IDs for broader coverage. Switch to IMDb only if your setup requires it.',
             },
             {
               key: 'background',
