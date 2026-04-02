@@ -179,7 +179,11 @@ export const getSummaryBadgeHorizontalMetrics = (
   const summaryLabel = label.trim().toUpperCase();
   const summaryLabelFontSize = Math.max(11, Math.round(fontSize * 0.46));
   const chipPaddingX = Math.max(9, Math.round(paddingX * 0.48));
-  const chipWidth = estimateSummaryLabelWidth(summaryLabel, summaryLabelFontSize) + chipPaddingX * 2;
+  const chipMetricLabel =
+    summaryLabel === 'CRITICS' || summaryLabel === 'AUDIENCE'
+      ? 'AUDIENCE'
+      : summaryLabel;
+  const chipWidth = estimateSummaryLabelWidth(chipMetricLabel, summaryLabelFontSize) + chipPaddingX * 2;
   const contentGap = Math.max(8, Math.round(paddingX * 0.52));
   const sideInset = Math.max(10, Math.round(paddingX * 0.78));
   return {
