@@ -24,6 +24,7 @@ const createBadge = (key, value) => ({
 test('image route render layout expands logo canvases to fit badge rows', async () => {
   const layout = await resolveImageRouteRenderLayout({
     imageType: 'logo',
+    isThumbnailRequest: false,
     ratingPresentation: 'standard',
     outputWidth: 420,
     outputHeight: 120,
@@ -63,6 +64,7 @@ test('image route render layout expands logo canvases to fit badge rows', async 
 test('image route render layout collapses backdrop ratings into one bottom row when enabled', async () => {
   const layout = await resolveImageRouteRenderLayout({
     imageType: 'backdrop',
+    isThumbnailRequest: false,
     ratingPresentation: 'standard',
     outputWidth: 1280,
     outputHeight: 720,
@@ -104,9 +106,78 @@ test('image route render layout collapses backdrop ratings into one bottom row w
   assert.deepEqual(layout.rightRatingBadges, []);
 });
 
+test('image route render layout adds extra safe inset for thumbnail backdrop renders', async () => {
+  const normalLayout = await resolveImageRouteRenderLayout({
+    imageType: 'backdrop',
+    isThumbnailRequest: false,
+    ratingPresentation: 'standard',
+    outputWidth: 1280,
+    outputHeight: 720,
+    overlayAutoScale: 1,
+    displayRatingBadges: [createBadge('imdb', '7.5')],
+    streamBadges: [],
+    effectivePosterRatingsLayout: 'top',
+    effectivePosterRatingsMaxPerSide: 3,
+    effectiveBackdropRatingsLayout: 'right-vertical',
+    backdropBottomRatingsRow: false,
+    logoBottomRatingsRow: false,
+    posterRatingBadgeScale: 100,
+    backdropRatingBadgeScale: 100,
+    logoRatingBadgeScale: 100,
+    posterQualityBadgeScale: 100,
+    backdropQualityBadgeScale: 100,
+    ratingStyle: 'plain',
+    qualityBadgesMax: null,
+    mediaType: 'tv',
+    media: { id: 1 },
+    tmdbKey: 'tmdb-key',
+    requestedImageLang: 'en',
+    phases: { ...phases },
+    fetchJsonCached: async () => {
+      throw new Error('unexpected fetch');
+    },
+  });
+  const thumbnailLayout = await resolveImageRouteRenderLayout({
+    imageType: 'backdrop',
+    isThumbnailRequest: true,
+    ratingPresentation: 'standard',
+    outputWidth: 1280,
+    outputHeight: 720,
+    overlayAutoScale: 1,
+    displayRatingBadges: [createBadge('imdb', '7.5')],
+    streamBadges: [],
+    effectivePosterRatingsLayout: 'top',
+    effectivePosterRatingsMaxPerSide: 3,
+    effectiveBackdropRatingsLayout: 'right-vertical',
+    backdropBottomRatingsRow: false,
+    logoBottomRatingsRow: false,
+    posterRatingBadgeScale: 100,
+    backdropRatingBadgeScale: 100,
+    logoRatingBadgeScale: 100,
+    posterQualityBadgeScale: 100,
+    backdropQualityBadgeScale: 100,
+    ratingStyle: 'plain',
+    qualityBadgesMax: null,
+    mediaType: 'tv',
+    media: { id: 1 },
+    tmdbKey: 'tmdb-key',
+    requestedImageLang: 'en',
+    phases: { ...phases },
+    fetchJsonCached: async () => {
+      throw new Error('unexpected fetch');
+    },
+  });
+
+  assert.equal(normalLayout.backdropEdgeInset, 12);
+  assert.equal(thumbnailLayout.backdropEdgeInset, 24);
+  assert.equal(thumbnailLayout.badgeTopOffset > normalLayout.badgeTopOffset, true);
+  assert.equal(thumbnailLayout.badgeBottomOffset > normalLayout.badgeBottomOffset, true);
+});
+
 test('image route render layout keeps logo ratings on one row in blockbuster mode when enabled', async () => {
   const layout = await resolveImageRouteRenderLayout({
     imageType: 'logo',
+    isThumbnailRequest: false,
     ratingPresentation: 'blockbuster',
     outputWidth: 420,
     outputHeight: 120,

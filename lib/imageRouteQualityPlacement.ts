@@ -21,8 +21,11 @@ export type QualityBadgeOverlaySpec = {
   left: number;
 };
 
-const resolveQualityBadgeEdgeInset = (imageType: ImageType, posterEdgeInset: number) =>
-  imageType === 'poster' ? posterEdgeInset : 12;
+const resolveQualityBadgeEdgeInset = (
+  imageType: ImageType,
+  posterEdgeInset: number,
+  backdropEdgeInset: number,
+) => (imageType === 'poster' ? posterEdgeInset : backdropEdgeInset);
 
 export const measureQualityBadgeColumnWidth = ({
   columnBadges,
@@ -64,6 +67,7 @@ export const buildQualityBadgeColumnOverlays = ({
   badgeGap,
   qualityBadgesStyle,
   posterEdgeInset,
+  backdropEdgeInset,
 }: {
   columnBadges: QualityBadgeInput[];
   startY: number;
@@ -78,9 +82,15 @@ export const buildQualityBadgeColumnOverlays = ({
   badgeGap: number;
   qualityBadgesStyle: QualityBadgeStyle;
   posterEdgeInset: number;
+  backdropEdgeInset: number;
 }) => {
   if (columnBadges.length === 0) return [];
 
+  const rowEdgeInset = resolveQualityBadgeEdgeInset(
+    imageType,
+    posterEdgeInset,
+    backdropEdgeInset,
+  );
   const columnLayout = resolveQualityBadgeColumnLayout({
     referenceBadgeHeight,
     qualityBadgeScalePercent,
@@ -95,10 +105,9 @@ export const buildQualityBadgeColumnOverlays = ({
     ? null
     : Math.min(
         Math.max(72, Math.round(qualityHeight * 1.75)),
-        Math.max(72, outputWidth - 24)
+        Math.max(72, outputWidth - rowEdgeInset * 2)
       );
   let rowY = Math.max(badgeTopOffset, startY);
-  const rowEdgeInset = resolveQualityBadgeEdgeInset(imageType, posterEdgeInset);
   const overlays: QualityBadgeOverlaySpec[] = [];
 
   for (const badge of columnBadges) {
@@ -141,6 +150,7 @@ export const buildQualityBadgeRowOverlays = ({
   badgeGap,
   qualityBadgesStyle,
   posterEdgeInset,
+  backdropEdgeInset,
 }: {
   rowBadges: QualityBadgeInput[];
   rowY: number;
@@ -152,9 +162,15 @@ export const buildQualityBadgeRowOverlays = ({
   badgeGap: number;
   qualityBadgesStyle: QualityBadgeStyle;
   posterEdgeInset: number;
+  backdropEdgeInset: number;
 }) => {
   if (rowBadges.length === 0) return [];
 
+  const rowEdgeInset = resolveQualityBadgeEdgeInset(
+    imageType,
+    posterEdgeInset,
+    backdropEdgeInset,
+  );
   const useIntrinsicWidths = usesIntrinsicQualityBadgeWidths(qualityBadgesStyle);
   const qualityHeight = resolveQualityBadgeHeight({
     referenceBadgeHeight,
@@ -165,7 +181,7 @@ export const buildQualityBadgeRowOverlays = ({
     ? null
     : Math.min(
         Math.max(64, Math.round(qualityHeight * 1.75)),
-        Math.max(64, outputWidth - 24)
+        Math.max(64, outputWidth - rowEdgeInset * 2)
       );
   const rowGap = resolveQualityBadgeGap({ badgeGap, layout: 'row' });
   const targetRowCount = imageType === 'poster' ? Math.max(1, Math.ceil(rowBadges.length / 3)) : 1;
@@ -192,7 +208,6 @@ export const buildQualityBadgeRowOverlays = ({
     origin === 'bottom'
       ? rowY - totalHeight + Math.max(...(specRows.at(-1)?.map((spec) => spec.height) || [0]))
       : rowY;
-  const rowEdgeInset = resolveQualityBadgeEdgeInset(imageType, posterEdgeInset);
   const overlays: QualityBadgeOverlaySpec[] = [];
 
   for (const specRow of specRows) {
@@ -234,6 +249,7 @@ export const buildQualityBadgeColumnOverlaysAt = ({
   badgeGap,
   qualityBadgesStyle,
   posterEdgeInset,
+  backdropEdgeInset,
 }: {
   columnBadges: QualityBadgeInput[];
   startY: number;
@@ -246,6 +262,7 @@ export const buildQualityBadgeColumnOverlaysAt = ({
   badgeGap: number;
   qualityBadgesStyle: QualityBadgeStyle;
   posterEdgeInset: number;
+  backdropEdgeInset: number;
 }) => {
   if (columnBadges.length === 0) return [];
 
@@ -253,7 +270,7 @@ export const buildQualityBadgeColumnOverlaysAt = ({
   let rowY = Math.max(badgeTopOffset, startY);
   const useIntrinsicWidths = usesIntrinsicQualityBadgeWidths(qualityBadgesStyle);
   const clampedX = Math.round(x);
-  const minX = resolveQualityBadgeEdgeInset(imageType, posterEdgeInset);
+  const minX = resolveQualityBadgeEdgeInset(imageType, posterEdgeInset, backdropEdgeInset);
   const overlays: QualityBadgeOverlaySpec[] = [];
 
   for (const badge of columnBadges) {

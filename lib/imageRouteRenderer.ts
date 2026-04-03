@@ -155,6 +155,7 @@ export type FastRenderInput = {
   badgeGap: number;
   badgeTopOffset: number;
   badgeBottomOffset: number;
+  backdropEdgeInset: number;
   badges: RatingBadge[];
   qualityBadges: RatingBadge[];
   qualityBadgesSide: QualityBadgesSide;
@@ -290,6 +291,8 @@ export const renderWithSharp = async (
         ? Math.max(44, Math.round(50 * overlayAutoScale))
         : ratingBadgeHeight;
     const qualityBadgeScaleRatio = Math.max(0.7, input.qualityBadgeScalePercent / 100);
+    const backdropEdgeInset =
+      input.imageType === 'backdrop' ? input.backdropEdgeInset : POSTER_EDGE_INSET_BASE;
     const posterEdgeInset =
       input.imageType === 'poster'
         ? POSTER_EDGE_INSET_BASE + input.posterEdgeOffset
@@ -791,8 +794,15 @@ export const renderWithSharp = async (
       const badgeWidth = Math.min(estimatedWidth, maxBadgeWidth);
       const rowX =
         side === 'left'
-          ? posterEdgeInset
-          : Math.max(posterEdgeInset, input.outputWidth - badgeWidth - posterEdgeInset);
+          ? input.imageType === 'poster'
+            ? posterEdgeInset
+            : backdropEdgeInset
+          : Math.max(
+              input.imageType === 'poster' ? posterEdgeInset : backdropEdgeInset,
+              input.outputWidth -
+                badgeWidth -
+                (input.imageType === 'poster' ? posterEdgeInset : backdropEdgeInset),
+            );
       pushBadgeOverlay({ badge, badgeWidth, rowX, rowY, compactText: false });
     };
     const composeBadgeColumn = (
@@ -1065,6 +1075,7 @@ export const renderWithSharp = async (
             badgeGap: input.badgeGap,
             qualityBadgesStyle: input.qualityBadgesStyle,
             posterEdgeInset,
+            backdropEdgeInset,
           })
         );
       } else if (qualityPlacement === 'top') {
@@ -1086,6 +1097,7 @@ export const renderWithSharp = async (
             badgeGap: input.badgeGap,
             qualityBadgesStyle: input.qualityBadgesStyle,
             posterEdgeInset,
+            backdropEdgeInset,
           })
         );
       } else {
@@ -1144,6 +1156,7 @@ export const renderWithSharp = async (
             badgeGap: input.badgeGap,
             qualityBadgesStyle: input.qualityBadgesStyle,
             posterEdgeInset,
+            backdropEdgeInset,
           })
         );
       }
@@ -1157,7 +1170,7 @@ export const renderWithSharp = async (
       });
       const uniformBadgeWidth = Math.min(
         Math.max(72, Math.round(qualityHeight * 1.75)),
-        Math.max(72, input.outputWidth - 24)
+        Math.max(72, input.outputWidth - backdropEdgeInset * 2)
       );
       const usableQualityBadges = resolvedQualityBadges.filter((badge) =>
         isMediaFeatureBadgeKey(String(badge.key))
@@ -1221,6 +1234,7 @@ export const renderWithSharp = async (
               badgeGap: input.badgeGap,
               qualityBadgesStyle: input.qualityBadgesStyle,
               posterEdgeInset,
+              backdropEdgeInset,
             })
           );
         } else {
@@ -1236,8 +1250,11 @@ export const renderWithSharp = async (
             qualityBadgesStyle: input.qualityBadgesStyle,
             uniformBadgeWidth,
           });
-          let leftX = 12;
-          let rightX = Math.max(12, input.outputWidth - rightColumnWidth - 12);
+          let leftX = backdropEdgeInset;
+          let rightX = Math.max(
+            backdropEdgeInset,
+            input.outputWidth - rightColumnWidth - backdropEdgeInset,
+          );
           if (ratingsOnRight) {
             const centerX = input.outputWidth / 2;
             leftX = centerX - columnGap - leftColumnWidth;
@@ -1253,7 +1270,7 @@ export const renderWithSharp = async (
             const backdropRegion = input.backdropBottomRatingsRow
               ? { left: 0, width: input.outputWidth }
               : getBackdropBadgeRegion(input.outputWidth, input.backdropRatingsLayout);
-            const effectiveMaxWidth = Math.max(0, backdropRegion.width - 24);
+            const effectiveMaxWidth = Math.max(0, backdropRegion.width - backdropEdgeInset * 2);
             const backdropRows =
               input.backdropRows && input.backdropRows.length > 0
                 ? input.backdropRows
@@ -1285,6 +1302,7 @@ export const renderWithSharp = async (
               badgeGap: input.badgeGap,
               qualityBadgesStyle: input.qualityBadgesStyle,
               posterEdgeInset,
+              backdropEdgeInset,
             })
           );
           appendQualityBadgeOverlays(
@@ -1300,6 +1318,7 @@ export const renderWithSharp = async (
               badgeGap: input.badgeGap,
               qualityBadgesStyle: input.qualityBadgesStyle,
               posterEdgeInset,
+              backdropEdgeInset,
             })
           );
         }

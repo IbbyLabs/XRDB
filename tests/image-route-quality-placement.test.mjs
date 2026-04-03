@@ -26,6 +26,7 @@ test('image route quality placement stacks right aligned poster columns', () => 
     badgeGap: 10,
     qualityBadgesStyle: 'glass',
     posterEdgeInset: 18,
+    backdropEdgeInset: 12,
   });
 
   assert.equal(overlays.length, 2);
@@ -51,6 +52,7 @@ test('image route quality placement centers poster row overlays across multiple 
     badgeGap: 10,
     qualityBadgesStyle: 'plain',
     posterEdgeInset: 16,
+    backdropEdgeInset: 12,
   });
 
   assert.equal(overlays.length, 4);
@@ -91,9 +93,10 @@ test('image route quality placement clamps explicit backdrop column positions', 
     badgeGap: 10,
     qualityBadgesStyle: 'plain',
     posterEdgeInset: 20,
+    backdropEdgeInset: 24,
   });
 
   assert.equal(overlays.length, 1);
-  assert.equal(overlays[0].left, 12);
+  assert.equal(overlays[0].left, 24);
   assert.equal(overlays[0].top, 24);
 });
