@@ -50,7 +50,10 @@ export const buildAggregateRatingBadgeForSource = ({
   presentation: RatingPresentation;
   renderablePreferences: RatingPreference[];
   ratingBadgeByProvider: Map<RatingPreference, AggregateBadgeInput>;
-  resolveAccentColor: (source: AggregateRatingSource) => string;
+  resolveAccentColor: (
+    source: AggregateRatingSource,
+    normalizedScore: number | null,
+  ) => string;
   accentBarOffset?: number;
   accentBarVisible?: boolean;
   allowFallbackToOverall?: boolean;
@@ -103,7 +106,7 @@ export const buildAggregateRatingBadgeForSource = ({
         : getAggregateRatingSourceLabel(effectiveSource),
     value: formatNormalizedRatingValue(averageValue, valueMode),
     iconUrl: useCompactAggregateBadge ? representativeIconUrl : '',
-    accentColor: resolveAccentColor(effectiveSource),
+    accentColor: resolveAccentColor(effectiveSource, averageValue),
     accentBarOffset,
     accentBarVisible,
     variant: useCompactAggregateBadge ? 'minimal' : 'summary',
@@ -124,7 +127,10 @@ export const buildAggregateRatingBadges = ({
   presentation: RatingPresentation;
   renderablePreferences: RatingPreference[];
   ratingBadgeByProvider: Map<RatingPreference, AggregateBadgeInput>;
-  resolveAccentColor: (source: AggregateRatingSource) => string;
+  resolveAccentColor: (
+    source: AggregateRatingSource,
+    normalizedScore: number | null,
+  ) => string;
   accentBarOffset?: number;
   accentBarVisible?: boolean;
   valueMode?: RatingValueMode;

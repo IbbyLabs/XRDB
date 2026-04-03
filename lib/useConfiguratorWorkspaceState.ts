@@ -33,6 +33,7 @@ import {
   DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
   DEFAULT_AGGREGATE_ACCENT_COLOR,
   DEFAULT_AGGREGATE_ACCENT_MODE,
+  DEFAULT_AGGREGATE_DYNAMIC_STOPS,
   DEFAULT_AGGREGATE_RATING_SOURCE,
   DEFAULT_RATING_PRESENTATION,
   type AggregateAccentMode,
@@ -180,6 +181,7 @@ export function useConfiguratorWorkspaceState() {
   const [aggregateAccentColor, setAggregateAccentColor] = useState<string>(DEFAULT_AGGREGATE_ACCENT_COLOR);
   const [aggregateCriticsAccentColor, setAggregateCriticsAccentColor] = useState<string>(AGGREGATE_RATING_SOURCE_ACCENTS.critics);
   const [aggregateAudienceAccentColor, setAggregateAudienceAccentColor] = useState<string>(AGGREGATE_RATING_SOURCE_ACCENTS.audience);
+  const [aggregateDynamicStops, setAggregateDynamicStops] = useState<string>(DEFAULT_AGGREGATE_DYNAMIC_STOPS);
   const [aggregateAccentBarOffset, setAggregateAccentBarOffset] = useState<number>(DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET);
   const [aggregateAccentBarVisible, setAggregateAccentBarVisible] = useState(true);
   const [ratingXOffsetPillGlass, setRatingXOffsetPillGlass] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
@@ -233,6 +235,7 @@ export function useConfiguratorWorkspaceState() {
     aggregateAccentMode,
     aggregateAudienceAccentColor,
     aggregateCriticsAccentColor,
+    aggregateDynamicStops,
     backdropAggregateRatingSource,
     backdropArtworkSource,
     backdropEpisodeArtwork,
@@ -366,6 +369,7 @@ export function useConfiguratorWorkspaceState() {
     setAggregateAccentMode,
     setAggregateAudienceAccentColor,
     setAggregateCriticsAccentColor,
+    setAggregateDynamicStops,
     setBackdropAggregateRatingSource,
     setBackdropArtworkSource,
     setBackdropEpisodeArtwork,

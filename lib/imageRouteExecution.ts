@@ -248,6 +248,7 @@ export const executeImageRouteRender = async ({
         aggregateAccentColor: requestState.aggregateAccentColor,
         aggregateCriticsAccentColor: requestState.aggregateCriticsAccentColor,
         aggregateAudienceAccentColor: requestState.aggregateAudienceAccentColor,
+        aggregateDynamicStops: requestState.aggregateDynamicStops,
         aggregateAccentBarOffset: requestState.aggregateAccentBarOffset,
         aggregateAccentBarVisible: requestState.aggregateAccentBarVisible,
         posterRingValueSource: requestState.posterRingValueSource,

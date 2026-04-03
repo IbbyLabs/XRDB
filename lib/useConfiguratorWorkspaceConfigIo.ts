@@ -21,6 +21,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   aggregateAccentMode: WorkspaceSettings['aggregateAccentMode'];
   aggregateAudienceAccentColor: WorkspaceSettings['aggregateAudienceAccentColor'];
   aggregateCriticsAccentColor: WorkspaceSettings['aggregateCriticsAccentColor'];
+  aggregateDynamicStops: WorkspaceSettings['aggregateDynamicStops'];
   backdropAggregateRatingSource: WorkspaceSettings['backdropAggregateRatingSource'];
   backdropArtworkSource: WorkspaceSettings['backdropArtworkSource'];
   backdropEpisodeArtwork: WorkspaceSettings['backdropEpisodeArtwork'];
@@ -145,6 +146,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setAggregateAccentMode: Setter<WorkspaceSettings['aggregateAccentMode']>;
   setAggregateAudienceAccentColor: Setter<WorkspaceSettings['aggregateAudienceAccentColor']>;
   setAggregateCriticsAccentColor: Setter<WorkspaceSettings['aggregateCriticsAccentColor']>;
+  setAggregateDynamicStops: Setter<WorkspaceSettings['aggregateDynamicStops']>;
   setBackdropAggregateRatingSource: Setter<WorkspaceSettings['backdropAggregateRatingSource']>;
   setBackdropArtworkSource: Setter<WorkspaceSettings['backdropArtworkSource']>;
   setBackdropEpisodeArtwork: Setter<WorkspaceSettings['backdropEpisodeArtwork']>;
@@ -279,6 +281,7 @@ export function useConfiguratorWorkspaceConfigIo({
   aggregateAccentMode,
   aggregateAudienceAccentColor,
   aggregateCriticsAccentColor,
+  aggregateDynamicStops,
   backdropAggregateRatingSource,
   backdropArtworkSource,
   backdropEpisodeArtwork,
@@ -403,6 +406,7 @@ export function useConfiguratorWorkspaceConfigIo({
   setAggregateAccentMode,
   setAggregateAudienceAccentColor,
   setAggregateCriticsAccentColor,
+  setAggregateDynamicStops,
   setBackdropAggregateRatingSource,
   setBackdropArtworkSource,
   setBackdropEpisodeArtwork,
@@ -639,6 +643,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setAggregateAccentColor(normalized.settings.aggregateAccentColor);
       setAggregateCriticsAccentColor(normalized.settings.aggregateCriticsAccentColor);
       setAggregateAudienceAccentColor(normalized.settings.aggregateAudienceAccentColor);
+      setAggregateDynamicStops(normalized.settings.aggregateDynamicStops);
       setAggregateAccentBarOffset(normalized.settings.aggregateAccentBarOffset);
       setAggregateAccentBarVisible(normalized.settings.aggregateAccentBarVisible);
       setRatingXOffsetPillGlass(normalized.settings.ratingXOffsetPillGlass);
@@ -667,6 +672,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setAggregateAccentMode,
       setAggregateAudienceAccentColor,
       setAggregateCriticsAccentColor,
+      setAggregateDynamicStops,
       setBackdropAggregateRatingSource,
       setBackdropArtworkSource,
       setBackdropEpisodeArtwork,
@@ -903,6 +909,7 @@ export function useConfiguratorWorkspaceConfigIo({
         aggregateAccentColor,
         aggregateCriticsAccentColor,
         aggregateAudienceAccentColor,
+        aggregateDynamicStops,
         aggregateAccentBarOffset,
         aggregateAccentBarVisible,
         ratingXOffsetPillGlass,
@@ -933,6 +940,7 @@ export function useConfiguratorWorkspaceConfigIo({
       aggregateAccentMode,
       aggregateAudienceAccentColor,
       aggregateCriticsAccentColor,
+      aggregateDynamicStops,
       backdropAggregateRatingSource,
       backdropArtworkSource,
       backdropEpisodeArtwork,

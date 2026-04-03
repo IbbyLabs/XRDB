@@ -144,6 +144,7 @@ const buildSampleSettings = () =>
       aggregateAccentColor: '#22d3ee',
       aggregateCriticsAccentColor: '#f97316',
       aggregateAudienceAccentColor: '#22c55e',
+      aggregateDynamicStops: '0:#7f1d1d,40:#dc2626,60:#f59e0b,75:#84cc16,85:#16a34a',
       aggregateAccentBarOffset: -3,
       aggregateAccentBarVisible: true,
       ratingXOffsetPillGlass: 18,
@@ -285,6 +286,7 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       aggregateAccentColor: '#22d3ee',
       aggregateCriticsAccentColor: '#f97316',
       aggregateAudienceAccentColor: '#22c55e',
+      aggregateDynamicStops: '0:#7f1d1d,40:#dc2626,60:#f59e0b,75:#84cc16,85:#16a34a',
       aggregateAccentBarOffset: -3,
       aggregateAccentBarVisible: true,
       ratingXOffsetPillGlass: 18,
@@ -548,6 +550,29 @@ test('config payload keeps random poster criteria when configured', () => {
   assert.equal(decodedConfig.randomPosterMinWidth, 1200);
   assert.equal(decodedConfig.randomPosterMinHeight, 1800);
   assert.equal(decodedConfig.randomPosterFallback, 'original');
+});
+
+test('config payload keeps dynamic aggregate accent stops when enabled', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      aggregateAccentMode: 'dynamic',
+      aggregateDynamicStops: '85:#16A34A,0:#7f1d1d,60:#f59e0b',
+    },
+  });
+
+  assert.equal(config.settings.aggregateAccentMode, 'dynamic');
+  assert.equal(
+    config.settings.aggregateDynamicStops,
+    '0:#7f1d1d,60:#f59e0b,85:#16a34a',
+  );
+
+  const configString = buildConfigString('https://xrdb.example.com', config.settings);
+  assert.notEqual(configString, '');
+  const decodedConfig = JSON.parse(decodeBase64Url(configString));
+  assert.equal(decodedConfig.aggregateAccentMode, 'dynamic');
+  assert.equal(decodedConfig.aggregateDynamicStops, '0:#7f1d1d,60:#f59e0b,85:#16a34a');
 });
 
 test('config string and proxy manifest use the same shared XRDB settings', () => {

@@ -4,8 +4,12 @@ import assert from 'node:assert/strict';
 import {
   DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
   DEFAULT_AGGREGATE_ACCENT_MODE,
+  DEFAULT_AGGREGATE_DYNAMIC_STOPS,
+  normalizeAggregateDynamicStops,
   normalizeAggregateAccentBarOffset,
   normalizeAggregateAccentMode,
+  parseAggregateDynamicStops,
+  resolveAggregateDynamicAccentColor,
   hasAggregateRatingProvidersForSource,
   normalizeAggregateRatingSource,
   normalizeRatingPresentation,
@@ -72,6 +76,7 @@ test('aggregate source helpers distinguish summary modes and preferred providers
 test('aggregate accent helpers normalize mode and clamp bar offsets', () => {
   assert.equal(normalizeAggregateAccentMode('genre'), 'genre');
   assert.equal(normalizeAggregateAccentMode('CUSTOM'), 'custom');
+  assert.equal(normalizeAggregateAccentMode('dynamic'), 'dynamic');
   assert.equal(normalizeAggregateAccentMode('unknown'), DEFAULT_AGGREGATE_ACCENT_MODE);
   assert.equal(normalizeAggregateAccentBarOffset('-3'), -3);
   assert.equal(normalizeAggregateAccentBarOffset('-40'), -12);
@@ -80,6 +85,18 @@ test('aggregate accent helpers normalize mode and clamp bar offsets', () => {
     normalizeAggregateAccentBarOffset('not-a-number'),
     DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
   );
+});
+
+test('dynamic aggregate accent helpers normalize and resolve score stop colors', () => {
+  const normalized = normalizeAggregateDynamicStops(
+    '85:#16a34a, 40:#dc2626, 0:#7f1d1d, bad, 60:#f59e0b, 75:#84cc16',
+  );
+  assert.equal(normalized, DEFAULT_AGGREGATE_DYNAMIC_STOPS);
+  const stops = parseAggregateDynamicStops(normalized);
+  assert.equal(stops.length, 5);
+  assert.equal(resolveAggregateDynamicAccentColor(12, stops), '#7f1d1d');
+  assert.equal(resolveAggregateDynamicAccentColor(61, stops), '#f59e0b');
+  assert.equal(resolveAggregateDynamicAccentColor(99, stops), '#16a34a');
 });
 
 test('non-blockbuster presentations preserve selected placement controls', () => {

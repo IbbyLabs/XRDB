@@ -11,6 +11,7 @@ const createBaseInput = () => ({
   aggregateAccentColor: null,
   aggregateCriticsAccentColor: null,
   aggregateAudienceAccentColor: null,
+  aggregateDynamicStops: '0:#7f1d1d,40:#dc2626,60:#f59e0b,75:#84cc16,85:#16a34a',
   aggregateAccentBarOffset: 0,
   aggregateAccentBarVisible: true,
   posterRingValueSource: 'highest',
@@ -75,6 +76,19 @@ test('image route display state builds compact ring overlays for poster ring pre
   assert.ok(state.compactRingOverlay);
   assert.match(state.compactRingOverlay?.svg ?? '', /92/);
   assert.match(state.compactRingOverlay?.svg ?? '', /#ef4444/i);
+});
+
+test('image route display state maps dynamic aggregate accents from score stops', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    ratingPresentation: 'average',
+    aggregateRatingSource: 'overall',
+    aggregateAccentMode: 'dynamic',
+    aggregateDynamicStops: '0:#111111,80:#ffffff',
+  });
+
+  assert.equal(state.displayRatingBadges.length, 1);
+  assert.equal(state.displayRatingBadges[0]?.accentColor, '#ffffff');
 });
 
 test('image route display state keeps direct rating badges for standard backdrop renders', () => {

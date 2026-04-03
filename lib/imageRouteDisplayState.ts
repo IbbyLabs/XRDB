@@ -10,6 +10,8 @@ import {
   resolveLogoRatingsMaxForPresentation,
   resolvePosterRatingLayoutForPresentation,
   resolvePosterRatingsMaxPerSideForPresentation,
+  parseAggregateDynamicStops,
+  resolveAggregateDynamicAccentColor,
   usesCompactRingPresentation as isCompactRingPresentationMode,
   usesAggregateRatingPresentation,
   type AggregateAccentMode,
@@ -80,6 +82,7 @@ export const resolveImageRouteDisplayState = (input: {
   aggregateAccentColor: string | null;
   aggregateCriticsAccentColor: string | null;
   aggregateAudienceAccentColor: string | null;
+  aggregateDynamicStops: string;
   aggregateAccentBarOffset: number;
   aggregateAccentBarVisible: boolean;
   posterRingValueSource: PosterCompactRingSource;
@@ -112,6 +115,7 @@ export const resolveImageRouteDisplayState = (input: {
     aggregateAccentColor,
     aggregateCriticsAccentColor,
     aggregateAudienceAccentColor,
+    aggregateDynamicStops,
     aggregateAccentBarOffset,
     aggregateAccentBarVisible,
     posterRingValueSource,
@@ -135,6 +139,7 @@ export const resolveImageRouteDisplayState = (input: {
     outputHeight,
   } = input;
   let { streamBadges, genreBadge } = input;
+  const aggregateDynamicStopEntries = parseAggregateDynamicStops(aggregateDynamicStops);
 
   const usePosterBadgeLayout = imageType === 'poster';
   const useBackdropBadgeLayout = imageType === 'backdrop';
@@ -253,7 +258,16 @@ export const resolveImageRouteDisplayState = (input: {
     });
   }
 
-  const resolveAggregateAccentColor = (source: AggregateRatingSource) => {
+  const resolveAggregateAccentColor = (
+    source: AggregateRatingSource,
+    normalizedScore: number | null,
+  ) => {
+    if (aggregateAccentMode === 'dynamic' && normalizedScore !== null) {
+      return resolveAggregateDynamicAccentColor(
+        normalizedScore * 10,
+        aggregateDynamicStopEntries,
+      );
+    }
     if (aggregateAccentMode === 'custom') {
       if (source === 'critics' && aggregateCriticsAccentColor) {
         return aggregateCriticsAccentColor;
@@ -300,7 +314,7 @@ export const resolveImageRouteDisplayState = (input: {
             editorialAggregateSource,
           ),
           valueText: primaryAggregateBadge.value,
-          accentColor: resolveAggregateAccentColor(editorialAggregateSource),
+          accentColor: primaryAggregateBadge.accentColor,
         })
       : null;
 
@@ -349,8 +363,15 @@ export const resolveImageRouteDisplayState = (input: {
           posterRingProgressSource || DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
         )
       : null;
+  const compactRingScorePercent =
+    ((valueRingBadge || progressRingBadge)?.normalizedValue ?? 0) * 10;
   const compactRingAccentColor =
-    aggregateAccentMode === 'custom'
+    aggregateAccentMode === 'dynamic'
+      ? resolveAggregateDynamicAccentColor(
+          compactRingScorePercent,
+          aggregateDynamicStopEntries,
+        )
+      : aggregateAccentMode === 'custom'
       ? aggregateAccentColor || valueRingBadge?.badge.accentColor || '#22c55e'
       : aggregateAccentMode === 'genre' && primaryGenreFamily?.accentColor
         ? primaryGenreFamily.accentColor

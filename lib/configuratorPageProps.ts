@@ -239,6 +239,7 @@ export function buildConfiguratorPageProps({
         aggregateAccentColor: workspaceState.aggregateAccentColor,
         aggregateCriticsAccentColor: workspaceState.aggregateCriticsAccentColor,
         aggregateAudienceAccentColor: workspaceState.aggregateAudienceAccentColor,
+        aggregateDynamicStops: workspaceState.aggregateDynamicStops,
         aggregateAccentBarVisible: workspaceState.aggregateAccentBarVisible,
         aggregateAccentBarOffset: workspaceState.aggregateAccentBarOffset,
         onSelectRatingPresentation: workspaceSummary.setRatingPresentationForType,
@@ -249,6 +250,7 @@ export function buildConfiguratorPageProps({
         onSelectAggregateAccentColor: workspaceState.setAggregateAccentColor,
         onSelectAggregateCriticsAccentColor: workspaceState.setAggregateCriticsAccentColor,
         onSelectAggregateAudienceAccentColor: workspaceState.setAggregateAudienceAccentColor,
+        onSelectAggregateDynamicStops: workspaceState.setAggregateDynamicStops,
         onToggleAggregateAccentBarVisible: () =>
           workspaceState.setAggregateAccentBarVisible((current) => !current),
         onSelectAggregateAccentBarOffset: workspaceState.setAggregateAccentBarOffset,
