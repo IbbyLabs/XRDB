@@ -2,12 +2,16 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 import {
+  buildTmdbMultiSearchUrl,
   isMediaSearchPreviewType,
+  mapOmdbSearchResultsForPreviewType,
   mapTmdbSearchResultsForPreviewType,
 } from '@/lib/configuratorMediaSearch';
-import { TMDB_API_BASE_URL } from '@/lib/serviceBaseUrls';
+import { OMDB_API_KEY } from '@/lib/imageRouteConfig';
+import { OMDB_API_BASE_URL } from '@/lib/serviceBaseUrls';
 
 const DEFAULT_SEARCH_LANGUAGE = 'en-US';
+const SEARCH_RESULTS_LIMIT = 8;
 
 export async function GET(request: NextRequest) {
   const searchQuery = String(request.nextUrl.searchParams.get('q') || '').trim();
@@ -24,14 +28,15 @@ export async function GET(request: NextRequest) {
 
   const previewType = isMediaSearchPreviewType(previewTypeRaw) ? previewTypeRaw : 'poster';
 
-  const target = new URL('/search/multi', `${TMDB_API_BASE_URL}/`);
-  target.searchParams.set('api_key', tmdbKey);
-  target.searchParams.set('query', searchQuery);
-  target.searchParams.set('include_adult', 'false');
-  target.searchParams.set('language', language);
-  target.searchParams.set('page', '1');
+  const tmdbSearchUrl = buildTmdbMultiSearchUrl({
+    tmdbKey,
+    query: searchQuery,
+    language,
+    includeAdult: false,
+    page: 1,
+  });
 
-  const tmdbResponse = await fetch(target.toString(), { cache: 'no-store' }).catch(() => null);
+  const tmdbResponse = await fetch(tmdbSearchUrl, { cache: 'no-store' }).catch(() => null);
   if (!tmdbResponse) {
     return NextResponse.json({ error: 'Search request failed.' }, { status: 502 });
   }
@@ -47,8 +52,38 @@ export async function GET(request: NextRequest) {
   const items = mapTmdbSearchResultsForPreviewType({
     results,
     previewType,
-    limit: 8,
+    limit: SEARCH_RESULTS_LIMIT,
+  });
+  if (items.length > 0) {
+    return NextResponse.json({ items });
+  }
+
+  const omdbKey = String(OMDB_API_KEY || '').trim();
+  if (!omdbKey) {
+    return NextResponse.json({ items: [] });
+  }
+
+  const omdbTarget = new URL(OMDB_API_BASE_URL);
+  omdbTarget.searchParams.set('apikey', omdbKey);
+  omdbTarget.searchParams.set('s', searchQuery);
+  if (previewType === 'thumbnail') {
+    omdbTarget.searchParams.set('type', 'series');
+  }
+
+  const omdbResponse = await fetch(omdbTarget.toString(), { cache: 'no-store' }).catch(() => null);
+  if (!omdbResponse?.ok) {
+    return NextResponse.json({ items: [] });
+  }
+
+  const omdbPayload = await omdbResponse.json().catch(() => null);
+  const omdbResults = Array.isArray((omdbPayload as { Search?: unknown[] } | null)?.Search)
+    ? (omdbPayload as { Search: unknown[] }).Search
+    : [];
+  const omdbItems = mapOmdbSearchResultsForPreviewType({
+    results: omdbResults,
+    previewType,
+    limit: SEARCH_RESULTS_LIMIT,
   });
 
-  return NextResponse.json({ items });
+  return NextResponse.json({ items: omdbItems });
 }
