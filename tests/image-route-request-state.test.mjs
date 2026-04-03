@@ -117,3 +117,34 @@ test('image route request state requires a TMDB key', async () => {
     },
   );
 });
+
+test('image route request state resolves style scoped stack offsets for glass and square styles', async () => {
+  const glassState = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&ratingStyle=glass&ratingXOffsetPillGlass=18&ratingYOffsetPillGlass=-7&ratingXOffsetSquare=99&ratingYOffsetSquare=99',
+    ),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+  const squareState = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&ratingStyle=square&ratingXOffsetPillGlass=18&ratingYOffsetPillGlass=-7&ratingXOffsetSquare=-12&ratingYOffsetSquare=14',
+    ),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+  const plainState = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&ratingStyle=plain&ratingXOffsetPillGlass=18&ratingYOffsetPillGlass=-7',
+    ),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(glassState.ratingStackOffsetX, 18);
+  assert.equal(glassState.ratingStackOffsetY, -7);
+  assert.equal(squareState.ratingStackOffsetX, -12);
+  assert.equal(squareState.ratingStackOffsetY, 14);
+  assert.equal(plainState.ratingStackOffsetX, 0);
+  assert.equal(plainState.ratingStackOffsetY, 0);
+});

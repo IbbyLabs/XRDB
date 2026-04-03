@@ -61,6 +61,11 @@ import {
   RATING_VALUE_MODE_OPTIONS,
   type RatingValueMode,
 } from '@/lib/ratingDisplay';
+import {
+  MAX_RATING_STACK_OFFSET_PX,
+  MIN_RATING_STACK_OFFSET_PX,
+  normalizeRatingStackOffsetPx,
+} from '@/lib/ratingStackOffset';
 import { type PosterCompactRingSource } from '@/lib/posterCompactRing';
 import {
   DEFAULT_SIDE_RATING_OFFSET,
@@ -431,6 +436,10 @@ export function LookSection({
   activeImageText,
   activeImageTextDescription,
   ratingValueMode,
+  ratingXOffsetPillGlass,
+  ratingYOffsetPillGlass,
+  ratingXOffsetSquare,
+  ratingYOffsetSquare,
   activeGenreBadgeMode,
   activeGenreBadgeStyle,
   activeGenreBadgePosition,
@@ -470,6 +479,10 @@ export function LookSection({
   onSelectRatingStyle,
   onSelectImageText,
   onSelectRatingValueMode,
+  onSelectRatingXOffsetPillGlass,
+  onSelectRatingYOffsetPillGlass,
+  onSelectRatingXOffsetSquare,
+  onSelectRatingYOffsetSquare,
   onSelectGenreBadgeMode,
   onSelectGenreBadgeStyle,
   onSelectGenreBadgePosition,
@@ -513,6 +526,10 @@ export function LookSection({
   activeImageText: PosterImageTextPreference | BackdropImageTextPreference;
   activeImageTextDescription: string | null;
   ratingValueMode: RatingValueMode;
+  ratingXOffsetPillGlass: number;
+  ratingYOffsetPillGlass: number;
+  ratingXOffsetSquare: number;
+  ratingYOffsetSquare: number;
   activeGenreBadgeMode: GenreBadgeMode;
   activeGenreBadgeStyle: GenreBadgeStyle;
   activeGenreBadgePosition: GenreBadgePosition;
@@ -554,6 +571,10 @@ export function LookSection({
     value: PosterImageTextPreference | BackdropImageTextPreference,
   ) => void;
   onSelectRatingValueMode: (value: RatingValueMode) => void;
+  onSelectRatingXOffsetPillGlass: (value: number) => void;
+  onSelectRatingYOffsetPillGlass: (value: number) => void;
+  onSelectRatingXOffsetSquare: (value: number) => void;
+  onSelectRatingYOffsetSquare: (value: number) => void;
   onSelectGenreBadgeMode: (value: GenreBadgeMode) => void;
   onSelectGenreBadgeStyle: (value: GenreBadgeStyle) => void;
   onSelectGenreBadgePosition: (value: GenreBadgePosition) => void;
@@ -587,6 +608,31 @@ export function LookSection({
   onSelectGenreBadgeScale: (value: number) => void;
   onSelectQualityBadgeScale: (value: number) => void;
 }) {
+  const supportsStyleStackOffsets =
+    activeRatingStyle === 'glass' || activeRatingStyle === 'square';
+  const activeStyleStackOffsetX =
+    activeRatingStyle === 'glass' ? ratingXOffsetPillGlass : ratingXOffsetSquare;
+  const activeStyleStackOffsetY =
+    activeRatingStyle === 'glass' ? ratingYOffsetPillGlass : ratingYOffsetSquare;
+  const handleStyleStackOffsetXChange = (value: number) => {
+    const normalized = normalizeRatingStackOffsetPx(value);
+    if (activeRatingStyle === 'glass') {
+      onSelectRatingXOffsetPillGlass(normalized);
+      return;
+    }
+    onSelectRatingXOffsetSquare(normalized);
+  };
+  const handleStyleStackOffsetYChange = (value: number) => {
+    const normalized = normalizeRatingStackOffsetPx(value);
+    if (activeRatingStyle === 'glass') {
+      onSelectRatingYOffsetPillGlass(normalized);
+      return;
+    }
+    onSelectRatingYOffsetSquare(normalized);
+  };
+  const styleStackOffsetLabel =
+    activeRatingStyle === 'glass' ? 'Pill Stack Offset' : 'Square Stack Offset';
+
   return (
     <>
       <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
@@ -641,6 +687,31 @@ export function LookSection({
               ))}
             </div>
           </div>
+          {supportsStyleStackOffsets ? (
+            <div className={settingsCardClass}>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
+                {styleStackOffsetLabel}
+              </span>
+              <div className="space-y-2">
+                <RangeField
+                  label="X Offset"
+                  value={activeStyleStackOffsetX}
+                  min={MIN_RATING_STACK_OFFSET_PX}
+                  max={MAX_RATING_STACK_OFFSET_PX}
+                  suffix="px"
+                  onChange={handleStyleStackOffsetXChange}
+                />
+                <RangeField
+                  label="Y Offset"
+                  value={activeStyleStackOffsetY}
+                  min={MIN_RATING_STACK_OFFSET_PX}
+                  max={MAX_RATING_STACK_OFFSET_PX}
+                  suffix="px"
+                  onChange={handleStyleStackOffsetYChange}
+                />
+              </div>
+            </div>
+          ) : null}
           <div className={settingsCardClass}>
             <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge</span>
             <div className={selectorGroupClass}>

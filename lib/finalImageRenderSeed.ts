@@ -48,6 +48,8 @@ type FinalImageRenderSeedInput = {
   aggregateAccentBarVisible: boolean;
   artworkSelectionSeed: string;
   ratingStyle: string;
+  ratingStackOffsetX: number;
+  ratingStackOffsetY: number;
   ratingValueMode: string;
   posterRatingBadgeScale: number;
   backdropRatingBadgeScale: number;
@@ -86,6 +88,8 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.imageType === 'backdrop'
       ? input.backdropQualityBadgeScale
       : input.posterQualityBadgeScale;
+  const appliesStyleRatingOffset =
+    input.ratingStyle === 'glass' || input.ratingStyle === 'square';
   const providerAppearanceKey =
     encodeRatingProviderAppearanceOverrides(input.providerAppearanceOverrides) || '-';
 
@@ -138,6 +142,8 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.aggregateAccentBarVisible ? 'on' : 'off',
     input.artworkSelectionSeed || '-',
     input.ratingStyle,
+    appliesStyleRatingOffset ? String(input.ratingStackOffsetX) : '-',
+    appliesStyleRatingOffset ? String(input.ratingStackOffsetY) : '-',
     input.ratingValueMode,
     String(ratingBadgeScale),
     input.genreBadgeMode,
@@ -158,6 +164,6 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
       : '-',
     input.sourceFallbackKey || '-',
     input.renderCacheBuster || '-',
-    'v8',
+    'v9',
   ].join('|');
 };

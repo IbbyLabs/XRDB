@@ -138,6 +138,10 @@ const buildSampleSettings = () =>
       aggregateAudienceAccentColor: '#22c55e',
       aggregateAccentBarOffset: -3,
       aggregateAccentBarVisible: true,
+      ratingXOffsetPillGlass: 18,
+      ratingYOffsetPillGlass: -14,
+      ratingXOffsetSquare: -10,
+      ratingYOffsetSquare: 12,
       posterRatingsMaxPerSide: 7,
       logoRatingsMax: 4,
       logoBackground: 'dark',
@@ -266,6 +270,10 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       aggregateAudienceAccentColor: '#22c55e',
       aggregateAccentBarOffset: -3,
       aggregateAccentBarVisible: true,
+      ratingXOffsetPillGlass: 18,
+      ratingYOffsetPillGlass: -14,
+      ratingXOffsetSquare: -10,
+      ratingYOffsetSquare: 12,
       posterRatingsMaxPerSide: 7,
       logoRatingsMax: 4,
       logoBackground: 'dark',
@@ -551,6 +559,10 @@ test('config string and proxy manifest use the same shared XRDB settings', () =>
     aggregateCriticsAccentColor: '#f97316',
     aggregateAudienceAccentColor: '#22c55e',
     aggregateAccentBarOffset: -3,
+    ratingXOffsetPillGlass: 18,
+    ratingYOffsetPillGlass: -14,
+    ratingXOffsetSquare: -10,
+    ratingYOffsetSquare: 12,
     posterImageSize: 'large',
     posterImageText: 'clean',
     backdropImageText: 'clean',
@@ -644,6 +656,10 @@ test('config string and proxy manifest use the same shared XRDB settings', () =>
     aggregateCriticsAccentColor: '#f97316',
     aggregateAudienceAccentColor: '#22c55e',
     aggregateAccentBarOffset: '-3',
+    ratingXOffsetPillGlass: '18',
+    ratingYOffsetPillGlass: '-14',
+    ratingXOffsetSquare: '-10',
+    ratingYOffsetSquare: '12',
     posterImageSize: 'large',
     posterImageText: 'clean',
     backdropImageText: 'clean',
@@ -718,6 +734,10 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
     assert.match(value, /aggregateCriticsAccentColor=%23f97316/);
     assert.match(value, /aggregateAudienceAccentColor=%2322c55e/);
     assert.match(value, /aggregateAccentBarOffset=-3/);
+    assert.match(value, /ratingXOffsetPillGlass=18/);
+    assert.match(value, /ratingYOffsetPillGlass=-14/);
+    assert.match(value, /ratingXOffsetSquare=-10/);
+    assert.match(value, /ratingYOffsetSquare=12/);
     assert.match(
       value,
       new RegExp(`providerAppearance=${encodeRatingProviderAppearanceOverrides(SAMPLE_PROVIDER_APPEARANCE)}`),

@@ -40,6 +40,8 @@ const createInput = (overrides = {}) => ({
   blockbusterDensity: 'balanced',
   aggregateRatingSource: 'combined',
   ratingStyle: 'stacked',
+  ratingStackOffsetX: 0,
+  ratingStackOffsetY: 0,
   ratingValueMode: 'normalized',
   posterRatingBadgeScale: 100,
   backdropRatingBadgeScale: 100,
@@ -192,6 +194,28 @@ test('final image render seed changes when poster edge offset changes', () => {
   );
 
   assert.notEqual(baseKey, offsetKey);
+});
+
+test('final image render seed changes when active style stack offsets change', () => {
+  const baseKey = buildFinalImageRenderSeedKey(
+    createInput({ ratingStyle: 'glass', ratingStackOffsetX: 0, ratingStackOffsetY: 0 }),
+  );
+  const changedKey = buildFinalImageRenderSeedKey(
+    createInput({ ratingStyle: 'glass', ratingStackOffsetX: 22, ratingStackOffsetY: -9 }),
+  );
+
+  assert.notEqual(baseKey, changedKey);
+});
+
+test('final image render seed ignores style stack offsets for non glass and non square styles', () => {
+  const baseKey = buildFinalImageRenderSeedKey(
+    createInput({ ratingStyle: 'plain', ratingStackOffsetX: 0, ratingStackOffsetY: 0 }),
+  );
+  const changedKey = buildFinalImageRenderSeedKey(
+    createInput({ ratingStyle: 'plain', ratingStackOffsetX: 22, ratingStackOffsetY: -9 }),
+  );
+
+  assert.equal(baseKey, changedKey);
 });
 
 test('final image render seed scopes compact ring sources to ring poster renders', () => {

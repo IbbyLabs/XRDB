@@ -42,6 +42,11 @@ import {
   type SideRatingPosition,
 } from './sideRatingPosition.ts';
 import {
+  DEFAULT_RATING_STACK_OFFSET_PX,
+  normalizeRatingStackOffsetPx,
+  resolveStyleRatingStackOffset,
+} from './ratingStackOffset.ts';
+import {
   DEFAULT_POSTER_EDGE_OFFSET,
   normalizePosterEdgeOffset,
 } from './posterEdgeOffset.ts';
@@ -213,6 +218,8 @@ export type ImageRouteRequestState = {
   qualityBadgesMax: number | null;
   qualityBadgePreferences: BadgeKey[];
   ratingStyle: RatingStyle;
+  ratingStackOffsetX: number;
+  ratingStackOffsetY: number;
   logoBackground: LogoBackground;
   providerAppearanceOverrides: RatingProviderAppearanceOverrides;
   posterRatingBadgeScale: number;
@@ -796,6 +803,29 @@ export const resolveImageRouteRequestState = async ({
     : imageType === 'logo'
       ? 'plain'
       : DEFAULT_RATING_STYLE;
+  const ratingXOffsetPillGlass = normalizeRatingStackOffsetPx(
+    searchParams.get('ratingXOffsetPillGlass') ?? searchParams.get('ratingXOffsetGlass'),
+    DEFAULT_RATING_STACK_OFFSET_PX,
+  );
+  const ratingYOffsetPillGlass = normalizeRatingStackOffsetPx(
+    searchParams.get('ratingYOffsetPillGlass') ?? searchParams.get('ratingYOffsetGlass'),
+    DEFAULT_RATING_STACK_OFFSET_PX,
+  );
+  const ratingXOffsetSquare = normalizeRatingStackOffsetPx(
+    searchParams.get('ratingXOffsetSquare'),
+    DEFAULT_RATING_STACK_OFFSET_PX,
+  );
+  const ratingYOffsetSquare = normalizeRatingStackOffsetPx(
+    searchParams.get('ratingYOffsetSquare'),
+    DEFAULT_RATING_STACK_OFFSET_PX,
+  );
+  const { x: ratingStackOffsetX, y: ratingStackOffsetY } = resolveStyleRatingStackOffset({
+    ratingStyle,
+    ratingXOffsetPillGlass,
+    ratingYOffsetPillGlass,
+    ratingXOffsetSquare,
+    ratingYOffsetSquare,
+  });
   const logoBackground = normalizeLogoBackground(searchParams.get('logoBackground'));
   const providerAppearanceOverrides = parseRatingProviderAppearanceOverrides(
     searchParams.get('providerAppearance'),
@@ -1089,6 +1119,8 @@ export const resolveImageRouteRequestState = async ({
     aggregateAccentBarVisible,
     artworkSelectionSeed,
     ratingStyle,
+    ratingStackOffsetX,
+    ratingStackOffsetY,
     ratingValueMode,
     posterRatingBadgeScale,
     backdropRatingBadgeScale: effectiveBackdropRatingBadgeScale,
@@ -1148,6 +1180,8 @@ export const resolveImageRouteRequestState = async ({
     qualityBadgesMax,
     qualityBadgePreferences,
     ratingStyle,
+    ratingStackOffsetX,
+    ratingStackOffsetY,
     logoBackground,
     providerAppearanceOverrides,
     posterRatingBadgeScale,

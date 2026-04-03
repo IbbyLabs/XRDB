@@ -47,6 +47,7 @@ import { buildEpisodeToken, DEFAULT_EPISODE_ID_MODE, type EpisodeIdMode } from '
 import { isVerticalPosterRatingLayout, type PosterRatingLayout } from '@/lib/posterLayoutOptions';
 import { type BackdropRatingLayout } from '@/lib/backdropLayoutOptions';
 import { DEFAULT_POSTER_EDGE_OFFSET } from '@/lib/posterEdgeOffset';
+import { DEFAULT_RATING_STACK_OFFSET_PX } from '@/lib/ratingStackOffset';
 import { DEFAULT_RATING_VALUE_MODE, type RatingValueMode } from '@/lib/ratingDisplay';
 import {
   DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
@@ -313,6 +314,10 @@ export function useConfiguratorOutputs({
   previewType,
   proxyUrlVisible,
   qualityBadgesSide,
+  ratingXOffsetPillGlass,
+  ratingYOffsetPillGlass,
+  ratingXOffsetSquare,
+  ratingYOffsetSquare,
   ratingProviderAppearanceOverrides,
   ratingValueMode,
   showConfigString,
@@ -433,6 +438,10 @@ export function useConfiguratorOutputs({
   previewType: 'poster' | 'backdrop' | 'thumbnail' | 'logo';
   proxyUrlVisible: boolean;
   qualityBadgesSide: QualityBadgesSide;
+  ratingXOffsetPillGlass: number;
+  ratingYOffsetPillGlass: number;
+  ratingXOffsetSquare: number;
+  ratingYOffsetSquare: number;
   ratingProviderAppearanceOverrides: RatingProviderAppearanceOverrides;
   ratingValueMode: RatingValueMode;
   showConfigString: boolean;
@@ -477,6 +486,18 @@ export function useConfiguratorOutputs({
           : previewType === 'thumbnail'
             ? thumbnailRatingStyle
           : logoRatingStyle;
+    const ratingStyleOffsetX =
+      ratingStyleForType === 'glass'
+        ? ratingXOffsetPillGlass
+        : ratingStyleForType === 'square'
+          ? ratingXOffsetSquare
+          : DEFAULT_RATING_STACK_OFFSET_PX;
+    const ratingStyleOffsetY =
+      ratingStyleForType === 'glass'
+        ? ratingYOffsetPillGlass
+        : ratingStyleForType === 'square'
+          ? ratingYOffsetSquare
+          : DEFAULT_RATING_STACK_OFFSET_PX;
     const ratingPresentationForType =
       previewType === 'poster'
         ? posterRatingPresentation
@@ -575,6 +596,21 @@ export function useConfiguratorOutputs({
             : 'logoRatingPresentation',
         ratingPresentationForType,
       );
+    }
+    if (ratingStyleForType === 'glass') {
+      if (ratingStyleOffsetX !== DEFAULT_RATING_STACK_OFFSET_PX) {
+        query.set('ratingXOffsetPillGlass', String(ratingStyleOffsetX));
+      }
+      if (ratingStyleOffsetY !== DEFAULT_RATING_STACK_OFFSET_PX) {
+        query.set('ratingYOffsetPillGlass', String(ratingStyleOffsetY));
+      }
+    } else if (ratingStyleForType === 'square') {
+      if (ratingStyleOffsetX !== DEFAULT_RATING_STACK_OFFSET_PX) {
+        query.set('ratingXOffsetSquare', String(ratingStyleOffsetX));
+      }
+      if (ratingStyleOffsetY !== DEFAULT_RATING_STACK_OFFSET_PX) {
+        query.set('ratingYOffsetSquare', String(ratingStyleOffsetY));
+      }
     }
     if (previewType === 'poster' && ratingPresentationForType === 'ring') {
       if (posterRingValueSource !== DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE) {
@@ -943,6 +979,10 @@ export function useConfiguratorOutputs({
     posterStreamBadges,
     previewType,
     qualityBadgesSide,
+    ratingXOffsetPillGlass,
+    ratingYOffsetPillGlass,
+    ratingXOffsetSquare,
+    ratingYOffsetSquare,
     ratingProviderAppearanceOverrides,
     ratingValueMode,
     shouldShowQualityBadgesPosition,
