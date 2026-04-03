@@ -379,6 +379,24 @@ test('final image render seed changes when quality badge settings change', () =>
   assert.notEqual(baseKey, changedScaleKey);
 });
 
+test('final image render seed changes when thumbnail quality badge scale changes', () => {
+  const baseThumbnailKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'thumbnail', backdropQualityBadgeScale: 100 }),
+  );
+  const changedThumbnailKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'thumbnail', backdropQualityBadgeScale: 121 }),
+  );
+  const basePosterKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'poster', backdropQualityBadgeScale: 100 }),
+  );
+  const changedPosterKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'poster', backdropQualityBadgeScale: 121 }),
+  );
+
+  assert.notEqual(baseThumbnailKey, changedThumbnailKey);
+  assert.equal(basePosterKey, changedPosterKey);
+});
+
 test('final image render seed changes when blackbar artwork source is enabled for the active type', () => {
   const posterBase = buildFinalImageRenderSeedKey(
     createInput({ imageType: 'poster', posterArtworkSource: 'tmdb' }),

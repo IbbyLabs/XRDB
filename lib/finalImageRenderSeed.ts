@@ -98,7 +98,7 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
         ? input.backdropRatingBadgeScale
         : input.logoRatingBadgeScale;
   const qualityBadgeScale =
-    input.imageType === 'backdrop'
+    input.imageType === 'backdrop' || input.imageType === 'thumbnail'
       ? input.backdropQualityBadgeScale
       : input.posterQualityBadgeScale;
   const appliesStyleRatingOffset =

@@ -4,6 +4,8 @@ import type { MouseEvent } from 'react';
 
 import {
   BRAND_DISPLAY_NAME,
+  BRAND_DISCORD_AIO_LABEL,
+  BRAND_DISCORD_AIO_URL,
   BRAND_DISCORD_OFFICIAL_LABEL,
   BRAND_DISCORD_OFFICIAL_URL,
   BRAND_GITHUB_LABEL,
@@ -66,6 +68,7 @@ export function SitePageOutro({
             {renderInternalLink(proxyHref, 'Proxy')}
             {renderInternalLink(docsHref, 'Docs')}
             <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="xrdb-footer-link">{BRAND_GITHUB_LABEL}</a>
+            <a href={BRAND_DISCORD_AIO_URL} target="_blank" rel="noreferrer" className="xrdb-footer-link">{BRAND_DISCORD_AIO_LABEL}</a>
             <a href={BRAND_DISCORD_OFFICIAL_URL} target="_blank" rel="noreferrer" className="xrdb-footer-link">{BRAND_DISCORD_OFFICIAL_LABEL}</a>
           </div>
           <div className="site-page-credit">
