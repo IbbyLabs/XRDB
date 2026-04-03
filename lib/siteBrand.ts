@@ -12,14 +12,10 @@ export const BRAND_SUPPORT_URL =
   process.env.NEXT_PUBLIC_BRAND_SUPPORT_URL || 'https://kofi.ibbylabs.dev';
 export const BRAND_UPTIME_URL =
   process.env.NEXT_PUBLIC_BRAND_UPTIME_URL || 'https://uptime.ibbylabs.dev';
-export const BRAND_DISCORD_AIO_URL =
-  process.env.NEXT_PUBLIC_BRAND_DISCORD_AIO_URL || 'https://discord.gg/5S2nTdV2uD';
-export const BRAND_DISCORD_AIO_LABEL =
-  process.env.NEXT_PUBLIC_BRAND_DISCORD_AIO_LABEL || 'XRDB in AIOStreams Discord';
 export const BRAND_DISCORD_OFFICIAL_URL =
-  process.env.NEXT_PUBLIC_BRAND_DISCORD_OFFICIAL_URL || 'https://discord.gg/wPY2pcqjmm';
+  process.env.NEXT_PUBLIC_BRAND_DISCORD_OFFICIAL_URL || 'https://discord.gg/DdXgUY7e8z';
 export const BRAND_DISCORD_OFFICIAL_LABEL =
-  process.env.NEXT_PUBLIC_BRAND_DISCORD_OFFICIAL_LABEL || 'Official XRDB Discord';
+  process.env.NEXT_PUBLIC_BRAND_DISCORD_OFFICIAL_LABEL || 'Official AIOMetadata Discord';
 export const BRAND_DISCORD_DM_URL =
   process.env.NEXT_PUBLIC_BRAND_DISCORD_DM_URL || 'https://discord.com/users/947862578682548255';
 export const BRAND_DISCORD_DM_HANDLE =

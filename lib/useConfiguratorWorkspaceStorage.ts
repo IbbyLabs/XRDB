@@ -12,6 +12,10 @@ import {
   serializeSavedUiConfig,
   type SavedUiConfig,
 } from '@/lib/uiConfig';
+import {
+  parseConfiguratorLinkImport,
+  type ConfiguratorPreviewType,
+} from '@/lib/configuratorLinkImport';
 
 const UI_CONFIG_STORAGE_KEY = 'xrdb.uiConfig.v1';
 const UI_CONFIG_SETTINGS_STORAGE_KEY = 'xrdb.uiConfig.settings.v1';
@@ -36,6 +40,9 @@ type LegacyApiKeyConfigStorage = {
 export function useConfiguratorWorkspaceStorage({
   applySavedUiConfig,
   buildCurrentUiConfig,
+  previewType,
+  setPreviewType,
+  setMediaId,
   stickyPreviewEnabled,
   experienceMode,
   selectedPresetId,
@@ -47,6 +54,9 @@ export function useConfiguratorWorkspaceStorage({
 }: {
   applySavedUiConfig: (config: SavedUiConfig) => void;
   buildCurrentUiConfig: () => SavedUiConfig;
+  previewType: ConfiguratorPreviewType;
+  setPreviewType: (value: ConfiguratorPreviewType) => void;
+  setMediaId: (value: string) => void;
   stickyPreviewEnabled: boolean;
   experienceMode: ConfiguratorExperienceMode;
   selectedPresetId: ConfiguratorPresetId | null;
@@ -305,6 +315,34 @@ export function useConfiguratorWorkspaceStorage({
     [applyWorkspaceConfig],
   );
 
+  const handleImportWorkspaceLink = useCallback(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const rawValue = window.prompt('Paste an XRDB URL to import settings.');
+    if (rawValue === null) {
+      return;
+    }
+
+    const parsedImport = parseConfiguratorLinkImport(rawValue, {
+      baseOrigin: window.location.origin,
+      fallbackPreviewType: previewType,
+    });
+    if (!parsedImport) {
+      setSavedConfigStatus('invalid');
+      return;
+    }
+
+    applyWorkspaceConfig(parsedImport.config, 'imported');
+    if (parsedImport.previewType && parsedImport.previewType !== previewType) {
+      setPreviewType(parsedImport.previewType);
+    }
+    if (parsedImport.mediaId) {
+      setMediaId(parsedImport.mediaId);
+    }
+  }, [applyWorkspaceConfig, previewType, setMediaId, setPreviewType]);
+
   return {
     applyWorkspaceConfig,
     configAutoSave,
@@ -316,5 +354,6 @@ export function useConfiguratorWorkspaceStorage({
     handleDownloadWorkspace,
     handlePromptWorkspaceImport,
     handleImportWorkspace,
+    handleImportWorkspaceLink,
   };
 }

@@ -4,7 +4,7 @@ import type { MouseEvent } from 'react';
 
 import {
   BRAND_DISPLAY_NAME,
-  BRAND_DISCORD_AIO_URL,
+  BRAND_DISCORD_OFFICIAL_LABEL,
   BRAND_DISCORD_OFFICIAL_URL,
   BRAND_GITHUB_LABEL,
   BRAND_GITHUB_URL,
@@ -66,8 +66,7 @@ export function SitePageOutro({
             {renderInternalLink(proxyHref, 'Proxy')}
             {renderInternalLink(docsHref, 'Docs')}
             <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="xrdb-footer-link">{BRAND_GITHUB_LABEL}</a>
-            <a href={BRAND_DISCORD_AIO_URL} target="_blank" rel="noreferrer" className="xrdb-footer-link">XRDB in AIOStreams Discord</a>
-            <a href={BRAND_DISCORD_OFFICIAL_URL} target="_blank" rel="noreferrer" className="xrdb-footer-link">Official XRDB Discord</a>
+            <a href={BRAND_DISCORD_OFFICIAL_URL} target="_blank" rel="noreferrer" className="xrdb-footer-link">{BRAND_DISCORD_OFFICIAL_LABEL}</a>
           </div>
           <div className="site-page-credit">
             <Image src="/favicon.png" alt="" aria-hidden="true" width={20} height={20} />

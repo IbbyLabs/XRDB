@@ -1090,6 +1090,9 @@ export function useConfiguratorWorkspaceRuntime() {
   const workspaceStorage = useConfiguratorWorkspaceStorage({
     applySavedUiConfig,
     buildCurrentUiConfig,
+    previewType,
+    setPreviewType,
+    setMediaId,
     stickyPreviewEnabled,
     experienceMode,
     selectedPresetId,

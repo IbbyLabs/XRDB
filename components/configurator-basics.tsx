@@ -228,6 +228,7 @@ export function SetupModeSection({
 export function WorkspaceManagementSection({
   workspaceImportInputRef,
   onImportWorkspace,
+  onImportWorkspaceLink,
   onSaveWorkspace,
   onDownloadWorkspace,
   onPromptWorkspaceImport,
@@ -238,6 +239,7 @@ export function WorkspaceManagementSection({
 }: {
   workspaceImportInputRef: RefObject<HTMLInputElement | null>;
   onImportWorkspace: (event: ChangeEvent<HTMLInputElement>) => void;
+  onImportWorkspaceLink: () => void;
   onSaveWorkspace: () => void;
   onDownloadWorkspace: () => void;
   onPromptWorkspaceImport: () => void;
@@ -253,7 +255,7 @@ export function WorkspaceManagementSection({
         Save the shared XRDB settings plus proxy manifest setup to this browser, or export them as a JSON file.
       </p>
       <p className="mb-2 text-[11px] text-zinc-500">
-        Saved workspace values only affect this page. Share the config string or the generated proxy manifest if you want the same settings somewhere else.
+        Saved workspace values only affect this page. Paste a shared XRDB URL with Import link to apply the same settings here.
       </p>
       <input
         ref={workspaceImportInputRef}
@@ -283,6 +285,13 @@ export function WorkspaceManagementSection({
           className="rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300 hover:bg-zinc-900"
         >
           Import JSON
+        </button>
+        <button
+          type="button"
+          onClick={onImportWorkspaceLink}
+          className="rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300 hover:bg-zinc-900"
+        >
+          Import link
         </button>
         <button
           type="button"
@@ -319,7 +328,7 @@ export function WorkspaceManagementSection({
                     : savedConfigStatus === 'preset'
                       ? 'Preset applied.'
                       : savedConfigStatus === 'invalid'
-                        ? 'Invalid workspace file.'
+                        ? 'Invalid workspace import.'
                         : 'Unable to access local storage.'}
           </span>
         ) : null}
