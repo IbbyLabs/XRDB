@@ -526,7 +526,7 @@ export function MediaTargetSection({
               <select value={lang} onChange={(event) => onLangChange(event.target.value)} className="w-full appearance-none rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-white outline-none focus:border-violet-500/50">
                 {supportedLanguages.map((language) => (
                   <option key={language.code} value={language.code} className="bg-zinc-900">
-                    {language.flag} {language.label} ({language.code})
+                    {language.flag} {language.label}
                   </option>
                 ))}
               </select>
