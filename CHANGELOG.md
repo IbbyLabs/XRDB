@@ -13,6 +13,21 @@
 
 <a id="v1-4-1"></a>
 
+<a id="v1-4-2"></a>
+
+## [v1.4.2] - 03/04/2026
+
+### Fixed
+* BUG-44 FR-22 restore sticky rail and black ratings strip
+  
+  Remove relative positioning classes from sticky rail wrappers so preview and showcase sticky mode can pin correctly again on desktop.
+  
+  Rework blackbar handling to keep normal artwork selection and render a black strip behind rating rows instead of replacing the full image with a solid black source.
+  
+  Wire black strip mode through request state and renderer inputs, update artwork option copy, and adjust render seed artwork tokens for blackbar cache busting.
+  
+  Add targeted regressions for sticky wrapper classes, black strip rendering, request state black strip activation, artwork selection fallback behavior, and render seed changes.
+
 ## [v1.4.1] - 03/04/2026
 
 ### Fixed
