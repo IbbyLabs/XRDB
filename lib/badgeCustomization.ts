@@ -9,6 +9,7 @@ import {
 export const DEFAULT_BADGE_SCALE_PERCENT = 100;
 export const MIN_BADGE_SCALE_PERCENT = 70;
 export const MAX_BADGE_SCALE_PERCENT = 150;
+export const MAX_THUMBNAIL_RATING_BADGE_SCALE_PERCENT = 200;
 export const MAX_QUALITY_BADGE_SCALE_PERCENT = 200;
 export const MAX_GENRE_BADGE_SCALE_PERCENT = 200;
 export const MIN_GENRE_BADGE_BORDER_WIDTH_PX = 0;
@@ -222,6 +223,23 @@ export const normalizeQualityBadgeScalePercent = (
   return Math.max(
     MIN_BADGE_SCALE_PERCENT,
     Math.min(MAX_QUALITY_BADGE_SCALE_PERCENT, Math.round(numericValue)),
+  );
+};
+
+export const normalizeThumbnailRatingBadgeScalePercent = (
+  value: unknown,
+  fallback = DEFAULT_BADGE_SCALE_PERCENT,
+) => {
+  const numericValue =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string'
+        ? Number(value.trim())
+        : Number.NaN;
+  if (!Number.isFinite(numericValue)) return fallback;
+  return Math.max(
+    MIN_BADGE_SCALE_PERCENT,
+    Math.min(MAX_THUMBNAIL_RATING_BADGE_SCALE_PERCENT, Math.round(numericValue)),
   );
 };
 

@@ -7,6 +7,7 @@ import {
   normalizeGenreBadgeScalePercent,
   normalizeNoBackgroundBadgeOutlineWidthPx,
   normalizeQualityBadgeScalePercent,
+  normalizeThumbnailRatingBadgeScalePercent,
 } from '../lib/badgeCustomization.ts';
 
 test('genre badge scale normalization clamps to 70 to 200', () => {
@@ -19,6 +20,12 @@ test('quality badge scale normalization clamps to 70 to 200', () => {
   assert.equal(normalizeQualityBadgeScalePercent('205'), 200);
   assert.equal(normalizeQualityBadgeScalePercent('70'), 70);
   assert.equal(normalizeQualityBadgeScalePercent('40'), 70);
+});
+
+test('thumbnail rating badge scale normalization clamps to 70 to 200', () => {
+  assert.equal(normalizeThumbnailRatingBadgeScalePercent('205'), 200);
+  assert.equal(normalizeThumbnailRatingBadgeScalePercent('70'), 70);
+  assert.equal(normalizeThumbnailRatingBadgeScalePercent('40'), 70);
 });
 
 test('genre badge border width normalization clamps to 0 to 6 and keeps decimal precision', () => {

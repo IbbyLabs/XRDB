@@ -35,6 +35,7 @@ import {
   DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   MAX_GENRE_BADGE_BORDER_WIDTH_PX,
   MAX_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
+  MAX_THUMBNAIL_RATING_BADGE_SCALE_PERCENT,
   MIN_GENRE_BADGE_BORDER_WIDTH_PX,
   MIN_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   MAX_BADGE_SCALE_PERCENT,
@@ -47,6 +48,7 @@ import {
   normalizeGenreBadgeScalePercent,
   normalizeNoBackgroundBadgeOutlineWidthPx,
   normalizeQualityBadgeScalePercent,
+  normalizeThumbnailRatingBadgeScalePercent,
 } from '@/lib/badgeCustomization';
 import {
   DEFAULT_QUALITY_BADGES_STYLE,
@@ -799,6 +801,15 @@ export function LookSection({
   const styleStackOffsetLabel =
     activeRatingStyle === 'glass' ? 'Pill Stack Offset' : 'Square Stack Offset';
   const showRandomPosterFilters = previewType === 'poster' && activeImageText === 'random';
+  const ratingBadgeScaleMax =
+    previewType === 'thumbnail' ? MAX_THUMBNAIL_RATING_BADGE_SCALE_PERCENT : MAX_BADGE_SCALE_PERCENT;
+  const handleRatingBadgeScaleChange = (value: number) => {
+    if (previewType === 'thumbnail') {
+      onSelectRatingBadgeScale(normalizeThumbnailRatingBadgeScalePercent(String(value)));
+      return;
+    }
+    onSelectRatingBadgeScale(normalizeBadgeScalePercent(String(value)));
+  };
 
   return (
     <>
@@ -1629,8 +1640,8 @@ export function LookSection({
               label="Rating badges"
               value={activeRatingBadgeScale}
               min={MIN_BADGE_SCALE_PERCENT}
-              max={MAX_BADGE_SCALE_PERCENT}
-              onChange={(value) => onSelectRatingBadgeScale(normalizeBadgeScalePercent(String(value)))}
+              max={ratingBadgeScaleMax}
+              onChange={handleRatingBadgeScaleChange}
             />
             <ScaleField
               label="Genre badge"

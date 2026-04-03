@@ -90,6 +90,7 @@ import {
   normalizeQualityBadgeScalePercent,
   normalizeQualityBadgePreferencesList,
   normalizeRatingProviderAppearanceOverrides,
+  normalizeThumbnailRatingBadgeScalePercent,
   stringifyQualityBadgePreferencesAllowEmpty,
   type RatingProviderAppearanceOverrides,
 } from './badgeCustomization.ts';
@@ -1314,7 +1315,7 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
       candidate.backdropRatingBadgeScale ?? rpdbFontScalePercent,
       defaults.backdropRatingBadgeScale,
     ),
-    thumbnailRatingBadgeScale: normalizeBadgeScalePercent(
+    thumbnailRatingBadgeScale: normalizeThumbnailRatingBadgeScalePercent(
       candidate.thumbnailRatingBadgeScale ??
         candidate.backdropRatingBadgeScale ??
         rpdbFontScalePercent,
