@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   DEFAULT_BADGE_SCALE_PERCENT,
@@ -98,6 +98,10 @@ import { useConfiguratorWorkspaceStorage } from '@/lib/useConfiguratorWorkspaceS
 import { useConfiguratorWorkspaceSummary } from '@/lib/useConfiguratorWorkspaceSummary';
 import { useConfiguratorWorkspaceUi } from '@/lib/useConfiguratorWorkspaceUi';
 import { enabledOrderedToRows } from '@/lib/ratingProviderRows';
+import {
+  MEDIA_TARGET_SAMPLE_IDS,
+  type MediaSearchItem,
+} from '@/lib/configuratorMediaSearch';
 
 type WorkspacePanelId =
   | 'configurator'
@@ -492,6 +496,82 @@ export function useConfiguratorWorkspaceRuntime() {
     tmdbKey,
     workspaceCenterView,
   } = workspaceState;
+
+  const [mediaSearchQuery, setMediaSearchQuery] = useState('');
+  const [mediaSearchLoading, setMediaSearchLoading] = useState(false);
+  const [mediaSearchError, setMediaSearchError] = useState('');
+  const [mediaSearchResults, setMediaSearchResults] = useState<MediaSearchItem[]>([]);
+  const [activePreviewTitle, setActivePreviewTitle] = useState('');
+
+  const handleMediaIdChange = (value: string) => {
+    setMediaId(value);
+    setActivePreviewTitle('');
+    setMediaSearchError('');
+  };
+
+  const handleMediaSearchSubmit = async () => {
+    if (disableRemoteLookups) {
+      setMediaSearchError('Search is disabled in docs capture mode.');
+      setMediaSearchResults([]);
+      return;
+    }
+
+    const normalizedQuery = mediaSearchQuery.trim();
+    if (normalizedQuery.length < 2) {
+      setMediaSearchError('Enter at least 2 characters to search.');
+      setMediaSearchResults([]);
+      return;
+    }
+    if (!tmdbKey.trim()) {
+      setMediaSearchError('Add a TMDB key to search by name.');
+      setMediaSearchResults([]);
+      return;
+    }
+
+    setMediaSearchLoading(true);
+    setMediaSearchError('');
+    try {
+      const target = new URL('/api/media-search', window.location.origin);
+      target.searchParams.set('q', normalizedQuery);
+      target.searchParams.set('tmdbKey', tmdbKey.trim());
+      target.searchParams.set('previewType', previewType);
+      target.searchParams.set('lang', lang);
+
+      const response = await fetch(target.toString(), { method: 'GET', cache: 'no-store' });
+      const payload = await response.json().catch(() => null) as { items?: MediaSearchItem[]; error?: string } | null;
+      if (!response.ok) {
+        throw new Error(payload?.error || 'Search failed.');
+      }
+
+      const nextResults = Array.isArray(payload?.items) ? payload.items : [];
+      setMediaSearchResults(nextResults);
+      if (nextResults.length === 0) {
+        setMediaSearchError('No matches found for that title.');
+      }
+    } catch (error) {
+      setMediaSearchResults([]);
+      setMediaSearchError(error instanceof Error ? error.message : 'Search failed.');
+    } finally {
+      setMediaSearchLoading(false);
+    }
+  };
+
+  const handleSelectMediaSearchResult = (result: MediaSearchItem) => {
+    setMediaId(result.mediaId);
+    setActivePreviewTitle(result.year ? `${result.title} (${result.year})` : result.title);
+    setMediaSearchError('');
+  };
+
+  const handleShuffleMediaTarget = () => {
+    const samples = MEDIA_TARGET_SAMPLE_IDS[previewType];
+    if (!samples || samples.length === 0) {
+      return;
+    }
+    const randomIndex = Math.floor(Math.random() * samples.length);
+    setMediaId(samples[randomIndex]);
+    setActivePreviewTitle('Sample target');
+    setMediaSearchError('');
+  };
 
   const feeds = useConfiguratorFeeds({
     disabled: disableRemoteLookups,
@@ -1008,6 +1088,12 @@ export function useConfiguratorWorkspaceRuntime() {
   } = workspaceUi;
 
   useEffect(() => {
+    setMediaSearchResults([]);
+    setMediaSearchError('');
+    setActivePreviewTitle('');
+  }, [previewType]);
+
+  useEffect(() => {
     if (!docsCaptureConfig) {
       return;
     }
@@ -1237,6 +1323,18 @@ export function useConfiguratorWorkspaceRuntime() {
     activeWorkspaceSettings,
     baseUrl,
     feeds,
+    mediaTargetSearch: {
+      onMediaIdChange: handleMediaIdChange,
+      mediaSearchQuery,
+      mediaSearchLoading,
+      mediaSearchError,
+      mediaSearchResults,
+      activePreviewTitle,
+      onMediaSearchQueryChange: setMediaSearchQuery,
+      onMediaSearchSubmit: handleMediaSearchSubmit,
+      onSelectMediaSearchResult: handleSelectMediaSearchResult,
+      onShuffleMediaTarget: handleShuffleMediaTarget,
+    },
     outputs: workspaceOutputs,
     pageChrome,
     workspaceActions,

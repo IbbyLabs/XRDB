@@ -13,6 +13,7 @@ import type { useConfiguratorWorkspaceState } from '@/lib/useConfiguratorWorkspa
 import type { useConfiguratorWorkspaceStorage } from '@/lib/useConfiguratorWorkspaceStorage';
 import type { useConfiguratorWorkspaceSummary } from '@/lib/useConfiguratorWorkspaceSummary';
 import type { ConfiguratorWizardAnswers } from '@/lib/configuratorPresets';
+import type { MediaSearchItem } from '@/lib/configuratorMediaSearch';
 import {
   XRDB_REQUEST_KEY_HELP_COPY,
   FANART_KEY_HELP_COPY,
@@ -72,6 +73,19 @@ type WorkspaceUiState = {
   wizardQuestionIndex: number;
 };
 
+type MediaTargetSearchState = {
+  onMediaIdChange: (value: string) => void;
+  mediaSearchQuery: string;
+  mediaSearchLoading: boolean;
+  mediaSearchError: string;
+  mediaSearchResults: MediaSearchItem[];
+  activePreviewTitle: string;
+  onMediaSearchQueryChange: (value: string) => void;
+  onMediaSearchSubmit: () => void;
+  onSelectMediaSearchResult: (result: MediaSearchItem) => void;
+  onShuffleMediaTarget: () => void;
+};
+
 export function buildConfiguratorPageProps({
   activeWorkspaceSettings,
   baseUrl,
@@ -83,6 +97,7 @@ export function buildConfiguratorPageProps({
   workspaceStorage,
   workspaceSummary,
   workspaceUi,
+  mediaTargetSearch,
 }: {
   activeWorkspaceSettings: ReturnType<typeof useConfiguratorActiveWorkspaceSettings>;
   baseUrl: string;
@@ -94,6 +109,7 @@ export function buildConfiguratorPageProps({
   workspaceStorage: ReturnType<typeof useConfiguratorWorkspaceStorage>;
   workspaceSummary: ReturnType<typeof useConfiguratorWorkspaceSummary>;
   workspaceUi: WorkspaceUiState;
+  mediaTargetSearch: MediaTargetSearchState;
 }): {
   heroProps: ComponentProps<typeof ConfiguratorHero>;
   inputsPanelProps: ComponentProps<typeof ConfiguratorInputsPanel>;
@@ -190,8 +206,17 @@ export function buildConfiguratorPageProps({
         lang: workspaceState.lang,
         supportedLanguages: pageChrome.supportedLanguages,
         onPreviewTypeChange: workspaceState.setPreviewType,
-        onMediaIdChange: workspaceState.setMediaId,
+        onMediaIdChange: mediaTargetSearch.onMediaIdChange,
         onLangChange: workspaceState.setLang,
+        mediaSearchQuery: mediaTargetSearch.mediaSearchQuery,
+        mediaSearchLoading: mediaTargetSearch.mediaSearchLoading,
+        mediaSearchError: mediaTargetSearch.mediaSearchError,
+        mediaSearchResults: mediaTargetSearch.mediaSearchResults,
+        activePreviewTitle: mediaTargetSearch.activePreviewTitle,
+        onMediaSearchQueryChange: mediaTargetSearch.onMediaSearchQueryChange,
+        onMediaSearchSubmit: mediaTargetSearch.onMediaSearchSubmit,
+        onSelectMediaSearchResult: mediaTargetSearch.onSelectMediaSearchResult,
+        onShuffleMediaTarget: mediaTargetSearch.onShuffleMediaTarget,
       },
       presentationProps: {
         presentationOrder: PRESENTATION_SECTION_ORDER,

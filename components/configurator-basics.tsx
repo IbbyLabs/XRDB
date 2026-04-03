@@ -1,7 +1,8 @@
 'use client';
 
 import type { ChangeEvent, RefObject } from 'react';
-import { ChevronRight, Globe2, Image as ImageIcon, Layers, MonitorPlay } from 'lucide-react';
+import { ChevronRight, Globe2, Image as ImageIcon, Layers, MonitorPlay, Search, Shuffle } from 'lucide-react';
+import type { MediaSearchItem } from '@/lib/configuratorMediaSearch';
 
 import type {
   ConfiguratorExperienceMode,
@@ -430,6 +431,15 @@ export function MediaTargetSection({
   onPreviewTypeChange,
   onMediaIdChange,
   onLangChange,
+  mediaSearchQuery,
+  mediaSearchLoading,
+  mediaSearchError,
+  mediaSearchResults,
+  activePreviewTitle,
+  onMediaSearchQueryChange,
+  onMediaSearchSubmit,
+  onSelectMediaSearchResult,
+  onShuffleMediaTarget,
 }: {
   previewType: ProxyType;
   mediaId: string;
@@ -439,6 +449,15 @@ export function MediaTargetSection({
   onPreviewTypeChange: (value: ProxyType) => void;
   onMediaIdChange: (value: string) => void;
   onLangChange: (value: string) => void;
+  mediaSearchQuery: string;
+  mediaSearchLoading: boolean;
+  mediaSearchError: string;
+  mediaSearchResults: MediaSearchItem[];
+  activePreviewTitle: string;
+  onMediaSearchQueryChange: (value: string) => void;
+  onMediaSearchSubmit: () => void;
+  onSelectMediaSearchResult: (result: MediaSearchItem) => void;
+  onShuffleMediaTarget: () => void;
 }) {
   const activeGuide = PREVIEW_GUIDE[previewType];
 
@@ -489,6 +508,71 @@ export function MediaTargetSection({
             <Globe2 className="h-3 w-3 shrink-0" /> Add TMDB key for lang
           </div>
         )}
+      </div>
+      <div className="mt-3 rounded-xl border border-white/10 bg-black/30 p-3">
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="min-w-[160px] flex-1">
+            <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Search by name</span>
+            <input
+              type="text"
+              value={mediaSearchQuery}
+              onChange={(event) => onMediaSearchQueryChange(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  onMediaSearchSubmit();
+                }
+              }}
+              placeholder={previewType === 'thumbnail' ? 'Search for a series' : 'Search for a movie or series'}
+              className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-white outline-none focus:border-violet-500/50"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={onMediaSearchSubmit}
+            disabled={!tmdbKey || mediaSearchLoading || mediaSearchQuery.trim().length < 2}
+            className={`inline-flex items-center gap-1 rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+              !tmdbKey || mediaSearchLoading || mediaSearchQuery.trim().length < 2
+                ? 'cursor-not-allowed border-white/10 bg-zinc-950 text-zinc-500'
+                : 'border-violet-500/40 bg-violet-500/15 text-violet-100 hover:bg-violet-500/25'
+            }`}
+          >
+            <Search className="h-3.5 w-3.5" />
+            {mediaSearchLoading ? 'Searching' : 'Search'}
+          </button>
+          <button
+            type="button"
+            onClick={onShuffleMediaTarget}
+            className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-800"
+          >
+            <Shuffle className="h-3.5 w-3.5" />
+            Shuffle sample
+          </button>
+        </div>
+        {mediaSearchError ? (
+          <p className="mt-2 text-[11px] leading-5 text-rose-300">{mediaSearchError}</p>
+        ) : null}
+        {activePreviewTitle ? (
+          <p className="mt-2 text-[11px] leading-5 text-zinc-400">
+            Preview title: <span className="font-semibold text-zinc-200">{activePreviewTitle}</span>
+          </p>
+        ) : null}
+        {mediaSearchResults.length > 0 ? (
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {mediaSearchResults.map((result) => (
+              <button
+                key={`${result.mediaId}-${result.title}`}
+                type="button"
+                onClick={() => onSelectMediaSearchResult(result)}
+                className="rounded-lg border border-white/10 bg-zinc-950/80 px-3 py-2 text-left transition-colors hover:border-violet-500/50 hover:bg-zinc-900"
+              >
+                <div className="text-[12px] font-semibold text-zinc-100">{result.title}</div>
+                <div className="mt-0.5 text-[11px] text-zinc-500">{result.subtitle}</div>
+                <div className="mt-1 font-mono text-[10px] text-zinc-400">{result.mediaId}</div>
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
       {previewType === 'thumbnail' ? (
         <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
