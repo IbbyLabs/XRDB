@@ -382,6 +382,7 @@ export function RecentChanges({
                       <span className="xrdb-commit-hash font-mono">{commit.shortHash}</span>
                     </div>
                     <p className="xrdb-commit-title">{commit.title}</p>
+                    {commit.body ? <p className="xrdb-commit-body">{commit.body}</p> : null}
                     <p className="xrdb-commit-date font-mono">{formatCommitTimestamp(commit.date, nowMs)}</p>
                   </li>
                 ))}
