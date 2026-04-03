@@ -240,8 +240,8 @@ test('tv networks resolve to distinct network badges in media badge order', () =
     badges.map((badge) => badge.key),
     ['netflix', 'hbo', 'primevideo'],
   );
-  assert.equal(badges[0].iconUrl, 'https://image.tmdb.org/t/p/w185/netflix.png');
-  assert.equal(badges[1].iconUrl, 'https://image.tmdb.org/t/p/w185/max.png');
+  assert.equal(badges[0].iconUrl, 'https://image.tmdb.org/t/p/w500/netflix.png');
+  assert.equal(badges[1].iconUrl, 'https://image.tmdb.org/t/p/w500/max.png');
 });
 
 test('watch providers prefer the requested region and ignore rent only entries', () => {
@@ -262,7 +262,7 @@ test('watch providers prefer the requested region and ignore rent only entries',
     badges.map((badge) => badge.key),
     ['primevideo'],
   );
-  assert.equal(badges[0].iconUrl, 'https://image.tmdb.org/t/p/w185/prime-video.png');
+  assert.equal(badges[0].iconUrl, 'https://image.tmdb.org/t/p/w500/prime-video.png');
 });
 
 test('watch providers normalize ads variants and max channel names into badge keys', () => {
