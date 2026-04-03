@@ -11,6 +11,13 @@ type FinalImageRenderSeedInput = {
   cleanId: string;
   requestedImageLang: string;
   posterTextPreference: string;
+  randomPosterTextMode: string;
+  randomPosterLanguageMode: string;
+  randomPosterMinVoteCount: number | null;
+  randomPosterMinVoteAverage: number | null;
+  randomPosterMinWidth: number | null;
+  randomPosterMinHeight: number | null;
+  randomPosterFallbackMode: string;
   posterImageSize: string;
   backdropImageSize: string;
   posterArtworkSource: string;
@@ -79,6 +86,7 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
   const isPoster = input.imageType === 'poster';
   const isBackdrop = input.imageType === 'backdrop' || input.imageType === 'thumbnail';
   const isLogo = input.imageType === 'logo';
+  const usesRandomPosterCriteria = isPoster && input.posterTextPreference === 'random';
   const ratingBadgeScale =
     input.imageType === 'poster'
       ? input.posterRatingBadgeScale
@@ -101,6 +109,13 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.cleanId,
     input.requestedImageLang,
     input.posterTextPreference,
+    usesRandomPosterCriteria ? input.randomPosterTextMode : '-',
+    usesRandomPosterCriteria ? input.randomPosterLanguageMode : '-',
+    usesRandomPosterCriteria ? String(input.randomPosterMinVoteCount ?? 'off') : '-',
+    usesRandomPosterCriteria ? String(input.randomPosterMinVoteAverage ?? 'off') : '-',
+    usesRandomPosterCriteria ? String(input.randomPosterMinWidth ?? 'off') : '-',
+    usesRandomPosterCriteria ? String(input.randomPosterMinHeight ?? 'off') : '-',
+    usesRandomPosterCriteria ? input.randomPosterFallbackMode : '-',
     isPoster ? input.posterImageSize : '-',
     input.imageType === 'backdrop' ? input.backdropImageSize : '-',
     isPoster ? input.posterArtworkSource : '-',
@@ -166,6 +181,6 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
       : '-',
     input.sourceFallbackKey || '-',
     input.renderCacheBuster || '-',
-    'v9',
+    'v10',
   ].join('|');
 };

@@ -1,9 +1,15 @@
 import {
+  DEFAULT_RANDOM_POSTER_FALLBACK_MODE,
+  DEFAULT_RANDOM_POSTER_LANGUAGE_MODE,
+  DEFAULT_RANDOM_POSTER_TEXT_MODE,
   FALLBACK_IMAGE_LANGUAGE,
   TMDB_CACHE_TTL_MS,
   type ArtworkSource,
   type EpisodeArtworkMode,
   type PosterTextPreference,
+  type RandomPosterFallbackMode,
+  type RandomPosterLanguageMode,
+  type RandomPosterTextMode,
 } from './imageRouteConfig.ts';
 import { resolveOmdbPosterUrl } from './imageRouteOmdb.ts';
 import { pickByLanguageWithFallback } from './imageLanguage.ts';
@@ -93,6 +99,13 @@ export const createImageRouteArtworkSelector = (
     requestedImageLang: string;
     fallbackImageLang?: string;
     posterTextPreference: PosterTextPreference;
+    randomPosterTextMode: RandomPosterTextMode;
+    randomPosterLanguageMode: RandomPosterLanguageMode;
+    randomPosterMinVoteCount: number | null;
+    randomPosterMinVoteAverage: number | null;
+    randomPosterMinWidth: number | null;
+    randomPosterMinHeight: number | null;
+    randomPosterFallbackMode: RandomPosterFallbackMode;
     posterArtworkSource: ArtworkSource;
     backdropArtworkSource: ArtworkSource;
     logoArtworkSource: ArtworkSource;
@@ -304,6 +317,17 @@ export const createImageRouteArtworkSelector = (
         fallbackImageLang,
         originalPosterPath,
         buildArtworkSeed('tmdb-poster'),
+        {
+          randomPosterTextMode: input.randomPosterTextMode || DEFAULT_RANDOM_POSTER_TEXT_MODE,
+          randomPosterLanguageMode:
+            input.randomPosterLanguageMode || DEFAULT_RANDOM_POSTER_LANGUAGE_MODE,
+          randomPosterMinVoteCount: input.randomPosterMinVoteCount,
+          randomPosterMinVoteAverage: input.randomPosterMinVoteAverage,
+          randomPosterMinWidth: input.randomPosterMinWidth,
+          randomPosterMinHeight: input.randomPosterMinHeight,
+          randomPosterFallbackMode:
+            input.randomPosterFallbackMode || DEFAULT_RANDOM_POSTER_FALLBACK_MODE,
+        },
       );
       const posterIsTextless = isTextlessPosterSelection(posterCollection, selectedPoster);
 

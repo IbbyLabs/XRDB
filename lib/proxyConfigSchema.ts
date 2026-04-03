@@ -56,6 +56,13 @@ const SHARED_IMAGE_QUERY_KEYS = [
 const IMAGE_QUERY_KEYS_BY_TYPE = {
   poster: [
     'posterImageSize',
+    'randomPosterText',
+    'randomPosterLanguage',
+    'randomPosterMinVoteCount',
+    'randomPosterMinVoteAverage',
+    'randomPosterMinWidth',
+    'randomPosterMinHeight',
+    'randomPosterFallback',
     'posterGenreBadge',
     'posterGenreBadgeStyle',
     'posterGenreBadgePosition',
@@ -262,6 +269,13 @@ export type ProxyConfig = {
   logoAggregateRatingSource?: string;
   posterImageText?: string;
   posterImageSize?: string;
+  randomPosterText?: string;
+  randomPosterLanguage?: string;
+  randomPosterMinVoteCount?: string;
+  randomPosterMinVoteAverage?: string;
+  randomPosterMinWidth?: string;
+  randomPosterMinHeight?: string;
+  randomPosterFallback?: string;
   backdropImageSize?: string;
   backdropImageText?: string;
   thumbnailImageText?: string;
@@ -414,6 +428,13 @@ const CONFIG_STRING_KEYS = [
   'logoAggregateRatingSource',
   'posterImageText',
   'posterImageSize',
+  'randomPosterText',
+  'randomPosterLanguage',
+  'randomPosterMinVoteCount',
+  'randomPosterMinVoteAverage',
+  'randomPosterMinWidth',
+  'randomPosterMinHeight',
+  'randomPosterFallback',
   'backdropImageSize',
   'backdropImageText',
   'thumbnailImageText',
@@ -510,6 +531,13 @@ export const XRDB_RESERVED_PARAMS = new Set<string>([
   'logoAggregateRatingSource',
   'posterImageText',
   'posterImageSize',
+  'randomPosterText',
+  'randomPosterLanguage',
+  'randomPosterMinVoteCount',
+  'randomPosterMinVoteAverage',
+  'randomPosterMinWidth',
+  'randomPosterMinHeight',
+  'randomPosterFallback',
   'backdropImageSize',
   'backdropImageText',
   'thumbnailImageText',

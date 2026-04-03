@@ -82,6 +82,9 @@ import type {
   LogoBackground,
   PosterImageSize,
   PosterImageTextPreference,
+  RandomPosterFallbackMode,
+  RandomPosterLanguageMode,
+  RandomPosterTextMode,
 } from '@/lib/uiConfig';
 
 type PreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
@@ -110,6 +113,73 @@ const normalizeOptionalBadgeCountInput = (value: string) => {
   if (normalized < POSTER_RATINGS_MAX_PER_SIDE_MIN) return null;
   return normalized;
 };
+
+const normalizeOptionalNonNegativeIntegerInput = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed)) return null;
+  const normalized = Math.trunc(parsed);
+  if (normalized < 0) return 0;
+  return normalized;
+};
+
+const normalizeOptionalVoteAverageInput = (value: string) => {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed)) return null;
+  return Math.max(0, Math.min(100, Number(parsed.toFixed(2))));
+};
+
+const RANDOM_POSTER_TEXT_OPTIONS: Array<DetailedSelectionOption<RandomPosterTextMode>> = [
+  {
+    id: 'any',
+    label: 'Any',
+    description: 'Allow text and textless posters.',
+  },
+  {
+    id: 'text',
+    label: 'Text',
+    description: 'Only allow posters with language text metadata.',
+  },
+  {
+    id: 'textless',
+    label: 'Textless',
+    description: 'Only allow posters with no language text metadata.',
+  },
+];
+
+const RANDOM_POSTER_LANGUAGE_OPTIONS: Array<DetailedSelectionOption<RandomPosterLanguageMode>> = [
+  {
+    id: 'any',
+    label: 'Any',
+    description: 'Allow any poster language metadata.',
+  },
+  {
+    id: 'requested',
+    label: 'Requested',
+    description: 'Require the requested language when metadata is available.',
+  },
+  {
+    id: 'fallback',
+    label: 'Fallback',
+    description: 'Require the fallback language when metadata is available.',
+  },
+];
+
+const RANDOM_POSTER_FALLBACK_OPTIONS: Array<DetailedSelectionOption<RandomPosterFallbackMode>> = [
+  {
+    id: 'best',
+    label: 'Best Match',
+    description: 'Use the highest ranked TMDB poster when filters find no match.',
+  },
+  {
+    id: 'original',
+    label: 'Original',
+    description: 'Fall back to the canonical original poster when filters find no match.',
+  },
+];
 
 export function PresentationSection({
   presentationOrder,
@@ -452,6 +522,13 @@ export function LookSection({
   activeArtworkSourceDescription,
   posterImageSizeOptions,
   posterImageSize,
+  randomPosterText,
+  randomPosterLanguage,
+  randomPosterMinVoteCount,
+  randomPosterMinVoteAverage,
+  randomPosterMinWidth,
+  randomPosterMinHeight,
+  randomPosterFallback,
   backdropImageSizeOptions,
   backdropImageSize,
   activePosterImageSizeDescription,
@@ -497,6 +574,13 @@ export function LookSection({
   onSelectThumbnailArtworkSource,
   onSelectPosterArtworkSource,
   onSelectPosterImageSize,
+  onSelectRandomPosterText,
+  onSelectRandomPosterLanguage,
+  onSelectRandomPosterMinVoteCount,
+  onSelectRandomPosterMinVoteAverage,
+  onSelectRandomPosterMinWidth,
+  onSelectRandomPosterMinHeight,
+  onSelectRandomPosterFallback,
   onSelectBackdropImageSize,
   onSelectPosterRatingsLayout,
   onSelectPosterRatingsMaxPerSide,
@@ -546,6 +630,13 @@ export function LookSection({
   activeArtworkSourceDescription: string | null;
   posterImageSizeOptions: Array<DetailedSelectionOption<PosterImageSize>>;
   posterImageSize: PosterImageSize;
+  randomPosterText: RandomPosterTextMode;
+  randomPosterLanguage: RandomPosterLanguageMode;
+  randomPosterMinVoteCount: number | null;
+  randomPosterMinVoteAverage: number | null;
+  randomPosterMinWidth: number | null;
+  randomPosterMinHeight: number | null;
+  randomPosterFallback: RandomPosterFallbackMode;
   backdropImageSizeOptions: Array<DetailedSelectionOption<BackdropImageSize>>;
   backdropImageSize: BackdropImageSize;
   activePosterImageSizeDescription: string;
@@ -593,6 +684,13 @@ export function LookSection({
   onSelectThumbnailArtworkSource: (value: ArtworkSource) => void;
   onSelectPosterArtworkSource: (value: ArtworkSource) => void;
   onSelectPosterImageSize: (value: PosterImageSize) => void;
+  onSelectRandomPosterText: (value: RandomPosterTextMode) => void;
+  onSelectRandomPosterLanguage: (value: RandomPosterLanguageMode) => void;
+  onSelectRandomPosterMinVoteCount: (value: number | null) => void;
+  onSelectRandomPosterMinVoteAverage: (value: number | null) => void;
+  onSelectRandomPosterMinWidth: (value: number | null) => void;
+  onSelectRandomPosterMinHeight: (value: number | null) => void;
+  onSelectRandomPosterFallback: (value: RandomPosterFallbackMode) => void;
   onSelectBackdropImageSize: (value: BackdropImageSize) => void;
   onSelectPosterRatingsLayout: (value: PosterRatingLayout) => void;
   onSelectPosterRatingsMaxPerSide: (value: number | null) => void;
@@ -643,6 +741,7 @@ export function LookSection({
   };
   const styleStackOffsetLabel =
     activeRatingStyle === 'glass' ? 'Pill Stack Offset' : 'Square Stack Offset';
+  const showRandomPosterFilters = previewType === 'poster' && activeImageText === 'random';
 
   return (
     <>
@@ -879,6 +978,183 @@ export function LookSection({
                 <p className="text-[11px] leading-relaxed text-zinc-500">
                   {activePosterImageSizeDescription}
                 </p>
+                {showRandomPosterFilters ? (
+                  <>
+                    <div className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                      Random Poster Filters
+                    </div>
+                    <div className="space-y-3 rounded-lg border border-white/10 bg-zinc-950/60 p-3">
+                      <div>
+                        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                          Text
+                        </div>
+                        <div className={selectorGroupClass}>
+                          {RANDOM_POSTER_TEXT_OPTIONS.map((option) => (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() => onSelectRandomPosterText(option.id)}
+                              className={selectorButtonClass(randomPosterText === option.id)}
+                              title={option.description}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                          Language
+                        </div>
+                        <div className={selectorGroupClass}>
+                          {RANDOM_POSTER_LANGUAGE_OPTIONS.map((option) => (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() => onSelectRandomPosterLanguage(option.id)}
+                              className={selectorButtonClass(randomPosterLanguage === option.id)}
+                              title={option.description}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="grid gap-2 md:grid-cols-2">
+                        <div>
+                          <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                            Min Vote Count
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={0}
+                              step={1}
+                              value={randomPosterMinVoteCount ?? ''}
+                              onChange={(event) =>
+                                onSelectRandomPosterMinVoteCount(
+                                  normalizeOptionalNonNegativeIntegerInput(event.target.value),
+                                )
+                              }
+                              placeholder="Any"
+                              className="w-full bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => onSelectRandomPosterMinVoteCount(null)}
+                              className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800"
+                            >
+                              Auto
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                            Min Vote Average
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              step={0.1}
+                              value={randomPosterMinVoteAverage ?? ''}
+                              onChange={(event) =>
+                                onSelectRandomPosterMinVoteAverage(
+                                  normalizeOptionalVoteAverageInput(event.target.value),
+                                )
+                              }
+                              placeholder="Any"
+                              className="w-full bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => onSelectRandomPosterMinVoteAverage(null)}
+                              className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800"
+                            >
+                              Auto
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                            Min Width
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={0}
+                              step={1}
+                              value={randomPosterMinWidth ?? ''}
+                              onChange={(event) =>
+                                onSelectRandomPosterMinWidth(
+                                  normalizeOptionalNonNegativeIntegerInput(event.target.value),
+                                )
+                              }
+                              placeholder="Any"
+                              className="w-full bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => onSelectRandomPosterMinWidth(null)}
+                              className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800"
+                            >
+                              Auto
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                            Min Height
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={0}
+                              step={1}
+                              value={randomPosterMinHeight ?? ''}
+                              onChange={(event) =>
+                                onSelectRandomPosterMinHeight(
+                                  normalizeOptionalNonNegativeIntegerInput(event.target.value),
+                                )
+                              }
+                              placeholder="Any"
+                              className="w-full bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => onSelectRandomPosterMinHeight(null)}
+                              className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800"
+                            >
+                              Auto
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                          No Match Fallback
+                        </div>
+                        <div className={selectorGroupClass}>
+                          {RANDOM_POSTER_FALLBACK_OPTIONS.map((option) => (
+                            <button
+                              key={option.id}
+                              type="button"
+                              onClick={() => onSelectRandomPosterFallback(option.id)}
+                              className={selectorButtonClass(randomPosterFallback === option.id)}
+                              title={option.description}
+                            >
+                              {option.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-[11px] leading-relaxed text-zinc-500">
+                        Applies to TMDB random poster picks. Filters only affect random poster selection and keep deterministic seed behavior.
+                      </p>
+                    </div>
+                  </>
+                ) : null}
               </>
             ) : null}
             {previewType === 'backdrop' ? (

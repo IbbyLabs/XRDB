@@ -102,6 +102,13 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   posterGenreBadgeScale: WorkspaceSettings['posterGenreBadgeScale'];
   posterGenreBadgeStyle: WorkspaceSettings['posterGenreBadgeStyle'];
   posterImageSize: WorkspaceSettings['posterImageSize'];
+  randomPosterText: WorkspaceSettings['randomPosterText'];
+  randomPosterLanguage: WorkspaceSettings['randomPosterLanguage'];
+  randomPosterMinVoteCount: WorkspaceSettings['randomPosterMinVoteCount'];
+  randomPosterMinVoteAverage: WorkspaceSettings['randomPosterMinVoteAverage'];
+  randomPosterMinWidth: WorkspaceSettings['randomPosterMinWidth'];
+  randomPosterMinHeight: WorkspaceSettings['randomPosterMinHeight'];
+  randomPosterFallback: WorkspaceSettings['randomPosterFallback'];
   posterImageText: WorkspaceSettings['posterImageText'];
   posterQualityBadgePreferences: WorkspaceSettings['posterQualityBadgePreferences'];
   posterQualityBadgeScale: WorkspaceSettings['posterQualityBadgeScale'];
@@ -217,6 +224,13 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setPosterGenreBadgeScale: Setter<WorkspaceSettings['posterGenreBadgeScale']>;
   setPosterGenreBadgeStyle: Setter<WorkspaceSettings['posterGenreBadgeStyle']>;
   setPosterImageSize: Setter<WorkspaceSettings['posterImageSize']>;
+  setRandomPosterText: Setter<WorkspaceSettings['randomPosterText']>;
+  setRandomPosterLanguage: Setter<WorkspaceSettings['randomPosterLanguage']>;
+  setRandomPosterMinVoteCount: Setter<WorkspaceSettings['randomPosterMinVoteCount']>;
+  setRandomPosterMinVoteAverage: Setter<WorkspaceSettings['randomPosterMinVoteAverage']>;
+  setRandomPosterMinWidth: Setter<WorkspaceSettings['randomPosterMinWidth']>;
+  setRandomPosterMinHeight: Setter<WorkspaceSettings['randomPosterMinHeight']>;
+  setRandomPosterFallback: Setter<WorkspaceSettings['randomPosterFallback']>;
   setPosterImageText: Setter<WorkspaceSettings['posterImageText']>;
   setPosterQualityBadgePreferences: Setter<WorkspaceSettings['posterQualityBadgePreferences']>;
   setPosterQualityBadgeScale: Setter<WorkspaceSettings['posterQualityBadgeScale']>;
@@ -346,6 +360,13 @@ export function useConfiguratorWorkspaceConfigIo({
   posterGenreBadgeScale,
   posterGenreBadgeStyle,
   posterImageSize,
+  randomPosterText,
+  randomPosterLanguage,
+  randomPosterMinVoteCount,
+  randomPosterMinVoteAverage,
+  randomPosterMinWidth,
+  randomPosterMinHeight,
+  randomPosterFallback,
   posterImageText,
   posterQualityBadgePreferences,
   posterQualityBadgeScale,
@@ -461,6 +482,13 @@ export function useConfiguratorWorkspaceConfigIo({
   setPosterGenreBadgeScale,
   setPosterGenreBadgeStyle,
   setPosterImageSize,
+  setRandomPosterText,
+  setRandomPosterLanguage,
+  setRandomPosterMinVoteCount,
+  setRandomPosterMinVoteAverage,
+  setRandomPosterMinWidth,
+  setRandomPosterMinHeight,
+  setRandomPosterFallback,
   setPosterImageText,
   setPosterQualityBadgePreferences,
   setPosterQualityBadgeScale,
@@ -514,6 +542,13 @@ export function useConfiguratorWorkspaceConfigIo({
       setLang(normalized.settings.lang);
       setPosterImageSize(normalized.settings.posterImageSize);
       setBackdropImageSize(normalized.settings.backdropImageSize);
+      setRandomPosterText(normalized.settings.randomPosterText);
+      setRandomPosterLanguage(normalized.settings.randomPosterLanguage);
+      setRandomPosterMinVoteCount(normalized.settings.randomPosterMinVoteCount);
+      setRandomPosterMinVoteAverage(normalized.settings.randomPosterMinVoteAverage);
+      setRandomPosterMinWidth(normalized.settings.randomPosterMinWidth);
+      setRandomPosterMinHeight(normalized.settings.randomPosterMinHeight);
+      setRandomPosterFallback(normalized.settings.randomPosterFallback);
       setPosterImageText(normalized.settings.posterImageText);
       setBackdropImageText(normalized.settings.backdropImageText);
       setThumbnailImageText(normalized.settings.thumbnailImageText);
@@ -711,6 +746,13 @@ export function useConfiguratorWorkspaceConfigIo({
       setPosterGenreBadgeScale,
       setPosterGenreBadgeStyle,
       setPosterImageSize,
+      setRandomPosterText,
+      setRandomPosterLanguage,
+      setRandomPosterMinVoteCount,
+      setRandomPosterMinVoteAverage,
+      setRandomPosterMinWidth,
+      setRandomPosterMinHeight,
+      setRandomPosterFallback,
       setPosterImageText,
       setPosterQualityBadgePreferences,
       setPosterQualityBadgeScale,
@@ -761,6 +803,13 @@ export function useConfiguratorWorkspaceConfigIo({
         lang,
         posterImageSize,
         backdropImageSize,
+        randomPosterText,
+        randomPosterLanguage,
+        randomPosterMinVoteCount,
+        randomPosterMinVoteAverage,
+        randomPosterMinWidth,
+        randomPosterMinHeight,
+        randomPosterFallback,
         posterImageText,
         backdropImageText,
         thumbnailImageText,
@@ -964,6 +1013,13 @@ export function useConfiguratorWorkspaceConfigIo({
       posterGenreBadgeScale,
       posterGenreBadgeStyle,
       posterImageSize,
+      randomPosterText,
+      randomPosterLanguage,
+      randomPosterMinVoteCount,
+      randomPosterMinVoteAverage,
+      randomPosterMinWidth,
+      randomPosterMinHeight,
+      randomPosterFallback,
       posterImageText,
       posterQualityBadgePreferences,
       posterQualityBadgeScale,

@@ -148,3 +148,22 @@ test('image route request state resolves style scoped stack offsets for glass an
   assert.equal(plainState.ratingStackOffsetX, 0);
   assert.equal(plainState.ratingStackOffsetY, 0);
 });
+
+test('image route request state parses random poster filter controls', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&imageText=random&randomPosterText=textless&randomPosterLanguage=requested&randomPosterMinVoteCount=12&randomPosterMinVoteAverage=6.5&randomPosterMinWidth=1000&randomPosterMinHeight=1500&randomPosterFallback=original',
+    ),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(state.posterTextPreference, 'random');
+  assert.equal(state.randomPosterTextMode, 'textless');
+  assert.equal(state.randomPosterLanguageMode, 'requested');
+  assert.equal(state.randomPosterMinVoteCount, 12);
+  assert.equal(state.randomPosterMinVoteAverage, 6.5);
+  assert.equal(state.randomPosterMinWidth, 1000);
+  assert.equal(state.randomPosterMinHeight, 1500);
+  assert.equal(state.randomPosterFallbackMode, 'original');
+});

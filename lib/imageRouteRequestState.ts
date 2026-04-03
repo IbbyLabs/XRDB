@@ -103,6 +103,9 @@ import {
   DEFAULT_BACKDROP_IMAGE_SIZE,
   DEFAULT_BLOCKBUSTER_DENSITY,
   DEFAULT_POSTER_IMAGE_SIZE,
+  DEFAULT_RANDOM_POSTER_FALLBACK_MODE,
+  DEFAULT_RANDOM_POSTER_LANGUAGE_MODE,
+  DEFAULT_RANDOM_POSTER_TEXT_MODE,
   EXPLICIT_ID_SOURCE_SET,
   FALLBACK_IMAGE_LANGUAGE,
   FANART_API_KEY,
@@ -121,6 +124,12 @@ import {
   normalizeEpisodeArtworkMode,
   normalizeOptionalBadgeCount,
   normalizePosterImageSize,
+  normalizeRandomPosterFallbackMode,
+  normalizeRandomPosterLanguageMode,
+  normalizeRandomPosterMinDimension,
+  normalizeRandomPosterMinVoteAverage,
+  normalizeRandomPosterMinVoteCount,
+  normalizeRandomPosterTextMode,
   normalizeRpdbFontScalePercent,
   resolveRpdbRatingBarPositionAliases,
   toAnimeMappingProvider,
@@ -135,6 +144,9 @@ import {
   type PosterQualityBadgesPosition,
   type PosterTextPreference,
   type QualityBadgesSide,
+  type RandomPosterFallbackMode,
+  type RandomPosterLanguageMode,
+  type RandomPosterTextMode,
 } from './imageRouteConfig.ts';
 import {
   getDeterministicTtlMs,
@@ -253,6 +265,13 @@ export type ImageRouteRequestState = {
   allowAnimeOnlyRatings: boolean;
   hasConfirmedAnimeMapping: boolean;
   posterTextPreference: PosterTextPreference;
+  randomPosterTextMode: RandomPosterTextMode;
+  randomPosterLanguageMode: RandomPosterLanguageMode;
+  randomPosterMinVoteCount: number | null;
+  randomPosterMinVoteAverage: number | null;
+  randomPosterMinWidth: number | null;
+  randomPosterMinHeight: number | null;
+  randomPosterFallbackMode: RandomPosterFallbackMode;
   ratingPresentation: RatingPresentation;
   posterRingValueSource: PosterCompactRingSource;
   posterRingProgressSource: PosterCompactRingSource;
@@ -590,6 +609,30 @@ export const resolveImageRouteRequestState = async ({
     searchParams.get('backdropImageSize') ??
       (imageType === 'backdrop' && !isThumbnailRequest ? searchParams.get('imageSize') : null),
     DEFAULT_BACKDROP_IMAGE_SIZE,
+  );
+  const randomPosterTextMode = normalizeRandomPosterTextMode(
+    searchParams.get('randomPosterText'),
+    DEFAULT_RANDOM_POSTER_TEXT_MODE,
+  );
+  const randomPosterLanguageMode = normalizeRandomPosterLanguageMode(
+    searchParams.get('randomPosterLanguage'),
+    DEFAULT_RANDOM_POSTER_LANGUAGE_MODE,
+  );
+  const randomPosterMinVoteCount = normalizeRandomPosterMinVoteCount(
+    searchParams.get('randomPosterMinVoteCount'),
+  );
+  const randomPosterMinVoteAverage = normalizeRandomPosterMinVoteAverage(
+    searchParams.get('randomPosterMinVoteAverage'),
+  );
+  const randomPosterMinWidth = normalizeRandomPosterMinDimension(
+    searchParams.get('randomPosterMinWidth'),
+  );
+  const randomPosterMinHeight = normalizeRandomPosterMinDimension(
+    searchParams.get('randomPosterMinHeight'),
+  );
+  const randomPosterFallbackMode = normalizeRandomPosterFallbackMode(
+    searchParams.get('randomPosterFallback'),
+    DEFAULT_RANDOM_POSTER_FALLBACK_MODE,
   );
   const artworkSelectionSeedParam =
     searchParams.get('artworkSeed') || searchParams.get('randomSeed') || '';
@@ -1092,6 +1135,13 @@ export const resolveImageRouteRequestState = async ({
     cleanId,
     requestedImageLang,
     posterTextPreference,
+    randomPosterTextMode,
+    randomPosterLanguageMode,
+    randomPosterMinVoteCount,
+    randomPosterMinVoteAverage,
+    randomPosterMinWidth,
+    randomPosterMinHeight,
+    randomPosterFallbackMode,
     posterImageSize,
     backdropImageSize,
     posterArtworkSource,
@@ -1222,6 +1272,13 @@ export const resolveImageRouteRequestState = async ({
     allowAnimeOnlyRatings,
     hasConfirmedAnimeMapping,
     posterTextPreference,
+    randomPosterTextMode,
+    randomPosterLanguageMode,
+    randomPosterMinVoteCount,
+    randomPosterMinVoteAverage,
+    randomPosterMinWidth,
+    randomPosterMinHeight,
+    randomPosterFallbackMode,
     ratingPresentation,
     posterRingValueSource,
     posterRingProgressSource,

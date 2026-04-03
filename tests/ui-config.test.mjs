@@ -50,6 +50,13 @@ const buildSampleSettings = () =>
       lang: 'fr',
       posterImageSize: 'large',
       backdropImageSize: 'normal',
+      randomPosterText: 'any',
+      randomPosterLanguage: 'any',
+      randomPosterMinVoteCount: null,
+      randomPosterMinVoteAverage: null,
+      randomPosterMinWidth: null,
+      randomPosterMinHeight: null,
+      randomPosterFallback: 'best',
       posterImageText: 'clean',
       backdropImageText: 'clean',
       thumbnailImageText: 'clean',
@@ -177,6 +184,13 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       lang: 'fr',
       posterImageSize: 'large',
       backdropImageSize: 'normal',
+      randomPosterText: 'any',
+      randomPosterLanguage: 'any',
+      randomPosterMinVoteCount: null,
+      randomPosterMinVoteAverage: null,
+      randomPosterMinWidth: null,
+      randomPosterMinHeight: null,
+      randomPosterFallback: 'best',
       posterImageText: 'clean',
       backdropImageText: 'clean',
       thumbnailImageText: 'clean',
@@ -497,6 +511,43 @@ test('config payload includes aggregate accent bar visibility when disabled', ()
   assert.notEqual(configString, '');
   const decodedConfig = JSON.parse(decodeBase64Url(configString));
   assert.equal(decodedConfig.aggregateAccentBarVisible, false);
+});
+
+test('config payload keeps random poster criteria when configured', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      posterImageText: 'random',
+      randomPosterText: 'textless',
+      randomPosterLanguage: 'requested',
+      randomPosterMinVoteCount: 25,
+      randomPosterMinVoteAverage: 7.1,
+      randomPosterMinWidth: 1200,
+      randomPosterMinHeight: 1800,
+      randomPosterFallback: 'original',
+    },
+  });
+
+  assert.equal(config.settings.randomPosterText, 'textless');
+  assert.equal(config.settings.randomPosterLanguage, 'requested');
+  assert.equal(config.settings.randomPosterMinVoteCount, 25);
+  assert.equal(config.settings.randomPosterMinVoteAverage, 7.1);
+  assert.equal(config.settings.randomPosterMinWidth, 1200);
+  assert.equal(config.settings.randomPosterMinHeight, 1800);
+  assert.equal(config.settings.randomPosterFallback, 'original');
+
+  const configString = buildConfigString('https://xrdb.example.com', config.settings);
+  assert.notEqual(configString, '');
+  const decodedConfig = JSON.parse(decodeBase64Url(configString));
+  assert.equal(decodedConfig.posterImageText, 'random');
+  assert.equal(decodedConfig.randomPosterText, 'textless');
+  assert.equal(decodedConfig.randomPosterLanguage, 'requested');
+  assert.equal(decodedConfig.randomPosterMinVoteCount, 25);
+  assert.equal(decodedConfig.randomPosterMinVoteAverage, 7.1);
+  assert.equal(decodedConfig.randomPosterMinWidth, 1200);
+  assert.equal(decodedConfig.randomPosterMinHeight, 1800);
+  assert.equal(decodedConfig.randomPosterFallback, 'original');
 });
 
 test('config string and proxy manifest use the same shared XRDB settings', () => {

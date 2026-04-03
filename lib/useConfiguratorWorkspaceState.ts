@@ -58,6 +58,9 @@ import {
   type PosterImageSize,
   type PosterImageTextPreference,
   type PosterQualityBadgesPosition,
+  type RandomPosterFallbackMode,
+  type RandomPosterLanguageMode,
+  type RandomPosterTextMode,
   type ProxyMediaType,
   type QualityBadgesSide,
   type StreamBadgesSetting,
@@ -74,6 +77,13 @@ export function useConfiguratorWorkspaceState() {
   const [lang, setLang] = useState('en');
   const [posterImageSize, setPosterImageSize] = useState<PosterImageSize>('normal');
   const [backdropImageSize, setBackdropImageSize] = useState<BackdropImageSize>('normal');
+  const [randomPosterText, setRandomPosterText] = useState<RandomPosterTextMode>('any');
+  const [randomPosterLanguage, setRandomPosterLanguage] = useState<RandomPosterLanguageMode>('any');
+  const [randomPosterMinVoteCount, setRandomPosterMinVoteCount] = useState<number | null>(null);
+  const [randomPosterMinVoteAverage, setRandomPosterMinVoteAverage] = useState<number | null>(null);
+  const [randomPosterMinWidth, setRandomPosterMinWidth] = useState<number | null>(null);
+  const [randomPosterMinHeight, setRandomPosterMinHeight] = useState<number | null>(null);
+  const [randomPosterFallback, setRandomPosterFallback] = useState<RandomPosterFallbackMode>('best');
   const [posterImageText, setPosterImageText] = useState<PosterImageTextPreference>('clean');
   const [backdropImageText, setBackdropImageText] = useState<BackdropImageTextPreference>('clean');
   const [thumbnailImageText, setThumbnailImageText] = useState<BackdropImageTextPreference>('clean');
@@ -310,6 +320,13 @@ export function useConfiguratorWorkspaceState() {
     posterGenreBadgeStyle,
     posterIdMode,
     posterImageSize,
+    randomPosterText,
+    randomPosterLanguage,
+    randomPosterMinVoteCount,
+    randomPosterMinVoteAverage,
+    randomPosterMinWidth,
+    randomPosterMinHeight,
+    randomPosterFallback,
     posterImageText,
     posterQualityBadgePreferences,
     posterQualityBadgeScale,
@@ -434,6 +451,13 @@ export function useConfiguratorWorkspaceState() {
     setPosterGenreBadgeStyle,
     setPosterIdMode,
     setPosterImageSize,
+    setRandomPosterText,
+    setRandomPosterLanguage,
+    setRandomPosterMinVoteCount,
+    setRandomPosterMinVoteAverage,
+    setRandomPosterMinWidth,
+    setRandomPosterMinHeight,
+    setRandomPosterFallback,
     setPosterImageText,
     setPosterQualityBadgePreferences,
     setPosterQualityBadgeScale,
