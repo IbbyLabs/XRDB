@@ -85,21 +85,11 @@ export const buildTmdbSupportedLanguageOptions = ({
     .map((entry) => normalizeLocaleCode(entry))
     .filter((entry): entry is string => Boolean(entry));
 
-  const basesWithVariants = new Set(
-    normalizedCodes
-      .filter((code) => code.includes('-'))
-      .map((code) => getLocaleBase(code))
-      .filter((code): code is string => Boolean(code)),
-  );
-
   const options = new Map<string, SupportedLanguageOption>();
 
   for (const code of normalizedCodes) {
     const base = getLocaleBase(code);
     if (!base) continue;
-    if (!code.includes('-') && basesWithVariants.has(base)) {
-      continue;
-    }
 
     const region = getLocaleRegion(code);
     const baseLabel = toTitleCaseLabel(baseLabels.get(base) || code, base);

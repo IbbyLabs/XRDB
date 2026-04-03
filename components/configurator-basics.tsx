@@ -1,6 +1,6 @@
 'use client';
 
-import type { ChangeEvent, RefObject } from 'react';
+import { useEffect, useId, useRef, useState, type ChangeEvent, type RefObject } from 'react';
 import { ChevronRight, Globe2, Image as ImageIcon, Layers, MonitorPlay, Shuffle } from 'lucide-react';
 import type { MediaSearchItem } from '@/lib/configuratorMediaSearch';
 import {
@@ -11,6 +11,7 @@ import {
 import type {
   ConfiguratorExperienceMode,
 } from '@/lib/configuratorPresets';
+import type { SupportedLanguageOption } from '@/lib/configuratorPageOptions';
 import type { TmdbIdScopeMode } from '@/lib/uiConfig';
 
 type ProxyType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
@@ -148,6 +149,134 @@ const QUERY_PARAM_REFERENCE = [
     detail: 'Chooses the thumbnail specific rating providers without affecting poster, backdrop, or logo routes.',
   },
 ] as const;
+
+function ThemedDropdown({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: SupportedLanguageOption[];
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const selectedOptionRef = useRef<HTMLButtonElement | null>(null);
+  const listboxId = useId();
+  const activeOption =
+    options.find((option) => option.code === value) ||
+    options.find((option) => option.code === 'en') ||
+    options[0] ||
+    null;
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (rootRef.current && event.target instanceof Node && !rootRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      selectedOptionRef.current?.scrollIntoView({ block: 'nearest' });
+    }
+  }, [isOpen]);
+
+  if (!activeOption) {
+    return null;
+  }
+
+  return (
+    <div ref={rootRef} className="relative w-[12.5rem] max-w-full">
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+        aria-controls={listboxId}
+        aria-label={label}
+        onClick={() => setIsOpen((current) => !current)}
+        className={`flex w-full items-center justify-between gap-3 rounded-xl border bg-[linear-gradient(180deg,rgba(38,22,66,0.96),rgba(14,9,26,0.98))] px-3 py-2.5 text-left shadow-[0_14px_32px_rgba(8,5,16,0.28)] outline-none transition-all ${
+          isOpen
+            ? 'border-violet-300/45 text-white'
+            : 'border-violet-400/20 text-zinc-100 hover:border-violet-300/30'
+        } focus-visible:border-violet-300/45`}
+      >
+        <span className="min-w-0">
+          <span className="block text-[9px] font-semibold uppercase tracking-[0.18em] text-violet-200/70">Selected language</span>
+          <span className="mt-1 flex min-w-0 items-center gap-2 text-xs font-semibold">
+            <span className="shrink-0 text-sm leading-none">{activeOption.flag}</span>
+            <span className="truncate">{activeOption.label}</span>
+          </span>
+        </span>
+        <ChevronRight
+          className={`h-3.5 w-3.5 shrink-0 stroke-[2.25] text-violet-200/70 transition-transform ${
+            isOpen ? 'rotate-90' : ''
+          }`}
+        />
+      </button>
+      {isOpen ? (
+        <div className="absolute left-0 top-full z-30 mt-2 w-[15.5rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-violet-400/20 bg-[linear-gradient(180deg,rgba(31,18,52,0.98),rgba(11,8,22,0.98))] shadow-[0_28px_72px_rgba(6,4,14,0.62)] backdrop-blur-xl">
+          <div className="border-b border-white/8 px-3 py-2">
+            <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-violet-200/75">
+              {label}
+            </div>
+          </div>
+          <div id={listboxId} role="listbox" aria-label={label} className="max-h-80 overflow-y-auto p-1.5">
+            {options.map((option) => {
+              const isSelected = option.code === activeOption.code;
+              return (
+                <button
+                  key={option.code}
+                  ref={isSelected ? selectedOptionRef : null}
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  onClick={() => {
+                    onChange(option.code);
+                    setIsOpen(false);
+                  }}
+                  className={`flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs transition-colors ${
+                    isSelected
+                      ? 'bg-violet-500/20 text-white'
+                      : 'text-zinc-300 hover:bg-white/6 hover:text-white'
+                  }`}
+                >
+                  <span className="shrink-0 text-sm leading-none">{option.flag}</span>
+                  <span className="min-w-0 flex-1 truncate font-medium">{option.label}</span>
+                  {isSelected ? (
+                    <span className="rounded-full border border-violet-300/25 bg-violet-500/18 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-violet-100">
+                      Current
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 export function SetupModeSection({
   experienceMode,
@@ -458,7 +587,7 @@ export function MediaTargetSection({
   mediaId: string;
   tmdbKey: string;
   lang: string;
-  supportedLanguages: Array<{ code: string; label: string; flag: string }>;
+  supportedLanguages: SupportedLanguageOption[];
   onPreviewTypeChange: (value: ProxyType) => void;
   onMediaIdChange: (value: string) => void;
   onLangChange: (value: string) => void;
@@ -534,18 +663,9 @@ export function MediaTargetSection({
           />
         </div>
         {tmdbKey ? (
-          <div className="w-44">
+          <div className="w-[12.5rem] max-w-full">
             <span className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500"><Globe2 className="h-3 w-3" /> Lang</span>
-            <div className="relative">
-              <select value={lang} onChange={(event) => onLangChange(event.target.value)} className="w-full appearance-none rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-white outline-none focus:border-violet-500/50">
-                {supportedLanguages.map((language) => (
-                  <option key={language.code} value={language.code} className="bg-zinc-900">
-                    {language.flag} {language.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronRight className="pointer-events-none absolute right-2 top-2.5 h-3 w-3 rotate-90 stroke-2 text-zinc-500" />
-            </div>
+            <ThemedDropdown label="Language" options={supportedLanguages} value={lang} onChange={onLangChange} />
           </div>
         ) : (
           <div className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black p-2 text-[10px] text-zinc-500">
