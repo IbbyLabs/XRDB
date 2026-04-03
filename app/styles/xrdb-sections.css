@@ -511,6 +511,12 @@
 	overflow: visible;
 }
 
+@media (min-width: 1280px) {
+	#workspace-preview > .xrdb-panel-preview {
+		overflow: visible;
+	}
+}
+
 .xrdb-toggle-group {
 	display: flex;
 	flex-wrap: wrap;
