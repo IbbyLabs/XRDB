@@ -209,6 +209,7 @@ export const GENRE_BADGE_ANIME_GROUPING_OPTIONS: Array<{
 export const PRESENTATION_SECTION_ORDER: RatingPresentation[] = [
   'standard',
   'editorial',
+  'ring',
   'average',
   'dual',
   'minimal',
