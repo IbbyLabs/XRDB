@@ -151,7 +151,11 @@ ${textMarkup}
   if (genreBadge.style === 'square') {
     const capHeight = Math.max(4, Math.round(height * 0.14));
     const capWidth = Math.min(width - 20, Math.max(Math.round(width * 0.34), 18));
-    const capLeft = Math.round((width - capWidth) / 2);
+    const capCenterX = showText ? textCenterX : Math.round(width / 2);
+    const capLeft = Math.max(
+      6,
+      Math.min(width - capWidth - 6, Math.round(capCenterX - capWidth / 2)),
+    );
     const capTop = 6;
 
     return {
