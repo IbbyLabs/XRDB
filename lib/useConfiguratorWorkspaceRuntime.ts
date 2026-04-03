@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   DEFAULT_BADGE_SCALE_PERCENT,
@@ -131,6 +131,7 @@ type PreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 const DOCS_CAPTURE_ENABLED = process.env.NEXT_PUBLIC_XRDB_ENABLE_DOCS_CAPTURE === 'true';
 const DOCS_CAPTURE_RATING_ROWS = enabledOrderedToRows(['tmdb']);
 const DOCS_CAPTURE_QUALITY_BADGE_PREFERENCES: MediaFeatureBadgeKey[] = [];
+const MEDIA_SEARCH_DEBOUNCE_MS = 280;
 const WORKSPACE_PANEL_IDS = new Set<WorkspacePanelId>([
   'configurator',
   'center-view',
@@ -539,31 +540,50 @@ export function useConfiguratorWorkspaceRuntime() {
   const [mediaSearchError, setMediaSearchError] = useState('');
   const [mediaSearchResults, setMediaSearchResults] = useState<MediaSearchItem[]>([]);
   const [activePreviewTitle, setActivePreviewTitle] = useState('');
+  const mediaSearchRequestIdRef = useRef(0);
+  const mediaSearchAbortControllerRef = useRef<AbortController | null>(null);
 
   const handleMediaIdChange = (value: string) => {
+    mediaSearchAbortControllerRef.current?.abort();
     setMediaId(value);
     setActivePreviewTitle('');
     setMediaSearchError('');
+    setMediaSearchLoading(false);
+    setMediaSearchResults([]);
+    setMediaSearchQuery('');
   };
 
-  const handleMediaSearchSubmit = async () => {
+  const runMediaSearch = useCallback(async (
+    query: string,
+    options?: { showValidationErrors?: boolean },
+  ) => {
+    const showValidationErrors = options?.showValidationErrors === true;
     if (disableRemoteLookups) {
       setMediaSearchError('Search is disabled in docs capture mode.');
       setMediaSearchResults([]);
+      setMediaSearchLoading(false);
       return;
     }
 
-    const normalizedQuery = mediaSearchQuery.trim();
+    const normalizedQuery = String(query || '').trim();
     if (normalizedQuery.length < 2) {
-      setMediaSearchError('Enter at least 2 characters to search.');
+      setMediaSearchError(showValidationErrors && normalizedQuery.length > 0 ? 'Enter at least 2 characters to search.' : '');
       setMediaSearchResults([]);
+      setMediaSearchLoading(false);
       return;
     }
     if (!tmdbKey.trim()) {
       setMediaSearchError('Add a TMDB key to search by name.');
       setMediaSearchResults([]);
+      setMediaSearchLoading(false);
       return;
     }
+
+    mediaSearchAbortControllerRef.current?.abort();
+    const controller = new AbortController();
+    mediaSearchAbortControllerRef.current = controller;
+    const requestId = mediaSearchRequestIdRef.current + 1;
+    mediaSearchRequestIdRef.current = requestId;
 
     setMediaSearchLoading(true);
     setMediaSearchError('');
@@ -574,10 +594,17 @@ export function useConfiguratorWorkspaceRuntime() {
       target.searchParams.set('previewType', previewType);
       target.searchParams.set('lang', lang);
 
-      const response = await fetch(target.toString(), { method: 'GET', cache: 'no-store' });
+      const response = await fetch(target.toString(), {
+        method: 'GET',
+        cache: 'no-store',
+        signal: controller.signal,
+      });
       const payload = await response.json().catch(() => null) as { items?: MediaSearchItem[]; error?: string } | null;
       if (!response.ok) {
         throw new Error(payload?.error || 'Search failed.');
+      }
+      if (mediaSearchRequestIdRef.current !== requestId) {
+        return;
       }
 
       const nextResults = Array.isArray(payload?.items) ? payload.items : [];
@@ -586,14 +613,29 @@ export function useConfiguratorWorkspaceRuntime() {
         setMediaSearchError('No matches found for that title.');
       }
     } catch (error) {
+      if (controller.signal.aborted) {
+        return;
+      }
+      if (mediaSearchRequestIdRef.current !== requestId) {
+        return;
+      }
       setMediaSearchResults([]);
       setMediaSearchError(error instanceof Error ? error.message : 'Search failed.');
     } finally {
-      setMediaSearchLoading(false);
+      if (mediaSearchRequestIdRef.current === requestId) {
+        setMediaSearchLoading(false);
+      }
     }
-  };
+  }, [disableRemoteLookups, lang, previewType, tmdbKey]);
+
+  const handleMediaSearchSubmit = useCallback(() => {
+    void runMediaSearch(mediaSearchQuery, { showValidationErrors: true });
+  }, [mediaSearchQuery, runMediaSearch]);
 
   const handleSelectMediaSearchResult = (result: MediaSearchItem) => {
+    mediaSearchAbortControllerRef.current?.abort();
+    setMediaSearchLoading(false);
+
     if (previewType === 'thumbnail') {
       const currentTarget = parseEpisodePreviewMediaTarget(mediaId);
       const resultTarget = parseEpisodePreviewMediaTarget(result.mediaId);
@@ -608,6 +650,8 @@ export function useConfiguratorWorkspaceRuntime() {
     }
     setActivePreviewTitle(result.year ? `${result.title} (${result.year})` : result.title);
     setMediaSearchError('');
+    setMediaSearchResults([]);
+    setMediaSearchQuery('');
   };
 
   const handleShuffleMediaTarget = () => {
@@ -615,11 +659,39 @@ export function useConfiguratorWorkspaceRuntime() {
     if (!samples || samples.length === 0) {
       return;
     }
+
+    mediaSearchAbortControllerRef.current?.abort();
+    setMediaSearchLoading(false);
     const randomIndex = Math.floor(Math.random() * samples.length);
     setMediaId(samples[randomIndex]);
     setActivePreviewTitle('Sample target');
     setMediaSearchError('');
+    setMediaSearchResults([]);
+    setMediaSearchQuery('');
   };
+
+  useEffect(() => {
+    const normalizedQuery = mediaSearchQuery.trim();
+    if (!normalizedQuery) {
+      mediaSearchAbortControllerRef.current?.abort();
+      setMediaSearchLoading(false);
+      setMediaSearchResults([]);
+      setMediaSearchError('');
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      void runMediaSearch(normalizedQuery);
+    }, MEDIA_SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [mediaSearchQuery, runMediaSearch]);
+
+  useEffect(() => () => {
+    mediaSearchAbortControllerRef.current?.abort();
+  }, []);
 
   const feeds = useConfiguratorFeeds({
     disabled: disableRemoteLookups,
@@ -1193,6 +1265,8 @@ export function useConfiguratorWorkspaceRuntime() {
   } = workspaceUi;
 
   useEffect(() => {
+    mediaSearchAbortControllerRef.current?.abort();
+    setMediaSearchLoading(false);
     setMediaSearchResults([]);
     setMediaSearchError('');
     setActivePreviewTitle('');
