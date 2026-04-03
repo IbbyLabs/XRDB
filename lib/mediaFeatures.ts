@@ -2,6 +2,7 @@ import { buildTmdbProviderLogoUrl } from './imageRouteSourceUrls.ts';
 
 export type MediaFeatureBadgeKey =
   | 'certification'
+  | 'releasestatus'
   | 'netflix'
   | 'hbo'
   | 'primevideo'
@@ -65,6 +66,11 @@ const MEDIA_FEATURE_META_BY_KEY: Record<MediaFeatureBadgeKey, MediaFeatureBadgeM
     key: 'certification',
     label: '',
     accentColor: '#f5f5f4',
+  },
+  releasestatus: {
+    key: 'releasestatus',
+    label: 'Release Status',
+    accentColor: '#f97316',
   },
   netflix: {
     key: 'netflix',
@@ -139,6 +145,7 @@ const MEDIA_FEATURE_META_BY_KEY: Record<MediaFeatureBadgeKey, MediaFeatureBadgeM
 };
 export const MEDIA_FEATURE_BADGE_ORDER: MediaFeatureBadgeKey[] = [
   'certification',
+  'releasestatus',
   'netflix',
   'hbo',
   'primevideo',
@@ -474,6 +481,57 @@ export const resolveMovieCertificationBadge = (
     const certification = getMovieCertificationCandidates(result)[0];
     if (certification) return certification;
   }
+  return null;
+};
+
+const MOVIE_THEATRICAL_RELEASE_TYPES = new Set([2, 3]);
+const MOVIE_DIGITAL_RELEASE_TYPES = new Set([4]);
+
+const hasMovieReleaseTypeLanded = (
+  releaseDatesPayload: any,
+  releaseTypes: Set<number>,
+  nowMs = Date.now(),
+) => {
+  const results = Array.isArray(releaseDatesPayload?.results) ? releaseDatesPayload.results : [];
+
+  for (const result of results) {
+    const entries = Array.isArray(result?.release_dates) ? result.release_dates : [];
+    for (const entry of entries) {
+      if (!releaseTypes.has(Number(entry?.type))) continue;
+
+      const releaseTimestamp = Date.parse(String(entry?.release_date || ''));
+      if (!Number.isFinite(releaseTimestamp)) {
+        return true;
+      }
+      if (releaseTimestamp <= nowMs) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+};
+
+export const resolveMovieReleaseStatusBadge = (
+  releaseDatesPayload: any,
+  nowMs = Date.now(),
+): MediaFeatureBadgeMeta | null => {
+  if (hasMovieReleaseTypeLanded(releaseDatesPayload, MOVIE_DIGITAL_RELEASE_TYPES, nowMs)) {
+    return {
+      ...MEDIA_FEATURE_META_BY_KEY.releasestatus,
+      label: 'Digital Release',
+      accentColor: '#38bdf8',
+    };
+  }
+
+  if (hasMovieReleaseTypeLanded(releaseDatesPayload, MOVIE_THEATRICAL_RELEASE_TYPES, nowMs)) {
+    return {
+      ...MEDIA_FEATURE_META_BY_KEY.releasestatus,
+      label: 'In Cinemas',
+      accentColor: '#f97316',
+    };
+  }
+
   return null;
 };
 

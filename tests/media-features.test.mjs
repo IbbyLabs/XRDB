@@ -12,6 +12,7 @@ import {
   normalizeUserFacingMediaBadgeLabel,
   parseMediaFeatureFlagsFromFilename,
   resolveMovieCertificationBadge,
+  resolveMovieReleaseStatusBadge,
   resolveTvCertificationBadge,
 } from '../lib/mediaFeatures.ts';
 import {
@@ -172,6 +173,45 @@ test('movie physical media release only counts when a physical date has landed',
 
   assert.equal(beforeRelease, false);
   assert.equal(afterRelease, true);
+});
+
+test('movie release status prefers digital once the digital date has landed', () => {
+  const badge = resolveMovieReleaseStatusBadge(
+    {
+      results: [
+        {
+          iso_3166_1: 'US',
+          release_dates: [
+            { type: 3, release_date: '2026-03-20T00:00:00.000Z' },
+            { type: 4, release_date: '2026-04-10T00:00:00.000Z' },
+          ],
+        },
+      ],
+    },
+    Date.parse('2026-04-12T00:00:00.000Z'),
+  );
+
+  assert.equal(badge?.key, 'releasestatus');
+  assert.equal(badge?.label, 'Digital Release');
+});
+
+test('movie release status falls back to in cinemas before digital release', () => {
+  const badge = resolveMovieReleaseStatusBadge(
+    {
+      results: [
+        {
+          iso_3166_1: 'US',
+          release_dates: [
+            { type: 3, release_date: '2026-03-20T00:00:00.000Z' },
+            { type: 4, release_date: '2026-04-10T00:00:00.000Z' },
+          ],
+        },
+      ],
+    },
+    Date.parse('2026-03-28T00:00:00.000Z'),
+  );
+
+  assert.equal(badge?.label, 'In Cinemas');
 });
 
 test('tv certification resolution falls back to available regions', () => {

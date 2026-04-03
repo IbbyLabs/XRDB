@@ -29,6 +29,7 @@ import {
   buildCertificationBadgeMeta,
   hasMoviePhysicalMediaRelease,
   resolveMovieCertificationBadge,
+  resolveMovieReleaseStatusBadge,
   resolveTvCertificationBadge,
   MEDIA_FEATURE_BADGE_ORDER,
 } from './mediaFeatures.ts';
@@ -269,6 +270,7 @@ let selectedLogoAspectRatio: number | null = null;
 let selectedPosterLogoPath: string | null = null;
 let selectedPosterIsTextless = false;
 let certificationBadgeLabel: string | null = null;
+let releaseStatusBadge: RatingBadge | null = null;
 let bundledWatchProviderResults: unknown = null;
 let movieHasPhysicalMediaRelease: boolean | null = null;
 const requestedExternalRatings = new Set([...selectedRatings]);
@@ -541,6 +543,17 @@ if (!useRawKitsuFallback && detailsBundlePromise) {
         : mediaType === 'tv'
           ? resolveTvCertificationBadge(bundledCertificationPayload, requestedImageLang)
           : null;
+    const resolvedReleaseStatusBadge =
+      mediaType === 'movie' ? resolveMovieReleaseStatusBadge(bundledCertificationPayload) : null;
+    releaseStatusBadge = resolvedReleaseStatusBadge
+      ? {
+          key: resolvedReleaseStatusBadge.key,
+          label: resolvedReleaseStatusBadge.label,
+          value: '',
+          iconUrl: '',
+          accentColor: resolvedReleaseStatusBadge.accentColor,
+        }
+      : null;
   }
   primaryGenreFamily = resolvePrimaryGenreFamily(
     [
@@ -733,6 +746,9 @@ if (certificationBadgeLabel) {
     },
     ...streamBadges,
   ];
+}
+if (releaseStatusBadge) {
+  streamBadges = [releaseStatusBadge, ...streamBadges];
 }
 if (mediaType === 'movie' && movieHasPhysicalMediaRelease === false) {
   streamBadges = streamBadges.filter((badge) => badge.key !== 'bluray' && badge.key !== 'remux');
