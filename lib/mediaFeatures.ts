@@ -311,7 +311,7 @@ const normalizeNetworkName = (value: unknown) =>
 
 const resolveStreamingProviderBadgeKey = (
   normalizedProviderName: string,
-): MediaFeatureBadgeKey | null => {
+): StreamingServiceBadgeKey | null => {
   if (!normalizedProviderName) return null;
   if (normalizedProviderName.includes('netflix')) return 'netflix';
   if (
