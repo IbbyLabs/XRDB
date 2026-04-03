@@ -214,3 +214,90 @@ test('image route render layout keeps logo ratings on one row in blockbuster mod
 
   assert.equal(layout.logoBadgesPerRow, 5);
 });
+
+test('image route render layout keeps stacked poster badge scale meaningful in dense side layouts', async () => {
+  const displayRatingBadges = [
+    createBadge('imdb', '7.5'),
+    createBadge('tmdb', '8.0'),
+    createBadge('tomatoes', '91'),
+    createBadge('metacritic', '68'),
+    createBadge('letterboxd', '4.1'),
+    createBadge('trakt', '7.9'),
+    createBadge('simkl', '8.2'),
+    createBadge('allocine', '4.2'),
+    createBadge('allocinepress', '3.9'),
+    createBadge('mdblist', '82'),
+  ];
+  const lowScaleLayout = await resolveImageRouteRenderLayout({
+    imageType: 'poster',
+    isThumbnailRequest: false,
+    ratingPresentation: 'standard',
+    outputWidth: 300,
+    outputHeight: 450,
+    overlayAutoScale: 1,
+    displayRatingBadges,
+    streamBadges: [],
+    effectivePosterRatingsLayout: 'left-right',
+    effectivePosterRatingsMaxPerSide: null,
+    effectiveBackdropRatingsLayout: 'top',
+    backdropBottomRatingsRow: false,
+    logoBottomRatingsRow: false,
+    posterRatingBadgeScale: 70,
+    backdropRatingBadgeScale: 100,
+    logoRatingBadgeScale: 100,
+    posterQualityBadgeScale: 100,
+    backdropQualityBadgeScale: 100,
+    ratingStyle: 'stacked',
+    qualityBadgesMax: null,
+    mediaType: 'movie',
+    media: { id: 1 },
+    tmdbKey: 'tmdb-key',
+    requestedImageLang: 'en',
+    phases: { ...phases },
+    fetchJsonCached: async () => {
+      throw new Error('unexpected fetch');
+    },
+  });
+  const highScaleLayout = await resolveImageRouteRenderLayout({
+    imageType: 'poster',
+    isThumbnailRequest: false,
+    ratingPresentation: 'standard',
+    outputWidth: 300,
+    outputHeight: 450,
+    overlayAutoScale: 1,
+    displayRatingBadges,
+    streamBadges: [],
+    effectivePosterRatingsLayout: 'left-right',
+    effectivePosterRatingsMaxPerSide: null,
+    effectiveBackdropRatingsLayout: 'top',
+    backdropBottomRatingsRow: false,
+    logoBottomRatingsRow: false,
+    posterRatingBadgeScale: 130,
+    backdropRatingBadgeScale: 100,
+    logoRatingBadgeScale: 100,
+    posterQualityBadgeScale: 100,
+    backdropQualityBadgeScale: 100,
+    ratingStyle: 'stacked',
+    qualityBadgesMax: null,
+    mediaType: 'movie',
+    media: { id: 1 },
+    tmdbKey: 'tmdb-key',
+    requestedImageLang: 'en',
+    phases: { ...phases },
+    fetchJsonCached: async () => {
+      throw new Error('unexpected fetch');
+    },
+  });
+
+  const lowScaleVisibleBadgeCount =
+    lowScaleLayout.topRatingBadges.length +
+    lowScaleLayout.leftRatingBadges.length +
+    lowScaleLayout.rightRatingBadges.length;
+  const highScaleVisibleBadgeCount =
+    highScaleLayout.topRatingBadges.length +
+    highScaleLayout.leftRatingBadges.length +
+    highScaleLayout.rightRatingBadges.length;
+
+  assert.ok(highScaleLayout.badgeIconSize > lowScaleLayout.badgeIconSize);
+  assert.ok(highScaleVisibleBadgeCount < lowScaleVisibleBadgeCount);
+});
