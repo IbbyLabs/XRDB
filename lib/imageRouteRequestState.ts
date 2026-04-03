@@ -23,9 +23,11 @@ import {
 import {
   DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
   DEFAULT_AGGREGATE_ACCENT_MODE,
+  DEFAULT_AGGREGATE_DYNAMIC_STOPS,
   DEFAULT_AGGREGATE_RATING_SOURCE,
   DEFAULT_RATING_PRESENTATION,
   normalizeAggregateAccentBarOffset,
+  normalizeAggregateDynamicStops,
   normalizeAggregateAccentMode,
   normalizeAggregateRatingSource,
   normalizeRatingPresentation,
@@ -280,6 +282,7 @@ export type ImageRouteRequestState = {
   aggregateAccentColor: string | null;
   aggregateCriticsAccentColor: string | null;
   aggregateAudienceAccentColor: string | null;
+  aggregateDynamicStops: string;
   aggregateAccentBarOffset: number;
   aggregateAccentBarVisible: boolean;
   blockbusterDensity: BlockbusterDensity;
@@ -571,6 +574,10 @@ export const resolveImageRouteRequestState = async ({
     normalizeHexColor(searchParams.get('aggregateCriticsAccentColor')) || null;
   const aggregateAudienceAccentColor =
     normalizeHexColor(searchParams.get('aggregateAudienceAccentColor')) || null;
+  const aggregateDynamicStops = normalizeAggregateDynamicStops(
+    searchParams.get('aggregateDynamicStops'),
+    DEFAULT_AGGREGATE_DYNAMIC_STOPS,
+  );
   const aggregateAccentBarOffset = normalizeAggregateAccentBarOffset(
     searchParams.get('aggregateAccentBarOffset'),
     DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
@@ -1176,6 +1183,7 @@ export const resolveImageRouteRequestState = async ({
     aggregateAccentColor,
     aggregateCriticsAccentColor,
     aggregateAudienceAccentColor,
+    aggregateDynamicStops,
     aggregateAccentBarOffset,
     aggregateAccentBarVisible,
     artworkSelectionSeed,
@@ -1287,6 +1295,7 @@ export const resolveImageRouteRequestState = async ({
     aggregateAccentColor,
     aggregateCriticsAccentColor,
     aggregateAudienceAccentColor,
+    aggregateDynamicStops,
     aggregateAccentBarOffset,
     aggregateAccentBarVisible,
     blockbusterDensity,

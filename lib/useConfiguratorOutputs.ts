@@ -17,6 +17,7 @@ import {
   DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
   DEFAULT_AGGREGATE_ACCENT_COLOR,
   DEFAULT_AGGREGATE_ACCENT_MODE,
+  DEFAULT_AGGREGATE_DYNAMIC_STOPS,
   DEFAULT_AGGREGATE_RATING_SOURCE,
   DEFAULT_RATING_PRESENTATION,
   usesAggregateAccentBar,
@@ -219,6 +220,7 @@ export function useConfiguratorOutputs({
   aggregateAccentMode,
   aggregateAudienceAccentColor,
   aggregateCriticsAccentColor,
+  aggregateDynamicStops,
   backdropAggregateRatingSource,
   backdropArtworkSource,
   backdropGenreBadgeAnimeGrouping,
@@ -351,6 +353,7 @@ export function useConfiguratorOutputs({
   aggregateAccentMode: AggregateAccentMode;
   aggregateAudienceAccentColor: string;
   aggregateCriticsAccentColor: string;
+  aggregateDynamicStops: string;
   backdropAggregateRatingSource: AggregateRatingSource;
   backdropArtworkSource: ArtworkSource;
   backdropGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
@@ -679,6 +682,13 @@ export function useConfiguratorOutputs({
       query.set('aggregateAudienceAccentColor', aggregateAudienceAccentColor);
     }
     if (
+      usesAggregateRatingPresentation(ratingPresentationForType) &&
+      (aggregateAccentMode === 'dynamic' ||
+        aggregateDynamicStops !== DEFAULT_AGGREGATE_DYNAMIC_STOPS)
+    ) {
+      query.set('aggregateDynamicStops', aggregateDynamicStops);
+    }
+    if (
       usesAggregateAccentBar(ratingPresentationForType) &&
       aggregateAccentBarOffset !== DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET
     ) {
@@ -949,6 +959,7 @@ export function useConfiguratorOutputs({
     aggregateAccentMode,
     aggregateAudienceAccentColor,
     aggregateCriticsAccentColor,
+    aggregateDynamicStops,
     backdropAggregateRatingSource,
     backdropArtworkSource,
     backdropImageSize,

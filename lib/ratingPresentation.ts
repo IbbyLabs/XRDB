@@ -13,12 +13,18 @@ export type RatingPresentation =
   | 'blockbuster'
   | 'none';
 export type AggregateRatingSource = 'overall' | 'critics' | 'audience';
-export type AggregateAccentMode = 'source' | 'genre' | 'custom';
+export type AggregateAccentMode = 'source' | 'genre' | 'custom' | 'dynamic';
+export type AggregateDynamicStop = {
+  threshold: number;
+  color: string;
+};
 
 export const DEFAULT_RATING_PRESENTATION: RatingPresentation = 'standard';
 export const DEFAULT_AGGREGATE_RATING_SOURCE: AggregateRatingSource = 'overall';
 export const DEFAULT_AGGREGATE_ACCENT_MODE: AggregateAccentMode = 'source';
 export const DEFAULT_AGGREGATE_ACCENT_COLOR = '#a78bfa';
+export const DEFAULT_AGGREGATE_DYNAMIC_STOPS =
+  '0:#7f1d1d,40:#dc2626,60:#f59e0b,75:#84cc16,85:#16a34a';
 export const DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET = 0;
 export const MIN_AGGREGATE_ACCENT_BAR_OFFSET = -12;
 export const MAX_AGGREGATE_ACCENT_BAR_OFFSET = 12;
@@ -122,6 +128,11 @@ export const AGGREGATE_ACCENT_MODE_OPTIONS: Array<{
     label: 'Custom',
     description: 'Use a custom accent colour for aggregate badges and overlays.',
   },
+  {
+    id: 'dynamic',
+    label: 'Dynamic',
+    description: 'Map aggregate score ranges to configurable colours.',
+  },
 ];
 
 const CRITICS_RATING_PROVIDERS = new Set<RatingPreference>([
@@ -199,10 +210,86 @@ export const normalizeAggregateAccentMode = (
   fallback: AggregateAccentMode = DEFAULT_AGGREGATE_ACCENT_MODE,
 ): AggregateAccentMode => {
   const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
-  if (normalized === 'source' || normalized === 'genre' || normalized === 'custom') {
+  if (
+    normalized === 'source' ||
+    normalized === 'genre' ||
+    normalized === 'custom' ||
+    normalized === 'dynamic'
+  ) {
     return normalized;
   }
   return fallback;
+};
+
+const AGGREGATE_DYNAMIC_STOP_TOKEN_PATTERN = /^(-?\d+(?:\.\d+)?)\s*:\s*(#[0-9a-fA-F]{6})$/;
+
+const parseAggregateDynamicStopsInternal = (value: unknown): AggregateDynamicStop[] => {
+  if (typeof value !== 'string') return [];
+  const tokens = value
+    .split(',')
+    .map((token) => token.trim())
+    .filter((token) => token.length > 0);
+  if (tokens.length === 0) return [];
+  const stopMap = new Map<number, string>();
+  for (const token of tokens) {
+    const match = token.match(AGGREGATE_DYNAMIC_STOP_TOKEN_PATTERN);
+    if (!match) continue;
+    const numericThreshold = Number.parseFloat(match[1]);
+    if (!Number.isFinite(numericThreshold)) continue;
+    const threshold = Math.max(0, Math.min(100, Math.round(numericThreshold)));
+    const color = match[2].toLowerCase();
+    stopMap.set(threshold, color);
+  }
+  return [...stopMap.entries()]
+    .sort((left, right) => left[0] - right[0])
+    .map(([threshold, color]) => ({ threshold, color }));
+};
+
+const stringifyAggregateDynamicStops = (stops: AggregateDynamicStop[]) =>
+  stops.map((stop) => `${stop.threshold}:${stop.color}`).join(',');
+
+export const normalizeAggregateDynamicStops = (
+  value: unknown,
+  fallback: string = DEFAULT_AGGREGATE_DYNAMIC_STOPS,
+) => {
+  const parsed = parseAggregateDynamicStopsInternal(value);
+  if (parsed.length > 0) {
+    return stringifyAggregateDynamicStops(parsed);
+  }
+  const fallbackParsed = parseAggregateDynamicStopsInternal(fallback);
+  if (fallbackParsed.length > 0) {
+    return stringifyAggregateDynamicStops(fallbackParsed);
+  }
+  return DEFAULT_AGGREGATE_DYNAMIC_STOPS;
+};
+
+export const parseAggregateDynamicStops = (
+  value: unknown,
+  fallback: string = DEFAULT_AGGREGATE_DYNAMIC_STOPS,
+): AggregateDynamicStop[] =>
+  parseAggregateDynamicStopsInternal(
+    normalizeAggregateDynamicStops(value, fallback),
+  );
+
+export const resolveAggregateDynamicAccentColor = (
+  scorePercent: number,
+  stops: AggregateDynamicStop[],
+) => {
+  if (!Array.isArray(stops) || stops.length === 0) {
+    return '#22c55e';
+  }
+  const normalizedScore = Number.isFinite(scorePercent)
+    ? Math.max(0, Math.min(100, scorePercent))
+    : 0;
+  let resolvedColor = stops[0].color;
+  for (const stop of stops) {
+    if (normalizedScore >= stop.threshold) {
+      resolvedColor = stop.color;
+      continue;
+    }
+    break;
+  }
+  return resolvedColor;
 };
 
 export const normalizeAggregateAccentBarOffset = (

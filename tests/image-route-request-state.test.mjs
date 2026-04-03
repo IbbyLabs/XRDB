@@ -167,3 +167,16 @@ test('image route request state parses random poster filter controls', async () 
   assert.equal(state.randomPosterMinHeight, 1500);
   assert.equal(state.randomPosterFallbackMode, 'original');
 });
+
+test('image route request state normalizes dynamic aggregate accent stops', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&aggregateAccentMode=dynamic&aggregateDynamicStops=85:%2316A34A,0:%237f1d1d,60:%23f59e0b',
+    ),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(state.aggregateAccentMode, 'dynamic');
+  assert.equal(state.aggregateDynamicStops, '0:#7f1d1d,60:#f59e0b,85:#16a34a');
+});

@@ -33,6 +33,7 @@ const SHARED_IMAGE_QUERY_KEYS = [
   'aggregateAccentColor',
   'aggregateCriticsAccentColor',
   'aggregateAudienceAccentColor',
+  'aggregateDynamicStops',
   'aggregateAccentBarOffset',
   'aggregateAccentBarVisible',
   'ratingXOffsetPillGlass',
@@ -226,6 +227,7 @@ export type ProxyConfig = {
   aggregateAccentColor?: string;
   aggregateCriticsAccentColor?: string;
   aggregateAudienceAccentColor?: string;
+  aggregateDynamicStops?: string;
   aggregateAccentBarOffset?: string;
   aggregateAccentBarVisible?: string;
   ratingXOffsetPillGlass?: string;
@@ -385,6 +387,7 @@ const CONFIG_STRING_KEYS = [
   'aggregateAccentColor',
   'aggregateCriticsAccentColor',
   'aggregateAudienceAccentColor',
+  'aggregateDynamicStops',
   'aggregateAccentBarOffset',
   'aggregateAccentBarVisible',
   'ratingXOffsetPillGlass',

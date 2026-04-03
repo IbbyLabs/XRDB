@@ -19,6 +19,7 @@ import {
 } from '@/lib/posterLayoutOptions';
 import {
   AGGREGATE_RATING_SOURCE_ACCENTS,
+  parseAggregateDynamicStops,
   preservesSelectedRatingLayout,
   RATING_PRESENTATION_OPTIONS,
   usesCompactRingPresentation,
@@ -123,6 +124,7 @@ export function useConfiguratorWorkspaceSummary({
   aggregateAccentMode,
   aggregateAudienceAccentColor,
   aggregateCriticsAccentColor,
+  aggregateDynamicStops,
   backdropRatingPresentation,
   backdropRatingStyle,
   logoRatingPresentation,
@@ -135,6 +137,7 @@ export function useConfiguratorWorkspaceSummary({
   aggregateAccentMode: AggregateAccentMode;
   aggregateAudienceAccentColor: string;
   aggregateCriticsAccentColor: string;
+  aggregateDynamicStops: string;
   backdropAggregateRatingSource: AggregateRatingSource;
   backdropArtworkSource: ArtworkSource;
   backdropArtworkSourceOptions: Array<{ id: ArtworkSource; label: string; description: string }>;
@@ -234,8 +237,13 @@ export function useConfiguratorWorkspaceSummary({
         : logoAggregateRatingSource;
   const usesAggregatePresentation = usesAggregateRatingPresentation(activeRatingPresentation);
   const isCompactRingPresentation = usesCompactRingPresentation(activeRatingPresentation);
+  const dynamicAccentPreviewColor =
+    parseAggregateDynamicStops(aggregateDynamicStops).at(-1)?.color ||
+    AGGREGATE_RATING_SOURCE_ACCENTS[activeAggregateRatingSource];
   const activeAggregateAccent =
-    aggregateAccentMode === 'custom'
+    aggregateAccentMode === 'dynamic'
+      ? dynamicAccentPreviewColor
+      : aggregateAccentMode === 'custom'
       ? usesDualAggregateRatingPresentation(activeRatingPresentation)
         ? aggregateCriticsAccentColor
         : aggregateAccentColor

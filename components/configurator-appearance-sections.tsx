@@ -9,8 +9,10 @@ import {
 import {
   AGGREGATE_ACCENT_MODE_OPTIONS,
   AGGREGATE_RATING_SOURCE_ACCENTS,
+  DEFAULT_AGGREGATE_DYNAMIC_STOPS,
   AGGREGATE_RATING_SOURCE_OPTIONS,
   RATING_PRESENTATION_OPTIONS,
+  normalizeAggregateDynamicStops,
   usesDualAggregateRatingPresentation,
   type AggregateAccentMode,
   type AggregateRatingSource,
@@ -201,6 +203,7 @@ export function PresentationSection({
   aggregateAccentColor,
   aggregateCriticsAccentColor,
   aggregateAudienceAccentColor,
+  aggregateDynamicStops,
   aggregateAccentBarVisible,
   aggregateAccentBarOffset,
   onSelectRatingPresentation,
@@ -211,6 +214,7 @@ export function PresentationSection({
   onSelectAggregateAccentColor,
   onSelectAggregateCriticsAccentColor,
   onSelectAggregateAudienceAccentColor,
+  onSelectAggregateDynamicStops,
   onToggleAggregateAccentBarVisible,
   onSelectAggregateAccentBarOffset,
 }: {
@@ -233,6 +237,7 @@ export function PresentationSection({
   aggregateAccentColor: string;
   aggregateCriticsAccentColor: string;
   aggregateAudienceAccentColor: string;
+  aggregateDynamicStops: string;
   aggregateAccentBarVisible: boolean;
   aggregateAccentBarOffset: number;
   onSelectRatingPresentation: (value: RatingPresentation) => void;
@@ -243,6 +248,7 @@ export function PresentationSection({
   onSelectAggregateAccentColor: (value: string) => void;
   onSelectAggregateCriticsAccentColor: (value: string) => void;
   onSelectAggregateAudienceAccentColor: (value: string) => void;
+  onSelectAggregateDynamicStops: (value: string) => void;
   onToggleAggregateAccentBarVisible: () => void;
   onSelectAggregateAccentBarOffset: (value: number) => void;
 }) {
@@ -461,6 +467,37 @@ export function PresentationSection({
                   />
                 </>
               ) : null}
+            </div>
+          ) : null}
+          {aggregateAccentMode === 'dynamic' ? (
+            <div className="space-y-2 pt-1">
+              <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block">
+                Dynamic Stops
+              </label>
+              <input
+                type="text"
+                value={aggregateDynamicStops}
+                onChange={(event) => onSelectAggregateDynamicStops(event.target.value)}
+                onBlur={(event) =>
+                  onSelectAggregateDynamicStops(
+                    normalizeAggregateDynamicStops(event.target.value, DEFAULT_AGGREGATE_DYNAMIC_STOPS),
+                  )
+                }
+                placeholder={DEFAULT_AGGREGATE_DYNAMIC_STOPS}
+                className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none"
+              />
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => onSelectAggregateDynamicStops(DEFAULT_AGGREGATE_DYNAMIC_STOPS)}
+                  className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800"
+                >
+                  Reset Stops
+                </button>
+              </div>
+              <p className="text-[11px] leading-relaxed text-zinc-500">
+                Use comma-separated threshold and colour pairs like 0:#7f1d1d,40:#dc2626,60:#f59e0b,75:#84cc16,85:#16a34a.
+              </p>
             </div>
           ) : null}
           {showsAggregateAccentBarOffset ? (

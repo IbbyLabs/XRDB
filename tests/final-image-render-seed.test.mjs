@@ -40,6 +40,7 @@ const createInput = (overrides = {}) => ({
   posterRingProgressSource: 'tmdb',
   blockbusterDensity: 'balanced',
   aggregateRatingSource: 'combined',
+  aggregateDynamicStops: '0:#7f1d1d,40:#dc2626,60:#f59e0b,75:#84cc16,85:#16a34a',
   ratingStyle: 'stacked',
   ratingStackOffsetX: 0,
   ratingStackOffsetY: 0,
@@ -220,6 +221,36 @@ test('final image render seed changes when active style stack offsets change', (
   );
 
   assert.notEqual(baseKey, changedKey);
+});
+
+test('final image render seed scopes dynamic aggregate stops to dynamic accent mode', () => {
+  const baseDynamicKey = buildFinalImageRenderSeedKey(
+    createInput({
+      aggregateAccentMode: 'dynamic',
+      aggregateDynamicStops: '0:#111111,80:#ffffff',
+    }),
+  );
+  const changedDynamicKey = buildFinalImageRenderSeedKey(
+    createInput({
+      aggregateAccentMode: 'dynamic',
+      aggregateDynamicStops: '0:#111111,90:#ffffff',
+    }),
+  );
+  const baseSourceKey = buildFinalImageRenderSeedKey(
+    createInput({
+      aggregateAccentMode: 'source',
+      aggregateDynamicStops: '0:#111111,80:#ffffff',
+    }),
+  );
+  const changedSourceKey = buildFinalImageRenderSeedKey(
+    createInput({
+      aggregateAccentMode: 'source',
+      aggregateDynamicStops: '0:#111111,90:#ffffff',
+    }),
+  );
+
+  assert.notEqual(baseDynamicKey, changedDynamicKey);
+  assert.equal(baseSourceKey, changedSourceKey);
 });
 
 test('final image render seed ignores style stack offsets for non glass and non square styles', () => {

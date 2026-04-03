@@ -24,9 +24,11 @@ import {
   DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
   DEFAULT_AGGREGATE_ACCENT_COLOR,
   DEFAULT_AGGREGATE_ACCENT_MODE,
+  DEFAULT_AGGREGATE_DYNAMIC_STOPS,
   DEFAULT_AGGREGATE_RATING_SOURCE,
   DEFAULT_RATING_PRESENTATION,
   normalizeAggregateAccentBarOffset,
+  normalizeAggregateDynamicStops,
   normalizeAggregateAccentMode,
   normalizeAggregateRatingSource,
   normalizeRatingPresentation,
@@ -239,6 +241,7 @@ export type SharedXrdbSettings = {
   aggregateAccentColor: string;
   aggregateCriticsAccentColor: string;
   aggregateAudienceAccentColor: string;
+  aggregateDynamicStops: string;
   aggregateAccentBarOffset: number;
   aggregateAccentBarVisible: boolean;
   ratingXOffsetPillGlass: number;
@@ -461,6 +464,7 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   aggregateAccentColor: DEFAULT_AGGREGATE_ACCENT_COLOR,
   aggregateCriticsAccentColor: AGGREGATE_RATING_SOURCE_ACCENTS.critics,
   aggregateAudienceAccentColor: AGGREGATE_RATING_SOURCE_ACCENTS.audience,
+  aggregateDynamicStops: DEFAULT_AGGREGATE_DYNAMIC_STOPS,
   aggregateAccentBarOffset: DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
   aggregateAccentBarVisible: true,
   ratingXOffsetPillGlass: DEFAULT_RATING_STACK_OFFSET_PX,
@@ -1218,6 +1222,10 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
       normalizeHexColor(candidate.aggregateAudienceAccentColor) ||
       normalizeHexColor(candidate.compactAudienceAccentColor) ||
       defaults.aggregateAudienceAccentColor,
+    aggregateDynamicStops: normalizeAggregateDynamicStops(
+      candidate.aggregateDynamicStops,
+      defaults.aggregateDynamicStops,
+    ),
     aggregateAccentBarOffset: normalizeAggregateAccentBarOffset(
       candidate.aggregateAccentBarOffset,
       defaults.aggregateAccentBarOffset,
@@ -1764,6 +1772,12 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
     settings.aggregateAudienceAccentColor !== AGGREGATE_RATING_SOURCE_ACCENTS.audience
   ) {
     payload.aggregateAudienceAccentColor = settings.aggregateAudienceAccentColor;
+  }
+  if (
+    settings.aggregateAccentMode === 'dynamic' ||
+    settings.aggregateDynamicStops !== DEFAULT_AGGREGATE_DYNAMIC_STOPS
+  ) {
+    payload.aggregateDynamicStops = settings.aggregateDynamicStops;
   }
   if (settings.aggregateAccentBarOffset !== DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET) {
     payload.aggregateAccentBarOffset = settings.aggregateAccentBarOffset;

@@ -52,6 +52,7 @@ type FinalImageRenderSeedInput = {
   aggregateAccentColor: string | null;
   aggregateCriticsAccentColor: string | null;
   aggregateAudienceAccentColor: string | null;
+  aggregateDynamicStops: string;
   aggregateAccentBarOffset: number;
   aggregateAccentBarVisible: boolean;
   artworkSelectionSeed: string;
@@ -155,6 +156,7 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.aggregateAccentColor || '-',
     input.aggregateCriticsAccentColor || '-',
     input.aggregateAudienceAccentColor || '-',
+    input.aggregateAccentMode === 'dynamic' ? input.aggregateDynamicStops : '-',
     String(input.aggregateAccentBarOffset),
     input.aggregateAccentBarVisible ? 'on' : 'off',
     input.artworkSelectionSeed || '-',
@@ -181,6 +183,6 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
       : '-',
     input.sourceFallbackKey || '-',
     input.renderCacheBuster || '-',
-    'v10',
+    'v11',
   ].join('|');
 };
