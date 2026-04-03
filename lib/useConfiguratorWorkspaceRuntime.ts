@@ -104,7 +104,7 @@ import { useConfiguratorWorkspaceSummary } from '@/lib/useConfiguratorWorkspaceS
 import { useConfiguratorWorkspaceUi } from '@/lib/useConfiguratorWorkspaceUi';
 import { enabledOrderedToRows } from '@/lib/ratingProviderRows';
 import {
-  MEDIA_TARGET_SAMPLE_IDS,
+  pickShuffledMediaTarget,
   type MediaSearchItem,
 } from '@/lib/configuratorMediaSearch';
 
@@ -655,15 +655,17 @@ export function useConfiguratorWorkspaceRuntime() {
   };
 
   const handleShuffleMediaTarget = () => {
-    const samples = MEDIA_TARGET_SAMPLE_IDS[previewType];
-    if (!samples || samples.length === 0) {
+    const nextSample = pickShuffledMediaTarget({
+      previewType,
+      currentMediaId: mediaId,
+    });
+    if (!nextSample) {
       return;
     }
 
     mediaSearchAbortControllerRef.current?.abort();
     setMediaSearchLoading(false);
-    const randomIndex = Math.floor(Math.random() * samples.length);
-    setMediaId(samples[randomIndex]);
+    setMediaId(nextSample);
     setActivePreviewTitle('Sample target');
     setMediaSearchError('');
     setMediaSearchResults([]);
