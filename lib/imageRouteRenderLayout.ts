@@ -319,16 +319,6 @@ export const resolveImageRouteRenderLayout = async (input: {
         false,
         ratingStyle,
       );
-      fittedPosterMetrics = fitBadgeMetricsToHeight(
-        posterColumns,
-        outputHeight,
-        fittedPosterMetrics,
-        badgeTopOffset,
-        badgeBottomOffset,
-        posterMinMetrics,
-        reservedTopRows,
-        ratingStyle,
-      );
       const maxPerColumn = getMaxBadgeColumnCount(
         outputHeight,
         fittedPosterMetrics,
@@ -353,6 +343,23 @@ export const resolveImageRouteRenderLayout = async (input: {
       bottomRatingBadges = posterBadgeGroups.bottomBadges;
       leftRatingBadges = posterBadgeGroups.leftBadges;
       rightRatingBadges = posterBadgeGroups.rightBadges;
+      const constrainedLeftColumn = useThreeBadgeTopRow ? leftRatingBadges.slice(1) : leftRatingBadges;
+      const constrainedRightColumn = useThreeBadgeTopRow ? rightRatingBadges.slice(1) : rightRatingBadges;
+      const constrainedPosterColumns = [constrainedLeftColumn, constrainedRightColumn].filter(
+        (column) => column.length > 0,
+      );
+      const constrainedReservedTopRows =
+        effectivePosterRatingsLayout === 'left-right' && topRatingBadges.length > 0 ? 1 : 0;
+      fittedPosterMetrics = fitBadgeMetricsToHeight(
+        constrainedPosterColumns,
+        outputHeight,
+        fittedPosterMetrics,
+        badgeTopOffset,
+        badgeBottomOffset,
+        posterMinMetrics,
+        constrainedReservedTopRows,
+        ratingStyle,
+      );
       cappedRatingBadges = [...topRatingBadges, ...leftRatingBadges, ...rightRatingBadges];
     } else {
       const posterRowFitWidth = usePosterRowLayout
