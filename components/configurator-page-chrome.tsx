@@ -8,8 +8,6 @@ import type { RecentCommit } from '@/lib/recentCommits';
 import {
   BRAND_DISPLAY_NAME,
   BRAND_FULL_NAME,
-  BRAND_DISCORD_AIO_LABEL,
-  BRAND_DISCORD_AIO_URL,
   BRAND_DISCORD_DM_HANDLE,
   BRAND_DISCORD_DM_URL,
   BRAND_DISCORD_OFFICIAL_LABEL,
@@ -181,18 +179,13 @@ export function ConfiguratorHero({
             <div className="site-discord-callout">
               <p className="site-discord-callout-title">Need help with XRDB, ratings, or proxy setup?</p>
               <p className="site-discord-callout-copy">
-                Join the XRDB communities for help with rendering issues, badges, language settings, or addon setup. The AIOStreams channel is useful for shared troubleshooting, and the official XRDB server is the main project home.
+                Join the official AIOMetadata Discord for help with rendering issues, badges, language settings, and addon setup.
               </p>
               <div className="site-discord-callout-actions">
                 <DiscordPill
-                  href={BRAND_DISCORD_AIO_URL}
-                  label={BRAND_DISCORD_AIO_LABEL}
-                  title="Open the XRDB channel in the AIOStreams Discord"
-                />
-                <DiscordPill
                   href={BRAND_DISCORD_OFFICIAL_URL}
                   label={BRAND_DISCORD_OFFICIAL_LABEL}
-                  title="Open the official XRDB Discord"
+                  title="Open the official AIOMetadata Discord"
                 />
               </div>
               <span className="site-discord-fallback">

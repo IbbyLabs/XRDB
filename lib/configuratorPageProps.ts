@@ -175,6 +175,7 @@ export function buildConfiguratorPageProps({
       workspaceManagementProps: {
         workspaceImportInputRef: workspaceStorage.workspaceImportInputRef,
         onImportWorkspace: workspaceStorage.handleImportWorkspace,
+        onImportWorkspaceLink: workspaceStorage.handleImportWorkspaceLink,
         onSaveWorkspace: workspaceStorage.handleSaveWorkspaceConfig,
         onDownloadWorkspace: workspaceStorage.handleDownloadWorkspace,
         onPromptWorkspaceImport: workspaceStorage.handlePromptWorkspaceImport,
