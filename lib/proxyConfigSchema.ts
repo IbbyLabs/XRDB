@@ -35,6 +35,10 @@ const SHARED_IMAGE_QUERY_KEYS = [
   'aggregateAudienceAccentColor',
   'aggregateAccentBarOffset',
   'aggregateAccentBarVisible',
+  'ratingXOffsetPillGlass',
+  'ratingYOffsetPillGlass',
+  'ratingXOffsetSquare',
+  'ratingYOffsetSquare',
   'posterRatingsLayout',
   'posterRatingsMax',
   'posterRatingsMaxPerSide',
@@ -215,6 +219,10 @@ export type ProxyConfig = {
   aggregateAudienceAccentColor?: string;
   aggregateAccentBarOffset?: string;
   aggregateAccentBarVisible?: string;
+  ratingXOffsetPillGlass?: string;
+  ratingYOffsetPillGlass?: string;
+  ratingXOffsetSquare?: string;
+  ratingYOffsetSquare?: string;
   posterQualityBadges?: string;
   posterQualityBadgesStyle?: string;
   posterQualityBadgeScale?: string;
@@ -361,6 +369,10 @@ const CONFIG_STRING_KEYS = [
   'aggregateAudienceAccentColor',
   'aggregateAccentBarOffset',
   'aggregateAccentBarVisible',
+  'ratingXOffsetPillGlass',
+  'ratingYOffsetPillGlass',
+  'ratingXOffsetSquare',
+  'ratingYOffsetSquare',
   'posterQualityBadges',
   'posterQualityBadgesStyle',
   'posterQualityBadgeScale',

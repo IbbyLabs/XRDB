@@ -124,6 +124,10 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   proxyTranslateMeta: WorkspaceProxy['translateMeta'];
   proxyTranslateMetaMode: MetadataTranslationMode;
   qualityBadgesSide: WorkspaceSettings['qualityBadgesSide'];
+  ratingXOffsetPillGlass: WorkspaceSettings['ratingXOffsetPillGlass'];
+  ratingYOffsetPillGlass: WorkspaceSettings['ratingYOffsetPillGlass'];
+  ratingXOffsetSquare: WorkspaceSettings['ratingXOffsetSquare'];
+  ratingYOffsetSquare: WorkspaceSettings['ratingYOffsetSquare'];
   ratingProviderAppearanceOverrides: WorkspaceSettings['ratingProviderAppearanceOverrides'];
   ratingValueMode: WorkspaceSettings['ratingValueMode'];
   setAggregateAccentBarOffset: Setter<WorkspaceSettings['aggregateAccentBarOffset']>;
@@ -232,6 +236,10 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setProxyTranslateMeta: Setter<WorkspaceProxy['translateMeta']>;
   setProxyTranslateMetaMode: Setter<MetadataTranslationMode>;
   setQualityBadgesSide: Setter<WorkspaceSettings['qualityBadgesSide']>;
+  setRatingXOffsetPillGlass: Setter<WorkspaceSettings['ratingXOffsetPillGlass']>;
+  setRatingYOffsetPillGlass: Setter<WorkspaceSettings['ratingYOffsetPillGlass']>;
+  setRatingXOffsetSquare: Setter<WorkspaceSettings['ratingXOffsetSquare']>;
+  setRatingYOffsetSquare: Setter<WorkspaceSettings['ratingYOffsetSquare']>;
   setRatingProviderAppearanceOverrides: Setter<WorkspaceSettings['ratingProviderAppearanceOverrides']>;
   setRatingValueMode: Setter<WorkspaceSettings['ratingValueMode']>;
   setSimklClientId: Setter<WorkspaceSettings['simklClientId']>;
@@ -356,6 +364,10 @@ export function useConfiguratorWorkspaceConfigIo({
   proxyTranslateMeta,
   proxyTranslateMetaMode,
   qualityBadgesSide,
+  ratingXOffsetPillGlass,
+  ratingYOffsetPillGlass,
+  ratingXOffsetSquare,
+  ratingYOffsetSquare,
   ratingProviderAppearanceOverrides,
   ratingValueMode,
   setAggregateAccentBarOffset,
@@ -464,6 +476,10 @@ export function useConfiguratorWorkspaceConfigIo({
   setProxyTranslateMeta,
   setProxyTranslateMetaMode,
   setQualityBadgesSide,
+  setRatingXOffsetPillGlass,
+  setRatingYOffsetPillGlass,
+  setRatingXOffsetSquare,
+  setRatingYOffsetSquare,
   setRatingProviderAppearanceOverrides,
   setRatingValueMode,
   setSimklClientId,
@@ -581,6 +597,10 @@ export function useConfiguratorWorkspaceConfigIo({
       setAggregateAudienceAccentColor(normalized.settings.aggregateAudienceAccentColor);
       setAggregateAccentBarOffset(normalized.settings.aggregateAccentBarOffset);
       setAggregateAccentBarVisible(normalized.settings.aggregateAccentBarVisible);
+      setRatingXOffsetPillGlass(normalized.settings.ratingXOffsetPillGlass);
+      setRatingYOffsetPillGlass(normalized.settings.ratingYOffsetPillGlass);
+      setRatingXOffsetSquare(normalized.settings.ratingXOffsetSquare);
+      setRatingYOffsetSquare(normalized.settings.ratingYOffsetSquare);
       setPosterRatingsMaxPerSide(normalized.settings.posterRatingsMaxPerSide);
       setLogoRatingsMax(normalized.settings.logoRatingsMax);
       setLogoBackground(normalized.settings.logoBackground);
@@ -702,6 +722,10 @@ export function useConfiguratorWorkspaceConfigIo({
       setProxyTranslateMeta,
       setProxyTranslateMetaMode,
       setQualityBadgesSide,
+      setRatingXOffsetPillGlass,
+      setRatingYOffsetPillGlass,
+      setRatingXOffsetSquare,
+      setRatingYOffsetSquare,
       setRatingProviderAppearanceOverrides,
       setRatingValueMode,
       setSimklClientId,
@@ -819,6 +843,10 @@ export function useConfiguratorWorkspaceConfigIo({
         aggregateAudienceAccentColor,
         aggregateAccentBarOffset,
         aggregateAccentBarVisible,
+        ratingXOffsetPillGlass,
+        ratingYOffsetPillGlass,
+        ratingXOffsetSquare,
+        ratingYOffsetSquare,
         posterRatingsMaxPerSide,
         logoRatingsMax,
         logoBackground,
@@ -943,6 +971,10 @@ export function useConfiguratorWorkspaceConfigIo({
       proxyTranslateMeta,
       proxyTranslateMetaMode,
       qualityBadgesSide,
+      ratingXOffsetPillGlass,
+      ratingYOffsetPillGlass,
+      ratingXOffsetSquare,
+      ratingYOffsetSquare,
       ratingProviderAppearanceOverrides,
       ratingValueMode,
       simklClientId,

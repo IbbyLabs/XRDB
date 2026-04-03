@@ -388,6 +388,8 @@ export const executeImageRouteRender = async ({
           sideRatingsPosition: requestState.sideRatingsPosition,
           sideRatingsOffset: requestState.sideRatingsOffset,
           ratingStyle: requestState.ratingStyle,
+          ratingStackOffsetX: requestState.ratingStackOffsetX,
+          ratingStackOffsetY: requestState.ratingStackOffsetY,
           logoBackground: requestState.logoBackground,
           topBadges: renderLayout.topRatingBadges,
           bottomBadges: renderLayout.bottomRatingBadges,

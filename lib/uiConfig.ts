@@ -91,6 +91,10 @@ import {
   type SideRatingPosition,
 } from './sideRatingPosition.ts';
 import {
+  DEFAULT_RATING_STACK_OFFSET_PX,
+  normalizeRatingStackOffsetPx,
+} from './ratingStackOffset.ts';
+import {
   DEFAULT_POSTER_EDGE_OFFSET,
   normalizePosterEdgeOffset,
 } from './posterEdgeOffset.ts';
@@ -222,6 +226,10 @@ export type SharedXrdbSettings = {
   aggregateAudienceAccentColor: string;
   aggregateAccentBarOffset: number;
   aggregateAccentBarVisible: boolean;
+  ratingXOffsetPillGlass: number;
+  ratingYOffsetPillGlass: number;
+  ratingXOffsetSquare: number;
+  ratingYOffsetSquare: number;
   posterRatingsMaxPerSide: number | null;
   posterEdgeOffset: number;
   posterSideRatingsPosition: SideRatingPosition;
@@ -394,6 +402,10 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   aggregateAudienceAccentColor: AGGREGATE_RATING_SOURCE_ACCENTS.audience,
   aggregateAccentBarOffset: DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
   aggregateAccentBarVisible: true,
+  ratingXOffsetPillGlass: DEFAULT_RATING_STACK_OFFSET_PX,
+  ratingYOffsetPillGlass: DEFAULT_RATING_STACK_OFFSET_PX,
+  ratingXOffsetSquare: DEFAULT_RATING_STACK_OFFSET_PX,
+  ratingYOffsetSquare: DEFAULT_RATING_STACK_OFFSET_PX,
   posterRatingsMaxPerSide: DEFAULT_POSTER_RATINGS_MAX_PER_SIDE,
   posterEdgeOffset: DEFAULT_POSTER_EDGE_OFFSET,
   posterSideRatingsPosition: DEFAULT_SIDE_RATING_POSITION,
@@ -1044,6 +1056,22 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
       candidate.aggregateAccentBarVisible ?? candidate.aggregateAccentVisible ?? candidate.compactAccentLineVisible,
       defaults.aggregateAccentBarVisible,
     ),
+    ratingXOffsetPillGlass: normalizeRatingStackOffsetPx(
+      candidate.ratingXOffsetPillGlass ?? candidate.ratingXOffsetGlass,
+      defaults.ratingXOffsetPillGlass,
+    ),
+    ratingYOffsetPillGlass: normalizeRatingStackOffsetPx(
+      candidate.ratingYOffsetPillGlass ?? candidate.ratingYOffsetGlass,
+      defaults.ratingYOffsetPillGlass,
+    ),
+    ratingXOffsetSquare: normalizeRatingStackOffsetPx(
+      candidate.ratingXOffsetSquare,
+      defaults.ratingXOffsetSquare,
+    ),
+    ratingYOffsetSquare: normalizeRatingStackOffsetPx(
+      candidate.ratingYOffsetSquare,
+      defaults.ratingYOffsetSquare,
+    ),
     logoRatingStyle:
       candidate.logoRatingStyle === 'glass' ||
       candidate.logoRatingStyle === 'plain' ||
@@ -1546,6 +1574,18 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   }
   if (settings.aggregateAccentBarVisible !== true) {
     payload.aggregateAccentBarVisible = false;
+  }
+  if (settings.ratingXOffsetPillGlass !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.ratingXOffsetPillGlass = settings.ratingXOffsetPillGlass;
+  }
+  if (settings.ratingYOffsetPillGlass !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.ratingYOffsetPillGlass = settings.ratingYOffsetPillGlass;
+  }
+  if (settings.ratingXOffsetSquare !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.ratingXOffsetSquare = settings.ratingXOffsetSquare;
+  }
+  if (settings.ratingYOffsetSquare !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.ratingYOffsetSquare = settings.ratingYOffsetSquare;
   }
 
   if (

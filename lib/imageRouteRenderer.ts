@@ -170,6 +170,8 @@ export type FastRenderInput = {
   sideRatingsPosition: SideRatingPosition;
   sideRatingsOffset: number;
   ratingStyle: RatingStyle;
+  ratingStackOffsetX: number;
+  ratingStackOffsetY: number;
   logoBackground: LogoBackground;
   topBadges: RatingBadge[];
   bottomBadges: RatingBadge[];
@@ -279,6 +281,11 @@ export const renderWithSharp = async (
       paddingY: input.badgePaddingY,
       gap: input.badgeGap,
     };
+    const shouldApplyRatingStackOffset =
+      (input.ratingStyle === 'glass' || input.ratingStyle === 'square') &&
+      (input.ratingStackOffsetX !== 0 || input.ratingStackOffsetY !== 0);
+    const clamp = (value: number, min: number, max: number) =>
+      Math.max(min, Math.min(max, value));
     const badgeBaseHeight = input.badgeIconSize + input.badgePaddingY * 2;
     const ratingBadgeHeight = getBadgeHeightFromMetrics(sideColumnMetrics, input.ratingStyle);
     const overlayAutoScale = resolveOverlayAutoScale({
@@ -529,8 +536,23 @@ export const renderWithSharp = async (
         return;
       }
 
-      overlays.push({ input: Buffer.from(badgeSvg), top: rowY, left: rowX });
-      trackGenreCollisionRect(rowX, rowY, badgeWidth, ratingBadgeHeight);
+      const translatedLeft = shouldApplyRatingStackOffset
+        ? clamp(
+            rowX + input.ratingStackOffsetX,
+            0,
+            Math.max(0, input.outputWidth - badgeWidth),
+          )
+        : rowX;
+      const translatedTop = shouldApplyRatingStackOffset
+        ? clamp(
+            rowY + input.ratingStackOffsetY,
+            0,
+            Math.max(0, input.finalOutputHeight - ratingBadgeHeight),
+          )
+        : rowY;
+
+      overlays.push({ input: Buffer.from(badgeSvg), top: translatedTop, left: translatedLeft });
+      trackGenreCollisionRect(translatedLeft, translatedTop, badgeWidth, ratingBadgeHeight);
     };
     const appendQualityBadgeOverlays = (
       qualityBadgeOverlays: ReturnType<typeof buildQualityBadgeRowOverlays>

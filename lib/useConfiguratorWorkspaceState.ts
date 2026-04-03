@@ -26,6 +26,7 @@ import {
   type GenreBadgeStyle,
 } from '@/lib/genreBadge';
 import { DEFAULT_POSTER_EDGE_OFFSET } from '@/lib/posterEdgeOffset';
+import { DEFAULT_RATING_STACK_OFFSET_PX } from '@/lib/ratingStackOffset';
 import { buildDefaultRatingRows, enabledOrderedToRows, rowsToEnabledOrdered, type RatingProviderRow } from '@/lib/ratingProviderRows';
 import {
   AGGREGATE_RATING_SOURCE_ACCENTS,
@@ -168,6 +169,10 @@ export function useConfiguratorWorkspaceState() {
   const [aggregateAudienceAccentColor, setAggregateAudienceAccentColor] = useState<string>(AGGREGATE_RATING_SOURCE_ACCENTS.audience);
   const [aggregateAccentBarOffset, setAggregateAccentBarOffset] = useState<number>(DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET);
   const [aggregateAccentBarVisible, setAggregateAccentBarVisible] = useState(true);
+  const [ratingXOffsetPillGlass, setRatingXOffsetPillGlass] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
+  const [ratingYOffsetPillGlass, setRatingYOffsetPillGlass] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
+  const [ratingXOffsetSquare, setRatingXOffsetSquare] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
+  const [ratingYOffsetSquare, setRatingYOffsetSquare] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
   const [posterRatingsMaxPerSide, setPosterRatingsMaxPerSide] = useState<number | null>(DEFAULT_POSTER_RATINGS_MAX_PER_SIDE);
   const [logoRatingsMax, setLogoRatingsMax] = useState<number | null>(null);
   const [logoBackground, setLogoBackground] = useState<LogoBackground>('transparent');
@@ -324,6 +329,10 @@ export function useConfiguratorWorkspaceState() {
     proxyTranslateMeta,
     proxyTranslateMetaMode,
     qualityBadgesSide,
+    ratingXOffsetPillGlass,
+    ratingYOffsetPillGlass,
+    ratingXOffsetSquare,
+    ratingYOffsetSquare,
     ratingProviderAppearanceOverrides,
     ratingValueMode,
     selectedPresetId,
@@ -441,6 +450,10 @@ export function useConfiguratorWorkspaceState() {
     setProxyTranslateMeta,
     setProxyTranslateMetaMode,
     setQualityBadgesSide,
+    setRatingXOffsetPillGlass,
+    setRatingYOffsetPillGlass,
+    setRatingXOffsetSquare,
+    setRatingYOffsetSquare,
     setRatingProviderAppearanceOverrides,
     setRatingValueMode,
     setSelectedPresetId,
