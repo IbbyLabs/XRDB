@@ -195,8 +195,35 @@ export const mapOmdbSearchResultsForPreviewType = ({
 };
 
 export const MEDIA_TARGET_SAMPLE_IDS: Record<MediaSearchPreviewType, string[]> = {
-  poster: ['tt0133093', 'tmdb:movie:27205', 'tmdb:movie:603', 'tmdb:movie:157336'],
+  poster: ['tt0133093', 'tmdb:movie:27205', 'tmdb:movie:157336', 'tmdb:movie:335787'],
   backdrop: ['tmdb:tv:1399', 'tmdb:movie:299534', 'tmdb:movie:603'],
   thumbnail: ['tt0944947:1:1', 'tmdb:tv:1399:1:1', 'tmdb:tv:1396:1:1'],
   logo: ['tmdb:movie:603', 'tmdb:tv:1399', 'tmdb:movie:299534'],
+};
+
+export const pickShuffledMediaTarget = ({
+  previewType,
+  currentMediaId,
+  randomValue = Math.random(),
+}: {
+  previewType: MediaSearchPreviewType;
+  currentMediaId: string;
+  randomValue?: number;
+}) => {
+  const samples = MEDIA_TARGET_SAMPLE_IDS[previewType];
+  if (!samples || samples.length === 0) {
+    return '';
+  }
+
+  const normalizedCurrent = String(currentMediaId || '').trim().toLowerCase();
+  const alternateSamples = samples.filter(
+    (sample) => sample.trim().toLowerCase() !== normalizedCurrent,
+  );
+  const candidateSamples = alternateSamples.length > 0 ? alternateSamples : samples;
+  const boundedRandom =
+    Number.isFinite(randomValue) && randomValue >= 0 && randomValue < 1
+      ? randomValue
+      : Math.random();
+  const randomIndex = Math.floor(boundedRandom * candidateSamples.length);
+  return candidateSamples[randomIndex] || candidateSamples[0] || '';
 };

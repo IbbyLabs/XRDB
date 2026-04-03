@@ -7,6 +7,7 @@ import {
   buildTmdbMultiSearchUrl,
   mapOmdbSearchResultsForPreviewType,
   mapTmdbSearchResultsForPreviewType,
+  pickShuffledMediaTarget,
 } from '../lib/configuratorMediaSearch.ts';
 
 test('buildMediaIdForPreviewType returns typed tmdb IDs for poster and backdrop', () => {
@@ -78,4 +79,31 @@ test('mapOmdbSearchResultsForPreviewType maps fallback items and filters thumbna
   assert.equal(posterMapped[0].subtitle, 'Movie · 2022 · IMDb');
   assert.equal(thumbnailMapped.length, 1);
   assert.equal(thumbnailMapped[0].mediaId, 'imdb:tt1234567:1:1');
+});
+
+test('pickShuffledMediaTarget avoids returning the current media target when alternatives exist', () => {
+  const nextPoster = pickShuffledMediaTarget({
+    previewType: 'poster',
+    currentMediaId: 'tt0133093',
+    randomValue: 0,
+  });
+  const nextLogo = pickShuffledMediaTarget({
+    previewType: 'logo',
+    currentMediaId: 'tmdb:movie:603',
+    randomValue: 0.95,
+  });
+
+  assert.notEqual(nextPoster, 'tt0133093');
+  assert.notEqual(nextLogo, 'tmdb:movie:603');
+});
+
+test('pickShuffledMediaTarget returns a fallback value when current target is empty', () => {
+  const nextBackdrop = pickShuffledMediaTarget({
+    previewType: 'backdrop',
+    currentMediaId: '',
+    randomValue: 0.5,
+  });
+
+  assert.equal(typeof nextBackdrop, 'string');
+  assert.ok(nextBackdrop.length > 0);
 });
