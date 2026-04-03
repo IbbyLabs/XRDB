@@ -53,6 +53,7 @@ export type ImageRouteRenderLayout = {
   badgeGap: number;
   badgeTopOffset: number;
   badgeBottomOffset: number;
+  backdropEdgeInset: number;
   posterRowHorizontalInset: number;
   qualityBadges: RatingBadge[];
   effectiveQualityBadgeScalePercent: number;
@@ -67,6 +68,7 @@ export type ImageRouteRenderLayout = {
 
 export const resolveImageRouteRenderLayout = async (input: {
   imageType: 'poster' | 'backdrop' | 'logo';
+  isThumbnailRequest: boolean;
   ratingPresentation: RatingPresentation;
   outputWidth: number;
   outputHeight: number;
@@ -94,6 +96,7 @@ export const resolveImageRouteRenderLayout = async (input: {
 }): Promise<ImageRouteRenderLayout> => {
   const {
     imageType,
+    isThumbnailRequest,
     ratingPresentation,
     outputWidth,
     outputHeight,
@@ -193,6 +196,7 @@ export const resolveImageRouteRenderLayout = async (input: {
   let badgeGap = 10;
   let badgeTopOffset = 16;
   let badgeBottomOffset = 16;
+  let backdropEdgeInset = 12;
   let posterMinMetrics: BadgeLayoutMetrics = DEFAULT_BADGE_MIN_METRICS;
   let posterRowHorizontalInset = 12;
 
@@ -202,8 +206,9 @@ export const resolveImageRouteRenderLayout = async (input: {
     badgePaddingY = 8;
     badgePaddingX = 12;
     badgeGap = 8;
-    badgeTopOffset = 20;
-    badgeBottomOffset = 20;
+    badgeTopOffset = isThumbnailRequest ? 28 : 20;
+    badgeBottomOffset = isThumbnailRequest ? 28 : 20;
+    backdropEdgeInset = isThumbnailRequest ? 24 : 12;
   } else if (usePosterBadgeLayout) {
     if (usePosterRowLayoutLarge) {
       badgeIconSize = 46;
@@ -237,6 +242,7 @@ export const resolveImageRouteRenderLayout = async (input: {
 
   badgeTopOffset = Math.max(12, Math.round(badgeTopOffset * overlayAutoScale));
   badgeBottomOffset = Math.max(12, Math.round(badgeBottomOffset * overlayAutoScale));
+  backdropEdgeInset = Math.max(12, Math.round(backdropEdgeInset * overlayAutoScale));
   posterRowHorizontalInset = Math.max(12, Math.round(posterRowHorizontalInset * overlayAutoScale));
   posterMinMetrics = scaleBadgeMetrics(posterMinMetrics, 100, overlayAutoScale);
 
@@ -549,6 +555,7 @@ export const resolveImageRouteRenderLayout = async (input: {
     badgeGap,
     badgeTopOffset,
     badgeBottomOffset,
+    backdropEdgeInset,
     posterRowHorizontalInset,
     qualityBadges,
     effectiveQualityBadgeScalePercent,

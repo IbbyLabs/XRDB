@@ -296,6 +296,7 @@ export const executeImageRouteRender = async ({
 
       const renderLayout = await resolveImageRouteRenderLayout({
         imageType: requestState.imageType,
+        isThumbnailRequest: requestState.isThumbnailRequest,
         ratingPresentation: requestState.ratingPresentation,
         outputWidth,
         outputHeight,
@@ -372,6 +373,7 @@ export const executeImageRouteRender = async ({
           badgeGap: renderLayout.badgeGap,
           badgeTopOffset: renderLayout.badgeTopOffset,
           badgeBottomOffset: renderLayout.badgeBottomOffset,
+          backdropEdgeInset: renderLayout.backdropEdgeInset,
           badges: renderLayout.cappedRatingBadges,
           qualityBadges: renderLayout.qualityBadges,
           qualityBadgesSide: requestState.qualityBadgesSide,
