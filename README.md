@@ -516,6 +516,23 @@ POSTER NOTE: `posterArtworkSource` supports `tmdb`, `fanart`, `cinemeta`, `omdb`
 BACKDROP NOTE: `backdropArtworkSource` supports `tmdb`, `fanart`, `cinemeta`, and `random`. Fanart uses fanart.tv moviebackground or showbackground art when a fanart key is available, Cinemeta uses MetaHub when an IMDb id is available, and random picks a seeded source across the available backdrop candidates.
 LOGO NOTE: `logoArtworkSource` supports `tmdb`, `fanart`, `cinemeta`, and `random`. Fanart uses fanart.tv HD or clear logo assets when a fanart key is available, Cinemeta uses MetaHub when an IMDb id is available, and random picks a seeded source across the available logo candidates.
 THUMBNAIL NOTE: Episode thumbnails use `/thumbnail/{id}/S{season}E{episode}.jpg`, default to `thumbnailRatings=tmdb,imdb`, accept base ids such as plain IMDb, `xrdbid`, `tvdb`, `kitsu`, `anilist`, `mal`, and `anidb`, and use dedicated thumbnail scoped controls such as `thumbnailRatingStyle`, `thumbnailImageText`, `thumbnailArtworkSource`, `thumbnailEpisodeArtwork`, `thumbnailRatingsLayout`, `thumbnailBottomRatingsRow`, `thumbnailRatingBadgeScale`, `thumbnailQualityBadgesStyle`, `thumbnailQualityBadgesMax`, `thumbnailQualityBadgeScale`, `thumbnailSideRatingsPosition`, and `thumbnailSideRatingsOffset`.
+THUMBNAIL PREVIEW NOTE: The Configurator Essentials panel now exposes explicit `Series ID`, `Season`, and `Episode` controls whenever preview type is `thumbnail`. These controls always build a valid episode target and keep preview routing aligned with `/thumbnail/{id}/S{season}E{episode}.jpg`.
+THUMBNAIL PARSING NOTE: Standard inputs parse as `{baseId}:{season}:{episode}` with the final two numeric segments mapped to season and episode. Kitsu also supports `{kitsuId}:{episode}` shorthand and treats it as season `1`.
+
+EPISODE THUMBNAIL CAPABILITY MATRIX
+| Area | Current behavior |
+| --- | --- |
+| Preview route | `/thumbnail/{id}/S{season}E{episode}.jpg` |
+| Default rating providers | `thumbnailRatings=tmdb,imdb` |
+| Accepted base ID families | IMDb, `xrdbid`, `tvdb`, `tmdb:tv`, `kitsu`, `anilist`, `mal`, `anidb` |
+| Configurator target controls | Dedicated thumbnail `Series ID`, `Season`, `Episode` fields in Essentials |
+| Artwork source control | `thumbnailArtworkSource` per type |
+| Episode image mode | `thumbnailEpisodeArtwork=still|series` |
+| Layout controls | `thumbnailRatingsLayout`, `thumbnailBottomRatingsRow`, `thumbnailRatingsMax`, `thumbnailSideRatingsPosition`, `thumbnailSideRatingsOffset` |
+| Badge sizing controls | `thumbnailRatingBadgeScale`, `thumbnailQualityBadgeScale`, `thumbnailGenreBadgeScale` |
+| Export patterns | AIOMetadata export always emits thumbnail scoped route + params |
+| Proxy behavior | Proxy image URLs for episodic items resolve through the same thumbnail route and respect thumbnail scoped settings |
+
 BOTTOM ROW NOTE: `backdropBottomRatingsRow=true`, `thumbnailBottomRatingsRow=true`, and `logoBottomRatingsRow=true` collapse those badges into one Bottom Row. The backdrop and thumbnail Bottom Row options intentionally override side stack layout and side offset settings.
 ALLOCINE NOTE: `allocine` and `allocinepress` provide AlloCiné audience and press scores on their native `/5` scale unless you normalize them through `ratingValueMode`.
 FUTURE NOTE: season aware fanart support is a good next step for TV because fanart.tv exposes seasonposter and seasonthumb assets.

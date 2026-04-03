@@ -57,7 +57,11 @@ import {
   type StreamBadgesSetting,
   type TmdbIdScopeMode,
 } from '@/lib/uiConfig';
-import { buildEpisodeToken, DEFAULT_EPISODE_ID_MODE, type EpisodeIdMode } from '@/lib/episodeIdentity';
+import {
+  DEFAULT_EPISODE_ID_MODE,
+  parseEpisodePreviewMediaTarget,
+  type EpisodeIdMode,
+} from '@/lib/episodeIdentity';
 import { isVerticalPosterRatingLayout, type PosterRatingLayout } from '@/lib/posterLayoutOptions';
 import { type BackdropRatingLayout } from '@/lib/backdropLayoutOptions';
 import { DEFAULT_POSTER_EDGE_OFFSET } from '@/lib/posterEdgeOffset';
@@ -221,19 +225,6 @@ const buildGenreSamplePreviewUrl = ({
   }
 
   return `${normalizedBaseUrl}/${sample.previewType}/${encodeURIComponent(sample.mediaId)}.jpg?${query.toString()}`;
-};
-
-const parseEpisodePreviewMediaTarget = (value: string) => {
-  const match = /^(.*?):(\d+):(\d+)$/.exec(value.trim());
-  if (!match) {
-    return null;
-  }
-  const [, id, season, episode] = match;
-  const episodeToken = buildEpisodeToken(Number(season), Number(episode));
-  if (!id || !episodeToken) {
-    return null;
-  }
-  return { id, episodeToken };
 };
 
 export function useConfiguratorOutputs({
@@ -993,7 +984,7 @@ export function useConfiguratorOutputs({
     }
 
     if (previewType === 'thumbnail' && thumbnailTarget) {
-      return `${baseUrl}/thumbnail/${encodeURIComponent(thumbnailTarget.id)}/${thumbnailTarget.episodeToken}.jpg?${query.toString()}`;
+      return `${baseUrl}/thumbnail/${encodeURIComponent(thumbnailTarget.mediaId)}/${thumbnailTarget.episodeToken}.jpg?${query.toString()}`;
     }
     return `${baseUrl}/${previewType}/${normalizedMediaId}.jpg?${query.toString()}`;
   }, [

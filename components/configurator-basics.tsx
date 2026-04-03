@@ -3,6 +3,10 @@
 import type { ChangeEvent, RefObject } from 'react';
 import { ChevronRight, Globe2, Image as ImageIcon, Layers, MonitorPlay, Search, Shuffle } from 'lucide-react';
 import type { MediaSearchItem } from '@/lib/configuratorMediaSearch';
+import {
+  buildEpisodePreviewMediaTarget,
+  parseEpisodePreviewMediaTarget,
+} from '@/lib/episodeIdentity';
 
 import type {
   ConfiguratorExperienceMode,
@@ -460,6 +464,32 @@ export function MediaTargetSection({
   onShuffleMediaTarget: () => void;
 }) {
   const activeGuide = PREVIEW_GUIDE[previewType];
+  const thumbnailTarget =
+    previewType === 'thumbnail' ? parseEpisodePreviewMediaTarget(mediaId) : null;
+  const thumbnailBaseId = thumbnailTarget ? thumbnailTarget.mediaId : mediaId.trim();
+  const thumbnailSeason = thumbnailTarget ? String(thumbnailTarget.seasonNumber) : '1';
+  const thumbnailEpisode = thumbnailTarget ? String(thumbnailTarget.episodeNumber) : '1';
+
+  const applyThumbnailTarget = ({
+    nextBaseId,
+    nextSeason,
+    nextEpisode,
+  }: {
+    nextBaseId: string;
+    nextSeason: string | number;
+    nextEpisode: string | number;
+  }) => {
+    const nextMediaId = buildEpisodePreviewMediaTarget({
+      mediaId: nextBaseId,
+      seasonNumber: nextSeason,
+      episodeNumber: nextEpisode,
+    });
+    if (nextMediaId) {
+      onMediaIdChange(nextMediaId);
+      return;
+    }
+    onMediaIdChange(nextBaseId);
+  };
 
   return (
     <div>
@@ -509,6 +539,62 @@ export function MediaTargetSection({
           </div>
         )}
       </div>
+      {previewType === 'thumbnail' ? (
+        <div className="mt-3 rounded-xl border border-white/10 bg-black/30 p-3">
+          <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr),120px,120px]">
+            <div>
+              <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Series ID</span>
+              <input
+                type="text"
+                value={thumbnailBaseId}
+                onChange={(event) =>
+                  applyThumbnailTarget({
+                    nextBaseId: event.target.value,
+                    nextSeason: thumbnailSeason,
+                    nextEpisode: thumbnailEpisode,
+                  })}
+                placeholder="tmdb:tv:1399"
+                className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-white outline-none focus:border-violet-500/50"
+              />
+            </div>
+            <div>
+              <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Season</span>
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={thumbnailSeason}
+                onChange={(event) =>
+                  applyThumbnailTarget({
+                    nextBaseId: thumbnailBaseId,
+                    nextSeason: event.target.value,
+                    nextEpisode: thumbnailEpisode,
+                  })}
+                className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-white outline-none focus:border-violet-500/50"
+              />
+            </div>
+            <div>
+              <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Episode</span>
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={thumbnailEpisode}
+                onChange={(event) =>
+                  applyThumbnailTarget({
+                    nextBaseId: thumbnailBaseId,
+                    nextSeason: thumbnailSeason,
+                    nextEpisode: event.target.value,
+                  })}
+                className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-white outline-none focus:border-violet-500/50"
+              />
+            </div>
+          </div>
+          <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+            Use TMDB TV, IMDb, TVDB, XRDBID, AniList, MAL, AniDB, or Kitsu series IDs here. The preview route stays `/thumbnail/{'{id}'}/S{'{season}'}E{'{episode}'}.jpg`.
+          </p>
+        </div>
+      ) : null}
       <div className="mt-3 rounded-xl border border-white/10 bg-black/30 p-3">
         <div className="flex flex-wrap items-end gap-2">
           <div className="min-w-[160px] flex-1">
