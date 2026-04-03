@@ -24,8 +24,8 @@ test('mapTmdbSearchResultsForPreviewType keeps only tv results for thumbnail pre
   const mapped = mapTmdbSearchResultsForPreviewType({
     previewType: 'thumbnail',
     results: [
-      { id: 603, media_type: 'movie', title: 'The Matrix', release_date: '1999-03-30' },
-      { id: 1399, media_type: 'tv', name: 'Game of Thrones', first_air_date: '2011-04-17' },
+      { id: 603, media_type: 'movie', title: 'The Matrix', release_date: '1999-03-30', poster_path: '/matrix.jpg' },
+      { id: 1399, media_type: 'tv', name: 'Game of Thrones', first_air_date: '2011-04-17', poster_path: '/got.jpg' },
     ],
   });
 
@@ -34,6 +34,7 @@ test('mapTmdbSearchResultsForPreviewType keeps only tv results for thumbnail pre
   assert.equal(mapped[0].title, 'Game of Thrones');
   assert.equal(mapped[0].subtitle, 'Series · 2011 · TMDB');
   assert.equal(mapped[0].source, 'tmdb');
+  assert.equal(mapped[0].posterUrl, 'https://image.tmdb.org/t/p/w154/got.jpg');
 });
 
 test('buildTmdbMultiSearchUrl keeps the /3 path segment', () => {
@@ -62,14 +63,14 @@ test('mapOmdbSearchResultsForPreviewType maps fallback items and filters thumbna
     previewType: 'poster',
     results: [
       { Title: 'Uncharted', Year: '2022', imdbID: 'tt1464335', Type: 'movie' },
-      { Title: 'Uncharted World', Year: '2024', imdbID: 'tt1234567', Type: 'series' },
+      { Title: 'Uncharted World', Year: '2024', imdbID: 'tt1234567', Type: 'series', Poster: 'https://m.media-amazon.com/images/test.jpg' },
     ],
   });
   const thumbnailMapped = mapOmdbSearchResultsForPreviewType({
     previewType: 'thumbnail',
     results: [
       { Title: 'Uncharted', Year: '2022', imdbID: 'tt1464335', Type: 'movie' },
-      { Title: 'Uncharted World', Year: '2024', imdbID: 'tt1234567', Type: 'series' },
+      { Title: 'Uncharted World', Year: '2024', imdbID: 'tt1234567', Type: 'series', Poster: 'https://m.media-amazon.com/images/test.jpg' },
     ],
   });
 
@@ -77,8 +78,10 @@ test('mapOmdbSearchResultsForPreviewType maps fallback items and filters thumbna
   assert.equal(posterMapped[0].mediaId, 'imdb:tt1464335');
   assert.equal(posterMapped[0].source, 'imdb');
   assert.equal(posterMapped[0].subtitle, 'Movie · 2022 · IMDb');
+  assert.equal(posterMapped[0].posterUrl, '');
   assert.equal(thumbnailMapped.length, 1);
   assert.equal(thumbnailMapped[0].mediaId, 'imdb:tt1234567:1:1');
+  assert.equal(thumbnailMapped[0].posterUrl, 'https://m.media-amazon.com/images/test.jpg');
 });
 
 test('pickShuffledMediaTarget avoids returning the current media target when alternatives exist', () => {

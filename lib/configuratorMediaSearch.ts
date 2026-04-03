@@ -12,6 +12,7 @@ export type MediaSearchItem = {
   year: string;
   subtitle: string;
   mediaId: string;
+  posterUrl?: string;
   tmdbId?: number;
   imdbId?: string;
 };
@@ -46,6 +47,29 @@ const normalizeOmdbType = (value: unknown): OmdbSearchMediaType | null => {
     return normalized as OmdbSearchMediaType;
   }
   return null;
+};
+
+const normalizeTmdbPosterPath = (value: unknown) => {
+  const normalized = String(value || '').trim();
+  return normalized.startsWith('/') ? normalized : '';
+};
+
+const buildTmdbPosterUrl = (posterPath: string, size = 'w154') => {
+  if (!posterPath) return '';
+  return `https://image.tmdb.org/t/p/${size}${posterPath}`;
+};
+
+const normalizeOmdbPosterUrl = (value: unknown) => {
+  const normalized = String(value || '').trim();
+  if (!normalized || normalized.toUpperCase() === 'N/A') {
+    return '';
+  }
+  try {
+    const parsed = new URL(normalized);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.toString() : '';
+  } catch {
+    return '';
+  }
 };
 
 const buildSubtitle = ({
@@ -136,6 +160,7 @@ export const mapTmdbSearchResultsForPreviewType = ({
     const year = normalizeYear(
       mediaType === 'movie' ? result.release_date : result.first_air_date,
     );
+    const posterPath = normalizeTmdbPosterPath(result.poster_path);
 
     mapped.push({
       source: 'tmdb',
@@ -145,6 +170,7 @@ export const mapTmdbSearchResultsForPreviewType = ({
       year,
       subtitle: buildSubtitle({ mediaType, year, source: 'tmdb' }),
       mediaId: buildMediaIdForPreviewType(previewType, mediaType, Math.trunc(tmdbId)),
+      posterUrl: buildTmdbPosterUrl(posterPath),
     });
   }
 
@@ -187,6 +213,7 @@ export const mapOmdbSearchResultsForPreviewType = ({
       year,
       subtitle: buildSubtitle({ mediaType, year, source: 'imdb' }),
       mediaId,
+      posterUrl: normalizeOmdbPosterUrl(result.Poster),
       imdbId,
     });
   }

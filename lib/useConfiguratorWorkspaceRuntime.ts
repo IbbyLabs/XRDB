@@ -131,7 +131,7 @@ type PreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 const DOCS_CAPTURE_ENABLED = process.env.NEXT_PUBLIC_XRDB_ENABLE_DOCS_CAPTURE === 'true';
 const DOCS_CAPTURE_RATING_ROWS = enabledOrderedToRows(['tmdb']);
 const DOCS_CAPTURE_QUALITY_BADGE_PREFERENCES: MediaFeatureBadgeKey[] = [];
-const MEDIA_SEARCH_DEBOUNCE_MS = 280;
+const MEDIA_SEARCH_DEBOUNCE_MS = 140;
 const WORKSPACE_PANEL_IDS = new Set<WorkspacePanelId>([
   'configurator',
   'center-view',
@@ -566,8 +566,8 @@ export function useConfiguratorWorkspaceRuntime() {
     }
 
     const normalizedQuery = String(query || '').trim();
-    if (normalizedQuery.length < 2) {
-      setMediaSearchError(showValidationErrors && normalizedQuery.length > 0 ? 'Enter at least 2 characters to search.' : '');
+    if (!normalizedQuery) {
+      setMediaSearchError(showValidationErrors ? 'Enter a title to search.' : '');
       setMediaSearchResults([]);
       setMediaSearchLoading(false);
       return;
