@@ -116,6 +116,9 @@ export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
 export type PosterImageSize = 'normal' | 'large' | '4k';
 export type BackdropImageSize = PosterImageSize;
+export type RandomPosterTextMode = 'any' | 'text' | 'textless';
+export type RandomPosterLanguageMode = 'any' | 'requested' | 'fallback';
+export type RandomPosterFallbackMode = 'best' | 'original';
 export type PosterImageTextPreference = 'original' | 'clean' | 'alternative' | 'random';
 export type BackdropImageTextPreference = 'original' | 'clean' | 'alternative' | 'random';
 export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta' | 'omdb' | 'random' | 'blackbar';
@@ -144,6 +147,13 @@ export type SharedXrdbSettings = {
   lang: string;
   posterImageSize: PosterImageSize;
   backdropImageSize: BackdropImageSize;
+  randomPosterText: RandomPosterTextMode;
+  randomPosterLanguage: RandomPosterLanguageMode;
+  randomPosterMinVoteCount: number | null;
+  randomPosterMinVoteAverage: number | null;
+  randomPosterMinWidth: number | null;
+  randomPosterMinHeight: number | null;
+  randomPosterFallback: RandomPosterFallbackMode;
   posterImageText: PosterImageTextPreference;
   backdropImageText: BackdropImageTextPreference;
   thumbnailImageText: BackdropImageTextPreference;
@@ -270,6 +280,9 @@ export type SavedProxySettings = {
 const DEFAULT_RATING_PREFERENCES: RatingPreference[] = [...ALL_RATING_PREFERENCES];
 const POSTER_IMAGE_SIZE_SET = new Set<PosterImageSize>(['normal', 'large', '4k']);
 const BACKDROP_IMAGE_SIZE_SET = new Set<BackdropImageSize>(['normal', 'large', '4k']);
+const RANDOM_POSTER_TEXT_MODE_SET = new Set<RandomPosterTextMode>(['any', 'text', 'textless']);
+const RANDOM_POSTER_LANGUAGE_MODE_SET = new Set<RandomPosterLanguageMode>(['any', 'requested', 'fallback']);
+const RANDOM_POSTER_FALLBACK_MODE_SET = new Set<RandomPosterFallbackMode>(['best', 'original']);
 const POSTER_IMAGE_TEXT_PREFERENCE_SET = new Set<PosterImageTextPreference>([
   'original',
   'clean',
@@ -356,6 +369,13 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   lang: 'en',
   posterImageSize: 'normal',
   backdropImageSize: 'normal',
+  randomPosterText: 'any',
+  randomPosterLanguage: 'any',
+  randomPosterMinVoteCount: null,
+  randomPosterMinVoteAverage: null,
+  randomPosterMinWidth: null,
+  randomPosterMinHeight: null,
+  randomPosterFallback: 'best',
   posterImageText: 'clean',
   backdropImageText: 'clean',
   thumbnailImageText: 'clean',
@@ -565,6 +585,63 @@ const normalizeBackdropImageSize = (
   return BACKDROP_IMAGE_SIZE_SET.has(normalized as BackdropImageSize)
     ? (normalized as BackdropImageSize)
     : fallback;
+};
+
+const normalizeRandomPosterTextMode = (
+  value: unknown,
+  fallback: RandomPosterTextMode,
+): RandomPosterTextMode => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (!normalized) return fallback;
+  return RANDOM_POSTER_TEXT_MODE_SET.has(normalized as RandomPosterTextMode)
+    ? (normalized as RandomPosterTextMode)
+    : fallback;
+};
+
+const normalizeRandomPosterLanguageMode = (
+  value: unknown,
+  fallback: RandomPosterLanguageMode,
+): RandomPosterLanguageMode => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (!normalized) return fallback;
+  return RANDOM_POSTER_LANGUAGE_MODE_SET.has(normalized as RandomPosterLanguageMode)
+    ? (normalized as RandomPosterLanguageMode)
+    : fallback;
+};
+
+const normalizeRandomPosterFallbackMode = (
+  value: unknown,
+  fallback: RandomPosterFallbackMode,
+): RandomPosterFallbackMode => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (!normalized) return fallback;
+  return RANDOM_POSTER_FALLBACK_MODE_SET.has(normalized as RandomPosterFallbackMode)
+    ? (normalized as RandomPosterFallbackMode)
+    : fallback;
+};
+
+const normalizeOptionalNonNegativeInt = (value: unknown, fallback: number | null): number | null => {
+  if (value === null || value === undefined || String(value).trim() === '') {
+    return fallback;
+  }
+  const parsed = Number.parseInt(String(value).trim(), 10);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+  return Math.max(0, parsed);
+};
+
+const normalizeOptionalVoteAverage = (value: unknown, fallback: number | null): number | null => {
+  if (value === null || value === undefined || String(value).trim() === '') {
+    return fallback;
+  }
+  const parsed = Number.parseFloat(String(value).trim());
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+  if (parsed < 0) return 0;
+  if (parsed > 10) return 10;
+  return parsed;
 };
 
 type RpdbRatingBarPosition =
@@ -844,6 +921,34 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
     backdropImageSize: normalizeBackdropImageSize(
       candidate.backdropImageSize,
       defaults.backdropImageSize,
+    ),
+    randomPosterText: normalizeRandomPosterTextMode(
+      candidate.randomPosterText,
+      defaults.randomPosterText,
+    ),
+    randomPosterLanguage: normalizeRandomPosterLanguageMode(
+      candidate.randomPosterLanguage,
+      defaults.randomPosterLanguage,
+    ),
+    randomPosterMinVoteCount: normalizeOptionalNonNegativeInt(
+      candidate.randomPosterMinVoteCount,
+      defaults.randomPosterMinVoteCount,
+    ),
+    randomPosterMinVoteAverage: normalizeOptionalVoteAverage(
+      candidate.randomPosterMinVoteAverage,
+      defaults.randomPosterMinVoteAverage,
+    ),
+    randomPosterMinWidth: normalizeOptionalNonNegativeInt(
+      candidate.randomPosterMinWidth,
+      defaults.randomPosterMinWidth,
+    ),
+    randomPosterMinHeight: normalizeOptionalNonNegativeInt(
+      candidate.randomPosterMinHeight,
+      defaults.randomPosterMinHeight,
+    ),
+    randomPosterFallback: normalizeRandomPosterFallbackMode(
+      candidate.randomPosterFallback,
+      defaults.randomPosterFallback,
     ),
     posterImageText,
     backdropImageText,
@@ -1350,6 +1455,27 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   }
   if (settings.backdropImageSize !== 'normal') {
     payload.backdropImageSize = settings.backdropImageSize;
+  }
+  if (settings.randomPosterText !== 'any') {
+    payload.randomPosterText = settings.randomPosterText;
+  }
+  if (settings.randomPosterLanguage !== 'any') {
+    payload.randomPosterLanguage = settings.randomPosterLanguage;
+  }
+  if (settings.randomPosterMinVoteCount !== null) {
+    payload.randomPosterMinVoteCount = settings.randomPosterMinVoteCount;
+  }
+  if (settings.randomPosterMinVoteAverage !== null) {
+    payload.randomPosterMinVoteAverage = settings.randomPosterMinVoteAverage;
+  }
+  if (settings.randomPosterMinWidth !== null) {
+    payload.randomPosterMinWidth = settings.randomPosterMinWidth;
+  }
+  if (settings.randomPosterMinHeight !== null) {
+    payload.randomPosterMinHeight = settings.randomPosterMinHeight;
+  }
+  if (settings.randomPosterFallback !== 'best') {
+    payload.randomPosterFallback = settings.randomPosterFallback;
   }
   if (settings.ratingValueMode !== DEFAULT_RATING_VALUE_MODE) {
     payload.ratingValueMode = settings.ratingValueMode;

@@ -24,6 +24,9 @@ import {
   type EpisodeArtworkMode,
   type PosterImageSize,
   type PosterTextPreference,
+  type RandomPosterFallbackMode,
+  type RandomPosterLanguageMode,
+  type RandomPosterTextMode,
 } from './imageRouteConfig.ts';
 import {
   buildNetworkBadgesFromTvNetworks,
@@ -144,6 +147,13 @@ export const prepareImageRouteMediaState = async (input: {
   requestedImageLang: string;
   includeImageLanguage: string;
   posterTextPreference: PosterTextPreference;
+  randomPosterTextMode: RandomPosterTextMode;
+  randomPosterLanguageMode: RandomPosterLanguageMode;
+  randomPosterMinVoteCount: number | null;
+  randomPosterMinVoteAverage: number | null;
+  randomPosterMinWidth: number | null;
+  randomPosterMinHeight: number | null;
+  randomPosterFallbackMode: RandomPosterFallbackMode;
   posterArtworkSource: ArtworkSource;
   backdropArtworkSource: ArtworkSource;
   logoArtworkSource: ArtworkSource;
@@ -207,6 +217,13 @@ export const prepareImageRouteMediaState = async (input: {
     requestedImageLang,
     includeImageLanguage,
     posterTextPreference,
+    randomPosterTextMode,
+    randomPosterLanguageMode,
+    randomPosterMinVoteCount,
+    randomPosterMinVoteAverage,
+    randomPosterMinWidth,
+    randomPosterMinHeight,
+    randomPosterFallbackMode,
     posterArtworkSource,
     backdropArtworkSource,
     logoArtworkSource,
@@ -610,6 +627,13 @@ if (!useRawKitsuFallback && detailsBundlePromise) {
     requestedImageLang,
     fallbackImageLang: FALLBACK_IMAGE_LANGUAGE,
     posterTextPreference,
+    randomPosterTextMode,
+    randomPosterLanguageMode,
+    randomPosterMinVoteCount,
+    randomPosterMinVoteAverage,
+    randomPosterMinWidth,
+    randomPosterMinHeight,
+    randomPosterFallbackMode,
     posterArtworkSource,
     backdropArtworkSource,
     logoArtworkSource,

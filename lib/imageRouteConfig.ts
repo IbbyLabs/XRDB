@@ -10,6 +10,9 @@ import { resolveTorrentioBaseUrl } from './torrentioUrl.ts';
 export type PosterTextPreference = 'original' | 'clean' | 'alternative' | 'random';
 export type PosterImageSize = 'normal' | 'large' | '4k';
 export type BackdropImageSize = 'normal' | 'large' | '4k';
+export type RandomPosterTextMode = 'any' | 'text' | 'textless';
+export type RandomPosterLanguageMode = 'any' | 'requested' | 'fallback';
+export type RandomPosterFallbackMode = 'best' | 'original';
 export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta' | 'omdb' | 'random' | 'blackbar';
 export type EpisodeArtworkMode = 'still' | 'series';
 export type AnimeMappingProvider = 'mal' | 'anilist' | 'imdb' | 'tmdb' | 'tvdb' | 'anidb';
@@ -46,6 +49,9 @@ const ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta',
 const EPISODE_ARTWORK_MODE_SET = new Set<EpisodeArtworkMode>(['still', 'series']);
 const POSTER_IMAGE_SIZE_SET = new Set<PosterImageSize>(['normal', 'large', '4k']);
 const BACKDROP_IMAGE_SIZE_SET = new Set<BackdropImageSize>(['normal', 'large', '4k']);
+const RANDOM_POSTER_TEXT_MODE_SET = new Set<RandomPosterTextMode>(['any', 'text', 'textless']);
+const RANDOM_POSTER_LANGUAGE_MODE_SET = new Set<RandomPosterLanguageMode>(['any', 'requested', 'fallback']);
+const RANDOM_POSTER_FALLBACK_MODE_SET = new Set<RandomPosterFallbackMode>(['best', 'original']);
 
 export const FALLBACK_IMAGE_LANGUAGE = 'en';
 export const ALLOWED_IMAGE_TYPES = new Set(['poster', 'backdrop', 'logo']);
@@ -55,6 +61,9 @@ export const ANIME_NATIVE_INPUT_ID_PREFIX_SET = new Set(['kitsu', 'mal', 'myanim
 export const FANART_ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['fanart', 'random']);
 export const DEFAULT_POSTER_IMAGE_SIZE: PosterImageSize = 'normal';
 export const DEFAULT_BACKDROP_IMAGE_SIZE: BackdropImageSize = 'normal';
+export const DEFAULT_RANDOM_POSTER_TEXT_MODE: RandomPosterTextMode = 'any';
+export const DEFAULT_RANDOM_POSTER_LANGUAGE_MODE: RandomPosterLanguageMode = 'any';
+export const DEFAULT_RANDOM_POSTER_FALLBACK_MODE: RandomPosterFallbackMode = 'best';
 export const POSTER_IMAGE_DIMENSIONS: Record<PosterImageSize, { width: number; height: number }> = {
   normal: { width: 580, height: 859 },
   large: { width: 1280, height: 1896 },
@@ -167,6 +176,68 @@ export const normalizeBackdropImageSize = (
   return BACKDROP_IMAGE_SIZE_SET.has(normalized as BackdropImageSize)
     ? (normalized as BackdropImageSize)
     : fallback;
+};
+
+export const normalizeRandomPosterTextMode = (
+  value?: string | null,
+  fallback: RandomPosterTextMode = DEFAULT_RANDOM_POSTER_TEXT_MODE,
+): RandomPosterTextMode => {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return fallback;
+  return RANDOM_POSTER_TEXT_MODE_SET.has(normalized as RandomPosterTextMode)
+    ? (normalized as RandomPosterTextMode)
+    : fallback;
+};
+
+export const normalizeRandomPosterLanguageMode = (
+  value?: string | null,
+  fallback: RandomPosterLanguageMode = DEFAULT_RANDOM_POSTER_LANGUAGE_MODE,
+): RandomPosterLanguageMode => {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return fallback;
+  return RANDOM_POSTER_LANGUAGE_MODE_SET.has(normalized as RandomPosterLanguageMode)
+    ? (normalized as RandomPosterLanguageMode)
+    : fallback;
+};
+
+export const normalizeRandomPosterFallbackMode = (
+  value?: string | null,
+  fallback: RandomPosterFallbackMode = DEFAULT_RANDOM_POSTER_FALLBACK_MODE,
+): RandomPosterFallbackMode => {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return fallback;
+  return RANDOM_POSTER_FALLBACK_MODE_SET.has(normalized as RandomPosterFallbackMode)
+    ? (normalized as RandomPosterFallbackMode)
+    : fallback;
+};
+
+export const normalizeRandomPosterMinVoteCount = (
+  value?: string | null,
+): number | null => {
+  if (value === null || value === undefined || String(value).trim() === '') return null;
+  const parsed = Number.parseInt(String(value).trim(), 10);
+  if (!Number.isFinite(parsed)) return null;
+  return Math.max(0, parsed);
+};
+
+export const normalizeRandomPosterMinVoteAverage = (
+  value?: string | null,
+): number | null => {
+  if (value === null || value === undefined || String(value).trim() === '') return null;
+  const parsed = Number.parseFloat(String(value).trim());
+  if (!Number.isFinite(parsed)) return null;
+  if (parsed < 0) return 0;
+  if (parsed > 10) return 10;
+  return parsed;
+};
+
+export const normalizeRandomPosterMinDimension = (
+  value?: string | null,
+): number | null => {
+  if (value === null || value === undefined || String(value).trim() === '') return null;
+  const parsed = Number.parseInt(String(value).trim(), 10);
+  if (!Number.isFinite(parsed)) return null;
+  return Math.max(0, parsed);
 };
 
 export const normalizeRpdbRatingBarPosition = (

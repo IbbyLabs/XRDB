@@ -52,6 +52,71 @@ test('image route selection keeps random picks stable per seed', () => {
   assert.equal(first, second);
 });
 
+test('image route selection applies random poster filters and deterministic fallback rules', () => {
+  const images = [
+    { file_path: '/a', iso_639_1: 'en', vote_average: 8, vote_count: 100, width: 1000, height: 1500 },
+    { file_path: '/b', iso_639_1: null, vote_average: 9, vote_count: 200, width: 1200, height: 1800 },
+    { file_path: '/c', iso_639_1: 'fr', vote_average: 7, vote_count: 400, width: 900, height: 1300 },
+  ];
+
+  const filtered = pickPosterByPreference(
+    images,
+    'random',
+    'en',
+    'fr',
+    '/a',
+    'seed-filtered',
+    {
+      randomPosterTextMode: 'textless',
+      randomPosterLanguageMode: 'any',
+      randomPosterMinVoteCount: null,
+      randomPosterMinVoteAverage: null,
+      randomPosterMinWidth: 1100,
+      randomPosterMinHeight: null,
+      randomPosterFallbackMode: 'best',
+    },
+  );
+  assert.equal(filtered?.file_path, '/b');
+
+  const fallbackOriginal = pickPosterByPreference(
+    images,
+    'random',
+    'en',
+    'fr',
+    '/a',
+    'seed-no-match',
+    {
+      randomPosterTextMode: 'text',
+      randomPosterLanguageMode: 'requested',
+      randomPosterMinVoteCount: 1000,
+      randomPosterMinVoteAverage: 10,
+      randomPosterMinWidth: 5000,
+      randomPosterMinHeight: 5000,
+      randomPosterFallbackMode: 'original',
+    },
+  );
+  assert.equal(fallbackOriginal?.file_path, '/a');
+
+  const fallbackBest = pickPosterByPreference(
+    images,
+    'random',
+    'en',
+    'fr',
+    '/a',
+    'seed-no-match-best',
+    {
+      randomPosterTextMode: 'text',
+      randomPosterLanguageMode: 'requested',
+      randomPosterMinVoteCount: 1000,
+      randomPosterMinVoteAverage: 10,
+      randomPosterMinWidth: 5000,
+      randomPosterMinHeight: 5000,
+      randomPosterFallbackMode: 'best',
+    },
+  );
+  assert.equal(fallbackBest?.file_path, '/b');
+});
+
 test('image route selection ranks fanart assets by language and likes', () => {
   const assets = [
     { url: 'https://img/one', lang: 'fr', likes: '20' },

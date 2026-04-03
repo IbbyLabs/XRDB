@@ -40,6 +40,9 @@ import {
   type PosterImageTextPreference,
   type PosterQualityBadgesPosition,
   type QualityBadgesSide,
+  type RandomPosterFallbackMode,
+  type RandomPosterLanguageMode,
+  type RandomPosterTextMode,
   type SavedUiConfig,
   type StreamBadgesSetting,
   type TmdbIdScopeMode,
@@ -298,6 +301,13 @@ export function useConfiguratorOutputs({
   posterGenreBadgeStyle,
   posterIdMode,
   posterImageSize,
+  randomPosterText,
+  randomPosterLanguage,
+  randomPosterMinVoteCount,
+  randomPosterMinVoteAverage,
+  randomPosterMinWidth,
+  randomPosterMinHeight,
+  randomPosterFallback,
   posterImageText,
   posterQualityBadgePreferences,
   posterQualityBadgeScale,
@@ -423,6 +433,13 @@ export function useConfiguratorOutputs({
   posterGenreBadgeStyle: GenreBadgeStyle;
   posterIdMode: 'auto' | 'tmdb' | 'imdb';
   posterImageSize: PosterImageSize;
+  randomPosterText: RandomPosterTextMode;
+  randomPosterLanguage: RandomPosterLanguageMode;
+  randomPosterMinVoteCount: number | null;
+  randomPosterMinVoteAverage: number | null;
+  randomPosterMinWidth: number | null;
+  randomPosterMinHeight: number | null;
+  randomPosterFallback: RandomPosterFallbackMode;
   posterImageText: PosterImageTextPreference;
   posterQualityBadgePreferences: string[];
   posterQualityBadgeScale: number;
@@ -758,6 +775,27 @@ export function useConfiguratorOutputs({
       if (previewType === 'poster' && posterImageSize !== 'normal') {
         query.set('posterImageSize', posterImageSize);
       }
+      if (previewType === 'poster' && randomPosterText !== 'any') {
+        query.set('randomPosterText', randomPosterText);
+      }
+      if (previewType === 'poster' && randomPosterLanguage !== 'any') {
+        query.set('randomPosterLanguage', randomPosterLanguage);
+      }
+      if (previewType === 'poster' && randomPosterMinVoteCount !== null) {
+        query.set('randomPosterMinVoteCount', String(randomPosterMinVoteCount));
+      }
+      if (previewType === 'poster' && randomPosterMinVoteAverage !== null) {
+        query.set('randomPosterMinVoteAverage', String(randomPosterMinVoteAverage));
+      }
+      if (previewType === 'poster' && randomPosterMinWidth !== null) {
+        query.set('randomPosterMinWidth', String(randomPosterMinWidth));
+      }
+      if (previewType === 'poster' && randomPosterMinHeight !== null) {
+        query.set('randomPosterMinHeight', String(randomPosterMinHeight));
+      }
+      if (previewType === 'poster' && randomPosterFallback !== 'best') {
+        query.set('randomPosterFallback', randomPosterFallback);
+      }
       if (previewType === 'backdrop' && backdropImageSize !== 'normal') {
         query.set('backdropImageSize', backdropImageSize);
       }
@@ -967,6 +1005,13 @@ export function useConfiguratorOutputs({
     posterArtworkSource,
     posterEdgeOffset,
     posterImageSize,
+    randomPosterText,
+    randomPosterLanguage,
+    randomPosterMinVoteCount,
+    randomPosterMinVoteAverage,
+    randomPosterMinWidth,
+    randomPosterMinHeight,
+    randomPosterFallback,
     posterImageText,
     posterQualityBadgePreferences,
     posterQualityBadgeScale,
