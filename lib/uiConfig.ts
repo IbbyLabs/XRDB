@@ -75,6 +75,8 @@ import {
 import {
   DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_BADGE_SCALE_PERCENT,
+  DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR,
+  DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_THUMBNAIL_GENRE_BADGE_BORDER_WIDTH_PX,
@@ -84,6 +86,7 @@ import {
   normalizeGenreBadgeBorderWidthPx,
   normalizeGenreBadgeScalePercent,
   normalizeHexColor,
+  normalizeNoBackgroundBadgeOutlineWidthPx,
   normalizeQualityBadgeScalePercent,
   normalizeQualityBadgePreferencesList,
   normalizeRatingProviderAppearanceOverrides,
@@ -253,6 +256,8 @@ export type SharedXrdbSettings = {
   aggregateDynamicStops: string;
   aggregateAccentBarOffset: number;
   aggregateAccentBarVisible: boolean;
+  posterNoBackgroundBadgeOutlineColor: string;
+  posterNoBackgroundBadgeOutlineWidth: number;
   ratingXOffsetPillGlass: number;
   ratingYOffsetPillGlass: number;
   ratingXOffsetSquare: number;
@@ -480,6 +485,8 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   aggregateDynamicStops: DEFAULT_AGGREGATE_DYNAMIC_STOPS,
   aggregateAccentBarOffset: DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
   aggregateAccentBarVisible: true,
+  posterNoBackgroundBadgeOutlineColor: DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR,
+  posterNoBackgroundBadgeOutlineWidth: DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   ratingXOffsetPillGlass: DEFAULT_RATING_STACK_OFFSET_PX,
   ratingYOffsetPillGlass: DEFAULT_RATING_STACK_OFFSET_PX,
   ratingXOffsetSquare: DEFAULT_RATING_STACK_OFFSET_PX,
@@ -1269,6 +1276,13 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
       candidate.aggregateAccentBarVisible ?? candidate.aggregateAccentVisible ?? candidate.compactAccentLineVisible,
       defaults.aggregateAccentBarVisible,
     ),
+    posterNoBackgroundBadgeOutlineColor:
+      normalizeHexColor(candidate.posterNoBackgroundBadgeOutlineColor) ||
+      defaults.posterNoBackgroundBadgeOutlineColor,
+    posterNoBackgroundBadgeOutlineWidth: normalizeNoBackgroundBadgeOutlineWidthPx(
+      candidate.posterNoBackgroundBadgeOutlineWidth,
+      defaults.posterNoBackgroundBadgeOutlineWidth,
+    ),
     ratingXOffsetPillGlass: normalizeRatingStackOffsetPx(
       candidate.ratingXOffsetPillGlass ?? candidate.ratingXOffsetGlass,
       defaults.ratingXOffsetPillGlass,
@@ -1831,6 +1845,12 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   }
   if (settings.aggregateAccentBarVisible !== true) {
     payload.aggregateAccentBarVisible = false;
+  }
+  if (settings.posterNoBackgroundBadgeOutlineColor !== DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR) {
+    payload.posterNoBackgroundBadgeOutlineColor = settings.posterNoBackgroundBadgeOutlineColor;
+  }
+  if (settings.posterNoBackgroundBadgeOutlineWidth !== DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX) {
+    payload.posterNoBackgroundBadgeOutlineWidth = settings.posterNoBackgroundBadgeOutlineWidth;
   }
   if (settings.ratingXOffsetPillGlass !== DEFAULT_RATING_STACK_OFFSET_PX) {
     payload.ratingXOffsetPillGlass = settings.ratingXOffsetPillGlass;

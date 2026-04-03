@@ -5,6 +5,7 @@ import {
   DEFAULT_QUALITY_BADGE_PREFERENCES,
   normalizeGenreBadgeBorderWidthPx,
   normalizeGenreBadgeScalePercent,
+  normalizeNoBackgroundBadgeOutlineWidthPx,
   normalizeQualityBadgeScalePercent,
 } from '../lib/badgeCustomization.ts';
 
@@ -25,6 +26,13 @@ test('genre badge border width normalization clamps to 0 to 6 and keeps decimal 
   assert.equal(normalizeGenreBadgeBorderWidthPx('0'), 0);
   assert.equal(normalizeGenreBadgeBorderWidthPx('-1'), 0);
   assert.equal(normalizeGenreBadgeBorderWidthPx('1.46'), 1.5);
+});
+
+test('no background badge outline width normalization clamps to 0 to 4', () => {
+  assert.equal(normalizeNoBackgroundBadgeOutlineWidthPx('7.4'), 4);
+  assert.equal(normalizeNoBackgroundBadgeOutlineWidthPx('0'), 0);
+  assert.equal(normalizeNoBackgroundBadgeOutlineWidthPx('-1'), 0);
+  assert.equal(normalizeNoBackgroundBadgeOutlineWidthPx('2.6'), 2.6);
 });
 
 test('default quality badge preferences include network and core quality badges', () => {

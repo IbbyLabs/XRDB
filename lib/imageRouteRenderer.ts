@@ -123,6 +123,8 @@ export type GenreBadgeSpec = {
   position: GenreBadgePosition;
   scalePercent?: number;
   borderWidth?: number;
+  noBackgroundOutlineColor?: string;
+  noBackgroundOutlineWidth?: number;
 };
 export type EditorialRatingOverlay = EditorialRatingOverlaySpec;
 export type PosterCompactRingOverlay = PosterCompactRingOverlaySpec;

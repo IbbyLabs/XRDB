@@ -138,6 +138,8 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   proxyTranslateMeta: WorkspaceProxy['translateMeta'];
   proxyTranslateMetaMode: MetadataTranslationMode;
   qualityBadgesSide: WorkspaceSettings['qualityBadgesSide'];
+  posterNoBackgroundBadgeOutlineColor: WorkspaceSettings['posterNoBackgroundBadgeOutlineColor'];
+  posterNoBackgroundBadgeOutlineWidth: WorkspaceSettings['posterNoBackgroundBadgeOutlineWidth'];
   ratingXOffsetPillGlass: WorkspaceSettings['ratingXOffsetPillGlass'];
   ratingYOffsetPillGlass: WorkspaceSettings['ratingYOffsetPillGlass'];
   ratingXOffsetSquare: WorkspaceSettings['ratingXOffsetSquare'];
@@ -264,6 +266,8 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setProxyTranslateMeta: Setter<WorkspaceProxy['translateMeta']>;
   setProxyTranslateMetaMode: Setter<MetadataTranslationMode>;
   setQualityBadgesSide: Setter<WorkspaceSettings['qualityBadgesSide']>;
+  setPosterNoBackgroundBadgeOutlineColor: Setter<WorkspaceSettings['posterNoBackgroundBadgeOutlineColor']>;
+  setPosterNoBackgroundBadgeOutlineWidth: Setter<WorkspaceSettings['posterNoBackgroundBadgeOutlineWidth']>;
   setRatingXOffsetPillGlass: Setter<WorkspaceSettings['ratingXOffsetPillGlass']>;
   setRatingYOffsetPillGlass: Setter<WorkspaceSettings['ratingYOffsetPillGlass']>;
   setRatingXOffsetSquare: Setter<WorkspaceSettings['ratingXOffsetSquare']>;
@@ -406,6 +410,8 @@ export function useConfiguratorWorkspaceConfigIo({
   proxyTranslateMeta,
   proxyTranslateMetaMode,
   qualityBadgesSide,
+  posterNoBackgroundBadgeOutlineColor,
+  posterNoBackgroundBadgeOutlineWidth,
   ratingXOffsetPillGlass,
   ratingYOffsetPillGlass,
   ratingXOffsetSquare,
@@ -532,6 +538,8 @@ export function useConfiguratorWorkspaceConfigIo({
   setProxyTranslateMeta,
   setProxyTranslateMetaMode,
   setQualityBadgesSide,
+  setPosterNoBackgroundBadgeOutlineColor,
+  setPosterNoBackgroundBadgeOutlineWidth,
   setRatingXOffsetPillGlass,
   setRatingYOffsetPillGlass,
   setRatingXOffsetSquare,
@@ -666,6 +674,8 @@ export function useConfiguratorWorkspaceConfigIo({
       setAggregateDynamicStops(normalized.settings.aggregateDynamicStops);
       setAggregateAccentBarOffset(normalized.settings.aggregateAccentBarOffset);
       setAggregateAccentBarVisible(normalized.settings.aggregateAccentBarVisible);
+      setPosterNoBackgroundBadgeOutlineColor(normalized.settings.posterNoBackgroundBadgeOutlineColor);
+      setPosterNoBackgroundBadgeOutlineWidth(normalized.settings.posterNoBackgroundBadgeOutlineWidth);
       setRatingXOffsetPillGlass(normalized.settings.ratingXOffsetPillGlass);
       setRatingYOffsetPillGlass(normalized.settings.ratingYOffsetPillGlass);
       setRatingXOffsetSquare(normalized.settings.ratingXOffsetSquare);
@@ -806,6 +816,8 @@ export function useConfiguratorWorkspaceConfigIo({
       setProxyTranslateMeta,
       setProxyTranslateMetaMode,
       setQualityBadgesSide,
+      setPosterNoBackgroundBadgeOutlineColor,
+      setPosterNoBackgroundBadgeOutlineWidth,
       setRatingXOffsetPillGlass,
       setRatingYOffsetPillGlass,
       setRatingXOffsetSquare,
@@ -940,6 +952,8 @@ export function useConfiguratorWorkspaceConfigIo({
         aggregateDynamicStops,
         aggregateAccentBarOffset,
         aggregateAccentBarVisible,
+        posterNoBackgroundBadgeOutlineColor,
+        posterNoBackgroundBadgeOutlineWidth,
         ratingXOffsetPillGlass,
         ratingYOffsetPillGlass,
         ratingXOffsetSquare,
@@ -1083,6 +1097,8 @@ export function useConfiguratorWorkspaceConfigIo({
       proxyTranslateMeta,
       proxyTranslateMetaMode,
       qualityBadgesSide,
+      posterNoBackgroundBadgeOutlineColor,
+      posterNoBackgroundBadgeOutlineWidth,
       ratingXOffsetPillGlass,
       ratingYOffsetPillGlass,
       ratingXOffsetSquare,

@@ -3,6 +3,8 @@ import { useMemo, useState } from 'react';
 import {
   DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_BADGE_SCALE_PERCENT,
+  DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR,
+  DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_THUMBNAIL_GENRE_BADGE_BORDER_WIDTH_PX,
@@ -200,6 +202,12 @@ export function useConfiguratorWorkspaceState() {
   const [aggregateDynamicStops, setAggregateDynamicStops] = useState<string>(DEFAULT_AGGREGATE_DYNAMIC_STOPS);
   const [aggregateAccentBarOffset, setAggregateAccentBarOffset] = useState<number>(DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET);
   const [aggregateAccentBarVisible, setAggregateAccentBarVisible] = useState(true);
+  const [posterNoBackgroundBadgeOutlineColor, setPosterNoBackgroundBadgeOutlineColor] = useState<string>(
+    DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR,
+  );
+  const [posterNoBackgroundBadgeOutlineWidth, setPosterNoBackgroundBadgeOutlineWidth] = useState<number>(
+    DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
+  );
   const [ratingXOffsetPillGlass, setRatingXOffsetPillGlass] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
   const [ratingYOffsetPillGlass, setRatingYOffsetPillGlass] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
   const [ratingXOffsetSquare, setRatingXOffsetSquare] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
@@ -252,6 +260,8 @@ export function useConfiguratorWorkspaceState() {
     aggregateAudienceAccentColor,
     aggregateCriticsAccentColor,
     aggregateDynamicStops,
+    posterNoBackgroundBadgeOutlineColor,
+    posterNoBackgroundBadgeOutlineWidth,
     backdropAggregateRatingSource,
     backdropArtworkSource,
     backdropEpisodeArtwork,
@@ -390,6 +400,8 @@ export function useConfiguratorWorkspaceState() {
     setAggregateAudienceAccentColor,
     setAggregateCriticsAccentColor,
     setAggregateDynamicStops,
+    setPosterNoBackgroundBadgeOutlineColor,
+    setPosterNoBackgroundBadgeOutlineWidth,
     setBackdropAggregateRatingSource,
     setBackdropArtworkSource,
     setBackdropEpisodeArtwork,

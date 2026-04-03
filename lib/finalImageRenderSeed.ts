@@ -55,6 +55,8 @@ type FinalImageRenderSeedInput = {
   aggregateDynamicStops: string;
   aggregateAccentBarOffset: number;
   aggregateAccentBarVisible: boolean;
+  posterNoBackgroundBadgeOutlineColor: string;
+  posterNoBackgroundBadgeOutlineWidth: number;
   artworkSelectionSeed: string;
   ratingStyle: string;
   ratingStackOffsetX: number;
@@ -160,6 +162,8 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.aggregateAccentMode === 'dynamic' ? input.aggregateDynamicStops : '-',
     String(input.aggregateAccentBarOffset),
     input.aggregateAccentBarVisible ? 'on' : 'off',
+    isPoster ? input.posterNoBackgroundBadgeOutlineColor : '-',
+    isPoster ? String(input.posterNoBackgroundBadgeOutlineWidth) : '-',
     input.artworkSelectionSeed || '-',
     input.ratingStyle,
     appliesStyleRatingOffset ? String(input.ratingStackOffsetX) : '-',
@@ -187,6 +191,6 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
       : '-',
     input.sourceFallbackKey || '-',
     input.renderCacheBuster || '-',
-    'v12',
+    'v13',
   ].join('|');
 };

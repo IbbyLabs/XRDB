@@ -30,9 +30,13 @@ import {
   type PosterRatingLayout,
 } from '@/lib/posterLayoutOptions';
 import {
-  MAX_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_BADGE_SCALE_PERCENT,
+  DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR,
+  DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
+  MAX_GENRE_BADGE_BORDER_WIDTH_PX,
+  MAX_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   MIN_GENRE_BADGE_BORDER_WIDTH_PX,
+  MIN_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   MAX_BADGE_SCALE_PERCENT,
   MAX_GENRE_BADGE_SCALE_PERCENT,
   MAX_QUALITY_BADGE_SCALE_PERCENT,
@@ -41,6 +45,7 @@ import {
   normalizeBadgeScalePercent,
   normalizeGenreBadgeBorderWidthPx,
   normalizeGenreBadgeScalePercent,
+  normalizeNoBackgroundBadgeOutlineWidthPx,
   normalizeQualityBadgeScalePercent,
 } from '@/lib/badgeCustomization';
 import {
@@ -600,6 +605,8 @@ export function LookSection({
   activeGenreBadgeScale,
   activeGenreBadgeBorderWidth,
   activeQualityBadgeScale,
+  posterNoBackgroundBadgeOutlineColor,
+  posterNoBackgroundBadgeOutlineWidth,
   onSelectRatingStyle,
   onSelectImageText,
   onSelectRatingValueMode,
@@ -648,6 +655,8 @@ export function LookSection({
   onSelectGenreBadgeScale,
   onSelectGenreBadgeBorderWidth,
   onSelectQualityBadgeScale,
+  onSelectPosterNoBackgroundBadgeOutlineColor,
+  onSelectPosterNoBackgroundBadgeOutlineWidth,
 }: {
   previewType: PreviewType;
   styleLabel: string;
@@ -710,6 +719,8 @@ export function LookSection({
   activeGenreBadgeScale: number;
   activeGenreBadgeBorderWidth: number;
   activeQualityBadgeScale: number;
+  posterNoBackgroundBadgeOutlineColor: string;
+  posterNoBackgroundBadgeOutlineWidth: number;
   onSelectRatingStyle: (value: RatingStyle) => void;
   onSelectImageText: (
     value: PosterImageTextPreference | BackdropImageTextPreference,
@@ -760,6 +771,8 @@ export function LookSection({
   onSelectGenreBadgeScale: (value: number) => void;
   onSelectGenreBadgeBorderWidth: (value: number) => void;
   onSelectQualityBadgeScale: (value: number) => void;
+  onSelectPosterNoBackgroundBadgeOutlineColor: (value: string) => void;
+  onSelectPosterNoBackgroundBadgeOutlineWidth: (value: number) => void;
 }) {
   const supportsStyleStackOffsets =
     activeRatingStyle === 'glass' || activeRatingStyle === 'square';
@@ -1647,6 +1660,45 @@ export function LookSection({
               onChange={(value) => onSelectQualityBadgeScale(normalizeQualityBadgeScalePercent(String(value)))}
             />
           </div>
+          {previewType === 'poster' ? (
+            <div className="grid gap-3 md:grid-cols-2">
+              <ColorField
+                label="No Background Outline Color"
+                value={posterNoBackgroundBadgeOutlineColor}
+                onChange={onSelectPosterNoBackgroundBadgeOutlineColor}
+              />
+              <div className="space-y-2">
+                <RangeField
+                  label="No Background Outline Width"
+                  value={posterNoBackgroundBadgeOutlineWidth}
+                  min={MIN_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX}
+                  max={MAX_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX}
+                  suffix="px"
+                  onChange={(value) =>
+                    onSelectPosterNoBackgroundBadgeOutlineWidth(
+                      normalizeNoBackgroundBadgeOutlineWidthPx(String(value)),
+                    )
+                  }
+                />
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onSelectPosterNoBackgroundBadgeOutlineColor(
+                        DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR,
+                      );
+                      onSelectPosterNoBackgroundBadgeOutlineWidth(
+                        DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
+                      );
+                    }}
+                    className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800"
+                  >
+                    Reset Outline
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
           <p className="text-[11px] leading-relaxed text-zinc-500">
             These sliders let people increase badge and tag legibility without forcing a new layout. XRDB will still fit the final output back into the selected poster, backdrop, or logo frame.
           </p>

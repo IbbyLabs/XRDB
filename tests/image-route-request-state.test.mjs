@@ -168,6 +168,19 @@ test('image route request state parses random poster filter controls', async () 
   assert.equal(state.randomPosterFallbackMode, 'original');
 });
 
+test('image route request state parses poster no background outline controls', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&posterNoBackgroundBadgeOutlineColor=%23112233&posterNoBackgroundBadgeOutlineWidth=2',
+    ),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(state.posterNoBackgroundBadgeOutlineColor, '#112233');
+  assert.equal(state.posterNoBackgroundBadgeOutlineWidth, 2);
+});
+
 test('image route request state normalizes dynamic aggregate accent stops', async () => {
   const state = await resolveImageRouteRequestState({
     request: createRequest(

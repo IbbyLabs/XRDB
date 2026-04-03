@@ -318,6 +318,8 @@ export function buildConfiguratorPageProps({
         activeGenreBadgeScale: activeWorkspaceSettings.activeGenreBadgeScale,
         activeGenreBadgeBorderWidth: activeWorkspaceSettings.activeGenreBadgeBorderWidth,
         activeQualityBadgeScale: activeWorkspaceSettings.activeQualityBadgeScale,
+        posterNoBackgroundBadgeOutlineColor: workspaceState.posterNoBackgroundBadgeOutlineColor,
+        posterNoBackgroundBadgeOutlineWidth: workspaceState.posterNoBackgroundBadgeOutlineWidth,
         onSelectRatingStyle: workspaceSummary.setRatingStyleForType,
         onSelectImageText: workspaceSummary.setImageTextForType,
         onSelectRatingValueMode: workspaceState.setRatingValueMode,
@@ -370,6 +372,8 @@ export function buildConfiguratorPageProps({
         onSelectGenreBadgeScale: activeWorkspaceSettings.setActiveGenreBadgeScale,
         onSelectGenreBadgeBorderWidth: activeWorkspaceSettings.setActiveGenreBadgeBorderWidth,
         onSelectQualityBadgeScale: activeWorkspaceSettings.setActiveQualityBadgeScale,
+        onSelectPosterNoBackgroundBadgeOutlineColor: workspaceState.setPosterNoBackgroundBadgeOutlineColor,
+        onSelectPosterNoBackgroundBadgeOutlineWidth: workspaceState.setPosterNoBackgroundBadgeOutlineWidth,
       },
       qualityProps: {
         previewType: workspaceState.previewType,

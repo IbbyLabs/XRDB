@@ -41,6 +41,8 @@ const createInput = (overrides = {}) => ({
   blockbusterDensity: 'balanced',
   aggregateRatingSource: 'combined',
   aggregateDynamicStops: '0:#7f1d1d,40:#dc2626,60:#f59e0b,75:#84cc16,85:#16a34a',
+  posterNoBackgroundBadgeOutlineColor: '#000000',
+  posterNoBackgroundBadgeOutlineWidth: 0,
   ratingStyle: 'stacked',
   ratingStackOffsetX: 0,
   ratingStackOffsetY: 0,
@@ -211,6 +213,28 @@ test('final image render seed changes when poster edge offset changes', () => {
   );
 
   assert.notEqual(baseKey, offsetKey);
+});
+
+test('final image render seed scopes no background outline settings to poster renders', () => {
+  const basePosterKey = buildFinalImageRenderSeedKey(createInput({ imageType: 'poster' }));
+  const changedPosterKey = buildFinalImageRenderSeedKey(
+    createInput({
+      imageType: 'poster',
+      posterNoBackgroundBadgeOutlineColor: '#112233',
+      posterNoBackgroundBadgeOutlineWidth: 2,
+    }),
+  );
+  const baseBackdropKey = buildFinalImageRenderSeedKey(createInput({ imageType: 'backdrop' }));
+  const changedBackdropKey = buildFinalImageRenderSeedKey(
+    createInput({
+      imageType: 'backdrop',
+      posterNoBackgroundBadgeOutlineColor: '#112233',
+      posterNoBackgroundBadgeOutlineWidth: 2,
+    }),
+  );
+
+  assert.notEqual(basePosterKey, changedPosterKey);
+  assert.equal(baseBackdropKey, changedBackdropKey);
 });
 
 test('final image render seed changes when active style stack offsets change', () => {

@@ -144,6 +144,8 @@ export const prepareImageRouteMediaState = async (input: {
   genreBadgeScale: number;
   effectiveGenreBadgeScale: number;
   genreBadgeBorderWidth: number;
+  noBackgroundBadgeOutlineColor: string;
+  noBackgroundBadgeOutlineWidth: number;
   genreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   requestedImageLang: string;
   includeImageLanguage: string;
@@ -215,6 +217,8 @@ export const prepareImageRouteMediaState = async (input: {
     genreBadgePosition,
     genreBadgeScale,
     genreBadgeAnimeGrouping,
+    noBackgroundBadgeOutlineColor,
+    noBackgroundBadgeOutlineWidth,
     requestedImageLang,
     includeImageLanguage,
     posterTextPreference,
@@ -272,6 +276,8 @@ const buildResolvedGenreBadge = (
     position: genreBadgePosition,
     scalePercent: effectiveGenreBadgeScale,
     borderWidth: input.genreBadgeBorderWidth,
+    noBackgroundOutlineColor: noBackgroundBadgeOutlineColor,
+    noBackgroundOutlineWidth: noBackgroundBadgeOutlineWidth,
   };
 };
 let primaryGenreFamily = resolvePrimaryGenreFamily(

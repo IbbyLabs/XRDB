@@ -82,12 +82,15 @@ import {
   DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_BADGE_SCALE_PERCENT,
   DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
+  DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR,
+  DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_THUMBNAIL_GENRE_BADGE_BORDER_WIDTH_PX,
   normalizeBadgeScalePercent,
   normalizeGenreBadgeBorderWidthPx,
   normalizeGenreBadgeScalePercent,
   normalizeHexColor,
+  normalizeNoBackgroundBadgeOutlineWidthPx,
   normalizeQualityBadgeScalePercent,
   parseQualityBadgePreferencesAllowEmpty,
   parseRatingProviderAppearanceOverrides,
@@ -291,6 +294,8 @@ export type ImageRouteRequestState = {
   aggregateDynamicStops: string;
   aggregateAccentBarOffset: number;
   aggregateAccentBarVisible: boolean;
+  posterNoBackgroundBadgeOutlineColor: string;
+  posterNoBackgroundBadgeOutlineWidth: number;
   blockbusterDensity: BlockbusterDensity;
   hasExplicitRatingOrder: boolean;
   shouldApplyRatings: boolean;
@@ -625,6 +630,13 @@ export const resolveImageRouteRequestState = async ({
   const aggregateAccentBarVisible = !(
     typeof aggregateAccentBarVisibleParam === 'string' &&
     ['0', 'false', 'off', 'no'].includes(aggregateAccentBarVisibleParam.trim().toLowerCase())
+  );
+  const posterNoBackgroundBadgeOutlineColor =
+    normalizeHexColor(searchParams.get('posterNoBackgroundBadgeOutlineColor')) ||
+    DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR;
+  const posterNoBackgroundBadgeOutlineWidth = normalizeNoBackgroundBadgeOutlineWidthPx(
+    searchParams.get('posterNoBackgroundBadgeOutlineWidth'),
+    DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   );
   const imageTextParam = searchParams.get('imageText') || searchParams.get('posterText');
   const thumbnailImageTextParam =
@@ -1222,6 +1234,8 @@ export const resolveImageRouteRequestState = async ({
     aggregateDynamicStops,
     aggregateAccentBarOffset,
     aggregateAccentBarVisible,
+    posterNoBackgroundBadgeOutlineColor,
+    posterNoBackgroundBadgeOutlineWidth,
     artworkSelectionSeed,
     ratingStyle,
     ratingStackOffsetX,
@@ -1336,6 +1350,8 @@ export const resolveImageRouteRequestState = async ({
     aggregateDynamicStops,
     aggregateAccentBarOffset,
     aggregateAccentBarVisible,
+    posterNoBackgroundBadgeOutlineColor,
+    posterNoBackgroundBadgeOutlineWidth,
     blockbusterDensity,
     hasExplicitRatingOrder,
     shouldApplyRatings,

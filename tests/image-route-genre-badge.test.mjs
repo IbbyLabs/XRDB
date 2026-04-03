@@ -20,6 +20,25 @@ test('image route genre badge builds plain icon and text output', () => {
   assert.match(spec.svg, /ANIME/);
 });
 
+test('image route genre badge applies no background outline for plain text style', () => {
+  const spec = buildGenreBadgeSvg(
+    {
+      familyId: 'anime',
+      label: 'Anime',
+      accentColor: '#7dd3fc',
+      mode: 'text',
+      style: 'plain',
+      noBackgroundOutlineColor: '#111111',
+      noBackgroundOutlineWidth: 2,
+    },
+    'poster',
+  );
+
+  assert.match(spec.svg, /stroke="#111111"/);
+  assert.match(spec.svg, /stroke-width="2"/);
+  assert.match(spec.svg, /paint-order="stroke fill"/);
+});
+
 test('image route genre badge builds square style output', () => {
   const spec = buildGenreBadgeSvg(
     {

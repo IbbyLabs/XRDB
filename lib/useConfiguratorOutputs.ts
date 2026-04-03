@@ -3,6 +3,8 @@ import { useCallback, useMemo, useState } from 'react';
 import {
   DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_BADGE_SCALE_PERCENT,
+  DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR,
+  DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_THUMBNAIL_GENRE_BADGE_BORDER_WIDTH_PX,
@@ -360,6 +362,8 @@ export function useConfiguratorOutputs({
   previewType,
   proxyUrlVisible,
   qualityBadgesSide,
+  posterNoBackgroundBadgeOutlineColor,
+  posterNoBackgroundBadgeOutlineWidth,
   ratingXOffsetPillGlass,
   ratingYOffsetPillGlass,
   ratingXOffsetSquare,
@@ -498,6 +502,8 @@ export function useConfiguratorOutputs({
   previewType: 'poster' | 'backdrop' | 'thumbnail' | 'logo';
   proxyUrlVisible: boolean;
   qualityBadgesSide: QualityBadgesSide;
+  posterNoBackgroundBadgeOutlineColor: string;
+  posterNoBackgroundBadgeOutlineWidth: number;
   ratingXOffsetPillGlass: number;
   ratingYOffsetPillGlass: number;
   ratingXOffsetSquare: number;
@@ -868,6 +874,12 @@ export function useConfiguratorOutputs({
       if (posterEdgeOffset !== DEFAULT_POSTER_EDGE_OFFSET) {
         query.set('posterEdgeOffset', String(posterEdgeOffset));
       }
+      if (posterNoBackgroundBadgeOutlineWidth !== DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX) {
+        query.set('posterNoBackgroundBadgeOutlineWidth', String(posterNoBackgroundBadgeOutlineWidth));
+        if (posterNoBackgroundBadgeOutlineColor !== DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR) {
+          query.set('posterNoBackgroundBadgeOutlineColor', posterNoBackgroundBadgeOutlineColor);
+        }
+      }
     } else if (previewType === 'backdrop') {
       if (!backdropBottomRatingsRow) {
         query.set('backdropRatingsLayout', backdropRatingsLayout);
@@ -1079,6 +1091,8 @@ export function useConfiguratorOutputs({
     posterSideRatingsOffset,
     posterSideRatingsPosition,
     posterStreamBadges,
+    posterNoBackgroundBadgeOutlineColor,
+    posterNoBackgroundBadgeOutlineWidth,
     previewType,
     qualityBadgesSide,
     ratingXOffsetPillGlass,
