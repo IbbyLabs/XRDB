@@ -64,7 +64,7 @@ const commitRecords = output
       date: String(date || '').trim(),
       type: normalized.type,
       title: normalized.title,
-      body: null,
+      body: normalized.body,
     };
   })
   .filter((entry) => isPublicCommitEntry(entry))
