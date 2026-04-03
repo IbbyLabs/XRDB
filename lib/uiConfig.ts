@@ -121,6 +121,8 @@ export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta' | 'omdb' | 'random' |
 export type EpisodeArtworkMode = 'still' | 'series';
 export type LogoBackground = 'transparent' | 'dark';
 export type TmdbIdScopeMode = 'soft' | 'strict';
+export type ProxyMediaType = 'movie' | 'series' | 'anime';
+export const PROXY_MEDIA_TYPES: readonly ProxyMediaType[] = ['movie', 'series', 'anime'];
 type XrdbImageType = 'poster' | 'backdrop' | 'logo';
 export type AiometadataUrlPatterns = {
   posterUrlPattern: string;
@@ -258,6 +260,7 @@ export type SavedProxySettings = {
   translateMeta: boolean;
   translateMetaMode: MetadataTranslationMode;
   debugMetaTranslation: boolean;
+  proxyTypes: ProxyMediaType[];
   episodeIdMode: EpisodeIdMode;
   catalogRules: ProxyCatalogRule[];
 };
@@ -284,6 +287,7 @@ const QUALITY_BADGES_SIDE_SET = new Set<QualityBadgesSide>(['left', 'right']);
 const POSTER_QUALITY_BADGES_POSITION_SET = new Set<PosterQualityBadgesPosition>(['auto', 'left', 'right']);
 const LOGO_BACKGROUND_SET = new Set<LogoBackground>(['transparent', 'dark']);
 const TMDB_ID_SCOPE_MODE_SET = new Set<TmdbIdScopeMode>(['soft', 'strict']);
+const PROXY_MEDIA_TYPE_SET = new Set<ProxyMediaType>(PROXY_MEDIA_TYPES);
 
 const normalizeBoolean = (value: unknown, fallback = false) => {
   if (typeof value === 'boolean') return value;
@@ -296,6 +300,38 @@ const normalizeBoolean = (value: unknown, fallback = false) => {
   }
   return fallback;
 };
+
+const normalizeProxyMediaType = (value: unknown): ProxyMediaType | null => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (!normalized) return null;
+  if (normalized === 'movie' || normalized === 'film') return 'movie';
+  if (normalized === 'series' || normalized === 'tv' || normalized === 'show') return 'series';
+  if (normalized === 'anime') return 'anime';
+  return null;
+};
+
+const normalizeProxyMediaTypes = (
+  value: unknown,
+  fallback: ProxyMediaType[],
+): ProxyMediaType[] => {
+  const rawValues = Array.isArray(value)
+    ? value
+    : typeof value === 'string'
+      ? value.split(',')
+      : [];
+  const selected = new Set<ProxyMediaType>();
+  for (const rawValue of rawValues) {
+    const normalized = normalizeProxyMediaType(rawValue);
+    if (normalized && PROXY_MEDIA_TYPE_SET.has(normalized)) {
+      selected.add(normalized);
+    }
+  }
+  const ordered = PROXY_MEDIA_TYPES.filter((type) => selected.has(type));
+  return ordered.length > 0 ? ordered : [...fallback];
+};
+
+const hasAllProxyMediaTypes = (value: ProxyMediaType[]) =>
+  PROXY_MEDIA_TYPES.every((type) => value.includes(type));
 
 const normalizeEpisodeArtworkMode = (
   value: unknown,
@@ -431,6 +467,7 @@ export const createDefaultSavedUiConfig = (): SavedUiConfig => ({
     translateMeta: false,
     translateMetaMode: DEFAULT_METADATA_TRANSLATION_MODE,
     debugMetaTranslation: false,
+    proxyTypes: [...PROXY_MEDIA_TYPES],
     episodeIdMode: DEFAULT_EPISODE_ID_MODE,
     catalogRules: [],
   },
@@ -1163,6 +1200,7 @@ export const normalizeSavedUiConfig = (value: unknown): SavedUiConfig => {
       translateMeta?: unknown;
       translateMetaMode?: unknown;
       debugMetaTranslation?: unknown;
+      proxyTypes?: unknown;
       episodeIdMode?: unknown;
       catalogRules?: unknown;
     };
@@ -1185,6 +1223,7 @@ export const normalizeSavedUiConfig = (value: unknown): SavedUiConfig => {
         candidate.proxy?.debugMetaTranslation,
         defaults.proxy.debugMetaTranslation,
       ),
+      proxyTypes: normalizeProxyMediaTypes(candidate.proxy?.proxyTypes, defaults.proxy.proxyTypes),
       episodeIdMode: normalizeEpisodeIdMode(
         candidate.proxy?.episodeIdMode,
         defaults.proxy.episodeIdMode,
@@ -1868,6 +1907,10 @@ export const buildProxyPayload = (
     if (proxy.debugMetaTranslation) {
       payload.debugMetaTranslation = true;
     }
+  }
+  const normalizedProxyTypes = normalizeProxyMediaTypes(proxy.proxyTypes, [...PROXY_MEDIA_TYPES]);
+  if (!hasAllProxyMediaTypes(normalizedProxyTypes)) {
+    payload.proxyTypes = normalizedProxyTypes.join(',');
   }
   if (proxy.episodeIdMode !== DEFAULT_EPISODE_ID_MODE) {
     payload.episodeIdMode = normalizeEpisodeIdMode(proxy.episodeIdMode, DEFAULT_EPISODE_ID_MODE);

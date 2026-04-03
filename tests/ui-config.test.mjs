@@ -153,6 +153,7 @@ const buildSampleSettings = () =>
       translateMeta: true,
       translateMetaMode: 'prefer-requested-language',
       debugMetaTranslation: true,
+      proxyTypes: ['movie', 'anime'],
       catalogRules: [{ key: 'movie:top', title: 'Cinema Prime', discoverOnly: true }],
     },
   });
@@ -285,6 +286,7 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       translateMeta: true,
       translateMetaMode: 'prefer-requested-language',
       debugMetaTranslation: true,
+      proxyTypes: ['movie', 'anime'],
       episodeIdMode: 'imdb',
       catalogRules: [{ key: 'movie:top', title: 'Cinema Prime', discoverOnly: true }],
     },
@@ -347,6 +349,7 @@ test('workspace normalization ignores legacy proxy enabled flags', () => {
     translateMeta: false,
     translateMetaMode: 'fill-missing',
     debugMetaTranslation: false,
+    proxyTypes: ['movie', 'series', 'anime'],
     episodeIdMode: 'imdb',
     catalogRules: [],
   });
@@ -606,6 +609,7 @@ test('config string and proxy manifest use the same shared XRDB settings', () =>
     translateMeta: true,
     translateMetaMode: 'prefer-requested-language',
     debugMetaTranslation: true,
+    proxyTypes: 'movie,anime',
     posterRatings: 'imdb,tmdb',
     backdropRatings: 'mdblist',
     thumbnailRatings: 'tmdb,imdb',

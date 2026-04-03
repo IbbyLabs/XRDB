@@ -50,10 +50,15 @@ type ProxyTmdbTarget = {
   episode?: number | null;
 };
 
+type ProxyMediaTypeSelection = 'movie' | 'series' | 'anime';
+
 const TMDB_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const TMDB_FAILED_TTL_MS = 2 * 60 * 1000;
 const ANIME_MAPPING_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 const ANIME_MAPPING_FAILED_TTL_MS = 2 * 60 * 1000;
+const PROXY_MEDIA_TYPE_SELECTION_ORDER: ProxyMediaTypeSelection[] = ['movie', 'series', 'anime'];
+const PROXY_MEDIA_TYPE_SELECTION_SET = new Set<ProxyMediaTypeSelection>(PROXY_MEDIA_TYPE_SELECTION_ORDER);
+const PROXY_ANIME_ID_PREFIX_SET = new Set(['kitsu', 'mal', 'myanimelist', 'anilist', 'anidb']);
 
 const tmdbFetchCache = new Map<string, CacheEntry<Promise<any>>>();
 const animeMappingFetchCache = new Map<string, CacheEntry<Promise<any>>>();
@@ -554,6 +559,70 @@ export const isTypeEnabled = (
   return config.logoEnabled !== false;
 };
 
+const normalizeProxyMediaTypeSelection = (value: string): ProxyMediaTypeSelection | null => {
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return null;
+  if (normalized === 'movie' || normalized === 'film') return 'movie';
+  if (normalized === 'series' || normalized === 'tv' || normalized === 'show') return 'series';
+  if (normalized === 'anime') return 'anime';
+  return null;
+};
+
+const parseProxyMediaTypeSelections = (config: ProxyConfig) => {
+  const selected = new Set<ProxyMediaTypeSelection>();
+  for (const rawValue of String(config.proxyTypes || '').split(',')) {
+    const normalized = normalizeProxyMediaTypeSelection(rawValue);
+    if (normalized && PROXY_MEDIA_TYPE_SELECTION_SET.has(normalized)) {
+      selected.add(normalized);
+    }
+  }
+  if (selected.size === 0) {
+    return new Set<ProxyMediaTypeSelection>(PROXY_MEDIA_TYPE_SELECTION_ORDER);
+  }
+  return selected;
+};
+
+const resolveProxyMediaTypeSelection = (
+  rawType: unknown,
+  rawId: string | null,
+  xrdbId: string,
+): ProxyMediaTypeSelection | null => {
+  const normalizedStremioType = normalizeStremioType(rawType);
+  if (normalizedStremioType === 'movie') {
+    return 'movie';
+  }
+
+  const normalizedType = typeof rawType === 'string' ? rawType.trim().toLowerCase() : '';
+  if (normalizedType === 'anime') {
+    return 'anime';
+  }
+
+  const normalizedRawId = normalizeXrdbId(rawId, normalizedType);
+  const candidateId = normalizedRawId || xrdbId;
+  const [prefix = ''] = candidateId.split(':', 1);
+  if (PROXY_ANIME_ID_PREFIX_SET.has(prefix.toLowerCase())) {
+    return 'anime';
+  }
+
+  if (normalizedStremioType === 'tv' || normalizedType === 'series' || normalizedType === 'tv' || normalizedType === 'show') {
+    return 'series';
+  }
+
+  return null;
+};
+
+const isProxyMediaTypeEnabled = (
+  config: ProxyConfig,
+  rawType: unknown,
+  rawId: string | null,
+  xrdbId: string,
+) => {
+  const selectedTypes = parseProxyMediaTypeSelections(config);
+  const mediaType = resolveProxyMediaTypeSelection(rawType, rawId, xrdbId);
+  if (!mediaType) return true;
+  return selectedTypes.has(mediaType);
+};
+
 const rewriteMetaVideoThumbnails = (
   meta: Record<string, unknown>,
   requestUrl: URL,
@@ -619,6 +688,7 @@ export const rewriteMetaImages = (
   const rawType = typeof meta.type === 'string' ? meta.type : null;
   const xrdbId = normalizeProxyXrdbId(rawId, rawType, config);
   if (!xrdbId) return meta;
+  if (!isProxyMediaTypeEnabled(config, rawType, rawId, xrdbId)) return meta;
 
   const nextMeta: Record<string, unknown> = { ...meta };
   const sourcePosterUrl = typeof meta.poster === 'string' ? meta.poster.trim() : '';
@@ -683,6 +753,7 @@ export const translateMetaPayload = async (
   const rawType = typeof meta.type === 'string' ? meta.type : null;
   const xrdbId = normalizeProxyXrdbId(rawId, rawType, config);
   if (!xrdbId) return meta;
+  if (!isProxyMediaTypeEnabled(config, rawType, rawId, xrdbId)) return meta;
 
   const tmdbTarget = await resolveProxyTmdbTarget({
     xrdbId,

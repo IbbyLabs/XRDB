@@ -83,3 +83,45 @@ test('proxy route image rewriting updates artwork and video thumbnails from loca
     'https://images.example.com/episode.jpg',
   );
 });
+
+test('proxy route media type selection skips series items when only movies are enabled', () => {
+  const requestUrl = new URL('https://proxy.example.com/proxy/config/meta/series/id.json');
+  const meta = {
+    id: 'tt0944947',
+    type: 'series',
+    poster: 'https://images.example.com/poster.jpg',
+  };
+  const config = {
+    url: 'https://addon.example.com/manifest.json',
+    tmdbKey: 'tmdb-key',
+    mdblistKey: 'mdblist-key',
+    proxyTypes: 'movie',
+  };
+
+  const rewritten = rewriteMetaImages(meta, requestUrl, config);
+  assert.equal(rewritten.poster, 'https://images.example.com/poster.jpg');
+});
+
+test('proxy route media type selection treats anime native IDs as anime', () => {
+  const requestUrl = new URL('https://proxy.example.com/proxy/config/meta/series/id.json');
+  const meta = {
+    id: 'mal:5114',
+    type: 'series',
+    poster: 'https://images.example.com/poster.jpg',
+  };
+  const config = {
+    url: 'https://addon.example.com/manifest.json',
+    tmdbKey: 'tmdb-key',
+    mdblistKey: 'mdblist-key',
+    proxyTypes: 'anime',
+  };
+
+  const rewritten = rewriteMetaImages(meta, requestUrl, config);
+  const posterUrl = new URL(rewritten.poster);
+
+  assert.equal(posterUrl.pathname, '/poster/mal%3A5114.jpg');
+  assert.equal(
+    posterUrl.searchParams.get('fallbackUrl'),
+    'https://images.example.com/poster.jpg',
+  );
+});
