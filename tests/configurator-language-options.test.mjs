@@ -20,7 +20,11 @@ test('configurator language options expand regional TMDB locales into readable l
   assert.match(options.find((entry) => entry.code === 'es-ES')?.label || '', /^Español \(.+\)$/);
   assert.match(options.find((entry) => entry.code === 'it-IT')?.label || '', /^Italiano \(.+\)$/);
   assert.match(options.find((entry) => entry.code === 'es-MX')?.label || '', /^Español \(.+\)$/);
-  assert.equal(options.find((entry) => entry.code === 'en'), undefined);
+  assert.deepEqual(options.find((entry) => entry.code === 'en'), {
+    code: 'en',
+    flag: '🌐',
+    label: 'English',
+  });
 });
 
 test('language selector renders localized labels without appending locale codes', () => {
@@ -28,6 +32,10 @@ test('language selector renders localized labels without appending locale codes'
     path.resolve(process.cwd(), 'components/configurator-basics.tsx'),
     'utf8',
   );
-  assert.match(source, /\{language\.flag\} \{language\.label\}/);
-  assert.doesNotMatch(source, /\{language\.label\} \(\{language\.code\}\)/);
+  assert.match(source, /\{activeOption\.flag\}/);
+  assert.match(source, /\{activeOption\.label\}/);
+  assert.match(source, /\{option\.flag\}/);
+  assert.match(source, /\{option\.label\}/);
+  assert.doesNotMatch(source, /\{option\.label\} \(\{option\.code\}\)/);
+  assert.doesNotMatch(source, /\{activeOption\.label\} \(\{activeOption\.code\}\)/);
 });
