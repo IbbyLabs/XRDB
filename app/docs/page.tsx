@@ -40,6 +40,163 @@ const docCards = [
   },
 ];
 
+const idFormatRows = [
+  {
+    label: 'IMDb',
+    format: '`tt0133093`',
+    details: 'Direct IMDb IDs are accepted as is. This is the broad compatibility path for many addons.',
+  },
+  {
+    label: 'TMDB plain',
+    format: '`tmdb:603`',
+    details:
+      'Plain TMDB IDs are accepted. XRDB can infer the media kind from context, but this is less explicit than typed TMDB.',
+  },
+  {
+    label: 'TMDB typed',
+    format: '`tmdb:movie:603` or `tmdb:tv:1399`',
+    details:
+      'Typed TMDB IDs are explicit and avoid movie vs show collisions. This is the recommended format for backdrops and logos and the default AIOMetadata poster mode.',
+  },
+  {
+    label: 'Anime families',
+    format: '`mal:`, `anilist:`, `kitsu:`, `tvdb:`, `anidb:`',
+    details:
+      'Anime ID prefixes are accepted directly. They are useful when your source metadata already uses anime native IDs.',
+  },
+];
+
+const posterIdSourceRows = [
+  {
+    label: 'Auto (recommended)',
+    pattern: '`/poster/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb...`',
+    effect:
+      'Uses typed TMDB IDs for poster patterns. This gives broader and more consistent poster coverage.',
+  },
+  {
+    label: 'IMDb',
+    pattern: '`/poster/{imdb_id}.jpg?...`',
+    effect:
+      'Uses IMDb IDs for poster patterns. Use this for integrations that require IMDb IDs, with possible coverage tradeoffs when IMDb IDs are missing.',
+  },
+];
+
+const artworkSourceRows = [
+  {
+    source: '`tmdb`',
+    availability: 'Poster, backdrop, thumbnail, logo',
+    behavior: 'Uses normal TMDB artwork selection for the active type.',
+  },
+  {
+    source: '`fanart`',
+    availability: 'Poster, backdrop, thumbnail, logo',
+    behavior:
+      'Prefers fanart.tv assets when a fanart key is available, then falls back to TMDB.',
+  },
+  {
+    source: '`cinemeta`',
+    availability: 'Poster, backdrop, thumbnail, logo',
+    behavior:
+      'Prefers MetaHub Cinemeta assets when an IMDb ID is available, then falls back to TMDB.',
+  },
+  {
+    source: '`random`',
+    availability: 'Poster, backdrop, thumbnail, logo',
+    behavior:
+      'Picks a deterministic random source from the type supported pool, then falls back if needed.',
+  },
+  {
+    source: '`omdb`',
+    availability: 'Poster only',
+    behavior:
+      'Poster only path that uses OMDb poster data when server OMDb access and IMDb IDs are available, then falls back to TMDB.',
+  },
+];
+
+const presentationRows = [
+  {
+    mode: '`standard`',
+    visual: 'Provider badges in the selected style and layout.',
+    useCase: 'Balanced default when you want provider specific badges visible.',
+  },
+  {
+    mode: '`minimal`',
+    visual: 'One compact aggregate chip.',
+    useCase: 'Clean look with minimal badge density.',
+  },
+  {
+    mode: '`average`',
+    visual: 'One labeled aggregate badge (Overall, Critics, or Audience).',
+    useCase: 'Simple single score display with label clarity.',
+  },
+  {
+    mode: '`dual`',
+    visual: 'Two aggregate badges, one for critics and one for audience.',
+    useCase: 'When both perspectives should stay visible at the same time.',
+  },
+  {
+    mode: '`dual-minimal`',
+    visual: 'Two compact aggregate chips for critics and audience.',
+    useCase: 'Dual view with lower visual weight.',
+  },
+  {
+    mode: '`editorial`',
+    visual: 'Poster uses an integrated top left editorial score mark.',
+    useCase:
+      'Poster focused editorial look. Non poster outputs fall back to a clean average badge.',
+  },
+  {
+    mode: '`blockbuster`',
+    visual: 'Dense promo style rendering with heavy badge presence.',
+    useCase: 'High impact poster variants and showcase style outputs.',
+  },
+  {
+    mode: '`none`',
+    visual: 'No rating badges.',
+    useCase: 'Artwork only output where ratings should be hidden.',
+  },
+];
+
+const proxyRouteRows = [
+  {
+    route: '`/proxy/{config}/manifest.json`',
+    purpose: 'Encoded install URL form used by the configurator proxy export.',
+  },
+  {
+    route: '`/proxy/manifest.json?url={manifestUrl}&tmdbKey=...&mdblistKey=...`',
+    purpose:
+      'Query based manifest form for tools that build URLs dynamically instead of using the encoded config path.',
+  },
+  {
+    route: '`/proxy/catalog/...`, `/proxy/meta/...`, and other addon resource paths',
+    purpose:
+      'Passthrough routes that forward addon resources while applying the same XRDB config for image rewrites and optional metadata translation.',
+  },
+];
+
+const perTypeRows = [
+  {
+    type: 'Poster',
+    controls:
+      '`posterRatings`, `posterArtworkSource`, `posterRatingPresentation`, `posterRatingsLayout`, `posterRatingsMaxPerSide`, `posterQualityBadgesStyle`',
+  },
+  {
+    type: 'Backdrop',
+    controls:
+      '`backdropRatings`, `backdropArtworkSource`, `backdropRatingPresentation`, `backdropRatingsLayout`, `backdropBottomRatingsRow`, `backdropQualityBadgesStyle`',
+  },
+  {
+    type: 'Episode thumbnail',
+    controls:
+      '`thumbnailRatings`, `thumbnailArtworkSource`, `thumbnailEpisodeArtwork`, `thumbnailRatingPresentation`, `thumbnailRatingsLayout`, `thumbnailBottomRatingsRow`',
+  },
+  {
+    type: 'Logo',
+    controls:
+      '`logoRatings`, `logoArtworkSource`, `logoRatingPresentation`, `logoRatingsMax`, `logoBottomRatingsRow`, `logoBackground`',
+  },
+];
+
 export default function DocsPage() {
   return (
     <div className="xrdb-page min-h-screen bg-transparent text-zinc-300 selection:bg-violet-500/30">
@@ -156,6 +313,173 @@ export default function DocsPage() {
                 </div>
               </article>
             </div>
+          </div>
+        </section>
+
+        <section className="xrdb-section">
+          <div className="space-y-4">
+            <article className="rounded-[32px] border border-white/10 bg-zinc-950/60 p-6 md:p-8">
+              <h2 className="text-2xl font-semibold text-white">XRDB feature explanations</h2>
+              <p className="mt-2 text-sm leading-6 text-zinc-400">
+                This guide explains what each major setting does and how it changes image output, proxy behavior, and exported integration URLs.
+              </p>
+            </article>
+
+            <article className="rounded-[32px] border border-white/10 bg-zinc-950/60 p-6 md:p-8">
+              <h3 className="text-xl font-semibold text-white">ID formats and sources</h3>
+              <p className="mt-2 text-sm leading-6 text-zinc-400">
+                XRDB accepts multiple ID families. Typed IDs are the safest choice when the source can provide them.
+              </p>
+              <div className="mt-4 space-y-3">
+                {idFormatRows.map((row) => (
+                  <div key={row.label} className="rounded-2xl border border-white/10 bg-black/35 p-4">
+                    <div className="text-sm font-semibold text-white">{row.label}</div>
+                    <div className="mt-1 font-mono text-xs text-zinc-300">{row.format}</div>
+                    <div className="mt-2 text-sm leading-6 text-zinc-400">{row.details}</div>
+                  </div>
+                ))}
+              </div>
+              <h4 className="mt-6 text-sm font-semibold uppercase tracking-wide text-zinc-300">Poster ID source</h4>
+              <div className="mt-3 space-y-3">
+                {posterIdSourceRows.map((row) => (
+                  <div key={row.label} className="rounded-2xl border border-white/10 bg-black/35 p-4">
+                    <div className="text-sm font-semibold text-white">{row.label}</div>
+                    <div className="mt-1 font-mono text-xs text-zinc-300">{row.pattern}</div>
+                    <div className="mt-2 text-sm leading-6 text-zinc-400">{row.effect}</div>
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            <article className="rounded-[32px] border border-white/10 bg-zinc-950/60 p-6 md:p-8">
+              <h3 className="text-xl font-semibold text-white">Artwork sources</h3>
+              <p className="mt-2 text-sm leading-6 text-zinc-400">
+                Artwork source controls let each image type prefer a different upstream source while keeping fallback behavior predictable.
+              </p>
+              <div className="mt-4 space-y-3">
+                {artworkSourceRows.map((row) => (
+                  <div key={row.source} className="rounded-2xl border border-white/10 bg-black/35 p-4">
+                    <div className="text-sm font-semibold text-white">{row.source}</div>
+                    <div className="mt-1 text-xs text-zinc-500">{row.availability}</div>
+                    <div className="mt-2 text-sm leading-6 text-zinc-400">{row.behavior}</div>
+                  </div>
+                ))}
+              </div>
+            </article>
+
+            <article className="rounded-[32px] border border-white/10 bg-zinc-950/60 p-6 md:p-8">
+              <h3 className="text-xl font-semibold text-white">Presentation modes</h3>
+              <p className="mt-2 text-sm leading-6 text-zinc-400">
+                Presentation controls define the rating overlay style. Each type can use its own presentation mode.
+              </p>
+              <div className="mt-4 space-y-3">
+                {presentationRows.map((row) => (
+                  <div key={row.mode} className="rounded-2xl border border-white/10 bg-black/35 p-4">
+                    <div className="text-sm font-semibold text-white">{row.mode}</div>
+                    <div className="mt-1 text-sm leading-6 text-zinc-300">{row.visual}</div>
+                    <div className="mt-1 text-sm leading-6 text-zinc-400">{row.useCase}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 rounded-2xl border border-violet-500/25 bg-violet-500/10 p-4 text-sm leading-6 text-zinc-300">
+                Episode thumbnails use the same 16:9 layout model as backdrops and expose thumbnail scoped layout controls (`thumbnailRatingsLayout`, `thumbnailBottomRatingsRow`, `thumbnailSideRatingsPosition`, `thumbnailSideRatingsOffset`) so they can mirror or diverge from backdrop behavior.
+              </div>
+            </article>
+
+            <article className="rounded-[32px] border border-white/10 bg-zinc-950/60 p-6 md:p-8">
+              <h3 className="text-xl font-semibold text-white">Rating provider ordering</h3>
+              <p className="mt-2 text-sm leading-6 text-zinc-400">
+                Provider order is configured per image type with `posterRatings`, `backdropRatings`, `thumbnailRatings`, and `logoRatings`. The order you set controls the provider sequence for that type.
+              </p>
+              <div className="mt-4 rounded-2xl border border-white/10 bg-black/35 p-4 text-sm leading-6 text-zinc-400">
+                <p>
+                  Episode thumbnail ratings are type limited today and default to <span className="font-mono text-zinc-300">`tmdb,imdb`</span>.
+                </p>
+                <p className="mt-2">
+                  Keep values per type if you want different provider emphasis across poster, backdrop, thumbnail, and logo outputs.
+                </p>
+              </div>
+            </article>
+
+            <article className="rounded-[32px] border border-white/10 bg-zinc-950/60 p-6 md:p-8">
+              <h3 className="text-xl font-semibold text-white">Metadata translation</h3>
+              <p className="mt-2 text-sm leading-6 text-zinc-400">
+                Proxy metadata translation is controlled by `translateMeta` and `translateMetaMode`.
+              </p>
+              <div className="mt-4 space-y-3">
+                <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
+                  <div className="text-sm font-semibold text-white">`translateMeta=true`</div>
+                  <div className="mt-2 text-sm leading-6 text-zinc-400">
+                    Enables proxy side metadata translation for catalog and meta responses while image rendering settings remain unchanged.
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
+                  <div className="text-sm font-semibold text-white">`translateMetaMode=fill-missing` (safe default)</div>
+                  <div className="mt-2 text-sm leading-6 text-zinc-400">
+                    Keeps good source text, then fills blank or placeholder fields. This is the conservative default for most proxy installs.
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 rounded-2xl border border-violet-500/25 bg-violet-500/10 p-4 text-sm leading-6 text-zinc-300">
+                AIOMetadata URL exports are image URL patterns. They do not change merge behavior by themselves. Translation settings matter when those addons are consumed through XRDB proxy routes.
+              </div>
+            </article>
+
+            <article className="rounded-[32px] border border-white/10 bg-zinc-950/60 p-6 md:p-8">
+              <h3 className="text-xl font-semibold text-white">Proxy functionality</h3>
+              <p className="mt-2 text-sm leading-6 text-zinc-400">
+                XRDB supports both encoded and query based proxy configuration styles.
+              </p>
+              <div className="mt-4 space-y-3">
+                {proxyRouteRows.map((row) => (
+                  <div key={row.route} className="rounded-2xl border border-white/10 bg-black/35 p-4">
+                    <div className="font-mono text-xs text-zinc-300">{row.route}</div>
+                    <div className="mt-2 text-sm leading-6 text-zinc-400">{row.purpose}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 rounded-2xl border border-white/10 bg-black/35 p-4 text-sm leading-6 text-zinc-400">
+                Proxy rewrites `meta.poster`, `meta.background`, and `meta.logo` to XRDB image routes using the active config and passes non image resources through unchanged.
+              </div>
+            </article>
+
+            <article className="rounded-[32px] border border-white/10 bg-zinc-950/60 p-6 md:p-8">
+              <h3 className="text-xl font-semibold text-white">BYOK stateless setup</h3>
+              <p className="mt-2 text-sm leading-6 text-zinc-400">
+                XRDB is stateless by design. User provided keys flow through generated URLs and encoded config payloads instead of server side session storage.
+              </p>
+              <div className="mt-4 rounded-2xl border border-white/10 bg-black/35 p-4 text-sm leading-6 text-zinc-400">
+                This lets one XRDB deployment serve many users while each user keeps their own API usage and limits through URL scoped credentials.
+              </div>
+            </article>
+
+            <article className="rounded-[32px] border border-white/10 bg-zinc-950/60 p-6 md:p-8">
+              <h3 className="text-xl font-semibold text-white">AIOMetadata exports</h3>
+              <p className="mt-2 text-sm leading-6 text-zinc-400">
+                The configurator generates four ready to paste patterns for AIOMetadata fields: poster, background, logo, and episode thumbnail.
+              </p>
+              <div className="mt-4 rounded-2xl border border-white/10 bg-black/35 p-4 text-sm leading-6 text-zinc-400">
+                Poster pattern behavior follows the Poster ID source control. Episode thumbnail pattern behavior follows Episode ID source and thumbnail specific settings including artwork source, ratings, layout, and text mode. The Hide credentials toggle can mask key values with placeholders without changing live runtime URLs.
+              </div>
+            </article>
+
+            <article className="rounded-[32px] border border-white/10 bg-zinc-950/60 p-6 md:p-8">
+              <h3 className="text-xl font-semibold text-white">Per type rendering controls</h3>
+              <p className="mt-2 text-sm leading-6 text-zinc-400">
+                Most rendering controls are type scoped so one setup can drive different poster, backdrop, thumbnail, and logo outputs from the same base config.
+              </p>
+              <div className="mt-4 space-y-3">
+                {perTypeRows.map((row) => (
+                  <div key={row.type} className="rounded-2xl border border-white/10 bg-black/35 p-4">
+                    <div className="text-sm font-semibold text-white">{row.type}</div>
+                    <div className="mt-2 font-mono text-xs leading-6 text-zinc-300">{row.controls}</div>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-4 text-sm leading-6 text-zinc-500">
+                For the full parameter catalog and deployment references, use the README in the repository root.
+              </p>
+            </article>
           </div>
         </section>
       </main>
