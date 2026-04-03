@@ -10,6 +10,140 @@ import type { TmdbIdScopeMode } from '@/lib/uiConfig';
 
 type ProxyType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 
+const PREVIEW_GUIDE = {
+  poster: {
+    title: 'Poster',
+    fieldValue: 'tt0133093',
+    routePath: '/poster/tt0133093.jpg',
+    fieldHelp: 'Use one base title ID only. Movie, show, and anime poster lookups all start from a single base ID.',
+    fieldExamples: ['tt0133093', 'tmdb:movie:603', 'tmdb:tv:1399', 'xrdbid:tt0944947', 'mal:16498'],
+    routeExamples: ['/poster/tt0133093.jpg', '/poster/tmdb:movie:603.jpg', '/poster/tmdb:tv:1399.jpg'],
+  },
+  backdrop: {
+    title: 'Backdrop',
+    fieldValue: 'tmdb:tv:1399',
+    routePath: '/backdrop/tmdb:tv:1399.jpg',
+    fieldHelp: 'Use one base title ID only. Typed TMDB IDs are the safest choice when you need movie and TV lookups to stay separated.',
+    fieldExamples: ['tt0944947', 'tmdb:movie:603', 'tmdb:tv:1399', 'xrdbid:tt0944947', 'tvdb:121361'],
+    routeExamples: ['/backdrop/tt0944947.jpg', '/backdrop/tmdb:movie:603.jpg', '/backdrop/tmdb:tv:1399.jpg'],
+  },
+  thumbnail: {
+    title: 'Thumbnail',
+    fieldValue: 'tt0944947:1:1',
+    routePath: '/thumbnail/tt0944947/S01E01.jpg',
+    fieldHelp: 'Use an episode target. Standard episode IDs use seriesId:season:episode. Kitsu episode inputs also accept seriesId:episode when seasons are not available.',
+    fieldExamples: [
+      'tt0944947:1:1',
+      'tmdb:tv:1399:1:1',
+      'xrdbid:tt0944947:1:1',
+      'tvdb:121361:1:1',
+      'anilist:16498:1:1',
+      'mal:16498:1:1',
+      'anidb:5114:1:1',
+      'kitsu:7442:1',
+    ],
+    routeExamples: [
+      '/thumbnail/tt0944947/S01E01.jpg',
+      '/thumbnail/tmdb:tv:1399/S01E01.jpg',
+      '/thumbnail/xrdbid:tt0944947/S01E01.jpg',
+      '/thumbnail/kitsu:7442/S01E01.jpg',
+    ],
+  },
+  logo: {
+    title: 'Logo',
+    fieldValue: 'tmdb:movie:603',
+    routePath: '/logo/tmdb:movie:603.png',
+    fieldHelp: 'Use one base title ID only. Logos export as PNG and typed TMDB IDs are recommended because they avoid ambiguous movie versus TV matches.',
+    fieldExamples: ['tmdb:movie:603', 'tmdb:tv:1399', 'tt0944947', 'xrdbid:tt0944947'],
+    routeExamples: ['/logo/tmdb:movie:603.png', '/logo/tmdb:tv:1399.png', '/logo/tt0944947.png'],
+  },
+} satisfies Record<
+  ProxyType,
+  {
+    title: string;
+    fieldValue: string;
+    routePath: string;
+    fieldHelp: string;
+    fieldExamples: string[];
+    routeExamples: string[];
+  }
+>;
+
+const BASE_ID_FAMILIES = [
+  {
+    label: 'IMDb',
+    detail: 'Best general base ID for posters and simple movie or show lookups.',
+    examples: ['tt0133093', 'tt0944947'],
+  },
+  {
+    label: 'Typed TMDB',
+    detail: 'Best when movie and TV type must stay explicit. Required by Strict TMDB scope for backdrop and logo requests.',
+    examples: ['tmdb:movie:603', 'tmdb:tv:1399'],
+  },
+  {
+    label: 'XRDB canon ID',
+    detail: 'Keeps an IMDb base ID explicit in proxy and episodic workflows.',
+    examples: ['xrdbid:tt0944947'],
+  },
+  {
+    label: 'TVDB',
+    detail: 'Supported for series and episode targeting when your upstream IDs come from TVDB.',
+    examples: ['tvdb:121361'],
+  },
+  {
+    label: 'Anime IDs',
+    detail: 'Use the native anime provider ID when your source does not begin with IMDb or TMDB.',
+    examples: ['anilist:16498', 'mal:16498', 'anidb:5114', 'kitsu:7442'],
+  },
+] as const;
+
+const FORMAT_REFERENCE = [
+  {
+    label: 'Poster input',
+    value: 'baseId',
+    detail: 'Example: tt0133093 or tmdb:movie:603',
+  },
+  {
+    label: 'Backdrop input',
+    value: 'baseId',
+    detail: 'Example: tmdb:tv:1399 or xrdbid:tt0944947',
+  },
+  {
+    label: 'Logo input',
+    value: 'baseId',
+    detail: 'Example: tmdb:movie:603 or tmdb:tv:1399',
+  },
+  {
+    label: 'Thumbnail input',
+    value: 'seriesId:season:episode',
+    detail: 'Example: tt0944947:1:1 or tmdb:tv:1399:1:1',
+  },
+  {
+    label: 'Kitsu thumbnail input',
+    value: 'seriesId:episode',
+    detail: 'Example: kitsu:7442:1',
+  },
+] as const;
+
+const QUERY_PARAM_REFERENCE = [
+  {
+    label: 'idSource=tmdb',
+    detail: 'Pins poster, backdrop, and logo exports to typed TMDB route patterns.',
+  },
+  {
+    label: 'tmdbIdScope=strict',
+    detail: 'Requires tmdb:movie:id or tmdb:tv:id for backdrop and logo requests.',
+  },
+  {
+    label: 'thumbnailEpisodeArtwork=still|series',
+    detail: 'Controls whether thumbnails prefer the episode still or the series backdrop source.',
+  },
+  {
+    label: 'thumbnailRatings=tmdb,imdb',
+    detail: 'Chooses the thumbnail specific rating providers without affecting poster, backdrop, or logo routes.',
+  },
+] as const;
+
 export function SetupModeSection({
   experienceMode,
   onOpenIntro,
@@ -306,6 +440,8 @@ export function MediaTargetSection({
   onMediaIdChange: (value: string) => void;
   onLangChange: (value: string) => void;
 }) {
+  const activeGuide = PREVIEW_GUIDE[previewType];
+
   return (
     <div>
       <div className="mb-2 text-[11px] font-semibold text-zinc-400">Media Target</div>
@@ -359,6 +495,135 @@ export function MediaTargetSection({
           Thumbnail previews need an episode target in `seriesId:season:episode` form, for example `tt0944947:1:1` or `tmdb:tv:1399:1:1`.
         </p>
       ) : null}
+      <div className="mt-4 overflow-hidden rounded-2xl border border-violet-500/25 bg-[linear-gradient(180deg,rgba(42,24,74,0.94),rgba(18,10,32,0.98))] shadow-[0_18px_48px_rgba(10,6,18,0.38)]">
+        <div className="border-b border-white/10 px-4 py-4 sm:px-5">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-200/90">
+            XRDB ID Guide
+          </div>
+          <h4 className="mt-2 text-base font-semibold text-white">Accepted IDs, route shapes, and preview input rules</h4>
+          <p className="mt-2 max-w-3xl text-[12px] leading-6 text-zinc-300">
+            The Media ID field above accepts a base title ID for posters, backdrops, and logos. Thumbnail previews need an episode target. Use this guide to match the field input, the exported route, and the most common scoped query params without guessing.
+          </p>
+        </div>
+        <div className="grid gap-3 px-4 py-4 sm:px-5 xl:grid-cols-[1.1fr,0.9fr]">
+          <div className="rounded-2xl border border-violet-400/20 bg-black/20 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-200/80">Current preview type</div>
+                <div className="mt-1 text-lg font-semibold text-white">{activeGuide.title}</div>
+              </div>
+              <span className="rounded-full border border-violet-400/30 bg-violet-500/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-100">
+                {previewType}
+              </span>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              <div className="rounded-xl border border-white/10 bg-black/35 p-3">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">What goes in Media ID</div>
+                <div className="mt-2 rounded-lg border border-white/10 bg-black px-3 py-2 font-mono text-[12px] text-violet-100">
+                  {activeGuide.fieldValue}
+                </div>
+                <p className="mt-2 text-[11px] leading-5 text-zinc-400">{activeGuide.fieldHelp}</p>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-black/35 p-3">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">Route XRDB generates</div>
+                <div className="mt-2 rounded-lg border border-white/10 bg-black px-3 py-2 font-mono text-[12px] text-zinc-100">
+                  {activeGuide.routePath}
+                </div>
+                <p className="mt-2 text-[11px] leading-5 text-zinc-400">
+                  The preview input above is the ID payload. The final route keeps the same base ID, then adds the artwork path and file format for that image type.
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">Input examples</div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {activeGuide.fieldExamples.map((example) => (
+                    <span
+                      key={`${previewType}-field-${example}`}
+                      className="rounded-full border border-white/10 bg-black/35 px-2.5 py-1 font-mono text-[11px] text-zinc-200"
+                    >
+                      {example}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-500">Route examples</div>
+                <div className="mt-2 flex flex-col gap-2">
+                  {activeGuide.routeExamples.map((example) => (
+                    <div
+                      key={`${previewType}-route-${example}`}
+                      className="rounded-lg border border-white/10 bg-black/35 px-3 py-2 font-mono text-[11px] text-zinc-200"
+                    >
+                      {example}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="grid gap-3">
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Accepted base ID families</div>
+              <div className="mt-3 grid gap-2">
+                {BASE_ID_FAMILIES.map((family) => (
+                  <div key={family.label} className="rounded-xl border border-white/10 bg-black/30 p-3">
+                    <div className="text-sm font-semibold text-white">{family.label}</div>
+                    <p className="mt-1 text-[11px] leading-5 text-zinc-400">{family.detail}</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {family.examples.map((example) => (
+                        <span
+                          key={`${family.label}-${example}`}
+                          className="rounded-full border border-white/10 bg-black/35 px-2.5 py-1 font-mono text-[10px] text-zinc-300"
+                        >
+                          {example}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Movie, show, and episode rules</div>
+              <div className="mt-3 grid gap-2">
+                {FORMAT_REFERENCE.map((item) => (
+                  <div key={item.label} className="rounded-xl border border-white/10 bg-black/30 p-3">
+                    <div className="text-[11px] font-semibold text-white">{item.label}</div>
+                    <div className="mt-2 font-mono text-[11px] text-violet-100">{item.value}</div>
+                    <p className="mt-1 text-[11px] leading-5 text-zinc-400">{item.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="border-t border-white/10 bg-black/15 px-4 py-4 sm:px-5">
+          <div className="grid gap-3 lg:grid-cols-[1.15fr,0.85fr]">
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">Strict TMDB and route safety</div>
+              <p className="mt-2 text-[12px] leading-6 text-zinc-300">
+                If you enable Strict TMDB scope, backdrop and logo requests must stay typed as <span className="font-mono text-violet-100">tmdb:movie:603</span> or <span className="font-mono text-violet-100">tmdb:tv:1399</span>. Plain <span className="font-mono text-zinc-100">tmdb:603</span> is ambiguous and will be rejected.
+              </p>
+              <p className="mt-2 text-[11px] leading-5 text-zinc-400">
+                Poster routes can stay on IMDb or another supported base ID when that fits your source better. The export panels below show the full scoped query string XRDB will generate for your current workspace.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-black/25 p-4">
+              <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">High signal query params</div>
+              <div className="mt-3 grid gap-2">
+                {QUERY_PARAM_REFERENCE.map((item) => (
+                  <div key={item.label} className="rounded-xl border border-white/10 bg-black/30 p-3">
+                    <div className="font-mono text-[11px] text-zinc-100">{item.label}</div>
+                    <p className="mt-1 text-[11px] leading-5 text-zinc-400">{item.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
