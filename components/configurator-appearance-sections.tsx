@@ -31,10 +31,12 @@ import {
   DEFAULT_BADGE_SCALE_PERCENT,
   MAX_BADGE_SCALE_PERCENT,
   MAX_GENRE_BADGE_SCALE_PERCENT,
+  MAX_QUALITY_BADGE_SCALE_PERCENT,
   MIN_BADGE_SCALE_PERCENT,
   QUALITY_BADGE_OPTIONS,
   normalizeBadgeScalePercent,
   normalizeGenreBadgeScalePercent,
+  normalizeQualityBadgeScalePercent,
 } from '@/lib/badgeCustomization';
 import {
   DEFAULT_QUALITY_BADGES_STYLE,
@@ -1276,8 +1278,8 @@ export function LookSection({
               label="Quality badges"
               value={activeQualityBadgeScale}
               min={MIN_BADGE_SCALE_PERCENT}
-              max={MAX_BADGE_SCALE_PERCENT}
-              onChange={(value) => onSelectQualityBadgeScale(normalizeBadgeScalePercent(String(value)))}
+              max={MAX_QUALITY_BADGE_SCALE_PERCENT}
+              onChange={(value) => onSelectQualityBadgeScale(normalizeQualityBadgeScalePercent(String(value)))}
             />
           </div>
           <p className="text-[11px] leading-relaxed text-zinc-500">

@@ -77,6 +77,7 @@ import {
   normalizeBadgeScalePercent,
   normalizeGenreBadgeScalePercent,
   normalizeHexColor,
+  normalizeQualityBadgeScalePercent,
   normalizeQualityBadgePreferencesList,
   normalizeRatingProviderAppearanceOverrides,
   stringifyQualityBadgePreferencesAllowEmpty,
@@ -1097,19 +1098,19 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
       candidate.logoRatingBadgeScale ?? rpdbFontScalePercent,
       defaults.logoRatingBadgeScale,
     ),
-    posterQualityBadgeScale: normalizeBadgeScalePercent(
+    posterQualityBadgeScale: normalizeQualityBadgeScalePercent(
       candidate.posterQualityBadgeScale,
       defaults.posterQualityBadgeScale,
     ),
-    backdropQualityBadgeScale: normalizeBadgeScalePercent(
+    backdropQualityBadgeScale: normalizeQualityBadgeScalePercent(
       candidate.backdropQualityBadgeScale,
       defaults.backdropQualityBadgeScale,
     ),
-    thumbnailQualityBadgeScale: normalizeBadgeScalePercent(
+    thumbnailQualityBadgeScale: normalizeQualityBadgeScalePercent(
       candidate.thumbnailQualityBadgeScale ?? candidate.backdropQualityBadgeScale,
       defaults.thumbnailQualityBadgeScale,
     ),
-    logoQualityBadgeScale: normalizeBadgeScalePercent(
+    logoQualityBadgeScale: normalizeQualityBadgeScalePercent(
       candidate.logoQualityBadgeScale,
       defaults.logoQualityBadgeScale,
     ),
