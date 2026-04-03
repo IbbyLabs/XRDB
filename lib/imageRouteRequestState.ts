@@ -79,8 +79,13 @@ import {
 } from './genreBadge.ts';
 import { isAmbiguousTmdbXrdbId, normalizeXrdbId } from './proxyConfigBridge.ts';
 import {
+  DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_BADGE_SCALE_PERCENT,
+  DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
+  DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX,
+  DEFAULT_THUMBNAIL_GENRE_BADGE_BORDER_WIDTH_PX,
   normalizeBadgeScalePercent,
+  normalizeGenreBadgeBorderWidthPx,
   normalizeGenreBadgeScalePercent,
   normalizeHexColor,
   normalizeQualityBadgeScalePercent,
@@ -213,6 +218,7 @@ export type ImageRouteRequestState = {
   genreBadgeStyle: GenreBadgeStyle;
   genreBadgePosition: GenreBadgePosition;
   genreBadgeScale: number;
+  genreBadgeBorderWidth: number;
   effectiveGenreBadgeScale: number;
   genreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   posterRatingsLayout: PosterRatingLayout;
@@ -442,6 +448,28 @@ export const resolveImageRouteRequestState = async ({
     searchParams.get('logoGenreBadgeScale') ?? searchParams.get('genreBadgeScale'),
     globalGenreBadgeScale,
   );
+  const globalGenreBadgeBorderWidth = normalizeGenreBadgeBorderWidthPx(
+    searchParams.get('genreBadgeBorderWidth'),
+    DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX,
+  );
+  const posterGenreBadgeBorderWidth = normalizeGenreBadgeBorderWidthPx(
+    searchParams.get('posterGenreBadgeBorderWidth') ?? searchParams.get('genreBadgeBorderWidth'),
+    globalGenreBadgeBorderWidth,
+  );
+  const backdropGenreBadgeBorderWidth = normalizeGenreBadgeBorderWidthPx(
+    searchParams.get('backdropGenreBadgeBorderWidth') ?? searchParams.get('genreBadgeBorderWidth'),
+    DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX,
+  );
+  const thumbnailGenreBadgeBorderWidth = normalizeGenreBadgeBorderWidthPx(
+    searchParams.get('thumbnailGenreBadgeBorderWidth') ??
+      searchParams.get('backdropGenreBadgeBorderWidth') ??
+      searchParams.get('genreBadgeBorderWidth'),
+    backdropGenreBadgeBorderWidth,
+  );
+  const logoGenreBadgeBorderWidth = normalizeGenreBadgeBorderWidthPx(
+    searchParams.get('logoGenreBadgeBorderWidth') ?? searchParams.get('genreBadgeBorderWidth'),
+    DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
+  );
   const posterGenreBadgeAnimeGrouping = normalizeGenreBadgeAnimeGrouping(
     searchParams.get('posterGenreBadgeAnimeGrouping') ??
       searchParams.get('genreBadgeAnimeGrouping'),
@@ -494,6 +522,14 @@ export const resolveImageRouteRequestState = async ({
         : imageType === 'backdrop'
         ? backdropGenreBadgeScale
         : logoGenreBadgeScale;
+  const genreBadgeBorderWidth =
+    imageType === 'poster'
+      ? posterGenreBadgeBorderWidth
+      : isThumbnailRequest
+        ? thumbnailGenreBadgeBorderWidth
+        : imageType === 'backdrop'
+          ? backdropGenreBadgeBorderWidth
+          : logoGenreBadgeBorderWidth;
   const genreBadgeAnimeGrouping =
     imageType === 'poster'
       ? posterGenreBadgeAnimeGrouping
@@ -1200,6 +1236,7 @@ export const resolveImageRouteRequestState = async ({
     genreBadgeStyle,
     genreBadgePosition,
     genreBadgeScale,
+    genreBadgeBorderWidth,
     genreBadgeAnimeGrouping,
     logoBackground,
     effectiveRatingPreferences,
@@ -1226,6 +1263,7 @@ export const resolveImageRouteRequestState = async ({
     genreBadgeStyle,
     genreBadgePosition,
     genreBadgeScale,
+    genreBadgeBorderWidth,
     effectiveGenreBadgeScale,
     genreBadgeAnimeGrouping,
     posterRatingsLayout,

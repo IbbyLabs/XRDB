@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   DEFAULT_QUALITY_BADGE_PREFERENCES,
+  normalizeGenreBadgeBorderWidthPx,
   normalizeGenreBadgeScalePercent,
   normalizeQualityBadgeScalePercent,
 } from '../lib/badgeCustomization.ts';
@@ -17,6 +18,13 @@ test('quality badge scale normalization clamps to 70 to 200', () => {
   assert.equal(normalizeQualityBadgeScalePercent('205'), 200);
   assert.equal(normalizeQualityBadgeScalePercent('70'), 70);
   assert.equal(normalizeQualityBadgeScalePercent('40'), 70);
+});
+
+test('genre badge border width normalization clamps to 0 to 6 and keeps decimal precision', () => {
+  assert.equal(normalizeGenreBadgeBorderWidthPx('7.4'), 6);
+  assert.equal(normalizeGenreBadgeBorderWidthPx('0'), 0);
+  assert.equal(normalizeGenreBadgeBorderWidthPx('-1'), 0);
+  assert.equal(normalizeGenreBadgeBorderWidthPx('1.46'), 1.5);
 });
 
 test('default quality badge preferences include network and core quality badges', () => {

@@ -54,6 +54,7 @@ const createInput = (overrides = {}) => ({
   genreBadgeStyle: 'plain',
   genreBadgePosition: 'bottomCenter',
   genreBadgeScale: 100,
+  genreBadgeBorderWidth: 1.4,
   logoBackground: 'dark',
   effectiveRatingPreferences: ['imdb', 'tmdb'],
   providerAppearanceOverrides: {},

@@ -14,6 +14,7 @@ export type GenreBadgeRenderSpec = {
   mode: GenreBadgeMode;
   style: GenreBadgeStyle;
   scalePercent?: number;
+  borderWidth?: number;
 };
 
 const estimateGenreBadgeLabelWidth = (label: string, fontSize: number) => {
@@ -92,7 +93,11 @@ export const buildGenreBadgeSvg = (
   );
   const radius =
     genreBadge.style === 'square' ? Math.max(10, Math.round(height * 0.28)) : Math.round(height / 2);
-  const strokeWidth = genreBadge.style === 'plain' ? 0 : imageType === 'backdrop' ? 1.5 : 1.4;
+  const defaultStrokeWidth = imageType === 'backdrop' ? 1.5 : 1.4;
+  const strokeWidth =
+    genreBadge.style === 'glass'
+      ? Math.max(0, Number.isFinite(genreBadge.borderWidth) ? Number(genreBadge.borderWidth) : defaultStrokeWidth)
+      : 0;
   const iconSize = Math.round(height * (imageType === 'backdrop' ? 0.46 : 0.48));
   const fontSize = genreBadge.mode === 'text' ? Math.round(height * 0.37) : Math.round(height * 0.34);
   const label = genreBadge.label.trim().toUpperCase();

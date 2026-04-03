@@ -11,6 +11,12 @@ export const MIN_BADGE_SCALE_PERCENT = 70;
 export const MAX_BADGE_SCALE_PERCENT = 150;
 export const MAX_QUALITY_BADGE_SCALE_PERCENT = 200;
 export const MAX_GENRE_BADGE_SCALE_PERCENT = 200;
+export const MIN_GENRE_BADGE_BORDER_WIDTH_PX = 0;
+export const MAX_GENRE_BADGE_BORDER_WIDTH_PX = 6;
+export const DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX = 1.4;
+export const DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX = 1.5;
+export const DEFAULT_THUMBNAIL_GENRE_BADGE_BORDER_WIDTH_PX = 1.5;
+export const DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX = 1.4;
 export const DEFAULT_PROVIDER_ICON_SCALE_PERCENT = 100;
 export const MIN_PROVIDER_ICON_SCALE_PERCENT = 70;
 export const MAX_PROVIDER_ICON_SCALE_PERCENT = 145;
@@ -212,6 +218,23 @@ export const normalizeQualityBadgeScalePercent = (
   return Math.max(
     MIN_BADGE_SCALE_PERCENT,
     Math.min(MAX_QUALITY_BADGE_SCALE_PERCENT, Math.round(numericValue)),
+  );
+};
+
+export const normalizeGenreBadgeBorderWidthPx = (
+  value: unknown,
+  fallback = DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX,
+) => {
+  const numericValue =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string'
+        ? Number(value.trim())
+        : Number.NaN;
+  if (!Number.isFinite(numericValue)) return fallback;
+  return Math.max(
+    MIN_GENRE_BADGE_BORDER_WIDTH_PX,
+    Math.min(MAX_GENRE_BADGE_BORDER_WIDTH_PX, Math.round(numericValue * 10) / 10),
   );
 };
 
