@@ -9,7 +9,7 @@ import { resolveTorrentioBaseUrl } from './torrentioUrl.ts';
 
 export type PosterTextPreference = 'original' | 'clean' | 'alternative' | 'random';
 export type PosterImageSize = 'normal' | 'large' | '4k';
-export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta' | 'omdb' | 'random';
+export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta' | 'omdb' | 'random' | 'blackbar';
 export type EpisodeArtworkMode = 'still' | 'series';
 export type AnimeMappingProvider = 'mal' | 'anilist' | 'imdb' | 'tmdb' | 'tvdb' | 'anidb';
 export type AggregateBadgeKey = 'aggregate-overall' | 'aggregate-critics' | 'aggregate-audience';
@@ -41,7 +41,7 @@ const ANIME_MAPPING_PROVIDER_SET = new Set<AnimeMappingProvider>([
   'tvdb',
   'anidb',
 ]);
-const ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta', 'omdb', 'random']);
+const ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta', 'omdb', 'random', 'blackbar']);
 const EPISODE_ARTWORK_MODE_SET = new Set<EpisodeArtworkMode>(['still', 'series']);
 const POSTER_IMAGE_SIZE_SET = new Set<PosterImageSize>(['normal', 'large', '4k']);
 

@@ -117,7 +117,7 @@ export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
 export type PosterImageSize = 'normal' | 'large' | '4k';
 export type PosterImageTextPreference = 'original' | 'clean' | 'alternative' | 'random';
 export type BackdropImageTextPreference = 'original' | 'clean' | 'alternative' | 'random';
-export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta' | 'omdb' | 'random';
+export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta' | 'omdb' | 'random' | 'blackbar';
 export type EpisodeArtworkMode = 'still' | 'series';
 export type LogoBackground = 'transparent' | 'dark';
 export type TmdbIdScopeMode = 'soft' | 'strict';
@@ -276,8 +276,8 @@ const BACKDROP_IMAGE_TEXT_PREFERENCE_SET = new Set<BackdropImageTextPreference>(
   'alternative',
   'random',
 ]);
-const POSTER_ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta', 'omdb', 'random']);
-const NON_POSTER_ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta', 'random']);
+const POSTER_ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta', 'omdb', 'random', 'blackbar']);
+const NON_POSTER_ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta', 'random', 'blackbar']);
 const EPISODE_ARTWORK_MODE_SET = new Set<EpisodeArtworkMode>(['still', 'series']);
 const STREAM_BADGES_SETTING_SET = new Set<StreamBadgesSetting>(['auto', 'on', 'off']);
 const QUALITY_BADGES_SIDE_SET = new Set<QualityBadgesSide>(['left', 'right']);
