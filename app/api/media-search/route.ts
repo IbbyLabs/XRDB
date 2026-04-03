@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
   const previewTypeRaw = String(request.nextUrl.searchParams.get('previewType') || '').trim();
   const language = String(request.nextUrl.searchParams.get('lang') || '').trim() || DEFAULT_SEARCH_LANGUAGE;
 
-  if (!searchQuery || searchQuery.length < 2) {
-    return NextResponse.json({ error: 'Search query must be at least 2 characters.' }, { status: 400 });
+  if (!searchQuery) {
+    return NextResponse.json({ error: 'Search query is required.' }, { status: 400 });
   }
   if (!tmdbKey) {
     return NextResponse.json({ error: 'TMDB key is required.' }, { status: 400 });
