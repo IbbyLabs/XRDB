@@ -22,6 +22,7 @@ import {
   readProxyCatalogDescriptors,
   type ProxyCatalogRule,
 } from '@/lib/proxyCatalogRules';
+import type { ProxyMediaType } from '@/lib/uiConfig';
 
 export type CurrentSetupItem = {
   label: string;
@@ -45,6 +46,8 @@ export function ConfiguratorSupportPanels({
   onSelectProxyTranslateMetaMode,
   proxyDebugMetaTranslation,
   onToggleProxyDebugMetaTranslation,
+  proxyTypes,
+  onChangeProxyTypes,
   proxyCatalogRules,
   onChangeProxyCatalogRules,
   tmdbKey,
@@ -78,6 +81,8 @@ export function ConfiguratorSupportPanels({
   onSelectProxyTranslateMetaMode: (value: MetadataTranslationMode) => void;
   proxyDebugMetaTranslation: boolean;
   onToggleProxyDebugMetaTranslation: (value: boolean) => void;
+  proxyTypes: ProxyMediaType[];
+  onChangeProxyTypes: (value: ProxyMediaType[]) => void;
   proxyCatalogRules: ProxyCatalogRule[];
   onChangeProxyCatalogRules: (value: ProxyCatalogRule[]) => void;
   tmdbKey: string;
@@ -169,6 +174,22 @@ export function ConfiguratorSupportPanels({
     () => new Map(proxyCatalogRules.map((rule) => [rule.key, rule])),
     [proxyCatalogRules],
   );
+  const proxyTypeSet = useMemo(() => new Set(proxyTypes), [proxyTypes]);
+
+  const toggleProxyType = (type: ProxyMediaType, enabled: boolean) => {
+    const nextSet = new Set(proxyTypes);
+    if (enabled) {
+      nextSet.add(type);
+    } else {
+      nextSet.delete(type);
+    }
+    const orderedTypes = (['movie', 'series', 'anime'] as ProxyMediaType[]).filter((item) =>
+      nextSet.has(item),
+    );
+    if (orderedTypes.length > 0) {
+      onChangeProxyTypes(orderedTypes);
+    }
+  };
 
   const updateCatalogRule = (key: string, nextRule: Partial<ProxyCatalogRule>) => {
     const currentRule = catalogRulesByKey.get(key) || { key };
@@ -232,6 +253,32 @@ export function ConfiguratorSupportPanels({
                         placeholder="https://addon.example.com/manifest.json"
                         className="w-full min-w-0 bg-black border border-white/10 rounded-lg px-2.5 py-2 text-xs text-white focus:border-violet-500/50 outline-none"
                       />
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-zinc-950/70 p-3 space-y-2">
+                      <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Apply proxy to</div>
+                      <p className="text-[11px] leading-5 text-zinc-500">
+                        Select which media types get XRDB image rewrites and metadata translation in this proxy manifest.
+                      </p>
+                      <div className="grid gap-2 sm:grid-cols-3">
+                        {[
+                          { id: 'movie' as ProxyMediaType, label: 'Movie' },
+                          { id: 'series' as ProxyMediaType, label: 'Series' },
+                          { id: 'anime' as ProxyMediaType, label: 'Anime' },
+                        ].map((option) => (
+                          <label
+                            key={option.id}
+                            className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-2.5 py-2 text-[11px] font-semibold text-zinc-300"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={proxyTypeSet.has(option.id)}
+                              onChange={(event) => toggleProxyType(option.id, event.target.checked)}
+                              className="h-3 w-3 accent-violet-500"
+                            />
+                            <span>{option.label}</span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
                     <div className="rounded-xl border border-white/10 bg-zinc-950/70 p-3 space-y-3">
                       <label className="flex items-start gap-3 cursor-pointer">

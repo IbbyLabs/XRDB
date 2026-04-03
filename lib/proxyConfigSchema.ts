@@ -160,6 +160,7 @@ export type ProxyConfig = {
   fanartKey?: string;
   translateMeta?: boolean;
   translateMetaMode?: MetadataTranslationMode;
+  proxyTypes?: string;
   episodeIdMode?: EpisodeIdMode;
   debugMetaTranslation?: boolean;
   ratings?: string;
@@ -309,6 +310,7 @@ const ALL_OPTIONAL_IMAGE_QUERY_KEYS = [
 
 const CONFIG_STRING_KEYS = [
   'translateMetaMode',
+  'proxyTypes',
   'episodeIdMode',
   'xrdbKey',
   'simklClientId',
@@ -476,6 +478,7 @@ export const XRDB_RESERVED_PARAMS = new Set<string>([
   'xrdbBase',
   'translateMeta',
   'translateMetaMode',
+  'proxyTypes',
   'episodeIdMode',
   'thumbnailEpisodeArtwork',
   'backdropEpisodeArtwork',

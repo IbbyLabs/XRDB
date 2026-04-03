@@ -487,6 +487,8 @@ export function buildConfiguratorPageProps({
         onSelectProxyTranslateMetaMode: workspaceState.setProxyTranslateMetaMode,
         proxyDebugMetaTranslation: workspaceState.proxyDebugMetaTranslation,
         onToggleProxyDebugMetaTranslation: workspaceState.setProxyDebugMetaTranslation,
+        proxyTypes: workspaceState.proxyTypes,
+        onChangeProxyTypes: workspaceState.setProxyTypes,
         proxyCatalogRules: workspaceState.proxyCatalogRules,
         onChangeProxyCatalogRules: workspaceState.setProxyCatalogRules,
         tmdbKey: workspaceState.tmdbKey,

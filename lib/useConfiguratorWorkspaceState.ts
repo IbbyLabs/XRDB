@@ -57,6 +57,7 @@ import {
   type PosterImageSize,
   type PosterImageTextPreference,
   type PosterQualityBadgesPosition,
+  type ProxyMediaType,
   type QualityBadgesSide,
   type StreamBadgesSetting,
   type TmdbIdScopeMode,
@@ -190,6 +191,7 @@ export function useConfiguratorWorkspaceState() {
   const [proxyTranslateMeta, setProxyTranslateMeta] = useState(false);
   const [proxyTranslateMetaMode, setProxyTranslateMetaMode] = useState<MetadataTranslationMode>(DEFAULT_METADATA_TRANSLATION_MODE);
   const [proxyDebugMetaTranslation, setProxyDebugMetaTranslation] = useState(false);
+  const [proxyTypes, setProxyTypes] = useState<ProxyMediaType[]>(['movie', 'series', 'anime']);
   const [proxyCatalogRules, setProxyCatalogRules] = useState<ProxyCatalogRule[]>([]);
   const [showConfigString, setShowConfigString] = useState(false);
   const [showProxyUrl, setShowProxyUrl] = useState(false);
@@ -326,6 +328,7 @@ export function useConfiguratorWorkspaceState() {
     proxyDebugMetaTranslation,
     proxyCatalogRules,
     proxyManifestUrl,
+    proxyTypes,
     proxyTranslateMeta,
     proxyTranslateMetaMode,
     qualityBadgesSide,
@@ -447,6 +450,7 @@ export function useConfiguratorWorkspaceState() {
     setProxyDebugMetaTranslation,
     setProxyCatalogRules,
     setProxyManifestUrl,
+    setProxyTypes,
     setProxyTranslateMeta,
     setProxyTranslateMetaMode,
     setQualityBadgesSide,
