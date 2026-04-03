@@ -49,6 +49,7 @@ const SIMPLE_PRESENTATION_IDS: RatingPresentation[] = [
   'standard',
   'minimal',
   'average',
+  'ring',
   'blockbuster',
 ];
 
