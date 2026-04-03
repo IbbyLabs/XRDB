@@ -44,6 +44,29 @@ test('image route quality badge builds asset backed plain output', () => {
   assert.match(spec.svg, /quality-badge-logo-shadow/);
 });
 
+test('image route quality badge renders streaming provider logos when icon data is present', () => {
+  const iconDataUri =
+    'data:image/svg+xml;base64,' +
+    Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><rect width="24" height="24" rx="6" fill="#E50914"/></svg>',
+    ).toString('base64');
+  const spec = buildQualityBadgeSvg(
+    {
+      key: 'netflix',
+      label: 'Netflix',
+      accentColor: '#e50914',
+      iconDataUri,
+    },
+    44,
+    undefined,
+    'glass',
+  );
+
+  assert.ok(spec);
+  assert.match(spec.svg, /<image /);
+  assert.match(spec.svg, /NETFLIX/);
+});
+
 test('image route quality badge returns null for unsupported keys', () => {
   assert.equal(buildQualityBadgeSvg({ key: 'unknown', label: 'Unknown' }, 40, undefined, 'glass'), null);
 });

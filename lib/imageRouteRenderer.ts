@@ -257,6 +257,19 @@ export const renderWithSharp = async (
         iconRenderStateByProvider.set(providerKey, iconRenderState);
       }
     }
+    const resolvedQualityBadges = await Promise.all(
+      input.qualityBadges.map(async (badge) => {
+        const normalizedIconUrl = String(badge.iconUrl || '').trim();
+        if (!normalizedIconUrl) {
+          return badge;
+        }
+        const iconDataUri = await getProviderIconDataUri(normalizedIconUrl);
+        return {
+          ...badge,
+          iconDataUri,
+        };
+      })
+    );
 
     const sideColumnMetrics: BadgeLayoutMetrics = {
       iconSize: input.badgeIconSize,
@@ -354,7 +367,7 @@ export const renderWithSharp = async (
     const blockbusterProtectedRects = resolveBlockbusterProtectedRects({
       imageType: input.imageType,
       ratingPresentation: input.ratingPresentation,
-      qualityBadgeCount: input.qualityBadges.filter((badge) =>
+      qualityBadgeCount: resolvedQualityBadges.filter((badge) =>
         isMediaFeatureBadgeKey(String(badge.key))
       ).length,
       posterQualityBadgePlacement,
@@ -386,25 +399,27 @@ export const renderWithSharp = async (
         : [];
     const blockbusterCalloutKeys = new Set(blockbusterCalloutBadges.map((badge) => badge.key));
     const alignPosterRowWithQuality =
-      input.imageType === 'poster' && input.qualityBadges.length > 0 && posterQualityBadgeSidePlacement !== null;
-	    const posterRowAlign: 'left' | 'center' | 'right' = alignPosterRowWithQuality
-	      ? posterQualityBadgeSidePlacement === 'right'
-	        ? 'right'
-	        : 'left'
-	      : 'center';
-	    const posterCleanOverlayAsset = await buildPosterCleanOverlayAsset({
-	      imageType: input.imageType,
-	      posterTitleText: input.posterTitleText,
-	      posterLogoUrl: input.posterLogoUrl,
-	      posterRowRegionWidth,
-	      outputWidth: input.outputWidth,
-	      outputHeight: input.outputHeight,
-	      sharp,
-	      getSourceImagePayload,
-	    });
-	    const composeBadgeRow = (
-	      rowBadges: RatingBadge[],
-	      rowY: number,
+      input.imageType === 'poster' &&
+      resolvedQualityBadges.length > 0 &&
+      posterQualityBadgeSidePlacement !== null;
+    const posterRowAlign: 'left' | 'center' | 'right' = alignPosterRowWithQuality
+      ? posterQualityBadgeSidePlacement === 'right'
+        ? 'right'
+        : 'left'
+      : 'center';
+    const posterCleanOverlayAsset = await buildPosterCleanOverlayAsset({
+      imageType: input.imageType,
+      posterTitleText: input.posterTitleText,
+      posterLogoUrl: input.posterLogoUrl,
+      posterRowRegionWidth,
+      outputWidth: input.outputWidth,
+      outputHeight: input.outputHeight,
+      sharp,
+      getSourceImagePayload,
+    });
+    const composeBadgeRow = (
+      rowBadges: RatingBadge[],
+      rowY: number,
       options?: {
         maxRowWidth?: number;
         regionLeft?: number;
@@ -439,17 +454,17 @@ export const renderWithSharp = async (
         isPosterRowLayout,
       });
 
-	      for (const entry of placements) {
-	        pushBadgeOverlay({
-	          badge: entry.badge,
-	          badgeWidth: entry.badgeWidth,
+      for (const entry of placements) {
+        pushBadgeOverlay({
+          badge: entry.badge,
+          badgeWidth: entry.badgeWidth,
           rowX: entry.rowX,
           rowY,
           compactText: compactPosterRowText,
-	        });
-	      }
-	    };
-	    const pushBadgeOverlay = ({
+        });
+      }
+    };
+    const pushBadgeOverlay = ({
       badge,
       badgeWidth,
       rowX,
@@ -1008,7 +1023,7 @@ export const renderWithSharp = async (
 	      }
 	    }
 
-    if (input.imageType === 'poster' && input.qualityBadges.length > 0) {
+    if (input.imageType === 'poster' && resolvedQualityBadges.length > 0) {
       const qualityPlacement = resolvePosterQualityBadgePlacement(
         input.posterRatingsLayout,
         input.qualityBadgesSide,
@@ -1040,7 +1055,7 @@ export const renderWithSharp = async (
         );
         appendQualityBadgeOverlays(
           buildQualityBadgeRowOverlays({
-            rowBadges: input.qualityBadges,
+            rowBadges: resolvedQualityBadges,
             rowY: bottomY,
             origin: 'bottom',
             imageType: input.imageType,
@@ -1061,7 +1076,7 @@ export const renderWithSharp = async (
         const topY = Math.max(input.badgeTopOffset, editorialOverlaySafeBottom ?? input.badgeTopOffset);
         appendQualityBadgeOverlays(
           buildQualityBadgeRowOverlays({
-            rowBadges: input.qualityBadges,
+            rowBadges: resolvedQualityBadges,
             rowY: topY,
             origin: 'top',
             imageType: input.imageType,
@@ -1083,7 +1098,7 @@ export const renderWithSharp = async (
                 referenceBadgeHeight: ratingBadgeHeight,
                 qualityBadgeScalePercent: input.qualityBadgeScalePercent,
                 badgeGap: input.badgeGap,
-                badgeCount: input.qualityBadges.length,
+                badgeCount: resolvedQualityBadges.length,
                 availableHeight: input.outputHeight - input.badgeTopOffset - input.badgeBottomOffset,
               }).totalHeight
             ) / 2
@@ -1116,7 +1131,7 @@ export const renderWithSharp = async (
         }
         appendQualityBadgeOverlays(
           buildQualityBadgeColumnOverlays({
-            columnBadges: input.qualityBadges,
+            columnBadges: resolvedQualityBadges,
             startY: qualityStartY,
             side: qualityPlacement,
             imageType: input.imageType,
@@ -1134,7 +1149,7 @@ export const renderWithSharp = async (
       }
     }
 
-    if (input.imageType === 'backdrop' && input.qualityBadges.length > 0) {
+    if (input.imageType === 'backdrop' && resolvedQualityBadges.length > 0) {
       const qualityHeight = resolveQualityBadgeHeight({
         referenceBadgeHeight: ratingBadgeHeight,
         qualityBadgeScalePercent: input.qualityBadgeScalePercent,
@@ -1144,7 +1159,7 @@ export const renderWithSharp = async (
         Math.max(72, Math.round(qualityHeight * 1.75)),
         Math.max(72, input.outputWidth - 24)
       );
-      const usableQualityBadges = input.qualityBadges.filter((badge) =>
+      const usableQualityBadges = resolvedQualityBadges.filter((badge) =>
         isMediaFeatureBadgeKey(String(badge.key))
       );
       if (usableQualityBadges.length > 0) {

@@ -1,3 +1,5 @@
+import { buildTmdbProviderLogoUrl } from './imageRouteSourceUrls.ts';
+
 export type MediaFeatureBadgeKey =
   | 'certification'
   | 'netflix'
@@ -28,7 +30,18 @@ export type MediaFeatureBadgeMeta = {
   key: MediaFeatureBadgeKey;
   label: string;
   accentColor: string;
+  iconUrl?: string | null;
 };
+
+export type StreamingServiceBadgeKey =
+  | 'netflix'
+  | 'hbo'
+  | 'primevideo'
+  | 'disneyplus'
+  | 'appletvplus'
+  | 'hulu'
+  | 'paramountplus'
+  | 'peacock';
 
 const DEFAULT_CERTIFICATION_REGION_ORDER = [
   'US',
@@ -142,6 +155,17 @@ export const MEDIA_FEATURE_BADGE_ORDER: MediaFeatureBadgeKey[] = [
   'remux',
 ];
 const MEDIA_FEATURE_BADGE_KEY_SET = new Set<MediaFeatureBadgeKey>(MEDIA_FEATURE_BADGE_ORDER);
+export const STREAMING_SERVICE_BADGE_ORDER: StreamingServiceBadgeKey[] = [
+  'netflix',
+  'hbo',
+  'primevideo',
+  'disneyplus',
+  'appletvplus',
+  'hulu',
+  'paramountplus',
+  'peacock',
+];
+const STREAMING_SERVICE_BADGE_KEY_SET = new Set<StreamingServiceBadgeKey>(STREAMING_SERVICE_BADGE_ORDER);
 
 const normalizeRegionCode = (value: unknown) => {
   const normalized = typeof value === 'string' ? value.trim().toUpperCase() : '';
@@ -318,28 +342,48 @@ const resolveStreamingProviderBadgeKey = (
   return null;
 };
 
-const buildOrderedProviderBadgesFromNames = (providerNames: unknown[]): MediaFeatureBadgeMeta[] => {
-  const matchedKeys = new Set<MediaFeatureBadgeKey>();
-  for (const providerName of providerNames) {
-    const normalizedName = normalizeNetworkName(providerName);
+const buildOrderedProviderBadgesFromCandidates = (
+  providerCandidates: Array<{ name: unknown; logoPath?: unknown }>,
+): MediaFeatureBadgeMeta[] => {
+  const matchedBadges = new Map<StreamingServiceBadgeKey, string | null>();
+
+  for (const providerCandidate of providerCandidates) {
+    const normalizedName = normalizeNetworkName(providerCandidate.name);
     const key = resolveStreamingProviderBadgeKey(normalizedName);
-    if (key) {
-      matchedKeys.add(key);
+    if (!key || matchedBadges.has(key)) {
+      continue;
     }
+
+    const logoPath = typeof providerCandidate.logoPath === 'string' ? providerCandidate.logoPath.trim() : '';
+    matchedBadges.set(key, logoPath ? buildTmdbProviderLogoUrl(logoPath) : null);
   }
-  return MEDIA_FEATURE_BADGE_ORDER.flatMap((key) =>
-    matchedKeys.has(key) ? [MEDIA_FEATURE_META_BY_KEY[key]] : [],
-  );
+
+  return STREAMING_SERVICE_BADGE_ORDER.flatMap((key) => {
+    if (!matchedBadges.has(key)) {
+      return [];
+    }
+    return [
+      {
+        ...MEDIA_FEATURE_META_BY_KEY[key],
+        iconUrl: matchedBadges.get(key) ?? null,
+      },
+    ];
+  });
 };
 
 export const buildNetworkBadgesFromTvNetworks = (networks: unknown): MediaFeatureBadgeMeta[] => {
   if (!Array.isArray(networks) || networks.length === 0) return [];
-  return buildOrderedProviderBadgesFromNames(
-    networks.map((network) =>
-      network && typeof network === 'object' && 'name' in network
-        ? (network as { name?: unknown }).name
-        : '',
-    ),
+  return buildOrderedProviderBadgesFromCandidates(
+    networks.map((network) => ({
+      name:
+        network && typeof network === 'object' && 'name' in network
+          ? (network as { name?: unknown }).name
+          : '',
+      logoPath:
+        network && typeof network === 'object' && 'logo_path' in network
+          ? (network as { logo_path?: unknown }).logo_path
+          : '',
+    })),
   );
 };
 
@@ -383,17 +427,22 @@ export const buildNetworkBadgesFromWatchProviderResults = (
 
   if (!selectedRegionResult || typeof selectedRegionResult !== 'object') return [];
 
-  const providerNames = STREAM_PROVIDER_BUCKETS.flatMap((bucket) => {
+  const providerCandidates = STREAM_PROVIDER_BUCKETS.flatMap((bucket) => {
     const providers = (selectedRegionResult as Record<string, unknown>)[bucket];
     if (!Array.isArray(providers)) return [];
-    return providers.map((provider) =>
-      provider && typeof provider === 'object' && 'provider_name' in provider
-        ? (provider as { provider_name?: unknown }).provider_name
-        : '',
-    );
+    return providers.map((provider) => ({
+      name:
+        provider && typeof provider === 'object' && 'provider_name' in provider
+          ? (provider as { provider_name?: unknown }).provider_name
+          : '',
+      logoPath:
+        provider && typeof provider === 'object' && 'logo_path' in provider
+          ? (provider as { logo_path?: unknown }).logo_path
+          : '',
+    }));
   });
 
-  return buildOrderedProviderBadgesFromNames(providerNames);
+  return buildOrderedProviderBadgesFromCandidates(providerCandidates);
 };
 
 const getMovieCertificationCandidates = (result: any) => {
@@ -472,6 +521,9 @@ export const resolveTvCertificationBadge = (
 
 export const isMediaFeatureBadgeKey = (value: string): value is MediaFeatureBadgeKey =>
   MEDIA_FEATURE_BADGE_KEY_SET.has(value as MediaFeatureBadgeKey);
+
+export const isStreamingServiceBadgeKey = (value: string): value is StreamingServiceBadgeKey =>
+  STREAMING_SERVICE_BADGE_KEY_SET.has(value as StreamingServiceBadgeKey);
 
 export const buildCertificationBadgeMeta = (label: string): MediaFeatureBadgeMeta => ({
   ...MEDIA_FEATURE_META_BY_KEY.certification,

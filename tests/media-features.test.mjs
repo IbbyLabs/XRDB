@@ -189,9 +189,9 @@ test('tv certification resolution falls back to available regions', () => {
 
 test('tv networks resolve to distinct network badges in media badge order', () => {
   const badges = buildNetworkBadgesFromTvNetworks([
-    { name: 'HBO Max' },
-    { name: 'Netflix' },
-    { name: 'Prime Video' },
+    { name: 'HBO Max', logo_path: '/max.png' },
+    { name: 'Netflix', logo_path: '/netflix.png' },
+    { name: 'Prime Video', logo_path: '/prime.png' },
     { name: 'Unknown Network' },
     { name: 'HBO' },
   ]);
@@ -200,6 +200,8 @@ test('tv networks resolve to distinct network badges in media badge order', () =
     badges.map((badge) => badge.key),
     ['netflix', 'hbo', 'primevideo'],
   );
+  assert.equal(badges[0].iconUrl, 'https://image.tmdb.org/t/p/w185/netflix.png');
+  assert.equal(badges[1].iconUrl, 'https://image.tmdb.org/t/p/w185/max.png');
 });
 
 test('watch providers prefer the requested region and ignore rent only entries', () => {
@@ -209,7 +211,7 @@ test('watch providers prefer the requested region and ignore rent only entries',
         flatrate: [{ provider_name: 'Netflix' }],
       },
       GB: {
-        flatrate: [{ provider_name: 'Prime Video' }],
+        flatrate: [{ provider_name: 'Prime Video', logo_path: '/prime-video.png' }],
         rent: [{ provider_name: 'Apple TV' }],
       },
     },
@@ -220,6 +222,7 @@ test('watch providers prefer the requested region and ignore rent only entries',
     badges.map((badge) => badge.key),
     ['primevideo'],
   );
+  assert.equal(badges[0].iconUrl, 'https://image.tmdb.org/t/p/w185/prime-video.png');
 });
 
 test('watch providers normalize ads variants and max channel names into badge keys', () => {

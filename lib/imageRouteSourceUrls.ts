@@ -50,6 +50,9 @@ export const buildTmdbImageUrl = (
   return `https://image.tmdb.org/t/p/${size}${imgPath}`;
 };
 
+export const buildTmdbProviderLogoUrl = (logoPath: string, size = 'w185') =>
+  `https://image.tmdb.org/t/p/${size}${logoPath}`;
+
 export const buildCinemetaPosterUrl = (imdbId: string) =>
   `https://images.metahub.space/poster/medium/${encodeURIComponent(imdbId)}/img`;
 

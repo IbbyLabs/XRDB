@@ -8,6 +8,7 @@ import {
   type MediaBadgeAssetId,
 } from './mediaBadgeAssets.ts';
 import {
+  isStreamingServiceBadgeKey,
   isMediaFeatureBadgeKey,
   normalizeUserFacingMediaBadgeLabel,
   type MediaFeatureBadgeKey,
@@ -17,6 +18,8 @@ import { escapeXml, estimateGeneratedLogoLineWidth } from './imageRouteText.ts';
 export type QualityBadgeInput = {
   key: string;
   label: string;
+  accentColor?: string;
+  iconDataUri?: string | null;
 };
 
 const parseHexColor = (value: string) => {
@@ -89,6 +92,21 @@ const buildCenteredBadgeAssetImage = ({
   return `<image href="${dataUri}" x="${x}" y="${y}" width="${assetWidth}" height="${assetHeight}" preserveAspectRatio="xMidYMid meet"${extraAttributes ? ` ${extraAttributes}` : ''} />`;
 };
 
+const buildCenteredProviderLogoImage = ({
+  dataUri,
+  x,
+  y,
+  size,
+  extraAttributes = '',
+}: {
+  dataUri: string;
+  x: number;
+  y: number;
+  size: number;
+  extraAttributes?: string;
+}) =>
+  `<image href="${dataUri}" x="${x}" y="${y}" width="${size}" height="${size}" preserveAspectRatio="xMidYMid meet"${extraAttributes ? ` ${extraAttributes}` : ''} />`;
+
 export const usesIntrinsicQualityBadgeWidths = (style: QualityBadgeStyle) =>
   style === 'media' || style === 'silver';
 
@@ -102,6 +120,10 @@ export const buildQualityBadgeSvg = (
   if (!isMediaFeatureBadgeKey(String(key))) {
     return null;
   }
+  const hasStreamingServiceLogo =
+    isStreamingServiceBadgeKey(String(key)) &&
+    typeof badge.iconDataUri === 'string' &&
+    badge.iconDataUri.trim().startsWith('data:');
   const label = (normalizeUserFacingMediaBadgeLabel(badge.label) || '').toUpperCase();
   const h = Math.max(32, Math.round(height * 0.9));
   const radius = style === 'glass' ? Math.round(h / 2) : Math.round(h * 0.18);
@@ -386,6 +408,67 @@ ${style === 'plain' ? plainStroke : rect}
   }
 
   const accentColor = mediaFrameByKey[key as MediaFeatureBadgeKey]?.stroke ?? 'rgba(255,255,255,0.68)';
+  const resolvedAccentColor = badge.accentColor || accentColor;
+
+  if (hasStreamingServiceLogo) {
+    const iconSize = Math.max(16, Math.round(h * 0.56));
+    const iconPlateSize = Math.max(iconSize + 10, Math.round(h * 0.68));
+    const sidePadding = Math.max(10, Math.round(h * 0.22));
+    const contentGap = Math.max(9, Math.round(h * 0.16));
+    const textSize = Math.round(h * 0.33);
+    const width = widthOverride ?? Math.max(
+      Math.round(h * 1.9),
+      estimateQualityTextBadgeWidth(label, textSize, sidePadding + iconPlateSize + contentGap / 2),
+    );
+    const iconPlateX = sidePadding;
+    const iconPlateY = Math.round((h - iconPlateSize) / 2);
+    const iconX = Math.round(iconPlateX + (iconPlateSize - iconSize) / 2);
+    const iconY = Math.round((h - iconSize) / 2);
+    const textX = iconPlateX + iconPlateSize + contentGap;
+    const textY = Math.round(h * 0.66);
+    const textFilter = style === 'plain' ? ' filter="url(#quality-badge-stream-text-shadow)"' : '';
+    const defs =
+      style === 'plain'
+        ? `${buildPlainQualityShadowDefs('quality-badge-stream-surface')}<defs><filter id="quality-badge-stream-logo-shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="1" stdDeviation="2.1" flood-color="#000000" flood-opacity="0.52" /></filter><filter id="quality-badge-stream-text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#000000" flood-opacity="0.56" /></filter></defs>`
+        : '';
+    const backgroundMarkup =
+      style === 'media'
+        ? buildMediaPlate(width, {
+            stroke: hexColorToRgba(resolvedAccentColor, 0.68, 'rgba(255,255,255,0.68)'),
+            fill: 'rgba(12,18,32,0.24)',
+            strokeScale: 0.78,
+            radiusScale: 0.27,
+            highlightOpacity: 0.055,
+          })
+        : style === 'plain'
+          ? buildPlainQualitySurface(width, 'quality-badge-stream-surface')
+          : buildRect(width, resolvedAccentColor);
+    const iconPlateRadius = Math.max(8, Math.round(iconPlateSize * 0.28));
+    const iconPlateMarkup =
+      style === 'plain'
+        ? `<rect x="${iconPlateX}" y="${iconPlateY}" width="${iconPlateSize}" height="${iconPlateSize}" rx="${iconPlateRadius}" fill="rgba(2,6,23,0.28)" stroke="rgba(255,255,255,0.16)" stroke-width="1" />`
+        : `<rect x="${iconPlateX}" y="${iconPlateY}" width="${iconPlateSize}" height="${iconPlateSize}" rx="${iconPlateRadius}" fill="rgba(255,255,255,0.08)" stroke="${hexColorToRgba(resolvedAccentColor, 0.32, 'rgba(255,255,255,0.24)')}" stroke-width="1" />`;
+    const logoExtraAttributes = style === 'plain' ? 'filter="url(#quality-badge-stream-logo-shadow)"' : '';
+
+    return {
+      width,
+      height: h,
+      svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
+${defs}
+${backgroundMarkup}
+${iconPlateMarkup}
+${buildCenteredProviderLogoImage({
+  dataUri: badge.iconDataUri as string,
+  x: iconX,
+  y: iconY,
+  size: iconSize,
+  extraAttributes: logoExtraAttributes,
+})}
+<text x="${textX}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="start" fill="${style === 'plain' ? hexColorToRgba(resolvedAccentColor, 0.96, '#f5f5f4') : '#f5f5f4'}"${textFilter}>${escapeXml(label)}</text>
+</svg>`,
+    };
+  }
+
   const textSize = Math.round(h * 0.33);
   const sidePadding = Math.max(10, Math.round(h * 0.24));
   const textWidth = widthOverride ?? estimateQualityTextBadgeWidth(label, textSize, sidePadding);
@@ -396,18 +479,18 @@ ${style === 'plain' ? plainStroke : rect}
       height: h,
       svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${textWidth}" height="${h}" viewBox="0 0 ${textWidth} ${h}">
 ${buildMediaPlate(textWidth, {
-  stroke: hexColorToRgba(accentColor, 0.68, 'rgba(255,255,255,0.68)'),
+  stroke: hexColorToRgba(resolvedAccentColor, 0.68, 'rgba(255,255,255,0.68)'),
   fill: 'rgba(12,18,32,0.24)',
   strokeScale: 0.78,
   radiusScale: 0.27,
   highlightOpacity: 0.055,
 })}
-<text x="${textWidth / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${hexColorToRgba(accentColor, 0.97, '#f5f5f4')}" letter-spacing="0.012em">${escapeXml(label)}</text>
+<text x="${textWidth / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${hexColorToRgba(resolvedAccentColor, 0.97, '#f5f5f4')}" letter-spacing="0.012em">${escapeXml(label)}</text>
 </svg>`,
     };
   }
 
-  const rect = buildRect(textWidth, accentColor);
+  const rect = buildRect(textWidth, resolvedAccentColor);
   const plainStroke =
     style === 'plain' ? buildPlainQualitySurface(textWidth, 'quality-badge-text-fallback-surface') : '';
   const filter = style === 'plain' ? ' filter="url(#quality-badge-text-fallback-shadow)"' : '';
@@ -415,7 +498,8 @@ ${buildMediaPlate(textWidth, {
     style === 'plain'
       ? `${buildPlainQualityShadowDefs('quality-badge-text-fallback-surface')}<defs><filter id="quality-badge-text-fallback-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#000000" flood-opacity="0.56" /></filter></defs>`
       : '';
-  const textFill = style === 'plain' ? hexColorToRgba(accentColor, 0.95, '#f5f5f4') : '#f5f5f4';
+  const textFill =
+    style === 'plain' ? hexColorToRgba(resolvedAccentColor, 0.95, '#f5f5f4') : '#f5f5f4';
   return {
     width: textWidth,
     height: h,
