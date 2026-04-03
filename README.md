@@ -323,6 +323,10 @@ Episode thumbnails use the dedicated `/thumbnail/{id}/S{season}E{episode}.jpg` r
 | `qualityBadgesStyle` | Quality badges style (global fallback) | `glass`, `square`, `plain`, `media`, `silver` | `glass` |
 | `posterQualityBadgesStyle` | Poster quality badges style | `glass`, `square`, `plain`, `media`, `silver` | `glass` |
 | `backdropQualityBadgesStyle` | Backdrop quality badges style | `glass`, `square`, `plain`, `media`, `silver` | `glass` |
+| `posterQualityBadgeScale` | Poster quality badge scale | Number (`70-200`) | `100` |
+| `backdropQualityBadgeScale` | Backdrop quality badge scale | Number (`70-200`) | `100` |
+| `thumbnailQualityBadgeScale` | Thumbnail quality badge scale | Number (`70-200`) | `100` |
+| `logoQualityBadgeScale` | Logo quality badge scale | Number (`70-200`) | `100` |
 | `posterQualityBadgesMax` | Poster quality badge limit | Number (1-20) | `auto` |
 | `backdropQualityBadgesMax` | Backdrop quality badge limit | Number (1-20) | `auto` |
 | `ratingPresentation` | Rating presentation mode (global fallback) | `standard`, `minimal`, `average`, `dual`, `blockbuster`, `none` | `standard` |
