@@ -512,8 +512,22 @@
 }
 
 @media (min-width: 1280px) {
+	#workspace-preview {
+		position: relative;
+		z-index: 5;
+	}
+
 	#workspace-preview > .xrdb-panel-preview {
 		overflow: visible;
+		z-index: 5;
+	}
+
+	#workspace-preview .workspace-sticky-preview {
+		position: sticky;
+		top: var(--workspace-sticky-top);
+		align-self: start;
+		z-index: 40;
+		isolation: isolate;
 	}
 }
 

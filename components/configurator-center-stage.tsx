@@ -84,9 +84,7 @@ export function ConfiguratorCenterStage({
   const centerViewMeta =
     workspaceCenterViewOptions.find((option) => option.id === workspaceCenterView) ||
     workspaceCenterViewOptions[0];
-  const stickyRailClass = stickyPreviewEnabled
-    ? 'xl:sticky xl:top-[var(--workspace-sticky-top)] xl:z-10 xl:self-start'
-    : '';
+  const stickyRailClass = stickyPreviewEnabled ? 'workspace-sticky-preview' : '';
 
   const previewFrame = (
     <div className="rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(139,92,246,0.12),_transparent_58%),linear-gradient(180deg,rgba(12,10,20,0.92),rgba(6,6,10,0.96))] p-4">
