@@ -9,6 +9,7 @@ import {
   type GenreBadgeStyle,
 } from './genreBadge.ts';
 import {
+  BACKDROP_IMAGE_DIMENSIONS,
   FALLBACK_IMAGE_LANGUAGE,
   KITSU_CACHE_TTL_MS,
   MDBLIST_API_KEYS,
@@ -18,6 +19,7 @@ import {
   TORRENTIO_CACHE_TTL_MS,
   type AnimeMappingProvider,
   type ArtworkSource,
+  type BackdropImageSize,
   type BadgeKey,
   type EpisodeArtworkMode,
   type PosterImageSize,
@@ -154,6 +156,7 @@ export const prepareImageRouteMediaState = async (input: {
   sourceFallbackUrl: string | null;
   qualityBadgePreferences: string[];
   posterImageSize: PosterImageSize;
+  backdropImageSize: BackdropImageSize;
   mdblistKey: string | null;
   simklClientId: string;
   useRawKitsuFallback: boolean;
@@ -216,6 +219,7 @@ export const prepareImageRouteMediaState = async (input: {
     sourceFallbackUrl,
     qualityBadgePreferences,
     posterImageSize,
+    backdropImageSize,
     mdblistKey,
     simklClientId,
   } = input;
@@ -264,8 +268,12 @@ let imgUrl = rawFallbackImageUrl;
 let tmdbRating = 'N/A';
 let providerRatings = new Map<RatingPreference, string>();
 const renderedRatingTtlByProvider = new Map<BadgeKey, number>();
-let outputWidth = 1280;
-let outputHeight = 720;
+const defaultBackdropDimensions =
+  imageType === 'backdrop' && !isThumbnailRequest
+    ? BACKDROP_IMAGE_DIMENSIONS[backdropImageSize] || BACKDROP_IMAGE_DIMENSIONS.normal
+    : BACKDROP_IMAGE_DIMENSIONS.normal;
+let outputWidth = defaultBackdropDimensions.width;
+let outputHeight = defaultBackdropDimensions.height;
 let selectedLogoAspectRatio: number | null = null;
 let selectedPosterLogoPath: string | null = null;
 let selectedPosterIsTextless = false;

@@ -50,6 +50,7 @@ import {
 } from '@/lib/ratingAppearance';
 import type {
   ArtworkSource,
+  BackdropImageSize,
   BackdropImageTextPreference,
   LogoBackground,
   PosterImageSize,
@@ -760,6 +761,8 @@ export function SimpleQuickTuneSection({
   logoBackground,
   posterImageSizeOptions,
   posterImageSize,
+  backdropImageSizeOptions,
+  backdropImageSize,
   logoArtworkSourceOptions,
   activeArtworkSourceOptions,
   logoArtworkSource,
@@ -772,6 +775,7 @@ export function SimpleQuickTuneSection({
   onSelectImageText,
   onSelectLogoBackground,
   onSelectPosterImageSize,
+  onSelectBackdropImageSize,
   onSelectLogoArtworkSource,
   onSelectBackdropArtworkSource,
   onSelectThumbnailArtworkSource,
@@ -790,6 +794,8 @@ export function SimpleQuickTuneSection({
   logoBackground: LogoBackground;
   posterImageSizeOptions: Array<DetailedSelectionOption<PosterImageSize>>;
   posterImageSize: PosterImageSize;
+  backdropImageSizeOptions: Array<DetailedSelectionOption<BackdropImageSize>>;
+  backdropImageSize: BackdropImageSize;
   logoArtworkSourceOptions: Array<SelectionOption<ArtworkSource>>;
   activeArtworkSourceOptions: Array<SelectionOption<ArtworkSource>>;
   logoArtworkSource: ArtworkSource;
@@ -804,6 +810,7 @@ export function SimpleQuickTuneSection({
   ) => void;
   onSelectLogoBackground: (value: LogoBackground) => void;
   onSelectPosterImageSize: (value: PosterImageSize) => void;
+  onSelectBackdropImageSize: (value: BackdropImageSize) => void;
   onSelectLogoArtworkSource: (value: ArtworkSource) => void;
   onSelectBackdropArtworkSource: (value: ArtworkSource) => void;
   onSelectThumbnailArtworkSource: (value: ArtworkSource) => void;
@@ -918,6 +925,30 @@ export function SimpleQuickTuneSection({
                   onClick={() => onSelectPosterImageSize(option.id)}
                   className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
                     posterImageSize === option.id
+                      ? 'border-violet-500/60 bg-zinc-800 text-white'
+                      : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                  }`}
+                  title={option.description}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        {previewType === 'backdrop' ? (
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+              Backdrop Size
+            </div>
+            <div className="mt-2 flex flex-wrap gap-1">
+              {backdropImageSizeOptions.map((option) => (
+                <button
+                  key={`simple-backdrop-size-${option.id}`}
+                  type="button"
+                  onClick={() => onSelectBackdropImageSize(option.id)}
+                  className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+                    backdropImageSize === option.id
                       ? 'border-violet-500/60 bg-zinc-800 text-white'
                       : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
                   }`}

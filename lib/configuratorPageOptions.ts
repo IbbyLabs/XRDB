@@ -3,6 +3,7 @@ import { type EpisodeIdMode } from '@/lib/episodeIdentity';
 import { type RatingPresentation } from '@/lib/ratingPresentation';
 import {
   type ArtworkSource,
+  type BackdropImageSize,
   type BackdropImageTextPreference,
   type PosterImageSize,
   type PosterImageTextPreference,
@@ -39,6 +40,16 @@ export const POSTER_IMAGE_SIZE_OPTIONS: Array<{
   { id: 'normal', label: 'Normal', description: '580x859. Default poster ratio and balanced bandwidth.' },
   { id: 'large', label: 'Large', description: '1280x1896. Higher detail for larger displays.' },
   { id: '4k', label: '4K', description: '2000x2926. Maximum detail, slower transfers.' },
+];
+
+export const BACKDROP_IMAGE_SIZE_OPTIONS: Array<{
+  id: BackdropImageSize;
+  label: string;
+  description: string;
+}> = [
+  { id: 'normal', label: 'Normal', description: '1280x720. Default backdrop output.' },
+  { id: 'large', label: 'Large', description: '1920x1080. Higher detail for large screens.' },
+  { id: '4k', label: '4K', description: '3840x2160. Maximum detail, slower transfers.' },
 ];
 
 export const POSTER_IMAGE_TEXT_OPTIONS: Array<{

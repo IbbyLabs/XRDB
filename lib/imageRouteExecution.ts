@@ -187,6 +187,7 @@ export const executeImageRouteRender = async ({
         sourceFallbackUrl: requestState.sourceFallbackUrl,
         qualityBadgePreferences: requestState.qualityBadgePreferences,
         posterImageSize: requestState.posterImageSize,
+        backdropImageSize: requestState.backdropImageSize,
         mdblistKey: requestState.mdblistKey,
         simklClientId: requestState.simklClientId,
         useRawKitsuFallback,

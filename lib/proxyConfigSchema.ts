@@ -73,6 +73,7 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'posterArtworkSource',
   ],
   backdrop: [
+    'backdropImageSize',
     'backdropGenreBadge',
     'backdropGenreBadgeStyle',
     'backdropGenreBadgePosition',
@@ -261,6 +262,7 @@ export type ProxyConfig = {
   logoAggregateRatingSource?: string;
   posterImageText?: string;
   posterImageSize?: string;
+  backdropImageSize?: string;
   backdropImageText?: string;
   thumbnailImageText?: string;
   posterArtworkSource?: string;
@@ -412,6 +414,7 @@ const CONFIG_STRING_KEYS = [
   'logoAggregateRatingSource',
   'posterImageText',
   'posterImageSize',
+  'backdropImageSize',
   'backdropImageText',
   'thumbnailImageText',
   'posterArtworkSource',
@@ -507,6 +510,7 @@ export const XRDB_RESERVED_PARAMS = new Set<string>([
   'logoAggregateRatingSource',
   'posterImageText',
   'posterImageSize',
+  'backdropImageSize',
   'backdropImageText',
   'thumbnailImageText',
   'posterArtworkSource',

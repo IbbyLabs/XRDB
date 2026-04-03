@@ -36,6 +36,7 @@ import { type RatingPreference } from '@/lib/ratingProviderCatalog';
 import { type SideRatingPosition } from '@/lib/sideRatingPosition';
 import {
   type ArtworkSource,
+  type BackdropImageSize,
   type BackdropImageTextPreference,
   type LogoBackground,
   type PosterImageTextPreference,
@@ -56,7 +57,9 @@ export function useConfiguratorWorkspaceSummary({
   backdropArtworkSource,
   backdropArtworkSourceOptions,
   thumbnailBottomRatingsRow,
+  backdropImageSize,
   backdropImageText,
+  backdropImageSizeOptions,
   backdropImageTextOptions,
   backdropRatingsLayout,
   backdropBottomRatingsRow,
@@ -136,7 +139,9 @@ export function useConfiguratorWorkspaceSummary({
   backdropArtworkSource: ArtworkSource;
   backdropArtworkSourceOptions: Array<{ id: ArtworkSource; label: string; description: string }>;
   thumbnailBottomRatingsRow: boolean;
+  backdropImageSize: BackdropImageSize;
   backdropImageText: BackdropImageTextPreference;
+  backdropImageSizeOptions: Array<{ id: BackdropImageSize; label: string; description: string }>;
   backdropImageTextOptions: Array<{ id: BackdropImageTextPreference; label: string; description: string }>;
   backdropRatingPresentation: RatingPresentation;
   backdropRatingStyle: RatingStyle;
@@ -261,6 +266,8 @@ export function useConfiguratorWorkspaceSummary({
         : posterArtworkSource;
   const activePosterImageSizeOptionMeta =
     posterImageSizeOptions.find((option) => option.id === posterImageSize) || posterImageSizeOptions[0];
+  const activeBackdropImageSizeOptionMeta =
+    backdropImageSizeOptions.find((option) => option.id === backdropImageSize) || backdropImageSizeOptions[0];
   const activeArtworkSourceOptionMeta =
     activeArtworkSourceOptions.find((option) => option.id === activeArtworkSource) || null;
   const activeLogoSourceOptionMeta =
@@ -473,6 +480,7 @@ export function useConfiguratorWorkspaceSummary({
     activeArtworkSourceOptionMeta,
     activeArtworkSourceOptions,
     activeArtworkSourceSummary,
+    activeBackdropImageSizeOptionMeta,
     activeGenreBadgeModeLabel,
     activeImageText,
     activeImageTextOptionMeta,

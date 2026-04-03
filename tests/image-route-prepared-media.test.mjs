@@ -72,6 +72,7 @@ const createBaseInput = () => ({
   sourceFallbackUrl: null,
   qualityBadgePreferences: [],
   posterImageSize: 'normal',
+  backdropImageSize: 'normal',
   mdblistKey: null,
   simklClientId: '',
   useRawKitsuFallback: true,
@@ -96,6 +97,17 @@ test('prepared media state preserves raw kitsu fallback image and rating', async
   assert.equal(state.shouldRenderBadges, false);
   assert.equal(state.posterTitleText, null);
   assert.equal(state.posterLogoUrl, null);
+});
+
+test('prepared media state applies requested backdrop image size', async () => {
+  const state = await prepareImageRouteMediaState({
+    ...createBaseInput(),
+    imageType: 'backdrop',
+    backdropImageSize: 'large',
+  });
+
+  assert.equal(state.outputWidth, 1920);
+  assert.equal(state.outputHeight, 1080);
 });
 
 test('prepared media state derives logo width from fallback aspect ratio', async () => {

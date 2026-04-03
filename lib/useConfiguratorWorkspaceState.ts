@@ -51,6 +51,7 @@ import { DEFAULT_QUALITY_BADGES_STYLE, DEFAULT_RATING_STYLE, type QualityBadgeSt
 import { DEFAULT_SIDE_RATING_OFFSET, type SideRatingPosition } from '@/lib/sideRatingPosition';
 import {
   type ArtworkSource,
+  type BackdropImageSize,
   type BackdropImageTextPreference,
   type EpisodeArtworkMode,
   type LogoBackground,
@@ -72,6 +73,7 @@ export function useConfiguratorWorkspaceState() {
   const [mediaId, setMediaId] = useState('tt0133093');
   const [lang, setLang] = useState('en');
   const [posterImageSize, setPosterImageSize] = useState<PosterImageSize>('normal');
+  const [backdropImageSize, setBackdropImageSize] = useState<BackdropImageSize>('normal');
   const [posterImageText, setPosterImageText] = useState<PosterImageTextPreference>('clean');
   const [backdropImageText, setBackdropImageText] = useState<BackdropImageTextPreference>('clean');
   const [thumbnailImageText, setThumbnailImageText] = useState<BackdropImageTextPreference>('clean');
@@ -230,6 +232,7 @@ export function useConfiguratorWorkspaceState() {
     backdropGenreBadgeScale,
     backdropGenreBadgeStyle,
     backdropImageText,
+    backdropImageSize,
     backdropQualityBadgePreferences,
     backdropQualityBadgeScale,
     backdropQualityBadgesMax,
@@ -355,6 +358,7 @@ export function useConfiguratorWorkspaceState() {
     setBackdropGenreBadgeScale,
     setBackdropGenreBadgeStyle,
     setBackdropImageText,
+    setBackdropImageSize,
     setBackdropQualityBadgePreferences,
     setBackdropQualityBadgeScale,
     setBackdropQualityBadgesMax,

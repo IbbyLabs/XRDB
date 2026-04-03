@@ -11,6 +11,7 @@ const createInput = (overrides = {}) => ({
   requestedImageLang: 'en',
   posterTextPreference: 'clean',
   posterImageSize: 'medium',
+  backdropImageSize: 'normal',
   posterArtworkSource: 'fanart',
   backdropArtworkSource: 'tmdb',
   logoArtworkSource: 'tmdb',
@@ -122,6 +123,20 @@ test('final image render seed changes when backdrop rating badge scale changes',
   );
 
   assert.notEqual(baseKey, scaledKey);
+});
+
+test('final image render seed scopes backdrop image size to backdrop renders', () => {
+  const baseBackdropKey = buildFinalImageRenderSeedKey(createInput({ imageType: 'backdrop' }));
+  const changedBackdropKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'backdrop', backdropImageSize: '4k' }),
+  );
+  const basePosterKey = buildFinalImageRenderSeedKey(createInput({ imageType: 'poster' }));
+  const changedPosterKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'poster', backdropImageSize: '4k' }),
+  );
+
+  assert.notEqual(baseBackdropKey, changedBackdropKey);
+  assert.equal(basePosterKey, changedPosterKey);
 });
 
 test('final image render seed scopes thumbnail episode artwork to thumbnail renders', () => {

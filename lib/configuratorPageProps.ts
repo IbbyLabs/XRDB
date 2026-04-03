@@ -15,6 +15,7 @@ import type { useConfiguratorWorkspaceSummary } from '@/lib/useConfiguratorWorks
 import type { ConfiguratorWizardAnswers } from '@/lib/configuratorPresets';
 import type { MediaSearchItem } from '@/lib/configuratorMediaSearch';
 import {
+  BACKDROP_IMAGE_SIZE_OPTIONS,
   XRDB_REQUEST_KEY_HELP_COPY,
   FANART_KEY_HELP_COPY,
   LOGO_ARTWORK_SOURCE_OPTIONS,
@@ -275,8 +276,12 @@ export function buildConfiguratorPageProps({
           workspaceSummary.activeArtworkSourceOptionMeta?.description || null,
         posterImageSizeOptions: POSTER_IMAGE_SIZE_OPTIONS,
         posterImageSize: workspaceState.posterImageSize,
+        backdropImageSizeOptions: BACKDROP_IMAGE_SIZE_OPTIONS,
+        backdropImageSize: workspaceState.backdropImageSize,
         activePosterImageSizeDescription:
           workspaceSummary.activePosterImageSizeOptionMeta.description,
+        activeBackdropImageSizeDescription:
+          workspaceSummary.activeBackdropImageSizeOptionMeta.description,
         posterRatingsLayout: workspaceState.posterRatingsLayout,
         posterRatingsMaxPerSide: workspaceState.posterRatingsMaxPerSide,
         posterRatingsMax: workspaceState.posterRatingsMax,
@@ -318,6 +323,7 @@ export function buildConfiguratorPageProps({
         onSelectThumbnailArtworkSource: workspaceState.setThumbnailArtworkSource,
         onSelectPosterArtworkSource: workspaceState.setPosterArtworkSource,
         onSelectPosterImageSize: workspaceState.setPosterImageSize,
+        onSelectBackdropImageSize: workspaceState.setBackdropImageSize,
         onSelectPosterRatingsLayout: workspaceState.setPosterRatingsLayout,
         onSelectPosterRatingsMaxPerSide: workspaceState.setPosterRatingsMaxPerSide,
         onSelectPosterRatingsMax: workspaceState.setPosterRatingsMax,
@@ -390,6 +396,8 @@ export function buildConfiguratorPageProps({
         logoBackground: workspaceState.logoBackground,
         posterImageSizeOptions: POSTER_IMAGE_SIZE_OPTIONS,
         posterImageSize: workspaceState.posterImageSize,
+        backdropImageSizeOptions: BACKDROP_IMAGE_SIZE_OPTIONS,
+        backdropImageSize: workspaceState.backdropImageSize,
         logoArtworkSourceOptions: LOGO_ARTWORK_SOURCE_OPTIONS,
         activeArtworkSourceOptions: workspaceSummary.activeArtworkSourceOptions,
         logoArtworkSource: workspaceState.logoArtworkSource,
@@ -402,6 +410,7 @@ export function buildConfiguratorPageProps({
         onSelectImageText: workspaceSummary.setImageTextForType,
         onSelectLogoBackground: workspaceState.setLogoBackground,
         onSelectPosterImageSize: workspaceState.setPosterImageSize,
+        onSelectBackdropImageSize: workspaceState.setBackdropImageSize,
         onSelectLogoArtworkSource: workspaceState.setLogoArtworkSource,
         onSelectBackdropArtworkSource: workspaceState.setBackdropArtworkSource,
         onSelectThumbnailArtworkSource: workspaceState.setThumbnailArtworkSource,

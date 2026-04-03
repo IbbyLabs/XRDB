@@ -33,6 +33,7 @@ import {
   buildProxyUrl,
   normalizeBaseUrl,
   type ArtworkSource,
+  type BackdropImageSize,
   type BackdropImageTextPreference,
   type LogoBackground,
   type PosterImageSize,
@@ -221,6 +222,7 @@ export function useConfiguratorOutputs({
   backdropGenreBadgePosition,
   backdropGenreBadgeScale,
   backdropGenreBadgeStyle,
+  backdropImageSize,
   backdropImageText,
   backdropQualityBadgePreferences,
   backdropQualityBadgeScale,
@@ -345,6 +347,7 @@ export function useConfiguratorOutputs({
   backdropGenreBadgePosition: GenreBadgePosition;
   backdropGenreBadgeScale: number;
   backdropGenreBadgeStyle: GenreBadgeStyle;
+  backdropImageSize: BackdropImageSize;
   backdropImageText: BackdropImageTextPreference;
   backdropQualityBadgePreferences: string[];
   backdropQualityBadgeScale: number;
@@ -755,6 +758,9 @@ export function useConfiguratorOutputs({
       if (previewType === 'poster' && posterImageSize !== 'normal') {
         query.set('posterImageSize', posterImageSize);
       }
+      if (previewType === 'backdrop' && backdropImageSize !== 'normal') {
+        query.set('backdropImageSize', backdropImageSize);
+      }
       if (previewType === 'poster' && posterArtworkSource !== 'tmdb') {
         query.set('posterArtworkSource', posterArtworkSource);
       }
@@ -907,6 +913,7 @@ export function useConfiguratorOutputs({
     aggregateCriticsAccentColor,
     backdropAggregateRatingSource,
     backdropArtworkSource,
+    backdropImageSize,
     backdropImageText,
     backdropQualityBadgePreferences,
     backdropQualityBadgeScale,

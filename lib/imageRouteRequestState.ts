@@ -100,6 +100,7 @@ import { normalizeSafeFallbackImageUrl } from './imageRouteSourceFetch.ts';
 import {
   ALLOWED_IMAGE_TYPES,
   ANIME_NATIVE_INPUT_ID_PREFIX_SET,
+  DEFAULT_BACKDROP_IMAGE_SIZE,
   DEFAULT_BLOCKBUSTER_DENSITY,
   DEFAULT_POSTER_IMAGE_SIZE,
   EXPLICIT_ID_SOURCE_SET,
@@ -114,6 +115,7 @@ import {
   SIMKL_CLIENT_ID,
   TORRENTIO_CACHE_TTL_MS,
   normalizeArtworkSource,
+  normalizeBackdropImageSize,
   normalizeBlockbusterDensity,
   normalizeBooleanSearchFlag,
   normalizeEpisodeArtworkMode,
@@ -124,6 +126,7 @@ import {
   toAnimeMappingProvider,
   type AnimeMappingProvider,
   type ArtworkSource,
+  type BackdropImageSize,
   type BadgeKey,
   type BlockbusterDensity,
   type EpisodeArtworkMode,
@@ -267,6 +270,7 @@ export type ImageRouteRequestState = {
   shouldRenderLogoBackground: boolean;
   shouldCacheFinalImage: boolean;
   posterImageSize: PosterImageSize;
+  backdropImageSize: BackdropImageSize;
   posterArtworkSource: ArtworkSource;
   backdropArtworkSource: ArtworkSource;
   logoArtworkSource: ArtworkSource;
@@ -581,6 +585,11 @@ export const resolveImageRouteRequestState = async ({
       searchParams.get('posterSize') ??
       (imageType === 'poster' ? searchParams.get('imageSize') : null),
     DEFAULT_POSTER_IMAGE_SIZE,
+  );
+  const backdropImageSize = normalizeBackdropImageSize(
+    searchParams.get('backdropImageSize') ??
+      (imageType === 'backdrop' && !isThumbnailRequest ? searchParams.get('imageSize') : null),
+    DEFAULT_BACKDROP_IMAGE_SIZE,
   );
   const artworkSelectionSeedParam =
     searchParams.get('artworkSeed') || searchParams.get('randomSeed') || '';
@@ -1084,6 +1093,7 @@ export const resolveImageRouteRequestState = async ({
     requestedImageLang,
     posterTextPreference,
     posterImageSize,
+    backdropImageSize,
     posterArtworkSource,
     backdropArtworkSource: effectiveBackdropArtworkSource,
     logoArtworkSource,
@@ -1229,6 +1239,7 @@ export const resolveImageRouteRequestState = async ({
     shouldRenderLogoBackground,
     shouldCacheFinalImage,
     posterImageSize,
+    backdropImageSize,
     posterArtworkSource,
     backdropArtworkSource: effectiveBackdropArtworkSource,
     logoArtworkSource,
