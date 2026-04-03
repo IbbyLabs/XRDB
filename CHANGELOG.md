@@ -7,6 +7,97 @@
 
 <a id="v1-2-3"></a>
 
+<a id="v1-3-0"></a>
+
+## [v1.3.0] - 03/04/2026
+
+### Added
+* FR-30 add stacked rating XY offsets for pill glass and square
+  
+  Add style scoped stacked rating position controls for pill glass and square presentation modes across configurator state, URL params, proxy schema, and request parsing.
+  
+  Apply the resolved offsets in image rendering with canvas bounds clamping, include active offsets in render seed generation for cache correctness, and keep exports lean by emitting only active non default style offsets.
+  
+  Update README parameter docs and add test coverage for normalization, proxy passthrough, request state resolution, and render seed behavior.
+* add prominent XRDB ID and route guide
+  
+  Add a large reference block to the media target section so users can
+  see accepted base ID families, current preview input shape, route
+  examples, strict TMDB rules, and thumbnail specific episode formats
+  without leaving the essentials flow.
+  
+  Include concrete examples for poster, backdrop, logo, and thumbnail
+  workflows plus the most important scoped query params that affect
+  preview and export behavior.
+* FR-13 add movie release status badge
+  
+  Introduce an opt in release status quality badge that resolves movie theatrical and digital release state from TMDB release dates and feeds it through the existing prepared media badge flow.
+  
+  Add configurator badge support and regression tests covering digital and in cinemas transitions.
+* FR-28 render streaming service badges with provider logos
+  
+  Extend stream and network badge metadata to carry TMDB logo paths, resolve those icons during rendering, and render supported streaming badges with logo plates instead of text only badges.
+  
+  Cover the new behavior with quality badge and media feature regressions for watch providers and TV networks.
+* FR-16 add compact ring rating presentation
+  
+  Add a poster only compact ring presentation with configurable center and progress sources, genre or custom accent handling, and render seed support.
+  
+  Wire the configurator, saved workspace config, request parsing, display state, renderer overlays, and regression coverage for the new presentation mode.
+
+### Fixed
+* BUG-43 preserve stacked badge scale in side layouts
+  
+  Reorders poster side layout fitting so width fitting and auto max per side capping happen before height fitting. This keeps the rating badge scale control effective for dense stacked layouts instead of collapsing back to near identical badge sizes.
+  
+  Adds a regression test covering dense left right stacked poster layouts to confirm higher badge scale increases effective badge size and reduces auto fit badge count when max per side is automatic.
+* BUG-44 restore sticky preview rail
+  
+  Allow the configurator preview panel to use visible overflow on desktop breakpoints so the center sticky rail can pin correctly while scrolling.
+  
+  Keep the change scoped to #workspace preview so the shared panel shell behavior stays unchanged elsewhere.
+  
+  Verified with pnpm build and desktop Chrome sticky rail measurements.
+* restore clean production build
+  
+  Narrow the streaming provider badge resolver to the streaming badge key
+  union so provider matching type checks correctly during Next build.
+  
+  Restore the missing poster compact ring setters in configurator
+  workspace runtime wiring and remove the duplicated setter entries so
+  workspace config IO compiles cleanly again.
+* BUG-42 add thumbnail safe inset for badge overlays
+  
+  Increase thumbnail backdrop badge top and bottom spacing and apply a
+  larger horizontal edge inset to right side ratings and backdrop
+  quality badge columns so Stremio preview crops do not clip the badge
+  frame.
+  
+  Pass the thumbnail request state through render layout resolution and
+  add regression coverage for the thumbnail safe inset and backdrop
+  quality badge clamp behavior.
+* BUG-41 center square genre badge cap
+  
+  Adjust square genre badge rendering so the top cap line centers over the label block instead of the full badge width when text is present.
+  
+  Add a regression test covering the square cap alignment for text badges.
+* show recent changes commit bodies
+  
+  Preserve normalized git commit bodies in the generated recent changes feed instead of dropping them during commits JSON generation.
+  
+  Render commit body text in the Recent Changes dialog only when a body is present so short release entries stay compact while detailed fixes expose their full context.
+  
+  Verified with node experimental strip types test tests/commit display utils.test.mjs and npx eslint components/site chrome.tsx scripts/generate commits json.mjs.
+
+### Documentation
+* FR-31 expand XRDB guide feature explanations
+  
+  Add a dedicated XRDB feature explanations section to the docs page.
+  
+  Document ID format behavior, Poster ID source impact, artwork source selection, and presentation mode guidance.
+  
+  Clarify per type provider ordering, thumbnail default ratings, metadata translation defaults, proxy route forms, BYOK flow, AIOMetadata exports, and type scoped controls.
+
 ## [v1.2.3] - 03/04/2026
 
 ### Fixed
