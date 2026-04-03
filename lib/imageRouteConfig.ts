@@ -111,8 +111,9 @@ export const normalizeArtworkSource = (
   fallback: ArtworkSource = 'tmdb',
 ): ArtworkSource => {
   const normalized = (value || '').trim().toLowerCase();
-  return ARTWORK_SOURCE_SET.has(normalized as ArtworkSource)
-    ? (normalized as ArtworkSource)
+  const canonical = normalized === 'imdb' ? 'cinemeta' : normalized;
+  return ARTWORK_SOURCE_SET.has(canonical as ArtworkSource)
+    ? (canonical as ArtworkSource)
     : fallback;
 };
 
