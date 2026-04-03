@@ -311,10 +311,10 @@ Episode thumbnails use the dedicated `/thumbnail/{id}/S{season}E{episode}.jpg` r
 | `posterGenreBadgePosition` | Poster genre badge anchor | `topLeft`, `topCenter`, `topRight`, `bottomLeft`, `bottomCenter`, `bottomRight` | `topLeft` |
 | `backdropGenreBadgePosition` | Backdrop genre badge anchor | `topLeft`, `topCenter`, `topRight`, `bottomLeft`, `bottomCenter`, `bottomRight` | `topLeft` |
 | `logoGenreBadgePosition` | Logo genre badge anchor | `topLeft`, `topCenter`, `topRight`, `bottomLeft`, `bottomCenter`, `bottomRight` | `topLeft` |
-| `genreBadgeScale` | Genre badge scale (global fallback) | Number (`70-160`) | `100` |
-| `posterGenreBadgeScale` | Poster genre badge scale | Number (`70-160`) | `100` |
-| `backdropGenreBadgeScale` | Backdrop genre badge scale | Number (`70-160`) | `100` |
-| `logoGenreBadgeScale` | Logo genre badge scale | Number (`70-160`) | `100` |
+| `genreBadgeScale` | Genre badge scale (global fallback) | Number (`70-200`) | `100` |
+| `posterGenreBadgeScale` | Poster genre badge scale | Number (`70-200`) | `100` |
+| `backdropGenreBadgeScale` | Backdrop genre badge scale | Number (`70-200`) | `100` |
+| `logoGenreBadgeScale` | Logo genre badge scale | Number (`70-200`) | `100` |
 | `streamBadges` | Quality badges via Torrentio (global fallback) | `auto`, `on`, `off` | `auto` |
 | `posterStreamBadges` | Poster quality badges | `auto`, `on`, `off` | `auto` |
 | `backdropStreamBadges` | Backdrop quality badges | `auto`, `on`, `off` | `auto` |
