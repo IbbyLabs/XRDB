@@ -181,6 +181,19 @@ test('image route request state parses poster no background outline controls', a
   assert.equal(state.posterNoBackgroundBadgeOutlineWidth, 2);
 });
 
+test('image route request state allows larger thumbnail rating badge scale for thumbnail requests', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/backdrop/xrdbid:tt1234567:1:2.jpg?thumbnail=1&tmdbKey=tmdb-key&thumbnailRatingBadgeScale=190&backdropRatingBadgeScale=120',
+    ),
+    imageType: 'backdrop',
+    id: 'xrdbid:tt1234567:1:2.jpg',
+  });
+
+  assert.equal(state.isThumbnailRequest, true);
+  assert.equal(state.backdropRatingBadgeScale, 190);
+});
+
 test('image route request state normalizes dynamic aggregate accent stops', async () => {
   const state = await resolveImageRouteRequestState({
     request: createRequest(

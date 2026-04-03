@@ -92,6 +92,7 @@ import {
   normalizeHexColor,
   normalizeNoBackgroundBadgeOutlineWidthPx,
   normalizeQualityBadgeScalePercent,
+  normalizeThumbnailRatingBadgeScalePercent,
   parseQualityBadgePreferencesAllowEmpty,
   parseRatingProviderAppearanceOverrides,
   type RatingProviderAppearanceOverrides,
@@ -947,7 +948,7 @@ export const resolveImageRouteRequestState = async ({
     searchParams.get('backdropRatingBadgeScale') ?? rpdbFontScalePercent,
     DEFAULT_BADGE_SCALE_PERCENT,
   );
-  const thumbnailRatingBadgeScale = normalizeBadgeScalePercent(
+  const thumbnailRatingBadgeScale = normalizeThumbnailRatingBadgeScalePercent(
     searchParams.get('thumbnailRatingBadgeScale') ??
       searchParams.get('backdropRatingBadgeScale') ??
       rpdbFontScalePercent,

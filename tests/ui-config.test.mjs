@@ -585,6 +585,32 @@ test('config payload keeps dynamic aggregate accent stops when enabled', () => {
   assert.equal(decodedConfig.aggregateDynamicStops, '0:#7f1d1d,60:#f59e0b,85:#16a34a');
 });
 
+test('config payload allows larger thumbnail rating badge scale without changing other image types', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      thumbnailRatingBadgeScale: 190,
+      posterRatingBadgeScale: 190,
+      backdropRatingBadgeScale: 190,
+      logoRatingBadgeScale: 190,
+    },
+  });
+
+  assert.equal(config.settings.thumbnailRatingBadgeScale, 190);
+  assert.equal(config.settings.posterRatingBadgeScale, 150);
+  assert.equal(config.settings.backdropRatingBadgeScale, 150);
+  assert.equal(config.settings.logoRatingBadgeScale, 150);
+
+  const configString = buildConfigString('https://xrdb.example.com', config.settings);
+  assert.notEqual(configString, '');
+  const decodedConfig = JSON.parse(decodeBase64Url(configString));
+  assert.equal(decodedConfig.thumbnailRatingBadgeScale, 190);
+  assert.equal(decodedConfig.posterRatingBadgeScale, 150);
+  assert.equal(decodedConfig.backdropRatingBadgeScale, 150);
+  assert.equal(decodedConfig.logoRatingBadgeScale, 150);
+});
+
 test('config string and proxy manifest use the same shared XRDB settings', () => {
   const config = buildSampleSettings();
   const baseUrl = 'https://xrdb.example.com/';
