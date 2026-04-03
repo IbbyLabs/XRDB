@@ -15,6 +15,8 @@ export type GenreBadgeRenderSpec = {
   style: GenreBadgeStyle;
   scalePercent?: number;
   borderWidth?: number;
+  noBackgroundOutlineColor?: string;
+  noBackgroundOutlineWidth?: number;
 };
 
 const estimateGenreBadgeLabelWidth = (label: string, fontSize: number) => {
@@ -128,6 +130,15 @@ export const buildGenreBadgeSvg = (
   const textX = iconX + (showIcon ? iconSize + iconGap : 0);
   const textCenterX = textX + Math.round(labelWidth / 2);
   const textY = Math.round(height / 2 + fontSize * 0.05);
+  const noBackgroundOutlineWidth =
+    genreBadge.style === 'plain' && Number.isFinite(genreBadge.noBackgroundOutlineWidth)
+      ? Math.max(0, Number(genreBadge.noBackgroundOutlineWidth))
+      : 0;
+  const hasNoBackgroundOutline = noBackgroundOutlineWidth > 0;
+  const noBackgroundOutlineColor =
+    hasNoBackgroundOutline && typeof genreBadge.noBackgroundOutlineColor === 'string'
+      ? genreBadge.noBackgroundOutlineColor
+      : '#000000';
   const iconMarkup = showIcon
     ? `<g transform="translate(${iconCenterX} ${iconCenterY}) scale(${iconSize / 24}) translate(-12 -12)">${buildGenreBadgeIconMarkup({
         familyId: genreBadge.familyId,
@@ -135,7 +146,7 @@ export const buildGenreBadgeSvg = (
       })}</g>`
     : '';
   const textMarkup = showText
-    ? `<text x="${textCenterX}" y="${textY}" text-anchor="middle" dominant-baseline="middle" font-family="'Space Grotesk','Noto Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="700" letter-spacing="0.08em" fill="${genreBadge.accentColor}">${escapeXml(label)}</text>`
+    ? `<text x="${textCenterX}" y="${textY}" text-anchor="middle" dominant-baseline="middle" font-family="'Space Grotesk','Noto Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="700" letter-spacing="0.08em" fill="${genreBadge.accentColor}"${hasNoBackgroundOutline ? ` stroke="${noBackgroundOutlineColor}" stroke-width="${noBackgroundOutlineWidth}" paint-order="stroke fill" stroke-linejoin="round"` : ''}>${escapeXml(label)}</text>`
     : '';
   const plainShadowFilter = `<defs><filter id="genreBadgeShadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="1.6" stdDeviation="2.2" flood-color="rgba(0,0,0,0.68)"/><feDropShadow dx="0" dy="0" stdDeviation="1.1" flood-color="rgba(0,0,0,0.32)"/></filter></defs>`;
 

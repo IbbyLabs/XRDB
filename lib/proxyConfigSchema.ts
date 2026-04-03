@@ -37,6 +37,8 @@ const SHARED_IMAGE_QUERY_KEYS = [
   'aggregateDynamicStops',
   'aggregateAccentBarOffset',
   'aggregateAccentBarVisible',
+  'posterNoBackgroundBadgeOutlineColor',
+  'posterNoBackgroundBadgeOutlineWidth',
   'ratingXOffsetPillGlass',
   'ratingYOffsetPillGlass',
   'ratingXOffsetSquare',
@@ -81,6 +83,8 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'posterRatingPresentation',
     'posterAggregateRatingSource',
     'posterArtworkSource',
+    'posterNoBackgroundBadgeOutlineColor',
+    'posterNoBackgroundBadgeOutlineWidth',
   ],
   backdrop: [
     'backdropImageSize',
@@ -240,6 +244,8 @@ export type ProxyConfig = {
   aggregateDynamicStops?: string;
   aggregateAccentBarOffset?: string;
   aggregateAccentBarVisible?: string;
+  posterNoBackgroundBadgeOutlineColor?: string;
+  posterNoBackgroundBadgeOutlineWidth?: string;
   ratingXOffsetPillGlass?: string;
   ratingYOffsetPillGlass?: string;
   ratingXOffsetSquare?: string;
@@ -405,6 +411,8 @@ const CONFIG_STRING_KEYS = [
   'aggregateDynamicStops',
   'aggregateAccentBarOffset',
   'aggregateAccentBarVisible',
+  'posterNoBackgroundBadgeOutlineColor',
+  'posterNoBackgroundBadgeOutlineWidth',
   'ratingXOffsetPillGlass',
   'ratingYOffsetPillGlass',
   'ratingXOffsetSquare',

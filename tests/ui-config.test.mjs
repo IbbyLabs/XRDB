@@ -147,6 +147,8 @@ const buildSampleSettings = () =>
       aggregateDynamicStops: '0:#7f1d1d,40:#dc2626,60:#f59e0b,75:#84cc16,85:#16a34a',
       aggregateAccentBarOffset: -3,
       aggregateAccentBarVisible: true,
+      posterNoBackgroundBadgeOutlineColor: '#102030',
+      posterNoBackgroundBadgeOutlineWidth: 2,
       ratingXOffsetPillGlass: 18,
       ratingYOffsetPillGlass: -14,
       ratingXOffsetSquare: -10,
@@ -293,6 +295,8 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       aggregateDynamicStops: '0:#7f1d1d,40:#dc2626,60:#f59e0b,75:#84cc16,85:#16a34a',
       aggregateAccentBarOffset: -3,
       aggregateAccentBarVisible: true,
+      posterNoBackgroundBadgeOutlineColor: '#102030',
+      posterNoBackgroundBadgeOutlineWidth: 2,
       ratingXOffsetPillGlass: 18,
       ratingYOffsetPillGlass: -14,
       ratingXOffsetSquare: -10,
@@ -322,6 +326,8 @@ test('workspace serialization round-trips shared settings and proxy state', () =
   assert.equal(decodedConfig.posterSideRatingsOffset, 62);
   assert.equal(decodedConfig.backdropSideRatingsPosition, 'custom');
   assert.equal(decodedConfig.backdropSideRatingsOffset, 62);
+  assert.equal(decodedConfig.posterNoBackgroundBadgeOutlineColor, '#102030');
+  assert.equal(decodedConfig.posterNoBackgroundBadgeOutlineWidth, 2);
   assert.equal('sideRatingsPosition' in decodedConfig, false);
   assert.equal('sideRatingsOffset' in decodedConfig, false);
 });
@@ -644,6 +650,8 @@ test('config string and proxy manifest use the same shared XRDB settings', () =>
     aggregateCriticsAccentColor: '#f97316',
     aggregateAudienceAccentColor: '#22c55e',
     aggregateAccentBarOffset: -3,
+    posterNoBackgroundBadgeOutlineColor: '#102030',
+    posterNoBackgroundBadgeOutlineWidth: 2,
     ratingXOffsetPillGlass: 18,
     ratingYOffsetPillGlass: -14,
     ratingXOffsetSquare: -10,
@@ -742,6 +750,8 @@ test('config string and proxy manifest use the same shared XRDB settings', () =>
     aggregateCriticsAccentColor: '#f97316',
     aggregateAudienceAccentColor: '#22c55e',
     aggregateAccentBarOffset: '-3',
+    posterNoBackgroundBadgeOutlineColor: '#102030',
+    posterNoBackgroundBadgeOutlineWidth: '2',
     ratingXOffsetPillGlass: '18',
     ratingYOffsetPillGlass: '-14',
     ratingXOffsetSquare: '-10',
@@ -839,6 +849,8 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
   assert.match(patterns?.posterUrlPattern ?? '', /posterEdgeOffset=24/);
   assert.match(patterns?.posterUrlPattern ?? '', /posterSideRatingsPosition=custom/);
   assert.match(patterns?.posterUrlPattern ?? '', /posterSideRatingsOffset=62/);
+  assert.match(patterns?.posterUrlPattern ?? '', /posterNoBackgroundBadgeOutlineColor=%23102030/);
+  assert.match(patterns?.posterUrlPattern ?? '', /posterNoBackgroundBadgeOutlineWidth=2/);
   assert.match(patterns?.posterUrlPattern ?? '', /qualityBadgesSide=right/);
   assert.equal((patterns?.posterUrlPattern ?? '').includes('backdropRatings='), false);
   assert.equal((patterns?.posterUrlPattern ?? '').includes('logoRatings='), false);

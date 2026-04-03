@@ -172,6 +172,8 @@ export const executeImageRouteRender = async ({
         genreBadgeScale: requestState.genreBadgeScale,
         effectiveGenreBadgeScale: requestState.effectiveGenreBadgeScale,
         genreBadgeBorderWidth: requestState.genreBadgeBorderWidth,
+        noBackgroundBadgeOutlineColor: requestState.posterNoBackgroundBadgeOutlineColor,
+        noBackgroundBadgeOutlineWidth: requestState.posterNoBackgroundBadgeOutlineWidth,
         genreBadgeAnimeGrouping: requestState.genreBadgeAnimeGrouping,
         requestedImageLang: requestState.requestedImageLang,
         includeImageLanguage: requestState.includeImageLanguage,
@@ -287,6 +289,17 @@ export const executeImageRouteRender = async ({
       } = displayState;
       streamBadges = displayState.streamBadges;
       genreBadge = displayState.genreBadge;
+      if (
+        requestState.imageType === 'poster' &&
+        requestState.qualityBadgesStyle === 'plain' &&
+        requestState.posterNoBackgroundBadgeOutlineWidth > 0
+      ) {
+        streamBadges = streamBadges.map((badge) => ({
+          ...badge,
+          noBackgroundOutlineColor: requestState.posterNoBackgroundBadgeOutlineColor,
+          noBackgroundOutlineWidth: requestState.posterNoBackgroundBadgeOutlineWidth,
+        }));
+      }
 
       if (requestState.debugRatings) {
         debugResolvedRatingProviders = displayState.debugResolvedRatingProviders;

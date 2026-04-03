@@ -44,6 +44,25 @@ test('image route quality badge builds asset backed plain output', () => {
   assert.match(spec.svg, /quality-badge-logo-shadow/);
 });
 
+test('image route quality badge applies no background outline for plain style text', () => {
+  const spec = buildQualityBadgeSvg(
+    {
+      key: 'netflix',
+      label: 'Netflix',
+      noBackgroundOutlineColor: '#101010',
+      noBackgroundOutlineWidth: 2,
+    },
+    44,
+    undefined,
+    'plain',
+  );
+
+  assert.ok(spec);
+  assert.match(spec.svg, /stroke="#101010"/);
+  assert.match(spec.svg, /stroke-width="2"/);
+  assert.match(spec.svg, /paint-order="stroke fill"/);
+});
+
 test('image route quality badge renders streaming provider logos when icon data is present', () => {
   const iconDataUri =
     'data:image/svg+xml;base64,' +

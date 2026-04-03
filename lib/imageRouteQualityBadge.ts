@@ -20,6 +20,8 @@ export type QualityBadgeInput = {
   label: string;
   accentColor?: string;
   iconDataUri?: string | null;
+  noBackgroundOutlineColor?: string;
+  noBackgroundOutlineWidth?: number;
 };
 
 const parseHexColor = (value: string) => {
@@ -41,6 +43,22 @@ const parseHexColor = (value: string) => {
     g: Number.parseInt(expanded.slice(2, 4), 16),
     b: Number.parseInt(expanded.slice(4, 6), 16),
   };
+};
+
+const normalizeHexColorString = (value: unknown) => {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().replace(/^#/, '');
+  if (/^[0-9a-f]{3}$/i.test(normalized)) {
+    return `#${normalized
+      .split('')
+      .map((char) => `${char}${char}`)
+      .join('')
+      .toLowerCase()}`;
+  }
+  if (/^[0-9a-f]{6}$/i.test(normalized)) {
+    return `#${normalized.toLowerCase()}`;
+  }
+  return null;
 };
 
 const hexColorToRgba = (value: string, alpha: number, fallback = `rgba(167,139,250,${alpha})`) => {
@@ -120,6 +138,16 @@ export const buildQualityBadgeSvg = (
   if (!isMediaFeatureBadgeKey(String(key))) {
     return null;
   }
+  const noBackgroundOutlineWidth =
+    style === 'plain' && Number.isFinite(badge.noBackgroundOutlineWidth)
+      ? Math.max(0, Number(badge.noBackgroundOutlineWidth))
+      : 0;
+  const hasNoBackgroundOutline = noBackgroundOutlineWidth > 0;
+  const noBackgroundOutlineColor =
+    normalizeHexColorString(badge.noBackgroundOutlineColor) || '#000000';
+  const plainTextOutlineAttributes = hasNoBackgroundOutline
+    ? ` stroke="${noBackgroundOutlineColor}" stroke-width="${noBackgroundOutlineWidth}" paint-order="stroke fill" stroke-linejoin="round"`
+    : '';
   const hasStreamingServiceLogo =
     isStreamingServiceBadgeKey(String(key)) &&
     typeof badge.iconDataUri === 'string' &&
@@ -375,8 +403,8 @@ ${buildSilverQualityTextDefs('quality-badge-silver-text')}
       svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
 ${defs}
 ${style === 'plain' ? plainStroke : rect}
-<text x="${width / 2}" y="${badgeTypeY}" font-family="${fontFamily}" font-size="${badgeTypeSize}" font-weight="700" text-anchor="middle" fill="${style === 'plain' ? 'rgba(245,245,244,0.84)' : 'rgba(229,231,235,0.74)'}"${filter}>${badgeTypeLabel}</text>
-<text x="${width / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${fill}"${filter}>${escapeXml(label)}</text>
+<text x="${width / 2}" y="${badgeTypeY}" font-family="${fontFamily}" font-size="${badgeTypeSize}" font-weight="700" text-anchor="middle" fill="${style === 'plain' ? 'rgba(245,245,244,0.84)' : 'rgba(229,231,235,0.74)'}"${style === 'plain' ? plainTextOutlineAttributes : ''}${filter}>${badgeTypeLabel}</text>
+<text x="${width / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${fill}"${style === 'plain' ? plainTextOutlineAttributes : ''}${filter}>${escapeXml(label)}</text>
 </svg>`,
       width,
       height: h,
@@ -464,7 +492,7 @@ ${buildCenteredProviderLogoImage({
   size: iconSize,
   extraAttributes: logoExtraAttributes,
 })}
-<text x="${textX}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="start" fill="${style === 'plain' ? hexColorToRgba(resolvedAccentColor, 0.96, '#f5f5f4') : '#f5f5f4'}"${textFilter}>${escapeXml(label)}</text>
+<text x="${textX}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="start" fill="${style === 'plain' ? hexColorToRgba(resolvedAccentColor, 0.96, '#f5f5f4') : '#f5f5f4'}"${style === 'plain' ? plainTextOutlineAttributes : ''}${textFilter}>${escapeXml(label)}</text>
 </svg>`,
     };
   }
@@ -506,7 +534,7 @@ ${buildMediaPlate(textWidth, {
     svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${textWidth}" height="${h}" viewBox="0 0 ${textWidth} ${h}">
 ${defs}
 ${style === 'plain' ? plainStroke : rect}
-<text x="${textWidth / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${textFill}"${filter}>${escapeXml(label)}</text>
+<text x="${textWidth / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${textFill}"${style === 'plain' ? plainTextOutlineAttributes : ''}${filter}>${escapeXml(label)}</text>
 </svg>`,
   };
 };
