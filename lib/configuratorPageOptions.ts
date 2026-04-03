@@ -59,10 +59,10 @@ export const POSTER_ARTWORK_SOURCE_OPTIONS: Array<{
 }> = [
   { id: 'tmdb', label: 'TMDB', description: 'Use the normal TMDB clean poster selection.' },
   { id: 'fanart', label: 'Fanart', description: 'Prefer fanart.tv artwork when a fanart key is available, then fall back to TMDB.' },
-  { id: 'cinemeta', label: 'Cinemeta', description: 'Use the official MetaHub Cinemeta poster when an IMDb ID is available, then fall back to TMDB.' },
+  { id: 'cinemeta', label: 'IMDb', description: 'Use IMDb artwork via MetaHub Cinemeta when an IMDb ID is available, then fall back to TMDB.' },
   { id: 'omdb', label: 'OMDb', description: 'Use the OMDb poster when a server OMDb key and IMDb ID are available, then fall back to TMDB.' },
   { id: 'blackbar', label: 'Black Bar', description: 'Render a solid black poster background.' },
-  { id: 'random', label: 'Random', description: 'Pick a seeded random poster source between TMDB, fanart, Cinemeta, and OMDb when available.' },
+  { id: 'random', label: 'Random', description: 'Pick a seeded random poster source between TMDB, fanart, IMDb, and OMDb when available.' },
 ];
 
 export const BACKDROP_ARTWORK_SOURCE_OPTIONS: Array<{
@@ -72,9 +72,9 @@ export const BACKDROP_ARTWORK_SOURCE_OPTIONS: Array<{
 }> = [
   { id: 'tmdb', label: 'TMDB', description: 'Use the normal TMDB clean backdrop selection.' },
   { id: 'fanart', label: 'Fanart', description: 'Prefer fanart.tv backdrop art when a fanart key is available, then fall back to TMDB.' },
-  { id: 'cinemeta', label: 'Cinemeta', description: 'Use the official MetaHub Cinemeta backdrop when an IMDb ID is available, then fall back to TMDB.' },
+  { id: 'cinemeta', label: 'IMDb', description: 'Use IMDb backdrop artwork via MetaHub Cinemeta when an IMDb ID is available, then fall back to TMDB.' },
   { id: 'blackbar', label: 'Black Bar', description: 'Render a solid black backdrop background.' },
-  { id: 'random', label: 'Random', description: 'Pick a seeded random backdrop source between TMDB, fanart, and Cinemeta when available.' },
+  { id: 'random', label: 'Random', description: 'Pick a seeded random backdrop source between TMDB, fanart, and IMDb when available.' },
 ];
 
 export const LOGO_ARTWORK_SOURCE_OPTIONS: Array<{
@@ -84,9 +84,9 @@ export const LOGO_ARTWORK_SOURCE_OPTIONS: Array<{
 }> = [
   { id: 'tmdb', label: 'TMDB', description: 'Use the normal TMDB logo selection.' },
   { id: 'fanart', label: 'Fanart', description: 'Prefer fanart.tv logo assets when a fanart key is available, then fall back to TMDB.' },
-  { id: 'cinemeta', label: 'Cinemeta', description: 'Use the official MetaHub Cinemeta logo when an IMDb ID is available, then fall back to TMDB.' },
+  { id: 'cinemeta', label: 'IMDb', description: 'Use IMDb logo artwork via MetaHub Cinemeta when an IMDb ID is available, then fall back to TMDB.' },
   { id: 'blackbar', label: 'Black Bar', description: 'Render a solid black logo background source.' },
-  { id: 'random', label: 'Random', description: 'Pick a seeded random logo source between TMDB, fanart, and Cinemeta when available.' },
+  { id: 'random', label: 'Random', description: 'Pick a seeded random logo source between TMDB, fanart, and IMDb when available.' },
 ];
 
 export const BACKDROP_IMAGE_TEXT_OPTIONS: Array<{

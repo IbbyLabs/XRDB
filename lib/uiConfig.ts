@@ -595,8 +595,9 @@ const normalizePosterArtworkSource = (
   fallback: ArtworkSource,
 ): ArtworkSource => {
   const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
-  return POSTER_ARTWORK_SOURCE_SET.has(normalized as ArtworkSource)
-    ? (normalized as ArtworkSource)
+  const canonical = normalized === 'imdb' ? 'cinemeta' : normalized;
+  return POSTER_ARTWORK_SOURCE_SET.has(canonical as ArtworkSource)
+    ? (canonical as ArtworkSource)
     : fallback;
 };
 
@@ -605,8 +606,9 @@ const normalizeNonPosterArtworkSource = (
   fallback: ArtworkSource,
 ): ArtworkSource => {
   const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
-  return NON_POSTER_ARTWORK_SOURCE_SET.has(normalized as ArtworkSource)
-    ? (normalized as ArtworkSource)
+  const canonical = normalized === 'imdb' ? 'cinemeta' : normalized;
+  return NON_POSTER_ARTWORK_SOURCE_SET.has(canonical as ArtworkSource)
+    ? (canonical as ArtworkSource)
     : fallback;
 };
 

@@ -1044,6 +1044,20 @@ test('workspace normalization accepts cinemeta as a poster artwork source', () =
   assert.equal(config.settings.logoArtworkSource, 'cinemeta');
 });
 
+test('workspace normalization maps imdb artwork alias to cinemeta', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      posterArtworkSource: 'imdb',
+      backdropArtworkSource: 'imdb',
+      logoArtworkSource: 'imdb',
+    },
+  });
+
+  assert.equal(config.settings.posterArtworkSource, 'cinemeta');
+  assert.equal(config.settings.backdropArtworkSource, 'cinemeta');
+  assert.equal(config.settings.logoArtworkSource, 'cinemeta');
+});
+
 test('workspace normalization keeps OMDb poster artwork poster only', () => {
   const config = normalizeSavedUiConfig({
     settings: {
