@@ -53,6 +53,77 @@ export const buildEpisodeToken = (seasonValue: string | number, episodeValue: st
   return `S${String(seasonNumber).padStart(2, '0')}E${String(episodeNumber).padStart(2, '0')}`;
 };
 
+export type EpisodePreviewMediaTarget = {
+  mediaId: string;
+  seasonNumber: number;
+  episodeNumber: number;
+  episodeToken: string;
+};
+
+const KITSU_PREFIX = 'kitsu';
+
+export const parseEpisodePreviewMediaTarget = (value: string): EpisodePreviewMediaTarget | null => {
+  const trimmed = String(value || '').trim();
+  if (!trimmed) return null;
+
+  const lower = trimmed.toLowerCase();
+  if (lower.startsWith(`${KITSU_PREFIX}:`)) {
+    const parts = trimmed.split(':').map((part) => part.trim()).filter(Boolean);
+    if (parts.length < 3) return null;
+    const mediaIdValue = parts[1] || '';
+    if (!mediaIdValue) return null;
+
+    const mediaId = `${KITSU_PREFIX}:${mediaIdValue}`;
+    let seasonNumber = 1;
+    let episodeNumber = 0;
+    if (parts.length >= 4) {
+      const normalizedSeason = normalizeEpisodeNumber(parts[2]);
+      const normalizedEpisode = normalizeEpisodeNumber(parts[3]);
+      if (!normalizedSeason || !normalizedEpisode) return null;
+      seasonNumber = normalizedSeason;
+      episodeNumber = normalizedEpisode;
+    } else {
+      const normalizedEpisode = normalizeEpisodeNumber(parts[2]);
+      if (!normalizedEpisode) return null;
+      episodeNumber = normalizedEpisode;
+    }
+    const episodeToken = buildEpisodeToken(seasonNumber, episodeNumber);
+    if (!episodeToken) return null;
+    return { mediaId, seasonNumber, episodeNumber, episodeToken };
+  }
+
+  const parts = trimmed.split(':').map((part) => part.trim());
+  if (parts.length < 3) return null;
+  const seasonRaw = parts[parts.length - 2] || '';
+  const episodeRaw = parts[parts.length - 1] || '';
+  const mediaId = parts.slice(0, -2).join(':').trim();
+  if (!mediaId) return null;
+
+  const seasonNumber = normalizeEpisodeNumber(seasonRaw);
+  const episodeNumber = normalizeEpisodeNumber(episodeRaw);
+  if (!seasonNumber || !episodeNumber) return null;
+  const episodeToken = buildEpisodeToken(seasonNumber, episodeNumber);
+  if (!episodeToken) return null;
+  return { mediaId, seasonNumber, episodeNumber, episodeToken };
+};
+
+export const buildEpisodePreviewMediaTarget = ({
+  mediaId,
+  seasonNumber,
+  episodeNumber,
+}: {
+  mediaId: string;
+  seasonNumber: string | number;
+  episodeNumber: string | number;
+}) => {
+  const normalizedMediaId = String(mediaId || '').trim().replace(/:+$/, '');
+  if (!normalizedMediaId) return null;
+  const normalizedSeason = normalizeEpisodeNumber(seasonNumber);
+  const normalizedEpisode = normalizeEpisodeNumber(episodeNumber);
+  if (!normalizedSeason || !normalizedEpisode) return null;
+  return `${normalizedMediaId}:${normalizedSeason}:${normalizedEpisode}`;
+};
+
 export const parseKitsuEpisodeInput = (parts: string[]) => {
   const mediaId = String(parts[1] || '').trim();
   if (parts.length >= 4) {

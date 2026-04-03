@@ -83,6 +83,10 @@ import {
   SAMPLE_GENRE_BADGE_MODE_DEFAULT,
   SUPPORTED_LANGUAGES,
 } from '@/lib/configuratorPageOptions';
+import {
+  buildEpisodePreviewMediaTarget,
+  parseEpisodePreviewMediaTarget,
+} from '@/lib/episodeIdentity';
 import { isConfiguratorExperienceMode } from '@/lib/configuratorPresets';
 import { buildConfiguratorPageProps } from '@/lib/configuratorPageProps';
 import type { MediaFeatureBadgeKey } from '@/lib/mediaFeatures';
@@ -590,7 +594,18 @@ export function useConfiguratorWorkspaceRuntime() {
   };
 
   const handleSelectMediaSearchResult = (result: MediaSearchItem) => {
-    setMediaId(result.mediaId);
+    if (previewType === 'thumbnail') {
+      const currentTarget = parseEpisodePreviewMediaTarget(mediaId);
+      const resultTarget = parseEpisodePreviewMediaTarget(result.mediaId);
+      const nextTarget = buildEpisodePreviewMediaTarget({
+        mediaId: resultTarget?.mediaId || result.mediaId,
+        seasonNumber: currentTarget?.seasonNumber || resultTarget?.seasonNumber || 1,
+        episodeNumber: currentTarget?.episodeNumber || resultTarget?.episodeNumber || 1,
+      });
+      setMediaId(nextTarget || result.mediaId);
+    } else {
+      setMediaId(result.mediaId);
+    }
     setActivePreviewTitle(result.year ? `${result.title} (${result.year})` : result.title);
     setMediaSearchError('');
   };
