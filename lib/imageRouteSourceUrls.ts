@@ -50,7 +50,7 @@ export const buildTmdbImageUrl = (
   return `https://image.tmdb.org/t/p/${size}${imgPath}`;
 };
 
-export const buildTmdbProviderLogoUrl = (logoPath: string, size = 'w185') =>
+export const buildTmdbProviderLogoUrl = (logoPath: string, size = 'w500') =>
   `https://image.tmdb.org/t/p/${size}${logoPath}`;
 
 export const buildCinemetaPosterUrl = (imdbId: string) =>

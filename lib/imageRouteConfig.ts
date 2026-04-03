@@ -75,7 +75,7 @@ export const BACKDROP_IMAGE_DIMENSIONS: Record<BackdropImageSize, { width: numbe
   '4k': { width: 3840, height: 2160 },
 };
 export const DEFAULT_BLOCKBUSTER_DENSITY: BlockbusterDensity = 'balanced';
-export const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v86';
+export const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v87';
 export const XRDB_REQUEST_API_KEYS = getConfiguredXrdbRequestKeys();
 export const ANILIST_GRAPHQL_URL =
   process.env.XRDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
@@ -457,7 +457,7 @@ export const FINAL_IMAGE_CACHE_MAX_ENTRIES = 300;
 export const SOURCE_IMAGE_CACHE_MAX_ENTRIES = 128;
 export const METADATA_CACHE_MAX_ENTRIES = 2000;
 export const PROVIDER_ICON_CACHE_MAX_ENTRIES = 64;
-export const PROVIDER_ICON_CACHE_VERSION = 'v2';
+export const PROVIDER_ICON_CACHE_VERSION = 'v3';
 export const TMDB_ANIMATION_GENRE_ID = 16;
 export const MDBLIST_API_KEYS = parseApiKeyList(
   process.env.MDBLIST_API_KEYS,

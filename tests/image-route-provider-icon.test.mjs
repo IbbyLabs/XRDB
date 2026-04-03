@@ -5,20 +5,26 @@ import { createProviderIconDataUriResolver } from '../lib/imageRouteProviderIcon
 import { buildProviderIconMemoryCacheKey } from '../lib/imageRouteSourceUrls.ts';
 
 const createSharpDouble = () => {
-  return () => ({
-    resize() {
+  const calls = [];
+  const factory = () => ({
+    resize(width, height, options) {
+      calls.push({ method: 'resize', width, height, options });
       return this;
     },
-    png() {
+    png(options) {
+      calls.push({ method: 'png', options });
       return this;
     },
-    composite() {
+    composite(layers) {
+      calls.push({ method: 'composite', layers });
       return this;
     },
     async toBuffer() {
+      calls.push({ method: 'toBuffer' });
       return Buffer.from('icon-output');
     },
   });
+  return { factory, calls };
 };
 
 test('image route provider icon returns inline data uris unchanged', async () => {
@@ -28,7 +34,7 @@ test('image route provider icon returns inline data uris unchanged', async () =>
     readProviderIconFromStorage: async () => null,
     writeProviderIconToStorage: async () => {},
     stripCornerBackgroundFromIcon: async (_sharp, buffer) => buffer,
-    getSharpFactory: async () => createSharpDouble(),
+    getSharpFactory: async () => createSharpDouble().factory,
   });
 
   assert.equal(
@@ -48,7 +54,7 @@ test('image route provider icon prefers memory and storage caches before fetchin
     },
     writeProviderIconToStorage: async () => {},
     stripCornerBackgroundFromIcon: async (_sharp, buffer) => buffer,
-    getSharpFactory: async () => createSharpDouble(),
+    getSharpFactory: async () => createSharpDouble().factory,
     fetchImpl: async () => {
       throw new Error('should not be called');
     },
@@ -66,7 +72,7 @@ test('image route provider icon prefers memory and storage caches before fetchin
     readProviderIconFromStorage: async () => 'data:image/png;base64,storage',
     writeProviderIconToStorage: async () => {},
     stripCornerBackgroundFromIcon: async (_sharp, buffer) => buffer,
-    getSharpFactory: async () => createSharpDouble(),
+    getSharpFactory: async () => createSharpDouble().factory,
     fetchImpl: async () => {
       throw new Error('should not be called');
     },
@@ -84,6 +90,7 @@ test('image route provider icon fetches, rounds, caches, and writes processed ic
   const writes = [];
   const stored = [];
   const strippedBuffers = [];
+  const sharpDouble = createSharpDouble();
   const getProviderIconDataUri = createProviderIconDataUriResolver({
     getMetadata: () => null,
     setMetadata: (key, value, ttlMs) => writes.push({ key, value, ttlMs }),
@@ -95,7 +102,7 @@ test('image route provider icon fetches, rounds, caches, and writes processed ic
       strippedBuffers.push(buffer.toString('utf8'));
       return buffer;
     },
-    getSharpFactory: async () => createSharpDouble(),
+    getSharpFactory: async () => sharpDouble.factory,
     fetchImpl: async () =>
       new Response(new Uint8Array([1, 2, 3]), {
         status: 200,
@@ -114,4 +121,21 @@ test('image route provider icon fetches, rounds, caches, and writes processed ic
     radius: 12,
   });
   assert.equal(writes.length, 1);
+  const resizeCall = sharpDouble.calls.find((call) => call.method === 'resize');
+  assert.deepEqual(resizeCall, {
+    method: 'resize',
+    width: 192,
+    height: 192,
+    options: {
+      fit: 'contain',
+      kernel: 'lanczos3',
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    },
+  });
+  const compositeCall = sharpDouble.calls.find((call) => call.method === 'composite');
+  assert.equal(compositeCall?.layers.length, 1);
+  const roundedMask = compositeCall?.layers[0]?.input.toString('utf8') || '';
+  assert.match(roundedMask, /width="192"/);
+  assert.match(roundedMask, /height="192"/);
+  assert.match(roundedMask, /rx="24"/);
 });

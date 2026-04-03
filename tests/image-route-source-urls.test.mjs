@@ -34,8 +34,8 @@ test('image route source urls build stable provider icon keys', () => {
   const storageKey = buildProviderIconStorageKey('https://img/icon.png', 12);
   const memoryKey = buildProviderIconMemoryCacheKey('https://img/icon.png', 12);
 
-  assert.match(storageKey, /^icons\/v2\/[a-f0-9]{40}\.png$/);
-  assert.equal(memoryKey, 'icon:v2:https://img/icon.png|r:12');
+  assert.match(storageKey, /^icons\/v3\/[a-f0-9]{40}\.png$/);
+  assert.equal(memoryKey, 'icon:v3:https://img/icon.png|r:12');
 });
 
 test('image route source urls map TMDB sizes and source urls predictably', () => {

@@ -34,6 +34,7 @@ export const createProviderIconDataUriResolver = ({
   fetchImpl?: typeof fetch;
 }) => {
   const providerIconInFlight = new Map<string, Promise<string | null>>();
+  const providerIconOutputSize = 192;
 
   return async (iconUrl: string, iconCornerRadius = 0): Promise<string | null> => {
     const normalizedIconUrl = iconUrl.trim();
@@ -66,17 +67,18 @@ export const createProviderIconDataUriResolver = ({
         const sourceBuffer = Buffer.from(await response.arrayBuffer());
         const sharp = await getSharpFactory();
         const resizedBuffer = await sharp(sourceBuffer)
-          .resize(96, 96, {
+          .resize(providerIconOutputSize, providerIconOutputSize, {
             fit: 'contain',
+            kernel: 'lanczos3',
             background: { r: 0, g: 0, b: 0, alpha: 0 },
           })
           .png({ compressionLevel: 6 })
           .toBuffer();
         let outputBuffer = await stripCornerBackgroundFromIcon(sharp, resizedBuffer);
         if (iconCornerRadius > 0) {
-          const radius = Math.max(1, Math.min(48, Math.round(iconCornerRadius)));
+          const radius = Math.max(1, Math.min(96, Math.round(iconCornerRadius * 2)));
           const roundedMask = Buffer.from(
-            `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"><rect width="96" height="96" rx="${radius}" ry="${radius}" fill="white"/></svg>`
+            `<svg xmlns="http://www.w3.org/2000/svg" width="${providerIconOutputSize}" height="${providerIconOutputSize}"><rect width="${providerIconOutputSize}" height="${providerIconOutputSize}" rx="${radius}" ry="${radius}" fill="white"/></svg>`
           );
           outputBuffer = await sharp(outputBuffer)
             .composite([{ input: roundedMask, blend: 'dest-in' }])
