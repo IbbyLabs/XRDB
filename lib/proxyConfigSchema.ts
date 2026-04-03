@@ -21,6 +21,7 @@ const SHARED_IMAGE_QUERY_KEYS = [
   'genreBadgeStyle',
   'genreBadgePosition',
   'genreBadgeScale',
+  'genreBadgeBorderWidth',
   'genreBadgeAnimeGrouping',
   'streamBadges',
   'qualityBadgesSide',
@@ -68,6 +69,7 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'posterGenreBadgeStyle',
     'posterGenreBadgePosition',
     'posterGenreBadgeScale',
+    'posterGenreBadgeBorderWidth',
     'posterGenreBadgeAnimeGrouping',
     'posterStreamBadges',
     'posterQualityBadges',
@@ -86,6 +88,7 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'backdropGenreBadgeStyle',
     'backdropGenreBadgePosition',
     'backdropGenreBadgeScale',
+    'backdropGenreBadgeBorderWidth',
     'backdropGenreBadgeAnimeGrouping',
     'backdropStreamBadges',
     'backdropQualityBadges',
@@ -105,6 +108,7 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'thumbnailGenreBadgeStyle',
     'thumbnailGenreBadgePosition',
     'thumbnailGenreBadgeScale',
+    'thumbnailGenreBadgeBorderWidth',
     'thumbnailGenreBadgeAnimeGrouping',
     'thumbnailStreamBadges',
     'thumbnailQualityBadges',
@@ -128,6 +132,7 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'logoGenreBadgeStyle',
     'logoGenreBadgePosition',
     'logoGenreBadgeScale',
+    'logoGenreBadgeBorderWidth',
     'logoGenreBadgeAnimeGrouping',
     'logoRatings',
     'logoRatingsMax',
@@ -192,6 +197,7 @@ export type ProxyConfig = {
   genreBadgeStyle?: string;
   genreBadgePosition?: string;
   genreBadgeScale?: string;
+  genreBadgeBorderWidth?: string;
   genreBadgeAnimeGrouping?: string;
   posterGenreBadge?: string;
   backdropGenreBadge?: string;
@@ -209,6 +215,10 @@ export type ProxyConfig = {
   backdropGenreBadgeScale?: string;
   thumbnailGenreBadgeScale?: string;
   logoGenreBadgeScale?: string;
+  posterGenreBadgeBorderWidth?: string;
+  backdropGenreBadgeBorderWidth?: string;
+  thumbnailGenreBadgeBorderWidth?: string;
+  logoGenreBadgeBorderWidth?: string;
   posterGenreBadgeAnimeGrouping?: string;
   backdropGenreBadgeAnimeGrouping?: string;
   thumbnailGenreBadgeAnimeGrouping?: string;
@@ -353,6 +363,7 @@ const CONFIG_STRING_KEYS = [
   'genreBadgeStyle',
   'genreBadgePosition',
   'genreBadgeScale',
+  'genreBadgeBorderWidth',
   'posterGenreBadge',
   'backdropGenreBadge',
   'thumbnailGenreBadge',
@@ -369,6 +380,10 @@ const CONFIG_STRING_KEYS = [
   'backdropGenreBadgeScale',
   'thumbnailGenreBadgeScale',
   'logoGenreBadgeScale',
+  'posterGenreBadgeBorderWidth',
+  'backdropGenreBadgeBorderWidth',
+  'thumbnailGenreBadgeBorderWidth',
+  'logoGenreBadgeBorderWidth',
   'posterGenreBadgeAnimeGrouping',
   'backdropGenreBadgeAnimeGrouping',
   'thumbnailGenreBadgeAnimeGrouping',

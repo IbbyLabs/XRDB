@@ -143,6 +143,7 @@ export const prepareImageRouteMediaState = async (input: {
   genreBadgePosition: GenreBadgePosition;
   genreBadgeScale: number;
   effectiveGenreBadgeScale: number;
+  genreBadgeBorderWidth: number;
   genreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   requestedImageLang: string;
   includeImageLanguage: string;
@@ -270,6 +271,7 @@ const buildResolvedGenreBadge = (
     style: genreBadgeStyle,
     position: genreBadgePosition,
     scalePercent: effectiveGenreBadgeScale,
+    borderWidth: input.genreBadgeBorderWidth,
   };
 };
 let primaryGenreFamily = resolvePrimaryGenreFamily(

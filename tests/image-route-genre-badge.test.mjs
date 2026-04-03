@@ -78,6 +78,22 @@ test('image route genre badge builds glass style text output', () => {
   assert.match(spec.svg, /DOC/);
 });
 
+test('image route genre badge applies custom border width for glass style', () => {
+  const spec = buildGenreBadgeSvg(
+    {
+      familyId: 'documentary',
+      label: 'Doc',
+      accentColor: '#facc15',
+      mode: 'text',
+      style: 'glass',
+      borderWidth: 0,
+    },
+    'poster',
+  );
+
+  assert.match(spec.svg, /stroke-width="0"/);
+});
+
 test('image route genre badge centers icon-only badges within the rendered width', () => {
   const spec = buildGenreBadgeSvg(
     {

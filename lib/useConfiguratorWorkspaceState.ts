@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react';
 
 import {
+  DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_BADGE_SCALE_PERCENT,
+  DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
+  DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX,
+  DEFAULT_THUMBNAIL_GENRE_BADGE_BORDER_WIDTH_PX,
   QUALITY_BADGE_OPTIONS,
   type RatingProviderAppearanceOverrides,
 } from '@/lib/badgeCustomization';
@@ -110,6 +114,18 @@ export function useConfiguratorWorkspaceState() {
   const [backdropGenreBadgeScale, setBackdropGenreBadgeScale] = useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
   const [thumbnailGenreBadgeScale, setThumbnailGenreBadgeScale] = useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
   const [logoGenreBadgeScale, setLogoGenreBadgeScale] = useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
+  const [posterGenreBadgeBorderWidth, setPosterGenreBadgeBorderWidth] = useState<number>(
+    DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX,
+  );
+  const [backdropGenreBadgeBorderWidth, setBackdropGenreBadgeBorderWidth] = useState<number>(
+    DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX,
+  );
+  const [thumbnailGenreBadgeBorderWidth, setThumbnailGenreBadgeBorderWidth] = useState<number>(
+    DEFAULT_THUMBNAIL_GENRE_BADGE_BORDER_WIDTH_PX,
+  );
+  const [logoGenreBadgeBorderWidth, setLogoGenreBadgeBorderWidth] = useState<number>(
+    DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
+  );
   const [posterGenreBadgeAnimeGrouping, setPosterGenreBadgeAnimeGrouping] = useState<GenreBadgeAnimeGrouping>(DEFAULT_GENRE_BADGE_ANIME_GROUPING);
   const [backdropGenreBadgeAnimeGrouping, setBackdropGenreBadgeAnimeGrouping] = useState<GenreBadgeAnimeGrouping>(DEFAULT_GENRE_BADGE_ANIME_GROUPING);
   const [thumbnailGenreBadgeAnimeGrouping, setThumbnailGenreBadgeAnimeGrouping] = useState<GenreBadgeAnimeGrouping>(DEFAULT_GENRE_BADGE_ANIME_GROUPING);
@@ -243,6 +259,7 @@ export function useConfiguratorWorkspaceState() {
     backdropGenreBadgeMode,
     backdropGenreBadgePosition,
     backdropGenreBadgeScale,
+    backdropGenreBadgeBorderWidth,
     backdropGenreBadgeStyle,
     backdropImageText,
     backdropImageSize,
@@ -268,6 +285,7 @@ export function useConfiguratorWorkspaceState() {
     thumbnailGenreBadgeMode,
     thumbnailGenreBadgePosition,
     thumbnailGenreBadgeScale,
+    thumbnailGenreBadgeBorderWidth,
     thumbnailGenreBadgeStyle,
     thumbnailImageText,
     thumbnailQualityBadgePreferences,
@@ -297,6 +315,7 @@ export function useConfiguratorWorkspaceState() {
     logoGenreBadgeMode,
     logoGenreBadgePosition,
     logoGenreBadgeScale,
+    logoGenreBadgeBorderWidth,
     logoGenreBadgeStyle,
     logoQualityBadgePreferences,
     logoQualityBadgeScale,
@@ -320,6 +339,7 @@ export function useConfiguratorWorkspaceState() {
     posterGenreBadgeMode,
     posterGenreBadgePosition,
     posterGenreBadgeScale,
+    posterGenreBadgeBorderWidth,
     posterGenreBadgeStyle,
     posterIdMode,
     posterImageSize,
@@ -377,6 +397,7 @@ export function useConfiguratorWorkspaceState() {
     setBackdropGenreBadgeMode,
     setBackdropGenreBadgePosition,
     setBackdropGenreBadgeScale,
+    setBackdropGenreBadgeBorderWidth,
     setBackdropGenreBadgeStyle,
     setBackdropImageText,
     setBackdropImageSize,
@@ -401,6 +422,7 @@ export function useConfiguratorWorkspaceState() {
     setThumbnailGenreBadgeMode,
     setThumbnailGenreBadgePosition,
     setThumbnailGenreBadgeScale,
+    setThumbnailGenreBadgeBorderWidth,
     setThumbnailGenreBadgeStyle,
     setThumbnailImageText,
     setThumbnailQualityBadgePreferences,
@@ -430,6 +452,7 @@ export function useConfiguratorWorkspaceState() {
     setLogoGenreBadgeMode,
     setLogoGenreBadgePosition,
     setLogoGenreBadgeScale,
+    setLogoGenreBadgeBorderWidth,
     setLogoGenreBadgeStyle,
     setLogoQualityBadgePreferences,
     setLogoQualityBadgeScale,
@@ -452,6 +475,7 @@ export function useConfiguratorWorkspaceState() {
     setPosterGenreBadgeMode,
     setPosterGenreBadgePosition,
     setPosterGenreBadgeScale,
+    setPosterGenreBadgeBorderWidth,
     setPosterGenreBadgeStyle,
     setPosterIdMode,
     setPosterImageSize,

@@ -30,13 +30,16 @@ import {
   type PosterRatingLayout,
 } from '@/lib/posterLayoutOptions';
 import {
+  MAX_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_BADGE_SCALE_PERCENT,
+  MIN_GENRE_BADGE_BORDER_WIDTH_PX,
   MAX_BADGE_SCALE_PERCENT,
   MAX_GENRE_BADGE_SCALE_PERCENT,
   MAX_QUALITY_BADGE_SCALE_PERCENT,
   MIN_BADGE_SCALE_PERCENT,
   QUALITY_BADGE_OPTIONS,
   normalizeBadgeScalePercent,
+  normalizeGenreBadgeBorderWidthPx,
   normalizeGenreBadgeScalePercent,
   normalizeQualityBadgeScalePercent,
 } from '@/lib/badgeCustomization';
@@ -595,6 +598,7 @@ export function LookSection({
   logoQualityBadgePreferences,
   activeRatingBadgeScale,
   activeGenreBadgeScale,
+  activeGenreBadgeBorderWidth,
   activeQualityBadgeScale,
   onSelectRatingStyle,
   onSelectImageText,
@@ -642,6 +646,7 @@ export function LookSection({
   onToggleQualityBadgePreference,
   onSelectRatingBadgeScale,
   onSelectGenreBadgeScale,
+  onSelectGenreBadgeBorderWidth,
   onSelectQualityBadgeScale,
 }: {
   previewType: PreviewType;
@@ -703,6 +708,7 @@ export function LookSection({
   logoQualityBadgePreferences: QualityBadgeOptionId[];
   activeRatingBadgeScale: number;
   activeGenreBadgeScale: number;
+  activeGenreBadgeBorderWidth: number;
   activeQualityBadgeScale: number;
   onSelectRatingStyle: (value: RatingStyle) => void;
   onSelectImageText: (
@@ -752,6 +758,7 @@ export function LookSection({
   onToggleQualityBadgePreference: (value: QualityBadgeOptionId) => void;
   onSelectRatingBadgeScale: (value: number) => void;
   onSelectGenreBadgeScale: (value: number) => void;
+  onSelectGenreBadgeBorderWidth: (value: number) => void;
   onSelectQualityBadgeScale: (value: number) => void;
 }) {
   const supportsStyleStackOffsets =
@@ -1619,6 +1626,19 @@ export function LookSection({
               max={MAX_GENRE_BADGE_SCALE_PERCENT}
               onChange={(value) => onSelectGenreBadgeScale(normalizeGenreBadgeScalePercent(String(value)))}
             />
+            {activeGenreBadgeStyle === 'glass' ? (
+              <ScaleField
+                label="Genre border"
+                value={activeGenreBadgeBorderWidth}
+                min={MIN_GENRE_BADGE_BORDER_WIDTH_PX}
+                max={MAX_GENRE_BADGE_BORDER_WIDTH_PX}
+                step={0.1}
+                suffix="px"
+                onChange={(value) =>
+                  onSelectGenreBadgeBorderWidth(normalizeGenreBadgeBorderWidthPx(String(value)))
+                }
+              />
+            ) : null}
             <ScaleField
               label="Quality badges"
               value={activeQualityBadgeScale}
@@ -1747,25 +1767,33 @@ function ScaleField({
   value,
   min,
   max,
+  step = 1,
+  suffix = '%',
   onChange,
 }: {
   label: string;
   value: number;
   min: number;
   max: number;
+  step?: number;
+  suffix?: string;
   onChange: (value: number) => void;
 }) {
+  const displayValue = Number.isInteger(value) ? String(value) : value.toFixed(1);
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-3">
         <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">{label}</span>
-        <span className="text-[11px] text-zinc-400">{value}%</span>
+        <span className="text-[11px] text-zinc-400">
+          {displayValue}
+          {suffix}
+        </span>
       </div>
       <input
         type="range"
         min={min}
         max={max}
-        step={1}
+        step={step}
         value={value}
         onChange={(event) => onChange(Number(event.target.value))}
         className="h-2 w-full accent-violet-500"

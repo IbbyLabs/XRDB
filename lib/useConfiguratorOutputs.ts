@@ -1,6 +1,13 @@
 import { useCallback, useMemo, useState } from 'react';
 
-import { DEFAULT_BADGE_SCALE_PERCENT, type RatingProviderAppearanceOverrides } from '@/lib/badgeCustomization';
+import {
+  DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX,
+  DEFAULT_BADGE_SCALE_PERCENT,
+  DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
+  DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX,
+  DEFAULT_THUMBNAIL_GENRE_BADGE_BORDER_WIDTH_PX,
+  type RatingProviderAppearanceOverrides,
+} from '@/lib/badgeCustomization';
 import {
   DEFAULT_GENRE_BADGE_ANIME_GROUPING,
   DEFAULT_GENRE_BADGE_MODE,
@@ -72,6 +79,7 @@ const GENRE_BADGE_QUERY_KEYS = {
     style: 'posterGenreBadgeStyle',
     position: 'posterGenreBadgePosition',
     scale: 'posterGenreBadgeScale',
+    borderWidth: 'posterGenreBadgeBorderWidth',
     animeGrouping: 'posterGenreBadgeAnimeGrouping',
   },
   backdrop: {
@@ -79,6 +87,7 @@ const GENRE_BADGE_QUERY_KEYS = {
     style: 'backdropGenreBadgeStyle',
     position: 'backdropGenreBadgePosition',
     scale: 'backdropGenreBadgeScale',
+    borderWidth: 'backdropGenreBadgeBorderWidth',
     animeGrouping: 'backdropGenreBadgeAnimeGrouping',
   },
   thumbnail: {
@@ -86,6 +95,7 @@ const GENRE_BADGE_QUERY_KEYS = {
     style: 'thumbnailGenreBadgeStyle',
     position: 'thumbnailGenreBadgePosition',
     scale: 'thumbnailGenreBadgeScale',
+    borderWidth: 'thumbnailGenreBadgeBorderWidth',
     animeGrouping: 'thumbnailGenreBadgeAnimeGrouping',
   },
   logo: {
@@ -93,6 +103,7 @@ const GENRE_BADGE_QUERY_KEYS = {
     style: 'logoGenreBadgeStyle',
     position: 'logoGenreBadgePosition',
     scale: 'logoGenreBadgeScale',
+    borderWidth: 'logoGenreBadgeBorderWidth',
     animeGrouping: 'logoGenreBadgeAnimeGrouping',
   },
 } as const;
@@ -115,6 +126,7 @@ const appendGenreBadgeQueryParams = ({
   style,
   position,
   scale,
+  borderWidth,
   animeGrouping,
 }: {
   query: URLSearchParams;
@@ -123,6 +135,7 @@ const appendGenreBadgeQueryParams = ({
   style: GenreBadgeStyle;
   position: GenreBadgePosition;
   scale: number;
+  borderWidth: number;
   animeGrouping: GenreBadgeAnimeGrouping;
 }) => {
   const keys = GENRE_BADGE_QUERY_KEYS[type];
@@ -138,6 +151,17 @@ const appendGenreBadgeQueryParams = ({
   if (scale !== DEFAULT_BADGE_SCALE_PERCENT) {
     query.set(keys.scale, String(scale));
   }
+  const defaultBorderWidth =
+    type === 'poster'
+      ? DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX
+      : type === 'backdrop'
+        ? DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX
+        : type === 'thumbnail'
+          ? DEFAULT_THUMBNAIL_GENRE_BADGE_BORDER_WIDTH_PX
+          : DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX;
+  if (borderWidth !== defaultBorderWidth) {
+    query.set(keys.borderWidth, String(borderWidth));
+  }
   if (animeGrouping !== DEFAULT_GENRE_BADGE_ANIME_GROUPING) {
     query.set(keys.animeGrouping, animeGrouping);
   }
@@ -152,6 +176,7 @@ const buildGenreSamplePreviewUrl = ({
   style,
   position,
   scale,
+  borderWidth,
   animeGrouping,
 }: {
   baseUrl: string;
@@ -162,6 +187,7 @@ const buildGenreSamplePreviewUrl = ({
   style: GenreBadgeStyle;
   position: GenreBadgePosition;
   scale: number;
+  borderWidth: number;
   animeGrouping: GenreBadgeAnimeGrouping;
 }) => {
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
@@ -185,6 +211,7 @@ const buildGenreSamplePreviewUrl = ({
     style,
     position,
     scale,
+    borderWidth,
     animeGrouping,
   });
   for (const [key, value] of Object.entries(sample.params)) {
@@ -212,6 +239,7 @@ export function useConfiguratorOutputs({
   activeGenreBadgeMode,
   activeGenreBadgePosition,
   activeGenreBadgeScale,
+  activeGenreBadgeBorderWidth,
   activeGenreBadgeStyle,
   activeQualityBadgesMax,
   aggregateAccentBarOffset,
@@ -226,6 +254,7 @@ export function useConfiguratorOutputs({
   backdropGenreBadgeAnimeGrouping,
   backdropGenreBadgePosition,
   backdropGenreBadgeScale,
+  backdropGenreBadgeBorderWidth,
   backdropGenreBadgeStyle,
   backdropImageSize,
   backdropImageText,
@@ -249,6 +278,7 @@ export function useConfiguratorOutputs({
   thumbnailGenreBadgeAnimeGrouping,
   thumbnailGenreBadgePosition,
   thumbnailGenreBadgeScale,
+  thumbnailGenreBadgeBorderWidth,
   thumbnailGenreBadgeStyle,
   thumbnailImageText,
   thumbnailQualityBadgePreferences,
@@ -279,6 +309,7 @@ export function useConfiguratorOutputs({
   logoGenreBadgeAnimeGrouping,
   logoGenreBadgePosition,
   logoGenreBadgeScale,
+  logoGenreBadgeBorderWidth,
   logoGenreBadgeStyle,
   logoQualityBadgePreferences,
   logoQualityBadgeScale,
@@ -300,6 +331,7 @@ export function useConfiguratorOutputs({
   posterGenreBadgeAnimeGrouping,
   posterGenreBadgePosition,
   posterGenreBadgeScale,
+  posterGenreBadgeBorderWidth,
   posterGenreBadgeStyle,
   posterIdMode,
   posterImageSize,
@@ -345,6 +377,7 @@ export function useConfiguratorOutputs({
   activeGenreBadgeMode: GenreBadgeMode;
   activeGenreBadgePosition: GenreBadgePosition;
   activeGenreBadgeScale: number;
+  activeGenreBadgeBorderWidth: number;
   activeGenreBadgeStyle: GenreBadgeStyle;
   activeQualityBadgesMax: number | null;
   aggregateAccentBarOffset: number;
@@ -359,6 +392,7 @@ export function useConfiguratorOutputs({
   backdropGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   backdropGenreBadgePosition: GenreBadgePosition;
   backdropGenreBadgeScale: number;
+  backdropGenreBadgeBorderWidth: number;
   backdropGenreBadgeStyle: GenreBadgeStyle;
   backdropImageSize: BackdropImageSize;
   backdropImageText: BackdropImageTextPreference;
@@ -382,6 +416,7 @@ export function useConfiguratorOutputs({
   thumbnailGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   thumbnailGenreBadgePosition: GenreBadgePosition;
   thumbnailGenreBadgeScale: number;
+  thumbnailGenreBadgeBorderWidth: number;
   thumbnailGenreBadgeStyle: GenreBadgeStyle;
   thumbnailImageText: BackdropImageTextPreference;
   thumbnailQualityBadgePreferences: string[];
@@ -412,6 +447,7 @@ export function useConfiguratorOutputs({
   logoGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   logoGenreBadgePosition: GenreBadgePosition;
   logoGenreBadgeScale: number;
+  logoGenreBadgeBorderWidth: number;
   logoGenreBadgeStyle: GenreBadgeStyle;
   logoQualityBadgePreferences: string[];
   logoQualityBadgeScale: number;
@@ -433,6 +469,7 @@ export function useConfiguratorOutputs({
   posterGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   posterGenreBadgePosition: GenreBadgePosition;
   posterGenreBadgeScale: number;
+  posterGenreBadgeBorderWidth: number;
   posterGenreBadgeStyle: GenreBadgeStyle;
   posterIdMode: 'auto' | 'tmdb' | 'imdb';
   posterImageSize: PosterImageSize;
@@ -606,6 +643,7 @@ export function useConfiguratorOutputs({
       style: activeGenreBadgeStyle,
       position: activeGenreBadgePosition,
       scale: activeGenreBadgeScale,
+      borderWidth: activeGenreBadgeBorderWidth,
       animeGrouping: activeGenreBadgeAnimeGrouping,
     });
     if (ratingPresentationForType !== DEFAULT_RATING_PRESENTATION) {
@@ -951,6 +989,7 @@ export function useConfiguratorOutputs({
     activeGenreBadgeMode,
     activeGenreBadgePosition,
     activeGenreBadgeScale,
+    activeGenreBadgeBorderWidth,
     activeGenreBadgeStyle,
     activeQualityBadgesMax,
     aggregateAccentBarOffset,
@@ -1086,6 +1125,12 @@ export function useConfiguratorOutputs({
               : sample.previewType === 'backdrop'
                 ? backdropGenreBadgeScale
                 : logoGenreBadgeScale,
+          borderWidth:
+            sample.previewType === 'poster'
+              ? posterGenreBadgeBorderWidth
+              : sample.previewType === 'backdrop'
+                ? backdropGenreBadgeBorderWidth
+                : logoGenreBadgeBorderWidth,
           animeGrouping:
             sample.previewType === 'poster'
               ? posterGenreBadgeAnimeGrouping
@@ -1098,6 +1143,7 @@ export function useConfiguratorOutputs({
       backdropGenreBadgeAnimeGrouping,
       backdropGenreBadgePosition,
       backdropGenreBadgeScale,
+      backdropGenreBadgeBorderWidth,
       backdropGenreBadgeStyle,
       baseUrl,
       xrdbKey,
@@ -1105,10 +1151,12 @@ export function useConfiguratorOutputs({
       logoGenreBadgeAnimeGrouping,
       logoGenreBadgePosition,
       logoGenreBadgeScale,
+      logoGenreBadgeBorderWidth,
       logoGenreBadgeStyle,
       posterGenreBadgeAnimeGrouping,
       posterGenreBadgePosition,
       posterGenreBadgeScale,
+      posterGenreBadgeBorderWidth,
       posterGenreBadgeStyle,
       tmdbKey,
     ],

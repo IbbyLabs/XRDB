@@ -69,6 +69,7 @@ type FinalImageRenderSeedInput = {
   genreBadgeStyle: string;
   genreBadgePosition: string;
   genreBadgeScale: number;
+  genreBadgeBorderWidth: number;
   genreBadgeAnimeGrouping: string;
   logoBackground: string;
   effectiveRatingPreferences: string[];
@@ -169,6 +170,9 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ? input.genreBadgeStyle : '-',
     input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ? input.genreBadgePosition : '-',
     String(input.genreBadgeScale),
+    input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE && input.genreBadgeStyle === 'glass'
+      ? String(input.genreBadgeBorderWidth)
+      : '-',
     input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ? input.genreBadgeAnimeGrouping : '-',
     isLogo ? input.logoBackground : '-',
     input.effectiveRatingPreferences.join(',') || 'none',
@@ -183,6 +187,6 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
       : '-',
     input.sourceFallbackKey || '-',
     input.renderCacheBuster || '-',
-    'v11',
+    'v12',
   ].join('|');
 };
