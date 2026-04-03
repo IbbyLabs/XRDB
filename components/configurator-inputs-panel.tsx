@@ -147,7 +147,7 @@ export function ConfiguratorInputsPanel({
   );
 
   return (
-    <div id="workspace-settings" className="space-y-3 scroll-mt-24">
+    <div id="workspace-settings" className="xrdb-workspace-scroll-region space-y-3 scroll-mt-24">
       <div className="xrdb-panel xrdb-panel-form rounded-3xl border border-white/10 bg-zinc-900/60 p-3 md:p-4">
         <button type="button" onClick={onToggle} className="xrdb-panel-head flex w-full items-center justify-between gap-4 text-left">
           <div>

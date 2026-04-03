@@ -27,8 +27,6 @@ type GenrePreviewCard = {
 export function ConfiguratorCenterStage({
   isOpen,
   onToggle,
-  stickyPreviewEnabled,
-  onToggleStickyPreview,
   workspaceCenterView,
   workspaceCenterViewOptions,
   onSelectWorkspaceCenterView,
@@ -55,8 +53,6 @@ export function ConfiguratorCenterStage({
 }: {
   isOpen: boolean;
   onToggle: () => void;
-  stickyPreviewEnabled: boolean;
-  onToggleStickyPreview: () => void;
   workspaceCenterView: WorkspaceCenterView;
   workspaceCenterViewOptions: WorkspaceCenterViewOption[];
   onSelectWorkspaceCenterView: (value: WorkspaceCenterView) => void;
@@ -84,7 +80,6 @@ export function ConfiguratorCenterStage({
   const centerViewMeta =
     workspaceCenterViewOptions.find((option) => option.id === workspaceCenterView) ||
     workspaceCenterViewOptions[0];
-  const stickyRailClass = stickyPreviewEnabled ? 'workspace-sticky-preview' : '';
 
   const previewFrame = (
     <div className="rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(139,92,246,0.12),_transparent_58%),linear-gradient(180deg,rgba(12,10,20,0.92),rgba(6,6,10,0.96))] p-4">
@@ -188,20 +183,6 @@ export function ConfiguratorCenterStage({
                     </button>
                   ))}
                 </div>
-                <div className="hidden xl:flex items-center gap-3">
-                  <span className="text-[11px] text-zinc-500">Sticky rail</span>
-                  <button
-                    type="button"
-                    onClick={onToggleStickyPreview}
-                    className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                      stickyPreviewEnabled
-                        ? 'border-violet-500/60 bg-zinc-800 text-white'
-                        : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    {stickyPreviewEnabled ? 'On' : 'Off'}
-                  </button>
-                </div>
               </div>
               <div className="flex flex-wrap gap-2 min-[861px]:hidden">
                 <a
@@ -240,7 +221,7 @@ export function ConfiguratorCenterStage({
               </div>
               {workspaceCenterView === 'showcase' ? (
                 <div className="workspace-showcase-grid mt-3">
-                  <div className={`z-30 space-y-4 ${stickyRailClass}`.trim()}>
+                  <div className="z-30 space-y-4">
                     {previewFrame}
                     <div className="workspace-showcase-meta-grid">
                       <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-3">
@@ -356,7 +337,7 @@ export function ConfiguratorCenterStage({
                 </div>
               ) : workspaceCenterView === 'preview' ? (
                 <div className="mt-3">
-                  <div className={`z-30 space-y-3 ${stickyRailClass}`.trim()}>
+                  <div className="z-30 space-y-3">
                     {previewFrame}
                     <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(19,15,33,0.92),rgba(10,8,18,0.98))] p-4">
                       <div className="flex flex-wrap gap-2">
@@ -375,7 +356,7 @@ export function ConfiguratorCenterStage({
                 </div>
               ) : (
                 <div className="mt-3 space-y-3">
-                  <div className={`z-30 ${stickyRailClass}`.trim()}>
+                  <div className="z-30">
                     <div className="space-y-3">
                       {previewFrame}
                       <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(22,16,37,0.94),rgba(11,9,21,0.98))] p-4">

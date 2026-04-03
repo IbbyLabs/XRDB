@@ -44,6 +44,22 @@ export function useConfiguratorPageChrome({
     }
     const navHeight = navRef.current?.getBoundingClientRect().height ?? 0;
     const offset = isNavSticky() ? navHeight + 12 : 16;
+    const scrollRegion = target.closest('.xrdb-workspace-scroll-region');
+    if (scrollRegion instanceof HTMLElement) {
+      const regionTop = Math.max(0, scrollRegion.getBoundingClientRect().top + window.scrollY - offset);
+      const regionOffset = scrollRegion === target
+        ? 0
+        : Math.max(
+          0,
+          target.getBoundingClientRect().top
+            - scrollRegion.getBoundingClientRect().top
+            + scrollRegion.scrollTop
+            - 12,
+        );
+      window.scrollTo({ top: regionTop, behavior });
+      scrollRegion.scrollTo({ top: regionOffset, behavior });
+      return;
+    }
     const top = Math.max(0, target.getBoundingClientRect().top + window.scrollY - offset);
     window.scrollTo({ top, behavior });
   }, [isNavSticky]);
