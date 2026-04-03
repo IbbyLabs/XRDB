@@ -11,6 +11,28 @@
 
 <a id="v1-4-0"></a>
 
+<a id="v1-4-1"></a>
+
+## [v1.4.1] - 03/04/2026
+
+### Fixed
+* BUG-47 make shuffle sample update live preview targets
+  
+  Adds deterministic sample target selection that avoids returning the currently selected media target when alternatives exist.
+  
+  Updates poster sample IDs to unique titles so shuffle no longer appears stuck on Matrix aliases.
+  
+  Keeps shuffle interactions aligned with active search state and adds regression tests for non repeat behavior.
+* BUG-46 restore media title lookup and live search dropdown
+  
+  Fixes the media search request path regression by preserving the TMDB /3 route in the configurator search API.
+  
+  Adds TMDB first lookup with OMDb backed IMDb fallback when TMDB returns no mapped results and keeps TMDB auth failures explicit.
+  
+  Replaces button based submit UX with debounced typeahead behavior and dropdown results while preserving Enter to search support.
+  
+  Extends media search utility coverage with regression tests for URL building, TMDB mapping, and IMDb fallback mapping.
+
 ## [v1.4.0] - 03/04/2026
 
 ### Added
