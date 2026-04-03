@@ -10,6 +10,7 @@ const createInput = (overrides = {}) => ({
   cleanId: 'tt0111161',
   requestedImageLang: 'en',
   posterTextPreference: 'clean',
+  posterImageSize: 'medium',
   posterArtworkSource: 'fanart',
   backdropArtworkSource: 'tmdb',
   logoArtworkSource: 'tmdb',
@@ -34,6 +35,8 @@ const createInput = (overrides = {}) => ({
   backdropSideRatingsPosition: 'center',
   backdropSideRatingsOffset: 50,
   ratingPresentation: 'average',
+  posterRingValueSource: 'highest',
+  posterRingProgressSource: 'tmdb',
   blockbusterDensity: 'balanced',
   aggregateRatingSource: 'combined',
   ratingStyle: 'stacked',
@@ -53,6 +56,7 @@ const createInput = (overrides = {}) => ({
   mdblistStateKey: 'mdblist:none',
   simklStateKey: 'simkl:none',
   streamBadgesCacheKeySeed: 'off',
+  artworkSelectionSeed: 'artwork:default',
   fanartKeyHash: 'fanart-hash',
   fanartClientKeyHash: 'fanart-client-hash',
   omdbKeyHash: 'omdb-hash',
@@ -188,6 +192,40 @@ test('final image render seed changes when poster edge offset changes', () => {
   );
 
   assert.notEqual(baseKey, offsetKey);
+});
+
+test('final image render seed scopes compact ring sources to ring poster renders', () => {
+  const baseRingKey = buildFinalImageRenderSeedKey(
+    createInput({
+      ratingPresentation: 'ring',
+      posterRingValueSource: 'tmdb',
+      posterRingProgressSource: 'imdb',
+    }),
+  );
+  const changedRingKey = buildFinalImageRenderSeedKey(
+    createInput({
+      ratingPresentation: 'ring',
+      posterRingValueSource: 'tomatoes',
+      posterRingProgressSource: 'imdb',
+    }),
+  );
+  const baseAverageKey = buildFinalImageRenderSeedKey(
+    createInput({
+      ratingPresentation: 'average',
+      posterRingValueSource: 'tmdb',
+      posterRingProgressSource: 'imdb',
+    }),
+  );
+  const changedAverageKey = buildFinalImageRenderSeedKey(
+    createInput({
+      ratingPresentation: 'average',
+      posterRingValueSource: 'tomatoes',
+      posterRingProgressSource: 'imdb',
+    }),
+  );
+
+  assert.notEqual(baseRingKey, changedRingKey);
+  assert.equal(baseAverageKey, changedAverageKey);
 });
 
 test('final image render seed isolates poster side placement from backdrop side placement', () => {

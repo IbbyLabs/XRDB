@@ -21,6 +21,7 @@ import {
   AGGREGATE_RATING_SOURCE_ACCENTS,
   preservesSelectedRatingLayout,
   RATING_PRESENTATION_OPTIONS,
+  usesCompactRingPresentation,
   usesAggregateAccentBar,
   usesAggregateRatingPresentation,
   usesAggregateRatingSource,
@@ -227,6 +228,7 @@ export function useConfiguratorWorkspaceSummary({
           ? thumbnailAggregateRatingSource
         : logoAggregateRatingSource;
   const usesAggregatePresentation = usesAggregateRatingPresentation(activeRatingPresentation);
+  const isCompactRingPresentation = usesCompactRingPresentation(activeRatingPresentation);
   const activeAggregateAccent =
     aggregateAccentMode === 'custom'
       ? usesDualAggregateRatingPresentation(activeRatingPresentation)
@@ -316,7 +318,8 @@ export function useConfiguratorWorkspaceSummary({
           ? thumbnailRatingRows
         : logoRatingRows;
   const showsAggregateRatingSource = usesAggregateRatingSource(activeRatingPresentation);
-  const showsAggregateAccentBarOffset = usesAggregateAccentBar(activeRatingPresentation);
+  const showsAggregateAccentBarOffset =
+    usesAggregateAccentBar(activeRatingPresentation) && !isCompactRingPresentation;
   const activePresentationPreservesLayout = preservesSelectedRatingLayout(activeRatingPresentation);
   const isEditorialPresentation = activeRatingPresentation === 'editorial';
   const layoutPlacementHelp =
@@ -489,6 +492,7 @@ export function useConfiguratorWorkspaceSummary({
     currentSetupItems,
     enabledProviderCount,
     isEditorialPresentation,
+    isCompactRingPresentation,
     layoutPlacementHelp,
     providersLabel,
     quickPresentationOptions,

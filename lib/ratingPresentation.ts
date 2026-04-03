@@ -8,6 +8,7 @@ export type RatingPresentation =
   | 'average'
   | 'dual'
   | 'dual-minimal'
+  | 'ring'
   | 'editorial'
   | 'blockbuster'
   | 'none';
@@ -56,6 +57,11 @@ export const RATING_PRESENTATION_OPTIONS: Array<{
     id: 'dual-minimal',
     label: 'Compact Critics + Audience',
     description: 'Render separate critic and audience compact score chips at the same time.',
+  },
+  {
+    id: 'ring',
+    label: 'Compact Ring',
+    description: 'Poster gets a fixed top right score ring with configurable center and progress sources.',
   },
   {
     id: 'editorial',
@@ -150,6 +156,7 @@ export const normalizeRatingPresentation = (
     normalized === 'average' ||
     normalized === 'dual' ||
     normalized === 'dual-minimal' ||
+    normalized === 'ring' ||
     normalized === 'editorial' ||
     normalized === 'blockbuster' ||
     normalized === 'none'
@@ -172,7 +179,9 @@ export const resolveEffectiveRatingPresentation = (
   presentation: RatingPresentation,
   imageType: 'poster' | 'backdrop' | 'logo',
 ): RatingPresentation =>
-  presentation === 'editorial' && imageType !== 'poster' ? 'average' : presentation;
+  (presentation === 'editorial' || presentation === 'ring') && imageType !== 'poster'
+    ? 'average'
+    : presentation;
 
 export const normalizeAggregateRatingSource = (
   value: unknown,
@@ -232,13 +241,17 @@ export const usesAggregateAccentBar = (presentation: RatingPresentation) =>
   presentation === 'dual' ||
   presentation === 'dual-minimal';
 
+export const usesCompactRingPresentation = (presentation: RatingPresentation) =>
+  presentation === 'ring';
+
 export const preservesSelectedRatingLayout = (presentation: RatingPresentation) =>
-  presentation !== 'blockbuster' && presentation !== 'editorial';
+  presentation !== 'blockbuster' && presentation !== 'editorial' && presentation !== 'ring';
 
 export const resolvePosterRatingLayoutForPresentation = (
   presentation: RatingPresentation,
   layout: PosterRatingLayout,
-): PosterRatingLayout => (preservesSelectedRatingLayout(presentation) ? layout : 'left-right');
+): PosterRatingLayout =>
+  presentation === 'ring' ? layout : preservesSelectedRatingLayout(presentation) ? layout : 'left-right';
 
 export const resolveBackdropRatingLayoutForPresentation = (
   presentation: RatingPresentation,
@@ -248,7 +261,7 @@ export const resolveBackdropRatingLayoutForPresentation = (
 export const resolvePosterRatingsMaxPerSideForPresentation = (
   presentation: RatingPresentation,
   maxPerSide: number | null,
-) => (preservesSelectedRatingLayout(presentation) ? maxPerSide : null);
+) => (presentation === 'ring' || preservesSelectedRatingLayout(presentation) ? maxPerSide : null);
 
 export const resolveLogoRatingsMaxForPresentation = (
   presentation: RatingPresentation,

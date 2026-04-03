@@ -10,6 +10,7 @@ import { getMetadata, setMetadata } from './metadataStore.ts';
 import { isMediaFeatureBadgeKey } from './mediaFeatures.ts';
 import { resolveOverlayAutoScale } from './overlayScale.ts';
 import type { EditorialRatingOverlaySpec } from './editorialRatingOverlay.ts';
+import type { PosterCompactRingOverlaySpec } from './posterCompactRingOverlay.ts';
 import {
   type BadgeKey,
   type BlockbusterDensity,
@@ -123,6 +124,7 @@ export type GenreBadgeSpec = {
   scalePercent?: number;
 };
 export type EditorialRatingOverlay = EditorialRatingOverlaySpec;
+export type PosterCompactRingOverlay = PosterCompactRingOverlaySpec;
 
 export type FastRenderInput = {
   imageType: 'poster' | 'backdrop' | 'logo';
@@ -144,6 +146,7 @@ export type FastRenderInput = {
   posterTitleText?: string | null;
   posterLogoUrl?: string | null;
   editorialOverlay?: EditorialRatingOverlay | null;
+  compactRingOverlay?: PosterCompactRingOverlay | null;
   genreBadge?: GenreBadgeSpec | null;
   badgeIconSize: number;
   badgeFontSize: number;
@@ -811,6 +814,19 @@ export const renderWithSharp = async (
         input.editorialOverlay.top,
         input.editorialOverlay.width,
         input.editorialOverlay.height,
+      );
+    }
+    if (input.imageType === 'poster' && input.compactRingOverlay) {
+      overlays.push({
+        input: Buffer.from(input.compactRingOverlay.svg),
+        top: input.compactRingOverlay.top,
+        left: input.compactRingOverlay.left,
+      });
+      trackGenreCollisionRect(
+        input.compactRingOverlay.left,
+        input.compactRingOverlay.top,
+        input.compactRingOverlay.width,
+        input.compactRingOverlay.height,
       );
     }
 
