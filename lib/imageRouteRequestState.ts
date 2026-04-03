@@ -308,6 +308,7 @@ export type ImageRouteRequestState = {
   posterArtworkSource: ArtworkSource;
   backdropArtworkSource: ArtworkSource;
   logoArtworkSource: ArtworkSource;
+  ratingBlackStripEnabled: boolean;
   thumbnailEpisodeArtwork: EpisodeArtworkMode;
   backdropEpisodeArtwork: EpisodeArtworkMode;
   artworkSelectionSeed: string;
@@ -1117,6 +1118,13 @@ export const resolveImageRouteRequestState = async ({
   const effectiveBackdropArtworkSource = isThumbnailRequest
     ? thumbnailArtworkSource
     : backdropArtworkSource;
+  const activeArtworkSource =
+    imageType === 'poster'
+      ? posterArtworkSource
+      : imageType === 'backdrop'
+        ? effectiveBackdropArtworkSource
+        : logoArtworkSource;
+  const ratingBlackStripEnabled = activeArtworkSource === 'blackbar';
   const backdropUsesFanartArtwork = FANART_ARTWORK_SOURCE_SET.has(effectiveBackdropArtworkSource);
   const logoUsesFanartArtwork = FANART_ARTWORK_SOURCE_SET.has(logoArtworkSource);
   const hasRandomArtworkSelection =
@@ -1364,6 +1372,7 @@ export const resolveImageRouteRequestState = async ({
     posterArtworkSource,
     backdropArtworkSource: effectiveBackdropArtworkSource,
     logoArtworkSource,
+    ratingBlackStripEnabled,
     thumbnailEpisodeArtwork,
     backdropEpisodeArtwork,
     artworkSelectionSeed,

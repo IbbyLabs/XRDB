@@ -379,6 +379,31 @@ test('final image render seed changes when quality badge settings change', () =>
   assert.notEqual(baseKey, changedScaleKey);
 });
 
+test('final image render seed changes when blackbar artwork source is enabled for the active type', () => {
+  const posterBase = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'poster', posterArtworkSource: 'tmdb' }),
+  );
+  const posterBlackBar = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'poster', posterArtworkSource: 'blackbar' }),
+  );
+  const backdropBase = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'backdrop', backdropArtworkSource: 'tmdb' }),
+  );
+  const backdropBlackBar = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'backdrop', backdropArtworkSource: 'blackbar' }),
+  );
+  const logoBase = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'logo', logoArtworkSource: 'tmdb' }),
+  );
+  const logoBlackBar = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'logo', logoArtworkSource: 'blackbar' }),
+  );
+
+  assert.notEqual(posterBase, posterBlackBar);
+  assert.notEqual(backdropBase, backdropBlackBar);
+  assert.notEqual(logoBase, logoBlackBar);
+});
+
 test('final image render seed changes when the OMDb key state changes for OMDb poster sources', () => {
   const baseKey = buildFinalImageRenderSeedKey(
     createInput({ posterArtworkSource: 'omdb' }),

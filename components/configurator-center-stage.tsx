@@ -240,7 +240,7 @@ export function ConfiguratorCenterStage({
               </div>
               {workspaceCenterView === 'showcase' ? (
                 <div className="workspace-showcase-grid mt-3">
-                  <div className={`relative z-30 space-y-4 ${stickyRailClass}`.trim()}>
+                  <div className={`z-30 space-y-4 ${stickyRailClass}`.trim()}>
                     {previewFrame}
                     <div className="workspace-showcase-meta-grid">
                       <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-3">
@@ -356,7 +356,7 @@ export function ConfiguratorCenterStage({
                 </div>
               ) : workspaceCenterView === 'preview' ? (
                 <div className="mt-3">
-                  <div className={`relative z-30 space-y-3 ${stickyRailClass}`.trim()}>
+                  <div className={`z-30 space-y-3 ${stickyRailClass}`.trim()}>
                     {previewFrame}
                     <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(19,15,33,0.92),rgba(10,8,18,0.98))] p-4">
                       <div className="flex flex-wrap gap-2">
@@ -375,7 +375,7 @@ export function ConfiguratorCenterStage({
                 </div>
               ) : (
                 <div className="mt-3 space-y-3">
-                  <div className={`relative z-30 ${stickyRailClass}`.trim()}>
+                  <div className={`z-30 ${stickyRailClass}`.trim()}>
                     <div className="space-y-3">
                       {previewFrame}
                       <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(22,16,37,0.94),rgba(11,9,21,0.98))] p-4">
