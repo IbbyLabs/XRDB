@@ -173,6 +173,7 @@ export type FastRenderInput = {
   sideRatingsPosition: SideRatingPosition;
   sideRatingsOffset: number;
   ratingStyle: RatingStyle;
+  ratingBlackStripEnabled: boolean;
   ratingStackOffsetX: number;
   ratingStackOffsetY: number;
   logoBackground: LogoBackground;
@@ -467,6 +468,17 @@ export const renderWithSharp = async (
         isPosterRowLayout,
       });
 
+      if (input.ratingBlackStripEnabled && placements.length > 0) {
+        const rowLeft = Math.min(...placements.map((entry) => entry.rowX));
+        const rowRight = Math.max(...placements.map((entry) => entry.rowX + entry.badgeWidth));
+        pushRatingStripOverlay({
+          left: rowLeft,
+          top: rowY,
+          width: Math.max(0, rowRight - rowLeft),
+          height: ratingBadgeHeight,
+        });
+      }
+
       for (const entry of placements) {
         pushBadgeOverlay({
           badge: entry.badge,
@@ -476,6 +488,56 @@ export const renderWithSharp = async (
           compactText: compactPosterRowText,
         });
       }
+    };
+    const pushRatingStripOverlay = ({
+      left,
+      top,
+      width,
+      height,
+    }: {
+      left: number;
+      top: number;
+      width: number;
+      height: number;
+    }) => {
+      if (!input.ratingBlackStripEnabled) return;
+      if (!(width > 0 && height > 0)) return;
+      const translatedLeft = shouldApplyRatingStackOffset
+        ? left + input.ratingStackOffsetX
+        : left;
+      const translatedTop = shouldApplyRatingStackOffset
+        ? top + input.ratingStackOffsetY
+        : top;
+      const insetX = Math.max(10, Math.round(height * 0.28));
+      const insetY = Math.max(4, Math.round(height * 0.18));
+      const stripLeft = clamp(Math.round(translatedLeft - insetX), 0, input.outputWidth);
+      const stripTop = clamp(Math.round(translatedTop - insetY), 0, input.finalOutputHeight);
+      const stripRight = clamp(
+        Math.round(translatedLeft + width + insetX),
+        0,
+        input.outputWidth,
+      );
+      const stripBottom = clamp(
+        Math.round(translatedTop + height + insetY),
+        0,
+        input.finalOutputHeight,
+      );
+      const stripWidth = stripRight - stripLeft;
+      const stripHeight = stripBottom - stripTop;
+      if (!(stripWidth > 0 && stripHeight > 0)) return;
+      const cornerRadius = Math.max(
+        0,
+        Math.min(Math.round(stripHeight / 2), Math.round(height * 0.5)),
+      );
+      const stripSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${stripWidth}" height="${stripHeight}" viewBox="0 0 ${stripWidth} ${stripHeight}">
+  <rect x="0" y="0" width="${stripWidth}" height="${stripHeight}" rx="${cornerRadius}" ry="${cornerRadius}" fill="#000000" fill-opacity="0.94"/>
+</svg>`;
+      overlays.push({
+        input: Buffer.from(stripSvg),
+        top: stripTop,
+        left: stripLeft,
+      });
+      trackGenreCollisionRect(stripLeft, stripTop, stripWidth, stripHeight);
     };
     const pushBadgeOverlay = ({
       badge,
@@ -828,6 +890,14 @@ export const renderWithSharp = async (
                 badgeWidth -
                 (input.imageType === 'poster' ? posterEdgeInset : backdropEdgeInset),
             );
+      if (input.ratingBlackStripEnabled) {
+        pushRatingStripOverlay({
+          left: rowX,
+          top: rowY,
+          width: badgeWidth,
+          height: ratingBadgeHeight,
+        });
+      }
       pushBadgeOverlay({ badge, badgeWidth, rowX, rowY, compactText: false });
     };
     const composeBadgeColumn = (

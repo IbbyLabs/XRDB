@@ -325,13 +325,13 @@ test('image route artwork selection measures TMDB logo aspect ratio from the vis
   assert.deepEqual(measuredLogoUrls, ['https://image.tmdb.org/t/p/w500/tmdb-logo.png']);
 });
 
-test('image route artwork selection supports black bar background source', async () => {
+test('image route artwork selection keeps normal artwork when black bar source is selected', async () => {
   const selectArtwork = createImageRouteArtworkSelector({
     imageType: 'backdrop',
     isThumbnailRequest: false,
     mediaType: 'movie',
-    media: { id: 19, imdb_id: 'tt0099999' },
-    details: null,
+    media: { id: 19, imdb_id: 'tt0099999', backdrop_path: '/fallback-backdrop.jpg' },
+    details: { backdrop_path: '/details-backdrop.jpg' },
     requestedImageLang: 'en',
     fallbackImageLang: 'en',
     posterTextPreference: 'original',
@@ -357,10 +357,10 @@ test('image route artwork selection supports black bar background source', async
 
   const result = await selectArtwork({
     posters: [],
-    backdrops: [],
+    backdrops: [{ file_path: '/tmdb-backdrop.jpg', iso_639_1: 'en' }],
     logos: [],
   });
 
-  assert.equal(result.imgPath, '');
-  assert.match(result.imgUrlOverride || '', /^data:image\/svg\+xml;base64,/);
+  assert.equal(result.imgPath, '/tmdb-backdrop.jpg');
+  assert.equal(result.imgUrlOverride, null);
 });

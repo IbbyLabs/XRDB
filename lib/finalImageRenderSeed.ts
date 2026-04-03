@@ -105,6 +105,8 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.ratingStyle === 'glass' || input.ratingStyle === 'square';
   const providerAppearanceKey =
     encodeRatingProviderAppearanceOverrides(input.providerAppearanceOverrides) || '-';
+  const toArtworkSourceCacheToken = (source: string) =>
+    source === 'blackbar' ? 'blackbar-strip' : source;
 
   return [
     input.cacheVersion,
@@ -122,11 +124,11 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     usesRandomPosterCriteria ? input.randomPosterFallbackMode : '-',
     isPoster ? input.posterImageSize : '-',
     input.imageType === 'backdrop' ? input.backdropImageSize : '-',
-    isPoster ? input.posterArtworkSource : '-',
-    isBackdrop ? input.backdropArtworkSource : '-',
+    isPoster ? toArtworkSourceCacheToken(input.posterArtworkSource) : '-',
+    isBackdrop ? toArtworkSourceCacheToken(input.backdropArtworkSource) : '-',
     input.imageType === 'thumbnail' ? input.thumbnailEpisodeArtwork : '-',
     input.imageType === 'backdrop' ? input.backdropEpisodeArtwork : '-',
-    isLogo ? input.logoArtworkSource : '-',
+    isLogo ? toArtworkSourceCacheToken(input.logoArtworkSource) : '-',
     isPoster ? input.posterRatingsLayout : '-',
     isPoster ? String(input.posterRatingsMaxPerSide ?? 'auto') : '-',
     isPoster ? String(input.posterRatingsMax ?? 'auto') : '-',

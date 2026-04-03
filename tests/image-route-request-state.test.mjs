@@ -88,6 +88,34 @@ test('image route request state keeps OMDb poster artwork poster only', async ()
   assert.equal(backdropState.backdropArtworkSource, 'tmdb');
 });
 
+test('image route request state enables black strip mode when blackbar source is active', async () => {
+  const posterState = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&posterArtworkSource=blackbar',
+    ),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+  const backdropState = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/backdrop/tt0133093.jpg?tmdbKey=tmdb-key&backdropArtworkSource=blackbar',
+    ),
+    imageType: 'backdrop',
+    id: 'tt0133093.jpg',
+  });
+  const logoState = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/logo/tt0133093.jpg?tmdbKey=tmdb-key&logoArtworkSource=blackbar',
+    ),
+    imageType: 'logo',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(posterState.ratingBlackStripEnabled, true);
+  assert.equal(backdropState.ratingBlackStripEnabled, true);
+  assert.equal(logoState.ratingBlackStripEnabled, true);
+});
+
 test('image route request state normalizes type scoped episode artwork overrides', async () => {
   const state = await resolveImageRouteRequestState({
     request: createRequest(
