@@ -9,6 +9,156 @@
 
 <a id="v1-3-0"></a>
 
+<a id="v1-4-0"></a>
+
+## [v1.4.0] - 03/04/2026
+
+### Added
+* FR-32 show localized language names without locale codes
+  
+  Update the configurator language selector to display the full localized language label directly instead of appending the raw locale code in each option.
+  
+  Regional variants remain available through existing locale aware language option generation so entries such as English (United Kingdom) and Español (Spain) stay visible.
+  
+  Validation: pnpm run lint && pnpm run build.
+* FR-20 add thumbnail episode target controls
+  
+  Add dedicated thumbnail preview target inputs in Configurator Essentials for series ID, season, and episode so episode URLs are composed from explicit fields instead of manual freeform strings.
+  
+  Introduce shared episode preview target parsing and building helpers that support typed IDs such as tmdb:tv:id and tvdb:id, plus kitsu shorthand inputs.
+  
+  Reuse the shared parser in preview URL generation and keep season/episode values stable when a thumbnail media search result switches to a new series.
+  
+  Document the episode thumbnail capability matrix and parsing behavior in README and extend episode identity tests for parser and builder coverage.
+* FR-26 increase thumbnail rating badge scale range
+  
+  Add a thumbnail specific rating badge scale normalizer capped at 200 while preserving the existing 150 cap for poster, backdrop, and logo rating badge scale values.
+  
+  Wire the thumbnail scale normalizer through saved config normalization and image request state parsing, and update the Look panel rating badge slider to use the higher cap only for thumbnail previews.
+  
+  Extend tests for badge scale normalization, request state parsing, and config serialization to cover larger thumbnail rating badge scale values.
+* FR-25 add no background badge text outline controls
+  
+  Wire posterNoBackgroundBadgeOutlineColor and posterNoBackgroundBadgeOutlineWidth across shared settings, proxy/query schema, request state parsing, render seed, and configurator workspace runtime.
+  
+  Apply outline stroke rendering for plain genre badges and plain quality/network badge text, and expose poster only configurator controls for outline color and width.
+  
+  Add regression coverage for normalization, config serialization, request parsing, render seed scoping, and SVG output behavior.
+* FR-15 add per type glass genre badge border width controls
+  
+  Add new per type genre badge border width settings for poster, backdrop, thumbnail, and logo surfaces.
+  
+  Wire the new controls through configurator state, saved config normalization/serialization, proxy schema allowlists, and URL output generation.
+  
+  Apply border width in glass genre badge rendering, include it in request parsing and render seed inputs for cache correctness, and add regression coverage for normalization, rendering, and config round trips.
+* FR-12 improve provider icon rendering quality
+  
+  • request higher resolution provider icon sources for rating providers and TMDB network logos
+  
+  • increase provider icon rasterization output size and resize quality for cleaner scaling
+  
+  • bump provider icon and final render cache versions to invalidate stale low resolution output
+  
+  • update and extend tests for provider icon processing and URL/cache key expectations
+* FR-11 add dynamic aggregate accent stop mapping
+  
+  Add a dynamic aggregate accent mode with configurable threshold color stops and normalization helpers.
+  
+  Wire dynamic stops through configurator state, config import/export, query generation, proxy schema, request parsing, display state resolution, and render seed scoping.
+  
+  Extend aggregate badge and compact ring accent resolution to map score percent to dynamic stop colors.
+  
+  Add regression coverage for dynamic stop parsing, request state normalization, display state accents, seed scoping, and UI config payload behavior.
+* FR-10 add TMDB random poster quality filters
+  
+  Introduce random poster filter controls for TMDB selection across request parsing, config schema, and configurator state.
+  
+  Add deterministic filtered random selection with explicit fallback modes, and include filter settings in render seed generation.
+  
+  Expose poster random filter controls in the configurator UI and persist them through config import/export and preview URLs.
+  
+  Add request state, selection, and config tests covering filter parsing, candidate filtering, and fallback behavior.
+* FR-4 add backdrop image sizing controls and render support
+  
+  Add backdropImageSize (normal|large|4k) across route parsing, config schema, seed generation, and render dimensions.
+  
+  Wire backdrop size through configurator workspace state, config import/export, preview URL generation, and UI controls in Look and Quick Tune sections.
+  
+  Expand tests for ui config normalization/payload behavior, render seed scoping, and prepared media dimension selection.
+* FR-14 add proxy media type selection and gating
+  
+  Add proxyTypes to saved configurator state, proxy payload encoding, and proxy query decoding schema so manifests can target movie, series, or anime media types.
+  
+  Wire the configurator proxy panel with media type toggles and persist selections through workspace import export flows.
+  
+  Gate proxy artwork rewrites and metadata translation by selected media types, including anime classification via anime native ID prefixes.
+  
+  Add runtime and config regression tests for proxyTypes normalization, payload output, and rewrite behavior.
+* FR-32 show full language names in selector
+  
+  Render full language labels in the configurator language dropdown instead of ISO codes alone.
+  
+  Keep the ISO code in parentheses for compatibility and quick reference, and widen the control so labels remain readable.
+* FR-5 add imdb artwork source alias and ui labels
+  
+  Accept imdb as an artwork source alias and normalize it to the existing cinemeta pipeline across route parsing and workspace config normalization.
+  
+  Update configurator artwork source labels and descriptions to expose IMDb wording directly while preserving compatibility with existing cinemeta values.
+* FR-22 add black bar artwork source option
+  
+  Add a new blackbar artwork source to config normalization and configurator options for poster, backdrop, thumbnail, and logo flows.
+  
+  Render blackbar selections using an inline solid black image source in artwork selection so existing overlay and badge pipelines continue to work without layout regressions.
+* FR-29 add preview title search by name
+  
+  Add a TMDB backed media search endpoint and wire search controls into Media Target so users can resolve movie and series names into typed TMDB IDs.
+  
+  Support thumbnail specific filtering to series results, expose selectable search results, show the active preview title, and add a shuffle sample action for faster preview iteration.
+* FR-23 raise quality badge scale limit to 200
+  
+  Split quality badge scaling normalization from rating badge scaling so quality badges can scale up to 200 percent while rating badges remain capped at 150.
+  
+  Update configurator quality badge slider max, UI config normalization, request state parsing, and add regression coverage for quality scale clamping.
+
+### Fixed
+* FR-16 FR-32 expose compact ring selection and locale label coverage
+  
+  • include compact ring in the presentation section ordering so it appears in configurator presentation controls
+  
+  • include compact ring in simple mode presentation choices used by workspace summary and quick tune paths
+  
+  • add regression tests for ring visibility in both lists
+  
+  • expand language option tests to assert regional localized labels and ensure selector renders labels without appended ISO codes
+* FR-2 keep sticky preview above showcase samples
+  
+  Raise the sticky preview rail layer in showcase, preview, and guide center views so floating preview content remains above the samples column while scrolling.
+  
+  Lower the samples column layer in showcase mode to avoid stacking context overlap with the sticky preview frame.
+  
+  Validation: pnpm run lint && pnpm run build.
+* FR-2 keep sticky preview above sample content
+  
+  Apply a dedicated sticky preview class and desktop stacking rules so the center preview stays above adjacent showcase/sample surfaces while scrolling.
+  
+  Use a local stacking context for the preview section and raise the sticky rail z index without changing mobile behavior.
+
+### Documentation
+* FR-23 document and lock quality badge scale max at 200
+  
+  Document poster, backdrop, thumbnail, and logo quality badge scale query parameters with the shipped 70 to 200 range in README.
+  
+  Extend the slider regression test to lock MAX_QUALITY_BADGE_SCALE_PERCENT at 200 and verify the configurator quality badge slider uses that max constant.
+  
+  Validation: node experimental strip types test tests/genre badge slider range.test.mjs && pnpm run lint && pnpm run build.
+* FR-9 align genre badge slider range with 200 percent max
+  
+  Update README query parameter reference so genre badge scale ranges reflect the shipped 70 to 200 limits across global and per type controls.
+  
+  Add a regression test that locks MAX_GENRE_BADGE_SCALE_PERCENT at 200 and verifies the configurator genre badge slider is wired to that max constant.
+  
+  Validation: node experimental strip types test tests/genre badge slider range.test.mjs && pnpm run lint && pnpm run build.
+
 ## [v1.3.0] - 03/04/2026
 
 ### Added
