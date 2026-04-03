@@ -15,6 +15,19 @@
 
 <a id="v1-4-2"></a>
 
+<a id="v1-5-0"></a>
+
+## [v1.5.0] - 03/04/2026
+
+### Added
+* add share link import and remove invalid discord link
+  
+  Add workspace import link parsing so shared XRDB URLs can apply configurator settings and media target context.
+  
+  Add parser coverage tests and wire the new action into workspace management controls.
+  
+  Remove XRDB AIOStreams Discord  from hero/footer UI and brand env template defaults, keeping official XRDB Discord only and adding AIOMetadata discord
+
 ## [v1.4.2] - 03/04/2026
 
 ### Fixed
