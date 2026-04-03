@@ -37,6 +37,30 @@ test('image route genre badge builds square style output', () => {
   assert.match(spec.svg, /rgba\(8,11,16,0.88\)/);
 });
 
+test('image route genre badge centers the square cap over the label block', () => {
+  const spec = buildGenreBadgeSvg(
+    {
+      familyId: 'crime',
+      label: 'Crime',
+      accentColor: '#60a5fa',
+      mode: 'both',
+      style: 'square',
+    },
+    'poster',
+  );
+
+  const capMatch = spec.svg.match(/<rect x="(\d+)" y="6" width="(\d+)" height="\d+" rx="\d+" fill="#60a5fa"/);
+  const textMatch = spec.svg.match(/<text x="(\d+)" y="\d+" text-anchor="middle" dominant-baseline="middle"[^>]*>CRIME<\/text>/);
+
+  assert.ok(capMatch);
+  assert.ok(textMatch);
+
+  const capCenterX = Number.parseInt(capMatch[1], 10) + Number.parseInt(capMatch[2], 10) / 2;
+  const textCenterX = Number.parseInt(textMatch[1], 10);
+
+  assert.ok(Math.abs(capCenterX - textCenterX) <= 1);
+});
+
 test('image route genre badge builds glass style text output', () => {
   const spec = buildGenreBadgeSvg(
     {
