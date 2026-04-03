@@ -490,13 +490,13 @@ export function MediaTargetSection({
           />
         </div>
         {tmdbKey ? (
-          <div className="w-32">
+          <div className="w-44">
             <span className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500"><Globe2 className="h-3 w-3" /> Lang</span>
             <div className="relative">
               <select value={lang} onChange={(event) => onLangChange(event.target.value)} className="w-full appearance-none rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-white outline-none focus:border-violet-500/50">
                 {supportedLanguages.map((language) => (
                   <option key={language.code} value={language.code} className="bg-zinc-900">
-                    {language.flag} {language.code}
+                    {language.flag} {language.label} ({language.code})
                   </option>
                 ))}
               </select>
