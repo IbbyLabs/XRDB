@@ -80,6 +80,9 @@ const DEFAULT_DEPS: ArtworkSelectorDeps = {
   resolveOmdbPosterUrl,
 };
 
+const BLACK_BAR_DATA_URL =
+  'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyIiBoZWlnaHQ9IjIiPjxyZWN0IHdpZHRoPSIyIiBoZWlnaHQ9IjIiIGZpbGw9IiMwMDAiLz48L3N2Zz4=';
+
 export const createImageRouteArtworkSelector = (
   input: {
     imageType: 'poster' | 'backdrop' | 'logo';
@@ -150,6 +153,23 @@ export const createImageRouteArtworkSelector = (
   };
 
   return async (selectionInput: ArtworkSelectionInput): Promise<ArtworkSelectionResult> => {
+    const activeArtworkSource =
+      input.imageType === 'poster'
+        ? input.posterArtworkSource
+        : input.imageType === 'backdrop'
+          ? input.backdropArtworkSource
+          : input.logoArtworkSource;
+
+    if (activeArtworkSource === 'blackbar') {
+      return {
+        imgPath: '',
+        imgUrlOverride: BLACK_BAR_DATA_URL,
+        logoAspectRatio: null,
+        logoPath: null,
+        posterIsTextless: false,
+      };
+    }
+
     let posterCollection = selectionInput.posters || [];
     let backdropCollection = selectionInput.backdrops || [];
     const logoCollection = selectionInput.logos || [];
