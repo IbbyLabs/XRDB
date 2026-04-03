@@ -446,9 +446,6 @@ export function buildConfiguratorPageProps({
       centerStageProps: {
         isOpen: workspaceUi.openWorkspacePanels.has('center-view'),
         onToggle: () => workspaceUi.handleToggleWorkspacePanel('center-view'),
-        stickyPreviewEnabled: workspaceState.stickyPreviewEnabled,
-        onToggleStickyPreview: () =>
-          workspaceState.setStickyPreviewEnabled((current) => !current),
         workspaceCenterView: workspaceState.workspaceCenterView,
         workspaceCenterViewOptions: WORKSPACE_CENTER_VIEW_OPTIONS,
         onSelectWorkspaceCenterView: workspaceState.setWorkspaceCenterView,
@@ -502,7 +499,6 @@ export function buildConfiguratorPageProps({
         onToggleHideAiometadataCredentials: workspaceState.setHideAiometadataCredentials,
       },
       supportPanelsProps: {
-        stickyPreviewEnabled: workspaceState.stickyPreviewEnabled,
         isAddonProxyOpen: workspaceUi.openWorkspacePanels.has('addon-proxy'),
         isCurrentSetupOpen: workspaceUi.openWorkspacePanels.has('current-setup'),
         isQuickActionsOpen: workspaceUi.openWorkspacePanels.has('quick-actions'),

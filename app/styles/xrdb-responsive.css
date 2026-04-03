@@ -3,6 +3,19 @@
 		grid-template-columns: minmax(19rem, 0.94fr) minmax(0, 1.16fr);
 	}
 
+	.xrdb-workspace-scroll-region {
+		max-height: calc(100svh - var(--workspace-sticky-top) - 1.5rem);
+		overflow-x: hidden;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		padding: 0.35rem 0.7rem 1rem 0.35rem;
+		border-radius: 2.25rem;
+		scroll-padding-block: 0.75rem;
+		scrollbar-gutter: stable;
+		scrollbar-width: thin;
+		scrollbar-color: color-mix(in srgb, var(--glow) 50%, transparent) transparent;
+	}
+
 	.xrdb-workspace-side-rail {
 		grid-column: 1 / -1;
 	}

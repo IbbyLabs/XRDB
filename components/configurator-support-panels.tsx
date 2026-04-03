@@ -30,7 +30,6 @@ export type CurrentSetupItem = {
 };
 
 export function ConfiguratorSupportPanels({
-  stickyPreviewEnabled,
   isAddonProxyOpen,
   isCurrentSetupOpen,
   isQuickActionsOpen,
@@ -65,7 +64,6 @@ export function ConfiguratorSupportPanels({
   onJumpToExport,
   onFocusPreview,
 }: {
-  stickyPreviewEnabled: boolean;
   isAddonProxyOpen: boolean;
   isCurrentSetupOpen: boolean;
   isQuickActionsOpen: boolean;
@@ -209,14 +207,7 @@ export function ConfiguratorSupportPanels({
   };
 
   return (
-    <div
-      id="proxy"
-      className={`space-y-3 scroll-mt-24${
-        stickyPreviewEnabled
-          ? ' 2xl:sticky 2xl:top-[var(--workspace-sticky-top)] 2xl:self-start 2xl:z-10'
-          : ''
-      }`}
-    >
+    <div id="proxy" className="space-y-3 scroll-mt-24">
       <div className="space-y-3">
           <div className="xrdb-panel xrdb-panel-form rounded-3xl border border-white/10 bg-zinc-900/60 p-4">
             <button
