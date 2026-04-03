@@ -13,6 +13,8 @@ const createBaseInput = () => ({
   aggregateAudienceAccentColor: null,
   aggregateAccentBarOffset: 0,
   aggregateAccentBarVisible: true,
+  posterRingValueSource: 'highest',
+  posterRingProgressSource: 'tmdb',
   posterRatingsLayout: 'top',
   posterRatingsMaxPerSide: 3,
   backdropRatingsLayout: 'top',
@@ -58,6 +60,21 @@ test('image route display state builds editorial overlays and clears genre badge
   assert.equal(state.genreBadge, null);
   assert.ok(state.editorialOverlay);
   assert.deepEqual(state.debugResolvedRatingProviders, ['tomatoes', 'imdb']);
+});
+
+test('image route display state builds compact ring overlays for poster ring presentation', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    ratingPresentation: 'ring',
+    aggregateAccentMode: 'genre',
+  });
+
+  assert.equal(state.displayRatingBadges.length, 0);
+  assert.equal(state.genreBadge, null);
+  assert.equal(state.editorialOverlay, null);
+  assert.ok(state.compactRingOverlay);
+  assert.match(state.compactRingOverlay?.svg ?? '', /92/);
+  assert.match(state.compactRingOverlay?.svg ?? '', /#ef4444/i);
 });
 
 test('image route display state keeps direct rating badges for standard backdrop renders', () => {

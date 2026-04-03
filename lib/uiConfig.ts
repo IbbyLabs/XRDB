@@ -35,6 +35,12 @@ import {
   type RatingPresentation,
 } from './ratingPresentation.ts';
 import {
+  DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
+  DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE,
+  normalizePosterCompactRingSource,
+  type PosterCompactRingSource,
+} from './posterCompactRing.ts';
+import {
   normalizeRatingPreference,
   stringifyRatingPreferencesAllowEmpty,
   type RatingPreference,
@@ -204,6 +210,8 @@ export type SharedXrdbSettings = {
   backdropRatingPresentation: RatingPresentation;
   thumbnailRatingPresentation: RatingPresentation;
   logoRatingPresentation: RatingPresentation;
+  posterRingValueSource: PosterCompactRingSource;
+  posterRingProgressSource: PosterCompactRingSource;
   posterAggregateRatingSource: AggregateRatingSource;
   backdropAggregateRatingSource: AggregateRatingSource;
   thumbnailAggregateRatingSource: AggregateRatingSource;
@@ -374,6 +382,8 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   backdropRatingPresentation: DEFAULT_RATING_PRESENTATION,
   thumbnailRatingPresentation: DEFAULT_RATING_PRESENTATION,
   logoRatingPresentation: DEFAULT_RATING_PRESENTATION,
+  posterRingValueSource: DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE,
+  posterRingProgressSource: DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
   posterAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
   backdropAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
   thumbnailAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
@@ -988,6 +998,14 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
       candidate.logoRatingPresentation,
       defaults.logoRatingPresentation,
     ),
+    posterRingValueSource: normalizePosterCompactRingSource(
+      candidate.posterRingValueSource,
+      defaults.posterRingValueSource,
+    ),
+    posterRingProgressSource: normalizePosterCompactRingSource(
+      candidate.posterRingProgressSource,
+      defaults.posterRingProgressSource,
+    ),
     posterAggregateRatingSource: normalizeAggregateRatingSource(
       candidate.posterAggregateRatingSource,
       defaults.posterAggregateRatingSource,
@@ -1474,6 +1492,12 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   payload.posterRatingsLayout = settings.posterRatingsLayout;
   if (settings.posterRatingPresentation !== DEFAULT_RATING_PRESENTATION) {
     payload.posterRatingPresentation = settings.posterRatingPresentation;
+  }
+  if (settings.posterRingValueSource !== DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE) {
+    payload.posterRingValueSource = settings.posterRingValueSource;
+  }
+  if (settings.posterRingProgressSource !== DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE) {
+    payload.posterRingProgressSource = settings.posterRingProgressSource;
   }
   if (settings.backdropRatingPresentation !== DEFAULT_RATING_PRESENTATION) {
     payload.backdropRatingPresentation = settings.backdropRatingPresentation;

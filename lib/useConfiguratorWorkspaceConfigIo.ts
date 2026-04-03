@@ -91,6 +91,8 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   logoBottomRatingsRow: WorkspaceSettings['logoBottomRatingsRow'];
   mdblistKey: WorkspaceSettings['mdblistKey'];
   posterAggregateRatingSource: WorkspaceSettings['posterAggregateRatingSource'];
+  posterRingProgressSource: WorkspaceSettings['posterRingProgressSource'];
+  posterRingValueSource: WorkspaceSettings['posterRingValueSource'];
   posterArtworkSource: WorkspaceSettings['posterArtworkSource'];
   posterEdgeOffset: WorkspaceSettings['posterEdgeOffset'];
   posterGenreBadgeAnimeGrouping: WorkspaceSettings['posterGenreBadgeAnimeGrouping'];
@@ -198,6 +200,8 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setLogoBottomRatingsRow: Setter<WorkspaceSettings['logoBottomRatingsRow']>;
   setMdblistKey: Setter<WorkspaceSettings['mdblistKey']>;
   setPosterAggregateRatingSource: Setter<WorkspaceSettings['posterAggregateRatingSource']>;
+  setPosterRingProgressSource: Setter<WorkspaceSettings['posterRingProgressSource']>;
+  setPosterRingValueSource: Setter<WorkspaceSettings['posterRingValueSource']>;
   setPosterArtworkSource: Setter<WorkspaceSettings['posterArtworkSource']>;
   setPosterEdgeOffset: Setter<WorkspaceSettings['posterEdgeOffset']>;
   setPosterGenreBadgeAnimeGrouping: Setter<WorkspaceSettings['posterGenreBadgeAnimeGrouping']>;
@@ -319,6 +323,8 @@ export function useConfiguratorWorkspaceConfigIo({
   logoBottomRatingsRow,
   mdblistKey,
   posterAggregateRatingSource,
+  posterRingProgressSource,
+  posterRingValueSource,
   posterArtworkSource,
   posterEdgeOffset,
   posterGenreBadgeAnimeGrouping,
@@ -426,6 +432,8 @@ export function useConfiguratorWorkspaceConfigIo({
   setLogoBottomRatingsRow,
   setMdblistKey,
   setPosterAggregateRatingSource,
+  setPosterRingProgressSource,
+  setPosterRingValueSource,
   setPosterArtworkSource,
   setPosterEdgeOffset,
   setPosterGenreBadgeAnimeGrouping,
@@ -561,6 +569,8 @@ export function useConfiguratorWorkspaceConfigIo({
       setBackdropRatingPresentation(normalized.settings.backdropRatingPresentation);
       setThumbnailRatingPresentation(normalized.settings.thumbnailRatingPresentation);
       setLogoRatingPresentation(normalized.settings.logoRatingPresentation);
+      setPosterRingValueSource(normalized.settings.posterRingValueSource);
+      setPosterRingProgressSource(normalized.settings.posterRingProgressSource);
       setPosterAggregateRatingSource(normalized.settings.posterAggregateRatingSource);
       setBackdropAggregateRatingSource(normalized.settings.backdropAggregateRatingSource);
       setThumbnailAggregateRatingSource(normalized.settings.thumbnailAggregateRatingSource);
@@ -660,6 +670,8 @@ export function useConfiguratorWorkspaceConfigIo({
       setLogoBottomRatingsRow,
       setMdblistKey,
       setPosterAggregateRatingSource,
+      setPosterRingProgressSource,
+      setPosterRingValueSource,
       setPosterArtworkSource,
       setPosterEdgeOffset,
       setPosterGenreBadgeAnimeGrouping,
@@ -795,6 +807,8 @@ export function useConfiguratorWorkspaceConfigIo({
         backdropRatingPresentation,
         thumbnailRatingPresentation,
         logoRatingPresentation,
+        posterRingValueSource,
+        posterRingProgressSource,
         posterAggregateRatingSource,
         backdropAggregateRatingSource,
         thumbnailAggregateRatingSource,
@@ -897,6 +911,8 @@ export function useConfiguratorWorkspaceConfigIo({
       logoBottomRatingsRow,
       mdblistKey,
       posterAggregateRatingSource,
+      posterRingProgressSource,
+      posterRingValueSource,
       posterArtworkSource,
       posterEdgeOffset,
       posterGenreBadgeAnimeGrouping,
@@ -931,7 +947,6 @@ export function useConfiguratorWorkspaceConfigIo({
       ratingValueMode,
       simklClientId,
       thumbnailEpisodeArtwork,
-      thumbnailRatingPreferences,
       tmdbIdScope,
       tmdbKey,
     ],

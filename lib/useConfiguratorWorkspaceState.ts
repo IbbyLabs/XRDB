@@ -38,6 +38,11 @@ import {
   type AggregateRatingSource,
   type RatingPresentation,
 } from '@/lib/ratingPresentation';
+import {
+  DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
+  DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE,
+  type PosterCompactRingSource,
+} from '@/lib/posterCompactRing';
 import { DEFAULT_RATING_VALUE_MODE, type RatingValueMode } from '@/lib/ratingDisplay';
 import { DEFAULT_POSTER_RATINGS_MAX_PER_SIDE, type PosterRatingLayout } from '@/lib/posterLayoutOptions';
 import { type RatingPreference } from '@/lib/ratingProviderCatalog';
@@ -151,6 +156,12 @@ export function useConfiguratorWorkspaceState() {
   const [backdropAggregateRatingSource, setBackdropAggregateRatingSource] = useState<AggregateRatingSource>(DEFAULT_AGGREGATE_RATING_SOURCE);
   const [thumbnailAggregateRatingSource, setThumbnailAggregateRatingSource] = useState<AggregateRatingSource>(DEFAULT_AGGREGATE_RATING_SOURCE);
   const [logoAggregateRatingSource, setLogoAggregateRatingSource] = useState<AggregateRatingSource>(DEFAULT_AGGREGATE_RATING_SOURCE);
+  const [posterRingValueSource, setPosterRingValueSource] = useState<PosterCompactRingSource>(
+    DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE,
+  );
+  const [posterRingProgressSource, setPosterRingProgressSource] = useState<PosterCompactRingSource>(
+    DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
+  );
   const [aggregateAccentMode, setAggregateAccentMode] = useState<AggregateAccentMode>(DEFAULT_AGGREGATE_ACCENT_MODE);
   const [aggregateAccentColor, setAggregateAccentColor] = useState<string>(DEFAULT_AGGREGATE_ACCENT_COLOR);
   const [aggregateCriticsAccentColor, setAggregateCriticsAccentColor] = useState<string>(AGGREGATE_RATING_SOURCE_ACCENTS.critics);
@@ -278,6 +289,8 @@ export function useConfiguratorWorkspaceState() {
     mdblistKey,
     mediaId,
     posterAggregateRatingSource,
+    posterRingProgressSource,
+    posterRingValueSource,
     posterArtworkSource,
     posterEdgeOffset,
     posterGenreBadgeAnimeGrouping,
@@ -394,6 +407,8 @@ export function useConfiguratorWorkspaceState() {
     setMdblistKey,
     setMediaId,
     setPosterAggregateRatingSource,
+    setPosterRingProgressSource,
+    setPosterRingValueSource,
     setPosterArtworkSource,
     setPosterEdgeOffset,
     setPosterGenreBadgeAnimeGrouping,

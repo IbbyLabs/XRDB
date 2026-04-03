@@ -46,6 +46,12 @@ import {
   normalizePosterEdgeOffset,
 } from './posterEdgeOffset.ts';
 import {
+  DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
+  DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE,
+  normalizePosterCompactRingSource,
+  type PosterCompactRingSource,
+} from './posterCompactRing.ts';
+import {
   DEFAULT_RATING_VALUE_MODE,
   normalizeRatingValueMode,
   type RatingValueMode,
@@ -237,6 +243,8 @@ export type ImageRouteRequestState = {
   hasConfirmedAnimeMapping: boolean;
   posterTextPreference: PosterTextPreference;
   ratingPresentation: RatingPresentation;
+  posterRingValueSource: PosterCompactRingSource;
+  posterRingProgressSource: PosterCompactRingSource;
   aggregateRatingSource: AggregateRatingSource;
   aggregateAccentMode: AggregateAccentMode;
   aggregateAccentColor: string | null;
@@ -518,6 +526,14 @@ export const resolveImageRouteRequestState = async ({
   const aggregateAccentMode = normalizeAggregateAccentMode(
     searchParams.get('aggregateAccentMode'),
     DEFAULT_AGGREGATE_ACCENT_MODE,
+  );
+  const posterRingValueSource = normalizePosterCompactRingSource(
+    searchParams.get('posterRingValueSource'),
+    DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE,
+  );
+  const posterRingProgressSource = normalizePosterCompactRingSource(
+    searchParams.get('posterRingProgressSource'),
+    DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
   );
   const aggregateAccentColor = normalizeHexColor(searchParams.get('aggregateAccentColor')) || null;
   const aggregateCriticsAccentColor =
@@ -1061,6 +1077,8 @@ export const resolveImageRouteRequestState = async ({
     backdropSideRatingsPosition: effectiveBackdropSideRatingsPosition,
     backdropSideRatingsOffset: effectiveBackdropSideRatingsOffset,
     ratingPresentation,
+    posterRingValueSource,
+    posterRingProgressSource,
     blockbusterDensity,
     aggregateRatingSource,
     aggregateAccentMode,
@@ -1160,6 +1178,8 @@ export const resolveImageRouteRequestState = async ({
     hasConfirmedAnimeMapping,
     posterTextPreference,
     ratingPresentation,
+    posterRingValueSource,
+    posterRingProgressSource,
     aggregateRatingSource,
     aggregateAccentMode,
     aggregateAccentColor,

@@ -61,6 +61,7 @@ import {
   RATING_VALUE_MODE_OPTIONS,
   type RatingValueMode,
 } from '@/lib/ratingDisplay';
+import { type PosterCompactRingSource } from '@/lib/posterCompactRing';
 import {
   DEFAULT_SIDE_RATING_OFFSET,
   SIDE_RATING_POSITION_OPTIONS,
@@ -108,12 +109,16 @@ export function PresentationSection({
   activeRatingPresentation,
   layoutPlacementHelp,
   isEditorialPresentation,
+  isCompactRingPresentation,
   activePresentationPreservesLayout,
   usesAggregatePresentation,
   showsAggregateRatingSource,
   showsAggregateAccentBarOffset,
   activeAggregateAccent,
   activeAggregateRatingSource,
+  posterRingValueSource,
+  posterRingProgressSource,
+  posterCompactRingSourceOptions,
   aggregateAccentMode,
   aggregateAccentColor,
   aggregateCriticsAccentColor,
@@ -122,6 +127,8 @@ export function PresentationSection({
   aggregateAccentBarOffset,
   onSelectRatingPresentation,
   onSelectAggregateRatingSource,
+  onSelectPosterRingValueSource,
+  onSelectPosterRingProgressSource,
   onSelectAggregateAccentMode,
   onSelectAggregateAccentColor,
   onSelectAggregateCriticsAccentColor,
@@ -134,12 +141,16 @@ export function PresentationSection({
   activeRatingPresentation: RatingPresentation;
   layoutPlacementHelp: string | null;
   isEditorialPresentation: boolean;
+  isCompactRingPresentation: boolean;
   activePresentationPreservesLayout: boolean;
   usesAggregatePresentation: boolean;
   showsAggregateRatingSource: boolean;
   showsAggregateAccentBarOffset: boolean;
   activeAggregateAccent: string;
   activeAggregateRatingSource: AggregateRatingSource;
+  posterRingValueSource: PosterCompactRingSource;
+  posterRingProgressSource: PosterCompactRingSource;
+  posterCompactRingSourceOptions: Array<DetailedSelectionOption<PosterCompactRingSource>>;
   aggregateAccentMode: AggregateAccentMode;
   aggregateAccentColor: string;
   aggregateCriticsAccentColor: string;
@@ -148,6 +159,8 @@ export function PresentationSection({
   aggregateAccentBarOffset: number;
   onSelectRatingPresentation: (value: RatingPresentation) => void;
   onSelectAggregateRatingSource: (value: AggregateRatingSource) => void;
+  onSelectPosterRingValueSource: (value: PosterCompactRingSource) => void;
+  onSelectPosterRingProgressSource: (value: PosterCompactRingSource) => void;
   onSelectAggregateAccentMode: (value: AggregateAccentMode) => void;
   onSelectAggregateAccentColor: (value: string) => void;
   onSelectAggregateCriticsAccentColor: (value: string) => void;
@@ -194,6 +207,10 @@ export function PresentationSection({
             ? previewType === 'poster'
               ? 'Editorial uses a fixed top left score mark that feels printed into the poster. Layout controls stay saved for when you switch back to another mode.'
               : 'Editorial has its custom treatment on posters. Here it falls back to one clean average badge.'
+            : isCompactRingPresentation
+              ? previewType === 'poster'
+                ? 'Compact Ring uses a fixed top right score ring. Layout controls stay saved for when you switch back to another mode.'
+                : 'Compact Ring is poster only. Here it falls back to one clean average badge.'
             : activePresentationPreservesLayout
               ? `This mode still respects the selected layout below, so you can move ratings to ${layoutPlacementHelp}.`
               : `Blockbuster uses a fixed ${previewType === 'poster' ? 'left/right poster stack' : 'right vertical backdrop stack'}. Switch to another presentation to use ${layoutPlacementHelp}.`}
@@ -202,10 +219,12 @@ export function PresentationSection({
         <p className="text-[11px] leading-relaxed text-zinc-500">
           {isEditorialPresentation
             ? 'Editorial keeps its unique treatment on posters. Logo output falls back to one clean average badge.'
+            : isCompactRingPresentation
+              ? 'Compact Ring stays pinned to the poster corner. Logo output falls back to one clean average badge.'
             : 'Logo presentation keeps the output controls below available.'}
         </p>
       )}
-      {usesAggregatePresentation ? (
+      {usesAggregatePresentation || isCompactRingPresentation ? (
         <div
           className="rounded-xl border bg-zinc-900/50 p-3 space-y-2"
           style={{
@@ -213,6 +232,54 @@ export function PresentationSection({
             backgroundImage: `linear-gradient(145deg, ${hexToRgbaCss(activeAggregateAccent, 0.12)}, rgba(24,24,27,0.78) 58%)`,
           }}
         >
+          {isCompactRingPresentation ? (
+            <>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Compact Ring Sources</div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div>
+                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Center Value</div>
+                  <div className="flex flex-wrap gap-1">
+                    {posterCompactRingSourceOptions.map((option) => (
+                      <button
+                        key={`poster-ring-value-${option.id}`}
+                        type="button"
+                        onClick={() => onSelectPosterRingValueSource(option.id)}
+                        className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                          posterRingValueSource === option.id
+                            ? 'bg-zinc-800 text-white'
+                            : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Ring Progress</div>
+                  <div className="flex flex-wrap gap-1">
+                    {posterCompactRingSourceOptions.map((option) => (
+                      <button
+                        key={`poster-ring-progress-${option.id}`}
+                        type="button"
+                        onClick={() => onSelectPosterRingProgressSource(option.id)}
+                        className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                          posterRingProgressSource === option.id
+                            ? 'bg-zinc-800 text-white'
+                            : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <p className="text-[11px] leading-relaxed text-zinc-500">
+                XRDB normalizes both selected sources to a 0 to 100 score so the ring fill and center number stay comparable.
+              </p>
+            </>
+          ) : null}
           {showsAggregateRatingSource ? (
             <>
               <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Average Source</div>
@@ -260,7 +327,9 @@ export function PresentationSection({
             </>
           ) : null}
           <div className="pt-1">
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Accent</div>
+            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+              {isCompactRingPresentation ? 'Ring Accent' : 'Accent'}
+            </div>
             <div className="mt-2 flex flex-wrap gap-1">
               {AGGREGATE_ACCENT_MODE_OPTIONS.map((option) => {
                 const isSelected = aggregateAccentMode === option.id;
@@ -283,7 +352,9 @@ export function PresentationSection({
             <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
               {AGGREGATE_ACCENT_MODE_OPTIONS.find((option) => option.id === aggregateAccentMode)?.description}
               {aggregateAccentMode === 'genre'
-                ? ' Editorial already behaves like this on posters; this extends genre matching to the other aggregate badge styles too.'
+                ? isCompactRingPresentation
+                  ? ' Compact Ring can pick up the resolved genre colour for the ring glow and stroke.'
+                  : ' Editorial already behaves like this on posters; this extends genre matching to the other aggregate badge styles too.'
                 : ''}
             </p>
           </div>

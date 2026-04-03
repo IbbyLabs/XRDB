@@ -49,6 +49,11 @@ import { type BackdropRatingLayout } from '@/lib/backdropLayoutOptions';
 import { DEFAULT_POSTER_EDGE_OFFSET } from '@/lib/posterEdgeOffset';
 import { DEFAULT_RATING_VALUE_MODE, type RatingValueMode } from '@/lib/ratingDisplay';
 import {
+  DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
+  DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE,
+  type PosterCompactRingSource,
+} from '@/lib/posterCompactRing';
+import {
   DEFAULT_QUALITY_BADGES_STYLE,
   type QualityBadgeStyle,
   type RatingStyle,
@@ -280,6 +285,8 @@ export function useConfiguratorOutputs({
   mediaId,
   pendingReleaseTag,
   posterAggregateRatingSource,
+  posterRingProgressSource,
+  posterRingValueSource,
   posterArtworkSource,
   posterEdgeOffset,
   posterGenreBadgeAnimeGrouping,
@@ -398,6 +405,8 @@ export function useConfiguratorOutputs({
   mediaId: string;
   pendingReleaseTag: string;
   posterAggregateRatingSource: AggregateRatingSource;
+  posterRingProgressSource: PosterCompactRingSource;
+  posterRingValueSource: PosterCompactRingSource;
   posterArtworkSource: ArtworkSource;
   posterEdgeOffset: number;
   posterGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
@@ -566,6 +575,14 @@ export function useConfiguratorOutputs({
             : 'logoRatingPresentation',
         ratingPresentationForType,
       );
+    }
+    if (previewType === 'poster' && ratingPresentationForType === 'ring') {
+      if (posterRingValueSource !== DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE) {
+        query.set('posterRingValueSource', posterRingValueSource);
+      }
+      if (posterRingProgressSource !== DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE) {
+        query.set('posterRingProgressSource', posterRingProgressSource);
+      }
     }
     if (aggregateRatingSourceForType !== DEFAULT_AGGREGATE_RATING_SOURCE) {
       query.set(
@@ -872,10 +889,6 @@ export function useConfiguratorOutputs({
     thumbnailArtworkSource,
     thumbnailBottomRatingsRow,
     thumbnailEpisodeArtwork,
-    thumbnailGenreBadgeAnimeGrouping,
-    thumbnailGenreBadgePosition,
-    thumbnailGenreBadgeScale,
-    thumbnailGenreBadgeStyle,
     thumbnailImageText,
     thumbnailQualityBadgePreferences,
     thumbnailQualityBadgeScale,
@@ -919,6 +932,8 @@ export function useConfiguratorOutputs({
     posterRatingBadgeScale,
     posterRatingPreferences,
     posterRatingPresentation,
+    posterRingProgressSource,
+    posterRingValueSource,
     posterRatingStyle,
     posterRatingsLayout,
     posterRatingsMax,

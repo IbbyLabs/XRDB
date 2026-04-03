@@ -10,12 +10,17 @@ import {
   resolveLogoRatingsMaxForPresentation,
   resolvePosterRatingLayoutForPresentation,
   resolvePosterRatingsMaxPerSideForPresentation,
+  usesCompactRingPresentation as isCompactRingPresentationMode,
   usesAggregateRatingPresentation,
   type AggregateAccentMode,
   type AggregateRatingSource,
   type RatingPresentation,
 } from './ratingPresentation.ts';
-import { formatDisplayRatingValue, type RatingValueMode } from './ratingDisplay.ts';
+import {
+  formatDisplayRatingValue,
+  normalizeRatingToTenPointValue,
+  type RatingValueMode,
+} from './ratingDisplay.ts';
 import { buildAggregateRatingBadges } from './imageRouteAggregateBadge.ts';
 import { resolveRatingProviderBadgeAppearance } from './ratingProviderIcons.ts';
 import {
@@ -28,6 +33,12 @@ import { getEditorialEyebrowText } from './imageRouteDisplayPrefs.ts';
 import type { GenreBadgeFamilyMeta, GenreBadgeFamilyId } from './genreBadge.ts';
 import type { GenreBadgeSpec, RatingBadge } from './imageRouteRenderer.ts';
 import type { BackdropRatingLayout } from './backdropLayoutOptions.ts';
+import {
+  DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
+  DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE,
+  type PosterCompactRingSource,
+} from './posterCompactRing.ts';
+import { buildPosterCompactRingOverlay, type PosterCompactRingOverlaySpec } from './posterCompactRingOverlay.ts';
 
 const ANIME_ONLY_RATING_PROVIDER_SET = new Set<RatingPreference>(['myanimelist', 'anilist', 'kitsu']);
 const RATING_PROVIDER_META = new Map(
@@ -55,6 +66,7 @@ export type ImageRouteDisplayState = {
   streamBadges: RatingBadge[];
   genreBadge: GenreBadgeSpec | null;
   editorialOverlay: EditorialRatingOverlaySpec | null;
+  compactRingOverlay: PosterCompactRingOverlaySpec | null;
   ratingBadgeByProvider: Map<RatingPreference, RatingBadge>;
   renderableRatingPreferences: RatingPreference[];
   debugResolvedRatingProviders: RatingPreference[];
@@ -70,6 +82,8 @@ export const resolveImageRouteDisplayState = (input: {
   aggregateAudienceAccentColor: string | null;
   aggregateAccentBarOffset: number;
   aggregateAccentBarVisible: boolean;
+  posterRingValueSource: PosterCompactRingSource;
+  posterRingProgressSource: PosterCompactRingSource;
   posterRatingsLayout: PosterRatingLayout;
   posterRatingsMaxPerSide: number | null;
   backdropRatingsLayout: BackdropRatingLayout;
@@ -100,6 +114,8 @@ export const resolveImageRouteDisplayState = (input: {
     aggregateAudienceAccentColor,
     aggregateAccentBarOffset,
     aggregateAccentBarVisible,
+    posterRingValueSource,
+    posterRingProgressSource,
     posterRatingsLayout,
     posterRatingsMaxPerSide,
     backdropRatingsLayout,
@@ -124,6 +140,8 @@ export const resolveImageRouteDisplayState = (input: {
   const useBackdropBadgeLayout = imageType === 'backdrop';
   const useLogoBadgeLayout = imageType === 'logo';
   const usesAggregatePresentation = usesAggregateRatingPresentation(ratingPresentation);
+  const useCompactRingPresentation =
+    imageType === 'poster' && isCompactRingPresentationMode(ratingPresentation);
   const useEditorialPosterPresentation =
     imageType === 'poster' && ratingPresentation === 'editorial';
   const useBlockbusterPresentation = ratingPresentation === 'blockbuster';
@@ -286,6 +304,68 @@ export const resolveImageRouteDisplayState = (input: {
         })
       : null;
 
+  const resolveCompactRingBadge = (
+    requestedSource: PosterCompactRingSource,
+  ): { provider: RatingPreference; badge: RatingBadge; normalizedValue: number } | null => {
+    const availableEntries = renderableRatingPreferences
+      .map((provider) => {
+        const badge = ratingBadgeByProvider.get(provider);
+        if (!badge) return null;
+        const normalizedValue = normalizeRatingToTenPointValue(
+          provider,
+          String(badge.sourceValue || badge.value || '').trim(),
+        );
+        if (normalizedValue === null) return null;
+        return { provider, badge, normalizedValue };
+      })
+      .filter(
+        (entry): entry is { provider: RatingPreference; badge: RatingBadge; normalizedValue: number } =>
+          entry !== null,
+      );
+
+    if (availableEntries.length === 0) return null;
+
+    if (requestedSource !== 'highest') {
+      const exactMatch = availableEntries.find((entry) => entry.provider === requestedSource);
+      if (exactMatch) {
+        return exactMatch;
+      }
+    }
+
+    return availableEntries.reduce(
+      (highest, entry) =>
+        highest === null || entry.normalizedValue > highest.normalizedValue ? entry : highest,
+      null as { provider: RatingPreference; badge: RatingBadge; normalizedValue: number } | null,
+    );
+  };
+
+  const valueRingBadge =
+    useCompactRingPresentation
+      ? resolveCompactRingBadge(posterRingValueSource || DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE)
+      : null;
+  const progressRingBadge =
+    useCompactRingPresentation
+      ? resolveCompactRingBadge(
+          posterRingProgressSource || DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
+        )
+      : null;
+  const compactRingAccentColor =
+    aggregateAccentMode === 'custom'
+      ? aggregateAccentColor || valueRingBadge?.badge.accentColor || '#22c55e'
+      : aggregateAccentMode === 'genre' && primaryGenreFamily?.accentColor
+        ? primaryGenreFamily.accentColor
+        : valueRingBadge?.badge.accentColor || progressRingBadge?.badge.accentColor || '#22c55e';
+  const compactRingOverlay =
+    useCompactRingPresentation && valueRingBadge
+      ? buildPosterCompactRingOverlay({
+          outputWidth,
+          outputHeight,
+          valueText: String(Math.round(valueRingBadge.normalizedValue * 10)),
+          progressPercent: Math.round((progressRingBadge || valueRingBadge).normalizedValue * 10),
+          accentColor: compactRingAccentColor,
+        })
+      : null;
+
   const ratingBadges = usesAggregatePresentation
     ? aggregateBadges
     : selectAvailableRatingPreferences(
@@ -295,9 +375,10 @@ export const resolveImageRouteDisplayState = (input: {
       )
         .map((provider) => ratingBadgeByProvider.get(provider) || null)
         .filter((badge): badge is RatingBadge => badge !== null);
-  const displayRatingBadges = useEditorialPosterPresentation ? [] : ratingBadges;
+  const displayRatingBadges =
+    useEditorialPosterPresentation || useCompactRingPresentation ? [] : ratingBadges;
 
-  if (useEditorialPosterPresentation) {
+  if (useEditorialPosterPresentation || useCompactRingPresentation) {
     genreBadge = null;
   }
 
@@ -316,6 +397,7 @@ export const resolveImageRouteDisplayState = (input: {
     streamBadges,
     genreBadge,
     editorialOverlay,
+    compactRingOverlay,
     ratingBadgeByProvider,
     renderableRatingPreferences,
     debugResolvedRatingProviders: [...ratingBadgeByProvider.keys()],

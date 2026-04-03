@@ -20,6 +20,7 @@ import {
   usesDualAggregateRatingPresentation,
   usesAggregateRatingPresentation,
   usesAggregateRatingSource,
+  usesCompactRingPresentation,
 } from '../lib/ratingPresentation.ts';
 
 test('presentation modes normalize to supported values', () => {
@@ -29,6 +30,7 @@ test('presentation modes normalize to supported values', () => {
   assert.equal(normalizeRatingPresentation('compact-dual'), 'dual-minimal');
   assert.equal(normalizeRatingPresentation('EDITORIAL'), 'editorial');
   assert.equal(normalizeRatingPresentation('BLOCKBUSTER'), 'blockbuster');
+  assert.equal(normalizeRatingPresentation('RING'), 'ring');
   assert.equal(normalizeRatingPresentation('unknown'), 'standard');
 });
 
@@ -49,6 +51,8 @@ test('aggregate source helpers distinguish summary modes and preferred providers
   assert.equal(usesDualAggregateRatingPresentation('dual'), true);
   assert.equal(usesDualAggregateRatingPresentation('dual-minimal'), true);
   assert.equal(usesDualAggregateRatingPresentation('minimal'), false);
+  assert.equal(usesCompactRingPresentation('ring'), true);
+  assert.equal(usesCompactRingPresentation('average'), false);
   assert.equal(usesAggregateRatingSource('minimal'), true);
   assert.equal(usesAggregateRatingSource('editorial'), true);
   assert.deepEqual(
@@ -99,6 +103,15 @@ test('editorial keeps aggregate behavior but only renders as a unique poster mod
   assert.equal(resolveEffectiveRatingPresentation('editorial', 'logo'), 'average');
   assert.equal(resolveEffectiveRatingPresentation('dual', 'poster'), 'dual');
   assert.equal(resolveEffectiveRatingPresentation('dual-minimal', 'poster'), 'dual-minimal');
+});
+
+test('compact ring keeps poster layout controls saved but only renders as a poster mode', () => {
+  assert.equal(preservesSelectedRatingLayout('ring'), false);
+  assert.equal(resolveEffectiveRatingPresentation('ring', 'poster'), 'ring');
+  assert.equal(resolveEffectiveRatingPresentation('ring', 'backdrop'), 'average');
+  assert.equal(resolveEffectiveRatingPresentation('ring', 'logo'), 'average');
+  assert.equal(resolvePosterRatingLayoutForPresentation('ring', 'top'), 'top');
+  assert.equal(resolvePosterRatingsMaxPerSideForPresentation('ring', 5), 5);
 });
 
 test('blockbuster uses fixed placement defaults', () => {

@@ -126,6 +126,8 @@ const buildSampleSettings = () =>
       backdropRatingPresentation: 'average',
       thumbnailRatingPresentation: 'average',
       logoRatingPresentation: 'blockbuster',
+      posterRingValueSource: 'highest',
+      posterRingProgressSource: 'tmdb',
       posterAggregateRatingSource: 'audience',
       backdropAggregateRatingSource: 'critics',
       thumbnailAggregateRatingSource: 'critics',
@@ -252,6 +254,8 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       backdropRatingPresentation: 'average',
       thumbnailRatingPresentation: 'average',
       logoRatingPresentation: 'blockbuster',
+      posterRingValueSource: 'highest',
+      posterRingProgressSource: 'tmdb',
       posterAggregateRatingSource: 'audience',
       backdropAggregateRatingSource: 'critics',
       thumbnailAggregateRatingSource: 'critics',
@@ -415,6 +419,30 @@ test('workspace normalization preserves compact dual aggregate presentation alia
   const decodedConfig = JSON.parse(decodeBase64Url(configString));
   assert.equal(decodedConfig.posterRatingPresentation, 'dual-minimal');
   assert.equal(decodedConfig.backdropRatingPresentation, 'dual-minimal');
+});
+
+test('workspace normalization preserves compact ring source settings in config payloads', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      posterRatingPresentation: 'ring',
+      posterRingValueSource: 'highest',
+      posterRingProgressSource: 'tomatoes',
+    },
+  });
+
+  assert.equal(config.settings.posterRatingPresentation, 'ring');
+  assert.equal(config.settings.posterRingValueSource, 'highest');
+  assert.equal(config.settings.posterRingProgressSource, 'tomatoes');
+
+  const configString = buildConfigString('https://xrdb.example.com', config.settings);
+  assert.notEqual(configString, '');
+
+  const decodedConfig = JSON.parse(decodeBase64Url(configString));
+  assert.equal(decodedConfig.posterRatingPresentation, 'ring');
+  assert.equal(decodedConfig.posterRingProgressSource, 'tomatoes');
+  assert.equal('posterRingValueSource' in decodedConfig, false);
 });
 
 test('workspace normalization accepts none rating presentation to remove all ratings', () => {

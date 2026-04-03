@@ -26,6 +26,7 @@ import {
   WORKSPACE_CENTER_VIEW_OPTIONS,
 } from '@/lib/configuratorPageOptions';
 import { DEFAULT_POSTER_EDGE_OFFSET } from '@/lib/posterEdgeOffset';
+import { POSTER_COMPACT_RING_SOURCE_OPTIONS } from '@/lib/posterCompactRing';
 import { normalizeManifestUrl } from '@/lib/uiConfig';
 
 type WorkspacePanelId =
@@ -198,12 +199,16 @@ export function buildConfiguratorPageProps({
         activeRatingPresentation: workspaceSummary.activeRatingPresentation,
         layoutPlacementHelp: workspaceSummary.layoutPlacementHelp,
         isEditorialPresentation: workspaceSummary.isEditorialPresentation,
+        isCompactRingPresentation: workspaceSummary.isCompactRingPresentation,
         activePresentationPreservesLayout: workspaceSummary.activePresentationPreservesLayout,
         usesAggregatePresentation: workspaceSummary.usesAggregatePresentation,
         showsAggregateRatingSource: workspaceSummary.showsAggregateRatingSource,
         showsAggregateAccentBarOffset: workspaceSummary.showsAggregateAccentBarOffset,
         activeAggregateAccent: workspaceSummary.activeAggregateAccent,
         activeAggregateRatingSource: workspaceSummary.activeAggregateRatingSource,
+        posterRingValueSource: workspaceState.posterRingValueSource,
+        posterRingProgressSource: workspaceState.posterRingProgressSource,
+        posterCompactRingSourceOptions: POSTER_COMPACT_RING_SOURCE_OPTIONS,
         aggregateAccentMode: workspaceState.aggregateAccentMode,
         aggregateAccentColor: workspaceState.aggregateAccentColor,
         aggregateCriticsAccentColor: workspaceState.aggregateCriticsAccentColor,
@@ -212,6 +217,8 @@ export function buildConfiguratorPageProps({
         aggregateAccentBarOffset: workspaceState.aggregateAccentBarOffset,
         onSelectRatingPresentation: workspaceSummary.setRatingPresentationForType,
         onSelectAggregateRatingSource: workspaceSummary.setAggregateRatingSourceForType,
+        onSelectPosterRingValueSource: workspaceState.setPosterRingValueSource,
+        onSelectPosterRingProgressSource: workspaceState.setPosterRingProgressSource,
         onSelectAggregateAccentMode: workspaceState.setAggregateAccentMode,
         onSelectAggregateAccentColor: workspaceState.setAggregateAccentColor,
         onSelectAggregateCriticsAccentColor: workspaceState.setAggregateCriticsAccentColor,

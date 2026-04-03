@@ -36,6 +36,8 @@ type FinalImageRenderSeedInput = {
   backdropSideRatingsPosition: string;
   backdropSideRatingsOffset: number;
   ratingPresentation: string;
+  posterRingValueSource: string;
+  posterRingProgressSource: string;
   blockbusterDensity: string;
   aggregateRatingSource: string;
   aggregateAccentMode: string;
@@ -124,6 +126,8 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
       ? String(input.backdropSideRatingsOffset)
       : '-',
     input.ratingPresentation,
+    isPoster && input.ratingPresentation === 'ring' ? input.posterRingValueSource : '-',
+    isPoster && input.ratingPresentation === 'ring' ? input.posterRingProgressSource : '-',
     isPoster ? input.blockbusterDensity : '-',
     input.aggregateRatingSource,
     input.aggregateAccentMode,

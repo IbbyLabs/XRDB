@@ -242,6 +242,8 @@ export const executeImageRouteRender = async ({
         aggregateAudienceAccentColor: requestState.aggregateAudienceAccentColor,
         aggregateAccentBarOffset: requestState.aggregateAccentBarOffset,
         aggregateAccentBarVisible: requestState.aggregateAccentBarVisible,
+        posterRingValueSource: requestState.posterRingValueSource,
+        posterRingProgressSource: requestState.posterRingProgressSource,
         posterRatingsLayout: requestState.posterRatingsLayout,
         posterRatingsMaxPerSide: requestState.posterRatingsMaxPerSide,
         backdropRatingsLayout: requestState.backdropRatingsLayout,
@@ -270,6 +272,7 @@ export const executeImageRouteRender = async ({
         effectiveBackdropRatingsLayout,
         displayRatingBadges,
         editorialOverlay,
+        compactRingOverlay,
         ratingBadgeByProvider,
       } = displayState;
       streamBadges = displayState.streamBadges;
@@ -360,6 +363,7 @@ export const executeImageRouteRender = async ({
           posterTitleText,
           posterLogoUrl,
           editorialOverlay,
+          compactRingOverlay,
           genreBadge,
           badgeIconSize: renderLayout.badgeIconSize,
           badgeFontSize: renderLayout.badgeFontSize,
