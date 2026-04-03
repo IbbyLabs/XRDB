@@ -9,6 +9,7 @@ import { resolveTorrentioBaseUrl } from './torrentioUrl.ts';
 
 export type PosterTextPreference = 'original' | 'clean' | 'alternative' | 'random';
 export type PosterImageSize = 'normal' | 'large' | '4k';
+export type BackdropImageSize = 'normal' | 'large' | '4k';
 export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta' | 'omdb' | 'random' | 'blackbar';
 export type EpisodeArtworkMode = 'still' | 'series';
 export type AnimeMappingProvider = 'mal' | 'anilist' | 'imdb' | 'tmdb' | 'tvdb' | 'anidb';
@@ -44,6 +45,7 @@ const ANIME_MAPPING_PROVIDER_SET = new Set<AnimeMappingProvider>([
 const ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta', 'omdb', 'random', 'blackbar']);
 const EPISODE_ARTWORK_MODE_SET = new Set<EpisodeArtworkMode>(['still', 'series']);
 const POSTER_IMAGE_SIZE_SET = new Set<PosterImageSize>(['normal', 'large', '4k']);
+const BACKDROP_IMAGE_SIZE_SET = new Set<BackdropImageSize>(['normal', 'large', '4k']);
 
 export const FALLBACK_IMAGE_LANGUAGE = 'en';
 export const ALLOWED_IMAGE_TYPES = new Set(['poster', 'backdrop', 'logo']);
@@ -52,10 +54,16 @@ export const RAW_IMDB_ID_RE = /^tt\d+(?::.+)?$/i;
 export const ANIME_NATIVE_INPUT_ID_PREFIX_SET = new Set(['kitsu', 'mal', 'myanimelist', 'anilist', 'anidb']);
 export const FANART_ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['fanart', 'random']);
 export const DEFAULT_POSTER_IMAGE_SIZE: PosterImageSize = 'normal';
+export const DEFAULT_BACKDROP_IMAGE_SIZE: BackdropImageSize = 'normal';
 export const POSTER_IMAGE_DIMENSIONS: Record<PosterImageSize, { width: number; height: number }> = {
   normal: { width: 580, height: 859 },
   large: { width: 1280, height: 1896 },
   '4k': { width: 2000, height: 2926 },
+};
+export const BACKDROP_IMAGE_DIMENSIONS: Record<BackdropImageSize, { width: number; height: number }> = {
+  normal: { width: 1280, height: 720 },
+  large: { width: 1920, height: 1080 },
+  '4k': { width: 3840, height: 2160 },
 };
 export const DEFAULT_BLOCKBUSTER_DENSITY: BlockbusterDensity = 'balanced';
 export const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v86';
@@ -141,6 +149,23 @@ export const normalizePosterImageSize = (
   }
   return POSTER_IMAGE_SIZE_SET.has(normalized as PosterImageSize)
     ? (normalized as PosterImageSize)
+    : fallback;
+};
+
+export const normalizeBackdropImageSize = (
+  value?: string | null,
+  fallback: BackdropImageSize = DEFAULT_BACKDROP_IMAGE_SIZE,
+): BackdropImageSize => {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (!normalized) return fallback;
+  if (normalized === 'default') return fallback;
+  if (normalized === 'standard') return 'normal';
+  if (normalized === 'verylarge') return '4k';
+  if (normalized === 'uhd' || normalized === 'ultra' || normalized === '4k-slow' || normalized === '4kslow') {
+    return '4k';
+  }
+  return BACKDROP_IMAGE_SIZE_SET.has(normalized as BackdropImageSize)
+    ? (normalized as BackdropImageSize)
     : fallback;
 };
 

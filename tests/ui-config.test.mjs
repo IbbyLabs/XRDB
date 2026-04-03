@@ -49,6 +49,7 @@ const buildSampleSettings = () =>
       tmdbIdScope: 'strict',
       lang: 'fr',
       posterImageSize: 'large',
+      backdropImageSize: 'normal',
       posterImageText: 'clean',
       backdropImageText: 'clean',
       thumbnailImageText: 'clean',
@@ -175,6 +176,7 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       tmdbIdScope: 'strict',
       lang: 'fr',
       posterImageSize: 'large',
+      backdropImageSize: 'normal',
       posterImageText: 'clean',
       backdropImageText: 'clean',
       thumbnailImageText: 'clean',
@@ -1032,6 +1034,37 @@ test('workspace normalization accepts poster image size aliases and payload omit
   assert.notEqual(defaultConfigString, '');
   const defaultPayload = JSON.parse(decodeBase64Url(defaultConfigString));
   assert.equal(defaultPayload.posterImageSize, undefined);
+});
+
+test('workspace normalization accepts backdrop image size aliases and payload omits default', () => {
+  const aliasNormalized = normalizeSavedUiConfig({
+    settings: {
+      backdropImageSize: '4k-slow',
+    },
+  });
+  assert.equal(aliasNormalized.settings.backdropImageSize, '4k');
+
+  const defaultNormalized = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      backdropImageSize: 'standard',
+    },
+  });
+  assert.equal(defaultNormalized.settings.backdropImageSize, 'normal');
+
+  const defaultConfigString = buildConfigString('https://xrdb.example.com', defaultNormalized.settings);
+  assert.notEqual(defaultConfigString, '');
+  const defaultPayload = JSON.parse(decodeBase64Url(defaultConfigString));
+  assert.equal(defaultPayload.backdropImageSize, undefined);
+
+  const explicitConfigString = buildConfigString('https://xrdb.example.com', {
+    ...defaultNormalized.settings,
+    backdropImageSize: 'large',
+  });
+  assert.notEqual(explicitConfigString, '');
+  const explicitPayload = JSON.parse(decodeBase64Url(explicitConfigString));
+  assert.equal(explicitPayload.backdropImageSize, 'large');
 });
 
 test('workspace normalization accepts cinemeta as a poster artwork source', () => {

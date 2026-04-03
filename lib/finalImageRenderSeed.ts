@@ -12,6 +12,7 @@ type FinalImageRenderSeedInput = {
   requestedImageLang: string;
   posterTextPreference: string;
   posterImageSize: string;
+  backdropImageSize: string;
   posterArtworkSource: string;
   backdropArtworkSource: string;
   logoArtworkSource: string;
@@ -101,6 +102,7 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.requestedImageLang,
     input.posterTextPreference,
     isPoster ? input.posterImageSize : '-',
+    input.imageType === 'backdrop' ? input.backdropImageSize : '-',
     isPoster ? input.posterArtworkSource : '-',
     isBackdrop ? input.backdropArtworkSource : '-',
     input.imageType === 'thumbnail' ? input.thumbnailEpisodeArtwork : '-',

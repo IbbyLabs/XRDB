@@ -115,6 +115,7 @@ export type StreamBadgesSetting = 'auto' | 'on' | 'off';
 export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
 export type PosterImageSize = 'normal' | 'large' | '4k';
+export type BackdropImageSize = PosterImageSize;
 export type PosterImageTextPreference = 'original' | 'clean' | 'alternative' | 'random';
 export type BackdropImageTextPreference = 'original' | 'clean' | 'alternative' | 'random';
 export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta' | 'omdb' | 'random' | 'blackbar';
@@ -142,6 +143,7 @@ export type SharedXrdbSettings = {
   tmdbIdScope: TmdbIdScopeMode;
   lang: string;
   posterImageSize: PosterImageSize;
+  backdropImageSize: BackdropImageSize;
   posterImageText: PosterImageTextPreference;
   backdropImageText: BackdropImageTextPreference;
   thumbnailImageText: BackdropImageTextPreference;
@@ -267,6 +269,7 @@ export type SavedProxySettings = {
 
 const DEFAULT_RATING_PREFERENCES: RatingPreference[] = [...ALL_RATING_PREFERENCES];
 const POSTER_IMAGE_SIZE_SET = new Set<PosterImageSize>(['normal', 'large', '4k']);
+const BACKDROP_IMAGE_SIZE_SET = new Set<BackdropImageSize>(['normal', 'large', '4k']);
 const POSTER_IMAGE_TEXT_PREFERENCE_SET = new Set<PosterImageTextPreference>([
   'original',
   'clean',
@@ -352,6 +355,7 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   tmdbIdScope: 'soft',
   lang: 'en',
   posterImageSize: 'normal',
+  backdropImageSize: 'normal',
   posterImageText: 'clean',
   backdropImageText: 'clean',
   thumbnailImageText: 'clean',
@@ -543,6 +547,23 @@ const normalizePosterImageSize = (
   }
   return POSTER_IMAGE_SIZE_SET.has(normalized as PosterImageSize)
     ? (normalized as PosterImageSize)
+    : fallback;
+};
+
+const normalizeBackdropImageSize = (
+  value: unknown,
+  fallback: BackdropImageSize,
+): BackdropImageSize => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (!normalized) return fallback;
+  if (normalized === 'default') return fallback;
+  if (normalized === 'standard') return 'normal';
+  if (normalized === 'verylarge') return '4k';
+  if (normalized === 'uhd' || normalized === 'ultra' || normalized === '4k-slow' || normalized === '4kslow') {
+    return '4k';
+  }
+  return BACKDROP_IMAGE_SIZE_SET.has(normalized as BackdropImageSize)
+    ? (normalized as BackdropImageSize)
     : fallback;
 };
 
@@ -819,6 +840,10 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
     posterImageSize: normalizePosterImageSize(
       candidate.posterImageSize ?? candidate.posterSize ?? candidate.imageSize,
       defaults.posterImageSize,
+    ),
+    backdropImageSize: normalizeBackdropImageSize(
+      candidate.backdropImageSize,
+      defaults.backdropImageSize,
     ),
     posterImageText,
     backdropImageText,
@@ -1322,6 +1347,9 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   }
   if (settings.posterImageSize !== 'normal') {
     payload.posterImageSize = settings.posterImageSize;
+  }
+  if (settings.backdropImageSize !== 'normal') {
+    payload.backdropImageSize = settings.backdropImageSize;
   }
   if (settings.ratingValueMode !== DEFAULT_RATING_VALUE_MODE) {
     payload.ratingValueMode = settings.ratingValueMode;

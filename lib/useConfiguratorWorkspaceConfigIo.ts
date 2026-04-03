@@ -29,6 +29,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   backdropGenreBadgePosition: WorkspaceSettings['backdropGenreBadgePosition'];
   backdropGenreBadgeScale: WorkspaceSettings['backdropGenreBadgeScale'];
   backdropGenreBadgeStyle: WorkspaceSettings['backdropGenreBadgeStyle'];
+  backdropImageSize: WorkspaceSettings['backdropImageSize'];
   backdropImageText: WorkspaceSettings['backdropImageText'];
   backdropQualityBadgePreferences: WorkspaceSettings['backdropQualityBadgePreferences'];
   backdropQualityBadgeScale: WorkspaceSettings['backdropQualityBadgeScale'];
@@ -145,6 +146,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setBackdropGenreBadgePosition: Setter<WorkspaceSettings['backdropGenreBadgePosition']>;
   setBackdropGenreBadgeScale: Setter<WorkspaceSettings['backdropGenreBadgeScale']>;
   setBackdropGenreBadgeStyle: Setter<WorkspaceSettings['backdropGenreBadgeStyle']>;
+  setBackdropImageSize: Setter<WorkspaceSettings['backdropImageSize']>;
   setBackdropImageText: Setter<WorkspaceSettings['backdropImageText']>;
   setBackdropQualityBadgePreferences: Setter<WorkspaceSettings['backdropQualityBadgePreferences']>;
   setBackdropQualityBadgeScale: Setter<WorkspaceSettings['backdropQualityBadgeScale']>;
@@ -271,6 +273,7 @@ export function useConfiguratorWorkspaceConfigIo({
   backdropGenreBadgePosition,
   backdropGenreBadgeScale,
   backdropGenreBadgeStyle,
+  backdropImageSize,
   backdropImageText,
   backdropQualityBadgePreferences,
   backdropQualityBadgeScale,
@@ -387,6 +390,7 @@ export function useConfiguratorWorkspaceConfigIo({
   setBackdropGenreBadgePosition,
   setBackdropGenreBadgeScale,
   setBackdropGenreBadgeStyle,
+  setBackdropImageSize,
   setBackdropImageText,
   setBackdropQualityBadgePreferences,
   setBackdropQualityBadgeScale,
@@ -509,6 +513,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setSimklClientId(normalized.settings.simklClientId);
       setLang(normalized.settings.lang);
       setPosterImageSize(normalized.settings.posterImageSize);
+      setBackdropImageSize(normalized.settings.backdropImageSize);
       setPosterImageText(normalized.settings.posterImageText);
       setBackdropImageText(normalized.settings.backdropImageText);
       setThumbnailImageText(normalized.settings.thumbnailImageText);
@@ -635,6 +640,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setBackdropGenreBadgePosition,
       setBackdropGenreBadgeScale,
       setBackdropGenreBadgeStyle,
+      setBackdropImageSize,
       setBackdropImageText,
       setBackdropQualityBadgePreferences,
       setBackdropQualityBadgeScale,
@@ -754,6 +760,7 @@ export function useConfiguratorWorkspaceConfigIo({
         simklClientId: simklClientId.trim(),
         lang,
         posterImageSize,
+        backdropImageSize,
         posterImageText,
         backdropImageText,
         thumbnailImageText,
@@ -885,6 +892,7 @@ export function useConfiguratorWorkspaceConfigIo({
       backdropGenreBadgePosition,
       backdropGenreBadgeScale,
       backdropGenreBadgeStyle,
+      backdropImageSize,
       backdropImageText,
       backdropQualityBadgePreferences,
       backdropQualityBadgeScale,

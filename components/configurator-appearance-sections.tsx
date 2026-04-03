@@ -76,6 +76,7 @@ import {
 } from '@/lib/sideRatingPosition';
 import type {
   ArtworkSource,
+  BackdropImageSize,
   BackdropImageTextPreference,
   EpisodeArtworkMode,
   LogoBackground,
@@ -451,7 +452,10 @@ export function LookSection({
   activeArtworkSourceDescription,
   posterImageSizeOptions,
   posterImageSize,
+  backdropImageSizeOptions,
+  backdropImageSize,
   activePosterImageSizeDescription,
+  activeBackdropImageSizeDescription,
   posterRatingsLayout,
   posterRatingsMaxPerSide,
   posterRatingsMax,
@@ -493,6 +497,7 @@ export function LookSection({
   onSelectThumbnailArtworkSource,
   onSelectPosterArtworkSource,
   onSelectPosterImageSize,
+  onSelectBackdropImageSize,
   onSelectPosterRatingsLayout,
   onSelectPosterRatingsMaxPerSide,
   onSelectPosterRatingsMax,
@@ -541,7 +546,10 @@ export function LookSection({
   activeArtworkSourceDescription: string | null;
   posterImageSizeOptions: Array<DetailedSelectionOption<PosterImageSize>>;
   posterImageSize: PosterImageSize;
+  backdropImageSizeOptions: Array<DetailedSelectionOption<BackdropImageSize>>;
+  backdropImageSize: BackdropImageSize;
   activePosterImageSizeDescription: string;
+  activeBackdropImageSizeDescription: string;
   posterRatingsLayout: PosterRatingLayout;
   posterRatingsMaxPerSide: number | null;
   posterRatingsMax: number | null;
@@ -585,6 +593,7 @@ export function LookSection({
   onSelectThumbnailArtworkSource: (value: ArtworkSource) => void;
   onSelectPosterArtworkSource: (value: ArtworkSource) => void;
   onSelectPosterImageSize: (value: PosterImageSize) => void;
+  onSelectBackdropImageSize: (value: BackdropImageSize) => void;
   onSelectPosterRatingsLayout: (value: PosterRatingLayout) => void;
   onSelectPosterRatingsMaxPerSide: (value: number | null) => void;
   onSelectPosterRatingsMax: (value: number | null) => void;
@@ -869,6 +878,29 @@ export function LookSection({
                 </div>
                 <p className="text-[11px] leading-relaxed text-zinc-500">
                   {activePosterImageSizeDescription}
+                </p>
+              </>
+            ) : null}
+            {previewType === 'backdrop' ? (
+              <>
+                <div className="mt-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                  Backdrop Size
+                </div>
+                <div className={selectorGroupClass}>
+                  {backdropImageSizeOptions.map((option) => (
+                    <button
+                      key={option.id}
+                      type="button"
+                      onClick={() => onSelectBackdropImageSize(option.id)}
+                      className={selectorButtonClass(backdropImageSize === option.id)}
+                      title={option.description}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-[11px] leading-relaxed text-zinc-500">
+                  {activeBackdropImageSizeDescription}
                 </p>
               </>
             ) : null}
