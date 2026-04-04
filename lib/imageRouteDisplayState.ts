@@ -254,6 +254,8 @@ export const resolveImageRouteDisplayState = (input: {
       stackedIconOffsetY: providerAppearance?.stackedIconOffsetY,
       stackedValueOffsetX: providerAppearance?.stackedValueOffsetX,
       stackedValueOffsetY: providerAppearance?.stackedValueOffsetY,
+      valueOffsetX: providerAppearance?.valueOffsetX,
+      valueOffsetY: providerAppearance?.valueOffsetY,
       variant: 'standard',
     });
   }

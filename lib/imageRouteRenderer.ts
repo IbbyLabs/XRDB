@@ -112,6 +112,8 @@ export type RatingBadge = {
   stackedIconOffsetY?: number;
   stackedValueOffsetX?: number;
   stackedValueOffsetY?: number;
+  valueOffsetX?: number;
+  valueOffsetY?: number;
   variant?: 'standard' | 'minimal' | 'summary';
 };
 export type GenreBadgeSpec = {
@@ -587,6 +589,8 @@ export const renderWithSharp = async (
         stackedIconOffsetY: badge.stackedIconOffsetY,
         stackedValueOffsetX: badge.stackedValueOffsetX,
         stackedValueOffsetY: badge.stackedValueOffsetY,
+        valueOffsetX: badge.valueOffsetX,
+        valueOffsetY: badge.valueOffsetY,
         preferReadablePlainSurface: input.imageType === 'poster' || input.imageType === 'backdrop',
         preferNeutralGlassPlate:
           iconRenderStateByProvider.get(badge.key)?.preferNeutralGlassPlate || false,
