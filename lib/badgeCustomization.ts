@@ -64,6 +64,8 @@ export type RatingProviderAppearanceOverride = {
   stackedIconOffsetY?: number;
   stackedValueOffsetX?: number;
   stackedValueOffsetY?: number;
+  valueOffsetX?: number;
+  valueOffsetY?: number;
 };
 
 export type RatingProviderAppearanceOverrides = Partial<
@@ -520,6 +522,14 @@ export const normalizeRatingProviderAppearanceOverrides = (
       stackedValueY?: unknown;
       stackedRatingOffsetY?: unknown;
       stackedRatingYOffset?: unknown;
+      valueOffsetX?: unknown;
+      valueX?: unknown;
+      scoreOffsetX?: unknown;
+      scoreXOffset?: unknown;
+      valueOffsetY?: unknown;
+      valueY?: unknown;
+      scoreOffsetY?: unknown;
+      scoreYOffset?: unknown;
     };
     const iconUrl =
       typeof candidate.iconUrl === 'string' && candidate.iconUrl.trim()
@@ -627,6 +637,20 @@ export const normalizeRatingProviderAppearanceOverrides = (
         candidate.stackedRatingYOffset,
       DEFAULT_STACKED_ELEMENT_OFFSET_PX,
     );
+    const valueOffsetX = normalizeStackedElementOffsetPx(
+      candidate.valueOffsetX ??
+        candidate.valueX ??
+        candidate.scoreOffsetX ??
+        candidate.scoreXOffset,
+      DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+    );
+    const valueOffsetY = normalizeStackedElementOffsetPx(
+      candidate.valueOffsetY ??
+        candidate.valueY ??
+        candidate.scoreOffsetY ??
+        candidate.scoreYOffset,
+      DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+    );
     const override = compactObject({
       iconUrl,
       accentColor,
@@ -679,6 +703,14 @@ export const normalizeRatingProviderAppearanceOverrides = (
       stackedValueOffsetY:
         stackedValueOffsetY !== DEFAULT_STACKED_ELEMENT_OFFSET_PX
           ? stackedValueOffsetY
+          : undefined,
+      valueOffsetX:
+        valueOffsetX !== DEFAULT_STACKED_ELEMENT_OFFSET_PX
+          ? valueOffsetX
+          : undefined,
+      valueOffsetY:
+        valueOffsetY !== DEFAULT_STACKED_ELEMENT_OFFSET_PX
+          ? valueOffsetY
           : undefined,
     }) as RatingProviderAppearanceOverride;
 

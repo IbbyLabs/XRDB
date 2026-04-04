@@ -103,6 +103,8 @@ export type BuildBadgeSvgInput = {
   stackedIconOffsetY?: number;
   stackedValueOffsetX?: number;
   stackedValueOffsetY?: number;
+  valueOffsetX?: number;
+  valueOffsetY?: number;
   preferReadablePlainSurface?: boolean;
   preferNeutralGlassPlate?: boolean;
   compactText?: boolean;
@@ -140,6 +142,8 @@ export const buildBadgeSvg = ({
   stackedIconOffsetY = DEFAULT_STACKED_ELEMENT_OFFSET_PX,
   stackedValueOffsetX = DEFAULT_STACKED_ELEMENT_OFFSET_PX,
   stackedValueOffsetY = DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+  valueOffsetX = DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+  valueOffsetY = DEFAULT_STACKED_ELEMENT_OFFSET_PX,
   preferReadablePlainSurface = false,
   preferNeutralGlassPlate = false,
   compactText = false,
@@ -272,7 +276,9 @@ ${accentBarVisible ? `<rect x="${accentRailRect.x}" y="${accentRailRect.y}" widt
 
     if (badgeVariant === 'minimal') {
       const valueFontSize = Math.max(18, Math.round(fontSize * 1.05));
-      const valueY = Math.round(centerY + 1);
+      const baseValueY = Math.round(centerY + 1);
+      const minimalValueX = clampNumber(centerX + valueOffsetX, 4, Math.max(4, width - 4));
+      const minimalValueY = clampNumber(baseValueY + valueOffsetY, 4, Math.max(4, height - 4));
       const accentRailRect = resolveCenteredAccentRailRect({
         badgeWidth: width,
         badgeHeight: height,
@@ -289,7 +295,7 @@ ${accentBarVisible ? `<rect x="${accentRailRect.x}" y="${accentRailRect.y}" widt
 ${variantDefs}
 ${variantChrome}
 ${accentBarVisible ? `<rect x="${accentRailRect.x}" y="${accentRailRect.y}" width="${accentRailRect.width}" height="${accentRailRect.height}" rx="${Math.max(1, Math.round(accentRailRect.height / 2))}" fill="${accentColor}" />` : ''}
-<text x="${centerX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${valueFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="white"${valueFilter}${valueNumericStyle}>${escapeXml(value)}</text>
+<text x="${minimalValueX}" y="${minimalValueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${valueFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="white"${valueFilter}${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
     }
 
@@ -309,8 +315,8 @@ ${accentBarVisible ? `<rect x="${accentRailRect.x}" y="${accentRailRect.y}" widt
     const labelX = Math.round(chipX + chipWidth / 2);
     const labelY = Math.round(chipY + chipHeight / 2 + 1);
     const valueSlotX = chipX + chipWidth + contentGap;
-    const valueX = Math.round(valueSlotX + valueWidth / 2);
-    const valueY = Math.round(centerY + 1);
+    const valueX = clampNumber(Math.round(valueSlotX + valueWidth / 2) + valueOffsetX, 4, Math.max(4, width - 4));
+    const valueY = clampNumber(Math.round(centerY + 1) + valueOffsetY, 4, Math.max(4, height - 4));
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 ${variantDefs}
 ${variantChrome}
@@ -524,7 +530,17 @@ ${monogramText}
   const valueNumericStyle =
     ' style="font-variant-numeric: tabular-nums lining-nums; font-feature-settings: \'tnum\' 1, \'lnum\' 1;"';
   const valueAnchor = 'middle';
-  const valueRenderX = Math.round(valueX + valueAvailableWidth / 2);
+  const applyValueOffset = ratingStyle === 'glass' || ratingStyle === 'square';
+  const valueRenderX = clampNumber(
+    Math.round(valueX + valueAvailableWidth / 2) + (applyValueOffset ? valueOffsetX : 0),
+    valueX,
+    Math.max(valueX, width - outerPadding),
+  );
+  const finalValueY = clampNumber(
+    valueY + (applyValueOffset ? valueOffsetY : 0),
+    4,
+    Math.max(4, height - 4),
+  );
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 ${plainBadgeDefs}
 ${plainBadgeSurface}
@@ -532,6 +548,6 @@ ${outerRect}
 ${iconShape}
 ${iconImage}
 ${monogramText}
-<text x="${valueRenderX}" y="${valueY}" font-family="${valueFontFamily}" font-size="${fontSize}" font-weight="800" text-anchor="${valueAnchor}" fill="white"${valueFilter}${valueLetterSpacing}${valueTextLength}${valueNumericStyle}>${escapeXml(value)}</text>
+<text x="${valueRenderX}" y="${finalValueY}" font-family="${valueFontFamily}" font-size="${fontSize}" font-weight="800" text-anchor="${valueAnchor}" fill="white"${valueFilter}${valueLetterSpacing}${valueTextLength}${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
 };

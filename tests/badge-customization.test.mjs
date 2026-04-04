@@ -8,6 +8,11 @@ import {
   normalizeNoBackgroundBadgeOutlineWidthPx,
   normalizeQualityBadgeScalePercent,
   normalizeThumbnailRatingBadgeScalePercent,
+  normalizeRatingProviderAppearanceOverrides,
+  serializeRatingProviderAppearanceOverrides,
+  parseRatingProviderAppearanceOverrides,
+  encodeRatingProviderAppearanceOverrides,
+  DEFAULT_STACKED_ELEMENT_OFFSET_PX,
 } from '../lib/badgeCustomization.ts';
 
 test('genre badge scale normalization clamps to 70 to 200', () => {
@@ -61,4 +66,45 @@ test('default quality badge preferences include network and core quality badges'
     'remux',
     'bdremux',
   ]);
+});
+
+test('valueOffsetX and valueOffsetY are parsed from provider appearance overrides', () => {
+  const result = normalizeRatingProviderAppearanceOverrides({
+    tmdb: { valueOffsetX: 10, valueOffsetY: -5 },
+  });
+  assert.equal(result.tmdb?.valueOffsetX, 10);
+  assert.equal(result.tmdb?.valueOffsetY, -5);
+});
+
+test('valueOffsetX and valueOffsetY are clamped to the element offset range', () => {
+  const result = normalizeRatingProviderAppearanceOverrides({
+    tmdb: { valueOffsetX: 50, valueOffsetY: -50 },
+  });
+  assert.equal(result.tmdb?.valueOffsetX, 24);
+  assert.equal(result.tmdb?.valueOffsetY, -24);
+});
+
+test('valueOffsetX and valueOffsetY default values are omitted from serialization', () => {
+  const serialized = serializeRatingProviderAppearanceOverrides({
+    tmdb: { valueOffsetX: 0, valueOffsetY: 0 },
+  });
+  assert.equal(serialized, '');
+});
+
+test('valueOffsetX and valueOffsetY non-default values are included in serialization', () => {
+  const encoded = encodeRatingProviderAppearanceOverrides({
+    tmdb: { valueOffsetX: 8, valueOffsetY: -3 },
+  });
+  assert.ok(encoded.length > 0);
+  const parsed = parseRatingProviderAppearanceOverrides(encoded);
+  assert.equal(parsed.tmdb?.valueOffsetX, 8);
+  assert.equal(parsed.tmdb?.valueOffsetY, -3);
+});
+
+test('valueOffsetX and valueOffsetY parse from backward-compatible alias scoreOffsetX', () => {
+  const result = normalizeRatingProviderAppearanceOverrides({
+    imdb: { scoreOffsetX: 6, scoreOffsetY: -2 },
+  });
+  assert.equal(result.imdb?.valueOffsetX, 6);
+  assert.equal(result.imdb?.valueOffsetY, -2);
 });

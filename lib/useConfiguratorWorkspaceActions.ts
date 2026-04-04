@@ -210,6 +210,14 @@ export function useConfiguratorWorkspaceActions({
           nextOverride.stackedValueOffsetY,
           DEFAULT_STACKED_ELEMENT_OFFSET_PX,
         );
+        const normalizedValueOffsetX = normalizeStackedElementOffsetPx(
+          nextOverride.valueOffsetX,
+          DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+        );
+        const normalizedValueOffsetY = normalizeStackedElementOffsetPx(
+          nextOverride.valueOffsetY,
+          DEFAULT_STACKED_ELEMENT_OFFSET_PX,
+        );
 
         const compactOverride: RatingProviderAppearanceOverride = {};
         if (trimmedIconUrl) {
@@ -259,6 +267,12 @@ export function useConfiguratorWorkspaceActions({
         }
         if (normalizedStackedValueOffsetY !== DEFAULT_STACKED_ELEMENT_OFFSET_PX) {
           compactOverride.stackedValueOffsetY = normalizedStackedValueOffsetY;
+        }
+        if (normalizedValueOffsetX !== DEFAULT_STACKED_ELEMENT_OFFSET_PX) {
+          compactOverride.valueOffsetX = normalizedValueOffsetX;
+        }
+        if (normalizedValueOffsetY !== DEFAULT_STACKED_ELEMENT_OFFSET_PX) {
+          compactOverride.valueOffsetY = normalizedValueOffsetY;
         }
 
         const next = { ...current };

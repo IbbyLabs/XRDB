@@ -718,6 +718,44 @@ export function ProvidersSection({
                 ) : null}
               </div>
               <div>
+                <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-2">
+                  Value Position
+                </label>
+                <div className="grid gap-2">
+                  <StackedRangeField
+                    label="Value X Offset"
+                    value={activeProviderAppearanceOverride.valueOffsetX || DEFAULT_STACKED_ELEMENT_OFFSET_PX}
+                    min={MIN_STACKED_ELEMENT_OFFSET_PX}
+                    max={MAX_STACKED_ELEMENT_OFFSET_PX}
+                    suffix="px"
+                    onChange={(value) =>
+                      onUpdateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                        ...current,
+                        valueOffsetX: normalizeStackedElementOffsetPx(value),
+                      }))
+                    }
+                  />
+                  <StackedRangeField
+                    label="Value Y Offset"
+                    value={activeProviderAppearanceOverride.valueOffsetY || DEFAULT_STACKED_ELEMENT_OFFSET_PX}
+                    min={MIN_STACKED_ELEMENT_OFFSET_PX}
+                    max={MAX_STACKED_ELEMENT_OFFSET_PX}
+                    suffix="px"
+                    onChange={(value) =>
+                      onUpdateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                        ...current,
+                        valueOffsetY: normalizeStackedElementOffsetPx(value),
+                      }))
+                    }
+                  />
+                </div>
+                {!(activeRatingStyle === 'glass' || activeRatingStyle === 'square') ? (
+                  <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
+                    You can set these now and they will apply when the output uses glass or square badges.
+                  </p>
+                ) : null}
+              </div>
+              <div>
                 <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
                   Custom Icon URL
                 </label>
