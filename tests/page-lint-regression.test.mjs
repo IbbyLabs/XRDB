@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 
-test('app/page.tsx does not use forbidden lint patterns', () => {
+test('app/(workspace)/page.tsx does not use forbidden lint patterns', () => {
   const eslintBinary = join(
     process.cwd(),
     'node_modules',
@@ -11,7 +11,7 @@ test('app/page.tsx does not use forbidden lint patterns', () => {
     process.platform === 'win32' ? 'eslint.cmd' : 'eslint'
   );
 
-  const run = spawnSync(eslintBinary, ['app/page.tsx', '--format', 'json'], {
+  const run = spawnSync(eslintBinary, ['app/(workspace)/page.tsx', '--format', 'json'], {
     cwd: process.cwd(),
     encoding: 'utf8',
   });
@@ -19,7 +19,7 @@ test('app/page.tsx does not use forbidden lint patterns', () => {
   assert.equal(
     run.status,
     0,
-    `eslint failed for app/page.tsx\nstdout:\n${run.stdout}\nstderr:\n${run.stderr}`
+    `eslint failed for app/(workspace)/page.tsx\nstdout:\n${run.stdout}\nstderr:\n${run.stderr}`
   );
 
   const reports = JSON.parse(run.stdout || '[]');
@@ -35,6 +35,6 @@ test('app/page.tsx does not use forbidden lint patterns', () => {
   assert.equal(
     violations.length,
     0,
-    `Disallowed lint rules found in app/page.tsx:\n${JSON.stringify(violations, null, 2)}`
+    `Disallowed lint rules found in app/(workspace)/page.tsx:\n${JSON.stringify(violations, null, 2)}`
   );
 });
