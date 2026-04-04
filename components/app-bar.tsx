@@ -8,12 +8,13 @@ import { useEffect, useState } from 'react';
 import {
   BrandLockup,
   DeploymentVersionPill,
+  DiscordPill,
   LatestReleasePill,
   SupportPill,
   UptimePill,
 } from '@/components/site-chrome';
 import { LATEST_RELEASE_FEED_URL } from '@/lib/recentCommits';
-import { BRAND_GITHUB_LABEL, BRAND_GITHUB_URL } from '@/lib/siteBrand';
+import { BRAND_DISCORD_OFFICIAL_LABEL, BRAND_DISCORD_OFFICIAL_URL, BRAND_GITHUB_LABEL, BRAND_GITHUB_URL } from '@/lib/siteBrand';
 
 const viewTabs = [
   { href: '/', label: 'Configure' },
@@ -100,6 +101,7 @@ export function AppBar() {
             loading={isLatestReleaseLoading}
             pendingTag={pendingReleaseTag}
           />
+          <DiscordPill href={BRAND_DISCORD_OFFICIAL_URL} label={BRAND_DISCORD_OFFICIAL_LABEL} title={BRAND_DISCORD_OFFICIAL_LABEL} />
         </div>
 
         <button
@@ -128,6 +130,7 @@ export function AppBar() {
           </a>
           <UptimePill label="Uptime Tracker" />
           <SupportPill label="Support" />
+          <DiscordPill href={BRAND_DISCORD_OFFICIAL_URL} label={BRAND_DISCORD_OFFICIAL_LABEL} title={BRAND_DISCORD_OFFICIAL_LABEL} />
         </div>
       ) : null}
     </nav>
