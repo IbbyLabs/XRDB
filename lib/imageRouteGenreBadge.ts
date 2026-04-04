@@ -75,7 +75,51 @@ const buildGenreBadgeIconMarkup = ({
     return `<path d="M7.1 5.1h4.3c1.4 0 2.6 1.1 2.6 2.6V15c0 2.4-1.8 4.2-4.3 4.2S5.4 17.4 5.4 15V6.8c0-.9.7-1.7 1.7-1.7Z" fill="none" stroke="${color}" stroke-width="1.8"/><path d="M14.2 6.2h2.8c1 0 1.7.8 1.7 1.7v6.4c0 2.2-1.6 4-3.9 4H12" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="10.3" r="1" fill="${color}"/><circle cx="12" cy="10.3" r="1" fill="${color}"/><path d="M8.3 14c.9.9 1.8 1.3 2.7 1.3s1.8-.4 2.7-1.3" fill="none" stroke="${color}" stroke-width="1.7" stroke-linecap="round"/><circle cx="15.6" cy="10.8" r="0.9" fill="${color}"/><circle cx="18" cy="10.8" r="0.9" fill="${color}"/><path d="M15.1 14.8c.8-.8 1.7-1.2 2.5-1.2.4 0 .8.1 1.2.3" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round"/>`;
   }
 
-  return `<rect x="4" y="7" width="12" height="9.5" rx="2" fill="none" stroke="${color}" stroke-width="2"/><rect x="8" y="4.5" width="4.4" height="2.7" rx="1.2" fill="${color}"/><circle cx="10" cy="11.8" r="2.1" fill="${color}"/><path d="M16 9.2 20.5 7.1v9.4L16 14.4Z" fill="${color}" opacity="0.96"/>`;
+  if (familyId === 'documentary') {
+    return `<rect x="4" y="7" width="12" height="9.5" rx="2" fill="none" stroke="${color}" stroke-width="2"/><rect x="8" y="4.5" width="4.4" height="2.7" rx="1.2" fill="${color}"/><circle cx="10" cy="11.8" r="2.1" fill="${color}"/><path d="M16 9.2 20.5 7.1v9.4L16 14.4Z" fill="${color}" opacity="0.96"/>`;
+  }
+
+  if (familyId === 'music') {
+    return `<path d="M9 18V7.5l9-2.5v10" fill="none" stroke="${color}" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="2.5" fill="${color}" opacity="0.94"/><circle cx="15.5" cy="15" r="2.5" fill="${color}" opacity="0.94"/>`;
+  }
+
+  if (familyId === 'reality') {
+    return `<circle cx="12" cy="12" r="8" fill="none" stroke="${color}" stroke-width="1.9"/><circle cx="12" cy="12" r="5" fill="none" stroke="${color}" stroke-width="1.6"/><circle cx="12" cy="12" r="2" fill="${color}" opacity="0.95"/>`;
+  }
+
+  if (familyId === 'family') {
+    return `<path d="M4 21v-1c0-2.2 1.8-4 4-4h8c2.2 0 4 1.8 4 4v1" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="8" r="4" fill="none" stroke="${color}" stroke-width="1.8"/><path d="M5.5 21v-.5c0-1.4-1-2.5-2-2.5" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round"/><path d="M18.5 21v-.5c0-1.4 1-2.5 2-2.5" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round"/>`;
+  }
+
+  if (familyId === 'history') {
+    return `<circle cx="12" cy="12" r="8.5" fill="none" stroke="${color}" stroke-width="1.9"/><path d="M12 6.5V12l4 2.5" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+
+  if (familyId === 'kids') {
+    return `<path d="M12 3l2.5 5.5L20 9.5l-4 4.2 1 5.8L12 17l-5 2.5 1-5.8-4-4.2 5.5-1Z" fill="${color}" opacity="0.95"/>`;
+  }
+
+  if (familyId === 'news') {
+    return `<rect x="4" y="5" width="16" height="14" rx="2" fill="none" stroke="${color}" stroke-width="1.9"/><path d="M8 9h8M8 12.5h5" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round"/><rect x="15" y="12" width="3" height="3" rx="0.6" fill="${color}" opacity="0.9"/>`;
+  }
+
+  if (familyId === 'soap') {
+    return `<path d="M12 21c-1.5 0-5-3.5-5-8.5S9 3 12 3s5 4.5 5 9.5S13.5 21 12 21Z" fill="none" stroke="${color}" stroke-width="1.9"/><circle cx="10.5" cy="9" r="1.2" fill="${color}" opacity="0.6"/><circle cx="13" cy="12" r="0.9" fill="${color}" opacity="0.5"/>`;
+  }
+
+  if (familyId === 'talk') {
+    return `<path d="M4 6h16v10H8l-4 3V6Z" fill="none" stroke="${color}" stroke-width="1.9" stroke-linejoin="round"/><circle cx="9" cy="11" r="1.1" fill="${color}"/><circle cx="12" cy="11" r="1.1" fill="${color}"/><circle cx="15" cy="11" r="1.1" fill="${color}"/>`;
+  }
+
+  if (familyId === 'tvmovie') {
+    return `<rect x="3.5" y="5" width="17" height="12" rx="2" fill="none" stroke="${color}" stroke-width="1.9"/><path d="M8 20h8" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round"/><path d="M12 17v3" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round"/>`;
+  }
+
+  if (familyId === 'warpolitics') {
+    return `<path d="M6 3v18" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round"/><path d="M6 4h11l-3 4 3 4H6" fill="${color}" opacity="0.94"/>`;
+  }
+
+  return `<rect x="4" y="5" width="16" height="14" rx="2" fill="none" stroke="${color}" stroke-width="1.9"/><rect x="4" y="5" width="5.3" height="14" rx="2" fill="${color}" opacity="0.25"/><rect x="14.7" y="5" width="5.3" height="14" rx="2" fill="${color}" opacity="0.25"/><circle cx="12" cy="12" r="2.2" fill="${color}" opacity="0.9"/>`;
 };
 
 export const buildGenreBadgeSvg = (

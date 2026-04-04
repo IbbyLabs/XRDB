@@ -26,6 +26,17 @@ const EDITORIAL_GENRE_LABEL_BY_FAMILY: Record<GenreBadgeFamilyId, string> = {
   crime: 'Crime',
   drama: 'Drama',
   documentary: 'Doc',
+  music: 'Music',
+  reality: 'Reality',
+  family: 'Family',
+  history: 'History',
+  kids: 'Kids',
+  news: 'News',
+  soap: 'Soap',
+  talk: 'Talk',
+  tvmovie: 'TV',
+  warpolitics: 'War',
+  other: 'Other',
 };
 
 export const getEditorialEyebrowText = (
