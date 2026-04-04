@@ -1809,7 +1809,6 @@ export function useConfiguratorWorkspaceRuntime() {
     heroProps,
     inputsPanelProps,
     outroProps,
-    topNavProps,
     workspaceColumnsProps,
   } = buildConfiguratorPageProps({
     activeWorkspaceSettings,
@@ -1857,7 +1856,6 @@ export function useConfiguratorWorkspaceRuntime() {
     pageRef: pageChrome.pageRef,
     setExperienceModeDraft,
     showExperienceModal,
-    topNavProps,
     workspaceColumnsProps,
   };
 }

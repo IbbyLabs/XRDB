@@ -1,6 +1,6 @@
 import type { ComponentProps, Dispatch, MouseEvent, SetStateAction } from 'react';
 
-import type { ConfiguratorHero, ConfiguratorTopNav } from '@/components/configurator-page-chrome';
+import type { ConfiguratorHero } from '@/components/configurator-page-chrome';
 import type { ConfiguratorInputsPanel } from '@/components/configurator-inputs-panel';
 import type { ConfiguratorWorkspaceColumns } from '@/components/configurator-workspace-columns';
 import type { SitePageOutro } from '@/components/site-page-outro';
@@ -126,21 +126,9 @@ export function buildConfiguratorPageProps({
   heroProps: ComponentProps<typeof ConfiguratorHero>;
   inputsPanelProps: ComponentProps<typeof ConfiguratorInputsPanel>;
   outroProps: ComponentProps<typeof SitePageOutro>;
-  topNavProps: ComponentProps<typeof ConfiguratorTopNav>;
   workspaceColumnsProps: ComponentProps<typeof ConfiguratorWorkspaceColumns>;
 } {
   return {
-    topNavProps: {
-      navRef: pageChrome.navRef,
-      latestReleaseTag: feeds.latestReleaseTag,
-      latestReleaseUrl: feeds.latestReleaseUrl,
-      isLatestReleaseLoading: feeds.isLatestReleaseLoading,
-      pendingReleaseTag: feeds.pendingReleaseTag,
-      isMobileNavOpen: pageChrome.isMobileNavOpen,
-      onToggleMobileNav: pageChrome.toggleMobileNav,
-      onCloseMobileNav: pageChrome.closeMobileNav,
-      onAnchorClick: pageChrome.handleAnchorClick,
-    },
     heroProps: {
       heroRef: pageChrome.heroRef,
       versionStatusNote: outputs.versionStatusNote,

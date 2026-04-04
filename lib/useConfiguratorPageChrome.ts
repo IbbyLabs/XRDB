@@ -23,6 +23,10 @@ export function useConfiguratorPageChrome({
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [supportedLanguages, setSupportedLanguages] = useState(initialSupportedLanguages);
 
+  useEffect(() => {
+    navRef.current = document.querySelector<HTMLElement>('.xrdb-app-bar');
+  }, []);
+
   const isNavSticky = useCallback(() => {
     if (typeof window === 'undefined') {
       return false;
@@ -239,5 +243,5 @@ export function useConfiguratorPageChrome({
     scrollToHash,
     supportedLanguages,
     toggleMobileNav,
-  };
+  } as const;
 }
