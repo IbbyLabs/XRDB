@@ -19,6 +19,220 @@
 
 <a id="v1-6-0"></a>
 
+<a id="v1-7-0"></a>
+
+## [v1.7.0] - 04/04/2026
+
+### Added
+* FR-41 add rating value text color parameters
+  
+  Add three new URL parameters for configuring rating value text color:
+  • aggregateValueColor: global fallback for all badge value text
+  • aggregateCriticsValueColor: critics source override
+  • aggregateAudienceValueColor: audience source override
+  
+  Follows the same resolution chain as accent colors (critics override >
+  audience override > global fallback > default white). Applied across
+  all badge styles (standard, minimal, average, dual, blockbuster) and
+  both aggregate and per provider badge paths.
+  
+  Includes configurator UI color pickers in the appearance section,
+  URL serialization in the preview/output URLs, cache key integration,
+  and README parameter documentation.
+* FR-35 add textless artwork text preference
+  
+  Add 'textless' as a first class poster and backdrop text preference
+  that selects TMDB artwork without embedded text (iso_639_1: null)
+  and renders it bare with rating badges but without the branding
+  overlay that 'clean' mode adds.
+  
+  • Add 'textless' to PosterTextPreference union in imageRouteConfig
+  • Add 'textless' to UI validation sets and configurator options
+  • Update selection algorithms to share clean/textless null language branch
+  • Accept 'textless' in imageText URL parameter parsing
+  • Update configurator option descriptions to clarify overlay behavior
+  • Update README parameter tables with textless value
+  • Add 5 tests covering selection, fallback, and overlay suppression
+* FR-30 add per provider value offset for glass and square badges
+  
+  Add valueOffsetX and valueOffsetY fields to RatingProviderAppearanceOverride
+  for per provider numeric value text positioning within glass and square
+  horizontal badge styles. Range is ±24px, matching stacked element offsets,
+  with clamping to badge bounds across standard, minimal, and summary variants.
+  
+  Wire parsing with backward compatible aliases (valueX, scoreOffsetX, etc.),
+  serialization that omits default zero values, and configurator UI with
+  Value Position sliders per provider.
+  
+  Rename confusing configurator labels: Pill Stack Offset to Pill Badge
+  Position, Square Stack Offset to Square Badge Position.
+  
+  Includes 10 new unit tests covering parse, clamp, serialization round trip,
+  SVG offset application across all variant paths, and plain style exclusion.
+* FR-40 add pinned preview targets and expanded shuffle defaults
+  
+  Expand default media sample IDs from 3 to 4 to 10 per type with anime
+  and TV coverage. Add per type pinned targets with localStorage
+  persistence (max 8 per type). Merge pinned targets into the unified
+  shuffle pool with deduplication. Add pin affordances on search results
+  and current preview. Add horizontally scrollable chip row showing
+  pinned targets. Add inline type switch banner prompt with Keep and
+  Start fresh options and 5 second auto dismiss.
+* BUG-49 add full TMDB genre coverage and catchall fallback
+  
+  Add dedicated badge families for all previously unmapped TMDB genres:
+  music, reality, family, history, kids, news, soap, talk, tvmovie, and
+  warpolitics. Each gets a unique SVG icon, accent color, label, and
+  TMDB ID/name matching in the resolution cascade.
+  
+  Add a catchall 'other' family at the end of the cascade so
+  resolveGenreBadgeFamily never returns null when genres are present.
+  This eliminates the class of bug where new or niche genres render
+  without any badge.
+  
+  Expand GenreBadgeFamilyId union (11 to 22 values), GENRE_BADGE_FAMILY_META,
+  TMDB_GENRE const, buildGenreBadgeIconMarkup, EDITORIAL_GENRE_LABEL_BY_FAMILY,
+  and GENRE_BADGE_PREVIEW_SAMPLES. Add explicit documentary icon branch to
+  preserve its existing film camera icon after changing the default fallback.
+  
+  Add test cases for name resolution, TMDB ID resolution, catchall behavior,
+  empty genre handling, and priority preservation of existing families.
+  Update README genre badge documentation.
+* BUG-51 add composite BD Remux badge with remux display mode
+  
+  Add bdremux as a new quality badge that combines Blu ray and Remux into
+  a single composite badge. Users can choose between composite (BD Remux)
+  and separate (Bluray + Remux) display modes per media type via the
+  configurator UI.
+  
+  Rewrites buildMediaFeatureBadgesFromFlags to accept remuxDisplayMode
+  parameter. Composite mode emits a single bdremux badge. Separate mode
+  preserves the original bluray and remux as individual badges.
+  
+  Adds full 5 style mode parity (glass/square/plain/media/silver) via
+  the existing asset backed badge pipeline. Threads remuxDisplayMode
+  through all image routes, configurator settings, workspace state,
+  config IO, link import/export, and URL query serialization.
+  
+  Includes Remux Display selector in the quality badge customization
+  section with BD Remux and Show Both options.
+* restore Discord links across workspace UI
+  
+  Add XRDB Community Discord pill to the AppBar desktop status area
+  and mobile overflow menu. Add Discord pill to SitePrimaryNav desktop
+  and mobile drawer for when it is re enabled.
+  
+  Add a Community and support section to the Reference view with both
+  Discord server links (XRDB Community and AIOMetadata in AIOStreams),
+  a direct DM fallback link, GitHub repo link, and Ko fi support pill.
+* add multi view workspace layout with dedicated Proxy tab
+  
+  Restructure the configurator into a tabbed workspace with four views:
+  Configure, Export, Proxy, and Reference. Each view gets its own route
+  under the (workspace) route group sharing ConfiguratorProvider state.
+  
+  • Add app bar with horizontal view tabs and bottom tab bar for mobile
+  • Create app shell layout as the shared chrome wrapper
+  • Extract configure view, export view, proxy view, and reference view
+  • Move proxy controls from support panels accordion to standalone /addon
+    route with full two panel layout and progressive disclosure
+  • Remove experience mode gating from proxy metadata and catalog sections
+  • Add (workspace) route group with shared layout for /, /export, /addon
+  • Add /reference route outside workspace group
+  • Update site chrome, configurator page, and styles for new shell
+  • Remove old /configurator, /docs, and / page routes
+  • All proxy state still wired through useConfiguratorContext
+
+### Fixed
+* wire docsCaptureReady attribute and inline configurator page
+  
+  The configurator page component was a thin ConfigureView wrapper that
+  never set data docs capture ready on the .xrdb page div. Playwright
+  waited forever for that attribute during doc asset refresh, causing a
+  5 minute timeout that blocked every release.
+  
+  Inline the full workspace runtime into the page component and bind
+  docsCaptureReady from context to the data attribute so the capture
+  script can detect when the page is ready.
+* correct workspace capture URL for route group
+  
+  The configurator page lives at app/(workspace)/page.tsx which maps
+  to the root route /, not /configurator. The route group wrapper does
+  not create a URL segment. The stale /configurator path caused a 404
+  during doc asset refresh, making the preview viewport capture time
+  out and blocking releases.
+* BUG-50 fix badge text clipping and anime episode thumbnail fallback
+  
+  Badge clipping: add 14% bold weight compensation to estimateQualityTextBadgeWidth
+  for font weight 800 text badges (glass, square, plain styles). Localized to the
+  quality badge path only, not the shared estimateGeneratedLogoLineWidth function.
+  Digital Release width increases from 171px to 190px at height 44.
+  
+  Anime thumbnails: add three tier fallback chain after the primary TMDB episode
+  still query fails:
+  • TMDB /images endpoint for untagged stills
+  • Null language TMDB episode retry
+  • AniList streaming episode thumbnails via reverse mapping (TMDB -> AniList ID)
+    with title regex matching and index based fallback
+  
+  AniList integration uses fetchJsonCached with KITSU_CACHE_TTL_MS and the existing
+  anime reverse mapping service. ArtworkFetchJson type extended with optional
+  RequestInit for GraphQL POST support.
+  
+  Tests: 563 pass, 0 fail. 14 artwork selection tests, 11 quality badge tests.
+* BUG-48 scale poster edge inset with overlay auto scale
+  
+  Move posterEdgeInset computation from imageRouteRenderer into
+  imageRouteRenderLayout where all other spatial layout values are scaled.
+  The composed inset (POSTER_EDGE_INSET_BASE + posterEdgeOffset) is now
+  multiplied by overlayAutoScale with a 12px minimum floor, matching the
+  existing pattern used by backdropEdgeInset, badgeTopOffset,
+  badgeBottomOffset, and posterRowHorizontalInset.
+  
+  Adds posterEdgeOffset to the layout input interface and posterEdgeInset
+  to the layout result type. The renderer now consumes the pre scaled
+  value instead of computing it inline as an absolute pixel sum.
+  
+  Adds test cases verifying proportional scaling across normal, large,
+  and 4k quality levels and the 12px minimum floor.
+* BUG-45 scope stack offsets and release status badges
+  
+  BUG-45 completes the stack offset split for poster, backdrop, and thumbnail renders while keeping legacy shared values as a logo and import fallback.
+  
+  The configurator now reads and writes active preview offsets per type, generated preview URLs and AIOMetadata exports stay type scoped, and request parsing prefers typed params before legacy shared ones.
+  
+  The quality badge path now preserves intrinsic widths for text badges like Digital Release and In Cinemas in glass, square, and plain styles, with regression coverage for request parsing, export serialization, prepared media, badge rendering, placement, and proxy rewrites.
+* update page lint regression test to correct page path
+  
+  The root page moved to app/(workspace)/page.tsx but the test still
+  referenced app/page.tsx, causing ESLint to fail with 'no files found'.
+
+### Documentation
+* refresh static doc assets
+
+### Other Changes
+* FR-41 add value color fields to round trip assertion
+  
+  Add aggregateValueColor, aggregateCriticsValueColor, and
+  aggregateAudienceValueColor to the expected serialization output
+  in the workspace round trip test.
+* auto refresh doc assets before release
+  
+  Add a pre release step to scripts/release.mjs that runs the full doc
+  static asset refresh when a TMDB key is available. If the refresh produces
+  changes to README.md or docs/images, they are staged and committed
+  automatically before the version bump. Skips with a warning when the key
+  is not configured.
+* auto update README capture date in refresh script
+  
+  Add logic at the end of refresh doc static assets.mjs to read README.md,
+  find the screenshot capture date line using a regex pattern, and replace the
+  date with the current CAPTURE_DATE value. Logs a warning if the pattern is
+  not found.
+  
+  Part of public facing freshness rules OpenSpec change.
+* remove code comments from quality badge layout tests
+
 ## [v1.6.0] - 04/04/2026
 
 ### Added
