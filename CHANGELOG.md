@@ -21,6 +21,27 @@
 
 <a id="v1-7-0"></a>
 
+<a id="v1-7-1"></a>
+
+## [v1.7.1] - 05/04/2026
+
+### Fixed
+* remove duplicate ConfiguratorTopNav from configurator page
+  
+  The workspace redesign (5d4a682) added AppBar via AppShellLayout as the
+  sole navigation bar, but a subsequent fix (79bfb55) re inlined the full
+  old page content into configurator page.tsx to wire docsCaptureReady,
+  which brought back ConfiguratorTopNav. This caused two nav bars to stack
+  on screen.
+  
+  Restore the thin ConfigureView wrapper from the redesign while keeping
+  docsCaptureReady and pageRef on the .xrdb page div. Remove topNavProps
+  from the props builder and runtime. Point navRef at .xrdb app bar via
+  DOM query so scroll offset calculations still target the AppBar.
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.7.0] - 04/04/2026
 
 ### Added
