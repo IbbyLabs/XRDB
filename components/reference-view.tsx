@@ -3,6 +3,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 
+import { DiscordPill, SupportPill } from '@/components/site-chrome';
+import {
+  BRAND_DISCORD_AIO_LABEL,
+  BRAND_DISCORD_AIO_URL,
+  BRAND_DISCORD_DM_HANDLE,
+  BRAND_DISCORD_DM_URL,
+  BRAND_DISCORD_OFFICIAL_LABEL,
+  BRAND_DISCORD_OFFICIAL_URL,
+  BRAND_GITHUB_LABEL,
+  BRAND_GITHUB_URL,
+} from '@/lib/siteBrand';
+
 const SECTIONS = [
   { id: 'route-examples', label: 'Route examples' },
   { id: 'id-formats', label: 'ID formats' },
@@ -14,6 +26,7 @@ const SECTIONS = [
   { id: 'aiometadata-exports', label: 'AIOMetadata exports' },
   { id: 'byok-setup', label: 'BYOK setup' },
   { id: 'per-type-controls', label: 'Per type controls' },
+  { id: 'community-support', label: 'Community and support' },
 ] as const;
 
 type SectionId = (typeof SECTIONS)[number]['id'];
@@ -232,6 +245,29 @@ GET /thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb`}</CodeBlo
           <p>
             Thumbnails are the most distinct: they use the <code>/thumbnail/</code> route with dedicated episode artwork mode (<code>still</code> or <code>series</code>), their own rating provider list, and separate layout and sizing controls.
           </p>
+        </ReferenceSection>
+
+        <ReferenceSection id="community-support" title="Community and support" ref={registerRef('community-support')}>
+          <p>
+            Get help with XRDB, ratings, proxy setup, or addon configuration through the community Discord servers.
+          </p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <DiscordPill href={BRAND_DISCORD_OFFICIAL_URL} label={BRAND_DISCORD_OFFICIAL_LABEL} title={BRAND_DISCORD_OFFICIAL_LABEL} />
+            <DiscordPill href={BRAND_DISCORD_AIO_URL} label={BRAND_DISCORD_AIO_LABEL} title={BRAND_DISCORD_AIO_LABEL} />
+          </div>
+          <p>
+            You can also reach the developer directly at{' '}
+            <a href={BRAND_DISCORD_DM_URL} target="_blank" rel="noreferrer" className="text-violet-400 hover:text-violet-300 underline underline-offset-2">
+              {BRAND_DISCORD_DM_HANDLE}
+            </a>{' '}
+            on Discord.
+          </p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-[13px] font-semibold text-zinc-300 hover:text-white hover:border-white/25 transition-colors">
+              {BRAND_GITHUB_LABEL}
+            </a>
+            <SupportPill label="Support" />
+          </div>
         </ReferenceSection>
       </div>
     </div>

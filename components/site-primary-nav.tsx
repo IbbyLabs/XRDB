@@ -4,9 +4,9 @@ import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import { BrandLockup, DeploymentVersionPill, LatestReleasePill, SupportPill, UptimePill } from '@/components/site-chrome';
+import { BrandLockup, DeploymentVersionPill, DiscordPill, LatestReleasePill, SupportPill, UptimePill } from '@/components/site-chrome';
 import { LATEST_RELEASE_FEED_URL } from '@/lib/recentCommits';
-import { BRAND_GITHUB_LABEL, BRAND_GITHUB_URL } from '@/lib/siteBrand';
+import { BRAND_DISCORD_OFFICIAL_LABEL, BRAND_DISCORD_OFFICIAL_URL, BRAND_GITHUB_LABEL, BRAND_GITHUB_URL } from '@/lib/siteBrand';
 
 type NavItem = {
   href: string;
@@ -109,6 +109,7 @@ export function SitePrimaryNav({
             </a>
             <UptimePill label="Uptime Tracker" />
             <SupportPill label="Support" />
+            <DiscordPill href={BRAND_DISCORD_OFFICIAL_URL} label={BRAND_DISCORD_OFFICIAL_LABEL} title={BRAND_DISCORD_OFFICIAL_LABEL} />
           </div>
         </div>
         <div className="xrdb-nav-mobile-row">
@@ -164,6 +165,7 @@ export function SitePrimaryNav({
             </a>
             <UptimePill label="Uptime Tracker" />
             <SupportPill label="Support" />
+            <DiscordPill href={BRAND_DISCORD_OFFICIAL_URL} label={BRAND_DISCORD_OFFICIAL_LABEL} title={BRAND_DISCORD_OFFICIAL_LABEL} />
           </div>
         </div>
       </div>
