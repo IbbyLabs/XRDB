@@ -19,7 +19,18 @@ export type GenreBadgeFamilyId =
   | 'fantasy'
   | 'crime'
   | 'drama'
-  | 'documentary';
+  | 'documentary'
+  | 'music'
+  | 'reality'
+  | 'family'
+  | 'history'
+  | 'kids'
+  | 'news'
+  | 'soap'
+  | 'talk'
+  | 'tvmovie'
+  | 'warpolitics'
+  | 'other';
 
 export type GenreBadgeFamilyMeta = {
   id: GenreBadgeFamilyId;
@@ -255,6 +266,61 @@ export const GENRE_BADGE_FAMILY_META: Record<GenreBadgeFamilyId, GenreBadgeFamil
     label: 'DOC',
     accentColor: '#a3e635',
   },
+  music: {
+    id: 'music',
+    label: 'MUSIC',
+    accentColor: '#c084fc',
+  },
+  reality: {
+    id: 'reality',
+    label: 'REALITY',
+    accentColor: '#fbbf24',
+  },
+  family: {
+    id: 'family',
+    label: 'FAMILY',
+    accentColor: '#4ade80',
+  },
+  history: {
+    id: 'history',
+    label: 'HISTORY',
+    accentColor: '#94a3b8',
+  },
+  kids: {
+    id: 'kids',
+    label: 'KIDS',
+    accentColor: '#f472b6',
+  },
+  news: {
+    id: 'news',
+    label: 'NEWS',
+    accentColor: '#64748b',
+  },
+  soap: {
+    id: 'soap',
+    label: 'SOAP',
+    accentColor: '#2dd4bf',
+  },
+  talk: {
+    id: 'talk',
+    label: 'TALK',
+    accentColor: '#a78bfa',
+  },
+  tvmovie: {
+    id: 'tvmovie',
+    label: 'TV',
+    accentColor: '#f59e0b',
+  },
+  warpolitics: {
+    id: 'warpolitics',
+    label: 'WAR',
+    accentColor: '#f87171',
+  },
+  other: {
+    id: 'other',
+    label: 'OTHER',
+    accentColor: '#9ca3af',
+  },
 };
 
 const TMDB_GENRE = {
@@ -276,6 +342,15 @@ const TMDB_GENRE = {
   actionAdventureTv: 10759,
   kids: 10762,
   scifiFantasyTv: 10765,
+  music: 10402,
+  reality: 10764,
+  family: 10751,
+  history: 36,
+  news: 10763,
+  soap: 10766,
+  talk: 10767,
+  tvMovie: 10770,
+  warPoliticsTv: 10768,
 } as const;
 
 const normalizeGenreName = (value: string) => value.trim().toLowerCase().replace(/[_-]+/g, ' ');
@@ -409,6 +484,50 @@ export const resolveGenreBadgeFamily = (input: {
     return GENRE_BADGE_FAMILY_META.drama;
   }
 
+  if (hasGenreName(genreNames, 'music') || hasGenreId(genreIds, TMDB_GENRE.music)) {
+    return GENRE_BADGE_FAMILY_META.music;
+  }
+
+  if (hasGenreName(genreNames, 'reality') || hasGenreId(genreIds, TMDB_GENRE.reality)) {
+    return GENRE_BADGE_FAMILY_META.reality;
+  }
+
+  if (hasGenreName(genreNames, 'family') || hasGenreId(genreIds, TMDB_GENRE.family)) {
+    return GENRE_BADGE_FAMILY_META.family;
+  }
+
+  if (hasGenreName(genreNames, 'history') || hasGenreId(genreIds, TMDB_GENRE.history)) {
+    return GENRE_BADGE_FAMILY_META.history;
+  }
+
+  if (hasGenreName(genreNames, 'kids') || hasGenreId(genreIds, TMDB_GENRE.kids)) {
+    return GENRE_BADGE_FAMILY_META.kids;
+  }
+
+  if (hasGenreName(genreNames, 'news') || hasGenreId(genreIds, TMDB_GENRE.news)) {
+    return GENRE_BADGE_FAMILY_META.news;
+  }
+
+  if (hasGenreName(genreNames, 'soap') || hasGenreId(genreIds, TMDB_GENRE.soap)) {
+    return GENRE_BADGE_FAMILY_META.soap;
+  }
+
+  if (hasGenreName(genreNames, 'talk') || hasGenreId(genreIds, TMDB_GENRE.talk)) {
+    return GENRE_BADGE_FAMILY_META.talk;
+  }
+
+  if (hasGenreName(genreNames, 'tv movie') || hasGenreId(genreIds, TMDB_GENRE.tvMovie)) {
+    return GENRE_BADGE_FAMILY_META.tvmovie;
+  }
+
+  if (hasGenreName(genreNames, 'war & politics') || hasGenreId(genreIds, TMDB_GENRE.warPoliticsTv)) {
+    return GENRE_BADGE_FAMILY_META.warpolitics;
+  }
+
+  if (genreNames.size > 0 || genreIds.size > 0) {
+    return GENRE_BADGE_FAMILY_META.other;
+  }
+
   return null;
 };
 
@@ -522,6 +641,86 @@ export const GENRE_BADGE_PREVIEW_SAMPLES: ReadonlyArray<GenreBadgePreviewSample>
       ratingStyle: 'glass',
       imageText: 'original',
       posterRatingsLayout: 'top bottom',
+    },
+  },
+  {
+    key: 'whiplash-poster',
+    title: 'Whiplash',
+    typeLabel: 'Movie Poster',
+    previewType: 'poster',
+    mediaId: 'tt2582802',
+    lang: 'en',
+    familyId: 'music',
+    decision: 'Music is the primary genre. Drama is secondary and loses to the more specific music bucket.',
+    params: {
+      posterRatings: 'tmdb',
+      ratingStyle: 'glass',
+      imageText: 'original',
+      posterRatingsLayout: 'bottom',
+    },
+  },
+  {
+    key: 'survivor-backdrop',
+    title: 'Survivor',
+    typeLabel: 'Show Backdrop',
+    previewType: 'backdrop',
+    mediaId: 'tt0239195',
+    lang: 'en',
+    familyId: 'reality',
+    decision: 'Reality TV resolves to the reality family. No stronger bucket applies.',
+    params: {
+      backdropRatings: 'tmdb',
+      ratingStyle: 'glass',
+      imageText: 'clean',
+      backdropRatingsLayout: 'center',
+    },
+  },
+  {
+    key: 'incredibles-poster',
+    title: 'The Incredibles',
+    typeLabel: 'Movie Poster',
+    previewType: 'poster',
+    mediaId: 'tt0317705',
+    lang: 'en',
+    familyId: 'family',
+    decision: 'Animation wins over family in the cascade. This sample uses a title where family is the dominant genre after animation is resolved separately.',
+    params: {
+      posterRatings: 'tmdb',
+      ratingStyle: 'glass',
+      imageText: 'original',
+      posterRatingsLayout: 'top bottom',
+    },
+  },
+  {
+    key: 'schindlers-list-backdrop',
+    title: 'Schindlers List',
+    typeLabel: 'Movie Backdrop',
+    previewType: 'backdrop',
+    mediaId: 'tt0108052',
+    lang: 'en',
+    familyId: 'history',
+    decision: 'History is the distinguishing genre. Drama is secondary.',
+    params: {
+      backdropRatings: 'tmdb',
+      ratingStyle: 'square',
+      imageText: 'clean',
+      backdropRatingsLayout: 'right',
+    },
+  },
+  {
+    key: 'spongebob-poster',
+    title: 'SpongeBob SquarePants',
+    typeLabel: 'Show Poster',
+    previewType: 'poster',
+    mediaId: 'tt0206512',
+    lang: 'en',
+    familyId: 'kids',
+    decision: 'Kids genre activates when animation is already resolved separately or absent from the genre list.',
+    params: {
+      posterRatings: 'tmdb',
+      ratingStyle: 'glass',
+      imageText: 'original',
+      posterRatingsLayout: 'bottom',
     },
   },
 ] as const;

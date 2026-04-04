@@ -381,7 +381,7 @@ RPDB compatibility aliases are accepted where they map cleanly in XRDB: `order`/
 
 Transparent provider icons stay transparent across `glass`, `square`, and `plain`. In `glass`, XRDB switches icons with transparency such as Kitsu to a neutral inner chip with an accent ring to avoid accent color bleed through.
 
-Genre badges resolve from a curated family set instead of trying to icon map every TMDB genre. Strong buckets such as horror, comedy, drama, sci fi, fantasy, crime, documentary, animation, and anime render. When a title mixes drama with a stronger supported family, XRDB still prefers the more specific bucket.
+Genre badges resolve from a curated family set that covers every TMDB genre. Strong buckets such as horror, comedy, drama, sci fi, fantasy, crime, documentary, animation, and anime render with dedicated icons. Music, reality, family, history, kids, news, soap, talk, TV movie, and war also have their own badge families. When a title mixes drama with a stronger supported family, XRDB still prefers the more specific bucket. Any genre that does not match a dedicated family falls back to a neutral badge so nothing is missing.
 
 `fanartKey` is optional. If present, XRDB uses your key first for fanart requests. If it is blank, XRDB falls back to `XRDB_FANART_API_KEY` or `FANART_API_KEY` when the server has one.
 

@@ -140,3 +140,125 @@ test('genre preview samples cover movie, show, anime and all output types', () =
     assert.ok(GENRE_BADGE_FAMILY_META[familyId]);
   }
 });
+
+test('new genre families resolve from genre name', () => {
+  assert.equal(
+    resolveGenreBadgeFamily({ genres: [{ name: 'Music' }] })?.id,
+    'music',
+  );
+  assert.equal(
+    resolveGenreBadgeFamily({ genres: [{ name: 'Reality' }] })?.id,
+    'reality',
+  );
+  assert.equal(
+    resolveGenreBadgeFamily({ genres: [{ name: 'Family' }] })?.id,
+    'family',
+  );
+  assert.equal(
+    resolveGenreBadgeFamily({ genres: [{ name: 'History' }] })?.id,
+    'history',
+  );
+  assert.equal(
+    resolveGenreBadgeFamily({ genres: [{ name: 'Kids' }] })?.id,
+    'kids',
+  );
+  assert.equal(
+    resolveGenreBadgeFamily({ genres: [{ name: 'News' }] })?.id,
+    'news',
+  );
+  assert.equal(
+    resolveGenreBadgeFamily({ genres: [{ name: 'Soap' }] })?.id,
+    'soap',
+  );
+  assert.equal(
+    resolveGenreBadgeFamily({ genres: [{ name: 'Talk' }] })?.id,
+    'talk',
+  );
+  assert.equal(
+    resolveGenreBadgeFamily({ genres: [{ name: 'TV Movie' }] })?.id,
+    'tvmovie',
+  );
+  assert.equal(
+    resolveGenreBadgeFamily({ genres: [{ name: 'War & Politics' }] })?.id,
+    'warpolitics',
+  );
+});
+
+test('new genre families resolve from TMDB genre ID', () => {
+  assert.equal(
+    resolveGenreBadgeFamily({ genreIds: [10402] })?.id,
+    'music',
+  );
+  assert.equal(
+    resolveGenreBadgeFamily({ genreIds: [10764] })?.id,
+    'reality',
+  );
+  assert.equal(
+    resolveGenreBadgeFamily({ genreIds: [10751] })?.id,
+    'family',
+  );
+  assert.equal(
+    resolveGenreBadgeFamily({ genreIds: [36] })?.id,
+    'history',
+  );
+  assert.equal(
+    resolveGenreBadgeFamily({ genreIds: [10762] })?.id,
+    'kids',
+  );
+  assert.equal(
+    resolveGenreBadgeFamily({ genreIds: [10763] })?.id,
+    'news',
+  );
+  assert.equal(
+    resolveGenreBadgeFamily({ genreIds: [10766] })?.id,
+    'soap',
+  );
+  assert.equal(
+    resolveGenreBadgeFamily({ genreIds: [10767] })?.id,
+    'talk',
+  );
+  assert.equal(
+    resolveGenreBadgeFamily({ genreIds: [10770] })?.id,
+    'tvmovie',
+  );
+  assert.equal(
+    resolveGenreBadgeFamily({ genreIds: [10768] })?.id,
+    'warpolitics',
+  );
+});
+
+test('catchall returns other for unrecognized genre', () => {
+  assert.equal(
+    resolveGenreBadgeFamily({ genres: [{ name: 'Underwater Basket Weaving' }] })?.id,
+    'other',
+  );
+  assert.equal(
+    resolveGenreBadgeFamily({ genreIds: [99999] })?.id,
+    'other',
+  );
+});
+
+test('catchall returns null for empty genres', () => {
+  assert.equal(resolveGenreBadgeFamily({ genres: [] }), null);
+  assert.equal(resolveGenreBadgeFamily({}), null);
+  assert.equal(resolveGenreBadgeFamily({ genres: null }), null);
+});
+
+test('existing families still take priority over new families', () => {
+  assert.equal(
+    resolveGenreBadgeFamily({ genres: [{ name: 'Drama' }, { name: 'Music' }] })?.id,
+    'drama',
+  );
+  assert.equal(
+    resolveGenreBadgeFamily({ genres: [{ name: 'Comedy' }, { name: 'Reality' }] })?.id,
+    'comedy',
+  );
+  assert.equal(
+    resolveGenreBadgeFamily({ genres: [{ name: 'Action' }, { name: 'History' }] })?.id,
+    'action',
+  );
+  assert.equal(
+    resolveGenreBadgeFamily({ genres: [{ name: 'Horror' }, { name: 'Family' }] })?.id,
+    'horror',
+  );
+});
