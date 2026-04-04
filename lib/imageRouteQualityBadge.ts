@@ -196,6 +196,10 @@ export const buildQualityBadgeSvg = (
       stroke: 'rgba(251,146,60,0.92)',
       fill: 'rgba(239,68,68,0.16)',
     },
+    bdremux: {
+      stroke: 'rgba(217,119,6,0.88)',
+      fill: 'rgba(180,83,9,0.14)',
+    },
     bluray: {
       stroke: 'rgba(125,211,252,0.34)',
       fill: 'rgba(15,23,42,0.16)',
@@ -216,6 +220,7 @@ export const buildQualityBadgeSvg = (
     dolbyvision: '#e5e7eb',
     dolbyatmos: '#e5e7eb',
     remux: '#fb923c',
+    bdremux: '#d97706',
   };
   const baseRect = (width: number, stroke: string, fill: string, extra = '') =>
     `<rect x="${strokeWidth / 2}" y="${strokeWidth / 2}" width="${Math.max(0, width - strokeWidth)}" height="${Math.max(0, h - strokeWidth)}" rx="${radius}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" ${extra}/>`;
@@ -447,6 +452,10 @@ ${style === 'plain' ? plainStroke : rect}
 
   if (key === 'remux') {
     return buildAssetBackedBadgeSvg('remux', 'standard');
+  }
+
+  if (key === 'bdremux') {
+    return buildAssetBackedBadgeSvg('bdremux', 'standard');
   }
 
   const accentColor = mediaFrameByKey[key as MediaFeatureBadgeKey]?.stroke ?? 'rgba(255,255,255,0.68)';

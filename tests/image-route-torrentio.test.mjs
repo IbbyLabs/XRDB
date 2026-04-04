@@ -60,7 +60,7 @@ test('image route torrentio derives quality badges from stream filenames', async
 
   assert.deepEqual(
     result.badges.map((badge) => badge.key),
-    ['4k', 'bluray', 'dolbyvision', 'dolbyatmos'],
+    ['4k', 'bdremux', 'dolbyvision', 'dolbyatmos'],
   );
   assert.ok(result.cacheTtlMs >= 60_000);
 });

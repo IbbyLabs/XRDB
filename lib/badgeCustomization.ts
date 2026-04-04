@@ -87,6 +87,7 @@ export const QUALITY_BADGE_OPTIONS: Array<{ id: MediaFeatureBadgeKey; label: str
   { id: 'dolbyvision', label: 'Dolby Vision' },
   { id: 'dolbyatmos', label: 'Dolby Atmos' },
   { id: 'remux', label: 'Remux' },
+  { id: 'bdremux', label: 'BD Remux' },
 ];
 
 export const DEFAULT_QUALITY_BADGE_PREFERENCES: MediaFeatureBadgeKey[] = [
@@ -105,6 +106,7 @@ export const DEFAULT_QUALITY_BADGE_PREFERENCES: MediaFeatureBadgeKey[] = [
   'dolbyvision',
   'dolbyatmos',
   'remux',
+  'bdremux',
 ];
 
 const QUALITY_BADGE_ALIAS_MAP: Record<string, MediaFeatureBadgeKey> = {
@@ -145,6 +147,7 @@ const QUALITY_BADGE_ALIAS_MAP: Record<string, MediaFeatureBadgeKey> = {
   dolbyatmos: 'dolbyatmos',
   atmos: 'dolbyatmos',
   remux: 'remux',
+  bdremux: 'bdremux',
 };
 
 const toBase64Url = (value: string) => {

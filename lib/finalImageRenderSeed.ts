@@ -39,6 +39,7 @@ type FinalImageRenderSeedInput = {
   qualityBadgesStyle: string;
   qualityBadgesMax: number | null;
   qualityBadgePreferences: string[];
+  remuxDisplayMode: string;
   posterSideRatingsPosition: string;
   posterSideRatingsOffset: number;
   backdropSideRatingsPosition: string;

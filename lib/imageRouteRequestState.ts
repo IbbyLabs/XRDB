@@ -172,6 +172,8 @@ import {
   normalizeQualityBadgesStyle,
   normalizeStreamBadgesSetting,
 } from './imageRouteDisplayPrefs.ts';
+import { normalizeRemuxDisplayMode } from './uiConfig.ts';
+import type { RemuxDisplayMode } from './mediaFeatures.ts';
 
 type ImageType = (typeof ALLOWED_IMAGE_TYPES extends Set<infer T> ? T : never) & ('poster' | 'backdrop' | 'logo');
 
@@ -245,6 +247,7 @@ export type ImageRouteRequestState = {
   qualityBadgesStyle: QualityBadgeStyle;
   qualityBadgesMax: number | null;
   qualityBadgePreferences: BadgeKey[];
+  remuxDisplayMode: RemuxDisplayMode;
   ratingStyle: RatingStyle;
   ratingStackOffsetX: number;
   ratingStackOffsetY: number;
@@ -859,6 +862,25 @@ export const resolveImageRouteRequestState = async ({
   const thumbnailQualityBadgesMax = normalizeOptionalBadgeCount(
     searchParams.get('thumbnailQualityBadgesMax') ?? searchParams.get('backdropQualityBadgesMax'),
   );
+  const posterRemuxDisplayMode = normalizeRemuxDisplayMode(
+    searchParams.get('posterRemuxDisplayMode') ?? searchParams.get('remuxDisplayMode'),
+  );
+  const backdropRemuxDisplayMode = normalizeRemuxDisplayMode(
+    searchParams.get('backdropRemuxDisplayMode') ?? searchParams.get('remuxDisplayMode'),
+  );
+  const thumbnailRemuxDisplayMode = normalizeRemuxDisplayMode(
+    searchParams.get('thumbnailRemuxDisplayMode') ??
+      searchParams.get('backdropRemuxDisplayMode') ??
+      searchParams.get('remuxDisplayMode'),
+  );
+  const remuxDisplayMode =
+    imageType === 'poster'
+      ? posterRemuxDisplayMode
+      : isThumbnailRequest
+        ? thumbnailRemuxDisplayMode
+        : imageType === 'backdrop'
+          ? backdropRemuxDisplayMode
+          : 'composite' as const;
   const thumbnailRatingsMax = normalizeOptionalBadgeCount(
     searchParams.get('thumbnailRatingsMax') ?? searchParams.get('backdropRatingsMax'),
   );
@@ -1263,6 +1285,7 @@ export const resolveImageRouteRequestState = async ({
     qualityBadgesStyle,
     qualityBadgesMax,
     qualityBadgePreferences,
+    remuxDisplayMode,
     posterSideRatingsPosition,
     posterSideRatingsOffset,
     backdropSideRatingsPosition: effectiveBackdropSideRatingsPosition,
@@ -1345,6 +1368,7 @@ export const resolveImageRouteRequestState = async ({
     qualityBadgesStyle,
     qualityBadgesMax,
     qualityBadgePreferences,
+    remuxDisplayMode,
     ratingStyle,
     ratingStackOffsetX,
     ratingStackOffsetY,

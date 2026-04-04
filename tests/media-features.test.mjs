@@ -46,11 +46,11 @@ test('media feature badges prefer bluray over remux and dolby vision over hdr', 
 
   assert.deepEqual(
     badges.map((badge) => badge.key),
-    ['4k', 'bluray', 'dolbyvision', 'dolbyatmos'],
+    ['4k', 'bdremux', 'dolbyvision', 'dolbyatmos'],
   );
   assert.deepEqual(
     badges.map((badge) => badge.label),
-    ['4K', 'Bluray', 'Dolby Vision', 'Dolby Atmos'],
+    ['4K', 'BD Remux', 'Dolby Vision', 'Dolby Atmos'],
   );
 });
 
@@ -66,13 +66,14 @@ test('remux sources also expose bluray coverage when explicit bluray tokens are 
 
   assert.deepEqual(
     badges.map((badge) => badge.key),
-    ['4k', 'bluray', 'dolbyvision', 'dolbyatmos', 'remux'],
+    ['4k', 'bdremux', 'dolbyvision', 'dolbyatmos'],
   );
 });
 
 test('media badge assets stay embedded for renderer use', () => {
   assert.deepEqual(Object.keys(MEDIA_BADGE_ASSETS).sort(), [
     '4k',
+    'bdremux',
     'bluray',
     'dolbyatmos',
     'dolbyvision',

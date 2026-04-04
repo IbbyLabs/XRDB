@@ -37,6 +37,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   backdropQualityBadgeScale: WorkspaceSettings['backdropQualityBadgeScale'];
   backdropQualityBadgesStyle: WorkspaceSettings['backdropQualityBadgesStyle'];
   backdropQualityBadgesMax: WorkspaceSettings['backdropQualityBadgesMax'];
+  backdropRemuxDisplayMode: WorkspaceSettings['backdropRemuxDisplayMode'];
   backdropRatingBadgeScale: WorkspaceSettings['backdropRatingBadgeScale'];
   backdropRatingPreferences: WorkspaceSettings['backdropRatingPreferences'];
   backdropRatingPresentation: WorkspaceSettings['backdropRatingPresentation'];
@@ -62,6 +63,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   thumbnailQualityBadgeScale: WorkspaceSettings['thumbnailQualityBadgeScale'];
   thumbnailQualityBadgesStyle: WorkspaceSettings['thumbnailQualityBadgesStyle'];
   thumbnailQualityBadgesMax: WorkspaceSettings['thumbnailQualityBadgesMax'];
+  thumbnailRemuxDisplayMode: WorkspaceSettings['thumbnailRemuxDisplayMode'];
   thumbnailRatingBadgeScale: WorkspaceSettings['thumbnailRatingBadgeScale'];
   thumbnailRatingPresentation: WorkspaceSettings['thumbnailRatingPresentation'];
   thumbnailRatingStyle: WorkspaceSettings['thumbnailRatingStyle'];
@@ -87,6 +89,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   logoQualityBadgeScale: WorkspaceSettings['logoQualityBadgeScale'];
   logoQualityBadgesStyle: WorkspaceSettings['logoQualityBadgesStyle'];
   logoQualityBadgesMax: WorkspaceSettings['logoQualityBadgesMax'];
+  logoRemuxDisplayMode: WorkspaceSettings['logoRemuxDisplayMode'];
   logoRatingBadgeScale: WorkspaceSettings['logoRatingBadgeScale'];
   logoRatingPreferences: WorkspaceSettings['logoRatingPreferences'];
   logoRatingPresentation: WorkspaceSettings['logoRatingPresentation'];
@@ -120,6 +123,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   posterQualityBadgesPosition: WorkspaceSettings['posterQualityBadgesPosition'];
   posterQualityBadgesStyle: WorkspaceSettings['posterQualityBadgesStyle'];
   posterQualityBadgesMax: WorkspaceSettings['posterQualityBadgesMax'];
+  posterRemuxDisplayMode: WorkspaceSettings['posterRemuxDisplayMode'];
   posterRatingBadgeScale: WorkspaceSettings['posterRatingBadgeScale'];
   posterRatingPreferences: WorkspaceSettings['posterRatingPreferences'];
   posterRatingPresentation: WorkspaceSettings['posterRatingPresentation'];
@@ -180,6 +184,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setBackdropQualityBadgeScale: Setter<WorkspaceSettings['backdropQualityBadgeScale']>;
   setBackdropQualityBadgesStyle: Setter<WorkspaceSettings['backdropQualityBadgesStyle']>;
   setBackdropQualityBadgesMax: Setter<WorkspaceSettings['backdropQualityBadgesMax']>;
+  setBackdropRemuxDisplayMode: Setter<WorkspaceSettings['backdropRemuxDisplayMode']>;
   setBackdropRatingBadgeScale: Setter<WorkspaceSettings['backdropRatingBadgeScale']>;
   setBackdropRatingPresentation: Setter<WorkspaceSettings['backdropRatingPresentation']>;
   setBackdropRatingRows: Setter<RatingProviderRow[]>;
@@ -204,6 +209,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setThumbnailQualityBadgeScale: Setter<WorkspaceSettings['thumbnailQualityBadgeScale']>;
   setThumbnailQualityBadgesStyle: Setter<WorkspaceSettings['thumbnailQualityBadgesStyle']>;
   setThumbnailQualityBadgesMax: Setter<WorkspaceSettings['thumbnailQualityBadgesMax']>;
+  setThumbnailRemuxDisplayMode: Setter<WorkspaceSettings['thumbnailRemuxDisplayMode']>;
   setThumbnailRatingBadgeScale: Setter<WorkspaceSettings['thumbnailRatingBadgeScale']>;
   setThumbnailRatingPresentation: Setter<WorkspaceSettings['thumbnailRatingPresentation']>;
   setThumbnailRatingStyle: Setter<WorkspaceSettings['thumbnailRatingStyle']>;
@@ -229,6 +235,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setLogoQualityBadgeScale: Setter<WorkspaceSettings['logoQualityBadgeScale']>;
   setLogoQualityBadgesStyle: Setter<WorkspaceSettings['logoQualityBadgesStyle']>;
   setLogoQualityBadgesMax: Setter<WorkspaceSettings['logoQualityBadgesMax']>;
+  setLogoRemuxDisplayMode: Setter<WorkspaceSettings['logoRemuxDisplayMode']>;
   setLogoRatingBadgeScale: Setter<WorkspaceSettings['logoRatingBadgeScale']>;
   setLogoRatingPresentation: Setter<WorkspaceSettings['logoRatingPresentation']>;
   setLogoRatingRows: Setter<RatingProviderRow[]>;
@@ -261,6 +268,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setPosterQualityBadgesPosition: Setter<WorkspaceSettings['posterQualityBadgesPosition']>;
   setPosterQualityBadgesStyle: Setter<WorkspaceSettings['posterQualityBadgesStyle']>;
   setPosterQualityBadgesMax: Setter<WorkspaceSettings['posterQualityBadgesMax']>;
+  setPosterRemuxDisplayMode: Setter<WorkspaceSettings['posterRemuxDisplayMode']>;
   setPosterRatingBadgeScale: Setter<WorkspaceSettings['posterRatingBadgeScale']>;
   setPosterRatingPresentation: Setter<WorkspaceSettings['posterRatingPresentation']>;
   setPosterRatingRows: Setter<RatingProviderRow[]>;
@@ -333,6 +341,7 @@ export function useConfiguratorWorkspaceConfigIo({
   backdropQualityBadgeScale,
   backdropQualityBadgesStyle,
   backdropQualityBadgesMax,
+  backdropRemuxDisplayMode,
   backdropRatingBadgeScale,
   backdropRatingPreferences,
   backdropRatingPresentation,
@@ -358,6 +367,7 @@ export function useConfiguratorWorkspaceConfigIo({
   thumbnailQualityBadgeScale,
   thumbnailQualityBadgesStyle,
   thumbnailQualityBadgesMax,
+  thumbnailRemuxDisplayMode,
   thumbnailRatingBadgeScale,
   thumbnailRatingPresentation,
   thumbnailRatingStyle,
@@ -383,6 +393,7 @@ export function useConfiguratorWorkspaceConfigIo({
   logoQualityBadgeScale,
   logoQualityBadgesStyle,
   logoQualityBadgesMax,
+  logoRemuxDisplayMode,
   logoRatingBadgeScale,
   logoRatingPreferences,
   logoRatingPresentation,
@@ -416,6 +427,7 @@ export function useConfiguratorWorkspaceConfigIo({
   posterQualityBadgesPosition,
   posterQualityBadgesStyle,
   posterQualityBadgesMax,
+  posterRemuxDisplayMode,
   posterRatingBadgeScale,
   posterRatingPreferences,
   posterRatingPresentation,
@@ -476,6 +488,7 @@ export function useConfiguratorWorkspaceConfigIo({
   setBackdropQualityBadgeScale,
   setBackdropQualityBadgesStyle,
   setBackdropQualityBadgesMax,
+  setBackdropRemuxDisplayMode,
   setBackdropRatingBadgeScale,
   setBackdropRatingPresentation,
   setBackdropRatingRows,
@@ -500,6 +513,7 @@ export function useConfiguratorWorkspaceConfigIo({
   setThumbnailQualityBadgeScale,
   setThumbnailQualityBadgesStyle,
   setThumbnailQualityBadgesMax,
+  setThumbnailRemuxDisplayMode,
   setThumbnailRatingBadgeScale,
   setThumbnailRatingPresentation,
   setThumbnailRatingStyle,
@@ -525,6 +539,7 @@ export function useConfiguratorWorkspaceConfigIo({
   setLogoQualityBadgeScale,
   setLogoQualityBadgesStyle,
   setLogoQualityBadgesMax,
+  setLogoRemuxDisplayMode,
   setLogoRatingBadgeScale,
   setLogoRatingPresentation,
   setLogoRatingRows,
@@ -557,6 +572,7 @@ export function useConfiguratorWorkspaceConfigIo({
   setPosterQualityBadgesPosition,
   setPosterQualityBadgesStyle,
   setPosterQualityBadgesMax,
+  setPosterRemuxDisplayMode,
   setPosterRatingBadgeScale,
   setPosterRatingPresentation,
   setPosterRatingRows,
@@ -978,6 +994,10 @@ export function useConfiguratorWorkspaceConfigIo({
         backdropQualityBadgesMax,
         thumbnailQualityBadgesMax,
         logoQualityBadgesMax,
+        posterRemuxDisplayMode,
+        backdropRemuxDisplayMode,
+        thumbnailRemuxDisplayMode,
+        logoRemuxDisplayMode,
         posterRatingsLayout,
         backdropRatingsLayout,
         thumbnailRatingsLayout,
@@ -1082,6 +1102,7 @@ export function useConfiguratorWorkspaceConfigIo({
       backdropQualityBadgeScale,
       backdropQualityBadgesStyle,
       backdropQualityBadgesMax,
+      backdropRemuxDisplayMode,
       backdropRatingBadgeScale,
       backdropRatingPreferences,
       backdropRatingPresentation,
@@ -1106,6 +1127,7 @@ export function useConfiguratorWorkspaceConfigIo({
       thumbnailQualityBadgeScale,
       thumbnailQualityBadgesStyle,
       thumbnailQualityBadgesMax,
+      thumbnailRemuxDisplayMode,
       thumbnailRatingBadgeScale,
       thumbnailRatingPreferences,
       thumbnailRatingPresentation,
@@ -1132,6 +1154,7 @@ export function useConfiguratorWorkspaceConfigIo({
       logoQualityBadgeScale,
       logoQualityBadgesStyle,
       logoQualityBadgesMax,
+      logoRemuxDisplayMode,
       logoRatingBadgeScale,
       logoRatingPreferences,
       logoRatingPresentation,
@@ -1164,6 +1187,7 @@ export function useConfiguratorWorkspaceConfigIo({
       posterQualityBadgesPosition,
       posterQualityBadgesStyle,
       posterQualityBadgesMax,
+      posterRemuxDisplayMode,
       posterRatingBadgeScale,
       posterRatingPreferences,
       posterRatingPresentation,

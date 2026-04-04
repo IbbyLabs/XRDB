@@ -396,6 +396,8 @@ export function buildConfiguratorPageProps({
         onSelectQualityBadgesSide: workspaceState.setQualityBadgesSide,
         onSelectPosterQualityBadgePosition: workspaceState.setPosterQualityBadgesPosition,
         onToggleQualityBadgePreference: workspaceActions.toggleQualityBadgePreference,
+        activeRemuxDisplayMode: activeWorkspaceSettings.activeRemuxDisplayMode,
+        onSelectRemuxDisplayMode: activeWorkspaceSettings.setActiveRemuxDisplayMode,
       },
       providersProps: {
         providersLabel: workspaceSummary.providersLabel,
