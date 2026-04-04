@@ -295,6 +295,9 @@ export type ImageRouteRequestState = {
   aggregateAccentColor: string | null;
   aggregateCriticsAccentColor: string | null;
   aggregateAudienceAccentColor: string | null;
+  aggregateValueColor: string | null;
+  aggregateCriticsValueColor: string | null;
+  aggregateAudienceValueColor: string | null;
   aggregateDynamicStops: string;
   aggregateAccentBarOffset: number;
   aggregateAccentBarVisible: boolean;
@@ -620,6 +623,11 @@ export const resolveImageRouteRequestState = async ({
     normalizeHexColor(searchParams.get('aggregateCriticsAccentColor')) || null;
   const aggregateAudienceAccentColor =
     normalizeHexColor(searchParams.get('aggregateAudienceAccentColor')) || null;
+  const aggregateValueColor = normalizeHexColor(searchParams.get('aggregateValueColor')) || null;
+  const aggregateCriticsValueColor =
+    normalizeHexColor(searchParams.get('aggregateCriticsValueColor')) || null;
+  const aggregateAudienceValueColor =
+    normalizeHexColor(searchParams.get('aggregateAudienceValueColor')) || null;
   const aggregateDynamicStops = normalizeAggregateDynamicStops(
     searchParams.get('aggregateDynamicStops'),
     DEFAULT_AGGREGATE_DYNAMIC_STOPS,
@@ -1300,6 +1308,9 @@ export const resolveImageRouteRequestState = async ({
     aggregateAccentColor,
     aggregateCriticsAccentColor,
     aggregateAudienceAccentColor,
+    aggregateValueColor,
+    aggregateCriticsValueColor,
+    aggregateAudienceValueColor,
     aggregateDynamicStops,
     aggregateAccentBarOffset,
     aggregateAccentBarVisible,
@@ -1417,6 +1428,9 @@ export const resolveImageRouteRequestState = async ({
     aggregateAccentColor,
     aggregateCriticsAccentColor,
     aggregateAudienceAccentColor,
+    aggregateValueColor,
+    aggregateCriticsValueColor,
+    aggregateAudienceValueColor,
     aggregateDynamicStops,
     aggregateAccentBarOffset,
     aggregateAccentBarVisible,

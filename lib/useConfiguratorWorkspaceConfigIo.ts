@@ -20,8 +20,11 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   aggregateAccentColor: WorkspaceSettings['aggregateAccentColor'];
   aggregateAccentMode: WorkspaceSettings['aggregateAccentMode'];
   aggregateAudienceAccentColor: WorkspaceSettings['aggregateAudienceAccentColor'];
+  aggregateAudienceValueColor: WorkspaceSettings['aggregateAudienceValueColor'];
   aggregateCriticsAccentColor: WorkspaceSettings['aggregateCriticsAccentColor'];
+  aggregateCriticsValueColor: WorkspaceSettings['aggregateCriticsValueColor'];
   aggregateDynamicStops: WorkspaceSettings['aggregateDynamicStops'];
+  aggregateValueColor: WorkspaceSettings['aggregateValueColor'];
   backdropAggregateRatingSource: WorkspaceSettings['backdropAggregateRatingSource'];
   backdropArtworkSource: WorkspaceSettings['backdropArtworkSource'];
   backdropEpisodeArtwork: WorkspaceSettings['backdropEpisodeArtwork'];
@@ -167,8 +170,11 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setAggregateAccentColor: Setter<WorkspaceSettings['aggregateAccentColor']>;
   setAggregateAccentMode: Setter<WorkspaceSettings['aggregateAccentMode']>;
   setAggregateAudienceAccentColor: Setter<WorkspaceSettings['aggregateAudienceAccentColor']>;
+  setAggregateAudienceValueColor: Setter<WorkspaceSettings['aggregateAudienceValueColor']>;
   setAggregateCriticsAccentColor: Setter<WorkspaceSettings['aggregateCriticsAccentColor']>;
+  setAggregateCriticsValueColor: Setter<WorkspaceSettings['aggregateCriticsValueColor']>;
   setAggregateDynamicStops: Setter<WorkspaceSettings['aggregateDynamicStops']>;
+  setAggregateValueColor: Setter<WorkspaceSettings['aggregateValueColor']>;
   setBackdropAggregateRatingSource: Setter<WorkspaceSettings['backdropAggregateRatingSource']>;
   setBackdropArtworkSource: Setter<WorkspaceSettings['backdropArtworkSource']>;
   setBackdropEpisodeArtwork: Setter<WorkspaceSettings['backdropEpisodeArtwork']>;
@@ -324,8 +330,11 @@ export function useConfiguratorWorkspaceConfigIo({
   aggregateAccentColor,
   aggregateAccentMode,
   aggregateAudienceAccentColor,
+  aggregateAudienceValueColor,
   aggregateCriticsAccentColor,
+  aggregateCriticsValueColor,
   aggregateDynamicStops,
+  aggregateValueColor,
   backdropAggregateRatingSource,
   backdropArtworkSource,
   backdropEpisodeArtwork,
@@ -471,8 +480,11 @@ export function useConfiguratorWorkspaceConfigIo({
   setAggregateAccentColor,
   setAggregateAccentMode,
   setAggregateAudienceAccentColor,
+  setAggregateAudienceValueColor,
   setAggregateCriticsAccentColor,
+  setAggregateCriticsValueColor,
   setAggregateDynamicStops,
+  setAggregateValueColor,
   setBackdropAggregateRatingSource,
   setBackdropArtworkSource,
   setBackdropEpisodeArtwork,
@@ -735,6 +747,9 @@ export function useConfiguratorWorkspaceConfigIo({
       setAggregateAccentColor(normalized.settings.aggregateAccentColor);
       setAggregateCriticsAccentColor(normalized.settings.aggregateCriticsAccentColor);
       setAggregateAudienceAccentColor(normalized.settings.aggregateAudienceAccentColor);
+      setAggregateValueColor(normalized.settings.aggregateValueColor);
+      setAggregateCriticsValueColor(normalized.settings.aggregateCriticsValueColor);
+      setAggregateAudienceValueColor(normalized.settings.aggregateAudienceValueColor);
       setAggregateDynamicStops(normalized.settings.aggregateDynamicStops);
       setAggregateAccentBarOffset(normalized.settings.aggregateAccentBarOffset);
       setAggregateAccentBarVisible(normalized.settings.aggregateAccentBarVisible);
@@ -777,8 +792,11 @@ export function useConfiguratorWorkspaceConfigIo({
       setAggregateAccentColor,
       setAggregateAccentMode,
       setAggregateAudienceAccentColor,
+      setAggregateAudienceValueColor,
       setAggregateCriticsAccentColor,
+      setAggregateCriticsValueColor,
       setAggregateDynamicStops,
+      setAggregateValueColor,
       setBackdropAggregateRatingSource,
       setBackdropArtworkSource,
       setBackdropEpisodeArtwork,
@@ -1041,6 +1059,9 @@ export function useConfiguratorWorkspaceConfigIo({
         aggregateAccentColor,
         aggregateCriticsAccentColor,
         aggregateAudienceAccentColor,
+        aggregateValueColor,
+        aggregateCriticsValueColor,
+        aggregateAudienceValueColor,
         aggregateDynamicStops,
         aggregateAccentBarOffset,
         aggregateAccentBarVisible,
@@ -1085,8 +1106,11 @@ export function useConfiguratorWorkspaceConfigIo({
       aggregateAccentColor,
       aggregateAccentMode,
       aggregateAudienceAccentColor,
+      aggregateAudienceValueColor,
       aggregateCriticsAccentColor,
+      aggregateCriticsValueColor,
       aggregateDynamicStops,
+      aggregateValueColor,
       backdropAggregateRatingSource,
       backdropArtworkSource,
       backdropEpisodeArtwork,

@@ -334,6 +334,9 @@ Episode thumbnails use the dedicated `/thumbnail/{id}/S{season}E{episode}.jpg` r
 | `aggregateAccentMode` | Aggregate accent source | `source`, `genre`, `custom` | `source` |
 | `aggregateAccentColor` | Aggregate accent color when `aggregateAccentMode=custom` | Hex color | `#a78bfa` |
 | `aggregateAccentBarOffset` | Average badge accent bar offset | Number (-12 to 12) | `0` |
+| `aggregateValueColor` | Rating value text color (global fallback) | Hex color | `#ffffff` |
+| `aggregateCriticsValueColor` | Critics rating value text color override | Hex color | `#ffffff` |
+| `aggregateAudienceValueColor` | Audience rating value text color override | Hex color | `#ffffff` |
 | `ratingXOffsetPillGlass` | X offset for stacked Pill Glass badge layouts | Number (-320 to 320) | `0` |
 | `ratingYOffsetPillGlass` | Y offset for stacked Pill Glass badge layouts | Number (-320 to 320) | `0` |
 | `ratingXOffsetSquare` | X offset for stacked Square Dark badge layouts | Number (-320 to 320) | `0` |

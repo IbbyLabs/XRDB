@@ -82,6 +82,9 @@ export const resolveImageRouteDisplayState = (input: {
   aggregateAccentColor: string | null;
   aggregateCriticsAccentColor: string | null;
   aggregateAudienceAccentColor: string | null;
+  aggregateValueColor: string | null;
+  aggregateCriticsValueColor: string | null;
+  aggregateAudienceValueColor: string | null;
   aggregateDynamicStops: string;
   aggregateAccentBarOffset: number;
   aggregateAccentBarVisible: boolean;
@@ -115,6 +118,9 @@ export const resolveImageRouteDisplayState = (input: {
     aggregateAccentColor,
     aggregateCriticsAccentColor,
     aggregateAudienceAccentColor,
+    aggregateValueColor,
+    aggregateCriticsValueColor,
+    aggregateAudienceValueColor,
     aggregateDynamicStops,
     aggregateAccentBarOffset,
     aggregateAccentBarVisible,
@@ -256,6 +262,7 @@ export const resolveImageRouteDisplayState = (input: {
       stackedValueOffsetY: providerAppearance?.stackedValueOffsetY,
       valueOffsetX: providerAppearance?.valueOffsetX,
       valueOffsetY: providerAppearance?.valueOffsetY,
+      valueColor: aggregateValueColor || undefined,
       variant: 'standard',
     });
   }
@@ -287,6 +294,21 @@ export const resolveImageRouteDisplayState = (input: {
     return AGGREGATE_BADGE_ACCENT_BY_SOURCE[source];
   };
 
+  const resolveAggregateValueColor = (
+    source: AggregateRatingSource,
+  ): string | undefined => {
+    if (source === 'critics' && aggregateCriticsValueColor) {
+      return aggregateCriticsValueColor;
+    }
+    if (source === 'audience' && aggregateAudienceValueColor) {
+      return aggregateAudienceValueColor;
+    }
+    if (aggregateValueColor) {
+      return aggregateValueColor;
+    }
+    return undefined;
+  };
+
   const aggregateBadges = usesAggregatePresentation
     ? buildAggregateRatingBadges({
         requestedSource: aggregateRatingSource,
@@ -294,6 +316,7 @@ export const resolveImageRouteDisplayState = (input: {
         renderablePreferences: renderableRatingPreferences,
         ratingBadgeByProvider,
         resolveAccentColor: resolveAggregateAccentColor,
+        resolveValueColor: resolveAggregateValueColor,
         accentBarOffset: aggregateAccentBarOffset,
         accentBarVisible: aggregateAccentBarVisible,
         valueMode: ratingValueMode,

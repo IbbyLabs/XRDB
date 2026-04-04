@@ -23,6 +23,7 @@ export const DEFAULT_RATING_PRESENTATION: RatingPresentation = 'standard';
 export const DEFAULT_AGGREGATE_RATING_SOURCE: AggregateRatingSource = 'overall';
 export const DEFAULT_AGGREGATE_ACCENT_MODE: AggregateAccentMode = 'source';
 export const DEFAULT_AGGREGATE_ACCENT_COLOR = '#a78bfa';
+export const DEFAULT_AGGREGATE_VALUE_COLOR = '#ffffff';
 export const DEFAULT_AGGREGATE_DYNAMIC_STOPS =
   '0:#7f1d1d,40:#dc2626,60:#f59e0b,75:#84cc16,85:#16a34a';
 export const DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET = 0;

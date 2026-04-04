@@ -53,6 +53,9 @@ type FinalImageRenderSeedInput = {
   aggregateAccentColor: string | null;
   aggregateCriticsAccentColor: string | null;
   aggregateAudienceAccentColor: string | null;
+  aggregateValueColor: string | null;
+  aggregateCriticsValueColor: string | null;
+  aggregateAudienceValueColor: string | null;
   aggregateDynamicStops: string;
   aggregateAccentBarOffset: number;
   aggregateAccentBarVisible: boolean;
@@ -162,6 +165,9 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.aggregateAccentColor || '-',
     input.aggregateCriticsAccentColor || '-',
     input.aggregateAudienceAccentColor || '-',
+    input.aggregateValueColor || '-',
+    input.aggregateCriticsValueColor || '-',
+    input.aggregateAudienceValueColor || '-',
     input.aggregateAccentMode === 'dynamic' ? input.aggregateDynamicStops : '-',
     String(input.aggregateAccentBarOffset),
     input.aggregateAccentBarVisible ? 'on' : 'off',

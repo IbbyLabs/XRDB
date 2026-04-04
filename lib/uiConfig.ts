@@ -26,6 +26,7 @@ import {
   DEFAULT_AGGREGATE_ACCENT_MODE,
   DEFAULT_AGGREGATE_DYNAMIC_STOPS,
   DEFAULT_AGGREGATE_RATING_SOURCE,
+  DEFAULT_AGGREGATE_VALUE_COLOR,
   DEFAULT_RATING_PRESENTATION,
   normalizeAggregateAccentBarOffset,
   normalizeAggregateDynamicStops,
@@ -258,6 +259,9 @@ export type SharedXrdbSettings = {
   aggregateAccentColor: string;
   aggregateCriticsAccentColor: string;
   aggregateAudienceAccentColor: string;
+  aggregateValueColor: string;
+  aggregateCriticsValueColor: string;
+  aggregateAudienceValueColor: string;
   aggregateDynamicStops: string;
   aggregateAccentBarOffset: number;
   aggregateAccentBarVisible: boolean;
@@ -505,6 +509,9 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   aggregateAccentColor: DEFAULT_AGGREGATE_ACCENT_COLOR,
   aggregateCriticsAccentColor: AGGREGATE_RATING_SOURCE_ACCENTS.critics,
   aggregateAudienceAccentColor: AGGREGATE_RATING_SOURCE_ACCENTS.audience,
+  aggregateValueColor: DEFAULT_AGGREGATE_VALUE_COLOR,
+  aggregateCriticsValueColor: DEFAULT_AGGREGATE_VALUE_COLOR,
+  aggregateAudienceValueColor: DEFAULT_AGGREGATE_VALUE_COLOR,
   aggregateDynamicStops: DEFAULT_AGGREGATE_DYNAMIC_STOPS,
   aggregateAccentBarOffset: DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
   aggregateAccentBarVisible: true,
@@ -1311,6 +1318,12 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
       normalizeHexColor(candidate.aggregateAudienceAccentColor) ||
       normalizeHexColor(candidate.compactAudienceAccentColor) ||
       defaults.aggregateAudienceAccentColor,
+    aggregateValueColor:
+      normalizeHexColor(candidate.aggregateValueColor) || defaults.aggregateValueColor,
+    aggregateCriticsValueColor:
+      normalizeHexColor(candidate.aggregateCriticsValueColor) || defaults.aggregateCriticsValueColor,
+    aggregateAudienceValueColor:
+      normalizeHexColor(candidate.aggregateAudienceValueColor) || defaults.aggregateAudienceValueColor,
     aggregateDynamicStops: normalizeAggregateDynamicStops(
       candidate.aggregateDynamicStops,
       defaults.aggregateDynamicStops,
@@ -1952,6 +1965,15 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
     settings.aggregateAudienceAccentColor !== AGGREGATE_RATING_SOURCE_ACCENTS.audience
   ) {
     payload.aggregateAudienceAccentColor = settings.aggregateAudienceAccentColor;
+  }
+  if (settings.aggregateValueColor !== DEFAULT_AGGREGATE_VALUE_COLOR) {
+    payload.aggregateValueColor = settings.aggregateValueColor;
+  }
+  if (settings.aggregateCriticsValueColor !== DEFAULT_AGGREGATE_VALUE_COLOR) {
+    payload.aggregateCriticsValueColor = settings.aggregateCriticsValueColor;
+  }
+  if (settings.aggregateAudienceValueColor !== DEFAULT_AGGREGATE_VALUE_COLOR) {
+    payload.aggregateAudienceValueColor = settings.aggregateAudienceValueColor;
   }
   if (
     settings.aggregateAccentMode === 'dynamic' ||
