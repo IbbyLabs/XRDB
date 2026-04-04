@@ -17,6 +17,7 @@ import {
   splitBadgesIntoFittingRows,
 } from './imageRouteBadgeRows.ts';
 import { FALLBACK_IMAGE_LANGUAGE } from './imageRouteConfig.ts';
+import { POSTER_EDGE_INSET_BASE } from './posterEdgeOffset.ts';
 import { fetchBlockbusterBlurbsWithFallback } from './imageRouteBlockbuster.ts';
 import type { PhaseDurations, CachedJsonResponse } from './imageRouteRuntime.ts';
 import type { RatingBadge } from './imageRouteRenderer.ts';
@@ -54,6 +55,7 @@ export type ImageRouteRenderLayout = {
   badgeTopOffset: number;
   badgeBottomOffset: number;
   backdropEdgeInset: number;
+  posterEdgeInset: number;
   posterRowHorizontalInset: number;
   qualityBadges: RatingBadge[];
   effectiveQualityBadgeScalePercent: number;
@@ -90,6 +92,7 @@ export const resolveImageRouteRenderLayout = async (input: {
   mediaType: 'movie' | 'tv' | null;
   media: any;
   tmdbKey: string;
+  posterEdgeOffset: number;
   requestedImageLang: string;
   phases: PhaseDurations;
   fetchJsonCached: LayoutFetchJson;
@@ -113,6 +116,7 @@ export const resolveImageRouteRenderLayout = async (input: {
     logoRatingBadgeScale,
     posterQualityBadgeScale,
     backdropQualityBadgeScale,
+    posterEdgeOffset,
     ratingStyle,
     qualityBadgesMax,
     mediaType,
@@ -244,6 +248,7 @@ export const resolveImageRouteRenderLayout = async (input: {
   badgeBottomOffset = Math.max(12, Math.round(badgeBottomOffset * overlayAutoScale));
   backdropEdgeInset = Math.max(12, Math.round(backdropEdgeInset * overlayAutoScale));
   posterRowHorizontalInset = Math.max(12, Math.round(posterRowHorizontalInset * overlayAutoScale));
+  const posterEdgeInset = Math.max(12, Math.round((POSTER_EDGE_INSET_BASE + posterEdgeOffset) * overlayAutoScale));
   posterMinMetrics = scaleBadgeMetrics(posterMinMetrics, 100, overlayAutoScale);
 
   const ratingBadgeScalePercent =
@@ -563,6 +568,7 @@ export const resolveImageRouteRenderLayout = async (input: {
     badgeTopOffset,
     badgeBottomOffset,
     backdropEdgeInset,
+    posterEdgeInset,
     posterRowHorizontalInset,
     qualityBadges,
     effectiveQualityBadgeScalePercent,

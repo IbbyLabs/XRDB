@@ -167,7 +167,7 @@ export type FastRenderInput = {
   qualityBadgeScalePercent: number;
   posterRatingsLayout: PosterRatingLayout;
   posterRatingsMaxPerSide: number | null;
-  posterEdgeOffset: number;
+  posterEdgeInset: number;
   backdropRatingsLayout: BackdropRatingLayout;
   backdropBottomRatingsRow: boolean;
   sideRatingsPosition: SideRatingPosition;
@@ -306,7 +306,7 @@ export const renderWithSharp = async (
       input.imageType === 'backdrop' ? input.backdropEdgeInset : POSTER_EDGE_INSET_BASE;
     const posterEdgeInset =
       input.imageType === 'poster'
-        ? POSTER_EDGE_INSET_BASE + input.posterEdgeOffset
+        ? input.posterEdgeInset
         : POSTER_EDGE_INSET_BASE;
     const resolveSideBadgeStartY = (
       columnBadges: RatingBadge[],
