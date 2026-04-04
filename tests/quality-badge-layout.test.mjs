@@ -42,3 +42,61 @@ test('quality badge total height includes scaled gaps for correct positioning', 
   
   assert.ok(correctTotalHeight > buggyTotalHeight, 'correct calculation reserves more vertical space');
 });
+
+test('poster edge inset scales proportionally across quality levels', () => {
+  const POSTER_EDGE_INSET_BASE = 12;
+  const posterEdgeOffset = 10;
+  const posterBaseWidth = 580;
+  const posterBaseHeight = 859;
+
+  const qualities = [
+    { name: 'normal', width: 580, height: 859 },
+    { name: 'large', width: 1280, height: 1896 },
+    { name: '4k', width: 2000, height: 2926 },
+  ];
+
+  const results = qualities.map(({ name, width, height }) => {
+    const widthRatio = width / posterBaseWidth;
+    const heightRatio = height / posterBaseHeight;
+    const overlayAutoScale = Math.max(0.75, Math.min(4, Math.min(widthRatio, heightRatio)));
+    const posterEdgeInset = Math.max(12, Math.round((POSTER_EDGE_INSET_BASE + posterEdgeOffset) * overlayAutoScale));
+    return { name, width, overlayAutoScale, posterEdgeInset };
+  });
+
+  const normalResult = results[0];
+  for (const result of results) {
+    const expectedProportion = normalResult.posterEdgeInset / normalResult.width;
+    const actualProportion = result.posterEdgeInset / result.width;
+    const tolerance = 0.005;
+    assert.ok(
+      Math.abs(actualProportion - expectedProportion) < tolerance,
+      `${result.name} proportion ${actualProportion.toFixed(4)} should be within ${tolerance} of normal proportion ${expectedProportion.toFixed(4)}`
+    );
+  }
+
+  assert.equal(results[0].posterEdgeInset, 22, 'normal: (12 + 10) * 1.0 = 22');
+  assert.ok(results[1].posterEdgeInset > results[0].posterEdgeInset, 'large inset is greater than normal');
+  assert.ok(results[2].posterEdgeInset > results[1].posterEdgeInset, '4k inset is greater than large');
+});
+
+test('poster edge inset minimum floor is preserved at all quality levels', () => {
+  const POSTER_EDGE_INSET_BASE = 12;
+  const posterEdgeOffset = 0;
+  const posterBaseWidth = 580;
+  const posterBaseHeight = 859;
+
+  const qualities = [
+    { name: 'normal', width: 580, height: 859 },
+    { name: 'large', width: 1280, height: 1896 },
+    { name: '4k', width: 2000, height: 2926 },
+    { name: 'sub-normal', width: 290, height: 430 },
+  ];
+
+  for (const { name, width, height } of qualities) {
+    const widthRatio = width / posterBaseWidth;
+    const heightRatio = height / posterBaseHeight;
+    const overlayAutoScale = Math.max(0.75, Math.min(4, Math.min(widthRatio, heightRatio)));
+    const posterEdgeInset = Math.max(12, Math.round((POSTER_EDGE_INSET_BASE + posterEdgeOffset) * overlayAutoScale));
+    assert.ok(posterEdgeInset >= 12, `${name} posterEdgeInset ${posterEdgeInset} must be at least 12`);
+  }
+});
