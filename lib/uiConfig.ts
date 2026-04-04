@@ -259,6 +259,18 @@ export type SharedXrdbSettings = {
   aggregateAccentBarVisible: boolean;
   posterNoBackgroundBadgeOutlineColor: string;
   posterNoBackgroundBadgeOutlineWidth: number;
+  posterRatingXOffsetPillGlass: number;
+  posterRatingYOffsetPillGlass: number;
+  backdropRatingXOffsetPillGlass: number;
+  backdropRatingYOffsetPillGlass: number;
+  thumbnailRatingXOffsetPillGlass: number;
+  thumbnailRatingYOffsetPillGlass: number;
+  posterRatingXOffsetSquare: number;
+  posterRatingYOffsetSquare: number;
+  backdropRatingXOffsetSquare: number;
+  backdropRatingYOffsetSquare: number;
+  thumbnailRatingXOffsetSquare: number;
+  thumbnailRatingYOffsetSquare: number;
   ratingXOffsetPillGlass: number;
   ratingYOffsetPillGlass: number;
   ratingXOffsetSquare: number;
@@ -488,6 +500,18 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   aggregateAccentBarVisible: true,
   posterNoBackgroundBadgeOutlineColor: DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR,
   posterNoBackgroundBadgeOutlineWidth: DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
+  posterRatingXOffsetPillGlass: DEFAULT_RATING_STACK_OFFSET_PX,
+  posterRatingYOffsetPillGlass: DEFAULT_RATING_STACK_OFFSET_PX,
+  backdropRatingXOffsetPillGlass: DEFAULT_RATING_STACK_OFFSET_PX,
+  backdropRatingYOffsetPillGlass: DEFAULT_RATING_STACK_OFFSET_PX,
+  thumbnailRatingXOffsetPillGlass: DEFAULT_RATING_STACK_OFFSET_PX,
+  thumbnailRatingYOffsetPillGlass: DEFAULT_RATING_STACK_OFFSET_PX,
+  posterRatingXOffsetSquare: DEFAULT_RATING_STACK_OFFSET_PX,
+  posterRatingYOffsetSquare: DEFAULT_RATING_STACK_OFFSET_PX,
+  backdropRatingXOffsetSquare: DEFAULT_RATING_STACK_OFFSET_PX,
+  backdropRatingYOffsetSquare: DEFAULT_RATING_STACK_OFFSET_PX,
+  thumbnailRatingXOffsetSquare: DEFAULT_RATING_STACK_OFFSET_PX,
+  thumbnailRatingYOffsetSquare: DEFAULT_RATING_STACK_OFFSET_PX,
   ratingXOffsetPillGlass: DEFAULT_RATING_STACK_OFFSET_PX,
   ratingYOffsetPillGlass: DEFAULT_RATING_STACK_OFFSET_PX,
   ratingXOffsetSquare: DEFAULT_RATING_STACK_OFFSET_PX,
@@ -1284,6 +1308,66 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
       candidate.posterNoBackgroundBadgeOutlineWidth,
       defaults.posterNoBackgroundBadgeOutlineWidth,
     ),
+    posterRatingXOffsetPillGlass: normalizeRatingStackOffsetPx(
+      candidate.posterRatingXOffsetPillGlass ??
+        candidate.ratingXOffsetPillGlass ??
+        candidate.ratingXOffsetGlass,
+      defaults.posterRatingXOffsetPillGlass,
+    ),
+    posterRatingYOffsetPillGlass: normalizeRatingStackOffsetPx(
+      candidate.posterRatingYOffsetPillGlass ??
+        candidate.ratingYOffsetPillGlass ??
+        candidate.ratingYOffsetGlass,
+      defaults.posterRatingYOffsetPillGlass,
+    ),
+    backdropRatingXOffsetPillGlass: normalizeRatingStackOffsetPx(
+      candidate.backdropRatingXOffsetPillGlass ??
+        candidate.ratingXOffsetPillGlass ??
+        candidate.ratingXOffsetGlass,
+      defaults.backdropRatingXOffsetPillGlass,
+    ),
+    backdropRatingYOffsetPillGlass: normalizeRatingStackOffsetPx(
+      candidate.backdropRatingYOffsetPillGlass ??
+        candidate.ratingYOffsetPillGlass ??
+        candidate.ratingYOffsetGlass,
+      defaults.backdropRatingYOffsetPillGlass,
+    ),
+    thumbnailRatingXOffsetPillGlass: normalizeRatingStackOffsetPx(
+      candidate.thumbnailRatingXOffsetPillGlass ??
+        candidate.ratingXOffsetPillGlass ??
+        candidate.ratingXOffsetGlass,
+      defaults.thumbnailRatingXOffsetPillGlass,
+    ),
+    thumbnailRatingYOffsetPillGlass: normalizeRatingStackOffsetPx(
+      candidate.thumbnailRatingYOffsetPillGlass ??
+        candidate.ratingYOffsetPillGlass ??
+        candidate.ratingYOffsetGlass,
+      defaults.thumbnailRatingYOffsetPillGlass,
+    ),
+    posterRatingXOffsetSquare: normalizeRatingStackOffsetPx(
+      candidate.posterRatingXOffsetSquare ?? candidate.ratingXOffsetSquare,
+      defaults.posterRatingXOffsetSquare,
+    ),
+    posterRatingYOffsetSquare: normalizeRatingStackOffsetPx(
+      candidate.posterRatingYOffsetSquare ?? candidate.ratingYOffsetSquare,
+      defaults.posterRatingYOffsetSquare,
+    ),
+    backdropRatingXOffsetSquare: normalizeRatingStackOffsetPx(
+      candidate.backdropRatingXOffsetSquare ?? candidate.ratingXOffsetSquare,
+      defaults.backdropRatingXOffsetSquare,
+    ),
+    backdropRatingYOffsetSquare: normalizeRatingStackOffsetPx(
+      candidate.backdropRatingYOffsetSquare ?? candidate.ratingYOffsetSquare,
+      defaults.backdropRatingYOffsetSquare,
+    ),
+    thumbnailRatingXOffsetSquare: normalizeRatingStackOffsetPx(
+      candidate.thumbnailRatingXOffsetSquare ?? candidate.ratingXOffsetSquare,
+      defaults.thumbnailRatingXOffsetSquare,
+    ),
+    thumbnailRatingYOffsetSquare: normalizeRatingStackOffsetPx(
+      candidate.thumbnailRatingYOffsetSquare ?? candidate.ratingYOffsetSquare,
+      defaults.thumbnailRatingYOffsetSquare,
+    ),
     ratingXOffsetPillGlass: normalizeRatingStackOffsetPx(
       candidate.ratingXOffsetPillGlass ?? candidate.ratingXOffsetGlass,
       defaults.ratingXOffsetPillGlass,
@@ -1853,6 +1937,42 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   if (settings.posterNoBackgroundBadgeOutlineWidth !== DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX) {
     payload.posterNoBackgroundBadgeOutlineWidth = settings.posterNoBackgroundBadgeOutlineWidth;
   }
+  if (settings.posterRatingXOffsetPillGlass !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.posterRatingXOffsetPillGlass = settings.posterRatingXOffsetPillGlass;
+  }
+  if (settings.posterRatingYOffsetPillGlass !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.posterRatingYOffsetPillGlass = settings.posterRatingYOffsetPillGlass;
+  }
+  if (settings.backdropRatingXOffsetPillGlass !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.backdropRatingXOffsetPillGlass = settings.backdropRatingXOffsetPillGlass;
+  }
+  if (settings.backdropRatingYOffsetPillGlass !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.backdropRatingYOffsetPillGlass = settings.backdropRatingYOffsetPillGlass;
+  }
+  if (settings.thumbnailRatingXOffsetPillGlass !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.thumbnailRatingXOffsetPillGlass = settings.thumbnailRatingXOffsetPillGlass;
+  }
+  if (settings.thumbnailRatingYOffsetPillGlass !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.thumbnailRatingYOffsetPillGlass = settings.thumbnailRatingYOffsetPillGlass;
+  }
+  if (settings.posterRatingXOffsetSquare !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.posterRatingXOffsetSquare = settings.posterRatingXOffsetSquare;
+  }
+  if (settings.posterRatingYOffsetSquare !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.posterRatingYOffsetSquare = settings.posterRatingYOffsetSquare;
+  }
+  if (settings.backdropRatingXOffsetSquare !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.backdropRatingXOffsetSquare = settings.backdropRatingXOffsetSquare;
+  }
+  if (settings.backdropRatingYOffsetSquare !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.backdropRatingYOffsetSquare = settings.backdropRatingYOffsetSquare;
+  }
+  if (settings.thumbnailRatingXOffsetSquare !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.thumbnailRatingXOffsetSquare = settings.thumbnailRatingXOffsetSquare;
+  }
+  if (settings.thumbnailRatingYOffsetSquare !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.thumbnailRatingYOffsetSquare = settings.thumbnailRatingYOffsetSquare;
+  }
   if (settings.ratingXOffsetPillGlass !== DEFAULT_RATING_STACK_OFFSET_PX) {
     payload.ratingXOffsetPillGlass = settings.ratingXOffsetPillGlass;
   }
@@ -2066,6 +2186,12 @@ export const buildAiometadataUrlPatterns = (
   }
 
   const payloadEntries = Object.entries(payload).map(([key, value]) => [key, String(value)] as [string, string]);
+  const sharedRatingOffsetKeys = new Set([
+    'ratingXOffsetPillGlass',
+    'ratingYOffsetPillGlass',
+    'ratingXOffsetSquare',
+    'ratingYOffsetSquare',
+  ]);
   const buildScopedEntries = (scope: 'poster' | 'backdrop' | 'logo' | 'thumbnail') => {
     if (scope === 'thumbnail') {
       return payloadEntries.filter(
@@ -2073,6 +2199,7 @@ export const buildAiometadataUrlPatterns = (
           !key.startsWith('poster') &&
           !key.startsWith('backdrop') &&
           !key.startsWith('logo') &&
+          !sharedRatingOffsetKeys.has(key) &&
           key !== 'qualityBadgesSide',
       );
     }
@@ -2083,11 +2210,16 @@ export const buildAiometadataUrlPatterns = (
       }
 
       if (scope === 'poster') {
-        return !key.startsWith('backdrop') && !key.startsWith('logo');
+        return !key.startsWith('backdrop') && !key.startsWith('logo') && !sharedRatingOffsetKeys.has(key);
       }
 
       if (scope === 'backdrop') {
-        return !key.startsWith('poster') && !key.startsWith('logo') && key !== 'qualityBadgesSide';
+        return (
+          !key.startsWith('poster') &&
+          !key.startsWith('logo') &&
+          !sharedRatingOffsetKeys.has(key) &&
+          key !== 'qualityBadgesSide'
+        );
       }
 
       return !key.startsWith('poster') && !key.startsWith('backdrop') && key !== 'qualityBadgesSide';

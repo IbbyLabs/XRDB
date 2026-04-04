@@ -67,6 +67,22 @@ export function useConfiguratorWorkspaceSummary({
   backdropBottomRatingsRow,
   backdropSideRatingsOffset,
   backdropSideRatingsPosition,
+  posterRatingXOffsetPillGlass,
+  posterRatingYOffsetPillGlass,
+  backdropRatingXOffsetPillGlass,
+  backdropRatingYOffsetPillGlass,
+  thumbnailRatingXOffsetPillGlass,
+  thumbnailRatingYOffsetPillGlass,
+  posterRatingXOffsetSquare,
+  posterRatingYOffsetSquare,
+  backdropRatingXOffsetSquare,
+  backdropRatingYOffsetSquare,
+  thumbnailRatingXOffsetSquare,
+  thumbnailRatingYOffsetSquare,
+  ratingXOffsetPillGlass,
+  ratingYOffsetPillGlass,
+  ratingXOffsetSquare,
+  ratingYOffsetSquare,
   thumbnailAggregateRatingSource,
   thumbnailArtworkSource,
   thumbnailImageText,
@@ -104,6 +120,22 @@ export function useConfiguratorWorkspaceSummary({
   setBackdropRatingStyle,
   setBackdropSideRatingsOffset,
   setBackdropSideRatingsPosition,
+  setPosterRatingXOffsetPillGlass,
+  setPosterRatingYOffsetPillGlass,
+  setBackdropRatingXOffsetPillGlass,
+  setBackdropRatingYOffsetPillGlass,
+  setThumbnailRatingXOffsetPillGlass,
+  setThumbnailRatingYOffsetPillGlass,
+  setPosterRatingXOffsetSquare,
+  setPosterRatingYOffsetSquare,
+  setBackdropRatingXOffsetSquare,
+  setBackdropRatingYOffsetSquare,
+  setThumbnailRatingXOffsetSquare,
+  setThumbnailRatingYOffsetSquare,
+  setRatingXOffsetPillGlass,
+  setRatingYOffsetPillGlass,
+  setRatingXOffsetSquare,
+  setRatingYOffsetSquare,
   setThumbnailAggregateRatingSource,
   setThumbnailImageText,
   setThumbnailRatingPresentation,
@@ -153,6 +185,22 @@ export function useConfiguratorWorkspaceSummary({
   backdropBottomRatingsRow: boolean;
   backdropSideRatingsOffset: number;
   backdropSideRatingsPosition: SideRatingPosition;
+  posterRatingXOffsetPillGlass: number;
+  posterRatingYOffsetPillGlass: number;
+  backdropRatingXOffsetPillGlass: number;
+  backdropRatingYOffsetPillGlass: number;
+  thumbnailRatingXOffsetPillGlass: number;
+  thumbnailRatingYOffsetPillGlass: number;
+  posterRatingXOffsetSquare: number;
+  posterRatingYOffsetSquare: number;
+  backdropRatingXOffsetSquare: number;
+  backdropRatingYOffsetSquare: number;
+  thumbnailRatingXOffsetSquare: number;
+  thumbnailRatingYOffsetSquare: number;
+  ratingXOffsetPillGlass: number;
+  ratingYOffsetPillGlass: number;
+  ratingXOffsetSquare: number;
+  ratingYOffsetSquare: number;
   thumbnailAggregateRatingSource: AggregateRatingSource;
   thumbnailArtworkSource: ArtworkSource;
   thumbnailImageText: BackdropImageTextPreference;
@@ -194,6 +242,22 @@ export function useConfiguratorWorkspaceSummary({
   setBackdropRatingStyle: (value: RatingStyle) => void;
   setBackdropSideRatingsOffset: (value: number) => void;
   setBackdropSideRatingsPosition: (value: SideRatingPosition) => void;
+  setPosterRatingXOffsetPillGlass: (value: number) => void;
+  setPosterRatingYOffsetPillGlass: (value: number) => void;
+  setBackdropRatingXOffsetPillGlass: (value: number) => void;
+  setBackdropRatingYOffsetPillGlass: (value: number) => void;
+  setThumbnailRatingXOffsetPillGlass: (value: number) => void;
+  setThumbnailRatingYOffsetPillGlass: (value: number) => void;
+  setPosterRatingXOffsetSquare: (value: number) => void;
+  setPosterRatingYOffsetSquare: (value: number) => void;
+  setBackdropRatingXOffsetSquare: (value: number) => void;
+  setBackdropRatingYOffsetSquare: (value: number) => void;
+  setThumbnailRatingXOffsetSquare: (value: number) => void;
+  setThumbnailRatingYOffsetSquare: (value: number) => void;
+  setRatingXOffsetPillGlass: (value: number) => void;
+  setRatingYOffsetPillGlass: (value: number) => void;
+  setRatingXOffsetSquare: (value: number) => void;
+  setRatingYOffsetSquare: (value: number) => void;
   setThumbnailAggregateRatingSource: (value: AggregateRatingSource) => void;
   setThumbnailImageText: (value: BackdropImageTextPreference) => void;
   setThumbnailRatingPresentation: (value: RatingPresentation) => void;
@@ -303,6 +367,38 @@ export function useConfiguratorWorkspaceSummary({
       : previewType === 'thumbnail'
         ? thumbnailSideRatingsOffset
         : posterSideRatingsOffset;
+  const activeRatingXOffsetPillGlass =
+    previewType === 'poster'
+      ? posterRatingXOffsetPillGlass
+      : previewType === 'backdrop'
+        ? backdropRatingXOffsetPillGlass
+        : previewType === 'thumbnail'
+          ? thumbnailRatingXOffsetPillGlass
+          : ratingXOffsetPillGlass;
+  const activeRatingYOffsetPillGlass =
+    previewType === 'poster'
+      ? posterRatingYOffsetPillGlass
+      : previewType === 'backdrop'
+        ? backdropRatingYOffsetPillGlass
+        : previewType === 'thumbnail'
+          ? thumbnailRatingYOffsetPillGlass
+          : ratingYOffsetPillGlass;
+  const activeRatingXOffsetSquare =
+    previewType === 'poster'
+      ? posterRatingXOffsetSquare
+      : previewType === 'backdrop'
+        ? backdropRatingXOffsetSquare
+        : previewType === 'thumbnail'
+          ? thumbnailRatingXOffsetSquare
+          : ratingXOffsetSquare;
+  const activeRatingYOffsetSquare =
+    previewType === 'poster'
+      ? posterRatingYOffsetSquare
+      : previewType === 'backdrop'
+        ? backdropRatingYOffsetSquare
+        : previewType === 'thumbnail'
+          ? thumbnailRatingYOffsetSquare
+          : ratingYOffsetSquare;
   const styleLabel =
     previewType === 'poster'
       ? 'Poster Ratings Style'
@@ -481,6 +577,38 @@ export function useConfiguratorWorkspaceSummary({
       : previewType === 'thumbnail'
         ? setThumbnailSideRatingsOffset
         : setPosterSideRatingsOffset;
+  const setActiveRatingXOffsetPillGlass =
+    previewType === 'poster'
+      ? setPosterRatingXOffsetPillGlass
+      : previewType === 'backdrop'
+        ? setBackdropRatingXOffsetPillGlass
+        : previewType === 'thumbnail'
+          ? setThumbnailRatingXOffsetPillGlass
+          : setRatingXOffsetPillGlass;
+  const setActiveRatingYOffsetPillGlass =
+    previewType === 'poster'
+      ? setPosterRatingYOffsetPillGlass
+      : previewType === 'backdrop'
+        ? setBackdropRatingYOffsetPillGlass
+        : previewType === 'thumbnail'
+          ? setThumbnailRatingYOffsetPillGlass
+          : setRatingYOffsetPillGlass;
+  const setActiveRatingXOffsetSquare =
+    previewType === 'poster'
+      ? setPosterRatingXOffsetSquare
+      : previewType === 'backdrop'
+        ? setBackdropRatingXOffsetSquare
+        : previewType === 'thumbnail'
+          ? setThumbnailRatingXOffsetSquare
+          : setRatingXOffsetSquare;
+  const setActiveRatingYOffsetSquare =
+    previewType === 'poster'
+      ? setPosterRatingYOffsetSquare
+      : previewType === 'backdrop'
+        ? setBackdropRatingYOffsetSquare
+        : previewType === 'thumbnail'
+          ? setThumbnailRatingYOffsetSquare
+          : setRatingYOffsetSquare;
 
   return {
     activeAggregateAccent,
@@ -501,6 +629,10 @@ export function useConfiguratorWorkspaceSummary({
     activeRatingPresentation,
     activeRatingStyle,
     activeRatingStyleLabel,
+    activeRatingXOffsetPillGlass,
+    activeRatingYOffsetPillGlass,
+    activeRatingXOffsetSquare,
+    activeRatingYOffsetSquare,
     activeSideRatingsOffset,
     activeSideRatingsPosition,
     activeTypeLabel,
@@ -516,6 +648,10 @@ export function useConfiguratorWorkspaceSummary({
     ratingProviderRows,
     resolvedActiveProviderEditorId,
     selectedPresetMeta,
+    setActiveRatingXOffsetPillGlass,
+    setActiveRatingYOffsetPillGlass,
+    setActiveRatingXOffsetSquare,
+    setActiveRatingYOffsetSquare,
     setActiveSideRatingsOffset,
     setActiveSideRatingsPosition,
     setAggregateRatingSourceForType,

@@ -913,20 +913,56 @@ export const resolveImageRouteRequestState = async ({
     : imageType === 'logo'
       ? 'plain'
       : DEFAULT_RATING_STYLE;
+  const typeRatingXOffsetPillGlassParam =
+    imageType === 'poster'
+      ? searchParams.get('posterRatingXOffsetPillGlass')
+      : isThumbnailRequest
+        ? searchParams.get('thumbnailRatingXOffsetPillGlass')
+        : imageType === 'backdrop'
+          ? searchParams.get('backdropRatingXOffsetPillGlass')
+          : null;
+  const typeRatingYOffsetPillGlassParam =
+    imageType === 'poster'
+      ? searchParams.get('posterRatingYOffsetPillGlass')
+      : isThumbnailRequest
+        ? searchParams.get('thumbnailRatingYOffsetPillGlass')
+        : imageType === 'backdrop'
+          ? searchParams.get('backdropRatingYOffsetPillGlass')
+          : null;
+  const typeRatingXOffsetSquareParam =
+    imageType === 'poster'
+      ? searchParams.get('posterRatingXOffsetSquare')
+      : isThumbnailRequest
+        ? searchParams.get('thumbnailRatingXOffsetSquare')
+        : imageType === 'backdrop'
+          ? searchParams.get('backdropRatingXOffsetSquare')
+          : null;
+  const typeRatingYOffsetSquareParam =
+    imageType === 'poster'
+      ? searchParams.get('posterRatingYOffsetSquare')
+      : isThumbnailRequest
+        ? searchParams.get('thumbnailRatingYOffsetSquare')
+        : imageType === 'backdrop'
+          ? searchParams.get('backdropRatingYOffsetSquare')
+          : null;
   const ratingXOffsetPillGlass = normalizeRatingStackOffsetPx(
-    searchParams.get('ratingXOffsetPillGlass') ?? searchParams.get('ratingXOffsetGlass'),
+    typeRatingXOffsetPillGlassParam ??
+      searchParams.get('ratingXOffsetPillGlass') ??
+      searchParams.get('ratingXOffsetGlass'),
     DEFAULT_RATING_STACK_OFFSET_PX,
   );
   const ratingYOffsetPillGlass = normalizeRatingStackOffsetPx(
-    searchParams.get('ratingYOffsetPillGlass') ?? searchParams.get('ratingYOffsetGlass'),
+    typeRatingYOffsetPillGlassParam ??
+      searchParams.get('ratingYOffsetPillGlass') ??
+      searchParams.get('ratingYOffsetGlass'),
     DEFAULT_RATING_STACK_OFFSET_PX,
   );
   const ratingXOffsetSquare = normalizeRatingStackOffsetPx(
-    searchParams.get('ratingXOffsetSquare'),
+    typeRatingXOffsetSquareParam ?? searchParams.get('ratingXOffsetSquare'),
     DEFAULT_RATING_STACK_OFFSET_PX,
   );
   const ratingYOffsetSquare = normalizeRatingStackOffsetPx(
-    searchParams.get('ratingYOffsetSquare'),
+    typeRatingYOffsetSquareParam ?? searchParams.get('ratingYOffsetSquare'),
     DEFAULT_RATING_STACK_OFFSET_PX,
   );
   const { x: ratingStackOffsetX, y: ratingStackOffsetY } = resolveStyleRatingStackOffset({

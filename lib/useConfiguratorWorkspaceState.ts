@@ -208,6 +208,18 @@ export function useConfiguratorWorkspaceState() {
   const [posterNoBackgroundBadgeOutlineWidth, setPosterNoBackgroundBadgeOutlineWidth] = useState<number>(
     DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   );
+  const [posterRatingXOffsetPillGlass, setPosterRatingXOffsetPillGlass] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
+  const [posterRatingYOffsetPillGlass, setPosterRatingYOffsetPillGlass] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
+  const [backdropRatingXOffsetPillGlass, setBackdropRatingXOffsetPillGlass] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
+  const [backdropRatingYOffsetPillGlass, setBackdropRatingYOffsetPillGlass] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
+  const [thumbnailRatingXOffsetPillGlass, setThumbnailRatingXOffsetPillGlass] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
+  const [thumbnailRatingYOffsetPillGlass, setThumbnailRatingYOffsetPillGlass] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
+  const [posterRatingXOffsetSquare, setPosterRatingXOffsetSquare] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
+  const [posterRatingYOffsetSquare, setPosterRatingYOffsetSquare] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
+  const [backdropRatingXOffsetSquare, setBackdropRatingXOffsetSquare] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
+  const [backdropRatingYOffsetSquare, setBackdropRatingYOffsetSquare] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
+  const [thumbnailRatingXOffsetSquare, setThumbnailRatingXOffsetSquare] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
+  const [thumbnailRatingYOffsetSquare, setThumbnailRatingYOffsetSquare] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
   const [ratingXOffsetPillGlass, setRatingXOffsetPillGlass] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
   const [ratingYOffsetPillGlass, setRatingYOffsetPillGlass] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
   const [ratingXOffsetSquare, setRatingXOffsetSquare] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
@@ -385,6 +397,18 @@ export function useConfiguratorWorkspaceState() {
     proxyTranslateMeta,
     proxyTranslateMetaMode,
     qualityBadgesSide,
+    posterRatingXOffsetPillGlass,
+    posterRatingYOffsetPillGlass,
+    backdropRatingXOffsetPillGlass,
+    backdropRatingYOffsetPillGlass,
+    thumbnailRatingXOffsetPillGlass,
+    thumbnailRatingYOffsetPillGlass,
+    posterRatingXOffsetSquare,
+    posterRatingYOffsetSquare,
+    backdropRatingXOffsetSquare,
+    backdropRatingYOffsetSquare,
+    thumbnailRatingXOffsetSquare,
+    thumbnailRatingYOffsetSquare,
     ratingXOffsetPillGlass,
     ratingYOffsetPillGlass,
     ratingXOffsetSquare,
@@ -402,6 +426,18 @@ export function useConfiguratorWorkspaceState() {
     setAggregateDynamicStops,
     setPosterNoBackgroundBadgeOutlineColor,
     setPosterNoBackgroundBadgeOutlineWidth,
+    setPosterRatingXOffsetPillGlass,
+    setPosterRatingYOffsetPillGlass,
+    setBackdropRatingXOffsetPillGlass,
+    setBackdropRatingYOffsetPillGlass,
+    setThumbnailRatingXOffsetPillGlass,
+    setThumbnailRatingYOffsetPillGlass,
+    setPosterRatingXOffsetSquare,
+    setPosterRatingYOffsetSquare,
+    setBackdropRatingXOffsetSquare,
+    setBackdropRatingYOffsetSquare,
+    setThumbnailRatingXOffsetSquare,
+    setThumbnailRatingYOffsetSquare,
     setBackdropAggregateRatingSource,
     setBackdropArtworkSource,
     setBackdropEpisodeArtwork,

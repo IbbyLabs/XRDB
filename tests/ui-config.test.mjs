@@ -149,10 +149,18 @@ const buildSampleSettings = () =>
       aggregateAccentBarVisible: true,
       posterNoBackgroundBadgeOutlineColor: '#102030',
       posterNoBackgroundBadgeOutlineWidth: 2,
-      ratingXOffsetPillGlass: 18,
-      ratingYOffsetPillGlass: -14,
-      ratingXOffsetSquare: -10,
-      ratingYOffsetSquare: 12,
+      posterRatingXOffsetPillGlass: 18,
+      posterRatingYOffsetPillGlass: -14,
+      backdropRatingXOffsetPillGlass: 12,
+      backdropRatingYOffsetPillGlass: -10,
+      thumbnailRatingXOffsetPillGlass: 8,
+      thumbnailRatingYOffsetPillGlass: -6,
+      posterRatingXOffsetSquare: -10,
+      posterRatingYOffsetSquare: 12,
+      backdropRatingXOffsetSquare: -7,
+      backdropRatingYOffsetSquare: 9,
+      thumbnailRatingXOffsetSquare: -4,
+      thumbnailRatingYOffsetSquare: 6,
       posterRatingsMaxPerSide: 7,
       logoRatingsMax: 4,
       logoBackground: 'dark',
@@ -297,10 +305,22 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       aggregateAccentBarVisible: true,
       posterNoBackgroundBadgeOutlineColor: '#102030',
       posterNoBackgroundBadgeOutlineWidth: 2,
-      ratingXOffsetPillGlass: 18,
-      ratingYOffsetPillGlass: -14,
-      ratingXOffsetSquare: -10,
-      ratingYOffsetSquare: 12,
+      posterRatingXOffsetPillGlass: 18,
+      posterRatingYOffsetPillGlass: -14,
+      backdropRatingXOffsetPillGlass: 12,
+      backdropRatingYOffsetPillGlass: -10,
+      thumbnailRatingXOffsetPillGlass: 8,
+      thumbnailRatingYOffsetPillGlass: -6,
+      posterRatingXOffsetSquare: -10,
+      posterRatingYOffsetSquare: 12,
+      backdropRatingXOffsetSquare: -7,
+      backdropRatingYOffsetSquare: 9,
+      thumbnailRatingXOffsetSquare: -4,
+      thumbnailRatingYOffsetSquare: 6,
+      ratingXOffsetPillGlass: 0,
+      ratingYOffsetPillGlass: 0,
+      ratingXOffsetSquare: 0,
+      ratingYOffsetSquare: 0,
       posterRatingsMaxPerSide: 7,
       logoRatingsMax: 4,
       logoBackground: 'dark',
@@ -437,6 +457,45 @@ test('legacy shared genre badge settings expand to per type fields and re-compre
   assert.equal(decodedConfig.posterGenreBadge, undefined);
   assert.equal(decodedConfig.backdropGenreBadge, undefined);
   assert.equal(decodedConfig.logoGenreBadge, undefined);
+});
+
+test('legacy shared stack offsets seed type scoped fields without leaking shared params into AIOMetadata exports', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      ratingXOffsetPillGlass: 18,
+      ratingYOffsetPillGlass: -14,
+      ratingXOffsetSquare: -10,
+      ratingYOffsetSquare: 12,
+    },
+  });
+
+  assert.equal(config.settings.posterRatingXOffsetPillGlass, 18);
+  assert.equal(config.settings.backdropRatingXOffsetPillGlass, 18);
+  assert.equal(config.settings.thumbnailRatingXOffsetPillGlass, 18);
+  assert.equal(config.settings.posterRatingYOffsetPillGlass, -14);
+  assert.equal(config.settings.backdropRatingYOffsetPillGlass, -14);
+  assert.equal(config.settings.thumbnailRatingYOffsetPillGlass, -14);
+  assert.equal(config.settings.posterRatingXOffsetSquare, -10);
+  assert.equal(config.settings.backdropRatingXOffsetSquare, -10);
+  assert.equal(config.settings.thumbnailRatingXOffsetSquare, -10);
+  assert.equal(config.settings.posterRatingYOffsetSquare, 12);
+  assert.equal(config.settings.backdropRatingYOffsetSquare, 12);
+  assert.equal(config.settings.thumbnailRatingYOffsetSquare, 12);
+
+  const patterns = buildAiometadataUrlPatterns('https://xrdb.example.com/', config.settings, {
+    hideCredentials: true,
+  });
+
+  assert.match(patterns?.posterUrlPattern ?? '', /posterRatingXOffsetPillGlass=18/);
+  assert.match(patterns?.posterUrlPattern ?? '', /posterRatingYOffsetPillGlass=-14/);
+  assert.match(patterns?.posterUrlPattern ?? '', /posterRatingXOffsetSquare=-10/);
+  assert.match(patterns?.posterUrlPattern ?? '', /posterRatingYOffsetSquare=12/);
+  assert.equal((patterns?.posterUrlPattern ?? '').includes('ratingXOffsetPillGlass='), false);
+  assert.equal((patterns?.posterUrlPattern ?? '').includes('ratingYOffsetPillGlass='), false);
+  assert.equal((patterns?.posterUrlPattern ?? '').includes('ratingXOffsetSquare='), false);
+  assert.equal((patterns?.posterUrlPattern ?? '').includes('ratingYOffsetSquare='), false);
 });
 
 test('workspace normalization preserves compact dual aggregate presentation aliases', () => {
@@ -678,10 +737,18 @@ test('config string and proxy manifest use the same shared XRDB settings', () =>
     aggregateAccentBarOffset: -3,
     posterNoBackgroundBadgeOutlineColor: '#102030',
     posterNoBackgroundBadgeOutlineWidth: 2,
-    ratingXOffsetPillGlass: 18,
-    ratingYOffsetPillGlass: -14,
-    ratingXOffsetSquare: -10,
-    ratingYOffsetSquare: 12,
+    posterRatingXOffsetPillGlass: 18,
+    posterRatingYOffsetPillGlass: -14,
+    backdropRatingXOffsetPillGlass: 12,
+    backdropRatingYOffsetPillGlass: -10,
+    thumbnailRatingXOffsetPillGlass: 8,
+    thumbnailRatingYOffsetPillGlass: -6,
+    posterRatingXOffsetSquare: -10,
+    posterRatingYOffsetSquare: 12,
+    backdropRatingXOffsetSquare: -7,
+    backdropRatingYOffsetSquare: 9,
+    thumbnailRatingXOffsetSquare: -4,
+    thumbnailRatingYOffsetSquare: 6,
     posterImageSize: 'large',
     posterImageText: 'clean',
     backdropImageText: 'clean',
@@ -778,10 +845,18 @@ test('config string and proxy manifest use the same shared XRDB settings', () =>
     aggregateAccentBarOffset: '-3',
     posterNoBackgroundBadgeOutlineColor: '#102030',
     posterNoBackgroundBadgeOutlineWidth: '2',
-    ratingXOffsetPillGlass: '18',
-    ratingYOffsetPillGlass: '-14',
-    ratingXOffsetSquare: '-10',
-    ratingYOffsetSquare: '12',
+    posterRatingXOffsetPillGlass: '18',
+    posterRatingYOffsetPillGlass: '-14',
+    backdropRatingXOffsetPillGlass: '12',
+    backdropRatingYOffsetPillGlass: '-10',
+    thumbnailRatingXOffsetPillGlass: '8',
+    thumbnailRatingYOffsetPillGlass: '-6',
+    posterRatingXOffsetSquare: '-10',
+    posterRatingYOffsetSquare: '12',
+    backdropRatingXOffsetSquare: '-7',
+    backdropRatingYOffsetSquare: '9',
+    thumbnailRatingXOffsetSquare: '-4',
+    thumbnailRatingYOffsetSquare: '6',
     posterImageSize: 'large',
     posterImageText: 'clean',
     backdropImageText: 'clean',
@@ -856,14 +931,14 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
     assert.match(value, /aggregateCriticsAccentColor=%23f97316/);
     assert.match(value, /aggregateAudienceAccentColor=%2322c55e/);
     assert.match(value, /aggregateAccentBarOffset=-3/);
-    assert.match(value, /ratingXOffsetPillGlass=18/);
-    assert.match(value, /ratingYOffsetPillGlass=-14/);
-    assert.match(value, /ratingXOffsetSquare=-10/);
-    assert.match(value, /ratingYOffsetSquare=12/);
     assert.match(
       value,
       new RegExp(`providerAppearance=${encodeRatingProviderAppearanceOverrides(SAMPLE_PROVIDER_APPEARANCE)}`),
     );
+    assert.equal(value.includes('ratingXOffsetPillGlass='), false);
+    assert.equal(value.includes('ratingYOffsetPillGlass='), false);
+    assert.equal(value.includes('ratingXOffsetSquare='), false);
+    assert.equal(value.includes('ratingYOffsetSquare='), false);
     assert.equal(value.includes('%7Btmdb_key%7D'), false);
     assert.equal(value.includes('%7Bmdblist_key%7D'), false);
     assert.equal(value.includes('%7Bfanart_key%7D'), false);
@@ -877,6 +952,10 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
   assert.match(patterns?.posterUrlPattern ?? '', /posterSideRatingsOffset=62/);
   assert.match(patterns?.posterUrlPattern ?? '', /posterNoBackgroundBadgeOutlineColor=%23102030/);
   assert.match(patterns?.posterUrlPattern ?? '', /posterNoBackgroundBadgeOutlineWidth=2/);
+  assert.match(patterns?.posterUrlPattern ?? '', /posterRatingXOffsetPillGlass=18/);
+  assert.match(patterns?.posterUrlPattern ?? '', /posterRatingYOffsetPillGlass=-14/);
+  assert.match(patterns?.posterUrlPattern ?? '', /posterRatingXOffsetSquare=-10/);
+  assert.match(patterns?.posterUrlPattern ?? '', /posterRatingYOffsetSquare=12/);
   assert.match(patterns?.posterUrlPattern ?? '', /qualityBadgesSide=right/);
   assert.equal((patterns?.posterUrlPattern ?? '').includes('backdropRatings='), false);
   assert.equal((patterns?.posterUrlPattern ?? '').includes('logoRatings='), false);
@@ -886,6 +965,10 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
   assert.match(patterns?.backgroundUrlPattern ?? '', /backdropRatingsLayout=right-vertical/);
   assert.match(patterns?.backgroundUrlPattern ?? '', /backdropSideRatingsPosition=custom/);
   assert.match(patterns?.backgroundUrlPattern ?? '', /backdropSideRatingsOffset=62/);
+  assert.match(patterns?.backgroundUrlPattern ?? '', /backdropRatingXOffsetPillGlass=12/);
+  assert.match(patterns?.backgroundUrlPattern ?? '', /backdropRatingYOffsetPillGlass=-10/);
+  assert.match(patterns?.backgroundUrlPattern ?? '', /backdropRatingXOffsetSquare=-7/);
+  assert.match(patterns?.backgroundUrlPattern ?? '', /backdropRatingYOffsetSquare=9/);
   assert.equal((patterns?.backgroundUrlPattern ?? '').includes('backdropEpisodeArtwork='), false);
   assert.equal((patterns?.backgroundUrlPattern ?? '').includes('posterRatings='), false);
   assert.equal((patterns?.backgroundUrlPattern ?? '').includes('logoRatings='), false);
@@ -905,6 +988,10 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
   assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailRatingStyle=plain/);
   assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailImageText=clean/);
   assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailArtworkSource=fanart/);
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailRatingXOffsetPillGlass=8/);
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailRatingYOffsetPillGlass=-6/);
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailRatingXOffsetSquare=-4/);
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailRatingYOffsetSquare=6/);
   assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('posterRatings='), false);
   assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('backdropRatings='), false);
   assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('logoRatings='), false);

@@ -125,8 +125,22 @@ const buildCenteredProviderLogoImage = ({
 }) =>
   `<image href="${dataUri}" x="${x}" y="${y}" width="${size}" height="${size}" preserveAspectRatio="xMidYMid meet"${extraAttributes ? ` ${extraAttributes}` : ''} />`;
 
-export const usesIntrinsicQualityBadgeWidths = (style: QualityBadgeStyle) =>
-  style === 'media' || style === 'silver';
+export const usesIntrinsicQualityBadgeWidths = (
+  style: QualityBadgeStyle,
+  badge?: Pick<QualityBadgeInput, 'key' | 'iconDataUri'>,
+) => {
+  if (style === 'media' || style === 'silver') {
+    return true;
+  }
+  if (!badge) {
+    return false;
+  }
+  const hasStreamingServiceLogo =
+    isStreamingServiceBadgeKey(String(badge.key)) &&
+    typeof badge.iconDataUri === 'string' &&
+    badge.iconDataUri.trim().startsWith('data:');
+  return !(String(badge.key) in MEDIA_BADGE_ASSETS) && !hasStreamingServiceLogo;
+};
 
 export const buildQualityBadgeSvg = (
   badge: QualityBadgeInput,

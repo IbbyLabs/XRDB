@@ -24,6 +24,8 @@ test('image route quality badge helper marks intrinsic width styles', () => {
   assert.equal(usesIntrinsicQualityBadgeWidths('media'), true);
   assert.equal(usesIntrinsicQualityBadgeWidths('silver'), true);
   assert.equal(usesIntrinsicQualityBadgeWidths('glass'), false);
+  assert.equal(usesIntrinsicQualityBadgeWidths('glass', { key: 'releasestatus' }), true);
+  assert.equal(usesIntrinsicQualityBadgeWidths('square', { key: '4k' }), false);
 });
 
 test('image route quality badge builds media certification output', () => {
@@ -119,6 +121,27 @@ test('image route quality badge leaves extra width for long plain and silver net
 
       assert.ok(maxOpaqueX >= 0);
       assert.ok(info.width - 1 - maxOpaqueX >= 14, `${style} ${badgeCase.key} right margin ${info.width - 1 - maxOpaqueX}`);
+    }
+  }
+});
+
+test('image route quality badge leaves extra width for release status labels in glass square and plain styles', async () => {
+  const badgeCases = [
+    { label: 'Digital Release', minWidth: 132 },
+    { label: 'In Cinemas', minWidth: 108 },
+  ];
+
+  for (const style of ['glass', 'square', 'plain']) {
+    for (const badgeCase of badgeCases) {
+      const spec = buildQualityBadgeSvg(
+        { key: 'releasestatus', label: badgeCase.label },
+        44,
+        undefined,
+        style,
+      );
+
+      assert.ok(spec);
+      assert.ok(spec.width >= badgeCase.minWidth, `${style} ${badgeCase.label} width ${spec.width}`);
     }
   }
 });
