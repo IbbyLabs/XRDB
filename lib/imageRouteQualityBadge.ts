@@ -252,10 +252,13 @@ export const buildQualityBadgeSvg = (
   const estimateQualityTextBadgeWidth = (labelText: string, textSize: number, sidePadding = 0) => {
     const collapsed = labelText.trim().toUpperCase();
     if (!collapsed) return Math.max(Math.round(h * 1.45), sidePadding * 2);
+    const rawTextWidth = estimateGeneratedLogoLineWidth(collapsed, textSize);
+    const boldCompensation = rawTextWidth * 0.14;
     return Math.max(
       Math.round(h * 1.45),
       Math.round(
-        estimateGeneratedLogoLineWidth(collapsed, textSize) +
+        rawTextWidth +
+          boldCompensation +
           sidePadding * 2 +
           Math.max(12, Math.round(textSize * 0.78))
       ),

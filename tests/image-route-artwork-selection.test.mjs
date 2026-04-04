@@ -364,3 +364,330 @@ test('image route artwork selection keeps normal artwork when black bar source i
   assert.equal(result.imgPath, '/tmdb-backdrop.jpg');
   assert.equal(result.imgUrlOverride, null);
 });
+
+test('image route artwork selection falls back to TMDB images endpoint when primary still is missing', async () => {
+  const fetchCalls = [];
+  const selectArtwork = createImageRouteArtworkSelector({
+    imageType: 'backdrop',
+    isThumbnailRequest: true,
+    mediaType: 'tv',
+    media: { id: 200 },
+    details: null,
+    requestedImageLang: 'en',
+    fallbackImageLang: 'en',
+    posterTextPreference: 'original',
+    posterArtworkSource: 'tmdb',
+    backdropArtworkSource: 'tmdb',
+    logoArtworkSource: 'tmdb',
+    thumbnailEpisodeArtwork: 'still',
+    backdropEpisodeArtwork: 'series',
+    artworkSelectionSeed: '',
+    cleanId: 'tmdb:tv:200:3:1',
+    season: '3',
+    episode: '1',
+    isKitsu: false,
+    tmdbKey: 'tmdb-key',
+    fanartKey: '',
+    fanartClientKey: '',
+    fanartTvdbId: null,
+    phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+    fetchJsonCached: async (key, url) => {
+      fetchCalls.push(key);
+      if (key.includes(':images')) {
+        return {
+          ok: true,
+          status: 200,
+          data: { stills: [{ file_path: '/images-still.jpg', iso_639_1: null }] },
+        };
+      }
+      return { ok: true, status: 200, data: { still_path: null } };
+    },
+    getRemoteImageAspectRatio: async () => null,
+    resolveImdbId: async () => null,
+  });
+
+  const result = await selectArtwork({
+    posters: [],
+    backdrops: [{ file_path: '/series-backdrop.jpg', iso_639_1: 'en' }],
+    logos: [],
+  });
+
+  assert.equal(result.imgPath, '/images-still.jpg');
+  assert.ok(fetchCalls.some((k) => k.includes(':images')));
+});
+
+test('image route artwork selection falls back to null language TMDB query when images endpoint also empty', async () => {
+  const selectArtwork = createImageRouteArtworkSelector({
+    imageType: 'backdrop',
+    isThumbnailRequest: true,
+    mediaType: 'tv',
+    media: { id: 200 },
+    details: null,
+    requestedImageLang: 'en',
+    fallbackImageLang: 'en',
+    posterTextPreference: 'original',
+    posterArtworkSource: 'tmdb',
+    backdropArtworkSource: 'tmdb',
+    logoArtworkSource: 'tmdb',
+    thumbnailEpisodeArtwork: 'still',
+    backdropEpisodeArtwork: 'series',
+    artworkSelectionSeed: '',
+    cleanId: 'tmdb:tv:200:3:1',
+    season: '3',
+    episode: '1',
+    isKitsu: false,
+    tmdbKey: 'tmdb-key',
+    fanartKey: '',
+    fanartClientKey: '',
+    fanartTvdbId: null,
+    phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+    fetchJsonCached: async (key) => {
+      if (key.includes(':nolang')) {
+        return { ok: true, status: 200, data: { still_path: '/nolang-still.jpg' } };
+      }
+      if (key.includes(':images')) {
+        return { ok: true, status: 200, data: { stills: [] } };
+      }
+      return { ok: true, status: 200, data: { still_path: null } };
+    },
+    getRemoteImageAspectRatio: async () => null,
+    resolveImdbId: async () => null,
+  });
+
+  const result = await selectArtwork({
+    posters: [],
+    backdrops: [{ file_path: '/series-backdrop.jpg', iso_639_1: 'en' }],
+    logos: [],
+  });
+
+  assert.equal(result.imgPath, '/nolang-still.jpg');
+});
+
+test('image route artwork selection falls back to series backdrop when all episode still sources fail', async () => {
+  const selectArtwork = createImageRouteArtworkSelector({
+    imageType: 'backdrop',
+    isThumbnailRequest: true,
+    mediaType: 'tv',
+    media: { id: 200 },
+    details: null,
+    requestedImageLang: 'en',
+    fallbackImageLang: 'en',
+    posterTextPreference: 'original',
+    posterArtworkSource: 'tmdb',
+    backdropArtworkSource: 'tmdb',
+    logoArtworkSource: 'tmdb',
+    thumbnailEpisodeArtwork: 'still',
+    backdropEpisodeArtwork: 'series',
+    artworkSelectionSeed: '',
+    cleanId: 'tmdb:tv:200:3:1',
+    season: '3',
+    episode: '1',
+    isKitsu: false,
+    tmdbKey: 'tmdb-key',
+    fanartKey: '',
+    fanartClientKey: '',
+    fanartTvdbId: null,
+    phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+    fetchJsonCached: async (key) => {
+      if (key.includes(':images')) {
+        return { ok: true, status: 200, data: { stills: [] } };
+      }
+      return { ok: true, status: 200, data: { still_path: null } };
+    },
+    getRemoteImageAspectRatio: async () => null,
+    resolveImdbId: async () => null,
+  });
+
+  const result = await selectArtwork({
+    posters: [],
+    backdrops: [{ file_path: '/series-backdrop.jpg', iso_639_1: 'en' }],
+    logos: [],
+  });
+
+  assert.equal(result.imgPath, '/series-backdrop.jpg');
+});
+
+test('image route artwork selection falls back to AniList episode thumbnail when all TMDB sources fail', async () => {
+  const selectArtwork = createImageRouteArtworkSelector({
+    imageType: 'backdrop',
+    isThumbnailRequest: true,
+    mediaType: 'tv',
+    media: { id: 200 },
+    details: null,
+    requestedImageLang: 'en',
+    fallbackImageLang: 'en',
+    posterTextPreference: 'original',
+    posterArtworkSource: 'tmdb',
+    backdropArtworkSource: 'tmdb',
+    logoArtworkSource: 'tmdb',
+    thumbnailEpisodeArtwork: 'still',
+    backdropEpisodeArtwork: 'series',
+    artworkSelectionSeed: '',
+    cleanId: 'tmdb:tv:200:2:5',
+    season: '2',
+    episode: '5',
+    isKitsu: false,
+    tmdbKey: 'tmdb-key',
+    fanartKey: '',
+    fanartClientKey: '',
+    fanartTvdbId: null,
+    phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+    fetchJsonCached: async (key, _url, _ttl, _phases, _phase, init) => {
+      if (key.startsWith('anime:reverse:')) {
+        return {
+          ok: true,
+          status: 200,
+          data: { mappings: { ids: { anilist: 12345 } } },
+        };
+      }
+      if (key.startsWith('anilist:anime:') && init?.method === 'POST') {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            data: {
+              Media: {
+                streamingEpisodes: [
+                  { title: 'Episode 1 - Pilot', thumbnail: 'https://cdn.anilist.co/ep1.jpg' },
+                  { title: 'Episode 2 - Next', thumbnail: 'https://cdn.anilist.co/ep2.jpg' },
+                  { title: 'Episode 3 - Third', thumbnail: 'https://cdn.anilist.co/ep3.jpg' },
+                  { title: 'Episode 4 - Fourth', thumbnail: 'https://cdn.anilist.co/ep4.jpg' },
+                  { title: 'Episode 5 - Fifth', thumbnail: 'https://cdn.anilist.co/ep5.jpg' },
+                ],
+              },
+            },
+          },
+        };
+      }
+      if (key.includes(':images')) {
+        return { ok: true, status: 200, data: { stills: [] } };
+      }
+      return { ok: true, status: 200, data: { still_path: null } };
+    },
+    getRemoteImageAspectRatio: async () => null,
+    resolveImdbId: async () => null,
+  });
+
+  const result = await selectArtwork({
+    posters: [],
+    backdrops: [{ file_path: '/series-backdrop.jpg', iso_639_1: 'en' }],
+    logos: [],
+  });
+
+  assert.equal(result.imgUrlOverride, 'https://cdn.anilist.co/ep5.jpg');
+  assert.equal(result.imgPath, '');
+});
+
+test('image route artwork selection uses AniList episode index fallback when title does not match', async () => {
+  const selectArtwork = createImageRouteArtworkSelector({
+    imageType: 'backdrop',
+    isThumbnailRequest: true,
+    mediaType: 'tv',
+    media: { id: 200 },
+    details: null,
+    requestedImageLang: 'en',
+    fallbackImageLang: 'en',
+    posterTextPreference: 'original',
+    posterArtworkSource: 'tmdb',
+    backdropArtworkSource: 'tmdb',
+    logoArtworkSource: 'tmdb',
+    thumbnailEpisodeArtwork: 'still',
+    backdropEpisodeArtwork: 'series',
+    artworkSelectionSeed: '',
+    cleanId: 'tmdb:tv:200:1:2',
+    season: '1',
+    episode: '2',
+    isKitsu: false,
+    tmdbKey: 'tmdb-key',
+    fanartKey: '',
+    fanartClientKey: '',
+    fanartTvdbId: null,
+    phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+    fetchJsonCached: async (key, _url, _ttl, _phases, _phase, init) => {
+      if (key.startsWith('anime:reverse:')) {
+        return {
+          ok: true,
+          status: 200,
+          data: { mappings: { ids: { anilist: 99 } } },
+        };
+      }
+      if (key.startsWith('anilist:anime:') && init?.method === 'POST') {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            data: {
+              Media: {
+                streamingEpisodes: [
+                  { title: 'Untitled Ep 1', thumbnail: 'https://cdn.anilist.co/a.jpg' },
+                  { title: 'Untitled Ep 2', thumbnail: 'https://cdn.anilist.co/b.jpg' },
+                ],
+              },
+            },
+          },
+        };
+      }
+      if (key.includes(':images')) {
+        return { ok: true, status: 200, data: { stills: [] } };
+      }
+      return { ok: true, status: 200, data: { still_path: null } };
+    },
+    getRemoteImageAspectRatio: async () => null,
+    resolveImdbId: async () => null,
+  });
+
+  const result = await selectArtwork({
+    posters: [],
+    backdrops: [{ file_path: '/series-backdrop.jpg', iso_639_1: 'en' }],
+    logos: [],
+  });
+
+  assert.equal(result.imgUrlOverride, 'https://cdn.anilist.co/b.jpg');
+});
+
+test('image route artwork selection degrades to series backdrop when AniList reverse mapping fails', async () => {
+  const selectArtwork = createImageRouteArtworkSelector({
+    imageType: 'backdrop',
+    isThumbnailRequest: true,
+    mediaType: 'tv',
+    media: { id: 200 },
+    details: null,
+    requestedImageLang: 'en',
+    fallbackImageLang: 'en',
+    posterTextPreference: 'original',
+    posterArtworkSource: 'tmdb',
+    backdropArtworkSource: 'tmdb',
+    logoArtworkSource: 'tmdb',
+    thumbnailEpisodeArtwork: 'still',
+    backdropEpisodeArtwork: 'series',
+    artworkSelectionSeed: '',
+    cleanId: 'tmdb:tv:200:3:1',
+    season: '3',
+    episode: '1',
+    isKitsu: false,
+    tmdbKey: 'tmdb-key',
+    fanartKey: '',
+    fanartClientKey: '',
+    fanartTvdbId: null,
+    phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+    fetchJsonCached: async (key) => {
+      if (key.startsWith('anime:reverse:')) {
+        return { ok: false, status: 500, data: null };
+      }
+      if (key.includes(':images')) {
+        return { ok: true, status: 200, data: { stills: [] } };
+      }
+      return { ok: true, status: 200, data: { still_path: null } };
+    },
+    getRemoteImageAspectRatio: async () => null,
+    resolveImdbId: async () => null,
+  });
+
+  const result = await selectArtwork({
+    posters: [],
+    backdrops: [{ file_path: '/series-backdrop.jpg', iso_639_1: 'en' }],
+    logos: [],
+  });
+
+  assert.equal(result.imgPath, '/series-backdrop.jpg');
+});

@@ -107,6 +107,17 @@ export const ANILIST_MEDIA_RATING_QUERY = `
   }
 `;
 
+export const ANILIST_EPISODE_THUMBNAIL_QUERY = `
+  query XrdbEpisodeThumbnail($id: Int) {
+    Media(id: $id, type: ANIME) {
+      streamingEpisodes {
+        title
+        thumbnail
+      }
+    }
+  }
+`;
+
 export const parseApiKeyList = (...values: Array<string | undefined>) => {
   const result: string[] = [];
   const seen = new Set<string>();

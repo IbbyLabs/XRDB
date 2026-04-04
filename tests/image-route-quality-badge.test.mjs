@@ -127,8 +127,8 @@ test('image route quality badge leaves extra width for long plain and silver net
 
 test('image route quality badge leaves extra width for release status labels in glass square and plain styles', async () => {
   const badgeCases = [
-    { label: 'Digital Release', minWidth: 132 },
-    { label: 'In Cinemas', minWidth: 108 },
+    { label: 'Digital Release', minWidth: 185 },
+    { label: 'In Cinemas', minWidth: 132 },
   ];
 
   for (const style of ['glass', 'square', 'plain']) {
@@ -143,5 +143,31 @@ test('image route quality badge leaves extra width for release status labels in 
       assert.ok(spec);
       assert.ok(spec.width >= badgeCase.minWidth, `${style} ${badgeCase.label} width ${spec.width}`);
     }
+  }
+});
+
+test('image route quality badge bold compensation keeps short labels compact', async () => {
+  for (const style of ['glass', 'square', 'plain']) {
+    const certSpec = buildQualityBadgeSvg(
+      { key: 'certification', label: 'PG 13' },
+      44,
+      undefined,
+      style,
+    );
+    assert.ok(certSpec);
+    assert.ok(certSpec.width <= 100, `${style} PG 13 width ${certSpec.width} should stay compact`);
+  }
+});
+
+test('image route quality badge bold compensation scales with badge height', async () => {
+  for (const height of [40, 44, 60, 80]) {
+    const spec = buildQualityBadgeSvg(
+      { key: 'releasestatus', label: 'Digital Release' },
+      height,
+      undefined,
+      'glass',
+    );
+    assert.ok(spec);
+    assert.ok(spec.width >= 145, `glass Digital Release at h=${height} width ${spec.width}`);
   }
 });

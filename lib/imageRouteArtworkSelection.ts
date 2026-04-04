@@ -1,8 +1,11 @@
 import {
+  ANILIST_EPISODE_THUMBNAIL_QUERY,
+  ANILIST_GRAPHQL_URL,
   DEFAULT_RANDOM_POSTER_FALLBACK_MODE,
   DEFAULT_RANDOM_POSTER_LANGUAGE_MODE,
   DEFAULT_RANDOM_POSTER_TEXT_MODE,
   FALLBACK_IMAGE_LANGUAGE,
+  KITSU_CACHE_TTL_MS,
   TMDB_CACHE_TTL_MS,
   type ArtworkSource,
   type EpisodeArtworkMode,
@@ -11,8 +14,10 @@ import {
   type RandomPosterLanguageMode,
   type RandomPosterTextMode,
 } from './imageRouteConfig.ts';
+import { fetchAniListIdFromReverseMapping } from './imageRouteAnimeReverse.ts';
 import { resolveOmdbPosterUrl } from './imageRouteOmdb.ts';
 import { pickByLanguageWithFallback } from './imageLanguage.ts';
+import { BROWSER_LIKE_USER_AGENT } from './imageRouteExternalRatings.ts';
 import { fetchFanartArtwork } from './imageRouteFanart.ts';
 import type { PhaseDurations, CachedJsonResponse } from './imageRouteRuntime.ts';
 import {
@@ -35,6 +40,7 @@ type ArtworkFetchJson = (
   ttlMs: number,
   phases: PhaseDurations,
   phase: keyof PhaseDurations,
+  init?: RequestInit,
 ) => Promise<CachedJsonResponse>;
 
 type TmdbImageAsset = {
@@ -477,6 +483,124 @@ export const createImageRouteArtworkSelector = (
             logoPath,
             posterIsTextless: false,
           };
+        }
+
+        const episodeImagesResponse = await input.fetchJsonCached(
+          `${episodeCacheKeyBase}:images`,
+          `https://api.themoviedb.org/3/tv/${input.media.id}/season/${input.season}/episode/${input.episode}/images?api_key=${input.tmdbKey}`,
+          TMDB_CACHE_TTL_MS,
+          input.phases,
+          'tmdb',
+        );
+        const imagesStills = Array.isArray(episodeImagesResponse.data?.stills)
+          ? episodeImagesResponse.data.stills
+          : [];
+        const imagesStillPath =
+          imagesStills.length > 0 &&
+          typeof imagesStills[0]?.file_path === 'string' &&
+          imagesStills[0].file_path.trim().length > 0
+            ? imagesStills[0].file_path.trim()
+            : '';
+        if (imagesStillPath) {
+          return {
+            imgPath: imagesStillPath,
+            imgUrlOverride: null,
+            logoAspectRatio: null,
+            logoPath,
+            posterIsTextless: false,
+          };
+        }
+
+        const nullLangEpisodeResponse = await input.fetchJsonCached(
+          `${episodeCacheKeyBase}:nolang`,
+          `https://api.themoviedb.org/3/tv/${input.media.id}/season/${input.season}/episode/${input.episode}?api_key=${input.tmdbKey}`,
+          TMDB_CACHE_TTL_MS,
+          input.phases,
+          'tmdb',
+        );
+        const nullLangStillPath =
+          nullLangEpisodeResponse.ok &&
+          typeof nullLangEpisodeResponse.data?.still_path === 'string'
+            ? nullLangEpisodeResponse.data.still_path.trim()
+            : '';
+        if (nullLangStillPath) {
+          return {
+            imgPath: nullLangStillPath,
+            imgUrlOverride: null,
+            logoAspectRatio: null,
+            logoPath,
+            posterIsTextless: false,
+          };
+        }
+
+        const aniListId = await fetchAniListIdFromReverseMapping({
+          provider: 'tmdb',
+          externalId: String(input.media.id),
+          season: input.season,
+          episode: input.episode,
+          phases: input.phases,
+          fetchJsonCached: input.fetchJsonCached,
+        });
+
+        if (aniListId) {
+          const parsedAniListId = Number.parseInt(aniListId, 10);
+          if (Number.isFinite(parsedAniListId) && parsedAniListId > 0) {
+            const aniListResponse = await input.fetchJsonCached(
+              `anilist:anime:${parsedAniListId}:episodes`,
+              ANILIST_GRAPHQL_URL,
+              KITSU_CACHE_TTL_MS,
+              input.phases,
+              'tmdb',
+              {
+                method: 'POST',
+                headers: {
+                  'content-type': 'application/json',
+                  accept: 'application/json',
+                  'User-Agent': BROWSER_LIKE_USER_AGENT,
+                },
+                body: JSON.stringify({
+                  query: ANILIST_EPISODE_THUMBNAIL_QUERY,
+                  variables: { id: parsedAniListId },
+                }),
+              },
+            );
+
+            const streamingEpisodes = Array.isArray(
+              aniListResponse.data?.data?.Media?.streamingEpisodes,
+            )
+              ? aniListResponse.data.data.Media.streamingEpisodes
+              : [];
+
+            const episodeNum = Number.parseInt(input.episode, 10);
+            const episodePattern = Number.isFinite(episodeNum)
+              ? new RegExp(`(?:Episode|E)\\s*0*${episodeNum}\\b`, 'i')
+              : null;
+
+            const matched =
+              (episodePattern
+                ? streamingEpisodes.find(
+                    (ep: { title?: string; thumbnail?: string }) =>
+                      typeof ep?.title === 'string' && episodePattern.test(ep.title),
+                  )
+                : null) ??
+              (Number.isFinite(episodeNum) &&
+              episodeNum > 0 &&
+              episodeNum <= streamingEpisodes.length
+                ? streamingEpisodes[episodeNum - 1]
+                : null);
+
+            const aniListThumbnail =
+              typeof matched?.thumbnail === 'string' ? matched.thumbnail.trim() : '';
+            if (aniListThumbnail) {
+              return {
+                imgPath: '',
+                imgUrlOverride: aniListThumbnail,
+                logoAspectRatio: null,
+                logoPath,
+                posterIsTextless: false,
+              };
+            }
+          }
         }
       }
 
