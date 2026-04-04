@@ -74,17 +74,21 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'posterGenreBadgeBorderWidth',
     'posterGenreBadgeAnimeGrouping',
     'posterStreamBadges',
-    'posterQualityBadges',
-    'posterQualityBadgesStyle',
-    'posterQualityBadgeScale',
-    'posterQualityBadgesMax',
-    'posterRatings',
+  'posterQualityBadges',
+  'posterQualityBadgesStyle',
+  'posterQualityBadgeScale',
+  'posterQualityBadgesMax',
+  'posterRatings',
     'posterRatingBadgeScale',
     'posterRatingPresentation',
-    'posterAggregateRatingSource',
-    'posterArtworkSource',
-    'posterNoBackgroundBadgeOutlineColor',
-    'posterNoBackgroundBadgeOutlineWidth',
+  'posterAggregateRatingSource',
+  'posterArtworkSource',
+  'posterNoBackgroundBadgeOutlineColor',
+  'posterNoBackgroundBadgeOutlineWidth',
+  'posterRatingXOffsetPillGlass',
+  'posterRatingYOffsetPillGlass',
+  'posterRatingXOffsetSquare',
+  'posterRatingYOffsetSquare',
   ],
   backdrop: [
     'backdropImageSize',
@@ -100,12 +104,16 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'backdropQualityBadgeScale',
     'backdropQualityBadgesMax',
     'backdropRatings',
-    'backdropRatingBadgeScale',
-    'backdropRatingPresentation',
-    'backdropAggregateRatingSource',
-    'backdropArtworkSource',
-    'backdropEpisodeArtwork',
-    'backdropBottomRatingsRow',
+  'backdropRatingBadgeScale',
+  'backdropRatingPresentation',
+  'backdropAggregateRatingSource',
+  'backdropArtworkSource',
+  'backdropEpisodeArtwork',
+  'backdropBottomRatingsRow',
+  'backdropRatingXOffsetPillGlass',
+  'backdropRatingYOffsetPillGlass',
+  'backdropRatingXOffsetSquare',
+  'backdropRatingYOffsetSquare',
   ],
   thumbnail: [
     'thumbnailGenreBadge',
@@ -122,14 +130,18 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'thumbnailRatings',
     'thumbnailRatingBadgeScale',
     'thumbnailRatingPresentation',
-    'thumbnailAggregateRatingSource',
-    'thumbnailArtworkSource',
-    'thumbnailEpisodeArtwork',
-    'thumbnailRatingsLayout',
-    'thumbnailRatingsMax',
-    'thumbnailBottomRatingsRow',
-    'thumbnailSideRatingsPosition',
-    'thumbnailSideRatingsOffset',
+  'thumbnailAggregateRatingSource',
+  'thumbnailArtworkSource',
+  'thumbnailEpisodeArtwork',
+  'thumbnailRatingsLayout',
+  'thumbnailRatingsMax',
+  'thumbnailBottomRatingsRow',
+  'thumbnailRatingXOffsetPillGlass',
+  'thumbnailRatingYOffsetPillGlass',
+  'thumbnailRatingXOffsetSquare',
+  'thumbnailRatingYOffsetSquare',
+  'thumbnailSideRatingsPosition',
+  'thumbnailSideRatingsOffset',
   ],
   logo: [
     'logoGenreBadge',
@@ -246,6 +258,18 @@ export type ProxyConfig = {
   aggregateAccentBarVisible?: string;
   posterNoBackgroundBadgeOutlineColor?: string;
   posterNoBackgroundBadgeOutlineWidth?: string;
+  posterRatingXOffsetPillGlass?: string;
+  posterRatingYOffsetPillGlass?: string;
+  backdropRatingXOffsetPillGlass?: string;
+  backdropRatingYOffsetPillGlass?: string;
+  thumbnailRatingXOffsetPillGlass?: string;
+  thumbnailRatingYOffsetPillGlass?: string;
+  posterRatingXOffsetSquare?: string;
+  posterRatingYOffsetSquare?: string;
+  backdropRatingXOffsetSquare?: string;
+  backdropRatingYOffsetSquare?: string;
+  thumbnailRatingXOffsetSquare?: string;
+  thumbnailRatingYOffsetSquare?: string;
   ratingXOffsetPillGlass?: string;
   ratingYOffsetPillGlass?: string;
   ratingXOffsetSquare?: string;
@@ -413,6 +437,18 @@ const CONFIG_STRING_KEYS = [
   'aggregateAccentBarVisible',
   'posterNoBackgroundBadgeOutlineColor',
   'posterNoBackgroundBadgeOutlineWidth',
+  'posterRatingXOffsetPillGlass',
+  'posterRatingYOffsetPillGlass',
+  'backdropRatingXOffsetPillGlass',
+  'backdropRatingYOffsetPillGlass',
+  'thumbnailRatingXOffsetPillGlass',
+  'thumbnailRatingYOffsetPillGlass',
+  'posterRatingXOffsetSquare',
+  'posterRatingYOffsetSquare',
+  'backdropRatingXOffsetSquare',
+  'backdropRatingYOffsetSquare',
+  'thumbnailRatingXOffsetSquare',
+  'thumbnailRatingYOffsetSquare',
   'ratingXOffsetPillGlass',
   'ratingYOffsetPillGlass',
   'ratingXOffsetSquare',

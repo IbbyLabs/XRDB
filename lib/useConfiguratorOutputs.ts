@@ -355,6 +355,18 @@ export function useConfiguratorOutputs({
   qualityBadgesSide,
   posterNoBackgroundBadgeOutlineColor,
   posterNoBackgroundBadgeOutlineWidth,
+  posterRatingXOffsetPillGlass,
+  posterRatingYOffsetPillGlass,
+  backdropRatingXOffsetPillGlass,
+  backdropRatingYOffsetPillGlass,
+  thumbnailRatingXOffsetPillGlass,
+  thumbnailRatingYOffsetPillGlass,
+  posterRatingXOffsetSquare,
+  posterRatingYOffsetSquare,
+  backdropRatingXOffsetSquare,
+  backdropRatingYOffsetSquare,
+  thumbnailRatingXOffsetSquare,
+  thumbnailRatingYOffsetSquare,
   ratingXOffsetPillGlass,
   ratingYOffsetPillGlass,
   ratingXOffsetSquare,
@@ -495,6 +507,18 @@ export function useConfiguratorOutputs({
   qualityBadgesSide: QualityBadgesSide;
   posterNoBackgroundBadgeOutlineColor: string;
   posterNoBackgroundBadgeOutlineWidth: number;
+  posterRatingXOffsetPillGlass: number;
+  posterRatingYOffsetPillGlass: number;
+  backdropRatingXOffsetPillGlass: number;
+  backdropRatingYOffsetPillGlass: number;
+  thumbnailRatingXOffsetPillGlass: number;
+  thumbnailRatingYOffsetPillGlass: number;
+  posterRatingXOffsetSquare: number;
+  posterRatingYOffsetSquare: number;
+  backdropRatingXOffsetSquare: number;
+  backdropRatingYOffsetSquare: number;
+  thumbnailRatingXOffsetSquare: number;
+  thumbnailRatingYOffsetSquare: number;
   ratingXOffsetPillGlass: number;
   ratingYOffsetPillGlass: number;
   ratingXOffsetSquare: number;
@@ -545,16 +569,76 @@ export function useConfiguratorOutputs({
           : logoRatingStyle;
     const ratingStyleOffsetX =
       ratingStyleForType === 'glass'
-        ? ratingXOffsetPillGlass
+        ? previewType === 'poster'
+          ? posterRatingXOffsetPillGlass
+          : previewType === 'backdrop'
+            ? backdropRatingXOffsetPillGlass
+            : previewType === 'thumbnail'
+              ? thumbnailRatingXOffsetPillGlass
+              : ratingXOffsetPillGlass
         : ratingStyleForType === 'square'
-          ? ratingXOffsetSquare
+          ? previewType === 'poster'
+            ? posterRatingXOffsetSquare
+            : previewType === 'backdrop'
+              ? backdropRatingXOffsetSquare
+              : previewType === 'thumbnail'
+                ? thumbnailRatingXOffsetSquare
+                : ratingXOffsetSquare
           : DEFAULT_RATING_STACK_OFFSET_PX;
     const ratingStyleOffsetY =
       ratingStyleForType === 'glass'
-        ? ratingYOffsetPillGlass
+        ? previewType === 'poster'
+          ? posterRatingYOffsetPillGlass
+          : previewType === 'backdrop'
+            ? backdropRatingYOffsetPillGlass
+            : previewType === 'thumbnail'
+              ? thumbnailRatingYOffsetPillGlass
+              : ratingYOffsetPillGlass
         : ratingStyleForType === 'square'
-          ? ratingYOffsetSquare
+          ? previewType === 'poster'
+            ? posterRatingYOffsetSquare
+            : previewType === 'backdrop'
+              ? backdropRatingYOffsetSquare
+              : previewType === 'thumbnail'
+                ? thumbnailRatingYOffsetSquare
+                : ratingYOffsetSquare
           : DEFAULT_RATING_STACK_OFFSET_PX;
+    const ratingStyleOffsetXParam =
+      ratingStyleForType === 'glass'
+        ? previewType === 'poster'
+          ? 'posterRatingXOffsetPillGlass'
+          : previewType === 'backdrop'
+            ? 'backdropRatingXOffsetPillGlass'
+            : previewType === 'thumbnail'
+              ? 'thumbnailRatingXOffsetPillGlass'
+              : 'ratingXOffsetPillGlass'
+        : ratingStyleForType === 'square'
+          ? previewType === 'poster'
+            ? 'posterRatingXOffsetSquare'
+            : previewType === 'backdrop'
+              ? 'backdropRatingXOffsetSquare'
+              : previewType === 'thumbnail'
+                ? 'thumbnailRatingXOffsetSquare'
+                : 'ratingXOffsetSquare'
+          : null;
+    const ratingStyleOffsetYParam =
+      ratingStyleForType === 'glass'
+        ? previewType === 'poster'
+          ? 'posterRatingYOffsetPillGlass'
+          : previewType === 'backdrop'
+            ? 'backdropRatingYOffsetPillGlass'
+            : previewType === 'thumbnail'
+              ? 'thumbnailRatingYOffsetPillGlass'
+              : 'ratingYOffsetPillGlass'
+        : ratingStyleForType === 'square'
+          ? previewType === 'poster'
+            ? 'posterRatingYOffsetSquare'
+            : previewType === 'backdrop'
+              ? 'backdropRatingYOffsetSquare'
+              : previewType === 'thumbnail'
+                ? 'thumbnailRatingYOffsetSquare'
+                : 'ratingYOffsetSquare'
+          : null;
     const ratingPresentationForType =
       previewType === 'poster'
         ? posterRatingPresentation
@@ -656,18 +740,18 @@ export function useConfiguratorOutputs({
       );
     }
     if (ratingStyleForType === 'glass') {
-      if (ratingStyleOffsetX !== DEFAULT_RATING_STACK_OFFSET_PX) {
-        query.set('ratingXOffsetPillGlass', String(ratingStyleOffsetX));
+      if (ratingStyleOffsetXParam && ratingStyleOffsetX !== DEFAULT_RATING_STACK_OFFSET_PX) {
+        query.set(ratingStyleOffsetXParam, String(ratingStyleOffsetX));
       }
-      if (ratingStyleOffsetY !== DEFAULT_RATING_STACK_OFFSET_PX) {
-        query.set('ratingYOffsetPillGlass', String(ratingStyleOffsetY));
+      if (ratingStyleOffsetYParam && ratingStyleOffsetY !== DEFAULT_RATING_STACK_OFFSET_PX) {
+        query.set(ratingStyleOffsetYParam, String(ratingStyleOffsetY));
       }
     } else if (ratingStyleForType === 'square') {
-      if (ratingStyleOffsetX !== DEFAULT_RATING_STACK_OFFSET_PX) {
-        query.set('ratingXOffsetSquare', String(ratingStyleOffsetX));
+      if (ratingStyleOffsetXParam && ratingStyleOffsetX !== DEFAULT_RATING_STACK_OFFSET_PX) {
+        query.set(ratingStyleOffsetXParam, String(ratingStyleOffsetX));
       }
-      if (ratingStyleOffsetY !== DEFAULT_RATING_STACK_OFFSET_PX) {
-        query.set('ratingYOffsetSquare', String(ratingStyleOffsetY));
+      if (ratingStyleOffsetYParam && ratingStyleOffsetY !== DEFAULT_RATING_STACK_OFFSET_PX) {
+        query.set(ratingStyleOffsetYParam, String(ratingStyleOffsetY));
       }
     }
     if (previewType === 'poster' && ratingPresentationForType === 'ring') {
@@ -1084,6 +1168,18 @@ export function useConfiguratorOutputs({
     posterStreamBadges,
     posterNoBackgroundBadgeOutlineColor,
     posterNoBackgroundBadgeOutlineWidth,
+    posterRatingXOffsetPillGlass,
+    posterRatingYOffsetPillGlass,
+    backdropRatingXOffsetPillGlass,
+    backdropRatingYOffsetPillGlass,
+    thumbnailRatingXOffsetPillGlass,
+    thumbnailRatingYOffsetPillGlass,
+    posterRatingXOffsetSquare,
+    posterRatingYOffsetSquare,
+    backdropRatingXOffsetSquare,
+    backdropRatingYOffsetSquare,
+    thumbnailRatingXOffsetSquare,
+    thumbnailRatingYOffsetSquare,
     previewType,
     qualityBadgesSide,
     ratingXOffsetPillGlass,

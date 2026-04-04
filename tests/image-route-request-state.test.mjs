@@ -146,19 +146,59 @@ test('image route request state requires a TMDB key', async () => {
   );
 });
 
-test('image route request state resolves style scoped stack offsets for glass and square styles', async () => {
+test('image route request state resolves type scoped stack offsets before legacy shared values', async () => {
+  const posterState = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&ratingStyle=glass&posterRatingXOffsetPillGlass=18&posterRatingYOffsetPillGlass=-7&ratingXOffsetPillGlass=99&ratingYOffsetPillGlass=99',
+    ),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+  const backdropState = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/backdrop/tt0133093.jpg?tmdbKey=tmdb-key&ratingStyle=square&backdropRatingXOffsetSquare=-12&backdropRatingYOffsetSquare=14&ratingXOffsetSquare=99&ratingYOffsetSquare=99',
+    ),
+    imageType: 'backdrop',
+    id: 'tt0133093.jpg',
+  });
+  const thumbnailState = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/backdrop/xrdbid:tt1234567:1:2.jpg?thumbnail=1&tmdbKey=tmdb-key&ratingStyle=glass&thumbnailRatingXOffsetPillGlass=11&thumbnailRatingYOffsetPillGlass=-5&backdropRatingXOffsetPillGlass=66&backdropRatingYOffsetPillGlass=66&ratingXOffsetPillGlass=99&ratingYOffsetPillGlass=99',
+    ),
+    imageType: 'backdrop',
+    id: 'xrdbid:tt1234567:1:2.jpg',
+  });
+  const logoState = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/logo/tt0133093.jpg?tmdbKey=tmdb-key&logoRatingStyle=square&ratingXOffsetSquare=-9&ratingYOffsetSquare=6',
+    ),
+    imageType: 'logo',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(posterState.ratingStackOffsetX, 18);
+  assert.equal(posterState.ratingStackOffsetY, -7);
+  assert.equal(backdropState.ratingStackOffsetX, -12);
+  assert.equal(backdropState.ratingStackOffsetY, 14);
+  assert.equal(thumbnailState.ratingStackOffsetX, 11);
+  assert.equal(thumbnailState.ratingStackOffsetY, -5);
+  assert.equal(logoState.ratingStackOffsetX, -9);
+  assert.equal(logoState.ratingStackOffsetY, 6);
+});
+
+test('image route request state falls back to legacy shared stack offsets when type scoped values are missing', async () => {
   const glassState = await resolveImageRouteRequestState({
     request: createRequest(
-      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&ratingStyle=glass&ratingXOffsetPillGlass=18&ratingYOffsetPillGlass=-7&ratingXOffsetSquare=99&ratingYOffsetSquare=99',
+      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&ratingStyle=glass&ratingXOffsetPillGlass=18&ratingYOffsetPillGlass=-7',
     ),
     imageType: 'poster',
     id: 'tt0133093.jpg',
   });
   const squareState = await resolveImageRouteRequestState({
     request: createRequest(
-      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&ratingStyle=square&ratingXOffsetPillGlass=18&ratingYOffsetPillGlass=-7&ratingXOffsetSquare=-12&ratingYOffsetSquare=14',
+      'https://example.com/backdrop/tt0133093.jpg?tmdbKey=tmdb-key&ratingStyle=square&ratingXOffsetSquare=-12&ratingYOffsetSquare=14',
     ),
-    imageType: 'poster',
+    imageType: 'backdrop',
     id: 'tt0133093.jpg',
   });
   const plainState = await resolveImageRouteRequestState({

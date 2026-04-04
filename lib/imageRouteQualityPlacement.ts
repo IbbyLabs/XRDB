@@ -38,11 +38,10 @@ export const measureQualityBadgeColumnWidth = ({
   qualityBadgesStyle: QualityBadgeStyle;
   uniformBadgeWidth: number;
 }) => {
-  if (!usesIntrinsicQualityBadgeWidths(qualityBadgesStyle)) {
-    return uniformBadgeWidth;
-  }
-
   return columnBadges.reduce((maxWidth, badge) => {
+    if (!usesIntrinsicQualityBadgeWidths(qualityBadgesStyle, badge)) {
+      return Math.max(maxWidth, uniformBadgeWidth);
+    }
     const spec = buildQualityBadgeSvg(
       badge,
       qualityHeight,
@@ -100,27 +99,24 @@ export const buildQualityBadgeColumnOverlays = ({
   });
   const qualityHeight = columnLayout.height;
   const qualityGap = columnLayout.gap;
-  const useIntrinsicWidths = usesIntrinsicQualityBadgeWidths(qualityBadgesStyle);
-  const uniformBadgeWidth = useIntrinsicWidths
-    ? null
-    : Math.min(
-        Math.max(72, Math.round(qualityHeight * 1.75)),
-        Math.max(72, outputWidth - rowEdgeInset * 2)
-      );
+  const uniformBadgeWidth = Math.min(
+    Math.max(72, Math.round(qualityHeight * 1.75)),
+    Math.max(72, outputWidth - rowEdgeInset * 2)
+  );
   let rowY = Math.max(badgeTopOffset, startY);
   const overlays: QualityBadgeOverlaySpec[] = [];
 
   for (const badge of columnBadges) {
+    const useIntrinsicWidth = usesIntrinsicQualityBadgeWidths(qualityBadgesStyle, badge);
     const spec = buildQualityBadgeSvg(
       badge,
       qualityHeight,
-      uniformBadgeWidth ?? undefined,
+      useIntrinsicWidth ? undefined : uniformBadgeWidth,
       qualityBadgesStyle
     );
     if (!spec) continue;
 
-    const badgeWidth =
-      uniformBadgeWidth === null ? spec.width : Math.min(spec.width, uniformBadgeWidth);
+    const badgeWidth = useIntrinsicWidth ? spec.width : Math.min(spec.width, uniformBadgeWidth);
     const rowX =
       side === 'right'
         ? Math.max(rowEdgeInset, outputWidth - badgeWidth - rowEdgeInset)
@@ -171,18 +167,15 @@ export const buildQualityBadgeRowOverlays = ({
     posterEdgeInset,
     backdropEdgeInset,
   );
-  const useIntrinsicWidths = usesIntrinsicQualityBadgeWidths(qualityBadgesStyle);
   const qualityHeight = resolveQualityBadgeHeight({
     referenceBadgeHeight,
     qualityBadgeScalePercent,
     layout: 'row',
   });
-  const badgeWidth = useIntrinsicWidths
-    ? null
-    : Math.min(
-        Math.max(64, Math.round(qualityHeight * 1.75)),
-        Math.max(64, outputWidth - rowEdgeInset * 2)
-      );
+  const badgeWidth = Math.min(
+    Math.max(64, Math.round(qualityHeight * 1.75)),
+    Math.max(64, outputWidth - rowEdgeInset * 2)
+  );
   const rowGap = resolveQualityBadgeGap({ badgeGap, layout: 'row' });
   const targetRowCount = imageType === 'poster' ? Math.max(1, Math.ceil(rowBadges.length / 3)) : 1;
   const badgeRows = splitBadgesAcrossRowCount(rowBadges, targetRowCount);
@@ -193,7 +186,7 @@ export const buildQualityBadgeRowOverlays = ({
           buildQualityBadgeSvg(
             badge,
             qualityHeight,
-            badgeWidth ?? undefined,
+            usesIntrinsicQualityBadgeWidths(qualityBadgesStyle, badge) ? undefined : badgeWidth,
             qualityBadgesStyle
           )
         )
@@ -268,21 +261,21 @@ export const buildQualityBadgeColumnOverlaysAt = ({
 
   const qualityGap = Math.round(badgeGap * 1.25);
   let rowY = Math.max(badgeTopOffset, startY);
-  const useIntrinsicWidths = usesIntrinsicQualityBadgeWidths(qualityBadgesStyle);
   const clampedX = Math.round(x);
   const minX = resolveQualityBadgeEdgeInset(imageType, posterEdgeInset, backdropEdgeInset);
   const overlays: QualityBadgeOverlaySpec[] = [];
 
   for (const badge of columnBadges) {
+    const useIntrinsicWidth = usesIntrinsicQualityBadgeWidths(qualityBadgesStyle, badge);
     const spec = buildQualityBadgeSvg(
       badge,
       qualityHeight,
-      useIntrinsicWidths ? undefined : uniformBadgeWidth,
+      useIntrinsicWidth ? undefined : uniformBadgeWidth,
       qualityBadgesStyle
     );
     if (!spec) continue;
 
-    const badgeWidth = useIntrinsicWidths ? spec.width : uniformBadgeWidth;
+    const badgeWidth = useIntrinsicWidth ? spec.width : uniformBadgeWidth;
     const adjustedX = Math.max(
       minX,
       Math.min(clampedX, Math.max(minX, outputWidth - badgeWidth - minX))

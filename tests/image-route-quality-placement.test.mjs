@@ -80,6 +80,22 @@ test('image route quality placement measures uniform column widths for non intri
   assert.equal(width, 92);
 });
 
+test('image route quality placement preserves intrinsic widths for text badges in non intrinsic styles', () => {
+  for (const qualityBadgesStyle of ['glass', 'square', 'plain']) {
+    const width = measureQualityBadgeColumnWidth({
+      columnBadges: [
+        { key: '4k', label: '4K' },
+        { key: 'releasestatus', label: 'Digital Release' },
+      ],
+      qualityHeight: 44,
+      qualityBadgesStyle,
+      uniformBadgeWidth: 92,
+    });
+
+    assert.ok(width > 120, `${qualityBadgesStyle} width ${width}`);
+  }
+});
+
 test('image route quality placement clamps explicit backdrop column positions', () => {
   const overlays = buildQualityBadgeColumnOverlaysAt({
     columnBadges: [{ key: '4k', label: '4K' }],
@@ -99,4 +115,25 @@ test('image route quality placement clamps explicit backdrop column positions', 
   assert.equal(overlays.length, 1);
   assert.equal(overlays[0].left, 24);
   assert.equal(overlays[0].top, 24);
+});
+
+test('image route quality placement keeps release status overlays wider than the fixed badge lane', () => {
+  for (const qualityBadgesStyle of ['glass', 'square', 'plain']) {
+    const overlays = buildQualityBadgeRowOverlays({
+      rowBadges: [{ key: 'releasestatus', label: 'In Cinemas' }],
+      rowY: 72,
+      origin: 'top',
+      imageType: 'poster',
+      outputWidth: 420,
+      referenceBadgeHeight: 52,
+      qualityBadgeScalePercent: 100,
+      badgeGap: 10,
+      qualityBadgesStyle,
+      posterEdgeInset: 16,
+      backdropEdgeInset: 12,
+    });
+
+    assert.equal(overlays.length, 1);
+    assert.ok(overlays[0].width > 100, `${qualityBadgesStyle} width ${overlays[0].width}`);
+  }
 });

@@ -140,6 +140,18 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   qualityBadgesSide: WorkspaceSettings['qualityBadgesSide'];
   posterNoBackgroundBadgeOutlineColor: WorkspaceSettings['posterNoBackgroundBadgeOutlineColor'];
   posterNoBackgroundBadgeOutlineWidth: WorkspaceSettings['posterNoBackgroundBadgeOutlineWidth'];
+  posterRatingXOffsetPillGlass: WorkspaceSettings['posterRatingXOffsetPillGlass'];
+  posterRatingYOffsetPillGlass: WorkspaceSettings['posterRatingYOffsetPillGlass'];
+  backdropRatingXOffsetPillGlass: WorkspaceSettings['backdropRatingXOffsetPillGlass'];
+  backdropRatingYOffsetPillGlass: WorkspaceSettings['backdropRatingYOffsetPillGlass'];
+  thumbnailRatingXOffsetPillGlass: WorkspaceSettings['thumbnailRatingXOffsetPillGlass'];
+  thumbnailRatingYOffsetPillGlass: WorkspaceSettings['thumbnailRatingYOffsetPillGlass'];
+  posterRatingXOffsetSquare: WorkspaceSettings['posterRatingXOffsetSquare'];
+  posterRatingYOffsetSquare: WorkspaceSettings['posterRatingYOffsetSquare'];
+  backdropRatingXOffsetSquare: WorkspaceSettings['backdropRatingXOffsetSquare'];
+  backdropRatingYOffsetSquare: WorkspaceSettings['backdropRatingYOffsetSquare'];
+  thumbnailRatingXOffsetSquare: WorkspaceSettings['thumbnailRatingXOffsetSquare'];
+  thumbnailRatingYOffsetSquare: WorkspaceSettings['thumbnailRatingYOffsetSquare'];
   ratingXOffsetPillGlass: WorkspaceSettings['ratingXOffsetPillGlass'];
   ratingYOffsetPillGlass: WorkspaceSettings['ratingYOffsetPillGlass'];
   ratingXOffsetSquare: WorkspaceSettings['ratingXOffsetSquare'];
@@ -268,6 +280,18 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setQualityBadgesSide: Setter<WorkspaceSettings['qualityBadgesSide']>;
   setPosterNoBackgroundBadgeOutlineColor: Setter<WorkspaceSettings['posterNoBackgroundBadgeOutlineColor']>;
   setPosterNoBackgroundBadgeOutlineWidth: Setter<WorkspaceSettings['posterNoBackgroundBadgeOutlineWidth']>;
+  setPosterRatingXOffsetPillGlass: Setter<WorkspaceSettings['posterRatingXOffsetPillGlass']>;
+  setPosterRatingYOffsetPillGlass: Setter<WorkspaceSettings['posterRatingYOffsetPillGlass']>;
+  setBackdropRatingXOffsetPillGlass: Setter<WorkspaceSettings['backdropRatingXOffsetPillGlass']>;
+  setBackdropRatingYOffsetPillGlass: Setter<WorkspaceSettings['backdropRatingYOffsetPillGlass']>;
+  setThumbnailRatingXOffsetPillGlass: Setter<WorkspaceSettings['thumbnailRatingXOffsetPillGlass']>;
+  setThumbnailRatingYOffsetPillGlass: Setter<WorkspaceSettings['thumbnailRatingYOffsetPillGlass']>;
+  setPosterRatingXOffsetSquare: Setter<WorkspaceSettings['posterRatingXOffsetSquare']>;
+  setPosterRatingYOffsetSquare: Setter<WorkspaceSettings['posterRatingYOffsetSquare']>;
+  setBackdropRatingXOffsetSquare: Setter<WorkspaceSettings['backdropRatingXOffsetSquare']>;
+  setBackdropRatingYOffsetSquare: Setter<WorkspaceSettings['backdropRatingYOffsetSquare']>;
+  setThumbnailRatingXOffsetSquare: Setter<WorkspaceSettings['thumbnailRatingXOffsetSquare']>;
+  setThumbnailRatingYOffsetSquare: Setter<WorkspaceSettings['thumbnailRatingYOffsetSquare']>;
   setRatingXOffsetPillGlass: Setter<WorkspaceSettings['ratingXOffsetPillGlass']>;
   setRatingYOffsetPillGlass: Setter<WorkspaceSettings['ratingYOffsetPillGlass']>;
   setRatingXOffsetSquare: Setter<WorkspaceSettings['ratingXOffsetSquare']>;
@@ -412,6 +436,18 @@ export function useConfiguratorWorkspaceConfigIo({
   qualityBadgesSide,
   posterNoBackgroundBadgeOutlineColor,
   posterNoBackgroundBadgeOutlineWidth,
+  posterRatingXOffsetPillGlass,
+  posterRatingYOffsetPillGlass,
+  backdropRatingXOffsetPillGlass,
+  backdropRatingYOffsetPillGlass,
+  thumbnailRatingXOffsetPillGlass,
+  thumbnailRatingYOffsetPillGlass,
+  posterRatingXOffsetSquare,
+  posterRatingYOffsetSquare,
+  backdropRatingXOffsetSquare,
+  backdropRatingYOffsetSquare,
+  thumbnailRatingXOffsetSquare,
+  thumbnailRatingYOffsetSquare,
   ratingXOffsetPillGlass,
   ratingYOffsetPillGlass,
   ratingXOffsetSquare,
@@ -540,6 +576,18 @@ export function useConfiguratorWorkspaceConfigIo({
   setQualityBadgesSide,
   setPosterNoBackgroundBadgeOutlineColor,
   setPosterNoBackgroundBadgeOutlineWidth,
+  setPosterRatingXOffsetPillGlass,
+  setPosterRatingYOffsetPillGlass,
+  setBackdropRatingXOffsetPillGlass,
+  setBackdropRatingYOffsetPillGlass,
+  setThumbnailRatingXOffsetPillGlass,
+  setThumbnailRatingYOffsetPillGlass,
+  setPosterRatingXOffsetSquare,
+  setPosterRatingYOffsetSquare,
+  setBackdropRatingXOffsetSquare,
+  setBackdropRatingYOffsetSquare,
+  setThumbnailRatingXOffsetSquare,
+  setThumbnailRatingYOffsetSquare,
   setRatingXOffsetPillGlass,
   setRatingYOffsetPillGlass,
   setRatingXOffsetSquare,
@@ -676,6 +724,18 @@ export function useConfiguratorWorkspaceConfigIo({
       setAggregateAccentBarVisible(normalized.settings.aggregateAccentBarVisible);
       setPosterNoBackgroundBadgeOutlineColor(normalized.settings.posterNoBackgroundBadgeOutlineColor);
       setPosterNoBackgroundBadgeOutlineWidth(normalized.settings.posterNoBackgroundBadgeOutlineWidth);
+      setPosterRatingXOffsetPillGlass(normalized.settings.posterRatingXOffsetPillGlass);
+      setPosterRatingYOffsetPillGlass(normalized.settings.posterRatingYOffsetPillGlass);
+      setBackdropRatingXOffsetPillGlass(normalized.settings.backdropRatingXOffsetPillGlass);
+      setBackdropRatingYOffsetPillGlass(normalized.settings.backdropRatingYOffsetPillGlass);
+      setThumbnailRatingXOffsetPillGlass(normalized.settings.thumbnailRatingXOffsetPillGlass);
+      setThumbnailRatingYOffsetPillGlass(normalized.settings.thumbnailRatingYOffsetPillGlass);
+      setPosterRatingXOffsetSquare(normalized.settings.posterRatingXOffsetSquare);
+      setPosterRatingYOffsetSquare(normalized.settings.posterRatingYOffsetSquare);
+      setBackdropRatingXOffsetSquare(normalized.settings.backdropRatingXOffsetSquare);
+      setBackdropRatingYOffsetSquare(normalized.settings.backdropRatingYOffsetSquare);
+      setThumbnailRatingXOffsetSquare(normalized.settings.thumbnailRatingXOffsetSquare);
+      setThumbnailRatingYOffsetSquare(normalized.settings.thumbnailRatingYOffsetSquare);
       setRatingXOffsetPillGlass(normalized.settings.ratingXOffsetPillGlass);
       setRatingYOffsetPillGlass(normalized.settings.ratingYOffsetPillGlass);
       setRatingXOffsetSquare(normalized.settings.ratingXOffsetSquare);
@@ -818,6 +878,18 @@ export function useConfiguratorWorkspaceConfigIo({
       setQualityBadgesSide,
       setPosterNoBackgroundBadgeOutlineColor,
       setPosterNoBackgroundBadgeOutlineWidth,
+      setPosterRatingXOffsetPillGlass,
+      setPosterRatingYOffsetPillGlass,
+      setBackdropRatingXOffsetPillGlass,
+      setBackdropRatingYOffsetPillGlass,
+      setThumbnailRatingXOffsetPillGlass,
+      setThumbnailRatingYOffsetPillGlass,
+      setPosterRatingXOffsetSquare,
+      setPosterRatingYOffsetSquare,
+      setBackdropRatingXOffsetSquare,
+      setBackdropRatingYOffsetSquare,
+      setThumbnailRatingXOffsetSquare,
+      setThumbnailRatingYOffsetSquare,
       setRatingXOffsetPillGlass,
       setRatingYOffsetPillGlass,
       setRatingXOffsetSquare,
@@ -954,6 +1026,18 @@ export function useConfiguratorWorkspaceConfigIo({
         aggregateAccentBarVisible,
         posterNoBackgroundBadgeOutlineColor,
         posterNoBackgroundBadgeOutlineWidth,
+        posterRatingXOffsetPillGlass,
+        posterRatingYOffsetPillGlass,
+        backdropRatingXOffsetPillGlass,
+        backdropRatingYOffsetPillGlass,
+        thumbnailRatingXOffsetPillGlass,
+        thumbnailRatingYOffsetPillGlass,
+        posterRatingXOffsetSquare,
+        posterRatingYOffsetSquare,
+        backdropRatingXOffsetSquare,
+        backdropRatingYOffsetSquare,
+        thumbnailRatingXOffsetSquare,
+        thumbnailRatingYOffsetSquare,
         ratingXOffsetPillGlass,
         ratingYOffsetPillGlass,
         ratingXOffsetSquare,
@@ -1099,6 +1183,18 @@ export function useConfiguratorWorkspaceConfigIo({
       qualityBadgesSide,
       posterNoBackgroundBadgeOutlineColor,
       posterNoBackgroundBadgeOutlineWidth,
+      posterRatingXOffsetPillGlass,
+      posterRatingYOffsetPillGlass,
+      backdropRatingXOffsetPillGlass,
+      backdropRatingYOffsetPillGlass,
+      thumbnailRatingXOffsetPillGlass,
+      thumbnailRatingYOffsetPillGlass,
+      posterRatingXOffsetSquare,
+      posterRatingYOffsetSquare,
+      backdropRatingXOffsetSquare,
+      backdropRatingYOffsetSquare,
+      thumbnailRatingXOffsetSquare,
+      thumbnailRatingYOffsetSquare,
       ratingXOffsetPillGlass,
       ratingYOffsetPillGlass,
       ratingXOffsetSquare,

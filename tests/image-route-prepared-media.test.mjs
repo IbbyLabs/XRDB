@@ -153,6 +153,82 @@ test('prepared media state keeps TV network badges when stream badges use the de
   );
 });
 
+test('prepared media state keeps the digital release status badge in quality badge output', async () => {
+  const state = await prepareImageRouteMediaState({
+    ...createBaseInput(),
+    imageType: 'poster',
+    mediaType: 'movie',
+    media: {
+      id: 603,
+      title: 'Release Example',
+      release_date: '2025-04-01',
+      genres: [],
+    },
+    mediaId: 'tt0133093',
+    isKitsu: false,
+    idPrefix: 'tt0133093',
+    hasNativeAnimeInput: false,
+    allowAnimeOnlyRatings: false,
+    hasConfirmedAnimeMapping: false,
+    shouldApplyStreamBadges: true,
+    qualityBadgePreferences: ['releasestatus'],
+    useRawKitsuFallback: false,
+    rawFallbackImageUrl: null,
+    sourceFallbackUrl: 'https://images.example.com/poster.jpg',
+    fetchJsonCached: async (key) => {
+      if (key.includes(':details:en:bundle:v2:')) {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            vote_average: 7.8,
+            genres: [],
+            images: {
+              posters: [],
+              backdrops: [],
+              logos: [],
+            },
+            external_ids: {
+              imdb_id: 'tt0133093',
+            },
+            release_dates: {
+              results: [
+                {
+                  iso_3166_1: 'US',
+                  release_dates: [
+                    {
+                      type: 4,
+                      release_date: '2025-04-02T00:00:00.000Z',
+                    },
+                  ],
+                },
+              ],
+            },
+          },
+        };
+      }
+
+      if (key.includes(':watch-providers:v1')) {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            results: {},
+          },
+        };
+      }
+
+      throw new Error(`unexpected fetch ${key}`);
+    },
+  });
+
+  assert.deepEqual(
+    state.streamBadges.map((badge) => badge.key),
+    ['releasestatus'],
+  );
+  assert.equal(state.streamBadges[0]?.label, 'Digital Release');
+});
+
 test('prepared media state uses episode TMDB ratings for thumbnail backdrops', async () => {
   const state = await prepareImageRouteMediaState({
     ...createBaseInput(),
