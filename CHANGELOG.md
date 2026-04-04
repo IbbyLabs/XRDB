@@ -17,6 +17,45 @@
 
 <a id="v1-5-0"></a>
 
+<a id="v1-6-0"></a>
+
+## [v1.6.0] - 04/04/2026
+
+### Added
+* add Media ID search poster previews
+  
+  Show mini poster previews in Media ID search results so similarly named titles can be distinguished before selection.
+  
+  Start debounced search from the first typed character, keep the results list scrollable, and extend search mapping tests to cover poster URLs from TMDB and OMDb.
+
+### Fixed
+* theme language dropdown and keep English default
+  
+  Replace the native language select with a compact themed dropdown that matches the configurator styling more closely.
+  
+  Preserve base language entries when TMDB returns regional variants so the default language stays plain English instead of resolving to a region specific option.
+* replace sticky rails with scroll wells
+  
+  Move the configurator workspace to independent left and right rail scroll regions so the center preview stays in place while the side columns can be scanned without sticky preview controls.
+  
+  Remove the sticky preview toggle and related sticky rail wiring. Teach hash navigation to scroll the relevant workspace rail when a target lives inside a desktop scroll region.
+  
+  Refresh the regression coverage for the new scroll region behavior.
+* restore XRDB and AIOMetadata Discord links
+  
+  Restore separate Discord brand links for the official XRDB community and the AIOMetadata support channel in AIOStreams.
+  
+  Update the configurator callout and footer to surface both destinations with corrected labels and titles.
+  
+  Refresh env template defaults so new deployments inherit the correct invite URLs and branding copy.
+
+### Other Changes
+* align language dropdown assertions with new selector
+  
+  Update the TMDB language options test to expect plain English alongside regional variants so the default language behavior matches the configurator change.
+  
+  Replace the old native select source assertion with checks that match the themed dropdown rendering without appending locale codes.
+
 ## [v1.5.0] - 03/04/2026
 
 ### Added
