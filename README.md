@@ -349,7 +349,7 @@ Episode thumbnails use the dedicated `/thumbnail/{id}/S{season}E{episode}.jpg` r
 | `mdblistKey` | MDBList API Key (Stateless) | String (e.g. `your_key`) | Required for MDBList backed ratings |
 | `fanartKey` | Fanart API Key for fanart poster, backdrop, and logo sources | String (e.g. `your_key`) | Server fallback when available |
 | `simklClientId` | SIMKL client id for direct SIMKL ratings | String (e.g. `your_client_id`) | None |
-| `imageText` | Image text (global fallback for poster/backdrop/thumbnail) | `original`, `clean`, `alternative`, `random` | `original` (poster), `clean` (backdrop/thumbnail) |
+| `imageText` | Image text (global fallback for poster/backdrop/thumbnail) | `original`, `clean`, `textless`, `alternative`, `random` | `original` (poster), `clean` (backdrop/thumbnail) |
 | `posterArtworkSource` | Poster artwork source | `tmdb`, `fanart`, `cinemeta`, `omdb`, `random` | `tmdb` |
 | `backdropArtworkSource` | Backdrop artwork source | `tmdb`, `fanart`, `cinemeta`, `random` | `tmdb` |
 | `posterRatingsLayout` | Poster layout | `top`, `bottom`, `left`, `right`, `top bottom`, `left right` | `top bottom` |
@@ -491,8 +491,8 @@ ratingXOffsetSquare     | Number (-320 to 320)                                  
 ratingYOffsetSquare     | Number (-320 to 320)                                                 | 0
 ratingStyle             | glass, square, plain, stacked                                        | glass
 thumbnailRatingStyle    | glass, square, plain, stacked                                        | glass
-imageText               | original, clean, alternative, random                                 | original
-thumbnailImageText      | original, clean, alternative, random                                 | clean
+imageText               | original, clean, textless, alternative, random                       | original
+thumbnailImageText      | original, clean, textless, alternative, random                       | clean
 posterArtworkSource     | tmdb, fanart, cinemeta, omdb, random                                 | tmdb
 backdropArtworkSource   | tmdb, fanart, cinemeta, random                                       | tmdb
 thumbnailArtworkSource  | tmdb, fanart, cinemeta, random                                       | tmdb

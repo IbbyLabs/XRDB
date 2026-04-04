@@ -99,6 +99,17 @@ test('prepared media state preserves raw kitsu fallback image and rating', async
   assert.equal(state.posterLogoUrl, null);
 });
 
+test('prepared media state does not apply branding overlay when textless preference is set', async () => {
+  const state = await prepareImageRouteMediaState({
+    ...createBaseInput(),
+    imageType: 'poster',
+    posterTextPreference: 'textless',
+  });
+
+  assert.equal(state.posterTitleText, null);
+  assert.equal(state.posterLogoUrl, null);
+});
+
 test('prepared media state applies requested backdrop image size', async () => {
   const state = await prepareImageRouteMediaState({
     ...createBaseInput(),

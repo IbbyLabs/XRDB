@@ -199,7 +199,7 @@ export const pickPosterByPreference = <T extends RoutedImageCandidate>(
     originalPoster || (canonicalOriginalPath ? { file_path: canonicalOriginalPath } : posters[0]);
   const alternativePosters = posters.filter((poster) => poster.file_path !== canonicalOriginalPath);
 
-  if (preference === 'clean') {
+  if (preference === 'clean' || preference === 'textless') {
     return (
       posters.find((poster) => !poster.iso_639_1) ||
       pickByLanguageWithFallback(posters, preferredLang, fallbackLang) ||
@@ -282,7 +282,7 @@ export const pickBackdropByPreference = <T extends RoutedImageCandidate>(
     originalBackdrop || (canonicalOriginalPath ? { file_path: canonicalOriginalPath } : backdrops[0]);
   const alternativeBackdrops = backdrops.filter((backdrop) => backdrop.file_path !== canonicalOriginalPath);
 
-  if (preference === 'clean') {
+  if (preference === 'clean' || preference === 'textless') {
     return (
       backdrops.find((backdrop) => !backdrop.iso_639_1) ||
       pickByLanguageWithFallback(backdrops, preferredLang, fallbackLang) ||
