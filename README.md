@@ -687,7 +687,7 @@ Anime gets extra fallback help when possible. If TMDB is missing good text, XRDB
 
 ### Metadata Translation In Action
 
-These screenshots were regenerated from the local March 27, 2026 codebase using deterministic proxy fixtures.
+These screenshots were regenerated from the local April 4, 2026 codebase using deterministic proxy fixtures.
 
 To make each merge mode visible on demand, a local fixture addon returned controlled source addon metadata for three real IDs:
 
