@@ -58,7 +58,8 @@ export const POSTER_IMAGE_TEXT_OPTIONS: Array<{
   description: string;
 }> = [
   { id: 'original', label: 'Original', description: 'Use the default TMDB poster art.' },
-  { id: 'clean', label: 'Clean', description: 'Prefer TMDB art with less embedded text when available.' },
+  { id: 'clean', label: 'Clean', description: 'Prefer TMDB textless art and add a controlled title and logo overlay.' },
+  { id: 'textless', label: 'Textless', description: 'Prefer TMDB art without embedded text when available. No title overlay added.' },
   { id: 'alternative', label: 'Alternative', description: 'Use a different TMDB poster when one exists.' },
   { id: 'random', label: 'Random', description: 'Pick a seeded random poster variation for this title.' },
 ];
@@ -106,7 +107,8 @@ export const BACKDROP_IMAGE_TEXT_OPTIONS: Array<{
   description: string;
 }> = [
   { id: 'original', label: 'Original', description: 'Use the default TMDB backdrop art.' },
-  { id: 'clean', label: 'Clean', description: 'Prefer TMDB backdrop art with less embedded text when available.' },
+  { id: 'clean', label: 'Clean', description: 'Prefer TMDB textless backdrop art and add a controlled title and logo overlay.' },
+  { id: 'textless', label: 'Textless', description: 'Prefer TMDB backdrop art without embedded text when available. No title overlay added.' },
   { id: 'alternative', label: 'Alternative', description: 'Use a different TMDB backdrop when one exists.' },
   { id: 'random', label: 'Random', description: 'Pick a seeded random backdrop variation for this title.' },
 ];

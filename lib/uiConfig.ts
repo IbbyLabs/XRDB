@@ -130,8 +130,8 @@ export type BackdropImageSize = PosterImageSize;
 export type RandomPosterTextMode = 'any' | 'text' | 'textless';
 export type RandomPosterLanguageMode = 'any' | 'requested' | 'fallback';
 export type RandomPosterFallbackMode = 'best' | 'original';
-export type PosterImageTextPreference = 'original' | 'clean' | 'alternative' | 'random';
-export type BackdropImageTextPreference = 'original' | 'clean' | 'alternative' | 'random';
+export type PosterImageTextPreference = 'original' | 'clean' | 'textless' | 'alternative' | 'random';
+export type BackdropImageTextPreference = 'original' | 'clean' | 'textless' | 'alternative' | 'random';
 export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta' | 'omdb' | 'random' | 'blackbar';
 export type EpisodeArtworkMode = 'still' | 'series';
 export type LogoBackground = 'transparent' | 'dark';
@@ -320,12 +320,14 @@ const RANDOM_POSTER_FALLBACK_MODE_SET = new Set<RandomPosterFallbackMode>(['best
 const POSTER_IMAGE_TEXT_PREFERENCE_SET = new Set<PosterImageTextPreference>([
   'original',
   'clean',
+  'textless',
   'alternative',
   'random',
 ]);
 const BACKDROP_IMAGE_TEXT_PREFERENCE_SET = new Set<BackdropImageTextPreference>([
   'original',
   'clean',
+  'textless',
   'alternative',
   'random',
 ]);

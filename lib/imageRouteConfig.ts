@@ -7,7 +7,7 @@ import type { MediaFeatureBadgeKey } from './mediaFeatures.ts';
 import { getConfiguredXrdbRequestKeys } from './xrdbRequestKey.ts';
 import { resolveTorrentioBaseUrl } from './torrentioUrl.ts';
 
-export type PosterTextPreference = 'original' | 'clean' | 'alternative' | 'random';
+export type PosterTextPreference = 'original' | 'clean' | 'textless' | 'alternative' | 'random';
 export type PosterImageSize = 'normal' | 'large' | '4k';
 export type BackdropImageSize = 'normal' | 'large' | '4k';
 export type RandomPosterTextMode = 'any' | 'text' | 'textless';

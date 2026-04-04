@@ -1123,6 +1123,7 @@ export const resolveImageRouteRequestState = async ({
   );
   const posterTextPreference: PosterTextPreference =
     imageText === 'clean' ||
+    imageText === 'textless' ||
     imageText === 'alternative' ||
     imageText === 'random' ||
     imageText === 'original'

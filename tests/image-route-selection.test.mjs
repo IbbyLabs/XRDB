@@ -40,6 +40,56 @@ test('image route selection handles poster and backdrop preferences', () => {
   assert.equal(isTextlessPosterSelection(images, { file_path: '/clean' }), true);
 });
 
+test('image route selection picks textless poster when textless preference is set', () => {
+  const images = [
+    { file_path: '/original', iso_639_1: 'en' },
+    { file_path: '/textless', iso_639_1: null },
+    { file_path: '/alt', iso_639_1: 'fr' },
+  ];
+
+  assert.equal(
+    pickPosterByPreference(images, 'textless', 'en', 'fr')?.file_path,
+    '/textless',
+  );
+});
+
+test('image route selection falls back to language poster when no textless poster exists', () => {
+  const images = [
+    { file_path: '/original', iso_639_1: 'en' },
+    { file_path: '/alt', iso_639_1: 'fr' },
+  ];
+
+  assert.equal(
+    pickPosterByPreference(images, 'textless', 'en', 'fr')?.file_path,
+    '/original',
+  );
+});
+
+test('image route selection picks textless backdrop when textless preference is set', () => {
+  const images = [
+    { file_path: '/original', iso_639_1: 'en' },
+    { file_path: '/textless', iso_639_1: null },
+    { file_path: '/alt', iso_639_1: 'fr' },
+  ];
+
+  assert.equal(
+    pickBackdropByPreference(images, 'textless', 'en', 'fr')?.file_path,
+    '/textless',
+  );
+});
+
+test('image route selection falls back to language backdrop when no textless backdrop exists', () => {
+  const images = [
+    { file_path: '/original', iso_639_1: 'en' },
+    { file_path: '/alt', iso_639_1: 'fr' },
+  ];
+
+  assert.equal(
+    pickBackdropByPreference(images, 'textless', 'en', 'fr')?.file_path,
+    '/original',
+  );
+});
+
 test('image route selection keeps random picks stable per seed', () => {
   const images = [
     { file_path: '/a', iso_639_1: 'en' },
