@@ -948,7 +948,7 @@ const generateMetadataExamples = async () => {
 
 const buildWorkspaceCaptureUrl = (origin, { hash = '', requirePreview = false } = {}) => {
   const previewKeys = readPreviewEnvKeys();
-  const url = new URL('/configurator', origin);
+  const url = new URL('/', origin);
   url.searchParams.set('docsCapture', '1');
   url.searchParams.set('captureExperience', 'advanced');
   url.searchParams.set('captureWorkspaceCenterView', 'showcase');
