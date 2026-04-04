@@ -1,30 +1,10 @@
 'use client';
 
-import { ExperienceModeModal } from '@/components/experience-mode-modal';
-import {
-  ConfiguratorHero,
-  ConfiguratorTopNav,
-  ConfiguratorWorkspaceIntro,
-} from '@/components/configurator-page-chrome';
-import { ConfiguratorInputsPanel } from '@/components/configurator-inputs-panel';
-import { ConfiguratorWorkspaceColumns } from '@/components/configurator-workspace-columns';
-import { SitePageOutro } from '@/components/site-page-outro';
+import { ConfigureView } from '@/components/configure-view';
 import { useConfiguratorContext } from '@/lib/configuratorProvider';
 
 export default function ConfiguratorPage() {
-  const {
-    docsCaptureReady,
-    experienceModeDraft,
-    handleContinueExperienceMode,
-    heroProps,
-    inputsPanelProps,
-    outroProps,
-    pageRef,
-    setExperienceModeDraft,
-    showExperienceModal,
-    topNavProps,
-    workspaceColumnsProps,
-  } = useConfiguratorContext();
+  const { docsCaptureReady, pageRef } = useConfiguratorContext();
 
   return (
     <div
@@ -32,31 +12,7 @@ export default function ConfiguratorPage() {
       className="xrdb-page min-h-screen bg-transparent text-zinc-300 selection:bg-violet-500/30"
       data-docs-capture-ready={docsCaptureReady ? 'true' : 'false'}
     >
-      <ConfiguratorTopNav {...topNavProps} />
-
-      <main className="xrdb-main w-full px-6 py-10 md:py-14 2xl:px-8">
-        <ConfiguratorHero {...heroProps} />
-
-        <section id="preview" className="xrdb-section scroll-mt-24">
-          <div className="rounded-[32px] border border-violet-500/15 bg-[radial-gradient(ellipse_at_top,_rgba(139,92,246,0.12),_transparent_60%),linear-gradient(180deg,rgba(30,22,42,0.95),rgba(14,10,22,0.98))] p-4 md:p-5 xl:p-6">
-            <ConfiguratorWorkspaceIntro />
-            <div className="mt-4 xrdb-surface-grid xrdb-workspace-grid grid items-start gap-4">
-              <ConfiguratorInputsPanel {...inputsPanelProps} />
-              <ConfiguratorWorkspaceColumns {...workspaceColumnsProps} />
-            </div>
-          </div>
-        </section>
-      </main>
-
-      {showExperienceModal ? (
-        <ExperienceModeModal
-          experienceModeDraft={experienceModeDraft}
-          onSelectMode={setExperienceModeDraft}
-          onContinue={handleContinueExperienceMode}
-        />
-      ) : null}
-
-      <SitePageOutro {...outroProps} />
+      <ConfigureView />
     </div>
   );
 }
