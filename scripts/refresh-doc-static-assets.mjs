@@ -946,9 +946,9 @@ const generateMetadataExamples = async () => {
   }
 };
 
-const buildWorkspaceCaptureUrl = (origin, { hash = '', requirePreview = false } = {}) => {
+const buildWorkspaceCaptureUrl = (origin, { path: routePath = '/', requirePreview = false } = {}) => {
   const previewKeys = readPreviewEnvKeys();
-  const url = new URL('/', origin);
+  const url = new URL(routePath, origin);
   url.searchParams.set('docsCapture', '1');
   url.searchParams.set('captureExperience', 'advanced');
   url.searchParams.set('captureWorkspaceCenterView', 'showcase');
@@ -969,7 +969,6 @@ const buildWorkspaceCaptureUrl = (origin, { hash = '', requirePreview = false } 
     'capturePanels',
     ['configurator', 'center-view', 'addon-proxy', 'quick-actions'].join(','),
   );
-  url.hash = hash;
   return url.toString();
 };
 
@@ -981,7 +980,7 @@ const generateWorkspaceCaptures = async (origin) => {
 
   await captureScreenshot({
     url: buildWorkspaceCaptureUrl(origin, {
-      hash: 'preview',
+      path: '/',
       requirePreview: true,
     }),
     outputPath: previewViewportPath,
@@ -991,7 +990,7 @@ const generateWorkspaceCaptures = async (origin) => {
   });
 
   await captureScreenshot({
-    url: buildWorkspaceCaptureUrl(origin, { hash: 'proxy' }),
+    url: buildWorkspaceCaptureUrl(origin, { path: '/addon' }),
     outputPath: proxyViewportPath,
     width: 1440,
     height: 1200,
@@ -999,7 +998,7 @@ const generateWorkspaceCaptures = async (origin) => {
   });
 
   await captureScreenshot({
-    url: buildWorkspaceCaptureUrl(origin, { hash: 'proxy' }),
+    url: buildWorkspaceCaptureUrl(origin, { path: '/addon' }),
     outputPath: proxyNarrowViewportPath,
     width: 900,
     height: 1200,
@@ -1007,6 +1006,7 @@ const generateWorkspaceCaptures = async (origin) => {
   });
 
   await sharp(previewViewportPath)
+    .extract({ left: 0, top: 80, width: 1440, height: 1120 })
     .resize(840, 720, { fit: 'cover', position: 'top' })
     .png()
     .toFile(resolveDocAssetPath(DOC_STATIC_ASSET_PATHS.configuratorLiveDemo));
@@ -1017,7 +1017,7 @@ const generateWorkspaceCaptures = async (origin) => {
     .toFile(resolveDocAssetPath(DOC_STATIC_ASSET_PATHS.addonProxyLiveDemo));
 
   await sharp(proxyNarrowViewportPath)
-    .extract({ left: 28, top: 280, width: 430, height: 520 })
+    .extract({ left: 28, top: 700, width: 430, height: 488 })
     .resize(244, 277, { fit: 'cover', position: 'left top' })
     .png()
     .toFile(resolveDocAssetPath(DOC_STATIC_ASSET_PATHS.proxyTranslationSettingsPanel));

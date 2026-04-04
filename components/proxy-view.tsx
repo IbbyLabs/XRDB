@@ -27,7 +27,7 @@ import type { ProxyMediaType } from '@/lib/uiConfig';
 type PreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 
 export function ProxyView() {
-  const { workspaceColumnsProps } = useConfiguratorContext();
+  const { workspaceColumnsProps, isDocsCapture } = useConfiguratorContext();
   const { supportPanelsProps, centerStageProps } = workspaceColumnsProps;
 
   const {
@@ -66,7 +66,7 @@ export function ProxyView() {
     activeTypeLabel,
   } = centerStageProps;
 
-  const [translationOpen, setTranslationOpen] = useState(false);
+  const [translationOpen, setTranslationOpen] = useState(isDocsCapture);
   const [catalogOpen, setCatalogOpen] = useState(false);
 
   const [catalogLoadError, setCatalogLoadError] = useState('');

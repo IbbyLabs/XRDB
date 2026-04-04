@@ -1852,6 +1852,7 @@ export function useConfiguratorWorkspaceRuntime() {
     handleContinueExperienceMode,
     heroProps,
     inputsPanelProps,
+    isDocsCapture: Boolean(docsCaptureConfig),
     outroProps,
     pageRef: pageChrome.pageRef,
     setExperienceModeDraft,
