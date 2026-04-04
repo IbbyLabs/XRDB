@@ -1331,6 +1331,20 @@ const main = async () => {
   }
 
   logRefreshStep(`Refreshed static doc assets (${mode})`);
+
+  const readmePath = path.join(ROOT_DIR, 'README.md');
+  const readmeContent = await fs.readFile(readmePath, 'utf-8');
+  const datePattern = /^(These screenshots were regenerated from the local )\S+ \d{1,2}, \d{4}( codebase)/m;
+  const dateMatch = readmeContent.match(datePattern);
+  if (dateMatch) {
+    const updatedReadme = readmeContent.replace(datePattern, `$1${CAPTURE_DATE}$2`);
+    if (updatedReadme !== readmeContent) {
+      await fs.writeFile(readmePath, updatedReadme);
+      logRefreshStep(`Updated README.md capture date to ${CAPTURE_DATE}`);
+    }
+  } else {
+    console.warn('[refresh] WARNING: Could not find the screenshot capture date pattern in README.md');
+  }
 };
 
 await main();
