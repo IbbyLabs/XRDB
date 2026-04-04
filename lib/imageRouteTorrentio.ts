@@ -22,6 +22,7 @@ import {
   buildMediaFeatureBadgesFromFlags,
   collectMediaFeatureFlags,
   type MediaFeatureFlags,
+  type RemuxDisplayMode,
 } from './mediaFeatures.ts';
 import { BROWSER_LIKE_USER_AGENT } from './imageRouteExternalRatings.ts';
 
@@ -61,8 +62,8 @@ export const extractTorrentioFilenames = (payload: any) => {
   return filenames;
 };
 
-const buildFeatureBadgesFromFlags = (flags: MediaFeatureFlags): TorrentioRatingBadge[] =>
-  buildMediaFeatureBadgesFromFlags(flags).map((badge) => ({
+const buildFeatureBadgesFromFlags = (flags: MediaFeatureFlags, remuxDisplayMode: RemuxDisplayMode = 'composite'): TorrentioRatingBadge[] =>
+  buildMediaFeatureBadgesFromFlags(flags, remuxDisplayMode).map((badge) => ({
     key: badge.key,
     label: badge.label,
     value: '',
@@ -78,12 +79,14 @@ export const fetchTorrentioBadges = async ({
   id,
   phases,
   cacheTtlMs,
+  remuxDisplayMode = 'composite',
   fetchImpl = undiciFetch,
 }: {
   type: 'movie' | 'series';
   id: string;
   phases: PhaseDurations;
   cacheTtlMs?: number;
+  remuxDisplayMode?: RemuxDisplayMode;
   fetchImpl?: typeof undiciFetch;
 }): Promise<TorrentioBadgeResult> => {
   const trimmedId = id.trim();
@@ -103,13 +106,13 @@ export const fetchTorrentioBadges = async ({
   }
   const cached = getMetadata<TorrentioBadgeCache>(cacheKey);
   if (cached) {
-    return { badges: buildFeatureBadgesFromFlags(cached.flags), cacheTtlMs: ttlMs };
+    return { badges: buildFeatureBadgesFromFlags(cached.flags, remuxDisplayMode), cacheTtlMs: ttlMs };
   }
 
   return withDedupe(torrentioInFlight, cacheKey, async () => {
     const warm = getMetadata<TorrentioBadgeCache>(cacheKey);
     if (warm) {
-      return { badges: buildFeatureBadgesFromFlags(warm.flags), cacheTtlMs: ttlMs };
+      return { badges: buildFeatureBadgesFromFlags(warm.flags, remuxDisplayMode), cacheTtlMs: ttlMs };
     }
 
     let response: Response | null = null;
@@ -167,10 +170,10 @@ export const fetchTorrentioBadges = async ({
       );
       torrentioRateLimitedUntil = Date.now() + cooldownMs;
       setMetadata(cacheKey, { flags }, Math.min(targetTtl, cooldownMs));
-      return { badges: buildFeatureBadgesFromFlags(flags), cacheTtlMs: cooldownMs };
+      return { badges: buildFeatureBadgesFromFlags(flags, remuxDisplayMode), cacheTtlMs: cooldownMs };
     }
 
     setMetadata(cacheKey, { flags }, targetTtl);
-    return { badges: buildFeatureBadgesFromFlags(flags), cacheTtlMs: targetTtl };
+    return { badges: buildFeatureBadgesFromFlags(flags, remuxDisplayMode), cacheTtlMs: targetTtl };
   });
 };

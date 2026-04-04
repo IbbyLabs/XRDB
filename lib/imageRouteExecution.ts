@@ -196,6 +196,7 @@ export const executeImageRouteRender = async ({
         fanartClientKey: requestState.fanartClientKey,
         sourceFallbackUrl: requestState.sourceFallbackUrl,
         qualityBadgePreferences: requestState.qualityBadgePreferences,
+        remuxDisplayMode: requestState.remuxDisplayMode,
         posterImageSize: requestState.posterImageSize,
         backdropImageSize: requestState.backdropImageSize,
         mdblistKey: requestState.mdblistKey,

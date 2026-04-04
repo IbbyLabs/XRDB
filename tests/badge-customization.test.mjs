@@ -59,5 +59,6 @@ test('default quality badge preferences include network and core quality badges'
     'dolbyvision',
     'dolbyatmos',
     'remux',
+    'bdremux',
   ]);
 });

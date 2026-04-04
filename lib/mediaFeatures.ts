@@ -16,7 +16,8 @@ export type MediaFeatureBadgeKey =
   | 'hdr'
   | 'dolbyvision'
   | 'dolbyatmos'
-  | 'remux';
+  | 'remux'
+  | 'bdremux';
 
 export type MediaFeatureFlags = {
   has4k: boolean;
@@ -26,6 +27,8 @@ export type MediaFeatureFlags = {
   hasDolbyAtmos: boolean;
   hasRemux: boolean;
 };
+
+export type RemuxDisplayMode = 'composite' | 'separate';
 
 export type MediaFeatureBadgeMeta = {
   key: MediaFeatureBadgeKey;
@@ -142,6 +145,11 @@ const MEDIA_FEATURE_META_BY_KEY: Record<MediaFeatureBadgeKey, MediaFeatureBadgeM
     label: 'Remux',
     accentColor: '#ef4444',
   },
+  bdremux: {
+    key: 'bdremux',
+    label: 'BD Remux',
+    accentColor: '#d97706',
+  },
 };
 export const MEDIA_FEATURE_BADGE_ORDER: MediaFeatureBadgeKey[] = [
   'certification',
@@ -160,6 +168,7 @@ export const MEDIA_FEATURE_BADGE_ORDER: MediaFeatureBadgeKey[] = [
   'dolbyvision',
   'dolbyatmos',
   'remux',
+  'bdremux',
 ];
 const MEDIA_FEATURE_BADGE_KEY_SET = new Set<MediaFeatureBadgeKey>(MEDIA_FEATURE_BADGE_ORDER);
 export const STREAMING_SERVICE_BADGE_ORDER: StreamingServiceBadgeKey[] = [
@@ -292,15 +301,25 @@ export const collectMediaFeatureFlags = (filenames: string[]) => {
   return flags;
 };
 
-export const buildMediaFeatureBadgesFromFlags = (flags: MediaFeatureFlags) => {
+export const buildMediaFeatureBadgesFromFlags = (
+  flags: MediaFeatureFlags,
+  remuxDisplayMode: RemuxDisplayMode = 'composite',
+) => {
   const badges: MediaFeatureBadgeMeta[] = [];
   if (flags.has4k) badges.push(MEDIA_FEATURE_META_BY_KEY['4k']);
-  const hasPhysicalDiscSource = flags.hasBluray || flags.hasRemux;
-  if (hasPhysicalDiscSource) badges.push(MEDIA_FEATURE_META_BY_KEY.bluray);
+  if (flags.hasRemux) {
+    if (remuxDisplayMode === 'composite') {
+      badges.push(MEDIA_FEATURE_META_BY_KEY.bdremux);
+    } else {
+      if (flags.hasBluray) badges.push(MEDIA_FEATURE_META_BY_KEY.bluray);
+      badges.push(MEDIA_FEATURE_META_BY_KEY.remux);
+    }
+  } else if (flags.hasBluray) {
+    badges.push(MEDIA_FEATURE_META_BY_KEY.bluray);
+  }
   if (!flags.hasDolbyVision && flags.hasHdr) badges.push(MEDIA_FEATURE_META_BY_KEY.hdr);
   if (flags.hasDolbyVision) badges.push(MEDIA_FEATURE_META_BY_KEY.dolbyvision);
   if (flags.hasDolbyAtmos) badges.push(MEDIA_FEATURE_META_BY_KEY.dolbyatmos);
-  if (flags.hasRemux && !flags.hasBluray) badges.push(MEDIA_FEATURE_META_BY_KEY.remux);
   return badges;
 };
 

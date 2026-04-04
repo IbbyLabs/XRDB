@@ -38,6 +38,7 @@ import {
   type RatingProviderAppearanceOverrides,
 } from '@/lib/badgeCustomization';
 import { GENRE_BADGE_MODE_OPTIONS, type GenreBadgeMode } from '@/lib/genreBadge';
+import { type RemuxDisplayMode } from '@/lib/mediaFeatures';
 import { POSTER_RATINGS_MAX_PER_SIDE_MIN } from '@/lib/posterLayoutOptions';
 import { RATING_PROVIDER_OPTIONS, type RatingPreference } from '@/lib/ratingProviderCatalog';
 import { type RatingPresentation } from '@/lib/ratingPresentation';
@@ -118,6 +119,8 @@ export function QualitySection({
   onSelectQualityBadgesSide,
   onSelectPosterQualityBadgePosition,
   onToggleQualityBadgePreference,
+  activeRemuxDisplayMode,
+  onSelectRemuxDisplayMode,
 }: {
   previewType: PreviewType;
   qualityBadgeTypeLabel: string;
@@ -138,6 +141,8 @@ export function QualitySection({
   onSelectQualityBadgesSide: (value: QualityBadgesSide) => void;
   onSelectPosterQualityBadgePosition: (value: PosterQualityBadgesPosition) => void;
   onToggleQualityBadgePreference: (value: QualityBadgeOptionId) => void;
+  activeRemuxDisplayMode: RemuxDisplayMode;
+  onSelectRemuxDisplayMode: (value: RemuxDisplayMode) => void;
 }) {
   return (
     <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
@@ -253,6 +258,27 @@ export function QualitySection({
               {option.label}
             </button>
           ))}
+        </div>
+      </div>
+      <div className={settingsCardClass}>
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
+          Remux Display
+        </span>
+        <div className={selectorGroupClass}>
+          <button
+            type="button"
+            onClick={() => onSelectRemuxDisplayMode('composite')}
+            className={selectorButtonClass(activeRemuxDisplayMode === 'composite')}
+          >
+            BD Remux
+          </button>
+          <button
+            type="button"
+            onClick={() => onSelectRemuxDisplayMode('separate')}
+            className={selectorButtonClass(activeRemuxDisplayMode === 'separate')}
+          >
+            Show Both
+          </button>
         </div>
       </div>
       <p className="text-[11px] leading-relaxed text-zinc-500">

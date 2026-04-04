@@ -1,6 +1,6 @@
 import { type Dispatch, type SetStateAction } from 'react';
 import { type GenreBadgeAnimeGrouping, type GenreBadgeMode, type GenreBadgePosition, type GenreBadgeStyle } from '@/lib/genreBadge';
-import { type MediaFeatureBadgeKey } from '@/lib/mediaFeatures';
+import { type MediaFeatureBadgeKey, type RemuxDisplayMode } from '@/lib/mediaFeatures';
 import { type PosterRatingLayout } from '@/lib/posterLayoutOptions';
 import { type QualityBadgeStyle } from '@/lib/ratingAppearance';
 import { type QualityBadgesSide, type PosterQualityBadgesPosition, type StreamBadgesSetting } from '@/lib/uiConfig';
@@ -20,6 +20,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   backdropQualityBadgesMax,
   backdropQualityBadgesStyle,
   backdropRatingBadgeScale,
+  backdropRemuxDisplayMode,
   backdropStreamBadges,
   thumbnailGenreBadgeAnimeGrouping,
   thumbnailGenreBadgeMode,
@@ -32,6 +33,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   thumbnailQualityBadgesMax,
   thumbnailQualityBadgesStyle,
   thumbnailRatingBadgeScale,
+  thumbnailRemuxDisplayMode,
   thumbnailStreamBadges,
   logoGenreBadgeAnimeGrouping,
   logoGenreBadgeMode,
@@ -44,6 +46,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   logoQualityBadgesMax,
   logoQualityBadgesStyle,
   logoRatingBadgeScale,
+  logoRemuxDisplayMode,
   posterGenreBadgeAnimeGrouping,
   posterGenreBadgeMode,
   posterGenreBadgePosition,
@@ -56,6 +59,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   posterQualityBadgesStyle,
   posterRatingBadgeScale,
   posterRatingsLayout,
+  posterRemuxDisplayMode,
   posterStreamBadges,
   previewType,
   setBackdropGenreBadgeAnimeGrouping,
@@ -69,6 +73,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   setBackdropQualityBadgesMax,
   setBackdropQualityBadgesStyle,
   setBackdropRatingBadgeScale,
+  setBackdropRemuxDisplayMode,
   setBackdropStreamBadges,
   setThumbnailGenreBadgeAnimeGrouping,
   setThumbnailGenreBadgeMode,
@@ -81,6 +86,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   setThumbnailQualityBadgesMax,
   setThumbnailQualityBadgesStyle,
   setThumbnailRatingBadgeScale,
+  setThumbnailRemuxDisplayMode,
   setThumbnailStreamBadges,
   setLogoGenreBadgeAnimeGrouping,
   setLogoGenreBadgeMode,
@@ -93,6 +99,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   setLogoQualityBadgesMax,
   setLogoQualityBadgesStyle,
   setLogoRatingBadgeScale,
+  setLogoRemuxDisplayMode,
   setPosterGenreBadgeAnimeGrouping,
   setPosterGenreBadgeMode,
   setPosterGenreBadgePosition,
@@ -104,6 +111,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   setPosterQualityBadgesMax,
   setPosterQualityBadgesStyle,
   setPosterRatingBadgeScale,
+  setPosterRemuxDisplayMode,
   setPosterStreamBadges,
 }: {
   backdropGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
@@ -117,6 +125,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   backdropQualityBadgesMax: number | null;
   backdropQualityBadgesStyle: QualityBadgeStyle;
   backdropRatingBadgeScale: number;
+  backdropRemuxDisplayMode: RemuxDisplayMode;
   backdropStreamBadges: StreamBadgesSetting;
   thumbnailGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   thumbnailGenreBadgeMode: GenreBadgeMode;
@@ -129,6 +138,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   thumbnailQualityBadgesMax: number | null;
   thumbnailQualityBadgesStyle: QualityBadgeStyle;
   thumbnailRatingBadgeScale: number;
+  thumbnailRemuxDisplayMode: RemuxDisplayMode;
   thumbnailStreamBadges: StreamBadgesSetting;
   logoGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   logoGenreBadgeMode: GenreBadgeMode;
@@ -141,6 +151,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   logoQualityBadgesMax: number | null;
   logoQualityBadgesStyle: QualityBadgeStyle;
   logoRatingBadgeScale: number;
+  logoRemuxDisplayMode: RemuxDisplayMode;
   posterGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   posterGenreBadgeMode: GenreBadgeMode;
   posterGenreBadgePosition: GenreBadgePosition;
@@ -153,6 +164,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   posterQualityBadgesStyle: QualityBadgeStyle;
   posterRatingBadgeScale: number;
   posterRatingsLayout: PosterRatingLayout;
+  posterRemuxDisplayMode: RemuxDisplayMode;
   posterStreamBadges: StreamBadgesSetting;
   previewType: PreviewType;
   setBackdropGenreBadgeAnimeGrouping: Setter<GenreBadgeAnimeGrouping>;
@@ -166,6 +178,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   setBackdropQualityBadgesMax: Setter<number | null>;
   setBackdropQualityBadgesStyle: Setter<QualityBadgeStyle>;
   setBackdropRatingBadgeScale: Setter<number>;
+  setBackdropRemuxDisplayMode: Setter<RemuxDisplayMode>;
   setBackdropStreamBadges: Setter<StreamBadgesSetting>;
   setThumbnailGenreBadgeAnimeGrouping: Setter<GenreBadgeAnimeGrouping>;
   setThumbnailGenreBadgeMode: Setter<GenreBadgeMode>;
@@ -178,6 +191,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   setThumbnailQualityBadgesMax: Setter<number | null>;
   setThumbnailQualityBadgesStyle: Setter<QualityBadgeStyle>;
   setThumbnailRatingBadgeScale: Setter<number>;
+  setThumbnailRemuxDisplayMode: Setter<RemuxDisplayMode>;
   setThumbnailStreamBadges: Setter<StreamBadgesSetting>;
   setLogoGenreBadgeAnimeGrouping: Setter<GenreBadgeAnimeGrouping>;
   setLogoGenreBadgeMode: Setter<GenreBadgeMode>;
@@ -190,6 +204,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   setLogoQualityBadgesMax: Setter<number | null>;
   setLogoQualityBadgesStyle: Setter<QualityBadgeStyle>;
   setLogoRatingBadgeScale: Setter<number>;
+  setLogoRemuxDisplayMode: Setter<RemuxDisplayMode>;
   setPosterGenreBadgeAnimeGrouping: Setter<GenreBadgeAnimeGrouping>;
   setPosterGenreBadgeMode: Setter<GenreBadgeMode>;
   setPosterGenreBadgePosition: Setter<GenreBadgePosition>;
@@ -201,6 +216,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   setPosterQualityBadgesMax: Setter<number | null>;
   setPosterQualityBadgesStyle: Setter<QualityBadgeStyle>;
   setPosterRatingBadgeScale: Setter<number>;
+  setPosterRemuxDisplayMode: Setter<RemuxDisplayMode>;
   setPosterStreamBadges: Setter<StreamBadgesSetting>;
 }) {
   const shouldShowPosterQualityBadgesSide = posterRatingsLayout === 'top-bottom';
@@ -288,6 +304,14 @@ export function useConfiguratorActiveWorkspaceSettings({
         : previewType === 'logo'
           ? logoQualityBadgesStyle
           : posterQualityBadgesStyle,
+    activeRemuxDisplayMode:
+      previewType === 'backdrop'
+        ? backdropRemuxDisplayMode
+        : previewType === 'thumbnail'
+          ? thumbnailRemuxDisplayMode
+        : previewType === 'logo'
+          ? logoRemuxDisplayMode
+          : posterRemuxDisplayMode,
     activeRatingBadgeScale:
       previewType === 'poster'
         ? posterRatingBadgeScale
@@ -390,6 +414,14 @@ export function useConfiguratorActiveWorkspaceSettings({
         : previewType === 'logo'
           ? setLogoQualityBadgesStyle
           : setPosterQualityBadgesStyle,
+    setActiveRemuxDisplayMode:
+      previewType === 'backdrop'
+        ? setBackdropRemuxDisplayMode
+        : previewType === 'thumbnail'
+          ? setThumbnailRemuxDisplayMode
+        : previewType === 'logo'
+          ? setLogoRemuxDisplayMode
+          : setPosterRemuxDisplayMode,
     setActiveRatingBadgeScale:
       previewType === 'poster'
         ? setPosterRatingBadgeScale

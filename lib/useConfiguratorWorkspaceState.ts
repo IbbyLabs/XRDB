@@ -54,6 +54,7 @@ import {
 import { DEFAULT_RATING_VALUE_MODE, type RatingValueMode } from '@/lib/ratingDisplay';
 import { DEFAULT_POSTER_RATINGS_MAX_PER_SIDE, type PosterRatingLayout } from '@/lib/posterLayoutOptions';
 import { type RatingPreference } from '@/lib/ratingProviderCatalog';
+import { type RemuxDisplayMode } from '@/lib/mediaFeatures';
 import { DEFAULT_QUALITY_BADGES_STYLE, DEFAULT_RATING_STYLE, type QualityBadgeStyle, type RatingStyle } from '@/lib/ratingAppearance';
 import { DEFAULT_SIDE_RATING_OFFSET, type SideRatingPosition } from '@/lib/sideRatingPosition';
 import {
@@ -154,6 +155,10 @@ export function useConfiguratorWorkspaceState() {
   const [backdropQualityBadgesMax, setBackdropQualityBadgesMax] = useState<number | null>(null);
   const [thumbnailQualityBadgesMax, setThumbnailQualityBadgesMax] = useState<number | null>(null);
   const [logoQualityBadgesMax, setLogoQualityBadgesMax] = useState<number | null>(null);
+  const [posterRemuxDisplayMode, setPosterRemuxDisplayMode] = useState<RemuxDisplayMode>('composite');
+  const [backdropRemuxDisplayMode, setBackdropRemuxDisplayMode] = useState<RemuxDisplayMode>('composite');
+  const [thumbnailRemuxDisplayMode, setThumbnailRemuxDisplayMode] = useState<RemuxDisplayMode>('composite');
+  const [logoRemuxDisplayMode, setLogoRemuxDisplayMode] = useState<RemuxDisplayMode>('composite');
   const [posterRatingsLayout, setPosterRatingsLayout] = useState<PosterRatingLayout>('bottom');
   const [backdropRatingsLayout, setBackdropRatingsLayout] = useState<BackdropRatingLayout>(DEFAULT_BACKDROP_RATING_LAYOUT);
   const [thumbnailRatingsLayout, setThumbnailRatingsLayout] = useState<BackdropRatingLayout>(DEFAULT_BACKDROP_RATING_LAYOUT);
@@ -289,6 +294,7 @@ export function useConfiguratorWorkspaceState() {
     backdropQualityBadgeScale,
     backdropQualityBadgesMax,
     backdropQualityBadgesStyle,
+    backdropRemuxDisplayMode,
     backdropRatingBadgeScale,
     backdropRatingPreferences,
     backdropRatingPresentation,
@@ -314,6 +320,7 @@ export function useConfiguratorWorkspaceState() {
     thumbnailQualityBadgeScale,
     thumbnailQualityBadgesMax,
     thumbnailQualityBadgesStyle,
+    thumbnailRemuxDisplayMode,
     thumbnailRatingBadgeScale,
     thumbnailRatingPresentation,
     thumbnailRatingStyle,
@@ -343,6 +350,7 @@ export function useConfiguratorWorkspaceState() {
     logoQualityBadgeScale,
     logoQualityBadgesMax,
     logoQualityBadgesStyle,
+    logoRemuxDisplayMode,
     logoRatingBadgeScale,
     logoRatingPreferences,
     logoRatingPresentation,
@@ -378,6 +386,7 @@ export function useConfiguratorWorkspaceState() {
     posterQualityBadgesMax,
     posterQualityBadgesPosition,
     posterQualityBadgesStyle,
+    posterRemuxDisplayMode,
     posterRatingBadgeScale,
     posterRatingPreferences,
     posterRatingPresentation,
@@ -453,6 +462,7 @@ export function useConfiguratorWorkspaceState() {
     setBackdropQualityBadgeScale,
     setBackdropQualityBadgesMax,
     setBackdropQualityBadgesStyle,
+    setBackdropRemuxDisplayMode,
     setBackdropRatingBadgeScale,
     setBackdropRatingPresentation,
     setBackdropRatingRows,
@@ -477,6 +487,7 @@ export function useConfiguratorWorkspaceState() {
     setThumbnailQualityBadgeScale,
     setThumbnailQualityBadgesMax,
     setThumbnailQualityBadgesStyle,
+    setThumbnailRemuxDisplayMode,
     setThumbnailRatingBadgeScale,
     setThumbnailRatingPresentation,
     setThumbnailRatingStyle,
@@ -506,6 +517,7 @@ export function useConfiguratorWorkspaceState() {
     setLogoQualityBadgeScale,
     setLogoQualityBadgesMax,
     setLogoQualityBadgesStyle,
+    setLogoRemuxDisplayMode,
     setLogoRatingBadgeScale,
     setLogoRatingPresentation,
     setLogoRatingRows,
@@ -540,6 +552,7 @@ export function useConfiguratorWorkspaceState() {
     setPosterQualityBadgesMax,
     setPosterQualityBadgesPosition,
     setPosterQualityBadgesStyle,
+    setPosterRemuxDisplayMode,
     setPosterRatingBadgeScale,
     setPosterRatingPresentation,
     setPosterRatingRows,

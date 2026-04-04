@@ -94,7 +94,7 @@ import {
   stringifyQualityBadgePreferencesAllowEmpty,
   type RatingProviderAppearanceOverrides,
 } from './badgeCustomization.ts';
-import type { MediaFeatureBadgeKey } from './mediaFeatures.ts';
+import type { MediaFeatureBadgeKey, RemuxDisplayMode } from './mediaFeatures.ts';
 import {
   DEFAULT_SIDE_RATING_OFFSET,
   DEFAULT_SIDE_RATING_POSITION,
@@ -220,6 +220,10 @@ export type SharedXrdbSettings = {
   backdropQualityBadgesMax: number | null;
   thumbnailQualityBadgesMax: number | null;
   logoQualityBadgesMax: number | null;
+  posterRemuxDisplayMode: RemuxDisplayMode;
+  backdropRemuxDisplayMode: RemuxDisplayMode;
+  thumbnailRemuxDisplayMode: RemuxDisplayMode;
+  logoRemuxDisplayMode: RemuxDisplayMode;
   posterRatingsLayout: PosterRatingLayout;
   backdropRatingsLayout: BackdropRatingLayout;
   thumbnailRatingsLayout: BackdropRatingLayout;
@@ -461,6 +465,10 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   backdropQualityBadgesMax: null,
   thumbnailQualityBadgesMax: null,
   logoQualityBadgesMax: null,
+  posterRemuxDisplayMode: 'composite',
+  backdropRemuxDisplayMode: 'composite',
+  thumbnailRemuxDisplayMode: 'composite',
+  logoRemuxDisplayMode: 'composite',
   posterRatingsLayout: 'bottom',
   backdropRatingsLayout: DEFAULT_BACKDROP_RATING_LAYOUT,
   thumbnailRatingsLayout: DEFAULT_BACKDROP_RATING_LAYOUT,
@@ -863,6 +871,14 @@ const normalizeOptionalBadgeCount = (value: unknown): number | null => {
   return normalized;
 };
 
+const REMUX_DISPLAY_MODES = new Set<RemuxDisplayMode>(['composite', 'separate']);
+export const normalizeRemuxDisplayMode = (value: unknown): RemuxDisplayMode => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return REMUX_DISPLAY_MODES.has(normalized as RemuxDisplayMode)
+    ? (normalized as RemuxDisplayMode)
+    : 'composite';
+};
+
 const normalizeLogoBackground = (
   value: unknown,
   fallback: LogoBackground,
@@ -1197,6 +1213,10 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
       candidate.thumbnailQualityBadgesMax ?? candidate.backdropQualityBadgesMax,
     ),
     logoQualityBadgesMax: normalizeOptionalBadgeCount(candidate.logoQualityBadgesMax),
+    posterRemuxDisplayMode: normalizeRemuxDisplayMode(candidate.posterRemuxDisplayMode),
+    backdropRemuxDisplayMode: normalizeRemuxDisplayMode(candidate.backdropRemuxDisplayMode),
+    thumbnailRemuxDisplayMode: normalizeRemuxDisplayMode(candidate.thumbnailRemuxDisplayMode),
+    logoRemuxDisplayMode: normalizeRemuxDisplayMode(candidate.logoRemuxDisplayMode),
     posterRatingsLayout: normalizePosterRatingLayout(
       (candidate.posterRatingsLayout ?? rpdbRatingBarAliases.posterRatingsLayout) as
         | string
@@ -1801,6 +1821,18 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   }
   if (settings.logoQualityBadgesMax !== null) {
     payload.logoQualityBadgesMax = settings.logoQualityBadgesMax;
+  }
+  if (settings.posterRemuxDisplayMode !== 'composite') {
+    payload.posterRemuxDisplayMode = settings.posterRemuxDisplayMode;
+  }
+  if (settings.backdropRemuxDisplayMode !== 'composite') {
+    payload.backdropRemuxDisplayMode = settings.backdropRemuxDisplayMode;
+  }
+  if (settings.thumbnailRemuxDisplayMode !== 'composite') {
+    payload.thumbnailRemuxDisplayMode = settings.thumbnailRemuxDisplayMode;
+  }
+  if (settings.logoRemuxDisplayMode !== 'composite') {
+    payload.logoRemuxDisplayMode = settings.logoRemuxDisplayMode;
   }
   if (settings.posterRatingsMax !== null) {
     payload.posterRatingsMax = settings.posterRatingsMax;

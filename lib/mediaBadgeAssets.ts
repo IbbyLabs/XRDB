@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
-export type MediaBadgeAssetId = '4k' | 'hdr' | 'bluray' | 'dolbyvision' | 'dolbyatmos' | 'remux';
+export type MediaBadgeAssetId = '4k' | 'hdr' | 'bluray' | 'dolbyvision' | 'dolbyatmos' | 'remux' | 'bdremux';
 
 export type MediaBadgeAsset = {
   fileName: string;
@@ -65,6 +65,13 @@ export const MEDIA_BADGE_ASSETS = {
   }),
   remux: createBadgeAsset({
     fileName: 'remux.svg',
+    aspectRatio: 320 / 180,
+    widthRatio: 1.72,
+    heightRatio: 0.74,
+    horizontalPaddingRatio: 0.08,
+  }),
+  bdremux: createBadgeAsset({
+    fileName: 'bdremux.svg',
     aspectRatio: 320 / 180,
     widthRatio: 1.72,
     heightRatio: 0.74,

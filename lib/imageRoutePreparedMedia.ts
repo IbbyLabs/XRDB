@@ -37,6 +37,7 @@ import {
   resolveMovieReleaseStatusBadge,
   resolveTvCertificationBadge,
   MEDIA_FEATURE_BADGE_ORDER,
+  type RemuxDisplayMode,
 } from './mediaFeatures.ts';
 import { getMetadata, setMetadata } from './metadataStore.ts';
 import { getRatingCacheTtlMs } from './imageRouteMdbList.ts';
@@ -168,6 +169,7 @@ export const prepareImageRouteMediaState = async (input: {
   fanartClientKey: string;
   sourceFallbackUrl: string | null;
   qualityBadgePreferences: string[];
+  remuxDisplayMode: RemuxDisplayMode;
   posterImageSize: PosterImageSize;
   backdropImageSize: BackdropImageSize;
   mdblistKey: string | null;
@@ -240,6 +242,7 @@ export const prepareImageRouteMediaState = async (input: {
     fanartClientKey,
     sourceFallbackUrl,
     qualityBadgePreferences,
+    remuxDisplayMode,
     posterImageSize,
     backdropImageSize,
     mdblistKey,
@@ -521,7 +524,7 @@ const streamBadgesPromise =
         defaultTtlMs: TORRENTIO_CACHE_TTL_MS,
         oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
       });
-      return fetchTorrentioBadges({ type: torrentioType, id: torrentioId, phases, cacheTtlMs: torrentioCacheTtlMs });
+      return fetchTorrentioBadges({ type: torrentioType, id: torrentioId, phases, cacheTtlMs: torrentioCacheTtlMs, remuxDisplayMode });
     })()
     : null;
 

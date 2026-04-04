@@ -72,6 +72,7 @@ import {
   DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE,
   type PosterCompactRingSource,
 } from '@/lib/posterCompactRing';
+import { type RemuxDisplayMode } from '@/lib/mediaFeatures';
 import {
   DEFAULT_QUALITY_BADGES_STYLE,
   type QualityBadgeStyle,
@@ -254,6 +255,7 @@ export function useConfiguratorOutputs({
   backdropQualityBadgePreferences,
   backdropQualityBadgeScale,
   backdropQualityBadgesStyle,
+  backdropRemuxDisplayMode,
   backdropRatingBadgeScale,
   backdropRatingPreferences,
   backdropRatingPresentation,
@@ -277,6 +279,7 @@ export function useConfiguratorOutputs({
   thumbnailQualityBadgePreferences,
   thumbnailQualityBadgeScale,
   thumbnailQualityBadgesStyle,
+  thumbnailRemuxDisplayMode,
   thumbnailRatingBadgeScale,
   thumbnailRatingPreferences,
   thumbnailRatingPresentation,
@@ -307,6 +310,7 @@ export function useConfiguratorOutputs({
   logoQualityBadgePreferences,
   logoQualityBadgeScale,
   logoQualityBadgesStyle,
+  logoRemuxDisplayMode,
   logoRatingBadgeScale,
   logoRatingPreferences,
   logoRatingPresentation,
@@ -340,6 +344,7 @@ export function useConfiguratorOutputs({
   posterQualityBadgeScale,
   posterQualityBadgesPosition,
   posterQualityBadgesStyle,
+  posterRemuxDisplayMode,
   posterRatingBadgeScale,
   posterRatingPreferences,
   posterRatingPresentation,
@@ -406,6 +411,7 @@ export function useConfiguratorOutputs({
   backdropQualityBadgePreferences: string[];
   backdropQualityBadgeScale: number;
   backdropQualityBadgesStyle: QualityBadgeStyle;
+  backdropRemuxDisplayMode: RemuxDisplayMode;
   backdropRatingBadgeScale: number;
   backdropRatingPreferences: RatingPreference[];
   backdropRatingPresentation: RatingPresentation;
@@ -429,6 +435,7 @@ export function useConfiguratorOutputs({
   thumbnailQualityBadgePreferences: string[];
   thumbnailQualityBadgeScale: number;
   thumbnailQualityBadgesStyle: QualityBadgeStyle;
+  thumbnailRemuxDisplayMode: RemuxDisplayMode;
   thumbnailRatingBadgeScale: number;
   thumbnailRatingPreferences: RatingPreference[];
   thumbnailRatingPresentation: RatingPresentation;
@@ -459,6 +466,7 @@ export function useConfiguratorOutputs({
   logoQualityBadgePreferences: string[];
   logoQualityBadgeScale: number;
   logoQualityBadgesStyle: QualityBadgeStyle;
+  logoRemuxDisplayMode: RemuxDisplayMode;
   logoRatingBadgeScale: number;
   logoRatingPreferences: RatingPreference[];
   logoRatingPresentation: RatingPresentation;
@@ -492,6 +500,7 @@ export function useConfiguratorOutputs({
   posterQualityBadgeScale: number;
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
   posterQualityBadgesStyle: QualityBadgeStyle;
+  posterRemuxDisplayMode: RemuxDisplayMode;
   posterRatingBadgeScale: number;
   posterRatingPreferences: RatingPreference[];
   posterRatingPresentation: RatingPresentation;
@@ -683,6 +692,14 @@ export function useConfiguratorOutputs({
         : previewType === 'logo'
           ? logoQualityBadgePreferences
           : posterQualityBadgePreferences;
+    const remuxDisplayModeForType =
+      previewType === 'backdrop'
+        ? backdropRemuxDisplayMode
+        : previewType === 'thumbnail'
+          ? thumbnailRemuxDisplayMode
+        : previewType === 'logo'
+          ? logoRemuxDisplayMode
+          : posterRemuxDisplayMode;
     const ratingBadgeScaleForType =
       previewType === 'poster'
         ? posterRatingBadgeScale
@@ -873,6 +890,18 @@ export function useConfiguratorOutputs({
             ? 'logoQualityBadgesMax'
             : 'posterQualityBadgesMax',
         String(activeQualityBadgesMax),
+      );
+    }
+    if (remuxDisplayModeForType !== 'composite') {
+      query.set(
+        previewType === 'backdrop'
+          ? 'backdropRemuxDisplayMode'
+          : previewType === 'thumbnail'
+            ? 'thumbnailRemuxDisplayMode'
+          : previewType === 'logo'
+            ? 'logoRemuxDisplayMode'
+            : 'posterRemuxDisplayMode',
+        remuxDisplayModeForType,
       );
     }
 
@@ -1093,6 +1122,7 @@ export function useConfiguratorOutputs({
     backdropQualityBadgePreferences,
     backdropQualityBadgeScale,
     backdropQualityBadgesStyle,
+    backdropRemuxDisplayMode,
     backdropRatingBadgeScale,
     backdropRatingPreferences,
     backdropRatingPresentation,
@@ -1111,6 +1141,7 @@ export function useConfiguratorOutputs({
     thumbnailQualityBadgePreferences,
     thumbnailQualityBadgeScale,
     thumbnailQualityBadgesStyle,
+    thumbnailRemuxDisplayMode,
     thumbnailRatingBadgeScale,
     thumbnailRatingPreferences,
     thumbnailRatingPresentation,
@@ -1130,6 +1161,7 @@ export function useConfiguratorOutputs({
     logoQualityBadgePreferences,
     logoQualityBadgeScale,
     logoQualityBadgesStyle,
+    logoRemuxDisplayMode,
     logoRatingBadgeScale,
     logoRatingPreferences,
     logoRatingPresentation,
@@ -1154,6 +1186,7 @@ export function useConfiguratorOutputs({
     posterQualityBadgeScale,
     posterQualityBadgesPosition,
     posterQualityBadgesStyle,
+    posterRemuxDisplayMode,
     posterRatingBadgeScale,
     posterRatingPreferences,
     posterRatingPresentation,

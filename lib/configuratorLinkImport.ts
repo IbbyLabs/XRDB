@@ -68,6 +68,13 @@ const QUALITY_BADGES_KEY_BY_PREVIEW_TYPE: Record<ConfiguratorPreviewType, string
   logo: 'logoQualityBadgePreferences',
 };
 
+const REMUX_DISPLAY_MODE_KEY_BY_PREVIEW_TYPE: Record<ConfiguratorPreviewType, string> = {
+  poster: 'posterRemuxDisplayMode',
+  backdrop: 'backdropRemuxDisplayMode',
+  thumbnail: 'thumbnailRemuxDisplayMode',
+  logo: 'logoRemuxDisplayMode',
+};
+
 const STREAM_BADGES_KEY_BY_PREVIEW_TYPE: Partial<Record<ConfiguratorPreviewType, string>> = {
   poster: 'posterStreamBadges',
   backdrop: 'backdropStreamBadges',
@@ -261,6 +268,23 @@ export const parseConfiguratorLinkImport = (
       parseQualityBadgePreferencesAllowEmpty(logoQualityBadges);
   }
 
+  const posterRemuxDisplayMode = targetUrl.searchParams.get('posterRemuxDisplayMode');
+  if (posterRemuxDisplayMode !== null) {
+    settingsCandidate.posterRemuxDisplayMode = posterRemuxDisplayMode;
+  }
+  const backdropRemuxDisplayMode = targetUrl.searchParams.get('backdropRemuxDisplayMode');
+  if (backdropRemuxDisplayMode !== null) {
+    settingsCandidate.backdropRemuxDisplayMode = backdropRemuxDisplayMode;
+  }
+  const thumbnailRemuxDisplayMode = targetUrl.searchParams.get('thumbnailRemuxDisplayMode');
+  if (thumbnailRemuxDisplayMode !== null) {
+    settingsCandidate.thumbnailRemuxDisplayMode = thumbnailRemuxDisplayMode;
+  }
+  const logoRemuxDisplayMode = targetUrl.searchParams.get('logoRemuxDisplayMode');
+  if (logoRemuxDisplayMode !== null) {
+    settingsCandidate.logoRemuxDisplayMode = logoRemuxDisplayMode;
+  }
+
   const providerAppearance = targetUrl.searchParams.get('providerAppearance');
   if (providerAppearance !== null) {
     settingsCandidate.ratingProviderAppearanceOverrides =
@@ -308,6 +332,12 @@ export const parseConfiguratorLinkImport = (
     if (genericQualityBadges) {
       settingsCandidate[QUALITY_BADGES_KEY_BY_PREVIEW_TYPE[scopedPreviewType]] =
         parseQualityBadgePreferencesAllowEmpty(genericQualityBadges);
+    }
+
+    const genericRemuxDisplayMode = targetUrl.searchParams.get('remuxDisplayMode');
+    if (genericRemuxDisplayMode) {
+      settingsCandidate[REMUX_DISPLAY_MODE_KEY_BY_PREVIEW_TYPE[scopedPreviewType]] =
+        genericRemuxDisplayMode;
     }
 
     const genericStreamBadges = targetUrl.searchParams.get('streamBadges');
