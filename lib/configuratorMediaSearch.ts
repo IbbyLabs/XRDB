@@ -221,24 +221,85 @@ export const mapOmdbSearchResultsForPreviewType = ({
   return mapped;
 };
 
+export type PinnedTarget = { mediaId: string; title: string };
+export type PinnedTargetsStore = Record<MediaSearchPreviewType, PinnedTarget[]>;
+
+export const PINNED_TARGETS_STORAGE_KEY = 'xrdb.pinnedTargets.v1';
+export const PINNED_TARGETS_MAX_PER_TYPE = 8;
+
 export const MEDIA_TARGET_SAMPLE_IDS: Record<MediaSearchPreviewType, string[]> = {
-  poster: ['tt0133093', 'tmdb:movie:27205', 'tmdb:movie:157336', 'tmdb:movie:335787'],
-  backdrop: ['tmdb:tv:1399', 'tmdb:movie:299534', 'tmdb:movie:603'],
-  thumbnail: ['tt0944947:1:1', 'tmdb:tv:1399:1:1', 'tmdb:tv:1396:1:1'],
-  logo: ['tmdb:movie:603', 'tmdb:tv:1399', 'tmdb:movie:299534'],
+  poster: [
+    'tt0133093',
+    'tmdb:movie:27205',
+    'tmdb:movie:157336',
+    'tmdb:movie:335787',
+    'tmdb:movie:550',
+    'tmdb:movie:680',
+    'tmdb:tv:1399',
+    'tmdb:tv:1396',
+    'tmdb:tv:1429',
+    'tmdb:tv:85937',
+  ],
+  backdrop: [
+    'tmdb:movie:299534',
+    'tmdb:movie:603',
+    'tmdb:movie:438631',
+    'tmdb:movie:157336',
+    'tmdb:tv:1399',
+    'tmdb:tv:94997',
+    'tmdb:tv:1396',
+    'tmdb:tv:1429',
+    'tmdb:tv:85937',
+    'tmdb:tv:95479',
+  ],
+  thumbnail: [
+    'tt0944947:1:1',
+    'tmdb:tv:1399:1:1',
+    'tmdb:tv:1396:1:1',
+    'tmdb:tv:94997:1:1',
+    'tmdb:tv:66732:1:1',
+    'tmdb:tv:1429:1:1',
+    'tmdb:tv:85937:1:1',
+    'tmdb:tv:95479:1:1',
+    'tmdb:tv:37854:1:1',
+    'tmdb:tv:75603:1:1',
+  ],
+  logo: [
+    'tmdb:movie:603',
+    'tmdb:tv:1399',
+    'tmdb:movie:299534',
+    'tmdb:movie:27205',
+    'tmdb:tv:1396',
+    'tmdb:movie:438631',
+    'tmdb:movie:157336',
+    'tmdb:tv:1429',
+    'tmdb:tv:85937',
+    'tmdb:tv:37854',
+  ],
 };
 
 export const pickShuffledMediaTarget = ({
   previewType,
   currentMediaId,
+  pinnedTargets,
   randomValue = Math.random(),
 }: {
   previewType: MediaSearchPreviewType;
   currentMediaId: string;
+  pinnedTargets?: PinnedTarget[];
   randomValue?: number;
 }) => {
-  const samples = MEDIA_TARGET_SAMPLE_IDS[previewType];
-  if (!samples || samples.length === 0) {
+  const builtInSamples = MEDIA_TARGET_SAMPLE_IDS[previewType];
+  const pinnedIds = pinnedTargets ? pinnedTargets.map((p) => p.mediaId) : [];
+  const seen = new Set<string>();
+  const samples: string[] = [];
+  for (const id of [...builtInSamples, ...pinnedIds]) {
+    const key = id.trim().toLowerCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    samples.push(id);
+  }
+  if (samples.length === 0) {
     return '';
   }
 
@@ -253,4 +314,55 @@ export const pickShuffledMediaTarget = ({
       : Math.random();
   const randomIndex = Math.floor(boundedRandom * candidateSamples.length);
   return candidateSamples[randomIndex] || candidateSamples[0] || '';
+};
+
+const EMPTY_PINNED_STORE: PinnedTargetsStore = {
+  poster: [],
+  backdrop: [],
+  thumbnail: [],
+  logo: [],
+};
+
+export const readPinnedTargetsFromStorage = (): PinnedTargetsStore => {
+  try {
+    const raw = localStorage.getItem(PINNED_TARGETS_STORAGE_KEY);
+    if (!raw) return { ...EMPTY_PINNED_STORE };
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== 'object') return { ...EMPTY_PINNED_STORE };
+    const store = parsed as Record<string, unknown>;
+    const result: PinnedTargetsStore = { ...EMPTY_PINNED_STORE };
+    for (const key of ['poster', 'backdrop', 'thumbnail', 'logo'] as const) {
+      const arr = store[key];
+      if (!Array.isArray(arr)) continue;
+      result[key] = arr
+        .filter(
+          (entry): entry is PinnedTarget =>
+            !!entry &&
+            typeof entry === 'object' &&
+            typeof (entry as Record<string, unknown>).mediaId === 'string' &&
+            typeof (entry as Record<string, unknown>).title === 'string',
+        )
+        .slice(0, PINNED_TARGETS_MAX_PER_TYPE);
+    }
+    return result;
+  } catch {
+    return { ...EMPTY_PINNED_STORE };
+  }
+};
+
+export const writePinnedTargetsToStorage = (store: PinnedTargetsStore): void => {
+  try {
+    localStorage.setItem(PINNED_TARGETS_STORAGE_KEY, JSON.stringify(store));
+  } catch {
+    // silent — localStorage may be full or unavailable
+  }
+};
+
+export const isBuiltInSample = (mediaId: string): boolean => {
+  const normalized = String(mediaId || '').trim().toLowerCase();
+  if (!normalized) return false;
+  for (const ids of Object.values(MEDIA_TARGET_SAMPLE_IDS)) {
+    if (ids.some((id) => id.trim().toLowerCase() === normalized)) return true;
+  }
+  return false;
 };
