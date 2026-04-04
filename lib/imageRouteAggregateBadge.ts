@@ -24,6 +24,7 @@ export type AggregateBadgeInput = {
   sourceValue?: string;
   iconUrl: string;
   accentColor: string;
+  valueColor?: string;
   accentBarOffset?: number;
   accentBarVisible?: boolean;
   variant?: 'standard' | 'minimal' | 'summary';
@@ -41,6 +42,7 @@ export const buildAggregateRatingBadgeForSource = ({
   renderablePreferences,
   ratingBadgeByProvider,
   resolveAccentColor,
+  resolveValueColor,
   accentBarOffset = DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
   accentBarVisible = true,
   allowFallbackToOverall = true,
@@ -54,6 +56,9 @@ export const buildAggregateRatingBadgeForSource = ({
     source: AggregateRatingSource,
     normalizedScore: number | null,
   ) => string;
+  resolveValueColor?: (
+    source: AggregateRatingSource,
+  ) => string | undefined;
   accentBarOffset?: number;
   accentBarVisible?: boolean;
   allowFallbackToOverall?: boolean;
@@ -107,6 +112,7 @@ export const buildAggregateRatingBadgeForSource = ({
     value: formatNormalizedRatingValue(averageValue, valueMode),
     iconUrl: useCompactAggregateBadge ? representativeIconUrl : '',
     accentColor: resolveAccentColor(effectiveSource, averageValue),
+    valueColor: resolveValueColor?.(effectiveSource),
     accentBarOffset,
     accentBarVisible,
     variant: useCompactAggregateBadge ? 'minimal' : 'summary',
@@ -119,6 +125,7 @@ export const buildAggregateRatingBadges = ({
   renderablePreferences,
   ratingBadgeByProvider,
   resolveAccentColor,
+  resolveValueColor,
   accentBarOffset = DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
   accentBarVisible = true,
   valueMode = DEFAULT_RATING_VALUE_MODE,
@@ -131,6 +138,9 @@ export const buildAggregateRatingBadges = ({
     source: AggregateRatingSource,
     normalizedScore: number | null,
   ) => string;
+  resolveValueColor?: (
+    source: AggregateRatingSource,
+  ) => string | undefined;
   accentBarOffset?: number;
   accentBarVisible?: boolean;
   valueMode?: RatingValueMode;
@@ -144,6 +154,7 @@ export const buildAggregateRatingBadges = ({
           renderablePreferences,
           ratingBadgeByProvider,
           resolveAccentColor,
+          resolveValueColor,
           accentBarOffset,
           accentBarVisible,
           allowFallbackToOverall: false,
@@ -159,6 +170,7 @@ export const buildAggregateRatingBadges = ({
     renderablePreferences,
     ratingBadgeByProvider,
     resolveAccentColor,
+    resolveValueColor,
     accentBarOffset,
     accentBarVisible,
     valueMode,

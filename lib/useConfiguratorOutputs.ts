@@ -28,6 +28,7 @@ import {
   DEFAULT_AGGREGATE_ACCENT_MODE,
   DEFAULT_AGGREGATE_DYNAMIC_STOPS,
   DEFAULT_AGGREGATE_RATING_SOURCE,
+  DEFAULT_AGGREGATE_VALUE_COLOR,
   DEFAULT_RATING_PRESENTATION,
   usesAggregateAccentBar,
   usesAggregateRatingPresentation,
@@ -241,8 +242,11 @@ export function useConfiguratorOutputs({
   aggregateAccentColor,
   aggregateAccentMode,
   aggregateAudienceAccentColor,
+  aggregateAudienceValueColor,
   aggregateCriticsAccentColor,
+  aggregateCriticsValueColor,
   aggregateDynamicStops,
+  aggregateValueColor,
   backdropAggregateRatingSource,
   backdropArtworkSource,
   backdropGenreBadgeAnimeGrouping,
@@ -397,8 +401,11 @@ export function useConfiguratorOutputs({
   aggregateAccentColor: string;
   aggregateAccentMode: AggregateAccentMode;
   aggregateAudienceAccentColor: string;
+  aggregateAudienceValueColor: string;
   aggregateCriticsAccentColor: string;
+  aggregateCriticsValueColor: string;
   aggregateDynamicStops: string;
+  aggregateValueColor: string;
   backdropAggregateRatingSource: AggregateRatingSource;
   backdropArtworkSource: ArtworkSource;
   backdropGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
@@ -825,6 +832,24 @@ export function useConfiguratorOutputs({
       query.set('aggregateDynamicStops', aggregateDynamicStops);
     }
     if (
+      usesAggregateRatingPresentation(ratingPresentationForType) &&
+      aggregateValueColor !== DEFAULT_AGGREGATE_VALUE_COLOR
+    ) {
+      query.set('aggregateValueColor', aggregateValueColor);
+    }
+    if (
+      usesAggregateRatingPresentation(ratingPresentationForType) &&
+      aggregateCriticsValueColor !== DEFAULT_AGGREGATE_VALUE_COLOR
+    ) {
+      query.set('aggregateCriticsValueColor', aggregateCriticsValueColor);
+    }
+    if (
+      usesAggregateRatingPresentation(ratingPresentationForType) &&
+      aggregateAudienceValueColor !== DEFAULT_AGGREGATE_VALUE_COLOR
+    ) {
+      query.set('aggregateAudienceValueColor', aggregateAudienceValueColor);
+    }
+    if (
       usesAggregateAccentBar(ratingPresentationForType) &&
       aggregateAccentBarOffset !== DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET
     ) {
@@ -1113,8 +1138,11 @@ export function useConfiguratorOutputs({
     aggregateAccentColor,
     aggregateAccentMode,
     aggregateAudienceAccentColor,
+    aggregateAudienceValueColor,
     aggregateCriticsAccentColor,
+    aggregateCriticsValueColor,
     aggregateDynamicStops,
+    aggregateValueColor,
     backdropAggregateRatingSource,
     backdropArtworkSource,
     backdropImageSize,

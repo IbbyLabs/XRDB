@@ -41,6 +41,7 @@ import {
   DEFAULT_AGGREGATE_ACCENT_MODE,
   DEFAULT_AGGREGATE_DYNAMIC_STOPS,
   DEFAULT_AGGREGATE_RATING_SOURCE,
+  DEFAULT_AGGREGATE_VALUE_COLOR,
   DEFAULT_RATING_PRESENTATION,
   type AggregateAccentMode,
   type AggregateRatingSource,
@@ -204,6 +205,9 @@ export function useConfiguratorWorkspaceState() {
   const [aggregateAccentColor, setAggregateAccentColor] = useState<string>(DEFAULT_AGGREGATE_ACCENT_COLOR);
   const [aggregateCriticsAccentColor, setAggregateCriticsAccentColor] = useState<string>(AGGREGATE_RATING_SOURCE_ACCENTS.critics);
   const [aggregateAudienceAccentColor, setAggregateAudienceAccentColor] = useState<string>(AGGREGATE_RATING_SOURCE_ACCENTS.audience);
+  const [aggregateValueColor, setAggregateValueColor] = useState<string>(DEFAULT_AGGREGATE_VALUE_COLOR);
+  const [aggregateCriticsValueColor, setAggregateCriticsValueColor] = useState<string>(DEFAULT_AGGREGATE_VALUE_COLOR);
+  const [aggregateAudienceValueColor, setAggregateAudienceValueColor] = useState<string>(DEFAULT_AGGREGATE_VALUE_COLOR);
   const [aggregateDynamicStops, setAggregateDynamicStops] = useState<string>(DEFAULT_AGGREGATE_DYNAMIC_STOPS);
   const [aggregateAccentBarOffset, setAggregateAccentBarOffset] = useState<number>(DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET);
   const [aggregateAccentBarVisible, setAggregateAccentBarVisible] = useState(true);
@@ -275,8 +279,11 @@ export function useConfiguratorWorkspaceState() {
     aggregateAccentColor,
     aggregateAccentMode,
     aggregateAudienceAccentColor,
+    aggregateAudienceValueColor,
     aggregateCriticsAccentColor,
+    aggregateCriticsValueColor,
     aggregateDynamicStops,
+    aggregateValueColor,
     posterNoBackgroundBadgeOutlineColor,
     posterNoBackgroundBadgeOutlineWidth,
     backdropAggregateRatingSource,
@@ -431,8 +438,11 @@ export function useConfiguratorWorkspaceState() {
     setAggregateAccentColor,
     setAggregateAccentMode,
     setAggregateAudienceAccentColor,
+    setAggregateAudienceValueColor,
     setAggregateCriticsAccentColor,
+    setAggregateCriticsValueColor,
     setAggregateDynamicStops,
+    setAggregateValueColor,
     setPosterNoBackgroundBadgeOutlineColor,
     setPosterNoBackgroundBadgeOutlineWidth,
     setPosterRatingXOffsetPillGlass,

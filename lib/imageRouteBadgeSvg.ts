@@ -107,6 +107,7 @@ export type BuildBadgeSvgInput = {
   valueOffsetY?: number;
   preferReadablePlainSurface?: boolean;
   preferNeutralGlassPlate?: boolean;
+  valueColor?: string;
   compactText?: boolean;
 };
 
@@ -146,6 +147,7 @@ export const buildBadgeSvg = ({
   valueOffsetY = DEFAULT_STACKED_ELEMENT_OFFSET_PX,
   preferReadablePlainSurface = false,
   preferNeutralGlassPlate = false,
+  valueColor,
   compactText = false,
 }: BuildBadgeSvgInput) => {
   const radius = getBadgeOuterRadius(height, ratingStyle);
@@ -200,7 +202,7 @@ export const buildBadgeSvg = ({
         return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 ${plainDefs}
 ${accentBarVisible ? `<rect x="${accentRailRect.x}" y="${accentRailRect.y}" width="${accentRailRect.width}" height="${accentRailRect.height}" rx="${Math.max(2, Math.round(accentRailRect.height / 2))}" fill="${accentColor}" fill-opacity="0.78" filter="url(#plain-variant-surface-shadow)" />` : ''}
-<text x="${centerX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${valueFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="white" filter="url(#plain-variant-text-shadow)"${valueNumericStyle}>${escapeXml(value)}</text>
+<text x="${centerX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${valueFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="${valueColor ?? 'white'}" filter="url(#plain-variant-text-shadow)"${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
       }
 
@@ -238,7 +240,7 @@ ${accentBarVisible ? `<rect x="${accentRailRect.x}" y="${accentRailRect.y}" widt
 ${plainDefs}
 ${accentBarVisible ? `<rect x="${accentRailRect.x}" y="${accentRailRect.y}" width="${accentRailRect.width}" height="${accentRailRect.height}" rx="${Math.max(1.5, Math.round(accentRailRect.height / 2))}" fill="${accentColor}" fill-opacity="0.82" filter="url(#plain-variant-surface-shadow)" />` : ''}
 <text x="${labelX}" y="${labelY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${summaryLabelFontSize}" font-weight="800" text-anchor="middle" fill="${accentColor}" filter="url(#plain-variant-text-shadow)">${escapeXml(summaryLabel)}</text>
-<text x="${valueX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="white" filter="url(#plain-variant-text-shadow)"${valueNumericStyle}>${escapeXml(value)}</text>
+<text x="${valueX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="${valueColor ?? 'white'}" filter="url(#plain-variant-text-shadow)"${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
     }
     const accentStrokeOpacity = ratingStyle === 'square' ? 0.9 : 0.86;
@@ -295,7 +297,7 @@ ${accentBarVisible ? `<rect x="${accentRailRect.x}" y="${accentRailRect.y}" widt
 ${variantDefs}
 ${variantChrome}
 ${accentBarVisible ? `<rect x="${accentRailRect.x}" y="${accentRailRect.y}" width="${accentRailRect.width}" height="${accentRailRect.height}" rx="${Math.max(1, Math.round(accentRailRect.height / 2))}" fill="${accentColor}" />` : ''}
-<text x="${minimalValueX}" y="${minimalValueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${valueFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="white"${valueFilter}${valueNumericStyle}>${escapeXml(value)}</text>
+<text x="${minimalValueX}" y="${minimalValueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${valueFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="${valueColor ?? 'white'}"${valueFilter}${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
     }
 
@@ -322,7 +324,7 @@ ${variantDefs}
 ${variantChrome}
 <rect x="${chipX}" y="${chipY}" width="${chipWidth}" height="${chipHeight}" rx="${chipRadius}" fill="${accentColor}" fill-opacity="0.94" />
 <text x="${labelX}" y="${labelY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${summaryLabelFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="white"${valueFilter}>${escapeXml(summaryLabel)}</text>
-<text x="${valueX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="white"${valueFilter}${valueNumericStyle}>${escapeXml(value)}</text>
+<text x="${valueX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="${valueColor ?? 'white'}"${valueFilter}${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
   }
   if (ratingStyle === 'stacked') {
@@ -456,7 +458,7 @@ ${stackedLayout.showAccentRail ? `<rect x="${stackedLayout.accentRailX}" y="${st
 <rect x="${valuePlateX}" y="${valuePlateY}" width="${valuePlateWidth}" height="${valuePlateHeight}" rx="${valuePlateRadius}" fill="url(#stacked-value-fill)" stroke="rgba(255,255,255,0.08)" stroke-width="0.9" />
 ${iconImage}
 ${monogramText}
-<text x="${stackedLayout.valueX}" y="${valueCenterY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${stackedLayout.valueFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="white" filter="url(#stacked-value-shadow)"${valueTextLengthForPlate || valueTextLength}${valueNumericStyle}>${escapeXml(value)}</text>
+<text x="${stackedLayout.valueX}" y="${valueCenterY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${stackedLayout.valueFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="${valueColor ?? 'white'}" filter="url(#stacked-value-shadow)"${valueTextLengthForPlate || valueTextLength}${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
   }
   const outerPadding = Math.max(6, Math.round(paddingX * 0.7));
@@ -548,6 +550,6 @@ ${outerRect}
 ${iconShape}
 ${iconImage}
 ${monogramText}
-<text x="${valueRenderX}" y="${finalValueY}" font-family="${valueFontFamily}" font-size="${fontSize}" font-weight="800" text-anchor="${valueAnchor}" fill="white"${valueFilter}${valueLetterSpacing}${valueTextLength}${valueNumericStyle}>${escapeXml(value)}</text>
+<text x="${valueRenderX}" y="${finalValueY}" font-family="${valueFontFamily}" font-size="${fontSize}" font-weight="800" text-anchor="${valueAnchor}" fill="${valueColor ?? 'white'}"${valueFilter}${valueLetterSpacing}${valueTextLength}${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
 };

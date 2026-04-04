@@ -213,6 +213,9 @@ export function PresentationSection({
   aggregateAccentColor,
   aggregateCriticsAccentColor,
   aggregateAudienceAccentColor,
+  aggregateValueColor,
+  aggregateCriticsValueColor,
+  aggregateAudienceValueColor,
   aggregateDynamicStops,
   aggregateAccentBarVisible,
   aggregateAccentBarOffset,
@@ -224,6 +227,9 @@ export function PresentationSection({
   onSelectAggregateAccentColor,
   onSelectAggregateCriticsAccentColor,
   onSelectAggregateAudienceAccentColor,
+  onSelectAggregateValueColor,
+  onSelectAggregateCriticsValueColor,
+  onSelectAggregateAudienceValueColor,
   onSelectAggregateDynamicStops,
   onToggleAggregateAccentBarVisible,
   onSelectAggregateAccentBarOffset,
@@ -247,6 +253,9 @@ export function PresentationSection({
   aggregateAccentColor: string;
   aggregateCriticsAccentColor: string;
   aggregateAudienceAccentColor: string;
+  aggregateValueColor: string;
+  aggregateCriticsValueColor: string;
+  aggregateAudienceValueColor: string;
   aggregateDynamicStops: string;
   aggregateAccentBarVisible: boolean;
   aggregateAccentBarOffset: number;
@@ -258,6 +267,9 @@ export function PresentationSection({
   onSelectAggregateAccentColor: (value: string) => void;
   onSelectAggregateCriticsAccentColor: (value: string) => void;
   onSelectAggregateAudienceAccentColor: (value: string) => void;
+  onSelectAggregateValueColor: (value: string) => void;
+  onSelectAggregateCriticsValueColor: (value: string) => void;
+  onSelectAggregateAudienceValueColor: (value: string) => void;
   onSelectAggregateDynamicStops: (value: string) => void;
   onToggleAggregateAccentBarVisible: () => void;
   onSelectAggregateAccentBarOffset: (value: number) => void;
@@ -479,6 +491,27 @@ export function PresentationSection({
               ) : null}
             </div>
           ) : null}
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <ColorField
+              label="Value Color"
+              value={aggregateValueColor}
+              onChange={onSelectAggregateValueColor}
+            />
+            {usesDualAggregateRatingPresentation(activeRatingPresentation) ? (
+              <>
+                <ColorField
+                  label="Critics Value"
+                  value={aggregateCriticsValueColor}
+                  onChange={onSelectAggregateCriticsValueColor}
+                />
+                <ColorField
+                  label="Audience Value"
+                  value={aggregateAudienceValueColor}
+                  onChange={onSelectAggregateAudienceValueColor}
+                />
+              </>
+            ) : null}
+          </div>
           {aggregateAccentMode === 'dynamic' ? (
             <div className="space-y-2 pt-1">
               <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block">

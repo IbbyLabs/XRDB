@@ -94,6 +94,7 @@ export type RatingBadge = {
   sourceValue?: string;
   iconUrl: string;
   accentColor: string;
+  valueColor?: string;
   hasCustomIconOverride?: boolean;
   iconCornerRadius?: number;
   accentBarOffset?: number;
@@ -565,6 +566,7 @@ export const renderWithSharp = async (
         paddingX: input.badgePaddingX,
         gap: input.badgeGap,
         accentColor: badge.accentColor,
+        valueColor: badge.valueColor,
         monogram,
         iconDataUri: iconRenderStateByProvider.get(badge.key)?.dataUri || null,
         hasCustomIconOverride: badge.hasCustomIconOverride,
