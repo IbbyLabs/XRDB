@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 
+import { AppShellLayout } from '@/components/app-shell-layout';
 import { RootLayoutShell } from '@/components/root-layout-shell';
 import { scheduleImdbDatasetSync } from '@/lib/imdbDatasetScheduler';
 import { buildSiteMetadata, siteViewport } from '@/lib/siteMetadata';
@@ -14,5 +15,9 @@ export const viewport: Viewport = siteViewport;
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   scheduleImdbDatasetSync();
-  return <RootLayoutShell>{children}</RootLayoutShell>;
+  return (
+    <RootLayoutShell>
+      <AppShellLayout>{children}</AppShellLayout>
+    </RootLayoutShell>
+  );
 }
