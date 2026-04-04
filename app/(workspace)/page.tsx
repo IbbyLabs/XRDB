@@ -1,5 +1,5 @@
 import ConfiguratorPage from '@/components/configurator-page';
 
-export default function ConfiguratorRoute() {
+export default function ConfigureRoute() {
   return <ConfiguratorPage />;
 }

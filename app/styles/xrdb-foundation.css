@@ -7,7 +7,9 @@
 	--brand-bg-mid: #06030f;
 	--brand-bg-end: #030109;
 	--card: rgba(20, 10, 40, 0.95);
+	--card-rgb: 20 10 40;
 	--border: rgba(100, 70, 160, 0.5);
+	--border-rgb: 100 70 160;
 	--shadow-soft: 0 30px 80px -50px rgba(8, 4, 18, 0.9);
 	--glow: rgba(100, 70, 160, 0.6);
 }
@@ -27,7 +29,6 @@ body {
 	font-family: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
 	background-attachment: fixed;
 	background-image:
-		radial-gradient(circle at 85% 15%, rgba(50, 30, 90, 0.5) 0%, rgba(50, 30, 90, 0.22) 20%, transparent 44%),
 		linear-gradient(160deg, var(--brand-bg-start) 0%, var(--brand-bg-mid) 50%, var(--brand-bg-end) 100%);
 }
 
@@ -41,34 +42,4 @@ pre {
 	position: relative;
 	overflow-x: clip;
 	overflow-y: visible;
-	--scroll-compact-progress: 0;
-	--workspace-sticky-top: 96px;
-}
-
-.xrdb-page::before,
-.xrdb-page::after {
-	content: "";
-	position: absolute;
-	pointer-events: none;
-	width: 620px;
-	height: 620px;
-	border-radius: 50%;
-	background: radial-gradient(circle, rgba(80, 60, 140, 0.22), transparent 72%);
-	filter: blur(36px);
-	opacity: 0.9;
-	z-index: 0;
-}
-
-.xrdb-page::before {
-	top: -210px;
-	right: -180px;
-}
-
-.xrdb-page::after {
-	width: 760px;
-	height: 760px;
-	bottom: -320px;
-	left: -280px;
-	background: radial-gradient(circle, rgba(66, 42, 120, 0.42), transparent 76%);
-	filter: blur(54px);
 }

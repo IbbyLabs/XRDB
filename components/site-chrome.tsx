@@ -209,6 +209,7 @@ export function ConfiguratorAccordionSection({
   isOpen,
   onToggle,
   tone = 'default',
+  referenceHref,
   children,
 }: {
   title: string;
@@ -216,6 +217,7 @@ export function ConfiguratorAccordionSection({
   isOpen: boolean;
   onToggle: () => void;
   tone?: 'default' | 'accent';
+  referenceHref?: string;
   children: ReactNode;
 }) {
   return (
@@ -232,7 +234,18 @@ export function ConfiguratorAccordionSection({
         className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left"
       >
         <div className="min-w-0">
-          <div className="text-sm font-semibold text-white">{title}</div>
+          <div className="flex items-center gap-2">
+            <div className="text-sm font-semibold text-white">{title}</div>
+            {referenceHref ? (
+              <a
+                href={referenceHref}
+                onClick={(e) => e.stopPropagation()}
+                className="text-[10px] font-medium text-violet-400 hover:text-violet-300 transition-colors"
+              >
+                Reference
+              </a>
+            ) : null}
+          </div>
           <div className="mt-0.5 text-[11px] leading-5 text-zinc-500">{description}</div>
         </div>
         <ChevronRight
