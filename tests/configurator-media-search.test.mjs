@@ -5,9 +5,14 @@ import {
   buildImdbMediaIdForPreviewType,
   buildMediaIdForPreviewType,
   buildTmdbMultiSearchUrl,
+  isBuiltInSample,
   mapOmdbSearchResultsForPreviewType,
   mapTmdbSearchResultsForPreviewType,
+  MEDIA_TARGET_SAMPLE_IDS,
   pickShuffledMediaTarget,
+  PINNED_TARGETS_MAX_PER_TYPE,
+  readPinnedTargetsFromStorage,
+  writePinnedTargetsToStorage,
 } from '../lib/configuratorMediaSearch.ts';
 
 test('buildMediaIdForPreviewType returns typed tmdb IDs for poster and backdrop', () => {
@@ -109,4 +114,53 @@ test('pickShuffledMediaTarget returns a fallback value when current target is em
 
   assert.equal(typeof nextBackdrop, 'string');
   assert.ok(nextBackdrop.length > 0);
+});
+
+test('MEDIA_TARGET_SAMPLE_IDS has 10 entries per preview type', () => {
+  for (const type of ['poster', 'backdrop', 'thumbnail', 'logo']) {
+    assert.equal(
+      MEDIA_TARGET_SAMPLE_IDS[type].length,
+      10,
+      `Expected 10 sample IDs for ${type}`,
+    );
+  }
+});
+
+test('pickShuffledMediaTarget includes pinned targets in the pool', () => {
+  const pinned = [{ mediaId: 'tmdb:tv:99999', title: 'Custom Pin' }];
+  const results = new Set();
+  for (let i = 0; i < 200; i++) {
+    results.add(
+      pickShuffledMediaTarget({
+        previewType: 'poster',
+        currentMediaId: '',
+        pinnedTargets: pinned,
+        randomValue: i / 200,
+      }),
+    );
+  }
+  assert.ok(results.has('tmdb:tv:99999'), 'Pinned target should appear in shuffle pool');
+});
+
+test('pickShuffledMediaTarget deduplicates pinned targets matching built-in samples', () => {
+  const pinned = [{ mediaId: 'tt0133093', title: 'The Matrix (pinned)' }];
+  const results = new Set();
+  for (let i = 0; i < 200; i++) {
+    results.add(
+      pickShuffledMediaTarget({
+        previewType: 'poster',
+        currentMediaId: '',
+        pinnedTargets: pinned,
+        randomValue: i / 200,
+      }),
+    );
+  }
+  assert.equal(results.size, MEDIA_TARGET_SAMPLE_IDS.poster.length);
+});
+
+test('isBuiltInSample returns true for known sample IDs and false for unknown', () => {
+  assert.equal(isBuiltInSample('tt0133093'), true);
+  assert.equal(isBuiltInSample('tmdb:tv:1399'), true);
+  assert.equal(isBuiltInSample('tmdb:tv:99999'), false);
+  assert.equal(isBuiltInSample(''), false);
 });

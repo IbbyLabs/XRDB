@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useId, useRef, useState, type ChangeEvent, type RefObject } from 'react';
-import { ChevronRight, Globe2, Image as ImageIcon, Layers, MonitorPlay, Shuffle } from 'lucide-react';
-import type { MediaSearchItem } from '@/lib/configuratorMediaSearch';
+import { ChevronRight, Globe2, Image as ImageIcon, Layers, MonitorPlay, Pin, PinOff, Shuffle, X } from 'lucide-react';
+import type { MediaSearchItem, MediaSearchPreviewType, PinnedTarget } from '@/lib/configuratorMediaSearch';
 import {
   buildEpisodePreviewMediaTarget,
   parseEpisodePreviewMediaTarget,
@@ -582,6 +582,16 @@ export function MediaTargetSection({
   onMediaSearchSubmit,
   onSelectMediaSearchResult,
   onShuffleMediaTarget,
+  pinnedTargets,
+  isPinnedLimitReached,
+  isPinned,
+  onTogglePin,
+  onPinSearchResult,
+  onRemovePinnedTarget,
+  onSelectPinnedTarget,
+  typeSwitchPending,
+  onTypeSwitchKeep,
+  onTypeSwitchFresh,
 }: {
   previewType: ProxyType;
   mediaId: string;
@@ -600,6 +610,16 @@ export function MediaTargetSection({
   onMediaSearchSubmit: () => void;
   onSelectMediaSearchResult: (result: MediaSearchItem) => void;
   onShuffleMediaTarget: () => void;
+  pinnedTargets: PinnedTarget[];
+  isPinnedLimitReached: boolean;
+  isPinned: (mediaId: string) => boolean;
+  onTogglePin: () => void;
+  onPinSearchResult: (result: MediaSearchItem) => void;
+  onRemovePinnedTarget: (mediaId: string) => void;
+  onSelectPinnedTarget: (target: PinnedTarget) => void;
+  typeSwitchPending: MediaSearchPreviewType | null;
+  onTypeSwitchKeep: () => void;
+  onTypeSwitchFresh: () => void;
 }) {
   const activeGuide = PREVIEW_GUIDE[previewType];
   const thumbnailTarget =
@@ -651,6 +671,13 @@ export function MediaTargetSection({
               </button>
             ))}
           </div>
+          {typeSwitchPending ? (
+            <div className="mt-1.5 flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/8 px-2.5 py-1.5 text-[11px] text-amber-200/90">
+              <span className="flex-1">Keep <span className="font-semibold text-amber-100">{activePreviewTitle || mediaId}</span>?</span>
+              <button type="button" onClick={onTypeSwitchKeep} className="rounded bg-amber-500/20 px-2 py-0.5 font-semibold text-amber-100 hover:bg-amber-500/30">Keep</button>
+              <button type="button" onClick={onTypeSwitchFresh} className="rounded bg-zinc-700/50 px-2 py-0.5 font-semibold text-zinc-300 hover:bg-zinc-700/70">Start fresh</button>
+            </div>
+          ) : null}
         </div>
         <div className="min-w-[140px] flex-1">
           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Media ID</span>
@@ -752,31 +779,44 @@ export function MediaTargetSection({
                   <div className="rounded-md px-2.5 py-2 text-[11px] text-zinc-400">Searching titles</div>
                 ) : (
                   mediaSearchResults.map((result) => (
-                    <button
+                    <div
                       key={`${result.mediaId}-${result.title}`}
-                      type="button"
-                      onClick={() => onSelectMediaSearchResult(result)}
-                      className="flex w-full items-start gap-3 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-zinc-900"
+                      className="flex items-start gap-0.5"
                     >
-                      <div className="relative h-[72px] w-12 shrink-0 overflow-hidden rounded-md border border-white/10 bg-zinc-900">
-                        {result.posterUrl ? (
-                          <div
-                            aria-hidden="true"
-                            className="h-full w-full bg-cover bg-center"
-                            style={{ backgroundImage: `url("${result.posterUrl}")` }}
-                          />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center px-1 text-center text-[9px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
-                            No poster
-                          </div>
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-[12px] font-semibold text-zinc-100">{result.title}</div>
-                        <div className="mt-0.5 text-[11px] text-zinc-500">{result.subtitle}</div>
-                        <div className="mt-1 truncate font-mono text-[10px] text-zinc-400">{result.mediaId}</div>
-                      </div>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => onSelectMediaSearchResult(result)}
+                        className="flex min-w-0 flex-1 items-start gap-3 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-zinc-900"
+                      >
+                        <div className="relative h-[72px] w-12 shrink-0 overflow-hidden rounded-md border border-white/10 bg-zinc-900">
+                          {result.posterUrl ? (
+                            <div
+                              aria-hidden="true"
+                              className="h-full w-full bg-cover bg-center"
+                              style={{ backgroundImage: `url("${result.posterUrl}")` }}
+                            />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center px-1 text-center text-[9px] font-semibold uppercase tracking-[0.14em] text-zinc-500">
+                              No poster
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-[12px] font-semibold text-zinc-100">{result.title}</div>
+                          <div className="mt-0.5 text-[11px] text-zinc-500">{result.subtitle}</div>
+                          <div className="mt-1 truncate font-mono text-[10px] text-zinc-400">{result.mediaId}</div>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onPinSearchResult(result); }}
+                        disabled={isPinned(result.mediaId) || isPinnedLimitReached}
+                        className="mt-2 shrink-0 rounded p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-violet-400 disabled:opacity-30 disabled:cursor-not-allowed"
+                        title={isPinned(result.mediaId) ? 'Already pinned' : 'Pin this target'}
+                      >
+                        <Pin className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   ))
                 )}
               </div>
@@ -790,6 +830,19 @@ export function MediaTargetSection({
             <Shuffle className="h-3.5 w-3.5" />
             Shuffle sample
           </button>
+          <button
+            type="button"
+            onClick={onTogglePin}
+            disabled={!mediaId.trim() || (!isPinned(mediaId) && isPinnedLimitReached)}
+            className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-zinc-900 px-2.5 py-2 text-xs font-semibold transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title={isPinned(mediaId) ? 'Unpin this target' : 'Pin this target'}
+          >
+            {isPinned(mediaId) ? (
+              <PinOff className="h-3.5 w-3.5 text-violet-400" />
+            ) : (
+              <Pin className="h-3.5 w-3.5 text-zinc-400" />
+            )}
+          </button>
         </div>
         {mediaSearchError ? (
           <p className="mt-2 text-[11px] leading-5 text-rose-300">{mediaSearchError}</p>
@@ -798,6 +851,29 @@ export function MediaTargetSection({
           <p className="mt-2 text-[11px] leading-5 text-zinc-400">
             Preview title: <span className="font-semibold text-zinc-200">{activePreviewTitle}</span>
           </p>
+        ) : null}
+        {pinnedTargets.length > 0 ? (
+          <div className="mt-2 flex gap-1.5 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'thin' }}>
+            {pinnedTargets.map((pin) => (
+              <button
+                key={pin.mediaId}
+                type="button"
+                onClick={() => onSelectPinnedTarget(pin)}
+                className="group inline-flex shrink-0 items-center gap-1 rounded-full border border-white/10 bg-zinc-900 px-2 py-1 text-[11px] font-medium text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white"
+              >
+                <span className="max-w-[140px] truncate">{pin.title}</span>
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => { e.stopPropagation(); onRemovePinnedTarget(pin.mediaId); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); onRemovePinnedTarget(pin.mediaId); } }}
+                  className="ml-0.5 rounded-full p-0.5 text-zinc-500 transition-colors hover:bg-zinc-700 hover:text-zinc-200"
+                >
+                  <X className="h-3 w-3" />
+                </span>
+              </button>
+            ))}
+          </div>
         ) : null}
       </div>
       {previewType === 'thumbnail' ? (

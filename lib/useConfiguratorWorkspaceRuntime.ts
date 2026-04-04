@@ -104,8 +104,16 @@ import { useConfiguratorWorkspaceSummary } from '@/lib/useConfiguratorWorkspaceS
 import { useConfiguratorWorkspaceUi } from '@/lib/useConfiguratorWorkspaceUi';
 import { enabledOrderedToRows } from '@/lib/ratingProviderRows';
 import {
+  isBuiltInSample,
+  MEDIA_TARGET_SAMPLE_IDS,
+  PINNED_TARGETS_MAX_PER_TYPE,
   pickShuffledMediaTarget,
+  readPinnedTargetsFromStorage,
+  writePinnedTargetsToStorage,
   type MediaSearchItem,
+  type MediaSearchPreviewType,
+  type PinnedTarget,
+  type PinnedTargetsStore,
 } from '@/lib/configuratorMediaSearch';
 
 type WorkspacePanelId =
@@ -575,6 +583,167 @@ export function useConfiguratorWorkspaceRuntime() {
   const mediaSearchRequestIdRef = useRef(0);
   const mediaSearchAbortControllerRef = useRef<AbortController | null>(null);
 
+  const [pinnedTargets, setPinnedTargets] = useState<PinnedTargetsStore>(() => readPinnedTargetsFromStorage());
+
+  const pinnedTargetsForType = useMemo(() => pinnedTargets[previewType] || [], [pinnedTargets, previewType]);
+  const isPinnedLimitReached = pinnedTargetsForType.length >= PINNED_TARGETS_MAX_PER_TYPE;
+
+  const isPinned = useCallback(
+    (targetMediaId: string) => {
+      const normalized = String(targetMediaId || '').trim().toLowerCase();
+      return pinnedTargetsForType.some((p) => p.mediaId.trim().toLowerCase() === normalized);
+    },
+    [pinnedTargetsForType],
+  );
+
+  const handleAddPinnedTarget = useCallback(
+    (target: PinnedTarget) => {
+      setPinnedTargets((prev) => {
+        const list = prev[previewType] || [];
+        const normalizedNew = target.mediaId.trim().toLowerCase();
+        if (list.some((p) => p.mediaId.trim().toLowerCase() === normalizedNew)) return prev;
+        if (list.length >= PINNED_TARGETS_MAX_PER_TYPE) return prev;
+        const next: PinnedTargetsStore = { ...prev, [previewType]: [...list, target] };
+        writePinnedTargetsToStorage(next);
+        return next;
+      });
+    },
+    [previewType],
+  );
+
+  const handleRemovePinnedTarget = useCallback(
+    (targetMediaId: string) => {
+      setPinnedTargets((prev) => {
+        const list = prev[previewType] || [];
+        const normalized = targetMediaId.trim().toLowerCase();
+        const filtered = list.filter((p) => p.mediaId.trim().toLowerCase() !== normalized);
+        if (filtered.length === list.length) return prev;
+        const next: PinnedTargetsStore = { ...prev, [previewType]: filtered };
+        writePinnedTargetsToStorage(next);
+        return next;
+      });
+    },
+    [previewType],
+  );
+
+  const handleTogglePin = useCallback(() => {
+    if (!mediaId.trim()) return;
+    if (isPinned(mediaId)) {
+      handleRemovePinnedTarget(mediaId);
+    } else {
+      const title =
+        activePreviewTitle ||
+        (previewType === 'thumbnail'
+          ? `Target ${mediaId}`
+          : `Target ${mediaId}`);
+      handleAddPinnedTarget({ mediaId, title });
+    }
+  }, [mediaId, isPinned, handleRemovePinnedTarget, handleAddPinnedTarget, activePreviewTitle, previewType]);
+
+  const handlePinSearchResult = useCallback(
+    (result: MediaSearchItem) => {
+      let pinTitle = result.year ? `${result.title} (${result.year})` : result.title;
+      if (previewType === 'thumbnail') {
+        const parsed = parseEpisodePreviewMediaTarget(result.mediaId);
+        if (parsed) {
+          pinTitle = `${pinTitle} S${String(parsed.seasonNumber).padStart(2, '0')}E${String(parsed.episodeNumber).padStart(2, '0')}`;
+        }
+      }
+      handleAddPinnedTarget({ mediaId: result.mediaId, title: pinTitle });
+    },
+    [previewType, handleAddPinnedTarget],
+  );
+
+  const handleSelectPinnedTarget = useCallback(
+    (target: PinnedTarget) => {
+      mediaSearchAbortControllerRef.current?.abort();
+      setMediaSearchLoading(false);
+      setMediaId(target.mediaId);
+      setActivePreviewTitle(target.title);
+      setMediaSearchError('');
+      setMediaSearchResults([]);
+      setMediaSearchQuery('');
+    },
+    [setMediaId],
+  );
+
+  const [typeSwitchPending, setTypeSwitchPending] = useState<MediaSearchPreviewType | null>(null);
+  const typeSwitchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearTypeSwitchBanner = useCallback(() => {
+    setTypeSwitchPending(null);
+    if (typeSwitchTimerRef.current) {
+      clearTimeout(typeSwitchTimerRef.current);
+      typeSwitchTimerRef.current = null;
+    }
+  }, []);
+
+  const applyTypeSwitch = useCallback(
+    (nextType: MediaSearchPreviewType, keepMedia: boolean) => {
+      clearTypeSwitchBanner();
+      if (keepMedia) {
+        if (nextType === 'thumbnail') {
+          const base = previewType === 'thumbnail'
+            ? mediaId
+            : mediaId.trim();
+          const alreadyEpisode = parseEpisodePreviewMediaTarget(base);
+          if (!alreadyEpisode) {
+            const episodeId = buildEpisodePreviewMediaTarget({
+              mediaId: base,
+              seasonNumber: 1,
+              episodeNumber: 1,
+            });
+            setMediaId(episodeId || base);
+          }
+        } else if (previewType === 'thumbnail') {
+          const parsed = parseEpisodePreviewMediaTarget(mediaId);
+          if (parsed) {
+            setMediaId(parsed.mediaId);
+          }
+        }
+        setPreviewType(nextType);
+      } else {
+        setPreviewType(nextType);
+        const firstSample = MEDIA_TARGET_SAMPLE_IDS[nextType][0] || '';
+        setMediaId(firstSample);
+        setActivePreviewTitle('Sample target');
+        setMediaSearchError('');
+        setMediaSearchResults([]);
+        setMediaSearchQuery('');
+      }
+    },
+    [clearTypeSwitchBanner, mediaId, previewType, setMediaId, setPreviewType],
+  );
+
+  const handlePreviewTypeChange = useCallback(
+    (nextType: MediaSearchPreviewType) => {
+      if (nextType === previewType) return;
+      clearTypeSwitchBanner();
+      const normalizedMediaId = mediaId.trim();
+      if (!normalizedMediaId || isBuiltInSample(normalizedMediaId)) {
+        setPreviewType(nextType);
+        return;
+      }
+      setTypeSwitchPending(nextType);
+      typeSwitchTimerRef.current = setTimeout(() => {
+        applyTypeSwitch(nextType, true);
+      }, 5000);
+    },
+    [previewType, mediaId, clearTypeSwitchBanner, setPreviewType, applyTypeSwitch],
+  );
+
+  const handleTypeSwitchKeep = useCallback(() => {
+    if (typeSwitchPending) applyTypeSwitch(typeSwitchPending, true);
+  }, [typeSwitchPending, applyTypeSwitch]);
+
+  const handleTypeSwitchFresh = useCallback(() => {
+    if (typeSwitchPending) applyTypeSwitch(typeSwitchPending, false);
+  }, [typeSwitchPending, applyTypeSwitch]);
+
+  useEffect(() => () => {
+    if (typeSwitchTimerRef.current) clearTimeout(typeSwitchTimerRef.current);
+  }, []);
+
   const handleMediaIdChange = (value: string) => {
     mediaSearchAbortControllerRef.current?.abort();
     setMediaId(value);
@@ -690,6 +859,7 @@ export function useConfiguratorWorkspaceRuntime() {
     const nextSample = pickShuffledMediaTarget({
       previewType,
       currentMediaId: mediaId,
+      pinnedTargets: pinnedTargetsForType,
     });
     if (!nextSample) {
       return;
@@ -1641,6 +1811,17 @@ export function useConfiguratorWorkspaceRuntime() {
       onMediaSearchSubmit: handleMediaSearchSubmit,
       onSelectMediaSearchResult: handleSelectMediaSearchResult,
       onShuffleMediaTarget: handleShuffleMediaTarget,
+      pinnedTargets: pinnedTargetsForType,
+      isPinnedLimitReached,
+      isPinned,
+      onTogglePin: handleTogglePin,
+      onPinSearchResult: handlePinSearchResult,
+      onRemovePinnedTarget: handleRemovePinnedTarget,
+      onSelectPinnedTarget: handleSelectPinnedTarget,
+      typeSwitchPending,
+      onTypeSwitchKeep: handleTypeSwitchKeep,
+      onTypeSwitchFresh: handleTypeSwitchFresh,
+      onPreviewTypeChange: handlePreviewTypeChange,
     },
     outputs: workspaceOutputs,
     pageChrome,

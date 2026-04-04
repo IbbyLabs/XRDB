@@ -13,7 +13,7 @@ import type { useConfiguratorWorkspaceState } from '@/lib/useConfiguratorWorkspa
 import type { useConfiguratorWorkspaceStorage } from '@/lib/useConfiguratorWorkspaceStorage';
 import type { useConfiguratorWorkspaceSummary } from '@/lib/useConfiguratorWorkspaceSummary';
 import type { ConfiguratorWizardAnswers } from '@/lib/configuratorPresets';
-import type { MediaSearchItem } from '@/lib/configuratorMediaSearch';
+import type { MediaSearchItem, MediaSearchPreviewType, PinnedTarget } from '@/lib/configuratorMediaSearch';
 import {
   BACKDROP_IMAGE_SIZE_OPTIONS,
   XRDB_REQUEST_KEY_HELP_COPY,
@@ -85,6 +85,17 @@ type MediaTargetSearchState = {
   onMediaSearchSubmit: () => void;
   onSelectMediaSearchResult: (result: MediaSearchItem) => void;
   onShuffleMediaTarget: () => void;
+  pinnedTargets: PinnedTarget[];
+  isPinnedLimitReached: boolean;
+  isPinned: (mediaId: string) => boolean;
+  onTogglePin: () => void;
+  onPinSearchResult: (result: MediaSearchItem) => void;
+  onRemovePinnedTarget: (mediaId: string) => void;
+  onSelectPinnedTarget: (target: PinnedTarget) => void;
+  typeSwitchPending: MediaSearchPreviewType | null;
+  onTypeSwitchKeep: () => void;
+  onTypeSwitchFresh: () => void;
+  onPreviewTypeChange: (type: MediaSearchPreviewType) => void;
 };
 
 export function buildConfiguratorPageProps({
@@ -207,7 +218,7 @@ export function buildConfiguratorPageProps({
         tmdbKey: workspaceState.tmdbKey,
         lang: workspaceState.lang,
         supportedLanguages: pageChrome.supportedLanguages,
-        onPreviewTypeChange: workspaceState.setPreviewType,
+        onPreviewTypeChange: mediaTargetSearch.onPreviewTypeChange,
         onMediaIdChange: mediaTargetSearch.onMediaIdChange,
         onLangChange: workspaceState.setLang,
         mediaSearchQuery: mediaTargetSearch.mediaSearchQuery,
@@ -219,6 +230,16 @@ export function buildConfiguratorPageProps({
         onMediaSearchSubmit: mediaTargetSearch.onMediaSearchSubmit,
         onSelectMediaSearchResult: mediaTargetSearch.onSelectMediaSearchResult,
         onShuffleMediaTarget: mediaTargetSearch.onShuffleMediaTarget,
+        pinnedTargets: mediaTargetSearch.pinnedTargets,
+        isPinnedLimitReached: mediaTargetSearch.isPinnedLimitReached,
+        isPinned: mediaTargetSearch.isPinned,
+        onTogglePin: mediaTargetSearch.onTogglePin,
+        onPinSearchResult: mediaTargetSearch.onPinSearchResult,
+        onRemovePinnedTarget: mediaTargetSearch.onRemovePinnedTarget,
+        onSelectPinnedTarget: mediaTargetSearch.onSelectPinnedTarget,
+        typeSwitchPending: mediaTargetSearch.typeSwitchPending,
+        onTypeSwitchKeep: mediaTargetSearch.onTypeSwitchKeep,
+        onTypeSwitchFresh: mediaTargetSearch.onTypeSwitchFresh,
       },
       presentationProps: {
         presentationOrder: PRESENTATION_SECTION_ORDER,
