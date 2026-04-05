@@ -2,6 +2,7 @@ import { type Dispatch, type SetStateAction } from 'react';
 import { type GenreBadgeAnimeGrouping, type GenreBadgeMode, type GenreBadgePosition, type GenreBadgeStyle } from '@/lib/genreBadge';
 import { type MediaFeatureBadgeKey, type RemuxDisplayMode } from '@/lib/mediaFeatures';
 import { type PosterRatingLayout } from '@/lib/posterLayoutOptions';
+import { resolveQualityBadgePlacementControlMode } from '@/lib/qualityBadgeControls';
 import { type QualityBadgeStyle } from '@/lib/ratingAppearance';
 import { type QualityBadgesSide, type PosterQualityBadgesPosition, type StreamBadgesSetting } from '@/lib/uiConfig';
 
@@ -219,9 +220,12 @@ export function useConfiguratorActiveWorkspaceSettings({
   setPosterRemuxDisplayMode: Setter<RemuxDisplayMode>;
   setPosterStreamBadges: Setter<StreamBadgesSetting>;
 }) {
-  const shouldShowPosterQualityBadgesSide = posterRatingsLayout === 'top-bottom';
-  const shouldShowPosterQualityBadgesPosition =
-    posterRatingsLayout === 'top' || posterRatingsLayout === 'bottom';
+  const qualityBadgePlacementControlMode = resolveQualityBadgePlacementControlMode(
+    previewType,
+    posterRatingsLayout,
+  );
+  const shouldShowPosterQualityBadgesSide = qualityBadgePlacementControlMode === 'side';
+  const shouldShowPosterQualityBadgesPosition = qualityBadgePlacementControlMode === 'position';
 
   return {
     activeGenreBadgeAnimeGrouping:
@@ -334,6 +338,7 @@ export function useConfiguratorActiveWorkspaceSettings({
           : previewType === 'logo'
             ? 'Logo'
             : 'Poster',
+    qualityBadgePlacementControlMode,
     setActiveGenreBadgeAnimeGrouping:
       previewType === 'poster'
         ? setPosterGenreBadgeAnimeGrouping

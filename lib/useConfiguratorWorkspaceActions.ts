@@ -27,13 +27,15 @@ import {
   THUMBNAIL_RATING_PREFERENCES,
   type ThumbnailRatingPreference,
 } from '@/lib/episodeIdentity';
+import {
+  getAllQualityBadgePreferenceIds,
+  type QualityBadgePreferenceId,
+} from '@/lib/qualityBadgeControls';
 import { enabledOrderedToRows, rowsToEnabledOrdered, type RatingProviderRow } from '@/lib/ratingProviderRows';
 import { type RatingPreference } from '@/lib/ratingProviderCatalog';
 import { type SavedUiConfig } from '@/lib/uiConfig';
 
 type ProxyType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
-
-type QualityBadgePreferenceId = (typeof QUALITY_BADGE_OPTIONS)[number]['id'];
 
 export function useConfiguratorWorkspaceActions({
   applyWorkspaceConfig,
@@ -139,6 +141,13 @@ export function useConfiguratorWorkspaceActions({
           ? current.filter((entry) => entry !== badgeId)
           : [...current, badgeId],
       );
+    },
+    [setActiveQualityBadgePreferences],
+  );
+
+  const setAllQualityBadgePreferencesEnabled = useCallback(
+    (enabled: boolean) => {
+      setActiveQualityBadgePreferences(enabled ? getAllQualityBadgePreferenceIds() : []);
     },
     [setActiveQualityBadgePreferences],
   );
@@ -316,6 +325,7 @@ export function useConfiguratorWorkspaceActions({
   return {
     handleApplyPreset,
     reorderRatingPreference,
+    setAllQualityBadgePreferencesEnabled,
     setAllRatingPreferencesEnabled,
     toggleQualityBadgePreference,
     toggleRatingPreference,
