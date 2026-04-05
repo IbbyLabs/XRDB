@@ -221,6 +221,14 @@ export const mapOmdbSearchResultsForPreviewType = ({
   return mapped;
 };
 
+const MEDIA_ID_PATTERN = /^(?:tt\d+|tv:\d+|tmdb:(?:movie|tv):\d+(?::\d+:\d+)?|imdb:tt\d+(?::\d+:\d+)?|xrdbid:tt\d+(?::\d+:\d+)?|kitsu:\d+(?::\d+(?::\d+)?)?|mal:\d+(?::\d+:\d+)?|anilist:\d+(?::\d+:\d+)?|anidb:\d+(?::\d+:\d+)?|tvdb:\d+(?::\d+:\d+)?|\d+)$/i;
+
+export const isMediaIdPattern = (input: string): boolean => {
+  const trimmed = input.trim();
+  if (!trimmed) return false;
+  return MEDIA_ID_PATTERN.test(trimmed);
+};
+
 export type PinnedTarget = { mediaId: string; title: string };
 export type PinnedTargetsStore = Record<MediaSearchPreviewType, PinnedTarget[]>;
 
@@ -368,4 +376,14 @@ export const isBuiltInSample = (mediaId: string): boolean => {
     if (entries.some((entry) => entry.id.trim().toLowerCase() === normalized)) return true;
   }
   return false;
+};
+
+export const findSampleTitleByMediaId = (mediaId: string): string | null => {
+  const normalized = String(mediaId || '').trim().toLowerCase();
+  if (!normalized) return null;
+  for (const entries of Object.values(MEDIA_TARGET_SAMPLE_IDS)) {
+    const match = entries.find((entry) => entry.id.trim().toLowerCase() === normalized);
+    if (match) return match.title;
+  }
+  return null;
 };

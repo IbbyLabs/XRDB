@@ -92,9 +92,6 @@ type MediaTargetSearchState = {
   onPinSearchResult: (result: MediaSearchItem) => void;
   onRemovePinnedTarget: (mediaId: string) => void;
   onSelectPinnedTarget: (target: PinnedTarget) => void;
-  typeSwitchPending: MediaSearchPreviewType | null;
-  onTypeSwitchKeep: () => void;
-  onTypeSwitchFresh: () => void;
   onPreviewTypeChange: (type: MediaSearchPreviewType) => void;
 };
 
@@ -171,18 +168,6 @@ export function buildConfiguratorPageProps({
         onWizardAnswer: workspaceUi.handleWizardAnswer,
         onApplyPreset: workspaceActions.handleApplyPreset,
       },
-      workspaceManagementProps: {
-        workspaceImportInputRef: workspaceStorage.workspaceImportInputRef,
-        onImportWorkspace: workspaceStorage.handleImportWorkspace,
-        onImportWorkspaceLink: workspaceStorage.handleImportWorkspaceLink,
-        onSaveWorkspace: workspaceStorage.handleSaveWorkspaceConfig,
-        onDownloadWorkspace: workspaceStorage.handleDownloadWorkspace,
-        onPromptWorkspaceImport: workspaceStorage.handlePromptWorkspaceImport,
-        onClearSavedWorkspace: workspaceStorage.handleClearSavedWorkspace,
-        configAutoSave: workspaceStorage.configAutoSave,
-        onToggleConfigAutoSave: workspaceStorage.handleToggleConfigAutoSave,
-        savedConfigStatus: workspaceStorage.savedConfigStatus,
-      },
       accessKeysProps: {
         xrdbKey: workspaceState.xrdbKey,
         tmdbKey: workspaceState.tmdbKey,
@@ -206,7 +191,6 @@ export function buildConfiguratorPageProps({
         tmdbKey: workspaceState.tmdbKey,
         lang: workspaceState.lang,
         supportedLanguages: pageChrome.supportedLanguages,
-        onPreviewTypeChange: mediaTargetSearch.onPreviewTypeChange,
         onMediaIdChange: mediaTargetSearch.onMediaIdChange,
         onLangChange: workspaceState.setLang,
         mediaSearchQuery: mediaTargetSearch.mediaSearchQuery,
@@ -225,9 +209,6 @@ export function buildConfiguratorPageProps({
         onPinSearchResult: mediaTargetSearch.onPinSearchResult,
         onRemovePinnedTarget: mediaTargetSearch.onRemovePinnedTarget,
         onSelectPinnedTarget: mediaTargetSearch.onSelectPinnedTarget,
-        typeSwitchPending: mediaTargetSearch.typeSwitchPending,
-        onTypeSwitchKeep: mediaTargetSearch.onTypeSwitchKeep,
-        onTypeSwitchFresh: mediaTargetSearch.onTypeSwitchFresh,
       },
       presentationProps: {
         presentationOrder: PRESENTATION_SECTION_ORDER,
@@ -460,6 +441,23 @@ export function buildConfiguratorPageProps({
       },
     },
     workspaceColumnsProps: {
+      workspaceManagementProps: {
+        workspaceImportInputRef: workspaceStorage.workspaceImportInputRef,
+        onImportWorkspace: workspaceStorage.handleImportWorkspace,
+        onOpenImportLinkModal: workspaceStorage.onOpenImportLinkModal,
+        onCloseImportLinkModal: workspaceStorage.onCloseImportLinkModal,
+        onImportLinkValueChange: workspaceStorage.onImportLinkValueChange,
+        onSubmitImportLink: workspaceStorage.onSubmitImportLink,
+        importLinkModalOpen: workspaceStorage.importLinkModalOpen,
+        importLinkValue: workspaceStorage.importLinkValue,
+        onSaveWorkspace: workspaceStorage.handleSaveWorkspaceConfig,
+        onDownloadWorkspace: workspaceStorage.handleDownloadWorkspace,
+        onPromptWorkspaceImport: workspaceStorage.handlePromptWorkspaceImport,
+        onClearSavedWorkspace: workspaceStorage.handleClearSavedWorkspace,
+        configAutoSave: workspaceStorage.configAutoSave,
+        onToggleConfigAutoSave: workspaceStorage.handleToggleConfigAutoSave,
+        savedConfigStatus: workspaceStorage.savedConfigStatus,
+      },
       centerStageProps: {
         isOpen: workspaceUi.openWorkspacePanels.has('center-view'),
         onToggle: () => workspaceUi.handleToggleWorkspacePanel('center-view'),
@@ -467,7 +465,7 @@ export function buildConfiguratorPageProps({
         workspaceCenterViewOptions: WORKSPACE_CENTER_VIEW_OPTIONS,
         onSelectWorkspaceCenterView: workspaceState.setWorkspaceCenterView,
         previewType: workspaceState.previewType,
-        onSelectPreviewType: workspaceState.setPreviewType,
+        onSelectPreviewType: mediaTargetSearch.onPreviewTypeChange,
         previewUrl: outputs.previewUrl,
         previewErrored: outputs.previewErrored,
         previewErrorDetails: outputs.visiblePreviewErrorDetails,

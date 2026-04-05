@@ -134,12 +134,40 @@ GET /thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb`}</CodeBlo
 
         <ReferenceSection id="id-formats" title="ID formats" ref={registerRef('id-formats')}>
           <p>
-            Multiple ID formats are supported. IMDb IDs use the standard <code>tt</code> prefix. TMDB IDs use <code>tmdb:603</code> or explicit scoping like <code>tmdb:movie:603</code> / <code>tmdb:tv:1399</code>.
+            The Media ID field accepts a base title ID for posters, backdrops, and logos. Thumbnail previews need an episode target. Use this guide to match the field input, the exported route, and the most common scoped query params.
           </p>
+
+          <h3 className="text-[13px] font-semibold text-white pt-2">Accepted base ID families</h3>
+          <ul>
+            <li><strong>IMDb</strong> — best general base ID for posters and simple movie or show lookups. Examples: <code>tt0133093</code>, <code>tt0944947</code></li>
+            <li><strong>Typed TMDB</strong> — best when movie and TV type must stay explicit. Required by Strict TMDB scope for backdrop and logo requests. Examples: <code>tmdb:movie:603</code>, <code>tmdb:tv:1399</code></li>
+            <li><strong>XRDB canon ID</strong> — keeps an IMDb base ID explicit in proxy and episodic workflows. Examples: <code>xrdbid:tt0944947</code></li>
+            <li><strong>TVDB</strong> — supported for series and episode targeting when your upstream IDs come from TVDB. Examples: <code>tvdb:121361</code></li>
+            <li><strong>Anime IDs</strong> — use the native anime provider ID when your source does not begin with IMDb or TMDB. Examples: <code>anilist:16498</code>, <code>mal:16498</code>, <code>anidb:5114</code>, <code>kitsu:7442</code></li>
+          </ul>
+
+          <h3 className="text-[13px] font-semibold text-white pt-2">Input format by type</h3>
+          <ul>
+            <li><strong>Poster input</strong> — <code>baseId</code>. Example: <code>tt0133093</code> or <code>tmdb:movie:603</code></li>
+            <li><strong>Backdrop input</strong> — <code>baseId</code>. Example: <code>tmdb:tv:1399</code> or <code>xrdbid:tt0944947</code></li>
+            <li><strong>Logo input</strong> — <code>baseId</code>. Example: <code>tmdb:movie:603</code> or <code>tmdb:tv:1399</code></li>
+            <li><strong>Thumbnail input</strong> — <code>seriesId:season:episode</code>. Example: <code>tt0944947:1:1</code> or <code>tmdb:tv:1399:1:1</code></li>
+            <li><strong>Kitsu thumbnail input</strong> — <code>seriesId:episode</code>. Example: <code>kitsu:7442:1</code></li>
+          </ul>
+
+          <h3 className="text-[13px] font-semibold text-white pt-2">Strict TMDB and route safety</h3>
           <p>
-            Anime mapping providers include <code>kitsu:1</code>, <code>anilist:123</code>, <code>myanimelist:456</code>, <code>tvdb:12345</code>, and <code>anidb:6789</code>.
-            Episode thumbnails accept the same base ID families plus <code>xrdbid:{'{'}<em>imdb_id</em>{'}'}</code> as a wrapper format with season and episode appended as path segments.
+            If you enable Strict TMDB scope, backdrop and logo requests must stay typed as <code>tmdb:movie:603</code> or <code>tmdb:tv:1399</code>. Plain <code>tmdb:603</code> is ambiguous and will be rejected.
+            Poster routes can stay on IMDb or another supported base ID when that fits your source better. The export panels show the full scoped query string XRDB will generate for your current workspace.
           </p>
+
+          <h3 className="text-[13px] font-semibold text-white pt-2">High signal query params</h3>
+          <ul>
+            <li><code>idSource=tmdb</code> — pins poster, backdrop, and logo exports to typed TMDB route patterns</li>
+            <li><code>tmdbIdScope=strict</code> — requires <code>tmdb:movie:id</code> or <code>tmdb:tv:id</code> for backdrop and logo requests</li>
+            <li><code>thumbnailEpisodeArtwork=still|series</code> — controls whether thumbnails prefer the episode still or the series backdrop source</li>
+            <li><code>thumbnailRatings=tmdb,imdb</code> — chooses the thumbnail specific rating providers without affecting poster, backdrop, or logo routes</li>
+          </ul>
         </ReferenceSection>
 
         <ReferenceSection id="artwork-sources" title="Artwork sources" ref={registerRef('artwork-sources')}>

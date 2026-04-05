@@ -110,6 +110,7 @@ import {
   pickShuffledMediaTarget,
   readPinnedTargetsFromStorage,
   writePinnedTargetsToStorage,
+  findSampleTitleByMediaId,
   type MediaSearchItem,
   type MediaSearchPreviewType,
   type PinnedTarget,
@@ -725,17 +726,9 @@ export function useConfiguratorWorkspaceRuntime() {
     (nextType: MediaSearchPreviewType) => {
       if (nextType === previewType) return;
       clearTypeSwitchBanner();
-      const normalizedMediaId = mediaId.trim();
-      if (!normalizedMediaId || isBuiltInSample(normalizedMediaId)) {
-        setPreviewType(nextType);
-        return;
-      }
-      setTypeSwitchPending(nextType);
-      typeSwitchTimerRef.current = setTimeout(() => {
-        applyTypeSwitch(nextType, true);
-      }, 5000);
+      applyTypeSwitch(nextType, true);
     },
-    [previewType, mediaId, clearTypeSwitchBanner, setPreviewType, applyTypeSwitch],
+    [previewType, clearTypeSwitchBanner, applyTypeSwitch],
   );
 
   const handleTypeSwitchKeep = useCallback(() => {
@@ -749,6 +742,7 @@ export function useConfiguratorWorkspaceRuntime() {
   useEffect(() => () => {
     if (typeSwitchTimerRef.current) clearTimeout(typeSwitchTimerRef.current);
   }, []);
+
 
   const handleMediaIdChange = (value: string) => {
     mediaSearchAbortControllerRef.current?.abort();
@@ -1355,8 +1349,39 @@ export function useConfiguratorWorkspaceRuntime() {
     setExperienceModeDraft,
     setShowExperienceModal,
     setSelectedPresetId,
+    activePreviewTitle,
+    setActivePreviewTitle,
+    mediaId,
   });
-  const { applyWorkspaceConfig } = workspaceStorage;
+  const { applyWorkspaceConfig, uiSettingsLoaded } = workspaceStorage;
+  const resolvedForRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!uiSettingsLoaded) return;
+    if (activePreviewTitle) {
+      resolvedForRef.current = mediaId;
+      return;
+    }
+    if (resolvedForRef.current === mediaId) return;
+    resolvedForRef.current = mediaId;
+    const sample = findSampleTitleByMediaId(mediaId);
+    if (sample) {
+      setActivePreviewTitle(sample);
+      return;
+    }
+    if (!tmdbKey.trim() || disableRemoteLookups) return;
+    const resolveId = mediaId.startsWith('tmdb:') ? mediaId : mediaId.split(':')[0];
+    const target = new URL('/api/media-resolve', window.location.origin);
+    target.searchParams.set('id', resolveId);
+    target.searchParams.set('tmdbKey', tmdbKey.trim());
+    void fetch(target.toString(), { cache: 'no-store' })
+      .then(async (res) => {
+        if (!res.ok) return;
+        const data = await res.json().catch(() => null) as { title: string | null } | null;
+        if (data?.title) setActivePreviewTitle(data.title);
+      })
+      .catch(() => null);
+  }, [uiSettingsLoaded, activePreviewTitle, mediaId, tmdbKey, disableRemoteLookups]);
+
 
   const workspaceOutputs = useConfiguratorOutputs({
     activeGenreBadgeAnimeGrouping,
@@ -1832,9 +1857,6 @@ export function useConfiguratorWorkspaceRuntime() {
       onPinSearchResult: handlePinSearchResult,
       onRemovePinnedTarget: handleRemovePinnedTarget,
       onSelectPinnedTarget: handleSelectPinnedTarget,
-      typeSwitchPending,
-      onTypeSwitchKeep: handleTypeSwitchKeep,
-      onTypeSwitchFresh: handleTypeSwitchFresh,
       onPreviewTypeChange: handlePreviewTypeChange,
     },
     outputs: workspaceOutputs,

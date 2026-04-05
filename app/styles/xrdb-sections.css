@@ -44,6 +44,8 @@
 	display: grid;
 	gap: 1.25rem;
 	width: 100%;
+	max-width: 96rem;
+	margin-inline: auto;
 	min-width: 0;
 }
 

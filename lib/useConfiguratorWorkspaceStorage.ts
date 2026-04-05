@@ -27,7 +27,10 @@ type LocalUiSettingsStorage = {
   experienceMode?: ConfiguratorExperienceMode;
   presetId?: ConfiguratorPresetId | null;
   stickyPreview?: boolean;
+  mediaId?: string;
+  activeTitle?: string;
 };
+
 
 type LegacyApiKeyConfigStorage = {
   tmdbKey?: string;
@@ -45,7 +48,10 @@ export function useConfiguratorWorkspaceStorage({
   setMediaId,
   stickyPreviewEnabled,
   experienceMode,
+  activePreviewTitle,
+  setActivePreviewTitle,
   selectedPresetId,
+  mediaId,
   setStickyPreviewEnabled,
   setExperienceMode,
   setExperienceModeDraft,
@@ -58,6 +64,9 @@ export function useConfiguratorWorkspaceStorage({
   setPreviewType: (value: ConfiguratorPreviewType) => void;
   setMediaId: (value: string) => void;
   stickyPreviewEnabled: boolean;
+  activePreviewTitle: string;
+  setActivePreviewTitle: (value: string) => void;
+  mediaId: string;
   experienceMode: ConfiguratorExperienceMode;
   selectedPresetId: ConfiguratorPresetId | null;
   setStickyPreviewEnabled: (value: boolean) => void;
@@ -106,6 +115,12 @@ export function useConfiguratorWorkspaceStorage({
           }
           if (isConfiguratorPresetId(parsedSettings.presetId)) {
             setSelectedPresetId(parsedSettings.presetId);
+          }
+          if (typeof parsedSettings.mediaId === 'string' && parsedSettings.mediaId.trim()) {
+            setMediaId(parsedSettings.mediaId);
+          }
+          if (typeof parsedSettings.activeTitle === 'string' && parsedSettings.activeTitle.trim()) {
+            setActivePreviewTitle(parsedSettings.activeTitle);
           }
           return;
         }
@@ -198,6 +213,8 @@ export function useConfiguratorWorkspaceStorage({
     applyWorkspaceConfig,
     setExperienceMode,
     setExperienceModeDraft,
+    setActivePreviewTitle,
+    setMediaId,
     setSelectedPresetId,
     setShowExperienceModal,
     setStickyPreviewEnabled,
@@ -238,6 +255,8 @@ export function useConfiguratorWorkspaceStorage({
         stickyPreview: stickyPreviewEnabled,
         experienceMode,
         presetId: selectedPresetId,
+        mediaId,
+        activeTitle: activePreviewTitle,
       };
       window.localStorage.setItem(UI_CONFIG_SETTINGS_STORAGE_KEY, JSON.stringify(payload));
     } catch {
@@ -245,7 +264,15 @@ export function useConfiguratorWorkspaceStorage({
         setSavedConfigStatus('error');
       });
     }
-  }, [configAutoSave, stickyPreviewEnabled, experienceMode, selectedPresetId, uiSettingsLoaded]);
+  }, [
+    configAutoSave,
+    stickyPreviewEnabled,
+    experienceMode,
+    selectedPresetId,
+    mediaId,
+    activePreviewTitle,
+    uiSettingsLoaded,
+  ]);
 
   const handleSaveWorkspaceConfig = useCallback(() => {
     persistUiConfig(true);
@@ -315,18 +342,30 @@ export function useConfiguratorWorkspaceStorage({
     [applyWorkspaceConfig],
   );
 
-  const handleImportWorkspaceLink = useCallback(() => {
-    if (typeof window === 'undefined') {
-      return;
-    }
+  const [importLinkModalOpen, setImportLinkModalOpen] = useState(false);
+  const [importLinkValue, setImportLinkValue] = useState('');
 
-    const rawValue = window.prompt('Paste an XRDB URL to import settings.');
-    if (rawValue === null) {
+  const handleOpenImportLinkModal = useCallback(() => {
+    setImportLinkValue('');
+    setImportLinkModalOpen(true);
+  }, []);
+
+  const handleCloseImportLinkModal = useCallback(() => {
+    setImportLinkModalOpen(false);
+    setImportLinkValue('');
+  }, []);
+
+  const handleSubmitImportLink = useCallback(() => {
+    setImportLinkModalOpen(false);
+
+    const rawValue = importLinkValue.trim();
+    setImportLinkValue('');
+    if (!rawValue) {
       return;
     }
 
     const parsedImport = parseConfiguratorLinkImport(rawValue, {
-      baseOrigin: window.location.origin,
+      baseOrigin: typeof window !== 'undefined' ? window.location.origin : '',
       fallbackPreviewType: previewType,
     });
     if (!parsedImport) {
@@ -341,12 +380,13 @@ export function useConfiguratorWorkspaceStorage({
     if (parsedImport.mediaId) {
       setMediaId(parsedImport.mediaId);
     }
-  }, [applyWorkspaceConfig, previewType, setMediaId, setPreviewType]);
+  }, [applyWorkspaceConfig, importLinkValue, previewType, setMediaId, setPreviewType]);
 
   return {
     applyWorkspaceConfig,
     configAutoSave,
     savedConfigStatus,
+    uiSettingsLoaded,
     workspaceImportInputRef,
     handleSaveWorkspaceConfig,
     handleClearSavedWorkspace,
@@ -354,6 +394,11 @@ export function useConfiguratorWorkspaceStorage({
     handleDownloadWorkspace,
     handlePromptWorkspaceImport,
     handleImportWorkspace,
-    handleImportWorkspaceLink,
+    importLinkModalOpen,
+    importLinkValue,
+    onOpenImportLinkModal: handleOpenImportLinkModal,
+    onCloseImportLinkModal: handleCloseImportLinkModal,
+    onImportLinkValueChange: setImportLinkValue,
+    onSubmitImportLink: handleSubmitImportLink,
   };
 }

@@ -18,7 +18,7 @@ import { BRAND_DISCORD_OFFICIAL_LABEL, BRAND_DISCORD_OFFICIAL_URL, BRAND_GITHUB_
 
 const viewTabs = [
   { href: '/', label: 'Configure' },
-  { href: '/export', label: 'Export' },
+  { href: '/export', label: 'Import/Export' },
   { href: '/addon', label: 'Proxy' },
   { href: '/reference', label: 'Reference' },
 ] as const;

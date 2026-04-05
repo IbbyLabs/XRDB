@@ -1,10 +1,18 @@
 'use client';
 
 import { ConfigureView } from '@/components/configure-view';
+import { ExperienceModeModal } from '@/components/experience-mode-modal';
 import { useConfiguratorContext } from '@/lib/configuratorProvider';
 
 export default function ConfiguratorPage() {
-  const { docsCaptureReady, pageRef } = useConfiguratorContext();
+  const {
+    docsCaptureReady,
+    experienceModeDraft,
+    handleContinueExperienceMode,
+    pageRef,
+    setExperienceModeDraft,
+    showExperienceModal,
+  } = useConfiguratorContext();
 
   return (
     <div
@@ -13,6 +21,13 @@ export default function ConfiguratorPage() {
       data-docs-capture-ready={docsCaptureReady ? 'true' : 'false'}
     >
       <ConfigureView />
+      {showExperienceModal ? (
+        <ExperienceModeModal
+          experienceModeDraft={experienceModeDraft}
+          onSelectMode={setExperienceModeDraft}
+          onContinue={handleContinueExperienceMode}
+        />
+      ) : null}
     </div>
   );
 }

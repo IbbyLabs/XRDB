@@ -103,10 +103,9 @@ export function ConfiguratorCenterStage({
           </div>
         </div>
 
-        <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
-          <span className="rounded-full border border-white/10 bg-zinc-950/70 px-3 py-1.5 font-medium text-zinc-300">
-            {activeTypeLabel}
-          </span>
+        <p className="mt-2 text-[10px] text-zinc-500">Select to preview each type</p>
+
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
           <span className="rounded-full border border-white/10 bg-zinc-950/70 px-3 py-1.5 font-medium text-zinc-300">
             {activePresentationLabel}
           </span>
@@ -114,6 +113,7 @@ export function ConfiguratorCenterStage({
             {enabledProviderCount} providers
           </span>
         </div>
+
       </div>
     </div>
   );

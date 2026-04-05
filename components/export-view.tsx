@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Check, ChevronDown, Clipboard, Code2, Eye, EyeOff } from 'lucide-react';
 
 import { useConfiguratorContext } from '@/lib/configuratorProvider';
+import { WorkspaceManagementSection } from '@/components/configurator-basics';
 import {
   DEFAULT_EPISODE_ID_MODE,
   THUMBNAIL_RATING_PREFERENCES,
@@ -42,7 +43,7 @@ const EPISODE_ARTWORK_MODE_OPTIONS: Array<{
 
 export function ExportView() {
   const { workspaceColumnsProps } = useConfiguratorContext();
-  const { exportPanelsProps, centerStageProps } = workspaceColumnsProps;
+  const { exportPanelsProps, centerStageProps, workspaceManagementProps } = workspaceColumnsProps;
   const [optionsOpen, setOptionsOpen] = useState(false);
 
   const {
@@ -85,6 +86,10 @@ export function ExportView() {
   return (
     <div className="xrdb-export-layout w-full px-4 py-6 md:px-6 md:py-8">
       <div className="order-2 lg:order-1 min-w-0 space-y-4">
+        <div className="xrdb-panel rounded-2xl p-4">
+          <WorkspaceManagementSection {...workspaceManagementProps} />
+        </div>
+
         <AiometadataSection
           aiometadataPatternRows={aiometadataPatternRows}
           aiometadataCopied={aiometadataCopied}
@@ -194,6 +199,7 @@ export function ExportView() {
             </div>
           )}
         </div>
+
       </div>
 
       <div className="order-1 lg:order-2 min-w-0 lg:sticky lg:top-20">

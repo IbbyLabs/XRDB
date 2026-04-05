@@ -96,7 +96,7 @@ export function RatingProviderSortableList({
     >
       <SortableContext items={itemIds} strategy={rectSortingStrategy}>
         <ul
-          className="grid max-h-[min(24rem,55vh)] grid-cols-1 gap-x-3 gap-y-2 overflow-y-auto pr-0.5 sm:grid-cols-2 [touch-action:pan-y]"
+          className="grid grid-cols-1 gap-x-3 gap-y-2 pr-0.5 sm:grid-cols-2 [touch-action:pan-y]"
           style={listStyle}
         >
           {rows.map((row, index) => (

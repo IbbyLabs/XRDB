@@ -2,11 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Sliders, Download, Layers, BookOpen } from 'lucide-react';
+import { Sliders, ArrowLeftRight, Layers, BookOpen } from 'lucide-react';
 
 const tabs = [
   { href: '/', label: 'Configure', icon: Sliders },
-  { href: '/export', label: 'Export', icon: Download },
+  { href: '/export', label: 'Import/Export', icon: ArrowLeftRight },
   { href: '/addon', label: 'Proxy', icon: Layers },
   { href: '/reference', label: 'Reference', icon: BookOpen },
 ] as const;
