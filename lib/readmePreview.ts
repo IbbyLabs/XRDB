@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export type ReadmePreviewImageType = 'poster' | 'backdrop' | 'logo';
 
@@ -64,7 +66,10 @@ const getSelectionCandidateDefinitions = (
   candidate: ReadmePreviewSelectionCandidate | null,
 ): ReadonlyArray<ReadmePreviewDefinition> | null => (candidate ? candidate.definitions : null);
 
-const README_PREVIEW_STATE_URL = new URL('../data/readme-preview-gallery.json', import.meta.url);
+const README_PREVIEW_STATE_PATH = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../config/readme-preview-gallery.json',
+);
 const README_PREVIEW_GALLERY_ORIGIN = 'https://xrdb.ibbylabs.dev';
 
 const createEmptySlugBuckets = (): ReadmePreviewSlugBuckets => ({
@@ -547,7 +552,7 @@ const normalizeReadmePreviewState = (value: unknown): ReadmePreviewState => {
 
 const readReadmePreviewState = (): ReadmePreviewState => {
   try {
-    return normalizeReadmePreviewState(JSON.parse(readFileSync(README_PREVIEW_STATE_URL, 'utf8')));
+    return normalizeReadmePreviewState(JSON.parse(readFileSync(README_PREVIEW_STATE_PATH, 'utf8')));
   } catch {
     return DEFAULT_README_PREVIEW_STATE;
   }
