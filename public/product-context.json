@@ -2,7 +2,7 @@
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
   "xrdbTag": "v1.9.0",
-  "generatedAt": "2026-04-05T21:28:52.043Z",
+  "generatedAt": "2026-04-05T23:27:14.479Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -34,11 +34,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "track gallery state outside data dir",
+        "diversify gallery rotation and provider mixes",
         "tighten default quality badge proportions",
         "FR-45 expand age rating placement and slider defaults",
-        "BUG-56 honor provider textless support",
-        "FR-44 align rating badge scaling across artwork",
-        "BUG-57 restore quality badge controls"
+        "BUG-56 honor provider textless support"
       ]
     },
     {

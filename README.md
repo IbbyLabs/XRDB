@@ -330,6 +330,10 @@ Episode thumbnails use the dedicated `/thumbnail/{id}/S{season}E{episode}.jpg` r
 | `qualityBadgesStyle` | Quality badges style (global fallback) | `glass`, `square`, `plain`, `media`, `silver` | `glass` |
 | `posterQualityBadgesStyle` | Poster quality badges style | `glass`, `square`, `plain`, `media`, `silver` | `glass` |
 | `backdropQualityBadgesStyle` | Backdrop quality badges style | `glass`, `square`, `plain`, `media`, `silver` | `glass` |
+| `posterRatingBadgeScale` | Poster rating badge scale | Number (`70-200`) | `100` |
+| `backdropRatingBadgeScale` | Backdrop rating badge scale | Number (`70-200`) | `100` |
+| `thumbnailRatingBadgeScale` | Thumbnail rating badge scale | Number (`70-200`) | `100` |
+| `logoRatingBadgeScale` | Logo rating badge scale | Number (`70-200`) | `100` |
 | `posterQualityBadgeScale` | Poster quality badge scale | Number (`70-200`) | `100` |
 | `backdropQualityBadgeScale` | Backdrop quality badge scale | Number (`70-200`) | `100` |
 | `thumbnailQualityBadgeScale` | Thumbnail quality badge scale | Number (`70-200`) | `100` |
@@ -370,6 +374,12 @@ Episode thumbnails use the dedicated `/thumbnail/{id}/S{season}E{episode}.jpg` r
 | `logoBottomRatingsRow` | Force logo ratings into one Bottom Row | `true`, `false` | `false` |
 | `logoBackground` | Logo canvas background | `transparent`, `dark` | `transparent` |
 | `logoArtworkSource` | Logo artwork source | `tmdb`, `fanart`, `cinemeta`, `random` | `tmdb` |
+| `sideRatingsPosition` | Side stack vertical anchor (global fallback) | `top`, `middle`, `bottom`, `custom` | `top` |
+| `posterSideRatingsPosition` | Poster side stack vertical anchor | `top`, `middle`, `bottom`, `custom` | `top` |
+| `backdropSideRatingsPosition` | Backdrop side stack vertical anchor | `top`, `middle`, `bottom`, `custom` | `top` |
+| `sideRatingsOffset` | Side stack custom offset (global fallback) | Number (0-100) | `50` |
+| `posterSideRatingsOffset` | Poster side stack custom offset | Number (0-100) | `50` |
+| `backdropSideRatingsOffset` | Backdrop side stack custom offset | Number (0-100) | `50` |
 
 Thumbnail scoped query params mirror the configurator controls and keep thumbnail output independent from backdrop output. Rating badge scale remains type scoped across every artwork type even though the supported `70-200` range is now shared:
 
@@ -499,6 +509,10 @@ ratingXOffsetPillGlass  | Number (-320 to 320)                                  
 ratingYOffsetPillGlass  | Number (-320 to 320)                                                 | 0
 ratingXOffsetSquare     | Number (-320 to 320)                                                 | 0
 ratingYOffsetSquare     | Number (-320 to 320)                                                 | 0
+posterRatingBadgeScale  | Number (70-200)                                                      | 100
+backdropRatingBadgeScale | Number (70-200)                                                     | 100
+thumbnailRatingBadgeScale| Number (70-200)                                                     | 100
+logoRatingBadgeScale    | Number (70-200)                                                      | 100
 ratingStyle             | glass, square, plain, stacked                                        | glass
 thumbnailRatingStyle    | glass, square, plain, stacked                                        | glass
 imageText               | original, clean, textless, alternative, random                       | original
@@ -518,6 +532,12 @@ logoRatingsMax          | Number (1+)                                           
 logoBottomRatingsRow    | true, false                                                          | false
 logoBackground          | transparent, dark                                                    | transparent
 logoArtworkSource       | tmdb, fanart, cinemeta, random                                       | tmdb
+sideRatingsPosition     | top, middle, bottom, custom (global fallback)                        | top
+posterSideRatingsPosition| top, middle, bottom, custom (poster only)                           | top
+backdropSideRatingsPosition| top, middle, bottom, custom (backdrop only)                       | top
+sideRatingsOffset       | Number (0-100) (global fallback)                                     | 50
+posterSideRatingsOffset | Number (0-100) (poster only)                                         | 50
+backdropSideRatingsOffset| Number (0-100) (backdrop only)                                      | 50
 tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | -
 mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | -
 fanartKey               | Your Fanart API Key (used first for fanart sources)                  | server fallback when available
@@ -584,7 +604,7 @@ Episode thumbnails use /thumbnail/{episodeBaseId}/S{season}E{episode}.jpg and ke
 --- URL BUILD ---
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : type === 'thumbnail' ? cfg.thumbnailRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : type === 'thumbnail' ? cfg.thumbnailImageText : cfg.posterImageText;
-${cfg.baseUrl}/${type}/${id}.jpg?tmdbKey=${cfg.tmdbKey}&mdblistKey=${cfg.mdblistKey}&fanartKey=${cfg.fanartKey}&ratings=${cfg.ratings}&posterRatings=${cfg.posterRatings}&backdropRatings=${cfg.backdropRatings}&thumbnailRatings=${cfg.thumbnailRatings}&logoRatings=${cfg.logoRatings}&lang=${cfg.lang}&genreBadge=${cfg.genreBadge}&genreBadgeStyle=${cfg.genreBadgeStyle}&genreBadgePosition=${cfg.genreBadgePosition}&genreBadgeScale=${cfg.genreBadgeScale}&posterGenreBadge=${cfg.posterGenreBadge}&backdropGenreBadge=${cfg.backdropGenreBadge}&thumbnailGenreBadge=${cfg.thumbnailGenreBadge}&logoGenreBadge=${cfg.logoGenreBadge}&posterGenreBadgeStyle=${cfg.posterGenreBadgeStyle}&backdropGenreBadgeStyle=${cfg.backdropGenreBadgeStyle}&thumbnailGenreBadgeStyle=${cfg.thumbnailGenreBadgeStyle}&logoGenreBadgeStyle=${cfg.logoGenreBadgeStyle}&posterGenreBadgePosition=${cfg.posterGenreBadgePosition}&backdropGenreBadgePosition=${cfg.backdropGenreBadgePosition}&thumbnailGenreBadgePosition=${cfg.thumbnailGenreBadgePosition}&logoGenreBadgePosition=${cfg.logoGenreBadgePosition}&posterGenreBadgeScale=${cfg.posterGenreBadgeScale}&backdropGenreBadgeScale=${cfg.backdropGenreBadgeScale}&thumbnailGenreBadgeScale=${cfg.thumbnailGenreBadgeScale}&logoGenreBadgeScale=${cfg.logoGenreBadgeScale}&streamBadges=${cfg.streamBadges}&posterStreamBadges=${cfg.posterStreamBadges}&backdropStreamBadges=${cfg.backdropStreamBadges}&thumbnailStreamBadges=${cfg.thumbnailStreamBadges}&qualityBadgesSide=${cfg.qualityBadgesSide}&posterQualityBadgesPosition=${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=${cfg.backdropQualityBadgesStyle}&thumbnailQualityBadgesStyle=${cfg.thumbnailQualityBadgesStyle}&posterQualityBadgesMax=${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=${cfg.backdropQualityBadgesMax}&thumbnailQualityBadgesMax=${cfg.thumbnailQualityBadgesMax}&ratingPresentation=${cfg.ratingPresentation}&aggregateRatingSource=${cfg.aggregateRatingSource}&aggregateAccentMode=${cfg.aggregateAccentMode}&aggregateAccentColor=${cfg.aggregateAccentColor}&aggregateAccentBarOffset=${cfg.aggregateAccentBarOffset}&ratingXOffsetPillGlass=${cfg.ratingXOffsetPillGlass}&ratingYOffsetPillGlass=${cfg.ratingYOffsetPillGlass}&ratingXOffsetSquare=${cfg.ratingXOffsetSquare}&ratingYOffsetSquare=${cfg.ratingYOffsetSquare}&ratingStyle=${typeRatingStyle}&imageText=${typeImageText}&posterArtworkSource=${cfg.posterArtworkSource}&backdropArtworkSource=${cfg.backdropArtworkSource}&thumbnailArtworkSource=${cfg.thumbnailArtworkSource}&thumbnailEpisodeArtwork=${cfg.thumbnailEpisodeArtwork}&posterRatingsLayout=${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=${cfg.backdropRatingsLayout}&thumbnailRatingsLayout=${cfg.thumbnailRatingsLayout}&thumbnailRatingsMax=${cfg.thumbnailRatingsMax}&thumbnailBottomRatingsRow=${cfg.thumbnailBottomRatingsRow}&thumbnailSideRatingsPosition=${cfg.thumbnailSideRatingsPosition}&thumbnailSideRatingsOffset=${cfg.thumbnailSideRatingsOffset}&logoRatingsMax=${cfg.logoRatingsMax}&logoBackground=${cfg.logoBackground}&logoArtworkSource=${cfg.logoArtworkSource}
+${cfg.baseUrl}/${type}/${id}.jpg?tmdbKey=${cfg.tmdbKey}&mdblistKey=${cfg.mdblistKey}&fanartKey=${cfg.fanartKey}&ratings=${cfg.ratings}&posterRatings=${cfg.posterRatings}&backdropRatings=${cfg.backdropRatings}&thumbnailRatings=${cfg.thumbnailRatings}&logoRatings=${cfg.logoRatings}&lang=${cfg.lang}&genreBadge=${cfg.genreBadge}&genreBadgeStyle=${cfg.genreBadgeStyle}&genreBadgePosition=${cfg.genreBadgePosition}&genreBadgeScale=${cfg.genreBadgeScale}&posterGenreBadge=${cfg.posterGenreBadge}&backdropGenreBadge=${cfg.backdropGenreBadge}&thumbnailGenreBadge=${cfg.thumbnailGenreBadge}&logoGenreBadge=${cfg.logoGenreBadge}&posterGenreBadgeStyle=${cfg.posterGenreBadgeStyle}&backdropGenreBadgeStyle=${cfg.backdropGenreBadgeStyle}&thumbnailGenreBadgeStyle=${cfg.thumbnailGenreBadgeStyle}&logoGenreBadgeStyle=${cfg.logoGenreBadgeStyle}&posterGenreBadgePosition=${cfg.posterGenreBadgePosition}&backdropGenreBadgePosition=${cfg.backdropGenreBadgePosition}&thumbnailGenreBadgePosition=${cfg.thumbnailGenreBadgePosition}&logoGenreBadgePosition=${cfg.logoGenreBadgePosition}&posterGenreBadgeScale=${cfg.posterGenreBadgeScale}&backdropGenreBadgeScale=${cfg.backdropGenreBadgeScale}&thumbnailGenreBadgeScale=${cfg.thumbnailGenreBadgeScale}&logoGenreBadgeScale=${cfg.logoGenreBadgeScale}&streamBadges=${cfg.streamBadges}&posterStreamBadges=${cfg.posterStreamBadges}&backdropStreamBadges=${cfg.backdropStreamBadges}&thumbnailStreamBadges=${cfg.thumbnailStreamBadges}&qualityBadgesSide=${cfg.qualityBadgesSide}&posterQualityBadgesPosition=${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=${cfg.backdropQualityBadgesStyle}&thumbnailQualityBadgesStyle=${cfg.thumbnailQualityBadgesStyle}&posterQualityBadgesMax=${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=${cfg.backdropQualityBadgesMax}&thumbnailQualityBadgesMax=${cfg.thumbnailQualityBadgesMax}&ratingPresentation=${cfg.ratingPresentation}&aggregateRatingSource=${cfg.aggregateRatingSource}&aggregateAccentMode=${cfg.aggregateAccentMode}&aggregateAccentColor=${cfg.aggregateAccentColor}&aggregateAccentBarOffset=${cfg.aggregateAccentBarOffset}&ratingXOffsetPillGlass=${cfg.ratingXOffsetPillGlass}&ratingYOffsetPillGlass=${cfg.ratingYOffsetPillGlass}&ratingXOffsetSquare=${cfg.ratingXOffsetSquare}&ratingYOffsetSquare=${cfg.ratingYOffsetSquare}&posterRatingBadgeScale=${cfg.posterRatingBadgeScale}&backdropRatingBadgeScale=${cfg.backdropRatingBadgeScale}&thumbnailRatingBadgeScale=${cfg.thumbnailRatingBadgeScale}&logoRatingBadgeScale=${cfg.logoRatingBadgeScale}&ratingStyle=${typeRatingStyle}&imageText=${typeImageText}&posterArtworkSource=${cfg.posterArtworkSource}&backdropArtworkSource=${cfg.backdropArtworkSource}&thumbnailArtworkSource=${cfg.thumbnailArtworkSource}&thumbnailEpisodeArtwork=${cfg.thumbnailEpisodeArtwork}&posterRatingsLayout=${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=${cfg.backdropRatingsLayout}&thumbnailRatingsLayout=${cfg.thumbnailRatingsLayout}&thumbnailRatingsMax=${cfg.thumbnailRatingsMax}&thumbnailBottomRatingsRow=${cfg.thumbnailBottomRatingsRow}&thumbnailSideRatingsPosition=${cfg.thumbnailSideRatingsPosition}&thumbnailSideRatingsOffset=${cfg.thumbnailSideRatingsOffset}&sideRatingsPosition=${cfg.sideRatingsPosition}&posterSideRatingsPosition=${cfg.posterSideRatingsPosition}&backdropSideRatingsPosition=${cfg.backdropSideRatingsPosition}&sideRatingsOffset=${cfg.sideRatingsOffset}&posterSideRatingsOffset=${cfg.posterSideRatingsOffset}&backdropSideRatingsOffset=${cfg.backdropSideRatingsOffset}&logoRatingsMax=${cfg.logoRatingsMax}&logoBackground=${cfg.logoBackground}&logoArtworkSource=${cfg.logoArtworkSource}
 
 Omit imageText when type=logo.
 
@@ -758,6 +778,8 @@ Copy `env.template` to `.env` and adjust as needed. All cache TTL values are in 
 | `XRDB_JIKAN_API_BASE_URL` | `https://api.jikan.moe/v4` | Optional Jikan API base URL override for unauthenticated MAL fallback |
 | `XRDB_TRAKT_API_BASE_URL` | `https://api.trakt.tv` | Optional Trakt API base URL override |
 | `XRDB_OMDB_API_BASE_URL` | `https://www.omdbapi.com` | Optional OMDb API base URL override used for OMDb poster lookups |
+| `XRDB_FANART_API_KEY` | (empty) | Optional server side Fanart API key used as fallback when `fanartKey` is not supplied (also `FANART_API_KEY`) |
+| `XRDB_FANART_CLIENT_KEY` | (empty) | Optional server side Fanart client key (also `FANART_CLIENT_KEY`) |
 
 ### Cache TTLs
 
@@ -772,7 +794,7 @@ hardcoding separate cache TTL values.
 | `XRDB_KITSU_CACHE_TTL_MS` | 3 days | 10 min | 30 days | Kitsu anime |
 | `XRDB_OMDB_CACHE_TTL_MS` | 3 days | 10 min | 30 days | OMDb poster lookups |
 | `XRDB_SIMKL_CACHE_TTL_MS` | 3 days | 10 min | 30 days | SIMKL ratings |
-| `XRDB_SIMKL_ID_CACHE_TTL_MS` | 30 days | 10 min | 30 days | Simkl id resolution cache |
+| `XRDB_SIMKL_ID_CACHE_TTL_MS` | 180 days | 10 min | 365 days | Simkl id resolution cache |
 | `XRDB_SIMKL_ID_EMPTY_CACHE_TTL_MS` | 1 day | 10 min | 30 days | Simkl empty id lookup cache |
 | `XRDB_TORRENTIO_CACHE_TTL_MS` | 6 hours | 10 min | 7 days | Torrentio stream badges |
 | `XRDB_PROVIDER_ICON_CACHE_TTL_MS` | 7 days | 1 hour | 30 days | Rating provider icons |
@@ -792,6 +814,8 @@ hardcoding separate cache TTL values.
 | `XRDB_IMDB_DATASET_CHECK_INTERVAL_MS` | `900000` | Poll interval used to decide whether a refresh is due |
 | `XRDB_IMDB_DATASET_BASE_URL` | `https://datasets.imdbws.com` | Base URL used for ratings dataset downloads |
 | `XRDB_IMDB_RATINGS_DATASET_URL` | `https://datasets.imdbws.com/title.ratings.tsv.gz` | Override URL for the IMDb ratings dataset |
+| `XRDB_IMDB_EPISODES_DATASET_PATH` | `./data/imdb/title.episode.tsv.gz` | Local path for the IMDb episode dataset |
+| `XRDB_IMDB_EPISODES_DATASET_URL` | `https://datasets.imdbws.com/title.episode.tsv.gz` | Override URL for the IMDb episode dataset |
 | `XRDB_IMDB_DATASET_IMPORT_BATCH` | `5000` | Batch size used during SQLite imports |
 | `XRDB_IMDB_DATASET_IMPORT_PROGRESS` | `0` | Optional persisted import progress marker for resumable imports |
 | `XRDB_IMDB_DATASET_LOG` | `false` | Enable verbose IMDb dataset sync logging |
