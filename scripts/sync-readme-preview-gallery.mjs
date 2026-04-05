@@ -11,7 +11,7 @@ import {
 const ROOT_DIR = fileURLToPath(new URL('..', import.meta.url));
 const README_PATH = path.join(ROOT_DIR, 'README.md');
 const PACKAGE_JSON_PATH = path.join(ROOT_DIR, 'package.json');
-const STATE_PATH = path.join(ROOT_DIR, 'data', 'readme-preview-gallery.json');
+const STATE_PATH = path.join(ROOT_DIR, 'config', 'readme-preview-gallery.json');
 
 const readJsonIfPresent = async (filePath) => {
   try {
