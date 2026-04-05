@@ -651,7 +651,15 @@ export const resolveImageRouteRequestState = async ({
     searchParams.get('posterNoBackgroundBadgeOutlineWidth'),
     DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   );
-  const imageTextParam = searchParams.get('imageText') || searchParams.get('posterText');
+  const imageTextParam =
+    searchParams.get('imageText') ||
+    searchParams.get('posterImageText') ||
+    searchParams.get('posterText');
+  const backdropImageTextParam =
+    searchParams.get('backdropImageText') ??
+    searchParams.get('imageText') ??
+    searchParams.get('posterImageText') ??
+    searchParams.get('posterText');
   const thumbnailImageTextParam =
     searchParams.get('thumbnailImageText') ??
     searchParams.get('backdropImageText') ??
@@ -665,7 +673,11 @@ export const resolveImageRouteRequestState = async ({
   const textlessEnabled =
     explicitTextlessFlag === null ? hasTextlessPosterType : explicitTextlessFlag;
   const imageText =
-    (isThumbnailRequest ? thumbnailImageTextParam : imageTextParam) ||
+    (isThumbnailRequest
+      ? thumbnailImageTextParam
+      : imageType === 'backdrop'
+        ? backdropImageTextParam
+        : imageTextParam) ||
     (imageType === 'backdrop' ? 'clean' : textlessEnabled ? 'clean' : 'original');
   const posterImageSize = normalizePosterImageSize(
     searchParams.get('posterImageSize') ??

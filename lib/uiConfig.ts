@@ -2290,7 +2290,18 @@ export const buildAiometadataUrlPatterns = (
         ...(extraParams
           ? Object.entries(extraParams).map(([key, value]) => [key, value] as [string, string])
           : []),
-        ...buildScopedEntries(scope),
+        ...buildScopedEntries(scope).map(([key, value]) => {
+          if (scope === 'poster' && key === 'posterImageText') {
+            return ['imageText', value] as [string, string];
+          }
+          if (scope === 'backdrop' && key === 'backdropImageText') {
+            return ['imageText', value] as [string, string];
+          }
+          if (scope === 'thumbnail' && key === 'thumbnailImageText') {
+            return ['imageText', value] as [string, string];
+          }
+          return [key, value] as [string, string];
+        }),
       ]).toString(),
     );
 

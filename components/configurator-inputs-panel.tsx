@@ -63,7 +63,7 @@ export function ConfiguratorInputsPanel({
   [key: string]: unknown;
 }) {
   return (
-    <div id="workspace-settings" className="xrdb-workspace-scroll-region space-y-3 scroll-mt-24">
+    <div id="workspace-settings" className="xrdb-workspace-scroll-region min-h-0 space-y-3 scroll-mt-24">
       <div className="space-y-3">
         <SetupModeSection {...setupModeProps} />
         <AccessKeysSection {...accessKeysProps} />

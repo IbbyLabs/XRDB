@@ -1,9 +1,11 @@
 @media (min-width: 1024px) {
 	.xrdb-workspace-scroll-region {
-		max-height: calc(100svh - 4rem);
+		height: calc(100svh - 6.5rem);
+		max-height: calc(100svh - 6.5rem);
 		overflow-x: hidden;
 		overflow-y: auto;
 		overscroll-behavior: contain;
+		overscroll-behavior-y: contain;
 		padding: 0.35rem 0.7rem 1rem 0.35rem;
 		border-radius: 1.25rem;
 		scroll-padding-block: 0.75rem;
