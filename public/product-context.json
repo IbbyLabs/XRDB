@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.8.3",
-  "generatedAt": "2026-04-05T14:19:34.733Z",
+  "xrdbTag": "v1.8.4",
+  "generatedAt": "2026-04-05T14:27:18.170Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -34,11 +34,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "generate XRDB product context artifact",
         "default doc refresh away from Turbopack",
         "add timeout to playwright screenshot CLI to prevent infinite selector wait",
         "BUG-55 make setup intro navigable on constrained mobile viewports",
-        "BUG-54 restore scroll containment export text mapping and ring rendering",
-        "thumbnail preview input editability and title preservation"
+        "BUG-54 restore scroll containment export text mapping and ring rendering"
       ]
     },
     {

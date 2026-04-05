@@ -31,6 +31,33 @@
 
 <a id="v1-8-3"></a>
 
+<a id="v1-8-4"></a>
+
+## [v1.8.4] - 05/04/2026
+
+### Added
+* generate XRDB product context artifact
+  
+  Add a source derived product context generator that writes public/product context.json for tagged releases.
+  Reuse the public commit extraction logic across the commit feed and the new artifact generator, and cover the generator with a focused test.
+  Wire generation into the npm version lifecycle so released tags include the product context snapshot consumed by XRDBBot.
+
+### Fixed
+* default doc refresh away from Turbopack
+  
+  Make the docs capture workflow opt in to Turbopack instead of opt out.
+  This keeps screenshot generation and release automation on the stable
+  next dev path by default, which matches the successful release flow and
+  avoids the capture route manifest failures seen under Turbopack.
+  
+  Validation:
+  • nocorrect npm run lint
+  • nocorrect npm run test
+  • nocorrect npm run build
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.8.3] - 05/04/2026
 
 ### Fixed
