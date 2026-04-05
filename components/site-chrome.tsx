@@ -230,7 +230,7 @@ function DiscordWidgetCard({ href, data, error }: { href: string; data: DiscordW
         </div>
         <div className="dw-header">
           <div className="dw-header-avatar-wrap dw-header-avatar-wrap-muted">
-            <img src="/discord-avatar.gif" alt="" className="dw-header-avatar" width={48} height={48} />
+            <Image src="/discord-avatar.gif" alt="" className="dw-header-avatar" width={48} height={48} unoptimized />
           </div>
           <div className="dw-header-info">
             <span className="dw-server-name">{BRAND_NAME}</span>
@@ -285,7 +285,7 @@ function DiscordWidgetCard({ href, data, error }: { href: string; data: DiscordW
 
       <div className="dw-header">
         <div className="dw-header-avatar-wrap">
-          <img src="/discord-avatar.gif" alt="" className="dw-header-avatar" width={48} height={48} />
+          <Image src="/discord-avatar.gif" alt="" className="dw-header-avatar" width={48} height={48} unoptimized />
           <span className="dw-server-status-dot" />
         </div>
         <div className="dw-header-info">
@@ -304,7 +304,7 @@ function DiscordWidgetCard({ href, data, error }: { href: string; data: DiscordW
           {visibleMembers.map((m) => (
             <div key={m.id} className="dw-member">
               <div className="dw-avatar-wrap">
-                <img src={m.avatar_url} alt="" className="dw-avatar" width={28} height={28} />
+                <Image src={m.avatar_url} alt="" className="dw-avatar" width={28} height={28} />
                 <StatusDot status={m.status} />
               </div>
               <span className="dw-member-name">{m.username}</span>
