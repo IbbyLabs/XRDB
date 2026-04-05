@@ -22,7 +22,7 @@ const FIXTURE_NEXT_PORT = Number.parseInt(process.env.DOC_METADATA_FIXTURE_PORT 
 const CAPTURE_NEXT_PORT = Number.parseInt(process.env.DOC_CAPTURE_PORT || '3218', 10);
 const PLAYWRIGHT_WAIT_TIMEOUT_MS = Number.parseInt(process.env.DOC_CAPTURE_WAIT_MS || '1800', 10);
 const PLAYWRIGHT_COMMAND_TIMEOUT_MS = Number.parseInt(process.env.DOC_CAPTURE_COMMAND_TIMEOUT_MS || '300000', 10);
-const DOC_USE_TURBOPACK = process.env.DOC_USE_TURBOPACK !== 'false';
+const DOC_USE_TURBOPACK = process.env.DOC_USE_TURBOPACK === 'true';
 const CAPTURE_DATE = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
 const tmdbKey = process.env.XRDB_README_PREVIEW_TMDB_KEY || process.env.TMDB_KEY || '';
