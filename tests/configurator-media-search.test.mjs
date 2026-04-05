@@ -166,6 +166,7 @@ test('isBuiltInSample returns true for known sample IDs and false for unknown', 
   assert.equal(isBuiltInSample('tmdb:tv:1399'), true);
   assert.equal(isBuiltInSample('tmdb:tv:99999'), false);
   assert.equal(isBuiltInSample(''), false);
+});
 
 test('findSampleTitleByMediaId returns title for exact match', () => {
   assert.equal(findSampleTitleByMediaId('tt0133093'), 'The Matrix');
@@ -182,7 +183,6 @@ test('findSampleTitleByMediaId returns null for unknown IDs', () => {
   assert.equal(findSampleTitleByMediaId('tt9999999'), null);
   assert.equal(findSampleTitleByMediaId('tmdb:movie:99999'), null);
   assert.equal(findSampleTitleByMediaId(''), null);
-});
 });
 
 test('isMediaIdPattern detects IMDb IDs', () => {
