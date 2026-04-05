@@ -459,6 +459,7 @@ const captureScreenshot = async ({
       `--viewport-size=${width},${height}`,
       `--wait-for-timeout=${waitTimeoutMs}`,
       `--wait-for-selector=${waitForSelector}`,
+      `--timeout=${captureCommandTimeoutMs}`,
       url,
       outputPath,
     ],
