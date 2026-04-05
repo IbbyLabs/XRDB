@@ -26,6 +26,7 @@
     "ensure:native": "node scripts/ensure-native-deps.mjs",
     "clean": "next clean",
     "commits:generate": "node scripts/generate-commits-json.mjs",
+    "product-context:generate": "node scripts/generate-product-context.mjs",
     "dev": "next dev -p 3000",
     "prebuild": "npm run ensure:native",
     "build": "npm run commits:generate && next build",
@@ -62,7 +63,7 @@
     "verify:legacy-name": "node scripts/verify-no-legacy-brand.mjs",
     "verify:proxy-meta": "node scripts/verify-proxy-metadata-translation.mjs",
     "preversion": "npm run verify:legacy-name && npm run docs:refresh-assets && npm run docs:verify-manifest",
-    "version": "node scripts/bump-final-render-cache-version.mjs && node scripts/update-changelog.mjs && node scripts/refresh-readme-changelog-links.mjs && node scripts/refresh-readme-preview-cache-busters.mjs && git add CHANGELOG.md README.md docs/images lib/imageRouteConfig.ts"
+    "version": "node scripts/bump-final-render-cache-version.mjs && node scripts/update-changelog.mjs && node scripts/refresh-readme-changelog-links.mjs && node scripts/refresh-readme-preview-cache-busters.mjs && node scripts/generate-product-context.mjs && git add CHANGELOG.md README.md docs/images lib/imageRouteConfig.ts public/product-context.json"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
