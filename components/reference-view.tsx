@@ -176,7 +176,7 @@ GET /thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb`}</CodeBlo
             Backdrop and logo sources support <code>tmdb</code>, <code>fanart</code>, <code>cinemeta</code>, and <code>random</code>.
           </p>
           <p>
-            <code>fanart</code> uses fanart.tv artwork when a fanart key is present. <code>cinemeta</code> uses MetaHub when an IMDb ID is available. <code>omdb</code> (poster only) uses the server OMDb key. <code>random</code> picks a seeded source across available candidates. <code>blackbar</code> renders a solid black strip instead of a real image.
+            <code>fanart</code> uses fanart.tv artwork when a fanart key is present and now honors textless poster and backdrop choices when Fanart exposes neutral language metadata. <code>cinemeta</code> uses MetaHub when an IMDb ID is available. <code>omdb</code> (poster only) uses the server OMDb key. <code>clean</code>, <code>textless</code>, and random textless poster filters only use sources that actually supply textless artwork, so unsupported providers are skipped automatically. <code>random</code> picks a seeded source across available candidates. <code>blackbar</code> renders a solid black strip instead of a real image.
           </p>
         </ReferenceSection>
 

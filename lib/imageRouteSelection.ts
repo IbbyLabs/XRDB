@@ -39,6 +39,9 @@ export type FanartImageAsset = {
   likes?: string | number | null;
 };
 
+const hasFanartAssetUrl = (asset?: FanartImageAsset | null) =>
+  typeof asset?.url === 'string' && asset.url.trim().length > 0;
+
 export const pickDeterministicIndexBySeed = (seed: string, length: number) => {
   if (!Number.isFinite(length) || length <= 0) return 0;
   const normalizedSeed = String(seed || '').trim();
@@ -325,6 +328,9 @@ export const normalizeFanartLanguage = (value: unknown) => {
   return normalized;
 };
 
+export const isTextlessFanartAsset = (asset?: FanartImageAsset | null) =>
+  hasFanartAssetUrl(asset) && normalizeFanartLanguage(asset?.lang) === null;
+
 const rankFanartAsset = (
   asset: FanartImageAsset,
   requestedLang: string,
@@ -379,6 +385,64 @@ export const fanartAssetsToUrls = (items: FanartImageAsset[] = []) =>
       .map((item) => (typeof item?.url === 'string' ? item.url.trim() : ''))
       .filter(Boolean)
   )];
+
+const uniqueFanartAssets = (items: FanartImageAsset[] = []) =>
+  [...new Map(
+    items
+      .filter((item) => hasFanartAssetUrl(item))
+      .map((item) => [item.url!.trim(), item] as const)
+  ).values()];
+
+const filterFanartAssetsByTextMode = (
+  items: FanartImageAsset[],
+  mode: RandomPosterTextMode,
+) => {
+  if (mode === 'any') {
+    return items;
+  }
+  return items.filter((item) =>
+    mode === 'text' ? !isTextlessFanartAsset(item) : isTextlessFanartAsset(item)
+  );
+};
+
+export const pickFanartAssetByPreference = (
+  items: FanartImageAsset[] = [],
+  preference: PosterTextPreference,
+  randomSeed?: string,
+  randomPosterTextMode: RandomPosterTextMode = DEFAULT_RANDOM_POSTER_TEXT_MODE,
+) => {
+  const uniqueAssets = uniqueFanartAssets(items);
+  if (uniqueAssets.length === 0) return null;
+
+  if (preference === 'clean' || preference === 'textless') {
+    return uniqueAssets.find((item) => isTextlessFanartAsset(item)) || uniqueAssets[0] || null;
+  }
+
+  if (preference === 'original') {
+    return uniqueAssets[0] || null;
+  }
+
+  if (preference === 'random') {
+    const filteredAssets = filterFanartAssetsByTextMode(uniqueAssets, randomPosterTextMode);
+    return pickDeterministicItemBySeed(
+      filteredAssets.length > 0 ? filteredAssets : uniqueAssets,
+      `fanart:${randomSeed || 'seed'}`,
+    );
+  }
+
+  if (preference === 'alternative') {
+    return uniqueAssets[1] || uniqueAssets[0] || null;
+  }
+
+  return uniqueAssets[0] || null;
+};
+
+export const pickFanartPosterByPreference = (
+  items: FanartImageAsset[] = [],
+  preference: PosterTextPreference,
+  randomSeed?: string,
+  randomPosterTextMode: RandomPosterTextMode = DEFAULT_RANDOM_POSTER_TEXT_MODE,
+) => pickFanartAssetByPreference(items, preference, randomSeed, randomPosterTextMode);
 
 export const pickFanartUrlByPreference = (
   urls: string[] = [],

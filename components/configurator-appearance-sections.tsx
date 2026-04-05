@@ -1,5 +1,10 @@
 'use client';
 
+import {
+  artworkSourceSupportsTextlessSelection,
+  artworkTextSelectionNeedsProviderTextlessSupport,
+  TEXTLESS_ARTWORK_UNSUPPORTED_MESSAGE,
+} from '@/lib/artworkTextSupport';
 import { hexToRgbaCss } from '@/lib/hexToRgbaCss';
 import {
   DEFAULT_POSTER_EDGE_OFFSET,
@@ -110,9 +115,15 @@ type DetailedSelectionOption<T extends string> = SelectionOption<T> & {
 type QualityBadgeOptionId = (typeof QUALITY_BADGE_OPTIONS)[number]['id'];
 
 const selectorGroupClass = 'flex flex-wrap gap-1 rounded-lg border border-white/10 bg-zinc-900 p-1';
-const selectorButtonClass = (active: boolean) =>
+const selectorButtonClass = (active: boolean, disabled = false) =>
   `rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
-    active ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+    disabled
+      ? active
+        ? 'cursor-not-allowed bg-zinc-950 text-zinc-500 ring-1 ring-white/10'
+        : 'cursor-not-allowed text-zinc-600'
+      : active
+        ? 'bg-zinc-800 text-white'
+        : 'text-zinc-400 hover:text-white'
   }`;
 const settingsCardClass = 'rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-2';
 
@@ -834,6 +845,20 @@ export function LookSection({
   const styleStackOffsetLabel =
     activeRatingStyle === 'glass' ? 'Pill Badge Position' : 'Square Badge Position';
   const showRandomPosterFilters = previewType === 'poster' && activeImageText === 'random';
+  const artworkSourceScope = previewType === 'poster' ? 'poster' : 'backdrop';
+  const artworkSourceNeedsTextlessSupport =
+    (previewType === 'poster' || previewType === 'backdrop' || previewType === 'thumbnail') &&
+    artworkTextSelectionNeedsProviderTextlessSupport(
+      activeImageText,
+      previewType === 'poster' ? randomPosterText : 'any',
+    );
+  const blockedArtworkSourceIds = new Set(
+    artworkSourceNeedsTextlessSupport
+      ? activeArtworkSourceOptions
+          .filter((option) => !artworkSourceSupportsTextlessSelection(artworkSourceScope, option.id))
+          .map((option) => option.id)
+      : [],
+  );
   const ratingBadgeScaleMax = MAX_BADGE_SCALE_PERCENT;
   const handleRatingBadgeScaleChange = (value: number) => {
     onSelectRatingBadgeScale(
@@ -999,10 +1024,16 @@ export function LookSection({
             <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Artwork Source</div>
             <div className={selectorGroupClass}>
               {activeArtworkSourceOptions.map((option) => (
+                (() => {
+                  const optionDisabled = blockedArtworkSourceIds.has(option.id);
+                  return (
                 <button
                   key={option.id}
                   type="button"
                   onClick={() => {
+                    if (optionDisabled) {
+                      return;
+                    }
                     if (previewType === 'backdrop') {
                       onSelectBackdropArtworkSource(option.id);
                       return;
@@ -1013,13 +1044,21 @@ export function LookSection({
                     }
                     onSelectPosterArtworkSource(option.id);
                   }}
-                  className={selectorButtonClass(activeArtworkSource === option.id)}
-                  title={option.description}
+                  disabled={optionDisabled}
+                  className={selectorButtonClass(activeArtworkSource === option.id, optionDisabled)}
+                  title={optionDisabled ? TEXTLESS_ARTWORK_UNSUPPORTED_MESSAGE : option.description}
                 >
                   {option.label}
                 </button>
+                  );
+                })()
               ))}
             </div>
+            {artworkSourceNeedsTextlessSupport && blockedArtworkSourceIds.size > 0 ? (
+              <p className="text-[11px] leading-relaxed text-amber-300/80">
+                {TEXTLESS_ARTWORK_UNSUPPORTED_MESSAGE}
+              </p>
+            ) : null}
             {activeArtworkSourceDescription ? (
               <p className="text-[11px] leading-relaxed text-zinc-500">
                 {previewType === 'backdrop'
@@ -1028,7 +1067,7 @@ export function LookSection({
                     ? activeArtworkSourceDescription.replace('poster', 'thumbnail')
                   : activeArtworkSourceDescription}
                 {activeArtworkSource === 'fanart'
-                  ? ' Original and clean use the top ranked fanart image. Alternative uses the next ranked fanart image when one exists.'
+                  ? ' Original uses the top ranked fanart image. Clean and Textless prefer ranked textless fanart art when one exists. Alternative uses the next ranked fanart image when one exists.'
                   : ''}
               </p>
             ) : null}
@@ -1250,7 +1289,7 @@ export function LookSection({
                         </div>
                       </div>
                       <p className="text-[11px] leading-relaxed text-zinc-500">
-                        Applies to TMDB random poster picks. Filters only affect random poster selection and keep deterministic seed behavior.
+                        Applies to random poster picks. Sources that do not supply textless poster art are skipped when the text filter requires textless results. Filters only affect random poster selection and keep deterministic seed behavior.
                       </p>
                     </div>
                   </>

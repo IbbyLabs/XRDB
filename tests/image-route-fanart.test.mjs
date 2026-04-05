@@ -93,6 +93,9 @@ test('image route fanart builds movie lookups and sorts artwork by language and 
     'https://webservice.fanart.tv/v3/movies/42?api_key=fanart-key&client_key=client-key',
   );
   assert.equal(requests[0].phase, 'fanart');
+  assert.equal(artwork.posterAssets[0].url, 'https://img.example/fr.jpg');
+  assert.equal(artwork.posterAssets[1].url, 'https://img.example/en-low.jpg');
+  assert.equal(artwork.backdropAssets[0].url, 'https://img.example/bg-fr.jpg');
   assert.equal(artwork.posterUrls[0], 'https://img.example/fr.jpg');
   assert.deepEqual(artwork.backdropUrls, [
     'https://img.example/bg-fr.jpg',
