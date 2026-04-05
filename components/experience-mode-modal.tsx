@@ -12,25 +12,26 @@ export function ExperienceModeModal({
   onContinue: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-sm">
-      <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(32,20,54,0.98),rgba(16,10,28,0.98))] p-5 shadow-[0_40px_120px_-55px_rgba(0,0,0,0.95)] md:p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-300">
-              <Sparkles className="h-3.5 w-3.5 text-violet-300" />
-              Welcome to XRDB
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/75 px-3 py-3 backdrop-blur-sm sm:px-4 sm:py-6">
+      <div className="flex max-h-[calc(100dvh-1.5rem)] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(32,20,54,0.98),rgba(16,10,28,0.98))] shadow-[0_40px_120px_-55px_rgba(0,0,0,0.95)] sm:max-h-[calc(100dvh-3rem)]">
+        <div className="min-h-0 flex-1 overflow-y-auto p-5 md:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-300">
+                <Sparkles className="h-3.5 w-3.5 text-violet-300" />
+                Welcome to XRDB
+              </div>
+              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
+                Choose how you want to configure it.
+              </h2>
+              <p className="mt-3 max-w-xl text-sm leading-7 text-zinc-400">
+                Simple keeps the main decisions visible. Advanced opens the full XRDB surface,
+                including provider ordering, layout offsets, badge sizing, and custom source styling.
+              </p>
             </div>
-            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white md:text-4xl">
-              Choose how you want to configure it.
-            </h2>
-            <p className="mt-3 max-w-xl text-sm leading-7 text-zinc-400">
-              Simple keeps the main decisions visible. Advanced opens the full XRDB surface,
-              including provider ordering, layout offsets, badge sizing, and custom source styling.
-            </p>
           </div>
-        </div>
 
-        <div className="mt-6 grid gap-3 md:grid-cols-2">
+          <div className="mt-6 grid gap-3 md:grid-cols-2">
           {([
             {
               id: 'simple',
@@ -86,12 +87,14 @@ export function ExperienceModeModal({
               </div>
             </button>
           ))}
-        </div>
+          </div>
 
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-[11px] leading-5 text-zinc-500">
+          <p className="mt-6 text-[11px] leading-5 text-zinc-500">
             You can switch modes later from the configurator without changing your saved XRDB settings.
           </p>
+        </div>
+
+        <div className="flex shrink-0 justify-end border-t border-white/10 bg-black/20 p-4">
           <button
             type="button"
             onClick={onContinue}
