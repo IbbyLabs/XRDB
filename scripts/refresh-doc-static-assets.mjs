@@ -12,6 +12,7 @@ import {
 } from './doc-static-asset-manifest.mjs';
 import { ensureNativeDeps } from './ensure-native-deps.mjs';
 import { loadLocalEnv } from './load-local-env.mjs';
+import { syncReadmePreviewGallery } from './sync-readme-preview-gallery.mjs';
 
 loadLocalEnv();
 
@@ -1335,6 +1336,11 @@ const main = async () => {
   }
 
   logRefreshStep(`Refreshed static doc assets (${mode})`);
+
+  const gallerySync = await syncReadmePreviewGallery();
+  if (gallerySync.readmeUpdated || gallerySync.stateUpdated) {
+    logRefreshStep(`Synced README preview gallery for version ${gallerySync.version}`);
+  }
 
   const readmePath = path.join(ROOT_DIR, 'README.md');
   const readmeContent = await fs.readFile(readmePath, 'utf-8');
