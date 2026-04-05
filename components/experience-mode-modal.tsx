@@ -13,7 +13,7 @@ export function ExperienceModeModal({
 }) {
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-sm">
-      <div className="w-full max-w-2xl rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(12,10,20,0.98),rgba(6,5,12,0.98))] p-5 shadow-[0_40px_120px_-55px_rgba(0,0,0,0.95)] md:p-6">
+      <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(32,20,54,0.98),rgba(16,10,28,0.98))] p-5 shadow-[0_40px_120px_-55px_rgba(0,0,0,0.95)] md:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-300">
@@ -55,10 +55,10 @@ export function ExperienceModeModal({
               key={`modal-mode-${option.id}`}
               type="button"
               onClick={() => onSelectMode(option.id)}
-              className={`rounded-[1.5rem] border p-4 text-left transition-colors ${
+              className={`rounded-xl border p-4 text-left transition-colors ${
                 experienceModeDraft === option.id
                   ? 'border-violet-500/60 bg-violet-500/12 text-white'
-                  : 'border-white/10 bg-black/25 text-zinc-300 hover:border-white/20 hover:bg-black/35'
+                  : 'border-white/10 bg-black/30 text-zinc-300 hover:border-white/20 hover:bg-black/40'
               }`}
             >
               <div className="flex items-center justify-between gap-3">

@@ -2,6 +2,8 @@
 
 import { Check, ChevronRight, Clipboard, Code2, Eye, EyeOff } from 'lucide-react';
 
+import { WorkspaceManagementSection } from '@/components/configurator-basics';
+import type { ComponentProps } from 'react';
 import {
   DEFAULT_EPISODE_ID_MODE,
   THUMBNAIL_RATING_PREFERENCES,
@@ -107,6 +109,7 @@ export function ConfiguratorExportPanels({
   onToggleThumbnailRatingPreference,
   hideAiometadataCredentials,
   onToggleHideAiometadataCredentials,
+  workspaceManagementProps,
 }: {
   isConfigStringOpen: boolean;
   isAiometadataOpen: boolean;
@@ -133,6 +136,7 @@ export function ConfiguratorExportPanels({
   onToggleThumbnailRatingPreference: (providerId: ThumbnailRatingPreference) => void;
   hideAiometadataCredentials: boolean;
   onToggleHideAiometadataCredentials: (value: boolean) => void;
+  workspaceManagementProps?: ComponentProps<typeof WorkspaceManagementSection>;
 }) {
   const effectivePosterIdMode = posterIdMode === 'tmdb' ? 'auto' : posterIdMode;
 
@@ -470,6 +474,11 @@ export function ConfiguratorExportPanels({
           </div>
         </div>
       </div>
+      {workspaceManagementProps ? (
+        <div className="mt-3 xrdb-panel rounded-3xl border border-white/10 bg-zinc-900/60 p-4">
+          <WorkspaceManagementSection {...workspaceManagementProps} />
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -896,8 +896,8 @@ export function SimpleQuickTuneSection({
               onClick={() => onSelectRatingPresentation(option.id)}
               className={`rounded-xl border p-3 text-left transition-colors ${
                 activeRatingPresentation === option.id
-                  ? 'border-violet-500/60 bg-violet-500/10 text-white'
-                  : 'border-white/10 bg-zinc-900/60 text-zinc-300 hover:border-white/20 hover:bg-zinc-900'
+                  ? 'border-violet-500/60 bg-violet-500/12 text-white'
+                  : 'border-white/10 bg-black/30 text-zinc-300 hover:border-white/20 hover:bg-black/40'
               }`}
             >
               <div className="text-sm font-semibold">{option.label}</div>
@@ -920,8 +920,8 @@ export function SimpleQuickTuneSection({
                 onClick={() => onSelectRatingStyle(option.id)}
                 className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
                   activeRatingStyle === option.id
-                    ? 'border-violet-500/60 bg-zinc-800 text-white'
-                    : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                    ? 'border-violet-500/60 bg-violet-500/12 text-white'
+                    : 'border-white/10 bg-black text-zinc-400 hover:border-white/20 hover:text-white'
                 }`}
               >
                 {option.label}
@@ -943,8 +943,8 @@ export function SimpleQuickTuneSection({
                   onClick={() => onSelectImageText(option.id)}
                   className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
                     activeImageText === option.id
-                      ? 'border-violet-500/60 bg-zinc-800 text-white'
-                      : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                      ? 'border-violet-500/60 bg-violet-500/12 text-white'
+                      : 'border-white/10 bg-black text-zinc-400 hover:border-white/20 hover:text-white'
                   }`}
                 >
                   {option.label}
@@ -965,8 +965,8 @@ export function SimpleQuickTuneSection({
                   onClick={() => onSelectLogoBackground(option)}
                   className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
                     logoBackground === option
-                      ? 'border-violet-500/60 bg-zinc-800 text-white'
-                      : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                      ? 'border-violet-500/60 bg-violet-500/12 text-white'
+                      : 'border-white/10 bg-black text-zinc-400 hover:border-white/20 hover:text-white'
                   }`}
                 >
                   {option === 'dark' ? 'Dark' : 'Transparent'}
@@ -989,8 +989,8 @@ export function SimpleQuickTuneSection({
                   onClick={() => onSelectPosterImageSize(option.id)}
                   className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
                     posterImageSize === option.id
-                      ? 'border-violet-500/60 bg-zinc-800 text-white'
-                      : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                      ? 'border-violet-500/60 bg-violet-500/12 text-white'
+                      : 'border-white/10 bg-black text-zinc-400 hover:border-white/20 hover:text-white'
                   }`}
                   title={option.description}
                 >
@@ -1013,8 +1013,8 @@ export function SimpleQuickTuneSection({
                   onClick={() => onSelectBackdropImageSize(option.id)}
                   className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
                     backdropImageSize === option.id
-                      ? 'border-violet-500/60 bg-zinc-800 text-white'
-                      : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                      ? 'border-violet-500/60 bg-violet-500/12 text-white'
+                      : 'border-white/10 bg-black text-zinc-400 hover:border-white/20 hover:text-white'
                   }`}
                   title={option.description}
                 >
@@ -1051,8 +1051,8 @@ export function SimpleQuickTuneSection({
                 }}
                 className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
                   (previewType === 'logo' ? logoArtworkSource : activeArtworkSource) === option.id
-                    ? 'border-violet-500/60 bg-zinc-800 text-white'
-                    : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                    ? 'border-violet-500/60 bg-violet-500/12 text-white'
+                    : 'border-white/10 bg-black text-zinc-400 hover:border-white/20 hover:text-white'
                 }`}
               >
                 {option.label}
@@ -1075,8 +1075,8 @@ export function SimpleQuickTuneSection({
                 onClick={() => onSelectGenreBadgeMode(option.id)}
                 className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
                   activeGenreBadgeMode === option.id
-                    ? 'border-violet-500/60 bg-zinc-800 text-white'
-                    : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                    ? 'border-violet-500/60 bg-violet-500/12 text-white'
+                    : 'border-white/10 bg-black text-zinc-400 hover:border-white/20 hover:text-white'
                 }`}
               >
                 {option.label}
@@ -1098,8 +1098,8 @@ export function SimpleQuickTuneSection({
                   onClick={() => onSelectStreamBadges(option.id)}
                   className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
                     activeStreamBadges === option.id
-                      ? 'border-violet-500/60 bg-zinc-800 text-white'
-                      : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                      ? 'border-violet-500/60 bg-violet-500/12 text-white'
+                      : 'border-white/10 bg-black text-zinc-400 hover:border-white/20 hover:text-white'
                   }`}
                 >
                   {option.label}

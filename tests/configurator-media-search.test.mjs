@@ -5,7 +5,9 @@ import {
   buildImdbMediaIdForPreviewType,
   buildMediaIdForPreviewType,
   buildTmdbMultiSearchUrl,
+  findSampleTitleByMediaId,
   isBuiltInSample,
+  isMediaIdPattern,
   mapOmdbSearchResultsForPreviewType,
   mapTmdbSearchResultsForPreviewType,
   MEDIA_TARGET_SAMPLE_IDS,
@@ -164,4 +166,66 @@ test('isBuiltInSample returns true for known sample IDs and false for unknown', 
   assert.equal(isBuiltInSample('tmdb:tv:1399'), true);
   assert.equal(isBuiltInSample('tmdb:tv:99999'), false);
   assert.equal(isBuiltInSample(''), false);
+
+test('findSampleTitleByMediaId returns title for exact match', () => {
+  assert.equal(findSampleTitleByMediaId('tt0133093'), 'The Matrix');
+  assert.equal(findSampleTitleByMediaId('tmdb:tv:1399'), 'Game of Thrones');
+  assert.equal(findSampleTitleByMediaId('tmdb:movie:27205'), 'Inception');
+});
+
+test('findSampleTitleByMediaId returns title for episode-format sample IDs', () => {
+  assert.equal(findSampleTitleByMediaId('tt0944947:1:1'), 'Game of Thrones S01E01');
+  assert.equal(findSampleTitleByMediaId('tmdb:tv:1399:1:1'), 'Game of Thrones S01E01');
+});
+
+test('findSampleTitleByMediaId returns null for unknown IDs', () => {
+  assert.equal(findSampleTitleByMediaId('tt9999999'), null);
+  assert.equal(findSampleTitleByMediaId('tmdb:movie:99999'), null);
+  assert.equal(findSampleTitleByMediaId(''), null);
+});
+});
+
+test('isMediaIdPattern detects IMDb IDs', () => {
+  assert.equal(isMediaIdPattern('tt0133093'), true);
+  assert.equal(isMediaIdPattern('tt1234567'), true);
+  assert.equal(isMediaIdPattern('TT0133093'), true);
+});
+
+test('isMediaIdPattern detects pure numeric TMDB IDs', () => {
+  assert.equal(isMediaIdPattern('603'), true);
+  assert.equal(isMediaIdPattern('1399'), true);
+  assert.equal(isMediaIdPattern('550'), true);
+});
+
+test('isMediaIdPattern detects typed TMDB IDs', () => {
+  assert.equal(isMediaIdPattern('tmdb:movie:603'), true);
+  assert.equal(isMediaIdPattern('tmdb:tv:1399'), true);
+  assert.equal(isMediaIdPattern('tv:1399'), true);
+  assert.equal(isMediaIdPattern('tmdb:tv:1399:1:1'), true);
+});
+
+test('isMediaIdPattern detects other supported ID prefixes', () => {
+  assert.equal(isMediaIdPattern('kitsu:7442'), true);
+  assert.equal(isMediaIdPattern('mal:16498'), true);
+  assert.equal(isMediaIdPattern('anilist:16498'), true);
+  assert.equal(isMediaIdPattern('anidb:5114'), true);
+  assert.equal(isMediaIdPattern('tvdb:121361'), true);
+  assert.equal(isMediaIdPattern('imdb:tt0944947'), true);
+  assert.equal(isMediaIdPattern('xrdbid:tt0944947'), true);
+});
+
+test('isMediaIdPattern detects episode targets', () => {
+  assert.equal(isMediaIdPattern('tmdb:tv:1399:1:1'), true);
+  assert.equal(isMediaIdPattern('mal:16498:1:1'), true);
+  assert.equal(isMediaIdPattern('kitsu:7442:1'), true);
+  assert.equal(isMediaIdPattern('kitsu:7442:1:1'), true);
+});
+
+test('isMediaIdPattern returns false for name queries', () => {
+  assert.equal(isMediaIdPattern('The Matrix'), false);
+  assert.equal(isMediaIdPattern('breaking bad'), false);
+  assert.equal(isMediaIdPattern('game of thrones'), false);
+  assert.equal(isMediaIdPattern(''), false);
+  assert.equal(isMediaIdPattern('  '), false);
+  assert.equal(isMediaIdPattern('attack on titan 2024'), false);
 });
