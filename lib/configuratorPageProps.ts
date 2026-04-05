@@ -76,6 +76,7 @@ type WorkspaceUiState = {
 
 type MediaTargetSearchState = {
   onMediaIdChange: (value: string) => void;
+  onThumbnailEpisodeChange: (value: string) => void;
   mediaSearchQuery: string;
   mediaSearchLoading: boolean;
   mediaSearchError: string;
@@ -192,6 +193,7 @@ export function buildConfiguratorPageProps({
         lang: workspaceState.lang,
         supportedLanguages: pageChrome.supportedLanguages,
         onMediaIdChange: mediaTargetSearch.onMediaIdChange,
+        onThumbnailEpisodeChange: mediaTargetSearch.onThumbnailEpisodeChange,
         onLangChange: workspaceState.setLang,
         mediaSearchQuery: mediaTargetSearch.mediaSearchQuery,
         mediaSearchLoading: mediaTargetSearch.mediaSearchLoading,

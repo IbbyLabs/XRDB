@@ -754,6 +754,10 @@ export function useConfiguratorWorkspaceRuntime() {
     setMediaSearchQuery('');
   };
 
+  const handleThumbnailEpisodeChange = (value: string) => {
+    setMediaId(value);
+  };
+
   const runMediaSearch = useCallback(async (
     query: string,
     options?: { showValidationErrors?: boolean },
@@ -1369,7 +1373,9 @@ export function useConfiguratorWorkspaceRuntime() {
       return;
     }
     if (!tmdbKey.trim() || disableRemoteLookups) return;
-    const resolveId = mediaId.startsWith('tmdb:') ? mediaId : mediaId.split(':')[0];
+    const episodeTarget = parseEpisodePreviewMediaTarget(mediaId);
+    const baseId = episodeTarget ? episodeTarget.mediaId : mediaId;
+    const resolveId = baseId.startsWith('tmdb:') ? baseId : baseId.split(':')[0];
     const target = new URL('/api/media-resolve', window.location.origin);
     target.searchParams.set('id', resolveId);
     target.searchParams.set('tmdbKey', tmdbKey.trim());
@@ -1572,7 +1578,6 @@ export function useConfiguratorWorkspaceRuntime() {
     setMediaSearchLoading(false);
     setMediaSearchResults([]);
     setMediaSearchError('');
-    setActivePreviewTitle('');
   }, [previewType]);
 
   useEffect(() => {
@@ -1841,6 +1846,7 @@ export function useConfiguratorWorkspaceRuntime() {
     feeds,
     mediaTargetSearch: {
       onMediaIdChange: handleMediaIdChange,
+      onThumbnailEpisodeChange: handleThumbnailEpisodeChange,
       mediaSearchQuery,
       mediaSearchLoading,
       mediaSearchError,

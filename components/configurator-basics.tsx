@@ -512,6 +512,7 @@ export function MediaTargetSection({
   lang,
   supportedLanguages,
   onMediaIdChange,
+  onThumbnailEpisodeChange,
   onLangChange,
   mediaSearchQuery,
   mediaSearchLoading,
@@ -536,6 +537,7 @@ export function MediaTargetSection({
   lang: string;
   supportedLanguages: SupportedLanguageOption[];
   onMediaIdChange: (value: string) => void;
+  onThumbnailEpisodeChange: (value: string) => void;
   onLangChange: (value: string) => void;
   mediaSearchQuery: string;
   mediaSearchLoading: boolean;
@@ -559,6 +561,17 @@ export function MediaTargetSection({
   const thumbnailBaseId = thumbnailTarget ? thumbnailTarget.mediaId : mediaId.trim();
   const thumbnailSeason = thumbnailTarget ? String(thumbnailTarget.seasonNumber) : '1';
   const thumbnailEpisode = thumbnailTarget ? String(thumbnailTarget.episodeNumber) : '1';
+
+  const [localSeason, setLocalSeason] = useState(thumbnailSeason);
+  const [localEpisode, setLocalEpisode] = useState(thumbnailEpisode);
+
+  useEffect(() => {
+    setLocalSeason(thumbnailSeason);
+  }, [thumbnailSeason]);
+
+  useEffect(() => {
+    setLocalEpisode(thumbnailEpisode);
+  }, [thumbnailEpisode]);
 
   const [unifiedInput, setUnifiedInput] = useState(mediaId);
   const [inputFocused, setInputFocused] = useState(false);
@@ -587,24 +600,20 @@ export function MediaTargetSection({
   };
 
   const applyThumbnailTarget = ({
-    nextBaseId,
     nextSeason,
     nextEpisode,
   }: {
-    nextBaseId: string;
-    nextSeason: string | number;
-    nextEpisode: string | number;
+    nextSeason: string;
+    nextEpisode: string;
   }) => {
     const nextMediaId = buildEpisodePreviewMediaTarget({
-      mediaId: nextBaseId,
+      mediaId: thumbnailBaseId,
       seasonNumber: nextSeason,
       episodeNumber: nextEpisode,
     });
     if (nextMediaId) {
-      onMediaIdChange(nextMediaId);
-      return;
+      onThumbnailEpisodeChange(nextMediaId);
     }
-    onMediaIdChange(nextBaseId);
   };
 
   return (
@@ -702,57 +711,46 @@ export function MediaTargetSection({
       </div>
       {previewType === 'thumbnail' ? (
         <div className="mt-3 rounded-xl border border-white/10 bg-black/30 p-3">
-          <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr),120px,120px]">
-            <div>
-              <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Series ID</span>
-              <input
-                type="text"
-                value={thumbnailBaseId}
-                onChange={(event) =>
-                  applyThumbnailTarget({
-                    nextBaseId: event.target.value,
-                    nextSeason: thumbnailSeason,
-                    nextEpisode: thumbnailEpisode,
-                  })}
-                placeholder="tmdb:tv:1399"
-                className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs leading-5 text-white outline-none focus:border-violet-500/50"
-              />
-            </div>
+          <div className="grid grid-cols-2 gap-2">
             <div>
               <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Season</span>
               <input
-                type="number"
-                min={1}
-                step={1}
-                value={thumbnailSeason}
-                onChange={(event) =>
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={localSeason}
+                onChange={(event) => {
+                  const raw = event.target.value;
+                  setLocalSeason(raw);
                   applyThumbnailTarget({
-                    nextBaseId: thumbnailBaseId,
-                    nextSeason: event.target.value,
-                    nextEpisode: thumbnailEpisode,
-                  })}
+                    nextSeason: raw,
+                    nextEpisode: localEpisode,
+                  });
+                }}
                 className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs leading-5 text-white outline-none focus:border-violet-500/50"
               />
             </div>
             <div>
               <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Episode</span>
               <input
-                type="number"
-                min={1}
-                step={1}
-                value={thumbnailEpisode}
-                onChange={(event) =>
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={localEpisode}
+                onChange={(event) => {
+                  const raw = event.target.value;
+                  setLocalEpisode(raw);
                   applyThumbnailTarget({
-                    nextBaseId: thumbnailBaseId,
-                    nextSeason: thumbnailSeason,
-                    nextEpisode: event.target.value,
-                  })}
+                    nextSeason: localSeason,
+                    nextEpisode: raw,
+                  });
+                }}
                 className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs leading-5 text-white outline-none focus:border-violet-500/50"
               />
             </div>
           </div>
           <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-            Use TMDB TV, IMDb, TVDB, XRDBID, AniList, MAL, AniDB, or Kitsu series IDs here. The preview route stays `/thumbnail/{'{id}'}/S{'{season}'}E{'{episode}'}.jpg`.
+            Thumbnail previews need an episode target in `seriesId:season:episode` form, for example `tt0944947:1:1` or `tmdb:tv:1399:1:1`.
           </p>
         </div>
       ) : null}
