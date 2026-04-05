@@ -25,6 +25,35 @@
 
 <a id="v1-8-0"></a>
 
+<a id="v1-8-1"></a>
+
+## [v1.8.1] - 05/04/2026
+
+### Fixed
+* thumbnail preview input editability and title preservation
+  
+  • Switch season/episode inputs from type=number to type=text with
+    inputMode=numeric so backspace works on mobile browsers
+  • Add local state for season/episode fields to allow free clearing
+    and retyping without controlled value snap back
+  • Add dedicated onThumbnailEpisodeChange handler that updates the
+    media ID without clearing the resolved series title
+  • Remove setActivePreviewTitle clear from the previewType change
+    effect so title persists across poster/thumbnail switches
+  • Fix TMDB episode resolve ID extraction to use base series ID
+    (e.g. tmdb:tv:85937) instead of full episode string
+  • Remove redundant Series ID field from the thumbnail detail panel
+    since series identity is already shown in the unified search field
+  • Update thumbnail panel grid to two column layout for season/episode
+* harden native dependency preflight and remediation
+  
+  Add deterministic better sqlite3 remediation with rebuild then install fallback and explicit failure guidance.
+  
+  Run native preflight at refresh and release entrypoints, expand native dependency tests, and document behavior in README.
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.8.0] - 05/04/2026
 
 ### Added
