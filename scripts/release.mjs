@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
 
+import { ensureNativeDeps } from './ensure-native-deps.mjs';
 import { loadLocalEnv } from './load-local-env.mjs';
 
 loadLocalEnv();
@@ -11,6 +12,8 @@ if (!allowedLevels.has(level)) {
   console.error('Usage: npm run release -- <patch|minor|major>');
   process.exit(1);
 }
+
+ensureNativeDeps();
 
 function run(command, args, { stdio = 'inherit' } = {}) {
   const result = spawnSync(command, args, { stdio });
