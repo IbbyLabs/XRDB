@@ -42,6 +42,7 @@ cd XRDB
 ```
 
 Use Node 22.x locally. The repo now includes `.nvmrc` and `.node-version` so native packages such as `better-sqlite3` stay aligned with CI and release scripts.
+Doc refresh and release scripts now run an automatic native dependency preflight for `better-sqlite3` and attempt remediation when a Node ABI mismatch is detected.
 
 1. Install dependencies: `sudo npm install`
 2. Build: `npm run build`
@@ -179,6 +180,7 @@ npm run release:patch
 
 The release flow also bumps `FINAL_IMAGE_RENDERER_CACHE_VERSION` automatically so each new release invalidates stale final image renders on first request.
 Release automation now regenerates every tracked README doc image and CI fails if the checked in doc assets drift from the generator output.
+If native `better-sqlite3` binaries are out of sync with your local Node runtime, the release flow attempts automatic remediation before running refresh and release steps.
 
 Store `XRDB_README_PREVIEW_TMDB_KEY` and `XRDB_README_PREVIEW_MDBLIST_KEY` in local `.env` or `.env.local` if you want the release/doc asset scripts to pick them up automatically. Shell exported vars still win if both are set.
 

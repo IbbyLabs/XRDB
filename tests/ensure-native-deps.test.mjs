@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 
 import {
   getDeclaredPackageManager,
+  getNativeRemediationCommands,
+  getReinstallCommand,
   getRebuildCommand,
   getVerifyScript,
   isNativeAbiMismatch,
@@ -66,6 +68,48 @@ test('defaults to npm rebuild outside pnpm', () => {
       command: 'npm',
       args: ['rebuild', 'better-sqlite3'],
     },
+  );
+});
+
+test('uses pnpm install force for reinstall under pnpm', () => {
+  assert.deepEqual(
+    getReinstallCommand({
+      userAgent: 'pnpm/10.32.1 npm/? node/v22.7.0 darwin arm64',
+    }),
+    {
+      command: 'pnpm',
+      args: ['install', '--force'],
+    },
+  );
+});
+
+test('defaults to npm install force for reinstall outside pnpm', () => {
+  assert.deepEqual(
+    getReinstallCommand({
+      userAgent: 'npm/10.8.2 node/v22.7.0 darwin arm64 workspaces/false',
+    }),
+    {
+      command: 'npm',
+      args: ['install', '--force'],
+    },
+  );
+});
+
+test('returns deterministic remediation command order', () => {
+  assert.deepEqual(
+    getNativeRemediationCommands({
+      userAgent: 'pnpm/10.32.1 npm/? node/v22.7.0 darwin arm64',
+    }),
+    [
+      {
+        command: 'pnpm',
+        args: ['rebuild', 'better-sqlite3'],
+      },
+      {
+        command: 'pnpm',
+        args: ['install', '--force'],
+      },
+    ],
   );
 });
 

@@ -10,6 +10,7 @@ import sharp from 'sharp';
 import {
   DOC_STATIC_ASSET_PATHS,
 } from './doc-static-asset-manifest.mjs';
+import { ensureNativeDeps } from './ensure-native-deps.mjs';
 import { loadLocalEnv } from './load-local-env.mjs';
 
 loadLocalEnv();
@@ -1302,6 +1303,8 @@ const generateComparisonBoards = async ({
 };
 
 const main = async () => {
+  ensureNativeDeps();
+
   const mode = String(process.argv[2] || 'all').trim().toLowerCase();
   const validModes = new Set(['all', 'boards', 'captures', 'metadata']);
 

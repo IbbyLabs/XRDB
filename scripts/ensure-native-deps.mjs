@@ -43,6 +43,26 @@ export function getRebuildCommand({ userAgent = '', packageManager = '' } = {}) 
   };
 }
 
+export function getReinstallCommand({ userAgent = '', packageManager = '' } = {}) {
+  if (String(userAgent).startsWith('pnpm/') || String(packageManager).startsWith('pnpm@')) {
+    return {
+      command: 'pnpm',
+      args: ['install', '--force'],
+    };
+  }
+
+  return {
+    command: 'npm',
+    args: ['install', '--force'],
+  };
+}
+
+export function getNativeRemediationCommands({ userAgent = '', packageManager = '' } = {}) {
+  const rebuild = getRebuildCommand({ userAgent, packageManager });
+  const reinstall = getReinstallCommand({ userAgent, packageManager });
+  return [rebuild, reinstall];
+}
+
 function formatCommandFailure(command, args, result) {
   const output = [result.stdout, result.stderr]
     .filter((value) => String(value || '').trim())
@@ -73,40 +93,50 @@ export function ensureNativeDeps({ env = process.env, log = console } = {}) {
     throw new Error(beforeOutput || `${NATIVE_PACKAGE_NAME} failed to load.`);
   }
 
-  const { command, args } = getRebuildCommand({
+  const packageManager = env.npm_package_json
+    ? getDeclaredPackageManager({ packageJsonPath: env.npm_package_json })
+    : '';
+
+  const remediationCommands = getNativeRemediationCommands({
     userAgent: env.npm_config_user_agent,
-    packageManager: env.npm_package_json
-      ? getDeclaredPackageManager({ packageJsonPath: env.npm_package_json })
-      : '',
+    packageManager,
   });
 
   log.warn(
-    `[native] Detected ${NATIVE_PACKAGE_NAME} binary mismatch for Node ${process.version}. Rebuilding.`,
+    `[native] Detected ${NATIVE_PACKAGE_NAME} binary mismatch for Node ${process.version}. Attempting remediation.`,
   );
 
-  const rebuildResult = spawnSync(command, args, {
-    env,
-    stdio: 'inherit',
-  });
+  for (const { command, args } of remediationCommands) {
+    const remediationResult = spawnSync(command, args, {
+      env,
+      stdio: 'inherit',
+    });
 
-  if (rebuildResult.error) {
-    throw rebuildResult.error;
-  }
+    if (remediationResult.error) {
+      throw remediationResult.error;
+    }
 
-  if (rebuildResult.status !== 0) {
-    throw new Error(`${command} ${args.join(' ')} exited with status ${rebuildResult.status ?? 1}.`);
+    if (remediationResult.status !== 0) {
+      continue;
+    }
+
+    const verifyAfterRemediation = verifyNativePackage();
+    if (!verifyAfterRemediation.error && verifyAfterRemediation.status === 0) {
+      log.warn(`[native] ${NATIVE_PACKAGE_NAME} is ready for Node ${process.version}.`);
+      return true;
+    }
   }
 
   const verifyAfter = verifyNativePackage();
-  if (verifyAfter.error || verifyAfter.status !== 0) {
-    throw new Error(
-      formatCommandFailure(process.execPath, VERIFY_ARGS, verifyAfter) ||
-        `${NATIVE_PACKAGE_NAME} still failed to load after rebuild.`,
-    );
-  }
-
-  log.warn(`[native] ${NATIVE_PACKAGE_NAME} is ready for Node ${process.version}.`);
-  return true;
+  const verifyOutput = formatCommandFailure(process.execPath, VERIFY_ARGS, verifyAfter);
+  const nextSteps = remediationCommands
+    .map(({ command, args }) => `${command} ${args.join(' ')}`)
+    .join(' then ');
+  throw new Error(
+    `${verifyOutput || `${NATIVE_PACKAGE_NAME} still failed to load.`}\n\n` +
+      `Tried automatic remediation but it did not restore compatibility. ` +
+      `Run ${nextSteps} and retry.`,
+  );
 }
 
 function main() {
