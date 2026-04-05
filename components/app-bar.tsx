@@ -101,7 +101,7 @@ export function AppBar() {
             loading={isLatestReleaseLoading}
             pendingTag={pendingReleaseTag}
           />
-          <DiscordPill href={BRAND_DISCORD_OFFICIAL_URL} label={BRAND_DISCORD_OFFICIAL_LABEL} title={BRAND_DISCORD_OFFICIAL_LABEL} />
+          <DiscordPill href={BRAND_DISCORD_OFFICIAL_URL} label={BRAND_DISCORD_OFFICIAL_LABEL} title={BRAND_DISCORD_OFFICIAL_LABEL} popover />
         </div>
 
         <button
@@ -130,7 +130,7 @@ export function AppBar() {
           </a>
           <UptimePill label="Uptime Tracker" />
           <SupportPill label="Support" />
-          <DiscordPill href={BRAND_DISCORD_OFFICIAL_URL} label={BRAND_DISCORD_OFFICIAL_LABEL} title={BRAND_DISCORD_OFFICIAL_LABEL} />
+          <DiscordPill href={BRAND_DISCORD_OFFICIAL_URL} label={BRAND_DISCORD_OFFICIAL_LABEL} title={BRAND_DISCORD_OFFICIAL_LABEL} popover />
         </div>
       ) : null}
     </nav>

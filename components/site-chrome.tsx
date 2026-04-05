@@ -165,21 +165,234 @@ export function LatestReleasePill({
   );
 }
 
-export function DiscordPill({ href, label, title }: { href: string; label: string; title: string }) {
+const DISCORD_ICON_PATH =
+  'M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.31,60,73.31,53s5-12.74,11.43-12.74S96.33,46,96.22,53,91.08,65.69,84.69,65.69Z';
+
+const DISCORD_WIDGET_API = '/api/discord-widget';
+
+const KNOWN_BOT_NAMES = new Set(['dyno', 'mee6', 'carl-bot', 'dank memer', 'arcane', 'tatsu', 'mudae', 'aurorapulse']);
+
+interface DiscordWidgetData {
+  name: string;
+  instant_invite: string;
+  channels: { id: string; name: string; position: number }[];
+  members: { id: string; username: string; status: string; avatar_url: string }[];
+}
+
+const STATUS_PRIORITY: Record<string, number> = { online: 0, dnd: 1, idle: 2, offline: 3 };
+
+function isBot(username: string): boolean {
+  const lower = username.toLowerCase();
+  return lower.includes('bot') || KNOWN_BOT_NAMES.has(lower);
+}
+
+function useDiscordWidget() {
+  const [data, setData] = useState<DiscordWidgetData | null>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetch(DISCORD_WIDGET_API)
+      .then((r) => {
+        if (!r.ok) throw new Error('Widget unavailable');
+        return r.json();
+      })
+      .then((d: DiscordWidgetData) => { if (active) setData(d); })
+      .catch(() => { if (active) setError(true); });
+    return () => { active = false; };
+  }, []);
+
+  return { data, error };
+}
+
+function DiscordSvgIcon() {
   return (
-    <a
-      className="site-discord-pill"
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      aria-label={title}
-      title={title}
-    >
-      <svg className="site-discord-icon" viewBox="0 0 127.14 96.36" fill="currentColor" aria-hidden="true">
-        <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.31,60,73.31,53s5-12.74,11.43-12.74S96.33,46,96.22,53,91.08,65.69,84.69,65.69Z" />
-      </svg>
-      <span>{label}</span>
-    </a>
+    <svg className="site-discord-icon" viewBox="0 0 127.14 96.36" fill="currentColor" aria-hidden="true">
+      <path d={DISCORD_ICON_PATH} />
+    </svg>
+  );
+}
+
+function StatusDot({ status }: { status: string }) {
+  const cls =
+    status === 'online' ? 'dw-status-online' :
+    status === 'idle' ? 'dw-status-idle' :
+    status === 'dnd' ? 'dw-status-dnd' : 'dw-status-offline';
+  return <span className={`dw-status-dot ${cls}`} />;
+}
+
+function DiscordWidgetCard({ href, data, error }: { href: string; data: DiscordWidgetData | null; error: boolean }) {
+  if (error) {
+    return (
+      <div className="dw-card">
+        <div className="dw-banner dw-banner-muted">
+          <Image src="/discord-banner.png" alt="" className="dw-banner-img" width={340} height={120} />
+        </div>
+        <div className="dw-header">
+          <div className="dw-header-avatar-wrap dw-header-avatar-wrap-muted">
+            <img src="/discord-avatar.gif" alt="" className="dw-header-avatar" width={48} height={48} />
+          </div>
+          <div className="dw-header-info">
+            <span className="dw-server-name">{BRAND_NAME}</span>
+          </div>
+        </div>
+        <div className="dw-card-error">
+          <DiscordSvgIcon />
+          <span>Could not load server info</span>
+        </div>
+        <a className="dw-join-btn" href={href} target="_blank" rel="noreferrer">
+          Join Server
+          <ExternalLink className="h-3.5 w-3.5" />
+        </a>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="dw-card">
+        <div className="dw-skel-banner" />
+        <div className="dw-skel-header">
+          <div className="dw-skel-avatar" />
+          <div className="dw-skel-lines">
+            <div className="dw-skel-bar dw-skel-bar-name" />
+            <div className="dw-skel-bar dw-skel-bar-sub" />
+            <div className="dw-skel-bar dw-skel-bar-count" />
+          </div>
+        </div>
+        <div className="dw-skel-members">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="dw-skel-member">
+              <div className="dw-skel-member-avatar" />
+              <div className="dw-skel-bar dw-skel-bar-member-name" />
+            </div>
+          ))}
+        </div>
+        <div className="dw-skel-btn" />
+      </div>
+    );
+  }
+
+  const humans = data.members.filter((m) => !isBot(m.username));
+  const sorted = [...humans].sort((a, b) => (STATUS_PRIORITY[a.status] ?? 3) - (STATUS_PRIORITY[b.status] ?? 3));
+  const visibleMembers = sorted.slice(0, 12);
+
+  return (
+    <div className="dw-card">
+      <div className="dw-banner">
+        <Image src="/discord-banner.png" alt="" className="dw-banner-img" width={340} height={120} />
+      </div>
+
+      <div className="dw-header">
+        <div className="dw-header-avatar-wrap">
+          <img src="/discord-avatar.gif" alt="" className="dw-header-avatar" width={48} height={48} />
+          <span className="dw-server-status-dot" />
+        </div>
+        <div className="dw-header-info">
+          <span className="dw-server-name">{BRAND_NAME}</span>
+          <span className="dw-server-full-name">{BRAND_FULL_NAME}</span>
+          <span className="dw-member-count">
+            <span className="dw-count-dot" />
+            {humans.length} online
+          </span>
+        </div>
+      </div>
+
+      <div className="dw-members">
+        <span className="dw-members-label">Online now</span>
+        <div className="dw-member-list">
+          {visibleMembers.map((m) => (
+            <div key={m.id} className="dw-member">
+              <div className="dw-avatar-wrap">
+                <img src={m.avatar_url} alt="" className="dw-avatar" width={28} height={28} />
+                <StatusDot status={m.status} />
+              </div>
+              <span className="dw-member-name">{m.username}</span>
+            </div>
+          ))}
+          {humans.length > 12 ? (
+            <span className="dw-member-overflow">+{humans.length - 12} more</span>
+          ) : null}
+        </div>
+      </div>
+
+      <a className="dw-join-btn" href={data.instant_invite || href} target="_blank" rel="noreferrer">
+        Join Server
+        <ExternalLink className="h-3.5 w-3.5" />
+      </a>
+    </div>
+  );
+}
+
+export function DiscordPill({
+  href,
+  label,
+  title,
+  popover,
+}: {
+  href: string;
+  label: string;
+  title: string;
+  popover?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { data, error } = useDiscordWidget();
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onMouseDown = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isOpen]);
+
+  const onlineCount = data ? data.members.filter((m) => !isBot(m.username)).length : 0;
+
+  if (!popover) {
+    return (
+      <a
+        className="site-discord-pill"
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={title}
+        title={title}
+      >
+        <DiscordSvgIcon />
+        <span>{label}</span>
+      </a>
+    );
+  }
+
+  return (
+    <div ref={containerRef} className="site-discord-popover-anchor">
+      <button
+        type="button"
+        className="site-discord-pill"
+        aria-expanded={isOpen}
+        aria-label={title}
+        title={title}
+        onClick={() => setIsOpen((o) => !o)}
+      >
+        <DiscordSvgIcon />
+        <span>{label}</span>
+        {onlineCount > 0 ? <span className="site-discord-pill-count">{onlineCount}</span> : null}
+      </button>
+      <div className={`site-discord-popover${isOpen ? ' site-discord-popover-open' : ''}`}>
+        {isOpen ? <DiscordWidgetCard href={href} data={data} error={error} /> : null}
+      </div>
+    </div>
   );
 }
 
