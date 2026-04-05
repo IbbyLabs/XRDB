@@ -834,14 +834,13 @@ export function LookSection({
   const styleStackOffsetLabel =
     activeRatingStyle === 'glass' ? 'Pill Badge Position' : 'Square Badge Position';
   const showRandomPosterFilters = previewType === 'poster' && activeImageText === 'random';
-  const ratingBadgeScaleMax =
-    previewType === 'thumbnail' ? MAX_THUMBNAIL_RATING_BADGE_SCALE_PERCENT : MAX_BADGE_SCALE_PERCENT;
+  const ratingBadgeScaleMax = MAX_BADGE_SCALE_PERCENT;
   const handleRatingBadgeScaleChange = (value: number) => {
-    if (previewType === 'thumbnail') {
-      onSelectRatingBadgeScale(normalizeThumbnailRatingBadgeScalePercent(String(value)));
-      return;
-    }
-    onSelectRatingBadgeScale(normalizeBadgeScalePercent(String(value)));
+    onSelectRatingBadgeScale(
+      previewType === 'thumbnail'
+        ? normalizeThumbnailRatingBadgeScalePercent(String(value))
+        : normalizeBadgeScalePercent(String(value)),
+    );
   };
 
   return (

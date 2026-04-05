@@ -291,7 +291,7 @@ Response format note:
 - **Backdrop with Bottom Row**: `/backdrop/tmdb:tv:1399.jpg?backdropRatings=tmdb,imdb&backdropBottomRatingsRow=true&lang=en`
 - **Episode thumbnail with XRDBID**: `/thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb&lang=en`
 
-Episode thumbnails use the dedicated `/thumbnail/{id}/S{season}E{episode}.jpg` route. They keep their own thumbnail scoped controls for ratings, style, presentation, artwork source, episode artwork mode, image text, layout, badge sizing, quality badges, and side stack placement. `thumbnailRatings` defaults to `tmdb,imdb`.
+Episode thumbnails use the dedicated `/thumbnail/{id}/S{season}E{episode}.jpg` route. They keep their own thumbnail scoped controls for ratings, style, presentation, artwork source, episode artwork mode, image text, layout, badge sizing, quality badges, and side stack placement. Rating badge scale stays type scoped across poster, backdrop, thumbnail, and logo outputs, and every artwork type now supports the same `70-200` range. `thumbnailRatings` defaults to `tmdb,imdb`.
 
 ### Supported Query Parameters
 
@@ -366,7 +366,7 @@ Episode thumbnails use the dedicated `/thumbnail/{id}/S{season}E{episode}.jpg` r
 | `logoBackground` | Logo canvas background | `transparent`, `dark` | `transparent` |
 | `logoArtworkSource` | Logo artwork source | `tmdb`, `fanart`, `cinemeta`, `random` | `tmdb` |
 
-Thumbnail scoped query params mirror the configurator controls and keep thumbnail output independent from backdrop output:
+Thumbnail scoped query params mirror the configurator controls and keep thumbnail output independent from backdrop output. Rating badge scale remains type scoped across every artwork type even though the supported `70-200` range is now shared:
 
 - `thumbnailGenreBadge`, `thumbnailGenreBadgeStyle`, `thumbnailGenreBadgePosition`, `thumbnailGenreBadgeScale`, `thumbnailGenreBadgeAnimeGrouping`
 - `thumbnailStreamBadges`, `thumbnailQualityBadges`, `thumbnailQualityBadgesStyle`, `thumbnailQualityBadgesMax`, `thumbnailQualityBadgeScale`

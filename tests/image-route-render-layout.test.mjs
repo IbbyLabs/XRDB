@@ -172,6 +172,8 @@ test('image route render layout adds extra safe inset for thumbnail backdrop ren
   assert.equal(thumbnailLayout.backdropEdgeInset, 24);
   assert.equal(thumbnailLayout.badgeTopOffset > normalLayout.badgeTopOffset, true);
   assert.equal(thumbnailLayout.badgeBottomOffset > normalLayout.badgeBottomOffset, true);
+  assert.equal(thumbnailLayout.badgeIconSize > normalLayout.badgeIconSize, true);
+  assert.equal(thumbnailLayout.badgeFontSize > normalLayout.badgeFontSize, true);
 });
 
 test('image route render layout keeps logo ratings on one row in blockbuster mode when enabled', async () => {

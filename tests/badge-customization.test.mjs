@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   DEFAULT_QUALITY_BADGE_PREFERENCES,
+  normalizeBadgeScalePercent,
   normalizeGenreBadgeBorderWidthPx,
   normalizeGenreBadgeScalePercent,
   normalizeNoBackgroundBadgeOutlineWidthPx,
@@ -14,6 +15,12 @@ import {
   encodeRatingProviderAppearanceOverrides,
   DEFAULT_STACKED_ELEMENT_OFFSET_PX,
 } from '../lib/badgeCustomization.ts';
+
+test('rating badge scale normalization clamps to 70 to 200', () => {
+  assert.equal(normalizeBadgeScalePercent('205'), 200);
+  assert.equal(normalizeBadgeScalePercent('70'), 70);
+  assert.equal(normalizeBadgeScalePercent('40'), 70);
+});
 
 test('genre badge scale normalization clamps to 70 to 200', () => {
   assert.equal(normalizeGenreBadgeScalePercent('205'), 200);

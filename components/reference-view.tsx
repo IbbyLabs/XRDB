@@ -267,6 +267,9 @@ GET /thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb`}</CodeBlo
             Each type (poster, backdrop, thumbnail, logo) has independent settings for rating providers, rating style, presentation, layout, badge sizing, artwork source, and quality badge limits.
           </p>
           <p>
+            Rating badge scale is type scoped for every artwork type, and the configurator now supports the same 70 to 200 range across poster, backdrop, thumbnail, and logo outputs.
+          </p>
+          <p>
             Posters use <code>posterRatingsLayout</code> (top, bottom, left, right, and combinations).
             Backdrops use <code>backdropRatingsLayout</code> (center, right, right vertical) and can enable <code>backdropBottomRatingsRow</code>.
             The Quality Badges panel exposes poster placement controls for supported poster layouts and includes bulk enable and hide actions for visible quality badges.
