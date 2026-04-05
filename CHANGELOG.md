@@ -29,6 +29,48 @@
 
 <a id="v1-8-2"></a>
 
+<a id="v1-8-3"></a>
+
+## [v1.8.3] - 05/04/2026
+
+### Fixed
+* add timeout to playwright screenshot CLI to prevent infinite selector wait
+  
+  Without timeout, playwright's wait for selector uses timeout:0 (infinite).
+  A Turbopack cache corruption causing a 500 on the workspace route meant the
+  selector never appeared, resulting in an indefinite hang.
+  
+  Set timeout to captureCommandTimeoutMs so the CLI respects the same bound
+  as the runCommand process level timeout.
+* BUG-55 make setup intro navigable on constrained mobile viewports
+  
+  Outer overlay and modal card now use tighter mobile padding (px 3 py 3 on mobile,
+  sm:px 4 sm:py 6 on wider breakpoints) so the card is not clipped by the overlay
+  padding on small screens.
+  
+  Modal container switches from a single padded block to a flex column with an
+  explicit max h bound relative to 100dvh (1.5rem gap on mobile, 3rem on sm+).
+  The body region uses min h 0 flex 1 overflow y auto to provide internal scrolling
+  when content exceeds available height. The Continue action footer is a shrink 0
+  element outside the scroll region so it remains reachable regardless of scroll
+  position.
+  
+  Resolves the reported behaviour where users had to zoom out in mobile browsers
+  to reveal the Continue button. Mode selection and first visit vs return visit
+  semantics are unchanged. 603/603 tests pass, production build clean.
+
+### Documentation
+* refresh static doc assets
+
+### Other Changes
+* add playwright as dev dependency for doc capture screenshots
+  
+  The release script uses npx yes playwright screenshot to generate static
+  doc assets. Without playwright installed locally this caused npx to attempt
+  an on demand download which hung indefinitely. Installing playwright as an
+  explicit devDependency ensures the binary and Chromium are resolved from the
+  local node_modules cache and the doc asset capture step completes reliably.
+
 ## [v1.8.2] - 05/04/2026
 
 ### Fixed
