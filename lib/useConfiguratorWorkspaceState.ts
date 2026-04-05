@@ -59,6 +59,7 @@ import { type RemuxDisplayMode } from '@/lib/mediaFeatures';
 import { DEFAULT_QUALITY_BADGES_STYLE, DEFAULT_RATING_STYLE, type QualityBadgeStyle, type RatingStyle } from '@/lib/ratingAppearance';
 import { DEFAULT_SIDE_RATING_OFFSET, type SideRatingPosition } from '@/lib/sideRatingPosition';
 import {
+  type AgeRatingBadgePosition,
   type ArtworkSource,
   type BackdropImageSize,
   type BackdropImageTextPreference,
@@ -144,6 +145,7 @@ export function useConfiguratorWorkspaceState() {
   const [thumbnailStreamBadges, setThumbnailStreamBadges] = useState<StreamBadgesSetting>('auto');
   const [qualityBadgesSide, setQualityBadgesSide] = useState<QualityBadgesSide>('left');
   const [posterQualityBadgesPosition, setPosterQualityBadgesPosition] = useState<PosterQualityBadgesPosition>('auto');
+  const [ageRatingBadgePosition, setAgeRatingBadgePosition] = useState<AgeRatingBadgePosition>('inherit');
   const [posterQualityBadgesStyle, setPosterQualityBadgesStyle] = useState<QualityBadgeStyle>(DEFAULT_QUALITY_BADGES_STYLE);
   const [backdropQualityBadgesStyle, setBackdropQualityBadgesStyle] = useState<QualityBadgeStyle>(DEFAULT_QUALITY_BADGES_STYLE);
   const [thumbnailQualityBadgesStyle, setThumbnailQualityBadgesStyle] = useState<QualityBadgeStyle>(DEFAULT_QUALITY_BADGES_STYLE);
@@ -392,6 +394,7 @@ export function useConfiguratorWorkspaceState() {
     posterQualityBadgeScale,
     posterQualityBadgesMax,
     posterQualityBadgesPosition,
+    ageRatingBadgePosition,
     posterQualityBadgesStyle,
     posterRemuxDisplayMode,
     posterRatingBadgeScale,
@@ -561,6 +564,7 @@ export function useConfiguratorWorkspaceState() {
     setPosterQualityBadgeScale,
     setPosterQualityBadgesMax,
     setPosterQualityBadgesPosition,
+    setAgeRatingBadgePosition,
     setPosterQualityBadgesStyle,
     setPosterRemuxDisplayMode,
     setPosterRatingBadgeScale,

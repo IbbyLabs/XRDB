@@ -139,6 +139,7 @@ export const buildQualityBadgeRowOverlays = ({
   rowBadges,
   rowY,
   origin = 'top',
+  align = 'center',
   imageType,
   outputWidth,
   referenceBadgeHeight,
@@ -151,6 +152,7 @@ export const buildQualityBadgeRowOverlays = ({
   rowBadges: QualityBadgeInput[];
   rowY: number;
   origin?: 'top' | 'bottom';
+  align?: 'left' | 'center' | 'right';
   imageType: ImageType;
   outputWidth: number;
   referenceBadgeHeight: number;
@@ -206,7 +208,12 @@ export const buildQualityBadgeRowOverlays = ({
   for (const specRow of specRows) {
     const rowWidth =
       specRow.reduce((sum, spec) => sum + spec.width, 0) + Math.max(0, specRow.length - 1) * rowGap;
-    let rowX = Math.floor((outputWidth - rowWidth) / 2);
+    let rowX =
+      align === 'left'
+        ? rowEdgeInset
+        : align === 'right'
+          ? outputWidth - rowWidth - rowEdgeInset
+          : Math.floor((outputWidth - rowWidth) / 2);
     rowX = Math.max(
       rowEdgeInset,
       Math.min(rowX, Math.max(rowEdgeInset, outputWidth - rowWidth - rowEdgeInset))

@@ -126,6 +126,20 @@ import {
 export type StreamBadgesSetting = 'auto' | 'on' | 'off';
 export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
+export type AgeRatingBadgePosition =
+  | 'inherit'
+  | 'top-left'
+  | 'top-center'
+  | 'top-right'
+  | 'bottom-left'
+  | 'bottom-center'
+  | 'bottom-right'
+  | 'left-top'
+  | 'left-center'
+  | 'left-bottom'
+  | 'right-top'
+  | 'right-center'
+  | 'right-bottom';
 export type PosterImageSize = 'normal' | 'large' | '4k';
 export type BackdropImageSize = PosterImageSize;
 export type RandomPosterTextMode = 'any' | 'text' | 'textless';
@@ -209,6 +223,7 @@ export type SharedXrdbSettings = {
   thumbnailStreamBadges: StreamBadgesSetting;
   qualityBadgesSide: QualityBadgesSide;
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
+  ageRatingBadgePosition: AgeRatingBadgePosition;
   posterQualityBadgePreferences: MediaFeatureBadgeKey[];
   backdropQualityBadgePreferences: MediaFeatureBadgeKey[];
   thumbnailQualityBadgePreferences: MediaFeatureBadgeKey[];
@@ -341,6 +356,21 @@ const EPISODE_ARTWORK_MODE_SET = new Set<EpisodeArtworkMode>(['still', 'series']
 const STREAM_BADGES_SETTING_SET = new Set<StreamBadgesSetting>(['auto', 'on', 'off']);
 const QUALITY_BADGES_SIDE_SET = new Set<QualityBadgesSide>(['left', 'right']);
 const POSTER_QUALITY_BADGES_POSITION_SET = new Set<PosterQualityBadgesPosition>(['auto', 'left', 'right']);
+const AGE_RATING_BADGE_POSITION_SET = new Set<AgeRatingBadgePosition>([
+  'inherit',
+  'top-left',
+  'top-center',
+  'top-right',
+  'bottom-left',
+  'bottom-center',
+  'bottom-right',
+  'left-top',
+  'left-center',
+  'left-bottom',
+  'right-top',
+  'right-center',
+  'right-bottom',
+]);
 const LOGO_BACKGROUND_SET = new Set<LogoBackground>(['transparent', 'dark']);
 const TMDB_ID_SCOPE_MODE_SET = new Set<TmdbIdScopeMode>(['soft', 'strict']);
 const PROXY_MEDIA_TYPE_SET = new Set<ProxyMediaType>(PROXY_MEDIA_TYPES);
@@ -459,6 +489,7 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   thumbnailStreamBadges: 'auto',
   qualityBadgesSide: 'left',
   posterQualityBadgesPosition: 'auto',
+  ageRatingBadgePosition: 'inherit',
   posterQualityBadgePreferences: [...DEFAULT_QUALITY_BADGE_PREFERENCES],
   backdropQualityBadgePreferences: [...DEFAULT_QUALITY_BADGE_PREFERENCES],
   thumbnailQualityBadgePreferences: [...DEFAULT_QUALITY_BADGE_PREFERENCES],
@@ -843,6 +874,16 @@ const normalizePosterQualityBadgesPosition = (
     : fallback;
 };
 
+const normalizeAgeRatingBadgePosition = (
+  value: unknown,
+  fallback: AgeRatingBadgePosition,
+): AgeRatingBadgePosition => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return AGE_RATING_BADGE_POSITION_SET.has(normalized as AgeRatingBadgePosition)
+    ? (normalized as AgeRatingBadgePosition)
+    : fallback;
+};
+
 const normalizeRatingPreferencesList = (
   value: unknown,
   fallback: RatingPreference[],
@@ -1184,6 +1225,10 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
     posterQualityBadgesPosition: normalizePosterQualityBadgesPosition(
       candidate.posterQualityBadgesPosition,
       defaults.posterQualityBadgesPosition,
+    ),
+    ageRatingBadgePosition: normalizeAgeRatingBadgePosition(
+      candidate.ageRatingBadgePosition,
+      defaults.ageRatingBadgePosition,
     ),
     posterQualityBadgePreferences: normalizeQualityBadgePreferencesList(
       candidate.posterQualityBadgePreferences,
@@ -1777,6 +1822,9 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   ) {
     payload.posterQualityBadgesPosition = settings.posterQualityBadgesPosition;
   }
+  if (settings.ageRatingBadgePosition !== 'inherit') {
+    payload.ageRatingBadgePosition = settings.ageRatingBadgePosition;
+  }
   const posterQualityBadges = stringifyQualityBadgePreferencesAllowEmpty(
     settings.posterQualityBadgePreferences,
   );
@@ -2256,7 +2304,8 @@ export const buildAiometadataUrlPatterns = (
           !key.startsWith('backdrop') &&
           !key.startsWith('logo') &&
           !sharedRatingOffsetKeys.has(key) &&
-          key !== 'qualityBadgesSide',
+          key !== 'qualityBadgesSide' &&
+          key !== 'ageRatingBadgePosition',
       );
     }
 
@@ -2274,11 +2323,17 @@ export const buildAiometadataUrlPatterns = (
           !key.startsWith('poster') &&
           !key.startsWith('logo') &&
           !sharedRatingOffsetKeys.has(key) &&
-          key !== 'qualityBadgesSide'
+          key !== 'qualityBadgesSide' &&
+          key !== 'ageRatingBadgePosition'
         );
       }
 
-      return !key.startsWith('poster') && !key.startsWith('backdrop') && key !== 'qualityBadgesSide';
+      return (
+        !key.startsWith('poster') &&
+        !key.startsWith('backdrop') &&
+        key !== 'qualityBadgesSide' &&
+        key !== 'ageRatingBadgePosition'
+      );
     });
   };
   const buildQueryString = (

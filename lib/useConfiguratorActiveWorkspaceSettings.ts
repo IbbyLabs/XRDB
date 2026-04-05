@@ -2,9 +2,19 @@ import { type Dispatch, type SetStateAction } from 'react';
 import { type GenreBadgeAnimeGrouping, type GenreBadgeMode, type GenreBadgePosition, type GenreBadgeStyle } from '@/lib/genreBadge';
 import { type MediaFeatureBadgeKey, type RemuxDisplayMode } from '@/lib/mediaFeatures';
 import { type PosterRatingLayout } from '@/lib/posterLayoutOptions';
-import { resolveQualityBadgePlacementControlMode } from '@/lib/qualityBadgeControls';
+import {
+  getSupportedPosterAgeRatingBadgePositions,
+  hasNonCertificationQualityBadgePreferences,
+  resolveQualityBadgePlacementControlMode,
+  supportsPosterAgeRatingBadgePlacement,
+} from '@/lib/qualityBadgeControls';
 import { type QualityBadgeStyle } from '@/lib/ratingAppearance';
-import { type QualityBadgesSide, type PosterQualityBadgesPosition, type StreamBadgesSetting } from '@/lib/uiConfig';
+import {
+  type AgeRatingBadgePosition,
+  type QualityBadgesSide,
+  type PosterQualityBadgesPosition,
+  type StreamBadgesSetting,
+} from '@/lib/uiConfig';
 
 type PreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 type Setter<T> = Dispatch<SetStateAction<T>>;
@@ -57,6 +67,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   posterQualityBadgePreferences,
   posterQualityBadgeScale,
   posterQualityBadgesMax,
+  ageRatingBadgePosition,
   posterQualityBadgesStyle,
   posterRatingBadgeScale,
   posterRatingsLayout,
@@ -110,6 +121,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   setPosterQualityBadgePreferences,
   setPosterQualityBadgeScale,
   setPosterQualityBadgesMax,
+  setAgeRatingBadgePosition,
   setPosterQualityBadgesStyle,
   setPosterRatingBadgeScale,
   setPosterRemuxDisplayMode,
@@ -162,6 +174,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   posterQualityBadgePreferences: MediaFeatureBadgeKey[];
   posterQualityBadgeScale: number;
   posterQualityBadgesMax: number | null;
+  ageRatingBadgePosition: AgeRatingBadgePosition;
   posterQualityBadgesStyle: QualityBadgeStyle;
   posterRatingBadgeScale: number;
   posterRatingsLayout: PosterRatingLayout;
@@ -215,17 +228,35 @@ export function useConfiguratorActiveWorkspaceSettings({
   setPosterQualityBadgePreferences: Setter<MediaFeatureBadgeKey[]>;
   setPosterQualityBadgeScale: Setter<number>;
   setPosterQualityBadgesMax: Setter<number | null>;
+  setAgeRatingBadgePosition: Setter<AgeRatingBadgePosition>;
   setPosterQualityBadgesStyle: Setter<QualityBadgeStyle>;
   setPosterRatingBadgeScale: Setter<number>;
   setPosterRemuxDisplayMode: Setter<RemuxDisplayMode>;
   setPosterStreamBadges: Setter<StreamBadgesSetting>;
 }) {
+  const activeQualityBadgePreferences =
+    previewType === 'backdrop'
+      ? backdropQualityBadgePreferences
+      : previewType === 'thumbnail'
+        ? thumbnailQualityBadgePreferences
+        : previewType === 'logo'
+          ? logoQualityBadgePreferences
+          : posterQualityBadgePreferences;
   const qualityBadgePlacementControlMode = resolveQualityBadgePlacementControlMode(
     previewType,
     posterRatingsLayout,
   );
   const shouldShowPosterQualityBadgesSide = qualityBadgePlacementControlMode === 'side';
   const shouldShowPosterQualityBadgesPosition = qualityBadgePlacementControlMode === 'position';
+  const shouldShowPosterAgeRatingBadgePosition =
+    previewType === 'poster' && supportsPosterAgeRatingBadgePlacement(posterRatingsLayout);
+  const ageRatingBadgePositionOptions =
+    previewType === 'poster'
+      ? getSupportedPosterAgeRatingBadgePositions(posterRatingsLayout)
+      : [];
+  const hasNonCertificationQualityBadges = hasNonCertificationQualityBadgePreferences(
+    activeQualityBadgePreferences,
+  );
 
   return {
     activeGenreBadgeAnimeGrouping:
@@ -276,14 +307,7 @@ export function useConfiguratorActiveWorkspaceSettings({
           : previewType === 'thumbnail'
             ? thumbnailGenreBadgeStyle
           : logoGenreBadgeStyle,
-    activeQualityBadgePreferences:
-      previewType === 'backdrop'
-        ? backdropQualityBadgePreferences
-        : previewType === 'thumbnail'
-          ? thumbnailQualityBadgePreferences
-        : previewType === 'logo'
-          ? logoQualityBadgePreferences
-          : posterQualityBadgePreferences,
+    activeQualityBadgePreferences,
     activeQualityBadgeScale:
       previewType === 'backdrop'
         ? backdropQualityBadgeScale
@@ -308,6 +332,9 @@ export function useConfiguratorActiveWorkspaceSettings({
         : previewType === 'logo'
           ? logoQualityBadgesStyle
           : posterQualityBadgesStyle,
+    activeAgeRatingBadgePosition: ageRatingBadgePosition,
+    ageRatingBadgePositionOptions,
+    hasNonCertificationQualityBadges,
     activeRemuxDisplayMode:
       previewType === 'backdrop'
         ? backdropRemuxDisplayMode
@@ -419,6 +446,7 @@ export function useConfiguratorActiveWorkspaceSettings({
         : previewType === 'logo'
           ? setLogoQualityBadgesStyle
           : setPosterQualityBadgesStyle,
+    setActiveAgeRatingBadgePosition: setAgeRatingBadgePosition,
     setActiveRemuxDisplayMode:
       previewType === 'backdrop'
         ? setBackdropRemuxDisplayMode
@@ -443,6 +471,7 @@ export function useConfiguratorActiveWorkspaceSettings({
           : setPosterStreamBadges,
     shouldShowQualityBadgesPosition:
       previewType === 'poster' && shouldShowPosterQualityBadgesPosition,
+    shouldShowAgeRatingBadgePosition: shouldShowPosterAgeRatingBadgePosition,
     shouldShowQualityBadgesSide:
       previewType === 'poster' && shouldShowPosterQualityBadgesSide,
   };

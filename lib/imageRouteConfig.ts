@@ -20,6 +20,20 @@ export type AggregateBadgeKey = 'aggregate-overall' | 'aggregate-critics' | 'agg
 export type BadgeKey = RatingPreference | MediaFeatureBadgeKey | AggregateBadgeKey;
 export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
+export type AgeRatingBadgePosition =
+  | 'inherit'
+  | 'top-left'
+  | 'top-center'
+  | 'top-right'
+  | 'bottom-left'
+  | 'bottom-center'
+  | 'bottom-right'
+  | 'left-top'
+  | 'left-center'
+  | 'left-bottom'
+  | 'right-top'
+  | 'right-center'
+  | 'right-bottom';
 export type LogoBackground = 'transparent' | 'dark';
 export type BlockbusterDensity = 'sparse' | 'balanced' | 'packed';
 export type RpdbRatingBarPosition =

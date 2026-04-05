@@ -423,6 +423,7 @@ export function ConfiguratorAccordionSection({
   onToggle,
   tone = 'default',
   referenceHref,
+  actions,
   children,
 }: {
   title: string;
@@ -431,6 +432,7 @@ export function ConfiguratorAccordionSection({
   onToggle: () => void;
   tone?: 'default' | 'accent';
   referenceHref?: string;
+  actions?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -461,11 +463,14 @@ export function ConfiguratorAccordionSection({
           </div>
           <div className="mt-0.5 text-[11px] leading-5 text-zinc-500">{description}</div>
         </div>
-        <ChevronRight
-          className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${
-            isOpen ? 'rotate-90 text-violet-300' : ''
-          }`}
-        />
+        <div className="flex shrink-0 items-center gap-2" onClick={(event) => event.stopPropagation()}>
+          {actions}
+          <ChevronRight
+            className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${
+              isOpen ? 'rotate-90 text-violet-300' : ''
+            }`}
+          />
+        </div>
       </button>
       <div className="xrdb-accordion-body" data-open={isOpen}>
         <div className="xrdb-accordion-inner">

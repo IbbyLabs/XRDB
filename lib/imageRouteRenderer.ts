@@ -12,6 +12,7 @@ import { resolveOverlayAutoScale } from './overlayScale.ts';
 import type { EditorialRatingOverlaySpec } from './editorialRatingOverlay.ts';
 import type { PosterCompactRingOverlaySpec } from './posterCompactRingOverlay.ts';
 import {
+  type AgeRatingBadgePosition,
   type BadgeKey,
   type BlockbusterDensity,
   type LogoBackground,
@@ -56,6 +57,10 @@ import {
   buildQualityBadgeRowOverlays,
   measureQualityBadgeColumnWidth,
 } from './imageRouteQualityPlacement.ts';
+import {
+  isSupportedPosterAgeRatingBadgePosition,
+  supportsPosterAgeRatingBadgePlacement,
+} from './qualityBadgeControls.ts';
 import { resolveGenreBadgeOverlay } from './imageRouteGenrePlacement.ts';
 import {
   buildPosterCleanOverlayAsset,
@@ -166,6 +171,7 @@ export type FastRenderInput = {
   qualityBadges: RatingBadge[];
   qualityBadgesSide: QualityBadgesSide;
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
+  ageRatingBadgePosition: AgeRatingBadgePosition;
   qualityBadgesStyle: QualityBadgeStyle;
   qualityBadgeScalePercent: number;
   posterRatingsLayout: PosterRatingLayout;
@@ -189,6 +195,105 @@ export type FastRenderInput = {
   backdropRows?: RatingBadge[][];
   blockbusterBlurbs?: BlockbusterBlurb[];
   cacheControl: string;
+};
+
+type ExplicitPosterAgeRatingPlacement =
+  | {
+      kind: 'row';
+      edge: 'top' | 'bottom';
+      align: 'left' | 'center' | 'right';
+      rowY: number;
+      height: number;
+      protectedTop: number;
+      protectedBottom: number;
+    }
+  | {
+      kind: 'column';
+      side: 'left' | 'right';
+      startY: number;
+      height: number;
+      protectedTop: number;
+      protectedBottom: number;
+    };
+
+const resolveAgeRatingRowAlign = (position: AgeRatingBadgePosition): 'left' | 'center' | 'right' =>
+  position.endsWith('left')
+    ? 'left'
+    : position.endsWith('right')
+      ? 'right'
+      : 'center';
+
+const resolveAgeRatingColumnAnchor = (position: AgeRatingBadgePosition): 'top' | 'center' | 'bottom' =>
+  position.endsWith('top')
+    ? 'top'
+    : position.endsWith('bottom')
+      ? 'bottom'
+      : 'center';
+
+const resolveAgeRatingColumnStartY = ({
+  anchor,
+  height,
+  outputHeight,
+  badgeTopOffset,
+  badgeBottomOffset,
+}: {
+  anchor: 'top' | 'center' | 'bottom';
+  height: number;
+  outputHeight: number;
+  badgeTopOffset: number;
+  badgeBottomOffset: number;
+}) => {
+  if (anchor === 'top') {
+    return badgeTopOffset;
+  }
+  if (anchor === 'bottom') {
+    return Math.max(badgeTopOffset, outputHeight - badgeBottomOffset - height);
+  }
+  return Math.max(badgeTopOffset, Math.round((outputHeight - height) / 2));
+};
+
+const adjustVerticalStartForProtectedRange = ({
+  startY,
+  blockHeight,
+  protectedTop,
+  protectedBottom,
+  topBound,
+  bottomBound,
+  gap,
+}: {
+  startY: number;
+  blockHeight: number;
+  protectedTop: number;
+  protectedBottom: number;
+  topBound: number;
+  bottomBound: number;
+  gap: number;
+}) => {
+  const maxStart = Math.max(topBound, bottomBound - blockHeight);
+  const clampedStart = Math.max(topBound, Math.min(startY, maxStart));
+  const clampedBottom = clampedStart + blockHeight;
+  if (clampedBottom <= protectedTop || clampedStart >= protectedBottom) {
+    return clampedStart;
+  }
+
+  const aboveStart = protectedTop - gap - blockHeight;
+  const belowStart = protectedBottom + gap;
+  const canPlaceAbove = aboveStart >= topBound;
+  const canPlaceBelow = belowStart <= maxStart;
+
+  if (canPlaceAbove && canPlaceBelow) {
+    return Math.abs(clampedStart - aboveStart) <= Math.abs(belowStart - clampedStart)
+      ? aboveStart
+      : belowStart;
+  }
+  if (canPlaceAbove) {
+    return aboveStart;
+  }
+  if (canPlaceBelow) {
+    return belowStart;
+  }
+
+  return clampedStart;
 };
 
 const getSharpFactory = createSharpFactoryLoader();
@@ -359,10 +464,24 @@ export const renderWithSharp = async (
             ? [input.bottomBadges]
             : []
         : [];
-    const posterTopBlockBottom =
-      posterTopRows.length > 0
-        ? input.badgeTopOffset + posterTopRows.length * (ratingBadgeHeight + input.badgeGap)
-        : input.badgeTopOffset;
+    const hasExplicitAgeRatingPlacement =
+      input.imageType === 'poster' && input.ageRatingBadgePosition !== 'inherit';
+    const extractedAgeRatingReferenceHeight = resolveQualityBadgeHeight({
+      referenceBadgeHeight: posterQualityRowReferenceHeight,
+      qualityBadgeScalePercent: input.qualityBadgeScalePercent,
+      layout: 'row',
+    });
+    const extractedAgeRatingBadge =
+      input.imageType === 'poster' &&
+      hasExplicitAgeRatingPlacement &&
+      supportsPosterAgeRatingBadgePlacement(input.posterRatingsLayout) &&
+      isSupportedPosterAgeRatingBadgePosition(input.posterRatingsLayout, input.ageRatingBadgePosition)
+        ? resolvedQualityBadges.find((badge) => badge.key === 'certification') ?? null
+        : null;
+    const posterSharedQualityBadges =
+      extractedAgeRatingBadge === null
+        ? resolvedQualityBadges
+        : resolvedQualityBadges.filter((badge) => badge.key !== 'certification');
     const editorialOverlayBottom =
       input.imageType === 'poster' && input.editorialOverlay
         ? input.editorialOverlay.top + input.editorialOverlay.height
@@ -371,6 +490,84 @@ export const renderWithSharp = async (
       editorialOverlayBottom === null
         ? null
         : editorialOverlayBottom + Math.max(10, Math.round(input.badgeGap * 1.1));
+    const extractedAgeRatingColumnReferenceHeight = resolveQualityBadgeHeight({
+      referenceBadgeHeight: ratingBadgeHeight,
+      qualityBadgeScalePercent: input.qualityBadgeScalePercent,
+      layout: 'column',
+    });
+    const explicitAgeRatingPlacement: ExplicitPosterAgeRatingPlacement | null =
+      extractedAgeRatingBadge === null
+        ? null
+        : input.ageRatingBadgePosition.startsWith('top-') || input.ageRatingBadgePosition.startsWith('bottom-')
+          ? (() => {
+              const align = resolveAgeRatingRowAlign(input.ageRatingBadgePosition);
+              if (input.ageRatingBadgePosition.startsWith('top-')) {
+                const rowY = Math.max(input.badgeTopOffset, editorialOverlaySafeBottom ?? input.badgeTopOffset);
+                return {
+                  kind: 'row',
+                  edge: 'top',
+                  align,
+                  rowY,
+                  height: extractedAgeRatingReferenceHeight,
+                  protectedTop: rowY,
+                  protectedBottom: rowY + extractedAgeRatingReferenceHeight,
+                };
+              }
+              const bottomInset =
+                input.badgeBottomOffset + Math.max(4, Math.round(extractedAgeRatingReferenceHeight * 0.14));
+              const rowY = Math.max(
+                input.badgeTopOffset,
+                input.outputHeight - bottomInset - extractedAgeRatingReferenceHeight,
+              );
+              return {
+                kind: 'row',
+                edge: 'bottom',
+                align,
+                rowY,
+                height: extractedAgeRatingReferenceHeight,
+                protectedTop: rowY,
+                protectedBottom: rowY + extractedAgeRatingReferenceHeight,
+              };
+            })()
+          : (() => {
+              const side = input.ageRatingBadgePosition.startsWith('left-') ? 'left' : 'right';
+              const anchor = resolveAgeRatingColumnAnchor(input.ageRatingBadgePosition);
+              let startY = resolveAgeRatingColumnStartY({
+                anchor,
+                height: extractedAgeRatingColumnReferenceHeight,
+                outputHeight: input.outputHeight,
+                badgeTopOffset: input.badgeTopOffset,
+                badgeBottomOffset: input.badgeBottomOffset,
+              });
+              if (side === 'left' && anchor === 'top' && editorialOverlaySafeBottom !== null) {
+                startY = Math.max(startY, editorialOverlaySafeBottom);
+              }
+              return {
+                kind: 'column',
+                side,
+                startY,
+                height: extractedAgeRatingColumnReferenceHeight,
+                protectedTop: startY,
+                protectedBottom: startY + extractedAgeRatingColumnReferenceHeight,
+              };
+            })();
+    const extractedAgeRatingTopY =
+      explicitAgeRatingPlacement?.kind === 'row' && explicitAgeRatingPlacement.edge === 'top'
+        ? explicitAgeRatingPlacement.rowY
+        : null;
+    const posterTopContentStartY =
+      extractedAgeRatingTopY === null
+        ? input.badgeTopOffset
+        : extractedAgeRatingTopY + extractedAgeRatingReferenceHeight + input.badgeGap;
+    const posterTopRowsStartY = posterTopContentStartY;
+    const posterBottomReservedHeight =
+      explicitAgeRatingPlacement?.kind === 'row' && explicitAgeRatingPlacement.edge === 'bottom'
+        ? explicitAgeRatingPlacement.height + input.badgeGap
+        : 0;
+    const posterTopBlockBottom =
+      posterTopRows.length > 0
+        ? posterTopRowsStartY + posterTopRows.length * (ratingBadgeHeight + input.badgeGap)
+        : posterTopContentStartY;
     const blockbusterScatterRects: BlockbusterPlacementRect[] = [];
     const blockbusterBadgeOverlays: Array<{ input: Buffer; top: number; left: number }> = [];
     const blockbusterStickerOverlays: Array<{ input: Buffer; top: number; left: number }> = [];
@@ -417,7 +614,7 @@ export const renderWithSharp = async (
     const blockbusterCalloutKeys = new Set(blockbusterCalloutBadges.map((badge) => badge.key));
     const alignPosterRowWithQuality =
       input.imageType === 'poster' &&
-      resolvedQualityBadges.length > 0 &&
+      posterSharedQualityBadges.length > 0 &&
       posterQualityBadgeSidePlacement !== null;
     const posterRowAlign: 'left' | 'center' | 'right' = alignPosterRowWithQuality
       ? posterQualityBadgeSidePlacement === 'right'
@@ -1014,18 +1211,36 @@ export const renderWithSharp = async (
       } else if (input.imageType === 'poster') {
         const bottomRowY = Math.max(
           input.badgeTopOffset,
-          input.outputHeight - input.badgeBottomOffset - ratingBadgeHeight
+          input.outputHeight - input.badgeBottomOffset - posterBottomReservedHeight - ratingBadgeHeight
         );
         if (input.posterRatingsLayout === 'left' || input.posterRatingsLayout === 'right') {
           const maxBadgeWidth = Math.max(180, Math.floor(input.outputWidth * 0.46));
           const sideBadges =
             input.posterRatingsLayout === 'left' ? input.leftBadges : input.rightBadges;
+          const initialSideStartY = resolveSideBadgeStartY(
+            sideBadges,
+            sideColumnMetrics,
+            posterTopContentStartY,
+          );
+          const protectedSideStartY =
+            explicitAgeRatingPlacement?.kind === 'column' &&
+            explicitAgeRatingPlacement.side === input.posterRatingsLayout
+              ? adjustVerticalStartForProtectedRange({
+                  startY: initialSideStartY,
+                  blockHeight: measureBadgeColumnHeight(sideBadges, sideColumnMetrics, input.ratingStyle),
+                  protectedTop: explicitAgeRatingPlacement.protectedTop,
+                  protectedBottom: explicitAgeRatingPlacement.protectedBottom,
+                  topBound: input.badgeTopOffset,
+                  bottomBound: input.outputHeight - input.badgeBottomOffset,
+                  gap: input.badgeGap,
+                })
+              : initialSideStartY;
           composeBadgeColumn(
             sideBadges,
             input.posterRatingsLayout,
             maxBadgeWidth,
             'top',
-            resolveSideBadgeStartY(sideBadges)
+            protectedSideStartY
           );
         } else if (input.posterRatingsLayout === 'left-right') {
           const maxBadgeWidth = Math.max(160, Math.floor((input.outputWidth - 36) / 2));
@@ -1039,7 +1254,7 @@ export const renderWithSharp = async (
           if (hasThreeBadgeTopRow) {
             composeBadgeRow(
               [input.leftBadges[0], input.topBadges[0], input.rightBadges[0]],
-              input.badgeTopOffset,
+              posterTopRowsStartY,
               {
                 regionLeft: 0,
                 regionWidth: input.outputWidth,
@@ -1052,8 +1267,8 @@ export const renderWithSharp = async (
               remainingLeftBadges.length === 0 &&
               remainingRightBadges.length === 0;
             const topRowY = hasOnlyTopSingletonBadge
-              ? resolveSideBadgeStartY(input.topBadges)
-              : input.badgeTopOffset;
+              ? resolveSideBadgeStartY(input.topBadges, sideColumnMetrics, posterTopContentStartY)
+              : posterTopRowsStartY;
             composeBadgeRow(input.topBadges, topRowY, {
               regionLeft: input.posterRowHorizontalInset,
               regionWidth: posterRowRegionWidth,
@@ -1061,29 +1276,56 @@ export const renderWithSharp = async (
             });
           }
 
-          const sideStartY =
+          const baseSideStartY =
             resolveSideBadgeStartY(
               remainingLeftBadges.length >= remainingRightBadges.length
                 ? remainingLeftBadges
                 : remainingRightBadges,
               sideColumnMetrics,
               input.topBadges.length > 0
-                ? input.badgeTopOffset + ratingBadgeHeight + input.badgeGap
-                : input.badgeTopOffset
+                ? posterTopBlockBottom
+                : posterTopContentStartY
             );
-          if (remainingLeftBadges.length === remainingRightBadges.length) {
+          const leftSideStartY =
+            explicitAgeRatingPlacement?.kind === 'column' && explicitAgeRatingPlacement.side === 'left'
+              ? adjustVerticalStartForProtectedRange({
+                  startY: baseSideStartY,
+                  blockHeight: measureBadgeColumnHeight(remainingLeftBadges, sideColumnMetrics, input.ratingStyle),
+                  protectedTop: explicitAgeRatingPlacement.protectedTop,
+                  protectedBottom: explicitAgeRatingPlacement.protectedBottom,
+                  topBound: input.badgeTopOffset,
+                  bottomBound: input.outputHeight - input.badgeBottomOffset,
+                  gap: input.badgeGap,
+                })
+              : baseSideStartY;
+          const rightSideStartY =
+            explicitAgeRatingPlacement?.kind === 'column' && explicitAgeRatingPlacement.side === 'right'
+              ? adjustVerticalStartForProtectedRange({
+                  startY: baseSideStartY,
+                  blockHeight: measureBadgeColumnHeight(remainingRightBadges, sideColumnMetrics, input.ratingStyle),
+                  protectedTop: explicitAgeRatingPlacement.protectedTop,
+                  protectedBottom: explicitAgeRatingPlacement.protectedBottom,
+                  topBound: input.badgeTopOffset,
+                  bottomBound: input.outputHeight - input.badgeBottomOffset,
+                  gap: input.badgeGap,
+                })
+              : baseSideStartY;
+          if (
+            remainingLeftBadges.length === remainingRightBadges.length &&
+            leftSideStartY === rightSideStartY
+          ) {
             for (let index = 0; index < remainingLeftBadges.length; index += 1) {
-              const rowY = sideStartY + index * (ratingBadgeHeight + input.badgeGap);
+              const rowY = leftSideStartY + index * (ratingBadgeHeight + input.badgeGap);
               composeEdgeAlignedPosterBadge(remainingLeftBadges[index], rowY, 'left', maxBadgeWidth);
               composeEdgeAlignedPosterBadge(remainingRightBadges[index], rowY, 'right', maxBadgeWidth);
             }
           } else {
-            composeBadgeColumn(remainingLeftBadges, 'left', maxBadgeWidth, 'top', sideStartY);
-            composeBadgeColumn(remainingRightBadges, 'right', maxBadgeWidth, 'top', sideStartY);
+            composeBadgeColumn(remainingLeftBadges, 'left', maxBadgeWidth, 'top', leftSideStartY);
+            composeBadgeColumn(remainingRightBadges, 'right', maxBadgeWidth, 'top', rightSideStartY);
           }
         } else {
           if (posterTopRows.length > 0) {
-            let topRowY = input.badgeTopOffset;
+            let topRowY = posterTopRowsStartY;
             for (const row of posterTopRows) {
               composeBadgeRow(row, topRowY, {
                 regionLeft: input.posterRowHorizontalInset,
@@ -1134,7 +1376,7 @@ export const renderWithSharp = async (
 	      }
 	    }
 
-    if (input.imageType === 'poster' && resolvedQualityBadges.length > 0) {
+    if (input.imageType === 'poster' && (posterSharedQualityBadges.length > 0 || extractedAgeRatingBadge)) {
       const qualityPlacement = resolvePosterQualityBadgePlacement(
         input.posterRatingsLayout,
         input.qualityBadgesSide,
@@ -1152,6 +1394,45 @@ export const renderWithSharp = async (
         qualityBadgeScalePercent: input.qualityBadgeScalePercent,
         layout: 'column',
       });
+      if (extractedAgeRatingBadge && explicitAgeRatingPlacement) {
+        if (explicitAgeRatingPlacement.kind === 'row') {
+          appendQualityBadgeOverlays(
+            buildQualityBadgeRowOverlays({
+              rowBadges: [extractedAgeRatingBadge],
+              rowY: explicitAgeRatingPlacement.rowY,
+              origin: explicitAgeRatingPlacement.edge,
+              align: explicitAgeRatingPlacement.align,
+              imageType: input.imageType,
+              outputWidth: input.outputWidth,
+              referenceBadgeHeight: extractedAgeRatingReferenceHeight,
+              qualityBadgeScalePercent: input.qualityBadgeScalePercent,
+              badgeGap: input.badgeGap,
+              qualityBadgesStyle: input.qualityBadgesStyle,
+              posterEdgeInset,
+              backdropEdgeInset,
+            })
+          );
+        } else {
+          appendQualityBadgeOverlays(
+            buildQualityBadgeColumnOverlays({
+              columnBadges: [extractedAgeRatingBadge],
+              startY: explicitAgeRatingPlacement.startY,
+              side: explicitAgeRatingPlacement.side,
+              imageType: input.imageType,
+              outputWidth: input.outputWidth,
+              outputHeight: input.outputHeight,
+              badgeTopOffset: input.badgeTopOffset,
+              badgeBottomOffset: input.badgeBottomOffset,
+              referenceBadgeHeight: extractedAgeRatingColumnReferenceHeight,
+              qualityBadgeScalePercent: input.qualityBadgeScalePercent,
+              badgeGap: input.badgeGap,
+              qualityBadgesStyle: input.qualityBadgesStyle,
+              posterEdgeInset,
+              backdropEdgeInset,
+            })
+          );
+        }
+      }
       if (qualityPlacement === 'bottom') {
         const bottomQualityHeight = resolveQualityBadgeHeight({
           referenceBadgeHeight: posterQualityRowReferenceHeight,
@@ -1159,61 +1440,69 @@ export const renderWithSharp = async (
           layout: 'row',
         });
         const bottomQualityInset =
-          input.badgeBottomOffset + Math.max(4, Math.round(bottomQualityHeight * 0.14));
+          input.badgeBottomOffset + posterBottomReservedHeight + Math.max(4, Math.round(bottomQualityHeight * 0.14));
         const bottomY = Math.max(
           input.badgeTopOffset,
           input.outputHeight - bottomQualityInset - bottomQualityHeight
         );
-        appendQualityBadgeOverlays(
-          buildQualityBadgeRowOverlays({
-            rowBadges: resolvedQualityBadges,
-            rowY: bottomY,
-            origin: 'bottom',
-            imageType: input.imageType,
-            outputWidth: input.outputWidth,
-            referenceBadgeHeight: bottomQualityHeight,
-            qualityBadgeScalePercent: input.qualityBadgeScalePercent,
-            badgeGap: input.badgeGap,
-            qualityBadgesStyle: input.qualityBadgesStyle,
-            posterEdgeInset,
-            backdropEdgeInset,
-          })
-        );
+        if (posterSharedQualityBadges.length > 0) {
+          appendQualityBadgeOverlays(
+            buildQualityBadgeRowOverlays({
+              rowBadges: posterSharedQualityBadges,
+              rowY: bottomY,
+              origin: 'bottom',
+              imageType: input.imageType,
+              outputWidth: input.outputWidth,
+              referenceBadgeHeight: bottomQualityHeight,
+              qualityBadgeScalePercent: input.qualityBadgeScalePercent,
+              badgeGap: input.badgeGap,
+              qualityBadgesStyle: input.qualityBadgesStyle,
+              posterEdgeInset,
+              backdropEdgeInset,
+            })
+          );
+        }
       } else if (qualityPlacement === 'top') {
         const topQualityHeight = resolveQualityBadgeHeight({
           referenceBadgeHeight: posterQualityRowReferenceHeight,
           qualityBadgeScalePercent: input.qualityBadgeScalePercent,
           layout: 'row',
         });
-        const topY = Math.max(input.badgeTopOffset, editorialOverlaySafeBottom ?? input.badgeTopOffset);
-        appendQualityBadgeOverlays(
-          buildQualityBadgeRowOverlays({
-            rowBadges: resolvedQualityBadges,
-            rowY: topY,
-            origin: 'top',
-            imageType: input.imageType,
-            outputWidth: input.outputWidth,
-            referenceBadgeHeight: topQualityHeight,
-            qualityBadgeScalePercent: input.qualityBadgeScalePercent,
-            badgeGap: input.badgeGap,
-            qualityBadgesStyle: input.qualityBadgesStyle,
-            posterEdgeInset,
-            backdropEdgeInset,
-          })
-        );
+        const topY =
+          extractedAgeRatingBadge === null
+            ? Math.max(input.badgeTopOffset, editorialOverlaySafeBottom ?? input.badgeTopOffset)
+            : posterTopContentStartY;
+        if (posterSharedQualityBadges.length > 0) {
+          appendQualityBadgeOverlays(
+            buildQualityBadgeRowOverlays({
+              rowBadges: posterSharedQualityBadges,
+              rowY: topY,
+              origin: 'top',
+              imageType: input.imageType,
+              outputWidth: input.outputWidth,
+              referenceBadgeHeight: topQualityHeight,
+              qualityBadgeScalePercent: input.qualityBadgeScalePercent,
+              badgeGap: input.badgeGap,
+              qualityBadgesStyle: input.qualityBadgesStyle,
+              posterEdgeInset,
+              backdropEdgeInset,
+            })
+          );
+        }
       } else {
+        const qualityColumnLayout = resolveQualityBadgeColumnLayout({
+          referenceBadgeHeight: ratingBadgeHeight,
+          qualityBadgeScalePercent: input.qualityBadgeScalePercent,
+          badgeGap: input.badgeGap,
+          badgeCount: posterSharedQualityBadges.length,
+          availableHeight: input.outputHeight - input.badgeTopOffset - input.badgeBottomOffset,
+        });
         const centeredStartY = Math.max(
-          input.badgeTopOffset,
+          posterTopContentStartY,
           Math.round(
             (
               input.outputHeight -
-              resolveQualityBadgeColumnLayout({
-                referenceBadgeHeight: ratingBadgeHeight,
-                qualityBadgeScalePercent: input.qualityBadgeScalePercent,
-                badgeGap: input.badgeGap,
-                badgeCount: resolvedQualityBadges.length,
-                availableHeight: input.outputHeight - input.badgeTopOffset - input.badgeBottomOffset,
-              }).totalHeight
+              qualityColumnLayout.totalHeight
             ) / 2
           )
         );
@@ -1222,7 +1511,7 @@ export const renderWithSharp = async (
           (input.posterRatingsLayout === 'left' || input.posterRatingsLayout === 'right') &&
           (qualityPlacement === 'left' || qualityPlacement === 'right');
         if (shouldTopAlignQuality) {
-          qualityStartY = input.badgeTopOffset;
+          qualityStartY = posterTopContentStartY;
         } else if (posterTopRows.length > 0) {
           const belowTop = posterTopBlockBottom;
           qualityStartY = Math.max(qualityStartY, belowTop);
@@ -1242,24 +1531,40 @@ export const renderWithSharp = async (
         if (qualityPlacement === 'left' && editorialOverlaySafeBottom !== null) {
           qualityStartY = Math.max(qualityStartY, editorialOverlaySafeBottom);
         }
-        appendQualityBadgeOverlays(
-          buildQualityBadgeColumnOverlays({
-            columnBadges: resolvedQualityBadges,
+        if (
+          explicitAgeRatingPlacement?.kind === 'column' &&
+          explicitAgeRatingPlacement.side === qualityPlacement
+        ) {
+          qualityStartY = adjustVerticalStartForProtectedRange({
             startY: qualityStartY,
-            side: qualityPlacement,
-            imageType: input.imageType,
-            outputWidth: input.outputWidth,
-            outputHeight: input.outputHeight,
-            badgeTopOffset: input.badgeTopOffset,
-            badgeBottomOffset: input.badgeBottomOffset,
-            referenceBadgeHeight: ratingBadgeHeight,
-            qualityBadgeScalePercent: input.qualityBadgeScalePercent,
-            badgeGap: input.badgeGap,
-            qualityBadgesStyle: input.qualityBadgesStyle,
-            posterEdgeInset,
-            backdropEdgeInset,
-          })
-        );
+            blockHeight: qualityColumnLayout.totalHeight,
+            protectedTop: explicitAgeRatingPlacement.protectedTop,
+            protectedBottom: explicitAgeRatingPlacement.protectedBottom,
+            topBound: input.badgeTopOffset,
+            bottomBound: input.outputHeight - input.badgeBottomOffset,
+            gap: input.badgeGap,
+          });
+        }
+        if (posterSharedQualityBadges.length > 0) {
+          appendQualityBadgeOverlays(
+            buildQualityBadgeColumnOverlays({
+              columnBadges: posterSharedQualityBadges,
+              startY: qualityStartY,
+              side: qualityPlacement,
+              imageType: input.imageType,
+              outputWidth: input.outputWidth,
+              outputHeight: input.outputHeight,
+              badgeTopOffset: input.badgeTopOffset,
+              badgeBottomOffset: input.badgeBottomOffset,
+              referenceBadgeHeight: qualityBadgeHeight,
+              qualityBadgeScalePercent: input.qualityBadgeScalePercent,
+              badgeGap: input.badgeGap,
+              qualityBadgesStyle: input.qualityBadgesStyle,
+              posterEdgeInset,
+              backdropEdgeInset,
+            })
+          );
+        }
       }
     }
 

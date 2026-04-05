@@ -245,6 +245,7 @@ export type ProxyConfig = {
   thumbnailStreamBadges?: string;
   qualityBadgesSide?: string;
   posterQualityBadgesPosition?: string;
+  ageRatingBadgePosition?: string;
   qualityBadgesStyle?: string;
   providerAppearance?: string;
   ratingPresentation?: string;
@@ -424,6 +425,7 @@ const CONFIG_STRING_KEYS = [
   'thumbnailStreamBadges',
   'qualityBadgesSide',
   'posterQualityBadgesPosition',
+  'ageRatingBadgePosition',
   'qualityBadgesStyle',
   'providerAppearance',
   'ratingPresentation',

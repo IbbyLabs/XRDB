@@ -272,7 +272,10 @@ GET /thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb`}</CodeBlo
           <p>
             Posters use <code>posterRatingsLayout</code> (top, bottom, left, right, and combinations).
             Backdrops use <code>backdropRatingsLayout</code> (center, right, right vertical) and can enable <code>backdropBottomRatingsRow</code>.
-            The Quality Badges panel exposes poster placement controls for supported poster layouts and includes bulk enable and hide actions for visible quality badges.
+            The Quality Badges panel exposes poster placement controls for supported poster layouts, disables shared placement when certification is the only visible quality badge, adds a dedicated age rating position control for the active poster layout, and includes bulk enable and hide actions for visible quality badges.
+          </p>
+          <p>
+            Slider based customisation controls snap back to their defaults when you move close to the baseline and show a Default readout, while keeping keys, manifest inputs, and the current target unchanged.
           </p>
           <p>
             Thumbnails are the most distinct: they use the <code>/thumbnail/</code> route with dedicated episode artwork mode (<code>still</code> or <code>series</code>), their own rating provider list, and separate layout and sizing controls.

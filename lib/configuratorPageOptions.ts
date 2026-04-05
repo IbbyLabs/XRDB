@@ -2,6 +2,7 @@ import { type GenreBadgeAnimeGrouping, type GenreBadgeMode } from '@/lib/genreBa
 import { type EpisodeIdMode } from '@/lib/episodeIdentity';
 import { type RatingPresentation } from '@/lib/ratingPresentation';
 import {
+  type AgeRatingBadgePosition,
   type ArtworkSource,
   type BackdropImageSize,
   type BackdropImageTextPreference,
@@ -145,6 +146,25 @@ export const QUALITY_BADGE_POSITION_OPTIONS: Array<{ id: PosterQualityBadgesPosi
   { id: 'auto', label: 'Auto' },
   { id: 'left', label: 'Left' },
   { id: 'right', label: 'Right' },
+];
+
+export const AGE_RATING_BADGE_POSITION_OPTIONS: Array<{
+  id: AgeRatingBadgePosition;
+  label: string;
+}> = [
+  { id: 'inherit', label: 'Inherit' },
+  { id: 'top-left', label: 'Top Left' },
+  { id: 'top-center', label: 'Top Center' },
+  { id: 'top-right', label: 'Top Right' },
+  { id: 'bottom-left', label: 'Bottom Left' },
+  { id: 'bottom-center', label: 'Bottom Center' },
+  { id: 'bottom-right', label: 'Bottom Right' },
+  { id: 'left-top', label: 'Left Top' },
+  { id: 'left-center', label: 'Left Center' },
+  { id: 'left-bottom', label: 'Left Bottom' },
+  { id: 'right-top', label: 'Right Top' },
+  { id: 'right-center', label: 'Right Center' },
+  { id: 'right-bottom', label: 'Right Bottom' },
 ];
 
 export const EPISODE_ID_MODE_OPTIONS: Array<{

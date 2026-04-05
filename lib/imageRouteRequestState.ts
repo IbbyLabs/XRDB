@@ -144,6 +144,7 @@ import {
   normalizeRpdbFontScalePercent,
   resolveRpdbRatingBarPositionAliases,
   toAnimeMappingProvider,
+  type AgeRatingBadgePosition,
   type AnimeMappingProvider,
   type ArtworkSource,
   type BackdropImageSize,
@@ -166,6 +167,7 @@ import {
 } from './imageRouteRuntime.ts';
 import { pickOutputFormat, type OutputFormat } from './imageRouteMedia.ts';
 import {
+  normalizeAgeRatingBadgePosition,
   normalizeLogoBackground,
   normalizePosterQualityBadgesPosition,
   normalizeQualityBadgesSide,
@@ -244,6 +246,7 @@ export type ImageRouteRequestState = {
   sideRatingsOffset: number;
   qualityBadgesSide: QualityBadgesSide;
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
+  ageRatingBadgePosition: AgeRatingBadgePosition;
   qualityBadgesStyle: QualityBadgeStyle;
   qualityBadgesMax: number | null;
   qualityBadgePreferences: BadgeKey[];
@@ -850,6 +853,9 @@ export const resolveImageRouteRequestState = async ({
   const posterQualityBadgesPosition = normalizePosterQualityBadgesPosition(
     searchParams.get('posterQualityBadgesPosition'),
   );
+  const ageRatingBadgePosition = normalizeAgeRatingBadgePosition(
+    searchParams.get('ageRatingBadgePosition'),
+  );
   const posterQualityBadgePreferences = parseQualityBadgePreferencesAllowEmpty(
     searchParams.get('posterQualityBadges'),
   );
@@ -1303,6 +1309,7 @@ export const resolveImageRouteRequestState = async ({
     logoBottomRatingsRow,
     qualityBadgesSide,
     posterQualityBadgesPosition,
+    ageRatingBadgePosition,
     qualityBadgesStyle,
     qualityBadgesMax,
     qualityBadgePreferences,
@@ -1389,6 +1396,7 @@ export const resolveImageRouteRequestState = async ({
     sideRatingsOffset,
     qualityBadgesSide,
     posterQualityBadgesPosition,
+    ageRatingBadgePosition,
     qualityBadgesStyle,
     qualityBadgesMax,
     qualityBadgePreferences,
