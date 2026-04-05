@@ -286,6 +286,20 @@ test('image route request state allows larger thumbnail rating badge scale for t
   assert.equal(state.backdropRatingBadgeScale, 190);
 });
 
+test('image route request state keeps poster, backdrop, and logo rating badge scales type scoped', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&posterRatingBadgeScale=190&backdropRatingBadgeScale=185&logoRatingBadgeScale=180',
+    ),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(state.posterRatingBadgeScale, 190);
+  assert.equal(state.backdropRatingBadgeScale, 185);
+  assert.equal(state.logoRatingBadgeScale, 180);
+});
+
 test('image route request state normalizes dynamic aggregate accent stops', async () => {
   const state = await resolveImageRouteRequestState({
     request: createRequest(

@@ -213,6 +213,13 @@ export const resolveImageRouteRenderLayout = async (input: {
     badgeTopOffset = isThumbnailRequest ? 28 : 20;
     badgeBottomOffset = isThumbnailRequest ? 28 : 20;
     backdropEdgeInset = isThumbnailRequest ? 24 : 12;
+    if (isThumbnailRequest) {
+      badgeIconSize = 40;
+      badgeFontSize = 30;
+      badgePaddingY = 10;
+      badgePaddingX = 14;
+      badgeGap = 10;
+    }
   } else if (usePosterBadgeLayout) {
     if (usePosterRowLayoutLarge) {
       badgeIconSize = 46;

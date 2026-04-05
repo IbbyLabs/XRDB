@@ -651,7 +651,7 @@ test('config payload keeps dynamic aggregate accent stops when enabled', () => {
   assert.equal(decodedConfig.aggregateDynamicStops, '0:#7f1d1d,60:#f59e0b,85:#16a34a');
 });
 
-test('config payload allows larger thumbnail rating badge scale without changing other image types', () => {
+test('config payload preserves larger rating badge scales across artwork types', () => {
   const config = normalizeSavedUiConfig({
     settings: {
       tmdbKey: 'tmdb-key-123',
@@ -664,17 +664,17 @@ test('config payload allows larger thumbnail rating badge scale without changing
   });
 
   assert.equal(config.settings.thumbnailRatingBadgeScale, 190);
-  assert.equal(config.settings.posterRatingBadgeScale, 150);
-  assert.equal(config.settings.backdropRatingBadgeScale, 150);
-  assert.equal(config.settings.logoRatingBadgeScale, 150);
+  assert.equal(config.settings.posterRatingBadgeScale, 190);
+  assert.equal(config.settings.backdropRatingBadgeScale, 190);
+  assert.equal(config.settings.logoRatingBadgeScale, 190);
 
   const configString = buildConfigString('https://xrdb.example.com', config.settings);
   assert.notEqual(configString, '');
   const decodedConfig = JSON.parse(decodeBase64Url(configString));
   assert.equal(decodedConfig.thumbnailRatingBadgeScale, 190);
-  assert.equal(decodedConfig.posterRatingBadgeScale, 150);
-  assert.equal(decodedConfig.backdropRatingBadgeScale, 150);
-  assert.equal(decodedConfig.logoRatingBadgeScale, 150);
+  assert.equal(decodedConfig.posterRatingBadgeScale, 190);
+  assert.equal(decodedConfig.backdropRatingBadgeScale, 190);
+  assert.equal(decodedConfig.logoRatingBadgeScale, 190);
 });
 
 test('config string and proxy manifest use the same shared XRDB settings', () => {
