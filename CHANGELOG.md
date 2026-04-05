@@ -27,6 +27,24 @@
 
 <a id="v1-8-1"></a>
 
+<a id="v1-8-2"></a>
+
+## [v1.8.2] - 05/04/2026
+
+### Fixed
+* BUG-54 restore scroll containment export text mapping and ring rendering
+  
+  Isolate configurator side rail scrolling from page scroll and stabilize setup mode background layering in setup mode UI.
+  
+  Normalize AIOMetadata export query generation to emit canonical imageText values and preserve legacy imageText aliases in request parsing.
+  
+  Harden compact ring presentation behavior by allowing fallback when configured value/progress providers are partially unavailable and add compact ring alias normalization.
+  
+  Add targeted regression coverage and update refreshed documentation capture assets.
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.8.1] - 05/04/2026
 
 ### Fixed
