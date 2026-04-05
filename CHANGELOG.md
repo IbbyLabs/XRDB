@@ -33,6 +33,42 @@
 
 <a id="v1-8-4"></a>
 
+<a id="v1-9-0"></a>
+
+## [v1.9.0] - 05/04/2026
+
+### Added
+* FR-45 expand age rating placement and slider defaults
+  
+  Extend poster age rating placement to supported top, bottom, and side anchors with layout aware validation and renderer placement rules.
+  Add slider default snapping readouts, keep quality placement controls aligned when certification is isolated, and fold in the FR-45 preview dependency follow up.
+  Refresh the generated configurator assets and expand the focused renderer, config, and reset group coverage for the complete FR-45 flow.
+* FR-44 align rating badge scaling across artwork
+  
+  Raise the shared rating badge scale ceiling to 200 across poster, backdrop, thumbnail, and logo outputs while preserving type scoped settings in configurator state, config export, and request parsing.
+  
+  Increase the thumbnail render layout baseline so high badge scales produce larger, more legible episode thumbnail badges. Update focused regressions and public docs, and refresh the generated doc asset preview.
+
+### Fixed
+* tighten default quality badge proportions
+  
+  Increase the default 4K and BD Remux presence, reduce the default Digital Release width, and tighten glass streaming network badge widths.
+  Keep the configurable badge sizing path unchanged while refreshing the generated demo asset and focused badge coverage.
+* BUG-56 honor provider textless support
+  
+  • preserve Fanart poster and backdrop asset metadata for textless aware selection
+  • skip Cinemeta and OMDb whenever the active artwork mode requires textless artwork
+  • disable unsupported artwork sources in the configurator and align public docs
+  • add focused regressions for fanart textless picks and provider fallback behavior
+* BUG-57 restore quality badge controls
+  
+  Restore the poster quality badge placement surface in the configurator and add bulk enable and hide actions for per type quality badges.
+  
+  Add focused regression coverage for quality badge control resolution and poster quality badge position export behavior, and refresh the public docs capture to match the updated UI.
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.8.4] - 05/04/2026
 
 ### Added
