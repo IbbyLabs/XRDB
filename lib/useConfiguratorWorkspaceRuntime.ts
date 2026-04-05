@@ -710,9 +710,9 @@ export function useConfiguratorWorkspaceRuntime() {
         setPreviewType(nextType);
       } else {
         setPreviewType(nextType);
-        const firstSample = MEDIA_TARGET_SAMPLE_IDS[nextType][0] || '';
-        setMediaId(firstSample);
-        setActivePreviewTitle('Sample target');
+        const firstSample = MEDIA_TARGET_SAMPLE_IDS[nextType][0];
+        setMediaId(firstSample?.id || '');
+        setActivePreviewTitle(firstSample?.title || `Target ${firstSample?.id || ''}`);
         setMediaSearchError('');
         setMediaSearchResults([]);
         setMediaSearchQuery('');
@@ -873,8 +873,8 @@ export function useConfiguratorWorkspaceRuntime() {
 
     mediaSearchAbortControllerRef.current?.abort();
     setMediaSearchLoading(false);
-    setMediaId(nextSample);
-    setActivePreviewTitle('Sample target');
+    setMediaId(nextSample.mediaId);
+    setActivePreviewTitle(nextSample.title || `Target ${nextSample.mediaId}`);
     setMediaSearchError('');
     setMediaSearchResults([]);
     setMediaSearchQuery('');

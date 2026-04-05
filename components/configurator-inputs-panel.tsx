@@ -6,6 +6,7 @@ import { ConfiguratorAccordionSection } from '@/components/site-chrome';
 import {
   AccessKeysSection,
   MediaTargetSection,
+  WorkspaceManagementSection,
 } from '@/components/configurator-basics';
 import { ConfiguratorPresetStudio } from '@/components/configurator-preset-studio';
 import {
@@ -34,6 +35,7 @@ export function ConfiguratorInputsPanel({
   presetStudioProps,
   accessKeysProps,
   mediaTargetProps,
+  workspaceManagementProps,
   presentationProps,
   lookProps,
   qualityProps,
@@ -46,6 +48,7 @@ export function ConfiguratorInputsPanel({
   presetStudioProps: ComponentProps<typeof ConfiguratorPresetStudio>;
   accessKeysProps: ComponentProps<typeof AccessKeysSection>;
   mediaTargetProps: ComponentProps<typeof MediaTargetSection>;
+  workspaceManagementProps: ComponentProps<typeof WorkspaceManagementSection>;
   presentationProps: ComponentProps<typeof PresentationSection>;
   lookProps: ComponentProps<typeof LookSection>;
   qualityProps: ComponentProps<typeof QualitySection>;
@@ -55,8 +58,8 @@ export function ConfiguratorInputsPanel({
   return (
     <div id="workspace-settings" className="xrdb-workspace-scroll-region space-y-3 scroll-mt-24">
       <div className="space-y-3">
-        <MediaTargetSection {...mediaTargetProps} />
         <AccessKeysSection {...accessKeysProps} />
+        <MediaTargetSection {...mediaTargetProps} />
         <ConfiguratorPresetStudio
           {...presetStudioProps}
           isOpen={openWorkspaceSection === 'presets'}
@@ -103,6 +106,7 @@ export function ConfiguratorInputsPanel({
           <ProvidersSection {...providersProps} />
         </ConfiguratorAccordionSection>
       </div>
+      <WorkspaceManagementSection {...workspaceManagementProps} />
     </div>
   );
 }
