@@ -39,12 +39,12 @@ if (tmdbKey) {
     process.exit(refreshResult.status ?? 1);
   }
 
-  const docsDiff = spawnSync('git', ['status', '--porcelain', '--', 'README.md', 'docs/images'], {
+  const docsDiff = spawnSync('git', ['status', '--porcelain', '--', 'README.md', 'docs/images', 'data/readme-preview-gallery.json'], {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   if (String(docsDiff.stdout || '').trim()) {
-    run('git', ['add', 'README.md', 'docs/images']);
+    run('git', ['add', 'README.md', 'docs/images', 'data/readme-preview-gallery.json']);
     run('git', ['commit', '-m', 'docs: refresh static doc assets']);
     console.log('Committed refreshed doc assets.');
   } else {
