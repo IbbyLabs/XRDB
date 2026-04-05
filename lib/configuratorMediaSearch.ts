@@ -227,54 +227,56 @@ export type PinnedTargetsStore = Record<MediaSearchPreviewType, PinnedTarget[]>;
 export const PINNED_TARGETS_STORAGE_KEY = 'xrdb.pinnedTargets.v1';
 export const PINNED_TARGETS_MAX_PER_TYPE = 8;
 
-export const MEDIA_TARGET_SAMPLE_IDS: Record<MediaSearchPreviewType, string[]> = {
+export type MediaTargetSample = { id: string; title: string };
+
+export const MEDIA_TARGET_SAMPLE_IDS: Record<MediaSearchPreviewType, MediaTargetSample[]> = {
   poster: [
-    'tt0133093',
-    'tmdb:movie:27205',
-    'tmdb:movie:157336',
-    'tmdb:movie:335787',
-    'tmdb:movie:550',
-    'tmdb:movie:680',
-    'tmdb:tv:1399',
-    'tmdb:tv:1396',
-    'tmdb:tv:1429',
-    'tmdb:tv:85937',
+    { id: 'tt0133093', title: 'The Matrix' },
+    { id: 'tmdb:movie:27205', title: 'Inception' },
+    { id: 'tmdb:movie:157336', title: 'Interstellar' },
+    { id: 'tmdb:movie:335787', title: 'Uncharted' },
+    { id: 'tmdb:movie:550', title: 'Fight Club' },
+    { id: 'tmdb:movie:680', title: 'Pulp Fiction' },
+    { id: 'tmdb:tv:1399', title: 'Game of Thrones' },
+    { id: 'tmdb:tv:1396', title: 'Breaking Bad' },
+    { id: 'tmdb:tv:1429', title: 'Attack on Titan' },
+    { id: 'tmdb:tv:85937', title: 'Demon Slayer' },
   ],
   backdrop: [
-    'tmdb:movie:299534',
-    'tmdb:movie:603',
-    'tmdb:movie:438631',
-    'tmdb:movie:157336',
-    'tmdb:tv:1399',
-    'tmdb:tv:94997',
-    'tmdb:tv:1396',
-    'tmdb:tv:1429',
-    'tmdb:tv:85937',
-    'tmdb:tv:95479',
+    { id: 'tmdb:movie:299534', title: 'Avengers: Endgame' },
+    { id: 'tmdb:movie:603', title: 'The Matrix' },
+    { id: 'tmdb:movie:438631', title: 'Dune' },
+    { id: 'tmdb:movie:157336', title: 'Interstellar' },
+    { id: 'tmdb:tv:1399', title: 'Game of Thrones' },
+    { id: 'tmdb:tv:94997', title: 'House of the Dragon' },
+    { id: 'tmdb:tv:1396', title: 'Breaking Bad' },
+    { id: 'tmdb:tv:1429', title: 'Attack on Titan' },
+    { id: 'tmdb:tv:85937', title: 'Demon Slayer' },
+    { id: 'tmdb:tv:95479', title: 'Jujutsu Kaisen' },
   ],
   thumbnail: [
-    'tt0944947:1:1',
-    'tmdb:tv:1399:1:1',
-    'tmdb:tv:1396:1:1',
-    'tmdb:tv:94997:1:1',
-    'tmdb:tv:66732:1:1',
-    'tmdb:tv:1429:1:1',
-    'tmdb:tv:85937:1:1',
-    'tmdb:tv:95479:1:1',
-    'tmdb:tv:37854:1:1',
-    'tmdb:tv:75603:1:1',
+    { id: 'tt0944947:1:1', title: 'Game of Thrones S01E01' },
+    { id: 'tmdb:tv:1399:1:1', title: 'Game of Thrones S01E01' },
+    { id: 'tmdb:tv:1396:1:1', title: 'Breaking Bad S01E01' },
+    { id: 'tmdb:tv:94997:1:1', title: 'House of the Dragon S01E01' },
+    { id: 'tmdb:tv:66732:1:1', title: 'Stranger Things S01E01' },
+    { id: 'tmdb:tv:1429:1:1', title: 'Attack on Titan S01E01' },
+    { id: 'tmdb:tv:85937:1:1', title: 'Demon Slayer S01E01' },
+    { id: 'tmdb:tv:95479:1:1', title: 'Jujutsu Kaisen S01E01' },
+    { id: 'tmdb:tv:37854:1:1', title: 'One Piece S01E01' },
+    { id: 'tmdb:tv:75603:1:1', title: 'The Promised Neverland S01E01' },
   ],
   logo: [
-    'tmdb:movie:603',
-    'tmdb:tv:1399',
-    'tmdb:movie:299534',
-    'tmdb:movie:27205',
-    'tmdb:tv:1396',
-    'tmdb:movie:438631',
-    'tmdb:movie:157336',
-    'tmdb:tv:1429',
-    'tmdb:tv:85937',
-    'tmdb:tv:37854',
+    { id: 'tmdb:movie:603', title: 'The Matrix' },
+    { id: 'tmdb:tv:1399', title: 'Game of Thrones' },
+    { id: 'tmdb:movie:299534', title: 'Avengers: Endgame' },
+    { id: 'tmdb:movie:27205', title: 'Inception' },
+    { id: 'tmdb:tv:1396', title: 'Breaking Bad' },
+    { id: 'tmdb:movie:438631', title: 'Dune' },
+    { id: 'tmdb:movie:157336', title: 'Interstellar' },
+    { id: 'tmdb:tv:1429', title: 'Attack on Titan' },
+    { id: 'tmdb:tv:85937', title: 'Demon Slayer' },
+    { id: 'tmdb:tv:37854', title: 'One Piece' },
   ],
 };
 
@@ -290,22 +292,22 @@ export const pickShuffledMediaTarget = ({
   randomValue?: number;
 }) => {
   const builtInSamples = MEDIA_TARGET_SAMPLE_IDS[previewType];
-  const pinnedIds = pinnedTargets ? pinnedTargets.map((p) => p.mediaId) : [];
+  const pinnedIds = pinnedTargets ? pinnedTargets.map((p) => ({ id: p.mediaId, title: p.title })) : [];
   const seen = new Set<string>();
-  const samples: string[] = [];
-  for (const id of [...builtInSamples, ...pinnedIds]) {
-    const key = id.trim().toLowerCase();
+  const samples: MediaTargetSample[] = [];
+  for (const entry of [...builtInSamples, ...pinnedIds]) {
+    const key = entry.id.trim().toLowerCase();
     if (!key || seen.has(key)) continue;
     seen.add(key);
-    samples.push(id);
+    samples.push(entry);
   }
   if (samples.length === 0) {
-    return '';
+    return null;
   }
 
   const normalizedCurrent = String(currentMediaId || '').trim().toLowerCase();
   const alternateSamples = samples.filter(
-    (sample) => sample.trim().toLowerCase() !== normalizedCurrent,
+    (sample) => sample.id.trim().toLowerCase() !== normalizedCurrent,
   );
   const candidateSamples = alternateSamples.length > 0 ? alternateSamples : samples;
   const boundedRandom =
@@ -313,7 +315,8 @@ export const pickShuffledMediaTarget = ({
       ? randomValue
       : Math.random();
   const randomIndex = Math.floor(boundedRandom * candidateSamples.length);
-  return candidateSamples[randomIndex] || candidateSamples[0] || '';
+  const picked = candidateSamples[randomIndex] || candidateSamples[0];
+  return picked ? { mediaId: picked.id, title: picked.title } : null;
 };
 
 const EMPTY_PINNED_STORE: PinnedTargetsStore = {
@@ -361,8 +364,8 @@ export const writePinnedTargetsToStorage = (store: PinnedTargetsStore): void => 
 export const isBuiltInSample = (mediaId: string): boolean => {
   const normalized = String(mediaId || '').trim().toLowerCase();
   if (!normalized) return false;
-  for (const ids of Object.values(MEDIA_TARGET_SAMPLE_IDS)) {
-    if (ids.some((id) => id.trim().toLowerCase() === normalized)) return true;
+  for (const entries of Object.values(MEDIA_TARGET_SAMPLE_IDS)) {
+    if (entries.some((entry) => entry.id.trim().toLowerCase() === normalized)) return true;
   }
   return false;
 };

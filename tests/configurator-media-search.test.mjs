@@ -101,19 +101,22 @@ test('pickShuffledMediaTarget avoids returning the current media target when alt
     randomValue: 0.95,
   });
 
-  assert.notEqual(nextPoster, 'tt0133093');
-  assert.notEqual(nextLogo, 'tmdb:movie:603');
+  assert.notEqual(nextPoster?.mediaId, 'tt0133093');
+  assert.notEqual(nextLogo?.mediaId, 'tmdb:movie:603');
 });
 
-test('pickShuffledMediaTarget returns a fallback value when current target is empty', () => {
+test('pickShuffledMediaTarget returns a result when current target is empty', () => {
   const nextBackdrop = pickShuffledMediaTarget({
     previewType: 'backdrop',
     currentMediaId: '',
     randomValue: 0.5,
   });
 
-  assert.equal(typeof nextBackdrop, 'string');
-  assert.ok(nextBackdrop.length > 0);
+  assert.ok(nextBackdrop !== null);
+  assert.equal(typeof nextBackdrop.mediaId, 'string');
+  assert.ok(nextBackdrop.mediaId.length > 0);
+  assert.equal(typeof nextBackdrop.title, 'string');
+  assert.ok(nextBackdrop.title.length > 0);
 });
 
 test('MEDIA_TARGET_SAMPLE_IDS has 10 entries per preview type', () => {
@@ -130,14 +133,13 @@ test('pickShuffledMediaTarget includes pinned targets in the pool', () => {
   const pinned = [{ mediaId: 'tmdb:tv:99999', title: 'Custom Pin' }];
   const results = new Set();
   for (let i = 0; i < 200; i++) {
-    results.add(
-      pickShuffledMediaTarget({
-        previewType: 'poster',
-        currentMediaId: '',
-        pinnedTargets: pinned,
-        randomValue: i / 200,
-      }),
-    );
+    const result = pickShuffledMediaTarget({
+      previewType: 'poster',
+      currentMediaId: '',
+      pinnedTargets: pinned,
+      randomValue: i / 200,
+    });
+    if (result) results.add(result.mediaId);
   }
   assert.ok(results.has('tmdb:tv:99999'), 'Pinned target should appear in shuffle pool');
 });
@@ -146,14 +148,13 @@ test('pickShuffledMediaTarget deduplicates pinned targets matching built-in samp
   const pinned = [{ mediaId: 'tt0133093', title: 'The Matrix (pinned)' }];
   const results = new Set();
   for (let i = 0; i < 200; i++) {
-    results.add(
-      pickShuffledMediaTarget({
-        previewType: 'poster',
-        currentMediaId: '',
-        pinnedTargets: pinned,
-        randomValue: i / 200,
-      }),
-    );
+    const result = pickShuffledMediaTarget({
+      previewType: 'poster',
+      currentMediaId: '',
+      pinnedTargets: pinned,
+      randomValue: i / 200,
+    });
+    if (result) results.add(result.mediaId);
   }
   assert.equal(results.size, MEDIA_TARGET_SAMPLE_IDS.poster.length);
 });

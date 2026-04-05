@@ -509,23 +509,23 @@ export function AccessKeysSection({
       <div className="grid gap-2 md:grid-cols-5">
         <div>
           <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">XRDB Request</label>
-          <input type="password" value={xrdbKey} onChange={(event) => onXrdbKeyChange(event.target.value)} placeholder="Optional key" className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-white outline-none focus:border-violet-500/50" />
+          <input type="password" value={xrdbKey} onChange={(event) => onXrdbKeyChange(event.target.value)} placeholder="Optional key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
         </div>
         <div>
           <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">TMDB</label>
-          <input type="password" value={tmdbKey} onChange={(event) => onTmdbKeyChange(event.target.value)} placeholder="v3 Key" className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-white outline-none focus:border-violet-500/50" />
+          <input type="password" value={tmdbKey} onChange={(event) => onTmdbKeyChange(event.target.value)} placeholder="v3 Key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
         </div>
         <div>
           <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">MDBList</label>
-          <input type="password" value={mdblistKey} onChange={(event) => onMdblistKeyChange(event.target.value)} placeholder="Key" className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-white outline-none focus:border-violet-500/50" />
+          <input type="password" value={mdblistKey} onChange={(event) => onMdblistKeyChange(event.target.value)} placeholder="Key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
         </div>
         <div>
           <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Fanart</label>
-          <input type="password" value={fanartKey} onChange={(event) => onFanartKeyChange(event.target.value)} placeholder="Optional key" className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-white outline-none focus:border-violet-500/50" />
+          <input type="password" value={fanartKey} onChange={(event) => onFanartKeyChange(event.target.value)} placeholder="Optional key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
         </div>
         <div>
           <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">SIMKL</label>
-          <input type="password" value={simklClientId} onChange={(event) => onSimklClientIdChange(event.target.value)} placeholder="client_id (optional)" className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-white outline-none focus:border-violet-500/50" />
+          <input type="password" value={simklClientId} onChange={(event) => onSimklClientIdChange(event.target.value)} placeholder="client_id (optional)" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
         </div>
       </div>
       <div className="mt-3">
@@ -679,14 +679,14 @@ export function MediaTargetSection({
             </div>
           ) : null}
         </div>
-        <div className="min-w-[140px] flex-1">
+        <div className="min-w-[140px] max-w-[28rem] flex-1">
           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Media ID</span>
           <input
             type="text"
             value={mediaId}
             onChange={(event) => onMediaIdChange(event.target.value)}
             placeholder={previewType === 'thumbnail' ? 'tt0944947:1:1' : 'tt0133093'}
-            className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-white outline-none focus:border-violet-500/50"
+            className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs leading-5 text-white outline-none focus:border-violet-500/50"
           />
         </div>
         {tmdbKey ? (
@@ -715,7 +715,7 @@ export function MediaTargetSection({
                     nextEpisode: thumbnailEpisode,
                   })}
                 placeholder="tmdb:tv:1399"
-                className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-white outline-none focus:border-violet-500/50"
+                className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs leading-5 text-white outline-none focus:border-violet-500/50"
               />
             </div>
             <div>
@@ -731,7 +731,7 @@ export function MediaTargetSection({
                     nextSeason: event.target.value,
                     nextEpisode: thumbnailEpisode,
                   })}
-                className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-white outline-none focus:border-violet-500/50"
+                className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs leading-5 text-white outline-none focus:border-violet-500/50"
               />
             </div>
             <div>
@@ -747,7 +747,7 @@ export function MediaTargetSection({
                     nextSeason: thumbnailSeason,
                     nextEpisode: event.target.value,
                   })}
-                className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-white outline-none focus:border-violet-500/50"
+                className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs leading-5 text-white outline-none focus:border-violet-500/50"
               />
             </div>
           </div>
@@ -771,7 +771,7 @@ export function MediaTargetSection({
                 }
               }}
               placeholder={previewType === 'thumbnail' ? 'Search for a series' : 'Search for a movie or series'}
-              className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-white outline-none focus:border-violet-500/50"
+              className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs leading-5 text-white outline-none focus:border-violet-500/50"
             />
             {showSearchDropdown ? (
               <div className="absolute z-20 mt-1 max-h-72 w-full overflow-y-auto rounded-lg border border-white/10 bg-zinc-950/95 p-1 shadow-2xl shadow-black/50">
