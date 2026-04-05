@@ -31,8 +31,8 @@ export const MEDIA_BADGE_ASSETS = {
   '4k': createBadgeAsset({
     fileName: '4k-ultra-hd.svg',
     aspectRatio: 191 / 66,
-    widthRatio: 2.22,
-    heightRatio: 0.72,
+    widthRatio: 2.38,
+    heightRatio: 0.78,
     horizontalPaddingRatio: 0.05,
   }),
   hdr: createBadgeAsset({
@@ -52,16 +52,16 @@ export const MEDIA_BADGE_ASSETS = {
   dolbyvision: createBadgeAsset({
     fileName: 'dolby-vision.svg',
     aspectRatio: 105.5220032 / 15.6487389,
-    widthRatio: 2.38,
+    widthRatio: 2.58,
     heightRatio: 0.52,
-    horizontalPaddingRatio: 0.04,
+    horizontalPaddingRatio: 0.15,
   }),
   dolbyatmos: createBadgeAsset({
     fileName: 'dolby-atmos.svg',
     aspectRatio: 110.7599945 / 15.6427517,
-    widthRatio: 2.48,
+    widthRatio: 2.68,
     heightRatio: 0.52,
-    horizontalPaddingRatio: 0.04,
+    horizontalPaddingRatio: 0.15,
   }),
   remux: createBadgeAsset({
     fileName: 'remux.svg',
@@ -73,8 +73,8 @@ export const MEDIA_BADGE_ASSETS = {
   bdremux: createBadgeAsset({
     fileName: 'bdremux.svg',
     aspectRatio: 320 / 180,
-    widthRatio: 1.72,
-    heightRatio: 0.74,
+    widthRatio: 2.08,
+    heightRatio: 0.84,
     horizontalPaddingRatio: 0.08,
   }),
 } satisfies Record<MediaBadgeAssetId, MediaBadgeAsset>;
