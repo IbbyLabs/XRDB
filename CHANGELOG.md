@@ -23,6 +23,50 @@
 
 <a id="v1-7-1"></a>
 
+<a id="v1-8-0"></a>
+
+## [v1.8.0] - 05/04/2026
+
+### Added
+* streamline workspace and experience mode UX
+* FR-42 BUG-52 BUG-53 refine media target controls
+* add custom Discord widget popover with polished card
+  
+  Replace iframe based Discord widget with a custom card using the
+  Discord widget JSON API via a local proxy route to avoid CORS.
+  
+  Card features:
+  • Banner image with gradient fade into card background
+  • Animated GIF server avatar with blurple glow ring and online dot
+  • Live member list sorted by status, bots filtered out
+  • Join button with breathing glow animation
+  • Skeleton loading state matching card layout
+  • Polished error state with muted banner and avatar
+  • Live online count badge on the nav pill
+  • Popover scale and fade open/close animation
+  • Click outside and Escape key dismiss
+  
+  Includes /api/discord widget proxy route with 120s cache.
+  Avatar GIF optimized from 9.8MB to 207KB (96x96 resize).
+
+### Fixed
+* use Next Image for Discord widget avatars
+  
+  Replace plain img tags in the Discord widget card with Next Image and allow Discord CDN hosts in the shared Next image config.
+  
+  This keeps the widget aligned with Next lint rules and avoids leaving standalone image warnings in the site chrome.
+* align refresh outputs with routed workspace ui
+  
+  Route capture URLs to real workspace paths and expose docs capture readiness on addon.
+  
+  Auto open metadata translation panel during docs capture and retune screenshot crop regions for configurator and proxy assets.
+
+### Documentation
+* refresh static doc assets
+
+### Other Changes
+* fix sample title test block closure
+
 ## [v1.7.1] - 05/04/2026
 
 ### Fixed
