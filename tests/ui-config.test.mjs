@@ -1017,6 +1017,32 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
   assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('backdropEpisodeArtwork='), false);
 });
 
+test('AIOMetadata export includes poster quality badge position for top poster layouts', () => {
+  const config = buildSampleSettings();
+
+  config.settings.posterRatingsLayout = 'top';
+  config.settings.posterQualityBadgesPosition = 'right';
+
+  const patterns = buildAiometadataUrlPatterns('https://xrdb.example.com/', config.settings, {
+    hideCredentials: true,
+  });
+
+  assert.match(patterns?.posterUrlPattern ?? '', /posterQualityBadgesPosition=right/);
+});
+
+test('AIOMetadata export omits poster quality badge position for unsupported poster layouts', () => {
+  const config = buildSampleSettings();
+
+  config.settings.posterRatingsLayout = 'left-right';
+  config.settings.posterQualityBadgesPosition = 'right';
+
+  const patterns = buildAiometadataUrlPatterns('https://xrdb.example.com/', config.settings, {
+    hideCredentials: true,
+  });
+
+  assert.equal((patterns?.posterUrlPattern ?? '').includes('posterQualityBadgesPosition='), false);
+});
+
 test('AIOMetadata export can keep live credentials while preserving live AIOM defaults', () => {
   const config = buildSampleSettings();
 

@@ -377,6 +377,7 @@ export function buildConfiguratorPageProps({
       qualityProps: {
         previewType: workspaceState.previewType,
         qualityBadgeTypeLabel: activeWorkspaceSettings.qualityBadgeTypeLabel,
+        qualityBadgePlacementControlMode: activeWorkspaceSettings.qualityBadgePlacementControlMode,
         activeStreamBadges: activeWorkspaceSettings.activeStreamBadges,
         activeQualityBadgesStyle: activeWorkspaceSettings.activeQualityBadgesStyle,
         activeQualityBadgesMax: activeWorkspaceSettings.activeQualityBadgesMax,
@@ -394,6 +395,8 @@ export function buildConfiguratorPageProps({
         onSelectQualityBadgesSide: workspaceState.setQualityBadgesSide,
         onSelectPosterQualityBadgePosition: workspaceState.setPosterQualityBadgesPosition,
         onToggleQualityBadgePreference: workspaceActions.toggleQualityBadgePreference,
+        onSelectAllQualityBadgePreferencesEnabled:
+          workspaceActions.setAllQualityBadgePreferencesEnabled,
         activeRemuxDisplayMode: activeWorkspaceSettings.activeRemuxDisplayMode,
         onSelectRemuxDisplayMode: activeWorkspaceSettings.setActiveRemuxDisplayMode,
       },

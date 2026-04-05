@@ -49,6 +49,7 @@ import {
   type QualityBadgeStyle,
   type RatingStyle,
 } from '@/lib/ratingAppearance';
+import { type QualityBadgePlacementControlMode } from '@/lib/qualityBadgeControls';
 import type {
   ArtworkSource,
   BackdropImageSize,
@@ -102,6 +103,7 @@ const normalizeOptionalBadgeCountInput = (value: string) => {
 export function QualitySection({
   previewType,
   qualityBadgeTypeLabel,
+  qualityBadgePlacementControlMode,
   activeStreamBadges,
   activeQualityBadgesStyle,
   activeQualityBadgesMax,
@@ -119,11 +121,13 @@ export function QualitySection({
   onSelectQualityBadgesSide,
   onSelectPosterQualityBadgePosition,
   onToggleQualityBadgePreference,
+  onSelectAllQualityBadgePreferencesEnabled,
   activeRemuxDisplayMode,
   onSelectRemuxDisplayMode,
 }: {
   previewType: PreviewType;
   qualityBadgeTypeLabel: string;
+  qualityBadgePlacementControlMode: QualityBadgePlacementControlMode | null;
   activeStreamBadges: StreamBadgesSetting;
   activeQualityBadgesStyle: QualityBadgeStyle;
   activeQualityBadgesMax: number | null;
@@ -141,9 +145,13 @@ export function QualitySection({
   onSelectQualityBadgesSide: (value: QualityBadgesSide) => void;
   onSelectPosterQualityBadgePosition: (value: PosterQualityBadgesPosition) => void;
   onToggleQualityBadgePreference: (value: QualityBadgeOptionId) => void;
+  onSelectAllQualityBadgePreferencesEnabled: (enabled: boolean) => void;
   activeRemuxDisplayMode: RemuxDisplayMode;
   onSelectRemuxDisplayMode: (value: RemuxDisplayMode) => void;
 }) {
+  const showsPlacementControls =
+    qualityBadgePlacementControlMode === 'side' || qualityBadgePlacementControlMode === 'position';
+
   return (
     <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
       <div className="text-[11px] font-semibold text-zinc-400">
@@ -204,45 +212,79 @@ export function QualitySection({
             </button>
           </div>
         </div>
-        {shouldShowQualityBadgesSide ? (
+        {previewType === 'poster' ? (
           <div className={settingsCardClass}>
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Side</span>
-            <div className={selectorGroupClass}>
-              {qualityBadgeSideOptions.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => onSelectQualityBadgesSide(option.id)}
-                  className={selectorButtonClass(qualityBadgesSide === option.id)}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
-        {shouldShowQualityBadgesPosition ? (
-          <div className={settingsCardClass}>
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Position</span>
-            <div className={selectorGroupClass}>
-              {qualityBadgePositionOptions.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => onSelectPosterQualityBadgePosition(option.id)}
-                  className={selectorButtonClass(posterQualityBadgesPosition === option.id)}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
+              Placement
+            </span>
+            {qualityBadgePlacementControlMode === 'side' ? (
+              <div className={selectorGroupClass}>
+                {qualityBadgeSideOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => onSelectQualityBadgesSide(option.id)}
+                    className={selectorButtonClass(qualityBadgesSide === option.id)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            ) : qualityBadgePlacementControlMode === 'position' ? (
+              <div className={selectorGroupClass}>
+                {qualityBadgePositionOptions.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => onSelectPosterQualityBadgePosition(option.id)}
+                    className={selectorButtonClass(posterQualityBadgesPosition === option.id)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[11px] leading-relaxed text-zinc-500">
+                Switch the poster layout to Top, Bottom, or Top Bottom to move quality badges.
+              </p>
+            )}
+            {showsPlacementControls ? (
+              <p className="text-[11px] leading-relaxed text-zinc-500">
+                {qualityBadgePlacementControlMode === 'side'
+                  ? 'Top Bottom layouts let you choose which edge the quality badges occupy.'
+                  : 'Top and Bottom layouts can keep automatic placement or move quality badges to a fixed side.'}
+              </p>
+            ) : null}
           </div>
         ) : null}
       </div>
       <div className={settingsCardClass}>
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
-          Visible Quality Badges
-        </span>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block">
+              Visible Quality Badges
+            </span>
+            <div className="mt-1 text-[11px] text-zinc-500">
+              {activeQualityBadgePreferences.length} of {QUALITY_BADGE_OPTIONS.length} enabled
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() => onSelectAllQualityBadgePreferencesEnabled(false)}
+              className="rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300 hover:bg-zinc-900"
+            >
+              Hide All Badges
+            </button>
+            <button
+              type="button"
+              onClick={() => onSelectAllQualityBadgePreferencesEnabled(true)}
+              className="rounded-lg border border-white/10 bg-zinc-950 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300 hover:bg-zinc-900"
+            >
+              Enable All
+            </button>
+          </div>
+        </div>
         <div className="flex flex-wrap gap-1.5">
           {QUALITY_BADGE_OPTIONS.map((option) => (
             <button
