@@ -993,7 +993,7 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
   assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailSideRatingsPosition=custom/);
   assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailSideRatingsOffset=62/);
   assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailRatingStyle=plain/);
-  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailImageText=clean/);
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /imageText=clean/);
   assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailArtworkSource=fanart/);
   assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailRatingXOffsetPillGlass=8/);
   assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailRatingYOffsetPillGlass=-6/);
@@ -1101,6 +1101,23 @@ test('AIOMetadata export supports IMDb poster ID mode override', () => {
   assert.equal((patterns?.posterUrlPattern ?? '').includes('idSource=tmdb'), false);
   assert.match(patterns?.backgroundUrlPattern ?? '', /idSource=tmdb/);
   assert.match(patterns?.logoUrlPattern ?? '', /idSource=tmdb/);
+});
+
+test('AIOMetadata export uses canonical imageText query key for poster text preference', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      posterImageText: 'textless',
+    },
+  });
+
+  const patterns = buildAiometadataUrlPatterns('https://xrdb.example.com/', config.settings, {
+    hideCredentials: true,
+  });
+
+  assert.match(patterns?.posterUrlPattern ?? '', /(?:\?|&)imageText=textless(?:&|$)/);
+  assert.equal((patterns?.posterUrlPattern ?? '').includes('posterImageText='), false);
 });
 
 test('AIOMetadata export keeps bottom row overrides and omits overridden backdrop layout params', () => {

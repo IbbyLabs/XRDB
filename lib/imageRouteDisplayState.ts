@@ -388,8 +388,9 @@ export const resolveImageRouteDisplayState = (input: {
           posterRingProgressSource || DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
         )
       : null;
+  const compactRingPrimaryBadge = valueRingBadge || progressRingBadge;
   const compactRingScorePercent =
-    ((valueRingBadge || progressRingBadge)?.normalizedValue ?? 0) * 10;
+    (compactRingPrimaryBadge?.normalizedValue ?? 0) * 10;
   const compactRingAccentColor =
     aggregateAccentMode === 'dynamic'
       ? resolveAggregateDynamicAccentColor(
@@ -397,17 +398,17 @@ export const resolveImageRouteDisplayState = (input: {
           aggregateDynamicStopEntries,
         )
       : aggregateAccentMode === 'custom'
-      ? aggregateAccentColor || valueRingBadge?.badge.accentColor || '#22c55e'
+      ? aggregateAccentColor || compactRingPrimaryBadge?.badge.accentColor || '#22c55e'
       : aggregateAccentMode === 'genre' && primaryGenreFamily?.accentColor
         ? primaryGenreFamily.accentColor
-        : valueRingBadge?.badge.accentColor || progressRingBadge?.badge.accentColor || '#22c55e';
+        : compactRingPrimaryBadge?.badge.accentColor || '#22c55e';
   const compactRingOverlay =
-    useCompactRingPresentation && valueRingBadge
+    useCompactRingPresentation && compactRingPrimaryBadge
       ? buildPosterCompactRingOverlay({
           outputWidth,
           outputHeight,
-          valueText: String(Math.round(valueRingBadge.normalizedValue * 10)),
-          progressPercent: Math.round((progressRingBadge || valueRingBadge).normalizedValue * 10),
+          valueText: String(Math.round(compactRingPrimaryBadge.normalizedValue * 10)),
+          progressPercent: Math.round((progressRingBadge || compactRingPrimaryBadge).normalizedValue * 10),
           accentColor: compactRingAccentColor,
         })
       : null;

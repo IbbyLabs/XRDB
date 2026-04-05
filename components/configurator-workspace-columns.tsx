@@ -23,7 +23,7 @@ export function ConfiguratorWorkspaceColumns({
       <div className="min-w-0">
         <ConfiguratorCenterStage {...centerStageProps} />
       </div>
-      <div className="xrdb-workspace-side-rail xrdb-workspace-scroll-region">
+      <div className="xrdb-workspace-side-rail xrdb-workspace-scroll-region min-h-0">
         <ConfiguratorExportPanels {...exportPanelsProps} workspaceManagementProps={workspaceManagementProps} />
         <ConfiguratorSupportPanels {...supportPanelsProps} />
       </div>

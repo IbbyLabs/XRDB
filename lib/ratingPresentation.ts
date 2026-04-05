@@ -184,6 +184,13 @@ export const normalizeRatingPresentation = (
   ) {
     return 'dual-minimal';
   }
+  if (
+    normalized === 'compactring' ||
+    normalized === 'compact-ring' ||
+    normalized === 'compact_ring'
+  ) {
+    return 'ring';
+  }
   return fallback;
 };
 

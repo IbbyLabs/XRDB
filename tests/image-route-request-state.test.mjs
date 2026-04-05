@@ -236,6 +236,30 @@ test('image route request state parses random poster filter controls', async () 
   assert.equal(state.randomPosterFallbackMode, 'original');
 });
 
+test('image route request state accepts legacy posterImageText parameter on poster routes', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&posterImageText=textless',
+    ),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(state.posterTextPreference, 'textless');
+});
+
+test('image route request state accepts legacy backdropImageText parameter on backdrop routes', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/backdrop/tt0133093.jpg?tmdbKey=tmdb-key&backdropImageText=original',
+    ),
+    imageType: 'backdrop',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(state.posterTextPreference, 'original');
+});
+
 test('image route request state parses poster no background outline controls', async () => {
   const state = await resolveImageRouteRequestState({
     request: createRequest(

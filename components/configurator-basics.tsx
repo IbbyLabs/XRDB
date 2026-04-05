@@ -157,8 +157,9 @@ export function SetupModeSection({
   onSelectExperienceMode: (mode: ConfiguratorExperienceMode) => void;
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-violet-500/20 bg-[linear-gradient(180deg,rgba(32,20,54,0.92),rgba(16,10,28,0.98))]">
-      <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+    <section className="relative isolate overflow-hidden rounded-2xl border border-violet-500/20 bg-[linear-gradient(180deg,rgba(32,20,54,0.92),rgba(16,10,28,0.98))]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(130%_90%_at_0%_0%,rgba(139,92,246,0.2),transparent_58%),radial-gradient(120%_80%_at_100%_100%,rgba(56,189,248,0.1),transparent_62%)]" />
+      <div className="relative z-10 flex flex-col gap-3 px-4 py-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
             Setup Mode
@@ -178,7 +179,7 @@ export function SetupModeSection({
           Reopen Intro
         </button>
       </div>
-      <div className="grid gap-2 border-t border-white/10 px-4 py-3 md:grid-cols-2">
+      <div className="relative z-10 grid gap-2 border-t border-white/10 px-4 py-3 md:grid-cols-2">
         {([
           {
             id: 'simple',

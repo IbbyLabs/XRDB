@@ -35,6 +35,8 @@ test('presentation modes normalize to supported values', () => {
   assert.equal(normalizeRatingPresentation('EDITORIAL'), 'editorial');
   assert.equal(normalizeRatingPresentation('BLOCKBUSTER'), 'blockbuster');
   assert.equal(normalizeRatingPresentation('RING'), 'ring');
+  assert.equal(normalizeRatingPresentation('compact-ring'), 'ring');
+  assert.equal(normalizeRatingPresentation('compactring'), 'ring');
   assert.equal(normalizeRatingPresentation('unknown'), 'standard');
 });
 
