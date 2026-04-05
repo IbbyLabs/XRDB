@@ -4,9 +4,11 @@ import assert from 'node:assert/strict';
 import {
   fanartAssetsToUrls,
   isTextlessPosterSelection,
+  isTextlessFanartAsset,
   normalizeFanartLanguage,
   pickBackdropByPreference,
   pickDeterministicItemBySeed,
+  pickFanartPosterByPreference,
   pickFanartUrlByPreference,
   pickPosterByPreference,
   selectFanartAssets,
@@ -196,4 +198,37 @@ test('image route selection applies fanart preferences safely', () => {
   assert.equal(pickFanartUrlByPreference(urls, 'original'), 'https://img/a');
   assert.equal(pickFanartUrlByPreference(urls, 'alternative'), 'https://img/b');
   assert.equal(first, second);
+});
+
+test('image route selection applies fanart textless and random text preferences', () => {
+  const assets = [
+    { url: 'https://img/text-en', lang: 'en', likes: '2' },
+    { url: 'https://img/textless', lang: '00', likes: '50' },
+    { url: 'https://img/text-fr', lang: 'fr', likes: '20' },
+  ];
+
+  const explicitTextless = pickFanartPosterByPreference(
+    selectFanartAssets(assets, 'en', 'fr'),
+    'textless',
+    'fanart-explicit',
+    'any',
+  );
+  assert.equal(explicitTextless?.url, 'https://img/textless');
+  assert.equal(isTextlessFanartAsset(explicitTextless), true);
+
+  const randomText = pickFanartPosterByPreference(
+    selectFanartAssets(assets, 'en', 'fr'),
+    'random',
+    'fanart-random-text',
+    'text',
+  );
+  assert.notEqual(randomText?.url, 'https://img/textless');
+
+  const randomTextless = pickFanartPosterByPreference(
+    selectFanartAssets(assets, 'en', 'fr'),
+    'random',
+    'fanart-random-textless',
+    'textless',
+  );
+  assert.equal(randomTextless?.url, 'https://img/textless');
 });

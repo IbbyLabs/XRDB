@@ -57,10 +57,10 @@ export const POSTER_IMAGE_TEXT_OPTIONS: Array<{
   label: string;
   description: string;
 }> = [
-  { id: 'original', label: 'Original', description: 'Use the default TMDB poster art.' },
-  { id: 'clean', label: 'Clean', description: 'Prefer TMDB textless art and add a controlled title and logo overlay.' },
-  { id: 'textless', label: 'Textless', description: 'Prefer TMDB art without embedded text when available. No title overlay added.' },
-  { id: 'alternative', label: 'Alternative', description: 'Use a different TMDB poster when one exists.' },
+  { id: 'original', label: 'Original', description: 'Use the default poster art from the selected source.' },
+  { id: 'clean', label: 'Clean', description: 'Prefer textless poster art from sources that expose it and add a controlled title and logo overlay.' },
+  { id: 'textless', label: 'Textless', description: 'Prefer poster art without embedded text from sources that expose it. No title overlay added.' },
+  { id: 'alternative', label: 'Alternative', description: 'Use a different poster from the selected source when one exists.' },
   { id: 'random', label: 'Random', description: 'Pick a seeded random poster variation for this title.' },
 ];
 
@@ -106,10 +106,10 @@ export const BACKDROP_IMAGE_TEXT_OPTIONS: Array<{
   label: string;
   description: string;
 }> = [
-  { id: 'original', label: 'Original', description: 'Use the default TMDB backdrop art.' },
-  { id: 'clean', label: 'Clean', description: 'Prefer TMDB textless backdrop art and add a controlled title and logo overlay.' },
-  { id: 'textless', label: 'Textless', description: 'Prefer TMDB backdrop art without embedded text when available. No title overlay added.' },
-  { id: 'alternative', label: 'Alternative', description: 'Use a different TMDB backdrop when one exists.' },
+  { id: 'original', label: 'Original', description: 'Use the default backdrop art from the selected source.' },
+  { id: 'clean', label: 'Clean', description: 'Prefer textless backdrop art from sources that expose it and add a controlled title and logo overlay.' },
+  { id: 'textless', label: 'Textless', description: 'Prefer backdrop art without embedded text from sources that expose it. No title overlay added.' },
+  { id: 'alternative', label: 'Alternative', description: 'Use a different backdrop from the selected source when one exists.' },
   { id: 'random', label: 'Random', description: 'Pick a seeded random backdrop variation for this title.' },
 ];
 

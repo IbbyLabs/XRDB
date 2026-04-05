@@ -15,6 +15,10 @@ import {
   type RandomPosterTextMode,
 } from './imageRouteConfig.ts';
 import { fetchAniListIdFromReverseMapping } from './imageRouteAnimeReverse.ts';
+import {
+  artworkSourceSupportsTextlessSelection,
+  artworkTextSelectionNeedsProviderTextlessSupport,
+} from './artworkTextSupport.ts';
 import { resolveOmdbPosterUrl } from './imageRouteOmdb.ts';
 import { pickByLanguageWithFallback } from './imageLanguage.ts';
 import { BROWSER_LIKE_USER_AGENT } from './imageRouteExternalRatings.ts';
@@ -27,10 +31,13 @@ import {
   buildTmdbImageUrl,
 } from './imageRouteSourceUrls.ts';
 import {
+  type FanartImageAsset,
   isTextlessPosterSelection,
+  isTextlessFanartAsset,
   pickBackdropByPreference,
+  pickFanartAssetByPreference,
   pickDeterministicItemBySeed,
-  pickFanartUrlByPreference,
+  pickFanartPosterByPreference,
   pickPosterByPreference,
 } from './imageRouteSelection.ts';
 
@@ -50,7 +57,9 @@ type TmdbImageAsset = {
 };
 
 type FanartArtworkPayload = {
+  posterAssets: FanartImageAsset[];
   posterUrls: string[];
+  backdropAssets: FanartImageAsset[];
   backdropUrls: string[];
   logoUrls: string[];
 };
@@ -296,6 +305,10 @@ export const createImageRouteArtworkSelector = (
     }
 
     if (input.imageType === 'poster') {
+      const posterSourceNeedsTextlessSupport = artworkTextSelectionNeedsProviderTextlessSupport(
+        input.posterTextPreference,
+        input.randomPosterTextMode,
+      );
       const selectedPoster = pickPosterByPreference(
         posterCollection,
         input.posterTextPreference,
@@ -335,26 +348,31 @@ export const createImageRouteArtworkSelector = (
 
         if (input.mediaType === 'movie' || input.mediaType === 'tv') {
           const fanartArtwork = await getFanartArtwork();
-          const fanartPosterUrl = pickFanartUrlByPreference(
-            fanartArtwork?.posterUrls || [],
-            'random',
+          const fanartPoster = pickFanartPosterByPreference(
+            fanartArtwork?.posterAssets || [],
+            input.posterTextPreference,
             buildArtworkSeed('fanart-poster'),
+            input.randomPosterTextMode,
           );
-          if (fanartPosterUrl) {
+          if (fanartPoster?.url) {
             randomPosterCandidates.push({
-              imgUrlOverride: fanartPosterUrl,
+              imgUrlOverride: fanartPoster.url,
               logoPath:
                 pickDeterministicItemBySeed(
                   fanartArtwork?.logoUrls || [],
                   buildArtworkSeed('fanart-logo'),
                 ) || logoPath,
-              posterIsTextless: false,
+              posterIsTextless: isTextlessFanartAsset(fanartPoster),
             });
           }
         }
 
         const imdbId = await input.resolveImdbId();
-        if (imdbId) {
+        if (
+          imdbId &&
+          (!posterSourceNeedsTextlessSupport ||
+            artworkSourceSupportsTextlessSelection('poster', 'cinemeta'))
+        ) {
           randomPosterCandidates.push({
             imgUrlOverride: buildCinemetaPosterUrl(imdbId),
             logoPath,
@@ -362,8 +380,12 @@ export const createImageRouteArtworkSelector = (
           });
         }
 
-        const omdbPosterUrl = await getOmdbPosterUrl();
-        if (omdbPosterUrl) {
+        const omdbPosterUrl = posterSourceNeedsTextlessSupport ? null : await getOmdbPosterUrl();
+        if (
+          omdbPosterUrl &&
+          (!posterSourceNeedsTextlessSupport ||
+            artworkSourceSupportsTextlessSelection('poster', 'omdb'))
+        ) {
           randomPosterCandidates.push({
             imgUrlOverride: omdbPosterUrl,
             logoPath,
@@ -386,7 +408,11 @@ export const createImageRouteArtworkSelector = (
         }
       }
 
-      if (input.posterArtworkSource === 'cinemeta') {
+      if (
+        input.posterArtworkSource === 'cinemeta' &&
+        (!posterSourceNeedsTextlessSupport ||
+          artworkSourceSupportsTextlessSelection('poster', input.posterArtworkSource))
+      ) {
         const imdbId = await input.resolveImdbId();
         if (imdbId) {
           return {
@@ -399,7 +425,11 @@ export const createImageRouteArtworkSelector = (
         }
       }
 
-      if (input.posterArtworkSource === 'omdb') {
+      if (
+        input.posterArtworkSource === 'omdb' &&
+        (!posterSourceNeedsTextlessSupport ||
+          artworkSourceSupportsTextlessSelection('poster', input.posterArtworkSource))
+      ) {
         const omdbPosterUrl = await getOmdbPosterUrl();
         if (omdbPosterUrl) {
           return {
@@ -414,27 +444,31 @@ export const createImageRouteArtworkSelector = (
 
       if (input.posterArtworkSource === 'fanart' && (input.mediaType === 'movie' || input.mediaType === 'tv')) {
         const fanartArtwork = await getFanartArtwork();
-        const fanartPosterUrl = pickFanartUrlByPreference(
-          fanartArtwork?.posterUrls || [],
+        const fanartPoster = pickFanartPosterByPreference(
+          fanartArtwork?.posterAssets || [],
           input.posterTextPreference,
           buildArtworkSeed('fanart-poster'),
+          input.randomPosterTextMode,
         );
-        if (fanartPosterUrl) {
+        if (fanartPoster?.url) {
           return {
             imgPath: '',
-            imgUrlOverride: fanartPosterUrl,
+            imgUrlOverride: fanartPoster.url,
             logoAspectRatio: null,
             logoPath:
               pickDeterministicItemBySeed(
                 fanartArtwork?.logoUrls || [],
                 buildArtworkSeed('fanart-logo'),
               ) || logoPath,
-            posterIsTextless: false,
+            posterIsTextless: isTextlessFanartAsset(fanartPoster),
           };
         }
       }
 
-      const imdbId = selectedPoster?.file_path ? null : await input.resolveImdbId();
+      const imdbId =
+        selectedPoster?.file_path || posterSourceNeedsTextlessSupport
+          ? null
+          : await input.resolveImdbId();
       return {
         imgPath: selectedPoster?.file_path || '',
         imgUrlOverride: !selectedPoster?.file_path && imdbId ? buildCinemetaPosterUrl(imdbId) : null,
@@ -445,6 +479,9 @@ export const createImageRouteArtworkSelector = (
     }
 
     if (input.imageType === 'backdrop') {
+      const backdropSourceNeedsTextlessSupport = artworkTextSelectionNeedsProviderTextlessSupport(
+        input.posterTextPreference,
+      );
       if (
         input.isThumbnailRequest &&
         input.thumbnailEpisodeArtwork === 'still' &&
@@ -624,20 +661,24 @@ export const createImageRouteArtworkSelector = (
 
         if (input.mediaType === 'movie' || input.mediaType === 'tv') {
           const fanartArtwork = await getFanartArtwork();
-          const fanartBackdropUrl = pickFanartUrlByPreference(
-            fanartArtwork?.backdropUrls || [],
-            'random',
+          const fanartBackdrop = pickFanartAssetByPreference(
+            fanartArtwork?.backdropAssets || [],
+            input.posterTextPreference,
             buildArtworkSeed('fanart-backdrop'),
           );
-          if (fanartBackdropUrl) {
+          if (fanartBackdrop?.url) {
             randomBackdropCandidates.push({
-              imgUrlOverride: fanartBackdropUrl,
+              imgUrlOverride: fanartBackdrop.url,
             });
           }
         }
 
         const imdbId = await input.resolveImdbId();
-        if (imdbId) {
+        if (
+          imdbId &&
+          (!backdropSourceNeedsTextlessSupport ||
+            artworkSourceSupportsTextlessSelection('backdrop', 'cinemeta'))
+        ) {
           randomBackdropCandidates.push({
             imgUrlOverride: buildCinemetaBackdropUrl(imdbId),
           });
@@ -658,7 +699,11 @@ export const createImageRouteArtworkSelector = (
         }
       }
 
-      if (input.backdropArtworkSource === 'cinemeta') {
+      if (
+        input.backdropArtworkSource === 'cinemeta' &&
+        (!backdropSourceNeedsTextlessSupport ||
+          artworkSourceSupportsTextlessSelection('backdrop', input.backdropArtworkSource))
+      ) {
         const imdbId = await input.resolveImdbId();
         if (imdbId) {
           return {
@@ -673,15 +718,15 @@ export const createImageRouteArtworkSelector = (
 
       if (input.backdropArtworkSource === 'fanart' && (input.mediaType === 'movie' || input.mediaType === 'tv')) {
         const fanartArtwork = await getFanartArtwork();
-        const fanartBackdropUrl = pickFanartUrlByPreference(
-          fanartArtwork?.backdropUrls || [],
+        const fanartBackdrop = pickFanartAssetByPreference(
+          fanartArtwork?.backdropAssets || [],
           input.posterTextPreference,
           buildArtworkSeed('fanart-backdrop'),
         );
-        if (fanartBackdropUrl) {
+        if (fanartBackdrop?.url) {
           return {
             imgPath: '',
-            imgUrlOverride: fanartBackdropUrl,
+            imgUrlOverride: fanartBackdrop.url,
             logoAspectRatio: null,
             logoPath,
             posterIsTextless: false,
@@ -689,7 +734,10 @@ export const createImageRouteArtworkSelector = (
         }
       }
 
-      const imdbId = await input.resolveImdbId();
+      const imdbId =
+        selectedBackdrop?.file_path || backdropSourceNeedsTextlessSupport
+          ? null
+          : await input.resolveImdbId();
       return {
         imgPath: selectedBackdrop?.file_path || '',
         imgUrlOverride: !selectedBackdrop?.file_path && imdbId ? buildCinemetaBackdropUrl(imdbId) : null,

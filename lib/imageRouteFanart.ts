@@ -97,7 +97,9 @@ export const fetchFanartArtwork = async ({
   if (posterUrls.length === 0 && backdropUrls.length === 0 && logoUrls.length === 0) return null;
 
   return {
+    posterAssets: selectedPosters,
     posterUrls,
+    backdropAssets: selectedBackdrops,
     backdropUrls,
     logoUrls,
   };
