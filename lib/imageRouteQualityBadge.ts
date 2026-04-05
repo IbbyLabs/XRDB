@@ -167,6 +167,9 @@ export const buildQualityBadgeSvg = (
     typeof badge.iconDataUri === 'string' &&
     badge.iconDataUri.trim().startsWith('data:');
   const label = (normalizeUserFacingMediaBadgeLabel(badge.label) || '').toUpperCase();
+  const releaseStatusWidthScale =
+    key === 'releasestatus' && label === 'DIGITAL RELEASE' ? 0.84 : 1;
+  const streamingBadgeWidthScale = hasStreamingServiceLogo ? 0.95 : 1;
   const h = Math.max(32, Math.round(height * 0.9));
   const radius = style === 'glass' ? Math.round(h / 2) : Math.round(h * 0.18);
   const isSilverStyle = style === 'silver';
@@ -257,10 +260,10 @@ export const buildQualityBadgeSvg = (
     return Math.max(
       Math.round(h * 1.45),
       Math.round(
-        rawTextWidth +
+        (rawTextWidth +
           boldCompensation +
           sidePadding * 2 +
-          Math.max(12, Math.round(textSize * 0.78))
+          Math.max(12, Math.round(textSize * 0.78))) * releaseStatusWidthScale
       ),
     );
   };
@@ -466,13 +469,19 @@ ${style === 'plain' ? plainStroke : rect}
 
   if (hasStreamingServiceLogo) {
     const iconSize = Math.max(16, Math.round(h * 0.56));
-    const iconPlateSize = Math.max(iconSize + 10, Math.round(h * 0.68));
-    const sidePadding = Math.max(10, Math.round(h * 0.22));
-    const contentGap = Math.max(9, Math.round(h * 0.16));
+    const iconPlateSize = Math.max(iconSize + 8, Math.round(h * 0.62));
+    const sidePadding = Math.max(8, Math.round(h * 0.18));
+    const contentGap = Math.max(7, Math.round(h * 0.12));
     const textSize = Math.round(h * 0.33);
     const width = widthOverride ?? Math.max(
-      Math.round(h * 1.9),
-      estimateQualityTextBadgeWidth(label, textSize, sidePadding + iconPlateSize + contentGap / 2),
+      Math.round(h * 1.72),
+      Math.round(
+        estimateQualityTextBadgeWidth(
+          label,
+          textSize,
+          sidePadding + iconPlateSize + Math.round(contentGap * 0.35),
+        ) * streamingBadgeWidthScale,
+      ),
     );
     const iconPlateX = sidePadding;
     const iconPlateY = Math.round((h - iconPlateSize) / 2);

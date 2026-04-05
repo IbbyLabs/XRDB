@@ -127,7 +127,7 @@ test('image route quality badge leaves extra width for long plain and silver net
 
 test('image route quality badge leaves extra width for release status labels in glass square and plain styles', async () => {
   const badgeCases = [
-    { label: 'Digital Release', minWidth: 185 },
+    { label: 'Digital Release', minWidth: 158 },
     { label: 'In Cinemas', minWidth: 132 },
   ];
 
@@ -144,6 +144,71 @@ test('image route quality badge leaves extra width for release status labels in 
       assert.ok(spec.width >= badgeCase.minWidth, `${style} ${badgeCase.label} width ${spec.width}`);
     }
   }
+});
+
+test('image route quality badge tuned defaults keep affected badges in better proportion', () => {
+  const fourK = buildQualityBadgeSvg({ key: '4k', label: '4K' }, 44, undefined, 'glass');
+  const bdRemux = buildQualityBadgeSvg({ key: 'bdremux', label: 'BD Remux' }, 44, undefined, 'glass');
+  const digitalRelease = buildQualityBadgeSvg(
+    { key: 'releasestatus', label: 'Digital Release' },
+    44,
+    undefined,
+    'glass',
+  );
+  const dolbyVision = buildQualityBadgeSvg(
+    { key: 'dolbyvision', label: 'Dolby Vision' },
+    44,
+    undefined,
+    'glass',
+  );
+  const dolbyAtmos = buildQualityBadgeSvg(
+    { key: 'dolbyatmos', label: 'Dolby Atmos' },
+    44,
+    undefined,
+    'glass',
+  );
+
+  assert.ok(fourK);
+  assert.ok(bdRemux);
+  assert.ok(digitalRelease);
+  assert.ok(dolbyVision);
+  assert.ok(dolbyAtmos);
+
+  assert.ok(fourK.width >= 95, `4K width ${fourK.width}`);
+  assert.ok(bdRemux.width >= 76, `BD Remux width ${bdRemux.width}`);
+  assert.ok(digitalRelease.width <= 160, `Digital Release width ${digitalRelease.width}`);
+  assert.ok(dolbyVision.width >= 103, `Dolby Vision width ${dolbyVision.width}`);
+  assert.ok(dolbyAtmos.width >= 107, `Dolby Atmos width ${dolbyAtmos.width}`);
+});
+
+test('image route quality badge keeps glass streaming logo badges tighter by default', () => {
+  const buildStreamingBadge = (key, label, fill) =>
+    buildQualityBadgeSvg(
+      {
+        key,
+        label,
+        iconDataUri:
+          'data:image/svg+xml;base64,' +
+          Buffer.from(
+            `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><rect width="24" height="24" rx="6" fill="${fill}"/></svg>`,
+          ).toString('base64'),
+      },
+      44,
+      undefined,
+      'glass',
+    );
+
+  const hulu = buildStreamingBadge('hulu', 'Hulu', '#1ce783');
+  const netflix = buildStreamingBadge('netflix', 'Netflix', '#e50914');
+  const primeVideo = buildStreamingBadge('primevideo', 'Prime Video', '#00a8e1');
+
+  assert.ok(hulu);
+  assert.ok(netflix);
+  assert.ok(primeVideo);
+
+  assert.ok(hulu.width <= 130, `Hulu width ${hulu.width}`);
+  assert.ok(netflix.width <= 162, `Netflix width ${netflix.width}`);
+  assert.ok(primeVideo.width <= 200, `Prime Video width ${primeVideo.width}`);
 });
 
 test('image route quality badge bold compensation keeps short labels compact', async () => {
