@@ -93,6 +93,7 @@ const buildSampleSettings = () =>
       backdropStreamBadges: 'off',
       thumbnailStreamBadges: 'off',
       qualityBadgesSide: 'right',
+      ageRatingBadgePosition: 'top-center',
       posterQualityBadgesStyle: 'media',
       backdropQualityBadgesStyle: 'plain',
       thumbnailQualityBadgesStyle: 'plain',
@@ -245,6 +246,7 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       thumbnailStreamBadges: 'off',
       qualityBadgesSide: 'right',
       posterQualityBadgesPosition: 'auto',
+      ageRatingBadgePosition: 'top-center',
       posterQualityBadgePreferences: ['certification', 'hdr', 'remux'],
       backdropQualityBadgePreferences: ['4k', 'dolbyatmos'],
       thumbnailQualityBadgePreferences: ['4k', 'dolbyatmos'],
@@ -710,6 +712,7 @@ test('config string and proxy manifest use the same shared XRDB settings', () =>
     backdropStreamBadges: 'off',
     thumbnailStreamBadges: 'off',
     qualityBadgesSide: 'right',
+    ageRatingBadgePosition: 'top-center',
     posterQualityBadges: 'certification,hdr,remux',
     backdropQualityBadges: '4k,dolbyatmos',
     thumbnailQualityBadges: '4k,dolbyatmos',
@@ -818,6 +821,7 @@ test('config string and proxy manifest use the same shared XRDB settings', () =>
     backdropStreamBadges: 'off',
     thumbnailStreamBadges: 'off',
     qualityBadgesSide: 'right',
+    ageRatingBadgePosition: 'top-center',
     posterQualityBadges: 'certification,hdr,remux',
     backdropQualityBadges: '4k,dolbyatmos',
     thumbnailQualityBadges: '4k,dolbyatmos',
@@ -964,6 +968,7 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
   assert.match(patterns?.posterUrlPattern ?? '', /posterRatingXOffsetSquare=-10/);
   assert.match(patterns?.posterUrlPattern ?? '', /posterRatingYOffsetSquare=12/);
   assert.match(patterns?.posterUrlPattern ?? '', /qualityBadgesSide=right/);
+  assert.match(patterns?.posterUrlPattern ?? '', /ageRatingBadgePosition=top-center/);
   assert.equal((patterns?.posterUrlPattern ?? '').includes('backdropRatings='), false);
   assert.equal((patterns?.posterUrlPattern ?? '').includes('logoRatings='), false);
   assert.equal((patterns?.posterUrlPattern ?? '').includes('backdropRatingsLayout='), false);
@@ -980,6 +985,7 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
   assert.equal((patterns?.backgroundUrlPattern ?? '').includes('posterRatings='), false);
   assert.equal((patterns?.backgroundUrlPattern ?? '').includes('logoRatings='), false);
   assert.equal((patterns?.backgroundUrlPattern ?? '').includes('qualityBadgesSide='), false);
+  assert.equal((patterns?.backgroundUrlPattern ?? '').includes('ageRatingBadgePosition='), false);
 
   assert.match(patterns?.logoUrlPattern ?? '', /logoRatings=/);
   assert.equal((patterns?.logoUrlPattern ?? '').includes('backdropEpisodeArtwork='), false);
@@ -987,6 +993,7 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
   assert.equal((patterns?.logoUrlPattern ?? '').includes('posterRatings='), false);
   assert.equal((patterns?.logoUrlPattern ?? '').includes('backdropRatings='), false);
   assert.equal((patterns?.logoUrlPattern ?? '').includes('qualityBadgesSide='), false);
+  assert.equal((patterns?.logoUrlPattern ?? '').includes('ageRatingBadgePosition='), false);
 
   assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailRatings=tmdb%2Cimdb/);
   assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailRatingsLayout=right-vertical/);
@@ -1006,6 +1013,7 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
   assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('logoRatingStyle='), false);
   assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('posterImageText='), false);
   assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('qualityBadgesSide='), false);
+  assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('ageRatingBadgePosition='), false);
 
   assert.match(patterns?.backgroundUrlPattern ?? '', /idSource=tmdb/);
   assert.match(patterns?.logoUrlPattern ?? '', /idSource=tmdb/);

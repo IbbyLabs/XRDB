@@ -355,6 +355,8 @@ export function WorkspaceManagementSection({
                   ? 'Workspace imported.'
                   : savedConfigStatus === 'preset'
                     ? 'Preset applied.'
+                    : savedConfigStatus === 'reset'
+                      ? 'Defaults restored.'
                     : savedConfigStatus === 'invalid'
                       ? 'Invalid workspace import.'
                       : 'Unable to access local storage.'}

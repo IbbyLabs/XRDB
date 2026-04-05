@@ -36,6 +36,7 @@ type FinalImageRenderSeedInput = {
   logoBottomRatingsRow: boolean;
   qualityBadgesSide: string;
   posterQualityBadgesPosition: string;
+  ageRatingBadgePosition: string;
   qualityBadgesStyle: string;
   qualityBadgesMax: number | null;
   qualityBadgePreferences: string[];
@@ -145,6 +146,7 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     isPoster && (input.posterRatingsLayout === 'top' || input.posterRatingsLayout === 'bottom')
       ? input.posterQualityBadgesPosition
       : '-',
+    isPoster ? input.ageRatingBadgePosition : '-',
     isLogo ? '-' : input.qualityBadgesStyle,
     isLogo ? '-' : String(input.qualityBadgesMax ?? 'auto'),
     isLogo ? '-' : input.qualityBadgePreferences.join(',') || 'none',

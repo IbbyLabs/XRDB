@@ -102,7 +102,7 @@ export function ConfiguratorInputsPanel({
           </ConfiguratorAccordionSection>
           <ConfiguratorAccordionSection
             title="Quality Badges"
-            description="Stream badges, visible media marks, and quality badge positioning."
+            description="Stream badges, visible media marks, quality badge positioning, and age rating placement."
             isOpen={openWorkspaceSection === 'quality'}
             onToggle={() => onToggleWorkspaceSection('quality')}
             referenceHref="/reference#per-type-controls"

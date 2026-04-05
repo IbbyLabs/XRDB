@@ -76,14 +76,14 @@ export function useConfiguratorWorkspaceStorage({
   setSelectedPresetId: (value: ConfiguratorPresetId | null) => void;
 }) {
   const [savedConfigStatus, setSavedConfigStatus] = useState<
-    '' | 'loaded' | 'saved' | 'cleared' | 'imported' | 'preset' | 'error' | 'invalid'
+    '' | 'loaded' | 'saved' | 'cleared' | 'imported' | 'preset' | 'reset' | 'error' | 'invalid'
   >('');
   const [configAutoSave, setConfigAutoSave] = useState(false);
   const [uiSettingsLoaded, setUiSettingsLoaded] = useState(false);
   const workspaceImportInputRef = useRef<HTMLInputElement | null>(null);
 
   const applyWorkspaceConfig = useCallback(
-    (config: SavedUiConfig, status: 'loaded' | 'imported' | 'preset' = 'loaded') => {
+    (config: SavedUiConfig, status: 'loaded' | 'imported' | 'preset' | 'reset' = 'loaded') => {
       applySavedUiConfig(config);
       setSavedConfigStatus(status);
     },

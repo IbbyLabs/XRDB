@@ -15,6 +15,7 @@ import type { useConfiguratorWorkspaceSummary } from '@/lib/useConfiguratorWorks
 import type { ConfiguratorWizardAnswers } from '@/lib/configuratorPresets';
 import type { MediaSearchItem, MediaSearchPreviewType, PinnedTarget } from '@/lib/configuratorMediaSearch';
 import {
+  AGE_RATING_BADGE_POSITION_OPTIONS,
   BACKDROP_IMAGE_SIZE_OPTIONS,
   XRDB_REQUEST_KEY_HELP_COPY,
   FANART_KEY_HELP_COPY,
@@ -27,7 +28,6 @@ import {
   TMDB_ID_SCOPE_MODE_OPTIONS,
   WORKSPACE_CENTER_VIEW_OPTIONS,
 } from '@/lib/configuratorPageOptions';
-import { DEFAULT_POSTER_EDGE_OFFSET } from '@/lib/posterEdgeOffset';
 import { POSTER_COMPACT_RING_SOURCE_OPTIONS } from '@/lib/posterCompactRing';
 import { normalizeManifestUrl } from '@/lib/uiConfig';
 
@@ -355,8 +355,6 @@ export function buildConfiguratorPageProps({
           workspaceState.setThumbnailBottomRatingsRow((current) => !current),
         onSelectThumbnailEpisodeArtwork: workspaceState.setThumbnailEpisodeArtwork,
         onSelectPosterEdgeOffset: workspaceState.setPosterEdgeOffset,
-        onResetPosterEdgeOffset: () =>
-          workspaceState.setPosterEdgeOffset(DEFAULT_POSTER_EDGE_OFFSET),
         onSelectSideRatingsPosition: workspaceSummary.setActiveSideRatingsPosition,
         onSelectSideRatingsOffset: workspaceSummary.setActiveSideRatingsOffset,
         onSelectLogoArtworkSource: workspaceState.setLogoArtworkSource,
@@ -381,17 +379,26 @@ export function buildConfiguratorPageProps({
         activeStreamBadges: activeWorkspaceSettings.activeStreamBadges,
         activeQualityBadgesStyle: activeWorkspaceSettings.activeQualityBadgesStyle,
         activeQualityBadgesMax: activeWorkspaceSettings.activeQualityBadgesMax,
+        activeAgeRatingBadgePosition: activeWorkspaceSettings.activeAgeRatingBadgePosition,
         qualityBadgesSide: workspaceState.qualityBadgesSide,
         posterQualityBadgesPosition: workspaceState.posterQualityBadgesPosition,
+        shouldShowAgeRatingBadgePosition:
+          activeWorkspaceSettings.shouldShowAgeRatingBadgePosition,
         shouldShowQualityBadgesSide: activeWorkspaceSettings.shouldShowQualityBadgesSide,
         shouldShowQualityBadgesPosition: activeWorkspaceSettings.shouldShowQualityBadgesPosition,
         activeQualityBadgePreferences: activeWorkspaceSettings.activeQualityBadgePreferences,
+        ageRatingBadgePositionOptions: AGE_RATING_BADGE_POSITION_OPTIONS.filter((option) =>
+          activeWorkspaceSettings.ageRatingBadgePositionOptions.includes(option.id),
+        ),
+        hasNonCertificationQualityBadges:
+          activeWorkspaceSettings.hasNonCertificationQualityBadges,
         streamBadgeOptions: STREAM_BADGE_OPTIONS,
         qualityBadgeSideOptions: QUALITY_BADGE_SIDE_OPTIONS,
         qualityBadgePositionOptions: QUALITY_BADGE_POSITION_OPTIONS,
         onSelectStreamBadges: activeWorkspaceSettings.setActiveStreamBadges,
         onSelectQualityBadgeStyle: activeWorkspaceSettings.setActiveQualityBadgesStyle,
         onSelectQualityBadgesMax: activeWorkspaceSettings.setActiveQualityBadgesMax,
+        onSelectAgeRatingBadgePosition: activeWorkspaceSettings.setActiveAgeRatingBadgePosition,
         onSelectQualityBadgesSide: workspaceState.setQualityBadgesSide,
         onSelectPosterQualityBadgePosition: workspaceState.setPosterQualityBadgesPosition,
         onToggleQualityBadgePreference: workspaceActions.toggleQualityBadgePreference,

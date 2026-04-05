@@ -9,6 +9,7 @@ import {
   type QualityBadgeStyle,
 } from './ratingAppearance.ts';
 import type {
+  AgeRatingBadgePosition,
   LogoBackground,
   PosterQualityBadgesPosition,
   QualityBadgesSide,
@@ -71,6 +72,52 @@ export const normalizePosterQualityBadgesPosition = (
   if (['right', 'r', 'end'].includes(normalized)) return 'right';
   if (['left', 'l', 'start'].includes(normalized)) return 'left';
   return 'auto';
+};
+
+export const normalizeAgeRatingBadgePosition = (
+  value?: string | null,
+): AgeRatingBadgePosition => {
+  const normalized = (value || '').trim().toLowerCase();
+  if (!normalized || normalized === 'inherit' || normalized === 'default' || normalized === 'auto') {
+    return 'inherit';
+  }
+  if (normalized === 'top-left') {
+    return 'top-left';
+  }
+  if (normalized === 'top-center' || normalized === 'top' || normalized === 'upper') {
+    return 'top-center';
+  }
+  if (normalized === 'top-right') {
+    return 'top-right';
+  }
+  if (normalized === 'bottom-left') {
+    return 'bottom-left';
+  }
+  if (normalized === 'bottom-center' || normalized === 'bottom' || normalized === 'lower') {
+    return 'bottom-center';
+  }
+  if (normalized === 'bottom-right') {
+    return 'bottom-right';
+  }
+  if (normalized === 'left-top') {
+    return 'left-top';
+  }
+  if (normalized === 'left-center' || normalized === 'left' || normalized === 'start') {
+    return 'left-center';
+  }
+  if (normalized === 'left-bottom') {
+    return 'left-bottom';
+  }
+  if (normalized === 'right-top') {
+    return 'right-top';
+  }
+  if (normalized === 'right-center' || normalized === 'right' || normalized === 'end' || normalized === 'middle' || normalized === 'center') {
+    return 'right-center';
+  }
+  if (normalized === 'right-bottom') {
+    return 'right-bottom';
+  }
+  return 'inherit';
 };
 
 export const resolvePosterQualityBadgePlacement = (

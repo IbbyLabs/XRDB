@@ -13,6 +13,7 @@ import {
 } from '@/lib/posterEdgeOffset';
 import {
   AGGREGATE_ACCENT_MODE_OPTIONS,
+  DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
   AGGREGATE_RATING_SOURCE_ACCENTS,
   DEFAULT_AGGREGATE_DYNAMIC_STOPS,
   AGGREGATE_RATING_SOURCE_OPTIONS,
@@ -36,8 +37,12 @@ import {
 } from '@/lib/posterLayoutOptions';
 import {
   DEFAULT_BADGE_SCALE_PERCENT,
+  DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX,
+  DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR,
   DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
+  DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX,
+  DEFAULT_THUMBNAIL_GENRE_BADGE_BORDER_WIDTH_PX,
   MAX_GENRE_BADGE_BORDER_WIDTH_PX,
   MAX_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   MAX_THUMBNAIL_RATING_BADGE_SCALE_PERCENT,
@@ -81,11 +86,16 @@ import {
   type RatingValueMode,
 } from '@/lib/ratingDisplay';
 import {
+  DEFAULT_RATING_STACK_OFFSET_PX,
   MAX_RATING_STACK_OFFSET_PX,
   MIN_RATING_STACK_OFFSET_PX,
   normalizeRatingStackOffsetPx,
 } from '@/lib/ratingStackOffset';
 import { type PosterCompactRingSource } from '@/lib/posterCompactRing';
+import {
+  getSliderValueLabel,
+  snapSliderValueToDefault,
+} from '@/lib/configuratorSliderDefaults';
 import {
   DEFAULT_SIDE_RATING_OFFSET,
   SIDE_RATING_POSITION_OPTIONS,
@@ -575,6 +585,7 @@ export function PresentationSection({
               <RangeField
                 label="Accent Bar Offset"
                 value={aggregateAccentBarOffset}
+                defaultValue={DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET}
                 min={-24}
                 max={24}
                 suffix="px"
@@ -687,7 +698,6 @@ export function LookSection({
   onToggleThumbnailBottomRatingsRow,
   onSelectThumbnailEpisodeArtwork,
   onSelectPosterEdgeOffset,
-  onResetPosterEdgeOffset,
   onSelectSideRatingsPosition,
   onSelectSideRatingsOffset,
   onSelectLogoArtworkSource,
@@ -803,7 +813,6 @@ export function LookSection({
   onToggleThumbnailBottomRatingsRow: () => void;
   onSelectThumbnailEpisodeArtwork: (value: EpisodeArtworkMode) => void;
   onSelectPosterEdgeOffset: (value: number) => void;
-  onResetPosterEdgeOffset: () => void;
   onSelectSideRatingsPosition: (value: SideRatingPosition) => void;
   onSelectSideRatingsOffset: (value: number) => void;
   onSelectLogoArtworkSource: (value: ArtworkSource) => void;
@@ -820,6 +829,14 @@ export function LookSection({
   onSelectPosterNoBackgroundBadgeOutlineColor: (value: string) => void;
   onSelectPosterNoBackgroundBadgeOutlineWidth: (value: number) => void;
 }) {
+  const defaultGenreBadgeBorderWidth =
+    previewType === 'poster'
+      ? DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX
+      : previewType === 'backdrop'
+        ? DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX
+        : previewType === 'thumbnail'
+          ? DEFAULT_THUMBNAIL_GENRE_BADGE_BORDER_WIDTH_PX
+          : DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX;
   const supportsStyleStackOffsets =
     activeRatingStyle === 'glass' || activeRatingStyle === 'square';
   const activeStyleStackOffsetX =
@@ -842,6 +859,35 @@ export function LookSection({
     }
     onSelectRatingYOffsetSquare(normalized);
   };
+  const handlePosterEdgeOffsetChange = (value: number) => {
+    onSelectPosterEdgeOffset(
+      snapSliderValueToDefault({
+        value: normalizePosterEdgeOffset(String(value)),
+        defaultValue: DEFAULT_POSTER_EDGE_OFFSET,
+      }),
+    );
+  };
+  const handleSideRatingsOffsetChange = (value: number) => {
+    const normalizedValue = Number.isFinite(value)
+      ? Math.max(0, Math.min(100, Math.round(value)))
+      : DEFAULT_SIDE_RATING_OFFSET;
+    onSelectSideRatingsOffset(
+      snapSliderValueToDefault({
+        value: normalizedValue,
+        defaultValue: DEFAULT_SIDE_RATING_OFFSET,
+      }),
+    );
+  };
+  const posterEdgeOffsetLabel = getSliderValueLabel({
+    value: posterEdgeOffset,
+    defaultValue: DEFAULT_POSTER_EDGE_OFFSET,
+    suffix: 'px',
+  });
+  const sideRatingsOffsetLabel = getSliderValueLabel({
+    value: activeSideRatingsOffset,
+    defaultValue: DEFAULT_SIDE_RATING_OFFSET,
+    suffix: '%',
+  });
   const styleStackOffsetLabel =
     activeRatingStyle === 'glass' ? 'Pill Badge Position' : 'Square Badge Position';
   const showRandomPosterFilters = previewType === 'poster' && activeImageText === 'random';
@@ -931,6 +977,7 @@ export function LookSection({
                 <RangeField
                   label="X Offset"
                   value={activeStyleStackOffsetX}
+                  defaultValue={DEFAULT_RATING_STACK_OFFSET_PX}
                   min={MIN_RATING_STACK_OFFSET_PX}
                   max={MAX_RATING_STACK_OFFSET_PX}
                   suffix="px"
@@ -939,6 +986,7 @@ export function LookSection({
                 <RangeField
                   label="Y Offset"
                   value={activeStyleStackOffsetY}
+                  defaultValue={DEFAULT_RATING_STACK_OFFSET_PX}
                   min={MIN_RATING_STACK_OFFSET_PX}
                   max={MAX_RATING_STACK_OFFSET_PX}
                   suffix="px"
@@ -1475,7 +1523,7 @@ export function LookSection({
                 max={MAX_POSTER_EDGE_OFFSET}
                 step={1}
                 value={posterEdgeOffset}
-                onChange={(event) => onSelectPosterEdgeOffset(Number(event.target.value))}
+                onChange={(event) => handlePosterEdgeOffsetChange(Number(event.target.value))}
                 className="h-2 w-40 accent-violet-500"
               />
               <input
@@ -1485,17 +1533,11 @@ export function LookSection({
                 step={1}
                 value={posterEdgeOffset}
                 onChange={(event) => {
-                  onSelectPosterEdgeOffset(normalizePosterEdgeOffset(event.target.value));
+                  handlePosterEdgeOffsetChange(Number(event.target.value));
                 }}
                 className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
               />
-              <button
-                type="button"
-                onClick={onResetPosterEdgeOffset}
-                className="rounded-lg border border-white/10 bg-zinc-900 px-2 py-1.5 text-[11px] text-zinc-300 hover:bg-zinc-800"
-              >
-                Reset
-              </button>
+              <span className="w-16 text-[11px] text-zinc-400">{posterEdgeOffsetLabel}</span>
               <span className="text-[11px] text-zinc-500">Extra inset from poster edges</span>
             </div>
             <p className="text-[11px] leading-relaxed text-zinc-500">
@@ -1536,7 +1578,7 @@ export function LookSection({
                   max={100}
                   step={1}
                   value={activeSideRatingsOffset}
-                  onChange={(event) => onSelectSideRatingsOffset(Number(event.target.value))}
+                  onChange={(event) => handleSideRatingsOffsetChange(Number(event.target.value))}
                   className="h-2 w-40 accent-violet-500"
                 />
                 <input
@@ -1546,15 +1588,11 @@ export function LookSection({
                   step={1}
                   value={activeSideRatingsOffset}
                   onChange={(event) => {
-                    const parsed = Number(event.target.value);
-                    onSelectSideRatingsOffset(
-                      Number.isFinite(parsed)
-                        ? Math.max(0, Math.min(100, Math.round(parsed)))
-                        : DEFAULT_SIDE_RATING_OFFSET
-                    );
+                    handleSideRatingsOffsetChange(Number(event.target.value));
                   }}
                   className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
                 />
+                <span className="w-16 text-[11px] text-zinc-400">{sideRatingsOffsetLabel}</span>
                 <span className="text-[11px] text-zinc-500">0 = top, 100 = bottom</span>
               </div>
             ) : null}
@@ -1710,6 +1748,7 @@ export function LookSection({
             <ScaleField
               label="Rating badges"
               value={activeRatingBadgeScale}
+              defaultValue={DEFAULT_BADGE_SCALE_PERCENT}
               min={MIN_BADGE_SCALE_PERCENT}
               max={ratingBadgeScaleMax}
               onChange={handleRatingBadgeScaleChange}
@@ -1717,6 +1756,7 @@ export function LookSection({
             <ScaleField
               label="Genre badge"
               value={activeGenreBadgeScale}
+              defaultValue={DEFAULT_BADGE_SCALE_PERCENT}
               min={MIN_BADGE_SCALE_PERCENT}
               max={MAX_GENRE_BADGE_SCALE_PERCENT}
               onChange={(value) => onSelectGenreBadgeScale(normalizeGenreBadgeScalePercent(String(value)))}
@@ -1725,6 +1765,7 @@ export function LookSection({
               <ScaleField
                 label="Genre border"
                 value={activeGenreBadgeBorderWidth}
+                defaultValue={defaultGenreBadgeBorderWidth}
                 min={MIN_GENRE_BADGE_BORDER_WIDTH_PX}
                 max={MAX_GENRE_BADGE_BORDER_WIDTH_PX}
                 step={0.1}
@@ -1737,6 +1778,7 @@ export function LookSection({
             <ScaleField
               label="Quality badges"
               value={activeQualityBadgeScale}
+              defaultValue={DEFAULT_BADGE_SCALE_PERCENT}
               min={MIN_BADGE_SCALE_PERCENT}
               max={MAX_QUALITY_BADGE_SCALE_PERCENT}
               onChange={(value) => onSelectQualityBadgeScale(normalizeQualityBadgeScalePercent(String(value)))}
@@ -1753,6 +1795,7 @@ export function LookSection({
                 <RangeField
                   label="No Background Outline Width"
                   value={posterNoBackgroundBadgeOutlineWidth}
+                  defaultValue={DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX}
                   min={MIN_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX}
                   max={MAX_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX}
                   suffix="px"
@@ -1860,36 +1903,52 @@ function OptionalCountField({
 function RangeField({
   label,
   value,
+  defaultValue,
   min,
   max,
   suffix,
+  step = 1,
   onChange,
 }: {
   label: string;
   value: number;
+  defaultValue: number;
   min: number;
   max: number;
   suffix: string;
+  step?: number;
   onChange: (value: number) => void;
 }) {
+  const valueLabel = getSliderValueLabel({
+    value,
+    defaultValue,
+    step,
+    suffix,
+  });
+
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
           {label}
         </span>
-        <span className="text-[11px] text-zinc-400">
-          {value}
-          {suffix}
-        </span>
+        <span className="text-[11px] text-zinc-400">{valueLabel}</span>
       </div>
       <input
         type="range"
         min={min}
         max={max}
-        step={1}
+        step={step}
         value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
+        onChange={(event) =>
+          onChange(
+            snapSliderValueToDefault({
+              value: Number(event.target.value),
+              defaultValue,
+              step,
+            }),
+          )
+        }
         className="mt-2 h-2 w-full accent-violet-500"
       />
     </>
@@ -1899,6 +1958,7 @@ function RangeField({
 function ScaleField({
   label,
   value,
+  defaultValue,
   min,
   max,
   step = 1,
@@ -1907,21 +1967,25 @@ function ScaleField({
 }: {
   label: string;
   value: number;
+  defaultValue: number;
   min: number;
   max: number;
   step?: number;
   suffix?: string;
   onChange: (value: number) => void;
 }) {
-  const displayValue = Number.isInteger(value) ? String(value) : value.toFixed(1);
+  const valueLabel = getSliderValueLabel({
+    value,
+    defaultValue,
+    step,
+    suffix,
+  });
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-3">
         <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">{label}</span>
-        <span className="text-[11px] text-zinc-400">
-          {displayValue}
-          {suffix}
-        </span>
+        <span className="text-[11px] text-zinc-400">{valueLabel}</span>
       </div>
       <input
         type="range"
@@ -1929,7 +1993,15 @@ function ScaleField({
         max={max}
         step={step}
         value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
+        onChange={(event) =>
+          onChange(
+            snapSliderValueToDefault({
+              value: Number(event.target.value),
+              defaultValue,
+              step,
+            }),
+          )
+        }
         className="h-2 w-full accent-violet-500"
       />
     </div>

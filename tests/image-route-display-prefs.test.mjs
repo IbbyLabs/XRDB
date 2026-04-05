@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   getEditorialEyebrowText,
+  normalizeAgeRatingBadgePosition,
   normalizeLogoBackground,
   normalizePosterQualityBadgesPosition,
   normalizeQualityBadgesSide,
@@ -17,6 +18,11 @@ test('image route display prefs normalize stream and quality placement settings'
   assert.equal(normalizeQualityBadgesSide('end'), 'right');
   assert.equal(normalizePosterQualityBadgesPosition('start'), 'left');
   assert.equal(normalizePosterQualityBadgesPosition('default'), 'auto');
+  assert.equal(normalizeAgeRatingBadgePosition('top'), 'top-center');
+  assert.equal(normalizeAgeRatingBadgePosition('bottom'), 'bottom-center');
+  assert.equal(normalizeAgeRatingBadgePosition('left'), 'left-center');
+  assert.equal(normalizeAgeRatingBadgePosition('right'), 'right-center');
+  assert.equal(normalizeAgeRatingBadgePosition('default'), 'inherit');
 });
 
 test('image route display prefs resolve poster placement and logo background safely', () => {

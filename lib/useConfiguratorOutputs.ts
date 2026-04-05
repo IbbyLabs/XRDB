@@ -43,6 +43,7 @@ import {
   buildConfigString,
   buildProxyUrl,
   normalizeBaseUrl,
+  type AgeRatingBadgePosition,
   type ArtworkSource,
   type BackdropImageSize,
   type BackdropImageTextPreference,
@@ -347,6 +348,7 @@ export function useConfiguratorOutputs({
   posterQualityBadgePreferences,
   posterQualityBadgeScale,
   posterQualityBadgesPosition,
+  ageRatingBadgePosition,
   posterQualityBadgesStyle,
   posterRemuxDisplayMode,
   posterRatingBadgeScale,
@@ -506,6 +508,7 @@ export function useConfiguratorOutputs({
   posterQualityBadgePreferences: string[];
   posterQualityBadgeScale: number;
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
+  ageRatingBadgePosition: AgeRatingBadgePosition;
   posterQualityBadgesStyle: QualityBadgeStyle;
   posterRemuxDisplayMode: RemuxDisplayMode;
   posterRatingBadgeScale: number;
@@ -883,6 +886,9 @@ export function useConfiguratorOutputs({
     if (shouldShowQualityBadgesPosition && posterQualityBadgesPosition !== 'auto') {
       query.set('posterQualityBadgesPosition', posterQualityBadgesPosition);
     }
+    if (previewType === 'poster' && ageRatingBadgePosition !== 'inherit') {
+      query.set('ageRatingBadgePosition', ageRatingBadgePosition);
+    }
     if (qualityBadgesStyleForType !== DEFAULT_QUALITY_BADGES_STYLE) {
       query.set(
         previewType === 'backdrop'
@@ -1213,6 +1219,7 @@ export function useConfiguratorOutputs({
     posterQualityBadgePreferences,
     posterQualityBadgeScale,
     posterQualityBadgesPosition,
+    ageRatingBadgePosition,
     posterQualityBadgesStyle,
     posterRemuxDisplayMode,
     posterRatingBadgeScale,

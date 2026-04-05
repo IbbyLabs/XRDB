@@ -124,6 +124,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   posterQualityBadgePreferences: WorkspaceSettings['posterQualityBadgePreferences'];
   posterQualityBadgeScale: WorkspaceSettings['posterQualityBadgeScale'];
   posterQualityBadgesPosition: WorkspaceSettings['posterQualityBadgesPosition'];
+  ageRatingBadgePosition: WorkspaceSettings['ageRatingBadgePosition'];
   posterQualityBadgesStyle: WorkspaceSettings['posterQualityBadgesStyle'];
   posterQualityBadgesMax: WorkspaceSettings['posterQualityBadgesMax'];
   posterRemuxDisplayMode: WorkspaceSettings['posterRemuxDisplayMode'];
@@ -272,6 +273,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setPosterQualityBadgePreferences: Setter<WorkspaceSettings['posterQualityBadgePreferences']>;
   setPosterQualityBadgeScale: Setter<WorkspaceSettings['posterQualityBadgeScale']>;
   setPosterQualityBadgesPosition: Setter<WorkspaceSettings['posterQualityBadgesPosition']>;
+  setAgeRatingBadgePosition: Setter<WorkspaceSettings['ageRatingBadgePosition']>;
   setPosterQualityBadgesStyle: Setter<WorkspaceSettings['posterQualityBadgesStyle']>;
   setPosterQualityBadgesMax: Setter<WorkspaceSettings['posterQualityBadgesMax']>;
   setPosterRemuxDisplayMode: Setter<WorkspaceSettings['posterRemuxDisplayMode']>;
@@ -434,6 +436,7 @@ export function useConfiguratorWorkspaceConfigIo({
   posterQualityBadgePreferences,
   posterQualityBadgeScale,
   posterQualityBadgesPosition,
+  ageRatingBadgePosition,
   posterQualityBadgesStyle,
   posterQualityBadgesMax,
   posterRemuxDisplayMode,
@@ -582,6 +585,7 @@ export function useConfiguratorWorkspaceConfigIo({
   setPosterQualityBadgePreferences,
   setPosterQualityBadgeScale,
   setPosterQualityBadgesPosition,
+  setAgeRatingBadgePosition,
   setPosterQualityBadgesStyle,
   setPosterQualityBadgesMax,
   setPosterRemuxDisplayMode,
@@ -694,6 +698,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setThumbnailStreamBadges(normalized.settings.thumbnailStreamBadges);
       setQualityBadgesSide(normalized.settings.qualityBadgesSide);
       setPosterQualityBadgesPosition(normalized.settings.posterQualityBadgesPosition);
+      setAgeRatingBadgePosition(normalized.settings.ageRatingBadgePosition);
       setPosterQualityBadgePreferences(normalized.settings.posterQualityBadgePreferences);
       setBackdropQualityBadgePreferences(normalized.settings.backdropQualityBadgePreferences);
       setThumbnailQualityBadgePreferences(normalized.settings.thumbnailQualityBadgePreferences);
@@ -891,6 +896,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setPosterQualityBadgePreferences,
       setPosterQualityBadgeScale,
       setPosterQualityBadgesPosition,
+      setAgeRatingBadgePosition,
       setPosterQualityBadgesStyle,
       setPosterQualityBadgesMax,
       setPosterRatingBadgeScale,
@@ -1000,6 +1006,7 @@ export function useConfiguratorWorkspaceConfigIo({
         thumbnailStreamBadges,
         qualityBadgesSide,
         posterQualityBadgesPosition,
+        ageRatingBadgePosition,
         posterQualityBadgePreferences,
         backdropQualityBadgePreferences,
         thumbnailQualityBadgePreferences,
@@ -1209,6 +1216,7 @@ export function useConfiguratorWorkspaceConfigIo({
       posterQualityBadgePreferences,
       posterQualityBadgeScale,
       posterQualityBadgesPosition,
+      ageRatingBadgePosition,
       posterQualityBadgesStyle,
       posterQualityBadgesMax,
       posterRemuxDisplayMode,

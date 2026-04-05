@@ -31,6 +31,11 @@ import {
   getAllQualityBadgePreferenceIds,
   type QualityBadgePreferenceId,
 } from '@/lib/qualityBadgeControls';
+import {
+  buildConfiguratorGlobalResetConfig,
+  buildConfiguratorSectionResetConfig,
+  type ConfiguratorResetSectionId,
+} from '@/lib/configuratorResetGroups';
 import { enabledOrderedToRows, rowsToEnabledOrdered, type RatingProviderRow } from '@/lib/ratingProviderRows';
 import { type RatingPreference } from '@/lib/ratingProviderCatalog';
 import { type SavedUiConfig } from '@/lib/uiConfig';
@@ -50,7 +55,10 @@ export function useConfiguratorWorkspaceActions({
   setSelectedPresetId,
   setThumbnailRatingRows,
 }: {
-  applyWorkspaceConfig: (config: SavedUiConfig, status?: 'loaded' | 'imported' | 'preset') => void;
+  applyWorkspaceConfig: (
+    config: SavedUiConfig,
+    status?: 'loaded' | 'imported' | 'preset' | 'reset',
+  ) => void;
   buildCurrentUiConfig: () => SavedUiConfig;
   handleExitWizard: () => void;
   previewType: ProxyType;
@@ -322,9 +330,27 @@ export function useConfiguratorWorkspaceActions({
     [applyWorkspaceConfig, buildCurrentUiConfig, handleExitWizard, setSelectedPresetId],
   );
 
+  const resetCustomizationSection = useCallback(
+    (sectionId: ConfiguratorResetSectionId) => {
+      applyWorkspaceConfig(
+        buildConfiguratorSectionResetConfig(buildCurrentUiConfig(), sectionId, previewType),
+        'reset',
+      );
+      setSelectedPresetId(null);
+    },
+    [applyWorkspaceConfig, buildCurrentUiConfig, previewType, setSelectedPresetId],
+  );
+
+  const resetAllCustomizations = useCallback(() => {
+    applyWorkspaceConfig(buildConfiguratorGlobalResetConfig(buildCurrentUiConfig()), 'reset');
+    setSelectedPresetId(null);
+  }, [applyWorkspaceConfig, buildCurrentUiConfig, setSelectedPresetId]);
+
   return {
     handleApplyPreset,
     reorderRatingPreference,
+    resetAllCustomizations,
+    resetCustomizationSection,
     setAllQualityBadgePreferencesEnabled,
     setAllRatingPreferencesEnabled,
     toggleQualityBadgePreference,

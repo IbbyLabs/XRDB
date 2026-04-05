@@ -37,6 +37,10 @@ import {
   type RatingProviderAppearanceOverride,
   type RatingProviderAppearanceOverrides,
 } from '@/lib/badgeCustomization';
+import {
+  getSliderValueLabel,
+  snapSliderValueToDefault,
+} from '@/lib/configuratorSliderDefaults';
 import { GENRE_BADGE_MODE_OPTIONS, type GenreBadgeMode } from '@/lib/genreBadge';
 import { type RemuxDisplayMode } from '@/lib/mediaFeatures';
 import { POSTER_RATINGS_MAX_PER_SIDE_MIN } from '@/lib/posterLayoutOptions';
@@ -51,6 +55,7 @@ import {
 } from '@/lib/ratingAppearance';
 import { type QualityBadgePlacementControlMode } from '@/lib/qualityBadgeControls';
 import type {
+  AgeRatingBadgePosition,
   ArtworkSource,
   BackdropImageSize,
   BackdropImageTextPreference,
@@ -84,9 +89,15 @@ type ProviderMeta = (typeof RATING_PROVIDER_OPTIONS)[number];
 type QualityBadgeOptionId = (typeof QUALITY_BADGE_OPTIONS)[number]['id'];
 
 const selectorGroupClass = 'flex flex-wrap gap-1 rounded-lg border border-white/10 bg-zinc-900 p-1';
-const selectorButtonClass = (active: boolean) =>
+const selectorButtonClass = (active: boolean, disabled = false) =>
   `rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
-    active ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white'
+    disabled
+      ? active
+        ? 'cursor-not-allowed bg-zinc-950 text-zinc-500 ring-1 ring-white/10'
+        : 'cursor-not-allowed text-zinc-600'
+      : active
+        ? 'bg-zinc-800 text-white'
+        : 'text-zinc-400 hover:text-white'
   }`;
 const settingsCardClass = 'rounded-xl border border-white/10 bg-zinc-900/50 p-3 space-y-2';
 
@@ -107,17 +118,22 @@ export function QualitySection({
   activeStreamBadges,
   activeQualityBadgesStyle,
   activeQualityBadgesMax,
+  activeAgeRatingBadgePosition,
   qualityBadgesSide,
   posterQualityBadgesPosition,
+  shouldShowAgeRatingBadgePosition,
   shouldShowQualityBadgesSide,
   shouldShowQualityBadgesPosition,
   activeQualityBadgePreferences,
+  hasNonCertificationQualityBadges,
+  ageRatingBadgePositionOptions,
   streamBadgeOptions,
   qualityBadgeSideOptions,
   qualityBadgePositionOptions,
   onSelectStreamBadges,
   onSelectQualityBadgeStyle,
   onSelectQualityBadgesMax,
+  onSelectAgeRatingBadgePosition,
   onSelectQualityBadgesSide,
   onSelectPosterQualityBadgePosition,
   onToggleQualityBadgePreference,
@@ -131,17 +147,22 @@ export function QualitySection({
   activeStreamBadges: StreamBadgesSetting;
   activeQualityBadgesStyle: QualityBadgeStyle;
   activeQualityBadgesMax: number | null;
+  activeAgeRatingBadgePosition: AgeRatingBadgePosition;
   qualityBadgesSide: QualityBadgesSide;
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
+  shouldShowAgeRatingBadgePosition: boolean;
   shouldShowQualityBadgesSide: boolean;
   shouldShowQualityBadgesPosition: boolean;
   activeQualityBadgePreferences: QualityBadgeOptionId[];
+  hasNonCertificationQualityBadges: boolean;
+  ageRatingBadgePositionOptions: Array<SelectionOption<AgeRatingBadgePosition>>;
   streamBadgeOptions: Array<SelectionOption<StreamBadgesSetting>>;
   qualityBadgeSideOptions: Array<SelectionOption<QualityBadgesSide>>;
   qualityBadgePositionOptions: Array<SelectionOption<PosterQualityBadgesPosition>>;
   onSelectStreamBadges: (value: StreamBadgesSetting) => void;
   onSelectQualityBadgeStyle: (value: QualityBadgeStyle) => void;
   onSelectQualityBadgesMax: (value: number | null) => void;
+  onSelectAgeRatingBadgePosition: (value: AgeRatingBadgePosition) => void;
   onSelectQualityBadgesSide: (value: QualityBadgesSide) => void;
   onSelectPosterQualityBadgePosition: (value: PosterQualityBadgesPosition) => void;
   onToggleQualityBadgePreference: (value: QualityBadgeOptionId) => void;
@@ -151,6 +172,8 @@ export function QualitySection({
 }) {
   const showsPlacementControls =
     qualityBadgePlacementControlMode === 'side' || qualityBadgePlacementControlMode === 'position';
+  const sharedPlacementControlsDisabled =
+    previewType === 'poster' && showsPlacementControls && !hasNonCertificationQualityBadges;
 
   return (
     <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
@@ -223,8 +246,16 @@ export function QualitySection({
                   <button
                     key={option.id}
                     type="button"
-                    onClick={() => onSelectQualityBadgesSide(option.id)}
-                    className={selectorButtonClass(qualityBadgesSide === option.id)}
+                    onClick={() => {
+                      if (!sharedPlacementControlsDisabled) {
+                        onSelectQualityBadgesSide(option.id);
+                      }
+                    }}
+                    disabled={sharedPlacementControlsDisabled}
+                    className={selectorButtonClass(
+                      qualityBadgesSide === option.id,
+                      sharedPlacementControlsDisabled,
+                    )}
                   >
                     {option.label}
                   </button>
@@ -236,8 +267,16 @@ export function QualitySection({
                   <button
                     key={option.id}
                     type="button"
-                    onClick={() => onSelectPosterQualityBadgePosition(option.id)}
-                    className={selectorButtonClass(posterQualityBadgesPosition === option.id)}
+                    onClick={() => {
+                      if (!sharedPlacementControlsDisabled) {
+                        onSelectPosterQualityBadgePosition(option.id);
+                      }
+                    }}
+                    disabled={sharedPlacementControlsDisabled}
+                    className={selectorButtonClass(
+                      posterQualityBadgesPosition === option.id,
+                      sharedPlacementControlsDisabled,
+                    )}
                   >
                     {option.label}
                   </button>
@@ -250,11 +289,35 @@ export function QualitySection({
             )}
             {showsPlacementControls ? (
               <p className="text-[11px] leading-relaxed text-zinc-500">
-                {qualityBadgePlacementControlMode === 'side'
+                {sharedPlacementControlsDisabled
+                  ? 'This control applies to quality badges only. Enable at least one non-age-rating quality badge to move them.'
+                  : qualityBadgePlacementControlMode === 'side'
                   ? 'Top Bottom layouts let you choose which edge the quality badges occupy.'
                   : 'Top and Bottom layouts can keep automatic placement or move quality badges to a fixed side.'}
               </p>
             ) : null}
+          </div>
+        ) : null}
+        {previewType === 'poster' && shouldShowAgeRatingBadgePosition ? (
+          <div className={settingsCardClass}>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
+              Age Rating
+            </span>
+            <div className={selectorGroupClass}>
+              {ageRatingBadgePositionOptions.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => onSelectAgeRatingBadgePosition(option.id)}
+                  className={selectorButtonClass(activeAgeRatingBadgePosition === option.id)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-[11px] leading-relaxed text-zinc-500">
+              Moves the certification badge on its own while the remaining quality badges keep using their own placement controls.
+            </p>
           </div>
         ) : null}
       </div>
@@ -362,6 +425,28 @@ export function ProvidersSection({
   const activeProviderAppearanceOverride =
     (activeProviderMeta && ratingProviderAppearanceOverrides[activeProviderMeta.id]) || {};
   const usesStackedRatingStyle = activeRatingStyle === 'stacked';
+  const iconScalePercentValue =
+    activeProviderAppearanceOverride.iconScalePercent || DEFAULT_PROVIDER_ICON_SCALE_PERCENT;
+  const stackedWidthPercentValue =
+    activeProviderAppearanceOverride.stackedWidthPercent || DEFAULT_STACKED_WIDTH_PERCENT;
+  const stackedSurfaceOpacityPercentValue =
+    activeProviderAppearanceOverride.stackedSurfaceOpacityPercent ||
+    DEFAULT_STACKED_SURFACE_OPACITY_PERCENT;
+  const iconScalePercentLabel = getSliderValueLabel({
+    value: iconScalePercentValue,
+    defaultValue: DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
+    suffix: '%',
+  });
+  const stackedWidthPercentLabel = getSliderValueLabel({
+    value: stackedWidthPercentValue,
+    defaultValue: DEFAULT_STACKED_WIDTH_PERCENT,
+    suffix: '%',
+  });
+  const stackedSurfaceOpacityPercentLabel = getSliderValueLabel({
+    value: stackedSurfaceOpacityPercentValue,
+    defaultValue: DEFAULT_STACKED_SURFACE_OPACITY_PERCENT,
+    suffix: '%',
+  });
 
   return (
     <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-2">
@@ -483,25 +568,23 @@ export function ProvidersSection({
                       min={MIN_PROVIDER_ICON_SCALE_PERCENT}
                       max={MAX_PROVIDER_ICON_SCALE_PERCENT}
                       step={1}
-                      value={
-                        activeProviderAppearanceOverride.iconScalePercent ||
-                        DEFAULT_PROVIDER_ICON_SCALE_PERCENT
-                      }
+                      value={iconScalePercentValue}
                       onChange={(event) =>
                         onUpdateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
                           ...current,
                           iconScalePercent: normalizeProviderIconScalePercent(
-                            event.target.value,
+                            String(
+                              snapSliderValueToDefault({
+                                value: Number(event.target.value),
+                                defaultValue: DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
+                              }),
+                            ),
                           ),
                         }))
                       }
                       className="h-2 w-full accent-violet-500"
                     />
-                    <span className="w-14 text-right text-[11px] text-zinc-400">
-                      {activeProviderAppearanceOverride.iconScalePercent ||
-                        DEFAULT_PROVIDER_ICON_SCALE_PERCENT}
-                      %
-                    </span>
+                    <span className="w-14 text-right text-[11px] text-zinc-400">{iconScalePercentLabel}</span>
                   </div>
                 </div>
               </div>
@@ -534,26 +617,24 @@ export function ProvidersSection({
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Badge Width</span>
-                      <span className="text-[11px] text-zinc-400">
-                        {activeProviderAppearanceOverride.stackedWidthPercent ||
-                          DEFAULT_STACKED_WIDTH_PERCENT}
-                        %
-                      </span>
+                      <span className="text-[11px] text-zinc-400">{stackedWidthPercentLabel}</span>
                     </div>
                     <input
                       type="range"
                       min={MIN_STACKED_WIDTH_PERCENT}
                       max={MAX_STACKED_WIDTH_PERCENT}
                       step={1}
-                      value={
-                        activeProviderAppearanceOverride.stackedWidthPercent ||
-                        DEFAULT_STACKED_WIDTH_PERCENT
-                      }
+                      value={stackedWidthPercentValue}
                       onChange={(event) =>
                         onUpdateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
                           ...current,
                           stackedWidthPercent: normalizeStackedWidthPercent(
-                            event.target.value,
+                            String(
+                              snapSliderValueToDefault({
+                                value: Number(event.target.value),
+                                defaultValue: DEFAULT_STACKED_WIDTH_PERCENT,
+                              }),
+                            ),
                           ),
                         }))
                       }
@@ -563,26 +644,24 @@ export function ProvidersSection({
                   <div className="space-y-2">
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Body Opacity</span>
-                      <span className="text-[11px] text-zinc-400">
-                        {activeProviderAppearanceOverride.stackedSurfaceOpacityPercent ||
-                          DEFAULT_STACKED_SURFACE_OPACITY_PERCENT}
-                        %
-                      </span>
+                      <span className="text-[11px] text-zinc-400">{stackedSurfaceOpacityPercentLabel}</span>
                     </div>
                     <input
                       type="range"
                       min={MIN_STACKED_SURFACE_OPACITY_PERCENT}
                       max={MAX_STACKED_SURFACE_OPACITY_PERCENT}
                       step={1}
-                      value={
-                        activeProviderAppearanceOverride.stackedSurfaceOpacityPercent ||
-                        DEFAULT_STACKED_SURFACE_OPACITY_PERCENT
-                      }
+                      value={stackedSurfaceOpacityPercentValue}
                       onChange={(event) =>
                         onUpdateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
                           ...current,
                           stackedSurfaceOpacityPercent: normalizeStackedSurfaceOpacityPercent(
-                            event.target.value,
+                            String(
+                              snapSliderValueToDefault({
+                                value: Number(event.target.value),
+                                defaultValue: DEFAULT_STACKED_SURFACE_OPACITY_PERCENT,
+                              }),
+                            ),
                           ),
                         }))
                       }
@@ -638,6 +717,7 @@ export function ProvidersSection({
                   <StackedRangeField
                     label="Line Width"
                     value={activeProviderAppearanceOverride.stackedLineWidthPercent || DEFAULT_STACKED_LINE_WIDTH_PERCENT}
+                    defaultValue={DEFAULT_STACKED_LINE_WIDTH_PERCENT}
                     min={MIN_STACKED_LINE_WIDTH_PERCENT}
                     max={MAX_STACKED_LINE_WIDTH_PERCENT}
                     suffix="%"
@@ -651,6 +731,7 @@ export function ProvidersSection({
                   <StackedRangeField
                     label="Line Thickness"
                     value={activeProviderAppearanceOverride.stackedLineHeightPercent || DEFAULT_STACKED_LINE_HEIGHT_PERCENT}
+                    defaultValue={DEFAULT_STACKED_LINE_HEIGHT_PERCENT}
                     min={MIN_STACKED_LINE_HEIGHT_PERCENT}
                     max={MAX_STACKED_LINE_HEIGHT_PERCENT}
                     suffix="%"
@@ -664,6 +745,7 @@ export function ProvidersSection({
                   <StackedRangeField
                     label="Line Gap"
                     value={activeProviderAppearanceOverride.stackedLineGapPercent || DEFAULT_STACKED_LINE_GAP_PERCENT}
+                    defaultValue={DEFAULT_STACKED_LINE_GAP_PERCENT}
                     min={MIN_STACKED_LINE_GAP_PERCENT}
                     max={MAX_STACKED_LINE_GAP_PERCENT}
                     suffix="%"
@@ -677,6 +759,7 @@ export function ProvidersSection({
                   <StackedRangeField
                     label="Line X Offset"
                     value={activeProviderAppearanceOverride.stackedLineOffsetX || DEFAULT_STACKED_ELEMENT_OFFSET_PX}
+                    defaultValue={DEFAULT_STACKED_ELEMENT_OFFSET_PX}
                     min={MIN_STACKED_ELEMENT_OFFSET_PX}
                     max={MAX_STACKED_ELEMENT_OFFSET_PX}
                     suffix="px"
@@ -690,6 +773,7 @@ export function ProvidersSection({
                   <StackedRangeField
                     label="Line Y Offset"
                     value={activeProviderAppearanceOverride.stackedLineOffsetY || DEFAULT_STACKED_ELEMENT_OFFSET_PX}
+                    defaultValue={DEFAULT_STACKED_ELEMENT_OFFSET_PX}
                     min={MIN_STACKED_ELEMENT_OFFSET_PX}
                     max={MAX_STACKED_ELEMENT_OFFSET_PX}
                     suffix="px"
@@ -703,6 +787,7 @@ export function ProvidersSection({
                   <StackedRangeField
                     label="Logo X Offset"
                     value={activeProviderAppearanceOverride.stackedIconOffsetX || DEFAULT_STACKED_ELEMENT_OFFSET_PX}
+                    defaultValue={DEFAULT_STACKED_ELEMENT_OFFSET_PX}
                     min={MIN_STACKED_ELEMENT_OFFSET_PX}
                     max={MAX_STACKED_ELEMENT_OFFSET_PX}
                     suffix="px"
@@ -716,6 +801,7 @@ export function ProvidersSection({
                   <StackedRangeField
                     label="Logo Y Offset"
                     value={activeProviderAppearanceOverride.stackedIconOffsetY || DEFAULT_STACKED_ELEMENT_OFFSET_PX}
+                    defaultValue={DEFAULT_STACKED_ELEMENT_OFFSET_PX}
                     min={MIN_STACKED_ELEMENT_OFFSET_PX}
                     max={MAX_STACKED_ELEMENT_OFFSET_PX}
                     suffix="px"
@@ -729,6 +815,7 @@ export function ProvidersSection({
                   <StackedRangeField
                     label="Rating X Offset"
                     value={activeProviderAppearanceOverride.stackedValueOffsetX || DEFAULT_STACKED_ELEMENT_OFFSET_PX}
+                    defaultValue={DEFAULT_STACKED_ELEMENT_OFFSET_PX}
                     min={MIN_STACKED_ELEMENT_OFFSET_PX}
                     max={MAX_STACKED_ELEMENT_OFFSET_PX}
                     suffix="px"
@@ -742,6 +829,7 @@ export function ProvidersSection({
                   <StackedRangeField
                     label="Rating Y Offset"
                     value={activeProviderAppearanceOverride.stackedValueOffsetY || DEFAULT_STACKED_ELEMENT_OFFSET_PX}
+                    defaultValue={DEFAULT_STACKED_ELEMENT_OFFSET_PX}
                     min={MIN_STACKED_ELEMENT_OFFSET_PX}
                     max={MAX_STACKED_ELEMENT_OFFSET_PX}
                     suffix="px"
@@ -767,6 +855,7 @@ export function ProvidersSection({
                   <StackedRangeField
                     label="Value X Offset"
                     value={activeProviderAppearanceOverride.valueOffsetX || DEFAULT_STACKED_ELEMENT_OFFSET_PX}
+                    defaultValue={DEFAULT_STACKED_ELEMENT_OFFSET_PX}
                     min={MIN_STACKED_ELEMENT_OFFSET_PX}
                     max={MAX_STACKED_ELEMENT_OFFSET_PX}
                     suffix="px"
@@ -780,6 +869,7 @@ export function ProvidersSection({
                   <StackedRangeField
                     label="Value Y Offset"
                     value={activeProviderAppearanceOverride.valueOffsetY || DEFAULT_STACKED_ELEMENT_OFFSET_PX}
+                    defaultValue={DEFAULT_STACKED_ELEMENT_OFFSET_PX}
                     min={MIN_STACKED_ELEMENT_OFFSET_PX}
                     max={MAX_STACKED_ELEMENT_OFFSET_PX}
                     suffix="px"
@@ -1158,6 +1248,7 @@ export function SimpleQuickTuneSection({
 function StackedRangeField({
   label,
   value,
+  defaultValue,
   min,
   max,
   suffix,
@@ -1165,21 +1256,25 @@ function StackedRangeField({
 }: {
   label: string;
   value: number;
+  defaultValue: number;
   min: number;
   max: number;
   suffix: string;
   onChange: (value: string) => void;
 }) {
+  const valueLabel = getSliderValueLabel({
+    value,
+    defaultValue,
+    suffix,
+  });
+
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-3">
         <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
           {label}
         </span>
-        <span className="text-[11px] text-zinc-400">
-          {value}
-          {suffix}
-        </span>
+        <span className="text-[11px] text-zinc-400">{valueLabel}</span>
       </div>
       <input
         type="range"
@@ -1187,7 +1282,16 @@ function StackedRangeField({
         max={max}
         step={1}
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) =>
+          onChange(
+            String(
+              snapSliderValueToDefault({
+                value: Number(event.target.value),
+                defaultValue,
+              }),
+            ),
+          )
+        }
         className="h-2 w-full accent-violet-500"
       />
     </div>

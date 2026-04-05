@@ -17,6 +17,46 @@ test('quality badge controls resolve placement mode from preview type and poster
   assert.equal(controlsModule.resolveQualityBadgePlacementControlMode('backdrop', 'top'), null);
 });
 
+test('quality badge controls expose age rating placement support only for supported poster layouts', async () => {
+  const controlsModule = await importFresh('../lib/qualityBadgeControls.ts');
+
+  assert.equal(controlsModule.supportsPosterAgeRatingBadgePlacement('left'), true);
+  assert.equal(controlsModule.supportsPosterAgeRatingBadgePlacement('right'), true);
+  assert.equal(controlsModule.supportsPosterAgeRatingBadgePlacement('left-right'), true);
+  assert.equal(controlsModule.supportsPosterAgeRatingBadgePlacement('top'), true);
+  assert.equal(controlsModule.supportsPosterAgeRatingBadgePlacement('bottom'), true);
+  assert.equal(controlsModule.supportsPosterAgeRatingBadgePlacement('top-bottom'), true);
+});
+
+test('quality badge controls expose layout scoped age rating anchors and shared quality badge detection', async () => {
+  const controlsModule = await importFresh('../lib/qualityBadgeControls.ts');
+
+  assert.deepEqual(controlsModule.getSupportedPosterAgeRatingBadgePositions('top'), [
+    'top-left',
+    'top-center',
+    'top-right',
+    'bottom-left',
+    'bottom-center',
+    'bottom-right',
+  ]);
+  assert.equal(
+    controlsModule.isSupportedPosterAgeRatingBadgePosition('left', 'left-center'),
+    true,
+  );
+  assert.equal(
+    controlsModule.isSupportedPosterAgeRatingBadgePosition('left', 'top-center'),
+    false,
+  );
+  assert.equal(
+    controlsModule.hasNonCertificationQualityBadgePreferences(['certification']),
+    false,
+  );
+  assert.equal(
+    controlsModule.hasNonCertificationQualityBadgePreferences(['certification', 'hdr']),
+    true,
+  );
+});
+
 test('quality badge controls return an isolated list of all badge preferences', async () => {
   const controlsModule = await importFresh('../lib/qualityBadgeControls.ts');
   const badgeCustomizationModule = await importFresh('../lib/badgeCustomization.ts');
