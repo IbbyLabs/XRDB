@@ -1,6 +1,6 @@
 {
   "name": "xrdb",
-  "version": "1.8.2",
+  "version": "1.8.3",
   "private": true,
   "description": "XRDB, eXtended Ratings DataBase, is a dynamic media artwork service with live ratings, badges, and proxy tooling.",
   "packageManager": "pnpm@10.32.1",
