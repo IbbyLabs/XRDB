@@ -1,0 +1,76 @@
+{
+  "artifactType": "xrdb-product-context",
+  "schemaVersion": 1,
+  "xrdbTag": "v1.8.3",
+  "generatedAt": "2026-04-05T14:19:34.733Z",
+  "productName": "XRDB",
+  "expandedName": "eXtended Ratings DataBase",
+  "ownerName": "IbbyLabs",
+  "liveUrl": "https://xrdb.ibbylabs.dev",
+  "serverInvite": "https://discord.gg/wPY2pcqjmm",
+  "introLines": [
+    "XRDB, eXtended Ratings DataBase, is a dynamic media artwork service with live ratings, badges, and proxy tooling.",
+    "XRDB publishes live configurator, export, reference, preview, proxy, and thumbnail surfaces from https://xrdb.ibbylabs.dev."
+  ],
+  "sections": [
+    {
+      "heading": "Primary XRDB routes and surfaces",
+      "lines": [
+        "/: Configurator workspace for render settings and live preview.",
+        "/addon: Addon proxy workspace and manifest export flow.",
+        "/api/discord-widget: Community widget endpoint.",
+        "/api/latest-release: Latest release feed used by the site.",
+        "/api/media-resolve: Configurator media resolve endpoint.",
+        "/api/media-search: Configurator media search endpoint.",
+        "/docs-capture/mock-addon-manifest.json: Docs capture mock addon manifest endpoint.",
+        "/export: Export workspace for generated URLs and patterns.",
+        "/preview/[slug]: Fixed preview routes used by docs and live samples.",
+        "/proxy/[...path]: Proxy pass through endpoint for addon traffic.",
+        "/proxy/manifest.json: Proxy addon manifest endpoint.",
+        "/reference: Reference surface for shipped options and behavior.",
+        "/thumbnail/[id]/[episodeToken]: Episode thumbnail render route."
+      ]
+    },
+    {
+      "heading": "Recent XRDB feature highlights",
+      "lines": [
+        "default doc refresh away from Turbopack",
+        "add timeout to playwright screenshot CLI to prevent infinite selector wait",
+        "BUG-55 make setup intro navigable on constrained mobile viewports",
+        "BUG-54 restore scroll containment export text mapping and ring rendering",
+        "thumbnail preview input editability and title preservation"
+      ]
+    },
+    {
+      "heading": "Output and export capabilities",
+      "lines": [
+        "Supported image outputs: poster, backdrop, logo, thumbnail.",
+        "Poster sizes: normal 580x859, large 1280x1896, 4k 2000x2926.",
+        "Backdrop sizes: normal 1280x720, large 1920x1080, 4k 3840x2160.",
+        "Artwork sources in route config: tmdb, fanart, cinemeta, omdb, random, blackbar.",
+        "Explicit input id sources: imdb, tmdb, tvdb, mal, kitsu, anilist, anidb.",
+        "AIOMetadata export patterns are generated from the configurator export flow."
+      ]
+    },
+    {
+      "heading": "Metadata and proxy behavior",
+      "lines": [
+        "BYOK is the default runtime model. Provider keys come from configurator state or request URLs.",
+        "Configured base URLs: TMDB https://api.themoviedb.org/3, anime mapping https://animemapping.stremio.dpdns.org, Kitsu https://kitsu.io/api/edge, OMDb https://www.omdbapi.com.",
+        "Optional server side provider support exists for MyAnimeList, Trakt, SIMKL, Fanart, OMDb.",
+        "Proxy manifest requests require url, tmdbKey, and mdblistKey query params.",
+        "XRDB request keys can be supplied through xrdbKey, xrdb_key, x-xrdb-key, x-api-key, Authorization Bearer.",
+        "Proxy CORS allowlists are controlled by XRDB_PROXY_ALLOWED_ORIGINS."
+      ]
+    },
+    {
+      "heading": "Runtime and deployment notes",
+      "lines": [
+        "Tagged releases run through the npm release scripts and the npm version lifecycle.",
+        "Tagged releases publish GitHub release notes and GHCR container images.",
+        "compose.yaml is the stack path and local-compose.yaml is the standalone local path.",
+        "Project support link: https://kofi.ibbylabs.dev."
+      ]
+    }
+  ]
+}
