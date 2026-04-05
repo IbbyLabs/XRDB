@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.8.4",
-  "generatedAt": "2026-04-05T14:27:18.170Z",
+  "xrdbTag": "v1.9.0",
+  "generatedAt": "2026-04-05T21:28:52.043Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -34,11 +34,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
-        "generate XRDB product context artifact",
-        "default doc refresh away from Turbopack",
-        "add timeout to playwright screenshot CLI to prevent infinite selector wait",
-        "BUG-55 make setup intro navigable on constrained mobile viewports",
-        "BUG-54 restore scroll containment export text mapping and ring rendering"
+        "tighten default quality badge proportions",
+        "FR-45 expand age rating placement and slider defaults",
+        "BUG-56 honor provider textless support",
+        "FR-44 align rating badge scaling across artwork",
+        "BUG-57 restore quality badge controls"
       ]
     },
     {
