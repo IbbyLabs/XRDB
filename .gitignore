@@ -28,3 +28,4 @@ public/commits.json
 .env.production.local
 future.md
 tsconfig.tsbuildinfo
+.local-backup/
