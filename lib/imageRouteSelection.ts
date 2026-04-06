@@ -414,7 +414,15 @@ export const pickFanartAssetByPreference = (
   const uniqueAssets = uniqueFanartAssets(items);
   if (uniqueAssets.length === 0) return null;
 
-  if (preference === 'clean' || preference === 'textless') {
+  if (preference === 'clean') {
+    const hasLanguageTagged = uniqueAssets.some((item) => normalizeFanartLanguage(item?.lang) !== null);
+    if (hasLanguageTagged) {
+      return uniqueAssets[0] || null;
+    }
+    return uniqueAssets.find((item) => isTextlessFanartAsset(item)) || uniqueAssets[0] || null;
+  }
+
+  if (preference === 'textless') {
     return uniqueAssets.find((item) => isTextlessFanartAsset(item)) || uniqueAssets[0] || null;
   }
 
@@ -431,6 +439,10 @@ export const pickFanartAssetByPreference = (
   }
 
   if (preference === 'alternative') {
+    const languageTagged = uniqueAssets.filter((item) => normalizeFanartLanguage(item?.lang) !== null);
+    if (languageTagged.length > 0) {
+      return languageTagged[1] || languageTagged[0] || null;
+    }
     return uniqueAssets[1] || uniqueAssets[0] || null;
   }
 
