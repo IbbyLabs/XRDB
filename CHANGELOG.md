@@ -35,6 +35,94 @@
 
 <a id="v1-9-0"></a>
 
+<a id="v1-10-0"></a>
+
+## [v1.10.0] - 06/04/2026
+
+### Added
+* FR-49 relocate shuffle button to preview panel
+  
+  Move the shuffle sample button from the MediaTargetSection in the
+  inputs panel to the ConfiguratorCenterStage preview panel. The button
+  now renders right aligned in the type selector pill row, styled
+  consistently with the existing type pills.
+  
+  • Add onShuffleMediaTarget prop and Shuffle icon to CenterStage
+  • Wire handler through centerStageProps in configuratorPageProps
+  • Remove shuffle button, prop, and Shuffle import from MediaTargetSection
+  • No functional change to shuffle logic or pool behavior
+* diversify gallery rotation and provider mixes
+  
+  Add a curated README preview pool with deterministic selection, recent history tracking, and generated gallery rendering.
+  Expand the live preview cards to surface broader provider combinations, compact provider captions, and varied poster, backdrop, and logo examples.
+  Wire gallery syncing into doc refresh, version, and release flows, and extend focused coverage for selection, rendering, and preview URL behavior.
+
+### Fixed
+* make readme preview gallery test resilient to slug rotation
+  
+  The active gallery test hardcoded specific slugs from the 1.9.0 seed,
+  causing CI to fail after the 1.10.0 release rotated the logo selection.
+  Replace hardcoded slug spot checks with structural assertions that
+  verify image type coverage and pool addressability across rotations.
+* URL pattern overflow and copy button feedback
+  
+  • Add overflow hidden and min w 0 to URL pattern value containers
+    so long URLs stay within their rounded borders
+  • Add min w 0 and flex 1 to the label column so it shrinks properly
+  • Replace silent clipboard write with stateful copy button that
+    flashes green with a check icon for 1.5s after clicking
+  • Add shrink 0 to copy buttons so they never collapse
+* BUG-58 prefer language tagged Fanart.tv assets over null tagged in clean and alternative modes
+  
+  Fanart.tv contributors sometimes upload foreign language posters with
+  blank or '00' language codes, making them appear textless to the
+  selection logic. In clean mode this caused mistagged foreign posters
+  to be chosen over properly tagged English artwork, resulting in
+  non English poster text despite lang=en.
+  
+  Split the clean/textless branch in pickFanartAssetByPreference so
+  clean mode now checks for language tagged assets first and prefers
+  the best language match. Textless mode is unchanged and continues
+  to trust null lang tags as intended.
+  
+  Harden alternative mode with the same language tagged filter so the
+  second pick slot does not land on a mistagged null lang asset when
+  language tagged alternatives exist.
+* track gallery state outside data dir
+  
+  Move the README preview gallery state into config so clean clones and CI
+  builds do not depend on ignored runtime files.
+  
+  Update the runtime loader, sync script, version staging, and release docs
+  refresh flow to use the tracked path.
+
+### Documentation
+* refresh static doc assets
+* align README, env template, and product context with current behavior
+  
+  • Fix XRDB_SIMKL_ID_CACHE_TTL_MS default from 30 days to 180 days and max from 30 days to 365 days
+  • Add posterRatingBadgeScale, backdropRatingBadgeScale, thumbnailRatingBadgeScale, logoRatingBadgeScale to query param table and AI Integration Prompt
+  • Add sideRatingsPosition, posterSideRatingsPosition, backdropSideRatingsPosition, sideRatingsOffset, posterSideRatingsOffset, backdropSideRatingsOffset to query param table and AI Integration Prompt
+  • Add XRDB_FANART_API_KEY and XRDB_FANART_CLIENT_KEY to env var table and env.template
+  • Add XRDB_IMDB_EPISODES_DATASET_PATH and XRDB_IMDB_EPISODES_DATASET_URL to IMDb dataset env var table
+  • Regenerate product context artifact
+
+### Other Changes
+* remove 6 dead components from app bar migration
+  
+  Remove component files that became unreferenced after the app bar migration:
+  
+  • configurator workspace columns.tsx (old layout wrapper, never JSX mounted)
+  • configurator export panels.tsx (only mounted inside dead workspace columns)
+  • configurator support panels.tsx (only mounted inside dead workspace columns)
+  • configurator page chrome.tsx (type ref only, never mounted)
+  • site page outro.tsx (type ref only, never mounted)
+  • site primary nav.tsx (old nav replaced by app bar, completely unreferenced)
+  
+  Clean up stale imports and return properties in configuratorPageProps.ts and
+  useConfiguratorWorkspaceRuntime.ts. Remove dead file reads from the center
+  stage sticky test. Back up all removed files to .local backup/ (gitignored).
+
 ## [v1.9.0] - 05/04/2026
 
 ### Added
