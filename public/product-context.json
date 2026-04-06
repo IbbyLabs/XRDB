@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.10.0",
-  "generatedAt": "2026-04-06T03:01:19.436Z",
+  "xrdbTag": "v1.10.1",
+  "generatedAt": "2026-04-06T17:31:22.975Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -34,11 +34,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "preserve user API keys on link import",
+        "replace effect based menu reset with render time state adjustment",
+        "restore persistent status labels in brand lockup",
         "make readme preview gallery test resilient to slug rotation",
-        "URL pattern overflow and copy button feedback",
-        "FR-49 relocate shuffle button to preview panel",
-        "BUG-58 prefer language tagged Fanart.tv assets over null tagged in clean and alternative modes",
-        "track gallery state outside data dir"
+        "URL pattern overflow and copy button feedback"
       ]
     },
     {
