@@ -18,26 +18,29 @@ import { COMMIT_PAGE_SIZE, type RecentCommit } from '@/lib/recentCommits';
 
 const INVALID_COMMIT_TIMESTAMP_LABEL = 'unknown';
 
-export function BrandLockup({ compact = false }: { compact?: boolean }) {
+export function BrandLockup({ compact = false, nameSlot }: { compact?: boolean; nameSlot?: ReactNode }) {
   const accentIndex = BRAND_FULL_NAME.indexOf('X');
   const eyebrowLead = accentIndex >= 0 ? BRAND_FULL_NAME.slice(0, accentIndex) : BRAND_FULL_NAME;
   const eyebrowAccent = accentIndex >= 0 ? BRAND_FULL_NAME.slice(accentIndex, accentIndex + 1) : '';
   const eyebrowTail = accentIndex >= 0 ? BRAND_FULL_NAME.slice(accentIndex + 1) : '';
 
   return (
-    <Link href="/" className={`site-brand-lockup${compact ? ' site-brand-lockup-compact' : ''}`}>
-      <span className="site-brand-badge" aria-hidden="true">
+    <div className={`site-brand-lockup${compact ? ' site-brand-lockup-compact' : ''}`}>
+      <Link href="/" className="site-brand-badge" aria-label={BRAND_FULL_NAME}>
         <Image src="/favicon.png" alt="" className="site-brand-logo" width={38} height={38} priority />
-      </span>
+      </Link>
       <span className="site-brand-copy">
-        <span className="site-brand-eyebrow" aria-label={BRAND_FULL_NAME}>
+        <span className="site-brand-eyebrow" aria-hidden="true">
           <span>{eyebrowLead}</span>
           {eyebrowAccent ? <span className="site-brand-eyebrow-accent">{eyebrowAccent}</span> : null}
           <span>{eyebrowTail}</span>
         </span>
-        <span className="site-brand-name">{BRAND_NAME}</span>
+        <span className="site-brand-name-row">
+          <Link href="/" tabIndex={-1} aria-hidden="true" className="site-brand-name">{BRAND_NAME}</Link>
+          {nameSlot}
+        </span>
       </span>
-    </Link>
+    </div>
   );
 }
 
@@ -80,7 +83,7 @@ export function UptimePill({ label = 'IbbyLabs Uptime Tracker' }: { label?: stri
   );
 }
 
-export function DeploymentVersionPill({ compact = false }: { compact?: boolean }) {
+export function DeploymentVersionPill({ compact = false, labelless = false }: { compact?: boolean; labelless?: boolean }) {
   return (
     <span
       className={`xrdb-deployment-pill${compact ? ' xrdb-deployment-pill-compact' : ''}`}
@@ -88,9 +91,11 @@ export function DeploymentVersionPill({ compact = false }: { compact?: boolean }
       title={`${BRAND_DISPLAY_NAME} deployment version`}
     >
       <Terminal className="xrdb-deployment-pill-icon" aria-hidden="true" />
-      <span className="xrdb-deployment-pill-label font-mono">
-        {compact ? 'Live' : 'Current deployment'}
-      </span>
+      {!labelless ? (
+        <span className="xrdb-deployment-pill-label font-mono">
+          {compact ? 'Live' : 'Current deployment'}
+        </span>
+      ) : null}
       <span className="xrdb-deployment-pill-value font-mono">{DEPLOYMENT_VERSION}</span>
     </span>
   );
@@ -98,12 +103,14 @@ export function DeploymentVersionPill({ compact = false }: { compact?: boolean }
 
 export function LatestReleasePill({
   compact = false,
+  labelless = false,
   releaseTag,
   releaseUrl,
   loading,
   pendingTag = '',
 }: {
   compact?: boolean;
+  labelless?: boolean;
   releaseTag: string;
   releaseUrl: string;
   loading: boolean;
@@ -113,14 +120,14 @@ export function LatestReleasePill({
   const value = loading ? 'Checking' : hasPendingRelease ? pendingTag : releaseTag || 'Unknown';
   const label = loading
     ? compact
-      ? 'Latest deployment'
+      ? 'Latest'
       : 'Latest deployment'
     : hasPendingRelease
       ? compact
         ? 'Publishing'
         : 'Deployment publishing'
       : compact
-        ? 'Latest deployment'
+        ? 'Latest'
         : 'Latest deployment';
   const title = loading
     ? 'Checking GitHub for the latest deployment.'
@@ -134,7 +141,7 @@ export function LatestReleasePill({
   const content = (
     <>
       <Tag className="xrdb-release-pill-icon" aria-hidden="true" />
-      <span className="xrdb-release-pill-label font-mono">{label}</span>
+      {!labelless ? <span className="xrdb-release-pill-label font-mono">{label}</span> : null}
       <span className="xrdb-release-pill-value font-mono">{value}</span>
     </>
   );
