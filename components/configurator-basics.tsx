@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type ChangeEvent, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowDownToLine, ArrowUpFromLine, ChevronRight, Globe2, Layers, Link2, Pin, PinOff, Save, Trash2, X } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpFromLine, ChevronRight, Eye, EyeOff, Globe2, Layers, Link2, Pin, PinOff, Save, Trash2, X } from 'lucide-react';
 import type { MediaSearchItem, PinnedTarget } from '@/lib/configuratorMediaSearch';
 import { isMediaIdPattern } from '@/lib/configuratorMediaSearch';
 import Link from 'next/link';
@@ -447,29 +447,60 @@ export function AccessKeysSection({
   xrdbRequestKeyHelpCopy: string;
   fanartKeyHelpCopy: string;
 }) {
+  const [showXrdbKey, setShowXrdbKey] = useState(false);
+  const [showTmdbKey, setShowTmdbKey] = useState(false);
+  const [showMdblistKey, setShowMdblistKey] = useState(false);
+  const [showFanartKey, setShowFanartKey] = useState(false);
+  const [showSimklClientId, setShowSimklClientId] = useState(false);
+
   return (
     <div>
       <div className="mb-2 text-[11px] font-semibold text-zinc-400">Access Keys</div>
       <div className="grid gap-2 md:grid-cols-5">
         <div>
           <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">XRDB Request</label>
-          <input type="password" value={xrdbKey} onChange={(event) => onXrdbKeyChange(event.target.value)} placeholder="Optional key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
+          <div className="relative">
+            <input type={showXrdbKey ? 'text' : 'password'} value={xrdbKey} onChange={(event) => onXrdbKeyChange(event.target.value)} placeholder="Optional key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black py-2 pl-2.5 pr-8 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
+            <button type="button" onClick={() => setShowXrdbKey((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors" aria-label={showXrdbKey ? 'Hide key' : 'Show key'}>
+              {showXrdbKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            </button>
+          </div>
         </div>
         <div>
           <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noreferrer" className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-violet-300 hover:text-violet-200">TMDB</a>
-          <input type="password" value={tmdbKey} onChange={(event) => onTmdbKeyChange(event.target.value)} placeholder="v3 Key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
+          <div className="relative">
+            <input type={showTmdbKey ? 'text' : 'password'} value={tmdbKey} onChange={(event) => onTmdbKeyChange(event.target.value)} placeholder="v3 Key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black py-2 pl-2.5 pr-8 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
+            <button type="button" onClick={() => setShowTmdbKey((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors" aria-label={showTmdbKey ? 'Hide key' : 'Show key'}>
+              {showTmdbKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            </button>
+          </div>
         </div>
         <div>
           <a href="https://mdblist.com/preferences/" target="_blank" rel="noreferrer" className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-violet-300 hover:text-violet-200">MDBList</a>
-          <input type="password" value={mdblistKey} onChange={(event) => onMdblistKeyChange(event.target.value)} placeholder="Key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
+          <div className="relative">
+            <input type={showMdblistKey ? 'text' : 'password'} value={mdblistKey} onChange={(event) => onMdblistKeyChange(event.target.value)} placeholder="Key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black py-2 pl-2.5 pr-8 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
+            <button type="button" onClick={() => setShowMdblistKey((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors" aria-label={showMdblistKey ? 'Hide key' : 'Show key'}>
+              {showMdblistKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            </button>
+          </div>
         </div>
         <div>
           <a href="https://fanart.tv/get-an-api-key/" target="_blank" rel="noreferrer" className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-violet-300 hover:text-violet-200">Fanart</a>
-          <input type="password" value={fanartKey} onChange={(event) => onFanartKeyChange(event.target.value)} placeholder="Optional key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
+          <div className="relative">
+            <input type={showFanartKey ? 'text' : 'password'} value={fanartKey} onChange={(event) => onFanartKeyChange(event.target.value)} placeholder="Optional key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black py-2 pl-2.5 pr-8 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
+            <button type="button" onClick={() => setShowFanartKey((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors" aria-label={showFanartKey ? 'Hide key' : 'Show key'}>
+              {showFanartKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            </button>
+          </div>
         </div>
         <div>
           <a href="https://simkl.com/settings/developer/" target="_blank" rel="noreferrer" className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-violet-300 hover:text-violet-200">SIMKL</a>
-          <input type="password" value={simklClientId} onChange={(event) => onSimklClientIdChange(event.target.value)} placeholder="Optional key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
+          <div className="relative">
+            <input type={showSimklClientId ? 'text' : 'password'} value={simklClientId} onChange={(event) => onSimklClientIdChange(event.target.value)} placeholder="Optional key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black py-2 pl-2.5 pr-8 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
+            <button type="button" onClick={() => setShowSimklClientId((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors" aria-label={showSimklClientId ? 'Hide key' : 'Show key'}>
+              {showSimklClientId ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            </button>
+          </div>
         </div>
       </div>
       <div className="mt-3">
