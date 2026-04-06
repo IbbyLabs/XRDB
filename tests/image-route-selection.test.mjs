@@ -232,3 +232,36 @@ test('image route selection applies fanart textless and random text preferences'
   );
   assert.equal(randomTextless?.url, 'https://img/textless');
 });
+
+test('image route selection clean preference picks language-tagged over null-tagged fanart', () => {
+  const assets = [
+    { url: 'https://img/text-en', lang: 'en', likes: '2' },
+    { url: 'https://img/textless', lang: '00', likes: '50' },
+    { url: 'https://img/text-fr', lang: 'fr', likes: '20' },
+  ];
+
+  const cleanPick = pickFanartPosterByPreference(
+    selectFanartAssets(assets, 'en', 'fr'),
+    'clean',
+    'fanart-clean',
+    'any',
+  );
+  assert.equal(cleanPick?.url, 'https://img/text-en');
+  assert.equal(isTextlessFanartAsset(cleanPick), false);
+});
+
+test('image route selection clean preference picks textless when no language-tagged assets exist', () => {
+  const assets = [
+    { url: 'https://img/textless-a', lang: '00', likes: '10' },
+    { url: 'https://img/textless-b', lang: '', likes: '5' },
+  ];
+
+  const cleanPick = pickFanartPosterByPreference(
+    selectFanartAssets(assets, 'en', 'en'),
+    'clean',
+    'fanart-clean-only-textless',
+    'any',
+  );
+  assert.equal(cleanPick?.url, 'https://img/textless-a');
+  assert.equal(isTextlessFanartAsset(cleanPick), true);
+});
