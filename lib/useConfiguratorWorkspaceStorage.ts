@@ -373,14 +373,26 @@ export function useConfiguratorWorkspaceStorage({
       return;
     }
 
-    applyWorkspaceConfig(parsedImport.config, 'imported');
+    const currentConfig = buildCurrentUiConfig();
+    const importConfig: SavedUiConfig = {
+      ...parsedImport.config,
+      settings: {
+        ...parsedImport.config.settings,
+        xrdbKey: currentConfig.settings.xrdbKey,
+        tmdbKey: currentConfig.settings.tmdbKey,
+        mdblistKey: currentConfig.settings.mdblistKey,
+        fanartKey: currentConfig.settings.fanartKey,
+        simklClientId: currentConfig.settings.simklClientId,
+      },
+    };
+    applyWorkspaceConfig(importConfig, 'imported');
     if (parsedImport.previewType && parsedImport.previewType !== previewType) {
       setPreviewType(parsedImport.previewType);
     }
     if (parsedImport.mediaId) {
       setMediaId(parsedImport.mediaId);
     }
-  }, [applyWorkspaceConfig, importLinkValue, previewType, setMediaId, setPreviewType]);
+  }, [applyWorkspaceConfig, buildCurrentUiConfig, importLinkValue, previewType, setMediaId, setPreviewType]);
 
   return {
     applyWorkspaceConfig,
