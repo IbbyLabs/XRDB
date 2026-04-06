@@ -7,13 +7,11 @@ import { useEffect, useState } from 'react';
 
 import {
   BrandLockup,
-  DeploymentVersionPill,
   DiscordPill,
-  LatestReleasePill,
   SupportPill,
   UptimePill,
 } from '@/components/site-chrome';
-import { LATEST_RELEASE_FEED_URL } from '@/lib/recentCommits';
+import { StatusBanner } from '@/components/status-banner';
 import { BRAND_DISCORD_OFFICIAL_LABEL, BRAND_DISCORD_OFFICIAL_URL, BRAND_GITHUB_LABEL, BRAND_GITHUB_URL } from '@/lib/siteBrand';
 
 const viewTabs = [
@@ -26,43 +24,6 @@ const viewTabs = [
 export function AppBar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [latestReleaseTag, setLatestReleaseTag] = useState('');
-  const [latestReleaseUrl, setLatestReleaseUrl] = useState('');
-  const [pendingReleaseTag, setPendingReleaseTag] = useState('');
-  const [isLatestReleaseLoading, setIsLatestReleaseLoading] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    const controller = new AbortController();
-
-    const loadLatestRelease = async () => {
-      setIsLatestReleaseLoading(true);
-      try {
-        const url = new URL(LATEST_RELEASE_FEED_URL, window.location.origin);
-        const response = await fetch(url.toString(), {
-          signal: controller.signal,
-          cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache' },
-        });
-        if (!response.ok) throw new Error(`Feed unavailable (${response.status})`);
-        const payload = await response.json();
-        if (!active) return;
-        setLatestReleaseTag(typeof payload?.tagName === 'string' ? payload.tagName.trim() : '');
-        setLatestReleaseUrl(typeof payload?.url === 'string' ? payload.url.trim() : '');
-        setPendingReleaseTag(typeof payload?.pendingTagName === 'string' ? payload.pendingTagName.trim() : '');
-      } catch (error: any) {
-        if (!active || error?.name === 'AbortError') return;
-        setLatestReleaseTag('');
-        setLatestReleaseUrl('');
-        setPendingReleaseTag('');
-      } finally {
-        if (active) setIsLatestReleaseLoading(false);
-      }
-    };
-
-    loadLatestRelease();
-    return () => { active = false; controller.abort(); };
-  }, []);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -74,10 +35,10 @@ export function AppBar() {
   };
 
   return (
-    <nav className="xrdb-app-bar sticky top-0 z-50">
+    <nav className="xrdb-app-bar">
       <div className="xrdb-app-bar-inner">
         <div className="xrdb-app-bar-brand">
-          <BrandLockup compact />
+          <BrandLockup compact nameSlot={<StatusBanner />} />
         </div>
 
         <div className="xrdb-app-bar-tabs">
@@ -93,14 +54,6 @@ export function AppBar() {
         </div>
 
         <div className="xrdb-app-bar-status">
-          <DeploymentVersionPill compact />
-          <LatestReleasePill
-            compact
-            releaseTag={latestReleaseTag}
-            releaseUrl={latestReleaseUrl}
-            loading={isLatestReleaseLoading}
-            pendingTag={pendingReleaseTag}
-          />
           <DiscordPill href={BRAND_DISCORD_OFFICIAL_URL} label={BRAND_DISCORD_OFFICIAL_LABEL} title={BRAND_DISCORD_OFFICIAL_LABEL} popover />
         </div>
 
@@ -117,14 +70,6 @@ export function AppBar() {
 
       {isMobileMenuOpen ? (
         <div className="xrdb-app-bar-overflow">
-          <DeploymentVersionPill compact />
-          <LatestReleasePill
-            compact
-            releaseTag={latestReleaseTag}
-            releaseUrl={latestReleaseUrl}
-            loading={isLatestReleaseLoading}
-            pendingTag={pendingReleaseTag}
-          />
           <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="xrdb-app-bar-overflow-link">
             {BRAND_GITHUB_LABEL}
           </a>

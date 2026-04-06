@@ -9,6 +9,45 @@
 	min-width: 0;
 }
 
+.xrdb-app-chrome {
+	position: sticky;
+	top: 0;
+	z-index: 50;
+}
+
+.xrdb-status-banner {
+	display: flex;
+	align-items: center;
+	gap: 0.3rem;
+	overflow: hidden;
+	flex-shrink: 1;
+	min-width: 0;
+}
+
+.xrdb-status-banner .xrdb-deployment-pill,
+.xrdb-status-banner .xrdb-release-pill,
+.xrdb-status-banner a.xrdb-release-pill {
+	min-height: 1.1rem;
+	padding: 0.06rem 0.36rem;
+	box-shadow: none;
+}
+
+.xrdb-status-banner .xrdb-deployment-pill-icon,
+.xrdb-status-banner .xrdb-release-pill-icon {
+	width: 0.62rem;
+	height: 0.62rem;
+}
+
+.xrdb-status-banner .xrdb-deployment-pill-label,
+.xrdb-status-banner .xrdb-release-pill-label {
+	font-size: 0.55rem;
+}
+
+.xrdb-status-banner .xrdb-deployment-pill-value,
+.xrdb-status-banner .xrdb-release-pill-value {
+	font-size: 0.58rem;
+}
+
 .xrdb-app-bar {
 	border-bottom: 1px solid var(--border);
 	background: color-mix(in srgb, var(--card) 82%, rgba(2, 1, 8, 0.65) 18%);
@@ -363,9 +402,18 @@
 }
 
 .site-brand-copy {
-	display: grid;
+	display: flex;
+	flex-direction: column;
 	gap: 0.08rem;
 	min-width: 0;
+}
+
+.site-brand-name-row {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	min-width: 0;
+	overflow: hidden;
 }
 
 .site-brand-eyebrow {
@@ -403,6 +451,8 @@
 	line-height: 1.2;
 	font-weight: 600;
 	color: var(--brand-ink);
+	text-decoration: none;
+	flex-shrink: 0;
 }
 
 .site-brand-lockup-compact .site-brand-name {
