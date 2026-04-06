@@ -1843,14 +1843,11 @@ export function useConfiguratorWorkspaceRuntime() {
   });
 
   const {
-    heroProps,
     inputsPanelProps,
-    outroProps,
     workspaceColumnsProps,
   } = buildConfiguratorPageProps({
     activeWorkspaceSettings,
     baseUrl,
-    feeds,
     mediaTargetSearch: {
       onMediaIdChange: handleMediaIdChange,
       onThumbnailEpisodeChange: handleThumbnailEpisodeChange,
@@ -1885,10 +1882,8 @@ export function useConfiguratorWorkspaceRuntime() {
     docsCaptureReady,
     experienceModeDraft,
     handleContinueExperienceMode,
-    heroProps,
     inputsPanelProps,
     isDocsCapture: Boolean(docsCaptureConfig),
-    outroProps,
     pageRef: pageChrome.pageRef,
     setExperienceModeDraft,
     showExperienceModal,

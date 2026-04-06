@@ -1,11 +1,7 @@
-import type { ComponentProps, Dispatch, MouseEvent, SetStateAction } from 'react';
+import type { ComponentProps, Dispatch, SetStateAction } from 'react';
 
-import type { ConfiguratorHero } from '@/components/configurator-page-chrome';
 import type { ConfiguratorInputsPanel } from '@/components/configurator-inputs-panel';
-import type { ConfiguratorWorkspaceColumns } from '@/components/configurator-workspace-columns';
-import type { SitePageOutro } from '@/components/site-page-outro';
 import type { useConfiguratorActiveWorkspaceSettings } from '@/lib/useConfiguratorActiveWorkspaceSettings';
-import type { useConfiguratorFeeds } from '@/lib/useConfiguratorFeeds';
 import type { useConfiguratorOutputs } from '@/lib/useConfiguratorOutputs';
 import type { useConfiguratorPageChrome } from '@/lib/useConfiguratorPageChrome';
 import type { useConfiguratorWorkspaceActions } from '@/lib/useConfiguratorWorkspaceActions';
@@ -99,7 +95,6 @@ type MediaTargetSearchState = {
 export function buildConfiguratorPageProps({
   activeWorkspaceSettings,
   baseUrl,
-  feeds,
   outputs,
   pageChrome,
   workspaceActions,
@@ -111,7 +106,6 @@ export function buildConfiguratorPageProps({
 }: {
   activeWorkspaceSettings: ReturnType<typeof useConfiguratorActiveWorkspaceSettings>;
   baseUrl: string;
-  feeds: ReturnType<typeof useConfiguratorFeeds>;
   outputs: ReturnType<typeof useConfiguratorOutputs>;
   pageChrome: ReturnType<typeof useConfiguratorPageChrome>;
   workspaceActions: ReturnType<typeof useConfiguratorWorkspaceActions>;
@@ -120,24 +114,8 @@ export function buildConfiguratorPageProps({
   workspaceSummary: ReturnType<typeof useConfiguratorWorkspaceSummary>;
   workspaceUi: WorkspaceUiState;
   mediaTargetSearch: MediaTargetSearchState;
-}): {
-  heroProps: ComponentProps<typeof ConfiguratorHero>;
-  inputsPanelProps: ComponentProps<typeof ConfiguratorInputsPanel>;
-  outroProps: ComponentProps<typeof SitePageOutro>;
-  workspaceColumnsProps: ComponentProps<typeof ConfiguratorWorkspaceColumns>;
-} {
+}) {
   return {
-    heroProps: {
-      heroRef: pageChrome.heroRef,
-      versionStatusNote: outputs.versionStatusNote,
-      onAnchorClick: pageChrome.handleAnchorClick,
-      recentCommits: feeds.recentCommits,
-      visibleRecentCommitCount: feeds.visibleRecentCommitCount,
-      onLoadMoreRecentCommits: feeds.setVisibleRecentCommitCount,
-      isRecentCommitsLoading: feeds.isRecentCommitsLoading,
-      recentCommitsError: feeds.recentCommitsError,
-      nowMs: feeds.nowMs,
-    },
     inputsPanelProps: {
       isOpen: workspaceUi.openWorkspacePanels.has('configurator'),
       onToggle: () => workspaceUi.handleToggleWorkspacePanel('configurator'),
@@ -533,7 +511,7 @@ export function buildConfiguratorPageProps({
         onToggleCurrentSetup: () => workspaceUi.handleToggleWorkspacePanel('current-setup'),
         onToggleQuickActions: () => workspaceUi.handleToggleWorkspacePanel('quick-actions'),
         proxyManifestUrl: workspaceState.proxyManifestUrl,
-        onChangeProxyManifestUrl: (value) =>
+        onChangeProxyManifestUrl: (value: string) =>
           workspaceState.setProxyManifestUrl(normalizeManifestUrl(value, true)),
         proxyTranslateMeta: workspaceState.proxyTranslateMeta,
         onToggleProxyTranslateMeta: workspaceState.setProxyTranslateMeta,
@@ -573,14 +551,6 @@ export function buildConfiguratorPageProps({
           pageChrome.scrollToHash('#workspace-preview');
         },
       },
-    },
-    outroProps: {
-      onAnchorClick: pageChrome.handleAnchorClick as
-        | ((event: MouseEvent<HTMLAnchorElement>) => void)
-        | undefined,
-      configuratorHref: '#preview',
-      proxyHref: '#proxy',
-      docsHref: '/docs',
     },
   };
 }
