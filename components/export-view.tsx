@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Check, ChevronDown, Clipboard, Code2, Eye, EyeOff } from 'lucide-react';
 
@@ -227,6 +227,16 @@ function AiometadataSection({
   aiometadataCopied: boolean;
   onCopyAiometadata: () => void;
 }) {
+  const [copiedRowKey, setCopiedRowKey] = useState<string | null>(null);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleCopyRow = useCallback((key: string, value: string) => {
+    void navigator.clipboard.writeText(value);
+    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+    setCopiedRowKey(key);
+    copiedTimerRef.current = setTimeout(() => setCopiedRowKey(null), 1500);
+  }, []);
+
   return (
     <div className="xrdb-panel rounded-2xl p-4 space-y-3">
       <div className="flex items-center justify-between gap-3">
@@ -265,25 +275,34 @@ function AiometadataSection({
         <p className="text-[13px] text-zinc-500">Add API keys and configure settings to generate URLs.</p>
       ) : (
         <div className="space-y-2">
-          {aiometadataPatternRows.map((row) => (
-            <div key={row.key} className="rounded-xl border border-white/10 bg-black/40 p-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-[12px] font-semibold text-zinc-200">{row.label}</div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    void navigator.clipboard.writeText(row.value);
-                  }}
-                  className="rounded-full border border-white/15 px-3 py-1 text-[11px] font-medium text-zinc-300 hover:text-white transition-colors"
-                >
-                  Copy
-                </button>
+          {aiometadataPatternRows.map((row) => {
+            const isRowCopied = copiedRowKey === row.key;
+            return (
+              <div key={row.key} className="rounded-xl border border-white/10 bg-black/40 p-3 min-w-0">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1 text-[12px] font-semibold text-zinc-200">{row.label}</div>
+                  <button
+                    type="button"
+                    onClick={() => handleCopyRow(row.key, row.value)}
+                    className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-medium flex items-center gap-1.5 transition-all ${
+                      isRowCopied
+                        ? 'border-green-500/60 bg-green-500 text-white'
+                        : 'border-white/15 text-zinc-300 hover:text-white'
+                    }`}
+                  >
+                    {isRowCopied ? (
+                      <><Check className="w-3 h-3" /> Copied</>
+                    ) : (
+                      <><Clipboard className="w-3 h-3" /> Copy</>
+                    )}
+                  </button>
+                </div>
+                <div className="mt-2 rounded-lg border border-white/10 bg-zinc-950/80 p-3 font-mono text-[11px] leading-5 text-zinc-300 break-all overflow-hidden">
+                  {row.value}
+                </div>
               </div>
-              <div className="mt-2 rounded-lg border border-white/10 bg-zinc-950/80 p-3 font-mono text-[11px] leading-5 text-zinc-300 break-all">
-                {row.value}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

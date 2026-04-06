@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback, useRef, useState } from 'react';
 import { Check, ChevronRight, Clipboard, Code2, Eye, EyeOff } from 'lucide-react';
 
 import { WorkspaceManagementSection } from '@/components/configurator-basics';
@@ -139,6 +140,16 @@ export function ConfiguratorExportPanels({
   workspaceManagementProps?: ComponentProps<typeof WorkspaceManagementSection>;
 }) {
   const effectivePosterIdMode = posterIdMode === 'tmdb' ? 'auto' : posterIdMode;
+
+  const [copiedRowKey, setCopiedRowKey] = useState<string | null>(null);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleCopyRow = useCallback((key: string, value: string) => {
+    void navigator.clipboard.writeText(value);
+    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+    setCopiedRowKey(key);
+    copiedTimerRef.current = setTimeout(() => setCopiedRowKey(null), 1500);
+  }, []);
 
   return (
     <div id="workspace-export" className="scroll-mt-24">
@@ -445,28 +456,37 @@ export function ConfiguratorExportPanels({
                   </div>
 
                   <div className="space-y-3">
-                    {aiometadataPatternRows.map((row) => (
-                      <div key={row.key} className="rounded-xl border border-white/10 bg-black/60 p-3">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div>
-                            <div className="text-[11px] font-semibold text-zinc-200">{row.label}</div>
-                            <div className="mt-1 text-[11px] leading-5 text-zinc-500">{row.description}</div>
+                    {aiometadataPatternRows.map((row) => {
+                      const isRowCopied = copiedRowKey === row.key;
+                      return (
+                        <div key={row.key} className="rounded-xl border border-white/10 bg-black/60 p-3 min-w-0">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <div className="text-[11px] font-semibold text-zinc-200">{row.label}</div>
+                              <div className="mt-1 text-[11px] leading-5 text-zinc-500">{row.description}</div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyRow(row.key, row.value)}
+                              className={`shrink-0 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold flex items-center gap-1.5 transition-all ${
+                                isRowCopied
+                                  ? 'border-green-500/60 bg-green-500 text-white'
+                                  : 'border-white/10 bg-zinc-900 text-zinc-200 hover:bg-zinc-800'
+                              }`}
+                            >
+                              {isRowCopied ? (
+                                <><Check className="w-3 h-3" /> Copied</>
+                              ) : (
+                                <><Clipboard className="w-3 h-3" /> Copy</>
+                              )}
+                            </button>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              void navigator.clipboard.writeText(row.value);
-                            }}
-                            className="rounded-lg border border-white/10 bg-zinc-900 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-200 hover:bg-zinc-800"
-                          >
-                            Copy
-                          </button>
+                          <div className="mt-3 rounded-lg border border-white/10 bg-zinc-950/80 p-3 font-mono text-[11px] leading-5 text-zinc-300 break-all overflow-hidden">
+                            {row.value}
+                          </div>
                         </div>
-                        <div className="mt-3 rounded-lg border border-white/10 bg-zinc-950/80 p-3 font-mono text-[11px] leading-5 text-zinc-300 break-all">
-                          {row.value}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               </div>
