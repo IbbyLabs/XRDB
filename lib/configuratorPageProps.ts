@@ -203,7 +203,6 @@ export function buildConfiguratorPageProps({
         onMediaSearchQueryChange: mediaTargetSearch.onMediaSearchQueryChange,
         onMediaSearchSubmit: mediaTargetSearch.onMediaSearchSubmit,
         onSelectMediaSearchResult: mediaTargetSearch.onSelectMediaSearchResult,
-        onShuffleMediaTarget: mediaTargetSearch.onShuffleMediaTarget,
         pinnedTargets: mediaTargetSearch.pinnedTargets,
         isPinnedLimitReached: mediaTargetSearch.isPinnedLimitReached,
         isPinned: mediaTargetSearch.isPinned,
@@ -496,6 +495,7 @@ export function buildConfiguratorPageProps({
         genrePreviewCards: outputs.genrePreviewCards,
         onAnchorClick: pageChrome.handleAnchorClick,
         onOpenPreview: () => workspaceState.setWorkspaceCenterView('preview'),
+        onShuffleMediaTarget: mediaTargetSearch.onShuffleMediaTarget,
       },
       exportPanelsProps: {
         isConfigStringOpen: workspaceUi.openWorkspacePanels.has('config-string'),
