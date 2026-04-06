@@ -15,13 +15,14 @@ import {
 } from '../lib/readmePreview.ts';
 
 test('README preview active gallery resolves to the generated selection and pool slugs stay addressable', () => {
-  const activeSlugs = getReadmePreviewDefinitions().map((definition) => definition.slug);
+  const definitions = getReadmePreviewDefinitions();
+  const activeSlugs = definitions.map((definition) => definition.slug);
 
   assert.equal(activeSlugs.length, 10);
-  assert.ok(activeSlugs.includes('attack-on-titan-poster'));
-  assert.ok(activeSlugs.includes('dune-part-two-logo'));
-  assert.ok(activeSlugs.includes('attack-on-titan-logo'));
-  assert.equal(resolveReadmePreviewDefinition('attack-on-titan-poster')?.imageType, 'poster');
+  assert.ok(definitions.some((d) => d.imageType === 'poster'));
+  assert.ok(definitions.some((d) => d.imageType === 'backdrop'));
+  assert.ok(definitions.some((d) => d.imageType === 'logo'));
+  assert.ok(activeSlugs.every((slug) => resolveReadmePreviewDefinition(slug) !== null));
   assert.equal(resolveReadmePreviewDefinition('the-boys-poster')?.imageType, 'poster');
   assert.equal(resolveReadmePreviewDefinition('missing-slug'), null);
 });
