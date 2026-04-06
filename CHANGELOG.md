@@ -37,6 +37,46 @@
 
 <a id="v1-10-0"></a>
 
+<a id="v1-10-1"></a>
+
+## [v1.10.1] - 06/04/2026
+
+### Fixed
+* preserve user API keys on link import
+  
+  When importing a shared URL, the parsed config now has xrdbKey, tmdbKey,
+  mdblistKey, fanartKey, and simklClientId replaced with the user's current
+  values before applying. Keys the user had set are kept untouched; keys that
+  were blank remain blank. All other configuration from the imported URL is
+  applied as expected.
+* replace effect based menu reset with render time state adjustment
+  
+  Close mobile menu on route change by tracking previous pathname in state
+  instead of calling setState inside a useEffect body. Satisfies the
+  react hooks/set state in effect lint rule. Pattern follows React's
+  recommended 'adjust state while rendering' approach using useState for
+  the previous value comparison.
+* restore persistent status labels in brand lockup
+  
+  Move Live and Latest deployment status pills out of the hidden
+  desktop only app bar status section and into the brand lockup name
+  row, so they are always visible on all viewport widths.
+  
+  • Add StatusBanner component owning its own release fetch state
+    (lifted from AppBar) and rendering both pills with labelless+compact
+  • Restructure BrandLockup to accept a nameSlot rendered inline on
+    the same row as the XRDB short name
+  • Add labelless prop to DeploymentVersionPill and LatestReleasePill
+    so the inline context shows only icon + version value
+  • Add xrdb app chrome sticky wrapper in AppShellLayout; AppBar nav
+    no longer carries sticky positioning itself
+  • Add xrdb status banner and xrdb app chrome CSS; xrdb app bar brand
+    kept at same height as before
+  • Remove release fetch state and pill JSX from AppBar entirely
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.10.0] - 06/04/2026
 
 ### Added
