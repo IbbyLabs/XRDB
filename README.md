@@ -110,12 +110,12 @@ The doc refresh and release workflows rotate through a curated, varied set of pr
 
 <table>
   <tr>
-    <td><strong>Dune Part Two</strong><br>Dark canvas, square ratings, TMDB / Rotten Tomatoes / Metacritic / Letterboxd</td>
+    <td><strong>Stranger Things</strong><br>Dark canvas, square ratings, TMDB / Rotten Tomatoes / Metacritic User / Letterboxd</td>
     <td><strong>Attack on Titan</strong><br>Japanese text, TMDB / MyAnimeList / AniList / Kitsu, transparent canvas</td>
     <td><strong>Game of Thrones</strong><br>French text, plain ratings, TMDB / IMDb / Trakt / Metacritic, transparent canvas</td>
   </tr>
   <tr>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/dune-part-two-logo?cb=readme-preview-dune-part-two-logo-v1-9-0"><img src="https://xrdb.ibbylabs.dev/preview/dune-part-two-logo?cb=readme-preview-dune-part-two-logo-v1-9-0" alt="Dune Part Two logo live preview" width="320"></a></td>
+    <td><a href="https://xrdb.ibbylabs.dev/preview/stranger-things-logo?cb=readme-preview-stranger-things-logo-v1-9-0"><img src="https://xrdb.ibbylabs.dev/preview/stranger-things-logo?cb=readme-preview-stranger-things-logo-v1-9-0" alt="Stranger Things logo live preview" width="320"></a></td>
     <td><a href="https://xrdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v1-9-0"><img src="https://xrdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v1-9-0" alt="Attack on Titan logo live preview" width="320"></a></td>
     <td><a href="https://xrdb.ibbylabs.dev/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v1-9-0"><img src="https://xrdb.ibbylabs.dev/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v1-9-0" alt="Game of Thrones logo live preview" width="320"></a></td>
   </tr>
@@ -715,7 +715,7 @@ Anime gets extra fallback help when possible. If TMDB is missing good text, XRDB
 
 ### Metadata Translation In Action
 
-These screenshots were regenerated from the local April 5, 2026 codebase using deterministic proxy fixtures.
+These screenshots were regenerated from the local April 6, 2026 codebase using deterministic proxy fixtures.
 
 To make each merge mode visible on demand, a local fixture addon returned controlled source addon metadata for three real IDs:
 
