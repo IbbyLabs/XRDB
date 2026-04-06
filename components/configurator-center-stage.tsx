@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { Shuffle } from 'lucide-react';
 
 type PreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 
@@ -16,6 +17,7 @@ export function ConfiguratorCenterStage({
   activeTypeLabel,
   activePresentationLabel,
   enabledProviderCount,
+  onShuffleMediaTarget,
   ...rest
 }: {
   previewType: PreviewType;
@@ -29,6 +31,7 @@ export function ConfiguratorCenterStage({
   activeTypeLabel: string;
   activePresentationLabel: string;
   enabledProviderCount: number;
+  onShuffleMediaTarget: () => void;
   [key: string]: unknown;
 }) {
   return (
@@ -101,6 +104,14 @@ export function ConfiguratorCenterStage({
               </button>
             ))}
           </div>
+          <button
+            type="button"
+            onClick={onShuffleMediaTarget}
+            className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-zinc-950 px-3 py-1.5 text-[11px] font-medium text-zinc-400 transition-colors hover:text-white"
+          >
+            <Shuffle className="h-3 w-3" />
+            Shuffle
+          </button>
         </div>
 
         <p className="mt-2 text-[10px] text-zinc-500">Select to preview each type</p>

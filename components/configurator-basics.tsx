@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type ChangeEvent, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowDownToLine, ArrowUpFromLine, ChevronRight, Globe2, Layers, Link2, Pin, PinOff, Save, Shuffle, Trash2, X } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpFromLine, ChevronRight, Globe2, Layers, Link2, Pin, PinOff, Save, Trash2, X } from 'lucide-react';
 import type { MediaSearchItem, PinnedTarget } from '@/lib/configuratorMediaSearch';
 import { isMediaIdPattern } from '@/lib/configuratorMediaSearch';
 import Link from 'next/link';
@@ -525,7 +525,6 @@ export function MediaTargetSection({
   onMediaSearchQueryChange,
   onMediaSearchSubmit,
   onSelectMediaSearchResult,
-  onShuffleMediaTarget,
   pinnedTargets,
   isPinnedLimitReached,
   isPinned,
@@ -550,7 +549,6 @@ export function MediaTargetSection({
   onMediaSearchQueryChange: (value: string) => void;
   onMediaSearchSubmit: () => void;
   onSelectMediaSearchResult: (result: MediaSearchItem) => void;
-  onShuffleMediaTarget: () => void;
   pinnedTargets: PinnedTarget[];
   isPinnedLimitReached: boolean;
   isPinned: (mediaId: string) => boolean;
@@ -758,14 +756,6 @@ export function MediaTargetSection({
         </div>
       ) : null}
       <div className="mt-3 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={onShuffleMediaTarget}
-            className="inline-flex items-center gap-1 rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-800"
-          >
-            <Shuffle className="h-3.5 w-3.5" />
-            Shuffle sample
-          </button>
           <button
             type="button"
             onClick={onTogglePin}
