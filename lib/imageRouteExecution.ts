@@ -109,6 +109,7 @@ export const executeImageRouteRender = async ({
         hasNativeAnimeInput: requestState.hasNativeAnimeInput,
         allowAnimeOnlyRatings,
         hasConfirmedAnimeMapping,
+        tmdbEpOrder: requestState.tmdbEpOrder,
       });
       let media = resolvedMediaTarget.media;
       let mediaType = resolvedMediaTarget.mediaType;

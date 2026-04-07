@@ -99,6 +99,80 @@ export const resolveTvdbEpisodeToTmdb = async (
   };
 };
 
+export const resolveTmdbConsolidatedSeasonEpisode = async (
+  tmdbShowId: string,
+  requestedSeason: string,
+  requestedEpisode: string,
+  tmdbKey: string,
+  phases: PhaseDurations,
+  fetchJsonCached: EpisodeLookupJsonFetch,
+): Promise<{ season: string; episode: string } | null> => {
+  const targetSeason = Number.parseInt(requestedSeason, 10);
+  const targetEpisode = Number.parseInt(requestedEpisode, 10);
+  if (
+    !Number.isFinite(targetSeason) ||
+    !Number.isFinite(targetEpisode) ||
+    targetSeason < 1 ||
+    targetEpisode < 1
+  ) {
+    return null;
+  }
+
+  const targetSeasonResponse = await fetchJsonCached(
+    `tmdb:tv:${tmdbShowId}:season:${targetSeason}`,
+    `${TMDB_API_BASE_URL}/tv/${tmdbShowId}/season/${targetSeason}?api_key=${tmdbKey}`,
+    TMDB_CACHE_TTL_MS,
+    phases,
+    'tmdb',
+  );
+  if (!targetSeasonResponse.ok || !Array.isArray(targetSeasonResponse.data?.episodes)) {
+    return null;
+  }
+  if (targetEpisode <= (targetSeasonResponse.data.episodes as unknown[]).length) {
+    return null;
+  }
+
+  let priorCount = 0;
+  for (let s = 1; s < targetSeason; s += 1) {
+    const resp = await fetchJsonCached(
+      `tmdb:tv:${tmdbShowId}:season:${s}`,
+      `${TMDB_API_BASE_URL}/tv/${tmdbShowId}/season/${s}?api_key=${tmdbKey}`,
+      TMDB_CACHE_TTL_MS,
+      phases,
+      'tmdb',
+    );
+    if (!resp.ok || !Array.isArray(resp.data?.episodes)) return null;
+    priorCount += (resp.data.episodes as unknown[]).length;
+  }
+  const absoluteIndex = priorCount + targetEpisode;
+
+  let runningCount = 0;
+  for (let s = 1; s <= 30; s += 1) {
+    const resp = await fetchJsonCached(
+      `tmdb:tv:${tmdbShowId}:season:${s}`,
+      `${TMDB_API_BASE_URL}/tv/${tmdbShowId}/season/${s}?api_key=${tmdbKey}`,
+      TMDB_CACHE_TTL_MS,
+      phases,
+      'tmdb',
+    );
+    if (!resp.ok || !Array.isArray(resp.data?.episodes) || resp.data.episodes.length === 0) break;
+    const episodes = resp.data.episodes as Array<{ episode_number?: unknown }>;
+    if (absoluteIndex <= runningCount + episodes.length) {
+      const indexInSeason = absoluteIndex - runningCount;
+      const sorted = [...episodes].sort(
+        (a, b) => Number(a.episode_number) - Number(b.episode_number),
+      );
+      const ep = sorted[indexInSeason - 1];
+      if (ep == null) return null;
+      const epNum = Number(ep.episode_number);
+      if (!Number.isFinite(epNum)) return null;
+      return { season: String(s), episode: String(epNum) };
+    }
+    runningCount += episodes.length;
+  }
+  return null;
+};
+
 export const resolveTmdbEpisodeByAirYear = async (
   tmdbShowId: string,
   requestedSeason: string,
