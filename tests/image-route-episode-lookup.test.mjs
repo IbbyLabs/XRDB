@@ -5,6 +5,7 @@ import {
   extractTvdbEpisodeIdFromAiredOrderHtml,
   resolveTvdbEpisodeToTmdb,
   resolveTmdbEpisodeByAirYear,
+  resolveTmdbConsolidatedSeasonEpisode,
 } from '../lib/imageRouteEpisodeLookup.ts';
 
 const phases = {
@@ -162,4 +163,114 @@ test('image route episode lookup remaps air year buckets into TMDB season and ep
     'tmdb:tv:777:season:1',
     'tmdb:tv:777:season:2',
   ]);
+});
+
+test('resolveTmdbConsolidatedSeasonEpisode returns null when episode is within season count', async () => {
+  const fetchJsonCached = async (key) => {
+    if (key === 'tmdb:tv:888:season:1') {
+      return {
+        ok: true,
+        status: 200,
+        data: {
+          episodes: [
+            { episode_number: 1 },
+            { episode_number: 2 },
+            { episode_number: 3 },
+          ],
+        },
+      };
+    }
+    return { ok: false, status: 404, data: null };
+  };
+
+  const result = await resolveTmdbConsolidatedSeasonEpisode(
+    '888',
+    '1',
+    '2',
+    'tmdb-key',
+    { ...phases },
+    fetchJsonCached,
+  );
+
+  assert.equal(result, null);
+});
+
+test('resolveTmdbConsolidatedSeasonEpisode remaps episode exceeding season count into the correct season', async () => {
+  const fetchJsonCached = async (key) => {
+    if (key === 'tmdb:tv:999:season:1') {
+      return {
+        ok: true,
+        status: 200,
+        data: {
+          episodes: [
+            { episode_number: 1 },
+            { episode_number: 2 },
+            { episode_number: 3 },
+            { episode_number: 4 },
+            { episode_number: 5 },
+            { episode_number: 6 },
+            { episode_number: 7 },
+            { episode_number: 8 },
+            { episode_number: 9 },
+            { episode_number: 10 },
+            { episode_number: 11 },
+            { episode_number: 12 },
+            { episode_number: 13 },
+          ],
+        },
+      };
+    }
+    if (key === 'tmdb:tv:999:season:2') {
+      return {
+        ok: true,
+        status: 200,
+        data: {
+          episodes: [
+            { episode_number: 1 },
+            { episode_number: 2 },
+            { episode_number: 3 },
+            { episode_number: 4 },
+            { episode_number: 5 },
+            { episode_number: 6 },
+            { episode_number: 7 },
+            { episode_number: 8 },
+            { episode_number: 9 },
+            { episode_number: 10 },
+            { episode_number: 11 },
+            { episode_number: 12 },
+          ],
+        },
+      };
+    }
+    if (key === 'tmdb:tv:999:season:3') {
+      return { ok: false, status: 404, data: null };
+    }
+    return { ok: false, status: 404, data: null };
+  };
+
+  const result = await resolveTmdbConsolidatedSeasonEpisode(
+    '999',
+    '1',
+    '24',
+    'tmdb-key',
+    { ...phases },
+    fetchJsonCached,
+  );
+
+  assert.deepEqual(result, { season: '2', episode: '11' });
+});
+
+test('resolveTmdbConsolidatedSeasonEpisode returns null when season endpoint fails', async () => {
+  const fetchJsonCached = async () => ({ ok: false, status: 404, data: null });
+
+  const result = await resolveTmdbConsolidatedSeasonEpisode(
+    '555',
+    '1',
+    '5',
+    'tmdb-key',
+    { ...phases },
+    fetchJsonCached,
+  );
+
+  assert.equal(result, null);
 });

@@ -48,6 +48,7 @@ test('image route media target resolves explicit TMDB movie targets', async () =
     hasNativeAnimeInput: false,
     allowAnimeOnlyRatings: false,
     hasConfirmedAnimeMapping: false,
+    tmdbEpOrder: 'tmdb',
   });
 
   assert.equal(result.mediaType, 'movie');
@@ -94,6 +95,7 @@ test('image route media target prefers TV matches for episodic IMDb lookups', as
     hasNativeAnimeInput: false,
     allowAnimeOnlyRatings: false,
     hasConfirmedAnimeMapping: false,
+    tmdbEpOrder: 'tmdb',
   });
 
   assert.equal(result.mediaType, 'tv');
@@ -149,6 +151,13 @@ test('image route media target remaps reverse-mapped anime episodes to TMDB epis
           data: { id: 46298, name: 'Hunter x Hunter' },
         };
       }
+      if (key === 'tmdb:tv:46298:season:2') {
+        return {
+          ok: true,
+          status: 200,
+          data: { episodes: Array(75).fill({}) },
+        };
+      }
       throw new Error(`unexpected request ${key}`);
     },
     fetchTextCached: async () => createTextResponse(),
@@ -166,6 +175,7 @@ test('image route media target remaps reverse-mapped anime episodes to TMDB epis
     hasNativeAnimeInput: false,
     allowAnimeOnlyRatings: false,
     hasConfirmedAnimeMapping: false,
+    tmdbEpOrder: 'tmdb',
   });
 
   assert.equal(result.mediaType, 'tv');
@@ -182,6 +192,10 @@ test('image route media target remaps reverse-mapped anime episodes to TMDB epis
     {
       key: 'tmdb:tv:46298',
       url: 'https://api.themoviedb.org/3/tv/46298?api_key=tmdb-key',
+    },
+    {
+      key: 'tmdb:tv:46298:season:2',
+      url: 'https://api.themoviedb.org/3/tv/46298/season/2?api_key=tmdb-key',
     },
   ]);
 });

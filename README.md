@@ -521,6 +521,7 @@ posterArtworkSource     | tmdb, fanart, cinemeta, omdb, random                  
 backdropArtworkSource   | tmdb, fanart, cinemeta, random                                       | tmdb
 thumbnailArtworkSource  | tmdb, fanart, cinemeta, random                                       | tmdb
 thumbnailEpisodeArtwork | still, series                                                        | still
+tmdb_ep_order          | tvdb, tmdb                                                           | tmdb
 posterRatingsLayout     | top, bottom, left, right, top bottom, left right                     | top bottom
 posterRatingsMaxPerSide | Number (1+)                                                          | auto
 backdropRatingsLayout   | center, right, right vertical                                        | center
@@ -562,6 +563,7 @@ EPISODE THUMBNAIL CAPABILITY MATRIX
 | Configurator target controls | Dedicated thumbnail `Series ID`, `Season`, `Episode` fields in Essentials |
 | Artwork source control | `thumbnailArtworkSource` per type |
 | Episode image mode | `thumbnailEpisodeArtwork=still|series` |
+| TMDB episode order | `tmdb_ep_order=tvdb|tmdb` — when set to `tvdb`, resolves TMDB episode coordinates via TVDB aired order before fetching the episode still; useful for anime where TMDB consolidates seasons differently from TVDB |
 | Layout controls | `thumbnailRatingsLayout`, `thumbnailBottomRatingsRow`, `thumbnailRatingsMax`, `thumbnailSideRatingsPosition`, `thumbnailSideRatingsOffset` |
 | Badge sizing controls | `thumbnailRatingBadgeScale`, `thumbnailQualityBadgeScale`, `thumbnailGenreBadgeScale` |
 | Export patterns | AIOMetadata export always emits thumbnail scoped route + params |

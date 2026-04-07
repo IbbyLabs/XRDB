@@ -24,6 +24,7 @@ import { fetchKitsuFallbackAsset } from './imageRouteKitsuFallback.ts';
 import {
   resolveTmdbEpisodeByAirYear,
   resolveTvdbEpisodeToTmdb,
+  resolveTmdbConsolidatedSeasonEpisode,
 } from './imageRouteEpisodeLookup.ts';
 import {
   HttpError,
@@ -88,6 +89,7 @@ export type ResolveImageRouteMediaTargetInput = {
   hasNativeAnimeInput: boolean;
   allowAnimeOnlyRatings: boolean;
   hasConfirmedAnimeMapping: boolean;
+  tmdbEpOrder: 'tvdb' | 'tmdb';
 };
 
 export const resolveImageRouteMediaTarget = async (
@@ -116,6 +118,7 @@ export const resolveImageRouteMediaTarget = async (
     explicitTmdbMediaType,
     tvdbSeriesId,
     hasNativeAnimeInput,
+    tmdbEpOrder,
   } = input;
 
 let media = null;
@@ -244,6 +247,31 @@ if (isTmdb) {
     if (showResponse.ok) {
       media = showResponse.data;
       mediaType = 'tv';
+    }
+    if (isThumbnailRequest && mediaType === 'tv' && season && episode && media) {
+      if (tmdbEpOrder === 'tvdb') {
+        const tvdbSeriesIdForRemap = String(media.external_ids?.tvdb_id || '').trim() || null;
+        if (tvdbSeriesIdForRemap) {
+          const tvdbMapping = await resolveTvdbEpisodeToTmdb(
+            tvdbSeriesIdForRemap, season, episode, tmdbKey, phases, fetchJsonCached, fetchTextCached,
+          );
+          if (tvdbMapping) {
+            mediaId = tvdbMapping.showId;
+            season = tvdbMapping.season;
+            episode = tvdbMapping.episode;
+          } else {
+            const remapped = await resolveTmdbConsolidatedSeasonEpisode(
+              String(media.id || mediaId), season, episode, tmdbKey, phases, fetchJsonCached,
+            );
+            if (remapped) { season = remapped.season; episode = remapped.episode; }
+          }
+        }
+      } else {
+        const remapped = await resolveTmdbConsolidatedSeasonEpisode(
+          String(media.id || mediaId), season, episode, tmdbKey, phases, fetchJsonCached,
+        );
+        if (remapped) { season = remapped.season; episode = remapped.episode; }
+      }
     }
   } else {
     const tvResult = findData.tv_results?.[0] || null;
@@ -435,6 +463,31 @@ if (isTmdb) {
     ) {
       season = reverseMappedEpisodeTarget.season;
       episode = reverseMappedEpisodeTarget.episode;
+    }
+    if (isThumbnailRequest && mediaType === 'tv' && season && episode && media) {
+      if (tmdbEpOrder === 'tvdb') {
+        const tvdbSeriesIdForRemap = String(media.external_ids?.tvdb_id || '').trim() || null;
+        if (tvdbSeriesIdForRemap) {
+          const tvdbMapping = await resolveTvdbEpisodeToTmdb(
+            tvdbSeriesIdForRemap, season, episode, tmdbKey, phases, fetchJsonCached, fetchTextCached,
+          );
+          if (tvdbMapping) {
+            mediaId = tvdbMapping.showId;
+            season = tvdbMapping.season;
+            episode = tvdbMapping.episode;
+          } else {
+            const remapped = await resolveTmdbConsolidatedSeasonEpisode(
+              String(media.id || mediaId), season, episode, tmdbKey, phases, fetchJsonCached,
+            );
+            if (remapped) { season = remapped.season; episode = remapped.episode; }
+          }
+        }
+      } else {
+        const remapped = await resolveTmdbConsolidatedSeasonEpisode(
+          String(media.id || mediaId), season, episode, tmdbKey, phases, fetchJsonCached,
+        );
+        if (remapped) { season = remapped.season; episode = remapped.episode; }
+      }
     }
     allowAnimeOnlyRatings = true;
     hasConfirmedAnimeMapping = true;

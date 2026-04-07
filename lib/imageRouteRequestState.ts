@@ -320,6 +320,7 @@ export type ImageRouteRequestState = {
   ratingBlackStripEnabled: boolean;
   thumbnailEpisodeArtwork: EpisodeArtworkMode;
   backdropEpisodeArtwork: EpisodeArtworkMode;
+  tmdbEpOrder: 'tvdb' | 'tmdb';
   artworkSelectionSeed: string;
   fanartKey: string;
   fanartClientKey: string;
@@ -752,6 +753,8 @@ export const resolveImageRouteRequestState = async ({
     searchParams.get('backdropEpisodeArtwork'),
     'series',
   );
+  const tmdbEpOrderRaw = searchParams.get('tmdb_ep_order');
+  const tmdbEpOrder: 'tvdb' | 'tmdb' = tmdbEpOrderRaw === 'tvdb' ? 'tvdb' : 'tmdb';
   const fanartKey = searchParams.get('fanartKey') || FANART_API_KEY;
   const fanartClientKey = searchParams.get('fanartClientKey') || FANART_CLIENT_KEY;
   const rpdbRatingBarAliases = resolveRpdbRatingBarPositionAliases(
@@ -1470,6 +1473,7 @@ export const resolveImageRouteRequestState = async ({
     ratingBlackStripEnabled,
     thumbnailEpisodeArtwork,
     backdropEpisodeArtwork,
+    tmdbEpOrder,
     artworkSelectionSeed,
     fanartKey,
     fanartClientKey,

@@ -166,6 +166,7 @@ GET /thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb`}</CodeBlo
             <li><code>idSource=tmdb</code> — pins poster, backdrop, and logo exports to typed TMDB route patterns</li>
             <li><code>tmdbIdScope=strict</code> — requires <code>tmdb:movie:id</code> or <code>tmdb:tv:id</code> for backdrop and logo requests</li>
             <li><code>thumbnailEpisodeArtwork=still|series</code> — controls whether thumbnails prefer the episode still or the series backdrop source</li>
+            <li><code>tmdb_ep_order=tvdb|tmdb</code> — when set to <code>tvdb</code>, resolves episode coordinates through TVDB aired order before fetching the TMDB episode still; default is <code>tmdb</code></li>
             <li><code>thumbnailRatings=tmdb,imdb</code> — chooses the thumbnail specific rating providers without affecting poster, backdrop, or logo routes</li>
           </ul>
         </ReferenceSection>
