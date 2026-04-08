@@ -51,12 +51,7 @@ export const buildPosterCompactRingOverlay = ({
 <feDropShadow dx="0" dy="0" stdDeviation="${Math.max(8, Math.round(ringStroke * 1.1))}" flood-color="${accentColor}" flood-opacity="0.58" />
 <feDropShadow dx="0" dy="0" stdDeviation="${Math.max(3, Math.round(ringStroke * 0.55))}" flood-color="${accentColor}" flood-opacity="0.92" />
 </filter>
-<linearGradient id="compact-ring-surface" x1="0%" y1="0%" x2="100%" y2="100%">
-<stop offset="0%" stop-color="#080b10" stop-opacity="0.94" />
-<stop offset="100%" stop-color="#080b10" stop-opacity="0.82" />
-</linearGradient>
 </defs>
-<rect x="${Math.round(glowPad / 2)}" y="${Math.round(glowPad / 2)}" width="${size}" height="${size}" rx="${Math.max(18, Math.round(size * 0.28))}" fill="url(#compact-ring-surface)" />
 <circle cx="${center}" cy="${center}" r="${ringRadius}" fill="none" stroke="${trackColor}" stroke-width="${ringStroke}" />
 <circle cx="${center}" cy="${center}" r="${ringRadius}" fill="none" stroke="${accentColor}" stroke-width="${ringStroke}" stroke-linecap="round" stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}" transform="rotate(-90 ${center} ${center})" filter="url(#compact-ring-glow)" />
 <circle cx="${center}" cy="${center}" r="${circleRadius}" fill="rgba(8,11,16,0.86)" />
