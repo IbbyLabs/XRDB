@@ -425,7 +425,7 @@ export const resolveImageRouteDisplayState = (input: {
   const displayRatingBadges =
     useEditorialPosterPresentation || useCompactRingPresentation ? [] : ratingBadges;
 
-  if (useEditorialPosterPresentation || useCompactRingPresentation) {
+  if (useEditorialPosterPresentation) {
     genreBadge = null;
   }
 
