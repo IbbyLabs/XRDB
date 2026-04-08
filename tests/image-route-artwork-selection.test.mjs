@@ -891,3 +891,120 @@ test('image route artwork selection degrades to series backdrop when AniList rev
 
   assert.equal(result.imgPath, '/series-backdrop.jpg');
 });
+
+test('image route artwork selection uses AniList streaming thumbnail first in streaming mode', async () => {
+  let tmdbCalled = false;
+  const selectArtwork = createImageRouteArtworkSelector({
+    imageType: 'backdrop',
+    isThumbnailRequest: true,
+    mediaType: 'tv',
+    media: { id: 300 },
+    details: null,
+    requestedImageLang: 'en',
+    fallbackImageLang: 'en',
+    posterTextPreference: 'original',
+    posterArtworkSource: 'tmdb',
+    backdropArtworkSource: 'tmdb',
+    logoArtworkSource: 'tmdb',
+    thumbnailEpisodeArtwork: 'streaming',
+    backdropEpisodeArtwork: 'series',
+    artworkSelectionSeed: '',
+    cleanId: 'tmdb:tv:300:1:3',
+    season: '1',
+    episode: '3',
+    isKitsu: false,
+    tmdbKey: 'tmdb-key',
+    fanartKey: '',
+    fanartClientKey: '',
+    fanartTvdbId: null,
+    phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+    fetchJsonCached: async (key, _url, _ttl, _phases, _phase, init) => {
+      if (key.startsWith('anime:reverse:')) {
+        return {
+          ok: true,
+          status: 200,
+          data: { mappings: { ids: { anilist: 500 } } },
+        };
+      }
+      if (key.startsWith('anilist:anime:') && init?.method === 'POST') {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            data: {
+              Media: {
+                streamingEpisodes: [
+                  { title: 'Episode 1 - Opening', thumbnail: 'https://cdn.anilist.co/s1.jpg' },
+                  { title: 'Episode 2 - Rising', thumbnail: 'https://cdn.anilist.co/s2.jpg' },
+                  { title: 'Episode 3 - Clash', thumbnail: 'https://cdn.anilist.co/s3.jpg' },
+                ],
+              },
+            },
+          },
+        };
+      }
+      tmdbCalled = true;
+      return { ok: true, status: 200, data: { still_path: '/tmdb-still.jpg' } };
+    },
+    getRemoteImageAspectRatio: async () => null,
+    resolveImdbId: async () => null,
+  });
+
+  const result = await selectArtwork({
+    posters: [],
+    backdrops: [{ file_path: '/series-backdrop.jpg', iso_639_1: 'en' }],
+    logos: [],
+  });
+
+  assert.equal(result.imgUrlOverride, 'https://cdn.anilist.co/s3.jpg');
+  assert.equal(result.imgPath, '');
+  assert.equal(tmdbCalled, false);
+});
+
+test('image route artwork selection falls through to TMDB still in streaming mode when AniList returns nothing', async () => {
+  const selectArtwork = createImageRouteArtworkSelector({
+    imageType: 'backdrop',
+    isThumbnailRequest: true,
+    mediaType: 'tv',
+    media: { id: 301 },
+    details: null,
+    requestedImageLang: 'en',
+    fallbackImageLang: 'en',
+    posterTextPreference: 'original',
+    posterArtworkSource: 'tmdb',
+    backdropArtworkSource: 'tmdb',
+    logoArtworkSource: 'tmdb',
+    thumbnailEpisodeArtwork: 'streaming',
+    backdropEpisodeArtwork: 'series',
+    artworkSelectionSeed: '',
+    cleanId: 'tmdb:tv:301:1:2',
+    season: '1',
+    episode: '2',
+    isKitsu: false,
+    tmdbKey: 'tmdb-key',
+    fanartKey: '',
+    fanartClientKey: '',
+    fanartTvdbId: null,
+    phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+    fetchJsonCached: async (key) => {
+      if (key.startsWith('anime:reverse:')) {
+        return { ok: false, status: 404, data: null };
+      }
+      if (key === 'tmdb:tv:301:season:1:episode:2:en') {
+        return { ok: true, status: 200, data: { still_path: '/tmdb-ep-still.jpg' } };
+      }
+      return { ok: true, status: 200, data: { still_path: null } };
+    },
+    getRemoteImageAspectRatio: async () => null,
+    resolveImdbId: async () => null,
+  });
+
+  const result = await selectArtwork({
+    posters: [],
+    backdrops: [{ file_path: '/series-backdrop.jpg', iso_639_1: 'en' }],
+    logos: [],
+  });
+
+  assert.equal(result.imgPath, '/tmdb-ep-still.jpg');
+  assert.equal(result.imgUrlOverride, null);
+});

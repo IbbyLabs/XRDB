@@ -14,7 +14,7 @@ export type RandomPosterTextMode = 'any' | 'text' | 'textless';
 export type RandomPosterLanguageMode = 'any' | 'requested' | 'fallback';
 export type RandomPosterFallbackMode = 'best' | 'original';
 export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta' | 'omdb' | 'random' | 'blackbar';
-export type EpisodeArtworkMode = 'still' | 'series';
+export type EpisodeArtworkMode = 'still' | 'series' | 'streaming';
 export type AnimeMappingProvider = 'mal' | 'anilist' | 'imdb' | 'tmdb' | 'tvdb' | 'anidb';
 export type AggregateBadgeKey = 'aggregate-overall' | 'aggregate-critics' | 'aggregate-audience';
 export type BadgeKey = RatingPreference | MediaFeatureBadgeKey | AggregateBadgeKey;
@@ -60,7 +60,7 @@ const ANIME_MAPPING_PROVIDER_SET = new Set<AnimeMappingProvider>([
   'anidb',
 ]);
 const ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta', 'omdb', 'random', 'blackbar']);
-const EPISODE_ARTWORK_MODE_SET = new Set<EpisodeArtworkMode>(['still', 'series']);
+const EPISODE_ARTWORK_MODE_SET = new Set<EpisodeArtworkMode>(['still', 'series', 'streaming']);
 const POSTER_IMAGE_SIZE_SET = new Set<PosterImageSize>(['normal', 'large', '4k']);
 const BACKDROP_IMAGE_SIZE_SET = new Set<BackdropImageSize>(['normal', 'large', '4k']);
 const RANDOM_POSTER_TEXT_MODE_SET = new Set<RandomPosterTextMode>(['any', 'text', 'textless']);

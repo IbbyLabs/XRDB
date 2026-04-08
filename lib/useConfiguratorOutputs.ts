@@ -434,7 +434,7 @@ export function useConfiguratorOutputs({
   thumbnailAggregateRatingSource: AggregateRatingSource;
   thumbnailArtworkSource: ArtworkSource;
   thumbnailBottomRatingsRow: boolean;
-  thumbnailEpisodeArtwork: 'still' | 'series';
+  thumbnailEpisodeArtwork: 'still' | 'series' | 'streaming';
   thumbnailGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   thumbnailGenreBadgePosition: GenreBadgePosition;
   thumbnailGenreBadgeScale: number;
