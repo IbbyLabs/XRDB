@@ -39,6 +39,170 @@
 
 <a id="v1-10-1"></a>
 
+<a id="v1-11-0"></a>
+
+## [v1.11.0] - 08/04/2026
+
+### Added
+* FR-52 power law genre badge auto scale for large and 4K outputs
+  
+  Add resolveGenreBadgeAutoScale using clamp(pow(linearScale, 1.15), 0.75, 5)
+  so genre badges scale more aggressively than the linear overlay scale at
+  large and 4K resolutions, making them visually proportional to the poster area.
+  
+  Wire imageRoutePreparedMedia to use the new helper for effectiveGenreBadgeScale.
+  Add unit tests covering normal poster (1.0), large poster (~2.49), 4K poster
+  (~4.13), 4K backdrop (~3.54), min clamp (0.75), max clamp (5), and the
+  invariant that genre scale >= linear scale when scale > 1. Add integration
+  test confirming 4K badge height exceeds strict proportional equivalent.
+* add streaming mode for AniList thumbnail priority
+  
+  Add 'streaming' as a third EpisodeArtworkMode value alongside 'still' and 'series'.
+  
+  When thumbnailEpisodeArtwork=streaming, the AniList streamingEpisodes lookup
+  runs first. If it returns a per episode thumbnail URL the request returns
+  immediately with that image. If AniList returns nothing (no mapping, empty
+  streamingEpisodes, unmatched episode), execution falls through to the existing
+  TMDB episode still path unchanged, which in turn falls back to the series
+  backdrop stack. Default behaviour (still) is completely unchanged.
+  
+  • Add 'streaming' to EpisodeArtworkMode union and EPISODE_ARTWORK_MODE_SET
+    in lib/imageRouteConfig.ts and lib/uiConfig.ts
+  • Extract fetchStreamingEpisodeThumbnail helper in imageRouteArtworkSelection.ts
+    and reuse it for both the existing still fallback and the new streaming early
+    path; no AniList logic duplicated
+  • Fix inline type in useConfiguratorOutputs.ts which was missing 'streaming'
+  • Add Streaming button to Episode Artwork selector in configurator and export panel
+  • Update Episode Artwork description copy to mention Crunchyroll sourcing caveat
+  • Add two unit tests: streaming mode uses AniList when available; falls through
+    to TMDB still when AniList returns nothing (642 tests, 0 failures)
+* add show/hide toggle for each API key field
+  
+  Each key input (XRDB Request, TMDB, MDBList, Fanart, SIMKL) now has an
+  Eye/EyeOff toggle button positioned inside the input on the right. Keys
+  default to hidden (password) and can be revealed individually. Styling
+  is consistent with the existing configurator design language.
+
+### Fixed
+* BUG genre badges hidden on compact ring and ring undersized on large/4K posters
+  
+  • Remove compact ring from the genre badge suppression condition in
+    resolveImageRouteDisplayState; only editorial presentation suppresses
+    genre badges, compact ring has no reason to
+  • Remove upper size clamps (116px cap on size, 30px on inset, 12px on
+    ringStroke, 38px on valueFontSize) in buildPosterCompactRingOverlay so
+    the proportional formulas govern at all output resolutions; normal size
+    output is numerically unchanged, large and 4K now scale correctly
+  • Update the display state test assertion that expected genreBadge null
+    under compact ring to expect the badge present
+* BUG-64 follow single safe redirect for addon resource fetches
+  
+  Cinemeta catalog endpoints (and potentially other addons) return HTTP 307
+  redirects to a separate host. The proxy was using redirect: 'error' on all
+  upstream fetches, causing 502s for any catalog or resource route that redirects.
+  
+  Replace all three fetch call sites with fetchWithOneRedirect, a new helper in
+  lib/networkSecurity.ts that uses undici request() to get the real 3xx status
+  code, validates the Location header through assertSafeSourceUrl to prevent SSRF,
+  follows exactly one hop, and throws on chained redirects.
+  
+  Also fix a pre existing bug where genreBadge was not cleared for compact ring
+  poster presentation, matching the already correct behavior for editorial. This
+  was caught by a failing test during the run.
+  
+  Affected call sites:
+  • lib/proxyRouteHandler.ts: resource fetch and manifest fetch
+  • lib/proxyManifestRoute.ts: manifest fetch
+  
+  Tests:
+  • tests/network security.test.mjs: 5 unit tests for fetchWithOneRedirect
+    covering happy path, missing Location, invalid target, chained redirects
+  • All 652 tests pass
+* BUG-63 exclude mdblist from critics aggregate
+  
+  Move 'mdblist' from CRITICS_RATING_PROVIDERS to AUDIENCE_RATING_PROVIDERS.
+  MDBList is a user contributed weighted aggregate, not a professional critic
+  outlet, so its score was incorrectly inflating the critics average when
+  aggregateRatingSource=critics or dual critic/audience presentation was used.
+  
+  • Remove mdblist from CRITICS_RATING_PROVIDERS
+  • Add mdblist to AUDIENCE_RATING_PROVIDERS
+  • Add regression tests: critics only mdblist falls back to overall; audience
+    average correctly incorporates mdblist alongside imdb
+* BUG-60 compact ring and network badge rendering fixes
+  
+  • Add && !compactRingOverlay to early return guard in imageRouteExecution.ts
+    so compact ring requests reach the Sharp pipeline regardless of imageText value.
+    Previously, imageText=original produced no posterTitleText/posterLogoUrl,
+    causing the guard to fire and silently skip compact ring rendering entirely.
+  
+  • Scope genreBadge suppression to editorial presentation only in
+    imageRouteDisplayState.ts. The previous condition included useCompactRingPresentation,
+    which incorrectly cleared the genre badge when the ring was active. The ring
+    sits top right with no spatial conflict; genre badge independence is correct.
+  
+  • Gate networkBadges construction on shouldRenderStreamBadges in
+    imageRoutePreparedMedia.ts. TV network affiliation badges (e.g. Netflix for
+    Stranger Things from media.networks) were always injected regardless of the
+    posterStreamBadges=off setting. Watch provider badges were correctly gated;
+    network badges now follow the same rule.
+  
+  • Remove dark backing <rect> and compact ring surface linearGradient from the
+    compact ring SVG in posterCompactRingOverlay.ts. The ring now renders as a
+    clean progress ring without a dark backing card. The inner circle fill that
+    darkens the center behind the score text is intentionally preserved.
+* BUG-62 stop showing series rating for episode thumbnails
+  
+  Replace tableExists schema check with tableHasRows row presence check for
+  both imdb_ratings and imdb_episodes in imdbDatasetAvailability.ts. Both
+  tables are always created at DB init so the old check was permanently true,
+  disabling the early return guard and silently falling through to the series
+  IMDB ID on every cold cache.
+  
+  Remove the series IMDB ID fallback from ensureEpisodeScopedImdbId. When
+  season and episode are provided and no matching episode tconst is found in
+  the dataset, return null so the IMDB rating block produces no badge rather
+  than a misleading series level rating.
+  
+  Remove the !combinedRatings.has('imdb') guard from the IMDB dataset block.
+  MDBList runs first and can set 'imdb' from the series level IMDB rating via
+  its API response; that guard was silently blocking the dataset episode lookup
+  from ever firing for users who have both MDBList and the IMDB dataset
+  configured. The dataset result now always wins when an episode specific
+  tconst is found.
+  
+  Add three new test cases: episode not resolved produces no IMDB badge,
+  episode resolved uses episode specific tconst, and MDBList series IMDB is
+  overridden when the dataset has an episode specific rating.
+* BUG-61 remap consolidated TMDB anime season/episode coordinates
+  
+  Resolves incorrect episode lookups for anime that use accumulated/absolute
+  episode numbering on animemapping.com. When a series consolidates multiple
+  seasons into one TMDB season, episode numbers from TVDB aired order can
+  exceed the actual episode count for that season, causing a 404 and falling
+  back to the series backdrop.
+  
+  • Add resolveTmdbConsolidatedSeasonEpisode in imageRouteEpisodeLookup.ts:
+    walks TMDB seasons accumulating episode counts to remap an absolute
+    episode index to the correct season/episode pair
+  • Wire tmdb_ep_order query param (tvdb|tmdb, default tmdb) through
+    imageRouteRequestState, imageRouteMediaTarget, and imageRouteExecution
+  • When tmdb_ep_order=tvdb, resolves through resolveTvdbEpisodeToTmdb
+    before applying the consolidated season remap
+  • Add three new tests in image route episode lookup.test.mjs covering
+    in range passthrough, single season remap, and multi season remap
+  • Add tmdb_ep_order to README param table and thumbnail quick reference
+  • Add tmdb_ep_order to reference view.tsx high signal params list
+  • Regenerate product context.json
+
+### Documentation
+* refresh static doc assets
+* add streaming to thumbnailEpisodeArtwork allowed values and regenerate product context
+  
+  Update README AI param table and thumbnail quick reference to include
+  the streaming option added in the streaming mode feature. Regenerate
+  product context.json to reflect current config state.
+
 ## [v1.10.1] - 06/04/2026
 
 ### Fixed
