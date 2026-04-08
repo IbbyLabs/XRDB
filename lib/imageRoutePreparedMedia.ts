@@ -65,7 +65,7 @@ import { normalizeRatingValue, isTmdbAnimationTitle } from './imageRouteMedia.ts
 import { resolveImageRouteProviderRatings } from './imageRouteProviderRatings.ts';
 import { fetchTorrentioBadges } from './imageRouteTorrentio.ts';
 import { pickByLanguageWithFallback } from './imageLanguage.ts';
-import { resolveOverlayAutoScale } from './overlayScale.ts';
+import { resolveGenreBadgeAutoScale } from './overlayScale.ts';
 import { TMDB_API_BASE_URL } from './serviceBaseUrls.ts';
 import {
   LOGO_BASE_HEIGHT,
@@ -542,12 +542,12 @@ if (imageType === 'poster') {
     )
   );
 }
-const overlayAutoScale = resolveOverlayAutoScale({
+const genreBadgeAutoScale = resolveGenreBadgeAutoScale({
   imageType,
   outputWidth,
   outputHeight,
 });
-effectiveGenreBadgeScale = Math.max(1, Math.round(genreBadgeScale * overlayAutoScale));
+effectiveGenreBadgeScale = Math.max(1, Math.round(genreBadgeScale * genreBadgeAutoScale));
 if (genreBadge) {
   genreBadge = { ...genreBadge, scalePercent: effectiveGenreBadgeScale };
 }
