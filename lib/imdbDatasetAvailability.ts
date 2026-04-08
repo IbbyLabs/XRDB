@@ -16,13 +16,13 @@ let tableAvailability: TableAvailability = {
   hasEpisodes: false,
 };
 
-const tableExists = (tableName: string) => {
+const tableHasRows = (tableName: string) => {
   const db = getDb();
-  return Boolean(
-    db
-      .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?")
-      .get(tableName),
-  );
+  try {
+    return Boolean(db.prepare(`SELECT 1 FROM ${tableName} LIMIT 1`).get());
+  } catch {
+    return false;
+  }
 };
 
 export const refreshImdbDatasetTableAvailability = () => {
@@ -38,8 +38,8 @@ export const refreshImdbDatasetTableAvailability = () => {
   tableAvailability = {
     dbPath,
     checkedAt: now,
-    hasRatings: tableExists('imdb_ratings'),
-    hasEpisodes: tableExists('imdb_episodes'),
+    hasRatings: tableHasRows('imdb_ratings'),
+    hasEpisodes: tableHasRows('imdb_episodes'),
   };
 
   return tableAvailability;

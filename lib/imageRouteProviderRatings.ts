@@ -222,7 +222,7 @@ export const resolveImageRouteProviderRatings = async (
       seasonNumber,
       episodeNumber,
     );
-    return episodeMatch?.imdbId || resolvedImdbId;
+    return episodeMatch?.imdbId ?? null;
   };
 
   if (!imdbId && needsResolvableImdbId) {
@@ -326,7 +326,7 @@ export const resolveImageRouteProviderRatings = async (
 
   if (needsImdbRating) {
     const resolvedImdbId = await ensureEpisodeScopedImdbId();
-    if (resolvedImdbId && !combinedRatings.has('imdb')) {
+    if (resolvedImdbId) {
       const datasetRating = runtimeDeps.getImdbRatingFromDataset(resolvedImdbId);
       if (datasetRating) {
         const normalized = runtimeDeps.normalizeRatingValue(datasetRating.rating);
