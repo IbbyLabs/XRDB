@@ -2,7 +2,7 @@
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
   "xrdbTag": "v1.10.1",
-  "generatedAt": "2026-04-07T23:31:27.767Z",
+  "generatedAt": "2026-04-08T03:26:20.136Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -34,11 +34,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
-        "add show/hide toggle for each API key field",
-        "preserve user API keys on link import",
-        "replace effect based menu reset with render time state adjustment",
-        "restore persistent status labels in brand lockup",
-        "make readme preview gallery test resilient to slug rotation"
+        "FR-52 power law genre badge auto scale for large and 4K outputs",
+        "BUG genre badges hidden on compact ring and ring undersized on large/4K posters",
+        "BUG-64 follow single safe redirect for addon resource fetches",
+        "BUG-63 exclude mdblist from critics aggregate",
+        "BUG-60 compact ring and network badge rendering fixes"
       ]
     },
     {
