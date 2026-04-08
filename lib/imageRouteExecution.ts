@@ -280,6 +280,7 @@ export const executeImageRouteRender = async ({
         genreBadge,
         outputWidth,
         outputHeight,
+        posterRatingBadgeScale: requestState.posterRatingBadgeScale,
       });
       const {
         useLogoBadgeLayout,

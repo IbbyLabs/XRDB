@@ -491,7 +491,7 @@ export const renderWithSharp = async (
         ? null
         : editorialOverlayBottom + Math.max(10, Math.round(input.badgeGap * 1.1));
     const extractedAgeRatingColumnReferenceHeight = resolveQualityBadgeHeight({
-      referenceBadgeHeight: ratingBadgeHeight,
+      referenceBadgeHeight: posterQualityRowReferenceHeight,
       qualityBadgeScalePercent: input.qualityBadgeScalePercent,
       layout: 'column',
     });
@@ -1357,7 +1357,7 @@ export const renderWithSharp = async (
 	        const bottomOverlayAnchorY =
 	          posterBottomRows.length > 0
 	            ? bottomRowY - (posterBottomRows.length - 1) * (ratingBadgeHeight + input.badgeGap)
-	            : bottomRowY;
+	            : input.outputHeight - input.badgeBottomOffset - posterBottomReservedHeight;
 	        const posterCleanOverlayPlacement = resolvePosterCleanOverlayPlacement({
 	          overlay: posterCleanOverlayAsset,
 	          bottomBlockTopY: bottomOverlayAnchorY,
@@ -1390,7 +1390,7 @@ export const renderWithSharp = async (
         gap: input.badgeGap,
       };
       const qualityBadgeHeight = resolveQualityBadgeHeight({
-        referenceBadgeHeight: ratingBadgeHeight,
+        referenceBadgeHeight: posterQualityRowReferenceHeight,
         qualityBadgeScalePercent: input.qualityBadgeScalePercent,
         layout: 'column',
       });

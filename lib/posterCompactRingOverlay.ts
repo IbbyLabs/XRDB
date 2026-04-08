@@ -17,14 +17,17 @@ export const buildPosterCompactRingOverlay = ({
   valueText,
   progressPercent,
   accentColor,
+  badgeScalePercent = 100,
 }: {
   outputWidth: number;
   outputHeight: number;
   valueText: string;
   progressPercent: number;
   accentColor: string;
+  badgeScalePercent?: number;
 }): PosterCompactRingOverlaySpec => {
-  const size = Math.max(76, Math.round(outputWidth * 0.145));
+  const scaleRatio = Math.max(0.01, badgeScalePercent / 100);
+  const size = Math.max(76, Math.round(outputWidth * 0.145 * scaleRatio));
   const inset = Math.max(18, Math.round(size * 0.24));
   const ringStroke = Math.max(7, Math.round(size * 0.11));
   const glowPad = Math.max(18, Math.round(size * 0.34));
