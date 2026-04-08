@@ -520,7 +520,7 @@ thumbnailImageText      | original, clean, textless, alternative, random        
 posterArtworkSource     | tmdb, fanart, cinemeta, omdb, random                                 | tmdb
 backdropArtworkSource   | tmdb, fanart, cinemeta, random                                       | tmdb
 thumbnailArtworkSource  | tmdb, fanart, cinemeta, random                                       | tmdb
-thumbnailEpisodeArtwork | still, series                                                        | still
+thumbnailEpisodeArtwork | still, series, streaming                                              | still
 tmdb_ep_order          | tvdb, tmdb                                                           | tmdb
 posterRatingsLayout     | top, bottom, left, right, top bottom, left right                     | top bottom
 posterRatingsMaxPerSide | Number (1+)                                                          | auto
@@ -562,7 +562,7 @@ EPISODE THUMBNAIL CAPABILITY MATRIX
 | Accepted base ID families | IMDb, `xrdbid`, `tvdb`, `tmdb:tv`, `kitsu`, `anilist`, `mal`, `anidb` |
 | Configurator target controls | Dedicated thumbnail `Series ID`, `Season`, `Episode` fields in Essentials |
 | Artwork source control | `thumbnailArtworkSource` per type |
-| Episode image mode | `thumbnailEpisodeArtwork=still|series` |
+| Episode image mode | `thumbnailEpisodeArtwork=still|series|streaming` |
 | TMDB episode order | `tmdb_ep_order=tvdb|tmdb` — when set to `tvdb`, resolves TMDB episode coordinates via TVDB aired order before fetching the episode still; useful for anime where TMDB consolidates seasons differently from TVDB |
 | Layout controls | `thumbnailRatingsLayout`, `thumbnailBottomRatingsRow`, `thumbnailRatingsMax`, `thumbnailSideRatingsPosition`, `thumbnailSideRatingsOffset` |
 | Badge sizing controls | `thumbnailRatingBadgeScale`, `thumbnailQualityBadgeScale`, `thumbnailGenreBadgeScale` |
