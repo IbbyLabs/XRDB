@@ -109,6 +109,7 @@ export const resolveImageRouteDisplayState = (input: {
   genreBadge: GenreBadgeSpec | null;
   outputWidth: number;
   outputHeight: number;
+  posterRatingBadgeScale: number;
 }): ImageRouteDisplayState => {
   const {
     imageType,
@@ -143,6 +144,7 @@ export const resolveImageRouteDisplayState = (input: {
     primaryGenreFamily,
     outputWidth,
     outputHeight,
+    posterRatingBadgeScale,
   } = input;
   let { streamBadges, genreBadge } = input;
   const aggregateDynamicStopEntries = parseAggregateDynamicStops(aggregateDynamicStops);
@@ -410,6 +412,7 @@ export const resolveImageRouteDisplayState = (input: {
           valueText: String(Math.round(compactRingPrimaryBadge.normalizedValue * 10)),
           progressPercent: Math.round((progressRingBadge || compactRingPrimaryBadge).normalizedValue * 10),
           accentColor: compactRingAccentColor,
+          badgeScalePercent: posterRatingBadgeScale,
         })
       : null;
 
