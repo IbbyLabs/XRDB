@@ -1128,6 +1128,7 @@ export function LookSection({
                   {[
                     { id: 'still', label: 'Still' },
                     { id: 'series', label: 'Series' },
+                    { id: 'streaming', label: 'Streaming' },
                   ].map((option) => (
                     <button
                       key={option.id}
@@ -1140,7 +1141,7 @@ export function LookSection({
                   ))}
                 </div>
                 <p className="text-[11px] leading-relaxed text-zinc-500">
-                  Still keeps episode thumbnails tied to the TMDB episode frame when one exists. Series uses the normal backdrop artwork stack instead.
+                  Still keeps episode thumbnails tied to the TMDB episode frame when one exists. Series uses the normal backdrop artwork stack instead. Streaming sources from platforms like Crunchyroll and may not be available for all titles.
                 </p>
               </>
             ) : null}

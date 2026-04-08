@@ -148,7 +148,7 @@ export type RandomPosterFallbackMode = 'best' | 'original';
 export type PosterImageTextPreference = 'original' | 'clean' | 'textless' | 'alternative' | 'random';
 export type BackdropImageTextPreference = 'original' | 'clean' | 'textless' | 'alternative' | 'random';
 export type ArtworkSource = 'tmdb' | 'fanart' | 'cinemeta' | 'omdb' | 'random' | 'blackbar';
-export type EpisodeArtworkMode = 'still' | 'series';
+export type EpisodeArtworkMode = 'still' | 'series' | 'streaming';
 export type LogoBackground = 'transparent' | 'dark';
 export type TmdbIdScopeMode = 'soft' | 'strict';
 export type ProxyMediaType = 'movie' | 'series' | 'anime';
@@ -352,7 +352,7 @@ const BACKDROP_IMAGE_TEXT_PREFERENCE_SET = new Set<BackdropImageTextPreference>(
 ]);
 const POSTER_ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta', 'omdb', 'random', 'blackbar']);
 const NON_POSTER_ARTWORK_SOURCE_SET = new Set<ArtworkSource>(['tmdb', 'fanart', 'cinemeta', 'random', 'blackbar']);
-const EPISODE_ARTWORK_MODE_SET = new Set<EpisodeArtworkMode>(['still', 'series']);
+const EPISODE_ARTWORK_MODE_SET = new Set<EpisodeArtworkMode>(['still', 'series', 'streaming']);
 const STREAM_BADGES_SETTING_SET = new Set<StreamBadgesSetting>(['auto', 'on', 'off']);
 const QUALITY_BADGES_SIDE_SET = new Set<QualityBadgesSide>(['left', 'right']);
 const POSTER_QUALITY_BADGES_POSITION_SET = new Set<PosterQualityBadgesPosition>(['auto', 'left', 'right']);

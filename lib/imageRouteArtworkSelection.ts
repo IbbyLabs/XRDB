@@ -484,11 +484,75 @@ export const createImageRouteArtworkSelector = (
       );
       if (
         input.isThumbnailRequest &&
-        input.thumbnailEpisodeArtwork === 'still' &&
+        (input.thumbnailEpisodeArtwork === 'still' || input.thumbnailEpisodeArtwork === 'streaming') &&
         input.mediaType === 'tv' &&
         input.season &&
         input.episode
       ) {
+        const fetchStreamingEpisodeThumbnail = async (): Promise<string> => {
+          const aniListId = await fetchAniListIdFromReverseMapping({
+            provider: 'tmdb',
+            externalId: String(input.media.id),
+            season: input.season!,
+            episode: input.episode!,
+            phases: input.phases,
+            fetchJsonCached: input.fetchJsonCached,
+          });
+          if (!aniListId) return '';
+          const parsedAniListId = Number.parseInt(aniListId, 10);
+          if (!Number.isFinite(parsedAniListId) || parsedAniListId <= 0) return '';
+          const aniListEpResponse = await input.fetchJsonCached(
+            `anilist:anime:${parsedAniListId}:episodes`,
+            ANILIST_GRAPHQL_URL,
+            KITSU_CACHE_TTL_MS,
+            input.phases,
+            'tmdb',
+            {
+              method: 'POST',
+              headers: {
+                'content-type': 'application/json',
+                accept: 'application/json',
+                'User-Agent': BROWSER_LIKE_USER_AGENT,
+              },
+              body: JSON.stringify({
+                query: ANILIST_EPISODE_THUMBNAIL_QUERY,
+                variables: { id: parsedAniListId },
+              }),
+            },
+          );
+          const streamingEpisodes = Array.isArray(aniListEpResponse.data?.data?.Media?.streamingEpisodes)
+            ? aniListEpResponse.data.data.Media.streamingEpisodes
+            : [];
+          const episodeNum = Number.parseInt(input.episode!, 10);
+          const episodePattern = Number.isFinite(episodeNum)
+            ? new RegExp(`(?:Episode|E)\\s*0*${episodeNum}\\b`, 'i')
+            : null;
+          const matched =
+            (episodePattern
+              ? streamingEpisodes.find(
+                  (ep: { title?: string; thumbnail?: string }) =>
+                    typeof ep?.title === 'string' && episodePattern.test(ep.title),
+                )
+              : null) ??
+            (Number.isFinite(episodeNum) && episodeNum > 0 && episodeNum <= streamingEpisodes.length
+              ? streamingEpisodes[episodeNum - 1]
+              : null);
+          return typeof matched?.thumbnail === 'string' ? matched.thumbnail.trim() : '';
+        };
+
+        if (input.thumbnailEpisodeArtwork === 'streaming') {
+          const streamingThumbnail = await fetchStreamingEpisodeThumbnail();
+          if (streamingThumbnail) {
+            return {
+              imgPath: '',
+              imgUrlOverride: streamingThumbnail,
+              logoAspectRatio: null,
+              logoPath,
+              posterIsTextless: false,
+            };
+          }
+        }
+
         const episodeCacheKeyBase = `tmdb:tv:${input.media.id}:season:${input.season}:episode:${input.episode}`;
         const episodeResponse = await input.fetchJsonCached(
           `${episodeCacheKeyBase}:${input.requestedImageLang}`,
@@ -570,74 +634,15 @@ export const createImageRouteArtworkSelector = (
           };
         }
 
-        const aniListId = await fetchAniListIdFromReverseMapping({
-          provider: 'tmdb',
-          externalId: String(input.media.id),
-          season: input.season,
-          episode: input.episode,
-          phases: input.phases,
-          fetchJsonCached: input.fetchJsonCached,
-        });
-
-        if (aniListId) {
-          const parsedAniListId = Number.parseInt(aniListId, 10);
-          if (Number.isFinite(parsedAniListId) && parsedAniListId > 0) {
-            const aniListResponse = await input.fetchJsonCached(
-              `anilist:anime:${parsedAniListId}:episodes`,
-              ANILIST_GRAPHQL_URL,
-              KITSU_CACHE_TTL_MS,
-              input.phases,
-              'tmdb',
-              {
-                method: 'POST',
-                headers: {
-                  'content-type': 'application/json',
-                  accept: 'application/json',
-                  'User-Agent': BROWSER_LIKE_USER_AGENT,
-                },
-                body: JSON.stringify({
-                  query: ANILIST_EPISODE_THUMBNAIL_QUERY,
-                  variables: { id: parsedAniListId },
-                }),
-              },
-            );
-
-            const streamingEpisodes = Array.isArray(
-              aniListResponse.data?.data?.Media?.streamingEpisodes,
-            )
-              ? aniListResponse.data.data.Media.streamingEpisodes
-              : [];
-
-            const episodeNum = Number.parseInt(input.episode, 10);
-            const episodePattern = Number.isFinite(episodeNum)
-              ? new RegExp(`(?:Episode|E)\\s*0*${episodeNum}\\b`, 'i')
-              : null;
-
-            const matched =
-              (episodePattern
-                ? streamingEpisodes.find(
-                    (ep: { title?: string; thumbnail?: string }) =>
-                      typeof ep?.title === 'string' && episodePattern.test(ep.title),
-                  )
-                : null) ??
-              (Number.isFinite(episodeNum) &&
-              episodeNum > 0 &&
-              episodeNum <= streamingEpisodes.length
-                ? streamingEpisodes[episodeNum - 1]
-                : null);
-
-            const aniListThumbnail =
-              typeof matched?.thumbnail === 'string' ? matched.thumbnail.trim() : '';
-            if (aniListThumbnail) {
-              return {
-                imgPath: '',
-                imgUrlOverride: aniListThumbnail,
-                logoAspectRatio: null,
-                logoPath,
-                posterIsTextless: false,
-              };
-            }
-          }
+        const aniListThumbnail = await fetchStreamingEpisodeThumbnail();
+        if (aniListThumbnail) {
+          return {
+            imgPath: '',
+            imgUrlOverride: aniListThumbnail,
+            logoAspectRatio: null,
+            logoPath,
+            posterIsTextless: false,
+          };
         }
       }
 

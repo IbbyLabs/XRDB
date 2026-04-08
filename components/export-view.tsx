@@ -39,6 +39,7 @@ const EPISODE_ARTWORK_MODE_OPTIONS: Array<{
 }> = [
   { id: 'still', label: 'Episode still' },
   { id: 'series', label: 'Series backdrop' },
+  { id: 'streaming', label: 'Streaming' },
 ];
 
 export function ExportView() {
