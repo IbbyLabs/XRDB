@@ -131,3 +131,19 @@ test('image route genre badge centers icon-only badges within the rendered width
   assert.ok(translateMatch);
   assert.ok(Math.abs(Number.parseFloat(translateMatch[1]) - spec.width / 2) <= 1);
 });
+
+test('genre badge at 4K scale produces taller badge than strict proportional equivalent', () => {
+  const linearScale = Math.min(2000 / 580, 2926 / 859);
+  const boostScale = Math.pow(linearScale, 1.15);
+  const scalePercent = Math.max(1, Math.round(100 * boostScale));
+
+  const specBoosted = buildGenreBadgeSvg(
+    { familyId: 'anime', label: 'Anime', accentColor: '#7dd3fc', mode: 'both', style: 'glass', scalePercent },
+    'poster',
+  );
+  const proportionalHeight = Math.round(40 * linearScale);
+  assert.ok(
+    specBoosted.height > proportionalHeight,
+    `expected boosted height(${specBoosted.height}) > proportional(${proportionalHeight})`,
+  );
+});
