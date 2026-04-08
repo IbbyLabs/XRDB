@@ -24,9 +24,9 @@ export const buildPosterCompactRingOverlay = ({
   progressPercent: number;
   accentColor: string;
 }): PosterCompactRingOverlaySpec => {
-  const size = clampNumber(Math.round(outputWidth * 0.145), 76, 116);
-  const inset = clampNumber(Math.round(size * 0.24), 18, 30);
-  const ringStroke = clampNumber(Math.round(size * 0.11), 7, 12);
+  const size = Math.max(76, Math.round(outputWidth * 0.145));
+  const inset = Math.max(18, Math.round(size * 0.24));
+  const ringStroke = Math.max(7, Math.round(size * 0.11));
   const glowPad = Math.max(18, Math.round(size * 0.34));
   const totalSize = size + glowPad;
   const ringRadius = Math.round((size - ringStroke) / 2);
@@ -37,7 +37,7 @@ export const buildPosterCompactRingOverlay = ({
   const dashOffset = circumference * (1 - normalizedProgress / 100);
   const top = inset;
   const left = Math.max(inset, outputWidth - totalSize - inset);
-  const valueFontSize = clampNumber(Math.round(size * 0.34), 24, 38);
+  const valueFontSize = Math.max(24, Math.round(size * 0.34));
   const trackColor = 'rgba(255,255,255,0.18)';
 
   return {

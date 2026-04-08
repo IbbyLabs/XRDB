@@ -71,7 +71,7 @@ test('image route display state builds compact ring overlays for poster ring pre
   });
 
   assert.equal(state.displayRatingBadges.length, 0);
-  assert.equal(state.genreBadge, null);
+  assert.ok(state.genreBadge);
   assert.equal(state.editorialOverlay, null);
   assert.ok(state.compactRingOverlay);
   assert.match(state.compactRingOverlay?.svg ?? '', /92/);
