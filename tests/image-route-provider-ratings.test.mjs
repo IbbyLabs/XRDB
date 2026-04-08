@@ -423,3 +423,192 @@ test('image route provider ratings resolve Allociné audience and press values f
   assert.ok(renderedRatingTtlByProvider.has('allocine'));
   assert.ok(renderedRatingTtlByProvider.has('allocinepress'));
 });
+
+test('image route provider ratings produce no IMDB badge when episode tconst cannot be resolved', async () => {
+  const result = await resolveImageRouteProviderRatings(
+    {
+      cleanId: 'tt0944947:2:5',
+      imageType: 'backdrop',
+      mediaType: 'tv',
+      media: {
+        id: 1399,
+        imdb_id: 'tt0944947',
+        first_air_date: '2011-04-17',
+      },
+      mediaId: 'tt0944947',
+      isTmdb: false,
+      isKitsu: false,
+      isAniListInput: false,
+      idPrefix: 'tt0944947',
+      season: '2',
+      episode: '5',
+      mappedImdbId: null,
+      inputAnimeMappingProvider: null,
+      inputAnimeMappingExternalId: null,
+      requestedExternalRatings: new Set(['imdb']),
+      shouldAttemptAnimeMapping: false,
+      initialAllowAnimeOnlyRatings: false,
+      initialHasConfirmedAnimeMapping: false,
+      resolvedRatingMediaType: 'tv',
+      releaseDate: '2011-04-17',
+      mdblistKey: null,
+      hasMdbListApiKey: false,
+      simklClientId: '',
+      phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+      fetchJsonCached: async () => ({ ok: false, status: 404, data: null }),
+      getMetadata: () => null,
+      setMetadata: () => {},
+      detailsBundlePromise: null,
+      renderedRatingTtlByProvider: new Map(),
+      undiciFetchImpl: async () => {
+        throw new Error('unexpected undici fetch');
+      },
+    },
+    {
+      fetchAniListRating: async () => null,
+      fetchKitsuRating: async () => null,
+      fetchMyAnimeListRating: async () => null,
+      fetchTraktRating: async () => null,
+      fetchSimklRating: async () => null,
+      fetchMdbListRatings: async () => null,
+      findImdbEpisodeBySeriesSeasonEpisode: () => null,
+      getImdbRatingFromDataset: () => ({ rating: 7.5, votes: 50000 }),
+      normalizeRatingValue: (value) => {
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? numeric.toFixed(1) : null;
+      },
+    },
+  );
+
+  assert.equal(result.ratings.has('imdb'), false);
+});
+
+test('image route provider ratings use episode-specific tconst when episode is resolved', async () => {
+  const result = await resolveImageRouteProviderRatings(
+    {
+      cleanId: 'tt0944947:1:3',
+      imageType: 'backdrop',
+      mediaType: 'tv',
+      media: {
+        id: 1399,
+        imdb_id: 'tt0944947',
+        first_air_date: '2011-04-17',
+      },
+      mediaId: 'tt0944947',
+      isTmdb: false,
+      isKitsu: false,
+      isAniListInput: false,
+      idPrefix: 'tt0944947',
+      season: '1',
+      episode: '3',
+      mappedImdbId: null,
+      inputAnimeMappingProvider: null,
+      inputAnimeMappingExternalId: null,
+      requestedExternalRatings: new Set(['imdb']),
+      shouldAttemptAnimeMapping: false,
+      initialAllowAnimeOnlyRatings: false,
+      initialHasConfirmedAnimeMapping: false,
+      resolvedRatingMediaType: 'tv',
+      releaseDate: '2011-04-17',
+      mdblistKey: null,
+      hasMdbListApiKey: false,
+      simklClientId: '',
+      phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+      fetchJsonCached: async () => ({ ok: false, status: 404, data: null }),
+      getMetadata: () => null,
+      setMetadata: () => {},
+      detailsBundlePromise: null,
+      renderedRatingTtlByProvider: new Map(),
+      undiciFetchImpl: async () => {
+        throw new Error('unexpected undici fetch');
+      },
+    },
+    {
+      fetchAniListRating: async () => null,
+      fetchKitsuRating: async () => null,
+      fetchMyAnimeListRating: async () => null,
+      fetchTraktRating: async () => null,
+      fetchSimklRating: async () => null,
+      fetchMdbListRatings: async () => null,
+      findImdbEpisodeBySeriesSeasonEpisode: () => ({
+        imdbId: 'tt9999999',
+        seriesImdbId: 'tt0944947',
+        seasonNumber: 1,
+        episodeNumber: 3,
+      }),
+      getImdbRatingFromDataset: (imdbId) =>
+        imdbId === 'tt9999999' ? { rating: 9.2, votes: 800 } : { rating: 7.5, votes: 50000 },
+      normalizeRatingValue: (value) => {
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? numeric.toFixed(1) : null;
+      },
+    },
+  );
+
+  assert.equal(result.ratings.get('imdb'), '9.2');
+});
+
+test('image route provider ratings override MDBList series IMDB with episode-specific dataset rating', async () => {
+  const result = await resolveImageRouteProviderRatings(
+    {
+      cleanId: 'tt0944947:1:4',
+      imageType: 'backdrop',
+      mediaType: 'tv',
+      media: {
+        id: 1399,
+        imdb_id: 'tt0944947',
+        first_air_date: '2011-04-17',
+      },
+      mediaId: 'tt0944947',
+      isTmdb: false,
+      isKitsu: false,
+      isAniListInput: false,
+      idPrefix: 'tt0944947',
+      season: '1',
+      episode: '4',
+      mappedImdbId: null,
+      inputAnimeMappingProvider: null,
+      inputAnimeMappingExternalId: null,
+      requestedExternalRatings: new Set(['imdb']),
+      shouldAttemptAnimeMapping: false,
+      initialAllowAnimeOnlyRatings: false,
+      initialHasConfirmedAnimeMapping: false,
+      resolvedRatingMediaType: 'tv',
+      releaseDate: '2011-04-17',
+      mdblistKey: 'test-mdb-key',
+      hasMdbListApiKey: false,
+      simklClientId: '',
+      phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+      fetchJsonCached: async () => ({ ok: false, status: 404, data: null }),
+      getMetadata: () => null,
+      setMetadata: () => {},
+      detailsBundlePromise: null,
+      renderedRatingTtlByProvider: new Map(),
+      undiciFetchImpl: async () => {
+        throw new Error('unexpected undici fetch');
+      },
+    },
+    {
+      fetchAniListRating: async () => null,
+      fetchKitsuRating: async () => null,
+      fetchMyAnimeListRating: async () => null,
+      fetchTraktRating: async () => null,
+      fetchSimklRating: async () => null,
+      fetchMdbListRatings: async () => new Map([['imdb', '9.2']]),
+      findImdbEpisodeBySeriesSeasonEpisode: () => ({
+        imdbId: 'tt1480056',
+        seriesImdbId: 'tt0944947',
+        seasonNumber: 1,
+        episodeNumber: 4,
+      }),
+      getImdbRatingFromDataset: (imdbId) =>
+        imdbId === 'tt1480056' ? { rating: 8.3, votes: 900 } : { rating: 9.2, votes: 50000 },
+      normalizeRatingValue: (value) => {
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? numeric.toFixed(1) : null;
+      },
+    },
+  );
+
+  assert.equal(result.ratings.get('imdb'), '8.3');
+});
