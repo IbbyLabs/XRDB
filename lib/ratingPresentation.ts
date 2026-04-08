@@ -137,7 +137,6 @@ export const AGGREGATE_ACCENT_MODE_OPTIONS: Array<{
 ];
 
 const CRITICS_RATING_PROVIDERS = new Set<RatingPreference>([
-  'mdblist',
   'allocinepress',
   'tomatoes',
   'metacritic',
@@ -147,6 +146,7 @@ const CRITICS_RATING_PROVIDERS = new Set<RatingPreference>([
 const AUDIENCE_RATING_PROVIDERS = new Set<RatingPreference>([
   'tmdb',
   'imdb',
+  'mdblist',
   'allocine',
   'tomatoesaudience',
   'letterboxd',
