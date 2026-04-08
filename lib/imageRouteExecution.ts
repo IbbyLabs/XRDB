@@ -317,7 +317,8 @@ export const executeImageRouteRender = async ({
         !genreBadge &&
         !posterTitleText &&
         !posterLogoUrl &&
-        !editorialOverlay
+        !editorialOverlay &&
+        !compactRingOverlay
       ) {
         return getSourceImagePayload(imgUrl);
       }

@@ -808,7 +808,7 @@ if (imageType !== 'logo') {
         }))
       : [];
   const networkBadges =
-    mediaType === 'tv'
+    mediaType === 'tv' && shouldRenderStreamBadges
       ? buildNetworkBadgesFromTvNetworks(media?.networks).map((badge) => ({
           key: badge.key,
           label: badge.label,
