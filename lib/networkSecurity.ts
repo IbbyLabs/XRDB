@@ -1,5 +1,6 @@
 import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
+import { request as undiciRequest } from 'undici';
 
 const BLOCKED_HOSTNAMES = new Set([
   'localhost',
@@ -122,4 +123,61 @@ export const assertSafeSourceUrl = async (input: string) => {
   }
 
   return parsed;
+};
+
+const REDIRECT_STATUS_CODES = new Set([301, 302, 307, 308]);
+
+const buildWebResponse = async (
+  statusCode: number,
+  rawHeaders: Record<string, string | string[] | undefined>,
+  body: { arrayBuffer(): Promise<ArrayBuffer> },
+): Promise<Response> => {
+  const headers = new Headers();
+  for (const [key, value] of Object.entries(rawHeaders)) {
+    if (typeof value === 'string') {
+      headers.set(key, value);
+    } else if (Array.isArray(value)) {
+      headers.set(key, value.join(', '));
+    }
+  }
+  return new Response(await body.arrayBuffer(), { status: statusCode, headers });
+};
+
+type UndiciRequestFn = (
+  url: string,
+  options?: { maxRedirections?: number },
+) => Promise<{
+  statusCode: number;
+  headers: Record<string, string | string[] | undefined>;
+  body: { arrayBuffer(): Promise<ArrayBuffer>; dump(): Promise<void> };
+}>;
+
+export const fetchWithOneRedirect = async (
+  url: string,
+  _undiciRequest: UndiciRequestFn = undiciRequest as UndiciRequestFn,
+): Promise<Response> => {
+  const first = await _undiciRequest(url, { maxRedirections: 0 });
+
+  if (!REDIRECT_STATUS_CODES.has(first.statusCode)) {
+    return buildWebResponse(first.statusCode, first.headers, first.body);
+  }
+
+  await first.body.dump();
+
+  const locationHeader = first.headers['location'];
+  const location = Array.isArray(locationHeader) ? locationHeader[0] : locationHeader;
+  if (!location) {
+    throw new Error('Redirect response is missing a Location header.');
+  }
+
+  const resolvedLocation = new URL(location, url).toString();
+  await assertSafeSourceUrl(resolvedLocation);
+
+  const final = await _undiciRequest(resolvedLocation, { maxRedirections: 0 });
+  if (REDIRECT_STATUS_CODES.has(final.statusCode)) {
+    await final.body.dump();
+    throw new Error('Redirect chain not allowed: the redirect target also redirected.');
+  }
+
+  return buildWebResponse(final.statusCode, final.headers, final.body);
 };

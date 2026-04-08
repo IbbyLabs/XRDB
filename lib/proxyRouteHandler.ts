@@ -8,7 +8,7 @@ import {
   getConfiguredXrdbRequestKeys,
   isXrdbRequestAuthorized,
 } from '@/lib/xrdbRequestKey';
-import { assertSafeSourceUrl } from '@/lib/networkSecurity';
+import { assertSafeSourceUrl, fetchWithOneRedirect } from '@/lib/networkSecurity';
 import { buildProxyManifestPayload } from '@/lib/proxyManifest';
 import {
   buildProxyErrorResponse,
@@ -100,10 +100,7 @@ export async function handleProxyGet(
   if (!usingQueryConfig && resourceSegments.length === 1 && resourceSegments[0] === 'manifest.json') {
     let manifestResponse: Response;
     try {
-      manifestResponse = await fetch(safeManifestUrl.toString(), {
-        cache: 'no-store',
-        redirect: 'error',
-      });
+      manifestResponse = await fetchWithOneRedirect(safeManifestUrl.toString());
     } catch {
       return buildError(request, 'Unable to reach the source manifest.', 502);
     }
@@ -147,10 +144,7 @@ export async function handleProxyGet(
 
   let sourceResponse: Response;
   try {
-    sourceResponse = await fetch(forwardUrl.toString(), {
-      cache: 'no-store',
-      redirect: 'error',
-    });
+    sourceResponse = await fetchWithOneRedirect(forwardUrl.toString());
   } catch {
     return buildError(request, 'Unable to reach the source addon.', 502);
   }

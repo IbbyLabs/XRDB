@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { assertSafeSourceUrl } from '@/lib/networkSecurity';
+import { assertSafeSourceUrl, fetchWithOneRedirect } from '@/lib/networkSecurity';
 import {
   buildProxyCorsHeaders,
   buildProxyManifestPayload,
@@ -42,7 +42,7 @@ export async function handleProxyManifestGet(request: NextRequest) {
 
   let manifestResponse: Response;
   try {
-    manifestResponse = await fetch(safeSourceUrl.toString(), { cache: 'no-store', redirect: 'error' });
+    manifestResponse = await fetchWithOneRedirect(safeSourceUrl.toString());
   } catch {
     return buildError(request, 'Unable to reach the source manifest.', 502);
   }
