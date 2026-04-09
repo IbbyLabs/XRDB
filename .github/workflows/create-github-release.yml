@@ -73,6 +73,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPOSITORY: ${{ github.repository }}
+          CURRENT_TAG: ${{ github.event.workflow_run.head_branch }}
         run: node .github/scripts/reconcile-github-release-latest.mjs
 
       - name: Check Discord webhook secret
