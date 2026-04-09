@@ -22,6 +22,7 @@ import {
 } from '@/lib/imageRouteCachedFetch';
 import { resolveImageRouteRequestState } from '@/lib/imageRouteRequestState';
 import { executeImageRouteRender } from '@/lib/imageRouteExecution';
+import { getConfigProfile } from '@/lib/dbCore';
 
 const finalImageInFlight = new Map<string, Promise<RenderedImagePayload>>();
 
@@ -50,11 +51,15 @@ export async function handleImageRequest(
     return respond('Invalid image type', 400);
   }
 
+  const configId = request.nextUrl.searchParams.get('config');
+  const configFallbackKey = configId ? (getConfigProfile(configId)?.xrdbKey ?? null) : null;
+
   if (
     !isXrdbRequestAuthorized({
       configuredKeys: XRDB_REQUEST_API_KEYS,
       searchParams: request.nextUrl.searchParams,
       headers: request.headers,
+      fallbackKey: configFallbackKey,
     })
   ) {
     return respond(XRDB_REQUEST_KEY_ERROR_MESSAGE, 401);
