@@ -788,6 +788,10 @@ Copy `env.template` to `.env` and adjust as needed. All cache TTL values are in 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `XRDB_TRUST_PROXY_HEADERS` | `false` | Trust `x-forwarded-host` / `x-forwarded-proto` when behind a reverse proxy |
+| `XRDB_REQUEST_API_KEY` | (empty) | Single shared request key that gates render and proxy access on private hosts |
+| `XRDB_REQUEST_API_KEYS` | (empty) | Comma separated list of valid request keys when multiple keys are needed |
+| `XRDB_CONFIG_ENCRYPTION_KEY` | auto generated | 64 hex character (32 byte) key used to encrypt saved config profile params at rest. Set this explicitly in production and back it up. Generate with `openssl rand -hex 32`. |
+| `XRDB_INACTIVE_CONFIG_PRUNE_DAYS` | `-1` (disabled) | Days of inactivity before a saved config profile is pruned on startup. Inactivity is measured from the last image request that resolved the profile. Set to `-1` to disable pruning. |
 | `XRDB_PROXY_ALLOWED_ORIGINS` | (empty) | Comma separated CORS allowlist. Empty = `*` |
 | `XRDB_PREVIEW_ORIGIN` | `http://127.0.0.1:3000` | Preview fetch origin used by `/preview/{slug}` before falling back to the container hostname and public origin |
 | `XRDB_PORT` | `3000` | Host port used by `local-compose.yaml` |
@@ -816,6 +820,8 @@ Copy `env.template` to `.env` and adjust as needed. All cache TTL values are in 
 | `XRDB_OMDB_API_BASE_URL` | `https://www.omdbapi.com` | Optional OMDb API base URL override used for OMDb poster lookups |
 | `XRDB_FANART_API_KEY` | (empty) | Optional server side Fanart API key used as fallback when `fanartKey` is not supplied (also `FANART_API_KEY`) |
 | `XRDB_FANART_CLIENT_KEY` | (empty) | Optional server side Fanart client key (also `FANART_CLIENT_KEY`) |
+| `MDBLIST_API_KEY` | (empty) | Server side MDBList key used as a shared pool fallback for rating aggregation on hosted instances |
+| `MDBLIST_API_KEYS` | (empty) | Comma separated pool of server side MDBList keys. XRDB rotates through available keys under rate limit pressure |
 
 ### Cache TTLs
 
