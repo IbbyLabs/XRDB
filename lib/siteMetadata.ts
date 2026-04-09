@@ -3,9 +3,9 @@ import { BRAND_DISPLAY_NAME, BRAND_FULL_NAME, BRAND_NAME } from './siteBrand.ts'
 
 const DEFAULT_APP_URL = 'http://localhost:3000';
 const SITE_DESCRIPTION =
-  'XRDB, eXtended Ratings DataBase, is the active repository for releases, docs, and deployment updates.';
+  'Stateless artwork engine for posters, backdrops, thumbnails, logos, and addon integrations with dynamic ratings and quality badges.';
 const SITE_SOCIAL_DESCRIPTION =
-  'XRDB, eXtended Ratings DataBase, is the active repository for releases, docs, and deployment updates.';
+  'Stateless artwork engine for posters, backdrops, thumbnails, logos, and addon integrations with dynamic ratings and quality badges.';
 
 const resolveMetadataBase = (appUrl?: string) => new URL(appUrl || DEFAULT_APP_URL);
 
@@ -39,12 +39,12 @@ export const buildSiteMetadata = (appUrl?: string): Metadata => ({
     type: 'website',
     title: BRAND_DISPLAY_NAME,
     description: SITE_SOCIAL_DESCRIPTION,
-    images: ['/favicon.png'],
+    images: ['/discord-banner.png'],
   },
   twitter: {
     card: 'summary_large_image',
     title: `${BRAND_NAME} | ${BRAND_FULL_NAME}`,
     description: SITE_SOCIAL_DESCRIPTION,
-    images: ['/favicon.png'],
+    images: ['/discord-banner.png'],
   },
 });

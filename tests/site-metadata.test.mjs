@@ -8,7 +8,7 @@ test('buildSiteMetadata uses the provided public app URL as metadata base', () =
 
   assert.equal(metadata.metadataBase?.toString(), 'https://example.test/');
   assert.equal(metadata.applicationName, 'XRDB | eXtended Ratings DataBase');
-  assert.equal(metadata.openGraph?.images?.[0], '/favicon.png');
+  assert.equal(metadata.openGraph?.images?.[0], '/discord-banner.png');
 });
 
 test('siteViewport keeps the dark brand theme color', () => {
