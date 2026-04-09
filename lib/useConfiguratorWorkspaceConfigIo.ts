@@ -314,6 +314,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setRatingYOffsetSquare: Setter<WorkspaceSettings['ratingYOffsetSquare']>;
   setRatingProviderAppearanceOverrides: Setter<WorkspaceSettings['ratingProviderAppearanceOverrides']>;
   setRatingValueMode: Setter<WorkspaceSettings['ratingValueMode']>;
+  setRatingBlackStripEnabled: (value: boolean) => void;
   setSimklClientId: Setter<WorkspaceSettings['simklClientId']>;
   setThumbnailRatingRows: Setter<RatingProviderRow[]>;
   setThumbnailEpisodeArtwork: Setter<WorkspaceSettings['thumbnailEpisodeArtwork']>;
@@ -626,6 +627,7 @@ export function useConfiguratorWorkspaceConfigIo({
   setRatingYOffsetSquare,
   setRatingProviderAppearanceOverrides,
   setRatingValueMode,
+  setRatingBlackStripEnabled,
   setSimklClientId,
   setThumbnailRatingRows,
   setThumbnailEpisodeArtwork,
@@ -660,9 +662,14 @@ export function useConfiguratorWorkspaceConfigIo({
       setPosterImageText(normalized.settings.posterImageText);
       setBackdropImageText(normalized.settings.backdropImageText);
       setThumbnailImageText(normalized.settings.thumbnailImageText);
-      setPosterArtworkSource(normalized.settings.posterArtworkSource);
-      setBackdropArtworkSource(normalized.settings.backdropArtworkSource);
-      setThumbnailArtworkSource(normalized.settings.thumbnailArtworkSource);
+      const savedPosterSource = normalized.settings.posterArtworkSource;
+      const savedBackdropSource = normalized.settings.backdropArtworkSource;
+      const savedThumbnailSource = normalized.settings.thumbnailArtworkSource;
+      const hadBlackBar = savedPosterSource === 'blackbar' || savedBackdropSource === 'blackbar' || savedThumbnailSource === 'blackbar';
+      setPosterArtworkSource(savedPosterSource === 'blackbar' ? 'tmdb' : savedPosterSource);
+      setBackdropArtworkSource(savedBackdropSource === 'blackbar' ? 'tmdb' : savedBackdropSource);
+      setThumbnailArtworkSource(savedThumbnailSource === 'blackbar' ? 'tmdb' : savedThumbnailSource);
+      if (hadBlackBar) setRatingBlackStripEnabled(true);
       setBackdropEpisodeArtwork(normalized.settings.backdropEpisodeArtwork);
       setRatingValueMode(normalized.settings.ratingValueMode);
       setPosterGenreBadgeMode(normalized.settings.posterGenreBadgeMode);

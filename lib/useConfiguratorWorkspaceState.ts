@@ -100,6 +100,7 @@ export function useConfiguratorWorkspaceState() {
   const [posterArtworkSource, setPosterArtworkSource] = useState<ArtworkSource>('tmdb');
   const [backdropArtworkSource, setBackdropArtworkSource] = useState<ArtworkSource>('tmdb');
   const [thumbnailArtworkSource, setThumbnailArtworkSource] = useState<ArtworkSource>('tmdb');
+  const [ratingBlackStripEnabled, setRatingBlackStripEnabled] = useState(false);
   const [thumbnailEpisodeArtwork, setThumbnailEpisodeArtwork] = useState<EpisodeArtworkMode>('still');
   const [backdropEpisodeArtwork, setBackdropEpisodeArtwork] = useState<EpisodeArtworkMode>('series');
   const [ratingValueMode, setRatingValueMode] = useState<RatingValueMode>(DEFAULT_RATING_VALUE_MODE);
@@ -373,6 +374,7 @@ export function useConfiguratorWorkspaceState() {
     posterRingProgressSource,
     posterRingValueSource,
     posterArtworkSource,
+    ratingBlackStripEnabled,
     posterEdgeOffset,
     posterGenreBadgeAnimeGrouping,
     posterGenreBadgeMode,
@@ -543,6 +545,7 @@ export function useConfiguratorWorkspaceState() {
     setPosterRingProgressSource,
     setPosterRingValueSource,
     setPosterArtworkSource,
+    setRatingBlackStripEnabled,
     setPosterEdgeOffset,
     setPosterGenreBadgeAnimeGrouping,
     setPosterGenreBadgeMode,

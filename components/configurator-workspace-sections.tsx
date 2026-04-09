@@ -1162,7 +1162,7 @@ export function SimpleQuickTuneSection({
             Artwork Source
           </div>
           <div className="mt-2 flex flex-wrap gap-1">
-            {(previewType === 'logo' ? logoArtworkSourceOptions : activeArtworkSourceOptions).map((option) => (
+            {(previewType === 'logo' ? logoArtworkSourceOptions : activeArtworkSourceOptions.filter((option) => option.id !== 'blackbar')).map((option) => (
               <button
                 key={`simple-art-${option.id}`}
                 type="button"

@@ -348,6 +348,8 @@ export function buildConfiguratorPageProps({
         onSelectQualityBadgeScale: activeWorkspaceSettings.setActiveQualityBadgeScale,
         onSelectPosterNoBackgroundBadgeOutlineColor: workspaceState.setPosterNoBackgroundBadgeOutlineColor,
         onSelectPosterNoBackgroundBadgeOutlineWidth: workspaceState.setPosterNoBackgroundBadgeOutlineWidth,
+        activeBlackBarEnabled: workspaceState.ratingBlackStripEnabled,
+        onToggleBlackBar: () => workspaceState.setRatingBlackStripEnabled((v) => !v),
       },
       qualityProps: {
         previewType: workspaceState.previewType,

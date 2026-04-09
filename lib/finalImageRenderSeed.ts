@@ -63,6 +63,7 @@ type FinalImageRenderSeedInput = {
   posterNoBackgroundBadgeOutlineColor: string;
   posterNoBackgroundBadgeOutlineWidth: number;
   artworkSelectionSeed: string;
+  ratingBlackStripEnabled: boolean;
   ratingStyle: string;
   ratingStackOffsetX: number;
   ratingStackOffsetY: number;
@@ -176,6 +177,7 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     isPoster ? input.posterNoBackgroundBadgeOutlineColor : '-',
     isPoster ? String(input.posterNoBackgroundBadgeOutlineWidth) : '-',
     input.artworkSelectionSeed || '-',
+    input.ratingBlackStripEnabled ? 'strip' : '-',
     input.ratingStyle,
     appliesStyleRatingOffset ? String(input.ratingStackOffsetX) : '-',
     appliesStyleRatingOffset ? String(input.ratingStackOffsetY) : '-',
@@ -202,6 +204,6 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
       : '-',
     input.sourceFallbackKey || '-',
     input.renderCacheBuster || '-',
-    'v13',
+    'v14',
   ].join('|');
 };

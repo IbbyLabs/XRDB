@@ -8,8 +8,8 @@ export const TEXTLESS_ARTWORK_UNSUPPORTED_MESSAGE =
   'These providers currently do not supply textless artwork.';
 
 const TEXTLESS_CAPABLE_ARTWORK_SOURCES: Record<ArtworkTextSupportScope, Set<ArtworkSourceId>> = {
-  poster: new Set(['tmdb', 'fanart', 'random', 'blackbar']),
-  backdrop: new Set(['tmdb', 'fanart', 'random', 'blackbar']),
+  poster: new Set(['tmdb', 'fanart', 'random']),
+  backdrop: new Set(['tmdb', 'fanart', 'random']),
 };
 
 export const artworkTextSelectionNeedsProviderTextlessSupport = (

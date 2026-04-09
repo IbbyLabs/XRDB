@@ -64,6 +64,7 @@ const createInput = (overrides = {}) => ({
   simklStateKey: 'simkl:none',
   streamBadgesCacheKeySeed: 'off',
   artworkSelectionSeed: 'artwork:default',
+  ratingBlackStripEnabled: false,
   fanartKeyHash: 'fanart-hash',
   fanartClientKeyHash: 'fanart-client-hash',
   omdbKeyHash: 'omdb-hash',
