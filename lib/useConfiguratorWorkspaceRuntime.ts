@@ -1883,6 +1883,8 @@ export function useConfiguratorWorkspaceRuntime() {
   });
 
   return {
+    applySavedUiConfig,
+    buildCurrentUiConfig,
     docsCaptureReady,
     experienceModeDraft,
     handleContinueExperienceMode,
@@ -1891,6 +1893,7 @@ export function useConfiguratorWorkspaceRuntime() {
     pageRef: pageChrome.pageRef,
     setExperienceModeDraft,
     showExperienceModal,
+    uiSettingsLoaded,
     workspaceColumnsProps,
   };
 }
