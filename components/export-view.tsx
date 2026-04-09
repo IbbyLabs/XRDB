@@ -15,7 +15,27 @@ import {
 import {
   RATING_PROVIDER_OPTIONS,
 } from '@/lib/ratingProviderCatalog';
-import { type EpisodeArtworkMode } from '@/lib/uiConfig';
+import { type AiometadataUrlPatterns, type EpisodeArtworkMode } from '@/lib/uiConfig';
+
+const LEGACY_CONFIG_ID_RE = /^xr_[0-9a-f]{8}$/i;
+
+const toConfigUrl = (pattern: string, profileId: string): string => {
+  const qIdx = pattern.indexOf('?');
+  const base = qIdx >= 0 ? pattern.slice(0, qIdx) : pattern;
+  return `${base}?config=${profileId}`;
+};
+
+const formatCountdown = (msRemaining: number): string => {
+  if (msRemaining <= 0) return 'expired';
+  const totalMinutes = Math.floor(msRemaining / 60000);
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+  const plural = (n: number, s: string) => `${n} ${s}${n === 1 ? '' : 's'}`;
+  if (days >= 1) return `${plural(days, 'day')}, ${plural(hours, 'hour')} left`;
+  if (hours >= 1) return `${plural(hours, 'hour')}, ${plural(minutes, 'minute')} left`;
+  return `${plural(minutes, 'minute')} left`;
+};
 
 type PosterIdMode = 'auto' | 'tmdb' | 'imdb';
 type PreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
@@ -72,6 +92,40 @@ export function ExportView() {
     buildSaveParams,
   } = exportPanelsProps;
 
+  const [savedProfileId, setSavedProfileId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('xrdb_config_profile_id');
+    if (stored) setSavedProfileId(stored);
+  }, []);
+
+  useEffect(() => {
+    if (savedProfileId) {
+      localStorage.setItem('xrdb_config_profile_id', savedProfileId);
+    } else {
+      localStorage.removeItem('xrdb_config_profile_id');
+    }
+  }, [savedProfileId]);
+
+  useEffect(() => {
+    const sync = () => {
+      const stored = localStorage.getItem('xrdb_config_profile_id');
+      setSavedProfileId((prev) => (prev === stored ? prev : stored));
+    };
+    window.addEventListener('storage', sync);
+    window.addEventListener('xrdb-config-profile-cleared', sync);
+    return () => {
+      window.removeEventListener('storage', sync);
+      window.removeEventListener('xrdb-config-profile-cleared', sync);
+    };
+  }, []);
+
+  const [aiometadataUrlMode, setAiometadataUrlMode] = useState<'inline' | 'config'>('inline');
+
+  useEffect(() => {
+    if (!savedProfileId) setAiometadataUrlMode('inline');
+  }, [savedProfileId]);
+
   const {
     previewType,
     onSelectPreviewType,
@@ -96,6 +150,9 @@ export function ExportView() {
           aiometadataPatternRows={aiometadataPatternRows}
           aiometadataCopied={aiometadataCopied}
           onCopyAiometadata={onCopyAiometadata}
+          savedProfileId={savedProfileId}
+          aiometadataUrlMode={aiometadataUrlMode}
+          onSetAiometadataUrlMode={setAiometadataUrlMode}
         />
 
         <ConfigStringSection
@@ -110,6 +167,8 @@ export function ExportView() {
         <SaveConfigSection
           canGenerateConfig={canGenerateConfig}
           buildSaveParams={buildSaveParams}
+          savedProfileId={savedProfileId}
+          onProfileIdChange={setSavedProfileId}
         />
 
         <div className="xrdb-panel rounded-2xl">
@@ -229,20 +288,51 @@ function AiometadataSection({
   aiometadataPatternRows,
   aiometadataCopied,
   onCopyAiometadata,
+  savedProfileId,
+  aiometadataUrlMode,
+  onSetAiometadataUrlMode,
 }: {
   aiometadataPatternRows: Array<{ key: string; label: string; value: string; description: string }>;
   aiometadataCopied: boolean;
   onCopyAiometadata: () => void;
+  savedProfileId: string | null;
+  aiometadataUrlMode: 'inline' | 'config';
+  onSetAiometadataUrlMode: (mode: 'inline' | 'config') => void;
 }) {
   const [copiedRowKey, setCopiedRowKey] = useState<string | null>(null);
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [configCopiedAll, setConfigCopiedAll] = useState(false);
+  const configCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleCopyRow = useCallback((key: string, value: string) => {
-    void navigator.clipboard.writeText(value);
-    if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
-    setCopiedRowKey(key);
-    copiedTimerRef.current = setTimeout(() => setCopiedRowKey(null), 1500);
-  }, []);
+  const getDisplayValue = useCallback(
+    (value: string) =>
+      aiometadataUrlMode === 'config' && savedProfileId ? toConfigUrl(value, savedProfileId) : value,
+    [aiometadataUrlMode, savedProfileId],
+  );
+
+  const handleCopyRow = useCallback(
+    (key: string, value: string) => {
+      void navigator.clipboard.writeText(getDisplayValue(value));
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+      setCopiedRowKey(key);
+      copiedTimerRef.current = setTimeout(() => setCopiedRowKey(null), 1500);
+    },
+    [getDisplayValue],
+  );
+
+  const handleCopyAll = useCallback(() => {
+    if (aiometadataUrlMode === 'config' && savedProfileId) {
+      const text = aiometadataPatternRows.map((r) => toConfigUrl(r.value, savedProfileId)).join('\n');
+      void navigator.clipboard.writeText(text);
+      if (configCopiedTimerRef.current) clearTimeout(configCopiedTimerRef.current);
+      setConfigCopiedAll(true);
+      configCopiedTimerRef.current = setTimeout(() => setConfigCopiedAll(false), 1500);
+    } else {
+      onCopyAiometadata();
+    }
+  }, [aiometadataUrlMode, savedProfileId, aiometadataPatternRows, onCopyAiometadata]);
+
+  const isCopiedAll = aiometadataUrlMode === 'config' ? configCopiedAll : aiometadataCopied;
 
   return (
     <div className="xrdb-panel rounded-2xl p-4 space-y-3">
@@ -252,17 +342,17 @@ function AiometadataSection({
         </h2>
         <button
           type="button"
-          onClick={onCopyAiometadata}
+          onClick={handleCopyAll}
           disabled={!aiometadataPatternRows.length}
           className={`rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-2 transition-colors ${
             aiometadataPatternRows.length
-              ? aiometadataCopied
+              ? isCopiedAll
                 ? 'bg-green-500 text-white'
                 : 'bg-violet-600 text-white hover:bg-violet-500'
               : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
           }`}
         >
-          {aiometadataCopied ? (
+          {isCopiedAll ? (
             <>
               <Check className="w-3.5 h-3.5" />
               <span>Copied</span>
@@ -278,12 +368,43 @@ function AiometadataSection({
       <p className="text-[13px] leading-5 text-zinc-400">
         Ready to paste URL patterns for the AIOMetadata art override fields.
       </p>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onSetAiometadataUrlMode('inline')}
+          className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors ${
+            aiometadataUrlMode === 'inline'
+              ? 'border-violet-500/60 bg-zinc-800 text-white'
+              : 'border-white/10 bg-zinc-950 text-zinc-400 hover:text-white'
+          }`}
+        >
+          Inline
+        </button>
+        <button
+          type="button"
+          onClick={() => savedProfileId && onSetAiometadataUrlMode('config')}
+          disabled={!savedProfileId}
+          className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors ${
+            aiometadataUrlMode === 'config'
+              ? 'border-violet-500/60 bg-zinc-800 text-white'
+              : savedProfileId
+                ? 'border-white/10 bg-zinc-950 text-zinc-400 hover:text-white'
+                : 'border-white/5 bg-zinc-950 text-zinc-600 cursor-not-allowed'
+          }`}
+        >
+          Config
+        </button>
+        {!savedProfileId && (
+          <span className="text-[11px] text-zinc-600">Save a profile to enable config URLs</span>
+        )}
+      </div>
       {aiometadataPatternRows.length === 0 ? (
         <p className="text-[13px] text-zinc-500">Add API keys and configure settings to generate URLs.</p>
       ) : (
         <div className="space-y-2">
           {aiometadataPatternRows.map((row) => {
             const isRowCopied = copiedRowKey === row.key;
+            const displayValue = getDisplayValue(row.value);
             return (
               <div key={row.key} className="rounded-xl border border-white/10 bg-black/40 p-3 min-w-0">
                 <div className="flex items-center justify-between gap-3">
@@ -305,7 +426,7 @@ function AiometadataSection({
                   </button>
                 </div>
                 <div className="mt-2 rounded-lg border border-white/10 bg-zinc-950/80 p-3 font-mono text-[11px] leading-5 text-zinc-300 break-all overflow-hidden">
-                  {row.value}
+                  {displayValue}
                 </div>
               </div>
             );
@@ -390,40 +511,73 @@ function ConfigStringSection({
 function SaveConfigSection({
   canGenerateConfig,
   buildSaveParams,
+  savedProfileId,
+  onProfileIdChange,
 }: {
   canGenerateConfig: boolean;
   buildSaveParams: () => Record<string, string> | null;
+  savedProfileId: string | null;
+  onProfileIdChange: (id: string | null) => void;
 }) {
-  const [savedProfileId, setSavedProfileId] = useState<string | null>(() => {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem('xrdb_config_profile_id');
-  });
   const [isSaving, setIsSaving] = useState(false);
+  const [isMigrating, setIsMigrating] = useState(false);
   const [fragmentCopied, setFragmentCopied] = useState(false);
-  const [snippetCopied, setSnippetCopied] = useState(false);
+  const [expiredBanner, setExpiredBanner] = useState(false);
+  const [migrationCompleteBanner, setMigrationCompleteBanner] = useState(false);
+  const [migrationDeadline, setMigrationDeadline] = useState<number | null>(null);
+  const [countdown, setCountdown] = useState<string | null>(null);
   const fragmentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const snippetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const savedParamsFingerprintRef = useRef<string | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  const isLegacyId = savedProfileId ? LEGACY_CONFIG_ID_RE.test(savedProfileId) : false;
 
   useEffect(() => {
-    if (savedProfileId) {
-      localStorage.setItem('xrdb_config_profile_id', savedProfileId);
-    } else {
-      localStorage.removeItem('xrdb_config_profile_id');
+    if (!savedProfileId || !isLegacyId) {
+      setMigrationDeadline(null);
+      setCountdown(null);
+      return;
     }
-  }, [savedProfileId]);
+    let active = true;
+    void (async () => {
+      try {
+        const res = await fetch(`/api/config/${savedProfileId}/status`);
+        if (!res.ok) return;
+        const data = await res.json() as { isLegacy: boolean; migrationDeadline: number | null };
+        if (!active) return;
+        const deadline = data.migrationDeadline;
+        if (!deadline) return;
+        if (Date.now() > deadline) {
+          try { await fetch(`/api/config/${savedProfileId}`, { method: 'DELETE' }); } catch {}
+          if (active) { onProfileIdChange(null); setExpiredBanner(true); }
+          return;
+        }
+        setMigrationDeadline(deadline);
+        setCountdown(formatCountdown(deadline - Date.now()));
+      } catch {}
+    })();
+    return () => { active = false; };
+  }, [savedProfileId, isLegacyId, onProfileIdChange]);
 
   useEffect(() => {
-    const sync = () => {
-      const stored = localStorage.getItem('xrdb_config_profile_id');
-      setSavedProfileId((prev) => (prev === stored ? prev : stored));
-    };
-    window.addEventListener('storage', sync);
-    window.addEventListener('xrdb-config-profile-cleared', sync);
-    return () => {
-      window.removeEventListener('storage', sync);
-      window.removeEventListener('xrdb-config-profile-cleared', sync);
-    };
-  }, []);
+    if (!migrationDeadline) return;
+    const interval = setInterval(() => {
+      const remaining = migrationDeadline - Date.now();
+      if (remaining <= 0) {
+        setCountdown('expired');
+        clearInterval(interval);
+      } else {
+        setCountdown(formatCountdown(remaining));
+      }
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [migrationDeadline]);
+
+  useEffect(() => {
+    const params = buildSaveParams();
+    const fingerprint = params ? JSON.stringify(Object.entries(params).sort()) : null;
+    setHasUnsavedChanges(fingerprint !== savedParamsFingerprintRef.current);
+  });
 
   const handleSave = useCallback(async () => {
     const params = buildSaveParams();
@@ -439,12 +593,14 @@ function SaveConfigSection({
       });
       if (res.ok) {
         const data = await res.json() as { id: string };
-        setSavedProfileId(data.id);
+        savedParamsFingerprintRef.current = JSON.stringify(Object.entries(params).sort());
+        setHasUnsavedChanges(false);
+        onProfileIdChange(data.id);
       }
     } finally {
       setIsSaving(false);
     }
-  }, [buildSaveParams, savedProfileId]);
+  }, [buildSaveParams, savedProfileId, onProfileIdChange]);
 
   const handleDelete = useCallback(async () => {
     if (!savedProfileId) return;
@@ -452,12 +608,33 @@ function SaveConfigSection({
     try {
       const res = await fetch(`/api/config/${savedProfileId}`, { method: 'DELETE' });
       if (res.ok) {
-        setSavedProfileId(null);
+        onProfileIdChange(null);
       }
     } finally {
       setIsSaving(false);
     }
-  }, [savedProfileId]);
+  }, [savedProfileId, onProfileIdChange]);
+
+  const handleMigrate = useCallback(async () => {
+    if (!savedProfileId) return;
+    const params = buildSaveParams();
+    if (!params) return;
+    setIsMigrating(true);
+    try {
+      const newRes = await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!newRes.ok) return;
+      const { id: newId } = await newRes.json() as { id: string };
+      await fetch(`/api/config/${savedProfileId}`, { method: 'DELETE' });
+      onProfileIdChange(newId);
+      setMigrationCompleteBanner(true);
+    } finally {
+      setIsMigrating(false);
+    }
+  }, [savedProfileId, buildSaveParams, onProfileIdChange]);
 
   const handleCopyFragment = useCallback(() => {
     if (!savedProfileId) return;
@@ -465,15 +642,6 @@ function SaveConfigSection({
     if (fragmentTimerRef.current) clearTimeout(fragmentTimerRef.current);
     setFragmentCopied(true);
     fragmentTimerRef.current = setTimeout(() => setFragmentCopied(false), 1500);
-  }, [savedProfileId]);
-
-  const handleCopySnippet = useCallback(() => {
-    if (!savedProfileId) return;
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    void navigator.clipboard.writeText(`${origin}/poster/{id}.jpg?config=${savedProfileId}`);
-    if (snippetTimerRef.current) clearTimeout(snippetTimerRef.current);
-    setSnippetCopied(true);
-    snippetTimerRef.current = setTimeout(() => setSnippetCopied(false), 1500);
   }, [savedProfileId]);
 
   return (
@@ -491,13 +659,28 @@ function SaveConfigSection({
           Add a TMDB key and MDBList key to save a profile.
         </p>
       )}
+      {expiredBanner && (
+        <div className="rounded-xl border border-orange-500/30 bg-orange-950/20 p-3">
+          <p className="text-[12px] text-orange-300">
+            Your saved profile expired and was removed. Save a new profile to continue using config URLs.
+          </p>
+        </div>
+      )}
+      {migrationCompleteBanner && (
+        <div className="rounded-xl border border-green-500/30 bg-green-950/20 p-3 space-y-1">
+          <p className="text-[12px] font-semibold text-green-300">Profile migrated successfully</p>
+          <p className="text-[11px] text-green-400/80 leading-4">
+            Your previous profile stored settings in an older format. Consider rotating your TMDB and MDBList API keys to ensure they remain secure.
+          </p>
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
           onClick={() => void handleSave()}
-          disabled={!canGenerateConfig || isSaving}
+          disabled={!canGenerateConfig || isSaving || (!!savedProfileId && !hasUnsavedChanges)}
           className={`rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-2 transition-colors ${
-            canGenerateConfig && !isSaving
+            canGenerateConfig && !isSaving && (!savedProfileId || hasUnsavedChanges)
               ? 'bg-violet-600 text-white hover:bg-violet-500'
               : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
           }`}
@@ -519,6 +702,27 @@ function SaveConfigSection({
       </div>
       {savedProfileId && (
         <div className="space-y-2">
+          {isLegacyId && countdown && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 space-y-2">
+              <p className="text-[12px] font-semibold text-amber-300">Profile security upgrade required</p>
+              <p className="text-[11px] text-amber-400/80 leading-4">
+                This profile uses an older ID format. Migrate to a secure profile before it expires.{' '}
+                <span className="font-semibold">{countdown}</span>
+              </p>
+              <button
+                type="button"
+                onClick={() => void handleMigrate()}
+                disabled={isMigrating || !canGenerateConfig}
+                className={`rounded-full px-3 py-1.5 text-[11px] font-semibold flex items-center gap-1.5 transition-colors ${
+                  !isMigrating && canGenerateConfig
+                    ? 'bg-amber-500 text-black hover:bg-amber-400'
+                    : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                }`}
+              >
+                {isMigrating ? 'Migrating...' : 'Migrate now'}
+              </button>
+            </div>
+          )}
           <div className="rounded-xl border border-white/10 bg-black/40 p-3 min-w-0">
             <div className="flex items-center justify-between gap-3 mb-2">
               <div className="text-[12px] font-semibold text-zinc-200">Profile ID</div>
@@ -542,29 +746,7 @@ function SaveConfigSection({
               {savedProfileId}
             </div>
           </div>
-          <div className="rounded-xl border border-white/10 bg-black/40 p-3 min-w-0">
-            <div className="flex items-center justify-between gap-3 mb-2">
-              <div className="text-[12px] font-semibold text-zinc-200">Poster URL pattern</div>
-              <button
-                type="button"
-                onClick={handleCopySnippet}
-                className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-medium flex items-center gap-1.5 transition-all ${
-                  snippetCopied
-                    ? 'border-green-500/60 bg-green-500 text-white'
-                    : 'border-white/15 text-zinc-300 hover:text-white'
-                }`}
-              >
-                {snippetCopied ? (
-                  <><Check className="w-3 h-3" /> Copied</>
-                ) : (
-                  <><Clipboard className="w-3 h-3" /> Copy</>
-                )}
-              </button>
-            </div>
-            <div className="font-mono text-[11px] text-zinc-300 bg-zinc-950/80 rounded-lg border border-white/10 p-3 break-all">
-              {`${typeof window !== 'undefined' ? window.location.origin : ''}/poster/{id}.jpg?config=${savedProfileId}`}
-            </div>
-          </div>
+
         </div>
       )}
     </div>

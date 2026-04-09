@@ -505,6 +505,7 @@ export function buildConfiguratorPageProps({
         hideAiometadataCredentials: workspaceState.hideAiometadataCredentials,
         onToggleHideAiometadataCredentials: workspaceState.setHideAiometadataCredentials,
         buildSaveParams: () => buildProfileParams(outputs.currentUiConfig.settings),
+        aiometadataPatterns: outputs.aiometadataPatterns,
       },
       supportPanelsProps: {
         isAddonProxyOpen: workspaceUi.openWorkspacePanels.has('addon-proxy'),
