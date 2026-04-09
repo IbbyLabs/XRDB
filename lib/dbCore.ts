@@ -108,6 +108,13 @@ export const upsertConfigProfile = (id: string, params: Record<string, string>):
   ).run(id, JSON.stringify(params), now, now);
 };
 
+export const deleteConfigProfile = (id: string): boolean => {
+  ensureDbInitialized();
+  const db = getDb();
+  const result = db.prepare('DELETE FROM config_profiles WHERE id = ?').run(id);
+  return result.changes > 0;
+};
+
 export const getConfigProfile = (id: string): Record<string, string> | null => {
   ensureDbInitialized();
   const db = getDb();

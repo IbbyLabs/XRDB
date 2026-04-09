@@ -284,8 +284,14 @@ export function useConfiguratorWorkspaceStorage({
     }
 
     try {
+      const profileId = window.localStorage.getItem('xrdb_config_profile_id');
       window.localStorage.removeItem(UI_CONFIG_STORAGE_KEY);
       window.localStorage.removeItem(LEGACY_API_KEY_CONFIG_STORAGE_KEY);
+      window.localStorage.removeItem('xrdb_config_profile_id');
+      window.dispatchEvent(new Event('xrdb-config-profile-cleared'));
+      if (profileId) {
+        void fetch(`/api/config/${profileId}`, { method: 'DELETE' });
+      }
       applySavedUiConfig(normalizeSavedUiConfig({}));
       setSavedConfigStatus('cleared');
     } catch {
