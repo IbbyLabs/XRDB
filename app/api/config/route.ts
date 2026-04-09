@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   const params: Record<string, string> = {};
   for (const [key, value] of Object.entries(raw)) {
     if (key === '_id') continue;
-    if (value !== null && value !== undefined && value !== '') {
+    if (value !== null && value !== undefined) {
       params[key] = String(value);
     }
   }

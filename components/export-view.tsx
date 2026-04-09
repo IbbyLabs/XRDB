@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { BookmarkPlus, Check, ChevronDown, Clipboard, Code2, Eye, EyeOff } from 'lucide-react';
+import { BookmarkPlus, Check, ChevronDown, Clipboard, Code2, Eye, EyeOff, Trash2 } from 'lucide-react';
 
 import { useConfiguratorContext } from '@/lib/configuratorProvider';
 import { WorkspaceManagementSection } from '@/components/configurator-basics';
@@ -412,6 +412,19 @@ function SaveConfigSection({
     }
   }, [savedProfileId]);
 
+  useEffect(() => {
+    const sync = () => {
+      const stored = localStorage.getItem('xrdb_config_profile_id');
+      setSavedProfileId((prev) => (prev === stored ? prev : stored));
+    };
+    window.addEventListener('storage', sync);
+    window.addEventListener('xrdb-config-profile-cleared', sync);
+    return () => {
+      window.removeEventListener('storage', sync);
+      window.removeEventListener('xrdb-config-profile-cleared', sync);
+    };
+  }, []);
+
   const handleSave = useCallback(async () => {
     const params = buildSaveParams();
     if (!params) return;
@@ -432,6 +445,19 @@ function SaveConfigSection({
       setIsSaving(false);
     }
   }, [buildSaveParams, savedProfileId]);
+
+  const handleDelete = useCallback(async () => {
+    if (!savedProfileId) return;
+    setIsSaving(true);
+    try {
+      const res = await fetch(`/api/config/${savedProfileId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setSavedProfileId(null);
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  }, [savedProfileId]);
 
   const handleCopyFragment = useCallback(() => {
     if (!savedProfileId) return;
@@ -460,19 +486,37 @@ function SaveConfigSection({
         <span className="font-mono text-[12px] bg-zinc-900 px-1 rounded text-zinc-300">?config=&lt;id&gt;</span>{' '}
         to any image URL to apply this profile.
       </p>
-      <button
-        type="button"
-        onClick={() => void handleSave()}
-        disabled={!canGenerateConfig || isSaving}
-        className={`rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-2 transition-colors ${
-          canGenerateConfig && !isSaving
-            ? 'bg-violet-600 text-white hover:bg-violet-500'
-            : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-        }`}
-      >
-        <BookmarkPlus className="w-3.5 h-3.5" />
-        <span>{isSaving ? 'Saving...' : savedProfileId ? 'Update saved profile' : 'Save config profile'}</span>
-      </button>
+      {!canGenerateConfig && (
+        <p className="text-[12px] leading-4 text-amber-400/90">
+          Add a TMDB key and MDBList key to save a profile.
+        </p>
+      )}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => void handleSave()}
+          disabled={!canGenerateConfig || isSaving}
+          className={`rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-2 transition-colors ${
+            canGenerateConfig && !isSaving
+              ? 'bg-violet-600 text-white hover:bg-violet-500'
+              : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+          }`}
+        >
+          <BookmarkPlus className="w-3.5 h-3.5" />
+          <span>{isSaving ? 'Saving...' : savedProfileId ? 'Update saved profile' : 'Save config profile'}</span>
+        </button>
+        {savedProfileId && (
+          <button
+            type="button"
+            onClick={() => void handleDelete()}
+            disabled={isSaving}
+            className="rounded-full px-3 py-2 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-red-500/30 text-red-400 hover:text-red-300 hover:border-red-500/50"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Delete profile</span>
+          </button>
+        )}
+      </div>
       {savedProfileId && (
         <div className="space-y-2">
           <div className="rounded-xl border border-white/10 bg-black/40 p-3 min-w-0">
