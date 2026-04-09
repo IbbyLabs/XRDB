@@ -175,6 +175,7 @@ import {
   normalizeStreamBadgesSetting,
 } from './imageRouteDisplayPrefs.ts';
 import { normalizeRemuxDisplayMode } from './uiConfig.ts';
+import { getConfigProfile } from './dbCore.ts';
 import type { RemuxDisplayMode } from './mediaFeatures.ts';
 
 type ImageType = (typeof ALLOWED_IMAGE_TYPES extends Set<infer T> ? T : never) & ('poster' | 'backdrop' | 'logo');
@@ -339,7 +340,22 @@ export const resolveImageRouteRequestState = async ({
   imageType: ImageType;
   id: string;
 }): Promise<ImageRouteRequestState> => {
-  const searchParams = request.nextUrl.searchParams;
+  const rawSearchParams = request.nextUrl.searchParams;
+  const configProfileId = rawSearchParams.get('config');
+  let searchParams = rawSearchParams;
+  if (configProfileId) {
+    const profile = getConfigProfile(configProfileId);
+    if (profile) {
+      const merged = new URLSearchParams();
+      for (const [key, value] of Object.entries(profile)) {
+        merged.set(key, value);
+      }
+      for (const [key, value] of rawSearchParams.entries()) {
+        merged.set(key, value);
+      }
+      searchParams = merged;
+    }
+  }
   const isThumbnailRequest =
     imageType === 'backdrop' &&
     /^(1|true|yes|on)$/i.test(String(searchParams.get('thumbnail') || '').trim());

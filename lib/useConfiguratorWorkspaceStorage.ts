@@ -286,11 +286,12 @@ export function useConfiguratorWorkspaceStorage({
     try {
       window.localStorage.removeItem(UI_CONFIG_STORAGE_KEY);
       window.localStorage.removeItem(LEGACY_API_KEY_CONFIG_STORAGE_KEY);
+      applySavedUiConfig(normalizeSavedUiConfig({}));
       setSavedConfigStatus('cleared');
     } catch {
       setSavedConfigStatus('error');
     }
-  }, []);
+  }, [applySavedUiConfig]);
 
   const handleToggleConfigAutoSave = useCallback(() => {
     const next = !configAutoSave;

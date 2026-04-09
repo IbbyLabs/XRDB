@@ -304,6 +304,7 @@ Episode thumbnails use the dedicated `/thumbnail/{id}/S{season}E{episode}.jpg` r
 | `type` | Image type (Path) | `poster`, `backdrop`, `logo` (`thumbnail` uses its own route) | - |
 | `id` | Media ID (Path) | IMDb (`tt...`), TMDB (`tmdb:id`, `tmdb:movie:id`, `tmdb:tv:id`), Kitsu (`kitsu:id`), anime IDs such as `anilist:123`, `mal:456`, `tvdb:12345`, or `anidb:6789` | - |
 | `tmdbIdScope` | TMDB ID collision handling mode | `soft`, `strict` | `soft` |
+| `config` | Saved config profile ID. Loads server stored params as base defaults; explicit URL params take precedence. Generate a profile ID from the Export view in the configurator. | String (e.g. `xr_a1b2c3d4`) | - |
 | `lang` | Image language | Any TMDB ISO 639-1 code (e.g. `it`, `en`, `es`, `fr`, `de`, `ru`, `ja`) | `en` |
 | `genreBadge` | Genre badge mode (global fallback) | `off`, `text`, `icon`, `both` | `off` |
 | `posterGenreBadge` | Poster genre badge mode | `off`, `text`, `icon`, `both` | `off` |
@@ -469,6 +470,7 @@ Parameter               | Values                                                
 type (path)             | poster, backdrop, logo                                               | -
 id (path)               | IMDb (tt...), TMDB (tmdb:id / tmdb:movie:id / tmdb:tv:id), Kitsu (kitsu:id), AniList, MAL                            | -
 tmdbIdScope             | soft, strict                                                                                                           | soft
+config                  | Saved config profile ID. Loads server stored params as base defaults; explicit URL params take precedence.              | -
 ratings                 | tmdb, mdblist, imdb, allocine, allocinepress, tomatoes,              | all
                         | tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt,     |
                         | simkl, rogerebert, myanimelist,                                      |

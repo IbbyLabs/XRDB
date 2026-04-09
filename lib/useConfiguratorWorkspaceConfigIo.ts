@@ -942,6 +942,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setRatingXOffsetSquare,
       setRatingYOffsetSquare,
       setRatingProviderAppearanceOverrides,
+      setRatingBlackStripEnabled,
       setRatingValueMode,
       setSimklClientId,
       setThumbnailRatingRows,
