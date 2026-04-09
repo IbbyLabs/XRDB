@@ -496,12 +496,38 @@ export const resolveImageRouteRenderLayout = async (input: {
     badgeGap = fittedBackdropMetrics.gap;
   }
 
+  if (useLogoBadgeLayout && cappedRatingBadges.length > 0) {
+    const targetPerRow = useLogoBottomRatingsRow
+      ? cappedRatingBadges.length
+      : Math.min(cappedRatingBadges.length, Math.max(2, Math.ceil(Math.sqrt(cappedRatingBadges.length))));
+    const fittedLogoMetrics = fitBadgeMetricsToWidth(
+      [cappedRatingBadges.slice(0, targetPerRow)],
+      outputWidth,
+      {
+        iconSize: badgeIconSize,
+        fontSize: badgeFontSize,
+        paddingX: badgePaddingX,
+        paddingY: badgePaddingY,
+        gap: badgeGap,
+      },
+      DEFAULT_BADGE_MIN_METRICS,
+      false,
+      false,
+      ratingStyle,
+    );
+    badgeIconSize = fittedLogoMetrics.iconSize;
+    badgeFontSize = fittedLogoMetrics.fontSize;
+    badgePaddingX = fittedLogoMetrics.paddingX;
+    badgePaddingY = fittedLogoMetrics.paddingY;
+    badgeGap = fittedLogoMetrics.gap;
+  }
+
   const logoBadgesPerRow = useLogoBadgeLayout
     ? useLogoBottomRatingsRow
       ? Math.max(1, cappedRatingBadges.length)
       : useBlockbusterPresentation
       ? Math.max(2, Math.min(4, Math.ceil(Math.sqrt(cappedRatingBadges.length || 1))))
-      : Math.max(1, cappedRatingBadges.length)
+      : Math.min(cappedRatingBadges.length, Math.max(2, Math.ceil(Math.sqrt(cappedRatingBadges.length))))
     : 0;
   const logoBadgeRowWidth = useLogoBadgeLayout && cappedRatingBadges.length > 0
     ? chunkBy(cappedRatingBadges, Math.max(1, logoBadgesPerRow)).reduce((maxWidth, row) => {
@@ -525,9 +551,7 @@ export const resolveImageRouteRenderLayout = async (input: {
       ? streamBadges.slice(0, qualityBadgesMax)
       : streamBadges;
   const logoNaturalWidth = useLogoBadgeLayout ? outputWidth : 0;
-  const finalOutputWidth = useLogoBadgeLayout && logoBadgeRowWidth > 0
-    ? Math.max(logoNaturalWidth, logoBadgeRowWidth + 72)
-    : outputWidth;
+  const finalOutputWidth = useLogoBadgeLayout ? outputWidth : outputWidth;
   const logoImageWidth = useLogoBadgeLayout ? logoNaturalWidth : 0;
   const logoImageHeight = useLogoBadgeLayout ? outputHeight : 0;
   const logoBadgeRows =

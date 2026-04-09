@@ -21,7 +21,7 @@ const createBadge = (key, value) => ({
   accentColor: '#ffffff',
 });
 
-test('image route render layout expands logo canvases to fit badge rows', async () => {
+test('image route render layout wraps logo badges to rows that fit the natural logo width', async () => {
   const layout = await resolveImageRouteRenderLayout({
     imageType: 'logo',
     isThumbnailRequest: false,
@@ -56,9 +56,91 @@ test('image route render layout expands logo canvases to fit badge rows', async 
   assert.equal(layout.logoBadgesPerRow, 2);
   assert.equal(layout.qualityBadges.length, 1);
   assert.equal(layout.logoImageHeight, 120);
-  assert.ok(layout.finalOutputWidth >= 420);
+  assert.equal(layout.finalOutputWidth, 420);
   assert.ok(layout.finalOutputHeight > 120);
   assert.ok(layout.logoBadgeBandHeight > 0);
+});
+
+test('image route render layout wraps 4 or more logo badges to avoid expanding the logo canvas width', async () => {
+  const narrowLayout = await resolveImageRouteRenderLayout({
+    imageType: 'logo',
+    isThumbnailRequest: false,
+    ratingPresentation: 'standard',
+    outputWidth: 420,
+    outputHeight: 320,
+    overlayAutoScale: 1,
+    displayRatingBadges: [
+      createBadge('imdb', '7.5'),
+      createBadge('tmdb', '8.0'),
+      createBadge('tomatoes', '91'),
+      createBadge('metacritic', '68'),
+    ],
+    streamBadges: [],
+    effectivePosterRatingsLayout: 'top',
+    effectivePosterRatingsMaxPerSide: null,
+    effectiveBackdropRatingsLayout: 'top',
+    backdropBottomRatingsRow: false,
+    logoBottomRatingsRow: false,
+    posterRatingBadgeScale: 100,
+    backdropRatingBadgeScale: 100,
+    logoRatingBadgeScale: 100,
+    posterQualityBadgeScale: 100,
+    backdropQualityBadgeScale: 100,
+    ratingStyle: 'plain',
+    qualityBadgesMax: null,
+    mediaType: 'movie',
+    media: { id: 1 },
+    tmdbKey: 'tmdb-key',
+    requestedImageLang: 'en',
+    phases: { ...phases },
+    fetchJsonCached: async () => {
+      throw new Error('unexpected fetch');
+    },
+  });
+
+  assert.equal(narrowLayout.logoBadgesPerRow, 2, `expected 2 badges per row (sqrt of 4) in narrow logo, got logoBadgesPerRow=${narrowLayout.logoBadgesPerRow}`);
+  assert.equal(narrowLayout.finalOutputWidth, 420);
+  assert.equal(narrowLayout.logoImageHeight, 320);
+  assert.ok(narrowLayout.finalOutputHeight > 320);
+
+  const wideLayout = await resolveImageRouteRenderLayout({
+    imageType: 'logo',
+    isThumbnailRequest: false,
+    ratingPresentation: 'standard',
+    outputWidth: 1600,
+    outputHeight: 320,
+    overlayAutoScale: 1,
+    displayRatingBadges: [
+      createBadge('imdb', '7.5'),
+      createBadge('tmdb', '8.0'),
+      createBadge('tomatoes', '91'),
+      createBadge('metacritic', '68'),
+    ],
+    streamBadges: [],
+    effectivePosterRatingsLayout: 'top',
+    effectivePosterRatingsMaxPerSide: null,
+    effectiveBackdropRatingsLayout: 'top',
+    backdropBottomRatingsRow: false,
+    logoBottomRatingsRow: false,
+    posterRatingBadgeScale: 100,
+    backdropRatingBadgeScale: 100,
+    logoRatingBadgeScale: 100,
+    posterQualityBadgeScale: 100,
+    backdropQualityBadgeScale: 100,
+    ratingStyle: 'plain',
+    qualityBadgesMax: null,
+    mediaType: 'movie',
+    media: { id: 1 },
+    tmdbKey: 'tmdb-key',
+    requestedImageLang: 'en',
+    phases: { ...phases },
+    fetchJsonCached: async () => {
+      throw new Error('unexpected fetch');
+    },
+  });
+
+  assert.equal(wideLayout.logoBadgesPerRow, 2);
+  assert.equal(wideLayout.finalOutputWidth, 1600);
 });
 
 test('image route render layout collapses backdrop ratings into one bottom row when enabled', async () => {
