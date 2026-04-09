@@ -22,6 +22,7 @@ services:
       - "traefik.http.routers.xrdb.entrypoints=${XRDB_TRAEFIK_ENTRYPOINTS:-websecure}"
       - "traefik.http.routers.xrdb.tls.certresolver=${XRDB_TRAEFIK_CERTRESOLVER:-letsencrypt}"
       - "traefik.http.services.xrdb.loadbalancer.server.port=3000"
+      # - "traefik.http.routers.xrdb.middlewares=authelia@docker"
     profiles:
       - xrdb
       - all

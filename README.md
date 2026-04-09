@@ -244,6 +244,38 @@ Local custom port:
 XRDB_PORT=4000 docker compose -f local-compose.yaml up -d --build
 ```
 
+### Authelia
+
+If you run XRDB behind Authelia you need to bypass authentication for the image
+and proxy endpoints so Stremio, Jellyfin, and other clients can still fetch
+posters. The repo ships an
+[authelia-rules.template.yaml](authelia-rules.template.yaml) with the bypass
+rule and step by step instructions for both the Viren070 template and custom
+setups.
+
+**Viren070 template users** — add `TEMPLATE_XRDB_HOSTNAME: ${XRDB_HOSTNAME?}`
+to your Authelia compose environment, paste the bypass rule from the template
+into `configuration.yml` before the wildcard catch-all, and add
+`authelia@docker` to the XRDB router labels. The existing `*.DOMAIN`
+two_factor catch-all protects the configurator UI automatically.
+
+**Standalone / custom setups:**
+
+1. Add `TEMPLATE_XRDB_HOSTNAME` to your Authelia environment (set it to your
+   XRDB hostname).
+2. Copy the `access_control` rule from the template into your Authelia
+   `configuration.yml`.
+3. Uncomment the Authelia middleware label in `compose.yaml` (or add it
+   manually):
+   ```yaml
+   - "traefik.http.routers.xrdb.middlewares=authelia@docker"
+   ```
+
+The template bypasses `/poster`, `/backdrop`, `/logo`, `/thumbnail`, `/proxy`,
+`/api`, `/preview`, and Next.js static assets. Everything else (the
+configurator UI, reference page) is protected by your default policy. Image and
+proxy routes remain independently gated by `XRDB_REQUEST_API_KEY`.
+
 ### Public Fast Preset
 
 If you run a shared or public XRDB host, start from a lighter profile before
@@ -343,7 +375,7 @@ Episode thumbnails use the dedicated `/thumbnail/{id}/S{season}E{episode}.jpg` r
 | `backdropQualityBadgesMax` | Backdrop quality badge limit | Number (1-20) | `auto` |
 | `ratingPresentation` | Rating presentation mode (global fallback) | `standard`, `minimal`, `average`, `dual`, `blockbuster`, `none` | `standard` |
 | `aggregateRatingSource` | Aggregate source for `minimal` and `average` (global fallback) | `overall`, `critics`, `audience` | `overall` |
-| `aggregateAccentMode` | Aggregate accent source | `source`, `genre`, `custom` | `source` |
+| `aggregateAccentMode` | Aggregate accent source — also controls Compact Ring stroke color | `source`, `genre`, `custom`, `dynamic` | `source` |
 | `aggregateAccentColor` | Aggregate accent color when `aggregateAccentMode=custom` | Hex color | `#a78bfa` |
 | `aggregateAccentBarOffset` | Average badge accent bar offset | Number (-12 to 12) | `0` |
 | `aggregateValueColor` | Rating value text color (global fallback) | Hex color | `#ffffff` |
@@ -596,7 +628,7 @@ logo     -> genreBadge = cfg.logoGenreBadge, genreBadgeStyle = cfg.logoGenreBadg
 Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRatings / cfg.thumbnailRatings / cfg.logoRatings (fallback to cfg.ratings).
 Rating presentation can be set per type via cfg.posterRatingPresentation / cfg.backdropRatingPresentation / cfg.thumbnailRatingPresentation / cfg.logoRatingPresentation (fallback to cfg.ratingPresentation).
 Aggregate source can be set per type via cfg.posterAggregateRatingSource / cfg.backdropAggregateRatingSource / cfg.thumbnailAggregateRatingSource / cfg.logoAggregateRatingSource (fallback to cfg.aggregateRatingSource).
-Use cfg.aggregateAccentMode to keep source colours, match the genre badge, or force a custom aggregate accent through cfg.aggregateAccentColor.
+Use cfg.aggregateAccentMode to keep source colours, match the genre badge, force a custom aggregate accent through cfg.aggregateAccentColor, or use score-based dynamic color stops via cfg.aggregateDynamicStops. This setting also controls the Compact Ring stroke and glow color when ratingPresentation=ring.
 Use cfg.aggregateAccentBarOffset to nudge the average badge accent bar up or down a few pixels in compact, labeled, and dual aggregate layouts.
 Use cfg.ratingXOffsetPillGlass / cfg.ratingYOffsetPillGlass and cfg.ratingXOffsetSquare / cfg.ratingYOffsetSquare to nudge stacked Pill Glass and Square Dark rating groups.
 Quality badges can be set per type via cfg.posterStreamBadges / cfg.backdropStreamBadges / cfg.thumbnailStreamBadges (fallback to cfg.streamBadges).
