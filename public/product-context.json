@@ -2,7 +2,7 @@
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
   "xrdbTag": "v1.11.0",
-  "generatedAt": "2026-04-09T03:18:21.913Z",
+  "generatedAt": "2026-04-09T03:37:11.731Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -36,11 +36,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "BUG-65 compact ring accent mode ignored and position offset",
+        "add Authelia access control template",
         "correct site description and OG image for link previews",
         "BUG-66 scale paddingX proportionally with badge height",
-        "saved config profiles via ?config=<id>",
-        "BUG-67 Black Bar option incorrect visually and in wrong section",
-        "BUG-68 ring does not scale with badge size and age rating affected by badge scale"
+        "saved config profiles via ?config=<id>"
       ]
     },
     {
