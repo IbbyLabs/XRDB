@@ -28,6 +28,13 @@ CREATE TABLE IF NOT EXISTS imdb_episodes (
 );
 
 CREATE INDEX IF NOT EXISTS imdb_episodes_parent_idx ON imdb_episodes (parent_tconst, season_number, episode_number);
+
+CREATE TABLE IF NOT EXISTS config_profiles (
+  id TEXT PRIMARY KEY,
+  params TEXT NOT NULL,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
 `;
 
 type DbState = {
@@ -87,5 +94,32 @@ export const ensureDbInitialized = () => {
   if (!state.initialized) {
     state.db.exec(SCHEMA_SQL);
     state.initialized = true;
+  }
+};
+
+export const upsertConfigProfile = (id: string, params: Record<string, string>): void => {
+  ensureDbInitialized();
+  const db = getDb();
+  const now = Date.now();
+  db.prepare(
+    `INSERT INTO config_profiles (id, params, created_at, updated_at)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET params = excluded.params, updated_at = excluded.updated_at`,
+  ).run(id, JSON.stringify(params), now, now);
+};
+
+export const getConfigProfile = (id: string): Record<string, string> | null => {
+  ensureDbInitialized();
+  const db = getDb();
+  const row = db.prepare('SELECT params FROM config_profiles WHERE id = ?').get(id) as
+    | { params: string }
+    | undefined;
+  if (!row) {
+    return null;
+  }
+  try {
+    return JSON.parse(row.params) as Record<string, string>;
+  } catch {
+    return null;
   }
 };

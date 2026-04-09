@@ -2,7 +2,7 @@
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
   "xrdbTag": "v1.11.0",
-  "generatedAt": "2026-04-08T23:24:06.131Z",
+  "generatedAt": "2026-04-09T02:07:05.540Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -18,6 +18,8 @@
       "lines": [
         "/: Configurator workspace for render settings and live preview.",
         "/addon: Addon proxy workspace and manifest export flow.",
+        "/api/config",
+        "/api/config/[id]",
         "/api/discord-widget: Community widget endpoint.",
         "/api/latest-release: Latest release feed used by the site.",
         "/api/media-resolve: Configurator media resolve endpoint.",
@@ -34,11 +36,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "BUG-67 Black Bar option incorrect visually and in wrong section",
         "BUG-68 ring does not scale with badge size and age rating affected by badge scale",
         "FR-52 power law genre badge auto scale for large and 4K outputs",
         "BUG genre badges hidden on compact ring and ring undersized on large/4K posters",
-        "BUG-64 follow single safe redirect for addon resource fetches",
-        "BUG-63 exclude mdblist from critics aggregate"
+        "BUG-64 follow single safe redirect for addon resource fetches"
       ]
     },
     {

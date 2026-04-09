@@ -2148,6 +2148,12 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   return payload;
 };
 
+export const buildProfileParams = (settings: SharedXrdbSettings): Record<string, string> | null => {
+  const payload = buildSharedPayload(settings);
+  if (!payload) return null;
+  return Object.fromEntries(Object.entries(payload).map(([k, v]) => [k, String(v)]));
+};
+
 export const buildConfigPayload = (baseUrl: string, settings: SharedXrdbSettings) => {
   const origin = normalizeBaseUrl(baseUrl);
   const sharedPayload = buildSharedPayload(settings);

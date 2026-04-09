@@ -25,7 +25,7 @@ import {
   WORKSPACE_CENTER_VIEW_OPTIONS,
 } from '@/lib/configuratorPageOptions';
 import { POSTER_COMPACT_RING_SOURCE_OPTIONS } from '@/lib/posterCompactRing';
-import { normalizeManifestUrl } from '@/lib/uiConfig';
+import { buildProfileParams, normalizeManifestUrl } from '@/lib/uiConfig';
 
 type WorkspacePanelId =
   | 'configurator'
@@ -504,6 +504,7 @@ export function buildConfiguratorPageProps({
         onToggleThumbnailRatingPreference: workspaceActions.toggleThumbnailRatingPreference,
         hideAiometadataCredentials: workspaceState.hideAiometadataCredentials,
         onToggleHideAiometadataCredentials: workspaceState.setHideAiometadataCredentials,
+        buildSaveParams: () => buildProfileParams(outputs.currentUiConfig.settings),
       },
       supportPanelsProps: {
         isAddonProxyOpen: workspaceUi.openWorkspacePanels.has('addon-proxy'),

@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { Check, ChevronDown, Clipboard, Code2, Eye, EyeOff } from 'lucide-react';
+import { BookmarkPlus, Check, ChevronDown, Clipboard, Code2, Eye, EyeOff } from 'lucide-react';
 
 import { useConfiguratorContext } from '@/lib/configuratorProvider';
 import { WorkspaceManagementSection } from '@/components/configurator-basics';
@@ -69,6 +69,7 @@ export function ExportView() {
     onToggleThumbnailRatingPreference,
     hideAiometadataCredentials,
     onToggleHideAiometadataCredentials,
+    buildSaveParams,
   } = exportPanelsProps;
 
   const {
@@ -104,6 +105,11 @@ export function ExportView() {
           showConfigString={showConfigString}
           onCopyConfig={onCopyConfig}
           onToggleShowConfigString={onToggleShowConfigString}
+        />
+
+        <SaveConfigSection
+          canGenerateConfig={canGenerateConfig}
+          buildSaveParams={buildSaveParams}
         />
 
         <div className="xrdb-panel rounded-2xl">
@@ -377,6 +383,146 @@ function ConfigStringSection({
           <span>{showConfigString ? 'Hide' : 'Show'}</span>
         </button>
       </div>
+    </div>
+  );
+}
+
+function SaveConfigSection({
+  canGenerateConfig,
+  buildSaveParams,
+}: {
+  canGenerateConfig: boolean;
+  buildSaveParams: () => Record<string, string> | null;
+}) {
+  const [savedProfileId, setSavedProfileId] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    return localStorage.getItem('xrdb_config_profile_id');
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [fragmentCopied, setFragmentCopied] = useState(false);
+  const [snippetCopied, setSnippetCopied] = useState(false);
+  const fragmentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const snippetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (savedProfileId) {
+      localStorage.setItem('xrdb_config_profile_id', savedProfileId);
+    } else {
+      localStorage.removeItem('xrdb_config_profile_id');
+    }
+  }, [savedProfileId]);
+
+  const handleSave = useCallback(async () => {
+    const params = buildSaveParams();
+    if (!params) return;
+    setIsSaving(true);
+    try {
+      const body: Record<string, string> = { ...params };
+      if (savedProfileId) body._id = savedProfileId;
+      const res = await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        const data = await res.json() as { id: string };
+        setSavedProfileId(data.id);
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  }, [buildSaveParams, savedProfileId]);
+
+  const handleCopyFragment = useCallback(() => {
+    if (!savedProfileId) return;
+    void navigator.clipboard.writeText(`?config=${savedProfileId}`);
+    if (fragmentTimerRef.current) clearTimeout(fragmentTimerRef.current);
+    setFragmentCopied(true);
+    fragmentTimerRef.current = setTimeout(() => setFragmentCopied(false), 1500);
+  }, [savedProfileId]);
+
+  const handleCopySnippet = useCallback(() => {
+    if (!savedProfileId) return;
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    void navigator.clipboard.writeText(`${origin}/poster/{id}.jpg?config=${savedProfileId}`);
+    if (snippetTimerRef.current) clearTimeout(snippetTimerRef.current);
+    setSnippetCopied(true);
+    snippetTimerRef.current = setTimeout(() => setSnippetCopied(false), 1500);
+  }, [savedProfileId]);
+
+  return (
+    <div className="xrdb-panel rounded-2xl p-4 space-y-3">
+      <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+        <BookmarkPlus className="w-4 h-4 text-violet-500" /> Saved Config Profile
+      </h2>
+      <p className="text-[13px] leading-5 text-zinc-400">
+        Save current settings as a reusable ID. Append{' '}
+        <span className="font-mono text-[12px] bg-zinc-900 px-1 rounded text-zinc-300">?config=&lt;id&gt;</span>{' '}
+        to any image URL to apply this profile.
+      </p>
+      <button
+        type="button"
+        onClick={() => void handleSave()}
+        disabled={!canGenerateConfig || isSaving}
+        className={`rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-2 transition-colors ${
+          canGenerateConfig && !isSaving
+            ? 'bg-violet-600 text-white hover:bg-violet-500'
+            : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+        }`}
+      >
+        <BookmarkPlus className="w-3.5 h-3.5" />
+        <span>{isSaving ? 'Saving...' : savedProfileId ? 'Update saved profile' : 'Save config profile'}</span>
+      </button>
+      {savedProfileId && (
+        <div className="space-y-2">
+          <div className="rounded-xl border border-white/10 bg-black/40 p-3 min-w-0">
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <div className="text-[12px] font-semibold text-zinc-200">Profile ID</div>
+              <button
+                type="button"
+                onClick={handleCopyFragment}
+                className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-medium flex items-center gap-1.5 transition-all ${
+                  fragmentCopied
+                    ? 'border-green-500/60 bg-green-500 text-white'
+                    : 'border-white/15 text-zinc-300 hover:text-white'
+                }`}
+              >
+                {fragmentCopied ? (
+                  <><Check className="w-3 h-3" /> Copied</>
+                ) : (
+                  <><Clipboard className="w-3 h-3" /> Copy ?config=</>
+                )}
+              </button>
+            </div>
+            <div className="font-mono text-[11px] text-zinc-300 bg-zinc-950/80 rounded-lg border border-white/10 p-3 break-all">
+              {savedProfileId}
+            </div>
+          </div>
+          <div className="rounded-xl border border-white/10 bg-black/40 p-3 min-w-0">
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <div className="text-[12px] font-semibold text-zinc-200">Poster URL pattern</div>
+              <button
+                type="button"
+                onClick={handleCopySnippet}
+                className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-medium flex items-center gap-1.5 transition-all ${
+                  snippetCopied
+                    ? 'border-green-500/60 bg-green-500 text-white'
+                    : 'border-white/15 text-zinc-300 hover:text-white'
+                }`}
+              >
+                {snippetCopied ? (
+                  <><Check className="w-3 h-3" /> Copied</>
+                ) : (
+                  <><Clipboard className="w-3 h-3" /> Copy</>
+                )}
+              </button>
+            </div>
+            <div className="font-mono text-[11px] text-zinc-300 bg-zinc-950/80 rounded-lg border border-white/10 p-3 break-all">
+              {`${typeof window !== 'undefined' ? window.location.origin : ''}/poster/{id}.jpg?config=${savedProfileId}`}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
