@@ -2,6 +2,7 @@
   "compilerOptions": {
     "allowJs": true,
     "allowImportingTsExtensions": true,
+    "ignoreDeprecations": "6.0",
     "baseUrl": "..",
     "esModuleInterop": true,
     "isolatedModules": true,
