@@ -1212,7 +1212,7 @@ export const resolveImageRouteRequestState = async ({
       : imageType === 'backdrop'
         ? effectiveBackdropArtworkSource
         : logoArtworkSource;
-  const ratingBlackStripEnabled = activeArtworkSource === 'blackbar';
+  const ratingBlackStripEnabled = activeArtworkSource === 'blackbar' || searchParams.get('ratingBlackStrip') === '1';
   const backdropUsesFanartArtwork = FANART_ARTWORK_SOURCE_SET.has(effectiveBackdropArtworkSource);
   const logoUsesFanartArtwork = FANART_ARTWORK_SOURCE_SET.has(logoArtworkSource);
   const hasRandomArtworkSelection =
@@ -1339,6 +1339,7 @@ export const resolveImageRouteRequestState = async ({
     posterNoBackgroundBadgeOutlineColor,
     posterNoBackgroundBadgeOutlineWidth,
     artworkSelectionSeed,
+    ratingBlackStripEnabled,
     ratingStyle,
     ratingStackOffsetX,
     ratingStackOffsetY,

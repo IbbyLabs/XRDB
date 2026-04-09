@@ -328,6 +328,7 @@ export function PresentationSection({
           );
         })}
       </div>
+
       {layoutPlacementHelp ? (
         <p className="text-[11px] leading-relaxed text-zinc-500">
           {isEditorialPresentation
@@ -713,6 +714,8 @@ export function LookSection({
   onSelectQualityBadgeScale,
   onSelectPosterNoBackgroundBadgeOutlineColor,
   onSelectPosterNoBackgroundBadgeOutlineWidth,
+  activeBlackBarEnabled,
+  onToggleBlackBar,
 }: {
   previewType: PreviewType;
   styleLabel: string;
@@ -828,6 +831,8 @@ export function LookSection({
   onSelectQualityBadgeScale: (value: number) => void;
   onSelectPosterNoBackgroundBadgeOutlineColor: (value: string) => void;
   onSelectPosterNoBackgroundBadgeOutlineWidth: (value: number) => void;
+  activeBlackBarEnabled?: boolean;
+  onToggleBlackBar?: () => void;
 }) {
   const defaultGenreBadgeBorderWidth =
     previewType === 'poster'
@@ -933,6 +938,27 @@ export function LookSection({
                 </button>
               ))}
             </div>
+            {previewType !== 'logo' && onToggleBlackBar ? (
+              <>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mt-2 mb-1">Black Bar Overlay</span>
+                <div className={selectorGroupClass}>
+                  <button
+                    type="button"
+                    onClick={() => { if (!activeBlackBarEnabled) onToggleBlackBar(); }}
+                    className={selectorButtonClass(activeBlackBarEnabled === true)}
+                  >
+                    On
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { if (activeBlackBarEnabled) onToggleBlackBar(); }}
+                    className={selectorButtonClass(activeBlackBarEnabled !== true)}
+                  >
+                    Off
+                  </button>
+                </div>
+              </>
+            ) : null}
           </div>
           {previewType !== 'logo' ? (
             <div className={settingsCardClass}>
@@ -1070,8 +1096,13 @@ export function LookSection({
         {previewType === 'poster' || previewType === 'backdrop' || previewType === 'thumbnail' ? (
           <div className={settingsCardClass}>
             <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Artwork Source</div>
+            {activeBlackBarEnabled ? (
+              <p className="text-[11px] leading-relaxed text-zinc-400 mb-2">
+                Black Bar is active. Toggle it off in the style selector above to disable it.
+              </p>
+            ) : null}
             <div className={selectorGroupClass}>
-              {activeArtworkSourceOptions.map((option) => (
+              {activeArtworkSourceOptions.filter((option) => option.id !== 'blackbar').map((option) => (
                 (() => {
                   const optionDisabled = blockedArtworkSourceIds.has(option.id);
                   return (

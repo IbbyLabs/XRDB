@@ -384,6 +384,7 @@ export function useConfiguratorOutputs({
   ratingYOffsetSquare,
   ratingProviderAppearanceOverrides,
   ratingValueMode,
+  ratingBlackStripEnabled,
   showConfigString,
   shouldShowQualityBadgesPosition,
   shouldShowQualityBadgesSide,
@@ -544,6 +545,7 @@ export function useConfiguratorOutputs({
   ratingYOffsetSquare: number;
   ratingProviderAppearanceOverrides: RatingProviderAppearanceOverrides;
   ratingValueMode: RatingValueMode;
+  ratingBlackStripEnabled: boolean;
   showConfigString: boolean;
   shouldShowQualityBadgesPosition: boolean;
   shouldShowQualityBadgesSide: boolean;
@@ -997,6 +999,9 @@ export function useConfiguratorOutputs({
       if (previewType === 'thumbnail' && thumbnailArtworkSource !== 'tmdb') {
         query.set('thumbnailArtworkSource', thumbnailArtworkSource);
       }
+      if (ratingBlackStripEnabled) {
+        query.set('ratingBlackStrip', '1');
+      }
     }
     if (previewType === 'poster') {
       query.set('posterRatingsLayout', posterRatingsLayout);
@@ -1256,6 +1261,7 @@ export function useConfiguratorOutputs({
     ratingYOffsetSquare,
     ratingProviderAppearanceOverrides,
     ratingValueMode,
+    ratingBlackStripEnabled,
     shouldShowQualityBadgesPosition,
     shouldShowQualityBadgesSide,
     simklClientId,

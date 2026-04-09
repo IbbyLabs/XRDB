@@ -642,6 +642,7 @@ export const renderWithSharp = async (
         splitAcrossHalves?: boolean;
         spreadAcrossThirds?: boolean;
         preserveBadgeSize?: boolean;
+        suppressStripOverlay?: boolean;
       }
     ) => {
       if (rowBadges.length === 0) return;
@@ -668,7 +669,7 @@ export const renderWithSharp = async (
         isPosterRowLayout,
       });
 
-      if (input.ratingBlackStripEnabled && placements.length > 0) {
+      if (input.ratingBlackStripEnabled && !options?.suppressStripOverlay && placements.length > 0) {
         const rowLeft = Math.min(...placements.map((entry) => entry.rowX));
         const rowRight = Math.max(...placements.map((entry) => entry.rowX + entry.badgeWidth));
         pushRatingStripOverlay({
@@ -737,6 +738,47 @@ export const renderWithSharp = async (
         top: stripTop,
         left: stripLeft,
       });
+      trackGenreCollisionRect(stripLeft, stripTop, stripWidth, stripHeight);
+    };
+    const pushFlushStripOverlay = ({
+      mode,
+      left = 0,
+      top,
+      right,
+      bottom,
+      insertIndex,
+    }: {
+      mode: 'flush-bottom' | 'flush-top' | 'column-left' | 'column-right';
+      left?: number;
+      top: number;
+      right?: number;
+      bottom: number;
+      insertIndex?: number;
+    }) => {
+      if (!input.ratingBlackStripEnabled) return;
+      const stripLeft = left;
+      const stripTop = top;
+      const stripWidth = (right ?? input.outputWidth) - left;
+      const stripHeight = bottom - top;
+      if (!(stripWidth > 0 && stripHeight > 0)) return;
+      const rx = Math.max(4, Math.min(Math.round(ratingBadgeHeight * 0.45), Math.floor(stripWidth / 2), Math.floor(stripHeight / 2)));
+      let pathD: string;
+      if (mode === 'flush-bottom') {
+        pathD = `M ${rx} 0 H ${stripWidth - rx} A ${rx} ${rx} 0 0 1 ${stripWidth} ${rx} V ${stripHeight} H 0 V ${rx} A ${rx} ${rx} 0 0 1 ${rx} 0 Z`;
+      } else if (mode === 'flush-top') {
+        pathD = `M 0 0 H ${stripWidth} V ${stripHeight - rx} A ${rx} ${rx} 0 0 1 ${stripWidth - rx} ${stripHeight} H ${rx} A ${rx} ${rx} 0 0 1 0 ${stripHeight - rx} Z`;
+      } else if (mode === 'column-right') {
+        pathD = `M ${rx} 0 H ${stripWidth} V ${stripHeight} H ${rx} A ${rx} ${rx} 0 0 1 0 ${stripHeight - rx} V ${rx} A ${rx} ${rx} 0 0 1 ${rx} 0 Z`;
+      } else {
+        pathD = `M 0 0 H ${stripWidth - rx} A ${rx} ${rx} 0 0 1 ${stripWidth} ${rx} V ${stripHeight - rx} A ${rx} ${rx} 0 0 1 ${stripWidth - rx} ${stripHeight} H 0 Z`;
+      }
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${stripWidth}" height="${stripHeight}" viewBox="0 0 ${stripWidth} ${stripHeight}"><path d="${pathD}" fill="#000000" fill-opacity="0.94"/></svg>`;
+      const stripOverlay = { input: Buffer.from(svg), top: stripTop, left: stripLeft };
+      if (insertIndex !== undefined) {
+        overlays.splice(insertIndex, 0, stripOverlay);
+      } else {
+        overlays.push(stripOverlay);
+      }
       trackGenreCollisionRect(stripLeft, stripTop, stripWidth, stripHeight);
     };
     const pushBadgeOverlay = ({
@@ -1071,7 +1113,7 @@ export const renderWithSharp = async (
       rowY: number,
       side: 'left' | 'right',
       maxBadgeWidth: number
-    ) => {
+    ): { rowX: number; badgeWidth: number } => {
       const estimatedWidth = estimateRenderedBadgeWidth(
         badge,
         input.badgeFontSize,
@@ -1093,15 +1135,8 @@ export const renderWithSharp = async (
                 badgeWidth -
                 (input.imageType === 'poster' ? posterEdgeInset : backdropEdgeInset),
             );
-      if (input.ratingBlackStripEnabled) {
-        pushRatingStripOverlay({
-          left: rowX,
-          top: rowY,
-          width: badgeWidth,
-          height: ratingBadgeHeight,
-        });
-      }
       pushBadgeOverlay({ badge, badgeWidth, rowX, rowY, compactText: false });
+      return { rowX, badgeWidth };
     };
     const composeBadgeColumn = (
       columnBadges: RatingBadge[],
@@ -1117,13 +1152,36 @@ export const renderWithSharp = async (
           : origin === 'bottom'
           ? Math.max(input.badgeTopOffset, input.outputHeight - input.badgeBottomOffset - ratingBadgeHeight)
           : input.badgeTopOffset;
+      let colMinRowX = Infinity;
+      let colMaxRowXRight = -Infinity;
+      let colFirstRowY = rowY;
+      let colLastRowYBottom = rowY + ratingBadgeHeight;
+      const colStripInsertIndex = overlays.length;
       for (let index = 0; index < columnBadges.length; index += 1) {
         const badge = columnBadges[index];
-        composeEdgeAlignedPosterBadge(badge, rowY, side, maxBadgeWidth);
+        const result = composeEdgeAlignedPosterBadge(badge, rowY, side, maxBadgeWidth);
+        if (input.ratingBlackStripEnabled) {
+          if (index === 0) colFirstRowY = rowY;
+          colLastRowYBottom = rowY + ratingBadgeHeight;
+          if (result.rowX < colMinRowX) colMinRowX = result.rowX;
+          if (result.rowX + result.badgeWidth > colMaxRowXRight) colMaxRowXRight = result.rowX + result.badgeWidth;
+        }
         rowY +=
           origin === 'bottom'
             ? -(ratingBadgeHeight + input.badgeGap)
             : ratingBadgeHeight + input.badgeGap;
+      }
+      if (input.ratingBlackStripEnabled && colMinRowX !== Infinity) {
+        const insetX = Math.max(10, Math.round(ratingBadgeHeight * 0.28));
+        const insetY = Math.max(4, Math.round(ratingBadgeHeight * 0.18));
+        pushFlushStripOverlay({
+          mode: side === 'left' ? 'column-left' : 'column-right',
+          left: side === 'right' ? clamp(colMinRowX - insetX, 0, input.outputWidth) : 0,
+          top: clamp(colFirstRowY - insetY, 0, input.finalOutputHeight),
+          right: side === 'left' ? clamp(colMaxRowXRight + insetX, 0, input.outputWidth) : input.outputWidth,
+          bottom: clamp(colLastRowYBottom + insetY, 0, input.finalOutputHeight),
+          insertIndex: colStripInsertIndex,
+        });
       }
     };
     if (input.imageType === 'poster' && input.editorialOverlay) {
@@ -1200,12 +1258,24 @@ export const renderWithSharp = async (
                 input.outputHeight - input.badgeBottomOffset - backdropRowsHeight,
               )
             : input.badgeTopOffset;
+          const backdropBottomFlushFirstRowY = input.backdropBottomRatingsRow ? rowY : null;
+          const backdropStripInsertIndex = overlays.length;
           for (const row of backdropRows) {
             composeBadgeRow(row, rowY, {
               regionLeft: backdropRegion.left,
               regionWidth: backdropRegion.width,
+              suppressStripOverlay: input.ratingBlackStripEnabled && input.backdropBottomRatingsRow,
             });
             rowY += ratingBadgeHeight + input.badgeGap;
+          }
+          if (input.ratingBlackStripEnabled && backdropBottomFlushFirstRowY !== null) {
+            const insetY = Math.max(4, Math.round(ratingBadgeHeight * 0.18));
+            pushFlushStripOverlay({
+              mode: 'flush-bottom',
+              top: clamp(backdropBottomFlushFirstRowY - insetY, 0, input.finalOutputHeight),
+              bottom: input.finalOutputHeight,
+              insertIndex: backdropStripInsertIndex,
+            });
           }
         }
       } else if (input.imageType === 'poster') {
@@ -1314,10 +1384,46 @@ export const renderWithSharp = async (
             remainingLeftBadges.length === remainingRightBadges.length &&
             leftSideStartY === rightSideStartY
           ) {
+            let lMinX = Infinity, lMaxXRight = -Infinity, lFirstY = leftSideStartY, lLastYBottom = leftSideStartY + ratingBadgeHeight;
+            let rMinX = Infinity, rMaxXRight = -Infinity, rFirstY = leftSideStartY, rLastYBottom = leftSideStartY + ratingBadgeHeight;
+            const balancedStripInsertIndex = overlays.length;
             for (let index = 0; index < remainingLeftBadges.length; index += 1) {
               const rowY = leftSideStartY + index * (ratingBadgeHeight + input.badgeGap);
-              composeEdgeAlignedPosterBadge(remainingLeftBadges[index], rowY, 'left', maxBadgeWidth);
-              composeEdgeAlignedPosterBadge(remainingRightBadges[index], rowY, 'right', maxBadgeWidth);
+              const lResult = composeEdgeAlignedPosterBadge(remainingLeftBadges[index], rowY, 'left', maxBadgeWidth);
+              const rResult = composeEdgeAlignedPosterBadge(remainingRightBadges[index], rowY, 'right', maxBadgeWidth);
+              if (input.ratingBlackStripEnabled) {
+                if (index === 0) { lFirstY = rowY; rFirstY = rowY; }
+                lLastYBottom = rowY + ratingBadgeHeight;
+                rLastYBottom = rowY + ratingBadgeHeight;
+                if (lResult.rowX < lMinX) lMinX = lResult.rowX;
+                if (lResult.rowX + lResult.badgeWidth > lMaxXRight) lMaxXRight = lResult.rowX + lResult.badgeWidth;
+                if (rResult.rowX < rMinX) rMinX = rResult.rowX;
+                if (rResult.rowX + rResult.badgeWidth > rMaxXRight) rMaxXRight = rResult.rowX + rResult.badgeWidth;
+              }
+            }
+            if (input.ratingBlackStripEnabled && remainingLeftBadges.length > 0) {
+              const insetX = Math.max(10, Math.round(ratingBadgeHeight * 0.28));
+              const insetY = Math.max(4, Math.round(ratingBadgeHeight * 0.18));
+              if (lMinX !== Infinity) {
+                pushFlushStripOverlay({
+                  mode: 'column-left',
+                  left: 0,
+                  top: clamp(lFirstY - insetY, 0, input.finalOutputHeight),
+                  right: clamp(lMaxXRight + insetX, 0, input.outputWidth),
+                  bottom: clamp(lLastYBottom + insetY, 0, input.finalOutputHeight),
+                  insertIndex: balancedStripInsertIndex,
+                });
+              }
+              if (rMinX !== Infinity) {
+                pushFlushStripOverlay({
+                  mode: 'column-right',
+                  left: clamp(rMinX - insetX, 0, input.outputWidth),
+                  top: clamp(rFirstY - insetY, 0, input.finalOutputHeight),
+                  right: input.outputWidth,
+                  bottom: clamp(rLastYBottom + insetY, 0, input.finalOutputHeight),
+                  insertIndex: balancedStripInsertIndex,
+                });
+              }
             }
           } else {
             composeBadgeColumn(remainingLeftBadges, 'left', maxBadgeWidth, 'top', leftSideStartY);
@@ -1325,26 +1431,49 @@ export const renderWithSharp = async (
           }
         } else {
           if (posterTopRows.length > 0) {
+            const topStripInsertIndex = overlays.length;
             let topRowY = posterTopRowsStartY;
             for (const row of posterTopRows) {
               composeBadgeRow(row, topRowY, {
                 regionLeft: input.posterRowHorizontalInset,
                 regionWidth: posterRowRegionWidth,
                 align: posterRowAlign,
+                suppressStripOverlay: input.ratingBlackStripEnabled,
               });
               topRowY += ratingBadgeHeight + input.badgeGap;
             }
+            if (input.ratingBlackStripEnabled) {
+              const insetY = Math.max(4, Math.round(ratingBadgeHeight * 0.18));
+              pushFlushStripOverlay({
+                mode: 'flush-top',
+                top: 0,
+                bottom: clamp(topRowY - input.badgeGap + insetY, 0, input.finalOutputHeight),
+                insertIndex: topStripInsertIndex,
+              });
+            }
           }
           if (posterBottomRows.length > 0) {
+            const bottomStripInsertIndex = overlays.length;
             let bottomRowYStart =
               bottomRowY - (posterBottomRows.length - 1) * (ratingBadgeHeight + input.badgeGap);
+            const firstBottomRowY = bottomRowYStart;
             for (const row of posterBottomRows) {
               composeBadgeRow(row, bottomRowYStart, {
                 regionLeft: input.posterRowHorizontalInset,
                 regionWidth: posterRowRegionWidth,
                 align: posterRowAlign,
+                suppressStripOverlay: input.ratingBlackStripEnabled,
               });
               bottomRowYStart += ratingBadgeHeight + input.badgeGap;
+            }
+            if (input.ratingBlackStripEnabled) {
+              const insetY = Math.max(4, Math.round(ratingBadgeHeight * 0.18));
+              pushFlushStripOverlay({
+                mode: 'flush-bottom',
+                top: clamp(firstBottomRowY - insetY, 0, input.finalOutputHeight),
+                bottom: input.finalOutputHeight,
+                insertIndex: bottomStripInsertIndex,
+              });
             }
           }
         }
