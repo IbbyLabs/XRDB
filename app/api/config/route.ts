@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
 
   const raw = body as Record<string, unknown>;
   const providedId = typeof raw._id === 'string' && raw._id.trim() ? raw._id.trim() : null;
-  const id = providedId ?? `xr_${randomBytes(4).toString('hex')}`;
+  const id = providedId ?? `xrc_${randomBytes(8).toString('hex')}`;
 
   const params: Record<string, string> = {};
   for (const [key, value] of Object.entries(raw)) {

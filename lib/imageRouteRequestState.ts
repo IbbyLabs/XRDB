@@ -175,7 +175,7 @@ import {
   normalizeStreamBadgesSetting,
 } from './imageRouteDisplayPrefs.ts';
 import { normalizeRemuxDisplayMode } from './uiConfig.ts';
-import { getConfigProfile } from './dbCore.ts';
+import { getConfigProfile, getConfigProfileDeadline, LEGACY_ID_RE, touchConfigProfileAccess } from './dbCore.ts';
 import type { RemuxDisplayMode } from './mediaFeatures.ts';
 
 type ImageType = (typeof ALLOWED_IMAGE_TYPES extends Set<infer T> ? T : never) & ('poster' | 'backdrop' | 'logo');
@@ -329,6 +329,7 @@ export type ImageRouteRequestState = {
   renderSeedKey: string;
   effectiveRatingPreferences: RatingPreference[];
   selectedRatings: Set<RatingPreference>;
+  configMigrationDeadline: number | null;
 };
 
 export const resolveImageRouteRequestState = async ({
@@ -343,9 +344,11 @@ export const resolveImageRouteRequestState = async ({
   const rawSearchParams = request.nextUrl.searchParams;
   const configProfileId = rawSearchParams.get('config');
   let searchParams = rawSearchParams;
+  let configMigrationDeadline: number | null = null;
   if (configProfileId) {
     const profile = getConfigProfile(configProfileId);
     if (profile) {
+      touchConfigProfileAccess(configProfileId);
       const merged = new URLSearchParams();
       for (const [key, value] of Object.entries(profile)) {
         merged.set(key, value);
@@ -354,6 +357,16 @@ export const resolveImageRouteRequestState = async ({
         merged.set(key, value);
       }
       searchParams = merged;
+      if (LEGACY_ID_RE.test(configProfileId)) {
+        configMigrationDeadline = getConfigProfileDeadline(configProfileId);
+      }
+    } else {
+      throw new HttpError(
+        LEGACY_ID_RE.test(configProfileId)
+          ? 'This config profile has expired or been removed. Visit the configurator to save a new profile.'
+          : 'Config profile not found.',
+        410,
+      );
     }
   }
   const isThumbnailRequest =
@@ -1498,5 +1511,6 @@ export const resolveImageRouteRequestState = async ({
     renderSeedKey,
     effectiveRatingPreferences,
     selectedRatings,
+    configMigrationDeadline,
   };
 };
