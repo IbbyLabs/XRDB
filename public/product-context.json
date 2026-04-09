@@ -2,7 +2,7 @@
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
   "xrdbTag": "v1.12.0",
-  "generatedAt": "2026-04-09T03:40:30.068Z",
+  "generatedAt": "2026-04-09T23:47:23.762Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -20,6 +20,7 @@
         "/addon: Addon proxy workspace and manifest export flow.",
         "/api/config",
         "/api/config/[id]",
+        "/api/config/[id]/status",
         "/api/discord-widget: Community widget endpoint.",
         "/api/latest-release: Latest release feed used by the site.",
         "/api/media-resolve: Configurator media resolve endpoint.",
@@ -36,11 +37,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
-        "BUG-65 compact ring accent mode ignored and position offset",
-        "add Authelia access control template",
-        "correct site description and OG image for link previews",
-        "BUG-66 scale paddingX proportionally with badge height",
-        "saved config profiles via ?config=<id>"
+        "BUG-73 config profile xrdbKey used as auth fallback on image and thumbnail routes",
+        "FR-56 revert unsaved edits to last saved profile",
+        "BUG-70 scale badge metrics to fit natural logo width with 4+ ratings",
+        "BUG-71 config profile security — encryption, migration deadline, overlay",
+        "BUG-72 preserve empty string values in saved config profiles"
       ]
     },
     {

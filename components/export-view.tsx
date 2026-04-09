@@ -96,8 +96,10 @@ export function ExportView() {
   const [savedProfileId, setSavedProfileId] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem('xrdb_config_profile_id');
-    if (stored) setSavedProfileId(stored);
+    void Promise.resolve().then(() => {
+      const stored = localStorage.getItem('xrdb_config_profile_id');
+      if (stored) setSavedProfileId(stored);
+    });
   }, []);
 
   useEffect(() => {
@@ -122,10 +124,7 @@ export function ExportView() {
   }, []);
 
   const [aiometadataUrlMode, setAiometadataUrlMode] = useState<'inline' | 'config'>('inline');
-
-  useEffect(() => {
-    if (!savedProfileId) setAiometadataUrlMode('inline');
-  }, [savedProfileId]);
+  const effectiveAiometadataUrlMode: 'inline' | 'config' = savedProfileId ? aiometadataUrlMode : 'inline';
 
   const {
     previewType,
@@ -152,7 +151,7 @@ export function ExportView() {
           aiometadataCopied={aiometadataCopied}
           onCopyAiometadata={onCopyAiometadata}
           savedProfileId={savedProfileId}
-          aiometadataUrlMode={aiometadataUrlMode}
+          aiometadataUrlMode={effectiveAiometadataUrlMode}
           onSetAiometadataUrlMode={setAiometadataUrlMode}
         />
 
@@ -715,7 +714,7 @@ function SaveConfigSection({
     const params = buildSaveParams();
     const fingerprint = params ? JSON.stringify(Object.entries(params).sort()) : null;
     setHasUnsavedChanges(!!snapshotReady && fingerprint !== savedParamsFingerprintRef.current);
-  });
+  }, [buildSaveParams, snapshotReady]);
 
   const handleSave = useCallback(async () => {
     const params = buildSaveParams();
