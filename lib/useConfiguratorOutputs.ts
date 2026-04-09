@@ -32,6 +32,7 @@ import {
   DEFAULT_RATING_PRESENTATION,
   usesAggregateAccentBar,
   usesAggregateRatingPresentation,
+  usesCompactRingPresentation,
   type AggregateAccentMode,
   type AggregateRatingSource,
   type RatingPresentation,
@@ -804,52 +805,52 @@ export function useConfiguratorOutputs({
       );
     }
     if (
-      usesAggregateRatingPresentation(ratingPresentationForType) &&
+      (usesAggregateRatingPresentation(ratingPresentationForType) || usesCompactRingPresentation(ratingPresentationForType)) &&
       aggregateAccentMode !== DEFAULT_AGGREGATE_ACCENT_MODE
     ) {
       query.set('aggregateAccentMode', aggregateAccentMode);
     }
     if (
-      usesAggregateRatingPresentation(ratingPresentationForType) &&
+      (usesAggregateRatingPresentation(ratingPresentationForType) || usesCompactRingPresentation(ratingPresentationForType)) &&
       (aggregateAccentMode === 'custom' || aggregateAccentColor !== DEFAULT_AGGREGATE_ACCENT_COLOR)
     ) {
       query.set('aggregateAccentColor', aggregateAccentColor);
     }
     if (
-      usesAggregateRatingPresentation(ratingPresentationForType) &&
+      (usesAggregateRatingPresentation(ratingPresentationForType) || usesCompactRingPresentation(ratingPresentationForType)) &&
       (aggregateAccentMode === 'custom' ||
         aggregateCriticsAccentColor !== AGGREGATE_SOURCE_ACCENT_BY_ID.critics)
     ) {
       query.set('aggregateCriticsAccentColor', aggregateCriticsAccentColor);
     }
     if (
-      usesAggregateRatingPresentation(ratingPresentationForType) &&
+      (usesAggregateRatingPresentation(ratingPresentationForType) || usesCompactRingPresentation(ratingPresentationForType)) &&
       (aggregateAccentMode === 'custom' ||
         aggregateAudienceAccentColor !== AGGREGATE_SOURCE_ACCENT_BY_ID.audience)
     ) {
       query.set('aggregateAudienceAccentColor', aggregateAudienceAccentColor);
     }
     if (
-      usesAggregateRatingPresentation(ratingPresentationForType) &&
+      (usesAggregateRatingPresentation(ratingPresentationForType) || usesCompactRingPresentation(ratingPresentationForType)) &&
       (aggregateAccentMode === 'dynamic' ||
         aggregateDynamicStops !== DEFAULT_AGGREGATE_DYNAMIC_STOPS)
     ) {
       query.set('aggregateDynamicStops', aggregateDynamicStops);
     }
     if (
-      usesAggregateRatingPresentation(ratingPresentationForType) &&
+      (usesAggregateRatingPresentation(ratingPresentationForType) || usesCompactRingPresentation(ratingPresentationForType)) &&
       aggregateValueColor !== DEFAULT_AGGREGATE_VALUE_COLOR
     ) {
       query.set('aggregateValueColor', aggregateValueColor);
     }
     if (
-      usesAggregateRatingPresentation(ratingPresentationForType) &&
+      (usesAggregateRatingPresentation(ratingPresentationForType) || usesCompactRingPresentation(ratingPresentationForType)) &&
       aggregateCriticsValueColor !== DEFAULT_AGGREGATE_VALUE_COLOR
     ) {
       query.set('aggregateCriticsValueColor', aggregateCriticsValueColor);
     }
     if (
-      usesAggregateRatingPresentation(ratingPresentationForType) &&
+      (usesAggregateRatingPresentation(ratingPresentationForType) || usesCompactRingPresentation(ratingPresentationForType)) &&
       aggregateAudienceValueColor !== DEFAULT_AGGREGATE_VALUE_COLOR
     ) {
       query.set('aggregateAudienceValueColor', aggregateAudienceValueColor);

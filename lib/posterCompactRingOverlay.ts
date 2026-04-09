@@ -38,8 +38,9 @@ export const buildPosterCompactRingOverlay = ({
   const normalizedProgress = clampNumber(Math.round(progressPercent), 0, 100);
   const circumference = 2 * Math.PI * ringRadius;
   const dashOffset = circumference * (1 - normalizedProgress / 100);
-  const top = inset;
-  const left = Math.max(inset, outputWidth - totalSize - inset);
+  const glowOffset = Math.round(glowPad / 2);
+  const top = Math.max(0, inset - glowOffset);
+  const left = Math.max(0, outputWidth - totalSize - inset + glowOffset);
   const valueFontSize = Math.max(24, Math.round(size * 0.34));
   const trackColor = 'rgba(255,255,255,0.18)';
 
