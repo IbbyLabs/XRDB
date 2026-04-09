@@ -41,6 +41,146 @@
 
 <a id="v1-11-0"></a>
 
+<a id="v1-12-0"></a>
+
+## [v1.12.0] - 09/04/2026
+
+### Added
+* add Authelia access control template
+  
+  Add authelia rules.template.yaml with bypass rules for image, proxy,
+  API, preview, and static asset endpoints so media clients (Stremio,
+  Jellyfin) can fetch posters without authentication.
+  
+  Includes step by step instructions for both Viren070
+  docker compose template users and standalone Traefik setups. Uses Go
+  template syntax (TEMPLATE_XRDB_HOSTNAME env var) matching the Authelia
+  config filter pattern.
+  
+  Add commented out authelia@docker middleware label to compose.yaml.
+  Add Authelia section to README with setup guidance for both paths.
+* saved config profiles via ?config=<id>
+  
+  Add server stored config profiles that allow any image URL to load a
+  preset set of params by appending ?config=<id> to the request.
+  
+  • lib/dbCore.ts: add config_profiles table to SCHEMA_SQL with upsert
+    and get accessors
+  • app/api/config/route.ts: POST endpoint generates xr_<8hex> profile ID
+    or updates existing when _id is supplied
+  • app/api/config/[id]/route.ts: GET endpoint returns stored params or 404
+  • lib/imageRouteRequestState.ts: extract config param at request entry
+    point; merge stored profile as base with inline params overriding
+  • lib/uiConfig.ts: export buildProfileParams helper for string only
+    payload from SharedXrdbSettings
+  • lib/configuratorPageProps.ts: wire buildSaveParams into exportPanelsProps
+  • components/export view.tsx: add SaveConfigSection with save/update
+    button, profile ID display, and copy helpers; persist profile ID in
+    localStorage across refreshes and navigation
+  • lib/useConfiguratorWorkspaceConfigIo.ts: add missing
+    setRatingBlackStripEnabled to applySavedUiConfig dep array (lint fix)
+  • lib/useConfiguratorWorkspaceStorage.ts: fix Clear button to call
+    applySavedUiConfig with defaults so live state resets, not only storage
+  • README.md: add config param to main table and AI integration prompt table
+  • public/product context.json: regenerated
+
+### Fixed
+* BUG-65 compact ring accent mode ignored and position offset
+  
+  Compact Ring presentation (ratingPresentation=ring) was excluded from the
+  usesAggregateRatingPresentation gate in useConfiguratorOutputs, so
+  aggregateAccentMode and all dependent accent params were never serialized
+  into the generated image URL. The renderer always fell back to the default
+  source mode, locking the ring color to the badge provider accent regardless
+  of user selection.
+  
+  Fixed by adding usesCompactRingPresentation to each of the eight accent
+  param guards so genre, custom, and dynamic modes serialize correctly for
+  ring presentation URLs.
+  
+  The ring SVG viewport includes glowPad for the bloom filter, but the
+  overlay top/left position did not compensate for the extra padding.
+  This pushed the visible ring circle glowPad/2 pixels southwest of the
+  intended corner inset. Fixed by computing glowOffset = Math.round(glowPad / 2)
+  and applying it to both top and left so the ring edge sits at the same
+  inset as other badge types.
+  
+  README: added dynamic to aggregateAccentMode allowed values, noted that
+  the setting also controls Compact Ring stroke color. Regenerated
+  product context.json and refreshed static preview assets.
+* correct site description and OG image for link previews
+  
+  Replace stale repository description with accurate service description
+  matching the stateless artwork engine purpose of XRDB.
+  
+  Switch Open Graph and Twitter card image from favicon.png (512x512 icon)
+  to discord banner.png (1376x768 branded banner) so Discord and other
+  platforms render a proper preview instead of a tiny icon.
+  
+  Update test assertion for the new OG image path.
+* BUG-66 scale paddingX proportionally with badge height
+  
+  paddingX was hardcoded (e.g. 13px for glass+both) and never grew with
+  badge height. At 4K scale the badge height reaches ~140px but paddingX
+  stayed at 13, causing the icon to hug the border while iconGap (which
+  already used height * 0.16) ballooned — producing the large icon to text
+  gap observed in reports.
+  
+  Fix: express each paddingX constant as a fraction of height so the ratios
+  hold at every scale. Values are derived so they round to the original
+  pixel constants at the default poster base height of 40px, leaving
+  normal size rendering unchanged.
+  
+  Add two regression tests:
+  • BUG-66 genre badge icon padding scales proportionally at 4K scale
+  • BUG-66 genre badge icon gap stays proportional to badge height at 4K scale
+* BUG-67 Black Bar option incorrect visually and in wrong section
+  
+  The Black Bar rating strip was miscategorized as an artwork source, sat
+  flush incorrectly (appearing to float), and was visually broken in
+  stacked rating view. This fix addresses all three reported problems.
+  
+  • Move Black Bar out of artwork sources and expose it as an independent
+    ratingBlackStrip=1 query parameter so it combines with any style
+  • Fix rendering order so the strip sits flush at the poster bottom and
+    edges in all configurations including stacked rating view
+  • Move the Black Bar control from artwork source selector to the
+    Appearance section as a standalone On/Off overlay toggle
+  • Migrate saved configs with posterArtworkSource=blackbar to tmdb and
+    enable the strip flag so existing setups are not broken
+  • Fix useMemo dependency array in useConfiguratorOutputs
+  • Include ratingBlackStripEnabled in render cache seed key (v14) so
+    toggling it updates the preview immediately without reshuffling
+  • Guard textless artwork sources correctly
+  • Add renderer tests for strip overlay behavior
+  • Update README, reference view, and product context
+* BUG-68 ring does not scale with badge size and age rating affected by badge scale
+  
+  • Accept badgeScalePercent in buildPosterCompactRingOverlay and apply it
+    to the base size calculation so the ring scales proportionally with the
+    posterRatingBadgeScale slider
+  • Thread posterRatingBadgeScale through resolveImageRouteDisplayState and
+    pass it from imageRouteExecution so the value is available at build time
+  • Fix clean text poster anchor when ring is active: bottomOverlayAnchorY
+    now uses the fixed bottom inset instead of bottomRowY when no bottom
+    badge rows exist, preventing text from shifting as badge scale changes
+  • Break coupling between posterRatingBadgeScale and quality/age rating
+    badge column heights: extractedAgeRatingColumnReferenceHeight and the
+    shared qualityBadgeHeight now use posterQualityRowReferenceHeight as
+    their reference instead of the already scaled ratingBadgeHeight
+
+### Documentation
+* refresh static doc assets (2 commits)
+
+### Other Changes
+* refresh product context
+* remove unused firebase tools and ioredis devDependencies
+  
+  firebase tools pulled in @apphosting/build which had a broken ts node
+  sub install, producing noisy ENOENT bin warnings on every rebuild.
+  Neither firebase tools nor ioredis were referenced anywhere in the
+  codebase so both were removed cleanly.
+
 ## [v1.11.0] - 08/04/2026
 
 ### Added
