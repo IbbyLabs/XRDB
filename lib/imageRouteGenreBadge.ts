@@ -153,14 +153,14 @@ export const buildGenreBadgeSvg = (
     genreBadge.style === 'plain'
       ? showText
         ? showIcon
-          ? 8
-          : 6
-        : 4
+          ? Math.round(height * 0.20)
+          : Math.round(height * 0.15)
+        : Math.round(height * 0.10)
       : showText
         ? showIcon
-          ? 13
-          : 15
-        : 12;
+          ? Math.round(height * 0.325)
+          : Math.round(height * 0.375)
+        : Math.round(height * 0.30);
   const iconGap = showIcon && showText ? Math.max(7, Math.round(height * 0.16)) : 0;
   const labelWidth = showText ? estimateGenreBadgeLabelWidth(label, fontSize) : 0;
   const width = Math.max(
