@@ -147,3 +147,38 @@ test('genre badge at 4K scale produces taller badge than strict proportional equ
     `expected boosted height(${specBoosted.height}) > proportional(${proportionalHeight})`,
   );
 });
+
+test('BUG-66 genre badge icon padding scales proportionally at 4K scale', () => {
+  const scalePercent = 350;
+  const spec = buildGenreBadgeSvg(
+    { familyId: 'anime', label: 'Anime', accentColor: '#7dd3fc', mode: 'both', style: 'glass', scalePercent },
+    'poster',
+  );
+  const translateMatch = spec.svg.match(/transform="translate\(([\d.]+) ([\d.]+)\) scale/);
+  assert.ok(translateMatch, 'icon transform should be present');
+  const iconCenterX = Number.parseFloat(translateMatch[1]);
+  const iconSize = Math.round(spec.height * 0.48);
+  const iconX = iconCenterX - iconSize / 2;
+  const minExpectedPadding = Math.round(spec.height * 0.25);
+  assert.ok(
+    iconX >= minExpectedPadding,
+    `expected iconX (${iconX}) >= ${minExpectedPadding} for badge height ${spec.height} — icon is hugging the border`,
+  );
+});
+
+test('BUG-66 genre badge icon gap stays proportional to badge height at 4K scale', () => {
+  const normalSpec = buildGenreBadgeSvg(
+    { familyId: 'action', label: 'Action', accentColor: '#f87171', mode: 'both', style: 'glass', scalePercent: 100 },
+    'poster',
+  );
+  const largeSpec = buildGenreBadgeSvg(
+    { familyId: 'action', label: 'Action', accentColor: '#f87171', mode: 'both', style: 'glass', scalePercent: 350 },
+    'poster',
+  );
+  const normalPaddingRatio = (normalSpec.width - normalSpec.height) / normalSpec.height;
+  const largePaddingRatio = (largeSpec.width - largeSpec.height) / largeSpec.height;
+  assert.ok(
+    Math.abs(largePaddingRatio - normalPaddingRatio) < 0.15,
+    `expected width-to-height ratio to remain consistent across scales: normal ${normalPaddingRatio.toFixed(2)} vs 4K ${largePaddingRatio.toFixed(2)}`,
+  );
+});
