@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { BookmarkPlus, Check, ChevronDown, Clipboard, Code2, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { BookmarkPlus, Check, ChevronDown, Clipboard, Code2, Eye, EyeOff, RotateCcw, Trash2 } from 'lucide-react';
 
 import { useConfiguratorContext } from '@/lib/configuratorProvider';
 import { WorkspaceManagementSection } from '@/components/configurator-basics';
@@ -15,7 +15,8 @@ import {
 import {
   RATING_PROVIDER_OPTIONS,
 } from '@/lib/ratingProviderCatalog';
-import { type AiometadataUrlPatterns, type EpisodeArtworkMode } from '@/lib/uiConfig';
+import { parseConfiguratorLinkImport } from '@/lib/configuratorLinkImport';
+import { buildProfileParams, type AiometadataUrlPatterns, type EpisodeArtworkMode, type SavedUiConfig } from '@/lib/uiConfig';
 
 const LEGACY_CONFIG_ID_RE = /^xr_[0-9a-f]{8}$/i;
 
@@ -508,6 +509,112 @@ function ConfigStringSection({
   );
 }
 
+type ParamDiffEntry = { key: string; oldValue: string; newValue: string };
+
+const REVERT_DIFF_MAX_VISIBLE = 20;
+
+function buildSnapshotParams(snapshot: SavedUiConfig): Record<string, string> {
+  return buildProfileParams(snapshot.settings) ?? {};
+}
+
+function computeParamDiff(
+  current: Record<string, string>,
+  saved: Record<string, string>,
+): { entries: ParamDiffEntry[]; totalChanged: number } {
+  const allKeys = new Set([...Object.keys(current), ...Object.keys(saved)]);
+  const all: ParamDiffEntry[] = [];
+  for (const key of allKeys) {
+    const oldValue = saved[key] ?? '';
+    const newValue = current[key] ?? '';
+    if (oldValue !== newValue) {
+      all.push({ key, oldValue, newValue });
+    }
+  }
+  all.sort((a, b) => a.key.localeCompare(b.key));
+  return {
+    entries: all.slice(0, REVERT_DIFF_MAX_VISIBLE),
+    totalChanged: all.length,
+  };
+}
+
+function RevertDiffModal({
+  diff,
+  totalChanged,
+  confirmLabel,
+  onConfirm,
+  onCancel,
+}: {
+  diff: ParamDiffEntry[];
+  totalChanged: number;
+  confirmLabel?: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onCancel} />
+      <div className="relative z-10 w-full max-w-lg rounded-2xl border border-white/10 bg-zinc-950 shadow-2xl flex flex-col max-h-[80vh]">
+        <div className="p-5 border-b border-white/10 shrink-0">
+          <h3 className="text-sm font-semibold text-white">Confirm Changes</h3>
+          <p className="text-[12px] text-zinc-400 mt-1">
+            Review the changes you are about to revert to your saved configuration.
+          </p>
+        </div>
+        <div className="overflow-y-auto flex-1 p-4 space-y-2">
+          {diff.map((entry) => (
+            <div
+              key={entry.key}
+              className="rounded-xl border border-white/10 bg-zinc-900/60 p-3 space-y-2"
+            >
+              <div className="flex items-center gap-2">
+                <span className="rounded px-1.5 py-0.5 text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase tracking-wide">
+                  change
+                </span>
+                <span className="text-[12px] font-mono text-zinc-300">{entry.key}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide mb-1">old</div>
+                  <div className="rounded-lg bg-red-950/40 border border-red-500/20 px-2 py-1.5 font-mono text-[11px] text-red-300 break-all">
+                    {entry.oldValue || <span className="italic text-zinc-500">default</span>}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide mb-1">new</div>
+                  <div className="rounded-lg bg-green-950/40 border border-green-500/20 px-2 py-1.5 font-mono text-[11px] text-green-300 break-all">
+                    {entry.newValue || <span className="italic text-zinc-500">default</span>}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+          {totalChanged > REVERT_DIFF_MAX_VISIBLE && (
+            <p className="text-[12px] text-zinc-500 text-center py-1">
+              and {totalChanged - REVERT_DIFF_MAX_VISIBLE} more changes
+            </p>
+          )}
+        </div>
+        <div className="p-4 border-t border-white/10 flex items-center justify-between gap-3 shrink-0">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-full px-4 py-2 text-xs font-semibold border border-white/15 text-zinc-300 hover:text-white transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="rounded-full px-4 py-2 text-xs font-semibold bg-violet-600 text-white hover:bg-violet-500 transition-colors"
+          >
+            {confirmLabel ?? 'Confirm & Revert'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SaveConfigSection({
   canGenerateConfig,
   buildSaveParams,
@@ -519,6 +626,8 @@ function SaveConfigSection({
   savedProfileId: string | null;
   onProfileIdChange: (id: string | null) => void;
 }) {
+  const { applySavedUiConfig } = useConfiguratorContext();
+
   const [isSaving, setIsSaving] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
   const [fragmentCopied, setFragmentCopied] = useState(false);
@@ -526,11 +635,40 @@ function SaveConfigSection({
   const [migrationCompleteBanner, setMigrationCompleteBanner] = useState(false);
   const [migrationDeadline, setMigrationDeadline] = useState<number | null>(null);
   const [countdown, setCountdown] = useState<string | null>(null);
+  const [showRevertModal, setShowRevertModal] = useState(false);
+  const [revertDiff, setRevertDiff] = useState<{ entries: ParamDiffEntry[]; totalChanged: number } | null>(null);
+  const [modalMode, setModalMode] = useState<'revert' | 'save'>('revert');
   const fragmentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedParamsFingerprintRef = useRef<string | null>(null);
+  const savedConfigSnapshot = useRef<SavedUiConfig | null>(null);
+  const snapshotFetchedForIdRef = useRef<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [snapshotReady, setSnapshotReady] = useState(false);
 
   const isLegacyId = savedProfileId ? LEGACY_CONFIG_ID_RE.test(savedProfileId) : false;
+
+  useEffect(() => {
+    if (!savedProfileId || snapshotFetchedForIdRef.current === savedProfileId) return;
+    snapshotFetchedForIdRef.current = savedProfileId;
+    let active = true;
+    void (async () => {
+      try {
+        const res = await fetch(`/api/config/${savedProfileId}`);
+        if (!res.ok || !active) return;
+        const serverParams = await res.json() as Record<string, string>;
+        if (!active) return;
+        const fakePath = window.location.origin + '/?';
+        const qs = new URLSearchParams(serverParams).toString();
+        const result = parseConfiguratorLinkImport(fakePath + qs);
+        if (!result) return;
+        savedConfigSnapshot.current = result.config;
+        const snapshotParams = buildSnapshotParams(result.config);
+        savedParamsFingerprintRef.current = JSON.stringify(Object.entries(snapshotParams).sort());
+        setSnapshotReady(true);
+      } catch {}
+    })();
+    return () => { active = false; };
+  }, [savedProfileId]);
 
   useEffect(() => {
     if (!savedProfileId || !isLegacyId) {
@@ -576,7 +714,7 @@ function SaveConfigSection({
   useEffect(() => {
     const params = buildSaveParams();
     const fingerprint = params ? JSON.stringify(Object.entries(params).sort()) : null;
-    setHasUnsavedChanges(fingerprint !== savedParamsFingerprintRef.current);
+    setHasUnsavedChanges(!!snapshotReady && fingerprint !== savedParamsFingerprintRef.current);
   });
 
   const handleSave = useCallback(async () => {
@@ -593,7 +731,15 @@ function SaveConfigSection({
       });
       if (res.ok) {
         const data = await res.json() as { id: string };
+        const fakePath = window.location.origin + '/?';
+        const qs = new URLSearchParams(params).toString();
+        const result = parseConfiguratorLinkImport(fakePath + qs);
+        if (result) {
+          savedConfigSnapshot.current = result.config;
+        }
         savedParamsFingerprintRef.current = JSON.stringify(Object.entries(params).sort());
+        snapshotFetchedForIdRef.current = data.id;
+        setSnapshotReady(true);
         setHasUnsavedChanges(false);
         onProfileIdChange(data.id);
       }
@@ -608,6 +754,10 @@ function SaveConfigSection({
     try {
       const res = await fetch(`/api/config/${savedProfileId}`, { method: 'DELETE' });
       if (res.ok) {
+        savedConfigSnapshot.current = null;
+        savedParamsFingerprintRef.current = null;
+        snapshotFetchedForIdRef.current = null;
+        setSnapshotReady(false);
         onProfileIdChange(null);
       }
     } finally {
@@ -629,6 +779,15 @@ function SaveConfigSection({
       if (!newRes.ok) return;
       const { id: newId } = await newRes.json() as { id: string };
       await fetch(`/api/config/${savedProfileId}`, { method: 'DELETE' });
+      const fakePath = window.location.origin + '/?';
+      const qs = new URLSearchParams(params).toString();
+      const result = parseConfiguratorLinkImport(fakePath + qs);
+      if (result) {
+        savedConfigSnapshot.current = result.config;
+      }
+      savedParamsFingerprintRef.current = JSON.stringify(Object.entries(params).sort());
+      snapshotFetchedForIdRef.current = newId;
+      setSnapshotReady(true);
       onProfileIdChange(newId);
       setMigrationCompleteBanner(true);
     } finally {
@@ -644,112 +803,185 @@ function SaveConfigSection({
     fragmentTimerRef.current = setTimeout(() => setFragmentCopied(false), 1500);
   }, [savedProfileId]);
 
+  const handleSaveClick = useCallback(() => {
+    if (!savedProfileId) {
+      void handleSave();
+      return;
+    }
+    if (!savedConfigSnapshot.current) return;
+    const currentParams = buildSaveParams() ?? {};
+    const savedParams = buildSnapshotParams(savedConfigSnapshot.current);
+    const diff = computeParamDiff(currentParams, savedParams);
+    if (diff.totalChanged === 0) return;
+    setModalMode('save');
+    setRevertDiff(diff);
+    setShowRevertModal(true);
+  }, [savedProfileId, buildSaveParams, handleSave]);
+
+  const handleRevertClick = useCallback(() => {
+    if (!savedConfigSnapshot.current) return;
+    const currentParams = buildSaveParams() ?? {};
+    const savedParams = buildSnapshotParams(savedConfigSnapshot.current);
+    const diff = computeParamDiff(currentParams, savedParams);
+    if (diff.totalChanged === 0) return;
+    setModalMode('revert');
+    setRevertDiff(diff);
+    setShowRevertModal(true);
+  }, [buildSaveParams]);
+
+  const handleConfirm = useCallback(() => {
+    if (modalMode === 'save') {
+      void handleSave();
+      setShowRevertModal(false);
+      setRevertDiff(null);
+      return;
+    }
+    if (!savedConfigSnapshot.current) return;
+    applySavedUiConfig(savedConfigSnapshot.current);
+    const params = buildSnapshotParams(savedConfigSnapshot.current);
+    savedParamsFingerprintRef.current = JSON.stringify(Object.entries(params).sort());
+    setShowRevertModal(false);
+    setRevertDiff(null);
+  }, [modalMode, handleSave, applySavedUiConfig]);
+
+  const handleRevertCancel = useCallback(() => {
+    setShowRevertModal(false);
+    setRevertDiff(null);
+  }, []);
+
+  const showRevertButton = hasUnsavedChanges && savedConfigSnapshot.current !== null;
+
   return (
-    <div className="xrdb-panel rounded-2xl p-4 space-y-3">
-      <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-        <BookmarkPlus className="w-4 h-4 text-violet-500" /> Saved Config Profile
-      </h2>
-      <p className="text-[13px] leading-5 text-zinc-400">
-        Save current settings as a reusable ID. Append{' '}
-        <span className="font-mono text-[12px] bg-zinc-900 px-1 rounded text-zinc-300">?config=&lt;id&gt;</span>{' '}
-        to any image URL to apply this profile.
-      </p>
-      {!canGenerateConfig && (
-        <p className="text-[12px] leading-4 text-amber-400/90">
-          Add a TMDB key and MDBList key to save a profile.
+    <>
+      {showRevertModal && revertDiff && (
+        <RevertDiffModal
+          diff={revertDiff.entries}
+          totalChanged={revertDiff.totalChanged}
+          confirmLabel={modalMode === 'save' ? 'Save changes' : undefined}
+          onConfirm={handleConfirm}
+          onCancel={handleRevertCancel}
+        />
+      )}
+      <div className="xrdb-panel rounded-2xl p-4 space-y-3">
+        <h2 className="text-sm font-semibold text-white flex items-center gap-2">
+          <BookmarkPlus className="w-4 h-4 text-violet-500" /> Saved Config Profile
+          {hasUnsavedChanges && savedConfigSnapshot.current !== null && (
+            <span className="ml-auto rounded-full px-2 py-0.5 text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase tracking-wide">
+              unsaved changes
+            </span>
+          )}
+        </h2>
+        <p className="text-[13px] leading-5 text-zinc-400">
+          Save current settings as a reusable ID. Append{' '}
+          <span className="font-mono text-[12px] bg-zinc-900 px-1 rounded text-zinc-300">?config=&lt;id&gt;</span>{' '}
+          to any image URL to apply this profile.
         </p>
-      )}
-      {expiredBanner && (
-        <div className="rounded-xl border border-orange-500/30 bg-orange-950/20 p-3">
-          <p className="text-[12px] text-orange-300">
-            Your saved profile expired and was removed. Save a new profile to continue using config URLs.
+        {!canGenerateConfig && (
+          <p className="text-[12px] leading-4 text-amber-400/90">
+            Add a TMDB key and MDBList key to save a profile.
           </p>
-        </div>
-      )}
-      {migrationCompleteBanner && (
-        <div className="rounded-xl border border-green-500/30 bg-green-950/20 p-3 space-y-1">
-          <p className="text-[12px] font-semibold text-green-300">Profile migrated successfully</p>
-          <p className="text-[11px] text-green-400/80 leading-4">
-            Your previous profile stored settings in an older format. Consider rotating your TMDB and MDBList API keys to ensure they remain secure.
-          </p>
-        </div>
-      )}
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          onClick={() => void handleSave()}
-          disabled={!canGenerateConfig || isSaving || (!!savedProfileId && !hasUnsavedChanges)}
-          className={`rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-2 transition-colors ${
-            canGenerateConfig && !isSaving && (!savedProfileId || hasUnsavedChanges)
-              ? 'bg-violet-600 text-white hover:bg-violet-500'
-              : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-          }`}
-        >
-          <BookmarkPlus className="w-3.5 h-3.5" />
-          <span>{isSaving ? 'Saving...' : savedProfileId ? 'Update saved profile' : 'Save config profile'}</span>
-        </button>
-        {savedProfileId && (
+        )}
+        {expiredBanner && (
+          <div className="rounded-xl border border-orange-500/30 bg-orange-950/20 p-3">
+            <p className="text-[12px] text-orange-300">
+              Your saved profile expired and was removed. Save a new profile to continue using config URLs.
+            </p>
+          </div>
+        )}
+        {migrationCompleteBanner && (
+          <div className="rounded-xl border border-green-500/30 bg-green-950/20 p-3 space-y-1">
+            <p className="text-[12px] font-semibold text-green-300">Profile migrated successfully</p>
+            <p className="text-[11px] text-green-400/80 leading-4">
+              Your previous profile stored settings in an older format. Consider rotating your TMDB and MDBList API keys to ensure they remain secure.
+            </p>
+          </div>
+        )}
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={() => void handleDelete()}
-            disabled={isSaving}
-            className="rounded-full px-3 py-2 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-red-500/30 text-red-400 hover:text-red-300 hover:border-red-500/50"
+            onClick={handleSaveClick}
+            disabled={!canGenerateConfig || isSaving || (!!savedProfileId && !hasUnsavedChanges)}
+            className={`rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-2 transition-colors ${
+              canGenerateConfig && !isSaving && (!savedProfileId || hasUnsavedChanges)
+                ? 'bg-violet-600 text-white hover:bg-violet-500'
+                : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+            }`}
           >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Delete profile</span>
+            <BookmarkPlus className="w-3.5 h-3.5" />
+            <span>{isSaving ? 'Saving...' : savedProfileId ? 'Update saved profile' : 'Save config profile'}</span>
           </button>
-        )}
-      </div>
-      {savedProfileId && (
-        <div className="space-y-2">
-          {isLegacyId && countdown && (
-            <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 space-y-2">
-              <p className="text-[12px] font-semibold text-amber-300">Profile security upgrade required</p>
-              <p className="text-[11px] text-amber-400/80 leading-4">
-                This profile uses an older ID format. Migrate to a secure profile before it expires.{' '}
-                <span className="font-semibold">{countdown}</span>
-              </p>
-              <button
-                type="button"
-                onClick={() => void handleMigrate()}
-                disabled={isMigrating || !canGenerateConfig}
-                className={`rounded-full px-3 py-1.5 text-[11px] font-semibold flex items-center gap-1.5 transition-colors ${
-                  !isMigrating && canGenerateConfig
-                    ? 'bg-amber-500 text-black hover:bg-amber-400'
-                    : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-                }`}
-              >
-                {isMigrating ? 'Migrating...' : 'Migrate now'}
-              </button>
-            </div>
+          {showRevertButton && (
+            <button
+              type="button"
+              onClick={handleRevertClick}
+              className="rounded-full px-3 py-2 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-amber-500/30 text-amber-400 hover:text-amber-300 hover:border-amber-500/50"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Revert to saved</span>
+            </button>
           )}
-          <div className="rounded-xl border border-white/10 bg-black/40 p-3 min-w-0">
-            <div className="flex items-center justify-between gap-3 mb-2">
-              <div className="text-[12px] font-semibold text-zinc-200">Profile ID</div>
-              <button
-                type="button"
-                onClick={handleCopyFragment}
-                className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-medium flex items-center gap-1.5 transition-all ${
-                  fragmentCopied
-                    ? 'border-green-500/60 bg-green-500 text-white'
-                    : 'border-white/15 text-zinc-300 hover:text-white'
-                }`}
-              >
-                {fragmentCopied ? (
-                  <><Check className="w-3 h-3" /> Copied</>
-                ) : (
-                  <><Clipboard className="w-3 h-3" /> Copy ?config=</>
-                )}
-              </button>
-            </div>
-            <div className="font-mono text-[11px] text-zinc-300 bg-zinc-950/80 rounded-lg border border-white/10 p-3 break-all">
-              {savedProfileId}
+          {savedProfileId && (
+            <button
+              type="button"
+              onClick={() => void handleDelete()}
+              disabled={isSaving}
+              className="rounded-full px-3 py-2 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-red-500/30 text-red-400 hover:text-red-300 hover:border-red-500/50"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete profile</span>
+            </button>
+          )}
+        </div>
+        {savedProfileId && (
+          <div className="space-y-2">
+            {isLegacyId && countdown && (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-950/20 p-3 space-y-2">
+                <p className="text-[12px] font-semibold text-amber-300">Profile security upgrade required</p>
+                <p className="text-[11px] text-amber-400/80 leading-4">
+                  This profile uses an older ID format. Migrate to a secure profile before it expires.{' '}
+                  <span className="font-semibold">{countdown}</span>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void handleMigrate()}
+                  disabled={isMigrating || !canGenerateConfig}
+                  className={`rounded-full px-3 py-1.5 text-[11px] font-semibold flex items-center gap-1.5 transition-colors ${
+                    !isMigrating && canGenerateConfig
+                      ? 'bg-amber-500 text-black hover:bg-amber-400'
+                      : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                  }`}
+                >
+                  {isMigrating ? 'Migrating...' : 'Migrate now'}
+                </button>
+              </div>
+            )}
+            <div className="rounded-xl border border-white/10 bg-black/40 p-3 min-w-0">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="text-[12px] font-semibold text-zinc-200">Profile ID</div>
+                <button
+                  type="button"
+                  onClick={handleCopyFragment}
+                  className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-medium flex items-center gap-1.5 transition-all ${
+                    fragmentCopied
+                      ? 'border-green-500/60 bg-green-500 text-white'
+                      : 'border-white/15 text-zinc-300 hover:text-white'
+                  }`}
+                >
+                  {fragmentCopied ? (
+                    <><Check className="w-3 h-3" /> Copied</>
+                  ) : (
+                    <><Clipboard className="w-3 h-3" /> Copy ?config=</>
+                  )}
+                </button>
+              </div>
+              <div className="font-mono text-[11px] text-zinc-300 bg-zinc-950/80 rounded-lg border border-white/10 p-3 break-all">
+                {savedProfileId}
+              </div>
             </div>
           </div>
-
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </>
   );
 }
 
