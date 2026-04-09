@@ -76,9 +76,27 @@ export function resolveLatestPublishedReleaseId(releases) {
 export async function main() {
   const token = requireEnv('GITHUB_TOKEN');
   const repository = requireEnv('REPOSITORY');
+  const currentTag = String(process.env.CURRENT_TAG || '').trim();
   const apiUrl = `https://api.github.com/repos/${repository}`;
   const releases = await requestJson(`${apiUrl}/releases?per_page=100`, token);
-  const latest = resolveLatestPublishedReleaseId(releases);
+
+  let allReleases = Array.isArray(releases) ? releases : [];
+
+  if (currentTag) {
+    const tagRelease = await requestJson(
+      `${apiUrl}/releases/tags/${encodeURIComponent(currentTag)}`,
+      token
+    );
+
+    if (tagRelease && typeof tagRelease.id !== 'undefined') {
+      const alreadyInList = allReleases.some((r) => r.id === tagRelease.id);
+      if (!alreadyInList) {
+        allReleases = [...allReleases, tagRelease];
+      }
+    }
+  }
+
+  const latest = resolveLatestPublishedReleaseId(allReleases);
 
   if (!latest) {
     console.log('No published GitHub release found to mark as latest.');
