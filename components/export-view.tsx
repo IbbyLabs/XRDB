@@ -95,26 +95,21 @@ export function ExportView() {
 
   const [savedProfileId, setSavedProfileId] = useState<string | null>(null);
 
-  useEffect(() => {
-    void Promise.resolve().then(() => {
-      const stored = localStorage.getItem('xrdb_config_profile_id');
-      if (stored) setSavedProfileId(stored);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (savedProfileId) {
-      localStorage.setItem('xrdb_config_profile_id', savedProfileId);
+  const handleProfileIdChange = useCallback((id: string | null) => {
+    setSavedProfileId(id);
+    if (id) {
+      localStorage.setItem('xrdb_config_profile_id', id);
     } else {
       localStorage.removeItem('xrdb_config_profile_id');
     }
-  }, [savedProfileId]);
+  }, []);
 
   useEffect(() => {
     const sync = () => {
       const stored = localStorage.getItem('xrdb_config_profile_id');
       setSavedProfileId((prev) => (prev === stored ? prev : stored));
     };
+    sync();
     window.addEventListener('storage', sync);
     window.addEventListener('xrdb-config-profile-cleared', sync);
     return () => {
@@ -168,7 +163,7 @@ export function ExportView() {
           canGenerateConfig={canGenerateConfig}
           buildSaveParams={buildSaveParams}
           savedProfileId={savedProfileId}
-          onProfileIdChange={setSavedProfileId}
+          onProfileIdChange={handleProfileIdChange}
         />
 
         <div className="xrdb-panel rounded-2xl">
