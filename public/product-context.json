@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.13.0",
-  "generatedAt": "2026-04-10T00:00:22.774Z",
+  "xrdbTag": "v1.13.1",
+  "generatedAt": "2026-04-10T00:59:47.246Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -37,11 +37,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "BUG persistent config profile ID lost on page refresh or tab navigation",
         "BUG-73 config profile xrdbKey used as auth fallback on image and thumbnail routes",
         "FR-56 revert unsaved edits to last saved profile",
         "BUG-70 scale badge metrics to fit natural logo width with 4+ ratings",
-        "BUG-71 config profile security — encryption, migration deadline, overlay",
-        "BUG-72 preserve empty string values in saved config profiles"
+        "BUG-71 config profile security — encryption, migration deadline, overlay"
       ]
     },
     {
