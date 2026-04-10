@@ -35,7 +35,7 @@ test('full-stack preset enables dense layouts and full rating coverage', () => {
   const next = applyConfiguratorPreset(createDefaultSavedUiConfig(), 'full-stack');
 
   assert.equal(next.settings.posterRatingPresentation, 'blockbuster');
-  assert.equal(next.settings.backdropRatingPresentation, 'blockbuster');
+  assert.equal(next.settings.backdropRatingPresentation, 'standard');
   assert.equal(next.settings.logoRatingPresentation, 'dual-minimal');
   assert.equal(next.settings.posterRatingStyle, 'stacked');
   assert.equal(next.settings.backdropRatingStyle, 'stacked');

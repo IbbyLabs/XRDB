@@ -1,6 +1,7 @@
 import { type GenreBadgeAnimeGrouping, type GenreBadgeMode } from '@/lib/genreBadge';
 import { type EpisodeIdMode } from '@/lib/episodeIdentity';
 import { type RatingPresentation } from '@/lib/ratingPresentation';
+import { type MediaSearchPreviewType } from '@/lib/configuratorMediaSearch';
 import {
   type AgeRatingBadgePosition,
   type ArtworkSource,
@@ -239,6 +240,11 @@ export const PRESENTATION_SECTION_ORDER: RatingPresentation[] = [
   'blockbuster',
   'none',
 ];
+
+export const getPresentationOrderForType = (type: MediaSearchPreviewType): RatingPresentation[] =>
+  type === 'poster'
+    ? PRESENTATION_SECTION_ORDER
+    : PRESENTATION_SECTION_ORDER.filter((p) => p !== 'ring' && p !== 'editorial' && p !== 'blockbuster');
 
 export const WORKSPACE_CENTER_VIEW_OPTIONS: Array<{
   id: 'showcase' | 'preview' | 'guide';
