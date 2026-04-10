@@ -15,8 +15,7 @@ import {
 import {
   RATING_PROVIDER_OPTIONS,
 } from '@/lib/ratingProviderCatalog';
-import { parseConfiguratorLinkImport } from '@/lib/configuratorLinkImport';
-import { buildProfileParams, type AiometadataUrlPatterns, type EpisodeArtworkMode, type SavedUiConfig } from '@/lib/uiConfig';
+import { buildProfileParams, normalizeSavedUiConfig, serializeSavedUiConfig, type AiometadataUrlPatterns, type EpisodeArtworkMode, type SavedUiConfig } from '@/lib/uiConfig';
 
 const LEGACY_CONFIG_ID_RE = /^xr_[0-9a-f]{8}$/i;
 
@@ -651,12 +650,12 @@ function SaveConfigSection({
         if (!res.ok || !active) return;
         const serverParams = await res.json() as Record<string, string>;
         if (!active) return;
-        const fakePath = window.location.origin + '/?';
-        const qs = new URLSearchParams(serverParams).toString();
-        const result = parseConfiguratorLinkImport(fakePath + qs);
-        if (!result) return;
-        savedConfigSnapshot.current = result.config;
-        const snapshotParams = buildSnapshotParams(result.config);
+        const normalizedConfig = normalizeSavedUiConfig(
+          { settings: serverParams },
+          { skipCrossTypeFallbacks: true },
+        );
+        savedConfigSnapshot.current = normalizedConfig;
+        const snapshotParams = buildSnapshotParams(normalizedConfig);
         savedParamsFingerprintRef.current = JSON.stringify(Object.entries(snapshotParams).sort());
         setSnapshotReady(true);
       } catch {}
@@ -725,12 +724,14 @@ function SaveConfigSection({
       });
       if (res.ok) {
         const data = await res.json() as { id: string };
-        const fakePath = window.location.origin + '/?';
-        const qs = new URLSearchParams(params).toString();
-        const result = parseConfiguratorLinkImport(fakePath + qs);
-        if (result) {
-          savedConfigSnapshot.current = result.config;
-        }
+        const normalizedConfig = normalizeSavedUiConfig(
+          { settings: params },
+          { skipCrossTypeFallbacks: true },
+        );
+        savedConfigSnapshot.current = normalizedConfig;
+        try {
+          localStorage.setItem('xrdb.uiConfig.v1', serializeSavedUiConfig(normalizedConfig));
+        } catch {}
         savedParamsFingerprintRef.current = JSON.stringify(Object.entries(params).sort());
         snapshotFetchedForIdRef.current = data.id;
         setSnapshotReady(true);
@@ -773,12 +774,11 @@ function SaveConfigSection({
       if (!newRes.ok) return;
       const { id: newId } = await newRes.json() as { id: string };
       await fetch(`/api/config/${savedProfileId}`, { method: 'DELETE' });
-      const fakePath = window.location.origin + '/?';
-      const qs = new URLSearchParams(params).toString();
-      const result = parseConfiguratorLinkImport(fakePath + qs);
-      if (result) {
-        savedConfigSnapshot.current = result.config;
-      }
+      const normalizedConfig = normalizeSavedUiConfig(
+        { settings: params },
+        { skipCrossTypeFallbacks: true },
+      );
+      savedConfigSnapshot.current = normalizedConfig;
       savedParamsFingerprintRef.current = JSON.stringify(Object.entries(params).sort());
       snapshotFetchedForIdRef.current = newId;
       setSnapshotReady(true);

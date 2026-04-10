@@ -214,6 +214,7 @@ export const parseConfiguratorLinkImport = (
   options?: {
     baseOrigin?: string;
     fallbackPreviewType?: ConfiguratorPreviewType;
+    skipCrossTypeFallbacks?: boolean;
   },
 ): ConfiguratorLinkImportResult | null => {
   let targetUrl: URL;
@@ -350,7 +351,7 @@ export const parseConfiguratorLinkImport = (
   return {
     config: normalizeSavedUiConfig({
       settings: settingsCandidate,
-    }),
+    }, options?.skipCrossTypeFallbacks ? { skipCrossTypeFallbacks: true } : undefined),
     previewType: detectedPreviewType,
     mediaId,
   };

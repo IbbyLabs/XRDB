@@ -129,7 +129,7 @@ export function useConfiguratorWorkspaceStorage({
 
       const raw = window.localStorage.getItem(UI_CONFIG_STORAGE_KEY);
       if (raw) {
-        const parsed = parseSavedUiConfig(raw);
+        const parsed = parseSavedUiConfig(raw, { skipCrossTypeFallbacks: true });
         if (!parsed) {
           queueMicrotask(() => {
             if (cancelled) {
@@ -336,7 +336,7 @@ export function useConfiguratorWorkspaceStorage({
       }
 
       try {
-        const parsed = parseSavedUiConfig(await file.text());
+        const parsed = parseSavedUiConfig(await file.text(), { skipCrossTypeFallbacks: true });
         if (!parsed) {
           setSavedConfigStatus('invalid');
           return;

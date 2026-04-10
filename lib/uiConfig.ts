@@ -949,7 +949,7 @@ const normalizeTmdbIdScopeMode = (
     : fallback;
 };
 
-export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings => {
+export const normalizeSharedXrdbSettings = (value: unknown, options?: { skipCrossTypeFallbacks?: boolean }): SharedXrdbSettings => {
   const defaults = createDefaultSharedXrdbSettings();
   if (!value || typeof value !== 'object') {
     return defaults;
@@ -969,7 +969,7 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
     ? 'clean'
     : normalizeBackdropImageTextPreference(candidate.backdropImageText, defaults.backdropImageText);
   const thumbnailImageText = normalizeBackdropImageTextPreference(
-    candidate.thumbnailImageText ?? candidate.backdropImageText,
+    options?.skipCrossTypeFallbacks ? candidate.thumbnailImageText : (candidate.thumbnailImageText ?? candidate.backdropImageText),
     defaults.thumbnailImageText,
   );
   const posterArtworkSource = legacyFanartPosterMode
@@ -985,9 +985,9 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
         defaults.backdropArtworkSource
       );
   const thumbnailArtworkSource = normalizeNonPosterArtworkSource(
-    candidate.thumbnailArtworkSource ??
-      candidate.backdropArtworkSource ??
-      candidate.backdropCleanSource,
+    options?.skipCrossTypeFallbacks
+      ? candidate.thumbnailArtworkSource
+      : (candidate.thumbnailArtworkSource ?? candidate.backdropArtworkSource ?? candidate.backdropCleanSource),
     defaults.thumbnailArtworkSource,
   );
   const rpdbRatingBarAliases = resolveRpdbRatingBarPositionAliases(candidate.ratingBarPos);
@@ -1291,20 +1291,20 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
     posterRatingsMax: normalizeOptionalBadgeCount(candidate.posterRatingsMax),
     backdropRatingsMax: normalizeOptionalBadgeCount(candidate.backdropRatingsMax),
     thumbnailRatingsMax: normalizeOptionalBadgeCount(
-      candidate.thumbnailRatingsMax ?? candidate.backdropRatingsMax,
+      options?.skipCrossTypeFallbacks ? candidate.thumbnailRatingsMax : (candidate.thumbnailRatingsMax ?? candidate.backdropRatingsMax),
     ),
     backdropBottomRatingsRow: normalizeBoolean(
       candidate.backdropBottomRatingsRow,
       defaults.backdropBottomRatingsRow,
     ),
     thumbnailBottomRatingsRow: normalizeBoolean(
-      candidate.thumbnailBottomRatingsRow ?? candidate.backdropBottomRatingsRow,
+      options?.skipCrossTypeFallbacks ? candidate.thumbnailBottomRatingsRow : (candidate.thumbnailBottomRatingsRow ?? candidate.backdropBottomRatingsRow),
       defaults.thumbnailBottomRatingsRow,
     ),
     posterRatingStyle: normalizeRatingStyle(candidate.posterRatingStyle as string | null | undefined),
     backdropRatingStyle: normalizeRatingStyle(candidate.backdropRatingStyle as string | null | undefined),
     thumbnailRatingStyle: normalizeRatingStyle(
-      (candidate.thumbnailRatingStyle ?? candidate.backdropRatingStyle) as
+      (options?.skipCrossTypeFallbacks ? candidate.thumbnailRatingStyle : (candidate.thumbnailRatingStyle ?? candidate.backdropRatingStyle)) as
         | string
         | null
         | undefined,
@@ -1318,7 +1318,7 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
       defaults.backdropRatingPresentation,
     ),
     thumbnailRatingPresentation: normalizeRatingPresentation(
-      candidate.thumbnailRatingPresentation ?? candidate.backdropRatingPresentation,
+      options?.skipCrossTypeFallbacks ? candidate.thumbnailRatingPresentation : (candidate.thumbnailRatingPresentation ?? candidate.backdropRatingPresentation),
       defaults.thumbnailRatingPresentation,
     ),
     logoRatingPresentation: normalizeRatingPresentation(
@@ -1342,7 +1342,7 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
       defaults.backdropAggregateRatingSource,
     ),
     thumbnailAggregateRatingSource: normalizeAggregateRatingSource(
-      candidate.thumbnailAggregateRatingSource ?? candidate.backdropAggregateRatingSource,
+      options?.skipCrossTypeFallbacks ? candidate.thumbnailAggregateRatingSource : (candidate.thumbnailAggregateRatingSource ?? candidate.backdropAggregateRatingSource),
       defaults.thumbnailAggregateRatingSource,
     ),
     logoAggregateRatingSource: normalizeAggregateRatingSource(
@@ -1539,7 +1539,7 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
   };
 };
 
-export const normalizeSavedUiConfig = (value: unknown): SavedUiConfig => {
+export const normalizeSavedUiConfig = (value: unknown, options?: { skipCrossTypeFallbacks?: boolean }): SavedUiConfig => {
   const defaults = createDefaultSavedUiConfig();
   if (!value || typeof value !== 'object') {
     return defaults;
@@ -1560,7 +1560,7 @@ export const normalizeSavedUiConfig = (value: unknown): SavedUiConfig => {
 
   return {
     version: 1,
-    settings: normalizeSharedXrdbSettings(candidate.settings),
+    settings: normalizeSharedXrdbSettings(candidate.settings, options),
     proxy: {
       manifestUrl:
         typeof candidate.proxy?.manifestUrl === 'string'
@@ -1585,9 +1585,9 @@ export const normalizeSavedUiConfig = (value: unknown): SavedUiConfig => {
   };
 };
 
-export const parseSavedUiConfig = (raw: string): SavedUiConfig | null => {
+export const parseSavedUiConfig = (raw: string, options?: { skipCrossTypeFallbacks?: boolean }): SavedUiConfig | null => {
   try {
-    return normalizeSavedUiConfig(JSON.parse(raw));
+    return normalizeSavedUiConfig(JSON.parse(raw), options);
   } catch {
     return null;
   }
