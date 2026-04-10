@@ -45,6 +45,23 @@
 
 <a id="v1-13-0"></a>
 
+<a id="v1-13-1"></a>
+
+## [v1.13.1] - 10/04/2026
+
+### Fixed
+* BUG persistent config profile ID lost on page refresh or tab navigation
+  
+  Root cause: three successive bad fixes introduced by lint compliance attempts:
+  1. Promise.resolve().then() wrapper deferred localStorage read past write back effect firing with null, silently deleting the stored ID on every mount.
+  2. Lazy useState initializer caused SSR hydration mismatch (server null vs client stored value).
+  3. useRef guard on write back effect still vulnerable to React Strict Mode double invocation, where ref persists across remounts and fires the write with null before sync() restores the value.
+  
+  Fix: remove the write back effect entirely. Reads are handled by sync() called immediately in the event listener effect (setState inside callback, not effect body, satisfying react hooks/set state in effect). Writes happen synchronously inside handleProfileIdChange alongside setSavedProfileId, so localStorage and state always stay in sync with no effect involvement.
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.13.0] - 10/04/2026
 
 ### Added
