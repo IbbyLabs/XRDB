@@ -78,7 +78,7 @@ test('image route display state builds compact ring overlays for poster ring pre
   assert.match(state.compactRingOverlay?.svg ?? '', /#ef4444/i);
 });
 
-test('image route display state keeps compact ring overlay when value source is unavailable but progress source is available', () => {
+test('image route display state suppresses compact ring overlay when value source has no data', () => {
   const state = resolveImageRouteDisplayState({
     ...createBaseInput(),
     ratingPresentation: 'ring',
@@ -88,8 +88,7 @@ test('image route display state keeps compact ring overlay when value source is 
     providerRatings: new Map([['imdb', '7.1']]),
   });
 
-  assert.ok(state.compactRingOverlay);
-  assert.match(state.compactRingOverlay?.svg ?? '', /71/);
+  assert.equal(state.compactRingOverlay, null);
 });
 
 test('image route display state maps dynamic aggregate accents from score stops', () => {

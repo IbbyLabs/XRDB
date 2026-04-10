@@ -371,6 +371,7 @@ export const resolveImageRouteDisplayState = (input: {
       if (exactMatch) {
         return exactMatch;
       }
+      return null;
     }
 
     return availableEntries.reduce(
@@ -390,7 +391,7 @@ export const resolveImageRouteDisplayState = (input: {
           posterRingProgressSource || DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
         )
       : null;
-  const compactRingPrimaryBadge = valueRingBadge || progressRingBadge;
+  const compactRingPrimaryBadge = valueRingBadge;
   const compactRingScorePercent =
     parseFloat(((compactRingPrimaryBadge?.normalizedValue ?? 0)).toFixed(1)) * 10;
   const compactRingAccentColor =
