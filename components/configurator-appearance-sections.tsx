@@ -332,24 +332,16 @@ export function PresentationSection({
       {layoutPlacementHelp ? (
         <p className="text-[11px] leading-relaxed text-zinc-500">
           {isEditorialPresentation
-            ? previewType === 'poster'
-              ? 'Editorial uses a fixed top left score mark that feels printed into the poster. Layout controls stay saved for when you switch back to another mode.'
-              : 'Editorial has its custom treatment on posters. Here it falls back to one clean average badge.'
+            ? 'Editorial uses a fixed top left score mark that feels printed into the poster. Layout controls stay saved for when you switch back to another mode.'
             : isCompactRingPresentation
-              ? previewType === 'poster'
-                ? 'Compact Ring uses a fixed top right score ring. Layout controls stay saved for when you switch back to another mode.'
-                : 'Compact Ring is poster only. Here it falls back to one clean average badge.'
+              ? 'Compact Ring uses a fixed top right score ring. Layout controls stay saved for when you switch back to another mode.'
             : activePresentationPreservesLayout
               ? `This mode still respects the selected layout below, so you can move ratings to ${layoutPlacementHelp}.`
-              : `Blockbuster uses a fixed ${previewType === 'poster' ? 'left/right poster stack' : 'right vertical backdrop stack'}. Switch to another presentation to use ${layoutPlacementHelp}.`}
+              : `Blockbuster uses a fixed left/right poster stack. Switch to another presentation to use ${layoutPlacementHelp}.`}
         </p>
       ) : (
         <p className="text-[11px] leading-relaxed text-zinc-500">
-          {isEditorialPresentation
-            ? 'Editorial keeps its unique treatment on posters. Logo output falls back to one clean average badge.'
-            : isCompactRingPresentation
-              ? 'Compact Ring stays pinned to the poster corner. Logo output falls back to one clean average badge.'
-            : 'Logo presentation keeps the output controls below available.'}
+          {'Logo presentation keeps the output controls below available.'}
         </p>
       )}
       {usesAggregatePresentation || isCompactRingPresentation ? (

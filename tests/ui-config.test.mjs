@@ -17,6 +17,7 @@ import {
   buildProxyUrl,
   decodeBase64Url,
   normalizeSavedUiConfig,
+  normalizeSharedXrdbSettings,
   parseSavedUiConfig,
   serializeSavedUiConfig,
 } from '../lib/uiConfig.ts';
@@ -134,7 +135,7 @@ const buildSampleSettings = () =>
       posterRatingPresentation: 'minimal',
       backdropRatingPresentation: 'average',
       thumbnailRatingPresentation: 'average',
-      logoRatingPresentation: 'blockbuster',
+      logoRatingPresentation: 'dual-minimal',
       posterRingValueSource: 'highest',
       posterRingProgressSource: 'tmdb',
       posterAggregateRatingSource: 'audience',
@@ -295,7 +296,7 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       posterRatingPresentation: 'minimal',
       backdropRatingPresentation: 'average',
       thumbnailRatingPresentation: 'average',
-      logoRatingPresentation: 'blockbuster',
+      logoRatingPresentation: 'dual-minimal',
       posterRingValueSource: 'highest',
       posterRingProgressSource: 'tmdb',
       posterAggregateRatingSource: 'audience',
@@ -736,7 +737,7 @@ test('config string and proxy manifest use the same shared XRDB settings', () =>
     posterRatingPresentation: 'minimal',
     backdropRatingPresentation: 'average',
     thumbnailRatingPresentation: 'average',
-    logoRatingPresentation: 'blockbuster',
+    logoRatingPresentation: 'dual-minimal',
     posterAggregateRatingSource: 'audience',
     backdropAggregateRatingSource: 'critics',
     thumbnailAggregateRatingSource: 'critics',
@@ -845,7 +846,7 @@ test('config string and proxy manifest use the same shared XRDB settings', () =>
     posterRatingPresentation: 'minimal',
     backdropRatingPresentation: 'average',
     thumbnailRatingPresentation: 'average',
-    logoRatingPresentation: 'blockbuster',
+    logoRatingPresentation: 'dual-minimal',
     posterAggregateRatingSource: 'audience',
     backdropAggregateRatingSource: 'critics',
     thumbnailAggregateRatingSource: 'critics',
@@ -1539,4 +1540,44 @@ test('TMDB ID scope helpers detect explicit and ambiguous forms', () => {
   assert.equal(isAmbiguousTmdbXrdbId('tmdb:movie:603'), false);
   assert.equal(isAmbiguousTmdbXrdbId('tmdb:tv:1399'), false);
   assert.equal(isAmbiguousTmdbXrdbId('tt0133093'), false);
+});
+
+test('stale ring on backdrop is coerced to standard', () => {
+  const result = normalizeSharedXrdbSettings({ backdropRatingPresentation: 'ring' });
+  assert.equal(result.backdropRatingPresentation, 'standard');
+});
+
+test('stale editorial on thumbnail is coerced to standard', () => {
+  const result = normalizeSharedXrdbSettings({ thumbnailRatingPresentation: 'editorial' });
+  assert.equal(result.thumbnailRatingPresentation, 'standard');
+});
+
+test('stale ring on logo is coerced to standard', () => {
+  const result = normalizeSharedXrdbSettings({ logoRatingPresentation: 'ring' });
+  assert.equal(result.logoRatingPresentation, 'standard');
+});
+
+test('stale blockbuster on backdrop is coerced to standard', () => {
+  const result = normalizeSharedXrdbSettings({ backdropRatingPresentation: 'blockbuster' });
+  assert.equal(result.backdropRatingPresentation, 'standard');
+});
+
+test('valid ring on poster is left unchanged', () => {
+  const result = normalizeSharedXrdbSettings({ posterRatingPresentation: 'ring' });
+  assert.equal(result.posterRatingPresentation, 'ring');
+});
+
+test('valid blockbuster on poster is left unchanged', () => {
+  const result = normalizeSharedXrdbSettings({ posterRatingPresentation: 'blockbuster' });
+  assert.equal(result.posterRatingPresentation, 'blockbuster');
+});
+
+test('stale non-thumbnail provider normalizes out of thumbnail preferences', () => {
+  const result = normalizeSharedXrdbSettings({ thumbnailRatingPreferences: ['letterboxd', 'trakt', 'tmdb'] });
+  assert.deepEqual(result.thumbnailRatingPreferences, ['tmdb']);
+});
+
+test('empty thumbnail provider intersection defaults to allowed set', () => {
+  const result = normalizeSharedXrdbSettings({ thumbnailRatingPreferences: ['letterboxd', 'trakt'] });
+  assert.deepEqual(result.thumbnailRatingPreferences, ['tmdb', 'imdb']);
 });

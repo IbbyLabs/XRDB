@@ -949,6 +949,9 @@ const normalizeTmdbIdScopeMode = (
     : fallback;
 };
 
+const coerceNonPosterPresentation = (p: RatingPresentation): RatingPresentation =>
+  p === 'ring' || p === 'editorial' || p === 'blockbuster' ? 'standard' : p;
+
 export const normalizeSharedXrdbSettings = (value: unknown, options?: { skipCrossTypeFallbacks?: boolean }): SharedXrdbSettings => {
   const defaults = createDefaultSharedXrdbSettings();
   if (!value || typeof value !== 'object') {
@@ -1196,12 +1199,15 @@ export const normalizeSharedXrdbSettings = (value: unknown, options?: { skipCros
       candidate.backdropRatingPreferences ?? candidate.backdropRatings ?? sharedRatingsInput,
       defaults.backdropRatingPreferences,
     ),
-    thumbnailRatingPreferences: filterThumbnailRatingPreferences(
-      normalizeRatingPreferencesList(
-        candidate.thumbnailRatingPreferences ?? candidate.thumbnailRatings ?? sharedRatingsInput,
-        defaults.thumbnailRatingPreferences,
-      ),
-    ),
+    thumbnailRatingPreferences: (() => {
+      const filtered = filterThumbnailRatingPreferences(
+        normalizeRatingPreferencesList(
+          candidate.thumbnailRatingPreferences ?? candidate.thumbnailRatings ?? sharedRatingsInput,
+          defaults.thumbnailRatingPreferences,
+        ),
+      );
+      return filtered.length > 0 ? filtered : [...defaults.thumbnailRatingPreferences];
+    })(),
     logoRatingPreferences: normalizeRatingPreferencesList(
       candidate.logoRatingPreferences ?? candidate.logoRatings ?? sharedRatingsInput,
       defaults.logoRatingPreferences,
@@ -1313,18 +1319,18 @@ export const normalizeSharedXrdbSettings = (value: unknown, options?: { skipCros
       candidate.posterRatingPresentation,
       defaults.posterRatingPresentation,
     ),
-    backdropRatingPresentation: normalizeRatingPresentation(
+    backdropRatingPresentation: coerceNonPosterPresentation(normalizeRatingPresentation(
       candidate.backdropRatingPresentation,
       defaults.backdropRatingPresentation,
-    ),
-    thumbnailRatingPresentation: normalizeRatingPresentation(
+    )),
+    thumbnailRatingPresentation: coerceNonPosterPresentation(normalizeRatingPresentation(
       options?.skipCrossTypeFallbacks ? candidate.thumbnailRatingPresentation : (candidate.thumbnailRatingPresentation ?? candidate.backdropRatingPresentation),
       defaults.thumbnailRatingPresentation,
-    ),
-    logoRatingPresentation: normalizeRatingPresentation(
+    )),
+    logoRatingPresentation: coerceNonPosterPresentation(normalizeRatingPresentation(
       candidate.logoRatingPresentation,
       defaults.logoRatingPresentation,
-    ),
+    )),
     posterRingValueSource: normalizePosterCompactRingSource(
       candidate.posterRingValueSource,
       defaults.posterRingValueSource,

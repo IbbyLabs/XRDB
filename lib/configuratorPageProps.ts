@@ -17,7 +17,7 @@ import {
   FANART_KEY_HELP_COPY,
   LOGO_ARTWORK_SOURCE_OPTIONS,
   POSTER_IMAGE_SIZE_OPTIONS,
-  PRESENTATION_SECTION_ORDER,
+  getPresentationOrderForType,
   QUALITY_BADGE_POSITION_OPTIONS,
   QUALITY_BADGE_SIDE_OPTIONS,
   STREAM_BADGE_OPTIONS,
@@ -190,7 +190,7 @@ export function buildConfiguratorPageProps({
         onSelectPinnedTarget: mediaTargetSearch.onSelectPinnedTarget,
       },
       presentationProps: {
-        presentationOrder: PRESENTATION_SECTION_ORDER,
+        presentationOrder: getPresentationOrderForType(workspaceState.previewType),
         previewType: workspaceState.previewType,
         activeRatingPresentation: workspaceSummary.activeRatingPresentation,
         layoutPlacementHelp: workspaceSummary.layoutPlacementHelp,
