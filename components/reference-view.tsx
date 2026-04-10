@@ -268,7 +268,13 @@ GET /thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb`}</CodeBlo
             Each type (poster, backdrop, thumbnail, logo) has independent settings for rating providers, rating style, presentation, layout, badge sizing, artwork source, and quality badge limits.
           </p>
           <p>
+            The preview type row also includes a sync action so you can copy the active type into one target, all targets, or pull settings back from another type after reviewing a param diff.
+          </p>
+          <p>
             Rating badge scale is type scoped for every artwork type, and the configurator now supports the same 70 to 200 range across poster, backdrop, thumbnail, and logo outputs.
+          </p>
+          <p>
+            Sync respects type specific safety rules: poster only presentations fall back to standard on backdrop, thumbnail, and logo targets, thumbnail sync keeps episode safe rating providers, and logo sync skips stream badges.
           </p>
           <p>
             Posters use <code>posterRatingsLayout</code> (top, bottom, left, right, and combinations).

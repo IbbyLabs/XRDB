@@ -180,6 +180,8 @@ Release flow:
 
 ```bash
 npm run release:patch
+npm run release:minor
+npm run release:major
 ```
 
 The release flow also bumps `FINAL_IMAGE_RENDERER_CACHE_VERSION` automatically so each new release invalidates stale final image renders on first request.
@@ -329,6 +331,8 @@ Response format note:
 
 Episode thumbnails use the dedicated `/thumbnail/{id}/S{season}E{episode}.jpg` route. They keep their own thumbnail scoped controls for ratings, style, presentation, artwork source, episode artwork mode, image text, layout, badge sizing, quality badges, and side stack placement. Rating badge scale stays type scoped across poster, backdrop, thumbnail, and logo outputs, and every artwork type now supports the same `70-200` range. `thumbnailRatings` defaults to `tmdb,imdb`.
 
+The configurator preview type row now includes a sync control beside each type. You can sync the active type to one target, sync to all targets, or pull settings from another type before applying the diff. Sync keeps type safety intact: poster only presentations such as `ring`, `editorial`, and `blockbuster` are coerced to `standard` on backdrop, thumbnail, and logo targets, thumbnail sync keeps only episode safe rating providers, and logo sync does not carry stream badges.
+
 ### Supported Query Parameters
 
 | Parameter | Description | Supported Values | Default |
@@ -373,7 +377,7 @@ Episode thumbnails use the dedicated `/thumbnail/{id}/S{season}E{episode}.jpg` r
 | `logoQualityBadgeScale` | Logo quality badge scale | Number (`70-200`) | `100` |
 | `posterQualityBadgesMax` | Poster quality badge limit | Number (1-20) | `auto` |
 | `backdropQualityBadgesMax` | Backdrop quality badge limit | Number (1-20) | `auto` |
-| `ratingPresentation` | Rating presentation mode (global fallback) | `standard`, `minimal`, `average`, `dual`, `blockbuster`, `none` | `standard` |
+| `ratingPresentation` | Rating presentation mode (global fallback) | `standard`, `minimal`, `average`, `dual`, `editorial`, `ring`, `blockbuster`, `none` | `standard` |
 | `aggregateRatingSource` | Aggregate source for `minimal` and `average` (global fallback) | `overall`, `critics`, `audience` | `overall` |
 | `aggregateAccentMode` | Aggregate accent source — also controls Compact Ring stroke color | `source`, `genre`, `custom`, `dynamic` | `source` |
 | `aggregateAccentColor` | Aggregate accent color when `aggregateAccentMode=custom` | Hex color | `#a78bfa` |
@@ -537,7 +541,7 @@ thumbnailQualityBadgesStyle| glass, square, plain, media, silver (thumbnail only
 posterQualityBadgesMax  | Number (1+)                                                          | auto
 backdropQualityBadgesMax| Number (1+)                                                          | auto
 thumbnailQualityBadgesMax| Number (1+)                                                         | auto
-ratingPresentation      | standard, minimal, average, dual, blockbuster, none                  | standard
+ratingPresentation      | standard, minimal, average, dual, editorial, ring, blockbuster, none | standard
 aggregateRatingSource   | overall, critics, audience                                           | overall
 ratingXOffsetPillGlass  | Number (-320 to 320)                                                 | 0
 ratingYOffsetPillGlass  | Number (-320 to 320)                                                 | 0
@@ -626,7 +630,7 @@ backdrop -> genreBadge = cfg.backdropGenreBadge, genreBadgeStyle = cfg.backdropG
 thumbnail -> genreBadge = cfg.thumbnailGenreBadge, genreBadgeStyle = cfg.thumbnailGenreBadgeStyle, genreBadgePosition = cfg.thumbnailGenreBadgePosition, genreBadgeScale = cfg.thumbnailGenreBadgeScale
 logo     -> genreBadge = cfg.logoGenreBadge, genreBadgeStyle = cfg.logoGenreBadgeStyle, genreBadgePosition = cfg.logoGenreBadgePosition, genreBadgeScale = cfg.logoGenreBadgeScale
 Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRatings / cfg.thumbnailRatings / cfg.logoRatings (fallback to cfg.ratings).
-Rating presentation can be set per type via cfg.posterRatingPresentation / cfg.backdropRatingPresentation / cfg.thumbnailRatingPresentation / cfg.logoRatingPresentation (fallback to cfg.ratingPresentation).
+Rating presentation can be set per type via cfg.posterRatingPresentation / cfg.backdropRatingPresentation / cfg.thumbnailRatingPresentation / cfg.logoRatingPresentation (fallback to cfg.ratingPresentation). Shipped values are standard, minimal, average, dual, editorial, ring, blockbuster, and none. Poster only presentations are coerced to standard when applied to backdrop, thumbnail, or logo output.
 Aggregate source can be set per type via cfg.posterAggregateRatingSource / cfg.backdropAggregateRatingSource / cfg.thumbnailAggregateRatingSource / cfg.logoAggregateRatingSource (fallback to cfg.aggregateRatingSource).
 Use cfg.aggregateAccentMode to keep source colours, match the genre badge, force a custom aggregate accent through cfg.aggregateAccentColor, or use score-based dynamic color stops via cfg.aggregateDynamicStops. This setting also controls the Compact Ring stroke and glow color when ratingPresentation=ring.
 Use cfg.aggregateAccentBarOffset to nudge the average badge accent bar up or down a few pixels in compact, labeled, and dual aggregate layouts.
@@ -636,6 +640,7 @@ Use cfg.qualityBadgesSide for poster top bottom layouts, cfg.posterQualityBadges
 In the configurator, the Quality Badges panel keeps poster placement controls visible for supported poster layouts, disables the shared placement control when certification is the only visible quality badge, adds a dedicated age rating selector for the active poster layout, and includes Hide All Badges / Enable All actions for the per type quality badge list. Slider based customisation controls now snap back to their defaults when you move close to the baseline and show a Default readout while keeping keys, manifest inputs, and the current target intact.
 Quality badges style/max can be set per type via cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle / cfg.thumbnailQualityBadgesStyle and cfg.posterQualityBadgesMax / cfg.backdropQualityBadgesMax / cfg.thumbnailQualityBadgesMax.
 Episode thumbnails use /thumbnail/{episodeBaseId}/S{season}E{episode}.jpg and keep their own cfg.thumbnailRatings, cfg.thumbnailRatingStyle, cfg.thumbnailImageText, cfg.thumbnailArtworkSource, cfg.thumbnailEpisodeArtwork, cfg.thumbnailRatingsLayout, cfg.thumbnailBottomRatingsRow, cfg.thumbnailRatingsMax, cfg.thumbnailSideRatingsPosition, cfg.thumbnailSideRatingsOffset, cfg.thumbnailRatingBadgeScale, cfg.thumbnailQualityBadgesStyle, cfg.thumbnailQualityBadgesMax, cfg.thumbnailQualityBadgeScale, and cfg.thumbnailStreamBadges settings.
+The configurator sync action beside each preview type can copy the active type into one target, all targets, or pull settings from another type. The diff modal shows the exact param changes before apply, and sync keeps type specific safety rules intact by coercing poster only presentations on non poster targets, filtering thumbnail providers to episode safe options, and omitting stream badges when syncing into logo.
 
 --- URL BUILD ---
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : type === 'thumbnail' ? cfg.thumbnailRatingStyle : cfg.logoRatingStyle;
