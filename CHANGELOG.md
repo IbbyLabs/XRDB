@@ -43,6 +43,148 @@
 
 <a id="v1-12-0"></a>
 
+<a id="v1-13-0"></a>
+
+## [v1.13.0] - 10/04/2026
+
+### Added
+* FR-56 revert unsaved edits to last saved profile
+  
+  Add revert to saved profile feature to the Saved Config Profile section
+  of the Export panel.
+  
+  • Fetch server saved params on mount via GET /api/config/{id} and
+    reconstruct a SavedUiConfig snapshot via parseConfiguratorLinkImport
+    so the reference state always reflects what is persisted, not the
+    current UI state
+  • Track snapshotReady to gate unsaved changes detection until the
+    server fetch completes, preventing false negatives on initial load
+  • Compute a param level diff (capped at 20 entries) between current
+    UI params and the saved snapshot on every render cycle
+  • Show an 'unsaved changes' badge in the Saved Config Profile header
+    whenever the current settings diverge from the snapshot
+  • Show an amber 'Revert to saved' button alongside the unsaved badge
+  • RevertDiffModal renders a CHANGE badged diff with OLD (server saved,
+    red) and NEW (current, green) columns before any destructive action
+  • 'Revert to saved' opens the modal with 'Confirm and Revert' label;
+    confirming restores all settings via applySavedUiConfig and resets
+    the fingerprint
+  • 'Update saved profile' opens the same modal with 'Save changes'
+    label; confirming saves to the server and updates the snapshot
+  • Snapshot and fingerprint are refreshed after every save, migrate, or
+    delete to keep the reference state in sync
+* BUG-71 config profile security — encryption, migration deadline, overlay
+  
+  • Encrypt all config profile params at rest using AES 256 GCM via CONFIG_ENCRYPTION_KEY
+  • Add xrc_ prefix for new encrypted profiles; xr_ legacy profiles remain readable
+  • Seed a global legacy_migration_deadline in config_meta table at first server start
+  • New GET /api/config/[id]/status endpoint returns isLegacy + migrationDeadline from server
+  • SaveConfigSection fetches server anchored deadline; countdown survives localStorage clear
+  • Image overlay (red orange hazard stripe) injected on all xr_ legacy profile requests
+  • Overlay composited via Sharp after render; cache bypassed for legacy profiles
+  • HTTP 410 with human readable message when a legacy profile has expired or been deleted
+  • Update button disabled when saved profile exists and params match last saved fingerprint
+  • Key rotation banner shown after successful migration to prompt xrc_ URL adoption
+  • Fix hydration mismatch: savedProfileId starts null, populated in useEffect after mount
+  • Fix ArrayBuffer passed to Sharp for overlay: wrap with Buffer.from() before composite
+  • env.template: add CONFIG_ENCRYPTION_KEY entry with generation instructions
+
+### Fixed
+* BUG-73 config profile xrdbKey used as auth fallback on image and thumbnail routes
+  
+  Previously the request key auth check fired before the config profile was
+  loaded, so xrdbKey stored in the profile was never used to authorize the
+  request. Users had to manually append &xrdbKey= to every URL even when it
+  was already saved in their config profile.
+  
+  Fix: read the config profile before the auth check in imageRouteHandler and
+  thumbnail route, pass profile xrdbKey as fallbackKey to isXrdbRequestAuthorized.
+  This matches the existing behavior in proxyRouteHandler.
+  
+  A config ID is now fully self contained — no additional params needed in the URL.
+* BUG-70 scale badge metrics to fit natural logo width with 4+ ratings
+  
+  Before this fix the logo badge layout had no fitBadgeMetricsToWidth step,
+  unlike poster and backdrop. With 4+ providers at full logo badge scale
+  (iconSize 92, paddingX 38) the badge row exceeded the natural logo width,
+  causing finalOutputWidth to expand. The logo art stayed at its original
+  narrow width but was centered in the much wider canvas, appearing tiny.
+  
+  Fix: before computing logoBadgesPerRow, run fitBadgeMetricsToWidth against
+  a row of ceil(sqrt(N)) badges at the natural outputWidth. This scales badge
+  metrics down proportionally so N badges across ceil(sqrt(N)) rows fill the
+  canvas without expanding it. finalOutputWidth is now always outputWidth for
+  logo type images.
+  
+  logoBadgesPerRow also switches from cappedRatingBadges.length (all on one
+  row) to ceil(sqrt(N)) for standard presentation, matching the scaling target
+  and producing a grid layout (4 badges -> 2x2, 9 -> 3x3, 16 -> 4x4).
+  
+  Tests updated to assert finalOutputWidth stays at outputWidth and
+  logoBadgesPerRow follows the sqrt grid.
+* BUG-72 preserve empty string values in saved config profiles
+  
+  Config save endpoint was stripping empty string values, causing provider
+  selections like ratings="" (no providers) to be silently dropped. On load
+  the missing key returned null, which the parser treated as all providers
+  enabled.
+  
+  • Stop filtering empty strings in POST /api/config so explicit empty
+    selections persist correctly across all image types (poster, backdrop,
+    logo, thumbnail)
+  • Add DELETE /api/config/[id] endpoint and deleteConfigProfile db helper
+    so users can remove a saved profile and reset to defaults
+  • Show missing keys message in Saved Config Profile section when TMDB or
+    MDBList key is absent, matching the Config String section behavior
+  • Add Delete profile button next to save button for saved profiles
+* revert ignoreDeprecations, invalid value for CI TypeScript version
+* prevent race condition marking older release as latest
+  
+  The reconcile step ran immediately after softprops/action gh release
+  created the new release. Due to GitHub API eventual consistency, the
+  freshly created release was sometimes absent from GET /releases?per_page=100,
+  causing the reconcile to identify the previous release as the highest
+  version and PATCH it as Latest, undoing the correct Latest marker.
+  
+  Pass CURRENT_TAG to the reconcile step. When set, the script fetches
+  the release directly via GET /releases/tags/{tag} (point in time
+  consistent) and merges it into the comparison set before determining
+  which release wins Latest. If the new release was missing from the
+  paginated list it is now included and correctly wins the version sort.
+
+### Documentation
+* refresh static doc assets
+* pre minor release documentation and lint audit
+  
+  README Proxy and Security table was missing six env vars that are live
+  in env.template and code:
+  • XRDB_REQUEST_API_KEY and XRDB_REQUEST_API_KEYS (request access control)
+  • XRDB_CONFIG_ENCRYPTION_KEY (config profile encryption, added in v1.12.0)
+  • XRDB_INACTIVE_CONFIG_PRUNE_DAYS (config profile pruning, added in v1.12.0)
+  • MDBLIST_API_KEY and MDBLIST_API_KEYS (server side rating pool keys)
+  
+  env.template had TMDB_API_KEY with an incorrect description claiming it is
+  used for preview, rendering, and artwork selection. No code reads this var.
+  Removed it to prevent user confusion.
+  
+  env.template was missing four brand env vars that are read in lib/siteBrand.ts:
+  • NEXT_PUBLIC_BRAND_GITHUB_URL
+  • NEXT_PUBLIC_BRAND_GITHUB_LABEL
+  • NEXT_PUBLIC_BRAND_SUPPORT_URL
+  • NEXT_PUBLIC_BRAND_UPTIME_URL
+  
+  Regenerated public/product context.json after surface updates.
+  
+  Fixed two pre existing React lint errors in components/export view.tsx:
+  • Replaced setState in effect aiometadataUrlMode reset with a derived
+    effectiveAiometadataUrlMode computed at render time
+  • Added [buildSaveParams, snapshotReady] deps to no deps useEffect
+  • Moved localStorage mount read into a promise callback to satisfy
+    react hooks/set state in effect without changing behavior
+
+### Other Changes
+* silence baseUrl deprecation warning for TS 6.0
+
 ## [v1.12.0] - 09/04/2026
 
 ### Added
