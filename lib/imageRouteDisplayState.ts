@@ -275,7 +275,7 @@ export const resolveImageRouteDisplayState = (input: {
   ) => {
     if (aggregateAccentMode === 'dynamic' && normalizedScore !== null) {
       return resolveAggregateDynamicAccentColor(
-        normalizedScore * 10,
+        parseFloat(normalizedScore.toFixed(1)) * 10,
         aggregateDynamicStopEntries,
       );
     }
@@ -392,7 +392,7 @@ export const resolveImageRouteDisplayState = (input: {
       : null;
   const compactRingPrimaryBadge = valueRingBadge || progressRingBadge;
   const compactRingScorePercent =
-    (compactRingPrimaryBadge?.normalizedValue ?? 0) * 10;
+    parseFloat(((compactRingPrimaryBadge?.normalizedValue ?? 0)).toFixed(1)) * 10;
   const compactRingAccentColor =
     aggregateAccentMode === 'dynamic'
       ? resolveAggregateDynamicAccentColor(
