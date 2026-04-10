@@ -47,6 +47,100 @@
 
 <a id="v1-13-1"></a>
 
+<a id="v1-14-0"></a>
+
+## [v1.14.0] - 10/04/2026
+
+### Added
+* add cross type settings sync
+  
+  Add cross type sync actions in configurator with diff confirmation before apply, including sync to all and pull from flows.
+  
+  Introduce shared sync helpers and tests for extraction, application, coercion, filtering, and diff computation.
+  
+  Keep the sync flyout viewport safe by clamping horizontal position, flipping when needed, and reserving bottom nav safe space.
+* type presentation compatibility gating
+  
+  Filter ring, editorial, and blockbuster from the presentation grid for
+  backdrop, thumbnail, and logo types. All three are poster only at the
+  render layer (finalImageRenderSeed.ts bypasses them for non poster
+  output) so showing them in the UI was misleading.
+  
+  Changes:
+  • Add getPresentationOrderForType helper in configuratorPageOptions.ts
+    that strips ring, editorial, and blockbuster for non poster types
+  • Wire configuratorPageProps.ts to use it instead of the static order
+  • Add coerceNonPosterPresentation in uiConfig.ts that collapses any
+    stale ring, editorial, or blockbuster value to standard on load for
+    backdrop, thumbnmail, and logo settings
+  • Wrap thumbnailRatingPreferences normalization in an IIFE with an
+    empty intersection fallback to defaults so a fully invalid provider
+    list does not produce a blank badge output
+  • Remove the non poster fallback hint text from the appearance sections
+    and simplify the Blockbuster hint copy
+  • Update full stack preset: backdropRatingPresentation now standard
+    (was blockbuster, which was already silently falling back at render
+    time); update preset description to reflect this
+  • Add 8 unit tests covering coercion and provider fallback cases
+  • Update configurator presets test fixture to match corrected preset
+
+### Fixed
+* BUG-69 suppress compact ring when configured provider has no data
+  
+  When resolveCompactRingBadge was called with a specific provider source
+  that had no score for the current media, it silently fell through to the
+  reduce max path and returned the highest available score from any other
+  enabled provider. This produced inflated numbers and ring arcs with no
+  indication that the displayed score was from a different source.
+  
+  Fix: add return null inside the if (requestedSource !== 'highest') block
+  after the exact match check fails, so a missing specific provider exits
+  with null instead of falling through to the reduce.
+  
+  Also remove the valueRingBadge || progressRingBadge composition fallback
+  at the call site. When the value source returns null the ring now
+  suppresses entirely rather than substituting the progress source score
+  as a silent replacement value. The || fallback was a second silent
+  substitution with no user intent behind it.
+  
+  The 'highest' path is unchanged and continues returning the max
+  available score by design.
+  
+  Updated the existing test that was asserting the old fallback behavior
+  to assert the correct suppression behavior instead.
+* BUG-76 snap dynamic accent color to displayed rating precision
+  
+  The dynamic accent color was resolved using the raw floating point average
+  (e.g. 7.9501) while the badge text was rounded to one decimal (e.g. 8.0).
+  This caused titles displaying the same score to land on different color stops
+  depending on whether their raw average was just above or below a boundary.
+  
+  Fix: both the aggregate badge path and the compact ring path now round the
+  normalized score to one decimal before multiplying by 10 for stop lookup,
+  matching the precision of the displayed value so color and badge are always
+  consistent.
+* BUG-75 preserve profile ring sources and stop false unsaved diffs
+  
+  • add profile load normalization mode to skip cross type fallback inheritance when reading saved config state
+  • thread skipCrossTypeFallbacks through saved config parsing paths used by profile and local storage loads
+  • replace export snapshot reconstruction via import URL parser with direct normalizeSavedUiConfig from save params
+  • persist the exact normalized saved snapshot to local storage after successful profile save
+  • fix thumbnail aggregate source fallback behavior in skip mode to avoid backdrop bleed through
+  • keep URL import behavior backward compatible for generic import links
+  
+  Verification:
+  • pnpm run lint
+  • pnpm run test
+  • pnpm run build
+  • manual: backdrop none/random save reload no false unsaved state
+  • manual: poster ring sources persist after save reload
+  • manual: revert diff and apply behavior verified
+  • manual: URL import backdrop ring inheritance path verified
+
+### Documentation
+* refresh static doc assets
+* audit sync and presentation docs
+
 ## [v1.13.1] - 10/04/2026
 
 ### Fixed
