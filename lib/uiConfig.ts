@@ -949,7 +949,7 @@ const normalizeTmdbIdScopeMode = (
     : fallback;
 };
 
-const coerceNonPosterPresentation = (p: RatingPresentation): RatingPresentation =>
+export const coerceNonPosterPresentation = (p: RatingPresentation): RatingPresentation =>
   p === 'ring' || p === 'editorial' || p === 'blockbuster' ? 'standard' : p;
 
 export const normalizeSharedXrdbSettings = (value: unknown, options?: { skipCrossTypeFallbacks?: boolean }): SharedXrdbSettings => {
