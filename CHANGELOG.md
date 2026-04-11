@@ -51,6 +51,24 @@
 
 <a id="v1-15-0"></a>
 
+<a id="v1-15-1"></a>
+
+## [v1.15.1] - 11/04/2026
+
+### Fixed
+* BUG-75 preserve saved profile alias round trips
+  
+  Decode saved profile wire aliases before shared settings normalization so saved profile diff and revert rebuild the same canonical settings shape.
+  
+  • restore quality badge alias params and providerAppearance through the shared uiConfig decode path
+  
+  • keep canonical keys authoritative when both canonical and alias forms are present
+  
+  • add round trip and precedence regression coverage for saved profile params
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.15.0] - 11/04/2026
 
 ### Added
