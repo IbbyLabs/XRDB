@@ -93,6 +93,8 @@ import {
   normalizeHexColor,
   normalizeNoBackgroundBadgeOutlineWidthPx,
   normalizeQualityBadgeScalePercent,
+  parseQualityBadgePreferencesAllowEmpty,
+  parseRatingProviderAppearanceOverrides,
   normalizeQualityBadgePreferencesList,
   normalizeRatingProviderAppearanceOverrides,
   normalizeThumbnailRatingBadgeScalePercent,
@@ -960,13 +962,65 @@ const normalizeTmdbIdScopeMode = (
 export const coerceNonPosterPresentation = (p: RatingPresentation): RatingPresentation =>
   p === 'ring' || p === 'editorial' || p === 'blockbuster' ? 'standard' : p;
 
+const decodeSavedProfileSettingsAliases = (value: unknown) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return value;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  const decoded: Record<string, unknown> = { ...candidate };
+
+  if (
+    decoded.posterQualityBadgePreferences === undefined &&
+    typeof candidate.posterQualityBadges === 'string'
+  ) {
+    decoded.posterQualityBadgePreferences = parseQualityBadgePreferencesAllowEmpty(
+      candidate.posterQualityBadges,
+    );
+  }
+  if (
+    decoded.backdropQualityBadgePreferences === undefined &&
+    typeof candidate.backdropQualityBadges === 'string'
+  ) {
+    decoded.backdropQualityBadgePreferences = parseQualityBadgePreferencesAllowEmpty(
+      candidate.backdropQualityBadges,
+    );
+  }
+  if (
+    decoded.thumbnailQualityBadgePreferences === undefined &&
+    typeof candidate.thumbnailQualityBadges === 'string'
+  ) {
+    decoded.thumbnailQualityBadgePreferences = parseQualityBadgePreferencesAllowEmpty(
+      candidate.thumbnailQualityBadges,
+    );
+  }
+  if (
+    decoded.logoQualityBadgePreferences === undefined &&
+    typeof candidate.logoQualityBadges === 'string'
+  ) {
+    decoded.logoQualityBadgePreferences = parseQualityBadgePreferencesAllowEmpty(
+      candidate.logoQualityBadges,
+    );
+  }
+  if (
+    decoded.ratingProviderAppearanceOverrides === undefined &&
+    typeof candidate.providerAppearance === 'string'
+  ) {
+    decoded.ratingProviderAppearanceOverrides = parseRatingProviderAppearanceOverrides(
+      candidate.providerAppearance,
+    );
+  }
+
+  return decoded;
+};
+
 export const normalizeSharedXrdbSettings = (value: unknown, options?: { skipCrossTypeFallbacks?: boolean }): SharedXrdbSettings => {
   const defaults = createDefaultSharedXrdbSettings();
   if (!value || typeof value !== 'object') {
     return defaults;
   }
 
-  const candidate = value as Partial<Record<keyof SharedXrdbSettings, unknown>> & Record<string, unknown>;
+  const candidate = decodeSavedProfileSettingsAliases(value) as Partial<Record<keyof SharedXrdbSettings, unknown>> & Record<string, unknown>;
   const rawPosterImageText =
     typeof candidate.posterImageText === 'string' ? candidate.posterImageText.trim().toLowerCase() : '';
   const rawBackdropImageText =

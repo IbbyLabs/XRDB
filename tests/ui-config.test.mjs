@@ -12,6 +12,7 @@ import {
   encodeRatingProviderAppearanceOverrides,
 } from '../lib/badgeCustomization.ts';
 import {
+  buildProfileParams,
   buildAiometadataUrlPatterns,
   buildConfigString,
   buildProxyUrl,
@@ -1339,6 +1340,85 @@ test('workspace normalization accepts backdrop image size aliases and payload om
   assert.notEqual(explicitConfigString, '');
   const explicitPayload = JSON.parse(decodeBase64Url(explicitConfigString));
   assert.equal(explicitPayload.backdropImageSize, 'large');
+});
+
+test('profile params round-trip preserves quality badge preferences and provider appearance', () => {
+  const config = buildSampleSettings();
+  const params = buildProfileParams(config.settings);
+
+  assert.ok(params);
+
+  const roundTripped = normalizeSavedUiConfig(
+    { settings: params },
+    { skipCrossTypeFallbacks: true },
+  );
+
+  assert.deepEqual(
+    roundTripped.settings.posterQualityBadgePreferences,
+    config.settings.posterQualityBadgePreferences,
+  );
+  assert.deepEqual(
+    roundTripped.settings.backdropQualityBadgePreferences,
+    config.settings.backdropQualityBadgePreferences,
+  );
+  assert.deepEqual(
+    roundTripped.settings.thumbnailQualityBadgePreferences,
+    config.settings.thumbnailQualityBadgePreferences,
+  );
+  assert.deepEqual(
+    roundTripped.settings.logoQualityBadgePreferences,
+    config.settings.logoQualityBadgePreferences,
+  );
+  assert.deepEqual(
+    roundTripped.settings.ratingProviderAppearanceOverrides,
+    config.settings.ratingProviderAppearanceOverrides,
+  );
+  assert.deepEqual(buildProfileParams(roundTripped.settings), params);
+});
+
+test('canonical saved config keys win over profile aliases', () => {
+  const canonicalProviderAppearance = {
+    trakt: {
+      accentColor: '#7c3aed',
+      iconScalePercent: 118,
+    },
+  };
+
+  const config = normalizeSavedUiConfig(
+    {
+      settings: {
+        posterQualityBadgePreferences: ['certification'],
+        posterQualityBadges: 'hdr,4k',
+        backdropQualityBadgePreferences: ['remux'],
+        backdropQualityBadges: 'hdr',
+        thumbnailQualityBadgePreferences: ['dolbyatmos'],
+        thumbnailQualityBadges: 'certification',
+        logoQualityBadgePreferences: ['4k'],
+        logoQualityBadges: 'remux',
+        ratingProviderAppearanceOverrides: canonicalProviderAppearance,
+        providerAppearance: encodeRatingProviderAppearanceOverrides({
+          imdb: {
+            accentColor: '#ff0000',
+            iconScalePercent: 91,
+          },
+        }),
+      },
+    },
+    { skipCrossTypeFallbacks: true },
+  );
+
+  assert.deepEqual(config.settings.posterQualityBadgePreferences, ['certification']);
+  assert.deepEqual(config.settings.backdropQualityBadgePreferences, ['remux']);
+  assert.deepEqual(config.settings.thumbnailQualityBadgePreferences, ['dolbyatmos']);
+  assert.deepEqual(config.settings.logoQualityBadgePreferences, ['4k']);
+  assert.deepEqual(
+    config.settings.ratingProviderAppearanceOverrides,
+    normalizeSavedUiConfig({
+      settings: {
+        ratingProviderAppearanceOverrides: canonicalProviderAppearance,
+      },
+    }).settings.ratingProviderAppearanceOverrides,
+  );
 });
 
 test('workspace normalization accepts cinemeta as a poster artwork source', () => {

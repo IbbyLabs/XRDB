@@ -1,7 +1,4 @@
-import {
-  parseQualityBadgePreferencesAllowEmpty,
-  parseRatingProviderAppearanceOverrides,
-} from './badgeCustomization.ts';
+import { parseQualityBadgePreferencesAllowEmpty } from './badgeCustomization.ts';
 import { PROXY_OPTIONAL_STRING_KEYS } from './proxyConfigSchema.ts';
 import { normalizeSavedUiConfig, type SavedUiConfig } from './uiConfig.ts';
 
@@ -248,27 +245,6 @@ export const parseConfiguratorLinkImport = (
     return null;
   }
 
-  const posterQualityBadges = targetUrl.searchParams.get('posterQualityBadges');
-  if (posterQualityBadges !== null) {
-    settingsCandidate.posterQualityBadgePreferences =
-      parseQualityBadgePreferencesAllowEmpty(posterQualityBadges);
-  }
-  const backdropQualityBadges = targetUrl.searchParams.get('backdropQualityBadges');
-  if (backdropQualityBadges !== null) {
-    settingsCandidate.backdropQualityBadgePreferences =
-      parseQualityBadgePreferencesAllowEmpty(backdropQualityBadges);
-  }
-  const thumbnailQualityBadges = targetUrl.searchParams.get('thumbnailQualityBadges');
-  if (thumbnailQualityBadges !== null) {
-    settingsCandidate.thumbnailQualityBadgePreferences =
-      parseQualityBadgePreferencesAllowEmpty(thumbnailQualityBadges);
-  }
-  const logoQualityBadges = targetUrl.searchParams.get('logoQualityBadges');
-  if (logoQualityBadges !== null) {
-    settingsCandidate.logoQualityBadgePreferences =
-      parseQualityBadgePreferencesAllowEmpty(logoQualityBadges);
-  }
-
   const posterRemuxDisplayMode = targetUrl.searchParams.get('posterRemuxDisplayMode');
   if (posterRemuxDisplayMode !== null) {
     settingsCandidate.posterRemuxDisplayMode = posterRemuxDisplayMode;
@@ -284,12 +260,6 @@ export const parseConfiguratorLinkImport = (
   const logoRemuxDisplayMode = targetUrl.searchParams.get('logoRemuxDisplayMode');
   if (logoRemuxDisplayMode !== null) {
     settingsCandidate.logoRemuxDisplayMode = logoRemuxDisplayMode;
-  }
-
-  const providerAppearance = targetUrl.searchParams.get('providerAppearance');
-  if (providerAppearance !== null) {
-    settingsCandidate.ratingProviderAppearanceOverrides =
-      parseRatingProviderAppearanceOverrides(providerAppearance);
   }
 
   if (scopedPreviewType) {
