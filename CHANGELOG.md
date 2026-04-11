@@ -53,6 +53,22 @@
 
 <a id="v1-15-1"></a>
 
+<a id="v1-16-0"></a>
+
+## [v1.16.0] - 11/04/2026
+
+### Added
+* protect saved config and proxy references
+  
+  • store saved configs and proxy payloads as encrypted UUID backed records
+  • require password unlock flows for saved profile reveal, update, rotation, and deletion
+  • preserve runtime UUID config resolution and legacy migration support
+  • harden preview origin trust and proxy connection time source validation
+  • refresh docs, tests, and product context for the new security model
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.15.1] - 11/04/2026
 
 ### Fixed
