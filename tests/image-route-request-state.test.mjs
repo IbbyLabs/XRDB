@@ -312,3 +312,19 @@ test('image route request state normalizes dynamic aggregate accent stops', asyn
   assert.equal(state.aggregateAccentMode, 'dynamic');
   assert.equal(state.aggregateDynamicStops, '0:#7f1d1d,60:#f59e0b,85:#16a34a');
 });
+
+test('image route request state parses compact ring aggregate and priority params', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&posterRatingPresentation=ring&posterRingValueSource=critics&posterRingProgressSource=priority-audience&posterRingCriticsPriority=metacritic,tomatoes,imdb,tmdb&posterRingAudiencePriority=letterboxd,tomatoesaudience,imdb',
+    ),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(state.ratingPresentation, 'ring');
+  assert.equal(state.posterRingValueSource, 'critics');
+  assert.equal(state.posterRingProgressSource, 'priority-audience');
+  assert.deepEqual(state.posterRingCriticsPriority, ['metacritic', 'tomatoes', 'imdb']);
+  assert.deepEqual(state.posterRingAudiencePriority, ['letterboxd', 'tomatoesaudience', 'imdb']);
+});

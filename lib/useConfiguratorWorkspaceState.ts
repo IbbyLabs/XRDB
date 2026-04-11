@@ -48,6 +48,8 @@ import {
   type RatingPresentation,
 } from '@/lib/ratingPresentation';
 import {
+  DEFAULT_POSTER_COMPACT_RING_AUDIENCE_PRIORITY,
+  DEFAULT_POSTER_COMPACT_RING_CRITICS_PRIORITY,
   DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
   DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE,
   type PosterCompactRingSource,
@@ -203,6 +205,12 @@ export function useConfiguratorWorkspaceState() {
   );
   const [posterRingProgressSource, setPosterRingProgressSource] = useState<PosterCompactRingSource>(
     DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
+  );
+  const [posterRingCriticsPriority, setPosterRingCriticsPriority] = useState<RatingPreference[]>(
+    [...DEFAULT_POSTER_COMPACT_RING_CRITICS_PRIORITY],
+  );
+  const [posterRingAudiencePriority, setPosterRingAudiencePriority] = useState<RatingPreference[]>(
+    [...DEFAULT_POSTER_COMPACT_RING_AUDIENCE_PRIORITY],
   );
   const [aggregateAccentMode, setAggregateAccentMode] = useState<AggregateAccentMode>(DEFAULT_AGGREGATE_ACCENT_MODE);
   const [aggregateAccentColor, setAggregateAccentColor] = useState<string>(DEFAULT_AGGREGATE_ACCENT_COLOR);
@@ -372,6 +380,8 @@ export function useConfiguratorWorkspaceState() {
     mediaId,
     posterAggregateRatingSource,
     posterRingProgressSource,
+    posterRingCriticsPriority,
+    posterRingAudiencePriority,
     posterRingValueSource,
     posterArtworkSource,
     ratingBlackStripEnabled,
@@ -543,6 +553,8 @@ export function useConfiguratorWorkspaceState() {
     setMediaId,
     setPosterAggregateRatingSource,
     setPosterRingProgressSource,
+    setPosterRingCriticsPriority,
+    setPosterRingAudiencePriority,
     setPosterRingValueSource,
     setPosterArtworkSource,
     setRatingBlackStripEnabled,

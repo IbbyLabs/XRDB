@@ -71,8 +71,11 @@ import { DEFAULT_POSTER_EDGE_OFFSET } from '@/lib/posterEdgeOffset';
 import { DEFAULT_RATING_STACK_OFFSET_PX } from '@/lib/ratingStackOffset';
 import { DEFAULT_RATING_VALUE_MODE, type RatingValueMode } from '@/lib/ratingDisplay';
 import {
+  DEFAULT_POSTER_COMPACT_RING_AUDIENCE_PRIORITY,
+  DEFAULT_POSTER_COMPACT_RING_CRITICS_PRIORITY,
   DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
   DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE,
+  stringifyPosterCompactRingPriorityList,
   type PosterCompactRingSource,
 } from '@/lib/posterCompactRing';
 import { type RemuxDisplayMode } from '@/lib/mediaFeatures';
@@ -328,6 +331,8 @@ export function useConfiguratorOutputs({
   pendingReleaseTag,
   posterAggregateRatingSource,
   posterRingProgressSource,
+  posterRingCriticsPriority,
+  posterRingAudiencePriority,
   posterRingValueSource,
   posterArtworkSource,
   posterEdgeOffset,
@@ -489,6 +494,8 @@ export function useConfiguratorOutputs({
   pendingReleaseTag: string;
   posterAggregateRatingSource: AggregateRatingSource;
   posterRingProgressSource: PosterCompactRingSource;
+  posterRingCriticsPriority: RatingPreference[];
+  posterRingAudiencePriority: RatingPreference[];
   posterRingValueSource: PosterCompactRingSource;
   posterArtworkSource: ArtworkSource;
   posterEdgeOffset: number;
@@ -790,6 +797,24 @@ export function useConfiguratorOutputs({
       }
       if (posterRingProgressSource !== DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE) {
         query.set('posterRingProgressSource', posterRingProgressSource);
+      }
+      if (
+        stringifyPosterCompactRingPriorityList(posterRingCriticsPriority) !==
+        stringifyPosterCompactRingPriorityList(DEFAULT_POSTER_COMPACT_RING_CRITICS_PRIORITY)
+      ) {
+        query.set(
+          'posterRingCriticsPriority',
+          stringifyPosterCompactRingPriorityList(posterRingCriticsPriority),
+        );
+      }
+      if (
+        stringifyPosterCompactRingPriorityList(posterRingAudiencePriority) !==
+        stringifyPosterCompactRingPriorityList(DEFAULT_POSTER_COMPACT_RING_AUDIENCE_PRIORITY)
+      ) {
+        query.set(
+          'posterRingAudiencePriority',
+          stringifyPosterCompactRingPriorityList(posterRingAudiencePriority),
+        );
       }
     }
     if (aggregateRatingSourceForType !== DEFAULT_AGGREGATE_RATING_SOURCE) {
@@ -1232,6 +1257,8 @@ export function useConfiguratorOutputs({
     posterRatingPreferences,
     posterRatingPresentation,
     posterRingProgressSource,
+    posterRingCriticsPriority,
+    posterRingAudiencePriority,
     posterRingValueSource,
     posterRatingStyle,
     posterRatingsLayout,

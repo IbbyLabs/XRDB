@@ -183,16 +183,25 @@ GET /thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb`}</CodeBlo
 
         <ReferenceSection id="presentation-modes" title="Presentation modes" ref={registerRef('presentation-modes')}>
           <p>
-            Six rating presentation modes are available:
+            Current rating presentation modes:
           </p>
           <ul>
             <li><strong>Standard</strong> — individual provider badges</li>
             <li><strong>Compact average</strong> — one compact aggregate badge</li>
             <li><strong>Labeled average</strong> — aggregate with a label</li>
             <li><strong>Critics + Audience</strong> — separate critic and audience aggregates</li>
+            <li><strong>Compact Critics + Audience</strong> — separate compact critic and audience chips</li>
+            <li><strong>Compact Ring</strong> — poster only score ring with separate center and progress sources</li>
+            <li><strong>Editorial</strong> — poster score mark integrated into the artwork</li>
             <li><strong>Blockbuster</strong> — premium variant</li>
             <li><strong>None</strong> — disables ratings entirely</li>
           </ul>
+          <p>
+            Compact Ring uses <code>posterRingValueSource</code> for the center value and <code>posterRingProgressSource</code> for the stroke.
+            Sources can be <code>overall</code>, <code>critics</code>, <code>audience</code>, <code>priority-critics</code>, <code>priority-audience</code>, <code>highest</code>, or a provider id.
+            Aggregate sources try their selected lane, then overall, then <code>posterRingCriticsPriority</code> or <code>posterRingAudiencePriority</code>.
+            Exact provider selections stay strict.
+          </p>
           <p>
             Badge styles (glass, square, plain, stacked, media, silver) control the visual treatment.
             Glass is the default for posters and backdrops; plain is the default for logos.
