@@ -49,6 +49,20 @@
 
 <a id="v1-14-0"></a>
 
+<a id="v1-15-0"></a>
+
+## [v1.15.0] - 11/04/2026
+
+### Added
+* FR-64 add compact ring source priorities
+  
+  Add configurable Compact Ring center and progress sources for overall, critics, audience, and lane specific priority modes.
+  
+  Wire the new ring source settings through request parsing, configurator state, URL exports, render seeding, fallback resolution, public docs, and focused regression tests.
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.14.0] - 10/04/2026
 
 ### Added
