@@ -1,6 +1,6 @@
 import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
-import { Agent, request as undiciRequest } from 'undici';
+import { Agent, ProxyAgent, request as undiciRequest, type Dispatcher } from 'undici';
 
 const BLOCKED_HOSTNAMES = new Set([
   'localhost',
@@ -107,12 +107,39 @@ const SAFE_SOURCE_DISPATCHER = new Agent({
   },
 });
 
+let safeSourceProxyDispatcherUrl: string | null = null;
+let safeSourceProxyDispatcher: ProxyAgent | null = null;
+
+const getSafeSourceProxyUrl = () =>
+  process.env.HTTPS_PROXY ||
+  process.env.HTTP_PROXY ||
+  process.env.https_proxy ||
+  process.env.http_proxy ||
+  null;
+
+const getSafeSourceProxyDispatcher = () => {
+  const proxyUrl = getSafeSourceProxyUrl();
+  if (!proxyUrl) {
+    safeSourceProxyDispatcherUrl = null;
+    safeSourceProxyDispatcher = null;
+    return null;
+  }
+
+  if (safeSourceProxyDispatcher && safeSourceProxyDispatcherUrl === proxyUrl) {
+    return safeSourceProxyDispatcher;
+  }
+
+  safeSourceProxyDispatcherUrl = proxyUrl;
+  safeSourceProxyDispatcher = new ProxyAgent(proxyUrl);
+  return safeSourceProxyDispatcher;
+};
+
 const allowPrivateSourcesForTests = () =>
   process.env.XRDB_ALLOW_PRIVATE_SOURCES_FOR_TESTS === 'true' &&
   process.env.NODE_ENV !== 'production';
 
 const getSafeSourceDispatcher = () =>
-  allowPrivateSourcesForTests() ? undefined : SAFE_SOURCE_DISPATCHER;
+  allowPrivateSourcesForTests() ? undefined : (getSafeSourceProxyDispatcher() || SAFE_SOURCE_DISPATCHER);
 
 export const assertSafeSourceUrl = async (input: string) => {
   const raw = String(input || '').trim();
@@ -180,7 +207,7 @@ const buildWebResponse = async (
 
 type UndiciRequestFn = (
   url: string,
-  options?: { dispatcher?: Agent; maxRedirections?: number },
+  options?: { dispatcher?: Dispatcher; maxRedirections?: number },
 ) => Promise<{
   statusCode: number;
   headers: Record<string, string | string[] | undefined>;

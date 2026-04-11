@@ -88,3 +88,24 @@ export const resolveProxyPublicUrl = ({
   }
   return baseUrl;
 };
+
+export const buildProxyReferencePublicUrl = ({
+  requestUrl,
+  hostHeader,
+  forwardedHostHeader,
+  forwardedProtoHeader,
+  trustForwarded,
+  referenceId,
+}: ProxyPublicUrlContext & { referenceId: string }) => {
+  const publicRequestUrl = resolveProxyPublicUrl({
+    requestUrl,
+    hostHeader,
+    forwardedHostHeader,
+    forwardedProtoHeader,
+    trustForwarded,
+  });
+  publicRequestUrl.pathname = `/proxy/${referenceId}/manifest.json`;
+  publicRequestUrl.search = '';
+  publicRequestUrl.hash = '';
+  return publicRequestUrl.toString();
+};

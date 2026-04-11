@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { createOrReuseProxyReference } from '@/lib/dbCore';
 import { normalizeProxyConfigPayload } from '@/lib/proxyConfigCodec';
+import { buildProxyReferenceUrl } from '@/lib/proxyRouteHttp';
 
 export async function POST(request: NextRequest) {
   let body: unknown;
@@ -21,6 +22,6 @@ export async function POST(request: NextRequest) {
   }
 
   const id = createOrReuseProxyReference(config);
-  const url = new URL(`/proxy/${id}/manifest.json`, request.nextUrl.origin).toString();
+  const url = buildProxyReferenceUrl(request, id);
   return NextResponse.json({ id, url });
 }
