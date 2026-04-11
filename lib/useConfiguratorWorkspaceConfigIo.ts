@@ -103,6 +103,8 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   mdblistKey: WorkspaceSettings['mdblistKey'];
   posterAggregateRatingSource: WorkspaceSettings['posterAggregateRatingSource'];
   posterRingProgressSource: WorkspaceSettings['posterRingProgressSource'];
+  posterRingCriticsPriority: WorkspaceSettings['posterRingCriticsPriority'];
+  posterRingAudiencePriority: WorkspaceSettings['posterRingAudiencePriority'];
   posterRingValueSource: WorkspaceSettings['posterRingValueSource'];
   posterArtworkSource: WorkspaceSettings['posterArtworkSource'];
   posterEdgeOffset: WorkspaceSettings['posterEdgeOffset'];
@@ -252,6 +254,8 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setMdblistKey: Setter<WorkspaceSettings['mdblistKey']>;
   setPosterAggregateRatingSource: Setter<WorkspaceSettings['posterAggregateRatingSource']>;
   setPosterRingProgressSource: Setter<WorkspaceSettings['posterRingProgressSource']>;
+  setPosterRingCriticsPriority: Setter<WorkspaceSettings['posterRingCriticsPriority']>;
+  setPosterRingAudiencePriority: Setter<WorkspaceSettings['posterRingAudiencePriority']>;
   setPosterRingValueSource: Setter<WorkspaceSettings['posterRingValueSource']>;
   setPosterArtworkSource: Setter<WorkspaceSettings['posterArtworkSource']>;
   setPosterEdgeOffset: Setter<WorkspaceSettings['posterEdgeOffset']>;
@@ -416,6 +420,8 @@ export function useConfiguratorWorkspaceConfigIo({
   mdblistKey,
   posterAggregateRatingSource,
   posterRingProgressSource,
+  posterRingCriticsPriority,
+  posterRingAudiencePriority,
   posterRingValueSource,
   posterArtworkSource,
   posterEdgeOffset,
@@ -565,6 +571,8 @@ export function useConfiguratorWorkspaceConfigIo({
   setMdblistKey,
   setPosterAggregateRatingSource,
   setPosterRingProgressSource,
+  setPosterRingCriticsPriority,
+  setPosterRingAudiencePriority,
   setPosterRingValueSource,
   setPosterArtworkSource,
   setPosterEdgeOffset,
@@ -751,6 +759,8 @@ export function useConfiguratorWorkspaceConfigIo({
       setLogoRatingPresentation(normalized.settings.logoRatingPresentation);
       setPosterRingValueSource(normalized.settings.posterRingValueSource);
       setPosterRingProgressSource(normalized.settings.posterRingProgressSource);
+      setPosterRingCriticsPriority(normalized.settings.posterRingCriticsPriority);
+      setPosterRingAudiencePriority(normalized.settings.posterRingAudiencePriority);
       setPosterAggregateRatingSource(normalized.settings.posterAggregateRatingSource);
       setBackdropAggregateRatingSource(normalized.settings.backdropAggregateRatingSource);
       setThumbnailAggregateRatingSource(normalized.settings.thumbnailAggregateRatingSource);
@@ -882,6 +892,8 @@ export function useConfiguratorWorkspaceConfigIo({
       setMdblistKey,
       setPosterAggregateRatingSource,
       setPosterRingProgressSource,
+      setPosterRingCriticsPriority,
+      setPosterRingAudiencePriority,
       setPosterRingValueSource,
       setPosterArtworkSource,
       setPosterEdgeOffset,
@@ -1066,6 +1078,8 @@ export function useConfiguratorWorkspaceConfigIo({
         logoRatingPresentation,
         posterRingValueSource,
         posterRingProgressSource,
+        posterRingCriticsPriority,
+        posterRingAudiencePriority,
         posterAggregateRatingSource,
         backdropAggregateRatingSource,
         thumbnailAggregateRatingSource,
@@ -1203,6 +1217,8 @@ export function useConfiguratorWorkspaceConfigIo({
       mdblistKey,
       posterAggregateRatingSource,
       posterRingProgressSource,
+      posterRingCriticsPriority,
+      posterRingAudiencePriority,
       posterRingValueSource,
       posterArtworkSource,
       posterEdgeOffset,

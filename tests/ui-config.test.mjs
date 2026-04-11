@@ -138,6 +138,8 @@ const buildSampleSettings = () =>
       logoRatingPresentation: 'dual-minimal',
       posterRingValueSource: 'highest',
       posterRingProgressSource: 'tmdb',
+      posterRingCriticsPriority: ['tomatoes', 'metacritic', 'imdb'],
+      posterRingAudiencePriority: ['tomatoesaudience', 'imdb', 'tmdb'],
       posterAggregateRatingSource: 'audience',
       backdropAggregateRatingSource: 'critics',
       thumbnailAggregateRatingSource: 'critics',
@@ -299,6 +301,8 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       logoRatingPresentation: 'dual-minimal',
       posterRingValueSource: 'highest',
       posterRingProgressSource: 'tmdb',
+      posterRingCriticsPriority: ['tomatoes', 'metacritic', 'imdb'],
+      posterRingAudiencePriority: ['tomatoesaudience', 'imdb', 'tmdb'],
       posterAggregateRatingSource: 'audience',
       backdropAggregateRatingSource: 'critics',
       thumbnailAggregateRatingSource: 'critics',
@@ -535,22 +539,28 @@ test('workspace normalization preserves compact ring source settings in config p
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       posterRatingPresentation: 'ring',
-      posterRingValueSource: 'highest',
-      posterRingProgressSource: 'tomatoes',
+      posterRingValueSource: 'critics',
+      posterRingProgressSource: 'priority-audience',
+      posterRingCriticsPriority: 'metacritic,tomatoes,imdb',
+      posterRingAudiencePriority: 'letterboxd,tomatoesaudience,imdb',
     },
   });
 
   assert.equal(config.settings.posterRatingPresentation, 'ring');
-  assert.equal(config.settings.posterRingValueSource, 'highest');
-  assert.equal(config.settings.posterRingProgressSource, 'tomatoes');
+  assert.equal(config.settings.posterRingValueSource, 'critics');
+  assert.equal(config.settings.posterRingProgressSource, 'priority-audience');
+  assert.deepEqual(config.settings.posterRingCriticsPriority, ['metacritic', 'tomatoes', 'imdb']);
+  assert.deepEqual(config.settings.posterRingAudiencePriority, ['letterboxd', 'tomatoesaudience', 'imdb']);
 
   const configString = buildConfigString('https://xrdb.example.com', config.settings);
   assert.notEqual(configString, '');
 
   const decodedConfig = JSON.parse(decodeBase64Url(configString));
   assert.equal(decodedConfig.posterRatingPresentation, 'ring');
-  assert.equal(decodedConfig.posterRingProgressSource, 'tomatoes');
-  assert.equal('posterRingValueSource' in decodedConfig, false);
+  assert.equal(decodedConfig.posterRingValueSource, 'critics');
+  assert.equal(decodedConfig.posterRingProgressSource, 'priority-audience');
+  assert.equal(decodedConfig.posterRingCriticsPriority, 'metacritic,tomatoes,imdb');
+  assert.equal(decodedConfig.posterRingAudiencePriority, 'letterboxd,tomatoesaudience,imdb');
 });
 
 test('workspace normalization accepts none rating presentation to remove all ratings', () => {

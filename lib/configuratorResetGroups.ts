@@ -34,6 +34,8 @@ const PRESENTATION_PREVIEW_KEYS: Record<ConfiguratorResetPreviewType, readonly S
     'posterAggregateRatingSource',
     'posterRingValueSource',
     'posterRingProgressSource',
+    'posterRingCriticsPriority',
+    'posterRingAudiencePriority',
   ],
   backdrop: ['backdropRatingPresentation', 'backdropAggregateRatingSource'],
   thumbnail: ['thumbnailRatingPresentation', 'thumbnailAggregateRatingSource'],

@@ -86,6 +86,10 @@ import {
   type RatingValueMode,
 } from '@/lib/ratingDisplay';
 import {
+  RATING_PROVIDER_OPTIONS,
+  type RatingPreference,
+} from '@/lib/ratingProviderCatalog';
+import {
   DEFAULT_RATING_STACK_OFFSET_PX,
   MAX_RATING_STACK_OFFSET_PX,
   MIN_RATING_STACK_OFFSET_PX,
@@ -229,6 +233,8 @@ export function PresentationSection({
   activeAggregateRatingSource,
   posterRingValueSource,
   posterRingProgressSource,
+  posterRingCriticsPriority,
+  posterRingAudiencePriority,
   posterCompactRingSourceOptions,
   aggregateAccentMode,
   aggregateAccentColor,
@@ -244,6 +250,8 @@ export function PresentationSection({
   onSelectAggregateRatingSource,
   onSelectPosterRingValueSource,
   onSelectPosterRingProgressSource,
+  onSelectPosterRingCriticsPriority,
+  onSelectPosterRingAudiencePriority,
   onSelectAggregateAccentMode,
   onSelectAggregateAccentColor,
   onSelectAggregateCriticsAccentColor,
@@ -269,6 +277,8 @@ export function PresentationSection({
   activeAggregateRatingSource: AggregateRatingSource;
   posterRingValueSource: PosterCompactRingSource;
   posterRingProgressSource: PosterCompactRingSource;
+  posterRingCriticsPriority: RatingPreference[];
+  posterRingAudiencePriority: RatingPreference[];
   posterCompactRingSourceOptions: Array<DetailedSelectionOption<PosterCompactRingSource>>;
   aggregateAccentMode: AggregateAccentMode;
   aggregateAccentColor: string;
@@ -284,6 +294,8 @@ export function PresentationSection({
   onSelectAggregateRatingSource: (value: AggregateRatingSource) => void;
   onSelectPosterRingValueSource: (value: PosterCompactRingSource) => void;
   onSelectPosterRingProgressSource: (value: PosterCompactRingSource) => void;
+  onSelectPosterRingCriticsPriority: (value: RatingPreference[]) => void;
+  onSelectPosterRingAudiencePriority: (value: RatingPreference[]) => void;
   onSelectAggregateAccentMode: (value: AggregateAccentMode) => void;
   onSelectAggregateAccentColor: (value: string) => void;
   onSelectAggregateCriticsAccentColor: (value: string) => void;
@@ -295,6 +307,16 @@ export function PresentationSection({
   onToggleAggregateAccentBarVisible: () => void;
   onSelectAggregateAccentBarOffset: (value: number) => void;
 }) {
+  const togglePriorityProvider = (
+    current: RatingPreference[],
+    provider: RatingPreference,
+  ) => {
+    if (current.includes(provider)) {
+      return current.filter((entry) => entry !== provider);
+    }
+    return [...current, provider].slice(0, 3);
+  };
+
   return (
     <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
       <div className="text-[11px] font-semibold text-zinc-400">Presentation</div>
@@ -397,6 +419,71 @@ export function PresentationSection({
               </div>
               <p className="text-[11px] leading-relaxed text-zinc-500">
                 XRDB normalizes both selected sources to a 0 to 100 score so the ring fill and center number stay comparable.
+              </p>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div>
+                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Critics Priority</div>
+                  <div className="flex flex-wrap gap-1">
+                    {RATING_PROVIDER_OPTIONS.map((option) => {
+                      const rank = posterRingCriticsPriority.indexOf(option.id as RatingPreference);
+                      const selected = rank >= 0;
+                      return (
+                        <button
+                          key={`poster-ring-priority-critics-${option.id}`}
+                          type="button"
+                          onClick={() =>
+                            onSelectPosterRingCriticsPriority(
+                              togglePriorityProvider(
+                                posterRingCriticsPriority,
+                                option.id as RatingPreference,
+                              ),
+                            )
+                          }
+                          className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                            selected
+                              ? 'bg-zinc-800 text-white'
+                              : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                          }`}
+                        >
+                          {selected ? `${rank + 1}. ${option.label}` : option.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Audience Priority</div>
+                  <div className="flex flex-wrap gap-1">
+                    {RATING_PROVIDER_OPTIONS.map((option) => {
+                      const rank = posterRingAudiencePriority.indexOf(option.id as RatingPreference);
+                      const selected = rank >= 0;
+                      return (
+                        <button
+                          key={`poster-ring-priority-audience-${option.id}`}
+                          type="button"
+                          onClick={() =>
+                            onSelectPosterRingAudiencePriority(
+                              togglePriorityProvider(
+                                posterRingAudiencePriority,
+                                option.id as RatingPreference,
+                              ),
+                            )
+                          }
+                          className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                            selected
+                              ? 'bg-zinc-800 text-white'
+                              : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                          }`}
+                        >
+                          {selected ? `${rank + 1}. ${option.label}` : option.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+              <p className="text-[11px] leading-relaxed text-zinc-500">
+                Critics and Audience averages try their own lane, then Overall, then the matching priority list. Exact provider sources stay strict. If a chosen provider has no score, XRDB does not silently substitute another provider.
               </p>
             </>
           ) : null}

@@ -16,6 +16,8 @@ const createBaseInput = () => ({
   aggregateAccentBarVisible: true,
   posterRingValueSource: 'highest',
   posterRingProgressSource: 'tmdb',
+  posterRingCriticsPriority: ['tomatoes', 'metacritic', 'imdb'],
+  posterRingAudiencePriority: ['tomatoesaudience', 'imdb', 'tmdb'],
   posterRatingsLayout: 'top',
   posterRatingsMaxPerSide: 3,
   backdropRatingsLayout: 'top',
@@ -89,6 +91,48 @@ test('image route display state suppresses compact ring overlay when value sourc
   });
 
   assert.equal(state.compactRingOverlay, null);
+});
+
+test('image route display state resolves compact ring center from critics aggregate with overall fallback', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    ratingPresentation: 'ring',
+    posterRingValueSource: 'critics',
+    posterRingProgressSource: 'audience',
+    effectiveRatingPreferences: ['imdb'],
+    providerRatings: new Map([['imdb', '7.1']]),
+  });
+
+  assert.ok(state.compactRingOverlay);
+  assert.match(state.compactRingOverlay?.svg ?? '', /71/);
+});
+
+test('image route display state resolves compact ring from critics priority source', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    ratingPresentation: 'ring',
+    posterRingValueSource: 'priority-critics',
+    posterRingCriticsPriority: ['metacritic', 'imdb', 'tomatoes'],
+    effectiveRatingPreferences: ['imdb'],
+    providerRatings: new Map([['imdb', '7.1']]),
+  });
+
+  assert.ok(state.compactRingOverlay);
+  assert.match(state.compactRingOverlay?.svg ?? '', /71/);
+});
+
+test('image route display state resolves compact ring from audience priority source', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    ratingPresentation: 'ring',
+    posterRingValueSource: 'priority-audience',
+    posterRingAudiencePriority: ['letterboxd', 'imdb', 'tomatoesaudience'],
+    effectiveRatingPreferences: ['imdb'],
+    providerRatings: new Map([['imdb', '7.1']]),
+  });
+
+  assert.ok(state.compactRingOverlay);
+  assert.match(state.compactRingOverlay?.svg ?? '', /71/);
 });
 
 test('image route display state maps dynamic aggregate accents from score stops', () => {

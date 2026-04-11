@@ -53,8 +53,12 @@ import {
   normalizePosterEdgeOffset,
 } from './posterEdgeOffset.ts';
 import {
+  DEFAULT_POSTER_COMPACT_RING_AUDIENCE_PRIORITY,
+  DEFAULT_POSTER_COMPACT_RING_CRITICS_PRIORITY,
   DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
   DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE,
+  normalizePosterCompactRingPriorityList,
+  stringifyPosterCompactRingPriorityList,
   normalizePosterCompactRingSource,
   type PosterCompactRingSource,
 } from './posterCompactRing.ts';
@@ -294,6 +298,8 @@ export type ImageRouteRequestState = {
   ratingPresentation: RatingPresentation;
   posterRingValueSource: PosterCompactRingSource;
   posterRingProgressSource: PosterCompactRingSource;
+  posterRingCriticsPriority: RatingPreference[];
+  posterRingAudiencePriority: RatingPreference[];
   aggregateRatingSource: AggregateRatingSource;
   aggregateAccentMode: AggregateAccentMode;
   aggregateAccentColor: string | null;
@@ -650,6 +656,14 @@ export const resolveImageRouteRequestState = async ({
   const posterRingProgressSource = normalizePosterCompactRingSource(
     searchParams.get('posterRingProgressSource'),
     DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
+  );
+  const posterRingCriticsPriority = normalizePosterCompactRingPriorityList(
+    searchParams.get('posterRingCriticsPriority'),
+    DEFAULT_POSTER_COMPACT_RING_CRITICS_PRIORITY,
+  );
+  const posterRingAudiencePriority = normalizePosterCompactRingPriorityList(
+    searchParams.get('posterRingAudiencePriority'),
+    DEFAULT_POSTER_COMPACT_RING_AUDIENCE_PRIORITY,
   );
   const aggregateAccentColor = normalizeHexColor(searchParams.get('aggregateAccentColor')) || null;
   const aggregateCriticsAccentColor =
@@ -1353,6 +1367,8 @@ export const resolveImageRouteRequestState = async ({
     ratingPresentation,
     posterRingValueSource,
     posterRingProgressSource,
+    posterRingCriticsPriority: stringifyPosterCompactRingPriorityList(posterRingCriticsPriority),
+    posterRingAudiencePriority: stringifyPosterCompactRingPriorityList(posterRingAudiencePriority),
     blockbusterDensity,
     aggregateRatingSource,
     aggregateAccentMode,
@@ -1476,6 +1492,8 @@ export const resolveImageRouteRequestState = async ({
     ratingPresentation,
     posterRingValueSource,
     posterRingProgressSource,
+    posterRingCriticsPriority,
+    posterRingAudiencePriority,
     aggregateRatingSource,
     aggregateAccentMode,
     aggregateAccentColor,
