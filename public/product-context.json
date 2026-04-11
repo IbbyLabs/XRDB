@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.15.1",
-  "generatedAt": "2026-04-11T04:29:10.025Z",
+  "xrdbTag": "v1.16.0",
+  "generatedAt": "2026-04-11T04:50:22.903Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -42,11 +42,10 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "protect saved config and proxy references",
         "BUG-75 preserve saved profile alias round trips",
         "FR-64 add compact ring source priorities",
-        "add cross type settings sync",
-        "type presentation compatibility gating",
-        "BUG-69 suppress compact ring when configured provider has no data"
+        "add cross type settings sync"
       ]
     },
     {
