@@ -154,3 +154,20 @@ test('fetchWithOneRedirect uses ProxyAgent when outbound proxy env is configured
     else process.env.HTTP_PROXY = previousHttpProxy;
   }
 });
+
+test('safe source dispatcher lookup supports lookup calls with options.all', async () => {
+  const calls = [];
+  const mock = async (url, options) => {
+    calls.push(options || {});
+    return {
+      statusCode: 200,
+      headers: { 'content-type': 'application/json' },
+      body: makeBody('{"ok":true}'),
+    };
+  };
+
+  const response = await fetchWithOneRedirect('https://example.test/manifest.json', mock);
+  assert.equal(response.status, 200);
+  assert.equal(calls.length, 1);
+  assert.ok(calls[0]?.dispatcher);
+});
