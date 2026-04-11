@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
+  buildProxyReferencePublicUrl,
   buildProxyRouteCorsHeaders,
   resolveProxyPublicUrl,
 } from './proxyRouteRequest.ts';
 
-export { buildProxyRouteCorsHeaders, resolveProxyPublicUrl } from './proxyRouteRequest.ts';
+export { buildProxyReferencePublicUrl, buildProxyRouteCorsHeaders, resolveProxyPublicUrl } from './proxyRouteRequest.ts';
 
 export const getPublicRequestUrl = (request: NextRequest) =>
   resolveProxyPublicUrl({
@@ -14,6 +15,17 @@ export const getPublicRequestUrl = (request: NextRequest) =>
     forwardedProtoHeader: request.headers.get('x-forwarded-proto'),
     trustForwarded: process.env.XRDB_TRUST_PROXY_HEADERS === 'true',
   });
+
+export const buildProxyReferenceUrl = (request: NextRequest, referenceId: string) => {
+  return buildProxyReferencePublicUrl({
+    requestUrl: request.nextUrl.toString(),
+    hostHeader: request.headers.get('host'),
+    forwardedHostHeader: request.headers.get('x-forwarded-host'),
+    forwardedProtoHeader: request.headers.get('x-forwarded-proto'),
+    trustForwarded: process.env.XRDB_TRUST_PROXY_HEADERS === 'true',
+    referenceId,
+  });
+};
 
 export const buildProxyErrorResponse = (
   request: NextRequest,

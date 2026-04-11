@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { ProxyAgent } from 'undici';
+
 import { fetchWithOneRedirect } from '../lib/networkSecurity.ts';
 
 const makeBody = (text = '') => ({
@@ -121,4 +123,34 @@ test('fetchWithOneRedirect throws when redirect target is a non-http URL', async
     () => fetchWithOneRedirect('https://example.test/manifest.json', mock),
     /http/i,
   );
+});
+
+test('fetchWithOneRedirect uses ProxyAgent when outbound proxy env is configured', async () => {
+  const previousHttpsProxy = process.env.HTTPS_PROXY;
+  const previousHttpProxy = process.env.HTTP_PROXY;
+  const callOptions = [];
+
+  process.env.HTTPS_PROXY = 'http://proxy.example.test:8080';
+  delete process.env.HTTP_PROXY;
+
+  const mock = makeUndiciMock([
+    { statusCode: 200, headers: { 'content-type': 'application/json' }, body: makeBody('{"ok":true}') },
+  ]);
+  const instrumentedMock = async (url, options) => {
+    callOptions.push(options || {});
+    return mock(url, options);
+  };
+
+  try {
+    const response = await fetchWithOneRedirect('https://example.test/manifest.json', instrumentedMock);
+    assert.equal(response.status, 200);
+    assert.equal(callOptions.length, 1);
+    assert.ok(callOptions[0]?.dispatcher instanceof ProxyAgent);
+  } finally {
+    if (previousHttpsProxy === undefined) delete process.env.HTTPS_PROXY;
+    else process.env.HTTPS_PROXY = previousHttpsProxy;
+
+    if (previousHttpProxy === undefined) delete process.env.HTTP_PROXY;
+    else process.env.HTTP_PROXY = previousHttpProxy;
+  }
 });
