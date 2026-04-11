@@ -55,6 +55,29 @@
 
 <a id="v1-16-0"></a>
 
+<a id="v1-16-1"></a>
+
+## [v1.16.1] - 11/04/2026
+
+### Fixed
+* preserve unlock state and addon source fetches
+  
+  Move protected profile unlock state into the shared workspace runtime so Export route navigation keeps the active management session.
+  
+  Apply revealed profile settings to the live workspace immediately and keep persisted config aligned with the in memory state.
+  
+  Fix the safe source lookup callback so public addon manifests such as Cinemeta resolve through the proxy fetch path.
+* BUG-77 restore hosted manifest proxy flows
+  
+  Build proxy reference URLs from the public request context so hosted deployments no longer emit internal bind hosts.
+  
+  Honor outbound proxy environment settings for safe source manifest fetches while preserving source validation.
+  
+  Keep generated proxy links visible in the addon view even when catalog manifest introspection fails.
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.16.0] - 11/04/2026
 
 ### Added
