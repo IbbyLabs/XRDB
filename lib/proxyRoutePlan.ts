@@ -2,8 +2,10 @@ import {
   XRDB_RESERVED_PARAMS,
   decodeProxyConfig,
   getProxyConfigFromQuery,
+  normalizeProxyConfigPayload,
   type ProxyConfig,
 } from './proxyConfigBridge.ts';
+import { getProxyReference, PROTECTED_CONFIG_ID_RE } from './dbCore.ts';
 
 export const buildProxyForwardUrl = (
   originBase: string,
@@ -67,7 +69,11 @@ export const parseProxyRouteConfig = (
   }
 
   const configSeed = pathSegments[0];
-  const config = configSeed ? decodeProxyConfig(configSeed) : null;
+  const storedConfig =
+    configSeed && PROTECTED_CONFIG_ID_RE.test(configSeed)
+      ? normalizeProxyConfigPayload(getProxyReference<Record<string, unknown>>(configSeed) || {})
+      : null;
+  const config = storedConfig || (configSeed ? decodeProxyConfig(configSeed) : null);
   if (!config) {
     return {
       config: null,

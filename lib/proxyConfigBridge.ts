@@ -6,5 +6,9 @@ export {
   hasExplicitTmdbMediaTypeInXrdbId,
   isAmbiguousTmdbXrdbId,
 } from './proxyIdUtils.ts';
-export { decodeProxyConfig, getProxyConfigFromQuery } from './proxyConfigCodec.ts';
+export {
+  decodeProxyConfig,
+  getProxyConfigFromQuery,
+  normalizeProxyConfigPayload,
+} from './proxyConfigCodec.ts';
 export { buildXrdbImageUrl } from './proxyImageUrl.ts';

@@ -18,7 +18,17 @@ import {
 } from '@/lib/ratingProviderCatalog';
 import { buildProfileParams, normalizeSavedUiConfig, serializeSavedUiConfig, type AiometadataUrlPatterns, type EpisodeArtworkMode, type SavedUiConfig } from '@/lib/uiConfig';
 
-const LEGACY_CONFIG_ID_RE = /^xr_[0-9a-f]{8}$/i;
+const LEGACY_CONFIG_ID_RE = /^(xr_[0-9a-f]{8}|xrc_[0-9a-f]{16})$/i;
+const CONFIG_UNLOCK_HEADER = 'x-xrdb-config-unlock';
+
+type SavedConfigProfileStatus = {
+  isLegacy: boolean;
+  migrationDeadline: number | null;
+  requiresPassword: boolean;
+  failedAttempts: number;
+  lockedUntil: number | null;
+  isLocked: boolean;
+};
 
 const toConfigUrl = (pattern: string, profileId: string): string => {
   const qIdx = pattern.indexOf('?');
@@ -36,6 +46,11 @@ const formatCountdown = (msRemaining: number): string => {
   if (days >= 1) return `${plural(days, 'day')}, ${plural(hours, 'hour')} left`;
   if (hours >= 1) return `${plural(hours, 'hour')}, ${plural(minutes, 'minute')} left`;
   return `${plural(minutes, 'minute')} left`;
+};
+
+const readErrorMessage = async (response: Response, fallback: string) => {
+  const payload = (await response.json().catch(() => null)) as { error?: string } | null;
+  return payload?.error || fallback;
 };
 
 type PosterIdMode = 'auto' | 'tmdb' | 'imdb';
@@ -119,7 +134,10 @@ export function ExportView() {
   }, []);
 
   const [aiometadataUrlMode, setAiometadataUrlMode] = useState<'inline' | 'config'>('inline');
-  const effectiveAiometadataUrlMode: 'inline' | 'config' = savedProfileId ? aiometadataUrlMode : 'inline';
+  const hasUuidBackedProfile = Boolean(savedProfileId && !LEGACY_CONFIG_ID_RE.test(savedProfileId));
+  const effectiveAiometadataUrlMode: 'inline' | 'config' = hasUuidBackedProfile
+    ? aiometadataUrlMode
+    : 'inline';
 
   const {
     previewType,
@@ -146,6 +164,7 @@ export function ExportView() {
           aiometadataCopied={aiometadataCopied}
           onCopyAiometadata={onCopyAiometadata}
           savedProfileId={savedProfileId}
+          configUrlAvailable={hasUuidBackedProfile}
           aiometadataUrlMode={effectiveAiometadataUrlMode}
           onSetAiometadataUrlMode={setAiometadataUrlMode}
         />
@@ -284,6 +303,7 @@ function AiometadataSection({
   aiometadataCopied,
   onCopyAiometadata,
   savedProfileId,
+  configUrlAvailable,
   aiometadataUrlMode,
   onSetAiometadataUrlMode,
 }: {
@@ -291,6 +311,7 @@ function AiometadataSection({
   aiometadataCopied: boolean;
   onCopyAiometadata: () => void;
   savedProfileId: string | null;
+  configUrlAvailable: boolean;
   aiometadataUrlMode: 'inline' | 'config';
   onSetAiometadataUrlMode: (mode: 'inline' | 'config') => void;
 }) {
@@ -377,20 +398,22 @@ function AiometadataSection({
         </button>
         <button
           type="button"
-          onClick={() => savedProfileId && onSetAiometadataUrlMode('config')}
-          disabled={!savedProfileId}
+          onClick={() => configUrlAvailable && onSetAiometadataUrlMode('config')}
+          disabled={!configUrlAvailable}
           className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors ${
             aiometadataUrlMode === 'config'
               ? 'border-violet-500/60 bg-zinc-800 text-white'
-              : savedProfileId
+              : configUrlAvailable
                 ? 'border-white/10 bg-zinc-950 text-zinc-400 hover:text-white'
                 : 'border-white/5 bg-zinc-950 text-zinc-600 cursor-not-allowed'
           }`}
         >
           Config
         </button>
-        {!savedProfileId && (
-          <span className="text-[11px] text-zinc-600">Save a profile to enable config URLs</span>
+        {!configUrlAvailable && (
+          <span className="text-[11px] text-zinc-600">
+            {savedProfileId ? 'Migrate to a UUID profile to enable config URLs' : 'Save a profile to enable config URLs'}
+          </span>
         )}
       </div>
       {aiometadataPatternRows.length === 0 ? (
@@ -571,45 +594,191 @@ function SaveConfigSection({
 
   const [isSaving, setIsSaving] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
+  const [isUnlocking, setIsUnlocking] = useState(false);
+  const [isRotatingPassword, setIsRotatingPassword] = useState(false);
   const [fragmentCopied, setFragmentCopied] = useState(false);
   const [expiredBanner, setExpiredBanner] = useState(false);
   const [migrationCompleteBanner, setMigrationCompleteBanner] = useState(false);
+  const [profileNotice, setProfileNotice] = useState<string | null>(null);
+  const [rotationNotice, setRotationNotice] = useState<string | null>(null);
   const [migrationDeadline, setMigrationDeadline] = useState<number | null>(null);
   const [countdown, setCountdown] = useState<string | null>(null);
+  const [profileStatus, setProfileStatus] = useState<SavedConfigProfileStatus | null>(null);
+  const [accessPassword, setAccessPassword] = useState('');
+  const [accessPasswordConfirm, setAccessPasswordConfirm] = useState('');
+  const [rotationPassword, setRotationPassword] = useState('');
+  const [rotationPasswordConfirm, setRotationPasswordConfirm] = useState('');
+  const [unlockToken, setUnlockToken] = useState<string | null>(null);
+  const [unlockExpiresAt, setUnlockExpiresAt] = useState<number | null>(null);
   const [showRevertModal, setShowRevertModal] = useState(false);
   const [revertDiff, setRevertDiff] = useState<{ entries: ParamDiffEntry[]; totalChanged: number } | null>(null);
   const [modalMode, setModalMode] = useState<'revert' | 'save'>('revert');
   const fragmentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedParamsFingerprintRef = useRef<string | null>(null);
   const savedConfigSnapshot = useRef<SavedUiConfig | null>(null);
-  const snapshotFetchedForIdRef = useRef<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [snapshotReady, setSnapshotReady] = useState(false);
 
-  const isLegacyId = savedProfileId ? LEGACY_CONFIG_ID_RE.test(savedProfileId) : false;
+  const isLegacyId = profileStatus?.isLegacy ?? Boolean(savedProfileId && LEGACY_CONFIG_ID_RE.test(savedProfileId));
+  const isUnlocked = Boolean(unlockToken && unlockExpiresAt && unlockExpiresAt > Date.now());
+
+  const clearSnapshot = useCallback(() => {
+    savedConfigSnapshot.current = null;
+    savedParamsFingerprintRef.current = null;
+    setSnapshotReady(false);
+    setHasUnsavedChanges(false);
+  }, []);
+
+  const clearUnlockState = useCallback(() => {
+    setUnlockToken(null);
+    setUnlockExpiresAt(null);
+    clearSnapshot();
+  }, [clearSnapshot]);
+
+  const applySnapshot = useCallback((params: Record<string, string>) => {
+    const normalizedConfig = normalizeSavedUiConfig(
+      { settings: params },
+      { skipCrossTypeFallbacks: true },
+    );
+    savedConfigSnapshot.current = normalizedConfig;
+    try {
+      localStorage.setItem('xrdb.uiConfig.v1', serializeSavedUiConfig(normalizedConfig));
+    } catch {}
+    savedParamsFingerprintRef.current = JSON.stringify(Object.entries(params).sort());
+    setSnapshotReady(true);
+    setHasUnsavedChanges(false);
+  }, []);
+
+  const loadProfileStatus = useCallback(async (id: string) => {
+    const res = await fetch(`/api/config/${id}/status`, { cache: 'no-store' });
+    if (!res.ok) {
+      if (res.status === 404 || res.status === 410) {
+        if (LEGACY_CONFIG_ID_RE.test(id)) {
+          setExpiredBanner(true);
+        }
+        setProfileStatus(null);
+        onProfileIdChange(null);
+      }
+      return null;
+    }
+
+    const data = (await res.json()) as SavedConfigProfileStatus;
+    setProfileStatus(data);
+
+    const deadline = data.isLegacy ? data.migrationDeadline : null;
+    setMigrationDeadline(deadline ?? null);
+    setCountdown(deadline ? formatCountdown(deadline - Date.now()) : null);
+
+    if (data.isLocked) {
+      clearUnlockState();
+    }
+
+    return data;
+  }, [clearUnlockState, onProfileIdChange]);
+
+  const revealSavedProfile = useCallback(async (id: string, token: string) => {
+    const res = await fetch(`/api/config/${id}/reveal`, {
+      cache: 'no-store',
+      headers: {
+        [CONFIG_UNLOCK_HEADER]: token,
+      },
+    });
+
+    if (res.status === 401) {
+      clearUnlockState();
+      setProfileNotice('Unlock expired. Enter your password again.');
+      return false;
+    }
+
+    if (!res.ok) {
+      setProfileNotice(await readErrorMessage(res, 'Unable to reveal the saved profile.'));
+      return false;
+    }
+
+    applySnapshot((await res.json()) as Record<string, string>);
+    return true;
+  }, [applySnapshot, clearUnlockState]);
+
+  const unlockProtectedProfile = useCallback(async (id: string, password: string) => {
+    const res = await fetch(`/api/config/${id}/unlock`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ password }),
+    });
+
+    const data = (await res.json().catch(() => null)) as {
+      error?: string;
+      token?: string;
+      expiresAt?: number;
+      failedAttempts?: number;
+      lockedUntil?: number | null;
+    } | null;
+
+    if (!res.ok || !data?.token || typeof data.expiresAt !== 'number') {
+      const lockedUntil = typeof data?.lockedUntil === 'number' ? data.lockedUntil : null;
+      setProfileStatus((current) => current ? {
+        ...current,
+        failedAttempts: typeof data?.failedAttempts === 'number' ? data.failedAttempts : current.failedAttempts,
+        lockedUntil,
+        isLocked: typeof lockedUntil === 'number' && lockedUntil > Date.now(),
+      } : current);
+      setProfileNotice(data?.error || 'Unable to unlock the profile.');
+      return false;
+    }
+
+    setUnlockToken(data.token);
+    setUnlockExpiresAt(data.expiresAt);
+    setProfileNotice(null);
+    setProfileStatus((current) => current ? {
+      ...current,
+      failedAttempts: typeof data.failedAttempts === 'number' ? data.failedAttempts : 0,
+      lockedUntil: data.lockedUntil ?? null,
+      isLocked: false,
+    } : current);
+    return revealSavedProfile(id, data.token);
+  }, [revealSavedProfile]);
 
   useEffect(() => {
-    if (!savedProfileId || snapshotFetchedForIdRef.current === savedProfileId) return;
-    snapshotFetchedForIdRef.current = savedProfileId;
+    if (!savedProfileId) {
+      setProfileStatus(null);
+      setMigrationDeadline(null);
+      setCountdown(null);
+      setProfileNotice(null);
+      setRotationNotice(null);
+      clearUnlockState();
+      return;
+    }
+
+    clearUnlockState();
+    setProfileNotice(null);
+    setRotationNotice(null);
+    setExpiredBanner(false);
+
     let active = true;
     void (async () => {
-      try {
-        const res = await fetch(`/api/config/${savedProfileId}`);
-        if (!res.ok || !active) return;
-        const serverParams = await res.json() as Record<string, string>;
-        if (!active) return;
-        const normalizedConfig = normalizeSavedUiConfig(
-          { settings: serverParams },
-          { skipCrossTypeFallbacks: true },
-        );
-        savedConfigSnapshot.current = normalizedConfig;
-        const snapshotParams = buildSnapshotParams(normalizedConfig);
-        savedParamsFingerprintRef.current = JSON.stringify(Object.entries(snapshotParams).sort());
-        setSnapshotReady(true);
-      } catch {}
+      const data = await loadProfileStatus(savedProfileId);
+      if (!active || !data || !data.isLegacy) {
+        return;
+      }
+
+      const deadline = data.migrationDeadline;
+      if (!deadline) {
+        return;
+      }
+      if (Date.now() > deadline) {
+        if (active) {
+          onProfileIdChange(null);
+          setExpiredBanner(true);
+        }
+      }
     })();
-    return () => { active = false; };
-  }, [savedProfileId]);
+
+    return () => {
+      active = false;
+    };
+  }, [savedProfileId, loadProfileStatus, clearUnlockState, onProfileIdChange]);
 
   useEffect(() => {
     if (!savedProfileId || !isLegacyId) {
@@ -617,26 +786,7 @@ function SaveConfigSection({
       setCountdown(null);
       return;
     }
-    let active = true;
-    void (async () => {
-      try {
-        const res = await fetch(`/api/config/${savedProfileId}/status`);
-        if (!res.ok) return;
-        const data = await res.json() as { isLegacy: boolean; migrationDeadline: number | null };
-        if (!active) return;
-        const deadline = data.migrationDeadline;
-        if (!deadline) return;
-        if (Date.now() > deadline) {
-          try { await fetch(`/api/config/${savedProfileId}`, { method: 'DELETE' }); } catch {}
-          if (active) { onProfileIdChange(null); setExpiredBanner(true); }
-          return;
-        }
-        setMigrationDeadline(deadline);
-        setCountdown(formatCountdown(deadline - Date.now()));
-      } catch {}
-    })();
-    return () => { active = false; };
-  }, [savedProfileId, isLegacyId, onProfileIdChange]);
+  }, [savedProfileId, isLegacyId]);
 
   useEffect(() => {
     if (!migrationDeadline) return;
@@ -661,93 +811,274 @@ function SaveConfigSection({
   const handleSave = useCallback(async () => {
     const params = buildSaveParams();
     if (!params) return;
+
+    setProfileNotice(null);
+    setRotationNotice(null);
+
+    if (!savedProfileId) {
+      if (accessPassword.trim().length < 8) {
+        setProfileNotice('Set a profile password with at least 8 characters.');
+        return;
+      }
+      if (accessPassword !== accessPasswordConfirm) {
+        setProfileNotice('Password confirmation does not match.');
+        return;
+      }
+
+      setIsSaving(true);
+      try {
+        const res = await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...params,
+            password: accessPassword,
+          }),
+        });
+        if (!res.ok) {
+          setProfileNotice(await readErrorMessage(res, 'Unable to save the config profile.'));
+          return;
+        }
+
+        const data = (await res.json()) as { id: string };
+        applySnapshot(params);
+        onProfileIdChange(data.id);
+        await loadProfileStatus(data.id);
+        await unlockProtectedProfile(data.id, accessPassword);
+        setAccessPasswordConfirm('');
+        return;
+      } finally {
+        setIsSaving(false);
+      }
+    }
+
+    if (isLegacyId) {
+      setProfileNotice('Migrate this legacy profile before saving updates.');
+      return;
+    }
+
+    if (!unlockToken || !isUnlocked) {
+      setProfileNotice('Unlock this profile before saving updates.');
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const body: Record<string, string> = { ...params };
-      if (savedProfileId) body._id = savedProfileId;
-      const res = await fetch('/api/config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+      const res = await fetch(`/api/config/${savedProfileId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          [CONFIG_UNLOCK_HEADER]: unlockToken,
+        },
+        body: JSON.stringify(params),
       });
-      if (res.ok) {
-        const data = await res.json() as { id: string };
-        const normalizedConfig = normalizeSavedUiConfig(
-          { settings: params },
-          { skipCrossTypeFallbacks: true },
-        );
-        savedConfigSnapshot.current = normalizedConfig;
-        try {
-          localStorage.setItem('xrdb.uiConfig.v1', serializeSavedUiConfig(normalizedConfig));
-        } catch {}
-        savedParamsFingerprintRef.current = JSON.stringify(Object.entries(params).sort());
-        snapshotFetchedForIdRef.current = data.id;
-        setSnapshotReady(true);
-        setHasUnsavedChanges(false);
-        onProfileIdChange(data.id);
+      if (res.status === 401) {
+        clearUnlockState();
+        setProfileNotice('Unlock expired. Enter your password again.');
+        return;
       }
+      if (!res.ok) {
+        setProfileNotice(await readErrorMessage(res, 'Unable to update the saved profile.'));
+        return;
+      }
+
+      applySnapshot(params);
+      setProfileNotice('Saved profile updated.');
     } finally {
       setIsSaving(false);
     }
-  }, [buildSaveParams, savedProfileId, onProfileIdChange]);
+  }, [
+    accessPassword,
+    accessPasswordConfirm,
+    applySnapshot,
+    buildSaveParams,
+    clearUnlockState,
+    isLegacyId,
+    isUnlocked,
+    loadProfileStatus,
+    onProfileIdChange,
+    savedProfileId,
+    unlockProtectedProfile,
+    unlockToken,
+  ]);
 
   const handleDelete = useCallback(async () => {
-    if (!savedProfileId) return;
+    if (!savedProfileId || isLegacyId || !unlockToken) {
+      setProfileNotice(isLegacyId ? 'Forget this legacy profile locally or migrate it first.' : 'Unlock this profile before deleting it.');
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const res = await fetch(`/api/config/${savedProfileId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/config/${savedProfileId}`, {
+        method: 'DELETE',
+        headers: {
+          [CONFIG_UNLOCK_HEADER]: unlockToken,
+        },
+      });
+      if (res.status === 401) {
+        clearUnlockState();
+        setProfileNotice('Unlock expired. Enter your password again.');
+        return;
+      }
       if (res.ok) {
-        savedConfigSnapshot.current = null;
-        savedParamsFingerprintRef.current = null;
-        snapshotFetchedForIdRef.current = null;
-        setSnapshotReady(false);
+        clearUnlockState();
+        setProfileStatus(null);
         onProfileIdChange(null);
+      } else {
+        setProfileNotice(await readErrorMessage(res, 'Unable to delete the saved profile.'));
       }
     } finally {
       setIsSaving(false);
     }
-  }, [savedProfileId, onProfileIdChange]);
+  }, [clearUnlockState, isLegacyId, onProfileIdChange, savedProfileId, unlockToken]);
 
   const handleMigrate = useCallback(async () => {
     if (!savedProfileId) return;
     const params = buildSaveParams();
     if (!params) return;
+
+    if (accessPassword.trim().length < 8) {
+      setProfileNotice('Set a profile password with at least 8 characters to migrate this profile.');
+      return;
+    }
+    if (accessPassword !== accessPasswordConfirm) {
+      setProfileNotice('Password confirmation does not match.');
+      return;
+    }
+
     setIsMigrating(true);
     try {
-      const newRes = await fetch('/api/config', {
+      const newRes = await fetch(`/api/config/${savedProfileId}/migrate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
+        body: JSON.stringify({ password: accessPassword }),
       });
-      if (!newRes.ok) return;
+      if (!newRes.ok) {
+        setProfileNotice(await readErrorMessage(newRes, 'Unable to migrate the saved profile.'));
+        return;
+      }
+
       const { id: newId } = await newRes.json() as { id: string };
-      await fetch(`/api/config/${savedProfileId}`, { method: 'DELETE' });
-      const normalizedConfig = normalizeSavedUiConfig(
-        { settings: params },
-        { skipCrossTypeFallbacks: true },
-      );
-      savedConfigSnapshot.current = normalizedConfig;
-      savedParamsFingerprintRef.current = JSON.stringify(Object.entries(params).sort());
-      snapshotFetchedForIdRef.current = newId;
-      setSnapshotReady(true);
+      applySnapshot(params);
       onProfileIdChange(newId);
+      await loadProfileStatus(newId);
+      await unlockProtectedProfile(newId, accessPassword);
       setMigrationCompleteBanner(true);
+      setAccessPasswordConfirm('');
     } finally {
       setIsMigrating(false);
     }
-  }, [savedProfileId, buildSaveParams, onProfileIdChange]);
+  }, [
+    accessPassword,
+    accessPasswordConfirm,
+    applySnapshot,
+    buildSaveParams,
+    loadProfileStatus,
+    onProfileIdChange,
+    savedProfileId,
+    unlockProtectedProfile,
+  ]);
+
+  const handleUnlock = useCallback(async () => {
+    if (!savedProfileId || isLegacyId) {
+      return;
+    }
+    if (!accessPassword.trim()) {
+      setProfileNotice('Enter your profile password to unlock this profile.');
+      return;
+    }
+
+    setIsUnlocking(true);
+    try {
+      await unlockProtectedProfile(savedProfileId, accessPassword);
+      await loadProfileStatus(savedProfileId);
+    } finally {
+      setIsUnlocking(false);
+    }
+  }, [accessPassword, isLegacyId, loadProfileStatus, savedProfileId, unlockProtectedProfile]);
+
+  const handleRotatePassword = useCallback(async () => {
+    if (!savedProfileId || !unlockToken || !isUnlocked) {
+      setRotationNotice('Unlock this profile before rotating the password.');
+      return;
+    }
+    if (rotationPassword.trim().length < 8) {
+      setRotationNotice('Set a new password with at least 8 characters.');
+      return;
+    }
+    if (rotationPassword !== rotationPasswordConfirm) {
+      setRotationNotice('New password confirmation does not match.');
+      return;
+    }
+
+    setIsRotatingPassword(true);
+    try {
+      const res = await fetch(`/api/config/${savedProfileId}/rotate-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          [CONFIG_UNLOCK_HEADER]: unlockToken,
+        },
+        body: JSON.stringify({ newPassword: rotationPassword }),
+      });
+      if (res.status === 401) {
+        clearUnlockState();
+        setProfileNotice('Unlock expired. Enter your password again.');
+        setRotationNotice(null);
+        return;
+      }
+      if (!res.ok) {
+        setRotationNotice(await readErrorMessage(res, 'Unable to rotate the profile password.'));
+        return;
+      }
+
+      const data = (await res.json()) as { token: string; expiresAt: number };
+      setUnlockToken(data.token);
+      setUnlockExpiresAt(data.expiresAt);
+      setRotationPassword('');
+      setRotationPasswordConfirm('');
+      setRotationNotice('Profile password rotated.');
+      setProfileNotice('Unlock token refreshed with the new password.');
+      await loadProfileStatus(savedProfileId);
+    } finally {
+      setIsRotatingPassword(false);
+    }
+  }, [
+    clearUnlockState,
+    isUnlocked,
+    loadProfileStatus,
+    rotationPassword,
+    rotationPasswordConfirm,
+    savedProfileId,
+    unlockToken,
+  ]);
+
+  const handleForgetProfile = useCallback(() => {
+    clearUnlockState();
+    setProfileStatus(null);
+    onProfileIdChange(null);
+  }, [clearUnlockState, onProfileIdChange]);
 
   const handleCopyFragment = useCallback(() => {
-    if (!savedProfileId) return;
+    if (!savedProfileId || isLegacyId) return;
     void navigator.clipboard.writeText(`?config=${savedProfileId}`);
     if (fragmentTimerRef.current) clearTimeout(fragmentTimerRef.current);
     setFragmentCopied(true);
     fragmentTimerRef.current = setTimeout(() => setFragmentCopied(false), 1500);
-  }, [savedProfileId]);
+  }, [isLegacyId, savedProfileId]);
 
   const handleSaveClick = useCallback(() => {
     if (!savedProfileId) {
       void handleSave();
+      return;
+    }
+    if (isLegacyId) {
+      void handleMigrate();
+      return;
+    }
+    if (!isUnlocked) {
+      setProfileNotice('Unlock this profile before saving updates.');
       return;
     }
     if (!savedConfigSnapshot.current) return;
@@ -758,7 +1089,7 @@ function SaveConfigSection({
     setModalMode('save');
     setRevertDiff(diff);
     setShowRevertModal(true);
-  }, [savedProfileId, buildSaveParams, handleSave]);
+  }, [buildSaveParams, handleMigrate, handleSave, isLegacyId, isUnlocked, savedProfileId]);
 
   const handleRevertClick = useCallback(() => {
     if (!savedConfigSnapshot.current) return;
@@ -792,6 +1123,13 @@ function SaveConfigSection({
   }, []);
 
   const showRevertButton = hasUnsavedChanges && savedConfigSnapshot.current !== null;
+  const showPasswordSetup = !savedProfileId || isLegacyId;
+  const showUnlockControls = Boolean(savedProfileId && !isLegacyId && !isUnlocked);
+  const showRotationControls = Boolean(savedProfileId && !isLegacyId && isUnlocked);
+  const lockedUntil = profileStatus?.lockedUntil ?? null;
+  const lockedCountdown = typeof lockedUntil === 'number' && lockedUntil > Date.now()
+    ? formatCountdown(lockedUntil - Date.now())
+    : null;
 
   return (
     <>
@@ -834,23 +1172,164 @@ function SaveConfigSection({
           <div className="rounded-xl border border-green-500/30 bg-green-950/20 p-3 space-y-1">
             <p className="text-[12px] font-semibold text-green-300">Profile migrated successfully</p>
             <p className="text-[11px] text-green-400/80 leading-4">
-              Your previous profile stored settings in an older format. Consider rotating your TMDB and MDBList API keys to ensure they remain secure.
+              Your previous profile stored settings in an older format. This configurator now exports only the new UUID backed profile ID.
             </p>
+          </div>
+        )}
+        {lockedCountdown && (
+          <div className="rounded-xl border border-rose-500/30 bg-rose-950/20 p-3">
+            <p className="text-[12px] text-rose-300">
+              This profile is locked after repeated password attempts. Try again when the cooldown ends. <span className="font-semibold">{lockedCountdown}</span>
+            </p>
+          </div>
+        )}
+        {profileNotice && (
+          <div className="rounded-xl border border-white/10 bg-black/40 p-3">
+            <p className="text-[12px] text-zinc-300">{profileNotice}</p>
+          </div>
+        )}
+        {showPasswordSetup && (
+          <div className="grid gap-3 md:grid-cols-2">
+            <label className="space-y-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+                {savedProfileId ? 'New profile password' : 'Profile password'}
+              </span>
+              <input
+                type="password"
+                value={accessPassword}
+                onChange={(event) => setAccessPassword(event.target.value)}
+                placeholder="At least 8 characters"
+                className="w-full rounded-xl border border-white/10 bg-black/70 px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-500 outline-none focus:border-violet-500/50"
+              />
+            </label>
+            <label className="space-y-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Confirm password</span>
+              <input
+                type="password"
+                value={accessPasswordConfirm}
+                onChange={(event) => setAccessPasswordConfirm(event.target.value)}
+                placeholder="Repeat password"
+                className="w-full rounded-xl border border-white/10 bg-black/70 px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-500 outline-none focus:border-violet-500/50"
+              />
+            </label>
+          </div>
+        )}
+        {showUnlockControls && (
+          <div className="space-y-3 rounded-xl border border-white/10 bg-black/40 p-3">
+            <div>
+              <div className="text-[12px] font-semibold text-zinc-200">Unlock management</div>
+              <p className="mt-1 text-[11px] leading-4 text-zinc-500">
+                Enter the profile password to reveal the saved settings, update this UUID profile, rotate its password, or delete it.
+              </p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
+              <label className="space-y-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Profile password</span>
+                <input
+                  type="password"
+                  value={accessPassword}
+                  onChange={(event) => setAccessPassword(event.target.value)}
+                  placeholder="Enter password"
+                  className="w-full rounded-xl border border-white/10 bg-black/70 px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-500 outline-none focus:border-violet-500/50"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => void handleUnlock()}
+                disabled={isUnlocking || !accessPassword.trim() || Boolean(lockedCountdown)}
+                className={`rounded-full px-4 py-2 text-xs font-semibold transition-colors ${
+                  !isUnlocking && accessPassword.trim() && !lockedCountdown
+                    ? 'bg-violet-600 text-white hover:bg-violet-500'
+                    : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                }`}
+              >
+                {isUnlocking ? 'Unlocking...' : 'Unlock'}
+              </button>
+            </div>
+            {typeof profileStatus?.failedAttempts === 'number' && profileStatus.failedAttempts > 0 && !profileStatus.isLocked && (
+              <p className="text-[11px] text-amber-400/90">
+                Failed attempts: {profileStatus.failedAttempts} of 5 before cooldown.
+              </p>
+            )}
+          </div>
+        )}
+        {showRotationControls && (
+          <div className="space-y-3 rounded-xl border border-white/10 bg-black/40 p-3">
+            <div>
+              <div className="text-[12px] font-semibold text-zinc-200">Profile unlocked</div>
+              <p className="mt-1 text-[11px] leading-4 text-zinc-500">
+                Management access stays open for {unlockExpiresAt ? formatCountdown(unlockExpiresAt - Date.now()) : 'a limited time'}.
+              </p>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="space-y-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">New password</span>
+                <input
+                  type="password"
+                  value={rotationPassword}
+                  onChange={(event) => setRotationPassword(event.target.value)}
+                  placeholder="At least 8 characters"
+                  className="w-full rounded-xl border border-white/10 bg-black/70 px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-500 outline-none focus:border-violet-500/50"
+                />
+              </label>
+              <label className="space-y-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Confirm new password</span>
+                <input
+                  type="password"
+                  value={rotationPasswordConfirm}
+                  onChange={(event) => setRotationPasswordConfirm(event.target.value)}
+                  placeholder="Repeat new password"
+                  className="w-full rounded-xl border border-white/10 bg-black/70 px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-500 outline-none focus:border-violet-500/50"
+                />
+              </label>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void handleRotatePassword()}
+                disabled={isRotatingPassword}
+                className={`rounded-full px-4 py-2 text-xs font-semibold transition-colors ${
+                  !isRotatingPassword
+                    ? 'border border-white/15 text-zinc-300 hover:text-white'
+                    : 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-white/5'
+                }`}
+              >
+                {isRotatingPassword ? 'Rotating...' : 'Rotate password'}
+              </button>
+              {rotationNotice && <span className="text-[11px] text-zinc-500">{rotationNotice}</span>}
+            </div>
           </div>
         )}
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={handleSaveClick}
-            disabled={!canGenerateConfig || isSaving || (!!savedProfileId && !hasUnsavedChanges)}
+            disabled={
+              !canGenerateConfig
+              || isSaving
+              || (savedProfileId !== null && !isLegacyId && !hasUnsavedChanges)
+              || (savedProfileId !== null && isLegacyId && isMigrating)
+            }
             className={`rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-2 transition-colors ${
-              canGenerateConfig && !isSaving && (!savedProfileId || hasUnsavedChanges)
+              canGenerateConfig
+              && !isSaving
+              && (!savedProfileId || isLegacyId || hasUnsavedChanges)
                 ? 'bg-violet-600 text-white hover:bg-violet-500'
                 : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
             }`}
           >
             <BookmarkPlus className="w-3.5 h-3.5" />
-            <span>{isSaving ? 'Saving...' : savedProfileId ? 'Update saved profile' : 'Save config profile'}</span>
+            <span>
+              {isSaving
+                ? 'Saving...'
+                : isMigrating
+                  ? 'Migrating...'
+                  : savedProfileId
+                    ? isLegacyId
+                      ? 'Migrate to protected profile'
+                      : 'Update saved profile'
+                    : 'Save protected profile'}
+            </span>
           </button>
           {showRevertButton && (
             <button
@@ -862,7 +1341,7 @@ function SaveConfigSection({
               <span>Revert to saved</span>
             </button>
           )}
-          {savedProfileId && (
+          {savedProfileId && !isLegacyId && (
             <button
               type="button"
               onClick={() => void handleDelete()}
@@ -871,6 +1350,16 @@ function SaveConfigSection({
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>Delete profile</span>
+            </button>
+          )}
+          {savedProfileId && isLegacyId && (
+            <button
+              type="button"
+              onClick={handleForgetProfile}
+              className="rounded-full px-3 py-2 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-white/10 text-zinc-400 hover:text-zinc-300 hover:border-white/20"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Forget local reference</span>
             </button>
           )}
         </div>
@@ -903,22 +1392,30 @@ function SaveConfigSection({
                 <button
                   type="button"
                   onClick={handleCopyFragment}
+                  disabled={isLegacyId}
                   className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-medium flex items-center gap-1.5 transition-all ${
                     fragmentCopied
                       ? 'border-green-500/60 bg-green-500 text-white'
-                      : 'border-white/15 text-zinc-300 hover:text-white'
+                      : isLegacyId
+                        ? 'border-white/5 bg-zinc-950 text-zinc-600 cursor-not-allowed'
+                        : 'border-white/15 text-zinc-300 hover:text-white'
                   }`}
                 >
                   {fragmentCopied ? (
                     <><Check className="w-3 h-3" /> Copied</>
                   ) : (
-                    <><Clipboard className="w-3 h-3" /> Copy ?config=</>
+                    <><Clipboard className="w-3 h-3" /> {isLegacyId ? 'Migrate to copy' : 'Copy ?config='}</>
                   )}
                 </button>
               </div>
               <div className="font-mono text-[11px] text-zinc-300 bg-zinc-950/80 rounded-lg border border-white/10 p-3 break-all">
                 {savedProfileId}
               </div>
+              {isLegacyId && (
+                <p className="mt-2 text-[11px] leading-4 text-zinc-500">
+                  Legacy profile IDs stay readable during migration, but new exports now copy only the protected UUID format.
+                </p>
+              )}
             </div>
           </div>
         )}

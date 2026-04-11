@@ -1,8 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import { NextRequest } from 'next/server.js';
 
+import { createProtectedConfigProfile } from '../lib/dbCore.ts';
 import { resolveImageRouteRequestState } from '../lib/imageRouteRequestState.ts';
 import { HttpError } from '../lib/imageRouteRuntime.ts';
 
@@ -13,6 +17,48 @@ const createRequest = (url, headers = {}) =>
       ...headers,
     },
   });
+
+const withTempDataDir = async (t, callback) => {
+  const tempDir = mkdtempSync(join(tmpdir(), 'xrdb-image-config-'));
+  const previousDataDir = process.env.XRDB_DATA_DIR;
+  const previousDbPath = process.env.XRDB_DB_PATH;
+
+  process.env.XRDB_DATA_DIR = tempDir;
+  delete process.env.XRDB_DB_PATH;
+
+  t.after(() => {
+    if (previousDataDir === undefined) delete process.env.XRDB_DATA_DIR;
+    else process.env.XRDB_DATA_DIR = previousDataDir;
+
+    if (previousDbPath === undefined) delete process.env.XRDB_DB_PATH;
+    else process.env.XRDB_DB_PATH = previousDbPath;
+
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  return callback();
+};
+
+test('image route request state resolves UUID-backed config profiles at runtime', async (t) => {
+  await withTempDataDir(t, async () => {
+    const configId = createProtectedConfigProfile(
+      {
+        tmdbKey: 'tmdb-key',
+        posterRatings: 'imdb,tmdb',
+      },
+      'password-hash',
+    );
+
+    const state = await resolveImageRouteRequestState({
+      request: createRequest(`https://example.com/poster/tt0133093.jpg?config=${configId}`),
+      imageType: 'poster',
+      id: 'tt0133093.jpg',
+    });
+
+    assert.deepEqual(state.effectiveRatingPreferences, ['imdb', 'tmdb']);
+    assert.equal(state.configMigrationDeadline, null);
+  });
+});
 
 test('image route request state rejects ambiguous strict TMDB ids for backdrop renders', async () => {
   await assert.rejects(

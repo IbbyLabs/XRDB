@@ -25,7 +25,7 @@ import {
   WORKSPACE_CENTER_VIEW_OPTIONS,
 } from '@/lib/configuratorPageOptions';
 import { POSTER_COMPACT_RING_SOURCE_OPTIONS } from '@/lib/posterCompactRing';
-import { buildProfileParams, normalizeManifestUrl } from '@/lib/uiConfig';
+import { buildProfileParams, buildProxyPayload, normalizeManifestUrl } from '@/lib/uiConfig';
 
 type WorkspacePanelId =
   | 'configurator'
@@ -532,6 +532,7 @@ export function buildConfiguratorPageProps({
         onChangeProxyTypes: workspaceState.setProxyTypes,
         proxyCatalogRules: workspaceState.proxyCatalogRules,
         onChangeProxyCatalogRules: workspaceState.setProxyCatalogRules,
+        proxyPayload: buildProxyPayload(baseUrl, outputs.currentUiConfig.proxy, outputs.currentUiConfig.settings),
         tmdbKey: workspaceState.tmdbKey,
         mdblistKey: workspaceState.mdblistKey,
         displayedProxyUrl: outputs.displayedProxyUrl,

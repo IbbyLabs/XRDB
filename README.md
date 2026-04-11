@@ -340,7 +340,7 @@ The configurator preview type row now includes a sync control beside each type. 
 | `type` | Image type (Path) | `poster`, `backdrop`, `logo` (`thumbnail` uses its own route) | - |
 | `id` | Media ID (Path) | IMDb (`tt...`), TMDB (`tmdb:id`, `tmdb:movie:id`, `tmdb:tv:id`), Kitsu (`kitsu:id`), anime IDs such as `anilist:123`, `mal:456`, `tvdb:12345`, or `anidb:6789` | - |
 | `tmdbIdScope` | TMDB ID collision handling mode | `soft`, `strict` | `soft` |
-| `config` | Saved config profile ID. Loads server stored params as base defaults; explicit URL params take precedence. Generate a profile ID from the Export view in the configurator. | String (e.g. `xr_a1b2c3d4`) | - |
+| `config` | Saved config profile ID. Loads encrypted server stored params as base defaults; explicit URL params take precedence. Generate a password protected UUID profile from the Export view in the configurator. | String (e.g. `550e8400-e29b-41d4-a716-446655440000`) | - |
 | `lang` | Image language | Any TMDB ISO 639-1 code (e.g. `it`, `en`, `es`, `fr`, `de`, `ru`, `ja`) | `en` |
 | `genreBadge` | Genre badge mode (global fallback) | `off`, `text`, `icon`, `both` | `off` |
 | `posterGenreBadge` | Poster genre badge mode | `off`, `text`, `icon`, `both` | `off` |
@@ -511,7 +511,7 @@ Parameter               | Values                                                
 type (path)             | poster, backdrop, logo                                               | -
 id (path)               | IMDb (tt...), TMDB (tmdb:id / tmdb:movie:id / tmdb:tv:id), Kitsu (kitsu:id), AniList, MAL                            | -
 tmdbIdScope             | soft, strict                                                                                                           | soft
-config                  | Saved config profile ID. Loads server stored params as base defaults; explicit URL params take precedence.              | -
+config                  | Saved config profile ID. Loads encrypted server stored params as base defaults; explicit URL params take precedence.      | -
 ratings                 | tmdb, mdblist, imdb, allocine, allocinepress, tomatoes,              | all
                         | tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt,     |
                         | simkl, rogerebert, myanimelist,                                      |
@@ -677,10 +677,10 @@ XRDB can act as a proxy for any Stremio addon and always replace images
 Stremio does not use query params here. **Generate the link from the XRDB site** using the "Proxy Manifest" section:
 
 ```text
-https://YOUR_XRDB_HOST/proxy/{config}/manifest.json
+https://YOUR_XRDB_HOST/proxy/{uuid}/manifest.json
 ```
 
-`{config}` is created automatically by the site based on the inserted parameters.
+`{uuid}` is created automatically by the site from a server stored proxy reference. Legacy inline proxy URLs stay readable during migration, but new copied links always use the UUID form.
 
 ### Direct Query Proxy Mode (Advanced)
 
@@ -690,7 +690,7 @@ For scripts, testing, or non generated integrations, XRDB also exposes a direct 
 https://YOUR_XRDB_HOST/proxy/manifest.json?url={manifestUrl}&tmdbKey=...&mdblistKey=...&fanartKey=...
 ```
 
-The matching query based passthrough routes live under `/proxy/catalog/...`, `/proxy/meta/...`, and the other addon resource paths and accept the same query config. The encoded `/proxy/{config}/manifest.json` form is still the normal Stremio install URL.
+The matching query based passthrough routes live under `/proxy/catalog/...`, `/proxy/meta/...`, and the other addon resource paths and accept the same query config. The UUID backed `/proxy/{uuid}/manifest.json` form is the normal Stremio install URL.
 
 ### Notes
 - The proxy routes `meta.poster`, `meta.background`, and `meta.logo` through XRDB URLs.
@@ -808,10 +808,10 @@ Copy `env.template` to `.env` and adjust as needed. All cache TTL values are in 
 | `XRDB_TRUST_PROXY_HEADERS` | `false` | Trust `x-forwarded-host` / `x-forwarded-proto` when behind a reverse proxy |
 | `XRDB_REQUEST_API_KEY` | (empty) | Single shared request key that gates render and proxy access on private hosts |
 | `XRDB_REQUEST_API_KEYS` | (empty) | Comma separated list of valid request keys when multiple keys are needed |
-| `XRDB_CONFIG_ENCRYPTION_KEY` | auto generated | 64 hex character (32 byte) key used to encrypt saved config profile params at rest. Set this explicitly in production and back it up. Generate with `openssl rand -hex 32`. |
+| `XRDB_CONFIG_ENCRYPTION_KEY` | auto generated | 64 hex character (32 byte) key used to encrypt saved config profile params and stored proxy references at rest. Set this explicitly in production and back it up. Generate with `openssl rand -hex 32`. |
 | `XRDB_INACTIVE_CONFIG_PRUNE_DAYS` | `-1` (disabled) | Days of inactivity before a saved config profile is pruned on startup. Inactivity is measured from the last image request that resolved the profile. Set to `-1` to disable pruning. |
 | `XRDB_PROXY_ALLOWED_ORIGINS` | (empty) | Comma separated CORS allowlist. Empty = `*` |
-| `XRDB_PREVIEW_ORIGIN` | `http://127.0.0.1:3000` | Preview fetch origin used by `/preview/{slug}` before falling back to the container hostname and public origin |
+| `XRDB_PREVIEW_ORIGIN` | `http://127.0.0.1:3000` | Trusted preview fetch origin used by `/preview/{slug}`. Set this explicitly in production. The legacy `PREVIEW_INTERNAL_ORIGIN` alias is still accepted during migration. |
 | `XRDB_PORT` | `3000` | Host port used by `local-compose.yaml` |
 | `XRDB_DATA_DIR` | `./data` | Host path mounted to `/app/data` by `local-compose.yaml` |
 | `DOCKER_DATA_DIR` | `./data` | Root host data path used by `compose.yaml`, which mounts `${DOCKER_DATA_DIR}/xrdb` into `/app/data` |
