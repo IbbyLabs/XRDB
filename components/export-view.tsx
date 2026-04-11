@@ -5,6 +5,11 @@ import Image from 'next/image';
 import { BookmarkPlus, Check, ChevronDown, Clipboard, Code2, Eye, EyeOff, RotateCcw, Trash2 } from 'lucide-react';
 
 import { ConfirmDiffModal } from '@/components/confirm-diff-modal';
+import {
+  buildRevealedConfigState,
+  getActiveConfigProfileUnlockSession,
+  shouldClearConfigProfileUnlockSession,
+} from '@/lib/configProfileClientState';
 import { useConfiguratorContext } from '@/lib/configuratorProvider';
 import { WorkspaceManagementSection } from '@/components/configurator-basics';
 import {
@@ -16,7 +21,7 @@ import {
 import {
   RATING_PROVIDER_OPTIONS,
 } from '@/lib/ratingProviderCatalog';
-import { buildProfileParams, normalizeSavedUiConfig, serializeSavedUiConfig, type AiometadataUrlPatterns, type EpisodeArtworkMode, type SavedUiConfig } from '@/lib/uiConfig';
+import { buildProfileParams, type AiometadataUrlPatterns, type EpisodeArtworkMode, type SavedUiConfig } from '@/lib/uiConfig';
 
 const LEGACY_CONFIG_ID_RE = /^(xr_[0-9a-f]{8}|xrc_[0-9a-f]{16})$/i;
 const CONFIG_UNLOCK_HEADER = 'x-xrdb-config-unlock';
@@ -79,7 +84,11 @@ const EPISODE_ARTWORK_MODE_OPTIONS: Array<{
 ];
 
 export function ExportView() {
-  const { workspaceColumnsProps } = useConfiguratorContext();
+  const {
+    clearConfigProfileUnlockSession,
+    configProfileUnlockSession,
+    workspaceColumnsProps,
+  } = useConfiguratorContext();
   const { exportPanelsProps, centerStageProps, workspaceManagementProps } = workspaceColumnsProps;
   const [optionsOpen, setOptionsOpen] = useState(false);
 
@@ -109,20 +118,26 @@ export function ExportView() {
   } = exportPanelsProps;
 
   const [savedProfileId, setSavedProfileId] = useState<string | null>(null);
+  const [savedProfileIdLoaded, setSavedProfileIdLoaded] = useState(false);
 
   const handleProfileIdChange = useCallback((id: string | null) => {
+    if (!id || configProfileUnlockSession?.profileId !== id) {
+      clearConfigProfileUnlockSession();
+    }
+    setSavedProfileIdLoaded(true);
     setSavedProfileId(id);
     if (id) {
       localStorage.setItem('xrdb_config_profile_id', id);
     } else {
       localStorage.removeItem('xrdb_config_profile_id');
     }
-  }, []);
+  }, [clearConfigProfileUnlockSession, configProfileUnlockSession?.profileId]);
 
   useEffect(() => {
     const sync = () => {
       const stored = localStorage.getItem('xrdb_config_profile_id');
       setSavedProfileId((prev) => (prev === stored ? prev : stored));
+      setSavedProfileIdLoaded(true);
     };
     sync();
     window.addEventListener('storage', sync);
@@ -132,6 +147,23 @@ export function ExportView() {
       window.removeEventListener('xrdb-config-profile-cleared', sync);
     };
   }, []);
+
+  useEffect(() => {
+    if (!shouldClearConfigProfileUnlockSession({
+      session: configProfileUnlockSession,
+      profileIdLoaded: savedProfileIdLoaded,
+      profileId: savedProfileId,
+    })) {
+      return;
+    }
+
+    clearConfigProfileUnlockSession();
+  }, [
+    clearConfigProfileUnlockSession,
+    configProfileUnlockSession,
+    savedProfileId,
+    savedProfileIdLoaded,
+  ]);
 
   const [aiometadataUrlMode, setAiometadataUrlMode] = useState<'inline' | 'config'>('inline');
   const hasUuidBackedProfile = Boolean(savedProfileId && !LEGACY_CONFIG_ID_RE.test(savedProfileId));
@@ -182,6 +214,7 @@ export function ExportView() {
           canGenerateConfig={canGenerateConfig}
           buildSaveParams={buildSaveParams}
           savedProfileId={savedProfileId}
+          savedProfileIdLoaded={savedProfileIdLoaded}
           onProfileIdChange={handleProfileIdChange}
         />
 
@@ -583,14 +616,21 @@ function SaveConfigSection({
   canGenerateConfig,
   buildSaveParams,
   savedProfileId,
+  savedProfileIdLoaded,
   onProfileIdChange,
 }: {
   canGenerateConfig: boolean;
   buildSaveParams: () => Record<string, string> | null;
   savedProfileId: string | null;
+  savedProfileIdLoaded: boolean;
   onProfileIdChange: (id: string | null) => void;
 }) {
-  const { applySavedUiConfig } = useConfiguratorContext();
+  const {
+    applySavedUiConfig,
+    clearConfigProfileUnlockSession,
+    configProfileUnlockSession,
+    setConfigProfileUnlockSession,
+  } = useConfiguratorContext();
 
   const [isSaving, setIsSaving] = useState(false);
   const [isMigrating, setIsMigrating] = useState(false);
@@ -608,8 +648,6 @@ function SaveConfigSection({
   const [accessPasswordConfirm, setAccessPasswordConfirm] = useState('');
   const [rotationPassword, setRotationPassword] = useState('');
   const [rotationPasswordConfirm, setRotationPasswordConfirm] = useState('');
-  const [unlockToken, setUnlockToken] = useState<string | null>(null);
-  const [unlockExpiresAt, setUnlockExpiresAt] = useState<number | null>(null);
   const [showRevertModal, setShowRevertModal] = useState(false);
   const [revertDiff, setRevertDiff] = useState<{ entries: ParamDiffEntry[]; totalChanged: number } | null>(null);
   const [modalMode, setModalMode] = useState<'revert' | 'save'>('revert');
@@ -618,9 +656,17 @@ function SaveConfigSection({
   const savedConfigSnapshot = useRef<SavedUiConfig | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [snapshotReady, setSnapshotReady] = useState(false);
+  const [, setUnlockCountdownTick] = useState(0);
+
+  const activeUnlockSession = getActiveConfigProfileUnlockSession(
+    configProfileUnlockSession,
+    savedProfileId,
+  );
+  const unlockToken = activeUnlockSession?.token ?? null;
+  const unlockExpiresAt = activeUnlockSession?.expiresAt ?? null;
 
   const isLegacyId = profileStatus?.isLegacy ?? Boolean(savedProfileId && LEGACY_CONFIG_ID_RE.test(savedProfileId));
-  const isUnlocked = Boolean(unlockToken && unlockExpiresAt && unlockExpiresAt > Date.now());
+  const isUnlocked = Boolean(activeUnlockSession);
 
   const clearSnapshot = useCallback(() => {
     savedConfigSnapshot.current = null;
@@ -630,24 +676,21 @@ function SaveConfigSection({
   }, []);
 
   const clearUnlockState = useCallback(() => {
-    setUnlockToken(null);
-    setUnlockExpiresAt(null);
+    clearConfigProfileUnlockSession();
     clearSnapshot();
-  }, [clearSnapshot]);
+  }, [clearConfigProfileUnlockSession, clearSnapshot]);
 
   const applySnapshot = useCallback((params: Record<string, string>) => {
-    const normalizedConfig = normalizeSavedUiConfig(
-      { settings: params },
-      { skipCrossTypeFallbacks: true },
-    );
+    const { fingerprint, normalizedConfig, serializedConfig } = buildRevealedConfigState(params);
     savedConfigSnapshot.current = normalizedConfig;
+    applySavedUiConfig(normalizedConfig);
     try {
-      localStorage.setItem('xrdb.uiConfig.v1', serializeSavedUiConfig(normalizedConfig));
+      localStorage.setItem('xrdb.uiConfig.v1', serializedConfig);
     } catch {}
-    savedParamsFingerprintRef.current = JSON.stringify(Object.entries(params).sort());
+    savedParamsFingerprintRef.current = fingerprint;
     setSnapshotReady(true);
     setHasUnsavedChanges(false);
-  }, []);
+  }, [applySavedUiConfig]);
 
   const loadProfileStatus = useCallback(async (id: string) => {
     const res = await fetch(`/api/config/${id}/status`, { cache: 'no-store' });
@@ -728,8 +771,11 @@ function SaveConfigSection({
       return false;
     }
 
-    setUnlockToken(data.token);
-    setUnlockExpiresAt(data.expiresAt);
+    setConfigProfileUnlockSession({
+      profileId: id,
+      token: data.token,
+      expiresAt: data.expiresAt,
+    });
     setProfileNotice(null);
     setProfileStatus((current) => current ? {
       ...current,
@@ -738,9 +784,13 @@ function SaveConfigSection({
       isLocked: false,
     } : current);
     return revealSavedProfile(id, data.token);
-  }, [revealSavedProfile]);
+  }, [revealSavedProfile, setConfigProfileUnlockSession]);
 
   useEffect(() => {
+    if (!savedProfileIdLoaded) {
+      return;
+    }
+
     if (!savedProfileId) {
       setProfileStatus(null);
       setMigrationDeadline(null);
@@ -751,7 +801,6 @@ function SaveConfigSection({
       return;
     }
 
-    clearUnlockState();
     setProfileNotice(null);
     setRotationNotice(null);
     setExpiredBanner(false);
@@ -778,7 +827,21 @@ function SaveConfigSection({
     return () => {
       active = false;
     };
-  }, [savedProfileId, loadProfileStatus, clearUnlockState, onProfileIdChange]);
+  }, [savedProfileId, savedProfileIdLoaded, loadProfileStatus, clearUnlockState, onProfileIdChange]);
+
+  useEffect(() => {
+    if (!unlockExpiresAt) {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      setUnlockCountdownTick((current) => current + 1);
+    }, 60_000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [unlockExpiresAt]);
 
   useEffect(() => {
     if (!savedProfileId || !isLegacyId) {
@@ -1034,8 +1097,11 @@ function SaveConfigSection({
       }
 
       const data = (await res.json()) as { token: string; expiresAt: number };
-      setUnlockToken(data.token);
-      setUnlockExpiresAt(data.expiresAt);
+      setConfigProfileUnlockSession({
+        profileId: savedProfileId,
+        token: data.token,
+        expiresAt: data.expiresAt,
+      });
       setRotationPassword('');
       setRotationPasswordConfirm('');
       setRotationNotice('Profile password rotated.');
@@ -1051,6 +1117,7 @@ function SaveConfigSection({
     rotationPassword,
     rotationPasswordConfirm,
     savedProfileId,
+    setConfigProfileUnlockSession,
     unlockToken,
   ]);
 
@@ -1258,7 +1325,7 @@ function SaveConfigSection({
             <div>
               <div className="text-[12px] font-semibold text-zinc-200">Profile unlocked</div>
               <p className="mt-1 text-[11px] leading-4 text-zinc-500">
-                Management access stays open for {unlockExpiresAt ? formatCountdown(unlockExpiresAt - Date.now()) : 'a limited time'}.
+                Management access remains active. {unlockExpiresAt ? formatCountdown(unlockExpiresAt - Date.now()) : 'Expires soon.'}
               </p>
             </div>
             <div className="grid gap-3 md:grid-cols-2">

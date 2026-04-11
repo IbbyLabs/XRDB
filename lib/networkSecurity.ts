@@ -99,10 +99,24 @@ const selectSafeLookupRecord = async (hostname: string) => {
 
 const SAFE_SOURCE_DISPATCHER = new Agent({
   connect: {
-    lookup(hostname, _options, callback) {
+    lookup(hostname, options, callback) {
       void selectSafeLookupRecord(hostname)
-        .then((record) => callback(null, record.address, record.family))
-        .catch((error) => callback(error as Error, '', 4));
+        .then((record) => {
+          if (options?.all) {
+            callback(null, [{ address: record.address, family: record.family }]);
+            return;
+          }
+
+          callback(null, record.address, record.family);
+        })
+        .catch((error) => {
+          if (options?.all) {
+            callback(error as Error, []);
+            return;
+          }
+
+          callback(error as Error, '', 4);
+        });
     },
   },
 });

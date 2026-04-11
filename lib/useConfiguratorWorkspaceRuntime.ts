@@ -87,6 +87,7 @@ import {
   buildEpisodePreviewMediaTarget,
   parseEpisodePreviewMediaTarget,
 } from '@/lib/episodeIdentity';
+import { type ConfigProfileUnlockSession } from '@/lib/configProfileClientState';
 import { isConfiguratorExperienceMode } from '@/lib/configuratorPresets';
 import { buildConfiguratorPageProps } from '@/lib/configuratorPageProps';
 import type { MediaFeatureBadgeKey } from '@/lib/mediaFeatures';
@@ -242,6 +243,8 @@ export function useConfiguratorWorkspaceRuntime() {
   const baseUrl = normalizeBaseUrl(useClientOrigin());
   const docsCaptureConfig = useMemo(() => readDocsCaptureConfig(), []);
   const disableRemoteLookups = Boolean(docsCaptureConfig);
+  const [configProfileUnlockSession, setConfigProfileUnlockSession] =
+    useState<ConfigProfileUnlockSession | null>(null);
   const workspaceState = useConfiguratorWorkspaceState();
   const {
     activeProviderEditorId,
@@ -1374,6 +1377,28 @@ export function useConfiguratorWorkspaceRuntime() {
     setActivePreviewTitle,
     mediaId,
   });
+  const clearConfigProfileUnlockSession = useCallback(() => {
+    setConfigProfileUnlockSession(null);
+  }, []);
+
+  useEffect(() => {
+    if (!configProfileUnlockSession) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setConfigProfileUnlockSession((current) =>
+        current && current.profileId === configProfileUnlockSession.profileId
+          ? null
+          : current,
+      );
+    }, Math.max(configProfileUnlockSession.expiresAt - Date.now(), 0));
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [configProfileUnlockSession]);
+
   const { applyWorkspaceConfig, uiSettingsLoaded } = workspaceStorage;
   const resolvedForRef = useRef<string | null>(null);
   useEffect(() => {
@@ -1895,12 +1920,15 @@ export function useConfiguratorWorkspaceRuntime() {
   return {
     applySavedUiConfig,
     buildCurrentUiConfig,
+    clearConfigProfileUnlockSession,
+    configProfileUnlockSession,
     docsCaptureReady,
     experienceModeDraft,
     handleContinueExperienceMode,
     inputsPanelProps,
     isDocsCapture: Boolean(docsCaptureConfig),
     pageRef: pageChrome.pageRef,
+    setConfigProfileUnlockSession,
     setExperienceModeDraft,
     showExperienceModal,
     uiSettingsLoaded,
