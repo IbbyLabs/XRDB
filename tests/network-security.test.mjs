@@ -20,19 +20,28 @@ const makeUndiciMock = (responses) => {
 };
 
 test('fetchWithOneRedirect returns non-redirect response directly', async () => {
+  const callOptions = [];
   const mock = makeUndiciMock([
     { statusCode: 200, headers: { 'content-type': 'application/json' }, body: makeBody('{"ok":true}') },
   ]);
 
-  const response = await fetchWithOneRedirect('https://example.test/manifest.json', mock);
+  const instrumentedMock = async (url, options) => {
+    callOptions.push(options || {});
+    return mock(url, options);
+  };
+
+  const response = await fetchWithOneRedirect('https://example.test/manifest.json', instrumentedMock);
   assert.equal(response.status, 200);
   const json = await response.json();
   assert.deepEqual(json, { ok: true });
+  assert.equal(callOptions.length, 1);
+  assert.ok(callOptions[0]?.dispatcher);
 });
 
 test('fetchWithOneRedirect follows a single valid redirect', async () => {
   process.env.XRDB_ALLOW_PRIVATE_SOURCES_FOR_TESTS = 'true';
   process.env.NODE_ENV = 'test';
+  const callOptions = [];
 
   const mock = makeUndiciMock([
     {
@@ -46,11 +55,17 @@ test('fetchWithOneRedirect follows a single valid redirect', async () => {
       body: makeBody('{"metas":[]}'),
     },
   ]);
+  const instrumentedMock = async (url, options) => {
+    callOptions.push(options || {});
+    return mock(url, options);
+  };
 
-  const response = await fetchWithOneRedirect('https://example.test/catalog.json', mock);
+  const response = await fetchWithOneRedirect('https://example.test/catalog.json', instrumentedMock);
   assert.equal(response.status, 200);
   const json = await response.json();
   assert.deepEqual(json, { metas: [] });
+  assert.equal(callOptions.length, 2);
+  assert.ok(callOptions.every((options) => !options.dispatcher));
 
   delete process.env.XRDB_ALLOW_PRIVATE_SOURCES_FOR_TESTS;
   delete process.env.NODE_ENV;

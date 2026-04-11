@@ -1,6 +1,6 @@
 import { lookup } from 'node:dns/promises';
 import { isIP } from 'node:net';
-import { request as undiciRequest } from 'undici';
+import { Agent, request as undiciRequest } from 'undici';
 
 const BLOCKED_HOSTNAMES = new Set([
   'localhost',
@@ -10,7 +10,10 @@ const BLOCKED_HOSTNAMES = new Set([
 ]);
 
 const LOOKUP_CACHE_TTL_MS = 5 * 60 * 1000;
-const lookupCache = new Map<string, { expiresAt: number; addresses: string[] }>();
+const lookupCache = new Map<
+  string,
+  { expiresAt: number; records: Array<{ address: string; family: number }> }
+>();
 
 const parseIPv4 = (value: string) => {
   const parts = value.split('.').map((part) => Number(part));
@@ -63,18 +66,53 @@ const isBlockedHostname = (hostname: string) => {
   return false;
 };
 
-const resolveHostAddresses = async (hostname: string) => {
+const resolveHostRecords = async (hostname: string) => {
   const now = Date.now();
   const cached = lookupCache.get(hostname);
   if (cached && cached.expiresAt > now) {
-    return cached.addresses;
+    return cached.records;
   }
 
   const records = await lookup(hostname, { all: true, verbatim: true });
-  const addresses = records.map((record) => record.address);
-  lookupCache.set(hostname, { expiresAt: now + LOOKUP_CACHE_TTL_MS, addresses });
-  return addresses;
+  lookupCache.set(hostname, { expiresAt: now + LOOKUP_CACHE_TTL_MS, records });
+  return records;
 };
+
+const resolveHostAddresses = async (hostname: string) =>
+  (await resolveHostRecords(hostname)).map((record) => record.address);
+
+const selectSafeLookupRecord = async (hostname: string) => {
+  const records = await resolveHostRecords(hostname);
+  if (!records.length) {
+    throw new Error('Hostname resolution failed.');
+  }
+  if (records.some((record) => isPrivateAddress(record.address))) {
+    throw new Error('Target resolves to a private network address.');
+  }
+
+  const safeRecord = records[0];
+  if (!safeRecord) {
+    throw new Error('Hostname resolution failed.');
+  }
+  return safeRecord;
+};
+
+const SAFE_SOURCE_DISPATCHER = new Agent({
+  connect: {
+    lookup(hostname, _options, callback) {
+      void selectSafeLookupRecord(hostname)
+        .then((record) => callback(null, record.address, record.family))
+        .catch((error) => callback(error as Error, '', 4));
+    },
+  },
+});
+
+const allowPrivateSourcesForTests = () =>
+  process.env.XRDB_ALLOW_PRIVATE_SOURCES_FOR_TESTS === 'true' &&
+  process.env.NODE_ENV !== 'production';
+
+const getSafeSourceDispatcher = () =>
+  allowPrivateSourcesForTests() ? undefined : SAFE_SOURCE_DISPATCHER;
 
 export const assertSafeSourceUrl = async (input: string) => {
   const raw = String(input || '').trim();
@@ -97,10 +135,7 @@ export const assertSafeSourceUrl = async (input: string) => {
     throw new Error('URL credentials are not allowed.');
   }
 
-  if (
-    process.env.XRDB_ALLOW_PRIVATE_SOURCES_FOR_TESTS === 'true' &&
-    process.env.NODE_ENV !== 'production'
-  ) {
+  if (allowPrivateSourcesForTests()) {
     return parsed;
   }
 
@@ -145,7 +180,7 @@ const buildWebResponse = async (
 
 type UndiciRequestFn = (
   url: string,
-  options?: { maxRedirections?: number },
+  options?: { dispatcher?: Agent; maxRedirections?: number },
 ) => Promise<{
   statusCode: number;
   headers: Record<string, string | string[] | undefined>;
@@ -156,7 +191,10 @@ export const fetchWithOneRedirect = async (
   url: string,
   _undiciRequest: UndiciRequestFn = undiciRequest as UndiciRequestFn,
 ): Promise<Response> => {
-  const first = await _undiciRequest(url, { maxRedirections: 0 });
+  const first = await _undiciRequest(url, {
+    dispatcher: getSafeSourceDispatcher(),
+    maxRedirections: 0,
+  });
 
   if (!REDIRECT_STATUS_CODES.has(first.statusCode)) {
     return buildWebResponse(first.statusCode, first.headers, first.body);
@@ -173,7 +211,10 @@ export const fetchWithOneRedirect = async (
   const resolvedLocation = new URL(location, url).toString();
   await assertSafeSourceUrl(resolvedLocation);
 
-  const final = await _undiciRequest(resolvedLocation, { maxRedirections: 0 });
+  const final = await _undiciRequest(resolvedLocation, {
+    dispatcher: getSafeSourceDispatcher(),
+    maxRedirections: 0,
+  });
   if (REDIRECT_STATUS_CODES.has(final.statusCode)) {
     await final.body.dump();
     throw new Error('Redirect chain not allowed: the redirect target also redirected.');

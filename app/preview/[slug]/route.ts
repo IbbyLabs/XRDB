@@ -59,9 +59,15 @@ export async function GET(
   const previewOrigins = resolveReadmePreviewOrigins({
     requestOrigin: request.nextUrl.origin,
     previewOrigin: process.env.XRDB_PREVIEW_ORIGIN,
+    previewOriginAlias: process.env.PREVIEW_INTERNAL_ORIGIN,
     bindHost: process.env.HOSTNAME,
     port: process.env.PORT,
+    includeRequestOriginFallback: process.env.NODE_ENV !== 'production',
   });
+
+  if (previewOrigins.length === 0) {
+    return buildTextResponse('README preview origin is not configured.', 503);
+  }
 
   let sourceResponse: Response | null = null;
   for (const previewOrigin of previewOrigins) {

@@ -81,28 +81,32 @@ const assignNormalizedStringField = (
   config[key] = value;
 };
 
+export const normalizeProxyConfigPayload = (payload: Record<string, unknown>): ProxyConfig | null => {
+  const url = readOptionalText(payload.url);
+  const tmdbKey = readOptionalText(payload.tmdbKey);
+  const mdblistKey = readOptionalText(payload.mdblistKey);
+  if (!url || !tmdbKey || !mdblistKey) return null;
+
+  const config: ProxyConfig = { url, tmdbKey, mdblistKey };
+  for (const key of PROXY_OPTIONAL_STRING_KEYS) {
+    const value = readOptionalTextAllowEmpty(payload[key]);
+    if (value !== undefined) {
+      assignNormalizedStringField(config, key, value);
+    }
+  }
+  for (const key of PROXY_OPTIONAL_BOOLEAN_KEYS) {
+    const value = readOptionalBoolean(payload[key]);
+    if (value !== undefined) {
+      config[key] = value;
+    }
+  }
+  return config;
+};
+
 export const decodeProxyConfig = (encoded: string): ProxyConfig | null => {
   try {
     const payload = JSON.parse(decodeBase64Url(encoded)) as Record<string, unknown>;
-    const url = readOptionalText(payload.url);
-    const tmdbKey = readOptionalText(payload.tmdbKey);
-    const mdblistKey = readOptionalText(payload.mdblistKey);
-    if (!url || !tmdbKey || !mdblistKey) return null;
-
-    const config: ProxyConfig = { url, tmdbKey, mdblistKey };
-    for (const key of PROXY_OPTIONAL_STRING_KEYS) {
-      const value = readOptionalTextAllowEmpty(payload[key]);
-      if (value !== undefined) {
-        assignNormalizedStringField(config, key, value);
-      }
-    }
-    for (const key of PROXY_OPTIONAL_BOOLEAN_KEYS) {
-      const value = readOptionalBoolean(payload[key]);
-      if (value !== undefined) {
-        config[key] = value;
-      }
-    }
-    return config;
+    return normalizeProxyConfigPayload(payload);
   } catch {
     return null;
   }
