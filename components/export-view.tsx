@@ -7,7 +7,9 @@ import { BookmarkPlus, Check, ChevronDown, Clipboard, Code2, Eye, EyeOff, Rotate
 import { ConfirmDiffModal } from '@/components/confirm-diff-modal';
 import {
   buildRevealedConfigState,
+  getNextAiometadataUrlMode,
   getActiveConfigProfileUnlockSession,
+  isProtectedConfigProfileId,
   shouldClearConfigProfileUnlockSession,
 } from '@/lib/configProfileClientState';
 import { useConfiguratorContext } from '@/lib/configuratorProvider';
@@ -166,10 +168,28 @@ export function ExportView() {
   ]);
 
   const [aiometadataUrlMode, setAiometadataUrlMode] = useState<'inline' | 'config'>('inline');
+  const aiometadataUrlModeOverrideRef = useRef(false);
   const hasUuidBackedProfile = Boolean(savedProfileId && !LEGACY_CONFIG_ID_RE.test(savedProfileId));
   const effectiveAiometadataUrlMode: 'inline' | 'config' = hasUuidBackedProfile
     ? aiometadataUrlMode
     : 'inline';
+
+  const handleSetAiometadataUrlMode = useCallback((mode: 'inline' | 'config') => {
+    aiometadataUrlModeOverrideRef.current = true;
+    setAiometadataUrlMode(mode);
+  }, []);
+
+  useEffect(() => {
+    if (!hasUuidBackedProfile) {
+      aiometadataUrlModeOverrideRef.current = false;
+    }
+
+    setAiometadataUrlMode((currentMode) => getNextAiometadataUrlMode({
+      currentMode,
+      hasProtectedProfile: hasUuidBackedProfile,
+      hasExplicitOverride: aiometadataUrlModeOverrideRef.current,
+    }));
+  }, [hasUuidBackedProfile]);
 
   const {
     previewType,
@@ -187,9 +207,15 @@ export function ExportView() {
   return (
     <div className="xrdb-export-layout w-full px-4 py-6 md:px-6 md:py-8">
       <div className="order-2 lg:order-1 min-w-0 space-y-4">
-        <div className="xrdb-panel rounded-2xl p-4">
-          <WorkspaceManagementSection {...workspaceManagementProps} />
-        </div>
+        <SaveConfigSection
+          canGenerateConfig={canGenerateConfig}
+          buildSaveParams={buildSaveParams}
+          pendingRestoreProfileId={workspaceManagementProps.pendingConfigProfileId}
+          onClearPendingRestore={workspaceManagementProps.onClearPendingConfigProfileRestore}
+          savedProfileId={savedProfileId}
+          savedProfileIdLoaded={savedProfileIdLoaded}
+          onProfileIdChange={handleProfileIdChange}
+        />
 
         <AiometadataSection
           aiometadataPatternRows={aiometadataPatternRows}
@@ -198,25 +224,12 @@ export function ExportView() {
           savedProfileId={savedProfileId}
           configUrlAvailable={hasUuidBackedProfile}
           aiometadataUrlMode={effectiveAiometadataUrlMode}
-          onSetAiometadataUrlMode={setAiometadataUrlMode}
+          onSetAiometadataUrlMode={handleSetAiometadataUrlMode}
         />
 
-        <ConfigStringSection
-          displayedConfigString={displayedConfigString}
-          canGenerateConfig={canGenerateConfig}
-          configCopied={configCopied}
-          showConfigString={showConfigString}
-          onCopyConfig={onCopyConfig}
-          onToggleShowConfigString={onToggleShowConfigString}
-        />
-
-        <SaveConfigSection
-          canGenerateConfig={canGenerateConfig}
-          buildSaveParams={buildSaveParams}
-          savedProfileId={savedProfileId}
-          savedProfileIdLoaded={savedProfileIdLoaded}
-          onProfileIdChange={handleProfileIdChange}
-        />
+        <div className="xrdb-panel rounded-2xl p-4">
+          <WorkspaceManagementSection {...workspaceManagementProps} />
+        </div>
 
         <div className="xrdb-panel rounded-2xl">
           <button
@@ -311,6 +324,20 @@ export function ExportView() {
               </label>
             </div>
           )}
+        </div>
+
+        <div className="space-y-2">
+          <div className="px-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-zinc-500">
+            Advanced exports
+          </div>
+          <ConfigStringSection
+            displayedConfigString={displayedConfigString}
+            canGenerateConfig={canGenerateConfig}
+            configCopied={configCopied}
+            showConfigString={showConfigString}
+            onCopyConfig={onCopyConfig}
+            onToggleShowConfigString={onToggleShowConfigString}
+          />
         </div>
 
       </div>
@@ -615,12 +642,16 @@ function RevertDiffModal({
 function SaveConfigSection({
   canGenerateConfig,
   buildSaveParams,
+  pendingRestoreProfileId,
+  onClearPendingRestore,
   savedProfileId,
   savedProfileIdLoaded,
   onProfileIdChange,
 }: {
   canGenerateConfig: boolean;
   buildSaveParams: () => Record<string, string> | null;
+  pendingRestoreProfileId?: string | null;
+  onClearPendingRestore?: () => void;
   savedProfileId: string | null;
   savedProfileIdLoaded: boolean;
   onProfileIdChange: (id: string | null) => void;
@@ -648,6 +679,8 @@ function SaveConfigSection({
   const [accessPasswordConfirm, setAccessPasswordConfirm] = useState('');
   const [rotationPassword, setRotationPassword] = useState('');
   const [rotationPasswordConfirm, setRotationPasswordConfirm] = useState('');
+  const [restoreModalOpen, setRestoreModalOpen] = useState(false);
+  const [restoreProfileId, setRestoreProfileId] = useState('');
   const [showRevertModal, setShowRevertModal] = useState(false);
   const [revertDiff, setRevertDiff] = useState<{ entries: ParamDiffEntry[]; totalChanged: number } | null>(null);
   const [modalMode, setModalMode] = useState<'revert' | 'save'>('revert');
@@ -692,10 +725,14 @@ function SaveConfigSection({
     setHasUnsavedChanges(false);
   }, [applySavedUiConfig]);
 
-  const loadProfileStatus = useCallback(async (id: string) => {
+  const loadProfileStatus = useCallback(async (
+    id: string,
+    options?: { clearActiveProfileOnMissing?: boolean },
+  ) => {
+    const clearActiveProfileOnMissing = options?.clearActiveProfileOnMissing ?? true;
     const res = await fetch(`/api/config/${id}/status`, { cache: 'no-store' });
     if (!res.ok) {
-      if (res.status === 404 || res.status === 410) {
+      if ((res.status === 404 || res.status === 410) && clearActiveProfileOnMissing) {
         if (LEGACY_CONFIG_ID_RE.test(id)) {
           setExpiredBanner(true);
         }
@@ -828,6 +865,16 @@ function SaveConfigSection({
       active = false;
     };
   }, [savedProfileId, savedProfileIdLoaded, loadProfileStatus, clearUnlockState, onProfileIdChange]);
+
+  useEffect(() => {
+    if (!pendingRestoreProfileId) {
+      return;
+    }
+
+    setRestoreProfileId(pendingRestoreProfileId);
+    setRestoreModalOpen(true);
+    setProfileNotice('Saved profile link detected. Enter your password to open it on this device.');
+  }, [pendingRestoreProfileId]);
 
   useEffect(() => {
     if (!unlockExpiresAt) {
@@ -1127,6 +1174,55 @@ function SaveConfigSection({
     onProfileIdChange(null);
   }, [clearUnlockState, onProfileIdChange]);
 
+  const handleOpenRestoreModal = useCallback(() => {
+    setProfileNotice(null);
+    setRestoreProfileId(
+      pendingRestoreProfileId
+      || (savedProfileId && !LEGACY_CONFIG_ID_RE.test(savedProfileId) ? savedProfileId : ''),
+    );
+    setRestoreModalOpen(true);
+  }, [pendingRestoreProfileId, savedProfileId]);
+
+  const handleCloseRestoreModal = useCallback(() => {
+    setRestoreModalOpen(false);
+    onClearPendingRestore?.();
+  }, [onClearPendingRestore]);
+
+  const handleRestoreProfile = useCallback(async () => {
+    const nextProfileId = restoreProfileId.trim();
+    if (!isProtectedConfigProfileId(nextProfileId)) {
+      setProfileNotice('Enter a valid saved profile ID.');
+      return;
+    }
+    if (!accessPassword.trim()) {
+      setProfileNotice('Enter your profile password to open this profile.');
+      return;
+    }
+
+    setIsUnlocking(true);
+    try {
+      const status = await loadProfileStatus(nextProfileId, { clearActiveProfileOnMissing: false });
+      if (!status) {
+        setProfileNotice('Saved profile not found.');
+        return;
+      }
+
+      onProfileIdChange(nextProfileId);
+      const restored = await unlockProtectedProfile(nextProfileId, accessPassword);
+      if (!restored) {
+        return;
+      }
+
+      await loadProfileStatus(nextProfileId);
+      setRestoreModalOpen(false);
+      onClearPendingRestore?.();
+      setAccessPassword('');
+      setProfileNotice('Saved profile opened on this device.');
+    } finally {
+      setIsUnlocking(false);
+    }
+  }, [accessPassword, loadProfileStatus, onClearPendingRestore, onProfileIdChange, restoreProfileId, unlockProtectedProfile]);
+
   const handleCopyFragment = useCallback(() => {
     if (!savedProfileId || isLegacyId) return;
     void navigator.clipboard.writeText(`?config=${savedProfileId}`);
@@ -1200,6 +1296,61 @@ function SaveConfigSection({
 
   return (
     <>
+      {restoreModalOpen ? (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-sm" onClick={handleCloseRestoreModal}>
+          <div className="w-full max-w-lg rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.14),transparent_54%),linear-gradient(180deg,rgba(12,10,20,0.98),rgba(6,5,12,0.98))] p-6 shadow-[0_40px_120px_-55px_rgba(0,0,0,0.95)]" onClick={(event) => event.stopPropagation()}>
+            <div className="space-y-2">
+              <div className="text-lg font-semibold tracking-tight text-white">Open saved profile</div>
+              <p className="text-[13px] leading-relaxed text-zinc-400">
+                Enter your UUID profile and password to load the same saved setup on this device.
+              </p>
+            </div>
+            <div className="mt-5 space-y-3">
+              <label className="space-y-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Profile ID</span>
+                <input
+                  type="text"
+                  value={restoreProfileId}
+                  onChange={(event) => setRestoreProfileId(event.target.value)}
+                  placeholder="550e8400-e29b-41d4-a716-446655440000"
+                  className="w-full rounded-2xl border border-white/10 bg-black/70 px-4 py-3 text-[13px] text-white placeholder:text-zinc-500 outline-none focus:border-cyan-500/50"
+                />
+              </label>
+              <label className="space-y-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Profile password</span>
+                <input
+                  type="password"
+                  value={accessPassword}
+                  onChange={(event) => setAccessPassword(event.target.value)}
+                  placeholder="Enter password"
+                  className="w-full rounded-2xl border border-white/10 bg-black/70 px-4 py-3 text-[13px] text-white placeholder:text-zinc-500 outline-none focus:border-cyan-500/50"
+                />
+              </label>
+            </div>
+            <div className="mt-5 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleCloseRestoreModal}
+                className="rounded-xl px-5 py-2 text-[13px] font-semibold text-zinc-400 transition-colors hover:text-zinc-200"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleRestoreProfile()}
+                disabled={isUnlocking || !restoreProfileId.trim() || !accessPassword.trim()}
+                className={`rounded-xl px-5 py-2 text-[13px] font-semibold transition-colors ${
+                  !isUnlocking && restoreProfileId.trim() && accessPassword.trim()
+                    ? 'bg-cyan-400 text-slate-950 hover:bg-cyan-300'
+                    : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                }`}
+              >
+                {isUnlocking ? 'Opening...' : 'Open profile'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       {showRevertModal && revertDiff && (
         <RevertDiffModal
           diff={revertDiff.entries}
@@ -1219,7 +1370,7 @@ function SaveConfigSection({
           )}
         </h2>
         <p className="text-[13px] leading-5 text-zinc-400">
-          Save current settings as a reusable ID. Append{' '}
+          Save current settings as a reusable ID for any device. Use Open saved profile to load the same setup somewhere else, then append{' '}
           <span className="font-mono text-[12px] bg-zinc-900 px-1 rounded text-zinc-300">?config=&lt;id&gt;</span>{' '}
           to any image URL to apply this profile.
         </p>
@@ -1370,6 +1521,13 @@ function SaveConfigSection({
         <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
+            onClick={handleOpenRestoreModal}
+            className="rounded-full border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-xs font-semibold text-cyan-100 transition-colors hover:border-cyan-300/50 hover:bg-cyan-400/15"
+          >
+            Open saved profile
+          </button>
+          <button
+            type="button"
             onClick={handleSaveClick}
             disabled={
               !canGenerateConfig
@@ -1471,7 +1629,7 @@ function SaveConfigSection({
                   {fragmentCopied ? (
                     <><Check className="w-3 h-3" /> Copied</>
                   ) : (
-                    <><Clipboard className="w-3 h-3" /> {isLegacyId ? 'Migrate to copy' : 'Copy ?config='}</>
+                    <><Clipboard className="w-3 h-3" /> {isLegacyId ? 'Migrate to copy' : 'Copy UUID link'}</>
                   )}
                 </button>
               </div>

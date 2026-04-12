@@ -12,6 +12,7 @@ import {
   serializeSavedUiConfig,
   type SavedUiConfig,
 } from '@/lib/uiConfig';
+import { isProtectedConfigProfileId } from '@/lib/configProfileClientState';
 import {
   parseConfiguratorLinkImport,
   type ConfiguratorPreviewType,
@@ -21,6 +22,7 @@ const UI_CONFIG_STORAGE_KEY = 'xrdb.uiConfig.v1';
 const UI_CONFIG_SETTINGS_STORAGE_KEY = 'xrdb.uiConfig.settings.v1';
 const LEGACY_API_KEY_CONFIG_STORAGE_KEY = 'xrdb.apiKeyConfig.v1';
 const LEGACY_API_KEY_CONFIG_SETTINGS_STORAGE_KEY = 'xrdb.apiKeyConfig.settings.v1';
+const CONFIG_PROFILE_RESTORE_SYNC_EVENT = 'xrdb:config-profile-restore-sync';
 
 type LocalUiSettingsStorage = {
   autoSave?: boolean;
@@ -76,11 +78,13 @@ export function useConfiguratorWorkspaceStorage({
   setSelectedPresetId: (value: ConfiguratorPresetId | null) => void;
 }) {
   const [savedConfigStatus, setSavedConfigStatus] = useState<
-    '' | 'loaded' | 'saved' | 'cleared' | 'imported' | 'preset' | 'reset' | 'error' | 'invalid'
+    '' | 'loaded' | 'saved' | 'cleared' | 'imported' | 'preset' | 'reset' | 'error' | 'invalid' | 'profile-link'
   >('');
   const [configAutoSave, setConfigAutoSave] = useState(false);
   const [uiSettingsLoaded, setUiSettingsLoaded] = useState(false);
+  const [pendingConfigProfileId, setPendingConfigProfileId] = useState<string | null>(null);
   const workspaceImportInputRef = useRef<HTMLInputElement | null>(null);
+  const pendingRestoreFromUrlRef = useRef<string | null>(null);
 
   const applyWorkspaceConfig = useCallback(
     (config: SavedUiConfig, status: 'loaded' | 'imported' | 'preset' | 'reset' = 'loaded') => {
@@ -278,6 +282,38 @@ export function useConfiguratorWorkspaceStorage({
     persistUiConfig(true);
   }, [persistUiConfig]);
 
+  const queueConfigProfileRestore = useCallback((profileId: string) => {
+    setPendingConfigProfileId(profileId);
+    setSavedConfigStatus('profile-link');
+  }, []);
+
+  const syncPendingConfigProfileRestoreFromUrl = useCallback(() => {
+    if (typeof window === 'undefined' || !uiSettingsLoaded) {
+      return;
+    }
+
+    const configProfileId = new URL(window.location.href).searchParams.get('config');
+    if (!isProtectedConfigProfileId(configProfileId)) {
+      return;
+    }
+
+    if (pendingRestoreFromUrlRef.current === configProfileId) {
+      return;
+    }
+
+    const storedProfileId = window.localStorage.getItem('xrdb_config_profile_id');
+    if (storedProfileId === configProfileId) {
+      return;
+    }
+
+    pendingRestoreFromUrlRef.current = configProfileId;
+    queueConfigProfileRestore(configProfileId);
+  }, [queueConfigProfileRestore, uiSettingsLoaded]);
+
+  const clearPendingConfigProfileRestore = useCallback(() => {
+    setPendingConfigProfileId(null);
+  }, []);
+
   const handleClearSavedWorkspace = useCallback(() => {
     if (typeof window === 'undefined') {
       return;
@@ -288,6 +324,7 @@ export function useConfiguratorWorkspaceStorage({
       window.localStorage.removeItem(UI_CONFIG_STORAGE_KEY);
       window.localStorage.removeItem(LEGACY_API_KEY_CONFIG_STORAGE_KEY);
       window.localStorage.removeItem('xrdb_config_profile_id');
+      setPendingConfigProfileId(null);
       window.dispatchEvent(new Event('xrdb-config-profile-cleared'));
       if (profileId) {
         void fetch(`/api/config/${profileId}`, { method: 'DELETE' });
@@ -307,6 +344,23 @@ export function useConfiguratorWorkspaceStorage({
       persistUiConfig(false);
     }
   }, [configAutoSave, persistUiConfig]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !uiSettingsLoaded) {
+      return;
+    }
+
+    const handleSyncPendingConfigProfileRestore = () => {
+      syncPendingConfigProfileRestoreFromUrl();
+    };
+
+    window.addEventListener(CONFIG_PROFILE_RESTORE_SYNC_EVENT, handleSyncPendingConfigProfileRestore);
+    window.dispatchEvent(new Event(CONFIG_PROFILE_RESTORE_SYNC_EVENT));
+
+    return () => {
+      window.removeEventListener(CONFIG_PROFILE_RESTORE_SYNC_EVENT, handleSyncPendingConfigProfileRestore);
+    };
+  }, [syncPendingConfigProfileRestoreFromUrl, uiSettingsLoaded]);
 
   const handleDownloadWorkspace = useCallback(() => {
     if (typeof window === 'undefined') {
@@ -380,6 +434,11 @@ export function useConfiguratorWorkspaceStorage({
       return;
     }
 
+    if (parsedImport.configProfileId) {
+      queueConfigProfileRestore(parsedImport.configProfileId);
+      return;
+    }
+
     const currentConfig = buildCurrentUiConfig();
     const importConfig: SavedUiConfig = {
       ...parsedImport.config,
@@ -399,11 +458,13 @@ export function useConfiguratorWorkspaceStorage({
     if (parsedImport.mediaId) {
       setMediaId(parsedImport.mediaId);
     }
-  }, [applyWorkspaceConfig, buildCurrentUiConfig, importLinkValue, previewType, setMediaId, setPreviewType]);
+  }, [applyWorkspaceConfig, buildCurrentUiConfig, importLinkValue, previewType, queueConfigProfileRestore, setMediaId, setPreviewType]);
 
   return {
     applyWorkspaceConfig,
+    clearPendingConfigProfileRestore,
     configAutoSave,
+    pendingConfigProfileId,
     savedConfigStatus,
     uiSettingsLoaded,
     workspaceImportInputRef,
