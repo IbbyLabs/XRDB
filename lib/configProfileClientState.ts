@@ -10,6 +10,8 @@ export type ConfigProfileUnlockSession = {
   expiresAt: number;
 };
 
+export const CONFIG_PROFILE_UNLOCK_SESSION_STORAGE_KEY = 'xrdb.configProfileUnlockSession.v1';
+
 export const PROTECTED_CONFIG_PROFILE_ID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -46,6 +48,47 @@ export const getActiveConfigProfileUnlockSession = (
   }
 
   return session;
+};
+
+export const serializeConfigProfileUnlockSession = (
+  session: ConfigProfileUnlockSession | null,
+) => {
+  if (!session) {
+    return null;
+  }
+
+  return JSON.stringify(session);
+};
+
+export const parseConfigProfileUnlockSession = (
+  raw: string | null,
+  now = Date.now(),
+) => {
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as Partial<ConfigProfileUnlockSession> | null;
+    if (
+      !parsed
+      || typeof parsed.profileId !== 'string'
+      || typeof parsed.token !== 'string'
+      || typeof parsed.expiresAt !== 'number'
+      || !Number.isFinite(parsed.expiresAt)
+      || parsed.expiresAt <= now
+    ) {
+      return null;
+    }
+
+    return {
+      profileId: parsed.profileId,
+      token: parsed.token,
+      expiresAt: parsed.expiresAt,
+    } satisfies ConfigProfileUnlockSession;
+  } catch {
+    return null;
+  }
 };
 
 export const shouldClearConfigProfileUnlockSession = ({
