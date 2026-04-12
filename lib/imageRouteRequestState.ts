@@ -89,8 +89,10 @@ import {
   DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR,
   DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX,
+  DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
   DEFAULT_THUMBNAIL_GENRE_BADGE_BORDER_WIDTH_PX,
   normalizeBadgeScalePercent,
+  normalizeGenreBadgeBackgroundOpacityPercent,
   normalizeGenreBadgeBorderWidthPx,
   normalizeGenreBadgeScalePercent,
   normalizeHexColor,
@@ -232,6 +234,7 @@ export type ImageRouteRequestState = {
   genreBadgePosition: GenreBadgePosition;
   genreBadgeScale: number;
   genreBadgeBorderWidth: number;
+  genreBadgeBackgroundOpacity: number;
   effectiveGenreBadgeScale: number;
   genreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   posterRatingsLayout: PosterRatingLayout;
@@ -522,6 +525,31 @@ export const resolveImageRouteRequestState = async ({
     searchParams.get('logoGenreBadgeBorderWidth') ?? searchParams.get('genreBadgeBorderWidth'),
     DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
   );
+  const globalGenreBadgeBackgroundOpacity = normalizeGenreBadgeBackgroundOpacityPercent(
+    searchParams.get('genreBadgeBackgroundOpacity'),
+    DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
+  );
+  const posterGenreBadgeBackgroundOpacity = normalizeGenreBadgeBackgroundOpacityPercent(
+    searchParams.get('posterGenreBadgeBackgroundOpacity') ??
+      searchParams.get('genreBadgeBackgroundOpacity'),
+    globalGenreBadgeBackgroundOpacity,
+  );
+  const backdropGenreBadgeBackgroundOpacity = normalizeGenreBadgeBackgroundOpacityPercent(
+    searchParams.get('backdropGenreBadgeBackgroundOpacity') ??
+      searchParams.get('genreBadgeBackgroundOpacity'),
+    globalGenreBadgeBackgroundOpacity,
+  );
+  const thumbnailGenreBadgeBackgroundOpacity = normalizeGenreBadgeBackgroundOpacityPercent(
+    searchParams.get('thumbnailGenreBadgeBackgroundOpacity') ??
+      searchParams.get('backdropGenreBadgeBackgroundOpacity') ??
+      searchParams.get('genreBadgeBackgroundOpacity'),
+    backdropGenreBadgeBackgroundOpacity,
+  );
+  const logoGenreBadgeBackgroundOpacity = normalizeGenreBadgeBackgroundOpacityPercent(
+    searchParams.get('logoGenreBadgeBackgroundOpacity') ??
+      searchParams.get('genreBadgeBackgroundOpacity'),
+    globalGenreBadgeBackgroundOpacity,
+  );
   const posterGenreBadgeAnimeGrouping = normalizeGenreBadgeAnimeGrouping(
     searchParams.get('posterGenreBadgeAnimeGrouping') ??
       searchParams.get('genreBadgeAnimeGrouping'),
@@ -582,6 +610,14 @@ export const resolveImageRouteRequestState = async ({
         : imageType === 'backdrop'
           ? backdropGenreBadgeBorderWidth
           : logoGenreBadgeBorderWidth;
+  const genreBadgeBackgroundOpacity =
+    imageType === 'poster'
+      ? posterGenreBadgeBackgroundOpacity
+      : isThumbnailRequest
+        ? thumbnailGenreBadgeBackgroundOpacity
+        : imageType === 'backdrop'
+          ? backdropGenreBadgeBackgroundOpacity
+          : logoGenreBadgeBackgroundOpacity;
   const genreBadgeAnimeGrouping =
     imageType === 'poster'
       ? posterGenreBadgeAnimeGrouping
@@ -962,9 +998,19 @@ export const resolveImageRouteRequestState = async ({
   const effectiveBackdropRatingsLayout = isThumbnailRequest
     ? thumbnailRatingsLayout
     : backdropRatingsLayout;
-  const effectiveBackdropBottomRatingsRow = isThumbnailRequest
-    ? thumbnailBottomRatingsRow
-    : backdropBottomRatingsRow;
+  const shouldPrioritizeBottomGenreZone =
+    genreBadgeStyle === 'clean' && genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE;
+  const effectiveBackdropBottomRatingsRow =
+    (isThumbnailRequest ? thumbnailBottomRatingsRow : backdropBottomRatingsRow) &&
+    !(shouldPrioritizeBottomGenreZone && (imageType === 'backdrop' || isThumbnailRequest));
+  const effectivePosterRatingsLayout =
+    shouldPrioritizeBottomGenreZone &&
+    imageType === 'poster' &&
+    (posterRatingsLayout === 'bottom' || posterRatingsLayout === 'top-bottom')
+      ? 'top'
+      : posterRatingsLayout;
+  const effectiveLogoBottomRatingsRow =
+    shouldPrioritizeBottomGenreZone && imageType === 'logo' ? false : logoBottomRatingsRow;
   const qualityBadgesStyle =
     imageType === 'poster'
       ? posterQualityBadgesStyle
@@ -1346,7 +1392,7 @@ export const resolveImageRouteRequestState = async ({
     logoArtworkSource,
     thumbnailEpisodeArtwork,
     backdropEpisodeArtwork,
-    posterRatingsLayout,
+    posterRatingsLayout: effectivePosterRatingsLayout,
     posterRatingsMaxPerSide,
     posterRatingsMax,
     posterEdgeOffset,
@@ -1354,7 +1400,7 @@ export const resolveImageRouteRequestState = async ({
     backdropRatingsMax: effectiveBackdropRatingsMax,
     backdropBottomRatingsRow: effectiveBackdropBottomRatingsRow,
     logoRatingsMax,
-    logoBottomRatingsRow,
+    logoBottomRatingsRow: effectiveLogoBottomRatingsRow,
     qualityBadgesSide,
     posterQualityBadgesPosition,
     ageRatingBadgePosition,
@@ -1401,6 +1447,7 @@ export const resolveImageRouteRequestState = async ({
     genreBadgePosition,
     genreBadgeScale,
     genreBadgeBorderWidth,
+    genreBadgeBackgroundOpacity,
     genreBadgeAnimeGrouping,
     logoBackground,
     effectiveRatingPreferences,
@@ -1428,9 +1475,10 @@ export const resolveImageRouteRequestState = async ({
     genreBadgePosition,
     genreBadgeScale,
     genreBadgeBorderWidth,
+    genreBadgeBackgroundOpacity,
     effectiveGenreBadgeScale,
     genreBadgeAnimeGrouping,
-    posterRatingsLayout,
+    posterRatingsLayout: effectivePosterRatingsLayout,
     posterRatingsMaxPerSide,
     posterRatingsMax,
     posterEdgeOffset,
@@ -1438,7 +1486,7 @@ export const resolveImageRouteRequestState = async ({
     backdropRatingsMax: effectiveBackdropRatingsMax,
     backdropBottomRatingsRow: effectiveBackdropBottomRatingsRow,
     logoRatingsMax,
-    logoBottomRatingsRow,
+    logoBottomRatingsRow: effectiveLogoBottomRatingsRow,
     posterSideRatingsPosition,
     posterSideRatingsOffset,
     backdropSideRatingsPosition: effectiveBackdropSideRatingsPosition,

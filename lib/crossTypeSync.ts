@@ -31,6 +31,7 @@ export type SyncableTypeSettings = {
   genreBadgePosition: GenreBadgePosition;
   genreBadgeScale: number;
   genreBadgeBorderWidth: number;
+  genreBadgeBackgroundOpacity: number;
   genreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   qualityBadgePreferences: MediaFeatureBadgeKey[];
   qualityBadgesStyle: QualityBadgeStyle;
@@ -81,6 +82,7 @@ export const extractSyncableSettings = (
         genreBadgePosition: settings.posterGenreBadgePosition,
         genreBadgeScale: settings.posterGenreBadgeScale,
         genreBadgeBorderWidth: settings.posterGenreBadgeBorderWidth,
+        genreBadgeBackgroundOpacity: settings.posterGenreBadgeBackgroundOpacity,
         genreBadgeAnimeGrouping: settings.posterGenreBadgeAnimeGrouping,
         qualityBadgePreferences: [...settings.posterQualityBadgePreferences],
         qualityBadgesStyle: settings.posterQualityBadgesStyle,
@@ -100,6 +102,7 @@ export const extractSyncableSettings = (
         genreBadgePosition: settings.backdropGenreBadgePosition,
         genreBadgeScale: settings.backdropGenreBadgeScale,
         genreBadgeBorderWidth: settings.backdropGenreBadgeBorderWidth,
+        genreBadgeBackgroundOpacity: settings.backdropGenreBadgeBackgroundOpacity,
         genreBadgeAnimeGrouping: settings.backdropGenreBadgeAnimeGrouping,
         qualityBadgePreferences: [...settings.backdropQualityBadgePreferences],
         qualityBadgesStyle: settings.backdropQualityBadgesStyle,
@@ -119,6 +122,7 @@ export const extractSyncableSettings = (
         genreBadgePosition: settings.thumbnailGenreBadgePosition,
         genreBadgeScale: settings.thumbnailGenreBadgeScale,
         genreBadgeBorderWidth: settings.thumbnailGenreBadgeBorderWidth,
+        genreBadgeBackgroundOpacity: settings.thumbnailGenreBadgeBackgroundOpacity,
         genreBadgeAnimeGrouping: settings.thumbnailGenreBadgeAnimeGrouping,
         qualityBadgePreferences: [...settings.thumbnailQualityBadgePreferences],
         qualityBadgesStyle: settings.thumbnailQualityBadgesStyle,
@@ -138,6 +142,7 @@ export const extractSyncableSettings = (
         genreBadgePosition: settings.logoGenreBadgePosition,
         genreBadgeScale: settings.logoGenreBadgeScale,
         genreBadgeBorderWidth: settings.logoGenreBadgeBorderWidth,
+        genreBadgeBackgroundOpacity: settings.logoGenreBadgeBackgroundOpacity,
         genreBadgeAnimeGrouping: settings.logoGenreBadgeAnimeGrouping,
         qualityBadgePreferences: [...settings.logoQualityBadgePreferences],
         qualityBadgesStyle: settings.logoQualityBadgesStyle,
@@ -181,6 +186,7 @@ export const applySyncableSettings = (
         posterGenreBadgePosition: incoming.genreBadgePosition,
         posterGenreBadgeScale: incoming.genreBadgeScale,
         posterGenreBadgeBorderWidth: incoming.genreBadgeBorderWidth,
+        posterGenreBadgeBackgroundOpacity: incoming.genreBadgeBackgroundOpacity,
         posterGenreBadgeAnimeGrouping: incoming.genreBadgeAnimeGrouping,
         posterQualityBadgePreferences: incoming.qualityBadgePreferences,
         posterQualityBadgesStyle: incoming.qualityBadgesStyle,
@@ -201,6 +207,7 @@ export const applySyncableSettings = (
         backdropGenreBadgePosition: incoming.genreBadgePosition,
         backdropGenreBadgeScale: incoming.genreBadgeScale,
         backdropGenreBadgeBorderWidth: incoming.genreBadgeBorderWidth,
+        backdropGenreBadgeBackgroundOpacity: incoming.genreBadgeBackgroundOpacity,
         backdropGenreBadgeAnimeGrouping: incoming.genreBadgeAnimeGrouping,
         backdropQualityBadgePreferences: incoming.qualityBadgePreferences,
         backdropQualityBadgesStyle: incoming.qualityBadgesStyle,
@@ -223,6 +230,7 @@ export const applySyncableSettings = (
         thumbnailGenreBadgePosition: incoming.genreBadgePosition,
         thumbnailGenreBadgeScale: incoming.genreBadgeScale,
         thumbnailGenreBadgeBorderWidth: incoming.genreBadgeBorderWidth,
+        thumbnailGenreBadgeBackgroundOpacity: incoming.genreBadgeBackgroundOpacity,
         thumbnailGenreBadgeAnimeGrouping: incoming.genreBadgeAnimeGrouping,
         thumbnailQualityBadgePreferences: incoming.qualityBadgePreferences,
         thumbnailQualityBadgesStyle: incoming.qualityBadgesStyle,
@@ -246,6 +254,7 @@ export const applySyncableSettings = (
         logoGenreBadgePosition: incoming.genreBadgePosition,
         logoGenreBadgeScale: incoming.genreBadgeScale,
         logoGenreBadgeBorderWidth: incoming.genreBadgeBorderWidth,
+        logoGenreBadgeBackgroundOpacity: incoming.genreBadgeBackgroundOpacity,
         logoGenreBadgeAnimeGrouping: incoming.genreBadgeAnimeGrouping,
         logoQualityBadgePreferences: incoming.qualityBadgePreferences,
         logoQualityBadgesStyle: incoming.qualityBadgesStyle,

@@ -80,6 +80,7 @@ type FinalImageRenderSeedInput = {
   genreBadgePosition: string;
   genreBadgeScale: number;
   genreBadgeBorderWidth: number;
+  genreBadgeBackgroundOpacity: number;
   genreBadgeAnimeGrouping: string;
   logoBackground: string;
   effectiveRatingPreferences: string[];
@@ -197,6 +198,9 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     String(input.genreBadgeScale),
     input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE && input.genreBadgeStyle === 'glass'
       ? String(input.genreBadgeBorderWidth)
+      : '-',
+    input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE && input.genreBadgeStyle === 'clean'
+      ? String(input.genreBadgeBackgroundOpacity)
       : '-',
     input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ? input.genreBadgeAnimeGrouping : '-',
     isLogo ? input.logoBackground : '-',

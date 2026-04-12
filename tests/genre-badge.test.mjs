@@ -24,6 +24,7 @@ test('genre badge mode normalization falls back safely', () => {
 
 test('genre badge style and position normalization accept friendly variants', () => {
   assert.equal(normalizeGenreBadgeStyle('square'), 'square');
+  assert.equal(normalizeGenreBadgeStyle('clean'), 'clean');
   assert.equal(normalizeGenreBadgeStyle('unknown'), DEFAULT_GENRE_BADGE_STYLE);
   assert.equal(normalizeGenreBadgePosition('top center'), 'topCenter');
   assert.equal(normalizeGenreBadgePosition('bottom-right'), 'bottomRight');

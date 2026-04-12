@@ -80,6 +80,7 @@ import {
 import {
   DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_BADGE_SCALE_PERCENT,
+  DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
   DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR,
   DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
@@ -88,6 +89,7 @@ import {
   DEFAULT_QUALITY_BADGE_PREFERENCES,
   encodeRatingProviderAppearanceOverrides,
   normalizeBadgeScalePercent,
+  normalizeGenreBadgeBackgroundOpacityPercent,
   normalizeGenreBadgeBorderWidthPx,
   normalizeGenreBadgeScalePercent,
   normalizeHexColor,
@@ -216,6 +218,10 @@ export type SharedXrdbSettings = {
   backdropGenreBadgeBorderWidth: number;
   thumbnailGenreBadgeBorderWidth: number;
   logoGenreBadgeBorderWidth: number;
+  posterGenreBadgeBackgroundOpacity: number;
+  backdropGenreBadgeBackgroundOpacity: number;
+  thumbnailGenreBadgeBackgroundOpacity: number;
+  logoGenreBadgeBackgroundOpacity: number;
   posterGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   backdropGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   thumbnailGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
@@ -484,6 +490,10 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   backdropGenreBadgeBorderWidth: DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX,
   thumbnailGenreBadgeBorderWidth: DEFAULT_THUMBNAIL_GENRE_BADGE_BORDER_WIDTH_PX,
   logoGenreBadgeBorderWidth: DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
+  posterGenreBadgeBackgroundOpacity: DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
+  backdropGenreBadgeBackgroundOpacity: DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
+  thumbnailGenreBadgeBackgroundOpacity: DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
+  logoGenreBadgeBackgroundOpacity: DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
   posterGenreBadgeAnimeGrouping: DEFAULT_GENRE_BADGE_ANIME_GROUPING,
   backdropGenreBadgeAnimeGrouping: DEFAULT_GENRE_BADGE_ANIME_GROUPING,
   thumbnailGenreBadgeAnimeGrouping: DEFAULT_GENRE_BADGE_ANIME_GROUPING,
@@ -1078,6 +1088,10 @@ export const normalizeSharedXrdbSettings = (value: unknown, options?: { skipCros
     candidate.genreBadgeBorderWidth,
     DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX,
   );
+  const globalGenreBadgeBackgroundOpacity = normalizeGenreBadgeBackgroundOpacityPercent(
+    candidate.genreBadgeBackgroundOpacity,
+    DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
+  );
   const globalGenreBadgeAnimeGrouping = normalizeGenreBadgeAnimeGrouping(
     candidate.genreBadgeAnimeGrouping,
     DEFAULT_GENRE_BADGE_ANIME_GROUPING,
@@ -1236,6 +1250,24 @@ export const normalizeSharedXrdbSettings = (value: unknown, options?: { skipCros
     logoGenreBadgeBorderWidth: normalizeGenreBadgeBorderWidthPx(
       candidate.logoGenreBadgeBorderWidth ?? candidate.genreBadgeBorderWidth,
       DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
+    ),
+    posterGenreBadgeBackgroundOpacity: normalizeGenreBadgeBackgroundOpacityPercent(
+      candidate.posterGenreBadgeBackgroundOpacity ?? candidate.genreBadgeBackgroundOpacity,
+      globalGenreBadgeBackgroundOpacity,
+    ),
+    backdropGenreBadgeBackgroundOpacity: normalizeGenreBadgeBackgroundOpacityPercent(
+      candidate.backdropGenreBadgeBackgroundOpacity ?? candidate.genreBadgeBackgroundOpacity,
+      globalGenreBadgeBackgroundOpacity,
+    ),
+    thumbnailGenreBadgeBackgroundOpacity: normalizeGenreBadgeBackgroundOpacityPercent(
+      candidate.thumbnailGenreBadgeBackgroundOpacity ??
+        candidate.backdropGenreBadgeBackgroundOpacity ??
+        candidate.genreBadgeBackgroundOpacity,
+      defaults.thumbnailGenreBadgeBackgroundOpacity,
+    ),
+    logoGenreBadgeBackgroundOpacity: normalizeGenreBadgeBackgroundOpacityPercent(
+      candidate.logoGenreBadgeBackgroundOpacity ?? candidate.genreBadgeBackgroundOpacity,
+      globalGenreBadgeBackgroundOpacity,
     ),
     posterGenreBadgeAnimeGrouping: normalizeGenreBadgeAnimeGrouping(
       candidate.posterGenreBadgeAnimeGrouping,
@@ -1849,6 +1881,18 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   }
   if (settings.logoGenreBadgeBorderWidth !== DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX) {
     payload.logoGenreBadgeBorderWidth = settings.logoGenreBadgeBorderWidth;
+  }
+  if (settings.posterGenreBadgeBackgroundOpacity !== DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT) {
+    payload.posterGenreBadgeBackgroundOpacity = settings.posterGenreBadgeBackgroundOpacity;
+  }
+  if (settings.backdropGenreBadgeBackgroundOpacity !== DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT) {
+    payload.backdropGenreBadgeBackgroundOpacity = settings.backdropGenreBadgeBackgroundOpacity;
+  }
+  if (settings.thumbnailGenreBadgeBackgroundOpacity !== DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT) {
+    payload.thumbnailGenreBadgeBackgroundOpacity = settings.thumbnailGenreBadgeBackgroundOpacity;
+  }
+  if (settings.logoGenreBadgeBackgroundOpacity !== DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT) {
+    payload.logoGenreBadgeBackgroundOpacity = settings.logoGenreBadgeBackgroundOpacity;
   }
   appendSharedOrPerTypePayload({
     payload,

@@ -20,6 +20,40 @@ test('image route genre badge builds plain icon and text output', () => {
   assert.match(spec.svg, /ANIME/);
 });
 
+test('image route genre badge builds clean text style output', () => {
+  const spec = buildGenreBadgeSvg(
+    {
+      familyId: 'scifi',
+      label: 'SCI FI',
+      accentColor: '#22d3ee',
+      mode: 'text',
+      style: 'clean',
+    },
+    'poster',
+  );
+
+  assert.match(spec.svg, /Science Fiction/);
+  assert.match(spec.svg, /fill="#ffffff"/);
+  assert.match(spec.svg, /fill="rgba\(8,11,16,0\.28\)"/);
+  assert.match(spec.svg, /genreBadgeShadow/);
+});
+
+test('image route genre badge applies custom clean background opacity', () => {
+  const spec = buildGenreBadgeSvg(
+    {
+      familyId: 'anime',
+      label: 'Anime',
+      accentColor: '#7dd3fc',
+      mode: 'text',
+      style: 'clean',
+      backgroundOpacity: 45,
+    },
+    'poster',
+  );
+
+  assert.match(spec.svg, /fill="rgba\(8,11,16,0\.45\)"/);
+});
+
 test('image route genre badge applies no background outline for plain text style', () => {
   const spec = buildGenreBadgeSvg(
     {

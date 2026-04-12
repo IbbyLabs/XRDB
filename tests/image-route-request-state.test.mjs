@@ -319,6 +319,18 @@ test('image route request state parses poster no background outline controls', a
   assert.equal(state.posterNoBackgroundBadgeOutlineWidth, 2);
 });
 
+test('image route request state parses genre badge clean background opacity controls', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&genreBadgeBackgroundOpacity=24&posterGenreBadgeBackgroundOpacity=46',
+    ),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(state.genreBadgeBackgroundOpacity, 46);
+});
+
 test('image route request state allows larger thumbnail rating badge scale for thumbnail requests', async () => {
   const state = await resolveImageRouteRequestState({
     request: createRequest(

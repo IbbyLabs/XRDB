@@ -1,5 +1,5 @@
 export type GenreBadgeMode = 'off' | 'text' | 'icon' | 'both';
-export type GenreBadgeStyle = 'glass' | 'square' | 'plain';
+export type GenreBadgeStyle = 'glass' | 'square' | 'plain' | 'clean';
 export type GenreBadgePosition =
   | 'topLeft'
   | 'topCenter'
@@ -101,6 +101,11 @@ export const GENRE_BADGE_STYLE_OPTIONS: Array<{
     id: 'plain',
     label: 'No Background',
     description: 'Render just the icon and text with no badge surface behind them.',
+  },
+  {
+    id: 'clean',
+    label: 'Clean Text',
+    description: 'Render clean title style genre text for card style artwork.',
   },
 ];
 
