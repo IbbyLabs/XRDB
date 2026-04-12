@@ -18,7 +18,7 @@ Current priorities for XRDB, eXtended Ratings DataBase:
 
 1. Better quality badges from more providers, not only one source.
 2. Smarter fallback so images still load when one provider is slow or down.
-3. UUID account saves with password login so settings can be restored on any device.
+3. UUID saved profiles with password protected restore so settings can be reopened on any device.
 4. Cache warming for startup and background updates so popular content is ready faster.
 5. Poster cache warming controls to reduce first load delay.
 6. More control for output sizes for poster backdrop and logo.
@@ -60,7 +60,7 @@ This means that the XRDB server itself does not permanently store or centrally m
 
 This intentional design allows you to host public XRDB proxy instances without paying for massive shared API usage, as every connected addon or user brings their own API key and rate limits. The visibility of keys in URLs and the configurator UI is expected behavior.
 
-The configurator includes an AIOMetadata export section that generates ready to use URL patterns for custom art override fields in AIOMetadata compatible addons. The `Hide credentials` toggle masks exported AIOMetadata patterns with placeholders without changing live XRDB request URLs. The `Poster ID source` selector controls whether poster URLs use auto mode (typed TMDB IDs for the broadest coverage), explicit TMDB, or IMDb IDs for compatibility. Background and logo patterns always use type aware TMDB IDs, and episode thumbnails use the selected episode ID mode with season and episode placeholders plus their own thumbnail scoped ratings, artwork, text, and layout settings.
+The configurator includes an Import/Export view built around password protected UUID saved profiles. Save a profile once, use Open saved profile on another device, or paste a `?config=<uuid>` link back into the configurator to reopen that same server stored setup. When a protected profile is active, AIOMetadata exports default to lean UUID backed links while inline parameter URLs remain available as an advanced fallback. The `Hide credentials` toggle masks displayed AIOMetadata patterns with placeholders without changing live XRDB request URLs. The `Poster ID source` selector controls whether poster URLs use auto mode (typed TMDB IDs for the broadest coverage), explicit TMDB, or IMDb IDs for compatibility. Background and logo patterns always use type aware TMDB IDs, and episode thumbnails use the selected episode ID mode with season and episode placeholders plus their own thumbnail scoped ratings, artwork, text, and layout settings.
 
 Optional server side client ids can extend a few providers beyond the BYOK flow. `XRDB_MAL_CLIENT_ID` enables the official MyAnimeList API path for direct `myanimelist` ratings, `XRDB_TRAKT_CLIENT_ID` enables direct `trakt` ratings, and `SIMKL_CLIENT_ID` (or `XRDB_SIMKL_CLIENT_ID`) enables direct `simkl` ratings server wide. A user supplied `simklClientId` query parameter takes precedence over the server key for SIMKL. When the MAL client id is not configured, XRDB falls back to Jikan for direct `myanimelist` lookups before falling back to MDBList whenever a `mdblistKey` is present. Fanart backed artwork can also use a server fallback key from `XRDB_FANART_API_KEY` or `FANART_API_KEY`, but a user supplied `fanartKey` is preferred when available. OMDb poster lookups use the server side `OMDB_KEY` by default and also accept `OMDB_API_KEY` or `XRDB_OMDB_API_KEY`.
 
@@ -110,12 +110,12 @@ The doc refresh and release workflows rotate through a curated, varied set of pr
 
 <table>
   <tr>
-    <td><strong>Dune Part Two</strong><br>Dark canvas, square ratings, TMDB / Rotten Tomatoes / Metacritic / Letterboxd</td>
+    <td><strong>Stranger Things</strong><br>Dark canvas, square ratings, TMDB / Rotten Tomatoes / Metacritic User / Letterboxd</td>
     <td><strong>Attack on Titan</strong><br>Japanese text, TMDB / MyAnimeList / AniList / Kitsu, transparent canvas</td>
     <td><strong>Game of Thrones</strong><br>French text, plain ratings, TMDB / IMDb / Trakt / Metacritic, transparent canvas</td>
   </tr>
   <tr>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/dune-part-two-logo?cb=readme-preview-dune-part-two-logo-v1-16-1"><img src="https://xrdb.ibbylabs.dev/preview/dune-part-two-logo?cb=readme-preview-dune-part-two-logo-v1-16-1" alt="Dune Part Two logo live preview" width="320"></a></td>
+    <td><a href="https://xrdb.ibbylabs.dev/preview/stranger-things-logo?cb=readme-preview-stranger-things-logo-v1-16-1"><img src="https://xrdb.ibbylabs.dev/preview/stranger-things-logo?cb=readme-preview-stranger-things-logo-v1-16-1" alt="Stranger Things logo live preview" width="320"></a></td>
     <td><a href="https://xrdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v1-16-1"><img src="https://xrdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v1-16-1" alt="Attack on Titan logo live preview" width="320"></a></td>
     <td><a href="https://xrdb.ibbylabs.dev/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v1-16-1"><img src="https://xrdb.ibbylabs.dev/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v1-16-1" alt="Game of Thrones logo live preview" width="320"></a></td>
   </tr>
@@ -340,7 +340,7 @@ The configurator preview type row now includes a sync control beside each type. 
 | `type` | Image type (Path) | `poster`, `backdrop`, `logo` (`thumbnail` uses its own route) | - |
 | `id` | Media ID (Path) | IMDb (`tt...`), TMDB (`tmdb:id`, `tmdb:movie:id`, `tmdb:tv:id`), Kitsu (`kitsu:id`), anime IDs such as `anilist:123`, `mal:456`, `tvdb:12345`, or `anidb:6789` | - |
 | `tmdbIdScope` | TMDB ID collision handling mode | `soft`, `strict` | `soft` |
-| `config` | Saved config profile ID. Loads encrypted server stored params as base defaults; explicit URL params take precedence. Generate a password protected UUID profile from the Export view in the configurator. | String (e.g. `550e8400-e29b-41d4-a716-446655440000`) | - |
+| `config` | Saved config profile ID. Loads encrypted server stored params as base defaults; explicit URL params take precedence. Create or reopen password protected UUID profiles from the Import/Export view in the configurator. | String (e.g. `550e8400-e29b-41d4-a716-446655440000`) | - |
 | `lang` | Image language | Any TMDB ISO 639-1 code (e.g. `it`, `en`, `es`, `fr`, `de`, `ru`, `ja`) | `en` |
 | `genreBadge` | Genre badge mode (global fallback) | `off`, `text`, `icon`, `both` | `off` |
 | `posterGenreBadge` | Poster genre badge mode | `off`, `text`, `icon`, `both` | `off` |
@@ -511,7 +511,7 @@ Parameter               | Values                                                
 type (path)             | poster, backdrop, logo                                               | -
 id (path)               | IMDb (tt...), TMDB (tmdb:id / tmdb:movie:id / tmdb:tv:id), Kitsu (kitsu:id), AniList, MAL                            | -
 tmdbIdScope             | soft, strict                                                                                                           | soft
-config                  | Saved config profile ID. Loads encrypted server stored params as base defaults; explicit URL params take precedence.      | -
+config                  | Saved config profile ID. Loads encrypted server stored params as base defaults; explicit URL params take precedence. Open the same UUID profile from Import/Export to reuse it on another device. | -
 ratings                 | tmdb, mdblist, imdb, allocine, allocinepress, tomatoes,              | all
                         | tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt,     |
                         | simkl, rogerebert, myanimelist,                                      |
@@ -769,7 +769,7 @@ Anime gets extra fallback help when possible. If TMDB is missing good text, XRDB
 
 ### Metadata Translation In Action
 
-These screenshots were regenerated from the local April 11, 2026 codebase using deterministic proxy fixtures.
+These screenshots were regenerated from the local April 12, 2026 codebase using deterministic proxy fixtures.
 
 To make each merge mode visible on demand, a local fixture addon returned controlled source addon metadata for three real IDs:
 

@@ -10,6 +10,7 @@ test('parseConfiguratorLinkImport imports settings from shared logo URL', () => 
   );
 
   assert.ok(parsed);
+  assert.equal(parsed.configProfileId, null);
   assert.equal(parsed.previewType, 'logo');
   assert.equal(parsed.mediaId, null);
   assert.equal(parsed.config.settings.logoRatingsMax, 6);
@@ -33,6 +34,7 @@ test('parseConfiguratorLinkImport scopes generic imageText to preview type', () 
   );
 
   assert.ok(parsed);
+  assert.equal(parsed.configProfileId, null);
   assert.equal(parsed.previewType, 'backdrop');
   assert.equal(parsed.mediaId, 'tmdb:tv:1399');
   assert.equal(parsed.config.settings.backdropImageText, 'alternative');
@@ -52,8 +54,20 @@ test('parseConfiguratorLinkImport decodes provider appearance overrides', () => 
   );
 
   assert.ok(parsed);
+  assert.equal(parsed.configProfileId, null);
   assert.equal(parsed.config.settings.ratingProviderAppearanceOverrides.trakt?.accentColor, '#7c3aed');
   assert.equal(parsed.config.settings.ratingProviderAppearanceOverrides.trakt?.iconScalePercent, 118);
+});
+
+test('parseConfiguratorLinkImport preserves protected config profile links', () => {
+  const parsed = parseConfiguratorLinkImport(
+    'https://xrdb.example.com/poster/tt0133093.jpg?config=550e8400-e29b-41d4-a716-446655440000',
+  );
+
+  assert.ok(parsed);
+  assert.equal(parsed.configProfileId, '550e8400-e29b-41d4-a716-446655440000');
+  assert.equal(parsed.previewType, 'poster');
+  assert.equal(parsed.mediaId, 'tt0133093');
 });
 
 test('parseConfiguratorLinkImport rejects URLs without importable settings', () => {

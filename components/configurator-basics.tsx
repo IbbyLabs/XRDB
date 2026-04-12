@@ -277,7 +277,7 @@ export function WorkspaceManagementSection({
         <Layers className="w-4 h-4 text-violet-500" /> Workspace
       </h2>
       <p className="text-[11px] leading-relaxed text-zinc-500">
-        Save settings to this browser or export them as JSON. Paste a shared XRDB URL with Import link to apply the same settings here.
+        Save settings to this browser or export them as JSON. Paste a shared XRDB URL or saved profile link with Import link to apply the same settings here.
       </p>
       <input
         ref={workspaceImportInputRef}
@@ -357,6 +357,8 @@ export function WorkspaceManagementSection({
                     ? 'Preset applied.'
                     : savedConfigStatus === 'reset'
                       ? 'Defaults restored.'
+                    : savedConfigStatus === 'profile-link'
+                      ? 'Saved profile link detected.'
                     : savedConfigStatus === 'invalid'
                       ? 'Invalid workspace import.'
                       : 'Unable to access local storage.'}

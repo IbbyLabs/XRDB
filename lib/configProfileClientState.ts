@@ -10,6 +10,32 @@ export type ConfigProfileUnlockSession = {
   expiresAt: number;
 };
 
+export const PROTECTED_CONFIG_PROFILE_ID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export const isProtectedConfigProfileId = (value: string | null | undefined): value is string =>
+  PROTECTED_CONFIG_PROFILE_ID_RE.test(String(value || '').trim());
+
+export const getNextAiometadataUrlMode = ({
+  currentMode,
+  hasProtectedProfile,
+  hasExplicitOverride,
+}: {
+  currentMode: 'inline' | 'config';
+  hasProtectedProfile: boolean;
+  hasExplicitOverride: boolean;
+}): 'inline' | 'config' => {
+  if (!hasProtectedProfile) {
+    return 'inline';
+  }
+
+  if (!hasExplicitOverride) {
+    return 'config';
+  }
+
+  return currentMode;
+};
+
 export const getActiveConfigProfileUnlockSession = (
   session: ConfigProfileUnlockSession | null,
   profileId: string | null,

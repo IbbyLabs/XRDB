@@ -8,7 +8,11 @@ export type ConfiguratorLinkImportResult = {
   config: SavedUiConfig;
   previewType: ConfiguratorPreviewType | null;
   mediaId: string | null;
+  configProfileId: string | null;
 };
+
+const PROTECTED_CONFIG_PROFILE_ID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const PREVIEW_TYPES = new Set<ConfiguratorPreviewType>([
   'poster',
@@ -230,6 +234,10 @@ export const parseConfiguratorLinkImport = (
     mediaId,
   } = parsePreviewTargetFromPath(targetUrl);
   const scopedPreviewType = detectedPreviewType || options?.fallbackPreviewType || null;
+  const configProfileId = (() => {
+    const candidate = String(targetUrl.searchParams.get('config') || '').trim();
+    return PROTECTED_CONFIG_PROFILE_ID_RE.test(candidate) ? candidate : null;
+  })();
   const settingsCandidate: Record<string, unknown> = {};
   let hasRecognizedParam = false;
 
@@ -241,7 +249,7 @@ export const parseConfiguratorLinkImport = (
     hasRecognizedParam = true;
   }
 
-  if (!hasRecognizedParam) {
+  if (!hasRecognizedParam && !configProfileId) {
     return null;
   }
 
@@ -324,5 +332,6 @@ export const parseConfiguratorLinkImport = (
     }, options?.skipCrossTypeFallbacks ? { skipCrossTypeFallbacks: true } : undefined),
     previewType: detectedPreviewType,
     mediaId,
+    configProfileId,
   };
 };

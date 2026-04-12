@@ -260,7 +260,7 @@ GET /thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb`}</CodeBlo
             The <strong>Poster ID source</strong> selector controls whether poster URLs use auto mode (typed TMDB IDs), explicit TMDB, or IMDb IDs.
           </p>
           <p>
-            Config mode exports are available only for UUID backed saved profiles. Legacy profile IDs must be migrated in the Export view before AIOMetadata copies switch to <code>?config=&lt;uuid&gt;</code> links.
+            When a protected UUID profile is active, AIOMetadata exports default to config mode so copied patterns use <code>?config=&lt;uuid&gt;</code> links first. Inline parameter URLs remain available as an advanced fallback, and legacy profile IDs must still be migrated before config mode can be used.
           </p>
         </ReferenceSection>
 
@@ -273,7 +273,7 @@ GET /thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb`}</CodeBlo
             Keys are embedded directly into generated URLs (<code>tmdbKey=...&mdblistKey=...&fanartKey=...</code>) or addon proxy configurations and stored locally in localStorage when using the configurator.
           </p>
           <p>
-            When you save a config profile, XRDB stores the encrypted server copy behind a password protected UUID. Runtime image requests can still use <code>?config=&lt;uuid&gt;</code>, but profile reveal, update, rotate-password, and delete actions require an unlock step in the Export view.
+            When you save a config profile, XRDB stores the encrypted server copy behind a password protected UUID. Use Open saved profile in Import/Export, or reopen a configurator link containing <code>?config=&lt;uuid&gt;</code>, to load that same profile on another device. Runtime image requests can still use <code>?config=&lt;uuid&gt;</code>, but profile reveal, update, rotate-password, and delete actions require an unlock step in Import/Export.
           </p>
           <p>
             Optional server side client IDs (<code>XRDB_MAL_CLIENT_ID</code>, <code>XRDB_TRAKT_CLIENT_ID</code>, <code>XRDB_SIMKL_CLIENT_ID</code>) extend ratings beyond BYOK.

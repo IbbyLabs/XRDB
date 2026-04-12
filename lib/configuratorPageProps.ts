@@ -449,8 +449,10 @@ export function buildConfiguratorPageProps({
         onDownloadWorkspace: workspaceStorage.handleDownloadWorkspace,
         onPromptWorkspaceImport: workspaceStorage.handlePromptWorkspaceImport,
         onClearSavedWorkspace: workspaceStorage.handleClearSavedWorkspace,
+        onClearPendingConfigProfileRestore: workspaceStorage.clearPendingConfigProfileRestore,
         configAutoSave: workspaceStorage.configAutoSave,
         onToggleConfigAutoSave: workspaceStorage.handleToggleConfigAutoSave,
+        pendingConfigProfileId: workspaceStorage.pendingConfigProfileId,
         savedConfigStatus: workspaceStorage.savedConfigStatus,
       },
       centerStageProps: {
