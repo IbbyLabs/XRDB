@@ -6,9 +6,11 @@ import { BookmarkPlus, Check, ChevronDown, Clipboard, Code2, Eye, EyeOff, Rotate
 
 import { ConfirmDiffModal } from '@/components/confirm-diff-modal';
 import {
+  buildConfigProfileFingerprint,
   buildRevealedConfigState,
   getNextAiometadataUrlMode,
   getActiveConfigProfileUnlockSession,
+  hasConfigProfileUnsavedChanges,
   isProtectedConfigProfileId,
   shouldClearConfigProfileUnlockSession,
 } from '@/lib/configProfileClientState';
@@ -242,6 +244,9 @@ export function ExportView() {
           </button>
           {optionsOpen && (
             <div className="border-t border-white/10 p-4 space-y-4">
+              <p className="text-[12px] leading-5 text-zinc-500">
+                These export options stay on this device and do not affect Update saved profile.
+              </p>
               <ExportOptionGroup label="Poster ID source">
                 <div className="flex flex-wrap gap-2">
                   <OptionPill
@@ -914,8 +919,13 @@ function SaveConfigSection({
 
   useEffect(() => {
     const params = buildSaveParams();
-    const fingerprint = params ? JSON.stringify(Object.entries(params).sort()) : null;
-    setHasUnsavedChanges(!!snapshotReady && fingerprint !== savedParamsFingerprintRef.current);
+    setHasUnsavedChanges(
+      hasConfigProfileUnsavedChanges({
+        currentParams: params,
+        savedFingerprint: savedParamsFingerprintRef.current,
+        snapshotReady,
+      }),
+    );
   }, [buildSaveParams, snapshotReady]);
 
   const handleSave = useCallback(async () => {
@@ -1275,7 +1285,7 @@ function SaveConfigSection({
     if (!savedConfigSnapshot.current) return;
     applySavedUiConfig(savedConfigSnapshot.current);
     const params = buildSnapshotParams(savedConfigSnapshot.current);
-    savedParamsFingerprintRef.current = JSON.stringify(Object.entries(params).sort());
+    savedParamsFingerprintRef.current = buildConfigProfileFingerprint(params);
     setShowRevertModal(false);
     setRevertDiff(null);
   }, [modalMode, handleSave, applySavedUiConfig]);
@@ -1370,7 +1380,7 @@ function SaveConfigSection({
           )}
         </h2>
         <p className="text-[13px] leading-5 text-zinc-400">
-          Save current settings as a reusable ID for any device. Use Open saved profile to load the same setup somewhere else, then append{' '}
+          Save the current artwork configuration used by saved profile URLs as a reusable ID for any device. Workspace, proxy, and export-only controls stay local to this browser. Use Open saved profile to load the same setup somewhere else, then append{' '}
           <span className="font-mono text-[12px] bg-zinc-900 px-1 rounded text-zinc-300">?config=&lt;id&gt;</span>{' '}
           to any image URL to apply this profile.
         </p>

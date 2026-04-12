@@ -64,6 +64,19 @@ export const shouldClearConfigProfileUnlockSession = ({
   return profileId !== session.profileId;
 };
 
+export const buildConfigProfileFingerprint = (params: Record<string, string> | null | undefined) =>
+  params ? JSON.stringify(Object.entries(params).sort()) : null;
+
+export const hasConfigProfileUnsavedChanges = ({
+  currentParams,
+  savedFingerprint,
+  snapshotReady,
+}: {
+  currentParams: Record<string, string> | null | undefined;
+  savedFingerprint: string | null;
+  snapshotReady: boolean;
+}) => snapshotReady && buildConfigProfileFingerprint(currentParams) !== savedFingerprint;
+
 export const buildRevealedConfigState = (params: Record<string, string>) => {
   const normalizedConfig = normalizeSavedUiConfig(
     { settings: params },
@@ -73,8 +86,6 @@ export const buildRevealedConfigState = (params: Record<string, string>) => {
   return {
     normalizedConfig,
     serializedConfig: serializeSavedUiConfig(normalizedConfig),
-    fingerprint: JSON.stringify(
-      Object.entries(buildProfileParams(normalizedConfig.settings) ?? {}).sort(),
-    ),
+    fingerprint: buildConfigProfileFingerprint(buildProfileParams(normalizedConfig.settings) ?? {}),
   };
 };

@@ -2,13 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  buildConfigProfileFingerprint,
   buildRevealedConfigState,
   getNextAiometadataUrlMode,
   getActiveConfigProfileUnlockSession,
+  hasConfigProfileUnsavedChanges,
   isProtectedConfigProfileId,
   shouldClearConfigProfileUnlockSession,
 } from '../lib/configProfileClientState.ts';
-import { buildProxyPayload, parseSavedUiConfig } from '../lib/uiConfig.ts';
+import { buildProfileParams, buildProxyPayload, parseSavedUiConfig } from '../lib/uiConfig.ts';
 
 test('isProtectedConfigProfileId accepts UUID profile identifiers', () => {
   assert.equal(isProtectedConfigProfileId('550e8400-e29b-41d4-a716-446655440000'), true);
@@ -127,4 +129,49 @@ test('revealed config state immediately exposes restored keys to proxy payloads'
   assert.equal(proxyPayload?.tmdbKey, 'tmdb');
   assert.equal(proxyPayload?.mdblistKey, 'mdb');
   assert.notEqual(revealed.fingerprint, '[]');
+});
+
+test('buildConfigProfileFingerprint returns a stable sorted fingerprint', () => {
+  assert.equal(
+    buildConfigProfileFingerprint({ b: '2', a: '1' }),
+    buildConfigProfileFingerprint({ a: '1', b: '2' }),
+  );
+  assert.equal(buildConfigProfileFingerprint(null), null);
+});
+
+test('hasConfigProfileUnsavedChanges detects persisted saved-profile setting changes', () => {
+  const revealed = buildRevealedConfigState({
+    tmdbKey: 'tmdb',
+    mdblistKey: 'mdb',
+    thumbnailRatings: 'tmdb,imdb',
+  });
+  const currentParams = {
+    ...(buildProfileParams(revealed.normalizedConfig.settings) ?? {}),
+    thumbnailRatings: 'tmdb',
+  };
+
+  assert.equal(
+    hasConfigProfileUnsavedChanges({
+      currentParams,
+      savedFingerprint: revealed.fingerprint,
+      snapshotReady: true,
+    }),
+    true,
+  );
+});
+
+test('hasConfigProfileUnsavedChanges ignores local-only controls outside saved-profile params', () => {
+  const revealed = buildRevealedConfigState({
+    tmdbKey: 'tmdb',
+    mdblistKey: 'mdb',
+  });
+
+  assert.equal(
+    hasConfigProfileUnsavedChanges({
+      currentParams: buildProfileParams(revealed.normalizedConfig.settings) ?? {},
+      savedFingerprint: revealed.fingerprint,
+      snapshotReady: true,
+    }),
+    false,
+  );
 });
