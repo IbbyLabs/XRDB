@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.17.0",
-  "generatedAt": "2026-04-12T18:12:39.737Z",
+  "xrdbTag": "v1.17.1",
+  "generatedAt": "2026-04-12T19:10:48.666Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -25,6 +25,7 @@
         "/api/config/[id]/rotate-password",
         "/api/config/[id]/status",
         "/api/config/[id]/unlock",
+        "/api/configurator-env-access-keys: Runtime configurator access key defaults endpoint.",
         "/api/discord-widget: Community widget endpoint.",
         "/api/latest-release: Latest release feed used by the site.",
         "/api/media-resolve: Configurator media resolve endpoint.",
@@ -42,11 +43,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "BUG-82 BUG-84 harden release gates",
+        "BUG-82 BUG-83 BUG-84 resolve regressions",
         "BUG-81 preserve unlocked saved profile updates",
         "FR-67 scope link imports by type",
-        "FR-68 add console log levels",
-        "restore password visibility toggles",
-        "BUG-79 clarify saved profile update scope"
+        "FR-68 add console log levels"
       ]
     },
     {

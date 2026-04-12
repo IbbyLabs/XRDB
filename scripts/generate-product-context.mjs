@@ -19,6 +19,7 @@ const KNOWN_ROUTE_LABELS = {
   '/proxy/[...path]': 'Proxy pass through endpoint for addon traffic.',
   '/thumbnail/[id]/[episodeToken]': 'Episode thumbnail render route.',
   '/api/latest-release': 'Latest release feed used by the site.',
+  '/api/configurator-env-access-keys': 'Runtime configurator access key defaults endpoint.',
   '/api/media-search': 'Configurator media search endpoint.',
   '/api/media-resolve': 'Configurator media resolve endpoint.',
   '/api/discord-widget': 'Community widget endpoint.',

@@ -59,6 +59,40 @@
 
 <a id="v1-17-0"></a>
 
+<a id="v1-17-1"></a>
+
+## [v1.17.1] - 12/04/2026
+
+### Fixed
+* BUG-82 BUG-84 harden release gates
+  
+  Ensure doc refresh and release scripts run TypeScript imports with Node type stripping.
+  
+  Seed configurator env defaults from a runtime API endpoint so standalone production builds do not freeze build time env values.
+  
+  Prepare standalone static and public assets before local pnpm start so production verification matches the Docker runtime layout.
+  
+  Refresh generated README doc assets and extend configurator env access key coverage.
+* BUG-82 BUG-83 BUG-84 resolve regressions
+  
+  Treat a blank Torrentio base URL as disabled while preserving the default for unset configuration.
+  
+  Seed configurator access key fields from server environment defaults without overwriting saved user values.
+  
+  Make ratingPresentation=none suppress rating overlays and stream badges across poster and non poster outputs.
+  
+  Update docs and add targeted regression coverage for the affected behaviors.
+* BUG-81 preserve unlocked saved profile updates
+  
+  Add schema driven saved profile verification coverage and a dedicated release gate.
+  
+  Persist protected profile unlock sessions across remounts and restore saved snapshots so configure to export updates keep their diff baseline.
+  
+  Validated with focused client state tests, full lint/test/build, and manual browser verification of the protected update flow.
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.17.0] - 12/04/2026
 
 ### Added
