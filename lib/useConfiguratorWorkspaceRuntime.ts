@@ -87,7 +87,12 @@ import {
   buildEpisodePreviewMediaTarget,
   parseEpisodePreviewMediaTarget,
 } from '@/lib/episodeIdentity';
-import { type ConfigProfileUnlockSession } from '@/lib/configProfileClientState';
+import {
+  CONFIG_PROFILE_UNLOCK_SESSION_STORAGE_KEY,
+  parseConfigProfileUnlockSession,
+  serializeConfigProfileUnlockSession,
+  type ConfigProfileUnlockSession,
+} from '@/lib/configProfileClientState';
 import { isConfiguratorExperienceMode } from '@/lib/configuratorPresets';
 import { buildConfiguratorPageProps } from '@/lib/configuratorPageProps';
 import type { MediaFeatureBadgeKey } from '@/lib/mediaFeatures';
@@ -1377,6 +1382,31 @@ export function useConfiguratorWorkspaceRuntime() {
     setActivePreviewTitle,
     mediaId,
   });
+
+  useEffect(() => {
+    const restoredSession = parseConfigProfileUnlockSession(
+      window.sessionStorage.getItem(CONFIG_PROFILE_UNLOCK_SESSION_STORAGE_KEY),
+    );
+
+    if (restoredSession) {
+      setConfigProfileUnlockSession(restoredSession);
+      return;
+    }
+
+    window.sessionStorage.removeItem(CONFIG_PROFILE_UNLOCK_SESSION_STORAGE_KEY);
+  }, []);
+
+  useEffect(() => {
+    const serializedSession = serializeConfigProfileUnlockSession(configProfileUnlockSession);
+
+    if (serializedSession) {
+      window.sessionStorage.setItem(CONFIG_PROFILE_UNLOCK_SESSION_STORAGE_KEY, serializedSession);
+      return;
+    }
+
+    window.sessionStorage.removeItem(CONFIG_PROFILE_UNLOCK_SESSION_STORAGE_KEY);
+  }, [configProfileUnlockSession]);
+
   const clearConfigProfileUnlockSession = useCallback(() => {
     setConfigProfileUnlockSession(null);
   }, []);

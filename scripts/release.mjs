@@ -26,6 +26,9 @@ function run(command, args, { stdio = 'inherit' } = {}) {
   return result;
 }
 
+console.log('Running saved profile verification gate before release...');
+run('npm', ['run', 'verify:config-profiles']);
+
 const tmdbKey = process.env.XRDB_README_PREVIEW_TMDB_KEY || process.env.TMDB_KEY || '';
 
 if (tmdbKey) {

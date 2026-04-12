@@ -8,6 +8,8 @@ import {
   getActiveConfigProfileUnlockSession,
   hasConfigProfileUnsavedChanges,
   isProtectedConfigProfileId,
+  parseConfigProfileUnlockSession,
+  serializeConfigProfileUnlockSession,
   shouldClearConfigProfileUnlockSession,
 } from '../lib/configProfileClientState.ts';
 import { buildProfileParams, buildProxyPayload, parseSavedUiConfig } from '../lib/uiConfig.ts';
@@ -66,6 +68,25 @@ test('config profile unlock session stays active for the same profile until expi
     null,
   );
   assert.equal(getActiveConfigProfileUnlockSession(session, 'xrc_other', 1_999), null);
+});
+
+test('config profile unlock session serializes and restores valid sessions', () => {
+  const session = {
+    profileId: 'xrc_0123456789abcdef',
+    token: 'unlock-token',
+    expiresAt: 2_000,
+  };
+
+  assert.deepEqual(
+    parseConfigProfileUnlockSession(serializeConfigProfileUnlockSession(session), 1_000),
+    session,
+  );
+  assert.equal(
+    parseConfigProfileUnlockSession(serializeConfigProfileUnlockSession(session), 2_000),
+    null,
+  );
+  assert.equal(parseConfigProfileUnlockSession('{"profileId":1}', 1_000), null);
+  assert.equal(serializeConfigProfileUnlockSession(null), null);
 });
 
 test('config profile unlock session is not cleared before saved profile id hydration completes', () => {

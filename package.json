@@ -60,6 +60,7 @@
     "release:patch": "node scripts/release.mjs patch",
     "release:minor": "node scripts/release.mjs minor",
     "release:major": "node scripts/release.mjs major",
+    "verify:config-profiles": "node --experimental-strip-types --test tests/config-profile-verification.test.mjs",
     "verify:legacy-name": "node scripts/verify-no-legacy-brand.mjs",
     "verify:proxy-meta": "node scripts/verify-proxy-metadata-translation.mjs",
     "preversion": "npm run verify:legacy-name && npm run docs:refresh-assets && npm run docs:verify-manifest",

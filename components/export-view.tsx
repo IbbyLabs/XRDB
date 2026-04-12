@@ -762,13 +762,18 @@ function SaveConfigSection({
     clearSnapshot();
   }, [clearConfigProfileUnlockSession, clearSnapshot]);
 
-  const applySnapshot = useCallback((params: Record<string, string>) => {
+  const applySnapshot = useCallback((
+    params: Record<string, string>,
+    options?: { applyToWorkspace?: boolean },
+  ) => {
     const { fingerprint, normalizedConfig, serializedConfig } = buildRevealedConfigState(params);
     savedConfigSnapshot.current = normalizedConfig;
-    applySavedUiConfig(normalizedConfig);
-    try {
-      localStorage.setItem('xrdb.uiConfig.v1', serializedConfig);
-    } catch {}
+    if (options?.applyToWorkspace !== false) {
+      applySavedUiConfig(normalizedConfig);
+      try {
+        localStorage.setItem('xrdb.uiConfig.v1', serializedConfig);
+      } catch {}
+    }
     savedParamsFingerprintRef.current = fingerprint;
     setSnapshotReady(true);
     setHasUnsavedChanges(false);
@@ -827,6 +832,44 @@ function SaveConfigSection({
     applySnapshot((await res.json()) as Record<string, string>);
     return true;
   }, [applySnapshot, clearUnlockState]);
+
+  useEffect(() => {
+    if (!savedProfileId || !unlockToken || snapshotReady) {
+      return;
+    }
+
+    let active = true;
+
+    void (async () => {
+      const res = await fetch(`/api/config/${savedProfileId}/reveal`, {
+        cache: 'no-store',
+        headers: {
+          [CONFIG_UNLOCK_HEADER]: unlockToken,
+        },
+      });
+
+      if (!active) {
+        return;
+      }
+
+      if (res.status === 401) {
+        clearUnlockState();
+        setProfileNotice('Unlock expired. Enter your password again.');
+        return;
+      }
+
+      if (!res.ok) {
+        setProfileNotice(await readErrorMessage(res, 'Unable to reveal the saved profile.'));
+        return;
+      }
+
+      applySnapshot((await res.json()) as Record<string, string>, { applyToWorkspace: false });
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [applySnapshot, clearUnlockState, savedProfileId, snapshotReady, unlockToken]);
 
   const unlockProtectedProfile = useCallback(async (id: string, password: string) => {
     const res = await fetch(`/api/config/${id}/unlock`, {
