@@ -98,3 +98,21 @@ test('image route torrentio reuses cached badge results', async () => {
   assert.equal(fetchCalls, 1);
   assert.deepEqual(second.badges, first.badges);
 });
+
+test('image route torrentio skips fetches when torrentio is disabled', async () => {
+  let fetchCalls = 0;
+  const result = await fetchTorrentioBadges({
+    type: 'movie',
+    id: createUniqueId('disabled'),
+    phases: createPhases(),
+    baseUrl: null,
+    fetchImpl: async () => {
+      fetchCalls += 1;
+      throw new Error('should not fetch when disabled');
+    },
+  });
+
+  assert.equal(fetchCalls, 0);
+  assert.deepEqual(result.badges, []);
+  assert.ok(result.cacheTtlMs >= 60_000);
+});

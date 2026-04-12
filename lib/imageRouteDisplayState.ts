@@ -153,17 +153,22 @@ export const resolveImageRouteDisplayState = (input: {
     posterRatingBadgeScale,
   } = input;
   let { streamBadges, genreBadge } = input;
+  const suppressRatingPresentation = ratingPresentation === 'none';
+  if (suppressRatingPresentation) {
+    streamBadges = [];
+  }
   const aggregateDynamicStopEntries = parseAggregateDynamicStops(aggregateDynamicStops);
 
   const usePosterBadgeLayout = imageType === 'poster';
   const useBackdropBadgeLayout = imageType === 'backdrop';
   const useLogoBadgeLayout = imageType === 'logo';
-  const usesAggregatePresentation = usesAggregateRatingPresentation(ratingPresentation);
+  const usesAggregatePresentation =
+    !suppressRatingPresentation && usesAggregateRatingPresentation(ratingPresentation);
   const useCompactRingPresentation =
-    imageType === 'poster' && isCompactRingPresentationMode(ratingPresentation);
+    !suppressRatingPresentation && imageType === 'poster' && isCompactRingPresentationMode(ratingPresentation);
   const useEditorialPosterPresentation =
-    imageType === 'poster' && ratingPresentation === 'editorial';
-  const useBlockbusterPresentation = ratingPresentation === 'blockbuster';
+    !suppressRatingPresentation && imageType === 'poster' && ratingPresentation === 'editorial';
+  const useBlockbusterPresentation = !suppressRatingPresentation && ratingPresentation === 'blockbuster';
   const effectivePosterRatingsLayout =
     usePosterBadgeLayout
       ? resolvePosterRatingLayoutForPresentation(ratingPresentation, posterRatingsLayout)
@@ -208,11 +213,13 @@ export const resolveImageRouteDisplayState = (input: {
 
   const ratingBadgeByProvider = new Map<RatingPreference, RatingBadge>();
   const renderableRatingPreferences = orderRatingPreferencesForRender(
-    effectiveRatingPreferences.filter((provider) =>
-      provider === 'kitsu'
-        ? shouldRenderRawKitsuFallbackRating || allowAnimeOnlyRatings
-        : allowAnimeOnlyRatings || !ANIME_ONLY_RATING_PROVIDER_SET.has(provider),
-    ),
+    suppressRatingPresentation
+      ? []
+      : effectiveRatingPreferences.filter((provider) =>
+          provider === 'kitsu'
+            ? shouldRenderRawKitsuFallbackRating || allowAnimeOnlyRatings
+            : allowAnimeOnlyRatings || !ANIME_ONLY_RATING_PROVIDER_SET.has(provider),
+        ),
     {
       prioritizeAnimeRatings: allowAnimeOnlyRatings,
       preserveInputOrder: hasExplicitRatingOrder,

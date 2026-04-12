@@ -2,14 +2,21 @@
 
 import { createContext, useContext, type ReactNode } from 'react';
 
+import type { ConfiguratorEnvAccessKeys } from '@/lib/configuratorEnvAccessKeys';
 import { useConfiguratorWorkspaceRuntime } from '@/lib/useConfiguratorWorkspaceRuntime';
 
 type ConfiguratorContextValue = ReturnType<typeof useConfiguratorWorkspaceRuntime>;
 
 const ConfiguratorContext = createContext<ConfiguratorContextValue | null>(null);
 
-export function ConfiguratorProvider({ children }: { children: ReactNode }) {
-  const runtime = useConfiguratorWorkspaceRuntime();
+export function ConfiguratorProvider({
+  children,
+  envAccessKeys,
+}: {
+  children: ReactNode;
+  envAccessKeys: ConfiguratorEnvAccessKeys;
+}) {
+  const runtime = useConfiguratorWorkspaceRuntime({ envAccessKeys });
   return (
     <ConfiguratorContext.Provider value={runtime}>
       {children}

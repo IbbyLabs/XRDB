@@ -72,9 +72,6 @@ const buildFeatureBadgesFromFlags = (flags: MediaFeatureFlags, remuxDisplayMode:
     accentColor: badge.accentColor,
   }));
 
-const buildTorrentioUrl = (type: 'movie' | 'series', id: string) =>
-  buildTorrentioStreamUrl(TORRENTIO_BASE_URL, type, id);
-
 export const fetchTorrentioBadges = async ({
   type,
   id,
@@ -82,6 +79,7 @@ export const fetchTorrentioBadges = async ({
   cacheTtlMs,
   remuxDisplayMode = 'composite',
   fetchImpl = undiciFetch,
+  baseUrl = TORRENTIO_BASE_URL,
 }: {
   type: 'movie' | 'series';
   id: string;
@@ -89,9 +87,10 @@ export const fetchTorrentioBadges = async ({
   cacheTtlMs?: number;
   remuxDisplayMode?: RemuxDisplayMode;
   fetchImpl?: typeof undiciFetch;
+  baseUrl?: string | null;
 }): Promise<TorrentioBadgeResult> => {
   const trimmedId = id.trim();
-  if (!trimmedId) {
+  if (!trimmedId || !baseUrl) {
     return { badges: [], cacheTtlMs: TORRENTIO_CACHE_TTL_MS };
   }
   const cacheKey = `torrentio:${type}:${trimmedId}`;
@@ -117,7 +116,7 @@ export const fetchTorrentioBadges = async ({
     }
 
     let response: Response | null = null;
-    const torrentioUrl = buildTorrentioUrl(type, trimmedId);
+    const torrentioUrl = buildTorrentioStreamUrl(baseUrl, type, trimmedId);
     try {
       response = await measurePhase(phases, 'stream', () =>
         torrentioConcurrencyLimit(async () => {

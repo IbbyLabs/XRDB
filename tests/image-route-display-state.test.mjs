@@ -168,6 +168,56 @@ test('image route display state keeps direct rating badges for standard backdrop
   );
 });
 
+test('image route display state suppresses poster rating surfaces for none presentation', () => {
+  const streamBadges = [
+    {
+      key: '4k',
+      label: '4K',
+      value: '',
+      iconUrl: '',
+      accentColor: '#38bdf8',
+    },
+  ];
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    ratingPresentation: 'none',
+    streamBadges,
+  });
+
+  assert.equal(state.usesAggregatePresentation, false);
+  assert.equal(state.useEditorialPosterPresentation, false);
+  assert.equal(state.useBlockbusterPresentation, false);
+  assert.equal(state.displayRatingBadges.length, 0);
+  assert.equal(state.streamBadges.length, 0);
+  assert.equal(state.editorialOverlay, null);
+  assert.equal(state.compactRingOverlay, null);
+  assert.deepEqual(state.debugResolvedRatingProviders, []);
+  assert.ok(state.genreBadge);
+});
+
+test('image route display state suppresses non poster rating surfaces for none presentation', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    imageType: 'backdrop',
+    ratingPresentation: 'none',
+    streamBadges: [
+      {
+        key: 'hdr',
+        label: 'HDR',
+        value: '',
+        iconUrl: '',
+        accentColor: '#f59e0b',
+      },
+    ],
+  });
+
+  assert.equal(state.usesAggregatePresentation, false);
+  assert.equal(state.displayRatingBadges.length, 0);
+  assert.equal(state.streamBadges.length, 0);
+  assert.deepEqual(state.debugResolvedRatingProviders, []);
+  assert.ok(state.genreBadge);
+});
+
 test('image route display state applies XRDB provider icon tuning defaults', () => {
   const state = resolveImageRouteDisplayState({
     ...createBaseInput(),

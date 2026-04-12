@@ -374,3 +374,36 @@ test('image route request state parses compact ring aggregate and priority param
   assert.deepEqual(state.posterRingCriticsPriority, ['metacritic', 'tomatoes', 'imdb']);
   assert.deepEqual(state.posterRingAudiencePriority, ['letterboxd', 'tomatoesaudience', 'imdb']);
 });
+
+test('image route request state disables rating and stream work for poster none presentation', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&posterRatingPresentation=none&posterRatings=imdb,tmdb&posterStreamBadges=on',
+    ),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(state.ratingPresentation, 'none');
+  assert.equal(state.shouldApplyRatings, false);
+  assert.equal(state.shouldApplyStreamBadges, false);
+  assert.deepEqual(state.effectiveRatingPreferences, []);
+  assert.deepEqual([...state.selectedRatings], []);
+});
+
+test('image route request state disables rating and stream work for thumbnail none presentation', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/backdrop/xrdbid:tt1234567:1:2.jpg?thumbnail=1&tmdbKey=tmdb-key&thumbnailRatingPresentation=none&thumbnailRatings=tmdb,imdb&thumbnailStreamBadges=on',
+    ),
+    imageType: 'backdrop',
+    id: 'xrdbid:tt1234567:1:2.jpg',
+  });
+
+  assert.equal(state.isThumbnailRequest, true);
+  assert.equal(state.ratingPresentation, 'none');
+  assert.equal(state.shouldApplyRatings, false);
+  assert.equal(state.shouldApplyStreamBadges, false);
+  assert.deepEqual(state.effectiveRatingPreferences, []);
+  assert.deepEqual([...state.selectedRatings], []);
+});
