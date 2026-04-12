@@ -83,7 +83,7 @@ export const RATING_PRESENTATION_OPTIONS: Array<{
   {
     id: 'none',
     label: 'None',
-    description: 'No rating badges or provider overlays.',
+    description: 'No rating badges, aggregate overlays, provider overlays, or stream badges.',
   },
 ];
 

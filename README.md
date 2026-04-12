@@ -377,7 +377,7 @@ The configurator preview type row now includes a sync control beside each type. 
 | `logoQualityBadgeScale` | Logo quality badge scale | Number (`70-200`) | `100` |
 | `posterQualityBadgesMax` | Poster quality badge limit | Number (1-20) | `auto` |
 | `backdropQualityBadgesMax` | Backdrop quality badge limit | Number (1-20) | `auto` |
-| `ratingPresentation` | Rating presentation mode (global fallback) | `standard`, `minimal`, `average`, `dual`, `dual-minimal`, `editorial`, `ring`, `blockbuster`, `none` | `standard` |
+| `ratingPresentation` | Rating presentation mode (global fallback). `none` disables rating badges, aggregate overlays, provider overlays, and stream badges. | `standard`, `minimal`, `average`, `dual`, `dual-minimal`, `editorial`, `ring`, `blockbuster`, `none` | `standard` |
 | `aggregateRatingSource` | Aggregate source for `minimal` and `average` (global fallback) | `overall`, `critics`, `audience` | `overall` |
 | `posterRingValueSource` | Center score source for poster Compact Ring | `overall`, `critics`, `audience`, `priority-critics`, `priority-audience`, `highest`, or any rating provider | `highest` |
 | `posterRingProgressSource` | Progress stroke source for poster Compact Ring | `overall`, `critics`, `audience`, `priority-critics`, `priority-audience`, `highest`, or any rating provider | `tmdb` |
@@ -642,7 +642,7 @@ backdrop -> genreBadge = cfg.backdropGenreBadge, genreBadgeStyle = cfg.backdropG
 thumbnail -> genreBadge = cfg.thumbnailGenreBadge, genreBadgeStyle = cfg.thumbnailGenreBadgeStyle, genreBadgePosition = cfg.thumbnailGenreBadgePosition, genreBadgeScale = cfg.thumbnailGenreBadgeScale
 logo     -> genreBadge = cfg.logoGenreBadge, genreBadgeStyle = cfg.logoGenreBadgeStyle, genreBadgePosition = cfg.logoGenreBadgePosition, genreBadgeScale = cfg.logoGenreBadgeScale
 Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRatings / cfg.thumbnailRatings / cfg.logoRatings (fallback to cfg.ratings).
-Rating presentation can be set per type via cfg.posterRatingPresentation / cfg.backdropRatingPresentation / cfg.thumbnailRatingPresentation / cfg.logoRatingPresentation (fallback to cfg.ratingPresentation). Shipped values are standard, minimal, average, dual, dual-minimal, editorial, ring, blockbuster, and none. Poster only presentations are coerced to standard when applied to backdrop, thumbnail, or logo output.
+Rating presentation can be set per type via cfg.posterRatingPresentation / cfg.backdropRatingPresentation / cfg.thumbnailRatingPresentation / cfg.logoRatingPresentation (fallback to cfg.ratingPresentation). Shipped values are standard, minimal, average, dual, dual-minimal, editorial, ring, blockbuster, and none. None disables rating badges, aggregate overlays, provider overlays, and stream badges. Poster only presentations are coerced to standard when applied to backdrop, thumbnail, or logo output.
 Aggregate source can be set per type via cfg.posterAggregateRatingSource / cfg.backdropAggregateRatingSource / cfg.thumbnailAggregateRatingSource / cfg.logoAggregateRatingSource (fallback to cfg.aggregateRatingSource).
 Compact Ring source can be set for posters via cfg.posterRingValueSource and cfg.posterRingProgressSource. Use overall, critics, audience, priority-critics, priority-audience, highest, or a provider id. Aggregate ring sources try their selected lane, then overall, then the matching priority list from cfg.posterRingCriticsPriority or cfg.posterRingAudiencePriority. Exact provider sources stay strict and do not silently substitute another provider.
 Use cfg.aggregateAccentMode to keep source colours, match the genre badge, force a custom aggregate accent through cfg.aggregateAccentColor, or use score-based dynamic color stops via cfg.aggregateDynamicStops. This setting also controls the Compact Ring stroke and glow color when ratingPresentation=ring.
@@ -886,7 +886,7 @@ hardcoding separate cache TTL values.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `XRDB_TORRENTIO_BASE_URL` | `https://torrentio.strem.fun` | Custom Torrentio instance URL |
+| `XRDB_TORRENTIO_BASE_URL` | `https://torrentio.strem.fun` | Custom Torrentio instance URL. Leave unset to use the default instance, or set to a blank value to disable Torrentio lookups. |
 | `XRDB_TORRENTIO_CONCURRENCY` | `2` | Max parallel Torrentio badge fetches. Higher can improve throughput, but also increases the chance of source rate limiting. |
 | `XRDB_TORRENTIO_RATE_LIMIT_COOLDOWN_MS` | `900000` | Cooldown window after Torrentio responds with rate limiting. |
 

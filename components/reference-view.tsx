@@ -194,7 +194,7 @@ GET /thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb`}</CodeBlo
             <li><strong>Compact Ring</strong> — poster only score ring with separate center and progress sources</li>
             <li><strong>Editorial</strong> — poster score mark integrated into the artwork</li>
             <li><strong>Blockbuster</strong> — premium variant</li>
-            <li><strong>None</strong> — disables ratings entirely</li>
+            <li><strong>None</strong> — disables rating badges, aggregate overlays, provider overlays, and stream badges</li>
           </ul>
           <p>
             Compact Ring uses <code>posterRingValueSource</code> for the center value and <code>posterRingProgressSource</code> for the stroke.

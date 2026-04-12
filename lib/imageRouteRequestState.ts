@@ -1240,8 +1240,10 @@ export const resolveImageRouteRequestState = async ({
         ? backdropAggregateRatingSource
         : logoAggregateRatingSource;
   const hasExplicitRatingOrder = ratingsForType !== null && ratingsForType !== undefined;
-  const shouldApplyRatings = ratingPreferences.length > 0;
+  const suppressRatingPresentation = ratingPresentation === 'none';
+  const shouldApplyRatings = !suppressRatingPresentation && ratingPreferences.length > 0;
   const shouldApplyStreamBadges =
+    !suppressRatingPresentation &&
     imageType !== 'logo' &&
     (streamBadgesSetting === 'on' || streamBadgesSetting === 'auto') &&
     !hasNativeAnimeInput;
@@ -1290,7 +1292,7 @@ export const resolveImageRouteRequestState = async ({
     (imageType === 'logo' && logoUsesFanartArtwork);
   const renderCacheBuster = (searchParams.get('cb') || '').trim();
   const effectiveRatingPreferences = shouldApplyRatings ? ratingPreferences : [];
-  const selectedRatings = new Set<RatingPreference>(ratingPreferences);
+  const selectedRatings = new Set<RatingPreference>(effectiveRatingPreferences);
   const usesMdblistSeed = effectiveRatingPreferences.some((provider) =>
     MDBLIST_STATEFUL_RATING_PROVIDERS.has(provider),
   );

@@ -122,6 +122,10 @@ import {
   type PinnedTarget,
   type PinnedTargetsStore,
 } from '@/lib/configuratorMediaSearch';
+import {
+  applyConfiguratorEnvAccessKeys,
+  type ConfiguratorEnvAccessKeys,
+} from '@/lib/configuratorEnvAccessKeys';
 
 type WorkspacePanelId =
   | 'configurator'
@@ -244,7 +248,11 @@ const readDocsCaptureConfig = () => {
   };
 };
 
-export function useConfiguratorWorkspaceRuntime() {
+export function useConfiguratorWorkspaceRuntime({
+  envAccessKeys,
+}: {
+  envAccessKeys: ConfiguratorEnvAccessKeys;
+}) {
   const baseUrl = normalizeBaseUrl(useClientOrigin());
   const docsCaptureConfig = useMemo(() => readDocsCaptureConfig(), []);
   const disableRemoteLookups = Boolean(docsCaptureConfig);
@@ -1430,7 +1438,44 @@ export function useConfiguratorWorkspaceRuntime() {
   }, [configProfileUnlockSession]);
 
   const { applyWorkspaceConfig, uiSettingsLoaded } = workspaceStorage;
+  const envAccessKeysAppliedRef = useRef(false);
   const resolvedForRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!uiSettingsLoaded || envAccessKeysAppliedRef.current) {
+      return;
+    }
+
+    envAccessKeysAppliedRef.current = true;
+    const merged = applyConfiguratorEnvAccessKeys(
+      {
+        fanartKey,
+        mdblistKey,
+        simklClientId,
+      },
+      envAccessKeys,
+    );
+
+    if (merged.fanartKey !== fanartKey) {
+      setFanartKey(merged.fanartKey);
+    }
+    if (merged.mdblistKey !== mdblistKey) {
+      setMdblistKey(merged.mdblistKey);
+    }
+    if (merged.simklClientId !== simklClientId) {
+      setSimklClientId(merged.simklClientId);
+    }
+  }, [
+    envAccessKeys,
+    fanartKey,
+    mdblistKey,
+    setFanartKey,
+    setMdblistKey,
+    setSimklClientId,
+    simklClientId,
+    uiSettingsLoaded,
+  ]);
+
   useEffect(() => {
     if (!uiSettingsLoaded) return;
     if (activePreviewTitle) {

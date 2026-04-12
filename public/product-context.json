@@ -2,7 +2,7 @@
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
   "xrdbTag": "v1.17.0",
-  "generatedAt": "2026-04-12T14:34:23.517Z",
+  "generatedAt": "2026-04-12T18:12:39.737Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -42,11 +42,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "BUG-81 preserve unlocked saved profile updates",
         "FR-67 scope link imports by type",
         "FR-68 add console log levels",
         "restore password visibility toggles",
-        "BUG-79 clarify saved profile update scope",
-        "prioritize uuid saved profile portability"
+        "BUG-79 clarify saved profile update scope"
       ]
     },
     {
