@@ -7,6 +7,7 @@ import {
   type ConfiguratorPresetId,
 } from '@/lib/configuratorPresets';
 import {
+  buildProfileParams,
   normalizeSavedUiConfig,
   parseSavedUiConfig,
   serializeSavedUiConfig,
@@ -14,7 +15,10 @@ import {
 } from '@/lib/uiConfig';
 import { isProtectedConfigProfileId } from '@/lib/configProfileClientState';
 import {
+  getConfiguratorLinkImportTypes,
+  mergeConfiguratorLinkImportIntoProfileParams,
   parseConfiguratorLinkImport,
+  type ConfiguratorLinkImportResult,
   type ConfiguratorPreviewType,
 } from '@/lib/configuratorLinkImport';
 
@@ -40,6 +44,13 @@ type LegacyApiKeyConfigStorage = {
   proxyTmdbKey?: string;
   proxyMdblistKey?: string;
   proxyManifestUrl?: string;
+};
+
+type PendingLinkImportSelection = {
+  parsedImport: ConfiguratorLinkImportResult;
+  selectedTargetTypes: ConfiguratorPreviewType[];
+  includeSharedSettings: boolean;
+  allowCrossTypeTargets: boolean;
 };
 
 export function useConfiguratorWorkspaceStorage({
@@ -405,6 +416,8 @@ export function useConfiguratorWorkspaceStorage({
 
   const [importLinkModalOpen, setImportLinkModalOpen] = useState(false);
   const [importLinkValue, setImportLinkValue] = useState('');
+  const [pendingLinkImportSelection, setPendingLinkImportSelection] =
+    useState<PendingLinkImportSelection | null>(null);
 
   const handleOpenImportLinkModal = useCallback(() => {
     setImportLinkValue('');
@@ -415,6 +428,73 @@ export function useConfiguratorWorkspaceStorage({
     setImportLinkModalOpen(false);
     setImportLinkValue('');
   }, []);
+
+  const handleCancelImportLinkSelection = useCallback(() => {
+    setPendingLinkImportSelection(null);
+  }, []);
+
+  const handleToggleImportTargetType = useCallback((targetType: ConfiguratorPreviewType) => {
+    setPendingLinkImportSelection((current) => {
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        selectedTargetTypes: current.selectedTargetTypes.includes(targetType)
+          ? current.selectedTargetTypes.filter((entry) => entry !== targetType)
+          : [...current.selectedTargetTypes, targetType],
+      };
+    });
+  }, []);
+
+  const handleToggleImportSharedSettings = useCallback(() => {
+    setPendingLinkImportSelection((current) => (
+      current
+        ? {
+            ...current,
+            includeSharedSettings: !current.includeSharedSettings,
+          }
+        : current
+    ));
+  }, []);
+
+  const handleConfirmImportLinkSelection = useCallback(() => {
+    if (!pendingLinkImportSelection) {
+      return;
+    }
+
+    const { parsedImport, selectedTargetTypes, includeSharedSettings } = pendingLinkImportSelection;
+    if (selectedTargetTypes.length === 0 && !includeSharedSettings) {
+      return;
+    }
+
+    const currentConfig = buildCurrentUiConfig();
+    const currentParams = buildProfileParams(currentConfig.settings) ?? {};
+    const nextParams = mergeConfiguratorLinkImportIntoProfileParams(currentParams, parsedImport, {
+      targetTypes: selectedTargetTypes,
+      includeShared: includeSharedSettings,
+      sourceType: parsedImport.defaultSourceType,
+    });
+    const nextConfig = normalizeSavedUiConfig(
+      {
+        version: 1,
+        settings: nextParams,
+        proxy: currentConfig.proxy,
+      },
+      { skipCrossTypeFallbacks: true },
+    );
+
+    setPendingLinkImportSelection(null);
+    applyWorkspaceConfig(nextConfig, 'imported');
+
+    if (selectedTargetTypes.length === 1 && selectedTargetTypes[0] && selectedTargetTypes[0] !== previewType) {
+      setPreviewType(selectedTargetTypes[0]);
+    }
+    if (parsedImport.mediaId) {
+      setMediaId(parsedImport.mediaId);
+    }
+  }, [applyWorkspaceConfig, buildCurrentUiConfig, pendingLinkImportSelection, previewType, setMediaId, setPreviewType]);
 
   const handleSubmitImportLink = useCallback(() => {
     setImportLinkModalOpen(false);
@@ -439,26 +519,24 @@ export function useConfiguratorWorkspaceStorage({
       return;
     }
 
-    const currentConfig = buildCurrentUiConfig();
-    const importConfig: SavedUiConfig = {
-      ...parsedImport.config,
-      settings: {
-        ...parsedImport.config.settings,
-        xrdbKey: currentConfig.settings.xrdbKey,
-        tmdbKey: currentConfig.settings.tmdbKey,
-        mdblistKey: currentConfig.settings.mdblistKey,
-        fanartKey: currentConfig.settings.fanartKey,
-        simklClientId: currentConfig.settings.simklClientId,
-      },
-    };
-    applyWorkspaceConfig(importConfig, 'imported');
-    if (parsedImport.previewType && parsedImport.previewType !== previewType) {
-      setPreviewType(parsedImport.previewType);
+    const importTypes = getConfiguratorLinkImportTypes(parsedImport);
+    if (importTypes.length === 0 && Object.keys(parsedImport.sharedSettings).length === 0) {
+      setSavedConfigStatus('invalid');
+      return;
     }
-    if (parsedImport.mediaId) {
-      setMediaId(parsedImport.mediaId);
-    }
-  }, [applyWorkspaceConfig, buildCurrentUiConfig, importLinkValue, previewType, queueConfigProfileRestore, setMediaId, setPreviewType]);
+
+    setPendingLinkImportSelection({
+      parsedImport,
+      selectedTargetTypes:
+        importTypes.length <= 1
+          ? parsedImport.defaultSourceType
+            ? [parsedImport.defaultSourceType]
+            : []
+          : importTypes,
+      includeSharedSettings: false,
+      allowCrossTypeTargets: importTypes.length <= 1,
+    });
+  }, [importLinkValue, previewType, queueConfigProfileRestore]);
 
   return {
     applyWorkspaceConfig,
@@ -476,9 +554,14 @@ export function useConfiguratorWorkspaceStorage({
     handleImportWorkspace,
     importLinkModalOpen,
     importLinkValue,
+    pendingLinkImportSelection,
     onOpenImportLinkModal: handleOpenImportLinkModal,
     onCloseImportLinkModal: handleCloseImportLinkModal,
     onImportLinkValueChange: setImportLinkValue,
     onSubmitImportLink: handleSubmitImportLink,
+    onCancelImportLinkSelection: handleCancelImportLinkSelection,
+    onConfirmImportLinkSelection: handleConfirmImportLinkSelection,
+    onToggleImportSharedSettings: handleToggleImportSharedSettings,
+    onToggleImportTargetType: handleToggleImportTargetType,
   };
 }

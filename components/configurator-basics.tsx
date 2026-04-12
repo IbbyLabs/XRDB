@@ -19,6 +19,13 @@ import type { TmdbIdScopeMode } from '@/lib/uiConfig';
 
 type ProxyType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 
+const IMPORT_TYPE_LABEL: Record<ProxyType, string> = {
+  poster: 'Poster',
+  backdrop: 'Backdrop',
+  thumbnail: 'Thumbnail',
+  logo: 'Logo',
+};
+
 function ThemedDropdown({
   label,
   options,
@@ -235,10 +242,15 @@ export function WorkspaceManagementSection({
   onImportWorkspace,
   onOpenImportLinkModal,
   onCloseImportLinkModal,
+  onCancelImportLinkSelection,
+  onConfirmImportLinkSelection,
   onImportLinkValueChange,
   onSubmitImportLink,
+  onToggleImportSharedSettings,
+  onToggleImportTargetType,
   importLinkModalOpen,
   importLinkValue,
+  pendingLinkImportSelection,
   onSaveWorkspace,
   onDownloadWorkspace,
   onPromptWorkspaceImport,
@@ -251,10 +263,24 @@ export function WorkspaceManagementSection({
   onImportWorkspace: (event: ChangeEvent<HTMLInputElement>) => void;
   onOpenImportLinkModal: () => void;
   onCloseImportLinkModal: () => void;
+  onCancelImportLinkSelection: () => void;
+  onConfirmImportLinkSelection: () => void;
   onImportLinkValueChange: (value: string) => void;
   onSubmitImportLink: () => void;
+  onToggleImportSharedSettings: () => void;
+  onToggleImportTargetType: (value: ProxyType) => void;
   importLinkModalOpen: boolean;
   importLinkValue: string;
+  pendingLinkImportSelection: {
+    parsedImport: {
+      sharedSettings: Record<string, string>;
+      typeSettings: Partial<Record<ProxyType, Record<string, string>>>;
+      defaultSourceType: ProxyType | null;
+    };
+    selectedTargetTypes: ProxyType[];
+    includeSharedSettings: boolean;
+    allowCrossTypeTargets: boolean;
+  } | null;
   onSaveWorkspace: () => void;
   onDownloadWorkspace: () => void;
   onPromptWorkspaceImport: () => void;
@@ -264,6 +290,17 @@ export function WorkspaceManagementSection({
   savedConfigStatus: string | null;
 }) {
   const importLinkInputRef = useRef<HTMLInputElement | null>(null);
+  const importTargetTypes = pendingLinkImportSelection?.allowCrossTypeTargets
+    ? (['poster', 'backdrop', 'thumbnail', 'logo'] as const)
+    : (Object.keys(pendingLinkImportSelection?.parsedImport.typeSettings ?? {}) as ProxyType[]);
+  const sharedSettingCount = Object.keys(pendingLinkImportSelection?.parsedImport.sharedSettings ?? {}).length;
+  const sourceTypeLabel = pendingLinkImportSelection?.parsedImport.defaultSourceType
+    ? IMPORT_TYPE_LABEL[pendingLinkImportSelection.parsedImport.defaultSourceType]
+    : 'Imported';
+  const canConfirmImportSelection = Boolean(
+    pendingLinkImportSelection &&
+      (pendingLinkImportSelection.selectedTargetTypes.length > 0 || pendingLinkImportSelection.includeSharedSettings),
+  );
 
   useEffect(() => {
     if (importLinkModalOpen) {
@@ -402,6 +439,105 @@ export function WorkspaceManagementSection({
                 }`}
               >
                 Import
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      ) : null}
+      {pendingLinkImportSelection ? createPortal(
+        <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-sm" onClick={onCancelImportLinkSelection}>
+          <div className="w-full max-w-xl rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(12,10,20,0.98),rgba(6,5,12,0.98))] p-6 shadow-[0_40px_120px_-55px_rgba(0,0,0,0.95)]" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full border border-violet-500/30 bg-violet-500/10">
+                <Link2 className="w-4 h-4 text-violet-300" />
+              </div>
+              <h3 className="text-lg font-semibold tracking-tight text-white">Review import</h3>
+            </div>
+            <p className="text-[13px] leading-relaxed text-zinc-400 mb-5">
+              {pendingLinkImportSelection.allowCrossTypeTargets
+                ? `Choose which sections should receive the imported ${sourceTypeLabel.toLowerCase()} settings.`
+                : 'Choose which imported sections should be applied to your workspace.'}
+            </p>
+
+            {sharedSettingCount > 0 ? (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 mb-4">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={pendingLinkImportSelection.includeSharedSettings}
+                    onChange={onToggleImportSharedSettings}
+                    className="mt-0.5 h-4 w-4 accent-violet-500"
+                  />
+                  <span>
+                    <span className="block text-[13px] font-semibold text-white">Include shared visual settings</span>
+                    <span className="mt-1 block text-[11px] leading-5 text-zinc-400">
+                      Apply {sharedSettingCount} shared appearance setting{sharedSettingCount === 1 ? '' : 's'} such as provider styling or aggregate display behavior.
+                    </span>
+                  </span>
+                </label>
+              </div>
+            ) : null}
+
+            {importTargetTypes.length > 0 ? (
+              <div className="space-y-2">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                  {pendingLinkImportSelection.allowCrossTypeTargets ? 'Apply To' : 'Imported Sections'}
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {importTargetTypes.map((type) => {
+                    const isSelected = pendingLinkImportSelection.selectedTargetTypes.includes(type);
+                    const isMappedTarget =
+                      pendingLinkImportSelection.allowCrossTypeTargets &&
+                      pendingLinkImportSelection.parsedImport.defaultSourceType !== null &&
+                      type !== pendingLinkImportSelection.parsedImport.defaultSourceType;
+
+                    return (
+                      <button
+                        key={`import-target-${type}`}
+                        type="button"
+                        onClick={() => onToggleImportTargetType(type)}
+                        className={`rounded-2xl border px-4 py-3 text-left transition-colors ${
+                          isSelected
+                            ? 'border-violet-500/60 bg-violet-500/12 text-white'
+                            : 'border-white/10 bg-white/[0.04] text-zinc-300 hover:border-white/20 hover:bg-white/[0.06]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-[13px] font-semibold">{IMPORT_TYPE_LABEL[type]}</span>
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${isSelected ? 'bg-violet-500/20 text-violet-100' : 'bg-white/5 text-zinc-500'}`}>
+                            {isSelected ? 'Selected' : 'Select'}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-[11px] leading-5 text-zinc-400">
+                          {isMappedTarget ? `Reuse the imported ${sourceTypeLabel.toLowerCase()} look on ${IMPORT_TYPE_LABEL[type].toLowerCase()}.` : `Apply the imported ${IMPORT_TYPE_LABEL[type].toLowerCase()} settings.`}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="mt-5 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={onCancelImportLinkSelection}
+                className="rounded-xl px-5 py-2 text-[13px] font-semibold text-zinc-400 hover:text-zinc-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={onConfirmImportLinkSelection}
+                disabled={!canConfirmImportSelection}
+                className={`rounded-xl px-5 py-2 text-[13px] font-semibold transition-colors ${
+                  canConfirmImportSelection
+                    ? 'bg-violet-600 text-white hover:bg-violet-500'
+                    : 'bg-white/5 text-zinc-600 cursor-not-allowed'
+                }`}
+              >
+                Apply import
               </button>
             </div>
           </div>

@@ -1,30 +1,209 @@
-import { parseQualityBadgePreferencesAllowEmpty } from './badgeCustomization.ts';
 import { PROXY_OPTIONAL_STRING_KEYS } from './proxyConfigSchema.ts';
-import { normalizeSavedUiConfig, type SavedUiConfig } from './uiConfig.ts';
 
 export type ConfiguratorPreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 
+export type ConfiguratorLinkImportPatch = Record<string, string>;
+
 export type ConfiguratorLinkImportResult = {
-  config: SavedUiConfig;
+  sharedSettings: ConfiguratorLinkImportPatch;
+  typeSettings: Partial<Record<ConfiguratorPreviewType, ConfiguratorLinkImportPatch>>;
   previewType: ConfiguratorPreviewType | null;
   mediaId: string | null;
   configProfileId: string | null;
+  defaultSourceType: ConfiguratorPreviewType | null;
 };
 
 const PROTECTED_CONFIG_PROFILE_ID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-const PREVIEW_TYPES = new Set<ConfiguratorPreviewType>([
+const PREVIEW_TYPE_ORDER: ConfiguratorPreviewType[] = [
   'poster',
   'backdrop',
   'thumbnail',
   'logo',
-]);
+];
 
-const IMPORT_QUERY_KEYS = new Set<string>([
+const PREVIEW_TYPES = new Set<ConfiguratorPreviewType>(PREVIEW_TYPE_ORDER);
+
+const TYPE_PREFIX_BY_PREVIEW_TYPE: Record<ConfiguratorPreviewType, string> = {
+  poster: 'poster',
+  backdrop: 'backdrop',
+  thumbnail: 'thumbnail',
+  logo: 'logo',
+};
+
+const NON_VISUAL_QUERY_KEYS = new Set<string>([
+  'xrdbKey',
   'tmdbKey',
   'mdblistKey',
-  ...PROXY_OPTIONAL_STRING_KEYS,
+  'fanartKey',
+  'simklClientId',
+  'lang',
+  'secLang',
+  'tmdbIdScope',
+  'xrdbBase',
+  'catalogPlan',
+]);
+
+const SHARED_VISUAL_QUERY_KEYS = new Set<string>([
+  'providerAppearance',
+  'ratingValueMode',
+  'qualityBadgesSide',
+  'aggregateAccentMode',
+  'aggregateAccentColor',
+  'aggregateCriticsAccentColor',
+  'aggregateAudienceAccentColor',
+  'aggregateValueColor',
+  'aggregateCriticsValueColor',
+  'aggregateAudienceValueColor',
+  'aggregateDynamicStops',
+  'aggregateAccentBarOffset',
+  'aggregateAccentBarVisible',
+]);
+
+const TYPE_SCOPED_VISUAL_QUERY_KEYS = new Set<string>(
+  PROXY_OPTIONAL_STRING_KEYS.filter((key) => {
+    if (NON_VISUAL_QUERY_KEYS.has(key) || SHARED_VISUAL_QUERY_KEYS.has(key)) {
+      return false;
+    }
+
+    return PREVIEW_TYPE_ORDER.some((type) => key.startsWith(TYPE_PREFIX_BY_PREVIEW_TYPE[type]));
+  }),
+);
+
+const GENERIC_QUERY_TO_TYPE_KEY: Record<string, Partial<Record<ConfiguratorPreviewType, string>>> = {
+  ratings: {
+    poster: 'posterRatings',
+    backdrop: 'backdropRatings',
+    thumbnail: 'thumbnailRatings',
+    logo: 'logoRatings',
+  },
+  order: {
+    poster: 'posterRatings',
+    backdrop: 'backdropRatings',
+    thumbnail: 'thumbnailRatings',
+    logo: 'logoRatings',
+  },
+  ratingStyle: {
+    poster: 'posterRatingStyle',
+    backdrop: 'backdropRatingStyle',
+    thumbnail: 'thumbnailRatingStyle',
+    logo: 'logoRatingStyle',
+  },
+  ratingsStyle: {
+    poster: 'posterRatingStyle',
+    backdrop: 'backdropRatingStyle',
+    thumbnail: 'thumbnailRatingStyle',
+    logo: 'logoRatingStyle',
+  },
+  ratingPresentation: {
+    poster: 'posterRatingPresentation',
+    backdrop: 'backdropRatingPresentation',
+    thumbnail: 'thumbnailRatingPresentation',
+    logo: 'logoRatingPresentation',
+  },
+  aggregateRatingSource: {
+    poster: 'posterAggregateRatingSource',
+    backdrop: 'backdropAggregateRatingSource',
+    thumbnail: 'thumbnailAggregateRatingSource',
+    logo: 'logoAggregateRatingSource',
+  },
+  qualityBadgesStyle: {
+    poster: 'posterQualityBadgesStyle',
+    backdrop: 'backdropQualityBadgesStyle',
+    thumbnail: 'thumbnailQualityBadgesStyle',
+    logo: 'logoQualityBadgesStyle',
+  },
+  qualityBadgeScale: {
+    poster: 'posterQualityBadgeScale',
+    backdrop: 'backdropQualityBadgeScale',
+    thumbnail: 'thumbnailQualityBadgeScale',
+    logo: 'logoQualityBadgeScale',
+  },
+  qualityBadges: {
+    poster: 'posterQualityBadges',
+    backdrop: 'backdropQualityBadges',
+    thumbnail: 'thumbnailQualityBadges',
+    logo: 'logoQualityBadges',
+  },
+  remuxDisplayMode: {
+    poster: 'posterRemuxDisplayMode',
+    backdrop: 'backdropRemuxDisplayMode',
+    thumbnail: 'thumbnailRemuxDisplayMode',
+    logo: 'logoRemuxDisplayMode',
+  },
+  streamBadges: {
+    poster: 'posterStreamBadges',
+    backdrop: 'backdropStreamBadges',
+    thumbnail: 'thumbnailStreamBadges',
+  },
+  imageText: {
+    poster: 'posterImageText',
+    backdrop: 'backdropImageText',
+    thumbnail: 'thumbnailImageText',
+  },
+  imageSize: {
+    poster: 'posterImageSize',
+    backdrop: 'backdropImageSize',
+  },
+  genreBadge: {
+    poster: 'posterGenreBadge',
+    backdrop: 'backdropGenreBadge',
+    thumbnail: 'thumbnailGenreBadge',
+    logo: 'logoGenreBadge',
+  },
+  genreBadgeStyle: {
+    poster: 'posterGenreBadgeStyle',
+    backdrop: 'backdropGenreBadgeStyle',
+    thumbnail: 'thumbnailGenreBadgeStyle',
+    logo: 'logoGenreBadgeStyle',
+  },
+  genreBadgePosition: {
+    poster: 'posterGenreBadgePosition',
+    backdrop: 'backdropGenreBadgePosition',
+    thumbnail: 'thumbnailGenreBadgePosition',
+    logo: 'logoGenreBadgePosition',
+  },
+  genreBadgeScale: {
+    poster: 'posterGenreBadgeScale',
+    backdrop: 'backdropGenreBadgeScale',
+    thumbnail: 'thumbnailGenreBadgeScale',
+    logo: 'logoGenreBadgeScale',
+  },
+  genreBadgeBorderWidth: {
+    poster: 'posterGenreBadgeBorderWidth',
+    backdrop: 'backdropGenreBadgeBorderWidth',
+    thumbnail: 'thumbnailGenreBadgeBorderWidth',
+    logo: 'logoGenreBadgeBorderWidth',
+  },
+  genreBadgeAnimeGrouping: {
+    poster: 'posterGenreBadgeAnimeGrouping',
+    backdrop: 'backdropGenreBadgeAnimeGrouping',
+    thumbnail: 'thumbnailGenreBadgeAnimeGrouping',
+    logo: 'logoGenreBadgeAnimeGrouping',
+  },
+};
+
+const CROSS_TYPE_COMPATIBLE_SUFFIXES = new Set<string>([
+  'Ratings',
+  'RatingStyle',
+  'RatingPresentation',
+  'AggregateRatingSource',
+  'RatingBadgeScale',
+  'QualityBadges',
+  'QualityBadgesStyle',
+  'QualityBadgeScale',
+  'QualityBadgesMax',
+  'GenreBadge',
+  'GenreBadgeStyle',
+  'GenreBadgePosition',
+  'GenreBadgeScale',
+  'GenreBadgeBorderWidth',
+  'GenreBadgeAnimeGrouping',
+  'StreamBadges',
+  'RemuxDisplayMode',
+  'ArtworkSource',
+  'ImageText',
 ]);
 
 const RATING_STYLE_KEY_BY_PREVIEW_TYPE: Record<ConfiguratorPreviewType, string> = {
@@ -210,6 +389,135 @@ const tryParseImportUrl = (rawValue: string, baseOrigin: string) => {
   }
 };
 
+const getPreviewTypeFromScopedKey = (key: string): ConfiguratorPreviewType | null => {
+  for (const type of PREVIEW_TYPE_ORDER) {
+    if (key.startsWith(TYPE_PREFIX_BY_PREVIEW_TYPE[type])) {
+      return type;
+    }
+  }
+
+  return null;
+};
+
+const addTypeSetting = (
+  target: Partial<Record<ConfiguratorPreviewType, ConfiguratorLinkImportPatch>>,
+  previewType: ConfiguratorPreviewType,
+  key: string,
+  value: string,
+) => {
+  target[previewType] = {
+    ...(target[previewType] ?? {}),
+    [key]: value,
+  };
+};
+
+const getDefaultSourceType = (
+  typeSettings: Partial<Record<ConfiguratorPreviewType, ConfiguratorLinkImportPatch>>,
+  preferredType: ConfiguratorPreviewType | null,
+): ConfiguratorPreviewType | null => {
+  if (preferredType && typeSettings[preferredType]) {
+    return preferredType;
+  }
+
+  for (const type of PREVIEW_TYPE_ORDER) {
+    if (typeSettings[type]) {
+      return type;
+    }
+  }
+
+  return preferredType;
+};
+
+const getTypeSuffix = (previewType: ConfiguratorPreviewType, key: string) => {
+  const prefix = TYPE_PREFIX_BY_PREVIEW_TYPE[previewType];
+  return key.startsWith(prefix) ? key.slice(prefix.length) : null;
+};
+
+export const getConfiguratorLinkImportTypes = (
+  result: Pick<ConfiguratorLinkImportResult, 'typeSettings'>,
+) => PREVIEW_TYPE_ORDER.filter((type) => {
+  const patch = result.typeSettings[type];
+  return Boolean(patch && Object.keys(patch).length > 0);
+});
+
+export const mapConfiguratorImportPatchToType = (
+  sourceType: ConfiguratorPreviewType,
+  targetType: ConfiguratorPreviewType,
+  patch: ConfiguratorLinkImportPatch,
+): ConfiguratorLinkImportPatch => {
+  if (sourceType === targetType) {
+    return { ...patch };
+  }
+
+  const mapped: ConfiguratorLinkImportPatch = {};
+
+  for (const [key, value] of Object.entries(patch)) {
+    const suffix = getTypeSuffix(sourceType, key);
+    if (!suffix || !CROSS_TYPE_COMPATIBLE_SUFFIXES.has(suffix)) {
+      continue;
+    }
+
+    if (suffix === 'StreamBadges' && targetType === 'logo') {
+      continue;
+    }
+
+    if (suffix === 'ImageText' && targetType === 'logo') {
+      continue;
+    }
+
+    if (
+      suffix === 'RatingPresentation' &&
+      targetType !== 'poster' &&
+      (value === 'ring' || value === 'editorial' || value === 'blockbuster')
+    ) {
+      continue;
+    }
+
+    mapped[`${TYPE_PREFIX_BY_PREVIEW_TYPE[targetType]}${suffix}`] = value;
+  }
+
+  return mapped;
+};
+
+export const mergeConfiguratorLinkImportIntoProfileParams = (
+  currentParams: Record<string, string>,
+  parsedImport: ConfiguratorLinkImportResult,
+  selection: {
+    targetTypes: ConfiguratorPreviewType[];
+    includeShared: boolean;
+    sourceType?: ConfiguratorPreviewType | null;
+  },
+) => {
+  const nextParams: Record<string, string> = { ...currentParams };
+
+  if (selection.includeShared) {
+    Object.assign(nextParams, parsedImport.sharedSettings);
+  }
+
+  const sourceType = selection.sourceType ?? parsedImport.defaultSourceType;
+
+  for (const targetType of selection.targetTypes) {
+    const explicitPatch = parsedImport.typeSettings[targetType];
+    if (explicitPatch) {
+      Object.assign(nextParams, explicitPatch);
+      continue;
+    }
+
+    if (!sourceType) {
+      continue;
+    }
+
+    const sourcePatch = parsedImport.typeSettings[sourceType];
+    if (!sourcePatch) {
+      continue;
+    }
+
+    Object.assign(nextParams, mapConfiguratorImportPatchToType(sourceType, targetType, sourcePatch));
+  }
+
+  return nextParams;
+};
+
 export const parseConfiguratorLinkImport = (
   rawValue: string,
   options?: {
@@ -238,14 +546,39 @@ export const parseConfiguratorLinkImport = (
     const candidate = String(targetUrl.searchParams.get('config') || '').trim();
     return PROTECTED_CONFIG_PROFILE_ID_RE.test(candidate) ? candidate : null;
   })();
-  const settingsCandidate: Record<string, unknown> = {};
+  const sharedSettings: ConfiguratorLinkImportPatch = {};
+  const typeSettings: Partial<Record<ConfiguratorPreviewType, ConfiguratorLinkImportPatch>> = {};
   let hasRecognizedParam = false;
 
   for (const [key, value] of targetUrl.searchParams.entries()) {
-    if (!IMPORT_QUERY_KEYS.has(key)) {
+    if (NON_VISUAL_QUERY_KEYS.has(key)) {
       continue;
     }
-    settingsCandidate[key] = value;
+    if (SHARED_VISUAL_QUERY_KEYS.has(key)) {
+      sharedSettings[key] = value;
+      hasRecognizedParam = true;
+      continue;
+    }
+
+    if (TYPE_SCOPED_VISUAL_QUERY_KEYS.has(key)) {
+      const previewType = getPreviewTypeFromScopedKey(key);
+      if (previewType) {
+        addTypeSetting(typeSettings, previewType, key, value);
+        hasRecognizedParam = true;
+      }
+      continue;
+    }
+
+    if (!scopedPreviewType) {
+      continue;
+    }
+
+    const mappedKey = GENERIC_QUERY_TO_TYPE_KEY[key]?.[scopedPreviewType];
+    if (!mappedKey) {
+      continue;
+    }
+
+    addTypeSetting(typeSettings, scopedPreviewType, mappedKey, value);
     hasRecognizedParam = true;
   }
 
@@ -253,85 +586,12 @@ export const parseConfiguratorLinkImport = (
     return null;
   }
 
-  const posterRemuxDisplayMode = targetUrl.searchParams.get('posterRemuxDisplayMode');
-  if (posterRemuxDisplayMode !== null) {
-    settingsCandidate.posterRemuxDisplayMode = posterRemuxDisplayMode;
-  }
-  const backdropRemuxDisplayMode = targetUrl.searchParams.get('backdropRemuxDisplayMode');
-  if (backdropRemuxDisplayMode !== null) {
-    settingsCandidate.backdropRemuxDisplayMode = backdropRemuxDisplayMode;
-  }
-  const thumbnailRemuxDisplayMode = targetUrl.searchParams.get('thumbnailRemuxDisplayMode');
-  if (thumbnailRemuxDisplayMode !== null) {
-    settingsCandidate.thumbnailRemuxDisplayMode = thumbnailRemuxDisplayMode;
-  }
-  const logoRemuxDisplayMode = targetUrl.searchParams.get('logoRemuxDisplayMode');
-  if (logoRemuxDisplayMode !== null) {
-    settingsCandidate.logoRemuxDisplayMode = logoRemuxDisplayMode;
-  }
-
-  if (scopedPreviewType) {
-    const genericImageText = targetUrl.searchParams.get('imageText');
-    const imageTextKey = IMAGE_TEXT_KEY_BY_PREVIEW_TYPE[scopedPreviewType];
-    if (genericImageText && imageTextKey) {
-      settingsCandidate[imageTextKey] = genericImageText;
-    }
-
-    const genericRatingStyle =
-      targetUrl.searchParams.get('ratingStyle') || targetUrl.searchParams.get('ratingsStyle');
-    if (genericRatingStyle) {
-      settingsCandidate[RATING_STYLE_KEY_BY_PREVIEW_TYPE[scopedPreviewType]] = genericRatingStyle;
-    }
-
-    const genericRatingPresentation = targetUrl.searchParams.get('ratingPresentation');
-    if (genericRatingPresentation) {
-      settingsCandidate[RATING_PRESENTATION_KEY_BY_PREVIEW_TYPE[scopedPreviewType]] =
-        genericRatingPresentation;
-    }
-
-    const genericAggregateRatingSource = targetUrl.searchParams.get('aggregateRatingSource');
-    if (genericAggregateRatingSource) {
-      settingsCandidate[AGGREGATE_SOURCE_KEY_BY_PREVIEW_TYPE[scopedPreviewType]] =
-        genericAggregateRatingSource;
-    }
-
-    const genericQualityBadgesStyle = targetUrl.searchParams.get('qualityBadgesStyle');
-    if (genericQualityBadgesStyle) {
-      settingsCandidate[QUALITY_BADGES_STYLE_KEY_BY_PREVIEW_TYPE[scopedPreviewType]] =
-        genericQualityBadgesStyle;
-    }
-
-    const genericQualityBadgeScale = targetUrl.searchParams.get('qualityBadgeScale');
-    if (genericQualityBadgeScale) {
-      settingsCandidate[QUALITY_BADGE_SCALE_KEY_BY_PREVIEW_TYPE[scopedPreviewType]] =
-        genericQualityBadgeScale;
-    }
-
-    const genericQualityBadges = targetUrl.searchParams.get('qualityBadges');
-    if (genericQualityBadges) {
-      settingsCandidate[QUALITY_BADGES_KEY_BY_PREVIEW_TYPE[scopedPreviewType]] =
-        parseQualityBadgePreferencesAllowEmpty(genericQualityBadges);
-    }
-
-    const genericRemuxDisplayMode = targetUrl.searchParams.get('remuxDisplayMode');
-    if (genericRemuxDisplayMode) {
-      settingsCandidate[REMUX_DISPLAY_MODE_KEY_BY_PREVIEW_TYPE[scopedPreviewType]] =
-        genericRemuxDisplayMode;
-    }
-
-    const genericStreamBadges = targetUrl.searchParams.get('streamBadges');
-    const streamBadgesKey = STREAM_BADGES_KEY_BY_PREVIEW_TYPE[scopedPreviewType];
-    if (genericStreamBadges && streamBadgesKey) {
-      settingsCandidate[streamBadgesKey] = genericStreamBadges;
-    }
-  }
-
   return {
-    config: normalizeSavedUiConfig({
-      settings: settingsCandidate,
-    }, options?.skipCrossTypeFallbacks ? { skipCrossTypeFallbacks: true } : undefined),
+    sharedSettings,
+    typeSettings,
     previewType: detectedPreviewType,
     mediaId,
     configProfileId,
+    defaultSourceType: getDefaultSourceType(typeSettings, scopedPreviewType),
   };
 };
