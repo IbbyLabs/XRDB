@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import {
   DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_BADGE_SCALE_PERCENT,
+  DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
   DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR,
   DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
@@ -133,6 +134,18 @@ export function useConfiguratorWorkspaceState() {
   );
   const [logoGenreBadgeBorderWidth, setLogoGenreBadgeBorderWidth] = useState<number>(
     DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
+  );
+  const [posterGenreBadgeBackgroundOpacity, setPosterGenreBadgeBackgroundOpacity] = useState<number>(
+    DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
+  );
+  const [backdropGenreBadgeBackgroundOpacity, setBackdropGenreBadgeBackgroundOpacity] = useState<number>(
+    DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
+  );
+  const [thumbnailGenreBadgeBackgroundOpacity, setThumbnailGenreBadgeBackgroundOpacity] = useState<number>(
+    DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
+  );
+  const [logoGenreBadgeBackgroundOpacity, setLogoGenreBadgeBackgroundOpacity] = useState<number>(
+    DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
   );
   const [posterGenreBadgeAnimeGrouping, setPosterGenreBadgeAnimeGrouping] = useState<GenreBadgeAnimeGrouping>(DEFAULT_GENRE_BADGE_ANIME_GROUPING);
   const [backdropGenreBadgeAnimeGrouping, setBackdropGenreBadgeAnimeGrouping] = useState<GenreBadgeAnimeGrouping>(DEFAULT_GENRE_BADGE_ANIME_GROUPING);
@@ -305,6 +318,7 @@ export function useConfiguratorWorkspaceState() {
     backdropGenreBadgePosition,
     backdropGenreBadgeScale,
     backdropGenreBadgeBorderWidth,
+    backdropGenreBadgeBackgroundOpacity,
     backdropGenreBadgeStyle,
     backdropImageText,
     backdropImageSize,
@@ -332,6 +346,7 @@ export function useConfiguratorWorkspaceState() {
     thumbnailGenreBadgePosition,
     thumbnailGenreBadgeScale,
     thumbnailGenreBadgeBorderWidth,
+    thumbnailGenreBadgeBackgroundOpacity,
     thumbnailGenreBadgeStyle,
     thumbnailImageText,
     thumbnailQualityBadgePreferences,
@@ -363,6 +378,7 @@ export function useConfiguratorWorkspaceState() {
     logoGenreBadgePosition,
     logoGenreBadgeScale,
     logoGenreBadgeBorderWidth,
+    logoGenreBadgeBackgroundOpacity,
     logoGenreBadgeStyle,
     logoQualityBadgePreferences,
     logoQualityBadgeScale,
@@ -391,6 +407,7 @@ export function useConfiguratorWorkspaceState() {
     posterGenreBadgePosition,
     posterGenreBadgeScale,
     posterGenreBadgeBorderWidth,
+    posterGenreBadgeBackgroundOpacity,
     posterGenreBadgeStyle,
     posterIdMode,
     posterImageSize,
@@ -480,6 +497,7 @@ export function useConfiguratorWorkspaceState() {
     setBackdropGenreBadgePosition,
     setBackdropGenreBadgeScale,
     setBackdropGenreBadgeBorderWidth,
+    setBackdropGenreBadgeBackgroundOpacity,
     setBackdropGenreBadgeStyle,
     setBackdropImageText,
     setBackdropImageSize,
@@ -506,6 +524,7 @@ export function useConfiguratorWorkspaceState() {
     setThumbnailGenreBadgePosition,
     setThumbnailGenreBadgeScale,
     setThumbnailGenreBadgeBorderWidth,
+    setThumbnailGenreBadgeBackgroundOpacity,
     setThumbnailGenreBadgeStyle,
     setThumbnailImageText,
     setThumbnailQualityBadgePreferences,
@@ -537,6 +556,7 @@ export function useConfiguratorWorkspaceState() {
     setLogoGenreBadgePosition,
     setLogoGenreBadgeScale,
     setLogoGenreBadgeBorderWidth,
+    setLogoGenreBadgeBackgroundOpacity,
     setLogoGenreBadgeStyle,
     setLogoQualityBadgePreferences,
     setLogoQualityBadgeScale,
@@ -564,6 +584,7 @@ export function useConfiguratorWorkspaceState() {
     setPosterGenreBadgePosition,
     setPosterGenreBadgeScale,
     setPosterGenreBadgeBorderWidth,
+    setPosterGenreBadgeBackgroundOpacity,
     setPosterGenreBadgeStyle,
     setPosterIdMode,
     setPosterImageSize,

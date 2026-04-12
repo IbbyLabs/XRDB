@@ -131,6 +131,7 @@ export type GenreBadgeSpec = {
   position: GenreBadgePosition;
   scalePercent?: number;
   borderWidth?: number;
+  backgroundOpacity?: number;
   noBackgroundOutlineColor?: string;
   noBackgroundOutlineWidth?: number;
 };
@@ -1871,6 +1872,42 @@ export const renderWithSharp = async (
       posterEdgeInset,
       collisionRects: genreCollisionRects,
     });
+    if (
+      genreBadgeOverlay &&
+      input.genreBadge &&
+      input.genreBadge.style === 'clean' &&
+      input.genreBadge.mode !== 'off'
+    ) {
+      const cleanBackgroundOpacity = Math.max(
+        0,
+        Math.min(
+          1,
+          (Number.isFinite(input.genreBadge.backgroundOpacity)
+            ? Number(input.genreBadge.backgroundOpacity)
+            : 28) / 100,
+        ),
+      );
+      const overlayTop = Math.max(0, genreBadgeOverlay.top - Math.round(genreBadgeOverlay.height * 1.2));
+      const overlayHeight = Math.max(1, input.outputHeight - overlayTop);
+      const topAlpha = Math.max(0.02, Math.min(0.18, cleanBackgroundOpacity * 0.22));
+      const midAlpha = Math.max(topAlpha, Math.min(0.42, cleanBackgroundOpacity * 0.5));
+      const bottomAlpha = Math.max(midAlpha, Math.min(0.92, cleanBackgroundOpacity * 1.05));
+      const cleanShadowSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${input.outputWidth}" height="${overlayHeight}" viewBox="0 0 ${input.outputWidth} ${overlayHeight}">
+<defs>
+<linearGradient id="cleanBottomShadow" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0%" stop-color="rgba(0,0,0,${topAlpha.toFixed(2)})"/>
+<stop offset="45%" stop-color="rgba(0,0,0,${midAlpha.toFixed(2)})"/>
+<stop offset="100%" stop-color="rgba(0,0,0,${bottomAlpha.toFixed(2)})"/>
+</linearGradient>
+</defs>
+<rect x="0" y="0" width="${input.outputWidth}" height="${overlayHeight}" fill="url(#cleanBottomShadow)"/>
+</svg>`;
+      overlays.push({
+        input: Buffer.from(cleanShadowSvg),
+        top: overlayTop,
+        left: 0,
+      });
+    }
     if (genreBadgeOverlay) {
       overlays.push({
         input: Buffer.from(genreBadgeOverlay.svg),

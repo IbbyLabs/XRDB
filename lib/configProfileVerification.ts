@@ -3,9 +3,11 @@ import {
   DEFAULT_BADGE_SCALE_PERCENT,
   DEFAULT_QUALITY_BADGE_PREFERENCES,
   MAX_BADGE_SCALE_PERCENT,
+  MAX_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
   MAX_GENRE_BADGE_BORDER_WIDTH_PX,
   MAX_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   MIN_BADGE_SCALE_PERCENT,
+  MIN_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
   MIN_GENRE_BADGE_BORDER_WIDTH_PX,
   MIN_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
 } from './badgeCustomization.ts';
@@ -282,6 +284,23 @@ const buildEntries = () => {
       coverageValues: toDecimalTenthsRange(MIN_GENRE_BADGE_BORDER_WIDTH_PX, MAX_GENRE_BADGE_BORDER_WIDTH_PX),
       browserFamily: 'genre-badge',
       surfaces: [key.replace('GenreBadgeBorderWidth', '').toLowerCase()],
+    });
+  }
+
+  for (const key of [
+    'posterGenreBadgeBackgroundOpacity',
+    'backdropGenreBadgeBackgroundOpacity',
+    'thumbnailGenreBadgeBackgroundOpacity',
+    'logoGenreBadgeBackgroundOpacity',
+  ]) {
+    entries.push({
+      key,
+      coverageValues: toIntegerRange(
+        MIN_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
+        MAX_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
+      ),
+      browserFamily: 'genre-badge',
+      surfaces: [key.replace('GenreBadgeBackgroundOpacity', '').toLowerCase()],
     });
   }
 

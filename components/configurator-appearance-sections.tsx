@@ -39,14 +39,17 @@ import {
   DEFAULT_BADGE_SCALE_PERCENT,
   DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
+  DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
   DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR,
   DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_THUMBNAIL_GENRE_BADGE_BORDER_WIDTH_PX,
   MAX_GENRE_BADGE_BORDER_WIDTH_PX,
+  MAX_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
   MAX_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   MAX_THUMBNAIL_RATING_BADGE_SCALE_PERCENT,
   MIN_GENRE_BADGE_BORDER_WIDTH_PX,
+  MIN_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
   MIN_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   MAX_BADGE_SCALE_PERCENT,
   MAX_GENRE_BADGE_SCALE_PERCENT,
@@ -55,6 +58,7 @@ import {
   QUALITY_BADGE_OPTIONS,
   normalizeBadgeScalePercent,
   normalizeGenreBadgeBorderWidthPx,
+  normalizeGenreBadgeBackgroundOpacityPercent,
   normalizeGenreBadgeScalePercent,
   normalizeNoBackgroundBadgeOutlineWidthPx,
   normalizeQualityBadgeScalePercent,
@@ -741,6 +745,7 @@ export function LookSection({
   activeRatingBadgeScale,
   activeGenreBadgeScale,
   activeGenreBadgeBorderWidth,
+  activeGenreBadgeBackgroundOpacity,
   activeQualityBadgeScale,
   posterNoBackgroundBadgeOutlineColor,
   posterNoBackgroundBadgeOutlineWidth,
@@ -790,6 +795,7 @@ export function LookSection({
   onSelectRatingBadgeScale,
   onSelectGenreBadgeScale,
   onSelectGenreBadgeBorderWidth,
+  onSelectGenreBadgeBackgroundOpacity,
   onSelectQualityBadgeScale,
   onSelectPosterNoBackgroundBadgeOutlineColor,
   onSelectPosterNoBackgroundBadgeOutlineWidth,
@@ -856,6 +862,7 @@ export function LookSection({
   activeRatingBadgeScale: number;
   activeGenreBadgeScale: number;
   activeGenreBadgeBorderWidth: number;
+  activeGenreBadgeBackgroundOpacity: number;
   activeQualityBadgeScale: number;
   posterNoBackgroundBadgeOutlineColor: string;
   posterNoBackgroundBadgeOutlineWidth: number;
@@ -907,6 +914,7 @@ export function LookSection({
   onSelectRatingBadgeScale: (value: number) => void;
   onSelectGenreBadgeScale: (value: number) => void;
   onSelectGenreBadgeBorderWidth: (value: number) => void;
+  onSelectGenreBadgeBackgroundOpacity: (value: number) => void;
   onSelectQualityBadgeScale: (value: number) => void;
   onSelectPosterNoBackgroundBadgeOutlineColor: (value: string) => void;
   onSelectPosterNoBackgroundBadgeOutlineWidth: (value: number) => void;
@@ -1883,6 +1891,21 @@ export function LookSection({
                 suffix="px"
                 onChange={(value) =>
                   onSelectGenreBadgeBorderWidth(normalizeGenreBadgeBorderWidthPx(String(value)))
+                }
+              />
+            ) : null}
+            {activeGenreBadgeStyle === 'clean' ? (
+              <ScaleField
+                label="Genre background"
+                value={activeGenreBadgeBackgroundOpacity}
+                defaultValue={DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT}
+                min={MIN_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT}
+                max={MAX_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT}
+                suffix="%"
+                onChange={(value) =>
+                  onSelectGenreBadgeBackgroundOpacity(
+                    normalizeGenreBadgeBackgroundOpacityPercent(String(value)),
+                  )
                 }
               />
             ) : null}

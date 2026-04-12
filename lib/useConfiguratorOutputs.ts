@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import {
   DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_BADGE_SCALE_PERCENT,
+  DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
   DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR,
   DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
@@ -93,6 +94,7 @@ const GENRE_BADGE_QUERY_KEYS = {
     position: 'posterGenreBadgePosition',
     scale: 'posterGenreBadgeScale',
     borderWidth: 'posterGenreBadgeBorderWidth',
+    backgroundOpacity: 'posterGenreBadgeBackgroundOpacity',
     animeGrouping: 'posterGenreBadgeAnimeGrouping',
   },
   backdrop: {
@@ -101,6 +103,7 @@ const GENRE_BADGE_QUERY_KEYS = {
     position: 'backdropGenreBadgePosition',
     scale: 'backdropGenreBadgeScale',
     borderWidth: 'backdropGenreBadgeBorderWidth',
+    backgroundOpacity: 'backdropGenreBadgeBackgroundOpacity',
     animeGrouping: 'backdropGenreBadgeAnimeGrouping',
   },
   thumbnail: {
@@ -109,6 +112,7 @@ const GENRE_BADGE_QUERY_KEYS = {
     position: 'thumbnailGenreBadgePosition',
     scale: 'thumbnailGenreBadgeScale',
     borderWidth: 'thumbnailGenreBadgeBorderWidth',
+    backgroundOpacity: 'thumbnailGenreBadgeBackgroundOpacity',
     animeGrouping: 'thumbnailGenreBadgeAnimeGrouping',
   },
   logo: {
@@ -117,6 +121,7 @@ const GENRE_BADGE_QUERY_KEYS = {
     position: 'logoGenreBadgePosition',
     scale: 'logoGenreBadgeScale',
     borderWidth: 'logoGenreBadgeBorderWidth',
+    backgroundOpacity: 'logoGenreBadgeBackgroundOpacity',
     animeGrouping: 'logoGenreBadgeAnimeGrouping',
   },
 } as const;
@@ -140,6 +145,7 @@ const appendGenreBadgeQueryParams = ({
   position,
   scale,
   borderWidth,
+  backgroundOpacity,
   animeGrouping,
 }: {
   query: URLSearchParams;
@@ -149,6 +155,7 @@ const appendGenreBadgeQueryParams = ({
   position: GenreBadgePosition;
   scale: number;
   borderWidth: number;
+  backgroundOpacity: number;
   animeGrouping: GenreBadgeAnimeGrouping;
 }) => {
   const keys = GENRE_BADGE_QUERY_KEYS[type];
@@ -175,6 +182,9 @@ const appendGenreBadgeQueryParams = ({
   if (borderWidth !== defaultBorderWidth) {
     query.set(keys.borderWidth, String(borderWidth));
   }
+  if (backgroundOpacity !== DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT) {
+    query.set(keys.backgroundOpacity, String(backgroundOpacity));
+  }
   if (animeGrouping !== DEFAULT_GENRE_BADGE_ANIME_GROUPING) {
     query.set(keys.animeGrouping, animeGrouping);
   }
@@ -190,6 +200,7 @@ const buildGenreSamplePreviewUrl = ({
   position,
   scale,
   borderWidth,
+  backgroundOpacity,
   animeGrouping,
 }: {
   baseUrl: string;
@@ -201,6 +212,7 @@ const buildGenreSamplePreviewUrl = ({
   position: GenreBadgePosition;
   scale: number;
   borderWidth: number;
+  backgroundOpacity: number;
   animeGrouping: GenreBadgeAnimeGrouping;
 }) => {
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
@@ -225,6 +237,7 @@ const buildGenreSamplePreviewUrl = ({
     position,
     scale,
     borderWidth,
+    backgroundOpacity,
     animeGrouping,
   });
   for (const [key, value] of Object.entries(sample.params)) {
@@ -240,6 +253,7 @@ export function useConfiguratorOutputs({
   activeGenreBadgePosition,
   activeGenreBadgeScale,
   activeGenreBadgeBorderWidth,
+  activeGenreBadgeBackgroundOpacity,
   activeGenreBadgeStyle,
   activeQualityBadgesMax,
   aggregateAccentBarOffset,
@@ -258,6 +272,7 @@ export function useConfiguratorOutputs({
   backdropGenreBadgePosition,
   backdropGenreBadgeScale,
   backdropGenreBadgeBorderWidth,
+  backdropGenreBadgeBackgroundOpacity,
   backdropGenreBadgeStyle,
   backdropImageSize,
   backdropImageText,
@@ -283,6 +298,7 @@ export function useConfiguratorOutputs({
   thumbnailGenreBadgePosition,
   thumbnailGenreBadgeScale,
   thumbnailGenreBadgeBorderWidth,
+  thumbnailGenreBadgeBackgroundOpacity,
   thumbnailGenreBadgeStyle,
   thumbnailImageText,
   thumbnailQualityBadgePreferences,
@@ -315,6 +331,7 @@ export function useConfiguratorOutputs({
   logoGenreBadgePosition,
   logoGenreBadgeScale,
   logoGenreBadgeBorderWidth,
+  logoGenreBadgeBackgroundOpacity,
   logoGenreBadgeStyle,
   logoQualityBadgePreferences,
   logoQualityBadgeScale,
@@ -340,6 +357,7 @@ export function useConfiguratorOutputs({
   posterGenreBadgePosition,
   posterGenreBadgeScale,
   posterGenreBadgeBorderWidth,
+  posterGenreBadgeBackgroundOpacity,
   posterGenreBadgeStyle,
   posterIdMode,
   posterImageSize,
@@ -403,6 +421,7 @@ export function useConfiguratorOutputs({
   activeGenreBadgePosition: GenreBadgePosition;
   activeGenreBadgeScale: number;
   activeGenreBadgeBorderWidth: number;
+  activeGenreBadgeBackgroundOpacity: number;
   activeGenreBadgeStyle: GenreBadgeStyle;
   activeQualityBadgesMax: number | null;
   aggregateAccentBarOffset: number;
@@ -421,6 +440,7 @@ export function useConfiguratorOutputs({
   backdropGenreBadgePosition: GenreBadgePosition;
   backdropGenreBadgeScale: number;
   backdropGenreBadgeBorderWidth: number;
+  backdropGenreBadgeBackgroundOpacity: number;
   backdropGenreBadgeStyle: GenreBadgeStyle;
   backdropImageSize: BackdropImageSize;
   backdropImageText: BackdropImageTextPreference;
@@ -446,6 +466,7 @@ export function useConfiguratorOutputs({
   thumbnailGenreBadgePosition: GenreBadgePosition;
   thumbnailGenreBadgeScale: number;
   thumbnailGenreBadgeBorderWidth: number;
+  thumbnailGenreBadgeBackgroundOpacity: number;
   thumbnailGenreBadgeStyle: GenreBadgeStyle;
   thumbnailImageText: BackdropImageTextPreference;
   thumbnailQualityBadgePreferences: string[];
@@ -478,6 +499,7 @@ export function useConfiguratorOutputs({
   logoGenreBadgePosition: GenreBadgePosition;
   logoGenreBadgeScale: number;
   logoGenreBadgeBorderWidth: number;
+  logoGenreBadgeBackgroundOpacity: number;
   logoGenreBadgeStyle: GenreBadgeStyle;
   logoQualityBadgePreferences: string[];
   logoQualityBadgeScale: number;
@@ -503,6 +525,7 @@ export function useConfiguratorOutputs({
   posterGenreBadgePosition: GenreBadgePosition;
   posterGenreBadgeScale: number;
   posterGenreBadgeBorderWidth: number;
+  posterGenreBadgeBackgroundOpacity: number;
   posterGenreBadgeStyle: GenreBadgeStyle;
   posterIdMode: 'auto' | 'tmdb' | 'imdb';
   posterImageSize: PosterImageSize;
@@ -762,6 +785,7 @@ export function useConfiguratorOutputs({
       position: activeGenreBadgePosition,
       scale: activeGenreBadgeScale,
       borderWidth: activeGenreBadgeBorderWidth,
+      backgroundOpacity: activeGenreBadgeBackgroundOpacity,
       animeGrouping: activeGenreBadgeAnimeGrouping,
     });
     if (ratingPresentationForType !== DEFAULT_RATING_PRESENTATION) {
@@ -1168,6 +1192,7 @@ export function useConfiguratorOutputs({
     activeGenreBadgePosition,
     activeGenreBadgeScale,
     activeGenreBadgeBorderWidth,
+    activeGenreBadgeBackgroundOpacity,
     activeGenreBadgeStyle,
     activeQualityBadgesMax,
     aggregateAccentBarOffset,
@@ -1334,6 +1359,12 @@ export function useConfiguratorOutputs({
               : sample.previewType === 'backdrop'
                 ? backdropGenreBadgeBorderWidth
                 : logoGenreBadgeBorderWidth,
+          backgroundOpacity:
+            sample.previewType === 'poster'
+              ? posterGenreBadgeBackgroundOpacity
+              : sample.previewType === 'backdrop'
+                ? backdropGenreBadgeBackgroundOpacity
+                : logoGenreBadgeBackgroundOpacity,
           animeGrouping:
             sample.previewType === 'poster'
               ? posterGenreBadgeAnimeGrouping
@@ -1347,6 +1378,7 @@ export function useConfiguratorOutputs({
       backdropGenreBadgePosition,
       backdropGenreBadgeScale,
       backdropGenreBadgeBorderWidth,
+      backdropGenreBadgeBackgroundOpacity,
       backdropGenreBadgeStyle,
       baseUrl,
       xrdbKey,
@@ -1355,11 +1387,13 @@ export function useConfiguratorOutputs({
       logoGenreBadgePosition,
       logoGenreBadgeScale,
       logoGenreBadgeBorderWidth,
+      logoGenreBadgeBackgroundOpacity,
       logoGenreBadgeStyle,
       posterGenreBadgeAnimeGrouping,
       posterGenreBadgePosition,
       posterGenreBadgeScale,
       posterGenreBadgeBorderWidth,
+      posterGenreBadgeBackgroundOpacity,
       posterGenreBadgeStyle,
       tmdbKey,
     ],

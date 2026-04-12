@@ -145,6 +145,7 @@ export const prepareImageRouteMediaState = async (input: {
   genreBadgeScale: number;
   effectiveGenreBadgeScale: number;
   genreBadgeBorderWidth: number;
+  genreBadgeBackgroundOpacity: number;
   noBackgroundBadgeOutlineColor: string;
   noBackgroundBadgeOutlineWidth: number;
   genreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
@@ -279,6 +280,7 @@ const buildResolvedGenreBadge = (
     position: genreBadgePosition,
     scalePercent: effectiveGenreBadgeScale,
     borderWidth: input.genreBadgeBorderWidth,
+    backgroundOpacity: input.genreBadgeBackgroundOpacity,
     noBackgroundOutlineColor: noBackgroundBadgeOutlineColor,
     noBackgroundOutlineWidth: noBackgroundBadgeOutlineWidth,
   };

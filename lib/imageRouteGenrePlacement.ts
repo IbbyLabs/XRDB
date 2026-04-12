@@ -57,33 +57,47 @@ export const resolveGenreBadgeOverlay = ({
   if (!genreBadge) return null;
 
   const spec = buildGenreBadgeSvg(genreBadge, imageType);
+  const isBottomPriorityClean = genreBadge.style === 'clean' && genreBadge.mode !== 'off';
+  const resolvedPosition = isBottomPriorityClean ? 'bottomCenter' : genreBadge.position;
+  const minInset = isBottomPriorityClean ? 2 : 12;
   const horizontalInset = imageType === 'poster' ? posterEdgeInset : 12;
   const maxLeft = Math.max(horizontalInset, outputWidth - spec.width - horizontalInset);
-  const maxTop = Math.max(12, outputHeight - spec.height - 12);
-  const topInset = Math.min(maxTop, Math.max(12, badgeTopOffset));
+  const maxTop = Math.max(minInset, outputHeight - spec.height - minInset);
+  const topInset = Math.min(maxTop, Math.max(minInset, badgeTopOffset));
   const bottomInset = Math.min(
     maxTop,
-    Math.max(12, outputHeight - spec.height - badgeBottomOffset)
+    isBottomPriorityClean
+      ? outputHeight - spec.height - minInset
+      : Math.max(minInset, outputHeight - spec.height - badgeBottomOffset)
   );
   const centerLeft = Math.max(12, Math.min(maxLeft, Math.round((outputWidth - spec.width) / 2)));
   const left =
-    genreBadge.position === 'topRight' || genreBadge.position === 'bottomRight'
+    resolvedPosition === 'topRight' || resolvedPosition === 'bottomRight'
       ? maxLeft
-      : genreBadge.position === 'topCenter' || genreBadge.position === 'bottomCenter'
+      : resolvedPosition === 'topCenter' || resolvedPosition === 'bottomCenter'
         ? centerLeft
         : horizontalInset;
   const initialTop =
-    genreBadge.position === 'bottomLeft' ||
-    genreBadge.position === 'bottomCenter' ||
-    genreBadge.position === 'bottomRight'
+    resolvedPosition === 'bottomLeft' ||
+    resolvedPosition === 'bottomCenter' ||
+    resolvedPosition === 'bottomRight'
       ? bottomInset
       : topInset;
   const verticalDirection =
-    genreBadge.position === 'bottomLeft' ||
-    genreBadge.position === 'bottomCenter' ||
-    genreBadge.position === 'bottomRight'
+    resolvedPosition === 'bottomLeft' ||
+    resolvedPosition === 'bottomCenter' ||
+    resolvedPosition === 'bottomRight'
       ? 'up'
       : 'down';
+  if (isBottomPriorityClean) {
+    return {
+      svg: spec.svg,
+      width: spec.width,
+      height: spec.height,
+      top: Math.max(minInset, Math.min(maxTop, initialTop)),
+      left,
+    };
+  }
   const collisionPadding = Math.max(8, Math.round(badgeGap * 0.9));
   let adjustedTop = initialTop;
 
