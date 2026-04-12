@@ -57,6 +57,50 @@
 
 <a id="v1-16-1"></a>
 
+<a id="v1-17-0"></a>
+
+## [v1.17.0] - 12/04/2026
+
+### Added
+* FR-68 add console log levels
+  
+  Add a shared server logger with debug, info, warn, and error levels.
+  
+  Keep request logging disabled by default, add XRDB_REQUEST_LOG_LEVEL for opt in request visibility, and route info output to stdout while warnings and errors stay on stderr.
+  
+  Migrate runtime logging call sites, add focused logger tests, and document the new env vars in the runtime docs.
+* prioritize uuid saved profile portability
+  
+  Promote protected UUID profiles to the primary Import/Export workflow and add a first class restore path for opening an existing saved profile on another device.
+  
+  Recognize ?config=<uuid> links in configurator import and URL hydration, surface restore prompts in Configure and Import/Export, and default AIOMetadata exports to config mode URLs unless the user explicitly switches back to inline.
+  
+  Refresh README, reference copy, and generated doc assets to match the saved profile first workflow, and cover the new mode selection and config link parsing behavior with focused tests.
+
+### Fixed
+* FR-67 scope link imports by type
+  
+  Refactor configurator link import parsing into scoped visual patches instead of full workspace replacement.
+  
+  Add import review UI for shared visual settings and cross type destination selection, and merge selected patches onto current profile params.
+  
+  Expand focused import regression coverage for same type preservation, excluded non visual values, shared setting prompts, and compatible cross type mapping.
+* restore password visibility toggles
+  
+  Add eye toggles back to saved profile password inputs in the export view.
+  
+  Keep matching password and confirm password fields in sync when revealing sensitive values.
+* BUG-79 clarify saved profile update scope
+  
+  Extract shared config profile fingerprint helpers for saved profile dirty state.
+  
+  Clarify that export only controls stay local to the browser and do not affect Update saved profile.
+  
+  Add focused regression tests for persisted setting changes versus local only controls.
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.16.1] - 11/04/2026
 
 ### Fixed
