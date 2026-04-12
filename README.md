@@ -806,6 +806,8 @@ Copy `env.template` to `.env` and adjust as needed. All cache TTL values are in 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `XRDB_TRUST_PROXY_HEADERS` | `false` | Trust `x-forwarded-host` / `x-forwarded-proto` when behind a reverse proxy |
+| `XRDB_LOG_LEVEL` | `info` | Server console log threshold for XRDB runtime logs. `debug` and `info` write to STDOUT. `warn` and `error` write to STDERR. |
+| `XRDB_REQUEST_LOG_LEVEL` | `off` | Optional override for routine image request logs. Leave unset to keep request logs disabled by default. Accepted values: `off`, `debug`, `info`, `warn`, `error`. |
 | `XRDB_REQUEST_API_KEY` | (empty) | Single shared request key that gates render and proxy access on private hosts |
 | `XRDB_REQUEST_API_KEYS` | (empty) | Comma separated list of valid request keys when multiple keys are needed |
 | `XRDB_CONFIG_ENCRYPTION_KEY` | auto generated | 64 hex character (32 byte) key used to encrypt saved config profile params and stored proxy references at rest. Set this explicitly in production and back it up. Generate with `openssl rand -hex 32`. |

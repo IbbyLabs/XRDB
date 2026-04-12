@@ -34,6 +34,7 @@ import {
 import type { RatingPreference } from './ratingProviderCatalog.ts';
 import type { ImageRouteRequestState } from './imageRouteRequestState.ts';
 import { buildMigrationWarningOverlaySvg } from './migrationWarningOverlay.ts';
+import { logger } from './serverLogger.ts';
 
 const getSharpFactory = createSharpFactoryLoader();
 
@@ -462,7 +463,7 @@ export const executeImageRouteRender = async ({
             cacheControl: renderedPayload.cacheControl,
           };
         } catch (err) {
-          console.error('[xrdb] migration overlay composite failed:', err);
+          logger.error('[xrdb] migration overlay composite failed:', err);
         }
       }
 

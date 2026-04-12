@@ -2,7 +2,7 @@
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
   "xrdbTag": "v1.16.1",
-  "generatedAt": "2026-04-11T12:08:16.274Z",
+  "generatedAt": "2026-04-12T13:10:57.414Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -42,11 +42,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "restore password visibility toggles",
+        "BUG-79 clarify saved profile update scope",
+        "prioritize uuid saved profile portability",
         "preserve unlock state and addon source fetches",
-        "BUG-77 restore hosted manifest proxy flows",
-        "protect saved config and proxy references",
-        "BUG-75 preserve saved profile alias round trips",
-        "FR-64 add compact ring source priorities"
+        "BUG-77 restore hosted manifest proxy flows"
       ]
     },
     {

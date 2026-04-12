@@ -23,6 +23,7 @@ import {
 import { resolveImageRouteRequestState } from '@/lib/imageRouteRequestState';
 import { executeImageRouteRender } from '@/lib/imageRouteExecution';
 import { getConfigProfile } from '@/lib/dbCore';
+import { logger } from '@/lib/serverLogger';
 
 const finalImageInFlight = new Map<string, Promise<RenderedImagePayload>>();
 
@@ -65,7 +66,7 @@ export async function handleImageRequest(
     return respond(XRDB_REQUEST_KEY_ERROR_MESSAGE, 401);
   }
 
-  console.warn(
+  logger.request(
     `[XRDB] image request: /${type}/${id} streamBadges=${request.nextUrl.searchParams.get('posterStreamBadges') ?? request.nextUrl.searchParams.get('streamBadges') ?? 'none'}`,
   );
   scheduleImdbDatasetSync();
@@ -113,9 +114,7 @@ export async function handleImageRequest(
       return respond(error.message, error.status, error.headers);
     }
 
-    if (process.env.NODE_ENV !== 'production') {
-      console.error('[XRDB] render failed', error);
-    }
+    logger.error('[XRDB] render failed', error);
 
     const message = typeof error?.message === 'string' ? error.message : 'Unknown error';
     const normalizedMessage = message.toLowerCase();
