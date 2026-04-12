@@ -1865,7 +1865,10 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
     },
     defaultValue: DEFAULT_GENRE_BADGE_ANIME_GROUPING,
   });
-  if (settings.thumbnailGenreBadgeMode !== DEFAULT_GENRE_BADGE_MODE) {
+  if (
+    settings.thumbnailGenreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ||
+    settings.thumbnailGenreBadgeMode !== settings.backdropGenreBadgeMode
+  ) {
     payload.thumbnailGenreBadge = settings.thumbnailGenreBadgeMode;
   }
   if (settings.thumbnailGenreBadgeStyle !== DEFAULT_GENRE_BADGE_STYLE) {

@@ -474,6 +474,25 @@ test('legacy shared genre badge settings expand to per type fields and re-compre
   assert.equal(decodedConfig.logoGenreBadge, undefined);
 });
 
+test('profile params keep thumbnail genre badge off when backdrop genre badge is enabled', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      backdropGenreBadgeMode: 'both',
+      thumbnailGenreBadgeMode: 'off',
+    },
+  });
+
+  const params = buildProfileParams(config.settings);
+  assert.ok(params);
+  assert.equal(params.thumbnailGenreBadge, 'off');
+
+  const roundTripped = normalizeSavedUiConfig({ settings: params });
+  assert.equal(roundTripped.settings.thumbnailGenreBadgeMode, 'off');
+  assert.equal(roundTripped.settings.backdropGenreBadgeMode, 'both');
+});
+
 test('legacy shared stack offsets seed type scoped fields without leaking shared params into AIOMetadata exports', () => {
   const config = normalizeSavedUiConfig({
     settings: {
