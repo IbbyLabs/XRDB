@@ -20,7 +20,7 @@ import {
   artworkTextSelectionNeedsProviderTextlessSupport,
 } from './artworkTextSupport.ts';
 import { resolveOmdbPosterUrl } from './imageRouteOmdb.ts';
-import { pickByLanguageWithFallback } from './imageLanguage.ts';
+import { pickByLanguageOrNeutral, pickByLanguageWithFallback } from './imageLanguage.ts';
 import { BROWSER_LIKE_USER_AGENT } from './imageRouteExternalRatings.ts';
 import { fetchFanartArtwork } from './imageRouteFanart.ts';
 import type { PhaseDurations, CachedJsonResponse } from './imageRouteRuntime.ts';
@@ -182,7 +182,7 @@ export const createImageRouteArtworkSelector = (
     let backdropCollection = selectionInput.backdrops || [];
     const logoCollection = selectionInput.logos || [];
 
-    const selectedLogo = pickByLanguageWithFallback(
+    const selectedLogo = pickByLanguageOrNeutral(
       logoCollection,
       input.requestedImageLang,
       fallbackImageLang,

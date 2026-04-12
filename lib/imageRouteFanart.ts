@@ -8,6 +8,7 @@ import type {
 import { sha1Hex } from './imageRouteRuntime.ts';
 import {
   fanartAssetsToUrls,
+  normalizeFanartLanguage,
   selectFanartAssets,
   type FanartImageAsset,
 } from './imageRouteSelection.ts';
@@ -91,9 +92,16 @@ export const fetchFanartArtwork = async ({
   const selectedPosters = selectFanartAssets(posterCandidates, requestedLang, fallbackLang);
   const selectedBackdrops = selectFanartAssets(backdropCandidates, requestedLang, fallbackLang);
   const selectedLogos = selectFanartAssets(logoCandidates, requestedLang, fallbackLang);
+  const preferredLogoLanguage = normalizeFanartLanguage(selectedLogos[0]?.lang);
+  const scopedLogos =
+    selectedLogos.length === 0
+      ? []
+      : selectedLogos.filter(
+          (asset) => normalizeFanartLanguage(asset?.lang) === preferredLogoLanguage,
+        );
   const posterUrls = fanartAssetsToUrls(selectedPosters);
   const backdropUrls = fanartAssetsToUrls(selectedBackdrops);
-  const logoUrls = fanartAssetsToUrls(selectedLogos);
+  const logoUrls = fanartAssetsToUrls(scopedLogos.length > 0 ? scopedLogos : selectedLogos);
   if (posterUrls.length === 0 && backdropUrls.length === 0 && logoUrls.length === 0) return null;
 
   return {
