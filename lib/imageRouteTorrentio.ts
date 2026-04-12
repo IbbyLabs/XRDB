@@ -25,6 +25,7 @@ import {
   type RemuxDisplayMode,
 } from './mediaFeatures.ts';
 import { BROWSER_LIKE_USER_AGENT } from './imageRouteExternalRatings.ts';
+import { logger } from './serverLogger.ts';
 
 type TorrentioBadgeCache = {
   flags: MediaFeatureFlags;
@@ -138,7 +139,7 @@ export const fetchTorrentioBadges = async ({
     } catch (err) {
       const failureTtl = Math.min(ttlMs, 2 * 60 * 1000);
       setMetadata(cacheKey, { flags: collectMediaFeatureFlags([]) }, failureTtl);
-      console.warn(
+      logger.warn(
         `[XRDB] Torrentio fetch failed for ${torrentioUrl}:`,
         err instanceof Error ? err.message : err
       );
@@ -146,7 +147,7 @@ export const fetchTorrentioBadges = async ({
     }
 
     if (!response.ok) {
-      console.warn(`[XRDB] Torrentio returned ${response.status} for ${torrentioUrl}`);
+      logger.warn(`[XRDB] Torrentio returned ${response.status} for ${torrentioUrl}`);
     }
 
     let payload: any = null;
@@ -159,7 +160,7 @@ export const fetchTorrentioBadges = async ({
     const filenames = extractTorrentioFilenames(payload);
     const flags = collectMediaFeatureFlags(filenames);
     if (filenames.length === 0) {
-      console.warn(`[XRDB] Torrentio returned 0 streams for ${torrentioUrl}`);
+      logger.warn(`[XRDB] Torrentio returned 0 streams for ${torrentioUrl}`);
     }
     const isRateLimited = response.status === 429 || response.status === 403;
     const targetTtl = response.ok ? ttlMs : Math.min(ttlMs, 2 * 60 * 1000);

@@ -9,6 +9,8 @@ import {
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
+import { logger } from './serverLogger.ts';
+
 export const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS metadata_cache (
   key TEXT PRIMARY KEY,
@@ -125,7 +127,7 @@ const resolveConfigEncryptionKey = (): Buffer => {
   const generated = randomBytes(32);
   mkdirSync(dirname(keyPath), { recursive: true });
   writeFileSync(keyPath, generated.toString('hex'), { mode: 0o600 });
-  console.warn(
+  logger.warn(
     '[xrdb] Auto-generated config encryption key written to',
     keyPath,
     '-- set XRDB_CONFIG_ENCRYPTION_KEY for production deployments.',
