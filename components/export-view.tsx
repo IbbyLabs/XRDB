@@ -599,6 +599,47 @@ function buildSnapshotParams(snapshot: SavedUiConfig): Record<string, string> {
   return buildProfileParams(snapshot.settings) ?? {};
 }
 
+function SensitiveField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  revealed,
+  onToggleReveal,
+  inputClassName,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  revealed: boolean;
+  onToggleReveal: () => void;
+  inputClassName: string;
+}) {
+  return (
+    <label className="space-y-1.5">
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">{label}</span>
+      <div className="relative">
+        <input
+          type={revealed ? 'text' : 'password'}
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={placeholder}
+          className={`${inputClassName} pr-10`}
+        />
+        <button
+          type="button"
+          onClick={onToggleReveal}
+          aria-label={revealed ? `Hide ${label.toLowerCase()}` : `Show ${label.toLowerCase()}`}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors hover:text-zinc-300"
+        >
+          {revealed ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      </div>
+    </label>
+  );
+}
+
 function computeParamDiff(
   current: Record<string, string>,
   saved: Record<string, string>,
@@ -689,6 +730,9 @@ function SaveConfigSection({
   const [showRevertModal, setShowRevertModal] = useState(false);
   const [revertDiff, setRevertDiff] = useState<{ entries: ParamDiffEntry[]; totalChanged: number } | null>(null);
   const [modalMode, setModalMode] = useState<'revert' | 'save'>('revert');
+  const [showAccessPasswordFields, setShowAccessPasswordFields] = useState(false);
+  const [showRestorePassword, setShowRestorePassword] = useState(false);
+  const [showRotationPasswordFields, setShowRotationPasswordFields] = useState(false);
   const fragmentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedParamsFingerprintRef = useRef<string | null>(null);
   const savedConfigSnapshot = useRef<SavedUiConfig | null>(null);
@@ -1326,16 +1370,15 @@ function SaveConfigSection({
                   className="w-full rounded-2xl border border-white/10 bg-black/70 px-4 py-3 text-[13px] text-white placeholder:text-zinc-500 outline-none focus:border-cyan-500/50"
                 />
               </label>
-              <label className="space-y-1.5">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Profile password</span>
-                <input
-                  type="password"
-                  value={accessPassword}
-                  onChange={(event) => setAccessPassword(event.target.value)}
-                  placeholder="Enter password"
-                  className="w-full rounded-2xl border border-white/10 bg-black/70 px-4 py-3 text-[13px] text-white placeholder:text-zinc-500 outline-none focus:border-cyan-500/50"
-                />
-              </label>
+              <SensitiveField
+                label="Profile password"
+                value={accessPassword}
+                onChange={setAccessPassword}
+                placeholder="Enter password"
+                revealed={showRestorePassword}
+                onToggleReveal={() => setShowRestorePassword((current) => !current)}
+                inputClassName="w-full rounded-2xl border border-white/10 bg-black/70 px-4 py-3 text-[13px] text-white placeholder:text-zinc-500 outline-none focus:border-cyan-500/50"
+              />
             </div>
             <div className="mt-5 flex items-center justify-end gap-3">
               <button
@@ -1418,28 +1461,24 @@ function SaveConfigSection({
         )}
         {showPasswordSetup && (
           <div className="grid gap-3 md:grid-cols-2">
-            <label className="space-y-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
-                {savedProfileId ? 'New profile password' : 'Profile password'}
-              </span>
-              <input
-                type="password"
-                value={accessPassword}
-                onChange={(event) => setAccessPassword(event.target.value)}
-                placeholder="At least 8 characters"
-                className="w-full rounded-xl border border-white/10 bg-black/70 px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-500 outline-none focus:border-violet-500/50"
-              />
-            </label>
-            <label className="space-y-1.5">
-              <span className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Confirm password</span>
-              <input
-                type="password"
-                value={accessPasswordConfirm}
-                onChange={(event) => setAccessPasswordConfirm(event.target.value)}
-                placeholder="Repeat password"
-                className="w-full rounded-xl border border-white/10 bg-black/70 px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-500 outline-none focus:border-violet-500/50"
-              />
-            </label>
+            <SensitiveField
+              label={savedProfileId ? 'New profile password' : 'Profile password'}
+              value={accessPassword}
+              onChange={setAccessPassword}
+              placeholder="At least 8 characters"
+              revealed={showAccessPasswordFields}
+              onToggleReveal={() => setShowAccessPasswordFields((current) => !current)}
+              inputClassName="w-full rounded-xl border border-white/10 bg-black/70 px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-500 outline-none focus:border-violet-500/50"
+            />
+            <SensitiveField
+              label="Confirm password"
+              value={accessPasswordConfirm}
+              onChange={setAccessPasswordConfirm}
+              placeholder="Repeat password"
+              revealed={showAccessPasswordFields}
+              onToggleReveal={() => setShowAccessPasswordFields((current) => !current)}
+              inputClassName="w-full rounded-xl border border-white/10 bg-black/70 px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-500 outline-none focus:border-violet-500/50"
+            />
           </div>
         )}
         {showUnlockControls && (
@@ -1451,16 +1490,15 @@ function SaveConfigSection({
               </p>
             </div>
             <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
-              <label className="space-y-1.5">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Profile password</span>
-                <input
-                  type="password"
-                  value={accessPassword}
-                  onChange={(event) => setAccessPassword(event.target.value)}
-                  placeholder="Enter password"
-                  className="w-full rounded-xl border border-white/10 bg-black/70 px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-500 outline-none focus:border-violet-500/50"
-                />
-              </label>
+              <SensitiveField
+                label="Profile password"
+                value={accessPassword}
+                onChange={setAccessPassword}
+                placeholder="Enter password"
+                revealed={showAccessPasswordFields}
+                onToggleReveal={() => setShowAccessPasswordFields((current) => !current)}
+                inputClassName="w-full rounded-xl border border-white/10 bg-black/70 px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-500 outline-none focus:border-violet-500/50"
+              />
               <button
                 type="button"
                 onClick={() => void handleUnlock()}
@@ -1490,26 +1528,24 @@ function SaveConfigSection({
               </p>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
-              <label className="space-y-1.5">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">New password</span>
-                <input
-                  type="password"
-                  value={rotationPassword}
-                  onChange={(event) => setRotationPassword(event.target.value)}
-                  placeholder="At least 8 characters"
-                  className="w-full rounded-xl border border-white/10 bg-black/70 px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-500 outline-none focus:border-violet-500/50"
-                />
-              </label>
-              <label className="space-y-1.5">
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Confirm new password</span>
-                <input
-                  type="password"
-                  value={rotationPasswordConfirm}
-                  onChange={(event) => setRotationPasswordConfirm(event.target.value)}
-                  placeholder="Repeat new password"
-                  className="w-full rounded-xl border border-white/10 bg-black/70 px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-500 outline-none focus:border-violet-500/50"
-                />
-              </label>
+              <SensitiveField
+                label="New password"
+                value={rotationPassword}
+                onChange={setRotationPassword}
+                placeholder="At least 8 characters"
+                revealed={showRotationPasswordFields}
+                onToggleReveal={() => setShowRotationPasswordFields((current) => !current)}
+                inputClassName="w-full rounded-xl border border-white/10 bg-black/70 px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-500 outline-none focus:border-violet-500/50"
+              />
+              <SensitiveField
+                label="Confirm new password"
+                value={rotationPasswordConfirm}
+                onChange={setRotationPasswordConfirm}
+                placeholder="Repeat new password"
+                revealed={showRotationPasswordFields}
+                onToggleReveal={() => setShowRotationPasswordFields((current) => !current)}
+                inputClassName="w-full rounded-xl border border-white/10 bg-black/70 px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-500 outline-none focus:border-violet-500/50"
+              />
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
