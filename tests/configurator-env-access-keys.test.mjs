@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   applyConfiguratorEnvAccessKeys,
   getConfiguratorEnvAccessKeys,
+  hasConfiguratorEnvAccessKeys,
 } from '../lib/configuratorEnvAccessKeys.ts';
 
 test('configurator env access keys prefer first MDBList pool key and trim values', () => {
@@ -95,4 +96,17 @@ test('configurator env access keys do not clear existing state when defaults are
     mdblistKey: 'user-mdb',
     simklClientId: 'user-simkl',
   });
+});
+
+test('configurator env access keys detect when any default is present', () => {
+  assert.equal(hasConfiguratorEnvAccessKeys({
+    fanartKey: '',
+    mdblistKey: '',
+    simklClientId: '',
+  }), false);
+  assert.equal(hasConfiguratorEnvAccessKeys({
+    fanartKey: '',
+    mdblistKey: 'server-mdb',
+    simklClientId: '',
+  }), true);
 });

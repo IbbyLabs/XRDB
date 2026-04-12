@@ -1438,11 +1438,33 @@ export function useConfiguratorWorkspaceRuntime({
   }, [configProfileUnlockSession]);
 
   const { applyWorkspaceConfig, uiSettingsLoaded } = workspaceStorage;
+  const [runtimeEnvAccessKeys, setRuntimeEnvAccessKeys] = useState(envAccessKeys);
+  const [runtimeEnvAccessKeysLoaded, setRuntimeEnvAccessKeysLoaded] = useState(false);
   const envAccessKeysAppliedRef = useRef(false);
   const resolvedForRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!uiSettingsLoaded || envAccessKeysAppliedRef.current) {
+    let active = true;
+    void (async () => {
+      const response = await fetch('/api/configurator-env-access-keys', { cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error('Unable to load configurator env access keys.');
+      }
+      const keys = (await response.json()) as ConfiguratorEnvAccessKeys;
+      if (!active) {
+        return;
+      }
+      setRuntimeEnvAccessKeys(keys);
+      setRuntimeEnvAccessKeysLoaded(true);
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!uiSettingsLoaded || !runtimeEnvAccessKeysLoaded || envAccessKeysAppliedRef.current) {
       return;
     }
 
@@ -1453,7 +1475,7 @@ export function useConfiguratorWorkspaceRuntime({
         mdblistKey,
         simklClientId,
       },
-      envAccessKeys,
+      runtimeEnvAccessKeys,
     );
 
     if (merged.fanartKey !== fanartKey) {
@@ -1466,9 +1488,10 @@ export function useConfiguratorWorkspaceRuntime({
       setSimklClientId(merged.simklClientId);
     }
   }, [
-    envAccessKeys,
     fanartKey,
     mdblistKey,
+    runtimeEnvAccessKeys,
+    runtimeEnvAccessKeysLoaded,
     setFanartKey,
     setMdblistKey,
     setSimklClientId,
