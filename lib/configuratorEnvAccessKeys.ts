@@ -31,3 +31,6 @@ export const applyConfiguratorEnvAccessKeys = (
   mdblistKey: current.mdblistKey.trim() || defaults.mdblistKey,
   simklClientId: current.simklClientId.trim() || defaults.simklClientId,
 });
+
+export const hasConfiguratorEnvAccessKeys = (keys: ConfiguratorEnvAccessKeys) =>
+  Boolean(keys.fanartKey || keys.mdblistKey || keys.simklClientId);
