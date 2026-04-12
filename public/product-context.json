@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.17.1",
-  "generatedAt": "2026-04-12T19:10:48.666Z",
+  "xrdbTag": "v1.17.2",
+  "generatedAt": "2026-04-12T20:21:25.757Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -43,11 +43,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "BUG-85 preserve thumbnail genre badge off on profile update",
         "BUG-82 BUG-84 harden release gates",
         "BUG-82 BUG-83 BUG-84 resolve regressions",
         "BUG-81 preserve unlocked saved profile updates",
-        "FR-67 scope link imports by type",
-        "FR-68 add console log levels"
+        "FR-67 scope link imports by type"
       ]
     },
     {

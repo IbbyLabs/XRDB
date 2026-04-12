@@ -61,6 +61,16 @@
 
 <a id="v1-17-1"></a>
 
+<a id="v1-17-2"></a>
+
+## [v1.17.2] - 12/04/2026
+
+### Fixed
+* BUG-85 preserve thumbnail genre badge off on profile update
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.17.1] - 12/04/2026
 
 ### Fixed
