@@ -103,7 +103,6 @@ test('image route fanart builds movie lookups and sorts artwork by language and 
   ]);
   assert.deepEqual(artwork.logoUrls, [
     'https://img.example/logo-fr.png',
-    'https://img.example/logo-null.png',
   ]);
 });
 

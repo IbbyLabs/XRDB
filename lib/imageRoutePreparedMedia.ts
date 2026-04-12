@@ -64,7 +64,7 @@ import {
 import { normalizeRatingValue, isTmdbAnimationTitle } from './imageRouteMedia.ts';
 import { resolveImageRouteProviderRatings } from './imageRouteProviderRatings.ts';
 import { fetchTorrentioBadges } from './imageRouteTorrentio.ts';
-import { pickByLanguageWithFallback } from './imageLanguage.ts';
+import { pickByLanguageOrNeutral, pickByLanguageWithFallback } from './imageLanguage.ts';
 import { resolveGenreBadgeAutoScale } from './overlayScale.ts';
 import { TMDB_API_BASE_URL } from './serviceBaseUrls.ts';
 import {
@@ -695,7 +695,7 @@ if (!useRawKitsuFallback && detailsBundlePromise) {
     );
     if (logoFallbackImagesResponse.ok) {
       const logoFallbackImages = logoFallbackImagesResponse.data || {};
-      const logoFallback = pickByLanguageWithFallback<{ iso_639_1?: string | null; file_path?: string | null }>(
+      const logoFallback = pickByLanguageOrNeutral<{ iso_639_1?: string | null; file_path?: string | null }>(
         logoFallbackImages.logos || [],
         requestedImageLang,
         FALLBACK_IMAGE_LANGUAGE
