@@ -15,23 +15,46 @@ test('configurator env access keys prefer first MDBList pool key and trim values
   });
 
   assert.deepEqual(result, {
-    fanartKey: 'fanart-key',
-    mdblistKey: 'first-mdb',
-    simklClientId: 'simkl-client',
+    fanartKey: '',
+    mdblistKey: '',
+    simklClientId: '',
+    hasServerFanartKey: true,
+    hasServerMdblistKey: true,
+    hasServerSimklClientId: true,
   });
 });
 
 test('configurator env access keys fall back to legacy aliases when primary vars are absent', () => {
   const result = getConfiguratorEnvAccessKeys({
     FANART_API_KEY: 'fanart-fallback',
-    MDBLIST_API_KEY: 'mdb-fallback',
+    MDBLIST_KEY: 'mdb-fallback',
     XRDB_SIMKL_CLIENT_ID: 'simkl-fallback',
   });
 
   assert.deepEqual(result, {
-    fanartKey: 'fanart-fallback',
-    mdblistKey: 'mdb-fallback',
-    simklClientId: 'simkl-fallback',
+    fanartKey: '',
+    mdblistKey: '',
+    simklClientId: '',
+    hasServerFanartKey: true,
+    hasServerMdblistKey: true,
+    hasServerSimklClientId: true,
+  });
+});
+
+test('configurator env access keys never expose server side Simkl values', () => {
+  const result = getConfiguratorEnvAccessKeys({
+    SIMKL_CLIENT_ID: 'simkl-primary',
+    SIMKL_API_KEY: 'simkl-alias',
+    XRDB_SIMKL_CLIENT_ID: 'simkl-server',
+  });
+
+  assert.deepEqual(result, {
+    fanartKey: '',
+    mdblistKey: '',
+    simklClientId: '',
+    hasServerFanartKey: false,
+    hasServerMdblistKey: false,
+    hasServerSimklClientId: true,
   });
 });
 
@@ -103,10 +126,16 @@ test('configurator env access keys detect when any default is present', () => {
     fanartKey: '',
     mdblistKey: '',
     simklClientId: '',
+    hasServerFanartKey: false,
+    hasServerMdblistKey: false,
+    hasServerSimklClientId: false,
   }), false);
   assert.equal(hasConfiguratorEnvAccessKeys({
     fanartKey: '',
-    mdblistKey: 'server-mdb',
+    mdblistKey: '',
     simklClientId: '',
+    hasServerFanartKey: false,
+    hasServerMdblistKey: true,
+    hasServerSimklClientId: false,
   }), true);
 });

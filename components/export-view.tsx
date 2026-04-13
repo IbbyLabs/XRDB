@@ -211,7 +211,7 @@ export function ExportView() {
     <div className="xrdb-export-layout w-full px-4 py-6 md:px-6 md:py-8">
       <div className="order-2 lg:order-1 min-w-0 space-y-4">
         <SaveConfigSection
-          canGenerateConfig={canGenerateConfig}
+          canSaveProfile={exportPanelsProps.canSaveProfile}
           buildSaveParams={buildSaveParams}
           pendingRestoreProfileId={workspaceManagementProps.pendingConfigProfileId}
           onClearPendingRestore={workspaceManagementProps.onClearPendingConfigProfileRestore}
@@ -694,7 +694,7 @@ function RevertDiffModal({
 }
 
 function SaveConfigSection({
-  canGenerateConfig,
+  canSaveProfile,
   buildSaveParams,
   pendingRestoreProfileId,
   onClearPendingRestore,
@@ -702,7 +702,7 @@ function SaveConfigSection({
   savedProfileIdLoaded,
   onProfileIdChange,
 }: {
-  canGenerateConfig: boolean;
+  canSaveProfile: boolean;
   buildSaveParams: () => Record<string, string> | null;
   pendingRestoreProfileId?: string | null;
   onClearPendingRestore?: () => void;
@@ -1596,9 +1596,9 @@ function SaveConfigSection({
           <span className="font-mono text-[12px] bg-zinc-900 px-1 rounded text-zinc-300">?config=&lt;id&gt;</span>{' '}
           to any image URL to apply this profile.
         </p>
-        {!canGenerateConfig && (
+        {!canSaveProfile && (
           <p className="text-[12px] leading-4 text-amber-400/90">
-            Add a TMDB key and MDBList key to save a profile.
+            Add a TMDB key to save a profile. Add MDBList only when this server has no configured MDBList key.
           </p>
         )}
         {expiredBanner && (
@@ -1745,13 +1745,13 @@ function SaveConfigSection({
             type="button"
             onClick={handleSaveClick}
             disabled={
-              !canGenerateConfig
+              !canSaveProfile
               || isSaving
               || (savedProfileId !== null && !isLegacyId && !hasUnsavedChanges)
               || (savedProfileId !== null && isLegacyId && isMigrating)
             }
             className={`rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-2 transition-colors ${
-              canGenerateConfig
+              canSaveProfile
               && !isSaving
               && (!savedProfileId || isLegacyId || hasUnsavedChanges)
                 ? 'bg-violet-600 text-white hover:bg-violet-500'
@@ -1815,9 +1815,9 @@ function SaveConfigSection({
                 <button
                   type="button"
                   onClick={() => void handleMigrate()}
-                  disabled={isMigrating || !canGenerateConfig}
+                  disabled={isMigrating || !canSaveProfile}
                   className={`rounded-full px-3 py-1.5 text-[11px] font-semibold flex items-center gap-1.5 transition-colors ${
-                    !isMigrating && canGenerateConfig
+                    !isMigrating && canSaveProfile
                       ? 'bg-amber-500 text-black hover:bg-amber-400'
                       : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
                   }`}
