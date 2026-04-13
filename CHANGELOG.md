@@ -65,6 +65,24 @@
 
 <a id="v1-18-0"></a>
 
+<a id="v1-18-1"></a>
+
+## [v1.18.1] - 13/04/2026
+
+### Fixed
+* BUG-90 prevent login overwrite of unsaved config
+  
+  Add login conflict handling so profile reveal does not silently replace active local configurator edits.
+  
+  Introduce explicit conflict resolution actions for loading profile values or keeping web changes.
+  
+  Add and update config profile client state tests for conflict detection behavior.
+  
+  Verification: pnpm run lint && pnpm run test && pnpm run build
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.18.0] - 13/04/2026
 
 ### Added
