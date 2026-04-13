@@ -59,7 +59,7 @@ export const resolveGenreBadgeOverlay = ({
   const spec = buildGenreBadgeSvg(genreBadge, imageType);
   const isBottomPriorityClean = genreBadge.style === 'clean' && genreBadge.mode !== 'off';
   const resolvedPosition = isBottomPriorityClean ? 'bottomCenter' : genreBadge.position;
-  const minInset = isBottomPriorityClean ? 2 : 12;
+  const minInset = isBottomPriorityClean ? Math.round(outputHeight * 0.013) : 12;
   const horizontalInset = imageType === 'poster' ? posterEdgeInset : 12;
   const maxLeft = Math.max(horizontalInset, outputWidth - spec.width - horizontalInset);
   const maxTop = Math.max(minInset, outputHeight - spec.height - minInset);
