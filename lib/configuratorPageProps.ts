@@ -95,6 +95,7 @@ type MediaTargetSearchState = {
 export function buildConfiguratorPageProps({
   activeWorkspaceSettings,
   baseUrl,
+  hasServerMdblistKey,
   outputs,
   pageChrome,
   workspaceActions,
@@ -106,6 +107,7 @@ export function buildConfiguratorPageProps({
 }: {
   activeWorkspaceSettings: ReturnType<typeof useConfiguratorActiveWorkspaceSettings>;
   baseUrl: string;
+  hasServerMdblistKey: boolean;
   outputs: ReturnType<typeof useConfiguratorOutputs>;
   pageChrome: ReturnType<typeof useConfiguratorPageChrome>;
   workspaceActions: ReturnType<typeof useConfiguratorWorkspaceActions>;
@@ -499,6 +501,9 @@ export function buildConfiguratorPageProps({
         onToggleAiometadata: () => workspaceUi.handleToggleWorkspacePanel('aio-urls'),
         displayedConfigString: outputs.displayedConfigString,
         canGenerateConfig: workspaceSummary.canGenerateConfig,
+        canSaveProfile:
+          Boolean(workspaceState.tmdbKey.trim())
+          && (Boolean(workspaceState.mdblistKey.trim()) || hasServerMdblistKey),
         configCopied: workspaceUi.configCopied,
         showConfigString: outputs.isConfigStringVisible,
         onCopyConfig: workspaceUi.handleCopyConfig,
@@ -519,7 +524,10 @@ export function buildConfiguratorPageProps({
         onToggleThumbnailRatingPreference: workspaceActions.toggleThumbnailRatingPreference,
         hideAiometadataCredentials: workspaceState.hideAiometadataCredentials,
         onToggleHideAiometadataCredentials: workspaceState.setHideAiometadataCredentials,
-        buildSaveParams: () => buildProfileParams(outputs.currentUiConfig.settings),
+        buildSaveParams: () =>
+          buildProfileParams(outputs.currentUiConfig.settings, {
+            allowMissingMdblistKey: hasServerMdblistKey,
+          }),
         aiometadataPatterns: outputs.aiometadataPatterns,
       },
       supportPanelsProps: {

@@ -2015,6 +2015,7 @@ export function useConfiguratorWorkspaceRuntime({
   } = buildConfiguratorPageProps({
     activeWorkspaceSettings,
     baseUrl,
+    hasServerMdblistKey: runtimeEnvAccessKeys.hasServerMdblistKey,
     mediaTargetSearch: {
       onMediaIdChange: handleMediaIdChange,
       onThumbnailEpisodeChange: handleThumbnailEpisodeChange,

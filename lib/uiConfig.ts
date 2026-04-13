@@ -2287,9 +2287,20 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   return payload;
 };
 
-export const buildProfileParams = (settings: SharedXrdbSettings): Record<string, string> | null => {
-  const payload = buildSharedPayload(settings);
+export const buildProfileParams = (
+  settings: SharedXrdbSettings,
+  options?: { allowMissingMdblistKey?: boolean },
+): Record<string, string> | null => {
+  const allowMissingMdblistKey = options?.allowMissingMdblistKey === true;
+  const profileSettings =
+    allowMissingMdblistKey && !settings.mdblistKey.trim()
+      ? { ...settings, mdblistKey: '__server_mdblist__' }
+      : settings;
+  const payload = buildSharedPayload(profileSettings);
   if (!payload) return null;
+  if (allowMissingMdblistKey && !settings.mdblistKey.trim()) {
+    delete payload.mdblistKey;
+  }
   return Object.fromEntries(Object.entries(payload).map(([k, v]) => [k, String(v)]));
 };
 
