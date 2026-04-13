@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.18.1",
-  "generatedAt": "2026-04-13T04:23:03.060Z",
+  "xrdbTag": "v1.18.2",
+  "generatedAt": "2026-04-13T05:58:44.319Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -43,11 +43,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "BUG-91 prevent server key exposure and allow tmdb only profile save with server mdb fallback",
         "BUG-90 prevent login overwrite of unsaved config",
         "refine clean bottom fade and placement",
         "enforce language first logo selection for tmdb and fanart",
-        "FR-39 clean bottom genre shadow overlay",
-        "BUG-85 preserve thumbnail genre badge off on profile update"
+        "FR-39 clean bottom genre shadow overlay"
       ]
     },
     {

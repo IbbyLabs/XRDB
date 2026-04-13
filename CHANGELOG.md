@@ -67,6 +67,22 @@
 
 <a id="v1-18-1"></a>
 
+<a id="v1-18-2"></a>
+
+## [v1.18.2] - 13/04/2026
+
+### Fixed
+* BUG-91 prevent server key exposure and allow tmdb only profile save with server mdb fallback
+  
+  Hide server side Fanart, MDBList, and Simkl credential values from configurator env access responses while keeping non sensitive availability flags.
+  
+  Decouple profile save gating from config string generation so profile create/update/migrate only require TMDB when server MDBList is configured.
+  
+  Add legacy MDBLIST_KEY alias support for server availability checks and update regression tests.
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.18.1] - 13/04/2026
 
 ### Fixed
