@@ -7,6 +7,7 @@ import { BookmarkPlus, Check, ChevronDown, Clipboard, Code2, Eye, EyeOff, Rotate
 import { ConfirmDiffModal } from '@/components/confirm-diff-modal';
 import {
   buildConfigProfileFingerprint,
+  hasConfigProfileLoginConflict,
   buildRevealedConfigState,
   getNextAiometadataUrlMode,
   getActiveConfigProfileUnlockSession,
@@ -592,6 +593,13 @@ function ConfigStringSection({
 }
 
 type ParamDiffEntry = { key: string; oldValue: string; newValue: string };
+type ProfileLoginConflictState = {
+  profileId: string;
+  token: string;
+  localParams: Record<string, string>;
+  profileParams: Record<string, string>;
+  diff: { entries: ParamDiffEntry[]; totalChanged: number };
+};
 
 const REVERT_DIFF_MAX_VISIBLE = 20;
 
@@ -730,6 +738,8 @@ function SaveConfigSection({
   const [showRevertModal, setShowRevertModal] = useState(false);
   const [revertDiff, setRevertDiff] = useState<{ entries: ParamDiffEntry[]; totalChanged: number } | null>(null);
   const [modalMode, setModalMode] = useState<'revert' | 'save'>('revert');
+  const [profileLoginConflictState, setProfileLoginConflictState] = useState<ProfileLoginConflictState | null>(null);
+  const [isResolvingProfileLoginConflict, setIsResolvingProfileLoginConflict] = useState(false);
   const [showAccessPasswordFields, setShowAccessPasswordFields] = useState(false);
   const [showRestorePassword, setShowRestorePassword] = useState(false);
   const [showRotationPasswordFields, setShowRotationPasswordFields] = useState(false);
@@ -811,6 +821,11 @@ function SaveConfigSection({
   }, [clearUnlockState, onProfileIdChange]);
 
   const revealSavedProfile = useCallback(async (id: string, token: string) => {
+    if (profileLoginConflictState) {
+      setProfileNotice('Resolve the active profile conflict before unlocking again.');
+      return false;
+    }
+
     const res = await fetch(`/api/config/${id}/reveal`, {
       cache: 'no-store',
       headers: {
@@ -829,12 +844,29 @@ function SaveConfigSection({
       return false;
     }
 
-    applySnapshot((await res.json()) as Record<string, string>);
+    const revealedParams = (await res.json()) as Record<string, string>;
+    const localParams = buildSaveParams() ?? {};
+    const profileParams = revealedParams;
+
+    if (hasConfigProfileLoginConflict({ localParams, profileParams })) {
+      setProfileLoginConflictState({
+        profileId: id,
+        token,
+        localParams,
+        profileParams,
+        diff: computeParamDiff(localParams, profileParams),
+      });
+      setProfileNotice('Choose how to handle local changes before loading this profile.');
+      setRestoreModalOpen(false);
+      return false;
+    }
+
+    applySnapshot(revealedParams);
     return true;
-  }, [applySnapshot, clearUnlockState]);
+  }, [applySnapshot, buildSaveParams, clearUnlockState, profileLoginConflictState]);
 
   useEffect(() => {
-    if (!savedProfileId || !unlockToken || snapshotReady) {
+    if (!savedProfileId || !unlockToken || snapshotReady || profileLoginConflictState) {
       return;
     }
 
@@ -869,7 +901,7 @@ function SaveConfigSection({
     return () => {
       active = false;
     };
-  }, [applySnapshot, clearUnlockState, savedProfileId, snapshotReady, unlockToken]);
+  }, [applySnapshot, clearUnlockState, profileLoginConflictState, savedProfileId, snapshotReady, unlockToken]);
 
   const unlockProtectedProfile = useCallback(async (id: string, password: string) => {
     const res = await fetch(`/api/config/${id}/unlock`, {
@@ -1382,6 +1414,55 @@ function SaveConfigSection({
     setRevertDiff(null);
   }, []);
 
+  const handleKeepWebChanges = useCallback(async () => {
+    if (!profileLoginConflictState) {
+      return;
+    }
+
+    setIsResolvingProfileLoginConflict(true);
+    try {
+      const res = await fetch(`/api/config/${profileLoginConflictState.profileId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          [CONFIG_UNLOCK_HEADER]: profileLoginConflictState.token,
+        },
+        body: JSON.stringify(profileLoginConflictState.localParams),
+      });
+      if (res.status === 401) {
+        clearUnlockState();
+        setProfileNotice('Unlock expired. Enter your password again.');
+        return;
+      }
+      if (!res.ok) {
+        setProfileNotice(await readErrorMessage(res, 'Unable to update the saved profile.'));
+        return;
+      }
+
+      applySnapshot(profileLoginConflictState.localParams, { applyToWorkspace: false });
+      setProfileLoginConflictState(null);
+      setProfileNotice('Web changes saved to profile.');
+      await loadProfileStatus(profileLoginConflictState.profileId);
+    } finally {
+      setIsResolvingProfileLoginConflict(false);
+    }
+  }, [applySnapshot, clearUnlockState, loadProfileStatus, profileLoginConflictState]);
+
+  const handleLoadProfileConfig = useCallback(() => {
+    if (!profileLoginConflictState) {
+      return;
+    }
+
+    applySnapshot(profileLoginConflictState.profileParams);
+    setProfileLoginConflictState(null);
+    setProfileNotice('Saved profile loaded.');
+  }, [applySnapshot, profileLoginConflictState]);
+
+  const handleCancelProfileConflict = useCallback(() => {
+    setProfileLoginConflictState(null);
+    setProfileNotice('Profile load canceled. Current web changes are still active.');
+  }, []);
+
   const showRevertButton = hasUnsavedChanges && savedConfigSnapshot.current !== null;
   const showPasswordSetup = !savedProfileId || isLegacyId;
   const showUnlockControls = Boolean(savedProfileId && !isLegacyId && !isUnlocked);
@@ -1456,6 +1537,51 @@ function SaveConfigSection({
           onCancel={handleRevertCancel}
         />
       )}
+      {profileLoginConflictState ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-sm" onClick={handleCancelProfileConflict}>
+          <div className="w-full max-w-xl rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.14),transparent_54%),linear-gradient(180deg,rgba(12,10,20,0.98),rgba(6,5,12,0.98))] p-6 shadow-[0_40px_120px_-55px_rgba(0,0,0,0.95)]" onClick={(event) => event.stopPropagation()}>
+            <div className="space-y-2">
+              <div className="text-lg font-semibold tracking-tight text-white">Keep web changes or load saved profile</div>
+              <p className="text-[13px] leading-relaxed text-zinc-400">
+                Local web changes and saved profile values are different. Choose which one to keep.
+              </p>
+            </div>
+            <div className="mt-4 rounded-xl border border-white/10 bg-black/40 p-3 text-[12px] text-zinc-300">
+              {profileLoginConflictState.diff.totalChanged} setting{profileLoginConflictState.diff.totalChanged === 1 ? '' : 's'} differ.
+            </div>
+            <div className="mt-5 flex flex-wrap items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={handleCancelProfileConflict}
+                disabled={isResolvingProfileLoginConflict}
+                className="rounded-xl px-5 py-2 text-[13px] font-semibold text-zinc-400 transition-colors hover:text-zinc-200 disabled:cursor-not-allowed disabled:text-zinc-600"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => { void handleLoadProfileConfig(); }}
+                disabled={isResolvingProfileLoginConflict}
+                className="rounded-xl border border-white/15 px-5 py-2 text-[13px] font-semibold text-zinc-200 transition-colors hover:border-white/30 hover:text-white disabled:cursor-not-allowed disabled:border-white/5 disabled:text-zinc-600"
+              >
+                Load saved profile
+              </button>
+              <button
+                type="button"
+                onClick={() => { void handleKeepWebChanges(); }}
+                disabled={isResolvingProfileLoginConflict}
+                className={`rounded-xl px-5 py-2 text-[13px] font-semibold transition-colors ${
+                  isResolvingProfileLoginConflict
+                    ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                    : 'bg-cyan-400 text-slate-950 hover:bg-cyan-300'
+                }`}
+              >
+                {isResolvingProfileLoginConflict ? 'Saving...' : 'Keep web changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <div className="xrdb-panel rounded-2xl p-4 space-y-3">
         <h2 className="text-sm font-semibold text-white flex items-center gap-2">
           <BookmarkPlus className="w-4 h-4 text-violet-500" /> Saved Config Profile
