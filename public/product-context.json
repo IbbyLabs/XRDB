@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.17.2",
-  "generatedAt": "2026-04-12T22:15:31.933Z",
+  "xrdbTag": "v1.18.0",
+  "generatedAt": "2026-04-13T02:06:01.749Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -43,11 +43,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "refine clean bottom fade and placement",
+        "enforce language first logo selection for tmdb and fanart",
+        "FR-39 clean bottom genre shadow overlay",
         "BUG-85 preserve thumbnail genre badge off on profile update",
-        "BUG-82 BUG-84 harden release gates",
-        "BUG-82 BUG-83 BUG-84 resolve regressions",
-        "BUG-81 preserve unlocked saved profile updates",
-        "FR-67 scope link imports by type"
+        "BUG-82 BUG-84 harden release gates"
       ]
     },
     {

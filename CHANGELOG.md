@@ -63,6 +63,57 @@
 
 <a id="v1-17-2"></a>
 
+<a id="v1-18-0"></a>
+
+## [v1.18.0] - 13/04/2026
+
+### Added
+* FR-39 clean bottom genre shadow overlay
+  
+  • add clean genre bottom priority overlay behavior with full width dark to light bottom shadow
+  
+  • force clean genre badge to bottom center and move competing bottom layout elements away
+  
+  • wire configurable clean background opacity through UI, config payloads, and proxy/query parsing
+  
+  • update request/render placement logic and regression coverage
+
+### Fixed
+* refine clean bottom fade and placement
+* enforce language first logo selection for tmdb and fanart
+  
+  Update logo selection to prevent localized logo fallbacks when requested language assets are expected.
+  
+  TMDB logo selection now prefers requested language, then fallback language, then neutral, and does not fall back to arbitrary language logos.
+  
+  Fanart logo selection now restricts deterministic picks to the highest priority language bucket resolved for the request, instead of selecting across mixed language logo candidates.
+  
+  Result: requests such as logoArtworkSource=fanart&lang=en return English logos when English fanart logos exist for the title.
+  
+  Validation: pnpm run lint && pnpm run test && pnpm run build; manual checks on tmdb:movie:177572 and tmdb:movie:412656 with logoArtworkSource=fanart&lang=en.
+
+### Documentation
+* refresh static doc assets
+* FR-39 add genreBadgeBorderWidth and posterNoBackground outline params to README and product context
+  
+  Add 7 missing genre badge parameters to the README parameter table, AI Integration
+  Prompt parameter block, per type settings section, and URL build template:
+  
+  • genreBadgeBorderWidth (global fallback, 0 to 10, default 1.4)
+  • posterGenreBadgeBorderWidth (default 1.4)
+  • backdropGenreBadgeBorderWidth (default 1.5)
+  • thumbnailGenreBadgeBorderWidth (default 1.5)
+  • logoGenreBadgeBorderWidth (default 1.4)
+  • posterNoBackgroundBadgeOutlineColor (hex, default #000000)
+  • posterNoBackgroundBadgeOutlineWidth (0 to 10, default 0)
+  
+  All params were already implemented in code. This commit closes the documentation
+  gap identified in Group 2 of the fr-39-genre badge OpenSpec change.
+  
+  Regenerate public/product context.json to include the new param descriptions.
+  
+  Gate: lint clean, 766/766 tests pass, build clean.
+
 ## [v1.17.2] - 12/04/2026
 
 ### Fixed
