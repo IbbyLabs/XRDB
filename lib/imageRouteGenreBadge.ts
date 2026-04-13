@@ -176,7 +176,7 @@ export const buildGenreBadgeSvg = (
   const iconSize = Math.round(height * (imageType === 'backdrop' ? 0.46 : 0.48));
   const isClean = genreBadge.style === 'clean';
   const fontSize = isClean
-    ? (genreBadge.mode === 'text' ? Math.round(height * 0.44) : Math.round(height * 0.4))
+    ? (genreBadge.mode === 'text' ? Math.round(height * 0.50) : Math.round(height * 0.46))
     : (genreBadge.mode === 'text' ? Math.round(height * 0.37) : Math.round(height * 0.34));
   const label = isClean
     ? CLEAN_GENRE_LABEL_BY_FAMILY[genreBadge.familyId]
@@ -211,7 +211,7 @@ export const buildGenreBadgeSvg = (
   const iconCenterY = Math.round(iconY + iconSize / 2);
   const textX = iconX + (showIcon ? iconSize + iconGap : 0);
   const textCenterX = textX + Math.round(labelWidth / 2);
-  const textY = Math.round(height / 2 + fontSize * 0.05);
+  const textY = Math.round(height / 2 + fontSize * (isClean ? -0.1 : 0.05));
   const noBackgroundOutlineWidth =
     genreBadge.style === 'plain' && Number.isFinite(genreBadge.noBackgroundOutlineWidth)
       ? Math.max(0, Number(genreBadge.noBackgroundOutlineWidth))
@@ -236,7 +236,7 @@ export const buildGenreBadgeSvg = (
     ? `<text x="${textCenterX}" y="${textY}" text-anchor="middle" dominant-baseline="middle" font-family="${textFontFamily}" font-size="${fontSize}" font-weight="700" letter-spacing="${textLetterSpacing}" fill="${textFill}"${hasNoBackgroundOutline ? ` stroke="${noBackgroundOutlineColor}" stroke-width="${noBackgroundOutlineWidth}" paint-order="stroke fill" stroke-linejoin="round"` : ''}>${escapeXml(label)}</text>`
     : '';
   const plainShadowFilter = `<defs><filter id="genreBadgeShadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="1.6" stdDeviation="2.2" flood-color="rgba(0,0,0,0.68)"/><feDropShadow dx="0" dy="0" stdDeviation="1.1" flood-color="rgba(0,0,0,0.32)"/></filter></defs>`;
-  const cleanShadowFilter = `<defs><filter id="genreBadgeShadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="1.2" stdDeviation="1.8" flood-color="rgba(0,0,0,0.78)"/><feDropShadow dx="0" dy="0" stdDeviation="0.8" flood-color="rgba(0,0,0,0.28)"/></filter></defs>`;
+  const cleanShadowFilter = `<defs><filter id="genreBadgeShadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="0.8" stdDeviation="1.1" flood-color="rgba(0,0,0,0.52)"/><feDropShadow dx="0" dy="0" stdDeviation="0.45" flood-color="rgba(0,0,0,0.16)"/></filter></defs>`;
   const cleanBackgroundOpacity =
     Math.max(
       0,
@@ -247,8 +247,8 @@ export const buildGenreBadgeSvg = (
           : DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
       ),
     ) / 100;
-  const cleanShadowEdgeOpacity = Math.max(0.12, Math.min(0.62, cleanBackgroundOpacity * 1.75));
-  const cleanShadowCenterOpacity = Math.max(0.01, Math.min(0.14, cleanBackgroundOpacity * 0.2));
+  const cleanShadowEdgeOpacity = Math.max(0.05, Math.min(0.24, cleanBackgroundOpacity * 0.62));
+  const cleanShadowCenterOpacity = Math.max(0.01, Math.min(0.06, cleanBackgroundOpacity * 0.08));
 
   if (genreBadge.style === 'plain') {
     return {
@@ -265,12 +265,18 @@ ${textMarkup}
   }
 
   if (genreBadge.style === 'clean') {
-    const stripInsetX = Math.max(1, Math.round(width * 0.025));
-    const stripHeight = Math.max(14, Math.round(height * 0.62));
-    const stripY = Math.round((height - stripHeight) / 2);
-    const stripRadius = Math.max(6, Math.round(stripHeight * 0.2));
-    const shadowHeight = Math.min(height, stripHeight + Math.max(8, Math.round(height * 0.34)));
-    const shadowY = Math.round((height - shadowHeight) / 2);
+    const stripWidth = showText
+      ? Math.max(18, Math.round(labelWidth + height * 0.18))
+      : Math.max(14, Math.round(iconSize * 0.9));
+    const stripLeft = showText
+      ? Math.max(0, Math.min(width - stripWidth, Math.round(textCenterX - stripWidth / 2)))
+      : Math.max(0, Math.min(width - stripWidth, Math.round(iconCenterX - stripWidth / 2)));
+    const stripHeight = Math.max(2, Math.round(height * 0.08));
+    const stripTop = Math.max(
+      0,
+      Math.min(height - stripHeight, Math.round(textY + fontSize * 0.36)),
+    );
+    const stripRadius = Math.max(1, Math.round(stripHeight / 2));
     const shadowGradient = `<defs><linearGradient id="cleanStripShadow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(0,0,0,${cleanShadowEdgeOpacity.toFixed(2)})"/><stop offset="28%" stop-color="rgba(0,0,0,${(cleanShadowEdgeOpacity * 0.5).toFixed(2)})"/><stop offset="50%" stop-color="rgba(0,0,0,${cleanShadowCenterOpacity.toFixed(2)})"/><stop offset="72%" stop-color="rgba(0,0,0,${(cleanShadowEdgeOpacity * 0.5).toFixed(2)})"/><stop offset="100%" stop-color="rgba(0,0,0,${cleanShadowEdgeOpacity.toFixed(2)})"/></linearGradient></defs>`;
     return {
       width,
@@ -279,11 +285,10 @@ ${textMarkup}
 ${cleanShadowFilter}
 ${shadowGradient}
 <g filter="url(#genreBadgeShadow)">
-<rect x="${Math.max(0, stripInsetX - 1)}" y="${shadowY}" width="${Math.max(0, width - Math.max(0, stripInsetX - 1) * 2)}" height="${shadowHeight}" rx="${Math.max(8, Math.round(shadowHeight * 0.22))}" fill="url(#cleanStripShadow)"/>
-<rect x="${stripInsetX}" y="${stripY}" width="${Math.max(0, width - stripInsetX * 2)}" height="${stripHeight}" rx="${stripRadius}" fill="rgba(8,11,16,${cleanBackgroundOpacity.toFixed(2)})" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+<rect x="${stripLeft}" y="${stripTop}" width="${stripWidth}" height="${stripHeight}" rx="${stripRadius}" fill="url(#cleanStripShadow)"/>
+</g>
 ${iconMarkup}
 ${textMarkup}
-</g>
 </svg>`,
     };
   }

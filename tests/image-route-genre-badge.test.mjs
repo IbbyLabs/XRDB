@@ -34,7 +34,8 @@ test('image route genre badge builds clean text style output', () => {
 
   assert.match(spec.svg, /Science Fiction/);
   assert.match(spec.svg, /fill="#ffffff"/);
-  assert.match(spec.svg, /fill="rgba\(8,11,16,0\.28\)"/);
+  assert.doesNotMatch(spec.svg, /fill="rgba\(8,11,16,/);
+  assert.match(spec.svg, /cleanStripShadow/);
   assert.match(spec.svg, /genreBadgeShadow/);
 });
 
@@ -51,7 +52,8 @@ test('image route genre badge applies custom clean background opacity', () => {
     'poster',
   );
 
-  assert.match(spec.svg, /fill="rgba\(8,11,16,0\.45\)"/);
+  assert.match(spec.svg, /stop-color="rgba\(0,0,0,0\.24\)"/);
+  assert.match(spec.svg, /stop-color="rgba\(0,0,0,0\.04\)"/);
 });
 
 test('image route genre badge applies no background outline for plain text style', () => {
