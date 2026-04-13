@@ -120,6 +120,14 @@ export const hasConfigProfileUnsavedChanges = ({
   snapshotReady: boolean;
 }) => snapshotReady && buildConfigProfileFingerprint(currentParams) !== savedFingerprint;
 
+export const hasConfigProfileLoginConflict = ({
+  localParams,
+  profileParams,
+}: {
+  localParams: Record<string, string> | null | undefined;
+  profileParams: Record<string, string> | null | undefined;
+}) => buildConfigProfileFingerprint(localParams) !== buildConfigProfileFingerprint(profileParams);
+
 export const buildRevealedConfigState = (params: Record<string, string>) => {
   const normalizedConfig = normalizeSavedUiConfig(
     { settings: params },

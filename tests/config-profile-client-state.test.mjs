@@ -7,6 +7,7 @@ import {
   getNextAiometadataUrlMode,
   getActiveConfigProfileUnlockSession,
   hasConfigProfileUnsavedChanges,
+  hasConfigProfileLoginConflict,
   isProtectedConfigProfileId,
   parseConfigProfileUnlockSession,
   serializeConfigProfileUnlockSession,
@@ -192,6 +193,26 @@ test('hasConfigProfileUnsavedChanges ignores local-only controls outside saved-p
       currentParams: buildProfileParams(revealed.normalizedConfig.settings) ?? {},
       savedFingerprint: revealed.fingerprint,
       snapshotReady: true,
+    }),
+    false,
+  );
+});
+
+test('hasConfigProfileLoginConflict returns true when local and profile params differ', () => {
+  assert.equal(
+    hasConfigProfileLoginConflict({
+      localParams: { tmdbKey: 'tmdb', mdblistKey: 'mdb' },
+      profileParams: { tmdbKey: 'tmdb', mdblistKey: 'mdb-v2' },
+    }),
+    true,
+  );
+});
+
+test('hasConfigProfileLoginConflict returns false for equivalent params in different key order', () => {
+  assert.equal(
+    hasConfigProfileLoginConflict({
+      localParams: { mdblistKey: 'mdb', tmdbKey: 'tmdb' },
+      profileParams: { tmdbKey: 'tmdb', mdblistKey: 'mdb' },
     }),
     false,
   );
