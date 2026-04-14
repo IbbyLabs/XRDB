@@ -26,6 +26,9 @@ type SharpImageLike = {
 
 type SharpImageFactory = (input: Buffer) => SharpImageLike;
 
+const POSTER_BASE_WIDTH = 580;
+const POSTER_BASE_HEIGHT = 859;
+
 export const buildPosterCleanOverlayAsset = async ({
   imageType,
   posterTitleText,
@@ -64,10 +67,15 @@ export const buildPosterCleanOverlayAsset = async ({
       if (logoMeta.width && logoMeta.height) {
         const maxLogoWidth = Math.min(posterRowRegionWidth, Math.round(outputWidth * 0.78));
         const maxLogoHeight = Math.max(48, Math.round(outputHeight * 0.16));
+        const posterScale = Math.min(
+          outputWidth / POSTER_BASE_WIDTH,
+          outputHeight / POSTER_BASE_HEIGHT,
+        );
+        const maxUpscale = Math.max(1, Math.min(4, posterScale));
         const scale = Math.min(
-          1,
           maxLogoWidth / logoMeta.width,
-          maxLogoHeight / logoMeta.height
+          maxLogoHeight / logoMeta.height,
+          maxUpscale,
         );
         const logoWidth = Math.max(1, Math.round(logoMeta.width * scale));
         const logoHeight = Math.max(1, Math.round(logoMeta.height * scale));

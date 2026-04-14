@@ -58,5 +58,9 @@ export const resolveGenreBadgeAutoScale = ({
     linearScale = outputHeight / LOGO_BASE_HEIGHT;
   }
 
+  if (imageType === 'poster') {
+    return clamp(Math.pow(linearScale, 1.05), 0.75, 5);
+  }
+
   return clamp(Math.pow(linearScale, 1.15), 0.75, 5);
 };

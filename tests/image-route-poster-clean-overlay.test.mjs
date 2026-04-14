@@ -97,6 +97,35 @@ test('image route poster clean overlay trims transparent logo padding before siz
   assert.equal(overlay.height, 120);
 });
 
+test('image route poster clean overlay upscales small logos for 4K poster outputs', async () => {
+  const overlay = await buildPosterCleanOverlayAsset({
+    imageType: 'poster',
+    posterTitleText: 'Fallback Title',
+    posterLogoUrl: 'https://cdn.example.com/logo.png',
+    posterRowRegionWidth: 1500,
+    outputWidth: 2000,
+    outputHeight: 2926,
+    sharp: () => ({
+      metadata: async () => ({ width: 220, height: 80 }),
+      resize: (width, height) => ({
+        png: () => ({
+          toBuffer: async () => Buffer.from(`logo:${width}x${height}`),
+        }),
+      }),
+    }),
+    getSourceImagePayload: async () => ({
+      body: new Uint8Array([1, 2, 3]).buffer,
+      contentType: 'image/png',
+      cacheControl: 'public, max-age=60',
+    }),
+  });
+
+  assert.ok(overlay);
+  assert.deepEqual(overlay.buffer, Buffer.from('logo:749x273'));
+  assert.equal(overlay.width, 749);
+  assert.equal(overlay.height, 273);
+});
+
 test('image route poster clean overlay placement centers art above the bottom block', () => {
   const placement = resolvePosterCleanOverlayPlacement({
     overlay: {

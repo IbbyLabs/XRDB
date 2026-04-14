@@ -51,14 +51,27 @@ test('genre badge auto scale boosts large poster above linear', () => {
   const genre = resolveGenreBadgeAutoScale({ imageType: 'poster', outputWidth: 1280, outputHeight: 1896 });
   const linear = resolveOverlayAutoScale({ imageType: 'poster', outputWidth: 1280, outputHeight: 1896 });
   assert.ok(genre > linear, `expected genre(${genre}) > linear(${linear})`);
-  assert.ok(Math.abs(genre - 2.49) < 0.05, `expected ~2.49, got ${genre}`);
+  assert.ok(Math.abs(genre - 2.31) < 0.05, `expected ~2.31, got ${genre}`);
 });
 
 test('genre badge auto scale boosts 4K poster above linear', () => {
   const genre = resolveGenreBadgeAutoScale({ imageType: 'poster', outputWidth: 2000, outputHeight: 2926 });
   const linear = resolveOverlayAutoScale({ imageType: 'poster', outputWidth: 2000, outputHeight: 2926 });
   assert.ok(genre > linear, `expected genre(${genre}) > linear(${linear})`);
-  assert.ok(Math.abs(genre - 4.13) < 0.05, `expected ~4.13, got ${genre}`);
+  assert.ok(Math.abs(genre - 3.64) < 0.05, `expected ~3.64, got ${genre}`);
+});
+
+test('poster genre auto scale keeps comparable normalized size ratios across tiers', () => {
+  const normalScale = resolveGenreBadgeAutoScale({ imageType: 'poster', outputWidth: 580, outputHeight: 859 });
+  const largeScale = resolveGenreBadgeAutoScale({ imageType: 'poster', outputWidth: 1280, outputHeight: 1896 });
+  const fourKScale = resolveGenreBadgeAutoScale({ imageType: 'poster', outputWidth: 2000, outputHeight: 2926 });
+
+  const normalRatio = (40 * normalScale) / 859;
+  const largeRatio = (40 * largeScale) / 1896;
+  const fourKRatio = (40 * fourKScale) / 2926;
+
+  assert.ok(Math.abs(largeRatio - normalRatio) < 0.004, `expected large ratio near normal (${largeRatio} vs ${normalRatio})`);
+  assert.ok(Math.abs(fourKRatio - normalRatio) < 0.004, `expected 4K ratio near normal (${fourKRatio} vs ${normalRatio})`);
 });
 
 test('genre badge auto scale boosts 4K backdrop above linear', () => {
