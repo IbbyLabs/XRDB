@@ -296,7 +296,7 @@ GET /thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb`}</CodeBlo
           <p>
             Posters use <code>posterRatingsLayout</code> (top, bottom, left, right, and combinations).
             Backdrops use <code>backdropRatingsLayout</code> (center, right, right vertical) and can enable <code>backdropBottomRatingsRow</code>.
-            The Quality Badges panel exposes poster placement controls for supported poster layouts, disables shared placement when certification is the only visible quality badge, adds a dedicated age rating position control for the active poster layout, and includes bulk enable and hide actions for visible quality badges.
+            The Quality Badges panel exposes poster placement controls for supported row and side layouts, disables shared placement when certification is the only visible quality badge, lets the age rating inherit, group with the shared badges, or move independently for the active poster layout, and includes bulk enable and hide actions for visible quality badges.
           </p>
           <p>
             Slider based customisation controls snap back to their defaults when you move close to the baseline and show a Default readout, while keeping keys, manifest inputs, and the current target unchanged.

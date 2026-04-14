@@ -1118,7 +1118,19 @@ test('AIOMetadata export includes poster quality badge position for top poster l
   assert.match(patterns?.posterUrlPattern ?? '', /posterQualityBadgesPosition=right/);
 });
 
-test('AIOMetadata export omits poster quality badge position for unsupported poster layouts', () => {
+test('AIOMetadata export preserves grouped age rating placement for poster configs', () => {
+  const config = buildSampleSettings();
+
+  config.settings.ageRatingBadgePosition = 'grouped';
+
+  const patterns = buildAiometadataUrlPatterns('https://xrdb.example.com/', config.settings, {
+    hideCredentials: true,
+  });
+
+  assert.match(patterns?.posterUrlPattern ?? '', /ageRatingBadgePosition=grouped/);
+});
+
+test('AIOMetadata export includes poster quality badge position for supported side poster layouts', () => {
   const config = buildSampleSettings();
 
   config.settings.posterRatingsLayout = 'left-right';
@@ -1128,7 +1140,7 @@ test('AIOMetadata export omits poster quality badge position for unsupported pos
     hideCredentials: true,
   });
 
-  assert.equal((patterns?.posterUrlPattern ?? '').includes('posterQualityBadgesPosition='), false);
+  assert.match(patterns?.posterUrlPattern ?? '', /posterQualityBadgesPosition=right/);
 });
 
 test('AIOMetadata export can keep live credentials while preserving live AIOM defaults', () => {

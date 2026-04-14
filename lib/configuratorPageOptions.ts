@@ -154,6 +154,7 @@ export const AGE_RATING_BADGE_POSITION_OPTIONS: Array<{
   label: string;
 }> = [
   { id: 'inherit', label: 'Inherit' },
+  { id: 'grouped', label: 'Grouped' },
   { id: 'top-left', label: 'Top Left' },
   { id: 'top-center', label: 'Top Center' },
   { id: 'top-right', label: 'Top Right' },

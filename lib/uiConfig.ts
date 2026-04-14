@@ -136,6 +136,7 @@ export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
 export type AgeRatingBadgePosition =
   | 'inherit'
+  | 'grouped'
   | 'top-left'
   | 'top-center'
   | 'top-right'
@@ -377,6 +378,7 @@ const QUALITY_BADGES_SIDE_SET = new Set<QualityBadgesSide>(['left', 'right']);
 const POSTER_QUALITY_BADGES_POSITION_SET = new Set<PosterQualityBadgesPosition>(['auto', 'left', 'right']);
 const AGE_RATING_BADGE_POSITION_SET = new Set<AgeRatingBadgePosition>([
   'inherit',
+  'grouped',
   'top-left',
   'top-center',
   'top-right',
@@ -1955,7 +1957,11 @@ const buildSharedPayload = (settings: SharedXrdbSettings, options?: SharedPayloa
     payload.qualityBadgesSide = settings.qualityBadgesSide;
   }
   if (
-    (settings.posterRatingsLayout === 'top' || settings.posterRatingsLayout === 'bottom') &&
+    (settings.posterRatingsLayout === 'top' ||
+      settings.posterRatingsLayout === 'bottom' ||
+      settings.posterRatingsLayout === 'left' ||
+      settings.posterRatingsLayout === 'right' ||
+      settings.posterRatingsLayout === 'left-right') &&
     settings.posterQualityBadgesPosition !== 'auto'
   ) {
     payload.posterQualityBadgesPosition = settings.posterQualityBadgesPosition;

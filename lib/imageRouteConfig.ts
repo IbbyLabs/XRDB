@@ -22,6 +22,7 @@ export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
 export type AgeRatingBadgePosition =
   | 'inherit'
+  | 'grouped'
   | 'top-left'
   | 'top-center'
   | 'top-right'

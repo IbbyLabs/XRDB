@@ -18,6 +18,7 @@ test('image route display prefs normalize stream and quality placement settings'
   assert.equal(normalizeQualityBadgesSide('end'), 'right');
   assert.equal(normalizePosterQualityBadgesPosition('start'), 'left');
   assert.equal(normalizePosterQualityBadgesPosition('default'), 'auto');
+  assert.equal(normalizeAgeRatingBadgePosition('group'), 'grouped');
   assert.equal(normalizeAgeRatingBadgePosition('top'), 'top-center');
   assert.equal(normalizeAgeRatingBadgePosition('bottom'), 'bottom-center');
   assert.equal(normalizeAgeRatingBadgePosition('left'), 'left-center');
@@ -27,6 +28,8 @@ test('image route display prefs normalize stream and quality placement settings'
 
 test('image route display prefs resolve poster placement and logo background safely', () => {
   assert.equal(resolvePosterQualityBadgePlacement('left', 'left', 'auto'), 'bottom');
+  assert.equal(resolvePosterQualityBadgePlacement('left', 'left', 'right'), 'right');
+  assert.equal(resolvePosterQualityBadgePlacement('left-right', 'left', 'right'), 'right');
   assert.equal(resolvePosterQualityBadgePlacement('top-bottom', 'right', 'auto'), 'right');
   assert.equal(resolvePosterQualityBadgePlacement('top', 'left', 'auto'), 'bottom');
   assert.equal(resolvePosterQualityBadgePlacement('bottom', 'left', 'auto'), 'top');

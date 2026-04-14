@@ -81,6 +81,9 @@ export const normalizeAgeRatingBadgePosition = (
   if (!normalized || normalized === 'inherit' || normalized === 'default' || normalized === 'auto') {
     return 'inherit';
   }
+  if (normalized === 'grouped' || normalized === 'group' || normalized === 'shared') {
+    return 'grouped';
+  }
   if (normalized === 'top-left') {
     return 'top-left';
   }
@@ -126,7 +129,7 @@ export const resolvePosterQualityBadgePlacement = (
   posterQualityBadgesPosition: PosterQualityBadgesPosition,
 ): 'top' | 'bottom' | QualityBadgesSide => {
   if (layout === 'left' || layout === 'right' || layout === 'left-right') {
-    return 'bottom';
+    return posterQualityBadgesPosition === 'auto' ? 'bottom' : posterQualityBadgesPosition;
   }
   if (layout === 'top-bottom') {
     return qualityBadgesSide;

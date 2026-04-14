@@ -284,7 +284,7 @@ export function QualitySection({
               </div>
             ) : (
               <p className="text-[11px] leading-relaxed text-zinc-500">
-                Switch the poster layout to Top, Bottom, or Top Bottom to move quality badges.
+                Switch the poster layout to a supported row or side layout to move quality badges.
               </p>
             )}
             {showsPlacementControls ? (
@@ -293,7 +293,7 @@ export function QualitySection({
                   ? 'This control applies to quality badges only. Enable at least one non-age-rating quality badge to move them.'
                   : qualityBadgePlacementControlMode === 'side'
                   ? 'Top Bottom layouts let you choose which edge the quality badges occupy.'
-                  : 'Top and Bottom layouts can keep automatic placement or move quality badges to a fixed side.'}
+                  : 'Supported row and side layouts can keep automatic placement or move quality badges to a fixed side.'}
               </p>
             ) : null}
           </div>
@@ -316,7 +316,7 @@ export function QualitySection({
               ))}
             </div>
             <p className="text-[11px] leading-relaxed text-zinc-500">
-              Moves the certification badge on its own while the remaining quality badges keep using their own placement controls.
+              Inherit keeps the certification badge on shared placement, Grouped keeps it inside the same badge group, and the other options move it on its own.
             </p>
           </div>
         ) : null}
