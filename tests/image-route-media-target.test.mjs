@@ -108,6 +108,70 @@ test('image route media target prefers TV matches for episodic IMDb lookups', as
   ]);
 });
 
+test('image route media target resolves tv episode IMDb matches to the parent show for poster requests', async () => {
+  const requests = [];
+  const result = await resolveImageRouteMediaTarget({
+    imageType: 'poster',
+    isThumbnailRequest: false,
+    tmdbKey: 'tmdb-key',
+    phases: { ...phases },
+    fetchJsonCached: async (key, url) => {
+      requests.push({ key, url });
+      if (key === 'tmdb:find:tt7654321') {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            movie_results: [],
+            tv_results: [],
+            tv_episode_results: [{ show_id: 1399, season_number: 1, episode_number: 1 }],
+          },
+        };
+      }
+      if (key === 'tmdb:tv:1399') {
+        return {
+          ok: true,
+          status: 200,
+          data: { id: 1399, name: 'Game of Thrones' },
+        };
+      }
+      throw new Error(`unexpected request ${key}`);
+    },
+    fetchTextCached: async () => createTextResponse(),
+    mediaId: 'tt7654321',
+    season: null,
+    episode: null,
+    isTmdb: false,
+    isTvdb: false,
+    isCanonId: false,
+    isKitsu: false,
+    inputAnimeMappingProvider: null,
+    inputAnimeMappingExternalId: null,
+    explicitTmdbMediaType: null,
+    tvdbSeriesId: null,
+    hasNativeAnimeInput: false,
+    allowAnimeOnlyRatings: false,
+    hasConfirmedAnimeMapping: false,
+    tmdbEpOrder: 'tmdb',
+  });
+
+  assert.equal(result.mediaType, 'tv');
+  assert.equal(result.media.id, 1399);
+  assert.equal(result.mediaId, '1399');
+  assert.equal(result.season, '1');
+  assert.equal(result.episode, '1');
+  assert.deepEqual(requests, [
+    {
+      key: 'tmdb:find:tt7654321',
+      url: 'https://api.themoviedb.org/3/find/tt7654321?api_key=tmdb-key&external_source=imdb_id',
+    },
+    {
+      key: 'tmdb:tv:1399',
+      url: 'https://api.themoviedb.org/3/tv/1399?api_key=tmdb-key',
+    },
+  ]);
+});
+
 test('image route media target remaps reverse-mapped anime episodes to TMDB episode numbers', async () => {
   const requests = [];
   const result = await resolveImageRouteMediaTarget({

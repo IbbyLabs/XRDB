@@ -140,3 +140,9 @@ export const buildRevealedConfigState = (params: Record<string, string>) => {
     fingerprint: buildConfigProfileFingerprint(buildProfileParams(normalizedConfig.settings) ?? {}),
   };
 };
+
+export const toConfigModeAiometadataUrl = (pattern: string, profileId: string) => {
+  const qIdx = pattern.indexOf('?');
+  const base = qIdx >= 0 ? pattern.slice(0, qIdx) : pattern;
+  return `${base}?config=${profileId}`;
+};

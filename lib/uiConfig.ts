@@ -2540,7 +2540,7 @@ export const buildAiometadataUrlPatterns = (
   return {
     posterUrlPattern: useTmdbPosterIds
       ? `${origin}/poster/tmdb:{type}:{tmdb_id}.jpg?${buildQueryString('poster', { idSource: 'tmdb' })}`
-      : `${origin}/poster/{imdb_id}.jpg?${buildQueryString('poster')}`,
+      : `${origin}/poster/imdb:{imdb_id}.jpg?${buildQueryString('poster')}`,
     backgroundUrlPattern: `${origin}/backdrop/tmdb:{type}:{tmdb_id}.jpg?${buildQueryString('backdrop', { idSource: 'tmdb' })}`,
     logoUrlPattern: `${origin}/logo/tmdb:{type}:{tmdb_id}.png?${buildQueryString('logo', { idSource: 'tmdb' })}`,
     episodeThumbnailUrlPattern: `${origin}/thumbnail/${buildEpisodePatternBaseId(episodeIdMode)}/S{season}E{episode}.jpg?${buildQueryString('thumbnail')}`,
