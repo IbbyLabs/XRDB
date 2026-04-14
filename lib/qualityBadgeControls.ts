@@ -13,6 +13,7 @@ const NON_CERTIFICATION_QUALITY_BADGE_PREFERENCE_IDS = ALL_QUALITY_BADGE_PREFERE
 );
 const AGE_RATING_BADGE_POSITIONS_BY_LAYOUT = {
   top: [
+    'grouped',
     'top-left',
     'top-center',
     'top-right',
@@ -21,6 +22,7 @@ const AGE_RATING_BADGE_POSITIONS_BY_LAYOUT = {
     'bottom-right',
   ],
   bottom: [
+    'grouped',
     'top-left',
     'top-center',
     'top-right',
@@ -29,6 +31,7 @@ const AGE_RATING_BADGE_POSITIONS_BY_LAYOUT = {
     'bottom-right',
   ],
   'top-bottom': [
+    'grouped',
     'top-left',
     'top-center',
     'top-right',
@@ -37,6 +40,7 @@ const AGE_RATING_BADGE_POSITIONS_BY_LAYOUT = {
     'bottom-right',
   ],
   left: [
+    'grouped',
     'left-top',
     'left-center',
     'left-bottom',
@@ -45,6 +49,7 @@ const AGE_RATING_BADGE_POSITIONS_BY_LAYOUT = {
     'right-bottom',
   ],
   right: [
+    'grouped',
     'left-top',
     'left-center',
     'left-bottom',
@@ -53,6 +58,7 @@ const AGE_RATING_BADGE_POSITIONS_BY_LAYOUT = {
     'right-bottom',
   ],
   'left-right': [
+    'grouped',
     'top-left',
     'top-center',
     'top-right',
@@ -78,7 +84,13 @@ export const resolveQualityBadgePlacementControlMode = (
   if (posterRatingsLayout === 'top-bottom') {
     return 'side';
   }
-  if (posterRatingsLayout === 'top' || posterRatingsLayout === 'bottom') {
+  if (
+    posterRatingsLayout === 'top' ||
+    posterRatingsLayout === 'bottom' ||
+    posterRatingsLayout === 'left' ||
+    posterRatingsLayout === 'right' ||
+    posterRatingsLayout === 'left-right'
+  ) {
     return 'position';
   }
   return null;

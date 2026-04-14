@@ -111,6 +111,7 @@ const STREAM_BADGE_VALUES = ['auto', 'on', 'off'] as const;
 const POSTER_QUALITY_POSITION_VALUES = ['auto', 'left', 'right'] as const;
 const AGE_RATING_POSITION_VALUES = [
   'inherit',
+  'grouped',
   'top-left',
   'top-center',
   'top-right',
@@ -403,8 +404,13 @@ export const CONFIG_PROFILE_VERIFICATION_ENTRIES = buildEntries();
 
 export const CONFIG_PROFILE_INTERACTION_CASES: ConfigProfileInteractionCase[] = [
   {
-    id: 'poster-quality-badges-position-omits-unless-top-or-bottom',
+    id: 'poster-quality-badges-position-includes-for-supported-side-layouts',
     params: { tmdbKey: 'tmdb', mdblistKey: 'mdb', posterRatingsLayout: 'left', posterQualityBadgesPosition: 'right' },
+    expectedIncludedKeys: ['posterRatingsLayout', 'posterQualityBadgesPosition'],
+  },
+  {
+    id: 'poster-quality-badges-position-omits-for-top-bottom-layouts',
+    params: { tmdbKey: 'tmdb', mdblistKey: 'mdb', posterRatingsLayout: 'top-bottom', posterQualityBadgesPosition: 'right' },
     expectedIncludedKeys: ['posterRatingsLayout'],
     expectedOmittedKeys: ['posterQualityBadgesPosition'],
   },

@@ -478,7 +478,9 @@ export const renderWithSharp = async (
             : []
         : [];
     const hasExplicitAgeRatingPlacement =
-      input.imageType === 'poster' && input.ageRatingBadgePosition !== 'inherit';
+      input.imageType === 'poster' &&
+      input.ageRatingBadgePosition !== 'inherit' &&
+      input.ageRatingBadgePosition !== 'grouped';
     const extractedAgeRatingReferenceHeight = resolveQualityBadgeHeight({
       referenceBadgeHeight: posterQualityRowReferenceHeight,
       qualityBadgeScalePercent: input.qualityBadgeScalePercent,
@@ -492,7 +494,7 @@ export const renderWithSharp = async (
         ? resolvedQualityBadges.find((badge) => badge.key === 'certification') ?? null
         : null;
     const posterSharedQualityBadges =
-      extractedAgeRatingBadge === null
+      extractedAgeRatingBadge === null || input.ageRatingBadgePosition === 'grouped'
         ? resolvedQualityBadges
         : resolvedQualityBadges.filter((badge) => badge.key !== 'certification');
     const editorialOverlayBottom =
@@ -1649,21 +1651,27 @@ export const renderWithSharp = async (
           )
         );
         let qualityStartY = centeredStartY;
+        const qualitySideBadges =
+          qualityPlacement === 'right' ? input.rightBadges : input.leftBadges;
         const shouldTopAlignQuality =
           (input.posterRatingsLayout === 'left' || input.posterRatingsLayout === 'right') &&
-          (qualityPlacement === 'left' || qualityPlacement === 'right');
+          (qualityPlacement === 'left' || qualityPlacement === 'right') &&
+          qualitySideBadges.length === 0;
         if (shouldTopAlignQuality) {
           qualityStartY = posterTopContentStartY;
         } else if (posterTopRows.length > 0) {
           const belowTop = posterTopBlockBottom;
           qualityStartY = Math.max(qualityStartY, belowTop);
         } else {
-          const sideBadges = qualityPlacement === 'right' ? input.rightBadges : input.leftBadges;
-          if (sideBadges.length > 0) {
-            const sideColumnHeight = measureBadgeColumnHeight(sideBadges, metrics, input.ratingStyle);
+          if (qualitySideBadges.length > 0) {
+            const sideColumnHeight = measureBadgeColumnHeight(
+              qualitySideBadges,
+              metrics,
+              input.ratingStyle,
+            );
             if (sideColumnHeight > 0) {
               const belowSide =
-                resolveSideBadgeStartY(sideBadges, metrics) +
+                resolveSideBadgeStartY(qualitySideBadges, metrics) +
                 sideColumnHeight +
                 input.badgeGap;
               qualityStartY = Math.max(qualityStartY, belowSide);
