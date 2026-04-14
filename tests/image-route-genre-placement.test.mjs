@@ -85,3 +85,43 @@ test('image route genre placement nudges upward from bottom collisions', () => {
   assert.ok(overlay);
   assert.equal(overlay.top < 240, true);
 });
+
+test('image route clean genre placement avoids title collision across poster sizes', () => {
+  const posterSizes = [
+    { name: 'normal', width: 580, height: 859 },
+    { name: 'large', width: 1000, height: 1463 },
+    { name: '4k', width: 2000, height: 2926 },
+  ];
+
+  for (const size of posterSizes) {
+    const titleRect = {
+      left: Math.round(size.width * 0.15),
+      top: Math.round(size.height * 0.76),
+      width: Math.round(size.width * 0.7),
+      height: Math.round(size.height * 0.09),
+    };
+    const overlay = resolveGenreBadgeOverlay({
+      genreBadge: {
+        ...baseGenreBadge,
+        style: 'clean',
+        mode: 'text',
+      },
+      imageType: 'poster',
+      outputWidth: size.width,
+      outputHeight: size.height,
+      badgeTopOffset: Math.round(size.height * 0.03),
+      badgeBottomOffset: Math.round(size.height * 0.03),
+      badgeGap: Math.max(10, Math.round(size.height * 0.012)),
+      posterEdgeInset: Math.max(12, Math.round(size.width * 0.02)),
+      collisionRects: [titleRect],
+    });
+
+    assert.ok(overlay, `${size.name} should resolve clean genre overlay`);
+    const overlapsTitle =
+      overlay.left < titleRect.left + titleRect.width &&
+      overlay.left + overlay.width > titleRect.left &&
+      overlay.top < titleRect.top + titleRect.height &&
+      overlay.top + overlay.height > titleRect.top;
+    assert.equal(overlapsTitle, false, `${size.name} clean genre should not overlap title region`);
+  }
+});

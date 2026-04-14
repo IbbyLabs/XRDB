@@ -63,6 +63,7 @@ import {
   supportsPosterAgeRatingBadgePlacement,
 } from './qualityBadgeControls.ts';
 import { resolveGenreBadgeOverlay } from './imageRouteGenrePlacement.ts';
+import { buildGenreBadgeSvg } from './imageRouteGenreBadge.ts';
 import {
   buildPosterCleanOverlayAsset,
   resolvePosterCleanOverlayPlacement,
@@ -422,11 +423,26 @@ export const renderWithSharp = async (
       input.imageType === 'poster' &&
       input.genreBadge?.style === 'clean' &&
       input.genreBadge.mode !== 'off';
+    const cleanPosterGenreHeight =
+      cleanPosterGenreModeActive && input.genreBadge
+        ? buildGenreBadgeSvg(
+            {
+              familyId: input.genreBadge.familyId,
+              label: input.genreBadge.label,
+              accentColor: input.genreBadge.accentColor,
+              mode: input.genreBadge.mode,
+              style: input.genreBadge.style,
+              scalePercent: input.genreBadge.scalePercent,
+              borderWidth: input.genreBadge.borderWidth,
+              backgroundOpacity: input.genreBadge.backgroundOpacity,
+              noBackgroundOutlineColor: input.genreBadge.noBackgroundOutlineColor,
+              noBackgroundOutlineWidth: input.genreBadge.noBackgroundOutlineWidth,
+            },
+            'poster',
+          ).height
+        : 0;
     const cleanPosterReservedBottomHeight = cleanPosterGenreModeActive
-      ? Math.max(
-          Math.round(input.outputHeight * 0.2),
-          ratingBadgeHeight * 2 + input.badgeGap * 3,
-        )
+      ? cleanPosterGenreHeight + Math.max(10, Math.round(input.badgeGap * 1.8))
       : 0;
     const effectiveBadgeBottomOffset = input.badgeBottomOffset + cleanPosterReservedBottomHeight;
     const resolveSideBadgeStartY = (
@@ -1516,6 +1532,12 @@ export const renderWithSharp = async (
 	            top: posterCleanOverlayPlacement.top,
 	            left: posterCleanOverlayPlacement.left,
 	          });
+            trackGenreCollisionRect(
+              posterCleanOverlayPlacement.left,
+              posterCleanOverlayPlacement.top,
+              posterCleanOverlayAsset.width,
+              posterCleanOverlayAsset.height,
+            );
 	        }
 	      }
 	    }

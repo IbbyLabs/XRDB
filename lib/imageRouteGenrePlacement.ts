@@ -89,17 +89,8 @@ export const resolveGenreBadgeOverlay = ({
     resolvedPosition === 'bottomRight'
       ? 'up'
       : 'down';
-  if (isBottomPriorityClean) {
-    return {
-      svg: spec.svg,
-      width: spec.width,
-      height: spec.height,
-      top: Math.max(minInset, Math.min(maxTop, initialTop)),
-      left,
-    };
-  }
   const collisionPadding = Math.max(8, Math.round(badgeGap * 0.9));
-  let adjustedTop = initialTop;
+  let adjustedTop = Math.max(minInset, Math.min(maxTop, initialTop));
 
   for (let pass = 0; pass < collisionRects.length + 2; pass += 1) {
     let nextTop = adjustedTop;
@@ -116,7 +107,7 @@ export const resolveGenreBadgeOverlay = ({
           ? Math.min(nextTop, rect.top - spec.height - collisionPadding)
           : Math.max(nextTop, rect.top + rect.height + collisionPadding);
     }
-    const clampedNextTop = Math.max(12, Math.min(maxTop, nextTop));
+    const clampedNextTop = Math.max(minInset, Math.min(maxTop, nextTop));
     if (clampedNextTop === adjustedTop) break;
     adjustedTop = clampedNextTop;
   }
