@@ -5,6 +5,7 @@ export type ConfiguratorEnvAccessKeys = {
   hasServerFanartKey: boolean;
   hasServerMdblistKey: boolean;
   hasServerSimklClientId: boolean;
+  hasServerTmdbKey: boolean;
 };
 
 const trimEnvValue = (value: string | undefined) => String(value || '').trim();
@@ -34,6 +35,11 @@ export const getConfiguratorEnvAccessKeys = (
       trimEnvValue(env.SIMKL_API_KEY) ||
       trimEnvValue(env.XRDB_SIMKL_CLIENT_ID),
   ),
+  hasServerTmdbKey: Boolean(
+    trimEnvValue(env.XRDB_TMDB_API_KEY) ||
+      trimEnvValue(env.TMDB_API_KEY) ||
+      trimEnvValue(env.TMDB_KEY),
+  ),
 });
 
 export const applyConfiguratorEnvAccessKeys = (
@@ -52,5 +58,6 @@ export const hasConfiguratorEnvAccessKeys = (keys: ConfiguratorEnvAccessKeys) =>
       keys.simklClientId ||
       keys.hasServerFanartKey ||
       keys.hasServerMdblistKey ||
-      keys.hasServerSimklClientId,
+      keys.hasServerSimklClientId ||
+      keys.hasServerTmdbKey,
   );

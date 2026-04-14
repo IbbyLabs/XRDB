@@ -66,8 +66,12 @@ export const buildXrdbImageUrl = ({
   target.search = '';
 
   appendOptionalQuery(target, 'xrdbKey', getProxyParamValue(reqUrl, config, 'xrdbKey'));
-  target.searchParams.set('tmdbKey', tmdbKey);
-  target.searchParams.set('mdblistKey', mdblistKey);
+  if (tmdbKey) {
+    target.searchParams.set('tmdbKey', tmdbKey);
+  }
+  if (mdblistKey) {
+    target.searchParams.set('mdblistKey', mdblistKey);
+  }
 
   const resolvedSimklClientId = simklClientId || getProxyParamValue(reqUrl, config, 'simklClientId');
   if (resolvedSimklClientId) {

@@ -483,7 +483,7 @@ function AiometadataSection({
         )}
       </div>
       {aiometadataPatternRows.length === 0 ? (
-        <p className="text-[13px] text-zinc-500">Add API keys and configure settings to generate URLs.</p>
+        <p className="text-[13px] text-zinc-500">Configure server keys and settings to generate URLs.</p>
       ) : (
         <div className="space-y-2">
           {aiometadataPatternRows.map((row) => {
@@ -542,11 +542,11 @@ function ConfigStringSection({
         <Code2 className="w-4 h-4 text-violet-500" /> Config String
       </h2>
       <p className="text-[13px] leading-5 text-zinc-400">
-        Base64url string containing API keys and all settings.
+        Base64url string containing settings. Provider keys stay on the server.
       </p>
       <div className="rounded-xl border border-white/10 bg-black/70 p-3 overflow-hidden">
         <div className={`font-mono text-[11px] text-zinc-300 break-all${!showConfigString && displayedConfigString ? ' select-none' : ''}`}>
-          {displayedConfigString || 'Add TMDB key and MDBList key to generate.'}
+          {displayedConfigString || 'Configure server TMDB and MDBList keys to generate.'}
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2">
@@ -1598,7 +1598,7 @@ function SaveConfigSection({
         </p>
         {!canSaveProfile && (
           <p className="text-[12px] leading-4 text-amber-400/90">
-            Add a TMDB key to save a profile. Add MDBList only when this server has no configured MDBList key.
+            Configure server TMDB and MDBList keys to save a profile.
           </p>
         )}
         {expiredBanner && (
@@ -1942,7 +1942,7 @@ function CompactPreview({
           </div>
         ) : (
           <div className="text-center text-[13px] text-zinc-500">
-            {tmdbKeyPresent ? 'No preview available.' : 'Add a TMDB key to unlock preview.'}
+            {tmdbKeyPresent ? 'No preview available.' : 'Configure a server TMDB key to unlock preview.'}
           </div>
         )}
       </div>

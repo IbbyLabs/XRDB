@@ -103,6 +103,11 @@ export const TRAKT_API_BASE_URL =
   process.env.XRDB_TRAKT_API_BASE_URL?.trim() || 'https://api.trakt.tv';
 export const TRAKT_CLIENT_ID =
   process.env.XRDB_TRAKT_CLIENT_ID?.trim() || process.env.TRAKT_CLIENT_ID?.trim() || '';
+export const TMDB_API_KEY =
+  process.env.XRDB_TMDB_API_KEY?.trim() ||
+  process.env.TMDB_API_KEY?.trim() ||
+  process.env.TMDB_KEY?.trim() ||
+  '';
 export const FANART_API_KEY =
   process.env.XRDB_FANART_API_KEY?.trim() || process.env.FANART_API_KEY?.trim() || '';
 export const FANART_CLIENT_KEY =

@@ -520,7 +520,7 @@ export function ProxyView() {
               </div>
             ) : (
               <div className="text-center text-[13px] text-zinc-500">
-                {tmdbKeyPresent ? 'No preview available.' : 'Add a TMDB key to unlock preview.'}
+                {tmdbKeyPresent ? 'No preview available.' : 'Configure a server TMDB key to unlock preview.'}
               </div>
             )}
           </div>

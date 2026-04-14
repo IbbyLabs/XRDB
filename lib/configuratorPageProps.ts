@@ -95,7 +95,10 @@ type MediaTargetSearchState = {
 export function buildConfiguratorPageProps({
   activeWorkspaceSettings,
   baseUrl,
+  hasServerFanartKey,
   hasServerMdblistKey,
+  hasServerSimklClientId,
+  hasServerTmdbKey,
   outputs,
   pageChrome,
   workspaceActions,
@@ -107,7 +110,10 @@ export function buildConfiguratorPageProps({
 }: {
   activeWorkspaceSettings: ReturnType<typeof useConfiguratorActiveWorkspaceSettings>;
   baseUrl: string;
+  hasServerFanartKey: boolean;
   hasServerMdblistKey: boolean;
+  hasServerSimklClientId: boolean;
+  hasServerTmdbKey: boolean;
   outputs: ReturnType<typeof useConfiguratorOutputs>;
   pageChrome: ReturnType<typeof useConfiguratorPageChrome>;
   workspaceActions: ReturnType<typeof useConfiguratorWorkspaceActions>;
@@ -151,25 +157,23 @@ export function buildConfiguratorPageProps({
       },
       accessKeysProps: {
         xrdbKey: workspaceState.xrdbKey,
-        tmdbKey: workspaceState.tmdbKey,
-        mdblistKey: workspaceState.mdblistKey,
-        fanartKey: workspaceState.fanartKey,
-        simklClientId: workspaceState.simklClientId,
         tmdbIdScope: workspaceState.tmdbIdScope,
         onXrdbKeyChange: workspaceState.setXrdbKey,
-        onTmdbKeyChange: workspaceState.setTmdbKey,
-        onMdblistKeyChange: workspaceState.setMdblistKey,
-        onFanartKeyChange: workspaceState.setFanartKey,
-        onSimklClientIdChange: workspaceState.setSimklClientId,
         onTmdbIdScopeChange: workspaceState.setTmdbIdScope,
         tmdbIdScopeOptions: TMDB_ID_SCOPE_MODE_OPTIONS,
         xrdbRequestKeyHelpCopy: XRDB_REQUEST_KEY_HELP_COPY,
         fanartKeyHelpCopy: FANART_KEY_HELP_COPY,
+        serverCredentialStatus: {
+          fanart: hasServerFanartKey,
+          mdblist: hasServerMdblistKey,
+          simkl: hasServerSimklClientId,
+          tmdb: hasServerTmdbKey,
+        },
       },
       mediaTargetProps: {
         previewType: workspaceState.previewType,
         mediaId: workspaceState.mediaId,
-        tmdbKey: workspaceState.tmdbKey,
+        tmdbKeyAvailable: Boolean(workspaceState.tmdbKey.trim()) || hasServerTmdbKey,
         lang: workspaceState.lang,
         supportedLanguages: pageChrome.supportedLanguages,
         onMediaIdChange: mediaTargetSearch.onMediaIdChange,
@@ -477,7 +481,7 @@ export function buildConfiguratorPageProps({
         previewUrl: outputs.previewUrl,
         previewErrored: outputs.previewErrored,
         previewErrorDetails: outputs.visiblePreviewErrorDetails,
-        tmdbKeyPresent: Boolean(workspaceState.tmdbKey.trim()),
+        tmdbKeyPresent: Boolean(workspaceState.tmdbKey.trim()) || hasServerTmdbKey,
         onPreviewImageError: outputs.handlePreviewImageError,
         onPreviewImageLoad: outputs.handlePreviewImageLoad,
         activeTypeLabel: workspaceSummary.activeTypeLabel,
@@ -502,7 +506,7 @@ export function buildConfiguratorPageProps({
         displayedConfigString: outputs.displayedConfigString,
         canGenerateConfig: workspaceSummary.canGenerateConfig,
         canSaveProfile:
-          Boolean(workspaceState.tmdbKey.trim())
+          (Boolean(workspaceState.tmdbKey.trim()) || hasServerTmdbKey)
           && (Boolean(workspaceState.mdblistKey.trim()) || hasServerMdblistKey),
         configCopied: workspaceUi.configCopied,
         showConfigString: outputs.isConfigStringVisible,
@@ -527,6 +531,8 @@ export function buildConfiguratorPageProps({
         buildSaveParams: () =>
           buildProfileParams(outputs.currentUiConfig.settings, {
             allowMissingMdblistKey: hasServerMdblistKey,
+            allowMissingTmdbKey: hasServerTmdbKey,
+            omitProviderCredentials: true,
           }),
         aiometadataPatterns: outputs.aiometadataPatterns,
       },
@@ -551,7 +557,11 @@ export function buildConfiguratorPageProps({
         onChangeProxyTypes: workspaceState.setProxyTypes,
         proxyCatalogRules: workspaceState.proxyCatalogRules,
         onChangeProxyCatalogRules: workspaceState.setProxyCatalogRules,
-        proxyPayload: buildProxyPayload(baseUrl, outputs.currentUiConfig.proxy, outputs.currentUiConfig.settings),
+        proxyPayload: buildProxyPayload(baseUrl, outputs.currentUiConfig.proxy, outputs.currentUiConfig.settings, {
+          allowMissingMdblistKey: hasServerMdblistKey,
+          allowMissingTmdbKey: hasServerTmdbKey,
+          omitProviderCredentials: true,
+        }),
         tmdbKey: workspaceState.tmdbKey,
         mdblistKey: workspaceState.mdblistKey,
         displayedProxyUrl: outputs.displayedProxyUrl,

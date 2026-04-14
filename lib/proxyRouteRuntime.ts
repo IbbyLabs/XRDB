@@ -20,6 +20,7 @@ import {
   XRDBID_PREFIX,
   normalizeEpisodeIdMode,
 } from './episodeIdentity.ts';
+import { TMDB_API_KEY } from './imageRouteConfig.ts';
 import { TMDB_API_BASE_URL } from './serviceBaseUrls.ts';
 
 const ANILIST_GRAPHQL_URL = process.env.XRDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
@@ -748,6 +749,7 @@ export const translateMetaPayload = async (
   const debugMetaTranslation = config.debugMetaTranslation === true;
   const lang = config.lang || requestUrl.searchParams.get('lang');
   if (!lang) return meta;
+  const tmdbKey = config.tmdbKey || TMDB_API_KEY;
 
   const rawId = typeof meta.id === 'string' ? meta.id : null;
   const rawType = typeof meta.type === 'string' ? meta.type : null;
@@ -758,7 +760,7 @@ export const translateMetaPayload = async (
   const tmdbTarget = await resolveProxyTmdbTarget({
     xrdbId,
     metaType: rawType,
-    tmdbKey: config.tmdbKey,
+    tmdbKey,
     lang,
   });
   const tmdbId = tmdbTarget?.id ?? null;
@@ -772,7 +774,7 @@ export const translateMetaPayload = async (
       ? await resolveTmdbTranslationFieldAvailability({
           tmdbId: tmdbTarget.id,
           type: tmdbTarget.type,
-          tmdbKey: config.tmdbKey,
+          tmdbKey,
           lang,
           fetchTmdbJson,
         })
@@ -865,7 +867,7 @@ export const translateMetaPayload = async (
     const seasonDataMap = new Map<number, any>();
     await mapWithConcurrency(Array.from(seasonValues), 6, async (seasonValue) => {
       const seasonUrl = new URL(`${TMDB_API_BASE_URL}/tv/${tmdbId}/season/${seasonValue}`);
-      seasonUrl.searchParams.set('api_key', config.tmdbKey);
+      seasonUrl.searchParams.set('api_key', tmdbKey);
       seasonUrl.searchParams.set('language', lang);
       const seasonData = await fetchTmdbJson(seasonUrl.toString());
       if (seasonData && typeof seasonData === 'object') {
@@ -890,7 +892,7 @@ export const translateMetaPayload = async (
       const resolvedEpisodeTarget = await resolveProxyEpisodeTmdbTarget({
         baseXrdbId: xrdbId,
         metaType: rawType,
-        tmdbKey: config.tmdbKey,
+        tmdbKey,
         lang,
         seasonValue,
         episodeValue,
@@ -910,7 +912,7 @@ export const translateMetaPayload = async (
 
       if (resolvedSeason !== seasonValue && !seasonDataMap.has(resolvedSeason)) {
         const seasonUrl = new URL(`${TMDB_API_BASE_URL}/tv/${tmdbId}/season/${resolvedSeason}`);
-        seasonUrl.searchParams.set('api_key', config.tmdbKey);
+        seasonUrl.searchParams.set('api_key', tmdbKey);
         seasonUrl.searchParams.set('language', lang);
         const seasonData = await fetchTmdbJson(seasonUrl.toString());
         if (seasonData && typeof seasonData === 'object') {
@@ -935,7 +937,7 @@ export const translateMetaPayload = async (
         ? await resolveTmdbTranslationFieldAvailability({
             tmdbId: resolvedEpisodeTarget.id,
             type: resolvedEpisodeTarget.type,
-            tmdbKey: config.tmdbKey,
+            tmdbKey,
             lang,
             fetchTmdbJson,
             seasonNumber: resolvedSeason,

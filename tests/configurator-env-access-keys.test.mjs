@@ -21,6 +21,7 @@ test('configurator env access keys prefer first MDBList pool key and trim values
     hasServerFanartKey: true,
     hasServerMdblistKey: true,
     hasServerSimklClientId: true,
+    hasServerTmdbKey: false,
   });
 });
 
@@ -29,6 +30,7 @@ test('configurator env access keys fall back to legacy aliases when primary vars
     FANART_API_KEY: 'fanart-fallback',
     MDBLIST_KEY: 'mdb-fallback',
     XRDB_SIMKL_CLIENT_ID: 'simkl-fallback',
+    TMDB_KEY: 'tmdb-fallback',
   });
 
   assert.deepEqual(result, {
@@ -38,6 +40,7 @@ test('configurator env access keys fall back to legacy aliases when primary vars
     hasServerFanartKey: true,
     hasServerMdblistKey: true,
     hasServerSimklClientId: true,
+    hasServerTmdbKey: true,
   });
 });
 
@@ -55,6 +58,25 @@ test('configurator env access keys never expose server side Simkl values', () =>
     hasServerFanartKey: false,
     hasServerMdblistKey: false,
     hasServerSimklClientId: true,
+    hasServerTmdbKey: false,
+  });
+});
+
+test('configurator env access keys detect server side TMDB values without exposing them', () => {
+  const result = getConfiguratorEnvAccessKeys({
+    XRDB_TMDB_API_KEY: 'tmdb-primary',
+    TMDB_API_KEY: 'tmdb-alias',
+    TMDB_KEY: 'tmdb-legacy',
+  });
+
+  assert.deepEqual(result, {
+    fanartKey: '',
+    mdblistKey: '',
+    simklClientId: '',
+    hasServerFanartKey: false,
+    hasServerMdblistKey: false,
+    hasServerSimklClientId: false,
+    hasServerTmdbKey: true,
   });
 });
 
@@ -129,6 +151,7 @@ test('configurator env access keys detect when any default is present', () => {
     hasServerFanartKey: false,
     hasServerMdblistKey: false,
     hasServerSimklClientId: false,
+    hasServerTmdbKey: false,
   }), false);
   assert.equal(hasConfiguratorEnvAccessKeys({
     fanartKey: '',
@@ -137,5 +160,6 @@ test('configurator env access keys detect when any default is present', () => {
     hasServerFanartKey: false,
     hasServerMdblistKey: true,
     hasServerSimklClientId: false,
+    hasServerTmdbKey: false,
   }), true);
 });

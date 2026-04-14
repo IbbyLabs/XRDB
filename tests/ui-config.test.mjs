@@ -934,6 +934,51 @@ test('config string and proxy manifest use the same shared XRDB settings', () =>
   });
 });
 
+test('server managed exports omit provider credentials when server fallbacks are available', () => {
+  const config = buildSampleSettings();
+  const baseUrl = 'https://xrdb.example.com/';
+  const options = {
+    allowMissingMdblistKey: true,
+    allowMissingTmdbKey: true,
+    omitProviderCredentials: true,
+  };
+  const settings = {
+    ...config.settings,
+    simklClientId: 'simkl-client-id-000',
+  };
+
+  const configString = buildConfigString(baseUrl, settings, options);
+  assert.notEqual(configString, '');
+
+  const decodedConfig = JSON.parse(decodeBase64Url(configString));
+  assert.equal(decodedConfig.xrdbKey, 'shared-xrdb-key-000');
+  assert.equal('tmdbKey' in decodedConfig, false);
+  assert.equal('mdblistKey' in decodedConfig, false);
+  assert.equal('fanartKey' in decodedConfig, false);
+  assert.equal('simklClientId' in decodedConfig, false);
+
+  const params = buildProfileParams(settings, options);
+  assert.ok(params);
+  assert.equal(params.xrdbKey, 'shared-xrdb-key-000');
+  assert.equal('tmdbKey' in params, false);
+  assert.equal('mdblistKey' in params, false);
+  assert.equal('fanartKey' in params, false);
+  assert.equal('simklClientId' in params, false);
+
+  const proxyUrl = buildProxyUrl(baseUrl, config.proxy, settings, options);
+  assert.match(proxyUrl, /^https:\/\/xrdb\.example\.com\/proxy\/.+\/manifest\.json$/);
+
+  const encodedConfig = proxyUrl.split('/proxy/')[1]?.replace('/manifest.json', '');
+  assert.ok(encodedConfig);
+  const decodedProxy = JSON.parse(decodeBase64Url(encodedConfig));
+  assert.equal(decodedProxy.url, 'https://addon.example.com/manifest.json');
+  assert.equal(decodedProxy.xrdbKey, 'shared-xrdb-key-000');
+  assert.equal('tmdbKey' in decodedProxy, false);
+  assert.equal('mdblistKey' in decodedProxy, false);
+  assert.equal('fanartKey' in decodedProxy, false);
+  assert.equal('simklClientId' in decodedProxy, false);
+});
+
 test('AIOMetadata export builds masked patterns with placeholders', () => {
   const config = buildSampleSettings();
 
