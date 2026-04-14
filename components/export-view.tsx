@@ -14,6 +14,7 @@ import {
   hasConfigProfileUnsavedChanges,
   isProtectedConfigProfileId,
   shouldClearConfigProfileUnlockSession,
+  toConfigModeAiometadataUrl,
 } from '@/lib/configProfileClientState';
 import { useConfiguratorContext } from '@/lib/configuratorProvider';
 import { WorkspaceManagementSection } from '@/components/configurator-basics';
@@ -38,12 +39,6 @@ type SavedConfigProfileStatus = {
   failedAttempts: number;
   lockedUntil: number | null;
   isLocked: boolean;
-};
-
-const toConfigUrl = (pattern: string, profileId: string): string => {
-  const qIdx = pattern.indexOf('?');
-  const base = qIdx >= 0 ? pattern.slice(0, qIdx) : pattern;
-  return `${base}?config=${profileId}`;
 };
 
 const formatCountdown = (msRemaining: number): string => {
@@ -173,7 +168,8 @@ export function ExportView() {
   const [aiometadataUrlMode, setAiometadataUrlMode] = useState<'inline' | 'config'>('inline');
   const aiometadataUrlModeOverrideRef = useRef(false);
   const hasUuidBackedProfile = Boolean(savedProfileId && !LEGACY_CONFIG_ID_RE.test(savedProfileId));
-  const effectiveAiometadataUrlMode: 'inline' | 'config' = hasUuidBackedProfile
+  const configModeAvailable = savedProfileIdLoaded && hasUuidBackedProfile;
+  const effectiveAiometadataUrlMode: 'inline' | 'config' = configModeAvailable
     ? aiometadataUrlMode
     : 'inline';
 
@@ -183,16 +179,16 @@ export function ExportView() {
   }, []);
 
   useEffect(() => {
-    if (!hasUuidBackedProfile) {
+    if (!configModeAvailable) {
       aiometadataUrlModeOverrideRef.current = false;
     }
 
     setAiometadataUrlMode((currentMode) => getNextAiometadataUrlMode({
       currentMode,
-      hasProtectedProfile: hasUuidBackedProfile,
+      hasProtectedProfile: configModeAvailable,
       hasExplicitOverride: aiometadataUrlModeOverrideRef.current,
     }));
-  }, [hasUuidBackedProfile]);
+  }, [configModeAvailable]);
 
   const {
     previewType,
@@ -225,7 +221,7 @@ export function ExportView() {
           aiometadataCopied={aiometadataCopied}
           onCopyAiometadata={onCopyAiometadata}
           savedProfileId={savedProfileId}
-          configUrlAvailable={hasUuidBackedProfile}
+          configUrlAvailable={configModeAvailable}
           aiometadataUrlMode={effectiveAiometadataUrlMode}
           onSetAiometadataUrlMode={handleSetAiometadataUrlMode}
         />
@@ -388,7 +384,7 @@ function AiometadataSection({
 
   const getDisplayValue = useCallback(
     (value: string) =>
-      aiometadataUrlMode === 'config' && savedProfileId ? toConfigUrl(value, savedProfileId) : value,
+      aiometadataUrlMode === 'config' && savedProfileId ? toConfigModeAiometadataUrl(value, savedProfileId) : value,
     [aiometadataUrlMode, savedProfileId],
   );
 
@@ -404,7 +400,9 @@ function AiometadataSection({
 
   const handleCopyAll = useCallback(() => {
     if (aiometadataUrlMode === 'config' && savedProfileId) {
-      const text = aiometadataPatternRows.map((r) => toConfigUrl(r.value, savedProfileId)).join('\n');
+      const text = aiometadataPatternRows
+        .map((r) => toConfigModeAiometadataUrl(r.value, savedProfileId))
+        .join('\n');
       void navigator.clipboard.writeText(text);
       if (configCopiedTimerRef.current) clearTimeout(configCopiedTimerRef.current);
       setConfigCopiedAll(true);

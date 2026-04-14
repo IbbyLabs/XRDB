@@ -12,6 +12,7 @@ import {
   parseConfigProfileUnlockSession,
   serializeConfigProfileUnlockSession,
   shouldClearConfigProfileUnlockSession,
+  toConfigModeAiometadataUrl,
 } from '../lib/configProfileClientState.ts';
 import { buildProfileParams, buildProxyPayload, parseSavedUiConfig } from '../lib/uiConfig.ts';
 
@@ -215,5 +216,46 @@ test('hasConfigProfileLoginConflict returns false for equivalent params in diffe
       profileParams: { tmdbKey: 'tmdb', mdblistKey: 'mdb' },
     }),
     false,
+  );
+});
+
+test('toConfigModeAiometadataUrl rewrites inline urls to config urls deterministically', () => {
+  const value = toConfigModeAiometadataUrl(
+    'https://xrdb.example.com/poster/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb&lang=en',
+    '550e8400-e29b-41d4-a716-446655440000',
+  );
+
+  assert.equal(
+    value,
+    'https://xrdb.example.com/poster/tmdb:{type}:{tmdb_id}.jpg?config=550e8400-e29b-41d4-a716-446655440000',
+  );
+});
+
+test('toConfigModeAiometadataUrl reflects profile id changes for regenerated rows', () => {
+  const inlinePattern = 'https://xrdb.example.com/backdrop/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb';
+  const first = toConfigModeAiometadataUrl(inlinePattern, '550e8400-e29b-41d4-a716-446655440000');
+  const second = toConfigModeAiometadataUrl(inlinePattern, '550e8400-e29b-41d4-a716-446655440001');
+
+  assert.equal(first.endsWith('?config=550e8400-e29b-41d4-a716-446655440000'), true);
+  assert.equal(second.endsWith('?config=550e8400-e29b-41d4-a716-446655440001'), true);
+});
+
+test('toConfigModeAiometadataUrl regenerates from updated inline pattern state', () => {
+  const beforeReset = toConfigModeAiometadataUrl(
+    'https://xrdb.example.com/logo/tmdb:{type}:{tmdb_id}.png?idSource=tmdb&posterImageText=textless',
+    '550e8400-e29b-41d4-a716-446655440000',
+  );
+  const afterReset = toConfigModeAiometadataUrl(
+    'https://xrdb.example.com/logo/tmdb:{type}:{tmdb_id}.png?idSource=tmdb&posterImageText=clean',
+    '550e8400-e29b-41d4-a716-446655440000',
+  );
+
+  assert.equal(
+    beforeReset,
+    'https://xrdb.example.com/logo/tmdb:{type}:{tmdb_id}.png?config=550e8400-e29b-41d4-a716-446655440000',
+  );
+  assert.equal(
+    afterReset,
+    'https://xrdb.example.com/logo/tmdb:{type}:{tmdb_id}.png?config=550e8400-e29b-41d4-a716-446655440000',
   );
 });

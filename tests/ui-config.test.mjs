@@ -1223,7 +1223,7 @@ test('AIOMetadata export supports IMDb poster ID mode override', () => {
     posterIdMode: 'imdb',
   });
 
-  assert.equal(patterns?.posterUrlPattern.startsWith('https://xrdb.example.com/poster/{imdb_id}.jpg?'), true);
+  assert.equal(patterns?.posterUrlPattern.startsWith('https://xrdb.example.com/poster/imdb:{imdb_id}.jpg?'), true);
   assert.equal((patterns?.posterUrlPattern ?? '').includes('idSource=tmdb'), false);
   assert.match(patterns?.backgroundUrlPattern ?? '', /idSource=tmdb/);
   assert.match(patterns?.logoUrlPattern ?? '', /idSource=tmdb/);
