@@ -162,6 +162,11 @@ export type TmdbIdScopeMode = 'soft' | 'strict';
 export type ProxyMediaType = 'movie' | 'series' | 'anime';
 export const PROXY_MEDIA_TYPES: readonly ProxyMediaType[] = ['movie', 'series', 'anime'];
 type XrdbImageType = 'poster' | 'backdrop' | 'logo';
+type SharedPayloadOptions = {
+  allowMissingTmdbKey?: boolean;
+  allowMissingMdblistKey?: boolean;
+  omitProviderCredentials?: boolean;
+};
 export type AiometadataUrlPatterns = {
   posterUrlPattern: string;
   backgroundUrlPattern: string;
@@ -1732,27 +1737,37 @@ const appendSharedOrPerTypePayload = <Value extends string | number | boolean>(o
   }
 };
 
-const buildSharedPayload = (settings: SharedXrdbSettings) => {
+const buildSharedPayload = (settings: SharedXrdbSettings, options?: SharedPayloadOptions) => {
   const xrdbKey = settings.xrdbKey.trim();
   const tmdbKey = settings.tmdbKey.trim();
   const mdblistKey = settings.mdblistKey.trim();
   const fanartKey = settings.fanartKey.trim();
-  if (!tmdbKey || !mdblistKey) {
+  const allowMissingTmdbKey = options?.allowMissingTmdbKey === true;
+  const allowMissingMdblistKey = options?.allowMissingMdblistKey === true;
+  const omitProviderCredentials = options?.omitProviderCredentials === true;
+  const hasUsableTmdbKey = omitProviderCredentials ? allowMissingTmdbKey : Boolean(tmdbKey) || allowMissingTmdbKey;
+  const hasUsableMdblistKey = omitProviderCredentials
+    ? allowMissingMdblistKey
+    : Boolean(mdblistKey) || allowMissingMdblistKey;
+  if (!hasUsableTmdbKey || !hasUsableMdblistKey) {
     return null;
   }
 
-  const payload: Record<string, string | number | boolean> = {
-    tmdbKey,
-    mdblistKey,
-  };
+  const payload: Record<string, string | number | boolean> = {};
+  if (tmdbKey && !omitProviderCredentials) {
+    payload.tmdbKey = tmdbKey;
+  }
+  if (mdblistKey && !omitProviderCredentials) {
+    payload.mdblistKey = mdblistKey;
+  }
   if (xrdbKey) {
     payload.xrdbKey = xrdbKey;
   }
-  if (fanartKey) {
+  if (fanartKey && !omitProviderCredentials) {
     payload.fanartKey = fanartKey;
   }
   const simklClientId = settings.simklClientId.trim();
-  if (simklClientId) {
+  if (simklClientId && !omitProviderCredentials) {
     payload.simklClientId = simklClientId;
   }
   if (settings.tmdbIdScope !== 'soft') {
@@ -2289,24 +2304,20 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
 
 export const buildProfileParams = (
   settings: SharedXrdbSettings,
-  options?: { allowMissingMdblistKey?: boolean },
+  options?: SharedPayloadOptions,
 ): Record<string, string> | null => {
-  const allowMissingMdblistKey = options?.allowMissingMdblistKey === true;
-  const profileSettings =
-    allowMissingMdblistKey && !settings.mdblistKey.trim()
-      ? { ...settings, mdblistKey: '__server_mdblist__' }
-      : settings;
-  const payload = buildSharedPayload(profileSettings);
+  const payload = buildSharedPayload(settings, options);
   if (!payload) return null;
-  if (allowMissingMdblistKey && !settings.mdblistKey.trim()) {
-    delete payload.mdblistKey;
-  }
   return Object.fromEntries(Object.entries(payload).map(([k, v]) => [k, String(v)]));
 };
 
-export const buildConfigPayload = (baseUrl: string, settings: SharedXrdbSettings) => {
+export const buildConfigPayload = (
+  baseUrl: string,
+  settings: SharedXrdbSettings,
+  options?: SharedPayloadOptions,
+) => {
   const origin = normalizeBaseUrl(baseUrl);
-  const sharedPayload = buildSharedPayload(settings);
+  const sharedPayload = buildSharedPayload(settings, options);
   if (!origin || !sharedPayload) {
     return null;
   }
@@ -2317,8 +2328,12 @@ export const buildConfigPayload = (baseUrl: string, settings: SharedXrdbSettings
   };
 };
 
-export const buildConfigString = (baseUrl: string, settings: SharedXrdbSettings) => {
-  const payload = buildConfigPayload(baseUrl, settings);
+export const buildConfigString = (
+  baseUrl: string,
+  settings: SharedXrdbSettings,
+  options?: SharedPayloadOptions,
+) => {
+  const payload = buildConfigPayload(baseUrl, settings, options);
   if (!payload) {
     return '';
   }
@@ -2386,7 +2401,7 @@ export const buildAiometadataUrlPatterns = (
     hideCredentials?: boolean;
     posterIdMode?: AiometadataPosterIdMode;
     episodeIdMode?: AiometadataEpisodeIdMode;
-  },
+  } & SharedPayloadOptions,
 ): AiometadataUrlPatterns | null => {
   const origin = normalizeBaseUrl(baseUrl);
   if (!origin) {
@@ -2440,7 +2455,7 @@ export const buildAiometadataUrlPatterns = (
       : settings.simklClientId.trim(),
   };
 
-  const payload = buildSharedPayload(exportSettings);
+  const payload = buildSharedPayload(exportSettings, options);
   if (!payload) {
     return null;
   }
@@ -2530,10 +2545,11 @@ export const buildProxyPayload = (
   baseUrl: string,
   proxy: SavedProxySettings,
   settings: SharedXrdbSettings,
+  options?: SharedPayloadOptions,
 ) => {
   const origin = normalizeBaseUrl(baseUrl);
   const normalizedManifestUrl = normalizeManifestUrl(proxy.manifestUrl);
-  const sharedPayload = buildSharedPayload(settings);
+  const sharedPayload = buildSharedPayload(settings, options);
   if (!origin || !normalizedManifestUrl || isBareHttpUrl(normalizedManifestUrl) || !sharedPayload) {
     return null;
   }
@@ -2573,9 +2589,10 @@ export const buildProxyUrl = (
   baseUrl: string,
   proxy: SavedProxySettings,
   settings: SharedXrdbSettings,
+  options?: SharedPayloadOptions,
 ) => {
   const origin = normalizeBaseUrl(baseUrl);
-  const payload = buildProxyPayload(baseUrl, proxy, settings);
+  const payload = buildProxyPayload(baseUrl, proxy, settings, options);
   if (!origin || !payload) {
     return '';
   }

@@ -19,7 +19,7 @@ const UI_CONFIG_PATH = path.join(ROOT_DIR, 'lib', 'uiConfig.ts');
 
 const extractSerializerKeys = async () => {
   const source = await readFile(UI_CONFIG_PATH, 'utf8');
-  const serializerSectionMatch = source.match(/const buildSharedPayload = \(settings: SharedXrdbSettings\) => \{([\s\S]*?)return payload;/);
+  const serializerSectionMatch = source.match(/const buildSharedPayload = \(settings: SharedXrdbSettings(?:, options\?: SharedPayloadOptions)?\) => \{([\s\S]*?)return payload;/);
   assert.ok(serializerSectionMatch, 'Unable to locate buildSharedPayload in uiConfig.ts');
   const section = serializerSectionMatch[1];
   const keys = new Set();

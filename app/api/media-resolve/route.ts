@@ -1,13 +1,14 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
+import { TMDB_API_KEY } from '@/lib/imageRouteConfig';
 import { TMDB_API_BASE_URL } from '@/lib/serviceBaseUrls';
 
 const EMPTY_RESULT = { title: null };
 
 export async function GET(request: NextRequest) {
   const id = String(request.nextUrl.searchParams.get('id') || '').trim();
-  const tmdbKey = String(request.nextUrl.searchParams.get('tmdbKey') || '').trim();
+  const tmdbKey = String(request.nextUrl.searchParams.get('tmdbKey') || '').trim() || TMDB_API_KEY;
 
   if (!id || !tmdbKey) {
     return NextResponse.json(EMPTY_RESULT, { status: 400 });

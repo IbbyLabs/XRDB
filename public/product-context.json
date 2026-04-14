@@ -2,7 +2,7 @@
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
   "xrdbTag": "v1.18.2",
-  "generatedAt": "2026-04-13T05:58:44.319Z",
+  "generatedAt": "2026-04-13T22:09:06.503Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -64,10 +64,10 @@
     {
       "heading": "Metadata and proxy behavior",
       "lines": [
-        "BYOK is the default runtime model. Provider keys come from configurator state or request URLs.",
+        "Server managed provider keys are the default runtime model. Generated configurator URLs omit provider credentials when server keys exist.",
         "Configured base URLs: TMDB https://api.themoviedb.org/3, anime mapping https://animemapping.stremio.dpdns.org, Kitsu https://kitsu.io/api/edge, OMDb https://www.omdbapi.com.",
         "Optional server side provider support exists for MyAnimeList, Trakt, SIMKL, Fanart, OMDb.",
-        "Proxy manifest requests require url, tmdbKey, and mdblistKey query params.",
+        "Proxy manifest direct query mode requires url plus either server provider keys or tmdbKey and mdblistKey query params.",
         "XRDB request keys can be supplied through xrdbKey, xrdb_key, x-xrdb-key, x-api-key, Authorization Bearer.",
         "Proxy CORS allowlists are controlled by XRDB_PROXY_ALLOWED_ORIGINS."
       ]

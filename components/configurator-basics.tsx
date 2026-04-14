@@ -550,32 +550,17 @@ export function WorkspaceManagementSection({
 
 export function AccessKeysSection({
   xrdbKey,
-  tmdbKey,
-  mdblistKey,
-  fanartKey,
-  simklClientId,
   tmdbIdScope,
   onXrdbKeyChange,
-  onTmdbKeyChange,
-  onMdblistKeyChange,
-  onFanartKeyChange,
-  onSimklClientIdChange,
   onTmdbIdScopeChange,
   tmdbIdScopeOptions,
   xrdbRequestKeyHelpCopy,
   fanartKeyHelpCopy,
+  serverCredentialStatus,
 }: {
   xrdbKey: string;
-  tmdbKey: string;
-  mdblistKey: string;
-  fanartKey: string;
-  simklClientId: string;
   tmdbIdScope: TmdbIdScopeMode;
   onXrdbKeyChange: (value: string) => void;
-  onTmdbKeyChange: (value: string) => void;
-  onMdblistKeyChange: (value: string) => void;
-  onFanartKeyChange: (value: string) => void;
-  onSimklClientIdChange: (value: string) => void;
   onTmdbIdScopeChange: (value: TmdbIdScopeMode) => void;
   tmdbIdScopeOptions: Array<{
     id: TmdbIdScopeMode;
@@ -584,61 +569,51 @@ export function AccessKeysSection({
   }>;
   xrdbRequestKeyHelpCopy: string;
   fanartKeyHelpCopy: string;
+  serverCredentialStatus: {
+    fanart: boolean;
+    mdblist: boolean;
+    simkl: boolean;
+    tmdb: boolean;
+  };
 }) {
   const [showXrdbKey, setShowXrdbKey] = useState(false);
-  const [showTmdbKey, setShowTmdbKey] = useState(false);
-  const [showMdblistKey, setShowMdblistKey] = useState(false);
-  const [showFanartKey, setShowFanartKey] = useState(false);
-  const [showSimklClientId, setShowSimklClientId] = useState(false);
+  const credentialRows = [
+    ['TMDB', serverCredentialStatus.tmdb],
+    ['MDBList', serverCredentialStatus.mdblist],
+    ['Fanart', serverCredentialStatus.fanart],
+    ['SIMKL', serverCredentialStatus.simkl],
+  ] as const;
 
   return (
     <div>
-      <div className="mb-2 text-[11px] font-semibold text-zinc-400">Access Keys</div>
-      <div className="grid gap-2 md:grid-cols-5">
-        <div>
-          <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">XRDB Request</label>
-          <div className="relative">
-            <input type={showXrdbKey ? 'text' : 'password'} value={xrdbKey} onChange={(event) => onXrdbKeyChange(event.target.value)} placeholder="Optional key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black py-2 pl-2.5 pr-8 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
-            <button type="button" onClick={() => setShowXrdbKey((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors" aria-label={showXrdbKey ? 'Hide key' : 'Show key'}>
-              {showXrdbKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            </button>
-          </div>
+      <div className="mb-2 text-[12px] font-semibold text-zinc-400">Access Keys</div>
+      <div>
+        <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500">XRDB Request</label>
+        <div className="relative w-full">
+          <input type={showXrdbKey ? 'text' : 'password'} value={xrdbKey} onChange={(event) => onXrdbKeyChange(event.target.value)} placeholder="Optional key" className="w-full rounded-lg border border-white/10 bg-black py-2.5 pl-3 pr-10 text-[13px] leading-5 text-white outline-none focus:border-violet-500/50" />
+          <button type="button" onClick={() => setShowXrdbKey((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors" aria-label={showXrdbKey ? 'Hide key' : 'Show key'}>
+            {showXrdbKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
         </div>
-        <div>
-          <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noreferrer" className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-violet-300 hover:text-violet-200">TMDB</a>
-          <div className="relative">
-            <input type={showTmdbKey ? 'text' : 'password'} value={tmdbKey} onChange={(event) => onTmdbKeyChange(event.target.value)} placeholder="v3 Key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black py-2 pl-2.5 pr-8 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
-            <button type="button" onClick={() => setShowTmdbKey((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors" aria-label={showTmdbKey ? 'Hide key' : 'Show key'}>
-              {showTmdbKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            </button>
+        <div className="mt-2 w-full rounded-lg border border-white/10 bg-black/30 p-3.5">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Server Provider Keys</div>
+          <div className="mt-2 flex flex-wrap gap-2.5">
+            {credentialRows.map(([label, isPresent]) => (
+              <span
+                key={label}
+                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+                  isPresent
+                    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
+                    : 'border-white/10 bg-white/5 text-zinc-500'
+                }`}
+              >
+                {label} {isPresent ? 'configured' : 'missing'}
+              </span>
+            ))}
           </div>
-        </div>
-        <div>
-          <a href="https://mdblist.com/preferences/" target="_blank" rel="noreferrer" className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-violet-300 hover:text-violet-200">MDBList</a>
-          <div className="relative">
-            <input type={showMdblistKey ? 'text' : 'password'} value={mdblistKey} onChange={(event) => onMdblistKeyChange(event.target.value)} placeholder="Key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black py-2 pl-2.5 pr-8 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
-            <button type="button" onClick={() => setShowMdblistKey((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors" aria-label={showMdblistKey ? 'Hide key' : 'Show key'}>
-              {showMdblistKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            </button>
-          </div>
-        </div>
-        <div>
-          <a href="https://fanart.tv/get-an-api-key/" target="_blank" rel="noreferrer" className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-violet-300 hover:text-violet-200">Fanart</a>
-          <div className="relative">
-            <input type={showFanartKey ? 'text' : 'password'} value={fanartKey} onChange={(event) => onFanartKeyChange(event.target.value)} placeholder="Optional key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black py-2 pl-2.5 pr-8 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
-            <button type="button" onClick={() => setShowFanartKey((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors" aria-label={showFanartKey ? 'Hide key' : 'Show key'}>
-              {showFanartKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            </button>
-          </div>
-        </div>
-        <div>
-          <a href="https://simkl.com/settings/developer/" target="_blank" rel="noreferrer" className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-violet-300 hover:text-violet-200">SIMKL</a>
-          <div className="relative">
-            <input type={showSimklClientId ? 'text' : 'password'} value={simklClientId} onChange={(event) => onSimklClientIdChange(event.target.value)} placeholder="Optional key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black py-2 pl-2.5 pr-8 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
-            <button type="button" onClick={() => setShowSimklClientId((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors" aria-label={showSimklClientId ? 'Hide key' : 'Show key'}>
-              {showSimklClientId ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            </button>
-          </div>
+          <p className="mt-2 text-[12px] leading-6 text-zinc-500">
+            Provider API keys are read from server environment variables and are not exposed in generated URLs.
+          </p>
         </div>
       </div>
       <div className="mt-3">
@@ -680,7 +655,7 @@ export function AccessKeysSection({
 export function MediaTargetSection({
   previewType,
   mediaId,
-  tmdbKey,
+  tmdbKeyAvailable,
   lang,
   supportedLanguages,
   onMediaIdChange,
@@ -704,7 +679,7 @@ export function MediaTargetSection({
 }: {
   previewType: ProxyType;
   mediaId: string;
-  tmdbKey: string;
+  tmdbKeyAvailable: boolean;
   lang: string;
   supportedLanguages: SupportedLanguageOption[];
   onMediaIdChange: (value: string) => void;
@@ -749,7 +724,7 @@ export function MediaTargetSection({
   const isUnifiedIdMode = isMediaIdPattern(unifiedInput);
   const normalizedMediaSearchQuery = isUnifiedIdMode ? '' : unifiedInput.trim();
   const showSearchDropdown =
-    Boolean(tmdbKey) &&
+    tmdbKeyAvailable &&
     !isUnifiedIdMode &&
     normalizedMediaSearchQuery.length >= 1 &&
     (mediaSearchLoading || mediaSearchResults.length > 0);
@@ -868,14 +843,14 @@ export function MediaTargetSection({
             </div>
           ) : null}
         </div>
-        {tmdbKey ? (
+        {tmdbKeyAvailable ? (
           <div className="w-[12.5rem] max-w-full">
             <span className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500"><Globe2 className="h-3 w-3" /> Lang</span>
             <ThemedDropdown label="Language" options={supportedLanguages} value={lang} onChange={onLangChange} />
           </div>
         ) : (
           <div className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black p-2 text-[10px] text-zinc-500">
-            <Globe2 className="h-3 w-3 shrink-0" /> Add TMDB key for lang
+            <Globe2 className="h-3 w-3 shrink-0" /> Add server TMDB key for lang
           </div>
         )}
       </div>

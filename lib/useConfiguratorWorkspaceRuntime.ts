@@ -123,7 +123,6 @@ import {
   type PinnedTargetsStore,
 } from '@/lib/configuratorMediaSearch';
 import {
-  applyConfiguratorEnvAccessKeys,
   type ConfiguratorEnvAccessKeys,
 } from '@/lib/configuratorEnvAccessKeys';
 
@@ -621,6 +620,14 @@ export function useConfiguratorWorkspaceRuntime({
   const [activePreviewTitle, setActivePreviewTitle] = useState('');
   const mediaSearchRequestIdRef = useRef(0);
   const mediaSearchAbortControllerRef = useRef<AbortController | null>(null);
+  const [runtimeEnvAccessKeys, setRuntimeEnvAccessKeys] = useState(envAccessKeys);
+  const [runtimeEnvAccessKeysLoaded, setRuntimeEnvAccessKeysLoaded] = useState(false);
+  const envAccessKeysAppliedRef = useRef(false);
+  const resolvedForRef = useRef<string | null>(null);
+  const allowClientProviderCredentials = Boolean(docsCaptureConfig);
+  const hasTmdbCredential =
+    runtimeEnvAccessKeys.hasServerTmdbKey ||
+    (allowClientProviderCredentials && Boolean(tmdbKey.trim()));
 
   const [pinnedTargets, setPinnedTargets] = useState<PinnedTargetsStore>(() => readPinnedTargetsFromStorage());
 
@@ -809,8 +816,8 @@ export function useConfiguratorWorkspaceRuntime({
       setMediaSearchLoading(false);
       return;
     }
-    if (!tmdbKey.trim()) {
-      setMediaSearchError('Add a TMDB key to search by name.');
+    if (!hasTmdbCredential) {
+      setMediaSearchError('Configure a server TMDB key to search by name.');
       setMediaSearchResults([]);
       setMediaSearchLoading(false);
       return;
@@ -827,7 +834,9 @@ export function useConfiguratorWorkspaceRuntime({
     try {
       const target = new URL('/api/media-search', window.location.origin);
       target.searchParams.set('q', normalizedQuery);
-      target.searchParams.set('tmdbKey', tmdbKey.trim());
+      if (allowClientProviderCredentials && tmdbKey.trim()) {
+        target.searchParams.set('tmdbKey', tmdbKey.trim());
+      }
       target.searchParams.set('previewType', previewType);
       target.searchParams.set('lang', lang);
 
@@ -863,7 +872,7 @@ export function useConfiguratorWorkspaceRuntime({
         setMediaSearchLoading(false);
       }
     }
-  }, [disableRemoteLookups, lang, previewType, tmdbKey]);
+  }, [allowClientProviderCredentials, disableRemoteLookups, hasTmdbCredential, lang, previewType, tmdbKey]);
 
   const handleMediaSearchSubmit = useCallback(() => {
     void runMediaSearch(mediaSearchQuery, { showValidationErrors: true });
@@ -1068,7 +1077,7 @@ export function useConfiguratorWorkspaceRuntime({
   const pageChrome = useConfiguratorPageChrome({
     disableRemoteLookups,
     initialSupportedLanguages: SUPPORTED_LANGUAGES,
-    tmdbKey,
+    tmdbKey: docsCaptureConfig ? tmdbKey : '',
   });
 
   const workspaceConfigIo = useConfiguratorWorkspaceConfigIo({
@@ -1463,10 +1472,6 @@ export function useConfiguratorWorkspaceRuntime({
   }, [configProfileUnlockSession]);
 
   const { applyWorkspaceConfig, uiSettingsLoaded } = workspaceStorage;
-  const [runtimeEnvAccessKeys, setRuntimeEnvAccessKeys] = useState(envAccessKeys);
-  const [runtimeEnvAccessKeysLoaded, setRuntimeEnvAccessKeysLoaded] = useState(false);
-  const envAccessKeysAppliedRef = useRef(false);
-  const resolvedForRef = useRef<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -1494,33 +1499,32 @@ export function useConfiguratorWorkspaceRuntime({
     }
 
     envAccessKeysAppliedRef.current = true;
-    const merged = applyConfiguratorEnvAccessKeys(
-      {
-        fanartKey,
-        mdblistKey,
-        simklClientId,
-      },
-      runtimeEnvAccessKeys,
-    );
-
-    if (merged.fanartKey !== fanartKey) {
-      setFanartKey(merged.fanartKey);
+    if (docsCaptureConfig) {
+      return;
     }
-    if (merged.mdblistKey !== mdblistKey) {
-      setMdblistKey(merged.mdblistKey);
+    if (fanartKey.trim()) {
+      setFanartKey('');
     }
-    if (merged.simklClientId !== simklClientId) {
-      setSimklClientId(merged.simklClientId);
+    if (mdblistKey.trim()) {
+      setMdblistKey('');
+    }
+    if (simklClientId.trim()) {
+      setSimklClientId('');
+    }
+    if (tmdbKey.trim()) {
+      setTmdbKey('');
     }
   }, [
+    docsCaptureConfig,
     fanartKey,
     mdblistKey,
-    runtimeEnvAccessKeys,
     runtimeEnvAccessKeysLoaded,
     setFanartKey,
     setMdblistKey,
     setSimklClientId,
+    setTmdbKey,
     simklClientId,
+    tmdbKey,
     uiSettingsLoaded,
   ]);
 
@@ -1537,13 +1541,15 @@ export function useConfiguratorWorkspaceRuntime({
       setActivePreviewTitle(sample);
       return;
     }
-    if (!tmdbKey.trim() || disableRemoteLookups) return;
+    if (!hasTmdbCredential || disableRemoteLookups) return;
     const episodeTarget = parseEpisodePreviewMediaTarget(mediaId);
     const baseId = episodeTarget ? episodeTarget.mediaId : mediaId;
     const resolveId = baseId.startsWith('tmdb:') ? baseId : baseId.split(':')[0];
     const target = new URL('/api/media-resolve', window.location.origin);
     target.searchParams.set('id', resolveId);
-    target.searchParams.set('tmdbKey', tmdbKey.trim());
+    if (allowClientProviderCredentials && tmdbKey.trim()) {
+      target.searchParams.set('tmdbKey', tmdbKey.trim());
+    }
     void fetch(target.toString(), { cache: 'no-store' })
       .then(async (res) => {
         if (!res.ok) return;
@@ -1551,10 +1557,11 @@ export function useConfiguratorWorkspaceRuntime({
         if (data?.title) setActivePreviewTitle(data.title);
       })
       .catch(() => null);
-  }, [uiSettingsLoaded, activePreviewTitle, mediaId, tmdbKey, disableRemoteLookups]);
+  }, [uiSettingsLoaded, activePreviewTitle, allowClientProviderCredentials, mediaId, tmdbKey, hasTmdbCredential, disableRemoteLookups]);
 
 
   const workspaceOutputs = useConfiguratorOutputs({
+    allowClientProviderCredentials,
     activeGenreBadgeAnimeGrouping,
     activeGenreBadgeMode,
     activeGenreBadgePosition,
@@ -1628,6 +1635,8 @@ export function useConfiguratorWorkspaceRuntime({
     fanartKey,
     genrePreviewMode,
     hideAiometadataCredentials,
+    hasServerMdblistKey: runtimeEnvAccessKeys.hasServerMdblistKey,
+    hasServerTmdbKey: hasTmdbCredential,
     isLatestReleaseLoading: feeds.isLatestReleaseLoading,
     lang,
     latestReleaseTag: feeds.latestReleaseTag,
@@ -2015,7 +2024,10 @@ export function useConfiguratorWorkspaceRuntime({
   } = buildConfiguratorPageProps({
     activeWorkspaceSettings,
     baseUrl,
+    hasServerFanartKey: runtimeEnvAccessKeys.hasServerFanartKey,
     hasServerMdblistKey: runtimeEnvAccessKeys.hasServerMdblistKey,
+    hasServerSimklClientId: runtimeEnvAccessKeys.hasServerSimklClientId,
+    hasServerTmdbKey: hasTmdbCredential,
     mediaTargetSearch: {
       onMediaIdChange: handleMediaIdChange,
       onThumbnailEpisodeChange: handleThumbnailEpisodeChange,

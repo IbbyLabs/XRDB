@@ -24,7 +24,7 @@ const SECTIONS = [
   { id: 'metadata-translation', label: 'Metadata translation' },
   { id: 'proxy', label: 'Proxy' },
   { id: 'aiometadata-exports', label: 'AIOMetadata exports' },
-  { id: 'byok-setup', label: 'BYOK setup' },
+  { id: 'server-keys', label: 'Server keys' },
   { id: 'per-type-controls', label: 'Per type controls' },
   { id: 'community-support', label: 'Community and support' },
 ] as const;
@@ -264,20 +264,19 @@ GET /thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb`}</CodeBlo
           </p>
         </ReferenceSection>
 
-        <ReferenceSection id="byok-setup" title="BYOK setup" ref={registerRef('byok-setup')}>
+        <ReferenceSection id="server-keys" title="Server keys" ref={registerRef('server-keys')}>
           <p>
-            XRDB is stateless: it does not permanently store API keys on the server.
-            Keys are read from incoming requests, letting public instances scale without shared API usage costs.
+            XRDB reads provider API keys from server environment variables. Configure <code>XRDB_TMDB_API_KEY</code> plus <code>MDBLIST_API_KEY</code> or <code>MDBLIST_API_KEYS</code> for the simplest shared setup.
           </p>
           <p>
-            Keys are embedded directly into generated URLs (<code>tmdbKey=...&mdblistKey=...&fanartKey=...</code>) or addon proxy configurations and stored locally in localStorage when using the configurator.
+            Generated URLs omit provider credentials when server keys exist. Optional per request overrides such as <code>tmdbKey</code>, <code>mdblistKey</code>, and <code>fanartKey</code> still work for advanced integrations.
           </p>
           <p>
             When you save a config profile, XRDB stores the encrypted server copy behind a password protected UUID. Use Open saved profile in Import/Export, or reopen a configurator link containing <code>?config=&lt;uuid&gt;</code>, to load that same profile on another device. Runtime image requests can still use <code>?config=&lt;uuid&gt;</code>, but profile reveal, update, rotate-password, and delete actions require an unlock step in Import/Export.
           </p>
           <p>
-            Optional server side client IDs (<code>XRDB_MAL_CLIENT_ID</code>, <code>XRDB_TRAKT_CLIENT_ID</code>, <code>XRDB_SIMKL_CLIENT_ID</code>) extend ratings beyond BYOK.
-            User supplied parameters always take precedence.
+            Optional server side client IDs (<code>XRDB_MAL_CLIENT_ID</code>, <code>XRDB_TRAKT_CLIENT_ID</code>, <code>XRDB_SIMKL_CLIENT_ID</code>) extend direct ratings.
+            SIMKL can also use <code>SIMKL_CLIENT_ID</code>.
           </p>
         </ReferenceSection>
 

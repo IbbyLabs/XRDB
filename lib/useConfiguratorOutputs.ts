@@ -191,9 +191,11 @@ const appendGenreBadgeQueryParams = ({
 };
 
 const buildGenreSamplePreviewUrl = ({
+  allowClientProviderCredentials,
   baseUrl,
   xrdbKey,
   tmdbKey,
+  hasServerTmdbKey,
   sample,
   mode,
   style,
@@ -203,9 +205,11 @@ const buildGenreSamplePreviewUrl = ({
   backgroundOpacity,
   animeGrouping,
 }: {
+  allowClientProviderCredentials: boolean;
   baseUrl: string;
   xrdbKey: string;
   tmdbKey: string;
+  hasServerTmdbKey: boolean;
   sample: (typeof GENRE_BADGE_PREVIEW_SAMPLES)[number];
   mode: GenreBadgeMode;
   style: GenreBadgeStyle;
@@ -217,15 +221,15 @@ const buildGenreSamplePreviewUrl = ({
 }) => {
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
   const normalizedXrdbKey = xrdbKey.trim();
-  const normalizedTmdbKey = tmdbKey.trim();
-  if (!normalizedBaseUrl || !normalizedTmdbKey) {
+  const normalizedTmdbKey = allowClientProviderCredentials ? tmdbKey.trim() : '';
+  if (!normalizedBaseUrl || (!normalizedTmdbKey && !hasServerTmdbKey)) {
     return '';
   }
 
-  const query = new URLSearchParams({
-    tmdbKey: normalizedTmdbKey,
-    lang: sample.lang,
-  });
+  const query = new URLSearchParams({ lang: sample.lang });
+  if (normalizedTmdbKey) {
+    query.set('tmdbKey', normalizedTmdbKey);
+  }
   if (normalizedXrdbKey) {
     query.set('xrdbKey', normalizedXrdbKey);
   }
@@ -248,6 +252,7 @@ const buildGenreSamplePreviewUrl = ({
 };
 
 export function useConfiguratorOutputs({
+  allowClientProviderCredentials,
   activeGenreBadgeAnimeGrouping,
   activeGenreBadgeMode,
   activeGenreBadgePosition,
@@ -321,6 +326,8 @@ export function useConfiguratorOutputs({
   fanartKey,
   genrePreviewMode,
   hideAiometadataCredentials,
+  hasServerMdblistKey,
+  hasServerTmdbKey,
   isLatestReleaseLoading,
   lang,
   latestReleaseTag,
@@ -416,6 +423,7 @@ export function useConfiguratorOutputs({
   tmdbIdScope,
   tmdbKey,
 }: {
+  allowClientProviderCredentials: boolean;
   activeGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   activeGenreBadgeMode: GenreBadgeMode;
   activeGenreBadgePosition: GenreBadgePosition;
@@ -489,6 +497,8 @@ export function useConfiguratorOutputs({
   fanartKey: string;
   genrePreviewMode: GenreBadgeMode;
   hideAiometadataCredentials: boolean;
+  hasServerMdblistKey: boolean;
+  hasServerTmdbKey: boolean;
   isLatestReleaseLoading: boolean;
   lang: string;
   latestReleaseTag: string;
@@ -590,10 +600,10 @@ export function useConfiguratorOutputs({
 
   const previewUrl = useMemo(() => {
     const normalizedXrdbKey = xrdbKey.trim();
-    const normalizedTmdbKey = tmdbKey.trim();
-    const normalizedFanartKey = fanartKey.trim();
+    const normalizedTmdbKey = allowClientProviderCredentials ? tmdbKey.trim() : '';
+    const normalizedFanartKey = allowClientProviderCredentials ? fanartKey.trim() : '';
     const normalizedMediaId = mediaId.trim();
-    if (!baseUrl || !normalizedTmdbKey || !normalizedMediaId) {
+    if (!baseUrl || (!normalizedTmdbKey && !hasServerTmdbKey) || !normalizedMediaId) {
       return '';
     }
     const thumbnailTarget =
@@ -988,13 +998,15 @@ export function useConfiguratorOutputs({
       );
     }
 
-    if (mdblistKey) {
+    if (allowClientProviderCredentials && mdblistKey) {
       query.set('mdblistKey', mdblistKey);
     }
-    if (simklClientId.trim()) {
+    if (allowClientProviderCredentials && simklClientId.trim()) {
       query.set('simklClientId', simklClientId.trim());
     }
-    query.set('tmdbKey', normalizedTmdbKey);
+    if (normalizedTmdbKey) {
+      query.set('tmdbKey', normalizedTmdbKey);
+    }
     if (tmdbIdScope !== 'soft') {
       query.set('tmdbIdScope', tmdbIdScope);
     }
@@ -1187,6 +1199,7 @@ export function useConfiguratorOutputs({
     }
     return `${baseUrl}/${previewType}/${normalizedMediaId}.jpg?${query.toString()}`;
   }, [
+    allowClientProviderCredentials,
     activeGenreBadgeAnimeGrouping,
     activeGenreBadgeMode,
     activeGenreBadgePosition,
@@ -1244,6 +1257,7 @@ export function useConfiguratorOutputs({
     baseUrl,
     xrdbKey,
     fanartKey,
+    hasServerTmdbKey,
     lang,
     logoAggregateRatingSource,
     logoArtworkSource,
@@ -1330,9 +1344,11 @@ export function useConfiguratorOutputs({
       GENRE_BADGE_PREVIEW_SAMPLES.map((sample) => ({
         sample,
         url: buildGenreSamplePreviewUrl({
+          allowClientProviderCredentials,
           baseUrl,
           xrdbKey,
           tmdbKey,
+          hasServerTmdbKey,
           sample,
           mode: genrePreviewMode,
           style:
@@ -1375,6 +1391,7 @@ export function useConfiguratorOutputs({
       })),
     [
       backdropGenreBadgeAnimeGrouping,
+      allowClientProviderCredentials,
       backdropGenreBadgePosition,
       backdropGenreBadgeScale,
       backdropGenreBadgeBorderWidth,
@@ -1382,6 +1399,7 @@ export function useConfiguratorOutputs({
       backdropGenreBadgeStyle,
       baseUrl,
       xrdbKey,
+      hasServerTmdbKey,
       genrePreviewMode,
       logoGenreBadgeAnimeGrouping,
       logoGenreBadgePosition,
@@ -1433,7 +1451,7 @@ export function useConfiguratorOutputs({
           setPreviewErrorDetails('Strict TMDB ID scope blocked an ambiguous TMDB ID. Use tmdb:movie:id or tmdb:tv:id, or switch TMDB ID scope to Soft.');
           return;
         }
-        setPreviewErrorDetails('TMDB key is missing. Add your TMDB v3 key in Inputs.');
+        setPreviewErrorDetails('TMDB key is missing. Configure XRDB_TMDB_API_KEY on the server.');
         return;
       }
 
@@ -1477,23 +1495,34 @@ export function useConfiguratorOutputs({
   const currentUiConfig = useMemo(() => buildCurrentUiConfig(), [buildCurrentUiConfig]);
 
   const configString = useMemo(
-    () => buildConfigString(baseUrl, currentUiConfig.settings),
-    [baseUrl, currentUiConfig],
+    () => buildConfigString(baseUrl, currentUiConfig.settings, {
+      allowMissingMdblistKey: hasServerMdblistKey,
+      allowMissingTmdbKey: hasServerTmdbKey,
+      omitProviderCredentials: true,
+    }),
+    [baseUrl, currentUiConfig, hasServerMdblistKey, hasServerTmdbKey],
   );
 
   const aiometadataPatterns = useMemo(
     () =>
       buildAiometadataUrlPatterns(baseUrl, currentUiConfig.settings, {
+        allowMissingMdblistKey: hasServerMdblistKey,
+        allowMissingTmdbKey: hasServerTmdbKey,
         hideCredentials: hideAiometadataCredentials,
+        omitProviderCredentials: true,
         posterIdMode,
         episodeIdMode,
       }),
-    [baseUrl, currentUiConfig, episodeIdMode, hideAiometadataCredentials, posterIdMode],
+    [baseUrl, currentUiConfig, episodeIdMode, hasServerMdblistKey, hasServerTmdbKey, hideAiometadataCredentials, posterIdMode],
   );
 
   const proxyUrl = useMemo(
-    () => buildProxyUrl(baseUrl, currentUiConfig.proxy, currentUiConfig.settings),
-    [baseUrl, currentUiConfig],
+    () => buildProxyUrl(baseUrl, currentUiConfig.proxy, currentUiConfig.settings, {
+      allowMissingMdblistKey: hasServerMdblistKey,
+      allowMissingTmdbKey: hasServerTmdbKey,
+      omitProviderCredentials: true,
+    }),
+    [baseUrl, currentUiConfig, hasServerMdblistKey, hasServerTmdbKey],
   );
   const aiometadataPatternRows = useMemo<AiometadataPatternRow[]>(
     () =>

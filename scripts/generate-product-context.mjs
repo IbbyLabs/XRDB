@@ -215,8 +215,8 @@ function buildOutputCapabilityLines({ imageRouteSource, routePaths, readme }) {
 function buildMetadataBehaviorLines({ readme, envTemplate, serviceBaseUrlsSource }) {
   const lines = [];
 
-  if (/Bring Your Own Key \(BYOK\)/.test(readme)) {
-    lines.push('BYOK is the default runtime model. Provider keys come from configurator state or request URLs.');
+  if (/Server Managed API Keys/.test(readme)) {
+    lines.push('Server managed provider keys are the default runtime model. Generated configurator URLs omit provider credentials when server keys exist.');
   }
 
   const defaultTmdbBaseUrl = extractLastStringLiteral(serviceBaseUrlsSource, 'DEFAULT_TMDB_API_BASE_URL');
@@ -261,7 +261,7 @@ function buildProxyBehaviorLines({ proxyManifestSource, requestKeySource, envTem
     /Missing "url" query parameter\./.test(proxyManifestSource) &&
     /Missing "tmdbKey" or "mdblistKey" query parameter\./.test(proxyManifestSource)
   ) {
-    lines.push('Proxy manifest requests require url, tmdbKey, and mdblistKey query params.');
+    lines.push('Proxy manifest direct query mode requires url plus either server provider keys or tmdbKey and mdblistKey query params.');
   }
 
   const requestKeyNames = extractSetValues(requestKeySource, 'REQUEST_KEY_HEADER_NAMES');

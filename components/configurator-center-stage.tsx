@@ -192,7 +192,7 @@ export function ConfiguratorCenterStage({
                   ? previewErrorDetails || 'Preview could not be rendered with the current settings.'
                   : tmdbKeyPresent
                     ? 'No preview available.'
-                    : 'Add a TMDB key to unlock the live render.'}
+                    : 'Configure a server TMDB key to unlock the live render.'}
               </div>
             </div>
           )}

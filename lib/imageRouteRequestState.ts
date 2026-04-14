@@ -133,6 +133,7 @@ import {
   OMDB_API_KEY,
   RAW_IMDB_ID_RE,
   SIMKL_CLIENT_ID,
+  TMDB_API_KEY,
   TORRENTIO_CACHE_TTL_MS,
   normalizeArtworkSource,
   normalizeBackdropImageSize,
@@ -1155,7 +1156,7 @@ export const resolveImageRouteRequestState = async ({
     : backdropQualityBadgeScale;
   const mdblistKey =
     searchParams.get('mdblistKey') || searchParams.get('mdblist_key');
-  const tmdbKey = searchParams.get('tmdbKey') || searchParams.get('tmdb_key') || '';
+  const tmdbKey = searchParams.get('tmdbKey') || searchParams.get('tmdb_key') || TMDB_API_KEY;
   const simklClientIdFromQuery =
     searchParams.get('simklClientId') || searchParams.get('simkl_client_id') || '';
   const simklClientId = simklClientIdFromQuery || SIMKL_CLIENT_ID;

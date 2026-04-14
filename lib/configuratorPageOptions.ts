@@ -257,7 +257,7 @@ export const WORKSPACE_CENTER_VIEW_OPTIONS: Array<{
 ];
 
 export const FANART_KEY_HELP_COPY =
-  'Optional. Recommended. Your key is used first. If left blank, XRDB falls back to the service key when one exists. This helps if the shared service key is rate limited or blocked later.';
+  'Fanart, MDBList, TMDB, and SIMKL provider keys are configured on the server. Generated URLs stay lean and do not include provider credentials.';
 
 export const XRDB_REQUEST_KEY_HELP_COPY =
   'Optional. Only needed when the XRDB host enables request protection. When present, the configurator carries it into previews, config strings, proxy manifests, and exported URL patterns.';
