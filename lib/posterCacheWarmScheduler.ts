@@ -2,6 +2,8 @@ import { fetchJsonCached, fetchTextCached } from './imageRouteCachedFetch.ts';
 import { resolveImageRouteRequestState, type ImageRouteRequestInput } from './imageRouteRequestState.ts';
 import { executeImageRouteRender } from './imageRouteExecution.ts';
 import { createConcurrencyLimit, type PhaseDurations, type RenderedImagePayload } from './imageRouteRuntime.ts';
+import { fetchImdbTopRatedIds, fetchMdblistTrendingIds, fetchTmdbPopularIds } from './posterCacheWarmDynamicSources.ts';
+import { getRecentPosterEntries } from './posterCacheWarmRecentRing.ts';
 import { logger } from './serverLogger.ts';
 import { readPosterWarmSource, resolvePosterCacheWarmConfig } from './posterCacheWarmConfig.ts';
 
@@ -9,6 +11,16 @@ type PosterWarmSummary = {
   warmed: number;
   skipped: number;
   failed: number;
+};
+
+type PosterWarmTargetSet = {
+  targets: string[];
+  recentEntries: Array<{ id: string; searchParams: URLSearchParams }>;
+  staticCount: number;
+  tmdbCount: number;
+  mdblistCount: number;
+  imdbCount: number;
+  recentCount: number;
 };
 
 type PosterWarmSchedulerState = typeof globalThis & {
@@ -20,17 +32,25 @@ type PosterWarmSchedulerState = typeof globalThis & {
 
 const getSchedulerState = () => globalThis as PosterWarmSchedulerState;
 
-const createPosterWarmRequest = (targetId: string): ImageRouteRequestInput => ({
-  nextUrl: {
-    searchParams: new URL(`https://xrdb.internal/poster/${encodeURIComponent(targetId)}.jpg`).searchParams,
-  },
-  headers: new Headers({
-    accept: 'image/jpeg',
-  }),
-});
+const createPosterWarmRequest = (targetId: string, extraSearchParams?: URLSearchParams): ImageRouteRequestInput => {
+  const url = new URL(`https://xrdb.internal/poster/${encodeURIComponent(targetId)}.jpg`);
+  if (extraSearchParams) {
+    for (const [key, value] of extraSearchParams) {
+      url.searchParams.set(key, value);
+    }
+  }
+  return {
+    nextUrl: {
+      searchParams: url.searchParams,
+    },
+    headers: new Headers({
+      accept: 'image/jpeg',
+    }),
+  };
+};
 
-const warmPosterTarget = async (targetId: string) => {
-  const request = createPosterWarmRequest(targetId);
+const warmPosterTarget = async (targetId: string, extraSearchParams?: URLSearchParams) => {
+  const request = createPosterWarmRequest(targetId, extraSearchParams);
   const phases: PhaseDurations = {
     auth: 0,
     tmdb: 0,
@@ -58,11 +78,51 @@ const warmPosterTarget = async (targetId: string) => {
   });
 };
 
+export const resolvePosterWarmTargets = async ({
+  config,
+  fetchTmdbIds = fetchTmdbPopularIds,
+  fetchMdblistIds = fetchMdblistTrendingIds,
+  fetchImdbIds = fetchImdbTopRatedIds,
+  fetchRecentEntries = getRecentPosterEntries,
+}: {
+  config: ReturnType<typeof resolvePosterCacheWarmConfig>;
+  fetchTmdbIds?: typeof fetchTmdbPopularIds;
+  fetchMdblistIds?: typeof fetchMdblistTrendingIds;
+  fetchImdbIds?: typeof fetchImdbTopRatedIds;
+  fetchRecentEntries?: typeof getRecentPosterEntries;
+}): Promise<PosterWarmTargetSet> => {
+  const staticTargets = readPosterWarmSource(config);
+  const [tmdbTargets, mdblistTargets, imdbTargets] = await Promise.all([
+    fetchTmdbIds({ config }),
+    fetchMdblistIds({ config }),
+    fetchImdbIds({ config }),
+  ]);
+  const targets = [...new Set([...staticTargets, ...tmdbTargets, ...mdblistTargets, ...imdbTargets])];
+  const recentEntries = config.recentEnabled ? fetchRecentEntries(config.recentLimit) : [];
+
+  if (config.logEnabled) {
+    logger.info(
+      `[XRDB] poster warm targets static=${staticTargets.length} tmdb=${tmdbTargets.length} mdblist=${mdblistTargets.length} imdb=${imdbTargets.length} recent=${recentEntries.length} merged=${targets.length}`,
+    );
+  }
+
+  return {
+    targets,
+    recentEntries,
+    staticCount: staticTargets.length,
+    tmdbCount: tmdbTargets.length,
+    mdblistCount: mdblistTargets.length,
+    imdbCount: imdbTargets.length,
+    recentCount: recentEntries.length,
+  };
+};
+
 export const runPosterCacheWarm = async () => {
   const config = resolvePosterCacheWarmConfig();
-  const targets = readPosterWarmSource(config);
-  if (!config.enabled || targets.length === 0) {
-    return { warmed: 0, skipped: targets.length === 0 ? 0 : targets.length, failed: 0 } satisfies PosterWarmSummary;
+  const { targets, recentEntries } = await resolvePosterWarmTargets({ config });
+  const totalTargets = targets.length + recentEntries.length;
+  if (!config.enabled || totalTargets === 0) {
+    return { warmed: 0, skipped: 0, failed: 0 } satisfies PosterWarmSummary;
   }
 
   const limit = createConcurrencyLimit(config.concurrency);
@@ -82,6 +142,23 @@ export const runPosterCacheWarm = async () => {
           summary.failed += 1;
           logger.warn(
             `[XRDB] poster warm failed for ${targetId}:`,
+            error instanceof Error ? error.message : error,
+          );
+        }
+      }),
+    ),
+  );
+
+  await Promise.all(
+    recentEntries.map(({ id, searchParams }) =>
+      limit(async () => {
+        try {
+          await warmPosterTarget(id, searchParams);
+          summary.warmed += 1;
+        } catch (error) {
+          summary.failed += 1;
+          logger.warn(
+            `[XRDB] poster warm failed for recent entry ${id}:`,
             error instanceof Error ? error.message : error,
           );
         }

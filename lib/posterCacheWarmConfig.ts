@@ -10,6 +10,14 @@ export type PosterCacheWarmConfig = {
   logEnabled: boolean;
   source: string;
   sourceFilePath: string | null;
+  tmdbEnabled: boolean;
+  tmdbLimit: number;
+  mdblistEnabled: boolean;
+  mdblistLimit: number;
+  imdbEnabled: boolean;
+  imdbLimit: number;
+  recentEnabled: boolean;
+  recentLimit: number;
 };
 
 const POSTER_ROUTE_RE = /\/poster\/([^/?#]+)\.(?:jpe?g|png|webp|avif)$/i;
@@ -63,7 +71,13 @@ export const readPosterWarmSource = (config: Pick<PosterCacheWarmConfig, 'source
 export const resolvePosterCacheWarmConfig = (): PosterCacheWarmConfig => {
   const source = String(process.env.XRDB_POSTER_WARM_SOURCE ?? '').trim();
   const sourceFilePath = String(process.env.XRDB_POSTER_WARM_SOURCE_FILE ?? '').trim() || null;
-  const enabled = parseBool(process.env.XRDB_POSTER_WARM_ENABLED, true) && (Boolean(source) || Boolean(sourceFilePath));
+  const tmdbEnabled = parseBool(process.env.XRDB_POSTER_WARM_TMDB_ENABLED, false);
+  const mdblistEnabled = parseBool(process.env.XRDB_POSTER_WARM_MDBLIST_ENABLED, false);
+  const imdbEnabled = parseBool(process.env.XRDB_POSTER_WARM_IMDB_ENABLED, false);
+  const recentEnabled = parseBool(process.env.XRDB_POSTER_WARM_RECENT_ENABLED, false);
+  const enabled =
+    parseBool(process.env.XRDB_POSTER_WARM_ENABLED, true) &&
+    (Boolean(source) || Boolean(sourceFilePath) || tmdbEnabled || mdblistEnabled || imdbEnabled || recentEnabled);
 
   return {
     enabled,
@@ -73,5 +87,13 @@ export const resolvePosterCacheWarmConfig = (): PosterCacheWarmConfig => {
     logEnabled: parseBool(process.env.XRDB_POSTER_WARM_LOG, false),
     source,
     sourceFilePath,
+    tmdbEnabled,
+    tmdbLimit: Math.max(1, Math.min(500, parsePositiveInt(process.env.XRDB_POSTER_WARM_TMDB_LIMIT, 100))),
+    mdblistEnabled,
+    mdblistLimit: Math.max(1, Math.min(500, parsePositiveInt(process.env.XRDB_POSTER_WARM_MDBLIST_LIMIT, 200))),
+    imdbEnabled,
+    imdbLimit: Math.max(1, Math.min(5000, parsePositiveInt(process.env.XRDB_POSTER_WARM_IMDB_LIMIT, 500))),
+    recentEnabled,
+    recentLimit: Math.max(1, Math.min(2000, parsePositiveInt(process.env.XRDB_POSTER_WARM_RECENT_LIMIT, 500))),
   };
 };

@@ -937,10 +937,20 @@ hardcoding separate cache TTL values.
 | `XRDB_POSTER_WARM_ENABLED` | `true` | Enables the scheduled poster warming job when a source list is configured. |
 | `XRDB_POSTER_WARM_SOURCE` | (empty) | Inline comma-separated or newline-separated list of poster targets. Supports explicit IDs such as `tt0133093`, `tmdb:movie:603`, `tmdb:tv:1396`, or full poster URLs. |
 | `XRDB_POSTER_WARM_SOURCE_FILE` | (empty) | Optional file path for a poster warming source list. File targets are merged with `XRDB_POSTER_WARM_SOURCE`. |
+| `XRDB_POSTER_WARM_TMDB_ENABLED` | `false` | When `true`, XRDB fetches fresh TMDB popular and now playing ids (6 endpoints, up to 120 raw results) before each warm pass and merges them with static warm targets. |
+| `XRDB_POSTER_WARM_TMDB_LIMIT` | `100` | Maximum number of TMDB ids to merge into a warm pass. |
+| `XRDB_POSTER_WARM_MDBLIST_ENABLED` | `false` | When `true`, XRDB fetches fresh MDBList trending ids before each warm pass and merges them with static warm targets. No API key required. |
+| `XRDB_POSTER_WARM_MDBLIST_LIMIT` | `200` | Maximum number of MDBList trending ids to merge into a warm pass. |
+| `XRDB_POSTER_WARM_IMDB_ENABLED` | `false` | When `true`, XRDB reads the local IMDb ratings dataset and merges the top voted titles into each warm pass. Requires the dataset to be present on disk. |
+| `XRDB_POSTER_WARM_IMDB_LIMIT` | `500` | Maximum number of IMDb top-rated ids to merge into a warm pass. |
+| `XRDB_POSTER_WARM_RECENT_ENABLED` | `false` | When `true`, XRDB records recently served poster requests in a bounded ring buffer and replays them during the next warm pass, using each request's exact configuration. |
+| `XRDB_POSTER_WARM_RECENT_LIMIT` | `500` | Maximum number of recent poster requests to replay per warm pass. |
 | `XRDB_POSTER_WARM_INTERVAL_MS` | `21600000` | Intended cadence for scheduled poster warming runs. |
 | `XRDB_POSTER_WARM_CHECK_INTERVAL_MS` | `900000` | Poll interval used to decide when another warming run is due. |
 | `XRDB_POSTER_WARM_CONCURRENCY` | `2` | Max number of poster warm jobs to run in parallel. |
 | `XRDB_POSTER_WARM_LOG` | `false` | Enables summary logging for poster warming runs. |
+
+Static warm sources remain the baseline fallback. When dynamic sources are enabled, XRDB fetches fresh ids from each enabled source, deduplicates them, and warms the merged target set. The recently-requested ring replays actual user requests with their original configuration, ensuring warm hits benefit custom config users and not just default-config installs.
 
 ### Sharp Rendering (advanced)
 
