@@ -69,6 +69,92 @@
 
 <a id="v1-18-2"></a>
 
+<a id="v1-19-0"></a>
+
+## [v1.19.0] - 15/04/2026
+
+### Added
+* shift to server managed provider keys
+  
+  Remove provider key entry fields from configurator access keys and surface server credential status in the UI.
+  
+  Use server TMDB and MDBList fallbacks across search, preview, proxy, and export payload generation while keeping optional per request overrides.
+  
+  Update docs and env template for XRDB_TMDB_API_KEY support and add regression coverage for credential omission and server key detection.
+
+### Fixed
+* BUG-96 fallback to server MDBList keys
+  
+  Retry provider rating resolution with the server MDBList key pool when a manual MDBList key returns no data.
+  
+  Add regression coverage for manual key failure so preview badges keep rendering from fallback data.
+* BUG-95 genre badge respects selected position in blockbuster mode
+  
+  In blockbuster poster mode, the collision avoidance loop was pushing the
+  genre badge away from all blockbuster overlay elements (score tiles,
+  callout tiles, rating badges, strip), ignoring the user's chosen position
+  entirely. The badge could end up halfway down the poster regardless of
+  what genreBadgePosition was set to.
+  
+  Fix: pass empty collisionRects for blockbuster poster mode in
+  imageRouteRenderer so the collision loop exits immediately and the badge
+  renders at the user selected offset. Non blockbuster posters and
+  backdrops continue to use full collision avoidance as before.
+  
+  Also refreshed doc static assets and README capture date.
+* BUG-92 accept all config profile ID formats in link import
+  
+  Configurator link import validated config IDs with a UUID only pattern, which caused encrypted xrc_ IDs and legacy xr_ IDs to be rejected during parse. When those URLs were imported, configProfileId was dropped and the saved profile binding was silently lost.
+  
+  This commit replaces the UUID only matcher with a unified CONFIG_PROFILE_ID_RE that accepts all supported profile ID families: UUID v4, xrc_<16 hex>, and xr_<8 hex>. The parsing path now preserves profile IDs consistently across import flows without changing merge precedence behavior.
+  
+  Regression coverage includes explicit xrc_ and xr_ parser tests plus request state tests validating UUID profile resolution, explicit URL parameter precedence over saved profile parameters, and parity between generated inline URLs and ?config URLs across poster, backdrop, logo, and thumbnail routes.
+* BUG-89 skip clean style scrim when background opacity is 0
+  
+  Clean genre badge rendering still produced the clean style scrim when background opacity was explicitly set to 0, which made fully transparent clean badges impossible and caused a mismatch between requested opacity and rendered output.
+  
+  This commit updates the clean style rendering path so the scrim/background layer is skipped when effective clean background opacity resolves to zero, while preserving existing clean text treatment, shadow behavior, and non zero opacity rendering.
+  
+  The change keeps clean style visuals deterministic across inline URLs and saved profile URLs where genreBadgeBackgroundOpacity is set to 0.
+* BUG-88 enforce clean text only constraints
+  
+  Clean style behavior drifted across configurator state, URL generation, and runtime normalization. Icon and both modes could leak into clean style and non bottom center positions could persist, which produced inconsistent output between saved settings, generated links, and rendered images.
+  
+  This commit centralizes clean style coercion through shared helpers so clean style resolves to text mode and bottom center placement unless genre badge mode is explicitly off. The coercion is applied across configurator props normalization, output query generation, runtime request state parsing, and renderer badge building to keep behavior consistent on poster, backdrop, thumbnail, and logo routes.
+  
+  Regression coverage was expanded in genre badge, request state, image route badge, and ui config suites to lock clean style mode and placement coercion and ensure clean output remains text only across parsing and rendering paths.
+* BUG-87 prevent clean genre title overlap
+  
+  Clean genre badges could overlap the poster title area on some output sizes because clean mode placement short circuited before collision avoidance and because the renderer did not reserve space using the actual clean badge footprint.
+  
+  This commit removes the clean mode early return in genre placement so collision rect solving always runs, clamps placement using dynamic min inset, computes clean poster reserved bottom height from the rendered clean badge SVG height, and tracks the clean overlay collision rectangle so later overlays cannot collide into it.
+  
+  Coverage was added with a multi size poster placement regression test to verify clean genre badges do not overlap the title region across normal, large, and 4k poster outputs.
+* BUG-86 keep poster genre and clean logo scaling proportional
+  
+  Adjust poster genre badge auto scaling to keep normalized visual proportions more stable across normal, large, and 4K outputs while preserving user scale compounding behavior.
+  
+  Update poster clean overlay logo sizing so small source logos can upscale proportionally for higher resolution poster renders, preventing undersized 4K logo output.
+  
+  Add focused regression coverage for poster genre normalized ratio consistency and 4K clean logo upscale behavior across rendering paths.
+* BUG-80 harden AIOMetadata TV poster target resolution
+  
+  Harden AIOMetadata TV export target resolution so poster URLs consistently resolve the correct media target and avoid ambiguous poster selection behavior.
+  
+  Align export view and config profile client state handling with the normalized media target path so generated patterns and saved state stay consistent.
+  
+  Add targeted regression tests for config profile client state, media target normalization, and UI config serialization to lock the BUG-80 behavior in place.
+* stabilize side placement and grouped age rating behavior
+  
+  Allow grouped age rating placement to participate correctly on supported poster side layouts while preserving the intended quality badge side behavior.
+  
+  Update poster display preference resolution and quality badge placement controls so grouped certification output does not overlap or drift when side positions are selected.
+  
+  Refresh supporting docs and visual reference assets, and add regression coverage for display preference resolution, age rating extraction behavior, quality badge control normalization, and UI config payload handling.
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.18.2] - 13/04/2026
 
 ### Fixed
