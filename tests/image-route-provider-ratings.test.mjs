@@ -354,6 +354,80 @@ test('image route provider ratings resolve imdb dependent providers from bundled
   assert.ok(renderedRatingTtlByProvider.has('simkl'));
 });
 
+test('image route provider ratings fallback to server MDBList keys when manual key returns no data', async () => {
+  const mdbCalls = [];
+  const renderedRatingTtlByProvider = new Map();
+
+  const result = await resolveImageRouteProviderRatings(
+    {
+      cleanId: 'tt1375666',
+      imageType: 'poster',
+      mediaType: 'movie',
+      media: {
+        id: 27205,
+        imdb_id: 'tt1375666',
+        release_date: '2010-07-16',
+      },
+      mediaId: 'tt1375666',
+      isTmdb: false,
+      isKitsu: false,
+      isAniListInput: false,
+      idPrefix: 'imdb',
+      season: null,
+      episode: null,
+      mappedImdbId: null,
+      inputAnimeMappingProvider: null,
+      inputAnimeMappingExternalId: null,
+      requestedExternalRatings: new Set(['mdblist', 'tomatoes']),
+      shouldAttemptAnimeMapping: false,
+      initialAllowAnimeOnlyRatings: false,
+      initialHasConfirmedAnimeMapping: false,
+      resolvedRatingMediaType: 'movie',
+      releaseDate: '2010-07-16',
+      mdblistKey: 'manual-invalid-key',
+      hasMdbListApiKey: true,
+      simklClientId: '',
+      phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+      fetchJsonCached: async () => createEmptyResponse(),
+      getMetadata: () => null,
+      setMetadata: () => {},
+      detailsBundlePromise: null,
+      renderedRatingTtlByProvider,
+      undiciFetchImpl: async () => {
+        throw new Error('unexpected undici fetch');
+      },
+    },
+    {
+      fetchAniListRating: async () => null,
+      fetchKitsuRating: async () => null,
+      fetchMyAnimeListRating: async () => null,
+      fetchTraktRating: async () => null,
+      fetchSimklRating: async () => null,
+      fetchMdbListRatings: async ({ manualApiKey }) => {
+        mdbCalls.push(manualApiKey ?? null);
+        if (manualApiKey) {
+          return null;
+        }
+        return new Map([
+          ['mdblist', '85'],
+          ['tomatoes', '90'],
+        ]);
+      },
+      getImdbRatingFromDataset: () => null,
+      normalizeRatingValue: (value) => {
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? numeric.toFixed(1) : null;
+      },
+    },
+  );
+
+  assert.deepEqual(mdbCalls, ['manual-invalid-key', null]);
+  assert.equal(result.ratings.get('mdblist'), '85');
+  assert.equal(result.ratings.get('tomatoes'), '90');
+  assert.ok(renderedRatingTtlByProvider.has('mdblist'));
+  assert.ok(renderedRatingTtlByProvider.has('tomatoes'));
+});
+
 test('image route provider ratings resolve Allociné audience and press values from title lookups', async () => {
   const renderedRatingTtlByProvider = new Map();
 
