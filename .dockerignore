@@ -3,7 +3,8 @@ node_modules
 coverage
 dist
 out
-data
+data/*
+!data/poster-warm-targets.txt
 loadtest
 npm-debug.log*
 pnpm-debug.log*
