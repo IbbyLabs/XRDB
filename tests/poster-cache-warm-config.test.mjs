@@ -41,9 +41,17 @@ test('poster warm config stays disabled without source input', () => {
   const previousEnabled = process.env.XRDB_POSTER_WARM_ENABLED;
   const previousSource = process.env.XRDB_POSTER_WARM_SOURCE;
   const previousFile = process.env.XRDB_POSTER_WARM_SOURCE_FILE;
+  const previousTmdbEnabled = process.env.XRDB_POSTER_WARM_TMDB_ENABLED;
+  const previousMdblistEnabled = process.env.XRDB_POSTER_WARM_MDBLIST_ENABLED;
+  const previousImdbEnabled = process.env.XRDB_POSTER_WARM_IMDB_ENABLED;
+  const previousRecentEnabled = process.env.XRDB_POSTER_WARM_RECENT_ENABLED;
 
   delete process.env.XRDB_POSTER_WARM_SOURCE;
   delete process.env.XRDB_POSTER_WARM_SOURCE_FILE;
+  delete process.env.XRDB_POSTER_WARM_TMDB_ENABLED;
+  delete process.env.XRDB_POSTER_WARM_MDBLIST_ENABLED;
+  delete process.env.XRDB_POSTER_WARM_IMDB_ENABLED;
+  delete process.env.XRDB_POSTER_WARM_RECENT_ENABLED;
   process.env.XRDB_POSTER_WARM_ENABLED = 'true';
 
   try {
@@ -56,5 +64,43 @@ test('poster warm config stays disabled without source input', () => {
     else process.env.XRDB_POSTER_WARM_SOURCE = previousSource;
     if (previousFile === undefined) delete process.env.XRDB_POSTER_WARM_SOURCE_FILE;
     else process.env.XRDB_POSTER_WARM_SOURCE_FILE = previousFile;
+    if (previousTmdbEnabled === undefined) delete process.env.XRDB_POSTER_WARM_TMDB_ENABLED;
+    else process.env.XRDB_POSTER_WARM_TMDB_ENABLED = previousTmdbEnabled;
+    if (previousMdblistEnabled === undefined) delete process.env.XRDB_POSTER_WARM_MDBLIST_ENABLED;
+    else process.env.XRDB_POSTER_WARM_MDBLIST_ENABLED = previousMdblistEnabled;
+    if (previousImdbEnabled === undefined) delete process.env.XRDB_POSTER_WARM_IMDB_ENABLED;
+    else process.env.XRDB_POSTER_WARM_IMDB_ENABLED = previousImdbEnabled;
+    if (previousRecentEnabled === undefined) delete process.env.XRDB_POSTER_WARM_RECENT_ENABLED;
+    else process.env.XRDB_POSTER_WARM_RECENT_ENABLED = previousRecentEnabled;
+  }
+});
+
+test('poster warm config enables scheduler when only dynamic sources are enabled', () => {
+  const previousEnabled = process.env.XRDB_POSTER_WARM_ENABLED;
+  const previousSource = process.env.XRDB_POSTER_WARM_SOURCE;
+  const previousFile = process.env.XRDB_POSTER_WARM_SOURCE_FILE;
+  const previousTmdbEnabled = process.env.XRDB_POSTER_WARM_TMDB_ENABLED;
+
+  delete process.env.XRDB_POSTER_WARM_SOURCE;
+  delete process.env.XRDB_POSTER_WARM_SOURCE_FILE;
+  process.env.XRDB_POSTER_WARM_ENABLED = 'true';
+  process.env.XRDB_POSTER_WARM_TMDB_ENABLED = 'true';
+
+  try {
+    const config = resolvePosterCacheWarmConfig();
+    assert.equal(config.enabled, true);
+    assert.equal(config.tmdbEnabled, true);
+    assert.equal(config.tmdbLimit, 100);
+    assert.equal(config.mdblistEnabled, false);
+    assert.equal(config.mdblistLimit, 200);
+  } finally {
+    if (previousEnabled === undefined) delete process.env.XRDB_POSTER_WARM_ENABLED;
+    else process.env.XRDB_POSTER_WARM_ENABLED = previousEnabled;
+    if (previousSource === undefined) delete process.env.XRDB_POSTER_WARM_SOURCE;
+    else process.env.XRDB_POSTER_WARM_SOURCE = previousSource;
+    if (previousFile === undefined) delete process.env.XRDB_POSTER_WARM_SOURCE_FILE;
+    else process.env.XRDB_POSTER_WARM_SOURCE_FILE = previousFile;
+    if (previousTmdbEnabled === undefined) delete process.env.XRDB_POSTER_WARM_TMDB_ENABLED;
+    else process.env.XRDB_POSTER_WARM_TMDB_ENABLED = previousTmdbEnabled;
   }
 });

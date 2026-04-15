@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   resetPosterCacheWarmSchedulerForTests,
+  resolvePosterWarmTargets,
   schedulePosterCacheWarm,
 } from '../lib/posterCacheWarmScheduler.ts';
 
@@ -14,6 +15,14 @@ const CONFIG = {
   logEnabled: false,
   source: 'tt0133093',
   sourceFilePath: null,
+  tmdbEnabled: false,
+  tmdbLimit: 100,
+  mdblistEnabled: false,
+  mdblistLimit: 200,
+  imdbEnabled: false,
+  imdbLimit: 500,
+  recentEnabled: false,
+  recentLimit: 500,
 };
 
 test('poster warm scheduler avoids overlap and respects the warm interval', async () => {
@@ -73,4 +82,27 @@ test('poster warm scheduler avoids overlap and respects the warm interval', asyn
     },
   });
   assert.equal(runs, 2);
+});
+
+test('poster warm target resolution merges and deduplicates static and dynamic sources', async () => {
+  const result = await resolvePosterWarmTargets({
+    config: {
+      ...CONFIG,
+      source: 'tt0133093,tmdb:movie:603',
+      tmdbEnabled: true,
+      mdblistEnabled: true,
+    },
+    fetchTmdbIds: async () => ['tmdb:movie:603', 'tmdb:tv:1396'],
+    fetchMdblistIds: async () => ['tt0133093', 'tt0111161'],
+    fetchImdbIds: async () => [],
+    fetchRecentEntries: () => [],
+  });
+
+  assert.deepEqual(result.targets, ['tt0133093', 'tmdb:movie:603', 'tmdb:tv:1396', 'tt0111161']);
+  assert.deepEqual(result.recentEntries, []);
+  assert.equal(result.staticCount, 2);
+  assert.equal(result.tmdbCount, 2);
+  assert.equal(result.mdblistCount, 2);
+  assert.equal(result.imdbCount, 0);
+  assert.equal(result.recentCount, 0);
 });

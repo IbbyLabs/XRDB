@@ -2,7 +2,7 @@
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
   "xrdbTag": "v1.19.1",
-  "generatedAt": "2026-04-15T20:29:47.563Z",
+  "generatedAt": "2026-04-15T22:12:29.165Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -43,11 +43,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "FR-80 FR-55 speed up poster cold loads",
         "BUG-97 apply stored episode config profile when thumbnail URL has no explicit badge params",
         "BUG-98 fix quality badge column centering when clean genre badge reserves bottom space",
         "BUG-99 apply configured value color to ring score text across all accent modes",
-        "BUG-96 fallback to server MDBList keys",
-        "BUG-95 genre badge respects selected position in blockbuster mode"
+        "BUG-96 fallback to server MDBList keys"
       ]
     },
     {

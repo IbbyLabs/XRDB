@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 
 import { scheduleImdbDatasetSync } from '@/lib/imdbDatasetScheduler';
 import { schedulePosterCacheWarm } from '@/lib/posterCacheWarmScheduler';
+import { recordRecentPosterRequest } from '@/lib/posterCacheWarmRecentRing';
 import {
   XRDB_REQUEST_KEY_ERROR_MESSAGE,
   isXrdbRequestAuthorized,
@@ -72,6 +73,10 @@ export async function handleImageRequest(
   );
   scheduleImdbDatasetSync();
   schedulePosterCacheWarm();
+
+  if (type === 'poster') {
+    recordRecentPosterRequest(id, request.nextUrl.searchParams);
+  }
 
   try {
     const requestState = await resolveImageRouteRequestState({
