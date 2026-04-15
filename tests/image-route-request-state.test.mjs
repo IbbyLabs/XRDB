@@ -542,6 +542,39 @@ test('image route request state disables rating and stream work for poster none 
   assert.deepEqual([...state.selectedRatings], []);
 });
 
+test('image route request state keeps poster auto stream badges enabled but non-blocking', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest('https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&posterStreamBadges=auto'),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(state.shouldApplyStreamBadges, true);
+  assert.equal(state.shouldBlockOnStreamBadges, false);
+});
+
+test('image route request state defaults poster stream badges to off when omitted', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest('https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key'),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(state.shouldApplyStreamBadges, false);
+  assert.equal(state.shouldBlockOnStreamBadges, false);
+});
+
+test('image route request state keeps poster on stream badges blocking', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest('https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&posterStreamBadges=on'),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(state.shouldApplyStreamBadges, true);
+  assert.equal(state.shouldBlockOnStreamBadges, true);
+});
+
 test('image route request state disables rating and stream work for thumbnail none presentation', async () => {
   const state = await resolveImageRouteRequestState({
     request: createRequest(

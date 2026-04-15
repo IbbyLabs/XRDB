@@ -14,6 +14,7 @@ import {
 import {
   buildProfileParams,
   buildAiometadataUrlPatterns,
+  createDefaultSavedUiConfig,
   buildConfigString,
   buildProxyUrl,
   decodeBase64Url,
@@ -40,6 +41,12 @@ const SAMPLE_PROVIDER_APPEARANCE = {
     stackedLineHeightPercent: 124,
   },
 };
+
+test('default saved ui config disables poster stream badges by default', () => {
+  const config = createDefaultSavedUiConfig();
+
+  assert.equal(config.settings.posterStreamBadges, 'off');
+});
 
 const buildSampleSettings = () =>
   normalizeSavedUiConfig({

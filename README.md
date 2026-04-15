@@ -370,7 +370,7 @@ The configurator preview type row now includes a sync control beside each type. 
 | `posterNoBackgroundBadgeOutlineColor` | Text stroke colour for `plain` style genre badge on poster | Hex colour (e.g. `#000000`) | `#000000` |
 | `posterNoBackgroundBadgeOutlineWidth` | Text stroke width for `plain` style genre badge on poster. `0` disables the stroke. | Number (`0-10`) | `0` |
 | `streamBadges` | Quality badges via Torrentio (global fallback) | `auto`, `on`, `off` | `auto` |
-| `posterStreamBadges` | Poster quality badges | `auto`, `on`, `off` | `auto` |
+| `posterStreamBadges` | Poster quality badges. `auto` warms in the background and does not block cold poster renders. | `auto`, `on`, `off` | `off` |
 | `backdropStreamBadges` | Backdrop quality badges | `auto`, `on`, `off` | `auto` |
 | `qualityBadgesSide` | Quality badges side (poster `top bottom` layout only) | `left`, `right` | `left` |
 | `posterQualityBadgesPosition` | Quality badges side for poster `top` or `bottom` layouts | `auto`, `left`, `right` | `auto` |
@@ -558,7 +558,7 @@ logoGenreBadgeBackgroundOpacity | logo clean style genre badge background opacit
 posterNoBackgroundBadgeOutlineColor | text stroke colour for plain style genre badge on poster | #000000
 posterNoBackgroundBadgeOutlineWidth | text stroke width for plain style genre badge on poster, 0 disables | 0
 streamBadges            | auto, on, off (global fallback)                                      | auto
-posterStreamBadges      | auto, on, off (poster only)                                          | auto
+posterStreamBadges      | auto, on, off (poster only)                                          | off
 backdropStreamBadges    | auto, on, off (backdrop only)                                        | auto
 qualityBadgesSide       | left, right (poster top bottom layout only)                          | left
 posterQualityBadgesPosition | auto, left, right (poster top or bottom only)                    | auto
@@ -921,10 +921,26 @@ hardcoding separate cache TTL values.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `XRDB_TORRENTIO_BASE_URL` | `https://torrentio.strem.fun` | Custom Torrentio instance URL. Leave unset to use the default instance, or set to a blank value to disable Torrentio lookups. |
+| `XRDB_TORRENTIO_FALLBACK_BASE_URL` | `https://torrentio.stremio.ru` | Optional fallback Torrentio instance used when the primary host times out, fails, or returns a retryable status. Set to a blank value to disable fallback. |
 | `XRDB_TORRENTIO_CONCURRENCY` | `2` | Max parallel Torrentio badge fetches. Higher can improve throughput, but also increases the chance of source rate limiting. |
+| `XRDB_TORRENTIO_TIMEOUT_MS` | `4000` | Per-request timeout for Torrentio badge fetches before XRDB fails over or gives up. |
 | `XRDB_TORRENTIO_RATE_LIMIT_COOLDOWN_MS` | `900000` | Cooldown window after Torrentio responds with rate limiting. |
+| `XRDB_TORRENTIO_BYPASS_PROXY` | `false` | When `true`, Torrentio badge fetches skip the shared `HTTP_PROXY` or `HTTPS_PROXY` route and connect directly. |
+| `XRDB_TORRENTIO_DIRECT_CANDIDATE_BASE_URL` | `https://torrentio.stremio.ru` | Expected direct-host candidate used as the default fallback base URL when no explicit fallback is configured. |
 
-> **Note:** Torrentio requests use `HTTP_PROXY` / `HTTPS_PROXY` env vars (via `undici ProxyAgent`) when set.
+> **Note:** Torrentio requests use `HTTP_PROXY` or `HTTPS_PROXY` env vars (via `undici ProxyAgent`) when set, unless `XRDB_TORRENTIO_BYPASS_PROXY=true`.
+
+### Poster Cache Warming
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `XRDB_POSTER_WARM_ENABLED` | `true` | Enables the scheduled poster warming job when a source list is configured. |
+| `XRDB_POSTER_WARM_SOURCE` | (empty) | Inline comma-separated or newline-separated list of poster targets. Supports explicit IDs such as `tt0133093`, `tmdb:movie:603`, `tmdb:tv:1396`, or full poster URLs. |
+| `XRDB_POSTER_WARM_SOURCE_FILE` | (empty) | Optional file path for a poster warming source list. File targets are merged with `XRDB_POSTER_WARM_SOURCE`. |
+| `XRDB_POSTER_WARM_INTERVAL_MS` | `21600000` | Intended cadence for scheduled poster warming runs. |
+| `XRDB_POSTER_WARM_CHECK_INTERVAL_MS` | `900000` | Poll interval used to decide when another warming run is due. |
+| `XRDB_POSTER_WARM_CONCURRENCY` | `2` | Max number of poster warm jobs to run in parallel. |
+| `XRDB_POSTER_WARM_LOG` | `false` | Enables summary logging for poster warming runs. |
 
 ### Sharp Rendering (advanced)
 

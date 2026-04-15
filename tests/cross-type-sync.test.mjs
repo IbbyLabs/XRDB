@@ -177,6 +177,8 @@ test('computeSyncToAllDiff: identical per-type settings produce zero diff for ea
     backdropGenreBadgeBorderWidth: 1,
     thumbnailGenreBadgeBorderWidth: 1,
     logoGenreBadgeBorderWidth: 1,
+    backdropStreamBadges: 'off',
+    thumbnailStreamBadges: 'off',
   };
   const allDiffs = computeSyncToAllDiff(settings, 'poster');
   for (const type of ['backdrop', 'thumbnail', 'logo']) {
