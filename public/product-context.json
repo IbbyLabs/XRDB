@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.19.1",
-  "generatedAt": "2026-04-15T22:12:29.165Z",
+  "xrdbTag": "v1.20.0",
+  "generatedAt": "2026-04-15T22:54:40.348Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -43,11 +43,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "track poster warm target seed file",
+        "include poster warm targets in docker build context",
+        "expand poster warm sources with TMDB multi endpoint, IMDb baseline, recent ring",
         "FR-80 FR-55 speed up poster cold loads",
-        "BUG-97 apply stored episode config profile when thumbnail URL has no explicit badge params",
-        "BUG-98 fix quality badge column centering when clean genre badge reserves bottom space",
-        "BUG-99 apply configured value color to ring score text across all accent modes",
-        "BUG-96 fallback to server MDBList keys"
+        "BUG-97 apply stored episode config profile when thumbnail URL has no explicit badge params"
       ]
     },
     {
