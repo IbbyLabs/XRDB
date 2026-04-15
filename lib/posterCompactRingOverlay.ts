@@ -17,6 +17,7 @@ export const buildPosterCompactRingOverlay = ({
   valueText,
   progressPercent,
   accentColor,
+  valueColor,
   badgeScalePercent = 100,
 }: {
   outputWidth: number;
@@ -24,6 +25,7 @@ export const buildPosterCompactRingOverlay = ({
   valueText: string;
   progressPercent: number;
   accentColor: string;
+  valueColor?: string;
   badgeScalePercent?: number;
 }): PosterCompactRingOverlaySpec => {
   const scaleRatio = Math.max(0.01, badgeScalePercent / 100);
@@ -59,7 +61,7 @@ export const buildPosterCompactRingOverlay = ({
 <circle cx="${center}" cy="${center}" r="${ringRadius}" fill="none" stroke="${trackColor}" stroke-width="${ringStroke}" />
 <circle cx="${center}" cy="${center}" r="${ringRadius}" fill="none" stroke="${accentColor}" stroke-width="${ringStroke}" stroke-linecap="round" stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}" transform="rotate(-90 ${center} ${center})" filter="url(#compact-ring-glow)" />
 <circle cx="${center}" cy="${center}" r="${circleRadius}" fill="rgba(8,11,16,0.86)" />
-<text x="${center}" y="${center + Math.round(valueFontSize * 0.08)}" font-family="'Space Grotesk','Noto Sans',Arial,sans-serif" font-size="${valueFontSize}" font-weight="700" text-anchor="middle" dominant-baseline="middle" fill="#f8fafc">${escapeXml(valueText)}</text>
+<text x="${center}" y="${center + Math.round(valueFontSize * 0.08)}" font-family="'Space Grotesk','Noto Sans',Arial,sans-serif" font-size="${valueFontSize}" font-weight="700" text-anchor="middle" dominant-baseline="middle" fill="${valueColor ?? '#f8fafc'}">${escapeXml(valueText)}</text>
 </svg>`,
   };
 };

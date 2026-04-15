@@ -80,6 +80,67 @@ test('image route display state builds compact ring overlays for poster ring pre
   assert.match(state.compactRingOverlay?.svg ?? '', /#ef4444/i);
 });
 
+test('compact ring applies configured value color to score text in source accent mode', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    ratingPresentation: 'ring',
+    aggregateAccentMode: 'source',
+    aggregateValueColor: '#ff6600',
+  });
+
+  assert.ok(state.compactRingOverlay);
+  assert.match(state.compactRingOverlay?.svg ?? '', /#ff6600/i);
+});
+
+test('compact ring applies configured value color to score text in genre accent mode', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    ratingPresentation: 'ring',
+    aggregateAccentMode: 'genre',
+    aggregateValueColor: '#ff6600',
+  });
+
+  assert.ok(state.compactRingOverlay);
+  assert.match(state.compactRingOverlay?.svg ?? '', /#ff6600/i);
+});
+
+test('compact ring applies configured value color to score text in custom accent mode', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    ratingPresentation: 'ring',
+    aggregateAccentMode: 'custom',
+    aggregateAccentColor: '#3b82f6',
+    aggregateValueColor: '#ff6600',
+  });
+
+  assert.ok(state.compactRingOverlay);
+  assert.match(state.compactRingOverlay?.svg ?? '', /#ff6600/i);
+});
+
+test('compact ring applies configured value color to score text in dynamic accent mode', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    ratingPresentation: 'ring',
+    aggregateAccentMode: 'dynamic',
+    aggregateValueColor: '#ff6600',
+  });
+
+  assert.ok(state.compactRingOverlay);
+  assert.match(state.compactRingOverlay?.svg ?? '', /#ff6600/i);
+});
+
+test('compact ring score text uses default color when no value color is configured', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    ratingPresentation: 'ring',
+    aggregateAccentMode: 'source',
+    aggregateValueColor: null,
+  });
+
+  assert.ok(state.compactRingOverlay);
+  assert.match(state.compactRingOverlay?.svg ?? '', /#f8fafc/i);
+});
+
 test('image route display state suppresses compact ring overlay when value source has no data', () => {
   const state = resolveImageRouteDisplayState({
     ...createBaseInput(),
