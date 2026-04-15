@@ -90,7 +90,7 @@ export const BACKDROP_IMAGE_DIMENSIONS: Record<BackdropImageSize, { width: numbe
   '4k': { width: 3840, height: 2160 },
 };
 export const DEFAULT_BLOCKBUSTER_DENSITY: BlockbusterDensity = 'balanced';
-export const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v117';
+export const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v118';
 export const XRDB_REQUEST_API_KEYS = getConfiguredXrdbRequestKeys();
 export const ANILIST_GRAPHQL_URL =
   process.env.XRDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
