@@ -92,6 +92,8 @@ export const BACKDROP_IMAGE_DIMENSIONS: Record<BackdropImageSize, { width: numbe
 export const DEFAULT_BLOCKBUSTER_DENSITY: BlockbusterDensity = 'balanced';
 export const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v118';
 export const XRDB_REQUEST_API_KEYS = getConfiguredXrdbRequestKeys();
+export const XRDB_EPISODE_CONFIG_PROFILE_ID: string | null =
+  String(process.env.XRDB_EPISODE_CONFIG_PROFILE_ID ?? '').trim() || null;
 export const ANILIST_GRAPHQL_URL =
   process.env.XRDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
 export const MYANIMELIST_API_BASE_URL =

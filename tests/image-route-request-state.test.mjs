@@ -558,3 +558,64 @@ test('image route request state disables rating and stream work for thumbnail no
   assert.deepEqual(state.effectiveRatingPreferences, []);
   assert.deepEqual([...state.selectedRatings], []);
 });
+
+test('thumbnail with stored episode profile resolves profile settings for thumbnail requests', async (t) => {
+  await withTempDataDir(t, async () => {
+    const configId = createProtectedConfigProfile(
+      {
+        tmdbKey: 'tmdb-key',
+        thumbnailRatings: 'kitsu',
+        thumbnailRatingStyle: 'plain',
+      },
+      'password-hash',
+    );
+
+    const state = await resolveImageRouteRequestState({
+      request: createRequest(
+        `https://example.com/backdrop/xrdbid:tt1234567:1:2.jpg?thumbnail=1&config=${configId}`,
+      ),
+      imageType: 'backdrop',
+      id: 'xrdbid:tt1234567:1:2.jpg',
+    });
+
+    assert.equal(state.isThumbnailRequest, true);
+    assert.deepEqual(state.effectiveRatingPreferences, ['kitsu']);
+    assert.equal(state.ratingStyle, 'plain');
+  });
+});
+
+test('thumbnail without config resolves default settings without error', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/backdrop/xrdbid:tt1234567:1:2.jpg?thumbnail=1&tmdbKey=tmdb-key',
+    ),
+    imageType: 'backdrop',
+    id: 'xrdbid:tt1234567:1:2.jpg',
+  });
+
+  assert.equal(state.isThumbnailRequest, true);
+  assert.deepEqual(state.effectiveRatingPreferences, ['tmdb', 'imdb']);
+});
+
+test('explicit thumbnail badge params override stored episode profile', async (t) => {
+  await withTempDataDir(t, async () => {
+    const configId = createProtectedConfigProfile(
+      {
+        tmdbKey: 'tmdb-key',
+        thumbnailRatings: 'kitsu',
+      },
+      'password-hash',
+    );
+
+    const state = await resolveImageRouteRequestState({
+      request: createRequest(
+        `https://example.com/backdrop/xrdbid:tt1234567:1:2.jpg?thumbnail=1&config=${configId}&thumbnailRatings=imdb,tmdb`,
+      ),
+      imageType: 'backdrop',
+      id: 'xrdbid:tt1234567:1:2.jpg',
+    });
+
+    assert.equal(state.isThumbnailRequest, true);
+    assert.deepEqual(state.effectiveRatingPreferences, ['imdb', 'tmdb']);
+  });
+});
