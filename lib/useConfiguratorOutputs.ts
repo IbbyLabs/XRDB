@@ -17,6 +17,8 @@ import {
   DEFAULT_GENRE_BADGE_POSITION,
   DEFAULT_GENRE_BADGE_STYLE,
   GENRE_BADGE_PREVIEW_SAMPLES,
+  resolveGenreBadgeModeForStyle,
+  resolveGenreBadgePositionForStyle,
   type GenreBadgeAnimeGrouping,
   type GenreBadgeMode,
   type GenreBadgePosition,
@@ -159,14 +161,16 @@ const appendGenreBadgeQueryParams = ({
   animeGrouping: GenreBadgeAnimeGrouping;
 }) => {
   const keys = GENRE_BADGE_QUERY_KEYS[type];
-  if (mode !== DEFAULT_GENRE_BADGE_MODE) {
-    query.set(keys.mode, mode);
+  const resolvedMode = resolveGenreBadgeModeForStyle(mode, style);
+  const resolvedPosition = resolveGenreBadgePositionForStyle(position, style, resolvedMode);
+  if (resolvedMode !== DEFAULT_GENRE_BADGE_MODE) {
+    query.set(keys.mode, resolvedMode);
   }
   if (style !== DEFAULT_GENRE_BADGE_STYLE) {
     query.set(keys.style, style);
   }
-  if (position !== DEFAULT_GENRE_BADGE_POSITION) {
-    query.set(keys.position, position);
+  if (resolvedPosition !== DEFAULT_GENRE_BADGE_POSITION) {
+    query.set(keys.position, resolvedPosition);
   }
   if (scale !== DEFAULT_BADGE_SCALE_PERCENT) {
     query.set(keys.scale, String(scale));

@@ -215,6 +215,27 @@ export const normalizeGenreBadgeAnimeGrouping = (
     : fallback;
 };
 
+export const resolveGenreBadgeModeForStyle = (
+  mode: GenreBadgeMode,
+  style: GenreBadgeStyle,
+): GenreBadgeMode => {
+  if (style === 'clean') {
+    return mode === 'off' ? 'off' : 'text';
+  }
+  return mode;
+};
+
+export const resolveGenreBadgePositionForStyle = (
+  position: GenreBadgePosition,
+  style: GenreBadgeStyle,
+  mode: GenreBadgeMode,
+): GenreBadgePosition => {
+  if (style === 'clean' && mode !== 'off') {
+    return 'bottomCenter';
+  }
+  return position;
+};
+
 export const GENRE_BADGE_FAMILY_META: Record<GenreBadgeFamilyId, GenreBadgeFamilyMeta> = {
   anime: {
     id: 'anime',

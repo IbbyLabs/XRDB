@@ -331,6 +331,20 @@ test('image route request state parses genre badge clean background opacity cont
   assert.equal(state.genreBadgeBackgroundOpacity, 46);
 });
 
+test('image route request state coerces clean genre badge to text mode at bottom center', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&posterGenreBadge=both&posterGenreBadgeStyle=clean&posterGenreBadgePosition=topRight',
+    ),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(state.genreBadgeStyle, 'clean');
+  assert.equal(state.genreBadgeMode, 'text');
+  assert.equal(state.genreBadgePosition, 'bottomCenter');
+});
+
 test('image route request state allows larger thumbnail rating badge scale for thumbnail requests', async () => {
   const state = await resolveImageRouteRequestState({
     request: createRequest(

@@ -18,6 +18,7 @@ test('image route genre badge builds plain icon and text output', () => {
   assert.ok(spec.width > spec.height);
   assert.match(spec.svg, /genreBadgeShadow/);
   assert.match(spec.svg, /ANIME/);
+  assert.match(spec.svg, /translate\(-12 -12\)/);
 });
 
 test('image route genre badge builds clean text style output', () => {
@@ -37,6 +38,39 @@ test('image route genre badge builds clean text style output', () => {
   assert.doesNotMatch(spec.svg, /fill="rgba\(8,11,16,/);
   assert.match(spec.svg, /cleanStripShadow/);
   assert.match(spec.svg, /genreBadgeShadow/);
+  assert.doesNotMatch(spec.svg, /translate\(-12 -12\)/);
+});
+
+test('image route genre badge coerces clean icon-only mode to text-only output', () => {
+  const spec = buildGenreBadgeSvg(
+    {
+      familyId: 'scifi',
+      label: 'SCI FI',
+      accentColor: '#22d3ee',
+      mode: 'icon',
+      style: 'clean',
+    },
+    'poster',
+  );
+
+  assert.doesNotMatch(spec.svg, /translate\(-12 -12\)/);
+  assert.match(spec.svg, /Science Fiction/);
+});
+
+test('clean style both mode remains text-only output', () => {
+  const spec = buildGenreBadgeSvg(
+    {
+      familyId: 'scifi',
+      label: 'SCI FI',
+      accentColor: '#22d3ee',
+      mode: 'both',
+      style: 'clean',
+    },
+    'poster',
+  );
+
+  assert.doesNotMatch(spec.svg, /translate\(-12 -12\)/);
+  assert.match(spec.svg, /Science Fiction/);
 });
 
 test('image route genre badge applies custom clean background opacity', () => {

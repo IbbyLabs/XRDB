@@ -6,6 +6,7 @@ import {
   type GenreBadgeFamilyId,
   type GenreBadgeMode,
   type GenreBadgeStyle,
+  resolveGenreBadgeModeForStyle,
 } from './genreBadge.ts';
 import { estimateSummaryLabelWidth } from './imageRouteBadgeMetrics.ts';
 import { escapeXml } from './imageRouteText.ts';
@@ -175,18 +176,15 @@ export const buildGenreBadgeSvg = (
       : 0;
   const iconSize = Math.round(height * (imageType === 'backdrop' ? 0.46 : 0.48));
   const isClean = genreBadge.style === 'clean';
+  const resolvedMode = resolveGenreBadgeModeForStyle(genreBadge.mode, genreBadge.style);
   const fontSize = isClean
-    ? (genreBadge.mode === 'text' ? Math.round(height * 0.50) : Math.round(height * 0.46))
-    : (genreBadge.mode === 'text' ? Math.round(height * 0.37) : Math.round(height * 0.34));
+    ? Math.round(height * 0.50)
+    : (resolvedMode === 'text' ? Math.round(height * 0.37) : Math.round(height * 0.34));
   const label = isClean
     ? CLEAN_GENRE_LABEL_BY_FAMILY[genreBadge.familyId]
     : genreBadge.label.trim().toUpperCase();
-  const showIcon = isClean
-    ? genreBadge.mode === 'icon'
-    : genreBadge.mode === 'icon' || genreBadge.mode === 'both';
-  const showText = isClean
-    ? genreBadge.mode === 'text' || genreBadge.mode === 'both'
-    : genreBadge.mode === 'text' || genreBadge.mode === 'both';
+  const showIcon = resolvedMode === 'icon' || resolvedMode === 'both';
+  const showText = resolvedMode === 'text' || resolvedMode === 'both';
   const paddingX =
     genreBadge.style === 'plain'
       ? showText

@@ -72,6 +72,8 @@ import {
   normalizeGenreBadgeMode,
   normalizeGenreBadgePosition,
   normalizeGenreBadgeStyle,
+  resolveGenreBadgeModeForStyle,
+  resolveGenreBadgePositionForStyle,
   type GenreBadgeAnimeGrouping,
   type GenreBadgeMode,
   type GenreBadgePosition,
@@ -1103,6 +1105,66 @@ export const normalizeSharedXrdbSettings = (value: unknown, options?: { skipCros
     candidate.genreBadgeAnimeGrouping,
     DEFAULT_GENRE_BADGE_ANIME_GROUPING,
   );
+  const posterGenreBadgeStyle = normalizeGenreBadgeStyle(
+    candidate.posterGenreBadgeStyle,
+    globalGenreBadgeStyle,
+  );
+  const backdropGenreBadgeStyle = normalizeGenreBadgeStyle(
+    candidate.backdropGenreBadgeStyle,
+    globalGenreBadgeStyle,
+  );
+  const thumbnailGenreBadgeStyle = normalizeGenreBadgeStyle(
+    candidate.thumbnailGenreBadgeStyle ?? candidate.backdropGenreBadgeStyle,
+    defaults.thumbnailGenreBadgeStyle,
+  );
+  const logoGenreBadgeStyle = normalizeGenreBadgeStyle(
+    candidate.logoGenreBadgeStyle,
+    globalGenreBadgeStyle,
+  );
+  const posterGenreBadgeMode = resolveGenreBadgeModeForStyle(
+    normalizeGenreBadgeMode(candidate.posterGenreBadgeMode ?? candidate.posterGenreBadge, globalGenreBadgeMode),
+    posterGenreBadgeStyle,
+  );
+  const backdropGenreBadgeMode = resolveGenreBadgeModeForStyle(
+    normalizeGenreBadgeMode(candidate.backdropGenreBadgeMode ?? candidate.backdropGenreBadge, globalGenreBadgeMode),
+    backdropGenreBadgeStyle,
+  );
+  const thumbnailGenreBadgeMode = resolveGenreBadgeModeForStyle(
+    normalizeGenreBadgeMode(
+      candidate.thumbnailGenreBadgeMode ??
+        candidate.thumbnailGenreBadge ??
+        candidate.backdropGenreBadge,
+      defaults.thumbnailGenreBadgeMode,
+    ),
+    thumbnailGenreBadgeStyle,
+  );
+  const logoGenreBadgeMode = resolveGenreBadgeModeForStyle(
+    normalizeGenreBadgeMode(candidate.logoGenreBadgeMode ?? candidate.logoGenreBadge, globalGenreBadgeMode),
+    logoGenreBadgeStyle,
+  );
+  const posterGenreBadgePosition = resolveGenreBadgePositionForStyle(
+    normalizeGenreBadgePosition(candidate.posterGenreBadgePosition, globalGenreBadgePosition),
+    posterGenreBadgeStyle,
+    posterGenreBadgeMode,
+  );
+  const backdropGenreBadgePosition = resolveGenreBadgePositionForStyle(
+    normalizeGenreBadgePosition(candidate.backdropGenreBadgePosition, globalGenreBadgePosition),
+    backdropGenreBadgeStyle,
+    backdropGenreBadgeMode,
+  );
+  const thumbnailGenreBadgePosition = resolveGenreBadgePositionForStyle(
+    normalizeGenreBadgePosition(
+      candidate.thumbnailGenreBadgePosition ?? candidate.backdropGenreBadgePosition,
+      defaults.thumbnailGenreBadgePosition,
+    ),
+    thumbnailGenreBadgeStyle,
+    thumbnailGenreBadgeMode,
+  );
+  const logoGenreBadgePosition = resolveGenreBadgePositionForStyle(
+    normalizeGenreBadgePosition(candidate.logoGenreBadgePosition, globalGenreBadgePosition),
+    logoGenreBadgeStyle,
+    logoGenreBadgeMode,
+  );
   const legacySideRatingsPosition = normalizeSideRatingPosition(
     candidate.sideRatingsPosition ?? rpdbRatingBarAliases.sideRatingsPosition,
   );
@@ -1174,56 +1236,18 @@ export const normalizeSharedXrdbSettings = (value: unknown, options?: { skipCros
       defaults.backdropEpisodeArtwork,
     ),
     ratingValueMode: normalizeRatingValueMode(candidate.ratingValueMode, defaults.ratingValueMode),
-    posterGenreBadgeMode: normalizeGenreBadgeMode(
-      candidate.posterGenreBadgeMode ?? candidate.posterGenreBadge,
-      globalGenreBadgeMode,
-    ),
-    backdropGenreBadgeMode: normalizeGenreBadgeMode(
-      candidate.backdropGenreBadgeMode ?? candidate.backdropGenreBadge,
-      globalGenreBadgeMode,
-    ),
-    thumbnailGenreBadgeMode: normalizeGenreBadgeMode(
-      candidate.thumbnailGenreBadgeMode ??
-        candidate.thumbnailGenreBadge ??
-        candidate.backdropGenreBadge,
-      defaults.thumbnailGenreBadgeMode,
-    ),
-    logoGenreBadgeMode: normalizeGenreBadgeMode(
-      candidate.logoGenreBadgeMode ?? candidate.logoGenreBadge,
-      globalGenreBadgeMode,
-    ),
-    posterGenreBadgeStyle: normalizeGenreBadgeStyle(
-      candidate.posterGenreBadgeStyle,
-      globalGenreBadgeStyle,
-    ),
-    backdropGenreBadgeStyle: normalizeGenreBadgeStyle(
-      candidate.backdropGenreBadgeStyle,
-      globalGenreBadgeStyle,
-    ),
-    thumbnailGenreBadgeStyle: normalizeGenreBadgeStyle(
-      candidate.thumbnailGenreBadgeStyle ?? candidate.backdropGenreBadgeStyle,
-      defaults.thumbnailGenreBadgeStyle,
-    ),
-    logoGenreBadgeStyle: normalizeGenreBadgeStyle(
-      candidate.logoGenreBadgeStyle,
-      globalGenreBadgeStyle,
-    ),
-    posterGenreBadgePosition: normalizeGenreBadgePosition(
-      candidate.posterGenreBadgePosition,
-      globalGenreBadgePosition,
-    ),
-    backdropGenreBadgePosition: normalizeGenreBadgePosition(
-      candidate.backdropGenreBadgePosition,
-      globalGenreBadgePosition,
-    ),
-    thumbnailGenreBadgePosition: normalizeGenreBadgePosition(
-      candidate.thumbnailGenreBadgePosition ?? candidate.backdropGenreBadgePosition,
-      defaults.thumbnailGenreBadgePosition,
-    ),
-    logoGenreBadgePosition: normalizeGenreBadgePosition(
-      candidate.logoGenreBadgePosition,
-      globalGenreBadgePosition,
-    ),
+    posterGenreBadgeMode,
+    backdropGenreBadgeMode,
+    thumbnailGenreBadgeMode,
+    logoGenreBadgeMode,
+    posterGenreBadgeStyle,
+    backdropGenreBadgeStyle,
+    thumbnailGenreBadgeStyle,
+    logoGenreBadgeStyle,
+    posterGenreBadgePosition,
+    backdropGenreBadgePosition,
+    thumbnailGenreBadgePosition,
+    logoGenreBadgePosition,
     posterGenreBadgeScale: normalizeGenreBadgeScalePercent(
       candidate.posterGenreBadgeScale,
       globalGenreBadgeScale,

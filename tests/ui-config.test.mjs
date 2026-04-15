@@ -478,6 +478,28 @@ test('legacy shared genre badge settings expand to per type fields and re-compre
   assert.equal(decodedConfig.logoGenreBadge, undefined);
 });
 
+test('clean genre badge style forces text mode and bottom center position in normalized settings', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      posterGenreBadgeMode: 'both',
+      posterGenreBadgeStyle: 'clean',
+      posterGenreBadgePosition: 'topRight',
+      backdropGenreBadgeMode: 'icon',
+      backdropGenreBadgeStyle: 'clean',
+      backdropGenreBadgePosition: 'topLeft',
+    },
+  });
+
+  assert.equal(config.settings.posterGenreBadgeStyle, 'clean');
+  assert.equal(config.settings.posterGenreBadgeMode, 'text');
+  assert.equal(config.settings.posterGenreBadgePosition, 'bottomCenter');
+  assert.equal(config.settings.backdropGenreBadgeStyle, 'clean');
+  assert.equal(config.settings.backdropGenreBadgeMode, 'text');
+  assert.equal(config.settings.backdropGenreBadgePosition, 'bottomCenter');
+});
+
 test('profile params keep thumbnail genre badge off when backdrop genre badge is enabled', () => {
   const config = normalizeSavedUiConfig({
     settings: {

@@ -74,6 +74,8 @@ import {
   DEFAULT_GENRE_BADGE_STYLE,
   normalizeGenreBadgeAnimeGrouping,
   normalizeGenreBadgeMode,
+  resolveGenreBadgeModeForStyle,
+  resolveGenreBadgePositionForStyle,
   normalizeGenreBadgePosition,
   normalizeGenreBadgeStyle,
   type GenreBadgeAnimeGrouping,
@@ -571,7 +573,7 @@ export const resolveImageRouteRequestState = async ({
     searchParams.get('logoGenreBadgeAnimeGrouping') ?? searchParams.get('genreBadgeAnimeGrouping'),
     globalGenreBadgeAnimeGrouping,
   );
-  const genreBadgeMode =
+  const rawGenreBadgeMode =
     imageType === 'poster'
       ? posterGenreBadgeMode
       : isThumbnailRequest
@@ -587,7 +589,7 @@ export const resolveImageRouteRequestState = async ({
         : imageType === 'backdrop'
         ? backdropGenreBadgeStyle
         : logoGenreBadgeStyle;
-  const genreBadgePosition =
+  const rawGenreBadgePosition =
     imageType === 'poster'
       ? posterGenreBadgePosition
       : isThumbnailRequest
@@ -595,6 +597,12 @@ export const resolveImageRouteRequestState = async ({
         : imageType === 'backdrop'
         ? backdropGenreBadgePosition
         : logoGenreBadgePosition;
+  const genreBadgeMode = resolveGenreBadgeModeForStyle(rawGenreBadgeMode, genreBadgeStyle);
+  const genreBadgePosition = resolveGenreBadgePositionForStyle(
+    rawGenreBadgePosition,
+    genreBadgeStyle,
+    genreBadgeMode,
+  );
   const genreBadgeScale =
     imageType === 'poster'
       ? posterGenreBadgeScale
