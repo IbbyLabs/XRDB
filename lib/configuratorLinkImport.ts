@@ -13,8 +13,8 @@ export type ConfiguratorLinkImportResult = {
   defaultSourceType: ConfiguratorPreviewType | null;
 };
 
-const PROTECTED_CONFIG_PROFILE_ID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const CONFIG_PROFILE_ID_RE =
+  /^(?:[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|xrc_[0-9a-f]{16}|xr_[0-9a-f]{8})$/i;
 
 const PREVIEW_TYPE_ORDER: ConfiguratorPreviewType[] = [
   'poster',
@@ -544,7 +544,7 @@ export const parseConfiguratorLinkImport = (
   const scopedPreviewType = detectedPreviewType || options?.fallbackPreviewType || null;
   const configProfileId = (() => {
     const candidate = String(targetUrl.searchParams.get('config') || '').trim();
-    return PROTECTED_CONFIG_PROFILE_ID_RE.test(candidate) ? candidate : null;
+    return CONFIG_PROFILE_ID_RE.test(candidate) ? candidate : null;
   })();
   const sharedSettings: ConfiguratorLinkImportPatch = {};
   const typeSettings: Partial<Record<ConfiguratorPreviewType, ConfiguratorLinkImportPatch>> = {};

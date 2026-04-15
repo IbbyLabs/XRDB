@@ -71,6 +71,28 @@ test('parseConfiguratorLinkImport preserves protected config profile links', () 
   assert.equal(parsed.mediaId, 'tt0133093');
 });
 
+test('parseConfiguratorLinkImport preserves encrypted xrc config profile links', () => {
+  const parsed = parseConfiguratorLinkImport(
+    'https://xrdb.example.com/poster/tt0133093.jpg?config=xrc_a1b2c3d4e5f6a7b8',
+  );
+
+  assert.ok(parsed);
+  assert.equal(parsed.configProfileId, 'xrc_a1b2c3d4e5f6a7b8');
+  assert.equal(parsed.previewType, 'poster');
+  assert.equal(parsed.mediaId, 'tt0133093');
+});
+
+test('parseConfiguratorLinkImport preserves legacy xr config profile links', () => {
+  const parsed = parseConfiguratorLinkImport(
+    'https://xrdb.example.com/poster/tt0133093.jpg?config=xr_deadbeef',
+  );
+
+  assert.ok(parsed);
+  assert.equal(parsed.configProfileId, 'xr_deadbeef');
+  assert.equal(parsed.previewType, 'poster');
+  assert.equal(parsed.mediaId, 'tt0133093');
+});
+
 test('parseConfiguratorLinkImport rejects URLs without importable settings', () => {
   const parsed = parseConfiguratorLinkImport('https://xrdb.example.com/logo/tt0133093.jpg?foo=bar');
   assert.equal(parsed, null);
