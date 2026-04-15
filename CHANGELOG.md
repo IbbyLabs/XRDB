@@ -73,6 +73,51 @@
 
 <a id="v1-19-1"></a>
 
+<a id="v1-20-0"></a>
+
+## [v1.20.0] - 15/04/2026
+
+### Added
+* expand poster warm sources with TMDB multi endpoint, IMDb baseline, recent ring
+  
+  • TMDB: fetch 6 endpoints per pass (movie/popular p1+p2, movie/now_playing p1,
+    tv/popular p1+p2, tv/on_the_air p1) instead of 2; up to ~120 raw ids before cap
+  • MDBList: raise default limit from 100 to 200
+  • IMDb: new optional source reads local title.ratings.tsv.gz, sorts by vote count,
+    merges top N ids; no network required, falls back cleanly when file is absent
+  • Recent ring: bounded in memory ring buffer (default 500) records each inbound
+    poster request with its full search params (auth stripped); scheduler replays
+    exact request signatures so warm hits land in per config cache slots
+  • Wire recordRecentPosterRequest into imageRouteHandler for poster requests
+  • New env vars: XRDB_POSTER_WARM_IMDB_ENABLED/LIMIT, XRDB_POSTER_WARM_RECENT_ENABLED/LIMIT
+  • Update XRDB_POSTER_WARM_MDBLIST_LIMIT default in docs and env.template to 200
+  • 9 new tests covering TMDB 6 endpoint mapping, IMDb sort/cap/missing file,
+    ring dedup/eviction/auth strip/limit; all existing tests updated for new fields
+  • 834/834 tests pass, lint clean, build clean
+* FR-80 FR-55 speed up poster cold loads
+  
+  • default poster stream badges to off for new configs
+  
+  • add non blocking posterStreamBadges=auto behavior with deferred warming
+  
+  • add Torrentio timeout, fallback host, and proxy bypass controls
+  
+  • add scheduled poster cache warming with source parsing and overlap protection
+  
+  • enforce metadata cache pruning bounds and add stream warm observability
+  
+  • update docs, env template, and tests for new behavior
+
+### Fixed
+* track poster warm target seed file
+* include poster warm targets in docker build context
+
+### Documentation
+* refresh static doc assets
+
+### Other Changes
+* bake poster warm targets.txt into image
+
 ## [v1.19.1] - 15/04/2026
 
 ### Fixed
