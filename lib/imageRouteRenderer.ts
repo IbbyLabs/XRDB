@@ -1663,14 +1663,11 @@ export const renderWithSharp = async (
           badgeCount: posterSharedQualityBadges.length,
           availableHeight: input.outputHeight - input.badgeTopOffset - effectiveBadgeBottomOffset,
         });
+        const availableCenter =
+          (input.badgeTopOffset + input.outputHeight - effectiveBadgeBottomOffset) / 2;
         const centeredStartY = Math.max(
           posterTopContentStartY,
-          Math.round(
-            (
-              input.outputHeight -
-              qualityColumnLayout.totalHeight
-            ) / 2
-          )
+          Math.round(availableCenter - qualityColumnLayout.totalHeight / 2)
         );
         let qualityStartY = centeredStartY;
         const qualitySideBadges =
