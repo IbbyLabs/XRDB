@@ -71,6 +71,86 @@
 
 <a id="v1-19-0"></a>
 
+<a id="v1-19-1"></a>
+
+## [v1.19.1] - 15/04/2026
+
+### Fixed
+* BUG-97 apply stored episode config profile when thumbnail URL has no explicit badge params
+  
+  The /thumbnail/<id>/S01E01.jpg route is a thin wrapper that parses the
+  episode token into season and episode numbers, then constructs an internal
+  backdrop URL (/backdrop/<id>:<season>:<episode>.jpg?thumbnail=1) and
+  delegates rendering to the shared image handler.
+  
+  XRDB_EPISODE_CONFIG_PROFILE_ID is a server side env var intended to apply
+  a default config profile to all episode thumbnail requests, so Plex,
+  Jellyfin, and similar callers that send bare URLs with no query params
+  receive the operator configured badge and rating settings. The feature was
+  completely inert due to two separate gaps in the route:
+  
+  1. configId was read only from the ?config= search param of the incoming
+     URL. The env var was never consulted, so bare thumbnail URLs always
+     rendered with no profile applied.
+  
+  2. The route constructs a fresh internal URL for the backdrop handler. The
+     original search params are copied over but ?config= was never explicitly
+     set on the internal URL. Even if configId had been populated, the
+     backdrop renderer would have received no config param and skipped the
+     profile lookup entirely.
+  
+  Fix reads XRDB_EPISODE_CONFIG_PROFILE_ID as a fallback when no ?config=
+  is present on the incoming request. When configId resolves from the env
+  var rather than the caller URL, it is injected into the internal backdrop
+  URL as ?config= before forwarding. The guard on !requestUrl.searchParams
+  .has('config') ensures the env var is strictly a fallback: an explicit
+  ?config= from the caller always takes precedence.
+* BUG-98 fix quality badge column centering when clean genre badge reserves bottom space
+  
+  When a poster renders Pill Glass quality badges alongside a clean style
+  genre badge, the renderer reserves a block of space at the bottom of the
+  poster for the genre badge via cleanPosterReservedBottomHeight. That value
+  is folded into effectiveBadgeBottomOffset so layout bounds are correct
+  throughout the renderer.
+  
+  The quality badge column centering step did not use effectiveBadgeBottomOffset
+  as the lower boundary. Instead it divided the full output height by two,
+  treating the center of the entire image as the target midpoint. The result
+  was that the quality column drifted into the space reserved for the genre
+  badge and appeared off center relative to the usable area above it.
+  
+  The fix computes availableCenter as:
+    (badgeTopOffset + outputHeight, effectiveBadgeBottomOffset) / 2
+  
+  This bounds the center calculation to the region between the top badge
+  offset and the effective bottom offset, so the column centers correctly
+  within the available space regardless of how much bottom space the clean
+  genre badge reserves.
+* BUG-99 apply configured value color to ring score text across all accent modes
+  
+  aggregateValueColor was fully resolved in the display state pipeline but
+  was never passed to buildPosterCompactRingOverlay. The ring builder had
+  the score text fill hardcoded to #f8fafc regardless of what color was
+  configured. As a result, any value set via aggregateValueColor was silently
+  ignored whenever the compact ring presentation was active.
+  
+  The fix adds an optional valueColor param to buildPosterCompactRingOverlay
+  and threads it through to the SVG fill attribute using valueColor ?? '#f8fafc'
+  so the hardcoded default is preserved when no color is configured.
+  
+  On the display state side, compactRingValueColor is derived before the
+  ring builder call: when the primary badge is an aggregate kind, the color
+  follows the aggregate value color resolver; for provider badges, it falls
+  back to the aggregateValueColor input. This keeps behavior consistent
+  across all four accent modes (source, genre, custom, dynamic).
+  
+  Tests added for all four accent modes to confirm the configured color
+  appears in the rendered SVG and that the default white is preserved when
+  no color is set.
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.19.0] - 15/04/2026
 
 ### Added
