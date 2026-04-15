@@ -557,6 +557,10 @@ export const resolveImageRouteDisplayState = (input: {
           : compactRingPrimaryBadge?.kind === 'provider'
             ? compactRingPrimaryBadge.badge.accentColor
             : '#22c55e';
+  const compactRingValueColor =
+    compactRingPrimaryBadge?.kind === 'aggregate'
+      ? resolveAggregateValueColor(compactRingPrimaryBadge.source)
+      : aggregateValueColor || undefined;
   const compactRingOverlay =
     useCompactRingPresentation && compactRingPrimaryBadge
       ? buildPosterCompactRingOverlay({
@@ -567,6 +571,7 @@ export const resolveImageRouteDisplayState = (input: {
             (progressRingBadge || compactRingPrimaryBadge).normalizedValue * 10,
           ),
           accentColor: compactRingAccentColor,
+          valueColor: compactRingValueColor,
           badgeScalePercent: posterRatingBadgeScale,
         })
       : null;
