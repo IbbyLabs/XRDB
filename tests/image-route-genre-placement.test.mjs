@@ -125,3 +125,77 @@ test('image route clean genre placement avoids title collision across poster siz
     assert.equal(overlapsTitle, false, `${size.name} clean genre should not overlap title region`);
   }
 });
+
+test('image route clean genre placement remains near bottom under dense collisions', () => {
+  const outputWidth = 580;
+  const outputHeight = 859;
+  const overlay = resolveGenreBadgeOverlay({
+    genreBadge: {
+      ...baseGenreBadge,
+      style: 'clean',
+      mode: 'text',
+      position: 'topLeft',
+    },
+    imageType: 'poster',
+    outputWidth,
+    outputHeight,
+    badgeTopOffset: 24,
+    badgeBottomOffset: 24,
+    badgeGap: 10,
+    posterEdgeInset: 18,
+    collisionRects: [
+      { left: 30, top: 80, width: 520, height: 80 },
+      { left: 20, top: 190, width: 540, height: 92 },
+      { left: 22, top: 320, width: 536, height: 94 },
+      { left: 26, top: 452, width: 528, height: 88 },
+      { left: 36, top: 570, width: 508, height: 76 },
+    ],
+  });
+
+  assert.ok(overlay);
+  const minInset = Math.round(outputHeight * 0.013);
+  const anchoredBottomTop = outputHeight - overlay.height - minInset;
+  const maxAllowedRise = Math.max(
+    Math.round(outputHeight * 0.08),
+    overlay.height + Math.max(8, Math.round(10 * 0.9)) * 2,
+  );
+  assert.equal(overlay.top >= anchoredBottomTop - maxAllowedRise, true);
+  assert.equal(overlay.top < Math.round(outputHeight * 0.7), false);
+});
+
+test('image route genre placement in blockbuster mode respects selected position', () => {
+  const outputWidth = 580;
+  const outputHeight = 859;
+  const badgeTopOffset = 24;
+  const badgeBottomOffset = 24;
+
+  for (const position of ['topLeft', 'topCenter', 'topRight', 'bottomLeft', 'bottomCenter', 'bottomRight']) {
+    const overlay = resolveGenreBadgeOverlay({
+      genreBadge: {
+        ...baseGenreBadge,
+        style: 'glass',
+        mode: 'both',
+        position,
+      },
+      imageType: 'poster',
+      outputWidth,
+      outputHeight,
+      badgeTopOffset,
+      badgeBottomOffset,
+      badgeGap: 10,
+      posterEdgeInset: 18,
+      collisionRects: [],
+    });
+
+    assert.ok(overlay, `${position} should resolve`);
+
+    const isBottom = position.startsWith('bottom');
+    if (isBottom) {
+      assert.equal(overlay.top >= outputHeight - overlay.height - badgeBottomOffset - 2, true,
+        `${position}: badge top (${overlay.top}) should be near bottom offset`);
+    } else {
+      assert.equal(overlay.top <= badgeTopOffset + 2, true,
+        `${position}: badge top (${overlay.top}) should be at top offset (${badgeTopOffset})`);
+    }
+  }
+});

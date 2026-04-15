@@ -90,7 +90,13 @@ export const resolveGenreBadgeOverlay = ({
       ? 'up'
       : 'down';
   const collisionPadding = Math.max(8, Math.round(badgeGap * 0.9));
-  let adjustedTop = Math.max(minInset, Math.min(maxTop, initialTop));
+  const minTopBound = isBottomPriorityClean
+    ? Math.max(
+        minInset,
+        bottomInset - Math.max(Math.round(outputHeight * 0.08), spec.height + collisionPadding * 2)
+      )
+    : minInset;
+  let adjustedTop = Math.max(minTopBound, Math.min(maxTop, initialTop));
 
   for (let pass = 0; pass < collisionRects.length + 2; pass += 1) {
     let nextTop = adjustedTop;
@@ -107,7 +113,7 @@ export const resolveGenreBadgeOverlay = ({
           ? Math.min(nextTop, rect.top - spec.height - collisionPadding)
           : Math.max(nextTop, rect.top + rect.height + collisionPadding);
     }
-    const clampedNextTop = Math.max(minInset, Math.min(maxTop, nextTop));
+    const clampedNextTop = Math.max(minTopBound, Math.min(maxTop, nextTop));
     if (clampedNextTop === adjustedTop) break;
     adjustedTop = clampedNextTop;
   }

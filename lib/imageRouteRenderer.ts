@@ -1912,7 +1912,10 @@ export const renderWithSharp = async (
       badgeBottomOffset: input.badgeBottomOffset,
       badgeGap: input.badgeGap,
       posterEdgeInset,
-      collisionRects: genreCollisionRects,
+      collisionRects:
+        input.imageType === 'poster' && input.ratingPresentation === 'blockbuster'
+          ? []
+          : genreCollisionRects,
     });
     if (genreBadgeOverlay && input.genreBadge?.style === 'clean' && input.genreBadge.mode !== 'off') {
       const rawOpacity = Math.max(0, Math.min(100, input.genreBadge.backgroundOpacity ?? DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT)) / 100;
