@@ -50,6 +50,7 @@ const createBaseInput = () => ({
   hasConfirmedAnimeMapping: true,
   shouldApplyRatings: false,
   shouldApplyStreamBadges: false,
+  shouldBlockOnStreamBadges: false,
   shouldRenderLogoBackground: false,
   genreBadgeMode: DEFAULT_GENRE_BADGE_MODE,
   genreBadgeStyle: DEFAULT_GENRE_BADGE_STYLE,

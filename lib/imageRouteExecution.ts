@@ -171,6 +171,7 @@ export const executeImageRouteRender = async ({
         hasConfirmedAnimeMapping,
         shouldApplyRatings: requestState.shouldApplyRatings,
         shouldApplyStreamBadges: requestState.shouldApplyStreamBadges,
+        shouldBlockOnStreamBadges: requestState.shouldBlockOnStreamBadges,
         shouldRenderLogoBackground: requestState.shouldRenderLogoBackground,
         genreBadgeMode: requestState.genreBadgeMode,
         genreBadgeStyle: requestState.genreBadgeStyle,
@@ -227,6 +228,7 @@ export const executeImageRouteRender = async ({
         certificationBadgeLabel,
         streamBadges: preparedStreamBadges,
         streamBadgesCacheTtlMs,
+        streamBadgesDeferred,
         posterTitleText,
         posterLogoUrl,
         shouldRenderBadges,
@@ -468,7 +470,7 @@ export const executeImageRouteRender = async ({
         }
       }
 
-      if (requestState.shouldCacheFinalImage && !requestState.configMigrationDeadline) {
+      if (requestState.shouldCacheFinalImage && !requestState.configMigrationDeadline && !streamBadgesDeferred) {
         try {
           await putCachedImageToObjectStorage(finalObjectStorageKey, finalPayload);
         } catch {

@@ -323,6 +323,7 @@ export type ImageRouteRequestState = {
   hasExplicitRatingOrder: boolean;
   shouldApplyRatings: boolean;
   shouldApplyStreamBadges: boolean;
+  shouldBlockOnStreamBadges: boolean;
   shouldRenderLogoBackground: boolean;
   shouldCacheFinalImage: boolean;
   posterImageSize: PosterImageSize;
@@ -344,12 +345,16 @@ export type ImageRouteRequestState = {
   configMigrationDeadline: number | null;
 };
 
+export type ImageRouteRequestInput = Pick<NextRequest, 'headers'> & {
+  nextUrl: Pick<NextRequest['nextUrl'], 'searchParams'>;
+};
+
 export const resolveImageRouteRequestState = async ({
   request,
   imageType,
   id,
 }: {
-  request: NextRequest;
+  request: ImageRouteRequestInput;
   imageType: ImageType;
   id: string;
 }): Promise<ImageRouteRequestState> => {
@@ -919,8 +924,9 @@ export const resolveImageRouteRequestState = async ({
   const sideRatingsOffset =
     imageType === 'backdrop' ? effectiveBackdropSideRatingsOffset : posterSideRatingsOffset;
   const globalStreamBadgesSetting = normalizeStreamBadgesSetting(searchParams.get('streamBadges'));
+  const posterStreamBadgesParam = searchParams.get('posterStreamBadges') || searchParams.get('streamBadges');
   const posterStreamBadgesSetting = normalizeStreamBadgesSetting(
-    searchParams.get('posterStreamBadges') || searchParams.get('streamBadges'),
+    posterStreamBadgesParam ?? 'off',
   );
   const backdropStreamBadgesSetting = normalizeStreamBadgesSetting(
     searchParams.get('backdropStreamBadges') || searchParams.get('streamBadges'),
@@ -1302,6 +1308,8 @@ export const resolveImageRouteRequestState = async ({
     imageType !== 'logo' &&
     (streamBadgesSetting === 'on' || streamBadgesSetting === 'auto') &&
     !hasNativeAnimeInput;
+  const shouldBlockOnStreamBadges =
+    shouldApplyStreamBadges && (imageType !== 'poster' || streamBadgesSetting === 'on');
   const posterUsesFanartArtwork = FANART_ARTWORK_SOURCE_SET.has(posterArtworkSource);
   const effectiveBackdropArtworkSource = isThumbnailRequest
     ? thumbnailArtworkSource
@@ -1570,6 +1578,7 @@ export const resolveImageRouteRequestState = async ({
     hasExplicitRatingOrder,
     shouldApplyRatings,
     shouldApplyStreamBadges,
+    shouldBlockOnStreamBadges,
     shouldRenderLogoBackground,
     shouldCacheFinalImage,
     posterImageSize,

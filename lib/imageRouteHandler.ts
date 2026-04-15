@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 
 import { scheduleImdbDatasetSync } from '@/lib/imdbDatasetScheduler';
+import { schedulePosterCacheWarm } from '@/lib/posterCacheWarmScheduler';
 import {
   XRDB_REQUEST_KEY_ERROR_MESSAGE,
   isXrdbRequestAuthorized,
@@ -70,6 +71,7 @@ export async function handleImageRequest(
     `[XRDB] image request: /${type}/${id} streamBadges=${request.nextUrl.searchParams.get('posterStreamBadges') ?? request.nextUrl.searchParams.get('streamBadges') ?? 'none'}`,
   );
   scheduleImdbDatasetSync();
+  schedulePosterCacheWarm();
 
   try {
     const requestState = await resolveImageRouteRequestState({

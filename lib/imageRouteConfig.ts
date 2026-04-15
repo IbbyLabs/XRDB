@@ -1,4 +1,4 @@
-import { ProxyAgent } from 'undici';
+import { ProxyAgent, type Dispatcher } from 'undici';
 import type { RatingPreference } from './ratingProviderCatalog.ts';
 import type { BackdropRatingLayout } from './backdropLayoutOptions.ts';
 import type { PosterRatingLayout } from './posterLayoutOptions.ts';
@@ -472,14 +472,31 @@ export const TORRENTIO_CONCURRENCY = (() => {
   if (!Number.isFinite(rawValue) || rawValue <= 0) return 2;
   return Math.max(1, Math.min(4, Math.floor(rawValue)));
 })();
+export const TORRENTIO_TIMEOUT_MS = parseCacheTtlMs(
+  process.env.XRDB_TORRENTIO_TIMEOUT_MS,
+  4 * 1000,
+  500,
+  10 * 1000,
+);
+export const TORRENTIO_DIRECT_CANDIDATE_BASE_URL = resolveTorrentioBaseUrl(
+  process.env.XRDB_TORRENTIO_DIRECT_CANDIDATE_BASE_URL,
+  'https://torrentio.stremio.ru',
+);
 export const TORRENTIO_BASE_URL = resolveTorrentioBaseUrl(process.env.XRDB_TORRENTIO_BASE_URL);
+export const TORRENTIO_FALLBACK_BASE_URL = resolveTorrentioBaseUrl(
+  process.env.XRDB_TORRENTIO_FALLBACK_BASE_URL,
+  TORRENTIO_DIRECT_CANDIDATE_BASE_URL ?? undefined,
+);
 export const TORRENTIO_PROXY_URL =
   process.env.HTTPS_PROXY ||
   process.env.HTTP_PROXY ||
   process.env.https_proxy ||
   process.env.http_proxy ||
   null;
-export const TORRENTIO_DISPATCHER = TORRENTIO_PROXY_URL ? new ProxyAgent(TORRENTIO_PROXY_URL) : undefined;
+export const TORRENTIO_BYPASS_PROXY =
+  normalizeBooleanSearchFlag(process.env.XRDB_TORRENTIO_BYPASS_PROXY) === true;
+export const TORRENTIO_DISPATCHER: Dispatcher | undefined =
+  TORRENTIO_PROXY_URL && !TORRENTIO_BYPASS_PROXY ? new ProxyAgent(TORRENTIO_PROXY_URL) : undefined;
 export const PROVIDER_ICON_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.XRDB_PROVIDER_ICON_CACHE_TTL_MS,
   7 * 24 * 60 * 60 * 1000,

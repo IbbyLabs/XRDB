@@ -511,7 +511,7 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   backdropRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
   thumbnailRatingPreferences: filterThumbnailRatingPreferences(DEFAULT_RATING_PREFERENCES),
   logoRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
-  posterStreamBadges: 'auto',
+  posterStreamBadges: 'off',
   backdropStreamBadges: 'auto',
   thumbnailStreamBadges: 'auto',
   qualityBadgesSide: 'left',
@@ -1764,6 +1764,7 @@ const appendSharedOrPerTypePayload = <Value extends string | number | boolean>(o
 };
 
 const buildSharedPayload = (settings: SharedXrdbSettings, options?: SharedPayloadOptions) => {
+  const defaultSettings = createDefaultSharedXrdbSettings();
   const xrdbKey = settings.xrdbKey.trim();
   const tmdbKey = settings.tmdbKey.trim();
   const mdblistKey = settings.mdblistKey.trim();
@@ -1968,13 +1969,13 @@ const buildSharedPayload = (settings: SharedXrdbSettings, options?: SharedPayloa
   if (settings.thumbnailGenreBadgeAnimeGrouping !== DEFAULT_GENRE_BADGE_ANIME_GROUPING) {
     payload.thumbnailGenreBadgeAnimeGrouping = settings.thumbnailGenreBadgeAnimeGrouping;
   }
-  if (settings.posterStreamBadges !== 'auto') {
+  if (settings.posterStreamBadges !== defaultSettings.posterStreamBadges) {
     payload.posterStreamBadges = settings.posterStreamBadges;
   }
-  if (settings.backdropStreamBadges !== 'auto') {
+  if (settings.backdropStreamBadges !== defaultSettings.backdropStreamBadges) {
     payload.backdropStreamBadges = settings.backdropStreamBadges;
   }
-  if (settings.thumbnailStreamBadges !== 'auto') {
+  if (settings.thumbnailStreamBadges !== defaultSettings.thumbnailStreamBadges) {
     payload.thumbnailStreamBadges = settings.thumbnailStreamBadges;
   }
   if (settings.posterRatingsLayout === 'top-bottom' && settings.qualityBadgesSide !== 'left') {

@@ -1,4 +1,5 @@
 import { getDb, ensureDbInitialized } from './sqliteStore.ts';
+import { METADATA_CACHE_MAX_ENTRIES } from './imageRouteConfig.ts';
 
 type MetadataRow = {
   value: string;
@@ -6,6 +7,7 @@ type MetadataRow = {
 };
 
 const EXPIRED_PRUNE_SAMPLE_RATE = 0.05;
+const OLDEST_PRUNE_SAMPLE_RATE = 0.02;
 
 const readMetadataRow = (key: string) => {
   const db = getDb();
@@ -52,6 +54,9 @@ export const setMetadata = (key: string, value: any, ttlMs: number) => {
 
   if (Math.random() < EXPIRED_PRUNE_SAMPLE_RATE) {
     pruneExpiredMetadata();
+  }
+  if (Math.random() < OLDEST_PRUNE_SAMPLE_RATE) {
+    pruneOldestMetadata(METADATA_CACHE_MAX_ENTRIES);
   }
 };
 
