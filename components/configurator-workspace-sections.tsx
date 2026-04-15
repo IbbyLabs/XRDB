@@ -41,7 +41,11 @@ import {
   getSliderValueLabel,
   snapSliderValueToDefault,
 } from '@/lib/configuratorSliderDefaults';
-import { GENRE_BADGE_MODE_OPTIONS, type GenreBadgeMode } from '@/lib/genreBadge';
+import {
+  GENRE_BADGE_MODE_OPTIONS,
+  type GenreBadgeMode,
+  type GenreBadgeStyle,
+} from '@/lib/genreBadge';
 import { type RemuxDisplayMode } from '@/lib/mediaFeatures';
 import { POSTER_RATINGS_MAX_PER_SIDE_MIN } from '@/lib/posterLayoutOptions';
 import { RATING_PROVIDER_OPTIONS, type RatingPreference } from '@/lib/ratingProviderCatalog';
@@ -964,6 +968,7 @@ export function SimpleQuickTuneSection({
   logoArtworkSource,
   activeArtworkSource,
   activeGenreBadgeMode,
+  activeGenreBadgeStyle,
   activeStreamBadges,
   streamBadgeOptions,
   onSelectRatingPresentation,
@@ -997,6 +1002,7 @@ export function SimpleQuickTuneSection({
   logoArtworkSource: ArtworkSource;
   activeArtworkSource: ArtworkSource;
   activeGenreBadgeMode: GenreBadgeMode;
+  activeGenreBadgeStyle: GenreBadgeStyle;
   activeStreamBadges: StreamBadgesSetting;
   streamBadgeOptions: Array<SelectionOption<StreamBadgesSetting>>;
   onSelectRatingPresentation: (value: RatingPresentation) => void;
@@ -1014,6 +1020,15 @@ export function SimpleQuickTuneSection({
   onSelectGenreBadgeMode: (value: GenreBadgeMode) => void;
   onSelectStreamBadges: (value: StreamBadgesSetting) => void;
 }) {
+  const cleanGenreStyleActive = activeGenreBadgeStyle === 'clean';
+  const resolvedActiveGenreBadgeMode =
+    cleanGenreStyleActive && activeGenreBadgeMode !== 'off' ? 'text' : activeGenreBadgeMode;
+  const genreModeOptions = cleanGenreStyleActive
+    ? GENRE_BADGE_MODE_OPTIONS.filter((option) => option.id === 'off' || option.id === 'text')
+    : GENRE_BADGE_MODE_OPTIONS.filter((option) =>
+        option.id === 'off' || option.id === 'text' || option.id === 'both',
+      );
+
   return (
     <div className="space-y-4">
       <div>
@@ -1198,15 +1213,17 @@ export function SimpleQuickTuneSection({
             Genre Badge
           </div>
           <div className="mt-2 flex flex-wrap gap-1">
-            {GENRE_BADGE_MODE_OPTIONS.filter((option) =>
-              option.id === 'off' || option.id === 'text' || option.id === 'both',
-            ).map((option) => (
+            {genreModeOptions.map((option) => (
               <button
                 key={`simple-genre-${option.id}`}
                 type="button"
-                onClick={() => onSelectGenreBadgeMode(option.id)}
+                onClick={() =>
+                  onSelectGenreBadgeMode(
+                    cleanGenreStyleActive && option.id !== 'off' ? 'text' : option.id,
+                  )
+                }
                 className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
-                  activeGenreBadgeMode === option.id
+                  resolvedActiveGenreBadgeMode === option.id
                     ? 'border-violet-500/60 bg-violet-500/12 text-white'
                     : 'border-white/10 bg-black text-zinc-400 hover:border-white/20 hover:text-white'
                 }`}

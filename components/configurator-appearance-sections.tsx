@@ -1005,6 +1005,31 @@ export function LookSection({
         : normalizeBadgeScalePercent(String(value)),
     );
   };
+  const cleanGenreStyleActive = activeGenreBadgeStyle === 'clean';
+  const resolvedActiveGenreBadgeMode =
+    cleanGenreStyleActive && activeGenreBadgeMode !== 'off' ? 'text' : activeGenreBadgeMode;
+  const availableGenreModeOptions = cleanGenreStyleActive
+    ? GENRE_BADGE_MODE_OPTIONS.filter((option) => option.id === 'off' || option.id === 'text')
+    : GENRE_BADGE_MODE_OPTIONS;
+  const handleGenreBadgeModeSelect = (value: GenreBadgeMode) => {
+    if (cleanGenreStyleActive && value !== 'off') {
+      onSelectGenreBadgeMode('text');
+      return;
+    }
+    onSelectGenreBadgeMode(value);
+  };
+  const handleGenreBadgeStyleSelect = (value: GenreBadgeStyle) => {
+    onSelectGenreBadgeStyle(value);
+    if (value !== 'clean') {
+      return;
+    }
+    if (activeGenreBadgeMode !== 'off') {
+      onSelectGenreBadgeMode('text');
+    }
+    if (activeGenreBadgePosition !== 'bottomCenter') {
+      onSelectGenreBadgePosition('bottomCenter');
+    }
+  };
 
   return (
     <>
@@ -1111,12 +1136,12 @@ export function LookSection({
           <div className={settingsCardClass}>
             <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge</span>
             <div className={selectorGroupClass}>
-              {GENRE_BADGE_MODE_OPTIONS.map((option) => (
+              {availableGenreModeOptions.map((option) => (
                 <button
                   key={option.id}
                   type="button"
-                  onClick={() => onSelectGenreBadgeMode(option.id)}
-                  className={selectorButtonClass(activeGenreBadgeMode === option.id)}
+                  onClick={() => handleGenreBadgeModeSelect(option.id)}
+                  className={selectorButtonClass(resolvedActiveGenreBadgeMode === option.id)}
                   title={option.description}
                 >
                   {option.label}
@@ -1131,7 +1156,7 @@ export function LookSection({
                 <button
                   key={option.id}
                   type="button"
-                  onClick={() => onSelectGenreBadgeStyle(option.id)}
+                  onClick={() => handleGenreBadgeStyleSelect(option.id)}
                   className={selectorButtonClass(activeGenreBadgeStyle === option.id)}
                   title={option.description}
                 >
@@ -1140,22 +1165,24 @@ export function LookSection({
               ))}
             </div>
           </div>
-          <div className={settingsCardClass}>
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge Position</span>
-            <div className={selectorGroupClass}>
-              {GENRE_BADGE_POSITION_OPTIONS.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => onSelectGenreBadgePosition(option.id)}
-                  className={selectorButtonClass(activeGenreBadgePosition === option.id)}
-                  title={option.description}
-                >
-                  {option.label}
-                </button>
-              ))}
+          {!cleanGenreStyleActive ? (
+            <div className={settingsCardClass}>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge Position</span>
+              <div className={selectorGroupClass}>
+                {GENRE_BADGE_POSITION_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => onSelectGenreBadgePosition(option.id)}
+                    className={selectorButtonClass(activeGenreBadgePosition === option.id)}
+                    title={option.description}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : null}
           <div className={settingsCardClass}>
             <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Anime Grouping</span>
             <div className={selectorGroupClass}>
@@ -1872,14 +1899,16 @@ export function LookSection({
               max={ratingBadgeScaleMax}
               onChange={handleRatingBadgeScaleChange}
             />
-            <ScaleField
-              label="Genre badge"
-              value={activeGenreBadgeScale}
-              defaultValue={DEFAULT_BADGE_SCALE_PERCENT}
-              min={MIN_BADGE_SCALE_PERCENT}
-              max={MAX_GENRE_BADGE_SCALE_PERCENT}
-              onChange={(value) => onSelectGenreBadgeScale(normalizeGenreBadgeScalePercent(String(value)))}
-            />
+            {!cleanGenreStyleActive ? (
+              <ScaleField
+                label="Genre badge"
+                value={activeGenreBadgeScale}
+                defaultValue={DEFAULT_BADGE_SCALE_PERCENT}
+                min={MIN_BADGE_SCALE_PERCENT}
+                max={MAX_GENRE_BADGE_SCALE_PERCENT}
+                onChange={(value) => onSelectGenreBadgeScale(normalizeGenreBadgeScalePercent(String(value)))}
+              />
+            ) : null}
             {activeGenreBadgeStyle === 'glass' ? (
               <ScaleField
                 label="Genre border"

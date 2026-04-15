@@ -429,6 +429,7 @@ export function buildConfiguratorPageProps({
         logoArtworkSource: workspaceState.logoArtworkSource,
         activeArtworkSource: workspaceSummary.activeArtworkSource,
         activeGenreBadgeMode: activeWorkspaceSettings.activeGenreBadgeMode,
+        activeGenreBadgeStyle: activeWorkspaceSettings.activeGenreBadgeStyle,
         activeStreamBadges: activeWorkspaceSettings.activeStreamBadges,
         streamBadgeOptions: STREAM_BADGE_OPTIONS,
         onSelectRatingPresentation: workspaceSummary.setRatingPresentationForType,
