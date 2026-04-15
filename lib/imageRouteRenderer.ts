@@ -1916,6 +1916,7 @@ export const renderWithSharp = async (
     });
     if (genreBadgeOverlay && input.genreBadge?.style === 'clean' && input.genreBadge.mode !== 'off') {
       const rawOpacity = Math.max(0, Math.min(100, input.genreBadge.backgroundOpacity ?? DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT)) / 100;
+      if (rawOpacity !== 0) {
       const scrimMaxOpacity = Math.min(0.99, 0.8 + rawOpacity * 0.25).toFixed(2);
       const scrimMidOpacity = Math.min(0.96, Number(scrimMaxOpacity) * 0.9).toFixed(2);
       const scrimWidth = input.outputWidth;
@@ -1926,6 +1927,7 @@ export const renderWithSharp = async (
       const scrimHeight = Math.max(1, input.outputHeight - scrimTop);
       const scrimSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${scrimWidth}" height="${scrimHeight}"><defs><linearGradient id="cleanBotScrim" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="68%" stop-color="rgba(0,0,0,${scrimMidOpacity})"/><stop offset="100%" stop-color="rgba(0,0,0,${scrimMaxOpacity})"/></linearGradient></defs><rect width="${scrimWidth}" height="${scrimHeight}" fill="url(#cleanBotScrim)"/></svg>`;
       overlays.push({ input: Buffer.from(scrimSvg), top: scrimTop, left: scrimLeft });
+      }
     }
     if (genreBadgeOverlay) {
       overlays.push({
