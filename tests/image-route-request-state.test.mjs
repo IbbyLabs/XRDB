@@ -9,6 +9,11 @@ import { NextRequest } from 'next/server.js';
 import { createProtectedConfigProfile } from '../lib/dbCore.ts';
 import { resolveImageRouteRequestState } from '../lib/imageRouteRequestState.ts';
 import { HttpError } from '../lib/imageRouteRuntime.ts';
+import {
+  buildAiometadataUrlPatterns,
+  buildProfileParams,
+  createDefaultSavedUiConfig,
+} from '../lib/uiConfig.ts';
 
 const createRequest = (url, headers = {}) =>
   new NextRequest(url, {
@@ -57,6 +62,126 @@ test('image route request state resolves UUID-backed config profiles at runtime'
 
     assert.deepEqual(state.effectiveRatingPreferences, ['imdb', 'tmdb']);
     assert.equal(state.configMigrationDeadline, null);
+  });
+});
+
+test('image route request state keeps explicit URL params over saved profile params', async (t) => {
+  await withTempDataDir(t, async () => {
+    const configId = createProtectedConfigProfile(
+      {
+        tmdbKey: 'tmdb-key',
+        posterRatingStyle: 'plain',
+      },
+      'password-hash',
+    );
+
+    const state = await resolveImageRouteRequestState({
+      request: createRequest(
+        `https://example.com/poster/tt0133093.jpg?config=${configId}&ratingStyle=square`,
+      ),
+      imageType: 'poster',
+      id: 'tt0133093.jpg',
+    });
+
+    assert.equal(state.ratingStyle, 'square');
+  });
+});
+
+test('image route request state resolves generated inline and config URLs with parity', async (t) => {
+  await withTempDataDir(t, async () => {
+    const config = createDefaultSavedUiConfig();
+    config.settings.tmdbKey = 'tmdb-key';
+    config.settings.mdblistKey = 'mdblist-key';
+    config.settings.posterRatings = ['imdb', 'tmdb'];
+    config.settings.backdropRatings = ['tmdb'];
+    config.settings.logoRatings = ['tmdb'];
+    config.settings.thumbnailRatings = ['tmdb', 'imdb'];
+    config.settings.posterRatingStyle = 'glass';
+    config.settings.backdropRatingStyle = 'square';
+    config.settings.logoRatingStyle = 'plain';
+    config.settings.thumbnailRatingStyle = 'glass';
+
+    const inlinePatterns = buildAiometadataUrlPatterns('https://example.com/', config.settings, {
+      hideCredentials: false,
+    });
+    assert.ok(inlinePatterns);
+
+    const profileParams = buildProfileParams(config.settings);
+    assert.ok(profileParams);
+    const configId = createProtectedConfigProfile(profileParams, 'password-hash');
+
+    const posterInline = inlinePatterns.posterUrlPattern
+      .replace('{type}', 'movie')
+      .replace('{tmdb_id}', '603');
+    const backdropInline = inlinePatterns.backgroundUrlPattern
+      .replace('{type}', 'tv')
+      .replace('{tmdb_id}', '1399');
+    const logoInline = inlinePatterns.logoUrlPattern
+      .replace('{type}', 'movie')
+      .replace('{tmdb_id}', '603');
+    const thumbnailInline = inlinePatterns.episodeThumbnailUrlPattern
+      .replace('{imdb_id}', 'tt0944947')
+      .replace('{season}', '1')
+      .replace('{episode}', '1');
+
+    const posterConfig = posterInline.replace(/\?.*$/, `?config=${configId}`);
+    const backdropConfig = backdropInline.replace(/\?.*$/, `?config=${configId}`);
+    const logoConfig = logoInline.replace(/\?.*$/, `?config=${configId}`);
+    const thumbnailConfig = thumbnailInline.replace(/\?.*$/, `?config=${configId}`);
+
+    const posterInlineState = await resolveImageRouteRequestState({
+      request: createRequest(posterInline),
+      imageType: 'poster',
+      id: 'tmdb:movie:603.jpg',
+    });
+    const posterConfigState = await resolveImageRouteRequestState({
+      request: createRequest(posterConfig),
+      imageType: 'poster',
+      id: 'tmdb:movie:603.jpg',
+    });
+    assert.deepEqual(posterConfigState.effectiveRatingPreferences, posterInlineState.effectiveRatingPreferences);
+
+    const backdropInlineState = await resolveImageRouteRequestState({
+      request: createRequest(backdropInline),
+      imageType: 'backdrop',
+      id: 'tmdb:tv:1399.jpg',
+    });
+    const backdropConfigState = await resolveImageRouteRequestState({
+      request: createRequest(backdropConfig),
+      imageType: 'backdrop',
+      id: 'tmdb:tv:1399.jpg',
+    });
+    assert.deepEqual(
+      backdropConfigState.effectiveRatingPreferences,
+      backdropInlineState.effectiveRatingPreferences,
+    );
+
+    const logoInlineState = await resolveImageRouteRequestState({
+      request: createRequest(logoInline),
+      imageType: 'logo',
+      id: 'tmdb:movie:603.png',
+    });
+    const logoConfigState = await resolveImageRouteRequestState({
+      request: createRequest(logoConfig),
+      imageType: 'logo',
+      id: 'tmdb:movie:603.png',
+    });
+    assert.deepEqual(logoConfigState.effectiveRatingPreferences, logoInlineState.effectiveRatingPreferences);
+
+    const thumbnailInlineState = await resolveImageRouteRequestState({
+      request: createRequest(`${thumbnailInline}&thumbnail=1`),
+      imageType: 'backdrop',
+      id: 'tt0944947.jpg',
+    });
+    const thumbnailConfigState = await resolveImageRouteRequestState({
+      request: createRequest(`${thumbnailConfig}&thumbnail=1`),
+      imageType: 'backdrop',
+      id: 'tt0944947.jpg',
+    });
+    assert.deepEqual(
+      thumbnailConfigState.effectiveRatingPreferences,
+      thumbnailInlineState.effectiveRatingPreferences,
+    );
   });
 });
 
