@@ -109,6 +109,7 @@ export type PreparedImageRouteMediaState = {
   posterTitleText: string | null;
   posterLogoUrl: string | null;
   providerRatingsEnabled: boolean;
+  transientProviderFailureTtlMs: number | null;
   shouldRenderBadges: boolean;
 };
 
@@ -314,6 +315,7 @@ let releaseStatusBadge: RatingBadge | null = null;
 let streamBadgesDeferred = false;
 let bundledWatchProviderResults: unknown = null;
 let movieHasPhysicalMediaRelease: boolean | null = null;
+let transientProviderFailureTtlMs: number | null = null;
 const requestedExternalRatings = new Set([...selectedRatings]);
 const shouldAttemptAnimeMapping = hasNativeAnimeInput || mediaLooksAnimated;
 const needsExternalRatings = [...requestedExternalRatings].some((provider) => provider !== 'tmdb');
@@ -811,6 +813,7 @@ if (providerRatingsPromise) {
   providerRatings = providerRatingResult.ratings;
   allowAnimeOnlyRatings = providerRatingResult.allowAnimeOnlyRatings;
   hasConfirmedAnimeMapping = providerRatingResult.hasConfirmedAnimeMapping;
+  transientProviderFailureTtlMs = providerRatingResult.transientProviderFailureTtlMs;
   primaryGenreFamily = resolvePrimaryGenreFamily(resolvedGenres, resolvedGenreIds);
   genreBadge = buildResolvedGenreBadge(primaryGenreFamily);
 }
@@ -896,6 +899,7 @@ if (shouldRenderRawKitsuFallbackRating) {
     posterTitleText,
     posterLogoUrl,
     providerRatingsEnabled: providerRatingsPromise !== null,
+    transientProviderFailureTtlMs,
     shouldRenderBadges,
   };
 };

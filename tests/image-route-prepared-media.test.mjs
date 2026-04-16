@@ -111,6 +111,80 @@ test('prepared media state does not apply branding overlay when textless prefere
   assert.equal(state.posterLogoUrl, null);
 });
 
+test('prepared media state carries transient provider failure ttl from provider resolution', async () => {
+  const state = await prepareImageRouteMediaState(
+    {
+      ...createBaseInput(),
+      imageType: 'poster',
+      mediaType: 'movie',
+      media: {
+        id: 603,
+        title: 'The Matrix',
+        release_date: '1999-03-31',
+        genres: [],
+      },
+      mediaId: '603',
+      isTmdb: true,
+      isKitsu: false,
+      idPrefix: 'tmdb',
+      hasNativeAnimeInput: false,
+      allowAnimeOnlyRatings: false,
+      hasConfirmedAnimeMapping: false,
+      selectedRatings: new Set(['mdblist']),
+      shouldApplyRatings: true,
+      mdblistKey: 'manual-key',
+      useRawKitsuFallback: false,
+      rawFallbackImageUrl: null,
+      sourceFallbackUrl: 'https://images.example.com/poster.jpg',
+      fetchJsonCached: async (key) => {
+        if (key.includes(':details:en:bundle:v2:')) {
+          return {
+            ok: true,
+            status: 200,
+            data: {
+              vote_average: 7.8,
+              genres: [],
+              images: {
+                posters: [],
+                backdrops: [],
+                logos: [],
+              },
+              external_ids: {
+                imdb_id: 'tt0133093',
+              },
+            },
+          };
+        }
+
+        if (key.endsWith(':images:all')) {
+          return {
+            ok: true,
+            status: 200,
+            data: {
+              posters: [],
+              backdrops: [],
+              logos: [],
+            },
+          };
+        }
+
+        throw new Error(`unexpected fetch for ${key}`);
+      },
+    },
+    {
+      resolveImageRouteProviderRatings: async () => ({
+        ratings: new Map(),
+        allowAnimeOnlyRatings: false,
+        hasConfirmedAnimeMapping: false,
+        transientProviderFailureTtlMs: 120_000,
+      }),
+    },
+  );
+
+  assert.equal(state.providerRatingsEnabled, true);
+  assert.equal(state.transientProviderFailureTtlMs, 120_000);
+});
+
 test('prepared media state applies requested backdrop image size', async () => {
   const state = await prepareImageRouteMediaState({
     ...createBaseInput(),

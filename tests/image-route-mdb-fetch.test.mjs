@@ -16,7 +16,7 @@ test('image route MDB fetch returns normalized ratings from a successful respons
   const phases = createPhases();
   const calls = [];
 
-  const ratings = await fetchMdbListRatings({
+  const result = await fetchMdbListRatings({
     imdbId: 'tt0944947',
     mediaType: 'tv',
     cacheTtlMs: 60_000,
@@ -41,15 +41,16 @@ test('image route MDB fetch returns normalized ratings from a successful respons
 
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, 'https://api.mdblist.com/imdb/show/tt0944947?apikey=demo');
-  assert.equal(ratings.get('tmdb'), '8.3');
-  assert.equal(ratings.get('imdb'), '9.2');
+  assert.equal(result.transientFailureTtlMs, null);
+  assert.equal(result.ratings.get('tmdb'), '8.3');
+  assert.equal(result.ratings.get('imdb'), '9.2');
 });
 
 test('image route MDB fetch returns null when the request fails', async () => {
   const phases = createPhases();
   const calls = [];
 
-  const ratings = await fetchMdbListRatings({
+  const result = await fetchMdbListRatings({
     imdbId: 'tt0111161',
     mediaType: 'movie',
     cacheTtlMs: 60_000,
@@ -68,7 +69,26 @@ test('image route MDB fetch returns null when the request fails', async () => {
     cleanId: undefined,
   });
 
-  assert.equal(ratings, null);
+  assert.equal(result.ratings, null);
+  assert.equal(result.transientFailureTtlMs, 60_000);
   assert.equal(calls.length, 1);
   assert.equal(calls[0].url, 'https://api.mdblist.com/imdb/movie/tt0111161?apikey=demo');
+});
+
+test('image route MDB fetch does not shorten cache ttl for non-retryable failures', async () => {
+  const result = await fetchMdbListRatings({
+    imdbId: 'tt0111161',
+    mediaType: 'movie',
+    cacheTtlMs: 60_000,
+    phases: createPhases(),
+    manualApiKey: 'demo',
+    fetchJsonCached: async () => ({
+      ok: false,
+      status: 404,
+      data: null,
+    }),
+  });
+
+  assert.equal(result.ratings, null);
+  assert.equal(result.transientFailureTtlMs, null);
 });

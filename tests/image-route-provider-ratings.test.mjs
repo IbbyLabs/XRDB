@@ -428,6 +428,68 @@ test('image route provider ratings fallback to server MDBList keys when manual k
   assert.ok(renderedRatingTtlByProvider.has('tomatoes'));
 });
 
+test('image route provider ratings surface transient MDBList failures for cache shortening', async () => {
+  const result = await resolveImageRouteProviderRatings(
+    {
+      cleanId: 'tt1375666',
+      imageType: 'poster',
+      mediaType: 'movie',
+      media: {
+        id: 27205,
+        imdb_id: 'tt1375666',
+        release_date: '2010-07-16',
+      },
+      mediaId: 'tt1375666',
+      isTmdb: false,
+      isKitsu: false,
+      isAniListInput: false,
+      idPrefix: 'imdb',
+      season: null,
+      episode: null,
+      mappedImdbId: null,
+      inputAnimeMappingProvider: null,
+      inputAnimeMappingExternalId: null,
+      requestedExternalRatings: new Set(['mdblist', 'tomatoes']),
+      shouldAttemptAnimeMapping: false,
+      initialAllowAnimeOnlyRatings: false,
+      initialHasConfirmedAnimeMapping: false,
+      resolvedRatingMediaType: 'movie',
+      releaseDate: '2010-07-16',
+      mdblistKey: 'manual-key',
+      hasMdbListApiKey: false,
+      simklClientId: '',
+      phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+      fetchJsonCached: async () => createEmptyResponse(),
+      getMetadata: () => null,
+      setMetadata: () => {},
+      detailsBundlePromise: null,
+      renderedRatingTtlByProvider: new Map(),
+      undiciFetchImpl: async () => {
+        throw new Error('unexpected undici fetch');
+      },
+    },
+    {
+      fetchAniListRating: async () => null,
+      fetchKitsuRating: async () => null,
+      fetchMyAnimeListRating: async () => null,
+      fetchTraktRating: async () => null,
+      fetchSimklRating: async () => null,
+      fetchMdbListRatings: async () => ({
+        ratings: null,
+        transientFailureTtlMs: 120_000,
+      }),
+      getImdbRatingFromDataset: () => null,
+      normalizeRatingValue: (value) => {
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? numeric.toFixed(1) : null;
+      },
+    },
+  );
+
+  assert.equal(result.ratings.size, 0);
+  assert.equal(result.transientProviderFailureTtlMs, 120_000);
+});
+
 test('image route provider ratings resolve Allociné audience and press values from title lookups', async () => {
   const renderedRatingTtlByProvider = new Map();
 

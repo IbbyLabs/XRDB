@@ -7,6 +7,11 @@ import {
 } from './imageRouteMdbList.ts';
 import type { CachedJsonResponse, PhaseDurations } from './imageRouteRuntime.ts';
 
+export type MdbListRatingsFetchResult = {
+  ratings: ReturnType<typeof collectMDBListRatings> | null;
+  transientFailureTtlMs: number | null;
+};
+
 type MdbFetchJson = (
   key: string,
   url: string,
@@ -43,8 +48,15 @@ export const fetchMdbListRatings = async ({
   const normalizedImdbId = String(imdbId || '').trim();
   const normalizedMediaType = mediaType === 'tv' ? 'show' : 'movie';
   const apiKeys = manualApiKey ? [manualApiKey] : getMdbListApiKeysInPriorityOrder();
+  const transientFailureTtlMs = Math.min(cacheTtlMs, 2 * 60 * 1000);
+  let sawTransientFailure = false;
 
-  if (!normalizedImdbId || !apiKeys.length) return null;
+  if (!normalizedImdbId || !apiKeys.length) {
+    return {
+      ratings: null,
+      transientFailureTtlMs: null,
+    };
+  }
 
   for (const apiKey of apiKeys) {
     try {
@@ -58,20 +70,32 @@ export const fetchMdbListRatings = async ({
 
       if (isMdbListRateLimitedResponse(response)) {
         markMdbListApiKeyRateLimited(apiKey);
+        sawTransientFailure = true;
         continue;
       }
 
       if (!response.ok) {
         if (shouldRetryMdbListWithAnotherKey(response)) {
+          sawTransientFailure = true;
           continue;
         }
-        return null;
+        return {
+          ratings: null,
+          transientFailureTtlMs: null,
+        };
       }
 
-      return collectMDBListRatings(response.data);
+      return {
+        ratings: collectMDBListRatings(response.data),
+        transientFailureTtlMs: null,
+      };
     } catch {
+      sawTransientFailure = true;
     }
   }
 
-  return null;
+  return {
+    ratings: null,
+    transientFailureTtlMs: sawTransientFailure ? transientFailureTtlMs : null,
+  };
 };

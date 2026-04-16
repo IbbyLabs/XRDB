@@ -64,6 +64,41 @@ export type ExecutedImageRouteRender = {
   debugResolvedRatingProviders: RatingPreference[];
 };
 
+export const resolveFinalImageCacheTtlMs = ({
+  renderedRatingCacheKeys,
+  renderedRatingTtlByProvider,
+  hasCertificationBadge,
+  streamBadgeCount,
+  streamBadgesCacheTtlMs,
+  transientProviderFailureTtlMs,
+}: {
+  renderedRatingCacheKeys: string[];
+  renderedRatingTtlByProvider: Map<string, number>;
+  hasCertificationBadge: boolean;
+  streamBadgeCount: number;
+  streamBadgesCacheTtlMs: number | null;
+  transientProviderFailureTtlMs: number | null;
+}) => {
+  const renderedRatingCacheTtlCandidates = [
+    ...renderedRatingCacheKeys.map((badgeKey) => {
+      if (badgeKey === 'tmdb') {
+        return TMDB_CACHE_TTL_MS;
+      }
+      return renderedRatingTtlByProvider.get(badgeKey) || null;
+    }),
+    ...(hasCertificationBadge ? [TMDB_CACHE_TTL_MS] : []),
+    ...(streamBadgeCount > 0 ? [streamBadgesCacheTtlMs ?? TORRENTIO_CACHE_TTL_MS] : []),
+    transientProviderFailureTtlMs,
+  ].filter(
+    (ttlMs): ttlMs is number =>
+      typeof ttlMs === 'number' && Number.isFinite(ttlMs) && ttlMs > 0,
+  );
+
+  return renderedRatingCacheTtlCandidates.length > 0
+    ? Math.min(...renderedRatingCacheTtlCandidates)
+    : TMDB_CACHE_TTL_MS;
+};
+
 export const executeImageRouteRender = async ({
   requestState,
   phases,
@@ -231,6 +266,7 @@ export const executeImageRouteRender = async ({
         streamBadgesDeferred,
         posterTitleText,
         posterLogoUrl,
+        transientProviderFailureTtlMs,
         shouldRenderBadges,
       } = preparedMedia;
       let streamBadges = preparedStreamBadges;
@@ -367,23 +403,14 @@ export const executeImageRouteRender = async ({
       const renderedRatingCacheKeys = usesAggregatePresentation
         ? [...ratingBadgeByProvider.keys()]
         : displayRatingBadges.map((badge) => badge.key);
-      const renderedRatingCacheTtlCandidates = [
-        ...renderedRatingCacheKeys.map((badgeKey) => {
-          if (badgeKey === 'tmdb') {
-            return TMDB_CACHE_TTL_MS;
-          }
-          return renderedRatingTtlByProvider.get(badgeKey) || null;
-        }),
-        ...(certificationBadgeLabel ? [TMDB_CACHE_TTL_MS] : []),
-        ...(streamBadges.length > 0 ? [streamBadgesCacheTtlMs ?? TORRENTIO_CACHE_TTL_MS] : []),
-      ].filter(
-        (ttlMs): ttlMs is number =>
-          typeof ttlMs === 'number' && Number.isFinite(ttlMs) && ttlMs > 0,
-      );
-      const finalImageCacheTtlMs =
-        renderedRatingCacheTtlCandidates.length > 0
-          ? Math.min(...renderedRatingCacheTtlCandidates)
-          : TMDB_CACHE_TTL_MS;
+      const finalImageCacheTtlMs = resolveFinalImageCacheTtlMs({
+        renderedRatingCacheKeys,
+        renderedRatingTtlByProvider,
+        hasCertificationBadge: Boolean(certificationBadgeLabel),
+        streamBadgeCount: streamBadges.length,
+        streamBadgesCacheTtlMs,
+        transientProviderFailureTtlMs,
+      });
       const responseCacheControl = `public, s-maxage=${Math.max(60, Math.floor(finalImageCacheTtlMs / 1000))}, stale-while-revalidate=60`;
       const renderedPayload = await renderWithSharp(
         {

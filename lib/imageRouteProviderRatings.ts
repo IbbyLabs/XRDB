@@ -27,7 +27,7 @@ import {
   fetchSimklRating,
   fetchTraktRating,
 } from './imageRouteExternalRatings.ts';
-import { fetchMdbListRatings } from './imageRouteMdbFetch.ts';
+import { fetchMdbListRatings, type MdbListRatingsFetchResult } from './imageRouteMdbFetch.ts';
 import { getMdbListCacheTtlMs, getRatingCacheTtlMs } from './imageRouteMdbList.ts';
 import { normalizeRatingValue } from './imageRouteMedia.ts';
 import type { RatingPreference } from './ratingProviderCatalog.ts';
@@ -104,11 +104,34 @@ const DEFAULT_DEPS: ProviderRatingsDeps = {
 };
 
 const ANIME_ONLY_RATING_PROVIDER_SET = new Set<RatingPreference>(['myanimelist', 'anilist', 'kitsu']);
+const MDBLIST_BACKED_RATING_PROVIDER_SET = new Set<RatingPreference>([
+  'mdblist',
+  'tomatoes',
+  'tomatoesaudience',
+  'letterboxd',
+  'metacritic',
+  'metacriticuser',
+  'rogerebert',
+]);
 
 export type ResolvedProviderRatings = {
   ratings: Map<RatingPreference, string>;
   allowAnimeOnlyRatings: boolean;
   hasConfirmedAnimeMapping: boolean;
+  transientProviderFailureTtlMs: number | null;
+};
+
+const normalizeMdbListRatingsResult = (
+  value: MdbListRatingsFetchResult | Map<RatingPreference, string> | null,
+): MdbListRatingsFetchResult => {
+  if (value instanceof Map || value === null) {
+    return {
+      ratings: value,
+      transientFailureTtlMs: null,
+    };
+  }
+
+  return value;
 };
 
 export const resolveImageRouteProviderRatings = async (
@@ -149,6 +172,7 @@ export const resolveImageRouteProviderRatings = async (
   const runtimeDeps = { ...DEFAULT_DEPS, ...deps };
   let hasConfirmedAnimeMapping = input.initialHasConfirmedAnimeMapping;
   let allowAnimeOnlyRatings = input.initialAllowAnimeOnlyRatings;
+  let transientProviderFailureTtlMs: number | null = null;
 
   let imdbId: string | null = input.media?.imdb_id || input.mappedImdbId;
   let kitsuId: string | null = input.isKitsu ? input.mediaId : null;
@@ -167,6 +191,9 @@ export const resolveImageRouteProviderRatings = async (
   const needsSimklRating = input.requestedExternalRatings.has('simkl');
   const needsAllocineRating = input.requestedExternalRatings.has('allocine');
   const needsAllocinePressRating = input.requestedExternalRatings.has('allocinepress');
+  const needsMdbListBackedRating = [...input.requestedExternalRatings].some((provider) =>
+    MDBLIST_BACKED_RATING_PROVIDER_SET.has(provider)
+  );
   const needsResolvableImdbId =
     needsImdbRating ||
     Boolean(input.mdblistKey) ||
@@ -185,6 +212,15 @@ export const resolveImageRouteProviderRatings = async (
       hasConfirmedAnimeMapping = true;
       allowAnimeOnlyRatings = true;
     }
+  };
+
+  const setTransientProviderFailureTtl = (ttlMs: number | null) => {
+    if (typeof ttlMs !== 'number' || !Number.isFinite(ttlMs) || ttlMs <= 0) {
+      return;
+    }
+
+    transientProviderFailureTtlMs =
+      transientProviderFailureTtlMs === null ? ttlMs : Math.min(transientProviderFailureTtlMs, ttlMs);
   };
 
   setAnimeMappingState();
@@ -234,6 +270,7 @@ export const resolveImageRouteProviderRatings = async (
       ratings: combinedRatings,
       allowAnimeOnlyRatings,
       hasConfirmedAnimeMapping,
+      transientProviderFailureTtlMs,
     };
   }
 
@@ -293,7 +330,7 @@ export const resolveImageRouteProviderRatings = async (
   setAnimeMappingState();
 
   const resolvedImdbIdForMdbList =
-    input.mdblistKey || input.hasMdbListApiKey ? await ensureImdbId() : null;
+    needsMdbListBackedRating && (input.mdblistKey || input.hasMdbListApiKey) ? await ensureImdbId() : null;
   if (resolvedImdbIdForMdbList && (input.mdblistKey || input.hasMdbListApiKey)) {
     try {
       const mdbListCacheTtlMs = getMdbListCacheTtlMs({
@@ -301,7 +338,7 @@ export const resolveImageRouteProviderRatings = async (
         mediaType: input.resolvedRatingMediaType,
         releaseDate: input.releaseDate,
       });
-      let mdbRatings = await runtimeDeps.fetchMdbListRatings({
+      let mdbResult = normalizeMdbListRatingsResult(await runtimeDeps.fetchMdbListRatings({
         imdbId: resolvedImdbIdForMdbList,
         mediaType: input.resolvedRatingMediaType,
         cacheTtlMs: mdbListCacheTtlMs,
@@ -311,9 +348,11 @@ export const resolveImageRouteProviderRatings = async (
         cleanId: input.cleanId,
         manualApiKey: input.mdblistKey,
         fetchJsonCached: input.fetchJsonCached,
-      });
+      }));
+      setTransientProviderFailureTtl(mdbResult.transientFailureTtlMs);
+      let mdbRatings = mdbResult.ratings;
       if (!mdbRatings && input.mdblistKey && input.hasMdbListApiKey) {
-        mdbRatings = await runtimeDeps.fetchMdbListRatings({
+        mdbResult = normalizeMdbListRatingsResult(await runtimeDeps.fetchMdbListRatings({
           imdbId: resolvedImdbIdForMdbList,
           mediaType: input.resolvedRatingMediaType,
           cacheTtlMs: mdbListCacheTtlMs,
@@ -323,7 +362,9 @@ export const resolveImageRouteProviderRatings = async (
           cleanId: input.cleanId,
           manualApiKey: null,
           fetchJsonCached: input.fetchJsonCached,
-        });
+        }));
+        setTransientProviderFailureTtl(mdbResult.transientFailureTtlMs);
+        mdbRatings = mdbResult.ratings;
       }
       if (mdbRatings) {
         for (const [provider, value] of mdbRatings.entries()) {
@@ -503,5 +544,6 @@ export const resolveImageRouteProviderRatings = async (
     ratings: combinedRatings,
     allowAnimeOnlyRatings,
     hasConfirmedAnimeMapping,
+    transientProviderFailureTtlMs,
   };
 };
