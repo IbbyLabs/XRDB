@@ -203,6 +203,20 @@ Minimum recommended:
 - CPU: 4 vCPU
 - RAM: 4 GB
 
+Environment templates:
+- `env.selfhost.template` is the minimal self host setup.
+- `env.template` is the full reference with every supported option.
+
+Quick start with the minimal template:
+```bash
+cp env.selfhost.template .env
+```
+
+Use the full template instead:
+```bash
+cp env.template .env
+```
+
 Local source build:
 ```bash
 npm run docker:up
@@ -832,7 +846,7 @@ Production validation for this feature covered French (France), French (Belgium)
 
 ## Environment Variables
 
-Copy `env.template` to `.env` and adjust as needed. All cache TTL values are in **milliseconds**.
+Use `env.selfhost.template` for a minimal self host setup or `env.template` for the full reference. Copy your choice to `.env` and adjust as needed. All cache TTL values are in **milliseconds**.
 
 ### Proxy & Security
 
