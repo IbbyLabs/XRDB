@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@import "tailwindcss" source(none);
+@source "../../app/**/*.{ts,tsx}";
+@source "../../components/**/*.{ts,tsx}";
 
 :root {
 	--brand-ink: #efe9ff;
