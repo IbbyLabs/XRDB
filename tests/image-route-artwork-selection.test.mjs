@@ -961,6 +961,82 @@ test('image route artwork selection uses AniList streaming thumbnail first in st
   assert.equal(tmdbCalled, false);
 });
 
+test('image route artwork selection prefers IMDb reverse mapping for AniList fallback when IMDb is available', async () => {
+  const fetchCalls = [];
+  const selectArtwork = createImageRouteArtworkSelector({
+    imageType: 'backdrop',
+    isThumbnailRequest: true,
+    mediaType: 'tv',
+    media: { id: 95479, imdb_id: 'tt12343534' },
+    details: null,
+    requestedImageLang: 'en',
+    fallbackImageLang: 'en',
+    posterTextPreference: 'original',
+    posterArtworkSource: 'tmdb',
+    backdropArtworkSource: 'tmdb',
+    logoArtworkSource: 'tmdb',
+    thumbnailEpisodeArtwork: 'still',
+    backdropEpisodeArtwork: 'series',
+    artworkSelectionSeed: '',
+    cleanId: 'tmdb:tv:95479',
+    season: '3',
+    episode: '1',
+    isKitsu: false,
+    tmdbKey: 'tmdb-key',
+    fanartKey: '',
+    fanartClientKey: '',
+    fanartTvdbId: null,
+    phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+    fetchJsonCached: async (key, _url, _ttl, _phases, _phase, init) => {
+      fetchCalls.push(key);
+      if (key === 'anime:reverse:imdb:tt12343534:s:3:e:1') {
+        return {
+          ok: true,
+          status: 200,
+          data: { mappings: { ids: { anilist: 172463 } } },
+        };
+      }
+      if (key === 'anime:reverse:tmdb:95479:s:3:e:1') {
+        return {
+          ok: true,
+          status: 200,
+          data: { mappings: { ids: { anilist: 113415 } } },
+        };
+      }
+      if (key.startsWith('anilist:anime:172463:') && init?.method === 'POST') {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            data: {
+              Media: {
+                streamingEpisodes: [],
+              },
+            },
+          },
+        };
+      }
+      if (key.includes(':images')) {
+        return { ok: true, status: 200, data: { stills: [] } };
+      }
+      return { ok: true, status: 200, data: { still_path: null } };
+    },
+    getRemoteImageAspectRatio: async () => null,
+    resolveImdbId: async () => 'tt12343534',
+  });
+
+  const result = await selectArtwork({
+    posters: [],
+    backdrops: [{ file_path: '/series-backdrop.jpg', iso_639_1: 'en' }],
+    logos: [],
+  });
+
+  assert.equal(result.imgPath, '/series-backdrop.jpg');
+  assert.equal(result.imgUrlOverride, null);
+  assert.ok(fetchCalls.includes('anime:reverse:imdb:tt12343534:s:3:e:1'));
+  assert.ok(!fetchCalls.includes('anime:reverse:tmdb:95479:s:3:e:1'));
+});
+
 test('image route artwork selection falls through to TMDB still in streaming mode when AniList returns nothing', async () => {
   const selectArtwork = createImageRouteArtworkSelector({
     imageType: 'backdrop',

@@ -1,6 +1,7 @@
 import {
   ANILIST_EPISODE_THUMBNAIL_QUERY,
   ANILIST_GRAPHQL_URL,
+  type AnimeMappingProvider,
   DEFAULT_RANDOM_POSTER_FALLBACK_MODE,
   DEFAULT_RANDOM_POSTER_LANGUAGE_MODE,
   DEFAULT_RANDOM_POSTER_TEXT_MODE,
@@ -145,6 +146,10 @@ export const createImageRouteArtworkSelector = (
     `${scope}:${input.artworkSelectionSeed || `${input.cleanId}:${input.imageType}`}`;
   let fanartArtworkPromise: Promise<FanartArtworkPayload | null> | null = null;
   let omdbPosterUrlPromise: Promise<string | null> | null = null;
+  let animeReverseMappingTargetPromise: Promise<{
+    provider: AnimeMappingProvider;
+    externalId: string;
+  } | null> | null = null;
 
   const getFanartArtwork = async () => {
     if (!(input.mediaType === 'movie' || input.mediaType === 'tv')) return null;
@@ -175,6 +180,54 @@ export const createImageRouteArtworkSelector = (
       });
     })();
     return omdbPosterUrlPromise;
+  };
+
+  const getAnimeReverseMappingTarget = async () => {
+    if (animeReverseMappingTargetPromise) return animeReverseMappingTargetPromise;
+    animeReverseMappingTargetPromise = (async () => {
+      const trimmedCleanId = String(input.cleanId || '').trim();
+      const parts = trimmedCleanId.split(':').map((part) => part.trim());
+      const prefix = (parts[0] || '').toLowerCase();
+
+      if (prefix === 'anilist' && parts[1]) {
+        return { provider: 'anilist' as const, externalId: parts[1] };
+      }
+      if ((prefix === 'mal' || prefix === 'myanimelist') && parts[1]) {
+        return { provider: 'mal' as const, externalId: parts[1] };
+      }
+      if (prefix === 'anidb' && parts[1]) {
+        return { provider: 'anidb' as const, externalId: parts[1] };
+      }
+      if (prefix === 'tvdb' && parts[1]) {
+        return { provider: 'tvdb' as const, externalId: parts[1] };
+      }
+
+      const imdbId =
+        (/^tt\d+$/i.test(trimmedCleanId)
+          ? trimmedCleanId
+          : prefix === 'imdb' && parts[1]
+            ? parts[1]
+            : prefix === 'xrdbid' && parts[1]
+              ? parts[1]
+              : await input.resolveImdbId()) || '';
+      if (imdbId) {
+        return { provider: 'imdb' as const, externalId: imdbId };
+      }
+
+      if (prefix === 'tmdb') {
+        const tmdbId =
+          parts[1] === 'movie' || parts[1] === 'tv'
+            ? parts[2] || ''
+            : parts[1] || '';
+        if (tmdbId) {
+          return { provider: 'tmdb' as const, externalId: tmdbId };
+        }
+      }
+
+      const tmdbId = String(input.media.id || '').trim();
+      return tmdbId ? { provider: 'tmdb' as const, externalId: tmdbId } : null;
+    })();
+    return animeReverseMappingTargetPromise;
   };
 
   return async (selectionInput: ArtworkSelectionInput): Promise<ArtworkSelectionResult> => {
@@ -490,9 +543,11 @@ export const createImageRouteArtworkSelector = (
         input.episode
       ) {
         const fetchStreamingEpisodeThumbnail = async (): Promise<string> => {
+          const reverseMappingTarget = await getAnimeReverseMappingTarget();
+          if (!reverseMappingTarget) return '';
           const aniListId = await fetchAniListIdFromReverseMapping({
-            provider: 'tmdb',
-            externalId: String(input.media.id),
+            provider: reverseMappingTarget.provider,
+            externalId: reverseMappingTarget.externalId,
             season: input.season!,
             episode: input.episode!,
             phases: input.phases,
