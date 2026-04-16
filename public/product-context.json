@@ -2,7 +2,7 @@
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
   "xrdbTag": "v1.21.1",
-  "generatedAt": "2026-04-16T21:31:22.360Z",
+  "generatedAt": "2026-04-16T22:46:21.614Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -45,11 +45,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "invalidate proxied manifests when source config changes",
+        "BUG-101 BUG-105 preserve proxy age rating placement and clean genre sizing",
         "keep personal provider keys server side",
         "harden server managed credential handling",
-        "BUG-109 restore full language options",
-        "prefer IMDb reverse mapping for anime episode fallback",
-        "sanitize poster warm replay requests"
+        "BUG-109 restore full language options"
       ]
     },
     {

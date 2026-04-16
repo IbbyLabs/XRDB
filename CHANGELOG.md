@@ -81,6 +81,22 @@
 
 <a id="v1-21-1"></a>
 
+## Unreleased
+
+### Fixed
+* refresh UUID proxy manifest freshness
+  
+  Make UUID backed proxy manifest identity track the effective source manifest payload and serve manifest plus proxy ref responses with no store cache headers so stable XRDB proxy URLs pick up upstream addon config changes without rotating the install URL.
+* BUG-101 preserve proxy age rating placement in generated proxy flows
+  
+  Forward `ageRatingBadgePosition` through shared proxy image query keys so generated proxy manifests keep detached certification badge placement in rewritten poster URLs.
+* BUG-105 keep clean genre badge sizing available
+  
+  Keep the genre badge size slider visible while Clean Text genre styling is active so the configurator still exposes the expected sizing control.
+
+### Documentation
+* align proxy docs and UI copy with server managed key requirements and stable UUID manifest behavior
+
 ## [v1.21.1] - 16/04/2026
 
 ### Fixed

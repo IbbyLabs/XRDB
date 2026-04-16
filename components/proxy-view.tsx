@@ -308,7 +308,7 @@ export function ProxyView() {
 
               {effectiveCatalogLoadState === 'idle' && (
                 <div className="rounded-xl border border-dashed border-white/10 bg-black/30 px-4 py-3 text-[13px] leading-5 text-zinc-500">
-                  Add a manifest URL, TMDB key, and MDBList key to load catalog controls.
+                  Add a manifest URL and make sure TMDB and MDBList coverage is available through server keys or the current workspace to load catalog controls.
                 </div>
               )}
 
@@ -421,7 +421,7 @@ export function ProxyView() {
             <Zap className="w-4 h-4 text-violet-500" /> Generated manifest
           </h2>
           <p className="text-[13px] leading-5 text-zinc-400">
-            Use this URL in Stremio. It ends with manifest.json and has no query params.
+            Use this stable URL in Stremio. It ends with manifest.json, has no query params, and keeps the same UUID when the source manifest changes.
           </p>
           <div className="rounded-xl border border-white/10 bg-black/70 p-3 overflow-hidden">
             <div className={`font-mono text-[11px] text-zinc-300 break-all${!showProxyUrl && effectiveGeneratedProxyUrl ? ' select-none' : ''}`}>
@@ -485,11 +485,11 @@ export function ProxyView() {
           </div>
           {!canGenerateProxy && (
             <p className="text-[13px] text-zinc-500">
-              Add manifest URL, TMDB key and MDBList key to generate a UUID backed link.
+              Add a manifest URL and make sure TMDB and MDBList coverage is available through server keys or the current workspace to generate a UUID backed link.
             </p>
           )}
           <p className="text-[11px] leading-4 text-zinc-500">
-            Legacy inline proxy links remain readable during migration. Copying here always rotates to the new UUID backed manifest format.
+            Legacy inline proxy links remain readable during migration. Copying here always rotates to the UUID backed manifest format, and the copied URL refreshes when the source manifest changes.
           </p>
         </div>
       </div>

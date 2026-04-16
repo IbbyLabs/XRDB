@@ -109,12 +109,12 @@ The doc refresh and release workflows rotate through a curated, varied set of pr
 
 <table>
   <tr>
-    <td><strong>Dune Part Two</strong><br>Dark canvas, square ratings, TMDB / Rotten Tomatoes / Metacritic / Letterboxd</td>
+    <td><strong>Stranger Things</strong><br>Dark canvas, square ratings, TMDB / Rotten Tomatoes / Metacritic User / Letterboxd</td>
     <td><strong>Attack on Titan</strong><br>Japanese text, TMDB / MyAnimeList / AniList / Kitsu, transparent canvas</td>
     <td><strong>Game of Thrones</strong><br>French text, plain ratings, TMDB / IMDb / Trakt / Metacritic, transparent canvas</td>
   </tr>
   <tr>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/dune-part-two-logo?cb=readme-preview-dune-part-two-logo-v1-21-1"><img src="https://xrdb.ibbylabs.dev/preview/dune-part-two-logo?cb=readme-preview-dune-part-two-logo-v1-21-1" alt="Dune Part Two logo live preview" width="320"></a></td>
+    <td><a href="https://xrdb.ibbylabs.dev/preview/stranger-things-logo?cb=readme-preview-stranger-things-logo-v1-21-1"><img src="https://xrdb.ibbylabs.dev/preview/stranger-things-logo?cb=readme-preview-stranger-things-logo-v1-21-1" alt="Stranger Things logo live preview" width="320"></a></td>
     <td><a href="https://xrdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v1-21-1"><img src="https://xrdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v1-21-1" alt="Attack on Titan logo live preview" width="320"></a></td>
     <td><a href="https://xrdb.ibbylabs.dev/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v1-21-1"><img src="https://xrdb.ibbylabs.dev/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v1-21-1" alt="Game of Thrones logo live preview" width="320"></a></td>
   </tr>
@@ -721,13 +721,13 @@ XRDB can act as a proxy for any Stremio addon and always replace images
 
 ### Manifest Proxy (Stremio)
 
-Stremio does not use query params here. **Generate the link from the XRDB site** using the "Proxy Manifest" section:
+Stremio does not use query params here. **Generate the link from the XRDB site** using the Generated manifest section on the Proxy page:
 
 ```text
 https://YOUR_XRDB_HOST/proxy/{uuid}/manifest.json
 ```
 
-`{uuid}` is created automatically by the site from a server stored proxy reference. Legacy inline proxy URLs stay readable during migration, but new copied links always use the UUID form.
+`{uuid}` is created automatically by the site from a server stored proxy reference. The copied UUID link stays stable, and XRDB refreshes the proxied manifest when the source addon manifest changes at the same source URL. Legacy inline proxy URLs stay readable during migration, but new copied links always use the UUID form.
 
 ### Direct Query Proxy Mode (Advanced)
 
@@ -737,13 +737,13 @@ For scripts, testing, or non generated integrations, XRDB also exposes a direct 
 https://YOUR_XRDB_HOST/proxy/manifest.json?url={manifestUrl}
 ```
 
-The matching query based passthrough routes live under `/proxy/catalog/...`, `/proxy/meta/...`, and the other addon resource paths and accept the same query config. The UUID backed `/proxy/{uuid}/manifest.json` form is the normal Stremio install URL.
+The matching query based passthrough routes live under `/proxy/catalog/...`, `/proxy/meta/...`, and the other addon resource paths and accept the same query config. The UUID backed `/proxy/{uuid}/manifest.json` form is the normal Stremio install URL. When the XRDB host already has server managed TMDB and MDBList keys, the direct manifest route only needs `url`. Otherwise pass `tmdbKey` and `mdblistKey` explicitly.
 
 ### Notes
 - The proxy routes `meta.poster`, `meta.background`, and `meta.logo` through XRDB URLs.
 - The `url` field must point to the original addon's `manifest.json`.
-- `tmdbKey` is required.
-- `mdblistKey` is required for MDBList backed ratings and broad fallback coverage.
+- `tmdbKey` and `mdblistKey` are required for direct query mode unless the XRDB host already provides server managed TMDB and MDBList keys.
+- The copied UUID flow can use those server keys without exposing them in the manifest URL.
 - `fanartKey` is optional and is recommended when you use fanart sources. When it is missing, XRDB can fall back to the server key if one exists.
 - For shared/public XRDB instances, start with the Public Fast preset above before enabling long rating lists or Torrentio stream badges.
 - Optional proxy metadata translation can localize `meta.name` / `meta.description` and episode text.
