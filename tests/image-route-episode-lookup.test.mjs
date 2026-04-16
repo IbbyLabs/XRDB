@@ -167,6 +167,9 @@ test('image route episode lookup remaps air year buckets into TMDB season and ep
 
 test('resolveTmdbConsolidatedSeasonEpisode returns null when episode is within season count', async () => {
   const fetchJsonCached = async (key) => {
+    if (key === 'tmdb:tv:888') {
+      return { ok: true, status: 200, data: { number_of_seasons: 1 } };
+    }
     if (key === 'tmdb:tv:888:season:1') {
       return {
         ok: true,
@@ -197,6 +200,9 @@ test('resolveTmdbConsolidatedSeasonEpisode returns null when episode is within s
 
 test('resolveTmdbConsolidatedSeasonEpisode remaps episode exceeding season count into the correct season', async () => {
   const fetchJsonCached = async (key) => {
+    if (key === 'tmdb:tv:999') {
+      return { ok: true, status: 200, data: { number_of_seasons: 2 } };
+    }
     if (key === 'tmdb:tv:999:season:1') {
       return {
         ok: true,
@@ -261,7 +267,12 @@ test('resolveTmdbConsolidatedSeasonEpisode remaps episode exceeding season count
 });
 
 test('resolveTmdbConsolidatedSeasonEpisode returns null when season endpoint fails', async () => {
-  const fetchJsonCached = async () => ({ ok: false, status: 404, data: null });
+  const fetchJsonCached = async (key) => {
+    if (key === 'tmdb:tv:555') {
+      return { ok: true, status: 200, data: { number_of_seasons: 1 } };
+    }
+    return { ok: false, status: 404, data: null };
+  };
 
   const result = await resolveTmdbConsolidatedSeasonEpisode(
     '555',
