@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { buildTmdbSupportedLanguageOptions } from '@/lib/configuratorLanguageOptions';
+import { readConfiguratorProviderCredentialSession } from '@/lib/configuratorProviderCredentialSession';
 import { TMDB_API_KEY } from '@/lib/imageRouteConfig';
 import { TMDB_API_BASE_URL } from '@/lib/serviceBaseUrls';
 import { fetchTmdbServer, hasServerTmdbCredentials } from '@/lib/tmdbServerAuth';
@@ -14,9 +15,16 @@ type TmdbLanguageRecord = {
 const toUpstreamErrorStatus = (status: number) =>
   status === 401 || status === 403 ? 401 : 502;
 
-const buildTmdbConfigurationUrl = (path: string) => {
+const resolveRequestTmdbKey = (request: Request) => {
+  const searchParams = new URL(request.url).searchParams;
+  return (searchParams.get('tmdbKey') || searchParams.get('tmdb_key') || '').trim();
+};
+
+const buildTmdbConfigurationUrl = (path: string, tmdbKey = '') => {
   const target = new URL(path, `${TMDB_API_BASE_URL.replace(/\/+$/, '')}/`);
-  if (TMDB_API_KEY) {
+  if (tmdbKey) {
+    target.searchParams.set('api_key', tmdbKey);
+  } else if (TMDB_API_KEY) {
     target.searchParams.set('api_key', TMDB_API_KEY);
   }
   return target.toString();
@@ -24,8 +32,11 @@ const buildTmdbConfigurationUrl = (path: string) => {
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
-  if (!hasServerTmdbCredentials()) {
+export async function GET(request: Request) {
+  const requestTmdbKey =
+    resolveRequestTmdbKey(request) || readConfiguratorProviderCredentialSession(request).tmdbKey;
+
+  if (!requestTmdbKey && !hasServerTmdbCredentials()) {
     return NextResponse.json(
       { error: 'TMDB credentials are required.', options: [] },
       { status: 400 },
@@ -33,8 +44,10 @@ export async function GET() {
   }
 
   const [languagesResponse, primaryTranslationsResponse] = await Promise.all([
-    fetchTmdbServer(buildTmdbConfigurationUrl('configuration/languages'), { cache: 'no-store' }),
-    fetchTmdbServer(buildTmdbConfigurationUrl('configuration/primary_translations'), {
+    fetchTmdbServer(buildTmdbConfigurationUrl('configuration/languages', requestTmdbKey), {
+      cache: 'no-store',
+    }),
+    fetchTmdbServer(buildTmdbConfigurationUrl('configuration/primary_translations', requestTmdbKey), {
       cache: 'no-store',
     }),
   ]);

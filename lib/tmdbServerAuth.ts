@@ -9,7 +9,11 @@ type TmdbServerAuthOptions = {
   apiBaseUrl?: string;
 };
 
+type TmdbFetchImpl = (url: string, init?: RequestInit) => Promise<Response>;
+
 const trimValue = (value: string | null | undefined) => String(value || '').trim();
+
+const RETRYABLE_TMDB_STATUS_SET = new Set([401, 403, 429]);
 
 const isTmdbApiUrl = (value: string, apiBaseUrl: string) => {
   try {
@@ -74,11 +78,63 @@ export const prepareTmdbServerRequest = ({
   };
 };
 
-export const fetchTmdbServer = (
+const buildTmdbFallbackRequest = ({
+  url,
+  init,
+  serverApiKey = TMDB_API_KEY,
+  serverReadAccessToken = TMDB_READ_ACCESS_TOKEN,
+  apiBaseUrl = TMDB_API_BASE_URL,
+}: TmdbServerAuthOptions) => {
+  if (!isTmdbApiUrl(url, apiBaseUrl) || !hasServerTmdbCredentials({ serverApiKey, serverReadAccessToken })) {
+    return null;
+  }
+
+  const target = new URL(url);
+  const queryApiKey = trimValue(target.searchParams.get('api_key'));
+  const normalizedServerApiKey = trimValue(serverApiKey);
+  const normalizedReadAccessToken = trimValue(serverReadAccessToken);
+  if (!queryApiKey || (normalizedServerApiKey && queryApiKey === normalizedServerApiKey)) {
+    return null;
+  }
+
+  if (normalizedReadAccessToken) {
+    target.searchParams.delete('api_key');
+    return prepareTmdbServerRequest({
+      url: target.toString(),
+      init,
+      serverApiKey,
+      serverReadAccessToken,
+      apiBaseUrl,
+    });
+  }
+
+  if (!normalizedServerApiKey) {
+    return null;
+  }
+
+  target.searchParams.set('api_key', normalizedServerApiKey);
+  return {
+    url: target.toString(),
+    init,
+  };
+};
+
+export const fetchTmdbServer = async (
   url: string,
   init?: RequestInit,
-  fetchImpl: typeof fetch = fetch,
+  fetchImpl: TmdbFetchImpl = fetch,
+  options: Omit<TmdbServerAuthOptions, 'url' | 'init'> = {},
 ) => {
-  const prepared = prepareTmdbServerRequest({ url, init });
-  return fetchImpl(prepared.url, prepared.init);
+  const prepared = prepareTmdbServerRequest({ url, init, ...options });
+  const response = await fetchImpl(prepared.url, prepared.init);
+  if (response.ok || !RETRYABLE_TMDB_STATUS_SET.has(response.status)) {
+    return response;
+  }
+
+  const fallbackRequest = buildTmdbFallbackRequest({ url, init, ...options });
+  if (!fallbackRequest) {
+    return response;
+  }
+
+  return fetchImpl(fallbackRequest.url, fallbackRequest.init);
 };

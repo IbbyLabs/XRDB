@@ -92,6 +92,33 @@ type MediaTargetSearchState = {
   onPreviewTypeChange: (type: MediaSearchPreviewType) => void;
 };
 
+type PersonalProviderKeyStatus = {
+  tmdb: boolean;
+  mdblist: boolean;
+  fanart: boolean;
+  simkl: boolean;
+};
+
+type PersonalProviderKeyMaskedPreview = {
+  tmdb: string;
+  mdblist: string;
+  fanart: string;
+  simkl: string;
+};
+
+type PersonalProviderKeyUpdates = Partial<{
+  tmdbKey: string;
+  mdblistKey: string;
+  fanartKey: string;
+  simklClientId: string;
+}>;
+
+type ConfiguratorPageWorkspaceState = ReturnType<typeof useConfiguratorWorkspaceState> & {
+  personalProviderKeyStatus: PersonalProviderKeyStatus;
+  personalProviderKeyMaskedPreview: PersonalProviderKeyMaskedPreview;
+  savePersonalProviderKeys: (updates: PersonalProviderKeyUpdates) => Promise<void>;
+};
+
 export function buildConfiguratorPageProps({
   activeWorkspaceSettings,
   baseUrl,
@@ -117,7 +144,7 @@ export function buildConfiguratorPageProps({
   outputs: ReturnType<typeof useConfiguratorOutputs>;
   pageChrome: ReturnType<typeof useConfiguratorPageChrome>;
   workspaceActions: ReturnType<typeof useConfiguratorWorkspaceActions>;
-  workspaceState: ReturnType<typeof useConfiguratorWorkspaceState>;
+  workspaceState: ConfiguratorPageWorkspaceState;
   workspaceStorage: ReturnType<typeof useConfiguratorWorkspaceStorage>;
   workspaceSummary: ReturnType<typeof useConfiguratorWorkspaceSummary>;
   workspaceUi: WorkspaceUiState;
@@ -156,8 +183,12 @@ export function buildConfiguratorPageProps({
         onApplyPreset: workspaceActions.handleApplyPreset,
       },
       accessKeysProps: {
+        experienceMode: workspaceState.experienceMode,
+        personalProviderKeyStatus: workspaceState.personalProviderKeyStatus,
+        personalProviderKeyMaskedPreview: workspaceState.personalProviderKeyMaskedPreview,
         xrdbKey: workspaceState.xrdbKey,
         tmdbIdScope: workspaceState.tmdbIdScope,
+        onSavePersonalProviderKeys: workspaceState.savePersonalProviderKeys,
         onXrdbKeyChange: workspaceState.setXrdbKey,
         onTmdbIdScopeChange: workspaceState.setTmdbIdScope,
         tmdbIdScopeOptions: TMDB_ID_SCOPE_MODE_OPTIONS,
@@ -173,7 +204,7 @@ export function buildConfiguratorPageProps({
       mediaTargetProps: {
         previewType: workspaceState.previewType,
         mediaId: workspaceState.mediaId,
-        tmdbKeyAvailable: Boolean(workspaceState.tmdbKey.trim()) || hasServerTmdbKey,
+        tmdbKeyAvailable: workspaceState.personalProviderKeyStatus.tmdb || hasServerTmdbKey,
         lang: workspaceState.lang,
         supportedLanguages: pageChrome.supportedLanguages,
         onMediaIdChange: mediaTargetSearch.onMediaIdChange,
@@ -482,7 +513,7 @@ export function buildConfiguratorPageProps({
         previewUrl: outputs.previewUrl,
         previewErrored: outputs.previewErrored,
         previewErrorDetails: outputs.visiblePreviewErrorDetails,
-        tmdbKeyPresent: Boolean(workspaceState.tmdbKey.trim()) || hasServerTmdbKey,
+        tmdbKeyPresent: workspaceState.personalProviderKeyStatus.tmdb || hasServerTmdbKey,
         onPreviewImageError: outputs.handlePreviewImageError,
         onPreviewImageLoad: outputs.handlePreviewImageLoad,
         activeTypeLabel: workspaceSummary.activeTypeLabel,
@@ -507,8 +538,8 @@ export function buildConfiguratorPageProps({
         displayedConfigString: outputs.displayedConfigString,
         canGenerateConfig: workspaceSummary.canGenerateConfig,
         canSaveProfile:
-          (Boolean(workspaceState.tmdbKey.trim()) || hasServerTmdbKey)
-          && (Boolean(workspaceState.mdblistKey.trim()) || hasServerMdblistKey),
+          (workspaceState.personalProviderKeyStatus.tmdb || hasServerTmdbKey)
+          && (workspaceState.personalProviderKeyStatus.mdblist || hasServerMdblistKey),
         configCopied: workspaceUi.configCopied,
         showConfigString: outputs.isConfigStringVisible,
         onCopyConfig: workspaceUi.handleCopyConfig,
@@ -563,8 +594,6 @@ export function buildConfiguratorPageProps({
           allowMissingTmdbKey: hasServerTmdbKey,
           omitProviderCredentials: true,
         }),
-        tmdbKey: workspaceState.tmdbKey,
-        mdblistKey: workspaceState.mdblistKey,
         displayedProxyUrl: outputs.displayedProxyUrl,
         proxyUrl: outputs.proxyUrl,
         baseUrl,

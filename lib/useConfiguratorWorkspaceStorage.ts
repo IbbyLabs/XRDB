@@ -9,6 +9,7 @@ import {
 import {
   buildProfileParams,
   normalizeSavedUiConfig,
+  omitProviderCredentialsFromSavedUiConfig,
   parseSavedUiConfig,
   serializeSavedUiConfig,
   type SavedUiConfig,
@@ -241,7 +242,10 @@ export function useConfiguratorWorkspaceStorage({
     }
 
     try {
-      window.localStorage.setItem(UI_CONFIG_STORAGE_KEY, serializeSavedUiConfig(buildCurrentUiConfig()));
+      window.localStorage.setItem(
+        UI_CONFIG_STORAGE_KEY,
+        serializeSavedUiConfig(omitProviderCredentialsFromSavedUiConfig(buildCurrentUiConfig())),
+      );
       if (showSavedStatus) {
         setSavedConfigStatus('saved');
       }
@@ -378,7 +382,9 @@ export function useConfiguratorWorkspaceStorage({
       return;
     }
 
-    const payload = serializeSavedUiConfig(buildCurrentUiConfig());
+    const payload = serializeSavedUiConfig(
+      omitProviderCredentialsFromSavedUiConfig(buildCurrentUiConfig()),
+    );
     const blob = new Blob([payload], { type: 'application/json' });
     const downloadUrl = window.URL.createObjectURL(blob);
     const link = document.createElement('a');

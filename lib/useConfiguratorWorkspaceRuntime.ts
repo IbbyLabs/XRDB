@@ -145,11 +145,41 @@ type WorkspaceSectionId =
 
 type WorkspaceCenterView = 'showcase' | 'preview' | 'guide';
 type PreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
+type ProviderCredentialSessionStatus = {
+  tmdb: boolean;
+  mdblist: boolean;
+  fanart: boolean;
+  simkl: boolean;
+};
+type ProviderCredentialSessionMaskedPreview = {
+  tmdb: string;
+  mdblist: string;
+  fanart: string;
+  simkl: string;
+};
+type ProviderCredentialSessionPatch = Partial<{
+  tmdbKey: string;
+  mdblistKey: string;
+  fanartKey: string;
+  simklClientId: string;
+}>;
 
 const DOCS_CAPTURE_ENABLED = process.env.NEXT_PUBLIC_XRDB_ENABLE_DOCS_CAPTURE === 'true';
 const DOCS_CAPTURE_RATING_ROWS = enabledOrderedToRows(['tmdb']);
 const DOCS_CAPTURE_QUALITY_BADGE_PREFERENCES: MediaFeatureBadgeKey[] = [];
 const MEDIA_SEARCH_DEBOUNCE_MS = 140;
+const EMPTY_PROVIDER_CREDENTIAL_SESSION_STATUS: ProviderCredentialSessionStatus = {
+  tmdb: false,
+  mdblist: false,
+  fanart: false,
+  simkl: false,
+};
+const EMPTY_PROVIDER_CREDENTIAL_SESSION_MASKED_PREVIEW: ProviderCredentialSessionMaskedPreview = {
+  tmdb: '',
+  mdblist: '',
+  fanart: '',
+  simkl: '',
+};
 const WORKSPACE_PANEL_IDS = new Set<WorkspacePanelId>([
   'configurator',
   'center-view',
@@ -186,6 +216,58 @@ const isWorkspaceCenterView = (value: string): value is WorkspaceCenterView =>
   WORKSPACE_CENTER_VIEWS.has(value as WorkspaceCenterView);
 
 const isPreviewType = (value: string): value is PreviewType => PREVIEW_TYPES.has(value as PreviewType);
+
+const readProviderCredentialSessionStatus = (value: unknown): ProviderCredentialSessionStatus => {
+  if (!value || typeof value !== 'object') {
+    return EMPTY_PROVIDER_CREDENTIAL_SESSION_STATUS;
+  }
+
+  const status = value as Partial<ProviderCredentialSessionStatus>;
+
+  return {
+    tmdb: Boolean(status.tmdb),
+    mdblist: Boolean(status.mdblist),
+    fanart: Boolean(status.fanart),
+    simkl: Boolean(status.simkl),
+  };
+};
+
+const readProviderCredentialSessionMaskedPreview = (value: unknown): ProviderCredentialSessionMaskedPreview => {
+  if (!value || typeof value !== 'object') {
+    return EMPTY_PROVIDER_CREDENTIAL_SESSION_MASKED_PREVIEW;
+  }
+
+  const maskedPreview = value as Partial<ProviderCredentialSessionMaskedPreview>;
+
+  return {
+    tmdb: String(maskedPreview.tmdb || ''),
+    mdblist: String(maskedPreview.mdblist || ''),
+    fanart: String(maskedPreview.fanart || ''),
+    simkl: String(maskedPreview.simkl || ''),
+  };
+};
+
+const hasProviderCredentialSessionStatus = (value: ProviderCredentialSessionStatus) =>
+  Boolean(value.tmdb || value.mdblist || value.fanart || value.simkl);
+
+const buildProviderCredentialSessionPatch = (value: ProviderCredentialSessionPatch) => {
+  const patch: Record<string, string> = {};
+
+  if ('tmdbKey' in value) {
+    patch.tmdbKey = String(value.tmdbKey || '').trim();
+  }
+  if ('mdblistKey' in value) {
+    patch.mdblistKey = String(value.mdblistKey || '').trim();
+  }
+  if ('fanartKey' in value) {
+    patch.fanartKey = String(value.fanartKey || '').trim();
+  }
+  if ('simklClientId' in value) {
+    patch.simklClientId = String(value.simklClientId || '').trim();
+  }
+
+  return patch;
+};
 
 const areSetsEqual = (left: Set<string>, right: Set<string>) => {
   if (left.size !== right.size) {
@@ -621,13 +703,67 @@ export function useConfiguratorWorkspaceRuntime({
   const mediaSearchRequestIdRef = useRef(0);
   const mediaSearchAbortControllerRef = useRef<AbortController | null>(null);
   const [runtimeEnvAccessKeys, setRuntimeEnvAccessKeys] = useState(envAccessKeys);
-  const [runtimeEnvAccessKeysLoaded, setRuntimeEnvAccessKeysLoaded] = useState(false);
-  const envAccessKeysAppliedRef = useRef(false);
   const resolvedForRef = useRef<string | null>(null);
-  const allowClientProviderCredentials = Boolean(docsCaptureConfig);
+  const [providerCredentialSessionStatus, setProviderCredentialSessionStatus] =
+    useState<ProviderCredentialSessionStatus>(EMPTY_PROVIDER_CREDENTIAL_SESSION_STATUS);
+  const [providerCredentialSessionMaskedPreview, setProviderCredentialSessionMaskedPreview] =
+    useState<ProviderCredentialSessionMaskedPreview>(EMPTY_PROVIDER_CREDENTIAL_SESSION_MASKED_PREVIEW);
+  const allowClientProviderCredentials = Boolean(
+    docsCaptureConfig || hasProviderCredentialSessionStatus(providerCredentialSessionStatus),
+  );
   const hasTmdbCredential =
-    runtimeEnvAccessKeys.hasServerTmdbKey ||
-    (allowClientProviderCredentials && Boolean(tmdbKey.trim()));
+    runtimeEnvAccessKeys.hasServerTmdbKey
+    || providerCredentialSessionStatus.tmdb
+    || Boolean(docsCaptureConfig && tmdbKey.trim());
+  const [providerCredentialSessionVersion, setProviderCredentialSessionVersion] = useState(0);
+  const refreshProviderCredentialSessionStatus = useCallback(async () => {
+    const response = await fetch('/api/configurator-provider-credentials', {
+      cache: 'no-store',
+    });
+    if (!response.ok) {
+      throw new Error('Unable to load personal provider keys.');
+    }
+
+    const payload = (await response.json().catch(() => null)) as
+      | { status?: ProviderCredentialSessionStatus; maskedPreview?: ProviderCredentialSessionMaskedPreview }
+      | null;
+    setProviderCredentialSessionStatus(readProviderCredentialSessionStatus(payload?.status));
+    setProviderCredentialSessionMaskedPreview(
+      readProviderCredentialSessionMaskedPreview(payload?.maskedPreview),
+    );
+  }, []);
+
+  const savePersonalProviderKeys = useCallback(async (updates: ProviderCredentialSessionPatch) => {
+    const response = await fetch('/api/configurator-provider-credentials', {
+      method: 'PUT',
+      headers: {
+        'content-type': 'application/json',
+      },
+      cache: 'no-store',
+      body: JSON.stringify(buildProviderCredentialSessionPatch(updates)),
+    });
+    const payload = (await response.json().catch(() => null)) as
+      | {
+          error?: string;
+          status?: ProviderCredentialSessionStatus;
+          maskedPreview?: ProviderCredentialSessionMaskedPreview;
+        }
+      | null;
+
+    if (!response.ok) {
+      throw new Error(payload?.error || 'Unable to save personal provider keys.');
+    }
+
+    setProviderCredentialSessionStatus(readProviderCredentialSessionStatus(payload?.status));
+    setProviderCredentialSessionMaskedPreview(
+      readProviderCredentialSessionMaskedPreview(payload?.maskedPreview),
+    );
+    setProviderCredentialSessionVersion((current) => current + 1);
+  }, []);
+
+  useEffect(() => {
+    void refreshProviderCredentialSessionStatus().catch(() => null);
+  }, [refreshProviderCredentialSessionStatus]);
 
   const [pinnedTargets, setPinnedTargets] = useState<PinnedTargetsStore>(() => readPinnedTargetsFromStorage());
 
@@ -834,9 +970,6 @@ export function useConfiguratorWorkspaceRuntime({
     try {
       const target = new URL('/api/media-search', window.location.origin);
       target.searchParams.set('q', normalizedQuery);
-      if (allowClientProviderCredentials && tmdbKey.trim()) {
-        target.searchParams.set('tmdbKey', tmdbKey.trim());
-      }
       target.searchParams.set('previewType', previewType);
       target.searchParams.set('lang', lang);
 
@@ -872,7 +1005,7 @@ export function useConfiguratorWorkspaceRuntime({
         setMediaSearchLoading(false);
       }
     }
-  }, [allowClientProviderCredentials, disableRemoteLookups, hasTmdbCredential, lang, previewType, tmdbKey]);
+  }, [disableRemoteLookups, hasTmdbCredential, lang, previewType]);
 
   const handleMediaSearchSubmit = useCallback(() => {
     void runMediaSearch(mediaSearchQuery, { showValidationErrors: true });
@@ -1077,6 +1210,7 @@ export function useConfiguratorWorkspaceRuntime({
   const pageChrome = useConfiguratorPageChrome({
     disableRemoteLookups,
     initialSupportedLanguages: SUPPORTED_LANGUAGES,
+    providerCredentialSessionVersion,
   });
 
   const workspaceConfigIo = useConfiguratorWorkspaceConfigIo({
@@ -1473,6 +1607,68 @@ export function useConfiguratorWorkspaceRuntime({
   const { applyWorkspaceConfig, uiSettingsLoaded } = workspaceStorage;
 
   useEffect(() => {
+    const stateBackedProviderKeys = buildProviderCredentialSessionPatch({
+      tmdbKey,
+      mdblistKey,
+      fanartKey,
+      simklClientId,
+    });
+    const hasStateBackedProviderKeys = Object.values(stateBackedProviderKeys).some(Boolean);
+
+    if (!hasStateBackedProviderKeys) {
+      return;
+    }
+
+    if (docsCaptureConfig) {
+      void savePersonalProviderKeys(stateBackedProviderKeys).catch(() => null);
+      return;
+    }
+
+    if (!uiSettingsLoaded) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void savePersonalProviderKeys(stateBackedProviderKeys)
+      .then(() => {
+        if (cancelled) {
+          return;
+        }
+
+        if (tmdbKey.trim()) {
+          setTmdbKey('');
+        }
+        if (mdblistKey.trim()) {
+          setMdblistKey('');
+        }
+        if (fanartKey.trim()) {
+          setFanartKey('');
+        }
+        if (simklClientId.trim()) {
+          setSimklClientId('');
+        }
+      })
+      .catch(() => null);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    docsCaptureConfig,
+    fanartKey,
+    mdblistKey,
+    savePersonalProviderKeys,
+    setFanartKey,
+    setMdblistKey,
+    setSimklClientId,
+    setTmdbKey,
+    simklClientId,
+    tmdbKey,
+    uiSettingsLoaded,
+  ]);
+
+  useEffect(() => {
     let active = true;
     void (async () => {
       const response = await fetch('/api/configurator-env-access-keys', { cache: 'no-store' });
@@ -1484,48 +1680,12 @@ export function useConfiguratorWorkspaceRuntime({
         return;
       }
       setRuntimeEnvAccessKeys(keys);
-      setRuntimeEnvAccessKeysLoaded(true);
     })();
 
     return () => {
       active = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (!uiSettingsLoaded || !runtimeEnvAccessKeysLoaded || envAccessKeysAppliedRef.current) {
-      return;
-    }
-
-    envAccessKeysAppliedRef.current = true;
-    if (docsCaptureConfig) {
-      return;
-    }
-    if (fanartKey.trim()) {
-      setFanartKey('');
-    }
-    if (mdblistKey.trim()) {
-      setMdblistKey('');
-    }
-    if (simklClientId.trim()) {
-      setSimklClientId('');
-    }
-    if (tmdbKey.trim()) {
-      setTmdbKey('');
-    }
-  }, [
-    docsCaptureConfig,
-    fanartKey,
-    mdblistKey,
-    runtimeEnvAccessKeysLoaded,
-    setFanartKey,
-    setMdblistKey,
-    setSimklClientId,
-    setTmdbKey,
-    simklClientId,
-    tmdbKey,
-    uiSettingsLoaded,
-  ]);
 
   useEffect(() => {
     if (!uiSettingsLoaded) return;
@@ -1546,9 +1706,6 @@ export function useConfiguratorWorkspaceRuntime({
     const resolveId = baseId.startsWith('tmdb:') ? baseId : baseId.split(':')[0];
     const target = new URL('/api/media-resolve', window.location.origin);
     target.searchParams.set('id', resolveId);
-    if (allowClientProviderCredentials && tmdbKey.trim()) {
-      target.searchParams.set('tmdbKey', tmdbKey.trim());
-    }
     void fetch(target.toString(), { cache: 'no-store' })
       .then(async (res) => {
         if (!res.ok) return;
@@ -1556,7 +1713,14 @@ export function useConfiguratorWorkspaceRuntime({
         if (data?.title) setActivePreviewTitle(data.title);
       })
       .catch(() => null);
-  }, [uiSettingsLoaded, activePreviewTitle, allowClientProviderCredentials, mediaId, tmdbKey, hasTmdbCredential, disableRemoteLookups]);
+  }, [
+    uiSettingsLoaded,
+    activePreviewTitle,
+    mediaId,
+    providerCredentialSessionVersion,
+    hasTmdbCredential,
+    disableRemoteLookups,
+  ]);
 
 
   const workspaceOutputs = useConfiguratorOutputs({
@@ -1635,7 +1799,7 @@ export function useConfiguratorWorkspaceRuntime({
     genrePreviewMode,
     hideAiometadataCredentials,
     hasServerMdblistKey: runtimeEnvAccessKeys.hasServerMdblistKey,
-    hasServerTmdbKey: hasTmdbCredential,
+    hasServerTmdbKey: runtimeEnvAccessKeys.hasServerTmdbKey,
     isLatestReleaseLoading: feeds.isLatestReleaseLoading,
     lang,
     latestReleaseTag: feeds.latestReleaseTag,
@@ -1727,6 +1891,7 @@ export function useConfiguratorWorkspaceRuntime({
     showConfigString,
     shouldShowQualityBadgesPosition: activeWorkspaceSettings.shouldShowQualityBadgesPosition,
     shouldShowQualityBadgesSide: activeWorkspaceSettings.shouldShowQualityBadgesSide,
+    providerCredentialSessionVersion,
     simklClientId,
     tmdbIdScope,
     tmdbKey,
@@ -2026,7 +2191,7 @@ export function useConfiguratorWorkspaceRuntime({
     hasServerFanartKey: runtimeEnvAccessKeys.hasServerFanartKey,
     hasServerMdblistKey: runtimeEnvAccessKeys.hasServerMdblistKey,
     hasServerSimklClientId: runtimeEnvAccessKeys.hasServerSimklClientId,
-    hasServerTmdbKey: hasTmdbCredential,
+    hasServerTmdbKey: runtimeEnvAccessKeys.hasServerTmdbKey,
     mediaTargetSearch: {
       onMediaIdChange: handleMediaIdChange,
       onThumbnailEpisodeChange: handleThumbnailEpisodeChange,
@@ -2051,7 +2216,12 @@ export function useConfiguratorWorkspaceRuntime({
     outputs: workspaceOutputs,
     pageChrome,
     workspaceActions,
-    workspaceState,
+    workspaceState: {
+      ...workspaceState,
+      personalProviderKeyStatus: providerCredentialSessionStatus,
+      personalProviderKeyMaskedPreview: providerCredentialSessionMaskedPreview,
+      savePersonalProviderKeys,
+    },
     workspaceStorage,
     workspaceSummary,
     workspaceUi,

@@ -47,6 +47,7 @@ import {
   buildConfigString,
   buildProxyUrl,
   normalizeBaseUrl,
+  omitProviderCredentialsFromSavedUiConfig,
   type AgeRatingBadgePosition,
   type ArtworkSource,
   type BackdropImageSize,
@@ -197,6 +198,7 @@ const appendGenreBadgeQueryParams = ({
 const buildGenreSamplePreviewUrl = ({
   allowClientProviderCredentials,
   baseUrl,
+  providerCredentialSessionVersion,
   xrdbKey,
   tmdbKey,
   hasServerTmdbKey,
@@ -211,6 +213,7 @@ const buildGenreSamplePreviewUrl = ({
 }: {
   allowClientProviderCredentials: boolean;
   baseUrl: string;
+  providerCredentialSessionVersion: number;
   xrdbKey: string;
   tmdbKey: string;
   hasServerTmdbKey: boolean;
@@ -231,11 +234,11 @@ const buildGenreSamplePreviewUrl = ({
   }
 
   const query = new URLSearchParams({ lang: sample.lang });
-  if (normalizedTmdbKey) {
-    query.set('tmdbKey', normalizedTmdbKey);
-  }
   if (normalizedXrdbKey) {
     query.set('xrdbKey', normalizedXrdbKey);
+  }
+  if (allowClientProviderCredentials && providerCredentialSessionVersion > 0) {
+    query.set('previewSession', String(providerCredentialSessionVersion));
   }
   appendGenreBadgeQueryParams({
     query,
@@ -423,6 +426,7 @@ export function useConfiguratorOutputs({
   showConfigString,
   shouldShowQualityBadgesPosition,
   shouldShowQualityBadgesSide,
+  providerCredentialSessionVersion,
   simklClientId,
   tmdbIdScope,
   tmdbKey,
@@ -594,6 +598,7 @@ export function useConfiguratorOutputs({
   showConfigString: boolean;
   shouldShowQualityBadgesPosition: boolean;
   shouldShowQualityBadgesSide: boolean;
+  providerCredentialSessionVersion: number;
   simklClientId: string;
   tmdbIdScope: TmdbIdScopeMode;
   tmdbKey: string;
@@ -1002,14 +1007,8 @@ export function useConfiguratorOutputs({
       );
     }
 
-    if (allowClientProviderCredentials && mdblistKey) {
-      query.set('mdblistKey', mdblistKey);
-    }
-    if (allowClientProviderCredentials && simklClientId.trim()) {
-      query.set('simklClientId', simklClientId.trim());
-    }
-    if (normalizedTmdbKey) {
-      query.set('tmdbKey', normalizedTmdbKey);
+    if (allowClientProviderCredentials && providerCredentialSessionVersion > 0) {
+      query.set('previewSession', String(providerCredentialSessionVersion));
     }
     if (tmdbIdScope !== 'soft') {
       query.set('tmdbIdScope', tmdbIdScope);
@@ -1023,10 +1022,6 @@ export function useConfiguratorOutputs({
         (thumbnailArtworkSource === 'fanart' || thumbnailArtworkSource === 'random')) ||
       (previewType === 'logo' &&
         (logoArtworkSource === 'fanart' || logoArtworkSource === 'random'));
-    if (normalizedFanartKey && shouldSendFanartKey) {
-      query.set('fanartKey', normalizedFanartKey);
-    }
-
     if (previewType === 'poster' || previewType === 'backdrop' || previewType === 'thumbnail') {
       query.set('imageText', imageTextForType);
       if (previewType === 'poster' && posterImageSize !== 'normal') {
@@ -1335,6 +1330,7 @@ export function useConfiguratorOutputs({
     ratingBlackStripEnabled,
     shouldShowQualityBadgesPosition,
     shouldShowQualityBadgesSide,
+    providerCredentialSessionVersion,
     simklClientId,
     tmdbIdScope,
     tmdbKey,
@@ -1350,6 +1346,7 @@ export function useConfiguratorOutputs({
         url: buildGenreSamplePreviewUrl({
           allowClientProviderCredentials,
           baseUrl,
+          providerCredentialSessionVersion,
           xrdbKey,
           tmdbKey,
           hasServerTmdbKey,
@@ -1417,6 +1414,7 @@ export function useConfiguratorOutputs({
       posterGenreBadgeBorderWidth,
       posterGenreBadgeBackgroundOpacity,
       posterGenreBadgeStyle,
+      providerCredentialSessionVersion,
       tmdbKey,
     ],
   );
@@ -1496,7 +1494,10 @@ export function useConfiguratorOutputs({
     setPreviewErrorDetails('');
   }, []);
 
-  const currentUiConfig = useMemo(() => buildCurrentUiConfig(), [buildCurrentUiConfig]);
+  const currentUiConfig = useMemo(
+    () => omitProviderCredentialsFromSavedUiConfig(buildCurrentUiConfig()),
+    [buildCurrentUiConfig],
+  );
 
   const configString = useMemo(
     () => buildConfigString(baseUrl, currentUiConfig.settings, {

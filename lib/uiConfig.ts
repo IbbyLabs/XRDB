@@ -342,6 +342,19 @@ export type SavedUiConfig = {
   proxy: SavedProxySettings;
 };
 
+export const omitProviderCredentialsFromSavedUiConfig = (
+  config: SavedUiConfig,
+): SavedUiConfig => ({
+  ...config,
+  settings: {
+    ...config.settings,
+    tmdbKey: '',
+    mdblistKey: '',
+    fanartKey: '',
+    simklClientId: '',
+  },
+});
+
 export type SavedProxySettings = {
   manifestUrl: string;
   translateMeta: boolean;

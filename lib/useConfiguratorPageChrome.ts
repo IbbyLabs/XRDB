@@ -10,9 +10,11 @@ import { type SupportedLanguageOption } from '@/lib/configuratorPageOptions';
 export function useConfiguratorPageChrome({
   disableRemoteLookups = false,
   initialSupportedLanguages,
+  providerCredentialSessionVersion = 0,
 }: {
   disableRemoteLookups?: boolean;
   initialSupportedLanguages: SupportedLanguageOption[];
+  providerCredentialSessionVersion?: number;
 }) {
   const pageRef = useRef<HTMLDivElement | null>(null);
   const navRef = useRef<HTMLElement | null>(null);
@@ -95,8 +97,9 @@ export function useConfiguratorPageChrome({
     }
 
     let active = true;
+    const languageOptionsUrl = new URL('/api/configurator-language-options', window.location.origin);
 
-    fetch('/api/configurator-language-options', { cache: 'no-store' })
+    fetch(languageOptionsUrl.toString(), { cache: 'no-store' })
       .then(async (response) => {
         const payload = (await response.json().catch(() => null)) as
           | { options?: SupportedLanguageOption[] }
@@ -113,7 +116,7 @@ export function useConfiguratorPageChrome({
     return () => {
       active = false;
     };
-  }, [disableRemoteLookups]);
+  }, [disableRemoteLookups, providerCredentialSessionVersion]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {

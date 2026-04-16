@@ -1,4 +1,5 @@
 import {
+  SIMKL_CLIENT_ID,
   SIMKL_ID_CACHE_TTL_MS,
   SIMKL_ID_EMPTY_CACHE_TTL_MS,
   TRAKT_API_BASE_URL,
@@ -684,6 +685,7 @@ export const fetchSimklId = async ({
 
 export const fetchSimklRating = async ({
   clientId,
+  serverClientId = SIMKL_CLIENT_ID,
   imdbId,
   tmdbId,
   mediaType,
@@ -697,6 +699,7 @@ export const fetchSimklRating = async ({
   setMetadata,
 }: {
   clientId: string;
+  serverClientId?: string | null;
   imdbId?: string | null;
   tmdbId?: string | null;
   mediaType: 'movie' | 'tv';
@@ -712,58 +715,69 @@ export const fetchSimklRating = async ({
   const normalizedClientId = String(clientId || '').trim();
   if (!normalizedClientId) return null;
 
-  const simklId = await fetchSimklId({
-    clientId: normalizedClientId,
-    imdbId,
-    tmdbId,
-    mediaType,
-    anilistId,
-    malId,
-    kitsuId,
-    cacheTtlMs: SIMKL_ID_CACHE_TTL_MS,
-    phases,
-    fetchJsonCached,
-    getMetadata,
-    setMetadata,
-  });
+  const normalizedServerClientId = String(serverClientId || '').trim();
 
-  if (!simklId) return null;
-
-  const simklSummaryType = resolveSimklSummaryType({
-    mediaType,
-    anilistId,
-    malId,
-    kitsuId,
-  });
-  const query = buildSimklRequiredQuery(normalizedClientId);
-  query.set('extended', 'full');
-
-  try {
-    const response = await fetchJsonCached(
-      `simkl:summary:${simklSummaryType}:${simklId}:client:${sha1Hex(normalizedClientId)}`,
-      `https://api.simkl.com/${simklSummaryType}/${encodeURIComponent(simklId)}?${query.toString()}`,
-      cacheTtlMs,
+  const loadRating = async (resolvedClientId: string) => {
+    const simklId = await fetchSimklId({
+      clientId: resolvedClientId,
+      imdbId,
+      tmdbId,
+      mediaType,
+      anilistId,
+      malId,
+      kitsuId,
+      cacheTtlMs: SIMKL_ID_CACHE_TTL_MS,
       phases,
-      'mdb',
-      {
-        headers: {
-          'simkl-api-key': normalizedClientId,
-          'Accept': 'application/json',
-          'User-Agent': SIMKL_USER_AGENT,
-        },
-      }
-    );
+      fetchJsonCached,
+      getMetadata,
+      setMetadata,
+    });
 
-    if (!response.ok) return null;
+    if (!simklId) return null;
 
-    const rating = normalizeRatingValue(
-      response.data?.rating ??
-        response.data?.simkl?.rating ??
-        response.data?.ratings?.simkl?.rating ??
-        response.data?.ratings?.overall?.rating,
-    );
-    return rating && !isNegativeRatingValue(rating) ? rating : null;
-  } catch {
-    return null;
+    const simklSummaryType = resolveSimklSummaryType({
+      mediaType,
+      anilistId,
+      malId,
+      kitsuId,
+    });
+    const query = buildSimklRequiredQuery(resolvedClientId);
+    query.set('extended', 'full');
+
+    try {
+      const response = await fetchJsonCached(
+        `simkl:summary:${simklSummaryType}:${simklId}:client:${sha1Hex(resolvedClientId)}`,
+        `https://api.simkl.com/${simklSummaryType}/${encodeURIComponent(simklId)}?${query.toString()}`,
+        cacheTtlMs,
+        phases,
+        'mdb',
+        {
+          headers: {
+            'simkl-api-key': resolvedClientId,
+            'Accept': 'application/json',
+            'User-Agent': SIMKL_USER_AGENT,
+          },
+        }
+      );
+
+      if (!response.ok) return null;
+
+      const rating = normalizeRatingValue(
+        response.data?.rating ??
+          response.data?.simkl?.rating ??
+          response.data?.ratings?.simkl?.rating ??
+          response.data?.ratings?.overall?.rating,
+      );
+      return rating && !isNegativeRatingValue(rating) ? rating : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const rating = await loadRating(normalizedClientId);
+  if (rating || !normalizedServerClientId || normalizedServerClientId === normalizedClientId) {
+    return rating;
   }
+
+  return loadRating(normalizedServerClientId);
 };

@@ -10,7 +10,7 @@ import {
   type PhaseDurations,
 } from './imageRouteRuntime.ts';
 import { sanitizeSensitiveCredentialUrl } from './credentialSearchParams.ts';
-import { prepareTmdbServerRequest } from './tmdbServerAuth.ts';
+import { fetchTmdbServer } from './tmdbServerAuth.ts';
 
 const jsonMetadataInFlight = new Map<string, Promise<CachedJsonResponse>>();
 const textMetadataInFlight = new Map<string, Promise<CachedTextResponse>>();
@@ -35,15 +35,18 @@ export const fetchJsonCached = async (
     if (fromCache) return fromCache;
 
     const fetchStartedAt = Date.now();
-    const preparedRequest = prepareTmdbServerRequest({ url, init });
-    const loggedUrl = sanitizeSensitiveCredentialUrl(preparedRequest.url);
+    const loggedUrl = sanitizeSensitiveCredentialUrl(url);
     let response: Response;
     try {
       response = await measurePhase(phases, phase, () =>
-        fetchImpl(preparedRequest.url, {
-          cache: 'no-store',
-          ...preparedRequest.init,
-        }),
+        fetchTmdbServer(
+          url,
+          {
+            cache: 'no-store',
+            ...init,
+          },
+          fetchImpl,
+        ),
       );
     } catch (error) {
       if (observer?.onNetworkError) {
@@ -76,7 +79,7 @@ export const fetchJsonCached = async (
 
     const tmdbHost = (() => {
       try {
-        return new URL(preparedRequest.url).hostname === 'api.themoviedb.org';
+        return new URL(url).hostname === 'api.themoviedb.org';
       } catch {
         return false;
       }

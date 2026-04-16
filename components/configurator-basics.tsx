@@ -548,9 +548,357 @@ export function WorkspaceManagementSection({
   );
 }
 
+type PersonalProviderKeyFieldId = 'tmdb' | 'mdblist' | 'fanart' | 'simkl';
+
+type PersonalProviderKeyDraft = {
+  tmdbKey: string;
+  mdblistKey: string;
+  fanartKey: string;
+  simklClientId: string;
+};
+
+type PersonalProviderKeyStatus = {
+  tmdb: boolean;
+  mdblist: boolean;
+  fanart: boolean;
+  simkl: boolean;
+};
+
+type PersonalProviderKeyMaskedPreview = {
+  tmdb: string;
+  mdblist: string;
+  fanart: string;
+  simkl: string;
+};
+
+type PersonalProviderKeyUpdates = Partial<PersonalProviderKeyDraft>;
+
+const EMPTY_PERSONAL_PROVIDER_KEY_DRAFT: PersonalProviderKeyDraft = {
+  tmdbKey: '',
+  mdblistKey: '',
+  fanartKey: '',
+  simklClientId: '',
+};
+
+const EMPTY_PERSONAL_PROVIDER_KEY_DIRTY: Record<PersonalProviderKeyFieldId, boolean> = {
+  tmdb: false,
+  mdblist: false,
+  fanart: false,
+  simkl: false,
+};
+
+function ProviderKeyModal({
+  open,
+  onClose,
+  providerKeyStatus,
+  providerKeyMaskedPreview,
+  onSavePersonalProviderKeys,
+}: {
+  open: boolean;
+  onClose: () => void;
+  providerKeyStatus: PersonalProviderKeyStatus;
+  providerKeyMaskedPreview: PersonalProviderKeyMaskedPreview;
+  onSavePersonalProviderKeys: (updates: PersonalProviderKeyUpdates) => Promise<void>;
+}) {
+  const firstInputRef = useRef<HTMLInputElement | null>(null);
+  const [draftValues, setDraftValues] = useState<PersonalProviderKeyDraft>(EMPTY_PERSONAL_PROVIDER_KEY_DRAFT);
+  const [dirtyFields, setDirtyFields] = useState<Record<PersonalProviderKeyFieldId, boolean>>(
+    EMPTY_PERSONAL_PROVIDER_KEY_DIRTY,
+  );
+  const [revealedFields, setRevealedFields] = useState<Record<PersonalProviderKeyFieldId, boolean>>({
+    tmdb: false,
+    mdblist: false,
+    fanart: false,
+    simkl: false,
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+
+  useEffect(() => {
+    if (!open) {
+      setDraftValues(EMPTY_PERSONAL_PROVIDER_KEY_DRAFT);
+      setDirtyFields(EMPTY_PERSONAL_PROVIDER_KEY_DIRTY);
+      setRevealedFields(EMPTY_PERSONAL_PROVIDER_KEY_DIRTY);
+      setSaveError('');
+      return;
+    }
+
+    requestAnimationFrame(() => firstInputRef.current?.focus());
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose, open]);
+
+  if (!open || typeof document === 'undefined') {
+    return null;
+  }
+
+  const hasPendingChanges = Object.values(dirtyFields).some(Boolean);
+
+  const providerFields = [
+    {
+      id: 'tmdb' as const,
+      draftField: 'tmdbKey' as const,
+      label: 'TMDB',
+      placeholder: 'Optional personal API key',
+      help: 'Used for title search, media resolve, previews, and live server requests.',
+    },
+    {
+      id: 'mdblist' as const,
+      draftField: 'mdblistKey' as const,
+      label: 'MDBList',
+      placeholder: 'Optional personal API key',
+      help: 'Used first for live rating requests, with automatic server fallback when available.',
+    },
+    {
+      id: 'fanart' as const,
+      draftField: 'fanartKey' as const,
+      label: 'Fanart API',
+      placeholder: 'Optional personal API key',
+      help: 'Used for Fanart artwork requests when your active source needs it, with server fallback when available.',
+    },
+    {
+      id: 'simkl' as const,
+      draftField: 'simklClientId' as const,
+      label: 'SIMKL Client',
+      placeholder: 'Optional personal client ID',
+      help: 'Used for live SIMKL rating requests when that provider is enabled, with server fallback when available.',
+    },
+  ];
+
+  const toggleFieldVisibility = (fieldId: PersonalProviderKeyFieldId) => {
+    setRevealedFields((current) => ({
+      ...current,
+      [fieldId]: !current[fieldId],
+    }));
+  };
+
+  const updateDraftValue = (
+    fieldId: PersonalProviderKeyFieldId,
+    draftField: keyof PersonalProviderKeyDraft,
+    value: string,
+  ) => {
+    setDraftValues((current) => ({
+      ...current,
+      [draftField]: value,
+    }));
+    setDirtyFields((current) => ({
+      ...current,
+      [fieldId]: true,
+    }));
+    setSaveError('');
+  };
+
+  const markFieldForRemoval = (
+    fieldId: PersonalProviderKeyFieldId,
+    draftField: keyof PersonalProviderKeyDraft,
+  ) => {
+    setDraftValues((current) => ({
+      ...current,
+      [draftField]: '',
+    }));
+    setDirtyFields((current) => ({
+      ...current,
+      [fieldId]: true,
+    }));
+    setSaveError('');
+  };
+
+  const handleSave = async () => {
+    if (!hasPendingChanges) {
+      onClose();
+      return;
+    }
+
+    const updates: PersonalProviderKeyUpdates = {};
+    if (dirtyFields.tmdb) {
+      updates.tmdbKey = draftValues.tmdbKey.trim();
+    }
+    if (dirtyFields.mdblist) {
+      updates.mdblistKey = draftValues.mdblistKey.trim();
+    }
+    if (dirtyFields.fanart) {
+      updates.fanartKey = draftValues.fanartKey.trim();
+    }
+    if (dirtyFields.simkl) {
+      updates.simklClientId = draftValues.simklClientId.trim();
+    }
+
+    setIsSaving(true);
+    setSaveError('');
+
+    try {
+      await onSavePersonalProviderKeys(updates);
+      onClose();
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Unable to save personal provider keys.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[90] flex items-center justify-center bg-black/80 px-4 py-6 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-3xl rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(18,12,31,0.98),rgba(7,6,13,0.98))] p-6 shadow-[0_40px_120px_-55px_rgba(0,0,0,0.95)]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-300">
+              Personal Provider Keys
+            </div>
+            <h3 className="mt-4 text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+              Use your own provider keys
+            </h3>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-zinc-400">
+              Add or replace any key you want XRDB to try first on live requests. These values are
+              sent to the server session and are not kept in workspace state or generated exports.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-white/10 bg-white/5 p-2 text-zinc-400 transition-colors hover:border-white/20 hover:text-zinc-200"
+            aria-label="Close personal provider keys"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mt-6 grid gap-3 md:grid-cols-2">
+          {providerFields.map((field) => {
+            const draftValue = draftValues[field.draftField];
+            const isDirty = dirtyFields[field.id];
+            const isSavedOnServer = providerKeyStatus[field.id];
+            const maskedPreview = providerKeyMaskedPreview[field.id];
+            const statusLabel = isDirty
+              ? draftValue.trim()
+                ? isSavedOnServer
+                  ? 'Will replace the saved key.'
+                  : 'Will save a new server key.'
+                : isSavedOnServer
+                  ? 'Will remove the saved key.'
+                  : 'Will keep this field empty.'
+              : isSavedOnServer
+                ? maskedPreview
+                  ? `Saved on server as ${maskedPreview}.`
+                  : 'Saved on server.'
+                : 'Not saved.';
+            const placeholder = !isDirty && maskedPreview ? maskedPreview : field.placeholder;
+
+            return (
+            <label
+              key={field.id}
+              className="rounded-2xl border border-white/10 bg-white/[0.04] p-4"
+            >
+              <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+                {field.label}
+              </span>
+              <div className="relative">
+                <input
+                  ref={field.id === 'tmdb' ? firstInputRef : undefined}
+                  type={revealedFields[field.id] ? 'text' : 'password'}
+                  value={draftValue}
+                  onChange={(event) => updateDraftValue(field.id, field.draftField, event.target.value)}
+                  placeholder={placeholder}
+                  autoCapitalize="none"
+                  autoComplete="new-password"
+                  spellCheck={false}
+                  className={`w-full rounded-xl border border-white/10 bg-black/50 py-3 pl-3 pr-10 text-[13px] leading-5 text-white outline-none transition-colors focus:border-violet-400/50 ${
+                    maskedPreview && !isDirty ? 'placeholder:text-zinc-400' : 'placeholder:text-zinc-600'
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => toggleFieldVisibility(field.id)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors hover:text-zinc-300"
+                  aria-label={revealedFields[field.id] ? `Hide ${field.label}` : `Show ${field.label}`}
+                >
+                  {revealedFields[field.id] ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+              <span className="mt-2 block text-[11px] leading-5 text-zinc-500">{field.help}</span>
+              <div className="mt-3 flex items-center justify-between gap-3 text-[11px] leading-5">
+                <span className="text-zinc-500">{statusLabel}</span>
+                {(isSavedOnServer || draftValue) ? (
+                  <button
+                    type="button"
+                    onClick={() => markFieldForRemoval(field.id, field.draftField)}
+                    className="shrink-0 rounded-full border border-white/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-400 transition-colors hover:border-white/20 hover:text-zinc-200"
+                  >
+                    {isSavedOnServer && !draftValue ? 'Remove saved key' : 'Clear entry'}
+                  </button>
+                ) : null}
+              </div>
+            </label>
+            );
+          })}
+        </div>
+
+        <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-4">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+            How XRDB uses them
+          </div>
+          <p className="mt-2 text-[12px] leading-6 text-zinc-400">
+            Personal values are tried first on live requests. When the server has its own credential,
+            XRDB falls back automatically if your personal key fails.
+          </p>
+          <p className="mt-2 text-[12px] leading-6 text-zinc-500">
+            Saved values stay server held. Generated URLs, config strings, workspace saves, and
+            AIOMetadata patterns stay clean.
+          </p>
+        </div>
+
+        {saveError ? (
+          <p className="mt-4 text-sm leading-6 text-rose-300">{saveError}</p>
+        ) : null}
+
+        <div className="mt-6 flex flex-col-reverse justify-end gap-3 sm:flex-row">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-xl border border-white/10 px-5 py-3 text-sm font-semibold text-zinc-300 transition-colors hover:border-white/20 hover:text-white"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleSave()}
+            disabled={isSaving}
+            className="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-violet-500"
+          >
+            {isSaving ? 'Saving...' : hasPendingChanges ? 'Save changes' : 'Done'}
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 export function AccessKeysSection({
+  experienceMode,
+  personalProviderKeyStatus,
+  personalProviderKeyMaskedPreview,
   xrdbKey,
   tmdbIdScope,
+  onSavePersonalProviderKeys,
   onXrdbKeyChange,
   onTmdbIdScopeChange,
   tmdbIdScopeOptions,
@@ -558,8 +906,12 @@ export function AccessKeysSection({
   fanartKeyHelpCopy,
   serverCredentialStatus,
 }: {
+  experienceMode: ConfiguratorExperienceMode;
+  personalProviderKeyStatus: PersonalProviderKeyStatus;
+  personalProviderKeyMaskedPreview: PersonalProviderKeyMaskedPreview;
   xrdbKey: string;
   tmdbIdScope: TmdbIdScopeMode;
+  onSavePersonalProviderKeys: (updates: PersonalProviderKeyUpdates) => Promise<void>;
   onXrdbKeyChange: (value: string) => void;
   onTmdbIdScopeChange: (value: TmdbIdScopeMode) => void;
   tmdbIdScopeOptions: Array<{
@@ -577,12 +929,23 @@ export function AccessKeysSection({
   };
 }) {
   const [showXrdbKey, setShowXrdbKey] = useState(false);
+  const [showProviderKeyModal, setShowProviderKeyModal] = useState(false);
   const credentialRows = [
     ['TMDB', serverCredentialStatus.tmdb],
     ['MDBList', serverCredentialStatus.mdblist],
     ['Fanart', serverCredentialStatus.fanart],
     ['SIMKL', serverCredentialStatus.simkl],
   ] as const;
+  const personalProviderLabels = [
+    personalProviderKeyStatus.tmdb ? 'TMDB' : null,
+    personalProviderKeyStatus.mdblist ? 'MDBList' : null,
+    personalProviderKeyStatus.fanart ? 'Fanart API' : null,
+    personalProviderKeyStatus.simkl ? 'SIMKL Client' : null,
+  ].filter((label): label is string => Boolean(label));
+  const personalProviderSummary =
+    personalProviderLabels.length === 0
+      ? ''
+      : `${personalProviderLabels.length} personal ${personalProviderLabels.length === 1 ? 'key' : 'keys'} saved on server: ${personalProviderLabels.join(', ')}.`;
 
   return (
     <div>
@@ -614,6 +977,33 @@ export function AccessKeysSection({
           <p className="mt-2 text-[12px] leading-6 text-zinc-500">
             Provider API keys are read from server environment variables and are not exposed in generated URLs.
           </p>
+        </div>
+        <div className="mt-2 rounded-lg border border-white/10 bg-black/30 p-3.5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+                Personal Provider Keys
+              </div>
+              <p className="mt-1 text-[12px] leading-6 text-zinc-500">
+                {experienceMode === 'advanced'
+                  ? 'Have your own provider keys? Store them in the server session for live previews and server backed requests.'
+                  : 'Have your own provider keys? Switch to Advanced to add them.'}
+              </p>
+              <p className="mt-2 text-[11px] leading-5 text-zinc-500">
+                {personalProviderSummary ||
+                  'Shared exports keep provider keys out of config strings, proxy URLs, AIOMetadata patterns, and saved workspace state.'}
+              </p>
+            </div>
+            {experienceMode === 'advanced' ? (
+              <button
+                type="button"
+                onClick={() => setShowProviderKeyModal(true)}
+                className="shrink-0 self-start rounded-full border border-white/10 bg-black px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-300 transition-colors hover:border-white/20 hover:bg-zinc-900"
+              >
+                Manage keys
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
       <div className="mt-3">
@@ -648,6 +1038,13 @@ export function AccessKeysSection({
       <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
         {fanartKeyHelpCopy}
       </p>
+      <ProviderKeyModal
+        open={showProviderKeyModal && experienceMode === 'advanced'}
+        onClose={() => setShowProviderKeyModal(false)}
+        providerKeyStatus={personalProviderKeyStatus}
+        providerKeyMaskedPreview={personalProviderKeyMaskedPreview}
+        onSavePersonalProviderKeys={onSavePersonalProviderKeys}
+      />
     </div>
   );
 }

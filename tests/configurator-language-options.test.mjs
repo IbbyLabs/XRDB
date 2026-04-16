@@ -46,9 +46,25 @@ test('language selector loads options through the server route instead of direct
     'utf8',
   );
 
-  assert.match(source, /fetch\('\/api\/configurator-language-options'/);
+  assert.match(source, /new URL\('\/api\/configurator-language-options', window\.location\.origin\)/);
+  assert.match(source, /fetch\(languageOptionsUrl\.toString\(\)/);
   assert.doesNotMatch(source, /api\.themoviedb\.org\/3\/configuration\/languages/);
   assert.doesNotMatch(source, /api\.themoviedb\.org\/3\/configuration\/primary_translations/);
+});
+
+test('language selector reloads through the server route without forwarding personal TMDB keys in the browser URL', () => {
+  const hookSource = fs.readFileSync(
+    path.resolve(process.cwd(), 'lib/useConfiguratorPageChrome.ts'),
+    'utf8',
+  );
+  const routeSource = fs.readFileSync(
+    path.resolve(process.cwd(), 'app/api/configurator-language-options/route.ts'),
+    'utf8',
+  );
+
+  assert.doesNotMatch(hookSource, /searchParams\.set\('tmdbKey',/);
+  assert.match(routeSource, /readConfiguratorProviderCredentialSession/);
+  assert.match(routeSource, /buildTmdbConfigurationUrl\('configuration\/languages', requestTmdbKey\)/);
 });
 
 test('language selector dropdown anchors to the trigger right edge to avoid viewport overflow', () => {

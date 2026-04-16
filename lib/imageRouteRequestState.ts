@@ -185,6 +185,7 @@ import {
   normalizeStreamBadgesSetting,
 } from './imageRouteDisplayPrefs.ts';
 import { normalizeRemuxDisplayMode } from './uiConfig.ts';
+import { readConfiguratorProviderCredentialSession } from './configuratorProviderCredentialSession.ts';
 import { getConfigProfile, getConfigProfileDeadline, LEGACY_ID_RE, touchConfigProfileAccess } from './dbCore.ts';
 import type { RemuxDisplayMode } from './mediaFeatures.ts';
 
@@ -276,7 +277,7 @@ export type ImageRouteRequestState = {
   mdblistKey: string | null;
   tmdbKey: string;
   simklClientId: string;
-  simklClientSource: 'query' | 'server' | 'none';
+  simklClientSource: 'query' | 'session' | 'server' | 'none';
   debugRatings: boolean;
   idPrefix: string;
   inputAnimeMappingProvider: AnimeMappingProvider | null;
@@ -418,6 +419,8 @@ export const resolveImageRouteRequestState = async ({
       400,
     );
   }
+
+  const providerCredentialSession = readConfiguratorProviderCredentialSession(request);
 
   const requestedFallbackUrl = searchParams.get('fallbackUrl');
   const lang = searchParams.get('lang') || FALLBACK_IMAGE_LANGUAGE;
@@ -849,7 +852,7 @@ export const resolveImageRouteRequestState = async ({
   );
   const tmdbEpOrderRaw = searchParams.get('tmdb_ep_order');
   const tmdbEpOrder: 'tvdb' | 'tmdb' = tmdbEpOrderRaw === 'tvdb' ? 'tvdb' : 'tmdb';
-  const fanartKey = searchParams.get('fanartKey') || FANART_API_KEY;
+  const fanartKey = searchParams.get('fanartKey') || providerCredentialSession.fanartKey || FANART_API_KEY;
   const fanartClientKey = searchParams.get('fanartClientKey') || FANART_CLIENT_KEY;
   const rpdbRatingBarAliases = resolveRpdbRatingBarPositionAliases(
     searchParams.get('ratingBarPos'),
@@ -1170,13 +1173,16 @@ export const resolveImageRouteRequestState = async ({
     ? thumbnailQualityBadgeScale
     : backdropQualityBadgeScale;
   const mdblistKey =
-    searchParams.get('mdblistKey') || searchParams.get('mdblist_key');
-  const tmdbKey = searchParams.get('tmdbKey') || searchParams.get('tmdb_key') || TMDB_API_KEY;
-  const simklClientIdFromQuery =
-    searchParams.get('simklClientId') || searchParams.get('simkl_client_id') || '';
-  const simklClientId = simklClientIdFromQuery || SIMKL_CLIENT_ID;
-  const simklClientSource = simklClientIdFromQuery
+    searchParams.get('mdblistKey') || searchParams.get('mdblist_key') || providerCredentialSession.mdblistKey;
+  const tmdbKey =
+    searchParams.get('tmdbKey') || searchParams.get('tmdb_key') || providerCredentialSession.tmdbKey || TMDB_API_KEY;
+  const simklClientIdFromRequest =
+    searchParams.get('simklClientId') || searchParams.get('simkl_client_id') || providerCredentialSession.simklClientId || '';
+  const simklClientId = simklClientIdFromRequest || SIMKL_CLIENT_ID;
+  const simklClientSource = searchParams.get('simklClientId') || searchParams.get('simkl_client_id')
     ? 'query'
+    : providerCredentialSession.simklClientId
+      ? 'session'
     : SIMKL_CLIENT_ID
       ? 'server'
       : 'none';

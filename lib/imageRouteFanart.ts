@@ -1,4 +1,4 @@
-import { TMDB_CACHE_TTL_MS } from './imageRouteConfig.ts';
+import { FANART_API_KEY, FANART_CLIENT_KEY, TMDB_CACHE_TTL_MS } from './imageRouteConfig.ts';
 import type {
   CachedJsonNetworkObserver,
   CachedJsonResponse,
@@ -30,6 +30,8 @@ export const fetchFanartArtwork = async ({
   tvdbId,
   fanartKey,
   fanartClientKey,
+  serverFanartKey = FANART_API_KEY,
+  serverFanartClientKey = FANART_CLIENT_KEY,
   requestedLang,
   fallbackLang,
   phases,
@@ -40,38 +42,57 @@ export const fetchFanartArtwork = async ({
   tvdbId?: string | null;
   fanartKey: string;
   fanartClientKey?: string | null;
+  serverFanartKey?: string | null;
+  serverFanartClientKey?: string | null;
   requestedLang: string;
   fallbackLang: string;
   phases: PhaseDurations;
   fetchJsonCached: FanartFetchJson;
 }) => {
-  const normalizedApiKey = String(fanartKey || '').trim();
-  if (!normalizedApiKey) return null;
-
   const lookupId =
     mediaType === 'movie' ? String(tmdbId || '').trim() : String(tvdbId || '').trim();
   if (!lookupId) return null;
+  const serverApiKey = String(serverFanartKey || '').trim();
+  const serverClientKey = String(serverFanartClientKey || '').trim();
 
-  const endpoint =
-    mediaType === 'movie'
-      ? `https://webservice.fanart.tv/v3/movies/${lookupId}?api_key=${encodeURIComponent(normalizedApiKey)}`
-      : `https://webservice.fanart.tv/v3/tv/${lookupId}?api_key=${encodeURIComponent(normalizedApiKey)}`;
-  const url = fanartClientKey
-    ? `${endpoint}&client_key=${encodeURIComponent(String(fanartClientKey).trim())}`
-    : endpoint;
+  const loadPayload = async (apiKey: string, clientKey: string) => {
+    const normalizedApiKey = String(apiKey || '').trim();
+    if (!normalizedApiKey) {
+      return null;
+    }
 
-  const response = await fetchJsonCached(
-    `fanart:${mediaType}:${lookupId}:key:${sha1Hex(normalizedApiKey)}:client:${sha1Hex(String(fanartClientKey || ''))}`,
-    url,
-    TMDB_CACHE_TTL_MS,
-    phases,
-    'fanart'
-  );
-  if (!response.ok || !response.data || typeof response.data !== 'object') {
+    const normalizedClientKey = String(clientKey || '').trim();
+    const endpoint =
+      mediaType === 'movie'
+        ? `https://webservice.fanart.tv/v3/movies/${lookupId}?api_key=${encodeURIComponent(normalizedApiKey)}`
+        : `https://webservice.fanart.tv/v3/tv/${lookupId}?api_key=${encodeURIComponent(normalizedApiKey)}`;
+    const url = normalizedClientKey
+      ? `${endpoint}&client_key=${encodeURIComponent(normalizedClientKey)}`
+      : endpoint;
+
+    const response = await fetchJsonCached(
+      `fanart:${mediaType}:${lookupId}:key:${sha1Hex(normalizedApiKey)}:client:${sha1Hex(normalizedClientKey)}`,
+      url,
+      TMDB_CACHE_TTL_MS,
+      phases,
+      'fanart'
+    );
+    if (!response.ok || !response.data || typeof response.data !== 'object') {
+      return null;
+    }
+
+    return response.data as Record<string, FanartImageAsset[] | unknown>;
+  };
+
+  const normalizedApiKey = String(fanartKey || '').trim();
+  let payload = await loadPayload(normalizedApiKey, String(fanartClientKey || '').trim());
+  if (!payload && serverApiKey && normalizedApiKey && normalizedApiKey !== serverApiKey) {
+    payload = await loadPayload(serverApiKey, serverClientKey);
+  }
+  if (!payload) {
     return null;
   }
 
-  const payload = response.data as Record<string, FanartImageAsset[] | unknown>;
   const posterCandidates = mediaType === 'movie'
     ? ((payload.movieposter as FanartImageAsset[] | undefined) || [])
     : ((payload.tvposter as FanartImageAsset[] | undefined) || []);

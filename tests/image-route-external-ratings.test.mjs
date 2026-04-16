@@ -348,3 +348,57 @@ test('image route external ratings fetch Simkl summary ratings and reject negati
   assert.match(requested[0].url, /https:\/\/api\.simkl\.com\/redirect\?/);
   assert.match(requested[1].url, /https:\/\/api\.simkl\.com\/movies\/555\?/);
 });
+
+test('image route external ratings fall back to the server Simkl client id when a personal client id fails', async () => {
+  const metadata = new Map();
+  const requested = [];
+  const fetchJsonCached = async (_key, url) => {
+    requested.push(url);
+    if (url.includes('client_id=user-simkl-key')) {
+      return {
+        ok: false,
+        status: 401,
+        data: null,
+        location: null,
+      };
+    }
+
+    if (url.startsWith('https://api.simkl.com/redirect?')) {
+      return {
+        ok: true,
+        status: 200,
+        data: { id: '555' },
+        location: null,
+      };
+    }
+
+    return {
+      ok: true,
+      status: 200,
+      data: {
+        ratings: {
+          simkl: {
+            rating: 91,
+          },
+        },
+      },
+    };
+  };
+
+  const rating = await fetchSimklRating({
+    clientId: 'user-simkl-key',
+    serverClientId: 'server-simkl-key',
+    tmdbId: '42',
+    mediaType: 'movie',
+    cacheTtlMs: 5000,
+    phases,
+    fetchJsonCached,
+    getMetadata: (key) => metadata.get(key),
+    setMetadata: (key, value) => metadata.set(key, value),
+  });
+
+  assert.equal(rating, '91');
+  assert.match(requested[0], /client_id=user-simkl-key/);
+  assert.match(requested[1], /client_id=server-simkl-key/);
+  assert.match(requested[2], /https:\/\/api\.simkl\.com\/movies\/555\?/);
+});

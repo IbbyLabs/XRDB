@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
+import { readConfiguratorProviderCredentialSession } from '@/lib/configuratorProviderCredentialSession';
 import { TMDB_API_KEY } from '@/lib/imageRouteConfig';
 import { TMDB_API_BASE_URL } from '@/lib/serviceBaseUrls';
 import { fetchTmdbServer, hasServerTmdbCredentials } from '@/lib/tmdbServerAuth';
@@ -24,7 +25,9 @@ const buildTmdbResolveUrl = (
 
 export async function GET(request: NextRequest) {
   const id = String(request.nextUrl.searchParams.get('id') || '').trim();
-  const tmdbKey = String(request.nextUrl.searchParams.get('tmdbKey') || '').trim() || TMDB_API_KEY;
+  const sessionTmdbKey = readConfiguratorProviderCredentialSession(request).tmdbKey;
+  const tmdbKey =
+    String(request.nextUrl.searchParams.get('tmdbKey') || '').trim() || sessionTmdbKey || TMDB_API_KEY;
 
   if (!id || (!tmdbKey && !hasServerTmdbCredentials())) {
     return NextResponse.json(EMPTY_RESULT, { status: 400 });

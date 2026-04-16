@@ -135,3 +135,42 @@ test('image route fanart uses tvdb ids for shows and returns null on invalid pay
     'https://webservice.fanart.tv/v3/tv/9001?api_key=fanart-key',
   );
 });
+
+test('image route fanart falls back to the server key when a personal key fails', async () => {
+  const requests = [];
+  const fetchJsonCached = async (_key, url) => {
+    requests.push(url);
+    if (url.includes('api_key=user-fanart-key')) {
+      return {
+        ok: false,
+        status: 401,
+        data: null,
+      };
+    }
+
+    return {
+      ok: true,
+      status: 200,
+      data: {
+        movieposter: [{ url: 'https://img.example/server.jpg', lang: 'en', likes: '1' }],
+      },
+    };
+  };
+
+  const artwork = await fetchFanartArtwork({
+    mediaType: 'movie',
+    tmdbId: '42',
+    fanartKey: 'user-fanart-key',
+    serverFanartKey: 'server-fanart-key',
+    requestedLang: 'en',
+    fallbackLang: 'en',
+    phases,
+    fetchJsonCached,
+  });
+
+  assert.deepEqual(requests, [
+    'https://webservice.fanart.tv/v3/movies/42?api_key=user-fanart-key',
+    'https://webservice.fanart.tv/v3/movies/42?api_key=server-fanart-key',
+  ]);
+  assert.deepEqual(artwork?.posterUrls, ['https://img.example/server.jpg']);
+});
