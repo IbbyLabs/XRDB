@@ -79,6 +79,47 @@
 
 <a id="v1-21-0"></a>
 
+<a id="v1-21-1"></a>
+
+## [v1.21.1] - 16/04/2026
+
+### Fixed
+* keep personal provider keys server side
+  
+  Move personal provider credentials into an opaque server held session and resolve them through session aware configurator routes instead of browser visible params.
+  
+  Add server fallback behavior for TMDB, Fanart, and Simkl requests, strip provider keys from previews and saved workspace exports, and show masked previews for saved personal keys in the advanced access keys modal.
+* harden server managed credential handling
+  
+  Prefer server side TMDB bearer auth when a read access token is configured while keeping explicit per request overrides intact.
+  
+  Redact sensitive credential query params from observer URLs and replay storage, hash MDBList cache keys, and omit xrdbKey from masked exports.
+  
+  Update docs, templates, and tests for the new credential handling and masked export behavior.
+* BUG-109 restore full language options
+  
+  Move configurator language loading behind a server route so provider keys stay out of the browser while TMDB backed language options still load. Also keep the language dropdown aligned inside the viewport and cover both regressions with focused tests.
+* prefer IMDb reverse mapping for anime episode fallback
+  
+  Use season aware reverse mapping for AniList episode thumbnail fallback instead of always routing through the TMDB show id.
+  
+  The previous fallback path could resolve sequel anime entries to the wrong AniList work and reuse the same episode thumbnail across seasons, which is what caused the JJK S02E01 and S03E01 collision.
+  
+  Prefer explicit anime mapping ids and resolved IMDb ids before falling back to TMDB, and keep the regression covered with a focused artwork selection test for the season 3 episode fallback path.
+* sanitize poster warm replay requests
+  
+  Default poster warm renders to a lean imdb,tmdb profile and strip replay only params, provider credentials, config ids, and MDBList backed providers before replay.
+  
+  Share the MDBList backed provider set and add focused regressions for sanitized replay storage and warm request parameter normalization.
+* BUG-108 shorten cache for transient MDBList failures
+  
+  Detect transient MDBList failures during provider resolution and carry a short lived TTL through prepared media into final image cache control.
+  
+  Add focused regressions for MDBList failure handling, provider resolution propagation, prepared media state, and final image TTL calculation.
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.21.0] - 16/04/2026
 
 ### Added

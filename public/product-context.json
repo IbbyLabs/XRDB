@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.21.0",
-  "generatedAt": "2026-04-16T19:22:10.504Z",
+  "xrdbTag": "v1.21.1",
+  "generatedAt": "2026-04-16T21:31:22.360Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -27,6 +27,7 @@
         "/api/config/[id]/unlock",
         "/api/configurator-env-access-keys: Runtime configurator access key defaults endpoint.",
         "/api/configurator-language-options",
+        "/api/configurator-provider-credentials",
         "/api/discord-widget: Community widget endpoint.",
         "/api/latest-release: Latest release feed used by the site.",
         "/api/media-resolve: Configurator media resolve endpoint.",
@@ -44,11 +45,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
-        "restore full language options",
+        "keep personal provider keys server side",
+        "harden server managed credential handling",
+        "BUG-109 restore full language options",
         "prefer IMDb reverse mapping for anime episode fallback",
-        "sanitize poster warm replay requests",
-        "BUG-108 shorten cache for transient MDBList failures",
-        "BUG-106 restore full provider resolution"
+        "sanitize poster warm replay requests"
       ]
     },
     {
