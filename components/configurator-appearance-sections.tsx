@@ -1899,16 +1899,14 @@ export function LookSection({
               max={ratingBadgeScaleMax}
               onChange={handleRatingBadgeScaleChange}
             />
-            {!cleanGenreStyleActive ? (
-              <ScaleField
-                label="Genre badge"
-                value={activeGenreBadgeScale}
-                defaultValue={DEFAULT_BADGE_SCALE_PERCENT}
-                min={MIN_BADGE_SCALE_PERCENT}
-                max={MAX_GENRE_BADGE_SCALE_PERCENT}
-                onChange={(value) => onSelectGenreBadgeScale(normalizeGenreBadgeScalePercent(String(value)))}
-              />
-            ) : null}
+            <ScaleField
+              label="Genre badge"
+              value={activeGenreBadgeScale}
+              defaultValue={DEFAULT_BADGE_SCALE_PERCENT}
+              min={MIN_BADGE_SCALE_PERCENT}
+              max={MAX_GENRE_BADGE_SCALE_PERCENT}
+              onChange={(value) => onSelectGenreBadgeScale(normalizeGenreBadgeScalePercent(String(value)))}
+            />
             {activeGenreBadgeStyle === 'glass' ? (
               <ScaleField
                 label="Genre border"

@@ -27,6 +27,7 @@ const SHARED_IMAGE_QUERY_KEYS = [
   'streamBadges',
   'qualityBadgesSide',
   'posterQualityBadgesPosition',
+  'ageRatingBadgePosition',
   'qualityBadgesStyle',
   'providerAppearance',
   'ratingPresentation',
