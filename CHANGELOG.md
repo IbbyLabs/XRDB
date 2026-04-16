@@ -97,6 +97,30 @@
 ### Documentation
 * align proxy docs and UI copy with server managed key requirements and stable UUID manifest behavior
 
+<a id="v1-21-2"></a>
+
+## [v1.21.2] - 16/04/2026
+
+### Fixed
+* invalidate proxied manifests when source config changes
+  
+  Make proxy manifest identity depend on the effective source manifest payload and proxy seed so stable source URLs do not keep a stale addon identity after configuration changes.
+  
+  Add explicit no store cache headers to proxy manifest and proxy ref responses and cover the behavior with focused proxy regression tests.
+* BUG-101 BUG-105 preserve proxy age rating placement and clean genre sizing
+  
+  Keep the genre badge size slider available when the clean text genre style is active so the configurator still exposes badge scaling in that mode.
+  
+  Forward ageRatingBadgePosition through shared proxy image query keys and cover the rewrite with a regression test so poster proxy manifests preserve custom age rating placement.
+
+### Documentation
+* refresh static doc assets
+* align freshness guidance and refresh doc assets
+  
+  Clarify that the Generated manifest flow uses a stable UUID backed install URL that refreshes when the source addon manifest changes instead of implying a rotated install link is required.
+  
+  Update proxy page and reference copy to describe server managed TMDB and MDBList coverage, record the recent proxy and configurator fixes in the unreleased changelog, and refresh the tracked README preview metadata plus static documentation captures.
+
 ## [v1.21.1] - 16/04/2026
 
 ### Fixed
