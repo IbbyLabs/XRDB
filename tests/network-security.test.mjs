@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { ProxyAgent } from 'undici';
+
 import { fetchWithOneRedirect } from '../lib/networkSecurity.ts';
 
 const makeBody = (text = '') => ({
@@ -20,19 +22,28 @@ const makeUndiciMock = (responses) => {
 };
 
 test('fetchWithOneRedirect returns non-redirect response directly', async () => {
+  const callOptions = [];
   const mock = makeUndiciMock([
     { statusCode: 200, headers: { 'content-type': 'application/json' }, body: makeBody('{"ok":true}') },
   ]);
 
-  const response = await fetchWithOneRedirect('https://example.test/manifest.json', mock);
+  const instrumentedMock = async (url, options) => {
+    callOptions.push(options || {});
+    return mock(url, options);
+  };
+
+  const response = await fetchWithOneRedirect('https://example.test/manifest.json', instrumentedMock);
   assert.equal(response.status, 200);
   const json = await response.json();
   assert.deepEqual(json, { ok: true });
+  assert.equal(callOptions.length, 1);
+  assert.ok(callOptions[0]?.dispatcher);
 });
 
 test('fetchWithOneRedirect follows a single valid redirect', async () => {
   process.env.XRDB_ALLOW_PRIVATE_SOURCES_FOR_TESTS = 'true';
   process.env.NODE_ENV = 'test';
+  const callOptions = [];
 
   const mock = makeUndiciMock([
     {
@@ -46,11 +57,17 @@ test('fetchWithOneRedirect follows a single valid redirect', async () => {
       body: makeBody('{"metas":[]}'),
     },
   ]);
+  const instrumentedMock = async (url, options) => {
+    callOptions.push(options || {});
+    return mock(url, options);
+  };
 
-  const response = await fetchWithOneRedirect('https://example.test/catalog.json', mock);
+  const response = await fetchWithOneRedirect('https://example.test/catalog.json', instrumentedMock);
   assert.equal(response.status, 200);
   const json = await response.json();
   assert.deepEqual(json, { metas: [] });
+  assert.equal(callOptions.length, 2);
+  assert.ok(callOptions.every((options) => !options.dispatcher));
 
   delete process.env.XRDB_ALLOW_PRIVATE_SOURCES_FOR_TESTS;
   delete process.env.NODE_ENV;
@@ -106,4 +123,51 @@ test('fetchWithOneRedirect throws when redirect target is a non-http URL', async
     () => fetchWithOneRedirect('https://example.test/manifest.json', mock),
     /http/i,
   );
+});
+
+test('fetchWithOneRedirect uses ProxyAgent when outbound proxy env is configured', async () => {
+  const previousHttpsProxy = process.env.HTTPS_PROXY;
+  const previousHttpProxy = process.env.HTTP_PROXY;
+  const callOptions = [];
+
+  process.env.HTTPS_PROXY = 'http://proxy.example.test:8080';
+  delete process.env.HTTP_PROXY;
+
+  const mock = makeUndiciMock([
+    { statusCode: 200, headers: { 'content-type': 'application/json' }, body: makeBody('{"ok":true}') },
+  ]);
+  const instrumentedMock = async (url, options) => {
+    callOptions.push(options || {});
+    return mock(url, options);
+  };
+
+  try {
+    const response = await fetchWithOneRedirect('https://example.test/manifest.json', instrumentedMock);
+    assert.equal(response.status, 200);
+    assert.equal(callOptions.length, 1);
+    assert.ok(callOptions[0]?.dispatcher instanceof ProxyAgent);
+  } finally {
+    if (previousHttpsProxy === undefined) delete process.env.HTTPS_PROXY;
+    else process.env.HTTPS_PROXY = previousHttpsProxy;
+
+    if (previousHttpProxy === undefined) delete process.env.HTTP_PROXY;
+    else process.env.HTTP_PROXY = previousHttpProxy;
+  }
+});
+
+test('safe source dispatcher lookup supports lookup calls with options.all', async () => {
+  const calls = [];
+  const mock = async (url, options) => {
+    calls.push(options || {});
+    return {
+      statusCode: 200,
+      headers: { 'content-type': 'application/json' },
+      body: makeBody('{"ok":true}'),
+    };
+  };
+
+  const response = await fetchWithOneRedirect('https://example.test/manifest.json', mock);
+  assert.equal(response.status, 200);
+  assert.equal(calls.length, 1);
+  assert.ok(calls[0]?.dispatcher);
 });

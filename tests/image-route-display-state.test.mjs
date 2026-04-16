@@ -16,6 +16,8 @@ const createBaseInput = () => ({
   aggregateAccentBarVisible: true,
   posterRingValueSource: 'highest',
   posterRingProgressSource: 'tmdb',
+  posterRingCriticsPriority: ['tomatoes', 'metacritic', 'imdb'],
+  posterRingAudiencePriority: ['tomatoesaudience', 'imdb', 'tmdb'],
   posterRatingsLayout: 'top',
   posterRatingsMaxPerSide: 3,
   backdropRatingsLayout: 'top',
@@ -78,12 +80,114 @@ test('image route display state builds compact ring overlays for poster ring pre
   assert.match(state.compactRingOverlay?.svg ?? '', /#ef4444/i);
 });
 
-test('image route display state keeps compact ring overlay when value source is unavailable but progress source is available', () => {
+test('compact ring applies configured value color to score text in source accent mode', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    ratingPresentation: 'ring',
+    aggregateAccentMode: 'source',
+    aggregateValueColor: '#ff6600',
+  });
+
+  assert.ok(state.compactRingOverlay);
+  assert.match(state.compactRingOverlay?.svg ?? '', /#ff6600/i);
+});
+
+test('compact ring applies configured value color to score text in genre accent mode', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    ratingPresentation: 'ring',
+    aggregateAccentMode: 'genre',
+    aggregateValueColor: '#ff6600',
+  });
+
+  assert.ok(state.compactRingOverlay);
+  assert.match(state.compactRingOverlay?.svg ?? '', /#ff6600/i);
+});
+
+test('compact ring applies configured value color to score text in custom accent mode', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    ratingPresentation: 'ring',
+    aggregateAccentMode: 'custom',
+    aggregateAccentColor: '#3b82f6',
+    aggregateValueColor: '#ff6600',
+  });
+
+  assert.ok(state.compactRingOverlay);
+  assert.match(state.compactRingOverlay?.svg ?? '', /#ff6600/i);
+});
+
+test('compact ring applies configured value color to score text in dynamic accent mode', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    ratingPresentation: 'ring',
+    aggregateAccentMode: 'dynamic',
+    aggregateValueColor: '#ff6600',
+  });
+
+  assert.ok(state.compactRingOverlay);
+  assert.match(state.compactRingOverlay?.svg ?? '', /#ff6600/i);
+});
+
+test('compact ring score text uses default color when no value color is configured', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    ratingPresentation: 'ring',
+    aggregateAccentMode: 'source',
+    aggregateValueColor: null,
+  });
+
+  assert.ok(state.compactRingOverlay);
+  assert.match(state.compactRingOverlay?.svg ?? '', /#f8fafc/i);
+});
+
+test('image route display state suppresses compact ring overlay when value source has no data', () => {
   const state = resolveImageRouteDisplayState({
     ...createBaseInput(),
     ratingPresentation: 'ring',
     posterRingValueSource: 'anilist',
     posterRingProgressSource: 'imdb',
+    effectiveRatingPreferences: ['imdb'],
+    providerRatings: new Map([['imdb', '7.1']]),
+  });
+
+  assert.equal(state.compactRingOverlay, null);
+});
+
+test('image route display state resolves compact ring center from critics aggregate with overall fallback', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    ratingPresentation: 'ring',
+    posterRingValueSource: 'critics',
+    posterRingProgressSource: 'audience',
+    effectiveRatingPreferences: ['imdb'],
+    providerRatings: new Map([['imdb', '7.1']]),
+  });
+
+  assert.ok(state.compactRingOverlay);
+  assert.match(state.compactRingOverlay?.svg ?? '', /71/);
+});
+
+test('image route display state resolves compact ring from critics priority source', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    ratingPresentation: 'ring',
+    posterRingValueSource: 'priority-critics',
+    posterRingCriticsPriority: ['metacritic', 'imdb', 'tomatoes'],
+    effectiveRatingPreferences: ['imdb'],
+    providerRatings: new Map([['imdb', '7.1']]),
+  });
+
+  assert.ok(state.compactRingOverlay);
+  assert.match(state.compactRingOverlay?.svg ?? '', /71/);
+});
+
+test('image route display state resolves compact ring from audience priority source', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    ratingPresentation: 'ring',
+    posterRingValueSource: 'priority-audience',
+    posterRingAudiencePriority: ['letterboxd', 'imdb', 'tomatoesaudience'],
     effectiveRatingPreferences: ['imdb'],
     providerRatings: new Map([['imdb', '7.1']]),
   });
@@ -123,6 +227,56 @@ test('image route display state keeps direct rating badges for standard backdrop
     state.displayRatingBadges.map((badge) => badge.key),
     ['tomatoes', 'imdb'],
   );
+});
+
+test('image route display state suppresses poster rating surfaces for none presentation', () => {
+  const streamBadges = [
+    {
+      key: '4k',
+      label: '4K',
+      value: '',
+      iconUrl: '',
+      accentColor: '#38bdf8',
+    },
+  ];
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    ratingPresentation: 'none',
+    streamBadges,
+  });
+
+  assert.equal(state.usesAggregatePresentation, false);
+  assert.equal(state.useEditorialPosterPresentation, false);
+  assert.equal(state.useBlockbusterPresentation, false);
+  assert.equal(state.displayRatingBadges.length, 0);
+  assert.equal(state.streamBadges.length, 0);
+  assert.equal(state.editorialOverlay, null);
+  assert.equal(state.compactRingOverlay, null);
+  assert.deepEqual(state.debugResolvedRatingProviders, []);
+  assert.ok(state.genreBadge);
+});
+
+test('image route display state suppresses non poster rating surfaces for none presentation', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    imageType: 'backdrop',
+    ratingPresentation: 'none',
+    streamBadges: [
+      {
+        key: 'hdr',
+        label: 'HDR',
+        value: '',
+        iconUrl: '',
+        accentColor: '#f59e0b',
+      },
+    ],
+  });
+
+  assert.equal(state.usesAggregatePresentation, false);
+  assert.equal(state.displayRatingBadges.length, 0);
+  assert.equal(state.streamBadges.length, 0);
+  assert.deepEqual(state.debugResolvedRatingProviders, []);
+  assert.ok(state.genreBadge);
 });
 
 test('image route display state applies XRDB provider icon tuning defaults', () => {

@@ -10,8 +10,10 @@ import {
   resolveLogoRatingsMaxForPresentation,
   resolvePosterRatingLayoutForPresentation,
   resolvePosterRatingsMaxPerSideForPresentation,
+  hasAggregateRatingProvidersForSource,
   parseAggregateDynamicStops,
   resolveAggregateDynamicAccentColor,
+  selectAggregateRatingProviders,
   usesCompactRingPresentation as isCompactRingPresentationMode,
   usesAggregateRatingPresentation,
   type AggregateAccentMode,
@@ -90,6 +92,8 @@ export const resolveImageRouteDisplayState = (input: {
   aggregateAccentBarVisible: boolean;
   posterRingValueSource: PosterCompactRingSource;
   posterRingProgressSource: PosterCompactRingSource;
+  posterRingCriticsPriority: RatingPreference[];
+  posterRingAudiencePriority: RatingPreference[];
   posterRatingsLayout: PosterRatingLayout;
   posterRatingsMaxPerSide: number | null;
   backdropRatingsLayout: BackdropRatingLayout;
@@ -127,6 +131,8 @@ export const resolveImageRouteDisplayState = (input: {
     aggregateAccentBarVisible,
     posterRingValueSource,
     posterRingProgressSource,
+    posterRingCriticsPriority,
+    posterRingAudiencePriority,
     posterRatingsLayout,
     posterRatingsMaxPerSide,
     backdropRatingsLayout,
@@ -147,17 +153,22 @@ export const resolveImageRouteDisplayState = (input: {
     posterRatingBadgeScale,
   } = input;
   let { streamBadges, genreBadge } = input;
+  const suppressRatingPresentation = ratingPresentation === 'none';
+  if (suppressRatingPresentation) {
+    streamBadges = [];
+  }
   const aggregateDynamicStopEntries = parseAggregateDynamicStops(aggregateDynamicStops);
 
   const usePosterBadgeLayout = imageType === 'poster';
   const useBackdropBadgeLayout = imageType === 'backdrop';
   const useLogoBadgeLayout = imageType === 'logo';
-  const usesAggregatePresentation = usesAggregateRatingPresentation(ratingPresentation);
+  const usesAggregatePresentation =
+    !suppressRatingPresentation && usesAggregateRatingPresentation(ratingPresentation);
   const useCompactRingPresentation =
-    imageType === 'poster' && isCompactRingPresentationMode(ratingPresentation);
+    !suppressRatingPresentation && imageType === 'poster' && isCompactRingPresentationMode(ratingPresentation);
   const useEditorialPosterPresentation =
-    imageType === 'poster' && ratingPresentation === 'editorial';
-  const useBlockbusterPresentation = ratingPresentation === 'blockbuster';
+    !suppressRatingPresentation && imageType === 'poster' && ratingPresentation === 'editorial';
+  const useBlockbusterPresentation = !suppressRatingPresentation && ratingPresentation === 'blockbuster';
   const effectivePosterRatingsLayout =
     usePosterBadgeLayout
       ? resolvePosterRatingLayoutForPresentation(ratingPresentation, posterRatingsLayout)
@@ -202,11 +213,13 @@ export const resolveImageRouteDisplayState = (input: {
 
   const ratingBadgeByProvider = new Map<RatingPreference, RatingBadge>();
   const renderableRatingPreferences = orderRatingPreferencesForRender(
-    effectiveRatingPreferences.filter((provider) =>
-      provider === 'kitsu'
-        ? shouldRenderRawKitsuFallbackRating || allowAnimeOnlyRatings
-        : allowAnimeOnlyRatings || !ANIME_ONLY_RATING_PROVIDER_SET.has(provider),
-    ),
+    suppressRatingPresentation
+      ? []
+      : effectiveRatingPreferences.filter((provider) =>
+          provider === 'kitsu'
+            ? shouldRenderRawKitsuFallbackRating || allowAnimeOnlyRatings
+            : allowAnimeOnlyRatings || !ANIME_ONLY_RATING_PROVIDER_SET.has(provider),
+        ),
     {
       prioritizeAnimeRatings: allowAnimeOnlyRatings,
       preserveInputOrder: hasExplicitRatingOrder,
@@ -275,7 +288,7 @@ export const resolveImageRouteDisplayState = (input: {
   ) => {
     if (aggregateAccentMode === 'dynamic' && normalizedScore !== null) {
       return resolveAggregateDynamicAccentColor(
-        normalizedScore * 10,
+        parseFloat(normalizedScore.toFixed(1)) * 10,
         aggregateDynamicStopEntries,
       );
     }
@@ -345,9 +358,22 @@ export const resolveImageRouteDisplayState = (input: {
         })
       : null;
 
+  type CompactRingResolvedValue =
+    | {
+        kind: 'provider';
+        provider: RatingPreference;
+        badge: RatingBadge;
+        normalizedValue: number;
+      }
+    | {
+        kind: 'aggregate';
+        source: AggregateRatingSource;
+        normalizedValue: number;
+      };
+
   const resolveCompactRingBadge = (
     requestedSource: PosterCompactRingSource,
-  ): { provider: RatingPreference; badge: RatingBadge; normalizedValue: number } | null => {
+  ): CompactRingResolvedValue | null => {
     const availableEntries = renderableRatingPreferences
       .map((provider) => {
         const badge = ratingBadgeByProvider.get(provider);
@@ -366,18 +392,134 @@ export const resolveImageRouteDisplayState = (input: {
 
     if (availableEntries.length === 0) return null;
 
+    const availableProviders = availableEntries.map((entry) => entry.provider);
+    const availableEntryByProvider = new Map(
+      availableEntries.map((entry) => [entry.provider, entry] as const),
+    );
+
+    const resolvePriorityEntry = (priorityList: RatingPreference[]) => {
+      for (const provider of priorityList) {
+        const entry = availableEntryByProvider.get(provider);
+        if (entry) return entry;
+      }
+      return null;
+    };
+
+    const resolveAggregateValue = (
+      source: AggregateRatingSource,
+    ): { source: AggregateRatingSource; normalizedValue: number } | null => {
+      if (
+        source !== 'overall' &&
+        !hasAggregateRatingProvidersForSource(source, availableProviders)
+      ) {
+        return null;
+      }
+      const selectedProviders = selectAggregateRatingProviders(source, availableProviders);
+      const selectedValues = selectedProviders
+        .map((provider) => availableEntryByProvider.get(provider)?.normalizedValue ?? null)
+        .filter((value): value is number => value !== null);
+      if (selectedValues.length === 0) {
+        return null;
+      }
+      return {
+        source,
+        normalizedValue:
+          selectedValues.reduce((sum, value) => sum + value, 0) / selectedValues.length,
+      };
+    };
+
+    const resolveAggregatePriorityEntry = (source: AggregateRatingSource) => {
+      if (source === 'critics') {
+        return resolvePriorityEntry(posterRingCriticsPriority);
+      }
+      if (source === 'audience') {
+        return resolvePriorityEntry(posterRingAudiencePriority);
+      }
+      const mergedPriority: RatingPreference[] = [];
+      const seen = new Set<RatingPreference>();
+      for (const provider of [...posterRingCriticsPriority, ...posterRingAudiencePriority]) {
+        if (seen.has(provider)) continue;
+        seen.add(provider);
+        mergedPriority.push(provider);
+      }
+      return resolvePriorityEntry(mergedPriority);
+    };
+
+    if (requestedSource === 'priority-critics') {
+      const priorityEntry = resolvePriorityEntry(posterRingCriticsPriority);
+      return priorityEntry
+        ? {
+            kind: 'provider',
+            provider: priorityEntry.provider,
+            badge: priorityEntry.badge,
+            normalizedValue: priorityEntry.normalizedValue,
+          }
+        : null;
+    }
+
+    if (requestedSource === 'priority-audience') {
+      const priorityEntry = resolvePriorityEntry(posterRingAudiencePriority);
+      return priorityEntry
+        ? {
+            kind: 'provider',
+            provider: priorityEntry.provider,
+            badge: priorityEntry.badge,
+            normalizedValue: priorityEntry.normalizedValue,
+          }
+        : null;
+    }
+
+    if (
+      requestedSource === 'overall' ||
+      requestedSource === 'critics' ||
+      requestedSource === 'audience'
+    ) {
+      const aggregateMatch =
+        resolveAggregateValue(requestedSource) || resolveAggregateValue('overall');
+      if (aggregateMatch) {
+        return {
+          kind: 'aggregate',
+          source: aggregateMatch.source,
+          normalizedValue: aggregateMatch.normalizedValue,
+        };
+      }
+      const priorityFallback = resolveAggregatePriorityEntry(requestedSource);
+      return priorityFallback
+        ? {
+            kind: 'provider',
+            provider: priorityFallback.provider,
+            badge: priorityFallback.badge,
+            normalizedValue: priorityFallback.normalizedValue,
+          }
+        : null;
+    }
+
     if (requestedSource !== 'highest') {
       const exactMatch = availableEntries.find((entry) => entry.provider === requestedSource);
       if (exactMatch) {
-        return exactMatch;
+        return {
+          kind: 'provider',
+          provider: exactMatch.provider,
+          badge: exactMatch.badge,
+          normalizedValue: exactMatch.normalizedValue,
+        };
       }
+      return null;
     }
 
-    return availableEntries.reduce(
+    const highest = availableEntries.reduce(
       (highest, entry) =>
         highest === null || entry.normalizedValue > highest.normalizedValue ? entry : highest,
       null as { provider: RatingPreference; badge: RatingBadge; normalizedValue: number } | null,
     );
+    return highest
+      ? {
+          kind: 'provider',
+          provider: highest.provider,
+          badge: highest.badge,
+          normalizedValue: highest.normalizedValue,
+        }
+      : null;
   };
 
   const valueRingBadge =
@@ -390,9 +532,9 @@ export const resolveImageRouteDisplayState = (input: {
           posterRingProgressSource || DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
         )
       : null;
-  const compactRingPrimaryBadge = valueRingBadge || progressRingBadge;
+  const compactRingPrimaryBadge = valueRingBadge;
   const compactRingScorePercent =
-    (compactRingPrimaryBadge?.normalizedValue ?? 0) * 10;
+    parseFloat(((compactRingPrimaryBadge?.normalizedValue ?? 0)).toFixed(1)) * 10;
   const compactRingAccentColor =
     aggregateAccentMode === 'dynamic'
       ? resolveAggregateDynamicAccentColor(
@@ -400,18 +542,36 @@ export const resolveImageRouteDisplayState = (input: {
           aggregateDynamicStopEntries,
         )
       : aggregateAccentMode === 'custom'
-      ? aggregateAccentColor || compactRingPrimaryBadge?.badge.accentColor || '#22c55e'
+        ? aggregateAccentColor ||
+          (compactRingPrimaryBadge?.kind === 'provider'
+            ? compactRingPrimaryBadge.badge.accentColor
+            : null) ||
+          '#22c55e'
       : aggregateAccentMode === 'genre' && primaryGenreFamily?.accentColor
         ? primaryGenreFamily.accentColor
-        : compactRingPrimaryBadge?.badge.accentColor || '#22c55e';
+        : compactRingPrimaryBadge?.kind === 'aggregate'
+          ? resolveAggregateAccentColor(
+              compactRingPrimaryBadge.source,
+              compactRingPrimaryBadge.normalizedValue,
+            )
+          : compactRingPrimaryBadge?.kind === 'provider'
+            ? compactRingPrimaryBadge.badge.accentColor
+            : '#22c55e';
+  const compactRingValueColor =
+    compactRingPrimaryBadge?.kind === 'aggregate'
+      ? resolveAggregateValueColor(compactRingPrimaryBadge.source)
+      : aggregateValueColor || undefined;
   const compactRingOverlay =
     useCompactRingPresentation && compactRingPrimaryBadge
       ? buildPosterCompactRingOverlay({
           outputWidth,
           outputHeight,
           valueText: String(Math.round(compactRingPrimaryBadge.normalizedValue * 10)),
-          progressPercent: Math.round((progressRingBadge || compactRingPrimaryBadge).normalizedValue * 10),
+          progressPercent: Math.round(
+            (progressRingBadge || compactRingPrimaryBadge).normalizedValue * 10,
+          ),
           accentColor: compactRingAccentColor,
+          valueColor: compactRingValueColor,
           badgeScalePercent: posterRatingBadgeScale,
         })
       : null;

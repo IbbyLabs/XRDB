@@ -22,6 +22,7 @@ const SHARED_IMAGE_QUERY_KEYS = [
   'genreBadgePosition',
   'genreBadgeScale',
   'genreBadgeBorderWidth',
+  'genreBadgeBackgroundOpacity',
   'genreBadgeAnimeGrouping',
   'streamBadges',
   'qualityBadgesSide',
@@ -72,6 +73,7 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'posterGenreBadgePosition',
     'posterGenreBadgeScale',
     'posterGenreBadgeBorderWidth',
+    'posterGenreBadgeBackgroundOpacity',
     'posterGenreBadgeAnimeGrouping',
     'posterStreamBadges',
   'posterQualityBadges',
@@ -97,6 +99,7 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'backdropGenreBadgePosition',
     'backdropGenreBadgeScale',
     'backdropGenreBadgeBorderWidth',
+    'backdropGenreBadgeBackgroundOpacity',
     'backdropGenreBadgeAnimeGrouping',
     'backdropStreamBadges',
     'backdropQualityBadges',
@@ -121,6 +124,7 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'thumbnailGenreBadgePosition',
     'thumbnailGenreBadgeScale',
     'thumbnailGenreBadgeBorderWidth',
+    'thumbnailGenreBadgeBackgroundOpacity',
     'thumbnailGenreBadgeAnimeGrouping',
     'thumbnailStreamBadges',
     'thumbnailQualityBadges',
@@ -149,6 +153,7 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'logoGenreBadgePosition',
     'logoGenreBadgeScale',
     'logoGenreBadgeBorderWidth',
+    'logoGenreBadgeBackgroundOpacity',
     'logoGenreBadgeAnimeGrouping',
     'logoRatings',
     'logoRatingsMax',
@@ -214,6 +219,7 @@ export type ProxyConfig = {
   genreBadgePosition?: string;
   genreBadgeScale?: string;
   genreBadgeBorderWidth?: string;
+  genreBadgeBackgroundOpacity?: string;
   genreBadgeAnimeGrouping?: string;
   posterGenreBadge?: string;
   backdropGenreBadge?: string;
@@ -235,6 +241,10 @@ export type ProxyConfig = {
   backdropGenreBadgeBorderWidth?: string;
   thumbnailGenreBadgeBorderWidth?: string;
   logoGenreBadgeBorderWidth?: string;
+  posterGenreBadgeBackgroundOpacity?: string;
+  backdropGenreBadgeBackgroundOpacity?: string;
+  thumbnailGenreBadgeBackgroundOpacity?: string;
+  logoGenreBadgeBackgroundOpacity?: string;
   posterGenreBadgeAnimeGrouping?: string;
   backdropGenreBadgeAnimeGrouping?: string;
   thumbnailGenreBadgeAnimeGrouping?: string;
@@ -395,6 +405,7 @@ const CONFIG_STRING_KEYS = [
   'genreBadgePosition',
   'genreBadgeScale',
   'genreBadgeBorderWidth',
+  'genreBadgeBackgroundOpacity',
   'posterGenreBadge',
   'backdropGenreBadge',
   'thumbnailGenreBadge',
@@ -415,6 +426,10 @@ const CONFIG_STRING_KEYS = [
   'backdropGenreBadgeBorderWidth',
   'thumbnailGenreBadgeBorderWidth',
   'logoGenreBadgeBorderWidth',
+  'posterGenreBadgeBackgroundOpacity',
+  'backdropGenreBadgeBackgroundOpacity',
+  'thumbnailGenreBadgeBackgroundOpacity',
+  'logoGenreBadgeBackgroundOpacity',
   'posterGenreBadgeAnimeGrouping',
   'backdropGenreBadgeAnimeGrouping',
   'thumbnailGenreBadgeAnimeGrouping',

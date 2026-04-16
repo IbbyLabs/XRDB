@@ -1,7 +1,6 @@
-import { randomBytes } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
 
-import { upsertConfigProfile } from '@/lib/dbCore';
+import { createProtectedConfigProfileFromBody } from '@/lib/configProfileRoute';
 
 export async function POST(request: NextRequest) {
   let body: unknown;
@@ -15,19 +14,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Body must be a JSON object' }, { status: 400 });
   }
 
-  const raw = body as Record<string, unknown>;
-  const providedId = typeof raw._id === 'string' && raw._id.trim() ? raw._id.trim() : null;
-  const id = providedId ?? `xr_${randomBytes(4).toString('hex')}`;
-
-  const params: Record<string, string> = {};
-  for (const [key, value] of Object.entries(raw)) {
-    if (key === '_id') continue;
-    if (value !== null && value !== undefined) {
-      params[key] = String(value);
-    }
+  const result = await createProtectedConfigProfileFromBody(body);
+  if (!result.ok) {
+    return NextResponse.json(result.body, { status: result.status });
   }
 
-  upsertConfigProfile(id, params);
-
-  return NextResponse.json({ id });
+  return NextResponse.json({ id: result.id });
 }

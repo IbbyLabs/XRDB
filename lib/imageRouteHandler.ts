@@ -1,6 +1,8 @@
 import { NextRequest } from 'next/server';
 
 import { scheduleImdbDatasetSync } from '@/lib/imdbDatasetScheduler';
+import { schedulePosterCacheWarm } from '@/lib/posterCacheWarmScheduler';
+import { recordRecentPosterRequest } from '@/lib/posterCacheWarmRecentRing';
 import {
   XRDB_REQUEST_KEY_ERROR_MESSAGE,
   isXrdbRequestAuthorized,
@@ -22,6 +24,8 @@ import {
 } from '@/lib/imageRouteCachedFetch';
 import { resolveImageRouteRequestState } from '@/lib/imageRouteRequestState';
 import { executeImageRouteRender } from '@/lib/imageRouteExecution';
+import { getConfigProfile } from '@/lib/dbCore';
+import { logger } from '@/lib/serverLogger';
 
 const finalImageInFlight = new Map<string, Promise<RenderedImagePayload>>();
 
@@ -50,20 +54,29 @@ export async function handleImageRequest(
     return respond('Invalid image type', 400);
   }
 
+  const configId = request.nextUrl.searchParams.get('config');
+  const configFallbackKey = configId ? (getConfigProfile(configId)?.xrdbKey ?? null) : null;
+
   if (
     !isXrdbRequestAuthorized({
       configuredKeys: XRDB_REQUEST_API_KEYS,
       searchParams: request.nextUrl.searchParams,
       headers: request.headers,
+      fallbackKey: configFallbackKey,
     })
   ) {
     return respond(XRDB_REQUEST_KEY_ERROR_MESSAGE, 401);
   }
 
-  console.warn(
+  logger.request(
     `[XRDB] image request: /${type}/${id} streamBadges=${request.nextUrl.searchParams.get('posterStreamBadges') ?? request.nextUrl.searchParams.get('streamBadges') ?? 'none'}`,
   );
   scheduleImdbDatasetSync();
+  schedulePosterCacheWarm();
+
+  if (type === 'poster') {
+    recordRecentPosterRequest(id, request.nextUrl.searchParams);
+  }
 
   try {
     const requestState = await resolveImageRouteRequestState({
@@ -108,9 +121,7 @@ export async function handleImageRequest(
       return respond(error.message, error.status, error.headers);
     }
 
-    if (process.env.NODE_ENV !== 'production') {
-      console.error('[XRDB] render failed', error);
-    }
+    logger.error('[XRDB] render failed', error);
 
     const message = typeof error?.message === 'string' ? error.message : 'Unknown error';
     const normalizedMessage = message.toLowerCase();

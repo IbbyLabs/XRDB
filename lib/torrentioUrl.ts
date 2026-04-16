@@ -3,9 +3,15 @@ export const DEFAULT_TORRENTIO_BASE_URL = 'https://torrentio.strem.fun';
 export const resolveTorrentioBaseUrl = (
   value: string | undefined,
   fallback = DEFAULT_TORRENTIO_BASE_URL,
-) => {
-  const rawValue = (value || '').trim();
-  const candidate = rawValue || fallback;
+): string | null => {
+  if (value === undefined) {
+    return fallback;
+  }
+  const rawValue = value.trim();
+  if (!rawValue) {
+    return null;
+  }
+  const candidate = rawValue;
   let parsed: URL;
   try {
     parsed = new URL(candidate);

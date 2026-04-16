@@ -1,10 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import { NextRequest } from 'next/server.js';
 
+import { createProtectedConfigProfile } from '../lib/dbCore.ts';
 import { resolveImageRouteRequestState } from '../lib/imageRouteRequestState.ts';
 import { HttpError } from '../lib/imageRouteRuntime.ts';
+import {
+  buildAiometadataUrlPatterns,
+  buildProfileParams,
+  createDefaultSavedUiConfig,
+} from '../lib/uiConfig.ts';
 
 const createRequest = (url, headers = {}) =>
   new NextRequest(url, {
@@ -13,6 +22,168 @@ const createRequest = (url, headers = {}) =>
       ...headers,
     },
   });
+
+const withTempDataDir = async (t, callback) => {
+  const tempDir = mkdtempSync(join(tmpdir(), 'xrdb-image-config-'));
+  const previousDataDir = process.env.XRDB_DATA_DIR;
+  const previousDbPath = process.env.XRDB_DB_PATH;
+
+  process.env.XRDB_DATA_DIR = tempDir;
+  delete process.env.XRDB_DB_PATH;
+
+  t.after(() => {
+    if (previousDataDir === undefined) delete process.env.XRDB_DATA_DIR;
+    else process.env.XRDB_DATA_DIR = previousDataDir;
+
+    if (previousDbPath === undefined) delete process.env.XRDB_DB_PATH;
+    else process.env.XRDB_DB_PATH = previousDbPath;
+
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  return callback();
+};
+
+test('image route request state resolves UUID-backed config profiles at runtime', async (t) => {
+  await withTempDataDir(t, async () => {
+    const configId = createProtectedConfigProfile(
+      {
+        tmdbKey: 'tmdb-key',
+        posterRatings: 'imdb,tmdb',
+      },
+      'password-hash',
+    );
+
+    const state = await resolveImageRouteRequestState({
+      request: createRequest(`https://example.com/poster/tt0133093.jpg?config=${configId}`),
+      imageType: 'poster',
+      id: 'tt0133093.jpg',
+    });
+
+    assert.deepEqual(state.effectiveRatingPreferences, ['imdb', 'tmdb']);
+    assert.equal(state.configMigrationDeadline, null);
+  });
+});
+
+test('image route request state keeps explicit URL params over saved profile params', async (t) => {
+  await withTempDataDir(t, async () => {
+    const configId = createProtectedConfigProfile(
+      {
+        tmdbKey: 'tmdb-key',
+        posterRatingStyle: 'plain',
+      },
+      'password-hash',
+    );
+
+    const state = await resolveImageRouteRequestState({
+      request: createRequest(
+        `https://example.com/poster/tt0133093.jpg?config=${configId}&ratingStyle=square`,
+      ),
+      imageType: 'poster',
+      id: 'tt0133093.jpg',
+    });
+
+    assert.equal(state.ratingStyle, 'square');
+  });
+});
+
+test('image route request state resolves generated inline and config URLs with parity', async (t) => {
+  await withTempDataDir(t, async () => {
+    const config = createDefaultSavedUiConfig();
+    config.settings.tmdbKey = 'tmdb-key';
+    config.settings.mdblistKey = 'mdblist-key';
+    config.settings.posterRatings = ['imdb', 'tmdb'];
+    config.settings.backdropRatings = ['tmdb'];
+    config.settings.logoRatings = ['tmdb'];
+    config.settings.thumbnailRatings = ['tmdb', 'imdb'];
+    config.settings.posterRatingStyle = 'glass';
+    config.settings.backdropRatingStyle = 'square';
+    config.settings.logoRatingStyle = 'plain';
+    config.settings.thumbnailRatingStyle = 'glass';
+
+    const inlinePatterns = buildAiometadataUrlPatterns('https://example.com/', config.settings, {
+      hideCredentials: false,
+    });
+    assert.ok(inlinePatterns);
+
+    const profileParams = buildProfileParams(config.settings);
+    assert.ok(profileParams);
+    const configId = createProtectedConfigProfile(profileParams, 'password-hash');
+
+    const posterInline = inlinePatterns.posterUrlPattern
+      .replace('{type}', 'movie')
+      .replace('{tmdb_id}', '603');
+    const backdropInline = inlinePatterns.backgroundUrlPattern
+      .replace('{type}', 'tv')
+      .replace('{tmdb_id}', '1399');
+    const logoInline = inlinePatterns.logoUrlPattern
+      .replace('{type}', 'movie')
+      .replace('{tmdb_id}', '603');
+    const thumbnailInline = inlinePatterns.episodeThumbnailUrlPattern
+      .replace('{imdb_id}', 'tt0944947')
+      .replace('{season}', '1')
+      .replace('{episode}', '1');
+
+    const posterConfig = posterInline.replace(/\?.*$/, `?config=${configId}`);
+    const backdropConfig = backdropInline.replace(/\?.*$/, `?config=${configId}`);
+    const logoConfig = logoInline.replace(/\?.*$/, `?config=${configId}`);
+    const thumbnailConfig = thumbnailInline.replace(/\?.*$/, `?config=${configId}`);
+
+    const posterInlineState = await resolveImageRouteRequestState({
+      request: createRequest(posterInline),
+      imageType: 'poster',
+      id: 'tmdb:movie:603.jpg',
+    });
+    const posterConfigState = await resolveImageRouteRequestState({
+      request: createRequest(posterConfig),
+      imageType: 'poster',
+      id: 'tmdb:movie:603.jpg',
+    });
+    assert.deepEqual(posterConfigState.effectiveRatingPreferences, posterInlineState.effectiveRatingPreferences);
+
+    const backdropInlineState = await resolveImageRouteRequestState({
+      request: createRequest(backdropInline),
+      imageType: 'backdrop',
+      id: 'tmdb:tv:1399.jpg',
+    });
+    const backdropConfigState = await resolveImageRouteRequestState({
+      request: createRequest(backdropConfig),
+      imageType: 'backdrop',
+      id: 'tmdb:tv:1399.jpg',
+    });
+    assert.deepEqual(
+      backdropConfigState.effectiveRatingPreferences,
+      backdropInlineState.effectiveRatingPreferences,
+    );
+
+    const logoInlineState = await resolveImageRouteRequestState({
+      request: createRequest(logoInline),
+      imageType: 'logo',
+      id: 'tmdb:movie:603.png',
+    });
+    const logoConfigState = await resolveImageRouteRequestState({
+      request: createRequest(logoConfig),
+      imageType: 'logo',
+      id: 'tmdb:movie:603.png',
+    });
+    assert.deepEqual(logoConfigState.effectiveRatingPreferences, logoInlineState.effectiveRatingPreferences);
+
+    const thumbnailInlineState = await resolveImageRouteRequestState({
+      request: createRequest(`${thumbnailInline}&thumbnail=1`),
+      imageType: 'backdrop',
+      id: 'tt0944947.jpg',
+    });
+    const thumbnailConfigState = await resolveImageRouteRequestState({
+      request: createRequest(`${thumbnailConfig}&thumbnail=1`),
+      imageType: 'backdrop',
+      id: 'tt0944947.jpg',
+    });
+    assert.deepEqual(
+      thumbnailConfigState.effectiveRatingPreferences,
+      thumbnailInlineState.effectiveRatingPreferences,
+    );
+  });
+});
 
 test('image route request state rejects ambiguous strict TMDB ids for backdrop renders', async () => {
   await assert.rejects(
@@ -273,6 +444,32 @@ test('image route request state parses poster no background outline controls', a
   assert.equal(state.posterNoBackgroundBadgeOutlineWidth, 2);
 });
 
+test('image route request state parses genre badge clean background opacity controls', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&genreBadgeBackgroundOpacity=24&posterGenreBadgeBackgroundOpacity=46',
+    ),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(state.genreBadgeBackgroundOpacity, 46);
+});
+
+test('image route request state coerces clean genre badge to text mode at bottom center', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&posterGenreBadge=both&posterGenreBadgeStyle=clean&posterGenreBadgePosition=topRight',
+    ),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(state.genreBadgeStyle, 'clean');
+  assert.equal(state.genreBadgeMode, 'text');
+  assert.equal(state.genreBadgePosition, 'bottomCenter');
+});
+
 test('image route request state allows larger thumbnail rating badge scale for thumbnail requests', async () => {
   const state = await resolveImageRouteRequestState({
     request: createRequest(
@@ -311,4 +508,147 @@ test('image route request state normalizes dynamic aggregate accent stops', asyn
 
   assert.equal(state.aggregateAccentMode, 'dynamic');
   assert.equal(state.aggregateDynamicStops, '0:#7f1d1d,60:#f59e0b,85:#16a34a');
+});
+
+test('image route request state parses compact ring aggregate and priority params', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&posterRatingPresentation=ring&posterRingValueSource=critics&posterRingProgressSource=priority-audience&posterRingCriticsPriority=metacritic,tomatoes,imdb,tmdb&posterRingAudiencePriority=letterboxd,tomatoesaudience,imdb',
+    ),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(state.ratingPresentation, 'ring');
+  assert.equal(state.posterRingValueSource, 'critics');
+  assert.equal(state.posterRingProgressSource, 'priority-audience');
+  assert.deepEqual(state.posterRingCriticsPriority, ['metacritic', 'tomatoes', 'imdb']);
+  assert.deepEqual(state.posterRingAudiencePriority, ['letterboxd', 'tomatoesaudience', 'imdb']);
+});
+
+test('image route request state disables rating and stream work for poster none presentation', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&posterRatingPresentation=none&posterRatings=imdb,tmdb&posterStreamBadges=on',
+    ),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(state.ratingPresentation, 'none');
+  assert.equal(state.shouldApplyRatings, false);
+  assert.equal(state.shouldApplyStreamBadges, false);
+  assert.deepEqual(state.effectiveRatingPreferences, []);
+  assert.deepEqual([...state.selectedRatings], []);
+});
+
+test('image route request state keeps poster auto stream badges enabled but non-blocking', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest('https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&posterStreamBadges=auto'),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(state.shouldApplyStreamBadges, true);
+  assert.equal(state.shouldBlockOnStreamBadges, false);
+});
+
+test('image route request state defaults poster stream badges to off when omitted', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest('https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key'),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(state.shouldApplyStreamBadges, false);
+  assert.equal(state.shouldBlockOnStreamBadges, false);
+});
+
+test('image route request state keeps poster on stream badges blocking', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest('https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&posterStreamBadges=on'),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(state.shouldApplyStreamBadges, true);
+  assert.equal(state.shouldBlockOnStreamBadges, true);
+});
+
+test('image route request state disables rating and stream work for thumbnail none presentation', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/backdrop/xrdbid:tt1234567:1:2.jpg?thumbnail=1&tmdbKey=tmdb-key&thumbnailRatingPresentation=none&thumbnailRatings=tmdb,imdb&thumbnailStreamBadges=on',
+    ),
+    imageType: 'backdrop',
+    id: 'xrdbid:tt1234567:1:2.jpg',
+  });
+
+  assert.equal(state.isThumbnailRequest, true);
+  assert.equal(state.ratingPresentation, 'none');
+  assert.equal(state.shouldApplyRatings, false);
+  assert.equal(state.shouldApplyStreamBadges, false);
+  assert.deepEqual(state.effectiveRatingPreferences, []);
+  assert.deepEqual([...state.selectedRatings], []);
+});
+
+test('thumbnail with stored episode profile resolves profile settings for thumbnail requests', async (t) => {
+  await withTempDataDir(t, async () => {
+    const configId = createProtectedConfigProfile(
+      {
+        tmdbKey: 'tmdb-key',
+        thumbnailRatings: 'kitsu',
+        thumbnailRatingStyle: 'plain',
+      },
+      'password-hash',
+    );
+
+    const state = await resolveImageRouteRequestState({
+      request: createRequest(
+        `https://example.com/backdrop/xrdbid:tt1234567:1:2.jpg?thumbnail=1&config=${configId}`,
+      ),
+      imageType: 'backdrop',
+      id: 'xrdbid:tt1234567:1:2.jpg',
+    });
+
+    assert.equal(state.isThumbnailRequest, true);
+    assert.deepEqual(state.effectiveRatingPreferences, ['kitsu']);
+    assert.equal(state.ratingStyle, 'plain');
+  });
+});
+
+test('thumbnail without config resolves default settings without error', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/backdrop/xrdbid:tt1234567:1:2.jpg?thumbnail=1&tmdbKey=tmdb-key',
+    ),
+    imageType: 'backdrop',
+    id: 'xrdbid:tt1234567:1:2.jpg',
+  });
+
+  assert.equal(state.isThumbnailRequest, true);
+  assert.deepEqual(state.effectiveRatingPreferences, ['tmdb', 'imdb']);
+});
+
+test('explicit thumbnail badge params override stored episode profile', async (t) => {
+  await withTempDataDir(t, async () => {
+    const configId = createProtectedConfigProfile(
+      {
+        tmdbKey: 'tmdb-key',
+        thumbnailRatings: 'kitsu',
+      },
+      'password-hash',
+    );
+
+    const state = await resolveImageRouteRequestState({
+      request: createRequest(
+        `https://example.com/backdrop/xrdbid:tt1234567:1:2.jpg?thumbnail=1&config=${configId}&thumbnailRatings=imdb,tmdb`,
+      ),
+      imageType: 'backdrop',
+      id: 'xrdbid:tt1234567:1:2.jpg',
+    });
+
+    assert.equal(state.isThumbnailRequest, true);
+    assert.deepEqual(state.effectiveRatingPreferences, ['imdb', 'tmdb']);
+  });
 });

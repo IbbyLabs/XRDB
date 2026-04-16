@@ -11,6 +11,10 @@ test('resolveTorrentioBaseUrl falls back to default when unset', () => {
   assert.equal(resolveTorrentioBaseUrl(undefined), DEFAULT_TORRENTIO_BASE_URL);
 });
 
+test('resolveTorrentioBaseUrl disables torrentio when env is explicitly blank', () => {
+  assert.equal(resolveTorrentioBaseUrl('   '), null);
+});
+
 test('resolveTorrentioBaseUrl strips manifest and trailing slash from instance URL', () => {
   const normalized = resolveTorrentioBaseUrl(' https://torrentio.kuu.example/realdebrid=1/manifest.json ');
 

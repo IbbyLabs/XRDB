@@ -39,14 +39,17 @@ import {
   DEFAULT_BADGE_SCALE_PERCENT,
   DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
+  DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
   DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR,
   DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_THUMBNAIL_GENRE_BADGE_BORDER_WIDTH_PX,
   MAX_GENRE_BADGE_BORDER_WIDTH_PX,
+  MAX_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
   MAX_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   MAX_THUMBNAIL_RATING_BADGE_SCALE_PERCENT,
   MIN_GENRE_BADGE_BORDER_WIDTH_PX,
+  MIN_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
   MIN_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   MAX_BADGE_SCALE_PERCENT,
   MAX_GENRE_BADGE_SCALE_PERCENT,
@@ -55,6 +58,7 @@ import {
   QUALITY_BADGE_OPTIONS,
   normalizeBadgeScalePercent,
   normalizeGenreBadgeBorderWidthPx,
+  normalizeGenreBadgeBackgroundOpacityPercent,
   normalizeGenreBadgeScalePercent,
   normalizeNoBackgroundBadgeOutlineWidthPx,
   normalizeQualityBadgeScalePercent,
@@ -85,6 +89,10 @@ import {
   RATING_VALUE_MODE_OPTIONS,
   type RatingValueMode,
 } from '@/lib/ratingDisplay';
+import {
+  RATING_PROVIDER_OPTIONS,
+  type RatingPreference,
+} from '@/lib/ratingProviderCatalog';
 import {
   DEFAULT_RATING_STACK_OFFSET_PX,
   MAX_RATING_STACK_OFFSET_PX,
@@ -229,6 +237,8 @@ export function PresentationSection({
   activeAggregateRatingSource,
   posterRingValueSource,
   posterRingProgressSource,
+  posterRingCriticsPriority,
+  posterRingAudiencePriority,
   posterCompactRingSourceOptions,
   aggregateAccentMode,
   aggregateAccentColor,
@@ -244,6 +254,8 @@ export function PresentationSection({
   onSelectAggregateRatingSource,
   onSelectPosterRingValueSource,
   onSelectPosterRingProgressSource,
+  onSelectPosterRingCriticsPriority,
+  onSelectPosterRingAudiencePriority,
   onSelectAggregateAccentMode,
   onSelectAggregateAccentColor,
   onSelectAggregateCriticsAccentColor,
@@ -269,6 +281,8 @@ export function PresentationSection({
   activeAggregateRatingSource: AggregateRatingSource;
   posterRingValueSource: PosterCompactRingSource;
   posterRingProgressSource: PosterCompactRingSource;
+  posterRingCriticsPriority: RatingPreference[];
+  posterRingAudiencePriority: RatingPreference[];
   posterCompactRingSourceOptions: Array<DetailedSelectionOption<PosterCompactRingSource>>;
   aggregateAccentMode: AggregateAccentMode;
   aggregateAccentColor: string;
@@ -284,6 +298,8 @@ export function PresentationSection({
   onSelectAggregateRatingSource: (value: AggregateRatingSource) => void;
   onSelectPosterRingValueSource: (value: PosterCompactRingSource) => void;
   onSelectPosterRingProgressSource: (value: PosterCompactRingSource) => void;
+  onSelectPosterRingCriticsPriority: (value: RatingPreference[]) => void;
+  onSelectPosterRingAudiencePriority: (value: RatingPreference[]) => void;
   onSelectAggregateAccentMode: (value: AggregateAccentMode) => void;
   onSelectAggregateAccentColor: (value: string) => void;
   onSelectAggregateCriticsAccentColor: (value: string) => void;
@@ -295,6 +311,16 @@ export function PresentationSection({
   onToggleAggregateAccentBarVisible: () => void;
   onSelectAggregateAccentBarOffset: (value: number) => void;
 }) {
+  const togglePriorityProvider = (
+    current: RatingPreference[],
+    provider: RatingPreference,
+  ) => {
+    if (current.includes(provider)) {
+      return current.filter((entry) => entry !== provider);
+    }
+    return [...current, provider].slice(0, 3);
+  };
+
   return (
     <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
       <div className="text-[11px] font-semibold text-zinc-400">Presentation</div>
@@ -332,24 +358,16 @@ export function PresentationSection({
       {layoutPlacementHelp ? (
         <p className="text-[11px] leading-relaxed text-zinc-500">
           {isEditorialPresentation
-            ? previewType === 'poster'
-              ? 'Editorial uses a fixed top left score mark that feels printed into the poster. Layout controls stay saved for when you switch back to another mode.'
-              : 'Editorial has its custom treatment on posters. Here it falls back to one clean average badge.'
+            ? 'Editorial uses a fixed top left score mark that feels printed into the poster. Layout controls stay saved for when you switch back to another mode.'
             : isCompactRingPresentation
-              ? previewType === 'poster'
-                ? 'Compact Ring uses a fixed top right score ring. Layout controls stay saved for when you switch back to another mode.'
-                : 'Compact Ring is poster only. Here it falls back to one clean average badge.'
+              ? 'Compact Ring uses a fixed top right score ring. Layout controls stay saved for when you switch back to another mode.'
             : activePresentationPreservesLayout
               ? `This mode still respects the selected layout below, so you can move ratings to ${layoutPlacementHelp}.`
-              : `Blockbuster uses a fixed ${previewType === 'poster' ? 'left/right poster stack' : 'right vertical backdrop stack'}. Switch to another presentation to use ${layoutPlacementHelp}.`}
+              : `Blockbuster uses a fixed left/right poster stack. Switch to another presentation to use ${layoutPlacementHelp}.`}
         </p>
       ) : (
         <p className="text-[11px] leading-relaxed text-zinc-500">
-          {isEditorialPresentation
-            ? 'Editorial keeps its unique treatment on posters. Logo output falls back to one clean average badge.'
-            : isCompactRingPresentation
-              ? 'Compact Ring stays pinned to the poster corner. Logo output falls back to one clean average badge.'
-            : 'Logo presentation keeps the output controls below available.'}
+          {'Logo presentation keeps the output controls below available.'}
         </p>
       )}
       {usesAggregatePresentation || isCompactRingPresentation ? (
@@ -405,6 +423,71 @@ export function PresentationSection({
               </div>
               <p className="text-[11px] leading-relaxed text-zinc-500">
                 XRDB normalizes both selected sources to a 0 to 100 score so the ring fill and center number stay comparable.
+              </p>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div>
+                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Critics Priority</div>
+                  <div className="flex flex-wrap gap-1">
+                    {RATING_PROVIDER_OPTIONS.map((option) => {
+                      const rank = posterRingCriticsPriority.indexOf(option.id as RatingPreference);
+                      const selected = rank >= 0;
+                      return (
+                        <button
+                          key={`poster-ring-priority-critics-${option.id}`}
+                          type="button"
+                          onClick={() =>
+                            onSelectPosterRingCriticsPriority(
+                              togglePriorityProvider(
+                                posterRingCriticsPriority,
+                                option.id as RatingPreference,
+                              ),
+                            )
+                          }
+                          className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                            selected
+                              ? 'bg-zinc-800 text-white'
+                              : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                          }`}
+                        >
+                          {selected ? `${rank + 1}. ${option.label}` : option.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Audience Priority</div>
+                  <div className="flex flex-wrap gap-1">
+                    {RATING_PROVIDER_OPTIONS.map((option) => {
+                      const rank = posterRingAudiencePriority.indexOf(option.id as RatingPreference);
+                      const selected = rank >= 0;
+                      return (
+                        <button
+                          key={`poster-ring-priority-audience-${option.id}`}
+                          type="button"
+                          onClick={() =>
+                            onSelectPosterRingAudiencePriority(
+                              togglePriorityProvider(
+                                posterRingAudiencePriority,
+                                option.id as RatingPreference,
+                              ),
+                            )
+                          }
+                          className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
+                            selected
+                              ? 'bg-zinc-800 text-white'
+                              : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
+                          }`}
+                        >
+                          {selected ? `${rank + 1}. ${option.label}` : option.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+              <p className="text-[11px] leading-relaxed text-zinc-500">
+                Critics and Audience averages try their own lane, then Overall, then the matching priority list. Exact provider sources stay strict. If a chosen provider has no score, XRDB does not silently substitute another provider.
               </p>
             </>
           ) : null}
@@ -662,6 +745,7 @@ export function LookSection({
   activeRatingBadgeScale,
   activeGenreBadgeScale,
   activeGenreBadgeBorderWidth,
+  activeGenreBadgeBackgroundOpacity,
   activeQualityBadgeScale,
   posterNoBackgroundBadgeOutlineColor,
   posterNoBackgroundBadgeOutlineWidth,
@@ -711,6 +795,7 @@ export function LookSection({
   onSelectRatingBadgeScale,
   onSelectGenreBadgeScale,
   onSelectGenreBadgeBorderWidth,
+  onSelectGenreBadgeBackgroundOpacity,
   onSelectQualityBadgeScale,
   onSelectPosterNoBackgroundBadgeOutlineColor,
   onSelectPosterNoBackgroundBadgeOutlineWidth,
@@ -777,6 +862,7 @@ export function LookSection({
   activeRatingBadgeScale: number;
   activeGenreBadgeScale: number;
   activeGenreBadgeBorderWidth: number;
+  activeGenreBadgeBackgroundOpacity: number;
   activeQualityBadgeScale: number;
   posterNoBackgroundBadgeOutlineColor: string;
   posterNoBackgroundBadgeOutlineWidth: number;
@@ -828,6 +914,7 @@ export function LookSection({
   onSelectRatingBadgeScale: (value: number) => void;
   onSelectGenreBadgeScale: (value: number) => void;
   onSelectGenreBadgeBorderWidth: (value: number) => void;
+  onSelectGenreBadgeBackgroundOpacity: (value: number) => void;
   onSelectQualityBadgeScale: (value: number) => void;
   onSelectPosterNoBackgroundBadgeOutlineColor: (value: string) => void;
   onSelectPosterNoBackgroundBadgeOutlineWidth: (value: number) => void;
@@ -917,6 +1004,31 @@ export function LookSection({
         ? normalizeThumbnailRatingBadgeScalePercent(String(value))
         : normalizeBadgeScalePercent(String(value)),
     );
+  };
+  const cleanGenreStyleActive = activeGenreBadgeStyle === 'clean';
+  const resolvedActiveGenreBadgeMode =
+    cleanGenreStyleActive && activeGenreBadgeMode !== 'off' ? 'text' : activeGenreBadgeMode;
+  const availableGenreModeOptions = cleanGenreStyleActive
+    ? GENRE_BADGE_MODE_OPTIONS.filter((option) => option.id === 'off' || option.id === 'text')
+    : GENRE_BADGE_MODE_OPTIONS;
+  const handleGenreBadgeModeSelect = (value: GenreBadgeMode) => {
+    if (cleanGenreStyleActive && value !== 'off') {
+      onSelectGenreBadgeMode('text');
+      return;
+    }
+    onSelectGenreBadgeMode(value);
+  };
+  const handleGenreBadgeStyleSelect = (value: GenreBadgeStyle) => {
+    onSelectGenreBadgeStyle(value);
+    if (value !== 'clean') {
+      return;
+    }
+    if (activeGenreBadgeMode !== 'off') {
+      onSelectGenreBadgeMode('text');
+    }
+    if (activeGenreBadgePosition !== 'bottomCenter') {
+      onSelectGenreBadgePosition('bottomCenter');
+    }
   };
 
   return (
@@ -1024,12 +1136,12 @@ export function LookSection({
           <div className={settingsCardClass}>
             <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge</span>
             <div className={selectorGroupClass}>
-              {GENRE_BADGE_MODE_OPTIONS.map((option) => (
+              {availableGenreModeOptions.map((option) => (
                 <button
                   key={option.id}
                   type="button"
-                  onClick={() => onSelectGenreBadgeMode(option.id)}
-                  className={selectorButtonClass(activeGenreBadgeMode === option.id)}
+                  onClick={() => handleGenreBadgeModeSelect(option.id)}
+                  className={selectorButtonClass(resolvedActiveGenreBadgeMode === option.id)}
                   title={option.description}
                 >
                   {option.label}
@@ -1044,7 +1156,7 @@ export function LookSection({
                 <button
                   key={option.id}
                   type="button"
-                  onClick={() => onSelectGenreBadgeStyle(option.id)}
+                  onClick={() => handleGenreBadgeStyleSelect(option.id)}
                   className={selectorButtonClass(activeGenreBadgeStyle === option.id)}
                   title={option.description}
                 >
@@ -1053,22 +1165,24 @@ export function LookSection({
               ))}
             </div>
           </div>
-          <div className={settingsCardClass}>
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge Position</span>
-            <div className={selectorGroupClass}>
-              {GENRE_BADGE_POSITION_OPTIONS.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => onSelectGenreBadgePosition(option.id)}
-                  className={selectorButtonClass(activeGenreBadgePosition === option.id)}
-                  title={option.description}
-                >
-                  {option.label}
-                </button>
-              ))}
+          {!cleanGenreStyleActive ? (
+            <div className={settingsCardClass}>
+              <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge Position</span>
+              <div className={selectorGroupClass}>
+                {GENRE_BADGE_POSITION_OPTIONS.map((option) => (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => onSelectGenreBadgePosition(option.id)}
+                    className={selectorButtonClass(activeGenreBadgePosition === option.id)}
+                    title={option.description}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : null}
           <div className={settingsCardClass}>
             <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Anime Grouping</span>
             <div className={selectorGroupClass}>
@@ -1785,14 +1899,16 @@ export function LookSection({
               max={ratingBadgeScaleMax}
               onChange={handleRatingBadgeScaleChange}
             />
-            <ScaleField
-              label="Genre badge"
-              value={activeGenreBadgeScale}
-              defaultValue={DEFAULT_BADGE_SCALE_PERCENT}
-              min={MIN_BADGE_SCALE_PERCENT}
-              max={MAX_GENRE_BADGE_SCALE_PERCENT}
-              onChange={(value) => onSelectGenreBadgeScale(normalizeGenreBadgeScalePercent(String(value)))}
-            />
+            {!cleanGenreStyleActive ? (
+              <ScaleField
+                label="Genre badge"
+                value={activeGenreBadgeScale}
+                defaultValue={DEFAULT_BADGE_SCALE_PERCENT}
+                min={MIN_BADGE_SCALE_PERCENT}
+                max={MAX_GENRE_BADGE_SCALE_PERCENT}
+                onChange={(value) => onSelectGenreBadgeScale(normalizeGenreBadgeScalePercent(String(value)))}
+              />
+            ) : null}
             {activeGenreBadgeStyle === 'glass' ? (
               <ScaleField
                 label="Genre border"
@@ -1804,6 +1920,21 @@ export function LookSection({
                 suffix="px"
                 onChange={(value) =>
                   onSelectGenreBadgeBorderWidth(normalizeGenreBadgeBorderWidthPx(String(value)))
+                }
+              />
+            ) : null}
+            {activeGenreBadgeStyle === 'clean' ? (
+              <ScaleField
+                label="Genre background"
+                value={activeGenreBadgeBackgroundOpacity}
+                defaultValue={DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT}
+                min={MIN_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT}
+                max={MAX_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT}
+                suffix="%"
+                onChange={(value) =>
+                  onSelectGenreBadgeBackgroundOpacity(
+                    normalizeGenreBadgeBackgroundOpacityPercent(String(value)),
+                  )
                 }
               />
             ) : null}

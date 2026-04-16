@@ -38,9 +38,13 @@ import {
   type RatingPresentation,
 } from './ratingPresentation.ts';
 import {
+  DEFAULT_POSTER_COMPACT_RING_AUDIENCE_PRIORITY,
+  DEFAULT_POSTER_COMPACT_RING_CRITICS_PRIORITY,
   DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
   DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE,
+  normalizePosterCompactRingPriorityList,
   normalizePosterCompactRingSource,
+  stringifyPosterCompactRingPriorityList,
   type PosterCompactRingSource,
 } from './posterCompactRing.ts';
 import {
@@ -68,6 +72,8 @@ import {
   normalizeGenreBadgeMode,
   normalizeGenreBadgePosition,
   normalizeGenreBadgeStyle,
+  resolveGenreBadgeModeForStyle,
+  resolveGenreBadgePositionForStyle,
   type GenreBadgeAnimeGrouping,
   type GenreBadgeMode,
   type GenreBadgePosition,
@@ -76,6 +82,7 @@ import {
 import {
   DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_BADGE_SCALE_PERCENT,
+  DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
   DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR,
   DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
@@ -84,11 +91,14 @@ import {
   DEFAULT_QUALITY_BADGE_PREFERENCES,
   encodeRatingProviderAppearanceOverrides,
   normalizeBadgeScalePercent,
+  normalizeGenreBadgeBackgroundOpacityPercent,
   normalizeGenreBadgeBorderWidthPx,
   normalizeGenreBadgeScalePercent,
   normalizeHexColor,
   normalizeNoBackgroundBadgeOutlineWidthPx,
   normalizeQualityBadgeScalePercent,
+  parseQualityBadgePreferencesAllowEmpty,
+  parseRatingProviderAppearanceOverrides,
   normalizeQualityBadgePreferencesList,
   normalizeRatingProviderAppearanceOverrides,
   normalizeThumbnailRatingBadgeScalePercent,
@@ -128,6 +138,7 @@ export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
 export type AgeRatingBadgePosition =
   | 'inherit'
+  | 'grouped'
   | 'top-left'
   | 'top-center'
   | 'top-right'
@@ -154,6 +165,11 @@ export type TmdbIdScopeMode = 'soft' | 'strict';
 export type ProxyMediaType = 'movie' | 'series' | 'anime';
 export const PROXY_MEDIA_TYPES: readonly ProxyMediaType[] = ['movie', 'series', 'anime'];
 type XrdbImageType = 'poster' | 'backdrop' | 'logo';
+type SharedPayloadOptions = {
+  allowMissingTmdbKey?: boolean;
+  allowMissingMdblistKey?: boolean;
+  omitProviderCredentials?: boolean;
+};
 export type AiometadataUrlPatterns = {
   posterUrlPattern: string;
   backgroundUrlPattern: string;
@@ -210,6 +226,10 @@ export type SharedXrdbSettings = {
   backdropGenreBadgeBorderWidth: number;
   thumbnailGenreBadgeBorderWidth: number;
   logoGenreBadgeBorderWidth: number;
+  posterGenreBadgeBackgroundOpacity: number;
+  backdropGenreBadgeBackgroundOpacity: number;
+  thumbnailGenreBadgeBackgroundOpacity: number;
+  logoGenreBadgeBackgroundOpacity: number;
   posterGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   backdropGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   thumbnailGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
@@ -266,6 +286,8 @@ export type SharedXrdbSettings = {
   logoRatingPresentation: RatingPresentation;
   posterRingValueSource: PosterCompactRingSource;
   posterRingProgressSource: PosterCompactRingSource;
+  posterRingCriticsPriority: RatingPreference[];
+  posterRingAudiencePriority: RatingPreference[];
   posterAggregateRatingSource: AggregateRatingSource;
   backdropAggregateRatingSource: AggregateRatingSource;
   thumbnailAggregateRatingSource: AggregateRatingSource;
@@ -358,6 +380,7 @@ const QUALITY_BADGES_SIDE_SET = new Set<QualityBadgesSide>(['left', 'right']);
 const POSTER_QUALITY_BADGES_POSITION_SET = new Set<PosterQualityBadgesPosition>(['auto', 'left', 'right']);
 const AGE_RATING_BADGE_POSITION_SET = new Set<AgeRatingBadgePosition>([
   'inherit',
+  'grouped',
   'top-left',
   'top-center',
   'top-right',
@@ -476,6 +499,10 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   backdropGenreBadgeBorderWidth: DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX,
   thumbnailGenreBadgeBorderWidth: DEFAULT_THUMBNAIL_GENRE_BADGE_BORDER_WIDTH_PX,
   logoGenreBadgeBorderWidth: DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
+  posterGenreBadgeBackgroundOpacity: DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
+  backdropGenreBadgeBackgroundOpacity: DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
+  thumbnailGenreBadgeBackgroundOpacity: DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
+  logoGenreBadgeBackgroundOpacity: DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
   posterGenreBadgeAnimeGrouping: DEFAULT_GENRE_BADGE_ANIME_GROUPING,
   backdropGenreBadgeAnimeGrouping: DEFAULT_GENRE_BADGE_ANIME_GROUPING,
   thumbnailGenreBadgeAnimeGrouping: DEFAULT_GENRE_BADGE_ANIME_GROUPING,
@@ -484,7 +511,7 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   backdropRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
   thumbnailRatingPreferences: filterThumbnailRatingPreferences(DEFAULT_RATING_PREFERENCES),
   logoRatingPreferences: [...DEFAULT_RATING_PREFERENCES],
-  posterStreamBadges: 'auto',
+  posterStreamBadges: 'off',
   backdropStreamBadges: 'auto',
   thumbnailStreamBadges: 'auto',
   qualityBadgesSide: 'left',
@@ -532,6 +559,8 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   logoRatingPresentation: DEFAULT_RATING_PRESENTATION,
   posterRingValueSource: DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE,
   posterRingProgressSource: DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
+  posterRingCriticsPriority: [...DEFAULT_POSTER_COMPACT_RING_CRITICS_PRIORITY],
+  posterRingAudiencePriority: [...DEFAULT_POSTER_COMPACT_RING_AUDIENCE_PRIORITY],
   posterAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
   backdropAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
   thumbnailAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
@@ -949,13 +978,68 @@ const normalizeTmdbIdScopeMode = (
     : fallback;
 };
 
-export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings => {
+export const coerceNonPosterPresentation = (p: RatingPresentation): RatingPresentation =>
+  p === 'ring' || p === 'editorial' || p === 'blockbuster' ? 'standard' : p;
+
+const decodeSavedProfileSettingsAliases = (value: unknown) => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return value;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  const decoded: Record<string, unknown> = { ...candidate };
+
+  if (
+    decoded.posterQualityBadgePreferences === undefined &&
+    typeof candidate.posterQualityBadges === 'string'
+  ) {
+    decoded.posterQualityBadgePreferences = parseQualityBadgePreferencesAllowEmpty(
+      candidate.posterQualityBadges,
+    );
+  }
+  if (
+    decoded.backdropQualityBadgePreferences === undefined &&
+    typeof candidate.backdropQualityBadges === 'string'
+  ) {
+    decoded.backdropQualityBadgePreferences = parseQualityBadgePreferencesAllowEmpty(
+      candidate.backdropQualityBadges,
+    );
+  }
+  if (
+    decoded.thumbnailQualityBadgePreferences === undefined &&
+    typeof candidate.thumbnailQualityBadges === 'string'
+  ) {
+    decoded.thumbnailQualityBadgePreferences = parseQualityBadgePreferencesAllowEmpty(
+      candidate.thumbnailQualityBadges,
+    );
+  }
+  if (
+    decoded.logoQualityBadgePreferences === undefined &&
+    typeof candidate.logoQualityBadges === 'string'
+  ) {
+    decoded.logoQualityBadgePreferences = parseQualityBadgePreferencesAllowEmpty(
+      candidate.logoQualityBadges,
+    );
+  }
+  if (
+    decoded.ratingProviderAppearanceOverrides === undefined &&
+    typeof candidate.providerAppearance === 'string'
+  ) {
+    decoded.ratingProviderAppearanceOverrides = parseRatingProviderAppearanceOverrides(
+      candidate.providerAppearance,
+    );
+  }
+
+  return decoded;
+};
+
+export const normalizeSharedXrdbSettings = (value: unknown, options?: { skipCrossTypeFallbacks?: boolean }): SharedXrdbSettings => {
   const defaults = createDefaultSharedXrdbSettings();
   if (!value || typeof value !== 'object') {
     return defaults;
   }
 
-  const candidate = value as Partial<Record<keyof SharedXrdbSettings, unknown>> & Record<string, unknown>;
+  const candidate = decodeSavedProfileSettingsAliases(value) as Partial<Record<keyof SharedXrdbSettings, unknown>> & Record<string, unknown>;
   const rawPosterImageText =
     typeof candidate.posterImageText === 'string' ? candidate.posterImageText.trim().toLowerCase() : '';
   const rawBackdropImageText =
@@ -969,7 +1053,7 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
     ? 'clean'
     : normalizeBackdropImageTextPreference(candidate.backdropImageText, defaults.backdropImageText);
   const thumbnailImageText = normalizeBackdropImageTextPreference(
-    candidate.thumbnailImageText ?? candidate.backdropImageText,
+    options?.skipCrossTypeFallbacks ? candidate.thumbnailImageText : (candidate.thumbnailImageText ?? candidate.backdropImageText),
     defaults.thumbnailImageText,
   );
   const posterArtworkSource = legacyFanartPosterMode
@@ -985,9 +1069,9 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
         defaults.backdropArtworkSource
       );
   const thumbnailArtworkSource = normalizeNonPosterArtworkSource(
-    candidate.thumbnailArtworkSource ??
-      candidate.backdropArtworkSource ??
-      candidate.backdropCleanSource,
+    options?.skipCrossTypeFallbacks
+      ? candidate.thumbnailArtworkSource
+      : (candidate.thumbnailArtworkSource ?? candidate.backdropArtworkSource ?? candidate.backdropCleanSource),
     defaults.thumbnailArtworkSource,
   );
   const rpdbRatingBarAliases = resolveRpdbRatingBarPositionAliases(candidate.ratingBarPos);
@@ -1013,9 +1097,73 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
     candidate.genreBadgeBorderWidth,
     DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX,
   );
+  const globalGenreBadgeBackgroundOpacity = normalizeGenreBadgeBackgroundOpacityPercent(
+    candidate.genreBadgeBackgroundOpacity,
+    DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
+  );
   const globalGenreBadgeAnimeGrouping = normalizeGenreBadgeAnimeGrouping(
     candidate.genreBadgeAnimeGrouping,
     DEFAULT_GENRE_BADGE_ANIME_GROUPING,
+  );
+  const posterGenreBadgeStyle = normalizeGenreBadgeStyle(
+    candidate.posterGenreBadgeStyle,
+    globalGenreBadgeStyle,
+  );
+  const backdropGenreBadgeStyle = normalizeGenreBadgeStyle(
+    candidate.backdropGenreBadgeStyle,
+    globalGenreBadgeStyle,
+  );
+  const thumbnailGenreBadgeStyle = normalizeGenreBadgeStyle(
+    candidate.thumbnailGenreBadgeStyle ?? candidate.backdropGenreBadgeStyle,
+    defaults.thumbnailGenreBadgeStyle,
+  );
+  const logoGenreBadgeStyle = normalizeGenreBadgeStyle(
+    candidate.logoGenreBadgeStyle,
+    globalGenreBadgeStyle,
+  );
+  const posterGenreBadgeMode = resolveGenreBadgeModeForStyle(
+    normalizeGenreBadgeMode(candidate.posterGenreBadgeMode ?? candidate.posterGenreBadge, globalGenreBadgeMode),
+    posterGenreBadgeStyle,
+  );
+  const backdropGenreBadgeMode = resolveGenreBadgeModeForStyle(
+    normalizeGenreBadgeMode(candidate.backdropGenreBadgeMode ?? candidate.backdropGenreBadge, globalGenreBadgeMode),
+    backdropGenreBadgeStyle,
+  );
+  const thumbnailGenreBadgeMode = resolveGenreBadgeModeForStyle(
+    normalizeGenreBadgeMode(
+      candidate.thumbnailGenreBadgeMode ??
+        candidate.thumbnailGenreBadge ??
+        candidate.backdropGenreBadge,
+      defaults.thumbnailGenreBadgeMode,
+    ),
+    thumbnailGenreBadgeStyle,
+  );
+  const logoGenreBadgeMode = resolveGenreBadgeModeForStyle(
+    normalizeGenreBadgeMode(candidate.logoGenreBadgeMode ?? candidate.logoGenreBadge, globalGenreBadgeMode),
+    logoGenreBadgeStyle,
+  );
+  const posterGenreBadgePosition = resolveGenreBadgePositionForStyle(
+    normalizeGenreBadgePosition(candidate.posterGenreBadgePosition, globalGenreBadgePosition),
+    posterGenreBadgeStyle,
+    posterGenreBadgeMode,
+  );
+  const backdropGenreBadgePosition = resolveGenreBadgePositionForStyle(
+    normalizeGenreBadgePosition(candidate.backdropGenreBadgePosition, globalGenreBadgePosition),
+    backdropGenreBadgeStyle,
+    backdropGenreBadgeMode,
+  );
+  const thumbnailGenreBadgePosition = resolveGenreBadgePositionForStyle(
+    normalizeGenreBadgePosition(
+      candidate.thumbnailGenreBadgePosition ?? candidate.backdropGenreBadgePosition,
+      defaults.thumbnailGenreBadgePosition,
+    ),
+    thumbnailGenreBadgeStyle,
+    thumbnailGenreBadgeMode,
+  );
+  const logoGenreBadgePosition = resolveGenreBadgePositionForStyle(
+    normalizeGenreBadgePosition(candidate.logoGenreBadgePosition, globalGenreBadgePosition),
+    logoGenreBadgeStyle,
+    logoGenreBadgeMode,
   );
   const legacySideRatingsPosition = normalizeSideRatingPosition(
     candidate.sideRatingsPosition ?? rpdbRatingBarAliases.sideRatingsPosition,
@@ -1088,56 +1236,18 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
       defaults.backdropEpisodeArtwork,
     ),
     ratingValueMode: normalizeRatingValueMode(candidate.ratingValueMode, defaults.ratingValueMode),
-    posterGenreBadgeMode: normalizeGenreBadgeMode(
-      candidate.posterGenreBadgeMode ?? candidate.posterGenreBadge,
-      globalGenreBadgeMode,
-    ),
-    backdropGenreBadgeMode: normalizeGenreBadgeMode(
-      candidate.backdropGenreBadgeMode ?? candidate.backdropGenreBadge,
-      globalGenreBadgeMode,
-    ),
-    thumbnailGenreBadgeMode: normalizeGenreBadgeMode(
-      candidate.thumbnailGenreBadgeMode ??
-        candidate.thumbnailGenreBadge ??
-        candidate.backdropGenreBadge,
-      defaults.thumbnailGenreBadgeMode,
-    ),
-    logoGenreBadgeMode: normalizeGenreBadgeMode(
-      candidate.logoGenreBadgeMode ?? candidate.logoGenreBadge,
-      globalGenreBadgeMode,
-    ),
-    posterGenreBadgeStyle: normalizeGenreBadgeStyle(
-      candidate.posterGenreBadgeStyle,
-      globalGenreBadgeStyle,
-    ),
-    backdropGenreBadgeStyle: normalizeGenreBadgeStyle(
-      candidate.backdropGenreBadgeStyle,
-      globalGenreBadgeStyle,
-    ),
-    thumbnailGenreBadgeStyle: normalizeGenreBadgeStyle(
-      candidate.thumbnailGenreBadgeStyle ?? candidate.backdropGenreBadgeStyle,
-      defaults.thumbnailGenreBadgeStyle,
-    ),
-    logoGenreBadgeStyle: normalizeGenreBadgeStyle(
-      candidate.logoGenreBadgeStyle,
-      globalGenreBadgeStyle,
-    ),
-    posterGenreBadgePosition: normalizeGenreBadgePosition(
-      candidate.posterGenreBadgePosition,
-      globalGenreBadgePosition,
-    ),
-    backdropGenreBadgePosition: normalizeGenreBadgePosition(
-      candidate.backdropGenreBadgePosition,
-      globalGenreBadgePosition,
-    ),
-    thumbnailGenreBadgePosition: normalizeGenreBadgePosition(
-      candidate.thumbnailGenreBadgePosition ?? candidate.backdropGenreBadgePosition,
-      defaults.thumbnailGenreBadgePosition,
-    ),
-    logoGenreBadgePosition: normalizeGenreBadgePosition(
-      candidate.logoGenreBadgePosition,
-      globalGenreBadgePosition,
-    ),
+    posterGenreBadgeMode,
+    backdropGenreBadgeMode,
+    thumbnailGenreBadgeMode,
+    logoGenreBadgeMode,
+    posterGenreBadgeStyle,
+    backdropGenreBadgeStyle,
+    thumbnailGenreBadgeStyle,
+    logoGenreBadgeStyle,
+    posterGenreBadgePosition,
+    backdropGenreBadgePosition,
+    thumbnailGenreBadgePosition,
+    logoGenreBadgePosition,
     posterGenreBadgeScale: normalizeGenreBadgeScalePercent(
       candidate.posterGenreBadgeScale,
       globalGenreBadgeScale,
@@ -1172,6 +1282,24 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
       candidate.logoGenreBadgeBorderWidth ?? candidate.genreBadgeBorderWidth,
       DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
     ),
+    posterGenreBadgeBackgroundOpacity: normalizeGenreBadgeBackgroundOpacityPercent(
+      candidate.posterGenreBadgeBackgroundOpacity ?? candidate.genreBadgeBackgroundOpacity,
+      globalGenreBadgeBackgroundOpacity,
+    ),
+    backdropGenreBadgeBackgroundOpacity: normalizeGenreBadgeBackgroundOpacityPercent(
+      candidate.backdropGenreBadgeBackgroundOpacity ?? candidate.genreBadgeBackgroundOpacity,
+      globalGenreBadgeBackgroundOpacity,
+    ),
+    thumbnailGenreBadgeBackgroundOpacity: normalizeGenreBadgeBackgroundOpacityPercent(
+      candidate.thumbnailGenreBadgeBackgroundOpacity ??
+        candidate.backdropGenreBadgeBackgroundOpacity ??
+        candidate.genreBadgeBackgroundOpacity,
+      defaults.thumbnailGenreBadgeBackgroundOpacity,
+    ),
+    logoGenreBadgeBackgroundOpacity: normalizeGenreBadgeBackgroundOpacityPercent(
+      candidate.logoGenreBadgeBackgroundOpacity ?? candidate.genreBadgeBackgroundOpacity,
+      globalGenreBadgeBackgroundOpacity,
+    ),
     posterGenreBadgeAnimeGrouping: normalizeGenreBadgeAnimeGrouping(
       candidate.posterGenreBadgeAnimeGrouping,
       globalGenreBadgeAnimeGrouping,
@@ -1196,12 +1324,15 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
       candidate.backdropRatingPreferences ?? candidate.backdropRatings ?? sharedRatingsInput,
       defaults.backdropRatingPreferences,
     ),
-    thumbnailRatingPreferences: filterThumbnailRatingPreferences(
-      normalizeRatingPreferencesList(
-        candidate.thumbnailRatingPreferences ?? candidate.thumbnailRatings ?? sharedRatingsInput,
-        defaults.thumbnailRatingPreferences,
-      ),
-    ),
+    thumbnailRatingPreferences: (() => {
+      const filtered = filterThumbnailRatingPreferences(
+        normalizeRatingPreferencesList(
+          candidate.thumbnailRatingPreferences ?? candidate.thumbnailRatings ?? sharedRatingsInput,
+          defaults.thumbnailRatingPreferences,
+        ),
+      );
+      return filtered.length > 0 ? filtered : [...defaults.thumbnailRatingPreferences];
+    })(),
     logoRatingPreferences: normalizeRatingPreferencesList(
       candidate.logoRatingPreferences ?? candidate.logoRatings ?? sharedRatingsInput,
       defaults.logoRatingPreferences,
@@ -1291,20 +1422,20 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
     posterRatingsMax: normalizeOptionalBadgeCount(candidate.posterRatingsMax),
     backdropRatingsMax: normalizeOptionalBadgeCount(candidate.backdropRatingsMax),
     thumbnailRatingsMax: normalizeOptionalBadgeCount(
-      candidate.thumbnailRatingsMax ?? candidate.backdropRatingsMax,
+      options?.skipCrossTypeFallbacks ? candidate.thumbnailRatingsMax : (candidate.thumbnailRatingsMax ?? candidate.backdropRatingsMax),
     ),
     backdropBottomRatingsRow: normalizeBoolean(
       candidate.backdropBottomRatingsRow,
       defaults.backdropBottomRatingsRow,
     ),
     thumbnailBottomRatingsRow: normalizeBoolean(
-      candidate.thumbnailBottomRatingsRow ?? candidate.backdropBottomRatingsRow,
+      options?.skipCrossTypeFallbacks ? candidate.thumbnailBottomRatingsRow : (candidate.thumbnailBottomRatingsRow ?? candidate.backdropBottomRatingsRow),
       defaults.thumbnailBottomRatingsRow,
     ),
     posterRatingStyle: normalizeRatingStyle(candidate.posterRatingStyle as string | null | undefined),
     backdropRatingStyle: normalizeRatingStyle(candidate.backdropRatingStyle as string | null | undefined),
     thumbnailRatingStyle: normalizeRatingStyle(
-      (candidate.thumbnailRatingStyle ?? candidate.backdropRatingStyle) as
+      (options?.skipCrossTypeFallbacks ? candidate.thumbnailRatingStyle : (candidate.thumbnailRatingStyle ?? candidate.backdropRatingStyle)) as
         | string
         | null
         | undefined,
@@ -1313,18 +1444,18 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
       candidate.posterRatingPresentation,
       defaults.posterRatingPresentation,
     ),
-    backdropRatingPresentation: normalizeRatingPresentation(
+    backdropRatingPresentation: coerceNonPosterPresentation(normalizeRatingPresentation(
       candidate.backdropRatingPresentation,
       defaults.backdropRatingPresentation,
-    ),
-    thumbnailRatingPresentation: normalizeRatingPresentation(
-      candidate.thumbnailRatingPresentation ?? candidate.backdropRatingPresentation,
+    )),
+    thumbnailRatingPresentation: coerceNonPosterPresentation(normalizeRatingPresentation(
+      options?.skipCrossTypeFallbacks ? candidate.thumbnailRatingPresentation : (candidate.thumbnailRatingPresentation ?? candidate.backdropRatingPresentation),
       defaults.thumbnailRatingPresentation,
-    ),
-    logoRatingPresentation: normalizeRatingPresentation(
+    )),
+    logoRatingPresentation: coerceNonPosterPresentation(normalizeRatingPresentation(
       candidate.logoRatingPresentation,
       defaults.logoRatingPresentation,
-    ),
+    )),
     posterRingValueSource: normalizePosterCompactRingSource(
       candidate.posterRingValueSource,
       defaults.posterRingValueSource,
@@ -1332,6 +1463,14 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
     posterRingProgressSource: normalizePosterCompactRingSource(
       candidate.posterRingProgressSource,
       defaults.posterRingProgressSource,
+    ),
+    posterRingCriticsPriority: normalizePosterCompactRingPriorityList(
+      candidate.posterRingCriticsPriority,
+      defaults.posterRingCriticsPriority,
+    ),
+    posterRingAudiencePriority: normalizePosterCompactRingPriorityList(
+      candidate.posterRingAudiencePriority,
+      defaults.posterRingAudiencePriority,
     ),
     posterAggregateRatingSource: normalizeAggregateRatingSource(
       candidate.posterAggregateRatingSource,
@@ -1342,7 +1481,7 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
       defaults.backdropAggregateRatingSource,
     ),
     thumbnailAggregateRatingSource: normalizeAggregateRatingSource(
-      candidate.thumbnailAggregateRatingSource ?? candidate.backdropAggregateRatingSource,
+      options?.skipCrossTypeFallbacks ? candidate.thumbnailAggregateRatingSource : (candidate.thumbnailAggregateRatingSource ?? candidate.backdropAggregateRatingSource),
       defaults.thumbnailAggregateRatingSource,
     ),
     logoAggregateRatingSource: normalizeAggregateRatingSource(
@@ -1539,7 +1678,7 @@ export const normalizeSharedXrdbSettings = (value: unknown): SharedXrdbSettings 
   };
 };
 
-export const normalizeSavedUiConfig = (value: unknown): SavedUiConfig => {
+export const normalizeSavedUiConfig = (value: unknown, options?: { skipCrossTypeFallbacks?: boolean }): SavedUiConfig => {
   const defaults = createDefaultSavedUiConfig();
   if (!value || typeof value !== 'object') {
     return defaults;
@@ -1560,7 +1699,7 @@ export const normalizeSavedUiConfig = (value: unknown): SavedUiConfig => {
 
   return {
     version: 1,
-    settings: normalizeSharedXrdbSettings(candidate.settings),
+    settings: normalizeSharedXrdbSettings(candidate.settings, options),
     proxy: {
       manifestUrl:
         typeof candidate.proxy?.manifestUrl === 'string'
@@ -1585,9 +1724,9 @@ export const normalizeSavedUiConfig = (value: unknown): SavedUiConfig => {
   };
 };
 
-export const parseSavedUiConfig = (raw: string): SavedUiConfig | null => {
+export const parseSavedUiConfig = (raw: string, options?: { skipCrossTypeFallbacks?: boolean }): SavedUiConfig | null => {
   try {
-    return normalizeSavedUiConfig(JSON.parse(raw));
+    return normalizeSavedUiConfig(JSON.parse(raw), options);
   } catch {
     return null;
   }
@@ -1624,27 +1763,38 @@ const appendSharedOrPerTypePayload = <Value extends string | number | boolean>(o
   }
 };
 
-const buildSharedPayload = (settings: SharedXrdbSettings) => {
+const buildSharedPayload = (settings: SharedXrdbSettings, options?: SharedPayloadOptions) => {
+  const defaultSettings = createDefaultSharedXrdbSettings();
   const xrdbKey = settings.xrdbKey.trim();
   const tmdbKey = settings.tmdbKey.trim();
   const mdblistKey = settings.mdblistKey.trim();
   const fanartKey = settings.fanartKey.trim();
-  if (!tmdbKey || !mdblistKey) {
+  const allowMissingTmdbKey = options?.allowMissingTmdbKey === true;
+  const allowMissingMdblistKey = options?.allowMissingMdblistKey === true;
+  const omitProviderCredentials = options?.omitProviderCredentials === true;
+  const hasUsableTmdbKey = omitProviderCredentials ? allowMissingTmdbKey : Boolean(tmdbKey) || allowMissingTmdbKey;
+  const hasUsableMdblistKey = omitProviderCredentials
+    ? allowMissingMdblistKey
+    : Boolean(mdblistKey) || allowMissingMdblistKey;
+  if (!hasUsableTmdbKey || !hasUsableMdblistKey) {
     return null;
   }
 
-  const payload: Record<string, string | number | boolean> = {
-    tmdbKey,
-    mdblistKey,
-  };
+  const payload: Record<string, string | number | boolean> = {};
+  if (tmdbKey && !omitProviderCredentials) {
+    payload.tmdbKey = tmdbKey;
+  }
+  if (mdblistKey && !omitProviderCredentials) {
+    payload.mdblistKey = mdblistKey;
+  }
   if (xrdbKey) {
     payload.xrdbKey = xrdbKey;
   }
-  if (fanartKey) {
+  if (fanartKey && !omitProviderCredentials) {
     payload.fanartKey = fanartKey;
   }
   const simklClientId = settings.simklClientId.trim();
-  if (simklClientId) {
+  if (simklClientId && !omitProviderCredentials) {
     payload.simklClientId = simklClientId;
   }
   if (settings.tmdbIdScope !== 'soft') {
@@ -1774,6 +1924,18 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   if (settings.logoGenreBadgeBorderWidth !== DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX) {
     payload.logoGenreBadgeBorderWidth = settings.logoGenreBadgeBorderWidth;
   }
+  if (settings.posterGenreBadgeBackgroundOpacity !== DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT) {
+    payload.posterGenreBadgeBackgroundOpacity = settings.posterGenreBadgeBackgroundOpacity;
+  }
+  if (settings.backdropGenreBadgeBackgroundOpacity !== DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT) {
+    payload.backdropGenreBadgeBackgroundOpacity = settings.backdropGenreBadgeBackgroundOpacity;
+  }
+  if (settings.thumbnailGenreBadgeBackgroundOpacity !== DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT) {
+    payload.thumbnailGenreBadgeBackgroundOpacity = settings.thumbnailGenreBadgeBackgroundOpacity;
+  }
+  if (settings.logoGenreBadgeBackgroundOpacity !== DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT) {
+    payload.logoGenreBadgeBackgroundOpacity = settings.logoGenreBadgeBackgroundOpacity;
+  }
   appendSharedOrPerTypePayload({
     payload,
     globalKey: 'genreBadgeAnimeGrouping',
@@ -1789,7 +1951,10 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
     },
     defaultValue: DEFAULT_GENRE_BADGE_ANIME_GROUPING,
   });
-  if (settings.thumbnailGenreBadgeMode !== DEFAULT_GENRE_BADGE_MODE) {
+  if (
+    settings.thumbnailGenreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ||
+    settings.thumbnailGenreBadgeMode !== settings.backdropGenreBadgeMode
+  ) {
     payload.thumbnailGenreBadge = settings.thumbnailGenreBadgeMode;
   }
   if (settings.thumbnailGenreBadgeStyle !== DEFAULT_GENRE_BADGE_STYLE) {
@@ -1804,20 +1969,24 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   if (settings.thumbnailGenreBadgeAnimeGrouping !== DEFAULT_GENRE_BADGE_ANIME_GROUPING) {
     payload.thumbnailGenreBadgeAnimeGrouping = settings.thumbnailGenreBadgeAnimeGrouping;
   }
-  if (settings.posterStreamBadges !== 'auto') {
+  if (settings.posterStreamBadges !== defaultSettings.posterStreamBadges) {
     payload.posterStreamBadges = settings.posterStreamBadges;
   }
-  if (settings.backdropStreamBadges !== 'auto') {
+  if (settings.backdropStreamBadges !== defaultSettings.backdropStreamBadges) {
     payload.backdropStreamBadges = settings.backdropStreamBadges;
   }
-  if (settings.thumbnailStreamBadges !== 'auto') {
+  if (settings.thumbnailStreamBadges !== defaultSettings.thumbnailStreamBadges) {
     payload.thumbnailStreamBadges = settings.thumbnailStreamBadges;
   }
   if (settings.posterRatingsLayout === 'top-bottom' && settings.qualityBadgesSide !== 'left') {
     payload.qualityBadgesSide = settings.qualityBadgesSide;
   }
   if (
-    (settings.posterRatingsLayout === 'top' || settings.posterRatingsLayout === 'bottom') &&
+    (settings.posterRatingsLayout === 'top' ||
+      settings.posterRatingsLayout === 'bottom' ||
+      settings.posterRatingsLayout === 'left' ||
+      settings.posterRatingsLayout === 'right' ||
+      settings.posterRatingsLayout === 'left-right') &&
     settings.posterQualityBadgesPosition !== 'auto'
   ) {
     payload.posterQualityBadgesPosition = settings.posterQualityBadgesPosition;
@@ -1971,6 +2140,22 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   }
   if (settings.posterRingProgressSource !== DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE) {
     payload.posterRingProgressSource = settings.posterRingProgressSource;
+  }
+  if (
+    stringifyPosterCompactRingPriorityList(settings.posterRingCriticsPriority) !==
+    stringifyPosterCompactRingPriorityList(DEFAULT_POSTER_COMPACT_RING_CRITICS_PRIORITY)
+  ) {
+    payload.posterRingCriticsPriority = stringifyPosterCompactRingPriorityList(
+      settings.posterRingCriticsPriority,
+    );
+  }
+  if (
+    stringifyPosterCompactRingPriorityList(settings.posterRingAudiencePriority) !==
+    stringifyPosterCompactRingPriorityList(DEFAULT_POSTER_COMPACT_RING_AUDIENCE_PRIORITY)
+  ) {
+    payload.posterRingAudiencePriority = stringifyPosterCompactRingPriorityList(
+      settings.posterRingAudiencePriority,
+    );
   }
   if (settings.backdropRatingPresentation !== DEFAULT_RATING_PRESENTATION) {
     payload.backdropRatingPresentation = settings.backdropRatingPresentation;
@@ -2148,15 +2333,22 @@ const buildSharedPayload = (settings: SharedXrdbSettings) => {
   return payload;
 };
 
-export const buildProfileParams = (settings: SharedXrdbSettings): Record<string, string> | null => {
-  const payload = buildSharedPayload(settings);
+export const buildProfileParams = (
+  settings: SharedXrdbSettings,
+  options?: SharedPayloadOptions,
+): Record<string, string> | null => {
+  const payload = buildSharedPayload(settings, options);
   if (!payload) return null;
   return Object.fromEntries(Object.entries(payload).map(([k, v]) => [k, String(v)]));
 };
 
-export const buildConfigPayload = (baseUrl: string, settings: SharedXrdbSettings) => {
+export const buildConfigPayload = (
+  baseUrl: string,
+  settings: SharedXrdbSettings,
+  options?: SharedPayloadOptions,
+) => {
   const origin = normalizeBaseUrl(baseUrl);
-  const sharedPayload = buildSharedPayload(settings);
+  const sharedPayload = buildSharedPayload(settings, options);
   if (!origin || !sharedPayload) {
     return null;
   }
@@ -2167,8 +2359,12 @@ export const buildConfigPayload = (baseUrl: string, settings: SharedXrdbSettings
   };
 };
 
-export const buildConfigString = (baseUrl: string, settings: SharedXrdbSettings) => {
-  const payload = buildConfigPayload(baseUrl, settings);
+export const buildConfigString = (
+  baseUrl: string,
+  settings: SharedXrdbSettings,
+  options?: SharedPayloadOptions,
+) => {
+  const payload = buildConfigPayload(baseUrl, settings, options);
   if (!payload) {
     return '';
   }
@@ -2236,7 +2432,7 @@ export const buildAiometadataUrlPatterns = (
     hideCredentials?: boolean;
     posterIdMode?: AiometadataPosterIdMode;
     episodeIdMode?: AiometadataEpisodeIdMode;
-  },
+  } & SharedPayloadOptions,
 ): AiometadataUrlPatterns | null => {
   const origin = normalizeBaseUrl(baseUrl);
   if (!origin) {
@@ -2290,7 +2486,7 @@ export const buildAiometadataUrlPatterns = (
       : settings.simklClientId.trim(),
   };
 
-  const payload = buildSharedPayload(exportSettings);
+  const payload = buildSharedPayload(exportSettings, options);
   if (!payload) {
     return null;
   }
@@ -2369,7 +2565,7 @@ export const buildAiometadataUrlPatterns = (
   return {
     posterUrlPattern: useTmdbPosterIds
       ? `${origin}/poster/tmdb:{type}:{tmdb_id}.jpg?${buildQueryString('poster', { idSource: 'tmdb' })}`
-      : `${origin}/poster/{imdb_id}.jpg?${buildQueryString('poster')}`,
+      : `${origin}/poster/imdb:{imdb_id}.jpg?${buildQueryString('poster')}`,
     backgroundUrlPattern: `${origin}/backdrop/tmdb:{type}:{tmdb_id}.jpg?${buildQueryString('backdrop', { idSource: 'tmdb' })}`,
     logoUrlPattern: `${origin}/logo/tmdb:{type}:{tmdb_id}.png?${buildQueryString('logo', { idSource: 'tmdb' })}`,
     episodeThumbnailUrlPattern: `${origin}/thumbnail/${buildEpisodePatternBaseId(episodeIdMode)}/S{season}E{episode}.jpg?${buildQueryString('thumbnail')}`,
@@ -2380,10 +2576,11 @@ export const buildProxyPayload = (
   baseUrl: string,
   proxy: SavedProxySettings,
   settings: SharedXrdbSettings,
+  options?: SharedPayloadOptions,
 ) => {
   const origin = normalizeBaseUrl(baseUrl);
   const normalizedManifestUrl = normalizeManifestUrl(proxy.manifestUrl);
-  const sharedPayload = buildSharedPayload(settings);
+  const sharedPayload = buildSharedPayload(settings, options);
   if (!origin || !normalizedManifestUrl || isBareHttpUrl(normalizedManifestUrl) || !sharedPayload) {
     return null;
   }
@@ -2423,9 +2620,10 @@ export const buildProxyUrl = (
   baseUrl: string,
   proxy: SavedProxySettings,
   settings: SharedXrdbSettings,
+  options?: SharedPayloadOptions,
 ) => {
   const origin = normalizeBaseUrl(baseUrl);
-  const payload = buildProxyPayload(baseUrl, proxy, settings);
+  const payload = buildProxyPayload(baseUrl, proxy, settings, options);
   if (!origin || !payload) {
     return '';
   }

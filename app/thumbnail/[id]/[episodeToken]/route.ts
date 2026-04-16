@@ -5,6 +5,8 @@ import {
   isXrdbRequestAuthorized,
 } from '@/lib/xrdbRequestKey';
 import { handleImageRequest } from '@/lib/imageRouteHandler';
+import { getConfigProfile } from '@/lib/dbCore';
+import { XRDB_EPISODE_CONFIG_PROFILE_ID } from '@/lib/imageRouteConfig';
 
 const EPISODE_THUMBNAIL_TOKEN_RE = /^S(\d+)E(\d+)(?:\.(?:jpg|jpeg|png|webp))?$/i;
 const XRDB_REQUEST_API_KEYS = getConfiguredXrdbRequestKeys();
@@ -14,11 +16,15 @@ export async function GET(
   { params }: { params: Promise<{ id: string; episodeToken: string }> },
 ) {
   const requestUrl = new URL(request.url);
+  const configId = requestUrl.searchParams.get('config') ?? XRDB_EPISODE_CONFIG_PROFILE_ID;
+  const configFallbackKey = configId ? (getConfigProfile(configId)?.xrdbKey ?? null) : null;
+
   if (
     !isXrdbRequestAuthorized({
       configuredKeys: XRDB_REQUEST_API_KEYS,
       searchParams: requestUrl.searchParams,
       headers: new Headers(request.headers),
+      fallbackKey: configFallbackKey,
     })
   ) {
     return new Response(XRDB_REQUEST_KEY_ERROR_MESSAGE, { status: 401 });
@@ -36,6 +42,9 @@ export async function GET(
   const backdropUrl = new URL(requestUrl);
   backdropUrl.pathname = `/backdrop/${backdropId}`;
   backdropUrl.searchParams.set('thumbnail', '1');
+  if (configId && !requestUrl.searchParams.has('config')) {
+    backdropUrl.searchParams.set('config', configId);
+  }
 
   return handleImageRequest(
     new NextRequest(backdropUrl, {

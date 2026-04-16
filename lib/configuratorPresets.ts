@@ -187,7 +187,7 @@ export const CONFIGURATOR_PRESETS: readonly ConfiguratorPresetDefinition[] = [
     badge: 'Fully Fledged',
     description: 'Dense, feature rich rendering for people who want the whole XRDB surface turned on.',
     bullets: [
-      'Enables the full provider list with stacked and blockbuster heavy presentation defaults.',
+      'Enables the full provider list with stacked blockbuster presentation for posters and standard for backdrops.',
       'Keeps every quality badge visible with richer media marks.',
       'Best paired with advanced mode for manual tuning after the preset lands.',
     ],
@@ -205,7 +205,7 @@ export const CONFIGURATOR_PRESETS: readonly ConfiguratorPresetDefinition[] = [
         posterQualityBadgesStyle: 'media',
         backdropQualityBadgesStyle: 'media',
         posterRatingPresentation: 'blockbuster',
-        backdropRatingPresentation: 'blockbuster',
+        backdropRatingPresentation: 'standard',
         logoRatingPresentation: 'dual-minimal',
         posterRatingStyle: 'stacked',
         backdropRatingStyle: 'stacked',

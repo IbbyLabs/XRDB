@@ -1,8 +1,12 @@
-import { DEFAULT_BADGE_SCALE_PERCENT } from './badgeCustomization.ts';
+import {
+  DEFAULT_BADGE_SCALE_PERCENT,
+  DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
+} from './badgeCustomization.ts';
 import {
   type GenreBadgeFamilyId,
   type GenreBadgeMode,
   type GenreBadgeStyle,
+  resolveGenreBadgeModeForStyle,
 } from './genreBadge.ts';
 import { estimateSummaryLabelWidth } from './imageRouteBadgeMetrics.ts';
 import { escapeXml } from './imageRouteText.ts';
@@ -15,6 +19,7 @@ export type GenreBadgeRenderSpec = {
   style: GenreBadgeStyle;
   scalePercent?: number;
   borderWidth?: number;
+  backgroundOpacity?: number;
   noBackgroundOutlineColor?: string;
   noBackgroundOutlineWidth?: number;
 };
@@ -26,6 +31,31 @@ const estimateGenreBadgeLabelWidth = (label: string, fontSize: number) => {
   const letterSpacingWidth = Math.round(Math.max(0, normalized.length - 1) * fontSize * 0.08);
   const safetyWidth = Math.max(10, Math.round(fontSize * 0.62));
   return Math.max(Math.round(fontSize * 2.2), baseWidth + letterSpacingWidth + safetyWidth);
+};
+
+const CLEAN_GENRE_LABEL_BY_FAMILY: Record<GenreBadgeFamilyId, string> = {
+  anime: 'Anime',
+  animation: 'Animation',
+  horror: 'Horror',
+  comedy: 'Comedy',
+  romance: 'Romance',
+  action: 'Action',
+  scifi: 'Science Fiction',
+  fantasy: 'Fantasy',
+  crime: 'Crime',
+  drama: 'Drama',
+  documentary: 'Documentary',
+  music: 'Music',
+  reality: 'Reality',
+  family: 'Family',
+  history: 'History',
+  kids: 'Kids',
+  news: 'News',
+  soap: 'Soap',
+  talk: 'Talk',
+  tvmovie: 'TV Movie',
+  warpolitics: 'War and Politics',
+  other: 'Other',
 };
 
 const buildGenreBadgeIconMarkup = ({
@@ -134,7 +164,7 @@ export const buildGenreBadgeSvg = (
         : 40;
   const scaleRatio = Math.max(0.7, (genreBadge.scalePercent ?? DEFAULT_BADGE_SCALE_PERCENT) / 100);
   const height = Math.max(
-    genreBadge.style === 'plain' ? 26 : 30,
+    genreBadge.style === 'plain' || genreBadge.style === 'clean' ? 26 : 30,
     Math.round(baseHeight * scaleRatio),
   );
   const radius =
@@ -145,10 +175,16 @@ export const buildGenreBadgeSvg = (
       ? Math.max(0, Number.isFinite(genreBadge.borderWidth) ? Number(genreBadge.borderWidth) : defaultStrokeWidth)
       : 0;
   const iconSize = Math.round(height * (imageType === 'backdrop' ? 0.46 : 0.48));
-  const fontSize = genreBadge.mode === 'text' ? Math.round(height * 0.37) : Math.round(height * 0.34);
-  const label = genreBadge.label.trim().toUpperCase();
-  const showIcon = genreBadge.mode === 'icon' || genreBadge.mode === 'both';
-  const showText = genreBadge.mode === 'text' || genreBadge.mode === 'both';
+  const isClean = genreBadge.style === 'clean';
+  const resolvedMode = resolveGenreBadgeModeForStyle(genreBadge.mode, genreBadge.style);
+  const fontSize = isClean
+    ? Math.round(height * 0.50)
+    : (resolvedMode === 'text' ? Math.round(height * 0.37) : Math.round(height * 0.34));
+  const label = isClean
+    ? CLEAN_GENRE_LABEL_BY_FAMILY[genreBadge.familyId]
+    : genreBadge.label.trim().toUpperCase();
+  const showIcon = resolvedMode === 'icon' || resolvedMode === 'both';
+  const showText = resolvedMode === 'text' || resolvedMode === 'both';
   const paddingX =
     genreBadge.style === 'plain'
       ? showText
@@ -173,7 +209,7 @@ export const buildGenreBadgeSvg = (
   const iconCenterY = Math.round(iconY + iconSize / 2);
   const textX = iconX + (showIcon ? iconSize + iconGap : 0);
   const textCenterX = textX + Math.round(labelWidth / 2);
-  const textY = Math.round(height / 2 + fontSize * 0.05);
+  const textY = Math.round(height / 2 + fontSize * (isClean ? -0.1 : 0.05));
   const noBackgroundOutlineWidth =
     genreBadge.style === 'plain' && Number.isFinite(genreBadge.noBackgroundOutlineWidth)
       ? Math.max(0, Number(genreBadge.noBackgroundOutlineWidth))
@@ -189,10 +225,28 @@ export const buildGenreBadgeSvg = (
         color: genreBadge.accentColor,
       })}</g>`
     : '';
+  const textFill = isClean ? '#ffffff' : genreBadge.accentColor;
+  const textLetterSpacing = isClean ? '0.01em' : '0.08em';
+  const textFontFamily = isClean
+    ? "'Noto Sans','DejaVu Sans',Arial,sans-serif"
+    : "'Space Grotesk','Noto Sans',Arial,sans-serif";
   const textMarkup = showText
-    ? `<text x="${textCenterX}" y="${textY}" text-anchor="middle" dominant-baseline="middle" font-family="'Space Grotesk','Noto Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="700" letter-spacing="0.08em" fill="${genreBadge.accentColor}"${hasNoBackgroundOutline ? ` stroke="${noBackgroundOutlineColor}" stroke-width="${noBackgroundOutlineWidth}" paint-order="stroke fill" stroke-linejoin="round"` : ''}>${escapeXml(label)}</text>`
+    ? `<text x="${textCenterX}" y="${textY}" text-anchor="middle" dominant-baseline="middle" font-family="${textFontFamily}" font-size="${fontSize}" font-weight="700" letter-spacing="${textLetterSpacing}" fill="${textFill}"${hasNoBackgroundOutline ? ` stroke="${noBackgroundOutlineColor}" stroke-width="${noBackgroundOutlineWidth}" paint-order="stroke fill" stroke-linejoin="round"` : ''}>${escapeXml(label)}</text>`
     : '';
   const plainShadowFilter = `<defs><filter id="genreBadgeShadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="1.6" stdDeviation="2.2" flood-color="rgba(0,0,0,0.68)"/><feDropShadow dx="0" dy="0" stdDeviation="1.1" flood-color="rgba(0,0,0,0.32)"/></filter></defs>`;
+  const cleanShadowFilter = `<defs><filter id="genreBadgeShadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="0.8" stdDeviation="1.1" flood-color="rgba(0,0,0,0.52)"/><feDropShadow dx="0" dy="0" stdDeviation="0.45" flood-color="rgba(0,0,0,0.16)"/></filter></defs>`;
+  const cleanBackgroundOpacity =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        Number.isFinite(genreBadge.backgroundOpacity)
+          ? Number(genreBadge.backgroundOpacity)
+          : DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
+      ),
+    ) / 100;
+  const cleanShadowEdgeOpacity = Math.max(0.05, Math.min(0.24, cleanBackgroundOpacity * 0.62));
+  const cleanShadowCenterOpacity = Math.max(0.01, Math.min(0.06, cleanBackgroundOpacity * 0.08));
 
   if (genreBadge.style === 'plain') {
     return {
@@ -204,6 +258,35 @@ ${plainShadowFilter}
 ${iconMarkup}
 ${textMarkup}
 </g>
+</svg>`,
+    };
+  }
+
+  if (genreBadge.style === 'clean') {
+    const stripWidth = showText
+      ? Math.max(18, Math.round(labelWidth + height * 0.18))
+      : Math.max(14, Math.round(iconSize * 0.9));
+    const stripLeft = showText
+      ? Math.max(0, Math.min(width - stripWidth, Math.round(textCenterX - stripWidth / 2)))
+      : Math.max(0, Math.min(width - stripWidth, Math.round(iconCenterX - stripWidth / 2)));
+    const stripHeight = Math.max(2, Math.round(height * 0.08));
+    const stripTop = Math.max(
+      0,
+      Math.min(height - stripHeight, Math.round(textY + fontSize * 0.36)),
+    );
+    const stripRadius = Math.max(1, Math.round(stripHeight / 2));
+    const shadowGradient = `<defs><linearGradient id="cleanStripShadow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(0,0,0,${cleanShadowEdgeOpacity.toFixed(2)})"/><stop offset="28%" stop-color="rgba(0,0,0,${(cleanShadowEdgeOpacity * 0.5).toFixed(2)})"/><stop offset="50%" stop-color="rgba(0,0,0,${cleanShadowCenterOpacity.toFixed(2)})"/><stop offset="72%" stop-color="rgba(0,0,0,${(cleanShadowEdgeOpacity * 0.5).toFixed(2)})"/><stop offset="100%" stop-color="rgba(0,0,0,${cleanShadowEdgeOpacity.toFixed(2)})"/></linearGradient></defs>`;
+    return {
+      width,
+      height,
+      svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+${cleanShadowFilter}
+${shadowGradient}
+<g filter="url(#genreBadgeShadow)">
+<rect x="${stripLeft}" y="${stripTop}" width="${stripWidth}" height="${stripHeight}" rx="${stripRadius}" fill="url(#cleanStripShadow)"/>
+</g>
+${iconMarkup}
+${textMarkup}
 </svg>`,
     };
   }

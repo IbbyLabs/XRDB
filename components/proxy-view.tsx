@@ -13,18 +13,14 @@ import {
 } from 'lucide-react';
 
 import { useConfiguratorContext } from '@/lib/configuratorProvider';
-import {
-  METADATA_TRANSLATION_MODE_OPTIONS,
-  type MetadataTranslationMode,
-} from '@/lib/metadataTranslation';
+import { METADATA_TRANSLATION_MODE_OPTIONS } from '@/lib/metadataTranslation';
+import { loadProxyCatalogManifest } from '@/lib/proxyCatalogManifestLoad';
 import {
   normalizeProxyCatalogRules,
   readProxyCatalogDescriptors,
   type ProxyCatalogRule,
 } from '@/lib/proxyCatalogRules';
 import type { ProxyMediaType } from '@/lib/uiConfig';
-
-type PreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 
 export function ProxyView() {
   const { workspaceColumnsProps, isDocsCapture } = useConfiguratorContext();
@@ -43,14 +39,8 @@ export function ProxyView() {
     onChangeProxyTypes,
     proxyCatalogRules,
     onChangeProxyCatalogRules,
-    tmdbKey,
-    mdblistKey,
-    displayedProxyUrl,
-    proxyUrl,
+    proxyPayload,
     baseUrl,
-    canGenerateProxy,
-    proxyCopied,
-    onCopyProxy,
     showProxyUrl,
     onToggleShowProxyUrl,
   } = supportPanelsProps;
@@ -63,7 +53,6 @@ export function ProxyView() {
     tmdbKeyPresent,
     onPreviewImageError,
     onPreviewImageLoad,
-    activeTypeLabel,
   } = centerStageProps;
 
   const [translationOpen, setTranslationOpen] = useState(isDocsCapture);
@@ -73,14 +62,10 @@ export function ProxyView() {
   const [catalogLoadState, setCatalogLoadState] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [catalogManifest, setCatalogManifest] = useState<Record<string, unknown> | null>(null);
   const [catalogRequestKey, setCatalogRequestKey] = useState('');
+  const [generatedProxyUrl, setGeneratedProxyUrl] = useState('');
+  const [proxyCopied, setProxyCopied] = useState(false);
 
-  const normalizedManifestUrl = proxyManifestUrl.trim();
-  const normalizedTmdbKey = tmdbKey.trim();
-  const normalizedMdblistKey = mdblistKey.trim();
-  const activeCatalogRequestKey =
-    normalizedManifestUrl && normalizedTmdbKey && normalizedMdblistKey
-      ? `${normalizedManifestUrl}::${normalizedTmdbKey}::${normalizedMdblistKey}`
-      : '';
+  const activeCatalogRequestKey = proxyPayload ? JSON.stringify(proxyPayload) : '';
 
   useEffect(() => {
     if (!activeCatalogRequestKey) {
@@ -93,33 +78,18 @@ export function ProxyView() {
       setCatalogLoadState('loading');
       setCatalogLoadError('');
 
-      const target = new URL('/proxy/manifest.json', window.location.origin);
-      target.searchParams.set('url', normalizedManifestUrl);
-      target.searchParams.set('tmdbKey', normalizedTmdbKey);
-      target.searchParams.set('mdblistKey', normalizedMdblistKey);
-
-      try {
-        const response = await fetch(target.toString(), { cache: 'no-store' });
-        if (!response.ok) {
-          const message = await response.text();
-          throw new Error(message || `Manifest request failed with ${response.status}`);
-        }
-        const payload = await response.json();
-        if (cancelled) return;
-        setCatalogManifest(payload && typeof payload === 'object' ? payload : null);
-        setCatalogLoadState('ready');
-      } catch (error) {
-        if (cancelled) return;
-        setCatalogManifest(null);
-        setCatalogLoadState('error');
-        setCatalogLoadError(error instanceof Error ? error.message : 'Unable to load source catalogs.');
-      }
+      const result = await loadProxyCatalogManifest(activeCatalogRequestKey);
+      if (cancelled) return;
+      setGeneratedProxyUrl(result.generatedProxyUrl);
+      setCatalogManifest(result.catalogManifest);
+      setCatalogLoadState(result.catalogLoadState);
+      setCatalogLoadError(result.catalogLoadError);
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [activeCatalogRequestKey, normalizedManifestUrl, normalizedMdblistKey, normalizedTmdbKey]);
+  }, [activeCatalogRequestKey]);
 
   const effectiveCatalogLoadState = !activeCatalogRequestKey
     ? 'idle'
@@ -134,6 +104,10 @@ export function ProxyView() {
     effectiveCatalogLoadState === 'ready' && catalogRequestKey === activeCatalogRequestKey
       ? catalogManifest
       : null;
+  const effectiveGeneratedProxyUrl =
+    activeCatalogRequestKey && catalogRequestKey === activeCatalogRequestKey
+      ? generatedProxyUrl
+      : '';
 
   const catalogDescriptors = useMemo(
     () => (effectiveCatalogManifest ? readProxyCatalogDescriptors(effectiveCatalogManifest) : []),
@@ -144,6 +118,19 @@ export function ProxyView() {
     [proxyCatalogRules],
   );
   const proxyTypeSet = useMemo(() => new Set(proxyTypes), [proxyTypes]);
+  const canGenerateProxy = Boolean(effectiveGeneratedProxyUrl);
+  const displayedProxyUrl =
+    effectiveGeneratedProxyUrl ||
+    `${baseUrl || 'https://xrdb.example.com'}/proxy/{uuid}/manifest.json`;
+
+  const handleCopyProxy = () => {
+    if (!effectiveGeneratedProxyUrl) {
+      return;
+    }
+    navigator.clipboard.writeText(effectiveGeneratedProxyUrl);
+    setProxyCopied(true);
+    setTimeout(() => setProxyCopied(false), 2000);
+  };
 
   const toggleProxyType = (type: ProxyMediaType, enabled: boolean) => {
     const nextSet = new Set(proxyTypes);
@@ -437,14 +424,16 @@ export function ProxyView() {
             Use this URL in Stremio. It ends with manifest.json and has no query params.
           </p>
           <div className="rounded-xl border border-white/10 bg-black/70 p-3 overflow-hidden">
-            <div className={`font-mono text-[11px] text-zinc-300 break-all${!showProxyUrl && proxyUrl ? ' select-none' : ''}`}>
-              {displayedProxyUrl || `${baseUrl || 'https://xrdb.example.com'}/proxy/{config}/manifest.json`}
+            <div className={`font-mono text-[11px] text-zinc-300 break-all${!showProxyUrl && effectiveGeneratedProxyUrl ? ' select-none' : ''}`}>
+              {showProxyUrl || !effectiveGeneratedProxyUrl
+                ? displayedProxyUrl
+                : '*'.repeat(displayedProxyUrl.length)}
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={onCopyProxy}
+              onClick={handleCopyProxy}
               disabled={!canGenerateProxy}
               className={`rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-2 transition-colors ${
                 canGenerateProxy
@@ -481,7 +470,7 @@ export function ProxyView() {
               <span>{showProxyUrl ? 'Hide' : 'Show'}</span>
             </button>
             <a
-              href={canGenerateProxy ? proxyUrl : undefined}
+              href={canGenerateProxy ? effectiveGeneratedProxyUrl : undefined}
               target="_blank"
               rel="noreferrer"
               className={`rounded-full px-4 py-2 text-xs font-semibold inline-flex items-center gap-2 transition-colors ${
@@ -496,9 +485,12 @@ export function ProxyView() {
           </div>
           {!canGenerateProxy && (
             <p className="text-[13px] text-zinc-500">
-              Add manifest URL, TMDB key and MDBList key to generate a valid link.
+              Add manifest URL, TMDB key and MDBList key to generate a UUID backed link.
             </p>
           )}
+          <p className="text-[11px] leading-4 text-zinc-500">
+            Legacy inline proxy links remain readable during migration. Copying here always rotates to the new UUID backed manifest format.
+          </p>
         </div>
       </div>
 
@@ -528,7 +520,7 @@ export function ProxyView() {
               </div>
             ) : (
               <div className="text-center text-[13px] text-zinc-500">
-                {tmdbKeyPresent ? 'No preview available.' : 'Add a TMDB key to unlock preview.'}
+                {tmdbKeyPresent ? 'No preview available.' : 'Configure a server TMDB key to unlock preview.'}
               </div>
             )}
           </div>

@@ -87,6 +87,12 @@ import {
   buildEpisodePreviewMediaTarget,
   parseEpisodePreviewMediaTarget,
 } from '@/lib/episodeIdentity';
+import {
+  CONFIG_PROFILE_UNLOCK_SESSION_STORAGE_KEY,
+  parseConfigProfileUnlockSession,
+  serializeConfigProfileUnlockSession,
+  type ConfigProfileUnlockSession,
+} from '@/lib/configProfileClientState';
 import { isConfiguratorExperienceMode } from '@/lib/configuratorPresets';
 import { buildConfiguratorPageProps } from '@/lib/configuratorPageProps';
 import type { MediaFeatureBadgeKey } from '@/lib/mediaFeatures';
@@ -116,6 +122,9 @@ import {
   type PinnedTarget,
   type PinnedTargetsStore,
 } from '@/lib/configuratorMediaSearch';
+import {
+  type ConfiguratorEnvAccessKeys,
+} from '@/lib/configuratorEnvAccessKeys';
 
 type WorkspacePanelId =
   | 'configurator'
@@ -238,10 +247,16 @@ const readDocsCaptureConfig = () => {
   };
 };
 
-export function useConfiguratorWorkspaceRuntime() {
+export function useConfiguratorWorkspaceRuntime({
+  envAccessKeys,
+}: {
+  envAccessKeys: ConfiguratorEnvAccessKeys;
+}) {
   const baseUrl = normalizeBaseUrl(useClientOrigin());
   const docsCaptureConfig = useMemo(() => readDocsCaptureConfig(), []);
   const disableRemoteLookups = Boolean(docsCaptureConfig);
+  const [configProfileUnlockSession, setConfigProfileUnlockSession] =
+    useState<ConfigProfileUnlockSession | null>(null);
   const workspaceState = useConfiguratorWorkspaceState();
   const {
     activeProviderEditorId,
@@ -263,6 +278,7 @@ export function useConfiguratorWorkspaceRuntime() {
     backdropGenreBadgePosition,
     backdropGenreBadgeScale,
     backdropGenreBadgeBorderWidth,
+    backdropGenreBadgeBackgroundOpacity,
     backdropGenreBadgeStyle,
     backdropImageSize,
     backdropImageText,
@@ -290,6 +306,7 @@ export function useConfiguratorWorkspaceRuntime() {
     thumbnailGenreBadgePosition,
     thumbnailGenreBadgeScale,
     thumbnailGenreBadgeBorderWidth,
+    thumbnailGenreBadgeBackgroundOpacity,
     thumbnailGenreBadgeStyle,
     thumbnailImageText,
     thumbnailQualityBadgePreferences,
@@ -322,6 +339,7 @@ export function useConfiguratorWorkspaceRuntime() {
     logoGenreBadgePosition,
     logoGenreBadgeScale,
     logoGenreBadgeBorderWidth,
+    logoGenreBadgeBackgroundOpacity,
     logoGenreBadgeStyle,
     logoQualityBadgePreferences,
     logoQualityBadgeScale,
@@ -345,6 +363,7 @@ export function useConfiguratorWorkspaceRuntime() {
     posterGenreBadgePosition,
     posterGenreBadgeScale,
     posterGenreBadgeBorderWidth,
+    posterGenreBadgeBackgroundOpacity,
     posterGenreBadgeStyle,
     posterIdMode,
     posterImageSize,
@@ -367,6 +386,8 @@ export function useConfiguratorWorkspaceRuntime() {
     posterRatingPreferences,
     posterRatingPresentation,
     posterRingProgressSource,
+    posterRingCriticsPriority,
+    posterRingAudiencePriority,
     posterRingValueSource,
     posterRatingRows,
     posterRatingStyle,
@@ -425,6 +446,7 @@ export function useConfiguratorWorkspaceRuntime() {
     setBackdropGenreBadgePosition,
     setBackdropGenreBadgeScale,
     setBackdropGenreBadgeBorderWidth,
+    setBackdropGenreBadgeBackgroundOpacity,
     setBackdropGenreBadgeStyle,
     setBackdropImageSize,
     setBackdropImageText,
@@ -451,6 +473,7 @@ export function useConfiguratorWorkspaceRuntime() {
     setThumbnailGenreBadgePosition,
     setThumbnailGenreBadgeScale,
     setThumbnailGenreBadgeBorderWidth,
+    setThumbnailGenreBadgeBackgroundOpacity,
     setThumbnailGenreBadgeStyle,
     setThumbnailImageText,
     setThumbnailQualityBadgePreferences,
@@ -482,6 +505,7 @@ export function useConfiguratorWorkspaceRuntime() {
     setLogoGenreBadgePosition,
     setLogoGenreBadgeScale,
     setLogoGenreBadgeBorderWidth,
+    setLogoGenreBadgeBackgroundOpacity,
     setLogoGenreBadgeStyle,
     setLogoQualityBadgePreferences,
     setLogoQualityBadgeScale,
@@ -498,6 +522,8 @@ export function useConfiguratorWorkspaceRuntime() {
     setMediaId,
     setPosterAggregateRatingSource,
     setPosterRingProgressSource,
+    setPosterRingCriticsPriority,
+    setPosterRingAudiencePriority,
     setPosterRingValueSource,
     setPosterArtworkSource,
     setPosterEdgeOffset,
@@ -506,6 +532,7 @@ export function useConfiguratorWorkspaceRuntime() {
     setPosterGenreBadgePosition,
     setPosterGenreBadgeScale,
     setPosterGenreBadgeBorderWidth,
+    setPosterGenreBadgeBackgroundOpacity,
     setPosterGenreBadgeStyle,
     setPosterIdMode,
     setPosterImageSize,
@@ -593,6 +620,14 @@ export function useConfiguratorWorkspaceRuntime() {
   const [activePreviewTitle, setActivePreviewTitle] = useState('');
   const mediaSearchRequestIdRef = useRef(0);
   const mediaSearchAbortControllerRef = useRef<AbortController | null>(null);
+  const [runtimeEnvAccessKeys, setRuntimeEnvAccessKeys] = useState(envAccessKeys);
+  const [runtimeEnvAccessKeysLoaded, setRuntimeEnvAccessKeysLoaded] = useState(false);
+  const envAccessKeysAppliedRef = useRef(false);
+  const resolvedForRef = useRef<string | null>(null);
+  const allowClientProviderCredentials = Boolean(docsCaptureConfig);
+  const hasTmdbCredential =
+    runtimeEnvAccessKeys.hasServerTmdbKey ||
+    (allowClientProviderCredentials && Boolean(tmdbKey.trim()));
 
   const [pinnedTargets, setPinnedTargets] = useState<PinnedTargetsStore>(() => readPinnedTargetsFromStorage());
 
@@ -781,8 +816,8 @@ export function useConfiguratorWorkspaceRuntime() {
       setMediaSearchLoading(false);
       return;
     }
-    if (!tmdbKey.trim()) {
-      setMediaSearchError('Add a TMDB key to search by name.');
+    if (!hasTmdbCredential) {
+      setMediaSearchError('Configure a server TMDB key to search by name.');
       setMediaSearchResults([]);
       setMediaSearchLoading(false);
       return;
@@ -799,7 +834,9 @@ export function useConfiguratorWorkspaceRuntime() {
     try {
       const target = new URL('/api/media-search', window.location.origin);
       target.searchParams.set('q', normalizedQuery);
-      target.searchParams.set('tmdbKey', tmdbKey.trim());
+      if (allowClientProviderCredentials && tmdbKey.trim()) {
+        target.searchParams.set('tmdbKey', tmdbKey.trim());
+      }
       target.searchParams.set('previewType', previewType);
       target.searchParams.set('lang', lang);
 
@@ -835,7 +872,7 @@ export function useConfiguratorWorkspaceRuntime() {
         setMediaSearchLoading(false);
       }
     }
-  }, [disableRemoteLookups, lang, previewType, tmdbKey]);
+  }, [allowClientProviderCredentials, disableRemoteLookups, hasTmdbCredential, lang, previewType, tmdbKey]);
 
   const handleMediaSearchSubmit = useCallback(() => {
     void runMediaSearch(mediaSearchQuery, { showValidationErrors: true });
@@ -915,6 +952,7 @@ export function useConfiguratorWorkspaceRuntime() {
     backdropGenreBadgePosition,
     backdropGenreBadgeScale,
     backdropGenreBadgeBorderWidth,
+    backdropGenreBadgeBackgroundOpacity,
     backdropGenreBadgeStyle,
     backdropQualityBadgePreferences,
     backdropQualityBadgeScale,
@@ -928,6 +966,7 @@ export function useConfiguratorWorkspaceRuntime() {
     thumbnailGenreBadgePosition,
     thumbnailGenreBadgeScale,
     thumbnailGenreBadgeBorderWidth,
+    thumbnailGenreBadgeBackgroundOpacity,
     thumbnailGenreBadgeStyle,
     thumbnailQualityBadgePreferences,
     thumbnailQualityBadgeScale,
@@ -941,6 +980,7 @@ export function useConfiguratorWorkspaceRuntime() {
     logoGenreBadgePosition,
     logoGenreBadgeScale,
     logoGenreBadgeBorderWidth,
+    logoGenreBadgeBackgroundOpacity,
     logoGenreBadgeStyle,
     logoQualityBadgePreferences,
     logoQualityBadgeScale,
@@ -953,6 +993,7 @@ export function useConfiguratorWorkspaceRuntime() {
     posterGenreBadgePosition,
     posterGenreBadgeScale,
     posterGenreBadgeBorderWidth,
+    posterGenreBadgeBackgroundOpacity,
     posterGenreBadgeStyle,
     posterQualityBadgePreferences,
     posterQualityBadgeScale,
@@ -969,6 +1010,7 @@ export function useConfiguratorWorkspaceRuntime() {
     setBackdropGenreBadgePosition,
     setBackdropGenreBadgeScale,
     setBackdropGenreBadgeBorderWidth,
+    setBackdropGenreBadgeBackgroundOpacity,
     setBackdropGenreBadgeStyle,
     setBackdropQualityBadgePreferences,
     setBackdropQualityBadgeScale,
@@ -982,6 +1024,7 @@ export function useConfiguratorWorkspaceRuntime() {
     setThumbnailGenreBadgePosition,
     setThumbnailGenreBadgeScale,
     setThumbnailGenreBadgeBorderWidth,
+    setThumbnailGenreBadgeBackgroundOpacity,
     setThumbnailGenreBadgeStyle,
     setThumbnailQualityBadgePreferences,
     setThumbnailQualityBadgeScale,
@@ -995,6 +1038,7 @@ export function useConfiguratorWorkspaceRuntime() {
     setLogoGenreBadgePosition,
     setLogoGenreBadgeScale,
     setLogoGenreBadgeBorderWidth,
+    setLogoGenreBadgeBackgroundOpacity,
     setLogoGenreBadgeStyle,
     setLogoQualityBadgePreferences,
     setLogoQualityBadgeScale,
@@ -1007,6 +1051,7 @@ export function useConfiguratorWorkspaceRuntime() {
     setPosterGenreBadgePosition,
     setPosterGenreBadgeScale,
     setPosterGenreBadgeBorderWidth,
+    setPosterGenreBadgeBackgroundOpacity,
     setPosterGenreBadgeStyle,
     setPosterQualityBadgePreferences,
     setPosterQualityBadgeScale,
@@ -1023,6 +1068,7 @@ export function useConfiguratorWorkspaceRuntime() {
     activeGenreBadgePosition,
     activeGenreBadgeScale,
     activeGenreBadgeBorderWidth,
+    activeGenreBadgeBackgroundOpacity,
     activeGenreBadgeStyle,
     activeQualityBadgesMax,
     setActiveQualityBadgePreferences,
@@ -1031,7 +1077,7 @@ export function useConfiguratorWorkspaceRuntime() {
   const pageChrome = useConfiguratorPageChrome({
     disableRemoteLookups,
     initialSupportedLanguages: SUPPORTED_LANGUAGES,
-    tmdbKey,
+    tmdbKey: docsCaptureConfig ? tmdbKey : '',
   });
 
   const workspaceConfigIo = useConfiguratorWorkspaceConfigIo({
@@ -1053,6 +1099,7 @@ export function useConfiguratorWorkspaceRuntime() {
     backdropGenreBadgePosition,
     backdropGenreBadgeScale,
     backdropGenreBadgeBorderWidth,
+    backdropGenreBadgeBackgroundOpacity,
     backdropGenreBadgeStyle,
     backdropImageSize,
     backdropImageText,
@@ -1080,6 +1127,7 @@ export function useConfiguratorWorkspaceRuntime() {
     thumbnailGenreBadgePosition,
     thumbnailGenreBadgeScale,
     thumbnailGenreBadgeBorderWidth,
+    thumbnailGenreBadgeBackgroundOpacity,
     thumbnailGenreBadgeStyle,
     thumbnailImageText,
     thumbnailQualityBadgePreferences,
@@ -1108,6 +1156,7 @@ export function useConfiguratorWorkspaceRuntime() {
     logoGenreBadgePosition,
     logoGenreBadgeScale,
     logoGenreBadgeBorderWidth,
+    logoGenreBadgeBackgroundOpacity,
     logoGenreBadgeStyle,
     logoQualityBadgePreferences,
     logoQualityBadgeScale,
@@ -1124,6 +1173,8 @@ export function useConfiguratorWorkspaceRuntime() {
     mdblistKey,
     posterAggregateRatingSource,
     posterRingProgressSource,
+    posterRingCriticsPriority,
+    posterRingAudiencePriority,
     posterRingValueSource,
     posterArtworkSource,
     posterEdgeOffset,
@@ -1132,6 +1183,7 @@ export function useConfiguratorWorkspaceRuntime() {
     posterGenreBadgePosition,
     posterGenreBadgeScale,
     posterGenreBadgeBorderWidth,
+    posterGenreBadgeBackgroundOpacity,
     posterGenreBadgeStyle,
     posterImageSize,
     randomPosterText,
@@ -1205,6 +1257,7 @@ export function useConfiguratorWorkspaceRuntime() {
     setBackdropGenreBadgePosition,
     setBackdropGenreBadgeScale,
     setBackdropGenreBadgeBorderWidth,
+    setBackdropGenreBadgeBackgroundOpacity,
     setBackdropGenreBadgeStyle,
     setBackdropImageSize,
     setBackdropImageText,
@@ -1231,6 +1284,7 @@ export function useConfiguratorWorkspaceRuntime() {
     setThumbnailGenreBadgePosition,
     setThumbnailGenreBadgeScale,
     setThumbnailGenreBadgeBorderWidth,
+    setThumbnailGenreBadgeBackgroundOpacity,
     setThumbnailGenreBadgeStyle,
     setThumbnailImageText,
     setThumbnailQualityBadgePreferences,
@@ -1258,6 +1312,7 @@ export function useConfiguratorWorkspaceRuntime() {
     setLogoGenreBadgePosition,
     setLogoGenreBadgeScale,
     setLogoGenreBadgeBorderWidth,
+    setLogoGenreBadgeBackgroundOpacity,
     setLogoGenreBadgeStyle,
     setLogoQualityBadgePreferences,
     setLogoQualityBadgeScale,
@@ -1273,6 +1328,8 @@ export function useConfiguratorWorkspaceRuntime() {
     setMdblistKey,
     setPosterAggregateRatingSource,
     setPosterRingProgressSource,
+    setPosterRingCriticsPriority,
+    setPosterRingAudiencePriority,
     setPosterRingValueSource,
     setPosterArtworkSource,
     setPosterEdgeOffset,
@@ -1281,6 +1338,7 @@ export function useConfiguratorWorkspaceRuntime() {
     setPosterGenreBadgePosition,
     setPosterGenreBadgeScale,
     setPosterGenreBadgeBorderWidth,
+    setPosterGenreBadgeBackgroundOpacity,
     setPosterGenreBadgeStyle,
     setPosterImageSize,
     setRandomPosterText,
@@ -1366,8 +1424,110 @@ export function useConfiguratorWorkspaceRuntime() {
     setActivePreviewTitle,
     mediaId,
   });
+
+  useEffect(() => {
+    const restoredSession = parseConfigProfileUnlockSession(
+      window.sessionStorage.getItem(CONFIG_PROFILE_UNLOCK_SESSION_STORAGE_KEY),
+    );
+
+    if (restoredSession) {
+      setConfigProfileUnlockSession(restoredSession);
+      return;
+    }
+
+    window.sessionStorage.removeItem(CONFIG_PROFILE_UNLOCK_SESSION_STORAGE_KEY);
+  }, []);
+
+  useEffect(() => {
+    const serializedSession = serializeConfigProfileUnlockSession(configProfileUnlockSession);
+
+    if (serializedSession) {
+      window.sessionStorage.setItem(CONFIG_PROFILE_UNLOCK_SESSION_STORAGE_KEY, serializedSession);
+      return;
+    }
+
+    window.sessionStorage.removeItem(CONFIG_PROFILE_UNLOCK_SESSION_STORAGE_KEY);
+  }, [configProfileUnlockSession]);
+
+  const clearConfigProfileUnlockSession = useCallback(() => {
+    setConfigProfileUnlockSession(null);
+  }, []);
+
+  useEffect(() => {
+    if (!configProfileUnlockSession) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setConfigProfileUnlockSession((current) =>
+        current && current.profileId === configProfileUnlockSession.profileId
+          ? null
+          : current,
+      );
+    }, Math.max(configProfileUnlockSession.expiresAt - Date.now(), 0));
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [configProfileUnlockSession]);
+
   const { applyWorkspaceConfig, uiSettingsLoaded } = workspaceStorage;
-  const resolvedForRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      const response = await fetch('/api/configurator-env-access-keys', { cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error('Unable to load configurator env access keys.');
+      }
+      const keys = (await response.json()) as ConfiguratorEnvAccessKeys;
+      if (!active) {
+        return;
+      }
+      setRuntimeEnvAccessKeys(keys);
+      setRuntimeEnvAccessKeysLoaded(true);
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!uiSettingsLoaded || !runtimeEnvAccessKeysLoaded || envAccessKeysAppliedRef.current) {
+      return;
+    }
+
+    envAccessKeysAppliedRef.current = true;
+    if (docsCaptureConfig) {
+      return;
+    }
+    if (fanartKey.trim()) {
+      setFanartKey('');
+    }
+    if (mdblistKey.trim()) {
+      setMdblistKey('');
+    }
+    if (simklClientId.trim()) {
+      setSimklClientId('');
+    }
+    if (tmdbKey.trim()) {
+      setTmdbKey('');
+    }
+  }, [
+    docsCaptureConfig,
+    fanartKey,
+    mdblistKey,
+    runtimeEnvAccessKeysLoaded,
+    setFanartKey,
+    setMdblistKey,
+    setSimklClientId,
+    setTmdbKey,
+    simklClientId,
+    tmdbKey,
+    uiSettingsLoaded,
+  ]);
+
   useEffect(() => {
     if (!uiSettingsLoaded) return;
     if (activePreviewTitle) {
@@ -1381,13 +1541,15 @@ export function useConfiguratorWorkspaceRuntime() {
       setActivePreviewTitle(sample);
       return;
     }
-    if (!tmdbKey.trim() || disableRemoteLookups) return;
+    if (!hasTmdbCredential || disableRemoteLookups) return;
     const episodeTarget = parseEpisodePreviewMediaTarget(mediaId);
     const baseId = episodeTarget ? episodeTarget.mediaId : mediaId;
     const resolveId = baseId.startsWith('tmdb:') ? baseId : baseId.split(':')[0];
     const target = new URL('/api/media-resolve', window.location.origin);
     target.searchParams.set('id', resolveId);
-    target.searchParams.set('tmdbKey', tmdbKey.trim());
+    if (allowClientProviderCredentials && tmdbKey.trim()) {
+      target.searchParams.set('tmdbKey', tmdbKey.trim());
+    }
     void fetch(target.toString(), { cache: 'no-store' })
       .then(async (res) => {
         if (!res.ok) return;
@@ -1395,15 +1557,17 @@ export function useConfiguratorWorkspaceRuntime() {
         if (data?.title) setActivePreviewTitle(data.title);
       })
       .catch(() => null);
-  }, [uiSettingsLoaded, activePreviewTitle, mediaId, tmdbKey, disableRemoteLookups]);
+  }, [uiSettingsLoaded, activePreviewTitle, allowClientProviderCredentials, mediaId, tmdbKey, hasTmdbCredential, disableRemoteLookups]);
 
 
   const workspaceOutputs = useConfiguratorOutputs({
+    allowClientProviderCredentials,
     activeGenreBadgeAnimeGrouping,
     activeGenreBadgeMode,
     activeGenreBadgePosition,
     activeGenreBadgeScale,
     activeGenreBadgeBorderWidth,
+    activeGenreBadgeBackgroundOpacity,
     activeGenreBadgeStyle,
     activeQualityBadgesMax,
     aggregateAccentBarOffset,
@@ -1422,6 +1586,7 @@ export function useConfiguratorWorkspaceRuntime() {
     backdropGenreBadgePosition,
     backdropGenreBadgeScale,
     backdropGenreBadgeBorderWidth,
+    backdropGenreBadgeBackgroundOpacity,
     backdropGenreBadgeStyle,
     backdropImageSize,
     backdropImageText,
@@ -1447,6 +1612,7 @@ export function useConfiguratorWorkspaceRuntime() {
     thumbnailGenreBadgePosition,
     thumbnailGenreBadgeScale,
     thumbnailGenreBadgeBorderWidth,
+    thumbnailGenreBadgeBackgroundOpacity,
     thumbnailGenreBadgeStyle,
     thumbnailImageText,
     thumbnailQualityBadgePreferences,
@@ -1469,6 +1635,8 @@ export function useConfiguratorWorkspaceRuntime() {
     fanartKey,
     genrePreviewMode,
     hideAiometadataCredentials,
+    hasServerMdblistKey: runtimeEnvAccessKeys.hasServerMdblistKey,
+    hasServerTmdbKey: hasTmdbCredential,
     isLatestReleaseLoading: feeds.isLatestReleaseLoading,
     lang,
     latestReleaseTag: feeds.latestReleaseTag,
@@ -1479,6 +1647,7 @@ export function useConfiguratorWorkspaceRuntime() {
     logoGenreBadgePosition,
     logoGenreBadgeScale,
     logoGenreBadgeBorderWidth,
+    logoGenreBadgeBackgroundOpacity,
     logoGenreBadgeStyle,
     logoQualityBadgePreferences,
     logoQualityBadgeScale,
@@ -1500,6 +1669,7 @@ export function useConfiguratorWorkspaceRuntime() {
     posterGenreBadgePosition,
     posterGenreBadgeScale,
     posterGenreBadgeBorderWidth,
+    posterGenreBadgeBackgroundOpacity,
     posterGenreBadgeStyle,
     posterIdMode,
     posterImageSize,
@@ -1521,6 +1691,8 @@ export function useConfiguratorWorkspaceRuntime() {
     posterRatingPreferences,
     posterRatingPresentation,
     posterRingProgressSource,
+    posterRingCriticsPriority,
+    posterRingAudiencePriority,
     posterRingValueSource,
     posterRatingStyle,
     posterRatingsLayout,
@@ -1852,6 +2024,10 @@ export function useConfiguratorWorkspaceRuntime() {
   } = buildConfiguratorPageProps({
     activeWorkspaceSettings,
     baseUrl,
+    hasServerFanartKey: runtimeEnvAccessKeys.hasServerFanartKey,
+    hasServerMdblistKey: runtimeEnvAccessKeys.hasServerMdblistKey,
+    hasServerSimklClientId: runtimeEnvAccessKeys.hasServerSimklClientId,
+    hasServerTmdbKey: hasTmdbCredential,
     mediaTargetSearch: {
       onMediaIdChange: handleMediaIdChange,
       onThumbnailEpisodeChange: handleThumbnailEpisodeChange,
@@ -1883,14 +2059,20 @@ export function useConfiguratorWorkspaceRuntime() {
   });
 
   return {
+    applySavedUiConfig,
+    buildCurrentUiConfig,
+    clearConfigProfileUnlockSession,
+    configProfileUnlockSession,
     docsCaptureReady,
     experienceModeDraft,
     handleContinueExperienceMode,
     inputsPanelProps,
     isDocsCapture: Boolean(docsCaptureConfig),
     pageRef: pageChrome.pageRef,
+    setConfigProfileUnlockSession,
     setExperienceModeDraft,
     showExperienceModal,
+    uiSettingsLoaded,
     workspaceColumnsProps,
   };
 }

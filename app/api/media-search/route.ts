@@ -7,7 +7,7 @@ import {
   mapOmdbSearchResultsForPreviewType,
   mapTmdbSearchResultsForPreviewType,
 } from '@/lib/configuratorMediaSearch';
-import { OMDB_API_KEY } from '@/lib/imageRouteConfig';
+import { OMDB_API_KEY, TMDB_API_KEY } from '@/lib/imageRouteConfig';
 import { OMDB_API_BASE_URL } from '@/lib/serviceBaseUrls';
 
 const DEFAULT_SEARCH_LANGUAGE = 'en-US';
@@ -15,7 +15,7 @@ const SEARCH_RESULTS_LIMIT = 8;
 
 export async function GET(request: NextRequest) {
   const searchQuery = String(request.nextUrl.searchParams.get('q') || '').trim();
-  const tmdbKey = String(request.nextUrl.searchParams.get('tmdbKey') || '').trim();
+  const tmdbKey = String(request.nextUrl.searchParams.get('tmdbKey') || '').trim() || TMDB_API_KEY;
   const previewTypeRaw = String(request.nextUrl.searchParams.get('previewType') || '').trim();
   const language = String(request.nextUrl.searchParams.get('lang') || '').trim() || DEFAULT_SEARCH_LANGUAGE;
 

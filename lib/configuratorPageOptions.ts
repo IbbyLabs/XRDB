@@ -1,6 +1,7 @@
 import { type GenreBadgeAnimeGrouping, type GenreBadgeMode } from '@/lib/genreBadge';
 import { type EpisodeIdMode } from '@/lib/episodeIdentity';
 import { type RatingPresentation } from '@/lib/ratingPresentation';
+import { type MediaSearchPreviewType } from '@/lib/configuratorMediaSearch';
 import {
   type AgeRatingBadgePosition,
   type ArtworkSource,
@@ -153,6 +154,7 @@ export const AGE_RATING_BADGE_POSITION_OPTIONS: Array<{
   label: string;
 }> = [
   { id: 'inherit', label: 'Inherit' },
+  { id: 'grouped', label: 'Grouped' },
   { id: 'top-left', label: 'Top Left' },
   { id: 'top-center', label: 'Top Center' },
   { id: 'top-right', label: 'Top Right' },
@@ -240,6 +242,11 @@ export const PRESENTATION_SECTION_ORDER: RatingPresentation[] = [
   'none',
 ];
 
+export const getPresentationOrderForType = (type: MediaSearchPreviewType): RatingPresentation[] =>
+  type === 'poster'
+    ? PRESENTATION_SECTION_ORDER
+    : PRESENTATION_SECTION_ORDER.filter((p) => p !== 'ring' && p !== 'editorial' && p !== 'blockbuster');
+
 export const WORKSPACE_CENTER_VIEW_OPTIONS: Array<{
   id: 'showcase' | 'preview' | 'guide';
   label: string;
@@ -251,7 +258,7 @@ export const WORKSPACE_CENTER_VIEW_OPTIONS: Array<{
 ];
 
 export const FANART_KEY_HELP_COPY =
-  'Optional. Recommended. Your key is used first. If left blank, XRDB falls back to the service key when one exists. This helps if the shared service key is rate limited or blocked later.';
+  'Fanart, MDBList, TMDB, and SIMKL provider keys are configured on the server. Generated URLs stay lean and do not include provider credentials.';
 
 export const XRDB_REQUEST_KEY_HELP_COPY =
   'Optional. Only needed when the XRDB host enables request protection. When present, the configurator carries it into previews, config strings, proxy manifests, and exported URL patterns.';

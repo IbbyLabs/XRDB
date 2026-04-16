@@ -12,7 +12,8 @@ Thumbs.db
 .vscode/
 backups/
 coverage/
-data/
+data/*
+!data/poster-warm-targets.txt
 node_modules/
 output/
 public/commits.json

@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   extractTorrentioFilenames,
   fetchTorrentioBadges,
+  getCachedTorrentioBadges,
 } from '../lib/imageRouteTorrentio.ts';
 
 const createPhases = () => ({
@@ -97,4 +98,74 @@ test('image route torrentio reuses cached badge results', async () => {
 
   assert.equal(fetchCalls, 1);
   assert.deepEqual(second.badges, first.badges);
+});
+
+test('image route torrentio skips fetches when torrentio is disabled', async () => {
+  let fetchCalls = 0;
+  const result = await fetchTorrentioBadges({
+    type: 'movie',
+    id: createUniqueId('disabled'),
+    phases: createPhases(),
+    baseUrl: null,
+    fetchImpl: async () => {
+      fetchCalls += 1;
+      throw new Error('should not fetch when disabled');
+    },
+  });
+
+  assert.equal(fetchCalls, 0);
+  assert.deepEqual(result.badges, []);
+  assert.ok(result.cacheTtlMs >= 60_000);
+});
+
+test('image route torrentio falls back to the configured secondary host on retryable failure', async () => {
+  const id = createUniqueId('fallback');
+  const requestedUrls = [];
+  const result = await fetchTorrentioBadges({
+    type: 'movie',
+    id,
+    phases: createPhases(),
+    baseUrl: 'https://torrentio.primary.example',
+    fallbackBaseUrl: 'https://torrentio.stremio.ru',
+    fetchImpl: async (input) => {
+      const url = String(input);
+      requestedUrls.push(url);
+      if (url.startsWith('https://torrentio.primary.example')) {
+        return new Response(JSON.stringify({ streams: [] }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+      return new Response(JSON.stringify({ streams: [{ filename: 'Movie.2024.2160p.WEB-DL.mkv' }] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    },
+  });
+
+  assert.deepEqual(requestedUrls, [
+    `https://torrentio.primary.example/stream/movie/${encodeURIComponent(id)}.json`,
+    `https://torrentio.stremio.ru/stream/movie/${encodeURIComponent(id)}.json`,
+  ]);
+  assert.equal(result.selectedBaseUrl, 'https://torrentio.stremio.ru');
+  assert.deepEqual(result.badges.map((badge) => badge.key), ['4k']);
+});
+
+test('image route torrentio exposes cached badges for non-blocking poster renders', async () => {
+  const id = createUniqueId('peek');
+  await fetchTorrentioBadges({
+    type: 'movie',
+    id,
+    phases: createPhases(),
+    fetchImpl: async () =>
+      new Response(JSON.stringify({ streams: [{ filename: 'Movie.2024.2160p.WEB-DL.mkv' }] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+  });
+
+  const cached = getCachedTorrentioBadges({ type: 'movie', id });
+
+  assert.ok(cached);
+  assert.deepEqual(cached.badges.map((badge) => badge.key), ['4k']);
 });

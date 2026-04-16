@@ -13,7 +13,9 @@ test('quality badge controls resolve placement mode from preview type and poster
   assert.equal(controlsModule.resolveQualityBadgePlacementControlMode('poster', 'top'), 'position');
   assert.equal(controlsModule.resolveQualityBadgePlacementControlMode('poster', 'bottom'), 'position');
   assert.equal(controlsModule.resolveQualityBadgePlacementControlMode('poster', 'top-bottom'), 'side');
-  assert.equal(controlsModule.resolveQualityBadgePlacementControlMode('poster', 'left-right'), null);
+  assert.equal(controlsModule.resolveQualityBadgePlacementControlMode('poster', 'left'), 'position');
+  assert.equal(controlsModule.resolveQualityBadgePlacementControlMode('poster', 'right'), 'position');
+  assert.equal(controlsModule.resolveQualityBadgePlacementControlMode('poster', 'left-right'), 'position');
   assert.equal(controlsModule.resolveQualityBadgePlacementControlMode('backdrop', 'top'), null);
 });
 
@@ -32,6 +34,7 @@ test('quality badge controls expose layout scoped age rating anchors and shared 
   const controlsModule = await importFresh('../lib/qualityBadgeControls.ts');
 
   assert.deepEqual(controlsModule.getSupportedPosterAgeRatingBadgePositions('top'), [
+    'grouped',
     'top-left',
     'top-center',
     'top-right',
@@ -41,6 +44,10 @@ test('quality badge controls expose layout scoped age rating anchors and shared 
   ]);
   assert.equal(
     controlsModule.isSupportedPosterAgeRatingBadgePosition('left', 'left-center'),
+    true,
+  );
+  assert.equal(
+    controlsModule.isSupportedPosterAgeRatingBadgePosition('left', 'grouped'),
     true,
   );
   assert.equal(

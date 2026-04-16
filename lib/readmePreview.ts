@@ -1140,18 +1140,23 @@ const buildReadmePreviewBindOrigin = ({
 export const resolveReadmePreviewOrigins = ({
   requestOrigin,
   previewOrigin = null,
+  previewOriginAlias = null,
   bindHost = null,
   port = null,
+  includeRequestOriginFallback = true,
 }: {
   requestOrigin: string;
   previewOrigin?: string | null;
+  previewOriginAlias?: string | null;
   bindHost?: string | null;
   port?: string | number | null;
+  includeRequestOriginFallback?: boolean;
 }) => {
   const candidates = [
     normalizeReadmePreviewOrigin(previewOrigin),
+    normalizeReadmePreviewOrigin(previewOriginAlias),
     buildReadmePreviewBindOrigin({ bindHost, port }),
-    normalizeReadmePreviewOrigin(requestOrigin),
+    includeRequestOriginFallback ? normalizeReadmePreviewOrigin(requestOrigin) : null,
   ].filter((value): value is string => Boolean(value));
 
   return [...new Set(candidates)];

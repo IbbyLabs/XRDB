@@ -17,7 +17,7 @@ import {
   FANART_KEY_HELP_COPY,
   LOGO_ARTWORK_SOURCE_OPTIONS,
   POSTER_IMAGE_SIZE_OPTIONS,
-  PRESENTATION_SECTION_ORDER,
+  getPresentationOrderForType,
   QUALITY_BADGE_POSITION_OPTIONS,
   QUALITY_BADGE_SIDE_OPTIONS,
   STREAM_BADGE_OPTIONS,
@@ -25,7 +25,7 @@ import {
   WORKSPACE_CENTER_VIEW_OPTIONS,
 } from '@/lib/configuratorPageOptions';
 import { POSTER_COMPACT_RING_SOURCE_OPTIONS } from '@/lib/posterCompactRing';
-import { buildProfileParams, normalizeManifestUrl } from '@/lib/uiConfig';
+import { buildProfileParams, buildProxyPayload, normalizeManifestUrl } from '@/lib/uiConfig';
 
 type WorkspacePanelId =
   | 'configurator'
@@ -95,6 +95,10 @@ type MediaTargetSearchState = {
 export function buildConfiguratorPageProps({
   activeWorkspaceSettings,
   baseUrl,
+  hasServerFanartKey,
+  hasServerMdblistKey,
+  hasServerSimklClientId,
+  hasServerTmdbKey,
   outputs,
   pageChrome,
   workspaceActions,
@@ -106,6 +110,10 @@ export function buildConfiguratorPageProps({
 }: {
   activeWorkspaceSettings: ReturnType<typeof useConfiguratorActiveWorkspaceSettings>;
   baseUrl: string;
+  hasServerFanartKey: boolean;
+  hasServerMdblistKey: boolean;
+  hasServerSimklClientId: boolean;
+  hasServerTmdbKey: boolean;
   outputs: ReturnType<typeof useConfiguratorOutputs>;
   pageChrome: ReturnType<typeof useConfiguratorPageChrome>;
   workspaceActions: ReturnType<typeof useConfiguratorWorkspaceActions>;
@@ -149,25 +157,23 @@ export function buildConfiguratorPageProps({
       },
       accessKeysProps: {
         xrdbKey: workspaceState.xrdbKey,
-        tmdbKey: workspaceState.tmdbKey,
-        mdblistKey: workspaceState.mdblistKey,
-        fanartKey: workspaceState.fanartKey,
-        simklClientId: workspaceState.simklClientId,
         tmdbIdScope: workspaceState.tmdbIdScope,
         onXrdbKeyChange: workspaceState.setXrdbKey,
-        onTmdbKeyChange: workspaceState.setTmdbKey,
-        onMdblistKeyChange: workspaceState.setMdblistKey,
-        onFanartKeyChange: workspaceState.setFanartKey,
-        onSimklClientIdChange: workspaceState.setSimklClientId,
         onTmdbIdScopeChange: workspaceState.setTmdbIdScope,
         tmdbIdScopeOptions: TMDB_ID_SCOPE_MODE_OPTIONS,
         xrdbRequestKeyHelpCopy: XRDB_REQUEST_KEY_HELP_COPY,
         fanartKeyHelpCopy: FANART_KEY_HELP_COPY,
+        serverCredentialStatus: {
+          fanart: hasServerFanartKey,
+          mdblist: hasServerMdblistKey,
+          simkl: hasServerSimklClientId,
+          tmdb: hasServerTmdbKey,
+        },
       },
       mediaTargetProps: {
         previewType: workspaceState.previewType,
         mediaId: workspaceState.mediaId,
-        tmdbKey: workspaceState.tmdbKey,
+        tmdbKeyAvailable: Boolean(workspaceState.tmdbKey.trim()) || hasServerTmdbKey,
         lang: workspaceState.lang,
         supportedLanguages: pageChrome.supportedLanguages,
         onMediaIdChange: mediaTargetSearch.onMediaIdChange,
@@ -190,7 +196,7 @@ export function buildConfiguratorPageProps({
         onSelectPinnedTarget: mediaTargetSearch.onSelectPinnedTarget,
       },
       presentationProps: {
-        presentationOrder: PRESENTATION_SECTION_ORDER,
+        presentationOrder: getPresentationOrderForType(workspaceState.previewType),
         previewType: workspaceState.previewType,
         activeRatingPresentation: workspaceSummary.activeRatingPresentation,
         layoutPlacementHelp: workspaceSummary.layoutPlacementHelp,
@@ -204,6 +210,8 @@ export function buildConfiguratorPageProps({
         activeAggregateRatingSource: workspaceSummary.activeAggregateRatingSource,
         posterRingValueSource: workspaceState.posterRingValueSource,
         posterRingProgressSource: workspaceState.posterRingProgressSource,
+        posterRingCriticsPriority: workspaceState.posterRingCriticsPriority,
+        posterRingAudiencePriority: workspaceState.posterRingAudiencePriority,
         posterCompactRingSourceOptions: POSTER_COMPACT_RING_SOURCE_OPTIONS,
         aggregateAccentMode: workspaceState.aggregateAccentMode,
         aggregateAccentColor: workspaceState.aggregateAccentColor,
@@ -219,6 +227,8 @@ export function buildConfiguratorPageProps({
         onSelectAggregateRatingSource: workspaceSummary.setAggregateRatingSourceForType,
         onSelectPosterRingValueSource: workspaceState.setPosterRingValueSource,
         onSelectPosterRingProgressSource: workspaceState.setPosterRingProgressSource,
+        onSelectPosterRingCriticsPriority: workspaceState.setPosterRingCriticsPriority,
+        onSelectPosterRingAudiencePriority: workspaceState.setPosterRingAudiencePriority,
         onSelectAggregateAccentMode: workspaceState.setAggregateAccentMode,
         onSelectAggregateAccentColor: workspaceState.setAggregateAccentColor,
         onSelectAggregateCriticsAccentColor: workspaceState.setAggregateCriticsAccentColor,
@@ -293,6 +303,8 @@ export function buildConfiguratorPageProps({
         activeRatingBadgeScale: activeWorkspaceSettings.activeRatingBadgeScale,
         activeGenreBadgeScale: activeWorkspaceSettings.activeGenreBadgeScale,
         activeGenreBadgeBorderWidth: activeWorkspaceSettings.activeGenreBadgeBorderWidth,
+        activeGenreBadgeBackgroundOpacity:
+          activeWorkspaceSettings.activeGenreBadgeBackgroundOpacity,
         activeQualityBadgeScale: activeWorkspaceSettings.activeQualityBadgeScale,
         posterNoBackgroundBadgeOutlineColor: workspaceState.posterNoBackgroundBadgeOutlineColor,
         posterNoBackgroundBadgeOutlineWidth: workspaceState.posterNoBackgroundBadgeOutlineWidth,
@@ -345,6 +357,8 @@ export function buildConfiguratorPageProps({
         onSelectRatingBadgeScale: activeWorkspaceSettings.setActiveRatingBadgeScale,
         onSelectGenreBadgeScale: activeWorkspaceSettings.setActiveGenreBadgeScale,
         onSelectGenreBadgeBorderWidth: activeWorkspaceSettings.setActiveGenreBadgeBorderWidth,
+        onSelectGenreBadgeBackgroundOpacity:
+          activeWorkspaceSettings.setActiveGenreBadgeBackgroundOpacity,
         onSelectQualityBadgeScale: activeWorkspaceSettings.setActiveQualityBadgeScale,
         onSelectPosterNoBackgroundBadgeOutlineColor: workspaceState.setPosterNoBackgroundBadgeOutlineColor,
         onSelectPosterNoBackgroundBadgeOutlineWidth: workspaceState.setPosterNoBackgroundBadgeOutlineWidth,
@@ -415,6 +429,7 @@ export function buildConfiguratorPageProps({
         logoArtworkSource: workspaceState.logoArtworkSource,
         activeArtworkSource: workspaceSummary.activeArtworkSource,
         activeGenreBadgeMode: activeWorkspaceSettings.activeGenreBadgeMode,
+        activeGenreBadgeStyle: activeWorkspaceSettings.activeGenreBadgeStyle,
         activeStreamBadges: activeWorkspaceSettings.activeStreamBadges,
         streamBadgeOptions: STREAM_BADGE_OPTIONS,
         onSelectRatingPresentation: workspaceSummary.setRatingPresentationForType,
@@ -437,16 +452,23 @@ export function buildConfiguratorPageProps({
         onImportWorkspace: workspaceStorage.handleImportWorkspace,
         onOpenImportLinkModal: workspaceStorage.onOpenImportLinkModal,
         onCloseImportLinkModal: workspaceStorage.onCloseImportLinkModal,
+        onCancelImportLinkSelection: workspaceStorage.onCancelImportLinkSelection,
+        onConfirmImportLinkSelection: workspaceStorage.onConfirmImportLinkSelection,
         onImportLinkValueChange: workspaceStorage.onImportLinkValueChange,
         onSubmitImportLink: workspaceStorage.onSubmitImportLink,
+        onToggleImportSharedSettings: workspaceStorage.onToggleImportSharedSettings,
+        onToggleImportTargetType: workspaceStorage.onToggleImportTargetType,
         importLinkModalOpen: workspaceStorage.importLinkModalOpen,
         importLinkValue: workspaceStorage.importLinkValue,
+        pendingLinkImportSelection: workspaceStorage.pendingLinkImportSelection,
         onSaveWorkspace: workspaceStorage.handleSaveWorkspaceConfig,
         onDownloadWorkspace: workspaceStorage.handleDownloadWorkspace,
         onPromptWorkspaceImport: workspaceStorage.handlePromptWorkspaceImport,
         onClearSavedWorkspace: workspaceStorage.handleClearSavedWorkspace,
+        onClearPendingConfigProfileRestore: workspaceStorage.clearPendingConfigProfileRestore,
         configAutoSave: workspaceStorage.configAutoSave,
         onToggleConfigAutoSave: workspaceStorage.handleToggleConfigAutoSave,
+        pendingConfigProfileId: workspaceStorage.pendingConfigProfileId,
         savedConfigStatus: workspaceStorage.savedConfigStatus,
       },
       centerStageProps: {
@@ -460,7 +482,7 @@ export function buildConfiguratorPageProps({
         previewUrl: outputs.previewUrl,
         previewErrored: outputs.previewErrored,
         previewErrorDetails: outputs.visiblePreviewErrorDetails,
-        tmdbKeyPresent: Boolean(workspaceState.tmdbKey.trim()),
+        tmdbKeyPresent: Boolean(workspaceState.tmdbKey.trim()) || hasServerTmdbKey,
         onPreviewImageError: outputs.handlePreviewImageError,
         onPreviewImageLoad: outputs.handlePreviewImageLoad,
         activeTypeLabel: workspaceSummary.activeTypeLabel,
@@ -484,6 +506,9 @@ export function buildConfiguratorPageProps({
         onToggleAiometadata: () => workspaceUi.handleToggleWorkspacePanel('aio-urls'),
         displayedConfigString: outputs.displayedConfigString,
         canGenerateConfig: workspaceSummary.canGenerateConfig,
+        canSaveProfile:
+          (Boolean(workspaceState.tmdbKey.trim()) || hasServerTmdbKey)
+          && (Boolean(workspaceState.mdblistKey.trim()) || hasServerMdblistKey),
         configCopied: workspaceUi.configCopied,
         showConfigString: outputs.isConfigStringVisible,
         onCopyConfig: workspaceUi.handleCopyConfig,
@@ -504,7 +529,13 @@ export function buildConfiguratorPageProps({
         onToggleThumbnailRatingPreference: workspaceActions.toggleThumbnailRatingPreference,
         hideAiometadataCredentials: workspaceState.hideAiometadataCredentials,
         onToggleHideAiometadataCredentials: workspaceState.setHideAiometadataCredentials,
-        buildSaveParams: () => buildProfileParams(outputs.currentUiConfig.settings),
+        buildSaveParams: () =>
+          buildProfileParams(outputs.currentUiConfig.settings, {
+            allowMissingMdblistKey: hasServerMdblistKey,
+            allowMissingTmdbKey: hasServerTmdbKey,
+            omitProviderCredentials: true,
+          }),
+        aiometadataPatterns: outputs.aiometadataPatterns,
       },
       supportPanelsProps: {
         isAddonProxyOpen: workspaceUi.openWorkspacePanels.has('addon-proxy'),
@@ -527,6 +558,11 @@ export function buildConfiguratorPageProps({
         onChangeProxyTypes: workspaceState.setProxyTypes,
         proxyCatalogRules: workspaceState.proxyCatalogRules,
         onChangeProxyCatalogRules: workspaceState.setProxyCatalogRules,
+        proxyPayload: buildProxyPayload(baseUrl, outputs.currentUiConfig.proxy, outputs.currentUiConfig.settings, {
+          allowMissingMdblistKey: hasServerMdblistKey,
+          allowMissingTmdbKey: hasServerTmdbKey,
+          omitProviderCredentials: true,
+        }),
         tmdbKey: workspaceState.tmdbKey,
         mdblistKey: workspaceState.mdblistKey,
         displayedProxyUrl: outputs.displayedProxyUrl,

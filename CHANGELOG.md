@@ -43,6 +43,730 @@
 
 <a id="v1-12-0"></a>
 
+<a id="v1-13-0"></a>
+
+<a id="v1-13-1"></a>
+
+<a id="v1-14-0"></a>
+
+<a id="v1-15-0"></a>
+
+<a id="v1-15-1"></a>
+
+<a id="v1-16-0"></a>
+
+<a id="v1-16-1"></a>
+
+<a id="v1-17-0"></a>
+
+<a id="v1-17-1"></a>
+
+<a id="v1-17-2"></a>
+
+<a id="v1-18-0"></a>
+
+<a id="v1-18-1"></a>
+
+<a id="v1-18-2"></a>
+
+<a id="v1-19-0"></a>
+
+<a id="v1-19-1"></a>
+
+<a id="v1-20-0"></a>
+
+<a id="v1-20-1"></a>
+
+## [v1.20.1] - 16/04/2026
+
+### Fixed
+* BUG-100 stabilize saved profile revert and sync diffs
+  
+  Route saved profile revert through the canonical snapshot apply path so imported workspace changes clear dirty state correctly after revert.
+  
+  Compare saved profile and cross type sync params with allow missing server managed provider key options so dirty checks and sync diffs still work when TMDB and MDBList keys are only configured on the server.
+  
+  Add regression coverage for provider keyless dirty detection and sync to all diffs.
+
+### Documentation
+* refresh static doc assets
+
+## [v1.20.0] - 15/04/2026
+
+### Added
+* expand poster warm sources with TMDB multi endpoint, IMDb baseline, recent ring
+  
+  • TMDB: fetch 6 endpoints per pass (movie/popular p1+p2, movie/now_playing p1,
+    tv/popular p1+p2, tv/on_the_air p1) instead of 2; up to ~120 raw ids before cap
+  • MDBList: raise default limit from 100 to 200
+  • IMDb: new optional source reads local title.ratings.tsv.gz, sorts by vote count,
+    merges top N ids; no network required, falls back cleanly when file is absent
+  • Recent ring: bounded in memory ring buffer (default 500) records each inbound
+    poster request with its full search params (auth stripped); scheduler replays
+    exact request signatures so warm hits land in per config cache slots
+  • Wire recordRecentPosterRequest into imageRouteHandler for poster requests
+  • New env vars: XRDB_POSTER_WARM_IMDB_ENABLED/LIMIT, XRDB_POSTER_WARM_RECENT_ENABLED/LIMIT
+  • Update XRDB_POSTER_WARM_MDBLIST_LIMIT default in docs and env.template to 200
+  • 9 new tests covering TMDB 6 endpoint mapping, IMDb sort/cap/missing file,
+    ring dedup/eviction/auth strip/limit; all existing tests updated for new fields
+  • 834/834 tests pass, lint clean, build clean
+* FR-80 FR-55 speed up poster cold loads
+  
+  • default poster stream badges to off for new configs
+  
+  • add non blocking posterStreamBadges=auto behavior with deferred warming
+  
+  • add Torrentio timeout, fallback host, and proxy bypass controls
+  
+  • add scheduled poster cache warming with source parsing and overlap protection
+  
+  • enforce metadata cache pruning bounds and add stream warm observability
+  
+  • update docs, env template, and tests for new behavior
+
+### Fixed
+* track poster warm target seed file
+* include poster warm targets in docker build context
+
+### Documentation
+* refresh static doc assets
+
+### Other Changes
+* bake poster warm targets.txt into image
+
+## [v1.19.1] - 15/04/2026
+
+### Fixed
+* BUG-97 apply stored episode config profile when thumbnail URL has no explicit badge params
+  
+  The /thumbnail/<id>/S01E01.jpg route is a thin wrapper that parses the
+  episode token into season and episode numbers, then constructs an internal
+  backdrop URL (/backdrop/<id>:<season>:<episode>.jpg?thumbnail=1) and
+  delegates rendering to the shared image handler.
+  
+  XRDB_EPISODE_CONFIG_PROFILE_ID is a server side env var intended to apply
+  a default config profile to all episode thumbnail requests, so Plex,
+  Jellyfin, and similar callers that send bare URLs with no query params
+  receive the operator configured badge and rating settings. The feature was
+  completely inert due to two separate gaps in the route:
+  
+  1. configId was read only from the ?config= search param of the incoming
+     URL. The env var was never consulted, so bare thumbnail URLs always
+     rendered with no profile applied.
+  
+  2. The route constructs a fresh internal URL for the backdrop handler. The
+     original search params are copied over but ?config= was never explicitly
+     set on the internal URL. Even if configId had been populated, the
+     backdrop renderer would have received no config param and skipped the
+     profile lookup entirely.
+  
+  Fix reads XRDB_EPISODE_CONFIG_PROFILE_ID as a fallback when no ?config=
+  is present on the incoming request. When configId resolves from the env
+  var rather than the caller URL, it is injected into the internal backdrop
+  URL as ?config= before forwarding. The guard on !requestUrl.searchParams
+  .has('config') ensures the env var is strictly a fallback: an explicit
+  ?config= from the caller always takes precedence.
+* BUG-98 fix quality badge column centering when clean genre badge reserves bottom space
+  
+  When a poster renders Pill Glass quality badges alongside a clean style
+  genre badge, the renderer reserves a block of space at the bottom of the
+  poster for the genre badge via cleanPosterReservedBottomHeight. That value
+  is folded into effectiveBadgeBottomOffset so layout bounds are correct
+  throughout the renderer.
+  
+  The quality badge column centering step did not use effectiveBadgeBottomOffset
+  as the lower boundary. Instead it divided the full output height by two,
+  treating the center of the entire image as the target midpoint. The result
+  was that the quality column drifted into the space reserved for the genre
+  badge and appeared off center relative to the usable area above it.
+  
+  The fix computes availableCenter as:
+    (badgeTopOffset + outputHeight, effectiveBadgeBottomOffset) / 2
+  
+  This bounds the center calculation to the region between the top badge
+  offset and the effective bottom offset, so the column centers correctly
+  within the available space regardless of how much bottom space the clean
+  genre badge reserves.
+* BUG-99 apply configured value color to ring score text across all accent modes
+  
+  aggregateValueColor was fully resolved in the display state pipeline but
+  was never passed to buildPosterCompactRingOverlay. The ring builder had
+  the score text fill hardcoded to #f8fafc regardless of what color was
+  configured. As a result, any value set via aggregateValueColor was silently
+  ignored whenever the compact ring presentation was active.
+  
+  The fix adds an optional valueColor param to buildPosterCompactRingOverlay
+  and threads it through to the SVG fill attribute using valueColor ?? '#f8fafc'
+  so the hardcoded default is preserved when no color is configured.
+  
+  On the display state side, compactRingValueColor is derived before the
+  ring builder call: when the primary badge is an aggregate kind, the color
+  follows the aggregate value color resolver; for provider badges, it falls
+  back to the aggregateValueColor input. This keeps behavior consistent
+  across all four accent modes (source, genre, custom, dynamic).
+  
+  Tests added for all four accent modes to confirm the configured color
+  appears in the rendered SVG and that the default white is preserved when
+  no color is set.
+
+### Documentation
+* refresh static doc assets
+
+## [v1.19.0] - 15/04/2026
+
+### Added
+* shift to server managed provider keys
+  
+  Remove provider key entry fields from configurator access keys and surface server credential status in the UI.
+  
+  Use server TMDB and MDBList fallbacks across search, preview, proxy, and export payload generation while keeping optional per request overrides.
+  
+  Update docs and env template for XRDB_TMDB_API_KEY support and add regression coverage for credential omission and server key detection.
+
+### Fixed
+* BUG-96 fallback to server MDBList keys
+  
+  Retry provider rating resolution with the server MDBList key pool when a manual MDBList key returns no data.
+  
+  Add regression coverage for manual key failure so preview badges keep rendering from fallback data.
+* BUG-95 genre badge respects selected position in blockbuster mode
+  
+  In blockbuster poster mode, the collision avoidance loop was pushing the
+  genre badge away from all blockbuster overlay elements (score tiles,
+  callout tiles, rating badges, strip), ignoring the user's chosen position
+  entirely. The badge could end up halfway down the poster regardless of
+  what genreBadgePosition was set to.
+  
+  Fix: pass empty collisionRects for blockbuster poster mode in
+  imageRouteRenderer so the collision loop exits immediately and the badge
+  renders at the user selected offset. Non blockbuster posters and
+  backdrops continue to use full collision avoidance as before.
+  
+  Also refreshed doc static assets and README capture date.
+* BUG-92 accept all config profile ID formats in link import
+  
+  Configurator link import validated config IDs with a UUID only pattern, which caused encrypted xrc_ IDs and legacy xr_ IDs to be rejected during parse. When those URLs were imported, configProfileId was dropped and the saved profile binding was silently lost.
+  
+  This commit replaces the UUID only matcher with a unified CONFIG_PROFILE_ID_RE that accepts all supported profile ID families: UUID v4, xrc_<16 hex>, and xr_<8 hex>. The parsing path now preserves profile IDs consistently across import flows without changing merge precedence behavior.
+  
+  Regression coverage includes explicit xrc_ and xr_ parser tests plus request state tests validating UUID profile resolution, explicit URL parameter precedence over saved profile parameters, and parity between generated inline URLs and ?config URLs across poster, backdrop, logo, and thumbnail routes.
+* BUG-89 skip clean style scrim when background opacity is 0
+  
+  Clean genre badge rendering still produced the clean style scrim when background opacity was explicitly set to 0, which made fully transparent clean badges impossible and caused a mismatch between requested opacity and rendered output.
+  
+  This commit updates the clean style rendering path so the scrim/background layer is skipped when effective clean background opacity resolves to zero, while preserving existing clean text treatment, shadow behavior, and non zero opacity rendering.
+  
+  The change keeps clean style visuals deterministic across inline URLs and saved profile URLs where genreBadgeBackgroundOpacity is set to 0.
+* BUG-88 enforce clean text only constraints
+  
+  Clean style behavior drifted across configurator state, URL generation, and runtime normalization. Icon and both modes could leak into clean style and non bottom center positions could persist, which produced inconsistent output between saved settings, generated links, and rendered images.
+  
+  This commit centralizes clean style coercion through shared helpers so clean style resolves to text mode and bottom center placement unless genre badge mode is explicitly off. The coercion is applied across configurator props normalization, output query generation, runtime request state parsing, and renderer badge building to keep behavior consistent on poster, backdrop, thumbnail, and logo routes.
+  
+  Regression coverage was expanded in genre badge, request state, image route badge, and ui config suites to lock clean style mode and placement coercion and ensure clean output remains text only across parsing and rendering paths.
+* BUG-87 prevent clean genre title overlap
+  
+  Clean genre badges could overlap the poster title area on some output sizes because clean mode placement short circuited before collision avoidance and because the renderer did not reserve space using the actual clean badge footprint.
+  
+  This commit removes the clean mode early return in genre placement so collision rect solving always runs, clamps placement using dynamic min inset, computes clean poster reserved bottom height from the rendered clean badge SVG height, and tracks the clean overlay collision rectangle so later overlays cannot collide into it.
+  
+  Coverage was added with a multi size poster placement regression test to verify clean genre badges do not overlap the title region across normal, large, and 4k poster outputs.
+* BUG-86 keep poster genre and clean logo scaling proportional
+  
+  Adjust poster genre badge auto scaling to keep normalized visual proportions more stable across normal, large, and 4K outputs while preserving user scale compounding behavior.
+  
+  Update poster clean overlay logo sizing so small source logos can upscale proportionally for higher resolution poster renders, preventing undersized 4K logo output.
+  
+  Add focused regression coverage for poster genre normalized ratio consistency and 4K clean logo upscale behavior across rendering paths.
+* BUG-80 harden AIOMetadata TV poster target resolution
+  
+  Harden AIOMetadata TV export target resolution so poster URLs consistently resolve the correct media target and avoid ambiguous poster selection behavior.
+  
+  Align export view and config profile client state handling with the normalized media target path so generated patterns and saved state stay consistent.
+  
+  Add targeted regression tests for config profile client state, media target normalization, and UI config serialization to lock the BUG-80 behavior in place.
+* stabilize side placement and grouped age rating behavior
+  
+  Allow grouped age rating placement to participate correctly on supported poster side layouts while preserving the intended quality badge side behavior.
+  
+  Update poster display preference resolution and quality badge placement controls so grouped certification output does not overlap or drift when side positions are selected.
+  
+  Refresh supporting docs and visual reference assets, and add regression coverage for display preference resolution, age rating extraction behavior, quality badge control normalization, and UI config payload handling.
+
+### Documentation
+* refresh static doc assets
+
+## [v1.18.2] - 13/04/2026
+
+### Fixed
+* BUG-91 prevent server key exposure and allow tmdb only profile save with server mdb fallback
+  
+  Hide server side Fanart, MDBList, and Simkl credential values from configurator env access responses while keeping non sensitive availability flags.
+  
+  Decouple profile save gating from config string generation so profile create/update/migrate only require TMDB when server MDBList is configured.
+  
+  Add legacy MDBLIST_KEY alias support for server availability checks and update regression tests.
+
+### Documentation
+* refresh static doc assets
+
+## [v1.18.1] - 13/04/2026
+
+### Fixed
+* BUG-90 prevent login overwrite of unsaved config
+  
+  Add login conflict handling so profile reveal does not silently replace active local configurator edits.
+  
+  Introduce explicit conflict resolution actions for loading profile values or keeping web changes.
+  
+  Add and update config profile client state tests for conflict detection behavior.
+  
+  Verification: pnpm run lint && pnpm run test && pnpm run build
+
+### Documentation
+* refresh static doc assets
+
+## [v1.18.0] - 13/04/2026
+
+### Added
+* FR-39 clean bottom genre shadow overlay
+  
+  • add clean genre bottom priority overlay behavior with full width dark to light bottom shadow
+  
+  • force clean genre badge to bottom center and move competing bottom layout elements away
+  
+  • wire configurable clean background opacity through UI, config payloads, and proxy/query parsing
+  
+  • update request/render placement logic and regression coverage
+
+### Fixed
+* refine clean bottom fade and placement
+* enforce language first logo selection for tmdb and fanart
+  
+  Update logo selection to prevent localized logo fallbacks when requested language assets are expected.
+  
+  TMDB logo selection now prefers requested language, then fallback language, then neutral, and does not fall back to arbitrary language logos.
+  
+  Fanart logo selection now restricts deterministic picks to the highest priority language bucket resolved for the request, instead of selecting across mixed language logo candidates.
+  
+  Result: requests such as logoArtworkSource=fanart&lang=en return English logos when English fanart logos exist for the title.
+  
+  Validation: pnpm run lint && pnpm run test && pnpm run build; manual checks on tmdb:movie:177572 and tmdb:movie:412656 with logoArtworkSource=fanart&lang=en.
+
+### Documentation
+* refresh static doc assets
+* FR-39 add genreBadgeBorderWidth and posterNoBackground outline params to README and product context
+  
+  Add 7 missing genre badge parameters to the README parameter table, AI Integration
+  Prompt parameter block, per type settings section, and URL build template:
+  
+  • genreBadgeBorderWidth (global fallback, 0 to 10, default 1.4)
+  • posterGenreBadgeBorderWidth (default 1.4)
+  • backdropGenreBadgeBorderWidth (default 1.5)
+  • thumbnailGenreBadgeBorderWidth (default 1.5)
+  • logoGenreBadgeBorderWidth (default 1.4)
+  • posterNoBackgroundBadgeOutlineColor (hex, default #000000)
+  • posterNoBackgroundBadgeOutlineWidth (0 to 10, default 0)
+  
+  All params were already implemented in code. This commit closes the documentation
+  gap identified in Group 2 of the fr-39-genre badge OpenSpec change.
+  
+  Regenerate public/product context.json to include the new param descriptions.
+  
+  Gate: lint clean, 766/766 tests pass, build clean.
+
+## [v1.17.2] - 12/04/2026
+
+### Fixed
+* BUG-85 preserve thumbnail genre badge off on profile update
+
+### Documentation
+* refresh static doc assets
+
+## [v1.17.1] - 12/04/2026
+
+### Fixed
+* BUG-82 BUG-84 harden release gates
+  
+  Ensure doc refresh and release scripts run TypeScript imports with Node type stripping.
+  
+  Seed configurator env defaults from a runtime API endpoint so standalone production builds do not freeze build time env values.
+  
+  Prepare standalone static and public assets before local pnpm start so production verification matches the Docker runtime layout.
+  
+  Refresh generated README doc assets and extend configurator env access key coverage.
+* BUG-82 BUG-83 BUG-84 resolve regressions
+  
+  Treat a blank Torrentio base URL as disabled while preserving the default for unset configuration.
+  
+  Seed configurator access key fields from server environment defaults without overwriting saved user values.
+  
+  Make ratingPresentation=none suppress rating overlays and stream badges across poster and non poster outputs.
+  
+  Update docs and add targeted regression coverage for the affected behaviors.
+* BUG-81 preserve unlocked saved profile updates
+  
+  Add schema driven saved profile verification coverage and a dedicated release gate.
+  
+  Persist protected profile unlock sessions across remounts and restore saved snapshots so configure to export updates keep their diff baseline.
+  
+  Validated with focused client state tests, full lint/test/build, and manual browser verification of the protected update flow.
+
+### Documentation
+* refresh static doc assets
+
+## [v1.17.0] - 12/04/2026
+
+### Added
+* FR-68 add console log levels
+  
+  Add a shared server logger with debug, info, warn, and error levels.
+  
+  Keep request logging disabled by default, add XRDB_REQUEST_LOG_LEVEL for opt in request visibility, and route info output to stdout while warnings and errors stay on stderr.
+  
+  Migrate runtime logging call sites, add focused logger tests, and document the new env vars in the runtime docs.
+* prioritize uuid saved profile portability
+  
+  Promote protected UUID profiles to the primary Import/Export workflow and add a first class restore path for opening an existing saved profile on another device.
+  
+  Recognize ?config=<uuid> links in configurator import and URL hydration, surface restore prompts in Configure and Import/Export, and default AIOMetadata exports to config mode URLs unless the user explicitly switches back to inline.
+  
+  Refresh README, reference copy, and generated doc assets to match the saved profile first workflow, and cover the new mode selection and config link parsing behavior with focused tests.
+
+### Fixed
+* FR-67 scope link imports by type
+  
+  Refactor configurator link import parsing into scoped visual patches instead of full workspace replacement.
+  
+  Add import review UI for shared visual settings and cross type destination selection, and merge selected patches onto current profile params.
+  
+  Expand focused import regression coverage for same type preservation, excluded non visual values, shared setting prompts, and compatible cross type mapping.
+* restore password visibility toggles
+  
+  Add eye toggles back to saved profile password inputs in the export view.
+  
+  Keep matching password and confirm password fields in sync when revealing sensitive values.
+* BUG-79 clarify saved profile update scope
+  
+  Extract shared config profile fingerprint helpers for saved profile dirty state.
+  
+  Clarify that export only controls stay local to the browser and do not affect Update saved profile.
+  
+  Add focused regression tests for persisted setting changes versus local only controls.
+
+### Documentation
+* refresh static doc assets
+
+## [v1.16.1] - 11/04/2026
+
+### Fixed
+* preserve unlock state and addon source fetches
+  
+  Move protected profile unlock state into the shared workspace runtime so Export route navigation keeps the active management session.
+  
+  Apply revealed profile settings to the live workspace immediately and keep persisted config aligned with the in memory state.
+  
+  Fix the safe source lookup callback so public addon manifests such as Cinemeta resolve through the proxy fetch path.
+* BUG-77 restore hosted manifest proxy flows
+  
+  Build proxy reference URLs from the public request context so hosted deployments no longer emit internal bind hosts.
+  
+  Honor outbound proxy environment settings for safe source manifest fetches while preserving source validation.
+  
+  Keep generated proxy links visible in the addon view even when catalog manifest introspection fails.
+
+### Documentation
+* refresh static doc assets
+
+## [v1.16.0] - 11/04/2026
+
+### Added
+* protect saved config and proxy references
+  
+  • store saved configs and proxy payloads as encrypted UUID backed records
+  • require password unlock flows for saved profile reveal, update, rotation, and deletion
+  • preserve runtime UUID config resolution and legacy migration support
+  • harden preview origin trust and proxy connection time source validation
+  • refresh docs, tests, and product context for the new security model
+
+### Documentation
+* refresh static doc assets
+
+## [v1.15.1] - 11/04/2026
+
+### Fixed
+* BUG-75 preserve saved profile alias round trips
+  
+  Decode saved profile wire aliases before shared settings normalization so saved profile diff and revert rebuild the same canonical settings shape.
+  
+  • restore quality badge alias params and providerAppearance through the shared uiConfig decode path
+  
+  • keep canonical keys authoritative when both canonical and alias forms are present
+  
+  • add round trip and precedence regression coverage for saved profile params
+
+### Documentation
+* refresh static doc assets
+
+## [v1.15.0] - 11/04/2026
+
+### Added
+* FR-64 add compact ring source priorities
+  
+  Add configurable Compact Ring center and progress sources for overall, critics, audience, and lane specific priority modes.
+  
+  Wire the new ring source settings through request parsing, configurator state, URL exports, render seeding, fallback resolution, public docs, and focused regression tests.
+
+### Documentation
+* refresh static doc assets
+
+## [v1.14.0] - 10/04/2026
+
+### Added
+* add cross type settings sync
+  
+  Add cross type sync actions in configurator with diff confirmation before apply, including sync to all and pull from flows.
+  
+  Introduce shared sync helpers and tests for extraction, application, coercion, filtering, and diff computation.
+  
+  Keep the sync flyout viewport safe by clamping horizontal position, flipping when needed, and reserving bottom nav safe space.
+* type presentation compatibility gating
+  
+  Filter ring, editorial, and blockbuster from the presentation grid for
+  backdrop, thumbnail, and logo types. All three are poster only at the
+  render layer (finalImageRenderSeed.ts bypasses them for non poster
+  output) so showing them in the UI was misleading.
+  
+  Changes:
+  • Add getPresentationOrderForType helper in configuratorPageOptions.ts
+    that strips ring, editorial, and blockbuster for non poster types
+  • Wire configuratorPageProps.ts to use it instead of the static order
+  • Add coerceNonPosterPresentation in uiConfig.ts that collapses any
+    stale ring, editorial, or blockbuster value to standard on load for
+    backdrop, thumbnmail, and logo settings
+  • Wrap thumbnailRatingPreferences normalization in an IIFE with an
+    empty intersection fallback to defaults so a fully invalid provider
+    list does not produce a blank badge output
+  • Remove the non poster fallback hint text from the appearance sections
+    and simplify the Blockbuster hint copy
+  • Update full stack preset: backdropRatingPresentation now standard
+    (was blockbuster, which was already silently falling back at render
+    time); update preset description to reflect this
+  • Add 8 unit tests covering coercion and provider fallback cases
+  • Update configurator presets test fixture to match corrected preset
+
+### Fixed
+* BUG-69 suppress compact ring when configured provider has no data
+  
+  When resolveCompactRingBadge was called with a specific provider source
+  that had no score for the current media, it silently fell through to the
+  reduce max path and returned the highest available score from any other
+  enabled provider. This produced inflated numbers and ring arcs with no
+  indication that the displayed score was from a different source.
+  
+  Fix: add return null inside the if (requestedSource !== 'highest') block
+  after the exact match check fails, so a missing specific provider exits
+  with null instead of falling through to the reduce.
+  
+  Also remove the valueRingBadge || progressRingBadge composition fallback
+  at the call site. When the value source returns null the ring now
+  suppresses entirely rather than substituting the progress source score
+  as a silent replacement value. The || fallback was a second silent
+  substitution with no user intent behind it.
+  
+  The 'highest' path is unchanged and continues returning the max
+  available score by design.
+  
+  Updated the existing test that was asserting the old fallback behavior
+  to assert the correct suppression behavior instead.
+* BUG-76 snap dynamic accent color to displayed rating precision
+  
+  The dynamic accent color was resolved using the raw floating point average
+  (e.g. 7.9501) while the badge text was rounded to one decimal (e.g. 8.0).
+  This caused titles displaying the same score to land on different color stops
+  depending on whether their raw average was just above or below a boundary.
+  
+  Fix: both the aggregate badge path and the compact ring path now round the
+  normalized score to one decimal before multiplying by 10 for stop lookup,
+  matching the precision of the displayed value so color and badge are always
+  consistent.
+* BUG-75 preserve profile ring sources and stop false unsaved diffs
+  
+  • add profile load normalization mode to skip cross type fallback inheritance when reading saved config state
+  • thread skipCrossTypeFallbacks through saved config parsing paths used by profile and local storage loads
+  • replace export snapshot reconstruction via import URL parser with direct normalizeSavedUiConfig from save params
+  • persist the exact normalized saved snapshot to local storage after successful profile save
+  • fix thumbnail aggregate source fallback behavior in skip mode to avoid backdrop bleed through
+  • keep URL import behavior backward compatible for generic import links
+  
+  Verification:
+  • pnpm run lint
+  • pnpm run test
+  • pnpm run build
+  • manual: backdrop none/random save reload no false unsaved state
+  • manual: poster ring sources persist after save reload
+  • manual: revert diff and apply behavior verified
+  • manual: URL import backdrop ring inheritance path verified
+
+### Documentation
+* refresh static doc assets
+* audit sync and presentation docs
+
+## [v1.13.1] - 10/04/2026
+
+### Fixed
+* BUG persistent config profile ID lost on page refresh or tab navigation
+  
+  Root cause: three successive bad fixes introduced by lint compliance attempts:
+  1. Promise.resolve().then() wrapper deferred localStorage read past write back effect firing with null, silently deleting the stored ID on every mount.
+  2. Lazy useState initializer caused SSR hydration mismatch (server null vs client stored value).
+  3. useRef guard on write back effect still vulnerable to React Strict Mode double invocation, where ref persists across remounts and fires the write with null before sync() restores the value.
+  
+  Fix: remove the write back effect entirely. Reads are handled by sync() called immediately in the event listener effect (setState inside callback, not effect body, satisfying react hooks/set state in effect). Writes happen synchronously inside handleProfileIdChange alongside setSavedProfileId, so localStorage and state always stay in sync with no effect involvement.
+
+### Documentation
+* refresh static doc assets
+
+## [v1.13.0] - 10/04/2026
+
+### Added
+* FR-56 revert unsaved edits to last saved profile
+  
+  Add revert to saved profile feature to the Saved Config Profile section
+  of the Export panel.
+  
+  • Fetch server saved params on mount via GET /api/config/{id} and
+    reconstruct a SavedUiConfig snapshot via parseConfiguratorLinkImport
+    so the reference state always reflects what is persisted, not the
+    current UI state
+  • Track snapshotReady to gate unsaved changes detection until the
+    server fetch completes, preventing false negatives on initial load
+  • Compute a param level diff (capped at 20 entries) between current
+    UI params and the saved snapshot on every render cycle
+  • Show an 'unsaved changes' badge in the Saved Config Profile header
+    whenever the current settings diverge from the snapshot
+  • Show an amber 'Revert to saved' button alongside the unsaved badge
+  • RevertDiffModal renders a CHANGE badged diff with OLD (server saved,
+    red) and NEW (current, green) columns before any destructive action
+  • 'Revert to saved' opens the modal with 'Confirm and Revert' label;
+    confirming restores all settings via applySavedUiConfig and resets
+    the fingerprint
+  • 'Update saved profile' opens the same modal with 'Save changes'
+    label; confirming saves to the server and updates the snapshot
+  • Snapshot and fingerprint are refreshed after every save, migrate, or
+    delete to keep the reference state in sync
+* BUG-71 config profile security — encryption, migration deadline, overlay
+  
+  • Encrypt all config profile params at rest using AES 256 GCM via CONFIG_ENCRYPTION_KEY
+  • Add xrc_ prefix for new encrypted profiles; xr_ legacy profiles remain readable
+  • Seed a global legacy_migration_deadline in config_meta table at first server start
+  • New GET /api/config/[id]/status endpoint returns isLegacy + migrationDeadline from server
+  • SaveConfigSection fetches server anchored deadline; countdown survives localStorage clear
+  • Image overlay (red orange hazard stripe) injected on all xr_ legacy profile requests
+  • Overlay composited via Sharp after render; cache bypassed for legacy profiles
+  • HTTP 410 with human readable message when a legacy profile has expired or been deleted
+  • Update button disabled when saved profile exists and params match last saved fingerprint
+  • Key rotation banner shown after successful migration to prompt xrc_ URL adoption
+  • Fix hydration mismatch: savedProfileId starts null, populated in useEffect after mount
+  • Fix ArrayBuffer passed to Sharp for overlay: wrap with Buffer.from() before composite
+  • env.template: add CONFIG_ENCRYPTION_KEY entry with generation instructions
+
+### Fixed
+* BUG-73 config profile xrdbKey used as auth fallback on image and thumbnail routes
+  
+  Previously the request key auth check fired before the config profile was
+  loaded, so xrdbKey stored in the profile was never used to authorize the
+  request. Users had to manually append &xrdbKey= to every URL even when it
+  was already saved in their config profile.
+  
+  Fix: read the config profile before the auth check in imageRouteHandler and
+  thumbnail route, pass profile xrdbKey as fallbackKey to isXrdbRequestAuthorized.
+  This matches the existing behavior in proxyRouteHandler.
+  
+  A config ID is now fully self contained — no additional params needed in the URL.
+* BUG-70 scale badge metrics to fit natural logo width with 4+ ratings
+  
+  Before this fix the logo badge layout had no fitBadgeMetricsToWidth step,
+  unlike poster and backdrop. With 4+ providers at full logo badge scale
+  (iconSize 92, paddingX 38) the badge row exceeded the natural logo width,
+  causing finalOutputWidth to expand. The logo art stayed at its original
+  narrow width but was centered in the much wider canvas, appearing tiny.
+  
+  Fix: before computing logoBadgesPerRow, run fitBadgeMetricsToWidth against
+  a row of ceil(sqrt(N)) badges at the natural outputWidth. This scales badge
+  metrics down proportionally so N badges across ceil(sqrt(N)) rows fill the
+  canvas without expanding it. finalOutputWidth is now always outputWidth for
+  logo type images.
+  
+  logoBadgesPerRow also switches from cappedRatingBadges.length (all on one
+  row) to ceil(sqrt(N)) for standard presentation, matching the scaling target
+  and producing a grid layout (4 badges -> 2x2, 9 -> 3x3, 16 -> 4x4).
+  
+  Tests updated to assert finalOutputWidth stays at outputWidth and
+  logoBadgesPerRow follows the sqrt grid.
+* BUG-72 preserve empty string values in saved config profiles
+  
+  Config save endpoint was stripping empty string values, causing provider
+  selections like ratings="" (no providers) to be silently dropped. On load
+  the missing key returned null, which the parser treated as all providers
+  enabled.
+  
+  • Stop filtering empty strings in POST /api/config so explicit empty
+    selections persist correctly across all image types (poster, backdrop,
+    logo, thumbnail)
+  • Add DELETE /api/config/[id] endpoint and deleteConfigProfile db helper
+    so users can remove a saved profile and reset to defaults
+  • Show missing keys message in Saved Config Profile section when TMDB or
+    MDBList key is absent, matching the Config String section behavior
+  • Add Delete profile button next to save button for saved profiles
+* revert ignoreDeprecations, invalid value for CI TypeScript version
+* prevent race condition marking older release as latest
+  
+  The reconcile step ran immediately after softprops/action gh release
+  created the new release. Due to GitHub API eventual consistency, the
+  freshly created release was sometimes absent from GET /releases?per_page=100,
+  causing the reconcile to identify the previous release as the highest
+  version and PATCH it as Latest, undoing the correct Latest marker.
+  
+  Pass CURRENT_TAG to the reconcile step. When set, the script fetches
+  the release directly via GET /releases/tags/{tag} (point in time
+  consistent) and merges it into the comparison set before determining
+  which release wins Latest. If the new release was missing from the
+  paginated list it is now included and correctly wins the version sort.
+
+### Documentation
+* refresh static doc assets
+* pre minor release documentation and lint audit
+  
+  README Proxy and Security table was missing six env vars that are live
+  in env.template and code:
+  • XRDB_REQUEST_API_KEY and XRDB_REQUEST_API_KEYS (request access control)
+  • XRDB_CONFIG_ENCRYPTION_KEY (config profile encryption, added in v1.12.0)
+  • XRDB_INACTIVE_CONFIG_PRUNE_DAYS (config profile pruning, added in v1.12.0)
+  • MDBLIST_API_KEY and MDBLIST_API_KEYS (server side rating pool keys)
+  
+  env.template had TMDB_API_KEY with an incorrect description claiming it is
+  used for preview, rendering, and artwork selection. No code reads this var.
+  Removed it to prevent user confusion.
+  
+  env.template was missing four brand env vars that are read in lib/siteBrand.ts:
+  • NEXT_PUBLIC_BRAND_GITHUB_URL
+  • NEXT_PUBLIC_BRAND_GITHUB_LABEL
+  • NEXT_PUBLIC_BRAND_SUPPORT_URL
+  • NEXT_PUBLIC_BRAND_UPTIME_URL
+  
+  Regenerated public/product context.json after surface updates.
+  
+  Fixed two pre existing React lint errors in components/export view.tsx:
+  • Replaced setState in effect aiometadataUrlMode reset with a derived
+    effectiveAiometadataUrlMode computed at render time
+  • Added [buildSaveParams, snapshotReady] deps to no deps useEffect
+  • Moved localStorage mount read into a promise callback to satisfy
+    react hooks/set state in effect without changing behavior
+
+### Other Changes
+* silence baseUrl deprecation warning for TS 6.0
+
 ## [v1.12.0] - 09/04/2026
 
 ### Added

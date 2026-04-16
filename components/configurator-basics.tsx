@@ -19,6 +19,13 @@ import type { TmdbIdScopeMode } from '@/lib/uiConfig';
 
 type ProxyType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 
+const IMPORT_TYPE_LABEL: Record<ProxyType, string> = {
+  poster: 'Poster',
+  backdrop: 'Backdrop',
+  thumbnail: 'Thumbnail',
+  logo: 'Logo',
+};
+
 function ThemedDropdown({
   label,
   options,
@@ -235,10 +242,15 @@ export function WorkspaceManagementSection({
   onImportWorkspace,
   onOpenImportLinkModal,
   onCloseImportLinkModal,
+  onCancelImportLinkSelection,
+  onConfirmImportLinkSelection,
   onImportLinkValueChange,
   onSubmitImportLink,
+  onToggleImportSharedSettings,
+  onToggleImportTargetType,
   importLinkModalOpen,
   importLinkValue,
+  pendingLinkImportSelection,
   onSaveWorkspace,
   onDownloadWorkspace,
   onPromptWorkspaceImport,
@@ -251,10 +263,24 @@ export function WorkspaceManagementSection({
   onImportWorkspace: (event: ChangeEvent<HTMLInputElement>) => void;
   onOpenImportLinkModal: () => void;
   onCloseImportLinkModal: () => void;
+  onCancelImportLinkSelection: () => void;
+  onConfirmImportLinkSelection: () => void;
   onImportLinkValueChange: (value: string) => void;
   onSubmitImportLink: () => void;
+  onToggleImportSharedSettings: () => void;
+  onToggleImportTargetType: (value: ProxyType) => void;
   importLinkModalOpen: boolean;
   importLinkValue: string;
+  pendingLinkImportSelection: {
+    parsedImport: {
+      sharedSettings: Record<string, string>;
+      typeSettings: Partial<Record<ProxyType, Record<string, string>>>;
+      defaultSourceType: ProxyType | null;
+    };
+    selectedTargetTypes: ProxyType[];
+    includeSharedSettings: boolean;
+    allowCrossTypeTargets: boolean;
+  } | null;
   onSaveWorkspace: () => void;
   onDownloadWorkspace: () => void;
   onPromptWorkspaceImport: () => void;
@@ -264,6 +290,17 @@ export function WorkspaceManagementSection({
   savedConfigStatus: string | null;
 }) {
   const importLinkInputRef = useRef<HTMLInputElement | null>(null);
+  const importTargetTypes = pendingLinkImportSelection?.allowCrossTypeTargets
+    ? (['poster', 'backdrop', 'thumbnail', 'logo'] as const)
+    : (Object.keys(pendingLinkImportSelection?.parsedImport.typeSettings ?? {}) as ProxyType[]);
+  const sharedSettingCount = Object.keys(pendingLinkImportSelection?.parsedImport.sharedSettings ?? {}).length;
+  const sourceTypeLabel = pendingLinkImportSelection?.parsedImport.defaultSourceType
+    ? IMPORT_TYPE_LABEL[pendingLinkImportSelection.parsedImport.defaultSourceType]
+    : 'Imported';
+  const canConfirmImportSelection = Boolean(
+    pendingLinkImportSelection &&
+      (pendingLinkImportSelection.selectedTargetTypes.length > 0 || pendingLinkImportSelection.includeSharedSettings),
+  );
 
   useEffect(() => {
     if (importLinkModalOpen) {
@@ -277,7 +314,7 @@ export function WorkspaceManagementSection({
         <Layers className="w-4 h-4 text-violet-500" /> Workspace
       </h2>
       <p className="text-[11px] leading-relaxed text-zinc-500">
-        Save settings to this browser or export them as JSON. Paste a shared XRDB URL with Import link to apply the same settings here.
+        Save settings to this browser or export them as JSON. Paste a shared XRDB URL or saved profile link with Import link to apply the same settings here.
       </p>
       <input
         ref={workspaceImportInputRef}
@@ -357,6 +394,8 @@ export function WorkspaceManagementSection({
                     ? 'Preset applied.'
                     : savedConfigStatus === 'reset'
                       ? 'Defaults restored.'
+                    : savedConfigStatus === 'profile-link'
+                      ? 'Saved profile link detected.'
                     : savedConfigStatus === 'invalid'
                       ? 'Invalid workspace import.'
                       : 'Unable to access local storage.'}
@@ -406,38 +445,122 @@ export function WorkspaceManagementSection({
         </div>,
         document.body,
       ) : null}
+      {pendingLinkImportSelection ? createPortal(
+        <div className="fixed inset-0 z-[85] flex items-center justify-center bg-black/75 px-4 py-6 backdrop-blur-sm" onClick={onCancelImportLinkSelection}>
+          <div className="w-full max-w-xl rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(12,10,20,0.98),rgba(6,5,12,0.98))] p-6 shadow-[0_40px_120px_-55px_rgba(0,0,0,0.95)]" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-center gap-2.5 mb-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full border border-violet-500/30 bg-violet-500/10">
+                <Link2 className="w-4 h-4 text-violet-300" />
+              </div>
+              <h3 className="text-lg font-semibold tracking-tight text-white">Review import</h3>
+            </div>
+            <p className="text-[13px] leading-relaxed text-zinc-400 mb-5">
+              {pendingLinkImportSelection.allowCrossTypeTargets
+                ? `Choose which sections should receive the imported ${sourceTypeLabel.toLowerCase()} settings.`
+                : 'Choose which imported sections should be applied to your workspace.'}
+            </p>
+
+            {sharedSettingCount > 0 ? (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 mb-4">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={pendingLinkImportSelection.includeSharedSettings}
+                    onChange={onToggleImportSharedSettings}
+                    className="mt-0.5 h-4 w-4 accent-violet-500"
+                  />
+                  <span>
+                    <span className="block text-[13px] font-semibold text-white">Include shared visual settings</span>
+                    <span className="mt-1 block text-[11px] leading-5 text-zinc-400">
+                      Apply {sharedSettingCount} shared appearance setting{sharedSettingCount === 1 ? '' : 's'} such as provider styling or aggregate display behavior.
+                    </span>
+                  </span>
+                </label>
+              </div>
+            ) : null}
+
+            {importTargetTypes.length > 0 ? (
+              <div className="space-y-2">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                  {pendingLinkImportSelection.allowCrossTypeTargets ? 'Apply To' : 'Imported Sections'}
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {importTargetTypes.map((type) => {
+                    const isSelected = pendingLinkImportSelection.selectedTargetTypes.includes(type);
+                    const isMappedTarget =
+                      pendingLinkImportSelection.allowCrossTypeTargets &&
+                      pendingLinkImportSelection.parsedImport.defaultSourceType !== null &&
+                      type !== pendingLinkImportSelection.parsedImport.defaultSourceType;
+
+                    return (
+                      <button
+                        key={`import-target-${type}`}
+                        type="button"
+                        onClick={() => onToggleImportTargetType(type)}
+                        className={`rounded-2xl border px-4 py-3 text-left transition-colors ${
+                          isSelected
+                            ? 'border-violet-500/60 bg-violet-500/12 text-white'
+                            : 'border-white/10 bg-white/[0.04] text-zinc-300 hover:border-white/20 hover:bg-white/[0.06]'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-[13px] font-semibold">{IMPORT_TYPE_LABEL[type]}</span>
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] ${isSelected ? 'bg-violet-500/20 text-violet-100' : 'bg-white/5 text-zinc-500'}`}>
+                            {isSelected ? 'Selected' : 'Select'}
+                          </span>
+                        </div>
+                        <p className="mt-2 text-[11px] leading-5 text-zinc-400">
+                          {isMappedTarget ? `Reuse the imported ${sourceTypeLabel.toLowerCase()} look on ${IMPORT_TYPE_LABEL[type].toLowerCase()}.` : `Apply the imported ${IMPORT_TYPE_LABEL[type].toLowerCase()} settings.`}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="mt-5 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={onCancelImportLinkSelection}
+                className="rounded-xl px-5 py-2 text-[13px] font-semibold text-zinc-400 hover:text-zinc-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={onConfirmImportLinkSelection}
+                disabled={!canConfirmImportSelection}
+                className={`rounded-xl px-5 py-2 text-[13px] font-semibold transition-colors ${
+                  canConfirmImportSelection
+                    ? 'bg-violet-600 text-white hover:bg-violet-500'
+                    : 'bg-white/5 text-zinc-600 cursor-not-allowed'
+                }`}
+              >
+                Apply import
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      ) : null}
     </div>
   );
 }
 
 export function AccessKeysSection({
   xrdbKey,
-  tmdbKey,
-  mdblistKey,
-  fanartKey,
-  simklClientId,
   tmdbIdScope,
   onXrdbKeyChange,
-  onTmdbKeyChange,
-  onMdblistKeyChange,
-  onFanartKeyChange,
-  onSimklClientIdChange,
   onTmdbIdScopeChange,
   tmdbIdScopeOptions,
   xrdbRequestKeyHelpCopy,
   fanartKeyHelpCopy,
+  serverCredentialStatus,
 }: {
   xrdbKey: string;
-  tmdbKey: string;
-  mdblistKey: string;
-  fanartKey: string;
-  simklClientId: string;
   tmdbIdScope: TmdbIdScopeMode;
   onXrdbKeyChange: (value: string) => void;
-  onTmdbKeyChange: (value: string) => void;
-  onMdblistKeyChange: (value: string) => void;
-  onFanartKeyChange: (value: string) => void;
-  onSimklClientIdChange: (value: string) => void;
   onTmdbIdScopeChange: (value: TmdbIdScopeMode) => void;
   tmdbIdScopeOptions: Array<{
     id: TmdbIdScopeMode;
@@ -446,61 +569,51 @@ export function AccessKeysSection({
   }>;
   xrdbRequestKeyHelpCopy: string;
   fanartKeyHelpCopy: string;
+  serverCredentialStatus: {
+    fanart: boolean;
+    mdblist: boolean;
+    simkl: boolean;
+    tmdb: boolean;
+  };
 }) {
   const [showXrdbKey, setShowXrdbKey] = useState(false);
-  const [showTmdbKey, setShowTmdbKey] = useState(false);
-  const [showMdblistKey, setShowMdblistKey] = useState(false);
-  const [showFanartKey, setShowFanartKey] = useState(false);
-  const [showSimklClientId, setShowSimklClientId] = useState(false);
+  const credentialRows = [
+    ['TMDB', serverCredentialStatus.tmdb],
+    ['MDBList', serverCredentialStatus.mdblist],
+    ['Fanart', serverCredentialStatus.fanart],
+    ['SIMKL', serverCredentialStatus.simkl],
+  ] as const;
 
   return (
     <div>
-      <div className="mb-2 text-[11px] font-semibold text-zinc-400">Access Keys</div>
-      <div className="grid gap-2 md:grid-cols-5">
-        <div>
-          <label className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-zinc-500">XRDB Request</label>
-          <div className="relative">
-            <input type={showXrdbKey ? 'text' : 'password'} value={xrdbKey} onChange={(event) => onXrdbKeyChange(event.target.value)} placeholder="Optional key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black py-2 pl-2.5 pr-8 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
-            <button type="button" onClick={() => setShowXrdbKey((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors" aria-label={showXrdbKey ? 'Hide key' : 'Show key'}>
-              {showXrdbKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            </button>
-          </div>
+      <div className="mb-2 text-[12px] font-semibold text-zinc-400">Access Keys</div>
+      <div>
+        <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500">XRDB Request</label>
+        <div className="relative w-full">
+          <input type={showXrdbKey ? 'text' : 'password'} value={xrdbKey} onChange={(event) => onXrdbKeyChange(event.target.value)} placeholder="Optional key" className="w-full rounded-lg border border-white/10 bg-black py-2.5 pl-3 pr-10 text-[13px] leading-5 text-white outline-none focus:border-violet-500/50" />
+          <button type="button" onClick={() => setShowXrdbKey((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors" aria-label={showXrdbKey ? 'Hide key' : 'Show key'}>
+            {showXrdbKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </button>
         </div>
-        <div>
-          <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noreferrer" className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-violet-300 hover:text-violet-200">TMDB</a>
-          <div className="relative">
-            <input type={showTmdbKey ? 'text' : 'password'} value={tmdbKey} onChange={(event) => onTmdbKeyChange(event.target.value)} placeholder="v3 Key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black py-2 pl-2.5 pr-8 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
-            <button type="button" onClick={() => setShowTmdbKey((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors" aria-label={showTmdbKey ? 'Hide key' : 'Show key'}>
-              {showTmdbKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            </button>
+        <div className="mt-2 w-full rounded-lg border border-white/10 bg-black/30 p-3.5">
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Server Provider Keys</div>
+          <div className="mt-2 flex flex-wrap gap-2.5">
+            {credentialRows.map(([label, isPresent]) => (
+              <span
+                key={label}
+                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+                  isPresent
+                    ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
+                    : 'border-white/10 bg-white/5 text-zinc-500'
+                }`}
+              >
+                {label} {isPresent ? 'configured' : 'missing'}
+              </span>
+            ))}
           </div>
-        </div>
-        <div>
-          <a href="https://mdblist.com/preferences/" target="_blank" rel="noreferrer" className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-violet-300 hover:text-violet-200">MDBList</a>
-          <div className="relative">
-            <input type={showMdblistKey ? 'text' : 'password'} value={mdblistKey} onChange={(event) => onMdblistKeyChange(event.target.value)} placeholder="Key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black py-2 pl-2.5 pr-8 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
-            <button type="button" onClick={() => setShowMdblistKey((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors" aria-label={showMdblistKey ? 'Hide key' : 'Show key'}>
-              {showMdblistKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            </button>
-          </div>
-        </div>
-        <div>
-          <a href="https://fanart.tv/get-an-api-key/" target="_blank" rel="noreferrer" className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-violet-300 hover:text-violet-200">Fanart</a>
-          <div className="relative">
-            <input type={showFanartKey ? 'text' : 'password'} value={fanartKey} onChange={(event) => onFanartKeyChange(event.target.value)} placeholder="Optional key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black py-2 pl-2.5 pr-8 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
-            <button type="button" onClick={() => setShowFanartKey((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors" aria-label={showFanartKey ? 'Hide key' : 'Show key'}>
-              {showFanartKey ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            </button>
-          </div>
-        </div>
-        <div>
-          <a href="https://simkl.com/settings/developer/" target="_blank" rel="noreferrer" className="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-violet-300 hover:text-violet-200">SIMKL</a>
-          <div className="relative">
-            <input type={showSimklClientId ? 'text' : 'password'} value={simklClientId} onChange={(event) => onSimklClientIdChange(event.target.value)} placeholder="Optional key" className="w-full max-w-[20rem] rounded-lg border border-white/10 bg-black py-2 pl-2.5 pr-8 text-xs leading-5 text-white outline-none focus:border-violet-500/50" />
-            <button type="button" onClick={() => setShowSimklClientId((v) => !v)} className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors" aria-label={showSimklClientId ? 'Hide key' : 'Show key'}>
-              {showSimklClientId ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-            </button>
-          </div>
+          <p className="mt-2 text-[12px] leading-6 text-zinc-500">
+            Provider API keys are read from server environment variables and are not exposed in generated URLs.
+          </p>
         </div>
       </div>
       <div className="mt-3">
@@ -542,7 +655,7 @@ export function AccessKeysSection({
 export function MediaTargetSection({
   previewType,
   mediaId,
-  tmdbKey,
+  tmdbKeyAvailable,
   lang,
   supportedLanguages,
   onMediaIdChange,
@@ -566,7 +679,7 @@ export function MediaTargetSection({
 }: {
   previewType: ProxyType;
   mediaId: string;
-  tmdbKey: string;
+  tmdbKeyAvailable: boolean;
   lang: string;
   supportedLanguages: SupportedLanguageOption[];
   onMediaIdChange: (value: string) => void;
@@ -611,7 +724,7 @@ export function MediaTargetSection({
   const isUnifiedIdMode = isMediaIdPattern(unifiedInput);
   const normalizedMediaSearchQuery = isUnifiedIdMode ? '' : unifiedInput.trim();
   const showSearchDropdown =
-    Boolean(tmdbKey) &&
+    tmdbKeyAvailable &&
     !isUnifiedIdMode &&
     normalizedMediaSearchQuery.length >= 1 &&
     (mediaSearchLoading || mediaSearchResults.length > 0);
@@ -730,14 +843,14 @@ export function MediaTargetSection({
             </div>
           ) : null}
         </div>
-        {tmdbKey ? (
+        {tmdbKeyAvailable ? (
           <div className="w-[12.5rem] max-w-full">
             <span className="mb-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500"><Globe2 className="h-3 w-3" /> Lang</span>
             <ThemedDropdown label="Language" options={supportedLanguages} value={lang} onChange={onLangChange} />
           </div>
         ) : (
           <div className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-black p-2 text-[10px] text-zinc-500">
-            <Globe2 className="h-3 w-3 shrink-0" /> Add TMDB key for lang
+            <Globe2 className="h-3 w-3 shrink-0" /> Add server TMDB key for lang
           </div>
         )}
       </div>

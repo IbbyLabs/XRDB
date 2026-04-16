@@ -38,6 +38,29 @@ export const pickByLanguageWithFallback = <T extends { iso_639_1?: string | null
   return items[0];
 };
 
+export const pickByLanguageOrNeutral = <T extends { iso_639_1?: string | null }>(
+  items: T[] = [],
+  preferredLang: string,
+  fallbackLang: string
+) => {
+  if (!Array.isArray(items) || items.length === 0) return null;
+
+  const preferred = normalizeImageLanguage(preferredLang);
+  const fallback = normalizeImageLanguage(fallbackLang);
+
+  if (preferred) {
+    const preferredItem = items.find((item) => normalizeImageLanguage(item?.iso_639_1) === preferred);
+    if (preferredItem) return preferredItem;
+  }
+
+  if (fallback) {
+    const fallbackItem = items.find((item) => normalizeImageLanguage(item?.iso_639_1) === fallback);
+    if (fallbackItem) return fallbackItem;
+  }
+
+  return items.find((item) => normalizeImageLanguage(item?.iso_639_1) === null) || null;
+};
+
 export const filterByLanguageWithFallback = <T extends { iso_639_1?: string | null }>(
   items: T[] = [],
   preferredLang: string,

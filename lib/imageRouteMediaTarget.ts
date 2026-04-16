@@ -523,6 +523,34 @@ if (isTmdb) {
       ? 'tv'
       : 'movie'
     : null;
+
+  if (!media) {
+    const episodeResult = findData.tv_episode_results?.[0] || null;
+    const showId = String(episodeResult?.show_id || '').trim();
+    if (showId) {
+      mediaId = showId;
+      const seasonNumber = Number(episodeResult?.season_number);
+      if (Number.isFinite(seasonNumber) && seasonNumber > 0) {
+        season = String(Math.trunc(seasonNumber));
+      }
+      const episodeNumber = Number(episodeResult?.episode_number);
+      if (Number.isFinite(episodeNumber) && episodeNumber > 0) {
+        episode = String(Math.trunc(episodeNumber));
+      }
+
+      const showResponse = await fetchJsonCached(
+        `tmdb:tv:${showId}`,
+        `${TMDB_API_BASE_URL}/tv/${showId}?api_key=${tmdbKey}`,
+        TMDB_CACHE_TTL_MS,
+        phases,
+        'tmdb',
+      );
+      if (showResponse.ok) {
+        media = showResponse.data;
+        mediaType = 'tv';
+      }
+    }
+  }
 }
 
 if (!media && !useRawKitsuFallback) {

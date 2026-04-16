@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { assertSafeSourceUrl, fetchWithOneRedirect } from '@/lib/networkSecurity';
+import { loadProxyManifestPayload } from '@/lib/proxySourceManifest';
 import {
   buildProxyCorsHeaders,
-  buildProxyManifestPayload,
 } from '@/lib/proxyManifest';
+import { MDBLIST_API_KEYS, TMDB_API_KEY } from '@/lib/imageRouteConfig';
 
 const resolveCorsHeaders = (request: NextRequest) =>
   buildProxyCorsHeaders({
@@ -29,36 +29,25 @@ export async function handleProxyManifestGet(request: NextRequest) {
   if (!sourceUrl) {
     return buildError(request, 'Missing "url" query parameter.');
   }
-  if (!tmdbKey || !mdblistKey) {
+  if ((!tmdbKey && !TMDB_API_KEY) || (!mdblistKey && MDBLIST_API_KEYS.length === 0)) {
     return buildError(request, 'Missing "tmdbKey" or "mdblistKey" query parameter.');
   }
 
-  let safeSourceUrl: URL;
-  try {
-    safeSourceUrl = await assertSafeSourceUrl(sourceUrl);
-  } catch {
-    return buildError(request, 'Invalid or unsafe source manifest URL.', 400);
-  }
-
-  let manifestResponse: Response;
-  try {
-    manifestResponse = await fetchWithOneRedirect(safeSourceUrl.toString());
-  } catch {
-    return buildError(request, 'Unable to reach the source manifest.', 502);
-  }
-
-  if (!manifestResponse.ok) {
-    return buildError(request, `Source manifest returned ${manifestResponse.status}.`, 502);
-  }
-
-  let manifest: Record<string, unknown>;
-  try {
-    manifest = (await manifestResponse.json()) as Record<string, unknown>;
-  } catch {
+  const result = await loadProxyManifestPayload({ sourceUrl, catalogPlan });
+  if (!result.ok) {
+    if (result.error === 'invalid-source') {
+      return buildError(request, 'Invalid or unsafe source manifest URL.', 400);
+    }
+    if (result.error === 'unreachable') {
+      return buildError(request, 'Unable to reach the source manifest.', 502);
+    }
+    if (result.error === 'bad-status') {
+      return buildError(request, `Source manifest returned ${result.status}.`, 502);
+    }
     return buildError(request, 'Source manifest is not valid JSON.', 502);
   }
 
-  return NextResponse.json(buildProxyManifestPayload(manifest, sourceUrl, { catalogPlan }), {
+  return NextResponse.json(result.payload, {
     status: 200,
     headers: resolveCorsHeaders(request),
   });

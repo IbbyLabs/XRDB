@@ -7,13 +7,18 @@ import {
   type ConfiguratorPresetId,
 } from '@/lib/configuratorPresets';
 import {
+  buildProfileParams,
   normalizeSavedUiConfig,
   parseSavedUiConfig,
   serializeSavedUiConfig,
   type SavedUiConfig,
 } from '@/lib/uiConfig';
+import { isProtectedConfigProfileId } from '@/lib/configProfileClientState';
 import {
+  getConfiguratorLinkImportTypes,
+  mergeConfiguratorLinkImportIntoProfileParams,
   parseConfiguratorLinkImport,
+  type ConfiguratorLinkImportResult,
   type ConfiguratorPreviewType,
 } from '@/lib/configuratorLinkImport';
 
@@ -21,6 +26,7 @@ const UI_CONFIG_STORAGE_KEY = 'xrdb.uiConfig.v1';
 const UI_CONFIG_SETTINGS_STORAGE_KEY = 'xrdb.uiConfig.settings.v1';
 const LEGACY_API_KEY_CONFIG_STORAGE_KEY = 'xrdb.apiKeyConfig.v1';
 const LEGACY_API_KEY_CONFIG_SETTINGS_STORAGE_KEY = 'xrdb.apiKeyConfig.settings.v1';
+const CONFIG_PROFILE_RESTORE_SYNC_EVENT = 'xrdb:config-profile-restore-sync';
 
 type LocalUiSettingsStorage = {
   autoSave?: boolean;
@@ -38,6 +44,13 @@ type LegacyApiKeyConfigStorage = {
   proxyTmdbKey?: string;
   proxyMdblistKey?: string;
   proxyManifestUrl?: string;
+};
+
+type PendingLinkImportSelection = {
+  parsedImport: ConfiguratorLinkImportResult;
+  selectedTargetTypes: ConfiguratorPreviewType[];
+  includeSharedSettings: boolean;
+  allowCrossTypeTargets: boolean;
 };
 
 export function useConfiguratorWorkspaceStorage({
@@ -76,11 +89,13 @@ export function useConfiguratorWorkspaceStorage({
   setSelectedPresetId: (value: ConfiguratorPresetId | null) => void;
 }) {
   const [savedConfigStatus, setSavedConfigStatus] = useState<
-    '' | 'loaded' | 'saved' | 'cleared' | 'imported' | 'preset' | 'reset' | 'error' | 'invalid'
+    '' | 'loaded' | 'saved' | 'cleared' | 'imported' | 'preset' | 'reset' | 'error' | 'invalid' | 'profile-link'
   >('');
   const [configAutoSave, setConfigAutoSave] = useState(false);
   const [uiSettingsLoaded, setUiSettingsLoaded] = useState(false);
+  const [pendingConfigProfileId, setPendingConfigProfileId] = useState<string | null>(null);
   const workspaceImportInputRef = useRef<HTMLInputElement | null>(null);
+  const pendingRestoreFromUrlRef = useRef<string | null>(null);
 
   const applyWorkspaceConfig = useCallback(
     (config: SavedUiConfig, status: 'loaded' | 'imported' | 'preset' | 'reset' = 'loaded') => {
@@ -129,7 +144,7 @@ export function useConfiguratorWorkspaceStorage({
 
       const raw = window.localStorage.getItem(UI_CONFIG_STORAGE_KEY);
       if (raw) {
-        const parsed = parseSavedUiConfig(raw);
+        const parsed = parseSavedUiConfig(raw, { skipCrossTypeFallbacks: true });
         if (!parsed) {
           queueMicrotask(() => {
             if (cancelled) {
@@ -278,6 +293,38 @@ export function useConfiguratorWorkspaceStorage({
     persistUiConfig(true);
   }, [persistUiConfig]);
 
+  const queueConfigProfileRestore = useCallback((profileId: string) => {
+    setPendingConfigProfileId(profileId);
+    setSavedConfigStatus('profile-link');
+  }, []);
+
+  const syncPendingConfigProfileRestoreFromUrl = useCallback(() => {
+    if (typeof window === 'undefined' || !uiSettingsLoaded) {
+      return;
+    }
+
+    const configProfileId = new URL(window.location.href).searchParams.get('config');
+    if (!isProtectedConfigProfileId(configProfileId)) {
+      return;
+    }
+
+    if (pendingRestoreFromUrlRef.current === configProfileId) {
+      return;
+    }
+
+    const storedProfileId = window.localStorage.getItem('xrdb_config_profile_id');
+    if (storedProfileId === configProfileId) {
+      return;
+    }
+
+    pendingRestoreFromUrlRef.current = configProfileId;
+    queueConfigProfileRestore(configProfileId);
+  }, [queueConfigProfileRestore, uiSettingsLoaded]);
+
+  const clearPendingConfigProfileRestore = useCallback(() => {
+    setPendingConfigProfileId(null);
+  }, []);
+
   const handleClearSavedWorkspace = useCallback(() => {
     if (typeof window === 'undefined') {
       return;
@@ -288,6 +335,7 @@ export function useConfiguratorWorkspaceStorage({
       window.localStorage.removeItem(UI_CONFIG_STORAGE_KEY);
       window.localStorage.removeItem(LEGACY_API_KEY_CONFIG_STORAGE_KEY);
       window.localStorage.removeItem('xrdb_config_profile_id');
+      setPendingConfigProfileId(null);
       window.dispatchEvent(new Event('xrdb-config-profile-cleared'));
       if (profileId) {
         void fetch(`/api/config/${profileId}`, { method: 'DELETE' });
@@ -307,6 +355,23 @@ export function useConfiguratorWorkspaceStorage({
       persistUiConfig(false);
     }
   }, [configAutoSave, persistUiConfig]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !uiSettingsLoaded) {
+      return;
+    }
+
+    const handleSyncPendingConfigProfileRestore = () => {
+      syncPendingConfigProfileRestoreFromUrl();
+    };
+
+    window.addEventListener(CONFIG_PROFILE_RESTORE_SYNC_EVENT, handleSyncPendingConfigProfileRestore);
+    window.dispatchEvent(new Event(CONFIG_PROFILE_RESTORE_SYNC_EVENT));
+
+    return () => {
+      window.removeEventListener(CONFIG_PROFILE_RESTORE_SYNC_EVENT, handleSyncPendingConfigProfileRestore);
+    };
+  }, [syncPendingConfigProfileRestoreFromUrl, uiSettingsLoaded]);
 
   const handleDownloadWorkspace = useCallback(() => {
     if (typeof window === 'undefined') {
@@ -336,7 +401,7 @@ export function useConfiguratorWorkspaceStorage({
       }
 
       try {
-        const parsed = parseSavedUiConfig(await file.text());
+        const parsed = parseSavedUiConfig(await file.text(), { skipCrossTypeFallbacks: true });
         if (!parsed) {
           setSavedConfigStatus('invalid');
           return;
@@ -351,6 +416,8 @@ export function useConfiguratorWorkspaceStorage({
 
   const [importLinkModalOpen, setImportLinkModalOpen] = useState(false);
   const [importLinkValue, setImportLinkValue] = useState('');
+  const [pendingLinkImportSelection, setPendingLinkImportSelection] =
+    useState<PendingLinkImportSelection | null>(null);
 
   const handleOpenImportLinkModal = useCallback(() => {
     setImportLinkValue('');
@@ -361,6 +428,73 @@ export function useConfiguratorWorkspaceStorage({
     setImportLinkModalOpen(false);
     setImportLinkValue('');
   }, []);
+
+  const handleCancelImportLinkSelection = useCallback(() => {
+    setPendingLinkImportSelection(null);
+  }, []);
+
+  const handleToggleImportTargetType = useCallback((targetType: ConfiguratorPreviewType) => {
+    setPendingLinkImportSelection((current) => {
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        selectedTargetTypes: current.selectedTargetTypes.includes(targetType)
+          ? current.selectedTargetTypes.filter((entry) => entry !== targetType)
+          : [...current.selectedTargetTypes, targetType],
+      };
+    });
+  }, []);
+
+  const handleToggleImportSharedSettings = useCallback(() => {
+    setPendingLinkImportSelection((current) => (
+      current
+        ? {
+            ...current,
+            includeSharedSettings: !current.includeSharedSettings,
+          }
+        : current
+    ));
+  }, []);
+
+  const handleConfirmImportLinkSelection = useCallback(() => {
+    if (!pendingLinkImportSelection) {
+      return;
+    }
+
+    const { parsedImport, selectedTargetTypes, includeSharedSettings } = pendingLinkImportSelection;
+    if (selectedTargetTypes.length === 0 && !includeSharedSettings) {
+      return;
+    }
+
+    const currentConfig = buildCurrentUiConfig();
+    const currentParams = buildProfileParams(currentConfig.settings) ?? {};
+    const nextParams = mergeConfiguratorLinkImportIntoProfileParams(currentParams, parsedImport, {
+      targetTypes: selectedTargetTypes,
+      includeShared: includeSharedSettings,
+      sourceType: parsedImport.defaultSourceType,
+    });
+    const nextConfig = normalizeSavedUiConfig(
+      {
+        version: 1,
+        settings: nextParams,
+        proxy: currentConfig.proxy,
+      },
+      { skipCrossTypeFallbacks: true },
+    );
+
+    setPendingLinkImportSelection(null);
+    applyWorkspaceConfig(nextConfig, 'imported');
+
+    if (selectedTargetTypes.length === 1 && selectedTargetTypes[0] && selectedTargetTypes[0] !== previewType) {
+      setPreviewType(selectedTargetTypes[0]);
+    }
+    if (parsedImport.mediaId) {
+      setMediaId(parsedImport.mediaId);
+    }
+  }, [applyWorkspaceConfig, buildCurrentUiConfig, pendingLinkImportSelection, previewType, setMediaId, setPreviewType]);
 
   const handleSubmitImportLink = useCallback(() => {
     setImportLinkModalOpen(false);
@@ -380,30 +514,35 @@ export function useConfiguratorWorkspaceStorage({
       return;
     }
 
-    const currentConfig = buildCurrentUiConfig();
-    const importConfig: SavedUiConfig = {
-      ...parsedImport.config,
-      settings: {
-        ...parsedImport.config.settings,
-        xrdbKey: currentConfig.settings.xrdbKey,
-        tmdbKey: currentConfig.settings.tmdbKey,
-        mdblistKey: currentConfig.settings.mdblistKey,
-        fanartKey: currentConfig.settings.fanartKey,
-        simklClientId: currentConfig.settings.simklClientId,
-      },
-    };
-    applyWorkspaceConfig(importConfig, 'imported');
-    if (parsedImport.previewType && parsedImport.previewType !== previewType) {
-      setPreviewType(parsedImport.previewType);
+    if (parsedImport.configProfileId) {
+      queueConfigProfileRestore(parsedImport.configProfileId);
+      return;
     }
-    if (parsedImport.mediaId) {
-      setMediaId(parsedImport.mediaId);
+
+    const importTypes = getConfiguratorLinkImportTypes(parsedImport);
+    if (importTypes.length === 0 && Object.keys(parsedImport.sharedSettings).length === 0) {
+      setSavedConfigStatus('invalid');
+      return;
     }
-  }, [applyWorkspaceConfig, buildCurrentUiConfig, importLinkValue, previewType, setMediaId, setPreviewType]);
+
+    setPendingLinkImportSelection({
+      parsedImport,
+      selectedTargetTypes:
+        importTypes.length <= 1
+          ? parsedImport.defaultSourceType
+            ? [parsedImport.defaultSourceType]
+            : []
+          : importTypes,
+      includeSharedSettings: false,
+      allowCrossTypeTargets: importTypes.length <= 1,
+    });
+  }, [importLinkValue, previewType, queueConfigProfileRestore]);
 
   return {
     applyWorkspaceConfig,
+    clearPendingConfigProfileRestore,
     configAutoSave,
+    pendingConfigProfileId,
     savedConfigStatus,
     uiSettingsLoaded,
     workspaceImportInputRef,
@@ -415,9 +554,14 @@ export function useConfiguratorWorkspaceStorage({
     handleImportWorkspace,
     importLinkModalOpen,
     importLinkValue,
+    pendingLinkImportSelection,
     onOpenImportLinkModal: handleOpenImportLinkModal,
     onCloseImportLinkModal: handleCloseImportLinkModal,
     onImportLinkValueChange: setImportLinkValue,
     onSubmitImportLink: handleSubmitImportLink,
+    onCancelImportLinkSelection: handleCancelImportLinkSelection,
+    onConfirmImportLinkSelection: handleConfirmImportLinkSelection,
+    onToggleImportSharedSettings: handleToggleImportSharedSettings,
+    onToggleImportTargetType: handleToggleImportTargetType,
   };
 }

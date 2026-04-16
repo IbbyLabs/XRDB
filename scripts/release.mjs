@@ -26,11 +26,18 @@ function run(command, args, { stdio = 'inherit' } = {}) {
   return result;
 }
 
+console.log('Running saved profile verification gate before release...');
+run('npm', ['run', 'verify:config-profiles']);
+
 const tmdbKey = process.env.XRDB_README_PREVIEW_TMDB_KEY || process.env.TMDB_KEY || '';
 
 if (tmdbKey) {
   console.log('Refreshing doc static assets before release...');
-  const refreshResult = spawnSync('node', ['scripts/refresh-doc-static-assets.mjs', 'all'], { stdio: 'inherit' });
+  const refreshResult = spawnSync(
+    'node',
+    ['--experimental-strip-types', 'scripts/refresh-doc-static-assets.mjs', 'all'],
+    { stdio: 'inherit' },
+  );
   if (refreshResult.error) {
     throw refreshResult.error;
   }

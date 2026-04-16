@@ -63,9 +63,10 @@ import {
 } from './imageRouteKitsuFallback.ts';
 import { normalizeRatingValue, isTmdbAnimationTitle } from './imageRouteMedia.ts';
 import { resolveImageRouteProviderRatings } from './imageRouteProviderRatings.ts';
-import { fetchTorrentioBadges } from './imageRouteTorrentio.ts';
-import { pickByLanguageWithFallback } from './imageLanguage.ts';
+import { fetchTorrentioBadges, getCachedTorrentioBadges } from './imageRouteTorrentio.ts';
+import { pickByLanguageOrNeutral, pickByLanguageWithFallback } from './imageLanguage.ts';
 import { resolveGenreBadgeAutoScale } from './overlayScale.ts';
+import { logger } from './serverLogger.ts';
 import { TMDB_API_BASE_URL } from './serviceBaseUrls.ts';
 import {
   LOGO_BASE_HEIGHT,
@@ -106,6 +107,7 @@ export type PreparedImageRouteMediaState = {
   certificationBadgeLabel: string | null;
   streamBadges: RatingBadge[];
   streamBadgesCacheTtlMs: number | null;
+  streamBadgesDeferred: boolean;
   posterTitleText: string | null;
   posterLogoUrl: string | null;
   providerRatingsEnabled: boolean;
@@ -138,6 +140,7 @@ export const prepareImageRouteMediaState = async (input: {
   hasConfirmedAnimeMapping: boolean;
   shouldApplyRatings: boolean;
   shouldApplyStreamBadges: boolean;
+  shouldBlockOnStreamBadges: boolean;
   shouldRenderLogoBackground: boolean;
   genreBadgeMode: GenreBadgeMode;
   genreBadgeStyle: GenreBadgeStyle;
@@ -145,6 +148,7 @@ export const prepareImageRouteMediaState = async (input: {
   genreBadgeScale: number;
   effectiveGenreBadgeScale: number;
   genreBadgeBorderWidth: number;
+  genreBadgeBackgroundOpacity: number;
   noBackgroundBadgeOutlineColor: string;
   noBackgroundBadgeOutlineWidth: number;
   genreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
@@ -213,6 +217,7 @@ export const prepareImageRouteMediaState = async (input: {
     hasNativeAnimeInput,
     shouldApplyRatings,
     shouldApplyStreamBadges,
+    shouldBlockOnStreamBadges,
     shouldRenderLogoBackground,
     genreBadgeMode,
     genreBadgeStyle,
@@ -279,6 +284,7 @@ const buildResolvedGenreBadge = (
     position: genreBadgePosition,
     scalePercent: effectiveGenreBadgeScale,
     borderWidth: input.genreBadgeBorderWidth,
+    backgroundOpacity: input.genreBadgeBackgroundOpacity,
     noBackgroundOutlineColor: noBackgroundBadgeOutlineColor,
     noBackgroundOutlineWidth: noBackgroundBadgeOutlineWidth,
   };
@@ -307,6 +313,7 @@ let selectedPosterLogoPath: string | null = null;
 let selectedPosterIsTextless = false;
 let certificationBadgeLabel: string | null = null;
 let releaseStatusBadge: RatingBadge | null = null;
+let streamBadgesDeferred = false;
 let bundledWatchProviderResults: unknown = null;
 let movieHasPhysicalMediaRelease: boolean | null = null;
 const requestedExternalRatings = new Set([...selectedRatings]);
@@ -486,7 +493,8 @@ const providerRatingsPromise =
       undiciFetchImpl: undiciFetch as unknown as JsonFetchImpl,
     })
     : null;
-const streamBadgesPromise =
+let streamBadgesPromise: Promise<Awaited<ReturnType<typeof fetchTorrentioBadges>>> | null = null;
+const startStreamBadgesWarm =
   shouldRenderStreamBadges && !useRawKitsuFallback && (mediaType === 'movie' || mediaType === 'tv')
     ? (async () => {
       let imdbId: string | null = isImdbId(mediaId) ? mediaId : null;
@@ -524,7 +532,47 @@ const streamBadgesPromise =
         defaultTtlMs: TORRENTIO_CACHE_TTL_MS,
         oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
       });
-      return fetchTorrentioBadges({ type: torrentioType, id: torrentioId, phases, cacheTtlMs: torrentioCacheTtlMs, remuxDisplayMode });
+      if (!shouldBlockOnStreamBadges) {
+        const cachedStreamBadges = getCachedTorrentioBadges({
+          type: torrentioType,
+          id: torrentioId,
+          cacheTtlMs: torrentioCacheTtlMs,
+          remuxDisplayMode,
+        });
+        if (cachedStreamBadges) {
+          return cachedStreamBadges;
+        }
+
+        streamBadgesDeferred = true;
+        streamBadgesPromise = fetchTorrentioBadges({
+          type: torrentioType,
+          id: torrentioId,
+          phases,
+          cacheTtlMs: torrentioCacheTtlMs,
+          remuxDisplayMode,
+        });
+        void streamBadgesPromise.then((result) => {
+          logger.request(
+            `[XRDB] background Torrentio warm completed for ${torrentioType}:${torrentioId} cacheHit=${result.cacheHit === true ? 'true' : 'false'} host=${result.selectedBaseUrl ?? 'cache'}`,
+          );
+        });
+        void streamBadgesPromise.catch((error) => {
+          logger.warn(
+            '[XRDB] background Torrentio warm failed:',
+            error instanceof Error ? error.message : error,
+          );
+        });
+        return { badges: [], cacheTtlMs: torrentioCacheTtlMs };
+      }
+
+      streamBadgesPromise = fetchTorrentioBadges({
+        type: torrentioType,
+        id: torrentioId,
+        phases,
+        cacheTtlMs: torrentioCacheTtlMs,
+        remuxDisplayMode,
+      });
+      return streamBadgesPromise;
     })()
     : null;
 
@@ -693,7 +741,7 @@ if (!useRawKitsuFallback && detailsBundlePromise) {
     );
     if (logoFallbackImagesResponse.ok) {
       const logoFallbackImages = logoFallbackImagesResponse.data || {};
-      const logoFallback = pickByLanguageWithFallback<{ iso_639_1?: string | null; file_path?: string | null }>(
+      const logoFallback = pickByLanguageOrNeutral<{ iso_639_1?: string | null; file_path?: string | null }>(
         logoFallbackImages.logos || [],
         requestedImageLang,
         FALLBACK_IMAGE_LANGUAGE
@@ -772,8 +820,12 @@ if (providerRatingsPromise) {
   primaryGenreFamily = resolvePrimaryGenreFamily(resolvedGenres, resolvedGenreIds);
   genreBadge = buildResolvedGenreBadge(primaryGenreFamily);
 }
-if (streamBadgesPromise) {
-  const streamBadgeResult = await streamBadgesPromise;
+if (startStreamBadgesWarm && shouldBlockOnStreamBadges) {
+  const streamBadgeResult = await startStreamBadgesWarm;
+  streamBadges = streamBadgeResult.badges;
+  streamBadgesCacheTtlMs = streamBadgeResult.cacheTtlMs;
+} else if (startStreamBadgesWarm && !shouldBlockOnStreamBadges) {
+  const streamBadgeResult = await startStreamBadgesWarm;
   streamBadges = streamBadgeResult.badges;
   streamBadgesCacheTtlMs = streamBadgeResult.cacheTtlMs;
 }
@@ -846,6 +898,7 @@ if (shouldRenderRawKitsuFallbackRating) {
     certificationBadgeLabel,
     streamBadges,
     streamBadgesCacheTtlMs,
+    streamBadgesDeferred,
     posterTitleText,
     posterLogoUrl,
     providerRatingsEnabled: providerRatingsPromise !== null,

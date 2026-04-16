@@ -1,4 +1,4 @@
-import { ProxyAgent } from 'undici';
+import { ProxyAgent, type Dispatcher } from 'undici';
 import type { RatingPreference } from './ratingProviderCatalog.ts';
 import type { BackdropRatingLayout } from './backdropLayoutOptions.ts';
 import type { PosterRatingLayout } from './posterLayoutOptions.ts';
@@ -22,6 +22,7 @@ export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
 export type AgeRatingBadgePosition =
   | 'inherit'
+  | 'grouped'
   | 'top-left'
   | 'top-center'
   | 'top-right'
@@ -89,8 +90,10 @@ export const BACKDROP_IMAGE_DIMENSIONS: Record<BackdropImageSize, { width: numbe
   '4k': { width: 3840, height: 2160 },
 };
 export const DEFAULT_BLOCKBUSTER_DENSITY: BlockbusterDensity = 'balanced';
-export const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v104';
+export const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v121';
 export const XRDB_REQUEST_API_KEYS = getConfiguredXrdbRequestKeys();
+export const XRDB_EPISODE_CONFIG_PROFILE_ID: string | null =
+  String(process.env.XRDB_EPISODE_CONFIG_PROFILE_ID ?? '').trim() || null;
 export const ANILIST_GRAPHQL_URL =
   process.env.XRDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
 export const MYANIMELIST_API_BASE_URL =
@@ -103,6 +106,11 @@ export const TRAKT_API_BASE_URL =
   process.env.XRDB_TRAKT_API_BASE_URL?.trim() || 'https://api.trakt.tv';
 export const TRAKT_CLIENT_ID =
   process.env.XRDB_TRAKT_CLIENT_ID?.trim() || process.env.TRAKT_CLIENT_ID?.trim() || '';
+export const TMDB_API_KEY =
+  process.env.XRDB_TMDB_API_KEY?.trim() ||
+  process.env.TMDB_API_KEY?.trim() ||
+  process.env.TMDB_KEY?.trim() ||
+  '';
 export const FANART_API_KEY =
   process.env.XRDB_FANART_API_KEY?.trim() || process.env.FANART_API_KEY?.trim() || '';
 export const FANART_CLIENT_KEY =
@@ -464,14 +472,31 @@ export const TORRENTIO_CONCURRENCY = (() => {
   if (!Number.isFinite(rawValue) || rawValue <= 0) return 2;
   return Math.max(1, Math.min(4, Math.floor(rawValue)));
 })();
+export const TORRENTIO_TIMEOUT_MS = parseCacheTtlMs(
+  process.env.XRDB_TORRENTIO_TIMEOUT_MS,
+  4 * 1000,
+  500,
+  10 * 1000,
+);
+export const TORRENTIO_DIRECT_CANDIDATE_BASE_URL = resolveTorrentioBaseUrl(
+  process.env.XRDB_TORRENTIO_DIRECT_CANDIDATE_BASE_URL,
+  'https://torrentio.stremio.ru',
+);
 export const TORRENTIO_BASE_URL = resolveTorrentioBaseUrl(process.env.XRDB_TORRENTIO_BASE_URL);
+export const TORRENTIO_FALLBACK_BASE_URL = resolveTorrentioBaseUrl(
+  process.env.XRDB_TORRENTIO_FALLBACK_BASE_URL,
+  TORRENTIO_DIRECT_CANDIDATE_BASE_URL ?? undefined,
+);
 export const TORRENTIO_PROXY_URL =
   process.env.HTTPS_PROXY ||
   process.env.HTTP_PROXY ||
   process.env.https_proxy ||
   process.env.http_proxy ||
   null;
-export const TORRENTIO_DISPATCHER = TORRENTIO_PROXY_URL ? new ProxyAgent(TORRENTIO_PROXY_URL) : undefined;
+export const TORRENTIO_BYPASS_PROXY =
+  normalizeBooleanSearchFlag(process.env.XRDB_TORRENTIO_BYPASS_PROXY) === true;
+export const TORRENTIO_DISPATCHER: Dispatcher | undefined =
+  TORRENTIO_PROXY_URL && !TORRENTIO_BYPASS_PROXY ? new ProxyAgent(TORRENTIO_PROXY_URL) : undefined;
 export const PROVIDER_ICON_CACHE_TTL_MS = parseCacheTtlMs(
   process.env.XRDB_PROVIDER_ICON_CACHE_TTL_MS,
   7 * 24 * 60 * 60 * 1000,

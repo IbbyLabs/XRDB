@@ -12,11 +12,14 @@ import {
   encodeRatingProviderAppearanceOverrides,
 } from '../lib/badgeCustomization.ts';
 import {
+  buildProfileParams,
   buildAiometadataUrlPatterns,
+  createDefaultSavedUiConfig,
   buildConfigString,
   buildProxyUrl,
   decodeBase64Url,
   normalizeSavedUiConfig,
+  normalizeSharedXrdbSettings,
   parseSavedUiConfig,
   serializeSavedUiConfig,
 } from '../lib/uiConfig.ts';
@@ -38,6 +41,12 @@ const SAMPLE_PROVIDER_APPEARANCE = {
     stackedLineHeightPercent: 124,
   },
 };
+
+test('default saved ui config disables poster stream badges by default', () => {
+  const config = createDefaultSavedUiConfig();
+
+  assert.equal(config.settings.posterStreamBadges, 'off');
+});
 
 const buildSampleSettings = () =>
   normalizeSavedUiConfig({
@@ -134,9 +143,11 @@ const buildSampleSettings = () =>
       posterRatingPresentation: 'minimal',
       backdropRatingPresentation: 'average',
       thumbnailRatingPresentation: 'average',
-      logoRatingPresentation: 'blockbuster',
+      logoRatingPresentation: 'dual-minimal',
       posterRingValueSource: 'highest',
       posterRingProgressSource: 'tmdb',
+      posterRingCriticsPriority: ['tomatoes', 'metacritic', 'imdb'],
+      posterRingAudiencePriority: ['tomatoesaudience', 'imdb', 'tmdb'],
       posterAggregateRatingSource: 'audience',
       backdropAggregateRatingSource: 'critics',
       thumbnailAggregateRatingSource: 'critics',
@@ -233,6 +244,10 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       backdropGenreBadgeBorderWidth: 1.5,
       thumbnailGenreBadgeBorderWidth: 1.5,
       logoGenreBadgeBorderWidth: 1.4,
+      posterGenreBadgeBackgroundOpacity: 28,
+      backdropGenreBadgeBackgroundOpacity: 28,
+      thumbnailGenreBadgeBackgroundOpacity: 28,
+      logoGenreBadgeBackgroundOpacity: 28,
       posterGenreBadgeAnimeGrouping: 'split',
       backdropGenreBadgeAnimeGrouping: 'split',
       thumbnailGenreBadgeAnimeGrouping: 'split',
@@ -295,9 +310,11 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       posterRatingPresentation: 'minimal',
       backdropRatingPresentation: 'average',
       thumbnailRatingPresentation: 'average',
-      logoRatingPresentation: 'blockbuster',
+      logoRatingPresentation: 'dual-minimal',
       posterRingValueSource: 'highest',
       posterRingProgressSource: 'tmdb',
+      posterRingCriticsPriority: ['tomatoes', 'metacritic', 'imdb'],
+      posterRingAudiencePriority: ['tomatoesaudience', 'imdb', 'tmdb'],
       posterAggregateRatingSource: 'audience',
       backdropAggregateRatingSource: 'critics',
       thumbnailAggregateRatingSource: 'critics',
@@ -468,6 +485,47 @@ test('legacy shared genre badge settings expand to per type fields and re-compre
   assert.equal(decodedConfig.logoGenreBadge, undefined);
 });
 
+test('clean genre badge style forces text mode and bottom center position in normalized settings', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      posterGenreBadgeMode: 'both',
+      posterGenreBadgeStyle: 'clean',
+      posterGenreBadgePosition: 'topRight',
+      backdropGenreBadgeMode: 'icon',
+      backdropGenreBadgeStyle: 'clean',
+      backdropGenreBadgePosition: 'topLeft',
+    },
+  });
+
+  assert.equal(config.settings.posterGenreBadgeStyle, 'clean');
+  assert.equal(config.settings.posterGenreBadgeMode, 'text');
+  assert.equal(config.settings.posterGenreBadgePosition, 'bottomCenter');
+  assert.equal(config.settings.backdropGenreBadgeStyle, 'clean');
+  assert.equal(config.settings.backdropGenreBadgeMode, 'text');
+  assert.equal(config.settings.backdropGenreBadgePosition, 'bottomCenter');
+});
+
+test('profile params keep thumbnail genre badge off when backdrop genre badge is enabled', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      backdropGenreBadgeMode: 'both',
+      thumbnailGenreBadgeMode: 'off',
+    },
+  });
+
+  const params = buildProfileParams(config.settings);
+  assert.ok(params);
+  assert.equal(params.thumbnailGenreBadge, 'off');
+
+  const roundTripped = normalizeSavedUiConfig({ settings: params });
+  assert.equal(roundTripped.settings.thumbnailGenreBadgeMode, 'off');
+  assert.equal(roundTripped.settings.backdropGenreBadgeMode, 'both');
+});
+
 test('legacy shared stack offsets seed type scoped fields without leaking shared params into AIOMetadata exports', () => {
   const config = normalizeSavedUiConfig({
     settings: {
@@ -534,22 +592,28 @@ test('workspace normalization preserves compact ring source settings in config p
       tmdbKey: 'tmdb-key-123',
       mdblistKey: 'mdblist-key-456',
       posterRatingPresentation: 'ring',
-      posterRingValueSource: 'highest',
-      posterRingProgressSource: 'tomatoes',
+      posterRingValueSource: 'critics',
+      posterRingProgressSource: 'priority-audience',
+      posterRingCriticsPriority: 'metacritic,tomatoes,imdb',
+      posterRingAudiencePriority: 'letterboxd,tomatoesaudience,imdb',
     },
   });
 
   assert.equal(config.settings.posterRatingPresentation, 'ring');
-  assert.equal(config.settings.posterRingValueSource, 'highest');
-  assert.equal(config.settings.posterRingProgressSource, 'tomatoes');
+  assert.equal(config.settings.posterRingValueSource, 'critics');
+  assert.equal(config.settings.posterRingProgressSource, 'priority-audience');
+  assert.deepEqual(config.settings.posterRingCriticsPriority, ['metacritic', 'tomatoes', 'imdb']);
+  assert.deepEqual(config.settings.posterRingAudiencePriority, ['letterboxd', 'tomatoesaudience', 'imdb']);
 
   const configString = buildConfigString('https://xrdb.example.com', config.settings);
   assert.notEqual(configString, '');
 
   const decodedConfig = JSON.parse(decodeBase64Url(configString));
   assert.equal(decodedConfig.posterRatingPresentation, 'ring');
-  assert.equal(decodedConfig.posterRingProgressSource, 'tomatoes');
-  assert.equal('posterRingValueSource' in decodedConfig, false);
+  assert.equal(decodedConfig.posterRingValueSource, 'critics');
+  assert.equal(decodedConfig.posterRingProgressSource, 'priority-audience');
+  assert.equal(decodedConfig.posterRingCriticsPriority, 'metacritic,tomatoes,imdb');
+  assert.equal(decodedConfig.posterRingAudiencePriority, 'letterboxd,tomatoesaudience,imdb');
 });
 
 test('workspace normalization accepts none rating presentation to remove all ratings', () => {
@@ -736,7 +800,7 @@ test('config string and proxy manifest use the same shared XRDB settings', () =>
     posterRatingPresentation: 'minimal',
     backdropRatingPresentation: 'average',
     thumbnailRatingPresentation: 'average',
-    logoRatingPresentation: 'blockbuster',
+    logoRatingPresentation: 'dual-minimal',
     posterAggregateRatingSource: 'audience',
     backdropAggregateRatingSource: 'critics',
     thumbnailAggregateRatingSource: 'critics',
@@ -845,7 +909,7 @@ test('config string and proxy manifest use the same shared XRDB settings', () =>
     posterRatingPresentation: 'minimal',
     backdropRatingPresentation: 'average',
     thumbnailRatingPresentation: 'average',
-    logoRatingPresentation: 'blockbuster',
+    logoRatingPresentation: 'dual-minimal',
     posterAggregateRatingSource: 'audience',
     backdropAggregateRatingSource: 'critics',
     thumbnailAggregateRatingSource: 'critics',
@@ -897,6 +961,51 @@ test('config string and proxy manifest use the same shared XRDB settings', () =>
     ).toString('base64url'),
     xrdbBase: 'https://xrdb.example.com',
   });
+});
+
+test('server managed exports omit provider credentials when server fallbacks are available', () => {
+  const config = buildSampleSettings();
+  const baseUrl = 'https://xrdb.example.com/';
+  const options = {
+    allowMissingMdblistKey: true,
+    allowMissingTmdbKey: true,
+    omitProviderCredentials: true,
+  };
+  const settings = {
+    ...config.settings,
+    simklClientId: 'simkl-client-id-000',
+  };
+
+  const configString = buildConfigString(baseUrl, settings, options);
+  assert.notEqual(configString, '');
+
+  const decodedConfig = JSON.parse(decodeBase64Url(configString));
+  assert.equal(decodedConfig.xrdbKey, 'shared-xrdb-key-000');
+  assert.equal('tmdbKey' in decodedConfig, false);
+  assert.equal('mdblistKey' in decodedConfig, false);
+  assert.equal('fanartKey' in decodedConfig, false);
+  assert.equal('simklClientId' in decodedConfig, false);
+
+  const params = buildProfileParams(settings, options);
+  assert.ok(params);
+  assert.equal(params.xrdbKey, 'shared-xrdb-key-000');
+  assert.equal('tmdbKey' in params, false);
+  assert.equal('mdblistKey' in params, false);
+  assert.equal('fanartKey' in params, false);
+  assert.equal('simklClientId' in params, false);
+
+  const proxyUrl = buildProxyUrl(baseUrl, config.proxy, settings, options);
+  assert.match(proxyUrl, /^https:\/\/xrdb\.example\.com\/proxy\/.+\/manifest\.json$/);
+
+  const encodedConfig = proxyUrl.split('/proxy/')[1]?.replace('/manifest.json', '');
+  assert.ok(encodedConfig);
+  const decodedProxy = JSON.parse(decodeBase64Url(encodedConfig));
+  assert.equal(decodedProxy.url, 'https://addon.example.com/manifest.json');
+  assert.equal(decodedProxy.xrdbKey, 'shared-xrdb-key-000');
+  assert.equal('tmdbKey' in decodedProxy, false);
+  assert.equal('mdblistKey' in decodedProxy, false);
+  assert.equal('fanartKey' in decodedProxy, false);
+  assert.equal('simklClientId' in decodedProxy, false);
 });
 
 test('AIOMetadata export builds masked patterns with placeholders', () => {
@@ -1038,7 +1147,19 @@ test('AIOMetadata export includes poster quality badge position for top poster l
   assert.match(patterns?.posterUrlPattern ?? '', /posterQualityBadgesPosition=right/);
 });
 
-test('AIOMetadata export omits poster quality badge position for unsupported poster layouts', () => {
+test('AIOMetadata export preserves grouped age rating placement for poster configs', () => {
+  const config = buildSampleSettings();
+
+  config.settings.ageRatingBadgePosition = 'grouped';
+
+  const patterns = buildAiometadataUrlPatterns('https://xrdb.example.com/', config.settings, {
+    hideCredentials: true,
+  });
+
+  assert.match(patterns?.posterUrlPattern ?? '', /ageRatingBadgePosition=grouped/);
+});
+
+test('AIOMetadata export includes poster quality badge position for supported side poster layouts', () => {
   const config = buildSampleSettings();
 
   config.settings.posterRatingsLayout = 'left-right';
@@ -1048,7 +1169,7 @@ test('AIOMetadata export omits poster quality badge position for unsupported pos
     hideCredentials: true,
   });
 
-  assert.equal((patterns?.posterUrlPattern ?? '').includes('posterQualityBadgesPosition='), false);
+  assert.match(patterns?.posterUrlPattern ?? '', /posterQualityBadgesPosition=right/);
 });
 
 test('AIOMetadata export can keep live credentials while preserving live AIOM defaults', () => {
@@ -1131,7 +1252,7 @@ test('AIOMetadata export supports IMDb poster ID mode override', () => {
     posterIdMode: 'imdb',
   });
 
-  assert.equal(patterns?.posterUrlPattern.startsWith('https://xrdb.example.com/poster/{imdb_id}.jpg?'), true);
+  assert.equal(patterns?.posterUrlPattern.startsWith('https://xrdb.example.com/poster/imdb:{imdb_id}.jpg?'), true);
   assert.equal((patterns?.posterUrlPattern ?? '').includes('idSource=tmdb'), false);
   assert.match(patterns?.backgroundUrlPattern ?? '', /idSource=tmdb/);
   assert.match(patterns?.logoUrlPattern ?? '', /idSource=tmdb/);
@@ -1328,6 +1449,85 @@ test('workspace normalization accepts backdrop image size aliases and payload om
   assert.notEqual(explicitConfigString, '');
   const explicitPayload = JSON.parse(decodeBase64Url(explicitConfigString));
   assert.equal(explicitPayload.backdropImageSize, 'large');
+});
+
+test('profile params round-trip preserves quality badge preferences and provider appearance', () => {
+  const config = buildSampleSettings();
+  const params = buildProfileParams(config.settings);
+
+  assert.ok(params);
+
+  const roundTripped = normalizeSavedUiConfig(
+    { settings: params },
+    { skipCrossTypeFallbacks: true },
+  );
+
+  assert.deepEqual(
+    roundTripped.settings.posterQualityBadgePreferences,
+    config.settings.posterQualityBadgePreferences,
+  );
+  assert.deepEqual(
+    roundTripped.settings.backdropQualityBadgePreferences,
+    config.settings.backdropQualityBadgePreferences,
+  );
+  assert.deepEqual(
+    roundTripped.settings.thumbnailQualityBadgePreferences,
+    config.settings.thumbnailQualityBadgePreferences,
+  );
+  assert.deepEqual(
+    roundTripped.settings.logoQualityBadgePreferences,
+    config.settings.logoQualityBadgePreferences,
+  );
+  assert.deepEqual(
+    roundTripped.settings.ratingProviderAppearanceOverrides,
+    config.settings.ratingProviderAppearanceOverrides,
+  );
+  assert.deepEqual(buildProfileParams(roundTripped.settings), params);
+});
+
+test('canonical saved config keys win over profile aliases', () => {
+  const canonicalProviderAppearance = {
+    trakt: {
+      accentColor: '#7c3aed',
+      iconScalePercent: 118,
+    },
+  };
+
+  const config = normalizeSavedUiConfig(
+    {
+      settings: {
+        posterQualityBadgePreferences: ['certification'],
+        posterQualityBadges: 'hdr,4k',
+        backdropQualityBadgePreferences: ['remux'],
+        backdropQualityBadges: 'hdr',
+        thumbnailQualityBadgePreferences: ['dolbyatmos'],
+        thumbnailQualityBadges: 'certification',
+        logoQualityBadgePreferences: ['4k'],
+        logoQualityBadges: 'remux',
+        ratingProviderAppearanceOverrides: canonicalProviderAppearance,
+        providerAppearance: encodeRatingProviderAppearanceOverrides({
+          imdb: {
+            accentColor: '#ff0000',
+            iconScalePercent: 91,
+          },
+        }),
+      },
+    },
+    { skipCrossTypeFallbacks: true },
+  );
+
+  assert.deepEqual(config.settings.posterQualityBadgePreferences, ['certification']);
+  assert.deepEqual(config.settings.backdropQualityBadgePreferences, ['remux']);
+  assert.deepEqual(config.settings.thumbnailQualityBadgePreferences, ['dolbyatmos']);
+  assert.deepEqual(config.settings.logoQualityBadgePreferences, ['4k']);
+  assert.deepEqual(
+    config.settings.ratingProviderAppearanceOverrides,
+    normalizeSavedUiConfig({
+      settings: {
+        ratingProviderAppearanceOverrides: canonicalProviderAppearance,
+      },
+    }).settings.ratingProviderAppearanceOverrides,
+  );
 });
 
 test('workspace normalization accepts cinemeta as a poster artwork source', () => {
@@ -1539,4 +1739,44 @@ test('TMDB ID scope helpers detect explicit and ambiguous forms', () => {
   assert.equal(isAmbiguousTmdbXrdbId('tmdb:movie:603'), false);
   assert.equal(isAmbiguousTmdbXrdbId('tmdb:tv:1399'), false);
   assert.equal(isAmbiguousTmdbXrdbId('tt0133093'), false);
+});
+
+test('stale ring on backdrop is coerced to standard', () => {
+  const result = normalizeSharedXrdbSettings({ backdropRatingPresentation: 'ring' });
+  assert.equal(result.backdropRatingPresentation, 'standard');
+});
+
+test('stale editorial on thumbnail is coerced to standard', () => {
+  const result = normalizeSharedXrdbSettings({ thumbnailRatingPresentation: 'editorial' });
+  assert.equal(result.thumbnailRatingPresentation, 'standard');
+});
+
+test('stale ring on logo is coerced to standard', () => {
+  const result = normalizeSharedXrdbSettings({ logoRatingPresentation: 'ring' });
+  assert.equal(result.logoRatingPresentation, 'standard');
+});
+
+test('stale blockbuster on backdrop is coerced to standard', () => {
+  const result = normalizeSharedXrdbSettings({ backdropRatingPresentation: 'blockbuster' });
+  assert.equal(result.backdropRatingPresentation, 'standard');
+});
+
+test('valid ring on poster is left unchanged', () => {
+  const result = normalizeSharedXrdbSettings({ posterRatingPresentation: 'ring' });
+  assert.equal(result.posterRatingPresentation, 'ring');
+});
+
+test('valid blockbuster on poster is left unchanged', () => {
+  const result = normalizeSharedXrdbSettings({ posterRatingPresentation: 'blockbuster' });
+  assert.equal(result.posterRatingPresentation, 'blockbuster');
+});
+
+test('stale non-thumbnail provider normalizes out of thumbnail preferences', () => {
+  const result = normalizeSharedXrdbSettings({ thumbnailRatingPreferences: ['letterboxd', 'trakt', 'tmdb'] });
+  assert.deepEqual(result.thumbnailRatingPreferences, ['tmdb']);
+});
+
+test('empty thumbnail provider intersection defaults to allowed set', () => {
+  const result = normalizeSharedXrdbSettings({ thumbnailRatingPreferences: ['letterboxd', 'trakt'] });
+  assert.deepEqual(result.thumbnailRatingPreferences, ['tmdb', 'imdb']);
 });

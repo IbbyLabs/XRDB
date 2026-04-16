@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import {
   DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_BADGE_SCALE_PERCENT,
+  DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
   DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR,
   DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX,
@@ -16,6 +17,8 @@ import {
   DEFAULT_GENRE_BADGE_POSITION,
   DEFAULT_GENRE_BADGE_STYLE,
   GENRE_BADGE_PREVIEW_SAMPLES,
+  resolveGenreBadgeModeForStyle,
+  resolveGenreBadgePositionForStyle,
   type GenreBadgeAnimeGrouping,
   type GenreBadgeMode,
   type GenreBadgePosition,
@@ -71,8 +74,11 @@ import { DEFAULT_POSTER_EDGE_OFFSET } from '@/lib/posterEdgeOffset';
 import { DEFAULT_RATING_STACK_OFFSET_PX } from '@/lib/ratingStackOffset';
 import { DEFAULT_RATING_VALUE_MODE, type RatingValueMode } from '@/lib/ratingDisplay';
 import {
+  DEFAULT_POSTER_COMPACT_RING_AUDIENCE_PRIORITY,
+  DEFAULT_POSTER_COMPACT_RING_CRITICS_PRIORITY,
   DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
   DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE,
+  stringifyPosterCompactRingPriorityList,
   type PosterCompactRingSource,
 } from '@/lib/posterCompactRing';
 import { type RemuxDisplayMode } from '@/lib/mediaFeatures';
@@ -90,6 +96,7 @@ const GENRE_BADGE_QUERY_KEYS = {
     position: 'posterGenreBadgePosition',
     scale: 'posterGenreBadgeScale',
     borderWidth: 'posterGenreBadgeBorderWidth',
+    backgroundOpacity: 'posterGenreBadgeBackgroundOpacity',
     animeGrouping: 'posterGenreBadgeAnimeGrouping',
   },
   backdrop: {
@@ -98,6 +105,7 @@ const GENRE_BADGE_QUERY_KEYS = {
     position: 'backdropGenreBadgePosition',
     scale: 'backdropGenreBadgeScale',
     borderWidth: 'backdropGenreBadgeBorderWidth',
+    backgroundOpacity: 'backdropGenreBadgeBackgroundOpacity',
     animeGrouping: 'backdropGenreBadgeAnimeGrouping',
   },
   thumbnail: {
@@ -106,6 +114,7 @@ const GENRE_BADGE_QUERY_KEYS = {
     position: 'thumbnailGenreBadgePosition',
     scale: 'thumbnailGenreBadgeScale',
     borderWidth: 'thumbnailGenreBadgeBorderWidth',
+    backgroundOpacity: 'thumbnailGenreBadgeBackgroundOpacity',
     animeGrouping: 'thumbnailGenreBadgeAnimeGrouping',
   },
   logo: {
@@ -114,6 +123,7 @@ const GENRE_BADGE_QUERY_KEYS = {
     position: 'logoGenreBadgePosition',
     scale: 'logoGenreBadgeScale',
     borderWidth: 'logoGenreBadgeBorderWidth',
+    backgroundOpacity: 'logoGenreBadgeBackgroundOpacity',
     animeGrouping: 'logoGenreBadgeAnimeGrouping',
   },
 } as const;
@@ -137,6 +147,7 @@ const appendGenreBadgeQueryParams = ({
   position,
   scale,
   borderWidth,
+  backgroundOpacity,
   animeGrouping,
 }: {
   query: URLSearchParams;
@@ -146,17 +157,20 @@ const appendGenreBadgeQueryParams = ({
   position: GenreBadgePosition;
   scale: number;
   borderWidth: number;
+  backgroundOpacity: number;
   animeGrouping: GenreBadgeAnimeGrouping;
 }) => {
   const keys = GENRE_BADGE_QUERY_KEYS[type];
-  if (mode !== DEFAULT_GENRE_BADGE_MODE) {
-    query.set(keys.mode, mode);
+  const resolvedMode = resolveGenreBadgeModeForStyle(mode, style);
+  const resolvedPosition = resolveGenreBadgePositionForStyle(position, style, resolvedMode);
+  if (resolvedMode !== DEFAULT_GENRE_BADGE_MODE) {
+    query.set(keys.mode, resolvedMode);
   }
   if (style !== DEFAULT_GENRE_BADGE_STYLE) {
     query.set(keys.style, style);
   }
-  if (position !== DEFAULT_GENRE_BADGE_POSITION) {
-    query.set(keys.position, position);
+  if (resolvedPosition !== DEFAULT_GENRE_BADGE_POSITION) {
+    query.set(keys.position, resolvedPosition);
   }
   if (scale !== DEFAULT_BADGE_SCALE_PERCENT) {
     query.set(keys.scale, String(scale));
@@ -172,45 +186,54 @@ const appendGenreBadgeQueryParams = ({
   if (borderWidth !== defaultBorderWidth) {
     query.set(keys.borderWidth, String(borderWidth));
   }
+  if (backgroundOpacity !== DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT) {
+    query.set(keys.backgroundOpacity, String(backgroundOpacity));
+  }
   if (animeGrouping !== DEFAULT_GENRE_BADGE_ANIME_GROUPING) {
     query.set(keys.animeGrouping, animeGrouping);
   }
 };
 
 const buildGenreSamplePreviewUrl = ({
+  allowClientProviderCredentials,
   baseUrl,
   xrdbKey,
   tmdbKey,
+  hasServerTmdbKey,
   sample,
   mode,
   style,
   position,
   scale,
   borderWidth,
+  backgroundOpacity,
   animeGrouping,
 }: {
+  allowClientProviderCredentials: boolean;
   baseUrl: string;
   xrdbKey: string;
   tmdbKey: string;
+  hasServerTmdbKey: boolean;
   sample: (typeof GENRE_BADGE_PREVIEW_SAMPLES)[number];
   mode: GenreBadgeMode;
   style: GenreBadgeStyle;
   position: GenreBadgePosition;
   scale: number;
   borderWidth: number;
+  backgroundOpacity: number;
   animeGrouping: GenreBadgeAnimeGrouping;
 }) => {
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
   const normalizedXrdbKey = xrdbKey.trim();
-  const normalizedTmdbKey = tmdbKey.trim();
-  if (!normalizedBaseUrl || !normalizedTmdbKey) {
+  const normalizedTmdbKey = allowClientProviderCredentials ? tmdbKey.trim() : '';
+  if (!normalizedBaseUrl || (!normalizedTmdbKey && !hasServerTmdbKey)) {
     return '';
   }
 
-  const query = new URLSearchParams({
-    tmdbKey: normalizedTmdbKey,
-    lang: sample.lang,
-  });
+  const query = new URLSearchParams({ lang: sample.lang });
+  if (normalizedTmdbKey) {
+    query.set('tmdbKey', normalizedTmdbKey);
+  }
   if (normalizedXrdbKey) {
     query.set('xrdbKey', normalizedXrdbKey);
   }
@@ -222,6 +245,7 @@ const buildGenreSamplePreviewUrl = ({
     position,
     scale,
     borderWidth,
+    backgroundOpacity,
     animeGrouping,
   });
   for (const [key, value] of Object.entries(sample.params)) {
@@ -232,11 +256,13 @@ const buildGenreSamplePreviewUrl = ({
 };
 
 export function useConfiguratorOutputs({
+  allowClientProviderCredentials,
   activeGenreBadgeAnimeGrouping,
   activeGenreBadgeMode,
   activeGenreBadgePosition,
   activeGenreBadgeScale,
   activeGenreBadgeBorderWidth,
+  activeGenreBadgeBackgroundOpacity,
   activeGenreBadgeStyle,
   activeQualityBadgesMax,
   aggregateAccentBarOffset,
@@ -255,6 +281,7 @@ export function useConfiguratorOutputs({
   backdropGenreBadgePosition,
   backdropGenreBadgeScale,
   backdropGenreBadgeBorderWidth,
+  backdropGenreBadgeBackgroundOpacity,
   backdropGenreBadgeStyle,
   backdropImageSize,
   backdropImageText,
@@ -280,6 +307,7 @@ export function useConfiguratorOutputs({
   thumbnailGenreBadgePosition,
   thumbnailGenreBadgeScale,
   thumbnailGenreBadgeBorderWidth,
+  thumbnailGenreBadgeBackgroundOpacity,
   thumbnailGenreBadgeStyle,
   thumbnailImageText,
   thumbnailQualityBadgePreferences,
@@ -302,6 +330,8 @@ export function useConfiguratorOutputs({
   fanartKey,
   genrePreviewMode,
   hideAiometadataCredentials,
+  hasServerMdblistKey,
+  hasServerTmdbKey,
   isLatestReleaseLoading,
   lang,
   latestReleaseTag,
@@ -312,6 +342,7 @@ export function useConfiguratorOutputs({
   logoGenreBadgePosition,
   logoGenreBadgeScale,
   logoGenreBadgeBorderWidth,
+  logoGenreBadgeBackgroundOpacity,
   logoGenreBadgeStyle,
   logoQualityBadgePreferences,
   logoQualityBadgeScale,
@@ -328,6 +359,8 @@ export function useConfiguratorOutputs({
   pendingReleaseTag,
   posterAggregateRatingSource,
   posterRingProgressSource,
+  posterRingCriticsPriority,
+  posterRingAudiencePriority,
   posterRingValueSource,
   posterArtworkSource,
   posterEdgeOffset,
@@ -335,6 +368,7 @@ export function useConfiguratorOutputs({
   posterGenreBadgePosition,
   posterGenreBadgeScale,
   posterGenreBadgeBorderWidth,
+  posterGenreBadgeBackgroundOpacity,
   posterGenreBadgeStyle,
   posterIdMode,
   posterImageSize,
@@ -393,11 +427,13 @@ export function useConfiguratorOutputs({
   tmdbIdScope,
   tmdbKey,
 }: {
+  allowClientProviderCredentials: boolean;
   activeGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   activeGenreBadgeMode: GenreBadgeMode;
   activeGenreBadgePosition: GenreBadgePosition;
   activeGenreBadgeScale: number;
   activeGenreBadgeBorderWidth: number;
+  activeGenreBadgeBackgroundOpacity: number;
   activeGenreBadgeStyle: GenreBadgeStyle;
   activeQualityBadgesMax: number | null;
   aggregateAccentBarOffset: number;
@@ -416,6 +452,7 @@ export function useConfiguratorOutputs({
   backdropGenreBadgePosition: GenreBadgePosition;
   backdropGenreBadgeScale: number;
   backdropGenreBadgeBorderWidth: number;
+  backdropGenreBadgeBackgroundOpacity: number;
   backdropGenreBadgeStyle: GenreBadgeStyle;
   backdropImageSize: BackdropImageSize;
   backdropImageText: BackdropImageTextPreference;
@@ -441,6 +478,7 @@ export function useConfiguratorOutputs({
   thumbnailGenreBadgePosition: GenreBadgePosition;
   thumbnailGenreBadgeScale: number;
   thumbnailGenreBadgeBorderWidth: number;
+  thumbnailGenreBadgeBackgroundOpacity: number;
   thumbnailGenreBadgeStyle: GenreBadgeStyle;
   thumbnailImageText: BackdropImageTextPreference;
   thumbnailQualityBadgePreferences: string[];
@@ -463,6 +501,8 @@ export function useConfiguratorOutputs({
   fanartKey: string;
   genrePreviewMode: GenreBadgeMode;
   hideAiometadataCredentials: boolean;
+  hasServerMdblistKey: boolean;
+  hasServerTmdbKey: boolean;
   isLatestReleaseLoading: boolean;
   lang: string;
   latestReleaseTag: string;
@@ -473,6 +513,7 @@ export function useConfiguratorOutputs({
   logoGenreBadgePosition: GenreBadgePosition;
   logoGenreBadgeScale: number;
   logoGenreBadgeBorderWidth: number;
+  logoGenreBadgeBackgroundOpacity: number;
   logoGenreBadgeStyle: GenreBadgeStyle;
   logoQualityBadgePreferences: string[];
   logoQualityBadgeScale: number;
@@ -489,6 +530,8 @@ export function useConfiguratorOutputs({
   pendingReleaseTag: string;
   posterAggregateRatingSource: AggregateRatingSource;
   posterRingProgressSource: PosterCompactRingSource;
+  posterRingCriticsPriority: RatingPreference[];
+  posterRingAudiencePriority: RatingPreference[];
   posterRingValueSource: PosterCompactRingSource;
   posterArtworkSource: ArtworkSource;
   posterEdgeOffset: number;
@@ -496,6 +539,7 @@ export function useConfiguratorOutputs({
   posterGenreBadgePosition: GenreBadgePosition;
   posterGenreBadgeScale: number;
   posterGenreBadgeBorderWidth: number;
+  posterGenreBadgeBackgroundOpacity: number;
   posterGenreBadgeStyle: GenreBadgeStyle;
   posterIdMode: 'auto' | 'tmdb' | 'imdb';
   posterImageSize: PosterImageSize;
@@ -560,10 +604,10 @@ export function useConfiguratorOutputs({
 
   const previewUrl = useMemo(() => {
     const normalizedXrdbKey = xrdbKey.trim();
-    const normalizedTmdbKey = tmdbKey.trim();
-    const normalizedFanartKey = fanartKey.trim();
+    const normalizedTmdbKey = allowClientProviderCredentials ? tmdbKey.trim() : '';
+    const normalizedFanartKey = allowClientProviderCredentials ? fanartKey.trim() : '';
     const normalizedMediaId = mediaId.trim();
-    if (!baseUrl || !normalizedTmdbKey || !normalizedMediaId) {
+    if (!baseUrl || (!normalizedTmdbKey && !hasServerTmdbKey) || !normalizedMediaId) {
       return '';
     }
     const thumbnailTarget =
@@ -755,6 +799,7 @@ export function useConfiguratorOutputs({
       position: activeGenreBadgePosition,
       scale: activeGenreBadgeScale,
       borderWidth: activeGenreBadgeBorderWidth,
+      backgroundOpacity: activeGenreBadgeBackgroundOpacity,
       animeGrouping: activeGenreBadgeAnimeGrouping,
     });
     if (ratingPresentationForType !== DEFAULT_RATING_PRESENTATION) {
@@ -790,6 +835,24 @@ export function useConfiguratorOutputs({
       }
       if (posterRingProgressSource !== DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE) {
         query.set('posterRingProgressSource', posterRingProgressSource);
+      }
+      if (
+        stringifyPosterCompactRingPriorityList(posterRingCriticsPriority) !==
+        stringifyPosterCompactRingPriorityList(DEFAULT_POSTER_COMPACT_RING_CRITICS_PRIORITY)
+      ) {
+        query.set(
+          'posterRingCriticsPriority',
+          stringifyPosterCompactRingPriorityList(posterRingCriticsPriority),
+        );
+      }
+      if (
+        stringifyPosterCompactRingPriorityList(posterRingAudiencePriority) !==
+        stringifyPosterCompactRingPriorityList(DEFAULT_POSTER_COMPACT_RING_AUDIENCE_PRIORITY)
+      ) {
+        query.set(
+          'posterRingAudiencePriority',
+          stringifyPosterCompactRingPriorityList(posterRingAudiencePriority),
+        );
       }
     }
     if (aggregateRatingSourceForType !== DEFAULT_AGGREGATE_RATING_SOURCE) {
@@ -939,13 +1002,15 @@ export function useConfiguratorOutputs({
       );
     }
 
-    if (mdblistKey) {
+    if (allowClientProviderCredentials && mdblistKey) {
       query.set('mdblistKey', mdblistKey);
     }
-    if (simklClientId.trim()) {
+    if (allowClientProviderCredentials && simklClientId.trim()) {
       query.set('simklClientId', simklClientId.trim());
     }
-    query.set('tmdbKey', normalizedTmdbKey);
+    if (normalizedTmdbKey) {
+      query.set('tmdbKey', normalizedTmdbKey);
+    }
     if (tmdbIdScope !== 'soft') {
       query.set('tmdbIdScope', tmdbIdScope);
     }
@@ -1138,11 +1203,13 @@ export function useConfiguratorOutputs({
     }
     return `${baseUrl}/${previewType}/${normalizedMediaId}.jpg?${query.toString()}`;
   }, [
+    allowClientProviderCredentials,
     activeGenreBadgeAnimeGrouping,
     activeGenreBadgeMode,
     activeGenreBadgePosition,
     activeGenreBadgeScale,
     activeGenreBadgeBorderWidth,
+    activeGenreBadgeBackgroundOpacity,
     activeGenreBadgeStyle,
     activeQualityBadgesMax,
     aggregateAccentBarOffset,
@@ -1194,6 +1261,7 @@ export function useConfiguratorOutputs({
     baseUrl,
     xrdbKey,
     fanartKey,
+    hasServerTmdbKey,
     lang,
     logoAggregateRatingSource,
     logoArtworkSource,
@@ -1232,6 +1300,8 @@ export function useConfiguratorOutputs({
     posterRatingPreferences,
     posterRatingPresentation,
     posterRingProgressSource,
+    posterRingCriticsPriority,
+    posterRingAudiencePriority,
     posterRingValueSource,
     posterRatingStyle,
     posterRatingsLayout,
@@ -1278,9 +1348,11 @@ export function useConfiguratorOutputs({
       GENRE_BADGE_PREVIEW_SAMPLES.map((sample) => ({
         sample,
         url: buildGenreSamplePreviewUrl({
+          allowClientProviderCredentials,
           baseUrl,
           xrdbKey,
           tmdbKey,
+          hasServerTmdbKey,
           sample,
           mode: genrePreviewMode,
           style:
@@ -1307,6 +1379,12 @@ export function useConfiguratorOutputs({
               : sample.previewType === 'backdrop'
                 ? backdropGenreBadgeBorderWidth
                 : logoGenreBadgeBorderWidth,
+          backgroundOpacity:
+            sample.previewType === 'poster'
+              ? posterGenreBadgeBackgroundOpacity
+              : sample.previewType === 'backdrop'
+                ? backdropGenreBadgeBackgroundOpacity
+                : logoGenreBadgeBackgroundOpacity,
           animeGrouping:
             sample.previewType === 'poster'
               ? posterGenreBadgeAnimeGrouping
@@ -1317,22 +1395,27 @@ export function useConfiguratorOutputs({
       })),
     [
       backdropGenreBadgeAnimeGrouping,
+      allowClientProviderCredentials,
       backdropGenreBadgePosition,
       backdropGenreBadgeScale,
       backdropGenreBadgeBorderWidth,
+      backdropGenreBadgeBackgroundOpacity,
       backdropGenreBadgeStyle,
       baseUrl,
       xrdbKey,
+      hasServerTmdbKey,
       genrePreviewMode,
       logoGenreBadgeAnimeGrouping,
       logoGenreBadgePosition,
       logoGenreBadgeScale,
       logoGenreBadgeBorderWidth,
+      logoGenreBadgeBackgroundOpacity,
       logoGenreBadgeStyle,
       posterGenreBadgeAnimeGrouping,
       posterGenreBadgePosition,
       posterGenreBadgeScale,
       posterGenreBadgeBorderWidth,
+      posterGenreBadgeBackgroundOpacity,
       posterGenreBadgeStyle,
       tmdbKey,
     ],
@@ -1372,7 +1455,7 @@ export function useConfiguratorOutputs({
           setPreviewErrorDetails('Strict TMDB ID scope blocked an ambiguous TMDB ID. Use tmdb:movie:id or tmdb:tv:id, or switch TMDB ID scope to Soft.');
           return;
         }
-        setPreviewErrorDetails('TMDB key is missing. Add your TMDB v3 key in Inputs.');
+        setPreviewErrorDetails('TMDB key is missing. Configure XRDB_TMDB_API_KEY on the server.');
         return;
       }
 
@@ -1416,23 +1499,34 @@ export function useConfiguratorOutputs({
   const currentUiConfig = useMemo(() => buildCurrentUiConfig(), [buildCurrentUiConfig]);
 
   const configString = useMemo(
-    () => buildConfigString(baseUrl, currentUiConfig.settings),
-    [baseUrl, currentUiConfig],
+    () => buildConfigString(baseUrl, currentUiConfig.settings, {
+      allowMissingMdblistKey: hasServerMdblistKey,
+      allowMissingTmdbKey: hasServerTmdbKey,
+      omitProviderCredentials: true,
+    }),
+    [baseUrl, currentUiConfig, hasServerMdblistKey, hasServerTmdbKey],
   );
 
   const aiometadataPatterns = useMemo(
     () =>
       buildAiometadataUrlPatterns(baseUrl, currentUiConfig.settings, {
+        allowMissingMdblistKey: hasServerMdblistKey,
+        allowMissingTmdbKey: hasServerTmdbKey,
         hideCredentials: hideAiometadataCredentials,
+        omitProviderCredentials: true,
         posterIdMode,
         episodeIdMode,
       }),
-    [baseUrl, currentUiConfig, episodeIdMode, hideAiometadataCredentials, posterIdMode],
+    [baseUrl, currentUiConfig, episodeIdMode, hasServerMdblistKey, hasServerTmdbKey, hideAiometadataCredentials, posterIdMode],
   );
 
   const proxyUrl = useMemo(
-    () => buildProxyUrl(baseUrl, currentUiConfig.proxy, currentUiConfig.settings),
-    [baseUrl, currentUiConfig],
+    () => buildProxyUrl(baseUrl, currentUiConfig.proxy, currentUiConfig.settings, {
+      allowMissingMdblistKey: hasServerMdblistKey,
+      allowMissingTmdbKey: hasServerTmdbKey,
+      omitProviderCredentials: true,
+    }),
+    [baseUrl, currentUiConfig, hasServerMdblistKey, hasServerTmdbKey],
   );
   const aiometadataPatternRows = useMemo<AiometadataPatternRow[]>(
     () =>

@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.12.0",
-  "generatedAt": "2026-04-09T03:40:30.068Z",
+  "xrdbTag": "v1.20.1",
+  "generatedAt": "2026-04-16T01:13:33.388Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -20,10 +20,17 @@
         "/addon: Addon proxy workspace and manifest export flow.",
         "/api/config",
         "/api/config/[id]",
+        "/api/config/[id]/migrate",
+        "/api/config/[id]/reveal",
+        "/api/config/[id]/rotate-password",
+        "/api/config/[id]/status",
+        "/api/config/[id]/unlock",
+        "/api/configurator-env-access-keys: Runtime configurator access key defaults endpoint.",
         "/api/discord-widget: Community widget endpoint.",
         "/api/latest-release: Latest release feed used by the site.",
         "/api/media-resolve: Configurator media resolve endpoint.",
         "/api/media-search: Configurator media search endpoint.",
+        "/api/proxy-ref",
         "/docs-capture/mock-addon-manifest.json: Docs capture mock addon manifest endpoint.",
         "/export: Export workspace for generated URLs and patterns.",
         "/preview/[slug]: Fixed preview routes used by docs and live samples.",
@@ -36,11 +43,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
-        "BUG-65 compact ring accent mode ignored and position offset",
-        "add Authelia access control template",
-        "correct site description and OG image for link previews",
-        "BUG-66 scale paddingX proportionally with badge height",
-        "saved config profiles via ?config=<id>"
+        "BUG-100 stabilize saved profile revert and sync diffs",
+        "track poster warm target seed file",
+        "include poster warm targets in docker build context",
+        "expand poster warm sources with TMDB multi endpoint, IMDb baseline, recent ring",
+        "FR-80 FR-55 speed up poster cold loads"
       ]
     },
     {
@@ -57,10 +64,10 @@
     {
       "heading": "Metadata and proxy behavior",
       "lines": [
-        "BYOK is the default runtime model. Provider keys come from configurator state or request URLs.",
+        "Server managed provider keys are the default runtime model. Generated configurator URLs omit provider credentials when server keys exist.",
         "Configured base URLs: TMDB https://api.themoviedb.org/3, anime mapping https://animemapping.stremio.dpdns.org, Kitsu https://kitsu.io/api/edge, OMDb https://www.omdbapi.com.",
         "Optional server side provider support exists for MyAnimeList, Trakt, SIMKL, Fanart, OMDb.",
-        "Proxy manifest requests require url, tmdbKey, and mdblistKey query params.",
+        "Proxy manifest direct query mode requires url plus either server provider keys or tmdbKey and mdblistKey query params.",
         "XRDB request keys can be supplied through xrdbKey, xrdb_key, x-xrdb-key, x-api-key, Authorization Bearer.",
         "Proxy CORS allowlists are controlled by XRDB_PROXY_ALLOWED_ORIGINS."
       ]

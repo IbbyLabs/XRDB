@@ -18,6 +18,7 @@ import { prepareImageRouteMediaState } from './imageRoutePreparedMedia.ts';
 import { resolveImageRouteDisplayState } from './imageRouteDisplayState.ts';
 import { resolveImageRouteRenderLayout } from './imageRouteRenderLayout.ts';
 import { renderWithSharp } from './imageRouteRenderer.ts';
+import { createSharpFactoryLoader } from './imageRouteSharp.ts';
 import {
   TMDB_CACHE_TTL_MS,
   TORRENTIO_CACHE_TTL_MS,
@@ -32,6 +33,10 @@ import {
 } from './imageRouteRuntime.ts';
 import type { RatingPreference } from './ratingProviderCatalog.ts';
 import type { ImageRouteRequestState } from './imageRouteRequestState.ts';
+import { buildMigrationWarningOverlaySvg } from './migrationWarningOverlay.ts';
+import { logger } from './serverLogger.ts';
+
+const getSharpFactory = createSharpFactoryLoader();
 
 type RouteFetchJson = (
   key: string,
@@ -134,7 +139,7 @@ export const executeImageRouteRender = async ({
         outputFormatToExtension(requestState.outputFormat as OutputFormat),
       );
 
-      if (requestState.shouldCacheFinalImage && objectStorageEnabled) {
+      if (requestState.shouldCacheFinalImage && objectStorageEnabled && !requestState.configMigrationDeadline) {
         const cachedFinalImage = await getCachedImageFromObjectStorage(finalObjectStorageKey);
         if (cachedFinalImage) {
           objectStorageHit = true;
@@ -166,6 +171,7 @@ export const executeImageRouteRender = async ({
         hasConfirmedAnimeMapping,
         shouldApplyRatings: requestState.shouldApplyRatings,
         shouldApplyStreamBadges: requestState.shouldApplyStreamBadges,
+        shouldBlockOnStreamBadges: requestState.shouldBlockOnStreamBadges,
         shouldRenderLogoBackground: requestState.shouldRenderLogoBackground,
         genreBadgeMode: requestState.genreBadgeMode,
         genreBadgeStyle: requestState.genreBadgeStyle,
@@ -173,6 +179,7 @@ export const executeImageRouteRender = async ({
         genreBadgeScale: requestState.genreBadgeScale,
         effectiveGenreBadgeScale: requestState.effectiveGenreBadgeScale,
         genreBadgeBorderWidth: requestState.genreBadgeBorderWidth,
+        genreBadgeBackgroundOpacity: requestState.genreBadgeBackgroundOpacity,
         noBackgroundBadgeOutlineColor: requestState.posterNoBackgroundBadgeOutlineColor,
         noBackgroundBadgeOutlineWidth: requestState.posterNoBackgroundBadgeOutlineWidth,
         genreBadgeAnimeGrouping: requestState.genreBadgeAnimeGrouping,
@@ -221,6 +228,7 @@ export const executeImageRouteRender = async ({
         certificationBadgeLabel,
         streamBadges: preparedStreamBadges,
         streamBadgesCacheTtlMs,
+        streamBadgesDeferred,
         posterTitleText,
         posterLogoUrl,
         shouldRenderBadges,
@@ -261,6 +269,8 @@ export const executeImageRouteRender = async ({
         aggregateAccentBarVisible: requestState.aggregateAccentBarVisible,
         posterRingValueSource: requestState.posterRingValueSource,
         posterRingProgressSource: requestState.posterRingProgressSource,
+        posterRingCriticsPriority: requestState.posterRingCriticsPriority,
+        posterRingAudiencePriority: requestState.posterRingAudiencePriority,
         posterRatingsLayout: requestState.posterRatingsLayout,
         posterRatingsMaxPerSide: requestState.posterRatingsMaxPerSide,
         backdropRatingsLayout: requestState.backdropRatingsLayout,
@@ -319,7 +329,8 @@ export const executeImageRouteRender = async ({
         !posterTitleText &&
         !posterLogoUrl &&
         !editorialOverlay &&
-        !compactRingOverlay
+        !compactRingOverlay &&
+        !requestState.configMigrationDeadline
       ) {
         return getSourceImagePayload(imgUrl);
       }
@@ -437,14 +448,36 @@ export const executeImageRouteRender = async ({
         phases,
       );
 
-      if (requestState.shouldCacheFinalImage) {
+      let finalPayload = renderedPayload;
+      if (requestState.configMigrationDeadline) {
         try {
-          await putCachedImageToObjectStorage(finalObjectStorageKey, renderedPayload);
+          const sharpFactory = await getSharpFactory();
+          const overlay = buildMigrationWarningOverlaySvg({
+            deadline: requestState.configMigrationDeadline,
+            outputWidth: renderLayout.finalOutputWidth,
+            outputHeight: renderLayout.finalOutputHeight,
+          });
+          const composited = await sharpFactory(Buffer.from(renderedPayload.body))
+            .composite([{ input: Buffer.from(overlay.svg), top: overlay.top, left: overlay.left }])
+            .toBuffer({ resolveWithObject: true });
+          finalPayload = {
+            body: composited.data,
+            contentType: renderedPayload.contentType,
+            cacheControl: renderedPayload.cacheControl,
+          };
+        } catch (err) {
+          logger.error('[xrdb] migration overlay composite failed:', err);
+        }
+      }
+
+      if (requestState.shouldCacheFinalImage && !requestState.configMigrationDeadline && !streamBadgesDeferred) {
+        try {
+          await putCachedImageToObjectStorage(finalObjectStorageKey, finalPayload);
         } catch {
         }
       }
 
-      return renderedPayload;
+      return finalPayload;
     },
   );
 

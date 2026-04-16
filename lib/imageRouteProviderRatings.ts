@@ -301,7 +301,7 @@ export const resolveImageRouteProviderRatings = async (
         mediaType: input.resolvedRatingMediaType,
         releaseDate: input.releaseDate,
       });
-      const mdbRatings = await runtimeDeps.fetchMdbListRatings({
+      let mdbRatings = await runtimeDeps.fetchMdbListRatings({
         imdbId: resolvedImdbIdForMdbList,
         cacheTtlMs: mdbListCacheTtlMs,
         phases: input.phases,
@@ -311,6 +311,18 @@ export const resolveImageRouteProviderRatings = async (
         manualApiKey: input.mdblistKey,
         fetchJsonCached: input.fetchJsonCached,
       });
+      if (!mdbRatings && input.mdblistKey && input.hasMdbListApiKey) {
+        mdbRatings = await runtimeDeps.fetchMdbListRatings({
+          imdbId: resolvedImdbIdForMdbList,
+          cacheTtlMs: mdbListCacheTtlMs,
+          phases: input.phases,
+          requestSource: 'addon',
+          imageType: input.imageType,
+          cleanId: input.cleanId,
+          manualApiKey: null,
+          fetchJsonCached: input.fetchJsonCached,
+        });
+      }
       if (mdbRatings) {
         for (const [provider, value] of mdbRatings.entries()) {
           if (!allowAnimeOnlyRatings && ANIME_ONLY_RATING_PROVIDER_SET.has(provider)) {

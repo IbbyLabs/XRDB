@@ -8,7 +8,7 @@ XRDB, eXtended Ratings DataBase, generates poster, backdrop, thumbnail, and logo
 <!-- changelog-links:start -->
 
 > [!TIP]
-> **Changelog:** read the [full changelog](CHANGELOG.md) or jump straight to the [latest entry](CHANGELOG.md#v1-12-0).
+> **Changelog:** read the [full changelog](CHANGELOG.md) or jump straight to the [latest entry](CHANGELOG.md#v1-20-1).
 
 <!-- changelog-links:end -->
 
@@ -18,7 +18,7 @@ Current priorities for XRDB, eXtended Ratings DataBase:
 
 1. Better quality badges from more providers, not only one source.
 2. Smarter fallback so images still load when one provider is slow or down.
-3. UUID account saves with password login so settings can be restored on any device.
+3. UUID saved profiles with password protected restore so settings can be reopened on any device.
 4. Cache warming for startup and background updates so popular content is ready faster.
 5. Poster cache warming controls to reduce first load delay.
 6. More control for output sizes for poster backdrop and logo.
@@ -49,20 +49,19 @@ Doc refresh and release scripts now run an automatic native dependency preflight
 3. Start the app: `npm run start`
 4. App available at `http://localhost:3000`
 
-## Stateless Architecture & API Keys (BYOK)
+## Server Managed API Keys
 
-XRDB is designed with a **Bring Your Own Key (BYOK)** stateless architecture.
-This means that the XRDB server itself does not permanently store or centrally manage your TMDB, MDBList, or optional Fanart API keys. Instead:
+XRDB uses server side provider keys by default. Configure TMDB and MDBList on the server, then use the configurator without pasting provider credentials into the browser:
 
-1. Keys are saved locally in your browser's `localStorage` when using the configurator UI.
-2. Keys are embedded directly into your generated URLs (`tmdbKey=...&mdblistKey=...&fanartKey=...`) and Addon proxy Base64 configurations when present.
-3. The server solely reads these keys from incoming requests to fetch source addon metadata on the fly.
+1. Provider keys stay in server environment variables.
+2. Generated image URLs, config strings, and addon proxy references omit provider credentials when the server key exists.
+3. The server falls back to those configured keys whenever `tmdbKey`, `mdblistKey`, `fanartKey`, or `simklClientId` is not present on an incoming request.
 
-This intentional design allows you to host public XRDB proxy instances without paying for massive shared API usage, as every connected addon or user brings their own API key and rate limits. The visibility of keys in URLs and the configurator UI is expected behavior.
+This keeps setup simple for shared hosts and avoids exposing provider keys in the UI or copied URLs. Request protection still uses the separate optional XRDB request key.
 
-The configurator includes an AIOMetadata export section that generates ready to use URL patterns for custom art override fields in AIOMetadata compatible addons. The `Hide credentials` toggle masks exported AIOMetadata patterns with placeholders without changing live XRDB request URLs. The `Poster ID source` selector controls whether poster URLs use auto mode (typed TMDB IDs for the broadest coverage), explicit TMDB, or IMDb IDs for compatibility. Background and logo patterns always use type aware TMDB IDs, and episode thumbnails use the selected episode ID mode with season and episode placeholders plus their own thumbnail scoped ratings, artwork, text, and layout settings.
+The configurator includes an Import/Export view built around password protected UUID saved profiles. Save a profile once, use Open saved profile on another device, or paste a `?config=<uuid>` link back into the configurator to reopen that same server stored setup. When a protected profile is active, AIOMetadata exports default to lean UUID backed links while inline parameter URLs remain available as an advanced fallback. The `Hide credentials` toggle masks displayed AIOMetadata patterns with placeholders without changing live XRDB request URLs. The `Poster ID source` selector controls whether poster URLs use auto mode (typed TMDB IDs for the broadest coverage), explicit TMDB, or IMDb IDs for compatibility. Background and logo patterns always use type aware TMDB IDs, and episode thumbnails use the selected episode ID mode with season and episode placeholders plus their own thumbnail scoped ratings, artwork, text, and layout settings.
 
-Optional server side client ids can extend a few providers beyond the BYOK flow. `XRDB_MAL_CLIENT_ID` enables the official MyAnimeList API path for direct `myanimelist` ratings, `XRDB_TRAKT_CLIENT_ID` enables direct `trakt` ratings, and `SIMKL_CLIENT_ID` (or `XRDB_SIMKL_CLIENT_ID`) enables direct `simkl` ratings server wide. A user supplied `simklClientId` query parameter takes precedence over the server key for SIMKL. When the MAL client id is not configured, XRDB falls back to Jikan for direct `myanimelist` lookups before falling back to MDBList whenever a `mdblistKey` is present. Fanart backed artwork can also use a server fallback key from `XRDB_FANART_API_KEY` or `FANART_API_KEY`, but a user supplied `fanartKey` is preferred when available. OMDb poster lookups use the server side `OMDB_KEY` by default and also accept `OMDB_API_KEY` or `XRDB_OMDB_API_KEY`.
+Server side client ids can extend a few providers. `XRDB_MAL_CLIENT_ID` enables the official MyAnimeList API path for direct `myanimelist` ratings, `XRDB_TRAKT_CLIENT_ID` enables direct `trakt` ratings, and `SIMKL_CLIENT_ID` (or `XRDB_SIMKL_CLIENT_ID`) enables direct `simkl` ratings server wide. When the MAL client id is not configured, XRDB falls back to Jikan for direct `myanimelist` lookups before falling back to MDBList whenever an MDBList key is available. Fanart backed artwork can use `XRDB_FANART_API_KEY` or `FANART_API_KEY`. OMDb poster lookups use the server side `OMDB_KEY` by default and also accept `OMDB_API_KEY` or `XRDB_OMDB_API_KEY`.
 
 For `simkl`, XRDB resolves a Simkl item id using `https://api.simkl.com/redirect` and then loads the summary from `https://api.simkl.com/movies/{id}`, `https://api.simkl.com/tv/{id}`, or `https://api.simkl.com/anime/{id}` based on media type hints. Every Simkl request includes `client_id`, `app-name`, and `app-version` query parameters, plus `simkl-api-key` and a browser style `User-Agent` header.
 
@@ -84,10 +83,10 @@ The doc refresh and release workflows rotate through a curated, varied set of pr
     <td><strong>Game of Thrones</strong><br>Plain ratings, TMDB / IMDb / Trakt / Metacritic, split side layout, detached age rating</td>
   </tr>
   <tr>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v1-12-0"><img src="https://xrdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v1-12-0" alt="Attack on Titan poster live preview" width="220"></a></td>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v1-12-0"><img src="https://xrdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v1-12-0" alt="Dune Part Two poster live preview" width="220"></a></td>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/stranger-things-poster?cb=readme-preview-stranger-things-poster-v1-12-0"><img src="https://xrdb.ibbylabs.dev/preview/stranger-things-poster?cb=readme-preview-stranger-things-poster-v1-12-0" alt="Stranger Things poster live preview" width="220"></a></td>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/game-of-thrones-poster?cb=readme-preview-game-of-thrones-poster-v1-12-0"><img src="https://xrdb.ibbylabs.dev/preview/game-of-thrones-poster?cb=readme-preview-game-of-thrones-poster-v1-12-0" alt="Game of Thrones poster live preview" width="220"></a></td>
+    <td><a href="https://xrdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v1-20-1"><img src="https://xrdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v1-20-1" alt="Attack on Titan poster live preview" width="220"></a></td>
+    <td><a href="https://xrdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v1-20-1"><img src="https://xrdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v1-20-1" alt="Dune Part Two poster live preview" width="220"></a></td>
+    <td><a href="https://xrdb.ibbylabs.dev/preview/stranger-things-poster?cb=readme-preview-stranger-things-poster-v1-20-1"><img src="https://xrdb.ibbylabs.dev/preview/stranger-things-poster?cb=readme-preview-stranger-things-poster-v1-20-1" alt="Stranger Things poster live preview" width="220"></a></td>
+    <td><a href="https://xrdb.ibbylabs.dev/preview/game-of-thrones-poster?cb=readme-preview-game-of-thrones-poster-v1-20-1"><img src="https://xrdb.ibbylabs.dev/preview/game-of-thrones-poster?cb=readme-preview-game-of-thrones-poster-v1-20-1" alt="Game of Thrones poster live preview" width="220"></a></td>
   </tr>
 </table>
 
@@ -100,9 +99,9 @@ The doc refresh and release workflows rotate through a curated, varied set of pr
     <td><strong>Stranger Things</strong><br>Square ratings, TMDB / Rotten Tomatoes / Metacritic / Letterboxd, stream badges, right side stack</td>
   </tr>
   <tr>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/attack-on-titan-backdrop?cb=readme-preview-attack-on-titan-backdrop-v1-12-0"><img src="https://xrdb.ibbylabs.dev/preview/attack-on-titan-backdrop?cb=readme-preview-attack-on-titan-backdrop-v1-12-0" alt="Attack on Titan backdrop live preview" width="320"></a></td>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/the-boys-backdrop?cb=readme-preview-the-boys-backdrop-v1-12-0"><img src="https://xrdb.ibbylabs.dev/preview/the-boys-backdrop?cb=readme-preview-the-boys-backdrop-v1-12-0" alt="The Boys backdrop live preview" width="320"></a></td>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v1-12-0"><img src="https://xrdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v1-12-0" alt="Stranger Things backdrop live preview" width="320"></a></td>
+    <td><a href="https://xrdb.ibbylabs.dev/preview/attack-on-titan-backdrop?cb=readme-preview-attack-on-titan-backdrop-v1-20-1"><img src="https://xrdb.ibbylabs.dev/preview/attack-on-titan-backdrop?cb=readme-preview-attack-on-titan-backdrop-v1-20-1" alt="Attack on Titan backdrop live preview" width="320"></a></td>
+    <td><a href="https://xrdb.ibbylabs.dev/preview/the-boys-backdrop?cb=readme-preview-the-boys-backdrop-v1-20-1"><img src="https://xrdb.ibbylabs.dev/preview/the-boys-backdrop?cb=readme-preview-the-boys-backdrop-v1-20-1" alt="The Boys backdrop live preview" width="320"></a></td>
+    <td><a href="https://xrdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v1-20-1"><img src="https://xrdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v1-20-1" alt="Stranger Things backdrop live preview" width="320"></a></td>
   </tr>
 </table>
 
@@ -115,9 +114,9 @@ The doc refresh and release workflows rotate through a curated, varied set of pr
     <td><strong>Game of Thrones</strong><br>French text, plain ratings, TMDB / IMDb / Trakt / Metacritic, transparent canvas</td>
   </tr>
   <tr>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/dune-part-two-logo?cb=readme-preview-dune-part-two-logo-v1-12-0"><img src="https://xrdb.ibbylabs.dev/preview/dune-part-two-logo?cb=readme-preview-dune-part-two-logo-v1-12-0" alt="Dune Part Two logo live preview" width="320"></a></td>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v1-12-0"><img src="https://xrdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v1-12-0" alt="Attack on Titan logo live preview" width="320"></a></td>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v1-12-0"><img src="https://xrdb.ibbylabs.dev/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v1-12-0" alt="Game of Thrones logo live preview" width="320"></a></td>
+    <td><a href="https://xrdb.ibbylabs.dev/preview/dune-part-two-logo?cb=readme-preview-dune-part-two-logo-v1-20-1"><img src="https://xrdb.ibbylabs.dev/preview/dune-part-two-logo?cb=readme-preview-dune-part-two-logo-v1-20-1" alt="Dune Part Two logo live preview" width="320"></a></td>
+    <td><a href="https://xrdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v1-20-1"><img src="https://xrdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v1-20-1" alt="Attack on Titan logo live preview" width="320"></a></td>
+    <td><a href="https://xrdb.ibbylabs.dev/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v1-20-1"><img src="https://xrdb.ibbylabs.dev/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v1-20-1" alt="Game of Thrones logo live preview" width="320"></a></td>
   </tr>
 </table>
 ## Rendering Option Comparisons
@@ -180,6 +179,8 @@ Release flow:
 
 ```bash
 npm run release:patch
+npm run release:minor
+npm run release:major
 ```
 
 The release flow also bumps `FINAL_IMAGE_RENDERER_CACHE_VERSION` automatically so each new release invalidates stale final image renders on first request.
@@ -329,6 +330,8 @@ Response format note:
 
 Episode thumbnails use the dedicated `/thumbnail/{id}/S{season}E{episode}.jpg` route. They keep their own thumbnail scoped controls for ratings, style, presentation, artwork source, episode artwork mode, image text, layout, badge sizing, quality badges, and side stack placement. Rating badge scale stays type scoped across poster, backdrop, thumbnail, and logo outputs, and every artwork type now supports the same `70-200` range. `thumbnailRatings` defaults to `tmdb,imdb`.
 
+The configurator preview type row now includes a sync control beside each type. You can sync the active type to one target, sync to all targets, or pull settings from another type before applying the diff. Sync keeps type safety intact: poster only presentations such as `ring`, `editorial`, and `blockbuster` are coerced to `standard` on backdrop, thumbnail, and logo targets, thumbnail sync keeps only episode safe rating providers, and logo sync does not carry stream badges.
+
 ### Supported Query Parameters
 
 | Parameter | Description | Supported Values | Default |
@@ -336,16 +339,16 @@ Episode thumbnails use the dedicated `/thumbnail/{id}/S{season}E{episode}.jpg` r
 | `type` | Image type (Path) | `poster`, `backdrop`, `logo` (`thumbnail` uses its own route) | - |
 | `id` | Media ID (Path) | IMDb (`tt...`), TMDB (`tmdb:id`, `tmdb:movie:id`, `tmdb:tv:id`), Kitsu (`kitsu:id`), anime IDs such as `anilist:123`, `mal:456`, `tvdb:12345`, or `anidb:6789` | - |
 | `tmdbIdScope` | TMDB ID collision handling mode | `soft`, `strict` | `soft` |
-| `config` | Saved config profile ID. Loads server stored params as base defaults; explicit URL params take precedence. Generate a profile ID from the Export view in the configurator. | String (e.g. `xr_a1b2c3d4`) | - |
+| `config` | Saved config profile ID. Loads encrypted server stored params as base defaults; explicit URL params take precedence. Create or reopen password protected UUID profiles from the Import/Export view in the configurator. | String (e.g. `550e8400-e29b-41d4-a716-446655440000`) | - |
 | `lang` | Image language | Any TMDB ISO 639-1 code (e.g. `it`, `en`, `es`, `fr`, `de`, `ru`, `ja`) | `en` |
 | `genreBadge` | Genre badge mode (global fallback) | `off`, `text`, `icon`, `both` | `off` |
 | `posterGenreBadge` | Poster genre badge mode | `off`, `text`, `icon`, `both` | `off` |
 | `backdropGenreBadge` | Backdrop genre badge mode | `off`, `text`, `icon`, `both` | `off` |
 | `logoGenreBadge` | Logo genre badge mode | `off`, `text`, `icon`, `both` | `off` |
-| `genreBadgeStyle` | Genre badge style (global fallback) | `glass`, `square`, `plain` | `glass` |
-| `posterGenreBadgeStyle` | Poster genre badge style | `glass`, `square`, `plain` | `glass` |
-| `backdropGenreBadgeStyle` | Backdrop genre badge style | `glass`, `square`, `plain` | `glass` |
-| `logoGenreBadgeStyle` | Logo genre badge style | `glass`, `square`, `plain` | `glass` |
+| `genreBadgeStyle` | Genre badge style (global fallback) | `glass`, `square`, `plain`, `clean` | `glass` |
+| `posterGenreBadgeStyle` | Poster genre badge style | `glass`, `square`, `plain`, `clean` | `glass` |
+| `backdropGenreBadgeStyle` | Backdrop genre badge style | `glass`, `square`, `plain`, `clean` | `glass` |
+| `logoGenreBadgeStyle` | Logo genre badge style | `glass`, `square`, `plain`, `clean` | `glass` |
 | `genreBadgePosition` | Genre badge anchor (global fallback) | `topLeft`, `topCenter`, `topRight`, `bottomLeft`, `bottomCenter`, `bottomRight` | `topLeft` |
 | `posterGenreBadgePosition` | Poster genre badge anchor | `topLeft`, `topCenter`, `topRight`, `bottomLeft`, `bottomCenter`, `bottomRight` | `topLeft` |
 | `backdropGenreBadgePosition` | Backdrop genre badge anchor | `topLeft`, `topCenter`, `topRight`, `bottomLeft`, `bottomCenter`, `bottomRight` | `topLeft` |
@@ -354,8 +357,20 @@ Episode thumbnails use the dedicated `/thumbnail/{id}/S{season}E{episode}.jpg` r
 | `posterGenreBadgeScale` | Poster genre badge scale | Number (`70-200`) | `100` |
 | `backdropGenreBadgeScale` | Backdrop genre badge scale | Number (`70-200`) | `100` |
 | `logoGenreBadgeScale` | Logo genre badge scale | Number (`70-200`) | `100` |
+| `genreBadgeBorderWidth` | Genre badge accent stroke width for `glass` style (global fallback). `0` disables the stroke. | Number (`0-10`) | `1.4` |
+| `posterGenreBadgeBorderWidth` | Poster genre badge border width | Number (`0-10`) | `1.4` |
+| `backdropGenreBadgeBorderWidth` | Backdrop genre badge border width | Number (`0-10`) | `1.5` |
+| `thumbnailGenreBadgeBorderWidth` | Thumbnail genre badge border width | Number (`0-10`) | `1.5` |
+| `logoGenreBadgeBorderWidth` | Logo genre badge border width | Number (`0-10`) | `1.4` |
+| `genreBadgeBackgroundOpacity` | Clean style genre badge background opacity (global fallback). `0` is transparent and `100` is fully opaque. | Number (`0-100`) | `28` |
+| `posterGenreBadgeBackgroundOpacity` | Poster clean style genre badge background opacity | Number (`0-100`) | `28` |
+| `backdropGenreBadgeBackgroundOpacity` | Backdrop clean style genre badge background opacity | Number (`0-100`) | `28` |
+| `thumbnailGenreBadgeBackgroundOpacity` | Thumbnail clean style genre badge background opacity | Number (`0-100`) | `28` |
+| `logoGenreBadgeBackgroundOpacity` | Logo clean style genre badge background opacity | Number (`0-100`) | `28` |
+| `posterNoBackgroundBadgeOutlineColor` | Text stroke colour for `plain` style genre badge on poster | Hex colour (e.g. `#000000`) | `#000000` |
+| `posterNoBackgroundBadgeOutlineWidth` | Text stroke width for `plain` style genre badge on poster. `0` disables the stroke. | Number (`0-10`) | `0` |
 | `streamBadges` | Quality badges via Torrentio (global fallback) | `auto`, `on`, `off` | `auto` |
-| `posterStreamBadges` | Poster quality badges | `auto`, `on`, `off` | `auto` |
+| `posterStreamBadges` | Poster quality badges. `auto` warms in the background and does not block cold poster renders. | `auto`, `on`, `off` | `off` |
 | `backdropStreamBadges` | Backdrop quality badges | `auto`, `on`, `off` | `auto` |
 | `qualityBadgesSide` | Quality badges side (poster `top bottom` layout only) | `left`, `right` | `left` |
 | `posterQualityBadgesPosition` | Quality badges side for poster `top` or `bottom` layouts | `auto`, `left`, `right` | `auto` |
@@ -373,8 +388,12 @@ Episode thumbnails use the dedicated `/thumbnail/{id}/S{season}E{episode}.jpg` r
 | `logoQualityBadgeScale` | Logo quality badge scale | Number (`70-200`) | `100` |
 | `posterQualityBadgesMax` | Poster quality badge limit | Number (1-20) | `auto` |
 | `backdropQualityBadgesMax` | Backdrop quality badge limit | Number (1-20) | `auto` |
-| `ratingPresentation` | Rating presentation mode (global fallback) | `standard`, `minimal`, `average`, `dual`, `blockbuster`, `none` | `standard` |
+| `ratingPresentation` | Rating presentation mode (global fallback). `none` disables rating badges, aggregate overlays, provider overlays, and stream badges. | `standard`, `minimal`, `average`, `dual`, `dual-minimal`, `editorial`, `ring`, `blockbuster`, `none` | `standard` |
 | `aggregateRatingSource` | Aggregate source for `minimal` and `average` (global fallback) | `overall`, `critics`, `audience` | `overall` |
+| `posterRingValueSource` | Center score source for poster Compact Ring | `overall`, `critics`, `audience`, `priority-critics`, `priority-audience`, `highest`, or any rating provider | `highest` |
+| `posterRingProgressSource` | Progress stroke source for poster Compact Ring | `overall`, `critics`, `audience`, `priority-critics`, `priority-audience`, `highest`, or any rating provider | `tmdb` |
+| `posterRingCriticsPriority` | Critics lane Compact Ring priority order | Comma separated rating providers, up to 3 | `tomatoes,metacritic,imdb` |
+| `posterRingAudiencePriority` | Audience lane Compact Ring priority order | Comma separated rating providers, up to 3 | `tomatoesaudience,imdb,tmdb` |
 | `aggregateAccentMode` | Aggregate accent source — also controls Compact Ring stroke color | `source`, `genre`, `custom`, `dynamic` | `source` |
 | `aggregateAccentColor` | Aggregate accent color when `aggregateAccentMode=custom` | Hex color | `#a78bfa` |
 | `aggregateAccentBarOffset` | Average badge accent bar offset | Number (-12 to 12) | `0` |
@@ -392,10 +411,10 @@ Episode thumbnails use the dedicated `/thumbnail/{id}/S{season}E{episode}.jpg` r
 | `logoRatings` | Logo rating providers | `tmdb, mdblist, imdb, allocine, allocinepress, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist, anilist, kitsu` | `all` |
 | `ratingValueMode` | Rating display scaling | `native`, `normalized`, `normalized100` | `native` |
 | `ratingStyle` (or `posterRatingStyle` / `backdropRatingStyle` / `thumbnailRatingStyle` / `logoRatingStyle`, or `style` legacy) | Badge style | `glass` (Pill), `square` (Dark), `plain` (No BG), `stacked` | `glass` (poster/backdrop/thumbnail), `plain` (logo) |
-| `tmdbKey` | TMDB v3 API Key (Stateless) | String (e.g. `your_key`) | **Required** |
-| `mdblistKey` | MDBList API Key (Stateless) | String (e.g. `your_key`) | Required for MDBList backed ratings |
-| `fanartKey` | Fanart API Key for fanart poster, backdrop, and logo sources | String (e.g. `your_key`) | Server fallback when available |
-| `simklClientId` | SIMKL client id for direct SIMKL ratings | String (e.g. `your_client_id`) | None |
+| `tmdbKey` | Optional TMDB v3 API key override | String | Server `XRDB_TMDB_API_KEY` |
+| `mdblistKey` | Optional MDBList API key override | String | Server `MDBLIST_API_KEY` / `MDBLIST_API_KEYS` |
+| `fanartKey` | Optional Fanart API key override for fanart poster, backdrop, and logo sources | String | Server `XRDB_FANART_API_KEY` |
+| `simklClientId` | Optional SIMKL client id override for direct SIMKL ratings | String | Server `SIMKL_CLIENT_ID` |
 | `imageText` | Image text (global fallback for poster/backdrop/thumbnail) | `original`, `clean`, `textless`, `alternative`, `random` | `original` (poster), `clean` (backdrop/thumbnail) |
 | `posterArtworkSource` | Poster artwork source | `tmdb`, `fanart`, `cinemeta`, `omdb`, `random`, `blackbar` | `tmdb` |
 | `backdropArtworkSource` | Backdrop artwork source | `tmdb`, `fanart`, `cinemeta`, `random`, `blackbar` | `tmdb` |
@@ -426,7 +445,7 @@ In the configurator UI, `minimal` is labeled as `Compact Average`, `average` is 
 
 RPDB compatibility aliases are accepted where they map cleanly in XRDB: `order`/`ratingOrder` (rating provider order), `ratingBarPos` (mapped to poster/backdrop layout + side position), `fontScale` (mapped to rating badge scale), `imageSize=verylarge` (mapped to `posterImageSize=4k`), and `textless`/`posterType=textless-*` (mapped to clean poster text mode).
 
-`myanimelist` and `trakt` can render directly when the server has `XRDB_MAL_CLIENT_ID` or `XRDB_TRAKT_CLIENT_ID`. Without the MAL client id, XRDB falls back to Jikan for direct `myanimelist` ratings. When direct lookups are unavailable, XRDB still falls back to MDBList when `mdblistKey` is present.
+`myanimelist` and `trakt` can render directly when the server has `XRDB_MAL_CLIENT_ID` or `XRDB_TRAKT_CLIENT_ID`. Without the MAL client id, XRDB falls back to Jikan for direct `myanimelist` ratings. When direct lookups are unavailable, XRDB still falls back to MDBList when an MDBList key is available.
 
 `allocine` and `allocinepress` add AlloCiné audience and press scores for movie and series titles. They render on the native `/5` scale by default and still respect `ratingValueMode` normalization when you want everything shown on a shared `/10` or `/100` scale.
 
@@ -436,7 +455,7 @@ Transparent provider icons stay transparent across `glass`, `square`, and `plain
 
 Genre badges resolve from a curated family set that covers every TMDB genre. Strong buckets such as horror, comedy, drama, sci fi, fantasy, crime, documentary, animation, and anime render with dedicated icons. Music, reality, family, history, kids, news, soap, talk, TV movie, and war also have their own badge families. When a title mixes drama with a stronger supported family, XRDB still prefers the more specific bucket. Any genre that does not match a dedicated family falls back to a neutral badge so nothing is missing.
 
-`fanartKey` is optional. If present, XRDB uses your key first for fanart requests. If it is blank, XRDB falls back to `XRDB_FANART_API_KEY` or `FANART_API_KEY` when the server has one.
+`fanartKey` is optional. XRDB falls back to `XRDB_FANART_API_KEY` or `FANART_API_KEY` when the request does not include one.
 
 Poster sources support `tmdb`, `fanart`, `cinemeta`, `omdb`, `random`, and `blackbar`. `posterArtworkSource=fanart` uses fanart.tv poster art for `original`, `clean`, `textless`, and `alternative`. `clean` and `textless` prefer Fanart posters whose normalized language metadata resolves to textless, then fall back to the normal ranked Fanart order when no textless poster exists. `posterArtworkSource=cinemeta` uses the MetaHub Cinemeta poster when an IMDb id is available, but XRDB skips it whenever the active poster text mode requires textless art. `posterArtworkSource=omdb` uses the OMDb poster when a server OMDb key and IMDb id are available, and it is skipped under the same textless requirement. `posterArtworkSource=random` picks a seeded source across TMDB, fanart, Cinemeta, and OMDb when those candidates exist, and drops unsupported providers whenever `clean`, `textless`, or the random poster text filter requires textless artwork. `posterArtworkSource=blackbar` is a presentation effect: the normal TMDB poster is still fetched as the background, and rating badges are rendered on a solid black strip flush with the image edge. In the configurator UI, black bar is exposed as a toggle in the Presentation section rather than an artwork source option.
 
@@ -470,9 +489,10 @@ To integrate XRDB into your addon:
 2. **Addon UI**: show ONLY the toggles to enable/disable `poster`, `backdrop`, `thumbnail`, `logo`. No modal and no extra settings panels.
 3. **Fallback**: if a type is disabled, keep the original artwork (do not call XRDB for that type).
 4. **Decode**: decode `xrdbConfig` (base64url -> JSON) once and reuse it.
-5. **URL build**: use `{baseUrl}/{type}/{id}.jpg` for poster, backdrop, and logo, and use `{baseUrl}/thumbnail/{episodeBaseId}/S{season}E{episode}.jpg` for episode thumbnails. Add `tmdbKey` and `mdblistKey`, then pass through any optional XRDB fields present in `cfg` such as `fanartKey`, `ratings`, `posterRatings`, `backdropRatings`, `thumbnailRatings`, `logoRatings`, `lang`, `ratingValueMode`, `genreBadge`, `genreBadgeStyle`, `genreBadgePosition`, `genreBadgeScale`, `posterGenreBadge`, `backdropGenreBadge`, `thumbnailGenreBadge`, `logoGenreBadge`, `posterGenreBadgeStyle`, `backdropGenreBadgeStyle`, `thumbnailGenreBadgeStyle`, `logoGenreBadgeStyle`, `posterGenreBadgePosition`, `backdropGenreBadgePosition`, `thumbnailGenreBadgePosition`, `logoGenreBadgePosition`, `posterGenreBadgeScale`, `backdropGenreBadgeScale`, `thumbnailGenreBadgeScale`, `logoGenreBadgeScale`, `streamBadges`, `posterStreamBadges`, `backdropStreamBadges`, `thumbnailStreamBadges`, `qualityBadgesSide`, `posterQualityBadgesPosition`, `qualityBadgesStyle`, `posterQualityBadgesStyle`, `backdropQualityBadgesStyle`, `thumbnailQualityBadgesStyle`, `posterQualityBadgesMax`, `backdropQualityBadgesMax`, `thumbnailQualityBadgesMax`, `ratingPresentation`, `aggregateRatingSource`, `ratingXOffsetPillGlass`, `ratingYOffsetPillGlass`, `ratingXOffsetSquare`, `ratingYOffsetSquare`, `posterRatingsLayout`, `posterRatingsMaxPerSide`, `backdropRatingsLayout`, `backdropBottomRatingsRow`, `thumbnailRatingsLayout`, `thumbnailBottomRatingsRow`, `thumbnailRatingsMax`, `thumbnailSideRatingsPosition`, `thumbnailSideRatingsOffset`, `logoRatingsMax`, `logoBottomRatingsRow`, `logoBackground`, `posterArtworkSource`, `backdropArtworkSource`, `thumbnailArtworkSource`, `thumbnailEpisodeArtwork`, and `logoArtworkSource`. Then apply the per type config fields:
+5. **URL build**: use `{baseUrl}/{type}/{id}.jpg` for poster, backdrop, and logo, and use `{baseUrl}/thumbnail/{episodeBaseId}/S{season}E{episode}.jpg` for episode thumbnails. Add `tmdbKey` and `mdblistKey`, then pass through any optional XRDB fields present in `cfg` such as `fanartKey`, `ratings`, `posterRatings`, `backdropRatings`, `thumbnailRatings`, `logoRatings`, `lang`, `ratingValueMode`, `genreBadge`, `genreBadgeStyle`, `genreBadgePosition`, `genreBadgeScale`, `posterGenreBadge`, `backdropGenreBadge`, `thumbnailGenreBadge`, `logoGenreBadge`, `posterGenreBadgeStyle`, `backdropGenreBadgeStyle`, `thumbnailGenreBadgeStyle`, `logoGenreBadgeStyle`, `posterGenreBadgePosition`, `backdropGenreBadgePosition`, `thumbnailGenreBadgePosition`, `logoGenreBadgePosition`, `posterGenreBadgeScale`, `backdropGenreBadgeScale`, `thumbnailGenreBadgeScale`, `logoGenreBadgeScale`, `genreBadgeBorderWidth`, `posterGenreBadgeBorderWidth`, `backdropGenreBadgeBorderWidth`, `thumbnailGenreBadgeBorderWidth`, `logoGenreBadgeBorderWidth`, `genreBadgeBackgroundOpacity`, `posterGenreBadgeBackgroundOpacity`, `backdropGenreBadgeBackgroundOpacity`, `thumbnailGenreBadgeBackgroundOpacity`, `logoGenreBadgeBackgroundOpacity`, `posterNoBackgroundBadgeOutlineColor`, `posterNoBackgroundBadgeOutlineWidth`, `streamBadges`, `posterStreamBadges`, `backdropStreamBadges`, `thumbnailStreamBadges`, `qualityBadgesSide`, `posterQualityBadgesPosition`, `qualityBadgesStyle`, `posterQualityBadgesStyle`, `backdropQualityBadgesStyle`, `thumbnailQualityBadgesStyle`, `posterQualityBadgesMax`, `backdropQualityBadgesMax`, `thumbnailQualityBadgesMax`, `ratingPresentation`, `aggregateRatingSource`, `posterRingValueSource`, `posterRingProgressSource`, `posterRingCriticsPriority`, `posterRingAudiencePriority`, `ratingXOffsetPillGlass`, `ratingYOffsetPillGlass`, `ratingXOffsetSquare`, `ratingYOffsetSquare`, `posterRatingsLayout`, `posterRatingsMaxPerSide`, `backdropRatingsLayout`, `backdropBottomRatingsRow`, `thumbnailRatingsLayout`, `thumbnailBottomRatingsRow`, `thumbnailRatingsMax`, `thumbnailSideRatingsPosition`, `thumbnailSideRatingsOffset`, `logoRatingsMax`, `logoBottomRatingsRow`, `logoBackground`, `posterArtworkSource`, `backdropArtworkSource`, `thumbnailArtworkSource`, `thumbnailEpisodeArtwork`, and `logoArtworkSource`. Then apply the per type config fields:
    - `poster`: `posterRatingStyle`, `posterImageText`
    - `poster artwork source`: `posterArtworkSource`
+   - `poster Compact Ring`: `posterRingValueSource`, `posterRingProgressSource`, `posterRingCriticsPriority`, `posterRingAudiencePriority`
    - `backdrop`: `backdropRatingStyle`, `backdropImageText`
    - `backdrop artwork source`: `backdropArtworkSource`
    - `episode thumbnail`: `thumbnailRatings`, `thumbnailRatingStyle`, `thumbnailRatingPresentation`, `thumbnailAggregateRatingSource`, `thumbnailImageText`, `thumbnailArtworkSource`, `thumbnailEpisodeArtwork`, `thumbnailRatingsLayout`, `thumbnailRatingsMax`, `thumbnailBottomRatingsRow`, `thumbnailSideRatingsPosition`, `thumbnailSideRatingsOffset`, `thumbnailRatingBadgeScale`, `thumbnailQualityBadges`, `thumbnailQualityBadgesStyle`, `thumbnailQualityBadgesMax`, `thumbnailQualityBadgeScale`, and `thumbnailStreamBadges`
@@ -502,7 +522,7 @@ Parameter               | Values                                                
 type (path)             | poster, backdrop, logo                                               | -
 id (path)               | IMDb (tt...), TMDB (tmdb:id / tmdb:movie:id / tmdb:tv:id), Kitsu (kitsu:id), AniList, MAL                            | -
 tmdbIdScope             | soft, strict                                                                                                           | soft
-config                  | Saved config profile ID. Loads server stored params as base defaults; explicit URL params take precedence.              | -
+config                  | Saved config profile ID. Loads encrypted server stored params as base defaults; explicit URL params take precedence. Open the same UUID profile from Import/Export to reuse it on another device. | -
 ratings                 | tmdb, mdblist, imdb, allocine, allocinepress, tomatoes,              | all
                         | tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt,     |
                         | simkl, rogerebert, myanimelist,                                      |
@@ -525,8 +545,20 @@ genreBadge             | off, text, icon, both (global fallback)                
 posterGenreBadge       | off, text, icon, both (poster only)                                  | off
 backdropGenreBadge     | off, text, icon, both (backdrop only)                                | off
 logoGenreBadge         | off, text, icon, both (logo only)                                    | off
+genreBadgeBorderWidth  | genre badge accent stroke width for glass style (global fallback), 0 disables | 1.4
+posterGenreBadgeBorderWidth | poster genre badge border width (0-10)                         | 1.4
+backdropGenreBadgeBorderWidth | backdrop genre badge border width (0-10)                     | 1.5
+thumbnailGenreBadgeBorderWidth | thumbnail genre badge border width (0-10)                   | 1.5
+logoGenreBadgeBorderWidth | logo genre badge border width (0-10)                              | 1.4
+genreBadgeBackgroundOpacity | clean style genre badge background opacity (global fallback, 0-100) | 28
+posterGenreBadgeBackgroundOpacity | poster clean style genre badge background opacity (0-100) | 28
+backdropGenreBadgeBackgroundOpacity | backdrop clean style genre badge background opacity (0-100) | 28
+thumbnailGenreBadgeBackgroundOpacity | thumbnail clean style genre badge background opacity (0-100) | 28
+logoGenreBadgeBackgroundOpacity | logo clean style genre badge background opacity (0-100) | 28
+posterNoBackgroundBadgeOutlineColor | text stroke colour for plain style genre badge on poster | #000000
+posterNoBackgroundBadgeOutlineWidth | text stroke width for plain style genre badge on poster, 0 disables | 0
 streamBadges            | auto, on, off (global fallback)                                      | auto
-posterStreamBadges      | auto, on, off (poster only)                                          | auto
+posterStreamBadges      | auto, on, off (poster only)                                          | off
 backdropStreamBadges    | auto, on, off (backdrop only)                                        | auto
 qualityBadgesSide       | left, right (poster top bottom layout only)                          | left
 posterQualityBadgesPosition | auto, left, right (poster top or bottom only)                    | auto
@@ -537,8 +569,14 @@ thumbnailQualityBadgesStyle| glass, square, plain, media, silver (thumbnail only
 posterQualityBadgesMax  | Number (1+)                                                          | auto
 backdropQualityBadgesMax| Number (1+)                                                          | auto
 thumbnailQualityBadgesMax| Number (1+)                                                         | auto
-ratingPresentation      | standard, minimal, average, dual, blockbuster, none                  | standard
+ratingPresentation      | standard, minimal, average, dual, dual-minimal, editorial, ring, blockbuster, none | standard
 aggregateRatingSource   | overall, critics, audience                                           | overall
+posterRingValueSource   | overall, critics, audience, priority-critics, priority-audience,     | highest
+                        | highest, or any rating provider (poster ring only)                   |
+posterRingProgressSource| overall, critics, audience, priority-critics, priority-audience,     | tmdb
+                        | highest, or any rating provider (poster ring only)                   |
+posterRingCriticsPriority| comma separated rating providers, up to 3 (poster ring only)        | tomatoes,metacritic,imdb
+posterRingAudiencePriority| comma separated rating providers, up to 3 (poster ring only)       | tomatoesaudience,imdb,tmdb
 ratingXOffsetPillGlass  | Number (-320 to 320)                                                 | 0
 ratingYOffsetPillGlass  | Number (-320 to 320)                                                 | 0
 ratingXOffsetSquare     | Number (-320 to 320)                                                 | 0
@@ -573,14 +611,14 @@ backdropSideRatingsPosition| top, middle, bottom, custom (backdrop only)        
 sideRatingsOffset       | Number (0-100) (global fallback)                                     | 50
 posterSideRatingsOffset | Number (0-100) (poster only)                                         | 50
 backdropSideRatingsOffset| Number (0-100) (backdrop only)                                      | 50
-tmdbKey (REQUIRED)      | Your TMDB v3 API Key                                                 | -
-mdblistKey (REQUIRED)   | Your MDBList.com API Key                                             | -
-fanartKey               | Your Fanart API Key (used first for fanart sources)                  | server fallback when available
-simklClientId           | Your SIMKL client id for direct SIMKL ratings                        | -
+tmdbKey                 | Optional TMDB v3 API key override                                    | server XRDB_TMDB_API_KEY
+mdblistKey              | Optional MDBList.com API key override                                | server MDBLIST_API_KEY / MDBLIST_API_KEYS
+fanartKey               | Optional Fanart API key override                                     | server XRDB_FANART_API_KEY
+simklClientId           | Optional SIMKL client id override for direct SIMKL ratings           | server SIMKL_CLIENT_ID
 
 TMDB NOTE: Default tmdbIdScope=soft keeps compatibility and accepts tmdb:id. Set tmdbIdScope=strict to require tmdb:movie:id or tmdb:tv:id for backdrop and logo.
 STYLE NOTE: Transparent provider icons stay transparent in every style. In glass, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring to avoid accent color bleed through.
-FANART NOTE: fanartKey is optional. If present, XRDB uses your key first for fanart poster, backdrop, and logo requests. If fanartKey is blank, XRDB falls back to XRDB_FANART_API_KEY or FANART_API_KEY when the server has one.
+SERVER KEY NOTE: Configure XRDB_TMDB_API_KEY plus MDBLIST_API_KEY or MDBLIST_API_KEYS on the server. Fanart and SIMKL use XRDB_FANART_API_KEY and SIMKL_CLIENT_ID when available. Omit provider key params from generated URLs unless a per request override is explicitly needed.
 POSTER NOTE: `posterArtworkSource` supports `tmdb`, `fanart`, `cinemeta`, `omdb`, and `random`. Fanart uses fanart.tv poster art when a fanart key is available, Cinemeta uses MetaHub when an IMDb id is available, OMDb uses the server OMDb key plus IMDb id, and random picks a seeded source across the available poster candidates.
 BACKDROP NOTE: `backdropArtworkSource` supports `tmdb`, `fanart`, `cinemeta`, and `random`. Fanart uses fanart.tv moviebackground or showbackground art when a fanart key is available, Cinemeta uses MetaHub when an IMDb id is available, and random picks a seeded source across the available backdrop candidates.
 LOGO NOTE: `logoArtworkSource` supports `tmdb`, `fanart`, `cinemeta`, and `random`. Fanart uses fanart.tv HD or clear logo assets when a fanart key is available, Cinemeta uses MetaHub when an IMDb id is available, and random picks a seeded source across the available logo candidates.
@@ -616,6 +654,7 @@ FUTURE NOTE: season aware fanart support is a good next step for TV because fana
 --- PER TYPE SETTINGS ---
 poster   -> ratingStyle = cfg.posterRatingStyle, imageText = cfg.posterImageText
 poster artwork source -> use cfg.posterArtworkSource for poster original, clean, or alternative
+poster Compact Ring -> use cfg.posterRingValueSource, cfg.posterRingProgressSource, cfg.posterRingCriticsPriority, cfg.posterRingAudiencePriority
 backdrop -> ratingStyle = cfg.backdropRatingStyle, imageText = cfg.backdropImageText
 backdrop artwork source -> use cfg.backdropArtworkSource for backdrop original, clean, or alternative
 thumbnail -> ratingStyle = cfg.thumbnailRatingStyle, imageText = cfg.thumbnailImageText, artworkSource = cfg.thumbnailArtworkSource, episodeArtwork = cfg.thumbnailEpisodeArtwork
@@ -625,9 +664,20 @@ poster   -> genreBadge = cfg.posterGenreBadge, genreBadgeStyle = cfg.posterGenre
 backdrop -> genreBadge = cfg.backdropGenreBadge, genreBadgeStyle = cfg.backdropGenreBadgeStyle, genreBadgePosition = cfg.backdropGenreBadgePosition, genreBadgeScale = cfg.backdropGenreBadgeScale
 thumbnail -> genreBadge = cfg.thumbnailGenreBadge, genreBadgeStyle = cfg.thumbnailGenreBadgeStyle, genreBadgePosition = cfg.thumbnailGenreBadgePosition, genreBadgeScale = cfg.thumbnailGenreBadgeScale
 logo     -> genreBadge = cfg.logoGenreBadge, genreBadgeStyle = cfg.logoGenreBadgeStyle, genreBadgePosition = cfg.logoGenreBadgePosition, genreBadgeScale = cfg.logoGenreBadgeScale
+all      -> genreBadgeBorderWidth = cfg.genreBadgeBorderWidth (optional global fallback for glass style accent stroke)
+poster   -> genreBadgeBorderWidth = cfg.posterGenreBadgeBorderWidth, posterNoBackgroundBadgeOutlineColor = cfg.posterNoBackgroundBadgeOutlineColor, posterNoBackgroundBadgeOutlineWidth = cfg.posterNoBackgroundBadgeOutlineWidth
+backdrop -> genreBadgeBorderWidth = cfg.backdropGenreBadgeBorderWidth
+thumbnail -> genreBadgeBorderWidth = cfg.thumbnailGenreBadgeBorderWidth
+logo     -> genreBadgeBorderWidth = cfg.logoGenreBadgeBorderWidth
+all      -> genreBadgeBackgroundOpacity = cfg.genreBadgeBackgroundOpacity (optional global fallback for clean style background)
+poster   -> genreBadgeBackgroundOpacity = cfg.posterGenreBadgeBackgroundOpacity
+backdrop -> genreBadgeBackgroundOpacity = cfg.backdropGenreBadgeBackgroundOpacity
+thumbnail -> genreBadgeBackgroundOpacity = cfg.thumbnailGenreBadgeBackgroundOpacity
+logo     -> genreBadgeBackgroundOpacity = cfg.logoGenreBadgeBackgroundOpacity
 Ratings providers can be set per type via cfg.posterRatings / cfg.backdropRatings / cfg.thumbnailRatings / cfg.logoRatings (fallback to cfg.ratings).
-Rating presentation can be set per type via cfg.posterRatingPresentation / cfg.backdropRatingPresentation / cfg.thumbnailRatingPresentation / cfg.logoRatingPresentation (fallback to cfg.ratingPresentation).
+Rating presentation can be set per type via cfg.posterRatingPresentation / cfg.backdropRatingPresentation / cfg.thumbnailRatingPresentation / cfg.logoRatingPresentation (fallback to cfg.ratingPresentation). Shipped values are standard, minimal, average, dual, dual-minimal, editorial, ring, blockbuster, and none. None disables rating badges, aggregate overlays, provider overlays, and stream badges. Poster only presentations are coerced to standard when applied to backdrop, thumbnail, or logo output.
 Aggregate source can be set per type via cfg.posterAggregateRatingSource / cfg.backdropAggregateRatingSource / cfg.thumbnailAggregateRatingSource / cfg.logoAggregateRatingSource (fallback to cfg.aggregateRatingSource).
+Compact Ring source can be set for posters via cfg.posterRingValueSource and cfg.posterRingProgressSource. Use overall, critics, audience, priority-critics, priority-audience, highest, or a provider id. Aggregate ring sources try their selected lane, then overall, then the matching priority list from cfg.posterRingCriticsPriority or cfg.posterRingAudiencePriority. Exact provider sources stay strict and do not silently substitute another provider.
 Use cfg.aggregateAccentMode to keep source colours, match the genre badge, force a custom aggregate accent through cfg.aggregateAccentColor, or use score-based dynamic color stops via cfg.aggregateDynamicStops. This setting also controls the Compact Ring stroke and glow color when ratingPresentation=ring.
 Use cfg.aggregateAccentBarOffset to nudge the average badge accent bar up or down a few pixels in compact, labeled, and dual aggregate layouts.
 Use cfg.ratingXOffsetPillGlass / cfg.ratingYOffsetPillGlass and cfg.ratingXOffsetSquare / cfg.ratingYOffsetSquare to nudge stacked Pill Glass and Square Dark rating groups.
@@ -636,11 +686,12 @@ Use cfg.qualityBadgesSide for poster top bottom layouts, cfg.posterQualityBadges
 In the configurator, the Quality Badges panel keeps poster placement controls visible for supported poster layouts, disables the shared placement control when certification is the only visible quality badge, adds a dedicated age rating selector for the active poster layout, and includes Hide All Badges / Enable All actions for the per type quality badge list. Slider based customisation controls now snap back to their defaults when you move close to the baseline and show a Default readout while keeping keys, manifest inputs, and the current target intact.
 Quality badges style/max can be set per type via cfg.posterQualityBadgesStyle / cfg.backdropQualityBadgesStyle / cfg.thumbnailQualityBadgesStyle and cfg.posterQualityBadgesMax / cfg.backdropQualityBadgesMax / cfg.thumbnailQualityBadgesMax.
 Episode thumbnails use /thumbnail/{episodeBaseId}/S{season}E{episode}.jpg and keep their own cfg.thumbnailRatings, cfg.thumbnailRatingStyle, cfg.thumbnailImageText, cfg.thumbnailArtworkSource, cfg.thumbnailEpisodeArtwork, cfg.thumbnailRatingsLayout, cfg.thumbnailBottomRatingsRow, cfg.thumbnailRatingsMax, cfg.thumbnailSideRatingsPosition, cfg.thumbnailSideRatingsOffset, cfg.thumbnailRatingBadgeScale, cfg.thumbnailQualityBadgesStyle, cfg.thumbnailQualityBadgesMax, cfg.thumbnailQualityBadgeScale, and cfg.thumbnailStreamBadges settings.
+The configurator sync action beside each preview type can copy the active type into one target, all targets, or pull settings from another type. The diff modal shows the exact param changes before apply, and sync keeps type specific safety rules intact by coercing poster only presentations on non poster targets, filtering thumbnail providers to episode safe options, and omitting stream badges when syncing into logo.
 
 --- URL BUILD ---
 const typeRatingStyle = type === 'poster' ? cfg.posterRatingStyle : type === 'backdrop' ? cfg.backdropRatingStyle : type === 'thumbnail' ? cfg.thumbnailRatingStyle : cfg.logoRatingStyle;
 const typeImageText = type === 'backdrop' ? cfg.backdropImageText : type === 'thumbnail' ? cfg.thumbnailImageText : cfg.posterImageText;
-${cfg.baseUrl}/${type}/${id}.jpg?tmdbKey=${cfg.tmdbKey}&mdblistKey=${cfg.mdblistKey}&fanartKey=${cfg.fanartKey}&ratings=${cfg.ratings}&posterRatings=${cfg.posterRatings}&backdropRatings=${cfg.backdropRatings}&thumbnailRatings=${cfg.thumbnailRatings}&logoRatings=${cfg.logoRatings}&lang=${cfg.lang}&genreBadge=${cfg.genreBadge}&genreBadgeStyle=${cfg.genreBadgeStyle}&genreBadgePosition=${cfg.genreBadgePosition}&genreBadgeScale=${cfg.genreBadgeScale}&posterGenreBadge=${cfg.posterGenreBadge}&backdropGenreBadge=${cfg.backdropGenreBadge}&thumbnailGenreBadge=${cfg.thumbnailGenreBadge}&logoGenreBadge=${cfg.logoGenreBadge}&posterGenreBadgeStyle=${cfg.posterGenreBadgeStyle}&backdropGenreBadgeStyle=${cfg.backdropGenreBadgeStyle}&thumbnailGenreBadgeStyle=${cfg.thumbnailGenreBadgeStyle}&logoGenreBadgeStyle=${cfg.logoGenreBadgeStyle}&posterGenreBadgePosition=${cfg.posterGenreBadgePosition}&backdropGenreBadgePosition=${cfg.backdropGenreBadgePosition}&thumbnailGenreBadgePosition=${cfg.thumbnailGenreBadgePosition}&logoGenreBadgePosition=${cfg.logoGenreBadgePosition}&posterGenreBadgeScale=${cfg.posterGenreBadgeScale}&backdropGenreBadgeScale=${cfg.backdropGenreBadgeScale}&thumbnailGenreBadgeScale=${cfg.thumbnailGenreBadgeScale}&logoGenreBadgeScale=${cfg.logoGenreBadgeScale}&streamBadges=${cfg.streamBadges}&posterStreamBadges=${cfg.posterStreamBadges}&backdropStreamBadges=${cfg.backdropStreamBadges}&thumbnailStreamBadges=${cfg.thumbnailStreamBadges}&qualityBadgesSide=${cfg.qualityBadgesSide}&posterQualityBadgesPosition=${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=${cfg.backdropQualityBadgesStyle}&thumbnailQualityBadgesStyle=${cfg.thumbnailQualityBadgesStyle}&posterQualityBadgesMax=${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=${cfg.backdropQualityBadgesMax}&thumbnailQualityBadgesMax=${cfg.thumbnailQualityBadgesMax}&ratingPresentation=${cfg.ratingPresentation}&aggregateRatingSource=${cfg.aggregateRatingSource}&aggregateAccentMode=${cfg.aggregateAccentMode}&aggregateAccentColor=${cfg.aggregateAccentColor}&aggregateAccentBarOffset=${cfg.aggregateAccentBarOffset}&ratingXOffsetPillGlass=${cfg.ratingXOffsetPillGlass}&ratingYOffsetPillGlass=${cfg.ratingYOffsetPillGlass}&ratingXOffsetSquare=${cfg.ratingXOffsetSquare}&ratingYOffsetSquare=${cfg.ratingYOffsetSquare}&posterRatingBadgeScale=${cfg.posterRatingBadgeScale}&backdropRatingBadgeScale=${cfg.backdropRatingBadgeScale}&thumbnailRatingBadgeScale=${cfg.thumbnailRatingBadgeScale}&logoRatingBadgeScale=${cfg.logoRatingBadgeScale}&ratingStyle=${typeRatingStyle}&imageText=${typeImageText}&posterArtworkSource=${cfg.posterArtworkSource}&backdropArtworkSource=${cfg.backdropArtworkSource}&thumbnailArtworkSource=${cfg.thumbnailArtworkSource}&thumbnailEpisodeArtwork=${cfg.thumbnailEpisodeArtwork}&posterRatingsLayout=${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=${cfg.backdropRatingsLayout}&thumbnailRatingsLayout=${cfg.thumbnailRatingsLayout}&thumbnailRatingsMax=${cfg.thumbnailRatingsMax}&thumbnailBottomRatingsRow=${cfg.thumbnailBottomRatingsRow}&thumbnailSideRatingsPosition=${cfg.thumbnailSideRatingsPosition}&thumbnailSideRatingsOffset=${cfg.thumbnailSideRatingsOffset}&sideRatingsPosition=${cfg.sideRatingsPosition}&posterSideRatingsPosition=${cfg.posterSideRatingsPosition}&backdropSideRatingsPosition=${cfg.backdropSideRatingsPosition}&sideRatingsOffset=${cfg.sideRatingsOffset}&posterSideRatingsOffset=${cfg.posterSideRatingsOffset}&backdropSideRatingsOffset=${cfg.backdropSideRatingsOffset}&logoRatingsMax=${cfg.logoRatingsMax}&logoBackground=${cfg.logoBackground}&logoArtworkSource=${cfg.logoArtworkSource}
+${cfg.baseUrl}/${type}/${id}.jpg?ratings=${cfg.ratings}&posterRatings=${cfg.posterRatings}&backdropRatings=${cfg.backdropRatings}&thumbnailRatings=${cfg.thumbnailRatings}&logoRatings=${cfg.logoRatings}&lang=${cfg.lang}&genreBadge=${cfg.genreBadge}&genreBadgeStyle=${cfg.genreBadgeStyle}&genreBadgePosition=${cfg.genreBadgePosition}&genreBadgeScale=${cfg.genreBadgeScale}&posterGenreBadge=${cfg.posterGenreBadge}&backdropGenreBadge=${cfg.backdropGenreBadge}&thumbnailGenreBadge=${cfg.thumbnailGenreBadge}&logoGenreBadge=${cfg.logoGenreBadge}&posterGenreBadgeStyle=${cfg.posterGenreBadgeStyle}&backdropGenreBadgeStyle=${cfg.backdropGenreBadgeStyle}&thumbnailGenreBadgeStyle=${cfg.thumbnailGenreBadgeStyle}&logoGenreBadgeStyle=${cfg.logoGenreBadgeStyle}&posterGenreBadgePosition=${cfg.posterGenreBadgePosition}&backdropGenreBadgePosition=${cfg.backdropGenreBadgePosition}&thumbnailGenreBadgePosition=${cfg.thumbnailGenreBadgePosition}&logoGenreBadgePosition=${cfg.logoGenreBadgePosition}&posterGenreBadgeScale=${cfg.posterGenreBadgeScale}&backdropGenreBadgeScale=${cfg.backdropGenreBadgeScale}&thumbnailGenreBadgeScale=${cfg.thumbnailGenreBadgeScale}&logoGenreBadgeScale=${cfg.logoGenreBadgeScale}&genreBadgeBorderWidth=${cfg.genreBadgeBorderWidth}&posterGenreBadgeBorderWidth=${cfg.posterGenreBadgeBorderWidth}&backdropGenreBadgeBorderWidth=${cfg.backdropGenreBadgeBorderWidth}&thumbnailGenreBadgeBorderWidth=${cfg.thumbnailGenreBadgeBorderWidth}&logoGenreBadgeBorderWidth=${cfg.logoGenreBadgeBorderWidth}&genreBadgeBackgroundOpacity=${cfg.genreBadgeBackgroundOpacity}&posterGenreBadgeBackgroundOpacity=${cfg.posterGenreBadgeBackgroundOpacity}&backdropGenreBadgeBackgroundOpacity=${cfg.backdropGenreBadgeBackgroundOpacity}&thumbnailGenreBadgeBackgroundOpacity=${cfg.thumbnailGenreBadgeBackgroundOpacity}&logoGenreBadgeBackgroundOpacity=${cfg.logoGenreBadgeBackgroundOpacity}&posterNoBackgroundBadgeOutlineColor=${cfg.posterNoBackgroundBadgeOutlineColor}&posterNoBackgroundBadgeOutlineWidth=${cfg.posterNoBackgroundBadgeOutlineWidth}&streamBadges=${cfg.streamBadges}&posterStreamBadges=${cfg.posterStreamBadges}&backdropStreamBadges=${cfg.backdropStreamBadges}&thumbnailStreamBadges=${cfg.thumbnailStreamBadges}&qualityBadgesSide=${cfg.qualityBadgesSide}&posterQualityBadgesPosition=${cfg.posterQualityBadgesPosition}&qualityBadgesStyle=${cfg.qualityBadgesStyle}&posterQualityBadgesStyle=${cfg.posterQualityBadgesStyle}&backdropQualityBadgesStyle=${cfg.backdropQualityBadgesStyle}&thumbnailQualityBadgesStyle=${cfg.thumbnailQualityBadgesStyle}&posterQualityBadgesMax=${cfg.posterQualityBadgesMax}&backdropQualityBadgesMax=${cfg.backdropQualityBadgesMax}&thumbnailQualityBadgesMax=${cfg.thumbnailQualityBadgesMax}&ratingPresentation=${cfg.ratingPresentation}&aggregateRatingSource=${cfg.aggregateRatingSource}&posterRingValueSource=${cfg.posterRingValueSource}&posterRingProgressSource=${cfg.posterRingProgressSource}&posterRingCriticsPriority=${cfg.posterRingCriticsPriority}&posterRingAudiencePriority=${cfg.posterRingAudiencePriority}&aggregateAccentMode=${cfg.aggregateAccentMode}&aggregateAccentColor=${cfg.aggregateAccentColor}&aggregateAccentBarOffset=${cfg.aggregateAccentBarOffset}&ratingXOffsetPillGlass=${cfg.ratingXOffsetPillGlass}&ratingYOffsetPillGlass=${cfg.ratingYOffsetPillGlass}&ratingXOffsetSquare=${cfg.ratingXOffsetSquare}&ratingYOffsetSquare=${cfg.ratingYOffsetSquare}&posterRatingBadgeScale=${cfg.posterRatingBadgeScale}&backdropRatingBadgeScale=${cfg.backdropRatingBadgeScale}&thumbnailRatingBadgeScale=${cfg.thumbnailRatingBadgeScale}&logoRatingBadgeScale=${cfg.logoRatingBadgeScale}&ratingStyle=${typeRatingStyle}&imageText=${typeImageText}&posterArtworkSource=${cfg.posterArtworkSource}&backdropArtworkSource=${cfg.backdropArtworkSource}&thumbnailArtworkSource=${cfg.thumbnailArtworkSource}&thumbnailEpisodeArtwork=${cfg.thumbnailEpisodeArtwork}&posterRatingsLayout=${cfg.posterRatingsLayout}&posterRatingsMaxPerSide=${cfg.posterRatingsMaxPerSide}&backdropRatingsLayout=${cfg.backdropRatingsLayout}&thumbnailRatingsLayout=${cfg.thumbnailRatingsLayout}&thumbnailRatingsMax=${cfg.thumbnailRatingsMax}&thumbnailBottomRatingsRow=${cfg.thumbnailBottomRatingsRow}&thumbnailSideRatingsPosition=${cfg.thumbnailSideRatingsPosition}&thumbnailSideRatingsOffset=${cfg.thumbnailSideRatingsOffset}&sideRatingsPosition=${cfg.sideRatingsPosition}&posterSideRatingsPosition=${cfg.posterSideRatingsPosition}&backdropSideRatingsPosition=${cfg.backdropSideRatingsPosition}&sideRatingsOffset=${cfg.sideRatingsOffset}&posterSideRatingsOffset=${cfg.posterSideRatingsOffset}&backdropSideRatingsOffset=${cfg.backdropSideRatingsOffset}&logoRatingsMax=${cfg.logoRatingsMax}&logoBackground=${cfg.logoBackground}&logoArtworkSource=${cfg.logoArtworkSource}
 
 Omit imageText when type=logo.
 
@@ -659,20 +710,20 @@ XRDB can act as a proxy for any Stremio addon and always replace images
 Stremio does not use query params here. **Generate the link from the XRDB site** using the "Proxy Manifest" section:
 
 ```text
-https://YOUR_XRDB_HOST/proxy/{config}/manifest.json
+https://YOUR_XRDB_HOST/proxy/{uuid}/manifest.json
 ```
 
-`{config}` is created automatically by the site based on the inserted parameters.
+`{uuid}` is created automatically by the site from a server stored proxy reference. Legacy inline proxy URLs stay readable during migration, but new copied links always use the UUID form.
 
 ### Direct Query Proxy Mode (Advanced)
 
 For scripts, testing, or non generated integrations, XRDB also exposes a direct manifest route:
 
 ```text
-https://YOUR_XRDB_HOST/proxy/manifest.json?url={manifestUrl}&tmdbKey=...&mdblistKey=...&fanartKey=...
+https://YOUR_XRDB_HOST/proxy/manifest.json?url={manifestUrl}
 ```
 
-The matching query based passthrough routes live under `/proxy/catalog/...`, `/proxy/meta/...`, and the other addon resource paths and accept the same query config. The encoded `/proxy/{config}/manifest.json` form is still the normal Stremio install URL.
+The matching query based passthrough routes live under `/proxy/catalog/...`, `/proxy/meta/...`, and the other addon resource paths and accept the same query config. The UUID backed `/proxy/{uuid}/manifest.json` form is the normal Stremio install URL.
 
 ### Notes
 - The proxy routes `meta.poster`, `meta.background`, and `meta.logo` through XRDB URLs.
@@ -751,7 +802,7 @@ Anime gets extra fallback help when possible. If TMDB is missing good text, XRDB
 
 ### Metadata Translation In Action
 
-These screenshots were regenerated from the local April 9, 2026 codebase using deterministic proxy fixtures.
+These screenshots were regenerated from the local April 16, 2026 codebase using deterministic proxy fixtures.
 
 To make each merge mode visible on demand, a local fixture addon returned controlled source addon metadata for three real IDs:
 
@@ -788,8 +839,14 @@ Copy `env.template` to `.env` and adjust as needed. All cache TTL values are in 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `XRDB_TRUST_PROXY_HEADERS` | `false` | Trust `x-forwarded-host` / `x-forwarded-proto` when behind a reverse proxy |
+| `XRDB_LOG_LEVEL` | `info` | Server console log threshold for XRDB runtime logs. `debug` and `info` write to STDOUT. `warn` and `error` write to STDERR. |
+| `XRDB_REQUEST_LOG_LEVEL` | `off` | Optional override for routine image request logs. Leave unset to keep request logs disabled by default. Accepted values: `off`, `debug`, `info`, `warn`, `error`. |
+| `XRDB_REQUEST_API_KEY` | (empty) | Single shared request key that gates render and proxy access on private hosts |
+| `XRDB_REQUEST_API_KEYS` | (empty) | Comma separated list of valid request keys when multiple keys are needed |
+| `XRDB_CONFIG_ENCRYPTION_KEY` | auto generated | 64 hex character (32 byte) key used to encrypt saved config profile params and stored proxy references at rest. Set this explicitly in production and back it up. Generate with `openssl rand -hex 32`. |
+| `XRDB_INACTIVE_CONFIG_PRUNE_DAYS` | `-1` (disabled) | Days of inactivity before a saved config profile is pruned on startup. Inactivity is measured from the last image request that resolved the profile. Set to `-1` to disable pruning. |
 | `XRDB_PROXY_ALLOWED_ORIGINS` | (empty) | Comma separated CORS allowlist. Empty = `*` |
-| `XRDB_PREVIEW_ORIGIN` | `http://127.0.0.1:3000` | Preview fetch origin used by `/preview/{slug}` before falling back to the container hostname and public origin |
+| `XRDB_PREVIEW_ORIGIN` | `http://127.0.0.1:3000` | Trusted preview fetch origin used by `/preview/{slug}`. Set this explicitly in production. The legacy `PREVIEW_INTERNAL_ORIGIN` alias is still accepted during migration. |
 | `XRDB_PORT` | `3000` | Host port used by `local-compose.yaml` |
 | `XRDB_DATA_DIR` | `./data` | Host path mounted to `/app/data` by `local-compose.yaml` |
 | `DOCKER_DATA_DIR` | `./data` | Root host data path used by `compose.yaml`, which mounts `${DOCKER_DATA_DIR}/xrdb` into `/app/data` |
@@ -800,6 +857,7 @@ Copy `env.template` to `.env` and adjust as needed. All cache TTL values are in 
 | `XRDB_TRAEFIK_CERTRESOLVER` | `letsencrypt` | Traefik certresolver label value |
 | `XRDB_README_PREVIEW_TMDB_KEY` | (empty) | Optional dedicated TMDB key for the fixed README preview gallery route |
 | `XRDB_README_PREVIEW_MDBLIST_KEY` | (empty) | Optional dedicated MDBList key for the fixed README preview gallery route |
+| `XRDB_TMDB_API_KEY` | (empty) | Server side TMDB v3 API key used for image rendering, search, and proxy translation (also `TMDB_API_KEY` and `TMDB_KEY`) |
 | `XRDB_TMDB_API_BASE_URL` | `https://api.themoviedb.org/3` | Optional TMDB API base URL override used by image rendering and proxy translation |
 | `XRDB_ANILIST_GRAPHQL_URL` | `https://graphql.anilist.co` | Optional AniList GraphQL endpoint override |
 | `XRDB_ANIME_MAPPING_BASE_URL` | `https://animemapping.stremio.dpdns.org` | Optional anime mapping service base URL override used by image rendering and proxy translation |
@@ -816,6 +874,8 @@ Copy `env.template` to `.env` and adjust as needed. All cache TTL values are in 
 | `XRDB_OMDB_API_BASE_URL` | `https://www.omdbapi.com` | Optional OMDb API base URL override used for OMDb poster lookups |
 | `XRDB_FANART_API_KEY` | (empty) | Optional server side Fanart API key used as fallback when `fanartKey` is not supplied (also `FANART_API_KEY`) |
 | `XRDB_FANART_CLIENT_KEY` | (empty) | Optional server side Fanart client key (also `FANART_CLIENT_KEY`) |
+| `MDBLIST_API_KEY` | (empty) | Server side MDBList key used as a shared pool fallback for rating aggregation on hosted instances |
+| `MDBLIST_API_KEYS` | (empty) | Comma separated pool of server side MDBList keys. XRDB rotates through available keys under rate limit pressure |
 
 ### Cache TTLs
 
@@ -860,11 +920,37 @@ hardcoding separate cache TTL values.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `XRDB_TORRENTIO_BASE_URL` | `https://torrentio.strem.fun` | Custom Torrentio instance URL |
+| `XRDB_TORRENTIO_BASE_URL` | `https://torrentio.strem.fun` | Custom Torrentio instance URL. Leave unset to use the default instance, or set to a blank value to disable Torrentio lookups. |
+| `XRDB_TORRENTIO_FALLBACK_BASE_URL` | `https://torrentio.stremio.ru` | Optional fallback Torrentio instance used when the primary host times out, fails, or returns a retryable status. Set to a blank value to disable fallback. |
 | `XRDB_TORRENTIO_CONCURRENCY` | `2` | Max parallel Torrentio badge fetches. Higher can improve throughput, but also increases the chance of source rate limiting. |
+| `XRDB_TORRENTIO_TIMEOUT_MS` | `4000` | Per-request timeout for Torrentio badge fetches before XRDB fails over or gives up. |
 | `XRDB_TORRENTIO_RATE_LIMIT_COOLDOWN_MS` | `900000` | Cooldown window after Torrentio responds with rate limiting. |
+| `XRDB_TORRENTIO_BYPASS_PROXY` | `false` | When `true`, Torrentio badge fetches skip the shared `HTTP_PROXY` or `HTTPS_PROXY` route and connect directly. |
+| `XRDB_TORRENTIO_DIRECT_CANDIDATE_BASE_URL` | `https://torrentio.stremio.ru` | Expected direct-host candidate used as the default fallback base URL when no explicit fallback is configured. |
 
-> **Note:** Torrentio requests use `HTTP_PROXY` / `HTTPS_PROXY` env vars (via `undici ProxyAgent`) when set.
+> **Note:** Torrentio requests use `HTTP_PROXY` or `HTTPS_PROXY` env vars (via `undici ProxyAgent`) when set, unless `XRDB_TORRENTIO_BYPASS_PROXY=true`.
+
+### Poster Cache Warming
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `XRDB_POSTER_WARM_ENABLED` | `true` | Enables the scheduled poster warming job when a source list is configured. |
+| `XRDB_POSTER_WARM_SOURCE` | (empty) | Inline comma-separated or newline-separated list of poster targets. Supports explicit IDs such as `tt0133093`, `tmdb:movie:603`, `tmdb:tv:1396`, or full poster URLs. |
+| `XRDB_POSTER_WARM_SOURCE_FILE` | (empty) | Optional file path for a poster warming source list. File targets are merged with `XRDB_POSTER_WARM_SOURCE`. |
+| `XRDB_POSTER_WARM_TMDB_ENABLED` | `false` | When `true`, XRDB fetches fresh TMDB popular and now playing ids (6 endpoints, up to 120 raw results) before each warm pass and merges them with static warm targets. |
+| `XRDB_POSTER_WARM_TMDB_LIMIT` | `100` | Maximum number of TMDB ids to merge into a warm pass. |
+| `XRDB_POSTER_WARM_MDBLIST_ENABLED` | `false` | When `true`, XRDB fetches fresh MDBList trending ids before each warm pass and merges them with static warm targets. No API key required. |
+| `XRDB_POSTER_WARM_MDBLIST_LIMIT` | `200` | Maximum number of MDBList trending ids to merge into a warm pass. |
+| `XRDB_POSTER_WARM_IMDB_ENABLED` | `false` | When `true`, XRDB reads the local IMDb ratings dataset and merges the top voted titles into each warm pass. Requires the dataset to be present on disk. |
+| `XRDB_POSTER_WARM_IMDB_LIMIT` | `500` | Maximum number of IMDb top-rated ids to merge into a warm pass. |
+| `XRDB_POSTER_WARM_RECENT_ENABLED` | `false` | When `true`, XRDB records recently served poster requests in a bounded ring buffer and replays them during the next warm pass, using each request's exact configuration. |
+| `XRDB_POSTER_WARM_RECENT_LIMIT` | `500` | Maximum number of recent poster requests to replay per warm pass. |
+| `XRDB_POSTER_WARM_INTERVAL_MS` | `21600000` | Intended cadence for scheduled poster warming runs. |
+| `XRDB_POSTER_WARM_CHECK_INTERVAL_MS` | `900000` | Poll interval used to decide when another warming run is due. |
+| `XRDB_POSTER_WARM_CONCURRENCY` | `2` | Max number of poster warm jobs to run in parallel. |
+| `XRDB_POSTER_WARM_LOG` | `false` | Enables summary logging for poster warming runs. |
+
+Static warm sources remain the baseline fallback. When dynamic sources are enabled, XRDB fetches fresh ids from each enabled source, deduplicates them, and warms the merged target set. The recently-requested ring replays actual user requests with their original configuration, ensuring warm hits benefit custom config users and not just default-config installs.
 
 ### Sharp Rendering (advanced)
 

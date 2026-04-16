@@ -9,7 +9,7 @@ import {
   isXrdbRequestAuthorized,
 } from '@/lib/xrdbRequestKey';
 import { assertSafeSourceUrl, fetchWithOneRedirect } from '@/lib/networkSecurity';
-import { buildProxyManifestPayload } from '@/lib/proxyManifest';
+import { loadProxyManifestPayload } from '@/lib/proxySourceManifest';
 import {
   buildProxyErrorResponse,
   buildProxyPassthroughResponse,
@@ -98,29 +98,26 @@ export async function handleProxyGet(
     request.nextUrl.searchParams.has('mdblistKey');
 
   if (!usingQueryConfig && resourceSegments.length === 1 && resourceSegments[0] === 'manifest.json') {
-    let manifestResponse: Response;
-    try {
-      manifestResponse = await fetchWithOneRedirect(safeManifestUrl.toString());
-    } catch {
-      return buildError(request, 'Unable to reach the source manifest.', 502);
-    }
-
-    if (!manifestResponse.ok) {
-      return buildError(request, `Source manifest returned ${manifestResponse.status}.`, 502);
-    }
-
-    let manifest: Record<string, unknown>;
-    try {
-      manifest = (await manifestResponse.json()) as Record<string, unknown>;
-    } catch {
-      return buildError(request, 'Source manifest is not valid JSON.', 502);
+    const result = await loadProxyManifestPayload({
+      sourceUrl: config.url,
+      catalogPlan: config.catalogPlan,
+      configSeed,
+    });
+    if (!result.ok) {
+      if (result.error === 'unreachable') {
+        return buildError(request, 'Unable to reach the source manifest.', 502);
+      }
+      if (result.error === 'bad-status') {
+        return buildError(request, `Source manifest returned ${result.status}.`, 502);
+      }
+      if (result.error === 'invalid-json') {
+        return buildError(request, 'Source manifest is not valid JSON.', 502);
+      }
+      return buildError(request, 'Invalid or unsafe source manifest URL.', 400);
     }
 
     return NextResponse.json(
-      buildProxyManifestPayload(manifest, config.url, {
-        configSeed,
-        catalogPlan: config.catalogPlan,
-      }),
+      result.payload,
       {
         status: 200,
         headers: buildJsonCorsHeaders(request),

@@ -38,6 +38,8 @@ const createInput = (overrides = {}) => ({
   ratingPresentation: 'average',
   posterRingValueSource: 'highest',
   posterRingProgressSource: 'tmdb',
+  posterRingCriticsPriority: 'tomatoes,metacritic,imdb',
+  posterRingAudiencePriority: 'tomatoesaudience,imdb,tmdb',
   blockbusterDensity: 'balanced',
   aggregateRatingSource: 'combined',
   aggregateDynamicStops: '0:#7f1d1d,40:#dc2626,60:#f59e0b,75:#84cc16,85:#16a34a',
@@ -317,6 +319,36 @@ test('final image render seed scopes compact ring sources to ring poster renders
       ratingPresentation: 'average',
       posterRingValueSource: 'tomatoes',
       posterRingProgressSource: 'imdb',
+    }),
+  );
+
+  assert.notEqual(baseRingKey, changedRingKey);
+  assert.equal(baseAverageKey, changedAverageKey);
+});
+
+test('final image render seed scopes compact ring priority lists to ring poster renders', () => {
+  const baseRingKey = buildFinalImageRenderSeedKey(
+    createInput({
+      ratingPresentation: 'ring',
+      posterRingCriticsPriority: 'tomatoes,metacritic,imdb',
+    }),
+  );
+  const changedRingKey = buildFinalImageRenderSeedKey(
+    createInput({
+      ratingPresentation: 'ring',
+      posterRingCriticsPriority: 'metacritic,tomatoes,imdb',
+    }),
+  );
+  const baseAverageKey = buildFinalImageRenderSeedKey(
+    createInput({
+      ratingPresentation: 'average',
+      posterRingCriticsPriority: 'tomatoes,metacritic,imdb',
+    }),
+  );
+  const changedAverageKey = buildFinalImageRenderSeedKey(
+    createInput({
+      ratingPresentation: 'average',
+      posterRingCriticsPriority: 'metacritic,tomatoes,imdb',
     }),
   );
 

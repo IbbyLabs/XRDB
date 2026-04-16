@@ -11,6 +11,7 @@ import {
   pruneExpiredObjectStorageImages,
   readObjectStorageMetadata,
 } from './imageObjectStoragePrune.ts';
+import { logger } from './serverLogger.ts';
 
 export { buildObjectStorageImageKey, buildObjectStorageSourceImageKey } from './imageObjectStoragePaths.ts';
 export { pruneExpiredObjectStorageImages } from './imageObjectStoragePrune.ts';
@@ -70,7 +71,7 @@ export const getCachedImageFromObjectStorage = async (key: string): Promise<Obje
       cacheControl,
     };
   } catch (error) {
-    console.error(`Error reading cached image ${key}:`, error);
+    logger.error(`Error reading cached image ${key}:`, error);
     return null;
   }
 };
@@ -95,7 +96,7 @@ export const putCachedImageToObjectStorage = async (
       'utf8'
     );
   } catch (error) {
-    console.error(`Error writing cached image ${key}:`, error);
+    logger.error(`Error writing cached image ${key}:`, error);
   }
 
   if (Math.random() < 0.02) {
@@ -139,7 +140,7 @@ const pruneOldestImageCache = async (maxFiles: number) => {
       } catch {}
     }
   } catch (error) {
-    console.error('Error during image cache pruning:', error);
+    logger.error('Error during image cache pruning:', error);
   } finally {
     inFlight.delete(cacheDir);
   }

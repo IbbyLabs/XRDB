@@ -18,6 +18,9 @@ export const DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX = 1.4;
 export const DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX = 1.5;
 export const DEFAULT_THUMBNAIL_GENRE_BADGE_BORDER_WIDTH_PX = 1.5;
 export const DEFAULT_LOGO_GENRE_BADGE_BORDER_WIDTH_PX = 1.4;
+export const MIN_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT = 0;
+export const MAX_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT = 100;
+export const DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT = 28;
 export const MIN_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX = 0;
 export const MAX_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX = 4;
 export const DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX = 0;
@@ -262,6 +265,23 @@ export const normalizeGenreBadgeBorderWidthPx = (
   return Math.max(
     MIN_GENRE_BADGE_BORDER_WIDTH_PX,
     Math.min(MAX_GENRE_BADGE_BORDER_WIDTH_PX, Math.round(numericValue * 10) / 10),
+  );
+};
+
+export const normalizeGenreBadgeBackgroundOpacityPercent = (
+  value: unknown,
+  fallback = DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
+) => {
+  const numericValue =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string'
+        ? Number(value.trim())
+        : Number.NaN;
+  if (!Number.isFinite(numericValue)) return fallback;
+  return Math.max(
+    MIN_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT,
+    Math.min(MAX_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT, Math.round(numericValue)),
   );
 };
 

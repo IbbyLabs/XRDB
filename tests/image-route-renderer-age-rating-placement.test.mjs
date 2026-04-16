@@ -26,6 +26,26 @@ const samplePixel = async (buffer, x, y) => {
   };
 };
 
+const hasNonWhitePixelInRect = async (buffer, left, top, width, height) => {
+  const { data, info } = await sharp(buffer)
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  for (let y = top; y < Math.min(info.height, top + height); y += 1) {
+    for (let x = left; x < Math.min(info.width, left + width); x += 1) {
+      const pixelIndex = (y * info.width + x) * info.channels;
+      const r = data[pixelIndex];
+      const g = data[pixelIndex + 1];
+      const b = data[pixelIndex + 2];
+      if (r < 240 || g < 240 || b < 240) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+};
+
 const createPosterRenderInput = (overrides = {}) => {
   const sourceSvg =
     "<svg xmlns='http://www.w3.org/2000/svg' width='400' height='600' viewBox='0 0 400 600'><rect width='400' height='600' fill='#ffffff'/></svg>";
@@ -145,6 +165,23 @@ test('image route renderer keeps poster quality badges separate from the age rat
   assert.ok(bottomCenter.r < 240 || bottomCenter.g < 240 || bottomCenter.b < 240);
 });
 
+test('image route renderer keeps the certification badge grouped with shared quality badges when grouped mode is selected', async () => {
+  const grouped = await renderWithSharp(
+    createPosterRenderInput({
+      posterRatingsLayout: 'top',
+      ageRatingBadgePosition: 'grouped',
+      posterQualityBadgesPosition: 'auto',
+    }),
+    { ...phases },
+  );
+
+  const topCenter = await samplePixel(grouped.body, 200, 42);
+  const bottomBandHasBadge = await hasNonWhitePixelInRect(grouped.body, 80, 520, 240, 60);
+
+  assert.ok(topCenter.r > 240 && topCenter.g > 240 && topCenter.b > 240);
+  assert.ok(bottomBandHasBadge);
+});
+
 test('image route renderer can place the certification badge on a bottom anchor without moving shared quality badges', async () => {
   const explicitBottom = await renderWithSharp(
     createPosterRenderInput({
@@ -174,6 +211,58 @@ test('image route renderer can place the certification badge on a side anchor fo
   const rightCenter = await samplePixel(explicitSide.body, 340, 300);
 
   assert.ok(rightCenter.r < 240 || rightCenter.g < 240 || rightCenter.b < 240);
+});
+
+test('image route renderer can move shared quality badges to the opposite side on side poster layouts', async () => {
+  const movedQuality = await renderWithSharp(
+    createPosterRenderInput({
+      posterRatingsLayout: 'left',
+      posterQualityBadgesPosition: 'right',
+      ageRatingBadgePosition: 'grouped',
+      sideRatingsPosition: 'top',
+    }),
+    { ...phases },
+  );
+
+  const rightUpperBandHasBadge = await hasNonWhitePixelInRect(movedQuality.body, 280, 20, 90, 120);
+  const leftUpperBandHasBadge = await hasNonWhitePixelInRect(movedQuality.body, 30, 20, 90, 120);
+  const bottomBandHasBadge = await hasNonWhitePixelInRect(movedQuality.body, 80, 500, 240, 60);
+
+  assert.ok(rightUpperBandHasBadge);
+  assert.equal(leftUpperBandHasBadge, false);
+  assert.equal(bottomBandHasBadge, false);
+});
+
+test('image route renderer keeps shared quality badges on the requested side for right poster layouts', async () => {
+  const movedLeft = await renderWithSharp(
+    createPosterRenderInput({
+      posterRatingsLayout: 'right',
+      posterQualityBadgesPosition: 'left',
+      ageRatingBadgePosition: 'grouped',
+      sideRatingsPosition: 'top',
+    }),
+    { ...phases },
+  );
+
+  const movedRight = await renderWithSharp(
+    createPosterRenderInput({
+      posterRatingsLayout: 'right',
+      posterQualityBadgesPosition: 'right',
+      ageRatingBadgePosition: 'grouped',
+      sideRatingsPosition: 'top',
+    }),
+    { ...phases },
+  );
+
+  const leftPlacementLeftBand = await hasNonWhitePixelInRect(movedLeft.body, 30, 20, 90, 150);
+  const leftPlacementRightBand = await hasNonWhitePixelInRect(movedLeft.body, 280, 20, 90, 150);
+  const rightPlacementLeftBand = await hasNonWhitePixelInRect(movedRight.body, 30, 20, 90, 150);
+  const rightPlacementRightBand = await hasNonWhitePixelInRect(movedRight.body, 280, 20, 90, 150);
+
+  assert.ok(leftPlacementLeftBand);
+  assert.equal(leftPlacementRightBand, false);
+  assert.equal(rightPlacementLeftBand, false);
+  assert.ok(rightPlacementRightBand);
 });
 
 test('image route renderer falls back to inherited placement for unsupported age rating anchors', async () => {

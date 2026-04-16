@@ -12,6 +12,8 @@ import {
   normalizeGenreBadgeMode,
   normalizeGenreBadgePosition,
   normalizeGenreBadgeStyle,
+  resolveGenreBadgeModeForStyle,
+  resolveGenreBadgePositionForStyle,
   resolveGenreBadgeFamily,
 } from '../lib/genreBadge.ts';
 
@@ -24,6 +26,7 @@ test('genre badge mode normalization falls back safely', () => {
 
 test('genre badge style and position normalization accept friendly variants', () => {
   assert.equal(normalizeGenreBadgeStyle('square'), 'square');
+  assert.equal(normalizeGenreBadgeStyle('clean'), 'clean');
   assert.equal(normalizeGenreBadgeStyle('unknown'), DEFAULT_GENRE_BADGE_STYLE);
   assert.equal(normalizeGenreBadgePosition('top center'), 'topCenter');
   assert.equal(normalizeGenreBadgePosition('bottom-right'), 'bottomRight');
@@ -33,6 +36,26 @@ test('genre badge style and position normalization accept friendly variants', ()
   assert.equal(
     normalizeGenreBadgeAnimeGrouping('unknown'),
     DEFAULT_GENRE_BADGE_ANIME_GROUPING,
+  );
+});
+
+test('clean genre badge style coerces mode and position to text and bottom center', () => {
+  assert.equal(resolveGenreBadgeModeForStyle('off', 'clean'), 'off');
+  assert.equal(resolveGenreBadgeModeForStyle('icon', 'clean'), 'text');
+  assert.equal(resolveGenreBadgeModeForStyle('both', 'clean'), 'text');
+  assert.equal(resolveGenreBadgeModeForStyle('both', 'glass'), 'both');
+
+  assert.equal(
+    resolveGenreBadgePositionForStyle('topLeft', 'clean', 'text'),
+    'bottomCenter',
+  );
+  assert.equal(
+    resolveGenreBadgePositionForStyle('topLeft', 'clean', 'off'),
+    'topLeft',
+  );
+  assert.equal(
+    resolveGenreBadgePositionForStyle('bottomRight', 'glass', 'both'),
+    'bottomRight',
   );
 });
 

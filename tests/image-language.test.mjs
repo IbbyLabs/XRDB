@@ -5,6 +5,7 @@ import {
   buildIncludeImageLanguage,
   filterByLanguageWithFallback,
   normalizeImageLanguage,
+  pickByLanguageOrNeutral,
   pickByLanguageWithFallback,
 } from '../lib/imageLanguage.ts';
 
@@ -64,6 +65,29 @@ test('pickByLanguageWithFallback falls back to first item when no language match
   const picked = pickByLanguageWithFallback(logos, 'en', 'en');
 
   assert.equal(picked?.file_path, '/ko.png');
+});
+
+test('pickByLanguageOrNeutral returns neutral entry when preferred and fallback are unavailable', () => {
+  const logos = [
+    { iso_639_1: 'ko', file_path: '/ko.png' },
+    { iso_639_1: null, file_path: '/neutral.png' },
+    { iso_639_1: 'he', file_path: '/he.png' },
+  ];
+
+  const picked = pickByLanguageOrNeutral(logos, 'en', 'en');
+
+  assert.equal(picked?.file_path, '/neutral.png');
+});
+
+test('pickByLanguageOrNeutral returns null when no preferred fallback or neutral exists', () => {
+  const logos = [
+    { iso_639_1: 'ko', file_path: '/ko.png' },
+    { iso_639_1: 'he', file_path: '/he.png' },
+  ];
+
+  const picked = pickByLanguageOrNeutral(logos, 'en', 'en');
+
+  assert.equal(picked, null);
 });
 
 test('filterByLanguageWithFallback keeps requested fallback and neutral entries when available', () => {

@@ -48,6 +48,8 @@ type FinalImageRenderSeedInput = {
   ratingPresentation: string;
   posterRingValueSource: string;
   posterRingProgressSource: string;
+  posterRingCriticsPriority: string;
+  posterRingAudiencePriority: string;
   blockbusterDensity: string;
   aggregateRatingSource: string;
   aggregateAccentMode: string;
@@ -78,6 +80,7 @@ type FinalImageRenderSeedInput = {
   genreBadgePosition: string;
   genreBadgeScale: number;
   genreBadgeBorderWidth: number;
+  genreBadgeBackgroundOpacity: number;
   genreBadgeAnimeGrouping: string;
   logoBackground: string;
   effectiveRatingPreferences: string[];
@@ -162,6 +165,12 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.ratingPresentation,
     isPoster && input.ratingPresentation === 'ring' ? input.posterRingValueSource : '-',
     isPoster && input.ratingPresentation === 'ring' ? input.posterRingProgressSource : '-',
+    isPoster && input.ratingPresentation === 'ring'
+      ? input.posterRingCriticsPriority || '-'
+      : '-',
+    isPoster && input.ratingPresentation === 'ring'
+      ? input.posterRingAudiencePriority || '-'
+      : '-',
     isPoster ? input.blockbusterDensity : '-',
     input.aggregateRatingSource,
     input.aggregateAccentMode,
@@ -189,6 +198,9 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     String(input.genreBadgeScale),
     input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE && input.genreBadgeStyle === 'glass'
       ? String(input.genreBadgeBorderWidth)
+      : '-',
+    input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE && input.genreBadgeStyle === 'clean'
+      ? String(input.genreBadgeBackgroundOpacity)
       : '-',
     input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ? input.genreBadgeAnimeGrouping : '-',
     isLogo ? input.logoBackground : '-',

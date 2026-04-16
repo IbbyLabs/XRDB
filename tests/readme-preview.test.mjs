@@ -169,3 +169,22 @@ test('README preview origins fall back through the container bind host before th
     ['http://127.0.0.1:3000/', 'https://xrdb.ibbylabs.dev/']
   );
 });
+
+test('README preview origins accept the legacy internal-origin alias and can disable public-origin fallback', () => {
+  assert.deepEqual(
+    resolveReadmePreviewOrigins({
+      requestOrigin: 'https://xrdb.ibbylabs.dev',
+      previewOriginAlias: 'http://127.0.0.1:3000/',
+      includeRequestOriginFallback: false,
+    }),
+    ['http://127.0.0.1:3000/']
+  );
+
+  assert.deepEqual(
+    resolveReadmePreviewOrigins({
+      requestOrigin: 'https://xrdb.ibbylabs.dev',
+      includeRequestOriginFallback: false,
+    }),
+    []
+  );
+});
