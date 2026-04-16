@@ -60,6 +60,22 @@ test('buildTmdbMultiSearchUrl keeps the /3 path segment', () => {
   assert.equal(url.searchParams.get('query'), 'Uncharted');
 });
 
+test('buildTmdbMultiSearchUrl omits api_key when no explicit key is provided', () => {
+  const url = new URL(
+    buildTmdbMultiSearchUrl({
+      tmdbKey: '',
+      query: 'Uncharted',
+      language: 'en',
+      apiBaseUrl: 'https://api.themoviedb.org/3',
+    }),
+  );
+
+  assert.equal(url.origin, 'https://api.themoviedb.org');
+  assert.equal(url.pathname, '/3/search/multi');
+  assert.equal(url.searchParams.get('api_key'), null);
+  assert.equal(url.searchParams.get('query'), 'Uncharted');
+});
+
 test('buildImdbMediaIdForPreviewType returns imdb targets by preview type', () => {
   assert.equal(buildImdbMediaIdForPreviewType('poster', 'tt1464335'), 'imdb:tt1464335');
   assert.equal(buildImdbMediaIdForPreviewType('thumbnail', 'tt0944947'), 'imdb:tt0944947:1:1');

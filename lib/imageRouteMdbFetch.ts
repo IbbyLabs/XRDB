@@ -5,6 +5,7 @@ import {
   markMdbListApiKeyRateLimited,
   shouldRetryMdbListWithAnotherKey,
 } from './imageRouteMdbList.ts';
+import { sha1Hex } from './imageRouteRuntime.ts';
 import type { CachedJsonResponse, PhaseDurations } from './imageRouteRuntime.ts';
 
 export type MdbListRatingsFetchResult = {
@@ -61,7 +62,7 @@ export const fetchMdbListRatings = async ({
   for (const apiKey of apiKeys) {
     try {
       const response = await fetchJsonCached(
-        `mdblist:${normalizedImdbId}:key:${apiKey}`,
+        `mdblist:${normalizedImdbId}:key:${sha1Hex(apiKey).slice(0, 12)}`,
         `https://api.mdblist.com/imdb/${normalizedMediaType}/${encodeURIComponent(normalizedImdbId)}?apikey=${encodeURIComponent(apiKey)}`,
         cacheTtlMs,
         phases,

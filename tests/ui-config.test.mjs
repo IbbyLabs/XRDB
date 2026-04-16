@@ -980,7 +980,7 @@ test('server managed exports omit provider credentials when server fallbacks are
   assert.notEqual(configString, '');
 
   const decodedConfig = JSON.parse(decodeBase64Url(configString));
-  assert.equal(decodedConfig.xrdbKey, 'shared-xrdb-key-000');
+  assert.equal('xrdbKey' in decodedConfig, false);
   assert.equal('tmdbKey' in decodedConfig, false);
   assert.equal('mdblistKey' in decodedConfig, false);
   assert.equal('fanartKey' in decodedConfig, false);
@@ -988,7 +988,7 @@ test('server managed exports omit provider credentials when server fallbacks are
 
   const params = buildProfileParams(settings, options);
   assert.ok(params);
-  assert.equal(params.xrdbKey, 'shared-xrdb-key-000');
+  assert.equal('xrdbKey' in params, false);
   assert.equal('tmdbKey' in params, false);
   assert.equal('mdblistKey' in params, false);
   assert.equal('fanartKey' in params, false);
@@ -1001,7 +1001,7 @@ test('server managed exports omit provider credentials when server fallbacks are
   assert.ok(encodedConfig);
   const decodedProxy = JSON.parse(decodeBase64Url(encodedConfig));
   assert.equal(decodedProxy.url, 'https://addon.example.com/manifest.json');
-  assert.equal(decodedProxy.xrdbKey, 'shared-xrdb-key-000');
+  assert.equal('xrdbKey' in decodedProxy, false);
   assert.equal('tmdbKey' in decodedProxy, false);
   assert.equal('mdblistKey' in decodedProxy, false);
   assert.equal('fanartKey' in decodedProxy, false);

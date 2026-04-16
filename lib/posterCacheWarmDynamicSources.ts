@@ -7,6 +7,7 @@ import { resolveImdbDatasetPaths } from './imdbDatasetLookupSchedulerConfig.ts';
 import { logger } from './serverLogger.ts';
 import { TMDB_API_BASE_URL } from './serviceBaseUrls.ts';
 import type { PosterCacheWarmConfig } from './posterCacheWarmConfig.ts';
+import { fetchTmdbServer, hasServerTmdbCredentials } from './tmdbServerAuth.ts';
 
 type WarmFetchImpl = typeof fetch;
 
@@ -57,18 +58,22 @@ export const fetchTmdbPopularIds = async ({
   fetchImpl?: WarmFetchImpl;
   tmdbKey?: string;
 }) => {
-  if (!config.tmdbEnabled || !tmdbKey) {
+  if (!config.tmdbEnabled || (!tmdbKey && !hasServerTmdbCredentials())) {
     return [];
   }
 
   try {
     const responses = await Promise.all(
-      TMDB_ENDPOINTS.map(({ path, page }) =>
-        fetchImpl(
-          `${TMDB_API_BASE_URL}/${path}?api_key=${encodeURIComponent(tmdbKey)}&language=en-US&page=${page}`,
-          { cache: 'no-store' },
-        ),
-      ),
+      TMDB_ENDPOINTS.map(({ path, page }) => {
+        const target = new URL(path, `${TMDB_API_BASE_URL.replace(/\/+$/, '')}/`);
+        if (tmdbKey) {
+          target.searchParams.set('api_key', tmdbKey);
+        }
+        target.searchParams.set('language', 'en-US');
+        target.searchParams.set('page', String(page));
+
+        return fetchTmdbServer(target.toString(), { cache: 'no-store' }, fetchImpl);
+      }),
     );
 
     const failedLabels = responses

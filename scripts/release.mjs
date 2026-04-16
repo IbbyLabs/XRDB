@@ -29,9 +29,16 @@ function run(command, args, { stdio = 'inherit' } = {}) {
 console.log('Running saved profile verification gate before release...');
 run('npm', ['run', 'verify:config-profiles']);
 
-const tmdbKey = process.env.XRDB_README_PREVIEW_TMDB_KEY || process.env.TMDB_KEY || '';
+const hasTmdbCredential = Boolean(
+  process.env.XRDB_README_PREVIEW_TMDB_KEY ||
+  process.env.XRDB_TMDB_READ_ACCESS_TOKEN ||
+  process.env.TMDB_READ_ACCESS_TOKEN ||
+  process.env.XRDB_TMDB_API_KEY ||
+  process.env.TMDB_API_KEY ||
+  process.env.TMDB_KEY,
+);
 
-if (tmdbKey) {
+if (hasTmdbCredential) {
   console.log('Refreshing doc static assets before release...');
   const refreshResult = spawnSync(
     'node',
@@ -58,7 +65,7 @@ if (tmdbKey) {
     console.log('Doc assets are already up to date.');
   }
 } else {
-  console.warn('WARNING: TMDB key not configured. Skipping doc asset refresh.');
+  console.warn('WARNING: TMDB credentials not configured. Skipping doc asset refresh.');
 }
 
 const dirtyCheck = spawnSync('git', ['status', '--porcelain'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });

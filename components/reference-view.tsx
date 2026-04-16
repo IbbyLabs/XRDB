@@ -269,7 +269,7 @@ GET /thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb`}</CodeBlo
             XRDB reads provider API keys from server environment variables. Configure <code>XRDB_TMDB_API_KEY</code> plus <code>MDBLIST_API_KEY</code> or <code>MDBLIST_API_KEYS</code> for the simplest shared setup.
           </p>
           <p>
-            Generated URLs omit provider credentials when server keys exist. Optional per request overrides such as <code>tmdbKey</code>, <code>mdblistKey</code>, and <code>fanartKey</code> still work for advanced integrations.
+            Generated URLs omit embedded credentials when server keys exist, and masked exports omit <code>xrdbKey</code> too. Optional per request overrides such as <code>tmdbKey</code>, <code>mdblistKey</code>, and <code>fanartKey</code> still work for advanced integrations.
           </p>
           <p>
             When you save a config profile, XRDB stores the encrypted server copy behind a password protected UUID. Use Open saved profile in Import/Export, or reopen a configurator link containing <code>?config=&lt;uuid&gt;</code>, to load that same profile on another device. Runtime image requests can still use <code>?config=&lt;uuid&gt;</code>, but profile reveal, update, rotate-password, and delete actions require an unlock step in Import/Export.

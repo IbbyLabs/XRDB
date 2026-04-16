@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { fetchMdbListRatings } from '../lib/imageRouteMdbFetch.ts';
+import { sha1Hex } from '../lib/imageRouteRuntime.ts';
 
 const createPhases = () => ({
   auth: 0,
@@ -40,6 +41,7 @@ test('image route MDB fetch returns normalized ratings from a successful respons
   });
 
   assert.equal(calls.length, 1);
+  assert.equal(calls[0].key, `mdblist:tt0944947:key:${sha1Hex('demo').slice(0, 12)}`);
   assert.equal(calls[0].url, 'https://api.mdblist.com/imdb/show/tt0944947?apikey=demo');
   assert.equal(result.transientFailureTtlMs, null);
   assert.equal(result.ratings.get('tmdb'), '8.3');
@@ -72,6 +74,7 @@ test('image route MDB fetch returns null when the request fails', async () => {
   assert.equal(result.ratings, null);
   assert.equal(result.transientFailureTtlMs, 60_000);
   assert.equal(calls.length, 1);
+  assert.equal(calls[0].key, `mdblist:tt0111161:key:${sha1Hex('demo').slice(0, 12)}`);
   assert.equal(calls[0].url, 'https://api.mdblist.com/imdb/movie/tt0111161?apikey=demo');
 });
 

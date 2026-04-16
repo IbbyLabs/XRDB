@@ -1787,7 +1787,7 @@ const buildSharedPayload = (settings: SharedXrdbSettings, options?: SharedPayloa
   if (mdblistKey && !omitProviderCredentials) {
     payload.mdblistKey = mdblistKey;
   }
-  if (xrdbKey) {
+  if (xrdbKey && !omitProviderCredentials) {
     payload.xrdbKey = xrdbKey;
   }
   if (fanartKey && !omitProviderCredentials) {

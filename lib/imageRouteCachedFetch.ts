@@ -9,6 +9,8 @@ import {
   type JsonFetchImpl,
   type PhaseDurations,
 } from './imageRouteRuntime.ts';
+import { sanitizeSensitiveCredentialUrl } from './credentialSearchParams.ts';
+import { prepareTmdbServerRequest } from './tmdbServerAuth.ts';
 
 const jsonMetadataInFlight = new Map<string, Promise<CachedJsonResponse>>();
 const textMetadataInFlight = new Map<string, Promise<CachedTextResponse>>();
@@ -33,12 +35,14 @@ export const fetchJsonCached = async (
     if (fromCache) return fromCache;
 
     const fetchStartedAt = Date.now();
+    const preparedRequest = prepareTmdbServerRequest({ url, init });
+    const loggedUrl = sanitizeSensitiveCredentialUrl(preparedRequest.url);
     let response: Response;
     try {
       response = await measurePhase(phases, phase, () =>
-        fetchImpl(url, {
+        fetchImpl(preparedRequest.url, {
           cache: 'no-store',
-          ...init,
+          ...preparedRequest.init,
         }),
       );
     } catch (error) {
@@ -46,7 +50,7 @@ export const fetchJsonCached = async (
         try {
           await observer.onNetworkError({
             key,
-            url,
+            url: loggedUrl,
             errorMessage: error instanceof Error ? error.message : 'Network error',
             durationMs: Date.now() - fetchStartedAt,
           });
@@ -72,7 +76,7 @@ export const fetchJsonCached = async (
 
     const tmdbHost = (() => {
       try {
-        return new URL(url).hostname === 'api.themoviedb.org';
+        return new URL(preparedRequest.url).hostname === 'api.themoviedb.org';
       } catch {
         return false;
       }
@@ -86,7 +90,7 @@ export const fetchJsonCached = async (
         statusMessage.includes('api key') ||
         statusMessage.includes('unauthorized')
       ) {
-        throw new HttpError('TMDB API key is invalid or unauthorized', 401);
+        throw new HttpError('TMDB credentials are invalid or unauthorized', 401);
       }
       throw new HttpError('TMDB request is unauthorized', 401);
     }
@@ -99,7 +103,7 @@ export const fetchJsonCached = async (
       try {
         await observer.onNetworkResponse({
           key,
-          url,
+          url: loggedUrl,
           status: response.status,
           ok: response.ok,
           data,

@@ -9,6 +9,7 @@ import {
 } from '@/lib/configuratorMediaSearch';
 import { OMDB_API_KEY, TMDB_API_KEY } from '@/lib/imageRouteConfig';
 import { OMDB_API_BASE_URL } from '@/lib/serviceBaseUrls';
+import { fetchTmdbServer, hasServerTmdbCredentials } from '@/lib/tmdbServerAuth';
 
 const DEFAULT_SEARCH_LANGUAGE = 'en-US';
 const SEARCH_RESULTS_LIMIT = 8;
@@ -22,8 +23,8 @@ export async function GET(request: NextRequest) {
   if (!searchQuery) {
     return NextResponse.json({ error: 'Search query is required.' }, { status: 400 });
   }
-  if (!tmdbKey) {
-    return NextResponse.json({ error: 'TMDB key is required.' }, { status: 400 });
+  if (!tmdbKey && !hasServerTmdbCredentials()) {
+    return NextResponse.json({ error: 'TMDB credentials are required.' }, { status: 400 });
   }
 
   const previewType = isMediaSearchPreviewType(previewTypeRaw) ? previewTypeRaw : 'poster';
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest) {
     page: 1,
   });
 
-  const tmdbResponse = await fetch(tmdbSearchUrl, { cache: 'no-store' }).catch(() => null);
+  const tmdbResponse = await fetchTmdbServer(tmdbSearchUrl, { cache: 'no-store' }).catch(() => null);
   if (!tmdbResponse) {
     return NextResponse.json({ error: 'Search request failed.' }, { status: 502 });
   }

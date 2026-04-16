@@ -4,23 +4,13 @@ import {
   stringifyRatingPreferencesAllowEmpty,
   type RatingPreference,
 } from './ratingProviderCatalog.ts';
+import { SENSITIVE_CREDENTIAL_QUERY_PARAM_NAMES, stripSensitiveCredentialSearchParams } from './credentialSearchParams.ts';
 
 const STRIP_WARM_SEARCH_PARAMS = new Set([
   'cb',
   'config',
   'debugRatings',
-  'fanartClientKey',
-  'fanartKey',
-  'fanart_client_key',
-  'fanart_key',
-  'mdblistKey',
-  'mdblist_key',
-  'simklClientId',
-  'simkl_client_id',
-  'tmdbKey',
-  'tmdb_key',
-  'xrdbKey',
-  'xrdb_key',
+  ...SENSITIVE_CREDENTIAL_QUERY_PARAM_NAMES,
 ]);
 
 const DEFAULT_POSTER_WARM_RATING_PREFERENCES: RatingPreference[] = ['imdb', 'tmdb'];
@@ -47,6 +37,7 @@ export const buildPosterWarmSearchParams = (searchParams?: URLSearchParams) => {
   const warmSearchParams = new URLSearchParams(searchParams);
   const requestedPosterRatings = searchParams?.get('posterRatings') ?? searchParams?.get('ratings') ?? null;
 
+  stripSensitiveCredentialSearchParams(warmSearchParams);
   for (const key of STRIP_WARM_SEARCH_PARAMS) {
     warmSearchParams.delete(key);
   }

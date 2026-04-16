@@ -26,7 +26,15 @@ const PLAYWRIGHT_COMMAND_TIMEOUT_MS = Number.parseInt(process.env.DOC_CAPTURE_CO
 const DOC_USE_TURBOPACK = process.env.DOC_USE_TURBOPACK === 'true';
 const CAPTURE_DATE = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-const tmdbKey = process.env.XRDB_README_PREVIEW_TMDB_KEY || process.env.TMDB_KEY || '';
+const tmdbKey = process.env.XRDB_README_PREVIEW_TMDB_KEY || '';
+const hasTmdbCredential = Boolean(
+  tmdbKey ||
+  process.env.XRDB_TMDB_READ_ACCESS_TOKEN ||
+  process.env.TMDB_READ_ACCESS_TOKEN ||
+  process.env.XRDB_TMDB_API_KEY ||
+  process.env.TMDB_API_KEY ||
+  process.env.TMDB_KEY,
+);
 const mdblistKey = process.env.XRDB_README_PREVIEW_MDBLIST_KEY || process.env.MDBLIST_KEY || '';
 
 const ensureDir = async (targetPath) => {
@@ -40,8 +48,8 @@ const logRefreshStep = (message) => {
 };
 
 const readPreviewEnvKeys = () => {
-  if (!tmdbKey) {
-    throw new Error('Missing TMDB key. Set TMDB_KEY or XRDB_README_PREVIEW_TMDB_KEY in your shell, .env, or .env.local before running.');
+  if (!hasTmdbCredential) {
+    throw new Error('Missing TMDB credentials. Set XRDB_TMDB_READ_ACCESS_TOKEN, XRDB_TMDB_API_KEY, TMDB_API_KEY, TMDB_KEY, or XRDB_README_PREVIEW_TMDB_KEY in your shell, .env, or .env.local before running.');
   }
 
   return { tmdbKey, mdblistKey };

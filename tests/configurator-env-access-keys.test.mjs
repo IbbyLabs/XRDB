@@ -80,6 +80,22 @@ test('configurator env access keys detect server side TMDB values without exposi
   });
 });
 
+test('configurator env access keys treat a TMDB read access token as a server credential', () => {
+  const result = getConfiguratorEnvAccessKeys({
+    XRDB_TMDB_READ_ACCESS_TOKEN: 'tmdb-read-token',
+  });
+
+  assert.deepEqual(result, {
+    fanartKey: '',
+    mdblistKey: '',
+    simklClientId: '',
+    hasServerFanartKey: false,
+    hasServerMdblistKey: false,
+    hasServerSimklClientId: false,
+    hasServerTmdbKey: true,
+  });
+});
+
 test('configurator env access keys only fill empty user state', () => {
   const result = applyConfiguratorEnvAccessKeys(
     {

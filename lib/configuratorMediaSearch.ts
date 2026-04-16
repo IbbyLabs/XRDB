@@ -125,7 +125,9 @@ export const buildTmdbMultiSearchUrl = ({
   apiBaseUrl?: string;
 }) => {
   const target = new URL('search/multi', `${String(apiBaseUrl || '').replace(/\/+$/, '')}/`);
-  target.searchParams.set('api_key', tmdbKey);
+  if (tmdbKey) {
+    target.searchParams.set('api_key', tmdbKey);
+  }
   target.searchParams.set('query', query);
   target.searchParams.set('include_adult', includeAdult ? 'true' : 'false');
   target.searchParams.set('language', language);

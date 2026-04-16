@@ -5,6 +5,7 @@ import {
   resolveReadmePreviewDefinition,
   resolveReadmePreviewOrigins,
 } from '@/lib/readmePreview';
+import { hasServerTmdbCredentials } from '@/lib/tmdbServerAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -49,9 +50,9 @@ export async function GET(
     return buildTextResponse('Unknown README preview.', 404);
   }
 
-  const tmdbKey = process.env.XRDB_README_PREVIEW_TMDB_KEY?.trim();
-  if (!tmdbKey) {
-    return buildTextResponse('README preview TMDB key is not configured.', 503);
+  const tmdbKey = process.env.XRDB_README_PREVIEW_TMDB_KEY?.trim() || '';
+  if (!tmdbKey && !hasServerTmdbCredentials()) {
+    return buildTextResponse('README preview TMDB credentials are not configured.', 503);
   }
 
   const mdblistKey = process.env.XRDB_README_PREVIEW_MDBLIST_KEY?.trim() || null;

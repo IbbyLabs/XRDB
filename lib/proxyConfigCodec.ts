@@ -11,7 +11,8 @@ import {
   PROXY_OPTIONAL_STRING_KEYS,
   type ProxyConfig,
 } from './proxyConfigSchema.ts';
-import { MDBLIST_API_KEYS, TMDB_API_KEY } from './imageRouteConfig.ts';
+import { MDBLIST_API_KEYS } from './imageRouteConfig.ts';
+import { hasServerTmdbCredentials } from './tmdbServerAuth.ts';
 
 const LEGACY_QUERY_KEY_BY_FIELD = {
   posterArtworkSource: 'posterCleanSource',
@@ -86,7 +87,7 @@ export const normalizeProxyConfigPayload = (payload: Record<string, unknown>): P
   const url = readOptionalText(payload.url);
   const tmdbKey = readOptionalText(payload.tmdbKey) || '';
   const mdblistKey = readOptionalText(payload.mdblistKey) || '';
-  if (!url || (!tmdbKey && !TMDB_API_KEY) || (!mdblistKey && MDBLIST_API_KEYS.length === 0)) return null;
+  if (!url || (!tmdbKey && !hasServerTmdbCredentials()) || (!mdblistKey && MDBLIST_API_KEYS.length === 0)) return null;
 
   const config: ProxyConfig = { url, tmdbKey, mdblistKey };
   for (const key of PROXY_OPTIONAL_STRING_KEYS) {
@@ -117,7 +118,7 @@ export const getProxyConfigFromQuery = (searchParams: URLSearchParams): ProxyCon
   const url = searchParams.get('url');
   const tmdbKey = searchParams.get('tmdbKey') || '';
   const mdblistKey = searchParams.get('mdblistKey') || '';
-  if (!url || (!tmdbKey && !TMDB_API_KEY) || (!mdblistKey && MDBLIST_API_KEYS.length === 0)) return null;
+  if (!url || (!tmdbKey && !hasServerTmdbCredentials()) || (!mdblistKey && MDBLIST_API_KEYS.length === 0)) return null;
 
   const config: ProxyConfig = { url, tmdbKey, mdblistKey };
   const xrdbKey = searchParams.get('xrdbKey');

@@ -111,6 +111,10 @@ export const TMDB_API_KEY =
   process.env.TMDB_API_KEY?.trim() ||
   process.env.TMDB_KEY?.trim() ||
   '';
+export const TMDB_READ_ACCESS_TOKEN =
+  process.env.XRDB_TMDB_READ_ACCESS_TOKEN?.trim() ||
+  process.env.TMDB_READ_ACCESS_TOKEN?.trim() ||
+  '';
 export const FANART_API_KEY =
   process.env.XRDB_FANART_API_KEY?.trim() || process.env.FANART_API_KEY?.trim() || '';
 export const FANART_CLIENT_KEY =

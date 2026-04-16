@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { buildTmdbSupportedLanguageOptions } from '@/lib/configuratorLanguageOptions';
 import { TMDB_API_KEY } from '@/lib/imageRouteConfig';
 import { TMDB_API_BASE_URL } from '@/lib/serviceBaseUrls';
+import { fetchTmdbServer, hasServerTmdbCredentials } from '@/lib/tmdbServerAuth';
 
 type TmdbLanguageRecord = {
   english_name?: string | null;
@@ -13,25 +14,29 @@ type TmdbLanguageRecord = {
 const toUpstreamErrorStatus = (status: number) =>
   status === 401 || status === 403 ? 401 : 502;
 
+const buildTmdbConfigurationUrl = (path: string) => {
+  const target = new URL(path, `${TMDB_API_BASE_URL.replace(/\/+$/, '')}/`);
+  if (TMDB_API_KEY) {
+    target.searchParams.set('api_key', TMDB_API_KEY);
+  }
+  return target.toString();
+};
+
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  if (!TMDB_API_KEY) {
+  if (!hasServerTmdbCredentials()) {
     return NextResponse.json(
-      { error: 'TMDB key is required.', options: [] },
+      { error: 'TMDB credentials are required.', options: [] },
       { status: 400 },
     );
   }
 
   const [languagesResponse, primaryTranslationsResponse] = await Promise.all([
-    fetch(
-      `${TMDB_API_BASE_URL}/configuration/languages?api_key=${encodeURIComponent(TMDB_API_KEY)}`,
-      { cache: 'no-store' },
-    ),
-    fetch(
-      `${TMDB_API_BASE_URL}/configuration/primary_translations?api_key=${encodeURIComponent(TMDB_API_KEY)}`,
-      { cache: 'no-store' },
-    ),
+    fetchTmdbServer(buildTmdbConfigurationUrl('configuration/languages'), { cache: 'no-store' }),
+    fetchTmdbServer(buildTmdbConfigurationUrl('configuration/primary_translations'), {
+      cache: 'no-store',
+    }),
   ]);
 
   if (!languagesResponse.ok) {

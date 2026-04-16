@@ -174,6 +174,7 @@ import {
   HttpError,
   sha1Hex,
 } from './imageRouteRuntime.ts';
+import { hasServerTmdbCredentials } from './tmdbServerAuth.ts';
 import { pickOutputFormat, type OutputFormat } from './imageRouteMedia.ts';
 import {
   normalizeAgeRatingBadgePosition,
@@ -1382,8 +1383,8 @@ export const resolveImageRouteRequestState = async ({
     imageType === 'poster' && (posterArtworkSource === 'omdb' || posterArtworkSource === 'random');
   const omdbKeyHash = usesOmdbArtwork ? sha1Hex(OMDB_API_KEY || '').slice(0, 12) : '-';
 
-  if (!tmdbKey) {
-    throw new HttpError('TMDB API Key (tmdbKey) is required', 400);
+  if (!tmdbKey && !hasServerTmdbCredentials()) {
+    throw new HttpError('TMDB credentials are required.', 400);
   }
 
   const sourceFallbackUrl = await normalizeSafeFallbackImageUrl(requestedFallbackUrl);

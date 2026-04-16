@@ -54,10 +54,10 @@ Doc refresh and release scripts now run an automatic native dependency preflight
 XRDB uses server side provider keys by default. Configure TMDB and MDBList on the server, then use the configurator without pasting provider credentials into the browser:
 
 1. Provider keys stay in server environment variables.
-2. Generated image URLs, config strings, and addon proxy references omit provider credentials when the server key exists.
+2. Generated image URLs, config strings, and addon proxy references omit embedded credentials when the server key exists, and masked configurator exports omit `xrdbKey` too.
 3. The server falls back to those configured keys whenever `tmdbKey`, `mdblistKey`, `fanartKey`, or `simklClientId` is not present on an incoming request.
 
-This keeps setup simple for shared hosts and avoids exposing provider keys in the UI or copied URLs. Request protection still uses the separate optional XRDB request key.
+This keeps setup simple for shared hosts and avoids exposing provider keys or XRDB request keys in the UI or copied URLs. Request protection still uses the separate optional XRDB request key.
 
 The configurator includes an Import/Export view built around password protected UUID saved profiles. Save a profile once, use Open saved profile on another device, or paste a `?config=<uuid>` link back into the configurator to reopen that same server stored setup. When a protected profile is active, AIOMetadata exports default to lean UUID backed links while inline parameter URLs remain available as an advanced fallback. The `Hide credentials` toggle masks displayed AIOMetadata patterns with placeholders without changing live XRDB request URLs. The `Poster ID source` selector controls whether poster URLs use auto mode (typed TMDB IDs for the broadest coverage), explicit TMDB, or IMDb IDs for compatibility. Background and logo patterns always use type aware TMDB IDs, and episode thumbnails use the selected episode ID mode with season and episode placeholders plus their own thumbnail scoped ratings, artwork, text, and layout settings.
 
@@ -69,7 +69,7 @@ For `simkl`, XRDB resolves a Simkl item id using `https://api.simkl.com/redirect
 
 These are live requests against production so readers can see current poster, backdrop, and logo output directly inside GitHub.
 
-The gallery uses the optional server side preview env vars `XRDB_README_PREVIEW_TMDB_KEY` and `XRDB_README_PREVIEW_MDBLIST_KEY` so the README does not need to expose a raw API key.
+The gallery can use the optional server side preview env vars `XRDB_README_PREVIEW_TMDB_KEY` and `XRDB_README_PREVIEW_MDBLIST_KEY` when you want isolated preview traffic. Otherwise it falls back to the main server TMDB credential so the README does not need to expose a raw API key.
 
 The doc refresh and release workflows rotate through a curated, varied set of preview cards. Each preview URL includes a `cb` cache buster token so GitHub fetches the current release selection.
 
@@ -187,7 +187,7 @@ The release flow also bumps `FINAL_IMAGE_RENDERER_CACHE_VERSION` automatically s
 Release automation now regenerates every tracked README doc image and CI fails if the checked in doc assets drift from the generator output.
 If native `better-sqlite3` binaries are out of sync with your local Node runtime, the release flow attempts automatic remediation before running refresh and release steps.
 
-Store `XRDB_README_PREVIEW_TMDB_KEY` and `XRDB_README_PREVIEW_MDBLIST_KEY` in local `.env` or `.env.local` if you want the release/doc asset scripts to pick them up automatically. Shell exported vars still win if both are set.
+Store `XRDB_README_PREVIEW_TMDB_KEY` and `XRDB_README_PREVIEW_MDBLIST_KEY` in local `.env` or `.env.local` if you want isolated preview traffic for the release/doc asset scripts. Otherwise the preview flow can use the main server TMDB credential automatically. Shell exported vars still win if both are set.
 
 If the GHCR package already existed before it was linked to this repository, open the package in GitHub and:
 
@@ -425,7 +425,7 @@ The configurator preview type row now includes a sync control beside each type. 
 | `logoRatings` | Logo rating providers | `tmdb, mdblist, imdb, allocine, allocinepress, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist, anilist, kitsu` | `all` |
 | `ratingValueMode` | Rating display scaling | `native`, `normalized`, `normalized100` | `native` |
 | `ratingStyle` (or `posterRatingStyle` / `backdropRatingStyle` / `thumbnailRatingStyle` / `logoRatingStyle`, or `style` legacy) | Badge style | `glass` (Pill), `square` (Dark), `plain` (No BG), `stacked` | `glass` (poster/backdrop/thumbnail), `plain` (logo) |
-| `tmdbKey` | Optional TMDB v3 API key override | String | Server `XRDB_TMDB_API_KEY` |
+| `tmdbKey` | Optional TMDB v3 API key override | String | Server TMDB credential via `XRDB_TMDB_READ_ACCESS_TOKEN` or `XRDB_TMDB_API_KEY` |
 | `mdblistKey` | Optional MDBList API key override | String | Server `MDBLIST_API_KEY` / `MDBLIST_API_KEYS` |
 | `fanartKey` | Optional Fanart API key override for fanart poster, backdrop, and logo sources | String | Server `XRDB_FANART_API_KEY` |
 | `simklClientId` | Optional SIMKL client id override for direct SIMKL ratings | String | Server `SIMKL_CLIENT_ID` |
@@ -625,14 +625,14 @@ backdropSideRatingsPosition| top, middle, bottom, custom (backdrop only)        
 sideRatingsOffset       | Number (0-100) (global fallback)                                     | 50
 posterSideRatingsOffset | Number (0-100) (poster only)                                         | 50
 backdropSideRatingsOffset| Number (0-100) (backdrop only)                                      | 50
-tmdbKey                 | Optional TMDB v3 API key override                                    | server XRDB_TMDB_API_KEY
+tmdbKey                 | Optional TMDB v3 API key override                                    | server XRDB_TMDB_READ_ACCESS_TOKEN / XRDB_TMDB_API_KEY
 mdblistKey              | Optional MDBList.com API key override                                | server MDBLIST_API_KEY / MDBLIST_API_KEYS
 fanartKey               | Optional Fanart API key override                                     | server XRDB_FANART_API_KEY
 simklClientId           | Optional SIMKL client id override for direct SIMKL ratings           | server SIMKL_CLIENT_ID
 
 TMDB NOTE: Default tmdbIdScope=soft keeps compatibility and accepts tmdb:id. Set tmdbIdScope=strict to require tmdb:movie:id or tmdb:tv:id for backdrop and logo.
 STYLE NOTE: Transparent provider icons stay transparent in every style. In glass, icons with transparency such as Kitsu render on a neutral inner chip with an accent ring to avoid accent color bleed through.
-SERVER KEY NOTE: Configure XRDB_TMDB_API_KEY plus MDBLIST_API_KEY or MDBLIST_API_KEYS on the server. Fanart and SIMKL use XRDB_FANART_API_KEY and SIMKL_CLIENT_ID when available. Omit provider key params from generated URLs unless a per request override is explicitly needed.
+SERVER KEY NOTE: Configure XRDB_TMDB_READ_ACCESS_TOKEN or XRDB_TMDB_API_KEY plus MDBLIST_API_KEY or MDBLIST_API_KEYS on the server. Prefer XRDB_TMDB_READ_ACCESS_TOKEN when you do not want outbound TMDB requests to use api_key query strings. Fanart and SIMKL use XRDB_FANART_API_KEY and SIMKL_CLIENT_ID when available. Omit provider key params from generated URLs unless a per request override is explicitly needed.
 POSTER NOTE: `posterArtworkSource` supports `tmdb`, `fanart`, `cinemeta`, `omdb`, and `random`. Fanart uses fanart.tv poster art when a fanart key is available, Cinemeta uses MetaHub when an IMDb id is available, OMDb uses the server OMDb key plus IMDb id, and random picks a seeded source across the available poster candidates.
 BACKDROP NOTE: `backdropArtworkSource` supports `tmdb`, `fanart`, `cinemeta`, and `random`. Fanart uses fanart.tv moviebackground or showbackground art when a fanart key is available, Cinemeta uses MetaHub when an IMDb id is available, and random picks a seeded source across the available backdrop candidates.
 LOGO NOTE: `logoArtworkSource` supports `tmdb`, `fanart`, `cinemeta`, and `random`. Fanart uses fanart.tv HD or clear logo assets when a fanart key is available, Cinemeta uses MetaHub when an IMDb id is available, and random picks a seeded source across the available logo candidates.
@@ -869,9 +869,10 @@ Use `env.selfhost.template` for a minimal self host setup or `env.template` for 
 | `XRDB_HOSTNAME` | required for `compose.yaml` | Host rule value used by the Traefik labels |
 | `XRDB_TRAEFIK_ENTRYPOINTS` | `websecure` | Traefik entrypoints label value |
 | `XRDB_TRAEFIK_CERTRESOLVER` | `letsencrypt` | Traefik certresolver label value |
-| `XRDB_README_PREVIEW_TMDB_KEY` | (empty) | Optional dedicated TMDB key for the fixed README preview gallery route |
+| `XRDB_README_PREVIEW_TMDB_KEY` | (empty) | Optional dedicated TMDB key for the fixed README preview gallery route when you want isolated preview traffic |
 | `XRDB_README_PREVIEW_MDBLIST_KEY` | (empty) | Optional dedicated MDBList key for the fixed README preview gallery route |
-| `XRDB_TMDB_API_KEY` | (empty) | Server side TMDB v3 API key used for image rendering, search, and proxy translation (also `TMDB_API_KEY` and `TMDB_KEY`) |
+| `XRDB_TMDB_READ_ACCESS_TOKEN` | (empty) | Preferred server side TMDB read access token used for image rendering, search, and proxy translation (also `TMDB_READ_ACCESS_TOKEN`) |
+| `XRDB_TMDB_API_KEY` | (empty) | Optional server side TMDB v3 API key fallback used for image rendering, search, and proxy translation (also `TMDB_API_KEY` and `TMDB_KEY`) |
 | `XRDB_TMDB_API_BASE_URL` | `https://api.themoviedb.org/3` | Optional TMDB API base URL override used by image rendering and proxy translation |
 | `XRDB_ANILIST_GRAPHQL_URL` | `https://graphql.anilist.co` | Optional AniList GraphQL endpoint override |
 | `XRDB_ANIME_MAPPING_BASE_URL` | `https://animemapping.stremio.dpdns.org` | Optional anime mapping service base URL override used by image rendering and proxy translation |

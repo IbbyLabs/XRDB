@@ -4,7 +4,8 @@ import { loadProxyManifestPayload } from '@/lib/proxySourceManifest';
 import {
   buildProxyCorsHeaders,
 } from '@/lib/proxyManifest';
-import { MDBLIST_API_KEYS, TMDB_API_KEY } from '@/lib/imageRouteConfig';
+import { MDBLIST_API_KEYS } from '@/lib/imageRouteConfig';
+import { hasServerTmdbCredentials } from '@/lib/tmdbServerAuth';
 
 const resolveCorsHeaders = (request: NextRequest) =>
   buildProxyCorsHeaders({
@@ -29,7 +30,7 @@ export async function handleProxyManifestGet(request: NextRequest) {
   if (!sourceUrl) {
     return buildError(request, 'Missing "url" query parameter.');
   }
-  if ((!tmdbKey && !TMDB_API_KEY) || (!mdblistKey && MDBLIST_API_KEYS.length === 0)) {
+  if ((!tmdbKey && !hasServerTmdbCredentials()) || (!mdblistKey && MDBLIST_API_KEYS.length === 0)) {
     return buildError(request, 'Missing "tmdbKey" or "mdblistKey" query parameter.');
   }
 

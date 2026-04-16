@@ -311,7 +311,7 @@ test('image route request state requires a TMDB key', async () => {
     (error) => {
       assert.ok(error instanceof HttpError);
       assert.equal(error.status, 400);
-      assert.equal(error.message, 'TMDB API Key (tmdbKey) is required');
+      assert.equal(error.message, 'TMDB credentials are required.');
       return true;
     },
   );

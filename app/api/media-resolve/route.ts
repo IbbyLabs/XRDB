@@ -3,14 +3,30 @@ import { NextResponse } from 'next/server';
 
 import { TMDB_API_KEY } from '@/lib/imageRouteConfig';
 import { TMDB_API_BASE_URL } from '@/lib/serviceBaseUrls';
+import { fetchTmdbServer, hasServerTmdbCredentials } from '@/lib/tmdbServerAuth';
 
 const EMPTY_RESULT = { title: null };
+
+const buildTmdbResolveUrl = (
+  path: string,
+  tmdbKey: string,
+  searchParams: Record<string, string>,
+) => {
+  const target = new URL(path, `${TMDB_API_BASE_URL.replace(/\/+$/, '')}/`);
+  if (tmdbKey) {
+    target.searchParams.set('api_key', tmdbKey);
+  }
+  for (const [key, value] of Object.entries(searchParams)) {
+    target.searchParams.set(key, value);
+  }
+  return target.toString();
+};
 
 export async function GET(request: NextRequest) {
   const id = String(request.nextUrl.searchParams.get('id') || '').trim();
   const tmdbKey = String(request.nextUrl.searchParams.get('tmdbKey') || '').trim() || TMDB_API_KEY;
 
-  if (!id || !tmdbKey) {
+  if (!id || (!tmdbKey && !hasServerTmdbCredentials())) {
     return NextResponse.json(EMPTY_RESULT, { status: 400 });
   }
 
@@ -18,8 +34,8 @@ export async function GET(request: NextRequest) {
   if (tmdbPrefixMatch) {
     const mediaType = tmdbPrefixMatch[1];
     const tmdbId = tmdbPrefixMatch[2];
-    const url = `${TMDB_API_BASE_URL}/${mediaType}/${tmdbId}?api_key=${tmdbKey}&language=en-US`;
-    const response = await fetch(url, { cache: 'no-store' }).catch(() => null);
+    const url = buildTmdbResolveUrl(`${mediaType}/${tmdbId}`, tmdbKey, { language: 'en-US' });
+    const response = await fetchTmdbServer(url, { cache: 'no-store' }).catch(() => null);
     if (!response?.ok) return NextResponse.json(EMPTY_RESULT);
     const data = await response.json().catch(() => null) as Record<string, unknown> | null;
     if (!data) return NextResponse.json(EMPTY_RESULT);
@@ -29,8 +45,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ title: title && yearStr ? `${title} (${yearStr})` : title });
   }
 
-  const url = `${TMDB_API_BASE_URL}/find/${encodeURIComponent(id)}?api_key=${tmdbKey}&external_source=imdb_id&language=en-US`;
-  const response = await fetch(url, { cache: 'no-store' }).catch(() => null);
+  const url = buildTmdbResolveUrl(`find/${encodeURIComponent(id)}`, tmdbKey, {
+    external_source: 'imdb_id',
+    language: 'en-US',
+  });
+  const response = await fetchTmdbServer(url, { cache: 'no-store' }).catch(() => null);
   if (!response?.ok) return NextResponse.json(EMPTY_RESULT);
   const data = await response.json().catch(() => null) as Record<string, unknown[]> | null;
   if (!data) return NextResponse.json(EMPTY_RESULT);

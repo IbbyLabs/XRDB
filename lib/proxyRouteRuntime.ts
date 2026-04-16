@@ -22,6 +22,7 @@ import {
 } from './episodeIdentity.ts';
 import { TMDB_API_KEY } from './imageRouteConfig.ts';
 import { TMDB_API_BASE_URL } from './serviceBaseUrls.ts';
+import { fetchTmdbServer } from './tmdbServerAuth.ts';
 
 const ANILIST_GRAPHQL_URL = process.env.XRDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
 const ANILIST_MEDIA_QUERY = `
@@ -118,7 +119,7 @@ const createCachedJsonFetcher = (
   failedTtlMs: number,
 ) =>
   createCachedValueFetcher(cache, successTtlMs, failedTtlMs, async (url: string) => {
-    const response = await fetch(url, { cache: 'no-store' });
+    const response = await fetchTmdbServer(url, { cache: 'no-store' });
     if (!response.ok) {
       return null;
     }

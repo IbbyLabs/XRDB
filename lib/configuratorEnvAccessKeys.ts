@@ -1,3 +1,5 @@
+import { hasServerTmdbCredentials } from './tmdbServerAuth.ts';
+
 export type ConfiguratorEnvAccessKeys = {
   fanartKey: string;
   mdblistKey: string;
@@ -35,11 +37,15 @@ export const getConfiguratorEnvAccessKeys = (
       trimEnvValue(env.SIMKL_API_KEY) ||
       trimEnvValue(env.XRDB_SIMKL_CLIENT_ID),
   ),
-  hasServerTmdbKey: Boolean(
-    trimEnvValue(env.XRDB_TMDB_API_KEY) ||
+  hasServerTmdbKey: hasServerTmdbCredentials({
+    serverApiKey:
+      trimEnvValue(env.XRDB_TMDB_API_KEY) ||
       trimEnvValue(env.TMDB_API_KEY) ||
       trimEnvValue(env.TMDB_KEY),
-  ),
+    serverReadAccessToken:
+      trimEnvValue(env.XRDB_TMDB_READ_ACCESS_TOKEN) ||
+      trimEnvValue(env.TMDB_READ_ACCESS_TOKEN),
+  }),
 });
 
 export const applyConfiguratorEnvAccessKeys = (

@@ -130,6 +130,24 @@ test('README preview target URLs inject the dedicated keys server side', () => {
   );
 });
 
+test('README preview target URLs omit tmdbKey when the server credential stays server side', () => {
+  const definition = resolveReadmePreviewDefinition('attack-on-titan-poster');
+  assert.ok(definition);
+
+  const url = buildReadmePreviewTargetUrl({
+    origin: 'https://xrdb.ibbylabs.dev',
+    definition,
+    tmdbKey: '',
+    mdblistKey: 'mdblist-preview-key',
+    cacheBuster: 'preview123',
+  });
+
+  assert.equal(
+    url.toString(),
+    'https://xrdb.ibbylabs.dev/poster/mal%3A16498.jpg?mdblistKey=mdblist-preview-key&lang=ja&posterRatings=tmdb%2Cmyanimelist%2Canilist%2Ckitsu&posterRatingsLayout=top+bottom&posterStreamBadges=off&ratingStyle=glass&imageText=original&cb=preview123'
+  );
+});
+
 test('README preview origin prefers the preview app origin when configured', () => {
   assert.equal(
     resolveReadmePreviewOrigin({

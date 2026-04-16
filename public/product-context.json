@@ -2,7 +2,7 @@
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
   "xrdbTag": "v1.21.0",
-  "generatedAt": "2026-04-16T05:38:21.205Z",
+  "generatedAt": "2026-04-16T19:22:10.504Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -26,6 +26,7 @@
         "/api/config/[id]/status",
         "/api/config/[id]/unlock",
         "/api/configurator-env-access-keys: Runtime configurator access key defaults endpoint.",
+        "/api/configurator-language-options",
         "/api/discord-widget: Community widget endpoint.",
         "/api/latest-release: Latest release feed used by the site.",
         "/api/media-resolve: Configurator media resolve endpoint.",
@@ -43,11 +44,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
-        "BUG-106 restore full provider resolution",
-        "harden stream cache",
-        "add adaptive stream cache ttl policy",
-        "replace s<=30 season cap with TMDB number_of_seasons bound",
-        "BUG-102 BUG-103 TMDB episode ID mode and anime S2 consolidated remap"
+        "restore full language options",
+        "prefer IMDb reverse mapping for anime episode fallback",
+        "sanitize poster warm replay requests",
+        "BUG-108 shorten cache for transient MDBList failures",
+        "BUG-106 restore full provider resolution"
       ]
     },
     {

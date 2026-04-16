@@ -88,6 +88,36 @@ test('image route cached fetch throws a typed TMDB auth error', async () => {
   );
 });
 
+test('image route cached fetch redacts credential query params for observer URLs', async () => {
+  const phases = createPhases();
+  const observed = [];
+
+  await fetchJsonCached(
+    createUniqueKey('observer-redaction'),
+    'https://api.mdblist.com/imdb/show/tt0944947?apikey=demo&client_id=simkl-client&fanartKey=fanart-key&xrdbKey=secret-key',
+    60_000,
+    phases,
+    'mdb',
+    undefined,
+    {
+      onNetworkResponse: (input) => {
+        observed.push(input.url);
+      },
+    },
+    async () =>
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }),
+  );
+
+  assert.deepEqual(observed, [
+    'https://api.mdblist.com/imdb/show/tt0944947?apikey=%5Bredacted%5D&client_id=%5Bredacted%5D&fanartKey=%5Bredacted%5D&xrdbKey=%5Bredacted%5D',
+  ]);
+});
+
 test('image route cached fetch reuses cached text responses', async () => {
   const phases = createPhases();
   const key = createUniqueKey('text');
