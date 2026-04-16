@@ -5,12 +5,13 @@ export const XRDBID_PREFIX = 'xrdbid';
 export const THUMBNAIL_RATING_PREFERENCES = ['tmdb', 'imdb'] as const satisfies readonly RatingPreference[];
 export type ThumbnailRatingPreference = (typeof THUMBNAIL_RATING_PREFERENCES)[number];
 
-export type EpisodeIdMode = 'imdb' | 'xrdbid' | 'tvdb' | 'kitsu' | 'anilist' | 'mal' | 'anidb';
+export type EpisodeIdMode = 'imdb' | 'tmdb' | 'xrdbid' | 'tvdb' | 'kitsu' | 'anilist' | 'mal' | 'anidb';
 
 export const DEFAULT_EPISODE_ID_MODE: EpisodeIdMode = 'imdb';
 
 const EPISODE_ID_MODE_SET = new Set<EpisodeIdMode>([
   'imdb',
+  'tmdb',
   'xrdbid',
   'tvdb',
   'kitsu',
@@ -164,6 +165,9 @@ export const buildEpisodePatternBaseId = (mode: EpisodeIdMode) => {
   if (mode === 'xrdbid') {
     return `${XRDBID_PREFIX}:{imdb_id}`;
   }
+  if (mode === 'tmdb') {
+    return 'tmdb:{tmdb_id}';
+  }
   if (mode === 'tvdb') {
     return 'tvdb:{tvdb_id}';
   }
@@ -197,6 +201,11 @@ export const applyEpisodeIdModeToXrdbId = (
   }
 
   const prefix = trimmed.split(':')[0]?.trim().toLowerCase() || '';
+  if (mode === 'tmdb' && prefix !== 'tmdb') {
+    const numericId = trimmed.replace(/^tmdb:/i, '');
+    return `tmdb:${numericId}`;
+  }
+  if (mode === 'tmdb') return trimmed;
   if (mode === 'tvdb' && prefix === 'tvdb') return trimmed;
   if (mode === 'kitsu' && prefix === 'kitsu') return trimmed;
   if (mode === 'anilist' && prefix === 'anilist') return trimmed;

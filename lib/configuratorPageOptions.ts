@@ -180,6 +180,11 @@ export const EPISODE_ID_MODE_OPTIONS: Array<{
     description: 'Use the series IMDb ID with season and episode placeholders.',
   },
   {
+    id: 'tmdb',
+    label: 'TMDB',
+    description: 'Use TMDB series IDs with season and episode placeholders.',
+  },
+  {
     id: 'xrdbid',
     label: 'XRDBID',
     description: 'Use the XRDBID episode resolver for stronger long run episode matching.',
@@ -187,7 +192,7 @@ export const EPISODE_ID_MODE_OPTIONS: Array<{
   {
     id: 'tvdb',
     label: 'TVDB',
-    description: 'Use TVDB aired order IDs when your source exposes TVDB episode mapping.',
+    description: 'Use TVDB aired order IDs when your source exposes TVDB series and episode IDs. Requires thetvdb.com availability. Falls back to TMDB season mapping when TVDB resolution fails.',
   },
   {
     id: 'kitsu',

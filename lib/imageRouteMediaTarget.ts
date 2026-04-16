@@ -173,6 +173,7 @@ if (isTmdb) {
     throw new HttpError('TVDB series ID is required', 400);
   }
 
+  let tvdbEpisodeResolved = false;
   if (season && episode) {
     const mappedEpisode = await resolveTvdbEpisodeToTmdb(
       mediaId,
@@ -183,12 +184,12 @@ if (isTmdb) {
       fetchJsonCached,
       fetchTextCached,
     );
-    if (!mappedEpisode?.showId) {
-      throw new HttpError('TVDB aired order episode not found on TMDB', 404);
+    if (mappedEpisode?.showId) {
+      tvdbEpisodeResolved = true;
+      mediaId = mappedEpisode.showId;
+      season = mappedEpisode.season;
+      episode = mappedEpisode.episode;
     }
-    mediaId = mappedEpisode.showId;
-    season = mappedEpisode.season;
-    episode = mappedEpisode.episode;
   }
 
   const tvFindResponse = await fetchJsonCached(
@@ -203,6 +204,12 @@ if (isTmdb) {
   if (tvResult) {
     media = tvResult;
     mediaType = 'tv';
+    if (!tvdbEpisodeResolved && season && episode) {
+      const remapped = await resolveTmdbConsolidatedSeasonEpisode(
+        String(tvResult.id || ''), season, episode, tmdbKey, phases, fetchJsonCached,
+      );
+      if (remapped) { season = remapped.season; episode = remapped.episode; }
+    }
   }
 } else if (isCanonId) {
   if (!mediaId) {
@@ -549,7 +556,20 @@ if (isTmdb) {
         media = showResponse.data;
         mediaType = 'tv';
       }
+      if (isThumbnailRequest && mediaType === 'tv' && season && episode) {
+        const remapped = await resolveTmdbConsolidatedSeasonEpisode(
+          showId, season, episode, tmdbKey, phases, fetchJsonCached,
+        );
+        if (remapped) { season = remapped.season; episode = remapped.episode; }
+      }
     }
+  }
+
+  if (isThumbnailRequest && mediaType === 'tv' && season && episode && media && !findData.tv_episode_results?.[0]) {
+    const remapped = await resolveTmdbConsolidatedSeasonEpisode(
+      String(media?.id || mediaId), season, episode, tmdbKey, phases, fetchJsonCached,
+    );
+    if (remapped) { season = remapped.season; episode = remapped.episode; }
   }
 }
 

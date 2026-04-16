@@ -479,7 +479,7 @@ XRDB supports multiple formats to identify media:
 - **TMDB**: `tmdb:603` or explicit `tmdb:movie:603` / `tmdb:tv:1399`
 - **Kitsu**: `kitsu:1` (prefix `kitsu:` followed by the ID)
 - **Anime Mappings**: `provider:id` (e.g. `anilist:123`, `myanimelist:456`)
-- **Episode Thumbnails**: `/thumbnail/{episodeBaseId}/S01E01.jpg` where `episodeBaseId` can be plain IMDb, `xrdbid:{imdb_id}`, `tvdb:{tvdb_id}`, `kitsu:{kitsu_id}`, `anilist:{anilist_id}`, `mal:{mal_id}`, or `anidb:{anidb_id}`
+- **Episode Thumbnails**: `/thumbnail/{episodeBaseId}/S01E01.jpg` where `episodeBaseId` can be plain IMDb, `tmdb:{tmdb_id}`, `xrdbid:{imdb_id}`, `tvdb:{tvdb_id}`, `kitsu:{kitsu_id}`, `anilist:{anilist_id}`, `mal:{mal_id}`, or `anidb:{anidb_id}`
 
 ## Addon Developer Guide
 

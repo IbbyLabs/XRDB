@@ -12,12 +12,17 @@ import {
 test('episode id mode normalization accepts local canonical and tvdb modes', () => {
   assert.equal(normalizeEpisodeIdMode('xrdbid'), 'xrdbid');
   assert.equal(normalizeEpisodeIdMode('tvdb'), 'tvdb');
+  assert.equal(normalizeEpisodeIdMode('tmdb'), 'tmdb');
   assert.equal(normalizeEpisodeIdMode('unknown'), 'imdb');
 });
 
 test('episode pattern builders expose local canonical and tvdb placeholders', () => {
   assert.equal(buildEpisodePatternBaseId('xrdbid'), 'xrdbid:{imdb_id}');
   assert.equal(buildEpisodePatternBaseId('tvdb'), 'tvdb:{tvdb_id}');
+});
+
+test('episode pattern builder returns tmdb placeholder for tmdb mode', () => {
+  assert.equal(buildEpisodePatternBaseId('tmdb'), 'tmdb:{tmdb_id}');
 });
 
 test('episode id mode remaps series imdb ids to the local canonical prefix for episodic flows', () => {
@@ -28,6 +33,21 @@ test('episode id mode remaps series imdb ids to the local canonical prefix for e
   assert.equal(
     applyEpisodeIdModeToXrdbId('tvdb:81189', 'tvdb', 'tv'),
     'tvdb:81189',
+  );
+});
+
+test('episode id mode prepends tmdb prefix for tmdb mode', () => {
+  assert.equal(
+    applyEpisodeIdModeToXrdbId('12345', 'tmdb', 'tv'),
+    'tmdb:12345',
+  );
+  assert.equal(
+    applyEpisodeIdModeToXrdbId('tmdb:12345', 'tmdb', 'tv'),
+    'tmdb:12345',
+  );
+  assert.equal(
+    applyEpisodeIdModeToXrdbId('12345', 'tmdb', 'movie'),
+    '12345',
   );
 });
 

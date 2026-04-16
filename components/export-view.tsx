@@ -19,7 +19,6 @@ import {
 } from '@/lib/configProfileClientState';import { useConfiguratorContext } from '@/lib/configuratorProvider';
 import { WorkspaceManagementSection } from '@/components/configurator-basics';
 import {
-  DEFAULT_EPISODE_ID_MODE,
   THUMBNAIL_RATING_PREFERENCES,
   type EpisodeIdMode,
   type ThumbnailRatingPreference,
@@ -28,6 +27,7 @@ import {
   RATING_PROVIDER_OPTIONS,
 } from '@/lib/ratingProviderCatalog';
 import { buildProfileParams, type AiometadataUrlPatterns, type EpisodeArtworkMode, type SavedUiConfig } from '@/lib/uiConfig';
+import { EPISODE_ID_MODE_OPTIONS } from '@/lib/configuratorPageOptions';
 
 const LEGACY_CONFIG_ID_RE = /^(xr_[0-9a-f]{8}|xrc_[0-9a-f]{16})$/i;
 const CONFIG_UNLOCK_HEADER = 'x-xrdb-config-unlock';
@@ -61,18 +61,7 @@ const readErrorMessage = async (response: Response, fallback: string) => {
 type PosterIdMode = 'auto' | 'tmdb' | 'imdb';
 type PreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 
-const EPISODE_ID_MODE_OPTIONS: Array<{
-  id: EpisodeIdMode;
-  label: string;
-}> = [
-  { id: DEFAULT_EPISODE_ID_MODE, label: 'IMDb' },
-  { id: 'xrdbid', label: 'XRDBID' },
-  { id: 'tvdb', label: 'TVDB' },
-  { id: 'kitsu', label: 'Kitsu' },
-  { id: 'anilist', label: 'AniList' },
-  { id: 'mal', label: 'MAL' },
-  { id: 'anidb', label: 'AniDB' },
-];
+
 
 const EPISODE_ARTWORK_MODE_OPTIONS: Array<{
   id: EpisodeArtworkMode;
@@ -270,6 +259,12 @@ export function ExportView() {
                     />
                   ))}
                 </div>
+                {(() => {
+                  const active = EPISODE_ID_MODE_OPTIONS.find((o) => o.id === episodeIdMode);
+                  return active?.description ? (
+                    <p className="mt-1.5 text-[11px] leading-5 text-zinc-500">{active.description}</p>
+                  ) : null;
+                })()}
               </ExportOptionGroup>
 
               <ExportOptionGroup label="Thumbnail episode artwork">

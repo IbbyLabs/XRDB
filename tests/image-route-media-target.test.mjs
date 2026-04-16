@@ -71,6 +71,13 @@ test('image route media target prefers TV matches for episodic IMDb lookups', as
     phases: { ...phases },
     fetchJsonCached: async (key, url) => {
       requests.push({ key, url });
+      if (key === 'tmdb:tv:9:season:1') {
+        return {
+          ok: true,
+          status: 200,
+          data: { episodes: Array(10).fill(null).map((_, i) => ({ episode_number: i + 1 })) },
+        };
+      }
       return {
         ok: true,
         status: 200,
@@ -100,10 +107,16 @@ test('image route media target prefers TV matches for episodic IMDb lookups', as
 
   assert.equal(result.mediaType, 'tv');
   assert.equal(result.media.id, 9);
+  assert.equal(result.season, '1');
+  assert.equal(result.episode, '2');
   assert.deepEqual(requests, [
     {
       key: 'tmdb:find:tt1234567',
       url: 'https://api.themoviedb.org/3/find/tt1234567?api_key=tmdb-key&external_source=imdb_id',
+    },
+    {
+      key: 'tmdb:tv:9:season:1',
+      url: 'https://api.themoviedb.org/3/tv/9/season/1?api_key=tmdb-key',
     },
   ]);
 });
@@ -262,4 +275,123 @@ test('image route media target remaps reverse-mapped anime episodes to TMDB epis
       url: 'https://api.themoviedb.org/3/tv/46298/season/2?api_key=tmdb-key',
     },
   ]);
+});
+
+test('image route media target applies consolidated-season remap in generic else path for anime thumbnails', async () => {
+  const result = await resolveImageRouteMediaTarget({
+    imageType: 'backdrop',
+    isThumbnailRequest: true,
+    tmdbKey: 'tmdb-key',
+    phases: { ...phases },
+    fetchJsonCached: async (key) => {
+      if (key === 'tmdb:find:tt1234567') {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            movie_results: [],
+            tv_results: [{ id: 99, name: 'Frieren' }],
+          },
+        };
+      }
+      if (key === 'tmdb:tv:99:season:1') {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            episodes: Array(12).fill(null).map((_, i) => ({ episode_number: i + 1 })),
+          },
+        };
+      }
+      if (key === 'tmdb:tv:99:season:2') {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            episodes: Array(12).fill(null).map((_, i) => ({ episode_number: i + 1 })),
+          },
+        };
+      }
+      return { ok: false, status: 404, data: null };
+    },
+    fetchTextCached: async () => createTextResponse(),
+    mediaId: 'tt1234567',
+    season: '1',
+    episode: '15',
+    isTmdb: false,
+    isTvdb: false,
+    isCanonId: false,
+    isKitsu: false,
+    inputAnimeMappingProvider: null,
+    inputAnimeMappingExternalId: null,
+    explicitTmdbMediaType: null,
+    tvdbSeriesId: null,
+    hasNativeAnimeInput: false,
+    allowAnimeOnlyRatings: false,
+    hasConfirmedAnimeMapping: false,
+    tmdbEpOrder: 'tmdb',
+  });
+
+  assert.equal(result.mediaType, 'tv');
+  assert.equal(result.media.id, 99);
+  assert.equal(result.season, '2');
+  assert.equal(result.episode, '3');
+});
+
+test('image route media target TVDB path falls back to consolidated remap when scrape fails', async () => {
+  const result = await resolveImageRouteMediaTarget({
+    imageType: 'backdrop',
+    isThumbnailRequest: true,
+    tmdbKey: 'tmdb-key',
+    phases: { ...phases },
+    fetchJsonCached: async (key) => {
+      if (key === 'tmdb:find:tvdb-series:81189') {
+        return {
+          ok: true,
+          status: 200,
+          data: { tv_results: [{ id: 1399, name: 'Game of Thrones' }] },
+        };
+      }
+      if (key === 'tmdb:tv:1399:season:2') {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            episodes: Array(10).fill(null).map((_, i) => ({ episode_number: i + 1 })),
+          },
+        };
+      }
+      if (key === 'tmdb:tv:1399:season:1') {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            episodes: Array(10).fill(null).map((_, i) => ({ episode_number: i + 1 })),
+          },
+        };
+      }
+      return { ok: false, status: 404, data: null };
+    },
+    fetchTextCached: async () => createTextResponse(null, false),
+    mediaId: '81189',
+    season: '2',
+    episode: '3',
+    isTmdb: false,
+    isTvdb: true,
+    isCanonId: false,
+    isKitsu: false,
+    inputAnimeMappingProvider: null,
+    inputAnimeMappingExternalId: null,
+    explicitTmdbMediaType: null,
+    tvdbSeriesId: '81189',
+    hasNativeAnimeInput: false,
+    allowAnimeOnlyRatings: false,
+    hasConfirmedAnimeMapping: false,
+    tmdbEpOrder: 'tmdb',
+  });
+
+  assert.equal(result.mediaType, 'tv');
+  assert.equal(result.media.id, 1399);
+  assert.equal(result.season, '2');
+  assert.equal(result.episode, '3');
 });
