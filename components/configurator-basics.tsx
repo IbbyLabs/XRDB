@@ -111,7 +111,7 @@ function ThemedDropdown({
         />
       </button>
       {isOpen ? (
-        <div className="absolute left-0 top-full z-30 mt-2 w-[15.5rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-violet-400/20 bg-[linear-gradient(180deg,rgba(31,18,52,0.98),rgba(11,8,22,0.98))] shadow-[0_28px_72px_rgba(6,4,14,0.62)] backdrop-blur-xl">
+        <div className="absolute right-0 top-full z-30 mt-2 w-[15.5rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-violet-400/20 bg-[linear-gradient(180deg,rgba(31,18,52,0.98),rgba(11,8,22,0.98))] shadow-[0_28px_72px_rgba(6,4,14,0.62)] backdrop-blur-xl">
           <div className="border-b border-white/8 px-3 py-2">
             <div className="text-[9px] font-semibold uppercase tracking-[0.18em] text-violet-200/75">
               {label}

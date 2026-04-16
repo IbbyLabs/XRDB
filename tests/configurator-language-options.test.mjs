@@ -39,3 +39,24 @@ test('language selector renders localized labels without appending locale codes'
   assert.doesNotMatch(source, /\{option\.label\} \(\{option\.code\}\)/);
   assert.doesNotMatch(source, /\{activeOption\.label\} \(\{activeOption\.code\}\)/);
 });
+
+test('language selector loads options through the server route instead of direct TMDB client fetches', () => {
+  const source = fs.readFileSync(
+    path.resolve(process.cwd(), 'lib/useConfiguratorPageChrome.ts'),
+    'utf8',
+  );
+
+  assert.match(source, /fetch\('\/api\/configurator-language-options'/);
+  assert.doesNotMatch(source, /api\.themoviedb\.org\/3\/configuration\/languages/);
+  assert.doesNotMatch(source, /api\.themoviedb\.org\/3\/configuration\/primary_translations/);
+});
+
+test('language selector dropdown anchors to the trigger right edge to avoid viewport overflow', () => {
+  const source = fs.readFileSync(
+    path.resolve(process.cwd(), 'components/configurator-basics.tsx'),
+    'utf8',
+  );
+
+  assert.match(source, /absolute right-0 top-full z-30/);
+  assert.doesNotMatch(source, /absolute left-0 top-full z-30/);
+});

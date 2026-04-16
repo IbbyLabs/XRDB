@@ -1077,7 +1077,6 @@ export function useConfiguratorWorkspaceRuntime({
   const pageChrome = useConfiguratorPageChrome({
     disableRemoteLookups,
     initialSupportedLanguages: SUPPORTED_LANGUAGES,
-    tmdbKey: docsCaptureConfig ? tmdbKey : '',
   });
 
   const workspaceConfigIo = useConfiguratorWorkspaceConfigIo({

@@ -6,16 +6,13 @@ import {
   type MouseEvent,
 } from 'react';
 import { type SupportedLanguageOption } from '@/lib/configuratorPageOptions';
-import { buildTmdbSupportedLanguageOptions } from '@/lib/configuratorLanguageOptions.ts';
 
 export function useConfiguratorPageChrome({
   disableRemoteLookups = false,
   initialSupportedLanguages,
-  tmdbKey,
 }: {
   disableRemoteLookups?: boolean;
   initialSupportedLanguages: SupportedLanguageOption[];
-  tmdbKey: string;
 }) {
   const pageRef = useRef<HTMLDivElement | null>(null);
   const navRef = useRef<HTMLElement | null>(null);
@@ -97,32 +94,26 @@ export function useConfiguratorPageChrome({
       return;
     }
 
-    if (!tmdbKey || tmdbKey.length <= 10) {
-      return;
-    }
+    let active = true;
 
-    Promise.all([
-      fetch(`https://api.themoviedb.org/3/configuration/languages?api_key=${tmdbKey}`).then((res) =>
-        res.json(),
-      ),
-      fetch(`https://api.themoviedb.org/3/configuration/primary_translations?api_key=${tmdbKey}`).then(
-        (res) => res.json(),
-      ),
-    ])
-      .then(([languages, primaryTranslations]) => {
-        if (!Array.isArray(languages)) {
+    fetch('/api/configurator-language-options', { cache: 'no-store' })
+      .then(async (response) => {
+        const payload = (await response.json().catch(() => null)) as
+          | { options?: SupportedLanguageOption[] }
+          | null;
+        if (!response.ok || !Array.isArray(payload?.options)) {
           return;
         }
-        const formatted = buildTmdbSupportedLanguageOptions({
-          languages,
-          primaryTranslations: Array.isArray(primaryTranslations) ? primaryTranslations : [],
-        });
-        if (formatted.length > 0) {
-          setSupportedLanguages(formatted);
+        if (active && payload.options.length > 0) {
+          setSupportedLanguages(payload.options);
         }
       })
       .catch(() => {});
-  }, [disableRemoteLookups, tmdbKey]);
+
+    return () => {
+      active = false;
+    };
+  }, [disableRemoteLookups]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
