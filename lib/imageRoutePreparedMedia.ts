@@ -13,7 +13,6 @@ import {
   FALLBACK_IMAGE_LANGUAGE,
   KITSU_CACHE_TTL_MS,
   MDBLIST_API_KEYS,
-  MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
   POSTER_IMAGE_DIMENSIONS,
   TMDB_CACHE_TTL_MS,
   TORRENTIO_CACHE_TTL_MS,
@@ -40,7 +39,6 @@ import {
   type RemuxDisplayMode,
 } from './mediaFeatures.ts';
 import { getMetadata, setMetadata } from './metadataStore.ts';
-import { getRatingCacheTtlMs } from './imageRouteMdbList.ts';
 import {
   getDeterministicTtlMs,
   HttpError,
@@ -63,7 +61,7 @@ import {
 } from './imageRouteKitsuFallback.ts';
 import { normalizeRatingValue, isTmdbAnimationTitle } from './imageRouteMedia.ts';
 import { resolveImageRouteProviderRatings } from './imageRouteProviderRatings.ts';
-import { fetchTorrentioBadges, getCachedTorrentioBadges } from './imageRouteTorrentio.ts';
+import { fetchTorrentioBadges, getAdaptiveStreamCacheTtlMs, getCachedTorrentioBadges } from './imageRouteTorrentio.ts';
 import { pickByLanguageOrNeutral, pickByLanguageWithFallback } from './imageLanguage.ts';
 import { resolveGenreBadgeAutoScale } from './overlayScale.ts';
 import { logger } from './serverLogger.ts';
@@ -361,12 +359,10 @@ if (mediaType === 'tv' && torrentioIdForCache) {
 }
 const streamBadgesWindowTtlMs = shouldRenderStreamBadges
     ? mediaType && torrentioIdForCache
-    ? getRatingCacheTtlMs({
+    ? getAdaptiveStreamCacheTtlMs({
       id: torrentioIdForCache,
-      mediaType: resolvedRatingMediaType,
+      mediaType: resolvedRatingMediaType === 'movie' ? 'movie' : 'series',
       releaseDate: releaseDateForCache,
-      defaultTtlMs: TORRENTIO_CACHE_TTL_MS,
-      oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
     })
     : getDeterministicTtlMs(TORRENTIO_CACHE_TTL_MS, cleanId)
   : null;
@@ -525,12 +521,10 @@ const startStreamBadgesWarm =
       const torrentioId = torrentioType === 'series'
         ? `${baseTorrentioId}:${season || '1'}:${episode || '1'}`
         : baseTorrentioId;
-      const torrentioCacheTtlMs = getRatingCacheTtlMs({
+      const torrentioCacheTtlMs = getAdaptiveStreamCacheTtlMs({
         id: baseTorrentioId,
-        mediaType: resolvedRatingMediaType,
+        mediaType: torrentioType,
         releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
-        defaultTtlMs: TORRENTIO_CACHE_TTL_MS,
-        oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
       });
       if (!shouldBlockOnStreamBadges) {
         const cachedStreamBadges = getCachedTorrentioBadges({

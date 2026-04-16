@@ -467,6 +467,38 @@ export const TORRENTIO_RATE_LIMIT_COOLDOWN_MS = parseCacheTtlMs(
   60 * 1000,
   24 * 60 * 60 * 1000,
 );
+export const TORRENTIO_ADAPTIVE_CACHE_ENABLED =
+  normalizeBooleanSearchFlag(process.env.XRDB_TORRENTIO_ADAPTIVE_CACHE_ENABLED) === true;
+export const TORRENTIO_FRESH_WINDOW_MS = parseCacheTtlMs(
+  process.env.XRDB_TORRENTIO_FRESH_WINDOW_MS,
+  8 * 60 * 60 * 1000,
+  60 * 1000,
+  7 * 24 * 60 * 60 * 1000,
+);
+export const TORRENTIO_WARM_WINDOW_MS = parseCacheTtlMs(
+  process.env.XRDB_TORRENTIO_WARM_WINDOW_MS,
+  48 * 60 * 60 * 1000,
+  60 * 1000,
+  30 * 24 * 60 * 60 * 1000,
+);
+export const TORRENTIO_FRESH_TTL_MS = parseCacheTtlMs(
+  process.env.XRDB_TORRENTIO_FRESH_TTL_MS,
+  30 * 60 * 1000,
+  60 * 1000,
+  6 * 60 * 60 * 1000,
+);
+export const TORRENTIO_WARM_TTL_MS = parseCacheTtlMs(
+  process.env.XRDB_TORRENTIO_WARM_TTL_MS,
+  6 * 60 * 60 * 1000,
+  60 * 1000,
+  24 * 60 * 60 * 1000,
+);
+export const TORRENTIO_STABLE_TTL_MS = parseCacheTtlMs(
+  process.env.XRDB_TORRENTIO_STABLE_TTL_MS,
+  7 * 24 * 60 * 60 * 1000,
+  60 * 60 * 1000,
+  30 * 24 * 60 * 60 * 1000,
+);
 export const TORRENTIO_CONCURRENCY = (() => {
   const rawValue = Number(process.env.XRDB_TORRENTIO_CONCURRENCY);
   if (!Number.isFinite(rawValue) || rawValue <= 0) return 2;

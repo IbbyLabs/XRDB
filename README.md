@@ -925,6 +925,12 @@ hardcoding separate cache TTL values.
 | `XRDB_TORRENTIO_CONCURRENCY` | `2` | Max parallel Torrentio badge fetches. Higher can improve throughput, but also increases the chance of source rate limiting. |
 | `XRDB_TORRENTIO_TIMEOUT_MS` | `4000` | Per-request timeout for Torrentio badge fetches before XRDB fails over or gives up. |
 | `XRDB_TORRENTIO_RATE_LIMIT_COOLDOWN_MS` | `900000` | Cooldown window after Torrentio responds with rate limiting. |
+| `XRDB_TORRENTIO_ADAPTIVE_CACHE_ENABLED` | `false` | Enables adaptive stream cache TTL selection based on content recency instead of a fixed Torrentio cache TTL. |
+| `XRDB_TORRENTIO_FRESH_WINDOW_MS` | `28800000` | Age window used to classify titles into the fresh adaptive cache bucket. |
+| `XRDB_TORRENTIO_WARM_WINDOW_MS` | `172800000` | Age window used to classify titles into the warm adaptive cache bucket before falling back to stable. |
+| `XRDB_TORRENTIO_FRESH_TTL_MS` | `1800000` | Adaptive cache TTL applied to fresh titles. |
+| `XRDB_TORRENTIO_WARM_TTL_MS` | `21600000` | Adaptive cache TTL applied to warm titles. |
+| `XRDB_TORRENTIO_STABLE_TTL_MS` | `604800000` | Adaptive cache TTL applied to stable titles. |
 | `XRDB_TORRENTIO_BYPASS_PROXY` | `false` | When `true`, Torrentio badge fetches skip the shared `HTTP_PROXY` or `HTTPS_PROXY` route and connect directly. |
 | `XRDB_TORRENTIO_DIRECT_CANDIDATE_BASE_URL` | `https://torrentio.stremio.ru` | Expected direct-host candidate used as the default fallback base URL when no explicit fallback is configured. |
 

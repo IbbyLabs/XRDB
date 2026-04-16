@@ -3,13 +3,19 @@ import { fetch as undiciFetch, type Dispatcher } from 'undici';
 import { getMetadata, setMetadata } from './metadataStore.ts';
 import { buildTorrentioStreamUrl } from './torrentioUrl.ts';
 import {
+  TORRENTIO_ADAPTIVE_CACHE_ENABLED,
   TORRENTIO_BASE_URL,
   TORRENTIO_CACHE_TTL_MS,
   TORRENTIO_CONCURRENCY,
   TORRENTIO_DISPATCHER,
   TORRENTIO_FALLBACK_BASE_URL,
+  TORRENTIO_FRESH_TTL_MS,
+  TORRENTIO_FRESH_WINDOW_MS,
   TORRENTIO_RATE_LIMIT_COOLDOWN_MS,
+  TORRENTIO_STABLE_TTL_MS,
   TORRENTIO_TIMEOUT_MS,
+  TORRENTIO_WARM_TTL_MS,
+  TORRENTIO_WARM_WINDOW_MS,
   type BadgeKey,
 } from './imageRouteConfig.ts';
 import {
@@ -51,6 +57,87 @@ export type TorrentioBadgeResult = {
 const torrentioInFlight = new Map<string, Promise<TorrentioBadgeResult>>();
 let torrentioRateLimitedUntil = 0;
 const torrentioConcurrencyLimit = createConcurrencyLimit(TORRENTIO_CONCURRENCY);
+
+export type RecencyBucket = 'fresh' | 'warm' | 'stable';
+
+type RecencyClassification = {
+  bucket: RecencyBucket;
+  source: string;
+  ageMs: number | null;
+};
+
+export const classifyStreamCacheRecencyBucket = ({
+  mediaType,
+  releaseDate,
+  episodeAirDate,
+  freshWindowMs,
+  warmWindowMs,
+}: {
+  mediaType: 'movie' | 'series';
+  releaseDate?: string | null;
+  episodeAirDate?: string | null;
+  freshWindowMs: number;
+  warmWindowMs: number;
+}): RecencyClassification => {
+  const useEpisodeDate = mediaType === 'series' && Boolean(episodeAirDate);
+  const dateStr = useEpisodeDate ? episodeAirDate : releaseDate;
+  const source = useEpisodeDate ? 'episode_air_date' : (releaseDate ? 'release_date' : 'missing');
+
+  if (!dateStr) {
+    return { bucket: 'warm', source: 'missing', ageMs: null };
+  }
+
+  const normalized = String(dateStr).trim();
+  const timestamp = normalized.includes('T') ? Date.parse(normalized) : Date.parse(`${normalized}T00:00:00Z`);
+  if (!Number.isFinite(timestamp)) {
+    return { bucket: 'warm', source: 'invalid', ageMs: null };
+  }
+
+  const ageMs = Date.now() - timestamp;
+  if (ageMs <= freshWindowMs) {
+    return { bucket: 'fresh', source, ageMs };
+  }
+  if (ageMs <= warmWindowMs) {
+    return { bucket: 'warm', source, ageMs };
+  }
+  return { bucket: 'stable', source, ageMs };
+};
+
+export const getAdaptiveStreamCacheTtlMs = ({
+  id,
+  mediaType,
+  releaseDate,
+  episodeAirDate,
+}: {
+  id: string;
+  mediaType: 'movie' | 'series';
+  releaseDate?: string | null;
+  episodeAirDate?: string | null;
+}): number => {
+  if (!TORRENTIO_ADAPTIVE_CACHE_ENABLED) {
+    return getDeterministicTtlMs(TORRENTIO_CACHE_TTL_MS, id);
+  }
+
+  const classification = classifyStreamCacheRecencyBucket({
+    mediaType,
+    releaseDate,
+    episodeAirDate,
+    freshWindowMs: TORRENTIO_FRESH_WINDOW_MS,
+    warmWindowMs: TORRENTIO_WARM_WINDOW_MS,
+  });
+
+  const bucketTtlMap: Record<RecencyBucket, number> = {
+    fresh: TORRENTIO_FRESH_TTL_MS,
+    warm: TORRENTIO_WARM_TTL_MS,
+    stable: TORRENTIO_STABLE_TTL_MS,
+  };
+
+  const ttlMs = getDeterministicTtlMs(bucketTtlMap[classification.bucket], id);
+  logger.request(
+    `[XRDB] adaptive stream cache id=${id} bucket=${classification.bucket} source=${classification.source} ttl=${ttlMs}ms`,
+  );
+  return ttlMs;
+};
 
 export const extractTorrentioFilenames = (payload: any) => {
   const streams = Array.isArray(payload?.streams) ? payload.streams : [];
