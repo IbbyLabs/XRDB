@@ -71,6 +71,9 @@ test('image route media target prefers TV matches for episodic IMDb lookups', as
     phases: { ...phases },
     fetchJsonCached: async (key, url) => {
       requests.push({ key, url });
+      if (key === 'tmdb:tv:9') {
+        return { ok: true, status: 200, data: { id: 9, number_of_seasons: 1 } };
+      }
       if (key === 'tmdb:tv:9:season:1') {
         return {
           ok: true,
@@ -113,6 +116,10 @@ test('image route media target prefers TV matches for episodic IMDb lookups', as
     {
       key: 'tmdb:find:tt1234567',
       url: 'https://api.themoviedb.org/3/find/tt1234567?api_key=tmdb-key&external_source=imdb_id',
+    },
+    {
+      key: 'tmdb:tv:9',
+      url: 'https://api.themoviedb.org/3/tv/9?api_key=tmdb-key',
     },
     {
       key: 'tmdb:tv:9:season:1',
@@ -225,7 +232,14 @@ test('image route media target remaps reverse-mapped anime episodes to TMDB epis
         return {
           ok: true,
           status: 200,
-          data: { id: 46298, name: 'Hunter x Hunter' },
+          data: { id: 46298, name: 'Hunter x Hunter', number_of_seasons: 2 },
+        };
+      }
+      if (key === 'tmdb:tv:46298:season:1') {
+        return {
+          ok: true,
+          status: 200,
+          data: { episodes: Array(58).fill({}) },
         };
       }
       if (key === 'tmdb:tv:46298:season:2') {
@@ -269,6 +283,14 @@ test('image route media target remaps reverse-mapped anime episodes to TMDB epis
     {
       key: 'tmdb:tv:46298',
       url: 'https://api.themoviedb.org/3/tv/46298?api_key=tmdb-key',
+    },
+    {
+      key: 'tmdb:tv:46298',
+      url: 'https://api.themoviedb.org/3/tv/46298?api_key=tmdb-key',
+    },
+    {
+      key: 'tmdb:tv:46298:season:1',
+      url: 'https://api.themoviedb.org/3/tv/46298/season/1?api_key=tmdb-key',
     },
     {
       key: 'tmdb:tv:46298:season:2',

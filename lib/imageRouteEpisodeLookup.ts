@@ -118,20 +118,6 @@ export const resolveTmdbConsolidatedSeasonEpisode = async (
     return null;
   }
 
-  const targetSeasonResponse = await fetchJsonCached(
-    `tmdb:tv:${tmdbShowId}:season:${targetSeason}`,
-    `${TMDB_API_BASE_URL}/tv/${tmdbShowId}/season/${targetSeason}?api_key=${tmdbKey}`,
-    TMDB_CACHE_TTL_MS,
-    phases,
-    'tmdb',
-  );
-  if (!targetSeasonResponse.ok || !Array.isArray(targetSeasonResponse.data?.episodes)) {
-    return null;
-  }
-  if (targetEpisode <= (targetSeasonResponse.data.episodes as unknown[]).length) {
-    return null;
-  }
-
   const showResponse = await fetchJsonCached(
     `tmdb:tv:${tmdbShowId}`,
     `${TMDB_API_BASE_URL}/tv/${tmdbShowId}?api_key=${tmdbKey}`,
@@ -145,7 +131,8 @@ export const resolveTmdbConsolidatedSeasonEpisode = async (
       : 100;
 
   let priorCount = 0;
-  for (let s = 1; s < targetSeason; s += 1) {
+  let targetSeasonEpisodeCount: number | null = null;
+  for (let s = 1; s <= targetSeason; s += 1) {
     const resp = await fetchJsonCached(
       `tmdb:tv:${tmdbShowId}:season:${s}`,
       `${TMDB_API_BASE_URL}/tv/${tmdbShowId}/season/${s}?api_key=${tmdbKey}`,
@@ -154,8 +141,16 @@ export const resolveTmdbConsolidatedSeasonEpisode = async (
       'tmdb',
     );
     if (!resp.ok || !Array.isArray(resp.data?.episodes)) return null;
-    priorCount += (resp.data.episodes as unknown[]).length;
+    const count = (resp.data.episodes as unknown[]).length;
+    if (s < targetSeason) {
+      priorCount += count;
+    } else {
+      targetSeasonEpisodeCount = count;
+    }
   }
+  if (targetSeasonEpisodeCount === null) return null;
+  if (targetEpisode <= targetSeasonEpisodeCount) return null;
+
   const absoluteIndex = priorCount + targetEpisode;
 
   let runningCount = 0;
