@@ -75,6 +75,22 @@
 
 <a id="v1-20-0"></a>
 
+<a id="v1-20-1"></a>
+
+## [v1.20.1] - 16/04/2026
+
+### Fixed
+* BUG-100 stabilize saved profile revert and sync diffs
+  
+  Route saved profile revert through the canonical snapshot apply path so imported workspace changes clear dirty state correctly after revert.
+  
+  Compare saved profile and cross type sync params with allow missing server managed provider key options so dirty checks and sync diffs still work when TMDB and MDBList keys are only configured on the server.
+  
+  Add regression coverage for provider keyless dirty detection and sync to all diffs.
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.20.0] - 15/04/2026
 
 ### Added

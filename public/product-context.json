@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.20.0",
-  "generatedAt": "2026-04-15T22:54:40.348Z",
+  "xrdbTag": "v1.20.1",
+  "generatedAt": "2026-04-16T01:13:33.388Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -43,11 +43,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "BUG-100 stabilize saved profile revert and sync diffs",
         "track poster warm target seed file",
         "include poster warm targets in docker build context",
         "expand poster warm sources with TMDB multi endpoint, IMDb baseline, recent ring",
-        "FR-80 FR-55 speed up poster cold loads",
-        "BUG-97 apply stored episode config profile when thumbnail URL has no explicit badge params"
+        "FR-80 FR-55 speed up poster cold loads"
       ]
     },
     {
