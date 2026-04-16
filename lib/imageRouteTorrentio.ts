@@ -1,18 +1,30 @@
 import { fetch as undiciFetch, type Dispatcher } from 'undici';
 
-import { getMetadata, setMetadata } from './metadataStore.ts';
+import { deleteMetadata, getMetadata, setMetadata } from './metadataStore.ts';
 import { buildTorrentioStreamUrl } from './torrentioUrl.ts';
 import {
+  CACHE_HARDENING_AUTO_TUNE,
+  CACHE_HARDENING_CIRCUIT_BREAKER,
+  CACHE_HARDENING_NEGATIVE_CACHE,
+  CACHE_HARDENING_PROVIDER_BUDGETS,
+  CACHE_HARDENING_SWR,
   TORRENTIO_ADAPTIVE_CACHE_ENABLED,
   TORRENTIO_BASE_URL,
+  TORRENTIO_BUDGET_REQUESTS_PER_WINDOW,
+  TORRENTIO_BUDGET_WINDOW_MS,
   TORRENTIO_CACHE_TTL_MS,
+  TORRENTIO_CIRCUIT_COOLDOWN_MS,
+  TORRENTIO_CIRCUIT_FAILURE_THRESHOLD,
+  TORRENTIO_CIRCUIT_WINDOW_MS,
   TORRENTIO_CONCURRENCY,
   TORRENTIO_DISPATCHER,
   TORRENTIO_FALLBACK_BASE_URL,
   TORRENTIO_FRESH_TTL_MS,
   TORRENTIO_FRESH_WINDOW_MS,
+  TORRENTIO_NEGATIVE_CACHE_TTL_MS,
   TORRENTIO_RATE_LIMIT_COOLDOWN_MS,
   TORRENTIO_STABLE_TTL_MS,
+  TORRENTIO_SWR_WINDOW_MS,
   TORRENTIO_TIMEOUT_MS,
   TORRENTIO_WARM_TTL_MS,
   TORRENTIO_WARM_WINDOW_MS,
@@ -139,6 +151,130 @@ export const getAdaptiveStreamCacheTtlMs = ({
   return ttlMs;
 };
 
+type CircuitState = {
+  failures: number[];
+  openUntil: number;
+};
+
+const torrentioCircuit = new Map<string, CircuitState>();
+
+const isCircuitOpen = (baseUrl: string, now: number): boolean => {
+  if (!CACHE_HARDENING_CIRCUIT_BREAKER) return false;
+  const state = torrentioCircuit.get(baseUrl);
+  if (!state) return false;
+  if (state.openUntil > now) return true;
+  const windowStart = now - TORRENTIO_CIRCUIT_WINDOW_MS;
+  state.failures = state.failures.filter((t) => t > windowStart);
+  return false;
+};
+
+const recordCircuitFailure = (baseUrl: string, now: number): void => {
+  if (!CACHE_HARDENING_CIRCUIT_BREAKER) return;
+  let state = torrentioCircuit.get(baseUrl);
+  if (!state) {
+    state = { failures: [], openUntil: 0 };
+    torrentioCircuit.set(baseUrl, state);
+  }
+  const windowStart = now - TORRENTIO_CIRCUIT_WINDOW_MS;
+  state.failures = state.failures.filter((t) => t > windowStart);
+  state.failures.push(now);
+  if (state.failures.length >= TORRENTIO_CIRCUIT_FAILURE_THRESHOLD) {
+    state.openUntil = now + TORRENTIO_CIRCUIT_COOLDOWN_MS;
+    logger.warn(`[XRDB] circuit breaker opened for ${baseUrl} until ${new Date(state.openUntil).toISOString()}`);
+  }
+};
+
+const recordCircuitSuccess = (baseUrl: string): void => {
+  if (!CACHE_HARDENING_CIRCUIT_BREAKER) return;
+  const state = torrentioCircuit.get(baseUrl);
+  if (state) {
+    state.failures = [];
+    state.openUntil = 0;
+  }
+};
+
+type BudgetState = {
+  windowStart: number;
+  count: number;
+};
+
+const torrentioBudget = new Map<string, BudgetState>();
+
+const isBudgetExhausted = (baseUrl: string, now: number): boolean => {
+  if (!CACHE_HARDENING_PROVIDER_BUDGETS) return false;
+  let state = torrentioBudget.get(baseUrl);
+  if (!state) {
+    state = { windowStart: now, count: 0 };
+    torrentioBudget.set(baseUrl, state);
+  }
+  if (now - state.windowStart > TORRENTIO_BUDGET_WINDOW_MS) {
+    state.windowStart = now;
+    state.count = 0;
+  }
+  return state.count >= TORRENTIO_BUDGET_REQUESTS_PER_WINDOW;
+};
+
+const consumeBudget = (baseUrl: string, now: number): void => {
+  if (!CACHE_HARDENING_PROVIDER_BUDGETS) return;
+  const state = torrentioBudget.get(baseUrl);
+  if (state) state.count += 1;
+};
+
+export const resetTorrentioHardeningStateForTests = (): void => {
+  torrentioCircuit.clear();
+  torrentioBudget.clear();
+};
+
+type AutoTuneStatKey = 'hits' | 'misses' | 'errors' | 'negativeCaches' | 'swrServes' | 'circuitSkips' | 'budgetSkips';
+
+type AutoTuneStats = {
+  hits: number;
+  misses: number;
+  errors: number;
+  negativeCaches: number;
+  swrServes: number;
+  circuitSkips: number;
+  budgetSkips: number;
+  windowStart: number;
+};
+
+const autoTuneStats: AutoTuneStats = {
+  hits: 0,
+  misses: 0,
+  errors: 0,
+  negativeCaches: 0,
+  swrServes: 0,
+  circuitSkips: 0,
+  budgetSkips: 0,
+  windowStart: Date.now(),
+};
+
+const AUTO_TUNE_LOG_INTERVAL_MS = 10 * 60 * 1000;
+
+export const recordAutoTuneStat = (event: AutoTuneStatKey): void => {
+  if (!CACHE_HARDENING_AUTO_TUNE) return;
+  autoTuneStats[event] += 1;
+  const now = Date.now();
+  if (now - autoTuneStats.windowStart >= AUTO_TUNE_LOG_INTERVAL_MS) {
+    const total = autoTuneStats.hits + autoTuneStats.misses;
+    const hitRate = total > 0 ? ((autoTuneStats.hits / total) * 100).toFixed(1) : 'n/a';
+    const negativeRate = autoTuneStats.misses > 0 ? ((autoTuneStats.negativeCaches / autoTuneStats.misses) * 100).toFixed(1) : 'n/a';
+    logger.info(
+      `[XRDB] auto-tune observe hits=${autoTuneStats.hits} misses=${autoTuneStats.misses} errors=${autoTuneStats.errors} hit_rate=${hitRate}% negatives=${autoTuneStats.negativeCaches} negative_rate=${negativeRate}% swr=${autoTuneStats.swrServes} circuit_skips=${autoTuneStats.circuitSkips} budget_skips=${autoTuneStats.budgetSkips}`,
+    );
+    autoTuneStats.hits = 0;
+    autoTuneStats.misses = 0;
+    autoTuneStats.errors = 0;
+    autoTuneStats.negativeCaches = 0;
+    autoTuneStats.swrServes = 0;
+    autoTuneStats.circuitSkips = 0;
+    autoTuneStats.budgetSkips = 0;
+    autoTuneStats.windowStart = now;
+  }
+};
+
+export const getAutoTuneStatsForTests = (): AutoTuneStats => ({ ...autoTuneStats });
+
 export const extractTorrentioFilenames = (payload: any) => {
   const streams = Array.isArray(payload?.streams) ? payload.streams : [];
   const filenames: string[] = [];
@@ -259,15 +395,50 @@ export const fetchTorrentioBadges = async ({
   }
   const cached = getCachedTorrentioBadges({ type, id: trimmedId, cacheTtlMs: ttlMs, remuxDisplayMode });
   if (cached) {
+    recordAutoTuneStat('hits');
     logger.request(`[XRDB] Torrentio cache hit for ${type}:${trimmedId}`);
     return cached;
   }
+  recordAutoTuneStat('misses');
 
   return withDedupe(torrentioInFlight, cacheKey, async () => {
     const warm = getCachedTorrentioBadges({ type, id: trimmedId, cacheTtlMs: ttlMs, remuxDisplayMode });
     if (warm) {
       logger.request(`[XRDB] Torrentio cache hit after dedupe wait for ${type}:${trimmedId}`);
       return warm;
+    }
+
+    if (CACHE_HARDENING_SWR) {
+      const swrKey = `${cacheKey}:swr`;
+      const stale = getMetadata<TorrentioBadgeCache>(swrKey);
+      if (stale) {
+        logger.request(`[XRDB] Torrentio SWR stale serve for ${type}:${trimmedId}`);
+        deleteMetadata(swrKey);
+        recordAutoTuneStat('swrServes');
+        const staleResult: TorrentioBadgeResult = {
+          badges: buildFeatureBadgesFromFlags(stale.flags, remuxDisplayMode),
+          cacheTtlMs: ttlMs,
+          cacheHit: true,
+          selectedBaseUrl: null,
+        };
+        void fetchTorrentioBadges({
+          type,
+          id: trimmedId,
+          phases,
+          cacheTtlMs: ttlMs,
+          remuxDisplayMode,
+          fetchImpl,
+          baseUrl,
+          fallbackBaseUrl,
+          timeoutMs,
+          dispatcher,
+        }).then(() => {
+          logger.request(`[XRDB] Torrentio SWR background refresh completed for ${type}:${trimmedId}`);
+        }).catch((err: unknown) => {
+          logger.warn(`[XRDB] Torrentio SWR background refresh failed for ${type}:${trimmedId}:`, err instanceof Error ? err.message : err);
+        });
+        return staleResult;
+      }
     }
 
     const attempts = [baseUrl, fallbackBaseUrl].filter(
@@ -277,8 +448,21 @@ export const fetchTorrentioBadges = async ({
     let response: Response | null = null;
     let selectedBaseUrl: string | null = null;
     let lastError: unknown = null;
+    const fetchNow = Date.now();
 
     for (const candidateBaseUrl of attempts) {
+      if (isCircuitOpen(candidateBaseUrl, fetchNow)) {
+        recordAutoTuneStat('circuitSkips');
+        logger.warn(`[XRDB] Torrentio circuit open for ${candidateBaseUrl}, skipping`);
+        continue;
+      }
+      if (isBudgetExhausted(candidateBaseUrl, fetchNow)) {
+        recordAutoTuneStat('budgetSkips');
+        logger.warn(`[XRDB] Torrentio budget exhausted for ${candidateBaseUrl}, skipping`);
+        continue;
+      }
+      consumeBudget(candidateBaseUrl, fetchNow);
+
       const torrentioUrl = buildTorrentioStreamUrl(candidateBaseUrl, type, trimmedId);
       try {
         response = await measurePhase(phases, 'stream', () =>
@@ -303,6 +487,7 @@ export const fetchTorrentioBadges = async ({
         );
       } catch (err) {
         lastError = err;
+        recordCircuitFailure(candidateBaseUrl, fetchNow);
         logger.warn(
           `[XRDB] Torrentio fetch failed for ${torrentioUrl}:`,
           err instanceof Error ? err.message : err,
@@ -314,13 +499,18 @@ export const fetchTorrentioBadges = async ({
       const retryableStatus = response.status === 403 || response.status === 408 || response.status === 429 || response.status >= 500;
       if (!response.ok && retryableStatus && candidateBaseUrl !== attempts[attempts.length - 1]) {
         logger.warn(`[XRDB] Torrentio returned ${response.status} for ${torrentioUrl}, trying fallback host`);
+        recordCircuitFailure(candidateBaseUrl, fetchNow);
         response = null;
         continue;
+      }
+      if (response.ok) {
+        recordCircuitSuccess(candidateBaseUrl);
       }
       break;
     }
 
     if (!response) {
+      recordAutoTuneStat('errors');
       const failureTtl = Math.min(ttlMs, 2 * 60 * 1000);
       setMetadata(cacheKey, { flags: collectMediaFeatureFlags([]) }, failureTtl);
       if (lastError) {
@@ -345,11 +535,16 @@ export const fetchTorrentioBadges = async ({
 
     const filenames = extractTorrentioFilenames(payload);
     const flags = collectMediaFeatureFlags(filenames);
-    if (filenames.length === 0) {
+    const isNegativeResult = response.ok && filenames.length === 0;
+    if (isNegativeResult) {
       logger.warn(`[XRDB] Torrentio returned 0 streams for ${selectedBaseUrl}`);
+      recordAutoTuneStat('negativeCaches');
     }
     const isRateLimited = response.status === 429 || response.status === 403;
-    const targetTtl = response.ok ? ttlMs : Math.min(ttlMs, 2 * 60 * 1000);
+    const negativeCacheTtl = CACHE_HARDENING_NEGATIVE_CACHE ? TORRENTIO_NEGATIVE_CACHE_TTL_MS : ttlMs;
+    const targetTtl = response.ok
+      ? (isNegativeResult ? negativeCacheTtl : ttlMs)
+      : Math.min(ttlMs, 2 * 60 * 1000);
     if (isRateLimited) {
       const cooldownMs = parseRetryAfterMs(
         response.headers.get('retry-after'),
@@ -365,6 +560,9 @@ export const fetchTorrentioBadges = async ({
     }
 
     setMetadata(cacheKey, { flags }, targetTtl);
+    if (CACHE_HARDENING_SWR && response.ok && !isNegativeResult) {
+      setMetadata(`${cacheKey}:swr`, { flags }, targetTtl + TORRENTIO_SWR_WINDOW_MS);
+    }
     const badges = buildFeatureBadgesFromFlags(flags, remuxDisplayMode);
     logger.request(
       `[XRDB] Torrentio fetched ${badges.length} badges for ${type}:${trimmedId} via ${selectedBaseUrl ?? 'unresolved-host'}`,

@@ -499,6 +499,75 @@ export const TORRENTIO_STABLE_TTL_MS = parseCacheTtlMs(
   60 * 60 * 1000,
   30 * 24 * 60 * 60 * 1000,
 );
+export const TORRENTIO_NEGATIVE_CACHE_TTL_MS = parseCacheTtlMs(
+  process.env.XRDB_TORRENTIO_NEGATIVE_CACHE_TTL_MS,
+  5 * 60 * 1000,
+  30 * 1000,
+  30 * 60 * 1000,
+);
+export const TORRENTIO_SWR_WINDOW_MS = parseCacheTtlMs(
+  process.env.XRDB_TORRENTIO_SWR_WINDOW_MS,
+  60 * 60 * 1000,
+  60 * 1000,
+  24 * 60 * 60 * 1000,
+);
+export const TORRENTIO_CIRCUIT_FAILURE_THRESHOLD = (() => {
+  const raw = Number(process.env.XRDB_TORRENTIO_CIRCUIT_FAILURE_THRESHOLD);
+  if (!Number.isFinite(raw) || raw <= 0) return 5;
+  return Math.max(1, Math.min(50, Math.floor(raw)));
+})();
+export const TORRENTIO_CIRCUIT_WINDOW_MS = parseCacheTtlMs(
+  process.env.XRDB_TORRENTIO_CIRCUIT_WINDOW_MS,
+  5 * 60 * 1000,
+  10 * 1000,
+  60 * 60 * 1000,
+);
+export const TORRENTIO_CIRCUIT_COOLDOWN_MS = parseCacheTtlMs(
+  process.env.XRDB_TORRENTIO_CIRCUIT_COOLDOWN_MS,
+  2 * 60 * 1000,
+  10 * 1000,
+  60 * 60 * 1000,
+);
+export const TORRENTIO_BUDGET_REQUESTS_PER_WINDOW = (() => {
+  const raw = Number(process.env.XRDB_TORRENTIO_BUDGET_REQUESTS_PER_WINDOW);
+  if (!Number.isFinite(raw) || raw <= 0) return 200;
+  return Math.max(1, Math.min(10000, Math.floor(raw)));
+})();
+export const TORRENTIO_BUDGET_WINDOW_MS = parseCacheTtlMs(
+  process.env.XRDB_TORRENTIO_BUDGET_WINDOW_MS,
+  60 * 1000,
+  10 * 1000,
+  60 * 60 * 1000,
+);
+export const CACHE_HARDENING_ENABLED =
+  normalizeBooleanSearchFlag(process.env.CACHE_HARDENING_ENABLED) === true;
+export const CACHE_HARDENING_SINGLEFLIGHT =
+  CACHE_HARDENING_ENABLED &&
+  normalizeBooleanSearchFlag(process.env.CACHE_HARDENING_SINGLEFLIGHT) === true;
+export const CACHE_HARDENING_JITTER =
+  CACHE_HARDENING_ENABLED &&
+  normalizeBooleanSearchFlag(process.env.CACHE_HARDENING_JITTER) === true;
+export const CACHE_HARDENING_NEGATIVE_CACHE =
+  CACHE_HARDENING_ENABLED &&
+  normalizeBooleanSearchFlag(process.env.CACHE_HARDENING_NEGATIVE_CACHE) === true;
+export const CACHE_HARDENING_SWR =
+  CACHE_HARDENING_ENABLED &&
+  normalizeBooleanSearchFlag(process.env.CACHE_HARDENING_SWR) === true;
+export const CACHE_HARDENING_CIRCUIT_BREAKER =
+  CACHE_HARDENING_ENABLED &&
+  normalizeBooleanSearchFlag(process.env.CACHE_HARDENING_CIRCUIT_BREAKER) === true;
+export const CACHE_HARDENING_PROVIDER_BUDGETS =
+  CACHE_HARDENING_ENABLED &&
+  normalizeBooleanSearchFlag(process.env.CACHE_HARDENING_PROVIDER_BUDGETS) === true;
+export const CACHE_HARDENING_PREWARM_POPULARITY =
+  CACHE_HARDENING_ENABLED &&
+  normalizeBooleanSearchFlag(process.env.CACHE_HARDENING_PREWARM_POPULARITY) === true;
+export const CACHE_HARDENING_SNAPSHOT_RESTORE =
+  CACHE_HARDENING_ENABLED &&
+  normalizeBooleanSearchFlag(process.env.CACHE_HARDENING_SNAPSHOT_RESTORE) === true;
+export const CACHE_HARDENING_AUTO_TUNE =
+  CACHE_HARDENING_ENABLED &&
+  normalizeBooleanSearchFlag(process.env.CACHE_HARDENING_AUTO_TUNE) === true;
 export const TORRENTIO_CONCURRENCY = (() => {
   const rawValue = Number(process.env.XRDB_TORRENTIO_CONCURRENCY);
   if (!Number.isFinite(rawValue) || rawValue <= 0) return 2;

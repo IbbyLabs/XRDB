@@ -60,6 +60,11 @@ export const setMetadata = (key: string, value: any, ttlMs: number) => {
   }
 };
 
+export const deleteMetadata = (key: string) => {
+  ensureDbInitialized();
+  getDb().prepare('DELETE FROM metadata_cache WHERE key = ?').run(key);
+};
+
 export const pruneExpiredMetadata = () => {
   ensureDbInitialized();
   getDb().prepare('DELETE FROM metadata_cache WHERE expires_at <= ?').run(Date.now());

@@ -931,10 +931,31 @@ hardcoding separate cache TTL values.
 | `XRDB_TORRENTIO_FRESH_TTL_MS` | `1800000` | Adaptive cache TTL applied to fresh titles. |
 | `XRDB_TORRENTIO_WARM_TTL_MS` | `21600000` | Adaptive cache TTL applied to warm titles. |
 | `XRDB_TORRENTIO_STABLE_TTL_MS` | `604800000` | Adaptive cache TTL applied to stable titles. |
+| `CACHE_HARDENING_ENABLED` | `false` | Global kill switch for stream cache hardening features. When disabled, all hardening flags fall back to legacy behavior. |
+| `CACHE_HARDENING_NEGATIVE_CACHE` | `false` | Enables short-lived negative caching for empty stream results. Requires `CACHE_HARDENING_ENABLED=true`. |
+| `XRDB_TORRENTIO_NEGATIVE_CACHE_TTL_MS` | `300000` | TTL applied to negative Torrentio results when negative caching is enabled. |
+| `CACHE_HARDENING_SWR` | `false` | Enables stale while revalidate for expired stream cache entries. Requires `CACHE_HARDENING_ENABLED=true`. |
+| `XRDB_TORRENTIO_SWR_WINDOW_MS` | `3600000` | Max stale-serve window for stale while revalidate. |
+| `CACHE_HARDENING_CIRCUIT_BREAKER` | `false` | Enables per-provider circuit breaking after repeated failures. Requires `CACHE_HARDENING_ENABLED=true`. |
+| `XRDB_TORRENTIO_CIRCUIT_FAILURE_THRESHOLD` | `5` | Failure count required to open the provider circuit. |
+| `XRDB_TORRENTIO_CIRCUIT_WINDOW_MS` | `300000` | Rolling failure window used by the provider circuit breaker. |
+| `XRDB_TORRENTIO_CIRCUIT_COOLDOWN_MS` | `120000` | Cooldown period before a tripped provider circuit can be retried. |
+| `CACHE_HARDENING_PROVIDER_BUDGETS` | `false` | Enables per-provider request budgets within a rolling time window. Requires `CACHE_HARDENING_ENABLED=true`. |
+| `XRDB_TORRENTIO_BUDGET_REQUESTS_PER_WINDOW` | `200` | Max Torrentio requests allowed per provider budget window. |
+| `XRDB_TORRENTIO_BUDGET_WINDOW_MS` | `60000` | Duration of the per-provider request budget window. |
 | `XRDB_TORRENTIO_BYPASS_PROXY` | `false` | When `true`, Torrentio badge fetches skip the shared `HTTP_PROXY` or `HTTPS_PROXY` route and connect directly. |
 | `XRDB_TORRENTIO_DIRECT_CANDIDATE_BASE_URL` | `https://torrentio.stremio.ru` | Expected direct-host candidate used as the default fallback base URL when no explicit fallback is configured. |
 
 > **Note:** Torrentio requests use `HTTP_PROXY` or `HTTPS_PROXY` env vars (via `undici ProxyAgent`) when set, unless `XRDB_TORRENTIO_BYPASS_PROXY=true`.
+
+Recommended hardening activation order for the one-wave rollout:
+
+1. Enable `CACHE_HARDENING_ENABLED=true` with all feature flags still off.
+2. Enable `CACHE_HARDENING_NEGATIVE_CACHE` and `CACHE_HARDENING_SWR` first.
+3. Enable `CACHE_HARDENING_CIRCUIT_BREAKER` and `CACHE_HARDENING_PROVIDER_BUDGETS` next.
+4. Enable `CACHE_HARDENING_PREWARM_POPULARITY` and `CACHE_HARDENING_SNAPSHOT_RESTORE` after cache behavior is stable.
+5. Enable `CACHE_HARDENING_AUTO_TUNE` last in observe-only mode.
+6. Roll back any stage by disabling that feature flag, or disable `CACHE_HARDENING_ENABLED` to revert everything immediately.
 
 ### Poster Cache Warming
 
@@ -951,6 +972,8 @@ hardcoding separate cache TTL values.
 | `XRDB_POSTER_WARM_IMDB_LIMIT` | `500` | Maximum number of IMDb top-rated ids to merge into a warm pass. |
 | `XRDB_POSTER_WARM_RECENT_ENABLED` | `false` | When `true`, XRDB records recently served poster requests in a bounded ring buffer and replays them during the next warm pass, using each request's exact configuration. |
 | `XRDB_POSTER_WARM_RECENT_LIMIT` | `500` | Maximum number of recent poster requests to replay per warm pass. |
+| `CACHE_HARDENING_PREWARM_POPULARITY` | `false` | Ranks warm targets by recent request frequency before scheduling. Requires `CACHE_HARDENING_ENABLED=true`. |
+| `CACHE_HARDENING_SNAPSHOT_RESTORE` | `false` | Persists and restores the recent hot target set across restarts. Requires `CACHE_HARDENING_ENABLED=true`. |
 | `XRDB_POSTER_WARM_INTERVAL_MS` | `21600000` | Intended cadence for scheduled poster warming runs. |
 | `XRDB_POSTER_WARM_CHECK_INTERVAL_MS` | `900000` | Poll interval used to decide when another warming run is due. |
 | `XRDB_POSTER_WARM_CONCURRENCY` | `2` | Max number of poster warm jobs to run in parallel. |

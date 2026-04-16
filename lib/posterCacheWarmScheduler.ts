@@ -1,4 +1,9 @@
 import { fetchJsonCached, fetchTextCached } from './imageRouteCachedFetch.ts';
+import { getMetadata, setMetadata } from './metadataStore.ts';
+import {
+  CACHE_HARDENING_PREWARM_POPULARITY,
+  CACHE_HARDENING_SNAPSHOT_RESTORE,
+} from './imageRouteConfig.ts';
 import { resolveImageRouteRequestState, type ImageRouteRequestInput } from './imageRouteRequestState.ts';
 import { executeImageRouteRender } from './imageRouteExecution.ts';
 import { createConcurrencyLimit, type PhaseDurations, type RenderedImagePayload } from './imageRouteRuntime.ts';
@@ -6,6 +11,37 @@ import { fetchImdbTopRatedIds, fetchMdblistTrendingIds, fetchTmdbPopularIds } fr
 import { getRecentPosterEntries } from './posterCacheWarmRecentRing.ts';
 import { logger } from './serverLogger.ts';
 import { readPosterWarmSource, resolvePosterCacheWarmConfig } from './posterCacheWarmConfig.ts';
+
+const PREWARM_SNAPSHOT_KEY = 'prewarm:hot_snapshot';
+const PREWARM_SNAPSHOT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+type PrewarmSnapshot = {
+  targets: string[];
+  savedAt: number;
+};
+
+export const loadPrewarmSnapshot = (): string[] => {
+  if (!CACHE_HARDENING_SNAPSHOT_RESTORE) return [];
+  const snap = getMetadata<PrewarmSnapshot>(PREWARM_SNAPSHOT_KEY);
+  return snap?.targets ?? [];
+};
+
+export const savePrewarmSnapshot = (targets: string[]): void => {
+  if (!CACHE_HARDENING_SNAPSHOT_RESTORE || targets.length === 0) return;
+  setMetadata(PREWARM_SNAPSHOT_KEY, { targets: targets.slice(0, 1000), savedAt: Date.now() }, PREWARM_SNAPSHOT_TTL_MS);
+};
+
+export const rankTargetsByPopularity = (
+  targets: string[],
+  recentEntries: Array<{ id: string; searchParams: URLSearchParams }>,
+): string[] => {
+  if (!CACHE_HARDENING_PREWARM_POPULARITY || recentEntries.length === 0) return targets;
+  const freq = new Map<string, number>();
+  for (const { id } of recentEntries) {
+    freq.set(id, (freq.get(id) ?? 0) + 1);
+  }
+  return [...targets].sort((a, b) => (freq.get(b) ?? 0) - (freq.get(a) ?? 0));
+};
 
 type PosterWarmSummary = {
   warmed: number;
@@ -97,12 +133,14 @@ export const resolvePosterWarmTargets = async ({
     fetchMdblistIds({ config }),
     fetchImdbIds({ config }),
   ]);
-  const targets = [...new Set([...staticTargets, ...tmdbTargets, ...mdblistTargets, ...imdbTargets])];
   const recentEntries = config.recentEnabled ? fetchRecentEntries(config.recentLimit) : [];
+  const snapshotTargets = loadPrewarmSnapshot();
+  const mergedSet = new Set([...snapshotTargets, ...staticTargets, ...tmdbTargets, ...mdblistTargets, ...imdbTargets]);
+  const targets = rankTargetsByPopularity([...mergedSet], recentEntries);
 
   if (config.logEnabled) {
     logger.info(
-      `[XRDB] poster warm targets static=${staticTargets.length} tmdb=${tmdbTargets.length} mdblist=${mdblistTargets.length} imdb=${imdbTargets.length} recent=${recentEntries.length} merged=${targets.length}`,
+      `[XRDB] poster warm targets static=${staticTargets.length} tmdb=${tmdbTargets.length} mdblist=${mdblistTargets.length} imdb=${imdbTargets.length} recent=${recentEntries.length} snapshot=${snapshotTargets.length} merged=${targets.length}`,
     );
   }
 
@@ -123,6 +161,9 @@ export const runPosterCacheWarm = async () => {
   const totalTargets = targets.length + recentEntries.length;
   if (!config.enabled || totalTargets === 0) {
     return { warmed: 0, skipped: 0, failed: 0 } satisfies PosterWarmSummary;
+  }
+  if (targets.length > 0) {
+    savePrewarmSnapshot(targets);
   }
 
   const limit = createConcurrencyLimit(config.concurrency);
