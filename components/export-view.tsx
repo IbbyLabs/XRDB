@@ -7,6 +7,7 @@ import { BookmarkPlus, Check, ChevronDown, Clipboard, Code2, Eye, EyeOff, Rotate
 import { ConfirmDiffModal } from '@/components/confirm-diff-modal';
 import {
   buildConfigProfileFingerprint,
+  buildSavedProfileComparableParams,
   hasConfigProfileLoginConflict,
   buildRevealedConfigState,
   getNextAiometadataUrlMode,
@@ -15,8 +16,7 @@ import {
   isProtectedConfigProfileId,
   shouldClearConfigProfileUnlockSession,
   toConfigModeAiometadataUrl,
-} from '@/lib/configProfileClientState';
-import { useConfiguratorContext } from '@/lib/configuratorProvider';
+} from '@/lib/configProfileClientState';import { useConfiguratorContext } from '@/lib/configuratorProvider';
 import { WorkspaceManagementSection } from '@/components/configurator-basics';
 import {
   DEFAULT_EPISODE_ID_MODE,
@@ -774,7 +774,7 @@ function SaveConfigSection({
     params: Record<string, string>,
     options?: { applyToWorkspace?: boolean },
   ) => {
-    const { fingerprint, normalizedConfig, serializedConfig } = buildRevealedConfigState(params);
+    const { normalizedConfig, serializedConfig } = buildRevealedConfigState(params);
     savedConfigSnapshot.current = normalizedConfig;
     if (options?.applyToWorkspace !== false) {
       applySavedUiConfig(normalizedConfig);
@@ -782,7 +782,9 @@ function SaveConfigSection({
         localStorage.setItem('xrdb.uiConfig.v1', serializedConfig);
       } catch {}
     }
-    savedParamsFingerprintRef.current = fingerprint;
+    savedParamsFingerprintRef.current = buildConfigProfileFingerprint(
+      buildSavedProfileComparableParams(params),
+    );
     setSnapshotReady(true);
     setHasUnsavedChanges(false);
   }, [applySavedUiConfig]);
@@ -1036,9 +1038,10 @@ function SaveConfigSection({
 
   useEffect(() => {
     const params = buildSaveParams();
+    const comparableParams = buildSavedProfileComparableParams(params);
     setHasUnsavedChanges(
       hasConfigProfileUnsavedChanges({
-        currentParams: params,
+        currentParams: comparableParams,
         savedFingerprint: savedParamsFingerprintRef.current,
         snapshotReady,
       }),
@@ -1400,12 +1403,11 @@ function SaveConfigSection({
       return;
     }
     if (!savedConfigSnapshot.current) return;
-    applySavedUiConfig(savedConfigSnapshot.current);
     const params = buildSnapshotParams(savedConfigSnapshot.current);
-    savedParamsFingerprintRef.current = buildConfigProfileFingerprint(params);
+    applySnapshot(params);
     setShowRevertModal(false);
     setRevertDiff(null);
-  }, [modalMode, handleSave, applySavedUiConfig]);
+  }, [applySnapshot, modalMode, handleSave]);
 
   const handleRevertCancel = useCallback(() => {
     setShowRevertModal(false);

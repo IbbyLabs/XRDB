@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   buildConfigProfileFingerprint,
   buildRevealedConfigState,
+  buildSavedProfileComparableParams,
   getNextAiometadataUrlMode,
   getActiveConfigProfileUnlockSession,
   hasConfigProfileUnsavedChanges,
@@ -196,6 +197,43 @@ test('hasConfigProfileUnsavedChanges ignores local-only controls outside saved-p
       snapshotReady: true,
     }),
     false,
+  );
+});
+
+test('buildSavedProfileComparableParams keeps provider-credential omissions stable for dirty checks', () => {
+  const savedProfileParams = {
+    posterRatings: 'imdb,tmdb',
+    posterGenreBadge: 'imdb',
+  };
+
+  const currentParams = {
+    posterGenreBadge: 'imdb',
+    posterRatings: 'imdb,tmdb',
+  };
+
+  const savedFingerprint = buildConfigProfileFingerprint(
+    buildSavedProfileComparableParams(savedProfileParams),
+  );
+
+  assert.equal(
+    hasConfigProfileUnsavedChanges({
+      currentParams: buildSavedProfileComparableParams(currentParams),
+      savedFingerprint,
+      snapshotReady: true,
+    }),
+    false,
+  );
+
+  assert.equal(
+    hasConfigProfileUnsavedChanges({
+      currentParams: buildSavedProfileComparableParams({
+        ...currentParams,
+        posterRatings: 'imdb',
+      }),
+      savedFingerprint,
+      snapshotReady: true,
+    }),
+    true,
   );
 });
 
