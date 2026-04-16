@@ -11,6 +11,7 @@ const resolveMetadataBase = (appUrl?: string) => new URL(appUrl || DEFAULT_APP_U
 
 export const siteViewport: Viewport = {
   themeColor: '#020108',
+  colorScheme: 'dark',
 };
 
 export const buildSiteMetadata = (appUrl?: string): Metadata => ({
