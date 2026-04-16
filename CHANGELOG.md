@@ -77,6 +77,95 @@
 
 <a id="v1-20-1"></a>
 
+<a id="v1-21-0"></a>
+
+## [v1.21.0] - 16/04/2026
+
+### Added
+* harden stream cache
+  
+  Implement stream cache hardening controls for Torrentio with feature gated behavior and a global hardening kill switch.
+  
+  Add negative caching, stale while revalidate serving, circuit breaker thresholds and cooldowns, provider request budgets, prewarm popularity ranking with snapshot restore, and observe only auto tune telemetry paths.
+  
+  Document activation and rollback controls in README and env template, extend config and metadata plumbing for hardening controls, and add targeted hardening tests that validate gating, rollback behavior, SWR, circuit, budgets, and prewarm recovery flows.
+* add adaptive stream cache ttl policy
+  
+  Introduce adaptive Torrentio stream cache TTL selection using recency buckets (fresh, warm, stable) instead of relying only on a fixed TTL.
+  
+  Add operator configurable adaptive window and TTL environment variables, document them in README and env template, and wire prepared media cache TTL calls through the adaptive helper.
+  
+  Add targeted tests for recency classification boundaries, fallback behavior for missing or invalid dates, and deterministic TTL jitter behavior.
+
+### Fixed
+* BUG-106 restore full provider resolution
+  
+  • switch MDBList fetch from legacy mdblist.com/api query format to api.mdblist.com path format
+  
+  • pass resolved media type through provider rating fetch so movie/show endpoints are targeted correctly
+  
+  • map MDBList popcorn source aliases to tomatoesaudience so RT audience ratings render
+  
+  • update MDB fetch tests to assert exact endpoint URLs and add popcorn alias coverage
+* replace s<=30 season cap with TMDB number_of_seasons bound
+  
+  Fetch the show detail endpoint to read number_of_seasons and use that
+  as the upper bound for the consolidated remap season walk. Falls back
+  to 100 if the endpoint fails. Eliminates the hard coded 30 season cap
+  that would silently return null for long running consolidated series.
+  
+  Updated resolveTmdbConsolidatedSeasonEpisode tests to mock the
+  tmdb:tv:{id} show detail key in all three test cases.
+* BUG-102 BUG-103 TMDB episode ID mode and anime S2 consolidated remap
+  
+  BUG-103: add tmdb episode ID mode with tmdb:{tmdb_id} URL pattern.
+  Wired tmdb to EpisodeIdMode union, EPISODE_ID_MODE_SET,
+  buildEpisodePatternBaseId, and applyEpisodeIdModeToXrdbId.
+  Added TMDB selector to export view and configuratorPageOptions.
+  export view now imports EPISODE_ID_MODE_OPTIONS from
+  configuratorPageOptions so option descriptions render inline
+  below the selector pills.
+  
+  BUG-102: anime S2+ thumbnails now resolve unique stills via
+  resolveTmdbConsolidatedSeasonEpisode. Applied in the generic
+  IMDb else path and as TVDB fallback when thetvdb.com scrape
+  returns null (no hard 404).
+  
+  README: document tmdb:{tmdb_id} in episode base ID formats.
+  
+  Verified: lint clean, 841/841 tests pass, production build
+  clean. Manual checks: tmdb:1399/S01E01 200, anime S1/S2 stills
+  differ, tvdb:81189/S99E99 200 fallback, tt0468569 poster 200,
+  TVDB description visible in export options.
+* constrain Tailwind source scanning to app and components (#3)
+  
+  Co authored by: IbbyLabs <40578997+IbbyLabs@users.noreply.github.com>
+
+### Documentation
+* refresh static doc assets
+* add minimal self host template
+
+### Other Changes
+* reuse known TMDB season counts in remap helper
+  
+  Reuse TMDB show season counts that are already loaded in image route
+  resolution when calling resolveTmdbConsolidatedSeasonEpisode. This
+  avoids an extra /tv/{id} fetch in thumbnail remap paths while keeping
+  the existing fallback fetch when the season count is not already known.
+  
+  Verified with focused thumbnail tests, full lint + test, and a fresh
+  manual pass of the export and thumbnail checks on a clean dev server.
+* consolidate season fetch loop into single pass
+  
+  Replace the separate targetSeason early check fetch and priorCount loop
+  with a single pass from s=1 to targetSeason. Tracks priorCount and
+  targetSeasonEpisodeCount in one loop, eliminating the duplicate fetch
+  of targetSeason that previously occurred when episodes exceeded the
+  season count. All fetches after the first are still cache hits.
+  
+  Updated test mocks to reflect the new fetch sequence.
+* add color scheme dark meta tag (#2)
+
 ## [v1.20.1] - 16/04/2026
 
 ### Fixed
