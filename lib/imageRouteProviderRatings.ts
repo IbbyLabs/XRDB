@@ -30,7 +30,10 @@ import {
 import { fetchMdbListRatings, type MdbListRatingsFetchResult } from './imageRouteMdbFetch.ts';
 import { getMdbListCacheTtlMs, getRatingCacheTtlMs } from './imageRouteMdbList.ts';
 import { normalizeRatingValue } from './imageRouteMedia.ts';
-import type { RatingPreference } from './ratingProviderCatalog.ts';
+import {
+  MDBLIST_BACKED_RATING_PROVIDERS,
+  type RatingPreference,
+} from './ratingProviderCatalog.ts';
 import type {
   CachedJsonNetworkObserver,
   CachedJsonResponse,
@@ -104,15 +107,6 @@ const DEFAULT_DEPS: ProviderRatingsDeps = {
 };
 
 const ANIME_ONLY_RATING_PROVIDER_SET = new Set<RatingPreference>(['myanimelist', 'anilist', 'kitsu']);
-const MDBLIST_BACKED_RATING_PROVIDER_SET = new Set<RatingPreference>([
-  'mdblist',
-  'tomatoes',
-  'tomatoesaudience',
-  'letterboxd',
-  'metacritic',
-  'metacriticuser',
-  'rogerebert',
-]);
 
 export type ResolvedProviderRatings = {
   ratings: Map<RatingPreference, string>;
@@ -192,7 +186,7 @@ export const resolveImageRouteProviderRatings = async (
   const needsAllocineRating = input.requestedExternalRatings.has('allocine');
   const needsAllocinePressRating = input.requestedExternalRatings.has('allocinepress');
   const needsMdbListBackedRating = [...input.requestedExternalRatings].some((provider) =>
-    MDBLIST_BACKED_RATING_PROVIDER_SET.has(provider)
+    MDBLIST_BACKED_RATING_PROVIDERS.has(provider)
   );
   const needsResolvableImdbId =
     needsImdbRating ||

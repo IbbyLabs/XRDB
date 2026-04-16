@@ -1,6 +1,7 @@
+import { buildPosterWarmSearchParams } from './posterCacheWarmSearchParams.ts';
+
 const DEFAULT_RING_SIZE = 500;
 const STRIP_EXTENSION_RE = /\.(?:jpe?g|png|webp|avif)$/i;
-const AUTH_STRIP_PARAMS = new Set(['xrdbKey', 'xrdb_key']);
 
 type RecentRingGlobal = typeof globalThis & {
   __xrdbPosterRecentRing?: string[];
@@ -13,10 +14,7 @@ export const recordRecentPosterRequest = (rawId: string, searchParams: URLSearch
   const id = rawId.replace(STRIP_EXTENSION_RE, '');
   if (!id) return;
 
-  const clean = new URLSearchParams(searchParams);
-  for (const key of AUTH_STRIP_PARAMS) {
-    clean.delete(key);
-  }
+  const clean = buildPosterWarmSearchParams(searchParams);
 
   const entry = `${id}\t${clean.toString()}`;
   const g = getRingGlobal();

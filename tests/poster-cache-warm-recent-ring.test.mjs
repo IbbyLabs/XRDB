@@ -43,6 +43,28 @@ test('ring strips auth params from stored entries', () => {
   assert.equal(entries[0].searchParams.get('layout'), 'stack');
   assert.equal(entries[0].searchParams.get('xrdbKey'), null);
   assert.equal(entries[0].searchParams.get('xrdb_key'), null);
+  assert.equal(entries[0].searchParams.get('posterRatings'), 'imdb,tmdb');
+});
+
+test('ring strips replay-only params and MDBList-backed providers from stored entries', () => {
+  clearRecentPosterRingForTests();
+
+  const params = new URLSearchParams(
+    'layout=stack&config=cfg_123&cb=1776360000001&debugRatings=1&mdblistKey=secret&tmdbKey=tmdb&fanartKey=fanart&simklClientId=simkl&posterRatings=tmdb,imdb,mdblist,tomatoes,trakt',
+  );
+  recordRecentPosterRequest('tt0111161.jpg', params);
+
+  const entries = getRecentPosterEntries(10);
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].searchParams.get('layout'), 'stack');
+  assert.equal(entries[0].searchParams.get('config'), null);
+  assert.equal(entries[0].searchParams.get('cb'), null);
+  assert.equal(entries[0].searchParams.get('debugRatings'), null);
+  assert.equal(entries[0].searchParams.get('mdblistKey'), null);
+  assert.equal(entries[0].searchParams.get('tmdbKey'), null);
+  assert.equal(entries[0].searchParams.get('fanartKey'), null);
+  assert.equal(entries[0].searchParams.get('simklClientId'), null);
+  assert.equal(entries[0].searchParams.get('posterRatings'), 'tmdb,imdb,trakt');
 });
 
 test('ring deduplicates identical id + params combos', () => {
@@ -54,6 +76,18 @@ test('ring deduplicates identical id + params combos', () => {
 
   const entries = getRecentPosterEntries(10);
   assert.equal(entries.length, 2);
+});
+
+test('ring deduplicates requests that only differ by cache-buster params', () => {
+  clearRecentPosterRingForTests();
+
+  recordRecentPosterRequest('tt0111161.jpg', new URLSearchParams('layout=stack&cb=1'));
+  recordRecentPosterRequest('tt0111161.jpg', new URLSearchParams('layout=stack&cb=2'));
+
+  const entries = getRecentPosterEntries(10);
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].searchParams.get('layout'), 'stack');
+  assert.equal(entries[0].searchParams.get('cb'), null);
 });
 
 test('ring evicts oldest entry when maxSize is exceeded', () => {

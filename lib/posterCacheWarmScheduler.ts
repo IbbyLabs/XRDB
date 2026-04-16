@@ -9,6 +9,7 @@ import { executeImageRouteRender } from './imageRouteExecution.ts';
 import { createConcurrencyLimit, type PhaseDurations, type RenderedImagePayload } from './imageRouteRuntime.ts';
 import { fetchImdbTopRatedIds, fetchMdblistTrendingIds, fetchTmdbPopularIds } from './posterCacheWarmDynamicSources.ts';
 import { getRecentPosterEntries } from './posterCacheWarmRecentRing.ts';
+import { buildPosterWarmSearchParams } from './posterCacheWarmSearchParams.ts';
 import { logger } from './serverLogger.ts';
 import { readPosterWarmSource, resolvePosterCacheWarmConfig } from './posterCacheWarmConfig.ts';
 
@@ -70,10 +71,9 @@ const getSchedulerState = () => globalThis as PosterWarmSchedulerState;
 
 const createPosterWarmRequest = (targetId: string, extraSearchParams?: URLSearchParams): ImageRouteRequestInput => {
   const url = new URL(`https://xrdb.internal/poster/${encodeURIComponent(targetId)}.jpg`);
-  if (extraSearchParams) {
-    for (const [key, value] of extraSearchParams) {
-      url.searchParams.set(key, value);
-    }
+  const warmSearchParams = buildPosterWarmSearchParams(extraSearchParams);
+  for (const [key, value] of warmSearchParams) {
+    url.searchParams.set(key, value);
   }
   return {
     nextUrl: {

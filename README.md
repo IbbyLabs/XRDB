@@ -975,8 +975,8 @@ Recommended hardening activation order for the one-wave rollout:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `XRDB_POSTER_WARM_ENABLED` | `true` | Enables the scheduled poster warming job when a source list is configured. |
-| `XRDB_POSTER_WARM_SOURCE` | (empty) | Inline comma-separated or newline-separated list of poster targets. Supports explicit IDs such as `tt0133093`, `tmdb:movie:603`, `tmdb:tv:1396`, or full poster URLs. |
+| `XRDB_POSTER_WARM_ENABLED` | `true` | Enables the scheduled poster warming job when a source list is configured. Warm requests use a lean poster rating profile by default so cache priming does not depend on MDBList-backed providers. |
+| `XRDB_POSTER_WARM_SOURCE` | (empty) | Inline comma-separated or newline-separated list of poster targets. Supports explicit IDs such as `tt0133093`, `tmdb:movie:603`, `tmdb:tv:1396`, or full poster URLs. URL query params are not preserved. |
 | `XRDB_POSTER_WARM_SOURCE_FILE` | (empty) | Optional file path for a poster warming source list. File targets are merged with `XRDB_POSTER_WARM_SOURCE`. |
 | `XRDB_POSTER_WARM_TMDB_ENABLED` | `false` | When `true`, XRDB fetches fresh TMDB popular and now playing ids (6 endpoints, up to 120 raw results) before each warm pass and merges them with static warm targets. |
 | `XRDB_POSTER_WARM_TMDB_LIMIT` | `100` | Maximum number of TMDB ids to merge into a warm pass. |
@@ -984,7 +984,7 @@ Recommended hardening activation order for the one-wave rollout:
 | `XRDB_POSTER_WARM_MDBLIST_LIMIT` | `200` | Maximum number of MDBList trending ids to merge into a warm pass. |
 | `XRDB_POSTER_WARM_IMDB_ENABLED` | `false` | When `true`, XRDB reads the local IMDb ratings dataset and merges the top voted titles into each warm pass. Requires the dataset to be present on disk. |
 | `XRDB_POSTER_WARM_IMDB_LIMIT` | `500` | Maximum number of IMDb top-rated ids to merge into a warm pass. |
-| `XRDB_POSTER_WARM_RECENT_ENABLED` | `false` | When `true`, XRDB records recently served poster requests in a bounded ring buffer and replays them during the next warm pass, using each request's exact configuration. |
+| `XRDB_POSTER_WARM_RECENT_ENABLED` | `false` | When `true`, XRDB records recently served poster requests in a bounded ring buffer and replays a sanitized version of them during the next warm pass. Auth keys, provider credentials, cache-busters, config profile ids, and MDBList-backed rating providers are stripped before replay. |
 | `XRDB_POSTER_WARM_RECENT_LIMIT` | `500` | Maximum number of recent poster requests to replay per warm pass. |
 | `CACHE_HARDENING_PREWARM_POPULARITY` | `false` | Ranks warm targets by recent request frequency before scheduling. Requires `CACHE_HARDENING_ENABLED=true`. |
 | `CACHE_HARDENING_SNAPSHOT_RESTORE` | `false` | Persists and restores the recent hot target set across restarts. Requires `CACHE_HARDENING_ENABLED=true`. |
@@ -993,7 +993,7 @@ Recommended hardening activation order for the one-wave rollout:
 | `XRDB_POSTER_WARM_CONCURRENCY` | `2` | Max number of poster warm jobs to run in parallel. |
 | `XRDB_POSTER_WARM_LOG` | `false` | Enables summary logging for poster warming runs. |
 
-Static warm sources remain the baseline fallback. When dynamic sources are enabled, XRDB fetches fresh ids from each enabled source, deduplicates them, and warms the merged target set. The recently-requested ring replays actual user requests with their original configuration, ensuring warm hits benefit custom config users and not just default-config installs.
+Static warm sources remain the baseline fallback. When dynamic sources are enabled, XRDB fetches fresh ids from each enabled source, deduplicates them, and warms the merged target set. Warmed poster requests default to a lean `imdb,tmdb` rating profile unless the replayed request already has a safe non-MDBList provider subset. Recent-request replay keeps layout and artwork-related params, but strips auth, credentials, cache-busters, config ids, and MDBList-backed providers before enqueueing the warm request.
 
 ### Sharp Rendering (advanced)
 

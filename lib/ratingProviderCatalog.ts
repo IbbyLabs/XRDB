@@ -111,6 +111,15 @@ const providerCatalog = [
 export const RATING_PROVIDER_OPTIONS = providerCatalog;
 export type RatingPreference = (typeof providerCatalog)[number]['id'];
 export const ALL_RATING_PREFERENCES: RatingPreference[] = providerCatalog.map(({ id }) => id);
+export const MDBLIST_BACKED_RATING_PROVIDERS = new Set<RatingPreference>([
+  'mdblist',
+  'tomatoes',
+  'tomatoesaudience',
+  'letterboxd',
+  'metacritic',
+  'metacriticuser',
+  'rogerebert',
+]);
 const ANIME_PRIORITY_RATING_PREFERENCES: RatingPreference[] = ['myanimelist', 'anilist', 'kitsu'];
 const aliasGroups: ReadonlyArray<readonly [RatingPreference, readonly string[]]> = [
   ['tmdb', ['tmdb']],
