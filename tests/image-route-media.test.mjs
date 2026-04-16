@@ -42,12 +42,14 @@ test('image route media collects MDBList ratings safely', () => {
       { source: 'IMDb', value: '7.4' },
       { source: 'MDBList', value: '-1' },
       { source: 'Rotten Tomatoes', value: '91' },
+      { source: 'popcorn', value: '89' },
     ],
     mdblist_score: '82',
   });
 
   assert.equal(ratings.get('imdb'), '7.4');
   assert.equal(ratings.get('tomatoes'), '91');
+  assert.equal(ratings.get('tomatoesaudience'), '89');
   assert.equal(ratings.get('mdblist'), '82');
 });
 

@@ -17,6 +17,7 @@ type MdbFetchJson = (
 
 export const fetchMdbListRatings = async ({
   imdbId,
+  mediaType,
   cacheTtlMs,
   phases,
   requestSource,
@@ -26,6 +27,7 @@ export const fetchMdbListRatings = async ({
   fetchJsonCached,
 }: {
   imdbId: string;
+  mediaType: 'movie' | 'tv';
   cacheTtlMs: number;
   phases: PhaseDurations;
   requestSource?: string;
@@ -39,6 +41,7 @@ export const fetchMdbListRatings = async ({
   void cleanId;
 
   const normalizedImdbId = String(imdbId || '').trim();
+  const normalizedMediaType = mediaType === 'tv' ? 'show' : 'movie';
   const apiKeys = manualApiKey ? [manualApiKey] : getMdbListApiKeysInPriorityOrder();
 
   if (!normalizedImdbId || !apiKeys.length) return null;
@@ -47,7 +50,7 @@ export const fetchMdbListRatings = async ({
     try {
       const response = await fetchJsonCached(
         `mdblist:${normalizedImdbId}:key:${apiKey}`,
-        `https://mdblist.com/api/?apikey=${encodeURIComponent(apiKey)}&i=${encodeURIComponent(normalizedImdbId)}`,
+        `https://api.mdblist.com/imdb/${normalizedMediaType}/${encodeURIComponent(normalizedImdbId)}?apikey=${encodeURIComponent(apiKey)}`,
         cacheTtlMs,
         phases,
         'mdb',

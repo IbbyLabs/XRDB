@@ -18,6 +18,7 @@ test('image route MDB fetch returns normalized ratings from a successful respons
 
   const ratings = await fetchMdbListRatings({
     imdbId: 'tt0944947',
+    mediaType: 'tv',
     cacheTtlMs: 60_000,
     phases,
     manualApiKey: 'demo',
@@ -39,7 +40,7 @@ test('image route MDB fetch returns normalized ratings from a successful respons
   });
 
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].url.includes('apikey=demo'), true);
+  assert.equal(calls[0].url, 'https://api.mdblist.com/imdb/show/tt0944947?apikey=demo');
   assert.equal(ratings.get('tmdb'), '8.3');
   assert.equal(ratings.get('imdb'), '9.2');
 });
@@ -50,6 +51,7 @@ test('image route MDB fetch returns null when the request fails', async () => {
 
   const ratings = await fetchMdbListRatings({
     imdbId: 'tt0111161',
+    mediaType: 'movie',
     cacheTtlMs: 60_000,
     phases,
     manualApiKey: 'demo',
@@ -68,4 +70,5 @@ test('image route MDB fetch returns null when the request fails', async () => {
 
   assert.equal(ratings, null);
   assert.equal(calls.length, 1);
+  assert.equal(calls[0].url, 'https://api.mdblist.com/imdb/movie/tt0111161?apikey=demo');
 });

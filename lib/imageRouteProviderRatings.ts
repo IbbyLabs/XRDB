@@ -303,6 +303,7 @@ export const resolveImageRouteProviderRatings = async (
       });
       let mdbRatings = await runtimeDeps.fetchMdbListRatings({
         imdbId: resolvedImdbIdForMdbList,
+        mediaType: input.resolvedRatingMediaType,
         cacheTtlMs: mdbListCacheTtlMs,
         phases: input.phases,
         requestSource: 'addon',
@@ -314,6 +315,7 @@ export const resolveImageRouteProviderRatings = async (
       if (!mdbRatings && input.mdblistKey && input.hasMdbListApiKey) {
         mdbRatings = await runtimeDeps.fetchMdbListRatings({
           imdbId: resolvedImdbIdForMdbList,
+          mediaType: input.resolvedRatingMediaType,
           cacheTtlMs: mdbListCacheTtlMs,
           phases: input.phases,
           requestSource: 'addon',

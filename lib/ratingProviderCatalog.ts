@@ -119,7 +119,7 @@ const aliasGroups: ReadonlyArray<readonly [RatingPreference, readonly string[]]>
   ['allocine', ['allocine', 'allocineaudience', 'allocinespectators', 'allocinespectateur', 'allocinespectateurs', 'allocineuser']],
   ['allocinepress', ['allocinepress', 'allocinepresse', 'allocinecritic', 'allocinecritics']],
   ['tomatoes', ['tomatoes', 'rottentomatoes', 'rottentomato', 'tomatoescritics', 'tomatoescritic', 'rottentomatoescritics', 'rt']],
-  ['tomatoesaudience', ['tomatoesaudience', 'rottentomatoesaudience', 'rtaudiencescore', 'rtaudience', 'popcorntime']],
+  ['tomatoesaudience', ['tomatoesaudience', 'rottentomatoesaudience', 'rtaudiencescore', 'rtaudience', 'popcorntime', 'popcorn', 'popcornmeter', 'popcornscore']],
   ['letterboxd', ['letterboxd']],
   ['metacritic', ['metacritic', 'metacriticcritics', 'metacriticcritic']],
   ['metacriticuser', ['metacriticuser', 'metacriticaudience']],
