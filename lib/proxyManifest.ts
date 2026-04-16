@@ -6,6 +6,38 @@ type ProxyCorsContext = {
   allowedOriginsRaw?: string | null;
 };
 
+const normalizeManifestValueForFingerprint = (value: unknown): unknown => {
+  if (Array.isArray(value)) {
+    return value.map((entry) => normalizeManifestValueForFingerprint(entry));
+  }
+
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([key, entryValue]) => [key, normalizeManifestValueForFingerprint(entryValue)]),
+    );
+  }
+
+  return value;
+};
+
+const buildProxyManifestIdentitySeed = (
+  manifest: Record<string, unknown>,
+  options?: {
+    catalogPlan?: string | null;
+    configSeed?: string;
+  },
+) => {
+  const sourceManifestFingerprint = JSON.stringify(
+    normalizeManifestValueForFingerprint(manifest),
+  );
+  const seedParts = [options?.configSeed, options?.catalogPlan, sourceManifestFingerprint].filter(
+    (value): value is string => typeof value === 'string' && value.length > 0,
+  );
+  return seedParts.length > 0 ? seedParts.join('|') : undefined;
+};
+
 export const parseAllowedProxyOrigins = (raw: string | undefined | null) => {
   if (!raw || !raw.trim()) return [];
   return raw
@@ -39,6 +71,15 @@ export const buildProxyCorsHeaders = ({
   };
 };
 
+export const buildProxyNoStoreHeaders = () => ({
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+  'CDN-Cache-Control': 'no-store',
+  'Cloudflare-CDN-Cache-Control': 'no-store',
+  'Surrogate-Control': 'no-store',
+  Pragma: 'no-cache',
+  Expires: '0',
+});
+
 export const buildProxyManifestPayload = (
   manifest: Record<string, unknown>,
   sourceManifestUrl: string,
@@ -52,10 +93,11 @@ export const buildProxyManifestPayload = (
   const sourceName = typeof manifest.name === 'string' ? manifest.name : 'Addon';
   const sourceDescription =
     typeof manifest.description === 'string' ? manifest.description : 'Served through the image proxy';
+  const identitySeed = buildProxyManifestIdentitySeed(manifest, options);
 
   return {
     ...rewrittenManifest,
-    id: buildProxyId(sourceManifestUrl, options?.configSeed),
+    id: buildProxyId(sourceManifestUrl, identitySeed),
     name: `XRDB Proxy | ${sourceName}`,
     description: `${sourceDescription} (served through XRDB Proxy)`,
   };

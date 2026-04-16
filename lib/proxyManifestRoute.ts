@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { loadProxyManifestPayload } from '@/lib/proxySourceManifest';
 import {
   buildProxyCorsHeaders,
+  buildProxyNoStoreHeaders,
 } from '@/lib/proxyManifest';
 import { MDBLIST_API_KEYS } from '@/lib/imageRouteConfig';
 import { hasServerTmdbCredentials } from '@/lib/tmdbServerAuth';
@@ -13,8 +14,13 @@ const resolveCorsHeaders = (request: NextRequest) =>
     allowedOriginsRaw: process.env.XRDB_PROXY_ALLOWED_ORIGINS,
   });
 
+const resolveResponseHeaders = (request: NextRequest) => ({
+  ...resolveCorsHeaders(request),
+  ...buildProxyNoStoreHeaders(),
+});
+
 const buildError = (request: NextRequest, message: string, status = 400) =>
-  NextResponse.json({ error: message }, { status, headers: resolveCorsHeaders(request) });
+  NextResponse.json({ error: message }, { status, headers: resolveResponseHeaders(request) });
 
 export function handleProxyManifestOptions(request: NextRequest) {
   return new NextResponse(null, { status: 204, headers: resolveCorsHeaders(request) });
@@ -50,6 +56,6 @@ export async function handleProxyManifestGet(request: NextRequest) {
 
   return NextResponse.json(result.payload, {
     status: 200,
-    headers: resolveCorsHeaders(request),
+    headers: resolveResponseHeaders(request),
   });
 }

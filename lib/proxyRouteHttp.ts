@@ -4,8 +4,10 @@ import {
   buildProxyRouteCorsHeaders,
   resolveProxyPublicUrl,
 } from './proxyRouteRequest.ts';
+import { buildProxyNoStoreHeaders } from './proxyManifest.ts';
 
 export { buildProxyReferencePublicUrl, buildProxyRouteCorsHeaders, resolveProxyPublicUrl } from './proxyRouteRequest.ts';
+export { buildProxyNoStoreHeaders } from './proxyManifest.ts';
 
 export const getPublicRequestUrl = (request: NextRequest) =>
   resolveProxyPublicUrl({
@@ -32,17 +34,25 @@ export const buildProxyErrorResponse = (
   allowedOriginsRaw: string | undefined,
   message: string,
   status = 400,
-) =>
-  NextResponse.json(
+) => {
+  const headers = new Headers(
+    buildProxyRouteCorsHeaders({
+      requestOrigin: request.headers.get('origin'),
+      allowedOriginsRaw,
+    }),
+  );
+  for (const [key, value] of Object.entries(buildProxyNoStoreHeaders())) {
+    headers.set(key, value);
+  }
+
+  return NextResponse.json(
     { error: message },
     {
       status,
-      headers: buildProxyRouteCorsHeaders({
-        requestOrigin: request.headers.get('origin'),
-        allowedOriginsRaw,
-      }),
+      headers,
     },
   );
+};
 
 export const buildProxyPassthroughResponse = async (
   request: NextRequest,

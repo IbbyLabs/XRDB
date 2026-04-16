@@ -12,6 +12,7 @@ import { assertSafeSourceUrl, fetchWithOneRedirect } from '@/lib/networkSecurity
 import { loadProxyManifestPayload } from '@/lib/proxySourceManifest';
 import {
   buildProxyErrorResponse,
+  buildProxyNoStoreHeaders,
   buildProxyPassthroughResponse,
   buildProxyRouteCorsHeaders,
   getPublicRequestUrl,
@@ -37,6 +38,11 @@ export const buildJsonCorsHeaders = (request: NextRequest) =>
     requestOrigin: request.headers.get('origin'),
     allowedOriginsRaw: PROXY_ALLOWED_ORIGINS,
   });
+
+const buildManifestHeaders = (request: NextRequest) => ({
+  ...buildJsonCorsHeaders(request),
+  ...buildProxyNoStoreHeaders(),
+});
 
 const buildSourceErrorResponse = async (sourceResponse: Response) => {
   const errorBody = await sourceResponse.text();
@@ -120,7 +126,7 @@ export async function handleProxyGet(
       result.payload,
       {
         status: 200,
-        headers: buildJsonCorsHeaders(request),
+        headers: buildManifestHeaders(request),
       },
     );
   }

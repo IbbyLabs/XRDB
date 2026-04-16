@@ -6,6 +6,7 @@ import {
   buildProxyRouteCorsHeaders,
   resolveProxyPublicUrl,
 } from '../lib/proxyRouteRequest.ts';
+import { buildProxyNoStoreHeaders } from '../lib/proxyManifest.ts';
 
 test('proxy route CORS headers allow matching origins when configured', () => {
   const headers = buildProxyRouteCorsHeaders({
@@ -18,6 +19,20 @@ test('proxy route CORS headers allow matching origins when configured', () => {
     headers['Access-Control-Allow-Headers'],
     'Content-Type, Authorization, X-XRDB-Key, X-API-Key',
   );
+});
+
+test('proxy route no-store headers disable browser and CDN caching', () => {
+  const headers = buildProxyNoStoreHeaders();
+
+  assert.equal(
+    headers['Cache-Control'],
+    'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+  );
+  assert.equal(headers['CDN-Cache-Control'], 'no-store');
+  assert.equal(headers['Cloudflare-CDN-Cache-Control'], 'no-store');
+  assert.equal(headers['Surrogate-Control'], 'no-store');
+  assert.equal(headers.Pragma, 'no-cache');
+  assert.equal(headers.Expires, '0');
 });
 
 test('proxy route public URL trusts forwarded host and proto when enabled', () => {
