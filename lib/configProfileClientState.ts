@@ -110,6 +110,21 @@ export const shouldClearConfigProfileUnlockSession = ({
 export const buildConfigProfileFingerprint = (params: Record<string, string> | null | undefined) =>
   params ? JSON.stringify(Object.entries(params).sort()) : null;
 
+export const buildSavedProfileComparableParams = (
+  params: Record<string, string> | null | undefined,
+) => {
+  const normalizedConfig = normalizeSavedUiConfig(
+    { settings: params ?? {} },
+    { skipCrossTypeFallbacks: true },
+  );
+
+  return buildProfileParams(normalizedConfig.settings, {
+    allowMissingTmdbKey: true,
+    allowMissingMdblistKey: true,
+    omitProviderCredentials: true,
+  }) ?? {};
+};
+
 export const hasConfigProfileUnsavedChanges = ({
   currentParams,
   savedFingerprint,
@@ -119,7 +134,6 @@ export const hasConfigProfileUnsavedChanges = ({
   savedFingerprint: string | null;
   snapshotReady: boolean;
 }) => snapshotReady && buildConfigProfileFingerprint(currentParams) !== savedFingerprint;
-
 export const hasConfigProfileLoginConflict = ({
   localParams,
   profileParams,

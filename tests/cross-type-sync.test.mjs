@@ -147,6 +147,16 @@ test('computeSyncDiff: detects changed fields', () => {
   assert.ok(entry, 'Expected a diff entry for accent color change');
 });
 
+test('computeSyncDiff: detects changed fields without client provider keys', () => {
+  const settings = { ...base, posterRatingPresentation: 'standard' };
+  const after = { ...settings, backdropRatingPresentation: 'compact-average' };
+  const diff = computeSyncDiff(settings, after);
+  assert.ok(diff.totalChanged > 0);
+  const entry = diff.entries.find((e) => e.key === 'backdropRatingPresentation');
+  assert.ok(entry, 'Expected a diff entry for backdrop presentation change');
+  assert.equal(entry?.newValue, 'compact-average');
+});
+
 test('computeSyncDiff: old/new values are correct', () => {
   const settings = { ...settingsWithKeys, posterGenreBadgeMode: 'off' };
   const after = applySyncableSettings(settings, 'poster', {
@@ -168,6 +178,14 @@ test('computeSyncToAllDiff: all types covered', () => {
   assert.ok('backdrop' in allDiffs);
   assert.ok('thumbnail' in allDiffs);
   assert.ok('logo' in allDiffs);
+});
+
+test('computeSyncToAllDiff: shows poster presentation changes without client provider keys', () => {
+  const settings = { ...base, posterRatingPresentation: 'compact-average' };
+  const allDiffs = computeSyncToAllDiff(settings, 'poster');
+  assert.ok(allDiffs.backdrop.totalChanged > 0);
+  assert.ok(allDiffs.thumbnail.totalChanged > 0);
+  assert.ok(allDiffs.logo.totalChanged > 0);
 });
 
 test('computeSyncToAllDiff: identical per-type settings produce zero diff for each type', () => {

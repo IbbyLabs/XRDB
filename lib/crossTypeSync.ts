@@ -269,8 +269,16 @@ export const computeSyncDiff = (
   before: SharedXrdbSettings,
   after: SharedXrdbSettings,
 ): { entries: ParamDiffEntry[]; totalChanged: number } => {
-  const beforeParams = buildProfileParams(before) ?? {};
-  const afterParams = buildProfileParams(after) ?? {};
+  const beforeParams = buildProfileParams(before, {
+    allowMissingTmdbKey: true,
+    allowMissingMdblistKey: true,
+    omitProviderCredentials: true,
+  }) ?? {};
+  const afterParams = buildProfileParams(after, {
+    allowMissingTmdbKey: true,
+    allowMissingMdblistKey: true,
+    omitProviderCredentials: true,
+  }) ?? {};
   const keys = new Set([...Object.keys(beforeParams), ...Object.keys(afterParams)]);
   const all: ParamDiffEntry[] = [];
   for (const key of keys) {
