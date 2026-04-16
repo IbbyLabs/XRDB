@@ -106,6 +106,7 @@ export const resolveTmdbConsolidatedSeasonEpisode = async (
   tmdbKey: string,
   phases: PhaseDurations,
   fetchJsonCached: EpisodeLookupJsonFetch,
+  knownSeasonCount?: number | null,
 ): Promise<{ season: string; episode: string } | null> => {
   const targetSeason = Number.parseInt(requestedSeason, 10);
   const targetEpisode = Number.parseInt(requestedEpisode, 10);
@@ -118,17 +119,21 @@ export const resolveTmdbConsolidatedSeasonEpisode = async (
     return null;
   }
 
-  const showResponse = await fetchJsonCached(
-    `tmdb:tv:${tmdbShowId}`,
-    `${TMDB_API_BASE_URL}/tv/${tmdbShowId}?api_key=${tmdbKey}`,
-    TMDB_CACHE_TTL_MS,
-    phases,
-    'tmdb',
-  );
-  const maxSeasons =
-    showResponse.ok && Number.isFinite(Number(showResponse.data?.number_of_seasons))
-      ? Number(showResponse.data.number_of_seasons)
-      : 100;
+  const knownMaxSeasons = Number(knownSeasonCount);
+  let maxSeasons = Number.isFinite(knownMaxSeasons) && knownMaxSeasons > 0 ? knownMaxSeasons : null;
+  if (maxSeasons === null) {
+    const showResponse = await fetchJsonCached(
+      `tmdb:tv:${tmdbShowId}`,
+      `${TMDB_API_BASE_URL}/tv/${tmdbShowId}?api_key=${tmdbKey}`,
+      TMDB_CACHE_TTL_MS,
+      phases,
+      'tmdb',
+    );
+    maxSeasons =
+      showResponse.ok && Number.isFinite(Number(showResponse.data?.number_of_seasons))
+        ? Number(showResponse.data.number_of_seasons)
+        : 100;
+  }
 
   let priorCount = 0;
   let targetSeasonEpisodeCount: number | null = null;

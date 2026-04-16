@@ -205,8 +205,10 @@ if (isTmdb) {
     media = tvResult;
     mediaType = 'tv';
     if (!tvdbEpisodeResolved && season && episode) {
+          const knownSeasonCount = Number(tvResult.number_of_seasons);
       const remapped = await resolveTmdbConsolidatedSeasonEpisode(
         String(tvResult.id || ''), season, episode, tmdbKey, phases, fetchJsonCached,
+        Number.isFinite(knownSeasonCount) ? knownSeasonCount : null,
       );
       if (remapped) { season = remapped.season; episode = remapped.episode; }
     }
@@ -267,15 +269,19 @@ if (isTmdb) {
             season = tvdbMapping.season;
             episode = tvdbMapping.episode;
           } else {
+            const knownSeasonCount = Number(media.number_of_seasons);
             const remapped = await resolveTmdbConsolidatedSeasonEpisode(
               String(media.id || mediaId), season, episode, tmdbKey, phases, fetchJsonCached,
+              Number.isFinite(knownSeasonCount) ? knownSeasonCount : null,
             );
             if (remapped) { season = remapped.season; episode = remapped.episode; }
           }
         }
       } else {
+        const knownSeasonCount = Number(media.number_of_seasons);
         const remapped = await resolveTmdbConsolidatedSeasonEpisode(
           String(media.id || mediaId), season, episode, tmdbKey, phases, fetchJsonCached,
+          Number.isFinite(knownSeasonCount) ? knownSeasonCount : null,
         );
         if (remapped) { season = remapped.season; episode = remapped.episode; }
       }
@@ -557,8 +563,10 @@ if (isTmdb) {
         mediaType = 'tv';
       }
       if (isThumbnailRequest && mediaType === 'tv' && season && episode) {
+        const knownSeasonCount = Number(media?.number_of_seasons);
         const remapped = await resolveTmdbConsolidatedSeasonEpisode(
           showId, season, episode, tmdbKey, phases, fetchJsonCached,
+          Number.isFinite(knownSeasonCount) ? knownSeasonCount : null,
         );
         if (remapped) { season = remapped.season; episode = remapped.episode; }
       }
@@ -566,8 +574,10 @@ if (isTmdb) {
   }
 
   if (isThumbnailRequest && mediaType === 'tv' && season && episode && media && !findData.tv_episode_results?.[0]) {
+    const knownSeasonCount = Number(media?.number_of_seasons);
     const remapped = await resolveTmdbConsolidatedSeasonEpisode(
       String(media?.id || mediaId), season, episode, tmdbKey, phases, fetchJsonCached,
+      Number.isFinite(knownSeasonCount) ? knownSeasonCount : null,
     );
     if (remapped) { season = remapped.season; episode = remapped.episode; }
   }
