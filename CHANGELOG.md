@@ -99,6 +99,37 @@
 
 <a id="v1-21-2"></a>
 
+<a id="v1-22-0"></a>
+
+## [v1.22.0] - 17/04/2026
+
+### Added
+* support original language artwork selection (FR-85)
+  
+  • add original as a first class language option in the configurator and supported language defaults
+  • keep request state cache identity distinct for lang=original without breaking fixed locale callers
+  • resolve TMDB artwork bundles, certification lookups, and localized badge data through the title's original language
+  • document lang=original usage and cover it with request state, prepared media, and configurator regression tests
+
+### Fixed
+* resolve BUG-111 badge border scaling
+  
+  Replace fixed badge border stroke widths with height relative stroke calculations so rating and genre badges keep proportional borders at large poster scales.
+  
+  Scale outer and inner badge strokes from badge height with clamps to preserve current normal size rendering while fixing thin borders on 4K and oversized poster outputs.
+  
+  Add direct SVG regression tests for rating badge glass borders and genre badge glass borders so future changes cannot silently reintroduce under scaled outlines.
+* resolve BUG-110 logo quality badge flow
+  
+  Remove the duplicated logo quality controls from the configurator and wire logo quality badges through the full image route pipeline.
+  
+  Parse logo quality badge params, enable the media feature pipeline for logo requests, preserve logo quality settings in the render seed, size the logo badge band for rating and quality rows, and render logo quality rows in the final output.
+  
+  Add regression coverage for logo request state parsing, logo quality only layout, renderer output in the logo badge band, and render cache busting for logo quality changes.
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.21.2] - 16/04/2026
 
 ### Fixed
