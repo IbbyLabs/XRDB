@@ -11,7 +11,7 @@ import {
 } from './qualityBadgeLayout.ts';
 import type { QualityBadgeStyle } from './ratingAppearance.ts';
 
-type ImageType = 'poster' | 'backdrop';
+type ImageType = 'poster' | 'backdrop' | 'logo';
 
 export type QualityBadgeOverlaySpec = {
   svg: string;
@@ -25,7 +25,7 @@ const resolveQualityBadgeEdgeInset = (
   imageType: ImageType,
   posterEdgeInset: number,
   backdropEdgeInset: number,
-) => (imageType === 'poster' ? posterEdgeInset : backdropEdgeInset);
+) => (imageType === 'backdrop' ? backdropEdgeInset : posterEdgeInset);
 
 export const measureQualityBadgeColumnWidth = ({
   columnBadges,

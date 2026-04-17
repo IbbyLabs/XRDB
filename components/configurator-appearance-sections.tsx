@@ -739,9 +739,6 @@ export function LookSection({
   logoBackground,
   logoRatingsMax,
   logoBottomRatingsRow,
-  logoQualityBadgesStyle,
-  logoQualityBadgesMax,
-  logoQualityBadgePreferences,
   activeRatingBadgeScale,
   activeGenreBadgeScale,
   activeGenreBadgeBorderWidth,
@@ -789,8 +786,6 @@ export function LookSection({
   onSelectLogoBackground,
   onSelectLogoRatingsMax,
   onToggleLogoBottomRatingsRow,
-  onSelectLogoQualityBadgesStyle,
-  onSelectLogoQualityBadgesMax,
   onToggleQualityBadgePreference,
   onSelectRatingBadgeScale,
   onSelectGenreBadgeScale,
@@ -856,9 +851,6 @@ export function LookSection({
   logoBackground: LogoBackground;
   logoRatingsMax: number | null;
   logoBottomRatingsRow: boolean;
-  logoQualityBadgesStyle: QualityBadgeStyle;
-  logoQualityBadgesMax: number | null;
-  logoQualityBadgePreferences: QualityBadgeOptionId[];
   activeRatingBadgeScale: number;
   activeGenreBadgeScale: number;
   activeGenreBadgeBorderWidth: number;
@@ -908,8 +900,6 @@ export function LookSection({
   onSelectLogoBackground: (value: LogoBackground) => void;
   onSelectLogoRatingsMax: (value: number | null) => void;
   onToggleLogoBottomRatingsRow: () => void;
-  onSelectLogoQualityBadgesStyle: (value: QualityBadgeStyle) => void;
-  onSelectLogoQualityBadgesMax: (value: number | null) => void;
   onToggleQualityBadgePreference: (value: QualityBadgeOptionId) => void;
   onSelectRatingBadgeScale: (value: number) => void;
   onSelectGenreBadgeScale: (value: number) => void;
@@ -1827,53 +1817,6 @@ export function LookSection({
                   >
                     Bottom Row
                   </button>
-                </div>
-              </div>
-            </div>
-            <div className="space-y-2 rounded-xl border border-white/10 bg-black/30 p-3">
-              <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Logo Quality Badges</div>
-              <div>
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Quality Badge Style</span>
-                <div className="flex flex-wrap gap-1">
-                  {QUALITY_BADGE_STYLE_OPTIONS.map((option) => (
-                    <button
-                      key={`logo-quality-style-${option.id}`}
-                      type="button"
-                      onClick={() => onSelectLogoQualityBadgesStyle(option.id)}
-                      className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
-                        logoQualityBadgesStyle === option.id
-                          ? 'border-violet-500/60 bg-zinc-800 text-white'
-                          : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <OptionalCountField
-                label="Max badges"
-                value={logoQualityBadgesMax}
-                buttonLabel="Auto"
-                onChange={onSelectLogoQualityBadgesMax}
-              />
-              <div>
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Visible Quality Badges</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {QUALITY_BADGE_OPTIONS.map((option) => (
-                    <button
-                      key={`logo-quality-${option.id}`}
-                      type="button"
-                      onClick={() => onToggleQualityBadgePreference(option.id)}
-                      className={`rounded-lg border px-2 py-1.5 text-[11px] font-medium transition-colors ${
-                        logoQualityBadgePreferences.includes(option.id)
-                          ? 'border-violet-500/60 bg-zinc-800 text-white'
-                          : 'border-white/10 bg-zinc-900 text-zinc-400 hover:text-white'
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
                 </div>
               </div>
             </div>

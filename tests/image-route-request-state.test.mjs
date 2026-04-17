@@ -511,6 +511,24 @@ test('image route request state keeps poster, backdrop, and logo rating badge sc
   assert.equal(state.logoRatingBadgeScale, 180);
 });
 
+test('image route request state keeps logo quality badge controls type scoped', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/logo/tt0133093.png?tmdbKey=tmdb-key&logoQualityBadges=hdr,4k&logoQualityBadgesStyle=glass&logoQualityBadgesMax=2&logoQualityBadgeScale=133&posterQualityBadges=remux&posterQualityBadgeScale=91',
+    ),
+    imageType: 'logo',
+    id: 'tt0133093.png',
+  });
+
+  assert.deepEqual(state.qualityBadgePreferences, ['hdr', '4k']);
+  assert.equal(state.qualityBadgesStyle, 'glass');
+  assert.equal(state.qualityBadgesMax, 2);
+  assert.equal(state.logoQualityBadgeScale, 133);
+  assert.equal(state.posterQualityBadgeScale, 91);
+  assert.equal(state.shouldApplyStreamBadges, true);
+  assert.equal(state.shouldBlockOnStreamBadges, true);
+});
+
 test('image route request state normalizes dynamic aggregate accent stops', async () => {
   const state = await resolveImageRouteRequestState({
     request: createRequest(

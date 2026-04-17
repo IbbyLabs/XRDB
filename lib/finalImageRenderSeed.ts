@@ -75,6 +75,7 @@ type FinalImageRenderSeedInput = {
   logoRatingBadgeScale: number;
   posterQualityBadgeScale: number;
   backdropQualityBadgeScale: number;
+  logoQualityBadgeScale?: number;
   genreBadgeMode: string;
   genreBadgeStyle: string;
   genreBadgePosition: string;
@@ -109,6 +110,8 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
   const qualityBadgeScale =
     input.imageType === 'backdrop' || input.imageType === 'thumbnail'
       ? input.backdropQualityBadgeScale
+      : input.imageType === 'logo'
+        ? (input.logoQualityBadgeScale ?? 100)
       : input.posterQualityBadgeScale;
   const appliesStyleRatingOffset =
     input.ratingStyle === 'glass' || input.ratingStyle === 'square';
@@ -151,10 +154,10 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
       ? input.posterQualityBadgesPosition
       : '-',
     isPoster ? input.ageRatingBadgePosition : '-',
-    isLogo ? '-' : input.qualityBadgesStyle,
-    isLogo ? '-' : String(input.qualityBadgesMax ?? 'auto'),
-    isLogo ? '-' : input.qualityBadgePreferences.join(',') || 'none',
-    isLogo ? '-' : String(qualityBadgeScale),
+    input.qualityBadgesStyle,
+    String(input.qualityBadgesMax ?? 'auto'),
+    input.qualityBadgePreferences.join(',') || 'none',
+    String(qualityBadgeScale),
     isBackdrop && !input.backdropBottomRatingsRow ? input.backdropRatingsLayout : '-',
     isPoster ? input.posterSideRatingsPosition : '-',
     isPoster ? String(input.posterSideRatingsOffset) : '-',

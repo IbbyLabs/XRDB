@@ -276,6 +276,7 @@ export type ImageRouteRequestState = {
   logoRatingBadgeScale: number;
   posterQualityBadgeScale: number;
   backdropQualityBadgeScale: number;
+  logoQualityBadgeScale: number;
   mdblistKey: string | null;
   tmdbKey: string;
   simklClientId: string;
@@ -968,6 +969,9 @@ export const resolveImageRouteRequestState = async ({
   const thumbnailQualityBadgePreferences = parseQualityBadgePreferencesAllowEmpty(
     searchParams.get('thumbnailQualityBadges') ?? searchParams.get('backdropQualityBadges'),
   );
+  const logoQualityBadgePreferences = parseQualityBadgePreferencesAllowEmpty(
+    searchParams.get('logoQualityBadges'),
+  );
   const globalQualityBadgesStyle = normalizeQualityBadgesStyle(
     searchParams.get('qualityBadgesStyle'),
   );
@@ -982,6 +986,9 @@ export const resolveImageRouteRequestState = async ({
       searchParams.get('backdropQualityBadgesStyle') ??
       searchParams.get('qualityBadgesStyle'),
   );
+  const logoQualityBadgesStyle = normalizeQualityBadgesStyle(
+    searchParams.get('logoQualityBadgesStyle') || searchParams.get('qualityBadgesStyle'),
+  );
   const posterQualityBadgesMax = normalizeOptionalBadgeCount(
     searchParams.get('posterQualityBadgesMax'),
   );
@@ -990,6 +997,9 @@ export const resolveImageRouteRequestState = async ({
   );
   const thumbnailQualityBadgesMax = normalizeOptionalBadgeCount(
     searchParams.get('thumbnailQualityBadgesMax') ?? searchParams.get('backdropQualityBadgesMax'),
+  );
+  const logoQualityBadgesMax = normalizeOptionalBadgeCount(
+    searchParams.get('logoQualityBadgesMax'),
   );
   const posterRemuxDisplayMode = normalizeRemuxDisplayMode(
     searchParams.get('posterRemuxDisplayMode') ?? searchParams.get('remuxDisplayMode'),
@@ -1039,7 +1049,7 @@ export const resolveImageRouteRequestState = async ({
         ? thumbnailQualityBadgesStyle
         : imageType === 'backdrop'
         ? backdropQualityBadgesStyle
-        : globalQualityBadgesStyle;
+          : logoQualityBadgesStyle || globalQualityBadgesStyle;
   const qualityBadgesMax =
     imageType === 'poster'
       ? posterQualityBadgesMax
@@ -1047,7 +1057,7 @@ export const resolveImageRouteRequestState = async ({
         ? thumbnailQualityBadgesMax
         : imageType === 'backdrop'
           ? backdropQualityBadgesMax
-        : null;
+          : logoQualityBadgesMax;
   const qualityBadgePreferences =
     imageType === 'poster'
       ? posterQualityBadgePreferences
@@ -1055,7 +1065,7 @@ export const resolveImageRouteRequestState = async ({
         ? thumbnailQualityBadgePreferences
         : imageType === 'backdrop'
           ? backdropQualityBadgePreferences
-        : [];
+          : logoQualityBadgePreferences;
   const typeRatingStyleParam =
     imageType === 'poster'
       ? searchParams.get('posterRatingStyle') ?? searchParams.get('posterRatingsStyle')
@@ -1166,6 +1176,10 @@ export const resolveImageRouteRequestState = async ({
   );
   const thumbnailQualityBadgeScale = normalizeQualityBadgeScalePercent(
     searchParams.get('thumbnailQualityBadgeScale') ?? searchParams.get('backdropQualityBadgeScale'),
+    DEFAULT_BADGE_SCALE_PERCENT,
+  );
+  const logoQualityBadgeScale = normalizeQualityBadgeScalePercent(
+    searchParams.get('logoQualityBadgeScale'),
     DEFAULT_BADGE_SCALE_PERCENT,
   );
   const effectiveBackdropRatingBadgeScale = isThumbnailRequest
@@ -1318,13 +1332,16 @@ export const resolveImageRouteRequestState = async ({
   const hasExplicitRatingOrder = ratingsForType !== null && ratingsForType !== undefined;
   const suppressRatingPresentation = ratingPresentation === 'none';
   const shouldApplyRatings = !suppressRatingPresentation && ratingPreferences.length > 0;
+  const shouldApplyLogoQualityBadges =
+    !suppressRatingPresentation && imageType === 'logo' && qualityBadgePreferences.length > 0;
   const shouldApplyStreamBadges =
-    !suppressRatingPresentation &&
-    imageType !== 'logo' &&
-    (streamBadgesSetting === 'on' || streamBadgesSetting === 'auto') &&
-    !hasNativeAnimeInput;
+    !hasNativeAnimeInput &&
+    (shouldApplyLogoQualityBadges ||
+      (!suppressRatingPresentation &&
+        imageType !== 'logo' &&
+        (streamBadgesSetting === 'on' || streamBadgesSetting === 'auto')));
   const shouldBlockOnStreamBadges =
-    shouldApplyStreamBadges && (imageType !== 'poster' || streamBadgesSetting === 'on');
+    shouldApplyStreamBadges && (imageType === 'logo' || imageType !== 'poster' || streamBadgesSetting === 'on');
   const posterUsesFanartArtwork = FANART_ARTWORK_SOURCE_SET.has(posterArtworkSource);
   const effectiveBackdropArtworkSource = isThumbnailRequest
     ? thumbnailArtworkSource
@@ -1474,6 +1491,7 @@ export const resolveImageRouteRequestState = async ({
     logoRatingBadgeScale,
     posterQualityBadgeScale,
     backdropQualityBadgeScale: effectiveBackdropQualityBadgeScale,
+    logoQualityBadgeScale,
     genreBadgeMode,
     genreBadgeStyle,
     genreBadgePosition,
@@ -1543,6 +1561,7 @@ export const resolveImageRouteRequestState = async ({
     logoRatingBadgeScale,
     posterQualityBadgeScale,
     backdropQualityBadgeScale: effectiveBackdropQualityBadgeScale,
+    logoQualityBadgeScale,
     mdblistKey,
     tmdbKey,
     simklClientId,

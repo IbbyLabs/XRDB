@@ -1243,19 +1243,57 @@ export const renderWithSharp = async (
     }
 
     if (input.imageType === 'logo') {
-      if (input.badges.length > 0 && input.logoBadgeBandHeight > 0 && input.logoBadgesPerRow > 0) {
-        const rows = chunkBy(input.badges, input.logoBadgesPerRow);
+      if (
+        (input.badges.length > 0 || input.qualityBadges.length > 0) &&
+        input.logoBadgeBandHeight > 0 &&
+        input.logoBadgesPerRow > 0
+      ) {
+        const ratingRows = input.badges.length > 0 ? chunkBy(input.badges, input.logoBadgesPerRow) : [];
+        const qualityRows =
+          input.qualityBadges.length > 0 ? chunkBy(input.qualityBadges, input.logoBadgesPerRow) : [];
+        const logoQualityBadgeHeight =
+          qualityRows.length > 0
+            ? resolveQualityBadgeHeight({
+                referenceBadgeHeight: ratingBadgeHeight,
+                qualityBadgeScalePercent: input.qualityBadgeScalePercent,
+                layout: 'row',
+              })
+            : 0;
         const rowsTotalHeight =
-          rows.length * ratingBadgeHeight + Math.max(0, rows.length - 1) * input.badgeGap;
+          ratingRows.length * ratingBadgeHeight +
+          qualityRows.length * logoQualityBadgeHeight +
+          Math.max(0, ratingRows.length + qualityRows.length - 1) * input.badgeGap;
         let rowY =
           input.outputHeight +
           Math.max(0, Math.floor((input.logoBadgeBandHeight - rowsTotalHeight) / 2));
-        for (const row of rows) {
+        for (const row of ratingRows) {
           composeBadgeRow(row, rowY, {
             maxRowWidth: input.logoBadgeMaxWidth,
             preserveBadgeSize: true,
           });
           rowY += ratingBadgeHeight + input.badgeGap;
+        }
+        for (const row of qualityRows) {
+          const qualityBadgeOverlays = buildQualityBadgeRowOverlays({
+            rowBadges: row,
+            rowY,
+            origin: 'top',
+            align: 'center',
+            imageType: 'logo',
+            outputWidth: input.outputWidth,
+            referenceBadgeHeight: ratingBadgeHeight,
+            qualityBadgeScalePercent: input.qualityBadgeScalePercent,
+            badgeGap: input.badgeGap,
+            qualityBadgesStyle: input.qualityBadgesStyle,
+            posterEdgeInset,
+            backdropEdgeInset,
+          });
+          appendQualityBadgeOverlays(qualityBadgeOverlays);
+          const qualityRowHeight = qualityBadgeOverlays.reduce(
+            (maxHeight, overlay) => Math.max(maxHeight, overlay.height),
+            logoQualityBadgeHeight,
+          );
+          rowY += qualityRowHeight + input.badgeGap;
         }
       }
 	    } else if (

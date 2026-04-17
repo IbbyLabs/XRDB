@@ -54,6 +54,7 @@ const createInput = (overrides = {}) => ({
   logoRatingBadgeScale: 100,
   posterQualityBadgeScale: 100,
   backdropQualityBadgeScale: 100,
+  logoQualityBadgeScale: 100,
   genreBadgeMode: 'text',
   genreBadgeStyle: 'plain',
   genreBadgePosition: 'bottomCenter',
@@ -181,6 +182,19 @@ test('final image render seed changes when logo rating badge scale changes', () 
   );
 
   assert.notEqual(baseKey, scaledKey);
+});
+
+test('final image render seed changes when logo quality badge settings change', () => {
+  const baseKey = buildFinalImageRenderSeedKey(createInput({ imageType: 'logo' }));
+  const changedPreferenceKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'logo', qualityBadgePreferences: ['hdr'] }),
+  );
+  const changedScaleKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'logo', logoQualityBadgeScale: 124 }),
+  );
+
+  assert.notEqual(baseKey, changedPreferenceKey);
+  assert.notEqual(baseKey, changedScaleKey);
 });
 
 test('historical regression: genre scale and rating scale each bust the render cache key', () => {

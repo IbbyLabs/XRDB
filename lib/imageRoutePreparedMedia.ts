@@ -935,15 +935,15 @@ if (imageType !== 'logo') {
         }))
       : [];
   streamBadges = [...networkBadges, ...watchProviderBadges, ...streamBadges];
-  const enabledQualityBadgeSet = new Set(qualityBadgePreferences);
-  streamBadges = MEDIA_FEATURE_BADGE_ORDER.flatMap((badgeKey) => {
-    if (!enabledQualityBadgeSet.has(badgeKey)) {
-      return [];
-    }
-    const match = streamBadges.find((badge) => badge.key === badgeKey);
-    return match ? [match] : [];
-  });
 }
+const enabledQualityBadgeSet = new Set(qualityBadgePreferences);
+streamBadges = MEDIA_FEATURE_BADGE_ORDER.flatMap((badgeKey) => {
+  if (!enabledQualityBadgeSet.has(badgeKey)) {
+    return [];
+  }
+  const match = streamBadges.find((badge) => badge.key === badgeKey);
+  return match ? [match] : [];
+});
 if (shouldRenderRawKitsuFallbackRating) {
   providerRatings.set('kitsu', rawFallbackKitsuRating as string);
   renderedRatingTtlByProvider.set('kitsu', KITSU_CACHE_TTL_MS);

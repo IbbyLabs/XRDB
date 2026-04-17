@@ -26,6 +26,23 @@ const samplePixel = async (buffer, x, y) => {
   };
 };
 
+const hasVisiblePixelInRect = async (buffer, left, top, width, height) => {
+  const { data, info } = await sharp(buffer)
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  for (let y = top; y < Math.min(info.height, top + height); y += 1) {
+    for (let x = left; x < Math.min(info.width, left + width); x += 1) {
+      const pixelIndex = (y * info.width + x) * info.channels;
+      if (data[pixelIndex + 3] > 0) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+};
+
 test('image route renderer draws a black ratings strip when blackbar source mode is enabled', async () => {
   const sourceSvg =
     "<svg xmlns='http://www.w3.org/2000/svg' width='640' height='360' viewBox='0 0 640 360'><rect width='640' height='360' fill='#ffffff'/></svg>";
@@ -282,4 +299,74 @@ test('backdrop flush-bottom strip touches the bottom edge when backdropBottomRat
     bottomPixel.r < 40 && bottomPixel.g < 40 && bottomPixel.b < 40,
     `expected bottom edge to be black, got r=${bottomPixel.r} g=${bottomPixel.g} b=${bottomPixel.b}`,
   );
+});
+
+test('image route renderer draws logo quality badges inside the logo badge band', async () => {
+  const sourceSvg =
+    "<svg xmlns='http://www.w3.org/2000/svg' width='420' height='120' viewBox='0 0 420 120'><rect width='420' height='120' fill='#ffffff'/></svg>";
+  const result = await renderWithSharp(
+    {
+      imageType: 'logo',
+      ratingPresentation: 'standard',
+      aggregateRatingSource: 'combined',
+      blockbusterDensity: 'balanced',
+      outputFormat: 'png',
+      imgUrl: `data:image/svg+xml,${encodeURIComponent(sourceSvg)}`,
+      imgFallbackUrl: null,
+      outputWidth: 420,
+      outputHeight: 120,
+      finalOutputHeight: 240,
+      logoBadgeBandHeight: 120,
+      logoBadgeMaxWidth: 396,
+      logoBadgesPerRow: 2,
+      posterRowHorizontalInset: 24,
+      posterTitleText: null,
+      posterLogoUrl: null,
+      editorialOverlay: null,
+      compactRingOverlay: null,
+      genreBadge: null,
+      badgeIconSize: 92,
+      badgeFontSize: 68,
+      badgePaddingX: 38,
+      badgePaddingY: 24,
+      badgeGap: 22,
+      badgeTopOffset: 16,
+      badgeBottomOffset: 16,
+      backdropEdgeInset: 12,
+      posterEdgeInset: 12,
+      badges: [],
+      qualityBadges: [createBadge('hdr', ''), createBadge('4k', '')],
+      qualityBadgesSide: 'left',
+      posterQualityBadgesPosition: 'auto',
+      ageRatingBadgePosition: 'inherit',
+      qualityBadgesStyle: 'plain',
+      qualityBadgeScalePercent: 100,
+      posterRatingsLayout: 'top',
+      posterRatingsMaxPerSide: null,
+      posterEdgeOffset: 0,
+      backdropRatingsLayout: 'top',
+      backdropBottomRatingsRow: false,
+      sideRatingsPosition: 'center',
+      sideRatingsOffset: 0,
+      ratingStyle: 'plain',
+      ratingBlackStripEnabled: false,
+      ratingStackOffsetX: 0,
+      ratingStackOffsetY: 0,
+      logoBackground: 'transparent',
+      topBadges: [],
+      bottomBadges: [],
+      leftBadges: [],
+      rightBadges: [],
+      posterTopRows: [],
+      posterBottomRows: [],
+      backdropRows: [],
+      blockbusterBlurbs: [],
+      cacheControl: 'public, s-maxage=60, stale-while-revalidate=60',
+    },
+    { ...phases2 },
+  );
+
+  const hasBandContent = await hasVisiblePixelInRect(result.body, 40, 130, 340, 90);
+
+  assert.ok(hasBandContent);
 });

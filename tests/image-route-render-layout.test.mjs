@@ -143,6 +143,46 @@ test('image route render layout wraps 4 or more logo badges to avoid expanding t
   assert.equal(wideLayout.finalOutputWidth, 1600);
 });
 
+test('image route render layout allocates a logo badge band for quality badges without ratings', async () => {
+  const layout = await resolveImageRouteRenderLayout({
+    imageType: 'logo',
+    isThumbnailRequest: false,
+    ratingPresentation: 'standard',
+    outputWidth: 420,
+    outputHeight: 120,
+    overlayAutoScale: 1,
+    displayRatingBadges: [],
+    streamBadges: [createBadge('hdr', ''), createBadge('4k', '')],
+    effectivePosterRatingsLayout: 'top',
+    effectivePosterRatingsMaxPerSide: 3,
+    effectiveBackdropRatingsLayout: 'top',
+    backdropBottomRatingsRow: false,
+    logoBottomRatingsRow: false,
+    posterRatingBadgeScale: 100,
+    backdropRatingBadgeScale: 100,
+    logoRatingBadgeScale: 100,
+    posterQualityBadgeScale: 100,
+    backdropQualityBadgeScale: 100,
+    logoQualityBadgeScale: 100,
+    ratingStyle: 'plain',
+    qualityBadgesMax: null,
+    mediaType: 'movie',
+    media: { id: 1 },
+    tmdbKey: 'tmdb-key',
+    requestedImageLang: 'en',
+    phases: { ...phases },
+    fetchJsonCached: async () => {
+      throw new Error('unexpected fetch');
+    },
+  });
+
+  assert.equal(layout.cappedRatingBadges.length, 0);
+  assert.equal(layout.qualityBadges.length, 2);
+  assert.equal(layout.logoBadgesPerRow, 2);
+  assert.ok(layout.logoBadgeBandHeight > 0);
+  assert.ok(layout.finalOutputHeight > 120);
+});
+
 test('image route render layout collapses backdrop ratings into one bottom row when enabled', async () => {
   const layout = await resolveImageRouteRenderLayout({
     imageType: 'backdrop',

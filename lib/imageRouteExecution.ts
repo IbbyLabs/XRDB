@@ -391,6 +391,7 @@ export const executeImageRouteRender = async ({
         logoRatingBadgeScale: requestState.logoRatingBadgeScale,
         posterQualityBadgeScale: requestState.posterQualityBadgeScale,
         backdropQualityBadgeScale: requestState.backdropQualityBadgeScale,
+        logoQualityBadgeScale: requestState.logoQualityBadgeScale,
         posterEdgeOffset: requestState.posterEdgeOffset,
         ratingStyle: requestState.ratingStyle,
         qualityBadgesMax: requestState.qualityBadgesMax,
