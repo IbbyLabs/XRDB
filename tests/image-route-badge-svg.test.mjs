@@ -319,3 +319,36 @@ test('image route badge svg does not apply valueOffset to plain style', () => {
   });
   assert.equal(baseline, withOffset);
 });
+
+test('image route badge svg scales glass border width with badge height', () => {
+  const baseSvg = buildBadgeSvg({
+    width: 128,
+    height: 42,
+    iconSize: 24,
+    fontSize: 18,
+    paddingX: 14,
+    gap: 10,
+    accentColor: '#38bdf8',
+    monogram: 'TM',
+    value: '7.9',
+    ratingStyle: 'glass',
+  });
+  const scaledSvg = buildBadgeSvg({
+    width: 384,
+    height: 126,
+    iconSize: 72,
+    fontSize: 54,
+    paddingX: 42,
+    gap: 30,
+    accentColor: '#38bdf8',
+    monogram: 'TM',
+    value: '7.9',
+    ratingStyle: 'glass',
+  });
+
+  const baseStroke = Number(baseSvg.match(/stroke-width="([0-9.]+)" \/>/)?.[1]);
+  const scaledStroke = Number(scaledSvg.match(/stroke-width="([0-9.]+)" \/>/)?.[1]);
+
+  assert.ok(baseStroke > 0);
+  assert.ok(scaledStroke > baseStroke, `expected scaled stroke (${scaledStroke}) > base stroke (${baseStroke})`);
+});

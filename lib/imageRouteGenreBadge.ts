@@ -33,6 +33,26 @@ const estimateGenreBadgeLabelWidth = (label: string, fontSize: number) => {
   return Math.max(Math.round(fontSize * 2.2), baseWidth + letterSpacingWidth + safetyWidth);
 };
 
+const resolveScaledGenreStrokeWidth = ({
+  baseWidth,
+  badgeHeight,
+  referenceHeight,
+  minWidth,
+  maxWidth,
+}: {
+  baseWidth: number;
+  badgeHeight: number;
+  referenceHeight: number;
+  minWidth: number;
+  maxWidth: number;
+}) =>
+  Number(
+    Math.max(
+      minWidth,
+      Math.min(maxWidth, Number(((baseWidth * badgeHeight) / referenceHeight).toFixed(2))),
+    ).toFixed(2),
+  );
+
 const CLEAN_GENRE_LABEL_BY_FAMILY: Record<GenreBadgeFamilyId, string> = {
   anime: 'Anime',
   animation: 'Animation',
@@ -172,8 +192,26 @@ export const buildGenreBadgeSvg = (
   const defaultStrokeWidth = imageType === 'backdrop' ? 1.5 : 1.4;
   const strokeWidth =
     genreBadge.style === 'glass'
-      ? Math.max(0, Number.isFinite(genreBadge.borderWidth) ? Number(genreBadge.borderWidth) : defaultStrokeWidth)
+      ? Math.max(
+          0,
+          resolveScaledGenreStrokeWidth({
+            baseWidth: Number.isFinite(genreBadge.borderWidth)
+              ? Number(genreBadge.borderWidth)
+              : defaultStrokeWidth,
+            badgeHeight: height,
+            referenceHeight: baseHeight,
+            minWidth: 0,
+            maxWidth: 8,
+          }),
+        )
       : 0;
+  const squareStrokeWidth = resolveScaledGenreStrokeWidth({
+    baseWidth: 1.4,
+    badgeHeight: height,
+    referenceHeight: baseHeight,
+    minWidth: 1,
+    maxWidth: 6,
+  });
   const iconSize = Math.round(height * (imageType === 'backdrop' ? 0.46 : 0.48));
   const isClean = genreBadge.style === 'clean';
   const resolvedMode = resolveGenreBadgeModeForStyle(genreBadge.mode, genreBadge.style);
@@ -305,7 +343,7 @@ ${textMarkup}
       width,
       height,
       svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-<rect x="0.7" y="0.7" width="${Math.max(0, width - 1.4)}" height="${Math.max(0, height - 1.4)}" rx="${radius}" fill="rgba(8,11,16,0.88)" stroke="rgba(255,255,255,0.09)" stroke-width="1.4"/>
+<rect x="${squareStrokeWidth / 2}" y="${squareStrokeWidth / 2}" width="${Math.max(0, width - squareStrokeWidth)}" height="${Math.max(0, height - squareStrokeWidth)}" rx="${radius}" fill="rgba(8,11,16,0.88)" stroke="rgba(255,255,255,0.09)" stroke-width="${squareStrokeWidth}"/>
 <rect x="${capLeft}" y="${capTop}" width="${capWidth}" height="${capHeight}" rx="${Math.round(capHeight / 2)}" fill="${genreBadge.accentColor}" opacity="0.92"/>
 <rect x="4" y="4" width="${Math.max(0, width - 8)}" height="${Math.max(0, height - 8)}" rx="${Math.max(8, radius - 3)}" fill="rgba(255,255,255,0.03)"/>
 ${iconMarkup}

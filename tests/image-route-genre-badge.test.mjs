@@ -252,3 +252,20 @@ test('BUG-66 genre badge icon gap stays proportional to badge height at 4K scale
     `expected width-to-height ratio to remain consistent across scales: normal ${normalPaddingRatio.toFixed(2)} vs 4K ${largePaddingRatio.toFixed(2)}`,
   );
 });
+
+test('genre badge glass border width scales with badge height', () => {
+  const normalSpec = buildGenreBadgeSvg(
+    { familyId: 'documentary', label: 'Doc', accentColor: '#facc15', mode: 'text', style: 'glass', borderWidth: 1.4, scalePercent: 100 },
+    'poster',
+  );
+  const largeSpec = buildGenreBadgeSvg(
+    { familyId: 'documentary', label: 'Doc', accentColor: '#facc15', mode: 'text', style: 'glass', borderWidth: 1.4, scalePercent: 200 },
+    'poster',
+  );
+
+  const normalStroke = Number(normalSpec.svg.match(/stroke-width="([0-9.]+)"/)?.[1]);
+  const largeStroke = Number(largeSpec.svg.match(/stroke-width="([0-9.]+)"/)?.[1]);
+
+  assert.ok(normalStroke > 0);
+  assert.ok(largeStroke > normalStroke, `expected scaled stroke (${largeStroke}) > base stroke (${normalStroke})`);
+});

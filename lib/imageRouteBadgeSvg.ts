@@ -25,6 +25,27 @@ import { hexColorToRgba } from './imageRouteBlockbusterLayout.ts';
 const clampNumber = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));
 
+const resolveScaledStrokeWidth = ({
+  baseWidth,
+  badgeHeight,
+  referenceHeight,
+  minWidth,
+  maxWidth,
+}: {
+  baseWidth: number;
+  badgeHeight: number;
+  referenceHeight: number;
+  minWidth: number;
+  maxWidth: number;
+}) =>
+  Number(
+    clampNumber(
+      Number(((baseWidth * badgeHeight) / referenceHeight).toFixed(2)),
+      minWidth,
+      maxWidth,
+    ).toFixed(2),
+  );
+
 const resolveCenteredAccentRailRect = ({
   badgeWidth,
   badgeHeight,
@@ -151,10 +172,21 @@ export const buildBadgeSvg = ({
   compactText = false,
 }: BuildBadgeSvgInput) => {
   const radius = getBadgeOuterRadius(height, ratingStyle);
+  const standardOuterStrokeWidth =
+    ratingStyle === 'plain'
+      ? 0
+      : resolveScaledStrokeWidth({
+          baseWidth: ratingStyle === 'square' ? 1.5 : 1,
+          badgeHeight: height,
+          referenceHeight: 42,
+          minWidth: ratingStyle === 'square' ? 1.2 : 0.85,
+          maxWidth: 6,
+        });
+  const standardOuterInset = standardOuterStrokeWidth / 2;
   const outerRect =
     ratingStyle === 'plain'
       ? ''
-      : `<rect x="0.75" y="0.75" width="${Math.max(0, width - 1.5)}" height="${Math.max(0, height - 1.5)}" rx="${radius}" fill="${ratingStyle === 'square' ? 'rgb(5,5,5)' : 'rgb(17,24,39)'}" fill-opacity="${ratingStyle === 'square' ? '0.94' : '0.70'}" stroke="${ratingStyle === 'square' ? accentColor : 'rgba(255,255,255,0.30)'}" stroke-width="${ratingStyle === 'square' ? '1.5' : '1'}" />`;
+      : `<rect x="${standardOuterInset}" y="${standardOuterInset}" width="${Math.max(0, width - standardOuterStrokeWidth)}" height="${Math.max(0, height - standardOuterStrokeWidth)}" rx="${radius}" fill="${ratingStyle === 'square' ? 'rgb(5,5,5)' : 'rgb(17,24,39)'}" fill-opacity="${ratingStyle === 'square' ? '0.94' : '0.70'}" stroke="${ratingStyle === 'square' ? accentColor : 'rgba(255,255,255,0.30)'}" stroke-width="${standardOuterStrokeWidth}" />`;
   const plainBadgeDefs =
     ratingStyle === 'plain'
       ? `<defs><filter id="text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.4" flood-color="#000000" flood-opacity="0.55" /></filter><filter id="plain-icon-shadow" x="-35%" y="-35%" width="170%" height="170%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="0" stdDeviation="1.4" flood-color="#020617" flood-opacity="0.78" /><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#020617" flood-opacity="0.46" /></filter>${preferReadablePlainSurface ? `<filter id="plain-badge-surface-shadow" x="-28%" y="-40%" width="156%" height="190%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="2.1" stdDeviation="3.8" flood-color="#020617" flood-opacity="0.72" /><feDropShadow dx="0" dy="0" stdDeviation="1.8" flood-color="#020617" flood-opacity="0.34" /></filter><linearGradient id="plain-badge-surface-fill" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#020617" stop-opacity="0.22" /><stop offset="100%" stop-color="#0f172a" stop-opacity="0.15" /></linearGradient>` : ''}</defs>`
@@ -253,14 +285,27 @@ ${accentBarVisible ? `<rect x="${accentRailRect.x}" y="${accentRailRect.y}" widt
     const baseFillOpacity = ratingStyle === 'square' ? 0.96 : 0.82;
     const innerStroke = 'rgb(255,255,255)';
     const innerStrokeOpacity = 0.16;
-    const strokeWidth = ratingStyle === 'square' ? 1.7 : 1.45;
-    const variantOuterInset = 0.9;
+    const strokeWidth = resolveScaledStrokeWidth({
+      baseWidth: ratingStyle === 'square' ? 1.7 : 1.45,
+      badgeHeight: height,
+      referenceHeight: 42,
+      minWidth: ratingStyle === 'square' ? 1.25 : 1,
+      maxWidth: 6,
+    });
+    const variantOuterInset = strokeWidth / 2;
     const variantOuterWidth = Math.max(0, width - variantOuterInset * 2);
     const variantOuterHeight = Math.max(0, height - variantOuterInset * 2);
     const variantInnerInset = 1.6;
     const variantInnerWidth = Math.max(0, width - variantInnerInset * 2);
     const variantInnerHeight = Math.max(0, height - variantInnerInset * 2);
     const variantInnerRadius = Math.max(2, radius - 1);
+    const variantInnerStrokeWidth = resolveScaledStrokeWidth({
+      baseWidth: 0.85,
+      badgeHeight: height,
+      referenceHeight: 42,
+      minWidth: 0.7,
+      maxWidth: 3.5,
+    });
     const variantStrokeInset = 2.3;
     const variantStrokeWidth = Math.max(0, width - variantStrokeInset * 2);
     const variantStrokeHeight = Math.max(0, height - variantStrokeInset * 2);
@@ -274,7 +319,7 @@ ${accentBarVisible ? `<rect x="${accentRailRect.x}" y="${accentRailRect.y}" widt
     const variantChrome = `
 <rect x="${variantOuterInset}" y="${variantOuterInset}" width="${variantOuterWidth}" height="${variantOuterHeight}" rx="${radius}" fill="${baseFill}" fill-opacity="${baseFillOpacity}" stroke="${accentColor}" stroke-opacity="${accentStrokeOpacity}" stroke-width="${strokeWidth}" />
 <rect x="${variantInnerInset}" y="${variantInnerInset}" width="${variantInnerWidth}" height="${variantInnerHeight}" rx="${variantInnerRadius}" fill="url(#variant-surface-fill)" />
-<rect x="${variantStrokeInset}" y="${variantStrokeInset}" width="${variantStrokeWidth}" height="${variantStrokeHeight}" rx="${variantStrokeRadius}" fill="none" stroke="${innerStroke}" stroke-opacity="${innerStrokeOpacity}" stroke-width="0.85" />`;
+<rect x="${variantStrokeInset}" y="${variantStrokeInset}" width="${variantStrokeWidth}" height="${variantStrokeHeight}" rx="${variantStrokeRadius}" fill="none" stroke="${innerStroke}" stroke-opacity="${innerStrokeOpacity}" stroke-width="${variantInnerStrokeWidth}" />`;
 
     if (badgeVariant === 'minimal') {
       const valueFontSize = Math.max(18, Math.round(fontSize * 1.05));
@@ -328,12 +373,33 @@ ${variantChrome}
 </svg>`;
   }
   if (ratingStyle === 'stacked') {
-    const stackedOuterInset = 0.9;
+    const stackedOuterStrokeWidth = resolveScaledStrokeWidth({
+      baseWidth: 1.15,
+      badgeHeight: height,
+      referenceHeight: 54,
+      minWidth: 0.95,
+      maxWidth: 5,
+    });
+    const stackedOuterInset = stackedOuterStrokeWidth / 2;
     const stackedOuterWidth = Math.max(0, width - stackedOuterInset * 2);
     const stackedOuterHeight = Math.max(0, height - stackedOuterInset * 2);
     const stackedInnerInset = 1.8;
     const stackedInnerWidth = Math.max(0, width - stackedInnerInset * 2);
     const stackedInnerHeight = Math.max(0, height - stackedInnerInset * 2);
+    const stackedIconPlateStrokeWidth = resolveScaledStrokeWidth({
+      baseWidth: 1.05,
+      badgeHeight: height,
+      referenceHeight: 54,
+      minWidth: 0.9,
+      maxWidth: 4,
+    });
+    const stackedValuePlateStrokeWidth = resolveScaledStrokeWidth({
+      baseWidth: 0.9,
+      badgeHeight: height,
+      referenceHeight: 54,
+      minWidth: 0.75,
+      maxWidth: 3.5,
+    });
     const renderIconSize = resolveBadgeIconRenderSize({
       iconSlotSize: Math.max(14, Math.round(iconSize * 0.72)),
       badgeHeight: Math.max(18, Math.round(height * 0.3)),
@@ -450,12 +516,12 @@ ${variantChrome}
       : `<text x="${stackedLayout.iconCenterX}" y="${Math.round(stackedLayout.iconCenterY + stackedLayout.iconFontSize * 0.34)}" font-family="Arial, sans-serif" font-size="${stackedLayout.iconFontSize}" font-weight="700" text-anchor="middle" fill="${accentColor}">${escapeXml(monogram)}</text>`;
     return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
 ${stackedDefs}
-<rect x="${stackedOuterInset}" y="${stackedOuterInset}" width="${stackedOuterWidth}" height="${stackedOuterHeight}" rx="${radius}" fill="rgba(8,11,16,${stackedBodyFillOpacity.toFixed(3)})" stroke="${stackedBodyStroke}" stroke-width="1.15" />
+<rect x="${stackedOuterInset}" y="${stackedOuterInset}" width="${stackedOuterWidth}" height="${stackedOuterHeight}" rx="${radius}" fill="rgba(8,11,16,${stackedBodyFillOpacity.toFixed(3)})" stroke="${stackedBodyStroke}" stroke-width="${stackedOuterStrokeWidth}" />
 <rect x="${stackedInnerInset}" y="${stackedInnerInset}" width="${stackedInnerWidth}" height="${stackedInnerHeight}" rx="${Math.max(10, radius - 3)}" fill="url(#stacked-surface-fill)" />
 <rect x="${topHighlightInsetX}" y="${topHighlightInsetY}" width="${topHighlightWidth}" height="${topHighlightHeight}" rx="${Math.max(8, Math.round(topHighlightHeight / 2))}" fill="rgba(255,255,255,0.04)" />
 ${stackedLayout.showAccentRail ? `<rect x="${stackedLayout.accentRailX}" y="${stackedLayout.accentRailY}" width="${stackedLayout.accentRailWidth}" height="${stackedLayout.accentRailHeight}" rx="${Math.max(2, Math.round(stackedLayout.accentRailHeight / 2))}" fill="url(#stacked-rail-fill)" filter="url(#stacked-rail-glow)" />` : ''}
-<rect x="${stackedLayout.iconPlateX}" y="${stackedLayout.iconPlateY}" width="${stackedLayout.iconPlateSize}" height="${stackedLayout.iconPlateSize}" rx="${Math.max(10, Math.round(stackedLayout.iconPlateSize * 0.28))}" fill="url(#stacked-icon-plate-fill)" stroke="${iconSurfaceStroke}" stroke-width="1.05" filter="url(#stacked-soft-shadow)" />
-<rect x="${valuePlateX}" y="${valuePlateY}" width="${valuePlateWidth}" height="${valuePlateHeight}" rx="${valuePlateRadius}" fill="url(#stacked-value-fill)" stroke="rgba(255,255,255,0.08)" stroke-width="0.9" />
+<rect x="${stackedLayout.iconPlateX}" y="${stackedLayout.iconPlateY}" width="${stackedLayout.iconPlateSize}" height="${stackedLayout.iconPlateSize}" rx="${Math.max(10, Math.round(stackedLayout.iconPlateSize * 0.28))}" fill="url(#stacked-icon-plate-fill)" stroke="${iconSurfaceStroke}" stroke-width="${stackedIconPlateStrokeWidth}" filter="url(#stacked-soft-shadow)" />
+<rect x="${valuePlateX}" y="${valuePlateY}" width="${valuePlateWidth}" height="${valuePlateHeight}" rx="${valuePlateRadius}" fill="url(#stacked-value-fill)" stroke="rgba(255,255,255,0.08)" stroke-width="${stackedValuePlateStrokeWidth}" />
 ${iconImage}
 ${monogramText}
 <text x="${stackedLayout.valueX}" y="${valueCenterY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${stackedLayout.valueFontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="${valueColor ?? 'white'}" filter="url(#stacked-value-shadow)"${valueTextLengthForPlate || valueTextLength}${valueNumericStyle}>${escapeXml(value)}</text>
@@ -489,6 +555,20 @@ ${monogramText}
   const valueLetterSpacing = compactText ? ' letter-spacing="-0.04em"' : '';
   const iconY = Math.round((height - renderIconSize) / 2);
   const useNeutralGlassPlate = ratingStyle === 'glass' && preferNeutralGlassPlate;
+  const glassIconStrokeWidth = resolveScaledStrokeWidth({
+    baseWidth: 1.5,
+    badgeHeight: height,
+    referenceHeight: 42,
+    minWidth: 1,
+    maxWidth: 5,
+  });
+  const glassIconInnerStrokeWidth = resolveScaledStrokeWidth({
+    baseWidth: 0.75,
+    badgeHeight: height,
+    referenceHeight: 42,
+    minWidth: 0.6,
+    maxWidth: 3,
+  });
   const useLightSquareIconPlate =
     ratingStyle === 'square' &&
     !hasCustomIconOverride &&
@@ -499,7 +579,7 @@ ${monogramText}
       : ratingStyle === 'square'
         ? `<rect x="${iconX + 0.75}" y="${iconY + 0.75}" width="${Math.max(0, renderIconSize - 1.5)}" height="${Math.max(0, renderIconSize - 1.5)}" rx="${Math.max(4, iconCornerRadius || iconRadius)}" fill="${useLightSquareIconPlate ? 'rgba(255,248,240,0.96)' : 'rgb(10,10,10)'}" />`
         : useNeutralGlassPlate
-          ? `<circle cx="${iconCx}" cy="${iconCy}" r="${iconRadius}" fill="rgba(15,23,42,0.92)" stroke="${accentColor}" stroke-width="1.5" />`
+          ? `<circle cx="${iconCx}" cy="${iconCy}" r="${iconRadius}" fill="rgba(15,23,42,0.92)" stroke="${accentColor}" stroke-width="${glassIconStrokeWidth}" />`
           : `<circle cx="${iconCx}" cy="${iconCy}" r="${iconRadius}" fill="${accentColor}" stroke="rgba(255,255,255,0.45)" />`;
   const iconClipPath =
     ratingStyle === 'plain'
@@ -515,7 +595,7 @@ ${monogramText}
           ? `<rect x="${iconX + 1.5}" y="${iconY + 1.5}" width="${Math.max(0, renderIconSize - 3)}" height="${Math.max(0, renderIconSize - 3)}" rx="${Math.max(4, iconCornerRadius || iconRadius - 1)}" fill="none" stroke="rgba(255,255,255,0.18)" />`
           : ''
         : useNeutralGlassPlate
-          ? `<circle cx="${iconCx}" cy="${iconCy}" r="${Math.max(1, iconRadius - 0.75)}" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="0.75" />`
+          ? `<circle cx="${iconCx}" cy="${iconCy}" r="${Math.max(1, iconRadius - 0.75)}" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="${glassIconInnerStrokeWidth}" />`
           : `<circle cx="${iconCx}" cy="${iconCy}" r="${iconRadius}" fill="none" stroke="rgba(255,255,255,0.45)" />`;
   const monogramFill = ratingStyle === 'glass' && !useNeutralGlassPlate ? 'white' : accentColor;
   const plainIconFilter = ratingStyle === 'plain' ? ' filter="url(#plain-icon-shadow)"' : '';
