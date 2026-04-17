@@ -5,6 +5,23 @@ import path from 'node:path';
 
 import { buildTmdbSupportedLanguageOptions } from '../lib/configuratorLanguageOptions.ts';
 
+test('configurator language options expose original language first', () => {
+  const options = buildTmdbSupportedLanguageOptions({
+    languages: [{ iso_639_1: 'en', english_name: 'English', name: 'English' }],
+  });
+  const optionsSource = fs.readFileSync(
+    path.resolve(process.cwd(), 'lib/configuratorPageOptions.ts'),
+    'utf8',
+  );
+
+  assert.deepEqual(options[0], {
+    code: 'original',
+    flag: '🌐',
+    label: 'Original language',
+  });
+  assert.match(optionsSource, /\{ code: 'original', label: 'Original language', flag: '🌐' \}/);
+});
+
 test('configurator language options expand regional TMDB locales into readable labels', () => {
   const options = buildTmdbSupportedLanguageOptions({
     languages: [

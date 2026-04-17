@@ -22,6 +22,7 @@ export type SupportedLanguageOption = {
 };
 
 export const SUPPORTED_LANGUAGES: SupportedLanguageOption[] = [
+  { code: 'original', label: 'Original language', flag: '🌐' },
   { code: 'en', label: 'English', flag: '🇺🇸' },
   { code: 'it', label: 'Italian', flag: '🇮🇹' },
   { code: 'es', label: 'Spanish', flag: '🇪🇸' },

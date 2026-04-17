@@ -58,6 +58,7 @@ const createBaseInput = () => ({
   genreBadgeScale: 100,
   effectiveGenreBadgeScale: 100,
   genreBadgeAnimeGrouping: DEFAULT_GENRE_BADGE_ANIME_GROUPING,
+  useOriginalImageLanguage: false,
   requestedImageLang: 'en',
   includeImageLanguage: 'en,null',
   posterTextPreference: 'original',
@@ -81,6 +82,88 @@ const createBaseInput = () => ({
   rawFallbackKitsuRating: '88',
   rawFallbackTitle: 'Fallback Example',
   rawFallbackLogoAspectRatio: null,
+});
+
+test('prepared media state resolves original-language poster bundles through TMDB images', async () => {
+  const requestedUrls = [];
+  const state = await prepareImageRouteMediaState({
+    ...createBaseInput(),
+    imageType: 'poster',
+    mediaType: 'movie',
+    media: {
+      id: 346,
+      title: 'Seven Samurai',
+      original_language: 'ja',
+      genres: [],
+    },
+    mediaId: '346',
+    isTmdb: true,
+    isKitsu: false,
+    idPrefix: 'tmdb',
+    useOriginalImageLanguage: true,
+    useRawKitsuFallback: false,
+    rawFallbackImageUrl: null,
+    sourceFallbackUrl: null,
+    hasNativeAnimeInput: false,
+    allowAnimeOnlyRatings: false,
+    hasConfirmedAnimeMapping: false,
+    selectedRatings: new Set(['tmdb']),
+    fetchJsonCached: async (key, url) => {
+      requestedUrls.push(url);
+      if (key.includes(':details:original:ja:bundle:v2:ja,en,null')) {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            original_language: 'ja',
+            vote_average: 8.6,
+            genres: [],
+            images: {
+              posters: [
+                { file_path: '/english-poster.jpg', iso_639_1: 'en' },
+                { file_path: '/japanese-poster.jpg', iso_639_1: 'ja' },
+              ],
+              backdrops: [],
+              logos: [],
+            },
+            external_ids: {},
+          },
+        };
+      }
+
+      if (key.includes(':details:original:en:bundle:v2:ja,en,null')) {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            original_language: 'ja',
+            vote_average: 8.6,
+            genres: [],
+            images: {
+              posters: [],
+              backdrops: [],
+              logos: [],
+            },
+            external_ids: {},
+          },
+        };
+      }
+
+      if (key.endsWith(':images:all')) {
+        return {
+          ok: true,
+          status: 200,
+          data: { posters: [], backdrops: [], logos: [] },
+        };
+      }
+
+      throw new Error(`unexpected fetch for ${key}`);
+    },
+  });
+
+  assert.match(requestedUrls[0] || '', /language=ja/);
+  assert.match(requestedUrls[0] || '', /include_image_language=ja%2Cen%2Cnull/);
+  assert.match(state.imgUrl, /japanese-poster\.jpg$/);
 });
 
 test('prepared media state preserves raw kitsu fallback image and rating', async () => {

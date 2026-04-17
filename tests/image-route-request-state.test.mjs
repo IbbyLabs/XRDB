@@ -407,6 +407,20 @@ test('image route request state parses random poster filter controls', async () 
   assert.equal(state.randomPosterFallbackMode, 'original');
 });
 
+test('image route request state keeps original language requests distinct from fixed locales', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&lang=original',
+    ),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(state.useOriginalImageLanguage, true);
+  assert.equal(state.requestedImageLang, 'en');
+  assert.match(state.renderSeedKey, /original/);
+});
+
 test('image route request state accepts legacy posterImageText parameter on poster routes', async () => {
   const state = await resolveImageRouteRequestState({
     request: createRequest(

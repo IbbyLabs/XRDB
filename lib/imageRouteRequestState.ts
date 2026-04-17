@@ -108,6 +108,7 @@ import {
 import { buildFinalImageRenderSeedKey } from './finalImageRenderSeed.ts';
 import {
   buildIncludeImageLanguage,
+  isOriginalImageLanguageSelection,
   normalizeImageLanguage,
 } from './imageLanguage.ts';
 import {
@@ -231,6 +232,7 @@ export type ImageRouteRequestState = {
   isThumbnailRequest: boolean;
   outputFormat: OutputFormat;
   cleanId: string;
+  useOriginalImageLanguage: boolean;
   requestedImageLang: string;
   includeImageLanguage: string;
   ratingValueMode: RatingValueMode;
@@ -1256,11 +1258,17 @@ export const resolveImageRouteRequestState = async ({
     episode = parts.length > 2 ? parts[2] : null;
   }
 
-  const requestedImageLang = normalizeImageLanguage(lang) || FALLBACK_IMAGE_LANGUAGE;
+  const useOriginalImageLanguage = isOriginalImageLanguageSelection(lang);
+  const requestedImageLang = useOriginalImageLanguage
+    ? FALLBACK_IMAGE_LANGUAGE
+    : normalizeImageLanguage(lang) || FALLBACK_IMAGE_LANGUAGE;
   const includeImageLanguage = buildIncludeImageLanguage(
     requestedImageLang,
     FALLBACK_IMAGE_LANGUAGE,
   );
+  const requestedImageLangCacheToken = useOriginalImageLanguage
+    ? 'original'
+    : requestedImageLang;
   const posterTextPreference: PosterTextPreference =
     imageText === 'clean' ||
     imageText === 'textless' ||
@@ -1400,7 +1408,7 @@ export const resolveImageRouteRequestState = async ({
     imageType: isThumbnailRequest ? 'thumbnail' : imageType,
     outputFormat,
     cleanId,
-    requestedImageLang,
+    requestedImageLang: requestedImageLangCacheToken,
     posterTextPreference,
     randomPosterTextMode,
     randomPosterLanguageMode,
@@ -1491,6 +1499,7 @@ export const resolveImageRouteRequestState = async ({
     isThumbnailRequest,
     outputFormat,
     cleanId,
+    useOriginalImageLanguage,
     requestedImageLang,
     includeImageLanguage,
     ratingValueMode,

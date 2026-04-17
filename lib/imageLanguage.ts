@@ -1,3 +1,8 @@
+export const ORIGINAL_IMAGE_LANGUAGE = 'original';
+
+export const isOriginalImageLanguageSelection = (value?: string | null) =>
+  String(value || '').trim().toLowerCase() === ORIGINAL_IMAGE_LANGUAGE;
+
 export const normalizeImageLanguage = (value?: string | null) => {
   if (!value) return null;
   const normalized = value.toLowerCase();

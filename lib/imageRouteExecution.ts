@@ -218,6 +218,7 @@ export const executeImageRouteRender = async ({
         noBackgroundBadgeOutlineColor: requestState.posterNoBackgroundBadgeOutlineColor,
         noBackgroundBadgeOutlineWidth: requestState.posterNoBackgroundBadgeOutlineWidth,
         genreBadgeAnimeGrouping: requestState.genreBadgeAnimeGrouping,
+        useOriginalImageLanguage: requestState.useOriginalImageLanguage,
         requestedImageLang: requestState.requestedImageLang,
         includeImageLanguage: requestState.includeImageLanguage,
         posterTextPreference: requestState.posterTextPreference,

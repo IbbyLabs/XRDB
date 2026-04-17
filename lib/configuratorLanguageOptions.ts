@@ -1,4 +1,5 @@
 import type { SupportedLanguageOption } from './configuratorPageOptions.ts';
+import { ORIGINAL_IMAGE_LANGUAGE } from './imageLanguage.ts';
 
 type TmdbLanguageRecord = {
   english_name?: string | null;
@@ -7,6 +8,11 @@ type TmdbLanguageRecord = {
 };
 
 const LANGUAGE_FLAG = '🌐';
+const ORIGINAL_LANGUAGE_OPTION: SupportedLanguageOption = {
+  code: ORIGINAL_IMAGE_LANGUAGE,
+  flag: LANGUAGE_FLAG,
+  label: 'Original language',
+};
 
 const normalizeLocaleCode = (value?: string | null) => {
   const trimmed = String(value || '').trim().replace(/_/g, '-');
@@ -102,9 +108,9 @@ export const buildTmdbSupportedLanguageOptions = ({
     });
   }
 
-  return [...options.values()].sort(
+  return [ORIGINAL_LANGUAGE_OPTION, ...[...options.values()].sort(
     (left, right) =>
       left.label.localeCompare(right.label, undefined, { sensitivity: 'base' }) ||
       left.code.localeCompare(right.code, undefined, { sensitivity: 'base' }),
-  );
+  )];
 };

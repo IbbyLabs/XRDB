@@ -338,6 +338,7 @@ Response format note:
 
 ### Examples
 - **Poster with IMDb and TMDB**: `/poster/tt0133093.jpg?ratings=imdb,tmdb&lang=en`
+- **Poster in original language**: `/poster/tt0089881.jpg?lang=original`
 - **Plain backdrop**: `/backdrop/tmdb:movie:603.jpg?ratings=mdblist&style=plain&backdropRatingsLayout=right vertical`
 - **Backdrop with Bottom Row**: `/backdrop/tmdb:tv:1399.jpg?backdropRatings=tmdb,imdb&backdropBottomRatingsRow=true&lang=en`
 - **Episode thumbnail with XRDBID**: `/thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb&lang=en`
@@ -354,7 +355,7 @@ The configurator preview type row now includes a sync control beside each type. 
 | `id` | Media ID (Path) | IMDb (`tt...`), TMDB (`tmdb:id`, `tmdb:movie:id`, `tmdb:tv:id`), Kitsu (`kitsu:id`), anime IDs such as `anilist:123`, `mal:456`, `tvdb:12345`, or `anidb:6789` | - |
 | `tmdbIdScope` | TMDB ID collision handling mode | `soft`, `strict` | `soft` |
 | `config` | Saved config profile ID. Loads encrypted server stored params as base defaults; explicit URL params take precedence. Create or reopen password protected UUID profiles from the Import/Export view in the configurator. | String (e.g. `550e8400-e29b-41d4-a716-446655440000`) | - |
-| `lang` | Image language | Any TMDB ISO 639-1 code (e.g. `it`, `en`, `es`, `fr`, `de`, `ru`, `ja`) | `en` |
+| `lang` | Image language | Any TMDB ISO 639-1 code (e.g. `it`, `en`, `es`, `fr`, `de`, `ru`, `ja`) or `original` to follow the title's TMDB original language | `en` |
 | `genreBadge` | Genre badge mode (global fallback) | `off`, `text`, `icon`, `both` | `off` |
 | `posterGenreBadge` | Poster genre badge mode | `off`, `text`, `icon`, `both` | `off` |
 | `backdropGenreBadge` | Backdrop genre badge mode | `off`, `text`, `icon`, `both` | `off` |
@@ -554,7 +555,7 @@ logoRatings             | tmdb, mdblist, imdb, allocine, allocinepress, tomatoes
                         | tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt,     |
                         | simkl, rogerebert, myanimelist,                                      |
                         | anilist, kitsu (logo only)                                           |
-lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, etc.)            | en
+lang                    | Any TMDB ISO 639-1 code (en, it, fr, es, de, ja, ko, etc.) or original | en
 genreBadge             | off, text, icon, both (global fallback)                              | off
 posterGenreBadge       | off, text, icon, both (poster only)                                  | off
 backdropGenreBadge     | off, text, icon, both (backdrop only)                                | off
@@ -769,7 +770,7 @@ If you just want a sensible default, use this:
 
 | Setting | Recommended Value | Why |
 |---------|-------------------|-----|
-| Language (`lang`) | Your actual viewing language, such as `en`, `it`, `fr`, or `fr-BE` | This tells XRDB which language to look for when translating text. |
+| Language (`lang`) | Your actual viewing language, such as `en`, `it`, `fr`, or `fr-BE`, or `original` | This tells XRDB which language to look for when translating text. `original` resolves to the title's TMDB original language. |
 | Translate metadata in the proxy (`translateMeta`) | On | Turns on metadata translation for the proxy. |
 | Merge mode (`translateMetaMode`) | `fill-missing` | Best default for most people. It fixes empty, blank, or placeholder text without overwriting good text from the addon. |
 | Attach debug provenance (`debugMetaTranslation`) | Off | Keep this off unless you are testing or troubleshooting. |
@@ -780,7 +781,7 @@ If you only want one recommendation: use `fill-missing`. It is the safest option
 
 | Setting | What It Does | How To Use It | Recommended For |
 |---------|--------------|---------------|-----------------|
-| Language (`lang`) | Chooses the language XRDB tries to use for translated metadata. | Set this to the language you actually want to read in Stremio. If you want wording for a specific region, use a regional code like `en-GB` or `fr-BE` instead of just `en` or `fr`. | Anyone using metadata translation. |
+| Language (`lang`) | Chooses the language XRDB tries to use for translated metadata. | Set this to the language you actually want to read in Stremio. If you want wording for a specific region, use a regional code like `en-GB` or `fr-BE` instead of just `en` or `fr`. Use `original` when you want artwork and translated metadata to follow the title's TMDB original language. | Anyone using metadata translation. |
 | Translate metadata in the proxy (`translateMeta`) | Turns metadata translation on or off for the proxy. | Enable it if you want XRDB to improve titles, descriptions, and episode text coming from another addon. Leave it off if you want to preserve the addon text exactly as it arrives. | Most users should turn it on. |
 | Merge mode (`translateMetaMode`) | Controls how careful or aggressive XRDB should be when deciding whether to replace addon text. | Pick the mode based on whether you want to preserve existing addon wording, prefer exact localized text, or prefer TMDB as the main source. | See the merge mode table below. |
 | Attach debug provenance (`debugMetaTranslation`) | Adds a debug object to each proxied item showing where the final text came from. | Use it when checking whether text came from the addon itself, TMDB, AniList, or Kitsu. Turn it back off for normal use. | Testing, debugging, and comparing behavior. |

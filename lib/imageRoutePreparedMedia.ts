@@ -63,6 +63,10 @@ import { normalizeRatingValue, isTmdbAnimationTitle } from './imageRouteMedia.ts
 import { resolveImageRouteProviderRatings } from './imageRouteProviderRatings.ts';
 import { fetchTorrentioBadges, getAdaptiveStreamCacheTtlMs, getCachedTorrentioBadges } from './imageRouteTorrentio.ts';
 import { pickByLanguageOrNeutral, pickByLanguageWithFallback } from './imageLanguage.ts';
+import {
+  buildIncludeImageLanguage,
+  normalizeImageLanguage,
+} from './imageLanguage.ts';
 import { resolveGenreBadgeAutoScale } from './overlayScale.ts';
 import { logger } from './serverLogger.ts';
 import { TMDB_API_BASE_URL } from './serviceBaseUrls.ts';
@@ -151,6 +155,7 @@ export const prepareImageRouteMediaState = async (input: {
   noBackgroundBadgeOutlineColor: string;
   noBackgroundBadgeOutlineWidth: number;
   genreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
+  useOriginalImageLanguage: boolean;
   requestedImageLang: string;
   includeImageLanguage: string;
   posterTextPreference: PosterTextPreference;
@@ -225,6 +230,7 @@ export const prepareImageRouteMediaState = async (input: {
     genreBadgeAnimeGrouping,
     noBackgroundBadgeOutlineColor,
     noBackgroundBadgeOutlineWidth,
+    useOriginalImageLanguage,
     requestedImageLang,
     includeImageLanguage,
     posterTextPreference,
@@ -316,6 +322,30 @@ let streamBadgesDeferred = false;
 let bundledWatchProviderResults: unknown = null;
 let movieHasPhysicalMediaRelease: boolean | null = null;
 let transientProviderFailureTtlMs: number | null = null;
+let effectiveRequestedImageLang = requestedImageLang;
+let effectiveIncludeImageLanguage = includeImageLanguage;
+
+const resolveOriginalImageLanguage = (...values: Array<string | null | undefined>) => {
+  for (const value of values) {
+    const normalized = normalizeImageLanguage(value);
+    if (normalized) {
+      return normalized;
+    }
+  }
+  return null;
+};
+
+const originalImageLanguageFromMedia = useOriginalImageLanguage
+  ? resolveOriginalImageLanguage(media?.original_language)
+  : null;
+
+if (originalImageLanguageFromMedia) {
+  effectiveRequestedImageLang = originalImageLanguageFromMedia;
+  effectiveIncludeImageLanguage = buildIncludeImageLanguage(
+    originalImageLanguageFromMedia,
+    FALLBACK_IMAGE_LANGUAGE,
+  );
+}
 const requestedExternalRatings = new Set([...selectedRatings]);
 const shouldAttemptAnimeMapping = hasNativeAnimeInput || mediaLooksAnimated;
 const needsExternalRatings = [...requestedExternalRatings].some((provider) => provider !== 'tmdb');
@@ -377,55 +407,86 @@ const streamBadgesCacheKey = shouldRenderStreamBadges
   : 'off';
 const detailsBundlePromise = !useRawKitsuFallback
   ? (async () => {
+    const loadDetailsBundle = async (language: string, includeImageLanguageValue: string) => {
+      const detailsUrl =
+        `${TMDB_API_BASE_URL}/${mediaType}/${media.id}?api_key=${tmdbKey}&language=${language}&append_to_response=${['images', 'external_ids', certificationAppendTarget].filter(Boolean).join(',')}&include_image_language=${encodeURIComponent(includeImageLanguageValue)}`;
+
+      const [detailsResponse, fallbackDetailsResponse, watchProvidersResponse] = await Promise.all([
+        fetchJsonCached(
+          `tmdb:${mediaType}:${media.id}:details:${useOriginalImageLanguage ? `original:${language}` : language}:bundle:v2:${includeImageLanguageValue}`,
+          detailsUrl,
+          TMDB_CACHE_TTL_MS,
+          phases,
+          'tmdb'
+        ),
+        language !== FALLBACK_IMAGE_LANGUAGE
+          ? fetchJsonCached(
+            `tmdb:${mediaType}:${media.id}:details:${useOriginalImageLanguage ? `original:${FALLBACK_IMAGE_LANGUAGE}` : FALLBACK_IMAGE_LANGUAGE}:bundle:v2:${includeImageLanguageValue}`,
+            `${TMDB_API_BASE_URL}/${mediaType}/${media.id}?api_key=${tmdbKey}&language=${FALLBACK_IMAGE_LANGUAGE}&append_to_response=${['images', 'external_ids', certificationAppendTarget].filter(Boolean).join(',')}&include_image_language=${encodeURIComponent(includeImageLanguageValue)}`,
+            TMDB_CACHE_TTL_MS,
+            phases,
+            'tmdb'
+          )
+          : Promise.resolve({ ok: false, status: 0, data: null } as CachedJsonResponse),
+        shouldRenderStreamBadges
+          ? fetchJsonCached(
+            `tmdb:${mediaType}:${media.id}:watch-providers:v1`,
+            watchProvidersUrl,
+            TMDB_CACHE_TTL_MS,
+            phases,
+            'tmdb'
+          )
+          : Promise.resolve({ ok: false, status: 0, data: null } as CachedJsonResponse)
+      ]);
+
+      const details = detailsResponse.data || {};
+      const fallbackDetails = fallbackDetailsResponse?.data || {};
+
+      return {
+        requestedImageLang: language,
+        includeImageLanguage: includeImageLanguageValue,
+        details,
+        fallbackDetails,
+        bundledImages: details.images || {},
+        bundledExternalIds: details.external_ids || {},
+        bundledCertificationPayload:
+          mediaType === 'movie'
+            ? details.release_dates || fallbackDetails.release_dates || null
+            : details.content_ratings || fallbackDetails.content_ratings || null,
+        bundledWatchProviderResults: watchProvidersResponse.data?.results || null,
+        tmdbRating: details.vote_average ? normalizeRatingValue(details.vote_average) || 'N/A' : 'N/A',
+      };
+    };
+
     const certificationAppendTarget =
       mediaType === 'movie' ? 'release_dates' : mediaType === 'tv' ? 'content_ratings' : null;
-    const buildDetailsUrl = (language: string) =>
-      `${TMDB_API_BASE_URL}/${mediaType}/${media.id}?api_key=${tmdbKey}&language=${language}&append_to_response=${['images', 'external_ids', certificationAppendTarget].filter(Boolean).join(',')}&include_image_language=${encodeURIComponent(includeImageLanguage)}`;
     const watchProvidersUrl = `${TMDB_API_BASE_URL}/${mediaType}/${media.id}/watch/providers?api_key=${tmdbKey}`;
 
-    const [detailsResponse, fallbackDetailsResponse, watchProvidersResponse] = await Promise.all([
-      fetchJsonCached(
-        `tmdb:${mediaType}:${media.id}:details:${requestedImageLang}:bundle:v2:${includeImageLanguage}`,
-        buildDetailsUrl(requestedImageLang),
-        TMDB_CACHE_TTL_MS,
-        phases,
-        'tmdb'
-      ),
-      requestedImageLang !== FALLBACK_IMAGE_LANGUAGE
-        ? fetchJsonCached(
-          `tmdb:${mediaType}:${media.id}:details:${FALLBACK_IMAGE_LANGUAGE}:bundle:v2:${includeImageLanguage}`,
-          buildDetailsUrl(FALLBACK_IMAGE_LANGUAGE),
-          TMDB_CACHE_TTL_MS,
-          phases,
-          'tmdb'
-        )
-        : Promise.resolve({ ok: false, status: 0, data: null } as CachedJsonResponse),
-      shouldRenderStreamBadges
-        ? fetchJsonCached(
-          `tmdb:${mediaType}:${media.id}:watch-providers:v1`,
-          watchProvidersUrl,
-          TMDB_CACHE_TTL_MS,
-          phases,
-          'tmdb'
-        )
-        : Promise.resolve({ ok: false, status: 0, data: null } as CachedJsonResponse)
-    ]);
+    let detailsBundle = await loadDetailsBundle(
+      effectiveRequestedImageLang,
+      effectiveIncludeImageLanguage,
+    );
+    const resolvedOriginalImageLanguage = useOriginalImageLanguage
+      ? resolveOriginalImageLanguage(
+        originalImageLanguageFromMedia,
+        detailsBundle.details?.original_language,
+        detailsBundle.fallbackDetails?.original_language,
+      )
+      : null;
 
-    const details = detailsResponse.data || {};
-    const fallbackDetails = fallbackDetailsResponse?.data || {};
+    if (
+      resolvedOriginalImageLanguage &&
+      (resolvedOriginalImageLanguage !== detailsBundle.requestedImageLang ||
+        buildIncludeImageLanguage(resolvedOriginalImageLanguage, FALLBACK_IMAGE_LANGUAGE) !==
+          detailsBundle.includeImageLanguage)
+    ) {
+      detailsBundle = await loadDetailsBundle(
+        resolvedOriginalImageLanguage,
+        buildIncludeImageLanguage(resolvedOriginalImageLanguage, FALLBACK_IMAGE_LANGUAGE),
+      );
+    }
 
-    return {
-      details,
-      fallbackDetails,
-      bundledImages: details.images || {},
-      bundledExternalIds: details.external_ids || {},
-      bundledCertificationPayload:
-        mediaType === 'movie'
-          ? details.release_dates || fallbackDetails.release_dates || null
-          : details.content_ratings || fallbackDetails.content_ratings || null,
-      bundledWatchProviderResults: watchProvidersResponse.data?.results || null,
-      tmdbRating: details.vote_average ? normalizeRatingValue(details.vote_average) || 'N/A' : 'N/A',
-    };
+    return detailsBundle;
   })()
   : null;
 const episodeDetailsPromise =
@@ -605,7 +666,11 @@ if (!useRawKitsuFallback && detailsBundlePromise) {
     bundledCertificationPayload,
     bundledWatchProviderResults: watchProviderResults,
     tmdbRating: bundledRating,
+    requestedImageLang: bundledRequestedImageLang,
+    includeImageLanguage: bundledIncludeImageLanguage,
   } = await detailsBundlePromise;
+  effectiveRequestedImageLang = bundledRequestedImageLang;
+  effectiveIncludeImageLanguage = bundledIncludeImageLanguage;
   bundledWatchProviderResults = watchProviderResults;
   tmdbRating = bundledRating;
   if (episodeDetailsPromise) {
@@ -619,9 +684,9 @@ if (!useRawKitsuFallback && detailsBundlePromise) {
       mediaType === 'movie' ? hasMoviePhysicalMediaRelease(bundledCertificationPayload) : null;
     certificationBadgeLabel =
       mediaType === 'movie'
-        ? resolveMovieCertificationBadge(bundledCertificationPayload, requestedImageLang)
+        ? resolveMovieCertificationBadge(bundledCertificationPayload, effectiveRequestedImageLang)
         : mediaType === 'tv'
-          ? resolveTvCertificationBadge(bundledCertificationPayload, requestedImageLang)
+          ? resolveTvCertificationBadge(bundledCertificationPayload, effectiveRequestedImageLang)
           : null;
     const resolvedReleaseStatusBadge =
       mediaType === 'movie' ? resolveMovieReleaseStatusBadge(bundledCertificationPayload) : null;
@@ -679,7 +744,7 @@ if (!useRawKitsuFallback && detailsBundlePromise) {
     mediaType: mediaType as 'movie' | 'tv',
     media,
     details,
-    requestedImageLang,
+    requestedImageLang: effectiveRequestedImageLang,
     fallbackImageLang: FALLBACK_IMAGE_LANGUAGE,
     posterTextPreference,
     randomPosterTextMode,
@@ -714,7 +779,7 @@ if (!useRawKitsuFallback && detailsBundlePromise) {
     posters: initialImages.posters || [],
     backdrops: initialImages.backdrops || [],
     logos: initialImages.logos || [],
-    seasonIncludeImageLanguage: includeImageLanguage
+    seasonIncludeImageLanguage: effectiveIncludeImageLanguage
   });
 
   imgPath = initialSelection.imgPath;
@@ -739,7 +804,7 @@ if (!useRawKitsuFallback && detailsBundlePromise) {
       const logoFallbackImages = logoFallbackImagesResponse.data || {};
       const logoFallback = pickByLanguageOrNeutral<{ iso_639_1?: string | null; file_path?: string | null }>(
         logoFallbackImages.logos || [],
-        requestedImageLang,
+        effectiveRequestedImageLang,
         FALLBACK_IMAGE_LANGUAGE
       );
       if (logoFallback?.file_path) {
@@ -848,7 +913,10 @@ if (mediaType === 'movie' && movieHasPhysicalMediaRelease === false) {
 if (imageType !== 'logo') {
   const watchProviderBadges =
     shouldRenderStreamBadges
-      ? buildNetworkBadgesFromWatchProviderResults(bundledWatchProviderResults, requestedImageLang).map((badge) => ({
+      ? buildNetworkBadgesFromWatchProviderResults(
+          bundledWatchProviderResults,
+          effectiveRequestedImageLang,
+        ).map((badge) => ({
           key: badge.key,
           label: badge.label,
           value: '',

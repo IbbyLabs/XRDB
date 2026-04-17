@@ -124,11 +124,15 @@ export function ReferenceView() {
             <code>GET /thumbnail/{'{'}<em>id</em>{'}'}/S{'{'}<em>season</em>{'}'}E{'{'}<em>episode</em>{'}'}.jpg</code>.
           </p>
           <CodeBlock>{`GET /poster/tt0133093.jpg?ratings=imdb,tmdb&lang=en
+GET /poster/tt0089881.jpg?lang=original
 GET /backdrop/tmdb:movie:603.jpg?ratings=mdblist&style=plain
 GET /logo/tmdb:tv:1399.jpg
 GET /thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb`}</CodeBlock>
           <p>
             Poster and backdrop responses return JPEG. Logo requests keep the <code>.jpg</code> route but may return PNG when transparency is preserved.
+          </p>
+          <p>
+            <code>lang=original</code> resolves artwork and localized TMDB lookups through the title&apos;s original language, so titles like The Matrix stay on English art while titles like Seven Samurai can resolve to Japanese posters.
           </p>
         </ReferenceSection>
 
