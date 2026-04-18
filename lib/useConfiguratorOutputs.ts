@@ -43,11 +43,13 @@ import {
 import { stringifyRatingPreferencesAllowEmpty, type RatingPreference } from '@/lib/ratingProviderCatalog';
 import { DEPLOYMENT_VERSION } from '@/lib/siteBrand';
 import {
+  DEFAULT_AIOMETADATA_EPISODE_ID_MODE,
   buildAiometadataUrlPatterns,
   buildConfigString,
   buildProxyUrl,
   normalizeBaseUrl,
   omitProviderCredentialsFromSavedUiConfig,
+  type AiometadataEpisodeIdMode,
   type AgeRatingBadgePosition,
   type ArtworkSource,
   type BackdropImageSize,
@@ -64,11 +66,7 @@ import {
   type StreamBadgesSetting,
   type TmdbIdScopeMode,
 } from '@/lib/uiConfig';
-import {
-  DEFAULT_EPISODE_ID_MODE,
-  parseEpisodePreviewMediaTarget,
-  type EpisodeIdMode,
-} from '@/lib/episodeIdentity';
+import { parseEpisodePreviewMediaTarget, type EpisodeIdMode } from '@/lib/episodeIdentity';
 import { isVerticalPosterRatingLayout, type PosterRatingLayout } from '@/lib/posterLayoutOptions';
 import { type BackdropRatingLayout } from '@/lib/backdropLayoutOptions';
 import { DEFAULT_POSTER_EDGE_OFFSET } from '@/lib/posterEdgeOffset';
@@ -328,7 +326,7 @@ export function useConfiguratorOutputs({
   thumbnailStreamBadges,
   baseUrl,
   buildCurrentUiConfig,
-  episodeIdMode = DEFAULT_EPISODE_ID_MODE,
+  aiometadataEpisodeIdMode = DEFAULT_AIOMETADATA_EPISODE_ID_MODE,
   xrdbKey,
   fanartKey,
   genrePreviewMode,
@@ -500,7 +498,7 @@ export function useConfiguratorOutputs({
   thumbnailStreamBadges: StreamBadgesSetting;
   baseUrl: string;
   buildCurrentUiConfig: () => SavedUiConfig;
-  episodeIdMode?: EpisodeIdMode;
+  aiometadataEpisodeIdMode?: AiometadataEpisodeIdMode;
   xrdbKey: string;
   fanartKey: string;
   genrePreviewMode: GenreBadgeMode;
@@ -1516,9 +1514,9 @@ export function useConfiguratorOutputs({
         hideCredentials: hideAiometadataCredentials,
         omitProviderCredentials: true,
         posterIdMode,
-        episodeIdMode,
+        episodeIdMode: aiometadataEpisodeIdMode,
       }),
-    [baseUrl, currentUiConfig, episodeIdMode, hasServerMdblistKey, hasServerTmdbKey, hideAiometadataCredentials, posterIdMode],
+    [aiometadataEpisodeIdMode, baseUrl, currentUiConfig, hasServerMdblistKey, hasServerTmdbKey, hideAiometadataCredentials, posterIdMode],
   );
 
   const proxyUrl = useMemo(
@@ -1537,7 +1535,7 @@ export function useConfiguratorOutputs({
               key: 'poster',
               label: 'Poster URL Pattern',
               value: aiometadataPatterns.posterUrlPattern,
-              description: 'Auto uses typed TMDB poster IDs for broader coverage. Switch to IMDb only if your setup requires it.',
+              description: 'IMDb is the compatibility default. Auto keeps the typed TMDB route for integrations that can expand those placeholders.',
             },
             {
               key: 'background',
@@ -1558,7 +1556,7 @@ export function useConfiguratorOutputs({
               label: 'Episode Thumbnail URL Pattern',
               value: aiometadataPatterns.episodeThumbnailUrlPattern,
               description:
-                'Matches the live AIOMetadata episode thumb preset, defaults anime-native exports to canonical series placeholders, and keeps episodeSource hints attached whenever the public token alone would lose provider episode meaning.',
+                'Auto keeps the mixed-library-compatible route and adds linked anime authority hints when available. Explicit provider modes still force a single source contract.',
             },
           ]
         : [],

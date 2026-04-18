@@ -39,6 +39,44 @@ export const EPISODE_ABSOLUTE_QUERY_KEYS = [
   'ep_absolute',
 ] as const;
 
+export const EPISODE_SOURCE_KITSU_ID_QUERY_KEYS = [
+  'episodeSourceKitsuId',
+  'episode_source_kitsu_id',
+] as const;
+
+export const EPISODE_SOURCE_ANILIST_ID_QUERY_KEYS = [
+  'episodeSourceAniListId',
+  'episode_source_anilist_id',
+] as const;
+
+export const EPISODE_SOURCE_MAL_ID_QUERY_KEYS = [
+  'episodeSourceMalId',
+  'episode_source_mal_id',
+] as const;
+
+export const EPISODE_SOURCE_ANIDB_ID_QUERY_KEYS = [
+  'episodeSourceAniDbId',
+  'episode_source_anidb_id',
+] as const;
+
+export const EPISODE_SOURCE_TVDB_ID_QUERY_KEYS = [
+  'episodeSourceTvdbId',
+  'episode_source_tvdb_id',
+] as const;
+
+export const EPISODE_AUTHORITY_CANDIDATE_PROVIDERS = [
+  'kitsu',
+  'anilist',
+  'mal',
+  'anidb',
+  'tvdb',
+] as const;
+
+export type EpisodeAuthorityCandidateProvider =
+  (typeof EPISODE_AUTHORITY_CANDIDATE_PROVIDERS)[number];
+
+export type EpisodeAuthorityCandidates = Partial<Record<EpisodeAuthorityCandidateProvider, string>>;
+
 const EPISODE_ID_MODE_SET = new Set<EpisodeIdMode>([
   'imdb',
   'tmdb',
@@ -77,12 +115,20 @@ const normalizeEpisodeNumber = (value: string | number) => {
   return Math.max(1, Math.trunc(parsed));
 };
 
+const normalizeEpisodeHintValue = (value: string | null) => {
+  const trimmed = String(value || '').trim();
+  if (!trimmed) return null;
+  if (trimmed.includes('{') || trimmed.includes('}')) return null;
+  if (/^(unknown|null|undefined)$/i.test(trimmed)) return null;
+  return trimmed;
+};
+
 const readFirstTrimmedSearchParam = (
   searchParams: URLSearchParams,
   keys: readonly string[],
 ) => {
   for (const key of keys) {
-    const value = String(searchParams.get(key) || '').trim();
+    const value = normalizeEpisodeHintValue(searchParams.get(key));
     if (value) {
       return value;
     }
@@ -99,7 +145,26 @@ export const parseEpisodeSourceHintSearchParams = (searchParams: URLSearchParams
   episodeSourceSeason: readFirstTrimmedSearchParam(searchParams, EPISODE_SOURCE_SEASON_QUERY_KEYS),
   episodeSourceEpisode: readFirstTrimmedSearchParam(searchParams, EPISODE_SOURCE_EPISODE_QUERY_KEYS),
   episodeAbsolute: readFirstTrimmedSearchParam(searchParams, EPISODE_ABSOLUTE_QUERY_KEYS),
+  episodeAuthorityCandidates: {
+    kitsu: readFirstTrimmedSearchParam(searchParams, EPISODE_SOURCE_KITSU_ID_QUERY_KEYS) || undefined,
+    anilist: readFirstTrimmedSearchParam(searchParams, EPISODE_SOURCE_ANILIST_ID_QUERY_KEYS) || undefined,
+    mal: readFirstTrimmedSearchParam(searchParams, EPISODE_SOURCE_MAL_ID_QUERY_KEYS) || undefined,
+    anidb: readFirstTrimmedSearchParam(searchParams, EPISODE_SOURCE_ANIDB_ID_QUERY_KEYS) || undefined,
+    tvdb: readFirstTrimmedSearchParam(searchParams, EPISODE_SOURCE_TVDB_ID_QUERY_KEYS) || undefined,
+  } satisfies EpisodeAuthorityCandidates,
 });
+
+export const selectEpisodeAuthorityCandidate = (
+  candidates: EpisodeAuthorityCandidates,
+): { provider: EpisodeAuthorityCandidateProvider; externalId: string } | null => {
+  for (const provider of EPISODE_AUTHORITY_CANDIDATE_PROVIDERS) {
+    const externalId = candidates[provider];
+    if (externalId) {
+      return { provider, externalId };
+    }
+  }
+  return null;
+};
 
 export const buildEpisodeToken = (seasonValue: string | number, episodeValue: string | number) => {
   const seasonNumber = normalizeEpisodeNumber(seasonValue);

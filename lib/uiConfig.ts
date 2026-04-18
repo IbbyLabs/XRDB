@@ -178,8 +178,9 @@ export type AiometadataUrlPatterns = {
   episodeThumbnailUrlPattern: string;
 };
 export type AiometadataPosterIdMode = 'auto' | 'tmdb' | 'imdb';
-export type AiometadataEpisodeIdMode = EpisodeIdMode;
+export type AiometadataEpisodeIdMode = 'auto' | EpisodeIdMode;
 export type AiometadataEpisodeBaseIdMode = EpisodeIdMode | 'raw';
+export const DEFAULT_AIOMETADATA_EPISODE_ID_MODE: AiometadataEpisodeIdMode = 'auto';
 
 export type SharedXrdbSettings = {
   xrdbKey: string;
@@ -2456,21 +2457,32 @@ export const buildAiometadataUrlPatterns = (
   }
 
   const hideCredentials = options?.hideCredentials ?? true;
-  const posterIdMode = options?.posterIdMode === 'imdb' ? 'imdb' : 'auto';
-  const episodeIdMode = normalizeEpisodeIdMode(options?.episodeIdMode, DEFAULT_EPISODE_ID_MODE);
+  const posterIdMode =
+    options?.posterIdMode === 'auto' || options?.posterIdMode === 'tmdb' ? 'auto' : 'imdb';
+  const normalizeAiometadataEpisodeIdMode = (
+    value: AiometadataEpisodeIdMode | undefined,
+  ): AiometadataEpisodeIdMode => {
+    if (value === undefined) return DEFAULT_AIOMETADATA_EPISODE_ID_MODE;
+    if (value === 'auto') return 'auto';
+    return normalizeEpisodeIdMode(value, DEFAULT_EPISODE_ID_MODE);
+  };
+  const episodeIdMode = normalizeAiometadataEpisodeIdMode(options?.episodeIdMode);
+  const episodePatternMode = episodeIdMode === 'auto'
+    ? DEFAULT_EPISODE_ID_MODE
+    : episodeIdMode;
   const normalizeEpisodeBaseIdMode = (
     value: AiometadataEpisodeBaseIdMode | undefined,
   ): AiometadataEpisodeBaseIdMode => {
     if (value === undefined) {
-      return episodeIdMode === 'kitsu' ||
-        episodeIdMode === 'anilist' ||
-        episodeIdMode === 'mal' ||
-        episodeIdMode === 'anidb'
+      return episodePatternMode === 'kitsu' ||
+        episodePatternMode === 'anilist' ||
+        episodePatternMode === 'mal' ||
+        episodePatternMode === 'anidb'
         ? 'xrdbid'
-        : episodeIdMode;
+        : episodePatternMode;
     }
     if (value === 'raw') return 'raw';
-    return normalizeEpisodeIdMode(value, episodeIdMode);
+    return normalizeEpisodeIdMode(value, episodePatternMode);
   };
   const episodeBaseIdMode = normalizeEpisodeBaseIdMode(options?.episodeBaseIdMode);
   const useTmdbPosterIds = posterIdMode === 'imdb' ? false : true;
@@ -2623,9 +2635,22 @@ export const buildAiometadataUrlPatterns = (
   };
 
   const buildEpisodeHintParams = (
-    mode: EpisodeIdMode,
+    mode: AiometadataEpisodeIdMode,
     baseIdMode: AiometadataEpisodeBaseIdMode,
-  ) => {
+  ): Record<string, string> | undefined => {
+    if (mode === 'auto') {
+      return {
+        episodeSourceKitsuId: '{kitsu_id}',
+        episodeSourceAniListId: '{anilist_id}',
+        episodeSourceMalId: '{mal_id}',
+        episodeSourceAniDbId: '{anidb_id}',
+        episodeSourceTvdbId: '{tvdb_id}',
+        episodeSourceSeason: '{season}',
+        episodeSourceEpisode: '{episode}',
+        episodeAbsolute: '{episode}',
+      };
+    }
+
     const usesCompatibilitySeasonToken =
       mode === 'kitsu' || mode === 'anilist' || mode === 'mal' || mode === 'anidb';
     const seriesAuthorityDiffers = baseIdMode !== 'raw' && baseIdMode !== mode;
@@ -2633,7 +2658,7 @@ export const buildAiometadataUrlPatterns = (
       return undefined;
     }
 
-    const baseHints = {
+    const baseHints: Record<string, string> = {
       episodeSourceProvider: mode,
       episodeSourceId: buildEpisodeAuthorityPlaceholder(mode),
       episodeSourceSeason: '{season}',
@@ -2655,7 +2680,7 @@ export const buildAiometadataUrlPatterns = (
       : `${origin}/poster/imdb:{imdb_id}.jpg?${buildQueryString('poster')}`,
     backgroundUrlPattern: `${origin}/backdrop/tmdb:{type}:{tmdb_id}.jpg?${buildQueryString('backdrop', { idSource: 'tmdb' })}`,
     logoUrlPattern: `${origin}/logo/tmdb:{type}:{tmdb_id}.png?${buildQueryString('logo', { idSource: 'tmdb' })}`,
-    episodeThumbnailUrlPattern: `${origin}/thumbnail/${buildEpisodeBaseIdPlaceholder(episodeBaseIdMode)}/${buildEpisodePatternToken(episodeIdMode)}.jpg?${buildQueryString('thumbnail', buildEpisodeHintParams(episodeIdMode, episodeBaseIdMode))}`,
+    episodeThumbnailUrlPattern: `${origin}/thumbnail/${buildEpisodeBaseIdPlaceholder(episodeBaseIdMode)}/${buildEpisodePatternToken(episodePatternMode)}.jpg?${buildQueryString('thumbnail', buildEpisodeHintParams(episodeIdMode, episodeBaseIdMode))}`,
   };
 };
 

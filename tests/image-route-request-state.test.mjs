@@ -108,6 +108,35 @@ test('image route request state parses mixed-provider episode hints and isolates
   assert.notEqual(hintedState.renderSeedKey, plainState.renderSeedKey);
 });
 
+test('image route request state selects the strongest mixed-library episode authority candidate', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/backdrop/tt12343534.jpg?thumbnail=1&tmdbKey=tmdb-key&episodeSourceTvdbId=121361&episodeSourceAniListId=16498&episodeSourceKitsuId=42765&episodeSourceSeason=1&episodeSourceEpisode=7&episodeAbsolute=7',
+    ),
+    imageType: 'backdrop',
+    id: 'tt12343534.jpg',
+  });
+
+  assert.equal(state.episodeSourceProvider, 'kitsu');
+  assert.equal(state.episodeSourceId, '42765');
+  assert.equal(state.episodeSourceSeason, '1');
+  assert.equal(state.episodeSourceEpisode, '7');
+  assert.equal(state.episodeAbsolute, '7');
+});
+
+test('image route request state keeps explicit episode provider hints over mixed-library candidates', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/backdrop/tt12343534.jpg?thumbnail=1&tmdbKey=tmdb-key&episodeSourceProvider=tvdb&episodeSourceId=121361&episodeSourceKitsuId=42765&episodeSourceSeason=1&episodeSourceEpisode=7',
+    ),
+    imageType: 'backdrop',
+    id: 'tt12343534.jpg',
+  });
+
+  assert.equal(state.episodeSourceProvider, 'tvdb');
+  assert.equal(state.episodeSourceId, '121361');
+});
+
 test('image route request state resolves generated inline and config URLs with parity', async (t) => {
   await withTempDataDir(t, async () => {
     const config = createDefaultSavedUiConfig();

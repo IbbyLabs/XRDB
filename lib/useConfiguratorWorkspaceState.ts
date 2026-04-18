@@ -62,6 +62,8 @@ import { type RemuxDisplayMode } from '@/lib/mediaFeatures';
 import { DEFAULT_QUALITY_BADGES_STYLE, DEFAULT_RATING_STYLE, type QualityBadgeStyle, type RatingStyle } from '@/lib/ratingAppearance';
 import { DEFAULT_SIDE_RATING_OFFSET, type SideRatingPosition } from '@/lib/sideRatingPosition';
 import {
+  DEFAULT_AIOMETADATA_EPISODE_ID_MODE,
+  type AiometadataEpisodeIdMode,
   type AgeRatingBadgePosition,
   type ArtworkSource,
   type BackdropImageSize,
@@ -279,7 +281,8 @@ export function useConfiguratorWorkspaceState() {
   const [showConfigString, setShowConfigString] = useState(false);
   const [showProxyUrl, setShowProxyUrl] = useState(false);
   const [hideAiometadataCredentials, setHideAiometadataCredentials] = useState(true);
-  const [posterIdMode, setPosterIdMode] = useState<'auto' | 'tmdb' | 'imdb'>('auto');
+  const [posterIdMode, setPosterIdMode] = useState<'auto' | 'tmdb' | 'imdb'>('imdb');
+  const [aiometadataEpisodeIdMode, setAiometadataEpisodeIdMode] = useState<AiometadataEpisodeIdMode>(DEFAULT_AIOMETADATA_EPISODE_ID_MODE);
   const [episodeIdMode, setEpisodeIdMode] = useState<EpisodeIdMode>(DEFAULT_EPISODE_ID_MODE);
   const [stickyPreviewEnabled, setStickyPreviewEnabled] = useState(true);
   const [workspaceCenterView, setWorkspaceCenterView] = useState<WorkspaceCenterView>('showcase');
@@ -362,6 +365,7 @@ export function useConfiguratorWorkspaceState() {
     thumbnailSideRatingsOffset,
     thumbnailSideRatingsPosition,
     thumbnailStreamBadges,
+    aiometadataEpisodeIdMode,
     episodeIdMode,
     xrdbKey,
     experienceMode,
@@ -540,6 +544,7 @@ export function useConfiguratorWorkspaceState() {
     setThumbnailSideRatingsOffset,
     setThumbnailSideRatingsPosition,
     setThumbnailStreamBadges,
+    setAiometadataEpisodeIdMode,
     setEpisodeIdMode,
     setXrdbKey,
     setExperienceMode,

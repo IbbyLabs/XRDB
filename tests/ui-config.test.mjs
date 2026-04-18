@@ -1017,10 +1017,11 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
 
   assert.equal(
     patterns?.posterUrlPattern.startsWith(
-      'https://xrdb.example.com/poster/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb&',
+      'https://xrdb.example.com/poster/imdb:{imdb_id}.jpg?',
     ),
     true,
   );
+  assert.equal((patterns?.posterUrlPattern ?? '').includes('idSource=tmdb'), false);
   assert.equal(
     patterns?.backgroundUrlPattern.startsWith(
       'https://xrdb.example.com/backdrop/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb&',
@@ -1115,6 +1116,14 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
   assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailRatingYOffsetPillGlass=-6/);
   assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailRatingXOffsetSquare=-4/);
   assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /thumbnailRatingYOffsetSquare=6/);
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /episodeSourceKitsuId=\{kitsu_id\}/);
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /episodeSourceAniListId=\{anilist_id\}/);
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /episodeSourceMalId=\{mal_id\}/);
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /episodeSourceAniDbId=\{anidb_id\}/);
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /episodeSourceTvdbId=\{tvdb_id\}/);
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /episodeSourceSeason=\{season\}/);
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /episodeSourceEpisode=\{episode\}/);
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /episodeAbsolute=\{episode\}/);
   assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('posterRatings='), false);
   assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('backdropRatings='), false);
   assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('logoRatings='), false);
@@ -1126,7 +1135,7 @@ test('AIOMetadata export builds masked patterns with placeholders', () => {
 
   assert.match(patterns?.backgroundUrlPattern ?? '', /idSource=tmdb/);
   assert.match(patterns?.logoUrlPattern ?? '', /idSource=tmdb/);
-  assert.match(patterns?.posterUrlPattern ?? '', /idSource=tmdb/);
+  assert.equal((patterns?.posterUrlPattern ?? '').includes('idSource=tmdb'), false);
   assert.match(patterns?.posterUrlPattern ?? '', /posterImageSize=large/);
   assert.equal((patterns?.posterUrlPattern ?? '').includes('backdropEpisodeArtwork='), false);
   assert.equal((patterns?.posterUrlPattern ?? '').includes('thumbnailEpisodeArtwork='), false);
@@ -1181,10 +1190,11 @@ test('AIOMetadata export can keep live credentials while preserving live AIOM de
 
   assert.equal(
     patterns?.posterUrlPattern.startsWith(
-      'https://xrdb.example.com/poster/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb&',
+      'https://xrdb.example.com/poster/imdb:{imdb_id}.jpg?',
     ),
     true,
   );
+  assert.equal((patterns?.posterUrlPattern ?? '').includes('idSource=tmdb'), false);
   assert.equal(
     patterns?.backgroundUrlPattern.startsWith(
       'https://xrdb.example.com/backdrop/tmdb:{type}:{tmdb_id}.jpg?idSource=tmdb&',
@@ -1203,6 +1213,8 @@ test('AIOMetadata export can keep live credentials while preserving live AIOM de
     ),
     true,
   );
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /episodeSourceKitsuId=\{kitsu_id\}/);
+  assert.match(patterns?.episodeThumbnailUrlPattern ?? '', /episodeSourceTvdbId=\{tvdb_id\}/);
 
   for (const value of Object.values(patterns ?? {})) {
     assert.match(value, /tmdbKey=tmdb-key-123/);
@@ -1711,6 +1723,24 @@ test('AIOMetadata export emits mixed-provider anime hint params for anime-native
   assert.match(kitsuPatterns?.episodeThumbnailUrlPattern ?? '', /episodeSourceEpisode=\{episode\}/);
   assert.match(kitsuPatterns?.episodeThumbnailUrlPattern ?? '', /episodeAbsolute=\{episode\}/);
   assert.equal((kitsuPatterns?.episodeThumbnailUrlPattern ?? '').includes('S{season}E{episode}'), false);
+});
+
+test('AIOMetadata export explicit IMDb episode mode keeps the compatibility route without candidate hints', () => {
+  const config = buildSampleSettings();
+
+  const imdbPatterns = buildAiometadataUrlPatterns('https://xrdb.example.com/', config.settings, {
+    hideCredentials: true,
+    episodeIdMode: 'imdb',
+  });
+
+  assert.equal(
+    imdbPatterns?.episodeThumbnailUrlPattern.startsWith(
+      'https://xrdb.example.com/thumbnail/{imdb_id}/S{season}E{episode}.jpg?',
+    ),
+    true,
+  );
+  assert.equal((imdbPatterns?.episodeThumbnailUrlPattern ?? '').includes('episodeSourceKitsuId='), false);
+  assert.equal((imdbPatterns?.episodeThumbnailUrlPattern ?? '').includes('episodeSourceProvider='), false);
 });
 
 test('AIOMetadata export can preserve explicit raw id placeholders while using canonical episode hints', () => {

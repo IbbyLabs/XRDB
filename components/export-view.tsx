@@ -26,7 +26,13 @@ import {
 import {
   RATING_PROVIDER_OPTIONS,
 } from '@/lib/ratingProviderCatalog';
-import { buildProfileParams, type AiometadataUrlPatterns, type EpisodeArtworkMode, type SavedUiConfig } from '@/lib/uiConfig';
+import {
+  buildProfileParams,
+  type AiometadataEpisodeIdMode,
+  type AiometadataUrlPatterns,
+  type EpisodeArtworkMode,
+  type SavedUiConfig,
+} from '@/lib/uiConfig';
 import { EPISODE_ID_MODE_OPTIONS } from '@/lib/configuratorPageOptions';
 
 const LEGACY_CONFIG_ID_RE = /^(xr_[0-9a-f]{8}|xrc_[0-9a-f]{16})$/i;
@@ -59,6 +65,7 @@ const readErrorMessage = async (response: Response, fallback: string) => {
 };
 
 type PosterIdMode = 'auto' | 'tmdb' | 'imdb';
+type ExportEpisodeIdMode = AiometadataEpisodeIdMode;
 type PreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 
 
@@ -70,6 +77,19 @@ const EPISODE_ARTWORK_MODE_OPTIONS: Array<{
   { id: 'still', label: 'Episode still' },
   { id: 'series', label: 'Series backdrop' },
   { id: 'streaming', label: 'Streaming' },
+];
+
+const EXPORT_EPISODE_ID_MODE_OPTIONS: Array<{
+  id: ExportEpisodeIdMode;
+  label: string;
+  description: string;
+}> = [
+  {
+    id: 'auto',
+    label: 'Auto',
+    description: 'Keep mixed anime and non-anime thumbnail routes compatible and attach linked anime authority ids when available.',
+  },
+  ...EPISODE_ID_MODE_OPTIONS,
 ];
 
 export function ExportView() {
@@ -250,7 +270,7 @@ export function ExportView() {
 
               <ExportOptionGroup label="Episode ID source">
                 <div className="flex flex-wrap gap-2">
-                  {EPISODE_ID_MODE_OPTIONS.map((option) => (
+                  {EXPORT_EPISODE_ID_MODE_OPTIONS.map((option) => (
                     <OptionPill
                       key={option.id}
                       active={episodeIdMode === option.id}
@@ -260,7 +280,7 @@ export function ExportView() {
                   ))}
                 </div>
                 {(() => {
-                  const active = EPISODE_ID_MODE_OPTIONS.find((o) => o.id === episodeIdMode);
+                  const active = EXPORT_EPISODE_ID_MODE_OPTIONS.find((o) => o.id === episodeIdMode);
                   return active?.description ? (
                     <p className="mt-1.5 text-[11px] leading-5 text-zinc-500">{active.description}</p>
                   ) : null;
@@ -441,9 +461,7 @@ function AiometadataSection({
         </button>
       </div>
       <p className="text-[13px] leading-5 text-zinc-400">
-        Ready to paste URL patterns for the AIOMetadata art override fields. Episode exports default to canonical series placeholders and keep{' '}
-        <code>episodeSource*</code>{' '}
-        hints when the public token alone would lose anime episode authority.
+        Ready to paste URL patterns for the AIOMetadata art override fields. Auto episode exports keep the mixed-library-safe route and add linked anime authority candidates when available, while explicit provider modes keep the single-source <code>episodeSource*</code> contract.
       </p>
       <div className="flex items-center gap-2">
         <button

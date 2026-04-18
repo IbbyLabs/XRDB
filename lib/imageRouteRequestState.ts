@@ -113,6 +113,7 @@ import {
 } from './imageLanguage.ts';
 import {
   parseEpisodeSourceHintSearchParams,
+  selectEpisodeAuthorityCandidate,
   THUMBNAIL_RATING_PREFERENCES,
   XRDBID_PREFIX,
   parseKitsuEpisodeInput,
@@ -1217,13 +1218,24 @@ export const resolveImageRouteRequestState = async ({
   );
   const {
     episodeSourceProviderValue,
-    episodeSourceId,
+    episodeSourceId: explicitEpisodeSourceId,
     episodeSourceSeason,
     episodeSourceEpisode,
     episodeAbsolute,
+    episodeAuthorityCandidates,
   } = parseEpisodeSourceHintSearchParams(searchParams);
   const parsedEpisodeSourceProvider = normalizeCanonicalAnimeProvider(episodeSourceProviderValue);
-  const episodeSourceProvider = parsedEpisodeSourceProvider === 'unknown' ? null : parsedEpisodeSourceProvider;
+  const explicitEpisodeSourceProvider = parsedEpisodeSourceProvider === 'unknown' ? null : parsedEpisodeSourceProvider;
+  const selectedEpisodeAuthorityCandidate =
+    explicitEpisodeSourceProvider && explicitEpisodeSourceId
+      ? null
+      : selectEpisodeAuthorityCandidate(episodeAuthorityCandidates);
+  const episodeSourceProvider = explicitEpisodeSourceProvider && explicitEpisodeSourceId
+    ? explicitEpisodeSourceProvider
+    : (selectedEpisodeAuthorityCandidate?.provider ?? null);
+  const episodeSourceId = explicitEpisodeSourceProvider && explicitEpisodeSourceId
+    ? explicitEpisodeSourceId
+    : (selectedEpisodeAuthorityCandidate?.externalId ?? null);
   const parts = cleanId.split(':');
   const idPrefix = (parts[0] || '').trim().toLowerCase();
   const inputAnimeMappingProvider = toAnimeMappingProvider(idPrefix);
