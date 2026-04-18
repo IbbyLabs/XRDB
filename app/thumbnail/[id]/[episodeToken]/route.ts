@@ -7,8 +7,7 @@ import {
 import { handleImageRequest } from '@/lib/imageRouteHandler';
 import { getConfigProfile } from '@/lib/dbCore';
 import { XRDB_EPISODE_CONFIG_PROFILE_ID } from '@/lib/imageRouteConfig';
-
-const EPISODE_THUMBNAIL_TOKEN_RE = /^S(\d+)E(\d+)(?:\.(?:jpg|jpeg|png|webp))?$/i;
+import { buildThumbnailBackdropUrl } from '@/lib/thumbnailRoute';
 const XRDB_REQUEST_API_KEYS = getConfiguredXrdbRequestKeys();
 
 export async function GET(
@@ -31,29 +30,19 @@ export async function GET(
   }
 
   const { id, episodeToken } = await params;
-  const match = EPISODE_THUMBNAIL_TOKEN_RE.exec(episodeToken);
-  const season = match?.[1] || null;
-  const episode = match?.[2] || null;
-  if (!season || !episode) {
+  const rewritten = buildThumbnailBackdropUrl(requestUrl, id, episodeToken, configId);
+  if (!rewritten) {
     return new Response('Invalid episode thumbnail token', { status: 400 });
   }
 
-  const backdropId = `${id}:${season}:${episode}.jpg`;
-  const backdropUrl = new URL(requestUrl);
-  backdropUrl.pathname = `/backdrop/${backdropId}`;
-  backdropUrl.searchParams.set('thumbnail', '1');
-  if (configId && !requestUrl.searchParams.has('config')) {
-    backdropUrl.searchParams.set('config', configId);
-  }
-
   return handleImageRequest(
-    new NextRequest(backdropUrl, {
+    new NextRequest(rewritten.backdropUrl, {
       headers: request.headers,
       method: request.method,
     }),
     {
       type: 'backdrop',
-      id: backdropId,
+      id: rewritten.backdropId,
     },
   );
 }

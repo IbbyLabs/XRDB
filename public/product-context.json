@@ -2,7 +2,7 @@
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
   "xrdbTag": "v1.22.0",
-  "generatedAt": "2026-04-17T04:19:42.076Z",
+  "generatedAt": "2026-04-18T00:09:20.630Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -60,7 +60,9 @@
         "Backdrop sizes: normal 1280x720, large 1920x1080, 4k 3840x2160.",
         "Artwork sources in route config: tmdb, fanart, cinemeta, omdb, random, blackbar.",
         "Explicit input id sources: imdb, tmdb, tvdb, mal, kitsu, anilist, anidb.",
-        "AIOMetadata export patterns are generated from the configurator export flow."
+        "AIOMetadata export patterns are generated from the configurator export flow.",
+        "AIOMetadata episode thumbnail patterns default anime-native episode modes to canonical series placeholders and keep raw {id} only for explicit source-faithful output.",
+        "Episode thumbnail exports can append episodeSourceProvider, episodeSourceId, episodeSourceSeason, episodeSourceEpisode, and episodeAbsolute when the public token alone would lose provider episode authority."
       ]
     },
     {

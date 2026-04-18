@@ -1339,7 +1339,7 @@ export function MediaTargetSection({
         ) : null}
       {previewType === 'thumbnail' ? (
         <p className="mt-2 text-[11px] leading-relaxed text-zinc-500">
-          Thumbnail previews need an episode target in `seriesId:season:episode` form, for example `tt0944947:1:1` or `tmdb:tv:1399:1:1`.
+          Thumbnail previews need an episode target in `seriesId:season:episode` form, for example `tt0944947:1:1` or `tmdb:tv:1399:1:1`. Kitsu also accepts `kitsu:7442:1`, and generated anime exports keep provider numbering in `episodeSource*` params instead of overloading the season token.
         </p>
       ) : null}
       <div className="mt-4 flex items-center gap-2 text-[11px] text-zinc-500">

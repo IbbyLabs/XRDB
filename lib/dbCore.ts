@@ -62,6 +62,71 @@ CREATE TABLE IF NOT EXISTS proxy_refs (
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS canonical_series_mappings (
+  canonical_series_id TEXT PRIMARY KEY,
+  payload TEXT NOT NULL,
+  confidence REAL,
+  source_updated_at INTEGER,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS canonical_series_provider_ids (
+  provider TEXT NOT NULL,
+  external_id TEXT NOT NULL,
+  canonical_series_id TEXT NOT NULL,
+  is_primary INTEGER NOT NULL DEFAULT 0,
+  source TEXT,
+  confidence REAL,
+  updated_at INTEGER NOT NULL,
+  PRIMARY KEY (provider, external_id)
+);
+
+CREATE INDEX IF NOT EXISTS canonical_series_provider_ids_series_idx
+  ON canonical_series_provider_ids (canonical_series_id);
+
+CREATE TABLE IF NOT EXISTS canonical_episode_mappings (
+  canonical_episode_id TEXT PRIMARY KEY,
+  canonical_series_id TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  season_number INTEGER,
+  episode_number INTEGER,
+  absolute_episode_number INTEGER,
+  confidence REAL,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS canonical_episode_mappings_series_idx
+  ON canonical_episode_mappings (canonical_series_id);
+
+CREATE TABLE IF NOT EXISTS canonical_episode_provider_refs (
+  lookup_key TEXT PRIMARY KEY,
+  provider TEXT NOT NULL,
+  series_external_id TEXT NOT NULL,
+  provider_season_number TEXT,
+  provider_episode_number TEXT,
+  provider_absolute_episode_number TEXT,
+  canonical_episode_id TEXT NOT NULL,
+  source TEXT,
+  confidence REAL,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS canonical_episode_provider_refs_episode_idx
+  ON canonical_episode_provider_refs (canonical_episode_id);
+
+CREATE TABLE IF NOT EXISTS canonical_mapping_overrides (
+  lookup_key TEXT PRIMARY KEY,
+  scope TEXT NOT NULL,
+  provider TEXT,
+  external_key TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  reason TEXT,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS canonical_mapping_overrides_scope_idx
+  ON canonical_mapping_overrides (scope);
 `;
 
 const SCHEMA_MIGRATIONS = [

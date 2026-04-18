@@ -144,6 +144,13 @@ export const executeImageRouteRender = async ({
         isKitsu: requestState.isKitsu,
         inputAnimeMappingProvider: requestState.inputAnimeMappingProvider,
         inputAnimeMappingExternalId: requestState.inputAnimeMappingExternalId,
+        idPrefix: requestState.idPrefix,
+        cleanId: requestState.cleanId,
+        episodeSourceProvider: requestState.episodeSourceProvider,
+        episodeSourceId: requestState.episodeSourceId,
+        episodeSourceSeason: requestState.episodeSourceSeason,
+        episodeSourceEpisode: requestState.episodeSourceEpisode,
+        episodeAbsolute: requestState.episodeAbsolute,
         explicitTmdbMediaType: requestState.explicitTmdbMediaType,
         tvdbSeriesId: requestState.tvdbSeriesId,
         hasNativeAnimeInput: requestState.hasNativeAnimeInput,
@@ -159,6 +166,8 @@ export const executeImageRouteRender = async ({
       const rawFallbackTitle = resolvedMediaTarget.rawFallbackTitle;
       const rawFallbackLogoAspectRatio = resolvedMediaTarget.rawFallbackLogoAspectRatio;
       const mappedImdbId = resolvedMediaTarget.mappedImdbId;
+      const canonicalSeriesIdentity = resolvedMediaTarget.canonicalSeriesIdentity;
+      const canonicalEpisodeIdentity = resolvedMediaTarget.canonicalEpisodeIdentity;
       mediaId = resolvedMediaTarget.mediaId;
       season = resolvedMediaTarget.season;
       episode = resolvedMediaTarget.episode;
@@ -250,6 +259,8 @@ export const executeImageRouteRender = async ({
         rawFallbackKitsuRating,
         rawFallbackTitle,
         rawFallbackLogoAspectRatio,
+        canonicalSeriesIdentity,
+        canonicalEpisodeIdentity,
       });
       allowAnimeOnlyRatings = preparedMedia.allowAnimeOnlyRatings;
       hasConfirmedAnimeMapping = preparedMedia.hasConfirmedAnimeMapping;

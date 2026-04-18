@@ -209,6 +209,14 @@ function buildOutputCapabilityLines({ imageRouteSource, routePaths, readme }) {
     lines.push('AIOMetadata export patterns are generated from the configurator export flow.');
   }
 
+  if (/canonical series placeholders/i.test(readme)) {
+    lines.push('AIOMetadata episode thumbnail patterns default anime-native episode modes to canonical series placeholders and keep raw {id} only for explicit source-faithful output.');
+  }
+
+  if (/episodeSourceProvider/.test(readme)) {
+    lines.push('Episode thumbnail exports can append episodeSourceProvider, episodeSourceId, episodeSourceSeason, episodeSourceEpisode, and episodeAbsolute when the public token alone would lose provider episode authority.');
+  }
+
   return lines;
 }
 

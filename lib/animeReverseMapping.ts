@@ -28,19 +28,18 @@ export type ReverseMappedAnimeImageTarget =
 
 export const resolveReverseMappedAnimeImageTarget = async ({
   imageType,
-  fetchTmdbId,
-  fetchKitsuId,
+  tmdbId,
+  kitsuId,
   fetchTmdbMedia,
   fetchKitsuFallbackAsset,
 }: {
   imageType: AnimeImageType;
-  fetchTmdbId: () => Promise<string | null>;
-  fetchKitsuId: () => Promise<string | null>;
+  tmdbId: string | null;
+  kitsuId: string | null;
   fetchTmdbMedia: (tmdbId: string, mediaType: ReverseMappedAnimeMediaType) => Promise<any | null>;
   fetchKitsuFallbackAsset: (kitsuId: string, imageType: AnimeImageType) => Promise<KitsuFallbackAsset | null>;
 }): Promise<ReverseMappedAnimeImageTarget> => {
   const resolveKitsuFallback = async (tmdbId: string | null): Promise<ReverseMappedAnimeImageTarget> => {
-    const kitsuId = await fetchKitsuId();
     if (!kitsuId) {
       return { kind: 'not-found', tmdbId, kitsuId: null };
     }
@@ -58,7 +57,6 @@ export const resolveReverseMappedAnimeImageTarget = async ({
     return { kind: 'not-found', tmdbId, kitsuId };
   };
 
-  const tmdbId = await fetchTmdbId();
   if (!tmdbId) {
     return resolveKitsuFallback(null);
   }

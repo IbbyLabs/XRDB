@@ -59,7 +59,7 @@ XRDB uses server side provider keys by default. Configure TMDB and MDBList on th
 
 This keeps setup simple for shared hosts and avoids exposing provider keys or XRDB request keys in the UI or copied URLs. Request protection still uses the separate optional XRDB request key.
 
-The configurator includes an Import/Export view built around password protected UUID saved profiles. Save a profile once, use Open saved profile on another device, or paste a `?config=<uuid>` link back into the configurator to reopen that same server stored setup. When a protected profile is active, AIOMetadata exports default to lean UUID backed links while inline parameter URLs remain available as an advanced fallback. The `Hide credentials` toggle masks displayed AIOMetadata patterns with placeholders without changing live XRDB request URLs. The `Poster ID source` selector controls whether poster URLs use auto mode (typed TMDB IDs for the broadest coverage), explicit TMDB, or IMDb IDs for compatibility. Background and logo patterns always use type aware TMDB IDs, and episode thumbnails use the selected episode ID mode with season and episode placeholders plus their own thumbnail scoped ratings, artwork, text, and layout settings.
+The configurator includes an Import/Export view built around password protected UUID saved profiles. Save a profile once, use Open saved profile on another device, or paste a `?config=<uuid>` link back into the configurator to reopen that same server stored setup. When a protected profile is active, AIOMetadata exports default to lean UUID backed links while inline parameter URLs remain available as an advanced fallback. The `Hide credentials` toggle masks displayed AIOMetadata patterns with placeholders without changing live XRDB request URLs. The `Poster ID source` selector controls whether poster URLs use auto mode (typed TMDB IDs for the broadest coverage), explicit TMDB, or IMDb IDs for compatibility. Background and logo patterns always use type aware TMDB IDs. Episode thumbnail exports now default anime-native episode modes to canonical series placeholders such as `xrdbid:{imdb_id}`, keep raw `{id}` available only for explicit source-faithful patterns, and attach `episodeSourceProvider`, `episodeSourceId`, `episodeSourceSeason`, `episodeSourceEpisode`, and `episodeAbsolute` whenever the public `SxxExx` token alone would lose provider episode authority.
 
 Server side client ids can extend a few providers. `XRDB_MAL_CLIENT_ID` enables the official MyAnimeList API path for direct `myanimelist` ratings, `XRDB_TRAKT_CLIENT_ID` enables direct `trakt` ratings, and `SIMKL_CLIENT_ID` (or `XRDB_SIMKL_CLIENT_ID`) enables direct `simkl` ratings server wide. When the MAL client id is not configured, XRDB falls back to Jikan for direct `myanimelist` lookups before falling back to MDBList whenever an MDBList key is available. Fanart backed artwork can use `XRDB_FANART_API_KEY` or `FANART_API_KEY`. OMDb poster lookups use the server side `OMDB_KEY` by default and also accept `OMDB_API_KEY` or `XRDB_OMDB_API_KEY`.
 
@@ -342,8 +342,9 @@ Response format note:
 - **Plain backdrop**: `/backdrop/tmdb:movie:603.jpg?ratings=mdblist&style=plain&backdropRatingsLayout=right vertical`
 - **Backdrop with Bottom Row**: `/backdrop/tmdb:tv:1399.jpg?backdropRatings=tmdb,imdb&backdropBottomRatingsRow=true&lang=en`
 - **Episode thumbnail with XRDBID**: `/thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb&lang=en`
+- **Anime episode thumbnail with mixed authority**: `/thumbnail/xrdbid:tt12343534/S01E07.jpg?episodeSourceProvider=kitsu&episodeSourceId=42765&episodeSourceSeason=42&episodeSourceEpisode=7&episodeAbsolute=7`
 
-Episode thumbnails use the dedicated `/thumbnail/{id}/S{season}E{episode}.jpg` route. They keep their own thumbnail scoped controls for ratings, style, presentation, artwork source, episode artwork mode, image text, layout, badge sizing, quality badges, and side stack placement. Rating badge scale stays type scoped across poster, backdrop, thumbnail, and logo outputs, and every artwork type now supports the same `70-200` range. `thumbnailRatings` defaults to `tmdb,imdb`.
+Episode thumbnails use the dedicated `/thumbnail/{id}/S{season}E{episode}.jpg` route. They keep their own thumbnail scoped controls for ratings, style, presentation, artwork source, episode artwork mode, image text, layout, badge sizing, quality badges, and side stack placement. Rating badge scale stays type scoped across poster, backdrop, thumbnail, and logo outputs, and every artwork type now supports the same `70-200` range. `thumbnailRatings` defaults to `tmdb,imdb`. When the path token alone cannot preserve provider episode meaning, XRDB accepts `episodeSourceProvider`, `episodeSourceId`, `episodeSourceSeason`, `episodeSourceEpisode`, and `episodeAbsolute` as backward-compatible hint params. Generated AIOMetadata episode patterns default to canonical series placeholders and keep raw `{id}` only when you explicitly need source-faithful output.
 
 The configurator preview type row now includes a sync control beside each type. You can sync the active type to one target, sync to all targets, or pull settings from another type before applying the diff. Sync keeps type safety intact: poster only presentations such as `ring`, `editorial`, and `blockbuster` are coerced to `standard` on backdrop, thumbnail, and logo targets, thumbnail sync keeps only episode safe rating providers, and logo sync does not carry stream badges.
 
@@ -354,6 +355,11 @@ The configurator preview type row now includes a sync control beside each type. 
 | `type` | Image type (Path) | `poster`, `backdrop`, `logo` (`thumbnail` uses its own route) | - |
 | `id` | Media ID (Path) | IMDb (`tt...`), TMDB (`tmdb:id`, `tmdb:movie:id`, `tmdb:tv:id`), Kitsu (`kitsu:id`), anime IDs such as `anilist:123`, `mal:456`, `tvdb:12345`, or `anidb:6789` | - |
 | `tmdbIdScope` | TMDB ID collision handling mode | `soft`, `strict` | `soft` |
+| `episodeSourceProvider` | Optional episode numbering authority for thumbnail requests when the base path id and the episode provider differ or the public token is only a compatibility token | `imdb`, `tmdb`, `tvdb`, `kitsu`, `anilist`, `mal`, `anidb` | - |
+| `episodeSourceId` | Provider-specific series id paired with `episodeSourceProvider` for thumbnail canonical resolution | String | - |
+| `episodeSourceSeason` | Provider-native season value preserved alongside the public thumbnail token when needed | Positive integer | - |
+| `episodeSourceEpisode` | Provider-native episode value preserved alongside the public thumbnail token when needed | Positive integer | - |
+| `episodeAbsolute` | Provider-native absolute episode number for anime-native numbering flows | Positive integer | - |
 | `config` | Saved config profile ID. Loads encrypted server stored params as base defaults; explicit URL params take precedence. Create or reopen password protected UUID profiles from the Import/Export view in the configurator. | String (e.g. `550e8400-e29b-41d4-a716-446655440000`) | - |
 | `lang` | Image language | Any TMDB ISO 639-1 code (e.g. `it`, `en`, `es`, `fr`, `de`, `ru`, `ja`) or `original` to follow the title's TMDB original language | `en` |
 | `genreBadge` | Genre badge mode (global fallback) | `off`, `text`, `icon`, `both` | `off` |
@@ -637,7 +643,7 @@ SERVER KEY NOTE: Configure XRDB_TMDB_READ_ACCESS_TOKEN or XRDB_TMDB_API_KEY plus
 POSTER NOTE: `posterArtworkSource` supports `tmdb`, `fanart`, `cinemeta`, `omdb`, and `random`. Fanart uses fanart.tv poster art when a fanart key is available, Cinemeta uses MetaHub when an IMDb id is available, OMDb uses the server OMDb key plus IMDb id, and random picks a seeded source across the available poster candidates.
 BACKDROP NOTE: `backdropArtworkSource` supports `tmdb`, `fanart`, `cinemeta`, and `random`. Fanart uses fanart.tv moviebackground or showbackground art when a fanart key is available, Cinemeta uses MetaHub when an IMDb id is available, and random picks a seeded source across the available backdrop candidates.
 LOGO NOTE: `logoArtworkSource` supports `tmdb`, `fanart`, `cinemeta`, and `random`. Fanart uses fanart.tv HD or clear logo assets when a fanart key is available, Cinemeta uses MetaHub when an IMDb id is available, and random picks a seeded source across the available logo candidates.
-THUMBNAIL NOTE: Episode thumbnails use `/thumbnail/{id}/S{season}E{episode}.jpg`, default to `thumbnailRatings=tmdb,imdb`, accept base ids such as plain IMDb, `xrdbid`, `tvdb`, `kitsu`, `anilist`, `mal`, and `anidb`, and use dedicated thumbnail scoped controls such as `thumbnailRatingStyle`, `thumbnailImageText`, `thumbnailArtworkSource`, `thumbnailEpisodeArtwork`, `thumbnailRatingsLayout`, `thumbnailBottomRatingsRow`, `thumbnailRatingBadgeScale`, `thumbnailQualityBadgesStyle`, `thumbnailQualityBadgesMax`, `thumbnailQualityBadgeScale`, `thumbnailSideRatingsPosition`, and `thumbnailSideRatingsOffset`.
+THUMBNAIL NOTE: Episode thumbnails use `/thumbnail/{id}/S{season}E{episode}.jpg`, default to `thumbnailRatings=tmdb,imdb`, accept base ids such as plain IMDb, `xrdbid`, `tvdb`, `kitsu`, `anilist`, `mal`, and `anidb`, and use dedicated thumbnail scoped controls such as `thumbnailRatingStyle`, `thumbnailImageText`, `thumbnailArtworkSource`, `thumbnailEpisodeArtwork`, `thumbnailRatingsLayout`, `thumbnailBottomRatingsRow`, `thumbnailRatingBadgeScale`, `thumbnailQualityBadgesStyle`, `thumbnailQualityBadgesMax`, `thumbnailQualityBadgeScale`, `thumbnailSideRatingsPosition`, and `thumbnailSideRatingsOffset`. Mixed-provider and anime-native numbering flows can append `episodeSourceProvider`, `episodeSourceId`, `episodeSourceSeason`, `episodeSourceEpisode`, and `episodeAbsolute` so the public token stays canonical even when provider numbering does not.
 THUMBNAIL PREVIEW NOTE: The Configurator Essentials panel now exposes explicit `Series ID`, `Season`, and `Episode` controls whenever preview type is `thumbnail`. These controls always build a valid episode target and keep preview routing aligned with `/thumbnail/{id}/S{season}E{episode}.jpg`.
 THUMBNAIL PARSING NOTE: Standard inputs parse as `{baseId}:{season}:{episode}` with the final two numeric segments mapped to season and episode. Kitsu also supports `{kitsuId}:{episode}` shorthand and treats it as season `1`.
 
@@ -653,8 +659,30 @@ EPISODE THUMBNAIL CAPABILITY MATRIX
 | TMDB episode order | `tmdb_ep_order=tvdb|tmdb` — when set to `tvdb`, resolves TMDB episode coordinates via TVDB aired order before fetching the episode still; useful for anime where TMDB consolidates seasons differently from TVDB |
 | Layout controls | `thumbnailRatingsLayout`, `thumbnailBottomRatingsRow`, `thumbnailRatingsMax`, `thumbnailSideRatingsPosition`, `thumbnailSideRatingsOffset` |
 | Badge sizing controls | `thumbnailRatingBadgeScale`, `thumbnailQualityBadgeScale`, `thumbnailGenreBadgeScale` |
-| Export patterns | AIOMetadata export always emits thumbnail scoped route + params |
+| Export patterns | AIOMetadata export emits thumbnail scoped route + params, defaults anime-native episode modes to canonical series placeholders, and keeps raw `{id}` only for explicit source-faithful patterns |
 | Proxy behavior | Proxy image URLs for episodic items resolve through the same thumbnail route and respect thumbnail scoped settings |
+
+### Canonical Anime Override Operations
+
+Use manual canonical overrides only for cases that automatic mapping cannot settle cleanly, such as split cours, specials, OVAs, recaps, or provider disagreements.
+
+Preferred write path:
+- Use `upsertCanonicalMappingOverride(...)` from `lib/canonicalAnimeIdentity/overrides.ts` so the canonical cache invalidation boundary is bumped automatically.
+- Treat the `canonical_mapping_overrides` table as the source of truth for persistent operator fixes. Do not edit the canonical cache tables directly.
+
+Lookup key rules:
+- Series overrides use `series:{provider}:{externalId}`. Example: `series:kitsu:42765`.
+- Episode overrides use `episode:{provider}:{externalId}:s:{season|-}:e:{episode|-}:a:{absolute|-}` after the inner lookup key is built. Example: `episode:mal:5114:s:0:e:1:a:-`.
+
+Payload expectations:
+- Series overrides store a full `CanonicalSeriesIdentity` payload with the corrected canonical series id plus any mapped provider ids that should win.
+- Episode overrides store a full `CanonicalEpisodeIdentity` payload with the corrected canonical season, episode, absolute episode, and provider refs.
+
+Operational guidance:
+- Keep `provider`, `externalKey`, and payload fields aligned with the lookup key you are overriding.
+- Prefer the narrowest override that fixes the bad mapping. Use an episode override before a series override when only one special or recap is wrong.
+- Re-run the affected thumbnail or proxy request after writing the override and confirm the output path and `episodeSource*` params now match the intended provider authority.
+- Record the reason string with the upstream disagreement or title-specific context so later audits can tell why the override exists.
 
 BOTTOM ROW NOTE: `backdropBottomRatingsRow=true`, `thumbnailBottomRatingsRow=true`, and `logoBottomRatingsRow=true` collapse those badges into one Bottom Row. The backdrop and thumbnail Bottom Row options intentionally override side stack layout and side offset settings.
 ALLOCINE NOTE: `allocine` and `allocinepress` provide AlloCiné audience and press scores on their native `/5` scale unless you normalize them through `ratingValueMode`.

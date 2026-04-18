@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   fetchAniListIdFromReverseMapping,
   fetchAnimeReverseMappingPayload,
+  fetchAnimeReverseMappingResolution,
   fetchKitsuIdFromReverseMapping,
   fetchMalIdFromReverseMapping,
   fetchTmdbIdFromReverseMapping,
@@ -47,6 +48,13 @@ test('image route anime reverse builds payload requests and returns ids', async 
     phases,
     fetchJsonCached,
   });
+  const resolution = await fetchAnimeReverseMappingResolution({
+    provider: 'mal',
+    externalId: '456',
+    season: '2',
+    phases,
+    fetchJsonCached,
+  });
   const kitsuId = await fetchKitsuIdFromReverseMapping({
     provider: 'mal',
     externalId: '456',
@@ -77,6 +85,10 @@ test('image route anime reverse builds payload requests and returns ids', async 
   });
 
   assert.equal(payload?.requested?.resolvedKitsuId, 'kitsu:77');
+  assert.equal(resolution.mappedIds.kitsu, '77');
+  assert.equal(resolution.mappedIds.anilist, '88');
+  assert.equal(resolution.mappedIds.mal, '99');
+  assert.equal(resolution.mappedIds.tmdb, '1234');
   assert.equal(kitsuId, '77');
   assert.equal(aniListId, '88');
   assert.equal(malId, '99');

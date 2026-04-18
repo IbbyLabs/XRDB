@@ -521,3 +521,64 @@ test('proxy image rewrites pass RPDB compatibility query aliases through to XRDB
   assert.equal(rewrittenPosterUrl.searchParams.get('textless'), 'true');
   assert.equal(rewrittenPosterUrl.searchParams.get('posterType'), 'textless-order');
 });
+
+test('proxy thumbnail rewrites can keep explicit anime episode authority when the base id is canonicalized separately', () => {
+  const rewrittenThumbnailUrl = new URL(
+    buildXrdbImageUrl({
+      reqUrl: new URL('https://proxy.example.net/proxy/example/meta/series/example.json'),
+      imageType: 'thumbnail',
+      xrdbId: 'xrdbid:tt12343534',
+      seasonNumber: 1,
+      episodeNumber: 7,
+      episodeSourceProvider: 'kitsu',
+      episodeSourceId: '42765',
+      episodeSourceSeason: 42,
+      episodeSourceEpisode: 7,
+      episodeAbsolute: 7,
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      config: {
+        url: 'https://addon.example.com/manifest.json',
+        tmdbKey: 'tmdb-key-123',
+        mdblistKey: 'mdblist-key-456',
+      },
+    }),
+  );
+
+  assert.equal(rewrittenThumbnailUrl.pathname, '/thumbnail/xrdbid%3Att12343534/S01E07.jpg');
+  assert.equal(rewrittenThumbnailUrl.searchParams.get('episodeSourceProvider'), 'kitsu');
+  assert.equal(rewrittenThumbnailUrl.searchParams.get('episodeSourceId'), '42765');
+  assert.equal(rewrittenThumbnailUrl.searchParams.get('episodeSourceSeason'), '42');
+  assert.equal(rewrittenThumbnailUrl.searchParams.get('episodeSourceEpisode'), '7');
+  assert.equal(rewrittenThumbnailUrl.searchParams.get('episodeAbsolute'), '7');
+});
+
+test('proxy thumbnail rewrites keep normal season tokens for season-native cross-provider authority', () => {
+  const rewrittenThumbnailUrl = new URL(
+    buildXrdbImageUrl({
+      reqUrl: new URL('https://proxy.example.net/proxy/example/meta/series/example.json'),
+      imageType: 'thumbnail',
+      xrdbId: 'xrdbid:tt12343534',
+      seasonNumber: 2,
+      episodeNumber: 7,
+      episodeSourceProvider: 'tvdb',
+      episodeSourceId: '121361',
+      episodeSourceSeason: 2,
+      episodeSourceEpisode: 7,
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      config: {
+        url: 'https://addon.example.com/manifest.json',
+        tmdbKey: 'tmdb-key-123',
+        mdblistKey: 'mdblist-key-456',
+      },
+    }),
+  );
+
+  assert.equal(rewrittenThumbnailUrl.pathname, '/thumbnail/xrdbid%3Att12343534/S02E07.jpg');
+  assert.equal(rewrittenThumbnailUrl.searchParams.get('episodeSourceProvider'), 'tvdb');
+  assert.equal(rewrittenThumbnailUrl.searchParams.get('episodeSourceId'), '121361');
+  assert.equal(rewrittenThumbnailUrl.searchParams.get('episodeSourceSeason'), '2');
+  assert.equal(rewrittenThumbnailUrl.searchParams.get('episodeSourceEpisode'), '7');
+  assert.equal(rewrittenThumbnailUrl.searchParams.has('episodeAbsolute'), false);
+});

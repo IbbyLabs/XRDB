@@ -1558,7 +1558,7 @@ export function useConfiguratorOutputs({
               label: 'Episode Thumbnail URL Pattern',
               value: aiometadataPatterns.episodeThumbnailUrlPattern,
               description:
-                'Matches the live AIOMetadata episode thumb preset and keeps the configured thumbnail scoped artwork, text, rating, and layout settings.',
+                'Matches the live AIOMetadata episode thumb preset, defaults anime-native exports to canonical series placeholders, and keeps episodeSource hints attached whenever the public token alone would lose provider episode meaning.',
             },
           ]
         : [],

@@ -87,6 +87,27 @@ test('image route request state keeps explicit URL params over saved profile par
   });
 });
 
+test('image route request state parses mixed-provider episode hints and isolates render seed', async () => {
+  const hintedState = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/backdrop/tt12343534.jpg?thumbnail=1&tmdbKey=tmdb-key&episodeSourceProvider=kitsu&episodeSourceId=42765&episodeSourceEpisode=1&episodeAbsolute=1',
+    ),
+    imageType: 'backdrop',
+    id: 'tt12343534.jpg',
+  });
+  const plainState = await resolveImageRouteRequestState({
+    request: createRequest('https://example.com/backdrop/tt12343534.jpg?thumbnail=1&tmdbKey=tmdb-key'),
+    imageType: 'backdrop',
+    id: 'tt12343534.jpg',
+  });
+
+  assert.equal(hintedState.episodeSourceProvider, 'kitsu');
+  assert.equal(hintedState.episodeSourceId, '42765');
+  assert.equal(hintedState.episodeSourceEpisode, '1');
+  assert.equal(hintedState.episodeAbsolute, '1');
+  assert.notEqual(hintedState.renderSeedKey, plainState.renderSeedKey);
+});
+
 test('image route request state resolves generated inline and config URLs with parity', async (t) => {
   await withTempDataDir(t, async () => {
     const config = createDefaultSavedUiConfig();

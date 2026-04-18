@@ -287,6 +287,85 @@ test('image route artwork selection marks fanart textless posters truthfully', a
   assert.equal(result.posterIsTextless, true);
 });
 
+test('image route artwork selection uses canonical TVDB ids for Fanart fallbacks when TMDB external ids are absent', async () => {
+  let capturedTvdbId = null;
+
+  const selectArtwork = createImageRouteArtworkSelector(
+    {
+      imageType: 'poster',
+      isThumbnailRequest: false,
+      mediaType: 'tv',
+      media: { id: 95479 },
+      details: { poster_path: '/tmdb-poster.jpg' },
+      requestedImageLang: 'en',
+      fallbackImageLang: 'en',
+      posterTextPreference: 'original',
+      posterArtworkSource: 'fanart',
+      backdropArtworkSource: 'tmdb',
+      logoArtworkSource: 'tmdb',
+      thumbnailEpisodeArtwork: 'still',
+      backdropEpisodeArtwork: 'series',
+      artworkSelectionSeed: 'fanart-canonical-tvdb',
+      cleanId: 'tmdb:tv:95479',
+      season: '2',
+      episode: '1',
+      isKitsu: false,
+      tmdbKey: 'tmdb-key',
+      fanartKey: 'fanart-key',
+      fanartClientKey: '',
+      fanartTvdbId: null,
+      phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+      fetchJsonCached: async () => createEmptyResponse(),
+      getRemoteImageAspectRatio: async () => 2.2,
+      resolveImdbId: async () => 'tt12343534',
+      canonicalSeriesIdentity: {
+        canonicalSeriesId: 'tmdb:95479',
+        provider: 'tmdb',
+        externalId: '95479',
+        mediaType: 'tv',
+        mappedIds: { imdb: 'tt12343534', tmdb: '95479', tvdb: '121361' },
+        links: [],
+        source: 'mapping',
+        confidence: 0.92,
+        sourceUpdatedAt: Date.now(),
+      },
+      canonicalEpisodeIdentity: {
+        canonicalEpisodeId: 'tmdb:95479:ep2-1',
+        canonicalSeriesId: 'tmdb:95479',
+        season: '2',
+        episode: '1',
+        absoluteEpisode: '13',
+        mappedIds: { imdb: 'tt12343534', tmdb: '95479', tvdb: '121361' },
+        providerRefs: [],
+        source: 'mapping',
+        confidence: 0.92,
+        sourceUpdatedAt: Date.now(),
+      },
+    },
+    {
+      fetchFanartArtwork: async ({ tvdbId }) => {
+        capturedTvdbId = tvdbId;
+        return {
+          posterAssets: [{ url: 'https://fanart.example/tv-poster.png', lang: 'en', likes: '3' }],
+          posterUrls: ['https://fanart.example/tv-poster.png'],
+          backdropAssets: [],
+          backdropUrls: [],
+          logoUrls: [],
+        };
+      },
+    },
+  );
+
+  const result = await selectArtwork({
+    posters: [],
+    backdrops: [],
+    logos: [],
+  });
+
+  assert.equal(capturedTvdbId, '121361');
+  assert.equal(result.imgUrlOverride, 'https://fanart.example/tv-poster.png');
+});
+
 test('image route artwork selection can source poster art from OMDb', async () => {
   const selectArtwork = createImageRouteArtworkSelector(
     {
@@ -776,6 +855,502 @@ test('image route artwork selection falls back to AniList episode thumbnail when
 
   assert.equal(result.imgUrlOverride, 'https://cdn.anilist.co/ep5.jpg');
   assert.equal(result.imgPath, '');
+});
+
+test('image route artwork selection uses canonical AniList ids and absolute episode authority before reverse mapping fallback', async () => {
+  const fetchCalls = [];
+  const selectArtwork = createImageRouteArtworkSelector({
+    imageType: 'backdrop',
+    isThumbnailRequest: true,
+    mediaType: 'tv',
+    media: { id: 200 },
+    details: null,
+    requestedImageLang: 'en',
+    fallbackImageLang: 'en',
+    posterTextPreference: 'original',
+    posterArtworkSource: 'tmdb',
+    backdropArtworkSource: 'tmdb',
+    logoArtworkSource: 'tmdb',
+    thumbnailEpisodeArtwork: 'still',
+    backdropEpisodeArtwork: 'series',
+    artworkSelectionSeed: '',
+    cleanId: 'tmdb:tv:200:2:1',
+    season: '2',
+    episode: '1',
+    isKitsu: false,
+    tmdbKey: 'tmdb-key',
+    fanartKey: '',
+    fanartClientKey: '',
+    fanartTvdbId: null,
+    phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+    canonicalSeriesIdentity: {
+      canonicalSeriesId: 'imdb:tt12343534',
+      provider: 'imdb',
+      externalId: 'tt12343534',
+      mediaType: 'tv',
+      mappedIds: { imdb: 'tt12343534', anilist: '12345', tmdb: '200' },
+      links: [],
+      source: 'reverse-mapping',
+      confidence: 0.9,
+      sourceUpdatedAt: Date.now(),
+    },
+    canonicalEpisodeIdentity: {
+      canonicalEpisodeId: 'imdb:tt12343534:ep13',
+      canonicalSeriesId: 'imdb:tt12343534',
+      season: '2',
+      episode: '1',
+      absoluteEpisode: '13',
+      mappedIds: { imdb: 'tt12343534', anilist: '12345', tmdb: '200' },
+      providerRefs: [],
+      source: 'reverse-mapping',
+      confidence: 0.9,
+    },
+    fetchJsonCached: async (key, _url, _ttl, _phases, _phase, init) => {
+      fetchCalls.push(key);
+      if (key.startsWith('anilist:anime:') && init?.method === 'POST') {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            data: {
+              Media: {
+                streamingEpisodes: Array.from({ length: 13 }, (_, index) => ({
+                  title: `Episode ${index + 1}`,
+                  thumbnail: `https://cdn.anilist.co/ep${index + 1}.jpg`,
+                })),
+              },
+            },
+          },
+        };
+      }
+      if (key.includes(':images')) {
+        return { ok: true, status: 200, data: { stills: [] } };
+      }
+      return { ok: true, status: 200, data: { still_path: null } };
+    },
+    getRemoteImageAspectRatio: async () => null,
+    resolveImdbId: async () => 'tt12343534',
+  });
+
+  const result = await selectArtwork({
+    posters: [],
+    backdrops: [{ file_path: '/series-backdrop.jpg', iso_639_1: 'en' }],
+    logos: [],
+  });
+
+  assert.equal(result.imgUrlOverride, 'https://cdn.anilist.co/ep13.jpg');
+  assert.equal(fetchCalls.some((key) => key.startsWith('anime:reverse:')), false);
+});
+
+test('image route artwork selection prefers episode AniList ids over broader series mappings', async () => {
+  const fetchCalls = [];
+  const selectArtwork = createImageRouteArtworkSelector({
+    imageType: 'backdrop',
+    isThumbnailRequest: true,
+    mediaType: 'tv',
+    media: { id: 200 },
+    details: null,
+    requestedImageLang: 'en',
+    fallbackImageLang: 'en',
+    posterTextPreference: 'original',
+    posterArtworkSource: 'tmdb',
+    backdropArtworkSource: 'tmdb',
+    logoArtworkSource: 'tmdb',
+    thumbnailEpisodeArtwork: 'still',
+    backdropEpisodeArtwork: 'series',
+    artworkSelectionSeed: '',
+    cleanId: 'tmdb:tv:200:2:1',
+    season: '2',
+    episode: '1',
+    isKitsu: false,
+    tmdbKey: 'tmdb-key',
+    fanartKey: '',
+    fanartClientKey: '',
+    fanartTvdbId: null,
+    phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+    canonicalSeriesIdentity: {
+      canonicalSeriesId: 'imdb:tt12343534',
+      provider: 'imdb',
+      externalId: 'tt12343534',
+      mediaType: 'tv',
+      mappedIds: { imdb: 'tt12343534', anilist: '99999', tmdb: '200' },
+      links: [],
+      source: 'reverse-mapping',
+      confidence: 0.9,
+      sourceUpdatedAt: Date.now(),
+    },
+    canonicalEpisodeIdentity: {
+      canonicalEpisodeId: 'imdb:tt12343534:ep13',
+      canonicalSeriesId: 'imdb:tt12343534',
+      season: '2',
+      episode: '1',
+      absoluteEpisode: '13',
+      mappedIds: { imdb: 'tt12343534', anilist: '12345', tmdb: '200' },
+      providerRefs: [],
+      source: 'reverse-mapping',
+      confidence: 0.9,
+    },
+    fetchJsonCached: async (key, _url, _ttl, _phases, _phase, init) => {
+      fetchCalls.push(key);
+      if (key.startsWith('anilist:anime:12345:') && init?.method === 'POST') {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            data: {
+              Media: {
+                streamingEpisodes: Array.from({ length: 13 }, (_, index) => ({
+                  title: `Episode ${index + 1}`,
+                  thumbnail: `https://cdn.anilist.co/episode-first-${index + 1}.jpg`,
+                })),
+              },
+            },
+          },
+        };
+      }
+      if (key.startsWith('anilist:anime:99999:') && init?.method === 'POST') {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            data: {
+              Media: {
+                streamingEpisodes: Array.from({ length: 13 }, (_, index) => ({
+                  title: `Episode ${index + 1}`,
+                  thumbnail: `https://cdn.anilist.co/series-first-${index + 1}.jpg`,
+                })),
+              },
+            },
+          },
+        };
+      }
+      if (key.includes(':images')) {
+        return { ok: true, status: 200, data: { stills: [] } };
+      }
+      return { ok: true, status: 200, data: { still_path: null } };
+    },
+    getRemoteImageAspectRatio: async () => null,
+    resolveImdbId: async () => 'tt12343534',
+  });
+
+  const result = await selectArtwork({
+    posters: [],
+    backdrops: [{ file_path: '/series-backdrop.jpg', iso_639_1: 'en' }],
+    logos: [],
+  });
+
+  assert.equal(result.imgUrlOverride, 'https://cdn.anilist.co/episode-first-13.jpg');
+  assert.ok(fetchCalls.some((key) => key.startsWith('anilist:anime:12345:')));
+  assert.equal(fetchCalls.some((key) => key.startsWith('anilist:anime:99999:')), false);
+});
+
+test('image route artwork selection prefers canonical episode provider refs over series ids for AniList fallback reverse mapping', async () => {
+  const fetchCalls = [];
+  const selectArtwork = createImageRouteArtworkSelector({
+    imageType: 'backdrop',
+    isThumbnailRequest: true,
+    mediaType: 'tv',
+    media: { id: 95479 },
+    details: null,
+    requestedImageLang: 'en',
+    fallbackImageLang: 'en',
+    posterTextPreference: 'original',
+    posterArtworkSource: 'tmdb',
+    backdropArtworkSource: 'tmdb',
+    logoArtworkSource: 'tmdb',
+    thumbnailEpisodeArtwork: 'still',
+    backdropEpisodeArtwork: 'series',
+    artworkSelectionSeed: '',
+    cleanId: 'tmdb:tv:95479',
+    season: '2',
+    episode: '1',
+    isKitsu: false,
+    tmdbKey: 'tmdb-key',
+    fanartKey: '',
+    fanartClientKey: '',
+    fanartTvdbId: null,
+    phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+    canonicalSeriesIdentity: {
+      canonicalSeriesId: 'tmdb:95479',
+      provider: 'tmdb',
+      externalId: '95479',
+      mediaType: 'tv',
+      mappedIds: { tmdb: '95479' },
+      links: [],
+      source: 'raw',
+      confidence: 0.5,
+      sourceUpdatedAt: Date.now(),
+    },
+    canonicalEpisodeIdentity: {
+      canonicalEpisodeId: 'tmdb:95479:ep2-1',
+      canonicalSeriesId: 'tmdb:95479',
+      season: '2',
+      episode: '1',
+      absoluteEpisode: '13',
+      mappedIds: { tmdb: '95479' },
+      providerRefs: [
+        {
+          provider: 'mal',
+          seriesExternalId: '11061',
+          seasonNumber: '2',
+          episodeNumber: '1',
+          absoluteEpisodeNumber: '13',
+          source: 'reverse-mapping',
+          confidence: 0.9,
+        },
+      ],
+      source: 'reverse-mapping',
+      confidence: 0.9,
+    },
+    fetchJsonCached: async (key, _url, _ttl, _phases, _phase, init) => {
+      fetchCalls.push(key);
+      if (key === 'anime:reverse:mal:11061:s:2:e:1') {
+        return {
+          ok: true,
+          status: 200,
+          data: { mappings: { ids: { anilist: 12345 } } },
+        };
+      }
+      if (key.startsWith('anilist:anime:12345:') && init?.method === 'POST') {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            data: {
+              Media: {
+                streamingEpisodes: Array.from({ length: 13 }, (_, index) => ({
+                  title: `Episode ${index + 1}`,
+                  thumbnail: `https://cdn.anilist.co/ref-${index + 1}.jpg`,
+                })),
+              },
+            },
+          },
+        };
+      }
+      if (key.includes(':images')) {
+        return { ok: true, status: 200, data: { stills: [] } };
+      }
+      return { ok: true, status: 200, data: { still_path: null } };
+    },
+    getRemoteImageAspectRatio: async () => null,
+    resolveImdbId: async () => null,
+  });
+
+  const result = await selectArtwork({
+    posters: [],
+    backdrops: [{ file_path: '/series-backdrop.jpg', iso_639_1: 'en' }],
+    logos: [],
+  });
+
+  assert.equal(result.imgUrlOverride, 'https://cdn.anilist.co/ref-13.jpg');
+  assert.ok(fetchCalls.includes('anime:reverse:mal:11061:s:2:e:1'));
+  assert.ok(!fetchCalls.includes('anime:reverse:tmdb:95479:s:2:e:1'));
+});
+
+test('image route artwork selection treats Kitsu provider refs as valid reverse-mapping authority', async () => {
+  const fetchCalls = [];
+  const selectArtwork = createImageRouteArtworkSelector({
+    imageType: 'backdrop',
+    isThumbnailRequest: true,
+    mediaType: 'tv',
+    media: { id: 95479 },
+    details: null,
+    requestedImageLang: 'en',
+    fallbackImageLang: 'en',
+    posterTextPreference: 'original',
+    posterArtworkSource: 'tmdb',
+    backdropArtworkSource: 'tmdb',
+    logoArtworkSource: 'tmdb',
+    thumbnailEpisodeArtwork: 'still',
+    backdropEpisodeArtwork: 'series',
+    artworkSelectionSeed: '',
+    cleanId: 'tmdb:tv:95479',
+    season: '2',
+    episode: '7',
+    isKitsu: false,
+    tmdbKey: 'tmdb-key',
+    fanartKey: '',
+    fanartClientKey: '',
+    fanartTvdbId: null,
+    phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+    canonicalSeriesIdentity: {
+      canonicalSeriesId: 'tmdb:95479',
+      provider: 'tmdb',
+      externalId: '95479',
+      mediaType: 'tv',
+      mappedIds: { tmdb: '95479' },
+      links: [],
+      source: 'raw',
+      confidence: 0.5,
+      sourceUpdatedAt: Date.now(),
+    },
+    canonicalEpisodeIdentity: {
+      canonicalEpisodeId: 'tmdb:95479:ep2-7',
+      canonicalSeriesId: 'tmdb:95479',
+      season: '2',
+      episode: '7',
+      absoluteEpisode: '7',
+      mappedIds: { tmdb: '95479' },
+      providerRefs: [
+        {
+          provider: 'kitsu',
+          seriesExternalId: '42765',
+          seasonNumber: '42',
+          episodeNumber: '7',
+          absoluteEpisodeNumber: '7',
+          source: 'reverse-mapping',
+          confidence: 0.9,
+        },
+      ],
+      source: 'reverse-mapping',
+      confidence: 0.9,
+    },
+    fetchJsonCached: async (key, _url, _ttl, _phases, _phase, init) => {
+      fetchCalls.push(key);
+      if (key === 'anime:reverse:kitsu:42765:s:42:e:7') {
+        return {
+          ok: true,
+          status: 200,
+          data: { mappings: { ids: { anilist: 12345 } } },
+        };
+      }
+      if (key.startsWith('anilist:anime:12345:') && init?.method === 'POST') {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            data: {
+              Media: {
+                streamingEpisodes: Array.from({ length: 7 }, (_, index) => ({
+                  title: `Episode ${index + 1}`,
+                  thumbnail: `https://cdn.anilist.co/kitsu-ref-${index + 1}.jpg`,
+                })),
+              },
+            },
+          },
+        };
+      }
+      if (key.includes(':images')) {
+        return { ok: true, status: 200, data: { stills: [] } };
+      }
+      return { ok: true, status: 200, data: { still_path: null } };
+    },
+    getRemoteImageAspectRatio: async () => null,
+    resolveImdbId: async () => null,
+  });
+
+  const result = await selectArtwork({
+    posters: [],
+    backdrops: [{ file_path: '/series-backdrop.jpg', iso_639_1: 'en' }],
+    logos: [],
+  });
+
+  assert.equal(result.imgUrlOverride, 'https://cdn.anilist.co/kitsu-ref-7.jpg');
+  assert.ok(fetchCalls.includes('anime:reverse:kitsu:42765:s:42:e:7'));
+  assert.ok(!fetchCalls.includes('anime:reverse:tmdb:95479:s:2:e:7'));
+});
+
+test('image route artwork selection keeps provider-native episode coordinates for reverse-mapping fallbacks', async () => {
+  const fetchCalls = [];
+  const selectArtwork = createImageRouteArtworkSelector({
+    imageType: 'backdrop',
+    isThumbnailRequest: true,
+    mediaType: 'tv',
+    media: { id: 95479 },
+    details: null,
+    requestedImageLang: 'en',
+    fallbackImageLang: 'en',
+    posterTextPreference: 'original',
+    posterArtworkSource: 'tmdb',
+    backdropArtworkSource: 'tmdb',
+    logoArtworkSource: 'tmdb',
+    thumbnailEpisodeArtwork: 'still',
+    backdropEpisodeArtwork: 'series',
+    artworkSelectionSeed: '',
+    cleanId: 'tmdb:tv:95479',
+    season: '3',
+    episode: '1',
+    isKitsu: false,
+    tmdbKey: 'tmdb-key',
+    fanartKey: '',
+    fanartClientKey: '',
+    fanartTvdbId: null,
+    phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+    canonicalSeriesIdentity: {
+      canonicalSeriesId: 'tmdb:95479',
+      provider: 'tmdb',
+      externalId: '95479',
+      mediaType: 'tv',
+      mappedIds: { tmdb: '95479' },
+      links: [],
+      source: 'raw',
+      confidence: 0.5,
+      sourceUpdatedAt: Date.now(),
+    },
+    canonicalEpisodeIdentity: {
+      canonicalEpisodeId: 'tmdb:95479:ep3-1',
+      canonicalSeriesId: 'tmdb:95479',
+      season: '3',
+      episode: '1',
+      absoluteEpisode: '25',
+      mappedIds: { tmdb: '95479' },
+      providerRefs: [
+        {
+          provider: 'mal',
+          seriesExternalId: '11061',
+          seasonNumber: '2',
+          episodeNumber: '1',
+          absoluteEpisodeNumber: '25',
+          source: 'override',
+          confidence: 1,
+        },
+      ],
+      source: 'override',
+      confidence: 1,
+    },
+    fetchJsonCached: async (key, _url, _ttl, _phases, _phase, init) => {
+      fetchCalls.push(key);
+      if (key === 'anime:reverse:mal:11061:s:2:e:1') {
+        return {
+          ok: true,
+          status: 200,
+          data: { mappings: { ids: { anilist: 12345 } } },
+        };
+      }
+      if (key.startsWith('anilist:anime:12345:') && init?.method === 'POST') {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            data: {
+              Media: {
+                streamingEpisodes: Array.from({ length: 25 }, (_, index) => ({
+                  title: `Episode ${index + 1}`,
+                  thumbnail: `https://cdn.anilist.co/split-cour-${index + 1}.jpg`,
+                })),
+              },
+            },
+          },
+        };
+      }
+      if (key.includes(':images')) {
+        return { ok: true, status: 200, data: { stills: [] } };
+      }
+      return { ok: true, status: 200, data: { still_path: null } };
+    },
+    getRemoteImageAspectRatio: async () => null,
+    resolveImdbId: async () => null,
+  });
+
+  const result = await selectArtwork({
+    posters: [],
+    backdrops: [{ file_path: '/series-backdrop.jpg', iso_639_1: 'en' }],
+    logos: [],
+  });
+
+  assert.equal(result.imgUrlOverride, 'https://cdn.anilist.co/split-cour-25.jpg');
+  assert.ok(fetchCalls.includes('anime:reverse:mal:11061:s:2:e:1'));
+  assert.ok(!fetchCalls.includes('anime:reverse:mal:11061:s:3:e:1'));
 });
 
 test('image route artwork selection uses AniList episode index fallback when title does not match', async () => {

@@ -1,7 +1,6 @@
 import {
   ANILIST_EPISODE_THUMBNAIL_QUERY,
   ANILIST_GRAPHQL_URL,
-  type AnimeMappingProvider,
   DEFAULT_RANDOM_POSTER_FALLBACK_MODE,
   DEFAULT_RANDOM_POSTER_LANGUAGE_MODE,
   DEFAULT_RANDOM_POSTER_TEXT_MODE,
@@ -15,7 +14,14 @@ import {
   type RandomPosterLanguageMode,
   type RandomPosterTextMode,
 } from './imageRouteConfig.ts';
-import { fetchAniListIdFromReverseMapping } from './imageRouteAnimeReverse.ts';
+import {
+  fetchAniListIdFromReverseMapping,
+  type ReverseMappingProvider,
+} from './imageRouteAnimeReverse.ts';
+import type {
+  CanonicalEpisodeIdentity,
+  CanonicalSeriesIdentity,
+} from './canonicalAnimeIdentity/index.ts';
 import {
   artworkSourceSupportsTextlessSelection,
   artworkTextSelectionNeedsProviderTextlessSupport,
@@ -102,6 +108,20 @@ const DEFAULT_DEPS: ArtworkSelectorDeps = {
   resolveOmdbPosterUrl,
 };
 
+const trimToNonEmpty = (value: string | null | undefined) => {
+  const normalized = String(value || '').trim();
+  return normalized || null;
+};
+
+const isAnimeMappingProvider = (provider: string): provider is ReverseMappingProvider =>
+  provider === 'kitsu' ||
+  provider === 'imdb' ||
+  provider === 'tmdb' ||
+  provider === 'tvdb' ||
+  provider === 'anilist' ||
+  provider === 'mal' ||
+  provider === 'anidb';
+
 export const createImageRouteArtworkSelector = (
   input: {
     imageType: 'poster' | 'backdrop' | 'logo';
@@ -137,19 +157,34 @@ export const createImageRouteArtworkSelector = (
     fetchJsonCached: ArtworkFetchJson;
     getRemoteImageAspectRatio: (url: string) => Promise<number | null>;
     resolveImdbId: () => Promise<string | null>;
+    canonicalSeriesIdentity?: CanonicalSeriesIdentity | null;
+    canonicalEpisodeIdentity?: CanonicalEpisodeIdentity | null;
   },
   deps: Partial<ArtworkSelectorDeps> = {},
 ) => {
   const runtimeDeps = { ...DEFAULT_DEPS, ...deps };
   const fallbackImageLang = input.fallbackImageLang || FALLBACK_IMAGE_LANGUAGE;
+  const canonicalTvdbSeriesId =
+    trimToNonEmpty(
+      input.canonicalEpisodeIdentity?.providerRefs.find((providerRef) => providerRef.provider === 'tvdb')
+        ?.seriesExternalId,
+    ) ||
+    trimToNonEmpty(input.canonicalSeriesIdentity?.mappedIds.tvdb) ||
+    (input.canonicalSeriesIdentity?.provider === 'tvdb'
+      ? trimToNonEmpty(input.canonicalSeriesIdentity.externalId)
+      : null);
+  const resolvedFanartTvdbId = trimToNonEmpty(input.fanartTvdbId) || canonicalTvdbSeriesId;
   const buildArtworkSeed = (scope: string) =>
     `${scope}:${input.artworkSelectionSeed || `${input.cleanId}:${input.imageType}`}`;
   let fanartArtworkPromise: Promise<FanartArtworkPayload | null> | null = null;
   let omdbPosterUrlPromise: Promise<string | null> | null = null;
   let animeReverseMappingTargetPromise: Promise<{
-    provider: AnimeMappingProvider;
+    provider: ReverseMappingProvider;
     externalId: string;
+    season: string | null;
+    episode: string | null;
   } | null> | null = null;
+  let canonicalAniListIdPromise: Promise<string | null> | null = null;
 
   const getFanartArtwork = async () => {
     if (!(input.mediaType === 'movie' || input.mediaType === 'tv')) return null;
@@ -157,7 +192,7 @@ export const createImageRouteArtworkSelector = (
     fanartArtworkPromise = runtimeDeps.fetchFanartArtwork({
       mediaType: input.mediaType,
       tmdbId: String(input.media.id),
-      tvdbId: input.mediaType === 'tv' ? input.fanartTvdbId || null : null,
+      tvdbId: input.mediaType === 'tv' ? resolvedFanartTvdbId : null,
       fanartKey: input.fanartKey,
       fanartClientKey: input.fanartClientKey,
       requestedLang: input.requestedImageLang,
@@ -185,21 +220,62 @@ export const createImageRouteArtworkSelector = (
   const getAnimeReverseMappingTarget = async () => {
     if (animeReverseMappingTargetPromise) return animeReverseMappingTargetPromise;
     animeReverseMappingTargetPromise = (async () => {
+      for (const providerRef of input.canonicalEpisodeIdentity?.providerRefs || []) {
+        if (!providerRef.seriesExternalId || !isAnimeMappingProvider(providerRef.provider)) continue;
+        return {
+          provider: providerRef.provider,
+          externalId: providerRef.seriesExternalId,
+          season: providerRef.seasonNumber || null,
+          episode: providerRef.episodeNumber || null,
+        };
+      }
+
+      if (input.canonicalSeriesIdentity) {
+        const canonical = input.canonicalSeriesIdentity;
+        if (canonical.mappedIds.kitsu) {
+          return { provider: 'kitsu' as const, externalId: canonical.mappedIds.kitsu, season: null, episode: null };
+        }
+        if (canonical.mappedIds.imdb) {
+          return { provider: 'imdb' as const, externalId: canonical.mappedIds.imdb, season: null, episode: null };
+        }
+        if (canonical.mappedIds.tmdb) {
+          return { provider: 'tmdb' as const, externalId: canonical.mappedIds.tmdb, season: null, episode: null };
+        }
+        if (canonical.mappedIds.tvdb) {
+          return { provider: 'tvdb' as const, externalId: canonical.mappedIds.tvdb, season: null, episode: null };
+        }
+        if (canonical.mappedIds.anilist) {
+          return { provider: 'anilist' as const, externalId: canonical.mappedIds.anilist, season: null, episode: null };
+        }
+        if (canonical.mappedIds.mal) {
+          return { provider: 'mal' as const, externalId: canonical.mappedIds.mal, season: null, episode: null };
+        }
+        if (canonical.mappedIds.anidb) {
+          return { provider: 'anidb' as const, externalId: canonical.mappedIds.anidb, season: null, episode: null };
+        }
+        if (canonical.provider !== 'xrdbid' && canonical.provider !== 'unknown') {
+          return { provider: canonical.provider, externalId: canonical.externalId, season: null, episode: null };
+        }
+      }
+
       const trimmedCleanId = String(input.cleanId || '').trim();
       const parts = trimmedCleanId.split(':').map((part) => part.trim());
       const prefix = (parts[0] || '').toLowerCase();
 
+      if (prefix === 'kitsu' && parts[1]) {
+        return { provider: 'kitsu' as const, externalId: parts[1], season: null, episode: null };
+      }
       if (prefix === 'anilist' && parts[1]) {
-        return { provider: 'anilist' as const, externalId: parts[1] };
+        return { provider: 'anilist' as const, externalId: parts[1], season: null, episode: null };
       }
       if ((prefix === 'mal' || prefix === 'myanimelist') && parts[1]) {
-        return { provider: 'mal' as const, externalId: parts[1] };
+        return { provider: 'mal' as const, externalId: parts[1], season: null, episode: null };
       }
       if (prefix === 'anidb' && parts[1]) {
-        return { provider: 'anidb' as const, externalId: parts[1] };
+        return { provider: 'anidb' as const, externalId: parts[1], season: null, episode: null };
       }
       if (prefix === 'tvdb' && parts[1]) {
-        return { provider: 'tvdb' as const, externalId: parts[1] };
+        return { provider: 'tvdb' as const, externalId: parts[1], season: null, episode: null };
       }
 
       const imdbId =
@@ -211,7 +287,7 @@ export const createImageRouteArtworkSelector = (
               ? parts[1]
               : await input.resolveImdbId()) || '';
       if (imdbId) {
-        return { provider: 'imdb' as const, externalId: imdbId };
+        return { provider: 'imdb' as const, externalId: imdbId, season: null, episode: null };
       }
 
       if (prefix === 'tmdb') {
@@ -220,14 +296,39 @@ export const createImageRouteArtworkSelector = (
             ? parts[2] || ''
             : parts[1] || '';
         if (tmdbId) {
-          return { provider: 'tmdb' as const, externalId: tmdbId };
+          return { provider: 'tmdb' as const, externalId: tmdbId, season: null, episode: null };
         }
       }
 
       const tmdbId = String(input.media.id || '').trim();
-      return tmdbId ? { provider: 'tmdb' as const, externalId: tmdbId } : null;
+      return tmdbId ? { provider: 'tmdb' as const, externalId: tmdbId, season: null, episode: null } : null;
     })();
     return animeReverseMappingTargetPromise;
+  };
+
+  const getCanonicalAniListId = async () => {
+    if (canonicalAniListIdPromise) return canonicalAniListIdPromise;
+    canonicalAniListIdPromise = (async () => {
+      const directAniListId =
+        input.canonicalEpisodeIdentity?.mappedIds.anilist ||
+        input.canonicalEpisodeIdentity?.providerRefs.find((providerRef) => providerRef.provider === 'anilist')
+          ?.seriesExternalId ||
+        input.canonicalSeriesIdentity?.mappedIds.anilist ||
+        null;
+      if (directAniListId) return directAniListId;
+
+      const reverseMappingTarget = await getAnimeReverseMappingTarget();
+      if (!reverseMappingTarget) return null;
+      return fetchAniListIdFromReverseMapping({
+        provider: reverseMappingTarget.provider,
+        externalId: reverseMappingTarget.externalId,
+        season: reverseMappingTarget.season || input.canonicalEpisodeIdentity?.season || input.season,
+        episode: reverseMappingTarget.episode || input.canonicalEpisodeIdentity?.episode || input.episode,
+        phases: input.phases,
+        fetchJsonCached: input.fetchJsonCached,
+      });
+    })();
+    return canonicalAniListIdPromise;
   };
 
   return async (selectionInput: ArtworkSelectionInput): Promise<ArtworkSelectionResult> => {
@@ -543,16 +644,7 @@ export const createImageRouteArtworkSelector = (
         input.episode
       ) {
         const fetchStreamingEpisodeThumbnail = async (): Promise<string> => {
-          const reverseMappingTarget = await getAnimeReverseMappingTarget();
-          if (!reverseMappingTarget) return '';
-          const aniListId = await fetchAniListIdFromReverseMapping({
-            provider: reverseMappingTarget.provider,
-            externalId: reverseMappingTarget.externalId,
-            season: input.season!,
-            episode: input.episode!,
-            phases: input.phases,
-            fetchJsonCached: input.fetchJsonCached,
-          });
+          const aniListId = await getCanonicalAniListId();
           if (!aniListId) return '';
           const parsedAniListId = Number.parseInt(aniListId, 10);
           if (!Number.isFinite(parsedAniListId) || parsedAniListId <= 0) return '';
@@ -578,7 +670,8 @@ export const createImageRouteArtworkSelector = (
           const streamingEpisodes = Array.isArray(aniListEpResponse.data?.data?.Media?.streamingEpisodes)
             ? aniListEpResponse.data.data.Media.streamingEpisodes
             : [];
-          const episodeNum = Number.parseInt(input.episode!, 10);
+          const episodeAuthority = input.canonicalEpisodeIdentity?.absoluteEpisode || input.episode;
+          const episodeNum = Number.parseInt(episodeAuthority || '', 10);
           const episodePattern = Number.isFinite(episodeNum)
             ? new RegExp(`(?:Episode|E)\\s*0*${episodeNum}\\b`, 'i')
             : null;

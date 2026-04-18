@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
 import { resolveImageRouteMediaTarget } from '../lib/imageRouteMediaTarget.ts';
 
@@ -17,6 +20,27 @@ const createTextResponse = (data = null, ok = false, status = ok ? 200 : 404) =>
   status,
   data,
 });
+
+const withTempDataDir = async (t, callback) => {
+  const tempDir = mkdtempSync(join(tmpdir(), 'xrdb-media-target-'));
+  const previousDataDir = process.env.XRDB_DATA_DIR;
+  const previousDbPath = process.env.XRDB_DB_PATH;
+
+  process.env.XRDB_DATA_DIR = tempDir;
+  delete process.env.XRDB_DB_PATH;
+
+  t.after(() => {
+    if (previousDataDir === undefined) delete process.env.XRDB_DATA_DIR;
+    else process.env.XRDB_DATA_DIR = previousDataDir;
+
+    if (previousDbPath === undefined) delete process.env.XRDB_DB_PATH;
+    else process.env.XRDB_DB_PATH = previousDbPath;
+
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  return callback();
+};
 
 test('image route media target resolves explicit TMDB movie targets', async () => {
   const requests = [];
@@ -60,6 +84,180 @@ test('image route media target resolves explicit TMDB movie targets', async () =
       url: 'https://api.themoviedb.org/3/movie/42?api_key=tmdb-key',
     },
   ]);
+});
+
+test('image route media target remaps mixed-provider anime episode hints before imdb lookup', async (t) => {
+  await withTempDataDir(t, async () => {
+    const requests = [];
+    const result = await resolveImageRouteMediaTarget({
+      imageType: 'backdrop',
+      isThumbnailRequest: true,
+      tmdbKey: 'tmdb-key',
+      phases: { ...phases },
+      fetchJsonCached: async (key, url) => {
+        requests.push({ key, url });
+        if (key === 'anime:kitsu:42765:s:-:e:1') {
+          return {
+            ok: true,
+            status: 200,
+            data: {
+              mappings: {
+                ids: {
+                  tmdb: '46298',
+                  mal: '5114',
+                },
+                tmdb_episode: {
+                  id: '46298',
+                  season_number: 2,
+                  episode_number: 1,
+                },
+              },
+            },
+          };
+        }
+        if (key === 'tmdb:find:tt12343534') {
+          return {
+            ok: true,
+            status: 200,
+            data: {
+              movie_results: [],
+              tv_results: [{ id: 46298, name: 'Mapped Show' }],
+            },
+          };
+        }
+        if (key === 'tmdb:tv:46298') {
+          return { ok: true, status: 200, data: { id: 46298, number_of_seasons: 2 } };
+        }
+        if (key === 'tmdb:tv:46298:season:1' || key === 'tmdb:tv:46298:season:2') {
+          return {
+            ok: true,
+            status: 200,
+            data: { episodes: [{ episode_number: 1 }] },
+          };
+        }
+        throw new Error(`Unexpected key: ${key}`);
+      },
+      fetchTextCached: async () => createTextResponse(),
+      mediaId: 'tt12343534',
+      season: '1',
+      episode: '1',
+      isTmdb: false,
+      isTvdb: false,
+      isCanonId: false,
+      isKitsu: false,
+      inputAnimeMappingProvider: null,
+      inputAnimeMappingExternalId: null,
+      cleanId: 'tt12343534',
+      idPrefix: 'tt12343534',
+      episodeSourceProvider: 'kitsu',
+      episodeSourceId: '42765',
+      episodeSourceSeason: null,
+      episodeSourceEpisode: '1',
+      episodeAbsolute: '1',
+      explicitTmdbMediaType: null,
+      tvdbSeriesId: null,
+      hasNativeAnimeInput: false,
+      allowAnimeOnlyRatings: false,
+      hasConfirmedAnimeMapping: false,
+      tmdbEpOrder: 'tmdb',
+    });
+
+    assert.equal(result.mediaType, 'tv');
+    assert.equal(result.season, '2');
+    assert.equal(result.episode, '1');
+    assert.equal(result.allowAnimeOnlyRatings, true);
+    assert.equal(result.hasConfirmedAnimeMapping, true);
+  });
+});
+
+test('image route media target resolves Kitsu shorthand episode inputs without a season token', async (t) => {
+  await withTempDataDir(t, async () => {
+    const requests = [];
+    const result = await resolveImageRouteMediaTarget({
+      imageType: 'backdrop',
+      isThumbnailRequest: true,
+      tmdbKey: 'tmdb-key',
+      phases: { ...phases },
+      fetchJsonCached: async (key, url) => {
+        requests.push({ key, url });
+        if (key === 'anime:kitsu:42765:s:-:e:7' || key === 'kitsu:mapping:42765:7') {
+          return {
+            ok: true,
+            status: 200,
+            data: {
+              mappings: {
+                ids: {
+                  imdb: 'tt12343534',
+                },
+                tmdb_episode: {
+                  id: '46298',
+                  season_number: 2,
+                  episode_number: 7,
+                },
+              },
+            },
+          };
+        }
+        if (key === 'tmdb:tv:46298') {
+          return {
+            ok: true,
+            status: 200,
+            data: { id: 46298, name: 'Mapped Show', number_of_seasons: 2 },
+          };
+        }
+        if (key === 'tmdb:tv:46298:season:1' || key === 'tmdb:tv:46298:season:2') {
+          return {
+            ok: true,
+            status: 200,
+            data: {
+              episodes: Array(12).fill(null).map((_, index) => ({ episode_number: index + 1 })),
+            },
+          };
+        }
+        throw new Error(`Unexpected key: ${key}`);
+      },
+      fetchTextCached: async () => createTextResponse(),
+      mediaId: '42765',
+      season: null,
+      episode: '7',
+      isTmdb: false,
+      isTvdb: false,
+      isCanonId: false,
+      isKitsu: true,
+      inputAnimeMappingProvider: null,
+      inputAnimeMappingExternalId: null,
+      cleanId: 'kitsu:42765',
+      idPrefix: 'kitsu',
+      explicitTmdbMediaType: null,
+      tvdbSeriesId: null,
+      hasNativeAnimeInput: true,
+      allowAnimeOnlyRatings: false,
+      hasConfirmedAnimeMapping: false,
+      tmdbEpOrder: 'tmdb',
+    });
+
+    assert.equal(result.mediaType, 'tv');
+    assert.equal(result.media.id, 46298);
+    assert.equal(result.season, '2');
+    assert.equal(result.episode, '7');
+    assert.equal(result.mappedImdbId, 'tt12343534');
+    assert.equal(result.allowAnimeOnlyRatings, false);
+    assert.equal(result.hasConfirmedAnimeMapping, false);
+    assert.ok(
+      requests.some(
+        ({ key, url }) =>
+          key === 'anime:kitsu:42765:s:-:e:7' &&
+          url === 'https://animemapping.stremio.dpdns.org/kitsu/42765?ep=7',
+      ),
+    );
+    assert.ok(
+      requests.some(
+        ({ key, url }) =>
+          key === 'tmdb:tv:46298' &&
+          url === 'https://api.themoviedb.org/3/tv/46298?api_key=tmdb-key',
+      ),
+    );
+  });
 });
 
 test('image route media target prefers TV matches for episodic IMDb lookups', async () => {
@@ -283,18 +481,6 @@ test('image route media target remaps reverse-mapped anime episodes to TMDB epis
     {
       key: 'tmdb:tv:46298',
       url: 'https://api.themoviedb.org/3/tv/46298?api_key=tmdb-key',
-    },
-    {
-      key: 'tmdb:tv:46298',
-      url: 'https://api.themoviedb.org/3/tv/46298?api_key=tmdb-key',
-    },
-    {
-      key: 'tmdb:tv:46298:season:1',
-      url: 'https://api.themoviedb.org/3/tv/46298/season/1?api_key=tmdb-key',
-    },
-    {
-      key: 'tmdb:tv:46298:season:2',
-      url: 'https://api.themoviedb.org/3/tv/46298/season/2?api_key=tmdb-key',
     },
   ]);
 });

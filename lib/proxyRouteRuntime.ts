@@ -14,15 +14,24 @@ import {
   resolveTmdbTranslationFieldAvailability,
   resolveTmdbTranslationTarget,
 } from './proxyMetaTranslation.ts';
+import {
+  normalizeCanonicalAnimeProvider,
+  resolveCanonicalEpisodeIdentity,
+  resolveCanonicalSeriesIdentity,
+  type CanonicalSeriesIdentity,
+  type RawEpisodeIdentityInput,
+} from './canonicalAnimeIdentity/index.ts';
 import { findImdbEpisodeBySeriesSeasonEpisode } from './imdbDatasetLookup.ts';
 import {
   applyEpisodeIdModeToXrdbId,
   XRDBID_PREFIX,
   normalizeEpisodeIdMode,
+  type EpisodeIdMode,
 } from './episodeIdentity.ts';
 import { TMDB_API_KEY } from './imageRouteConfig.ts';
 import { TMDB_API_BASE_URL } from './serviceBaseUrls.ts';
 import { fetchTmdbServer } from './tmdbServerAuth.ts';
+import type { CachedJsonResponse, PhaseDurations } from './imageRouteRuntime.ts';
 
 const ANILIST_GRAPHQL_URL = process.env.XRDB_ANILIST_GRAPHQL_URL?.trim() || 'https://graphql.anilist.co';
 const ANILIST_MEDIA_QUERY = `
@@ -61,12 +70,23 @@ const ANIME_MAPPING_FAILED_TTL_MS = 2 * 60 * 1000;
 const PROXY_MEDIA_TYPE_SELECTION_ORDER: ProxyMediaTypeSelection[] = ['movie', 'series', 'anime'];
 const PROXY_MEDIA_TYPE_SELECTION_SET = new Set<ProxyMediaTypeSelection>(PROXY_MEDIA_TYPE_SELECTION_ORDER);
 const PROXY_ANIME_ID_PREFIX_SET = new Set(['kitsu', 'mal', 'myanimelist', 'anilist', 'anidb']);
+type ProxyAnimeNativeEpisodeMode = 'kitsu' | 'anilist' | 'mal' | 'anidb';
+const PROXY_ANIME_NATIVE_EPISODE_MODE_SET = new Set<EpisodeIdMode>(['kitsu', 'anilist', 'mal', 'anidb']);
+const PROXY_CANONICAL_PHASES: PhaseDurations = {
+  auth: 0,
+  tmdb: 0,
+  mdb: 0,
+  fanart: 0,
+  stream: 0,
+  render: 0,
+};
 
 const tmdbFetchCache = new Map<string, CacheEntry<Promise<any>>>();
 const animeMappingFetchCache = new Map<string, CacheEntry<Promise<any>>>();
 const kitsuFetchCache = new Map<string, CacheEntry<Promise<any>>>();
 const anilistFetchCache = new Map<string, CacheEntry<Promise<any>>>();
 const textFetchCache = new Map<string, CacheEntry<Promise<any>>>();
+const proxyCanonicalFetchCache = new Map<string, CacheEntry<Promise<any>>>();
 
 const prunePromiseCache = (cache: Map<string, CacheEntry<Promise<any>>>) => {
   const now = Date.now();
@@ -186,6 +206,63 @@ const fetchText = createCachedValueFetcher(
     }
   },
 );
+
+const fetchProxyCanonicalJson = async (
+  key: string,
+  url: string,
+  ttlMs: number,
+  phases: PhaseDurations,
+  phase: keyof PhaseDurations,
+  init?: RequestInit,
+): Promise<CachedJsonResponse> => {
+  void phases;
+  void phase;
+
+  const now = Date.now();
+  const cached = proxyCanonicalFetchCache.get(key);
+  if (cached && cached.expiresAt > now) {
+    return cached.value;
+  }
+
+  if (proxyCanonicalFetchCache.size > 2000) {
+    prunePromiseCache(proxyCanonicalFetchCache);
+  }
+
+  const successTtlMs = Math.max(1, ttlMs);
+  const failedTtlMs = Math.min(successTtlMs, ANIME_MAPPING_FAILED_TTL_MS);
+  const entry: CacheEntry<Promise<any>> = {
+    value: Promise.resolve({ ok: false, status: 500, data: null }),
+    expiresAt: now + successTtlMs,
+  };
+  proxyCanonicalFetchCache.set(key, entry);
+
+  const promise = (async () => {
+    try {
+      const response = await fetchTmdbServer(url, { cache: 'no-store', ...init });
+      let data: any = null;
+
+      try {
+        data = await response.json();
+      } catch {
+        data = null;
+      }
+
+      const result = {
+        ok: response.ok,
+        status: response.status,
+        data,
+      };
+      entry.expiresAt = Date.now() + (response.ok ? successTtlMs : failedTtlMs);
+      return result;
+    } catch (error) {
+      proxyCanonicalFetchCache.delete(key);
+      throw error;
+    }
+  })();
+
+  entry.value = promise;
+  return promise;
+};
 
 export const mapWithConcurrency = async <T, R>(
   items: T[],
@@ -625,7 +702,126 @@ const isProxyMediaTypeEnabled = (
   return selectedTypes.has(mediaType);
 };
 
-const rewriteMetaVideoThumbnails = (
+const parseProxyAnimeEpisodeAuthority = (rawId: string | null, rawType: string | null) => {
+  const normalizedRawId = normalizeXrdbId(rawId, rawType);
+  if (!normalizedRawId) return null;
+
+  const [provider = '', externalId = ''] = normalizedRawId.split(':');
+  const normalizedProvider = provider.trim().toLowerCase();
+  const normalizedExternalId = externalId.trim();
+  if (!PROXY_ANIME_ID_PREFIX_SET.has(normalizedProvider) || !normalizedExternalId) {
+    return null;
+  }
+
+  return {
+    provider: normalizedProvider,
+    externalId: normalizedExternalId,
+  };
+};
+
+const buildProxyCanonicalRawInput = ({
+  rawId,
+  rawType,
+  seasonValue = null,
+  episodeValue = null,
+  episodeProvider = null,
+  episodeSourceId = null,
+}: {
+  rawId: string;
+  rawType: string | null;
+  seasonValue?: number | null;
+  episodeValue?: number | null;
+  episodeProvider?: string | null;
+  episodeSourceId?: string | null;
+}): RawEpisodeIdentityInput => {
+  const normalizedRawId = normalizeXrdbId(rawId, rawType) || String(rawId || '').trim();
+  const parts = normalizedRawId.split(':');
+  const firstPart = (parts[0] || '').trim();
+  const normalizedRawProvider = /^tt\d+$/i.test(normalizedRawId)
+    ? 'imdb'
+    : normalizeCanonicalAnimeProvider(firstPart || rawType || '');
+  const rawExternalId = /^tt\d+$/i.test(normalizedRawId)
+    ? normalizedRawId
+    : normalizedRawProvider === 'tmdb' && parts.length >= 3
+      ? (parts[2] || '').trim() || null
+      : normalizedRawProvider === 'xrdbid'
+        ? (parts[1] || '').trim() || null
+        : (parts[1] || '').trim() || null;
+  const normalizedEpisodeProvider = episodeProvider
+    ? normalizeCanonicalAnimeProvider(episodeProvider)
+    : null;
+  const hasAnimeNativeEpisodeProvider =
+    normalizedEpisodeProvider === 'kitsu' ||
+    normalizedEpisodeProvider === 'anilist' ||
+    normalizedEpisodeProvider === 'mal' ||
+    normalizedEpisodeProvider === 'anidb';
+  const normalizedSeason = Number.isFinite(seasonValue) ? String(seasonValue) : null;
+  const normalizedEpisode = Number.isFinite(episodeValue) ? String(episodeValue) : null;
+
+  return {
+    rawId: normalizedRawId,
+    rawProvider: normalizedRawProvider,
+    rawExternalId,
+    mediaType: normalizeStremioType(rawType) === 'movie' ? 'movie' : 'tv',
+    season: normalizedSeason,
+    episode: normalizedEpisode,
+    absoluteEpisode: hasAnimeNativeEpisodeProvider
+      ? normalizedEpisode
+      : null,
+    episodeProvider: normalizedEpisodeProvider,
+    episodeSourceId: episodeSourceId || null,
+    episodeSourceSeason: normalizedEpisodeProvider ? normalizedSeason : null,
+    episodeSourceEpisode: normalizedEpisodeProvider ? normalizedEpisode : null,
+    episodeAbsolute: hasAnimeNativeEpisodeProvider
+      ? normalizedEpisode
+      : null,
+    tmdbEpOrder: 'tmdb',
+  };
+};
+
+const resolveProxyConfiguredAnimeSeriesContext = async ({
+  rawId,
+  rawType,
+  xrdbId,
+  config,
+}: {
+  rawId: string;
+  rawType: string | null;
+  xrdbId: string;
+  config: ProxyConfig;
+}) => {
+  const configuredMode = normalizeEpisodeIdMode(config.episodeIdMode);
+  if (!PROXY_ANIME_NATIVE_EPISODE_MODE_SET.has(configuredMode)) {
+    return null;
+  }
+  const configuredAnimeMode = configuredMode as ProxyAnimeNativeEpisodeMode;
+
+  const rawInput = buildProxyCanonicalRawInput({ rawId, rawType });
+  const series = await resolveCanonicalSeriesIdentity({
+    input: rawInput,
+    phases: PROXY_CANONICAL_PHASES,
+    fetchJsonCached: fetchProxyCanonicalJson,
+  });
+  const mappedSeriesId = series.mappedIds[configuredAnimeMode] || null;
+  if (!mappedSeriesId) {
+    return null;
+  }
+
+  const canonicalImdbId = series.mappedIds.imdb || (series.provider === 'imdb' ? series.externalId : null);
+  const canonicalThumbnailId =
+    canonicalImdbId && (isAiometadataManifestUrl(config.url) || isCinemetaManifestUrl(config.url))
+      ? `${XRDBID_PREFIX}:${canonicalImdbId}`
+      : xrdbId;
+
+  return {
+    configuredMode: configuredAnimeMode,
+    series,
+    mappedSeriesId,
+    canonicalThumbnailId,
+  };
+};
+
+const rewriteMetaVideoThumbnails = async (
   meta: Record<string, unknown>,
   requestUrl: URL,
   config: ProxyConfig,
@@ -637,8 +833,18 @@ const rewriteMetaVideoThumbnails = (
   const rawType = typeof meta.type === 'string' ? meta.type : null;
   const xrdbId = normalizeProxyXrdbId(rawId, rawType, config);
   if (!xrdbId) return meta;
+  const episodeAuthority = parseProxyAnimeEpisodeAuthority(rawId, rawType);
+  const configuredAnimeSeriesContext =
+    rawId && !episodeAuthority
+      ? await resolveProxyConfiguredAnimeSeriesContext({
+          rawId,
+          rawType,
+          xrdbId,
+          config,
+        })
+      : null;
 
-  const nextVideos = meta.videos.map((video) => {
+  const nextVideos = await mapWithConcurrency(meta.videos, 6, async (video) => {
     if (!video || typeof video !== 'object') return video;
     const typedVideo = video as Record<string, unknown>;
     const seasonValue =
@@ -655,15 +861,54 @@ const rewriteMetaVideoThumbnails = (
 
     const sourceThumbnailUrl =
       typeof typedVideo.thumbnail === 'string' ? typedVideo.thumbnail.trim() : '';
+    const configuredEpisodeAuthority = configuredAnimeSeriesContext
+      ? await resolveCanonicalEpisodeIdentity({
+          input: buildProxyCanonicalRawInput({
+            rawId: rawId || '',
+            rawType,
+            seasonValue,
+            episodeValue,
+            episodeProvider: configuredAnimeSeriesContext.configuredMode,
+            episodeSourceId: configuredAnimeSeriesContext.mappedSeriesId,
+          }),
+          series: configuredAnimeSeriesContext.series,
+          phases: PROXY_CANONICAL_PHASES,
+          fetchJsonCached: fetchProxyCanonicalJson,
+        })
+      : null;
+    const effectiveEpisodeAuthority = episodeAuthority
+      ? {
+          provider: episodeAuthority.provider,
+          externalId: episodeAuthority.externalId,
+          xrdbId,
+          sourceSeason: seasonValue,
+          sourceEpisode: episodeValue,
+          absoluteEpisode: episodeValue,
+        }
+      : configuredAnimeSeriesContext
+        ? {
+            provider: configuredAnimeSeriesContext.configuredMode,
+            externalId: configuredAnimeSeriesContext.mappedSeriesId,
+            xrdbId: configuredAnimeSeriesContext.canonicalThumbnailId,
+            sourceSeason: seasonValue,
+            sourceEpisode: episodeValue,
+            absoluteEpisode: configuredEpisodeAuthority?.absoluteEpisode || String(episodeValue),
+          }
+        : null;
 
     return {
       ...typedVideo,
       thumbnail: buildXrdbImageUrl({
         reqUrl: requestUrl,
         imageType: 'thumbnail',
-        xrdbId,
+        xrdbId: effectiveEpisodeAuthority?.xrdbId || xrdbId,
         seasonNumber: seasonValue,
         episodeNumber: episodeValue,
+        episodeSourceProvider: effectiveEpisodeAuthority?.provider || null,
+        episodeSourceId: effectiveEpisodeAuthority?.externalId || null,
+        episodeSourceSeason: effectiveEpisodeAuthority?.sourceSeason || null,
+        episodeSourceEpisode: effectiveEpisodeAuthority?.sourceEpisode || null,
+        episodeAbsolute: effectiveEpisodeAuthority?.absoluteEpisode || null,
         tmdbKey: config.tmdbKey,
         mdblistKey: config.mdblistKey,
         simklClientId: config.simklClientId,
@@ -679,7 +924,7 @@ const rewriteMetaVideoThumbnails = (
   };
 };
 
-export const rewriteMetaImages = (
+export const rewriteMetaImages = async (
   meta: Record<string, unknown>,
   requestUrl: URL,
   config: ProxyConfig,

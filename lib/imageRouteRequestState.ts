@@ -112,10 +112,15 @@ import {
   normalizeImageLanguage,
 } from './imageLanguage.ts';
 import {
+  parseEpisodeSourceHintSearchParams,
   THUMBNAIL_RATING_PREFERENCES,
   XRDBID_PREFIX,
   parseKitsuEpisodeInput,
 } from './episodeIdentity.ts';
+import {
+  normalizeCanonicalAnimeProvider,
+  type CanonicalAnimeProvider,
+} from './canonicalAnimeIdentity/index.ts';
 import { normalizeSafeFallbackImageUrl } from './imageRouteSourceFetch.ts';
 import {
   ALLOWED_IMAGE_TYPES,
@@ -285,6 +290,11 @@ export type ImageRouteRequestState = {
   idPrefix: string;
   inputAnimeMappingProvider: AnimeMappingProvider | null;
   inputAnimeMappingExternalId: string | null;
+  episodeSourceProvider: CanonicalAnimeProvider | null;
+  episodeSourceId: string | null;
+  episodeSourceSeason: string | null;
+  episodeSourceEpisode: string | null;
+  episodeAbsolute: string | null;
   mediaId: string;
   season: string | null;
   episode: string | null;
@@ -1205,6 +1215,15 @@ export const resolveImageRouteRequestState = async ({
   const debugRatings = /^(1|true|yes|on)$/i.test(
     String(searchParams.get('debugRatings') || '').trim(),
   );
+  const {
+    episodeSourceProviderValue,
+    episodeSourceId,
+    episodeSourceSeason,
+    episodeSourceEpisode,
+    episodeAbsolute,
+  } = parseEpisodeSourceHintSearchParams(searchParams);
+  const parsedEpisodeSourceProvider = normalizeCanonicalAnimeProvider(episodeSourceProviderValue);
+  const episodeSourceProvider = parsedEpisodeSourceProvider === 'unknown' ? null : parsedEpisodeSourceProvider;
   const parts = cleanId.split(':');
   const idPrefix = (parts[0] || '').trim().toLowerCase();
   const inputAnimeMappingProvider = toAnimeMappingProvider(idPrefix);
@@ -1420,6 +1439,15 @@ export const resolveImageRouteRequestState = async ({
 
   const sourceFallbackUrl = await normalizeSafeFallbackImageUrl(requestedFallbackUrl);
   const sourceFallbackKey = sourceFallbackUrl ? sha1Hex(sourceFallbackUrl).slice(0, 12) : '-';
+  const canonicalEpisodeHintKey = episodeSourceProvider && episodeSourceId
+    ? [
+        episodeSourceProvider,
+        episodeSourceId,
+        episodeSourceSeason || '-',
+        episodeSourceEpisode || '-',
+        episodeAbsolute || '-',
+      ].join(':')
+    : '-';
   const renderSeedKey = buildFinalImageRenderSeedKey({
     cacheVersion: FINAL_IMAGE_RENDERER_CACHE_VERSION,
     imageType: isThumbnailRequest ? 'thumbnail' : imageType,
@@ -1509,6 +1537,7 @@ export const resolveImageRouteRequestState = async ({
     fanartClientKeyHash,
     omdbKeyHash,
     sourceFallbackKey,
+    canonicalEpisodeHintKey,
     renderCacheBuster,
   });
 
@@ -1570,6 +1599,11 @@ export const resolveImageRouteRequestState = async ({
     idPrefix,
     inputAnimeMappingProvider,
     inputAnimeMappingExternalId,
+    episodeSourceProvider,
+    episodeSourceId,
+    episodeSourceSeason,
+    episodeSourceEpisode,
+    episodeAbsolute,
     mediaId,
     season,
     episode,

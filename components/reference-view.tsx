@@ -127,7 +127,8 @@ export function ReferenceView() {
 GET /poster/tt0089881.jpg?lang=original
 GET /backdrop/tmdb:movie:603.jpg?ratings=mdblist&style=plain
 GET /logo/tmdb:tv:1399.jpg
-GET /thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb`}</CodeBlock>
+GET /thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb
+GET /thumbnail/xrdbid:tt12343534/S01E07.jpg?episodeSourceProvider=kitsu&episodeSourceId=42765&episodeSourceSeason=42&episodeSourceEpisode=7&episodeAbsolute=7`}</CodeBlock>
           <p>
             Poster and backdrop responses return JPEG. Logo requests keep the <code>.jpg</code> route but may return PNG when transparency is preserved.
           </p>
@@ -169,6 +170,7 @@ GET /thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb`}</CodeBlo
           <ul>
             <li><code>idSource=tmdb</code> — pins poster, backdrop, and logo exports to typed TMDB route patterns</li>
             <li><code>tmdbIdScope=strict</code> — requires <code>tmdb:movie:id</code> or <code>tmdb:tv:id</code> for backdrop and logo requests</li>
+            <li><code>episodeSourceProvider</code>, <code>episodeSourceId</code>, <code>episodeSourceSeason</code>, <code>episodeSourceEpisode</code>, <code>episodeAbsolute</code> — preserve mixed-provider or anime-native episode authority when the public thumbnail token is only a compatibility transport field</li>
             <li><code>thumbnailEpisodeArtwork=still|series</code> — controls whether thumbnails prefer the episode still or the series backdrop source</li>
             <li><code>tmdb_ep_order=tvdb|tmdb</code> — when set to <code>tvdb</code>, resolves episode coordinates through TVDB aired order before fetching the TMDB episode still; default is <code>tmdb</code></li>
             <li><code>thumbnailRatings=tmdb,imdb</code> — chooses the thumbnail specific rating providers without affecting poster, backdrop, or logo routes</li>
@@ -265,6 +267,9 @@ GET /thumbnail/xrdbid:tt0944947/S01E01.jpg?thumbnailRatings=tmdb,imdb`}</CodeBlo
           <p>
             The <strong>Hide credentials</strong> toggle masks patterns with placeholders without affecting live XRDB URLs.
             The <strong>Poster ID source</strong> selector controls whether poster URLs use auto mode (typed TMDB IDs), explicit TMDB, or IMDb IDs.
+          </p>
+          <p>
+            Episode thumbnail exports now default anime-native episode modes to canonical series placeholders such as <code>xrdbid:{'{'}imdb_id{'}'}</code> and attach <code>episodeSource*</code> hint params when the public <code>SxxExx</code> token alone would lose provider numbering. Use raw <code>{'{'}id{'}'}</code> only when you explicitly need source-faithful placeholder output.
           </p>
           <p>
             When a protected UUID profile is active, AIOMetadata exports default to config mode so copied patterns use <code>?config=&lt;uuid&gt;</code> links first. Inline parameter URLs remain available as an advanced fallback, and legacy profile IDs must still be migrated before config mode can be used.

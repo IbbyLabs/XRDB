@@ -441,7 +441,9 @@ function AiometadataSection({
         </button>
       </div>
       <p className="text-[13px] leading-5 text-zinc-400">
-        Ready to paste URL patterns for the AIOMetadata art override fields.
+        Ready to paste URL patterns for the AIOMetadata art override fields. Episode exports default to canonical series placeholders and keep{' '}
+        <code>episodeSource*</code>{' '}
+        hints when the public token alone would lose anime episode authority.
       </p>
       <div className="flex items-center gap-2">
         <button

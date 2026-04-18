@@ -1691,6 +1691,48 @@ test('AIOMetadata export supports tvdb and xrdbid episode thumbnail patterns', (
   );
 });
 
+test('AIOMetadata export emits mixed-provider anime hint params for anime-native episode modes', () => {
+  const config = buildSampleSettings();
+
+  const kitsuPatterns = buildAiometadataUrlPatterns('https://xrdb.example.com/', config.settings, {
+    hideCredentials: true,
+    episodeIdMode: 'kitsu',
+  });
+
+  assert.equal(
+    kitsuPatterns?.episodeThumbnailUrlPattern.startsWith(
+      'https://xrdb.example.com/thumbnail/xrdbid:{imdb_id}/S01E{episode}.jpg?',
+    ),
+    true,
+  );
+  assert.match(kitsuPatterns?.episodeThumbnailUrlPattern ?? '', /episodeSourceProvider=kitsu/);
+  assert.match(kitsuPatterns?.episodeThumbnailUrlPattern ?? '', /episodeSourceId=\{kitsu_id\}/);
+  assert.match(kitsuPatterns?.episodeThumbnailUrlPattern ?? '', /episodeSourceSeason=\{season\}/);
+  assert.match(kitsuPatterns?.episodeThumbnailUrlPattern ?? '', /episodeSourceEpisode=\{episode\}/);
+  assert.match(kitsuPatterns?.episodeThumbnailUrlPattern ?? '', /episodeAbsolute=\{episode\}/);
+  assert.equal((kitsuPatterns?.episodeThumbnailUrlPattern ?? '').includes('S{season}E{episode}'), false);
+});
+
+test('AIOMetadata export can preserve explicit raw id placeholders while using canonical episode hints', () => {
+  const config = buildSampleSettings();
+
+  const rawPatterns = buildAiometadataUrlPatterns('https://xrdb.example.com/', config.settings, {
+    hideCredentials: true,
+    episodeIdMode: 'kitsu',
+    episodeBaseIdMode: 'raw',
+  });
+
+  assert.equal(
+    rawPatterns?.episodeThumbnailUrlPattern.startsWith(
+      'https://xrdb.example.com/thumbnail/{id}/S01E{episode}.jpg?',
+    ),
+    true,
+  );
+  assert.match(rawPatterns?.episodeThumbnailUrlPattern ?? '', /episodeSourceProvider=kitsu/);
+  assert.match(rawPatterns?.episodeThumbnailUrlPattern ?? '', /episodeSourceId=\{kitsu_id\}/);
+  assert.match(rawPatterns?.episodeThumbnailUrlPattern ?? '', /episodeAbsolute=\{episode\}/);
+});
+
 test('episode artwork overrides stay type scoped across config and AIOMetadata exports', () => {
   const config = normalizeSavedUiConfig({
     settings: {

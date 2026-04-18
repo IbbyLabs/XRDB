@@ -8,14 +8,8 @@ test('reverse-mapped anime images fall back to Kitsu when TMDB details are missi
 
   const result = await resolveReverseMappedAnimeImageTarget({
     imageType: 'poster',
-    fetchTmdbId: async () => {
-      calls.push('fetchTmdbId');
-      return '1429';
-    },
-    fetchKitsuId: async () => {
-      calls.push('fetchKitsuId');
-      return '42';
-    },
+    tmdbId: '1429',
+    kitsuId: '42',
     fetchTmdbMedia: async (tmdbId, mediaType) => {
       calls.push(`fetchTmdbMedia:${tmdbId}:${mediaType}`);
       return null;
@@ -32,10 +26,8 @@ test('reverse-mapped anime images fall back to Kitsu when TMDB details are missi
   });
 
   assert.deepEqual(calls, [
-    'fetchTmdbId',
     'fetchTmdbMedia:1429:tv',
     'fetchTmdbMedia:1429:movie',
-    'fetchKitsuId',
     'fetchKitsuFallbackAsset:42:poster',
   ]);
   assert.deepEqual(result, {
@@ -56,14 +48,8 @@ test('reverse-mapped anime images fall back to Kitsu when TMDB mapping is missin
 
   const result = await resolveReverseMappedAnimeImageTarget({
     imageType: 'logo',
-    fetchTmdbId: async () => {
-      calls.push('fetchTmdbId');
-      return null;
-    },
-    fetchKitsuId: async () => {
-      calls.push('fetchKitsuId');
-      return '99';
-    },
+    tmdbId: null,
+    kitsuId: '99',
     fetchTmdbMedia: async (tmdbId, mediaType) => {
       calls.push(`fetchTmdbMedia:${tmdbId}:${mediaType}`);
       return { unexpected: true };
@@ -80,8 +66,6 @@ test('reverse-mapped anime images fall back to Kitsu when TMDB mapping is missin
   });
 
   assert.deepEqual(calls, [
-    'fetchTmdbId',
-    'fetchKitsuId',
     'fetchKitsuFallbackAsset:99:logo',
   ]);
   assert.deepEqual(result, {

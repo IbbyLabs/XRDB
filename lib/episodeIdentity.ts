@@ -9,6 +9,36 @@ export type EpisodeIdMode = 'imdb' | 'tmdb' | 'xrdbid' | 'tvdb' | 'kitsu' | 'ani
 
 export const DEFAULT_EPISODE_ID_MODE: EpisodeIdMode = 'imdb';
 
+export const EPISODE_SOURCE_PROVIDER_QUERY_KEYS = [
+  'episodeSourceProvider',
+  'episode_source_provider',
+  'ep_provider',
+] as const;
+
+export const EPISODE_SOURCE_ID_QUERY_KEYS = [
+  'episodeSourceId',
+  'episode_source_id',
+  'ep_id',
+] as const;
+
+export const EPISODE_SOURCE_SEASON_QUERY_KEYS = [
+  'episodeSourceSeason',
+  'episode_source_season',
+  'ep_season',
+] as const;
+
+export const EPISODE_SOURCE_EPISODE_QUERY_KEYS = [
+  'episodeSourceEpisode',
+  'episode_source_episode',
+  'ep_episode',
+] as const;
+
+export const EPISODE_ABSOLUTE_QUERY_KEYS = [
+  'episodeAbsolute',
+  'episode_absolute',
+  'ep_absolute',
+] as const;
+
 const EPISODE_ID_MODE_SET = new Set<EpisodeIdMode>([
   'imdb',
   'tmdb',
@@ -46,6 +76,30 @@ const normalizeEpisodeNumber = (value: string | number) => {
   if (!Number.isFinite(parsed) || parsed <= 0) return null;
   return Math.max(1, Math.trunc(parsed));
 };
+
+const readFirstTrimmedSearchParam = (
+  searchParams: URLSearchParams,
+  keys: readonly string[],
+) => {
+  for (const key of keys) {
+    const value = String(searchParams.get(key) || '').trim();
+    if (value) {
+      return value;
+    }
+  }
+  return null;
+};
+
+export const parseEpisodeSourceHintSearchParams = (searchParams: URLSearchParams) => ({
+  episodeSourceProviderValue: readFirstTrimmedSearchParam(
+    searchParams,
+    EPISODE_SOURCE_PROVIDER_QUERY_KEYS,
+  ),
+  episodeSourceId: readFirstTrimmedSearchParam(searchParams, EPISODE_SOURCE_ID_QUERY_KEYS),
+  episodeSourceSeason: readFirstTrimmedSearchParam(searchParams, EPISODE_SOURCE_SEASON_QUERY_KEYS),
+  episodeSourceEpisode: readFirstTrimmedSearchParam(searchParams, EPISODE_SOURCE_EPISODE_QUERY_KEYS),
+  episodeAbsolute: readFirstTrimmedSearchParam(searchParams, EPISODE_ABSOLUTE_QUERY_KEYS),
+});
 
 export const buildEpisodeToken = (seasonValue: string | number, episodeValue: string | number) => {
   const seasonNumber = normalizeEpisodeNumber(seasonValue);
@@ -184,6 +238,13 @@ export const buildEpisodePatternBaseId = (mode: EpisodeIdMode) => {
     return 'anidb:{anidb_id}';
   }
   return '{imdb_id}';
+};
+
+export const buildEpisodePatternToken = (mode: EpisodeIdMode) => {
+  if (mode === 'kitsu' || mode === 'anilist' || mode === 'mal' || mode === 'anidb') {
+    return 'S01E{episode}';
+  }
+  return 'S{season}E{episode}';
 };
 
 export const applyEpisodeIdModeToXrdbId = (

@@ -77,6 +77,10 @@ import {
   LOGO_MIN_WIDTH,
 } from './imageRouteText.ts';
 import type { RatingPreference } from './ratingProviderCatalog.ts';
+import type {
+  CanonicalEpisodeIdentity,
+  CanonicalSeriesIdentity,
+} from './canonicalAnimeIdentity/index.ts';
 
 type PreparedMediaFetchJson = (
   key: string,
@@ -187,6 +191,8 @@ export const prepareImageRouteMediaState = async (input: {
   rawFallbackKitsuRating: string | null;
   rawFallbackTitle: string | null;
   rawFallbackLogoAspectRatio: number | null;
+  canonicalSeriesIdentity?: CanonicalSeriesIdentity | null;
+  canonicalEpisodeIdentity?: CanonicalEpisodeIdentity | null;
 }, deps: Partial<PreparedMediaDeps> = {}): Promise<PreparedImageRouteMediaState> => {
   const runtimeDeps = { ...DEFAULT_DEPS, ...deps };
   let {
@@ -204,6 +210,8 @@ export const prepareImageRouteMediaState = async (input: {
     rawFallbackKitsuRating,
     rawFallbackTitle,
     rawFallbackLogoAspectRatio,
+    canonicalSeriesIdentity,
+    canonicalEpisodeIdentity,
   } = input;
   const {
     imageType,
@@ -772,6 +780,8 @@ if (!useRawKitsuFallback && detailsBundlePromise) {
     fetchJsonCached,
     getRemoteImageAspectRatio,
     resolveImdbId: resolveArtworkImdbId,
+    canonicalSeriesIdentity,
+    canonicalEpisodeIdentity,
   });
 
   const initialImages = bundledImages || {};

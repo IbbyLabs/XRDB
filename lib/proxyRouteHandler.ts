@@ -168,8 +168,10 @@ export async function handleProxyGet(
   }
 
   if (resource === 'catalog' && Array.isArray(payload.metas)) {
-    const metasWithImages = payload.metas.map((meta) =>
-      rewriteMetaImages(meta as Record<string, unknown>, publicRequestUrl, config),
+    const metasWithImages = await mapWithConcurrency(
+      payload.metas as Array<Record<string, unknown>>,
+      6,
+      async (meta) => rewriteMetaImages(meta as Record<string, unknown>, publicRequestUrl, config),
     );
     payload.metas = await mapWithConcurrency(
       metasWithImages as Array<Record<string, unknown>>,
@@ -179,7 +181,7 @@ export async function handleProxyGet(
   }
 
   if (resource === 'meta' && payload.meta && typeof payload.meta === 'object') {
-    const metaWithImages = rewriteMetaImages(
+    const metaWithImages = await rewriteMetaImages(
       payload.meta as Record<string, unknown>,
       publicRequestUrl,
       config,

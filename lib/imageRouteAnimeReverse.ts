@@ -3,12 +3,15 @@ import {
   extractAniListIdFromAnimemapping,
   extractKitsuIdFromAnimemapping,
   extractMalIdFromAnimemapping,
+  extractTmdbEpisodeTargetFromAnimemapping,
   extractTmdbIdFromAnimemapping,
 } from './animeMappingPayload.ts';
 import type { AnimeMappingProvider } from './imageRouteConfig.ts';
 import { KITSU_CACHE_TTL_MS } from './imageRouteConfig.ts';
 import type { CachedJsonResponse, PhaseDurations } from './imageRouteRuntime.ts';
 import { ANIME_MAPPING_BASE_URL } from './serviceBaseUrls.ts';
+
+export type ReverseMappingProvider = AnimeMappingProvider | 'kitsu';
 
 type ReverseMappingFetchJson = (
   key: string,
@@ -19,8 +22,19 @@ type ReverseMappingFetchJson = (
   init?: RequestInit,
 ) => Promise<CachedJsonResponse>;
 
+export type AnimeReverseMappingResolution = {
+  payload: any | null;
+  mappedIds: {
+    tmdb: string | null;
+    kitsu: string | null;
+    anilist: string | null;
+    mal: string | null;
+  };
+  tmdbEpisodeTarget: { id: string; season: string; episode: string } | null;
+};
+
 const buildAnimeReverseMappingRequest = (
-  provider: AnimeMappingProvider,
+  provider: ReverseMappingProvider,
   externalId: string,
   season?: string | null,
   episode?: string | null,
@@ -54,7 +68,7 @@ export const fetchAnimeReverseMappingPayload = async ({
   fetchJsonCached,
   cacheNamespace = 'anime',
 }: {
-  provider: AnimeMappingProvider;
+  provider: ReverseMappingProvider;
   externalId: string;
   season?: string | null;
   episode?: string | null;
@@ -88,53 +102,79 @@ export const fetchAnimeReverseMappingPayload = async ({
   }
 };
 
+export const buildAnimeReverseMappingResolution = (
+  payload: any | null,
+): AnimeReverseMappingResolution => ({
+  payload,
+  mappedIds: {
+    tmdb: payload ? extractTmdbIdFromAnimemapping(payload) : null,
+    kitsu: payload ? extractKitsuIdFromAnimemapping(payload) : null,
+    anilist: payload ? extractAniListIdFromAnimemapping(payload) : null,
+    mal: payload ? extractMalIdFromAnimemapping(payload) : null,
+  },
+  tmdbEpisodeTarget: payload ? extractTmdbEpisodeTargetFromAnimemapping(payload) : null,
+});
+
+export const fetchAnimeReverseMappingResolution = async (input: {
+  provider: ReverseMappingProvider;
+  externalId: string;
+  season?: string | null;
+  episode?: string | null;
+  phases: PhaseDurations;
+  fetchJsonCached: ReverseMappingFetchJson;
+  cacheNamespace?: string;
+}) => {
+  const payload = await fetchAnimeReverseMappingPayload(input);
+  return buildAnimeReverseMappingResolution(payload);
+};
+
 export const fetchKitsuIdFromReverseMapping = async (input: {
-  provider: AnimeMappingProvider;
+  provider: ReverseMappingProvider;
   externalId: string;
   season?: string | null;
   episode?: string | null;
   phases: PhaseDurations;
   fetchJsonCached: ReverseMappingFetchJson;
 }) => {
-  const payload = await fetchAnimeReverseMappingPayload(input);
-  return payload ? extractKitsuIdFromAnimemapping(payload) : null;
+  const resolution = await fetchAnimeReverseMappingResolution(input);
+  return resolution.mappedIds.kitsu;
 };
 
 export const fetchAniListIdFromReverseMapping = async (input: {
-  provider: AnimeMappingProvider;
+  provider: ReverseMappingProvider;
   externalId: string;
   season?: string | null;
   episode?: string | null;
   phases: PhaseDurations;
   fetchJsonCached: ReverseMappingFetchJson;
 }) => {
-  const payload = await fetchAnimeReverseMappingPayload(input);
-  return payload ? extractAniListIdFromAnimemapping(payload) : null;
+  const resolution = await fetchAnimeReverseMappingResolution(input);
+  return resolution.mappedIds.anilist;
 };
 
 export const fetchMalIdFromReverseMapping = async (input: {
-  provider: AnimeMappingProvider;
+  provider: ReverseMappingProvider;
   externalId: string;
   season?: string | null;
   episode?: string | null;
   phases: PhaseDurations;
   fetchJsonCached: ReverseMappingFetchJson;
 }) => {
-  const payload = await fetchAnimeReverseMappingPayload(input);
-  return payload ? extractMalIdFromAnimemapping(payload) : null;
+  const resolution = await fetchAnimeReverseMappingResolution(input);
+  return resolution.mappedIds.mal;
 };
 
 export const fetchTmdbIdFromReverseMapping = async (input: {
-  provider: AnimeMappingProvider;
+  provider: ReverseMappingProvider;
   externalId: string;
   season?: string | null;
   episode?: string | null;
   phases: PhaseDurations;
   fetchJsonCached: ReverseMappingFetchJson;
 }) => {
-  const payload = await fetchAnimeReverseMappingPayload({
+  const resolution = await fetchAnimeReverseMappingResolution({
     ...input,
     cacheNamespace: 'tmdb',
   });
-  return payload ? extractTmdbIdFromAnimemapping(payload) : null;
+  return resolution.mappedIds.tmdb;
 };

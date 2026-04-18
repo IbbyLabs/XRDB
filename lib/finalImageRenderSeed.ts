@@ -93,6 +93,7 @@ type FinalImageRenderSeedInput = {
   fanartClientKeyHash: string;
   omdbKeyHash: string;
   sourceFallbackKey: string;
+  canonicalEpisodeHintKey?: string;
   renderCacheBuster: string;
 };
 
@@ -218,6 +219,7 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
       ? input.omdbKeyHash || '-'
       : '-',
     input.sourceFallbackKey || '-',
+    input.canonicalEpisodeHintKey || '-',
     input.renderCacheBuster || '-',
     'v14',
   ].join('|');
