@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.22.1",
-  "generatedAt": "2026-04-18T01:23:19.199Z",
+  "xrdbTag": "v1.22.2",
+  "generatedAt": "2026-04-18T14:35:08.923Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -45,11 +45,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "add mixed library thumbnail auto mode",
         "canonicalize episode authority across thumbnails and proxy exports",
         "resolve BUG-111 badge border scaling",
         "resolve BUG-110 logo quality badge flow",
-        "support original language artwork selection (FR-85)",
-        "invalidate proxied manifests when source config changes"
+        "support original language artwork selection (FR-85)"
       ]
     },
     {

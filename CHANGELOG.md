@@ -103,6 +103,22 @@
 
 <a id="v1-22-1"></a>
 
+<a id="v1-22-2"></a>
+
+## [v1.22.2] - 18/04/2026
+
+### Added
+* add mixed library thumbnail auto mode
+  
+  Default AIOMetadata thumbnail exports to a mixed library safe Auto mode that keeps the public IMDb style route while attaching linked anime authority candidate ids.
+  
+  Add provider candidate parsing and deterministic precedence at runtime so explicit episodeSourceProvider plus episodeSourceId continues to win, while Auto exports can resolve anime native authority without breaking non anime compatibility.
+  
+  Update export UI copy, README/reference guidance, and regression coverage for the new Auto behavior and the poster export compatibility default.
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.22.1] - 18/04/2026
 
 ### Fixed
