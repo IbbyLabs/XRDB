@@ -396,6 +396,15 @@ function AiometadataSection({
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [configCopiedAll, setConfigCopiedAll] = useState(false);
   const configCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [repairBaseUrl, setRepairBaseUrl] = useState('https://aiometadata.elfhosted.com');
+  const [repairProfileId, setRepairProfileId] = useState('');
+  const [repairPassword, setRepairPassword] = useState('');
+  const [repairAddonPassword, setRepairAddonPassword] = useState('');
+  const [repairPending, setRepairPending] = useState(false);
+  const [repairResult, setRepairResult] = useState<{
+    tone: 'success' | 'error' | 'neutral';
+    message: string;
+  } | null>(null);
 
   const getDisplayValue = useCallback(
     (value: string) =>
@@ -426,6 +435,60 @@ function AiometadataSection({
       onCopyAiometadata();
     }
   }, [aiometadataUrlMode, savedProfileId, aiometadataPatternRows, onCopyAiometadata]);
+
+  const handleRepairProfile = useCallback(async () => {
+    if (!repairProfileId.trim() || !repairPassword) {
+      setRepairResult({
+        tone: 'error',
+        message: 'Enter the AIOMetadata base URL, UUID, and password before repairing.',
+      });
+      return;
+    }
+
+    setRepairPending(true);
+    setRepairResult(null);
+
+    try {
+      const res = await fetch('/api/aiometadata/repair-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          baseUrl: repairBaseUrl,
+          userUUID: repairProfileId,
+          password: repairPassword,
+          addonPassword: repairAddonPassword,
+        }),
+      });
+      const payload = await res.json().catch(() => null) as {
+        error?: string;
+        message?: string;
+        repaired?: boolean;
+        repairedKeys?: string[];
+      } | null;
+
+      if (!res.ok) {
+        setRepairResult({
+          tone: 'error',
+          message: payload?.error || 'Failed to repair the AIOMetadata profile.',
+        });
+        return;
+      }
+
+      setRepairResult({
+        tone: payload?.repaired ? 'success' : 'neutral',
+        message: payload?.repaired
+          ? `Repaired ${payload.repairedKeys?.join(', ') || 'AIOMetadata art patterns'}.`
+          : payload?.message || 'No encoded AIOMetadata art placeholders were found.',
+      });
+    } catch {
+      setRepairResult({
+        tone: 'error',
+        message: 'Failed to reach XRDB repair endpoint.',
+      });
+    } finally {
+      setRepairPending(false);
+    }
+  }, [repairAddonPassword, repairBaseUrl, repairPassword, repairProfileId]);
 
   const isCopiedAll = aiometadataUrlMode === 'config' ? configCopiedAll : aiometadataCopied;
 
@@ -494,6 +557,83 @@ function AiometadataSection({
             {savedProfileId ? 'Migrate to a UUID profile to enable config URLs' : 'Save a profile to enable config URLs'}
           </span>
         )}
+      </div>
+      <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-3">
+        <div className="flex items-center gap-2 text-[12px] font-semibold text-amber-100">
+          <RotateCcw className="w-3.5 h-3.5" />
+          <span>Repair broken AIOMetadata profile</span>
+        </div>
+        <p className="text-[12px] leading-5 text-amber-100/75">
+          Repairs saved AIOMetadata custom art patterns when XRDB placeholders were persisted as percent-encoded tokens like %7Bimdb_id%7D. XRDB sends the repair request directly and does not store the credentials.
+        </p>
+        <div className="grid gap-2 md:grid-cols-2">
+          <label className="space-y-1">
+            <span className="text-[11px] text-zinc-400">AIOMetadata base URL</span>
+            <input
+              type="url"
+              value={repairBaseUrl}
+              onChange={(event) => setRepairBaseUrl(event.target.value)}
+              placeholder="https://aiometadata.elfhosted.com"
+              className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-[12px] text-zinc-100 outline-none transition focus:border-violet-500/60"
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-[11px] text-zinc-400">AIOMetadata UUID</span>
+            <input
+              type="text"
+              value={repairProfileId}
+              onChange={(event) => setRepairProfileId(event.target.value)}
+              placeholder="550e8400-e29b-41d4-a716-446655440000"
+              className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-[12px] text-zinc-100 outline-none transition focus:border-violet-500/60"
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-[11px] text-zinc-400">Profile password</span>
+            <input
+              type="password"
+              value={repairPassword}
+              onChange={(event) => setRepairPassword(event.target.value)}
+              placeholder="Required"
+              className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-[12px] text-zinc-100 outline-none transition focus:border-violet-500/60"
+            />
+          </label>
+          <label className="space-y-1">
+            <span className="text-[11px] text-zinc-400">Addon password</span>
+            <input
+              type="password"
+              value={repairAddonPassword}
+              onChange={(event) => setRepairAddonPassword(event.target.value)}
+              placeholder="Only if the AIOMetadata instance requires it"
+              className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-[12px] text-zinc-100 outline-none transition focus:border-violet-500/60"
+            />
+          </label>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => void handleRepairProfile()}
+            disabled={repairPending}
+            className={`rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-2 transition-colors ${
+              repairPending
+                ? 'bg-zinc-700 text-zinc-300 cursor-wait'
+                : 'bg-amber-500 text-black hover:bg-amber-400'
+            }`}
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>{repairPending ? 'Repairing' : 'Repair profile'}</span>
+          </button>
+          {repairResult && (
+            <span className={`text-[12px] ${
+              repairResult.tone === 'success'
+                ? 'text-green-400'
+                : repairResult.tone === 'error'
+                  ? 'text-red-400'
+                  : 'text-zinc-400'
+            }`}>
+              {repairResult.message}
+            </span>
+          )}
+        </div>
       </div>
       {aiometadataPatternRows.length === 0 ? (
         <p className="text-[13px] text-zinc-500">Configure server keys and settings to generate URLs.</p>
