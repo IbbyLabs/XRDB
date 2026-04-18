@@ -105,6 +105,34 @@
 
 <a id="v1-22-2"></a>
 
+<a id="v1-22-3"></a>
+
+## [v1.22.3] - 18/04/2026
+
+### Fixed
+* repair encoded XRDB art placeholders in saved profiles
+  
+  Add an XRDB owned recovery path for AIOMetadata profiles that persisted custom
+  art URL patterns with percent encoded placeholder tokens such as %7Bimdb_id%7D.
+  When those encoded values are saved remotely, AIOMetadata cannot interpolate the
+  expected media identifiers and live payloads emit broken XRDB URLs.
+  
+  This change adds a shared repair helper for AIOMetadata custom art pattern
+  fields, a server route that loads and updates remote AIOMetadata profiles in
+  place, and an Import/Export UI form that lets operators trigger the repair with
+  profile credentials when needed.
+  
+  The fix is covered by focused tests for placeholder decoding, selective custom
+  art field repair, and AIOMetadata base URL normalization.
+  
+  Validation:
+  • pnpm run lint
+  • pnpm run test
+  • pnpm run build
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.22.2] - 18/04/2026
 
 ### Added

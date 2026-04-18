@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.22.2",
-  "generatedAt": "2026-04-18T14:35:08.923Z",
+  "xrdbTag": "v1.22.3",
+  "generatedAt": "2026-04-18T21:38:49.214Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -18,6 +18,7 @@
       "lines": [
         "/: Configurator workspace for render settings and live preview.",
         "/addon: Addon proxy workspace and manifest export flow.",
+        "/api/aiometadata/repair-profile",
         "/api/config",
         "/api/config/[id]",
         "/api/config/[id]/migrate",
@@ -45,11 +46,10 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "repair encoded XRDB art placeholders in saved profiles",
         "add mixed library thumbnail auto mode",
         "canonicalize episode authority across thumbnails and proxy exports",
-        "resolve BUG-111 badge border scaling",
-        "resolve BUG-110 logo quality badge flow",
-        "support original language artwork selection (FR-85)"
+        "resolve BUG-111 badge border scaling"
       ]
     },
     {
