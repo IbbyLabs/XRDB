@@ -101,6 +101,68 @@
 
 <a id="v1-22-0"></a>
 
+<a id="v1-22-1"></a>
+
+## [v1.22.1] - 18/04/2026
+
+### Fixed
+* canonicalize episode authority across thumbnails and proxy exports
+  
+  Add a canonical anime series and episode identity layer backed by SQLite
+  series mappings, episode mappings, provider refs, override storage, and
+  negative cache entries so mixed provider anime requests resolve through a
+  stable authority path instead of ad hoc reverse mapping branches.
+  
+  Normalize thumbnail request handling to preserve provider native episode
+  authority with episodeSourceProvider, episodeSourceId, episodeSourceSeason,
+  episodeSourceEpisode, and episodeAbsolute hints, and include those hints in
+  the render seed so canonicalized episode requests do not collide in cache.
+  
+  Route image request state, media target resolution, and prepared media
+  selection through canonical series and episode identity lookups so xrdbid
+  requests reuse IMDb backed overrides, Kitsu shorthand inputs resolve cleanly,
+  mixed provider anime hints remap before downstream TMDB lookups, and TMDB
+  consolidated season remaps reuse the same canonical episode authority.
+  
+  Update anime artwork fallback and reverse mapping helpers to reuse canonical
+  provider refs, canonical AniList ids, canonical TVDB ids, and canonical
+  absolute episode numbers before broader fallback heuristics, improving
+  AniList episode thumbnails and Fanart fallback selection for split cour,
+  special, and mixed provider cases.
+  
+  Teach AIOMetadata and proxy thumbnail URL generation to default anime native
+  episode exports to canonical series placeholders such as xrdbid:{imdb_id},
+  keep raw {id} only for explicit source faithful patterns, preserve
+  episodeSource* hint params when public SxxExx tokens are only compatibility
+  transport, and support the same authority rules in proxied episode rewrites.
+  
+  Harden proxy runtime and handler behavior by awaiting async meta image
+  rewrites consistently, supporting canonical anime authority when rewriting
+  video thumbnails, and keeping generated UUID backed proxy manifests aligned
+  with translation and debug settings.
+  
+  Refresh public documentation and configurator copy to describe canonical
+  anime thumbnail behavior, mixed provider episode hint params, canonical
+  override operations, and updated AIOMetadata export semantics across the
+  README, reference page, export view, configurator basics, and generated
+  product context.
+  
+  Add regression coverage for canonical cache invalidation and orphan cleanup,
+  override rollback, thumbnail route rewriting, mixed provider request state
+  parsing, canonical media target remapping, anime reverse mapping resolution,
+  artwork fallback selection, proxy thumbnail authority hints, AIOMetadata
+  episode export generation, and end to end anime coverage verification.
+
+### Documentation
+* refresh static doc assets
+* align canonical thumbnail integration guidance
+  
+  Clarify addon integration guidance for canonical anime thumbnail ids and episodeSource hint params.
+  
+  Expand the AI prompt parameter table to include xrdbid, tvdb, anidb, and the thumbnail only authority hint fields.
+  
+  Refresh the generated product context so release facing derived docs stay in sync with the README.
+
 ## [v1.22.0] - 17/04/2026
 
 ### Added

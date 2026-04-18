@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.22.0",
-  "generatedAt": "2026-04-18T01:20:27.405Z",
+  "xrdbTag": "v1.22.1",
+  "generatedAt": "2026-04-18T01:23:19.199Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
