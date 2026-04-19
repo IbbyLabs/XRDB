@@ -1713,7 +1713,7 @@ test('AIOMetadata export emits mixed-provider anime hint params for anime-native
 
   assert.equal(
     kitsuPatterns?.episodeThumbnailUrlPattern.startsWith(
-      'https://xrdb.example.com/thumbnail/xrdbid:{imdb_id}/S01E{episode}.jpg?',
+      'https://xrdb.example.com/thumbnail/xrdbid:{imdb_id}/S{season}E{episode}.jpg?',
     ),
     true,
   );
@@ -1722,7 +1722,6 @@ test('AIOMetadata export emits mixed-provider anime hint params for anime-native
   assert.match(kitsuPatterns?.episodeThumbnailUrlPattern ?? '', /episodeSourceSeason=\{season\}/);
   assert.match(kitsuPatterns?.episodeThumbnailUrlPattern ?? '', /episodeSourceEpisode=\{episode\}/);
   assert.match(kitsuPatterns?.episodeThumbnailUrlPattern ?? '', /episodeAbsolute=\{episode\}/);
-  assert.equal((kitsuPatterns?.episodeThumbnailUrlPattern ?? '').includes('S{season}E{episode}'), false);
 });
 
 test('AIOMetadata export explicit IMDb episode mode keeps the compatibility route without candidate hints', () => {
@@ -1754,7 +1753,7 @@ test('AIOMetadata export can preserve explicit raw id placeholders while using c
 
   assert.equal(
     rawPatterns?.episodeThumbnailUrlPattern.startsWith(
-      'https://xrdb.example.com/thumbnail/{id}/S01E{episode}.jpg?',
+      'https://xrdb.example.com/thumbnail/{id}/S{season}E{episode}.jpg?',
     ),
     true,
   );

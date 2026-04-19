@@ -306,9 +306,6 @@ export const buildEpisodePatternBaseId = (mode: EpisodeIdMode) => {
 };
 
 export const buildEpisodePatternToken = (mode: EpisodeIdMode) => {
-  if (mode === 'kitsu' || mode === 'anilist' || mode === 'mal' || mode === 'anidb') {
-    return 'S01E{episode}';
-  }
   return 'S{season}E{episode}';
 };
 
