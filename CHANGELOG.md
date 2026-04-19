@@ -107,6 +107,16 @@
 
 <a id="v1-22-3"></a>
 
+<a id="v1-22-4"></a>
+
+## [v1.22.4] - 19/04/2026
+
+### Fixed
+* repair xrdb and simkl custom art placeholders
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.22.3] - 18/04/2026
 
 ### Fixed

@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.22.3",
-  "generatedAt": "2026-04-18T21:38:49.214Z",
+  "xrdbTag": "v1.22.4",
+  "generatedAt": "2026-04-19T00:38:12.245Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -46,10 +46,10 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "repair xrdb and simkl custom art placeholders",
         "repair encoded XRDB art placeholders in saved profiles",
         "add mixed library thumbnail auto mode",
-        "canonicalize episode authority across thumbnails and proxy exports",
-        "resolve BUG-111 badge border scaling"
+        "canonicalize episode authority across thumbnails and proxy exports"
       ]
     },
     {
