@@ -17,6 +17,8 @@ const AIOMETADATA_PLACEHOLDERS = [
   '{top_key}',
   '{mdblist_key}',
   '{fanart_key}',
+  '{xrdb_key}',
+  '{simkl_client_id}',
   '{user_agent}',
   '{blur}',
   '{thumbnail}',
