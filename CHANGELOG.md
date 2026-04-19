@@ -109,6 +109,24 @@
 
 <a id="v1-22-4"></a>
 
+<a id="v1-22-5"></a>
+
+## [v1.22.5] - 19/04/2026
+
+### Fixed
+* preserve anime season tokens in AIOM thumbnail urls
+  
+  Prevent anime native AIOM episode thumbnail exports from collapsing every season to S01 when XRDB builds override URLs.
+  
+  Keep S{season}E{episode} in generated thumbnail paths for Kitsu, AniList, MAL, and AniDB episode modes so season specific thumbnails can resolve correctly across multi season anime libraries.
+  
+  Retain the existing mixed provider episodeSource* hint params and explicit raw id compatibility behavior while updating the season aware path contract exercised by the export tests.
+  
+  Validated with focused AIOM export tests, anime media target and rating resolution tests, and the full lint, test, and build gate.
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.22.4] - 19/04/2026
 
 ### Fixed
