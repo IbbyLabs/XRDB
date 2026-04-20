@@ -113,6 +113,22 @@
 
 <a id="v1-22-6"></a>
 
+<a id="v1-22-7"></a>
+
+## [v1.22.7] - 20/04/2026
+
+### Fixed
+* BUG-114 preserve regional TMDB poster locale selection
+  
+  Preserve regional locale codes like es MX in image request state so TMDB detail requests keep the requested market instead of collapsing to the base language.
+  
+  Prioritize locale specific TMDB poster paths during artwork selection and keep Clean poster selection language aware so null language textless art does not override the requested locale.
+  
+  Add regression coverage for regional locale preservation, locale specific TMDB poster selection, and clean versus textless image preference behavior.
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.22.6] - 20/04/2026
 
 ### Fixed
