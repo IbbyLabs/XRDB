@@ -170,6 +170,7 @@ type SharedPayloadOptions = {
   allowMissingTmdbKey?: boolean;
   allowMissingMdblistKey?: boolean;
   omitProviderCredentials?: boolean;
+  preserveXrdbKey?: boolean;
 };
 export type AiometadataUrlPatterns = {
   posterUrlPattern: string;
@@ -1788,6 +1789,7 @@ const buildSharedPayload = (settings: SharedXrdbSettings, options?: SharedPayloa
   const allowMissingTmdbKey = options?.allowMissingTmdbKey === true;
   const allowMissingMdblistKey = options?.allowMissingMdblistKey === true;
   const omitProviderCredentials = options?.omitProviderCredentials === true;
+  const preserveXrdbKey = options?.preserveXrdbKey === true;
   const hasUsableTmdbKey = omitProviderCredentials ? allowMissingTmdbKey : Boolean(tmdbKey) || allowMissingTmdbKey;
   const hasUsableMdblistKey = omitProviderCredentials
     ? allowMissingMdblistKey
@@ -1803,7 +1805,7 @@ const buildSharedPayload = (settings: SharedXrdbSettings, options?: SharedPayloa
   if (mdblistKey && !omitProviderCredentials) {
     payload.mdblistKey = mdblistKey;
   }
-  if (xrdbKey && !omitProviderCredentials) {
+  if (xrdbKey && (!omitProviderCredentials || preserveXrdbKey)) {
     payload.xrdbKey = xrdbKey;
   }
   if (fanartKey && !omitProviderCredentials) {

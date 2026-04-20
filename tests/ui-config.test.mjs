@@ -1008,6 +1008,24 @@ test('server managed exports omit provider credentials when server fallbacks are
   assert.equal('simklClientId' in decodedProxy, false);
 });
 
+test('saved profile params can preserve xrdbKey while omitting provider credentials', () => {
+  const config = buildSampleSettings();
+
+  const params = buildProfileParams(config.settings, {
+    allowMissingMdblistKey: true,
+    allowMissingTmdbKey: true,
+    omitProviderCredentials: true,
+    preserveXrdbKey: true,
+  });
+
+  assert.ok(params);
+  assert.equal(params.xrdbKey, 'shared-xrdb-key-000');
+  assert.equal('tmdbKey' in params, false);
+  assert.equal('mdblistKey' in params, false);
+  assert.equal('fanartKey' in params, false);
+  assert.equal('simklClientId' in params, false);
+});
+
 test('AIOMetadata export builds masked patterns with placeholders', () => {
   const config = buildSampleSettings();
 
