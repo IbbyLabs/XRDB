@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.22.6",
-  "generatedAt": "2026-04-20T19:09:03.359Z",
+  "xrdbTag": "v1.22.7",
+  "generatedAt": "2026-04-20T20:51:24.651Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -46,10 +46,10 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "BUG-114 preserve regional TMDB poster locale selection",
         "preserve xrdb key in saved profiles",
         "preserve anime season tokens in AIOM thumbnail urls",
-        "repair xrdb and simkl custom art placeholders",
-        "repair encoded XRDB art placeholders in saved profiles"
+        "repair xrdb and simkl custom art placeholders"
       ]
     },
     {
