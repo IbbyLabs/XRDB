@@ -202,11 +202,13 @@ test('hasConfigProfileUnsavedChanges ignores local-only controls outside saved-p
 
 test('buildSavedProfileComparableParams keeps provider-credential omissions stable for dirty checks', () => {
   const savedProfileParams = {
+    xrdbKey: 'shared-xrdb-key-000',
     posterRatings: 'imdb,tmdb',
     posterGenreBadge: 'imdb',
   };
 
   const currentParams = {
+    xrdbKey: 'shared-xrdb-key-000',
     posterGenreBadge: 'imdb',
     posterRatings: 'imdb,tmdb',
   };
@@ -222,6 +224,18 @@ test('buildSavedProfileComparableParams keeps provider-credential omissions stab
       snapshotReady: true,
     }),
     false,
+  );
+
+  assert.equal(
+    hasConfigProfileUnsavedChanges({
+      currentParams: buildSavedProfileComparableParams({
+        ...currentParams,
+        xrdbKey: 'different-xrdb-key',
+      }),
+      savedFingerprint,
+      snapshotReady: true,
+    }),
+    true,
   );
 
   assert.equal(

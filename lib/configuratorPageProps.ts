@@ -565,6 +565,7 @@ export function buildConfiguratorPageProps({
             allowMissingMdblistKey: hasServerMdblistKey,
             allowMissingTmdbKey: hasServerTmdbKey,
             omitProviderCredentials: true,
+            preserveXrdbKey: true,
           }),
         aiometadataPatterns: outputs.aiometadataPatterns,
       },

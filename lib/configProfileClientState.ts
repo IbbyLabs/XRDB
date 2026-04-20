@@ -122,6 +122,7 @@ export const buildSavedProfileComparableParams = (
     allowMissingTmdbKey: true,
     allowMissingMdblistKey: true,
     omitProviderCredentials: true,
+    preserveXrdbKey: true,
   }) ?? {};
 };
 
