@@ -3,10 +3,30 @@ export const ORIGINAL_IMAGE_LANGUAGE = 'original';
 export const isOriginalImageLanguageSelection = (value?: string | null) =>
   String(value || '').trim().toLowerCase() === ORIGINAL_IMAGE_LANGUAGE;
 
+export const normalizeRequestedImageLanguage = (value?: string | null) => {
+  const trimmed = String(value || '').trim().replace(/_/g, '-');
+  if (!trimmed) return null;
+
+  const [base, ...rest] = trimmed.split('-').filter(Boolean);
+  if (!base) return null;
+
+  const normalizedBase = base.toLowerCase();
+  if (normalizedBase === 'us') return 'en';
+  if (rest.length === 0) return normalizedBase;
+
+  const normalizedRest = rest.map((segment) => {
+    if (/^\d+$/.test(segment)) return segment;
+    if (segment.length === 2) return segment.toUpperCase();
+    return segment.toLowerCase();
+  });
+
+  return [normalizedBase, ...normalizedRest].join('-');
+};
+
 export const normalizeImageLanguage = (value?: string | null) => {
-  if (!value) return null;
-  const normalized = value.toLowerCase();
-  if (normalized === 'us' || normalized === 'en-us') return 'en';
+  const normalized = normalizeRequestedImageLanguage(value);
+  if (!normalized) return null;
+  if (normalized === 'en-US') return 'en';
   if (normalized.includes('-')) return normalized.split('-')[0];
   return normalized;
 };

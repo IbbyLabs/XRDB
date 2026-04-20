@@ -29,7 +29,7 @@ test('image route selection handles poster and backdrop preferences', () => {
 
   assert.equal(
     pickPosterByPreference(images, 'clean', 'en', 'fr')?.file_path,
-    '/clean',
+    '/original',
   );
   assert.equal(
     pickPosterByPreference(images, 'original', 'en', 'fr', '/original')?.file_path,
@@ -40,6 +40,23 @@ test('image route selection handles poster and backdrop preferences', () => {
     '/alt',
   );
   assert.equal(isTextlessPosterSelection(images, { file_path: '/clean' }), true);
+});
+
+test('image route selection clean preference prefers localized TMDB art over null-tagged posters', () => {
+  const images = [
+    { file_path: '/localized', iso_639_1: 'es' },
+    { file_path: '/null-tagged', iso_639_1: null },
+    { file_path: '/fallback', iso_639_1: 'en' },
+  ];
+
+  assert.equal(
+    pickPosterByPreference(images, 'clean', 'es-MX', 'en')?.file_path,
+    '/localized',
+  );
+  assert.equal(
+    pickBackdropByPreference(images, 'clean', 'es-MX', 'en')?.file_path,
+    '/localized',
+  );
 });
 
 test('image route selection picks textless poster when textless preference is set', () => {
