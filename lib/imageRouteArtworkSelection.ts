@@ -113,6 +113,25 @@ const trimToNonEmpty = (value: string | null | undefined) => {
   return normalized || null;
 };
 
+const prioritizeImagePath = <T extends { file_path?: string | null; iso_639_1?: string | null }>(
+  items: T[],
+  prioritizedPath: string | null,
+  prioritizedLang: string,
+) => {
+  const normalizedPath = trimToNonEmpty(prioritizedPath);
+  if (!normalizedPath) return items;
+
+  const existingItem = items.find((item) => trimToNonEmpty(item?.file_path) === normalizedPath);
+  if (existingItem) {
+    return [existingItem, ...items.filter((item) => trimToNonEmpty(item?.file_path) !== normalizedPath)];
+  }
+
+  return [
+    { file_path: normalizedPath, iso_639_1: trimToNonEmpty(prioritizedLang) },
+    ...items,
+  ] as T[];
+};
+
 const isAnimeMappingProvider = (provider: string): provider is ReverseMappingProvider =>
   provider === 'kitsu' ||
   provider === 'imdb' ||
@@ -335,6 +354,13 @@ export const createImageRouteArtworkSelector = (
     let posterCollection = selectionInput.posters || [];
     let backdropCollection = selectionInput.backdrops || [];
     const logoCollection = selectionInput.logos || [];
+    const requestedPosterPath = trimToNonEmpty(input.details?.poster_path) || trimToNonEmpty(input.media?.poster_path);
+
+    posterCollection = prioritizeImagePath(
+      posterCollection,
+      requestedPosterPath,
+      input.requestedImageLang,
+    );
 
     const selectedLogo = pickByLanguageOrNeutral(
       logoCollection,
@@ -360,9 +386,8 @@ export const createImageRouteArtworkSelector = (
     const localizedPosterPath =
       pickByLanguageWithFallback(posterCollection, input.requestedImageLang, fallbackImageLang)?.file_path || null;
     let originalPosterPath =
+      requestedPosterPath ||
       localizedPosterPath ||
-      input.details?.poster_path ||
-      input.media?.poster_path ||
       posterCollection[0]?.file_path;
     const localizedBackdropPath =
       pickByLanguageWithFallback(backdropCollection, input.requestedImageLang, fallbackImageLang)?.file_path || null;
@@ -451,6 +476,12 @@ export const createImageRouteArtworkSelector = (
       if (seasonImagesResponse.ok && Array.isArray(seasonImagesResponse.data?.posters) && seasonImagesResponse.data.posters.length > 0) {
         posterCollection = seasonImagesResponse.data.posters as TmdbImageAsset[];
       }
+
+      posterCollection = prioritizeImagePath(
+        posterCollection,
+        trimToNonEmpty(seasonPosterPath) || requestedPosterPath,
+        input.requestedImageLang,
+      );
 
       originalPosterPath =
         seasonPosterPath ||

@@ -471,6 +471,29 @@ test('image route request state keeps original language requests distinct from f
   assert.match(state.renderSeedKey, /original/);
 });
 
+test('image route request state preserves regional locale codes for TMDB requests', async () => {
+  const mexicoState = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tmdb:movie:1368166.jpg?tmdbKey=tmdb-key&lang=es-MX',
+    ),
+    imageType: 'poster',
+    id: 'tmdb:movie:1368166.jpg',
+  });
+  const spainState = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tmdb:movie:1368166.jpg?tmdbKey=tmdb-key&lang=es-ES',
+    ),
+    imageType: 'poster',
+    id: 'tmdb:movie:1368166.jpg',
+  });
+
+  assert.equal(mexicoState.requestedImageLang, 'es-MX');
+  assert.equal(spainState.requestedImageLang, 'es-ES');
+  assert.equal(mexicoState.includeImageLanguage, 'es,en,null');
+  assert.equal(spainState.includeImageLanguage, 'es,en,null');
+  assert.notEqual(mexicoState.renderSeedKey, spainState.renderSeedKey);
+});
+
 test('image route request state accepts legacy posterImageText parameter on poster routes', async () => {
   const state = await resolveImageRouteRequestState({
     request: createRequest(

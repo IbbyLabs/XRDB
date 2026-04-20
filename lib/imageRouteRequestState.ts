@@ -110,6 +110,7 @@ import {
   buildIncludeImageLanguage,
   isOriginalImageLanguageSelection,
   normalizeImageLanguage,
+  normalizeRequestedImageLanguage,
 } from './imageLanguage.ts';
 import {
   parseEpisodeSourceHintSearchParams,
@@ -1306,7 +1307,7 @@ export const resolveImageRouteRequestState = async ({
   const useOriginalImageLanguage = isOriginalImageLanguageSelection(lang);
   const requestedImageLang = useOriginalImageLanguage
     ? FALLBACK_IMAGE_LANGUAGE
-    : normalizeImageLanguage(lang) || FALLBACK_IMAGE_LANGUAGE;
+    : normalizeRequestedImageLanguage(lang) || FALLBACK_IMAGE_LANGUAGE;
   const includeImageLanguage = buildIncludeImageLanguage(
     requestedImageLang,
     FALLBACK_IMAGE_LANGUAGE,

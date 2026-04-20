@@ -231,6 +231,50 @@ test('image route artwork selection can source poster art from fanart', async ()
   assert.equal(result.posterIsTextless, false);
 });
 
+test('image route artwork selection prefers locale specific TMDB poster paths over generic image language matches', async () => {
+  const selectArtwork = createImageRouteArtworkSelector({
+    imageType: 'poster',
+    isThumbnailRequest: false,
+    mediaType: 'movie',
+    media: { id: 19, poster_path: '/poster-spain.jpg' },
+    details: { poster_path: '/poster-mexico.jpg' },
+    requestedImageLang: 'es-MX',
+    fallbackImageLang: 'en',
+    posterTextPreference: 'original',
+    posterArtworkSource: 'tmdb',
+    backdropArtworkSource: 'tmdb',
+    logoArtworkSource: 'tmdb',
+    thumbnailEpisodeArtwork: 'still',
+    backdropEpisodeArtwork: 'series',
+    artworkSelectionSeed: 'seed-es-mx',
+    cleanId: 'tmdb:movie:19',
+    season: null,
+    episode: null,
+    isKitsu: false,
+    tmdbKey: 'tmdb-key',
+    fanartKey: '',
+    fanartClientKey: '',
+    fanartTvdbId: null,
+    phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+    fetchJsonCached: async () => createEmptyResponse(),
+    getRemoteImageAspectRatio: async () => null,
+    resolveImdbId: async () => null,
+  });
+
+  const result = await selectArtwork({
+    posters: [
+      { file_path: '/poster-spain.jpg', iso_639_1: 'es' },
+      { file_path: '/poster-mexico.jpg', iso_639_1: 'es' },
+      { file_path: '/poster-english.jpg', iso_639_1: 'en' },
+    ],
+    backdrops: [],
+    logos: [],
+  });
+
+  assert.equal(result.imgPath, '/poster-mexico.jpg');
+  assert.equal(result.imgUrlOverride, null);
+});
+
 test('image route artwork selection marks fanart textless posters truthfully', async () => {
   const selectArtwork = createImageRouteArtworkSelector(
     {
