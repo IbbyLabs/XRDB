@@ -111,6 +111,31 @@
 
 <a id="v1-22-5"></a>
 
+<a id="v1-22-6"></a>
+
+## [v1.22.6] - 20/04/2026
+
+### Fixed
+* preserve xrdb key in saved profiles
+  
+  Keep xrdbKey in protected saved profile params even when provider credentials are omitted from exported payloads.
+  
+  Add a preserveXrdbKey serialization option, enable it for saved profile payload generation and dirty state comparisons, and cover the behavior with regression tests.
+  
+  Validated with pnpm run lint, pnpm run test, pnpm run build, pnpm run verify:config profiles, and a manual in app save/reveal flow confirming config UUID requests still authorize via the stored xrdbKey.
+* preserve anime season tokens in AIOM thumbnail urls
+  
+  Prevent anime native AIOM episode thumbnail exports from collapsing every season to S01 when XRDB builds override URLs.
+  
+  Keep S{season}E{episode} in generated thumbnail paths for Kitsu, AniList, MAL, and AniDB episode modes so season specific thumbnails can resolve correctly across multi season anime libraries.
+  
+  Retain the existing mixed provider episodeSource* hint params and explicit raw id compatibility behavior while updating the season aware path contract exercised by the export tests.
+  
+  Validated with focused AIOM export tests, anime media target and rating resolution tests, and the full lint, test, and build gate.
+
+### Documentation
+* refresh static doc assets (2 commits)
+
 ## [v1.22.5] - 19/04/2026
 
 ### Fixed
