@@ -1,10 +1,12 @@
 import {
+  computeWeightedAverage,
   DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
   getAggregateRatingSourceLabel,
   getAggregateRatingSourceShortLabel,
   hasAggregateRatingProvidersForSource,
   selectAggregateRatingProviders,
   usesDualAggregateRatingPresentation,
+  type AggregateProviderWeights,
   type AggregateRatingSource,
   type RatingPresentation,
 } from './ratingPresentation.ts';
@@ -47,6 +49,7 @@ export const buildAggregateRatingBadgeForSource = ({
   accentBarVisible = true,
   allowFallbackToOverall = true,
   valueMode = DEFAULT_RATING_VALUE_MODE,
+  providerWeights = {},
 }: {
   requestedSource: AggregateRatingSource;
   presentation: RatingPresentation;
@@ -63,6 +66,7 @@ export const buildAggregateRatingBadgeForSource = ({
   accentBarVisible?: boolean;
   allowFallbackToOverall?: boolean;
   valueMode?: RatingValueMode;
+  providerWeights?: AggregateProviderWeights;
 }): AggregateBadgeInput | null => {
   const availableProviders = renderablePreferences.filter((provider) => ratingBadgeByProvider.has(provider));
   if (availableProviders.length === 0) return null;
@@ -82,18 +86,17 @@ export const buildAggregateRatingBadgeForSource = ({
       : requestedSource;
   const selectedProviders = selectAggregateRatingProviders(resolvedSource, availableProviders);
 
-  const numericValues = selectedProviders
+  const numericEntries = selectedProviders
     .map((provider) => ({ provider, badge: ratingBadgeByProvider.get(provider) }))
     .filter((entry): entry is { provider: RatingPreference; badge: AggregateBadgeInput } => entry.badge !== undefined)
-    .map(({ provider, badge }) =>
-      normalizeRatingToTenPointValue(provider, String(badge.sourceValue || badge.value || '').trim())
-    )
-    .filter((value): value is number => value !== null);
+    .flatMap(({ provider, badge }) => {
+      const v = normalizeRatingToTenPointValue(provider, String(badge.sourceValue || badge.value || '').trim());
+      return v !== null ? [{ provider, value: v }] : [];
+    });
 
-  if (numericValues.length === 0) return null;
+  if (numericEntries.length === 0) return null;
 
-  const averageValue =
-    numericValues.reduce((sum, value) => sum + value, 0) / numericValues.length;
+  const averageValue = computeWeightedAverage(numericEntries, providerWeights);
   const effectiveSource = resolvedSource as AggregateRatingSource;
 
   const representativeProvider = selectedProviders.find((provider) =>
@@ -129,6 +132,7 @@ export const buildAggregateRatingBadges = ({
   accentBarOffset = DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
   accentBarVisible = true,
   valueMode = DEFAULT_RATING_VALUE_MODE,
+  providerWeights = {},
 }: {
   requestedSource: AggregateRatingSource;
   presentation: RatingPresentation;
@@ -144,6 +148,7 @@ export const buildAggregateRatingBadges = ({
   accentBarOffset?: number;
   accentBarVisible?: boolean;
   valueMode?: RatingValueMode;
+  providerWeights?: AggregateProviderWeights;
 }) => {
   if (usesDualAggregateRatingPresentation(presentation)) {
     return (['critics', 'audience'] as const)
@@ -159,6 +164,7 @@ export const buildAggregateRatingBadges = ({
           accentBarVisible,
           allowFallbackToOverall: false,
           valueMode,
+          providerWeights,
         }),
       )
       .filter((badge): badge is AggregateBadgeInput => badge !== null);
@@ -174,6 +180,7 @@ export const buildAggregateRatingBadges = ({
     accentBarOffset,
     accentBarVisible,
     valueMode,
+    providerWeights,
   });
 
   return badge ? [badge] : [];

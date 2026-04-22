@@ -29,10 +29,13 @@ import {
   normalizeAggregateAccentBarOffset,
   normalizeAggregateDynamicStops,
   normalizeAggregateAccentMode,
+  normalizeAggregateProviderWeights,
   normalizeAggregateRatingSource,
   normalizeRatingPresentation,
   resolveEffectiveRatingPresentation,
+  stringifyAggregateProviderWeights,
   type AggregateAccentMode,
+  type AggregateProviderWeights,
   type AggregateRatingSource,
   type RatingPresentation,
 } from './ratingPresentation.ts';
@@ -336,6 +339,7 @@ export type ImageRouteRequestState = {
   posterRingCriticsPriority: RatingPreference[];
   posterRingAudiencePriority: RatingPreference[];
   aggregateRatingSource: AggregateRatingSource;
+  aggregateProviderWeights: AggregateProviderWeights;
   aggregateAccentMode: AggregateAccentMode;
   aggregateAccentColor: string | null;
   aggregateCriticsAccentColor: string | null;
@@ -730,6 +734,20 @@ export const resolveImageRouteRequestState = async ({
   const logoAggregateRatingSource = normalizeAggregateRatingSource(
     searchParams.get('logoAggregateRatingSource') ?? searchParams.get('aggregateRatingSource'),
     globalAggregateRatingSource,
+  );
+  const posterAggregateProviderWeights = normalizeAggregateProviderWeights(
+    searchParams.get('posterAggregateProviderWeights') ?? searchParams.get('aggregateProviderWeights'),
+  );
+  const backdropAggregateProviderWeights = normalizeAggregateProviderWeights(
+    searchParams.get('backdropAggregateProviderWeights') ?? searchParams.get('aggregateProviderWeights'),
+  );
+  const thumbnailAggregateProviderWeights = normalizeAggregateProviderWeights(
+    searchParams.get('thumbnailAggregateProviderWeights') ??
+      searchParams.get('backdropAggregateProviderWeights') ??
+      searchParams.get('aggregateProviderWeights'),
+  );
+  const logoAggregateProviderWeights = normalizeAggregateProviderWeights(
+    searchParams.get('logoAggregateProviderWeights') ?? searchParams.get('aggregateProviderWeights'),
   );
   const aggregateAccentMode = normalizeAggregateAccentMode(
     searchParams.get('aggregateAccentMode'),
@@ -1403,6 +1421,14 @@ export const resolveImageRouteRequestState = async ({
         : imageType === 'backdrop'
         ? backdropAggregateRatingSource
         : logoAggregateRatingSource;
+  const aggregateProviderWeights =
+    imageType === 'poster'
+      ? posterAggregateProviderWeights
+      : isThumbnailRequest
+        ? thumbnailAggregateProviderWeights
+        : imageType === 'backdrop'
+        ? backdropAggregateProviderWeights
+        : logoAggregateProviderWeights;
   const hasExplicitRatingOrder = ratingsForType !== null && ratingsForType !== undefined;
   const suppressRatingPresentation = ratingPresentation === 'none';
   const shouldApplyRatings = !suppressRatingPresentation && ratingPreferences.length > 0;
@@ -1557,6 +1583,7 @@ export const resolveImageRouteRequestState = async ({
     posterRingAudiencePriority: stringifyPosterCompactRingPriorityList(posterRingAudiencePriority),
     blockbusterDensity,
     aggregateRatingSource,
+    aggregateProviderWeights: stringifyAggregateProviderWeights(aggregateProviderWeights),
     aggregateAccentMode,
     aggregateAccentColor,
     aggregateCriticsAccentColor,
@@ -1702,6 +1729,7 @@ export const resolveImageRouteRequestState = async ({
     posterRingCriticsPriority,
     posterRingAudiencePriority,
     aggregateRatingSource,
+    aggregateProviderWeights,
     aggregateAccentMode,
     aggregateAccentColor,
     aggregateCriticsAccentColor,

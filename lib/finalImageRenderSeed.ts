@@ -57,6 +57,7 @@ type FinalImageRenderSeedInput = {
   posterRingAudiencePriority: string;
   blockbusterDensity: string;
   aggregateRatingSource: string;
+  aggregateProviderWeights: string;
   aggregateAccentMode: string;
   aggregateAccentColor: string | null;
   aggregateCriticsAccentColor: string | null;
@@ -193,6 +194,7 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
       : '-',
     isPoster ? input.blockbusterDensity : '-',
     input.aggregateRatingSource,
+    input.aggregateProviderWeights || '-',
     input.aggregateAccentMode,
     input.aggregateAccentColor || '-',
     input.aggregateCriticsAccentColor || '-',

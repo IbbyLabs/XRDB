@@ -26,6 +26,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   aggregateDynamicStops: WorkspaceSettings['aggregateDynamicStops'];
   aggregateValueColor: WorkspaceSettings['aggregateValueColor'];
   backdropAggregateRatingSource: WorkspaceSettings['backdropAggregateRatingSource'];
+  backdropAggregateProviderWeights: WorkspaceSettings['backdropAggregateProviderWeights'];
   backdropArtworkSource: WorkspaceSettings['backdropArtworkSource'];
   backdropEpisodeArtwork: WorkspaceSettings['backdropEpisodeArtwork'];
   backdropGenreBadgeAnimeGrouping: WorkspaceSettings['backdropGenreBadgeAnimeGrouping'];
@@ -54,6 +55,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   backdropSideRatingsPosition: WorkspaceSettings['backdropSideRatingsPosition'];
   backdropStreamBadges: WorkspaceSettings['backdropStreamBadges'];
   thumbnailAggregateRatingSource: WorkspaceSettings['thumbnailAggregateRatingSource'];
+  thumbnailAggregateProviderWeights: WorkspaceSettings['thumbnailAggregateProviderWeights'];
   thumbnailArtworkSource: WorkspaceSettings['thumbnailArtworkSource'];
   thumbnailBottomRatingsRow: WorkspaceSettings['thumbnailBottomRatingsRow'];
   thumbnailGenreBadgeAnimeGrouping: WorkspaceSettings['thumbnailGenreBadgeAnimeGrouping'];
@@ -83,6 +85,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   fanartKey: WorkspaceSettings['fanartKey'];
   lang: WorkspaceSettings['lang'];
   logoAggregateRatingSource: WorkspaceSettings['logoAggregateRatingSource'];
+  logoAggregateProviderWeights: WorkspaceSettings['logoAggregateProviderWeights'];
   logoArtworkSource: WorkspaceSettings['logoArtworkSource'];
   logoBackground: WorkspaceSettings['logoBackground'];
   logoGenreBadgeAnimeGrouping: WorkspaceSettings['logoGenreBadgeAnimeGrouping'];
@@ -106,6 +109,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   logoBottomRatingsRow: WorkspaceSettings['logoBottomRatingsRow'];
   mdblistKey: WorkspaceSettings['mdblistKey'];
   posterAggregateRatingSource: WorkspaceSettings['posterAggregateRatingSource'];
+  posterAggregateProviderWeights: WorkspaceSettings['posterAggregateProviderWeights'];
   posterRingProgressSource: WorkspaceSettings['posterRingProgressSource'];
   posterRingCriticsPriority: WorkspaceSettings['posterRingCriticsPriority'];
   posterRingAudiencePriority: WorkspaceSettings['posterRingAudiencePriority'];
@@ -193,6 +197,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setAggregateDynamicStops: Setter<WorkspaceSettings['aggregateDynamicStops']>;
   setAggregateValueColor: Setter<WorkspaceSettings['aggregateValueColor']>;
   setBackdropAggregateRatingSource: Setter<WorkspaceSettings['backdropAggregateRatingSource']>;
+  setBackdropAggregateProviderWeights: Setter<WorkspaceSettings['backdropAggregateProviderWeights']>;
   setBackdropArtworkSource: Setter<WorkspaceSettings['backdropArtworkSource']>;
   setBackdropEpisodeArtwork: Setter<WorkspaceSettings['backdropEpisodeArtwork']>;
   setBackdropGenreBadgeAnimeGrouping: Setter<WorkspaceSettings['backdropGenreBadgeAnimeGrouping']>;
@@ -220,6 +225,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setBackdropSideRatingsPosition: Setter<WorkspaceSettings['backdropSideRatingsPosition']>;
   setBackdropStreamBadges: Setter<WorkspaceSettings['backdropStreamBadges']>;
   setThumbnailAggregateRatingSource: Setter<WorkspaceSettings['thumbnailAggregateRatingSource']>;
+  setThumbnailAggregateProviderWeights: Setter<WorkspaceSettings['thumbnailAggregateProviderWeights']>;
   setThumbnailArtworkSource: Setter<WorkspaceSettings['thumbnailArtworkSource']>;
   setThumbnailBottomRatingsRow: Setter<WorkspaceSettings['thumbnailBottomRatingsRow']>;
   setThumbnailGenreBadgeAnimeGrouping: Setter<WorkspaceSettings['thumbnailGenreBadgeAnimeGrouping']>;
@@ -249,6 +255,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setFanartKey: Setter<WorkspaceSettings['fanartKey']>;
   setLang: Setter<WorkspaceSettings['lang']>;
   setLogoAggregateRatingSource: Setter<WorkspaceSettings['logoAggregateRatingSource']>;
+  setLogoAggregateProviderWeights: Setter<WorkspaceSettings['logoAggregateProviderWeights']>;
   setLogoArtworkSource: Setter<WorkspaceSettings['logoArtworkSource']>;
   setLogoBackground: Setter<WorkspaceSettings['logoBackground']>;
   setLogoGenreBadgeAnimeGrouping: Setter<WorkspaceSettings['logoGenreBadgeAnimeGrouping']>;
@@ -271,6 +278,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setLogoBottomRatingsRow: Setter<WorkspaceSettings['logoBottomRatingsRow']>;
   setMdblistKey: Setter<WorkspaceSettings['mdblistKey']>;
   setPosterAggregateRatingSource: Setter<WorkspaceSettings['posterAggregateRatingSource']>;
+  setPosterAggregateProviderWeights: Setter<WorkspaceSettings['posterAggregateProviderWeights']>;
   setPosterRingProgressSource: Setter<WorkspaceSettings['posterRingProgressSource']>;
   setPosterRingCriticsPriority: Setter<WorkspaceSettings['posterRingCriticsPriority']>;
   setPosterRingAudiencePriority: Setter<WorkspaceSettings['posterRingAudiencePriority']>;
@@ -371,6 +379,7 @@ export function useConfiguratorWorkspaceConfigIo({
   aggregateDynamicStops,
   aggregateValueColor,
   backdropAggregateRatingSource,
+  backdropAggregateProviderWeights,
   backdropArtworkSource,
   backdropEpisodeArtwork,
   backdropGenreBadgeAnimeGrouping,
@@ -399,6 +408,7 @@ export function useConfiguratorWorkspaceConfigIo({
   backdropSideRatingsPosition,
   backdropStreamBadges,
   thumbnailAggregateRatingSource,
+  thumbnailAggregateProviderWeights,
   thumbnailArtworkSource,
   thumbnailBottomRatingsRow,
   thumbnailGenreBadgeAnimeGrouping,
@@ -428,6 +438,7 @@ export function useConfiguratorWorkspaceConfigIo({
   fanartKey,
   lang,
   logoAggregateRatingSource,
+  logoAggregateProviderWeights,
   logoArtworkSource,
   logoBackground,
   logoGenreBadgeAnimeGrouping,
@@ -451,6 +462,7 @@ export function useConfiguratorWorkspaceConfigIo({
   logoBottomRatingsRow,
   mdblistKey,
   posterAggregateRatingSource,
+  posterAggregateProviderWeights,
   posterRingProgressSource,
   posterRingCriticsPriority,
   posterRingAudiencePriority,
@@ -538,6 +550,7 @@ export function useConfiguratorWorkspaceConfigIo({
   setAggregateDynamicStops,
   setAggregateValueColor,
   setBackdropAggregateRatingSource,
+  setBackdropAggregateProviderWeights,
   setBackdropArtworkSource,
   setBackdropEpisodeArtwork,
   setBackdropGenreBadgeAnimeGrouping,
@@ -565,6 +578,7 @@ export function useConfiguratorWorkspaceConfigIo({
   setBackdropSideRatingsPosition,
   setBackdropStreamBadges,
   setThumbnailAggregateRatingSource,
+  setThumbnailAggregateProviderWeights,
   setThumbnailArtworkSource,
   setThumbnailBottomRatingsRow,
   setThumbnailGenreBadgeAnimeGrouping,
@@ -594,6 +608,7 @@ export function useConfiguratorWorkspaceConfigIo({
   setFanartKey,
   setLang,
   setLogoAggregateRatingSource,
+  setLogoAggregateProviderWeights,
   setLogoArtworkSource,
   setLogoBackground,
   setLogoGenreBadgeAnimeGrouping,
@@ -616,6 +631,7 @@ export function useConfiguratorWorkspaceConfigIo({
   setLogoBottomRatingsRow,
   setMdblistKey,
   setPosterAggregateRatingSource,
+  setPosterAggregateProviderWeights,
   setPosterRingProgressSource,
   setPosterRingCriticsPriority,
   setPosterRingAudiencePriority,
@@ -826,6 +842,10 @@ export function useConfiguratorWorkspaceConfigIo({
       setBackdropAggregateRatingSource(normalized.settings.backdropAggregateRatingSource);
       setThumbnailAggregateRatingSource(normalized.settings.thumbnailAggregateRatingSource);
       setLogoAggregateRatingSource(normalized.settings.logoAggregateRatingSource);
+      setPosterAggregateProviderWeights(normalized.settings.posterAggregateProviderWeights);
+      setBackdropAggregateProviderWeights(normalized.settings.backdropAggregateProviderWeights);
+      setThumbnailAggregateProviderWeights(normalized.settings.thumbnailAggregateProviderWeights);
+      setLogoAggregateProviderWeights(normalized.settings.logoAggregateProviderWeights);
       setAggregateAccentMode(normalized.settings.aggregateAccentMode);
       setAggregateAccentColor(normalized.settings.aggregateAccentColor);
       setAggregateCriticsAccentColor(normalized.settings.aggregateCriticsAccentColor);
@@ -890,6 +910,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setAggregateDynamicStops,
       setAggregateValueColor,
       setBackdropAggregateRatingSource,
+      setBackdropAggregateProviderWeights,
       setBackdropArtworkSource,
       setBackdropEpisodeArtwork,
       setBackdropGenreBadgeAnimeGrouping,
@@ -916,6 +937,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setBackdropSideRatingsPosition,
       setBackdropStreamBadges,
       setThumbnailAggregateRatingSource,
+      setThumbnailAggregateProviderWeights,
       setThumbnailArtworkSource,
       setThumbnailBottomRatingsRow,
       setThumbnailGenreBadgeAnimeGrouping,
@@ -944,6 +966,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setFanartKey,
       setLang,
       setLogoAggregateRatingSource,
+      setLogoAggregateProviderWeights,
       setLogoArtworkSource,
       setLogoBackground,
       setLogoGenreBadgeAnimeGrouping,
@@ -965,6 +988,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setLogoBottomRatingsRow,
       setMdblistKey,
       setPosterAggregateRatingSource,
+      setPosterAggregateProviderWeights,
       setPosterRingProgressSource,
       setPosterRingCriticsPriority,
       setPosterRingAudiencePriority,
@@ -1173,6 +1197,10 @@ export function useConfiguratorWorkspaceConfigIo({
         backdropAggregateRatingSource,
         thumbnailAggregateRatingSource,
         logoAggregateRatingSource,
+        posterAggregateProviderWeights,
+        backdropAggregateProviderWeights,
+        thumbnailAggregateProviderWeights,
+        logoAggregateProviderWeights,
         aggregateAccentMode,
         aggregateAccentColor,
         aggregateCriticsAccentColor,
@@ -1239,6 +1267,7 @@ export function useConfiguratorWorkspaceConfigIo({
       aggregateDynamicStops,
       aggregateValueColor,
       backdropAggregateRatingSource,
+      backdropAggregateProviderWeights,
       backdropArtworkSource,
       backdropEpisodeArtwork,
       backdropGenreBadgeAnimeGrouping,
@@ -1266,6 +1295,7 @@ export function useConfiguratorWorkspaceConfigIo({
       backdropSideRatingsPosition,
       backdropStreamBadges,
       thumbnailAggregateRatingSource,
+      thumbnailAggregateProviderWeights,
       thumbnailArtworkSource,
       thumbnailBottomRatingsRow,
       thumbnailGenreBadgeAnimeGrouping,
@@ -1296,6 +1326,7 @@ export function useConfiguratorWorkspaceConfigIo({
       fanartKey,
       lang,
       logoAggregateRatingSource,
+      logoAggregateProviderWeights,
       logoArtworkSource,
       logoBackground,
       logoGenreBadgeAnimeGrouping,
@@ -1318,6 +1349,7 @@ export function useConfiguratorWorkspaceConfigIo({
       logoBottomRatingsRow,
       mdblistKey,
       posterAggregateRatingSource,
+      posterAggregateProviderWeights,
       posterRingProgressSource,
       posterRingCriticsPriority,
       posterRingAudiencePriority,

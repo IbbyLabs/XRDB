@@ -45,7 +45,9 @@ import {
   DEFAULT_AGGREGATE_RATING_SOURCE,
   DEFAULT_AGGREGATE_VALUE_COLOR,
   DEFAULT_RATING_PRESENTATION,
+  DEFAULT_AGGREGATE_PROVIDER_WEIGHTS,
   type AggregateAccentMode,
+  type AggregateProviderWeights,
   type AggregateRatingSource,
   type RatingPresentation,
 } from '@/lib/ratingPresentation';
@@ -218,6 +220,10 @@ export function useConfiguratorWorkspaceState() {
   const [backdropAggregateRatingSource, setBackdropAggregateRatingSource] = useState<AggregateRatingSource>(DEFAULT_AGGREGATE_RATING_SOURCE);
   const [thumbnailAggregateRatingSource, setThumbnailAggregateRatingSource] = useState<AggregateRatingSource>(DEFAULT_AGGREGATE_RATING_SOURCE);
   const [logoAggregateRatingSource, setLogoAggregateRatingSource] = useState<AggregateRatingSource>(DEFAULT_AGGREGATE_RATING_SOURCE);
+  const [posterAggregateProviderWeights, setPosterAggregateProviderWeights] = useState<AggregateProviderWeights>(DEFAULT_AGGREGATE_PROVIDER_WEIGHTS);
+  const [backdropAggregateProviderWeights, setBackdropAggregateProviderWeights] = useState<AggregateProviderWeights>(DEFAULT_AGGREGATE_PROVIDER_WEIGHTS);
+  const [thumbnailAggregateProviderWeights, setThumbnailAggregateProviderWeights] = useState<AggregateProviderWeights>(DEFAULT_AGGREGATE_PROVIDER_WEIGHTS);
+  const [logoAggregateProviderWeights, setLogoAggregateProviderWeights] = useState<AggregateProviderWeights>(DEFAULT_AGGREGATE_PROVIDER_WEIGHTS);
   const [posterRingValueSource, setPosterRingValueSource] = useState<PosterCompactRingSource>(
     DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE,
   );
@@ -334,6 +340,7 @@ export function useConfiguratorWorkspaceState() {
     ageRatingBadgeStyle,
     releaseStatusBadgeStyle,
     backdropAggregateRatingSource,
+    backdropAggregateProviderWeights,
     backdropArtworkSource,
     backdropEpisodeArtwork,
     backdropGenreBadgeAnimeGrouping,
@@ -362,6 +369,7 @@ export function useConfiguratorWorkspaceState() {
     backdropSideRatingsPosition,
     backdropStreamBadges,
     thumbnailAggregateRatingSource,
+    thumbnailAggregateProviderWeights,
     thumbnailArtworkSource,
     thumbnailBottomRatingsRow,
     thumbnailGenreBadgeAnimeGrouping,
@@ -396,6 +404,7 @@ export function useConfiguratorWorkspaceState() {
     hideAiometadataCredentials,
     lang,
     logoAggregateRatingSource,
+    logoAggregateProviderWeights,
     logoArtworkSource,
     logoBackground,
     logoGenreBadgeAnimeGrouping,
@@ -420,6 +429,7 @@ export function useConfiguratorWorkspaceState() {
     mdblistKey,
     mediaId,
     posterAggregateRatingSource,
+    posterAggregateProviderWeights,
     posterRingProgressSource,
     posterRingCriticsPriority,
     posterRingAudiencePriority,
@@ -524,6 +534,7 @@ export function useConfiguratorWorkspaceState() {
     setThumbnailRatingXOffsetSquare,
     setThumbnailRatingYOffsetSquare,
     setBackdropAggregateRatingSource,
+    setBackdropAggregateProviderWeights,
     setBackdropArtworkSource,
     setBackdropEpisodeArtwork,
     setBackdropGenreBadgeAnimeGrouping,
@@ -551,6 +562,7 @@ export function useConfiguratorWorkspaceState() {
     setBackdropSideRatingsPosition,
     setBackdropStreamBadges,
     setThumbnailAggregateRatingSource,
+    setThumbnailAggregateProviderWeights,
     setThumbnailArtworkSource,
     setThumbnailBottomRatingsRow,
     setThumbnailGenreBadgeAnimeGrouping,
@@ -585,6 +597,7 @@ export function useConfiguratorWorkspaceState() {
     setHideAiometadataCredentials,
     setLang,
     setLogoAggregateRatingSource,
+    setLogoAggregateProviderWeights,
     setLogoArtworkSource,
     setLogoBackground,
     setLogoGenreBadgeAnimeGrouping,
@@ -608,6 +621,7 @@ export function useConfiguratorWorkspaceState() {
     setMdblistKey,
     setMediaId,
     setPosterAggregateRatingSource,
+    setPosterAggregateProviderWeights,
     setPosterRingProgressSource,
     setPosterRingCriticsPriority,
     setPosterRingAudiencePriority,

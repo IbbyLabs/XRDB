@@ -21,6 +21,7 @@ import {
   normalizeAggregateDynamicStops,
   usesDualAggregateRatingPresentation,
   type AggregateAccentMode,
+  type AggregateProviderWeights,
   type AggregateRatingSource,
   type RatingPresentation,
 } from '@/lib/ratingPresentation';
@@ -235,6 +236,7 @@ export function PresentationSection({
   showsAggregateAccentBarOffset,
   activeAggregateAccent,
   activeAggregateRatingSource,
+  activeAggregateProviderWeights,
   posterRingValueSource,
   posterRingProgressSource,
   posterRingCriticsPriority,
@@ -252,6 +254,7 @@ export function PresentationSection({
   aggregateAccentBarOffset,
   onSelectRatingPresentation,
   onSelectAggregateRatingSource,
+  onSetAggregateProviderWeightsForType,
   onSelectPosterRingValueSource,
   onSelectPosterRingProgressSource,
   onSelectPosterRingCriticsPriority,
@@ -279,6 +282,7 @@ export function PresentationSection({
   showsAggregateAccentBarOffset: boolean;
   activeAggregateAccent: string;
   activeAggregateRatingSource: AggregateRatingSource;
+  activeAggregateProviderWeights: AggregateProviderWeights;
   posterRingValueSource: PosterCompactRingSource;
   posterRingProgressSource: PosterCompactRingSource;
   posterRingCriticsPriority: RatingPreference[];
@@ -296,6 +300,7 @@ export function PresentationSection({
   aggregateAccentBarOffset: number;
   onSelectRatingPresentation: (value: RatingPresentation) => void;
   onSelectAggregateRatingSource: (value: AggregateRatingSource) => void;
+  onSetAggregateProviderWeightsForType: (value: AggregateProviderWeights) => void;
   onSelectPosterRingValueSource: (value: PosterCompactRingSource) => void;
   onSelectPosterRingProgressSource: (value: PosterCompactRingSource) => void;
   onSelectPosterRingCriticsPriority: (value: RatingPreference[]) => void;
@@ -534,6 +539,44 @@ export function PresentationSection({
               </div>
               <p className="text-[11px] leading-relaxed text-zinc-500">
                 {AGGREGATE_RATING_SOURCE_OPTIONS.find((option) => option.id === activeAggregateRatingSource)?.description}
+              </p>
+            </>
+          ) : null}
+          {usesAggregatePresentation ? (
+            <>
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Provider Weights</div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-3">
+                {RATING_PROVIDER_OPTIONS.map((provider) => {
+                  const raw = activeAggregateProviderWeights[provider.id as keyof AggregateProviderWeights];
+                  return (
+                    <label key={provider.id} className="flex flex-col gap-1">
+                      <span className="text-[10px] font-medium text-zinc-400">{provider.label}</span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={1}
+                        placeholder="Equal"
+                        value={raw ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value.trim();
+                          const next: AggregateProviderWeights = { ...activeAggregateProviderWeights };
+                          if (!val) {
+                            delete next[provider.id as keyof AggregateProviderWeights];
+                          } else {
+                            const parsed = Math.max(0, Math.min(100, Math.round(Number(val))));
+                            next[provider.id as keyof AggregateProviderWeights] = parsed;
+                          }
+                          onSetAggregateProviderWeightsForType(next);
+                        }}
+                        className="w-full rounded-lg border border-white/10 bg-zinc-900 px-2 py-1 text-[11px] text-white placeholder:text-zinc-600 focus:border-white/20 focus:outline-none"
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] leading-relaxed text-zinc-500">
+                Set relative weights for each provider in the average. Leave all blank for equal weighting. Missing provider scores are excluded and remaining weights are renormalized.
               </p>
             </>
           ) : null}

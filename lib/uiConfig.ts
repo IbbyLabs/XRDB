@@ -31,15 +31,20 @@ import {
   DEFAULT_AGGREGATE_ACCENT_COLOR,
   DEFAULT_AGGREGATE_ACCENT_MODE,
   DEFAULT_AGGREGATE_DYNAMIC_STOPS,
+  DEFAULT_AGGREGATE_PROVIDER_WEIGHTS,
   DEFAULT_AGGREGATE_RATING_SOURCE,
   DEFAULT_AGGREGATE_VALUE_COLOR,
   DEFAULT_RATING_PRESENTATION,
   normalizeAggregateAccentBarOffset,
   normalizeAggregateDynamicStops,
   normalizeAggregateAccentMode,
+  normalizeAggregateProviderWeights,
   normalizeAggregateRatingSource,
   normalizeRatingPresentation,
+  stringifyAggregateProviderWeights,
+  isDefaultAggregateProviderWeights,
   type AggregateAccentMode,
+  type AggregateProviderWeights,
   type AggregateRatingSource,
   type RatingPresentation,
 } from './ratingPresentation.ts';
@@ -307,6 +312,10 @@ export type SharedXrdbSettings = {
   backdropAggregateRatingSource: AggregateRatingSource;
   thumbnailAggregateRatingSource: AggregateRatingSource;
   logoAggregateRatingSource: AggregateRatingSource;
+  posterAggregateProviderWeights: AggregateProviderWeights;
+  backdropAggregateProviderWeights: AggregateProviderWeights;
+  thumbnailAggregateProviderWeights: AggregateProviderWeights;
+  logoAggregateProviderWeights: AggregateProviderWeights;
   aggregateAccentMode: AggregateAccentMode;
   aggregateAccentColor: string;
   aggregateCriticsAccentColor: string;
@@ -603,6 +612,10 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   backdropAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
   thumbnailAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
   logoAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
+  posterAggregateProviderWeights: DEFAULT_AGGREGATE_PROVIDER_WEIGHTS,
+  backdropAggregateProviderWeights: DEFAULT_AGGREGATE_PROVIDER_WEIGHTS,
+  thumbnailAggregateProviderWeights: DEFAULT_AGGREGATE_PROVIDER_WEIGHTS,
+  logoAggregateProviderWeights: DEFAULT_AGGREGATE_PROVIDER_WEIGHTS,
   aggregateAccentMode: DEFAULT_AGGREGATE_ACCENT_MODE,
   aggregateAccentColor: DEFAULT_AGGREGATE_ACCENT_COLOR,
   aggregateCriticsAccentColor: AGGREGATE_RATING_SOURCE_ACCENTS.critics,
@@ -1547,6 +1560,20 @@ export const normalizeSharedXrdbSettings = (value: unknown, options?: { skipCros
       candidate.logoAggregateRatingSource,
       defaults.logoAggregateRatingSource,
     ),
+    posterAggregateProviderWeights: normalizeAggregateProviderWeights(
+      candidate.posterAggregateProviderWeights,
+    ),
+    backdropAggregateProviderWeights: normalizeAggregateProviderWeights(
+      candidate.backdropAggregateProviderWeights,
+    ),
+    thumbnailAggregateProviderWeights: normalizeAggregateProviderWeights(
+      options?.skipCrossTypeFallbacks
+        ? candidate.thumbnailAggregateProviderWeights
+        : (candidate.thumbnailAggregateProviderWeights ?? candidate.backdropAggregateProviderWeights),
+    ),
+    logoAggregateProviderWeights: normalizeAggregateProviderWeights(
+      candidate.logoAggregateProviderWeights,
+    ),
     aggregateAccentMode: normalizeAggregateAccentMode(
       candidate.aggregateAccentMode,
       defaults.aggregateAccentMode,
@@ -2256,6 +2283,22 @@ const buildSharedPayload = (settings: SharedXrdbSettings, options?: SharedPayloa
   }
   if (settings.logoAggregateRatingSource !== DEFAULT_AGGREGATE_RATING_SOURCE) {
     payload.logoAggregateRatingSource = settings.logoAggregateRatingSource;
+  }
+  const posterWeights = stringifyAggregateProviderWeights(settings.posterAggregateProviderWeights);
+  const backdropWeights = stringifyAggregateProviderWeights(settings.backdropAggregateProviderWeights);
+  const thumbnailWeights = stringifyAggregateProviderWeights(settings.thumbnailAggregateProviderWeights);
+  const logoWeights = stringifyAggregateProviderWeights(settings.logoAggregateProviderWeights);
+  if (!isDefaultAggregateProviderWeights(settings.posterAggregateProviderWeights)) {
+    payload.posterAggregateProviderWeights = posterWeights;
+  }
+  if (!isDefaultAggregateProviderWeights(settings.backdropAggregateProviderWeights)) {
+    payload.backdropAggregateProviderWeights = backdropWeights;
+  }
+  if (!isDefaultAggregateProviderWeights(settings.thumbnailAggregateProviderWeights)) {
+    payload.thumbnailAggregateProviderWeights = thumbnailWeights;
+  }
+  if (!isDefaultAggregateProviderWeights(settings.logoAggregateProviderWeights)) {
+    payload.logoAggregateProviderWeights = logoWeights;
   }
   if (settings.aggregateAccentMode !== DEFAULT_AGGREGATE_ACCENT_MODE) {
     payload.aggregateAccentMode = settings.aggregateAccentMode;

@@ -17,6 +17,7 @@ import {
   usesCompactRingPresentation as isCompactRingPresentationMode,
   usesAggregateRatingPresentation,
   type AggregateAccentMode,
+  type AggregateProviderWeights,
   type AggregateRatingSource,
   type RatingPresentation,
 } from './ratingPresentation.ts';
@@ -80,6 +81,7 @@ export const resolveImageRouteDisplayState = (input: {
   imageType: 'poster' | 'backdrop' | 'logo';
   ratingPresentation: RatingPresentation;
   aggregateRatingSource: AggregateRatingSource;
+  aggregateProviderWeights: AggregateProviderWeights;
   aggregateAccentMode: AggregateAccentMode;
   aggregateAccentColor: string | null;
   aggregateCriticsAccentColor: string | null;
@@ -119,6 +121,7 @@ export const resolveImageRouteDisplayState = (input: {
     imageType,
     ratingPresentation,
     aggregateRatingSource,
+    aggregateProviderWeights,
     aggregateAccentMode,
     aggregateAccentColor,
     aggregateCriticsAccentColor,
@@ -335,6 +338,7 @@ export const resolveImageRouteDisplayState = (input: {
         accentBarOffset: aggregateAccentBarOffset,
         accentBarVisible: aggregateAccentBarVisible,
         valueMode: ratingValueMode,
+        providerWeights: aggregateProviderWeights,
       })
     : [];
   const primaryAggregateBadge = aggregateBadges[0] || null;

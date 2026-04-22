@@ -406,3 +406,62 @@ export const hasAggregateRatingProvidersForSource = (
     source === 'critics' ? CRITICS_RATING_PROVIDERS : AUDIENCE_RATING_PROVIDERS;
   return providers.some((provider) => filter.has(provider));
 };
+
+export type AggregateProviderWeights = Partial<Record<RatingPreference, number>>;
+
+export const DEFAULT_AGGREGATE_PROVIDER_WEIGHTS: AggregateProviderWeights = {};
+
+export const normalizeAggregateProviderWeights = (value: unknown): AggregateProviderWeights => {
+  if (!value) return {};
+  if (typeof value === 'object') {
+    const result: AggregateProviderWeights = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      const raw = typeof v === 'number' ? v : parseFloat(v as string);
+      if (!Number.isFinite(raw)) continue;
+      result[k as RatingPreference] = Math.max(0, Math.min(1000, raw));
+    }
+    return result;
+  }
+  if (typeof value !== 'string') return {};
+  const result: AggregateProviderWeights = {};
+  for (const part of value.split(',')) {
+    const idx = part.indexOf(':');
+    if (idx < 1) continue;
+    const provider = part.slice(0, idx).trim() as RatingPreference;
+    const raw = parseFloat(part.slice(idx + 1));
+    if (!Number.isFinite(raw)) continue;
+    result[provider] = Math.max(0, Math.min(1000, raw));
+  }
+  return result;
+};
+
+export const stringifyAggregateProviderWeights = (weights: AggregateProviderWeights): string =>
+  Object.entries(weights)
+    .filter(([, v]) => v != null)
+    .map(([k, v]) => `${k}:${v}`)
+    .join(',');
+
+export const isDefaultAggregateProviderWeights = (weights: AggregateProviderWeights): boolean =>
+  Object.keys(weights).length === 0;
+
+export const computeWeightedAverage = (
+  entries: Array<{ provider: RatingPreference; value: number }>,
+  weights: AggregateProviderWeights,
+): number => {
+  if (entries.length === 0) return 0;
+  const hasCustomWeights = Object.keys(weights).length > 0;
+  if (!hasCustomWeights) {
+    return entries.reduce((sum, e) => sum + e.value, 0) / entries.length;
+  }
+  let weightedSum = 0;
+  let totalWeight = 0;
+  for (const { provider, value } of entries) {
+    const w = weights[provider] ?? 1;
+    weightedSum += value * w;
+    totalWeight += w;
+  }
+  if (totalWeight === 0) {
+    return entries.reduce((sum, e) => sum + e.value, 0) / entries.length;
+  }
+  return weightedSum / totalWeight;
+};

@@ -1,6 +1,7 @@
 import type { MediaSearchPreviewType } from './configuratorMediaSearch.ts';
 import type {
   AggregateAccentMode,
+  AggregateProviderWeights,
   AggregateRatingSource,
   RatingPresentation,
 } from './ratingPresentation.ts';
@@ -24,6 +25,7 @@ export type SyncableTypeSettings = {
   ratingPreferences: RatingPreference[];
   ratingPresentation: RatingPresentation;
   aggregateRatingSource: AggregateRatingSource;
+  aggregateProviderWeights: AggregateProviderWeights;
   ratingBadgeScale: number;
   qualityBadgeScale: number;
   genreBadgeMode: GenreBadgeMode;
@@ -75,6 +77,7 @@ export const extractSyncableSettings = (
         ratingPreferences: [...settings.posterRatingPreferences],
         ratingPresentation: settings.posterRatingPresentation,
         aggregateRatingSource: settings.posterAggregateRatingSource,
+        aggregateProviderWeights: settings.posterAggregateProviderWeights,
         ratingBadgeScale: settings.posterRatingBadgeScale,
         qualityBadgeScale: settings.posterQualityBadgeScale,
         genreBadgeMode: settings.posterGenreBadgeMode,
@@ -95,6 +98,7 @@ export const extractSyncableSettings = (
         ratingPreferences: [...settings.backdropRatingPreferences],
         ratingPresentation: settings.backdropRatingPresentation,
         aggregateRatingSource: settings.backdropAggregateRatingSource,
+        aggregateProviderWeights: settings.backdropAggregateProviderWeights,
         ratingBadgeScale: settings.backdropRatingBadgeScale,
         qualityBadgeScale: settings.backdropQualityBadgeScale,
         genreBadgeMode: settings.backdropGenreBadgeMode,
@@ -115,6 +119,7 @@ export const extractSyncableSettings = (
         ratingPreferences: [...settings.thumbnailRatingPreferences],
         ratingPresentation: settings.thumbnailRatingPresentation,
         aggregateRatingSource: settings.thumbnailAggregateRatingSource,
+        aggregateProviderWeights: settings.thumbnailAggregateProviderWeights,
         ratingBadgeScale: settings.thumbnailRatingBadgeScale,
         qualityBadgeScale: settings.thumbnailQualityBadgeScale,
         genreBadgeMode: settings.thumbnailGenreBadgeMode,
@@ -135,6 +140,7 @@ export const extractSyncableSettings = (
         ratingPreferences: [...settings.logoRatingPreferences],
         ratingPresentation: settings.logoRatingPresentation,
         aggregateRatingSource: settings.logoAggregateRatingSource,
+        aggregateProviderWeights: settings.logoAggregateProviderWeights,
         ratingBadgeScale: settings.logoRatingBadgeScale,
         qualityBadgeScale: settings.logoQualityBadgeScale,
         genreBadgeMode: settings.logoGenreBadgeMode,
@@ -179,6 +185,7 @@ export const applySyncableSettings = (
         posterRatingPreferences: incoming.ratingPreferences,
         posterRatingPresentation: incoming.ratingPresentation,
         posterAggregateRatingSource: incoming.aggregateRatingSource,
+        posterAggregateProviderWeights: incoming.aggregateProviderWeights,
         posterRatingBadgeScale: incoming.ratingBadgeScale,
         posterQualityBadgeScale: incoming.qualityBadgeScale,
         posterGenreBadgeMode: incoming.genreBadgeMode,
@@ -200,6 +207,7 @@ export const applySyncableSettings = (
         backdropRatingPreferences: incoming.ratingPreferences,
         backdropRatingPresentation: coerceNonPosterPresentation(incoming.ratingPresentation),
         backdropAggregateRatingSource: incoming.aggregateRatingSource,
+        backdropAggregateProviderWeights: incoming.aggregateProviderWeights,
         backdropRatingBadgeScale: incoming.ratingBadgeScale,
         backdropQualityBadgeScale: incoming.qualityBadgeScale,
         backdropGenreBadgeMode: incoming.genreBadgeMode,
@@ -223,6 +231,7 @@ export const applySyncableSettings = (
           filteredProviders.length > 0 ? filteredProviders : settings.thumbnailRatingPreferences,
         thumbnailRatingPresentation: coerceNonPosterPresentation(incoming.ratingPresentation),
         thumbnailAggregateRatingSource: incoming.aggregateRatingSource,
+        thumbnailAggregateProviderWeights: incoming.aggregateProviderWeights,
         thumbnailRatingBadgeScale: incoming.ratingBadgeScale,
         thumbnailQualityBadgeScale: incoming.qualityBadgeScale,
         thumbnailGenreBadgeMode: incoming.genreBadgeMode,
@@ -247,6 +256,7 @@ export const applySyncableSettings = (
         logoRatingPreferences: incoming.ratingPreferences,
         logoRatingPresentation: coerceNonPosterPresentation(incoming.ratingPresentation),
         logoAggregateRatingSource: incoming.aggregateRatingSource,
+        logoAggregateProviderWeights: incoming.aggregateProviderWeights,
         logoRatingBadgeScale: incoming.ratingBadgeScale,
         logoQualityBadgeScale: incoming.qualityBadgeScale,
         logoGenreBadgeMode: incoming.genreBadgeMode,

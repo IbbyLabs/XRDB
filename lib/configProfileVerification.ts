@@ -326,6 +326,7 @@ const buildEntries = () => {
     entries.push({ key: withType(type, 'RatingStyle'), coverageValues: ratingStyleValues, browserFamily: 'presentation', surfaces: [type] });
     entries.push({ key: withType(type, 'RatingPresentation'), coverageValues: ratingPresentationValues, browserFamily: 'presentation', surfaces: [type] });
     entries.push({ key: withType(type, 'AggregateRatingSource'), coverageValues: aggregateRatingSourceValues, browserFamily: 'presentation', surfaces: [type] });
+    entries.push({ key: withType(type, 'AggregateProviderWeights'), coverageValues: ['imdb:50', 'imdb:50,tmdb:30'], browserFamily: 'presentation', surfaces: [type] });
     entries.push({ key: withType(type, 'RatingBadgeScale'), coverageValues: toIntegerRange(MIN_BADGE_SCALE_PERCENT, MAX_BADGE_SCALE_PERCENT, DEFAULT_BADGE_SCALE_PERCENT), browserFamily: 'appearance', surfaces: [type] });
     entries.push({ key: withType(type, 'QualityBadgeScale'), coverageValues: toIntegerRange(MIN_BADGE_SCALE_PERCENT, MAX_BADGE_SCALE_PERCENT, DEFAULT_BADGE_SCALE_PERCENT), browserFamily: 'appearance', surfaces: [type] });
     entries.push({ key: withType(type, 'QualityBadgesStyle'), coverageValues: qualityBadgeStyleValues, browserFamily: 'quality-badge', surfaces: [type] });

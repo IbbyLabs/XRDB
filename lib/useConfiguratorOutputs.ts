@@ -35,10 +35,13 @@ import {
   DEFAULT_AGGREGATE_RATING_SOURCE,
   DEFAULT_AGGREGATE_VALUE_COLOR,
   DEFAULT_RATING_PRESENTATION,
+  isDefaultAggregateProviderWeights,
+  stringifyAggregateProviderWeights,
   usesAggregateAccentBar,
   usesAggregateRatingPresentation,
   usesCompactRingPresentation,
   type AggregateAccentMode,
+  type AggregateProviderWeights,
   type AggregateRatingSource,
   type RatingPresentation,
 } from '@/lib/ratingPresentation';
@@ -283,6 +286,7 @@ export function useConfiguratorOutputs({
   aggregateDynamicStops,
   aggregateValueColor,
   backdropAggregateRatingSource,
+  backdropAggregateProviderWeights,
   backdropArtworkSource,
   backdropGenreBadgeAnimeGrouping,
   backdropGenreBadgePosition,
@@ -307,6 +311,7 @@ export function useConfiguratorOutputs({
   backdropSideRatingsPosition,
   backdropStreamBadges,
   thumbnailAggregateRatingSource,
+  thumbnailAggregateProviderWeights,
   thumbnailArtworkSource,
   thumbnailBottomRatingsRow,
   thumbnailEpisodeArtwork,
@@ -344,6 +349,7 @@ export function useConfiguratorOutputs({
   lang,
   latestReleaseTag,
   logoAggregateRatingSource,
+  logoAggregateProviderWeights,
   logoArtworkSource,
   logoBackground,
   logoGenreBadgeAnimeGrouping,
@@ -366,6 +372,7 @@ export function useConfiguratorOutputs({
   mediaId,
   pendingReleaseTag,
   posterAggregateRatingSource,
+  posterAggregateProviderWeights,
   posterRingProgressSource,
   posterRingCriticsPriority,
   posterRingAudiencePriority,
@@ -465,6 +472,7 @@ export function useConfiguratorOutputs({
   aggregateDynamicStops: string;
   aggregateValueColor: string;
   backdropAggregateRatingSource: AggregateRatingSource;
+  backdropAggregateProviderWeights: AggregateProviderWeights;
   backdropArtworkSource: ArtworkSource;
   backdropGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   backdropGenreBadgePosition: GenreBadgePosition;
@@ -489,6 +497,7 @@ export function useConfiguratorOutputs({
   backdropSideRatingsPosition: SideRatingPosition;
   backdropStreamBadges: StreamBadgesSetting;
   thumbnailAggregateRatingSource: AggregateRatingSource;
+  thumbnailAggregateProviderWeights: AggregateProviderWeights;
   thumbnailArtworkSource: ArtworkSource;
   thumbnailBottomRatingsRow: boolean;
   thumbnailEpisodeArtwork: 'still' | 'series' | 'streaming';
@@ -526,6 +535,7 @@ export function useConfiguratorOutputs({
   lang: string;
   latestReleaseTag: string;
   logoAggregateRatingSource: AggregateRatingSource;
+  logoAggregateProviderWeights: AggregateProviderWeights;
   logoArtworkSource: ArtworkSource;
   logoBackground: LogoBackground;
   logoGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
@@ -548,6 +558,7 @@ export function useConfiguratorOutputs({
   mediaId: string;
   pendingReleaseTag: string;
   posterAggregateRatingSource: AggregateRatingSource;
+  posterAggregateProviderWeights: AggregateProviderWeights;
   posterRingProgressSource: PosterCompactRingSource;
   posterRingCriticsPriority: RatingPreference[];
   posterRingAudiencePriority: RatingPreference[];
@@ -750,6 +761,14 @@ export function useConfiguratorOutputs({
           : previewType === 'thumbnail'
             ? thumbnailAggregateRatingSource
           : logoAggregateRatingSource;
+    const aggregateProviderWeightsForType =
+      previewType === 'poster'
+        ? posterAggregateProviderWeights
+        : previewType === 'backdrop'
+          ? backdropAggregateProviderWeights
+          : previewType === 'thumbnail'
+            ? thumbnailAggregateProviderWeights
+          : logoAggregateProviderWeights;
     const imageTextForType =
       previewType === 'backdrop'
         ? backdropImageText
@@ -899,6 +918,18 @@ export function useConfiguratorOutputs({
               ? 'thumbnailAggregateRatingSource'
             : 'logoAggregateRatingSource',
         aggregateRatingSourceForType,
+      );
+    }
+    if (!isDefaultAggregateProviderWeights(aggregateProviderWeightsForType)) {
+      query.set(
+        previewType === 'poster'
+          ? 'posterAggregateProviderWeights'
+          : previewType === 'backdrop'
+            ? 'backdropAggregateProviderWeights'
+            : previewType === 'thumbnail'
+              ? 'thumbnailAggregateProviderWeights'
+            : 'logoAggregateProviderWeights',
+        stringifyAggregateProviderWeights(aggregateProviderWeightsForType),
       );
     }
     if (
@@ -1276,6 +1307,7 @@ export function useConfiguratorOutputs({
     aggregateDynamicStops,
     aggregateValueColor,
     backdropAggregateRatingSource,
+    backdropAggregateProviderWeights,
     backdropArtworkSource,
     backdropImageSize,
     backdropImageText,
@@ -1294,6 +1326,7 @@ export function useConfiguratorOutputs({
     backdropSideRatingsPosition,
     backdropStreamBadges,
     thumbnailAggregateRatingSource,
+    thumbnailAggregateProviderWeights,
     thumbnailArtworkSource,
     thumbnailBottomRatingsRow,
     thumbnailEpisodeArtwork,
@@ -1317,6 +1350,7 @@ export function useConfiguratorOutputs({
     hasServerTmdbKey,
     lang,
     logoAggregateRatingSource,
+    logoAggregateProviderWeights,
     logoArtworkSource,
     logoBackground,
     logoQualityBadgePreferences,
@@ -1332,6 +1366,7 @@ export function useConfiguratorOutputs({
     logoStreamBadges,
     mediaId,
     posterAggregateRatingSource,
+    posterAggregateProviderWeights,
     posterArtworkSource,
     posterEdgeOffset,
     posterImageSize,
