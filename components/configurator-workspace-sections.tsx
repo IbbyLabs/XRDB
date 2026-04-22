@@ -216,6 +216,7 @@ export function QualitySection({
     qualityBadgePlacementControlMode === 'side' || qualityBadgePlacementControlMode === 'position';
   const sharedPlacementControlsDisabled =
     previewType === 'poster' && showsPlacementControls && !hasNonCertificationQualityBadges;
+  const qualityBadgeIconOverrideCount = Object.keys(qualityBadgeAppearanceOverrides).length;
 
   return (
     <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
@@ -511,7 +512,7 @@ export function QualitySection({
       <div className={settingsCardClass}>
         <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
           <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Custom Icons</span>
-          {Object.keys(qualityBadgeAppearanceOverrides).length > 0 && (
+          {qualityBadgeIconOverrideCount > 0 && (
             <button
               type="button"
               onClick={() => onUpdateQualityBadgeAppearanceOverride({})}
@@ -521,35 +522,41 @@ export function QualitySection({
             </button>
           )}
         </div>
-        <p className="text-[11px] leading-relaxed text-zinc-500 mb-2">
-          Paste a direct image URL or data URI for any badge. Leave blank to use the default icon.
-        </p>
-        <div className="space-y-2">
-          {QUALITY_BADGE_OPTIONS.map((option) => {
-            const override = qualityBadgeAppearanceOverrides[option.id];
-            return (
-              <div key={`qb-icon-${option.id}`} className="grid grid-cols-[80px,1fr] items-center gap-2">
-                <span className="text-[11px] text-zinc-400 truncate">{option.label}</span>
-                <input
-                  type="url"
-                  value={override?.iconUrl || ''}
-                  onChange={(event) => {
-                    const url = event.target.value.trim();
-                    const next = { ...qualityBadgeAppearanceOverrides };
-                    if (url) {
-                      next[option.id] = { iconUrl: url };
-                    } else {
-                      delete next[option.id];
-                    }
-                    onUpdateQualityBadgeAppearanceOverride(next);
-                  }}
-                  placeholder="https://... or data:image/..."
-                  className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
-                />
-              </div>
-            );
-          })}
-        </div>
+        <details className="group rounded-lg border border-white/10 bg-black/20">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-2.5 py-2 text-[11px] text-zinc-300 [&::-webkit-details-marker]:hidden">
+            <span>Edit icon URLs per badge</span>
+            <span className="text-zinc-500">{qualityBadgeIconOverrideCount} custom</span>
+          </summary>
+          <div className="space-y-2 border-t border-white/10 px-2.5 py-2.5">
+            <p className="text-[11px] leading-relaxed text-zinc-500">
+              Paste a direct image URL or data URI for any badge. Leave blank to use the default icon.
+            </p>
+            {QUALITY_BADGE_OPTIONS.map((option) => {
+              const override = qualityBadgeAppearanceOverrides[option.id];
+              return (
+                <div key={`qb-icon-${option.id}`} className="grid grid-cols-[80px,1fr] items-center gap-2">
+                  <span className="text-[11px] text-zinc-400 truncate">{option.label}</span>
+                  <input
+                    type="url"
+                    value={override?.iconUrl || ''}
+                    onChange={(event) => {
+                      const url = event.target.value.trim();
+                      const next = { ...qualityBadgeAppearanceOverrides };
+                      if (url) {
+                        next[option.id] = { iconUrl: url };
+                      } else {
+                        delete next[option.id];
+                      }
+                      onUpdateQualityBadgeAppearanceOverride(next);
+                    }}
+                    placeholder="https://... or data:image/..."
+                    className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </details>
       </div>
     </div>
   );
