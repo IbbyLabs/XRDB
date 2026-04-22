@@ -48,6 +48,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   thumbnailRatingBadgeScale,
   thumbnailRemuxDisplayMode,
   thumbnailStreamBadges,
+  logoStreamBadges,
   logoGenreBadgeAnimeGrouping,
   logoGenreBadgeMode,
   logoGenreBadgePosition,
@@ -106,6 +107,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   setThumbnailRatingBadgeScale,
   setThumbnailRemuxDisplayMode,
   setThumbnailStreamBadges,
+  setLogoStreamBadges,
   setLogoGenreBadgeAnimeGrouping,
   setLogoGenreBadgeMode,
   setLogoGenreBadgePosition,
@@ -163,6 +165,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   thumbnailRatingBadgeScale: number;
   thumbnailRemuxDisplayMode: RemuxDisplayMode;
   thumbnailStreamBadges: StreamBadgesSetting;
+  logoStreamBadges: StreamBadgesSetting;
   logoGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   logoGenreBadgeMode: GenreBadgeMode;
   logoGenreBadgePosition: GenreBadgePosition;
@@ -221,6 +224,7 @@ export function useConfiguratorActiveWorkspaceSettings({
   setThumbnailRatingBadgeScale: Setter<number>;
   setThumbnailRemuxDisplayMode: Setter<RemuxDisplayMode>;
   setThumbnailStreamBadges: Setter<StreamBadgesSetting>;
+  setLogoStreamBadges: Setter<StreamBadgesSetting>;
   setLogoGenreBadgeAnimeGrouping: Setter<GenreBadgeAnimeGrouping>;
   setLogoGenreBadgeMode: Setter<GenreBadgeMode>;
   setLogoGenreBadgePosition: Setter<GenreBadgePosition>;
@@ -380,7 +384,9 @@ export function useConfiguratorActiveWorkspaceSettings({
         ? backdropStreamBadges
         : previewType === 'thumbnail'
           ? thumbnailStreamBadges
-          : posterStreamBadges,
+          : previewType === 'logo'
+            ? logoStreamBadges
+            : posterStreamBadges,
     qualityBadgeTypeLabel:
       previewType === 'backdrop'
         ? 'Backdrop'
@@ -500,7 +506,9 @@ export function useConfiguratorActiveWorkspaceSettings({
         ? setBackdropStreamBadges
         : previewType === 'thumbnail'
           ? setThumbnailStreamBadges
-          : setPosterStreamBadges,
+          : previewType === 'logo'
+            ? setLogoStreamBadges
+            : setPosterStreamBadges,
     shouldShowQualityBadgesPosition:
       previewType === 'poster' && shouldShowPosterQualityBadgesPosition,
     shouldShowAgeRatingBadgePosition: shouldShowPosterAgeRatingBadgePosition,

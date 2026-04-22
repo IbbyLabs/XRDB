@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 118" role="img" aria-label="Apple TV+">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0f0b05"/><stop offset="100%" stop-color="#241b0f"/></linearGradient>
+    
+  </defs>
+  <rect x="3" y="3" width="162" height="112" rx="24" fill="url(#bg)" stroke="#8b6a22" stroke-width="3"/>
+  <rect x="11" y="14" width="146" height="90" rx="18" fill="#0c1018" fill-opacity="0.72" stroke="#3d2c12" stroke-width="1.5"/>
+  <text x="84" y="43" text-anchor="middle" dominant-baseline="middle" fill="#f3d27c" stroke="#000000" stroke-opacity="0.55" stroke-width="3" paint-order="stroke" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-weight="900" font-size="29" letter-spacing="0.8">APPLE</text>
+  <text x="84" y="77" text-anchor="middle" dominant-baseline="middle" fill="#f3d27c" stroke="#000000" stroke-opacity="0.55" stroke-width="3" paint-order="stroke" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-weight="900" font-size="29" letter-spacing="0.8">TV+</text>
+</svg>

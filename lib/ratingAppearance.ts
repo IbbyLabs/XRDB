@@ -1,5 +1,5 @@
-export type RatingStyle = 'glass' | 'square' | 'plain' | 'stacked';
-export type QualityBadgeStyle = 'glass' | 'square' | 'plain' | 'media' | 'silver';
+export type RatingStyle = 'glass' | 'square' | 'plain' | 'stacked' | 'tile';
+export type QualityBadgeStyle = 'glass' | 'square' | 'plain' | 'media' | 'silver' | 'tile' | 'community-badge';
 
 export const DEFAULT_RATING_STYLE: RatingStyle = 'glass';
 export const DEFAULT_QUALITY_BADGES_STYLE: QualityBadgeStyle = 'glass';
@@ -9,6 +9,7 @@ const ratingStyleCatalog = [
   ['square', 'Square Dark'],
   ['plain', 'No Background'],
   ['stacked', 'Stacked'],
+  ['tile', 'Tile Dark'],
 ] as const;
 
 const qualityBadgeStyleCatalog = [
@@ -17,6 +18,8 @@ const qualityBadgeStyleCatalog = [
   ['plain', 'No Background'],
   ['media', 'Media Marks'],
   ['silver', 'Silver Marks'],
+  ['tile', 'Tile Dark'],
+  ['community-badge', 'Community Badges'],
 ] as const;
 
 export const RATING_STYLE_OPTIONS: Array<{ id: RatingStyle; label: string }> =
@@ -39,4 +42,9 @@ export const normalizeQualityBadgeStyle = (value?: string | null): QualityBadgeS
   return qualityBadgeStyleIds.has(token as QualityBadgeStyle)
     ? (token as QualityBadgeStyle)
     : DEFAULT_QUALITY_BADGES_STYLE;
+};
+
+export const normalizeQualityBadgeStyleOrNull = (value?: string | null): QualityBadgeStyle | null => {
+  const token = normalizeStyleToken(value);
+  return qualityBadgeStyleIds.has(token as QualityBadgeStyle) ? (token as QualityBadgeStyle) : null;
 };

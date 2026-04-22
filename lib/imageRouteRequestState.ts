@@ -190,9 +190,15 @@ import {
   normalizePosterQualityBadgesPosition,
   normalizeQualityBadgesSide,
   normalizeQualityBadgesStyle,
+  normalizeQualityBadgesStyleOrNull,
   normalizeStreamBadgesSetting,
 } from './imageRouteDisplayPrefs.ts';
 import { normalizeRemuxDisplayMode } from './uiConfig.ts';
+import {
+  normalizeCommunityBadgeTheme,
+  DEFAULT_COMMUNITY_BADGE_THEME,
+  type CommunityBadgeTheme,
+} from './communityBadgeAssets.ts';
 import { readConfiguratorProviderCredentialSession } from './configuratorProviderCredentialSession.ts';
 import { getConfigProfile, getConfigProfileDeadline, LEGACY_ID_RE, touchConfigProfileAccess } from './dbCore.ts';
 import type { RemuxDisplayMode } from './mediaFeatures.ts';
@@ -270,6 +276,9 @@ export type ImageRouteRequestState = {
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
   ageRatingBadgePosition: AgeRatingBadgePosition;
   qualityBadgesStyle: QualityBadgeStyle;
+  communityBadgeTheme: CommunityBadgeTheme;
+  ageRatingBadgeStyle: QualityBadgeStyle | null;
+  releaseStatusBadgeStyle: QualityBadgeStyle | null;
   qualityBadgesMax: number | null;
   qualityBadgePreferences: BadgeKey[];
   remuxDisplayMode: RemuxDisplayMode;
@@ -337,6 +346,11 @@ export type ImageRouteRequestState = {
   posterNoBackgroundBadgeOutlineColor: string;
   posterNoBackgroundBadgeOutlineWidth: number;
   blockbusterDensity: BlockbusterDensity;
+  ageRatingTileColor: string | null;
+  releaseStatusTileColor: string | null;
+  qualityBadgesTileAccentColor: string | null;
+  networkTileColor: string | null;
+  genreBadgeTileAccentColor: string | null;
   hasExplicitRatingOrder: boolean;
   shouldApplyRatings: boolean;
   shouldApplyStreamBadges: boolean;
@@ -767,6 +781,25 @@ export const resolveImageRouteRequestState = async ({
     searchParams.get('posterNoBackgroundBadgeOutlineWidth'),
     DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   );
+  const ageRatingTileColor =
+    normalizeHexColor(searchParams.get('ageRatingTileColor')) || null;
+  const releaseStatusTileColor =
+    normalizeHexColor(searchParams.get('releaseStatusTileColor')) || null;
+  const qualityBadgesTileAccentColor =
+    normalizeHexColor(searchParams.get('qualityBadgesTileAccentColor')) || null;
+  const networkTileColor =
+    normalizeHexColor(searchParams.get('networkTileColor')) || null;
+  const genreBadgeTileAccentColor =
+    normalizeHexColor(searchParams.get('genreBadgeTileAccentColor')) || null;
+  const communityBadgeTheme = normalizeCommunityBadgeTheme(
+    searchParams.get('communityBadgeTheme'),
+  );
+  const ageRatingBadgeStyle = normalizeQualityBadgesStyleOrNull(
+    searchParams.get('ageRatingBadgeStyle'),
+  );
+  const releaseStatusBadgeStyle = normalizeQualityBadgesStyleOrNull(
+    searchParams.get('releaseStatusBadgeStyle'),
+  );
   const imageTextParam =
     searchParams.get('imageText') ||
     searchParams.get('posterImageText') ||
@@ -955,6 +988,9 @@ export const resolveImageRouteRequestState = async ({
       searchParams.get('backdropStreamBadges') ||
       searchParams.get('streamBadges'),
   );
+  const logoStreamBadgesSetting = normalizeStreamBadgesSetting(
+    searchParams.get('logoStreamBadges') || searchParams.get('streamBadges'),
+  );
   const streamBadgesSetting =
     imageType === 'poster'
       ? posterStreamBadgesSetting
@@ -962,7 +998,7 @@ export const resolveImageRouteRequestState = async ({
         ? thumbnailStreamBadgesSetting
         : imageType === 'backdrop'
         ? backdropStreamBadgesSetting
-        : globalStreamBadgesSetting;
+        : logoStreamBadgesSetting;
   const qualityBadgesSide = normalizeQualityBadgesSide(
     searchParams.get('qualityBadgesSide') || searchParams.get('qualityBadgesPosition'),
   );
@@ -1365,7 +1401,10 @@ export const resolveImageRouteRequestState = async ({
   const suppressRatingPresentation = ratingPresentation === 'none';
   const shouldApplyRatings = !suppressRatingPresentation && ratingPreferences.length > 0;
   const shouldApplyLogoQualityBadges =
-    !suppressRatingPresentation && imageType === 'logo' && qualityBadgePreferences.length > 0;
+    !suppressRatingPresentation &&
+    imageType === 'logo' &&
+    qualityBadgePreferences.length > 0 &&
+    (logoStreamBadgesSetting === 'on' || logoStreamBadgesSetting === 'auto');
   const shouldApplyStreamBadges =
     !hasNativeAnimeInput &&
     (shouldApplyLogoQualityBadges ||
@@ -1495,6 +1534,9 @@ export const resolveImageRouteRequestState = async ({
     posterQualityBadgesPosition,
     ageRatingBadgePosition,
     qualityBadgesStyle,
+    communityBadgeTheme,
+    ageRatingBadgeStyle,
+    releaseStatusBadgeStyle,
     qualityBadgesMax,
     qualityBadgePreferences,
     remuxDisplayMode,
@@ -1521,6 +1563,11 @@ export const resolveImageRouteRequestState = async ({
     aggregateAccentBarVisible,
     posterNoBackgroundBadgeOutlineColor,
     posterNoBackgroundBadgeOutlineWidth,
+    ageRatingTileColor,
+    releaseStatusTileColor,
+    qualityBadgesTileAccentColor,
+    networkTileColor,
+    genreBadgeTileAccentColor,
     artworkSelectionSeed,
     ratingBlackStripEnabled,
     ratingStyle,
@@ -1590,6 +1637,9 @@ export const resolveImageRouteRequestState = async ({
     posterQualityBadgesPosition,
     ageRatingBadgePosition,
     qualityBadgesStyle,
+    communityBadgeTheme,
+    ageRatingBadgeStyle,
+    releaseStatusBadgeStyle,
     qualityBadgesMax,
     qualityBadgePreferences,
     remuxDisplayMode,
@@ -1656,6 +1706,11 @@ export const resolveImageRouteRequestState = async ({
     aggregateAccentBarVisible,
     posterNoBackgroundBadgeOutlineColor,
     posterNoBackgroundBadgeOutlineWidth,
+    ageRatingTileColor,
+    releaseStatusTileColor,
+    qualityBadgesTileAccentColor,
+    networkTileColor,
+    genreBadgeTileAccentColor,
     blockbusterDensity,
     hasExplicitRatingOrder,
     shouldApplyRatings,

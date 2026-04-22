@@ -60,6 +60,7 @@ import { DEFAULT_POSTER_RATINGS_MAX_PER_SIDE, type PosterRatingLayout } from '@/
 import { type RatingPreference } from '@/lib/ratingProviderCatalog';
 import { type RemuxDisplayMode } from '@/lib/mediaFeatures';
 import { DEFAULT_QUALITY_BADGES_STYLE, DEFAULT_RATING_STYLE, type QualityBadgeStyle, type RatingStyle } from '@/lib/ratingAppearance';
+import { DEFAULT_COMMUNITY_BADGE_THEME, type CommunityBadgeTheme } from '@/lib/communityBadgeTheme';
 import { DEFAULT_SIDE_RATING_OFFSET, type SideRatingPosition } from '@/lib/sideRatingPosition';
 import {
   DEFAULT_AIOMETADATA_EPISODE_ID_MODE,
@@ -161,6 +162,7 @@ export function useConfiguratorWorkspaceState() {
   const [posterStreamBadges, setPosterStreamBadges] = useState<StreamBadgesSetting>('auto');
   const [backdropStreamBadges, setBackdropStreamBadges] = useState<StreamBadgesSetting>('auto');
   const [thumbnailStreamBadges, setThumbnailStreamBadges] = useState<StreamBadgesSetting>('auto');
+  const [logoStreamBadges, setLogoStreamBadges] = useState<StreamBadgesSetting>('auto');
   const [qualityBadgesSide, setQualityBadgesSide] = useState<QualityBadgesSide>('left');
   const [posterQualityBadgesPosition, setPosterQualityBadgesPosition] = useState<PosterQualityBadgesPosition>('auto');
   const [ageRatingBadgePosition, setAgeRatingBadgePosition] = useState<AgeRatingBadgePosition>('inherit');
@@ -243,6 +245,14 @@ export function useConfiguratorWorkspaceState() {
   const [posterNoBackgroundBadgeOutlineWidth, setPosterNoBackgroundBadgeOutlineWidth] = useState<number>(
     DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
   );
+  const [ageRatingTileColor, setAgeRatingTileColor] = useState<string>('');
+  const [releaseStatusTileColor, setReleaseStatusTileColor] = useState<string>('');
+  const [qualityBadgesTileAccentColor, setQualityBadgesTileAccentColor] = useState<string>('');
+  const [networkTileColor, setNetworkTileColor] = useState<string>('');
+  const [genreBadgeTileAccentColor, setGenreBadgeTileAccentColor] = useState<string>('');
+  const [communityBadgeTheme, setCommunityBadgeTheme] = useState<CommunityBadgeTheme>(DEFAULT_COMMUNITY_BADGE_THEME);
+  const [ageRatingBadgeStyle, setAgeRatingBadgeStyle] = useState<QualityBadgeStyle | null>(null);
+  const [releaseStatusBadgeStyle, setReleaseStatusBadgeStyle] = useState<QualityBadgeStyle | null>(null);
   const [posterRatingXOffsetPillGlass, setPosterRatingXOffsetPillGlass] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
   const [posterRatingYOffsetPillGlass, setPosterRatingYOffsetPillGlass] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
   const [backdropRatingXOffsetPillGlass, setBackdropRatingXOffsetPillGlass] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
@@ -313,6 +323,14 @@ export function useConfiguratorWorkspaceState() {
     aggregateValueColor,
     posterNoBackgroundBadgeOutlineColor,
     posterNoBackgroundBadgeOutlineWidth,
+    ageRatingTileColor,
+    releaseStatusTileColor,
+    qualityBadgesTileAccentColor,
+    networkTileColor,
+    genreBadgeTileAccentColor,
+    communityBadgeTheme,
+    ageRatingBadgeStyle,
+    releaseStatusBadgeStyle,
     backdropAggregateRatingSource,
     backdropArtworkSource,
     backdropEpisodeArtwork,
@@ -365,6 +383,7 @@ export function useConfiguratorWorkspaceState() {
     thumbnailSideRatingsOffset,
     thumbnailSideRatingsPosition,
     thumbnailStreamBadges,
+    logoStreamBadges,
     aiometadataEpisodeIdMode,
     episodeIdMode,
     xrdbKey,
@@ -481,6 +500,14 @@ export function useConfiguratorWorkspaceState() {
     setAggregateValueColor,
     setPosterNoBackgroundBadgeOutlineColor,
     setPosterNoBackgroundBadgeOutlineWidth,
+    setAgeRatingTileColor,
+    setReleaseStatusTileColor,
+    setQualityBadgesTileAccentColor,
+    setNetworkTileColor,
+    setGenreBadgeTileAccentColor,
+    setCommunityBadgeTheme,
+    setAgeRatingBadgeStyle,
+    setReleaseStatusBadgeStyle,
     setPosterRatingXOffsetPillGlass,
     setPosterRatingYOffsetPillGlass,
     setBackdropRatingXOffsetPillGlass,
@@ -544,6 +571,7 @@ export function useConfiguratorWorkspaceState() {
     setThumbnailSideRatingsOffset,
     setThumbnailSideRatingsPosition,
     setThumbnailStreamBadges,
+    setLogoStreamBadges,
     setAiometadataEpisodeIdMode,
     setEpisodeIdMode,
     setXrdbKey,

@@ -86,6 +86,10 @@ import {
   type QualityBadgeStyle,
   type RatingStyle,
 } from '@/lib/ratingAppearance';
+import {
+  DEFAULT_COMMUNITY_BADGE_THEME,
+  type CommunityBadgeTheme,
+} from '@/lib/communityBadgeTheme';
 import { type SideRatingPosition } from '@/lib/sideRatingPosition';
 
 const GENRE_BADGE_QUERY_KEYS = {
@@ -324,6 +328,7 @@ export function useConfiguratorOutputs({
   thumbnailSideRatingsOffset,
   thumbnailSideRatingsPosition,
   thumbnailStreamBadges,
+  logoStreamBadges,
   baseUrl,
   buildCurrentUiConfig,
   aiometadataEpisodeIdMode = DEFAULT_AIOMETADATA_EPISODE_ID_MODE,
@@ -402,6 +407,14 @@ export function useConfiguratorOutputs({
   qualityBadgesSide,
   posterNoBackgroundBadgeOutlineColor,
   posterNoBackgroundBadgeOutlineWidth,
+  ageRatingTileColor,
+  releaseStatusTileColor,
+  qualityBadgesTileAccentColor,
+  networkTileColor,
+  genreBadgeTileAccentColor,
+  communityBadgeTheme,
+  ageRatingBadgeStyle,
+  releaseStatusBadgeStyle,
   posterRatingXOffsetPillGlass,
   posterRatingYOffsetPillGlass,
   backdropRatingXOffsetPillGlass,
@@ -496,6 +509,7 @@ export function useConfiguratorOutputs({
   thumbnailSideRatingsOffset: number;
   thumbnailSideRatingsPosition: SideRatingPosition;
   thumbnailStreamBadges: StreamBadgesSetting;
+  logoStreamBadges: StreamBadgesSetting;
   baseUrl: string;
   buildCurrentUiConfig: () => SavedUiConfig;
   aiometadataEpisodeIdMode?: AiometadataEpisodeIdMode;
@@ -574,6 +588,14 @@ export function useConfiguratorOutputs({
   qualityBadgesSide: QualityBadgesSide;
   posterNoBackgroundBadgeOutlineColor: string;
   posterNoBackgroundBadgeOutlineWidth: number;
+  ageRatingTileColor: string;
+  releaseStatusTileColor: string;
+  qualityBadgesTileAccentColor: string;
+  networkTileColor: string;
+  genreBadgeTileAccentColor: string;
+  communityBadgeTheme: CommunityBadgeTheme;
+  ageRatingBadgeStyle: QualityBadgeStyle | null;
+  releaseStatusBadgeStyle: QualityBadgeStyle | null;
   posterRatingXOffsetPillGlass: number;
   posterRatingYOffsetPillGlass: number;
   backdropRatingXOffsetPillGlass: number;
@@ -735,6 +757,8 @@ export function useConfiguratorOutputs({
         ? backdropStreamBadges
         : previewType === 'thumbnail'
           ? thumbnailStreamBadges
+        : previewType === 'logo'
+          ? logoStreamBadges
           : posterStreamBadges;
     const qualityBadgesStyleForType =
       previewType === 'backdrop'
@@ -805,6 +829,9 @@ export function useConfiguratorOutputs({
       backgroundOpacity: activeGenreBadgeBackgroundOpacity,
       animeGrouping: activeGenreBadgeAnimeGrouping,
     });
+    if (activeGenreBadgeStyle === 'tile') {
+      if (genreBadgeTileAccentColor) query.set('genreBadgeTileAccentColor', genreBadgeTileAccentColor);
+    }
     if (ratingPresentationForType !== DEFAULT_RATING_PRESENTATION) {
       query.set(
         previewType === 'poster'
@@ -939,12 +966,14 @@ export function useConfiguratorOutputs({
     } else {
       query.set('logoRatings', ratingsQuery);
     }
-    if (previewType !== 'logo' && streamBadgesForType !== 'auto') {
+    if (streamBadgesForType !== 'auto') {
       query.set(
         previewType === 'backdrop'
           ? 'backdropStreamBadges'
           : previewType === 'thumbnail'
             ? 'thumbnailStreamBadges'
+          : previewType === 'logo'
+            ? 'logoStreamBadges'
             : 'posterStreamBadges',
         streamBadgesForType,
       );
@@ -1116,6 +1145,27 @@ export function useConfiguratorOutputs({
         query.set('logoArtworkSource', logoArtworkSource);
       }
     }
+    if (qualityBadgesStyleForType === 'tile') {
+      if (qualityBadgesTileAccentColor) query.set('qualityBadgesTileAccentColor', qualityBadgesTileAccentColor);
+      if (networkTileColor) query.set('networkTileColor', networkTileColor);
+    }
+    if (qualityBadgesStyleForType === 'tile' || ageRatingBadgeStyle === 'tile') {
+      if (ageRatingTileColor) query.set('ageRatingTileColor', ageRatingTileColor);
+    }
+    if (qualityBadgesStyleForType === 'tile' || releaseStatusBadgeStyle === 'tile') {
+      if (releaseStatusTileColor) query.set('releaseStatusTileColor', releaseStatusTileColor);
+    }
+    if (qualityBadgesStyleForType === 'community-badge' || ageRatingBadgeStyle === 'community-badge' || releaseStatusBadgeStyle === 'community-badge') {
+      if (communityBadgeTheme !== DEFAULT_COMMUNITY_BADGE_THEME) {
+        query.set('communityBadgeTheme', communityBadgeTheme);
+      }
+    }
+    if (ageRatingBadgeStyle !== null) {
+      query.set('ageRatingBadgeStyle', ageRatingBadgeStyle);
+    }
+    if (releaseStatusBadgeStyle !== null) {
+      query.set('releaseStatusBadgeStyle', releaseStatusBadgeStyle);
+    }
     if (ratingBadgeScaleForType !== DEFAULT_BADGE_SCALE_PERCENT) {
       query.set(
         previewType === 'poster'
@@ -1269,6 +1319,7 @@ export function useConfiguratorOutputs({
     logoRatingStyle,
     logoRatingsMax,
     logoBottomRatingsRow,
+    logoStreamBadges,
     mdblistKey,
     mediaId,
     posterAggregateRatingSource,
@@ -1305,6 +1356,14 @@ export function useConfiguratorOutputs({
     posterStreamBadges,
     posterNoBackgroundBadgeOutlineColor,
     posterNoBackgroundBadgeOutlineWidth,
+    ageRatingTileColor,
+    releaseStatusTileColor,
+    qualityBadgesTileAccentColor,
+    networkTileColor,
+    genreBadgeTileAccentColor,
+    communityBadgeTheme,
+    ageRatingBadgeStyle,
+    releaseStatusBadgeStyle,
     posterRatingXOffsetPillGlass,
     posterRatingYOffsetPillGlass,
     backdropRatingXOffsetPillGlass,

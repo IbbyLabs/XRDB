@@ -194,6 +194,20 @@ export const buildQualityBadgeRowOverlays = ({
         )
         .filter((spec): spec is NonNullable<typeof spec> => Boolean(spec))
     )
+    .filter((specRow) => specRow.length > 0)
+    .map((specRow) => {
+      if (imageType !== 'logo') return specRow;
+      const availableWidth = outputWidth - rowEdgeInset * 2;
+      const clipped: typeof specRow = [];
+      let usedWidth = 0;
+      for (const spec of specRow) {
+        const addWidth = clipped.length > 0 ? rowGap + spec.width : spec.width;
+        if (usedWidth + addWidth > availableWidth) break;
+        clipped.push(spec);
+        usedWidth += addWidth;
+      }
+      return clipped;
+    })
     .filter((specRow) => specRow.length > 0);
 
   const totalHeight =
@@ -225,7 +239,7 @@ export const buildQualityBadgeRowOverlays = ({
         svg: spec.svg,
         width: spec.width,
         height: spec.height,
-        top: startY,
+        top: startY + Math.floor((rowHeight - spec.height) / 2),
         left: rowX,
       });
       rowX += spec.width + rowGap;

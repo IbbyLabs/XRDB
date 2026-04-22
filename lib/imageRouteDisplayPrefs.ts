@@ -6,6 +6,7 @@ import {
 } from './ratingPresentation.ts';
 import {
   normalizeQualityBadgeStyle,
+  normalizeQualityBadgeStyleOrNull,
   type QualityBadgeStyle,
 } from './ratingAppearance.ts';
 import type {
@@ -145,6 +146,9 @@ export const resolvePosterQualityBadgePlacement = (
 
 export const normalizeQualityBadgesStyle = (value?: string | null): QualityBadgeStyle =>
   normalizeQualityBadgeStyle(value);
+
+export const normalizeQualityBadgesStyleOrNull = (value?: string | null): QualityBadgeStyle | null =>
+  normalizeQualityBadgeStyleOrNull(value);
 
 export const normalizeLogoBackground = (value?: string | null): LogoBackground => {
   const normalized = (value || '').trim().toLowerCase();

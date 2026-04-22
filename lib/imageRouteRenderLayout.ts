@@ -582,10 +582,7 @@ export const resolveImageRouteRenderLayout = async (input: {
     },
     ratingStyle,
   );
-  const logoQualityRows =
-    useLogoBadgeLayout && qualityBadges.length > 0
-      ? Math.ceil(qualityBadges.length / Math.max(1, logoBadgesPerRow))
-      : 0;
+  const logoQualityRows = useLogoBadgeLayout && qualityBadges.length > 0 ? 1 : 0;
   const logoQualityBadgeHeight =
     useLogoBadgeLayout && qualityBadges.length > 0
       ? resolveQualityBadgeHeight({

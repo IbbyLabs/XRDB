@@ -17,6 +17,7 @@ export type GenreBadgeRenderSpec = {
   accentColor: string;
   mode: GenreBadgeMode;
   style: GenreBadgeStyle;
+  tileAccentColor?: string;
   scalePercent?: number;
   borderWidth?: number;
   backgroundOpacity?: number;
@@ -349,6 +350,27 @@ ${textMarkup}
 ${iconMarkup}
 ${textMarkup}
 </svg>`,
+    };
+  }
+
+  if (genreBadge.style === 'tile') {
+    const TILE_BG = '#0f1117';
+    const tileFontFamily = "'Noto Sans','DejaVu Sans',Arial,sans-serif";
+    const tileR = Math.max(7, Math.round(height * 0.18));
+    const tileStripW = Math.max(tileR + 2, Math.round(height * 0.22));
+    const tileAccentColor = genreBadge.tileAccentColor || genreBadge.accentColor;
+    const tileStripPath = `M ${tileR},0 L ${tileStripW},0 L ${tileStripW},${height} L ${tileR},${height} Q 0,${height} 0,${height - tileR} L 0,${tileR} Q 0,0 ${tileR},0 Z`;
+    const tileLabel = genreBadge.label.trim().toUpperCase();
+    const tileFontSize = Math.round(height * 0.33);
+    const tileSidePad = Math.max(12, Math.round(height * 0.28));
+    const tileBodyMinW = Math.max(Math.round(height * 1.4), estimateGenreBadgeLabelWidth(tileLabel, tileFontSize) + tileSidePad * 2);
+    const tileW = Math.max(tileStripW + tileBodyMinW, tileStripW + Math.round(height * 0.9));
+    const contentCx = tileStripW + Math.round((tileW - tileStripW) / 2);
+    const textY = Math.round(height * 0.64);
+    return {
+      width: tileW,
+      height,
+      svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${tileW}" height="${height}" viewBox="0 0 ${tileW} ${height}"><rect x="0" y="0" width="${tileW}" height="${height}" rx="${tileR}" fill="${TILE_BG}"/><path d="${tileStripPath}" fill="${tileAccentColor}"/><text x="${contentCx}" y="${textY}" font-family="${tileFontFamily}" font-size="${tileFontSize}" font-weight="800" text-anchor="middle" fill="#f5f5f4" letter-spacing="0.08em">${escapeXml(tileLabel)}</text></svg>`,
     };
   }
 

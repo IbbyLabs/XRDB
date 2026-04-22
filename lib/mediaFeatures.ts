@@ -12,6 +12,7 @@ export type MediaFeatureBadgeKey =
   | 'paramountplus'
   | 'peacock'
   | '4k'
+  | 'hd'
   | 'bluray'
   | 'hdr'
   | 'dolbyvision'
@@ -21,6 +22,7 @@ export type MediaFeatureBadgeKey =
 
 export type MediaFeatureFlags = {
   has4k: boolean;
+  hasHd: boolean;
   hasBluray: boolean;
   hasHdr: boolean;
   hasDolbyVision: boolean;
@@ -120,6 +122,11 @@ const MEDIA_FEATURE_META_BY_KEY: Record<MediaFeatureBadgeKey, MediaFeatureBadgeM
     label: '4K',
     accentColor: '#f7c948',
   },
+  hd: {
+    key: 'hd',
+    label: 'HD',
+    accentColor: '#38bdf8',
+  },
   bluray: {
     key: 'bluray',
     label: 'Bluray',
@@ -163,6 +170,7 @@ export const MEDIA_FEATURE_BADGE_ORDER: MediaFeatureBadgeKey[] = [
   'paramountplus',
   'peacock',
   '4k',
+  'hd',
   'bluray',
   'hdr',
   'dolbyvision',
@@ -233,6 +241,7 @@ export const normalizeCertificationBadgeLabel = (value?: string | null) => {
 
 export const createEmptyMediaFeatureFlags = (): MediaFeatureFlags => ({
   has4k: false,
+  hasHd: false,
   hasBluray: false,
   hasHdr: false,
   hasDolbyVision: false,
@@ -242,6 +251,11 @@ export const createEmptyMediaFeatureFlags = (): MediaFeatureFlags => ({
 
 export const parseMediaFeatureFlagsFromFilename = (filename: string): MediaFeatureFlags => {
   const normalized = filename.toUpperCase();
+  const hasHdCandidate =
+    /\b1080P\b/.test(normalized) ||
+    /\b720P\b/.test(normalized) ||
+    /\bFULLHD\b/.test(normalized) ||
+    /\bFHD\b/.test(normalized);
   const hasDolbyVision =
     /\bDOVI\b/.test(normalized) || /\bDV\b/.test(normalized) || /DOLBY\s*VISION/.test(normalized);
   const hasHdr =
@@ -257,6 +271,7 @@ export const parseMediaFeatureFlagsFromFilename = (filename: string): MediaFeatu
     /\b4K\b/.test(normalized) ||
     /\bUHD\b/.test(normalized) ||
     /\bULTRAHD\b/.test(normalized);
+  const hasHd = !has4k && hasHdCandidate;
   const hasBluray =
     /\bBLU[\s._-]?RAY\b/.test(normalized) ||
     /\bBDRIP\b/.test(normalized) ||
@@ -267,7 +282,7 @@ export const parseMediaFeatureFlagsFromFilename = (filename: string): MediaFeatu
     /\bBD50\b/.test(normalized) ||
     /\bBRRIP\b/.test(normalized);
   const hasRemux = /\bREMUX\b/.test(normalized) || /\bBDREMUX\b/.test(normalized);
-  return { has4k, hasBluray, hasHdr, hasDolbyVision, hasDolbyAtmos, hasRemux };
+  return { has4k, hasHd, hasBluray, hasHdr, hasDolbyVision, hasDolbyAtmos, hasRemux };
 };
 
 export const mergeMediaFeatureFlags = (
@@ -275,6 +290,7 @@ export const mergeMediaFeatureFlags = (
   right: MediaFeatureFlags,
 ): MediaFeatureFlags => ({
   has4k: left.has4k || right.has4k,
+  hasHd: left.hasHd || right.hasHd,
   hasBluray: left.hasBluray || right.hasBluray,
   hasHdr: left.hasHdr || right.hasHdr,
   hasDolbyVision: left.hasDolbyVision || right.hasDolbyVision,
@@ -289,6 +305,7 @@ export const collectMediaFeatureFlags = (filenames: string[]) => {
     flags = mergeMediaFeatureFlags(flags, parseMediaFeatureFlagsFromFilename(filename));
     if (
       flags.has4k &&
+      flags.hasHd &&
       flags.hasBluray &&
       flags.hasHdr &&
       flags.hasDolbyVision &&
@@ -307,6 +324,7 @@ export const buildMediaFeatureBadgesFromFlags = (
 ) => {
   const badges: MediaFeatureBadgeMeta[] = [];
   if (flags.has4k) badges.push(MEDIA_FEATURE_META_BY_KEY['4k']);
+  if (!flags.has4k && flags.hasHd) badges.push(MEDIA_FEATURE_META_BY_KEY.hd);
   if (flags.hasRemux) {
     if (remuxDisplayMode === 'composite') {
       badges.push(MEDIA_FEATURE_META_BY_KEY.bdremux);

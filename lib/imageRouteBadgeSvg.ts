@@ -372,6 +372,36 @@ ${variantChrome}
 <text x="${valueX}" y="${valueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="${valueColor ?? 'white'}"${valueFilter}${valueNumericStyle}>${escapeXml(value)}</text>
 </svg>`;
   }
+  if (ratingStyle === 'tile') {
+    const tileBg = '#0f1117';
+    const tileR = Math.max(8, Math.round(height * 0.18));
+    const renderIconSizeTile = resolveBadgeIconRenderSize({ iconSlotSize: iconSize, badgeHeight: height, iconScalePercent });
+    const iconPlateW = Math.round(renderIconSizeTile + paddingX * 1.8);
+    const iconXTile = Math.round((iconPlateW - renderIconSizeTile) / 2);
+    const iconYTile = Math.round((height - renderIconSizeTile) / 2);
+    const iconCxTile = Math.round(iconPlateW / 2);
+    const iconCyTile = Math.round(height / 2);
+    const iconFontSizeTile = Math.max(12, Math.round(renderIconSizeTile * 0.42));
+    const platePath = `M ${tileR},0 L ${iconPlateW},0 L ${iconPlateW},${height} L ${tileR},${height} Q 0,${height} 0,${height - tileR} L 0,${tileR} Q 0,0 ${tileR},0 Z`;
+    const tileIconOutlineR = Math.max(1, Math.round(renderIconSizeTile * 0.04));
+    const tileIconOutlineDefs = iconDataUri
+      ? `<defs><filter id="tile-icon-ol" x="-20%" y="-20%" width="140%" height="140%"><feMorphology in="SourceAlpha" operator="dilate" radius="${tileIconOutlineR}" result="exp"/><feComposite in="exp" in2="SourceAlpha" operator="out" result="ring"/><feFlood flood-color="#ffffff" flood-opacity="0.82" result="wht"/><feComposite in="wht" in2="ring" operator="in" result="ol"/><feMerge><feMergeNode in="ol"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`
+      : '';
+    const iconContentTile = iconDataUri
+      ? `<image href="${iconDataUri}" x="${iconXTile}" y="${iconYTile}" width="${renderIconSizeTile}" height="${renderIconSizeTile}" preserveAspectRatio="xMidYMid meet" filter="url(#tile-icon-ol)" />`
+      : `<text x="${iconCxTile}" y="${Math.round(iconCyTile + iconFontSizeTile * 0.34)}" font-family="Arial, sans-serif" font-size="${iconFontSizeTile}" font-weight="700" text-anchor="middle" fill="white">${escapeXml(monogram)}</text>`;
+    const tileValueSlotX = iconPlateW + paddingX;
+    const tileValueAvailableW = Math.max(0, width - tileValueSlotX - Math.max(4, Math.round(paddingX * 0.5)));
+    const tileValueX = Math.round(tileValueSlotX + tileValueAvailableW / 2);
+    const tileValueY = Math.round(height / 2 + fontSize * 0.36);
+    const tileValueTextWidth = estimateBadgeTextWidth(value, fontSize, compactText);
+    const tileValueTextLen = compactText && tileValueTextWidth > tileValueAvailableW
+      ? ` textLength="${tileValueAvailableW}" lengthAdjust="spacingAndGlyphs"`
+      : '';
+    const tileNumericStyle = ' style="font-variant-numeric: tabular-nums lining-nums; font-feature-settings: \'tnum\' 1, \'lnum\' 1;"';
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${tileIconOutlineDefs}<rect x="0" y="0" width="${width}" height="${height}" rx="${tileR}" fill="${tileBg}"/><path d="${platePath}" fill="${accentColor}"/>${iconContentTile}<text x="${tileValueX}" y="${tileValueY}" font-family="'Noto Sans','DejaVu Sans',Arial,sans-serif" font-size="${fontSize}" font-weight="800" text-anchor="middle" fill="${valueColor ?? 'white'}"${tileValueTextLen}${tileNumericStyle}>${escapeXml(value)}</text></svg>`;
+  }
+
   if (ratingStyle === 'stacked') {
     const stackedOuterStrokeWidth = resolveScaledStrokeWidth({
       baseWidth: 1.15,

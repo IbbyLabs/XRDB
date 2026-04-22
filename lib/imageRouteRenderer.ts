@@ -1,6 +1,7 @@
 import type { BackdropRatingLayout } from './backdropLayoutOptions.ts';
 import type { PosterRatingLayout } from './posterLayoutOptions.ts';
 import type { QualityBadgeStyle, RatingStyle } from './ratingAppearance.ts';
+import type { CommunityBadgeTheme } from './communityBadgeAssets.ts';
 import type { AggregateRatingSource, RatingPresentation } from './ratingPresentation.ts';
 import type { SideRatingPosition } from './sideRatingPosition.ts';
 import type { GenreBadgeFamilyId, GenreBadgeMode, GenreBadgePosition, GenreBadgeStyle } from './genreBadge.ts';
@@ -101,6 +102,7 @@ export type RatingBadge = {
   sourceValue?: string;
   iconUrl: string;
   accentColor: string;
+  tileAccentColor?: string;
   valueColor?: string;
   hasCustomIconOverride?: boolean;
   iconCornerRadius?: number;
@@ -131,6 +133,7 @@ export type GenreBadgeSpec = {
   mode: GenreBadgeMode;
   style: GenreBadgeStyle;
   position: GenreBadgePosition;
+  tileAccentColor?: string;
   scalePercent?: number;
   borderWidth?: number;
   backgroundOpacity?: number;
@@ -176,6 +179,7 @@ export type FastRenderInput = {
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
   ageRatingBadgePosition: AgeRatingBadgePosition;
   qualityBadgesStyle: QualityBadgeStyle;
+  communityBadgeTheme?: CommunityBadgeTheme;
   qualityBadgeScalePercent: number;
   posterRatingsLayout: PosterRatingLayout;
   posterRatingsMaxPerSide: number | null;
@@ -437,6 +441,7 @@ export const renderWithSharp = async (
               backgroundOpacity: input.genreBadge.backgroundOpacity,
               noBackgroundOutlineColor: input.genreBadge.noBackgroundOutlineColor,
               noBackgroundOutlineWidth: input.genreBadge.noBackgroundOutlineWidth,
+              tileAccentColor: input.genreBadge.tileAccentColor,
             },
             'poster',
           ).height
@@ -1250,7 +1255,7 @@ export const renderWithSharp = async (
       ) {
         const ratingRows = input.badges.length > 0 ? chunkBy(input.badges, input.logoBadgesPerRow) : [];
         const qualityRows =
-          input.qualityBadges.length > 0 ? chunkBy(input.qualityBadges, input.logoBadgesPerRow) : [];
+          input.qualityBadges.length > 0 ? [input.qualityBadges] : [];
         const logoQualityBadgeHeight =
           qualityRows.length > 0
             ? resolveQualityBadgeHeight({

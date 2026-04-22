@@ -261,6 +261,14 @@ export const executeImageRouteRender = async ({
         rawFallbackLogoAspectRatio,
         canonicalSeriesIdentity,
         canonicalEpisodeIdentity,
+        ageRatingTileColor: requestState.ageRatingTileColor,
+        releaseStatusTileColor: requestState.releaseStatusTileColor,
+        qualityBadgesTileAccentColor: requestState.qualityBadgesTileAccentColor,
+        networkTileColor: requestState.networkTileColor,
+        genreBadgeTileAccentColor: requestState.genreBadgeTileAccentColor,
+        communityBadgeTheme: requestState.communityBadgeTheme,
+        ageRatingBadgeStyle: requestState.ageRatingBadgeStyle,
+        releaseStatusBadgeStyle: requestState.releaseStatusBadgeStyle,
       });
       allowAnimeOnlyRatings = preparedMedia.allowAnimeOnlyRatings;
       hasConfirmedAnimeMapping = preparedMedia.hasConfirmedAnimeMapping;

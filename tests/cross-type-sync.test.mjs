@@ -109,7 +109,7 @@ test('applySyncableSettings: stream badges excluded from logo target', () => {
   const settings = { ...base, posterStreamBadges: 'on' };
   const incoming = extractSyncableSettings(settings, 'poster');
   const result = applySyncableSettings(base, 'logo', incoming);
-  assert.equal('logoStreamBadges' in result, false);
+  assert.equal(result.logoStreamBadges, base.logoStreamBadges);
 });
 
 test('applySyncableSettings: thumbnail providers filter to TMDB/IMDb only', () => {

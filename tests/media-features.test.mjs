@@ -26,6 +26,7 @@ test('media feature parsing recognizes bluray premium audio video flags', () => 
 
   assert.deepEqual(flags, {
     has4k: true,
+    hasHd: false,
     hasBluray: true,
     hasHdr: true,
     hasDolbyVision: true,
@@ -37,6 +38,7 @@ test('media feature parsing recognizes bluray premium audio video flags', () => 
 test('media feature badges prefer bluray over remux and dolby vision over hdr', () => {
   const badges = buildMediaFeatureBadgesFromFlags({
     has4k: true,
+    hasHd: false,
     hasBluray: true,
     hasHdr: true,
     hasDolbyVision: true,
@@ -57,6 +59,7 @@ test('media feature badges prefer bluray over remux and dolby vision over hdr', 
 test('remux sources also expose bluray coverage when explicit bluray tokens are absent', () => {
   const badges = buildMediaFeatureBadgesFromFlags({
     has4k: true,
+    hasHd: false,
     hasBluray: false,
     hasHdr: true,
     hasDolbyVision: true,
@@ -94,9 +97,28 @@ test('media feature flag collection merges multiple filenames', () => {
   ]);
 
   assert.equal(flags.has4k, true);
+  assert.equal(flags.hasHd, false);
   assert.equal(flags.hasDolbyVision, true);
   assert.equal(flags.hasDolbyAtmos, true);
   assert.equal(flags.hasBluray, false);
+});
+
+test('hd streams produce hd badge and do not duplicate with 4k', () => {
+  const hdFlags = parseMediaFeatureFlagsFromFilename('Show.S01E01.1080p.WEB-DL.x265.mkv');
+  assert.equal(hdFlags.has4k, false);
+  assert.equal(hdFlags.hasHd, true);
+  assert.deepEqual(
+    buildMediaFeatureBadgesFromFlags(hdFlags).map((badge) => badge.key),
+    ['hd'],
+  );
+
+  const bothFlags = parseMediaFeatureFlagsFromFilename('Show.S01E01.2160p.1080p.WEB-DL.x265.mkv');
+  assert.equal(bothFlags.has4k, true);
+  assert.equal(bothFlags.hasHd, false);
+  assert.deepEqual(
+    buildMediaFeatureBadgesFromFlags(bothFlags).map((badge) => badge.key),
+    ['4k'],
+  );
 });
 
 test('4k web streams do not infer bluray badges', () => {

@@ -37,6 +37,10 @@ import {
   RATING_STYLE_OPTIONS,
 } from './ratingAppearance.ts';
 import {
+  COMMUNITY_BADGE_THEME_OPTIONS,
+  DEFAULT_COMMUNITY_BADGE_THEME,
+} from './communityBadgeTheme.ts';
+import {
   DEFAULT_RATING_STACK_OFFSET_PX,
   MAX_RATING_STACK_OFFSET_PX,
   MIN_RATING_STACK_OFFSET_PX,
@@ -149,6 +153,7 @@ const QUALITY_BADGES_SIDE_VALUES = ['left', 'right'] as const;
 
 const ratingStyleValues = RATING_STYLE_OPTIONS.map((option) => option.id);
 const qualityBadgeStyleValues = QUALITY_BADGE_STYLE_OPTIONS.map((option) => option.id);
+const communityBadgeThemeValues = COMMUNITY_BADGE_THEME_OPTIONS.map((option) => option.id);
 const genreBadgeModeValues = GENRE_BADGE_MODE_OPTIONS.map((option) => option.id);
 const genreBadgeStyleValues = GENRE_BADGE_STYLE_OPTIONS.map((option) => option.id);
 const genreBadgePositionValues = GENRE_BADGE_POSITION_OPTIONS.map((option) => option.id);
@@ -220,6 +225,14 @@ const buildEntries = () => {
     { key: 'aggregateAccentBarVisible', coverageValues: ['false'], browserFamily: 'appearance', surfaces: ['shared'] },
     { key: 'posterNoBackgroundBadgeOutlineColor', coverageValues: HEX_COLOR_CASES, browserFamily: 'appearance', surfaces: ['poster'] },
     { key: 'posterNoBackgroundBadgeOutlineWidth', coverageValues: toDecimalTenthsRange(MIN_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX, MAX_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX, 0), browserFamily: 'appearance', surfaces: ['poster'] },
+    { key: 'ageRatingTileColor', coverageValues: HEX_COLOR_CASES, browserFamily: 'quality-badge', surfaces: ['shared'] },
+    { key: 'releaseStatusTileColor', coverageValues: HEX_COLOR_CASES, browserFamily: 'quality-badge', surfaces: ['shared'] },
+    { key: 'qualityBadgesTileAccentColor', coverageValues: HEX_COLOR_CASES, browserFamily: 'quality-badge', surfaces: ['shared'] },
+    { key: 'networkTileColor', coverageValues: HEX_COLOR_CASES, browserFamily: 'quality-badge', surfaces: ['shared'] },
+    { key: 'genreBadgeTileAccentColor', coverageValues: HEX_COLOR_CASES, browserFamily: 'genre-badge', surfaces: ['shared'] },
+    { key: 'communityBadgeTheme', coverageValues: communityBadgeThemeValues, requiredParams: { qualityBadgesStyle: 'community-badge' }, browserFamily: 'quality-badge', surfaces: ['shared'] },
+    { key: 'ageRatingBadgeStyle', coverageValues: qualityBadgeStyleValues, browserFamily: 'quality-badge', surfaces: ['shared'] },
+    { key: 'releaseStatusBadgeStyle', coverageValues: qualityBadgeStyleValues, browserFamily: 'quality-badge', surfaces: ['shared'] },
     { key: 'ratingXOffsetPillGlass', coverageValues: toIntegerRange(MIN_RATING_STACK_OFFSET_PX, MAX_RATING_STACK_OFFSET_PX, DEFAULT_RATING_STACK_OFFSET_PX), browserFamily: 'offset', surfaces: ['shared'] },
     { key: 'ratingYOffsetPillGlass', coverageValues: toIntegerRange(MIN_RATING_STACK_OFFSET_PX, MAX_RATING_STACK_OFFSET_PX, DEFAULT_RATING_STACK_OFFSET_PX), browserFamily: 'offset', surfaces: ['shared'] },
     { key: 'ratingXOffsetSquare', coverageValues: toIntegerRange(MIN_RATING_STACK_OFFSET_PX, MAX_RATING_STACK_OFFSET_PX, DEFAULT_RATING_STACK_OFFSET_PX), browserFamily: 'offset', surfaces: ['shared'] },
@@ -319,6 +332,9 @@ const buildEntries = () => {
 
   for (const type of ['poster', 'backdrop', 'thumbnail']) {
     entries.push({ key: withType(type, 'ImageText'), coverageValues: IMAGE_TEXT_VALUES, browserFamily: 'artwork', surfaces: [type] });
+  }
+
+  for (const type of ['poster', 'backdrop', 'thumbnail', 'logo']) {
     entries.push({ key: withType(type, 'StreamBadges'), coverageValues: STREAM_BADGE_VALUES, browserFamily: 'quality-badge', surfaces: [type] });
   }
 
