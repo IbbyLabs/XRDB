@@ -161,7 +161,7 @@ const communityBadgeThemeValues = COMMUNITY_BADGE_THEME_OPTIONS.map((option) => 
 const genreBadgeModeValues = GENRE_BADGE_MODE_OPTIONS.map((option) => option.id);
 const genreBadgeStyleValues = GENRE_BADGE_STYLE_OPTIONS.map((option) => option.id);
 const genreBadgePositionValues = GENRE_BADGE_POSITION_OPTIONS.map((option) => option.id);
-const genreBadgeAnimeGroupingValues = ['split', 'animation'] as const;
+const genreBadgeAnimeGroupingValues = ['split', 'animation', 'secondary'] as const;
 const ratingPresentationValues = RATING_PRESENTATION_OPTIONS.map((option) => option.id);
 const aggregateRatingSourceValues = AGGREGATE_RATING_SOURCE_OPTIONS.map((option) => option.id);
 const aggregateAccentModeValues = AGGREGATE_ACCENT_MODE_OPTIONS.map((option) => option.id);

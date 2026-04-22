@@ -33,6 +33,9 @@ test('genre badge style and position normalization accept friendly variants', ()
   assert.equal(normalizeGenreBadgePosition('unknown'), DEFAULT_GENRE_BADGE_POSITION);
   assert.equal(normalizeGenreBadgeAnimeGrouping('animation'), 'animation');
   assert.equal(normalizeGenreBadgeAnimeGrouping('grouped'), 'animation');
+  assert.equal(normalizeGenreBadgeAnimeGrouping('merge'), 'animation');
+  assert.equal(normalizeGenreBadgeAnimeGrouping('secondary'), 'secondary');
+  assert.equal(normalizeGenreBadgeAnimeGrouping('replace'), 'secondary');
   assert.equal(
     normalizeGenreBadgeAnimeGrouping('unknown'),
     DEFAULT_GENRE_BADGE_ANIME_GROUPING,
@@ -110,6 +113,32 @@ test('genre badge family resolution keeps anime and animation separate', () => {
       animeGrouping: 'animation',
     })?.id,
     'animation',
+  );
+
+  assert.equal(
+    resolveGenreBadgeFamily({
+      genres: [{ name: 'Animation' }, { name: 'Action' }],
+      isAnimeContent: true,
+      animeGrouping: 'secondary',
+    })?.id,
+    'action',
+  );
+
+  assert.equal(
+    resolveGenreBadgeFamily({
+      genres: [{ name: 'Animation' }],
+      isAnimeContent: true,
+      animeGrouping: 'secondary',
+    })?.id,
+    'anime',
+  );
+
+  assert.equal(
+    resolveGenreBadgeFamily({
+      genres: [{ name: 'Animation' }, { name: 'Science Fiction' }],
+      animeGrouping: 'secondary',
+    })?.id,
+    'scifi',
   );
 });
 

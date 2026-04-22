@@ -7,7 +7,7 @@ export type GenreBadgePosition =
   | 'bottomLeft'
   | 'bottomCenter'
   | 'bottomRight';
-export type GenreBadgeAnimeGrouping = 'split' | 'animation';
+export type GenreBadgeAnimeGrouping = 'split' | 'animation' | 'secondary';
 export type GenreBadgeFamilyId =
   | 'anime'
   | 'animation'
@@ -160,6 +160,7 @@ const GENRE_BADGE_STYLE_SET = new Set<GenreBadgeStyle>(
 const GENRE_BADGE_ANIME_GROUPING_SET = new Set<GenreBadgeAnimeGrouping>([
   'split',
   'animation',
+  'secondary',
 ]);
 
 export const normalizeGenreBadgeMode = (
@@ -212,8 +213,16 @@ export const normalizeGenreBadgeAnimeGrouping = (
   fallback: GenreBadgeAnimeGrouping = DEFAULT_GENRE_BADGE_ANIME_GROUPING,
 ): GenreBadgeAnimeGrouping => {
   const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
-  if (normalized === 'grouped' || normalized === 'group' || normalized === 'animationonly') {
+  if (
+    normalized === 'grouped' ||
+    normalized === 'group' ||
+    normalized === 'merge' ||
+    normalized === 'animationonly'
+  ) {
     return 'animation';
+  }
+  if (normalized === 'replace' || normalized === 'secondarygenre' || normalized === 'replacesecondary') {
+    return 'secondary';
   }
   return GENRE_BADGE_ANIME_GROUPING_SET.has(normalized as GenreBadgeAnimeGrouping)
     ? (normalized as GenreBadgeAnimeGrouping)
@@ -449,117 +458,135 @@ export const resolveGenreBadgeFamily = (input: {
   const genreIds = collectGenreIds(genres, Array.isArray(input.genreIds) ? input.genreIds : []);
   const animeGrouping = normalizeGenreBadgeAnimeGrouping(input.animeGrouping);
 
-
-  if (hasGenreName(genreNames, 'anime')) {
-    return GENRE_BADGE_FAMILY_META.anime;
-  }
-  if (input.isAnimeContent) {
-    if (animeGrouping === 'animation') {
-      return GENRE_BADGE_FAMILY_META.animation;
+  const resolveFamily = (includeAnimationFamilies: boolean): GenreBadgeFamilyMeta | null => {
+    if (includeAnimationFamilies) {
+      if (hasGenreName(genreNames, 'anime')) {
+        return GENRE_BADGE_FAMILY_META.anime;
+      }
+      if (input.isAnimeContent) {
+        if (animeGrouping === 'animation') {
+          return GENRE_BADGE_FAMILY_META.animation;
+        }
+        return GENRE_BADGE_FAMILY_META.anime;
+      }
+      if (
+        hasGenreName(genreNames, 'animation', 'animated') ||
+        hasGenreId(genreIds, TMDB_GENRE.animation)
+      ) {
+        return GENRE_BADGE_FAMILY_META.animation;
+      }
     }
-    return GENRE_BADGE_FAMILY_META.anime;
-  }
-  if (hasGenreName(genreNames, 'animation', 'animated') || hasGenreId(genreIds, TMDB_GENRE.animation)) {
-    return GENRE_BADGE_FAMILY_META.animation;
+
+
+    if (hasGenreName(genreNames, 'horror') || hasGenreId(genreIds, TMDB_GENRE.horror)) {
+      return GENRE_BADGE_FAMILY_META.horror;
+    }
+
+    if (hasGenreName(genreNames, 'documentary') || hasGenreId(genreIds, TMDB_GENRE.documentary)) {
+      return GENRE_BADGE_FAMILY_META.documentary;
+    }
+
+    if (hasGenreName(genreNames, 'comedy') || hasGenreId(genreIds, TMDB_GENRE.comedy)) {
+      return GENRE_BADGE_FAMILY_META.comedy;
+    }
+
+    if (hasGenreName(genreNames, 'romance') || hasGenreId(genreIds, TMDB_GENRE.romance)) {
+      return GENRE_BADGE_FAMILY_META.romance;
+    }
+
+    if (
+      hasGenreName(genreNames, 'science fiction', 'sci fi & fantasy', 'sci-fi & fantasy') ||
+      hasGenreId(genreIds, TMDB_GENRE.scienceFictionMovie, TMDB_GENRE.scifiFantasyTv)
+    ) {
+      return GENRE_BADGE_FAMILY_META.scifi;
+    }
+
+    if (hasGenreName(genreNames, 'fantasy') || hasGenreId(genreIds, TMDB_GENRE.fantasy)) {
+      return GENRE_BADGE_FAMILY_META.fantasy;
+    }
+
+    if (
+      hasGenreName(genreNames, 'crime', 'thriller', 'mystery') ||
+      hasGenreId(genreIds, TMDB_GENRE.crime, TMDB_GENRE.thriller, TMDB_GENRE.mystery)
+    ) {
+      return GENRE_BADGE_FAMILY_META.crime;
+    }
+
+    if (
+      hasGenreName(genreNames, 'action', 'adventure', 'war', 'western', 'action & adventure') ||
+      hasGenreId(
+        genreIds,
+        TMDB_GENRE.action,
+        TMDB_GENRE.adventure,
+        TMDB_GENRE.war,
+        TMDB_GENRE.western,
+        TMDB_GENRE.actionAdventureTv,
+      )
+    ) {
+      return GENRE_BADGE_FAMILY_META.action;
+    }
+
+    if (hasGenreName(genreNames, 'drama') || hasGenreId(genreIds, TMDB_GENRE.drama)) {
+      return GENRE_BADGE_FAMILY_META.drama;
+    }
+
+    if (hasGenreName(genreNames, 'music') || hasGenreId(genreIds, TMDB_GENRE.music)) {
+      return GENRE_BADGE_FAMILY_META.music;
+    }
+
+    if (hasGenreName(genreNames, 'reality') || hasGenreId(genreIds, TMDB_GENRE.reality)) {
+      return GENRE_BADGE_FAMILY_META.reality;
+    }
+
+    if (hasGenreName(genreNames, 'family') || hasGenreId(genreIds, TMDB_GENRE.family)) {
+      return GENRE_BADGE_FAMILY_META.family;
+    }
+
+    if (hasGenreName(genreNames, 'history') || hasGenreId(genreIds, TMDB_GENRE.history)) {
+      return GENRE_BADGE_FAMILY_META.history;
+    }
+
+    if (hasGenreName(genreNames, 'kids') || hasGenreId(genreIds, TMDB_GENRE.kids)) {
+      return GENRE_BADGE_FAMILY_META.kids;
+    }
+
+    if (hasGenreName(genreNames, 'news') || hasGenreId(genreIds, TMDB_GENRE.news)) {
+      return GENRE_BADGE_FAMILY_META.news;
+    }
+
+    if (hasGenreName(genreNames, 'soap') || hasGenreId(genreIds, TMDB_GENRE.soap)) {
+      return GENRE_BADGE_FAMILY_META.soap;
+    }
+
+    if (hasGenreName(genreNames, 'talk') || hasGenreId(genreIds, TMDB_GENRE.talk)) {
+      return GENRE_BADGE_FAMILY_META.talk;
+    }
+
+    if (hasGenreName(genreNames, 'tv movie') || hasGenreId(genreIds, TMDB_GENRE.tvMovie)) {
+      return GENRE_BADGE_FAMILY_META.tvmovie;
+    }
+
+    if (
+      hasGenreName(genreNames, 'war & politics') ||
+      hasGenreId(genreIds, TMDB_GENRE.warPoliticsTv)
+    ) {
+      return GENRE_BADGE_FAMILY_META.warpolitics;
+    }
+
+    if (genreNames.size > 0 || genreIds.size > 0) {
+      return GENRE_BADGE_FAMILY_META.other;
+    }
+
+    return null;
+  };
+
+  const primary = resolveFamily(true);
+  if (animeGrouping !== 'secondary' || (primary?.id !== 'anime' && primary?.id !== 'animation')) {
+    return primary;
   }
 
-  if (hasGenreName(genreNames, 'horror') || hasGenreId(genreIds, TMDB_GENRE.horror)) {
-    return GENRE_BADGE_FAMILY_META.horror;
-  }
-
-  if (hasGenreName(genreNames, 'documentary') || hasGenreId(genreIds, TMDB_GENRE.documentary)) {
-    return GENRE_BADGE_FAMILY_META.documentary;
-  }
-
-  if (hasGenreName(genreNames, 'comedy') || hasGenreId(genreIds, TMDB_GENRE.comedy)) {
-    return GENRE_BADGE_FAMILY_META.comedy;
-  }
-
-  if (hasGenreName(genreNames, 'romance') || hasGenreId(genreIds, TMDB_GENRE.romance)) {
-    return GENRE_BADGE_FAMILY_META.romance;
-  }
-
-  if (
-    hasGenreName(genreNames, 'science fiction', 'sci fi & fantasy', 'sci-fi & fantasy') ||
-    hasGenreId(genreIds, TMDB_GENRE.scienceFictionMovie, TMDB_GENRE.scifiFantasyTv)
-  ) {
-    return GENRE_BADGE_FAMILY_META.scifi;
-  }
-
-  if (hasGenreName(genreNames, 'fantasy') || hasGenreId(genreIds, TMDB_GENRE.fantasy)) {
-    return GENRE_BADGE_FAMILY_META.fantasy;
-  }
-
-  if (
-    hasGenreName(genreNames, 'crime', 'thriller', 'mystery') ||
-    hasGenreId(genreIds, TMDB_GENRE.crime, TMDB_GENRE.thriller, TMDB_GENRE.mystery)
-  ) {
-    return GENRE_BADGE_FAMILY_META.crime;
-  }
-
-  if (
-    hasGenreName(genreNames, 'action', 'adventure', 'war', 'western', 'action & adventure') ||
-    hasGenreId(
-      genreIds,
-      TMDB_GENRE.action,
-      TMDB_GENRE.adventure,
-      TMDB_GENRE.war,
-      TMDB_GENRE.western,
-      TMDB_GENRE.actionAdventureTv,
-    )
-  ) {
-    return GENRE_BADGE_FAMILY_META.action;
-  }
-
-  if (hasGenreName(genreNames, 'drama') || hasGenreId(genreIds, TMDB_GENRE.drama)) {
-    return GENRE_BADGE_FAMILY_META.drama;
-  }
-
-  if (hasGenreName(genreNames, 'music') || hasGenreId(genreIds, TMDB_GENRE.music)) {
-    return GENRE_BADGE_FAMILY_META.music;
-  }
-
-  if (hasGenreName(genreNames, 'reality') || hasGenreId(genreIds, TMDB_GENRE.reality)) {
-    return GENRE_BADGE_FAMILY_META.reality;
-  }
-
-  if (hasGenreName(genreNames, 'family') || hasGenreId(genreIds, TMDB_GENRE.family)) {
-    return GENRE_BADGE_FAMILY_META.family;
-  }
-
-  if (hasGenreName(genreNames, 'history') || hasGenreId(genreIds, TMDB_GENRE.history)) {
-    return GENRE_BADGE_FAMILY_META.history;
-  }
-
-  if (hasGenreName(genreNames, 'kids') || hasGenreId(genreIds, TMDB_GENRE.kids)) {
-    return GENRE_BADGE_FAMILY_META.kids;
-  }
-
-  if (hasGenreName(genreNames, 'news') || hasGenreId(genreIds, TMDB_GENRE.news)) {
-    return GENRE_BADGE_FAMILY_META.news;
-  }
-
-  if (hasGenreName(genreNames, 'soap') || hasGenreId(genreIds, TMDB_GENRE.soap)) {
-    return GENRE_BADGE_FAMILY_META.soap;
-  }
-
-  if (hasGenreName(genreNames, 'talk') || hasGenreId(genreIds, TMDB_GENRE.talk)) {
-    return GENRE_BADGE_FAMILY_META.talk;
-  }
-
-  if (hasGenreName(genreNames, 'tv movie') || hasGenreId(genreIds, TMDB_GENRE.tvMovie)) {
-    return GENRE_BADGE_FAMILY_META.tvmovie;
-  }
-
-  if (hasGenreName(genreNames, 'war & politics') || hasGenreId(genreIds, TMDB_GENRE.warPoliticsTv)) {
-    return GENRE_BADGE_FAMILY_META.warpolitics;
-  }
-
-  if (genreNames.size > 0 || genreIds.size > 0) {
-    return GENRE_BADGE_FAMILY_META.other;
-  }
-
-  return null;
+  const secondary = resolveFamily(false);
+  return secondary && secondary.id !== 'other' ? secondary : primary;
 };
 
 export const GENRE_BADGE_PREVIEW_SAMPLES: ReadonlyArray<GenreBadgePreviewSample> = [

@@ -234,6 +234,11 @@ export const GENRE_BADGE_ANIME_GROUPING_OPTIONS: Array<{
     label: 'Group as Animation',
     description: 'Render anime content under the animation badge family.',
   },
+  {
+    id: 'secondary',
+    label: 'Secondary Genre',
+    description: 'When anime or animation would win, use the next strongest supported genre instead.',
+  },
 ];
 
 export const PRESENTATION_SECTION_ORDER: RatingPresentation[] = [
