@@ -370,3 +370,75 @@ test('image route renderer draws logo quality badges inside the logo badge band'
 
   assert.ok(hasBandContent);
 });
+
+test('image route renderer applies a transparent safe frame around logos', async () => {
+  const sourceSvg =
+    "<svg xmlns='http://www.w3.org/2000/svg' width='420' height='120' viewBox='0 0 420 120'><rect width='420' height='120' fill='#ffffff'/></svg>";
+  const result = await renderWithSharp(
+    {
+      imageType: 'logo',
+      ratingPresentation: 'standard',
+      aggregateRatingSource: 'combined',
+      blockbusterDensity: 'balanced',
+      outputFormat: 'png',
+      imgUrl: `data:image/svg+xml,${encodeURIComponent(sourceSvg)}`,
+      imgFallbackUrl: null,
+      outputWidth: 420,
+      outputHeight: 120,
+      finalOutputHeight: 120,
+      logoBadgeBandHeight: 0,
+      logoBadgeMaxWidth: 0,
+      logoBadgesPerRow: 0,
+      posterRowHorizontalInset: 24,
+      posterTitleText: null,
+      posterLogoUrl: null,
+      editorialOverlay: null,
+      compactRingOverlay: null,
+      genreBadge: null,
+      badgeIconSize: 92,
+      badgeFontSize: 68,
+      badgePaddingX: 38,
+      badgePaddingY: 24,
+      badgeGap: 22,
+      badgeTopOffset: 16,
+      badgeBottomOffset: 16,
+      backdropEdgeInset: 12,
+      posterEdgeInset: 12,
+      badges: [],
+      qualityBadges: [],
+      qualityBadgesSide: 'left',
+      posterQualityBadgesPosition: 'auto',
+      ageRatingBadgePosition: 'inherit',
+      qualityBadgesStyle: 'plain',
+      qualityBadgeScalePercent: 100,
+      posterRatingsLayout: 'top',
+      posterRatingsMaxPerSide: null,
+      posterEdgeOffset: 0,
+      backdropRatingsLayout: 'top',
+      backdropBottomRatingsRow: false,
+      sideRatingsPosition: 'center',
+      sideRatingsOffset: 0,
+      ratingStyle: 'plain',
+      ratingBlackStripEnabled: false,
+      ratingStackOffsetX: 0,
+      ratingStackOffsetY: 0,
+      logoBackground: 'transparent',
+      topBadges: [],
+      bottomBadges: [],
+      leftBadges: [],
+      rightBadges: [],
+      posterTopRows: [],
+      posterBottomRows: [],
+      backdropRows: [],
+      blockbusterBlurbs: [],
+      cacheControl: 'public, s-maxage=60, stale-while-revalidate=60',
+    },
+    { ...phases2 },
+  );
+
+  const topCenter = await samplePixel(result.body, 210, 6);
+  const center = await samplePixel(result.body, 210, 60);
+
+  assert.equal(topCenter.a, 0);
+  assert.equal(center.a, 255);
+});
