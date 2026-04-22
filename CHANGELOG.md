@@ -83,6 +83,15 @@
 
 ## Unreleased
 
+### Added
+* FR-66 community badge system, tile style, HD badge, per-badge style overrides
+
+  Adds two new quality badge styles: `tile` (dark card with colored left accent strip) and `community-badge` (curated SVG assets in gold, white, rainbow, and black themes selectable via `communityBadgeTheme`). Adds HD badge detection from 1080p/720p filename tokens when 4K is absent. Adds `logoStreamBadges` for independent logo type stream badge lists. Adds per-badge style overrides via `ageRatingBadgeStyle` and `releaseStatusBadgeStyle`. Adds tile accent color params: `qualityBadgesTileAccentColor`, `networkTileColor`, `ageRatingTileColor`, `releaseStatusTileColor`, and `genreBadgeTileAccentColor`. Standardizes provider icon outlines for consistency across badge styles.
+
+* per-badge custom icon URL override via `qualityBadgeAppearance`
+
+  Adds `qualityBadgeAppearance` query param accepting a base64url-encoded JSON object. Each key is a badge slot name (certification, releasestatus, netflix, hbo, primevideo, disneyplus, appletvplus, hulu, paramountplus, peacock, 4k, hd, bluray, hdr, dolbyvision, dolbyatmos, remux, bdremux) and each value is `{"iconUrl":"..."}` accepting data URIs or https URLs.
+
 ### Fixed
 * refresh UUID proxy manifest freshness
   

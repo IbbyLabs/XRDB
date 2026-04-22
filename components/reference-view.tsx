@@ -210,7 +210,11 @@ GET /thumbnail/xrdbid:tt12343534/S01E07.jpg?episodeSourceProvider=kitsu&episodeS
             Exact provider selections stay strict.
           </p>
           <p>
-            Badge styles (glass, square, plain, stacked, media, silver) control the visual treatment.
+            Badge styles (glass, square, plain, stacked, media, silver, tile, community-badge) control the visual treatment.
+            The tile style renders a dark card with a colored left accent strip, configurable per badge via tile color params.
+            The community-badge style uses curated SVG assets in four themes: gold, white, rainbow, and black, selectable via <code>communityBadgeTheme</code>.
+            Per-badge style overrides (<code>ageRatingBadgeStyle</code>, <code>releaseStatusBadgeStyle</code>) let individual slots use a different style from the row default.
+            Custom icons can be supplied for any badge slot via <code>qualityBadgeAppearance</code> (base64url JSON).
             Glass is the default for posters and backdrops; plain is the default for logos.
           </p>
         </ReferenceSection>
@@ -310,6 +314,11 @@ GET /thumbnail/xrdbid:tt12343534/S01E07.jpg?episodeSourceProvider=kitsu&episodeS
             Posters use <code>posterRatingsLayout</code> (top, bottom, left, right, and combinations).
             Backdrops use <code>backdropRatingsLayout</code> (center, right, right vertical) and can enable <code>backdropBottomRatingsRow</code>.
             The Quality Badges panel exposes poster placement controls for supported row and side layouts, disables shared placement when certification is the only visible quality badge, lets the age rating inherit, group with the shared badges, or move independently for the active poster layout, and includes bulk enable and hide actions for visible quality badges.
+                    <p>
+                      Logo type output supports <code>logoStreamBadges</code> for an independent stream badge list.
+                      HD badge detection activates automatically when the media filename contains a 1080p or 720p token and 4K is absent.
+                      Tile style accent colors are configurable globally via <code>qualityBadgesTileAccentColor</code> and per slot via <code>networkTileColor</code>, <code>ageRatingTileColor</code>, <code>releaseStatusTileColor</code>, and <code>genreBadgeTileAccentColor</code>.
+                    </p>
           </p>
           <p>
             Slider based customisation controls snap back to their defaults when you move close to the baseline and show a Default readout, while keeping keys, manifest inputs, and the current target unchanged.
