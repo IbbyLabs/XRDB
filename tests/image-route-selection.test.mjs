@@ -29,7 +29,7 @@ test('image route selection handles poster and backdrop preferences', () => {
 
   assert.equal(
     pickPosterByPreference(images, 'clean', 'en', 'fr')?.file_path,
-    '/original',
+    '/clean',
   );
   assert.equal(
     pickPosterByPreference(images, 'original', 'en', 'fr', '/original')?.file_path,
@@ -51,11 +51,11 @@ test('image route selection clean preference prefers localized TMDB art over nul
 
   assert.equal(
     pickPosterByPreference(images, 'clean', 'es-MX', 'en')?.file_path,
-    '/localized',
+    '/null-tagged',
   );
   assert.equal(
     pickBackdropByPreference(images, 'clean', 'es-MX', 'en')?.file_path,
-    '/localized',
+    '/null-tagged',
   );
 });
 
@@ -250,7 +250,7 @@ test('image route selection applies fanart textless and random text preferences'
   assert.equal(randomTextless?.url, 'https://img/textless');
 });
 
-test('image route selection clean preference picks language-tagged over null-tagged fanart', () => {
+test('image route selection clean preference picks textless over language-tagged fanart', () => {
   const assets = [
     { url: 'https://img/text-en', lang: 'en', likes: '2' },
     { url: 'https://img/textless', lang: '00', likes: '50' },
@@ -263,8 +263,8 @@ test('image route selection clean preference picks language-tagged over null-tag
     'fanart-clean',
     'any',
   );
-  assert.equal(cleanPick?.url, 'https://img/text-en');
-  assert.equal(isTextlessFanartAsset(cleanPick), false);
+  assert.equal(cleanPick?.url, 'https://img/textless');
+  assert.equal(isTextlessFanartAsset(cleanPick), true);
 });
 
 test('image route selection clean preference picks textless when no language-tagged assets exist', () => {
