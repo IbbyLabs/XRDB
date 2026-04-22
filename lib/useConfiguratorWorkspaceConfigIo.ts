@@ -111,6 +111,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   posterAggregateRatingSource: WorkspaceSettings['posterAggregateRatingSource'];
   posterAggregateProviderWeights: WorkspaceSettings['posterAggregateProviderWeights'];
   posterRingProgressSource: WorkspaceSettings['posterRingProgressSource'];
+  posterRingCenterOpacity: WorkspaceSettings['posterRingCenterOpacity'];
   posterRingCriticsPriority: WorkspaceSettings['posterRingCriticsPriority'];
   posterRingAudiencePriority: WorkspaceSettings['posterRingAudiencePriority'];
   posterRingValueSource: WorkspaceSettings['posterRingValueSource'];
@@ -280,6 +281,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setPosterAggregateRatingSource: Setter<WorkspaceSettings['posterAggregateRatingSource']>;
   setPosterAggregateProviderWeights: Setter<WorkspaceSettings['posterAggregateProviderWeights']>;
   setPosterRingProgressSource: Setter<WorkspaceSettings['posterRingProgressSource']>;
+  setPosterRingCenterOpacity: Setter<WorkspaceSettings['posterRingCenterOpacity']>;
   setPosterRingCriticsPriority: Setter<WorkspaceSettings['posterRingCriticsPriority']>;
   setPosterRingAudiencePriority: Setter<WorkspaceSettings['posterRingAudiencePriority']>;
   setPosterRingValueSource: Setter<WorkspaceSettings['posterRingValueSource']>;
@@ -464,6 +466,7 @@ export function useConfiguratorWorkspaceConfigIo({
   posterAggregateRatingSource,
   posterAggregateProviderWeights,
   posterRingProgressSource,
+  posterRingCenterOpacity,
   posterRingCriticsPriority,
   posterRingAudiencePriority,
   posterRingValueSource,
@@ -633,6 +636,7 @@ export function useConfiguratorWorkspaceConfigIo({
   setPosterAggregateRatingSource,
   setPosterAggregateProviderWeights,
   setPosterRingProgressSource,
+  setPosterRingCenterOpacity,
   setPosterRingCriticsPriority,
   setPosterRingAudiencePriority,
   setPosterRingValueSource,
@@ -836,6 +840,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setLogoRatingPresentation(normalized.settings.logoRatingPresentation);
       setPosterRingValueSource(normalized.settings.posterRingValueSource);
       setPosterRingProgressSource(normalized.settings.posterRingProgressSource);
+      setPosterRingCenterOpacity(normalized.settings.posterRingCenterOpacity);
       setPosterRingCriticsPriority(normalized.settings.posterRingCriticsPriority);
       setPosterRingAudiencePriority(normalized.settings.posterRingAudiencePriority);
       setPosterAggregateRatingSource(normalized.settings.posterAggregateRatingSource);
@@ -990,6 +995,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setPosterAggregateRatingSource,
       setPosterAggregateProviderWeights,
       setPosterRingProgressSource,
+      setPosterRingCenterOpacity,
       setPosterRingCriticsPriority,
       setPosterRingAudiencePriority,
       setPosterRingValueSource,
@@ -1191,6 +1197,7 @@ export function useConfiguratorWorkspaceConfigIo({
         logoRatingPresentation,
         posterRingValueSource,
         posterRingProgressSource,
+        posterRingCenterOpacity,
         posterRingCriticsPriority,
         posterRingAudiencePriority,
         posterAggregateRatingSource,
@@ -1351,6 +1358,7 @@ export function useConfiguratorWorkspaceConfigIo({
       posterAggregateRatingSource,
       posterAggregateProviderWeights,
       posterRingProgressSource,
+      posterRingCenterOpacity,
       posterRingCriticsPriority,
       posterRingAudiencePriority,
       posterRingValueSource,

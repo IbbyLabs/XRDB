@@ -30,7 +30,10 @@ import {
   POSTER_RATINGS_MAX_PER_SIDE_MAX,
   POSTER_RATINGS_MAX_PER_SIDE_MIN,
 } from './posterLayoutOptions.ts';
-import { POSTER_COMPACT_RING_SOURCE_OPTIONS } from './posterCompactRing.ts';
+import {
+  DEFAULT_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT,
+  POSTER_COMPACT_RING_SOURCE_OPTIONS,
+} from './posterCompactRing.ts';
 import {
   DEFAULT_QUALITY_BADGES_STYLE,
   QUALITY_BADGE_STYLE_OPTIONS,
@@ -380,6 +383,13 @@ const buildEntries = () => {
   for (const key of ['posterRingValueSource', 'posterRingProgressSource']) {
     entries.push({ key, coverageValues: ringSourceValues, browserFamily: 'presentation', surfaces: ['poster'] });
   }
+
+  entries.push({
+    key: 'posterRingCenterOpacity',
+    coverageValues: toIntegerRange(0, 100, DEFAULT_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT),
+    browserFamily: 'presentation',
+    surfaces: ['poster'],
+  });
 
   for (const key of ['posterRingCriticsPriority', 'posterRingAudiencePriority']) {
     entries.push({ key, coverageValues: RING_PRIORITY_CASES, browserFamily: 'presentation', surfaces: ['poster'] });
