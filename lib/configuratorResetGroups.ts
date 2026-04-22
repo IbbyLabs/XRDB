@@ -32,14 +32,15 @@ const PRESENTATION_PREVIEW_KEYS: Record<ConfiguratorResetPreviewType, readonly S
   poster: [
     'posterRatingPresentation',
     'posterAggregateRatingSource',
+    'posterAggregateProviderWeights',
     'posterRingValueSource',
     'posterRingProgressSource',
     'posterRingCriticsPriority',
     'posterRingAudiencePriority',
   ],
-  backdrop: ['backdropRatingPresentation', 'backdropAggregateRatingSource'],
-  thumbnail: ['thumbnailRatingPresentation', 'thumbnailAggregateRatingSource'],
-  logo: ['logoRatingPresentation', 'logoAggregateRatingSource'],
+  backdrop: ['backdropRatingPresentation', 'backdropAggregateRatingSource', 'backdropAggregateProviderWeights'],
+  thumbnail: ['thumbnailRatingPresentation', 'thumbnailAggregateRatingSource', 'thumbnailAggregateProviderWeights'],
+  logo: ['logoRatingPresentation', 'logoAggregateRatingSource', 'logoAggregateProviderWeights'],
 };
 
 const LOOK_SHARED_KEYS: readonly SettingsKey[] = ['ratingValueMode'];

@@ -59,6 +59,7 @@ const SHARED_VISUAL_QUERY_KEYS = new Set<string>([
   'aggregateDynamicStops',
   'aggregateAccentBarOffset',
   'aggregateAccentBarVisible',
+  'aggregateProviderWeights',
 ]);
 
 const TYPE_SCOPED_VISUAL_QUERY_KEYS = new Set<string>(
@@ -107,6 +108,12 @@ const GENERIC_QUERY_TO_TYPE_KEY: Record<string, Partial<Record<ConfiguratorPrevi
     backdrop: 'backdropAggregateRatingSource',
     thumbnail: 'thumbnailAggregateRatingSource',
     logo: 'logoAggregateRatingSource',
+  },
+  aggregateProviderWeights: {
+    poster: 'posterAggregateProviderWeights',
+    backdrop: 'backdropAggregateProviderWeights',
+    thumbnail: 'thumbnailAggregateProviderWeights',
+    logo: 'logoAggregateProviderWeights',
   },
   qualityBadgesStyle: {
     poster: 'posterQualityBadgesStyle',
@@ -189,6 +196,7 @@ const CROSS_TYPE_COMPATIBLE_SUFFIXES = new Set<string>([
   'RatingStyle',
   'RatingPresentation',
   'AggregateRatingSource',
+  'AggregateProviderWeights',
   'RatingBadgeScale',
   'QualityBadges',
   'QualityBadgesStyle',

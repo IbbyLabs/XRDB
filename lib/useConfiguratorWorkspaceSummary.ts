@@ -28,6 +28,7 @@ import {
   usesAggregateRatingSource,
   usesDualAggregateRatingPresentation,
   type AggregateAccentMode,
+  type AggregateProviderWeights,
   type AggregateRatingSource,
   type RatingPresentation,
 } from '@/lib/ratingPresentation';
@@ -56,6 +57,7 @@ const SIMPLE_PRESENTATION_IDS: RatingPresentation[] = [
 export function useConfiguratorWorkspaceSummary({
   activeProviderEditorId,
   backdropAggregateRatingSource,
+  backdropAggregateProviderWeights,
   backdropArtworkSource,
   backdropArtworkSourceOptions,
   thumbnailBottomRatingsRow,
@@ -84,6 +86,7 @@ export function useConfiguratorWorkspaceSummary({
   ratingXOffsetSquare,
   ratingYOffsetSquare,
   thumbnailAggregateRatingSource,
+  thumbnailAggregateProviderWeights,
   thumbnailArtworkSource,
   thumbnailImageText,
   thumbnailRatingPresentation,
@@ -95,9 +98,11 @@ export function useConfiguratorWorkspaceSummary({
   genrePreviewCards,
   genrePreviewMode,
   logoAggregateRatingSource,
+  logoAggregateProviderWeights,
   logoArtworkSource,
   logoArtworkSourceOptions,
   posterAggregateRatingSource,
+  posterAggregateProviderWeights,
   posterArtworkSource,
   posterArtworkSourceOptions,
   posterImageSize,
@@ -115,6 +120,7 @@ export function useConfiguratorWorkspaceSummary({
   logoRatingRows,
   selectedPresetId,
   setBackdropAggregateRatingSource,
+  setBackdropAggregateProviderWeights,
   setBackdropImageText,
   setBackdropRatingPresentation,
   setBackdropRatingStyle,
@@ -137,15 +143,18 @@ export function useConfiguratorWorkspaceSummary({
   setRatingXOffsetSquare,
   setRatingYOffsetSquare,
   setThumbnailAggregateRatingSource,
+  setThumbnailAggregateProviderWeights,
   setThumbnailImageText,
   setThumbnailRatingPresentation,
   setThumbnailRatingStyle,
   setThumbnailSideRatingsOffset,
   setThumbnailSideRatingsPosition,
   setLogoAggregateRatingSource,
+  setLogoAggregateProviderWeights,
   setLogoRatingPresentation,
   setLogoRatingStyle,
   setPosterAggregateRatingSource,
+  setPosterAggregateProviderWeights,
   setPosterImageText,
   setPosterRatingPresentation,
   setPosterRatingStyle,
@@ -172,6 +181,7 @@ export function useConfiguratorWorkspaceSummary({
   aggregateCriticsAccentColor: string;
   aggregateDynamicStops: string;
   backdropAggregateRatingSource: AggregateRatingSource;
+  backdropAggregateProviderWeights: AggregateProviderWeights;
   backdropArtworkSource: ArtworkSource;
   backdropArtworkSourceOptions: Array<{ id: ArtworkSource; label: string; description: string }>;
   thumbnailBottomRatingsRow: boolean;
@@ -202,6 +212,7 @@ export function useConfiguratorWorkspaceSummary({
   ratingXOffsetSquare: number;
   ratingYOffsetSquare: number;
   thumbnailAggregateRatingSource: AggregateRatingSource;
+  thumbnailAggregateProviderWeights: AggregateProviderWeights;
   thumbnailArtworkSource: ArtworkSource;
   thumbnailImageText: BackdropImageTextPreference;
   thumbnailRatingPresentation: RatingPresentation;
@@ -213,11 +224,13 @@ export function useConfiguratorWorkspaceSummary({
   genrePreviewCards: Array<{ sample: GenreBadgePreviewSample; url: string }>;
   genrePreviewMode: GenreBadgeMode;
   logoAggregateRatingSource: AggregateRatingSource;
+  logoAggregateProviderWeights: AggregateProviderWeights;
   logoArtworkSource: ArtworkSource;
   logoArtworkSourceOptions: Array<{ id: ArtworkSource; label: string; description: string }>;
   logoRatingPresentation: RatingPresentation;
   logoRatingStyle: RatingStyle;
   posterAggregateRatingSource: AggregateRatingSource;
+  posterAggregateProviderWeights: AggregateProviderWeights;
   posterArtworkSource: ArtworkSource;
   posterArtworkSourceOptions: Array<{ id: ArtworkSource; label: string; description: string }>;
   posterImageSize: string;
@@ -237,6 +250,7 @@ export function useConfiguratorWorkspaceSummary({
   logoRatingRows: RatingProviderRow[];
   selectedPresetId: ConfiguratorPresetId | null;
   setBackdropAggregateRatingSource: (value: AggregateRatingSource) => void;
+  setBackdropAggregateProviderWeights: (value: AggregateProviderWeights) => void;
   setBackdropImageText: (value: BackdropImageTextPreference) => void;
   setBackdropRatingPresentation: (value: RatingPresentation) => void;
   setBackdropRatingStyle: (value: RatingStyle) => void;
@@ -259,15 +273,18 @@ export function useConfiguratorWorkspaceSummary({
   setRatingXOffsetSquare: (value: number) => void;
   setRatingYOffsetSquare: (value: number) => void;
   setThumbnailAggregateRatingSource: (value: AggregateRatingSource) => void;
+  setThumbnailAggregateProviderWeights: (value: AggregateProviderWeights) => void;
   setThumbnailImageText: (value: BackdropImageTextPreference) => void;
   setThumbnailRatingPresentation: (value: RatingPresentation) => void;
   setThumbnailRatingStyle: (value: RatingStyle) => void;
   setThumbnailSideRatingsOffset: (value: number) => void;
   setThumbnailSideRatingsPosition: (value: SideRatingPosition) => void;
   setLogoAggregateRatingSource: (value: AggregateRatingSource) => void;
+  setLogoAggregateProviderWeights: (value: AggregateProviderWeights) => void;
   setLogoRatingPresentation: (value: RatingPresentation) => void;
   setLogoRatingStyle: (value: RatingStyle) => void;
   setPosterAggregateRatingSource: (value: AggregateRatingSource) => void;
+  setPosterAggregateProviderWeights: (value: AggregateProviderWeights) => void;
   setPosterImageText: (value: PosterImageTextPreference) => void;
   setPosterRatingPresentation: (value: RatingPresentation) => void;
   setPosterRatingStyle: (value: RatingStyle) => void;
@@ -300,6 +317,14 @@ export function useConfiguratorWorkspaceSummary({
         : previewType === 'thumbnail'
           ? thumbnailAggregateRatingSource
         : logoAggregateRatingSource;
+  const activeAggregateProviderWeights =
+    previewType === 'poster'
+      ? posterAggregateProviderWeights
+      : previewType === 'backdrop'
+        ? backdropAggregateProviderWeights
+        : previewType === 'thumbnail'
+          ? thumbnailAggregateProviderWeights
+          : logoAggregateProviderWeights;
   const usesAggregatePresentation = usesAggregateRatingPresentation(activeRatingPresentation);
   const isCompactRingPresentation = usesCompactRingPresentation(activeRatingPresentation);
   const dynamicAccentPreviewColor =
@@ -550,6 +575,25 @@ export function useConfiguratorWorkspaceSummary({
     [previewType, setBackdropAggregateRatingSource, setLogoAggregateRatingSource, setPosterAggregateRatingSource, setThumbnailAggregateRatingSource],
   );
 
+  const setAggregateProviderWeightsForType = useCallback(
+    (value: AggregateProviderWeights) => {
+      if (previewType === 'poster') {
+        setPosterAggregateProviderWeights(value);
+        return;
+      }
+      if (previewType === 'backdrop') {
+        setBackdropAggregateProviderWeights(value);
+        return;
+      }
+      if (previewType === 'thumbnail') {
+        setThumbnailAggregateProviderWeights(value);
+        return;
+      }
+      setLogoAggregateProviderWeights(value);
+    },
+    [previewType, setBackdropAggregateProviderWeights, setLogoAggregateProviderWeights, setPosterAggregateProviderWeights, setThumbnailAggregateProviderWeights],
+  );
+
   const setImageTextForType = useCallback(
     (value: PosterImageTextPreference) => {
       if (previewType === 'backdrop') {
@@ -612,6 +656,7 @@ export function useConfiguratorWorkspaceSummary({
 
   return {
     activeAggregateAccent,
+    activeAggregateProviderWeights,
     activeAggregateRatingSource,
     activeArtworkSource,
     activeArtworkSourceOptionMeta,
@@ -655,6 +700,7 @@ export function useConfiguratorWorkspaceSummary({
     setActiveSideRatingsOffset,
     setActiveSideRatingsPosition,
     setAggregateRatingSourceForType,
+    setAggregateProviderWeightsForType,
     setImageTextForType,
     setRatingPresentationForType,
     setRatingStyleForType,

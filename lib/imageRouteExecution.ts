@@ -331,6 +331,7 @@ export const executeImageRouteRender = async ({
         imageType: requestState.imageType,
         ratingPresentation: requestState.ratingPresentation,
         aggregateRatingSource: requestState.aggregateRatingSource,
+        aggregateProviderWeights: requestState.aggregateProviderWeights,
         aggregateAccentMode: requestState.aggregateAccentMode,
         aggregateAccentColor: requestState.aggregateAccentColor,
         aggregateCriticsAccentColor: requestState.aggregateCriticsAccentColor,
