@@ -204,6 +204,7 @@ export const pickPosterByPreference = <T extends RoutedImageCandidate>(
 
   if (preference === 'clean') {
     return (
+      posters.find((poster) => !poster.iso_639_1) ||
       pickByLanguageWithFallback(posters, preferredLang, fallbackLang) ||
       fallbackOriginal
     );
@@ -294,6 +295,7 @@ export const pickBackdropByPreference = <T extends RoutedImageCandidate>(
 
   if (preference === 'clean') {
     return (
+      backdrops.find((backdrop) => !backdrop.iso_639_1) ||
       pickByLanguageWithFallback(backdrops, preferredLang, fallbackLang) ||
       fallbackOriginal
     );
@@ -429,10 +431,6 @@ export const pickFanartAssetByPreference = (
   if (uniqueAssets.length === 0) return null;
 
   if (preference === 'clean') {
-    const hasLanguageTagged = uniqueAssets.some((item) => normalizeFanartLanguage(item?.lang) !== null);
-    if (hasLanguageTagged) {
-      return uniqueAssets[0] || null;
-    }
     return uniqueAssets.find((item) => isTextlessFanartAsset(item)) || uniqueAssets[0] || null;
   }
 
