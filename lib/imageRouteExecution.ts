@@ -17,7 +17,7 @@ import { resolveImageRouteMediaTarget } from './imageRouteMediaTarget.ts';
 import { prepareImageRouteMediaState } from './imageRoutePreparedMedia.ts';
 import { resolveImageRouteDisplayState } from './imageRouteDisplayState.ts';
 import { resolveImageRouteRenderLayout } from './imageRouteRenderLayout.ts';
-import { renderWithSharp } from './imageRouteRenderer.ts';
+import { renderWithSharp, getQualityBadgeIconDataUri } from './imageRouteRenderer.ts';
 import { createSharpFactoryLoader } from './imageRouteSharp.ts';
 import {
   TMDB_CACHE_TTL_MS,
@@ -269,6 +269,7 @@ export const executeImageRouteRender = async ({
         communityBadgeTheme: requestState.communityBadgeTheme,
         ageRatingBadgeStyle: requestState.ageRatingBadgeStyle,
         releaseStatusBadgeStyle: requestState.releaseStatusBadgeStyle,
+        qualityBadgeAppearanceOverrides: requestState.qualityBadgeAppearanceOverrides,
       });
       allowAnimeOnlyRatings = preparedMedia.allowAnimeOnlyRatings;
       hasConfirmedAnimeMapping = preparedMedia.hasConfirmedAnimeMapping;
@@ -291,6 +292,23 @@ export const executeImageRouteRender = async ({
       } = preparedMedia;
       let streamBadges = preparedStreamBadges;
       let { genreBadge } = preparedMedia;
+
+      // Resolve external quality badge icon URLs to data URIs
+      streamBadges = await Promise.all(
+        streamBadges.map(async (badge) => {
+          if (!badge.iconUrl) return badge;
+          // Only resolve if it's an external URL (not a data URI)
+          if (badge.iconUrl.startsWith('data:')) return badge;
+          try {
+             const dataUri = await getQualityBadgeIconDataUri(badge.iconUrl);
+             return dataUri ? { ...badge, iconUrl: dataUri } : badge;
+          } catch {
+            // If resolution fails, keep the original URL
+            return badge;
+          }
+        })
+      );
+
       const overlayAutoScale = resolveOverlayAutoScale({
         imageType: requestState.imageType,
         outputWidth,

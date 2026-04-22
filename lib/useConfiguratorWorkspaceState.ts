@@ -11,6 +11,7 @@ import {
   DEFAULT_THUMBNAIL_GENRE_BADGE_BORDER_WIDTH_PX,
   QUALITY_BADGE_OPTIONS,
   type RatingProviderAppearanceOverrides,
+  type QualityBadgeAppearanceOverrides,
 } from '@/lib/badgeCustomization';
 import { DEFAULT_BACKDROP_RATING_LAYOUT, type BackdropRatingLayout } from '@/lib/backdropLayoutOptions';
 import { DEFAULT_CONFIGURATOR_EXPERIENCE_MODE, type ConfiguratorExperienceMode, type ConfiguratorPresetId } from '@/lib/configuratorPresets';
@@ -275,6 +276,7 @@ export function useConfiguratorWorkspaceState() {
   const [logoBottomRatingsRow, setLogoBottomRatingsRow] = useState(false);
   const [logoArtworkSource, setLogoArtworkSource] = useState<ArtworkSource>('tmdb');
   const [ratingProviderAppearanceOverrides, setRatingProviderAppearanceOverrides] = useState<RatingProviderAppearanceOverrides>({});
+    const [qualityBadgeAppearanceOverrides, setQualityBadgeAppearanceOverrides] = useState<QualityBadgeAppearanceOverrides>({});
   const [activeProviderEditorId, setActiveProviderEditorId] = useState<RatingPreference>('tmdb');
   const [xrdbKey, setXrdbKey] = useState('');
   const [mdblistKey, setMdblistKey] = useState('');
@@ -486,6 +488,7 @@ export function useConfiguratorWorkspaceState() {
     ratingYOffsetSquare,
     ratingProviderAppearanceOverrides,
     ratingValueMode,
+      qualityBadgeAppearanceOverrides,
     selectedPresetId,
     setActiveProviderEditorId,
     setAggregateAccentBarOffset,
@@ -660,6 +663,7 @@ export function useConfiguratorWorkspaceState() {
     setRatingYOffsetSquare,
     setRatingProviderAppearanceOverrides,
     setRatingValueMode,
+      setQualityBadgeAppearanceOverrides,
     setSelectedPresetId,
     setShowConfigString,
     setShowExperienceModal,

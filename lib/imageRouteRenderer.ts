@@ -40,6 +40,7 @@ import {
   type RenderedImagePayload,
 } from './imageRouteRuntime.ts';
 import { createProviderIconDataUriResolver } from './imageRouteProviderIcon.ts';
+import { createQualityBadgeIconDataUriResolver } from './imageRouteQualityBadgeIcon.ts';
 import { createSharpFactoryLoader } from './imageRouteSharp.ts';
 import {
   estimateRenderedBadgeWidth,
@@ -318,6 +319,13 @@ const getProviderIconDataUri = createProviderIconDataUriResolver({
   stripCornerBackgroundFromIcon,
   getSharpFactory,
 });
+
+const getQualityBadgeIconDataUri = createQualityBadgeIconDataUriResolver({
+  getMetadata,
+  setMetadata,
+});
+
+export { getQualityBadgeIconDataUri };
 
 export const renderWithSharp = async (
   input: FastRenderInput,

@@ -59,6 +59,7 @@ import {
 } from './imageRouteSourceUrls.ts';
 import { type CommunityBadgeTheme } from './communityBadgeAssets.ts';
 import { type QualityBadgeStyle } from './ratingAppearance.ts';
+import { type QualityBadgeAppearanceOverrides } from './badgeCustomization.ts';
 import {
   pickPosterTitleFromMedia,
 } from './imageRouteKitsuFallback.ts';
@@ -204,6 +205,7 @@ export const prepareImageRouteMediaState = async (input: {
   communityBadgeTheme?: CommunityBadgeTheme;
   ageRatingBadgeStyle?: QualityBadgeStyle | null;
   releaseStatusBadgeStyle?: QualityBadgeStyle | null;
+  qualityBadgeAppearanceOverrides?: QualityBadgeAppearanceOverrides | null;
 }, deps: Partial<PreparedMediaDeps> = {}): Promise<PreparedImageRouteMediaState> => {
   const runtimeDeps = { ...DEFAULT_DEPS, ...deps };
   let {
@@ -993,6 +995,14 @@ if (input.communityBadgeTheme) {
     ...badge,
     communityBadgeTheme: input.communityBadgeTheme,
   }));
+}
+if (input.qualityBadgeAppearanceOverrides) {
+  const overrides = input.qualityBadgeAppearanceOverrides;
+  streamBadges = streamBadges.map((badge) => {
+    const override = overrides[String(badge.key)];
+    if (!override?.iconUrl) return badge;
+    return { ...badge, iconUrl: override.iconUrl };
+  });
 }
 if (shouldRenderRawKitsuFallbackRating) {
   providerRatings.set('kitsu', rawFallbackKitsuRating as string);

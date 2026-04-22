@@ -181,6 +181,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   ratingYOffsetSquare: WorkspaceSettings['ratingYOffsetSquare'];
   ratingProviderAppearanceOverrides: WorkspaceSettings['ratingProviderAppearanceOverrides'];
   ratingValueMode: WorkspaceSettings['ratingValueMode'];
+  qualityBadgeAppearanceOverrides: WorkspaceSettings['qualityBadgeAppearanceOverrides'];
   setAggregateAccentBarOffset: Setter<WorkspaceSettings['aggregateAccentBarOffset']>;
   setAggregateAccentBarVisible: Setter<WorkspaceSettings['aggregateAccentBarVisible']>;
   setAggregateAccentColor: Setter<WorkspaceSettings['aggregateAccentColor']>;
@@ -344,6 +345,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setRatingYOffsetSquare: Setter<WorkspaceSettings['ratingYOffsetSquare']>;
   setRatingProviderAppearanceOverrides: Setter<WorkspaceSettings['ratingProviderAppearanceOverrides']>;
   setRatingValueMode: Setter<WorkspaceSettings['ratingValueMode']>;
+  setQualityBadgeAppearanceOverrides: Setter<WorkspaceSettings['qualityBadgeAppearanceOverrides']>;
   setRatingBlackStripEnabled: (value: boolean) => void;
   setSimklClientId: Setter<WorkspaceSettings['simklClientId']>;
   setThumbnailRatingRows: Setter<RatingProviderRow[]>;
@@ -523,6 +525,7 @@ export function useConfiguratorWorkspaceConfigIo({
   ratingXOffsetSquare,
   ratingYOffsetSquare,
   ratingProviderAppearanceOverrides,
+  qualityBadgeAppearanceOverrides,
   ratingValueMode,
   setAggregateAccentBarOffset,
   setAggregateAccentBarVisible,
@@ -686,6 +689,7 @@ export function useConfiguratorWorkspaceConfigIo({
   setRatingXOffsetSquare,
   setRatingYOffsetSquare,
   setRatingProviderAppearanceOverrides,
+  setQualityBadgeAppearanceOverrides,
   setRatingValueMode,
   setRatingBlackStripEnabled,
   setSimklClientId,
@@ -865,6 +869,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setLogoArtworkSource(normalized.settings.logoArtworkSource);
       setThumbnailEpisodeArtwork(normalized.settings.thumbnailEpisodeArtwork);
       setRatingProviderAppearanceOverrides(normalized.settings.ratingProviderAppearanceOverrides);
+      setQualityBadgeAppearanceOverrides(normalized.settings.qualityBadgeAppearanceOverrides);
       setProxyManifestUrl(normalized.proxy.manifestUrl);
       setProxyTranslateMeta(normalized.proxy.translateMeta);
       setProxyTranslateMetaMode(normalized.proxy.translateMetaMode);
@@ -1032,6 +1037,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setRatingXOffsetSquare,
       setRatingYOffsetSquare,
       setRatingProviderAppearanceOverrides,
+      setQualityBadgeAppearanceOverrides,
       setRatingBlackStripEnabled,
       setRatingValueMode,
       setSimklClientId,
@@ -1209,6 +1215,7 @@ export function useConfiguratorWorkspaceConfigIo({
         logoBottomRatingsRow,
         logoArtworkSource,
         ratingProviderAppearanceOverrides,
+        qualityBadgeAppearanceOverrides,
       },
       proxy: {
         manifestUrl: normalizeManifestUrl(proxyManifestUrl, true),
@@ -1384,6 +1391,7 @@ export function useConfiguratorWorkspaceConfigIo({
       ratingXOffsetSquare,
       ratingYOffsetSquare,
       ratingProviderAppearanceOverrides,
+      qualityBadgeAppearanceOverrides,
       ratingValueMode,
       simklClientId,
       thumbnailEpisodeArtwork,
