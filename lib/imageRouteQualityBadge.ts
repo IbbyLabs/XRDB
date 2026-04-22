@@ -4,6 +4,11 @@ import {
   type RatingStyle,
 } from './ratingAppearance.ts';
 import {
+  getCommunityBadgeSvg,
+  DEFAULT_COMMUNITY_BADGE_THEME,
+  type CommunityBadgeTheme,
+} from './communityBadgeAssets.ts';
+import {
   MEDIA_BADGE_ASSETS,
   type MediaBadgeAssetId,
 } from './mediaBadgeAssets.ts';
@@ -19,6 +24,9 @@ export type QualityBadgeInput = {
   key: string;
   label: string;
   accentColor?: string;
+  tileAccentColor?: string;
+  communityBadgeTheme?: CommunityBadgeTheme;
+  styleOverride?: QualityBadgeStyle;
   iconDataUri?: string | null;
   noBackgroundOutlineColor?: string;
   noBackgroundOutlineWidth?: number;
@@ -127,9 +135,10 @@ const buildCenteredProviderLogoImage = ({
 
 export const usesIntrinsicQualityBadgeWidths = (
   style: QualityBadgeStyle,
-  badge?: Pick<QualityBadgeInput, 'key' | 'iconDataUri'>,
+  badge?: Pick<QualityBadgeInput, 'key' | 'iconDataUri' | 'styleOverride'>,
 ) => {
-  if (style === 'media' || style === 'silver') {
+  const effectiveStyle = badge?.styleOverride ?? style;
+  if (effectiveStyle === 'media' || effectiveStyle === 'silver' || effectiveStyle === 'tile' || effectiveStyle === 'community-badge') {
     return true;
   }
   if (!badge) {
@@ -147,13 +156,15 @@ export const buildQualityBadgeSvg = (
   height: number,
   widthOverride?: number,
   style: QualityBadgeStyle = DEFAULT_QUALITY_BADGES_STYLE
-) => {
+): { svg: string; width: number; height: number } | null => {
   const key = badge.key;
   if (!isMediaFeatureBadgeKey(String(key))) {
     return null;
   }
+  const effectiveStyle = badge.styleOverride ?? style;
+
   const noBackgroundOutlineWidth =
-    style === 'plain' && Number.isFinite(badge.noBackgroundOutlineWidth)
+    effectiveStyle === 'plain' && Number.isFinite(badge.noBackgroundOutlineWidth)
       ? Math.max(0, Number(badge.noBackgroundOutlineWidth))
       : 0;
   const hasNoBackgroundOutline = noBackgroundOutlineWidth > 0;
@@ -170,13 +181,21 @@ export const buildQualityBadgeSvg = (
   const releaseStatusWidthScale =
     key === 'releasestatus' && label === 'DIGITAL RELEASE' ? 0.84 : 1;
   const streamingBadgeWidthScale = hasStreamingServiceLogo ? 0.95 : 1;
-  const h = Math.max(32, Math.round(height * 0.9));
-  const radius = style === 'glass' ? Math.round(h / 2) : Math.round(h * 0.18);
-  const isSilverStyle = style === 'silver';
+  const h = effectiveStyle === 'community-badge'
+    ? Math.max(44, Math.round(height * 1.15))
+    : Math.max(32, Math.round(height * 0.9));
+  if (effectiveStyle === 'community-badge') {
+    const theme = badge.communityBadgeTheme ?? DEFAULT_COMMUNITY_BADGE_THEME;
+    const result = getCommunityBadgeSvg(String(key), theme, label, h);
+    if (result) return result;
+    return null;
+  }
+  const radius = effectiveStyle === 'glass' ? Math.round(h / 2) : Math.round(h * 0.18);
+  const isSilverStyle = effectiveStyle === 'silver';
   const strokeWidth =
-    style === 'glass'
+    effectiveStyle === 'glass'
       ? Math.max(1, Math.round(h * 0.04))
-      : style === 'square'
+      : effectiveStyle === 'square'
         ? Math.max(1, Math.round(h * 0.05))
         : Math.max(2, Math.round(h * 0.08));
   const fontFamily = `'Noto Sans','DejaVu Sans',Arial,sans-serif`;
@@ -268,8 +287,8 @@ export const buildQualityBadgeSvg = (
     );
   };
   const resolveChrome = (accentColor: string) => {
-    if (style === 'plain' || style === 'media' || style === 'silver') return null;
-    if (style === 'glass') {
+    if (effectiveStyle === 'plain' || effectiveStyle === 'media' || effectiveStyle === 'silver') return null;
+    if (effectiveStyle === 'glass') {
       return {
         stroke: 'rgba(255,255,255,0.45)',
         fill: 'rgba(17,24,39,0.70)',
@@ -325,7 +344,7 @@ ${buildMediaPlate(width, {
     const asset = MEDIA_BADGE_ASSETS[assetKey];
     const width = widthOverride ?? Math.round(h * asset.widthRatio);
     const horizontalPadding = Math.round(h * asset.horizontalPaddingRatio);
-    const isPlainStandard = variant === 'standard' && style === 'plain';
+    const isPlainStandard = variant === 'standard' && effectiveStyle === 'plain';
     const isSilverStandard = variant === 'standard' && isSilverStyle;
     const mediaFrame = mediaFrameByKey[assetKey];
     const backgroundMarkup =
@@ -372,7 +391,7 @@ ${buildCenteredBadgeAssetImage({
     };
   };
 
-  if (style === 'media') {
+  if (effectiveStyle === 'media') {
     if (key === 'certification') {
       return buildMediaCertificationSvg();
     }
@@ -403,6 +422,63 @@ ${buildSilverQualityTextDefs('quality-badge-silver-text')}
     }
   }
 
+  if (effectiveStyle === 'tile') {
+    const TILE_BG = '#0f1117';
+    const tileR = Math.max(7, Math.round(h * 0.18));
+    const tileStripW = Math.max(tileR + 2, Math.round(h * 0.22));
+    const tileAccentColor = badge.tileAccentColor ?? badge.accentColor ?? '#38bdf8';
+    const tileStripPath = `M ${tileR},0 L ${tileStripW},0 L ${tileStripW},${h} L ${tileR},${h} Q 0,${h} 0,${h - tileR} L 0,${tileR} Q 0,0 ${tileR},0 Z`;
+
+    if (key === 'certification') {
+      const textSize = Math.round(h * 0.38);
+      const badgeTypeSize = Math.max(8, Math.round(h * 0.18));
+      const sidePadding = Math.max(8, Math.round(h * 0.22));
+      const width = widthOverride ?? Math.max(
+        Math.round(h * 1.22),
+        estimateQualityTextBadgeWidth(label, textSize, sidePadding),
+        estimateQualityTextBadgeWidth('AGE', badgeTypeSize, sidePadding),
+      );
+      const contentCx = tileStripW + Math.round((width - tileStripW) / 2);
+      return {
+        width, height: h,
+        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}"><rect x="0" y="0" width="${width}" height="${h}" rx="${tileR}" fill="${TILE_BG}"/><path d="${tileStripPath}" fill="${badge.tileAccentColor ?? 'rgba(245,245,244,0.36)'}"/><text x="${contentCx}" y="${Math.round(h * 0.32)}" font-family="${fontFamily}" font-size="${badgeTypeSize}" font-weight="700" text-anchor="middle" fill="rgba(245,245,244,0.52)" letter-spacing="0.14em">AGE</text><text x="${contentCx}" y="${Math.round(h * 0.73)}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="#f5f5f4">${escapeXml(label)}</text></svg>`,
+      };
+    }
+
+    if (hasStreamingServiceLogo) {
+      const iconSize = Math.max(16, Math.round(h * 0.5));
+      const platePad = Math.round((h - iconSize) / 2);
+      const iconPlateW = iconSize + platePad * 2;
+      const contentGap = Math.max(6, Math.round(h * 0.1));
+      const textSize = Math.round(h * 0.32);
+      const textSidePad = Math.max(8, Math.round(h * 0.18));
+      const naturalWidth = estimateQualityTextBadgeWidth(label, textSize, iconPlateW + contentGap + textSidePad);
+      const width = widthOverride ?? Math.min(
+        Math.max(Math.round(h * 2.2), naturalWidth),
+        Math.round(h * 3.6),
+      );
+      const iconX = Math.round((iconPlateW - iconSize) / 2);
+      const iconY = Math.round((h - iconSize) / 2);
+      const platePath = `M ${tileR},0 L ${iconPlateW},0 L ${iconPlateW},${h} L ${tileR},${h} Q 0,${h} 0,${h - tileR} L 0,${tileR} Q 0,0 ${tileR},0 Z`;
+      const textCx = Math.round(iconPlateW + contentGap + (width - iconPlateW - contentGap - textSidePad) / 2);
+      const iconOutlineR = Math.max(1, Math.round(h * 0.04));
+      const iconOutlineDefs = `<defs><filter id="tile-provider-outline" x="-25%" y="-25%" width="150%" height="150%"><feMorphology in="SourceAlpha" operator="dilate" radius="${iconOutlineR}" result="exp"/><feComposite in="exp" in2="SourceAlpha" operator="out" result="ring"/><feFlood flood-color="#ffffff" flood-opacity="0.82" result="wht"/><feComposite in="wht" in2="ring" operator="in" result="outline"/><feMerge><feMergeNode in="outline"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+      return {
+        width, height: h,
+        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">${iconOutlineDefs}<rect x="0" y="0" width="${width}" height="${h}" rx="${tileR}" fill="${TILE_BG}"/><path d="${platePath}" fill="${tileAccentColor}"/>${buildCenteredProviderLogoImage({ dataUri: badge.iconDataUri as string, x: iconX, y: iconY, size: iconSize, extraAttributes: 'filter="url(#tile-provider-outline)"' })}<text x="${textCx}" y="${Math.round(h * 0.64)}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="#f5f5f4">${escapeXml(label)}</text></svg>`,
+      };
+    }
+
+    const textSize = Math.round(h * 0.33);
+    const sidePadding = Math.max(10, Math.round(h * 0.24));
+    const textWidth = widthOverride ?? estimateQualityTextBadgeWidth(label, textSize, sidePadding);
+    const contentCx = tileStripW + Math.round((textWidth - tileStripW) / 2);
+    return {
+      width: textWidth, height: h,
+      svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${textWidth}" height="${h}" viewBox="0 0 ${textWidth} ${h}"><rect x="0" y="0" width="${textWidth}" height="${h}" rx="${tileR}" fill="${TILE_BG}"/><path d="${tileStripPath}" fill="${tileAccentColor}"/><text x="${contentCx}" y="${Math.round(h * 0.66)}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="#f5f5f4">${escapeXml(label)}</text></svg>`,
+    };
+  }
+
   if (key === 'certification') {
     const badgeTypeLabel = 'AGE';
     const badgeTypeSize = Math.max(9, Math.round(h * 0.2));
@@ -416,20 +492,20 @@ ${buildSilverQualityTextDefs('quality-badge-silver-text')}
     const badgeTypeY = Math.round(h * 0.31);
     const textY = Math.round(h * 0.72);
     const rect = buildRect(width, '#e5e7eb');
-    const fill = style === 'plain' ? mediaText : '#e5e7eb';
-    const filter = style === 'plain' ? ' filter="url(#quality-badge-text-shadow)"' : '';
+    const fill = effectiveStyle === 'plain' ? mediaText : '#e5e7eb';
+    const filter = effectiveStyle === 'plain' ? ' filter="url(#quality-badge-text-shadow)"' : '';
     const defs =
-      style === 'plain'
+      effectiveStyle === 'plain'
         ? `${buildPlainQualityShadowDefs('quality-badge-text-surface')}<defs><filter id="quality-badge-text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#000000" flood-opacity="0.56" /></filter></defs>`
         : '';
     const plainStroke =
-      style === 'plain' ? buildPlainQualitySurface(width, 'quality-badge-text-surface') : '';
+      effectiveStyle === 'plain' ? buildPlainQualitySurface(width, 'quality-badge-text-surface') : '';
     return {
       svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">
 ${defs}
-${style === 'plain' ? plainStroke : rect}
-<text x="${width / 2}" y="${badgeTypeY}" font-family="${fontFamily}" font-size="${badgeTypeSize}" font-weight="700" text-anchor="middle" fill="${style === 'plain' ? 'rgba(245,245,244,0.84)' : 'rgba(229,231,235,0.74)'}"${style === 'plain' ? plainTextOutlineAttributes : ''}${filter}>${badgeTypeLabel}</text>
-<text x="${width / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${fill}"${style === 'plain' ? plainTextOutlineAttributes : ''}${filter}>${escapeXml(label)}</text>
+${effectiveStyle === 'plain' ? plainStroke : rect}
+<text x="${width / 2}" y="${badgeTypeY}" font-family="${fontFamily}" font-size="${badgeTypeSize}" font-weight="700" text-anchor="middle" fill="${effectiveStyle === 'plain' ? 'rgba(245,245,244,0.84)' : 'rgba(229,231,235,0.74)'}"${effectiveStyle === 'plain' ? plainTextOutlineAttributes : ''}${filter}>${badgeTypeLabel}</text>
+<text x="${width / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${fill}"${effectiveStyle === 'plain' ? plainTextOutlineAttributes : ''}${filter}>${escapeXml(label)}</text>
 </svg>`,
       width,
       height: h,
@@ -489,13 +565,15 @@ ${style === 'plain' ? plainStroke : rect}
     const iconY = Math.round((h - iconSize) / 2);
     const textX = iconPlateX + iconPlateSize + contentGap;
     const textY = Math.round(h * 0.66);
-    const textFilter = style === 'plain' ? ' filter="url(#quality-badge-stream-text-shadow)"' : '';
+    const textFilter = effectiveStyle === 'plain' ? ' filter="url(#quality-badge-stream-text-shadow)"' : '';
+    const iconOutlineR = Math.max(1, Math.round(h * 0.04));
+    const iconOutlineFilter = `<filter id="provider-icon-outline" x="-25%" y="-25%" width="150%" height="150%"><feMorphology in="SourceAlpha" operator="dilate" radius="${iconOutlineR}" result="exp"/><feComposite in="exp" in2="SourceAlpha" operator="out" result="ring"/><feFlood flood-color="#ffffff" flood-opacity="0.82" result="wht"/><feComposite in="wht" in2="ring" operator="in" result="outline"/><feMerge><feMergeNode in="outline"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
     const defs =
-      style === 'plain'
-        ? `${buildPlainQualityShadowDefs('quality-badge-stream-surface')}<defs><filter id="quality-badge-stream-logo-shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="1" stdDeviation="2.1" flood-color="#000000" flood-opacity="0.52" /></filter><filter id="quality-badge-stream-text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#000000" flood-opacity="0.56" /></filter></defs>`
-        : '';
+      effectiveStyle === 'plain'
+        ? `${buildPlainQualityShadowDefs('quality-badge-stream-surface')}<defs><filter id="quality-badge-stream-logo-shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="1" stdDeviation="2.1" flood-color="#000000" flood-opacity="0.52" /></filter><filter id="quality-badge-stream-text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#000000" flood-opacity="0.56" /></filter>${iconOutlineFilter}</defs>`
+        : `<defs>${iconOutlineFilter}</defs>`;
     const backgroundMarkup =
-      style === 'media'
+      effectiveStyle === 'media'
         ? buildMediaPlate(width, {
             stroke: hexColorToRgba(resolvedAccentColor, 0.68, 'rgba(255,255,255,0.68)'),
             fill: 'rgba(12,18,32,0.24)',
@@ -503,15 +581,15 @@ ${style === 'plain' ? plainStroke : rect}
             radiusScale: 0.27,
             highlightOpacity: 0.055,
           })
-        : style === 'plain'
+        : effectiveStyle === 'plain'
           ? buildPlainQualitySurface(width, 'quality-badge-stream-surface')
           : buildRect(width, resolvedAccentColor);
     const iconPlateRadius = Math.max(8, Math.round(iconPlateSize * 0.28));
     const iconPlateMarkup =
-      style === 'plain'
+      effectiveStyle === 'plain'
         ? `<rect x="${iconPlateX}" y="${iconPlateY}" width="${iconPlateSize}" height="${iconPlateSize}" rx="${iconPlateRadius}" fill="rgba(2,6,23,0.28)" stroke="rgba(255,255,255,0.16)" stroke-width="1" />`
         : `<rect x="${iconPlateX}" y="${iconPlateY}" width="${iconPlateSize}" height="${iconPlateSize}" rx="${iconPlateRadius}" fill="rgba(255,255,255,0.08)" stroke="${hexColorToRgba(resolvedAccentColor, 0.32, 'rgba(255,255,255,0.24)')}" stroke-width="1" />`;
-    const logoExtraAttributes = style === 'plain' ? 'filter="url(#quality-badge-stream-logo-shadow)"' : '';
+    const logoExtraAttributes = 'filter="url(#provider-icon-outline)"';
 
     return {
       width,
@@ -527,7 +605,7 @@ ${buildCenteredProviderLogoImage({
   size: iconSize,
   extraAttributes: logoExtraAttributes,
 })}
-<text x="${textX}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="start" fill="${style === 'plain' ? hexColorToRgba(resolvedAccentColor, 0.96, '#f5f5f4') : '#f5f5f4'}"${style === 'plain' ? plainTextOutlineAttributes : ''}${textFilter}>${escapeXml(label)}</text>
+<text x="${textX}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="start" fill="${effectiveStyle === 'plain' ? hexColorToRgba(resolvedAccentColor, 0.96, '#f5f5f4') : '#f5f5f4'}"${effectiveStyle === 'plain' ? plainTextOutlineAttributes : ''}${textFilter}>${escapeXml(label)}</text>
 </svg>`,
     };
   }
@@ -536,7 +614,7 @@ ${buildCenteredProviderLogoImage({
   const sidePadding = Math.max(10, Math.round(h * 0.24));
   const textWidth = widthOverride ?? estimateQualityTextBadgeWidth(label, textSize, sidePadding);
   const textY = Math.round(h * 0.66);
-  if (style === 'media') {
+  if (effectiveStyle === 'media') {
     return {
       width: textWidth,
       height: h,
@@ -555,21 +633,21 @@ ${buildMediaPlate(textWidth, {
 
   const rect = buildRect(textWidth, resolvedAccentColor);
   const plainStroke =
-    style === 'plain' ? buildPlainQualitySurface(textWidth, 'quality-badge-text-fallback-surface') : '';
-  const filter = style === 'plain' ? ' filter="url(#quality-badge-text-fallback-shadow)"' : '';
+    effectiveStyle === 'plain' ? buildPlainQualitySurface(textWidth, 'quality-badge-text-fallback-surface') : '';
+  const filter = effectiveStyle === 'plain' ? ' filter="url(#quality-badge-text-fallback-shadow)"' : '';
   const defs =
-    style === 'plain'
+    effectiveStyle === 'plain'
       ? `${buildPlainQualityShadowDefs('quality-badge-text-fallback-surface')}<defs><filter id="quality-badge-text-fallback-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#000000" flood-opacity="0.56" /></filter></defs>`
       : '';
   const textFill =
-    style === 'plain' ? hexColorToRgba(resolvedAccentColor, 0.95, '#f5f5f4') : '#f5f5f4';
+    effectiveStyle === 'plain' ? hexColorToRgba(resolvedAccentColor, 0.95, '#f5f5f4') : '#f5f5f4';
   return {
     width: textWidth,
     height: h,
     svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${textWidth}" height="${h}" viewBox="0 0 ${textWidth} ${h}">
 ${defs}
-${style === 'plain' ? plainStroke : rect}
-<text x="${textWidth / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${textFill}"${style === 'plain' ? plainTextOutlineAttributes : ''}${filter}>${escapeXml(label)}</text>
+${effectiveStyle === 'plain' ? plainStroke : rect}
+<text x="${textWidth / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${textFill}"${effectiveStyle === 'plain' ? plainTextOutlineAttributes : ''}${filter}>${escapeXml(label)}</text>
 </svg>`,
   };
 };

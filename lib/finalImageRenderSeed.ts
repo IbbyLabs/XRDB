@@ -38,6 +38,9 @@ type FinalImageRenderSeedInput = {
   posterQualityBadgesPosition: string;
   ageRatingBadgePosition: string;
   qualityBadgesStyle: string;
+  communityBadgeTheme: string;
+  ageRatingBadgeStyle: string | null;
+  releaseStatusBadgeStyle: string | null;
   qualityBadgesMax: number | null;
   qualityBadgePreferences: string[];
   remuxDisplayMode: string;
@@ -64,6 +67,11 @@ type FinalImageRenderSeedInput = {
   aggregateAccentBarVisible: boolean;
   posterNoBackgroundBadgeOutlineColor: string;
   posterNoBackgroundBadgeOutlineWidth: number;
+  ageRatingTileColor: string | null;
+  releaseStatusTileColor: string | null;
+  qualityBadgesTileAccentColor: string | null;
+  networkTileColor: string | null;
+  genreBadgeTileAccentColor: string | null;
   artworkSelectionSeed: string;
   ratingBlackStripEnabled: boolean;
   ratingStyle: string;
@@ -156,6 +164,9 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
       : '-',
     isPoster ? input.ageRatingBadgePosition : '-',
     input.qualityBadgesStyle,
+    (input.qualityBadgesStyle === 'community-badge' || input.ageRatingBadgeStyle === 'community-badge' || input.releaseStatusBadgeStyle === 'community-badge') ? input.communityBadgeTheme : '-',
+    input.ageRatingBadgeStyle ?? '-',
+    input.releaseStatusBadgeStyle ?? '-',
     String(input.qualityBadgesMax ?? 'auto'),
     input.qualityBadgePreferences.join(',') || 'none',
     String(qualityBadgeScale),
@@ -189,6 +200,10 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.aggregateAccentBarVisible ? 'on' : 'off',
     isPoster ? input.posterNoBackgroundBadgeOutlineColor : '-',
     isPoster ? String(input.posterNoBackgroundBadgeOutlineWidth) : '-',
+    (input.qualityBadgesStyle === 'tile' || input.ageRatingBadgeStyle === 'tile') ? (input.ageRatingTileColor || '-') : '-',
+    (input.qualityBadgesStyle === 'tile' || input.releaseStatusBadgeStyle === 'tile') ? (input.releaseStatusTileColor || '-') : '-',
+    input.qualityBadgesStyle === 'tile' ? (input.qualityBadgesTileAccentColor || '-') : '-',
+    input.qualityBadgesStyle === 'tile' ? (input.networkTileColor || '-') : '-',
     input.artworkSelectionSeed || '-',
     input.ratingBlackStripEnabled ? 'strip' : '-',
     input.ratingStyle,
@@ -205,6 +220,9 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
       : '-',
     input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE && input.genreBadgeStyle === 'clean'
       ? String(input.genreBadgeBackgroundOpacity)
+      : '-',
+    input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE && input.genreBadgeStyle === 'tile'
+      ? (input.genreBadgeTileAccentColor || '-')
       : '-',
     input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ? input.genreBadgeAnimeGrouping : '-',
     isLogo ? input.logoBackground : '-',

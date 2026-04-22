@@ -33,6 +33,12 @@
     "prestart": "npm run ensure:native && node scripts/prepare-standalone-assets.mjs",
     "start": "node .next/standalone/server.js",
     "predev": "npm run ensure:native && npm run commits:generate",
+    "comparison:generate-defaults": "node --experimental-strip-types output/verification/badge-comparison/generate-current-defaults.mjs",
+    "comparison:generate-ratings": "node --experimental-strip-types output/verification/badge-comparison/generate-rating-badges.mjs",
+    "comparison:generate-genres": "node --experimental-strip-types output/verification/badge-comparison/generate-genre-defaults.mjs",
+    "comparison:refresh": "pnpm comparison:generate-defaults && pnpm comparison:generate-ratings && pnpm comparison:generate-genres && node output/verification/badge-comparison/build-comparison.mjs",
+    "comparison:watch": "node output/verification/badge-comparison/watch-comparison.mjs",
+    "dev:with-comparison": "concurrently -k -n app,comparison -c cyan,magenta \"pnpm dev\" \"pnpm comparison:watch\"",
     "pretest": "npm run ensure:native",
     "test": "node --experimental-strip-types --test tests/**/*.test.mjs",
     "lint": "eslint .",
@@ -86,6 +92,7 @@
     "undici": "^7.24.4"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "@tailwindcss/postcss": "4.1.11",
     "@tailwindcss/typography": "^0.5.19",
     "@types/better-sqlite3": "^7.6.13",

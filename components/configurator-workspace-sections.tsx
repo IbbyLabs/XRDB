@@ -57,6 +57,11 @@ import {
   type QualityBadgeStyle,
   type RatingStyle,
 } from '@/lib/ratingAppearance';
+import {
+  COMMUNITY_BADGE_THEME_OPTIONS,
+  DEFAULT_COMMUNITY_BADGE_THEME,
+  type CommunityBadgeTheme,
+} from '@/lib/communityBadgeTheme';
 import { type QualityBadgePlacementControlMode } from '@/lib/qualityBadgeControls';
 import type {
   AgeRatingBadgePosition,
@@ -144,6 +149,20 @@ export function QualitySection({
   onSelectAllQualityBadgePreferencesEnabled,
   activeRemuxDisplayMode,
   onSelectRemuxDisplayMode,
+  ageRatingTileColor,
+  releaseStatusTileColor,
+  qualityBadgesTileAccentColor,
+  networkTileColor,
+  onSelectAgeRatingTileColor,
+  onSelectReleaseStatusTileColor,
+  onSelectQualityBadgesTileAccentColor,
+  onSelectNetworkTileColor,
+  communityBadgeTheme,
+  onSelectCommunityBadgeTheme,
+  ageRatingBadgeStyle,
+  onSelectAgeRatingBadgeStyle,
+  releaseStatusBadgeStyle,
+  onSelectReleaseStatusBadgeStyle,
 }: {
   previewType: PreviewType;
   qualityBadgeTypeLabel: string;
@@ -173,6 +192,20 @@ export function QualitySection({
   onSelectAllQualityBadgePreferencesEnabled: (enabled: boolean) => void;
   activeRemuxDisplayMode: RemuxDisplayMode;
   onSelectRemuxDisplayMode: (value: RemuxDisplayMode) => void;
+  ageRatingTileColor: string;
+  releaseStatusTileColor: string;
+  qualityBadgesTileAccentColor: string;
+  networkTileColor: string;
+  onSelectAgeRatingTileColor: (value: string) => void;
+  onSelectReleaseStatusTileColor: (value: string) => void;
+  onSelectQualityBadgesTileAccentColor: (value: string) => void;
+  onSelectNetworkTileColor: (value: string) => void;
+  communityBadgeTheme: CommunityBadgeTheme;
+  onSelectCommunityBadgeTheme: (value: CommunityBadgeTheme) => void;
+  ageRatingBadgeStyle: QualityBadgeStyle | null;
+  onSelectAgeRatingBadgeStyle: (value: QualityBadgeStyle | null) => void;
+  releaseStatusBadgeStyle: QualityBadgeStyle | null;
+  onSelectReleaseStatusBadgeStyle: (value: QualityBadgeStyle | null) => void;
 }) {
   const showsPlacementControls =
     qualityBadgePlacementControlMode === 'side' || qualityBadgePlacementControlMode === 'position';
@@ -185,23 +218,21 @@ export function QualitySection({
         Quality Badges · {qualityBadgeTypeLabel}
       </div>
       <div className="grid gap-3 md:grid-cols-2">
-        {previewType !== 'logo' ? (
-          <div className={settingsCardClass}>
-            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Stream Badges</span>
-            <div className={selectorGroupClass}>
-              {streamBadgeOptions.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => onSelectStreamBadges(option.id)}
-                  className={selectorButtonClass(activeStreamBadges === option.id)}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
+        <div className={settingsCardClass}>
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Stream Badges</span>
+          <div className={selectorGroupClass}>
+            {streamBadgeOptions.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => onSelectStreamBadges(option.id)}
+                className={selectorButtonClass(activeStreamBadges === option.id)}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
-        ) : null}
+        </div>
         <div className={settingsCardClass}>
           <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Badge Style</span>
           <div className={selectorGroupClass}>
@@ -211,6 +242,52 @@ export function QualitySection({
                 type="button"
                 onClick={() => onSelectQualityBadgeStyle(option.id)}
                 className={selectorButtonClass(activeQualityBadgesStyle === option.id)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className={settingsCardClass}>
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Age Rating Style</span>
+          <div className={selectorGroupClass}>
+            <button
+              key="age-rating-style-same"
+              type="button"
+              onClick={() => onSelectAgeRatingBadgeStyle(null)}
+              className={selectorButtonClass(ageRatingBadgeStyle === null)}
+            >
+              Same
+            </button>
+            {QUALITY_BADGE_STYLE_OPTIONS.map((option) => (
+              <button
+                key={`age-rating-style-${option.id}`}
+                type="button"
+                onClick={() => onSelectAgeRatingBadgeStyle(option.id)}
+                className={selectorButtonClass(ageRatingBadgeStyle === option.id)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className={settingsCardClass}>
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Release Status Style</span>
+          <div className={selectorGroupClass}>
+            <button
+              key="release-status-style-same"
+              type="button"
+              onClick={() => onSelectReleaseStatusBadgeStyle(null)}
+              className={selectorButtonClass(releaseStatusBadgeStyle === null)}
+            >
+              Same
+            </button>
+            {QUALITY_BADGE_STYLE_OPTIONS.map((option) => (
+              <button
+                key={`release-status-style-${option.id}`}
+                type="button"
+                onClick={() => onSelectReleaseStatusBadgeStyle(option.id)}
+                className={selectorButtonClass(releaseStatusBadgeStyle === option.id)}
               >
                 {option.label}
               </button>
@@ -393,6 +470,39 @@ export function QualitySection({
       <p className="text-[11px] leading-relaxed text-zinc-500">
         Keep only the quality marks that matter for your setup. The toggles stay visible while you edit so you can compare badge coverage, placement, no background styling, and silver mark styling without losing context.
       </p>
+      {(activeQualityBadgesStyle === 'tile' || ageRatingBadgeStyle === 'tile' || releaseStatusBadgeStyle === 'tile') ? (
+        <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
+          {(ageRatingBadgeStyle === 'tile' || (ageRatingBadgeStyle === null && activeQualityBadgesStyle === 'tile')) && (
+            <ColorField label="Age Rating Color" value={ageRatingTileColor} onChange={onSelectAgeRatingTileColor} />
+          )}
+          {(releaseStatusBadgeStyle === 'tile' || (releaseStatusBadgeStyle === null && activeQualityBadgesStyle === 'tile')) && (
+            <ColorField label="Release Status Color" value={releaseStatusTileColor} onChange={onSelectReleaseStatusTileColor} />
+          )}
+          {activeQualityBadgesStyle === 'tile' && (
+            <ColorField label="Quality Badge Color" value={qualityBadgesTileAccentColor} onChange={onSelectQualityBadgesTileAccentColor} />
+          )}
+          {activeQualityBadgesStyle === 'tile' && (
+            <ColorField label="Network Color" value={networkTileColor} onChange={onSelectNetworkTileColor} />
+          )}
+        </div>
+      ) : null}
+      {(activeQualityBadgesStyle === 'community-badge' || ageRatingBadgeStyle === 'community-badge' || releaseStatusBadgeStyle === 'community-badge') ? (
+        <div className={settingsCardClass}>
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Badge Theme</span>
+          <div className={selectorGroupClass}>
+            {COMMUNITY_BADGE_THEME_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => onSelectCommunityBadgeTheme(option.id)}
+                className={selectorButtonClass(communityBadgeTheme === option.id)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -1021,9 +1131,11 @@ export function SimpleQuickTuneSection({
   onSelectStreamBadges: (value: StreamBadgesSetting) => void;
 }) {
   const cleanGenreStyleActive = activeGenreBadgeStyle === 'clean';
+  const tileGenreStyleActive = activeGenreBadgeStyle === 'tile';
+  const restrictedGenreStyleActive = cleanGenreStyleActive || tileGenreStyleActive;
   const resolvedActiveGenreBadgeMode =
-    cleanGenreStyleActive && activeGenreBadgeMode !== 'off' ? 'text' : activeGenreBadgeMode;
-  const genreModeOptions = cleanGenreStyleActive
+    restrictedGenreStyleActive && activeGenreBadgeMode !== 'off' ? 'text' : activeGenreBadgeMode;
+  const genreModeOptions = restrictedGenreStyleActive
     ? GENRE_BADGE_MODE_OPTIONS.filter((option) => option.id === 'off' || option.id === 'text')
     : GENRE_BADGE_MODE_OPTIONS.filter((option) =>
         option.id === 'off' || option.id === 'text' || option.id === 'both',
@@ -1219,7 +1331,7 @@ export function SimpleQuickTuneSection({
                 type="button"
                 onClick={() =>
                   onSelectGenreBadgeMode(
-                    cleanGenreStyleActive && option.id !== 'off' ? 'text' : option.id,
+                    restrictedGenreStyleActive && option.id !== 'off' ? 'text' : option.id,
                   )
                 }
                 className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
@@ -1234,29 +1346,27 @@ export function SimpleQuickTuneSection({
           </div>
         </div>
 
-        {previewType !== 'logo' ? (
-          <div>
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-              Stream Badges
-            </div>
-            <div className="mt-2 flex flex-wrap gap-1">
-              {streamBadgeOptions.map((option) => (
-                <button
-                  key={`simple-stream-${option.id}`}
-                  type="button"
-                  onClick={() => onSelectStreamBadges(option.id)}
-                  className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
-                    activeStreamBadges === option.id
-                      ? 'border-violet-500/60 bg-violet-500/12 text-white'
-                      : 'border-white/10 bg-black text-zinc-400 hover:border-white/20 hover:text-white'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
+        <div>
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+            Stream Badges
           </div>
-        ) : null}
+          <div className="mt-2 flex flex-wrap gap-1">
+            {streamBadgeOptions.map((option) => (
+              <button
+                key={`simple-stream-${option.id}`}
+                type="button"
+                onClick={() => onSelectStreamBadges(option.id)}
+                className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
+                  activeStreamBadges === option.id
+                    ? 'border-violet-500/60 bg-violet-500/12 text-white'
+                    : 'border-white/10 bg-black text-zinc-400 hover:border-white/20 hover:text-white'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1311,6 +1421,35 @@ function StackedRangeField({
         }
         className="h-2 w-full accent-violet-500"
       />
+    </div>
+  );
+}
+
+function ColorField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="flex flex-col">
+      <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 mb-1 min-h-[2.5em] flex items-end">
+        {label}
+      </label>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          value={value || '#ffffff'}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-10 w-14 rounded-md border border-white/10 bg-black"
+        />
+        <div className="rounded-lg border border-white/10 bg-black px-2.5 py-2 text-xs text-zinc-300">
+          {value || 'default'}
+        </div>
+      </div>
     </div>
   );
 }

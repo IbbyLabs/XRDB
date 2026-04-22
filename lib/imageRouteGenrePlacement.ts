@@ -22,6 +22,7 @@ export type GenreBadgePlacementInput = {
   mode: GenreBadgeMode;
   style: GenreBadgeStyle;
   position: GenreBadgePosition;
+  tileAccentColor?: string;
   scalePercent?: number;
 };
 

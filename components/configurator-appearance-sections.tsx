@@ -757,6 +757,8 @@ export function LookSection({
   onSelectGenreBadgeStyle,
   onSelectGenreBadgePosition,
   onSelectGenreBadgeAnimeGrouping,
+  genreBadgeTileAccentColor,
+  onSelectGenreBadgeTileAccentColor,
   onSelectBackdropArtworkSource,
   onSelectThumbnailArtworkSource,
   onSelectPosterArtworkSource,
@@ -871,6 +873,8 @@ export function LookSection({
   onSelectGenreBadgeStyle: (value: GenreBadgeStyle) => void;
   onSelectGenreBadgePosition: (value: GenreBadgePosition) => void;
   onSelectGenreBadgeAnimeGrouping: (value: GenreBadgeAnimeGrouping) => void;
+  genreBadgeTileAccentColor: string;
+  onSelectGenreBadgeTileAccentColor: (value: string) => void;
   onSelectBackdropArtworkSource: (value: ArtworkSource) => void;
   onSelectThumbnailArtworkSource: (value: ArtworkSource) => void;
   onSelectPosterArtworkSource: (value: ArtworkSource) => void;
@@ -996,13 +1000,15 @@ export function LookSection({
     );
   };
   const cleanGenreStyleActive = activeGenreBadgeStyle === 'clean';
+  const tileGenreStyleActive = activeGenreBadgeStyle === 'tile';
+  const restrictedGenreStyleActive = cleanGenreStyleActive || tileGenreStyleActive;
   const resolvedActiveGenreBadgeMode =
-    cleanGenreStyleActive && activeGenreBadgeMode !== 'off' ? 'text' : activeGenreBadgeMode;
-  const availableGenreModeOptions = cleanGenreStyleActive
+    restrictedGenreStyleActive && activeGenreBadgeMode !== 'off' ? 'text' : activeGenreBadgeMode;
+  const availableGenreModeOptions = restrictedGenreStyleActive
     ? GENRE_BADGE_MODE_OPTIONS.filter((option) => option.id === 'off' || option.id === 'text')
     : GENRE_BADGE_MODE_OPTIONS;
   const handleGenreBadgeModeSelect = (value: GenreBadgeMode) => {
-    if (cleanGenreStyleActive && value !== 'off') {
+    if (restrictedGenreStyleActive && value !== 'off') {
       onSelectGenreBadgeMode('text');
       return;
     }
@@ -1010,13 +1016,13 @@ export function LookSection({
   };
   const handleGenreBadgeStyleSelect = (value: GenreBadgeStyle) => {
     onSelectGenreBadgeStyle(value);
-    if (value !== 'clean') {
+    if (value !== 'clean' && value !== 'tile') {
       return;
     }
     if (activeGenreBadgeMode !== 'off') {
       onSelectGenreBadgeMode('text');
     }
-    if (activeGenreBadgePosition !== 'bottomCenter') {
+    if (value === 'clean' && activeGenreBadgePosition !== 'bottomCenter') {
       onSelectGenreBadgePosition('bottomCenter');
     }
   };
@@ -1155,7 +1161,7 @@ export function LookSection({
               ))}
             </div>
           </div>
-          {!cleanGenreStyleActive ? (
+          {!cleanGenreStyleActive && !tileGenreStyleActive ? (
             <div className={settingsCardClass}>
               <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge Position</span>
               <div className={selectorGroupClass}>
@@ -1171,6 +1177,15 @@ export function LookSection({
                   </button>
                 ))}
               </div>
+            </div>
+          ) : null}
+          {tileGenreStyleActive ? (
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <ColorField
+                label="Genre Accent"
+                value={genreBadgeTileAccentColor}
+                onChange={onSelectGenreBadgeTileAccentColor}
+              />
             </div>
           ) : null}
           <div className={settingsCardClass}>

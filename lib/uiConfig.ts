@@ -15,10 +15,16 @@ import {
   DEFAULT_QUALITY_BADGES_STYLE,
   DEFAULT_RATING_STYLE,
   normalizeQualityBadgeStyle,
+  normalizeQualityBadgeStyleOrNull,
   normalizeRatingStyle,
   type QualityBadgeStyle,
   type RatingStyle,
 } from './ratingAppearance.ts';
+import {
+  DEFAULT_COMMUNITY_BADGE_THEME,
+  normalizeCommunityBadgeTheme,
+  type CommunityBadgeTheme,
+} from './communityBadgeTheme.ts';
 import {
   AGGREGATE_RATING_SOURCE_ACCENTS,
   DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET,
@@ -245,6 +251,7 @@ export type SharedXrdbSettings = {
   posterStreamBadges: StreamBadgesSetting;
   backdropStreamBadges: StreamBadgesSetting;
   thumbnailStreamBadges: StreamBadgesSetting;
+  logoStreamBadges: StreamBadgesSetting;
   qualityBadgesSide: QualityBadgesSide;
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
   ageRatingBadgePosition: AgeRatingBadgePosition;
@@ -308,6 +315,14 @@ export type SharedXrdbSettings = {
   aggregateAccentBarVisible: boolean;
   posterNoBackgroundBadgeOutlineColor: string;
   posterNoBackgroundBadgeOutlineWidth: number;
+  ageRatingTileColor: string;
+  releaseStatusTileColor: string;
+  qualityBadgesTileAccentColor: string;
+  networkTileColor: string;
+  genreBadgeTileAccentColor: string;
+  communityBadgeTheme: CommunityBadgeTheme;
+  ageRatingBadgeStyle: QualityBadgeStyle | null;
+  releaseStatusBadgeStyle: QualityBadgeStyle | null;
   posterRatingXOffsetPillGlass: number;
   posterRatingYOffsetPillGlass: number;
   backdropRatingXOffsetPillGlass: number;
@@ -531,6 +546,7 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   posterStreamBadges: 'off',
   backdropStreamBadges: 'auto',
   thumbnailStreamBadges: 'auto',
+  logoStreamBadges: 'auto',
   qualityBadgesSide: 'left',
   posterQualityBadgesPosition: 'auto',
   ageRatingBadgePosition: 'inherit',
@@ -594,6 +610,14 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   aggregateAccentBarVisible: true,
   posterNoBackgroundBadgeOutlineColor: DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR,
   posterNoBackgroundBadgeOutlineWidth: DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX,
+  ageRatingTileColor: '',
+  releaseStatusTileColor: '',
+  qualityBadgesTileAccentColor: '',
+  networkTileColor: '',
+  genreBadgeTileAccentColor: '',
+  communityBadgeTheme: DEFAULT_COMMUNITY_BADGE_THEME,
+  ageRatingBadgeStyle: null,
+  releaseStatusBadgeStyle: null,
   posterRatingXOffsetPillGlass: DEFAULT_RATING_STACK_OFFSET_PX,
   posterRatingYOffsetPillGlass: DEFAULT_RATING_STACK_OFFSET_PX,
   backdropRatingXOffsetPillGlass: DEFAULT_RATING_STACK_OFFSET_PX,
@@ -1366,6 +1390,10 @@ export const normalizeSharedXrdbSettings = (value: unknown, options?: { skipCros
       candidate.thumbnailStreamBadges ?? candidate.backdropStreamBadges,
       defaults.thumbnailStreamBadges,
     ),
+    logoStreamBadges: normalizeStreamBadgesSetting(
+      candidate.logoStreamBadges,
+      defaults.logoStreamBadges,
+    ),
     qualityBadgesSide: normalizeQualityBadgesSide(
       candidate.qualityBadgesSide,
       defaults.qualityBadgesSide,
@@ -1544,6 +1572,19 @@ export const normalizeSharedXrdbSettings = (value: unknown, options?: { skipCros
       candidate.posterNoBackgroundBadgeOutlineWidth,
       defaults.posterNoBackgroundBadgeOutlineWidth,
     ),
+    ageRatingTileColor:
+      normalizeHexColor(candidate.ageRatingTileColor) || defaults.ageRatingTileColor,
+    releaseStatusTileColor:
+      normalizeHexColor(candidate.releaseStatusTileColor) || defaults.releaseStatusTileColor,
+    qualityBadgesTileAccentColor:
+      normalizeHexColor(candidate.qualityBadgesTileAccentColor) || defaults.qualityBadgesTileAccentColor,
+    networkTileColor:
+      normalizeHexColor(candidate.networkTileColor) || defaults.networkTileColor,
+    genreBadgeTileAccentColor:
+      normalizeHexColor(candidate.genreBadgeTileAccentColor) || defaults.genreBadgeTileAccentColor,
+    communityBadgeTheme: normalizeCommunityBadgeTheme(candidate.communityBadgeTheme as string | null | undefined),
+    ageRatingBadgeStyle: normalizeQualityBadgeStyleOrNull(candidate.ageRatingBadgeStyle as string | null | undefined),
+    releaseStatusBadgeStyle: normalizeQualityBadgeStyleOrNull(candidate.releaseStatusBadgeStyle as string | null | undefined),
     posterRatingXOffsetPillGlass: normalizeRatingStackOffsetPx(
       candidate.posterRatingXOffsetPillGlass ??
         candidate.ratingXOffsetPillGlass ??
@@ -1996,6 +2037,9 @@ const buildSharedPayload = (settings: SharedXrdbSettings, options?: SharedPayloa
   if (settings.thumbnailStreamBadges !== defaultSettings.thumbnailStreamBadges) {
     payload.thumbnailStreamBadges = settings.thumbnailStreamBadges;
   }
+  if (settings.logoStreamBadges !== defaultSettings.logoStreamBadges) {
+    payload.logoStreamBadges = settings.logoStreamBadges;
+  }
   if (settings.posterRatingsLayout === 'top-bottom' && settings.qualityBadgesSide !== 'left') {
     payload.qualityBadgesSide = settings.qualityBadgesSide;
   }
@@ -2243,6 +2287,30 @@ const buildSharedPayload = (settings: SharedXrdbSettings, options?: SharedPayloa
   }
   if (settings.posterNoBackgroundBadgeOutlineWidth !== DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX) {
     payload.posterNoBackgroundBadgeOutlineWidth = settings.posterNoBackgroundBadgeOutlineWidth;
+  }
+  if (settings.ageRatingTileColor) {
+    payload.ageRatingTileColor = settings.ageRatingTileColor;
+  }
+  if (settings.releaseStatusTileColor) {
+    payload.releaseStatusTileColor = settings.releaseStatusTileColor;
+  }
+  if (settings.qualityBadgesTileAccentColor) {
+    payload.qualityBadgesTileAccentColor = settings.qualityBadgesTileAccentColor;
+  }
+  if (settings.networkTileColor) {
+    payload.networkTileColor = settings.networkTileColor;
+  }
+  if (settings.genreBadgeTileAccentColor) {
+    payload.genreBadgeTileAccentColor = settings.genreBadgeTileAccentColor;
+  }
+  if (settings.communityBadgeTheme !== DEFAULT_COMMUNITY_BADGE_THEME) {
+    payload.communityBadgeTheme = settings.communityBadgeTheme;
+  }
+  if (settings.ageRatingBadgeStyle !== null) {
+    payload.ageRatingBadgeStyle = settings.ageRatingBadgeStyle;
+  }
+  if (settings.releaseStatusBadgeStyle !== null) {
+    payload.releaseStatusBadgeStyle = settings.releaseStatusBadgeStyle;
   }
   if (settings.posterRatingXOffsetPillGlass !== DEFAULT_RATING_STACK_OFFSET_PX) {
     payload.posterRatingXOffsetPillGlass = settings.posterRatingXOffsetPillGlass;

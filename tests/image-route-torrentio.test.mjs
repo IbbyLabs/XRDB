@@ -38,6 +38,24 @@ test('image route torrentio extracts filenames from common stream shapes', () =>
   ]);
 });
 
+test('image route torrentio keeps title and name when filename is generic', () => {
+  const filenames = extractTorrentioFilenames({
+    streams: [
+      {
+        behaviorHints: { filename: 'Movie.mkv' },
+        title: 'Movie.2024.2160p.DV.HDR.REMUX.mkv',
+        name: 'Torrentio\\n4k DV | HDR',
+      },
+    ],
+  });
+
+  assert.deepEqual(filenames, [
+    'Movie.mkv',
+    'Movie.2024.2160p.DV.HDR.REMUX.mkv',
+    'Torrentio\\n4k DV | HDR',
+  ]);
+});
+
 test('image route torrentio derives quality badges from stream filenames', async () => {
   const result = await fetchTorrentioBadges({
     type: 'movie',

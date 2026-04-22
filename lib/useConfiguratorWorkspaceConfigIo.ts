@@ -77,6 +77,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   thumbnailSideRatingsOffset: WorkspaceSettings['thumbnailSideRatingsOffset'];
   thumbnailSideRatingsPosition: WorkspaceSettings['thumbnailSideRatingsPosition'];
   thumbnailStreamBadges: WorkspaceSettings['thumbnailStreamBadges'];
+  logoStreamBadges: WorkspaceSettings['logoStreamBadges'];
   episodeIdMode: EpisodeIdMode;
   xrdbKey: WorkspaceSettings['xrdbKey'];
   fanartKey: WorkspaceSettings['fanartKey'];
@@ -154,6 +155,14 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   qualityBadgesSide: WorkspaceSettings['qualityBadgesSide'];
   posterNoBackgroundBadgeOutlineColor: WorkspaceSettings['posterNoBackgroundBadgeOutlineColor'];
   posterNoBackgroundBadgeOutlineWidth: WorkspaceSettings['posterNoBackgroundBadgeOutlineWidth'];
+  ageRatingTileColor: WorkspaceSettings['ageRatingTileColor'];
+  releaseStatusTileColor: WorkspaceSettings['releaseStatusTileColor'];
+  qualityBadgesTileAccentColor: WorkspaceSettings['qualityBadgesTileAccentColor'];
+  networkTileColor: WorkspaceSettings['networkTileColor'];
+  genreBadgeTileAccentColor: WorkspaceSettings['genreBadgeTileAccentColor'];
+  communityBadgeTheme: WorkspaceSettings['communityBadgeTheme'];
+  ageRatingBadgeStyle: WorkspaceSettings['ageRatingBadgeStyle'];
+  releaseStatusBadgeStyle: WorkspaceSettings['releaseStatusBadgeStyle'];
   posterRatingXOffsetPillGlass: WorkspaceSettings['posterRatingXOffsetPillGlass'];
   posterRatingYOffsetPillGlass: WorkspaceSettings['posterRatingYOffsetPillGlass'];
   backdropRatingXOffsetPillGlass: WorkspaceSettings['backdropRatingXOffsetPillGlass'];
@@ -233,6 +242,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setThumbnailSideRatingsOffset: Setter<WorkspaceSettings['thumbnailSideRatingsOffset']>;
   setThumbnailSideRatingsPosition: Setter<WorkspaceSettings['thumbnailSideRatingsPosition']>;
   setThumbnailStreamBadges: Setter<WorkspaceSettings['thumbnailStreamBadges']>;
+  setLogoStreamBadges: Setter<WorkspaceSettings['logoStreamBadges']>;
   setEpisodeIdMode: Setter<EpisodeIdMode>;
   setXrdbKey: Setter<WorkspaceSettings['xrdbKey']>;
   setFanartKey: Setter<WorkspaceSettings['fanartKey']>;
@@ -308,6 +318,14 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setQualityBadgesSide: Setter<WorkspaceSettings['qualityBadgesSide']>;
   setPosterNoBackgroundBadgeOutlineColor: Setter<WorkspaceSettings['posterNoBackgroundBadgeOutlineColor']>;
   setPosterNoBackgroundBadgeOutlineWidth: Setter<WorkspaceSettings['posterNoBackgroundBadgeOutlineWidth']>;
+  setAgeRatingTileColor: Setter<WorkspaceSettings['ageRatingTileColor']>;
+  setReleaseStatusTileColor: Setter<WorkspaceSettings['releaseStatusTileColor']>;
+  setQualityBadgesTileAccentColor: Setter<WorkspaceSettings['qualityBadgesTileAccentColor']>;
+  setNetworkTileColor: Setter<WorkspaceSettings['networkTileColor']>;
+  setGenreBadgeTileAccentColor: Setter<WorkspaceSettings['genreBadgeTileAccentColor']>;
+  setCommunityBadgeTheme: Setter<WorkspaceSettings['communityBadgeTheme']>;
+  setAgeRatingBadgeStyle: Setter<WorkspaceSettings['ageRatingBadgeStyle']>;
+  setReleaseStatusBadgeStyle: Setter<WorkspaceSettings['releaseStatusBadgeStyle']>;
   setPosterRatingXOffsetPillGlass: Setter<WorkspaceSettings['posterRatingXOffsetPillGlass']>;
   setPosterRatingYOffsetPillGlass: Setter<WorkspaceSettings['posterRatingYOffsetPillGlass']>;
   setBackdropRatingXOffsetPillGlass: Setter<WorkspaceSettings['backdropRatingXOffsetPillGlass']>;
@@ -402,6 +420,7 @@ export function useConfiguratorWorkspaceConfigIo({
   thumbnailSideRatingsOffset,
   thumbnailSideRatingsPosition,
   thumbnailStreamBadges,
+  logoStreamBadges,
   episodeIdMode,
   xrdbKey,
   fanartKey,
@@ -479,6 +498,14 @@ export function useConfiguratorWorkspaceConfigIo({
   qualityBadgesSide,
   posterNoBackgroundBadgeOutlineColor,
   posterNoBackgroundBadgeOutlineWidth,
+  ageRatingTileColor,
+  releaseStatusTileColor,
+  qualityBadgesTileAccentColor,
+  networkTileColor,
+  genreBadgeTileAccentColor,
+  communityBadgeTheme,
+  ageRatingBadgeStyle,
+  releaseStatusBadgeStyle,
   posterRatingXOffsetPillGlass,
   posterRatingYOffsetPillGlass,
   backdropRatingXOffsetPillGlass,
@@ -558,6 +585,7 @@ export function useConfiguratorWorkspaceConfigIo({
   setThumbnailSideRatingsOffset,
   setThumbnailSideRatingsPosition,
   setThumbnailStreamBadges,
+  setLogoStreamBadges,
   setEpisodeIdMode,
   setXrdbKey,
   setFanartKey,
@@ -633,6 +661,14 @@ export function useConfiguratorWorkspaceConfigIo({
   setQualityBadgesSide,
   setPosterNoBackgroundBadgeOutlineColor,
   setPosterNoBackgroundBadgeOutlineWidth,
+  setAgeRatingTileColor,
+  setReleaseStatusTileColor,
+  setQualityBadgesTileAccentColor,
+  setNetworkTileColor,
+  setGenreBadgeTileAccentColor,
+  setCommunityBadgeTheme,
+  setAgeRatingBadgeStyle,
+  setReleaseStatusBadgeStyle,
   setPosterRatingXOffsetPillGlass,
   setPosterRatingYOffsetPillGlass,
   setBackdropRatingXOffsetPillGlass,
@@ -731,6 +767,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setPosterStreamBadges(normalized.settings.posterStreamBadges);
       setBackdropStreamBadges(normalized.settings.backdropStreamBadges);
       setThumbnailStreamBadges(normalized.settings.thumbnailStreamBadges);
+      setLogoStreamBadges(normalized.settings.logoStreamBadges);
       setQualityBadgesSide(normalized.settings.qualityBadgesSide);
       setPosterQualityBadgesPosition(normalized.settings.posterQualityBadgesPosition);
       setAgeRatingBadgePosition(normalized.settings.ageRatingBadgePosition);
@@ -797,6 +834,14 @@ export function useConfiguratorWorkspaceConfigIo({
       setAggregateAccentBarVisible(normalized.settings.aggregateAccentBarVisible);
       setPosterNoBackgroundBadgeOutlineColor(normalized.settings.posterNoBackgroundBadgeOutlineColor);
       setPosterNoBackgroundBadgeOutlineWidth(normalized.settings.posterNoBackgroundBadgeOutlineWidth);
+      setAgeRatingTileColor(normalized.settings.ageRatingTileColor);
+      setReleaseStatusTileColor(normalized.settings.releaseStatusTileColor);
+      setQualityBadgesTileAccentColor(normalized.settings.qualityBadgesTileAccentColor);
+      setNetworkTileColor(normalized.settings.networkTileColor);
+      setGenreBadgeTileAccentColor(normalized.settings.genreBadgeTileAccentColor);
+      setCommunityBadgeTheme(normalized.settings.communityBadgeTheme);
+      setAgeRatingBadgeStyle(normalized.settings.ageRatingBadgeStyle);
+      setReleaseStatusBadgeStyle(normalized.settings.releaseStatusBadgeStyle);
       setPosterRatingXOffsetPillGlass(normalized.settings.posterRatingXOffsetPillGlass);
       setPosterRatingYOffsetPillGlass(normalized.settings.posterRatingYOffsetPillGlass);
       setBackdropRatingXOffsetPillGlass(normalized.settings.backdropRatingXOffsetPillGlass);
@@ -888,6 +933,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setThumbnailSideRatingsOffset,
       setThumbnailSideRatingsPosition,
       setThumbnailStreamBadges,
+      setLogoStreamBadges,
       setEpisodeIdMode,
       setXrdbKey,
       setFanartKey,
@@ -961,6 +1007,14 @@ export function useConfiguratorWorkspaceConfigIo({
       setQualityBadgesSide,
       setPosterNoBackgroundBadgeOutlineColor,
       setPosterNoBackgroundBadgeOutlineWidth,
+      setAgeRatingTileColor,
+      setReleaseStatusTileColor,
+      setQualityBadgesTileAccentColor,
+      setNetworkTileColor,
+      setGenreBadgeTileAccentColor,
+      setCommunityBadgeTheme,
+      setAgeRatingBadgeStyle,
+      setReleaseStatusBadgeStyle,
       setPosterRatingXOffsetPillGlass,
       setPosterRatingYOffsetPillGlass,
       setBackdropRatingXOffsetPillGlass,
@@ -1052,6 +1106,7 @@ export function useConfiguratorWorkspaceConfigIo({
         posterStreamBadges,
         backdropStreamBadges,
         thumbnailStreamBadges,
+        logoStreamBadges,
         qualityBadgesSide,
         posterQualityBadgesPosition,
         ageRatingBadgePosition,
@@ -1124,6 +1179,14 @@ export function useConfiguratorWorkspaceConfigIo({
         aggregateAccentBarVisible,
         posterNoBackgroundBadgeOutlineColor,
         posterNoBackgroundBadgeOutlineWidth,
+        ageRatingTileColor,
+        releaseStatusTileColor,
+        qualityBadgesTileAccentColor,
+        networkTileColor,
+        genreBadgeTileAccentColor,
+        communityBadgeTheme,
+        ageRatingBadgeStyle,
+        releaseStatusBadgeStyle,
         posterRatingXOffsetPillGlass,
         posterRatingYOffsetPillGlass,
         backdropRatingXOffsetPillGlass,
@@ -1220,6 +1283,7 @@ export function useConfiguratorWorkspaceConfigIo({
       thumbnailSideRatingsOffset,
       thumbnailSideRatingsPosition,
       thumbnailStreamBadges,
+      logoStreamBadges,
       episodeIdMode,
       xrdbKey,
       fanartKey,
@@ -1295,6 +1359,14 @@ export function useConfiguratorWorkspaceConfigIo({
       qualityBadgesSide,
       posterNoBackgroundBadgeOutlineColor,
       posterNoBackgroundBadgeOutlineWidth,
+      ageRatingTileColor,
+      releaseStatusTileColor,
+      qualityBadgesTileAccentColor,
+      networkTileColor,
+      genreBadgeTileAccentColor,
+      communityBadgeTheme,
+      ageRatingBadgeStyle,
+      releaseStatusBadgeStyle,
       posterRatingXOffsetPillGlass,
       posterRatingYOffsetPillGlass,
       backdropRatingXOffsetPillGlass,

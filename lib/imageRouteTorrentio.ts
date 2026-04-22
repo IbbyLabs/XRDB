@@ -279,15 +279,18 @@ export const extractTorrentioFilenames = (payload: any) => {
   const streams = Array.isArray(payload?.streams) ? payload.streams : [];
   const filenames: string[] = [];
   for (const stream of streams) {
-    const filename =
-      (typeof stream?.filename === 'string' && stream.filename) ||
-      (typeof stream?.behaviorHints?.filename === 'string' && stream.behaviorHints.filename) ||
-      (typeof stream?.title === 'string' && stream.title) ||
-      (typeof stream?.name === 'string' && stream.name) ||
-      '';
-    if (filename) filenames.push(filename);
+    const candidates = [
+      typeof stream?.filename === 'string' ? stream.filename : '',
+      typeof stream?.behaviorHints?.filename === 'string' ? stream.behaviorHints.filename : '',
+      typeof stream?.title === 'string' ? stream.title : '',
+      typeof stream?.name === 'string' ? stream.name : '',
+    ];
+    for (const candidate of candidates) {
+      const normalized = candidate.trim();
+      if (normalized) filenames.push(normalized);
+    }
   }
-  return filenames;
+  return [...new Set(filenames)];
 };
 
 const buildFeatureBadgesFromFlags = (flags: MediaFeatureFlags, remuxDisplayMode: RemuxDisplayMode = 'composite'): TorrentioRatingBadge[] =>

@@ -1,5 +1,5 @@
 export type GenreBadgeMode = 'off' | 'text' | 'icon' | 'both';
-export type GenreBadgeStyle = 'glass' | 'square' | 'plain' | 'clean';
+export type GenreBadgeStyle = 'glass' | 'square' | 'plain' | 'clean' | 'tile';
 export type GenreBadgePosition =
   | 'topLeft'
   | 'topCenter'
@@ -106,6 +106,11 @@ export const GENRE_BADGE_STYLE_OPTIONS: Array<{
     id: 'clean',
     label: 'Clean Text',
     description: 'Render clean title style genre text for card style artwork.',
+  },
+  {
+    id: 'tile',
+    label: 'Tile Dark',
+    description: 'Render a dark tile badge with a per-family accent strip.',
   },
 ];
 
@@ -219,7 +224,7 @@ export const resolveGenreBadgeModeForStyle = (
   mode: GenreBadgeMode,
   style: GenreBadgeStyle,
 ): GenreBadgeMode => {
-  if (style === 'clean') {
+  if (style === 'clean' || style === 'tile') {
     return mode === 'off' ? 'off' : 'text';
   }
   return mode;

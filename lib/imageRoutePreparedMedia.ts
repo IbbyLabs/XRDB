@@ -35,6 +35,7 @@ import {
   resolveMovieCertificationBadge,
   resolveMovieReleaseStatusBadge,
   resolveTvCertificationBadge,
+  isStreamingServiceBadgeKey,
   MEDIA_FEATURE_BADGE_ORDER,
   type RemuxDisplayMode,
 } from './mediaFeatures.ts';
@@ -56,6 +57,8 @@ import {
 import {
   buildTmdbImageUrl,
 } from './imageRouteSourceUrls.ts';
+import { type CommunityBadgeTheme } from './communityBadgeAssets.ts';
+import { type QualityBadgeStyle } from './ratingAppearance.ts';
 import {
   pickPosterTitleFromMedia,
 } from './imageRouteKitsuFallback.ts';
@@ -193,6 +196,14 @@ export const prepareImageRouteMediaState = async (input: {
   rawFallbackLogoAspectRatio: number | null;
   canonicalSeriesIdentity?: CanonicalSeriesIdentity | null;
   canonicalEpisodeIdentity?: CanonicalEpisodeIdentity | null;
+  ageRatingTileColor?: string | null;
+  releaseStatusTileColor?: string | null;
+  qualityBadgesTileAccentColor?: string | null;
+  networkTileColor?: string | null;
+  genreBadgeTileAccentColor?: string | null;
+  communityBadgeTheme?: CommunityBadgeTheme;
+  ageRatingBadgeStyle?: QualityBadgeStyle | null;
+  releaseStatusBadgeStyle?: QualityBadgeStyle | null;
 }, deps: Partial<PreparedMediaDeps> = {}): Promise<PreparedImageRouteMediaState> => {
   const runtimeDeps = { ...DEFAULT_DEPS, ...deps };
   let {
@@ -300,6 +311,7 @@ const buildResolvedGenreBadge = (
     backgroundOpacity: input.genreBadgeBackgroundOpacity,
     noBackgroundOutlineColor: noBackgroundBadgeOutlineColor,
     noBackgroundOutlineWidth: noBackgroundBadgeOutlineWidth,
+    tileAccentColor: genreBadgeStyle === 'tile' ? (input.genreBadgeTileAccentColor || undefined) : undefined,
   };
 };
 let primaryGenreFamily = resolvePrimaryGenreFamily(
@@ -910,12 +922,21 @@ if (certificationBadgeLabel) {
       value: '',
       iconUrl: '',
       accentColor: certificationBadge.accentColor,
+      ...(input.ageRatingTileColor ? { tileAccentColor: input.ageRatingTileColor } : {}),
+      ...(input.ageRatingBadgeStyle ? { styleOverride: input.ageRatingBadgeStyle } : {}),
     },
     ...streamBadges,
   ];
 }
 if (releaseStatusBadge) {
-  streamBadges = [releaseStatusBadge, ...streamBadges];
+  streamBadges = [
+    {
+      ...releaseStatusBadge,
+      ...(input.releaseStatusTileColor ? { tileAccentColor: input.releaseStatusTileColor } : {}),
+      ...(input.releaseStatusBadgeStyle ? { styleOverride: input.releaseStatusBadgeStyle } : {}),
+    },
+    ...streamBadges,
+  ];
 }
 if (mediaType === 'movie' && movieHasPhysicalMediaRelease === false) {
   streamBadges = streamBadges.filter((badge) => badge.key !== 'bluray' && badge.key !== 'remux');
@@ -954,6 +975,25 @@ streamBadges = MEDIA_FEATURE_BADGE_ORDER.flatMap((badgeKey) => {
   const match = streamBadges.find((badge) => badge.key === badgeKey);
   return match ? [match] : [];
 });
+if (input.qualityBadgesTileAccentColor) {
+  streamBadges = streamBadges.map((badge) => {
+    const k = String(badge.key);
+    if (k === 'certification' || k === 'releasestatus' || isStreamingServiceBadgeKey(k)) return badge;
+    return { ...badge, tileAccentColor: input.qualityBadgesTileAccentColor! };
+  });
+}
+if (input.networkTileColor) {
+  streamBadges = streamBadges.map((badge) => {
+    if (!isStreamingServiceBadgeKey(String(badge.key))) return badge;
+    return { ...badge, tileAccentColor: input.networkTileColor! };
+  });
+}
+if (input.communityBadgeTheme) {
+  streamBadges = streamBadges.map((badge) => ({
+    ...badge,
+    communityBadgeTheme: input.communityBadgeTheme,
+  }));
+}
 if (shouldRenderRawKitsuFallbackRating) {
   providerRatings.set('kitsu', rawFallbackKitsuRating as string);
   renderedRatingTtlByProvider.set('kitsu', KITSU_CACHE_TTL_MS);
