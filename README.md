@@ -440,7 +440,7 @@ The configurator preview type row now includes a sync control beside each type. 
 | `backdropRatings` | Backdrop rating providers | `tmdb, mdblist, imdb, allocine, allocinepress, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist, anilist, kitsu` | `all` |
 | `thumbnailRatings` | Episode thumbnail rating providers | `tmdb, imdb` | `tmdb,imdb` |
 | `logoRatings` | Logo rating providers | `tmdb, mdblist, imdb, allocine, allocinepress, tomatoes, tomatoesaudience, letterboxd, metacritic, metacriticuser, trakt, simkl, rogerebert, myanimelist, anilist, kitsu` | `all` |
-| `ratingValueMode` | Rating display scaling | `native`, `normalized`, `normalized100` | `native` |
+| `ratingValueMode` | Rating display scaling | `native`, `normalized`, `normalizedclean`, `normalized100` | `native` |
 | `ratingStyle` (or `posterRatingStyle` / `backdropRatingStyle` / `thumbnailRatingStyle` / `logoRatingStyle`, or `style` legacy) | Badge style | `glass` (Pill), `square` (Dark), `plain` (No BG), `stacked`, `tile` | `glass` (poster/backdrop/thumbnail), `plain` (logo) |
 | `tmdbKey` | Optional TMDB v3 API key override | String | Server TMDB credential via `XRDB_TMDB_READ_ACCESS_TOKEN` or `XRDB_TMDB_API_KEY` |
 | `mdblistKey` | Optional MDBList API key override | String | Server `MDBLIST_API_KEY` / `MDBLIST_API_KEYS` |
@@ -496,7 +496,7 @@ Use `backdropBottomRatingsRow=true` or `logoBottomRatingsRow=true` to collapse t
 
 Future work: season aware fanart support is a strong next step for TV because fanart.tv exposes `seasonposter` and `seasonthumb` assets.
 
-Rendered ratings keep provider native scales by default. Set `ratingValueMode=normalized` to convert everything to a 0 to 10 display scale, or `ratingValueMode=normalized100` to convert everything to a rounded whole number out of 100. Providers that already use `/10` are shown without the suffix in ten point mode, percentage sources are converted to decimal (`69%` -> `6.9`) or whole number (`69`), `/5` sources are doubled (`4.2/5` -> `8.4`) or multiplied by twenty (`84`), and `/4` sources are multiplied by `2.5` (`3.5/4` -> `8.8` or `88`).
+Rendered ratings keep provider native scales by default. Set `ratingValueMode=normalized` to convert everything to a 0 to 10 display scale, use `ratingValueMode=normalizedclean` to convert to the same scale while trimming trailing point zero values (`10.0` -> `10`), or set `ratingValueMode=normalized100` to convert everything to a rounded whole number out of 100. Providers that already use `/10` are shown without the suffix in ten point mode, percentage sources are converted to decimal (`69%` -> `6.9`) or whole number (`69`), `/5` sources are doubled (`4.2/5` -> `8.4`) or multiplied by twenty (`84`), and `/4` sources are multiplied by `2.5` (`3.5/4` -> `8.8` or `88`).
 
 Episode thumbnails now use the episode level TMDB and IMDb ratings instead of inheriting the parent series rating stack. Keep `thumbnailRatings=tmdb,imdb` if you want the default episode specific pairing.
 

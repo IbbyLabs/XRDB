@@ -29,6 +29,12 @@ test('normalized display mode is opt in', () => {
   assert.equal(formatDisplayRatingValue('allocine', '2', { valueMode: 'normalized' }), '4.0');
 });
 
+test('normalized clean mode trims trailing point zero values', () => {
+  assert.equal(formatDisplayRatingValue('imdb', '8', { valueMode: 'normalizedclean' }), '8');
+  assert.equal(formatDisplayRatingValue('imdb', '8.6', { valueMode: 'normalizedclean' }), '8.6');
+  assert.equal(formatDisplayRatingValue('tomatoes', '90', { valueMode: 'normalizedclean' }), '9');
+});
+
 test('hundred point normalized display mode is opt in', () => {
   assert.equal(formatDisplayRatingValue('imdb', '7.8', { valueMode: 'normalized100' }), '78');
   assert.equal(formatDisplayRatingValue('tomatoes', '93', { valueMode: 'normalized100' }), '93');
@@ -38,6 +44,7 @@ test('hundred point normalized display mode is opt in', () => {
 test('rating value mode normalization accepts supported options only', () => {
   assert.equal(normalizeRatingValueMode(undefined), 'native');
   assert.equal(normalizeRatingValueMode(' normalized '), 'normalized');
+  assert.equal(normalizeRatingValueMode(' normalized-clean '), 'normalizedclean');
   assert.equal(normalizeRatingValueMode(' normalized-100 '), 'normalized100');
   assert.equal(normalizeRatingValueMode('unexpected', 'normalized'), 'normalized');
 });

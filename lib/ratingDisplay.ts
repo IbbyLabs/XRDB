@@ -1,6 +1,6 @@
 import type { RatingPreference } from './ratingProviderCatalog';
 
-export type RatingValueMode = 'native' | 'normalized' | 'normalized100';
+export type RatingValueMode = 'native' | 'normalized' | 'normalizedclean' | 'normalized100';
 
 export const DEFAULT_RATING_VALUE_MODE: RatingValueMode = 'native';
 
@@ -18,6 +18,11 @@ export const RATING_VALUE_MODE_OPTIONS: Array<{
     id: 'normalized',
     label: 'Normalised to Ten',
     description: 'Convert every source to a ten point value so different providers can be compared directly.',
+  },
+  {
+    id: 'normalizedclean',
+    label: 'Normalised to Ten Clean',
+    description: 'Convert every source to a ten point value and remove trailing point zero values such as 10.0 to 10.',
   },
   {
     id: 'normalized100',
@@ -53,8 +58,15 @@ export const normalizeRatingValueMode = (
   fallback: RatingValueMode = DEFAULT_RATING_VALUE_MODE,
 ): RatingValueMode => {
   const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
-  if (normalized === 'native' || normalized === 'normalized') {
+  if (normalized === 'native' || normalized === 'normalized' || normalized === 'normalizedclean') {
     return normalized;
+  }
+  if (
+    normalized === 'normalized-clean' ||
+    normalized === 'normalized_clean' ||
+    normalized === 'normalizedcleanten'
+  ) {
+    return 'normalizedclean';
   }
   if (
     normalized === 'normalized100' ||
@@ -119,7 +131,11 @@ export const formatNormalizedRatingValue = (
   if (valueMode === 'normalized100') {
     return String(Math.max(0, Math.min(100, Math.round(normalizedTenPointValue * 10))));
   }
-  return normalizedTenPointValue.toFixed(1);
+  const fixedValue = normalizedTenPointValue.toFixed(1);
+  if (valueMode === 'normalizedclean' && fixedValue.endsWith('.0')) {
+    return fixedValue.slice(0, -2);
+  }
+  return fixedValue;
 };
 
 const formatNativeProviderValue = (
@@ -157,7 +173,7 @@ export const formatDisplayRatingValue = (
 ) => {
   if (baseValue === 'N/A') return baseValue;
 
-  if (valueMode === 'normalized' || valueMode === 'normalized100') {
+  if (valueMode === 'normalized' || valueMode === 'normalizedclean' || valueMode === 'normalized100') {
     const normalizedValue = normalizeRatingToTenPointValue(provider, baseValue);
     if (normalizedValue !== null) {
       return formatNormalizedRatingValue(normalizedValue, valueMode);
