@@ -376,7 +376,7 @@ ${variantChrome}
     const tileBg = '#0f1117';
     const tileR = Math.max(8, Math.round(height * 0.18));
     const renderIconSizeTile = resolveBadgeIconRenderSize({ iconSlotSize: iconSize, badgeHeight: height, iconScalePercent });
-    const iconPlateW = Math.round(renderIconSizeTile + paddingX * 1.8);
+    const iconPlateW = Math.round(iconSize + paddingX * 1.8);
     const iconXTile = Math.round((iconPlateW - renderIconSizeTile) / 2);
     const iconYTile = Math.round((height - renderIconSizeTile) / 2);
     const iconCxTile = Math.round(iconPlateW / 2);
@@ -390,12 +390,13 @@ ${variantChrome}
     const iconContentTile = iconDataUri
       ? `<image href="${iconDataUri}" x="${iconXTile}" y="${iconYTile}" width="${renderIconSizeTile}" height="${renderIconSizeTile}" preserveAspectRatio="xMidYMid meet" filter="url(#tile-icon-ol)" />`
       : `<text x="${iconCxTile}" y="${Math.round(iconCyTile + iconFontSizeTile * 0.34)}" font-family="Arial, sans-serif" font-size="${iconFontSizeTile}" font-weight="700" text-anchor="middle" fill="white">${escapeXml(monogram)}</text>`;
-    const tileValueSlotX = iconPlateW + paddingX;
-    const tileValueAvailableW = Math.max(0, width - tileValueSlotX - Math.max(4, Math.round(paddingX * 0.5)));
+    const tileValueInset = Math.max(12, Math.round(paddingX * 1.2));
+    const tileValueSlotX = iconPlateW + tileValueInset;
+    const tileValueAvailableW = Math.max(0, width - tileValueSlotX - tileValueInset);
     const tileValueX = Math.round(tileValueSlotX + tileValueAvailableW / 2);
     const tileValueY = Math.round(height / 2 + fontSize * 0.36);
     const tileValueTextWidth = estimateBadgeTextWidth(value, fontSize, compactText);
-    const tileValueTextLen = compactText && tileValueTextWidth > tileValueAvailableW
+    const tileValueTextLen = tileValueTextWidth > tileValueAvailableW
       ? ` textLength="${tileValueAvailableW}" lengthAdjust="spacingAndGlyphs"`
       : '';
     const tileNumericStyle = ' style="font-variant-numeric: tabular-nums lining-nums; font-feature-settings: \'tnum\' 1, \'lnum\' 1;"';
