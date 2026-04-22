@@ -104,6 +104,8 @@ import {
   parseQualityBadgePreferencesAllowEmpty,
   parseRatingProviderAppearanceOverrides,
   type RatingProviderAppearanceOverrides,
+  parseQualityBadgeAppearanceOverrides,
+  type QualityBadgeAppearanceOverrides,
 } from './badgeCustomization.ts';
 import { buildFinalImageRenderSeedKey } from './finalImageRenderSeed.ts';
 import {
@@ -287,6 +289,7 @@ export type ImageRouteRequestState = {
   ratingStackOffsetY: number;
   logoBackground: LogoBackground;
   providerAppearanceOverrides: RatingProviderAppearanceOverrides;
+    qualityBadgeAppearanceOverrides: QualityBadgeAppearanceOverrides;
   posterRatingBadgeScale: number;
   backdropRatingBadgeScale: number;
   logoRatingBadgeScale: number;
@@ -1195,6 +1198,9 @@ export const resolveImageRouteRequestState = async ({
   const providerAppearanceOverrides = parseRatingProviderAppearanceOverrides(
     searchParams.get('providerAppearance'),
   );
+  const qualityBadgeAppearanceOverrides = parseQualityBadgeAppearanceOverrides(
+    searchParams.get('qualityBadgeAppearance'),
+  );
   const rpdbFontScalePercent = normalizeRpdbFontScalePercent(searchParams.get('fontScale'));
   const posterRatingBadgeScale = normalizeBadgeScalePercent(
     searchParams.get('posterRatingBadgeScale') ?? rpdbFontScalePercent,
@@ -1590,6 +1596,7 @@ export const resolveImageRouteRequestState = async ({
     logoBackground,
     effectiveRatingPreferences,
     providerAppearanceOverrides,
+    qualityBadgeAppearanceOverrides,
     mdblistStateKey,
     simklStateKey,
     streamBadgesCacheKeySeed,
@@ -1648,6 +1655,7 @@ export const resolveImageRouteRequestState = async ({
     ratingStackOffsetY,
     logoBackground,
     providerAppearanceOverrides,
+    qualityBadgeAppearanceOverrides,
     posterRatingBadgeScale,
     backdropRatingBadgeScale: effectiveBackdropRatingBadgeScale,
     logoRatingBadgeScale,

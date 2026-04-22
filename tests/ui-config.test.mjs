@@ -178,6 +178,7 @@ const buildSampleSettings = () =>
       logoBackground: 'dark',
       logoBottomRatingsRow: false,
       ratingProviderAppearanceOverrides: SAMPLE_PROVIDER_APPEARANCE,
+      qualityBadgeAppearanceOverrides: {},
     },
     proxy: {
       manifestUrl: 'stremio://addon.example.com/manifest.json',
@@ -361,6 +362,7 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       logoBackground: 'dark',
       logoBottomRatingsRow: false,
       ratingProviderAppearanceOverrides: SAMPLE_PROVIDER_APPEARANCE,
+      qualityBadgeAppearanceOverrides: {},
     },
     proxy: {
       manifestUrl: 'https://addon.example.com/manifest.json',

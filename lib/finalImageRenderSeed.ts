@@ -1,5 +1,7 @@
 import {
+  encodeQualityBadgeAppearanceOverrides,
   encodeRatingProviderAppearanceOverrides,
+  type QualityBadgeAppearanceOverrides,
   type RatingProviderAppearanceOverrides,
 } from './badgeCustomization.ts';
 import { DEFAULT_GENRE_BADGE_MODE } from './genreBadge.ts';
@@ -94,6 +96,7 @@ type FinalImageRenderSeedInput = {
   logoBackground: string;
   effectiveRatingPreferences: string[];
   providerAppearanceOverrides: RatingProviderAppearanceOverrides;
+  qualityBadgeAppearanceOverrides: QualityBadgeAppearanceOverrides;
   mdblistStateKey: string;
   simklStateKey: string;
   streamBadgesCacheKeySeed: string;
@@ -126,6 +129,8 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.ratingStyle === 'glass' || input.ratingStyle === 'square';
   const providerAppearanceKey =
     encodeRatingProviderAppearanceOverrides(input.providerAppearanceOverrides) || '-';
+  const qualityBadgeAppearanceKey =
+    encodeQualityBadgeAppearanceOverrides(input.qualityBadgeAppearanceOverrides) || '-';
   const toArtworkSourceCacheToken = (source: string) =>
     source === 'blackbar' ? 'blackbar-strip' : source;
 
@@ -228,6 +233,7 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     isLogo ? input.logoBackground : '-',
     input.effectiveRatingPreferences.join(',') || 'none',
     providerAppearanceKey,
+    qualityBadgeAppearanceKey,
     input.mdblistStateKey || '-',
     input.simklStateKey || '-',
     input.streamBadgesCacheKeySeed,

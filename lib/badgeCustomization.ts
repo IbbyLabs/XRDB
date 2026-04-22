@@ -786,3 +786,61 @@ export const encodeRatingProviderAppearanceOverrides = (
   const serialized = serializeRatingProviderAppearanceOverrides(overrides);
   return serialized ? toBase64Url(serialized) : '';
 };
+
+export type QualityBadgeAppearanceOverride = {
+  iconUrl?: string;
+};
+
+export type QualityBadgeAppearanceOverrides = Partial<Record<string, QualityBadgeAppearanceOverride>>;
+
+export const normalizeQualityBadgeAppearanceOverrides = (
+  value: unknown,
+): QualityBadgeAppearanceOverrides => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const normalizedEntries = Object.entries(value as Record<string, unknown>).flatMap(([key, rawOverride]) => {
+    const normalizedKey = String(key).trim().toLowerCase();
+    if (!normalizedKey) return [];
+    if (!rawOverride || typeof rawOverride !== 'object' || Array.isArray(rawOverride)) return [];
+    const candidate = rawOverride as Record<string, unknown>;
+    const iconUrl = typeof candidate.iconUrl === 'string' ? candidate.iconUrl.trim() : '';
+    if (!iconUrl) return [];
+    return [[normalizedKey, { iconUrl }] as const];
+  });
+  return Object.fromEntries(normalizedEntries);
+};
+
+export const serializeQualityBadgeAppearanceOverrides = (
+  overrides: QualityBadgeAppearanceOverrides,
+): string => {
+  const normalized = normalizeQualityBadgeAppearanceOverrides(overrides);
+  const entries = Object.entries(normalized);
+  return entries.length > 0 ? JSON.stringify(Object.fromEntries(entries)) : '';
+};
+
+export const parseQualityBadgeAppearanceOverrides = (
+  raw?: string | null,
+): QualityBadgeAppearanceOverrides => {
+  const normalized = String(raw || '').trim();
+  if (!normalized) return {};
+  const candidates = [normalized];
+  if (!normalized.startsWith('{')) {
+    try {
+      candidates.push(fromBase64Url(normalized));
+    } catch {
+    }
+  }
+  for (const candidate of candidates) {
+    try {
+      return normalizeQualityBadgeAppearanceOverrides(JSON.parse(candidate));
+    } catch {
+    }
+  }
+  return {};
+};
+
+export const encodeQualityBadgeAppearanceOverrides = (
+  overrides: QualityBadgeAppearanceOverrides,
+): string => {
+  const serialized = serializeQualityBadgeAppearanceOverrides(overrides);
+  return serialized ? toBase64Url(serialized) : '';
+};

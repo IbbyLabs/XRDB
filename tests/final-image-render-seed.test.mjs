@@ -63,6 +63,7 @@ const createInput = (overrides = {}) => ({
   logoBackground: 'dark',
   effectiveRatingPreferences: ['imdb', 'tmdb'],
   providerAppearanceOverrides: {},
+  qualityBadgeAppearanceOverrides: {},
   mdblistStateKey: 'mdblist:none',
   simklStateKey: 'simkl:none',
   streamBadgesCacheKeySeed: 'off',
@@ -230,6 +231,19 @@ test('final image render seed changes when poster edge offset changes', () => {
   );
 
   assert.notEqual(baseKey, offsetKey);
+});
+
+test('final image render seed changes when quality badge appearance overrides change', () => {
+  const baseKey = buildFinalImageRenderSeedKey(createInput());
+  const changedKey = buildFinalImageRenderSeedKey(
+    createInput({
+      qualityBadgeAppearanceOverrides: {
+        hdr: { iconUrl: 'data:image/svg+xml;base64,AAAA' },
+      },
+    }),
+  );
+
+  assert.notEqual(baseKey, changedKey);
 });
 
 test('final image render seed scopes no background outline settings to poster renders', () => {

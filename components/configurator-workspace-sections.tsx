@@ -36,6 +36,7 @@ import {
   normalizeStackedWidthPercent,
   type RatingProviderAppearanceOverride,
   type RatingProviderAppearanceOverrides,
+  type QualityBadgeAppearanceOverrides,
 } from '@/lib/badgeCustomization';
 import {
   getSliderValueLabel,
@@ -163,6 +164,8 @@ export function QualitySection({
   onSelectAgeRatingBadgeStyle,
   releaseStatusBadgeStyle,
   onSelectReleaseStatusBadgeStyle,
+  qualityBadgeAppearanceOverrides,
+  onUpdateQualityBadgeAppearanceOverride,
 }: {
   previewType: PreviewType;
   qualityBadgeTypeLabel: string;
@@ -206,6 +209,8 @@ export function QualitySection({
   onSelectAgeRatingBadgeStyle: (value: QualityBadgeStyle | null) => void;
   releaseStatusBadgeStyle: QualityBadgeStyle | null;
   onSelectReleaseStatusBadgeStyle: (value: QualityBadgeStyle | null) => void;
+  qualityBadgeAppearanceOverrides: QualityBadgeAppearanceOverrides;
+  onUpdateQualityBadgeAppearanceOverride: (value: QualityBadgeAppearanceOverrides) => void;
 }) {
   const showsPlacementControls =
     qualityBadgePlacementControlMode === 'side' || qualityBadgePlacementControlMode === 'position';
@@ -503,10 +508,52 @@ export function QualitySection({
           </div>
         </div>
       ) : null}
+      <div className={settingsCardClass}>
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+          <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Custom Icons</span>
+          {Object.keys(qualityBadgeAppearanceOverrides).length > 0 && (
+            <button
+              type="button"
+              onClick={() => onUpdateQualityBadgeAppearanceOverride({})}
+              className="rounded-lg border border-white/10 bg-zinc-950 px-2 py-1 text-[10px] font-semibold text-zinc-400 hover:text-white"
+            >
+              Reset All
+            </button>
+          )}
+        </div>
+        <p className="text-[11px] leading-relaxed text-zinc-500 mb-2">
+          Paste a direct image URL or data URI for any badge. Leave blank to use the default icon.
+        </p>
+        <div className="space-y-2">
+          {QUALITY_BADGE_OPTIONS.map((option) => {
+            const override = qualityBadgeAppearanceOverrides[option.id];
+            return (
+              <div key={`qb-icon-${option.id}`} className="grid grid-cols-[80px,1fr] items-center gap-2">
+                <span className="text-[11px] text-zinc-400 truncate">{option.label}</span>
+                <input
+                  type="url"
+                  value={override?.iconUrl || ''}
+                  onChange={(event) => {
+                    const url = event.target.value.trim();
+                    const next = { ...qualityBadgeAppearanceOverrides };
+                    if (url) {
+                      next[option.id] = { iconUrl: url };
+                    } else {
+                      delete next[option.id];
+                    }
+                    onUpdateQualityBadgeAppearanceOverride(next);
+                  }}
+                  placeholder="https://... or data:image/..."
+                  className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
-
 export function ProvidersSection({
   providersLabel,
   ratingProviderRows,

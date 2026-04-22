@@ -111,6 +111,10 @@ const PROVIDER_APPEARANCE_CASES = [
   'trakt.7c3aed.118.86.74.logo.0.86',
   'imdb.facc15.100.92.100.badge.1.100',
 ] as const;
+const QUALITY_BADGE_APPEARANCE_CASES = [
+  '{"hdr":{"iconUrl":"https://example.com/hdr.svg"}}',
+  '{"certification":{"iconUrl":"data:image/svg+xml;base64,PHN2Zy8+"}}',
+] as const;
 const STREAM_BADGE_VALUES = ['auto', 'on', 'off'] as const;
 const POSTER_QUALITY_POSITION_VALUES = ['auto', 'left', 'right'] as const;
 const AGE_RATING_POSITION_VALUES = [
@@ -412,6 +416,7 @@ const buildEntries = () => {
   entries.push({ key: 'logoBackground', coverageValues: LOGO_BACKGROUND_VALUES, browserFamily: 'artwork', surfaces: ['logo'] });
   entries.push({ key: 'logoBottomRatingsRow', coverageValues: ['true'], browserFamily: 'layout', surfaces: ['logo'] });
   entries.push({ key: 'providerAppearance', coverageValues: PROVIDER_APPEARANCE_CASES, browserFamily: 'appearance', surfaces: ['shared'] });
+  entries.push({ key: 'qualityBadgeAppearance', coverageValues: QUALITY_BADGE_APPEARANCE_CASES, browserFamily: 'appearance', surfaces: ['shared'] });
 
   return entries.sort((left, right) => left.key.localeCompare(right.key));
 };

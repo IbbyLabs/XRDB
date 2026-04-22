@@ -342,6 +342,14 @@ ${buildMediaPlate(width, {
     variant: 'media' | 'standard',
   ) => {
     const asset = MEDIA_BADGE_ASSETS[assetKey];
+    const customAssetDataUri =
+      typeof badge.iconDataUri === 'string' && badge.iconDataUri.trim().startsWith('data:')
+        ? badge.iconDataUri.trim()
+        : null;
+    const assetDataUri = customAssetDataUri ?? asset.dataUri;
+    const assetAspectRatio = customAssetDataUri ? 1 : asset.aspectRatio;
+    const assetHeightRatio = customAssetDataUri ? 0.62 : asset.heightRatio;
+    const assetYOffsetRatio = customAssetDataUri ? 0 : (asset.yOffsetRatio || 0);
     const width = widthOverride ?? Math.round(h * asset.widthRatio);
     const horizontalPadding = Math.round(h * asset.horizontalPaddingRatio);
     const isPlainStandard = variant === 'standard' && effectiveStyle === 'plain';
@@ -378,13 +386,13 @@ ${buildMediaPlate(width, {
 ${defs}
 ${backgroundMarkup}
 ${buildCenteredBadgeAssetImage({
-  dataUri: asset.dataUri,
+  dataUri: assetDataUri,
   width,
   height: h,
-  assetAspectRatio: asset.aspectRatio,
+  assetAspectRatio,
   horizontalPadding,
-  heightRatio: asset.heightRatio,
-  yOffset: Math.round(h * (asset.yOffsetRatio || 0)),
+  heightRatio: assetHeightRatio,
+  yOffset: Math.round(h * assetYOffsetRatio),
   extraAttributes: assetExtraAttributes,
 })}
 </svg>`,

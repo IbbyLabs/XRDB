@@ -97,6 +97,7 @@ import {
   DEFAULT_QUALITY_BADGE_PREFERENCES,
   encodeRatingProviderAppearanceOverrides,
   normalizeBadgeScalePercent,
+  encodeQualityBadgeAppearanceOverrides,
   normalizeGenreBadgeBackgroundOpacityPercent,
   normalizeGenreBadgeBorderWidthPx,
   normalizeGenreBadgeScalePercent,
@@ -110,6 +111,9 @@ import {
   normalizeThumbnailRatingBadgeScalePercent,
   stringifyQualityBadgePreferencesAllowEmpty,
   type RatingProviderAppearanceOverrides,
+  normalizeQualityBadgeAppearanceOverrides,
+  parseQualityBadgeAppearanceOverrides,
+  type QualityBadgeAppearanceOverrides,
 } from './badgeCustomization.ts';
 import type { MediaFeatureBadgeKey, RemuxDisplayMode } from './mediaFeatures.ts';
 import {
@@ -353,6 +357,7 @@ export type SharedXrdbSettings = {
   logoBackground: LogoBackground;
   logoBottomRatingsRow: boolean;
   ratingProviderAppearanceOverrides: RatingProviderAppearanceOverrides;
+  qualityBadgeAppearanceOverrides: QualityBadgeAppearanceOverrides;
 };
 
 export type SavedUiConfig = {
@@ -648,6 +653,7 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   logoBackground: 'transparent',
   logoBottomRatingsRow: false,
   ratingProviderAppearanceOverrides: {},
+  qualityBadgeAppearanceOverrides: {},
 });
 
 export const createDefaultSavedUiConfig = (): SavedUiConfig => ({
@@ -1068,6 +1074,14 @@ const decodeSavedProfileSettingsAliases = (value: unknown) => {
   ) {
     decoded.ratingProviderAppearanceOverrides = parseRatingProviderAppearanceOverrides(
       candidate.providerAppearance,
+    );
+  }
+  if (
+    decoded.qualityBadgeAppearanceOverrides === undefined &&
+    typeof candidate.qualityBadgeAppearance === 'string'
+  ) {
+    decoded.qualityBadgeAppearanceOverrides = parseQualityBadgeAppearanceOverrides(
+      candidate.qualityBadgeAppearance,
     );
   }
 
@@ -1732,6 +1746,9 @@ export const normalizeSharedXrdbSettings = (value: unknown, options?: { skipCros
     ),
     ratingProviderAppearanceOverrides: normalizeRatingProviderAppearanceOverrides(
       candidate.ratingProviderAppearanceOverrides,
+    ),
+    qualityBadgeAppearanceOverrides: normalizeQualityBadgeAppearanceOverrides(
+      candidate.qualityBadgeAppearanceOverrides,
     ),
   };
 };
@@ -2408,6 +2425,12 @@ const buildSharedPayload = (settings: SharedXrdbSettings, options?: SharedPayloa
   );
   if (providerAppearance) {
     payload.providerAppearance = providerAppearance;
+    const qualityBadgeAppearance = encodeQualityBadgeAppearanceOverrides(
+      settings.qualityBadgeAppearanceOverrides,
+    );
+    if (qualityBadgeAppearance) {
+      payload.qualityBadgeAppearance = qualityBadgeAppearance;
+    }
   }
   if (!settings.backdropBottomRatingsRow) {
     payload.backdropRatingsLayout = settings.backdropRatingsLayout;

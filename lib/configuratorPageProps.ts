@@ -448,6 +448,8 @@ export function buildConfiguratorPageProps({
         onSelectAgeRatingBadgeStyle: workspaceState.setAgeRatingBadgeStyle,
         releaseStatusBadgeStyle: workspaceState.releaseStatusBadgeStyle,
         onSelectReleaseStatusBadgeStyle: workspaceState.setReleaseStatusBadgeStyle,
+        qualityBadgeAppearanceOverrides: workspaceState.qualityBadgeAppearanceOverrides,
+        onUpdateQualityBadgeAppearanceOverride: workspaceState.setQualityBadgeAppearanceOverrides,
       },
       providersProps: {
         providersLabel: workspaceSummary.providersLabel,

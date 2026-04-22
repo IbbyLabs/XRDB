@@ -10,6 +10,8 @@ import {
   DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_THUMBNAIL_GENRE_BADGE_BORDER_WIDTH_PX,
   type RatingProviderAppearanceOverrides,
+  encodeQualityBadgeAppearanceOverrides,
+  type QualityBadgeAppearanceOverrides,
 } from '@/lib/badgeCustomization';
 import {
   DEFAULT_GENRE_BADGE_ANIME_GROUPING,
@@ -435,6 +437,7 @@ export function useConfiguratorOutputs({
   ratingValueMode,
   ratingBlackStripEnabled,
   showConfigString,
+  qualityBadgeAppearanceOverrides,
   shouldShowQualityBadgesPosition,
   shouldShowQualityBadgesSide,
   providerCredentialSessionVersion,
@@ -613,6 +616,7 @@ export function useConfiguratorOutputs({
   ratingXOffsetSquare: number;
   ratingYOffsetSquare: number;
   ratingProviderAppearanceOverrides: RatingProviderAppearanceOverrides;
+  qualityBadgeAppearanceOverrides: QualityBadgeAppearanceOverrides;
   ratingValueMode: RatingValueMode;
   ratingBlackStripEnabled: boolean;
   showConfigString: boolean;
@@ -1196,6 +1200,12 @@ export function useConfiguratorOutputs({
     if (Object.keys(activeProviderAppearance).length > 0) {
       query.set('providerAppearance', JSON.stringify(activeProviderAppearance));
     }
+    const encodedQualityBadgeAppearance = encodeQualityBadgeAppearanceOverrides(
+      qualityBadgeAppearanceOverrides,
+    );
+    if (encodedQualityBadgeAppearance) {
+      query.set('qualityBadgeAppearance', encodedQualityBadgeAppearance);
+    }
     const usesVerticalSideRatings =
       (previewType === 'poster' &&
         (isVerticalPosterRatingLayout(posterRatingsLayout) ||
@@ -1320,7 +1330,6 @@ export function useConfiguratorOutputs({
     logoRatingsMax,
     logoBottomRatingsRow,
     logoStreamBadges,
-    mdblistKey,
     mediaId,
     posterAggregateRatingSource,
     posterArtworkSource,
@@ -1383,12 +1392,12 @@ export function useConfiguratorOutputs({
     ratingXOffsetSquare,
     ratingYOffsetSquare,
     ratingProviderAppearanceOverrides,
+    qualityBadgeAppearanceOverrides,
     ratingValueMode,
     ratingBlackStripEnabled,
     shouldShowQualityBadgesPosition,
     shouldShowQualityBadgesSide,
     providerCredentialSessionVersion,
-    simklClientId,
     tmdbIdScope,
     tmdbKey,
   ]);
