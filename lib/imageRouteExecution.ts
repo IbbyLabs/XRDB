@@ -344,6 +344,7 @@ export const executeImageRouteRender = async ({
         aggregateAccentBarVisible: requestState.aggregateAccentBarVisible,
         posterRingValueSource: requestState.posterRingValueSource,
         posterRingProgressSource: requestState.posterRingProgressSource,
+        posterRingCenterOpacity: requestState.posterRingCenterOpacity,
         posterRingCriticsPriority: requestState.posterRingCriticsPriority,
         posterRingAudiencePriority: requestState.posterRingAudiencePriority,
         posterRatingsLayout: requestState.posterRatingsLayout,

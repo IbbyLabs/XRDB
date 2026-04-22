@@ -38,6 +38,7 @@ const createInput = (overrides = {}) => ({
   ratingPresentation: 'average',
   posterRingValueSource: 'highest',
   posterRingProgressSource: 'tmdb',
+  posterRingCenterOpacity: 86,
   posterRingCriticsPriority: 'tomatoes,metacritic,imdb',
   posterRingAudiencePriority: 'tomatoesaudience,imdb,tmdb',
   blockbusterDensity: 'balanced',
@@ -377,6 +378,36 @@ test('final image render seed scopes compact ring priority lists to ring poster 
     createInput({
       ratingPresentation: 'average',
       posterRingCriticsPriority: 'metacritic,tomatoes,imdb',
+    }),
+  );
+
+  assert.notEqual(baseRingKey, changedRingKey);
+  assert.equal(baseAverageKey, changedAverageKey);
+});
+
+test('final image render seed scopes compact ring center opacity to ring poster renders', () => {
+  const baseRingKey = buildFinalImageRenderSeedKey(
+    createInput({
+      ratingPresentation: 'ring',
+      posterRingCenterOpacity: 86,
+    }),
+  );
+  const changedRingKey = buildFinalImageRenderSeedKey(
+    createInput({
+      ratingPresentation: 'ring',
+      posterRingCenterOpacity: 36,
+    }),
+  );
+  const baseAverageKey = buildFinalImageRenderSeedKey(
+    createInput({
+      ratingPresentation: 'average',
+      posterRingCenterOpacity: 86,
+    }),
+  );
+  const changedAverageKey = buildFinalImageRenderSeedKey(
+    createInput({
+      ratingPresentation: 'average',
+      posterRingCenterOpacity: 36,
     }),
   );
 

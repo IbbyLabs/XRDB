@@ -1,4 +1,9 @@
 import { escapeXml } from './imageRouteText.ts';
+import {
+  DEFAULT_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT,
+  DEFAULT_POSTER_COMPACT_RING_FULL_PROGRESS_THRESHOLD_PERCENT,
+  normalizePosterCompactRingCenterOpacityPercent,
+} from './posterCompactRing.ts';
 
 export type PosterCompactRingOverlaySpec = {
   width: number;
@@ -16,6 +21,7 @@ export const buildPosterCompactRingOverlay = ({
   outputHeight,
   valueText,
   progressPercent,
+  centerOpacityPercent = DEFAULT_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT,
   accentColor,
   valueColor,
   badgeScalePercent = 100,
@@ -24,6 +30,7 @@ export const buildPosterCompactRingOverlay = ({
   outputHeight: number;
   valueText: string;
   progressPercent: number;
+  centerOpacityPercent?: number;
   accentColor: string;
   valueColor?: string;
   badgeScalePercent?: number;
@@ -37,7 +44,11 @@ export const buildPosterCompactRingOverlay = ({
   const ringRadius = Math.round((size - ringStroke) / 2);
   const center = Math.round(totalSize / 2);
   const circleRadius = Math.max(10, ringRadius - ringStroke * 0.38);
-  const normalizedProgress = clampNumber(Math.round(progressPercent), 0, 100);
+  const snappedProgressPercent =
+    progressPercent >= DEFAULT_POSTER_COMPACT_RING_FULL_PROGRESS_THRESHOLD_PERCENT
+      ? 100
+      : progressPercent;
+  const normalizedProgress = clampNumber(Math.round(snappedProgressPercent), 0, 100);
   const circumference = 2 * Math.PI * ringRadius;
   const dashOffset = circumference * (1 - normalizedProgress / 100);
   const glowOffset = Math.round(glowPad / 2);
@@ -45,6 +56,12 @@ export const buildPosterCompactRingOverlay = ({
   const left = Math.max(0, outputWidth - totalSize - inset + glowOffset);
   const valueFontSize = Math.max(24, Math.round(size * 0.34));
   const trackColor = 'rgba(255,255,255,0.18)';
+  const centerOpacity = normalizePosterCompactRingCenterOpacityPercent(centerOpacityPercent) / 100;
+  const centerOpacityToken = Number(centerOpacity.toFixed(2));
+  const ringStrokeElement =
+    normalizedProgress === 100
+      ? `<circle cx="${center}" cy="${center}" r="${ringRadius}" fill="none" stroke="${accentColor}" stroke-width="${ringStroke}" filter="url(#compact-ring-glow)" />`
+      : `<circle cx="${center}" cy="${center}" r="${ringRadius}" fill="none" stroke="${accentColor}" stroke-width="${ringStroke}" stroke-linecap="round" stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}" transform="rotate(-90 ${center} ${center})" filter="url(#compact-ring-glow)" />`;
 
   return {
     width: totalSize,
@@ -59,8 +76,8 @@ export const buildPosterCompactRingOverlay = ({
 </filter>
 </defs>
 <circle cx="${center}" cy="${center}" r="${ringRadius}" fill="none" stroke="${trackColor}" stroke-width="${ringStroke}" />
-<circle cx="${center}" cy="${center}" r="${ringRadius}" fill="none" stroke="${accentColor}" stroke-width="${ringStroke}" stroke-linecap="round" stroke-dasharray="${circumference}" stroke-dashoffset="${dashOffset}" transform="rotate(-90 ${center} ${center})" filter="url(#compact-ring-glow)" />
-<circle cx="${center}" cy="${center}" r="${circleRadius}" fill="rgba(8,11,16,0.86)" />
+${ringStrokeElement}
+<circle cx="${center}" cy="${center}" r="${circleRadius}" fill="rgba(8,11,16,${centerOpacityToken})" />
 <text x="${center}" y="${center + Math.round(valueFontSize * 0.08)}" font-family="'Space Grotesk','Noto Sans',Arial,sans-serif" font-size="${valueFontSize}" font-weight="700" text-anchor="middle" dominant-baseline="middle" fill="${valueColor ?? '#f8fafc'}">${escapeXml(valueText)}</text>
 </svg>`,
   };

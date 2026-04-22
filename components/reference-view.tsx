@@ -205,6 +205,7 @@ GET /thumbnail/xrdbid:tt12343534/S01E07.jpg?episodeSourceProvider=kitsu&episodeS
           </ul>
           <p>
             Compact Ring uses <code>posterRingValueSource</code> for the center value and <code>posterRingProgressSource</code> for the stroke.
+            Center fill transparency is controlled by <code>posterRingCenterOpacity</code> (0 to 100).
             Sources can be <code>overall</code>, <code>critics</code>, <code>audience</code>, <code>priority-critics</code>, <code>priority-audience</code>, <code>highest</code>, or a provider id.
             Aggregate sources try their selected lane, then overall, then <code>posterRingCriticsPriority</code> or <code>posterRingAudiencePriority</code>.
             Exact provider selections stay strict.

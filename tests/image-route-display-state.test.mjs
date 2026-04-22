@@ -16,6 +16,7 @@ const createBaseInput = () => ({
   aggregateAccentBarVisible: true,
   posterRingValueSource: 'highest',
   posterRingProgressSource: 'tmdb',
+  posterRingCenterOpacity: 86,
   posterRingCriticsPriority: ['tomatoes', 'metacritic', 'imdb'],
   posterRingAudiencePriority: ['tomatoesaudience', 'imdb', 'tmdb'],
   posterRatingsLayout: 'top',
@@ -139,6 +140,31 @@ test('compact ring score text uses default color when no value color is configur
 
   assert.ok(state.compactRingOverlay);
   assert.match(state.compactRingOverlay?.svg ?? '', /#f8fafc/i);
+});
+
+test('compact ring uses configured center opacity in overlay fill', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    ratingPresentation: 'ring',
+    posterRingCenterOpacity: 34,
+  });
+
+  assert.ok(state.compactRingOverlay);
+  assert.match(state.compactRingOverlay?.svg ?? '', /rgba\(8,11,16,0\.34\)/);
+});
+
+test('compact ring snaps near-full progress to full stroke', () => {
+  const state = resolveImageRouteDisplayState({
+    ...createBaseInput(),
+    ratingPresentation: 'ring',
+    posterRingValueSource: 'tomatoes',
+    posterRingProgressSource: 'tomatoes',
+    effectiveRatingPreferences: ['tomatoes'],
+    providerRatings: new Map([['tomatoes', '99.6']]),
+  });
+
+  assert.ok(state.compactRingOverlay);
+  assert.doesNotMatch(state.compactRingOverlay?.svg ?? '', /stroke-dashoffset/);
 });
 
 test('image route display state suppresses compact ring overlay when value source has no data', () => {

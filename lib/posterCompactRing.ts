@@ -26,6 +26,10 @@ export const DEFAULT_POSTER_COMPACT_RING_AUDIENCE_PRIORITY: RatingPreference[] =
   'imdb',
   'tmdb',
 ];
+export const MIN_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT = 0;
+export const MAX_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT = 100;
+export const DEFAULT_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT = 86;
+export const DEFAULT_POSTER_COMPACT_RING_FULL_PROGRESS_THRESHOLD_PERCENT = 99.5;
 
 export const POSTER_COMPACT_RING_SOURCE_OPTIONS: Array<{
   id: PosterCompactRingSource;
@@ -110,3 +114,23 @@ export const normalizePosterCompactRingPriorityList = (
 
 export const stringifyPosterCompactRingPriorityList = (value: RatingPreference[]) =>
   normalizeCompactRingPriorityListInput(value).join(',');
+
+export const normalizePosterCompactRingCenterOpacityPercent = (
+  value: unknown,
+  fallback = DEFAULT_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT,
+) => {
+  if (value == null) {
+    return fallback;
+  }
+  if (typeof value === 'string' && value.trim().length === 0) {
+    return fallback;
+  }
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+  return Math.max(
+    MIN_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT,
+    Math.min(MAX_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT, Math.round(parsed)),
+  );
+};

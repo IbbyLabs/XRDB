@@ -60,9 +60,11 @@ import {
   DEFAULT_POSTER_COMPACT_RING_CRITICS_PRIORITY,
   DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
   DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE,
+  DEFAULT_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT,
   normalizePosterCompactRingPriorityList,
   stringifyPosterCompactRingPriorityList,
   normalizePosterCompactRingSource,
+  normalizePosterCompactRingCenterOpacityPercent,
   type PosterCompactRingSource,
 } from './posterCompactRing.ts';
 import {
@@ -336,6 +338,7 @@ export type ImageRouteRequestState = {
   ratingPresentation: RatingPresentation;
   posterRingValueSource: PosterCompactRingSource;
   posterRingProgressSource: PosterCompactRingSource;
+  posterRingCenterOpacity: number;
   posterRingCriticsPriority: RatingPreference[];
   posterRingAudiencePriority: RatingPreference[];
   aggregateRatingSource: AggregateRatingSource;
@@ -760,6 +763,10 @@ export const resolveImageRouteRequestState = async ({
   const posterRingProgressSource = normalizePosterCompactRingSource(
     searchParams.get('posterRingProgressSource'),
     DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
+  );
+  const posterRingCenterOpacity = normalizePosterCompactRingCenterOpacityPercent(
+    searchParams.get('posterRingCenterOpacity'),
+    DEFAULT_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT,
   );
   const posterRingCriticsPriority = normalizePosterCompactRingPriorityList(
     searchParams.get('posterRingCriticsPriority'),
@@ -1579,6 +1586,7 @@ export const resolveImageRouteRequestState = async ({
     ratingPresentation,
     posterRingValueSource,
     posterRingProgressSource,
+    posterRingCenterOpacity,
     posterRingCriticsPriority: stringifyPosterCompactRingPriorityList(posterRingCriticsPriority),
     posterRingAudiencePriority: stringifyPosterCompactRingPriorityList(posterRingAudiencePriority),
     blockbusterDensity,
@@ -1726,6 +1734,7 @@ export const resolveImageRouteRequestState = async ({
     ratingPresentation,
     posterRingValueSource,
     posterRingProgressSource,
+    posterRingCenterOpacity,
     posterRingCriticsPriority,
     posterRingAudiencePriority,
     aggregateRatingSource,

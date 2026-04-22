@@ -53,6 +53,7 @@ import {
 } from '@/lib/ratingPresentation';
 import {
   DEFAULT_POSTER_COMPACT_RING_AUDIENCE_PRIORITY,
+  DEFAULT_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT,
   DEFAULT_POSTER_COMPACT_RING_CRITICS_PRIORITY,
   DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
   DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE,
@@ -229,6 +230,9 @@ export function useConfiguratorWorkspaceState() {
   );
   const [posterRingProgressSource, setPosterRingProgressSource] = useState<PosterCompactRingSource>(
     DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
+  );
+  const [posterRingCenterOpacity, setPosterRingCenterOpacity] = useState<number>(
+    DEFAULT_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT,
   );
   const [posterRingCriticsPriority, setPosterRingCriticsPriority] = useState<RatingPreference[]>(
     [...DEFAULT_POSTER_COMPACT_RING_CRITICS_PRIORITY],
@@ -431,6 +435,7 @@ export function useConfiguratorWorkspaceState() {
     posterAggregateRatingSource,
     posterAggregateProviderWeights,
     posterRingProgressSource,
+    posterRingCenterOpacity,
     posterRingCriticsPriority,
     posterRingAudiencePriority,
     posterRingValueSource,
@@ -623,6 +628,7 @@ export function useConfiguratorWorkspaceState() {
     setPosterAggregateRatingSource,
     setPosterAggregateProviderWeights,
     setPosterRingProgressSource,
+    setPosterRingCenterOpacity,
     setPosterRingCriticsPriority,
     setPosterRingAudiencePriority,
     setPosterRingValueSource,

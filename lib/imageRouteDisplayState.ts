@@ -94,6 +94,7 @@ export const resolveImageRouteDisplayState = (input: {
   aggregateAccentBarVisible: boolean;
   posterRingValueSource: PosterCompactRingSource;
   posterRingProgressSource: PosterCompactRingSource;
+  posterRingCenterOpacity: number;
   posterRingCriticsPriority: RatingPreference[];
   posterRingAudiencePriority: RatingPreference[];
   posterRatingsLayout: PosterRatingLayout;
@@ -134,6 +135,7 @@ export const resolveImageRouteDisplayState = (input: {
     aggregateAccentBarVisible,
     posterRingValueSource,
     posterRingProgressSource,
+    posterRingCenterOpacity,
     posterRingCriticsPriority,
     posterRingAudiencePriority,
     posterRatingsLayout,
@@ -574,6 +576,7 @@ export const resolveImageRouteDisplayState = (input: {
           progressPercent: Math.round(
             (progressRingBadge || compactRingPrimaryBadge).normalizedValue * 10,
           ),
+          centerOpacityPercent: posterRingCenterOpacity,
           accentColor: compactRingAccentColor,
           valueColor: compactRingValueColor,
           badgeScalePercent: posterRatingBadgeScale,

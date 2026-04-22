@@ -631,6 +631,19 @@ test('image route request state parses compact ring aggregate and priority param
   assert.deepEqual(state.posterRingAudiencePriority, ['letterboxd', 'tomatoesaudience', 'imdb']);
 });
 
+test('image route request state parses poster ring center opacity and clamps values', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt0133093.jpg?tmdbKey=tmdb-key&posterRatingPresentation=ring&posterRingCenterOpacity=121',
+    ),
+    imageType: 'poster',
+    id: 'tt0133093.jpg',
+  });
+
+  assert.equal(state.ratingPresentation, 'ring');
+  assert.equal(state.posterRingCenterOpacity, 100);
+});
+
 test('image route request state disables rating and stream work for poster none presentation', async () => {
   const state = await resolveImageRouteRequestState({
     request: createRequest(

@@ -53,6 +53,7 @@ type FinalImageRenderSeedInput = {
   ratingPresentation: string;
   posterRingValueSource: string;
   posterRingProgressSource: string;
+  posterRingCenterOpacity: number;
   posterRingCriticsPriority: string;
   posterRingAudiencePriority: string;
   blockbusterDensity: string;
@@ -186,6 +187,7 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.ratingPresentation,
     isPoster && input.ratingPresentation === 'ring' ? input.posterRingValueSource : '-',
     isPoster && input.ratingPresentation === 'ring' ? input.posterRingProgressSource : '-',
+    isPoster && input.ratingPresentation === 'ring' ? String(input.posterRingCenterOpacity) : '-',
     isPoster && input.ratingPresentation === 'ring'
       ? input.posterRingCriticsPriority || '-'
       : '-',

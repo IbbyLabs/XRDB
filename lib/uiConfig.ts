@@ -53,8 +53,10 @@ import {
   DEFAULT_POSTER_COMPACT_RING_CRITICS_PRIORITY,
   DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
   DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE,
+  DEFAULT_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT,
   normalizePosterCompactRingPriorityList,
   normalizePosterCompactRingSource,
+  normalizePosterCompactRingCenterOpacityPercent,
   stringifyPosterCompactRingPriorityList,
   type PosterCompactRingSource,
 } from './posterCompactRing.ts';
@@ -306,6 +308,7 @@ export type SharedXrdbSettings = {
   logoRatingPresentation: RatingPresentation;
   posterRingValueSource: PosterCompactRingSource;
   posterRingProgressSource: PosterCompactRingSource;
+  posterRingCenterOpacity: number;
   posterRingCriticsPriority: RatingPreference[];
   posterRingAudiencePriority: RatingPreference[];
   posterAggregateRatingSource: AggregateRatingSource;
@@ -606,6 +609,7 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   logoRatingPresentation: DEFAULT_RATING_PRESENTATION,
   posterRingValueSource: DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE,
   posterRingProgressSource: DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
+  posterRingCenterOpacity: DEFAULT_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT,
   posterRingCriticsPriority: [...DEFAULT_POSTER_COMPACT_RING_CRITICS_PRIORITY],
   posterRingAudiencePriority: [...DEFAULT_POSTER_COMPACT_RING_AUDIENCE_PRIORITY],
   posterAggregateRatingSource: DEFAULT_AGGREGATE_RATING_SOURCE,
@@ -1536,6 +1540,10 @@ export const normalizeSharedXrdbSettings = (value: unknown, options?: { skipCros
       candidate.posterRingProgressSource,
       defaults.posterRingProgressSource,
     ),
+    posterRingCenterOpacity: normalizePosterCompactRingCenterOpacityPercent(
+      candidate.posterRingCenterOpacity,
+      defaults.posterRingCenterOpacity,
+    ),
     posterRingCriticsPriority: normalizePosterCompactRingPriorityList(
       candidate.posterRingCriticsPriority,
       defaults.posterRingCriticsPriority,
@@ -2246,6 +2254,9 @@ const buildSharedPayload = (settings: SharedXrdbSettings, options?: SharedPayloa
   }
   if (settings.posterRingProgressSource !== DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE) {
     payload.posterRingProgressSource = settings.posterRingProgressSource;
+  }
+  if (settings.posterRingCenterOpacity !== DEFAULT_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT) {
+    payload.posterRingCenterOpacity = String(settings.posterRingCenterOpacity);
   }
   if (
     stringifyPosterCompactRingPriorityList(settings.posterRingCriticsPriority) !==

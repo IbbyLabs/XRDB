@@ -79,6 +79,7 @@ import { DEFAULT_RATING_STACK_OFFSET_PX } from '@/lib/ratingStackOffset';
 import { DEFAULT_RATING_VALUE_MODE, type RatingValueMode } from '@/lib/ratingDisplay';
 import {
   DEFAULT_POSTER_COMPACT_RING_AUDIENCE_PRIORITY,
+  DEFAULT_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT,
   DEFAULT_POSTER_COMPACT_RING_CRITICS_PRIORITY,
   DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE,
   DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE,
@@ -374,6 +375,7 @@ export function useConfiguratorOutputs({
   posterAggregateRatingSource,
   posterAggregateProviderWeights,
   posterRingProgressSource,
+  posterRingCenterOpacity,
   posterRingCriticsPriority,
   posterRingAudiencePriority,
   posterRingValueSource,
@@ -560,6 +562,7 @@ export function useConfiguratorOutputs({
   posterAggregateRatingSource: AggregateRatingSource;
   posterAggregateProviderWeights: AggregateProviderWeights;
   posterRingProgressSource: PosterCompactRingSource;
+  posterRingCenterOpacity: number;
   posterRingCriticsPriority: RatingPreference[];
   posterRingAudiencePriority: RatingPreference[];
   posterRingValueSource: PosterCompactRingSource;
@@ -888,6 +891,9 @@ export function useConfiguratorOutputs({
       }
       if (posterRingProgressSource !== DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE) {
         query.set('posterRingProgressSource', posterRingProgressSource);
+      }
+      if (posterRingCenterOpacity !== DEFAULT_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT) {
+        query.set('posterRingCenterOpacity', String(posterRingCenterOpacity));
       }
       if (
         stringifyPosterCompactRingPriorityList(posterRingCriticsPriority) !==
@@ -1388,6 +1394,7 @@ export function useConfiguratorOutputs({
     posterRatingPreferences,
     posterRatingPresentation,
     posterRingProgressSource,
+    posterRingCenterOpacity,
     posterRingCriticsPriority,
     posterRingAudiencePriority,
     posterRingValueSource,

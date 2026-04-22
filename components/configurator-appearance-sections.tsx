@@ -101,6 +101,7 @@ import {
   normalizeRatingStackOffsetPx,
 } from '@/lib/ratingStackOffset';
 import { type PosterCompactRingSource } from '@/lib/posterCompactRing';
+import { normalizePosterCompactRingCenterOpacityPercent } from '@/lib/posterCompactRing';
 import {
   getSliderValueLabel,
   snapSliderValueToDefault,
@@ -239,6 +240,7 @@ export function PresentationSection({
   activeAggregateProviderWeights,
   posterRingValueSource,
   posterRingProgressSource,
+  posterRingCenterOpacity,
   posterRingCriticsPriority,
   posterRingAudiencePriority,
   posterCompactRingSourceOptions,
@@ -257,6 +259,7 @@ export function PresentationSection({
   onSetAggregateProviderWeightsForType,
   onSelectPosterRingValueSource,
   onSelectPosterRingProgressSource,
+  onSelectPosterRingCenterOpacity,
   onSelectPosterRingCriticsPriority,
   onSelectPosterRingAudiencePriority,
   onSelectAggregateAccentMode,
@@ -285,6 +288,7 @@ export function PresentationSection({
   activeAggregateProviderWeights: AggregateProviderWeights;
   posterRingValueSource: PosterCompactRingSource;
   posterRingProgressSource: PosterCompactRingSource;
+  posterRingCenterOpacity: number;
   posterRingCriticsPriority: RatingPreference[];
   posterRingAudiencePriority: RatingPreference[];
   posterCompactRingSourceOptions: Array<DetailedSelectionOption<PosterCompactRingSource>>;
@@ -303,6 +307,7 @@ export function PresentationSection({
   onSetAggregateProviderWeightsForType: (value: AggregateProviderWeights) => void;
   onSelectPosterRingValueSource: (value: PosterCompactRingSource) => void;
   onSelectPosterRingProgressSource: (value: PosterCompactRingSource) => void;
+  onSelectPosterRingCenterOpacity: (value: number) => void;
   onSelectPosterRingCriticsPriority: (value: RatingPreference[]) => void;
   onSelectPosterRingAudiencePriority: (value: RatingPreference[]) => void;
   onSelectAggregateAccentMode: (value: AggregateAccentMode) => void;
@@ -429,6 +434,19 @@ export function PresentationSection({
               <p className="text-[11px] leading-relaxed text-zinc-500">
                 XRDB normalizes both selected sources to a 0 to 100 score so the ring fill and center number stay comparable.
               </p>
+              <RangeField
+                label="Center Opacity"
+                value={posterRingCenterOpacity}
+                defaultValue={86}
+                min={0}
+                max={100}
+                suffix="%"
+                onChange={(value) =>
+                  onSelectPosterRingCenterOpacity(
+                    normalizePosterCompactRingCenterOpacityPercent(String(value)),
+                  )
+                }
+              />
               <div className="grid gap-3 md:grid-cols-2">
                 <div>
                   <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Critics Priority</div>

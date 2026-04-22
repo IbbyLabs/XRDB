@@ -35,6 +35,7 @@ const PRESENTATION_PREVIEW_KEYS: Record<ConfiguratorResetPreviewType, readonly S
     'posterAggregateProviderWeights',
     'posterRingValueSource',
     'posterRingProgressSource',
+    'posterRingCenterOpacity',
     'posterRingCriticsPriority',
     'posterRingAudiencePriority',
   ],
