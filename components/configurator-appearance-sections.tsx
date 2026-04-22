@@ -1193,7 +1193,8 @@ export function LookSection({
             <div className={selectorGroupClass}>
               {[
                 { id: 'split', label: 'Split', description: 'Keep anime separate from animation.' },
-                { id: 'merge', label: 'Merge', description: 'Treat anime like the broader animation family.' },
+                { id: 'animation', label: 'Group as Animation', description: 'Treat anime like the broader animation family.' },
+                { id: 'secondary', label: 'Secondary Genre', description: 'Replace anime or animation with the next strongest supported genre when possible.' },
               ].map((option) => (
                 <button
                   key={option.id}
@@ -1210,7 +1211,7 @@ export function LookSection({
         </div>
         <p className="text-[11px] leading-relaxed text-zinc-500">
           {RATING_VALUE_MODE_OPTIONS.find((option) => option.id === ratingValueMode)?.description}{' '}
-          Genre badges use a small curated bucket set. Clear genres such as horror, comedy, drama, sci fi, fantasy, crime, documentary, animation, and anime resolve. When drama appears beside a stronger supported family, the more specific bucket still wins. The active preview type keeps its own badge mode, style, position, and scale.
+          Genre badges use a small curated bucket set. Clear genres such as horror, comedy, drama, sci fi, fantasy, crime, documentary, animation, and anime resolve. When drama appears beside a stronger supported family, the more specific bucket still wins. Secondary Genre mode replaces anime or animation with the next strongest supported family when one exists. The active preview type keeps its own badge mode, style, position, and scale.
         </p>
         {previewType === 'poster' || previewType === 'backdrop' || previewType === 'thumbnail' ? (
           <div className={settingsCardClass}>
