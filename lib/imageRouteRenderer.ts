@@ -355,18 +355,49 @@ export const renderWithSharp = async (
       });
     };
 
-    const preparedImage = input.imageType === 'logo'
-      ? sharp(sourceBuffer).trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
-      : sharp(sourceBuffer);
-    const resizedImageBuffer: Buffer = await preparedImage
-      .resize(imageWidth, imageHeight, {
-        fit: input.imageType === 'logo' ? 'contain' : 'cover',
-        position: 'center',
-        background: { r: 0, g: 0, b: 0, alpha: 0 },
+    if (input.imageType === 'logo') {
+      const logoInsetX = Math.max(12, Math.min(96, Math.round(imageWidth * 0.1)));
+      const logoInsetY = Math.max(12, Math.min(80, Math.round(imageHeight * 0.16)));
+      const logoContentWidth = Math.max(1, imageWidth - logoInsetX * 2);
+      const logoContentHeight = Math.max(1, imageHeight - logoInsetY * 2);
+      const fittedLogoBuffer = await sharp(sourceBuffer)
+        .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
+        .resize(logoContentWidth, logoContentHeight, {
+          fit: 'contain',
+          position: 'center',
+          background: { r: 0, g: 0, b: 0, alpha: 0 },
+        })
+        .png({ compressionLevel: 1 })
+        .toBuffer();
+      const framedLogoBuffer = await sharp({
+        create: {
+          width: imageWidth,
+          height: imageHeight,
+          channels: 4,
+          background: { r: 0, g: 0, b: 0, alpha: 0 },
+        },
       })
-      .png({ compressionLevel: 1 })
-      .toBuffer();
-    overlays.push({ input: resizedImageBuffer, top: 0, left: imageLeft });
+        .composite([
+          {
+            input: fittedLogoBuffer,
+            left: Math.floor((imageWidth - logoContentWidth) / 2),
+            top: Math.floor((imageHeight - logoContentHeight) / 2),
+          },
+        ])
+        .png({ compressionLevel: 1 })
+        .toBuffer();
+      overlays.push({ input: framedLogoBuffer, top: 0, left: imageLeft });
+    } else {
+      const resizedImageBuffer: Buffer = await sharp(sourceBuffer)
+        .resize(imageWidth, imageHeight, {
+          fit: 'cover',
+          position: 'center',
+          background: { r: 0, g: 0, b: 0, alpha: 0 },
+        })
+        .png({ compressionLevel: 1 })
+        .toBuffer();
+      overlays.push({ input: resizedImageBuffer, top: 0, left: imageLeft });
+    }
 
     const iconRenderStateByProvider = new Map<
       BadgeKey,

@@ -61,7 +61,7 @@ test('image route render layout wraps logo badges to rows that fit the natural l
   assert.ok(layout.logoBadgeBandHeight > 0);
 });
 
-test('image route render layout wraps 4 or more logo badges to avoid expanding the logo canvas width', async () => {
+test('image route render layout keeps logo ratings in one adaptive row and trims overflow on narrow logos', async () => {
   const narrowLayout = await resolveImageRouteRenderLayout({
     imageType: 'logo',
     isThumbnailRequest: false,
@@ -98,7 +98,8 @@ test('image route render layout wraps 4 or more logo badges to avoid expanding t
     },
   });
 
-  assert.equal(narrowLayout.logoBadgesPerRow, 2, `expected 2 badges per row (sqrt of 4) in narrow logo, got logoBadgesPerRow=${narrowLayout.logoBadgesPerRow}`);
+  assert.equal(narrowLayout.logoBadgesPerRow, 3);
+  assert.equal(narrowLayout.cappedRatingBadges.length, 3);
   assert.equal(narrowLayout.finalOutputWidth, 420);
   assert.equal(narrowLayout.logoImageHeight, 320);
   assert.ok(narrowLayout.finalOutputHeight > 320);
@@ -139,7 +140,8 @@ test('image route render layout wraps 4 or more logo badges to avoid expanding t
     },
   });
 
-  assert.equal(wideLayout.logoBadgesPerRow, 2);
+  assert.equal(wideLayout.logoBadgesPerRow, 4);
+  assert.equal(wideLayout.cappedRatingBadges.length, 4);
   assert.equal(wideLayout.finalOutputWidth, 1600);
 });
 
@@ -336,7 +338,8 @@ test('image route render layout keeps logo ratings on one row in blockbuster mod
     },
   });
 
-  assert.equal(layout.logoBadgesPerRow, 5);
+  assert.equal(layout.logoBadgesPerRow, 3);
+  assert.equal(layout.cappedRatingBadges.length, 3);
 });
 
 test('image route render layout keeps stacked poster badge scale meaningful in dense side layouts', async () => {

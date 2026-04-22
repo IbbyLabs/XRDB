@@ -145,7 +145,6 @@ export const resolveImageRouteRenderLayout = async (input: {
     useBackdropBadgeLayout &&
     !useBackdropBottomRatingsRow &&
     effectiveBackdropRatingsLayout === 'right-vertical';
-  const useLogoBottomRatingsRow = useLogoBadgeLayout && logoBottomRatingsRow;
 
   let cappedRatingBadges = [...displayRatingBadges];
   const backdropRows =
@@ -509,27 +508,66 @@ export const resolveImageRouteRenderLayout = async (input: {
   }
 
   if (useLogoBadgeLayout && cappedRatingBadges.length > 0) {
-    const targetPerRow = useLogoBottomRatingsRow
-      ? cappedRatingBadges.length
-      : Math.min(
-          Math.max(1, cappedRatingBadges.length),
-          Math.max(2, Math.ceil(Math.sqrt(Math.max(1, logoBandBadgeCount)))),
-        );
-    const fittedLogoMetrics = fitBadgeMetricsToWidth(
-      [cappedRatingBadges.slice(0, targetPerRow)],
-      outputWidth,
-      {
-        iconSize: badgeIconSize,
-        fontSize: badgeFontSize,
-        paddingX: badgePaddingX,
-        paddingY: badgePaddingY,
-        gap: badgeGap,
-      },
-      DEFAULT_BADGE_MIN_METRICS,
-      false,
-      false,
-      ratingStyle,
-    );
+    const baseLogoMetrics: BadgeLayoutMetrics = {
+      iconSize: badgeIconSize,
+      fontSize: badgeFontSize,
+      paddingX: badgePaddingX,
+      paddingY: badgePaddingY,
+      gap: badgeGap,
+    };
+    const logoSingleRowMinMetrics: BadgeLayoutMetrics = {
+      iconSize: ratingStyle === 'stacked' ? 48 : 44,
+      fontSize: ratingStyle === 'stacked' ? 36 : 34,
+      paddingX: ratingStyle === 'stacked' ? 18 : 14,
+      paddingY: ratingStyle === 'stacked' ? 12 : 8,
+      gap: 8,
+    };
+    const fitLogoRowMetrics = (count: number) =>
+      fitBadgeMetricsToWidth(
+        [cappedRatingBadges.slice(0, count)],
+        outputWidth,
+        baseLogoMetrics,
+        logoSingleRowMinMetrics,
+        false,
+        false,
+        ratingStyle,
+      );
+
+    const logoWidthTierCap = logoBottomRatingsRow
+      ? outputWidth <= 460
+        ? 3
+        : outputWidth <= 760
+          ? 4
+          : outputWidth <= 1120
+            ? 5
+            : Math.max(6, Math.floor(outputWidth / 220))
+      : outputWidth <= 460
+        ? 3
+        : outputWidth <= 760
+          ? 4
+          : outputWidth <= 1120
+            ? 5
+            : Math.max(6, Math.floor(outputWidth / 220));
+    let logoVisibleBadgeCount = Math.max(1, Math.min(cappedRatingBadges.length, logoWidthTierCap));
+    while (logoVisibleBadgeCount > 1) {
+      const trialMetrics = fitLogoRowMetrics(logoVisibleBadgeCount);
+      const legibleSingleRow =
+        trialMetrics.iconSize >= logoSingleRowMinMetrics.iconSize &&
+        trialMetrics.fontSize >= logoSingleRowMinMetrics.fontSize &&
+        trialMetrics.paddingX >= logoSingleRowMinMetrics.paddingX &&
+        trialMetrics.paddingY >= logoSingleRowMinMetrics.paddingY &&
+        trialMetrics.gap >= logoSingleRowMinMetrics.gap;
+      if (legibleSingleRow) {
+        break;
+      }
+      logoVisibleBadgeCount -= 1;
+    }
+
+    if (logoVisibleBadgeCount < cappedRatingBadges.length) {
+      cappedRatingBadges = cappedRatingBadges.slice(0, logoVisibleBadgeCount);
+    }
+
+    const fittedLogoMetrics = fitLogoRowMetrics(Math.max(1, cappedRatingBadges.length));
     badgeIconSize = fittedLogoMetrics.iconSize;
     badgeFontSize = fittedLogoMetrics.fontSize;
     badgePaddingX = fittedLogoMetrics.paddingX;
@@ -538,7 +576,7 @@ export const resolveImageRouteRenderLayout = async (input: {
   }
 
   const logoBadgesPerRow = useLogoBadgeLayout
-    ? useLogoBottomRatingsRow && cappedRatingBadges.length > 0
+    ? cappedRatingBadges.length > 0
       ? Math.max(1, cappedRatingBadges.length)
       : useBlockbusterPresentation
         ? Math.max(2, Math.min(4, Math.ceil(Math.sqrt(logoBandBadgeCount || 1))))
