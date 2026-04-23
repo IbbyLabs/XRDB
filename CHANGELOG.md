@@ -124,6 +124,401 @@
 
 <a id="v1-22-7"></a>
 
+<a id="v1-23-0"></a>
+
+## [v1.23.0] - 23/04/2026
+
+### Added
+* FR-34 ring rating style visual improvements
+  
+  Implement the remaining FR-34 Compact Ring visual improvements for ring completion and center transparency control.
+  
+  Problem
+  • Compact Ring could appear visually incomplete at scores very close to 100 because a tiny arc gap remained.
+  • Ring center transparency was not user configurable in a robust end to end way.
+  • Omitted center opacity could incorrectly behave like zero transparency in some paths.
+  
+  What changed
+  • Added explicit near full completion logic for Compact Ring progress:
+  • Snap progress to full when value is >= 99.5.
+  • Render a full stroke path at snapped 100 to avoid a residual seam artifact.
+  • Added configurable Compact Ring center opacity:
+  • New poster scoped setting: posterRingCenterOpacity (0 to 100).
+  • Default center opacity: 86.
+  • Clamp and normalize all incoming values to supported bounds.
+  • Fixed missing value normalization:
+  • Treat undefined/null/empty center opacity as default, not zero.
+  • Wired posterRingCenterOpacity across all relevant surfaces:
+  • configurator state and controls
+  • URL/export generation
+  • request parsing and normalization
+  • image execution/display state
+  • render cache seed scoping
+  • reset groups and profile verification coverage
+  • Updated docs/reference surfaces to describe the new setting and behavior.
+  
+  Tests and verification
+  • Added/updated regression tests for:
+  • center opacity normalization (including null/undefined/empty and clamping)
+  • request parsing and render behavior for posterRingCenterOpacity
+  • near full progress completion behavior
+  • render seed scoping for ring only cache variance
+  • saved config/profile round trip coverage
+* FR-60 customizable aggregate provider weights
+  
+  Add per type provider weight controls to the configurator so users can
+  assign relative weights (0–1000) to each active rating provider when
+  computing the aggregate score. Weights are normalized at render time so
+  only ratios matter; equal weighting is preserved as the default.
+  
+  Core logic
+  • lib/ratingPresentation.ts: add AggregateProviderWeights type,
+    normalizeAggregateProviderWeights (accepts both URL string format
+    "imdb:50,tmdb:30" and saved profile object format {imdb:50,tmdb:30}),
+    stringifyAggregateProviderWeights, isDefaultAggregateProviderWeights,
+    computeWeightedAverage with active provider renormalization and
+    equal weight fallback when all weights are zero or map is empty
+  
+  Routing and rendering
+  • lib/imageRouteRequestState.ts: parse per type URL params
+    (posterAggregateProviderWeights, backdropAggregateProviderWeights,
+    thumbnailAggregateProviderWeights, logoAggregateProviderWeights) and
+    global aggregateProviderWeights fallback; include in seed key
+  • lib/imageRouteAggregateBadge.ts: pass providerWeights to
+    computeWeightedAverage
+  • lib/imageRouteDisplayState.ts, lib/imageRouteExecution.ts: thread
+    aggregateProviderWeights through display state and execution
+  
+  Configurator state
+  • lib/uiConfig.ts: four SharedXrdbSettings fields; defaults; thumbnail
+    falls back to backdrop unless skipCrossTypeFallbacks; buildSharedPayload
+    emits per type keys when non default
+  • lib/useConfiguratorWorkspaceState.ts: four useState declarations
+  • lib/useConfiguratorWorkspaceRuntime.ts: 28 weight field references
+  • lib/useConfiguratorWorkspaceConfigIo.ts: applySavedUiConfig and
+    buildCurrentUiConfig wired for all four types including full deps array
+  • lib/useConfiguratorWorkspaceSummary.ts: activeAggregateProviderWeights
+    derived; setAggregateProviderWeightsForType callback
+  • lib/configuratorPageProps.ts: activeAggregateProviderWeights and
+    onSetAggregateProviderWeightsForType in presentationProps
+  • lib/configuratorLinkImport.ts: aggregateProviderWeights in
+    SHARED_VISUAL_QUERY_KEYS and CROSS_TYPE_COMPATIBLE_SUFFIXES
+  • lib/crossTypeSync.ts, lib/configuratorResetGroups.ts: all four types
+  
+  UI
+  • components/configurator appearance sections.tsx: "Provider Weights"
+    section with per provider number inputs (0–100, placeholder "Equal"),
+    shown only when usesAggregatePresentation
+  
+  Output
+  • lib/useConfiguratorOutputs.ts: aggregateProviderWeightsForType derived;
+    URL query param emitted when non default, omitted when equal weight
+  
+  Tests
+  • tests/aggregate provider weights.test.mjs: 15 tests covering
+    equal weight fallback, custom weight math, missing provider default,
+    zero weight fallback, single entry, string parsing, object input
+    (saved profile format), null/invalid input, clamping, malformed parts,
+    stringify, isDefault
+  • tests/ui config.test.mjs: round trip expected object updated with four
+    weight fields
+  • tests/config profile verification.test.mjs: verification schema updated
+* FR-58 FR-76 add secondary genre replacement mode
+  
+  Add a new anime grouping mode that can replace Anime or Animation with the next strongest supported genre family when available, while preserving existing Split and Group as Animation behavior.
+  
+  Why:
+  • FR-58 requests an option to avoid uninformative Anime or Animation badges and show a more meaningful secondary genre.
+  • FR-76 reports inaccurate genre badge outcomes where Anime or Animation appears too generically.
+  
+  What changed:
+  • Added secondary as a valid Genre Badge anime grouping mode in core type and normalization logic.
+  • Kept split as default behavior to preserve current output for existing users.
+  • Kept animation grouping behavior and added alias handling so merge style inputs normalize safely.
+  • Updated resolver logic to:
+  • Compute the normal primary family first.
+  • If mode is secondary and the primary family is anime or animation, rerun resolution without anime or animation families.
+  • Promote the secondary supported family when present.
+  • Fall back to original primary when no meaningful secondary family exists.
+  • Added the new mode to configurator options and UI copy.
+  • Updated profile verification coverage for allowed Genre Badge anime grouping values.
+  • Updated README documentation to describe genreBadgeAnimeGrouping=secondary behavior.
+  • Added unit coverage for:
+  • New normalization aliases and secondary mode parsing.
+  • Secondary family resolution behavior for anime and animation inputs.
+  • Prepared media flow to confirm resolved badge family uses secondary where applicable.
+  
+  Behavioral impact:
+  • No change for users on split or animation.
+  • Users who select secondary get more informative genre badges whenever a stronger non anime non animation family is available.
+  • If no stronger family exists, badge remains anime or animation to avoid empty or misleading output.
+* add normalized clean value mode to trim trailing point zero
+  
+  Introduce a new rating value display mode that keeps normalized ten point formatting but removes trailing point zero values.
+  This allows values like 10.0 and 8.0 to render as 10 and 8 while preserving non zero decimals such as 8.6.
+  The mode is exposed through the existing Rating Values selector and is parsed through the same config/query flow as other rating value modes.
+  
+  • Add new ratingValueMode: normalizedclean
+  • Add parser aliases for normalized clean variants
+  • Keep native, normalized, and normalized100 behavior unchanged
+  • Update config profile verification coverage for the new mode
+  • Add test coverage for formatting and mode normalization
+  • Update README parameter docs and rating value mode description
+* collapse quality badge custom icon editor into accordion
+  
+  Reduce visual clutter in the Quality section by moving custom quality badge icon URL controls into a compact accordion while preserving existing override behavior.
+  
+  • add derived override count via `qualityBadgeIconOverrideCount` for clearer state tracking
+  • replace inline always expanded icon URL grid with a `details/summary` accordion
+  • show compact status in summary (`N custom`) so active overrides remain visible when collapsed
+  • keep all existing per badge icon URL edit behavior unchanged
+  : trim input values
+  : write override when URL is present
+  : remove override entry when URL is cleared
+  • keep global `Reset All` behavior unchanged and reuse the derived override count for button visibility
+  • retain existing helper copy and input placeholders inside the expanded accordion panel
+  
+  UX impact:
+  • lowers default vertical footprint of the configurator
+  • makes advanced icon customization less overwhelming
+  • preserves discoverability and full editing capability when expanded
+* add custom icon URL override support via qualityBadgeAppearance param
+  
+  Add a new `qualityBadgeAppearance` query parameter that accepts a base64url encoded JSON
+  object allowing per badge icon overrides for all 18 quality badge keys (certification,
+  releasestatus, netflix, hbo, primevideo, disneyplus, appletvplus, hulu, paramountplus,
+  peacock, 4k, hd, bluray, hdr, dolbyvision, dolbyatmos, remux, bdremux).
+  
+  Each override accepts an `iconUrl` field that supports both inline data URIs and external
+  HTTP/HTTPS URLs, matching full parity with the existing provider badge custom icon system.
+  
+  New module:
+  • lib/imageRouteQualityBadgeIcon.ts: external URL resolver that fetches a remote SVG or
+    raster asset, converts it to a base64 data URI, caches the result for 24 hours in the
+    metadata store, and deduplicates concurrent in flight requests via withDedupe()
+  
+  Changes:
+  • lib/badgeCustomization.ts: QualityBadgeAppearanceOverride and
+    QualityBadgeAppearanceOverrides types; normalise, serialize, parse, and encode helpers
+  • lib/imageRouteQualityBadge.ts: check badge.iconDataUri (custom) before falling back to
+    the built in asset path; adjust aspectRatio for custom icons
+  • lib/imageRoutePreparedMedia.ts: move override application outside the communityBadgeTheme
+    conditional so overrides apply regardless of theme state
+  • lib/finalImageRenderSeed.ts: include encoded quality badge appearance overrides in the
+    render seed key so cache is invalidated when overrides change
+  • lib/imageRouteRequestState.ts: parse qualityBadgeAppearance query param and thread it
+    through buildFinalImageRenderSeedKey and the returned request state
+  • lib/imageRouteRenderer.ts: instantiate and export getQualityBadgeIconDataUri resolver
+  • lib/imageRouteExecution.ts: resolve all external iconUrl values in streamBadges to data
+    URIs before the render call
+  • lib/useConfiguratorWorkspaceState.ts: useState for qualityBadgeAppearanceOverrides
+  • lib/useConfiguratorWorkspaceConfigIo.ts: persist and load overrides from workspace config
+  • lib/useConfiguratorWorkspaceRuntime.ts: wire state and IO hooks together
+  • lib/useConfiguratorOutputs.ts: emit qualityBadgeAppearance param in the output URL
+  • lib/configuratorPageProps.ts: forward overrides to the quality section
+  • components/configurator workspace sections.tsx: per badge custom icon URL input fields
+* FR-66 community badge system, tile style, HD badge, per badge style overrides
+  
+  Community badge system
+  • Add lib/communityBadgeAssets.ts: canonical SVG resolver reading from
+    public/assets/community badges/canonical/{category}/{theme}/{slug}.svg
+  • Add lib/communityBadgeTheme.ts: CommunityBadgeTheme type (gold | white |
+    rainbow | black) and DEFAULT_COMMUNITY_BADGE_THEME constant
+  • Add public/assets/community badges/canonical/: 75 production SVGs organized
+    as age/{theme}/, network/{theme}/, quality/{theme}/ with human readable slugs
+    (pg 13.svg, netflix.svg, dolby vision.svg, etc.)
+  • Wire communityBadgeTheme query param through resolveImageRouteRequestState,
+    prepareImageRouteMediaState, buildQualityBadgeSvg, and all configurator hooks
+  • community badge style delegates rendering to getCommunityBadgeSvg; taller
+    badge box (height * 1.15, min 44px) to match asset proportions
+  
+  Tile Dark badge style
+  • Add tile and community badge to QualityBadgeStyle and tile to RatingStyle
+    in lib/ratingAppearance.ts; add normalizeQualityBadgeStyleOrNull helper
+  • Implement tile SVG path in buildQualityBadgeSvg: dark #0f1117 background,
+    left accent color strip using rounded left SVG path; handles certification
+    (two line AGE + value layout), streaming service logos (icon plate + label),
+    and plain text badges
+  • Add tileAccentColor field to QualityBadgeInput; per badge accent colors
+    threaded through prepared media state
+  • Add query params: qualityBadgesTileAccentColor, networkTileColor,
+    ageRatingTileColor, releaseStatusTileColor, genreBadgeTileAccentColor
+  • All tile color params emitted only when style is tile
+  
+  Per badge style overrides
+  • Add ageRatingBadgeStyle and releaseStatusBadgeStyle query params; resolved
+    via normalizeQualityBadgesStyleOrNull in request state
+  • Add styleOverride field to QualityBadgeInput; buildQualityBadgeSvg uses
+    effectiveStyle = badge.styleOverride ?? style throughout to allow individual
+    badges to override the global quality badge style
+  • Certification and release status badges enriched with styleOverride and
+    tileAccentColor in prepareImageRouteMediaState
+  
+  HD badge
+  • Add hd to MediaFeatureBadgeKey, MediaFeatureFlags, MEDIA_FEATURE_BADGE_ORDER,
+    and MEDIA_FEATURE_META_BY_KEY (label "HD", accentColor #38bdf8)
+  • Detect hasHdCandidate from 1080P, 720P, FULLHD, FHD tokens in filenames;
+    hasHd flag set when candidate found and 4K is absent
+  
+  Logo stream badges
+  • Add dedicated logoStreamBadges query param (logoStreamBadges ||
+    streamBadges fallback) resolved as logoStreamBadgesSetting
+  • Logo quality badges (shouldApplyLogoQualityBadges) now require explicit
+    logoStreamBadgesSetting === 'on' | 'auto' rather than activating implicitly
+  • useConfiguratorOutputs emits logoStreamBadges key when not auto; wires
+    logoStreamBadges through output hook props and config I/O
+  
+  Provider icon outline
+  • Apply white outline SVG filter to provider logos in all non plain quality
+    badge styles (previously only in plain); filter defined inline in defs block
+    for both plain and non plain paths to ensure consistent rendering
+  
+  Torrentio filename deduplication
+  • Collect all filename candidates from stream.filename,
+    behaviorHints.filename, title, and name rather than stopping at first hit
+  • Deduplicate collected filenames via Set before returning from
+    extractTorrentioFilenames
+  
+  Configurator wiring
+  • Extend useConfiguratorWorkspaceState, useConfiguratorWorkspaceRuntime,
+    useConfiguratorWorkspaceConfigIo, and useConfiguratorActiveWorkspaceSettings
+    with all new fields: logoStreamBadges, ageRatingBadgeStyle,
+    releaseStatusBadgeStyle, communityBadgeTheme, and all five tile color fields
+  • useConfiguratorOutputs: community badge theme emitted only when non default;
+    per badge style overrides emitted unconditionally when non null; tile color
+    params gated on matching active style
+  • components/configurator workspace sections.tsx: new tile and community badge
+    appearance sections surfacing all new controls
+  • components/configurator appearance sections.tsx: badge style selector updated
+    to include tile and community badge entries
+  
+  Tests and docs
+  • tests/media features.test.mjs: cover hd badge detection, certification label
+    hyphen stripping, generic badge label normalization
+  • tests/image route torrentio.test.mjs: cover multi candidate filename harvest
+    and deduplication, circuit breaker, provider budget, stale while revalidate
+  • tests/ui config.test.mjs: cover stream badge default, new tile/community
+    badge config fields
+  • tests/cross type sync.test.mjs: updated sync assertion
+  • README.md, config/readme preview gallery.json, docs/images: updated gallery
+    and render comparison screenshots
+
+### Fixed
+* harden remote badge icon fetches
+  
+  Route remote provider icon and quality badge icon URLs through the shared
+  safe source network guard instead of fetching arbitrary user supplied URLs
+  directly during image rendering.
+  
+  Why:
+  custom badge icon URLs can originate from query params or saved profile
+  state. Before this change, those URLs could reach raw server side fetch
+  paths in the render pipeline. That created an SSRF style risk where badge
+  rendering could be abused to probe localhost, private network addresses,
+  metadata services, or other internal only targets.
+  
+  What changed:
+  • update provider icon resolution to validate icon URLs with the shared
+    safe source URL assertion before any network request
+  • update quality badge icon resolution to use the same validation path
+  • replace direct fetch calls with the controlled safe fetch flow that
+    preserves the repository's redirect and source safety rules
+  • keep inline data URIs working unchanged
+  • keep cache behavior unchanged for valid remote icons
+  • add regression coverage proving unsafe hosts are rejected before fetch
+  
+  Behavior:
+  • valid public http/https icon URLs still resolve normally
+  • inline data URIs still bypass remote fetching
+  • unsafe targets such as localhost or private/internal addresses now return
+    no fetched icon instead of issuing a network request
+* FR-75 FR-62 adaptive single row logo ratings and TMDB logo safe frame centering
+  
+  For FR-75:
+  • Replace logo rating auto wrapping behavior with adaptive single row logic.
+  • Dynamically cap visible rating badges by logo width tier so narrow logos keep readable badge size.
+  • Keep one row output for logo ratings and trim overflow instead of shrinking into tiny icons.
+  • Preserve existing rating style scaling while enforcing minimum legibility thresholds.
+  
+  For FR-62:
+  • Add transparent safe frame compositing for logo images before badge overlays.
+  • Improve perceived centering and reduce oversized edge to edge TMDB logo presentation.
+  • Keep logo output transparent and platform safe for Stremio style clients.
+  
+  Test updates:
+  • Update image route render layout expectations to validate adaptive one row behavior and width based trimming.
+  • Update blockbuster logo row expectations under new adaptive constraints.
+  • Add renderer coverage to assert transparent safe frame padding behavior.
+  
+  Files touched:
+  • imageRouteRenderLayout.ts
+  • imageRouteRenderer.ts
+  • image route render layout.test.mjs
+  • image route renderer black strip.test.mjs
+* restore clean poster textless selection and clean branding behavior
+  
+  The clean artwork path regressed to language preferred selection, causing clean posters to look the same as original when textless art existed. This change restores clean mode semantics so clean prefers textless assets first, then falls back to language matched artwork only when textless is unavailable.
+  
+  What changed
+  • Updated poster selection logic to prioritize textless TMDB posters for clean mode.
+  • Updated backdrop selection logic to prioritize textless TMDB backdrops for clean mode consistency.
+  • Updated fanart asset selection logic so clean mode prioritizes textless fanart assets.
+  • Kept existing fallback behavior intact when no textless asset exists.
+  • Updated unit tests to assert the restored clean mode behavior and prevent future regressions.
+  
+  Why
+  • Clean mode is expected to produce textless art plus branding overlay placement above the bottom rating area.
+  • Selecting language tagged art first made clean effectively mirror original in many cases.
+  • Restoring textless first selection re enables the intended clean visual treatment.
+* rebalance tile dark badge value spacing and centering
+  
+  Adjust Tile Dark provider badge layout so score values stay centered and keep consistent edge clearance.
+  This update removes asymmetric value lane padding and applies a shared blanket inset so text no longer appears shifted or too close to the right edge.
+  It also stabilizes icon plate sizing behavior to reduce per provider visual drift that made value alignment look uneven.
+  
+  • Use equal horizontal insets for the Tile Dark value lane
+  • Preserve text centering while maintaining overflow fit behavior
+  • Standardize icon plate width baseline for more consistent visual centering
+  • Improve spacing reliability across different provider icon scales
+
+### Documentation
+* refresh static doc assets (2 commits)
+* correct genre badge border width and outline width ranges
+  
+  Fix stale parameter range documentation that diverged from the actual
+  runtime clamp constants in lib/badgeCustomization.ts.
+  
+  genreBadgeBorderWidth family (global, poster, backdrop, thumbnail, logo):
+  documented as 0 to 10 but clamped to 0 to 6 by MAX_GENRE_BADGE_BORDER_WIDTH_PX.
+  
+  posterNoBackgroundBadgeOutlineWidth:
+  documented as 0 to 10 in the main param table and missing the range entirely
+  in the AI Integration Prompt table; actual clamp is 0 to 4 via
+  MAX_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX.
+* align docs
+  
+  Update documentation and reference copy so the latest two feature commits are
+  fully represented across README, reference UI text, and changelog context.
+  
+  • refresh README quality badge language to cover:
+  • tile and community badge styles
+  • HD badge behavior
+  • per badge style overrides
+  • qualityBadgeAppearance custom icon overrides
+  • extend README parameter coverage with newly shipped query params and style
+    values (including logo stream badge and tile color controls)
+  • update AI integration guidance in README:
+  • pass through parameter list
+  • per type settings notes
+  • URL build template fields
+  • align reference page user facing copy with new behavior and controls:
+  • style list expansion
+  • community badge themes
+  • tile accent controls
+  • custom icon override support
+  • add unreleased changelog entries summarizing FR-66 surfaces and
+    qualityBadgeAppearance support
+
 ## [v1.22.7] - 20/04/2026
 
 ### Fixed
