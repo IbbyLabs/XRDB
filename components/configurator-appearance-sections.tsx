@@ -1222,7 +1222,7 @@ export function LookSection({
               ))}
             </div>
           </div>
-          {!cleanGenreStyleActive && !tileGenreStyleActive ? (
+          {!cleanGenreStyleActive ? (
             <div className={settingsCardClass}>
               <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Genre Badge Position</span>
               <div className={selectorGroupClass}>
