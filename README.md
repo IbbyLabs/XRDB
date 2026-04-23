@@ -378,18 +378,18 @@ The configurator preview type row now includes a sync control beside each type. 
 | `posterGenreBadgeScale` | Poster genre badge scale | Number (`70-200`) | `100` |
 | `backdropGenreBadgeScale` | Backdrop genre badge scale | Number (`70-200`) | `100` |
 | `logoGenreBadgeScale` | Logo genre badge scale | Number (`70-200`) | `100` |
-| `genreBadgeBorderWidth` | Genre badge accent stroke width for `glass` style (global fallback). `0` disables the stroke. | Number (`0-10`) | `1.4` |
-| `posterGenreBadgeBorderWidth` | Poster genre badge border width | Number (`0-10`) | `1.4` |
-| `backdropGenreBadgeBorderWidth` | Backdrop genre badge border width | Number (`0-10`) | `1.5` |
-| `thumbnailGenreBadgeBorderWidth` | Thumbnail genre badge border width | Number (`0-10`) | `1.5` |
-| `logoGenreBadgeBorderWidth` | Logo genre badge border width | Number (`0-10`) | `1.4` |
+| `genreBadgeBorderWidth` | Genre badge accent stroke width for `glass` style (global fallback). `0` disables the stroke. | Number (`0-6`) | `1.4` |
+| `posterGenreBadgeBorderWidth` | Poster genre badge border width | Number (`0-6`) | `1.4` |
+| `backdropGenreBadgeBorderWidth` | Backdrop genre badge border width | Number (`0-6`) | `1.5` |
+| `thumbnailGenreBadgeBorderWidth` | Thumbnail genre badge border width | Number (`0-6`) | `1.5` |
+| `logoGenreBadgeBorderWidth` | Logo genre badge border width | Number (`0-6`) | `1.4` |
 | `genreBadgeBackgroundOpacity` | Clean style genre badge background opacity (global fallback). `0` is transparent and `100` is fully opaque. | Number (`0-100`) | `28` |
 | `posterGenreBadgeBackgroundOpacity` | Poster clean style genre badge background opacity | Number (`0-100`) | `28` |
 | `backdropGenreBadgeBackgroundOpacity` | Backdrop clean style genre badge background opacity | Number (`0-100`) | `28` |
 | `thumbnailGenreBadgeBackgroundOpacity` | Thumbnail clean style genre badge background opacity | Number (`0-100`) | `28` |
 | `logoGenreBadgeBackgroundOpacity` | Logo clean style genre badge background opacity | Number (`0-100`) | `28` |
 | `posterNoBackgroundBadgeOutlineColor` | Text stroke colour for `plain` style genre badge on poster | Hex colour (e.g. `#000000`) | `#000000` |
-| `posterNoBackgroundBadgeOutlineWidth` | Text stroke width for `plain` style genre badge on poster. `0` disables the stroke. | Number (`0-10`) | `0` |
+| `posterNoBackgroundBadgeOutlineWidth` | Text stroke width for `plain` style genre badge on poster. `0` disables the stroke. | Number (`0-4`) | `0` |
 | `streamBadges` | Quality badges via Torrentio (global fallback) | `auto`, `on`, `off` | `auto` |
 | `posterStreamBadges` | Poster quality badges. `auto` warms in the background and does not block cold poster renders. | `auto`, `on`, `off` | `off` |
 | `backdropStreamBadges` | Backdrop quality badges | `auto`, `on`, `off` | `auto` |
@@ -583,17 +583,17 @@ posterGenreBadge       | off, text, icon, both (poster only)                    
 backdropGenreBadge     | off, text, icon, both (backdrop only)                                | off
 logoGenreBadge         | off, text, icon, both (logo only)                                    | off
 genreBadgeBorderWidth  | genre badge accent stroke width for glass style (global fallback), 0 disables | 1.4
-posterGenreBadgeBorderWidth | poster genre badge border width (0-10)                         | 1.4
-backdropGenreBadgeBorderWidth | backdrop genre badge border width (0-10)                     | 1.5
-thumbnailGenreBadgeBorderWidth | thumbnail genre badge border width (0-10)                   | 1.5
-logoGenreBadgeBorderWidth | logo genre badge border width (0-10)                              | 1.4
+posterGenreBadgeBorderWidth | poster genre badge border width (0-6)                          | 1.4
+backdropGenreBadgeBorderWidth | backdrop genre badge border width (0-6)                      | 1.5
+thumbnailGenreBadgeBorderWidth | thumbnail genre badge border width (0-6)                    | 1.5
+logoGenreBadgeBorderWidth | logo genre badge border width (0-6)                               | 1.4
 genreBadgeBackgroundOpacity | clean style genre badge background opacity (global fallback, 0-100) | 28
 posterGenreBadgeBackgroundOpacity | poster clean style genre badge background opacity (0-100) | 28
 backdropGenreBadgeBackgroundOpacity | backdrop clean style genre badge background opacity (0-100) | 28
 thumbnailGenreBadgeBackgroundOpacity | thumbnail clean style genre badge background opacity (0-100) | 28
 logoGenreBadgeBackgroundOpacity | logo clean style genre badge background opacity (0-100) | 28
 posterNoBackgroundBadgeOutlineColor | text stroke colour for plain style genre badge on poster | #000000
-posterNoBackgroundBadgeOutlineWidth | text stroke width for plain style genre badge on poster, 0 disables | 0
+posterNoBackgroundBadgeOutlineWidth | text stroke width for plain style genre badge on poster (0-4), 0 disables | 0
 streamBadges            | auto, on, off (global fallback)                                      | auto
 posterStreamBadges      | auto, on, off (poster only)                                          | off
 backdropStreamBadges    | auto, on, off (backdrop only)                                        | auto
