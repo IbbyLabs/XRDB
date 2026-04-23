@@ -2,9 +2,6 @@
 
 XRDB, eXtended Ratings DataBase, generates poster, backdrop, thumbnail, and logo artwork with dynamic ratings, quality badges, and export ready integrations.
 
-> [!NOTE]
-> XRDB, eXtended Ratings DataBase, is built by IbbyLabs for artwork workflows, media tools, and addon integrations.
-
 <!-- changelog-links:start -->
 
 > [!TIP]
