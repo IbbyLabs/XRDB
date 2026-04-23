@@ -1,4 +1,5 @@
 import { PROVIDER_ICON_CACHE_TTL_MS } from './imageRouteConfig.ts';
+import { assertSafeSourceUrl, fetchWithOneRedirect } from './networkSecurity.ts';
 import { withDedupe } from './imageRouteRuntime.ts';
 import { buildProviderIconMemoryCacheKey } from './imageRouteSourceUrls.ts';
 
@@ -23,7 +24,8 @@ export const createProviderIconDataUriResolver = ({
   writeProviderIconToStorage,
   stripCornerBackgroundFromIcon,
   getSharpFactory,
-  fetchImpl = fetch,
+  assertSafeSourceUrlImpl = assertSafeSourceUrl,
+  fetchSafeIconImpl = fetchWithOneRedirect,
 }: {
   getMetadata: MetadataReader;
   setMetadata: MetadataWriter;
@@ -31,7 +33,8 @@ export const createProviderIconDataUriResolver = ({
   writeProviderIconToStorage: ProviderIconStorageWriter;
   stripCornerBackgroundFromIcon: CornerBackgroundStripper;
   getSharpFactory: SharpFactoryLoader;
-  fetchImpl?: typeof fetch;
+  assertSafeSourceUrlImpl?: typeof assertSafeSourceUrl;
+  fetchSafeIconImpl?: typeof fetchWithOneRedirect;
 }) => {
   const providerIconInFlight = new Map<string, Promise<string | null>>();
   const providerIconOutputSize = 192;
@@ -61,7 +64,8 @@ export const createProviderIconDataUriResolver = ({
       }
 
       try {
-        const response = await fetchImpl(normalizedIconUrl, { cache: 'no-store' });
+        const safeIconUrl = await assertSafeSourceUrlImpl(normalizedIconUrl);
+        const response = await fetchSafeIconImpl(safeIconUrl.toString());
         if (!response.ok) return null;
 
         const sourceBuffer = Buffer.from(await response.arrayBuffer());
