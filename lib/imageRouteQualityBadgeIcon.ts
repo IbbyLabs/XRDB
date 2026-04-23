@@ -1,4 +1,5 @@
 import { withDedupe } from './imageRouteRuntime.ts';
+import { assertSafeSourceUrl, fetchWithOneRedirect } from './networkSecurity.ts';
 
 type MetadataReader = <T>(key: string) => T | null | undefined;
 type MetadataWriter = (key: string, value: any, ttlMs: number) => void;
@@ -8,11 +9,13 @@ const QUALITY_BADGE_ICON_CACHE_TTL_MS = 1000 * 60 * 60 * 24; // 24 hours
 export const createQualityBadgeIconDataUriResolver = ({
   getMetadata,
   setMetadata,
-  fetchImpl = fetch,
+  assertSafeSourceUrlImpl = assertSafeSourceUrl,
+  fetchSafeIconImpl = fetchWithOneRedirect,
 }: {
   getMetadata: MetadataReader;
   setMetadata: MetadataWriter;
-  fetchImpl?: typeof fetch;
+  assertSafeSourceUrlImpl?: typeof assertSafeSourceUrl;
+  fetchSafeIconImpl?: typeof fetchWithOneRedirect;
 }) => {
   const qualityBadgeIconInFlight = new Map<string, Promise<string | null>>();
 
@@ -38,7 +41,8 @@ export const createQualityBadgeIconDataUriResolver = ({
       if (warmLocal) return warmLocal;
 
       try {
-        const response = await fetchImpl(normalizedIconUrl, { cache: 'no-store' });
+        const safeIconUrl = await assertSafeSourceUrlImpl(normalizedIconUrl);
+        const response = await fetchSafeIconImpl(safeIconUrl.toString());
         if (!response.ok) return null;
 
         const contentType = response.headers.get('content-type') || 'image/png';

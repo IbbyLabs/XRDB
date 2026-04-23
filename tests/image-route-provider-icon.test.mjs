@@ -103,7 +103,8 @@ test('image route provider icon fetches, rounds, caches, and writes processed ic
       return buffer;
     },
     getSharpFactory: async () => sharpDouble.factory,
-    fetchImpl: async () =>
+    assertSafeSourceUrlImpl: async (value) => new URL(value),
+    fetchSafeIconImpl: async () =>
       new Response(new Uint8Array([1, 2, 3]), {
         status: 200,
       }),
@@ -138,4 +139,20 @@ test('image route provider icon fetches, rounds, caches, and writes processed ic
   assert.match(roundedMask, /width="192"/);
   assert.match(roundedMask, /height="192"/);
   assert.match(roundedMask, /rx="24"/);
+});
+
+test('image route provider icon rejects unsafe hosts before fetching', async () => {
+  const getProviderIconDataUri = createProviderIconDataUriResolver({
+    getMetadata: () => null,
+    setMetadata: () => {},
+    readProviderIconFromStorage: async () => null,
+    writeProviderIconToStorage: async () => {},
+    stripCornerBackgroundFromIcon: async (_sharp, buffer) => buffer,
+    getSharpFactory: async () => createSharpDouble().factory,
+    fetchSafeIconImpl: async () => {
+      throw new Error('should not be called');
+    },
+  });
+
+  assert.equal(await getProviderIconDataUri('http://localhost/icon.png'), null);
 });
