@@ -26,6 +26,8 @@ const samplePixel = async (buffer, x, y) => {
   };
 };
 
+const isMagentaPixel = (pixel) => pixel.r > 220 && pixel.g < 80 && pixel.b > 220;
+
 const hasNonWhitePixelInRect = async (buffer, left, top, width, height) => {
   const { data, info } = await sharp(buffer)
     .raw()
@@ -291,4 +293,38 @@ test('image route renderer does not render a standalone age rating badge when ce
   const topCenter = await samplePixel(explicitWithoutCertification.body, 200, 42);
 
   assert.ok(topCenter.r > 240 && topCenter.g > 240 && topCenter.b > 240);
+});
+
+test('image route renderer repositions compact ring when detached age rating occupies the same corner', async () => {
+  const compactRingOverlay = {
+    width: 96,
+    height: 96,
+    left: 272,
+    top: 20,
+    svg: "<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'><rect width='96' height='96' fill='#ff00ff'/></svg>",
+  };
+  const grouped = await renderWithSharp(
+    createPosterRenderInput({
+      posterRatingsLayout: 'left',
+      compactRingOverlay,
+      ageRatingBadgePosition: 'grouped',
+    }),
+    { ...phases },
+  );
+  const explicitTopRight = await renderWithSharp(
+    createPosterRenderInput({
+      posterRatingsLayout: 'left',
+      compactRingOverlay,
+      ageRatingBadgePosition: 'right-top',
+    }),
+    { ...phases },
+  );
+
+  const groupedOriginalSpot = await samplePixel(grouped.body, 320, 68);
+  const explicitOriginalSpot = await samplePixel(explicitTopRight.body, 320, 68);
+  const explicitShiftedSpot = await samplePixel(explicitTopRight.body, 320, 128);
+
+  assert.ok(isMagentaPixel(groupedOriginalSpot));
+  assert.equal(isMagentaPixel(explicitOriginalSpot), false);
+  assert.ok(isMagentaPixel(explicitShiftedSpot));
 });
