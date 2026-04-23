@@ -59,6 +59,7 @@ import {
   buildQualityBadgeColumnOverlaysAt,
   buildQualityBadgeRowOverlays,
   measureQualityBadgeColumnWidth,
+  type QualityBadgeOverlaySpec,
 } from './imageRouteQualityPlacement.ts';
 import {
   isSupportedPosterAgeRatingBadgePosition,
@@ -302,6 +303,81 @@ const adjustVerticalStartForProtectedRange = ({
   }
 
   return clampedStart;
+};
+
+const rectsOverlap = (
+  a: { left: number; top: number; width: number; height: number },
+  b: { left: number; top: number; width: number; height: number },
+) =>
+  a.left < b.left + b.width &&
+  a.left + a.width > b.left &&
+  a.top < b.top + b.height &&
+  a.top + a.height > b.top;
+
+const resolveCompactRingOverlayWithCollisionAvoidance = ({
+  compactRingOverlay,
+  blockedRects,
+  outputHeight,
+  badgeGap,
+}: {
+  compactRingOverlay: PosterCompactRingOverlaySpec;
+  blockedRects: Array<{ left: number; top: number; width: number; height: number }>;
+  outputHeight: number;
+  badgeGap: number;
+}): PosterCompactRingOverlaySpec => {
+  const gap = Math.max(6, badgeGap);
+  const maxTop = Math.max(0, outputHeight - compactRingOverlay.height);
+  let currentTop = Math.max(0, Math.min(compactRingOverlay.top, maxTop));
+  for (let pass = 0; pass < 8; pass += 1) {
+    const currentRect = {
+      left: compactRingOverlay.left,
+      top: currentTop,
+      width: compactRingOverlay.width,
+      height: compactRingOverlay.height,
+    };
+    const overlapTarget = blockedRects.find((rect) => rectsOverlap(currentRect, rect));
+    if (!overlapTarget) {
+      return {
+        ...compactRingOverlay,
+        top: currentTop,
+      };
+    }
+    const nextTop = Math.max(0, Math.min(overlapTarget.top + overlapTarget.height + gap, maxTop));
+    if (nextTop === currentTop) {
+      break;
+    }
+    currentTop = nextTop;
+  }
+
+  const lastRect = {
+    left: compactRingOverlay.left,
+    top: currentTop,
+    width: compactRingOverlay.width,
+    height: compactRingOverlay.height,
+  };
+  const overlapTarget = blockedRects.find((rect) => rectsOverlap(lastRect, rect));
+  if (!overlapTarget) {
+    return {
+      ...compactRingOverlay,
+      top: currentTop,
+    };
+  }
+
+  const aboveTop = Math.max(0, Math.min(overlapTarget.top - compactRingOverlay.height - gap, maxTop));
+  const aboveRect = {
+    left: compactRingOverlay.left,
+    top: aboveTop,
+    width: compactRingOverlay.width,
+    height: compactRingOverlay.height,
+  };
+  if (!rectsOverlap(aboveRect, overlapTarget)) {
+    return {
+      ...compactRingOverlay,
+      top: aboveTop,
+    };
+  }
+
+  return compactRingOverlay;
 };
 
 const getSharpFactory = createSharpFactoryLoader();
@@ -626,6 +702,40 @@ export const renderWithSharp = async (
                 protectedBottom: startY + extractedAgeRatingColumnReferenceHeight,
               };
             })();
+    const detachedAgeRatingOverlays: QualityBadgeOverlaySpec[] =
+      extractedAgeRatingBadge && explicitAgeRatingPlacement
+        ? explicitAgeRatingPlacement.kind === 'row'
+          ? buildQualityBadgeRowOverlays({
+              rowBadges: [extractedAgeRatingBadge],
+              rowY: explicitAgeRatingPlacement.rowY,
+              origin: explicitAgeRatingPlacement.edge,
+              align: explicitAgeRatingPlacement.align,
+              imageType: input.imageType,
+              outputWidth: input.outputWidth,
+              referenceBadgeHeight: extractedAgeRatingReferenceHeight,
+              qualityBadgeScalePercent: input.qualityBadgeScalePercent,
+              badgeGap: input.badgeGap,
+              qualityBadgesStyle: input.qualityBadgesStyle,
+              posterEdgeInset,
+              backdropEdgeInset,
+            })
+          : buildQualityBadgeColumnOverlays({
+              columnBadges: [extractedAgeRatingBadge],
+              startY: explicitAgeRatingPlacement.startY,
+              side: explicitAgeRatingPlacement.side,
+              imageType: input.imageType,
+              outputWidth: input.outputWidth,
+              outputHeight: input.outputHeight,
+              badgeTopOffset: input.badgeTopOffset,
+              badgeBottomOffset: effectiveBadgeBottomOffset,
+              referenceBadgeHeight: extractedAgeRatingColumnReferenceHeight,
+              qualityBadgeScalePercent: input.qualityBadgeScalePercent,
+              badgeGap: input.badgeGap,
+              qualityBadgesStyle: input.qualityBadgesStyle,
+              posterEdgeInset,
+              backdropEdgeInset,
+            })
+        : [];
     const extractedAgeRatingTopY =
       explicitAgeRatingPlacement?.kind === 'row' && explicitAgeRatingPlacement.edge === 'top'
         ? explicitAgeRatingPlacement.rowY
@@ -1272,20 +1382,6 @@ export const renderWithSharp = async (
         input.editorialOverlay.height,
       );
     }
-    if (input.imageType === 'poster' && input.compactRingOverlay) {
-      overlays.push({
-        input: Buffer.from(input.compactRingOverlay.svg),
-        top: input.compactRingOverlay.top,
-        left: input.compactRingOverlay.left,
-      });
-      trackGenreCollisionRect(
-        input.compactRingOverlay.left,
-        input.compactRingOverlay.top,
-        input.compactRingOverlay.width,
-        input.compactRingOverlay.height,
-      );
-    }
-
     if (input.imageType === 'logo') {
       if (
         (input.badges.length > 0 || input.qualityBadges.length > 0) &&
@@ -1642,44 +1738,8 @@ export const renderWithSharp = async (
         qualityBadgeScalePercent: input.qualityBadgeScalePercent,
         layout: 'column',
       });
-      if (extractedAgeRatingBadge && explicitAgeRatingPlacement) {
-        if (explicitAgeRatingPlacement.kind === 'row') {
-          appendQualityBadgeOverlays(
-            buildQualityBadgeRowOverlays({
-              rowBadges: [extractedAgeRatingBadge],
-              rowY: explicitAgeRatingPlacement.rowY,
-              origin: explicitAgeRatingPlacement.edge,
-              align: explicitAgeRatingPlacement.align,
-              imageType: input.imageType,
-              outputWidth: input.outputWidth,
-              referenceBadgeHeight: extractedAgeRatingReferenceHeight,
-              qualityBadgeScalePercent: input.qualityBadgeScalePercent,
-              badgeGap: input.badgeGap,
-              qualityBadgesStyle: input.qualityBadgesStyle,
-              posterEdgeInset,
-              backdropEdgeInset,
-            })
-          );
-        } else {
-          appendQualityBadgeOverlays(
-            buildQualityBadgeColumnOverlays({
-              columnBadges: [extractedAgeRatingBadge],
-              startY: explicitAgeRatingPlacement.startY,
-              side: explicitAgeRatingPlacement.side,
-              imageType: input.imageType,
-              outputWidth: input.outputWidth,
-              outputHeight: input.outputHeight,
-              badgeTopOffset: input.badgeTopOffset,
-              badgeBottomOffset: effectiveBadgeBottomOffset,
-              referenceBadgeHeight: extractedAgeRatingColumnReferenceHeight,
-              qualityBadgeScalePercent: input.qualityBadgeScalePercent,
-              badgeGap: input.badgeGap,
-              qualityBadgesStyle: input.qualityBadgesStyle,
-              posterEdgeInset,
-              backdropEdgeInset,
-            })
-          );
-        }
+      if (detachedAgeRatingOverlays.length > 0) {
+        appendQualityBadgeOverlays(detachedAgeRatingOverlays);
       }
       if (qualityPlacement === 'bottom') {
         const bottomQualityHeight = resolveQualityBadgeHeight({
@@ -1980,6 +2040,26 @@ export const renderWithSharp = async (
           );
         }
       }
+    }
+
+    if (input.imageType === 'poster' && input.compactRingOverlay) {
+      const resolvedCompactRingOverlay = resolveCompactRingOverlayWithCollisionAvoidance({
+        compactRingOverlay: input.compactRingOverlay,
+        blockedRects: genreCollisionRects,
+        outputHeight: input.outputHeight,
+        badgeGap: input.badgeGap,
+      });
+      overlays.push({
+        input: Buffer.from(resolvedCompactRingOverlay.svg),
+        top: resolvedCompactRingOverlay.top,
+        left: resolvedCompactRingOverlay.left,
+      });
+      trackGenreCollisionRect(
+        resolvedCompactRingOverlay.left,
+        resolvedCompactRingOverlay.top,
+        resolvedCompactRingOverlay.width,
+        resolvedCompactRingOverlay.height,
+      );
     }
 
     const genreBadgeOverlay = resolveGenreBadgeOverlay({
