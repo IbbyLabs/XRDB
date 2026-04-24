@@ -1022,7 +1022,7 @@ export function useConfiguratorOutputs({
     if (shouldShowQualityBadgesSide && qualityBadgesSide !== 'left') {
       query.set('qualityBadgesSide', qualityBadgesSide);
     }
-    if (shouldShowQualityBadgesPosition && posterQualityBadgesPosition !== 'auto') {
+    if (posterQualityBadgesPosition !== 'auto') {
       query.set('posterQualityBadgesPosition', posterQualityBadgesPosition);
     }
     if (previewType === 'poster' && ageRatingBadgePosition !== 'inherit') {
