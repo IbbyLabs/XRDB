@@ -65,6 +65,28 @@ test('quality badge row height follows the fitted rating badge height', () => {
   );
 });
 
+test('quality badge height can grow past the old 200px ceiling for 4K poster rows', () => {
+  assert.equal(
+    resolveQualityBadgeHeight({
+      referenceBadgeHeight: 173,
+      qualityBadgeScalePercent: 200,
+      layout: 'row',
+    }),
+    353,
+  );
+});
+
+test('quality badge height can grow past the old 200px ceiling for 4K backdrop columns', () => {
+  assert.equal(
+    resolveQualityBadgeHeight({
+      referenceBadgeHeight: 144,
+      qualityBadgeScalePercent: 200,
+      layout: 'column',
+    }),
+    288,
+  );
+});
+
 test('quality badge gap stays compact for rows and columns', () => {
   assert.equal(resolveQualityBadgeGap({ badgeGap: 9, layout: 'column' }), 10);
   assert.equal(resolveQualityBadgeGap({ badgeGap: 9, layout: 'row' }), 11);

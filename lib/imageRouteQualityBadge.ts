@@ -46,6 +46,79 @@ const resolveBadgeDataUri = (badge: Pick<QualityBadgeInput, 'iconDataUri' | 'ico
   return null;
 };
 
+const decodeDataUriPayload = (dataUri: string) => {
+  const match = /^data:([^;,]+)?(?:;charset=[^;,]+)?(;base64)?,(.*)$/i.exec(dataUri);
+  if (!match) return null;
+  const [, mimeType = '', base64Flag, payload = ''] = match;
+  try {
+    const buffer = base64Flag
+      ? Buffer.from(payload, 'base64')
+      : Buffer.from(decodeURIComponent(payload), 'utf8');
+    return {
+      mimeType: mimeType.toLowerCase(),
+      buffer,
+    };
+  } catch {
+    return null;
+  }
+};
+
+const parseNumericSvgLength = (value: string | undefined) => {
+  if (!value) return null;
+  const match = /^\s*([0-9]+(?:\.[0-9]+)?)/.exec(value);
+  if (!match) return null;
+  const numeric = Number.parseFloat(match[1]);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+};
+
+const inferSvgAspectRatio = (svgMarkup: string) => {
+  const viewBoxMatch = /viewBox\s*=\s*['"]\s*[-0-9.]+\s+[-0-9.]+\s+([0-9.]+)\s+([0-9.]+)\s*['"]/i.exec(
+    svgMarkup,
+  );
+  if (viewBoxMatch) {
+    const width = Number.parseFloat(viewBoxMatch[1]);
+    const height = Number.parseFloat(viewBoxMatch[2]);
+    if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+      return width / height;
+    }
+  }
+
+  const svgTagMatch = /<svg\b([^>]+)>/i.exec(svgMarkup);
+  if (!svgTagMatch) return null;
+  const attrs = svgTagMatch[1];
+  const widthAttr = /\bwidth\s*=\s*['"]([^'"]+)['"]/i.exec(attrs)?.[1];
+  const heightAttr = /\bheight\s*=\s*['"]([^'"]+)['"]/i.exec(attrs)?.[1];
+  const width = parseNumericSvgLength(widthAttr);
+  const height = parseNumericSvgLength(heightAttr);
+  if (width && height) {
+    return width / height;
+  }
+  return null;
+};
+
+const inferPngAspectRatio = (buffer: Buffer) => {
+  if (buffer.length < 24) return null;
+  const pngSignature = '89504e470d0a1a0a';
+  if (buffer.subarray(0, 8).toString('hex') !== pngSignature) return null;
+  const width = buffer.readUInt32BE(16);
+  const height = buffer.readUInt32BE(20);
+  if (width <= 0 || height <= 0) return null;
+  return width / height;
+};
+
+const inferBadgeDataUriAspectRatio = (dataUri: string | null) => {
+  if (!dataUri) return null;
+  const decoded = decodeDataUriPayload(dataUri);
+  if (!decoded) return null;
+  if (decoded.mimeType === 'image/svg+xml') {
+    return inferSvgAspectRatio(decoded.buffer.toString('utf8'));
+  }
+  if (decoded.mimeType === 'image/png') {
+    return inferPngAspectRatio(decoded.buffer);
+  }
+  return null;
+};
+
 const parseHexColor = (value: string) => {
   const normalized = String(value || '').trim().replace(/^#/, '');
   const expanded =
@@ -180,10 +253,16 @@ export const buildQualityBadgeSvg = (
   }
   const effectiveStyle = badge.styleOverride ?? style;
   const badgeDataUri = resolveBadgeDataUri(badge);
+  const badgeDataUriAspectRatio = inferBadgeDataUriAspectRatio(badgeDataUri);
 
   if (badge.fullBadge && badgeDataUri) {
     const fullBadgeHeight = Math.max(32, Math.round(height * 0.9));
-    const fullBadgeWidth = widthOverride ?? fullBadgeHeight;
+    const fullBadgeWidth =
+      widthOverride ??
+      Math.max(
+        24,
+        Math.round(fullBadgeHeight * Math.max(0.45, Math.min(badgeDataUriAspectRatio ?? 1, 6))),
+      );
     return {
       width: fullBadgeWidth,
       height: fullBadgeHeight,
@@ -371,7 +450,7 @@ ${buildMediaPlate(width, {
     const asset = MEDIA_BADGE_ASSETS[assetKey];
     const customAssetDataUri = badgeDataUri;
     const assetDataUri = customAssetDataUri ?? asset.dataUri;
-    const assetAspectRatio = customAssetDataUri ? 1 : asset.aspectRatio;
+    const assetAspectRatio = customAssetDataUri ? badgeDataUriAspectRatio ?? asset.aspectRatio : asset.aspectRatio;
     const assetHeightRatio = customAssetDataUri ? 0.62 : asset.heightRatio;
     const assetYOffsetRatio = customAssetDataUri ? 0 : (asset.yOffsetRatio || 0);
     const width = widthOverride ?? Math.round(h * asset.widthRatio);

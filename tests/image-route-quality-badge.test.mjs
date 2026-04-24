@@ -263,6 +263,56 @@ test('image route quality badge fullBadge renders from iconUrl data URI across s
   }
 });
 
+test('image route quality badge fullBadge preserves wide custom source aspect ratios', () => {
+  const wideIconUrl =
+    'data:image/svg+xml;base64,' +
+    Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 48"><rect width="160" height="48" rx="10" fill="#111827"/></svg>',
+    ).toString('base64');
+
+  const spec = buildQualityBadgeSvg(
+    {
+      key: 'appletvplus',
+      label: 'Apple TV Plus',
+      iconUrl: wideIconUrl,
+      fullBadge: true,
+    },
+    44,
+    undefined,
+    'glass',
+  );
+
+  assert.ok(spec, 'expected full badge spec');
+  assert.ok(spec.width > spec.height * 2.5, `expected wide full badge, got ${spec.width}x${spec.height}`);
+});
+
+test('image route quality badge asset overrides preserve wide custom source aspect ratios', () => {
+  const wideIconUrl =
+    'data:image/svg+xml;base64,' +
+    Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 60"><rect width="200" height="60" rx="12" fill="#38bdf8"/></svg>',
+    ).toString('base64');
+
+  const spec = buildQualityBadgeSvg(
+    {
+      key: '4k',
+      label: '4K',
+      iconUrl: wideIconUrl,
+    },
+    44,
+    undefined,
+    'glass',
+  );
+
+  assert.ok(spec, 'expected asset-backed badge spec');
+  const imageWidthMatch = /<image[^>]*width="([0-9]+)"[^>]*height="([0-9]+)"/.exec(spec.svg);
+  assert.ok(imageWidthMatch, 'expected embedded image sizing');
+  const [, imageWidthText, imageHeightText] = imageWidthMatch;
+  const imageWidth = Number.parseInt(imageWidthText, 10);
+  const imageHeight = Number.parseInt(imageHeightText, 10);
+  assert.ok(imageWidth > imageHeight * 2.5, `expected wide embedded custom image, got ${imageWidth}x${imageHeight}`);
+});
+
 test('image route quality badge streaming logos can render from iconUrl fallback', () => {
   const iconUrl =
     'data:image/svg+xml;base64,' +

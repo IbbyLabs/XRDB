@@ -1,5 +1,17 @@
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
+const resolveQualityBadgeMaxHeight = ({
+  referenceBadgeHeight,
+  layout,
+}: {
+  referenceBadgeHeight: number;
+  layout: 'row' | 'column';
+}) => {
+  const normalizedReferenceHeight = Math.max(40, Math.round(referenceBadgeHeight));
+  const maxMultiplier = layout === 'column' ? 2.05 : 2.1;
+  return Math.max(200, Math.round(normalizedReferenceHeight * maxMultiplier));
+};
+
 export const resolveQualityBadgeHeight = ({
   referenceBadgeHeight,
   qualityBadgeScalePercent,
@@ -14,10 +26,12 @@ export const resolveQualityBadgeHeight = ({
     layout === 'column'
       ? Math.round(referenceBadgeHeight * 1.0 * qualityBadgeScaleRatio)
       : Math.round(referenceBadgeHeight * 1.02 * qualityBadgeScaleRatio);
+  const maxHeight = resolveQualityBadgeMaxHeight({
+    referenceBadgeHeight,
+    layout,
+  });
 
-  return layout === 'column'
-    ? clamp(preferredHeight, 40, 200)
-    : clamp(preferredHeight, 40, 200);
+  return clamp(preferredHeight, 40, maxHeight);
 };
 
 export const resolveQualityBadgeGap = ({
