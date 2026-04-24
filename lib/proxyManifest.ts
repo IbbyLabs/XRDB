@@ -6,6 +6,9 @@ type ProxyCorsContext = {
   allowedOriginsRaw?: string | null;
 };
 
+const STORED_PROXY_REFERENCE_ID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 const normalizeManifestValueForFingerprint = (value: unknown): unknown => {
   if (Array.isArray(value)) {
     return value.map((entry) => normalizeManifestValueForFingerprint(entry));
@@ -29,10 +32,16 @@ const buildProxyManifestIdentitySeed = (
     configSeed?: string;
   },
 ) => {
+  const hasStoredProxyReferenceSeed =
+    typeof options?.configSeed === 'string' && STORED_PROXY_REFERENCE_ID_RE.test(options.configSeed);
   const sourceManifestFingerprint = JSON.stringify(
     normalizeManifestValueForFingerprint(manifest),
   );
-  const seedParts = [options?.configSeed, options?.catalogPlan, sourceManifestFingerprint].filter(
+  const seedParts = [
+    options?.configSeed,
+    options?.catalogPlan,
+    hasStoredProxyReferenceSeed ? null : sourceManifestFingerprint,
+  ].filter(
     (value): value is string => typeof value === 'string' && value.length > 0,
   );
   return seedParts.length > 0 ? seedParts.join('|') : undefined;

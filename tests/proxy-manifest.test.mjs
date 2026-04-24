@@ -70,6 +70,32 @@ test('buildProxyManifestPayload changes proxy identity when source manifest chan
   assert.notEqual(first.id, second.id);
 });
 
+test('buildProxyManifestPayload keeps UUID-backed proxy identity stable when source manifest changes', () => {
+  const options = {
+    configSeed: '123e4567-e89b-42d3-a456-426614174000',
+  };
+  const first = buildProxyManifestPayload(
+    {
+      id: 'source.addon',
+      name: 'Source Addon',
+      description: 'daily variant alpha',
+    },
+    'https://addon.example.com/manifest.json',
+    options,
+  );
+  const second = buildProxyManifestPayload(
+    {
+      id: 'source.addon',
+      name: 'Source Addon',
+      description: 'daily variant beta',
+    },
+    'https://addon.example.com/manifest.json',
+    options,
+  );
+
+  assert.equal(first.id, second.id);
+});
+
 test('buildProxyManifestPayload keeps proxy identity stable across manifest key order changes', () => {
   const first = buildProxyManifestPayload(
     {
