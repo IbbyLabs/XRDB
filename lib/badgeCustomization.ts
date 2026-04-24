@@ -789,6 +789,7 @@ export const encodeRatingProviderAppearanceOverrides = (
 
 export type QualityBadgeAppearanceOverride = {
   iconUrl?: string;
+  fullBadge?: boolean;
 };
 
 export type QualityBadgeAppearanceOverrides = Partial<Record<string, QualityBadgeAppearanceOverride>>;
@@ -804,7 +805,8 @@ export const normalizeQualityBadgeAppearanceOverrides = (
     const candidate = rawOverride as Record<string, unknown>;
     const iconUrl = typeof candidate.iconUrl === 'string' ? candidate.iconUrl.trim() : '';
     if (!iconUrl) return [];
-    return [[normalizedKey, { iconUrl }] as const];
+    const fullBadge = candidate.fullBadge === true ? true : undefined;
+    return [[normalizedKey, { iconUrl, ...(fullBadge !== undefined && { fullBadge }) }] as const];
   });
   return Object.fromEntries(normalizedEntries);
 };

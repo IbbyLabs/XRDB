@@ -1001,7 +1001,7 @@ if (input.qualityBadgeAppearanceOverrides) {
   streamBadges = streamBadges.map((badge) => {
     const override = overrides[String(badge.key)];
     if (!override?.iconUrl) return badge;
-    return { ...badge, iconUrl: override.iconUrl };
+    return { ...badge, iconUrl: override.iconUrl, ...(override.fullBadge && { fullBadge: true }) };
   });
 }
 if (shouldRenderRawKitsuFallbackRating) {

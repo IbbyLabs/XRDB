@@ -536,22 +536,39 @@ export function QualitySection({
               return (
                 <div key={`qb-icon-${option.id}`} className="grid grid-cols-[80px,1fr] items-center gap-2">
                   <span className="text-[11px] text-zinc-400 truncate">{option.label}</span>
-                  <input
-                    type="url"
-                    value={override?.iconUrl || ''}
-                    onChange={(event) => {
-                      const url = event.target.value.trim();
-                      const next = { ...qualityBadgeAppearanceOverrides };
-                      if (url) {
-                        next[option.id] = { iconUrl: url };
-                      } else {
-                        delete next[option.id];
-                      }
-                      onUpdateQualityBadgeAppearanceOverride(next);
-                    }}
-                    placeholder="https://... or data:image/..."
-                    className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
-                  />
+                  <div className="flex flex-col gap-1">
+                    <input
+                      type="url"
+                      value={override?.iconUrl || ''}
+                      onChange={(event) => {
+                        const url = event.target.value.trim();
+                        const next = { ...qualityBadgeAppearanceOverrides };
+                        if (url) {
+                          next[option.id] = { ...override, iconUrl: url };
+                        } else {
+                          delete next[option.id];
+                        }
+                        onUpdateQualityBadgeAppearanceOverride(next);
+                      }}
+                      placeholder="https://... or data:image/..."
+                      className="w-full bg-black border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
+                    />
+                    {override?.iconUrl ? (
+                      <label className="flex items-center gap-1.5 cursor-pointer select-none w-fit">
+                        <input
+                          type="checkbox"
+                          checked={override.fullBadge ?? false}
+                          onChange={(event) => {
+                            const next = { ...qualityBadgeAppearanceOverrides };
+                            next[option.id] = { ...override, fullBadge: event.target.checked || undefined };
+                            onUpdateQualityBadgeAppearanceOverride(next);
+                          }}
+                          className="accent-violet-500"
+                        />
+                        <span className="text-[10px] text-zinc-500">Use as full badge</span>
+                      </label>
+                    ) : null}
+                  </div>
                 </div>
               );
             })}
