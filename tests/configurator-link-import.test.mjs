@@ -9,7 +9,7 @@ import {
 
 test('parseConfiguratorLinkImport imports settings from shared logo URL', () => {
   const parsed = parseConfiguratorLinkImport(
-    'https://xrdb.ibbylabs.dev//logo/%7Bimdb_id%7D.jpg?logoRatingsMax=6&logoRatings=myanimelist,anilist,kitsu,rogerebert,metacritic,letterboxd,tomatoesaudience&ratingValueMode=native&tmdbKey={tmdb_key}&mdblistKey={mdblist_key}',
+    'https://extendedratings.com//logo/%7Bimdb_id%7D.jpg?logoRatingsMax=6&logoRatings=myanimelist,anilist,kitsu,rogerebert,metacritic,letterboxd,tomatoesaudience&ratingValueMode=native&tmdbKey={tmdb_key}&mdblistKey={mdblist_key}',
   );
 
   assert.ok(parsed);

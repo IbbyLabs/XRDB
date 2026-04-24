@@ -117,7 +117,7 @@ test('README preview target URLs inject the dedicated keys server side', () => {
   assert.ok(definition);
 
   const url = buildReadmePreviewTargetUrl({
-    origin: 'https://xrdb.ibbylabs.dev',
+    origin: 'https://extendedratings.com',
     definition,
     tmdbKey: 'tmdb-preview-key',
     mdblistKey: 'mdblist-preview-key',
@@ -126,7 +126,7 @@ test('README preview target URLs inject the dedicated keys server side', () => {
 
   assert.equal(
     url.toString(),
-    'https://xrdb.ibbylabs.dev/poster/mal%3A16498.jpg?tmdbKey=tmdb-preview-key&mdblistKey=mdblist-preview-key&lang=ja&posterRatings=tmdb%2Cmyanimelist%2Canilist%2Ckitsu&posterRatingsLayout=top+bottom&posterStreamBadges=off&ratingStyle=glass&imageText=original&cb=preview123'
+    'https://extendedratings.com/poster/mal%3A16498.jpg?tmdbKey=tmdb-preview-key&mdblistKey=mdblist-preview-key&lang=ja&posterRatings=tmdb%2Cmyanimelist%2Canilist%2Ckitsu&posterRatingsLayout=top+bottom&posterStreamBadges=off&ratingStyle=glass&imageText=original&cb=preview123'
   );
 });
 
@@ -135,7 +135,7 @@ test('README preview target URLs omit tmdbKey when the server credential stays s
   assert.ok(definition);
 
   const url = buildReadmePreviewTargetUrl({
-    origin: 'https://xrdb.ibbylabs.dev',
+    origin: 'https://extendedratings.com',
     definition,
     tmdbKey: '',
     mdblistKey: 'mdblist-preview-key',
@@ -144,14 +144,14 @@ test('README preview target URLs omit tmdbKey when the server credential stays s
 
   assert.equal(
     url.toString(),
-    'https://xrdb.ibbylabs.dev/poster/mal%3A16498.jpg?mdblistKey=mdblist-preview-key&lang=ja&posterRatings=tmdb%2Cmyanimelist%2Canilist%2Ckitsu&posterRatingsLayout=top+bottom&posterStreamBadges=off&ratingStyle=glass&imageText=original&cb=preview123'
+    'https://extendedratings.com/poster/mal%3A16498.jpg?mdblistKey=mdblist-preview-key&lang=ja&posterRatings=tmdb%2Cmyanimelist%2Canilist%2Ckitsu&posterRatingsLayout=top+bottom&posterStreamBadges=off&ratingStyle=glass&imageText=original&cb=preview123'
   );
 });
 
 test('README preview origin prefers the preview app origin when configured', () => {
   assert.equal(
     resolveReadmePreviewOrigin({
-      requestOrigin: 'https://xrdb.ibbylabs.dev',
+      requestOrigin: 'https://extendedratings.com',
       previewOrigin: 'http://127.0.0.1:3000/',
     }),
     'http://127.0.0.1:3000/'
@@ -159,39 +159,39 @@ test('README preview origin prefers the preview app origin when configured', () 
 
   assert.equal(
     resolveReadmePreviewOrigin({
-      requestOrigin: 'https://xrdb.ibbylabs.dev',
+      requestOrigin: 'https://extendedratings.com',
       previewOrigin: 'not a url',
     }),
-    'https://xrdb.ibbylabs.dev/'
+    'https://extendedratings.com/'
   );
 });
 
 test('README preview origins fall back through the container bind host before the public origin', () => {
   assert.deepEqual(
     resolveReadmePreviewOrigins({
-      requestOrigin: 'https://xrdb.ibbylabs.dev',
+      requestOrigin: 'https://extendedratings.com',
       previewOrigin: 'http://127.0.0.1:3000/',
       bindHost: 'b31b3ce79adc',
       port: '3000',
     }),
-    ['http://127.0.0.1:3000/', 'http://b31b3ce79adc:3000/', 'https://xrdb.ibbylabs.dev/']
+    ['http://127.0.0.1:3000/', 'http://b31b3ce79adc:3000/', 'https://extendedratings.com/']
   );
 
   assert.deepEqual(
     resolveReadmePreviewOrigins({
-      requestOrigin: 'https://xrdb.ibbylabs.dev',
+      requestOrigin: 'https://extendedratings.com',
       previewOrigin: 'http://127.0.0.1:3000/',
       bindHost: '0.0.0.0',
       port: '3000',
     }),
-    ['http://127.0.0.1:3000/', 'https://xrdb.ibbylabs.dev/']
+    ['http://127.0.0.1:3000/', 'https://extendedratings.com/']
   );
 });
 
 test('README preview origins accept the legacy internal-origin alias and can disable public-origin fallback', () => {
   assert.deepEqual(
     resolveReadmePreviewOrigins({
-      requestOrigin: 'https://xrdb.ibbylabs.dev',
+      requestOrigin: 'https://extendedratings.com',
       previewOriginAlias: 'http://127.0.0.1:3000/',
       includeRequestOriginFallback: false,
     }),
@@ -200,7 +200,7 @@ test('README preview origins accept the legacy internal-origin alias and can dis
 
   assert.deepEqual(
     resolveReadmePreviewOrigins({
-      requestOrigin: 'https://xrdb.ibbylabs.dev',
+      requestOrigin: 'https://extendedratings.com',
       includeRequestOriginFallback: false,
     }),
     []
