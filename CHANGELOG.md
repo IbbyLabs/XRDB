@@ -126,6 +126,67 @@
 
 <a id="v1-23-0"></a>
 
+<a id="v1-23-1"></a>
+
+## [v1.23.1] - 24/04/2026
+
+### Fixed
+* BUG-122 isolate black bar overlay by artwork type
+  
+  Fixes a state coupling bug where Black Bar Overlay toggles in one artwork type were affecting other types.
+  
+  • Replace the single shared black bar state with three independent states for poster, backdrop, and thumbnail.
+  • Update Appearance panel toggle wiring so it reads and writes only the currently active preview type.
+  • Update runtime preview/output derivation to use the active type’s black bar flag instead of a global value.
+  • Update saved config application so legacy blackbar artwork source values restore black bar state per type, not globally.
+  • Preserve existing renderer behavior and request semantics while removing cross type bleed.
+* BUG-121 enforce regional translation paths across proxy and poster rendering
+  
+  • preserve requested regional locale behavior when metadata translation runs in default mode
+  • add TMDB regional alias fallback so es MX can use es 419 entries when exact regional entries are absent
+  • keep es ES strict so Spain locale does not incorrectly consume es 419 LATAM entries
+  • propagate localized TMDB genre names into metadata and badge label selection so genre text localizes correctly
+  • prefer localized TMDB details title for clean poster branding overlay text instead of base media payload title
+* BUG-120 preserve quality badge placement across release status style changes
+  
+  Ensure explicit poster quality badge placement is always serialized when set, so placement intent survives unrelated style changes. This prevents fallback to auto placement that made quality badges appear to jump when cycling release status style options.
+  
+  • update configurator output query generation to always emit posterQualityBadgesPosition when value is not auto
+  • decouple placement persistence from placement control visibility gating
+  • preserve existing behavior for qualityBadgesSide and all rendering logic outside this persistence path
+  • scope limited to configurator URL/state output stability for poster quality badge placement
+* BUG-119 unify custom quality badge full surface rendering and icon fetch reliability
+  
+  • Add fullBadge support to quality badge appearance overrides and preserve it through normalization, encoding, parsing, and prepared media mapping.
+  • Add configurator support for per badge full badge mode with a dedicated Use as full badge toggle.
+  • Render full badge overrides as image only surfaces so custom artwork is shown without embedded text or nested default badge chrome.
+  • Ensure custom quality badge icon resolution uses the quality badge resolver path and supports SVG rasterization to PNG via sharp, with safe fallback to raw data URIs.
+  • Add optional request headers to safe redirected fetches and pass a browser like User Agent for provider and quality badge icon fetches.
+  • Fix CDN and Wikimedia style 403 fetch failures that previously caused icon resolution to return null and silently disable full badge rendering.
+  • Harden quality badge rendering to resolve icon sources from either iconDataUri or pre resolved iconUrl data URIs so behavior is consistent across all quality badge styles.
+  • Keep streaming logo and intrinsic width behavior aligned with the same resolved icon source logic across glass, square, plain, media, silver, tile, and community badge paths.
+* BUG-118 prevent compact ring overlap with age rating and grouped badges
+  
+  Move compact ring collision resolution to the end of poster rendering so placement is based on all rendered badge overlays, not only detached age rating overlays.
+  
+  • replace the age only compact ring avoidance path with generic collision avoidance against tracked blocked rectangles
+  • keep detached age rating overlay computation shared for both rendering and collision inputs to avoid drift between geometry and output
+  • preserve right edge compact ring anchoring while applying vertical repositioning to the first non overlapping slot
+  • ensure grouped mode and explicit age rating anchors both avoid compact ring overlap with top badge rows and quality badge stacks
+  • keep genre collision tracking behavior intact by adding the resolved compact ring rectangle after final placement
+  • add renderer regression coverage validating compact ring relocation when a detached age rating occupies the same corner
+* BUG-117 restore genre badge position control for tile dark style
+  
+  The configurator was hiding Genre Badge Position when the genre badge style was tile or clean.
+  Tile style still supports position state and rendering, so this created a style specific UI regression where users could not reposition badges directly.
+  
+  This change narrows the visibility gate so the position control is hidden only for clean style.
+  Tile dark now keeps the position controls visible, matching behavior across other styles and removing the style switch workaround.
+
+### Documentation
+* refresh static doc assets
+* updated README.md to remove redundant note.
+
 ## [v1.23.0] - 23/04/2026
 
 ### Added
