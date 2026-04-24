@@ -187,6 +187,9 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   ratingProviderAppearanceOverrides: WorkspaceSettings['ratingProviderAppearanceOverrides'];
   ratingValueMode: WorkspaceSettings['ratingValueMode'];
   qualityBadgeAppearanceOverrides: WorkspaceSettings['qualityBadgeAppearanceOverrides'];
+  posterRatingBlackStripEnabled: boolean;
+  backdropRatingBlackStripEnabled: boolean;
+  thumbnailRatingBlackStripEnabled: boolean;
   setAggregateAccentBarOffset: Setter<WorkspaceSettings['aggregateAccentBarOffset']>;
   setAggregateAccentBarVisible: Setter<WorkspaceSettings['aggregateAccentBarVisible']>;
   setAggregateAccentColor: Setter<WorkspaceSettings['aggregateAccentColor']>;
@@ -544,6 +547,9 @@ export function useConfiguratorWorkspaceConfigIo({
   ratingProviderAppearanceOverrides,
   qualityBadgeAppearanceOverrides,
   ratingValueMode,
+  posterRatingBlackStripEnabled,
+  backdropRatingBlackStripEnabled,
+  thumbnailRatingBlackStripEnabled,
   setAggregateAccentBarOffset,
   setAggregateAccentBarVisible,
   setAggregateAccentColor,
@@ -1089,9 +1095,20 @@ export function useConfiguratorWorkspaceConfigIo({
   );
 
   const buildCurrentUiConfig = useCallback(
-    (): SavedUiConfig => ({
-      version: 1,
-      settings: {
+    (): SavedUiConfig => {
+      const effectivePosterArtworkSource = posterRatingBlackStripEnabled
+        ? 'blackbar'
+        : posterArtworkSource;
+      const effectiveBackdropArtworkSource = backdropRatingBlackStripEnabled
+        ? 'blackbar'
+        : backdropArtworkSource;
+      const effectiveThumbnailArtworkSource = thumbnailRatingBlackStripEnabled
+        ? 'blackbar'
+        : thumbnailArtworkSource;
+
+      return {
+        version: 1,
+        settings: {
         xrdbKey: xrdbKey.trim(),
         tmdbKey: tmdbKey.trim(),
         tmdbIdScope,
@@ -1111,9 +1128,9 @@ export function useConfiguratorWorkspaceConfigIo({
         posterImageText,
         backdropImageText,
         thumbnailImageText,
-        posterArtworkSource,
-        backdropArtworkSource,
-        thumbnailArtworkSource,
+        posterArtworkSource: effectivePosterArtworkSource,
+        backdropArtworkSource: effectiveBackdropArtworkSource,
+        thumbnailArtworkSource: effectiveThumbnailArtworkSource,
         thumbnailEpisodeArtwork,
         backdropEpisodeArtwork,
         ratingValueMode,
@@ -1261,17 +1278,18 @@ export function useConfiguratorWorkspaceConfigIo({
         logoArtworkSource,
         ratingProviderAppearanceOverrides,
         qualityBadgeAppearanceOverrides,
-      },
-      proxy: {
-        manifestUrl: normalizeManifestUrl(proxyManifestUrl, true),
-        translateMeta: proxyTranslateMeta,
-        translateMetaMode: proxyTranslateMetaMode,
-        debugMetaTranslation: proxyDebugMetaTranslation,
-        proxyTypes,
-        episodeIdMode,
-        catalogRules: proxyCatalogRules,
-      },
-    }),
+        },
+        proxy: {
+          manifestUrl: normalizeManifestUrl(proxyManifestUrl, true),
+          translateMeta: proxyTranslateMeta,
+          translateMetaMode: proxyTranslateMetaMode,
+          debugMetaTranslation: proxyDebugMetaTranslation,
+          proxyTypes,
+          episodeIdMode,
+          catalogRules: proxyCatalogRules,
+        },
+      };
+    },
     [
       aggregateAccentBarOffset,
       aggregateAccentBarVisible,
@@ -1308,6 +1326,7 @@ export function useConfiguratorWorkspaceConfigIo({
       backdropRatingsLayout,
       backdropRatingsMax,
       backdropBottomRatingsRow,
+      backdropRatingBlackStripEnabled,
       backdropSideRatingsOffset,
       backdropSideRatingsPosition,
       backdropStreamBadges,
@@ -1334,6 +1353,7 @@ export function useConfiguratorWorkspaceConfigIo({
       thumbnailRatingStyle,
       thumbnailRatingsLayout,
       thumbnailRatingsMax,
+      thumbnailRatingBlackStripEnabled,
       thumbnailSideRatingsOffset,
       thumbnailSideRatingsPosition,
       thumbnailStreamBadges,
@@ -1404,6 +1424,7 @@ export function useConfiguratorWorkspaceConfigIo({
       posterRatingsLayout,
       posterRatingsMax,
       posterRatingsMaxPerSide,
+      posterRatingBlackStripEnabled,
       posterSideRatingsOffset,
       posterSideRatingsPosition,
       posterStreamBadges,
