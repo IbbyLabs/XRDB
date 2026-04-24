@@ -1192,7 +1192,7 @@ export function MediaTargetSection({
             />
           )}
           {showSearchDropdown ? (
-            <div className="absolute z-20 mt-1 max-h-72 w-full overflow-y-auto rounded-lg border border-white/10 bg-zinc-950/95 p-1 shadow-2xl shadow-black/50">
+            <div className="absolute left-0 z-20 mt-1 max-h-72 w-full max-w-[calc(100vw-2rem)] overflow-y-auto rounded-lg border border-white/10 bg-zinc-950/95 p-1 shadow-2xl shadow-black/50 md:w-[26rem]">
               {mediaSearchLoading ? (
                 <div className="rounded-md px-2.5 py-2 text-[11px] text-zinc-400">Searching titles</div>
               ) : (
@@ -1220,9 +1220,9 @@ export function MediaTargetSection({
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-[12px] font-semibold text-zinc-100">{result.title}</div>
+                        <div className="text-[12px] font-semibold text-zinc-100 break-words">{result.title}</div>
                         <div className="mt-0.5 text-[11px] text-zinc-500">{result.subtitle}</div>
-                        <div className="mt-1 truncate font-mono text-[10px] text-zinc-400">{result.mediaId}</div>
+                        <div className="mt-1 font-mono text-[10px] text-zinc-400 break-all">{result.mediaId}</div>
                       </div>
                     </button>
                     <button
