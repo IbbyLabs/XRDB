@@ -68,6 +68,33 @@ type PosterIdMode = 'auto' | 'tmdb' | 'imdb';
 type ExportEpisodeIdMode = AiometadataEpisodeIdMode;
 type PreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 
+const PUBLIC_AIOMETADATA_INSTANCES = [
+  { name: 'AIOMetadata (Midnight)', baseUrl: 'https://aiometadatafortheweebs.midnightignite.me' },
+  { name: 'AIOMetadata (Kuu)', baseUrl: 'https://aiometadata.stremio.ru' },
+  { name: 'AIOMetadata (Viren)', baseUrl: 'https://aiometadata.viren070.me' },
+  { name: 'AIOMetadata (Yeb)', baseUrl: 'https://aiometadata.fortheweak.cloud' },
+  { name: 'AIOMetadata (Nhyira)', baseUrl: 'https://aiometadatafortheweak.nhyira.dev' },
+  { name: 'AIOMetadata (ElfHosted)', baseUrl: 'https://aiometadata.elfhosted.com' },
+  { name: 'AIOMetadata (Omni)', baseUrl: 'https://aiometadata.12312023.xyz' },
+  { name: 'AIOMetadata (ATBP)', baseUrl: 'https://aiomd.atbphosting.com' },
+] as const;
+
+const PUBLIC_AIOMETADATA_BASE_URLS = new Set(
+  PUBLIC_AIOMETADATA_INSTANCES.map((instance) => instance.baseUrl.toLowerCase()),
+);
+
+const normalizeRepairBaseUrl = (value: string): string | null => {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  try {
+    const parsed = new URL(trimmed);
+    if (!/^https?:$/.test(parsed.protocol)) return null;
+    return `${parsed.protocol}//${parsed.host}`.toLowerCase();
+  } catch {
+    return null;
+  }
+};
+
 
 
 const EPISODE_ARTWORK_MODE_OPTIONS: Array<{
@@ -397,6 +424,9 @@ function AiometadataSection({
   const [configCopiedAll, setConfigCopiedAll] = useState(false);
   const configCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [repairBaseUrl, setRepairBaseUrl] = useState('https://aiometadata.elfhosted.com');
+  const repairBaseFieldRef = useRef<HTMLDivElement | null>(null);
+  const repairBaseInputRef = useRef<HTMLInputElement | null>(null);
+  const [repairBaseOptionsOpen, setRepairBaseOptionsOpen] = useState(false);
   const [repairProfileId, setRepairProfileId] = useState('');
   const [repairPassword, setRepairPassword] = useState('');
   const [repairAddonPassword, setRepairAddonPassword] = useState('');
@@ -405,6 +435,50 @@ function AiometadataSection({
     tone: 'success' | 'error' | 'neutral';
     message: string;
   } | null>(null);
+  const repairBaseUrlNormalized = normalizeRepairBaseUrl(repairBaseUrl);
+  const isPublicAiometadataInstance = Boolean(
+    repairBaseUrlNormalized && PUBLIC_AIOMETADATA_BASE_URLS.has(repairBaseUrlNormalized),
+  );
+  const repairBaseSearch = repairBaseUrl.trim().toLowerCase();
+  const repairBaseOptions = isPublicAiometadataInstance || !repairBaseSearch
+    ? PUBLIC_AIOMETADATA_INSTANCES
+    : PUBLIC_AIOMETADATA_INSTANCES.filter((instance) => (
+      instance.name.toLowerCase().includes(repairBaseSearch)
+      || instance.baseUrl.toLowerCase().includes(repairBaseSearch)
+    ));
+
+  useEffect(() => {
+    if (!repairBaseOptionsOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (repairBaseFieldRef.current?.contains(target)) return;
+      setRepairBaseOptionsOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setRepairBaseOptionsOpen(false);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [repairBaseOptionsOpen]);
+
+  const handleSelectRepairBaseUrl = useCallback((value: string) => {
+    setRepairBaseUrl(value);
+    setRepairBaseOptionsOpen(false);
+    requestAnimationFrame(() => {
+      repairBaseInputRef.current?.focus();
+    });
+  }, []);
 
   const getDisplayValue = useCallback(
     (value: string) =>
@@ -456,7 +530,7 @@ function AiometadataSection({
           baseUrl: repairBaseUrl,
           userUUID: repairProfileId,
           password: repairPassword,
-          addonPassword: repairAddonPassword,
+          addonPassword: isPublicAiometadataInstance ? '' : repairAddonPassword,
         }),
       });
       const payload = await res.json().catch(() => null) as {
@@ -488,7 +562,7 @@ function AiometadataSection({
     } finally {
       setRepairPending(false);
     }
-  }, [repairAddonPassword, repairBaseUrl, repairPassword, repairProfileId]);
+  }, [isPublicAiometadataInstance, repairAddonPassword, repairBaseUrl, repairPassword, repairProfileId]);
 
   const isCopiedAll = aiometadataUrlMode === 'config' ? configCopiedAll : aiometadataCopied;
 
@@ -569,13 +643,67 @@ function AiometadataSection({
         <div className="grid gap-2 md:grid-cols-2">
           <label className="space-y-1">
             <span className="text-[11px] text-zinc-400">AIOMetadata base URL</span>
-            <input
-              type="url"
-              value={repairBaseUrl}
-              onChange={(event) => setRepairBaseUrl(event.target.value)}
-              placeholder="https://aiometadata.elfhosted.com"
-              className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-[12px] text-zinc-100 outline-none transition focus:border-violet-500/60"
-            />
+            <div className="relative" ref={repairBaseFieldRef}>
+              <input
+                ref={repairBaseInputRef}
+                type="url"
+                value={repairBaseUrl}
+                onFocus={() => setRepairBaseOptionsOpen(true)}
+                onChange={(event) => {
+                  setRepairBaseUrl(event.target.value);
+                  setRepairBaseOptionsOpen(true);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    setRepairBaseOptionsOpen(true);
+                  }
+                }}
+                placeholder="https://aiometadata.elfhosted.com"
+                className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 pr-10 text-[12px] text-zinc-100 outline-none transition focus:border-violet-500/60"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setRepairBaseOptionsOpen((open) => !open);
+                  requestAnimationFrame(() => {
+                    repairBaseInputRef.current?.focus();
+                  });
+                }}
+                aria-label="Toggle public AIOMetadata instances"
+                className="absolute inset-y-0 right-0 flex w-9 items-center justify-center text-zinc-400 transition hover:text-white"
+              >
+                <ChevronDown className={`h-4 w-4 transition-transform ${repairBaseOptionsOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {repairBaseOptionsOpen && (
+                <div className="absolute left-0 right-0 top-full z-30 mt-1 overflow-hidden rounded-xl border border-white/10 bg-zinc-950 shadow-xl shadow-black/40">
+                  <div className="max-h-52 overflow-y-auto p-1">
+                    {repairBaseOptions.length ? (
+                      repairBaseOptions.map((instance) => {
+                        const isSelected = repairBaseUrlNormalized === instance.baseUrl.toLowerCase();
+                        return (
+                          <button
+                            key={instance.baseUrl}
+                            type="button"
+                            onClick={() => handleSelectRepairBaseUrl(instance.baseUrl)}
+                            className={`flex w-full flex-col items-start gap-0.5 rounded-lg px-2.5 py-2 text-left transition ${
+                              isSelected
+                                ? 'bg-violet-500/20 text-violet-100'
+                                : 'text-zinc-300 hover:bg-zinc-900 hover:text-white'
+                            }`}
+                          >
+                            <span className="text-[11px] font-semibold leading-4">{instance.name}</span>
+                            <span className="text-[11px] leading-4 text-zinc-500">{instance.baseUrl}</span>
+                          </button>
+                        );
+                      })
+                    ) : (
+                      <div className="px-2.5 py-2 text-[11px] text-zinc-500">No matching public instances.</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </label>
           <label className="space-y-1">
             <span className="text-[11px] text-zinc-400">AIOMetadata UUID</span>
@@ -597,16 +725,18 @@ function AiometadataSection({
               className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-[12px] text-zinc-100 outline-none transition focus:border-violet-500/60"
             />
           </label>
-          <label className="space-y-1">
-            <span className="text-[11px] text-zinc-400">Addon password</span>
-            <input
-              type="password"
-              value={repairAddonPassword}
-              onChange={(event) => setRepairAddonPassword(event.target.value)}
-              placeholder="Only if the AIOMetadata instance requires it"
-              className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-[12px] text-zinc-100 outline-none transition focus:border-violet-500/60"
-            />
-          </label>
+          {!isPublicAiometadataInstance && (
+            <label className="space-y-1">
+              <span className="text-[11px] text-zinc-400">Addon password</span>
+              <input
+                type="password"
+                value={repairAddonPassword}
+                onChange={(event) => setRepairAddonPassword(event.target.value)}
+                placeholder="Only if the AIOMetadata instance requires it"
+                className="w-full rounded-xl border border-white/10 bg-zinc-950 px-3 py-2 text-[12px] text-zinc-100 outline-none transition focus:border-violet-500/60"
+              />
+            </label>
+          )}
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <button
