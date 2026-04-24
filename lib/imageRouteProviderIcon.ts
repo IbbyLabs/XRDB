@@ -1,5 +1,6 @@
 import { PROVIDER_ICON_CACHE_TTL_MS } from './imageRouteConfig.ts';
 import { assertSafeSourceUrl, fetchWithOneRedirect } from './networkSecurity.ts';
+import { BROWSER_LIKE_USER_AGENT } from './imageRouteExternalRatings.ts';
 import { withDedupe } from './imageRouteRuntime.ts';
 import { buildProviderIconMemoryCacheKey } from './imageRouteSourceUrls.ts';
 
@@ -65,7 +66,7 @@ export const createProviderIconDataUriResolver = ({
 
       try {
         const safeIconUrl = await assertSafeSourceUrlImpl(normalizedIconUrl);
-        const response = await fetchSafeIconImpl(safeIconUrl.toString());
+        const response = await fetchSafeIconImpl(safeIconUrl.toString(), undefined, { 'User-Agent': BROWSER_LIKE_USER_AGENT });
         if (!response.ok) return null;
 
         const sourceBuffer = Buffer.from(await response.arrayBuffer());

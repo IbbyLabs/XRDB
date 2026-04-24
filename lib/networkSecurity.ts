@@ -231,10 +231,12 @@ type UndiciRequestFn = (
 export const fetchWithOneRedirect = async (
   url: string,
   _undiciRequest: UndiciRequestFn = undiciRequest as UndiciRequestFn,
+  requestHeaders?: Record<string, string>,
 ): Promise<Response> => {
   const first = await _undiciRequest(url, {
     dispatcher: getSafeSourceDispatcher(),
     maxRedirections: 0,
+    ...(requestHeaders && { headers: requestHeaders }),
   });
 
   if (!REDIRECT_STATUS_CODES.has(first.statusCode)) {
@@ -255,6 +257,7 @@ export const fetchWithOneRedirect = async (
   const final = await _undiciRequest(resolvedLocation, {
     dispatcher: getSafeSourceDispatcher(),
     maxRedirections: 0,
+    ...(requestHeaders && { headers: requestHeaders }),
   });
   if (REDIRECT_STATUS_CODES.has(final.statusCode)) {
     await final.body.dump();

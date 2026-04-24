@@ -236,3 +236,53 @@ test('image route quality badge bold compensation scales with badge height', asy
     assert.ok(spec.width >= 145, `glass Digital Release at h=${height} width ${spec.width}`);
   }
 });
+
+test('image route quality badge fullBadge renders from iconUrl data URI across styles', () => {
+  const iconUrl =
+    'data:image/svg+xml;base64,' +
+    Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#111827"/></svg>',
+    ).toString('base64');
+
+  for (const style of ['glass', 'square', 'plain', 'media', 'silver', 'tile', 'community-badge']) {
+    const spec = buildQualityBadgeSvg(
+      {
+        key: 'appletvplus',
+        label: 'Apple TV Plus',
+        iconUrl,
+        fullBadge: true,
+      },
+      44,
+      undefined,
+      style,
+    );
+
+    assert.ok(spec, `${style} should return a badge spec`);
+    assert.match(spec.svg, /<image /, `${style} should render image`);
+    assert.ok(!spec.svg.includes('APPLE TV PLUS'), `${style} should not render text when fullBadge is enabled`);
+  }
+});
+
+test('image route quality badge streaming logos can render from iconUrl fallback', () => {
+  const iconUrl =
+    'data:image/svg+xml;base64,' +
+    Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><rect width="24" height="24" rx="6" fill="#E50914"/></svg>',
+    ).toString('base64');
+
+  const spec = buildQualityBadgeSvg(
+    {
+      key: 'netflix',
+      label: 'Netflix',
+      accentColor: '#e50914',
+      iconUrl,
+    },
+    44,
+    undefined,
+    'glass',
+  );
+
+  assert.ok(spec);
+  assert.match(spec.svg, /<image /);
+  assert.match(spec.svg, /NETFLIX/);
+});

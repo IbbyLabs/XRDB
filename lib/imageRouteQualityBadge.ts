@@ -28,8 +28,22 @@ export type QualityBadgeInput = {
   communityBadgeTheme?: CommunityBadgeTheme;
   styleOverride?: QualityBadgeStyle;
   iconDataUri?: string | null;
+  iconUrl?: string;
   noBackgroundOutlineColor?: string;
   noBackgroundOutlineWidth?: number;
+  fullBadge?: boolean;
+};
+
+const resolveBadgeDataUri = (badge: Pick<QualityBadgeInput, 'iconDataUri' | 'iconUrl'>) => {
+  const iconDataUri = typeof badge.iconDataUri === 'string' ? badge.iconDataUri.trim() : '';
+  if (iconDataUri.startsWith('data:')) {
+    return iconDataUri;
+  }
+  const iconUrlDataUri = typeof badge.iconUrl === 'string' ? badge.iconUrl.trim() : '';
+  if (iconUrlDataUri.startsWith('data:')) {
+    return iconUrlDataUri;
+  }
+  return null;
 };
 
 const parseHexColor = (value: string) => {
@@ -135,8 +149,12 @@ const buildCenteredProviderLogoImage = ({
 
 export const usesIntrinsicQualityBadgeWidths = (
   style: QualityBadgeStyle,
-  badge?: Pick<QualityBadgeInput, 'key' | 'iconDataUri' | 'styleOverride'>,
+  badge?: Pick<QualityBadgeInput, 'key' | 'iconDataUri' | 'iconUrl' | 'styleOverride' | 'fullBadge'>,
 ) => {
+  const badgeDataUri = badge ? resolveBadgeDataUri(badge) : null;
+  if (badge?.fullBadge && badgeDataUri) {
+    return true;
+  }
   const effectiveStyle = badge?.styleOverride ?? style;
   if (effectiveStyle === 'media' || effectiveStyle === 'silver' || effectiveStyle === 'tile' || effectiveStyle === 'community-badge') {
     return true;
@@ -146,8 +164,7 @@ export const usesIntrinsicQualityBadgeWidths = (
   }
   const hasStreamingServiceLogo =
     isStreamingServiceBadgeKey(String(badge.key)) &&
-    typeof badge.iconDataUri === 'string' &&
-    badge.iconDataUri.trim().startsWith('data:');
+    Boolean(badgeDataUri);
   return !(String(badge.key) in MEDIA_BADGE_ASSETS) && !hasStreamingServiceLogo;
 };
 
@@ -162,6 +179,17 @@ export const buildQualityBadgeSvg = (
     return null;
   }
   const effectiveStyle = badge.styleOverride ?? style;
+  const badgeDataUri = resolveBadgeDataUri(badge);
+
+  if (badge.fullBadge && badgeDataUri) {
+    const fullBadgeHeight = Math.max(32, Math.round(height * 0.9));
+    const fullBadgeWidth = widthOverride ?? fullBadgeHeight;
+    return {
+      width: fullBadgeWidth,
+      height: fullBadgeHeight,
+      svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${fullBadgeWidth}" height="${fullBadgeHeight}" viewBox="0 0 ${fullBadgeWidth} ${fullBadgeHeight}"><image href="${badgeDataUri}" x="0" y="0" width="${fullBadgeWidth}" height="${fullBadgeHeight}" preserveAspectRatio="xMidYMid meet" /></svg>`,
+    };
+  }
 
   const noBackgroundOutlineWidth =
     effectiveStyle === 'plain' && Number.isFinite(badge.noBackgroundOutlineWidth)
@@ -175,8 +203,7 @@ export const buildQualityBadgeSvg = (
     : '';
   const hasStreamingServiceLogo =
     isStreamingServiceBadgeKey(String(key)) &&
-    typeof badge.iconDataUri === 'string' &&
-    badge.iconDataUri.trim().startsWith('data:');
+    Boolean(badgeDataUri);
   const label = (normalizeUserFacingMediaBadgeLabel(badge.label) || '').toUpperCase();
   const releaseStatusWidthScale =
     key === 'releasestatus' && label === 'DIGITAL RELEASE' ? 0.84 : 1;
@@ -342,10 +369,7 @@ ${buildMediaPlate(width, {
     variant: 'media' | 'standard',
   ) => {
     const asset = MEDIA_BADGE_ASSETS[assetKey];
-    const customAssetDataUri =
-      typeof badge.iconDataUri === 'string' && badge.iconDataUri.trim().startsWith('data:')
-        ? badge.iconDataUri.trim()
-        : null;
+    const customAssetDataUri = badgeDataUri;
     const assetDataUri = customAssetDataUri ?? asset.dataUri;
     const assetAspectRatio = customAssetDataUri ? 1 : asset.aspectRatio;
     const assetHeightRatio = customAssetDataUri ? 0.62 : asset.heightRatio;
@@ -473,7 +497,7 @@ ${buildSilverQualityTextDefs('quality-badge-silver-text')}
       const iconOutlineDefs = `<defs><filter id="tile-provider-outline" x="-25%" y="-25%" width="150%" height="150%"><feMorphology in="SourceAlpha" operator="dilate" radius="${iconOutlineR}" result="exp"/><feComposite in="exp" in2="SourceAlpha" operator="out" result="ring"/><feFlood flood-color="#ffffff" flood-opacity="0.82" result="wht"/><feComposite in="wht" in2="ring" operator="in" result="outline"/><feMerge><feMergeNode in="outline"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
       return {
         width, height: h,
-        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">${iconOutlineDefs}<rect x="0" y="0" width="${width}" height="${h}" rx="${tileR}" fill="${TILE_BG}"/><path d="${platePath}" fill="${tileAccentColor}"/>${buildCenteredProviderLogoImage({ dataUri: badge.iconDataUri as string, x: iconX, y: iconY, size: iconSize, extraAttributes: 'filter="url(#tile-provider-outline)"' })}<text x="${textCx}" y="${Math.round(h * 0.64)}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="#f5f5f4">${escapeXml(label)}</text></svg>`,
+        svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${h}" viewBox="0 0 ${width} ${h}">${iconOutlineDefs}<rect x="0" y="0" width="${width}" height="${h}" rx="${tileR}" fill="${TILE_BG}"/><path d="${platePath}" fill="${tileAccentColor}"/>${buildCenteredProviderLogoImage({ dataUri: badgeDataUri as string, x: iconX, y: iconY, size: iconSize, extraAttributes: 'filter="url(#tile-provider-outline)"' })}<text x="${textCx}" y="${Math.round(h * 0.64)}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="#f5f5f4">${escapeXml(label)}</text></svg>`,
       };
     }
 
@@ -607,7 +631,7 @@ ${defs}
 ${backgroundMarkup}
 ${iconPlateMarkup}
 ${buildCenteredProviderLogoImage({
-  dataUri: badge.iconDataUri as string,
+  dataUri: badgeDataUri as string,
   x: iconX,
   y: iconY,
   size: iconSize,

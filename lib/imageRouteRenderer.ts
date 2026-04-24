@@ -127,6 +127,7 @@ export type RatingBadge = {
   valueOffsetX?: number;
   valueOffsetY?: number;
   variant?: 'standard' | 'minimal' | 'summary';
+  fullBadge?: boolean;
 };
 export type GenreBadgeSpec = {
   familyId: GenreBadgeFamilyId;
@@ -399,6 +400,7 @@ const getProviderIconDataUri = createProviderIconDataUriResolver({
 const getQualityBadgeIconDataUri = createQualityBadgeIconDataUriResolver({
   getMetadata,
   setMetadata,
+  getSharpFactory,
 });
 
 export { getQualityBadgeIconDataUri };
@@ -500,7 +502,7 @@ export const renderWithSharp = async (
         if (!normalizedIconUrl) {
           return badge;
         }
-        const iconDataUri = await getProviderIconDataUri(normalizedIconUrl);
+        const iconDataUri = await getQualityBadgeIconDataUri(normalizedIconUrl);
         return {
           ...badge,
           iconDataUri,
