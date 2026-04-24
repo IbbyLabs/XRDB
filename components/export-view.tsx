@@ -632,7 +632,7 @@ function AiometadataSection({
           </span>
         )}
       </div>
-      <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-3">
+      <div className="relative rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 space-y-3" style={{ zIndex: 30 }}>
         <div className="flex items-center gap-2 text-[12px] font-semibold text-amber-100">
           <RotateCcw className="w-3.5 h-3.5" />
           <span>Repair broken AIOMetadata profile</span>
@@ -641,7 +641,7 @@ function AiometadataSection({
           Repairs saved AIOMetadata custom art patterns when XRDB placeholders were persisted as percent-encoded tokens like %7Bimdb_id%7D. XRDB sends the repair request directly and does not store the credentials.
         </p>
         <div className="grid gap-2 md:grid-cols-2">
-          <label className="space-y-1">
+          <label className="space-y-1 md:col-span-2">
             <span className="text-[11px] text-zinc-400">AIOMetadata base URL</span>
             <div className="relative" ref={repairBaseFieldRef}>
               <input
@@ -693,7 +693,7 @@ function AiometadataSection({
                             }`}
                           >
                             <span className="text-[11px] font-semibold leading-4">{instance.name}</span>
-                            <span className="text-[11px] leading-4 text-zinc-500">{instance.baseUrl}</span>
+                            <span className="text-[11px] leading-4 text-zinc-500 break-all">{instance.baseUrl}</span>
                           </button>
                         );
                       })
