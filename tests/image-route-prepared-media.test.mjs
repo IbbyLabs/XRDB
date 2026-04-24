@@ -322,6 +322,160 @@ test('prepared media state keeps TV network badges when stream badges use the de
   );
 });
 
+test('prepared media state prefers localized TMDB details title for clean poster overlay text', async () => {
+  const state = await prepareImageRouteMediaState({
+    ...createBaseInput(),
+    imageType: 'poster',
+    posterTextPreference: 'clean',
+    mediaType: 'movie',
+    media: {
+      id: 680,
+      title: 'Tiempos violentos',
+      genres: [],
+    },
+    mediaId: '680',
+    isTmdb: true,
+    isKitsu: false,
+    idPrefix: 'tmdb',
+    useRawKitsuFallback: false,
+    rawFallbackImageUrl: null,
+    sourceFallbackUrl: null,
+    hasNativeAnimeInput: false,
+    allowAnimeOnlyRatings: false,
+    hasConfirmedAnimeMapping: false,
+    selectedRatings: new Set(['tmdb']),
+    requestedImageLang: 'es-MX',
+    includeImageLanguage: 'es,en,null',
+    fetchJsonCached: async (key) => {
+      if (key.includes(':details:es-MX:bundle:v2:es,en,null')) {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            title: 'Tiempos violentos MX',
+            vote_average: 8.8,
+            genres: [],
+            images: {
+              posters: [
+                { file_path: '/textless-poster.jpg', iso_639_1: null },
+              ],
+              backdrops: [],
+              logos: [],
+            },
+            external_ids: {},
+          },
+        };
+      }
+
+      if (key.includes(':details:en:bundle:v2:es,en,null')) {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            title: 'Pulp Fiction',
+            vote_average: 8.8,
+            genres: [],
+            images: {
+              posters: [],
+              backdrops: [],
+              logos: [],
+            },
+            external_ids: {},
+          },
+        };
+      }
+
+      if (key.endsWith(':images:all')) {
+        return {
+          ok: true,
+          status: 200,
+          data: { posters: [], backdrops: [], logos: [] },
+        };
+      }
+
+      throw new Error(`unexpected fetch for ${key}`);
+    },
+  });
+
+  assert.equal(state.posterTitleText, 'Tiempos violentos MX');
+});
+
+test('prepared media state uses localized TMDB genre labels for genre badges', async () => {
+  const state = await prepareImageRouteMediaState({
+    ...createBaseInput(),
+    imageType: 'poster',
+    mediaType: 'movie',
+    media: {
+      id: 77,
+      title: 'Genre sample',
+      genre_ids: [35],
+      genres: [{ id: 35, name: 'Comedy' }],
+    },
+    mediaId: '77',
+    isTmdb: true,
+    isKitsu: false,
+    idPrefix: 'tmdb',
+    hasNativeAnimeInput: false,
+    allowAnimeOnlyRatings: false,
+    hasConfirmedAnimeMapping: false,
+    genreBadgeMode: 'text',
+    genreBadgeStyle: 'glass',
+    useRawKitsuFallback: false,
+    rawFallbackImageUrl: null,
+    sourceFallbackUrl: null,
+    requestedImageLang: 'es-ES',
+    includeImageLanguage: 'es,en,null',
+    fetchJsonCached: async (key) => {
+      if (key.includes(':details:es-ES:bundle:v2:es,en,null')) {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            vote_average: 7.1,
+            genres: [{ id: 35, name: 'Comedia' }],
+            images: {
+              posters: [{ file_path: '/poster-es.jpg', iso_639_1: 'es' }],
+              backdrops: [],
+              logos: [],
+            },
+            external_ids: {},
+          },
+        };
+      }
+
+      if (key.includes(':details:en:bundle:v2:es,en,null')) {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            vote_average: 7.1,
+            genres: [{ id: 35, name: 'Comedy' }],
+            images: {
+              posters: [],
+              backdrops: [],
+              logos: [],
+            },
+            external_ids: {},
+          },
+        };
+      }
+
+      if (key.endsWith(':images:all')) {
+        return {
+          ok: true,
+          status: 200,
+          data: { posters: [], backdrops: [], logos: [] },
+        };
+      }
+
+      throw new Error(`unexpected fetch for ${key}`);
+    },
+  });
+
+  assert.equal(state.genreBadge?.familyId, 'comedy');
+  assert.equal(state.genreBadge?.label, 'Comedia');
+});
+
 test('prepared media state keeps the digital release status badge in quality badge output', async () => {
   const state = await prepareImageRouteMediaState({
     ...createBaseInput(),

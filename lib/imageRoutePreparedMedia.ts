@@ -103,6 +103,99 @@ const DEFAULT_DEPS: PreparedMediaDeps = {
   resolveImageRouteProviderRatings,
 };
 
+const GENRE_IDS_BY_FAMILY = {
+  anime: [],
+  animation: [16],
+  horror: [27],
+  comedy: [35],
+  romance: [10749],
+  action: [28, 12, 10752, 37, 10759],
+  scifi: [878, 10765],
+  fantasy: [14],
+  crime: [80, 53, 9648],
+  drama: [18],
+  documentary: [99],
+  music: [10402],
+  reality: [10764],
+  family: [10751],
+  history: [36],
+  kids: [10762],
+  news: [10763],
+  soap: [10766],
+  talk: [10767],
+  tvmovie: [10770],
+  warpolitics: [10768],
+  other: [],
+} as const;
+
+const normalizeGenreLabel = (value: unknown) => {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim();
+  return normalized || null;
+};
+
+const parseGenreId = (value: unknown) => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.trunc(value);
+  }
+  if (typeof value === 'string') {
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+};
+
+const collectGenreBadgeLabelCandidates = (
+  genres: Array<{ id?: number | null; name?: string | null } | string | null | undefined>,
+) =>
+  genres.flatMap((entry) => {
+    if (typeof entry === 'string') {
+      const name = normalizeGenreLabel(entry);
+      return name ? [{ id: null, name }] : [];
+    }
+    if (!entry || typeof entry !== 'object') {
+      return [];
+    }
+    const name = normalizeGenreLabel((entry as { name?: unknown }).name);
+    if (!name) {
+      return [];
+    }
+    return [{ id: parseGenreId((entry as { id?: unknown }).id), name }];
+  });
+
+const resolveLocalizedGenreBadgeLabel = ({
+  family,
+  genres,
+  genreIds,
+}: {
+  family: GenreBadgeFamilyMeta;
+  genres: Array<{ id?: number | null; name?: string | null } | string | null | undefined>;
+  genreIds: Array<number | string | null | undefined>;
+}) => {
+  const candidates = collectGenreBadgeLabelCandidates(genres);
+  if (candidates.length === 0) return family.label;
+
+  const familyGenreIds = new Set<number>(GENRE_IDS_BY_FAMILY[family.id]);
+  if (familyGenreIds.size > 0) {
+    const matchByGenreObjectId = candidates.find((entry) => entry.id !== null && familyGenreIds.has(entry.id));
+    if (matchByGenreObjectId) {
+      return matchByGenreObjectId.name;
+    }
+
+    const resolvedIds = new Set(
+      genreIds
+        .map((entry) => parseGenreId(entry))
+        .filter((entry): entry is number => entry !== null),
+    );
+    const hasFamilyId = [...familyGenreIds].some((entry) => resolvedIds.has(entry));
+    if (hasFamilyId) {
+      return candidates[0]?.name || family.label;
+    }
+  }
+
+  return candidates[0]?.name || family.label;
+};
+
 export type PreparedImageRouteMediaState = {
   allowAnimeOnlyRatings: boolean;
   hasConfirmedAnimeMapping: boolean;
@@ -295,15 +388,26 @@ const resolvePrimaryGenreFamily = (
     isAnimeContent: resolveIsAnimeContent(),
     animeGrouping: genreBadgeAnimeGrouping,
   });
-const buildResolvedGenreBadge = (
-  family: ReturnType<typeof resolvePrimaryGenreFamily>,
-): GenreBadgeSpec | null => {
+const buildResolvedGenreBadge = ({
+  family,
+  genres,
+  genreIds,
+}: {
+  family: ReturnType<typeof resolvePrimaryGenreFamily>;
+  genres: Array<{ id?: number | null; name?: string | null } | string | null | undefined>;
+  genreIds: Array<number | string | null | undefined>;
+}): GenreBadgeSpec | null => {
   if (genreBadgeMode === DEFAULT_GENRE_BADGE_MODE || !family) {
     return null;
   }
+  const localizedLabel = resolveLocalizedGenreBadgeLabel({
+    family,
+    genres,
+    genreIds,
+  });
   return {
     familyId: family.id,
-    label: family.label,
+    label: localizedLabel,
     accentColor: family.accentColor,
     mode: genreBadgeMode,
     style: genreBadgeStyle,
@@ -320,9 +424,13 @@ let primaryGenreFamily = resolvePrimaryGenreFamily(
   Array.isArray(media?.genres) ? media.genres : [],
   Array.isArray(media?.genre_ids) ? media.genre_ids : [],
 );
-let genreBadge = buildResolvedGenreBadge(primaryGenreFamily);
 let resolvedGenres = Array.isArray(media?.genres) ? media.genres : [];
 let resolvedGenreIds = Array.isArray(media?.genre_ids) ? media.genre_ids : [];
+let genreBadge = buildResolvedGenreBadge({
+  family: primaryGenreFamily,
+  genres: resolvedGenres,
+  genreIds: resolvedGenreIds,
+});
 
 let imgPath = '';
 let imgUrl = rawFallbackImageUrl;
@@ -344,6 +452,7 @@ let streamBadgesDeferred = false;
 let bundledWatchProviderResults: unknown = null;
 let movieHasPhysicalMediaRelease: boolean | null = null;
 let transientProviderFailureTtlMs: number | null = null;
+let localizedPosterTitleFromDetails: string | null = null;
 let effectiveRequestedImageLang = requestedImageLang;
 let effectiveIncludeImageLanguage = includeImageLanguage;
 
@@ -695,6 +804,7 @@ if (!useRawKitsuFallback && detailsBundlePromise) {
   effectiveIncludeImageLanguage = bundledIncludeImageLanguage;
   bundledWatchProviderResults = watchProviderResults;
   tmdbRating = bundledRating;
+  localizedPosterTitleFromDetails = pickPosterTitleFromMedia(details, mediaType, null);
   if (episodeDetailsPromise) {
     const episodeDetailsResponse = await episodeDetailsPromise;
     if (episodeDetailsResponse.ok) {
@@ -728,15 +838,33 @@ if (!useRawKitsuFallback && detailsBundlePromise) {
       ...(Array.isArray(fallbackDetails?.genres) ? fallbackDetails.genres : []),
       ...(Array.isArray(media?.genres) ? media.genres : []),
     ],
-    Array.isArray(media?.genre_ids) ? media.genre_ids : [],
+    [
+      ...(Array.isArray(details?.genres) ? details.genres.map((entry: any) => entry?.id) : []),
+      ...(Array.isArray(fallbackDetails?.genres)
+        ? fallbackDetails.genres.map((entry: any) => entry?.id)
+        : []),
+      ...(Array.isArray(media?.genres) ? media.genres.map((entry: any) => entry?.id) : []),
+      ...(Array.isArray(media?.genre_ids) ? media.genre_ids : []),
+    ],
   );
   resolvedGenres = [
     ...(Array.isArray(details?.genres) ? details.genres : []),
     ...(Array.isArray(fallbackDetails?.genres) ? fallbackDetails.genres : []),
     ...(Array.isArray(media?.genres) ? media.genres : []),
   ];
-  resolvedGenreIds = Array.isArray(media?.genre_ids) ? media.genre_ids : [];
-  genreBadge = buildResolvedGenreBadge(primaryGenreFamily);
+  resolvedGenreIds = [
+    ...(Array.isArray(details?.genres) ? details.genres.map((entry: any) => entry?.id) : []),
+    ...(Array.isArray(fallbackDetails?.genres)
+      ? fallbackDetails.genres.map((entry: any) => entry?.id)
+      : []),
+    ...(Array.isArray(media?.genres) ? media.genres.map((entry: any) => entry?.id) : []),
+    ...(Array.isArray(media?.genre_ids) ? media.genre_ids : []),
+  ];
+  genreBadge = buildResolvedGenreBadge({
+    family: primaryGenreFamily,
+    genres: resolvedGenres,
+    genreIds: resolvedGenreIds,
+  });
   const fanartTvdbId =
     mediaType === 'tv'
       ? String(
@@ -887,7 +1015,7 @@ const shouldApplyPosterCleanOverlay =
 const shouldApplyPosterBrandingOverlay =
   shouldApplyPosterCleanOverlay;
 const posterTitleText = shouldApplyPosterBrandingOverlay
-  ? pickPosterTitleFromMedia(media, mediaType, rawFallbackTitle)
+  ? (localizedPosterTitleFromDetails || pickPosterTitleFromMedia(media, mediaType, rawFallbackTitle))
   : null;
 const posterLogoUrl =
   shouldApplyPosterBrandingOverlay && selectedPosterLogoPath
@@ -904,7 +1032,11 @@ if (providerRatingsPromise) {
   hasConfirmedAnimeMapping = providerRatingResult.hasConfirmedAnimeMapping;
   transientProviderFailureTtlMs = providerRatingResult.transientProviderFailureTtlMs;
   primaryGenreFamily = resolvePrimaryGenreFamily(resolvedGenres, resolvedGenreIds);
-  genreBadge = buildResolvedGenreBadge(primaryGenreFamily);
+  genreBadge = buildResolvedGenreBadge({
+    family: primaryGenreFamily,
+    genres: resolvedGenres,
+    genreIds: resolvedGenreIds,
+  });
 }
 if (startStreamBadgesWarm && shouldBlockOnStreamBadges) {
   const streamBadgeResult = await startStreamBadgesWarm;
