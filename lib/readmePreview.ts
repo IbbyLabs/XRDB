@@ -70,7 +70,7 @@ const README_PREVIEW_STATE_PATH = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   '../config/readme-preview-gallery.json',
 );
-const README_PREVIEW_GALLERY_ORIGIN = 'https://xrdb.ibbylabs.dev';
+const README_PREVIEW_GALLERY_ORIGIN = 'https://extendedratings.com';
 
 const createEmptySlugBuckets = (): ReadmePreviewSlugBuckets => ({
   poster: [],

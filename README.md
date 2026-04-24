@@ -80,10 +80,10 @@ The doc refresh and release workflows rotate through a curated, varied set of pr
     <td><strong>Game of Thrones</strong><br>Plain ratings, TMDB / IMDb / Trakt / Metacritic, split side layout, detached age rating</td>
   </tr>
   <tr>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v1-23-1"><img src="https://xrdb.ibbylabs.dev/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v1-23-1" alt="Attack on Titan poster live preview" width="220"></a></td>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v1-23-1"><img src="https://xrdb.ibbylabs.dev/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v1-23-1" alt="Dune Part Two poster live preview" width="220"></a></td>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/stranger-things-poster?cb=readme-preview-stranger-things-poster-v1-23-1"><img src="https://xrdb.ibbylabs.dev/preview/stranger-things-poster?cb=readme-preview-stranger-things-poster-v1-23-1" alt="Stranger Things poster live preview" width="220"></a></td>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/game-of-thrones-poster?cb=readme-preview-game-of-thrones-poster-v1-23-1"><img src="https://xrdb.ibbylabs.dev/preview/game-of-thrones-poster?cb=readme-preview-game-of-thrones-poster-v1-23-1" alt="Game of Thrones poster live preview" width="220"></a></td>
+    <td><a href="https://extendedratings.com/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v1-23-1"><img src="https://extendedratings.com/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v1-23-1" alt="Attack on Titan poster live preview" width="220"></a></td>
+    <td><a href="https://extendedratings.com/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v1-23-1"><img src="https://extendedratings.com/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v1-23-1" alt="Dune Part Two poster live preview" width="220"></a></td>
+    <td><a href="https://extendedratings.com/preview/stranger-things-poster?cb=readme-preview-stranger-things-poster-v1-23-1"><img src="https://extendedratings.com/preview/stranger-things-poster?cb=readme-preview-stranger-things-poster-v1-23-1" alt="Stranger Things poster live preview" width="220"></a></td>
+    <td><a href="https://extendedratings.com/preview/game-of-thrones-poster?cb=readme-preview-game-of-thrones-poster-v1-23-1"><img src="https://extendedratings.com/preview/game-of-thrones-poster?cb=readme-preview-game-of-thrones-poster-v1-23-1" alt="Game of Thrones poster live preview" width="220"></a></td>
   </tr>
 </table>
 
@@ -96,9 +96,9 @@ The doc refresh and release workflows rotate through a curated, varied set of pr
     <td><strong>Stranger Things</strong><br>Square ratings, TMDB / Rotten Tomatoes / Metacritic / Letterboxd, stream badges, right side stack</td>
   </tr>
   <tr>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/attack-on-titan-backdrop?cb=readme-preview-attack-on-titan-backdrop-v1-23-1"><img src="https://xrdb.ibbylabs.dev/preview/attack-on-titan-backdrop?cb=readme-preview-attack-on-titan-backdrop-v1-23-1" alt="Attack on Titan backdrop live preview" width="320"></a></td>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/the-boys-backdrop?cb=readme-preview-the-boys-backdrop-v1-23-1"><img src="https://xrdb.ibbylabs.dev/preview/the-boys-backdrop?cb=readme-preview-the-boys-backdrop-v1-23-1" alt="The Boys backdrop live preview" width="320"></a></td>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v1-23-1"><img src="https://xrdb.ibbylabs.dev/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v1-23-1" alt="Stranger Things backdrop live preview" width="320"></a></td>
+    <td><a href="https://extendedratings.com/preview/attack-on-titan-backdrop?cb=readme-preview-attack-on-titan-backdrop-v1-23-1"><img src="https://extendedratings.com/preview/attack-on-titan-backdrop?cb=readme-preview-attack-on-titan-backdrop-v1-23-1" alt="Attack on Titan backdrop live preview" width="320"></a></td>
+    <td><a href="https://extendedratings.com/preview/the-boys-backdrop?cb=readme-preview-the-boys-backdrop-v1-23-1"><img src="https://extendedratings.com/preview/the-boys-backdrop?cb=readme-preview-the-boys-backdrop-v1-23-1" alt="The Boys backdrop live preview" width="320"></a></td>
+    <td><a href="https://extendedratings.com/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v1-23-1"><img src="https://extendedratings.com/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v1-23-1" alt="Stranger Things backdrop live preview" width="320"></a></td>
   </tr>
 </table>
 
@@ -111,9 +111,9 @@ The doc refresh and release workflows rotate through a curated, varied set of pr
     <td><strong>Game of Thrones</strong><br>French text, plain ratings, TMDB / IMDb / Trakt / Metacritic, transparent canvas</td>
   </tr>
   <tr>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/dune-part-two-logo?cb=readme-preview-dune-part-two-logo-v1-23-1"><img src="https://xrdb.ibbylabs.dev/preview/dune-part-two-logo?cb=readme-preview-dune-part-two-logo-v1-23-1" alt="Dune Part Two logo live preview" width="320"></a></td>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v1-23-1"><img src="https://xrdb.ibbylabs.dev/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v1-23-1" alt="Attack on Titan logo live preview" width="320"></a></td>
-    <td><a href="https://xrdb.ibbylabs.dev/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v1-23-1"><img src="https://xrdb.ibbylabs.dev/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v1-23-1" alt="Game of Thrones logo live preview" width="320"></a></td>
+    <td><a href="https://extendedratings.com/preview/dune-part-two-logo?cb=readme-preview-dune-part-two-logo-v1-23-1"><img src="https://extendedratings.com/preview/dune-part-two-logo?cb=readme-preview-dune-part-two-logo-v1-23-1" alt="Dune Part Two logo live preview" width="320"></a></td>
+    <td><a href="https://extendedratings.com/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v1-23-1"><img src="https://extendedratings.com/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v1-23-1" alt="Attack on Titan logo live preview" width="320"></a></td>
+    <td><a href="https://extendedratings.com/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v1-23-1"><img src="https://extendedratings.com/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v1-23-1" alt="Game of Thrones logo live preview" width="320"></a></td>
   </tr>
 </table>
 ## Rendering Option Comparisons
@@ -1070,12 +1070,12 @@ concurrency `2`, cache memory `128 MB`, cache items `100`, and cache files `200`
 
 <table>
   <tr>
-    <td><strong>Live Configurator Workspace</strong><br>The current configurator and preview workspace running on `xrdb.ibbylabs.dev`.</td>
-    <td><strong>Live Proxy Workspace</strong><br>The current proxy panel and export flow running on `xrdb.ibbylabs.dev`.</td>
+    <td><strong>Live Configurator Workspace</strong><br>The current configurator and preview workspace running on `extendedratings.com`.</td>
+    <td><strong>Live Proxy Workspace</strong><br>The current proxy panel and export flow running on `extendedratings.com`.</td>
   </tr>
   <tr>
-    <td><a href="https://xrdb.ibbylabs.dev/#preview"><img src="docs/images/demo-videos/configurator-live-demo.png" alt="Open the live XRDB configurator workspace" width="420"></a></td>
-    <td><a href="https://xrdb.ibbylabs.dev/#proxy"><img src="docs/images/demo-videos/addon-proxy-live-demo.png" alt="Open the live XRDB proxy workspace" width="304"></a></td>
+    <td><a href="https://extendedratings.com/#preview"><img src="docs/images/demo-videos/configurator-live-demo.png" alt="Open the live XRDB configurator workspace" width="420"></a></td>
+    <td><a href="https://extendedratings.com/#proxy"><img src="docs/images/demo-videos/addon-proxy-live-demo.png" alt="Open the live XRDB proxy workspace" width="304"></a></td>
   </tr>
 </table>
 

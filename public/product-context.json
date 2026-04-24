@@ -6,11 +6,11 @@
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
-  "liveUrl": "https://xrdb.ibbylabs.dev",
+  "liveUrl": "https://extendedratings.com",
   "serverInvite": "https://discord.gg/wPY2pcqjmm",
   "introLines": [
     "XRDB, eXtended Ratings DataBase, is a dynamic media artwork service with live ratings, badges, and proxy tooling.",
-    "XRDB publishes live configurator, export, reference, preview, proxy, and thumbnail surfaces from https://xrdb.ibbylabs.dev."
+    "XRDB publishes live configurator, export, reference, preview, proxy, and thumbnail surfaces from https://extendedratings.com."
   ],
   "sections": [
     {

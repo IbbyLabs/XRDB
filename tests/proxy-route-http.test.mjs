@@ -63,7 +63,7 @@ test('proxy reference URL uses trusted forwarded host and protocol', () => {
   const url = buildProxyReferencePublicUrl({
     requestUrl: 'http://0.0.0.0:3000/api/proxy-ref',
     hostHeader: '0.0.0.0:3000',
-    forwardedHostHeader: 'xrdb.ibbylabs.dev',
+    forwardedHostHeader: 'extendedratings.com',
     forwardedProtoHeader: 'https',
     trustForwarded: true,
     referenceId: '123e4567-e89b-12d3-a456-426614174000',
@@ -71,7 +71,7 @@ test('proxy reference URL uses trusted forwarded host and protocol', () => {
 
   assert.equal(
     url,
-    'https://xrdb.ibbylabs.dev/proxy/123e4567-e89b-12d3-a456-426614174000/manifest.json',
+    'https://extendedratings.com/proxy/123e4567-e89b-12d3-a456-426614174000/manifest.json',
   );
 });
 
