@@ -523,7 +523,9 @@ export function useConfiguratorWorkspaceRuntime({
     ratingProviderAppearanceOverrides,
     qualityBadgeAppearanceOverrides,
     ratingValueMode,
-    ratingBlackStripEnabled,
+    posterRatingBlackStripEnabled,
+    backdropRatingBlackStripEnabled,
+    thumbnailRatingBlackStripEnabled,
     selectedPresetId,
     setActiveProviderEditorId,
     setAggregateAccentBarOffset,
@@ -702,7 +704,9 @@ export function useConfiguratorWorkspaceRuntime({
     setRatingProviderAppearanceOverrides,
     setQualityBadgeAppearanceOverrides,
     setRatingValueMode,
-    setRatingBlackStripEnabled,
+    setPosterRatingBlackStripEnabled,
+    setBackdropRatingBlackStripEnabled,
+    setThumbnailRatingBlackStripEnabled,
     setSelectedPresetId,
     setShowConfigString,
     setShowExperienceModal,
@@ -1589,7 +1593,9 @@ export function useConfiguratorWorkspaceRuntime({
     setRatingProviderAppearanceOverrides,
     setQualityBadgeAppearanceOverrides,
     setRatingValueMode,
-    setRatingBlackStripEnabled,
+    setPosterRatingBlackStripEnabled,
+    setBackdropRatingBlackStripEnabled,
+    setThumbnailRatingBlackStripEnabled,
     setSimklClientId,
     setThumbnailRatingRows,
     setThumbnailEpisodeArtwork,
@@ -1786,6 +1792,15 @@ export function useConfiguratorWorkspaceRuntime({
   ]);
 
 
+  const activeRatingBlackStripEnabled =
+    previewType === 'poster'
+      ? posterRatingBlackStripEnabled
+      : previewType === 'backdrop'
+        ? backdropRatingBlackStripEnabled
+        : previewType === 'thumbnail'
+          ? thumbnailRatingBlackStripEnabled
+          : false;
+
   const workspaceOutputs = useConfiguratorOutputs({
     allowClientProviderCredentials,
     activeGenreBadgeAnimeGrouping,
@@ -1964,7 +1979,7 @@ export function useConfiguratorWorkspaceRuntime({
     ratingYOffsetSquare,
     ratingProviderAppearanceOverrides,
     ratingValueMode,
-    ratingBlackStripEnabled,
+    ratingBlackStripEnabled: activeRatingBlackStripEnabled,
     showConfigString,
     shouldShowQualityBadgesPosition: activeWorkspaceSettings.shouldShowQualityBadgesPosition,
       qualityBadgeAppearanceOverrides,
