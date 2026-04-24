@@ -356,7 +356,9 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setRatingProviderAppearanceOverrides: Setter<WorkspaceSettings['ratingProviderAppearanceOverrides']>;
   setRatingValueMode: Setter<WorkspaceSettings['ratingValueMode']>;
   setQualityBadgeAppearanceOverrides: Setter<WorkspaceSettings['qualityBadgeAppearanceOverrides']>;
-  setRatingBlackStripEnabled: (value: boolean) => void;
+  setPosterRatingBlackStripEnabled: (value: boolean) => void;
+  setBackdropRatingBlackStripEnabled: (value: boolean) => void;
+  setThumbnailRatingBlackStripEnabled: (value: boolean) => void;
   setSimklClientId: Setter<WorkspaceSettings['simklClientId']>;
   setThumbnailRatingRows: Setter<RatingProviderRow[]>;
   setThumbnailEpisodeArtwork: Setter<WorkspaceSettings['thumbnailEpisodeArtwork']>;
@@ -711,7 +713,9 @@ export function useConfiguratorWorkspaceConfigIo({
   setRatingProviderAppearanceOverrides,
   setQualityBadgeAppearanceOverrides,
   setRatingValueMode,
-  setRatingBlackStripEnabled,
+  setPosterRatingBlackStripEnabled,
+  setBackdropRatingBlackStripEnabled,
+  setThumbnailRatingBlackStripEnabled,
   setSimklClientId,
   setThumbnailRatingRows,
   setThumbnailEpisodeArtwork,
@@ -749,11 +753,15 @@ export function useConfiguratorWorkspaceConfigIo({
       const savedPosterSource = normalized.settings.posterArtworkSource;
       const savedBackdropSource = normalized.settings.backdropArtworkSource;
       const savedThumbnailSource = normalized.settings.thumbnailArtworkSource;
-      const hadBlackBar = savedPosterSource === 'blackbar' || savedBackdropSource === 'blackbar' || savedThumbnailSource === 'blackbar';
+      const posterBlackBarEnabled = savedPosterSource === 'blackbar';
+      const backdropBlackBarEnabled = savedBackdropSource === 'blackbar';
+      const thumbnailBlackBarEnabled = savedThumbnailSource === 'blackbar';
       setPosterArtworkSource(savedPosterSource === 'blackbar' ? 'tmdb' : savedPosterSource);
       setBackdropArtworkSource(savedBackdropSource === 'blackbar' ? 'tmdb' : savedBackdropSource);
       setThumbnailArtworkSource(savedThumbnailSource === 'blackbar' ? 'tmdb' : savedThumbnailSource);
-      if (hadBlackBar) setRatingBlackStripEnabled(true);
+      setPosterRatingBlackStripEnabled(posterBlackBarEnabled);
+      setBackdropRatingBlackStripEnabled(backdropBlackBarEnabled);
+      setThumbnailRatingBlackStripEnabled(thumbnailBlackBarEnabled);
       setBackdropEpisodeArtwork(normalized.settings.backdropEpisodeArtwork);
       setRatingValueMode(normalized.settings.ratingValueMode);
       setPosterGenreBadgeMode(normalized.settings.posterGenreBadgeMode);
@@ -1068,7 +1076,9 @@ export function useConfiguratorWorkspaceConfigIo({
       setRatingYOffsetSquare,
       setRatingProviderAppearanceOverrides,
       setQualityBadgeAppearanceOverrides,
-      setRatingBlackStripEnabled,
+      setPosterRatingBlackStripEnabled,
+      setBackdropRatingBlackStripEnabled,
+      setThumbnailRatingBlackStripEnabled,
       setRatingValueMode,
       setSimklClientId,
       setThumbnailRatingRows,

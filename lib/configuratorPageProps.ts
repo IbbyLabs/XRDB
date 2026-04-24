@@ -401,8 +401,27 @@ export function buildConfiguratorPageProps({
         onSelectQualityBadgeScale: activeWorkspaceSettings.setActiveQualityBadgeScale,
         onSelectPosterNoBackgroundBadgeOutlineColor: workspaceState.setPosterNoBackgroundBadgeOutlineColor,
         onSelectPosterNoBackgroundBadgeOutlineWidth: workspaceState.setPosterNoBackgroundBadgeOutlineWidth,
-        activeBlackBarEnabled: workspaceState.ratingBlackStripEnabled,
-        onToggleBlackBar: () => workspaceState.setRatingBlackStripEnabled((v) => !v),
+        activeBlackBarEnabled:
+          workspaceState.previewType === 'poster'
+            ? workspaceState.posterRatingBlackStripEnabled
+            : workspaceState.previewType === 'backdrop'
+              ? workspaceState.backdropRatingBlackStripEnabled
+              : workspaceState.previewType === 'thumbnail'
+                ? workspaceState.thumbnailRatingBlackStripEnabled
+                : false,
+        onToggleBlackBar: () => {
+          if (workspaceState.previewType === 'poster') {
+            workspaceState.setPosterRatingBlackStripEnabled((v) => !v);
+            return;
+          }
+          if (workspaceState.previewType === 'backdrop') {
+            workspaceState.setBackdropRatingBlackStripEnabled((v) => !v);
+            return;
+          }
+          if (workspaceState.previewType === 'thumbnail') {
+            workspaceState.setThumbnailRatingBlackStripEnabled((v) => !v);
+          }
+        },
       },
       qualityProps: {
         previewType: workspaceState.previewType,
