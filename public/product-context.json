@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.23.0",
-  "generatedAt": "2026-04-23T00:37:40.546Z",
+  "xrdbTag": "v1.23.1",
+  "generatedAt": "2026-04-24T02:38:46.687Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -46,11 +46,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
-        "harden remote badge icon fetches",
-        "FR-34 ring rating style visual improvements",
-        "FR-60 customizable aggregate provider weights",
-        "FR-75 FR-62 adaptive single row logo ratings and TMDB logo safe frame centering",
-        "FR-58 FR-76 add secondary genre replacement mode"
+        "BUG-122 isolate black bar overlay by artwork type",
+        "BUG-121 enforce regional translation paths across proxy and poster rendering",
+        "BUG-120 preserve quality badge placement across release status style changes",
+        "BUG-119 unify custom quality badge full surface rendering and icon fetch reliability",
+        "BUG-118 prevent compact ring overlap with age rating and grouped badges"
       ]
     },
     {
