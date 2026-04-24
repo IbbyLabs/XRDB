@@ -178,6 +178,58 @@ test('TMDB translation availability requires an exact requested locale match whe
   });
 });
 
+test('TMDB translation availability accepts es-419 as a regional fallback for es-MX', async () => {
+  const availability = await resolveTmdbTranslationFieldAvailability({
+    tmdbId: 771,
+    type: 'movie',
+    tmdbKey: 'tmdb-key-123',
+    lang: 'es-MX',
+    fetchTmdbJson: async () => ({
+      translations: [
+        {
+          iso_639_1: 'es',
+          iso_3166_1: '419',
+          data: {
+            title: 'Mi pobre angelito',
+            overview: 'Resumen LATAM',
+          },
+        },
+      ],
+    }),
+  });
+
+  assert.deepEqual(availability, {
+    title: true,
+    overview: true,
+  });
+});
+
+test('TMDB translation availability does not use es-419 fallback for es-ES', async () => {
+  const availability = await resolveTmdbTranslationFieldAvailability({
+    tmdbId: 771,
+    type: 'movie',
+    tmdbKey: 'tmdb-key-123',
+    lang: 'es-ES',
+    fetchTmdbJson: async () => ({
+      translations: [
+        {
+          iso_639_1: 'es',
+          iso_3166_1: '419',
+          data: {
+            title: 'Mi pobre angelito',
+            overview: 'Resumen LATAM',
+          },
+        },
+      ],
+    }),
+  });
+
+  assert.deepEqual(availability, {
+    title: false,
+    overview: false,
+  });
+});
+
 test('anime text fallback prefers localized anime-native titles and Kitsu overview text', async () => {
   const fallback = await resolveAnimeTextFallback({
     xrdbId: 'mal:1',

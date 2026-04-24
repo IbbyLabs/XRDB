@@ -98,6 +98,12 @@ type RequestedLanguage = {
   region: string | null;
 };
 
+const REQUESTED_REGION_ALIASES: Record<string, Record<string, string[]>> = {
+  es: {
+    MX: ['419'],
+  },
+};
+
 const IMDB_RE = /^tt\d+$/i;
 const ANIME_MAPPING_PROVIDER_SET = new Set<AnimeMappingProvider>(['mal', 'anilist', 'kitsu', 'anidb']);
 
@@ -418,12 +424,19 @@ const findTmdbTranslationEntry = (payload: any, requestedLanguage: string | null
 
   const { language, region } = normalizeLanguage(requestedLanguage);
   if (!language) return null;
+  const regionalFallbacks =
+    region && REQUESTED_REGION_ALIASES[language]?.[region]
+      ? REQUESTED_REGION_ALIASES[language][region]
+      : [];
 
   for (const translation of translations) {
     const translationLanguage = toNonEmptyString(translation?.iso_639_1)?.toLowerCase() || null;
     const translationRegion = toNonEmptyString(translation?.iso_3166_1)?.toUpperCase() || null;
     if (translationLanguage !== language) continue;
     if (region && translationRegion === region) {
+      return translation;
+    }
+    if (region && translationRegion && regionalFallbacks.includes(translationRegion)) {
       return translation;
     }
     if (!region) {

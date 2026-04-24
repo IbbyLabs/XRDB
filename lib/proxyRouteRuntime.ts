@@ -995,6 +995,11 @@ export const translateMetaPayload = async (
   const debugMetaTranslation = config.debugMetaTranslation === true;
   const lang = config.lang || requestUrl.searchParams.get('lang');
   if (!lang) return meta;
+  const hasRequestedLanguageRegion = /^[A-Za-z]{2,3}[-_][A-Za-z0-9]{2,3}$/.test(String(lang).trim());
+  const effectiveMode =
+    mode === DEFAULT_METADATA_TRANSLATION_MODE && hasRequestedLanguageRegion
+      ? ('prefer-requested-language' as const)
+      : mode;
   const tmdbKey = config.tmdbKey || TMDB_API_KEY;
 
   const rawId = typeof meta.id === 'string' ? meta.id : null;
@@ -1014,7 +1019,7 @@ export const translateMetaPayload = async (
   const details = tmdbTarget?.details ?? null;
   const { title: translatedTitle, overview: translatedOverview } = extractTmdbTextCandidates(details);
 
-  const needsTmdbLanguageCheck = mode === 'prefer-requested-language' || debugMetaTranslation;
+  const needsTmdbLanguageCheck = effectiveMode === 'prefer-requested-language' || debugMetaTranslation;
   const tmdbRequestedLanguage =
     tmdbTarget && needsTmdbLanguageCheck
       ? await resolveTmdbTranslationFieldAvailability({
@@ -1030,7 +1035,7 @@ export const translateMetaPayload = async (
     isAnimeXrdbId(xrdbId) &&
     (debugMetaTranslation ||
       !tmdbTarget ||
-      (mode === 'prefer-requested-language' &&
+      (effectiveMode === 'prefer-requested-language' &&
         (tmdbRequestedLanguage.title === false || tmdbRequestedLanguage.overview === false)) ||
       !hasMeaningfulText(translatedTitle) ||
       !hasMeaningfulText(translatedOverview));
@@ -1046,8 +1051,22 @@ export const translateMetaPayload = async (
     : null;
 
   const nextMeta: Record<string, unknown> = { ...meta };
+  const localizedGenres = Array.isArray(details?.genres)
+    ? details.genres
+        .filter(
+          (entry: unknown) =>
+            Boolean(entry) &&
+            typeof entry === 'object' &&
+            !Array.isArray(entry) &&
+            (typeof (entry as any).name === 'string' || typeof (entry as any).id === 'number'),
+        )
+        .map((entry: any) => ({ id: entry.id, name: entry.name }))
+    : [];
+  if (localizedGenres.length > 0) {
+    nextMeta.genres = localizedGenres;
+  }
   const topLevelDebug = applyTranslatedTextFields(nextMeta, {
-    mode,
+    mode: effectiveMode,
     tmdbTitle: translatedTitle,
     tmdbOverview: translatedOverview,
     tmdbTitleExactRequestedLanguage: tmdbRequestedLanguage.title,
@@ -1063,7 +1082,7 @@ export const translateMetaPayload = async (
   if (debugMetaTranslation) {
     nextMeta._xrdbMetaTranslation = {
       requestedLanguage: lang,
-      mode,
+      mode: effectiveMode,
       xrdbId,
       resolutionPath: xrdbId.startsWith('tmdb:')
         ? 'tmdb'
@@ -1193,7 +1212,7 @@ export const translateMetaPayload = async (
 
       const nextVideo = { ...video };
       const episodeDebug = applyTranslatedTextFields(nextVideo, {
-        mode,
+        mode: effectiveMode,
         tmdbTitle: episodeTitle,
         tmdbOverview: episodeOverview,
         tmdbTitleExactRequestedLanguage: episodeRequestedLanguage.title,
@@ -1204,7 +1223,7 @@ export const translateMetaPayload = async (
         nextVideo._xrdbMetaTranslation = {
           scope: 'episode',
           requestedLanguage: lang,
-          mode,
+          mode: effectiveMode,
           tmdbTarget: {
             id: resolvedEpisodeTarget.id,
             type: resolvedEpisodeTarget.type,
