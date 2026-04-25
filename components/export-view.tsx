@@ -887,7 +887,14 @@ type ProfileLoginConflictState = {
 const REVERT_DIFF_MAX_VISIBLE = 20;
 
 function buildSnapshotParams(snapshot: SavedUiConfig): Record<string, string> {
-  return buildProfileParams(snapshot.settings) ?? {};
+  return buildSavedProfileComparableParams(
+    buildProfileParams(snapshot.settings, {
+      allowMissingTmdbKey: true,
+      allowMissingMdblistKey: true,
+      omitProviderCredentials: true,
+      preserveXrdbKey: true,
+    }) ?? {},
+  );
 }
 
 function SensitiveField({
@@ -1660,7 +1667,7 @@ function SaveConfigSection({
       return;
     }
     if (!savedConfigSnapshot.current) return;
-    const currentParams = buildSaveParams() ?? {};
+    const currentParams = buildSavedProfileComparableParams(buildSaveParams() ?? {});
     const savedParams = buildSnapshotParams(savedConfigSnapshot.current);
     const diff = computeParamDiff(currentParams, savedParams);
     if (diff.totalChanged === 0) return;
@@ -1671,7 +1678,7 @@ function SaveConfigSection({
 
   const handleRevertClick = useCallback(() => {
     if (!savedConfigSnapshot.current) return;
-    const currentParams = buildSaveParams() ?? {};
+    const currentParams = buildSavedProfileComparableParams(buildSaveParams() ?? {});
     const savedParams = buildSnapshotParams(savedConfigSnapshot.current);
     const diff = computeParamDiff(currentParams, savedParams);
     if (diff.totalChanged === 0) return;
