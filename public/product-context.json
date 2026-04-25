@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.24.0",
-  "generatedAt": "2026-04-25T03:23:32.085Z",
+  "xrdbTag": "v1.25.0",
+  "generatedAt": "2026-04-25T04:59:43.297Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -46,11 +46,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "add dedicated per type genre badge X/Y offset controls",
+        "restore poster quality badge offset controls in UI",
         "FR-91 localize clean genre badge labels",
         "improve plain quality badge readability and add poster badge offsets",
-        "remove age rating from custom icon overrides",
-        "preserve fantasy classification with TMDB combined sci fi genres",
-        "include rating style and icon shape in cross type sync with generated sync matrix docs"
+        "remove age rating from custom icon overrides"
       ]
     },
     {
