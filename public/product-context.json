@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.23.1",
-  "generatedAt": "2026-04-24T02:38:46.687Z",
+  "xrdbTag": "v1.24.0",
+  "generatedAt": "2026-04-25T03:23:32.085Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -46,11 +46,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
-        "BUG-122 isolate black bar overlay by artwork type",
-        "BUG-121 enforce regional translation paths across proxy and poster rendering",
-        "BUG-120 preserve quality badge placement across release status style changes",
-        "BUG-119 unify custom quality badge full surface rendering and icon fetch reliability",
-        "BUG-118 prevent compact ring overlap with age rating and grouped badges"
+        "FR-91 localize clean genre badge labels",
+        "improve plain quality badge readability and add poster badge offsets",
+        "remove age rating from custom icon overrides",
+        "preserve fantasy classification with TMDB combined sci fi genres",
+        "include rating style and icon shape in cross type sync with generated sync matrix docs"
       ]
     },
     {

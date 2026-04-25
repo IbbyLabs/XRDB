@@ -128,6 +128,219 @@
 
 <a id="v1-23-1"></a>
 
+<a id="v1-24-0"></a>
+
+## [v1.24.0] - 25/04/2026
+
+### Added
+* improve plain quality badge readability and add poster badge offsets
+  
+  • Reduce plain quality badge blur softness so text and glyph edges stay sharper at poster scale.
+  • Add adaptive plain readability plate logic that only appears when backdrop luminance variance indicates poor contrast.
+  • Add poster scoped quality badge position controls via query params:
+  • posterQualityBadgeOffsetX
+  • posterQualityBadgeOffsetY
+  • Wire new params through request normalization, execution input, renderer placement, and final render seed.
+  • Bump final render seed version to v15 to prevent stale cache collisions after placement and readability changes.
+  • Fix logo band regression by clamping overlay bounds against final composited output height where required.
+  • Document new poster badge offset parameters in README parameter tables and usage guidance.
+  • Add offsets to addon developer optional pass through parameter list.
+  • Add offsets to AI integration URL BUILD template so generated links preserve the new controls.
+  • Extend render seed tests to verify poster only cache key impact for new offsets and no backdrop seed leakage.
+  • Add dedicated renderer regression tests for:
+  • X and Y offset movement behavior
+  • Offset clamp behavior
+  • Adaptive readability plate on busy versus flat backgrounds
+  • Refresh static documentation assets after rendering changes, including comparison boards and captured preview/proxy images.
+  • Sync README preview gallery metadata and capture date updates from asset refresh workflow.
+  
+  Files touched
+  • README.md
+  • readme preview gallery.json
+  • addon proxy live demo.png
+  • configurator live demo.png
+  • anime logo comparison.png
+  • movie poster comparison.png
+  • show backdrop comparison.png
+  • finalImageRenderSeed.ts
+  • imageRouteExecution.ts
+  • imageRouteQualityBadge.ts
+  • imageRouteRenderer.ts
+  • imageRouteRequestState.ts
+  • final image render seed.test.mjs
+  • image route renderer quality badge plain.test.mjs
+* add icon shape controls for rating provider badges
+  
+  • add support for icon shape selection with values original, circle, squircle, and rounded
+  • keep original as the default so existing URLs and visuals remain unchanged
+  • thread icon shape through request parsing, render input, cache keys, and final image seed generation
+  • apply icon masking in both icon preprocessing and SVG badge clip paths for consistent output
+  • ensure plain rating style also respects non original icon shape selections
+  • update shared UI config schema, normalization, serialization, and saved profile verification coverage
+  • wire icon shape state through configurator workspace state, config IO, runtime, outputs, and advanced look controls
+  • place icon shape control in Advanced look section and remove accidental placement from Simple quick tune
+  • update README parameter docs and integration template examples for iconShape
+  • update tests for cache key format and UI config round trip behavior
+* add AIOMetadata public instance picker for repair profiles
+  
+  Introduce a dedicated AIOMetadata base URL picker in the Export repair section
+  to improve instance selection flow for public and self hosted users.
+  
+  • add curated public AIOMetadata instances
+  • replace native datalist behavior with a custom styled picker UI
+  • add dropdown toggle control with visible arrow affordance
+  • support open on focus and ArrowDown, close on outside click and Escape
+  • support search/filter by instance name and base URL while typing
+  • keep addon password hidden when selected base URL is a known public instance
+  • keep addon password visible for self hosted or unknown custom instances
+  • omit addon password from repair API payload when the selected instance is public
+  
+  Files:
+  • components/export view.tsx
+
+### Fixed
+* FR-91 localize clean genre badge labels
+  
+  Use the resolved genre badge label for clean badge rendering
+  instead of replacing it with a fixed English family label.
+  
+  This fixes cases where genre badges stayed in English even when
+  XRDB requests used a non English language setting and TMDB
+  returned localized genre names.
+* remove age rating from custom icon overrides
+* preserve fantasy classification with TMDB combined sci fi genres
+  
+  Update genre family resolution to split explicit science fiction from combined sci fi and fantasy signals.
+  Fantasy now takes precedence when fantasy is present and there is no explicit science fiction signal.
+  Sci fi still wins when explicit science fiction is present, and combined sci fi and fantasy still maps to sci fi when fantasy is not explicitly present.
+  
+  Add targeted regression coverage for:
+  • fantasy precedence with TMDB combined genre id 10765
+  • explicit science fiction precedence when both science fiction and fantasy are present
+* include rating style and icon shape in cross type sync with generated sync matrix docs
+  
+  Changes:
+  • add ratingStyle and iconShape to SyncableTypeSettings
+  • include ratingStyle and iconShape in extractSyncableSettings for all preview types
+  • apply ratingStyle and iconShape in applySyncableSettings for all target types
+  • keep existing compatibility constraints:
+  • non poster presentation coercion to standard
+  • thumbnail provider filtering to episode safe providers
+  • stream badges excluded when syncing into logo
+  • use computeSyncDiffForTarget in configurator center stage single target sync flow
+  • use computeSyncDiffForTarget in sync to all grouped diffs
+  
+  Tests:
+  • add transfer coverage for rating style and icon shape sync
+  • add target diff coverage for rating style and icon shape keys
+  • update identical per type zero diff fixture for new syncable fields
+  
+  Docs and automation:
+  • add scripts/generate sync settings matrix.mjs to build matrix from crossTypeSync exports
+  • add docs/sync settings matrix.md generated artifact
+  • export SYNCABLE_TARGET_KEY_MAP, SYNCABLE_GLOBAL_KEYS, and SYNC_SPECIAL_RULES from crossTypeSync
+  • add npm script sync matrix:generate
+  • run sync matrix generation automatically in predev, pretest, and prebuild
+  • add README link to generated sync matrix and update sync behavior description
+* enforce type scoped option edits and sync only cross type propagation
+  
+  • make icon shape truly per type across state, config IO, serialization, and request parsing
+  • stop save and revert confirmation from over reporting by diffing normalized comparable params
+  • add hard verification guardrails so any new shared option key fails tests unless explicitly allowed as legacy
+  • convert aggregate accent controls and rating value mode to active type scoped state so regular edits do not fan out across poster, backdrop, thumbnail, and logo
+  • preserve legacy compatibility paths for existing shared keys while prioritizing per type keys
+  • update docs for per type icon shape behavior and sync expectations
+  
+  Implementation details:
+  • add per type icon shape fields and fallback handling in normalization and payload building
+  • route icon shape writes through preview type specific setters
+  • update configurator runtime and config IO wiring for per type icon shape fields
+  • add explicit global key list and legacy shared key inventory in config profile verification
+  • add tests that block introduction of new shared option surfaces
+  • update round trip and regression coverage for profile serialization behavior
+* BUG-125 keep UUID proxy addon identity stable
+  
+  Stop UUID backed proxy manifests from rotating addon identity when upstream manifest payloads drift over time, which can invalidate saved collection bindings in clients like Nuvio.
+  
+  • treat stored UUID config seeds as stable identity anchors
+  • exclude upstream manifest fingerprint from identity seed when config seed is a UUID
+  • keep direct query mode behavior unchanged so non UUID flows can still reflect payload and catalog plan identity changes
+  • preserve existing no store response behavior and catalog rewrite flow
+  
+  Add regression coverage for identity stability and preserve existing identity tests:
+  
+  • add test ensuring UUID backed proxy identity remains stable across source manifest payload changes
+  • keep test coverage proving query mode identity still changes when source payload or catalog rules change
+* BUG-124 restore custom quality badge scaling for 4k outputs
+  
+  Remove the fixed quality badge height ceiling that caused poster and backdrop
+  quality badges to stop growing on larger and 4k renders, which made the size
+  slider appear unresponsive once the badges hit the cap.
+  
+  Preserve intrinsic aspect ratios for custom quality badge assets so full badge
+  overrides and asset backed custom icons keep their intended proportions instead
+  of collapsing toward square sizing.
+  
+  Add regression coverage for:
+  • full badge custom icon aspect handling
+  • asset backed custom badge aspect handling
+  • 4k poster quality badge height scaling past the old ceiling
+  • 4k backdrop quality badge height scaling past the old ceiling
+* BUG-126 black bar overlay changes not saved to profile
+  
+  Root cause: `buildCurrentUiConfig()` serialized the raw artwork source state
+  values (posterArtworkSource, backdropArtworkSource, thumbnailArtworkSource)
+  directly into the saved config. During a live session, these values are never
+  'blackbar' — `applySavedUiConfig` correctly splits a stored 'blackbar' value
+  into a raw source ('tmdb') plus a boolean flag
+  (posterRatingBlackStripEnabled: true) on load. The recombination step was
+  missing on save, so the serialized config never reflected overlay changes.
+  Dirty detection therefore never saw a difference, the save button stayed
+  disabled, and overlay state was lost on round trip.
+  
+  Fix: compute effective artwork sources inside `buildCurrentUiConfig` before
+  writing to the settings object. When the corresponding strip enabled flag is
+  true, the effective source is 'blackbar'; otherwise it falls through to the raw
+  state value. This mirrors the existing split in `applySavedUiConfig` and
+  completes the round trip symmetrically.
+  
+  • lib/useConfiguratorWorkspaceConfigIo.ts
+  • Added posterRatingBlackStripEnabled, backdropRatingBlackStripEnabled,
+      thumbnailRatingBlackStripEnabled to the hook args type
+  • Destructured the three flags in the hook body
+  • Computed effectivePosterArtworkSource, effectiveBackdropArtworkSource,
+      effectiveThumbnailArtworkSource in buildCurrentUiConfig
+  • Used effective values when writing posterArtworkSource,
+      backdropArtworkSource, thumbnailArtworkSource into serialized settings
+  • Added the three flags to all relevant useCallback dependency arrays
+  
+  • lib/useConfiguratorWorkspaceRuntime.ts
+  • Passed the three strip enabled flags from workspace state into the
+      useConfiguratorWorkspaceConfigIo call
+* polish dropdown layering and readability in repair and search panels
+  
+  keep the AIOMetadata repair base URL dropdown above URL pattern rows by applying explicit stacking on the repair container
+  increase readability in the repair dropdown by giving the base URL input more horizontal space and allowing long instance URLs to wrap
+  apply the same readability polish to Configure search by widening the results dropdown on desktop and allowing long result titles and media IDs to wrap instead of truncating
+  keep existing selection, keyboard, and click behaviors unchanged
+  Files changed:
+  
+  export view.tsx
+  configurator basics.tsx
+  ROADMAP.md
+
+### Documentation
+* refresh static doc assets
+
+### Other Changes
+* migrate XRDB public URL to extendedratings.com
+  
+  Replace all instances of xrdb.ibbylabs.dev with extendedratings.com across
+  documentation, product context, and test files.
+  
+  The new domain currently redirects to xrdb.ibbylabs.dev and will become the
+  primary public URL when the migration is complete.
+
 ## [v1.23.1] - 24/04/2026
 
 ### Fixed
