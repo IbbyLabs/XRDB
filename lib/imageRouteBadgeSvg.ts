@@ -12,7 +12,7 @@ import {
 } from './badgeCustomization.ts';
 import { computeStackedBadgeLayout } from './stackedBadgeLayout.ts';
 import { type BadgeKey } from './imageRouteConfig.ts';
-import { type RatingStyle } from './ratingAppearance.ts';
+import { type RatingStyle, type IconShape } from './ratingAppearance.ts';
 import { escapeXml } from './imageRouteText.ts';
 import {
   estimateBadgeTextWidth,
@@ -104,6 +104,7 @@ export type BuildBadgeSvgInput = {
   iconDataUri?: string | null;
   hasCustomIconOverride?: boolean;
   iconCornerRadius?: number;
+  iconShape?: IconShape;
   iconKey?: BadgeKey;
   labelText?: string;
   value: string;
@@ -144,6 +145,7 @@ export const buildBadgeSvg = ({
   iconDataUri,
   hasCustomIconOverride = false,
   iconCornerRadius = 0,
+  iconShape = 'original' as IconShape,
   iconKey,
   labelText,
   value,
@@ -604,7 +606,7 @@ ${monogramText}
     ratingStyle === 'square' &&
     !hasCustomIconOverride &&
     (iconKey === 'tomatoes' || iconKey === 'tomatoesaudience');
-  const iconShape =
+  const iconPlateSvg =
     ratingStyle === 'plain'
       ? ''
       : ratingStyle === 'square'
@@ -612,12 +614,28 @@ ${monogramText}
         : useNeutralGlassPlate
           ? `<circle cx="${iconCx}" cy="${iconCy}" r="${iconRadius}" fill="rgba(15,23,42,0.92)" stroke="${accentColor}" stroke-width="${glassIconStrokeWidth}" />`
           : `<circle cx="${iconCx}" cy="${iconCy}" r="${iconRadius}" fill="${accentColor}" stroke="rgba(255,255,255,0.45)" />`;
+  const resolvedIconClipInner = (() => {
+    if (iconShape === 'circle') {
+      return `<circle cx="${iconCx}" cy="${iconCy}" r="${Math.max(1, iconRadius - 1)}" />`;
+    }
+    if (iconShape === 'squircle') {
+      const rx = Math.max(2, Math.round(renderIconSize * 0.3));
+      return `<rect x="${iconX + 1.5}" y="${iconY + 1.5}" width="${Math.max(0, renderIconSize - 3)}" height="${Math.max(0, renderIconSize - 3)}" rx="${rx}" />`;
+    }
+    if (iconShape === 'rounded') {
+      const rx = Math.max(2, Math.round(renderIconSize * 0.15));
+      return `<rect x="${iconX + 1.5}" y="${iconY + 1.5}" width="${Math.max(0, renderIconSize - 3)}" height="${Math.max(0, renderIconSize - 3)}" rx="${rx}" />`;
+    }
+    return null;
+  })();
   const iconClipPath =
-    ratingStyle === 'plain'
-      ? ''
-      : ratingStyle === 'square'
-        ? `<rect x="${iconX + 1.5}" y="${iconY + 1.5}" width="${Math.max(0, renderIconSize - 3)}" height="${Math.max(0, renderIconSize - 3)}" rx="${Math.max(4, iconCornerRadius || iconRadius - 1)}" />`
-        : `<circle cx="${iconCx}" cy="${iconCy}" r="${Math.max(1, iconRadius - 1)}" />`;
+    resolvedIconClipInner !== null
+      ? resolvedIconClipInner
+      : ratingStyle === 'plain'
+        ? ''
+        : ratingStyle === 'square'
+          ? `<rect x="${iconX + 1.5}" y="${iconY + 1.5}" width="${Math.max(0, renderIconSize - 3)}" height="${Math.max(0, renderIconSize - 3)}" rx="${Math.max(4, iconCornerRadius || iconRadius - 1)}" />`
+          : `<circle cx="${iconCx}" cy="${iconCy}" r="${Math.max(1, iconRadius - 1)}" />`;
   const iconBorder =
     ratingStyle === 'plain'
       ? ''
@@ -630,12 +648,13 @@ ${monogramText}
           : `<circle cx="${iconCx}" cy="${iconCy}" r="${iconRadius}" fill="none" stroke="rgba(255,255,255,0.45)" />`;
   const monogramFill = ratingStyle === 'glass' && !useNeutralGlassPlate ? 'white' : accentColor;
   const plainIconFilter = ratingStyle === 'plain' ? ' filter="url(#plain-icon-shadow)"' : '';
+  const useIconClip = iconClipPath !== '';
   const iconImage =
     !iconDataUri
       ? ''
-      : ratingStyle === 'plain'
+      : !useIconClip && ratingStyle === 'plain'
         ? `<image href="${iconDataUri}" x="${iconX}" y="${iconY}" width="${renderIconSize}" height="${renderIconSize}" preserveAspectRatio="xMidYMid meet"${plainIconFilter} />`
-        : `<defs><clipPath id="icon-clip">${iconClipPath}</clipPath></defs><image href="${iconDataUri}" x="${iconX}" y="${iconY}" width="${renderIconSize}" height="${renderIconSize}" preserveAspectRatio="xMidYMid meet" clip-path="url(#icon-clip)" />${iconBorder}`;
+        : `<defs><clipPath id="icon-clip">${iconClipPath}</clipPath></defs><image href="${iconDataUri}" x="${iconX}" y="${iconY}" width="${renderIconSize}" height="${renderIconSize}" preserveAspectRatio="xMidYMid meet" clip-path="url(#icon-clip)"${useIconClip && ratingStyle === 'plain' ? plainIconFilter : ''} />${ratingStyle !== 'plain' ? iconBorder : ''}`;
   const monogramText =
     iconDataUri
       ? ''
@@ -658,7 +677,7 @@ ${monogramText}
 ${plainBadgeDefs}
 ${plainBadgeSurface}
 ${outerRect}
-${iconShape}
+${iconPlateSvg}
 ${iconImage}
 ${monogramText}
 <text x="${valueRenderX}" y="${finalValueY}" font-family="${valueFontFamily}" font-size="${fontSize}" font-weight="800" text-anchor="${valueAnchor}" fill="${valueColor ?? 'white'}"${valueFilter}${valueLetterSpacing}${valueTextLength}${valueNumericStyle}>${escapeXml(value)}</text>

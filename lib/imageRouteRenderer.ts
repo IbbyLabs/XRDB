@@ -1,6 +1,6 @@
 import type { BackdropRatingLayout } from './backdropLayoutOptions.ts';
 import type { PosterRatingLayout } from './posterLayoutOptions.ts';
-import type { QualityBadgeStyle, RatingStyle } from './ratingAppearance.ts';
+import type { QualityBadgeStyle, RatingStyle, IconShape } from './ratingAppearance.ts';
 import type { CommunityBadgeTheme } from './communityBadgeAssets.ts';
 import type { AggregateRatingSource, RatingPresentation } from './ratingPresentation.ts';
 import type { SideRatingPosition } from './sideRatingPosition.ts';
@@ -192,6 +192,7 @@ export type FastRenderInput = {
   sideRatingsPosition: SideRatingPosition;
   sideRatingsOffset: number;
   ratingStyle: RatingStyle;
+  iconShape: IconShape;
   ratingBlackStripEnabled: boolean;
   ratingStackOffsetX: number;
   ratingStackOffsetY: number;
@@ -486,7 +487,8 @@ export const renderWithSharp = async (
         input.badges.map(async (badge) => {
           const iconDataUri = await getProviderIconDataUri(
             badge.iconUrl,
-            badge.iconCornerRadius || 0
+            badge.iconCornerRadius || 0,
+            input.iconShape,
           );
           const preferNeutralGlassPlate = await shouldUseNeutralGlassPlateForIcon(iconDataUri, getSharpFactory);
           return [badge.key, { dataUri: iconDataUri, preferNeutralGlassPlate }] as const;
@@ -1004,6 +1006,7 @@ export const renderWithSharp = async (
         accentBarOffset: badge.accentBarOffset,
         accentBarVisible: badge.accentBarVisible,
         ratingStyle: input.ratingStyle,
+        iconShape: input.iconShape,
         iconScalePercent: badge.iconScalePercent,
         stackedLineVisible: badge.stackedLineVisible,
         stackedLineWidthPercent: badge.stackedLineWidthPercent,

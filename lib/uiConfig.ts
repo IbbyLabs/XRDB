@@ -13,10 +13,13 @@ import {
 } from './posterLayoutOptions.ts';
 import {
   DEFAULT_QUALITY_BADGES_STYLE,
+  DEFAULT_ICON_SHAPE,
   DEFAULT_RATING_STYLE,
+  normalizeIconShape,
   normalizeQualityBadgeStyle,
   normalizeQualityBadgeStyleOrNull,
   normalizeRatingStyle,
+  type IconShape,
   type QualityBadgeStyle,
   type RatingStyle,
 } from './ratingAppearance.ts';
@@ -294,6 +297,7 @@ export type SharedXrdbSettings = {
   backdropRatingStyle: RatingStyle;
   thumbnailRatingStyle: RatingStyle;
   logoRatingStyle: RatingStyle;
+  iconShape: IconShape;
   posterRatingBadgeScale: number;
   backdropRatingBadgeScale: number;
   thumbnailRatingBadgeScale: number;
@@ -595,6 +599,7 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   backdropRatingStyle: DEFAULT_RATING_STYLE,
   thumbnailRatingStyle: DEFAULT_RATING_STYLE,
   logoRatingStyle: 'plain',
+  iconShape: DEFAULT_ICON_SHAPE,
   posterRatingBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   backdropRatingBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   thumbnailRatingBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
@@ -1516,6 +1521,7 @@ export const normalizeSharedXrdbSettings = (value: unknown, options?: { skipCros
         | null
         | undefined,
     ),
+    iconShape: normalizeIconShape(candidate.iconShape as string | null | undefined),
     posterRatingPresentation: normalizeRatingPresentation(
       candidate.posterRatingPresentation,
       defaults.posterRatingPresentation,
@@ -2200,6 +2206,9 @@ const buildSharedPayload = (settings: SharedXrdbSettings, options?: SharedPayloa
   payload.backdropRatingStyle = settings.backdropRatingStyle;
   payload.thumbnailRatingStyle = settings.thumbnailRatingStyle;
   payload.logoRatingStyle = settings.logoRatingStyle;
+  if (settings.iconShape !== DEFAULT_ICON_SHAPE) {
+    payload.iconShape = settings.iconShape;
+  }
   if (settings.posterRatingBadgeScale !== DEFAULT_BADGE_SCALE_PERCENT) {
     payload.posterRatingBadgeScale = settings.posterRatingBadgeScale;
   }

@@ -15,8 +15,11 @@ import {
   type PosterRatingLayout,
 } from './posterLayoutOptions.ts';
 import {
+  DEFAULT_ICON_SHAPE,
   DEFAULT_RATING_STYLE,
+  normalizeIconShape,
   normalizeRatingStyle,
+  type IconShape,
   type QualityBadgeStyle,
   type RatingStyle,
 } from './ratingAppearance.ts';
@@ -290,6 +293,7 @@ export type ImageRouteRequestState = {
   qualityBadgePreferences: BadgeKey[];
   remuxDisplayMode: RemuxDisplayMode;
   ratingStyle: RatingStyle;
+  iconShape: IconShape;
   ratingStackOffsetX: number;
   ratingStackOffsetY: number;
   logoBackground: LogoBackground;
@@ -1160,6 +1164,9 @@ export const resolveImageRouteRequestState = async ({
     : imageType === 'logo'
       ? 'plain'
       : DEFAULT_RATING_STYLE;
+  const iconShape = normalizeIconShape(
+    searchParams.get('iconShape') || searchParams.get('iconClip'),
+  );
   const typeRatingXOffsetPillGlassParam =
     imageType === 'poster'
       ? searchParams.get('posterRatingXOffsetPillGlass')
@@ -1612,6 +1619,7 @@ export const resolveImageRouteRequestState = async ({
     artworkSelectionSeed,
     ratingBlackStripEnabled,
     ratingStyle,
+    iconShape,
     ratingStackOffsetX,
     ratingStackOffsetY,
     ratingValueMode,
@@ -1686,6 +1694,7 @@ export const resolveImageRouteRequestState = async ({
     qualityBadgePreferences,
     remuxDisplayMode,
     ratingStyle,
+    iconShape,
     ratingStackOffsetX,
     ratingStackOffsetY,
     logoBackground,

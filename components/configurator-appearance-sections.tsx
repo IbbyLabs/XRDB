@@ -66,9 +66,11 @@ import {
   normalizeThumbnailRatingBadgeScalePercent,
 } from '@/lib/badgeCustomization';
 import {
+  ICON_SHAPE_OPTIONS,
   DEFAULT_QUALITY_BADGES_STYLE,
   QUALITY_BADGE_STYLE_OPTIONS,
   RATING_STYLE_OPTIONS,
+  type IconShape,
   type QualityBadgeStyle,
   type RatingStyle,
 } from '@/lib/ratingAppearance';
@@ -764,6 +766,7 @@ export function LookSection({
   activeGenreBadgeStyle,
   activeGenreBadgePosition,
   activeGenreBadgeAnimeGrouping,
+  iconShape,
   activeArtworkSourceOptions,
   activeArtworkSource,
   activeArtworkSourceDescription,
@@ -818,6 +821,7 @@ export function LookSection({
   onSelectGenreBadgeStyle,
   onSelectGenreBadgePosition,
   onSelectGenreBadgeAnimeGrouping,
+  onSelectIconShape,
   genreBadgeTileAccentColor,
   onSelectGenreBadgeTileAccentColor,
   onSelectBackdropArtworkSource,
@@ -878,6 +882,7 @@ export function LookSection({
   activeGenreBadgeStyle: GenreBadgeStyle;
   activeGenreBadgePosition: GenreBadgePosition;
   activeGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
+  iconShape: IconShape;
   activeArtworkSourceOptions: Array<DetailedSelectionOption<ArtworkSource>>;
   activeArtworkSource: ArtworkSource;
   activeArtworkSourceDescription: string | null;
@@ -934,6 +939,7 @@ export function LookSection({
   onSelectGenreBadgeStyle: (value: GenreBadgeStyle) => void;
   onSelectGenreBadgePosition: (value: GenreBadgePosition) => void;
   onSelectGenreBadgeAnimeGrouping: (value: GenreBadgeAnimeGrouping) => void;
+  onSelectIconShape: (value: IconShape) => void;
   genreBadgeTileAccentColor: string;
   onSelectGenreBadgeTileAccentColor: (value: string) => void;
   onSelectBackdropArtworkSource: (value: ArtworkSource) => void;
@@ -1157,6 +1163,21 @@ export function LookSection({
                   onClick={() => onSelectRatingValueMode(option.id)}
                   className={selectorButtonClass(ratingValueMode === option.id)}
                   title={option.description}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className={settingsCardClass}>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">Icon Shape</span>
+            <div className={selectorGroupClass}>
+              {ICON_SHAPE_OPTIONS.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => onSelectIconShape(option.id)}
+                  className={selectorButtonClass(iconShape === option.id)}
                 >
                   {option.label}
                 </button>

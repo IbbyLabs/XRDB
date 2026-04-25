@@ -86,11 +86,12 @@ export const stripCornerBackgroundFromIcon = async (sharp: any, buffer: Buffer) 
 export const readProviderIconFromStorage = async (
   iconUrl: string,
   iconCornerRadius = 0,
+  iconShape = 'original',
 ): Promise<string | null> => {
   if (!isObjectStorageConfigured()) return null;
   try {
     const payload = await getCachedImageFromObjectStorage(
-      buildProviderIconStorageKey(iconUrl, iconCornerRadius),
+      buildProviderIconStorageKey(iconUrl, iconCornerRadius, iconShape),
     );
     if (!payload) return null;
     const buffer = Buffer.from(payload.body);
@@ -105,10 +106,11 @@ export const writeProviderIconToStorage = async (
   iconUrl: string,
   buffer: Buffer,
   iconCornerRadius = 0,
+  iconShape = 'original',
 ) => {
   if (!isObjectStorageConfigured()) return;
   try {
-    await putCachedImageToObjectStorage(buildProviderIconStorageKey(iconUrl, iconCornerRadius), {
+    await putCachedImageToObjectStorage(buildProviderIconStorageKey(iconUrl, iconCornerRadius, iconShape), {
       body: bufferToArrayBuffer(buffer),
       contentType: 'image/png',
       cacheControl: buildSourceImageFallbackCacheControl(PROVIDER_ICON_CACHE_TTL_MS),

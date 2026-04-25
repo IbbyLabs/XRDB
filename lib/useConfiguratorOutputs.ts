@@ -88,7 +88,9 @@ import {
 } from '@/lib/posterCompactRing';
 import { type RemuxDisplayMode } from '@/lib/mediaFeatures';
 import {
+  DEFAULT_ICON_SHAPE,
   DEFAULT_QUALITY_BADGES_STYLE,
+  type IconShape,
   type QualityBadgeStyle,
   type RatingStyle,
 } from '@/lib/ratingAppearance';
@@ -423,6 +425,7 @@ export function useConfiguratorOutputs({
   qualityBadgesTileAccentColor,
   networkTileColor,
   genreBadgeTileAccentColor,
+  iconShape,
   communityBadgeTheme,
   ageRatingBadgeStyle,
   releaseStatusBadgeStyle,
@@ -610,6 +613,7 @@ export function useConfiguratorOutputs({
   qualityBadgesTileAccentColor: string;
   networkTileColor: string;
   genreBadgeTileAccentColor: string;
+  iconShape: IconShape;
   communityBadgeTheme: CommunityBadgeTheme;
   ageRatingBadgeStyle: QualityBadgeStyle | null;
   releaseStatusBadgeStyle: QualityBadgeStyle | null;
@@ -858,6 +862,7 @@ export function useConfiguratorOutputs({
     if (activeGenreBadgeStyle === 'tile') {
       if (genreBadgeTileAccentColor) query.set('genreBadgeTileAccentColor', genreBadgeTileAccentColor);
     }
+    if (iconShape !== DEFAULT_ICON_SHAPE) query.set('iconShape', iconShape);
     if (ratingPresentationForType !== DEFAULT_RATING_PRESENTATION) {
       query.set(
         previewType === 'poster'
@@ -1412,6 +1417,7 @@ export function useConfiguratorOutputs({
     qualityBadgesTileAccentColor,
     networkTileColor,
     genreBadgeTileAccentColor,
+    iconShape,
     communityBadgeTheme,
     ageRatingBadgeStyle,
     releaseStatusBadgeStyle,

@@ -165,6 +165,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   qualityBadgesTileAccentColor: WorkspaceSettings['qualityBadgesTileAccentColor'];
   networkTileColor: WorkspaceSettings['networkTileColor'];
   genreBadgeTileAccentColor: WorkspaceSettings['genreBadgeTileAccentColor'];
+  iconShape: WorkspaceSettings['iconShape'];
   communityBadgeTheme: WorkspaceSettings['communityBadgeTheme'];
   ageRatingBadgeStyle: WorkspaceSettings['ageRatingBadgeStyle'];
   releaseStatusBadgeStyle: WorkspaceSettings['releaseStatusBadgeStyle'];
@@ -337,6 +338,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setQualityBadgesTileAccentColor: Setter<WorkspaceSettings['qualityBadgesTileAccentColor']>;
   setNetworkTileColor: Setter<WorkspaceSettings['networkTileColor']>;
   setGenreBadgeTileAccentColor: Setter<WorkspaceSettings['genreBadgeTileAccentColor']>;
+  setIconShape: Setter<WorkspaceSettings['iconShape']>;
   setCommunityBadgeTheme: Setter<WorkspaceSettings['communityBadgeTheme']>;
   setAgeRatingBadgeStyle: Setter<WorkspaceSettings['ageRatingBadgeStyle']>;
   setReleaseStatusBadgeStyle: Setter<WorkspaceSettings['releaseStatusBadgeStyle']>;
@@ -525,6 +527,7 @@ export function useConfiguratorWorkspaceConfigIo({
   qualityBadgesTileAccentColor,
   networkTileColor,
   genreBadgeTileAccentColor,
+  iconShape,
   communityBadgeTheme,
   ageRatingBadgeStyle,
   releaseStatusBadgeStyle,
@@ -697,6 +700,7 @@ export function useConfiguratorWorkspaceConfigIo({
   setQualityBadgesTileAccentColor,
   setNetworkTileColor,
   setGenreBadgeTileAccentColor,
+  setIconShape,
   setCommunityBadgeTheme,
   setAgeRatingBadgeStyle,
   setReleaseStatusBadgeStyle,
@@ -882,6 +886,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setQualityBadgesTileAccentColor(normalized.settings.qualityBadgesTileAccentColor);
       setNetworkTileColor(normalized.settings.networkTileColor);
       setGenreBadgeTileAccentColor(normalized.settings.genreBadgeTileAccentColor);
+      setIconShape(normalized.settings.iconShape);
       setCommunityBadgeTheme(normalized.settings.communityBadgeTheme);
       setAgeRatingBadgeStyle(normalized.settings.ageRatingBadgeStyle);
       setReleaseStatusBadgeStyle(normalized.settings.releaseStatusBadgeStyle);
@@ -1061,6 +1066,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setQualityBadgesTileAccentColor,
       setNetworkTileColor,
       setGenreBadgeTileAccentColor,
+      setIconShape,
       setCommunityBadgeTheme,
       setAgeRatingBadgeStyle,
       setReleaseStatusBadgeStyle,
@@ -1252,6 +1258,7 @@ export function useConfiguratorWorkspaceConfigIo({
         qualityBadgesTileAccentColor,
         networkTileColor,
         genreBadgeTileAccentColor,
+        iconShape,
         communityBadgeTheme,
         ageRatingBadgeStyle,
         releaseStatusBadgeStyle,
@@ -1442,6 +1449,7 @@ export function useConfiguratorWorkspaceConfigIo({
       qualityBadgesTileAccentColor,
       networkTileColor,
       genreBadgeTileAccentColor,
+      iconShape,
       communityBadgeTheme,
       ageRatingBadgeStyle,
       releaseStatusBadgeStyle,
