@@ -284,6 +284,8 @@ export type ImageRouteRequestState = {
   sideRatingsOffset: number;
   qualityBadgesSide: QualityBadgesSide;
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
+  posterQualityBadgeOffsetX: number;
+  posterQualityBadgeOffsetY: number;
   ageRatingBadgePosition: AgeRatingBadgePosition;
   qualityBadgesStyle: QualityBadgeStyle;
   communityBadgeTheme: CommunityBadgeTheme;
@@ -1037,6 +1039,18 @@ export const resolveImageRouteRequestState = async ({
   const posterQualityBadgesPosition = normalizePosterQualityBadgesPosition(
     searchParams.get('posterQualityBadgesPosition'),
   );
+  const posterQualityBadgeOffsetX = normalizeRatingStackOffsetPx(
+    searchParams.get('posterQualityBadgeOffsetX') ??
+      searchParams.get('posterQualityBadgesOffsetX') ??
+      searchParams.get('qualityBadgeOffsetX'),
+    DEFAULT_RATING_STACK_OFFSET_PX,
+  );
+  const posterQualityBadgeOffsetY = normalizeRatingStackOffsetPx(
+    searchParams.get('posterQualityBadgeOffsetY') ??
+      searchParams.get('posterQualityBadgesOffsetY') ??
+      searchParams.get('qualityBadgeOffsetY'),
+    DEFAULT_RATING_STACK_OFFSET_PX,
+  );
   const ageRatingBadgePosition = normalizeAgeRatingBadgePosition(
     searchParams.get('ageRatingBadgePosition'),
   );
@@ -1586,6 +1600,8 @@ export const resolveImageRouteRequestState = async ({
     logoBottomRatingsRow: effectiveLogoBottomRatingsRow,
     qualityBadgesSide,
     posterQualityBadgesPosition,
+    posterQualityBadgeOffsetX,
+    posterQualityBadgeOffsetY,
     ageRatingBadgePosition,
     qualityBadgesStyle,
     communityBadgeTheme,
@@ -1693,6 +1709,8 @@ export const resolveImageRouteRequestState = async ({
     sideRatingsOffset,
     qualityBadgesSide,
     posterQualityBadgesPosition,
+    posterQualityBadgeOffsetX,
+    posterQualityBadgeOffsetY,
     ageRatingBadgePosition,
     qualityBadgesStyle,
     communityBadgeTheme,

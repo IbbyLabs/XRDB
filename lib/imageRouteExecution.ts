@@ -488,6 +488,8 @@ export const executeImageRouteRender = async ({
           qualityBadges: renderLayout.qualityBadges,
           qualityBadgesSide: requestState.qualityBadgesSide,
           posterQualityBadgesPosition: requestState.posterQualityBadgesPosition,
+          posterQualityBadgeOffsetX: requestState.posterQualityBadgeOffsetX,
+          posterQualityBadgeOffsetY: requestState.posterQualityBadgeOffsetY,
           ageRatingBadgePosition: requestState.ageRatingBadgePosition,
           qualityBadgesStyle: requestState.qualityBadgesStyle,
           qualityBadgeScalePercent: renderLayout.effectiveQualityBadgeScalePercent,

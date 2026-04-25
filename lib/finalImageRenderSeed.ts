@@ -38,6 +38,8 @@ type FinalImageRenderSeedInput = {
   logoBottomRatingsRow: boolean;
   qualityBadgesSide: string;
   posterQualityBadgesPosition: string;
+  posterQualityBadgeOffsetX: number;
+  posterQualityBadgeOffsetY: number;
   ageRatingBadgePosition: string;
   qualityBadgesStyle: string;
   communityBadgeTheme: string;
@@ -170,6 +172,8 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     isPoster && (input.posterRatingsLayout === 'top' || input.posterRatingsLayout === 'bottom')
       ? input.posterQualityBadgesPosition
       : '-',
+    isPoster ? String(input.posterQualityBadgeOffsetX ?? 0) : '-',
+    isPoster ? String(input.posterQualityBadgeOffsetY ?? 0) : '-',
     isPoster ? input.ageRatingBadgePosition : '-',
     input.qualityBadgesStyle,
     (input.qualityBadgesStyle === 'community-badge' || input.ageRatingBadgeStyle === 'community-badge' || input.releaseStatusBadgeStyle === 'community-badge') ? input.communityBadgeTheme : '-',
@@ -251,6 +255,6 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.sourceFallbackKey || '-',
     input.canonicalEpisodeHintKey || '-',
     input.renderCacheBuster || '-',
-    'v14',
+    'v15',
   ].join('|');
 };
