@@ -344,6 +344,7 @@ test('workspace serialization round-trips shared settings and proxy state', () =
       qualityBadgesTileAccentColor: '',
       networkTileColor: '',
       genreBadgeTileAccentColor: '',
+      iconShape: 'original',
       communityBadgeTheme: 'gold',
       ageRatingBadgeStyle: null,
       releaseStatusBadgeStyle: null,

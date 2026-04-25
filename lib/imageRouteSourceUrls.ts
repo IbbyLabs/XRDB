@@ -22,11 +22,11 @@ export const isSharedCacheableSourceImageUrl = (value: string) => {
   }
 };
 
-export const buildProviderIconStorageKey = (iconUrl: string, iconCornerRadius = 0) =>
-  `icons/${PROVIDER_ICON_CACHE_VERSION}/${sha1Hex(`${iconUrl}|r:${iconCornerRadius}`)}.png`;
+export const buildProviderIconStorageKey = (iconUrl: string, iconCornerRadius = 0, iconShape = 'original') =>
+  `icons/${PROVIDER_ICON_CACHE_VERSION}/${sha1Hex(`${iconUrl}|r:${iconCornerRadius}|s:${iconShape}`)}.png`;
 
-export const buildProviderIconMemoryCacheKey = (iconUrl: string, iconCornerRadius = 0) =>
-  `icon:${PROVIDER_ICON_CACHE_VERSION}:${iconUrl}|r:${iconCornerRadius}`;
+export const buildProviderIconMemoryCacheKey = (iconUrl: string, iconCornerRadius = 0, iconShape = 'original') =>
+  `icon:${PROVIDER_ICON_CACHE_VERSION}:${iconUrl}|r:${iconCornerRadius}|s:${iconShape}`;
 
 export const pickTmdbImageSize = (imageType: ImageRouteArtworkType, outputWidth: number) => {
   if (imageType === 'poster') {

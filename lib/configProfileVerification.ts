@@ -36,6 +36,7 @@ import {
 } from './posterCompactRing.ts';
 import {
   DEFAULT_QUALITY_BADGES_STYLE,
+  ICON_SHAPE_OPTIONS,
   QUALITY_BADGE_STYLE_OPTIONS,
   RATING_STYLE_OPTIONS,
 } from './ratingAppearance.ts';
@@ -159,6 +160,7 @@ const REMUX_DISPLAY_VALUES = ['composite', 'separate'] as const;
 const QUALITY_BADGES_SIDE_VALUES = ['left', 'right'] as const;
 
 const ratingStyleValues = RATING_STYLE_OPTIONS.map((option) => option.id);
+const iconShapeValues = ICON_SHAPE_OPTIONS.map((option) => option.id);
 const qualityBadgeStyleValues = QUALITY_BADGE_STYLE_OPTIONS.map((option) => option.id);
 const communityBadgeThemeValues = COMMUNITY_BADGE_THEME_OPTIONS.map((option) => option.id);
 const genreBadgeModeValues = GENRE_BADGE_MODE_OPTIONS.map((option) => option.id);
@@ -237,6 +239,7 @@ const buildEntries = () => {
     { key: 'qualityBadgesTileAccentColor', coverageValues: HEX_COLOR_CASES, browserFamily: 'quality-badge', surfaces: ['shared'] },
     { key: 'networkTileColor', coverageValues: HEX_COLOR_CASES, browserFamily: 'quality-badge', surfaces: ['shared'] },
     { key: 'genreBadgeTileAccentColor', coverageValues: HEX_COLOR_CASES, browserFamily: 'genre-badge', surfaces: ['shared'] },
+    { key: 'iconShape', coverageValues: iconShapeValues, browserFamily: 'appearance', surfaces: ['shared'] },
     { key: 'communityBadgeTheme', coverageValues: communityBadgeThemeValues, requiredParams: { qualityBadgesStyle: 'community-badge' }, browserFamily: 'quality-badge', surfaces: ['shared'] },
     { key: 'ageRatingBadgeStyle', coverageValues: qualityBadgeStyleValues, browserFamily: 'quality-badge', surfaces: ['shared'] },
     { key: 'releaseStatusBadgeStyle', coverageValues: qualityBadgeStyleValues, browserFamily: 'quality-badge', surfaces: ['shared'] },

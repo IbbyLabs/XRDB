@@ -79,6 +79,7 @@ type FinalImageRenderSeedInput = {
   artworkSelectionSeed: string;
   ratingBlackStripEnabled: boolean;
   ratingStyle: string;
+  iconShape: string;
   ratingStackOffsetX: number;
   ratingStackOffsetY: number;
   ratingValueMode: string;
@@ -216,6 +217,7 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.artworkSelectionSeed || '-',
     input.ratingBlackStripEnabled ? 'strip' : '-',
     input.ratingStyle,
+    input.iconShape !== 'original' ? input.iconShape : '-',
     appliesStyleRatingOffset ? String(input.ratingStackOffsetX) : '-',
     appliesStyleRatingOffset ? String(input.ratingStackOffsetY) : '-',
     input.ratingValueMode,

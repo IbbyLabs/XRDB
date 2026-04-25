@@ -1330,67 +1330,6 @@ export function SimpleQuickTuneSection({
             </div>
           </div>
         ) : null}
-        {previewType === 'backdrop' ? (
-          <div>
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-              Backdrop Size
-            </div>
-            <div className="mt-2 flex flex-wrap gap-1">
-              {backdropImageSizeOptions.map((option) => (
-                <button
-                  key={`simple-backdrop-size-${option.id}`}
-                  type="button"
-                  onClick={() => onSelectBackdropImageSize(option.id)}
-                  className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
-                    backdropImageSize === option.id
-                      ? 'border-violet-500/60 bg-violet-500/12 text-white'
-                      : 'border-white/10 bg-black text-zinc-400 hover:border-white/20 hover:text-white'
-                  }`}
-                  title={option.description}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : null}
-
-        <div>
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
-            Artwork Source
-          </div>
-          <div className="mt-2 flex flex-wrap gap-1">
-            {(previewType === 'logo' ? logoArtworkSourceOptions : activeArtworkSourceOptions.filter((option) => option.id !== 'blackbar')).map((option) => (
-              <button
-                key={`simple-art-${option.id}`}
-                type="button"
-                onClick={() => {
-                  if (previewType === 'logo') {
-                    onSelectLogoArtworkSource(option.id);
-                    return;
-                  }
-                  if (previewType === 'backdrop') {
-                    onSelectBackdropArtworkSource(option.id);
-                    return;
-                  }
-                  if (previewType === 'thumbnail') {
-                    onSelectThumbnailArtworkSource(option.id);
-                    return;
-                  }
-                  onSelectPosterArtworkSource(option.id);
-                }}
-                className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
-                  (previewType === 'logo' ? logoArtworkSource : activeArtworkSource) === option.id
-                    ? 'border-violet-500/60 bg-violet-500/12 text-white'
-                    : 'border-white/10 bg-black text-zinc-400 hover:border-white/20 hover:text-white'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
             Genre Badge

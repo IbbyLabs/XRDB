@@ -63,7 +63,7 @@ import { DEFAULT_RATING_VALUE_MODE, type RatingValueMode } from '@/lib/ratingDis
 import { DEFAULT_POSTER_RATINGS_MAX_PER_SIDE, type PosterRatingLayout } from '@/lib/posterLayoutOptions';
 import { type RatingPreference } from '@/lib/ratingProviderCatalog';
 import { type RemuxDisplayMode } from '@/lib/mediaFeatures';
-import { DEFAULT_QUALITY_BADGES_STYLE, DEFAULT_RATING_STYLE, type QualityBadgeStyle, type RatingStyle } from '@/lib/ratingAppearance';
+import { DEFAULT_ICON_SHAPE, DEFAULT_QUALITY_BADGES_STYLE, DEFAULT_RATING_STYLE, type IconShape, type QualityBadgeStyle, type RatingStyle } from '@/lib/ratingAppearance';
 import { DEFAULT_COMMUNITY_BADGE_THEME, type CommunityBadgeTheme } from '@/lib/communityBadgeTheme';
 import { DEFAULT_SIDE_RATING_OFFSET, type SideRatingPosition } from '@/lib/sideRatingPosition';
 import {
@@ -263,6 +263,7 @@ export function useConfiguratorWorkspaceState() {
   const [qualityBadgesTileAccentColor, setQualityBadgesTileAccentColor] = useState<string>('');
   const [networkTileColor, setNetworkTileColor] = useState<string>('');
   const [genreBadgeTileAccentColor, setGenreBadgeTileAccentColor] = useState<string>('');
+  const [iconShape, setIconShape] = useState<IconShape>(DEFAULT_ICON_SHAPE);
   const [communityBadgeTheme, setCommunityBadgeTheme] = useState<CommunityBadgeTheme>(DEFAULT_COMMUNITY_BADGE_THEME);
   const [ageRatingBadgeStyle, setAgeRatingBadgeStyle] = useState<QualityBadgeStyle | null>(null);
   const [releaseStatusBadgeStyle, setReleaseStatusBadgeStyle] = useState<QualityBadgeStyle | null>(null);
@@ -342,6 +343,7 @@ export function useConfiguratorWorkspaceState() {
     qualityBadgesTileAccentColor,
     networkTileColor,
     genreBadgeTileAccentColor,
+    iconShape,
     communityBadgeTheme,
     ageRatingBadgeStyle,
     releaseStatusBadgeStyle,
@@ -527,6 +529,7 @@ export function useConfiguratorWorkspaceState() {
     setQualityBadgesTileAccentColor,
     setNetworkTileColor,
     setGenreBadgeTileAccentColor,
+    setIconShape,
     setCommunityBadgeTheme,
     setAgeRatingBadgeStyle,
     setReleaseStatusBadgeStyle,
