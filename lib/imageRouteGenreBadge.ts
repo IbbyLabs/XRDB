@@ -219,9 +219,10 @@ export const buildGenreBadgeSvg = (
   const fontSize = isClean
     ? Math.round(height * 0.50)
     : (resolvedMode === 'text' ? Math.round(height * 0.37) : Math.round(height * 0.34));
+  const normalizedInputLabel = genreBadge.label.trim();
   const label = isClean
-    ? CLEAN_GENRE_LABEL_BY_FAMILY[genreBadge.familyId]
-    : genreBadge.label.trim().toUpperCase();
+    ? normalizedInputLabel || CLEAN_GENRE_LABEL_BY_FAMILY[genreBadge.familyId]
+    : normalizedInputLabel.toUpperCase();
   const showIcon = resolvedMode === 'icon' || resolvedMode === 'both';
   const showText = resolvedMode === 'text' || resolvedMode === 'both';
   const paddingX =
