@@ -92,6 +92,53 @@ export type ConfigProfileInteractionCase = {
   expectedOmittedKeys?: readonly string[];
 };
 
+export const CONFIG_PROFILE_TYPE_SURFACES = ['poster', 'backdrop', 'thumbnail', 'logo'] as const;
+
+export const CONFIG_PROFILE_GLOBAL_KEYS = [
+  'tmdbKey',
+  'mdblistKey',
+  'xrdbKey',
+  'fanartKey',
+  'simklClientId',
+  'lang',
+  'tmdbIdScope',
+] as const;
+
+export const CONFIG_PROFILE_LEGACY_SHARED_OPTION_KEYS = [
+  'ratings',
+  'ratingValueMode',
+  'qualityBadgesStyle',
+  'ratingPresentation',
+  'aggregateRatingSource',
+  'aggregateAccentMode',
+  'aggregateAccentColor',
+  'aggregateCriticsAccentColor',
+  'aggregateAudienceAccentColor',
+  'aggregateValueColor',
+  'aggregateCriticsValueColor',
+  'aggregateAudienceValueColor',
+  'aggregateDynamicStops',
+  'aggregateAccentBarOffset',
+  'aggregateAccentBarVisible',
+  'ageRatingTileColor',
+  'releaseStatusTileColor',
+  'qualityBadgesTileAccentColor',
+  'networkTileColor',
+  'genreBadgeTileAccentColor',
+  'iconShape',
+  'communityBadgeTheme',
+  'ageRatingBadgeStyle',
+  'releaseStatusBadgeStyle',
+  'ratingXOffsetPillGlass',
+  'ratingYOffsetPillGlass',
+  'ratingXOffsetSquare',
+  'ratingYOffsetSquare',
+  'sideRatingsPosition',
+  'sideRatingsOffset',
+  'providerAppearance',
+  'qualityBadgeAppearance',
+] as const;
+
 const STRING_CASES = ['alpha', 'omega'] as const;
 const LANGUAGE_CASES = ['en', 'it', 'ja'] as const;
 const RATINGS_CASES = [
@@ -239,6 +286,10 @@ const buildEntries = () => {
     { key: 'qualityBadgesTileAccentColor', coverageValues: HEX_COLOR_CASES, browserFamily: 'quality-badge', surfaces: ['shared'] },
     { key: 'networkTileColor', coverageValues: HEX_COLOR_CASES, browserFamily: 'quality-badge', surfaces: ['shared'] },
     { key: 'genreBadgeTileAccentColor', coverageValues: HEX_COLOR_CASES, browserFamily: 'genre-badge', surfaces: ['shared'] },
+    { key: 'posterIconShape', coverageValues: iconShapeValues, browserFamily: 'appearance', surfaces: ['poster'] },
+    { key: 'backdropIconShape', coverageValues: iconShapeValues, browserFamily: 'appearance', surfaces: ['backdrop'] },
+    { key: 'thumbnailIconShape', coverageValues: iconShapeValues, browserFamily: 'appearance', surfaces: ['thumbnail'] },
+    { key: 'logoIconShape', coverageValues: iconShapeValues, browserFamily: 'appearance', surfaces: ['logo'] },
     { key: 'iconShape', coverageValues: iconShapeValues, browserFamily: 'appearance', surfaces: ['shared'] },
     { key: 'communityBadgeTheme', coverageValues: communityBadgeThemeValues, requiredParams: { qualityBadgesStyle: 'community-badge' }, browserFamily: 'quality-badge', surfaces: ['shared'] },
     { key: 'ageRatingBadgeStyle', coverageValues: qualityBadgeStyleValues, browserFamily: 'quality-badge', surfaces: ['shared'] },

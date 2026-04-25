@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import {
   DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX,
@@ -92,7 +92,20 @@ type ProxyType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 type WorkspaceCenterView = 'showcase' | 'preview' | 'guide';
 
 export function useConfiguratorWorkspaceState() {
-  const [previewType, setPreviewType] = useState<ProxyType>('poster');
+  const [previewType, setPreviewTypeState] = useState<ProxyType>('poster');
+  const previewTypeRef = useRef<ProxyType>('poster');
+  const setPreviewType = useCallback((value: ProxyType | ((prev: ProxyType) => ProxyType)) => {
+    if (typeof value === 'function') {
+      setPreviewTypeState((prev) => {
+        const next = value(prev);
+        previewTypeRef.current = next;
+        return next;
+      });
+      return;
+    }
+    previewTypeRef.current = value;
+    setPreviewTypeState(value);
+  }, []);
   const [mediaId, setMediaId] = useState('tt0133093');
   const [lang, setLang] = useState('en');
   const [posterImageSize, setPosterImageSize] = useState<PosterImageSize>('normal');
@@ -115,7 +128,10 @@ export function useConfiguratorWorkspaceState() {
   const [thumbnailRatingBlackStripEnabled, setThumbnailRatingBlackStripEnabled] = useState(false);
   const [thumbnailEpisodeArtwork, setThumbnailEpisodeArtwork] = useState<EpisodeArtworkMode>('still');
   const [backdropEpisodeArtwork, setBackdropEpisodeArtwork] = useState<EpisodeArtworkMode>('series');
-  const [ratingValueMode, setRatingValueMode] = useState<RatingValueMode>(DEFAULT_RATING_VALUE_MODE);
+  const [posterRatingValueMode, setPosterRatingValueMode] = useState<RatingValueMode>(DEFAULT_RATING_VALUE_MODE);
+  const [backdropRatingValueMode, setBackdropRatingValueMode] = useState<RatingValueMode>(DEFAULT_RATING_VALUE_MODE);
+  const [thumbnailRatingValueMode, setThumbnailRatingValueMode] = useState<RatingValueMode>(DEFAULT_RATING_VALUE_MODE);
+  const [logoRatingValueMode, setLogoRatingValueMode] = useState<RatingValueMode>(DEFAULT_RATING_VALUE_MODE);
   const [posterGenreBadgeMode, setPosterGenreBadgeMode] = useState<GenreBadgeMode>(DEFAULT_GENRE_BADGE_MODE);
   const [backdropGenreBadgeMode, setBackdropGenreBadgeMode] = useState<GenreBadgeMode>(DEFAULT_GENRE_BADGE_MODE);
   const [thumbnailGenreBadgeMode, setThumbnailGenreBadgeMode] = useState<GenreBadgeMode>(DEFAULT_GENRE_BADGE_MODE);
@@ -242,16 +258,46 @@ export function useConfiguratorWorkspaceState() {
   const [posterRingAudiencePriority, setPosterRingAudiencePriority] = useState<RatingPreference[]>(
     [...DEFAULT_POSTER_COMPACT_RING_AUDIENCE_PRIORITY],
   );
-  const [aggregateAccentMode, setAggregateAccentMode] = useState<AggregateAccentMode>(DEFAULT_AGGREGATE_ACCENT_MODE);
-  const [aggregateAccentColor, setAggregateAccentColor] = useState<string>(DEFAULT_AGGREGATE_ACCENT_COLOR);
-  const [aggregateCriticsAccentColor, setAggregateCriticsAccentColor] = useState<string>(AGGREGATE_RATING_SOURCE_ACCENTS.critics);
-  const [aggregateAudienceAccentColor, setAggregateAudienceAccentColor] = useState<string>(AGGREGATE_RATING_SOURCE_ACCENTS.audience);
-  const [aggregateValueColor, setAggregateValueColor] = useState<string>(DEFAULT_AGGREGATE_VALUE_COLOR);
-  const [aggregateCriticsValueColor, setAggregateCriticsValueColor] = useState<string>(DEFAULT_AGGREGATE_VALUE_COLOR);
-  const [aggregateAudienceValueColor, setAggregateAudienceValueColor] = useState<string>(DEFAULT_AGGREGATE_VALUE_COLOR);
-  const [aggregateDynamicStops, setAggregateDynamicStops] = useState<string>(DEFAULT_AGGREGATE_DYNAMIC_STOPS);
-  const [aggregateAccentBarOffset, setAggregateAccentBarOffset] = useState<number>(DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET);
-  const [aggregateAccentBarVisible, setAggregateAccentBarVisible] = useState(true);
+  const [posterAggregateAccentMode, setPosterAggregateAccentMode] = useState<AggregateAccentMode>(DEFAULT_AGGREGATE_ACCENT_MODE);
+  const [backdropAggregateAccentMode, setBackdropAggregateAccentMode] = useState<AggregateAccentMode>(DEFAULT_AGGREGATE_ACCENT_MODE);
+  const [thumbnailAggregateAccentMode, setThumbnailAggregateAccentMode] = useState<AggregateAccentMode>(DEFAULT_AGGREGATE_ACCENT_MODE);
+  const [logoAggregateAccentMode, setLogoAggregateAccentMode] = useState<AggregateAccentMode>(DEFAULT_AGGREGATE_ACCENT_MODE);
+  const [posterAggregateAccentColor, setPosterAggregateAccentColor] = useState<string>(DEFAULT_AGGREGATE_ACCENT_COLOR);
+  const [backdropAggregateAccentColor, setBackdropAggregateAccentColor] = useState<string>(DEFAULT_AGGREGATE_ACCENT_COLOR);
+  const [thumbnailAggregateAccentColor, setThumbnailAggregateAccentColor] = useState<string>(DEFAULT_AGGREGATE_ACCENT_COLOR);
+  const [logoAggregateAccentColor, setLogoAggregateAccentColor] = useState<string>(DEFAULT_AGGREGATE_ACCENT_COLOR);
+  const [posterAggregateCriticsAccentColor, setPosterAggregateCriticsAccentColor] = useState<string>(AGGREGATE_RATING_SOURCE_ACCENTS.critics);
+  const [backdropAggregateCriticsAccentColor, setBackdropAggregateCriticsAccentColor] = useState<string>(AGGREGATE_RATING_SOURCE_ACCENTS.critics);
+  const [thumbnailAggregateCriticsAccentColor, setThumbnailAggregateCriticsAccentColor] = useState<string>(AGGREGATE_RATING_SOURCE_ACCENTS.critics);
+  const [logoAggregateCriticsAccentColor, setLogoAggregateCriticsAccentColor] = useState<string>(AGGREGATE_RATING_SOURCE_ACCENTS.critics);
+  const [posterAggregateAudienceAccentColor, setPosterAggregateAudienceAccentColor] = useState<string>(AGGREGATE_RATING_SOURCE_ACCENTS.audience);
+  const [backdropAggregateAudienceAccentColor, setBackdropAggregateAudienceAccentColor] = useState<string>(AGGREGATE_RATING_SOURCE_ACCENTS.audience);
+  const [thumbnailAggregateAudienceAccentColor, setThumbnailAggregateAudienceAccentColor] = useState<string>(AGGREGATE_RATING_SOURCE_ACCENTS.audience);
+  const [logoAggregateAudienceAccentColor, setLogoAggregateAudienceAccentColor] = useState<string>(AGGREGATE_RATING_SOURCE_ACCENTS.audience);
+  const [posterAggregateValueColor, setPosterAggregateValueColor] = useState<string>(DEFAULT_AGGREGATE_VALUE_COLOR);
+  const [backdropAggregateValueColor, setBackdropAggregateValueColor] = useState<string>(DEFAULT_AGGREGATE_VALUE_COLOR);
+  const [thumbnailAggregateValueColor, setThumbnailAggregateValueColor] = useState<string>(DEFAULT_AGGREGATE_VALUE_COLOR);
+  const [logoAggregateValueColor, setLogoAggregateValueColor] = useState<string>(DEFAULT_AGGREGATE_VALUE_COLOR);
+  const [posterAggregateCriticsValueColor, setPosterAggregateCriticsValueColor] = useState<string>(DEFAULT_AGGREGATE_VALUE_COLOR);
+  const [backdropAggregateCriticsValueColor, setBackdropAggregateCriticsValueColor] = useState<string>(DEFAULT_AGGREGATE_VALUE_COLOR);
+  const [thumbnailAggregateCriticsValueColor, setThumbnailAggregateCriticsValueColor] = useState<string>(DEFAULT_AGGREGATE_VALUE_COLOR);
+  const [logoAggregateCriticsValueColor, setLogoAggregateCriticsValueColor] = useState<string>(DEFAULT_AGGREGATE_VALUE_COLOR);
+  const [posterAggregateAudienceValueColor, setPosterAggregateAudienceValueColor] = useState<string>(DEFAULT_AGGREGATE_VALUE_COLOR);
+  const [backdropAggregateAudienceValueColor, setBackdropAggregateAudienceValueColor] = useState<string>(DEFAULT_AGGREGATE_VALUE_COLOR);
+  const [thumbnailAggregateAudienceValueColor, setThumbnailAggregateAudienceValueColor] = useState<string>(DEFAULT_AGGREGATE_VALUE_COLOR);
+  const [logoAggregateAudienceValueColor, setLogoAggregateAudienceValueColor] = useState<string>(DEFAULT_AGGREGATE_VALUE_COLOR);
+  const [posterAggregateDynamicStops, setPosterAggregateDynamicStops] = useState<string>(DEFAULT_AGGREGATE_DYNAMIC_STOPS);
+  const [backdropAggregateDynamicStops, setBackdropAggregateDynamicStops] = useState<string>(DEFAULT_AGGREGATE_DYNAMIC_STOPS);
+  const [thumbnailAggregateDynamicStops, setThumbnailAggregateDynamicStops] = useState<string>(DEFAULT_AGGREGATE_DYNAMIC_STOPS);
+  const [logoAggregateDynamicStops, setLogoAggregateDynamicStops] = useState<string>(DEFAULT_AGGREGATE_DYNAMIC_STOPS);
+  const [posterAggregateAccentBarOffset, setPosterAggregateAccentBarOffset] = useState<number>(DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET);
+  const [backdropAggregateAccentBarOffset, setBackdropAggregateAccentBarOffset] = useState<number>(DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET);
+  const [thumbnailAggregateAccentBarOffset, setThumbnailAggregateAccentBarOffset] = useState<number>(DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET);
+  const [logoAggregateAccentBarOffset, setLogoAggregateAccentBarOffset] = useState<number>(DEFAULT_AGGREGATE_ACCENT_BAR_OFFSET);
+  const [posterAggregateAccentBarVisible, setPosterAggregateAccentBarVisible] = useState(true);
+  const [backdropAggregateAccentBarVisible, setBackdropAggregateAccentBarVisible] = useState(true);
+  const [thumbnailAggregateAccentBarVisible, setThumbnailAggregateAccentBarVisible] = useState(true);
+  const [logoAggregateAccentBarVisible, setLogoAggregateAccentBarVisible] = useState(true);
   const [posterNoBackgroundBadgeOutlineColor, setPosterNoBackgroundBadgeOutlineColor] = useState<string>(
     DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR,
   );
@@ -263,7 +309,10 @@ export function useConfiguratorWorkspaceState() {
   const [qualityBadgesTileAccentColor, setQualityBadgesTileAccentColor] = useState<string>('');
   const [networkTileColor, setNetworkTileColor] = useState<string>('');
   const [genreBadgeTileAccentColor, setGenreBadgeTileAccentColor] = useState<string>('');
-  const [iconShape, setIconShape] = useState<IconShape>(DEFAULT_ICON_SHAPE);
+  const [posterIconShape, setPosterIconShape] = useState<IconShape>(DEFAULT_ICON_SHAPE);
+  const [backdropIconShape, setBackdropIconShape] = useState<IconShape>(DEFAULT_ICON_SHAPE);
+  const [thumbnailIconShape, setThumbnailIconShape] = useState<IconShape>(DEFAULT_ICON_SHAPE);
+  const [logoIconShape, setLogoIconShape] = useState<IconShape>(DEFAULT_ICON_SHAPE);
   const [communityBadgeTheme, setCommunityBadgeTheme] = useState<CommunityBadgeTheme>(DEFAULT_COMMUNITY_BADGE_THEME);
   const [ageRatingBadgeStyle, setAgeRatingBadgeStyle] = useState<QualityBadgeStyle | null>(null);
   const [releaseStatusBadgeStyle, setReleaseStatusBadgeStyle] = useState<QualityBadgeStyle | null>(null);
@@ -323,6 +372,284 @@ export function useConfiguratorWorkspaceState() {
     [thumbnailRatingRows],
   );
   const logoRatingPreferences = useMemo(() => rowsToEnabledOrdered(logoRatingRows), [logoRatingRows]);
+  const iconShape =
+    previewType === 'poster'
+      ? posterIconShape
+      : previewType === 'backdrop'
+        ? backdropIconShape
+        : previewType === 'thumbnail'
+          ? thumbnailIconShape
+          : logoIconShape;
+  const setIconShape = useCallback((value: IconShape | ((prev: IconShape) => IconShape)) => {
+    if (previewTypeRef.current === 'poster') {
+      setPosterIconShape(value);
+      return;
+    }
+    if (previewTypeRef.current === 'backdrop') {
+      setBackdropIconShape(value);
+      return;
+    }
+    if (previewTypeRef.current === 'thumbnail') {
+      setThumbnailIconShape(value);
+      return;
+    }
+    setLogoIconShape(value);
+  }, []);
+
+  const ratingValueMode =
+    previewType === 'poster'
+      ? posterRatingValueMode
+      : previewType === 'backdrop'
+        ? backdropRatingValueMode
+        : previewType === 'thumbnail'
+          ? thumbnailRatingValueMode
+          : logoRatingValueMode;
+  const setRatingValueMode = useCallback((value: RatingValueMode | ((prev: RatingValueMode) => RatingValueMode)) => {
+    if (previewType === 'poster') {
+      setPosterRatingValueMode(value);
+      return;
+    }
+    if (previewType === 'backdrop') {
+      setBackdropRatingValueMode(value);
+      return;
+    }
+    if (previewType === 'thumbnail') {
+      setThumbnailRatingValueMode(value);
+      return;
+    }
+    setLogoRatingValueMode(value);
+  }, [previewType]);
+
+  const aggregateAccentMode =
+    previewType === 'poster'
+      ? posterAggregateAccentMode
+      : previewType === 'backdrop'
+        ? backdropAggregateAccentMode
+        : previewType === 'thumbnail'
+          ? thumbnailAggregateAccentMode
+          : logoAggregateAccentMode;
+  const aggregateAccentColor =
+    previewType === 'poster'
+      ? posterAggregateAccentColor
+      : previewType === 'backdrop'
+        ? backdropAggregateAccentColor
+        : previewType === 'thumbnail'
+          ? thumbnailAggregateAccentColor
+          : logoAggregateAccentColor;
+  const aggregateCriticsAccentColor =
+    previewType === 'poster'
+      ? posterAggregateCriticsAccentColor
+      : previewType === 'backdrop'
+        ? backdropAggregateCriticsAccentColor
+        : previewType === 'thumbnail'
+          ? thumbnailAggregateCriticsAccentColor
+          : logoAggregateCriticsAccentColor;
+  const aggregateAudienceAccentColor =
+    previewType === 'poster'
+      ? posterAggregateAudienceAccentColor
+      : previewType === 'backdrop'
+        ? backdropAggregateAudienceAccentColor
+        : previewType === 'thumbnail'
+          ? thumbnailAggregateAudienceAccentColor
+          : logoAggregateAudienceAccentColor;
+  const aggregateValueColor =
+    previewType === 'poster'
+      ? posterAggregateValueColor
+      : previewType === 'backdrop'
+        ? backdropAggregateValueColor
+        : previewType === 'thumbnail'
+          ? thumbnailAggregateValueColor
+          : logoAggregateValueColor;
+  const aggregateCriticsValueColor =
+    previewType === 'poster'
+      ? posterAggregateCriticsValueColor
+      : previewType === 'backdrop'
+        ? backdropAggregateCriticsValueColor
+        : previewType === 'thumbnail'
+          ? thumbnailAggregateCriticsValueColor
+          : logoAggregateCriticsValueColor;
+  const aggregateAudienceValueColor =
+    previewType === 'poster'
+      ? posterAggregateAudienceValueColor
+      : previewType === 'backdrop'
+        ? backdropAggregateAudienceValueColor
+        : previewType === 'thumbnail'
+          ? thumbnailAggregateAudienceValueColor
+          : logoAggregateAudienceValueColor;
+  const aggregateDynamicStops =
+    previewType === 'poster'
+      ? posterAggregateDynamicStops
+      : previewType === 'backdrop'
+        ? backdropAggregateDynamicStops
+        : previewType === 'thumbnail'
+          ? thumbnailAggregateDynamicStops
+          : logoAggregateDynamicStops;
+  const aggregateAccentBarOffset =
+    previewType === 'poster'
+      ? posterAggregateAccentBarOffset
+      : previewType === 'backdrop'
+        ? backdropAggregateAccentBarOffset
+        : previewType === 'thumbnail'
+          ? thumbnailAggregateAccentBarOffset
+          : logoAggregateAccentBarOffset;
+  const aggregateAccentBarVisible =
+    previewType === 'poster'
+      ? posterAggregateAccentBarVisible
+      : previewType === 'backdrop'
+        ? backdropAggregateAccentBarVisible
+        : previewType === 'thumbnail'
+          ? thumbnailAggregateAccentBarVisible
+          : logoAggregateAccentBarVisible;
+  const setAggregateAccentMode = useCallback((value: AggregateAccentMode | ((prev: AggregateAccentMode) => AggregateAccentMode)) => {
+    if (previewType === 'poster') {
+      setPosterAggregateAccentMode(value);
+      return;
+    }
+    if (previewType === 'backdrop') {
+      setBackdropAggregateAccentMode(value);
+      return;
+    }
+    if (previewType === 'thumbnail') {
+      setThumbnailAggregateAccentMode(value);
+      return;
+    }
+    setLogoAggregateAccentMode(value);
+  }, [previewType]);
+  const setAggregateAccentColor = useCallback((value: string | ((prev: string) => string)) => {
+    if (previewType === 'poster') {
+      setPosterAggregateAccentColor(value);
+      return;
+    }
+    if (previewType === 'backdrop') {
+      setBackdropAggregateAccentColor(value);
+      return;
+    }
+    if (previewType === 'thumbnail') {
+      setThumbnailAggregateAccentColor(value);
+      return;
+    }
+    setLogoAggregateAccentColor(value);
+  }, [previewType]);
+  const setAggregateCriticsAccentColor = useCallback((value: string | ((prev: string) => string)) => {
+    if (previewType === 'poster') {
+      setPosterAggregateCriticsAccentColor(value);
+      return;
+    }
+    if (previewType === 'backdrop') {
+      setBackdropAggregateCriticsAccentColor(value);
+      return;
+    }
+    if (previewType === 'thumbnail') {
+      setThumbnailAggregateCriticsAccentColor(value);
+      return;
+    }
+    setLogoAggregateCriticsAccentColor(value);
+  }, [previewType]);
+  const setAggregateAudienceAccentColor = useCallback((value: string | ((prev: string) => string)) => {
+    if (previewType === 'poster') {
+      setPosterAggregateAudienceAccentColor(value);
+      return;
+    }
+    if (previewType === 'backdrop') {
+      setBackdropAggregateAudienceAccentColor(value);
+      return;
+    }
+    if (previewType === 'thumbnail') {
+      setThumbnailAggregateAudienceAccentColor(value);
+      return;
+    }
+    setLogoAggregateAudienceAccentColor(value);
+  }, [previewType]);
+  const setAggregateValueColor = useCallback((value: string | ((prev: string) => string)) => {
+    if (previewType === 'poster') {
+      setPosterAggregateValueColor(value);
+      return;
+    }
+    if (previewType === 'backdrop') {
+      setBackdropAggregateValueColor(value);
+      return;
+    }
+    if (previewType === 'thumbnail') {
+      setThumbnailAggregateValueColor(value);
+      return;
+    }
+    setLogoAggregateValueColor(value);
+  }, [previewType]);
+  const setAggregateCriticsValueColor = useCallback((value: string | ((prev: string) => string)) => {
+    if (previewType === 'poster') {
+      setPosterAggregateCriticsValueColor(value);
+      return;
+    }
+    if (previewType === 'backdrop') {
+      setBackdropAggregateCriticsValueColor(value);
+      return;
+    }
+    if (previewType === 'thumbnail') {
+      setThumbnailAggregateCriticsValueColor(value);
+      return;
+    }
+    setLogoAggregateCriticsValueColor(value);
+  }, [previewType]);
+  const setAggregateAudienceValueColor = useCallback((value: string | ((prev: string) => string)) => {
+    if (previewType === 'poster') {
+      setPosterAggregateAudienceValueColor(value);
+      return;
+    }
+    if (previewType === 'backdrop') {
+      setBackdropAggregateAudienceValueColor(value);
+      return;
+    }
+    if (previewType === 'thumbnail') {
+      setThumbnailAggregateAudienceValueColor(value);
+      return;
+    }
+    setLogoAggregateAudienceValueColor(value);
+  }, [previewType]);
+  const setAggregateDynamicStops = useCallback((value: string | ((prev: string) => string)) => {
+    if (previewType === 'poster') {
+      setPosterAggregateDynamicStops(value);
+      return;
+    }
+    if (previewType === 'backdrop') {
+      setBackdropAggregateDynamicStops(value);
+      return;
+    }
+    if (previewType === 'thumbnail') {
+      setThumbnailAggregateDynamicStops(value);
+      return;
+    }
+    setLogoAggregateDynamicStops(value);
+  }, [previewType]);
+  const setAggregateAccentBarOffset = useCallback((value: number | ((prev: number) => number)) => {
+    if (previewType === 'poster') {
+      setPosterAggregateAccentBarOffset(value);
+      return;
+    }
+    if (previewType === 'backdrop') {
+      setBackdropAggregateAccentBarOffset(value);
+      return;
+    }
+    if (previewType === 'thumbnail') {
+      setThumbnailAggregateAccentBarOffset(value);
+      return;
+    }
+    setLogoAggregateAccentBarOffset(value);
+  }, [previewType]);
+  const setAggregateAccentBarVisible = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
+    if (previewType === 'poster') {
+      setPosterAggregateAccentBarVisible(value);
+      return;
+    }
+    if (previewType === 'backdrop') {
+      setBackdropAggregateAccentBarVisible(value);
+      return;
+    }
+    if (previewType === 'thumbnail') {
+      setThumbnailAggregateAccentBarVisible(value);
+      return;
+    }
+    setLogoAggregateAccentBarVisible(value);
+  }, [previewType]);
 
   return {
     activeProviderEditorId,
@@ -336,6 +663,46 @@ export function useConfiguratorWorkspaceState() {
     aggregateCriticsValueColor,
     aggregateDynamicStops,
     aggregateValueColor,
+    posterAggregateAccentMode,
+    backdropAggregateAccentMode,
+    thumbnailAggregateAccentMode,
+    logoAggregateAccentMode,
+    posterAggregateAccentColor,
+    backdropAggregateAccentColor,
+    thumbnailAggregateAccentColor,
+    logoAggregateAccentColor,
+    posterAggregateCriticsAccentColor,
+    backdropAggregateCriticsAccentColor,
+    thumbnailAggregateCriticsAccentColor,
+    logoAggregateCriticsAccentColor,
+    posterAggregateAudienceAccentColor,
+    backdropAggregateAudienceAccentColor,
+    thumbnailAggregateAudienceAccentColor,
+    logoAggregateAudienceAccentColor,
+    posterAggregateValueColor,
+    backdropAggregateValueColor,
+    thumbnailAggregateValueColor,
+    logoAggregateValueColor,
+    posterAggregateCriticsValueColor,
+    backdropAggregateCriticsValueColor,
+    thumbnailAggregateCriticsValueColor,
+    logoAggregateCriticsValueColor,
+    posterAggregateAudienceValueColor,
+    backdropAggregateAudienceValueColor,
+    thumbnailAggregateAudienceValueColor,
+    logoAggregateAudienceValueColor,
+    posterAggregateDynamicStops,
+    backdropAggregateDynamicStops,
+    thumbnailAggregateDynamicStops,
+    logoAggregateDynamicStops,
+    posterAggregateAccentBarOffset,
+    backdropAggregateAccentBarOffset,
+    thumbnailAggregateAccentBarOffset,
+    logoAggregateAccentBarOffset,
+    posterAggregateAccentBarVisible,
+    backdropAggregateAccentBarVisible,
+    thumbnailAggregateAccentBarVisible,
+    logoAggregateAccentBarVisible,
     posterNoBackgroundBadgeOutlineColor,
     posterNoBackgroundBadgeOutlineWidth,
     ageRatingTileColor,
@@ -343,6 +710,10 @@ export function useConfiguratorWorkspaceState() {
     qualityBadgesTileAccentColor,
     networkTileColor,
     genreBadgeTileAccentColor,
+    posterIconShape,
+    backdropIconShape,
+    thumbnailIconShape,
+    logoIconShape,
     iconShape,
     communityBadgeTheme,
     ageRatingBadgeStyle,
@@ -509,6 +880,10 @@ export function useConfiguratorWorkspaceState() {
     ratingYOffsetSquare,
     ratingProviderAppearanceOverrides,
     ratingValueMode,
+    posterRatingValueMode,
+    backdropRatingValueMode,
+    thumbnailRatingValueMode,
+    logoRatingValueMode,
       qualityBadgeAppearanceOverrides,
     selectedPresetId,
     setActiveProviderEditorId,
@@ -522,6 +897,46 @@ export function useConfiguratorWorkspaceState() {
     setAggregateCriticsValueColor,
     setAggregateDynamicStops,
     setAggregateValueColor,
+    setPosterAggregateAccentMode,
+    setBackdropAggregateAccentMode,
+    setThumbnailAggregateAccentMode,
+    setLogoAggregateAccentMode,
+    setPosterAggregateAccentColor,
+    setBackdropAggregateAccentColor,
+    setThumbnailAggregateAccentColor,
+    setLogoAggregateAccentColor,
+    setPosterAggregateCriticsAccentColor,
+    setBackdropAggregateCriticsAccentColor,
+    setThumbnailAggregateCriticsAccentColor,
+    setLogoAggregateCriticsAccentColor,
+    setPosterAggregateAudienceAccentColor,
+    setBackdropAggregateAudienceAccentColor,
+    setThumbnailAggregateAudienceAccentColor,
+    setLogoAggregateAudienceAccentColor,
+    setPosterAggregateValueColor,
+    setBackdropAggregateValueColor,
+    setThumbnailAggregateValueColor,
+    setLogoAggregateValueColor,
+    setPosterAggregateCriticsValueColor,
+    setBackdropAggregateCriticsValueColor,
+    setThumbnailAggregateCriticsValueColor,
+    setLogoAggregateCriticsValueColor,
+    setPosterAggregateAudienceValueColor,
+    setBackdropAggregateAudienceValueColor,
+    setThumbnailAggregateAudienceValueColor,
+    setLogoAggregateAudienceValueColor,
+    setPosterAggregateDynamicStops,
+    setBackdropAggregateDynamicStops,
+    setThumbnailAggregateDynamicStops,
+    setLogoAggregateDynamicStops,
+    setPosterAggregateAccentBarOffset,
+    setBackdropAggregateAccentBarOffset,
+    setThumbnailAggregateAccentBarOffset,
+    setLogoAggregateAccentBarOffset,
+    setPosterAggregateAccentBarVisible,
+    setBackdropAggregateAccentBarVisible,
+    setThumbnailAggregateAccentBarVisible,
+    setLogoAggregateAccentBarVisible,
     setPosterNoBackgroundBadgeOutlineColor,
     setPosterNoBackgroundBadgeOutlineWidth,
     setAgeRatingTileColor,
@@ -529,6 +944,10 @@ export function useConfiguratorWorkspaceState() {
     setQualityBadgesTileAccentColor,
     setNetworkTileColor,
     setGenreBadgeTileAccentColor,
+    setPosterIconShape,
+    setBackdropIconShape,
+    setThumbnailIconShape,
+    setLogoIconShape,
     setIconShape,
     setCommunityBadgeTheme,
     setAgeRatingBadgeStyle,
@@ -692,6 +1111,10 @@ export function useConfiguratorWorkspaceState() {
     setRatingYOffsetSquare,
     setRatingProviderAppearanceOverrides,
     setRatingValueMode,
+    setPosterRatingValueMode,
+    setBackdropRatingValueMode,
+    setThumbnailRatingValueMode,
+    setLogoRatingValueMode,
       setQualityBadgeAppearanceOverrides,
     setSelectedPresetId,
     setShowConfigString,

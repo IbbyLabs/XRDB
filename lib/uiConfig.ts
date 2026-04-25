@@ -298,6 +298,10 @@ export type SharedXrdbSettings = {
   thumbnailRatingStyle: RatingStyle;
   logoRatingStyle: RatingStyle;
   iconShape: IconShape;
+  posterIconShape: IconShape;
+  backdropIconShape: IconShape;
+  thumbnailIconShape: IconShape;
+  logoIconShape: IconShape;
   posterRatingBadgeScale: number;
   backdropRatingBadgeScale: number;
   thumbnailRatingBadgeScale: number;
@@ -600,6 +604,10 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   thumbnailRatingStyle: DEFAULT_RATING_STYLE,
   logoRatingStyle: 'plain',
   iconShape: DEFAULT_ICON_SHAPE,
+  posterIconShape: DEFAULT_ICON_SHAPE,
+  backdropIconShape: DEFAULT_ICON_SHAPE,
+  thumbnailIconShape: DEFAULT_ICON_SHAPE,
+  logoIconShape: DEFAULT_ICON_SHAPE,
   posterRatingBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   backdropRatingBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   thumbnailRatingBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
@@ -1522,6 +1530,18 @@ export const normalizeSharedXrdbSettings = (value: unknown, options?: { skipCros
         | undefined,
     ),
     iconShape: normalizeIconShape(candidate.iconShape as string | null | undefined),
+    posterIconShape: normalizeIconShape(
+      (candidate.posterIconShape ?? candidate.iconShape) as string | null | undefined,
+    ),
+    backdropIconShape: normalizeIconShape(
+      (candidate.backdropIconShape ?? candidate.iconShape) as string | null | undefined,
+    ),
+    thumbnailIconShape: normalizeIconShape(
+      (candidate.thumbnailIconShape ?? candidate.iconShape) as string | null | undefined,
+    ),
+    logoIconShape: normalizeIconShape(
+      (candidate.logoIconShape ?? candidate.iconShape) as string | null | undefined,
+    ),
     posterRatingPresentation: normalizeRatingPresentation(
       candidate.posterRatingPresentation,
       defaults.posterRatingPresentation,
@@ -2206,8 +2226,25 @@ const buildSharedPayload = (settings: SharedXrdbSettings, options?: SharedPayloa
   payload.backdropRatingStyle = settings.backdropRatingStyle;
   payload.thumbnailRatingStyle = settings.thumbnailRatingStyle;
   payload.logoRatingStyle = settings.logoRatingStyle;
-  if (settings.iconShape !== DEFAULT_ICON_SHAPE) {
-    payload.iconShape = settings.iconShape;
+  if (settings.posterIconShape !== DEFAULT_ICON_SHAPE) {
+    payload.posterIconShape = settings.posterIconShape;
+  }
+  if (settings.backdropIconShape !== DEFAULT_ICON_SHAPE) {
+    payload.backdropIconShape = settings.backdropIconShape;
+  }
+  if (settings.thumbnailIconShape !== DEFAULT_ICON_SHAPE) {
+    payload.thumbnailIconShape = settings.thumbnailIconShape;
+  }
+  if (settings.logoIconShape !== DEFAULT_ICON_SHAPE) {
+    payload.logoIconShape = settings.logoIconShape;
+  }
+  if (
+    settings.posterIconShape === settings.backdropIconShape
+    && settings.posterIconShape === settings.thumbnailIconShape
+    && settings.posterIconShape === settings.logoIconShape
+    && settings.posterIconShape !== DEFAULT_ICON_SHAPE
+  ) {
+    payload.iconShape = settings.posterIconShape;
   }
   if (settings.posterRatingBadgeScale !== DEFAULT_BADGE_SCALE_PERCENT) {
     payload.posterRatingBadgeScale = settings.posterRatingBadgeScale;

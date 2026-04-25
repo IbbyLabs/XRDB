@@ -1165,7 +1165,15 @@ export const resolveImageRouteRequestState = async ({
       ? 'plain'
       : DEFAULT_RATING_STYLE;
   const iconShape = normalizeIconShape(
-    searchParams.get('iconShape') || searchParams.get('iconClip'),
+    (
+      imageType === 'poster'
+        ? searchParams.get('posterIconShape')
+        : isThumbnailRequest
+          ? searchParams.get('thumbnailIconShape')
+          : imageType === 'backdrop'
+            ? searchParams.get('backdropIconShape')
+            : searchParams.get('logoIconShape')
+    ) || searchParams.get('iconShape') || searchParams.get('iconClip'),
   );
   const typeRatingXOffsetPillGlassParam =
     imageType === 'poster'

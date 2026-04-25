@@ -9,7 +9,10 @@ import {
   hasConfigProfileUnsavedChanges,
 } from '../lib/configProfileClientState.ts';
 import {
+  CONFIG_PROFILE_GLOBAL_KEYS,
   CONFIG_PROFILE_INTERACTION_CASES,
+  CONFIG_PROFILE_LEGACY_SHARED_OPTION_KEYS,
+  CONFIG_PROFILE_TYPE_SURFACES,
   CONFIG_PROFILE_VERIFICATION_ENTRIES,
 } from '../lib/configProfileVerification.ts';
 import { buildProfileParams, normalizeSavedUiConfig } from '../lib/uiConfig.ts';
@@ -56,6 +59,46 @@ test('saved profile verification schema covers every serialized config profile k
     .sort();
 
   assert.deepEqual(persistedKeys, serializerKeys);
+});
+
+test('config profile hard rule blocks new shared option keys', () => {
+  const globalKeySet = new Set(CONFIG_PROFILE_GLOBAL_KEYS);
+  const legacySharedKeySet = new Set(CONFIG_PROFILE_LEGACY_SHARED_OPTION_KEYS);
+  const typeSurfaceSet = new Set(CONFIG_PROFILE_TYPE_SURFACES);
+  const sharedSurfaceSet = new Set(['shared', 'shared-alias', 'legacy-alias']);
+
+  for (const entry of CONFIG_PROFILE_VERIFICATION_ENTRIES) {
+    const hasSharedSurface = entry.surfaces.some((surface) => sharedSurfaceSet.has(surface));
+    if (!hasSharedSurface) {
+      continue;
+    }
+
+    if (globalKeySet.has(entry.key)) {
+      continue;
+    }
+
+    assert.equal(
+      legacySharedKeySet.has(entry.key),
+      true,
+      `Shared option key ${entry.key} must be listed in CONFIG_PROFILE_LEGACY_SHARED_OPTION_KEYS`,
+    );
+  }
+
+  for (const entry of CONFIG_PROFILE_VERIFICATION_ENTRIES) {
+    const isGlobal = globalKeySet.has(entry.key);
+    const isLegacyShared = legacySharedKeySet.has(entry.key);
+    if (isGlobal || isLegacyShared) {
+      continue;
+    }
+
+    for (const surface of entry.surfaces) {
+      assert.equal(
+        typeSurfaceSet.has(surface),
+        true,
+        `${entry.key} must remain type scoped but uses surface ${surface}`,
+      );
+    }
+  }
 });
 
 test('saved profile verification entries round-trip every declared coverage value', () => {

@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 
 import { enabledOrderedToRows, type RatingProviderRow } from '@/lib/ratingProviderRows';
+import { DEFAULT_ICON_SHAPE } from '@/lib/ratingAppearance';
 import {
   normalizeManifestUrl,
   normalizeSavedUiConfig,
@@ -165,7 +166,10 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   qualityBadgesTileAccentColor: WorkspaceSettings['qualityBadgesTileAccentColor'];
   networkTileColor: WorkspaceSettings['networkTileColor'];
   genreBadgeTileAccentColor: WorkspaceSettings['genreBadgeTileAccentColor'];
-  iconShape: WorkspaceSettings['iconShape'];
+  posterIconShape: WorkspaceSettings['posterIconShape'];
+  backdropIconShape: WorkspaceSettings['backdropIconShape'];
+  thumbnailIconShape: WorkspaceSettings['thumbnailIconShape'];
+  logoIconShape: WorkspaceSettings['logoIconShape'];
   communityBadgeTheme: WorkspaceSettings['communityBadgeTheme'];
   ageRatingBadgeStyle: WorkspaceSettings['ageRatingBadgeStyle'];
   releaseStatusBadgeStyle: WorkspaceSettings['releaseStatusBadgeStyle'];
@@ -338,7 +342,10 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setQualityBadgesTileAccentColor: Setter<WorkspaceSettings['qualityBadgesTileAccentColor']>;
   setNetworkTileColor: Setter<WorkspaceSettings['networkTileColor']>;
   setGenreBadgeTileAccentColor: Setter<WorkspaceSettings['genreBadgeTileAccentColor']>;
-  setIconShape: Setter<WorkspaceSettings['iconShape']>;
+  setPosterIconShape: Setter<WorkspaceSettings['posterIconShape']>;
+  setBackdropIconShape: Setter<WorkspaceSettings['backdropIconShape']>;
+  setThumbnailIconShape: Setter<WorkspaceSettings['thumbnailIconShape']>;
+  setLogoIconShape: Setter<WorkspaceSettings['logoIconShape']>;
   setCommunityBadgeTheme: Setter<WorkspaceSettings['communityBadgeTheme']>;
   setAgeRatingBadgeStyle: Setter<WorkspaceSettings['ageRatingBadgeStyle']>;
   setReleaseStatusBadgeStyle: Setter<WorkspaceSettings['releaseStatusBadgeStyle']>;
@@ -527,7 +534,10 @@ export function useConfiguratorWorkspaceConfigIo({
   qualityBadgesTileAccentColor,
   networkTileColor,
   genreBadgeTileAccentColor,
-  iconShape,
+  posterIconShape,
+  backdropIconShape,
+  thumbnailIconShape,
+  logoIconShape,
   communityBadgeTheme,
   ageRatingBadgeStyle,
   releaseStatusBadgeStyle,
@@ -700,7 +710,10 @@ export function useConfiguratorWorkspaceConfigIo({
   setQualityBadgesTileAccentColor,
   setNetworkTileColor,
   setGenreBadgeTileAccentColor,
-  setIconShape,
+  setPosterIconShape,
+  setBackdropIconShape,
+  setThumbnailIconShape,
+  setLogoIconShape,
   setCommunityBadgeTheme,
   setAgeRatingBadgeStyle,
   setReleaseStatusBadgeStyle,
@@ -886,7 +899,10 @@ export function useConfiguratorWorkspaceConfigIo({
       setQualityBadgesTileAccentColor(normalized.settings.qualityBadgesTileAccentColor);
       setNetworkTileColor(normalized.settings.networkTileColor);
       setGenreBadgeTileAccentColor(normalized.settings.genreBadgeTileAccentColor);
-      setIconShape(normalized.settings.iconShape);
+      setPosterIconShape(normalized.settings.posterIconShape);
+      setBackdropIconShape(normalized.settings.backdropIconShape);
+      setThumbnailIconShape(normalized.settings.thumbnailIconShape);
+      setLogoIconShape(normalized.settings.logoIconShape);
       setCommunityBadgeTheme(normalized.settings.communityBadgeTheme);
       setAgeRatingBadgeStyle(normalized.settings.ageRatingBadgeStyle);
       setReleaseStatusBadgeStyle(normalized.settings.releaseStatusBadgeStyle);
@@ -1066,7 +1082,10 @@ export function useConfiguratorWorkspaceConfigIo({
       setQualityBadgesTileAccentColor,
       setNetworkTileColor,
       setGenreBadgeTileAccentColor,
-      setIconShape,
+      setPosterIconShape,
+      setBackdropIconShape,
+      setThumbnailIconShape,
+      setLogoIconShape,
       setCommunityBadgeTheme,
       setAgeRatingBadgeStyle,
       setReleaseStatusBadgeStyle,
@@ -1258,7 +1277,13 @@ export function useConfiguratorWorkspaceConfigIo({
         qualityBadgesTileAccentColor,
         networkTileColor,
         genreBadgeTileAccentColor,
-        iconShape,
+        iconShape: (posterIconShape === backdropIconShape && backdropIconShape === thumbnailIconShape && thumbnailIconShape === logoIconShape && posterIconShape !== DEFAULT_ICON_SHAPE)
+          ? posterIconShape
+          : DEFAULT_ICON_SHAPE,
+        posterIconShape,
+        backdropIconShape,
+        thumbnailIconShape,
+        logoIconShape,
         communityBadgeTheme,
         ageRatingBadgeStyle,
         releaseStatusBadgeStyle,
@@ -1449,7 +1474,10 @@ export function useConfiguratorWorkspaceConfigIo({
       qualityBadgesTileAccentColor,
       networkTileColor,
       genreBadgeTileAccentColor,
-      iconShape,
+      posterIconShape,
+      backdropIconShape,
+      thumbnailIconShape,
+      logoIconShape,
       communityBadgeTheme,
       ageRatingBadgeStyle,
       releaseStatusBadgeStyle,
