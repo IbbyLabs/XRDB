@@ -494,15 +494,21 @@ export const resolveGenreBadgeFamily = (input: {
       return GENRE_BADGE_FAMILY_META.romance;
     }
 
-    if (
-      hasGenreName(genreNames, 'science fiction', 'sci fi & fantasy', 'sci-fi & fantasy') ||
-      hasGenreId(genreIds, TMDB_GENRE.scienceFictionMovie, TMDB_GENRE.scifiFantasyTv)
-    ) {
-      return GENRE_BADGE_FAMILY_META.scifi;
+    const hasExplicitScienceFiction =
+      hasGenreName(genreNames, 'science fiction') ||
+      hasGenreId(genreIds, TMDB_GENRE.scienceFictionMovie);
+    const hasSciFiFantasyCombined =
+      hasGenreName(genreNames, 'sci fi & fantasy', 'sci-fi & fantasy') ||
+      hasGenreId(genreIds, TMDB_GENRE.scifiFantasyTv);
+    const hasFantasy =
+      hasGenreName(genreNames, 'fantasy') || hasGenreId(genreIds, TMDB_GENRE.fantasy);
+
+    if (hasFantasy && !hasExplicitScienceFiction) {
+      return GENRE_BADGE_FAMILY_META.fantasy;
     }
 
-    if (hasGenreName(genreNames, 'fantasy') || hasGenreId(genreIds, TMDB_GENRE.fantasy)) {
-      return GENRE_BADGE_FAMILY_META.fantasy;
+    if (hasExplicitScienceFiction || hasSciFiFantasyCombined) {
+      return GENRE_BADGE_FAMILY_META.scifi;
     }
 
     if (
