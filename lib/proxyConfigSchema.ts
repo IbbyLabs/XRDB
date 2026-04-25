@@ -21,6 +21,8 @@ const SHARED_IMAGE_QUERY_KEYS = [
   'genreBadgeStyle',
   'genreBadgePosition',
   'genreBadgeScale',
+  'genreBadgeOffsetX',
+  'genreBadgeOffsetY',
   'genreBadgeBorderWidth',
   'genreBadgeBackgroundOpacity',
   'genreBadgeAnimeGrouping',
@@ -75,6 +77,8 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'posterGenreBadgeStyle',
     'posterGenreBadgePosition',
     'posterGenreBadgeScale',
+    'posterGenreBadgeOffsetX',
+    'posterGenreBadgeOffsetY',
     'posterGenreBadgeBorderWidth',
     'posterGenreBadgeBackgroundOpacity',
     'posterGenreBadgeAnimeGrouping',
@@ -103,6 +107,8 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'backdropGenreBadgeStyle',
     'backdropGenreBadgePosition',
     'backdropGenreBadgeScale',
+    'backdropGenreBadgeOffsetX',
+    'backdropGenreBadgeOffsetY',
     'backdropGenreBadgeBorderWidth',
     'backdropGenreBadgeBackgroundOpacity',
     'backdropGenreBadgeAnimeGrouping',
@@ -128,6 +134,8 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'thumbnailGenreBadgeStyle',
     'thumbnailGenreBadgePosition',
     'thumbnailGenreBadgeScale',
+    'thumbnailGenreBadgeOffsetX',
+    'thumbnailGenreBadgeOffsetY',
     'thumbnailGenreBadgeBorderWidth',
     'thumbnailGenreBadgeBackgroundOpacity',
     'thumbnailGenreBadgeAnimeGrouping',
@@ -157,6 +165,8 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'logoGenreBadgeStyle',
     'logoGenreBadgePosition',
     'logoGenreBadgeScale',
+    'logoGenreBadgeOffsetX',
+    'logoGenreBadgeOffsetY',
     'logoGenreBadgeBorderWidth',
     'logoGenreBadgeBackgroundOpacity',
     'logoGenreBadgeAnimeGrouping',
@@ -223,6 +233,8 @@ export type ProxyConfig = {
   genreBadgeStyle?: string;
   genreBadgePosition?: string;
   genreBadgeScale?: string;
+  genreBadgeOffsetX?: string;
+  genreBadgeOffsetY?: string;
   genreBadgeBorderWidth?: string;
   genreBadgeBackgroundOpacity?: string;
   genreBadgeAnimeGrouping?: string;
@@ -242,6 +254,14 @@ export type ProxyConfig = {
   backdropGenreBadgeScale?: string;
   thumbnailGenreBadgeScale?: string;
   logoGenreBadgeScale?: string;
+  posterGenreBadgeOffsetX?: string;
+  posterGenreBadgeOffsetY?: string;
+  backdropGenreBadgeOffsetX?: string;
+  backdropGenreBadgeOffsetY?: string;
+  thumbnailGenreBadgeOffsetX?: string;
+  thumbnailGenreBadgeOffsetY?: string;
+  logoGenreBadgeOffsetX?: string;
+  logoGenreBadgeOffsetY?: string;
   posterGenreBadgeBorderWidth?: string;
   backdropGenreBadgeBorderWidth?: string;
   thumbnailGenreBadgeBorderWidth?: string;

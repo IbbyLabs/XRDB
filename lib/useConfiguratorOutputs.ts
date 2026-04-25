@@ -106,6 +106,8 @@ const GENRE_BADGE_QUERY_KEYS = {
     style: 'posterGenreBadgeStyle',
     position: 'posterGenreBadgePosition',
     scale: 'posterGenreBadgeScale',
+    offsetX: 'posterGenreBadgeOffsetX',
+    offsetY: 'posterGenreBadgeOffsetY',
     borderWidth: 'posterGenreBadgeBorderWidth',
     backgroundOpacity: 'posterGenreBadgeBackgroundOpacity',
     animeGrouping: 'posterGenreBadgeAnimeGrouping',
@@ -115,6 +117,8 @@ const GENRE_BADGE_QUERY_KEYS = {
     style: 'backdropGenreBadgeStyle',
     position: 'backdropGenreBadgePosition',
     scale: 'backdropGenreBadgeScale',
+    offsetX: 'backdropGenreBadgeOffsetX',
+    offsetY: 'backdropGenreBadgeOffsetY',
     borderWidth: 'backdropGenreBadgeBorderWidth',
     backgroundOpacity: 'backdropGenreBadgeBackgroundOpacity',
     animeGrouping: 'backdropGenreBadgeAnimeGrouping',
@@ -124,6 +128,8 @@ const GENRE_BADGE_QUERY_KEYS = {
     style: 'thumbnailGenreBadgeStyle',
     position: 'thumbnailGenreBadgePosition',
     scale: 'thumbnailGenreBadgeScale',
+    offsetX: 'thumbnailGenreBadgeOffsetX',
+    offsetY: 'thumbnailGenreBadgeOffsetY',
     borderWidth: 'thumbnailGenreBadgeBorderWidth',
     backgroundOpacity: 'thumbnailGenreBadgeBackgroundOpacity',
     animeGrouping: 'thumbnailGenreBadgeAnimeGrouping',
@@ -133,6 +139,8 @@ const GENRE_BADGE_QUERY_KEYS = {
     style: 'logoGenreBadgeStyle',
     position: 'logoGenreBadgePosition',
     scale: 'logoGenreBadgeScale',
+    offsetX: 'logoGenreBadgeOffsetX',
+    offsetY: 'logoGenreBadgeOffsetY',
     borderWidth: 'logoGenreBadgeBorderWidth',
     backgroundOpacity: 'logoGenreBadgeBackgroundOpacity',
     animeGrouping: 'logoGenreBadgeAnimeGrouping',
@@ -157,6 +165,8 @@ const appendGenreBadgeQueryParams = ({
   style,
   position,
   scale,
+  offsetX,
+  offsetY,
   borderWidth,
   backgroundOpacity,
   animeGrouping,
@@ -167,6 +177,8 @@ const appendGenreBadgeQueryParams = ({
   style: GenreBadgeStyle;
   position: GenreBadgePosition;
   scale: number;
+  offsetX: number;
+  offsetY: number;
   borderWidth: number;
   backgroundOpacity: number;
   animeGrouping: GenreBadgeAnimeGrouping;
@@ -185,6 +197,12 @@ const appendGenreBadgeQueryParams = ({
   }
   if (scale !== DEFAULT_BADGE_SCALE_PERCENT) {
     query.set(keys.scale, String(scale));
+  }
+  if (offsetX !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    query.set(keys.offsetX, String(offsetX));
+  }
+  if (offsetY !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    query.set(keys.offsetY, String(offsetY));
   }
   const defaultBorderWidth =
     type === 'poster'
@@ -217,6 +235,8 @@ const buildGenreSamplePreviewUrl = ({
   style,
   position,
   scale,
+  offsetX,
+  offsetY,
   borderWidth,
   backgroundOpacity,
   animeGrouping,
@@ -232,6 +252,8 @@ const buildGenreSamplePreviewUrl = ({
   style: GenreBadgeStyle;
   position: GenreBadgePosition;
   scale: number;
+  offsetX: number;
+  offsetY: number;
   borderWidth: number;
   backgroundOpacity: number;
   animeGrouping: GenreBadgeAnimeGrouping;
@@ -257,6 +279,8 @@ const buildGenreSamplePreviewUrl = ({
     style,
     position,
     scale,
+    offsetX,
+    offsetY,
     borderWidth,
     backgroundOpacity,
     animeGrouping,
@@ -274,6 +298,8 @@ export function useConfiguratorOutputs({
   activeGenreBadgeMode,
   activeGenreBadgePosition,
   activeGenreBadgeScale,
+  activeGenreBadgeOffsetX,
+  activeGenreBadgeOffsetY,
   activeGenreBadgeBorderWidth,
   activeGenreBadgeBackgroundOpacity,
   activeGenreBadgeStyle,
@@ -294,6 +320,8 @@ export function useConfiguratorOutputs({
   backdropGenreBadgeAnimeGrouping,
   backdropGenreBadgePosition,
   backdropGenreBadgeScale,
+  backdropGenreBadgeOffsetX,
+  backdropGenreBadgeOffsetY,
   backdropGenreBadgeBorderWidth,
   backdropGenreBadgeBackgroundOpacity,
   backdropGenreBadgeStyle,
@@ -321,6 +349,8 @@ export function useConfiguratorOutputs({
   thumbnailGenreBadgeAnimeGrouping,
   thumbnailGenreBadgePosition,
   thumbnailGenreBadgeScale,
+  thumbnailGenreBadgeOffsetX,
+  thumbnailGenreBadgeOffsetY,
   thumbnailGenreBadgeBorderWidth,
   thumbnailGenreBadgeBackgroundOpacity,
   thumbnailGenreBadgeStyle,
@@ -358,6 +388,8 @@ export function useConfiguratorOutputs({
   logoGenreBadgeAnimeGrouping,
   logoGenreBadgePosition,
   logoGenreBadgeScale,
+  logoGenreBadgeOffsetX,
+  logoGenreBadgeOffsetY,
   logoGenreBadgeBorderWidth,
   logoGenreBadgeBackgroundOpacity,
   logoGenreBadgeStyle,
@@ -386,6 +418,8 @@ export function useConfiguratorOutputs({
   posterGenreBadgeAnimeGrouping,
   posterGenreBadgePosition,
   posterGenreBadgeScale,
+  posterGenreBadgeOffsetX,
+  posterGenreBadgeOffsetY,
   posterGenreBadgeBorderWidth,
   posterGenreBadgeBackgroundOpacity,
   posterGenreBadgeStyle,
@@ -464,6 +498,8 @@ export function useConfiguratorOutputs({
   activeGenreBadgeMode: GenreBadgeMode;
   activeGenreBadgePosition: GenreBadgePosition;
   activeGenreBadgeScale: number;
+  activeGenreBadgeOffsetX: number;
+  activeGenreBadgeOffsetY: number;
   activeGenreBadgeBorderWidth: number;
   activeGenreBadgeBackgroundOpacity: number;
   activeGenreBadgeStyle: GenreBadgeStyle;
@@ -484,6 +520,8 @@ export function useConfiguratorOutputs({
   backdropGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   backdropGenreBadgePosition: GenreBadgePosition;
   backdropGenreBadgeScale: number;
+  backdropGenreBadgeOffsetX: number;
+  backdropGenreBadgeOffsetY: number;
   backdropGenreBadgeBorderWidth: number;
   backdropGenreBadgeBackgroundOpacity: number;
   backdropGenreBadgeStyle: GenreBadgeStyle;
@@ -511,6 +549,8 @@ export function useConfiguratorOutputs({
   thumbnailGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   thumbnailGenreBadgePosition: GenreBadgePosition;
   thumbnailGenreBadgeScale: number;
+  thumbnailGenreBadgeOffsetX: number;
+  thumbnailGenreBadgeOffsetY: number;
   thumbnailGenreBadgeBorderWidth: number;
   thumbnailGenreBadgeBackgroundOpacity: number;
   thumbnailGenreBadgeStyle: GenreBadgeStyle;
@@ -548,6 +588,8 @@ export function useConfiguratorOutputs({
   logoGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   logoGenreBadgePosition: GenreBadgePosition;
   logoGenreBadgeScale: number;
+  logoGenreBadgeOffsetX: number;
+  logoGenreBadgeOffsetY: number;
   logoGenreBadgeBorderWidth: number;
   logoGenreBadgeBackgroundOpacity: number;
   logoGenreBadgeStyle: GenreBadgeStyle;
@@ -576,6 +618,8 @@ export function useConfiguratorOutputs({
   posterGenreBadgeAnimeGrouping: GenreBadgeAnimeGrouping;
   posterGenreBadgePosition: GenreBadgePosition;
   posterGenreBadgeScale: number;
+  posterGenreBadgeOffsetX: number;
+  posterGenreBadgeOffsetY: number;
   posterGenreBadgeBorderWidth: number;
   posterGenreBadgeBackgroundOpacity: number;
   posterGenreBadgeStyle: GenreBadgeStyle;
@@ -859,6 +903,8 @@ export function useConfiguratorOutputs({
       style: activeGenreBadgeStyle,
       position: activeGenreBadgePosition,
       scale: activeGenreBadgeScale,
+      offsetX: activeGenreBadgeOffsetX,
+      offsetY: activeGenreBadgeOffsetY,
       borderWidth: activeGenreBadgeBorderWidth,
       backgroundOpacity: activeGenreBadgeBackgroundOpacity,
       animeGrouping: activeGenreBadgeAnimeGrouping,
@@ -1313,6 +1359,8 @@ export function useConfiguratorOutputs({
     activeGenreBadgeMode,
     activeGenreBadgePosition,
     activeGenreBadgeScale,
+    activeGenreBadgeOffsetX,
+    activeGenreBadgeOffsetY,
     activeGenreBadgeBorderWidth,
     activeGenreBadgeBackgroundOpacity,
     activeGenreBadgeStyle,
@@ -1496,6 +1544,18 @@ export function useConfiguratorOutputs({
               : sample.previewType === 'backdrop'
                 ? backdropGenreBadgeScale
                 : logoGenreBadgeScale,
+          offsetX:
+            sample.previewType === 'poster'
+              ? posterGenreBadgeOffsetX
+              : sample.previewType === 'backdrop'
+                ? backdropGenreBadgeOffsetX
+                : logoGenreBadgeOffsetX,
+          offsetY:
+            sample.previewType === 'poster'
+              ? posterGenreBadgeOffsetY
+              : sample.previewType === 'backdrop'
+                ? backdropGenreBadgeOffsetY
+                : logoGenreBadgeOffsetY,
           borderWidth:
             sample.previewType === 'poster'
               ? posterGenreBadgeBorderWidth
@@ -1521,6 +1581,8 @@ export function useConfiguratorOutputs({
       allowClientProviderCredentials,
       backdropGenreBadgePosition,
       backdropGenreBadgeScale,
+      backdropGenreBadgeOffsetX,
+      backdropGenreBadgeOffsetY,
       backdropGenreBadgeBorderWidth,
       backdropGenreBadgeBackgroundOpacity,
       backdropGenreBadgeStyle,
@@ -1531,12 +1593,16 @@ export function useConfiguratorOutputs({
       logoGenreBadgeAnimeGrouping,
       logoGenreBadgePosition,
       logoGenreBadgeScale,
+      logoGenreBadgeOffsetX,
+      logoGenreBadgeOffsetY,
       logoGenreBadgeBorderWidth,
       logoGenreBadgeBackgroundOpacity,
       logoGenreBadgeStyle,
       posterGenreBadgeAnimeGrouping,
       posterGenreBadgePosition,
       posterGenreBadgeScale,
+      posterGenreBadgeOffsetX,
+      posterGenreBadgeOffsetY,
       posterGenreBadgeBorderWidth,
       posterGenreBadgeBackgroundOpacity,
       posterGenreBadgeStyle,

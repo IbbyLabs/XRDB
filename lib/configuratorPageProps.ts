@@ -340,6 +340,8 @@ export function buildConfiguratorPageProps({
         logoQualityBadgePreferences: workspaceState.logoQualityBadgePreferences,
         activeRatingBadgeScale: activeWorkspaceSettings.activeRatingBadgeScale,
         activeGenreBadgeScale: activeWorkspaceSettings.activeGenreBadgeScale,
+        activeGenreBadgeOffsetX: activeWorkspaceSettings.activeGenreBadgeOffsetX,
+        activeGenreBadgeOffsetY: activeWorkspaceSettings.activeGenreBadgeOffsetY,
         activeGenreBadgeBorderWidth: activeWorkspaceSettings.activeGenreBadgeBorderWidth,
         activeGenreBadgeBackgroundOpacity:
           activeWorkspaceSettings.activeGenreBadgeBackgroundOpacity,
@@ -397,6 +399,8 @@ export function buildConfiguratorPageProps({
         onToggleQualityBadgePreference: workspaceActions.toggleQualityBadgePreference,
         onSelectRatingBadgeScale: activeWorkspaceSettings.setActiveRatingBadgeScale,
         onSelectGenreBadgeScale: activeWorkspaceSettings.setActiveGenreBadgeScale,
+        onSelectGenreBadgeOffsetX: activeWorkspaceSettings.setActiveGenreBadgeOffsetX,
+        onSelectGenreBadgeOffsetY: activeWorkspaceSettings.setActiveGenreBadgeOffsetY,
         onSelectGenreBadgeBorderWidth: activeWorkspaceSettings.setActiveGenreBadgeBorderWidth,
         onSelectGenreBadgeBackgroundOpacity:
           activeWorkspaceSettings.setActiveGenreBadgeBackgroundOpacity,

@@ -95,6 +95,8 @@ type FinalImageRenderSeedInput = {
   genreBadgeStyle: string;
   genreBadgePosition: string;
   genreBadgeScale: number;
+  genreBadgeOffsetX: number;
+  genreBadgeOffsetY: number;
   genreBadgeBorderWidth: number;
   genreBadgeBackgroundOpacity: number;
   genreBadgeAnimeGrouping: string;
@@ -230,6 +232,8 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ? input.genreBadgeStyle : '-',
     input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ? input.genreBadgePosition : '-',
     String(input.genreBadgeScale),
+    input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ? String(input.genreBadgeOffsetX) : '-',
+    input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE ? String(input.genreBadgeOffsetY) : '-',
     input.genreBadgeMode !== DEFAULT_GENRE_BADGE_MODE && input.genreBadgeStyle === 'glass'
       ? String(input.genreBadgeBorderWidth)
       : '-',
