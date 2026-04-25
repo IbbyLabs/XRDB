@@ -24,6 +24,8 @@ export function useConfiguratorActiveWorkspaceSettings({
   backdropGenreBadgeMode,
   backdropGenreBadgePosition,
   backdropGenreBadgeScale,
+  backdropGenreBadgeOffsetX,
+  backdropGenreBadgeOffsetY,
   backdropGenreBadgeBorderWidth,
   backdropGenreBadgeBackgroundOpacity,
   backdropGenreBadgeStyle,
@@ -38,6 +40,8 @@ export function useConfiguratorActiveWorkspaceSettings({
   thumbnailGenreBadgeMode,
   thumbnailGenreBadgePosition,
   thumbnailGenreBadgeScale,
+  thumbnailGenreBadgeOffsetX,
+  thumbnailGenreBadgeOffsetY,
   thumbnailGenreBadgeBorderWidth,
   thumbnailGenreBadgeBackgroundOpacity,
   thumbnailGenreBadgeStyle,
@@ -53,6 +57,8 @@ export function useConfiguratorActiveWorkspaceSettings({
   logoGenreBadgeMode,
   logoGenreBadgePosition,
   logoGenreBadgeScale,
+  logoGenreBadgeOffsetX,
+  logoGenreBadgeOffsetY,
   logoGenreBadgeBorderWidth,
   logoGenreBadgeBackgroundOpacity,
   logoGenreBadgeStyle,
@@ -66,6 +72,8 @@ export function useConfiguratorActiveWorkspaceSettings({
   posterGenreBadgeMode,
   posterGenreBadgePosition,
   posterGenreBadgeScale,
+  posterGenreBadgeOffsetX,
+  posterGenreBadgeOffsetY,
   posterGenreBadgeBorderWidth,
   posterGenreBadgeBackgroundOpacity,
   posterGenreBadgeStyle,
@@ -83,6 +91,8 @@ export function useConfiguratorActiveWorkspaceSettings({
   setBackdropGenreBadgeMode,
   setBackdropGenreBadgePosition,
   setBackdropGenreBadgeScale,
+  setBackdropGenreBadgeOffsetX,
+  setBackdropGenreBadgeOffsetY,
   setBackdropGenreBadgeBorderWidth,
   setBackdropGenreBadgeBackgroundOpacity,
   setBackdropGenreBadgeStyle,
@@ -97,6 +107,8 @@ export function useConfiguratorActiveWorkspaceSettings({
   setThumbnailGenreBadgeMode,
   setThumbnailGenreBadgePosition,
   setThumbnailGenreBadgeScale,
+  setThumbnailGenreBadgeOffsetX,
+  setThumbnailGenreBadgeOffsetY,
   setThumbnailGenreBadgeBorderWidth,
   setThumbnailGenreBadgeBackgroundOpacity,
   setThumbnailGenreBadgeStyle,
@@ -112,6 +124,8 @@ export function useConfiguratorActiveWorkspaceSettings({
   setLogoGenreBadgeMode,
   setLogoGenreBadgePosition,
   setLogoGenreBadgeScale,
+  setLogoGenreBadgeOffsetX,
+  setLogoGenreBadgeOffsetY,
   setLogoGenreBadgeBorderWidth,
   setLogoGenreBadgeBackgroundOpacity,
   setLogoGenreBadgeStyle,
@@ -125,6 +139,8 @@ export function useConfiguratorActiveWorkspaceSettings({
   setPosterGenreBadgeMode,
   setPosterGenreBadgePosition,
   setPosterGenreBadgeScale,
+  setPosterGenreBadgeOffsetX,
+  setPosterGenreBadgeOffsetY,
   setPosterGenreBadgeBorderWidth,
   setPosterGenreBadgeBackgroundOpacity,
   setPosterGenreBadgeStyle,
@@ -141,6 +157,8 @@ export function useConfiguratorActiveWorkspaceSettings({
   backdropGenreBadgeMode: GenreBadgeMode;
   backdropGenreBadgePosition: GenreBadgePosition;
   backdropGenreBadgeScale: number;
+  backdropGenreBadgeOffsetX: number;
+  backdropGenreBadgeOffsetY: number;
   backdropGenreBadgeBorderWidth: number;
   backdropGenreBadgeBackgroundOpacity: number;
   backdropGenreBadgeStyle: GenreBadgeStyle;
@@ -155,6 +173,8 @@ export function useConfiguratorActiveWorkspaceSettings({
   thumbnailGenreBadgeMode: GenreBadgeMode;
   thumbnailGenreBadgePosition: GenreBadgePosition;
   thumbnailGenreBadgeScale: number;
+  thumbnailGenreBadgeOffsetX: number;
+  thumbnailGenreBadgeOffsetY: number;
   thumbnailGenreBadgeBorderWidth: number;
   thumbnailGenreBadgeBackgroundOpacity: number;
   thumbnailGenreBadgeStyle: GenreBadgeStyle;
@@ -170,6 +190,8 @@ export function useConfiguratorActiveWorkspaceSettings({
   logoGenreBadgeMode: GenreBadgeMode;
   logoGenreBadgePosition: GenreBadgePosition;
   logoGenreBadgeScale: number;
+  logoGenreBadgeOffsetX: number;
+  logoGenreBadgeOffsetY: number;
   logoGenreBadgeBorderWidth: number;
   logoGenreBadgeBackgroundOpacity: number;
   logoGenreBadgeStyle: GenreBadgeStyle;
@@ -183,6 +205,8 @@ export function useConfiguratorActiveWorkspaceSettings({
   posterGenreBadgeMode: GenreBadgeMode;
   posterGenreBadgePosition: GenreBadgePosition;
   posterGenreBadgeScale: number;
+  posterGenreBadgeOffsetX: number;
+  posterGenreBadgeOffsetY: number;
   posterGenreBadgeBorderWidth: number;
   posterGenreBadgeBackgroundOpacity: number;
   posterGenreBadgeStyle: GenreBadgeStyle;
@@ -200,6 +224,8 @@ export function useConfiguratorActiveWorkspaceSettings({
   setBackdropGenreBadgeMode: Setter<GenreBadgeMode>;
   setBackdropGenreBadgePosition: Setter<GenreBadgePosition>;
   setBackdropGenreBadgeScale: Setter<number>;
+  setBackdropGenreBadgeOffsetX: Setter<number>;
+  setBackdropGenreBadgeOffsetY: Setter<number>;
   setBackdropGenreBadgeBorderWidth: Setter<number>;
   setBackdropGenreBadgeBackgroundOpacity: Setter<number>;
   setBackdropGenreBadgeStyle: Setter<GenreBadgeStyle>;
@@ -214,6 +240,8 @@ export function useConfiguratorActiveWorkspaceSettings({
   setThumbnailGenreBadgeMode: Setter<GenreBadgeMode>;
   setThumbnailGenreBadgePosition: Setter<GenreBadgePosition>;
   setThumbnailGenreBadgeScale: Setter<number>;
+  setThumbnailGenreBadgeOffsetX: Setter<number>;
+  setThumbnailGenreBadgeOffsetY: Setter<number>;
   setThumbnailGenreBadgeBorderWidth: Setter<number>;
   setThumbnailGenreBadgeBackgroundOpacity: Setter<number>;
   setThumbnailGenreBadgeStyle: Setter<GenreBadgeStyle>;
@@ -229,6 +257,8 @@ export function useConfiguratorActiveWorkspaceSettings({
   setLogoGenreBadgeMode: Setter<GenreBadgeMode>;
   setLogoGenreBadgePosition: Setter<GenreBadgePosition>;
   setLogoGenreBadgeScale: Setter<number>;
+  setLogoGenreBadgeOffsetX: Setter<number>;
+  setLogoGenreBadgeOffsetY: Setter<number>;
   setLogoGenreBadgeBorderWidth: Setter<number>;
   setLogoGenreBadgeBackgroundOpacity: Setter<number>;
   setLogoGenreBadgeStyle: Setter<GenreBadgeStyle>;
@@ -242,6 +272,8 @@ export function useConfiguratorActiveWorkspaceSettings({
   setPosterGenreBadgeMode: Setter<GenreBadgeMode>;
   setPosterGenreBadgePosition: Setter<GenreBadgePosition>;
   setPosterGenreBadgeScale: Setter<number>;
+  setPosterGenreBadgeOffsetX: Setter<number>;
+  setPosterGenreBadgeOffsetY: Setter<number>;
   setPosterGenreBadgeBorderWidth: Setter<number>;
   setPosterGenreBadgeBackgroundOpacity: Setter<number>;
   setPosterGenreBadgeStyle: Setter<GenreBadgeStyle>;
@@ -311,6 +343,22 @@ export function useConfiguratorActiveWorkspaceSettings({
           : previewType === 'thumbnail'
             ? thumbnailGenreBadgeScale
           : logoGenreBadgeScale,
+    activeGenreBadgeOffsetX:
+      previewType === 'poster'
+        ? posterGenreBadgeOffsetX
+        : previewType === 'backdrop'
+          ? backdropGenreBadgeOffsetX
+          : previewType === 'thumbnail'
+            ? thumbnailGenreBadgeOffsetX
+          : logoGenreBadgeOffsetX,
+    activeGenreBadgeOffsetY:
+      previewType === 'poster'
+        ? posterGenreBadgeOffsetY
+        : previewType === 'backdrop'
+          ? backdropGenreBadgeOffsetY
+          : previewType === 'thumbnail'
+            ? thumbnailGenreBadgeOffsetY
+          : logoGenreBadgeOffsetY,
     activeGenreBadgeBorderWidth:
       previewType === 'poster'
         ? posterGenreBadgeBorderWidth
@@ -428,6 +476,22 @@ export function useConfiguratorActiveWorkspaceSettings({
           : previewType === 'thumbnail'
             ? setThumbnailGenreBadgeScale
           : setLogoGenreBadgeScale,
+    setActiveGenreBadgeOffsetX:
+      previewType === 'poster'
+        ? setPosterGenreBadgeOffsetX
+        : previewType === 'backdrop'
+          ? setBackdropGenreBadgeOffsetX
+          : previewType === 'thumbnail'
+            ? setThumbnailGenreBadgeOffsetX
+          : setLogoGenreBadgeOffsetX,
+    setActiveGenreBadgeOffsetY:
+      previewType === 'poster'
+        ? setPosterGenreBadgeOffsetY
+        : previewType === 'backdrop'
+          ? setBackdropGenreBadgeOffsetY
+          : previewType === 'thumbnail'
+            ? setThumbnailGenreBadgeOffsetY
+          : setLogoGenreBadgeOffsetY,
     setActiveGenreBadgeBorderWidth:
       previewType === 'poster'
         ? setPosterGenreBadgeBorderWidth

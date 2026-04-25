@@ -805,6 +805,8 @@ export function LookSection({
   logoBottomRatingsRow,
   activeRatingBadgeScale,
   activeGenreBadgeScale,
+  activeGenreBadgeOffsetX,
+  activeGenreBadgeOffsetY,
   activeGenreBadgeBorderWidth,
   activeGenreBadgeBackgroundOpacity,
   activeQualityBadgeScale,
@@ -856,6 +858,8 @@ export function LookSection({
   onToggleQualityBadgePreference,
   onSelectRatingBadgeScale,
   onSelectGenreBadgeScale,
+  onSelectGenreBadgeOffsetX,
+  onSelectGenreBadgeOffsetY,
   onSelectGenreBadgeBorderWidth,
   onSelectGenreBadgeBackgroundOpacity,
   onSelectQualityBadgeScale,
@@ -921,6 +925,8 @@ export function LookSection({
   logoBottomRatingsRow: boolean;
   activeRatingBadgeScale: number;
   activeGenreBadgeScale: number;
+  activeGenreBadgeOffsetX: number;
+  activeGenreBadgeOffsetY: number;
   activeGenreBadgeBorderWidth: number;
   activeGenreBadgeBackgroundOpacity: number;
   activeQualityBadgeScale: number;
@@ -974,6 +980,8 @@ export function LookSection({
   onToggleQualityBadgePreference: (value: QualityBadgeOptionId) => void;
   onSelectRatingBadgeScale: (value: number) => void;
   onSelectGenreBadgeScale: (value: number) => void;
+  onSelectGenreBadgeOffsetX: (value: number) => void;
+  onSelectGenreBadgeOffsetY: (value: number) => void;
   onSelectGenreBadgeBorderWidth: (value: number) => void;
   onSelectGenreBadgeBackgroundOpacity: (value: number) => void;
   onSelectQualityBadgeScale: (value: number) => void;
@@ -1947,6 +1955,24 @@ export function LookSection({
               min={MIN_BADGE_SCALE_PERCENT}
               max={MAX_GENRE_BADGE_SCALE_PERCENT}
               onChange={(value) => onSelectGenreBadgeScale(normalizeGenreBadgeScalePercent(String(value)))}
+            />
+            <ScaleField
+              label="Genre offset X"
+              value={activeGenreBadgeOffsetX}
+              defaultValue={DEFAULT_RATING_STACK_OFFSET_PX}
+              min={MIN_RATING_STACK_OFFSET_PX}
+              max={MAX_RATING_STACK_OFFSET_PX}
+              suffix="px"
+              onChange={(value) => onSelectGenreBadgeOffsetX(normalizeRatingStackOffsetPx(String(value)))}
+            />
+            <ScaleField
+              label="Genre offset Y"
+              value={activeGenreBadgeOffsetY}
+              defaultValue={DEFAULT_RATING_STACK_OFFSET_PX}
+              min={MIN_RATING_STACK_OFFSET_PX}
+              max={MAX_RATING_STACK_OFFSET_PX}
+              suffix="px"
+              onChange={(value) => onSelectGenreBadgeOffsetY(normalizeRatingStackOffsetPx(String(value)))}
             />
             {activeGenreBadgeStyle === 'glass' ? (
               <ScaleField

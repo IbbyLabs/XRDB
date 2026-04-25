@@ -246,6 +246,14 @@ export type SharedXrdbSettings = {
   backdropGenreBadgeScale: number;
   thumbnailGenreBadgeScale: number;
   logoGenreBadgeScale: number;
+  posterGenreBadgeOffsetX: number;
+  posterGenreBadgeOffsetY: number;
+  backdropGenreBadgeOffsetX: number;
+  backdropGenreBadgeOffsetY: number;
+  thumbnailGenreBadgeOffsetX: number;
+  thumbnailGenreBadgeOffsetY: number;
+  logoGenreBadgeOffsetX: number;
+  logoGenreBadgeOffsetY: number;
   posterGenreBadgeBorderWidth: number;
   backdropGenreBadgeBorderWidth: number;
   thumbnailGenreBadgeBorderWidth: number;
@@ -554,6 +562,14 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   backdropGenreBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   thumbnailGenreBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
   logoGenreBadgeScale: DEFAULT_BADGE_SCALE_PERCENT,
+  posterGenreBadgeOffsetX: DEFAULT_RATING_STACK_OFFSET_PX,
+  posterGenreBadgeOffsetY: DEFAULT_RATING_STACK_OFFSET_PX,
+  backdropGenreBadgeOffsetX: DEFAULT_RATING_STACK_OFFSET_PX,
+  backdropGenreBadgeOffsetY: DEFAULT_RATING_STACK_OFFSET_PX,
+  thumbnailGenreBadgeOffsetX: DEFAULT_RATING_STACK_OFFSET_PX,
+  thumbnailGenreBadgeOffsetY: DEFAULT_RATING_STACK_OFFSET_PX,
+  logoGenreBadgeOffsetX: DEFAULT_RATING_STACK_OFFSET_PX,
+  logoGenreBadgeOffsetY: DEFAULT_RATING_STACK_OFFSET_PX,
   posterGenreBadgeBorderWidth: DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX,
   backdropGenreBadgeBorderWidth: DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX,
   thumbnailGenreBadgeBorderWidth: DEFAULT_THUMBNAIL_GENRE_BADGE_BORDER_WIDTH_PX,
@@ -1353,6 +1369,38 @@ export const normalizeSharedXrdbSettings = (value: unknown, options?: { skipCros
       candidate.logoGenreBadgeScale,
       globalGenreBadgeScale,
     ),
+    posterGenreBadgeOffsetX: normalizeRatingStackOffsetPx(
+      candidate.posterGenreBadgeOffsetX,
+      defaults.posterGenreBadgeOffsetX,
+    ),
+    posterGenreBadgeOffsetY: normalizeRatingStackOffsetPx(
+      candidate.posterGenreBadgeOffsetY,
+      defaults.posterGenreBadgeOffsetY,
+    ),
+    backdropGenreBadgeOffsetX: normalizeRatingStackOffsetPx(
+      candidate.backdropGenreBadgeOffsetX,
+      defaults.backdropGenreBadgeOffsetX,
+    ),
+    backdropGenreBadgeOffsetY: normalizeRatingStackOffsetPx(
+      candidate.backdropGenreBadgeOffsetY,
+      defaults.backdropGenreBadgeOffsetY,
+    ),
+    thumbnailGenreBadgeOffsetX: normalizeRatingStackOffsetPx(
+      candidate.thumbnailGenreBadgeOffsetX ?? candidate.backdropGenreBadgeOffsetX,
+      defaults.thumbnailGenreBadgeOffsetX,
+    ),
+    thumbnailGenreBadgeOffsetY: normalizeRatingStackOffsetPx(
+      candidate.thumbnailGenreBadgeOffsetY ?? candidate.backdropGenreBadgeOffsetY,
+      defaults.thumbnailGenreBadgeOffsetY,
+    ),
+    logoGenreBadgeOffsetX: normalizeRatingStackOffsetPx(
+      candidate.logoGenreBadgeOffsetX,
+      defaults.logoGenreBadgeOffsetX,
+    ),
+    logoGenreBadgeOffsetY: normalizeRatingStackOffsetPx(
+      candidate.logoGenreBadgeOffsetY,
+      defaults.logoGenreBadgeOffsetY,
+    ),
     posterGenreBadgeBorderWidth: normalizeGenreBadgeBorderWidthPx(
       candidate.posterGenreBadgeBorderWidth ?? candidate.genreBadgeBorderWidth,
       globalGenreBadgeBorderWidth,
@@ -2114,6 +2162,30 @@ const buildSharedPayload = (settings: SharedXrdbSettings, options?: SharedPayloa
   }
   if (settings.thumbnailGenreBadgeScale !== DEFAULT_BADGE_SCALE_PERCENT) {
     payload.thumbnailGenreBadgeScale = settings.thumbnailGenreBadgeScale;
+  }
+  if (settings.posterGenreBadgeOffsetX !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.posterGenreBadgeOffsetX = settings.posterGenreBadgeOffsetX;
+  }
+  if (settings.posterGenreBadgeOffsetY !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.posterGenreBadgeOffsetY = settings.posterGenreBadgeOffsetY;
+  }
+  if (settings.backdropGenreBadgeOffsetX !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.backdropGenreBadgeOffsetX = settings.backdropGenreBadgeOffsetX;
+  }
+  if (settings.backdropGenreBadgeOffsetY !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.backdropGenreBadgeOffsetY = settings.backdropGenreBadgeOffsetY;
+  }
+  if (settings.thumbnailGenreBadgeOffsetX !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.thumbnailGenreBadgeOffsetX = settings.thumbnailGenreBadgeOffsetX;
+  }
+  if (settings.thumbnailGenreBadgeOffsetY !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.thumbnailGenreBadgeOffsetY = settings.thumbnailGenreBadgeOffsetY;
+  }
+  if (settings.logoGenreBadgeOffsetX !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.logoGenreBadgeOffsetX = settings.logoGenreBadgeOffsetX;
+  }
+  if (settings.logoGenreBadgeOffsetY !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.logoGenreBadgeOffsetY = settings.logoGenreBadgeOffsetY;
   }
   if (settings.thumbnailGenreBadgeAnimeGrouping !== DEFAULT_GENRE_BADGE_ANIME_GROUPING) {
     payload.thumbnailGenreBadgeAnimeGrouping = settings.thumbnailGenreBadgeAnimeGrouping;

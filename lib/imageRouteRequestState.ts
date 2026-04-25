@@ -263,6 +263,8 @@ export type ImageRouteRequestState = {
   genreBadgeStyle: GenreBadgeStyle;
   genreBadgePosition: GenreBadgePosition;
   genreBadgeScale: number;
+  genreBadgeOffsetX: number;
+  genreBadgeOffsetY: number;
   genreBadgeBorderWidth: number;
   genreBadgeBackgroundOpacity: number;
   effectiveGenreBadgeScale: number;
@@ -486,6 +488,14 @@ export const resolveImageRouteRequestState = async ({
     searchParams.get('genreBadgeScale'),
     DEFAULT_BADGE_SCALE_PERCENT,
   );
+  const globalGenreBadgeOffsetX = normalizeRatingStackOffsetPx(
+    searchParams.get('genreBadgeOffsetX'),
+    DEFAULT_RATING_STACK_OFFSET_PX,
+  );
+  const globalGenreBadgeOffsetY = normalizeRatingStackOffsetPx(
+    searchParams.get('genreBadgeOffsetY'),
+    DEFAULT_RATING_STACK_OFFSET_PX,
+  );
   const globalGenreBadgeAnimeGrouping = normalizeGenreBadgeAnimeGrouping(
     searchParams.get('genreBadgeAnimeGrouping'),
     DEFAULT_GENRE_BADGE_ANIME_GROUPING,
@@ -559,6 +569,42 @@ export const resolveImageRouteRequestState = async ({
   const logoGenreBadgeScale = normalizeGenreBadgeScalePercent(
     searchParams.get('logoGenreBadgeScale') ?? searchParams.get('genreBadgeScale'),
     globalGenreBadgeScale,
+  );
+  const posterGenreBadgeOffsetX = normalizeRatingStackOffsetPx(
+    searchParams.get('posterGenreBadgeOffsetX') ?? searchParams.get('genreBadgeOffsetX'),
+    globalGenreBadgeOffsetX,
+  );
+  const backdropGenreBadgeOffsetX = normalizeRatingStackOffsetPx(
+    searchParams.get('backdropGenreBadgeOffsetX') ?? searchParams.get('genreBadgeOffsetX'),
+    globalGenreBadgeOffsetX,
+  );
+  const thumbnailGenreBadgeOffsetX = normalizeRatingStackOffsetPx(
+    searchParams.get('thumbnailGenreBadgeOffsetX') ??
+      searchParams.get('backdropGenreBadgeOffsetX') ??
+      searchParams.get('genreBadgeOffsetX'),
+    backdropGenreBadgeOffsetX,
+  );
+  const logoGenreBadgeOffsetX = normalizeRatingStackOffsetPx(
+    searchParams.get('logoGenreBadgeOffsetX') ?? searchParams.get('genreBadgeOffsetX'),
+    globalGenreBadgeOffsetX,
+  );
+  const posterGenreBadgeOffsetY = normalizeRatingStackOffsetPx(
+    searchParams.get('posterGenreBadgeOffsetY') ?? searchParams.get('genreBadgeOffsetY'),
+    globalGenreBadgeOffsetY,
+  );
+  const backdropGenreBadgeOffsetY = normalizeRatingStackOffsetPx(
+    searchParams.get('backdropGenreBadgeOffsetY') ?? searchParams.get('genreBadgeOffsetY'),
+    globalGenreBadgeOffsetY,
+  );
+  const thumbnailGenreBadgeOffsetY = normalizeRatingStackOffsetPx(
+    searchParams.get('thumbnailGenreBadgeOffsetY') ??
+      searchParams.get('backdropGenreBadgeOffsetY') ??
+      searchParams.get('genreBadgeOffsetY'),
+    backdropGenreBadgeOffsetY,
+  );
+  const logoGenreBadgeOffsetY = normalizeRatingStackOffsetPx(
+    searchParams.get('logoGenreBadgeOffsetY') ?? searchParams.get('genreBadgeOffsetY'),
+    globalGenreBadgeOffsetY,
   );
   const globalGenreBadgeBorderWidth = normalizeGenreBadgeBorderWidthPx(
     searchParams.get('genreBadgeBorderWidth'),
@@ -665,6 +711,22 @@ export const resolveImageRouteRequestState = async ({
         : imageType === 'backdrop'
         ? backdropGenreBadgeScale
         : logoGenreBadgeScale;
+  const genreBadgeOffsetX =
+    imageType === 'poster'
+      ? posterGenreBadgeOffsetX
+      : isThumbnailRequest
+        ? thumbnailGenreBadgeOffsetX
+        : imageType === 'backdrop'
+          ? backdropGenreBadgeOffsetX
+          : logoGenreBadgeOffsetX;
+  const genreBadgeOffsetY =
+    imageType === 'poster'
+      ? posterGenreBadgeOffsetY
+      : isThumbnailRequest
+        ? thumbnailGenreBadgeOffsetY
+        : imageType === 'backdrop'
+          ? backdropGenreBadgeOffsetY
+          : logoGenreBadgeOffsetY;
   const genreBadgeBorderWidth =
     imageType === 'poster'
       ? posterGenreBadgeBorderWidth
@@ -1657,6 +1719,8 @@ export const resolveImageRouteRequestState = async ({
     genreBadgeStyle,
     genreBadgePosition,
     genreBadgeScale,
+    genreBadgeOffsetX,
+    genreBadgeOffsetY,
     genreBadgeBorderWidth,
     genreBadgeBackgroundOpacity,
     genreBadgeAnimeGrouping,
@@ -1688,6 +1752,8 @@ export const resolveImageRouteRequestState = async ({
     genreBadgeStyle,
     genreBadgePosition,
     genreBadgeScale,
+    genreBadgeOffsetX,
+    genreBadgeOffsetY,
     genreBadgeBorderWidth,
     genreBadgeBackgroundOpacity,
     effectiveGenreBadgeScale,

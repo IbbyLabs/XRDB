@@ -250,6 +250,8 @@ export const prepareImageRouteMediaState = async (input: {
   genreBadgeStyle: GenreBadgeStyle;
   genreBadgePosition: GenreBadgePosition;
   genreBadgeScale: number;
+  genreBadgeOffsetX: number;
+  genreBadgeOffsetY: number;
   effectiveGenreBadgeScale: number;
   genreBadgeBorderWidth: number;
   genreBadgeBackgroundOpacity: number;
@@ -341,6 +343,8 @@ export const prepareImageRouteMediaState = async (input: {
     genreBadgeStyle,
     genreBadgePosition,
     genreBadgeScale,
+    genreBadgeOffsetX,
+    genreBadgeOffsetY,
     genreBadgeAnimeGrouping,
     noBackgroundBadgeOutlineColor,
     noBackgroundBadgeOutlineWidth,
@@ -413,6 +417,8 @@ const buildResolvedGenreBadge = ({
     style: genreBadgeStyle,
     position: genreBadgePosition,
     scalePercent: effectiveGenreBadgeScale,
+    offsetX: genreBadgeOffsetX,
+    offsetY: genreBadgeOffsetY,
     borderWidth: input.genreBadgeBorderWidth,
     backgroundOpacity: input.genreBadgeBackgroundOpacity,
     noBackgroundOutlineColor: noBackgroundBadgeOutlineColor,

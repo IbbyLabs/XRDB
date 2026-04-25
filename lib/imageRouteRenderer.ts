@@ -138,6 +138,8 @@ export type GenreBadgeSpec = {
   position: GenreBadgePosition;
   tileAccentColor?: string;
   scalePercent?: number;
+  offsetX?: number;
+  offsetY?: number;
   borderWidth?: number;
   backgroundOpacity?: number;
   noBackgroundOutlineColor?: string;

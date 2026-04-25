@@ -24,6 +24,8 @@ export type GenreBadgePlacementInput = {
   position: GenreBadgePosition;
   tileAccentColor?: string;
   scalePercent?: number;
+  offsetX?: number;
+  offsetY?: number;
 };
 
 export type GenreBadgeOverlaySpec = {
@@ -72,18 +74,22 @@ export const resolveGenreBadgeOverlay = ({
       : Math.max(minInset, outputHeight - spec.height - badgeBottomOffset)
   );
   const centerLeft = Math.max(12, Math.min(maxLeft, Math.round((outputWidth - spec.width) / 2)));
-  const left =
+  const baseLeft =
     resolvedPosition === 'topRight' || resolvedPosition === 'bottomRight'
       ? maxLeft
       : resolvedPosition === 'topCenter' || resolvedPosition === 'bottomCenter'
         ? centerLeft
         : horizontalInset;
+  const left = Math.max(
+    horizontalInset,
+    Math.min(maxLeft, baseLeft + (genreBadge.offsetX ?? 0))
+  );
   const initialTop =
-    resolvedPosition === 'bottomLeft' ||
+    (resolvedPosition === 'bottomLeft' ||
     resolvedPosition === 'bottomCenter' ||
     resolvedPosition === 'bottomRight'
       ? bottomInset
-      : topInset;
+      : topInset) + (genreBadge.offsetY ?? 0);
   const verticalDirection =
     resolvedPosition === 'bottomLeft' ||
     resolvedPosition === 'bottomCenter' ||

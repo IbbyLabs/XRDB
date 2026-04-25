@@ -148,6 +148,14 @@ export function useConfiguratorWorkspaceState() {
   const [backdropGenreBadgeScale, setBackdropGenreBadgeScale] = useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
   const [thumbnailGenreBadgeScale, setThumbnailGenreBadgeScale] = useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
   const [logoGenreBadgeScale, setLogoGenreBadgeScale] = useState<number>(DEFAULT_BADGE_SCALE_PERCENT);
+  const [posterGenreBadgeOffsetX, setPosterGenreBadgeOffsetX] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
+  const [posterGenreBadgeOffsetY, setPosterGenreBadgeOffsetY] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
+  const [backdropGenreBadgeOffsetX, setBackdropGenreBadgeOffsetX] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
+  const [backdropGenreBadgeOffsetY, setBackdropGenreBadgeOffsetY] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
+  const [thumbnailGenreBadgeOffsetX, setThumbnailGenreBadgeOffsetX] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
+  const [thumbnailGenreBadgeOffsetY, setThumbnailGenreBadgeOffsetY] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
+  const [logoGenreBadgeOffsetX, setLogoGenreBadgeOffsetX] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
+  const [logoGenreBadgeOffsetY, setLogoGenreBadgeOffsetY] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
   const [posterGenreBadgeBorderWidth, setPosterGenreBadgeBorderWidth] = useState<number>(
     DEFAULT_POSTER_GENRE_BADGE_BORDER_WIDTH_PX,
   );
@@ -728,6 +736,8 @@ export function useConfiguratorWorkspaceState() {
     backdropGenreBadgeMode,
     backdropGenreBadgePosition,
     backdropGenreBadgeScale,
+    backdropGenreBadgeOffsetX,
+    backdropGenreBadgeOffsetY,
     backdropGenreBadgeBorderWidth,
     backdropGenreBadgeBackgroundOpacity,
     backdropGenreBadgeStyle,
@@ -757,6 +767,8 @@ export function useConfiguratorWorkspaceState() {
     thumbnailGenreBadgeMode,
     thumbnailGenreBadgePosition,
     thumbnailGenreBadgeScale,
+    thumbnailGenreBadgeOffsetX,
+    thumbnailGenreBadgeOffsetY,
     thumbnailGenreBadgeBorderWidth,
     thumbnailGenreBadgeBackgroundOpacity,
     thumbnailGenreBadgeStyle,
@@ -792,6 +804,8 @@ export function useConfiguratorWorkspaceState() {
     logoGenreBadgeMode,
     logoGenreBadgePosition,
     logoGenreBadgeScale,
+    logoGenreBadgeOffsetX,
+    logoGenreBadgeOffsetY,
     logoGenreBadgeBorderWidth,
     logoGenreBadgeBackgroundOpacity,
     logoGenreBadgeStyle,
@@ -825,6 +839,8 @@ export function useConfiguratorWorkspaceState() {
     posterGenreBadgeMode,
     posterGenreBadgePosition,
     posterGenreBadgeScale,
+    posterGenreBadgeOffsetX,
+    posterGenreBadgeOffsetY,
     posterGenreBadgeBorderWidth,
     posterGenreBadgeBackgroundOpacity,
     posterGenreBadgeStyle,
@@ -976,6 +992,8 @@ export function useConfiguratorWorkspaceState() {
     setBackdropGenreBadgeMode,
     setBackdropGenreBadgePosition,
     setBackdropGenreBadgeScale,
+    setBackdropGenreBadgeOffsetX,
+    setBackdropGenreBadgeOffsetY,
     setBackdropGenreBadgeBorderWidth,
     setBackdropGenreBadgeBackgroundOpacity,
     setBackdropGenreBadgeStyle,
@@ -1004,6 +1022,8 @@ export function useConfiguratorWorkspaceState() {
     setThumbnailGenreBadgeMode,
     setThumbnailGenreBadgePosition,
     setThumbnailGenreBadgeScale,
+    setThumbnailGenreBadgeOffsetX,
+    setThumbnailGenreBadgeOffsetY,
     setThumbnailGenreBadgeBorderWidth,
     setThumbnailGenreBadgeBackgroundOpacity,
     setThumbnailGenreBadgeStyle,
@@ -1039,6 +1059,8 @@ export function useConfiguratorWorkspaceState() {
     setLogoGenreBadgeMode,
     setLogoGenreBadgePosition,
     setLogoGenreBadgeScale,
+    setLogoGenreBadgeOffsetX,
+    setLogoGenreBadgeOffsetY,
     setLogoGenreBadgeBorderWidth,
     setLogoGenreBadgeBackgroundOpacity,
     setLogoGenreBadgeStyle,
@@ -1071,6 +1093,8 @@ export function useConfiguratorWorkspaceState() {
     setPosterGenreBadgeMode,
     setPosterGenreBadgePosition,
     setPosterGenreBadgeScale,
+    setPosterGenreBadgeOffsetX,
+    setPosterGenreBadgeOffsetY,
     setPosterGenreBadgeBorderWidth,
     setPosterGenreBadgeBackgroundOpacity,
     setPosterGenreBadgeStyle,
