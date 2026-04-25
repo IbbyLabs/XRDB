@@ -178,6 +178,34 @@ test('default anime grouping remains split when users do not opt in', () => {
   }
 });
 
+test('fantasy precedence wins over TMDB combined sci fi fantasy without explicit science fiction', () => {
+  assert.equal(
+    resolveGenreBadgeFamily({
+      genres: [{ name: 'Sci-Fi & Fantasy' }, { name: 'Fantasy' }, { name: 'Drama' }],
+      genreIds: [10765, 14, 18],
+    })?.id,
+    'fantasy',
+  );
+
+  assert.equal(
+    resolveGenreBadgeFamily({
+      genres: [{ name: 'Fantasy' }, { name: 'Action & Adventure' }],
+      genreIds: [10765, 12],
+    })?.id,
+    'fantasy',
+  );
+});
+
+test('explicit science fiction still wins when both science fiction and fantasy are present', () => {
+  assert.equal(
+    resolveGenreBadgeFamily({
+      genres: [{ name: 'Science Fiction' }, { name: 'Fantasy' }],
+      genreIds: [878, 14],
+    })?.id,
+    'scifi',
+  );
+});
+
 test('genre preview samples cover movie, show, anime and all output types', () => {
   const typeLabels = new Set(GENRE_BADGE_PREVIEW_SAMPLES.map((sample) => sample.typeLabel));
   const previewTypes = new Set(GENRE_BADGE_PREVIEW_SAMPLES.map((sample) => sample.previewType));
