@@ -28,6 +28,8 @@ const createInput = (overrides = {}) => ({
   logoBottomRatingsRow: false,
   qualityBadgesSide: 'left',
   posterQualityBadgesPosition: 'auto',
+  posterQualityBadgeOffsetX: 0,
+  posterQualityBadgeOffsetY: 0,
   qualityBadgesStyle: 'plain',
   qualityBadgesMax: 2,
   qualityBadgePreferences: ['certification', 'hdr'],
@@ -232,6 +234,28 @@ test('final image render seed changes when poster edge offset changes', () => {
   );
 
   assert.notEqual(baseKey, offsetKey);
+});
+
+test('final image render seed scopes poster quality badge offsets to poster renders', () => {
+  const basePosterKey = buildFinalImageRenderSeedKey(createInput({ imageType: 'poster' }));
+  const changedPosterKey = buildFinalImageRenderSeedKey(
+    createInput({
+      imageType: 'poster',
+      posterQualityBadgeOffsetX: 42,
+      posterQualityBadgeOffsetY: -18,
+    }),
+  );
+  const baseBackdropKey = buildFinalImageRenderSeedKey(createInput({ imageType: 'backdrop' }));
+  const changedBackdropKey = buildFinalImageRenderSeedKey(
+    createInput({
+      imageType: 'backdrop',
+      posterQualityBadgeOffsetX: 42,
+      posterQualityBadgeOffsetY: -18,
+    }),
+  );
+
+  assert.notEqual(basePosterKey, changedPosterKey);
+  assert.equal(baseBackdropKey, changedBackdropKey);
 });
 
 test('final image render seed changes when quality badge appearance overrides change', () => {

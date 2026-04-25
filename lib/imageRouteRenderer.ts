@@ -180,6 +180,8 @@ export type FastRenderInput = {
   qualityBadges: RatingBadge[];
   qualityBadgesSide: QualityBadgesSide;
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
+  posterQualityBadgeOffsetX?: number;
+  posterQualityBadgeOffsetY?: number;
   ageRatingBadgePosition: AgeRatingBadgePosition;
   qualityBadgesStyle: QualityBadgeStyle;
   communityBadgeTheme?: CommunityBadgeTheme;
@@ -477,6 +479,86 @@ export const renderWithSharp = async (
         .toBuffer();
       overlays.push({ input: resizedImageBuffer, top: 0, left: imageLeft });
     }
+
+    let plainQualityBackdropRaw: {
+      data: Buffer;
+      width: number;
+      height: number;
+      channels: number;
+      left: number;
+      top: number;
+    } | null = null;
+
+    if (input.imageType !== 'logo' && input.qualityBadgesStyle === 'plain') {
+      const baseOverlay = overlays[0] ?? null;
+      if (baseOverlay) {
+        const rawBackdrop = await sharp(baseOverlay.input)
+          .ensureAlpha()
+          .raw()
+          .toBuffer({ resolveWithObject: true });
+        plainQualityBackdropRaw = {
+          data: rawBackdrop.data,
+          width: rawBackdrop.info.width,
+          height: rawBackdrop.info.height,
+          channels: rawBackdrop.info.channels,
+          left: baseOverlay.left,
+          top: baseOverlay.top,
+        };
+      }
+    }
+
+    const shouldUseAdaptivePlainPlate = ({
+      left,
+      top,
+      width,
+      height,
+    }: {
+      left: number;
+      top: number;
+      width: number;
+      height: number;
+    }) => {
+      if (!plainQualityBackdropRaw) return false;
+      const sampleLeft = Math.max(0, Math.floor(left - plainQualityBackdropRaw.left));
+      const sampleTop = Math.max(0, Math.floor(top - plainQualityBackdropRaw.top));
+      const sampleRight = Math.min(
+        plainQualityBackdropRaw.width,
+        Math.ceil(left - plainQualityBackdropRaw.left + width),
+      );
+      const sampleBottom = Math.min(
+        plainQualityBackdropRaw.height,
+        Math.ceil(top - plainQualityBackdropRaw.top + height),
+      );
+      if (sampleRight <= sampleLeft || sampleBottom <= sampleTop) return false;
+
+      const stride = plainQualityBackdropRaw.channels;
+      const step = Math.max(1, Math.floor(Math.min(width, height) / 20));
+      let count = 0;
+      let sum = 0;
+      let sumSq = 0;
+
+      for (let y = sampleTop; y < sampleBottom; y += step) {
+        const rowOffset = y * plainQualityBackdropRaw.width * stride;
+        for (let x = sampleLeft; x < sampleRight; x += step) {
+          const pixelOffset = rowOffset + x * stride;
+          const r = plainQualityBackdropRaw.data[pixelOffset] ?? 0;
+          const g = plainQualityBackdropRaw.data[pixelOffset + 1] ?? 0;
+          const b = plainQualityBackdropRaw.data[pixelOffset + 2] ?? 0;
+          const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+          sum += luminance;
+          sumSq += luminance * luminance;
+          count += 1;
+        }
+      }
+
+      if (count === 0) return false;
+      const mean = sum / count;
+      const variance = Math.max(0, sumSq / count - mean * mean);
+      const stdDev = Math.sqrt(variance);
+      if (stdDev >= 0.19) return true;
+      if (mean >= 0.33 && mean <= 0.73 && stdDev >= 0.115) return true;
+      return false;
+    };
 
     const iconRenderStateByProvider = new Map<
       BadgeKey,
@@ -1058,14 +1140,68 @@ export const renderWithSharp = async (
       qualityBadgeOverlays: ReturnType<typeof buildQualityBadgeRowOverlays>
     ) => {
       for (const overlay of qualityBadgeOverlays) {
+        const offsetX = input.imageType === 'poster' ? input.posterQualityBadgeOffsetX ?? 0 : 0;
+        const offsetY = input.imageType === 'poster' ? input.posterQualityBadgeOffsetY ?? 0 : 0;
+        const clampedLeft = clamp(
+          overlay.left + offsetX,
+          0,
+          Math.max(0, input.outputWidth - overlay.width),
+        );
+        const clampedTop = clamp(
+          overlay.top + offsetY,
+          0,
+          Math.max(0, input.finalOutputHeight - overlay.height),
+        );
+        if (
+          input.qualityBadgesStyle === 'plain' &&
+          shouldUseAdaptivePlainPlate({
+            left: clampedLeft,
+            top: clampedTop,
+            width: overlay.width,
+            height: overlay.height,
+          })
+        ) {
+          const plateInsetX = Math.max(4, Math.round(overlay.height * 0.11));
+          const plateInsetY = Math.max(3, Math.round(overlay.height * 0.12));
+          const plateLeft = clamp(
+            clampedLeft - plateInsetX,
+            0,
+            Math.max(0, input.outputWidth - 1),
+          );
+          const plateTop = clamp(
+            clampedTop - plateInsetY,
+            0,
+            Math.max(0, input.finalOutputHeight - 1),
+          );
+          const plateRight = clamp(
+            clampedLeft + overlay.width + plateInsetX,
+            1,
+            input.outputWidth,
+          );
+          const plateBottom = clamp(
+            clampedTop + overlay.height + plateInsetY,
+            1,
+            input.finalOutputHeight,
+          );
+          const plateWidth = Math.max(1, plateRight - plateLeft);
+          const plateHeight = Math.max(1, plateBottom - plateTop);
+          const plateRadius = Math.max(8, Math.round(plateHeight / 2));
+          const plateSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${plateWidth}" height="${plateHeight}" viewBox="0 0 ${plateWidth} ${plateHeight}"><rect x="0" y="0" width="${plateWidth}" height="${plateHeight}" rx="${plateRadius}" fill="rgba(2,6,23,0.20)" stroke="rgba(248,250,252,0.16)" stroke-width="1" /></svg>`;
+          overlays.push({
+            input: Buffer.from(plateSvg),
+            top: plateTop,
+            left: plateLeft,
+          });
+          trackGenreCollisionRect(plateLeft, plateTop, plateWidth, plateHeight);
+        }
         overlays.push({
           input: Buffer.from(overlay.svg),
-          top: overlay.top,
-          left: overlay.left,
+          top: clampedTop,
+          left: clampedLeft,
         });
         trackGenreCollisionRect(
-          overlay.left,
-          overlay.top,
+          clampedLeft,
+          clampedTop,
           overlay.width,
           overlay.height
         );

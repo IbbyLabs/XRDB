@@ -436,7 +436,7 @@ ${buildMediaPlate(width, {
     };
   };
   const buildPlainQualityShadowDefs = (filterId: string) =>
-    `<defs><filter id="${filterId}" x="-28%" y="-34%" width="156%" height="188%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="2" stdDeviation="3.6" flood-color="#020617" flood-opacity="0.72" /><feDropShadow dx="0" dy="0" stdDeviation="2.1" flood-color="#020617" flood-opacity="0.34" /></filter></defs>`;
+    `<defs><filter id="${filterId}" x="-28%" y="-34%" width="156%" height="188%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="1.2" stdDeviation="2.4" flood-color="#020617" flood-opacity="0.66" /><feDropShadow dx="0" dy="0" stdDeviation="1.35" flood-color="#020617" flood-opacity="0.28" /></filter></defs>`;
   const buildPlainQualitySurface = (width: number, filterId: string) =>
     `<rect x="5" y="7" width="${Math.max(0, width - 10)}" height="${Math.max(0, h - 14)}" rx="${Math.max(8, Math.round(h * 0.24))}" fill="rgba(2,6,23,0.10)" filter="url(#${filterId})" />`;
   const buildSilverQualityMarkDefs = (filterId: string) =>
@@ -475,7 +475,7 @@ ${buildMediaPlate(width, {
     const defs = isSilverStandard
       ? buildSilverQualityMarkDefs('quality-badge-silver-logo')
       : isPlainStandard
-        ? `${buildPlainQualityShadowDefs('quality-badge-plain-shadow')}<defs><filter id="quality-badge-logo-shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="1" stdDeviation="2.1" flood-color="#000000" flood-opacity="0.52" /></filter></defs>`
+        ? `${buildPlainQualityShadowDefs('quality-badge-plain-shadow')}<defs><filter id="quality-badge-logo-shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="0.8" stdDeviation="1.45" flood-color="#000000" flood-opacity="0.48" /></filter></defs>`
         : '';
     const assetExtraAttributes = isSilverStandard
       ? 'filter="url(#quality-badge-silver-logo)"'
@@ -607,7 +607,7 @@ ${buildSilverQualityTextDefs('quality-badge-silver-text')}
     const filter = effectiveStyle === 'plain' ? ' filter="url(#quality-badge-text-shadow)"' : '';
     const defs =
       effectiveStyle === 'plain'
-        ? `${buildPlainQualityShadowDefs('quality-badge-text-surface')}<defs><filter id="quality-badge-text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#000000" flood-opacity="0.56" /></filter></defs>`
+        ? `${buildPlainQualityShadowDefs('quality-badge-text-surface')}<defs><filter id="quality-badge-text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="0.9" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.50" /></filter></defs>`
         : '';
     const plainStroke =
       effectiveStyle === 'plain' ? buildPlainQualitySurface(width, 'quality-badge-text-surface') : '';
@@ -681,7 +681,7 @@ ${effectiveStyle === 'plain' ? plainStroke : rect}
     const iconOutlineFilter = `<filter id="provider-icon-outline" x="-25%" y="-25%" width="150%" height="150%"><feMorphology in="SourceAlpha" operator="dilate" radius="${iconOutlineR}" result="exp"/><feComposite in="exp" in2="SourceAlpha" operator="out" result="ring"/><feFlood flood-color="#ffffff" flood-opacity="0.82" result="wht"/><feComposite in="wht" in2="ring" operator="in" result="outline"/><feMerge><feMergeNode in="outline"/><feMergeNode in="SourceGraphic"/></feMerge></filter>`;
     const defs =
       effectiveStyle === 'plain'
-        ? `${buildPlainQualityShadowDefs('quality-badge-stream-surface')}<defs><filter id="quality-badge-stream-logo-shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="1" stdDeviation="2.1" flood-color="#000000" flood-opacity="0.52" /></filter><filter id="quality-badge-stream-text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#000000" flood-opacity="0.56" /></filter>${iconOutlineFilter}</defs>`
+        ? `${buildPlainQualityShadowDefs('quality-badge-stream-surface')}<defs><filter id="quality-badge-stream-logo-shadow" x="-25%" y="-25%" width="150%" height="150%"><feDropShadow dx="0" dy="0.8" stdDeviation="1.45" flood-color="#000000" flood-opacity="0.48" /></filter><filter id="quality-badge-stream-text-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="0.9" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.50" /></filter>${iconOutlineFilter}</defs>`
         : `<defs>${iconOutlineFilter}</defs>`;
     const backgroundMarkup =
       effectiveStyle === 'media'
@@ -748,7 +748,7 @@ ${buildMediaPlate(textWidth, {
   const filter = effectiveStyle === 'plain' ? ' filter="url(#quality-badge-text-fallback-shadow)"' : '';
   const defs =
     effectiveStyle === 'plain'
-      ? `${buildPlainQualityShadowDefs('quality-badge-text-fallback-surface')}<defs><filter id="quality-badge-text-fallback-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="1" stdDeviation="2.2" flood-color="#000000" flood-opacity="0.56" /></filter></defs>`
+      ? `${buildPlainQualityShadowDefs('quality-badge-text-fallback-surface')}<defs><filter id="quality-badge-text-fallback-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="0.9" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.50" /></filter></defs>`
       : '';
   const textFill =
     effectiveStyle === 'plain' ? hexColorToRgba(resolvedAccentColor, 0.95, '#f5f5f4') : '#f5f5f4';
