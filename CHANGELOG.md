@@ -130,6 +130,80 @@
 
 <a id="v1-24-0"></a>
 
+<a id="v1-25-0"></a>
+
+## [v1.25.0] - 25/04/2026
+
+### Added
+* add dedicated per type genre badge X/Y offset controls
+  
+  Add eight new settings — posterGenreBadgeOffsetX/Y, backdropGenreBadgeOffsetX/Y,
+  thumbnailGenreBadgeOffsetX/Y, logoGenreBadgeOffsetX/Y — giving each image type
+  independent pixel level control over where genre badges are drawn, matching the
+  offset capability already available for quality and rating badges.
+  
+  UI
+  • Two new ScaleField controls ("Genre offset X", "Genre offset Y") added to
+    LookSection in configurator appearance sections.tsx, bounded by the shared
+    rating stack offset limits (MIN/MAX_RATING_STACK_OFFSET_PX).
+  • Both controls update the active per type value via the existing previewType
+    dispatch pattern so preview and export stay in sync.
+  
+  Config model
+  • SharedXrdbSettings gains all eight fields, defaulting to
+    DEFAULT_RATING_STACK_OFFSET_PX and normalized through normalizeRatingStackOffsetPx.
+  • buildSharedPayload omits values that equal the default (lossless round trip).
+  • Profile verification coverage extended with integer range tests for all eight
+    keys under the genre badge family.
+  • Proxy config allowlists updated with shared genreBadgeOffsetX/Y and all four
+    per type variants.
+  
+  State and hooks
+  • useConfiguratorWorkspaceState: eight useState hooks, values and setters exported.
+  • useConfiguratorActiveWorkspaceSettings: activeGenreBadgeOffsetX/Y computed from
+    previewType; setActiveGenreBadgeOffsetX/Y dispatched to the correct per type setter.
+  • configuratorPageProps: lookProps carries activeGenreBadgeOffsetX/Y and
+    onSelectGenreBadgeOffsetX/Y.
+  • useConfiguratorOutputs: appendGenreBadgeQueryParams emits offset params when
+    non default; useMemo dependency array includes both active offset values.
+  • useConfiguratorWorkspaceConfigIo: all eight fields included in
+    buildCurrentUiConfig payload and applySavedUiConfig deps array.
+  • useConfiguratorWorkspaceRuntime: threads per type offset state through the full
+    hook chain.
+  
+  Request parsing and render pipeline
+  • imageRouteRequestState: parses globalGenreBadgeOffsetX/Y, then per type
+    overrides, and resolves the active pair from imageType.
+  • finalImageRenderSeed: includes offset values in the cache key when genre mode
+    is active, ensuring renders vary correctly per offset.
+  • imageRouteExecution → imageRoutePreparedMedia: offsets forwarded through the
+    pipeline and included in GenreBadgeSpec.
+  • imageRouteRenderer: GenreBadgeSpec type extended with optional offsetX/offsetY.
+  • imageRouteGenrePlacement: baseLeft/initialTop adjusted by offsetX/offsetY before
+    the clamped final position is returned.
+
+### Fixed
+* restore poster quality badge offset controls in UI
+  
+  The configurator now exposes poster quality badge X and Y position offsets, fixing the regression where these settings were only available as query params and changelog surfaced options.
+  
+  • add Position Offset controls for poster quality badges in the Quality section
+  • wire new controls through configurator page props and workspace state setters
+  • thread values through workspace runtime and config IO apply and save flows
+  • include poster quality badge offsets in output URL generation when non default
+  • add shared config defaults and normalization for both offset fields
+  • serialize offsets in payloads only when values differ from defaults
+  • register offset keys in proxy config schema allowlists and typings
+  • include offset keys in poster quality reset group coverage
+  • add config profile verification entries for both offset params
+  • add regression tests for:
+  • AIOMetadata export includes poster scoped offset params when set
+  • offsets stay poster scoped and do not leak to other surfaces
+  • reset groups include both new offset keys
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.24.0] - 25/04/2026
 
 ### Added
