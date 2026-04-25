@@ -13,7 +13,7 @@ import type {
   GenreBadgeStyle,
 } from './genreBadge.ts';
 import type { MediaFeatureBadgeKey } from './mediaFeatures.ts';
-import type { QualityBadgeStyle } from './ratingAppearance.ts';
+import type { IconShape, QualityBadgeStyle, RatingStyle } from './ratingAppearance.ts';
 import type { RatingPreference } from './ratingProviderCatalog.ts';
 import type { SharedXrdbSettings, StreamBadgesSetting } from './uiConfig.ts';
 import { buildProfileParams, coerceNonPosterPresentation } from './uiConfig.ts';
@@ -23,6 +23,8 @@ export type ParamDiffEntry = { key: string; oldValue: string; newValue: string }
 
 export type SyncableTypeSettings = {
   ratingPreferences: RatingPreference[];
+  ratingStyle: RatingStyle;
+  iconShape: IconShape;
   ratingPresentation: RatingPresentation;
   aggregateRatingSource: AggregateRatingSource;
   aggregateProviderWeights: AggregateProviderWeights;
@@ -75,6 +77,8 @@ export const extractSyncableSettings = (
     case 'poster':
       return {
         ratingPreferences: [...settings.posterRatingPreferences],
+        ratingStyle: settings.posterRatingStyle,
+        iconShape: settings.posterIconShape,
         ratingPresentation: settings.posterRatingPresentation,
         aggregateRatingSource: settings.posterAggregateRatingSource,
         aggregateProviderWeights: settings.posterAggregateProviderWeights,
@@ -96,6 +100,8 @@ export const extractSyncableSettings = (
     case 'backdrop':
       return {
         ratingPreferences: [...settings.backdropRatingPreferences],
+        ratingStyle: settings.backdropRatingStyle,
+        iconShape: settings.backdropIconShape,
         ratingPresentation: settings.backdropRatingPresentation,
         aggregateRatingSource: settings.backdropAggregateRatingSource,
         aggregateProviderWeights: settings.backdropAggregateProviderWeights,
@@ -117,6 +123,8 @@ export const extractSyncableSettings = (
     case 'thumbnail':
       return {
         ratingPreferences: [...settings.thumbnailRatingPreferences],
+        ratingStyle: settings.thumbnailRatingStyle,
+        iconShape: settings.thumbnailIconShape,
         ratingPresentation: settings.thumbnailRatingPresentation,
         aggregateRatingSource: settings.thumbnailAggregateRatingSource,
         aggregateProviderWeights: settings.thumbnailAggregateProviderWeights,
@@ -138,6 +146,8 @@ export const extractSyncableSettings = (
     default:
       return {
         ratingPreferences: [...settings.logoRatingPreferences],
+        ratingStyle: settings.logoRatingStyle,
+        iconShape: settings.logoIconShape,
         ratingPresentation: settings.logoRatingPresentation,
         aggregateRatingSource: settings.logoAggregateRatingSource,
         aggregateProviderWeights: settings.logoAggregateProviderWeights,
@@ -183,6 +193,8 @@ export const applySyncableSettings = (
         ...settings,
         ...globalOverrides,
         posterRatingPreferences: incoming.ratingPreferences,
+        posterRatingStyle: incoming.ratingStyle,
+        posterIconShape: incoming.iconShape,
         posterRatingPresentation: incoming.ratingPresentation,
         posterAggregateRatingSource: incoming.aggregateRatingSource,
         posterAggregateProviderWeights: incoming.aggregateProviderWeights,
@@ -205,6 +217,8 @@ export const applySyncableSettings = (
         ...settings,
         ...globalOverrides,
         backdropRatingPreferences: incoming.ratingPreferences,
+        backdropRatingStyle: incoming.ratingStyle,
+        backdropIconShape: incoming.iconShape,
         backdropRatingPresentation: coerceNonPosterPresentation(incoming.ratingPresentation),
         backdropAggregateRatingSource: incoming.aggregateRatingSource,
         backdropAggregateProviderWeights: incoming.aggregateProviderWeights,
@@ -229,6 +243,8 @@ export const applySyncableSettings = (
         ...globalOverrides,
         thumbnailRatingPreferences:
           filteredProviders.length > 0 ? filteredProviders : settings.thumbnailRatingPreferences,
+        thumbnailRatingStyle: incoming.ratingStyle,
+        thumbnailIconShape: incoming.iconShape,
         thumbnailRatingPresentation: coerceNonPosterPresentation(incoming.ratingPresentation),
         thumbnailAggregateRatingSource: incoming.aggregateRatingSource,
         thumbnailAggregateProviderWeights: incoming.aggregateProviderWeights,
@@ -254,6 +270,8 @@ export const applySyncableSettings = (
         ...settings,
         ...globalOverrides,
         logoRatingPreferences: incoming.ratingPreferences,
+        logoRatingStyle: incoming.ratingStyle,
+        logoIconShape: incoming.iconShape,
         logoRatingPresentation: coerceNonPosterPresentation(incoming.ratingPresentation),
         logoAggregateRatingSource: incoming.aggregateRatingSource,
         logoAggregateProviderWeights: incoming.aggregateProviderWeights,
@@ -274,6 +292,120 @@ export const applySyncableSettings = (
 };
 
 const SYNC_DIFF_MAX_VISIBLE = 20;
+
+export const SYNCABLE_TARGET_KEY_MAP: Record<keyof SyncableTypeSettings, string> = {
+  ratingPreferences: 'RatingPreferences',
+  ratingStyle: 'RatingStyle',
+  iconShape: 'IconShape',
+  ratingPresentation: 'RatingPresentation',
+  aggregateRatingSource: 'AggregateRatingSource',
+  aggregateProviderWeights: 'AggregateProviderWeights',
+  ratingBadgeScale: 'RatingBadgeScale',
+  qualityBadgeScale: 'QualityBadgeScale',
+  genreBadgeMode: 'GenreBadgeMode',
+  genreBadgeStyle: 'GenreBadgeStyle',
+  genreBadgePosition: 'GenreBadgePosition',
+  genreBadgeScale: 'GenreBadgeScale',
+  genreBadgeBorderWidth: 'GenreBadgeBorderWidth',
+  genreBadgeBackgroundOpacity: 'GenreBadgeBackgroundOpacity',
+  genreBadgeAnimeGrouping: 'GenreBadgeAnimeGrouping',
+  qualityBadgePreferences: 'QualityBadgePreferences',
+  qualityBadgesStyle: 'QualityBadgesStyle',
+  qualityBadgesMax: 'QualityBadgesMax',
+  streamBadges: 'StreamBadges',
+  aggregateAccentMode: 'aggregateAccentMode',
+  aggregateAccentColor: 'aggregateAccentColor',
+  aggregateCriticsAccentColor: 'aggregateCriticsAccentColor',
+  aggregateAudienceAccentColor: 'aggregateAudienceAccentColor',
+  aggregateValueColor: 'aggregateValueColor',
+  aggregateCriticsValueColor: 'aggregateCriticsValueColor',
+  aggregateAudienceValueColor: 'aggregateAudienceValueColor',
+  aggregateDynamicStops: 'aggregateDynamicStops',
+  aggregateAccentBarOffset: 'aggregateAccentBarOffset',
+  aggregateAccentBarVisible: 'aggregateAccentBarVisible',
+  ratingValueMode: 'ratingValueMode',
+};
+
+export const SYNCABLE_GLOBAL_KEYS = new Set<keyof SyncableTypeSettings>([
+  'aggregateAccentMode',
+  'aggregateAccentColor',
+  'aggregateCriticsAccentColor',
+  'aggregateAudienceAccentColor',
+  'aggregateValueColor',
+  'aggregateCriticsValueColor',
+  'aggregateAudienceValueColor',
+  'aggregateDynamicStops',
+  'aggregateAccentBarOffset',
+  'aggregateAccentBarVisible',
+  'ratingValueMode',
+]);
+
+const stringifySyncableValue = (value: unknown): string => {
+  if (value == null) {
+    return '';
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item)).join(',');
+  }
+  if (typeof value === 'object') {
+    const objectValue = value as Record<string, unknown>;
+    return JSON.stringify(
+      Object.keys(objectValue)
+        .sort((a, b) => a.localeCompare(b))
+        .reduce<Record<string, unknown>>((acc, key) => {
+          acc[key] = objectValue[key];
+          return acc;
+        }, {}),
+    );
+  }
+  return String(value);
+};
+
+export const SYNC_SPECIAL_RULES = [
+  'Only the fields listed in the matrix are synchronized across types.',
+  'Poster-only presentations are coerced to standard on backdrop, thumbnail, and logo targets.',
+  'Thumbnail provider sync keeps only episode-safe providers.',
+  'Stream badges are excluded when syncing into logo.',
+] as const;
+
+const buildSyncableParamKey = (
+  targetType: MediaSearchPreviewType,
+  field: keyof SyncableTypeSettings,
+): string => {
+  const mappedKey = SYNCABLE_TARGET_KEY_MAP[field];
+  if (SYNCABLE_GLOBAL_KEYS.has(field)) {
+    return mappedKey;
+  }
+  return `${targetType}${mappedKey}`;
+};
+
+export const computeSyncDiffForTarget = (
+  before: SharedXrdbSettings,
+  after: SharedXrdbSettings,
+  targetType: MediaSearchPreviewType,
+): { entries: ParamDiffEntry[]; totalChanged: number } => {
+  const beforeSyncable = extractSyncableSettings(before, targetType);
+  const afterSyncable = extractSyncableSettings(after, targetType);
+  const keys = new Set<keyof SyncableTypeSettings>([
+    ...Object.keys(beforeSyncable),
+    ...Object.keys(afterSyncable),
+  ] as Array<keyof SyncableTypeSettings>);
+
+  const all: ParamDiffEntry[] = [];
+  for (const key of keys) {
+    const oldValue = stringifySyncableValue(beforeSyncable[key]);
+    const newValue = stringifySyncableValue(afterSyncable[key]);
+    if (oldValue !== newValue) {
+      all.push({ key: buildSyncableParamKey(targetType, key), oldValue, newValue });
+    }
+  }
+
+  all.sort((a, b) => a.key.localeCompare(b.key));
+  return {
+    entries: all.slice(0, SYNC_DIFF_MAX_VISIBLE),
+    totalChanged: all.length,
+  };
+};
 
 export const computeSyncDiff = (
   before: SharedXrdbSettings,
@@ -321,7 +453,7 @@ export const computeSyncToAllDiff = (
       continue;
     }
     const after = applySyncableSettings(settings, targetType, extracted);
-    result[targetType] = computeSyncDiff(settings, after);
+    result[targetType] = computeSyncDiffForTarget(settings, after, targetType);
   }
   return result;
 };

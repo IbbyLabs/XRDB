@@ -5,6 +5,7 @@ import {
   extractSyncableSettings,
   applySyncableSettings,
   computeSyncDiff,
+  computeSyncDiffForTarget,
   computeSyncToAllDiff,
 } from '../lib/crossTypeSync.ts';
 import { createDefaultSharedXrdbSettings } from '../lib/uiConfig.ts';
@@ -79,6 +80,20 @@ test('applySyncableSettings: artwork source unchanged by sync', () => {
   const result = applySyncableSettings(settings, 'backdrop', incoming);
   assert.equal(result.backdropArtworkSource, 'cinemeta');
   assert.equal(result.posterArtworkSource, 'fanart');
+});
+
+test('applySyncableSettings: rating style and icon shape transfer to target type', () => {
+  const settings = {
+    ...base,
+    posterRatingStyle: 'plain',
+    posterIconShape: 'circle',
+    backdropRatingStyle: 'glass',
+    backdropIconShape: 'rounded',
+  };
+  const incoming = extractSyncableSettings(settings, 'poster');
+  const result = applySyncableSettings(settings, 'backdrop', incoming);
+  assert.equal(result.backdropRatingStyle, 'plain');
+  assert.equal(result.backdropIconShape, 'circle');
 });
 
 test('applySyncableSettings: accent colors transfer', () => {
@@ -168,6 +183,43 @@ test('computeSyncDiff: old/new values are correct', () => {
   assert.ok(entry, 'Expected a diff entry for genre badge mode change');
 });
 
+test('computeSyncDiffForTarget: detects target type syncable field changes', () => {
+  const settings = {
+    ...base,
+    posterRatingPresentation: 'compact-average',
+    backdropRatingPresentation: 'standard',
+  };
+  const incoming = extractSyncableSettings(settings, 'poster');
+  const after = applySyncableSettings(settings, 'backdrop', incoming);
+  const diff = computeSyncDiffForTarget(settings, after, 'backdrop');
+  assert.ok(diff.totalChanged > 0);
+  const entry = diff.entries.find((e) => e.key === 'backdropRatingPresentation');
+  assert.ok(entry, 'Expected a diff entry for backdrop presentation change');
+  assert.equal(entry?.oldValue, 'standard');
+  assert.equal(entry?.newValue, 'compact-average');
+});
+
+test('computeSyncDiffForTarget: detects icon shape and rating style changes', () => {
+  const settings = {
+    ...base,
+    posterRatingStyle: 'plain',
+    posterIconShape: 'circle',
+    backdropRatingStyle: 'glass',
+    backdropIconShape: 'rounded',
+  };
+  const incoming = extractSyncableSettings(settings, 'poster');
+  const after = applySyncableSettings(settings, 'backdrop', incoming);
+  const diff = computeSyncDiffForTarget(settings, after, 'backdrop');
+  const styleEntry = diff.entries.find((e) => e.key === 'backdropRatingStyle');
+  const iconEntry = diff.entries.find((e) => e.key === 'backdropIconShape');
+  assert.ok(styleEntry, 'Expected a diff entry for backdrop rating style change');
+  assert.ok(iconEntry, 'Expected a diff entry for backdrop icon shape change');
+  assert.equal(styleEntry?.oldValue, 'glass');
+  assert.equal(styleEntry?.newValue, 'plain');
+  assert.equal(iconEntry?.oldValue, 'rounded');
+  assert.equal(iconEntry?.newValue, 'circle');
+});
+
 test('computeSyncToAllDiff: source type has empty diff', () => {
   const allDiffs = computeSyncToAllDiff(settingsWithKeys, 'poster');
   assert.equal(allDiffs.poster.totalChanged, 0);
@@ -191,6 +243,14 @@ test('computeSyncToAllDiff: shows poster presentation changes without client pro
 test('computeSyncToAllDiff: identical per-type settings produce zero diff for each type', () => {
   const settings = {
     ...settingsWithKeys,
+    posterRatingStyle: 'plain',
+    backdropRatingStyle: 'plain',
+    thumbnailRatingStyle: 'plain',
+    logoRatingStyle: 'plain',
+    posterIconShape: 'rounded',
+    backdropIconShape: 'rounded',
+    thumbnailIconShape: 'rounded',
+    logoIconShape: 'rounded',
     posterGenreBadgeBorderWidth: 1,
     backdropGenreBadgeBorderWidth: 1,
     thumbnailGenreBadgeBorderWidth: 1,

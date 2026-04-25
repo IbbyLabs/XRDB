@@ -8,7 +8,7 @@ import { useConfiguratorContext } from '@/lib/configuratorProvider';
 import { ConfirmDiffModal, type ConfirmDiffSection } from '@/components/confirm-diff-modal';
 import { SyncFlyout } from '@/components/sync-flyout';
 import {
-  computeSyncDiff,
+  computeSyncDiffForTarget,
   computeSyncToAllDiff,
   applySyncableSettings,
   extractSyncableSettings,
@@ -79,7 +79,11 @@ export function ConfiguratorCenterStage({
         targetType as MediaSearchPreviewType,
         incoming,
       );
-      const diff = computeSyncDiff(currentConfig.settings, after);
+      const diff = computeSyncDiffForTarget(
+        currentConfig.settings,
+        after,
+        targetType as MediaSearchPreviewType,
+      );
       const targetLabel = TYPE_LABEL[targetType];
       setSyncDiffModal({
         title: `Sync to ${targetLabel}`,
