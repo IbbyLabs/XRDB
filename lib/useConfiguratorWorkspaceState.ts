@@ -187,6 +187,8 @@ export function useConfiguratorWorkspaceState() {
   const [logoStreamBadges, setLogoStreamBadges] = useState<StreamBadgesSetting>('auto');
   const [qualityBadgesSide, setQualityBadgesSide] = useState<QualityBadgesSide>('left');
   const [posterQualityBadgesPosition, setPosterQualityBadgesPosition] = useState<PosterQualityBadgesPosition>('auto');
+  const [posterQualityBadgeOffsetX, setPosterQualityBadgeOffsetX] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
+  const [posterQualityBadgeOffsetY, setPosterQualityBadgeOffsetY] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
   const [ageRatingBadgePosition, setAgeRatingBadgePosition] = useState<AgeRatingBadgePosition>('inherit');
   const [posterQualityBadgesStyle, setPosterQualityBadgesStyle] = useState<QualityBadgeStyle>(DEFAULT_QUALITY_BADGES_STYLE);
   const [backdropQualityBadgesStyle, setBackdropQualityBadgesStyle] = useState<QualityBadgeStyle>(DEFAULT_QUALITY_BADGES_STYLE);
@@ -840,6 +842,8 @@ export function useConfiguratorWorkspaceState() {
     posterQualityBadgeScale,
     posterQualityBadgesMax,
     posterQualityBadgesPosition,
+    posterQualityBadgeOffsetX,
+    posterQualityBadgeOffsetY,
     ageRatingBadgePosition,
     posterQualityBadgesStyle,
     posterRemuxDisplayMode,
@@ -1084,6 +1088,8 @@ export function useConfiguratorWorkspaceState() {
     setPosterQualityBadgeScale,
     setPosterQualityBadgesMax,
     setPosterQualityBadgesPosition,
+    setPosterQualityBadgeOffsetX,
+    setPosterQualityBadgeOffsetY,
     setAgeRatingBadgePosition,
     setPosterQualityBadgesStyle,
     setPosterRemuxDisplayMode,

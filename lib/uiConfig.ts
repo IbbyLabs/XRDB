@@ -268,6 +268,8 @@ export type SharedXrdbSettings = {
   logoStreamBadges: StreamBadgesSetting;
   qualityBadgesSide: QualityBadgesSide;
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
+  posterQualityBadgeOffsetX: number;
+  posterQualityBadgeOffsetY: number;
   ageRatingBadgePosition: AgeRatingBadgePosition;
   posterQualityBadgePreferences: MediaFeatureBadgeKey[];
   backdropQualityBadgePreferences: MediaFeatureBadgeKey[];
@@ -574,6 +576,8 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   logoStreamBadges: 'auto',
   qualityBadgesSide: 'left',
   posterQualityBadgesPosition: 'auto',
+  posterQualityBadgeOffsetX: DEFAULT_RATING_STACK_OFFSET_PX,
+  posterQualityBadgeOffsetY: DEFAULT_RATING_STACK_OFFSET_PX,
   ageRatingBadgePosition: 'inherit',
   posterQualityBadgePreferences: [...DEFAULT_QUALITY_BADGE_PREFERENCES],
   backdropQualityBadgePreferences: [...DEFAULT_QUALITY_BADGE_PREFERENCES],
@@ -1446,6 +1450,14 @@ export const normalizeSharedXrdbSettings = (value: unknown, options?: { skipCros
       candidate.posterQualityBadgesPosition,
       defaults.posterQualityBadgesPosition,
     ),
+    posterQualityBadgeOffsetX: normalizeRatingStackOffsetPx(
+      candidate.posterQualityBadgeOffsetX,
+      defaults.posterQualityBadgeOffsetX,
+    ),
+    posterQualityBadgeOffsetY: normalizeRatingStackOffsetPx(
+      candidate.posterQualityBadgeOffsetY,
+      defaults.posterQualityBadgeOffsetY,
+    ),
     ageRatingBadgePosition: normalizeAgeRatingBadgePosition(
       candidate.ageRatingBadgePosition,
       defaults.ageRatingBadgePosition,
@@ -2130,6 +2142,12 @@ const buildSharedPayload = (settings: SharedXrdbSettings, options?: SharedPayloa
     settings.posterQualityBadgesPosition !== 'auto'
   ) {
     payload.posterQualityBadgesPosition = settings.posterQualityBadgesPosition;
+  }
+  if (settings.posterQualityBadgeOffsetX !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.posterQualityBadgeOffsetX = settings.posterQualityBadgeOffsetX;
+  }
+  if (settings.posterQualityBadgeOffsetY !== DEFAULT_RATING_STACK_OFFSET_PX) {
+    payload.posterQualityBadgeOffsetY = settings.posterQualityBadgeOffsetY;
   }
   if (settings.ageRatingBadgePosition !== 'inherit') {
     payload.ageRatingBadgePosition = settings.ageRatingBadgePosition;

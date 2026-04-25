@@ -160,6 +160,8 @@ const QUALITY_PREVIEW_KEYS: Record<ConfiguratorResetPreviewType, readonly Settin
     'posterStreamBadges',
     'qualityBadgesSide',
     'posterQualityBadgesPosition',
+    'posterQualityBadgeOffsetX',
+    'posterQualityBadgeOffsetY',
     'ageRatingBadgePosition',
     'posterQualityBadgePreferences',
     'posterQualityBadgesStyle',
