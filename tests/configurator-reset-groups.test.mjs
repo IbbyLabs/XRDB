@@ -90,6 +90,8 @@ test('configurator reset key lists cover expanded customisation surfaces', () =>
   assert.ok(posterLookKeys.includes('posterNoBackgroundBadgeOutlineWidth'));
   assert.ok(posterQualityKeys.includes('ageRatingBadgePosition'));
   assert.ok(posterQualityKeys.includes('posterQualityBadgesPosition'));
+  assert.ok(posterQualityKeys.includes('posterQualityBadgeOffsetX'));
+  assert.ok(posterQualityKeys.includes('posterQualityBadgeOffsetY'));
   assert.ok(allKeys.includes('ratingProviderAppearanceOverrides'));
   assert.ok(allKeys.includes('logoBackground'));
   assert.ok(!allKeys.includes('xrdbKey'));

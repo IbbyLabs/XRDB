@@ -402,6 +402,8 @@ export function useConfiguratorOutputs({
   posterQualityBadgePreferences,
   posterQualityBadgeScale,
   posterQualityBadgesPosition,
+  posterQualityBadgeOffsetX,
+  posterQualityBadgeOffsetY,
   ageRatingBadgePosition,
   posterQualityBadgesStyle,
   posterRemuxDisplayMode,
@@ -590,6 +592,8 @@ export function useConfiguratorOutputs({
   posterQualityBadgePreferences: string[];
   posterQualityBadgeScale: number;
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
+  posterQualityBadgeOffsetX: number;
+  posterQualityBadgeOffsetY: number;
   ageRatingBadgePosition: AgeRatingBadgePosition;
   posterQualityBadgesStyle: QualityBadgeStyle;
   posterRemuxDisplayMode: RemuxDisplayMode;
@@ -1030,6 +1034,12 @@ export function useConfiguratorOutputs({
     if (posterQualityBadgesPosition !== 'auto') {
       query.set('posterQualityBadgesPosition', posterQualityBadgesPosition);
     }
+    if (posterQualityBadgeOffsetX !== DEFAULT_RATING_STACK_OFFSET_PX) {
+      query.set('posterQualityBadgeOffsetX', String(posterQualityBadgeOffsetX));
+    }
+    if (posterQualityBadgeOffsetY !== DEFAULT_RATING_STACK_OFFSET_PX) {
+      query.set('posterQualityBadgeOffsetY', String(posterQualityBadgeOffsetY));
+    }
     if (previewType === 'poster' && ageRatingBadgePosition !== 'inherit') {
       query.set('ageRatingBadgePosition', ageRatingBadgePosition);
     }
@@ -1392,6 +1402,8 @@ export function useConfiguratorOutputs({
     posterQualityBadgePreferences,
     posterQualityBadgeScale,
     posterQualityBadgesPosition,
+    posterQualityBadgeOffsetX,
+    posterQualityBadgeOffsetY,
     ageRatingBadgePosition,
     posterQualityBadgesStyle,
     posterRemuxDisplayMode,

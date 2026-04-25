@@ -27,6 +27,8 @@ const SHARED_IMAGE_QUERY_KEYS = [
   'streamBadges',
   'qualityBadgesSide',
   'posterQualityBadgesPosition',
+  'posterQualityBadgeOffsetX',
+  'posterQualityBadgeOffsetY',
   'ageRatingBadgePosition',
   'qualityBadgesStyle',
   'providerAppearance',
@@ -81,6 +83,8 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
   'posterQualityBadgesStyle',
   'posterQualityBadgeScale',
   'posterQualityBadgesMax',
+  'posterQualityBadgeOffsetX',
+  'posterQualityBadgeOffsetY',
   'posterRatings',
     'posterRatingBadgeScale',
     'posterRatingPresentation',
@@ -256,6 +260,8 @@ export type ProxyConfig = {
   thumbnailStreamBadges?: string;
   qualityBadgesSide?: string;
   posterQualityBadgesPosition?: string;
+  posterQualityBadgeOffsetX?: string;
+  posterQualityBadgeOffsetY?: string;
   ageRatingBadgePosition?: string;
   qualityBadgesStyle?: string;
   providerAppearance?: string;
@@ -441,6 +447,8 @@ const CONFIG_STRING_KEYS = [
   'thumbnailStreamBadges',
   'qualityBadgesSide',
   'posterQualityBadgesPosition',
+  'posterQualityBadgeOffsetX',
+  'posterQualityBadgeOffsetY',
   'ageRatingBadgePosition',
   'qualityBadgesStyle',
   'providerAppearance',

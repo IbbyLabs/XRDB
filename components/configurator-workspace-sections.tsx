@@ -43,6 +43,12 @@ import {
   snapSliderValueToDefault,
 } from '@/lib/configuratorSliderDefaults';
 import {
+  DEFAULT_RATING_STACK_OFFSET_PX,
+  MAX_RATING_STACK_OFFSET_PX,
+  MIN_RATING_STACK_OFFSET_PX,
+  normalizeRatingStackOffsetPx,
+} from '@/lib/ratingStackOffset';
+import {
   GENRE_BADGE_MODE_OPTIONS,
   type GenreBadgeMode,
   type GenreBadgeStyle,
@@ -131,6 +137,8 @@ export function QualitySection({
   activeAgeRatingBadgePosition,
   qualityBadgesSide,
   posterQualityBadgesPosition,
+  posterQualityBadgeOffsetX,
+  posterQualityBadgeOffsetY,
   shouldShowAgeRatingBadgePosition,
   shouldShowQualityBadgesSide,
   shouldShowQualityBadgesPosition,
@@ -146,6 +154,8 @@ export function QualitySection({
   onSelectAgeRatingBadgePosition,
   onSelectQualityBadgesSide,
   onSelectPosterQualityBadgePosition,
+  onSelectPosterQualityBadgeOffsetX,
+  onSelectPosterQualityBadgeOffsetY,
   onToggleQualityBadgePreference,
   onSelectAllQualityBadgePreferencesEnabled,
   activeRemuxDisplayMode,
@@ -176,6 +186,8 @@ export function QualitySection({
   activeAgeRatingBadgePosition: AgeRatingBadgePosition;
   qualityBadgesSide: QualityBadgesSide;
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
+  posterQualityBadgeOffsetX: number;
+  posterQualityBadgeOffsetY: number;
   shouldShowAgeRatingBadgePosition: boolean;
   shouldShowQualityBadgesSide: boolean;
   shouldShowQualityBadgesPosition: boolean;
@@ -191,6 +203,8 @@ export function QualitySection({
   onSelectAgeRatingBadgePosition: (value: AgeRatingBadgePosition) => void;
   onSelectQualityBadgesSide: (value: QualityBadgesSide) => void;
   onSelectPosterQualityBadgePosition: (value: PosterQualityBadgesPosition) => void;
+  onSelectPosterQualityBadgeOffsetX: (value: number) => void;
+  onSelectPosterQualityBadgeOffsetY: (value: number) => void;
   onToggleQualityBadgePreference: (value: QualityBadgeOptionId) => void;
   onSelectAllQualityBadgePreferencesEnabled: (enabled: boolean) => void;
   activeRemuxDisplayMode: RemuxDisplayMode;
@@ -217,6 +231,16 @@ export function QualitySection({
   const sharedPlacementControlsDisabled =
     previewType === 'poster' && showsPlacementControls && !hasNonCertificationQualityBadges;
   const qualityBadgeIconOverrideCount = Object.keys(qualityBadgeAppearanceOverrides).length;
+  const posterQualityBadgeOffsetXLabel = getSliderValueLabel({
+    value: posterQualityBadgeOffsetX,
+    defaultValue: DEFAULT_RATING_STACK_OFFSET_PX,
+    suffix: 'px',
+  });
+  const posterQualityBadgeOffsetYLabel = getSliderValueLabel({
+    value: posterQualityBadgeOffsetY,
+    defaultValue: DEFAULT_RATING_STACK_OFFSET_PX,
+    suffix: 'px',
+  });
 
   return (
     <div className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
@@ -404,6 +428,102 @@ export function QualitySection({
             </div>
             <p className="text-[11px] leading-relaxed text-zinc-500">
               Inherit keeps the certification badge on shared placement, Grouped keeps it inside the same badge group, and the other options move it on its own.
+            </p>
+          </div>
+        ) : null}
+        {previewType === 'poster' ? (
+          <div className={settingsCardClass}>
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500 block mb-1">
+              Position Offset
+            </span>
+            <div className="space-y-3">
+              <div>
+                <div className="mb-1 flex items-center justify-between gap-3">
+                  <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                    X Offset
+                  </label>
+                  <span className="text-[11px] text-zinc-400">{posterQualityBadgeOffsetXLabel}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min={MIN_RATING_STACK_OFFSET_PX}
+                    max={MAX_RATING_STACK_OFFSET_PX}
+                    step={1}
+                    value={posterQualityBadgeOffsetX}
+                    onChange={(event) =>
+                      onSelectPosterQualityBadgeOffsetX(
+                        snapSliderValueToDefault({
+                          value: normalizeRatingStackOffsetPx(event.target.value),
+                          defaultValue: DEFAULT_RATING_STACK_OFFSET_PX,
+                        }),
+                      )
+                    }
+                    className="h-2 w-full accent-violet-500"
+                  />
+                  <input
+                    type="number"
+                    min={MIN_RATING_STACK_OFFSET_PX}
+                    max={MAX_RATING_STACK_OFFSET_PX}
+                    step={1}
+                    value={posterQualityBadgeOffsetX}
+                    onChange={(event) =>
+                      onSelectPosterQualityBadgeOffsetX(
+                        snapSliderValueToDefault({
+                          value: normalizeRatingStackOffsetPx(event.target.value),
+                          defaultValue: DEFAULT_RATING_STACK_OFFSET_PX,
+                        }),
+                      )
+                    }
+                    className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <div className="mb-1 flex items-center justify-between gap-3">
+                  <label className="text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+                    Y Offset
+                  </label>
+                  <span className="text-[11px] text-zinc-400">{posterQualityBadgeOffsetYLabel}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="range"
+                    min={MIN_RATING_STACK_OFFSET_PX}
+                    max={MAX_RATING_STACK_OFFSET_PX}
+                    step={1}
+                    value={posterQualityBadgeOffsetY}
+                    onChange={(event) =>
+                      onSelectPosterQualityBadgeOffsetY(
+                        snapSliderValueToDefault({
+                          value: normalizeRatingStackOffsetPx(event.target.value),
+                          defaultValue: DEFAULT_RATING_STACK_OFFSET_PX,
+                        }),
+                      )
+                    }
+                    className="h-2 w-full accent-violet-500"
+                  />
+                  <input
+                    type="number"
+                    min={MIN_RATING_STACK_OFFSET_PX}
+                    max={MAX_RATING_STACK_OFFSET_PX}
+                    step={1}
+                    value={posterQualityBadgeOffsetY}
+                    onChange={(event) =>
+                      onSelectPosterQualityBadgeOffsetY(
+                        snapSliderValueToDefault({
+                          value: normalizeRatingStackOffsetPx(event.target.value),
+                          defaultValue: DEFAULT_RATING_STACK_OFFSET_PX,
+                        }),
+                      )
+                    }
+                    className="w-16 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs text-white focus:border-violet-500/50 outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+            <p className="text-[11px] leading-relaxed text-zinc-500">
+              Fine tune horizontal and vertical quality badge placement when posters are cropped or corners are masked by other apps.
             </p>
           </div>
         ) : null}

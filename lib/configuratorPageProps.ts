@@ -435,6 +435,8 @@ export function buildConfiguratorPageProps({
         activeAgeRatingBadgePosition: activeWorkspaceSettings.activeAgeRatingBadgePosition,
         qualityBadgesSide: workspaceState.qualityBadgesSide,
         posterQualityBadgesPosition: workspaceState.posterQualityBadgesPosition,
+        posterQualityBadgeOffsetX: workspaceState.posterQualityBadgeOffsetX,
+        posterQualityBadgeOffsetY: workspaceState.posterQualityBadgeOffsetY,
         shouldShowAgeRatingBadgePosition:
           activeWorkspaceSettings.shouldShowAgeRatingBadgePosition,
         shouldShowQualityBadgesSide: activeWorkspaceSettings.shouldShowQualityBadgesSide,
@@ -454,6 +456,8 @@ export function buildConfiguratorPageProps({
         onSelectAgeRatingBadgePosition: activeWorkspaceSettings.setActiveAgeRatingBadgePosition,
         onSelectQualityBadgesSide: workspaceState.setQualityBadgesSide,
         onSelectPosterQualityBadgePosition: workspaceState.setPosterQualityBadgesPosition,
+        onSelectPosterQualityBadgeOffsetX: workspaceState.setPosterQualityBadgeOffsetX,
+        onSelectPosterQualityBadgeOffsetY: workspaceState.setPosterQualityBadgeOffsetY,
         onToggleQualityBadgePreference: workspaceActions.toggleQualityBadgePreference,
         onSelectAllQualityBadgePreferencesEnabled:
           workspaceActions.setAllQualityBadgePreferencesEnabled,

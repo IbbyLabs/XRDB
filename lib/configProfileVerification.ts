@@ -264,6 +264,8 @@ const buildEntries = () => {
     { key: 'genreBadgeAnimeGrouping', coverageValues: genreBadgeAnimeGroupingValues, browserFamily: 'genre-badge', surfaces: ['poster', 'backdrop', 'logo'] },
     { key: 'qualityBadgesSide', coverageValues: QUALITY_BADGES_SIDE_VALUES, requiredParams: { posterRatingsLayout: 'top-bottom' }, browserFamily: 'quality-badge', surfaces: ['poster'] },
     { key: 'posterQualityBadgesPosition', coverageValues: POSTER_QUALITY_POSITION_VALUES, requiredParams: { posterRatingsLayout: 'top' }, browserFamily: 'quality-badge', surfaces: ['poster'] },
+    { key: 'posterQualityBadgeOffsetX', coverageValues: toIntegerRange(MIN_RATING_STACK_OFFSET_PX, MAX_RATING_STACK_OFFSET_PX, DEFAULT_RATING_STACK_OFFSET_PX), browserFamily: 'position', surfaces: ['poster'] },
+    { key: 'posterQualityBadgeOffsetY', coverageValues: toIntegerRange(MIN_RATING_STACK_OFFSET_PX, MAX_RATING_STACK_OFFSET_PX, DEFAULT_RATING_STACK_OFFSET_PX), browserFamily: 'position', surfaces: ['poster'] },
     { key: 'ageRatingBadgePosition', coverageValues: AGE_RATING_POSITION_VALUES, browserFamily: 'quality-badge', surfaces: ['poster'] },
     { key: 'ratingValueMode', coverageValues: RATING_VALUE_MODE_VALUES, browserFamily: 'presentation', surfaces: ['shared'] },
     { key: 'qualityBadgesStyle', coverageValues: qualityBadgeStyleValues, browserFamily: 'quality-badge', surfaces: ['shared-alias'] },

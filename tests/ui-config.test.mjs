@@ -1045,6 +1045,38 @@ test('AIOMetadata export includes poster quality badge position for top poster l
   assert.match(patterns?.posterUrlPattern ?? '', /posterQualityBadgesPosition=right/);
 });
 
+test('AIOMetadata export includes poster quality badge offsets when set', () => {
+  const config = buildSampleSettings();
+
+  config.settings.posterQualityBadgeOffsetX = 42;
+  config.settings.posterQualityBadgeOffsetY = -18;
+
+  const patterns = buildAiometadataUrlPatterns('https://xrdb.example.com/', config.settings, {
+    hideCredentials: true,
+  });
+
+  assert.match(patterns?.posterUrlPattern ?? '', /posterQualityBadgeOffsetX=42/);
+  assert.match(patterns?.posterUrlPattern ?? '', /posterQualityBadgeOffsetY=-18/);
+});
+
+test('AIOMetadata export keeps poster quality badge offsets poster scoped', () => {
+  const config = buildSampleSettings();
+
+  config.settings.posterQualityBadgeOffsetX = 42;
+  config.settings.posterQualityBadgeOffsetY = -18;
+
+  const patterns = buildAiometadataUrlPatterns('https://xrdb.example.com/', config.settings, {
+    hideCredentials: true,
+  });
+
+  assert.equal((patterns?.backgroundUrlPattern ?? '').includes('posterQualityBadgeOffsetX='), false);
+  assert.equal((patterns?.backgroundUrlPattern ?? '').includes('posterQualityBadgeOffsetY='), false);
+  assert.equal((patterns?.logoUrlPattern ?? '').includes('posterQualityBadgeOffsetX='), false);
+  assert.equal((patterns?.logoUrlPattern ?? '').includes('posterQualityBadgeOffsetY='), false);
+  assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('posterQualityBadgeOffsetX='), false);
+  assert.equal((patterns?.episodeThumbnailUrlPattern ?? '').includes('posterQualityBadgeOffsetY='), false);
+});
+
 test('AIOMetadata export preserves grouped age rating placement for poster configs', () => {
   const config = buildSampleSettings();
 
