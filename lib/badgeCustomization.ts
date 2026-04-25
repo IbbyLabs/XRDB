@@ -76,7 +76,6 @@ export type RatingProviderAppearanceOverrides = Partial<
 >;
 
 export const QUALITY_BADGE_OPTIONS: Array<{ id: MediaFeatureBadgeKey; label: string }> = [
-  { id: 'certification', label: 'Age Rating' },
   { id: 'releasestatus', label: 'Release Status' },
   { id: 'netflix', label: 'Netflix' },
   { id: 'hbo', label: 'HBO' },
