@@ -161,10 +161,27 @@ const HEADER = `# Changelog
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 `;
 
+const UNRELEASED_TEMPLATE = `## Unreleased
+
+### Added
+
+### Fixed
+
+### Documentation
+
+`;
+
+function getVersionSections(changelogText) {
+  const lines = String(changelogText || '').split('\n');
+  const firstVersionIndex = lines.findIndex(line => line.startsWith('## ['));
+  if (firstVersionIndex === -1) return '';
+  return lines.slice(firstVersionIndex).join('\n').trimStart();
+}
+
 if (process.argv.includes('--rebuild')) {
   console.log('Rebuilding entire CHANGELOG.md...');
   const tags = getAllTags();
-  let fullChangelog = HEADER + '\n';
+  let fullChangelog = `${HEADER}\n${UNRELEASED_TEMPLATE}`;
   
   for (let i = tags.length - 1; i >= 0; i--) {
     const current = tags[i];
@@ -194,11 +211,10 @@ if (process.argv.includes('--rebuild')) {
 
   const newEntry = generateSection(currentVersion, today, commits);
   
-  const lines = existingChangelog.split('\n');
-  const headerEndIndex = lines.findIndex(line => line.startsWith('## ['));
-  const header = headerEndIndex === -1 ? HEADER + '\n' : lines.slice(0, headerEndIndex).join('\n') + '\n';
-  const rest = headerEndIndex === -1 ? '' : lines.slice(headerEndIndex).join('\n');
+  const versionSections = getVersionSections(existingChangelog);
+  const rebuiltTop = `${HEADER}\n${UNRELEASED_TEMPLATE}`;
+  const merged = `${rebuiltTop}${newEntry}${versionSections ? `\n${versionSections}` : ''}`;
 
-  fs.writeFileSync('CHANGELOG.md', `${header}${newEntry}${rest}`);
+  fs.writeFileSync('CHANGELOG.md', merged);
   console.log(`Updated CHANGELOG.md with ${currentVersion} changes.`);
 }
