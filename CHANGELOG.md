@@ -132,6 +132,24 @@
 
 <a id="v1-25-0"></a>
 
+<a id="v1-25-1"></a>
+
+## [v1.25.1] - 27/04/2026
+
+### Fixed
+* replace Google S2 favicon URLs with direct gstatic faviconV2 URLs
+  
+  Google S2 favicons redirect server side to faviconV2 gstatic URLs. The
+  redirect chain was causing fallback 2 letter text icons instead of the
+  actual provider logos. Replace all 9 affected providers with the direct
+  faviconV2 URLs which return HTTP 200 without a redirect.
+  
+  Fixes: TMDB, MDBList, IMDb, Rotten Tomatoes, Letterboxd, SIMKL,
+  Roger Ebert, MyAnimeList, AniList
+
+### Documentation
+* refresh static doc assets
+
 ## [v1.25.0] - 25/04/2026
 
 ### Added

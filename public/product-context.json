@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.25.0",
-  "generatedAt": "2026-04-25T04:59:43.297Z",
+  "xrdbTag": "v1.25.1",
+  "generatedAt": "2026-04-27T04:25:39.223Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -46,11 +46,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "replace Google S2 favicon URLs with direct gstatic faviconV2 URLs",
         "add dedicated per type genre badge X/Y offset controls",
         "restore poster quality badge offset controls in UI",
         "FR-91 localize clean genre badge labels",
-        "improve plain quality badge readability and add poster badge offsets",
-        "remove age rating from custom icon overrides"
+        "improve plain quality badge readability and add poster badge offsets"
       ]
     },
     {
