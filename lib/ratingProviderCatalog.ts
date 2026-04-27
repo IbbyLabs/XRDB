@@ -9,19 +9,19 @@ const providerCatalog = [
   {
     id: 'tmdb',
     label: 'TMDB',
-    iconUrl: 'https://www.google.com/s2/favicons?domain=themoviedb.org&sz=128',
+    iconUrl: 'https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://themoviedb.org&size=128',
     accentColor: '#01b4e4',
   },
   {
     id: 'mdblist',
     label: 'MDBList',
-    iconUrl: 'https://www.google.com/s2/favicons?domain=mdblist.com&sz=128',
+    iconUrl: 'https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://mdblist.com&size=128',
     accentColor: '#f97316',
   },
   {
     id: 'imdb',
     label: 'IMDb',
-    iconUrl: 'https://www.google.com/s2/favicons?domain=imdb.com&sz=128',
+    iconUrl: 'https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://imdb.com&size=128',
     accentColor: '#f5c518',
     iconCornerRadius: 8,
   },
@@ -40,7 +40,7 @@ const providerCatalog = [
   {
     id: 'tomatoes',
     label: 'Rotten Tomatoes',
-    iconUrl: 'https://www.google.com/s2/favicons?domain=rottentomatoes.com&sz=128',
+    iconUrl: 'https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://rottentomatoes.com&size=128',
     accentColor: '#fa320a',
   },
   {
@@ -53,7 +53,7 @@ const providerCatalog = [
   {
     id: 'letterboxd',
     label: 'Letterboxd',
-    iconUrl: 'https://www.google.com/s2/favicons?domain=letterboxd.com&sz=128',
+    iconUrl: 'https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://letterboxd.com&size=128',
     accentColor: '#00a5ff',
   },
   {
@@ -77,26 +77,26 @@ const providerCatalog = [
   {
     id: 'simkl',
     label: 'SIMKL',
-    iconUrl: 'https://www.google.com/s2/favicons?domain=simkl.com&sz=128',
+    iconUrl: 'https://t1.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://simkl.com&size=128',
     accentColor: '#00b4ff',
     iconCornerRadius: 16,
   },
   {
     id: 'rogerebert',
     label: 'Roger Ebert',
-    iconUrl: 'https://www.google.com/s2/favicons?domain=rogerebert.com&sz=128',
+    iconUrl: 'https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://rogerebert.com&size=128',
     accentColor: '#c1121f',
   },
   {
     id: 'myanimelist',
     label: 'MyAnimeList',
-    iconUrl: 'https://www.google.com/s2/favicons?domain=myanimelist.net&sz=128',
+    iconUrl: 'https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://myanimelist.net&size=128',
     accentColor: '#2e51a2',
   },
   {
     id: 'anilist',
     label: 'AniList',
-    iconUrl: 'https://www.google.com/s2/favicons?domain=anilist.co&sz=128',
+    iconUrl: 'https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://anilist.co&size=128',
     accentColor: '#02a9ff',
   },
   {
