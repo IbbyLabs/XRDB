@@ -6,7 +6,7 @@ import {
   randomBytes,
   randomUUID,
 } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { accessSync, constants, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 import { logger } from './serverLogger.ts';
@@ -190,8 +190,12 @@ const resolveConfigEncryptionKey = (): Buffer => {
   }
 
   const generated = randomBytes(32);
-  mkdirSync(dirname(keyPath), { recursive: true });
-  writeFileSync(keyPath, generated.toString('hex'), { mode: 0o600 });
+  ensureWritableParentDirectory(keyPath);
+  try {
+    writeFileSync(keyPath, generated.toString('hex'), { mode: 0o600 });
+  } catch (error) {
+    failDataDirPermission(dirname(keyPath), error);
+  }
   logger.warn(
     '[xrdb] Auto-generated config encryption key written to',
     keyPath,
@@ -273,6 +277,19 @@ type GlobalDbState = typeof globalThis & {
 
 const getGlobalDbState = () => globalThis as GlobalDbState;
 
+const formatDataDirPermissionHelp = (targetPath: string) =>
+  [
+    `[xrdb] Data directory is not writable: ${targetPath}`,
+    '[xrdb] This usually means Docker created the bind mount as root before XRDB started.',
+    '[xrdb] Fix the host path permissions, then recreate XRDB.',
+    `[xrdb] Example: sudo chown -R 1000:1000 "${targetPath}" && sudo chmod -R 755 "${targetPath}"`,
+  ].join(' ');
+
+const failDataDirPermission = (targetPath: string, error: unknown): never => {
+  const cause = error instanceof Error ? ` Cause: ${error.message}` : '';
+  throw new Error(`${formatDataDirPermissionHelp(targetPath)}${cause}`);
+};
+
 const resolveDbDataDir = () => {
   const configured = String(process.env.XRDB_DATA_DIR ?? '').trim();
   return configured || join(process.cwd(), 'data');
@@ -283,9 +300,36 @@ export const getDbPath = () => {
   return configured || join(resolveDbDataDir(), 'xrdb.db');
 };
 
+const ensureWritableParentDirectory = (filePath: string) => {
+  const targetDir = dirname(filePath);
+
+  try {
+    mkdirSync(targetDir, { recursive: true });
+    accessSync(targetDir, constants.R_OK | constants.W_OK);
+  } catch (error) {
+    failDataDirPermission(targetDir, error);
+  }
+
+  return targetDir;
+};
+
 const openDatabase = (databasePath: string) => {
-  mkdirSync(dirname(databasePath), { recursive: true });
-  const db = new Database(databasePath);
+  ensureWritableParentDirectory(databasePath);
+
+  let db: Database.Database;
+  try {
+    db = new Database(databasePath);
+  } catch (error) {
+    if (
+      error instanceof Error
+      && ('code' in error)
+      && (error as NodeJS.ErrnoException & { code?: string }).code === 'SQLITE_CANTOPEN'
+    ) {
+      failDataDirPermission(dirname(databasePath), error);
+    }
+    throw error;
+  }
+
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
   return db;

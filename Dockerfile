@@ -43,6 +43,7 @@ RUN apt-get update \
     fontconfig \
     fonts-dejavu-core \
     fonts-freefont-ttf \
+    gosu \
     fonts-noto-core \
   && rm -rf /var/lib/apt/lists/*
 
@@ -50,16 +51,17 @@ COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
 COPY --from=build /app/data/poster-warm-targets.txt ./poster-warm-targets.txt
+COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 ENV XRDB_POSTER_WARM_SOURCE_FILE=./poster-warm-targets.txt
 
 RUN mkdir -p /app/data \
-  && chown -R node:node /app
-
-USER node
+  && chown -R node:node /app \
+  && chmod +x /usr/local/bin/docker-entrypoint.sh
 
 VOLUME ["/app/data"]
 
 EXPOSE 3000
 
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["node", "server.js"]
