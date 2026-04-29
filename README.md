@@ -971,7 +971,14 @@ Use `env.selfhost.template` for a minimal self host setup or `env.template` for 
 
 When these vars are unset, XRDB uses the runtime defaults shown below. The
 bundled `docker compose` setup now defers to those app defaults instead of
-hardcoding separate cache TTL values.
+hardcoding separate cache TTL values. Setting a var to its default value is a
+no-op — it only matters when you want a value different from the default.
+
+**Reducing MDBList API hits**: `XRDB_MDBLIST_CACHE_TTL_MS` is the primary lever.
+Raise it to cache ratings longer for all titles. `XRDB_MDBLIST_OLD_MOVIE_CACHE_TTL_MS`
+extends the TTL specifically for older titles and only has an effect when set
+*higher* than `XRDB_MDBLIST_CACHE_TTL_MS`. Lower `XRDB_MDBLIST_OLD_MOVIE_AGE_DAYS`
+(e.g. `180`) to classify more titles as old and apply the extended TTL to a broader set.
 
 | Variable | Default | Min | Max | Description |
 |----------|---------|-----|-----|-------------|
@@ -985,8 +992,8 @@ hardcoding separate cache TTL values.
 | `XRDB_TORRENTIO_CACHE_TTL_MS` | 6 hours | 10 min | 7 days | Torrentio stream badges |
 | `XRDB_PROVIDER_ICON_CACHE_TTL_MS` | 7 days | 1 hour | 30 days | Rating provider icons |
 | `XRDB_IMDB_DATASET_CACHE_TTL_MS` | 7 days | 1 hour | 365 days | Local IMDb dataset |
-| `XRDB_MDBLIST_OLD_MOVIE_CACHE_TTL_MS` | 7 days | 1 hour | 30 days | Extended cache for old media |
-| `XRDB_MDBLIST_OLD_MOVIE_AGE_DAYS` | 365 | 30 | 3,650 | Age threshold for "old media" logic |
+| `XRDB_MDBLIST_OLD_MOVIE_CACHE_TTL_MS` | 7 days | 1 hour | 30 days | Extended cache for old media — only effective above `XRDB_MDBLIST_CACHE_TTL_MS` |
+| `XRDB_MDBLIST_OLD_MOVIE_AGE_DAYS` | 365 | 30 | 3,650 | Age threshold for "old media" logic — lower to apply the extended TTL to more titles |
 | `XRDB_MDBLIST_RATE_LIMIT_COOLDOWN_MS` | 1 day | 30 sec | 7 days | Cooldown after MDBList rate limit |
 
 ### IMDb Dataset Sync
@@ -1014,25 +1021,25 @@ hardcoding separate cache TTL values.
 | `XRDB_TORRENTIO_FALLBACK_BASE_URL` | `https://torrentio.stremio.ru` | Optional fallback Torrentio instance used when the primary host times out, fails, or returns a retryable status. Set to a blank value to disable fallback. |
 | `XRDB_TORRENTIO_CONCURRENCY` | `2` | Max parallel Torrentio badge fetches. Higher can improve throughput, but also increases the chance of source rate limiting. |
 | `XRDB_TORRENTIO_TIMEOUT_MS` | `4000` | Per-request timeout for Torrentio badge fetches before XRDB fails over or gives up. |
-| `XRDB_TORRENTIO_RATE_LIMIT_COOLDOWN_MS` | `900000` | Cooldown window after Torrentio responds with rate limiting. |
+| `XRDB_TORRENTIO_RATE_LIMIT_COOLDOWN_MS` | `900000` | Cooldown window after Torrentio responds with rate limiting. Min: 1 min / max: 1 day. |
 | `XRDB_TORRENTIO_ADAPTIVE_CACHE_ENABLED` | `false` | Enables adaptive stream cache TTL selection based on content recency instead of a fixed Torrentio cache TTL. |
-| `XRDB_TORRENTIO_FRESH_WINDOW_MS` | `28800000` | Age window used to classify titles into the fresh adaptive cache bucket. |
-| `XRDB_TORRENTIO_WARM_WINDOW_MS` | `172800000` | Age window used to classify titles into the warm adaptive cache bucket before falling back to stable. |
-| `XRDB_TORRENTIO_FRESH_TTL_MS` | `1800000` | Adaptive cache TTL applied to fresh titles. |
-| `XRDB_TORRENTIO_WARM_TTL_MS` | `21600000` | Adaptive cache TTL applied to warm titles. |
-| `XRDB_TORRENTIO_STABLE_TTL_MS` | `604800000` | Adaptive cache TTL applied to stable titles. |
+| `XRDB_TORRENTIO_FRESH_WINDOW_MS` | `28800000` | Age window used to classify titles into the fresh adaptive cache bucket. Min: 1 min / max: 7 days. |
+| `XRDB_TORRENTIO_WARM_WINDOW_MS` | `172800000` | Age window used to classify titles into the warm adaptive cache bucket before falling back to stable. Min: 1 min / max: 30 days. |
+| `XRDB_TORRENTIO_FRESH_TTL_MS` | `1800000` | Adaptive cache TTL applied to fresh titles. Min: 1 min / max: 6 hours. |
+| `XRDB_TORRENTIO_WARM_TTL_MS` | `21600000` | Adaptive cache TTL applied to warm titles. Min: 1 min / max: 1 day. |
+| `XRDB_TORRENTIO_STABLE_TTL_MS` | `604800000` | Adaptive cache TTL applied to stable titles. Min: 1 hr / max: 30 days. |
 | `CACHE_HARDENING_ENABLED` | `false` | Global kill switch for stream cache hardening features. When disabled, all hardening flags fall back to legacy behavior. |
 | `CACHE_HARDENING_NEGATIVE_CACHE` | `false` | Enables short-lived negative caching for empty stream results. Requires `CACHE_HARDENING_ENABLED=true`. |
-| `XRDB_TORRENTIO_NEGATIVE_CACHE_TTL_MS` | `300000` | TTL applied to negative Torrentio results when negative caching is enabled. |
+| `XRDB_TORRENTIO_NEGATIVE_CACHE_TTL_MS` | `300000` | TTL applied to negative Torrentio results when negative caching is enabled. Min: 30 sec / max: 30 min. |
 | `CACHE_HARDENING_SWR` | `false` | Enables stale while revalidate for expired stream cache entries. Requires `CACHE_HARDENING_ENABLED=true`. |
-| `XRDB_TORRENTIO_SWR_WINDOW_MS` | `3600000` | Max stale-serve window for stale while revalidate. |
+| `XRDB_TORRENTIO_SWR_WINDOW_MS` | `3600000` | Max stale-serve window for stale while revalidate. Min: 1 min / max: 1 day. |
 | `CACHE_HARDENING_CIRCUIT_BREAKER` | `false` | Enables per-provider circuit breaking after repeated failures. Requires `CACHE_HARDENING_ENABLED=true`. |
-| `XRDB_TORRENTIO_CIRCUIT_FAILURE_THRESHOLD` | `5` | Failure count required to open the provider circuit. |
-| `XRDB_TORRENTIO_CIRCUIT_WINDOW_MS` | `300000` | Rolling failure window used by the provider circuit breaker. |
-| `XRDB_TORRENTIO_CIRCUIT_COOLDOWN_MS` | `120000` | Cooldown period before a tripped provider circuit can be retried. |
+| `XRDB_TORRENTIO_CIRCUIT_FAILURE_THRESHOLD` | `5` | Failure count required to open the provider circuit. Range: 1 – 50. |
+| `XRDB_TORRENTIO_CIRCUIT_WINDOW_MS` | `300000` | Rolling failure window used by the provider circuit breaker. Min: 10 sec / max: 1 hr. |
+| `XRDB_TORRENTIO_CIRCUIT_COOLDOWN_MS` | `120000` | Cooldown period before a tripped provider circuit can be retried. Min: 10 sec / max: 1 hr. |
 | `CACHE_HARDENING_PROVIDER_BUDGETS` | `false` | Enables per-provider request budgets within a rolling time window. Requires `CACHE_HARDENING_ENABLED=true`. |
-| `XRDB_TORRENTIO_BUDGET_REQUESTS_PER_WINDOW` | `200` | Max Torrentio requests allowed per provider budget window. |
-| `XRDB_TORRENTIO_BUDGET_WINDOW_MS` | `60000` | Duration of the per-provider request budget window. |
+| `XRDB_TORRENTIO_BUDGET_REQUESTS_PER_WINDOW` | `200` | Max Torrentio requests allowed per provider budget window. Range: 1 – 10,000. |
+| `XRDB_TORRENTIO_BUDGET_WINDOW_MS` | `60000` | Duration of the per-provider request budget window. Min: 10 sec / max: 1 hr. |
 | `XRDB_TORRENTIO_BYPASS_PROXY` | `false` | When `true`, Torrentio badge fetches skip the shared `HTTP_PROXY` or `HTTPS_PROXY` route and connect directly. |
 | `XRDB_TORRENTIO_DIRECT_CANDIDATE_BASE_URL` | `https://torrentio.stremio.ru` | Expected direct-host candidate used as the default fallback base URL when no explicit fallback is configured. |
 
