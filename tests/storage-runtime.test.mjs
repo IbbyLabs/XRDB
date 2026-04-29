@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync, mkdtempSync, rmSync, utimesSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, rmSync, utimesSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -109,4 +109,32 @@ test('object storage writes, reads, and prunes expired images inside the configu
     assert.equal(existsSync(metadataPath), false);
     assert.equal(await storageModule.getCachedImageFromObjectStorage(key), null);
   });
+});
+
+test('db initialization fails with a direct permission error when the data directory is not writable', async (t) => {
+  const tempDir = mkdtempSync(join(tmpdir(), 'xrdb-db-perms-'));
+  const lockedDir = join(tempDir, 'locked');
+  const previousDataDir = process.env.XRDB_DATA_DIR;
+  const previousDbPath = process.env.XRDB_DB_PATH;
+
+  mkdirSync(lockedDir, { recursive: true });
+  chmodSync(lockedDir, 0o555);
+  process.env.XRDB_DATA_DIR = lockedDir;
+  delete process.env.XRDB_DB_PATH;
+
+  t.after(() => {
+    chmodSync(lockedDir, 0o755);
+
+    if (previousDataDir === undefined) delete process.env.XRDB_DATA_DIR;
+    else process.env.XRDB_DATA_DIR = previousDataDir;
+
+    if (previousDbPath === undefined) delete process.env.XRDB_DB_PATH;
+    else process.env.XRDB_DB_PATH = previousDbPath;
+
+    rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  const dbModule = await importFresh('../lib/dbCore.ts');
+
+  assert.throws(() => dbModule.ensureDbInitialized(), /Data directory is not writable: .*locked/);
 });
