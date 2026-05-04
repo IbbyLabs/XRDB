@@ -203,6 +203,21 @@ export function StylePanel() {
               onChange={look.onSelectGenreBadgePosition}
             />
           </ControlRow>
+          <ControlRow label="Genre size">
+            <div className="xrdb-number-control">
+              <input
+                type="number"
+                className="xrdb-number-input"
+                value={look.activeGenreBadgeScale}
+                min={70}
+                max={200}
+                onChange={(e) => look.onSelectGenreBadgeScale(Number(e.target.value))}
+                aria-label="Genre badge size"
+                title="Scale genre badges relative to their default size. 100 is default."
+              />
+              <span className="xrdb-number-unit">%</span>
+            </div>
+          </ControlRow>
         </>
       ) : null}
     </div>
@@ -235,6 +250,22 @@ export function PositionPanel() {
         >
           {look.backdropBottomRatingsRow ? 'On' : 'Off'}
         </button>
+      </ControlRow>
+
+      <ControlRow label="Rating size">
+        <div className="xrdb-number-control">
+          <input
+            type="number"
+            className="xrdb-number-input"
+            value={look.activeRatingBadgeScale}
+            min={70}
+            max={200}
+            onChange={(e) => look.onSelectRatingBadgeScale(Number(e.target.value))}
+            aria-label="Rating badge size"
+            title="Scale rating badges relative to their default size. 100 is default."
+          />
+          <span className="xrdb-number-unit">%</span>
+        </div>
       </ControlRow>
     </div>
   );
@@ -292,6 +323,7 @@ export function AdvancedPanel() {
 export function QualityPanel() {
   const ctx = useConfiguratorContext();
   const q = ctx.inputsPanelProps.qualityProps;
+  const look = ctx.inputsPanelProps.lookProps;
 
   const allEnabled = q.activeQualityBadgePreferences.length === QUALITY_BADGE_OPTIONS.length;
   const enabledCount = q.activeQualityBadgePreferences.length;
@@ -343,6 +375,22 @@ export function QualityPanel() {
             aria-label="Maximum quality badges"
             title="Maximum number of quality badges to show. Leave blank for automatic."
           />
+        </div>
+      </ControlRow>
+
+      <ControlRow label="Badge size">
+        <div className="xrdb-number-control">
+          <input
+            type="number"
+            className="xrdb-number-input"
+            value={look.activeQualityBadgeScale}
+            min={70}
+            max={200}
+            onChange={(e) => look.onSelectQualityBadgeScale(Number(e.target.value))}
+            aria-label="Quality badge size"
+            title="Scale quality badges relative to their default size. 100 is default."
+          />
+          <span className="xrdb-number-unit">%</span>
         </div>
       </ControlRow>
 
