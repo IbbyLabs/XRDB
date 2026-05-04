@@ -1,10 +1,11 @@
 import { StepShell } from '@/components/step-shell';
-import { AdvancedPanel, PositionPanel, ProvidersPanel, StylePanel } from '@/components/poster-panels';
+import { AdvancedPanel, PositionPanel, ProvidersPanel, QualityPanel, StylePanel } from '@/components/poster-panels';
 
 const POSTER_PANELS = {
   providers: <ProvidersPanel />,
   style: <StylePanel />,
   position: <PositionPanel />,
+  quality: <QualityPanel />,
   advanced: <AdvancedPanel />,
 };
 

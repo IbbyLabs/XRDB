@@ -11,12 +11,13 @@ import { WORKFLOW_STEPS, type WorkflowStep } from '@/lib/workflowSteps';
 import { XrdbDropdown } from '@/components/xrdb-dropdown';
 
 type ArtworkStep = Exclude<WorkflowStep, 'integrations'>;
-type ControlTab = 'providers' | 'style' | 'position' | 'advanced';
+type ControlTab = 'providers' | 'style' | 'position' | 'advanced' | 'quality';
 
 const CONTROL_TABS: Array<{ key: ControlTab; label: string; hint: string }> = [
   { key: 'providers', label: 'Providers', hint: 'Source priority, fallback order, and API key settings' },
   { key: 'style', label: 'Style', hint: 'Typography, badges, tint, and treatment options' },
   { key: 'position', label: 'Position', hint: 'Badge stacks, title blocks, and overlay placement' },
+  { key: 'quality', label: 'Quality', hint: 'Stream badges, quality badges, and certification position' },
   { key: 'advanced', label: 'Advanced', hint: 'Edge case overrides and behavior tuning' },
 ];
 
@@ -55,6 +56,10 @@ const PANEL_COPY: Record<ArtworkStep, Record<ControlTab, { title: string; body: 
       title: 'Poster position controls',
       body: 'Position controls for badge stacks, logo rows, and title blocks appear in this panel.',
     },
+    quality: {
+      title: 'Poster quality badges',
+      body: 'Stream badges, quality badge style, badge preferences, and certification position controls appear here.',
+    },
     advanced: {
       title: 'Poster advanced controls',
       body: 'Advanced poster behavior and edge case tuning controls appear in this section.',
@@ -72,6 +77,10 @@ const PANEL_COPY: Record<ArtworkStep, Record<ControlTab, { title: string; body: 
     position: {
       title: 'Backdrop position controls',
       body: 'Backdrop position controls for metadata rows and overlays appear in this panel.',
+    },
+    quality: {
+      title: 'Backdrop quality badges',
+      body: 'Stream badges, quality badge style, badge preferences, and certification position controls appear here.',
     },
     advanced: {
       title: 'Backdrop advanced controls',
@@ -91,6 +100,10 @@ const PANEL_COPY: Record<ArtworkStep, Record<ControlTab, { title: string; body: 
       title: 'Thumbnail position controls',
       body: 'Thumbnail position controls for tight layouts and row balancing appear in this panel.',
     },
+    quality: {
+      title: 'Thumbnail quality badges',
+      body: 'Stream badges, quality badge style, badge preferences, and certification position controls appear here.',
+    },
     advanced: {
       title: 'Thumbnail advanced controls',
       body: 'Advanced thumbnail behavior and compatibility options appear in this section.',
@@ -108,6 +121,10 @@ const PANEL_COPY: Record<ArtworkStep, Record<ControlTab, { title: string; body: 
     position: {
       title: 'Logo position controls',
       body: 'Logo placement and spacing controls appear in this panel for final composition.',
+    },
+    quality: {
+      title: 'Logo quality badges',
+      body: 'Quality badge style, max count, and badge preference toggles appear here.',
     },
     advanced: {
       title: 'Logo advanced controls',
@@ -160,11 +177,10 @@ export function StepShell({
   }, [step, onSelectPreviewType]);
 
   const stepIndex = getStepIndex(step);
-  const previousStep = stepIndex > 0 ? WORKFLOW_STEPS[stepIndex - 1] : null;
   const nextStep = stepIndex >= 0 && stepIndex < WORKFLOW_STEPS.length - 1 ? WORKFLOW_STEPS[stepIndex + 1] : null;
 
   const visibleTabs = useMemo(
-    () => (experienceMode === 'simple' ? CONTROL_TABS.filter((tab) => tab.key !== 'advanced') : CONTROL_TABS),
+    () => (experienceMode === 'simple' ? CONTROL_TABS.filter((tab) => tab.key !== 'advanced' && tab.key !== 'quality') : CONTROL_TABS),
     [experienceMode],
   );
   const thumbnailEpisodeTarget = useMemo(() => {
@@ -174,7 +190,7 @@ export function StepShell({
     return parseEpisodePreviewMediaTarget(mediaTarget.mediaId);
   }, [mediaTarget, step]);
   const effectiveActiveTab: ControlTab =
-    experienceMode === 'simple' && activeTab === 'advanced' ? 'providers' : activeTab;
+    experienceMode === 'simple' && (activeTab === 'advanced' || activeTab === 'quality') ? 'providers' : activeTab;
 
   useFocusTrap(overlayRef, overlayOpen);
   useFocusTrap(fullscreenRef, fullScreenOpen);
@@ -214,12 +230,6 @@ export function StepShell({
         return;
       }
 
-      if (event.key === '[' && previousStep && !overlayOpen && !fullScreenOpen) {
-        event.preventDefault();
-        router.push(previousStep.href);
-        return;
-      }
-
       if (event.key === ']' && nextStep && !overlayOpen && !fullScreenOpen) {
         event.preventDefault();
         router.push(nextStep.href);
@@ -236,7 +246,7 @@ export function StepShell({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [overlayOpen, fullScreenOpen, previousStep, nextStep, router, ctx]);
+  }, [overlayOpen, fullScreenOpen, nextStep, router, ctx]);
 
   const handleTargetSubmit = () => {
     if (!mediaTarget) {
@@ -315,20 +325,6 @@ export function StepShell({
       aria-label={`${step} step shell`}
       data-docs-capture-ready={docsCaptureReady ? 'true' : undefined}
     >
-      <nav className="xrdb-step-indicator" aria-label="Artwork steps">
-        {WORKFLOW_STEPS.map((item, index) => (
-          <Link
-            key={item.key}
-            href={item.href}
-            className={`xrdb-step-pill${item.key === step ? ' xrdb-step-pill-active' : ''}`}
-            aria-current={item.key === step ? 'page' : undefined}
-          >
-            <span className="xrdb-step-pill-index">{index + 1}</span>
-            <span className="xrdb-step-pill-label">{item.label}</span>
-          </Link>
-        ))}
-      </nav>
-
       <button
         className="xrdb-preview-fab"
         type="button"
@@ -611,14 +607,6 @@ export function StepShell({
       </div>
 
       <div className="xrdb-step-nav-sticky" role="navigation" aria-label="Step navigation">
-        {previousStep ? (
-          <Link href={previousStep.href} className="xrdb-btn xrdb-btn-secondary">
-            Back: {previousStep.label}
-          </Link>
-        ) : (
-          <span className="xrdb-step-nav-space" aria-hidden="true" />
-        )}
-
         {nextStep ? (
           <Link href={nextStep.href} className="xrdb-btn xrdb-btn-primary">
             Next: {nextStep.label}

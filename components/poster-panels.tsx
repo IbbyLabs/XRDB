@@ -4,11 +4,12 @@ import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { useConfiguratorContext } from '@/lib/configuratorProvider';
 import { RATING_PROVIDER_OPTIONS } from '@/lib/ratingProviderCatalog';
-import { RATING_STYLE_OPTIONS, ICON_SHAPE_OPTIONS } from '@/lib/ratingAppearance';
+import { RATING_STYLE_OPTIONS, ICON_SHAPE_OPTIONS, QUALITY_BADGE_STYLE_OPTIONS } from '@/lib/ratingAppearance';
 import { POSTER_RATING_LAYOUT_OPTIONS } from '@/lib/posterLayoutOptions';
 import { RATING_VALUE_MODE_OPTIONS } from '@/lib/ratingDisplay';
 import { GENRE_BADGE_MODE_OPTIONS, GENRE_BADGE_STYLE_OPTIONS, GENRE_BADGE_POSITION_OPTIONS } from '@/lib/genreBadge';
 import { SIDE_RATING_POSITION_OPTIONS } from '@/lib/sideRatingPosition';
+import { QUALITY_BADGE_OPTIONS } from '@/lib/badgeCustomization';
 import { RATING_PRESENTATION_OPTIONS } from '@/lib/ratingPresentation';
 
 function ControlRow({
@@ -68,15 +69,13 @@ export function ProvidersPanel() {
         <h2 className="xrdb-subtab-panel-title">Rating providers</h2>
         <div className="xrdb-panel-header-actions">
           <span className="xrdb-panel-summary">{enabledCount} of {ratingProviderRows.length} enabled</span>
-          {!allEnabled && (
-            <button
-              type="button"
-              className="xrdb-btn-ghost"
-              onClick={() => onSelectAllRatingPreferencesEnabled(true)}
-            >
-              Enable all
-            </button>
-          )}
+          <button
+            type="button"
+            className="xrdb-btn-ghost"
+            onClick={() => onSelectAllRatingPreferencesEnabled(!allEnabled)}
+          >
+            {allEnabled ? 'Disable all' : 'Enable all'}
+          </button>
         </div>
       </div>
 
@@ -386,6 +385,115 @@ export function AdvancedPanel() {
           </ControlRow>
         </>
       ) : null}
+    </div>
+  );
+}
+export function QualityPanel() {
+  const ctx = useConfiguratorContext();
+  const q = ctx.inputsPanelProps.qualityProps;
+
+  const allEnabled = q.activeQualityBadgePreferences.length === QUALITY_BADGE_OPTIONS.length;
+  const enabledCount = q.activeQualityBadgePreferences.length;
+
+  return (
+    <div className="xrdb-panel-quality">
+      <div className="xrdb-panel-header">
+        <h2 className="xrdb-subtab-panel-title">Quality badges</h2>
+        <div className="xrdb-panel-header-actions">
+          <span className="xrdb-panel-summary">{enabledCount} of {QUALITY_BADGE_OPTIONS.length} enabled</span>
+          <button
+            type="button"
+            className="xrdb-btn-ghost"
+            onClick={() => q.onSelectAllQualityBadgePreferencesEnabled(!allEnabled)}
+          >
+            {allEnabled ? 'Disable all' : 'Enable all'}
+          </button>
+        </div>
+      </div>
+
+      <ControlRow label="Stream badges">
+        <OptionPills
+          options={q.streamBadgeOptions}
+          value={q.activeStreamBadges}
+          onChange={q.onSelectStreamBadges}
+        />
+      </ControlRow>
+
+      <ControlRow label="Badge style">
+        <OptionPills
+          options={QUALITY_BADGE_STYLE_OPTIONS}
+          value={q.activeQualityBadgesStyle}
+          onChange={q.onSelectQualityBadgeStyle}
+        />
+      </ControlRow>
+
+      <ControlRow label="Max badges">
+        <div className="xrdb-number-control">
+          <input
+            type="number"
+            className="xrdb-number-input"
+            value={q.activeQualityBadgesMax ?? ''}
+            min={0}
+            max={20}
+            placeholder="Auto"
+            onChange={(e) =>
+              q.onSelectQualityBadgesMax(e.target.value === '' ? null : Number(e.target.value))
+            }
+            aria-label="Maximum quality badges"
+            title="Maximum number of quality badges to show. Leave blank for automatic."
+          />
+        </div>
+      </ControlRow>
+
+      {q.shouldShowAgeRatingBadgePosition && q.ageRatingBadgePositionOptions.length > 0 ? (
+        <ControlRow label="Age rating position">
+          <OptionPills
+            options={q.ageRatingBadgePositionOptions}
+            value={q.activeAgeRatingBadgePosition}
+            onChange={q.onSelectAgeRatingBadgePosition}
+          />
+        </ControlRow>
+      ) : null}
+
+      {q.shouldShowQualityBadgesSide ? (
+        <ControlRow label="Badge side">
+          <OptionPills
+            options={q.qualityBadgeSideOptions}
+            value={q.qualityBadgesSide}
+            onChange={q.onSelectQualityBadgesSide}
+          />
+        </ControlRow>
+      ) : null}
+
+      {q.shouldShowQualityBadgesPosition ? (
+        <ControlRow label="Badge position">
+          <OptionPills
+            options={q.qualityBadgePositionOptions}
+            value={q.posterQualityBadgesPosition}
+            onChange={q.onSelectPosterQualityBadgePosition}
+          />
+        </ControlRow>
+      ) : null}
+
+      <ul className="xrdb-provider-list" role="list">
+        {QUALITY_BADGE_OPTIONS.map((badge) => {
+          const enabled = q.activeQualityBadgePreferences.includes(badge.id);
+          return (
+            <li key={badge.id} className="xrdb-provider-row">
+              <button
+                type="button"
+                className={`xrdb-provider-toggle${enabled ? ' xrdb-provider-toggle-on' : ''}`}
+                role="switch"
+                aria-checked={enabled}
+                onClick={() => q.onToggleQualityBadgePreference(badge.id)}
+              >
+                <span className="xrdb-provider-name">{badge.label}</span>
+                <span className="xrdb-provider-status-dot" aria-hidden="true" />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

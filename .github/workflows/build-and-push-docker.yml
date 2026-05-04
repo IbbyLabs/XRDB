@@ -136,8 +136,7 @@ jobs:
                 ;;
             esac
 
-            next_version="${major}.${minor}.${patch}"
-            deployment_version="v${next_version}-dev.${stamp}.${short_sha}"
+            deployment_version="dev.${stamp}.${short_sha}"
             dev_track_tag="dev-${stamp/./-}-${short_sha}"
             publish_dev="true"
           else

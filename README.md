@@ -166,16 +166,10 @@ Pushing a version tag that matches `v*` starts release workflows, and every push
 - release tags publish multi architecture container images to GHCR
 - main branch commits publish `ghcr.io/ibbylabs/xrdb:dev` and a timestamped tracking tag
 
-Development build versions use semver-aware prerelease strings in UTC 24-hour format:
+Development build versions use a semver-free dev string in UTC 24-hour format:
 
 - release tag build: `vX.Y.Z`
-- main branch dev build: `vX.Y.Z-dev.YYYYMMDD.HHMM.<shortsha>`
-
-The next `X.Y.Z` is inferred from commit messages since the latest release tag:
-
-- `BREAKING CHANGE` or `type!:` => major
-- `feat:` => minor
-- everything else => patch
+- main branch dev build: `dev.YYYYMMDD.HHMM.<shortsha>`
 
 When a release tag is built, `:dev` is also aligned to that release image. The next `main` commit advances `:dev` again.
 
