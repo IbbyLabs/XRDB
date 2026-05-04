@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { BrandLogoIcon } from '@/components/brand-logo-icon';
 import { ConfigProfileLoginDialog } from '@/components/config-profile-login-dialog';
 import { InstanceBrandingSlot } from '@/components/instance-branding-slot';
 import { buildRevealedConfigState } from '@/lib/configProfileClientState';
@@ -148,6 +149,7 @@ export function EntryPageClient({ instanceHtml }: EntryPageClientProps) {
       <div className="xrdb-entry">
         <div className="xrdb-entry-content">
         <div className="xrdb-entry-brand">
+          <BrandLogoIcon className="xrdb-entry-logo-mark" />
           <span className="xrdb-entry-name">{BRAND_NAME}</span>
           <span className="xrdb-entry-full">{BRAND_FULL_NAME}</span>
         </div>

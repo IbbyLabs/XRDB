@@ -693,7 +693,7 @@ export function PageFooter() {
     <footer className="site-page-footer">
       <div className="site-page-footer-content">
         <p className="site-page-footer-credit">
-          <BrandLogoIcon className="site-page-footer-mark" />
+          <img src="/ibbylabs-logo.png" className="site-page-footer-mark" alt="" aria-hidden="true" width={20} height={20} />
           <span>Developed by IbbyLabs</span>
           <span aria-hidden="true">·</span>
           <a href={BRAND_SUPPORT_URL} target="_blank" rel="noreferrer" className="site-page-footer-link">Support Me</a>
