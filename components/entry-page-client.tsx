@@ -192,17 +192,29 @@ export function EntryPageClient({ instanceHtml }: EntryPageClientProps) {
           <span className="xrdb-mode-card-body">Start from a community preset or your own saved config.</span>
           </Link>
         </div>
+        {configProfileUnlockSession?.profileId ? (
+          <p className="xrdb-entry-signed-in">
+            <span className="xrdb-entry-signed-in-dot" aria-hidden="true" />
+            Signed in &middot; <span className="xrdb-entry-signed-in-id">{configProfileUnlockSession.profileId.slice(0, 8)}&hellip;</span>
+          </p>
+        ) : null}
         <div className="xrdb-entry-actions xrdb-entry-actions-spaced">
-          <Link href="/integrations" className="xrdb-btn xrdb-btn-primary">
+          <Link href="/integrations" className="xrdb-btn xrdb-btn-primary xrdb-entry-btn">
             Start
           </Link>
-          <button
-            className="xrdb-btn xrdb-btn-secondary"
-            onClick={() => setLoginDialogOpen(true)}
-            type="button"
-          >
-            Login
-          </button>
+          {configProfileUnlockSession?.profileId ? (
+            <Link href="/save" className="xrdb-btn xrdb-btn-secondary xrdb-entry-btn">
+              Save &amp; Export
+            </Link>
+          ) : (
+            <button
+              className="xrdb-btn xrdb-btn-secondary xrdb-entry-btn"
+              onClick={() => setLoginDialogOpen(true)}
+              type="button"
+            >
+              Login
+            </button>
+          )}
         </div>
         <a
           href={BRAND_GITHUB_URL}

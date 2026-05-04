@@ -2137,6 +2137,38 @@
 	margin-top: 1.5rem;
 }
 
+.xrdb-entry-btn {
+	flex: 1 1 auto;
+	max-width: 200px;
+}
+
+.xrdb-entry-signed-in {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.375rem;
+	margin: 1rem 0 0;
+	font-size: 0.75rem;
+	font-weight: 500;
+	color: var(--muted);
+	letter-spacing: 0.01em;
+}
+
+.xrdb-entry-signed-in-dot {
+	display: inline-block;
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: oklch(70% 0.18 145);
+	flex-shrink: 0;
+}
+
+.xrdb-entry-signed-in-id {
+	font-family: var(--font-mono, monospace);
+	font-size: 0.7rem;
+	color: var(--ink);
+}
+
 .xrdb-entry-docs-link {
 	display: inline-block;
 	margin-top: 0.75rem;
