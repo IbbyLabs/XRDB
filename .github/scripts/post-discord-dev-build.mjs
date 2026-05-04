@@ -31,8 +31,7 @@ function toDetailedItem(commit) {
     .split(/\r?\n/)
     .slice(1)
     .map((line) => normalizeSummary(line))
-    .filter(Boolean)
-    .slice(0, 8);
+    .filter(Boolean);
 
   return {
     summary: subject,
