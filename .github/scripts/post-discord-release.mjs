@@ -389,7 +389,7 @@ function formatDetailedReleaseItemLines(item) {
     return [];
   }
 
-  const lines = [`- ${summary}`];
+  const lines = [`• ${summary}`];
 
   for (const detail of getReleaseItemDetails(item)) {
     const normalizedDetail = detail.replace(/^[•*-]\s+/, '');
