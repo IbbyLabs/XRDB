@@ -52,6 +52,17 @@ function resolveNavBuildMeta(version: string): {
   commitHash: string | null;
   commitUrl: string | null;
 } {
+  const pureDevVersionMatch = version.match(/^dev\.(\d{8})\.(\d{4})\.([0-9a-f]{7,40})$/i);
+  if (pureDevVersionMatch) {
+    const [, dateStamp, timeStamp, fullHash] = pureDevVersionMatch;
+    const shortHash = fullHash.slice(0, 7);
+    return {
+      label: `dev ${formatUkBuildTime(dateStamp, timeStamp)}`,
+      commitHash: shortHash,
+      commitUrl: `${BRAND_GITHUB_URL}/commit/${fullHash}`,
+    };
+  }
+
   const devVersionMatch = version.match(/^v[^-]+-dev\.(\d{8})\.(\d{4})\.([0-9a-f]{7,40})$/i);
   if (devVersionMatch) {
     const [, dateStamp, timeStamp, fullHash] = devVersionMatch;

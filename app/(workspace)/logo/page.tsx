@@ -5,6 +5,7 @@ import {
   ProvidersPanel,
   StylePanel,
   PositionPanel,
+  QualityPanel,
   AdvancedPanel,
 } from '@/components/logo-panels';
 
@@ -12,6 +13,7 @@ const LOGO_PANELS = {
   providers: <ProvidersPanel />,
   style: <StylePanel />,
   position: <PositionPanel />,
+  quality: <QualityPanel />,
   advanced: <AdvancedPanel />,
 };
 

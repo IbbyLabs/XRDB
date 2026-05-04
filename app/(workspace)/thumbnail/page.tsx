@@ -5,6 +5,7 @@ import {
   ProvidersPanel,
   StylePanel,
   PositionPanel,
+  QualityPanel,
   AdvancedPanel,
 } from '@/components/thumbnail-panels';
 
@@ -12,6 +13,7 @@ const THUMBNAIL_PANELS = {
   providers: <ProvidersPanel />,
   style: <StylePanel />,
   position: <PositionPanel />,
+  quality: <QualityPanel />,
   advanced: <AdvancedPanel />,
 };
 

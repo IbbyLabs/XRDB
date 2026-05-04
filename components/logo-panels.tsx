@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { useConfiguratorContext } from '@/lib/configuratorProvider';
 import { RATING_PROVIDER_OPTIONS } from '@/lib/ratingProviderCatalog';
 import { QUALITY_BADGE_STYLE_OPTIONS, RATING_STYLE_OPTIONS, ICON_SHAPE_OPTIONS } from '@/lib/ratingAppearance';
+import { QUALITY_BADGE_OPTIONS } from '@/lib/badgeCustomization';
 import { RATING_VALUE_MODE_OPTIONS } from '@/lib/ratingDisplay';
 
 function ControlRow({
@@ -64,15 +65,13 @@ export function ProvidersPanel() {
         <h2 className="xrdb-subtab-panel-title">Rating providers</h2>
         <div className="xrdb-panel-header-actions">
           <span className="xrdb-panel-summary">{enabledCount} of {ratingProviderRows.length} enabled</span>
-          {!allEnabled && (
-            <button
-              type="button"
-              className="xrdb-btn-ghost"
-              onClick={() => onSelectAllRatingPreferencesEnabled(true)}
-            >
-              Enable all
-            </button>
-          )}
+          <button
+            type="button"
+            className="xrdb-btn-ghost"
+            onClick={() => onSelectAllRatingPreferencesEnabled(!allEnabled)}
+          >
+            {allEnabled ? 'Disable all' : 'Enable all'}
+          </button>
         </div>
       </div>
 
@@ -254,8 +253,72 @@ export function AdvancedPanel() {
           onClick={look.onToggleBlackBar}
         >
           {look.activeBlackBarEnabled ? 'On' : 'Off'}
-        </button>
-      </ControlRow>
-    </div>
-  );
-}
+            </button>
+          </ControlRow>
+        </div>
+      );
+    }
+
+    export function QualityPanel() {
+      const ctx = useConfiguratorContext();
+      const look = ctx.inputsPanelProps.lookProps;
+
+      const enabledCount = look.logoQualityBadgePreferences.length;
+
+      return (
+        <div className="xrdb-panel-quality">
+          <div className="xrdb-panel-header">
+            <h2 className="xrdb-subtab-panel-title">Quality badges</h2>
+            <div className="xrdb-panel-header-actions">
+              <span className="xrdb-panel-summary">{enabledCount} of {QUALITY_BADGE_OPTIONS.length} enabled</span>
+            </div>
+          </div>
+
+          <ControlRow label="Badge style">
+            <OptionPills
+              options={QUALITY_BADGE_STYLE_OPTIONS}
+              value={look.logoQualityBadgesStyle}
+              onChange={look.onSelectLogoQualityBadgesStyle}
+            />
+          </ControlRow>
+
+          <ControlRow label="Max badges">
+            <div className="xrdb-number-control">
+              <input
+                type="number"
+                className="xrdb-number-input"
+                value={look.logoQualityBadgesMax ?? ''}
+                min={0}
+                max={20}
+                placeholder="Auto"
+                onChange={(e) =>
+                  look.onSelectLogoQualityBadgesMax(e.target.value === '' ? null : Number(e.target.value))
+                }
+                aria-label="Maximum quality badges"
+                title="Maximum number of quality badges to show. Leave blank for automatic."
+              />
+            </div>
+          </ControlRow>
+
+          <ul className="xrdb-provider-list" role="list">
+            {QUALITY_BADGE_OPTIONS.map((badge) => {
+              const enabled = look.logoQualityBadgePreferences.includes(badge.id);
+              return (
+                <li key={badge.id} className="xrdb-provider-row">
+                  <button
+                    type="button"
+                    className={`xrdb-provider-toggle${enabled ? ' xrdb-provider-toggle-on' : ''}`}
+                    role="switch"
+                    aria-checked={enabled}
+                    onClick={() => look.onToggleQualityBadgePreference(badge.id)}
+                  >
+                    <span className="xrdb-provider-name">{badge.label}</span>
+                    <span className="xrdb-provider-status-dot" aria-hidden="true" />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      );
+    }

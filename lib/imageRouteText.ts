@@ -45,6 +45,15 @@ export const splitTitleForGeneratedLogo = (title: string) => {
     return [...head, tail];
   }
 
+  if (lines.length > 1 && !lines[lines.length - 1].includes(' ')) {
+    const orphan = lines[lines.length - 1];
+    const prev = lines[lines.length - 2];
+    const merged = `${prev} ${orphan}`;
+    if (merged.length <= targetLineLength + 5) {
+      lines.splice(lines.length - 2, 2, merged);
+    }
+  }
+
   return lines;
 };
 
