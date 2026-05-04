@@ -53,7 +53,6 @@ export function createNextAppConfig(): NextConfig {
     env: {
       XRDB_BUILD_NAME: resolveBuildName(),
       XRDB_BUILD_VERSION: resolveBuildVersion(),
-      XRDB_INSTANCE_HTML: process.env.XRDB_INSTANCE_HTML ?? '',
     },
     eslint: {
       ignoreDuringBuilds: true,
