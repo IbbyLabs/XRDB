@@ -12,6 +12,7 @@ import { getRecentPosterEntries } from './posterCacheWarmRecentRing.ts';
 import { buildPosterWarmSearchParams } from './posterCacheWarmSearchParams.ts';
 import { logger } from './serverLogger.ts';
 import { readPosterWarmSource, resolvePosterCacheWarmConfig } from './posterCacheWarmConfig.ts';
+import { recordPrewarmRun } from './adminMetrics.ts';
 
 const PREWARM_SNAPSHOT_KEY = 'prewarm:hot_snapshot';
 const PREWARM_SNAPSHOT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -58,6 +59,7 @@ type PosterWarmTargetSet = {
   mdblistCount: number;
   imdbCount: number;
   recentCount: number;
+  snapshotCount: number;
 };
 
 type PosterWarmSchedulerState = typeof globalThis & {
@@ -152,12 +154,15 @@ export const resolvePosterWarmTargets = async ({
     mdblistCount: mdblistTargets.length,
     imdbCount: imdbTargets.length,
     recentCount: recentEntries.length,
+    snapshotCount: snapshotTargets.length,
   };
 };
 
 export const runPosterCacheWarm = async () => {
+  const startedAt = Date.now();
   const config = resolvePosterCacheWarmConfig();
-  const { targets, recentEntries } = await resolvePosterWarmTargets({ config });
+  const { targets, recentEntries, staticCount, tmdbCount, mdblistCount, imdbCount, recentCount, snapshotCount } =
+    await resolvePosterWarmTargets({ config });
   const totalTargets = targets.length + recentEntries.length;
   if (!config.enabled || totalTargets === 0) {
     return { warmed: 0, skipped: 0, failed: 0 } satisfies PosterWarmSummary;
@@ -212,6 +217,21 @@ export const runPosterCacheWarm = async () => {
       `[XRDB] poster warm summary warmed=${summary.warmed} skipped=${summary.skipped} failed=${summary.failed}`,
     );
   }
+
+  recordPrewarmRun({
+    startedAt,
+    completedAt: Date.now(),
+    warmed: summary.warmed,
+    skipped: summary.skipped,
+    failed: summary.failed,
+    staticCount,
+    tmdbCount,
+    mdblistCount,
+    imdbCount,
+    recentCount,
+    snapshotCount,
+    targetCount: totalTargets,
+  });
 
   return summary;
 };

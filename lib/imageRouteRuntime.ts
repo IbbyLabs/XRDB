@@ -1,6 +1,6 @@
 import { createHash, timingSafeEqual } from 'node:crypto';
 
-export type TimedCacheEntry<T> = {
+type TimedCacheEntry<T> = {
   value: T;
   expiresAt: number;
   lastAccessedAt: number;
@@ -73,7 +73,7 @@ export const safeCompareText = (left: string, right: string) => {
   return timingSafeEqual(Buffer.from(left), Buffer.from(right));
 };
 
-export const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 export const isImdbId = (value?: string | null) => {
   if (!value) return false;

@@ -64,7 +64,7 @@ import {
   GENRE_BADGE_STYLE_OPTIONS,
 } from './genreBadge.ts';
 
-export type ConfigProfileBrowserFamily =
+type ConfigProfileBrowserFamily =
   | 'credentials'
   | 'providers'
   | 'presentation'
@@ -77,7 +77,7 @@ export type ConfigProfileBrowserFamily =
   | 'limits'
   | 'appearance';
 
-export type ConfigProfileVerificationEntry = {
+type ConfigProfileVerificationEntry = {
   key: string;
   coverageValues: readonly string[];
   requiredParams?: Readonly<Record<string, string>>;
@@ -85,7 +85,7 @@ export type ConfigProfileVerificationEntry = {
   surfaces: readonly string[];
 };
 
-export type ConfigProfileInteractionCase = {
+type ConfigProfileInteractionCase = {
   id: string;
   params: Readonly<Record<string, string>>;
   expectedIncludedKeys: readonly string[];
@@ -569,15 +569,15 @@ export const CONFIG_PROFILE_INTERACTION_CASES: ConfigProfileInteractionCase[] = 
   },
 ];
 
-export const CONFIG_PROFILE_BROWSER_CASES = [
+const CONFIG_PROFILE_BROWSER_CASES = [
   { id: 'poster-rating-offset', previewType: 'poster', browserFamily: 'offset' },
   { id: 'backdrop-layout', previewType: 'backdrop', browserFamily: 'layout' },
   { id: 'thumbnail-side-position', previewType: 'thumbnail', browserFamily: 'position' },
   { id: 'logo-background', previewType: 'logo', browserFamily: 'artwork' },
 ] as const;
 
-export const getConfigProfileVerificationEntry = (key: string) =>
+const getConfigProfileVerificationEntry = (key: string) =>
   CONFIG_PROFILE_VERIFICATION_ENTRIES.find((entry) => entry.key === key) ?? null;
 
-export const getConfigProfileVerificationValues = (key: string) =>
+const getConfigProfileVerificationValues = (key: string) =>
   getConfigProfileVerificationEntry(key)?.coverageValues ?? [];

@@ -10,7 +10,7 @@ const posterLayoutCatalog = [
 export type PosterRatingLayout = (typeof posterLayoutCatalog)[number]['id'];
 
 export const POSTER_RATING_LAYOUT_OPTIONS = posterLayoutCatalog.map(({ id, label }) => ({ id, label }));
-export const DEFAULT_POSTER_RATING_LAYOUT: PosterRatingLayout = 'top-bottom';
+const DEFAULT_POSTER_RATING_LAYOUT: PosterRatingLayout = 'top-bottom';
 export const POSTER_RATINGS_MAX_PER_SIDE_MIN = 1;
 export const POSTER_RATINGS_MAX_PER_SIDE_MAX = 20;
 export const DEFAULT_POSTER_RATINGS_MAX_PER_SIDE: number | null = null;

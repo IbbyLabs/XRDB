@@ -5,7 +5,7 @@ import { type AgeRatingBadgePosition } from './uiConfig.ts';
 type PreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 
 export type QualityBadgePreferenceId = (typeof QUALITY_BADGE_OPTIONS)[number]['id'];
-export type QualityBadgePlacementControlMode = 'side' | 'position';
+type QualityBadgePlacementControlMode = 'side' | 'position';
 
 const ALL_QUALITY_BADGE_PREFERENCE_IDS = QUALITY_BADGE_OPTIONS.map(({ id }) => id);
 const NON_CERTIFICATION_QUALITY_BADGE_PREFERENCE_IDS = ALL_QUALITY_BADGE_PREFERENCE_IDS.filter(

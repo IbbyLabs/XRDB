@@ -1,13 +1,13 @@
 import type { ComponentProps, Dispatch, SetStateAction } from 'react';
-
-import type { ConfiguratorInputsPanel } from '@/components/configurator-inputs-panel';
-import type { useConfiguratorActiveWorkspaceSettings } from '@/lib/useConfiguratorActiveWorkspaceSettings';
-import type { useConfiguratorOutputs } from '@/lib/useConfiguratorOutputs';
-import type { useConfiguratorPageChrome } from '@/lib/useConfiguratorPageChrome';
-import type { useConfiguratorWorkspaceActions } from '@/lib/useConfiguratorWorkspaceActions';
-import type { useConfiguratorWorkspaceState } from '@/lib/useConfiguratorWorkspaceState';
-import type { useConfiguratorWorkspaceStorage } from '@/lib/useConfiguratorWorkspaceStorage';
-import type { useConfiguratorWorkspaceSummary } from '@/lib/useConfiguratorWorkspaceSummary';
+import type {
+  useConfiguratorActiveWorkspaceSettings,
+  useConfiguratorOutputs,
+  useConfiguratorPageChrome,
+  useConfiguratorWorkspaceActions,
+  useConfiguratorWorkspaceState,
+  useConfiguratorWorkspaceStorage,
+  useConfiguratorWorkspaceSummary,
+} from '@/lib/configuratorHooks';
 import type { ConfiguratorWizardAnswers } from '@/lib/configuratorPresets';
 import type { MediaSearchItem, MediaSearchPreviewType, PinnedTarget } from '@/lib/configuratorMediaSearch';
 import {
@@ -78,6 +78,7 @@ type MediaTargetSearchState = {
   mediaSearchError: string;
   mediaSearchResults: MediaSearchItem[];
   activePreviewTitle: string;
+  activePreviewPosterUrl: string;
   onMediaSearchQueryChange: (value: string) => void;
   onMediaSearchSubmit: () => void;
   onSelectMediaSearchResult: (result: MediaSearchItem) => void;
@@ -215,9 +216,11 @@ export function buildConfiguratorPageProps({
         mediaSearchError: mediaTargetSearch.mediaSearchError,
         mediaSearchResults: mediaTargetSearch.mediaSearchResults,
         activePreviewTitle: mediaTargetSearch.activePreviewTitle,
+        activePreviewPosterUrl: mediaTargetSearch.activePreviewPosterUrl,
         onMediaSearchQueryChange: mediaTargetSearch.onMediaSearchQueryChange,
         onMediaSearchSubmit: mediaTargetSearch.onMediaSearchSubmit,
         onSelectMediaSearchResult: mediaTargetSearch.onSelectMediaSearchResult,
+        onShuffleMediaTarget: mediaTargetSearch.onShuffleMediaTarget,
         pinnedTargets: mediaTargetSearch.pinnedTargets,
         isPinnedLimitReached: mediaTargetSearch.isPinnedLimitReached,
         isPinned: mediaTargetSearch.isPinned,

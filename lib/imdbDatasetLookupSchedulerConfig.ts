@@ -1,16 +1,16 @@
 import { join } from 'node:path';
 
-export type DatasetPaths = {
+type DatasetPaths = {
   ratingsPath: string;
   episodesPath: string;
 };
 
-export type DatasetUrls = {
+type DatasetUrls = {
   ratingsUrl: string;
   episodesUrl: string;
 };
 
-export type ImdbDatasetSyncConfig = {
+type ImdbDatasetSyncConfig = {
   autoDownload: boolean;
   autoImport: boolean;
   refreshMs: number;
@@ -42,7 +42,7 @@ export const parsePositiveInt = (value: string | undefined, fallback: number) =>
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
 };
 
-export const resolveImdbDataDir = () => {
+const resolveImdbDataDir = () => {
   const configured = String(process.env.XRDB_DATA_DIR ?? '').trim();
   return configured || join(process.cwd(), 'data');
 };

@@ -37,7 +37,7 @@ type LayoutFetchJson = (
   init?: RequestInit,
 ) => Promise<CachedJsonResponse>;
 
-export type ImageRouteRenderLayout = {
+type ImageRouteRenderLayout = {
   cappedRatingBadges: RatingBadge[];
   topRatingBadges: RatingBadge[];
   bottomRatingBadges: RatingBadge[];

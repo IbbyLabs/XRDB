@@ -2,6 +2,12 @@ import { execFileSync } from 'node:child_process';
 
 const legacyNeedle = String.fromCharCode(101, 114, 100, 98);
 
+// Third-party domains and identifiers that legitimately contain the legacy substring.
+// ratingposterdb.com contains the substring as part of "poster" + "db".
+const allowedPatterns = [
+  /ratingpost[^\s]*/i,
+];
+
 const runGit = (args, { allowFailure = false } = {}) => {
   try {
     return execFileSync('git', args, { encoding: 'utf8' });
@@ -39,13 +45,24 @@ const checks = [
   },
 ];
 
+const filterAllowed = (output) =>
+  String(output || '')
+    .split('\n')
+    .filter((line) => {
+      const lower = line.toLowerCase();
+      if (!lower.includes(legacyNeedle)) return false;
+      return !allowedPatterns.some((re) => re.test(line));
+    })
+    .join('\n');
+
 let failed = false;
 
 for (const check of checks) {
-  const output = runGit(check.args, { allowFailure: true });
+  const raw = runGit(check.args, { allowFailure: true });
+  const output = filterAllowed(raw);
   const matched = typeof check.test === 'function'
     ? check.test(output)
-    : Boolean(String(output || '').trim());
+    : Boolean(output.trim());
 
   if (!matched) {
     continue;

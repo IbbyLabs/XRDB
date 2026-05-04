@@ -1,4 +1,4 @@
-export type RecentCommitType =
+type RecentCommitType =
   | 'feat'
   | 'fix'
   | 'chore'

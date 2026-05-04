@@ -1,7 +1,7 @@
 import { buildPosterTitleSvg } from './imageRouteText.ts';
 import type { RenderedImagePayload } from './imageRouteRuntime.ts';
 
-export type PosterCleanOverlayAsset = {
+type PosterCleanOverlayAsset = {
   buffer: Buffer;
   width: number;
   height: number;

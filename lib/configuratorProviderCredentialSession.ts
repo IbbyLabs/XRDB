@@ -8,7 +8,7 @@ import {
 import { deriveConfigScopedSecret } from './dbCore.ts';
 import { deleteMetadata, getMetadata, setMetadata } from './metadataStore.ts';
 
-export const CONFIGURATOR_PROVIDER_CREDENTIAL_SESSION_COOKIE = 'xrdb_provider_credentials';
+const CONFIGURATOR_PROVIDER_CREDENTIAL_SESSION_COOKIE = 'xrdb_provider_credentials';
 
 const COOKIE_ENCRYPTION_VERSION = 0x01;
 const COOKIE_MAX_AGE_SECONDS = 12 * 60 * 60;
@@ -17,21 +17,21 @@ const SESSION_KEY_PREFIX = 'configurator-provider-credential-session:';
 const SESSION_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SESSION_FIELDS = ['tmdbKey', 'mdblistKey', 'fanartKey', 'simklClientId'] as const;
 
-export type ConfiguratorProviderCredentialSession = {
+type ConfiguratorProviderCredentialSession = {
   tmdbKey: string;
   mdblistKey: string;
   fanartKey: string;
   simklClientId: string;
 };
 
-export type ConfiguratorProviderCredentialSessionStatus = {
+type ConfiguratorProviderCredentialSessionStatus = {
   tmdb: boolean;
   mdblist: boolean;
   fanart: boolean;
   simkl: boolean;
 };
 
-export type ConfiguratorProviderCredentialSessionMaskedPreview = {
+type ConfiguratorProviderCredentialSessionMaskedPreview = {
   tmdb: string;
   mdblist: string;
   fanart: string;
@@ -55,14 +55,14 @@ const EMPTY_SESSION: ConfiguratorProviderCredentialSession = {
   simklClientId: '',
 };
 
-export const EMPTY_CONFIGURATOR_PROVIDER_CREDENTIAL_SESSION_STATUS: ConfiguratorProviderCredentialSessionStatus = {
+const EMPTY_CONFIGURATOR_PROVIDER_CREDENTIAL_SESSION_STATUS: ConfiguratorProviderCredentialSessionStatus = {
   tmdb: false,
   mdblist: false,
   fanart: false,
   simkl: false,
 };
 
-export const EMPTY_CONFIGURATOR_PROVIDER_CREDENTIAL_SESSION_MASKED_PREVIEW: ConfiguratorProviderCredentialSessionMaskedPreview = {
+const EMPTY_CONFIGURATOR_PROVIDER_CREDENTIAL_SESSION_MASKED_PREVIEW: ConfiguratorProviderCredentialSessionMaskedPreview = {
   tmdb: '',
   mdblist: '',
   fanart: '',
@@ -100,7 +100,7 @@ const parseCookieHeader = (value: string) => {
   return cookies;
 };
 
-export const normalizeConfiguratorProviderCredentialSession = (
+const normalizeConfiguratorProviderCredentialSession = (
   value: Partial<ConfiguratorProviderCredentialSession> | null | undefined,
 ): ConfiguratorProviderCredentialSession => ({
   tmdbKey: String(value?.tmdbKey || '').trim(),
@@ -109,11 +109,11 @@ export const normalizeConfiguratorProviderCredentialSession = (
   simklClientId: String(value?.simklClientId || '').trim(),
 });
 
-export const hasConfiguratorProviderCredentialSessionValues = (
+const hasConfiguratorProviderCredentialSessionValues = (
   value: ConfiguratorProviderCredentialSession,
 ) => Boolean(value.tmdbKey || value.mdblistKey || value.fanartKey || value.simklClientId);
 
-export const getConfiguratorProviderCredentialSessionStatus = (
+const getConfiguratorProviderCredentialSessionStatus = (
   value: ConfiguratorProviderCredentialSession,
 ): ConfiguratorProviderCredentialSessionStatus => ({
   tmdb: Boolean(value.tmdbKey),
@@ -143,7 +143,7 @@ const maskConfiguratorProviderCredential = (value: string) => {
   return `${normalized.slice(0, 4)}${'*'.repeat(Math.max(4, normalized.length - 8))}${normalized.slice(-4)}`;
 };
 
-export const getConfiguratorProviderCredentialSessionMaskedPreview = (
+const getConfiguratorProviderCredentialSessionMaskedPreview = (
   value: ConfiguratorProviderCredentialSession,
 ): ConfiguratorProviderCredentialSessionMaskedPreview => ({
   tmdb: maskConfiguratorProviderCredential(value.tmdbKey),

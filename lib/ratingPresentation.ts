@@ -14,7 +14,7 @@ export type RatingPresentation =
   | 'none';
 export type AggregateRatingSource = 'overall' | 'critics' | 'audience';
 export type AggregateAccentMode = 'source' | 'genre' | 'custom' | 'dynamic';
-export type AggregateDynamicStop = {
+type AggregateDynamicStop = {
   threshold: number;
   color: string;
 };

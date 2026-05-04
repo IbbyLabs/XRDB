@@ -3,7 +3,7 @@ import path from 'node:path';
 
 export type MediaBadgeAssetId = '4k' | 'hdr' | 'bluray' | 'dolbyvision' | 'dolbyatmos' | 'remux' | 'bdremux';
 
-export type MediaBadgeAsset = {
+type MediaBadgeAsset = {
   fileName: string;
   aspectRatio: number;
   widthRatio: number;
@@ -79,6 +79,6 @@ export const MEDIA_BADGE_ASSETS = {
   }),
 } satisfies Record<MediaBadgeAssetId, MediaBadgeAsset>;
 
-export const BLURAY_DISC_LOGO_ASPECT_RATIO = MEDIA_BADGE_ASSETS.bluray.aspectRatio;
+const BLURAY_DISC_LOGO_ASPECT_RATIO = MEDIA_BADGE_ASSETS.bluray.aspectRatio;
 
-export const BLURAY_DISC_LOGO_DATA_URI = MEDIA_BADGE_ASSETS.bluray.dataUri;
+const BLURAY_DISC_LOGO_DATA_URI = MEDIA_BADGE_ASSETS.bluray.dataUri;

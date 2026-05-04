@@ -1,8 +1,8 @@
 import { TMDB_API_BASE_URL } from './serviceBaseUrls.ts';
 
 export type MediaSearchPreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
-export type TmdbSearchMediaType = 'movie' | 'tv';
-export type MediaSearchSource = 'tmdb' | 'imdb';
+type TmdbSearchMediaType = 'movie' | 'tv';
+type MediaSearchSource = 'tmdb' | 'imdb';
 type OmdbSearchMediaType = 'movie' | 'series';
 
 export type MediaSearchItem = {
@@ -231,13 +231,13 @@ export const isMediaIdPattern = (input: string): boolean => {
   return MEDIA_ID_PATTERN.test(trimmed);
 };
 
-export type PinnedTarget = { mediaId: string; title: string };
+export type PinnedTarget = { mediaId: string; title: string; posterUrl?: string };
 export type PinnedTargetsStore = Record<MediaSearchPreviewType, PinnedTarget[]>;
 
-export const PINNED_TARGETS_STORAGE_KEY = 'xrdb.pinnedTargets.v1';
+const PINNED_TARGETS_STORAGE_KEY = 'xrdb.pinnedTargets.v1';
 export const PINNED_TARGETS_MAX_PER_TYPE = 8;
 
-export type MediaTargetSample = { id: string; title: string };
+type MediaTargetSample = { id: string; title: string };
 
 export const MEDIA_TARGET_SAMPLE_IDS: Record<MediaSearchPreviewType, MediaTargetSample[]> = {
   poster: [

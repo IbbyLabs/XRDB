@@ -98,16 +98,20 @@ import { buildConfiguratorPageProps } from '@/lib/configuratorPageProps';
 import type { MediaFeatureBadgeKey } from '@/lib/mediaFeatures';
 import { normalizeBaseUrl } from '@/lib/uiConfig';
 import { useClientOrigin } from '@/lib/useClientOrigin';
-import { useConfiguratorActiveWorkspaceSettings } from '@/lib/useConfiguratorActiveWorkspaceSettings';
-import { useConfiguratorFeeds } from '@/lib/useConfiguratorFeeds';
-import { useConfiguratorOutputs } from '@/lib/useConfiguratorOutputs';
-import { useConfiguratorPageChrome } from '@/lib/useConfiguratorPageChrome';
-import { useConfiguratorWorkspaceActions } from '@/lib/useConfiguratorWorkspaceActions';
-import { useConfiguratorWorkspaceConfigIo } from '@/lib/useConfiguratorWorkspaceConfigIo';
-import { useConfiguratorWorkspaceState } from '@/lib/useConfiguratorWorkspaceState';
-import { useConfiguratorWorkspaceStorage } from '@/lib/useConfiguratorWorkspaceStorage';
-import { useConfiguratorWorkspaceSummary } from '@/lib/useConfiguratorWorkspaceSummary';
-import { useConfiguratorWorkspaceUi } from '@/lib/useConfiguratorWorkspaceUi';
+import {
+  useConfiguratorActiveWorkspaceSettings,
+  useConfiguratorFeeds,
+  useConfiguratorOutputs,
+  useConfiguratorPageChrome,
+  useConfiguratorWorkspaceUi,
+} from '@/lib/configuratorHooks/ui';
+import {
+  useConfiguratorWorkspaceActions,
+  useConfiguratorWorkspaceConfigIo,
+  useConfiguratorWorkspaceState,
+  useConfiguratorWorkspaceStorage,
+  useConfiguratorWorkspaceSummary,
+} from '@/lib/configuratorHooks/workspace';
 import { enabledOrderedToRows } from '@/lib/ratingProviderRows';
 import {
   isBuiltInSample,
@@ -765,6 +769,7 @@ export function useConfiguratorWorkspaceRuntime({
   const [mediaSearchError, setMediaSearchError] = useState('');
   const [mediaSearchResults, setMediaSearchResults] = useState<MediaSearchItem[]>([]);
   const [activePreviewTitle, setActivePreviewTitle] = useState('');
+  const [activePreviewPosterUrl, setActivePreviewPosterUrl] = useState('');
   const mediaSearchRequestIdRef = useRef(0);
   const mediaSearchAbortControllerRef = useRef<AbortController | null>(null);
   const [runtimeEnvAccessKeys, setRuntimeEnvAccessKeys] = useState(envAccessKeys);
@@ -883,9 +888,14 @@ export function useConfiguratorWorkspaceRuntime({
         (previewType === 'thumbnail'
           ? `Target ${mediaId}`
           : `Target ${mediaId}`);
-      handleAddPinnedTarget({ mediaId, title });
+      const normalizedId = mediaId.trim().toLowerCase();
+      const resultMatch = mediaSearchResults.find(
+        (r) => r.mediaId.trim().toLowerCase() === normalizedId,
+      );
+      const poster = activePreviewPosterUrl || resultMatch?.posterUrl;
+      handleAddPinnedTarget({ mediaId, title, posterUrl: poster || undefined });
     }
-  }, [mediaId, isPinned, handleRemovePinnedTarget, handleAddPinnedTarget, activePreviewTitle, previewType]);
+  }, [mediaId, isPinned, handleRemovePinnedTarget, handleAddPinnedTarget, activePreviewTitle, activePreviewPosterUrl, mediaSearchResults, previewType]);
 
   const handlePinSearchResult = useCallback(
     (result: MediaSearchItem) => {
@@ -896,7 +906,7 @@ export function useConfiguratorWorkspaceRuntime({
           pinTitle = `${pinTitle} S${String(parsed.seasonNumber).padStart(2, '0')}E${String(parsed.episodeNumber).padStart(2, '0')}`;
         }
       }
-      handleAddPinnedTarget({ mediaId: result.mediaId, title: pinTitle });
+      handleAddPinnedTarget({ mediaId: result.mediaId, title: pinTitle, posterUrl: result.posterUrl });
     },
     [previewType, handleAddPinnedTarget],
   );
@@ -907,6 +917,7 @@ export function useConfiguratorWorkspaceRuntime({
       setMediaSearchLoading(false);
       setMediaId(target.mediaId);
       setActivePreviewTitle(target.title);
+      setActivePreviewPosterUrl(target.posterUrl || '');
       setMediaSearchError('');
       setMediaSearchResults([]);
       setMediaSearchQuery('');
@@ -1093,6 +1104,7 @@ export function useConfiguratorWorkspaceRuntime({
       setMediaId(result.mediaId);
     }
     setActivePreviewTitle(result.year ? `${result.title} (${result.year})` : result.title);
+    setActivePreviewPosterUrl(result.posterUrl || '');
     setMediaSearchError('');
     setMediaSearchResults([]);
     setMediaSearchQuery('');
@@ -1112,6 +1124,7 @@ export function useConfiguratorWorkspaceRuntime({
     setMediaSearchLoading(false);
     setMediaId(nextSample.mediaId);
     setActivePreviewTitle(nextSample.title || `Target ${nextSample.mediaId}`);
+    setActivePreviewPosterUrl('');
     setMediaSearchError('');
     setMediaSearchResults([]);
     setMediaSearchQuery('');
@@ -1687,6 +1700,27 @@ export function useConfiguratorWorkspaceRuntime({
   });
   const { applySavedUiConfig, buildCurrentUiConfig } = workspaceConfigIo;
 
+  const undoSnapshotRef = useRef<ReturnType<typeof buildCurrentUiConfig> | null>(null);
+  const [hasUndo, setHasUndo] = useState(false);
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
+
+  const applySavedUiConfigWithUndo = useCallback(
+    (config: ReturnType<typeof buildCurrentUiConfig>) => {
+      undoSnapshotRef.current = buildCurrentUiConfig();
+      setHasUndo(true);
+      applySavedUiConfig(config);
+    },
+    [applySavedUiConfig, buildCurrentUiConfig],
+  );
+
+  const undoLastConfigApply = useCallback(() => {
+    if (!undoSnapshotRef.current) return;
+    const snapshot = undoSnapshotRef.current;
+    undoSnapshotRef.current = null;
+    setHasUndo(false);
+    applySavedUiConfig(snapshot);
+  }, [applySavedUiConfig]);
+
   const workspaceStorage = useConfiguratorWorkspaceStorage({
     applySavedUiConfig,
     buildCurrentUiConfig,
@@ -1837,16 +1871,19 @@ export function useConfiguratorWorkspaceRuntime({
 
   useEffect(() => {
     if (!uiSettingsLoaded) return;
-    if (activePreviewTitle) {
+    const alreadyResolved = resolvedForRef.current === mediaId;
+    if (activePreviewTitle && activePreviewPosterUrl) {
       resolvedForRef.current = mediaId;
       return;
     }
-    if (resolvedForRef.current === mediaId) return;
+    if (alreadyResolved) return;
     resolvedForRef.current = mediaId;
-    const sample = findSampleTitleByMediaId(mediaId);
-    if (sample) {
-      setActivePreviewTitle(sample);
-      return;
+    if (!activePreviewTitle) {
+      const sample = findSampleTitleByMediaId(mediaId);
+      if (sample) {
+        setActivePreviewTitle(sample);
+        // fall through to fetch poster below
+      }
     }
     if (!hasTmdbCredential || disableRemoteLookups) return;
     const episodeTarget = parseEpisodePreviewMediaTarget(mediaId);
@@ -1857,13 +1894,15 @@ export function useConfiguratorWorkspaceRuntime({
     void fetch(target.toString(), { cache: 'no-store' })
       .then(async (res) => {
         if (!res.ok) return;
-        const data = await res.json().catch(() => null) as { title: string | null } | null;
+        const data = await res.json().catch(() => null) as { title: string | null; posterUrl: string | null } | null;
         if (data?.title) setActivePreviewTitle(data.title);
+        if (data?.posterUrl) setActivePreviewPosterUrl(data.posterUrl);
       })
       .catch(() => null);
   }, [
     uiSettingsLoaded,
     activePreviewTitle,
+    activePreviewPosterUrl,
     mediaId,
     providerCredentialSessionVersion,
     hasTmdbCredential,
@@ -2101,6 +2140,7 @@ export function useConfiguratorWorkspaceRuntime({
   const {
     handleContinueExperienceMode,
     handleExitWizard,
+    handleSelectExperienceMode,
     openWorkspacePanels,
     setOpenWorkspacePanels,
   } = workspaceUi;
@@ -2395,6 +2435,7 @@ export function useConfiguratorWorkspaceRuntime({
       mediaSearchError,
       mediaSearchResults,
       activePreviewTitle,
+      activePreviewPosterUrl,
       onMediaSearchQueryChange: setMediaSearchQuery,
       onMediaSearchSubmit: handleMediaSearchSubmit,
       onSelectMediaSearchResult: handleSelectMediaSearchResult,
@@ -2423,17 +2464,24 @@ export function useConfiguratorWorkspaceRuntime({
   });
 
   return {
-    applySavedUiConfig,
+    activeTemplateId,
+    applySavedUiConfig: applySavedUiConfigWithUndo,
     buildCurrentUiConfig,
     clearConfigProfileUnlockSession,
     configProfileUnlockSession,
     docsCaptureReady,
+    experienceMode,
     experienceModeDraft,
     handleContinueExperienceMode,
+    handleSelectExperienceMode,
+    hasUndo,
     inputsPanelProps,
+    undoLastConfigApply,
     isDocsCapture: Boolean(docsCaptureConfig),
     pageRef: pageChrome.pageRef,
+    setActiveTemplateId,
     setConfigProfileUnlockSession,
+    setExperienceMode,
     setExperienceModeDraft,
     showExperienceModal,
     uiSettingsLoaded,

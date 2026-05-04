@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { BrandLogoIcon } from '@/components/brand-logo-icon';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { ChevronRight, ExternalLink, Tag, Terminal } from 'lucide-react';
 import {
@@ -12,13 +13,16 @@ import {
   BRAND_NAME,
   BRAND_SUPPORT_URL,
   BRAND_UPTIME_URL,
+  BRAND_DEVELOPER,
+  BRAND_DEVELOPER_URL,
+  BRAND_DISCORD_OFFICIAL_URL,
   DEPLOYMENT_VERSION,
 } from '@/lib/siteBrand';
 import { COMMIT_PAGE_SIZE, type RecentCommit } from '@/lib/recentCommits';
 
 const INVALID_COMMIT_TIMESTAMP_LABEL = 'unknown';
 
-export function BrandLockup({ compact = false, nameSlot }: { compact?: boolean; nameSlot?: ReactNode }) {
+function BrandLockup({ compact = false, nameSlot }: { compact?: boolean; nameSlot?: ReactNode }) {
   const accentIndex = BRAND_FULL_NAME.indexOf('X');
   const eyebrowLead = accentIndex >= 0 ? BRAND_FULL_NAME.slice(0, accentIndex) : BRAND_FULL_NAME;
   const eyebrowAccent = accentIndex >= 0 ? BRAND_FULL_NAME.slice(accentIndex, accentIndex + 1) : '';
@@ -27,7 +31,7 @@ export function BrandLockup({ compact = false, nameSlot }: { compact?: boolean; 
   return (
     <div className={`site-brand-lockup${compact ? ' site-brand-lockup-compact' : ''}`}>
       <Link href="/" className="site-brand-badge" aria-label={BRAND_FULL_NAME}>
-        <Image src="/favicon.png" alt="" className="site-brand-logo" width={38} height={38} priority />
+        <BrandLogoIcon className="site-brand-logo" />
       </Link>
       <span className="site-brand-copy">
         <span className="site-brand-eyebrow" aria-hidden="true">
@@ -67,7 +71,7 @@ export function SupportPill({ label = 'Support' }: { label?: string }) {
   );
 }
 
-export function UptimePill({ label = 'IbbyLabs Uptime Tracker' }: { label?: string }) {
+function UptimePill({ label = 'IbbyLabs Uptime Tracker' }: { label?: string }) {
   return (
     <a
       className="site-status-pill"
@@ -83,7 +87,7 @@ export function UptimePill({ label = 'IbbyLabs Uptime Tracker' }: { label?: stri
   );
 }
 
-export function DeploymentVersionPill({ compact = false, labelless = false }: { compact?: boolean; labelless?: boolean }) {
+function DeploymentVersionPill({ compact = false, labelless = false }: { compact?: boolean; labelless?: boolean }) {
   return (
     <span
       className={`xrdb-deployment-pill${compact ? ' xrdb-deployment-pill-compact' : ''}`}
@@ -101,7 +105,7 @@ export function DeploymentVersionPill({ compact = false, labelless = false }: { 
   );
 }
 
-export function LatestReleasePill({
+function LatestReleasePill({
   compact = false,
   labelless = false,
   releaseTag,
@@ -182,6 +186,7 @@ const KNOWN_BOT_NAMES = new Set(['dyno', 'mee6', 'carl-bot', 'dank memer', 'arca
 interface DiscordWidgetData {
   name: string;
   instant_invite: string;
+  presence_count?: number;
   channels: { id: string; name: string; position: number }[];
   members: { id: string; username: string; status: string; avatar_url: string }[];
 }
@@ -193,21 +198,30 @@ function isBot(username: string): boolean {
   return lower.includes('bot') || KNOWN_BOT_NAMES.has(lower);
 }
 
-function useDiscordWidget() {
+function useDiscordWidget(enabled: boolean, apiUrl: string = DISCORD_WIDGET_API) {
   const [data, setData] = useState<DiscordWidgetData | null>(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     let active = true;
-    fetch(DISCORD_WIDGET_API)
-      .then((r) => {
-        if (!r.ok) throw new Error('Widget unavailable');
-        return r.json();
-      })
-      .then((d: DiscordWidgetData) => { if (active) setData(d); })
-      .catch(() => { if (active) setError(true); });
+    if (!enabled) {
+      queueMicrotask(() => {
+        if (active) {
+          setData(null);
+          setError(false);
+        }
+      });
+    } else {
+      fetch(apiUrl)
+        .then((r) => {
+          if (!r.ok) throw new Error('Widget unavailable');
+          return r.json();
+        })
+        .then((d: DiscordWidgetData) => { if (active) setData(d); })
+        .catch(() => { if (active) setError(true); });
+    }
     return () => { active = false; };
-  }, []);
+  }, [apiUrl, enabled]);
 
   return { data, error };
 }
@@ -228,19 +242,40 @@ function StatusDot({ status }: { status: string }) {
   return <span className={`dw-status-dot ${cls}`} />;
 }
 
-function DiscordWidgetCard({ href, data, error }: { href: string; data: DiscordWidgetData | null; error: boolean }) {
+function DiscordWidgetCard({
+  href,
+  data,
+  error,
+  serverLabel,
+  bannerSrc,
+  avatarSrc,
+}: {
+  href: string;
+  data: DiscordWidgetData | null;
+  error: boolean;
+  serverLabel: string;
+  bannerSrc?: string | null;
+  avatarSrc?: string | null;
+}) {
+  const banner = bannerSrc === undefined ? '/discord-banner.png' : bannerSrc;
+  const avatar = avatarSrc === undefined ? '/discord-avatar.gif' : avatarSrc;
+
   if (error) {
     return (
       <div className="dw-card">
-        <div className="dw-banner dw-banner-muted">
-          <Image src="/discord-banner.png" alt="" className="dw-banner-img" width={340} height={120} />
-        </div>
-        <div className="dw-header">
-          <div className="dw-header-avatar-wrap dw-header-avatar-wrap-muted">
-            <Image src="/discord-avatar.gif" alt="" className="dw-header-avatar" width={48} height={48} unoptimized />
+        {banner ? (
+          <div className="dw-banner dw-banner-muted">
+            <Image src={banner} alt="" className="dw-banner-img" width={340} height={120} />
           </div>
-          <div className="dw-header-info">
-            <span className="dw-server-name">{BRAND_NAME}</span>
+        ) : null}
+        <div className="dw-header">
+          {avatar ? (
+            <div className="dw-header-avatar-wrap dw-header-avatar-wrap-muted">
+              <Image src={avatar} alt="" className="dw-header-avatar" width={48} height={48} unoptimized />
+            </div>
+          ) : null}
+          <div className={`dw-header-info${!avatar ? ' dw-header-info-no-avatar' : ''}`}>
+            <span className="dw-server-name">{serverLabel}</span>
           </div>
         </div>
         <div className="dw-card-error">
@@ -258,10 +293,10 @@ function DiscordWidgetCard({ href, data, error }: { href: string; data: DiscordW
   if (!data) {
     return (
       <div className="dw-card">
-        <div className="dw-skel-banner" />
+        {banner ? <div className="dw-skel-banner" /> : null}
         <div className="dw-skel-header">
-          <div className="dw-skel-avatar" />
-          <div className="dw-skel-lines">
+          {avatar ? <div className="dw-skel-avatar" /> : null}
+          <div className={`dw-skel-lines${!avatar ? ' dw-skel-lines-no-avatar' : ''}`}>
             <div className="dw-skel-bar dw-skel-bar-name" />
             <div className="dw-skel-bar dw-skel-bar-sub" />
             <div className="dw-skel-bar dw-skel-bar-count" />
@@ -283,24 +318,28 @@ function DiscordWidgetCard({ href, data, error }: { href: string; data: DiscordW
   const humans = data.members.filter((m) => !isBot(m.username));
   const sorted = [...humans].sort((a, b) => (STATUS_PRIORITY[a.status] ?? 3) - (STATUS_PRIORITY[b.status] ?? 3));
   const visibleMembers = sorted.slice(0, 12);
+  const totalOnline = data.presence_count ?? humans.length;
 
   return (
     <div className="dw-card">
-      <div className="dw-banner">
-        <Image src="/discord-banner.png" alt="" className="dw-banner-img" width={340} height={120} />
-      </div>
+      {banner ? (
+        <div className="dw-banner">
+          <Image src={banner} alt="" className="dw-banner-img" width={340} height={120} />
+        </div>
+      ) : null}
 
       <div className="dw-header">
-        <div className="dw-header-avatar-wrap">
-          <Image src="/discord-avatar.gif" alt="" className="dw-header-avatar" width={48} height={48} unoptimized />
-          <span className="dw-server-status-dot" />
-        </div>
-        <div className="dw-header-info">
-          <span className="dw-server-name">{BRAND_NAME}</span>
-          <span className="dw-server-full-name">{BRAND_FULL_NAME}</span>
+        {avatar ? (
+          <div className="dw-header-avatar-wrap">
+            <Image src={avatar} alt="" className="dw-header-avatar" width={48} height={48} unoptimized />
+            <span className="dw-server-status-dot" />
+          </div>
+        ) : null}
+        <div className={`dw-header-info${!avatar ? ' dw-header-info-no-avatar' : ''}`}>
+          <span className="dw-server-name">{data.name}</span>
           <span className="dw-member-count">
             <span className="dw-count-dot" />
-            {humans.length} online
+            {totalOnline} online
           </span>
         </div>
       </div>
@@ -317,8 +356,8 @@ function DiscordWidgetCard({ href, data, error }: { href: string; data: DiscordW
               <span className="dw-member-name">{m.username}</span>
             </div>
           ))}
-          {humans.length > 12 ? (
-            <span className="dw-member-overflow">+{humans.length - 12} more</span>
+          {totalOnline > 12 ? (
+            <span className="dw-member-overflow">+{totalOnline - visibleMembers.length} more</span>
           ) : null}
         </div>
       </div>
@@ -336,15 +375,21 @@ export function DiscordPill({
   label,
   title,
   popover,
+  widgetApiUrl,
+  bannerSrc,
+  avatarSrc,
 }: {
   href: string;
   label: string;
   title: string;
   popover?: boolean;
+  widgetApiUrl?: string;
+  bannerSrc?: string | null;
+  avatarSrc?: string | null;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { data, error } = useDiscordWidget();
+  const { data, error } = useDiscordWidget(Boolean(popover), widgetApiUrl ?? DISCORD_WIDGET_API);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -364,7 +409,7 @@ export function DiscordPill({
     };
   }, [isOpen]);
 
-  const onlineCount = data ? data.members.filter((m) => !isBot(m.username)).length : 0;
+  const onlineCount = data ? (data.presence_count ?? data.members.filter((m) => !isBot(m.username)).length) : 0;
 
   if (!popover) {
     return (
@@ -397,13 +442,13 @@ export function DiscordPill({
         {onlineCount > 0 ? <span className="site-discord-pill-count">{onlineCount}</span> : null}
       </button>
       <div className={`site-discord-popover${isOpen ? ' site-discord-popover-open' : ''}`}>
-        {isOpen ? <DiscordWidgetCard href={href} data={data} error={error} /> : null}
+        {isOpen ? <DiscordWidgetCard href={href} data={data} error={error} serverLabel={label} bannerSrc={bannerSrc} avatarSrc={avatarSrc} /> : null}
       </div>
     </div>
   );
 }
 
-export function SectionHeader({
+function SectionHeader({
   eyebrow,
   title,
   description,
@@ -417,13 +462,13 @@ export function SectionHeader({
   return (
     <div className={`xrdb-section-header${align === 'center' ? ' xrdb-section-header-center' : ''}`}>
       <p className="site-section-eyebrow font-mono">{eyebrow}</p>
-      <h2 className="xrdb-section-title text-white">{title}</h2>
-      <p className="xrdb-section-copy text-zinc-400">{description}</p>
+      <h2 className="xrdb-section-title text-[color:var(--ink)]">{title}</h2>
+      <p className="xrdb-section-copy text-[color:var(--muted)]">{description}</p>
     </div>
   );
 }
 
-export function ConfiguratorAccordionSection({
+function ConfiguratorAccordionSection({
   title,
   description,
   isOpen,
@@ -446,8 +491,8 @@ export function ConfiguratorAccordionSection({
     <section
       className={`rounded-2xl border ${
         tone === 'accent'
-          ? 'border-violet-500/20 bg-[linear-gradient(180deg,rgba(32,20,54,0.92),rgba(16,10,28,0.98))]'
-          : 'border-white/10 bg-black/30'
+          ? 'border-[color:color-mix(in_oklch,var(--accent)_30%,var(--border))] bg-[color:var(--bg-elevated)]'
+          : 'border-[color:var(--border)] bg-[color:var(--bg-elevated)]'
       }`}
     >
       <button
@@ -457,31 +502,31 @@ export function ConfiguratorAccordionSection({
       >
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <div className="text-sm font-semibold text-white">{title}</div>
+            <div className="text-sm font-semibold text-[color:var(--ink)]">{title}</div>
             {referenceHref ? (
               <a
                 href={referenceHref}
                 onClick={(e) => e.stopPropagation()}
-                className="text-[10px] font-medium text-violet-400 hover:text-violet-300 transition-colors"
+                className="text-[12px] font-medium text-[color:var(--accent-text)] hover:text-[color:var(--ink)] transition-colors"
               >
                 Reference
               </a>
             ) : null}
           </div>
-          <div className="mt-0.5 text-[11px] leading-5 text-zinc-500">{description}</div>
+          <div className="mt-0.5 text-[11px] leading-5 text-[color:var(--muted)]">{description}</div>
         </div>
         <div className="flex shrink-0 items-center gap-2" onClick={(event) => event.stopPropagation()}>
           {actions}
           <ChevronRight
-            className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${
-              isOpen ? 'rotate-90 text-violet-300' : ''
+            className={`h-4 w-4 shrink-0 text-[color:var(--muted)] transition-transform ${
+              isOpen ? 'rotate-90 text-[color:var(--accent-text)]' : ''
             }`}
           />
         </div>
       </button>
       <div className="xrdb-accordion-body" data-open={isOpen}>
         <div className="xrdb-accordion-inner">
-          <div className="border-t border-white/10 px-4 py-3">{children}</div>
+          <div className="border-t border-[color:var(--border)] px-4 py-3">{children}</div>
         </div>
       </div>
     </section>
@@ -511,7 +556,7 @@ const formatCommitTimestamp = (value: string, nowMs: number) => {
   }).format(commitMs);
 };
 
-export function RecentChanges({
+function RecentChanges({
   commits,
   visibleCount,
   onLoadMore,
@@ -592,7 +637,7 @@ export function RecentChanges({
                 aria-label="Close recent changes"
                 onClick={() => setIsOpen(false)}
               >
-                ×
+                &times;
               </button>
             </div>
           </div>
@@ -640,5 +685,22 @@ export function RecentChanges({
         </section>
       ) : null}
     </div>
+  );
+}
+
+export function PageFooter() {
+  return (
+    <footer className="site-page-footer">
+      <div className="site-page-footer-content">
+        <p className="site-page-footer-credit">
+          <BrandLogoIcon className="site-page-footer-mark" />
+          <span>Developed by IbbyLabs</span>
+          <span aria-hidden="true">·</span>
+          <a href={BRAND_SUPPORT_URL} target="_blank" rel="noreferrer" className="site-page-footer-link">Support Me</a>
+          <span aria-hidden="true">·</span>
+          <a href={BRAND_DISCORD_OFFICIAL_URL} target="_blank" rel="noreferrer" className="site-page-footer-link">Join Discord</a>
+        </p>
+      </div>
+    </footer>
   );
 }

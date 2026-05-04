@@ -54,7 +54,9 @@ export async function handleProxyManifestGet(request: NextRequest) {
     return buildError(request, 'Source manifest is not valid JSON.', 502);
   }
 
-  return NextResponse.json(result.payload, {
+  const payload = { ...result.payload, logo: `${request.nextUrl.origin}/xrdb-logo.png` };
+
+  return NextResponse.json(payload, {
     status: 200,
     headers: resolveResponseHeaders(request),
   });

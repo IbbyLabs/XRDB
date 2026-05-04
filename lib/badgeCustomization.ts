@@ -9,7 +9,7 @@ import {
 export const DEFAULT_BADGE_SCALE_PERCENT = 100;
 export const MIN_BADGE_SCALE_PERCENT = 70;
 export const MAX_BADGE_SCALE_PERCENT = 200;
-export const MAX_THUMBNAIL_RATING_BADGE_SCALE_PERCENT = MAX_BADGE_SCALE_PERCENT;
+const MAX_THUMBNAIL_RATING_BADGE_SCALE_PERCENT = MAX_BADGE_SCALE_PERCENT;
 export const MAX_QUALITY_BADGE_SCALE_PERCENT = 200;
 export const MAX_GENRE_BADGE_SCALE_PERCENT = 200;
 export const MIN_GENRE_BADGE_BORDER_WIDTH_PX = 0;
@@ -436,7 +436,7 @@ export const normalizeHexColor = (value: unknown) => {
   return undefined;
 };
 
-export const normalizeQualityBadgePreference = (value: unknown): MediaFeatureBadgeKey | null => {
+const normalizeQualityBadgePreference = (value: unknown): MediaFeatureBadgeKey | null => {
   const normalized =
     typeof value === 'string' ? value.trim().toLowerCase().replace(/[\s._-]+/g, '') : '';
   if (!normalized) return null;
@@ -786,7 +786,7 @@ export const encodeRatingProviderAppearanceOverrides = (
   return serialized ? toBase64Url(serialized) : '';
 };
 
-export type QualityBadgeAppearanceOverride = {
+type QualityBadgeAppearanceOverride = {
   iconUrl?: string;
   fullBadge?: boolean;
 };
@@ -810,7 +810,7 @@ export const normalizeQualityBadgeAppearanceOverrides = (
   return Object.fromEntries(normalizedEntries);
 };
 
-export const serializeQualityBadgeAppearanceOverrides = (
+const serializeQualityBadgeAppearanceOverrides = (
   overrides: QualityBadgeAppearanceOverrides,
 ): string => {
   const normalized = normalizeQualityBadgeAppearanceOverrides(overrides);

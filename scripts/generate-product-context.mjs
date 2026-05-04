@@ -10,9 +10,18 @@ const PRODUCT_CONTEXT_OUTPUT_PATH = join('public', 'product-context.json');
 const DEFAULT_APP_URL = 'http://localhost:3000';
 const DEFAULT_GENERATED_AT = new Date().toISOString();
 const KNOWN_ROUTE_LABELS = {
-  '/': 'Configurator workspace for render settings and live preview.',
-  '/addon': 'Addon proxy workspace and manifest export flow.',
-  '/export': 'Export workspace for generated URLs and patterns.',
+  '/': 'Entry page for selecting artwork type and starting the configurator.',
+  '/poster': 'Poster artwork configurator with step-by-step provider, style, and layout controls.',
+  '/backdrop': 'Backdrop artwork configurator.',
+  '/logo': 'Logo artwork configurator.',
+  '/thumbnail': 'Episode thumbnail configurator.',
+  '/integrations': 'Integrations setup step for configuring provider credentials.',
+  '/proxy': 'Addon proxy workspace for generating Stremio manifest URLs.',
+  '/themes': 'Theme browser and custom palette editor.',
+  '/save': 'Saved configuration profile management.',
+  '/templates': 'Community templates browser.',
+  '/admin': 'Admin dashboard for metrics, cache, profiles, themes, and configuration.',
+  '/admin/login': 'Admin login page.',
   '/reference': 'Reference surface for shipped options and behavior.',
   '/preview/[slug]': 'Fixed preview routes used by docs and live samples.',
   '/proxy/manifest.json': 'Proxy addon manifest endpoint.',

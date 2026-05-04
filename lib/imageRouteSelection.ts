@@ -14,7 +14,7 @@ import {
 } from './imageLanguage.ts';
 import { sha1Hex } from './imageRouteRuntime.ts';
 
-export type RoutedImageCandidate = {
+type RoutedImageCandidate = {
   file_path?: string | null;
   iso_639_1?: string | null;
   width?: number | null;
@@ -23,7 +23,7 @@ export type RoutedImageCandidate = {
   vote_count?: number | null;
 };
 
-export type RandomPosterSelectionOptions = {
+type RandomPosterSelectionOptions = {
   randomPosterTextMode: RandomPosterTextMode;
   randomPosterLanguageMode: RandomPosterLanguageMode;
   randomPosterMinVoteCount: number | null;
@@ -42,7 +42,7 @@ export type FanartImageAsset = {
 const hasFanartAssetUrl = (asset?: FanartImageAsset | null) =>
   typeof asset?.url === 'string' && asset.url.trim().length > 0;
 
-export const pickDeterministicIndexBySeed = (seed: string, length: number) => {
+const pickDeterministicIndexBySeed = (seed: string, length: number) => {
   if (!Number.isFinite(length) || length <= 0) return 0;
   const normalizedSeed = String(seed || '').trim();
   if (!normalizedSeed) return 0;

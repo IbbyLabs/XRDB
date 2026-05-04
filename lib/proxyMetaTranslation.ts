@@ -9,17 +9,17 @@ import {
   TMDB_API_BASE_URL,
 } from './serviceBaseUrls.ts';
 
-export type TmdbMediaType = 'movie' | 'tv';
+type TmdbMediaType = 'movie' | 'tv';
 
-export type TmdbTranslationTarget = {
+type TmdbTranslationTarget = {
   id: number;
   type: TmdbMediaType;
   details: Record<string, unknown>;
 };
 
-export type TranslationFieldSource = 'source' | 'tmdb' | 'anilist' | 'kitsu' | 'none';
-export type TextFieldStatus = 'missing' | 'blank' | 'placeholder' | 'present';
-export type TextFieldReason =
+type TranslationFieldSource = 'source' | 'tmdb' | 'anilist' | 'kitsu' | 'none';
+type TextFieldStatus = 'missing' | 'blank' | 'placeholder' | 'present';
+type TextFieldReason =
   | 'preserved-source'
   | 'preferred-requested-language'
   | 'preferred-tmdb'
@@ -29,7 +29,7 @@ export type TextFieldReason =
   | 'fallback-anime'
   | 'unavailable';
 
-export type TextFieldDebug = {
+type TextFieldDebug = {
   source: TranslationFieldSource;
   reason: TextFieldReason;
   existingStatus: TextFieldStatus;
@@ -38,12 +38,12 @@ export type TextFieldDebug = {
   changed: boolean;
 };
 
-export type AppliedTextTranslationDebug = {
+type AppliedTextTranslationDebug = {
   title: TextFieldDebug;
   overview: TextFieldDebug;
 };
 
-export type AnimeTextFallback = {
+type AnimeTextFallback = {
   title: {
     value: string | null;
     source: 'anilist' | 'kitsu' | null;
@@ -56,7 +56,7 @@ export type AnimeTextFallback = {
   };
 };
 
-export type ApplyTranslatedTextFieldsOptions = {
+type ApplyTranslatedTextFieldsOptions = {
   mode?: MetadataTranslationMode | null;
   tmdbTitle?: string | null;
   tmdbOverview?: string | null;
@@ -1033,7 +1033,7 @@ export const applyTranslatedTextFields = (
   return { title, overview };
 };
 
-export const mergeTranslatedTextFields = (
+const mergeTranslatedTextFields = (
   target: Record<string, unknown>,
   translatedTitle: string | null,
   translatedOverview: string | null,

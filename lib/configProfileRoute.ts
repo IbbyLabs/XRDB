@@ -31,7 +31,7 @@ type AuthSuccess = {
   metadata: ConfigProfileMetadata;
 };
 
-export type ConfigProfileAuthResult = AuthFailure | AuthSuccess;
+type ConfigProfileAuthResult = AuthFailure | AuthSuccess;
 
 const normalizeParamsRecord = (value: unknown): Record<string, string> | null => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -49,7 +49,7 @@ const normalizeParamsRecord = (value: unknown): Record<string, string> | null =>
   return params;
 };
 
-export const extractConfigProfileParams = (body: unknown): Record<string, string> | null => {
+const extractConfigProfileParams = (body: unknown): Record<string, string> | null => {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
     return null;
   }
@@ -60,7 +60,7 @@ export const extractConfigProfileParams = (body: unknown): Record<string, string
   return normalizeParamsRecord(candidate);
 };
 
-export const readConfigPasswordFromBody = (
+const readConfigPasswordFromBody = (
   body: unknown,
   key: 'password' | 'newPassword' = 'password',
 ): string | null => {

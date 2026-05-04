@@ -6,7 +6,7 @@ import {
 } from '@/lib/xrdbRequestKey';
 import { handleImageRequest } from '@/lib/imageRouteHandler';
 import { getConfigProfile } from '@/lib/dbCore';
-import { XRDB_EPISODE_CONFIG_PROFILE_ID } from '@/lib/imageRouteConfig';
+import { XRDB_DEFAULT_EPISODE_PROFILE_ID } from '@/lib/imageRouteConfig';
 import { buildThumbnailBackdropUrl } from '@/lib/thumbnailRoute';
 const XRDB_REQUEST_API_KEYS = getConfiguredXrdbRequestKeys();
 
@@ -15,7 +15,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string; episodeToken: string }> },
 ) {
   const requestUrl = new URL(request.url);
-  const configId = requestUrl.searchParams.get('config') ?? XRDB_EPISODE_CONFIG_PROFILE_ID;
+  const configId = requestUrl.searchParams.get('config') ?? XRDB_DEFAULT_EPISODE_PROFILE_ID;
   const configFallbackKey = configId ? (getConfigProfile(configId)?.xrdbKey ?? null) : null;
 
   if (

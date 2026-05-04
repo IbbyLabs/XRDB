@@ -3,7 +3,6 @@ import path from 'node:path';
 export type { CommunityBadgeTheme } from './communityBadgeTheme.ts';
 export {
   DEFAULT_COMMUNITY_BADGE_THEME,
-  COMMUNITY_BADGE_THEME_OPTIONS,
   normalizeCommunityBadgeTheme,
 } from './communityBadgeTheme.ts';
 import type { CommunityBadgeTheme } from './communityBadgeTheme.ts';

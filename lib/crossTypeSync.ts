@@ -19,9 +19,9 @@ import type { SharedXrdbSettings, StreamBadgesSetting } from './uiConfig.ts';
 import { buildProfileParams, coerceNonPosterPresentation } from './uiConfig.ts';
 import { filterThumbnailRatingPreferences } from './episodeIdentity.ts';
 
-export type ParamDiffEntry = { key: string; oldValue: string; newValue: string };
+type ParamDiffEntry = { key: string; oldValue: string; newValue: string };
 
-export type SyncableTypeSettings = {
+type SyncableTypeSettings = {
   ratingPreferences: RatingPreference[];
   ratingStyle: RatingStyle;
   iconShape: IconShape;

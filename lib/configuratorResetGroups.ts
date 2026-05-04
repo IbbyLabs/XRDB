@@ -11,7 +11,7 @@ export type ConfiguratorResetSectionId =
   | 'providers'
   | 'quicktune';
 
-export type ConfiguratorResetPreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
+type ConfiguratorResetPreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 
 type SettingsKey = keyof SharedXrdbSettings;
 

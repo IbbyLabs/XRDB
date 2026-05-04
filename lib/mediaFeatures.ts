@@ -32,14 +32,14 @@ export type MediaFeatureFlags = {
 
 export type RemuxDisplayMode = 'composite' | 'separate';
 
-export type MediaFeatureBadgeMeta = {
+type MediaFeatureBadgeMeta = {
   key: MediaFeatureBadgeKey;
   label: string;
   accentColor: string;
   iconUrl?: string | null;
 };
 
-export type StreamingServiceBadgeKey =
+type StreamingServiceBadgeKey =
   | 'netflix'
   | 'hbo'
   | 'primevideo'
@@ -179,7 +179,7 @@ export const MEDIA_FEATURE_BADGE_ORDER: MediaFeatureBadgeKey[] = [
   'bdremux',
 ];
 const MEDIA_FEATURE_BADGE_KEY_SET = new Set<MediaFeatureBadgeKey>(MEDIA_FEATURE_BADGE_ORDER);
-export const STREAMING_SERVICE_BADGE_ORDER: StreamingServiceBadgeKey[] = [
+const STREAMING_SERVICE_BADGE_ORDER: StreamingServiceBadgeKey[] = [
   'netflix',
   'hbo',
   'primevideo',
@@ -239,7 +239,7 @@ export const normalizeCertificationBadgeLabel = (value?: string | null) => {
   return normalized.replace(/\s*\+\s*/g, '+');
 };
 
-export const createEmptyMediaFeatureFlags = (): MediaFeatureFlags => ({
+const createEmptyMediaFeatureFlags = (): MediaFeatureFlags => ({
   has4k: false,
   hasHd: false,
   hasBluray: false,
@@ -285,7 +285,7 @@ export const parseMediaFeatureFlagsFromFilename = (filename: string): MediaFeatu
   return { has4k, hasHd, hasBluray, hasHdr, hasDolbyVision, hasDolbyAtmos, hasRemux };
 };
 
-export const mergeMediaFeatureFlags = (
+const mergeMediaFeatureFlags = (
   left: MediaFeatureFlags,
   right: MediaFeatureFlags,
 ): MediaFeatureFlags => ({

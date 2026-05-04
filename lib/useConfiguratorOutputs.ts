@@ -1503,7 +1503,6 @@ export function useConfiguratorOutputs({
     qualityBadgeAppearanceOverrides,
     ratingValueMode,
     ratingBlackStripEnabled,
-    shouldShowQualityBadgesPosition,
     shouldShowQualityBadgesSide,
     providerCredentialSessionVersion,
     tmdbIdScope,

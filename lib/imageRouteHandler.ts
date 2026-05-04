@@ -6,6 +6,7 @@ import { recordRecentPosterRequest } from '@/lib/posterCacheWarmRecentRing';
 import {
   XRDB_REQUEST_KEY_ERROR_MESSAGE,
   isXrdbRequestAuthorized,
+  resolveProvidedXrdbRequestKey,
 } from '@/lib/xrdbRequestKey';
 import {
   ALLOWED_IMAGE_TYPES,
@@ -26,6 +27,7 @@ import { resolveImageRouteRequestState } from '@/lib/imageRouteRequestState';
 import { executeImageRouteRender } from '@/lib/imageRouteExecution';
 import { getConfigProfile } from '@/lib/dbCore';
 import { logger } from '@/lib/serverLogger';
+import { recordRequest } from '@/lib/adminMetrics';
 
 const finalImageInFlight = new Map<string, Promise<RenderedImagePayload>>();
 
@@ -51,11 +53,18 @@ export async function handleImageRequest(
 
   const { type, id } = params;
   if (!ALLOWED_IMAGE_TYPES.has(type)) {
-    return respond('Invalid image type', 400);
+    const invalidTypeResponse = respond('Invalid image type', 400);
+    recordRequest('image', 400, performance.now() - requestStartedAt, id);
+    return invalidTypeResponse;
   }
 
   const configId = request.nextUrl.searchParams.get('config');
   const configFallbackKey = configId ? (getConfigProfile(configId)?.xrdbKey ?? null) : null;
+  const providedRequestKey = resolveProvidedXrdbRequestKey({
+    searchParams: request.nextUrl.searchParams,
+    headers: request.headers,
+    fallbackKey: configFallbackKey,
+  });
 
   if (
     !isXrdbRequestAuthorized({
@@ -65,7 +74,12 @@ export async function handleImageRequest(
       fallbackKey: configFallbackKey,
     })
   ) {
-    return respond(XRDB_REQUEST_KEY_ERROR_MESSAGE, 401);
+    const unauthorizedResponse = respond(XRDB_REQUEST_KEY_ERROR_MESSAGE, 401);
+    recordRequest('image', 401, performance.now() - requestStartedAt, id, {
+      configId,
+      providedKey: providedRequestKey,
+    });
+    return unauthorizedResponse;
   }
 
   logger.request(
@@ -110,15 +124,25 @@ export async function handleImageRequest(
         }
       : undefined;
 
-    return createImageHttpResponse(
+    const finalResponse = createImageHttpResponse(
       execution.renderedImage,
       buildServerTimingHeader(phases, totalMs),
       cacheStatus,
       debugHeaders,
     );
+    recordRequest('image', 200, totalMs, id, {
+      configId,
+      providedKey: providedRequestKey,
+    });
+    return finalResponse;
   } catch (error: any) {
     if (error instanceof HttpError) {
-      return respond(error.message, error.status, error.headers);
+      const errResponse = respond(error.message, error.status, error.headers);
+      recordRequest('image', error.status, performance.now() - requestStartedAt, id, {
+        configId,
+        providedKey: providedRequestKey,
+      });
+      return errResponse;
     }
 
     logger.error('[XRDB] render failed', error);
@@ -131,17 +155,27 @@ export async function handleImageRequest(
       normalizedMessage.includes('econnreset') ||
       normalizedMessage.includes('etimedout')
     ) {
-      return respond(
+      const r502 = respond(
         'Upstream request failed. Check server outbound network and DNS to TMDB/MDBList.',
         502,
       );
+      recordRequest('image', 502, performance.now() - requestStartedAt, id, {
+        configId,
+        providedKey: providedRequestKey,
+      });
+      return r502;
     }
 
     const stack =
       process.env.NODE_ENV !== 'production' && typeof error?.stack === 'string'
         ? `\n${error.stack}`
         : '';
-    return respond(`Error: ${message}${stack}`, 500);
+    const r500 = respond(`Error: ${message}${stack}`, 500);
+    recordRequest('image', 500, performance.now() - requestStartedAt, id, {
+      configId,
+      providedKey: providedRequestKey,
+    });
+    return r500;
   }
 }
 

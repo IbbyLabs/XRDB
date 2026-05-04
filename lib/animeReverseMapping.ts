@@ -1,13 +1,13 @@
-export type AnimeImageType = 'poster' | 'backdrop' | 'logo';
-export type ReverseMappedAnimeMediaType = 'tv' | 'movie';
-export type KitsuFallbackAsset = {
+type AnimeImageType = 'poster' | 'backdrop' | 'logo';
+type ReverseMappedAnimeMediaType = 'tv' | 'movie';
+type KitsuFallbackAsset = {
   imageUrl: string | null;
   rating: string | null;
   title: string | null;
   logoAspectRatio: number | null;
 };
 
-export type ReverseMappedAnimeImageTarget =
+type ReverseMappedAnimeImageTarget =
   | {
       kind: 'tmdb';
       tmdbId: string;

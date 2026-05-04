@@ -56,7 +56,7 @@ type RouteFetchText = (
   init?: RequestInit,
 ) => Promise<CachedTextResponse>;
 
-export type ExecutedImageRouteRender = {
+type ExecutedImageRouteRender = {
   renderedImage: RenderedImagePayload;
   objectStorageHit: boolean;
   debugProviderRatingsEnabled: boolean;

@@ -1,7 +1,7 @@
 services:
   xrdb:
     container_name: xrdb
-    image: ghcr.io/ibbylabs/xrdb:latest
+    image: ghcr.io/ibbylabs/xrdb:${XRDB_IMAGE_TAG:-latest}
     restart: unless-stopped
     env_file:
       - .env

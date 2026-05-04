@@ -6,7 +6,7 @@ import {
 } from './proxyRouteRequest.ts';
 import { buildProxyNoStoreHeaders } from './proxyManifest.ts';
 
-export { buildProxyReferencePublicUrl, buildProxyRouteCorsHeaders, resolveProxyPublicUrl } from './proxyRouteRequest.ts';
+export { buildProxyRouteCorsHeaders } from './proxyRouteRequest.ts';
 export { buildProxyNoStoreHeaders } from './proxyManifest.ts';
 
 export const getPublicRequestUrl = (request: NextRequest) =>

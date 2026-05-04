@@ -1,0 +1,881 @@
+/* Admin Dashboard — XRDB */
+
+.xrdb-admin-layout {
+  min-height: 100dvh;
+  background: var(--bg-base);
+  color: var(--ink);
+  font-family: var(--font-body, system-ui, sans-serif);
+  padding: 0;
+}
+
+/* ── Login ──────────────────────────────────────────────────── */
+
+.xrdb-admin-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  background: var(--bg-base);
+  padding: 2rem 1rem;
+}
+
+.xrdb-admin-login-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 24rem;
+  box-shadow: var(--elevation-raised);
+}
+
+.xrdb-admin-login-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 0.25rem;
+  letter-spacing: -0.01em;
+}
+
+.xrdb-admin-login-subtitle {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  margin: 0 0 1.75rem;
+}
+
+.xrdb-admin-login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-bottom: 1.25rem;
+}
+
+.xrdb-admin-login-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.xrdb-admin-login-input {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  color: var(--ink);
+  font-size: 0.875rem;
+  padding: 0.625rem 0.75rem;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.15s ease;
+  font-family: inherit;
+}
+
+.xrdb-admin-login-input:focus {
+  border-color: var(--accent);
+}
+
+.xrdb-admin-login-error {
+  font-size: 0.8125rem;
+  color: var(--status-error);
+  margin-bottom: 1rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--status-error-bg);
+  border: 1px solid var(--status-error-border);
+  border-radius: 0.375rem;
+}
+
+.xrdb-admin-login-btn {
+  background: var(--accent);
+  color: oklch(97% 0.004 var(--hue));
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.625rem 1.25rem;
+  width: 100%;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  font-family: inherit;
+}
+
+.xrdb-admin-login-btn:hover {
+  opacity: 0.88;
+}
+
+.xrdb-admin-login-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Dashboard shell ─────────────────────────────────────────── */
+
+.xrdb-admin-header {
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0.875rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.xrdb-admin-header-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.xrdb-admin-header-title-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--accent-dim);
+  color: var(--accent-text);
+  padding: 0.1875rem 0.4375rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklch, var(--accent) 30%, transparent);
+}
+
+.xrdb-admin-logout-btn {
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 0.3125rem;
+  padding: 0.3125rem 0.625rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.xrdb-admin-logout-btn:hover {
+  color: var(--ink);
+  border-color: color-mix(in oklch, var(--border) 60%, var(--accent) 40%);
+}
+
+.xrdb-admin-body {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 1.5rem 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* ── Section card ────────────────────────────────────────────── */
+
+.xrdb-admin-section {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.xrdb-admin-section-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.xrdb-admin-section-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+  letter-spacing: -0.005em;
+}
+
+.xrdb-admin-section-body {
+  padding: 1.25rem;
+}
+
+/* ── Stat grid ───────────────────────────────────────────────── */
+
+.xrdb-admin-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: 0.75rem;
+}
+
+.xrdb-admin-stat-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.875rem 1rem;
+}
+
+.xrdb-admin-stat-card--hero {
+  background: color-mix(in oklch, var(--accent-dim) 90%, var(--bg-elevated));
+  border-color: color-mix(in oklch, var(--accent) 40%, var(--border));
+}
+
+.xrdb-admin-stat-card--hero .xrdb-admin-stat-value {
+  font-size: 2rem;
+  font-family: var(--font-display, "Bricolage Grotesque", system-ui, sans-serif);
+}
+
+.xrdb-admin-stat-card--secondary {
+  padding: 0.625rem 0.75rem;
+}
+
+.xrdb-admin-stat-card--secondary .xrdb-admin-stat-value {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.xrdb-admin-stat-card--secondary .xrdb-admin-stat-label {
+  font-size: 0.75rem;
+}
+
+.xrdb-admin-stat-grid + .xrdb-admin-stat-grid {
+  margin-top: 0.5rem;
+}
+
+.xrdb-admin-stat-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.375rem;
+}
+
+.xrdb-admin-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.xrdb-admin-stat-sub {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+/* ── Table ───────────────────────────────────────────────────── */
+
+.xrdb-admin-table-wrap {
+  overflow-x: auto;
+  margin: -0.25rem;
+}
+
+.xrdb-admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.xrdb-admin-table th {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.xrdb-admin-table td {
+  padding: 0.5rem 0.75rem;
+  color: var(--ink);
+  border-bottom: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.xrdb-admin-table tr:last-child td {
+  border-bottom: none;
+}
+
+.xrdb-admin-table .cell-muted {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* ── Status badge ────────────────────────────────────────────── */
+
+.xrdb-admin-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.1875rem 0.4375rem;
+  border-radius: 999px;
+  line-height: 1;
+}
+
+.xrdb-admin-badge--ok {
+  background: var(--status-success-bg);
+  color: var(--status-success);
+  border: 1px solid var(--status-success-border);
+}
+
+.xrdb-admin-badge--warn {
+  background: var(--status-warning-bg);
+  color: var(--status-warning);
+  border: 1px solid var(--status-warning-border);
+}
+
+.xrdb-admin-badge--err {
+  background: var(--status-error-bg);
+  color: var(--status-error);
+  border: 1px solid var(--status-error-border);
+}
+
+.xrdb-admin-badge--pending {
+  background: var(--accent-dim);
+  color: var(--accent-text);
+  border: 1px solid color-mix(in oklch, var(--accent) 30%, transparent);
+}
+
+/* ── Action button ───────────────────────────────────────────── */
+
+.xrdb-admin-btn {
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.3125rem 0.625rem;
+  border-radius: 0.3125rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  white-space: nowrap;
+}
+
+.xrdb-admin-btn:hover {
+  color: var(--ink);
+  border-color: color-mix(in oklch, var(--border) 60%, var(--accent) 40%);
+}
+
+.xrdb-admin-btn--danger {
+  color: var(--status-error);
+  border-color: var(--status-error-border);
+}
+
+.xrdb-admin-btn--danger:hover {
+  background: var(--status-error-bg);
+  color: var(--status-error);
+  border-color: var(--status-error-border);
+}
+
+.xrdb-admin-btn--primary {
+  background: var(--accent);
+  color: oklch(97% 0.004 var(--hue));
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.xrdb-admin-btn--primary:hover {
+  opacity: 0.88;
+}
+
+.xrdb-admin-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.xrdb-admin-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.xrdb-admin-btn-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ── Config key grid ─────────────────────────────────────────── */
+
+.xrdb-admin-config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.625rem;
+}
+
+.xrdb-admin-config-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 0.4375rem;
+  padding: 0.625rem 0.875rem;
+}
+
+.xrdb-admin-config-name {
+  font-size: 0.8125rem;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.xrdb-admin-config-name--sm {
+  font-size: 0.75rem;
+}
+
+.xrdb-admin-config-name--mono {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-weight: 400;
+}
+
+.xrdb-admin-config-value {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.xrdb-admin-config-value--truncate {
+  max-width: 8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xrdb-admin-health-ts {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.xrdb-admin-btn--sm {
+  font-size: 0.75rem;
+}
+
+.xrdb-admin-btn--offset {
+  margin-inline-start: 0.75rem;
+}
+
+/* ── Profile monospace id ────────────────────────────────────── */
+
+.xrdb-admin-id {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.75rem;
+  color: var(--muted);
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Empty state ─────────────────────────────────────────────── */
+
+.xrdb-admin-empty {
+  padding: 2rem 1.25rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+  .xrdb-admin-empty-hint {
+    font-size: 0.8125rem;
+    color: var(--muted);
+    margin-top: 0.375rem;
+    max-width: 32rem;
+    margin-inline: auto;
+    line-height: 1.5;
+  }
+
+/* ── Pagination row ──────────────────────────────────────────── */
+
+.xrdb-admin-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+/* ── Refresh indicator ───────────────────────────────────────── */
+
+.xrdb-admin-refresh {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.xrdb-admin-refresh-dot {
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: var(--status-success);
+}
+
+@keyframes xrdb-admin-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.xrdb-admin-refresh-dot--live {
+  animation: xrdb-admin-pulse 1.8s ease-in-out infinite;
+}
+
+/* ── Filter controls (input, select, combobox) ───────────────── */
+
+.xrdb-admin-input {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  color: var(--ink);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  padding: 0.375rem 0.625rem;
+  outline: none;
+  transition: border-color 0.15s ease;
+  width: 100%;
+}
+
+.xrdb-admin-input::placeholder {
+  color: var(--muted);
+}
+
+.xrdb-admin-input:focus,
+.xrdb-admin-input:focus-visible {
+  border-color: color-mix(in oklch, var(--accent) 70%, transparent);
+}
+
+.xrdb-admin-select {
+  appearance: none;
+  background: var(--bg-elevated);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='2,4 6,8 10,4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.5rem center;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  color: var(--ink);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  padding: 0.375rem 1.75rem 0.375rem 0.625rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.xrdb-admin-select:focus,
+.xrdb-admin-select:focus-visible {
+  border-color: color-mix(in oklch, var(--accent) 70%, transparent);
+}
+
+.xrdb-admin-combobox {
+  position: relative;
+  flex: 1 1 12rem;
+  min-width: 10rem;
+}
+
+.xrdb-admin-combobox-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 0.25rem);
+  z-index: 30;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: var(--elevation-raised, 0 8px 24px oklch(2% 0 0 / 0.4));
+  overflow: hidden;
+  max-height: 14rem;
+  overflow-y: auto;
+}
+
+.xrdb-admin-combobox-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  color: var(--muted);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  transition: background 0.1s ease, color 0.1s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.xrdb-admin-combobox-item:hover,
+.xrdb-admin-combobox-item--active {
+  background: var(--bg-elevated);
+  color: var(--ink);
+}
+
+.xrdb-admin-combobox-item mark {
+  background: var(--accent-dim);
+  color: var(--accent-text);
+  border-radius: 0.1875rem;
+  padding: 0 0.125rem;
+  font-style: normal;
+}
+
+/* ── Custom dropdown (replaces native <select>) ──────────────── */
+
+.xrdb-admin-dropdown {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.xrdb-admin-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  color: var(--ink);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  padding: 0.375rem 0.625rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  outline: none;
+}
+
+.xrdb-admin-dropdown-trigger:hover {
+  border-color: color-mix(in oklch, var(--border) 60%, var(--accent) 40%);
+}
+
+.xrdb-admin-dropdown-trigger:focus-visible {
+  border-color: color-mix(in oklch, var(--accent) 70%, transparent);
+}
+
+.xrdb-admin-dropdown-panel {
+  z-index: 9999;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  box-shadow: var(--elevation-raised, 0 8px 24px oklch(2% 0 0 / 0.5));
+  max-height: 16rem;
+  overflow-y: auto;
+  padding: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.0625rem;
+}
+
+.xrdb-admin-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4375rem 0.625rem;
+  font-size: 0.8125rem;
+  font-family: inherit;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: 0.3125rem;
+  cursor: pointer;
+  text-align: left;
+  white-space: nowrap;
+  transition: background 0.1s ease, color 0.1s ease;
+  width: 100%;
+}
+
+.xrdb-admin-dropdown-item:hover {
+  background: var(--bg-elevated);
+  color: var(--ink);
+}
+
+.xrdb-admin-dropdown-item--selected {
+  color: var(--accent-text);
+}
+
+.xrdb-admin-dropdown-item--selected:hover {
+  background: var(--accent-dim);
+  color: var(--accent-text);
+}
+
+/* ── Filter bar ─────────────────────────────────────────────── */
+
+.xrdb-admin-filter-bar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+/* ── Header actions row ──────────────────────────────────────── */
+
+.xrdb-admin-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+/* ── Section label (subsection heading inside a panel body) ──── */
+
+.xrdb-admin-section-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.xrdb-admin-section-label--inline {
+  margin: 0;
+}
+
+.xrdb-admin-section-label-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.625rem;
+}
+
+.xrdb-admin-section-body--stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.xrdb-admin-control-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.5rem;
+}
+
+.xrdb-admin-subsection {
+  margin-top: 0.75rem;
+}
+
+.xrdb-admin-subsection-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-bottom: 0.375rem;
+}
+
+/* ── Dropdown chevron ────────────────────────────────────────── */
+
+.xrdb-admin-dropdown-chevron {
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.xrdb-admin-dropdown-chevron--open {
+  transform: rotate(180deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xrdb-admin-dropdown-chevron {
+    transition: none;
+  }
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+
+@media (max-width: 48rem) {
+  .xrdb-admin-config-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 40rem) {
+  .xrdb-admin-body {
+    padding: 1rem 0.875rem 3rem;
+    gap: 1rem;
+  }
+
+  .xrdb-admin-section-body {
+    padding: 1rem;
+  }
+
+  .xrdb-admin-header {
+    padding: 0.75rem 1rem;
+  }
+
+  .xrdb-admin-header-actions {
+    gap: 0.5rem;
+  }
+
+  .xrdb-admin-section-header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .xrdb-admin-stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .xrdb-admin-filter-bar {
+    gap: 0.375rem;
+  }
+
+  .xrdb-admin-combobox {
+    flex-basis: 100%;
+    min-width: 0;
+  }
+
+  .xrdb-admin-dropdown {
+    flex-grow: 1;
+  }
+
+  .xrdb-admin-pagination {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.375rem;
+  }
+
+  .xrdb-admin-section-label {
+    margin-top: 1rem;
+  }
+}
+
+@media (pointer: coarse) {
+  .xrdb-admin-btn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* ── Cache panel meta row ────────────────────────────────────── */
+
+.xrdb-admin-ts-row {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.xrdb-admin-ts-item {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.xrdb-admin-ts-item strong {
+  color: var(--ink);
+  font-weight: 600;
+}

@@ -1,7 +1,7 @@
 import { format } from 'node:util';
 
-export type XrdbLogLevel = 'debug' | 'info' | 'warn' | 'error';
-export type XrdbRequestLogLevel = XrdbLogLevel | 'off';
+type XrdbLogLevel = 'debug' | 'info' | 'warn' | 'error';
+type XrdbRequestLogLevel = XrdbLogLevel | 'off';
 
 type LoggerEnv = Record<string, string | undefined>;
 

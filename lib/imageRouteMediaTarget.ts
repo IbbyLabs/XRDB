@@ -57,7 +57,7 @@ type RouteFetchText = (
   init?: RequestInit,
 ) => Promise<CachedTextResponse>;
 
-export type ResolvedImageRouteMediaTarget = {
+type ResolvedImageRouteMediaTarget = {
   media: any;
   mediaType: 'movie' | 'tv' | null;
   useRawKitsuFallback: boolean;
@@ -75,7 +75,7 @@ export type ResolvedImageRouteMediaTarget = {
   canonicalEpisodeIdentity: CanonicalEpisodeIdentity | null;
 };
 
-export type ResolveImageRouteMediaTargetInput = {
+type ResolveImageRouteMediaTargetInput = {
   imageType: 'poster' | 'backdrop' | 'logo';
   isThumbnailRequest: boolean;
   tmdbKey: string;

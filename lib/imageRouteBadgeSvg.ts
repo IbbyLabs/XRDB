@@ -92,7 +92,7 @@ const resolveCenteredAccentRailRect = ({
   return { x, y, width, height };
 };
 
-export type BuildBadgeSvgInput = {
+type BuildBadgeSvgInput = {
   width: number;
   height: number;
   iconSize: number;

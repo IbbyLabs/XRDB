@@ -69,7 +69,7 @@ const estimateTextWidth = (value: string, fontSize: number, letterSpacingEm = 0)
   return Math.round(width + Math.max(0, normalized.length - 1) * fontSize * letterSpacingEm);
 };
 
-export type EditorialRatingOverlayInput = {
+type EditorialRatingOverlayInput = {
   outputWidth: number;
   outputHeight: number;
   eyebrowText?: string | null;
@@ -77,7 +77,7 @@ export type EditorialRatingOverlayInput = {
   accentColor: string;
 };
 
-export type EditorialRatingOverlayLayout = {
+type EditorialRatingOverlayLayout = {
   top: number;
   left: number;
   width: number;

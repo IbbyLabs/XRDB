@@ -11,7 +11,7 @@ import { dirname, join } from 'node:path';
 
 import { logger } from './serverLogger.ts';
 
-export const SCHEMA_SQL = `
+const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS metadata_cache (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL,
@@ -127,6 +127,74 @@ CREATE TABLE IF NOT EXISTS canonical_mapping_overrides (
 
 CREATE INDEX IF NOT EXISTS canonical_mapping_overrides_scope_idx
   ON canonical_mapping_overrides (scope);
+
+CREATE TABLE IF NOT EXISTS community_templates (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL,
+  author TEXT NOT NULL,
+  tags TEXT NOT NULL DEFAULT '[]',
+  config TEXT NOT NULL,
+  approved INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS community_templates_approved_idx ON community_templates (approved, created_at);
+
+CREATE TABLE IF NOT EXISTS community_themes (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  author TEXT,
+  palette_json TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  submitted_at INTEGER NOT NULL,
+  reviewed_at INTEGER,
+  admin_note TEXT
+);
+
+CREATE INDEX IF NOT EXISTS community_themes_status_idx ON community_themes (status, submitted_at);
+
+CREATE TABLE IF NOT EXISTS admin_request_log (
+  id TEXT PRIMARY KEY,
+  route_type TEXT NOT NULL,
+  status_code INTEGER NOT NULL,
+  duration_ms REAL NOT NULL,
+  media_id TEXT,
+  config_id TEXT,
+  request_key_hash TEXT,
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS admin_request_log_created_idx ON admin_request_log (created_at DESC);
+CREATE INDEX IF NOT EXISTS admin_request_log_type_idx ON admin_request_log (route_type, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS admin_cache_events (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  event_type TEXT NOT NULL,
+  key_prefix TEXT,
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS admin_cache_events_created_idx ON admin_cache_events (created_at DESC);
+
+CREATE TABLE IF NOT EXISTS admin_prewarm_runs (
+  id TEXT PRIMARY KEY,
+  started_at INTEGER NOT NULL,
+  completed_at INTEGER NOT NULL,
+  warmed INTEGER NOT NULL,
+  skipped INTEGER NOT NULL,
+  failed INTEGER NOT NULL,
+  static_count INTEGER NOT NULL,
+  tmdb_count INTEGER NOT NULL,
+  mdblist_count INTEGER NOT NULL,
+  imdb_count INTEGER NOT NULL,
+  recent_count INTEGER NOT NULL,
+  snapshot_count INTEGER NOT NULL,
+  target_count INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS admin_prewarm_runs_completed_idx ON admin_prewarm_runs (completed_at DESC);
 `;
 
 const SCHEMA_MIGRATIONS = [
@@ -135,13 +203,26 @@ const SCHEMA_MIGRATIONS = [
   `ALTER TABLE config_profiles ADD COLUMN failed_attempts INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE config_profiles ADD COLUMN locked_until INTEGER`,
   `ALTER TABLE config_profiles ADD COLUMN unlock_version INTEGER NOT NULL DEFAULT 0`,
+  `CREATE TABLE IF NOT EXISTS community_templates (id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT NOT NULL, author TEXT NOT NULL, tags TEXT NOT NULL DEFAULT '[]', config TEXT NOT NULL, approved INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS community_templates_approved_idx ON community_templates (approved, created_at)`,
+  `CREATE TABLE IF NOT EXISTS admin_request_log (id TEXT PRIMARY KEY, route_type TEXT NOT NULL, status_code INTEGER NOT NULL, duration_ms REAL NOT NULL, media_id TEXT, created_at INTEGER NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS admin_request_log_created_idx ON admin_request_log (created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS admin_request_log_type_idx ON admin_request_log (route_type, created_at DESC)`,
+  `ALTER TABLE admin_request_log ADD COLUMN config_id TEXT`,
+  `ALTER TABLE admin_request_log ADD COLUMN request_key_hash TEXT`,
+  `CREATE INDEX IF NOT EXISTS admin_request_log_config_idx ON admin_request_log (config_id, created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS admin_request_log_key_hash_idx ON admin_request_log (request_key_hash, created_at DESC)`,
+  `CREATE TABLE IF NOT EXISTS admin_cache_events (id INTEGER PRIMARY KEY AUTOINCREMENT, event_type TEXT NOT NULL, key_prefix TEXT, created_at INTEGER NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS admin_cache_events_created_idx ON admin_cache_events (created_at DESC)`,
+  `CREATE TABLE IF NOT EXISTS admin_prewarm_runs (id TEXT PRIMARY KEY, started_at INTEGER NOT NULL, completed_at INTEGER NOT NULL, warmed INTEGER NOT NULL, skipped INTEGER NOT NULL, failed INTEGER NOT NULL, static_count INTEGER NOT NULL, tmdb_count INTEGER NOT NULL, mdblist_count INTEGER NOT NULL, imdb_count INTEGER NOT NULL, recent_count INTEGER NOT NULL, snapshot_count INTEGER NOT NULL, target_count INTEGER NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS admin_prewarm_runs_completed_idx ON admin_prewarm_runs (completed_at DESC)`,
 ];
 
 const MIGRATION_WINDOW_MS = 48 * 60 * 60 * 1000;
 
 const ENCRYPTION_VERSION = 0x01;
 export const LEGACY_ID_RE = /^xr_[0-9a-f]{8}$/i;
-export const ENCRYPTED_ID_RE = /^xrc_[0-9a-f]{16}$/i;
+const ENCRYPTED_ID_RE = /^xrc_[0-9a-f]{16}$/i;
 export const PROTECTED_CONFIG_ID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -360,14 +441,78 @@ export const getDb = () => getDbState().db;
 export const deriveConfigScopedSecret = (purpose: string): Buffer =>
   createHash('sha256').update(resolveConfigEncryptionKey()).update('\0').update(purpose).digest();
 
-export const createConfigProfileId = () => randomUUID();
+const createConfigProfileId = () => randomUUID();
 
 const createProxyReferenceId = () => randomUUID();
+
+type CommunityThemeOldRow = {
+  id: string;
+  name: string;
+  author: string | null;
+  hue: number;
+  accent_l: number;
+  accent_c: number;
+  surface_depth: number;
+  status: string;
+  submitted_at: number;
+  reviewed_at: number | null;
+  admin_note: string | null;
+};
+
+function parametricToPaletteSync(h: number, l: number, c: number, d: number): Record<string, string> {
+  return {
+    bgBase:     `oklch(${d}% 0.010 ${h})`,
+    bgMid:      `oklch(9.5% 0.012 ${h})`,
+    bgSurface:  `oklch(11% 0.014 ${h})`,
+    bgElevated: `oklch(16% 0.018 ${h})`,
+    accent:     `oklch(${l}% ${c} ${h})`,
+    accentDim:  `oklch(19% 0.09 ${h})`,
+    accentText: `oklch(76% 0.10 ${h})`,
+    ink:        `oklch(93% 0.007 ${h})`,
+    muted:      `oklch(51% 0.014 ${h})`,
+    border:     `oklch(22% 0.016 ${h})`,
+    scrim:      `oklch(4% 0.008 ${h} / 0.86)`,
+  };
+}
+
+function migrateCommunityThemes(db: Database.Database): void {
+  const cols = db.prepare('PRAGMA table_info(community_themes)').all() as { name: string }[];
+  if (!cols.length) return;
+  const hasHue = cols.some(c => c.name === 'hue');
+  if (!hasHue) return;
+
+  db.exec('ALTER TABLE community_themes RENAME TO community_themes_old');
+  db.exec(`CREATE TABLE community_themes (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    author TEXT,
+    palette_json TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    submitted_at INTEGER NOT NULL,
+    reviewed_at INTEGER,
+    admin_note TEXT
+  )`);
+
+  const old = db.prepare('SELECT * FROM community_themes_old').all() as CommunityThemeOldRow[];
+  const insert = db.prepare('INSERT INTO community_themes VALUES (?,?,?,?,?,?,?,?)');
+  for (const row of old) {
+    const hue = ((row.hue % 360) + 360) % 360;
+    const l = Math.min(70, Math.max(40, row.accent_l));
+    const c = Math.min(0.24, Math.max(0.08, row.accent_c));
+    const d = Math.min(15, Math.max(5, row.surface_depth));
+    const palette = parametricToPaletteSync(hue, l, c, d);
+    insert.run(row.id, row.name, row.author, JSON.stringify(palette), row.status, row.submitted_at, row.reviewed_at, row.admin_note);
+  }
+
+  db.exec('DROP TABLE community_themes_old');
+  db.exec('CREATE INDEX IF NOT EXISTS community_themes_status_idx ON community_themes (status, submitted_at)');
+}
 
 export const ensureDbInitialized = () => {
   const state = getDbState();
   if (!state.initialized) {
     state.db.exec(SCHEMA_SQL);
+    migrateCommunityThemes(state.db);
     for (const migration of SCHEMA_MIGRATIONS) {
       try {
         state.db.exec(migration);
@@ -465,6 +610,53 @@ export const deleteConfigProfile = (id: string): boolean => {
   return result.changes > 0;
 };
 
+export const listAllConfigProfiles = (query?: string): ConfigProfileMetadata[] => {
+  ensureDbInitialized();
+  const db = getDb();
+  const rows = (
+    query && query.trim()
+      ? db
+          .prepare(
+            `SELECT id, password_hash, failed_attempts, locked_until, unlock_version, created_at, updated_at, last_accessed_at
+             FROM config_profiles WHERE id LIKE ? ORDER BY created_at DESC`,
+          )
+          .all(`%${query.trim()}%`)
+      : db
+          .prepare(
+            `SELECT id, password_hash, failed_attempts, locked_until, unlock_version, created_at, updated_at, last_accessed_at
+             FROM config_profiles ORDER BY created_at DESC`,
+          )
+          .all()
+  ) as (ConfigProfileRow & { id: string })[];
+  return rows.map((row) => normalizeConfigProfileMetadata(row.id, row));
+};
+
+export const clearConfigProfilePassword = (id: string): boolean => {
+  ensureDbInitialized();
+  const result = getDb()
+    .prepare(
+      `UPDATE config_profiles
+       SET password_hash = NULL, failed_attempts = 0, locked_until = NULL,
+           unlock_version = unlock_version + 1, updated_at = ?
+       WHERE id = ?`,
+    )
+    .run(Date.now(), id);
+  return result.changes > 0;
+};
+
+export const unlockConfigProfile = (id: string): boolean => {
+  ensureDbInitialized();
+  const result = getDb()
+    .prepare(
+      `UPDATE config_profiles
+       SET failed_attempts = 0, locked_until = NULL,
+           unlock_version = unlock_version + 1, updated_at = ?
+       WHERE id = ?`,
+    )
+    .run(Date.now(), id);
+  return result.changes > 0;
+};
+
 export const getConfigProfile = (id: string): Record<string, string> | null => {
   const row = getConfigProfileRow(id);
   if (!row) {
@@ -551,7 +743,7 @@ export const clearConfigProfileUnlockFailures = (id: string): ConfigProfileMetad
   return getConfigProfileMetadata(id);
 };
 
-export const pruneInactiveConfigProfiles = (days: number): void => {
+const pruneInactiveConfigProfiles = (days: number): void => {
   ensureDbInitialized();
   const db = getDb();
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;

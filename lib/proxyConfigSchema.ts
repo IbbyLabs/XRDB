@@ -589,8 +589,8 @@ const CONFIG_BOOLEAN_KEYS = [
   'logoEnabled',
 ] as const satisfies readonly (keyof ProxyConfig)[];
 
-export type ProxyOptionalStringKey = (typeof CONFIG_STRING_KEYS)[number];
-export type ProxyOptionalBooleanKey = (typeof CONFIG_BOOLEAN_KEYS)[number];
+type ProxyOptionalStringKey = (typeof CONFIG_STRING_KEYS)[number];
+type ProxyOptionalBooleanKey = (typeof CONFIG_BOOLEAN_KEYS)[number];
 
 export const XRDB_OPTIONAL_PARAMS = SHARED_IMAGE_QUERY_KEYS;
 export const XRDB_TYPE_OPTIONAL_PARAMS = IMAGE_QUERY_KEYS_BY_TYPE;

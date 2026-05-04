@@ -56,7 +56,7 @@ const AGGREGATE_BADGE_ACCENT_BY_SOURCE = {
   audience: '#38bdf8',
 } as const;
 
-export type ImageRouteDisplayState = {
+type ImageRouteDisplayState = {
   usePosterBadgeLayout: boolean;
   useBackdropBadgeLayout: boolean;
   useLogoBadgeLayout: boolean;

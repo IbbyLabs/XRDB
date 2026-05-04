@@ -453,25 +453,29 @@ const captureScreenshot = async ({
   height,
   waitForSelector = '.xrdb-page',
   waitTimeoutMs = PLAYWRIGHT_WAIT_TIMEOUT_MS,
+  fullPage = false,
 }) => {
   const npxCommand = process.platform === 'win32' ? 'npx.cmd' : 'npx';
   const captureName = path.basename(outputPath);
   const captureCommandTimeoutMs = Math.max(waitTimeoutMs + 30_000, PLAYWRIGHT_COMMAND_TIMEOUT_MS);
   await ensureDir(outputPath);
   logRefreshStep(`Capturing ${captureName}`);
+  const args = [
+    '--yes',
+    'playwright',
+    'screenshot',
+    `--viewport-size=${width},${height}`,
+    `--wait-for-timeout=${waitTimeoutMs}`,
+    `--wait-for-selector=${waitForSelector}`,
+    `--timeout=${captureCommandTimeoutMs}`,
+  ];
+  if (fullPage) {
+    args.push('--full-page');
+  }
+  args.push(url, outputPath);
   await runCommand({
     command: npxCommand,
-    args: [
-      '--yes',
-      'playwright',
-      'screenshot',
-      `--viewport-size=${width},${height}`,
-      `--wait-for-timeout=${waitTimeoutMs}`,
-      `--wait-for-selector=${waitForSelector}`,
-      `--timeout=${captureCommandTimeoutMs}`,
-      url,
-      outputPath,
-    ],
+    args,
     timeoutMs: captureCommandTimeoutMs,
     label: `Playwright capture for ${captureName}`,
   });
@@ -987,51 +991,33 @@ const generateWorkspaceCaptures = async (origin) => {
   const captureDir = path.join(ROOT_DIR, 'output', 'playwright');
   const previewViewportPath = path.join(captureDir, 'preview-viewport.png');
   const proxyViewportPath = path.join(captureDir, 'proxy-viewport.png');
-  const proxyNarrowViewportPath = path.join(captureDir, 'proxy-narrow-viewport.png');
 
   await captureScreenshot({
-    url: buildWorkspaceCaptureUrl(origin, {
-      path: '/',
-      requirePreview: true,
-    }),
+    url: buildWorkspaceCaptureUrl(origin, { path: '/poster', requirePreview: true }),
     outputPath: previewViewportPath,
-    width: 1440,
-    height: 1200,
+    width: 1280,
+    height: 900,
     waitForSelector: '.xrdb-page[data-docs-capture-ready="true"]',
+    fullPage: true,
   });
 
   await captureScreenshot({
-    url: buildWorkspaceCaptureUrl(origin, { path: '/addon' }),
+    url: buildWorkspaceCaptureUrl(origin, { path: '/proxy' }),
     outputPath: proxyViewportPath,
     width: 1440,
     height: 1200,
-    waitForSelector: '.xrdb-page[data-docs-capture-ready="true"]',
-  });
-
-  await captureScreenshot({
-    url: buildWorkspaceCaptureUrl(origin, { path: '/addon' }),
-    outputPath: proxyNarrowViewportPath,
-    width: 900,
-    height: 1200,
-    waitForSelector: '.xrdb-page[data-docs-capture-ready="true"]',
+    fullPage: true,
   });
 
   await sharp(previewViewportPath)
-    .extract({ left: 0, top: 80, width: 1440, height: 1120 })
-    .resize(840, 720, { fit: 'cover', position: 'top' })
+    .resize(840, null)
     .png()
-    .toFile(resolveDocAssetPath(DOC_STATIC_ASSET_PATHS.configuratorLiveDemo));
+    .toFile(resolveDocAssetPath(DOC_STATIC_ASSET_PATHS.posterWorkspace));
 
   await sharp(proxyViewportPath)
-    .resize(520, 720, { fit: 'cover', position: 'left top' })
+    .resize(840, null)
     .png()
-    .toFile(resolveDocAssetPath(DOC_STATIC_ASSET_PATHS.addonProxyLiveDemo));
-
-  await sharp(proxyNarrowViewportPath)
-    .extract({ left: 28, top: 700, width: 430, height: 488 })
-    .resize(244, 277, { fit: 'cover', position: 'left top' })
-    .png()
-    .toFile(resolveDocAssetPath(DOC_STATIC_ASSET_PATHS.proxyTranslationSettingsPanel));
+    .toFile(resolveDocAssetPath(DOC_STATIC_ASSET_PATHS.proxyWorkspace));
 };
 
 const generateComparisonBoards = async ({

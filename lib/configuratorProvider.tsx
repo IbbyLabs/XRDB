@@ -31,3 +31,7 @@ export function useConfiguratorContext(): ConfiguratorContextValue {
   }
   return ctx;
 }
+
+export function useOptionalConfiguratorContext(): ConfiguratorContextValue | null {
+  return useContext(ConfiguratorContext);
+}

@@ -6,7 +6,7 @@ export type ProxyCatalogRule = {
   discoverOnly?: boolean;
 };
 
-export type ProxyCatalogDescriptor = {
+type ProxyCatalogDescriptor = {
   key: string;
   type: string;
   id: string;

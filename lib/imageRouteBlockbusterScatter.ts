@@ -1,7 +1,7 @@
 import { sha1Hex } from './imageRouteRuntime.ts';
 
 export type BlockbusterPlacementRect = { left: number; top: number; width: number; height: number };
-export type BlockbusterScatterMode = 'callout' | 'blurb' | 'score';
+type BlockbusterScatterMode = 'callout' | 'blurb' | 'score';
 
 export const intersectsBlockbusterRect = (
   left: BlockbusterPlacementRect,

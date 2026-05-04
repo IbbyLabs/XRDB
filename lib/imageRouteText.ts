@@ -107,7 +107,7 @@ export const buildGeneratedLogoDataUrl = (title: string) => {
   };
 };
 
-export const splitTitleForPosterText = (title: string) => {
+const splitTitleForPosterText = (title: string) => {
   const lines = splitTitleForGeneratedLogo(title);
   if (lines.length <= 2) return lines;
   return [lines[0], lines.slice(1).join(' ')];

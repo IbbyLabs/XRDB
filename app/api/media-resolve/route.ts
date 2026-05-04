@@ -6,7 +6,13 @@ import { TMDB_API_KEY } from '@/lib/imageRouteConfig';
 import { TMDB_API_BASE_URL } from '@/lib/serviceBaseUrls';
 import { fetchTmdbServer, hasServerTmdbCredentials } from '@/lib/tmdbServerAuth';
 
-const EMPTY_RESULT = { title: null };
+const EMPTY_RESULT = { title: null, posterUrl: null };
+
+const buildPosterUrl = (posterPath: unknown): string | null => {
+  if (!posterPath || typeof posterPath !== 'string') return null;
+  const path = posterPath.startsWith('/') ? posterPath : `/${posterPath}`;
+  return `https://image.tmdb.org/t/p/w154${path}`;
+};
 
 const buildTmdbResolveUrl = (
   path: string,
@@ -45,7 +51,8 @@ export async function GET(request: NextRequest) {
     const title = String((data.title ?? data.name) || '').trim() || null;
     const year = data.release_date || data.first_air_date;
     const yearStr = year ? String(year).slice(0, 4) : null;
-    return NextResponse.json({ title: title && yearStr ? `${title} (${yearStr})` : title });
+    const posterUrl = buildPosterUrl(data.poster_path);
+    return NextResponse.json({ title: title && yearStr ? `${title} (${yearStr})` : title, posterUrl });
   }
 
   const url = buildTmdbResolveUrl(`find/${encodeURIComponent(id)}`, tmdbKey, {
@@ -67,5 +74,6 @@ export async function GET(request: NextRequest) {
   const title = String((first.title ?? first.name) || '').trim() || null;
   const year = first.release_date || first.first_air_date;
   const yearStr = year ? String(year).slice(0, 4) : null;
-  return NextResponse.json({ title: title && yearStr ? `${title} (${yearStr})` : title });
+  const posterUrl = buildPosterUrl(first.poster_path);
+  return NextResponse.json({ title: title && yearStr ? `${title} (${yearStr})` : title, posterUrl });
 }

@@ -90,7 +90,7 @@ type ArtworkSelectionInput = {
   seasonIncludeImageLanguage?: string;
 };
 
-export type ArtworkSelectionResult = {
+type ArtworkSelectionResult = {
   imgPath: string;
   imgUrlOverride: string | null;
   logoAspectRatio: number | null;

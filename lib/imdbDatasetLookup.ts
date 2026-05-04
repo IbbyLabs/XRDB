@@ -8,7 +8,7 @@ import {
   type ImdbDatasetRating,
 } from './imdbDatasetRows.ts';
 
-export type { ImdbDatasetEpisode, ImdbDatasetRating } from './imdbDatasetRows.ts';
+export type { ImdbDatasetRating } from './imdbDatasetRows.ts';
 
 export const getImdbRatingFromDataset = (imdbId: string): ImdbDatasetRating | null => {
   const normalized = normalizeImdbId(imdbId);

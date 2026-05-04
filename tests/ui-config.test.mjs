@@ -9,6 +9,7 @@ import {
 } from '../lib/proxyConfigBridge.ts';
 import {
   DEFAULT_QUALITY_BADGE_PREFERENCES,
+  encodeQualityBadgeAppearanceOverrides,
   encodeRatingProviderAppearanceOverrides,
 } from '../lib/badgeCustomization.ts';
 import {
@@ -39,6 +40,12 @@ const SAMPLE_PROVIDER_APPEARANCE = {
     accentColor: '#facc15',
     stackedWidthPercent: 92,
     stackedLineHeightPercent: 124,
+  },
+};
+
+const SAMPLE_QUALITY_BADGE_APPEARANCE = {
+  hdr: {
+    iconUrl: 'https://cdn.example.com/badges/hdr-custom.svg',
   },
 };
 
@@ -895,6 +902,23 @@ test('saved profile params can preserve xrdbKey while omitting provider credenti
   assert.equal('mdblistKey' in params, false);
   assert.equal('fanartKey' in params, false);
   assert.equal('simklClientId' in params, false);
+});
+
+test('profile params keep custom quality badge urls when provider appearance is empty', () => {
+  const config = buildSampleSettings();
+  const settings = {
+    ...config.settings,
+    ratingProviderAppearanceOverrides: {},
+    qualityBadgeAppearanceOverrides: SAMPLE_QUALITY_BADGE_APPEARANCE,
+  };
+
+  const params = buildProfileParams(settings);
+  assert.ok(params);
+  assert.equal('providerAppearance' in params, false);
+  assert.equal(
+    params.qualityBadgeAppearance,
+    encodeQualityBadgeAppearanceOverrides(SAMPLE_QUALITY_BADGE_APPEARANCE),
+  );
 });
 
 test('AIOMetadata export builds masked patterns with placeholders', () => {
