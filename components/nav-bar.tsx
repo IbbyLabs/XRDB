@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 
 import { useOptionalConfiguratorContext } from '@/lib/configuratorProvider';
 import {
@@ -12,6 +13,103 @@ import {
 } from '@/lib/siteBrand';
 import { ThemeModeControl } from '@/components/theme-mode-control';
 import { BrandLogoIcon } from '@/components/brand-logo-icon';
+import {
+  applyThemeV2,
+  getActiveFamily,
+  getActiveModePreference,
+  resolveActiveTheme,
+  resolveMode,
+  setActiveMode,
+  type XRDBModePreference,
+  type XRDBThemeMode,
+} from '@/lib/theme';
+
+const MODE_OPTIONS: { value: XRDBModePreference; label: string; icon: string }[] = [
+  { value: 'system',   label: 'Auto',     icon: 'A' },
+  { value: 'light',    label: 'Light',    icon: 'L' },
+  { value: 'dark',     label: 'Dark',     icon: 'D' },
+  { value: 'midnight', label: 'Midnight', icon: 'M' },
+];
+
+function applyFamilyMode(familyId: string, effective: XRDBThemeMode) {
+  const palette = resolveActiveTheme(familyId, effective);
+  applyThemeV2({
+    id: effective === 'midnight' ? `midnight-${familyId}` : `${familyId}-${effective}`,
+    name: familyId,
+    category: 'preset',
+    palette,
+    source: 'preset',
+  });
+}
+
+function ThemeModePopover() {
+  const [open, setOpen] = useState(false);
+  const [pref, setPref] = useState<XRDBModePreference>(() => {
+    if (typeof window === 'undefined') return 'dark';
+    return getActiveModePreference();
+  });
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onPointerDown(e: PointerEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
+
+  function handleSelect(next: XRDBModePreference) {
+    setActiveMode(next);
+    setPref(next);
+    applyFamilyMode(getActiveFamily(), resolveMode(next));
+    setOpen(false);
+  }
+
+  const activeModeLabel = MODE_OPTIONS.find(m => m.value === pref)?.label ?? pref;
+
+  return (
+    <div ref={ref} className="xrdb-nav-mode-popover-wrap" aria-label="Color mode">
+      <button
+        type="button"
+        className="xrdb-theme-icon-btn"
+        aria-label={`Color mode: ${activeModeLabel}. Tap to change.`}
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        onClick={() => setOpen(o => !o)}
+      >
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M8 2a6 6 0 1 0 6 6 4.5 4.5 0 0 1-6-6z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open ? (
+        <div className="xrdb-nav-mode-popover" role="listbox" aria-label="Color mode">
+          {MODE_OPTIONS.map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              role="option"
+              aria-selected={pref === value}
+              className={`xrdb-nav-mode-popover-item${pref === value ? ' xrdb-nav-mode-popover-item-active' : ''}`}
+              onClick={() => handleSelect(value)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 const STEP_TABS = [
   { label: 'Poster', href: '/poster' },
@@ -141,7 +239,8 @@ export function NavBar({ adminEnabled = false }: { adminEnabled?: boolean }) {
         ) : null}
 
         <div className="xrdb-nav-theme-tools">
-          <ThemeModeControl />
+          <span className="xrdb-nav-theme-control-full"><ThemeModeControl /></span>
+          <span className="xrdb-nav-theme-control-compact"><ThemeModePopover /></span>
 
           <div className="xrdb-theme-trigger">
             <Link
