@@ -1006,6 +1006,7 @@ const generateWorkspaceCaptures = async (origin) => {
     outputPath: proxyViewportPath,
     width: 1440,
     height: 1200,
+    waitForSelector: '.xrdb-page[data-docs-capture-ready="true"]',
     fullPage: true,
   });
 
