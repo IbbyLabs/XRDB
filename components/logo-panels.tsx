@@ -196,6 +196,22 @@ export function PositionPanel() {
           {look.logoBottomRatingsRow ? 'On' : 'Off'}
         </button>
       </ControlRow>
+
+      <ControlRow label="Rating size">
+        <div className="xrdb-number-control">
+          <input
+            type="number"
+            className="xrdb-number-input"
+            value={look.activeRatingBadgeScale}
+            min={70}
+            max={200}
+            onChange={(e) => look.onSelectRatingBadgeScale(Number(e.target.value))}
+            aria-label="Rating badge size"
+            title="Scale rating badges relative to their default size. 100 is default."
+          />
+          <span className="xrdb-number-unit">%</span>
+        </div>
+      </ControlRow>
     </div>
   );
 }
@@ -297,6 +313,22 @@ export function AdvancedPanel() {
                 aria-label="Maximum quality badges"
                 title="Maximum number of quality badges to show. Leave blank for automatic."
               />
+            </div>
+          </ControlRow>
+
+          <ControlRow label="Badge size">
+            <div className="xrdb-number-control">
+              <input
+                type="number"
+                className="xrdb-number-input"
+                value={look.activeQualityBadgeScale}
+                min={70}
+                max={200}
+                onChange={(e) => look.onSelectQualityBadgeScale(Number(e.target.value))}
+                aria-label="Quality badge size"
+                title="Scale quality badges relative to their default size. 100 is default."
+              />
+              <span className="xrdb-number-unit">%</span>
             </div>
           </ControlRow>
 
