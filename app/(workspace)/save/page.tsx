@@ -57,6 +57,7 @@ export default function SavePage() {
   const [confirmAction, setConfirmAction] = useState<'reset' | 'delete' | null>(null);
   const [savedProfileFingerprint, setSavedProfileFingerprint] = useState<string | null>(null);
   const [savedProfileSnapshotReady, setSavedProfileSnapshotReady] = useState(false);
+  const [loginConflict, setLoginConflict] = useState<{ serverConfig: SavedUiConfig } | null>(null);
   const instanceMenuRef = useRef<HTMLDivElement | null>(null);
   const activeProfileId = ctx.configProfileUnlockSession?.profileId ?? null;
   const activeUnlockToken = ctx.configProfileUnlockSession?.token ?? null;
@@ -71,6 +72,7 @@ export default function SavePage() {
     }
     setSavedProfileFingerprint(null);
     setSavedProfileSnapshotReady(false);
+    setLoginConflict(null);
   }, [activeProfileId]);
 
   useEffect(() => {
@@ -231,7 +233,7 @@ export default function SavePage() {
     }
   }, [displayedAiometadataCopyBlock]);
 
-  const unlockAndLoadProfile = useCallback(async (id: string, password: string, successMessage: string) => {
+  const unlockAndLoadProfile = useCallback(async (id: string, password: string, successMessage: string, localParams?: Record<string, string> | null) => {
     const unlockResponse = await fetch(`/api/config/${encodeURIComponent(id)}/unlock`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -262,6 +264,27 @@ export default function SavePage() {
 
     const params = (await revealResponse.json()) as Record<string, string>;
     const { normalizedConfig, fingerprint } = buildRevealedConfigState(params);
+
+    const hasLocalConflict =
+      localParams != null &&
+      buildConfigProfileFingerprint(localParams) !== fingerprint;
+
+    if (hasLocalConflict) {
+      ctx.setConfigProfileUnlockSession({
+        profileId: id,
+        token: unlockData.token,
+        expiresAt: unlockData.expiresAt,
+      });
+      setSavedProfileFingerprint(fingerprint);
+      setSavedProfileSnapshotReady(true);
+      setLoginConflict({ serverConfig: normalizedConfig });
+      setProfileIdInput(id);
+      setProfilePasswordInput('');
+      setProfileStatus(null);
+      setProfileError(null);
+      return true;
+    }
+
     ctx.applySavedUiConfig(normalizedConfig);
     ctx.setConfigProfileUnlockSession({
       profileId: id,
@@ -290,11 +313,11 @@ export default function SavePage() {
     setProfileStatus(null);
 
     try {
-      await unlockAndLoadProfile(id, password, 'Profile loaded.');
+      await unlockAndLoadProfile(id, password, 'Profile loaded.', exportPanelsProps.buildSaveParams());
     } finally {
       setProfileBusy(false);
     }
-  }, [profileIdInput, profilePasswordInput, unlockAndLoadProfile]);
+  }, [exportPanelsProps, profileIdInput, profilePasswordInput, unlockAndLoadProfile]);
 
   const handleSaveProfile = useCallback(async () => {
     const params = currentSaveParams;
@@ -776,6 +799,31 @@ export default function SavePage() {
                   <strong className="xrdb-save-profile-uuid">{activeProfileId}</strong>
                   <p className="xrdb-save-url-desc">Save before copying UUID links so every AIOMetadata route points at the latest profile state.</p>
                 </div>
+
+                {loginConflict ? (
+                  <div className="xrdb-save-conflict-banner" role="alert">
+                    <p className="xrdb-save-conflict-msg">Your local settings differ from this profile. Save them to the profile, or discard local changes and load from profile.</p>
+                    <div className="xrdb-save-conflict-actions">
+                      <button
+                        className="xrdb-save-action-btn xrdb-save-action-primary"
+                        type="button"
+                        onClick={() => setLoginConflict(null)}
+                      >
+                        Keep local and save
+                      </button>
+                      <button
+                        className="xrdb-save-action-btn xrdb-save-action-secondary"
+                        type="button"
+                        onClick={() => {
+                          ctx.applySavedUiConfig(loginConflict.serverConfig);
+                          setLoginConflict(null);
+                        }}
+                      >
+                        Discard and load profile
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
 
                 <div className="xrdb-save-profile-toolbar">
                   <button
