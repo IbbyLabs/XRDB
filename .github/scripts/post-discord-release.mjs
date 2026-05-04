@@ -802,7 +802,6 @@ export function buildDiscordReleasePayload({
   return {
     ...(mentionContent ? { content: mentionContent } : {}),
     username: 'XRDB Releases',
-    avatar_url: AVATAR_URL,
     allowed_mentions: normalizedRoleId
       ? { roles: [normalizedRoleId] }
       : { parse: [] },
@@ -845,7 +844,6 @@ function buildDiscordContinuationPayloads({ repository, release, descriptions })
 
   return descriptions.map((description, index) => ({
     username: 'XRDB Releases',
-    avatar_url: AVATAR_URL,
     allowed_mentions: { parse: [] },
     embeds: [
       {
