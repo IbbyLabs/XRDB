@@ -339,7 +339,7 @@ export function StepShell({
         <div className="xrdb-preview-band-head">
           <h1 className="xrdb-preview-band-title">{WORKFLOW_STEPS[stepIndex]?.label ?? 'Artwork'} workspace</h1>
           <div className="xrdb-preview-band-actions">
-            <button className="xrdb-btn xrdb-btn-secondary" type="button" onClick={() => setOverlayOpen(true)}>
+            <button className="xrdb-btn xrdb-btn-secondary xrdb-inspect-desktop" type="button" onClick={() => setOverlayOpen(true)}>
               Inspect
             </button>
           </div>
@@ -607,6 +607,13 @@ export function StepShell({
       </div>
 
       <div className="xrdb-step-nav-sticky" role="navigation" aria-label="Step navigation">
+        <button
+          className="xrdb-btn xrdb-btn-secondary xrdb-inspect-mobile"
+          type="button"
+          onClick={() => setOverlayOpen(true)}
+        >
+          Inspect
+        </button>
         {nextStep ? (
           <Link href={nextStep.href} className="xrdb-btn xrdb-btn-primary">
             Next: {nextStep.label}

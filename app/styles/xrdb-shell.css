@@ -3275,6 +3275,10 @@
 	gap: 1rem;
 }
 
+.xrdb-inspect-mobile {
+	display: none;
+}
+
 /* Responsive: <920px */
 @media (max-width: 919px) {
 	.xrdb-step-shell {
@@ -3293,6 +3297,14 @@
 
 	.xrdb-preview-band-head {
 		align-items: flex-start;
+	}
+
+	.xrdb-inspect-desktop {
+		display: none;
+	}
+
+	.xrdb-inspect-mobile {
+		display: inline-flex;
 	}
 
 	.xrdb-preview-band-actions {
