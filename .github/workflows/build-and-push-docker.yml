@@ -8,6 +8,8 @@ run-name: >-
 
 "on":
   push:
+    branches:
+      - main
     tags:
       - "v*"
   workflow_dispatch: {}
@@ -75,6 +77,79 @@ jobs:
           pnpm run docs:refresh-assets
           git diff --exit-code -- README.md docs/images
 
+      - name: Compute deployment version metadata
+        id: version_meta
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+
+          short_sha="$(git rev-parse --short=7 HEAD)"
+          stamp="$(date -u +'%Y%m%d.%H%M')"
+          deployment_version=""
+          dev_track_tag=""
+          publish_dev="false"
+
+          if [ "${REF_TYPE}" = "tag" ] && printf '%s' "${REF_NAME}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+            deployment_version="${REF_NAME}"
+            dev_track_tag="dev-${REF_NAME#v}"
+            publish_dev="true"
+          elif [ "${REF_TYPE}" = "branch" ] && [ "${REF_NAME}" = "${DEFAULT_BRANCH}" ]; then
+            git fetch --force --tags origin
+            latest_tag="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' | sort -V | tail -n 1)"
+            if [ -z "${latest_tag}" ]; then
+              latest_tag="v0.0.0"
+            fi
+
+            base_version="${latest_tag#v}"
+            IFS='.' read -r major minor patch <<< "${base_version}"
+
+            if [ "${latest_tag}" = "v0.0.0" ]; then
+              subjects="$(git log --format=%s)"
+              bodies="$(git log --format=%B)"
+            else
+              subjects="$(git log --format=%s "${latest_tag}..HEAD")"
+              bodies="$(git log --format=%B "${latest_tag}..HEAD")"
+            fi
+
+            bump="patch"
+            if printf '%s\n%s\n' "${subjects}" "${bodies}" | grep -Eq 'BREAKING CHANGE|BREAKING-CHANGE|^[a-zA-Z]+\([^)]+\)!:|^[a-zA-Z]+!:'; then
+              bump="major"
+            elif printf '%s' "${subjects}" | grep -Eq '^feat\([^)]+\):|^feat:'; then
+              bump="minor"
+            fi
+
+            case "${bump}" in
+              major)
+                major=$((major + 1))
+                minor=0
+                patch=0
+                ;;
+              minor)
+                minor=$((minor + 1))
+                patch=0
+                ;;
+              *)
+                patch=$((patch + 1))
+                ;;
+            esac
+
+            next_version="${major}.${minor}.${patch}"
+            deployment_version="v${next_version}-dev.${stamp}.${short_sha}"
+            dev_track_tag="dev-${stamp/./-}-${short_sha}"
+            publish_dev="true"
+          else
+            deployment_version="manual-${stamp}-${short_sha}"
+            dev_track_tag="manual-${short_sha}"
+            publish_dev="false"
+          fi
+
+          echo "deployment_version=${deployment_version}" >> "$GITHUB_OUTPUT"
+          echo "dev_track_tag=${dev_track_tag}" >> "$GITHUB_OUTPUT"
+          echo "publish_dev=${publish_dev}" >> "$GITHUB_OUTPUT"
+
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -84,13 +159,17 @@ jobs:
             latest=false
           tags: |
             type=raw,value=${{ github.ref_name }},enable=${{ github.ref_type == 'tag' }}
-            type=sha,prefix=manual-,enable=${{ github.event_name == 'workflow_dispatch' && github.ref_type != 'tag' }}
+            type=raw,value=dev,enable=${{ steps.version_meta.outputs.publish_dev == 'true' }}
+            type=raw,value=${{ steps.version_meta.outputs.dev_track_tag }},enable=${{ steps.version_meta.outputs.publish_dev == 'true' }}
+            type=sha,prefix=manual-,enable=${{ github.event_name == 'workflow_dispatch' && steps.version_meta.outputs.publish_dev != 'true' }}
           labels: |
             org.opencontainers.image.title=XRDB
             org.opencontainers.image.description=XRDB generates poster, backdrop, and logo images with dynamic ratings on the fly.
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.documentation=${{ github.server_url }}/${{ github.repository }}#readme
+            org.opencontainers.image.version=${{ steps.version_meta.outputs.deployment_version }}
+            org.opencontainers.image.revision=${{ github.sha }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -111,8 +190,38 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
+          build-args: |
+            XRDB_BUILD_VERSION=${{ steps.version_meta.outputs.deployment_version }}
+            NEXT_PUBLIC_DEPLOYMENT_VERSION=${{ steps.version_meta.outputs.deployment_version }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           provenance: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Check Discord webhook secret for dev notifications
+        id: dev_webhook
+        if: ${{ github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch && steps.version_meta.outputs.publish_dev == 'true' }}
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+        run: |
+          if [ -n "${WEBHOOK_URL}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "WEBHOOK_URL secret is not configured. Skipping Discord dev build notification."
+          fi
+
+      - name: Post dev build to Discord
+        if: ${{ steps.dev_webhook.outputs.enabled == 'true' }}
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          DISCORD_ROLE_ID: '1500618567614206072'
+          REPOSITORY: ${{ github.repository }}
+          DEPLOYMENT_VERSION: ${{ steps.version_meta.outputs.deployment_version }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+          DEV_TRACK_TAG: ${{ steps.version_meta.outputs.dev_track_tag }}
+          BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node ./.github/scripts/post-discord-dev-build.mjs

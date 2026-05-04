@@ -24,7 +24,7 @@ const normalizeProvider = (provider: string): AnimeMappingProvider | null => {
   return null;
 };
 
-export type CanonicalProviderAdapterResult = {
+type CanonicalProviderAdapterResult = {
   payload: any | null;
   mappedIds: {
     tmdb: string | null;

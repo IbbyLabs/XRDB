@@ -13,8 +13,7 @@ import {
 } from './imageObjectStoragePrune.ts';
 import { logger } from './serverLogger.ts';
 
-export { buildObjectStorageImageKey, buildObjectStorageSourceImageKey } from './imageObjectStoragePaths.ts';
-export { pruneExpiredObjectStorageImages } from './imageObjectStoragePrune.ts';
+export { buildObjectStorageImageKey } from './imageObjectStoragePaths.ts';
 
 type ObjectStorageResult = {
   body: ArrayBuffer;
@@ -145,3 +144,5 @@ const pruneOldestImageCache = async (maxFiles: number) => {
     inFlight.delete(cacheDir);
   }
 };
+
+export { pruneExpiredObjectStorageImages };

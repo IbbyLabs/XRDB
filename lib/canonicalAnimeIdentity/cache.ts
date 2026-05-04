@@ -102,7 +102,7 @@ export const setCanonicalNegativeSeriesMapping = (provider: string, externalId: 
   );
 };
 
-export const clearCanonicalNegativeSeriesMapping = (provider: string, externalId: string) => {
+const clearCanonicalNegativeSeriesMapping = (provider: string, externalId: string) => {
   deleteMetadata(buildCanonicalNegativeSeriesCacheKey(provider, externalId));
 };
 
@@ -117,7 +117,7 @@ export const setCanonicalNegativeEpisodeMapping = (lookupKey: string) => {
   );
 };
 
-export const clearCanonicalNegativeEpisodeMapping = (lookupKey: string) => {
+const clearCanonicalNegativeEpisodeMapping = (lookupKey: string) => {
   deleteMetadata(buildCanonicalNegativeEpisodeCacheKey(lookupKey));
 };
 

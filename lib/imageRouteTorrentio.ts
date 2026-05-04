@@ -51,7 +51,7 @@ type TorrentioBadgeCache = {
   flags: MediaFeatureFlags;
 };
 
-export type TorrentioRatingBadge = {
+type TorrentioRatingBadge = {
   key: BadgeKey;
   label: string;
   value: string;
@@ -59,7 +59,7 @@ export type TorrentioRatingBadge = {
   accentColor: string;
 };
 
-export type TorrentioBadgeResult = {
+type TorrentioBadgeResult = {
   badges: TorrentioRatingBadge[];
   cacheTtlMs: number;
   cacheHit?: boolean;
@@ -70,7 +70,7 @@ const torrentioInFlight = new Map<string, Promise<TorrentioBadgeResult>>();
 let torrentioRateLimitedUntil = 0;
 const torrentioConcurrencyLimit = createConcurrencyLimit(TORRENTIO_CONCURRENCY);
 
-export type RecencyBucket = 'fresh' | 'warm' | 'stable';
+type RecencyBucket = 'fresh' | 'warm' | 'stable';
 
 type RecencyClassification = {
   bucket: RecencyBucket;

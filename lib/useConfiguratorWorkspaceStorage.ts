@@ -97,6 +97,7 @@ export function useConfiguratorWorkspaceStorage({
   const [pendingConfigProfileId, setPendingConfigProfileId] = useState<string | null>(null);
   const workspaceImportInputRef = useRef<HTMLInputElement | null>(null);
   const pendingRestoreFromUrlRef = useRef<string | null>(null);
+  const didHydrateFromStorageRef = useRef(false);
 
   const applyWorkspaceConfig = useCallback(
     (config: SavedUiConfig, status: 'loaded' | 'imported' | 'preset' | 'reset' = 'loaded') => {
@@ -110,6 +111,11 @@ export function useConfiguratorWorkspaceStorage({
     if (typeof window === 'undefined') {
       return;
     }
+
+    if (didHydrateFromStorageRef.current) {
+      return;
+    }
+    didHydrateFromStorageRef.current = true;
 
     let cancelled = false;
 

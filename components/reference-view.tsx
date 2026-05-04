@@ -35,6 +35,7 @@ export function ReferenceView() {
   const [activeSection, setActiveSection] = useState<SectionId>('route-examples');
   const [mobileOpen, setMobileOpen] = useState(false);
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -55,6 +56,41 @@ export function ReferenceView() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (!mobileOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const root = mobileMenuRef.current;
+      if (!root) {
+        return;
+      }
+      if (!root.contains(event.target as Node)) {
+        setMobileOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMobileOpen(false);
+      }
+    };
+
+    const handleScroll = () => {
+      setMobileOpen(false);
+    };
+
+    window.addEventListener('pointerdown', handlePointerDown);
+    window.addEventListener('keydown', handleEscape);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('keydown', handleEscape);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, [mobileOpen]);
+
   const registerRef = (id: string) => (el: HTMLElement | null) => {
     if (el) {
       sectionRefs.current.set(id, el);
@@ -66,18 +102,18 @@ export function ReferenceView() {
   const activeLabel = SECTIONS.find((s) => s.id === activeSection)?.label ?? '';
 
   return (
-    <div className="xrdb-reference-layout w-full px-4 py-6 md:px-6 md:py-8">
-      <nav className="hidden lg:block min-w-0 lg:sticky lg:top-20 self-start">
+    <div className="xrdb-reference-layout w-full px-4 py-6 md:px-6 md:py-8 lg:grid lg:grid-cols-[minmax(14rem,17rem)_minmax(0,1fr)] lg:items-start lg:gap-8">
+      <nav className="hidden lg:block min-w-0 lg:sticky lg:top-20 self-start z-10">
         <div className="xrdb-panel rounded-2xl p-4 space-y-1">
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 mb-3">Contents</div>
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--muted)] mb-3">Contents</div>
           {SECTIONS.map((section) => (
             <a
               key={section.id}
               href={`#${section.id}`}
               className={`block rounded-lg px-3 py-2 text-[13px] transition-colors ${
                 activeSection === section.id
-                  ? 'bg-violet-500/15 text-violet-300 font-semibold'
-                  : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                  ? 'bg-[color:var(--accent-dim)] text-[color:var(--accent-text)] font-semibold'
+                  : 'text-[color:var(--muted)] hover:text-[color:var(--ink)] hover:bg-[color:var(--bg-elevated)]'
               }`}
             >
               {section.label}
@@ -86,26 +122,28 @@ export function ReferenceView() {
         </div>
       </nav>
 
-      <div className="lg:hidden sticky top-14 z-20 mb-4">
+      <div className="xrdb-reference-mobile-nav lg:hidden sticky top-14 z-20 mb-4" ref={mobileMenuRef}>
         <button
           type="button"
           onClick={() => setMobileOpen((prev) => !prev)}
-          className="xrdb-panel w-full rounded-xl px-4 py-3 flex items-center justify-between text-sm font-semibold text-white"
+          className="xrdb-panel w-full rounded-xl px-4 py-3 flex items-center justify-between text-sm font-semibold text-[color:var(--ink)]"
         >
           <span>Jump to: {activeLabel}</span>
-          <ChevronDown className={`h-4 w-4 text-zinc-400 transition-transform ${mobileOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`h-4 w-4 text-[color:var(--muted)] transition-transform ${mobileOpen ? 'rotate-180' : ''}`} />
         </button>
         {mobileOpen && (
-          <div className="xrdb-panel mt-1 rounded-xl p-2 absolute left-0 right-0 shadow-xl">
+          <div className="xrdb-reference-mobile-menu" role="listbox" aria-label="Reference sections">
             {SECTIONS.map((section) => (
               <a
                 key={section.id}
                 href={`#${section.id}`}
                 onClick={() => setMobileOpen(false)}
+                role="option"
+                aria-selected={activeSection === section.id}
                 className={`block rounded-lg px-3 py-2 text-[13px] transition-colors ${
                   activeSection === section.id
-                    ? 'bg-violet-500/15 text-violet-300 font-semibold'
-                    : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                    ? 'bg-[color:var(--accent-dim)] text-[color:var(--accent-text)] font-semibold'
+                    : 'text-[color:var(--muted)] hover:text-[color:var(--ink)] hover:bg-[color:var(--bg-elevated)]'
                 }`}
               >
                 {section.label}
@@ -115,7 +153,7 @@ export function ReferenceView() {
         )}
       </div>
 
-      <div className="min-w-0 space-y-10">
+      <div className="min-w-0 space-y-10 lg:pt-1">
         <ReferenceSection id="route-examples" title="Route examples" ref={registerRef('route-examples')}>
           <p>
             XRDB provides three main image endpoints. Poster, backdrop, and logo artwork uses{' '}
@@ -142,7 +180,7 @@ GET /thumbnail/xrdbid:tt12343534/S01E07.jpg?episodeSourceProvider=kitsu&episodeS
             The Media ID field accepts a base title ID for posters, backdrops, and logos. Thumbnail previews need an episode target. Use this guide to match the field input, the exported route, and the most common scoped query params.
           </p>
 
-          <h3 className="text-[13px] font-semibold text-white pt-2">Accepted base ID families</h3>
+          <h3 className="text-[13px] font-semibold text-[color:var(--ink)] pt-2">Accepted base ID families</h3>
           <ul>
             <li><strong>IMDb</strong> — best general base ID for posters and simple movie or show lookups. Examples: <code>tt0133093</code>, <code>tt0944947</code></li>
             <li><strong>Typed TMDB</strong> — best when movie and TV type must stay explicit. Required by Strict TMDB scope for backdrop and logo requests. Examples: <code>tmdb:movie:603</code>, <code>tmdb:tv:1399</code></li>
@@ -151,7 +189,7 @@ GET /thumbnail/xrdbid:tt12343534/S01E07.jpg?episodeSourceProvider=kitsu&episodeS
             <li><strong>Anime IDs</strong> — use the native anime provider ID when your source does not begin with IMDb or TMDB. Examples: <code>anilist:16498</code>, <code>mal:16498</code>, <code>anidb:5114</code>, <code>kitsu:7442</code></li>
           </ul>
 
-          <h3 className="text-[13px] font-semibold text-white pt-2">Input format by type</h3>
+          <h3 className="text-[13px] font-semibold text-[color:var(--ink)] pt-2">Input format by type</h3>
           <ul>
             <li><strong>Poster input</strong> — <code>baseId</code>. Example: <code>tt0133093</code> or <code>tmdb:movie:603</code></li>
             <li><strong>Backdrop input</strong> — <code>baseId</code>. Example: <code>tmdb:tv:1399</code> or <code>xrdbid:tt0944947</code></li>
@@ -160,13 +198,13 @@ GET /thumbnail/xrdbid:tt12343534/S01E07.jpg?episodeSourceProvider=kitsu&episodeS
             <li><strong>Kitsu thumbnail input</strong> — <code>seriesId:episode</code>. Example: <code>kitsu:7442:1</code></li>
           </ul>
 
-          <h3 className="text-[13px] font-semibold text-white pt-2">Strict TMDB and route safety</h3>
+          <h3 className="text-[13px] font-semibold text-[color:var(--ink)] pt-2">Strict TMDB and route safety</h3>
           <p>
             If you enable Strict TMDB scope, backdrop and logo requests must stay typed as <code>tmdb:movie:603</code> or <code>tmdb:tv:1399</code>. Plain <code>tmdb:603</code> is ambiguous and will be rejected.
             Poster routes can stay on IMDb or another supported base ID when that fits your source better. The export panels show the full scoped query string XRDB will generate for your current workspace.
           </p>
 
-          <h3 className="text-[13px] font-semibold text-white pt-2">High signal query params</h3>
+          <h3 className="text-[13px] font-semibold text-[color:var(--ink)] pt-2">High signal query params</h3>
           <ul>
             <li><code>idSource=tmdb</code> — pins poster, backdrop, and logo exports to typed TMDB route patterns</li>
             <li><code>tmdbIdScope=strict</code> — requires <code>tmdb:movie:id</code> or <code>tmdb:tv:id</code> for backdrop and logo requests</li>
@@ -315,11 +353,9 @@ GET /thumbnail/xrdbid:tt12343534/S01E07.jpg?episodeSourceProvider=kitsu&episodeS
             Posters use <code>posterRatingsLayout</code> (top, bottom, left, right, and combinations).
             Backdrops use <code>backdropRatingsLayout</code> (center, right, right vertical) and can enable <code>backdropBottomRatingsRow</code>.
             The Quality Badges panel exposes poster placement controls for supported row and side layouts, disables shared placement when certification is the only visible quality badge, lets the age rating inherit, group with the shared badges, or move independently for the active poster layout, and includes bulk enable and hide actions for visible quality badges.
-                    <p>
-                      Logo type output supports <code>logoStreamBadges</code> for an independent stream badge list.
-                      HD badge detection activates automatically when the media filename contains a 1080p or 720p token and 4K is absent.
-                      Tile style accent colors are configurable globally via <code>qualityBadgesTileAccentColor</code> and per slot via <code>networkTileColor</code>, <code>ageRatingTileColor</code>, <code>releaseStatusTileColor</code>, and <code>genreBadgeTileAccentColor</code>.
-                    </p>
+            Logo type output supports <code>logoStreamBadges</code> for an independent stream badge list.
+            HD badge detection activates automatically when the media filename contains a 1080p or 720p token and 4K is absent.
+            Tile style accent colors are configurable globally via <code>qualityBadgesTileAccentColor</code> and per slot via <code>networkTileColor</code>, <code>ageRatingTileColor</code>, <code>releaseStatusTileColor</code>, and <code>genreBadgeTileAccentColor</code>.
           </p>
           <p>
             Slider based customisation controls snap back to their defaults when you move close to the baseline and show a Default readout, while keeping keys, manifest inputs, and the current target unchanged.
@@ -334,18 +370,18 @@ GET /thumbnail/xrdbid:tt12343534/S01E07.jpg?episodeSourceProvider=kitsu&episodeS
             Get help with XRDB, ratings, proxy setup, or addon configuration through the community Discord servers.
           </p>
           <div className="flex flex-wrap gap-2 pt-1">
-            <DiscordPill href={BRAND_DISCORD_OFFICIAL_URL} label={BRAND_DISCORD_OFFICIAL_LABEL} title={BRAND_DISCORD_OFFICIAL_LABEL} />
-            <DiscordPill href={BRAND_DISCORD_AIO_URL} label={BRAND_DISCORD_AIO_LABEL} title={BRAND_DISCORD_AIO_LABEL} />
+            <DiscordPill href={BRAND_DISCORD_OFFICIAL_URL} label={BRAND_DISCORD_OFFICIAL_LABEL} title={BRAND_DISCORD_OFFICIAL_LABEL} popover />
+            <DiscordPill href={BRAND_DISCORD_AIO_URL} label={BRAND_DISCORD_AIO_LABEL} title={BRAND_DISCORD_AIO_LABEL} popover widgetApiUrl="/api/discord-widget-aio" bannerSrc={null} avatarSrc={null} />
           </div>
           <p>
             You can also reach the developer directly at{' '}
-            <a href={BRAND_DISCORD_DM_URL} target="_blank" rel="noreferrer" className="text-violet-400 hover:text-violet-300 underline underline-offset-2">
+            <a href={BRAND_DISCORD_DM_URL} target="_blank" rel="noreferrer" className="text-[color:var(--accent-text)] hover:text-[color:var(--ink)] underline underline-offset-2">
               {BRAND_DISCORD_DM_HANDLE}
             </a>{' '}
             on Discord.
           </p>
           <div className="flex flex-wrap gap-2 pt-1">
-            <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-[13px] font-semibold text-zinc-300 hover:text-white hover:border-white/25 transition-colors">
+            <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--border)] bg-[color:var(--bg-elevated)] px-3.5 py-1.5 text-[13px] font-semibold text-[color:var(--muted)] hover:text-[color:var(--ink)] hover:border-[color:color-mix(in_oklch,var(--accent)_30%,var(--border))] transition-colors">
               {BRAND_GITHUB_LABEL}
             </a>
             <SupportPill label="Support" />
@@ -359,8 +395,8 @@ GET /thumbnail/xrdbid:tt12343534/S01E07.jpg?episodeSourceProvider=kitsu&episodeS
 function ReferenceSection({ id, title, children, ref }: { id: string; title: string; children: React.ReactNode; ref: (el: HTMLElement | null) => void }) {
   return (
     <section id={id} ref={ref} className="scroll-mt-24">
-      <h2 className="text-lg font-semibold text-white mb-3">{title}</h2>
-      <div className="xrdb-panel rounded-2xl p-5 space-y-3 text-[14px] leading-6 text-zinc-300 [&_code]:rounded [&_code]:bg-white/10 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-[13px] [&_code]:font-mono [&_code]:text-zinc-200 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1.5 [&_li]:text-zinc-400">
+      <h2 className="text-lg font-semibold text-[color:var(--ink)] mb-3">{title}</h2>
+      <div className="xrdb-panel rounded-2xl p-5 space-y-3 text-[14px] leading-6 text-[color:var(--ink)] [&_code]:rounded [&_code]:bg-[color:var(--bg-surface)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:text-[13px] [&_code]:font-mono [&_code]:text-[color:var(--ink)] [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1.5 [&_li]:text-[color:var(--muted)]">
         {children}
       </div>
     </section>
@@ -369,7 +405,7 @@ function ReferenceSection({ id, title, children, ref }: { id: string; title: str
 
 function CodeBlock({ children }: { children: string }) {
   return (
-    <pre className="rounded-xl border border-white/10 bg-black/70 p-4 overflow-x-auto font-mono text-[12px] leading-5 text-zinc-300">
+    <pre className="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-base)] p-4 overflow-x-auto font-mono text-[12px] leading-5 text-[color:var(--muted)]">
       {children}
     </pre>
   );

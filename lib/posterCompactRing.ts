@@ -5,7 +5,7 @@ import {
 } from './ratingProviderCatalog.ts';
 import { type AggregateRatingSource } from './ratingPresentation.ts';
 
-export type PosterCompactRingPrioritySource = 'priority-critics' | 'priority-audience';
+type PosterCompactRingPrioritySource = 'priority-critics' | 'priority-audience';
 
 export type PosterCompactRingSource =
   | RatingPreference
@@ -15,7 +15,7 @@ export type PosterCompactRingSource =
 
 export const DEFAULT_POSTER_COMPACT_RING_VALUE_SOURCE: PosterCompactRingSource = 'highest';
 export const DEFAULT_POSTER_COMPACT_RING_PROGRESS_SOURCE: PosterCompactRingSource = 'tmdb';
-export const MAX_POSTER_COMPACT_RING_PRIORITY_LENGTH = 3;
+const MAX_POSTER_COMPACT_RING_PRIORITY_LENGTH = 3;
 export const DEFAULT_POSTER_COMPACT_RING_CRITICS_PRIORITY: RatingPreference[] = [
   'tomatoes',
   'metacritic',
@@ -26,8 +26,8 @@ export const DEFAULT_POSTER_COMPACT_RING_AUDIENCE_PRIORITY: RatingPreference[] =
   'imdb',
   'tmdb',
 ];
-export const MIN_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT = 0;
-export const MAX_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT = 100;
+const MIN_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT = 0;
+const MAX_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT = 100;
 export const DEFAULT_POSTER_COMPACT_RING_CENTER_OPACITY_PERCENT = 86;
 export const DEFAULT_POSTER_COMPACT_RING_FULL_PROGRESS_THRESHOLD_PERCENT = 99.5;
 

@@ -4,14 +4,14 @@ import { getPosterRatingLayoutMaxBadges, type PosterRatingLayout } from './poste
 import { DEFAULT_RATING_STYLE, type RatingStyle } from './ratingAppearance.ts';
 import { resolveSideRatingOffsetFraction, type SideRatingPosition } from './sideRatingPosition.ts';
 
-export type PosterBadgeGroups<T> = {
+type PosterBadgeGroups<T> = {
   topBadges: T[];
   bottomBadges: T[];
   leftBadges: T[];
   rightBadges: T[];
 };
 
-export type BackdropBadgeRegion = {
+type BackdropBadgeRegion = {
   left: number;
   width: number;
 };

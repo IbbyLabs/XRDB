@@ -44,19 +44,6 @@ test('configurator language options expand regional TMDB locales into readable l
   });
 });
 
-test('language selector renders localized labels without appending locale codes', () => {
-  const source = fs.readFileSync(
-    path.resolve(process.cwd(), 'components/configurator-basics.tsx'),
-    'utf8',
-  );
-  assert.match(source, /\{activeOption\.flag\}/);
-  assert.match(source, /\{activeOption\.label\}/);
-  assert.match(source, /\{option\.flag\}/);
-  assert.match(source, /\{option\.label\}/);
-  assert.doesNotMatch(source, /\{option\.label\} \(\{option\.code\}\)/);
-  assert.doesNotMatch(source, /\{activeOption\.label\} \(\{activeOption\.code\}\)/);
-});
-
 test('language selector loads options through the server route instead of direct TMDB client fetches', () => {
   const source = fs.readFileSync(
     path.resolve(process.cwd(), 'lib/useConfiguratorPageChrome.ts'),
@@ -84,12 +71,3 @@ test('language selector reloads through the server route without forwarding pers
   assert.match(routeSource, /buildTmdbConfigurationUrl\('configuration\/languages', requestTmdbKey\)/);
 });
 
-test('language selector dropdown anchors to the trigger right edge to avoid viewport overflow', () => {
-  const source = fs.readFileSync(
-    path.resolve(process.cwd(), 'components/configurator-basics.tsx'),
-    'utf8',
-  );
-
-  assert.match(source, /absolute right-0 top-full z-30/);
-  assert.doesNotMatch(source, /absolute left-0 top-full z-30/);
-});

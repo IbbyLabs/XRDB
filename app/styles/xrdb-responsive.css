@@ -11,7 +11,7 @@
 		scroll-padding-block: 0.75rem;
 		scrollbar-gutter: stable;
 		scrollbar-width: thin;
-		scrollbar-color: color-mix(in srgb, var(--glow) 50%, transparent) transparent;
+		scrollbar-color: color-mix(in oklch, var(--accent) 35%, transparent) transparent;
 	}
 
 	.xrdb-workspace-side-rail {
@@ -102,5 +102,38 @@
 	.site-discord-callout,
 	.xrdb-footer-link {
 		transition: none;
+	}
+
+	[class*="dw-"] {
+		animation: none !important;
+	}
+}
+
+@media (pointer: coarse) {
+	.xrdb-option-pill,
+	.xrdb-provider-toggle,
+	.xrdb-subtab,
+	.xrdb-step-pill,
+	.xrdb-target-pin-current,
+	.xrdb-target-result-pin-inline,
+	.xrdb-save-url-copy,
+	.xrdb-mode-btn {
+		min-height: 2.75rem;
+	}
+
+	.xrdb-theme-icon-btn {
+		width: 2.75rem;
+		height: 2.75rem;
+		min-height: 2.75rem;
+	}
+
+	.xrdb-option-pill,
+	.xrdb-step-pill,
+	.xrdb-target-pin-current,
+	.xrdb-target-result-pin-inline,
+	.xrdb-save-url-copy {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
 	}
 }

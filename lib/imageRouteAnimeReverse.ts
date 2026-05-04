@@ -22,7 +22,7 @@ type ReverseMappingFetchJson = (
   init?: RequestInit,
 ) => Promise<CachedJsonResponse>;
 
-export type AnimeReverseMappingResolution = {
+type AnimeReverseMappingResolution = {
   payload: any | null;
   mappedIds: {
     tmdb: string | null;

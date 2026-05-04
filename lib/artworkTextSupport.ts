@@ -2,9 +2,9 @@ type ArtworkSourceId = 'tmdb' | 'fanart' | 'cinemeta' | 'omdb' | 'random' | 'bla
 type ArtworkTextPreference = 'original' | 'clean' | 'textless' | 'alternative' | 'random';
 type RandomPosterTextMode = 'any' | 'text' | 'textless';
 
-export type ArtworkTextSupportScope = 'poster' | 'backdrop';
+type ArtworkTextSupportScope = 'poster' | 'backdrop';
 
-export const TEXTLESS_ARTWORK_UNSUPPORTED_MESSAGE =
+const TEXTLESS_ARTWORK_UNSUPPORTED_MESSAGE =
   'These providers currently do not supply textless artwork.';
 
 const TEXTLESS_CAPABLE_ARTWORK_SOURCES: Record<ArtworkTextSupportScope, Set<ArtworkSourceId>> = {

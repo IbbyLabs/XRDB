@@ -3,7 +3,7 @@ import { parseNumericRatingValue } from './ratingDisplay.ts';
 import { sha1Hex } from './imageRouteRuntime.ts';
 import { escapeXml, estimateGeneratedLogoLineWidth } from './imageRouteText.ts';
 
-export type BlockbusterBadgeInput = {
+type BlockbusterBadgeInput = {
   key: BadgeKey;
   label: string;
   value: string;

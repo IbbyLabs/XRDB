@@ -3,7 +3,7 @@ import { timingSafeEqual } from 'node:crypto';
 export const XRDB_REQUEST_KEY_ERROR_MESSAGE = 'Missing or invalid XRDB request key.';
 export const XRDB_REQUEST_KEY_QUERY_PARAM = 'xrdbKey';
 export const XRDB_REQUEST_KEY_QUERY_PARAM_LEGACY = 'xrdb_key';
-export const XRDB_REQUEST_KEY_PLACEHOLDER = '{xrdb_key}';
+const XRDB_REQUEST_KEY_PLACEHOLDER = '{xrdb_key}';
 
 const REQUEST_KEY_HEADER_NAMES = ['x-xrdb-key', 'x-api-key'] as const;
 

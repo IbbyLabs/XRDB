@@ -168,8 +168,8 @@ export function ProxyView() {
     <div className="xrdb-export-layout w-full px-4 py-6 md:px-6 md:py-8">
       <div className="order-2 lg:order-1 min-w-0 space-y-4">
         <div className="xrdb-panel rounded-2xl p-4 space-y-3">
-          <h2 className="text-sm font-semibold text-white">Addon manifest</h2>
-          <p className="text-[13px] leading-5 text-zinc-400">
+          <h2 className="text-sm font-semibold text-[color:var(--ink)]">Addon manifest</h2>
+          <p className="text-[13px] leading-5 text-[color:var(--muted)]">
             Paste a Stremio addon manifest URL. XRDB will generate a proxy manifest that carries the current configurator settings into artwork output.
           </p>
           <input
@@ -177,13 +177,13 @@ export function ProxyView() {
             value={proxyManifestUrl}
             onChange={(event) => onChangeProxyManifestUrl(event.target.value)}
             placeholder="https://addon.example.com/manifest.json"
-            className="w-full min-w-0 rounded-xl border border-white/10 bg-black/70 px-3 py-2.5 text-[13px] text-white placeholder:text-zinc-500 focus:border-violet-500/50 outline-none"
+            className="w-full min-w-0 rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2.5 text-[13px] text-[color:var(--ink)] placeholder:text-[color:var(--muted)] focus:border-[color:var(--accent)] outline-none"
           />
         </div>
 
         <div className="xrdb-panel rounded-2xl p-4 space-y-3">
-          <h2 className="text-sm font-semibold text-white">Apply proxy to</h2>
-          <p className="text-[13px] leading-5 text-zinc-400">
+          <h2 className="text-sm font-semibold text-[color:var(--ink)]">Apply proxy to</h2>
+          <p className="text-[13px] leading-5 text-[color:var(--muted)]">
             Select which media types get XRDB image rewrites and metadata translation in this proxy manifest.
           </p>
           <div className="grid gap-2 sm:grid-cols-3">
@@ -194,13 +194,13 @@ export function ProxyView() {
             ]).map((option) => (
               <label
                 key={option.id}
-                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-[13px] font-medium text-zinc-300 cursor-pointer"
+                className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2.5 text-[13px] font-medium text-[color:var(--ink)] cursor-pointer"
               >
                 <input
                   type="checkbox"
                   checked={proxyTypeSet.has(option.id)}
                   onChange={(event) => toggleProxyType(option.id, event.target.checked)}
-                  className="h-3.5 w-3.5 accent-violet-500"
+                  className="h-3.5 w-3.5 accent-[var(--accent)]"
                 />
                 <span>{option.label}</span>
               </label>
@@ -214,30 +214,30 @@ export function ProxyView() {
             onClick={() => setTranslationOpen((prev) => !prev)}
             className="flex w-full items-center justify-between gap-3 p-4 text-left"
           >
-            <span className="text-sm font-semibold text-white">Metadata translation</span>
-            <ChevronDown className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${translationOpen ? 'rotate-180' : ''}`} />
+            <span className="text-sm font-semibold text-[color:var(--ink)]">Metadata translation</span>
+            <ChevronDown className={`h-4 w-4 shrink-0 text-[color:var(--muted)] transition-transform ${translationOpen ? 'rotate-180' : ''}`} />
           </button>
           {translationOpen && (
-            <div className="border-t border-white/10 p-4 space-y-4">
+            <div className="border-t border-[color:var(--border)] p-4 space-y-4">
               <label className="flex items-start gap-3 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={proxyTranslateMeta}
                   onChange={(event) => onToggleProxyTranslateMeta(event.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-white/20 bg-black accent-violet-500"
+                  className="mt-0.5 h-4 w-4 rounded border-[color:var(--border)] bg-[color:var(--bg-surface)] accent-[var(--accent)]"
                 />
                 <span className="space-y-1">
-                  <span className="block text-[13px] font-medium text-zinc-200">Translate metadata in the proxy</span>
-                  <span className="block text-[13px] leading-5 text-zinc-500">
+                  <span className="block text-[13px] font-medium text-[color:var(--ink)]">Translate metadata in the proxy</span>
+                  <span className="block text-[13px] leading-5 text-[color:var(--muted)]">
                     Preserve good addon text by default, then backfill localized TMDB text. Anime native IDs can bridge through anime mapping plus AniList or Kitsu when TMDB is weak.
                   </span>
                 </span>
               </label>
 
               {proxyTranslateMeta && (
-                <div className="space-y-4 rounded-xl border border-white/10 bg-black/40 p-4">
+                <div className="space-y-4 rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] p-4">
                   <div>
-                    <div className="text-[12px] font-semibold text-zinc-300 mb-2">Merge mode</div>
+                    <div className="text-[12px] font-semibold text-[color:var(--ink)] mb-2">Merge mode</div>
                     <div className="flex flex-wrap gap-2">
                       {METADATA_TRANSLATION_MODE_OPTIONS.map((option) => (
                         <button
@@ -246,15 +246,15 @@ export function ProxyView() {
                           onClick={() => onSelectProxyTranslateMetaMode(option.id)}
                           className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors ${
                             proxyTranslateMetaMode === option.id
-                              ? 'border-violet-500/60 bg-zinc-800 text-white'
-                              : 'border-white/10 bg-zinc-950 text-zinc-400 hover:text-white'
+                              ? 'border-[color:var(--accent)] bg-[color:var(--accent-dim)] text-[color:var(--ink)]'
+                              : 'border-[color:var(--border)] bg-[color:var(--bg-elevated)] text-[color:var(--muted)] hover:text-[color:var(--ink)]'
                           }`}
                         >
                           {option.label}
                         </button>
                       ))}
                     </div>
-                    <p className="mt-2 text-[13px] leading-5 text-zinc-500">
+                    <p className="mt-2 text-[13px] leading-5 text-[color:var(--muted)]">
                       {METADATA_TRANSLATION_MODE_OPTIONS.find((option) => option.id === proxyTranslateMetaMode)?.description}
                     </p>
                   </div>
@@ -264,11 +264,11 @@ export function ProxyView() {
                       type="checkbox"
                       checked={proxyDebugMetaTranslation}
                       onChange={(event) => onToggleProxyDebugMetaTranslation(event.target.checked)}
-                      className="mt-0.5 h-4 w-4 rounded border-white/20 bg-black accent-violet-500"
+                      className="mt-0.5 h-4 w-4 rounded border-[color:var(--border)] bg-[color:var(--bg-surface)] accent-[var(--accent)]"
                     />
                     <span className="space-y-1">
-                      <span className="block text-[13px] font-medium text-zinc-200">Attach debug provenance</span>
-                      <span className="block text-[13px] leading-5 text-zinc-500">
+                      <span className="block text-[13px] font-medium text-[color:var(--ink)]">Attach debug provenance</span>
+                      <span className="block text-[13px] leading-5 text-[color:var(--muted)]">
                         Adds a `_xrdbMetaTranslation` object to proxied meta items so you can see which fields came from the source addon, TMDB, AniList, or Kitsu.
                       </span>
                     </span>
@@ -285,12 +285,12 @@ export function ProxyView() {
             onClick={() => setCatalogOpen((prev) => !prev)}
             className="flex w-full items-center justify-between gap-3 p-4 text-left"
           >
-            <span className="text-sm font-semibold text-white">Catalog controls</span>
-            <ChevronDown className={`h-4 w-4 shrink-0 text-zinc-500 transition-transform ${catalogOpen ? 'rotate-180' : ''}`} />
+            <span className="text-sm font-semibold text-[color:var(--ink)]">Catalog controls</span>
+            <ChevronDown className={`h-4 w-4 shrink-0 text-[color:var(--muted)] transition-transform ${catalogOpen ? 'rotate-180' : ''}`} />
           </button>
           {catalogOpen && (
-            <div className="border-t border-white/10 p-4 space-y-3">
-              <p className="text-[13px] leading-5 text-zinc-400">
+            <div className="border-t border-[color:var(--border)] p-4 space-y-3">
+              <p className="text-[13px] leading-5 text-[color:var(--muted)]">
                 Tune catalog names, visibility, and search behavior for the generated XRDB proxy manifest.
               </p>
 
@@ -299,7 +299,7 @@ export function ProxyView() {
                   <button
                     type="button"
                     onClick={clearCatalogRules}
-                    className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] font-semibold text-zinc-300 hover:text-white transition-colors"
+                    className="rounded-full border border-[color:var(--border)] px-3 py-1.5 text-[11px] font-semibold text-[color:var(--muted)] hover:text-[color:var(--ink)] transition-colors"
                   >
                     Reset controls
                   </button>
@@ -307,13 +307,13 @@ export function ProxyView() {
               )}
 
               {effectiveCatalogLoadState === 'idle' && (
-                <div className="rounded-xl border border-dashed border-white/10 bg-black/30 px-4 py-3 text-[13px] leading-5 text-zinc-500">
+                <div className="rounded-xl border border-dashed border-[color:var(--border)] bg-[color:var(--bg-surface)] px-4 py-3 text-[13px] leading-5 text-[color:var(--muted)]">
                   Add a manifest URL and make sure TMDB and MDBList coverage is available through server keys or the current workspace to load catalog controls.
                 </div>
               )}
 
               {effectiveCatalogLoadState === 'loading' && (
-                <div className="rounded-xl border border-dashed border-white/10 bg-black/30 px-4 py-3 text-[13px] leading-5 text-zinc-500">
+                <div className="rounded-xl border border-dashed border-[color:var(--border)] bg-[color:var(--bg-surface)] px-4 py-3 text-[13px] leading-5 text-[color:var(--muted)]">
                   Loading catalog controls...
                 </div>
               )}
@@ -325,7 +325,7 @@ export function ProxyView() {
               )}
 
               {effectiveCatalogLoadState === 'ready' && catalogDescriptors.length === 0 && (
-                <div className="rounded-xl border border-dashed border-white/10 bg-black/30 px-4 py-3 text-[13px] leading-5 text-zinc-500">
+                <div className="rounded-xl border border-dashed border-[color:var(--border)] bg-[color:var(--bg-surface)] px-4 py-3 text-[13px] leading-5 text-[color:var(--muted)]">
                   The source manifest did not expose any catalogs that XRDB can tune here.
                 </div>
               )}
@@ -343,37 +343,37 @@ export function ProxyView() {
                     const discoverOnly = catalog.searchSupported && rule?.discoverOnly === true;
 
                     return (
-                      <div key={catalog.key} className="rounded-xl border border-white/10 bg-black/40 p-3 space-y-3">
+                      <div key={catalog.key} className="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] p-3 space-y-3">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
-                            <div className="text-[13px] font-semibold text-zinc-100">{catalog.name}</div>
-                            <div className="mt-1 font-mono text-[11px] text-zinc-500">{catalog.type}:{catalog.id}</div>
+                            <div className="text-[13px] font-semibold text-[color:var(--ink)]">{catalog.name}</div>
+                            <div className="mt-1 font-mono text-[11px] text-[color:var(--muted)]">{catalog.type}:{catalog.id}</div>
                           </div>
-                          <label className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-2.5 py-1.5 text-[11px] font-semibold text-zinc-300 cursor-pointer">
+                          <label className="inline-flex items-center gap-2 rounded-lg border border-[color:var(--border)] bg-[color:var(--bg-elevated)] px-2.5 py-1.5 text-[11px] font-semibold text-[color:var(--ink)] cursor-pointer">
                             <input
                               type="checkbox"
                               checked={isVisible}
                               onChange={(event) => updateCatalogRule(catalog.key, { hidden: !event.target.checked })}
-                              className="h-3 w-3 accent-violet-500"
+                              className="h-3 w-3 accent-[var(--accent)]"
                             />
                             <span>Visible</span>
                           </label>
                         </div>
 
                         <div>
-                          <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Display name</label>
+                          <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-[color:var(--muted)]">Display name</label>
                           <input
                             type="text"
                             value={title}
                             onChange={(event) => updateCatalogRule(catalog.key, { title: event.target.value })}
                             placeholder={catalog.name}
-                            className="w-full rounded-lg border border-white/10 bg-black px-2.5 py-2 text-[13px] text-white outline-none focus:border-violet-500/50"
+                            className="w-full rounded-lg border border-[color:var(--border)] bg-[color:var(--bg-elevated)] px-2.5 py-2 text-[13px] text-[color:var(--ink)] outline-none focus:border-[color:var(--accent)]"
                           />
                         </div>
 
                         {catalog.searchSupported ? (
                           <div className="grid gap-2 sm:grid-cols-2">
-                            <label className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-2.5 py-2 text-[11px] font-semibold text-zinc-300 cursor-pointer">
+                            <label className="inline-flex items-center gap-2 rounded-lg border border-[color:var(--border)] bg-[color:var(--bg-elevated)] px-2.5 py-2 text-[11px] font-semibold text-[color:var(--ink)] cursor-pointer">
                               <input
                                 type="checkbox"
                                 checked={searchEnabled}
@@ -383,11 +383,11 @@ export function ProxyView() {
                                     discoverOnly: event.target.checked ? false : rule?.discoverOnly,
                                   })
                                 }
-                                className="h-3 w-3 accent-violet-500"
+                                className="h-3 w-3 accent-[var(--accent)]"
                               />
                               <span>Search</span>
                             </label>
-                            <label className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-2.5 py-2 text-[11px] font-semibold text-zinc-300 cursor-pointer">
+                            <label className="inline-flex items-center gap-2 rounded-lg border border-[color:var(--border)] bg-[color:var(--bg-elevated)] px-2.5 py-2 text-[11px] font-semibold text-[color:var(--ink)] cursor-pointer">
                               <input
                                 type="checkbox"
                                 checked={discoverOnly}
@@ -397,13 +397,13 @@ export function ProxyView() {
                                     searchEnabled: event.target.checked ? false : rule?.searchEnabled,
                                   })
                                 }
-                                className="h-3 w-3 accent-violet-500"
+                                className="h-3 w-3 accent-[var(--accent)]"
                               />
                               <span>Discover only</span>
                             </label>
                           </div>
                         ) : (
-                          <div className="rounded-lg border border-dashed border-white/10 bg-black/30 px-3 py-2 text-[11px] leading-5 text-zinc-500">
+                          <div className="rounded-lg border border-dashed border-[color:var(--border)] bg-[color:var(--bg-elevated)] px-3 py-2 text-[11px] leading-5 text-[color:var(--muted)]">
                             This source catalog does not expose a search path.
                           </div>
                         )}
@@ -417,14 +417,14 @@ export function ProxyView() {
         </div>
 
         <div className="xrdb-panel rounded-2xl p-4 space-y-3">
-          <h2 className="text-sm font-semibold text-white flex items-center gap-2">
-            <Zap className="w-4 h-4 text-violet-500" /> Generated manifest
+          <h2 className="text-sm font-semibold text-[color:var(--ink)] flex items-center gap-2">
+            <Zap className="w-4 h-4 text-[color:var(--accent)]" /> Generated manifest
           </h2>
-          <p className="text-[13px] leading-5 text-zinc-400">
+          <p className="text-[13px] leading-5 text-[color:var(--muted)]">
             Use this stable URL in Stremio. It ends with manifest.json, has no query params, and keeps the same UUID when the source manifest changes.
           </p>
-          <div className="rounded-xl border border-white/10 bg-black/70 p-3 overflow-hidden">
-            <div className={`font-mono text-[11px] text-zinc-300 break-all${!showProxyUrl && effectiveGeneratedProxyUrl ? ' select-none' : ''}`}>
+          <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] p-3 overflow-hidden">
+            <div className={`font-mono text-[11px] text-[color:var(--ink)] break-all${!showProxyUrl && effectiveGeneratedProxyUrl ? ' select-none' : ''}`}>
               {showProxyUrl || !effectiveGeneratedProxyUrl
                 ? displayedProxyUrl
                 : '*'.repeat(displayedProxyUrl.length)}
@@ -435,12 +435,12 @@ export function ProxyView() {
               type="button"
               onClick={handleCopyProxy}
               disabled={!canGenerateProxy}
-              className={`rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-2 transition-colors ${
+              className={`rounded-full min-h-11 px-4 py-2.5 text-sm font-semibold flex items-center gap-2 transition-colors ${
                 canGenerateProxy
                   ? proxyCopied
-                    ? 'bg-green-500 text-white'
-                    : 'bg-violet-600 text-white hover:bg-violet-500'
-                  : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                    ? 'bg-[color:var(--accent-dim)] text-[color:var(--ink)]'
+                    : 'bg-[color:var(--accent)] text-[color:var(--bg-base)] hover:opacity-90'
+                  : 'bg-[color:var(--bg-elevated)] text-[color:var(--muted)] cursor-not-allowed'
               }`}
             >
               {proxyCopied ? (
@@ -459,10 +459,10 @@ export function ProxyView() {
               type="button"
               onClick={onToggleShowProxyUrl}
               disabled={!canGenerateProxy}
-              className={`rounded-full px-3 py-2 text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+              className={`rounded-full min-h-11 px-4 py-2.5 text-sm font-semibold flex items-center gap-1.5 transition-colors ${
                 canGenerateProxy
-                  ? 'border border-white/15 text-zinc-300 hover:text-white'
-                  : 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-white/5'
+                  ? 'border border-[color:var(--border)] text-[color:var(--ink)] hover:text-[color:var(--ink)]'
+                  : 'bg-[color:var(--bg-elevated)] text-[color:var(--muted)] cursor-not-allowed border border-[color:var(--border)]/50'
               }`}
               aria-label={showProxyUrl ? 'Hide proxy URL' : 'Show proxy URL'}
             >
@@ -473,10 +473,10 @@ export function ProxyView() {
               href={canGenerateProxy ? effectiveGeneratedProxyUrl : undefined}
               target="_blank"
               rel="noreferrer"
-              className={`rounded-full px-4 py-2 text-xs font-semibold inline-flex items-center gap-2 transition-colors ${
+              className={`rounded-full min-h-11 px-4 py-2.5 text-sm font-semibold inline-flex items-center gap-2 transition-colors ${
                 canGenerateProxy
-                  ? 'border border-white/15 text-zinc-300 hover:text-white'
-                  : 'border border-white/5 bg-zinc-800 text-zinc-500 pointer-events-none'
+                  ? 'border border-[color:var(--border)] text-[color:var(--ink)] hover:text-[color:var(--ink)]'
+                  : 'border border-[color:var(--border)]/50 bg-[color:var(--bg-elevated)] text-[color:var(--muted)] pointer-events-none'
               }`}
             >
               <ExternalLink className="w-3.5 h-3.5" />
@@ -484,11 +484,11 @@ export function ProxyView() {
             </a>
           </div>
           {!canGenerateProxy && (
-            <p className="text-[13px] text-zinc-500">
+            <p className="text-[13px] text-[color:var(--muted)]">
               Add a manifest URL and make sure TMDB and MDBList coverage is available through server keys or the current workspace to generate a UUID backed link.
             </p>
           )}
-          <p className="text-[11px] leading-4 text-zinc-500">
+          <p className="text-[11px] leading-4 text-[color:var(--muted)]">
             Legacy inline proxy links remain readable during migration. Copying here always rotates to the UUID backed manifest format, and the copied URL refreshes when the source manifest changes.
           </p>
         </div>
@@ -496,10 +496,10 @@ export function ProxyView() {
 
       <div className="order-1 lg:order-2 min-w-0 lg:sticky lg:top-20">
         <div className="xrdb-panel rounded-2xl p-4 space-y-3">
-          <div className="rounded-xl border border-white/10 bg-black/70 p-3 min-h-[200px] flex items-center justify-center">
+          <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] p-3 min-h-[200px] flex items-center justify-center">
             {previewUrl && !previewErrored ? (
               <div
-                className={`relative shadow-xl shadow-black ring-1 ring-white/10 rounded-xl overflow-hidden ${
+                className={`relative shadow-xl shadow-black/60 ring-1 ring-[color:var(--border)] rounded-xl overflow-hidden ${
                   previewType === 'poster'
                     ? 'aspect-[2/3] w-full max-w-[14rem]'
                     : previewType === 'logo'
@@ -519,7 +519,7 @@ export function ProxyView() {
                 />
               </div>
             ) : (
-              <div className="text-center text-[13px] text-zinc-500">
+              <div className="text-center text-[13px] text-[color:var(--muted)]">
                 {tmdbKeyPresent ? 'No preview available.' : 'Configure a server TMDB key to unlock preview.'}
               </div>
             )}
@@ -532,8 +532,8 @@ export function ProxyView() {
                 onClick={() => (onSelectPreviewType as (value: string) => void)(type)}
                 className={`rounded-full border px-3 py-1.5 text-[11px] font-medium transition-colors ${
                   previewType === type
-                    ? 'border-violet-500/60 bg-zinc-800 text-white'
-                    : 'border-white/10 bg-zinc-950 text-zinc-400 hover:text-white'
+                    ? 'border-[color:var(--accent)] bg-[color:var(--accent-dim)] text-[color:var(--ink)]'
+                    : 'border-[color:var(--border)] bg-[color:var(--bg-surface)] text-[color:var(--muted)] hover:text-[color:var(--ink)]'
                 }`}
               >
                 {type.charAt(0).toUpperCase() + type.slice(1)}

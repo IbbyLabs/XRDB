@@ -7,7 +7,10 @@ import {
   XRDB_REQUEST_KEY_ERROR_MESSAGE,
   getConfiguredXrdbRequestKeys,
   isXrdbRequestAuthorized,
+  resolveProvidedXrdbRequestKey,
 } from '@/lib/xrdbRequestKey';
+import { PROTECTED_CONFIG_ID_RE } from '@/lib/dbCore';
+import { recordRequest } from '@/lib/adminMetrics';
 import { assertSafeSourceUrl, fetchWithOneRedirect } from '@/lib/networkSecurity';
 import { loadProxyManifestPayload } from '@/lib/proxySourceManifest';
 import {
@@ -33,7 +36,7 @@ const PROXY_ALLOWED_ORIGINS = process.env.XRDB_PROXY_ALLOWED_ORIGINS;
 const buildError = (request: NextRequest, message: string, status = 400) =>
   buildProxyErrorResponse(request, PROXY_ALLOWED_ORIGINS, message, status);
 
-export const buildJsonCorsHeaders = (request: NextRequest) =>
+const buildJsonCorsHeaders = (request: NextRequest) =>
   buildProxyRouteCorsHeaders({
     requestOrigin: request.headers.get('origin'),
     allowedOriginsRaw: PROXY_ALLOWED_ORIGINS,
@@ -65,15 +68,36 @@ export async function handleProxyGet(
   request: NextRequest,
   pathSegments: string[],
 ) {
+  const requestStartedAt = performance.now();
+  let trackedConfigId: string | null = null;
+  let trackedProvidedKey: string | null = null;
+  let trackedResource: string | null = null;
+
+  const finalize = (response: NextResponse | Response) => {
+    recordRequest('proxy', response.status, performance.now() - requestStartedAt, trackedResource, {
+      configId: trackedConfigId,
+      providedKey: trackedProvidedKey,
+    });
+    return response;
+  };
+
   const parsed = parseProxyRouteConfig(request.nextUrl.searchParams, pathSegments);
   if (parsed.error) {
-    return buildError(request, parsed.error.message, parsed.error.status);
+    return finalize(buildError(request, parsed.error.message, parsed.error.status));
   }
 
   const { config, configSeed, resourceSegments } = parsed;
+  trackedResource = resourceSegments[0] || null;
   if (!config) {
-    return buildError(request, 'Missing proxy config in path.');
+    return finalize(buildError(request, 'Missing proxy config in path.'));
   }
+
+  trackedConfigId = configSeed && PROTECTED_CONFIG_ID_RE.test(configSeed) ? configSeed : null;
+  trackedProvidedKey = resolveProvidedXrdbRequestKey({
+    searchParams: request.nextUrl.searchParams,
+    headers: request.headers,
+    fallbackKey: config.xrdbKey,
+  });
 
   if (
     !isXrdbRequestAuthorized({
@@ -83,18 +107,18 @@ export async function handleProxyGet(
       fallbackKey: config.xrdbKey,
     })
   ) {
-    return buildError(request, XRDB_REQUEST_KEY_ERROR_MESSAGE, 401);
+    return finalize(buildError(request, XRDB_REQUEST_KEY_ERROR_MESSAGE, 401));
   }
 
   if (resourceSegments.length === 0) {
-    return buildError(request, 'Missing addon resource path.');
+    return finalize(buildError(request, 'Missing addon resource path.'));
   }
 
   let safeManifestUrl: URL;
   try {
     safeManifestUrl = await assertSafeSourceUrl(config.url);
   } catch {
-    return buildError(request, 'Invalid or unsafe source manifest URL.', 400);
+    return finalize(buildError(request, 'Invalid or unsafe source manifest URL.', 400));
   }
 
   const publicRequestUrl = getPublicRequestUrl(request);
@@ -111,31 +135,31 @@ export async function handleProxyGet(
     });
     if (!result.ok) {
       if (result.error === 'unreachable') {
-        return buildError(request, 'Unable to reach the source manifest.', 502);
+        return finalize(buildError(request, 'Unable to reach the source manifest.', 502));
       }
       if (result.error === 'bad-status') {
-        return buildError(request, `Source manifest returned ${result.status}.`, 502);
+        return finalize(buildError(request, `Source manifest returned ${result.status}.`, 502));
       }
       if (result.error === 'invalid-json') {
-        return buildError(request, 'Source manifest is not valid JSON.', 502);
+        return finalize(buildError(request, 'Source manifest is not valid JSON.', 502));
       }
-      return buildError(request, 'Invalid or unsafe source manifest URL.', 400);
+      return finalize(buildError(request, 'Invalid or unsafe source manifest URL.', 400));
     }
 
-    return NextResponse.json(
+    return finalize(NextResponse.json(
       result.payload,
       {
         status: 200,
         headers: buildManifestHeaders(request),
       },
-    );
+    ));
   }
 
   let originBase: string;
   try {
     originBase = parseAddonBaseUrl(safeManifestUrl.toString());
   } catch {
-    return buildError(request, 'Invalid source manifest URL.', 400);
+    return finalize(buildError(request, 'Invalid source manifest URL.', 400));
   }
 
   const resource = resourceSegments[0] || '';
@@ -149,22 +173,22 @@ export async function handleProxyGet(
   try {
     sourceResponse = await fetchWithOneRedirect(forwardUrl.toString());
   } catch {
-    return buildError(request, 'Unable to reach the source addon.', 502);
+    return finalize(buildError(request, 'Unable to reach the source addon.', 502));
   }
 
   if (!sourceResponse.ok) {
-    return buildSourceErrorResponse(sourceResponse);
+    return finalize(await buildSourceErrorResponse(sourceResponse));
   }
 
   if (resource !== 'catalog' && resource !== 'meta') {
-    return buildProxyPassthroughResponse(request, PROXY_ALLOWED_ORIGINS, sourceResponse);
+    return finalize(await buildProxyPassthroughResponse(request, PROXY_ALLOWED_ORIGINS, sourceResponse));
   }
 
   let payload: Record<string, unknown>;
   try {
     payload = (await sourceResponse.json()) as Record<string, unknown>;
   } catch {
-    return buildProxyPassthroughResponse(request, PROXY_ALLOWED_ORIGINS, sourceResponse);
+    return finalize(await buildProxyPassthroughResponse(request, PROXY_ALLOWED_ORIGINS, sourceResponse));
   }
 
   if (resource === 'catalog' && Array.isArray(payload.metas)) {
@@ -189,8 +213,8 @@ export async function handleProxyGet(
     payload.meta = await translateMetaPayload(metaWithImages, publicRequestUrl, config);
   }
 
-  return NextResponse.json(payload, {
+  return finalize(NextResponse.json(payload, {
     status: 200,
     headers: buildJsonCorsHeaders(request),
-  });
+  }));
 }

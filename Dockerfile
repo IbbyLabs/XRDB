@@ -21,6 +21,11 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends git \
   && rm -rf /var/lib/apt/lists/*
 
+ARG XRDB_BUILD_VERSION
+ARG NEXT_PUBLIC_DEPLOYMENT_VERSION
+ENV XRDB_BUILD_VERSION=${XRDB_BUILD_VERSION}
+ENV NEXT_PUBLIC_DEPLOYMENT_VERSION=${NEXT_PUBLIC_DEPLOYMENT_VERSION}
+
 COPY --from=install /app/node_modules ./node_modules
 COPY . .
 

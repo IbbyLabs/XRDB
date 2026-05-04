@@ -11,7 +11,7 @@ import {
 import { estimateSummaryLabelWidth } from './imageRouteBadgeMetrics.ts';
 import { escapeXml } from './imageRouteText.ts';
 
-export type GenreBadgeRenderSpec = {
+type GenreBadgeRenderSpec = {
   familyId: GenreBadgeFamilyId;
   label: string;
   accentColor: string;

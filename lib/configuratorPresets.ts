@@ -16,7 +16,7 @@ type ConfiguratorPresetPatch = {
   proxy?: Partial<SavedProxySettings>;
 };
 
-export type ConfiguratorPresetDefinition = {
+type ConfiguratorPresetDefinition = {
   id: ConfiguratorPresetId;
   label: string;
   badge: string;
@@ -43,7 +43,7 @@ type ConfiguratorWizardOptionMap = {
   }>;
 };
 
-export type ConfiguratorWizardQuestion<K extends ConfiguratorWizardQuestionId> = {
+type ConfiguratorWizardQuestion<K extends ConfiguratorWizardQuestionId> = {
   id: K;
   title: string;
   description: string;
@@ -51,7 +51,7 @@ export type ConfiguratorWizardQuestion<K extends ConfiguratorWizardQuestionId> =
 };
 
 export const DEFAULT_CONFIGURATOR_EXPERIENCE_MODE: ConfiguratorExperienceMode = 'simple';
-export const DEFAULT_CONFIGURATOR_PRESET_ID: ConfiguratorPresetId = 'balanced';
+const DEFAULT_CONFIGURATOR_PRESET_ID: ConfiguratorPresetId = 'balanced';
 
 const CORE_RATING_STACK: RatingPreference[] = ['imdb', 'tmdb'];
 const RECOMMENDED_RATING_STACK: RatingPreference[] = ['imdb', 'tmdb', 'mdblist'];
@@ -66,7 +66,7 @@ const BALANCED_QUALITY_BADGES: MediaFeatureBadgeKey[] = [
 
 const DEFAULT_TRANSLATION_MODE: MetadataTranslationMode = 'fill-missing';
 
-export const CONFIGURATOR_PRESETS: readonly ConfiguratorPresetDefinition[] = [
+const CONFIGURATOR_PRESETS: readonly ConfiguratorPresetDefinition[] = [
   {
     id: 'starter',
     label: 'Starter',

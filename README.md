@@ -56,6 +56,8 @@ XRDB uses server side provider keys by default. Configure TMDB and MDBList on th
 
 This keeps setup simple for shared hosts and avoids exposing provider keys or XRDB request keys in the UI or copied URLs. Request protection still uses the separate optional XRDB request key.
 
+The configurator now starts with an Integrations step that shows whether the current host already has working TMDB, MDBList, Fanart, and SIMKL credentials, then lets you add personal session overrides only when you need them.
+
 The configurator includes an Import/Export view built around password protected UUID saved profiles. Save a profile once, use Open saved profile on another device, or paste a `?config=<uuid>` link back into the configurator to reopen that same server stored setup. When a protected profile is active, AIOMetadata exports default to lean UUID backed links while inline parameter URLs remain available as an advanced fallback. The `Hide credentials` toggle masks displayed AIOMetadata patterns with placeholders without changing live XRDB request URLs. The `Poster ID source` selector defaults AIOMetadata poster exports to IMDb for compatibility and keeps auto mode available when you explicitly want typed TMDB poster placeholders. Background and logo patterns always use type aware TMDB IDs. Episode thumbnail exports now default to an Auto mixed-library mode that keeps the public route on IMDb and adds provider candidate hints such as `episodeSourceKitsuId`, `episodeSourceAniListId`, `episodeSourceMalId`, `episodeSourceAniDbId`, and `episodeSourceTvdbId` plus shared `episodeSourceSeason`, `episodeSourceEpisode`, and `episodeAbsolute` values when linked ids are available. Explicit anime-native episode modes still default to canonical series placeholders such as `xrdbid:{imdb_id}`, keep raw `{id}` available only for explicit source-faithful patterns, and continue using `episodeSourceProvider` plus `episodeSourceId` whenever the public `SxxExx` token alone would lose provider episode authority.
 
 Server side client ids can extend a few providers. `XRDB_MAL_CLIENT_ID` enables the official MyAnimeList API path for direct `myanimelist` ratings, `XRDB_TRAKT_CLIENT_ID` enables direct `trakt` ratings, and `SIMKL_CLIENT_ID` (or `XRDB_SIMKL_CLIENT_ID`) enables direct `simkl` ratings server wide. When the MAL client id is not configured, XRDB falls back to Jikan for direct `myanimelist` lookups before falling back to MDBList whenever an MDBList key is available. Fanart backed artwork can use `XRDB_FANART_API_KEY` or `FANART_API_KEY`. OMDb poster lookups use the server side `OMDB_KEY` by default and also accept `OMDB_API_KEY` or `XRDB_OMDB_API_KEY`.
@@ -158,18 +160,43 @@ Sources:
 
 ## Releases & Packages
 
-Pushing a version tag that matches `v*` now starts two independent workflows:
+Pushing a version tag that matches `v*` starts release workflows, and every push to `main` also publishes a development image channel.
 
-- publishes a GitHub release with notes sourced from the matching changelog entry
-- pushes a multi architecture container image to GHCR as `ghcr.io/ibbylabs/xrdb`
+- release tags publish a GitHub release with notes sourced from the matching changelog entry
+- release tags publish multi architecture container images to GHCR
+- main branch commits publish `ghcr.io/ibbylabs/xrdb:dev` and a timestamped tracking tag
 
-The GitHub release is no longer blocked on the Docker publish job finishing.
+Development build versions use semver-aware prerelease strings in UTC 24-hour format:
+
+- release tag build: `vX.Y.Z`
+- main branch dev build: `vX.Y.Z-dev.YYYYMMDD.HHMM.<shortsha>`
+
+The next `X.Y.Z` is inferred from commit messages since the latest release tag:
+
+- `BREAKING CHANGE` or `type!:` => major
+- `feat:` => minor
+- everything else => patch
+
+When a release tag is built, `:dev` is also aligned to that release image. The next `main` commit advances `:dev` again.
+
+Discord notifications can share the same webhook and channel for both release and dev builds:
+
+- `WEBHOOK_URL` is reused for both message types
+- `DISCORD_ROLE_ID` keeps public release pings
+- dev publish notifications use a dedicated role mention ID hardcoded in workflow for main-branch dev image publishes
 
 Pull examples:
 
 ```bash
 docker pull ghcr.io/ibbylabs/xrdb:latest
+docker pull ghcr.io/ibbylabs/xrdb:dev
 docker pull ghcr.io/ibbylabs/xrdb:v1.0.0
+```
+
+Compose can follow dev builds with:
+
+```env
+XRDB_IMAGE_TAG=dev
 ```
 
 Release flow:
@@ -201,15 +228,10 @@ Minimum recommended:
 - RAM: 4 GB
 
 Environment templates:
-- `env.selfhost.template` is the minimal self host setup.
-- `env.template` is the full reference with every supported option.
+- `env.template` is the canonical self-host setup file. Copy it to `.env` and fill in the values for your deployment.
+- Advanced tuning variables are documented in `variables.md`.
 
-Quick start with the minimal template:
-```bash
-cp env.selfhost.template .env
-```
-
-Use the full template instead:
+Quick start:
 ```bash
 cp env.template .env
 ```
@@ -901,10 +923,6 @@ To make each merge mode visible on demand, a local fixture addon returned contro
 
 The fixture environment also mocked the TMDB, anime mapping, AniList, and Kitsu lookups needed for those cases so the screenshots stay reproducible and do not expose live API keys in the captured output.
 
-#### Settings Panel
-
-![Proxy metadata translation settings](docs/images/metadata-translation/proxy-translation-settings-panel.png)
-
 Fill Missing in French (France) replaces placeholder movie fields with TMDB French text.
 
 ![Fill missing movie example in French](docs/images/metadata-translation/proxy-translation-fill-missing-movie-fr.png)
@@ -919,11 +937,73 @@ Anime fallback in English (United Kingdom): Prefer Requested Language falls back
 
 Production validation for this feature covered French (France), French (Belgium), English (United States), and English (United Kingdom).
 
+## Theme System
+
+XRDB ships with a built in theme system accessible via the palette icon in the navigation bar. All themes are expressed as explicit OKLCH palettes — 11 color tokens covering surfaces, accent, text, borders, and scrim.
+
+### How it works
+
+The theme panel has four tabs:
+
+- **Presets** — 12 curated OKLCH presets organized into three groups: Dark (Slate, Obsidian, Iron, Ember, Verdant, Crimson, Copper, Dusk), Special (Midnight for OLED black, Hoth for light mode), and Service (Stremio, TorBox).
+- **Community** — approved palettes submitted by other users.
+- **My themes** — up to 5 personal saved slots stored in `localStorage`. Build a custom palette on the Custom tab and save it here.
+- **Custom** — guided palette editor with three sections: Surfaces (hue and depth), Accent (hue, lightness, chroma), and Text and borders (text hue). Includes Apply, Save to My themes, Copy share link, and Submit to community actions.
+
+Applied themes are stored in `localStorage` under the key `xrdb.theme.v2` and restored instantly on the next page load with no flash of unstyled content. The init script also handles a `?theme=<base64url-palette>` URL parameter for shared links. Legacy `xrdb.theme.v1` sessions are migrated automatically on first load.
+
+### URL sharing
+
+From the Custom tab, use **Copy share link** to generate a URL with a `?theme=` parameter containing your full palette as a base64url-encoded JSON object. Anyone who opens the link will see your theme applied immediately.
+
+### Submitting a community theme
+
+From the Custom tab, build your palette and expand **Submit to community**. Add a name and optional author credit. Submissions go into a pending queue and require admin approval before appearing in the Community tab.
+
+**Submit endpoint:** `POST /api/themes/submit` with `{ name, author?, palette }` where `palette` is a full OKLCH palette object.
+
+**Community list endpoint:** `GET /api/themes/community` returns `{ themes }` with approved themes only.
+
+### Admin review
+
+Community theme submissions appear in the Admin dashboard under the **Community themes** panel. Each pending theme shows a swatch preview. Admins can approve (optionally renaming it) or deny (with an optional admin note).
+
+**Admin endpoints:**
+- `GET /api/admin/themes` — list all themes (all statuses)
+- `PATCH /api/admin/themes/:id` — body: `{ action: "approve" | "deny", name?, admin_note? }`
+
 ## Environment Variables
 
-Use `env.selfhost.template` for a minimal self host setup or `env.template` for the full reference. Copy your choice to `.env` and adjust as needed. All cache TTL values are in **milliseconds**.
+Copy `env.template` to `.env` and fill in the values for your deployment. Advanced tuning and internal override variables are documented in `variables.md`. All cache TTL values are in **milliseconds**.
 
 ### Proxy & Security
+
+## Admin Dashboard
+
+XRDB includes a built in admin dashboard at `/admin`. It is disabled by default and only activates when you set the `ADMIN_KEY` environment variable.
+
+**Enabling the dashboard:**
+
+1. Generate a strong key: `openssl rand -hex 32`
+2. Add it to your `.env`: `ADMIN_KEY=<your-generated-key>`
+3. Restart XRDB and navigate to `/admin`
+4. Sign in with the key you set
+
+**What the dashboard includes:**
+
+| Panel | What it shows |
+|-------|---------------|
+| Request metrics | Total requests, breakdown by route type and status code, per request log, cache hit rate. Supports clearing the log. |
+| Cache | Metadata cache totals (active, expired), hit and miss rates, prune expired entries, flush all cache. |
+| Config profiles | All saved config profiles with created and last accessed dates, password status, lock status. Supports reset password and delete. |
+| Community templates | All submitted community templates with pending or approved status. Supports approve and delete. |
+| Community themes | All submitted community themes with pending, approved, or denied status. Supports approve (with optional rename) and deny (with optional admin note). |
+| Configuration | Read only summary of which API keys are set, how many request keys are configured, instance settings, and cache TTL values. |
+
+**Security notes:**
+- `ADMIN_KEY` is never exposed to the browser. It is stored as an HTTP only cookie after login.
+- When `ADMIN_KEY` is not set, all `/admin` and `/api/admin/*` routes return 404. There is no way to reach the dashboard without setting the key first.
+- Use a key of at least 32 random bytes. Do not reuse it as a request key or any other secret.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
@@ -934,6 +1014,8 @@ Use `env.selfhost.template` for a minimal self host setup or `env.template` for 
 | `XRDB_REQUEST_API_KEYS` | (empty) | Comma separated list of valid request keys when multiple keys are needed |
 | `XRDB_CONFIG_ENCRYPTION_KEY` | auto generated | 64 hex character (32 byte) key used to encrypt saved config profile params and stored proxy references at rest. Set this explicitly in production and back it up. Generate with `openssl rand -hex 32`. |
 | `XRDB_INACTIVE_CONFIG_PRUNE_DAYS` | `-1` (disabled) | Days of inactivity before a saved config profile is pruned on startup. Inactivity is measured from the last image request that resolved the profile. Set to `-1` to disable pruning. |
+| `ADMIN_KEY` | (empty) | Set a strong unique key to enable the admin dashboard at `/admin`. Leave empty to disable (returns 404). Generate with `openssl rand -hex 32`. |
+| `XRDB_INSTANCE_HTML` | (empty) | Raw HTML injected above the mode cards on the entry page. For self-hosted instances only. Rendered as-is with no sanitization — you are responsible for the content. Leave empty on the official public deployment. |
 | `XRDB_PROXY_ALLOWED_ORIGINS` | (empty) | Comma separated CORS allowlist. Empty = `*` |
 | `XRDB_PREVIEW_ORIGIN` | `http://127.0.0.1:3000` | Trusted preview fetch origin used by `/preview/{slug}`. Set this explicitly in production. The legacy `PREVIEW_INTERNAL_ORIGIN` alias is still accepted during migration. |
 | `XRDB_PORT` | `3000` | Host port used by `local-compose.yaml` |
@@ -1095,12 +1177,12 @@ concurrency `2`, cache memory `128 MB`, cache items `100`, and cache files `200`
 
 <table>
   <tr>
-    <td><strong>Live Configurator Workspace</strong><br>The current configurator and preview workspace running on `extendedratings.com`.</td>
-    <td><strong>Live Proxy Workspace</strong><br>The current proxy panel and export flow running on `extendedratings.com`.</td>
+    <td><strong>Live Poster Workspace</strong><br>The current poster artwork configurator running on `extendedratings.com`.</td>
+    <td><strong>Live Proxy Workspace</strong><br>The current proxy manifest workspace running on `extendedratings.com`.</td>
   </tr>
   <tr>
-    <td><a href="https://extendedratings.com/#preview"><img src="docs/images/demo-videos/configurator-live-demo.png" alt="Open the live XRDB configurator workspace" width="420"></a></td>
-    <td><a href="https://extendedratings.com/#proxy"><img src="docs/images/demo-videos/addon-proxy-live-demo.png" alt="Open the live XRDB proxy workspace" width="304"></a></td>
+    <td><a href="https://extendedratings.com/poster"><img src="docs/images/demo-videos/poster-workspace.png" alt="Open the live XRDB poster workspace" width="420"></a></td>
+    <td><a href="https://extendedratings.com/proxy"><img src="docs/images/demo-videos/proxy-workspace.png" alt="Open the live XRDB proxy workspace" width="420"></a></td>
   </tr>
 </table>
 

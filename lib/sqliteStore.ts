@@ -8,7 +8,7 @@ export const dbQuery = async <T = any>(text: string, values: any[] = []) => {
   return executeQuery<T>(getDb(), text, values);
 };
 
-export type DbTransactionClient = {
+type DbTransactionClient = {
   query: <T = any>(text: string, values?: any[]) => Promise<{ rows: T[] }>;
 };
 

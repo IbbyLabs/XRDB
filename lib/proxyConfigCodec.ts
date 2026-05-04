@@ -184,9 +184,4 @@ export const getProxyParamValue = (
   return queryValue !== null ? queryValue : null;
 };
 
-export {
-  normalizeMetadataTranslationMode,
-  normalizeEpisodeIdMode,
-  type MetadataTranslationMode,
-  type EpisodeIdMode,
-};
+

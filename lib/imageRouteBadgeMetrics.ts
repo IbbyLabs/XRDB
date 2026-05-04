@@ -241,7 +241,7 @@ export const estimateRenderedBadgeWidth = (
   );
 };
 
-export const getMinimumCompressedBadgeWidth = (
+const getMinimumCompressedBadgeWidth = (
   value: string,
   fontSize: number,
   paddingX: number,

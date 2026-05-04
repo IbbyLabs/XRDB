@@ -1,5 +1,6 @@
 import { getDb, ensureDbInitialized } from './sqliteStore.ts';
 import { METADATA_CACHE_MAX_ENTRIES } from './imageRouteConfig.ts';
+import { recordCacheEvent } from './adminMetrics.ts';
 
 type MetadataRow = {
   value: string;
@@ -30,14 +31,19 @@ export const getMetadata = <T = any>(key: string): T | null => {
   const now = Date.now();
   const row = readMetadataRow(key);
 
-  if (!row) return null;
+  if (!row) {
+    recordCacheEvent('miss', key.split(':')[0]);
+    return null;
+  }
 
   if (Number(row.expires_at) <= now) {
     db.prepare('DELETE FROM metadata_cache WHERE key = ?').run(key);
+    recordCacheEvent('miss', key.split(':')[0]);
     return null;
   }
 
   db.prepare('UPDATE metadata_cache SET last_accessed_at = ? WHERE key = ?').run(now, key);
+  recordCacheEvent('hit', key.split(':')[0]);
   return parseMetadataValue<T>(row.value);
 };
 
@@ -51,6 +57,7 @@ export const setMetadata = (key: string, value: any, ttlMs: number) => {
   db.prepare(
     'INSERT OR REPLACE INTO metadata_cache (key, value, expires_at, last_accessed_at) VALUES (?, ?, ?, ?)',
   ).run(key, storedValue, expiresAt, now);
+  recordCacheEvent('set', key.split(':')[0]);
 
   if (Math.random() < EXPIRED_PRUNE_SAMPLE_RATE) {
     pruneExpiredMetadata();
@@ -63,9 +70,10 @@ export const setMetadata = (key: string, value: any, ttlMs: number) => {
 export const deleteMetadata = (key: string) => {
   ensureDbInitialized();
   getDb().prepare('DELETE FROM metadata_cache WHERE key = ?').run(key);
+  recordCacheEvent('delete', key.split(':')[0]);
 };
 
-export const pruneExpiredMetadata = () => {
+const pruneExpiredMetadata = () => {
   ensureDbInitialized();
   getDb().prepare('DELETE FROM metadata_cache WHERE expires_at <= ?').run(Date.now());
 };

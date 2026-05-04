@@ -1,6 +1,5 @@
 export { XRDB_RESERVED_PARAMS, type ProxyConfig } from './proxyConfigSchema.ts';
 export {
-  buildProxyId,
   parseAddonBaseUrl,
   normalizeXrdbId,
   hasExplicitTmdbMediaTypeInXrdbId,

@@ -1,7 +1,7 @@
 import { PROVIDER_ICON_CACHE_VERSION } from './imageRouteConfig.ts';
 import { sha1Hex } from './imageRouteRuntime.ts';
 
-export type ImageRouteArtworkType = 'poster' | 'backdrop' | 'logo';
+type ImageRouteArtworkType = 'poster' | 'backdrop' | 'logo';
 
 export const toImageContentType = (value: string | null) => {
   const normalized = (value || '').split(';')[0]?.trim().toLowerCase();

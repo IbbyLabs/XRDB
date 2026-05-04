@@ -14,7 +14,6 @@ import {
   resolveImdbDatasetUrls,
 } from './imdbDatasetLookupSchedulerConfig.ts';
 
-export { resolveImdbDatasetPaths, resolveImdbDatasetUrls };
 
 let syncInFlight: Promise<void> | null = null;
 let lastCheckAt = 0;

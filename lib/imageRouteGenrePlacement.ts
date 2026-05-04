@@ -8,14 +8,14 @@ import { buildGenreBadgeSvg } from './imageRouteGenreBadge.ts';
 
 type ImageType = 'poster' | 'backdrop' | 'logo';
 
-export type GenreBadgePlacementRect = {
+type GenreBadgePlacementRect = {
   left: number;
   top: number;
   width: number;
   height: number;
 };
 
-export type GenreBadgePlacementInput = {
+type GenreBadgePlacementInput = {
   familyId: GenreBadgeFamilyId;
   label: string;
   accentColor: string;
@@ -28,7 +28,7 @@ export type GenreBadgePlacementInput = {
   offsetY?: number;
 };
 
-export type GenreBadgeOverlaySpec = {
+type GenreBadgeOverlaySpec = {
   svg: string;
   width: number;
   height: number;

@@ -1,8 +1,8 @@
-export const LATEST_GITHUB_RELEASE_TTL_SECONDS = 60;
+const LATEST_GITHUB_RELEASE_TTL_SECONDS = 60;
 const DEFAULT_GITHUB_RELEASE_TIMEOUT_MS = 4_000;
 const DEFAULT_GITHUB_REPOSITORY_URL = 'https://github.com/IbbyLabs/XRDB';
 
-export type GitHubRepository = {
+type GitHubRepository = {
   owner: string;
   name: string;
   htmlUrl: string;
@@ -10,14 +10,14 @@ export type GitHubRepository = {
   releasesApiUrl: string;
 };
 
-export type LatestGitHubRelease = {
+type LatestGitHubRelease = {
   tagName: string;
   url: string;
   publishedAt: string | null;
   pendingTagName: string | null;
 };
 
-export type GitHubReleaseApiResponse = {
+type GitHubReleaseApiResponse = {
   id?: unknown;
   tag_name?: unknown;
   html_url?: unknown;
@@ -33,13 +33,10 @@ type NextFetchInit = RequestInit & {
 };
 
 function getRepositoryCandidates(): string[] {
-  return [
-    String(process.env.NEXT_PUBLIC_BRAND_GITHUB_URL || '').trim(),
-    DEFAULT_GITHUB_REPOSITORY_URL,
-  ].filter(Boolean);
+  return [DEFAULT_GITHUB_REPOSITORY_URL];
 }
 
-export function normalizeReleaseTag(value: unknown): string | null {
+function normalizeReleaseTag(value: unknown): string | null {
   if (typeof value !== 'string') {
     return null;
   }
@@ -230,7 +227,7 @@ export function selectPreviousPublishedReleaseTag(
   return publishedTags[currentIndex - 1] || '';
 }
 
-export function selectPendingReleaseTag(
+function selectPendingReleaseTag(
   payload: GitHubReleaseApiResponse[],
   latestPublishedTagName: string | null
 ): string | null {

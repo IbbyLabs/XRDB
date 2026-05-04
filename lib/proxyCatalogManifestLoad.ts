@@ -1,6 +1,6 @@
 type ProxyCatalogLoadState = 'ready' | 'error';
 
-export type ProxyCatalogManifestLoadResult = {
+type ProxyCatalogManifestLoadResult = {
   generatedProxyUrl: string;
   catalogManifest: Record<string, unknown> | null;
   catalogLoadState: ProxyCatalogLoadState;

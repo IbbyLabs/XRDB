@@ -184,7 +184,7 @@ export type EpisodeArtworkMode = 'still' | 'series' | 'streaming';
 export type LogoBackground = 'transparent' | 'dark';
 export type TmdbIdScopeMode = 'soft' | 'strict';
 export type ProxyMediaType = 'movie' | 'series' | 'anime';
-export const PROXY_MEDIA_TYPES: readonly ProxyMediaType[] = ['movie', 'series', 'anime'];
+const PROXY_MEDIA_TYPES: readonly ProxyMediaType[] = ['movie', 'series', 'anime'];
 type XrdbImageType = 'poster' | 'backdrop' | 'logo';
 type SharedPayloadOptions = {
   allowMissingTmdbKey?: boolean;
@@ -192,7 +192,7 @@ type SharedPayloadOptions = {
   omitProviderCredentials?: boolean;
   preserveXrdbKey?: boolean;
 };
-export type AiometadataUrlPatterns = {
+type AiometadataUrlPatterns = {
   posterUrlPattern: string;
   backgroundUrlPattern: string;
   logoUrlPattern: string;
@@ -200,7 +200,7 @@ export type AiometadataUrlPatterns = {
 };
 export type AiometadataPosterIdMode = 'auto' | 'tmdb' | 'imdb';
 export type AiometadataEpisodeIdMode = 'auto' | EpisodeIdMode;
-export type AiometadataEpisodeBaseIdMode = EpisodeIdMode | 'raw';
+type AiometadataEpisodeBaseIdMode = EpisodeIdMode | 'raw';
 export const DEFAULT_AIOMETADATA_EPISODE_ID_MODE: AiometadataEpisodeIdMode = 'auto';
 
 export type SharedXrdbSettings = {
@@ -738,9 +738,9 @@ export const normalizeManifestUrl = (value: string, allowBareScheme = false) => 
   return `https://${withoutScheme}`;
 };
 
-export const isBareHttpUrl = (value: string) => value === 'http://' || value === 'https://';
+const isBareHttpUrl = (value: string) => value === 'http://' || value === 'https://';
 
-export const encodeBase64Url = (value: string) => {
+const encodeBase64Url = (value: string) => {
   const bytes = new TextEncoder().encode(value);
   if (typeof window === 'undefined' && typeof Buffer !== 'undefined') {
     return Buffer.from(bytes).toString('base64url');
@@ -2615,12 +2615,12 @@ const buildSharedPayload = (settings: SharedXrdbSettings, options?: SharedPayloa
   );
   if (providerAppearance) {
     payload.providerAppearance = providerAppearance;
-    const qualityBadgeAppearance = encodeQualityBadgeAppearanceOverrides(
-      settings.qualityBadgeAppearanceOverrides,
-    );
-    if (qualityBadgeAppearance) {
-      payload.qualityBadgeAppearance = qualityBadgeAppearance;
-    }
+  }
+  const qualityBadgeAppearance = encodeQualityBadgeAppearanceOverrides(
+    settings.qualityBadgeAppearanceOverrides,
+  );
+  if (qualityBadgeAppearance) {
+    payload.qualityBadgeAppearance = qualityBadgeAppearance;
   }
   if (!settings.backdropBottomRatingsRow) {
     payload.backdropRatingsLayout = settings.backdropRatingsLayout;
@@ -2641,7 +2641,7 @@ export const buildProfileParams = (
   return Object.fromEntries(Object.entries(payload).map(([k, v]) => [k, String(v)]));
 };
 
-export const buildConfigPayload = (
+const buildConfigPayload = (
   baseUrl: string,
   settings: SharedXrdbSettings,
   options?: SharedPayloadOptions,

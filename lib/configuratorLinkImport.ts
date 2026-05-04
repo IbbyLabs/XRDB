@@ -2,7 +2,7 @@ import { PROXY_OPTIONAL_STRING_KEYS } from './proxyConfigSchema.ts';
 
 export type ConfiguratorPreviewType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
 
-export type ConfiguratorLinkImportPatch = Record<string, string>;
+type ConfiguratorLinkImportPatch = Record<string, string>;
 
 export type ConfiguratorLinkImportResult = {
   sharedSettings: ConfiguratorLinkImportPatch;
@@ -448,7 +448,7 @@ export const getConfiguratorLinkImportTypes = (
   return Boolean(patch && Object.keys(patch).length > 0);
 });
 
-export const mapConfiguratorImportPatchToType = (
+const mapConfiguratorImportPatchToType = (
   sourceType: ConfiguratorPreviewType,
   targetType: ConfiguratorPreviewType,
   patch: ConfiguratorLinkImportPatch,

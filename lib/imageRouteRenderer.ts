@@ -145,10 +145,10 @@ export type GenreBadgeSpec = {
   noBackgroundOutlineColor?: string;
   noBackgroundOutlineWidth?: number;
 };
-export type EditorialRatingOverlay = EditorialRatingOverlaySpec;
-export type PosterCompactRingOverlay = PosterCompactRingOverlaySpec;
+type EditorialRatingOverlay = EditorialRatingOverlaySpec;
+type PosterCompactRingOverlay = PosterCompactRingOverlaySpec;
 
-export type FastRenderInput = {
+type FastRenderInput = {
   imageType: 'poster' | 'backdrop' | 'logo';
   ratingPresentation: RatingPresentation;
   aggregateRatingSource: AggregateRatingSource;

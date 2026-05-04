@@ -1,6 +1,6 @@
 const EPISODE_THUMBNAIL_TOKEN_RE = /^S(\d+)E(\d+)(?:\.(?:jpg|jpeg|png|webp))?$/i;
 
-export const parseEpisodeThumbnailToken = (episodeToken: string) => {
+const parseEpisodeThumbnailToken = (episodeToken: string) => {
   const match = EPISODE_THUMBNAIL_TOKEN_RE.exec(episodeToken);
   const season = match?.[1] || null;
   const episode = match?.[2] || null;

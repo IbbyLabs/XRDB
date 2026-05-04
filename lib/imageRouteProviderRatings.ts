@@ -108,7 +108,7 @@ const DEFAULT_DEPS: ProviderRatingsDeps = {
 
 const ANIME_ONLY_RATING_PROVIDER_SET = new Set<RatingPreference>(['myanimelist', 'anilist', 'kitsu']);
 
-export type ResolvedProviderRatings = {
+type ResolvedProviderRatings = {
   ratings: Map<RatingPreference, string>;
   allowAnimeOnlyRatings: boolean;
   hasConfirmedAnimeMapping: boolean;

@@ -5,7 +5,7 @@ import {
 } from './imageRouteBadgeMetrics.ts';
 import type { RatingStyle } from './ratingAppearance.ts';
 
-export type BadgeRowPlacement<T> = {
+type BadgeRowPlacement<T> = {
   badge: T;
   badgeWidth: number;
   rowX: number;

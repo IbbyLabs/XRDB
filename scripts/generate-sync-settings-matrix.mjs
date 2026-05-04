@@ -1,18 +1,16 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
+import { SYNCABLE_TARGET_KEY_MAP, SYNCABLE_GLOBAL_KEYS, SYNC_SPECIAL_RULES } from '../lib/crossTypeSync.ts';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 const outputPath = path.join(rootDir, 'docs', 'sync-settings-matrix.md');
 
-const moduleUrl = pathToFileURL(path.join(rootDir, 'lib', 'crossTypeSync.ts')).href;
-const syncModule = await import(moduleUrl);
-
-const targetKeyMap = syncModule.SYNCABLE_TARGET_KEY_MAP;
-const globalKeys = syncModule.SYNCABLE_GLOBAL_KEYS;
-const specialRules = syncModule.SYNC_SPECIAL_RULES;
+const targetKeyMap = SYNCABLE_TARGET_KEY_MAP;
+const globalKeys = SYNCABLE_GLOBAL_KEYS;
+const specialRules = SYNC_SPECIAL_RULES;
 
 const toTypeKey = (type, keySuffix, isGlobal) => {
   if (isGlobal) {

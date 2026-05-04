@@ -19,7 +19,7 @@ import {
 import { type RatingPreference } from './ratingProviderCatalog.ts';
 import { type AggregateBadgeKey, type BadgeKey } from './imageRouteConfig.ts';
 
-export type AggregateBadgeInput = {
+type AggregateBadgeInput = {
   key: BadgeKey;
   label: string;
   value: string;

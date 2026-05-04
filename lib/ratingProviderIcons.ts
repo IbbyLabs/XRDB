@@ -5,7 +5,7 @@ import {
   TRAKT_LOGO_DATA_URI,
 } from './ratingProviderBrandAssets.ts';
 
-export type RatingProviderBadgeAppearance = {
+type RatingProviderBadgeAppearance = {
   iconUrl: string;
   accentColor: string;
   label: string;

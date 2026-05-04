@@ -2,9 +2,9 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export type ReadmePreviewImageType = 'poster' | 'backdrop' | 'logo';
+type ReadmePreviewImageType = 'poster' | 'backdrop' | 'logo';
 
-export type ReadmePreviewDefinition = {
+type ReadmePreviewDefinition = {
   slug: string;
   imageType: ReadmePreviewImageType;
   id: string;
@@ -32,9 +32,9 @@ type ReadmePreviewDefinitionInput = Omit<ReadmePreviewDefinition, 'description'>
   descriptionKeys: readonly ReadmePreviewDescriptionKey[];
 };
 
-export type ReadmePreviewSlugBuckets = Record<ReadmePreviewImageType, string[]>;
+type ReadmePreviewSlugBuckets = Record<ReadmePreviewImageType, string[]>;
 
-export type ReadmePreviewState = {
+type ReadmePreviewState = {
   schemaVersion: 1;
   version: string;
   seed: string;
@@ -880,10 +880,10 @@ export const validateReadmePreviewPool = () => {
   }
 };
 
-export const normalizeReadmePreviewVersion = (version: string) =>
+const normalizeReadmePreviewVersion = (version: string) =>
   String(version || '').trim().replace(/[^0-9A-Za-z]+/g, '-');
 
-export const buildReadmePreviewCacheBuster = ({
+const buildReadmePreviewCacheBuster = ({
   slug,
   version,
 }: {

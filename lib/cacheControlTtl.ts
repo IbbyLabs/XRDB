@@ -36,7 +36,7 @@ const getProviderTtlMs = (
   return ttlMs;
 };
 
-export const getFinalImageCacheTtlMs = (input: {
+const getFinalImageCacheTtlMs = (input: {
   renderedRatingProviders: string[];
   ttlByProvider: Map<string, number>;
   tmdbTtlMs: number;
@@ -53,7 +53,7 @@ export const getFinalImageCacheTtlMs = (input: {
   return minimumTtlMs ?? input.fallbackTtlMs ?? input.tmdbTtlMs;
 };
 
-export const buildPublicImageCacheControl = (ttlMs: number, staleWhileRevalidateSeconds = 60) => {
+const buildPublicImageCacheControl = (ttlMs: number, staleWhileRevalidateSeconds = 60) => {
   const maxAgeSeconds = Math.max(60, Math.floor(ttlMs / 1000));
   const staleSeconds = Math.max(0, Math.trunc(staleWhileRevalidateSeconds));
   return `public, s-maxage=${maxAgeSeconds}, stale-while-revalidate=${staleSeconds}`;
