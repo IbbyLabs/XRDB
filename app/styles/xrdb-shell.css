@@ -3947,6 +3947,29 @@
 	flex-wrap: wrap;
 }
 
+.xrdb-save-conflict-banner {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	padding: 0.875rem 1rem;
+	border: 1px solid color-mix(in oklch, var(--accent) 40%, var(--border));
+	border-radius: 10px;
+	background: color-mix(in oklch, var(--accent) 8%, var(--bg-surface));
+}
+
+.xrdb-save-conflict-msg {
+	margin: 0;
+	font-size: 0.8125rem;
+	line-height: 1.5;
+	color: var(--ink);
+}
+
+.xrdb-save-conflict-actions {
+	display: flex;
+	gap: 0.5rem;
+	flex-wrap: wrap;
+}
+
 .xrdb-save-inline-note,
 .xrdb-save-inline-note-text {
 	padding: 0.875rem 1rem;
