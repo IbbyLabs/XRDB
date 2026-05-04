@@ -13,6 +13,40 @@ const AVATAR_URL = 'https://raw.githubusercontent.com/IbbyLabs/xrdb/main/public/
 const DISCORD_ROLE_ID_RE = /^\d+$/;
 const TRACKED_RELEASE_ITEM_RE = /^(FR|BUG)[-\s]+(\d+)\b/i;
 
+function formatUkDateTime(value) {
+  const timestamp = Date.parse(String(value || ''));
+  if (!Number.isFinite(timestamp)) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/London',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+    timeZoneName: 'short',
+  }).format(new Date(timestamp));
+}
+
+function parseDevStampTimestamp(tagName) {
+  const match = String(tagName || '').trim().match(/^dev\.(\d{8})\.(\d{4})\.[0-9a-f]{7,40}$/i);
+  if (!match) {
+    return Number.NaN;
+  }
+
+  const [, datePart, timePart] = match;
+  const year = Number(datePart.slice(0, 4));
+  const month = Number(datePart.slice(4, 6));
+  const day = Number(datePart.slice(6, 8));
+  const hour = Number(timePart.slice(0, 2));
+  const minute = Number(timePart.slice(2, 4));
+  return Date.UTC(year, month - 1, day, hour, minute, 0);
+}
+
 function normalizeReleaseTag(value) {
   if (typeof value !== 'string') {
     return null;
@@ -355,15 +389,11 @@ function formatDetailedReleaseItemLines(item) {
     return [];
   }
 
-  const lines = [`• ${summary}`];
+  const lines = [`- ${summary}`];
 
   for (const detail of getReleaseItemDetails(item)) {
-    if (/^[•*-]\s+/.test(detail)) {
-      lines.push(`  - ${detail.replace(/^[•*-]\s+/, '')}`);
-      continue;
-    }
-
-    lines.push(`  ${detail}`);
+    const normalizedDetail = detail.replace(/^[•*-]\s+/, '');
+    lines.push(`  ${normalizedDetail}`);
   }
 
   return lines;
@@ -770,6 +800,11 @@ export function buildDiscordReleasePayload({
   const publishedTimestamp = Number.isFinite(Date.parse(publishedAt))
     ? Math.floor(Date.parse(publishedAt) / 1000)
     : null;
+  const publishedAtUk = formatUkDateTime(publishedAt);
+  const devStampUtcTimestamp = parseDevStampTimestamp(release.tag_name);
+  const devStampUk = Number.isFinite(devStampUtcTimestamp)
+    ? formatUkDateTime(new Date(devStampUtcTimestamp).toISOString())
+    : '';
   const normalizedRoleId = normalizeDiscordRoleId(discordRoleId);
   const mentionContent = normalizedRoleId ? `<@&${normalizedRoleId}>` : '';
 
@@ -782,10 +817,19 @@ export function buildDiscordReleasePayload({
     {
       name: 'Published',
       value: publishedTimestamp
-        ? `<t:${publishedTimestamp}:F>\n<t:${publishedTimestamp}:R>`
+        ? `${publishedAtUk ? `UK: ${publishedAtUk}\n` : ''}<t:${publishedTimestamp}:F>\n<t:${publishedTimestamp}:R>`
         : 'Unknown',
       inline: true,
     },
+    ...(devStampUk
+      ? [
+        {
+          name: 'Build stamp',
+          value: `UK: ${devStampUk}\nUTC: \`${String(release.tag_name || '').split('.', 3).join('.')}\``,
+          inline: true,
+        },
+      ]
+      : []),
     {
       name: 'Links',
       value: buildLinksField({
