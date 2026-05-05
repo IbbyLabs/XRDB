@@ -1884,6 +1884,37 @@
 	cursor: pointer;
 }
 
+.xrdb-theme-slider-legend {
+	display: flex;
+	flex-direction: column;
+	gap: 0.24rem;
+	margin-top: 0.1rem;
+}
+
+.xrdb-theme-slider-legend-track {
+	height: 0.35rem;
+	border-radius: 999px;
+	border: 1px solid color-mix(in oklch, var(--border) 74%, transparent);
+	overflow: hidden;
+}
+
+.xrdb-theme-slider-legend-labels {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	font-size: 0.64rem;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--muted);
+}
+
+.xrdb-theme-slider-legend-labels span:nth-child(2) {
+	text-align: center;
+}
+
+.xrdb-theme-slider-legend-labels span:last-child {
+	text-align: right;
+}
+
 .xrdb-theme-custom-actions {
 	display: flex;
 	justify-content: flex-end;
@@ -4960,6 +4991,7 @@
 	display: flex;
 	align-items: center;
 	gap: 0.65rem;
+	flex-wrap: wrap;
 }
 
 .xrdb-themes-preview-block {
@@ -4967,6 +4999,62 @@
 	height: 2rem;
 	border-radius: 6px;
 	border: 1px solid color-mix(in oklch, var(--border) 70%, transparent);
+}
+
+.xrdb-themes-preview-block-btn {
+	padding: 0;
+	cursor: pointer;
+	transition: transform 0.16s ease, border-color 0.16s ease;
+}
+
+.xrdb-themes-preview-block-btn:hover {
+	transform: translateY(-1px);
+	border-color: color-mix(in oklch, var(--accent) 52%, var(--border));
+}
+
+.xrdb-themes-preview-block-active {
+	border-color: var(--accent);
+	box-shadow: 0 0 0 1px color-mix(in oklch, var(--accent) 42%, transparent);
+}
+
+.xrdb-themes-preview-editor {
+	margin-left: auto;
+	display: flex;
+	align-items: center;
+	gap: 0.45rem;
+	flex-wrap: nowrap;
+}
+
+.xrdb-themes-preview-color-input {
+	width: 2rem;
+	height: 2rem;
+	padding: 0;
+	border-radius: 0.45rem;
+	border: 1px solid color-mix(in oklch, var(--border) 72%, transparent);
+	background: transparent;
+	cursor: pointer;
+}
+
+.xrdb-themes-preview-color-input::-webkit-color-swatch-wrapper {
+	padding: 0;
+}
+
+.xrdb-themes-preview-color-input::-webkit-color-swatch {
+	border: 0;
+	border-radius: 0.4rem;
+}
+
+.xrdb-themes-preview-color-input::-moz-color-swatch {
+	border: 0;
+	border-radius: 0.4rem;
+}
+
+.xrdb-themes-preview-hex-input {
+	width: 8.2rem;
+	min-height: 2rem;
+	font-size: 0.72rem;
+	font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+	padding: 0.3rem 0.45rem;
 }
 
 .xrdb-themes-preview-name {
@@ -5003,6 +5091,13 @@
 	.xrdb-themes-preview-panel {
 		position: static;
 		min-width: 0;
+		width: 100%;
+	}
+	.xrdb-themes-preview-editor {
+		margin-left: 0;
+		width: 100%;
+	}
+	.xrdb-themes-preview-hex-input {
 		width: 100%;
 	}
 	.xrdb-theme-custom-action-row {
