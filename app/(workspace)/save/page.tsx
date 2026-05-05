@@ -7,6 +7,7 @@ import { ConfigProfileLoginDialog } from '@/components/config-profile-login-dial
 import {
   buildConfigProfileFingerprint,
   buildRevealedConfigState,
+  buildSavedProfileComparableParams,
   hasConfigProfileUnsavedChanges,
   toConfigModeAiometadataUrl,
 } from '@/lib/configProfileClientState';
@@ -105,15 +106,82 @@ export default function SavePage() {
   }, [instanceMenuOpen]);
 
   const currentSaveParams = exportPanelsProps.buildSaveParams();
+  const currentComparableSaveParams = useMemo(
+    () => buildSavedProfileComparableParams(currentSaveParams),
+    [currentSaveParams],
+  );
 
   useEffect(() => {
-    if (!activeProfileId || savedProfileSnapshotReady || !currentSaveParams) {
+    if (!activeProfileId || !activeUnlockToken || savedProfileSnapshotReady) {
       return;
     }
 
-    setSavedProfileFingerprint(buildConfigProfileFingerprint(currentSaveParams));
-    setSavedProfileSnapshotReady(true);
-  }, [activeProfileId, currentSaveParams, savedProfileSnapshotReady]);
+    let active = true;
+
+    void (async () => {
+      try {
+        const revealResponse = await fetch(`/api/config/${encodeURIComponent(activeProfileId)}/reveal`, {
+          headers: {
+            [CONFIG_UNLOCK_HEADER]: activeUnlockToken,
+          },
+        });
+
+        if (!active) {
+          return;
+        }
+
+        if (!revealResponse.ok) {
+          if (revealResponse.status === 401 || revealResponse.status === 403) {
+            ctx.clearConfigProfileUnlockSession();
+            setProfileStatus('Session expired. Login again.');
+            return;
+          }
+
+          setSavedProfileFingerprint(
+            buildConfigProfileFingerprint(buildSavedProfileComparableParams(currentSaveParams)),
+          );
+          setSavedProfileSnapshotReady(true);
+          return;
+        }
+
+        const params = (await revealResponse.json()) as Record<string, string>;
+        const fingerprint = buildConfigProfileFingerprint(buildSavedProfileComparableParams(params));
+
+        if (!active) {
+          return;
+        }
+
+        setSavedProfileFingerprint(fingerprint);
+        setSavedProfileSnapshotReady(true);
+      } catch {
+        if (!active) {
+          return;
+        }
+        setSavedProfileFingerprint(
+          buildConfigProfileFingerprint(buildSavedProfileComparableParams(currentSaveParams)),
+        );
+        setSavedProfileSnapshotReady(true);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [
+    activeProfileId,
+    activeUnlockToken,
+    currentSaveParams,
+    ctx,
+    savedProfileSnapshotReady,
+  ]);
+
+  const handleLogoutProfile = useCallback(() => {
+    ctx.clearConfigProfileUnlockSession();
+    setProfilePasswordInput('');
+    setLoginConflict(null);
+    setProfileError(null);
+    setProfileStatus('Logged out.');
+  }, [ctx]);
 
   const copySingle = useCallback(async (key: string, value: string) => {
     try {
@@ -214,7 +282,7 @@ export default function SavePage() {
   const isPublicAiometadataInstance = AIOMETADATA_PUBLIC_BASE_URLS.has(repairBaseUrl.trim().toLowerCase());
 
   const hasPendingSaveChanges = hasConfigProfileUnsavedChanges({
-    currentParams: currentSaveParams,
+    currentParams: currentComparableSaveParams,
     savedFingerprint: savedProfileFingerprint,
     snapshotReady: Boolean(activeProfileId) && savedProfileSnapshotReady,
   });
@@ -263,11 +331,17 @@ export default function SavePage() {
     }
 
     const params = (await revealResponse.json()) as Record<string, string>;
-    const { normalizedConfig, fingerprint } = buildRevealedConfigState(params);
+    const { normalizedConfig } = buildRevealedConfigState(params);
+    const savedComparableFingerprint = buildConfigProfileFingerprint(
+      buildSavedProfileComparableParams(params),
+    );
+    const localComparableFingerprint = buildConfigProfileFingerprint(
+      buildSavedProfileComparableParams(localParams),
+    );
 
     const hasLocalConflict =
       localParams != null &&
-      buildConfigProfileFingerprint(localParams) !== fingerprint;
+      localComparableFingerprint !== savedComparableFingerprint;
 
     if (hasLocalConflict) {
       ctx.setConfigProfileUnlockSession({
@@ -275,7 +349,7 @@ export default function SavePage() {
         token: unlockData.token,
         expiresAt: unlockData.expiresAt,
       });
-      setSavedProfileFingerprint(fingerprint);
+      setSavedProfileFingerprint(savedComparableFingerprint);
       setSavedProfileSnapshotReady(true);
       setLoginConflict({ serverConfig: normalizedConfig });
       setProfileIdInput(id);
@@ -291,7 +365,7 @@ export default function SavePage() {
       token: unlockData.token,
       expiresAt: unlockData.expiresAt,
     });
-    setSavedProfileFingerprint(fingerprint);
+    setSavedProfileFingerprint(savedComparableFingerprint);
     setSavedProfileSnapshotReady(true);
     setProfileIdInput(id);
     setProfilePasswordInput('');
@@ -346,7 +420,9 @@ export default function SavePage() {
           return;
         }
 
-        setSavedProfileFingerprint(buildConfigProfileFingerprint(params));
+        setSavedProfileFingerprint(
+          buildConfigProfileFingerprint(buildSavedProfileComparableParams(params)),
+        );
         setSavedProfileSnapshotReady(true);
         setProfileStatus('Profile saved.');
         return;
@@ -767,6 +843,16 @@ export default function SavePage() {
             <Link href="/logo" className="xrdb-save-back-btn">
               &larr; Back to Logo
             </Link>
+            {activeProfileId ? (
+              <button
+                className="xrdb-save-action-btn xrdb-save-action-secondary"
+                onClick={handleLogoutProfile}
+                type="button"
+                disabled={profileBusy}
+              >
+                Logout
+              </button>
+            ) : null}
           </div>
         </div>
       </header>
@@ -834,11 +920,6 @@ export default function SavePage() {
                   >
                       {profileBusy ? 'Working' : hasPendingSaveChanges ? 'Save changes' : 'Saved'}
                   </button>
-                    <p className="xrdb-save-inline-note-text">
-                      {hasPendingSaveChanges
-                        ? 'Local changes are ready to save into this UUID.'
-                        : 'This UUID already matches the current workspace.'}
-                    </p>
                 </div>
               </>
             ) : (

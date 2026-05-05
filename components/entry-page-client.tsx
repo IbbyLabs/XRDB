@@ -6,8 +6,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { BrandLogoIcon } from '@/components/brand-logo-icon';
 import { ConfigProfileLoginDialog } from '@/components/config-profile-login-dialog';
 import { InstanceBrandingSlot } from '@/components/instance-branding-slot';
-import { buildRevealedConfigState } from '@/lib/configProfileClientState';
+import { buildRevealedConfigState, buildSavedProfileComparableParams } from '@/lib/configProfileClientState';
 import { useConfiguratorContext } from '@/lib/configuratorProvider';
+import { buildProfileParams } from '@/lib/uiConfig';
 import { BRAND_FULL_NAME, BRAND_GITHUB_URL, BRAND_NAME } from '@/lib/siteBrand';
 
 type EntryPageClientProps = {
@@ -26,6 +27,8 @@ export function EntryPageClient({ instanceHtml }: EntryPageClientProps) {
     experienceMode,
     handleSelectExperienceMode,
     applySavedUiConfig,
+    buildCurrentUiConfig,
+    clearConfigProfileUnlockSession,
     setConfigProfileUnlockSession,
     configProfileUnlockSession,
   } = useConfiguratorContext();
@@ -131,7 +134,18 @@ export function EntryPageClient({ instanceHtml }: EntryPageClientProps) {
 
       const params = (await revealResponse.json()) as Record<string, string>;
       const { normalizedConfig } = buildRevealedConfigState(params);
-      applySavedUiConfig(normalizedConfig);
+
+      const localConfig = buildCurrentUiConfig();
+      const localComparable = buildSavedProfileComparableParams(buildProfileParams(localConfig.settings) ?? {});
+      const serverComparable = buildSavedProfileComparableParams(params);
+      const localHasChanges =
+        JSON.stringify(Object.entries(localComparable).sort()) !==
+        JSON.stringify(Object.entries(serverComparable).sort());
+
+      if (!localHasChanges) {
+        applySavedUiConfig(normalizedConfig);
+      }
+
       setConfigProfileUnlockSession({
         profileId: id,
         token: unlockData.token,
@@ -142,7 +156,7 @@ export function EntryPageClient({ instanceHtml }: EntryPageClientProps) {
     } finally {
       setProfileBusy(false);
     }
-  }, [applySavedUiConfig, profileIdInput, profilePasswordInput, setConfigProfileUnlockSession]);
+  }, [applySavedUiConfig, buildCurrentUiConfig, profileIdInput, profilePasswordInput, setConfigProfileUnlockSession]);
 
   return (
     <>
@@ -205,9 +219,18 @@ export function EntryPageClient({ instanceHtml }: EntryPageClientProps) {
             Start
           </Link>
           {configProfileUnlockSession?.profileId ? (
-            <Link href="/save" className="xrdb-btn xrdb-btn-secondary xrdb-entry-btn">
-              Save &amp; Export
-            </Link>
+            <>
+              <Link href="/save" className="xrdb-btn xrdb-btn-secondary xrdb-entry-btn">
+                Save &amp; Export
+              </Link>
+              <button
+                className="xrdb-btn xrdb-btn-secondary xrdb-entry-btn"
+                onClick={clearConfigProfileUnlockSession}
+                type="button"
+              >
+                Logout
+              </button>
+            </>
           ) : (
             <button
               className="xrdb-btn xrdb-btn-secondary xrdb-entry-btn"

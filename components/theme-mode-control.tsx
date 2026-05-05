@@ -35,7 +35,7 @@ export function ThemeModeControl() {
   const [pref, setPref] = useState<XRDBModePreference>('dark');
 
   useEffect(() => {
-    setPref(getActiveModePreference());
+    queueMicrotask(() => setPref(getActiveModePreference()));
   }, []);
 
   useEffect(() => {
