@@ -41,7 +41,7 @@ ENV PORT=3000
 
 LABEL org.opencontainers.image.title="IbbyLabs Media Service"
 LABEL org.opencontainers.image.description="Dynamic media artwork service with rating overlays and proxy tooling."
-LABEL org.opencontainers.image.source="https://github.com/IbbyLabs/xrdb"
+LABEL org.opencontainers.image.source="https://github.com/IbbyLabs/XRDB"
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
