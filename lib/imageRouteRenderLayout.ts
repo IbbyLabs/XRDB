@@ -605,7 +605,7 @@ export const resolveImageRouteRenderLayout = async (input: {
   const logoNaturalWidth = useLogoBadgeLayout ? outputWidth : 0;
   const finalOutputWidth = useLogoBadgeLayout ? outputWidth : outputWidth;
   const logoImageWidth = useLogoBadgeLayout ? logoNaturalWidth : 0;
-  const logoImageHeight = useLogoBadgeLayout ? outputHeight : 0;
+  const logoBaseImageHeight = useLogoBadgeLayout ? outputHeight : 0;
   const logoRatingRows =
     useLogoBadgeLayout && cappedRatingBadges.length > 0
       ? Math.ceil(cappedRatingBadges.length / Math.max(1, logoBadgesPerRow))
@@ -643,6 +643,14 @@ export const resolveImageRouteRenderLayout = async (input: {
           (ratingStyle === 'stacked' ? 92 : 68),
       )
     : 0;
+  const LOGO_MIN_PORTION = 0.65;
+  const logoImageHeight =
+    useLogoBadgeLayout && logoBadgeBandHeight > 0
+      ? Math.max(
+          logoBaseImageHeight,
+          Math.ceil((logoBadgeBandHeight * LOGO_MIN_PORTION) / (1 - LOGO_MIN_PORTION)),
+        )
+      : logoBaseImageHeight;
   const finalOutputHeight = useLogoBadgeLayout ? logoImageHeight + logoBadgeBandHeight : outputHeight;
 
   return {

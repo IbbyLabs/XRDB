@@ -55,9 +55,13 @@ test('image route render layout wraps logo badges to rows that fit the natural l
 
   assert.equal(layout.logoBadgesPerRow, 2);
   assert.equal(layout.qualityBadges.length, 1);
-  assert.equal(layout.logoImageHeight, 120);
+  assert.ok(layout.logoImageHeight >= 120, `logoImageHeight ${layout.logoImageHeight} should be >= base outputHeight`);
+  assert.ok(
+    layout.logoImageHeight / layout.finalOutputHeight >= 0.64,
+    `logo portion ${(layout.logoImageHeight / layout.finalOutputHeight).toFixed(3)} should satisfy min ratio`,
+  );
   assert.equal(layout.finalOutputWidth, 420);
-  assert.ok(layout.finalOutputHeight > 120);
+  assert.ok(layout.finalOutputHeight > layout.logoImageHeight);
   assert.ok(layout.logoBadgeBandHeight > 0);
 });
 
