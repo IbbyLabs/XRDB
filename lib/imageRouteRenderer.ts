@@ -1054,6 +1054,72 @@ export const renderWithSharp = async (
       }
       trackGenreCollisionRect(stripLeft, stripTop, stripWidth, stripHeight);
     };
+    const resolveTopWithoutBadgeCollision = ({
+      left,
+      top,
+      width,
+      height,
+      preference,
+      minTop = input.badgeTopOffset,
+      maxTop = Math.max(input.badgeTopOffset, input.finalOutputHeight - height),
+    }: {
+      left: number;
+      top: number;
+      width: number;
+      height: number;
+      preference: 'down' | 'up';
+      minTop?: number;
+      maxTop?: number;
+    }) => {
+      const collisionPadding = Math.max(8, Math.round(input.badgeGap * 0.9));
+      let adjustedTop = clamp(top, minTop, maxTop);
+
+      for (let pass = 0; pass < genreCollisionRects.length + 3; pass += 1) {
+        let needsAdjustment = false;
+        let requiredDown = adjustedTop;
+        let requiredUp = adjustedTop;
+
+        for (const rect of genreCollisionRects) {
+          const overlapsHorizontally =
+            left < rect.left + rect.width + collisionPadding &&
+            left + width > rect.left - collisionPadding;
+          const overlapsVertically =
+            adjustedTop < rect.top + rect.height + collisionPadding &&
+            adjustedTop + height > rect.top - collisionPadding;
+          if (!overlapsHorizontally || !overlapsVertically) continue;
+          needsAdjustment = true;
+          requiredDown = Math.max(requiredDown, rect.top + rect.height + collisionPadding);
+          requiredUp = Math.min(requiredUp, rect.top - height - collisionPadding);
+        }
+
+        if (!needsAdjustment) break;
+
+        const downFits = requiredDown <= maxTop;
+        const upFits = requiredUp >= minTop;
+        let nextTop = adjustedTop;
+
+        if (preference === 'down') {
+          if (downFits) {
+            nextTop = requiredDown;
+          } else if (upFits) {
+            nextTop = requiredUp;
+          }
+        } else {
+          if (upFits) {
+            nextTop = requiredUp;
+          } else if (downFits) {
+            nextTop = requiredDown;
+          }
+        }
+
+        const clampedNextTop = clamp(nextTop, minTop, maxTop);
+        if (clampedNextTop === adjustedTop) break;
+        adjustedTop = clampedNextTop;
+      }
+
+      return adjustedTop;
+    };
+
     const pushBadgeOverlay = ({
       badge,
       badgeWidth,
@@ -1139,7 +1205,8 @@ export const renderWithSharp = async (
       trackGenreCollisionRect(translatedLeft, translatedTop, badgeWidth, ratingBadgeHeight);
     };
     const appendQualityBadgeOverlays = (
-      qualityBadgeOverlays: ReturnType<typeof buildQualityBadgeRowOverlays>
+      qualityBadgeOverlays: ReturnType<typeof buildQualityBadgeRowOverlays>,
+      collisionPreference: 'down' | 'up' = 'down',
     ) => {
       for (const overlay of qualityBadgeOverlays) {
         const offsetX = input.imageType === 'poster' ? input.posterQualityBadgeOffsetX ?? 0 : 0;
@@ -1149,11 +1216,18 @@ export const renderWithSharp = async (
           0,
           Math.max(0, input.outputWidth - overlay.width),
         );
-        const clampedTop = clamp(
+        const initialTop = clamp(
           overlay.top + offsetY,
           0,
           Math.max(0, input.finalOutputHeight - overlay.height),
         );
+        const clampedTop = resolveTopWithoutBadgeCollision({
+          left: clampedLeft,
+          top: initialTop,
+          width: overlay.width,
+          height: overlay.height,
+          preference: collisionPreference,
+        });
         if (
           input.qualityBadgesStyle === 'plain' &&
           shouldUseAdaptivePlainPlate({
@@ -1882,7 +1956,12 @@ export const renderWithSharp = async (
         layout: 'column',
       });
       if (detachedAgeRatingOverlays.length > 0) {
-        appendQualityBadgeOverlays(detachedAgeRatingOverlays);
+        appendQualityBadgeOverlays(
+          detachedAgeRatingOverlays,
+          explicitAgeRatingPlacement?.kind === 'row' && explicitAgeRatingPlacement.edge === 'bottom'
+            ? 'up'
+            : 'down',
+        );
       }
       if (qualityPlacement === 'bottom') {
         const bottomQualityHeight = resolveQualityBadgeHeight({
@@ -1910,7 +1989,8 @@ export const renderWithSharp = async (
               qualityBadgesStyle: input.qualityBadgesStyle,
               posterEdgeInset,
               backdropEdgeInset,
-            })
+            }),
+            'up',
           );
         }
       } else if (qualityPlacement === 'top') {
@@ -1937,7 +2017,8 @@ export const renderWithSharp = async (
               qualityBadgesStyle: input.qualityBadgesStyle,
               posterEdgeInset,
               backdropEdgeInset,
-            })
+            }),
+            'down',
           );
         }
       } else {
