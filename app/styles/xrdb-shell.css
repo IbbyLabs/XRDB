@@ -1127,13 +1127,13 @@
 }
 
 .xrdb-nav-inner {
-	display: flex;
+	display: grid;
+	grid-template-columns: minmax(0, max-content) minmax(0, 1fr) minmax(0, max-content);
 	align-items: center;
 	gap: 0.9rem;
 	height: 100%;
 	padding: 0 1rem;
-	max-width: 90rem;
-	margin: 0 auto;
+	width: 100%;
 }
 
 .xrdb-nav-brand {
@@ -1252,7 +1252,7 @@
 .xrdb-nav-tabs {
 	display: flex;
 	align-items: center;
-	flex: 1;
+	justify-content: center;
 	min-width: 0;
 }
 
@@ -1305,11 +1305,18 @@
 	flex-shrink: 0;
 }
 
+.xrdb-nav-right {
+	display: flex;
+	align-items: center;
+	gap: 0.45rem;
+	justify-self: end;
+	min-width: 0;
+}
+
 .xrdb-nav-theme-tools {
 	display: flex;
 	align-items: center;
 	gap: 0.45rem;
-	margin-left: auto;
 	flex-shrink: 0;
 }
 
@@ -1446,6 +1453,7 @@
 /* Mobile nav — hide step tabs, show as scroll row */
 @media (max-width: 639px) {
 	.xrdb-nav-inner {
+		grid-template-columns: minmax(0, max-content) minmax(0, 1fr) minmax(0, max-content);
 		gap: 0.75rem;
 		padding: 0 0.75rem;
 	}
@@ -1483,6 +1491,10 @@
 
 	.xrdb-nav-controls {
 		display: none;
+	}
+
+	.xrdb-nav-right {
+		gap: 0.3rem;
 	}
 
 	.xrdb-nav-theme-control-full {

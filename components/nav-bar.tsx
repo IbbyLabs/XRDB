@@ -215,44 +215,46 @@ export function NavBar({ adminEnabled = false }: { adminEnabled?: boolean }) {
           </div>
         </div>
 
-        {showModeToggle ? (
-          <div className="xrdb-nav-controls">
-            <div className="xrdb-mode-toggle" role="group" aria-label="Interface mode">
-              <button
-                className={`xrdb-mode-btn${activeMode === 'simple' ? ' xrdb-mode-btn-active' : ''}`}
-                onClick={() => handleModeSelect('simple')}
-                aria-pressed={activeMode === 'simple'}
-                type="button"
-              >
-                Simple
-              </button>
-              <button
-                className={`xrdb-mode-btn${activeMode === 'advanced' ? ' xrdb-mode-btn-active' : ''}`}
-                onClick={() => handleModeSelect('advanced')}
-                aria-pressed={activeMode === 'advanced'}
-                type="button"
-              >
-                Advanced
-              </button>
+        <div className="xrdb-nav-right">
+          {showModeToggle ? (
+            <div className="xrdb-nav-controls">
+              <div className="xrdb-mode-toggle" role="group" aria-label="Interface mode">
+                <button
+                  className={`xrdb-mode-btn${activeMode === 'simple' ? ' xrdb-mode-btn-active' : ''}`}
+                  onClick={() => handleModeSelect('simple')}
+                  aria-pressed={activeMode === 'simple'}
+                  type="button"
+                >
+                  Simple
+                </button>
+                <button
+                  className={`xrdb-mode-btn${activeMode === 'advanced' ? ' xrdb-mode-btn-active' : ''}`}
+                  onClick={() => handleModeSelect('advanced')}
+                  aria-pressed={activeMode === 'advanced'}
+                  type="button"
+                >
+                  Advanced
+                </button>
+              </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
 
-        <div className="xrdb-nav-theme-tools">
-          <span className="xrdb-nav-theme-control-full"><ThemeModeControl /></span>
-          <span className="xrdb-nav-theme-control-compact"><ThemeModePopover /></span>
+          <div className="xrdb-nav-theme-tools">
+            <span className="xrdb-nav-theme-control-full"><ThemeModeControl /></span>
+            <span className="xrdb-nav-theme-control-compact"><ThemeModePopover /></span>
 
-          <div className="xrdb-theme-trigger">
-            <Link
-              href="/themes"
-              className={`xrdb-theme-icon-btn${isActive('/themes') ? ' xrdb-theme-icon-btn-active' : ''}`}
-              aria-label="Theme settings"
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <circle cx="8" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.5" />
-                <path d="M8 1v1.5M8 13.5V15M15 8h-1.5M2.5 8H1M12.36 3.64l-1.06 1.06M4.7 11.3l-1.06 1.06M12.36 12.36l-1.06-1.06M4.7 4.7L3.64 3.64" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-            </Link>
+            <div className="xrdb-theme-trigger">
+              <Link
+                href="/themes"
+                className={`xrdb-theme-icon-btn${isActive('/themes') ? ' xrdb-theme-icon-btn-active' : ''}`}
+                aria-label="Theme settings"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                  <circle cx="8" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.5" />
+                  <path d="M8 1v1.5M8 13.5V15M15 8h-1.5M2.5 8H1M12.36 3.64l-1.06 1.06M4.7 11.3l-1.06 1.06M12.36 12.36l-1.06-1.06M4.7 4.7L3.64 3.64" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </Link>
+            </div>
           </div>
         </div>
       </div>
