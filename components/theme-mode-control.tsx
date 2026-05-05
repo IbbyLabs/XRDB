@@ -32,10 +32,11 @@ function applyFamilyMode(familyId: string, effective: XRDBThemeMode) {
 }
 
 export function ThemeModeControl() {
-  const [pref, setPref] = useState<XRDBModePreference>(() => {
-    if (typeof window === 'undefined') return 'dark';
-    return getActiveModePreference();
-  });
+  const [pref, setPref] = useState<XRDBModePreference>('dark');
+
+  useEffect(() => {
+    setPref(getActiveModePreference());
+  }, []);
 
   useEffect(() => {
     if (pref !== 'system') return;

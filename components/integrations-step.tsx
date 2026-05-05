@@ -459,7 +459,7 @@ export function IntegrationsStep() {
 
       <div className="xrdb-step-nav-sticky" role="navigation" aria-label="Step navigation">
         <Link href="/poster" className="xrdb-btn xrdb-btn-primary">
-          Next: Poster
+          Next
         </Link>
       </div>
     </section>
