@@ -6,9 +6,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { BrandLogoIcon } from '@/components/brand-logo-icon';
 import { ConfigProfileLoginDialog } from '@/components/config-profile-login-dialog';
 import { InstanceBrandingSlot } from '@/components/instance-branding-slot';
-import { buildRevealedConfigState, buildSavedProfileComparableParams } from '@/lib/configProfileClientState';
+import { buildRevealedConfigState } from '@/lib/configProfileClientState';
 import { useConfiguratorContext } from '@/lib/configuratorProvider';
-import { buildProfileParams } from '@/lib/uiConfig';
 import { BRAND_FULL_NAME, BRAND_GITHUB_URL, BRAND_NAME } from '@/lib/siteBrand';
 
 type EntryPageClientProps = {
@@ -27,7 +26,6 @@ export function EntryPageClient({ instanceHtml }: EntryPageClientProps) {
     experienceMode,
     handleSelectExperienceMode,
     applySavedUiConfig,
-    buildCurrentUiConfig,
     clearConfigProfileUnlockSession,
     setConfigProfileUnlockSession,
     configProfileUnlockSession,
@@ -134,17 +132,7 @@ export function EntryPageClient({ instanceHtml }: EntryPageClientProps) {
 
       const params = (await revealResponse.json()) as Record<string, string>;
       const { normalizedConfig } = buildRevealedConfigState(params);
-
-      const localConfig = buildCurrentUiConfig();
-      const localComparable = buildSavedProfileComparableParams(buildProfileParams(localConfig.settings) ?? {});
-      const serverComparable = buildSavedProfileComparableParams(params);
-      const localHasChanges =
-        JSON.stringify(Object.entries(localComparable).sort()) !==
-        JSON.stringify(Object.entries(serverComparable).sort());
-
-      if (!localHasChanges) {
-        applySavedUiConfig(normalizedConfig);
-      }
+      applySavedUiConfig(normalizedConfig);
 
       setConfigProfileUnlockSession({
         profileId: id,
@@ -156,7 +144,7 @@ export function EntryPageClient({ instanceHtml }: EntryPageClientProps) {
     } finally {
       setProfileBusy(false);
     }
-  }, [applySavedUiConfig, buildCurrentUiConfig, profileIdInput, profilePasswordInput, setConfigProfileUnlockSession]);
+  }, [applySavedUiConfig, profileIdInput, profilePasswordInput, setConfigProfileUnlockSession]);
 
   return (
     <>

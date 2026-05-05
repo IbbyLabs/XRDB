@@ -893,9 +893,10 @@ export default function SavePage() {
                       <button
                         className="xrdb-save-action-btn xrdb-save-action-primary"
                         type="button"
-                        onClick={() => setLoginConflict(null)}
+                        disabled={profileBusy}
+                        onClick={() => { void handleSaveProfile(); setLoginConflict(null); }}
                       >
-                        Keep local and save
+                        {profileBusy ? 'Working' : 'Keep local and save'}
                       </button>
                       <button
                         className="xrdb-save-action-btn xrdb-save-action-secondary"
@@ -911,7 +912,7 @@ export default function SavePage() {
                   </div>
                 ) : null}
 
-                <div className="xrdb-save-profile-toolbar">
+                {!loginConflict && <div className="xrdb-save-profile-toolbar">
                   <button
                     className="xrdb-save-action-btn xrdb-save-action-primary"
                     onClick={() => void handleSaveProfile()}
@@ -920,7 +921,7 @@ export default function SavePage() {
                   >
                       {profileBusy ? 'Working' : hasPendingSaveChanges ? 'Save changes' : 'Saved'}
                   </button>
-                </div>
+                </div>}
               </>
             ) : (
               <>
@@ -951,6 +952,14 @@ export default function SavePage() {
                     disabled={profileBusy}
                   >
                     {profileBusy ? 'Working' : 'Create UUID'}
+                  </button>
+                  <button
+                    className="xrdb-save-action-btn xrdb-save-action-secondary"
+                    onClick={() => setLoginDialogOpen(true)}
+                    type="button"
+                    disabled={profileBusy}
+                  >
+                    Login
                   </button>
                 </div>
               </>
