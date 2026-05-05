@@ -178,6 +178,7 @@ export function StepShell({
 
   const stepIndex = getStepIndex(step);
   const nextStep = stepIndex >= 0 && stepIndex < WORKFLOW_STEPS.length - 1 ? WORKFLOW_STEPS[stepIndex + 1] : null;
+  const prevStep = stepIndex > 0 ? WORKFLOW_STEPS[stepIndex - 1] : null;
 
   const visibleTabs = useMemo(
     () => (experienceMode === 'simple' ? CONTROL_TABS.filter((tab) => tab.key !== 'advanced' && tab.key !== 'quality') : CONTROL_TABS),
@@ -614,9 +615,14 @@ export function StepShell({
         >
           Inspect
         </button>
+        {prevStep && (
+          <Link href={prevStep.href} className="xrdb-btn xrdb-btn-secondary xrdb-step-nav-back">
+            Back
+          </Link>
+        )}
         {nextStep ? (
           <Link href={nextStep.href} className="xrdb-btn xrdb-btn-primary">
-            Next: {nextStep.label}
+            Next
           </Link>
         ) : (
           <div className="xrdb-step-nav-final-actions">

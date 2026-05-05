@@ -2437,7 +2437,7 @@
 
 .xrdb-preview-band {
 	position: sticky;
-	top: 0;
+	top: 52px;
 	z-index: 30;
 	display: flex;
 	flex-direction: column;
@@ -3109,7 +3109,7 @@
 
 .xrdb-step-nav-sticky {
 	position: fixed;
-	left: auto;
+	left: max(0.75rem, env(safe-area-inset-left));
 	right: max(0.75rem, env(safe-area-inset-right));
 	bottom: max(0.75rem, env(safe-area-inset-bottom));
 	z-index: 40;
@@ -3122,6 +3122,10 @@
 	border-radius: 0;
 	background: transparent;
 	pointer-events: none;
+}
+
+.xrdb-step-nav-back {
+	margin-right: auto;
 }
 
 .xrdb-step-nav-sticky a,
@@ -3341,7 +3345,6 @@
 	}
 
 	.xrdb-preview-band {
-		top: 52px;
 		min-height: 36vh;
 		max-height: 52vh;
 	}
