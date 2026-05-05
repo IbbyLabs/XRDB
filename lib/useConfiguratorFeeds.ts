@@ -21,9 +21,10 @@ export function useConfiguratorFeeds({
   const [latestReleaseUrl, setLatestReleaseUrl] = useState('');
   const [pendingReleaseTag, setPendingReleaseTag] = useState('');
   const [isLatestReleaseLoading, setIsLatestReleaseLoading] = useState(!disabled);
-  const [nowMs, setNowMs] = useState(Date.now());
+  const [nowMs, setNowMs] = useState(0);
 
   useEffect(() => {
+    setNowMs(Date.now());
     const tick = setInterval(() => {
       setNowMs(Date.now());
     }, 60_000);
