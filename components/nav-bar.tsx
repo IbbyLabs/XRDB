@@ -44,11 +44,12 @@ function applyFamilyMode(familyId: string, effective: XRDBThemeMode) {
 
 function ThemeModePopover() {
   const [open, setOpen] = useState(false);
-  const [pref, setPref] = useState<XRDBModePreference>(() => {
-    if (typeof window === 'undefined') return 'dark';
-    return getActiveModePreference();
-  });
+  const [pref, setPref] = useState<XRDBModePreference>('dark');
   const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    queueMicrotask(() => setPref(getActiveModePreference()));
+  }, []);
 
   useEffect(() => {
     if (!open) return;

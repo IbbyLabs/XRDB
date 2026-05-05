@@ -3707,6 +3707,14 @@
 	gap: 1.5rem;
 }
 
+.xrdb-save-header-nav {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.625rem;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+}
+
 .xrdb-save-title {
 	font-family: 'Bricolage Grotesque', system-ui, sans-serif;
 	font-size: 1.375rem;
@@ -3978,6 +3986,7 @@
 	display: flex;
 	flex-wrap: wrap;
 	gap: 0.75rem;
+	padding-bottom: 0.35rem;
 }
 
 .xrdb-save-inline-grid {
@@ -4114,9 +4123,10 @@
 .xrdb-save-profile-toolbar {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
+	justify-content: flex-start;
 	gap: 1rem;
 	flex-wrap: wrap;
+	padding-bottom: 0.35rem;
 }
 
 .xrdb-save-conflict-banner {
