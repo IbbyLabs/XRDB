@@ -31,6 +31,153 @@ type CommunityThemeRow = XRDBThemeV2 & { author?: string };
 
 type Tab = 'presets' | 'community' | 'mine' | 'custom';
 type CustomSection = 'surfaces' | 'accent' | 'detail';
+type PreviewTokenKey = keyof Pick<XRDBPalette, 'bgBase' | 'bgSurface' | 'bgElevated' | 'accent' | 'ink'>;
+type PreviewTokenOverrides = Partial<Record<PreviewTokenKey, string>>;
+
+type SliderLegendProps = {
+  gradient: string;
+  low: string;
+  mid: string;
+  high: string;
+};
+
+function SliderLegend({ gradient, low, mid, high }: SliderLegendProps) {
+  return (
+    <div className="xrdb-theme-slider-legend" aria-hidden="true">
+      <span className="xrdb-theme-slider-legend-track" style={{ background: gradient }} />
+      <span className="xrdb-theme-slider-legend-labels">
+        <span>{low}</span>
+        <span>{mid}</span>
+        <span>{high}</span>
+      </span>
+    </div>
+  );
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function normalizeHue(value: number): number {
+  return ((value % 360) + 360) % 360;
+}
+
+function parseRgbColor(input: string): { r: number; g: number; b: number } | null {
+  const match = input.match(/rgba?\(([^)]+)\)/i);
+  if (!match) return null;
+  const parts = match[1].split(/[\s,\/]+/).filter(Boolean);
+  if (parts.length < 3) return null;
+  const r = Number(parts[0]);
+  const g = Number(parts[1]);
+  const b = Number(parts[2]);
+  if (![r, g, b].every(Number.isFinite)) return null;
+  return {
+    r: clamp(Math.round(r), 0, 255),
+    g: clamp(Math.round(g), 0, 255),
+    b: clamp(Math.round(b), 0, 255),
+  };
+}
+
+function parseOklchColor(input: string): { l: number; c: number; h: number } | null {
+  const match = input.match(/oklch\(\s*([\d.]+)%\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*[\d.]+)?\s*\)/i);
+  if (!match) return null;
+  const l = Number(match[1]);
+  const c = Number(match[2]);
+  const h = Number(match[3]);
+  if (![l, c, h].every(Number.isFinite)) return null;
+  return {
+    l: clamp(l, 0, 100),
+    c: Math.max(0, c),
+    h: normalizeHue(h),
+  };
+}
+
+function cssColorToRgb(value: string): { r: number; g: number; b: number } | null {
+  if (typeof document === 'undefined') return null;
+  const el = document.createElement('span');
+  el.style.color = '';
+  el.style.color = value;
+  if (!el.style.color) return null;
+  document.body.appendChild(el);
+  const resolved = window.getComputedStyle(el).color;
+  el.remove();
+  return parseRgbColor(resolved);
+}
+
+function toSrgbChannel(channel: number): number {
+  const safe = clamp(channel, 0, 1);
+  return safe <= 0.0031308 ? 12.92 * safe : 1.055 * safe ** (1 / 2.4) - 0.055;
+}
+
+function oklchToRgb(oklch: { l: number; c: number; h: number }): { r: number; g: number; b: number } {
+  const l = oklch.l / 100;
+  const hRad = (oklch.h * Math.PI) / 180;
+  const a = oklch.c * Math.cos(hRad);
+  const bAxis = oklch.c * Math.sin(hRad);
+
+  const l_ = (l + 0.3963377774 * a + 0.2158037573 * bAxis) ** 3;
+  const m_ = (l - 0.1055613458 * a - 0.0638541728 * bAxis) ** 3;
+  const s_ = (l - 0.0894841775 * a - 1.291485548 * bAxis) ** 3;
+
+  const linearR = 4.0767416621 * l_ - 3.3077115913 * m_ + 0.2309699292 * s_;
+  const linearG = -1.2684380046 * l_ + 2.6097574011 * m_ - 0.3413193965 * s_;
+  const linearB = -0.0041960863 * l_ - 0.7034186147 * m_ + 1.707614701 * s_;
+
+  return {
+    r: clamp(Math.round(toSrgbChannel(linearR) * 255), 0, 255),
+    g: clamp(Math.round(toSrgbChannel(linearG) * 255), 0, 255),
+    b: clamp(Math.round(toSrgbChannel(linearB) * 255), 0, 255),
+  };
+}
+
+function toLinear(channel: number): number {
+  const c = channel / 255;
+  return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+}
+
+function rgbToOklch(rgb: { r: number; g: number; b: number }): { l: number; c: number; h: number } {
+  const r = toLinear(rgb.r);
+  const g = toLinear(rgb.g);
+  const b = toLinear(rgb.b);
+
+  const lmsL = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const lmsM = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const lmsS = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+
+  const l = 0.2104542553 * lmsL + 0.793617785 * lmsM - 0.0040720468 * lmsS;
+  const a = 1.9779984951 * lmsL - 2.428592205 * lmsM + 0.4505937099 * lmsS;
+  const bAxis = 0.0259040371 * lmsL + 0.7827717662 * lmsM - 0.808675766 * lmsS;
+  const c = Math.sqrt(a * a + bAxis * bAxis);
+  const rawHue = (Math.atan2(bAxis, a) * 180) / Math.PI;
+  return {
+    l: clamp(l * 100, 0, 100),
+    c,
+    h: normalizeHue(rawHue),
+  };
+}
+
+function rgbToHex(rgb: { r: number; g: number; b: number }): string {
+  return `#${rgb.r.toString(16).padStart(2, '0')}${rgb.g.toString(16).padStart(2, '0')}${rgb.b.toString(16).padStart(2, '0')}`;
+}
+
+function cssColorToHex(value: string): string | null {
+  const rgb = cssColorToRgb(value);
+  if (rgb) return rgbToHex(rgb);
+  const parsedOklch = parseOklchColor(value);
+  if (!parsedOklch) return null;
+  return rgbToHex(oklchToRgb(parsedOklch));
+}
+
+function normalizeHex(value: string): string {
+  const trimmed = value.trim();
+  const raw = trimmed.startsWith('#') ? trimmed.slice(1) : trimmed;
+  if (!/^[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/.test(raw)) return '';
+  if (raw.length === 3) {
+    const expanded = raw.split('').map(part => `${part}${part}`).join('');
+    return `#${expanded.toLowerCase()}`;
+  }
+  return `#${raw.toLowerCase()}`;
+}
 
 function buildCustomPalette(
   surfaceHue: number,
@@ -155,10 +302,12 @@ export function ThemePageContent() {
   const [submitAuthor, setSubmitAuthor] = useState('');
   const [submitExpanded, setSubmitExpanded] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'submitting' | 'ok' | 'err'>('idle');
+  const [activePreviewEditor, setActivePreviewEditor] = useState<PreviewTokenKey | null>(null);
+  const [previewHexDraft, setPreviewHexDraft] = useState('');
+  const [previewTokenOverrides, setPreviewTokenOverrides] = useState<PreviewTokenOverrides>({});
 
-  useEffect(() => {
-    if (tab !== 'custom') return;
-    const palette = buildCustomPalette(
+  const effectivePalette = {
+    ...buildCustomPalette(
       surfaceHue,
       surfaceDepth,
       surfaceChroma,
@@ -170,10 +319,16 @@ export function ThemePageContent() {
       accentC,
       textHue,
       borderChroma,
-    );
+    ),
+    ...previewTokenOverrides,
+  };
+
+  useEffect(() => {
+    if (tab !== 'custom') return;
+    const palette = effectivePalette;
     const payload: ThemePayloadV2 = { id: 'custom', name: 'Custom', category: 'personal', palette, source: 'personal' };
     applyThemeV2(payload);
-  }, [tab, surfaceHue, surfaceDepth, surfaceChroma, midLightness, surfaceLightness, elevatedLightness, accentHue, accentL, accentC, textHue, borderChroma]);
+  }, [tab, effectivePalette]);
 
   useEffect(() => {
     if (tab !== 'community') return;
@@ -210,19 +365,7 @@ export function ThemePageContent() {
   }
 
   function applyCustom() {
-    const palette = buildCustomPalette(
-      surfaceHue,
-      surfaceDepth,
-      surfaceChroma,
-      midLightness,
-      surfaceLightness,
-      elevatedLightness,
-      accentHue,
-      accentL,
-      accentC,
-      textHue,
-      borderChroma,
-    );
+    const palette = effectivePalette;
     const payload: ThemePayloadV2 = { id: 'custom', name: 'Custom', category: 'personal', palette, source: 'personal' };
     applyThemeV2(payload);
     saveThemeV2(payload);
@@ -233,19 +376,7 @@ export function ThemePageContent() {
     e.preventDefault();
     const name = saveSlotName.trim();
     if (!name) return;
-    const palette = buildCustomPalette(
-      surfaceHue,
-      surfaceDepth,
-      surfaceChroma,
-      midLightness,
-      surfaceLightness,
-      elevatedLightness,
-      accentHue,
-      accentL,
-      accentC,
-      textHue,
-      borderChroma,
-    );
+    const palette = effectivePalette;
     const theme: XRDBThemeV2 = { id: `personal-${Date.now()}`, name, category: 'personal', palette };
     savePersonalTheme(theme);
     setPersonalThemes(getPersonalThemes());
@@ -260,19 +391,7 @@ export function ThemePageContent() {
   }
 
   function handleCopyShareLink() {
-    const palette = buildCustomPalette(
-      surfaceHue,
-      surfaceDepth,
-      surfaceChroma,
-      midLightness,
-      surfaceLightness,
-      elevatedLightness,
-      accentHue,
-      accentL,
-      accentC,
-      textHue,
-      borderChroma,
-    );
+    const palette = effectivePalette;
     const encoded = encodePaletteForUrl(palette);
     const url = `${window.location.origin}/themes?theme=${encoded}`;
     setShareLink(url);
@@ -284,6 +403,9 @@ export function ThemePageContent() {
 
   function handleReset() {
     resetThemeV2();
+    setPreviewTokenOverrides({});
+    setActivePreviewEditor(null);
+    setPreviewHexDraft('');
     setActiveId(DEFAULT_PRESET_V2.id);
     setShareLink(null);
   }
@@ -292,19 +414,7 @@ export function ThemePageContent() {
     e.preventDefault();
     if (submitStatus === 'submitting') return;
     setSubmitStatus('submitting');
-    const palette = buildCustomPalette(
-      surfaceHue,
-      surfaceDepth,
-      surfaceChroma,
-      midLightness,
-      surfaceLightness,
-      elevatedLightness,
-      accentHue,
-      accentL,
-      accentC,
-      textHue,
-      borderChroma,
-    );
+    const palette = effectivePalette;
     try {
       const res = await fetch('/api/themes/submit', {
         method: 'POST',
@@ -317,19 +427,27 @@ export function ThemePageContent() {
     }
   }
 
-  const customPalette = buildCustomPalette(
-    surfaceHue,
-    surfaceDepth,
-    surfaceChroma,
-    midLightness,
-    surfaceLightness,
-    elevatedLightness,
-    accentHue,
-    accentL,
-    accentC,
-    textHue,
-    borderChroma,
-  );
+  function openPreviewEditor(key: PreviewTokenKey) {
+    setActivePreviewEditor(current => {
+      if (current === key) {
+        setPreviewHexDraft('');
+        return null;
+      }
+      setPreviewHexDraft(cssColorToHex(effectivePalette[key]) ?? '#000000');
+      return key;
+    });
+  }
+
+  function applyPreviewHex(key: PreviewTokenKey, hexValue: string) {
+    const normalized = normalizeHex(hexValue);
+    if (!normalized) return;
+    const rgb = cssColorToRgb(normalized);
+    if (!rgb) return;
+    const converted = rgbToOklch(rgb);
+    const override = `oklch(${converted.l.toFixed(1)}% ${converted.c.toFixed(3)} ${Math.round(converted.h)})`;
+    setPreviewTokenOverrides(current => ({ ...current, [key]: override }));
+    setPreviewHexDraft(normalized);
+  }
 
   return (
     <div className="xrdb-themes-page">
@@ -545,6 +663,12 @@ export function ThemePageContent() {
                     className="xrdb-theme-slider"
                     aria-label="Surface hue"
                   />
+                  <SliderLegend
+                    gradient="linear-gradient(90deg, oklch(14% 0.03 0), oklch(14% 0.03 60), oklch(14% 0.03 120), oklch(14% 0.03 180), oklch(14% 0.03 240), oklch(14% 0.03 300), oklch(14% 0.03 359))"
+                    low="Warm"
+                    mid="Cool"
+                    high="Warm"
+                  />
                 </label>
                 <label className="xrdb-theme-slider-row">
                   <span className="xrdb-theme-slider-label">
@@ -556,6 +680,12 @@ export function ThemePageContent() {
                     onChange={e => setSurfaceDepth(Number(e.target.value))}
                     className="xrdb-theme-slider"
                     aria-label="Surface depth"
+                  />
+                  <SliderLegend
+                    gradient={`linear-gradient(90deg, oklch(20% ${Math.max(surfaceChroma, 0.01).toFixed(3)} ${Math.round(surfaceHue)}), oklch(11% ${Math.max(surfaceChroma, 0.01).toFixed(3)} ${Math.round(surfaceHue)}), oklch(4% ${Math.max(surfaceChroma, 0.01).toFixed(3)} ${Math.round(surfaceHue)}))`}
+                    low="Lifted"
+                    mid="Balanced"
+                    high="Deep"
                   />
                 </label>
                 <label className="xrdb-theme-slider-row">
@@ -569,6 +699,12 @@ export function ThemePageContent() {
                     className="xrdb-theme-slider"
                     aria-label="Surface chroma"
                   />
+                  <SliderLegend
+                    gradient={`linear-gradient(90deg, oklch(${surfaceDepth.toFixed(1)}% 0 ${Math.round(surfaceHue)}), oklch(${surfaceDepth.toFixed(1)}% 0.017 ${Math.round(surfaceHue)}), oklch(${surfaceDepth.toFixed(1)}% 0.035 ${Math.round(surfaceHue)}))`}
+                    low="Neutral"
+                    mid="Tinted"
+                    high="Saturated"
+                  />
                 </label>
                 <label className="xrdb-theme-slider-row">
                   <span className="xrdb-theme-slider-label">
@@ -580,6 +716,12 @@ export function ThemePageContent() {
                     onChange={e => setMidLightness(Number(e.target.value))}
                     className="xrdb-theme-slider"
                     aria-label="Mid background lightness"
+                  />
+                  <SliderLegend
+                    gradient={`linear-gradient(90deg, oklch(5% ${(surfaceChroma + 0.002).toFixed(3)} ${Math.round(surfaceHue)}), oklch(12% ${(surfaceChroma + 0.002).toFixed(3)} ${Math.round(surfaceHue)}), oklch(20% ${(surfaceChroma + 0.002).toFixed(3)} ${Math.round(surfaceHue)}))`}
+                    low="Dark"
+                    mid="Balanced"
+                    high="Light"
                   />
                 </label>
                 <label className="xrdb-theme-slider-row">
@@ -593,6 +735,12 @@ export function ThemePageContent() {
                     className="xrdb-theme-slider"
                     aria-label="Surface lightness"
                   />
+                  <SliderLegend
+                    gradient={`linear-gradient(90deg, oklch(6% ${(surfaceChroma + 0.004).toFixed(3)} ${Math.round(surfaceHue)}), oklch(15% ${(surfaceChroma + 0.004).toFixed(3)} ${Math.round(surfaceHue)}), oklch(24% ${(surfaceChroma + 0.004).toFixed(3)} ${Math.round(surfaceHue)}))`}
+                    low="Dark"
+                    mid="Balanced"
+                    high="Light"
+                  />
                 </label>
                 <label className="xrdb-theme-slider-row">
                   <span className="xrdb-theme-slider-label">
@@ -604,6 +752,12 @@ export function ThemePageContent() {
                     onChange={e => setElevatedLightness(Number(e.target.value))}
                     className="xrdb-theme-slider"
                     aria-label="Elevated lightness"
+                  />
+                  <SliderLegend
+                    gradient={`linear-gradient(90deg, oklch(8% ${(surfaceChroma + 0.008).toFixed(3)} ${Math.round(surfaceHue)}), oklch(20% ${(surfaceChroma + 0.008).toFixed(3)} ${Math.round(surfaceHue)}), oklch(32% ${(surfaceChroma + 0.008).toFixed(3)} ${Math.round(surfaceHue)}))`}
+                    low="Subtle"
+                    mid="Balanced"
+                    high="Punchy"
                   />
                 </label>
               </div>
@@ -624,6 +778,12 @@ export function ThemePageContent() {
                     className="xrdb-theme-slider"
                     aria-label="Accent hue"
                   />
+                  <SliderLegend
+                    gradient={`linear-gradient(90deg, oklch(${Math.round(accentL)}% ${Math.max(accentC, 0.12).toFixed(3)} 0), oklch(${Math.round(accentL)}% ${Math.max(accentC, 0.12).toFixed(3)} 60), oklch(${Math.round(accentL)}% ${Math.max(accentC, 0.12).toFixed(3)} 120), oklch(${Math.round(accentL)}% ${Math.max(accentC, 0.12).toFixed(3)} 180), oklch(${Math.round(accentL)}% ${Math.max(accentC, 0.12).toFixed(3)} 240), oklch(${Math.round(accentL)}% ${Math.max(accentC, 0.12).toFixed(3)} 300), oklch(${Math.round(accentL)}% ${Math.max(accentC, 0.12).toFixed(3)} 359))`}
+                    low="Warm"
+                    mid="Cool"
+                    high="Warm"
+                  />
                 </label>
                 <label className="xrdb-theme-slider-row">
                   <span className="xrdb-theme-slider-label">
@@ -636,6 +796,12 @@ export function ThemePageContent() {
                     className="xrdb-theme-slider"
                     aria-label="Accent lightness"
                   />
+                  <SliderLegend
+                    gradient={`linear-gradient(90deg, oklch(30% ${accentC.toFixed(3)} ${Math.round(accentHue)}), oklch(58% ${accentC.toFixed(3)} ${Math.round(accentHue)}), oklch(85% ${accentC.toFixed(3)} ${Math.round(accentHue)}))`}
+                    low="Dark"
+                    mid="Balanced"
+                    high="Bright"
+                  />
                 </label>
                 <label className="xrdb-theme-slider-row">
                   <span className="xrdb-theme-slider-label">
@@ -647,6 +813,12 @@ export function ThemePageContent() {
                     onChange={e => setAccentC(Number(e.target.value))}
                     className="xrdb-theme-slider"
                     aria-label="Accent chroma"
+                  />
+                  <SliderLegend
+                    gradient={`linear-gradient(90deg, oklch(${Math.round(accentL)}% 0 ${Math.round(accentHue)}), oklch(${Math.round(accentL)}% 0.185 ${Math.round(accentHue)}), oklch(${Math.round(accentL)}% 0.37 ${Math.round(accentHue)}))`}
+                    low="Muted"
+                    mid="Strong"
+                    high="Vivid"
                   />
                 </label>
               </div>
@@ -667,6 +839,12 @@ export function ThemePageContent() {
                     className="xrdb-theme-slider"
                     aria-label="Text hue"
                   />
+                  <SliderLegend
+                    gradient="linear-gradient(90deg, oklch(72% 0.025 0), oklch(72% 0.025 60), oklch(72% 0.025 120), oklch(72% 0.025 180), oklch(72% 0.025 240), oklch(72% 0.025 300), oklch(72% 0.025 359))"
+                    low="Warm"
+                    mid="Cool"
+                    high="Warm"
+                  />
                 </label>
                 <label className="xrdb-theme-slider-row">
                   <span className="xrdb-theme-slider-label">
@@ -678,6 +856,12 @@ export function ThemePageContent() {
                     onChange={e => setBorderChroma(Number(e.target.value))}
                     className="xrdb-theme-slider"
                     aria-label="Border chroma"
+                  />
+                  <SliderLegend
+                    gradient={`linear-gradient(90deg, oklch(22% 0.004 ${Math.round(textHue)}), oklch(22% 0.027 ${Math.round(textHue)}), oklch(22% 0.050 ${Math.round(textHue)}))`}
+                    low="Soft"
+                    mid="Balanced"
+                    high="Strong"
                   />
                 </label>
               </div>
@@ -750,13 +934,45 @@ export function ThemePageContent() {
               <div className="xrdb-themes-preview-swatches">
                 {PREVIEW_TOKENS.map(({ key, label }) => (
                   <div key={key} className="xrdb-themes-preview-row">
-                    <span
-                      className="xrdb-themes-preview-block"
-                      style={{ background: customPalette[key] }}
-                      aria-hidden="true"
+                    <button
+                      type="button"
+                      className={`xrdb-themes-preview-block xrdb-themes-preview-block-btn${activePreviewEditor === key ? ' xrdb-themes-preview-block-active' : ''}`}
+                      style={{ background: effectivePalette[key as PreviewTokenKey] }}
+                      onClick={() => openPreviewEditor(key as PreviewTokenKey)}
+                      aria-label={`Edit ${label} color`}
                     />
                     <span className="xrdb-themes-preview-name">{label}</span>
-                    <span className="xrdb-themes-preview-value">{customPalette[key]}</span>
+                    <span className="xrdb-themes-preview-value">{effectivePalette[key as PreviewTokenKey]}</span>
+                    {activePreviewEditor === key && (
+                      <div className="xrdb-themes-preview-editor" role="group" aria-label={`${label} color editor`}>
+                        <input
+                          type="color"
+                          value={normalizeHex(previewHexDraft) || cssColorToHex(effectivePalette[key as PreviewTokenKey]) || '#000000'}
+                          onChange={event => {
+                            setPreviewHexDraft(event.target.value);
+                            applyPreviewHex(key as PreviewTokenKey, event.target.value);
+                          }}
+                          className="xrdb-themes-preview-color-input"
+                          aria-label={`${label} color wheel`}
+                        />
+                        <input
+                          type="text"
+                          value={previewHexDraft}
+                          onChange={event => setPreviewHexDraft(event.target.value)}
+                          onBlur={() => applyPreviewHex(key as PreviewTokenKey, previewHexDraft)}
+                          onKeyDown={event => {
+                            if (event.key === 'Enter') {
+                              event.preventDefault();
+                              applyPreviewHex(key as PreviewTokenKey, previewHexDraft);
+                            }
+                          }}
+                          className="xrdb-theme-input xrdb-themes-preview-hex-input"
+                          aria-label={`${label} hex value`}
+                          placeholder="#000000"
+                          spellCheck={false}
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
