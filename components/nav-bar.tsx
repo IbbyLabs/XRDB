@@ -129,12 +129,7 @@ export function NavBar({ adminEnabled = false }: { adminEnabled?: boolean }) {
   const pathname = usePathname();
   const configurator = useOptionalConfiguratorContext();
   const activeMode = configurator?.experienceMode ?? 'simple';
-  const isStepRoute =
-    pathname.startsWith('/poster')
-    || pathname.startsWith('/backdrop')
-    || pathname.startsWith('/thumbnail')
-    || pathname.startsWith('/logo');
-  const showModeToggle = isStepRoute;
+  const showModeToggle = Boolean(configurator);
   function handleModeSelect(nextMode: 'simple' | 'advanced') {
     if (!configurator) {
       return;
