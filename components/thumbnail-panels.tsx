@@ -218,6 +218,23 @@ export function StylePanel() {
               <span className="xrdb-number-unit">%</span>
             </div>
           </ControlRow>
+          {look.activeGenreBadgeStyle === 'clean' ? (
+            <ControlRow label="Clean overlay strength">
+              <div className="xrdb-number-control">
+                <input
+                  type="number"
+                  className="xrdb-number-input"
+                  value={look.activeGenreBadgeBackgroundOpacity}
+                  min={0}
+                  max={100}
+                  onChange={(e) => look.onSelectGenreBadgeBackgroundOpacity(Number(e.target.value))}
+                  aria-label="Clean genre overlay strength"
+                  title="Controls the black gradient strength behind clean genre text. 0 disables it."
+                />
+                <span className="xrdb-number-unit">%</span>
+              </div>
+            </ControlRow>
+          ) : null}
         </>
       ) : null}
     </div>
