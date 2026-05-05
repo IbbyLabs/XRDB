@@ -1071,7 +1071,7 @@ export const renderWithSharp = async (
       minTop?: number;
       maxTop?: number;
     }) => {
-      const collisionPadding = Math.max(8, Math.round(input.badgeGap * 0.9));
+      const collisionPadding = Math.max(2, Math.round(input.badgeGap * 0.25));
       let adjustedTop = clamp(top, minTop, maxTop);
 
       for (let pass = 0; pass < genreCollisionRects.length + 3; pass += 1) {
@@ -1202,7 +1202,6 @@ export const renderWithSharp = async (
         : rowY;
 
       overlays.push({ input: Buffer.from(badgeSvg), top: translatedTop, left: translatedLeft });
-      trackGenreCollisionRect(translatedLeft, translatedTop, badgeWidth, ratingBadgeHeight);
     };
     const appendQualityBadgeOverlays = (
       qualityBadgeOverlays: ReturnType<typeof buildQualityBadgeRowOverlays>,
