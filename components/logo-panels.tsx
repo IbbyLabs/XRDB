@@ -6,6 +6,7 @@ import { useConfiguratorContext } from '@/lib/configuratorProvider';
 import { RATING_PROVIDER_OPTIONS } from '@/lib/ratingProviderCatalog';
 import { QUALITY_BADGE_STYLE_OPTIONS, RATING_STYLE_OPTIONS, ICON_SHAPE_OPTIONS } from '@/lib/ratingAppearance';
 import { QUALITY_BADGE_OPTIONS } from '@/lib/badgeCustomization';
+import { COMMUNITY_BADGE_THEME_OPTIONS } from '@/lib/communityBadgeTheme';
 import { RATING_VALUE_MODE_OPTIONS } from '@/lib/ratingDisplay';
 
 function ControlRow({
@@ -305,6 +306,16 @@ export function AdvancedPanel() {
               onChange={look.onSelectLogoQualityBadgesStyle}
             />
           </ControlRow>
+
+          {look.logoQualityBadgesStyle === 'community-badge' ? (
+            <ControlRow label="Badge theme">
+              <OptionPills
+                options={COMMUNITY_BADGE_THEME_OPTIONS}
+                value={q.communityBadgeTheme}
+                onChange={q.onSelectCommunityBadgeTheme}
+              />
+            </ControlRow>
+          ) : null}
 
           <ControlRow label="Max badges">
             <div className="xrdb-number-control">

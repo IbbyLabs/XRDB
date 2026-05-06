@@ -10,6 +10,7 @@ import { RATING_VALUE_MODE_OPTIONS } from '@/lib/ratingDisplay';
 import { GENRE_BADGE_MODE_OPTIONS, GENRE_BADGE_STYLE_OPTIONS, GENRE_BADGE_POSITION_OPTIONS } from '@/lib/genreBadge';
 import { SIDE_RATING_POSITION_OPTIONS } from '@/lib/sideRatingPosition';
 import { QUALITY_BADGE_OPTIONS } from '@/lib/badgeCustomization';
+import { COMMUNITY_BADGE_THEME_OPTIONS } from '@/lib/communityBadgeTheme';
 import { RATING_PRESENTATION_OPTIONS } from '@/lib/ratingPresentation';
 
 function ControlRow({
@@ -482,6 +483,16 @@ export function QualityPanel() {
           onChange={q.onSelectQualityBadgeStyle}
         />
       </ControlRow>
+
+      {q.activeQualityBadgesStyle === 'community-badge' ? (
+        <ControlRow label="Badge theme">
+          <OptionPills
+            options={COMMUNITY_BADGE_THEME_OPTIONS}
+            value={q.communityBadgeTheme}
+            onChange={q.onSelectCommunityBadgeTheme}
+          />
+        </ControlRow>
+      ) : null}
 
       <ControlRow label="Max badges">
         <div className="xrdb-number-control">
