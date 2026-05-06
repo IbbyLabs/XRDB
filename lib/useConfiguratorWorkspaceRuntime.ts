@@ -835,7 +835,16 @@ export function useConfiguratorWorkspaceRuntime({
     void refreshProviderCredentialSessionStatus().catch(() => null);
   }, [refreshProviderCredentialSessionStatus]);
 
-  const [pinnedTargets, setPinnedTargets] = useState<PinnedTargetsStore>(() => readPinnedTargetsFromStorage());
+  const [pinnedTargets, setPinnedTargets] = useState<PinnedTargetsStore>({
+    poster: [],
+    backdrop: [],
+    thumbnail: [],
+    logo: [],
+  });
+
+  useEffect(() => {
+    queueMicrotask(() => setPinnedTargets(readPinnedTargetsFromStorage()));
+  }, []);
 
   const pinnedTargetsForType = useMemo(() => pinnedTargets[previewType] || [], [pinnedTargets, previewType]);
   const isPinnedLimitReached = pinnedTargetsForType.length >= PINNED_TARGETS_MAX_PER_TYPE;

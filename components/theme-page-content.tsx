@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 
 import {
   applyThemeV2,
+  DEFAULT_FAMILY_ID,
   DEFAULT_PRESET_V2,
   deletePersonalTheme,
   encodePaletteForUrl,
@@ -269,16 +270,14 @@ function ThemeFamilyCard({
 export function ThemePageContent() {
   const [tab, setTab] = useState<Tab>('presets');
   const [customSection, setCustomSection] = useState<CustomSection>('surfaces');
-  const [activeId, setActiveId] = useState<string>(
-    () => getStoredThemeV2()?.id ?? DEFAULT_PRESET_V2.id,
-  );
-  const [activeFamily, setActiveFamilyState] = useState<string>(() => getActiveFamily());
-  const [activeMode, setActiveModeState] = useState<XRDBThemeMode>(() => resolveMode(getActiveModePreference()));
+  const [activeId, setActiveId] = useState<string>(DEFAULT_PRESET_V2.id);
+  const [activeFamily, setActiveFamilyState] = useState<string>(DEFAULT_FAMILY_ID);
+  const [activeMode, setActiveModeState] = useState<XRDBThemeMode>('dark');
 
   const [community, setCommunity] = useState<CommunityThemeRow[]>([]);
   const [communityError, setCommunityError] = useState(false);
 
-  const [personalThemes, setPersonalThemes] = useState<XRDBThemeV2[]>(() => getPersonalThemes());
+  const [personalThemes, setPersonalThemes] = useState<XRDBThemeV2[]>([]);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [saveSlotName, setSaveSlotName] = useState('');
   const [savingSlot, setSavingSlot] = useState(false);
@@ -322,6 +321,15 @@ export function ThemePageContent() {
     ),
     ...previewTokenOverrides,
   };
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setActiveId(getStoredThemeV2()?.id ?? DEFAULT_PRESET_V2.id);
+      setActiveFamilyState(getActiveFamily());
+      setActiveModeState(resolveMode(getActiveModePreference()));
+      setPersonalThemes(getPersonalThemes());
+    });
+  }, []);
 
   useEffect(() => {
     if (tab !== 'custom') return;

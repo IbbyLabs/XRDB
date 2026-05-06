@@ -3640,6 +3640,23 @@
 	outline-offset: 1px;
 }
 
+.xrdb-url-input {
+	width: 100%;
+	padding: 0.375rem 0.5rem;
+	background: var(--bg-surface);
+	border: 1px solid var(--border);
+	border-radius: 0.375rem;
+	color: var(--ink);
+	font-size: 0.875rem;
+	text-align: left;
+	transition: border-color 0.15s ease;
+}
+
+.xrdb-url-input:focus {
+	outline: none;
+	border-color: var(--accent);
+}
+
 .xrdb-number-unit {
 	font-size: 0.75rem;
 	color: var(--muted);

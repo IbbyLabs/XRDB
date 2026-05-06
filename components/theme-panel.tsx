@@ -55,12 +55,12 @@ const PRESET_GROUPS: { label: string; ids: string[] }[] = [
 export function ThemePanel({ onClose }: { onClose: () => void }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const [tab, setTab] = useState<Tab>('presets');
-  const [activeId, setActiveId] = useState<string>(() => getStoredThemeV2()?.id ?? DEFAULT_PRESET_V2.id);
+  const [activeId, setActiveId] = useState<string>(DEFAULT_PRESET_V2.id);
 
   const [community, setCommunity] = useState<CommunityThemeRow[]>([]);
   const [communityError, setCommunityError] = useState(false);
 
-  const [personalThemes, setPersonalThemes] = useState<XRDBThemeV2[]>(() => getPersonalThemes());
+  const [personalThemes, setPersonalThemes] = useState<XRDBThemeV2[]>([]);
   const [saveSlotName, setSaveSlotName] = useState('');
   const [savingSlot, setSavingSlot] = useState(false);
 
@@ -78,6 +78,13 @@ export function ThemePanel({ onClose }: { onClose: () => void }) {
   const [submitAuthor, setSubmitAuthor] = useState('');
   const [submitExpanded, setSubmitExpanded] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'submitting' | 'ok' | 'err'>('idle');
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setActiveId(getStoredThemeV2()?.id ?? DEFAULT_PRESET_V2.id);
+      setPersonalThemes(getPersonalThemes());
+    });
+  }, []);
 
   useEffect(() => {
     if (tab !== 'custom') return;
