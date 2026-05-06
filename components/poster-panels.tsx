@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { useConfiguratorContext } from '@/lib/configuratorProvider';
 import { RATING_PROVIDER_OPTIONS } from '@/lib/ratingProviderCatalog';
 import { RATING_STYLE_OPTIONS, ICON_SHAPE_OPTIONS, QUALITY_BADGE_STYLE_OPTIONS } from '@/lib/ratingAppearance';
@@ -440,9 +440,16 @@ export function QualityPanel() {
   const ctx = useConfiguratorContext();
   const q = ctx.inputsPanelProps.qualityProps;
   const look = ctx.inputsPanelProps.lookProps;
+  const isAdvancedMode = ctx.experienceMode === 'advanced';
 
   const allEnabled = q.activeQualityBadgePreferences.length === QUALITY_BADGE_OPTIONS.length;
   const enabledCount = q.activeQualityBadgePreferences.length;
+  const customizableBadgeOptions = QUALITY_BADGE_OPTIONS.filter(
+    (badge) => badge.id !== 'certification' && badge.id !== 'releasestatus',
+  );
+  const enabledCustomizableBadges = customizableBadgeOptions.filter((badge) =>
+    q.activeQualityBadgePreferences.includes(badge.id),
+  );
 
   return (
     <div className="xrdb-panel-quality">
@@ -559,6 +566,76 @@ export function QualityPanel() {
           );
         })}
       </ul>
+
+      {isAdvancedMode ? (
+        <>
+          <div className="xrdb-panel-header">
+            <h2 className="xrdb-subtab-panel-title">Custom badge icons</h2>
+          </div>
+          {enabledCustomizableBadges.length > 0 ? (
+            enabledCustomizableBadges.map((badge) => {
+              const iconUrl = q.qualityBadgeAppearanceOverrides[badge.id]?.iconUrl ?? '';
+              const isLogoOnly = q.qualityBadgeAppearanceOverrides[badge.id]?.fullBadge === true;
+              return (
+                <Fragment key={badge.id}>
+                  <ControlRow label={`${badge.label} URL`}>
+                    <input
+                      type="url"
+                      className="xrdb-url-input"
+                      value={iconUrl}
+                      placeholder="https://example.com/badge.png"
+                      onChange={(event) => {
+                        const nextUrl = event.target.value.trim();
+                        q.onUpdateQualityBadgeAppearanceOverride((current) => {
+                          const next = { ...current };
+                          if (!nextUrl) {
+                            delete next[badge.id];
+                            return next;
+                          }
+                          next[badge.id] = {
+                            ...(current[badge.id] ?? {}),
+                            iconUrl: nextUrl,
+                          };
+                          return next;
+                        });
+                      }}
+                      aria-label={`${badge.label} custom icon URL`}
+                    />
+                  </ControlRow>
+                  {iconUrl ? (
+                    <ControlRow label="Display">
+                      <OptionPills
+                        options={[
+                          { id: 'text', label: 'Logo + text' },
+                          { id: 'icon', label: 'Logo only' },
+                        ] as const}
+                        value={isLogoOnly ? 'icon' : 'text'}
+                        onChange={(mode) => {
+                          q.onUpdateQualityBadgeAppearanceOverride((current) => {
+                            const existing = current[badge.id];
+                            if (!existing?.iconUrl) return current;
+                            const next = { ...existing };
+                            if (mode === 'icon') {
+                              next.fullBadge = true;
+                            } else {
+                              delete next.fullBadge;
+                            }
+                            return { ...current, [badge.id]: next };
+                          });
+                        }}
+                      />
+                    </ControlRow>
+                  ) : null}
+                </Fragment>
+              );
+            })
+          ) : (
+            <p className="xrdb-control-description">
+              Enable at least one quality badge to customize its icon URL.
+            </p>
+          )}
+        </>
+      ) : null}
     </div>
   );
 }
