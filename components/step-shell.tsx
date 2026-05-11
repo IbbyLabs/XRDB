@@ -192,6 +192,7 @@ export function StepShell({
   }, [mediaTarget, step]);
   const effectiveActiveTab: ControlTab =
     experienceMode === 'simple' && (activeTab === 'advanced' || activeTab === 'quality') ? 'providers' : activeTab;
+  const activeTabDefinition = visibleTabs.find((tab) => tab.key === effectiveActiveTab);
 
   useFocusTrap(overlayRef, overlayOpen);
   useFocusTrap(fullscreenRef, fullScreenOpen);
@@ -591,6 +592,9 @@ export function StepShell({
             </button>
           ))}
         </div>
+        <p className="xrdb-subtabs-guidance" role="status" aria-live="polite">
+          {activeTabDefinition?.hint ?? PANEL_COPY[step][effectiveActiveTab].body}
+        </p>
 
         <div
           id={`panel-${effectiveActiveTab}`}
@@ -605,35 +609,6 @@ export function StepShell({
             </>
           )}
         </div>
-      </div>
-
-      <div className="xrdb-step-nav-sticky" role="navigation" aria-label="Step navigation">
-        <button
-          className="xrdb-btn xrdb-btn-secondary xrdb-inspect-mobile"
-          type="button"
-          onClick={() => setOverlayOpen(true)}
-        >
-          Inspect
-        </button>
-        {prevStep && (
-          <Link href={prevStep.href} className="xrdb-btn xrdb-btn-secondary xrdb-step-nav-back">
-            Back
-          </Link>
-        )}
-        {nextStep ? (
-          <Link href={nextStep.href} className="xrdb-btn xrdb-btn-primary">
-            Next
-          </Link>
-        ) : (
-          <div className="xrdb-step-nav-final-actions">
-            <Link href="/save" className="xrdb-btn xrdb-btn-primary">
-              Continue: Save
-            </Link>
-            <Link href="/proxy" className="xrdb-btn xrdb-btn-secondary">
-              Proxy
-            </Link>
-          </div>
-        )}
       </div>
 
       {overlayOpen ? (
