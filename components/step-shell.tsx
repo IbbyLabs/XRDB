@@ -327,16 +327,6 @@ export function StepShell({
       aria-label={`${step} step shell`}
       data-docs-capture-ready={docsCaptureReady ? 'true' : undefined}
     >
-      <button
-        className="xrdb-preview-fab"
-        type="button"
-        onClick={() => setOverlayOpen(true)}
-        aria-label="Open preview"
-        title="Open preview (P)"
-      >
-        Preview
-      </button>
-
       <div className="xrdb-preview-band" role="region" aria-label={`${step} preview`}>
         <div className="xrdb-preview-band-head">
           <h1 className="xrdb-preview-band-title">{WORKFLOW_STEPS[stepIndex]?.label ?? 'Artwork'} workspace</h1>
@@ -609,6 +599,16 @@ export function StepShell({
             </>
           )}
         </div>
+
+        <button
+          className="xrdb-preview-fab"
+          type="button"
+          onClick={() => setOverlayOpen(true)}
+          aria-label="Open preview"
+          title="Open preview (P)"
+        >
+          Preview
+        </button>
       </div>
 
       {overlayOpen ? (

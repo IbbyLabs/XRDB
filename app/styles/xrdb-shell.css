@@ -3156,10 +3156,9 @@
 
 .xrdb-preview-fab {
 	display: none;
-	position: fixed;
-	right: max(0.75rem, env(safe-area-inset-right));
-	bottom: calc(max(0.75rem, env(safe-area-inset-bottom)) + 4.15rem);
-	z-index: 45;
+	position: static;
+	align-self: flex-end;
+	margin-top: 0.75rem;
 	min-height: 44px;
 	padding: 0.5rem 0.95rem;
 	border: 1px solid var(--accent);
