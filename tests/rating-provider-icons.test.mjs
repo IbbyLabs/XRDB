@@ -58,6 +58,10 @@ test('smart provider icons switch embedded art for rotten tomatoes, metacritic, 
     RATING_PROVIDER_OPTIONS.find((provider) => provider.id === 'trakt')?.iconUrl,
     TRAKT_LOGO_DATA_URI,
   );
+  assert.equal(
+    RATING_PROVIDER_OPTIONS.find((provider) => provider.id === 'filmweb')?.iconUrl,
+    'https://fwcdn.pl/prt/static/images/fw/icons2/228x228.png',
+  );
 
   const rtFresh = resolveRatingProviderBadgeAppearance({
     provider: 'tomatoes',

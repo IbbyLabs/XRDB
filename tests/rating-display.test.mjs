@@ -15,6 +15,7 @@ test('provider default rating display keeps native scales by default', () => {
   assert.equal(formatDisplayRatingValue('mdblist', '79'), '79');
   assert.equal(formatDisplayRatingValue('allocine', '4.4'), '4.4');
   assert.equal(formatDisplayRatingValue('allocinepress', '3.4'), '3.4');
+  assert.equal(formatDisplayRatingValue('filmweb', '7.6'), '7.6');
   assert.equal(formatDisplayRatingValue('tomatoes', '93'), '93%');
   assert.equal(formatDisplayRatingValue('kitsu', '82'), '82%');
   assert.equal(formatDisplayRatingValue('letterboxd', '3.9'), '3.9');
@@ -26,6 +27,7 @@ test('normalized display mode is opt in', () => {
   assert.equal(formatDisplayRatingValue('tomatoes', '93', { valueMode: 'normalized' }), '9.3');
   assert.equal(formatDisplayRatingValue('kitsu', '82', { valueMode: 'normalized' }), '8.2');
   assert.equal(formatDisplayRatingValue('imdb', '8', { valueMode: 'normalized' }), '8.0');
+  assert.equal(formatDisplayRatingValue('filmweb', '7.6', { valueMode: 'normalized' }), '7.6');
   assert.equal(formatDisplayRatingValue('allocine', '2', { valueMode: 'normalized' }), '4.0');
 });
 
@@ -37,6 +39,7 @@ test('normalized clean mode trims trailing point zero values', () => {
 
 test('hundred point normalized display mode is opt in', () => {
   assert.equal(formatDisplayRatingValue('imdb', '7.8', { valueMode: 'normalized100' }), '78');
+  assert.equal(formatDisplayRatingValue('filmweb', '7.6', { valueMode: 'normalized100' }), '76');
   assert.equal(formatDisplayRatingValue('tomatoes', '93', { valueMode: 'normalized100' }), '93');
   assert.equal(formatDisplayRatingValue('rogerebert', '3.5', { valueMode: 'normalized100' }), '88');
 });
@@ -51,6 +54,7 @@ test('rating value mode normalization accepts supported options only', () => {
 
 test('numeric normalization exports the 0 to 10 values used by aggregate modes', () => {
   assert.equal(normalizeRatingToTenPointValue('allocine', '4.4'), 8.8);
+  assert.equal(normalizeRatingToTenPointValue('filmweb', '7.6'), 7.6);
   assert.equal(normalizeRatingToTenPointValue('tomatoes', '93'), 9.3);
   assert.equal(normalizeRatingToTenPointValue('rogerebert', '3.5'), 8.75);
   assert.equal(normalizeRatingToTenPointValue('trakt', '76'), 7.6);
@@ -58,6 +62,7 @@ test('numeric normalization exports the 0 to 10 values used by aggregate modes',
 
 test('numeric normalization can export rounded 0 to 100 values for compact badges', () => {
   assert.equal(normalizeRatingToHundredPointValue('allocinepress', '3.4'), 68);
+  assert.equal(normalizeRatingToHundredPointValue('filmweb', '7.6'), 76);
   assert.equal(normalizeRatingToHundredPointValue('tomatoes', '93'), 93);
   assert.equal(normalizeRatingToHundredPointValue('rogerebert', '3.5'), 88);
   assert.equal(normalizeRatingToHundredPointValue('trakt', '76'), 76);
