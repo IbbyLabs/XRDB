@@ -212,6 +212,17 @@ import {
 import { readConfiguratorProviderCredentialSession } from './configuratorProviderCredentialSession.ts';
 import { getConfigProfile, getConfigProfileDeadline, LEGACY_ID_RE, touchConfigProfileAccess } from './dbCore.ts';
 import type { RemuxDisplayMode } from './mediaFeatures.ts';
+import {
+  normalizeScorebarStyle,
+  normalizeScorebarColor,
+  normalizeScorebarThreshold,
+  DEFAULT_SCOREBAR_LOW_COLOR,
+  DEFAULT_SCOREBAR_MID_COLOR,
+  DEFAULT_SCOREBAR_HIGH_COLOR,
+  DEFAULT_SCOREBAR_LOW_THRESHOLD,
+  DEFAULT_SCOREBAR_HIGH_THRESHOLD,
+  type ScorebarConfig,
+} from './scorebarConfig.ts';
 
 type ImageType = (typeof ALLOWED_IMAGE_TYPES extends Set<infer T> ? T : never) & ('poster' | 'backdrop' | 'logo');
 
@@ -392,6 +403,7 @@ export type ImageRouteRequestState = {
   effectiveRatingPreferences: RatingPreference[];
   selectedRatings: Set<RatingPreference>;
   configMigrationDeadline: number | null;
+  scorebarConfig: ScorebarConfig;
 };
 
 export type ImageRouteRequestInput = Pick<NextRequest, 'headers'> & {
@@ -1554,6 +1566,14 @@ export const resolveImageRouteRequestState = async ({
         ? effectiveBackdropArtworkSource
         : logoArtworkSource;
   const ratingBlackStripEnabled = activeArtworkSource === 'blackbar' || searchParams.get('ratingBlackStrip') === '1';
+  const scorebarConfig: ScorebarConfig = {
+    style: normalizeScorebarStyle(searchParams.get('scorebarStyle') ?? null),
+    lowColor: normalizeScorebarColor(searchParams.get('scorebarLowColor') ?? null, DEFAULT_SCOREBAR_LOW_COLOR),
+    midColor: normalizeScorebarColor(searchParams.get('scorebarMidColor') ?? null, DEFAULT_SCOREBAR_MID_COLOR),
+    highColor: normalizeScorebarColor(searchParams.get('scorebarHighColor') ?? null, DEFAULT_SCOREBAR_HIGH_COLOR),
+    lowThreshold: normalizeScorebarThreshold(searchParams.get('scorebarLowThreshold') ?? null, DEFAULT_SCOREBAR_LOW_THRESHOLD),
+    highThreshold: normalizeScorebarThreshold(searchParams.get('scorebarHighThreshold') ?? null, DEFAULT_SCOREBAR_HIGH_THRESHOLD),
+  };
   const backdropUsesFanartArtwork = FANART_ARTWORK_SOURCE_SET.has(effectiveBackdropArtworkSource);
   const logoUsesFanartArtwork = FANART_ARTWORK_SOURCE_SET.has(logoArtworkSource);
   const hasRandomArtworkSelection =
@@ -1881,5 +1901,6 @@ export const resolveImageRouteRequestState = async ({
     effectiveRatingPreferences,
     selectedRatings,
     configMigrationDeadline,
+    scorebarConfig,
   };
 };

@@ -23,6 +23,7 @@ import { fetchBlockbusterBlurbsWithFallback } from './imageRouteBlockbuster.ts';
 import type { PhaseDurations, CachedJsonResponse } from './imageRouteRuntime.ts';
 import type { RatingBadge } from './imageRouteRenderer.ts';
 import type { PosterRatingLayout } from './posterLayoutOptions.ts';
+import type { ScorebarConfig } from './scorebarConfig.ts';
 import type { BackdropRatingLayout } from './backdropLayoutOptions.ts';
 import type { RatingStyle } from './ratingAppearance.ts';
 import type { BlockbusterBlurb } from './imageRouteBlockbusterReview.ts';
@@ -67,6 +68,7 @@ type ImageRouteRenderLayout = {
   logoBadgeBandHeight: number;
   logoBadgeMaxWidth: number;
   logoBadgesPerRow: number;
+  scorebarBandHeight: number;
 };
 
 export const resolveImageRouteRenderLayout = async (input: {
@@ -98,6 +100,7 @@ export const resolveImageRouteRenderLayout = async (input: {
   requestedImageLang: string;
   phases: PhaseDurations;
   fetchJsonCached: LayoutFetchJson;
+  scorebarConfig?: ScorebarConfig | null;
 }): Promise<ImageRouteRenderLayout> => {
   const {
     imageType,
@@ -128,12 +131,14 @@ export const resolveImageRouteRenderLayout = async (input: {
     requestedImageLang,
     phases,
     fetchJsonCached,
+    scorebarConfig = null,
   } = input;
 
   const usePosterBadgeLayout = imageType === 'poster';
   const useBackdropBadgeLayout = imageType === 'backdrop';
   const useLogoBadgeLayout = imageType === 'logo';
   const useBlockbusterPresentation = ratingPresentation === 'blockbuster';
+  const usePosterScorebar = imageType === 'poster' && ratingPresentation === 'scorebar';
   const usePosterRowLayout =
     usePosterBadgeLayout &&
     (effectivePosterRatingsLayout === 'top' ||
@@ -301,6 +306,34 @@ export const resolveImageRouteRenderLayout = async (input: {
   badgeGap = scaledBadgeMetrics.gap;
 
   if (usePosterBadgeLayout && cappedRatingBadges.length > 0) {
+    if (usePosterScorebar) {
+      const fittedScorebarMetrics = fitBadgeMetricsToWidth(
+        [cappedRatingBadges],
+        Math.max(0, outputWidth - posterRowHorizontalInset * 2),
+        {
+          iconSize: badgeIconSize,
+          fontSize: badgeFontSize,
+          paddingX: badgePaddingX,
+          paddingY: badgePaddingY,
+          gap: badgeGap,
+        },
+        posterMinMetrics,
+        true,
+        false,
+        ratingStyle,
+      );
+      badgeIconSize = fittedScorebarMetrics.iconSize;
+      badgeFontSize = fittedScorebarMetrics.fontSize;
+      badgePaddingX = fittedScorebarMetrics.paddingX;
+      badgePaddingY = fittedScorebarMetrics.paddingY;
+      badgeGap = fittedScorebarMetrics.gap;
+      topRatingBadges = [];
+      bottomRatingBadges = [];
+      leftRatingBadges = [];
+      rightRatingBadges = [];
+      posterTopRows = [];
+      posterBottomRows = [];
+    } else {
     let fittedPosterMetrics: BadgeLayoutMetrics;
     if (
       effectivePosterRatingsLayout === 'left' ||
@@ -441,6 +474,7 @@ export const resolveImageRouteRenderLayout = async (input: {
     badgePaddingX = fittedPosterMetrics.paddingX;
     badgePaddingY = fittedPosterMetrics.paddingY;
     badgeGap = fittedPosterMetrics.gap;
+    }
   } else if (useBackdropBadgeLayout && cappedRatingBadges.length > 0) {
     let fittedBackdropMetrics: BadgeLayoutMetrics;
     if (useBackdropRightVerticalLayout) {
@@ -651,7 +685,12 @@ export const resolveImageRouteRenderLayout = async (input: {
           Math.ceil((logoBadgeBandHeight * LOGO_MIN_PORTION) / (1 - LOGO_MIN_PORTION)),
         )
       : logoBaseImageHeight;
-  const finalOutputHeight = useLogoBadgeLayout ? logoImageHeight + logoBadgeBandHeight : outputHeight;
+  const scorebarBandHeight = 0;
+  const finalOutputHeight = useLogoBadgeLayout
+    ? logoImageHeight + logoBadgeBandHeight
+    : usePosterScorebar
+      ? outputHeight + scorebarBandHeight
+      : outputHeight;
 
   return {
     cappedRatingBadges,
@@ -683,5 +722,6 @@ export const resolveImageRouteRenderLayout = async (input: {
     logoBadgeBandHeight,
     logoBadgeMaxWidth,
     logoBadgesPerRow,
+    scorebarBandHeight,
   };
 };

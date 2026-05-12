@@ -67,6 +67,15 @@ import { DEFAULT_ICON_SHAPE, DEFAULT_QUALITY_BADGES_STYLE, DEFAULT_RATING_STYLE,
 import { DEFAULT_COMMUNITY_BADGE_THEME, type CommunityBadgeTheme } from '@/lib/communityBadgeTheme';
 import { DEFAULT_SIDE_RATING_OFFSET, type SideRatingPosition } from '@/lib/sideRatingPosition';
 import {
+  DEFAULT_SCOREBAR_STYLE,
+  DEFAULT_SCOREBAR_LOW_COLOR,
+  DEFAULT_SCOREBAR_MID_COLOR,
+  DEFAULT_SCOREBAR_HIGH_COLOR,
+  DEFAULT_SCOREBAR_LOW_THRESHOLD,
+  DEFAULT_SCOREBAR_HIGH_THRESHOLD,
+  type ScorebarStyle,
+} from '@/lib/scorebarConfig';
+import {
   DEFAULT_AIOMETADATA_EPISODE_ID_MODE,
   type AiometadataEpisodeIdMode,
   type AgeRatingBadgePosition,
@@ -346,6 +355,12 @@ export function useConfiguratorWorkspaceState() {
   const [logoRatingsMax, setLogoRatingsMax] = useState<number | null>(null);
   const [logoBackground, setLogoBackground] = useState<LogoBackground>('transparent');
   const [logoBottomRatingsRow, setLogoBottomRatingsRow] = useState(false);
+  const [scorebarStyle, setScorebarStyle] = useState<ScorebarStyle>(DEFAULT_SCOREBAR_STYLE);
+  const [scorebarLowColor, setScorebarLowColor] = useState(DEFAULT_SCOREBAR_LOW_COLOR);
+  const [scorebarMidColor, setScorebarMidColor] = useState(DEFAULT_SCOREBAR_MID_COLOR);
+  const [scorebarHighColor, setScorebarHighColor] = useState(DEFAULT_SCOREBAR_HIGH_COLOR);
+  const [scorebarLowThreshold, setScorebarLowThreshold] = useState(DEFAULT_SCOREBAR_LOW_THRESHOLD);
+  const [scorebarHighThreshold, setScorebarHighThreshold] = useState(DEFAULT_SCOREBAR_HIGH_THRESHOLD);
   const [logoArtworkSource, setLogoArtworkSource] = useState<ArtworkSource>('tmdb');
   const [ratingProviderAppearanceOverrides, setRatingProviderAppearanceOverrides] = useState<RatingProviderAppearanceOverrides>({});
     const [qualityBadgeAppearanceOverrides, setQualityBadgeAppearanceOverrides] = useState<QualityBadgeAppearanceOverrides>({});
@@ -821,6 +836,12 @@ export function useConfiguratorWorkspaceState() {
     logoRatingStyle,
     logoRatingsMax,
     logoBottomRatingsRow,
+    scorebarStyle,
+    scorebarLowColor,
+    scorebarMidColor,
+    scorebarHighColor,
+    scorebarLowThreshold,
+    scorebarHighThreshold,
     mdblistKey,
     mediaId,
     posterAggregateRatingSource,
@@ -1075,6 +1096,12 @@ export function useConfiguratorWorkspaceState() {
     setLogoRatingStyle,
     setLogoRatingsMax,
     setLogoBottomRatingsRow,
+    setScorebarStyle,
+    setScorebarLowColor,
+    setScorebarMidColor,
+    setScorebarHighColor,
+    setScorebarLowThreshold,
+    setScorebarHighThreshold,
     setMdblistKey,
     setMediaId,
     setPosterAggregateRatingSource,

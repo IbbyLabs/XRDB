@@ -379,6 +379,7 @@ export const executeImageRouteRender = async ({
         displayRatingBadges,
         editorialOverlay,
         compactRingOverlay,
+        scorebarNormalizedScore,
         ratingBadgeByProvider,
       } = displayState;
       streamBadges = displayState.streamBadges;
@@ -442,6 +443,7 @@ export const executeImageRouteRender = async ({
         requestedImageLang: requestState.requestedImageLang,
         phases,
         fetchJsonCached,
+        scorebarConfig: requestState.scorebarConfig,
       });
       const renderedRatingCacheKeys = usesAggregatePresentation
         ? [...ratingBadgeByProvider.keys()]
@@ -516,6 +518,9 @@ export const executeImageRouteRender = async ({
           posterBottomRows: renderLayout.posterBottomRows,
           backdropRows: renderLayout.backdropRows,
           blockbusterBlurbs: renderLayout.blockbusterBlurbs,
+          scorebarBandHeight: renderLayout.scorebarBandHeight,
+          scorebarConfig: requestState.scorebarConfig,
+          scorebarNormalizedScore,
           cacheControl: responseCacheControl,
         },
         phases,

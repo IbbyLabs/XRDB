@@ -22,6 +22,7 @@ const themeInitScript = `(function(){var OR=/^oklch\\(\\s*[\\d.]+%?\\s+[\\d.]+\\
 export function RootLayoutShell({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      {/* eslint-disable-next-line @next/next/no-head-element */}
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>

@@ -11,6 +11,7 @@ export type RatingPresentation =
   | 'ring'
   | 'editorial'
   | 'blockbuster'
+  | 'scorebar'
   | 'none';
 export type AggregateRatingSource = 'overall' | 'critics' | 'audience';
 export type AggregateAccentMode = 'source' | 'genre' | 'custom' | 'dynamic';
@@ -79,6 +80,11 @@ export const RATING_PRESENTATION_OPTIONS: Array<{
     id: 'blockbuster',
     label: 'Blockbuster',
     description: 'Deliberately dense badge rich promo mode.',
+  },
+  {
+    id: 'scorebar',
+    label: 'Score Bar',
+    description: 'A colour-coded bar below the poster showing an averaged score across your selected providers.',
   },
   {
     id: 'none',
@@ -171,6 +177,7 @@ export const normalizeRatingPresentation = (
     normalized === 'ring' ||
     normalized === 'editorial' ||
     normalized === 'blockbuster' ||
+    normalized === 'scorebar' ||
     normalized === 'none'
   ) {
     return normalized;
@@ -198,7 +205,8 @@ export const resolveEffectiveRatingPresentation = (
   presentation: RatingPresentation,
   imageType: 'poster' | 'backdrop' | 'logo',
 ): RatingPresentation =>
-  (presentation === 'editorial' || presentation === 'ring') && imageType !== 'poster'
+  (presentation === 'editorial' || presentation === 'ring' || presentation === 'scorebar') &&
+  imageType !== 'poster'
     ? 'average'
     : presentation;
 

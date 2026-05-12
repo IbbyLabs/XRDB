@@ -3888,6 +3888,34 @@
 	outline-offset: 1px;
 }
 
+.xrdb-color-control {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.xrdb-color-input {
+	width: 2.5rem;
+	height: 2rem;
+	padding: 0.125rem;
+	background: var(--bg-surface);
+	border: 1px solid var(--border);
+	border-radius: 0.375rem;
+	cursor: pointer;
+}
+
+.xrdb-color-input:focus {
+	outline: none;
+	border-color: var(--accent);
+}
+
+.xrdb-color-value {
+	font-size: 0.8125rem;
+	color: var(--ink-muted);
+	font-variant-numeric: tabular-nums;
+	letter-spacing: 0.02em;
+}
+
 .xrdb-url-input {
 	width: 100%;
 	padding: 0.375rem 0.5rem;

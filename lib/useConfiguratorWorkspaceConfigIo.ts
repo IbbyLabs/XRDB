@@ -114,6 +114,12 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   logoRatingStyle: WorkspaceSettings['logoRatingStyle'];
   logoRatingsMax: WorkspaceSettings['logoRatingsMax'];
   logoBottomRatingsRow: WorkspaceSettings['logoBottomRatingsRow'];
+  scorebarStyle: WorkspaceSettings['scorebarStyle'];
+  scorebarLowColor: WorkspaceSettings['scorebarLowColor'];
+  scorebarMidColor: WorkspaceSettings['scorebarMidColor'];
+  scorebarHighColor: WorkspaceSettings['scorebarHighColor'];
+  scorebarLowThreshold: WorkspaceSettings['scorebarLowThreshold'];
+  scorebarHighThreshold: WorkspaceSettings['scorebarHighThreshold'];
   mdblistKey: WorkspaceSettings['mdblistKey'];
   posterAggregateRatingSource: WorkspaceSettings['posterAggregateRatingSource'];
   posterAggregateProviderWeights: WorkspaceSettings['posterAggregateProviderWeights'];
@@ -301,6 +307,12 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setLogoRatingStyle: Setter<WorkspaceSettings['logoRatingStyle']>;
   setLogoRatingsMax: Setter<WorkspaceSettings['logoRatingsMax']>;
   setLogoBottomRatingsRow: Setter<WorkspaceSettings['logoBottomRatingsRow']>;
+  setScorebarStyle: Setter<WorkspaceSettings['scorebarStyle']>;
+  setScorebarLowColor: Setter<WorkspaceSettings['scorebarLowColor']>;
+  setScorebarMidColor: Setter<WorkspaceSettings['scorebarMidColor']>;
+  setScorebarHighColor: Setter<WorkspaceSettings['scorebarHighColor']>;
+  setScorebarLowThreshold: Setter<WorkspaceSettings['scorebarLowThreshold']>;
+  setScorebarHighThreshold: Setter<WorkspaceSettings['scorebarHighThreshold']>;
   setMdblistKey: Setter<WorkspaceSettings['mdblistKey']>;
   setPosterAggregateRatingSource: Setter<WorkspaceSettings['posterAggregateRatingSource']>;
   setPosterAggregateProviderWeights: Setter<WorkspaceSettings['posterAggregateProviderWeights']>;
@@ -502,6 +514,12 @@ export function useConfiguratorWorkspaceConfigIo({
   logoRatingStyle,
   logoRatingsMax,
   logoBottomRatingsRow,
+  scorebarStyle,
+  scorebarLowColor,
+  scorebarMidColor,
+  scorebarHighColor,
+  scorebarLowThreshold,
+  scorebarHighThreshold,
   mdblistKey,
   posterAggregateRatingSource,
   posterAggregateProviderWeights,
@@ -689,6 +707,12 @@ export function useConfiguratorWorkspaceConfigIo({
   setLogoRatingStyle,
   setLogoRatingsMax,
   setLogoBottomRatingsRow,
+  setScorebarStyle,
+  setScorebarLowColor,
+  setScorebarMidColor,
+  setScorebarHighColor,
+  setScorebarLowThreshold,
+  setScorebarHighThreshold,
   setMdblistKey,
   setPosterAggregateRatingSource,
   setPosterAggregateProviderWeights,
@@ -968,6 +992,12 @@ export function useConfiguratorWorkspaceConfigIo({
       setLogoRatingsMax(normalized.settings.logoRatingsMax);
       setLogoBackground(normalized.settings.logoBackground);
       setLogoBottomRatingsRow(normalized.settings.logoBottomRatingsRow);
+      setScorebarStyle(normalized.settings.scorebarStyle);
+      setScorebarLowColor(normalized.settings.scorebarLowColor);
+      setScorebarMidColor(normalized.settings.scorebarMidColor);
+      setScorebarHighColor(normalized.settings.scorebarHighColor);
+      setScorebarLowThreshold(normalized.settings.scorebarLowThreshold);
+      setScorebarHighThreshold(normalized.settings.scorebarHighThreshold);
       setLogoArtworkSource(normalized.settings.logoArtworkSource);
       setThumbnailEpisodeArtwork(normalized.settings.thumbnailEpisodeArtwork);
       setRatingProviderAppearanceOverrides(normalized.settings.ratingProviderAppearanceOverrides);
@@ -1068,6 +1098,12 @@ export function useConfiguratorWorkspaceConfigIo({
       setLogoRatingStyle,
       setLogoRatingsMax,
       setLogoBottomRatingsRow,
+      setScorebarStyle,
+      setScorebarLowColor,
+      setScorebarMidColor,
+      setScorebarHighColor,
+      setScorebarLowThreshold,
+      setScorebarHighThreshold,
       setMdblistKey,
       setPosterAggregateRatingSource,
       setPosterAggregateProviderWeights,
@@ -1361,6 +1397,12 @@ export function useConfiguratorWorkspaceConfigIo({
         logoRatingsMax,
         logoBackground,
         logoBottomRatingsRow,
+        scorebarStyle,
+        scorebarLowColor,
+        scorebarMidColor,
+        scorebarHighColor,
+        scorebarLowThreshold,
+        scorebarHighThreshold,
         logoArtworkSource,
         ratingProviderAppearanceOverrides,
         qualityBadgeAppearanceOverrides,
@@ -1563,6 +1605,12 @@ export function useConfiguratorWorkspaceConfigIo({
       ratingYOffsetSquare,
       ratingProviderAppearanceOverrides,
       qualityBadgeAppearanceOverrides,
+      scorebarStyle,
+      scorebarLowColor,
+      scorebarMidColor,
+      scorebarHighColor,
+      scorebarLowThreshold,
+      scorebarHighThreshold,
       ratingValueMode,
       simklClientId,
       thumbnailEpisodeArtwork,

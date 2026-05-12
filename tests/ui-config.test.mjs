@@ -1796,3 +1796,91 @@ test('empty thumbnail provider intersection defaults to allowed set', () => {
   const result = normalizeSharedXrdbSettings({ thumbnailRatingPreferences: ['letterboxd', 'trakt'] });
   assert.deepEqual(result.thumbnailRatingPreferences, ['tmdb', 'imdb']);
 });
+
+test('scorebar settings round-trip through normalization and serialization', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      posterRatingPresentation: 'scorebar',
+      scorebarStyle: 'solid',
+      scorebarLowColor: '#cc3333',
+      scorebarMidColor: '#ccaa33',
+      scorebarHighColor: '#33aa66',
+      scorebarLowThreshold: 40,
+      scorebarHighThreshold: 70,
+    },
+  });
+
+  assert.equal(config.settings.posterRatingPresentation, 'scorebar');
+  assert.equal(config.settings.scorebarStyle, 'solid');
+  assert.equal(config.settings.scorebarLowColor, '#cc3333');
+  assert.equal(config.settings.scorebarMidColor, '#ccaa33');
+  assert.equal(config.settings.scorebarHighColor, '#33aa66');
+  assert.equal(config.settings.scorebarLowThreshold, 40);
+  assert.equal(config.settings.scorebarHighThreshold, 70);
+
+  const raw = serializeSavedUiConfig(config);
+  const parsed = parseSavedUiConfig(raw);
+
+  assert.equal(parsed.settings.scorebarStyle, 'solid');
+  assert.equal(parsed.settings.scorebarLowColor, '#cc3333');
+  assert.equal(parsed.settings.scorebarMidColor, '#ccaa33');
+  assert.equal(parsed.settings.scorebarHighColor, '#33aa66');
+  assert.equal(parsed.settings.scorebarLowThreshold, 40);
+  assert.equal(parsed.settings.scorebarHighThreshold, 70);
+});
+
+test('scorebar settings normalize invalid values to defaults', () => {
+  const result = normalizeSharedXrdbSettings({
+    scorebarStyle: 'invalid',
+    scorebarLowColor: 'not-a-color',
+    scorebarMidColor: null,
+    scorebarLowThreshold: -5,
+    scorebarHighThreshold: 200,
+  });
+
+  assert.equal(result.scorebarStyle, 'progress');
+  assert.equal(result.scorebarLowColor, '#e05252');
+  assert.equal(result.scorebarMidColor, '#e0a452');
+  assert.equal(result.scorebarLowThreshold, 0);
+  assert.equal(result.scorebarHighThreshold, 100);
+});
+
+test('scorebar settings omit default values from config payload', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      posterRatingsLayout: 'scorebar',
+    },
+  });
+
+  const configString = buildConfigString('https://xrdb.example.com', config.settings);
+  const payload = JSON.parse(decodeBase64Url(configString));
+
+  assert.equal('scorebarStyle' in payload, false);
+  assert.equal('scorebarLowColor' in payload, false);
+  assert.equal('scorebarMidColor' in payload, false);
+  assert.equal('scorebarHighColor' in payload, false);
+  assert.equal('scorebarLowThreshold' in payload, false);
+  assert.equal('scorebarHighThreshold' in payload, false);
+});
+
+test('scorebar settings include non-default values in config payload', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      posterRatingsLayout: 'scorebar',
+      scorebarStyle: 'gradient',
+      scorebarLowThreshold: 45,
+    },
+  });
+
+  const configString = buildConfigString('https://xrdb.example.com', config.settings);
+  const payload = JSON.parse(decodeBase64Url(configString));
+
+  assert.equal(payload.scorebarStyle, 'gradient');
+  assert.equal(payload.scorebarLowThreshold, 45);
+  assert.equal('scorebarMidColor' in payload, false);
+});

@@ -96,6 +96,8 @@ import {
 } from './imageRouteBlockbusterReview.ts';
 import { buildBadgeSvg } from './imageRouteBadgeSvg.ts';
 import { resolveQualityBadgeColumnLayout, resolveQualityBadgeHeight } from './qualityBadgeLayout.ts';
+import type { ScorebarConfig } from './scorebarConfig.ts';
+import { DEFAULT_SCOREBAR_CONFIG, getScorebarThresholdColor } from './scorebarConfig.ts';
 
 export type RatingBadge = {
   key: BadgeKey;
@@ -164,6 +166,9 @@ type FastRenderInput = {
   logoBadgeBandHeight: number;
   logoBadgeMaxWidth: number;
   logoBadgesPerRow: number;
+  scorebarBandHeight: number;
+  scorebarConfig: ScorebarConfig | null;
+  scorebarNormalizedScore: number | null;
   posterRowHorizontalInset: number;
   posterTitleText?: string | null;
   posterLogoUrl?: string | null;
@@ -1935,6 +1940,37 @@ export const renderWithSharp = async (
 	        }
 	      }
 	    }
+
+    if (
+      input.imageType === 'poster' &&
+      input.ratingPresentation === 'scorebar' &&
+      input.scorebarNormalizedScore !== null
+    ) {
+      const SCOREBAR_BOTTOM_INSET = 10;
+      const SCOREBAR_CANVAS_HEIGHT = 28;
+      const SCOREBAR_TRACK_Y = 15;
+      const SCOREBAR_BAR_HEIGHT = 6;
+      const SCOREBAR_H_FLOAT_INSET = 24;
+      const score = input.scorebarNormalizedScore;
+      const totalHorizontalInset = input.posterRowHorizontalInset + SCOREBAR_H_FLOAT_INSET;
+      const barY = Math.max(0, input.outputHeight - SCOREBAR_BOTTOM_INSET - SCOREBAR_CANVAS_HEIGHT);
+      const barWidth = Math.max(72, input.outputWidth - totalHorizontalInset * 2);
+      const barX = Math.round((input.outputWidth - barWidth) / 2);
+      const fillWidth = Math.max(0, Math.min(barWidth, Math.round((score / 100) * barWidth)));
+      const scorebarConfig = input.scorebarConfig ?? DEFAULT_SCOREBAR_CONFIG;
+      const style = scorebarConfig.style;
+      const shadowFilter = `<filter id="sh" x="-24%" y="-260%" width="148%" height="620%"><feDropShadow dx="0" dy="8" stdDeviation="7" flood-color="#000000" flood-opacity="0.5"/><feDropShadow dx="0" dy="2" stdDeviation="1.8" flood-color="#000000" flood-opacity="0.32"/></filter>`;
+      const trackFill = 'rgba(10, 12, 18, 0.72)';
+      const trackStroke = 'rgba(255, 255, 255, 0.2)';
+      const fillColor = getScorebarThresholdColor(score, scorebarConfig);
+      const fillPaint = style === 'gradient' ? 'url(#sg)' : fillColor;
+      const gradientDef =
+        style === 'gradient'
+          ? `<linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="${scorebarConfig.lowColor}"/><stop offset="50%" stop-color="${scorebarConfig.midColor}"/><stop offset="100%" stop-color="${scorebarConfig.highColor}"/></linearGradient>`
+          : '';
+      const barSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${barWidth}" height="${SCOREBAR_CANVAS_HEIGHT}"><defs><linearGradient id="sbScrim" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="46%" stop-color="rgba(0,0,0,0.16)"/><stop offset="100%" stop-color="rgba(0,0,0,0.34)"/></linearGradient>${gradientDef}${shadowFilter}</defs><rect x="0" y="0" width="${barWidth}" height="${SCOREBAR_CANVAS_HEIGHT}" fill="url(#sbScrim)"/><g filter="url(#sh)"><rect x="0" y="${SCOREBAR_TRACK_Y}" width="${barWidth}" height="${SCOREBAR_BAR_HEIGHT}" rx="999" ry="999" fill="${trackFill}" stroke="${trackStroke}" stroke-width="1"/>${fillWidth > 0 ? `<rect x="0" y="${SCOREBAR_TRACK_Y}" width="${fillWidth}" height="${SCOREBAR_BAR_HEIGHT}" rx="999" ry="999" fill="${fillPaint}"/>` : ''}</g></svg>`;
+      overlays.push({ input: Buffer.from(barSvg), top: barY, left: barX });
+    }
 
     if (input.imageType === 'poster' && (posterSharedQualityBadges.length > 0 || extractedAgeRatingBadge)) {
       const qualityPlacement = resolvePosterQualityBadgePlacement(

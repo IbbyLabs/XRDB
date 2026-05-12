@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   applyThemeV2,
@@ -305,7 +305,7 @@ export function ThemePageContent() {
   const [previewHexDraft, setPreviewHexDraft] = useState('');
   const [previewTokenOverrides, setPreviewTokenOverrides] = useState<PreviewTokenOverrides>({});
 
-  const effectivePalette = {
+  const effectivePalette = useMemo(() => ({
     ...buildCustomPalette(
       surfaceHue,
       surfaceDepth,
@@ -320,7 +320,7 @@ export function ThemePageContent() {
       borderChroma,
     ),
     ...previewTokenOverrides,
-  };
+  }), [surfaceHue, surfaceDepth, surfaceChroma, midLightness, surfaceLightness, elevatedLightness, accentHue, accentL, accentC, textHue, borderChroma, previewTokenOverrides]);
 
   useEffect(() => {
     queueMicrotask(() => {

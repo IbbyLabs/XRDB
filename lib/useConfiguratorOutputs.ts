@@ -99,6 +99,15 @@ import {
   type CommunityBadgeTheme,
 } from '@/lib/communityBadgeTheme';
 import { type SideRatingPosition } from '@/lib/sideRatingPosition';
+import {
+  DEFAULT_SCOREBAR_HIGH_COLOR,
+  DEFAULT_SCOREBAR_HIGH_THRESHOLD,
+  DEFAULT_SCOREBAR_LOW_COLOR,
+  DEFAULT_SCOREBAR_LOW_THRESHOLD,
+  DEFAULT_SCOREBAR_MID_COLOR,
+  DEFAULT_SCOREBAR_STYLE,
+  type ScorebarStyle,
+} from '@/lib/scorebarConfig';
 
 const GENRE_BADGE_QUERY_KEYS = {
   poster: {
@@ -403,6 +412,12 @@ export function useConfiguratorOutputs({
   logoRatingStyle,
   logoRatingsMax,
   logoBottomRatingsRow,
+  scorebarStyle,
+  scorebarLowColor,
+  scorebarMidColor,
+  scorebarHighColor,
+  scorebarLowThreshold,
+  scorebarHighThreshold,
   mdblistKey,
   mediaId,
   pendingReleaseTag,
@@ -603,6 +618,12 @@ export function useConfiguratorOutputs({
   logoRatingStyle: RatingStyle;
   logoRatingsMax: number | null;
   logoBottomRatingsRow: boolean;
+  scorebarStyle: ScorebarStyle;
+  scorebarLowColor: string;
+  scorebarMidColor: string;
+  scorebarHighColor: string;
+  scorebarLowThreshold: number;
+  scorebarHighThreshold: number;
   mdblistKey: string;
   mediaId: string;
   pendingReleaseTag: string;
@@ -1195,6 +1216,14 @@ export function useConfiguratorOutputs({
     }
     if (previewType === 'poster') {
       query.set('posterRatingsLayout', posterRatingsLayout);
+      if (posterRatingPresentation === 'scorebar') {
+        if (scorebarStyle !== DEFAULT_SCOREBAR_STYLE) query.set('scorebarStyle', scorebarStyle);
+        if (scorebarLowColor !== DEFAULT_SCOREBAR_LOW_COLOR) query.set('scorebarLowColor', scorebarLowColor);
+        if (scorebarMidColor !== DEFAULT_SCOREBAR_MID_COLOR) query.set('scorebarMidColor', scorebarMidColor);
+        if (scorebarHighColor !== DEFAULT_SCOREBAR_HIGH_COLOR) query.set('scorebarHighColor', scorebarHighColor);
+        if (scorebarLowThreshold !== DEFAULT_SCOREBAR_LOW_THRESHOLD) query.set('scorebarLowThreshold', String(scorebarLowThreshold));
+        if (scorebarHighThreshold !== DEFAULT_SCOREBAR_HIGH_THRESHOLD) query.set('scorebarHighThreshold', String(scorebarHighThreshold));
+      }
       if (ratingsMaxForType !== null) {
         query.set('posterRatingsMax', String(ratingsMaxForType));
       }
@@ -1465,6 +1494,12 @@ export function useConfiguratorOutputs({
     posterRingValueSource,
     posterRatingStyle,
     posterRatingsLayout,
+    scorebarStyle,
+    scorebarLowColor,
+    scorebarMidColor,
+    scorebarHighColor,
+    scorebarLowThreshold,
+    scorebarHighThreshold,
     posterRatingsMax,
     posterRatingsMaxPerSide,
     posterSideRatingsOffset,

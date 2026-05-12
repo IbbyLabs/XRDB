@@ -14,6 +14,7 @@ import {
   parseAggregateDynamicStops,
   resolveAggregateDynamicAccentColor,
   selectAggregateRatingProviders,
+  computeWeightedAverage,
   usesCompactRingPresentation as isCompactRingPresentationMode,
   usesAggregateRatingPresentation,
   type AggregateAccentMode,
@@ -63,6 +64,8 @@ type ImageRouteDisplayState = {
   usesAggregatePresentation: boolean;
   useEditorialPosterPresentation: boolean;
   useBlockbusterPresentation: boolean;
+  useScorebarPresentation: boolean;
+  scorebarNormalizedScore: number | null;
   effectivePosterRatingsLayout: PosterRatingLayout;
   effectivePosterRatingsMaxPerSide: number | null;
   effectiveBackdropRatingsLayout: BackdropRatingLayout;
@@ -169,6 +172,8 @@ export const resolveImageRouteDisplayState = (input: {
   const useLogoBadgeLayout = imageType === 'logo';
   const usesAggregatePresentation =
     !suppressRatingPresentation && usesAggregateRatingPresentation(ratingPresentation);
+  const useScorebarPresentation =
+    !suppressRatingPresentation && imageType === 'poster' && ratingPresentation === 'scorebar';
   const useCompactRingPresentation =
     !suppressRatingPresentation && imageType === 'poster' && isCompactRingPresentationMode(ratingPresentation);
   const useEditorialPosterPresentation =
@@ -593,7 +598,33 @@ export const resolveImageRouteDisplayState = (input: {
         .map((provider) => ratingBadgeByProvider.get(provider) || null)
         .filter((badge): badge is RatingBadge => badge !== null);
   const displayRatingBadges =
-    useEditorialPosterPresentation || useCompactRingPresentation ? [] : ratingBadges;
+    useEditorialPosterPresentation || useCompactRingPresentation || useScorebarPresentation
+      ? []
+      : ratingBadges;
+
+  const scorebarNormalizedScore: number | null = (() => {
+    if (!useScorebarPresentation) return null;
+    const availableProviders = renderableRatingPreferences.filter((p) =>
+      ratingBadgeByProvider.has(p),
+    );
+    if (availableProviders.length === 0) return null;
+    const selectedProviders = selectAggregateRatingProviders(
+      aggregateRatingSource,
+      availableProviders,
+    );
+    const numericEntries = selectedProviders.flatMap((provider) => {
+      const badge = ratingBadgeByProvider.get(provider);
+      if (!badge) return [];
+      const v = normalizeRatingToTenPointValue(
+        provider,
+        String(badge.sourceValue || badge.value || '').trim(),
+      );
+      return v !== null ? [{ provider, value: v }] : [];
+    });
+    if (numericEntries.length === 0) return null;
+    const averageValue = computeWeightedAverage(numericEntries, aggregateProviderWeights);
+    return parseFloat((averageValue * 10).toFixed(1));
+  })();
 
   if (useEditorialPosterPresentation) {
     genreBadge = null;
@@ -606,6 +637,7 @@ export const resolveImageRouteDisplayState = (input: {
     usesAggregatePresentation,
     useEditorialPosterPresentation,
     useBlockbusterPresentation,
+    useScorebarPresentation,
     effectivePosterRatingsLayout,
     effectivePosterRatingsMaxPerSide,
     effectiveBackdropRatingsLayout,
@@ -615,6 +647,7 @@ export const resolveImageRouteDisplayState = (input: {
     genreBadge,
     editorialOverlay,
     compactRingOverlay,
+    scorebarNormalizedScore,
     ratingBadgeByProvider,
     renderableRatingPreferences,
     debugResolvedRatingProviders: [...ratingBadgeByProvider.keys()],
