@@ -11,6 +11,20 @@ const QUALITY_BADGE_ICON_CACHE_TTL_MS = 1000 * 60 * 60 * 24; // 24 hours
 const isSvgContentType = (contentType: string) =>
   contentType.includes('svg');
 
+const looksLikeSvgUrl = (iconUrl: string) => {
+  try {
+    const { pathname } = new URL(iconUrl);
+    return pathname.toLowerCase().endsWith('.svg');
+  } catch {
+    return iconUrl.toLowerCase().includes('.svg');
+  }
+};
+
+const looksLikeSvgMarkup = (sourceBuffer: Buffer) => {
+  const markup = sourceBuffer.toString('utf8', 0, Math.min(sourceBuffer.length, 512)).trimStart();
+  return markup.startsWith('<svg') || markup.startsWith('<?xml');
+};
+
 const ensureSvgHasSize = (sourceBuffer: Buffer): Buffer | null => {
   const markup = sourceBuffer.toString('utf8');
   const svgMatch = /<svg\b([^>]*)>/i.exec(markup);
@@ -88,8 +102,12 @@ export const createQualityBadgeIconDataUriResolver = ({
 
         const contentType = response.headers.get('content-type') || 'image/png';
         const sourceBuffer = Buffer.from(await response.arrayBuffer());
+        const shouldTreatAsSvg =
+          isSvgContentType(contentType) ||
+          looksLikeSvgUrl(normalizedIconUrl) ||
+          looksLikeSvgMarkup(sourceBuffer);
 
-        if (isSvgContentType(contentType) && getSharpFactory) {
+        if (shouldTreatAsSvg && getSharpFactory) {
           try {
             const sharp = await getSharpFactory();
             let pngBuffer: Buffer | null = null;

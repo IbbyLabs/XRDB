@@ -109,3 +109,27 @@ test('quality badge icon retries svg rasterization with viewBox size normalizati
   assert.ok(result.startsWith('data:image/png;base64,'), `expected png data uri, got: ${result?.slice(0, 50)}`);
   assert.equal(attempts, 2, 'expected a retry with normalized svg size');
 });
+
+test('quality badge icon rasterizes mislabeled svg responses when the URL ends with .svg', async () => {
+  const svgBuffer = Buffer.from(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><circle cx="24" cy="24" r="24" fill="red"/></svg>',
+  );
+
+  const getQualityBadgeIconDataUri = createQualityBadgeIconDataUriResolver({
+    getMetadata: () => null,
+    setMetadata: () => {},
+    assertSafeSourceUrlImpl: async (url) => new URL(url),
+    fetchSafeIconImpl: async () => new Response(svgBuffer, {
+      status: 200,
+      headers: { 'content-type': 'application/octet-stream' },
+    }),
+    getSharpFactory: async () => {
+      const sharp = (await import('sharp')).default;
+      return sharp;
+    },
+  });
+
+  const result = await getQualityBadgeIconDataUri('https://example.com/icon.svg');
+  assert.ok(result !== null, 'expected non-null result');
+  assert.ok(result.startsWith('data:image/png;base64,'), `expected png data uri, got: ${result?.slice(0, 50)}`);
+});
