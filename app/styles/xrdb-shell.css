@@ -3182,6 +3182,44 @@
 	letter-spacing: -0.01em;
 }
 
+.xrdb-panel-section {
+	margin-bottom: 2rem;
+	padding-bottom: 1.75rem;
+	border-bottom: 1px solid color-mix(in oklch, var(--border) 60%, transparent);
+}
+
+.xrdb-panel-section:last-child {
+	margin-bottom: 0;
+	padding-bottom: 0;
+	border-bottom: none;
+}
+
+.xrdb-panel-section-header {
+	margin-bottom: 1.25rem;
+}
+
+.xrdb-panel-section-heading {
+	margin: 0 0 0.5rem;
+	font-size: 0.9375rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--accent);
+}
+
+.xrdb-panel-section-description {
+	margin: 0;
+	font-size: 0.8125rem;
+	line-height: 1.5;
+	color: var(--muted);
+}
+
+.xrdb-panel-section-content {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+}
+
 .xrdb-subtab-panel-body {
 	margin: 0.5rem 0 0;
 	font-size: 0.86rem;
