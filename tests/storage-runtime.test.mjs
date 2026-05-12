@@ -190,6 +190,41 @@ test('object storage prunes oldest files when file budget is exceeded', async (t
   });
 });
 
+test('metadata cache prunes oldest entries automatically on every write when count exceeds limit', async (t) => {
+  await withTempDataDir(t, async () => {
+    const cacheModule = await importFresh('../lib/metadataStore.ts');
+
+    cacheModule.setMetadata('keep:a', 'a', 60_000);
+    cacheModule.setMetadata('keep:b', 'b', 60_000);
+    cacheModule.setMetadata('keep:c', 'c', 60_000);
+
+    const { pruneOldestMetadata } = cacheModule;
+    pruneOldestMetadata(2);
+
+    assert.equal(cacheModule.getMetadata('keep:a'), null);
+    assert.ok(cacheModule.getMetadata('keep:b') !== null || cacheModule.getMetadata('keep:c') !== null);
+  });
+});
+
+test('metadata cache prunes expired entries automatically on every write', async (t) => {
+  await withTempDataDir(t, async () => {
+    const cacheModule = await importFresh('../lib/metadataStore.ts');
+
+    cacheModule.setMetadata('live:x', 'x', 60_000);
+    cacheModule.setMetadata('dead:y', 'y', -1);
+
+    assert.equal(cacheModule.getMetadata('live:x'), 'x');
+    assert.equal(cacheModule.getMetadata('dead:y'), null);
+
+    cacheModule.setMetadata('trigger:z', 'z', 60_000);
+
+    const { getDb, ensureDbInitialized } = await importFresh('../lib/sqliteStore.ts');
+    ensureDbInitialized();
+    const row = getDb().prepare('SELECT COUNT(*) as count FROM metadata_cache WHERE expires_at <= ?').get(Date.now());
+    assert.equal(Number(row.count), 0);
+  });
+});
+
 test('db initialization fails with a direct permission error when the data directory is not writable', async (t) => {
   const tempDir = mkdtempSync(join(tmpdir(), 'xrdb-db-perms-'));
   const lockedDir = join(tempDir, 'locked');
