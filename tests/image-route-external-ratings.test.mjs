@@ -6,10 +6,14 @@ import {
   SIMKL_APP_NAME,
   SIMKL_APP_VERSION,
   buildSimklRequiredQuery,
+  buildFilmwebTitleSlug,
   decodeAllocinePathFromClassName,
   extractAllocineRatings,
   extractAllocineSearchCandidates,
+  extractFilmwebRating,
+  extractFilmwebSearchCandidates,
   fetchAllocineRatings,
+  fetchFilmwebRating,
   fetchSimklId,
   fetchSimklRating,
   fetchTraktRating,
@@ -125,6 +129,56 @@ test('image route external ratings extract Allociné audience and press values f
     allocine: '4.4',
     allocinepress: '3.4',
   });
+});
+
+test('image route external ratings build Filmweb slugs, extract search candidates, and parse ratings', () => {
+  assert.equal(buildFilmwebTitleSlug('The Matrix'), 'The+Matrix');
+  assert.equal(buildFilmwebTitleSlug('Matrix: Reaktywacja'), 'Matrix%3A+Reaktywacja');
+
+  const candidates = extractFilmwebSearchCandidates({
+    payload: {
+      searchHits: [
+        {
+          id: 628,
+          type: 'film',
+          matchedTitle: 'Matrix',
+          matchedLang: 'pl-PL',
+        },
+        {
+          id: 151046,
+          type: 'serial',
+          matchedTitle: 'Matrix',
+          matchedLang: 'en-CA',
+        },
+      ],
+    },
+    mediaType: 'movie',
+    titles: ['Matrix', 'The Matrix'],
+  });
+
+  assert.deepEqual(candidates, [
+    {
+      id: '628',
+      type: 'film',
+      title: 'Matrix',
+      lang: 'pl-PL',
+    },
+  ]);
+
+  const html = `
+    <div itemprop="aggregateRating" itemscope itemtype="https://schema.org/AggregateRating">
+      <span itemprop="ratingValue">7,6</span>
+      <span itemprop="ratingCount">866965</span>
+    </div>
+    <script>
+      window.IRI.setSource('filmDataRating', {
+        rate: 7.5997700691223145,
+        ratingCount: 866965,
+      })
+    </script>
+  `;
+
+  assert.equal(extractFilmwebRating(html), '7.6');
 });
 
 test('image route external ratings fetch Allociné search and detail pages through the text cache path', async () => {
@@ -250,6 +304,65 @@ test('image route external ratings match Allociné series by original title when
     /\/_\/autocomplete\/series\/Law%20%26%20Order%20Special%20Victims%20Unit$/,
   );
   assert.match(requested[1], /\/series\/ficheserie_gen_cserie=74\.html$/);
+});
+
+test('image route external ratings fetch Filmweb search and detail pages through the text cache path', async () => {
+  const requested = [];
+  const metadata = new Map();
+  const fetchImpl = async (url) => {
+    requested.push(String(url));
+    if (String(url).includes('/api/v1/live/search?query=Matrix')) {
+      return new Response(JSON.stringify({
+        total: 1,
+        searchHits: [
+          {
+            id: 628,
+            type: 'film',
+            matchedTitle: 'Matrix',
+            matchedLang: 'pl-PL',
+          },
+        ],
+      }), {
+        status: 200,
+        headers: {
+          'content-type': 'application/json; charset=utf-8',
+        },
+      });
+    }
+    return new Response(`
+      <div itemprop="aggregateRating" itemscope itemtype="https://schema.org/AggregateRating">
+        <span itemprop="ratingValue">7,6</span>
+      </div>
+      <script>
+        window.IRI.setSource('filmDataRating', {
+          rate: 7.5997700691223145,
+          ratingCount: 866965,
+        })
+      </script>
+    `, {
+      status: 200,
+      headers: {
+        'content-type': 'text/html; charset=utf-8',
+      },
+    });
+  };
+
+  const rating = await fetchFilmwebRating({
+    mediaType: 'movie',
+    title: 'Matrix',
+    originalTitle: 'The Matrix',
+    releaseDate: '1999-03-31',
+    cacheTtlMs: 5000,
+    phases,
+    getMetadata: (key) => metadata.get(key),
+    setMetadata: (key, value) => metadata.set(key, value),
+    fetchImpl,
+  });
+
+  assert.equal(rating, '7.6');
+  assert.equal(requested.length, 2);
+  assert.match(requested[0], /\/api\/v1\/live\/search\?query=Matrix$/);
+  assert.match(requested[1], /\/film\/Matrix-1999-628$/);
 });
 
 test('image route external ratings treat zero Trakt ratings as missing', async () => {

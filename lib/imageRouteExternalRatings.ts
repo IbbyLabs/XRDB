@@ -56,14 +56,29 @@ type AllocineAutocompleteResult = {
 type AllocineAutocompleteResponse = {
   results?: AllocineAutocompleteResult[] | null;
 };
+type FilmwebSearchHit = {
+  id?: string | number | null;
+  type?: string | null;
+  matchedTitle?: string | null;
+  matchedLang?: string | null;
+};
+type FilmwebSearchResponse = {
+  searchHits?: FilmwebSearchHit[] | null;
+};
 
 const externalTextMetadataInFlight = new Map<string, Promise<CachedTextResponse>>();
 const ALLOCINE_BASE_URL = 'https://www.allocine.fr';
+const FILMWEB_BASE_URL = 'https://www.filmweb.pl';
 const ALLOCINE_REQUEST_HEADERS = {
   'user-agent': BROWSER_LIKE_USER_AGENT,
   accept:
     'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
   'accept-language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+};
+const FILMWEB_REQUEST_HEADERS = {
+  'user-agent': BROWSER_LIKE_USER_AGENT,
+  accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,application/json;q=0.8,*/*;q=0.7',
+  'accept-language': 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7',
 };
 
 const decodeHtmlEntities = (value: string) =>
@@ -365,6 +380,134 @@ const selectAllocineSearchCandidate = ({
   return ranked[0]?.score > 0 ? ranked[0].candidate : null;
 };
 
+const normalizeFilmwebTitle = (value: string) =>
+  decodeHtmlEntities(String(value || ''))
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '');
+
+const dedupeFilmwebTitleVariants = (values: Array<string | null | undefined>) => {
+  const result: string[] = [];
+  const seen = new Set<string>();
+
+  for (const value of values) {
+    const normalized = String(value || '').trim();
+    if (!normalized) continue;
+    const key = normalizeFilmwebTitle(normalized);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    result.push(normalized);
+  }
+
+  return result;
+};
+
+const scoreFilmwebTitleMatch = (candidateTitle: string, titles: string[]) => {
+  const normalizedCandidateTitle = normalizeFilmwebTitle(candidateTitle);
+  const normalizedTitles = titles.map((title) => normalizeFilmwebTitle(title)).filter(Boolean);
+
+  if (!normalizedCandidateTitle || normalizedTitles.length === 0) {
+    return 0;
+  }
+  if (normalizedTitles.includes(normalizedCandidateTitle)) {
+    return 120;
+  }
+  if (
+    normalizedTitles.some(
+      (title) => normalizedCandidateTitle.startsWith(title) || title.startsWith(normalizedCandidateTitle),
+    )
+  ) {
+    return 75;
+  }
+  if (
+    normalizedTitles.some(
+      (title) => normalizedCandidateTitle.includes(title) || title.includes(normalizedCandidateTitle),
+    )
+  ) {
+    return 40;
+  }
+
+  return 0;
+};
+
+export const buildFilmwebTitleSlug = (title: string) =>
+  encodeURIComponent(String(title || '').trim()).replace(/%20/g, '+');
+
+export const extractFilmwebSearchCandidates = ({
+  payload,
+  mediaType,
+  titles,
+}: {
+  payload: FilmwebSearchResponse;
+  mediaType: 'movie' | 'tv';
+  titles: string[];
+}) => {
+  const expectedType = mediaType === 'movie' ? 'film' : 'serial';
+  const results = Array.isArray(payload?.searchHits) ? payload.searchHits : [];
+  const candidates: Array<{ id: string; type: 'film' | 'serial'; title: string; lang: string | null }> = [];
+
+  for (const result of results) {
+    const type = String(result?.type || '').trim().toLowerCase();
+    if (type !== expectedType) continue;
+
+    const id = String(result?.id ?? '').trim();
+    if (!/^\d+$/.test(id)) continue;
+
+    const title = String(result?.matchedTitle || '').trim();
+    if (!title || scoreFilmwebTitleMatch(title, titles) <= 0) continue;
+
+    const lang = String(result?.matchedLang || '').trim() || null;
+    candidates.push({
+      id,
+      type: expectedType,
+      title,
+      lang,
+    });
+  }
+
+  return candidates;
+};
+
+const selectFilmwebSearchCandidate = ({
+  candidates,
+  titles,
+}: {
+  candidates: Array<{ id: string; type: 'film' | 'serial'; title: string; lang: string | null }>;
+  titles: string[];
+}) => {
+  const ranked = candidates
+    .map((candidate) => {
+      let score = scoreFilmwebTitleMatch(candidate.title, titles);
+      if (candidate.lang?.startsWith('pl')) score += 6;
+      if (candidate.lang?.startsWith('en')) score += 3;
+      return { candidate, score };
+    })
+    .sort((left, right) => right.score - left.score);
+
+  return ranked[0]?.score > 0 ? ranked[0].candidate : null;
+};
+
+export const extractFilmwebRating = (html: string) => {
+  const payloadPatterns = [
+    /window\.IRI\.setSource\('filmDataRating',\s*\{[\s\S]{0,400}?rate:\s*"?([0-9]+(?:\.[0-9]+)?)"?/i,
+    /window\.IRI\.setSource\('filmRating',\s*\{[\s\S]{0,400}?rate:\s*"?([0-9]+(?:\.[0-9]+)?)"?/i,
+    /itemprop="ratingValue">\s*([0-9]+,[0-9]+|[0-9]+(?:\.[0-9]+)?)\s*</i,
+    /class="filmRating__rateValue[^>]*">\s*([0-9]+,[0-9]+|[0-9]+(?:\.[0-9]+)?)\s*</i,
+  ];
+
+  for (const pattern of payloadPatterns) {
+    const match = html.match(pattern);
+    const rating = normalizeRatingValue(match?.[1]?.replace(',', '.'));
+    if (rating) {
+      return rating;
+    }
+  }
+
+  return null;
+};
+
 export const buildSimklRequiredQuery = (clientId: string) => {
   const query = new URLSearchParams();
   query.set('client_id', clientId);
@@ -563,6 +706,121 @@ export const fetchAllocineRatings = async ({
 
   const ratings = extractAllocineRatings(detailResponse.data);
   return ratings.allocine || ratings.allocinepress ? ratings : null;
+};
+
+export const fetchFilmwebRating = async ({
+  mediaType,
+  title,
+  originalTitle,
+  releaseDate,
+  cacheTtlMs,
+  phases,
+  getMetadata,
+  setMetadata,
+  fetchImpl,
+}: {
+  mediaType: 'movie' | 'tv';
+  title?: string | null;
+  originalTitle?: string | null;
+  releaseDate?: string | null;
+  cacheTtlMs: number;
+  phases: PhaseDurations;
+  getMetadata: MetadataReader;
+  setMetadata: MetadataWriter;
+  fetchImpl: JsonFetchImpl;
+}) => {
+  const titleVariants = dedupeFilmwebTitleVariants([title, originalTitle]).slice(0, 3);
+  if (titleVariants.length === 0) {
+    return null;
+  }
+
+  const releaseYearMatch = String(releaseDate || '').match(/\b(\d{4})\b/);
+  const releaseYear = releaseYearMatch ? Number(releaseYearMatch[1]) : null;
+  if (!Number.isFinite(releaseYear)) {
+    return null;
+  }
+
+  let selectedCandidate: { id: string; type: 'film' | 'serial'; title: string; lang: string | null } | null = null;
+
+  for (const titleVariant of titleVariants) {
+    const searchKey = `filmweb:search:v1:${mediaType}:${sha1Hex(titleVariant)}`;
+    const searchUrl = `${FILMWEB_BASE_URL}/api/v1/live/search?query=${encodeURIComponent(titleVariant)}`;
+    let response: CachedTextResponse;
+
+    try {
+      response = await fetchExternalTextCached({
+        key: searchKey,
+        url: searchUrl,
+        ttlMs: cacheTtlMs,
+        phases,
+        phase: 'mdb',
+        getMetadata,
+        setMetadata,
+        fetchImpl,
+        init: {
+          headers: FILMWEB_REQUEST_HEADERS,
+        },
+      });
+    } catch {
+      continue;
+    }
+
+    if (!response.ok || !response.data) continue;
+
+    let payload: FilmwebSearchResponse;
+    try {
+      payload = JSON.parse(response.data) as FilmwebSearchResponse;
+    } catch {
+      continue;
+    }
+
+    const candidates = extractFilmwebSearchCandidates({
+      payload,
+      mediaType,
+      titles: titleVariants,
+    });
+    selectedCandidate = selectFilmwebSearchCandidate({
+      candidates,
+      titles: titleVariants,
+    });
+    if (selectedCandidate) {
+      break;
+    }
+  }
+
+  if (!selectedCandidate) {
+    return null;
+  }
+
+  const typePath = selectedCandidate.type === 'serial' ? 'serial' : 'film';
+  const slug = buildFilmwebTitleSlug(selectedCandidate.title);
+  const detailPath = `/${typePath}/${slug}-${releaseYear}-${selectedCandidate.id}`;
+  const detailUrl = new URL(detailPath, FILMWEB_BASE_URL).toString();
+  let detailResponse: CachedTextResponse;
+
+  try {
+    detailResponse = await fetchExternalTextCached({
+      key: `filmweb:page:v1:${typePath}:${selectedCandidate.id}:${releaseYear}`,
+      url: detailUrl,
+      ttlMs: cacheTtlMs,
+      phases,
+      phase: 'mdb',
+      getMetadata,
+      setMetadata,
+      fetchImpl,
+      init: {
+        headers: FILMWEB_REQUEST_HEADERS,
+      },
+    });
+  } catch {
+    return null;
+  }
+
+  if (!detailResponse.ok || !detailResponse.data) {
+    return null;
+  }
+
+  return extractFilmwebRating(detailResponse.data);
 };
 
 export const fetchSimklId = async ({

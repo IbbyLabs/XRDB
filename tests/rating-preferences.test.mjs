@@ -84,6 +84,7 @@ test('kitsu uses the embedded logo source instead of a remote fallback icon', ()
 test('rating preference normalization accepts anilist.co aliases', () => {
   assert.equal(normalizeRatingPreference('AniList.co'), 'anilist');
   assert.equal(normalizeRatingPreference('ani.list_co'), 'anilist');
+  assert.equal(normalizeRatingPreference('filmweb.pl'), 'filmweb');
 });
 
 test('rating preference normalization accepts RPDB critic and audience aliases', () => {
@@ -112,4 +113,11 @@ test('stringify helpers normalize aliases and dedupe values', () => {
     stringifyRatingPreferences(['anilist', 'anilist', 'kitsu']),
     'anilist,kitsu',
   );
+});
+
+test('filmweb provider uses the authentic Filmweb hosted icon', () => {
+  const filmweb = RATING_PROVIDER_OPTIONS.find((provider) => provider.id === 'filmweb');
+
+  assert.ok(filmweb);
+  assert.equal(filmweb.iconUrl, 'https://fwcdn.pl/prt/static/images/fw/icons2/228x228.png');
 });

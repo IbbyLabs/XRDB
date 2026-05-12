@@ -38,6 +38,12 @@ const providerCatalog = [
     accentColor: '#f59e0b',
   },
   {
+    id: 'filmweb',
+    label: 'Filmweb',
+    iconUrl: 'https://fwcdn.pl/prt/static/images/fw/icons2/228x228.png',
+    accentColor: '#ecb014',
+  },
+  {
     id: 'tomatoes',
     label: 'Rotten Tomatoes',
     iconUrl: 'https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://rottentomatoes.com&size=128',
@@ -127,6 +133,7 @@ const aliasGroups: ReadonlyArray<readonly [RatingPreference, readonly string[]]>
   ['imdb', ['imdb']],
   ['allocine', ['allocine', 'allocineaudience', 'allocinespectators', 'allocinespectateur', 'allocinespectateurs', 'allocineuser']],
   ['allocinepress', ['allocinepress', 'allocinepresse', 'allocinecritic', 'allocinecritics']],
+  ['filmweb', ['filmweb', 'filmwebpl']],
   ['tomatoes', ['tomatoes', 'rottentomatoes', 'rottentomato', 'tomatoescritics', 'tomatoescritic', 'rottentomatoescritics', 'rt']],
   ['tomatoesaudience', ['tomatoesaudience', 'rottentomatoesaudience', 'rtaudiencescore', 'rtaudience', 'popcorntime', 'popcorn', 'popcornmeter', 'popcornscore']],
   ['letterboxd', ['letterboxd']],

@@ -24,6 +24,7 @@ import {
 } from './imageRouteConfig.ts';
 import {
   fetchAllocineRatings,
+  fetchFilmwebRating,
   fetchSimklRating,
   fetchTraktRating,
 } from './imageRouteExternalRatings.ts';
@@ -84,6 +85,7 @@ type ProviderRatingsDeps = {
   fetchTraktRating: typeof fetchTraktRating;
   fetchSimklRating: typeof fetchSimklRating;
   fetchAllocineRatings: typeof fetchAllocineRatings;
+  fetchFilmwebRating: typeof fetchFilmwebRating;
   fetchMdbListRatings: typeof fetchMdbListRatings;
   findImdbEpisodeBySeriesSeasonEpisode: typeof findImdbEpisodeBySeriesSeasonEpisode;
   getImdbRatingFromDataset: (imdbId: string) => ImdbDatasetRating | null;
@@ -100,6 +102,7 @@ const DEFAULT_DEPS: ProviderRatingsDeps = {
   fetchTraktRating,
   fetchSimklRating,
   fetchAllocineRatings,
+  fetchFilmwebRating,
   fetchMdbListRatings,
   findImdbEpisodeBySeriesSeasonEpisode,
   getImdbRatingFromDataset,
@@ -185,6 +188,7 @@ export const resolveImageRouteProviderRatings = async (
   const needsSimklRating = input.requestedExternalRatings.has('simkl');
   const needsAllocineRating = input.requestedExternalRatings.has('allocine');
   const needsAllocinePressRating = input.requestedExternalRatings.has('allocinepress');
+  const needsFilmwebRating = input.requestedExternalRatings.has('filmweb');
   const needsMdbListBackedRating = [...input.requestedExternalRatings].some((provider) =>
     MDBLIST_BACKED_RATING_PROVIDERS.has(provider)
   );
@@ -199,7 +203,8 @@ export const resolveImageRouteProviderRatings = async (
     input.media?.title || input.media?.name || input.media?.original_title || input.media?.original_name || null;
   const allocineOriginalTitle =
     input.media?.original_title || input.media?.original_name || input.media?.title || input.media?.name || null;
-  const needsTitleBasedRating = (needsAllocineRating || needsAllocinePressRating) && Boolean(allocineTitle);
+  const needsTitleBasedRating =
+    (needsAllocineRating || needsAllocinePressRating || needsFilmwebRating) && Boolean(allocineTitle);
 
   const setAnimeMappingState = () => {
     if (kitsuId || aniListId || malId) {
@@ -529,6 +534,34 @@ export const resolveImageRouteProviderRatings = async (
       if (allocineRatings?.allocinepress && needsAllocinePressRating) {
         combinedRatings.set('allocinepress', allocineRatings.allocinepress);
         input.renderedRatingTtlByProvider.set('allocinepress', allocineCacheTtlMs);
+      }
+    } catch {
+    }
+  }
+
+  if (needsFilmwebRating) {
+    try {
+      const filmwebCacheTtlMs = getRatingCacheTtlMs({
+        id: `filmweb:${input.resolvedRatingMediaType}:${allocineTitle || input.cleanId}`,
+        mediaType: input.resolvedRatingMediaType,
+        releaseDate: input.releaseDate,
+        defaultTtlMs: MDBLIST_CACHE_TTL_MS,
+        oldTtlMs: MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
+      });
+      const filmwebRating = await runtimeDeps.fetchFilmwebRating({
+        mediaType: input.resolvedRatingMediaType,
+        title: allocineTitle,
+        originalTitle: allocineOriginalTitle,
+        releaseDate: input.releaseDate,
+        cacheTtlMs: filmwebCacheTtlMs,
+        phases: input.phases,
+        getMetadata: input.getMetadata,
+        setMetadata: input.setMetadata,
+        fetchImpl: input.undiciFetchImpl,
+      });
+      if (filmwebRating) {
+        combinedRatings.set('filmweb', filmwebRating);
+        input.renderedRatingTtlByProvider.set('filmweb', filmwebCacheTtlMs);
       }
     } catch {
     }

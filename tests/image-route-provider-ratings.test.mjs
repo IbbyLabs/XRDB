@@ -560,6 +560,78 @@ test('image route provider ratings resolve Allociné audience and press values f
   assert.ok(renderedRatingTtlByProvider.has('allocinepress'));
 });
 
+test('image route provider ratings resolve Filmweb values from title lookups', async () => {
+  const renderedRatingTtlByProvider = new Map();
+  const calls = [];
+
+  const result = await resolveImageRouteProviderRatings(
+    {
+      cleanId: 'tmdb:movie:603',
+      imageType: 'poster',
+      mediaType: 'movie',
+      media: {
+        id: 603,
+        title: 'Matrix',
+        original_title: 'The Matrix',
+        release_date: '1999-03-31',
+      },
+      mediaId: '603',
+      isTmdb: true,
+      isKitsu: false,
+      isAniListInput: false,
+      idPrefix: 'tmdb',
+      season: null,
+      mappedImdbId: null,
+      inputAnimeMappingProvider: null,
+      inputAnimeMappingExternalId: null,
+      requestedExternalRatings: new Set(['filmweb']),
+      shouldAttemptAnimeMapping: false,
+      initialAllowAnimeOnlyRatings: false,
+      initialHasConfirmedAnimeMapping: false,
+      resolvedRatingMediaType: 'movie',
+      releaseDate: '1999-03-31',
+      mdblistKey: null,
+      hasMdbListApiKey: false,
+      simklClientId: '',
+      phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+      fetchJsonCached: async () => createEmptyResponse(),
+      getMetadata: () => null,
+      setMetadata: () => {},
+      detailsBundlePromise: null,
+      renderedRatingTtlByProvider,
+      undiciFetchImpl: async () => {
+        throw new Error('unexpected undici fetch');
+      },
+    },
+    {
+      fetchAniListRating: async () => null,
+      fetchKitsuRating: async () => null,
+      fetchMyAnimeListRating: async () => null,
+      fetchTraktRating: async () => null,
+      fetchSimklRating: async () => null,
+      fetchAllocineRatings: async () => null,
+      fetchFilmwebRating: async (options) => {
+        calls.push(options);
+        return '7.6';
+      },
+      fetchMdbListRatings: async () => null,
+      getImdbRatingFromDataset: () => null,
+      normalizeRatingValue: (value) => {
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? numeric.toFixed(1) : null;
+      },
+    },
+  );
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].mediaType, 'movie');
+  assert.equal(calls[0].title, 'Matrix');
+  assert.equal(calls[0].originalTitle, 'The Matrix');
+  assert.equal(calls[0].releaseDate, '1999-03-31');
+  assert.equal(result.ratings.get('filmweb'), '7.6');
+  assert.ok(renderedRatingTtlByProvider.has('filmweb'));
+});
+
 test('image route provider ratings produce no IMDB badge when episode tconst cannot be resolved', async () => {
   const result = await resolveImageRouteProviderRatings(
     {
