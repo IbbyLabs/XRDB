@@ -11,6 +11,40 @@ const QUALITY_BADGE_ICON_CACHE_TTL_MS = 1000 * 60 * 60 * 24; // 24 hours
 const isSvgContentType = (contentType: string) =>
   contentType.includes('svg');
 
+const ensureSvgHasSize = (sourceBuffer: Buffer): Buffer | null => {
+  const markup = sourceBuffer.toString('utf8');
+  const svgMatch = /<svg\b([^>]*)>/i.exec(markup);
+  if (!svgMatch) return null;
+
+  const attrs = svgMatch[1] || '';
+  const hasWidth = /\bwidth\s*=\s*['"][^'"]+['"]/i.test(attrs);
+  const hasHeight = /\bheight\s*=\s*['"][^'"]+['"]/i.test(attrs);
+  if (hasWidth && hasHeight) return null;
+
+  const viewBoxMatch = /\bviewBox\s*=\s*['"]\s*[-0-9.]+\s+[-0-9.]+\s+([0-9.]+)\s+([0-9.]+)\s*['"]/i.exec(attrs);
+  if (!viewBoxMatch) return null;
+
+  const width = Number.parseFloat(viewBoxMatch[1]);
+  const height = Number.parseFloat(viewBoxMatch[2]);
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    return null;
+  }
+
+  const replacement = `<svg${attrs} width="${width}" height="${height}">`;
+  const updated = markup.replace(/<svg\b[^>]*>/i, replacement);
+  return Buffer.from(updated, 'utf8');
+};
+
+const rasterizeSvgToPng = async (sharp: any, sourceBuffer: Buffer): Promise<Buffer> =>
+  sharp(sourceBuffer)
+    .resize(512, 512, {
+      fit: 'contain',
+      kernel: 'lanczos3',
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
+    .png({ compressionLevel: 6 })
+    .toBuffer();
+
 export const createQualityBadgeIconDataUriResolver = ({
   getMetadata,
   setMetadata,
@@ -58,14 +92,21 @@ export const createQualityBadgeIconDataUriResolver = ({
         if (isSvgContentType(contentType) && getSharpFactory) {
           try {
             const sharp = await getSharpFactory();
-            const pngBuffer = await sharp(sourceBuffer)
-              .resize(512, 512, {
-                fit: 'contain',
-                kernel: 'lanczos3',
-                background: { r: 0, g: 0, b: 0, alpha: 0 },
-              })
-              .png({ compressionLevel: 6 })
-              .toBuffer();
+            let pngBuffer: Buffer | null = null;
+
+            try {
+              pngBuffer = await rasterizeSvgToPng(sharp, sourceBuffer);
+            } catch {
+              const normalizedSvg = ensureSvgHasSize(sourceBuffer);
+              if (normalizedSvg) {
+                pngBuffer = await rasterizeSvgToPng(sharp, normalizedSvg);
+              }
+            }
+
+            if (!pngBuffer) {
+              throw new Error('svg-rasterization-failed');
+            }
+
             const dataUri = `data:image/png;base64,${pngBuffer.toString('base64')}`;
             setMetadata(memoryCacheKey, dataUri, QUALITY_BADGE_ICON_CACHE_TTL_MS);
             return dataUri;
