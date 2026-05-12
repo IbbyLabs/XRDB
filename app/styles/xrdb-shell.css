@@ -3252,6 +3252,37 @@
 	outline-offset: 2px;
 }
 
+.xrdb-preview-return-btn {
+	display: none;
+	position: fixed;
+	bottom: 84px;
+	right: 1.25rem;
+	z-index: 44;
+	width: 44px;
+	height: 44px;
+	border-radius: 999px;
+	border: 1px solid color-mix(in oklch, var(--accent) 70%, var(--border));
+	background: color-mix(in oklch, var(--accent) 12%, var(--bg-surface));
+	color: var(--accent);
+	font-size: 1.25rem;
+	line-height: 1;
+	font-weight: 700;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	box-shadow: 0 0.25rem 0.75rem oklch(4% 0.015 240 / 0.2);
+}
+
+.xrdb-preview-return-btn:hover {
+	border-color: var(--accent);
+	background: color-mix(in oklch, var(--accent) 20%, var(--bg-surface));
+	box-shadow: 0 0.5rem 1.5rem oklch(4% 0.015 240 / 0.28);
+}
+
+.xrdb-preview-return-btn:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 3px;
+}
+
 .xrdb-preview-overlay,
 .xrdb-preview-fullscreen {
 	position: fixed;
@@ -3573,6 +3604,10 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
+	}
+
+	.xrdb-preview-return-btn {
+		display: block;
 	}
 
 	.xrdb-dialog-panel {

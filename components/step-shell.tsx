@@ -174,6 +174,7 @@ export function StepShell({
   const floatingPreviewWindowRef = useRef<HTMLDivElement>(null);
   const floatingResizeStartRef = useRef({ pointerX: 0, pointerY: 0, width: 360, height: 242 });
 
+
   const ctx = useOptionalConfiguratorContext();
   const router = useRouter();
   const experienceMode = ctx?.experienceMode ?? 'simple';
@@ -756,6 +757,20 @@ export function StepShell({
         >
           Preview
         </button>
+
+        {effectivePreviewMode === 'workspace' ? (
+          <button
+            className="xrdb-preview-return-btn"
+            type="button"
+            onClick={() => {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            aria-label="Return to preview"
+            title="Scroll back to preview"
+          >
+            ↑
+          </button>
+        ) : null}
       </div>
 
       {overlayOpen ? (
