@@ -56,6 +56,30 @@ function OptionPills<T extends string>({
   );
 }
 
+function PanelSection({
+  heading,
+  description,
+  children,
+}: {
+  heading: string;
+  description?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="xrdb-panel-section">
+      <div className="xrdb-panel-section-header">
+        <h3 className="xrdb-panel-section-heading">{heading}</h3>
+        {description ? (
+          <p className="xrdb-panel-section-description">{description}</p>
+        ) : null}
+      </div>
+      <div className="xrdb-panel-section-content">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export function ProvidersPanel() {
   const ctx = useConfiguratorContext();
   const { ratingProviderRows, onToggleRatingPreference, onSelectAllRatingPreferencesEnabled } =
@@ -127,121 +151,131 @@ export function StylePanel() {
     <div className="xrdb-panel-style">
       <h2 className="xrdb-subtab-panel-title">Style</h2>
 
-      <ControlRow label="Presentation">
-        <OptionPills
-          options={presentationOptions}
-          value={pres.activeRatingPresentation}
-          onChange={pres.onSelectRatingPresentation}
-        />
-          <p className="xrdb-control-description">Controls how rating scores are displayed — as a card, an icon with a number, or a compact badge row.</p>
-      </ControlRow>
+      <PanelSection
+        heading="Presentation and display"
+        description="Controls how rating scores are displayed and the overall visual appearance of the poster."
+      >
+        <ControlRow label="Presentation">
+          <OptionPills
+            options={presentationOptions}
+            value={pres.activeRatingPresentation}
+            onChange={pres.onSelectRatingPresentation}
+          />
+          <p className="xrdb-control-description">Choose how ratings appear — as a card, an icon with a number, or a compact badge row.</p>
+        </ControlRow>
 
-      <ControlRow label="Artwork source">
-        <OptionPills
-          options={look.activeArtworkSourceOptions}
-          value={look.activeArtworkSource}
-          onChange={look.onSelectPosterArtworkSource}
-        />
-        {look.activeArtworkSourceDescription ? (
-          <p className="xrdb-control-description">{look.activeArtworkSourceDescription}</p>
-        ) : null}
-      </ControlRow>
+        <ControlRow label="Artwork source">
+          <OptionPills
+            options={look.activeArtworkSourceOptions}
+            value={look.activeArtworkSource}
+            onChange={look.onSelectPosterArtworkSource}
+          />
+          {look.activeArtworkSourceDescription ? (
+            <p className="xrdb-control-description">{look.activeArtworkSourceDescription}</p>
+          ) : null}
+        </ControlRow>
 
-      <ControlRow label="Rating style">
-        <OptionPills
-          options={RATING_STYLE_OPTIONS}
-          value={look.activeRatingStyle}
-          onChange={look.onSelectRatingStyle}
-        />
-      </ControlRow>
+        <ControlRow label="Rating style">
+          <OptionPills
+            options={RATING_STYLE_OPTIONS}
+            value={look.activeRatingStyle}
+            onChange={look.onSelectRatingStyle}
+          />
+        </ControlRow>
 
-      <ControlRow label="Image text">
-        <OptionPills
-          options={look.activeImageTextOptions}
-          value={look.activeImageText}
-          onChange={look.onSelectImageText}
-        />
-        {look.activeImageTextDescription ? (
-          <p className="xrdb-control-description">{look.activeImageTextDescription}</p>
-        ) : null}
-      </ControlRow>
+        <ControlRow label="Image text">
+          <OptionPills
+            options={look.activeImageTextOptions}
+            value={look.activeImageText}
+            onChange={look.onSelectImageText}
+          />
+          {look.activeImageTextDescription ? (
+            <p className="xrdb-control-description">{look.activeImageTextDescription}</p>
+          ) : null}
+        </ControlRow>
 
-      <ControlRow label="Rating values">
-        <OptionPills
-          options={RATING_VALUE_MODE_OPTIONS}
-          value={look.ratingValueMode}
-          onChange={look.onSelectRatingValueMode}
-        />
-      </ControlRow>
+        <ControlRow label="Rating values">
+          <OptionPills
+            options={RATING_VALUE_MODE_OPTIONS}
+            value={look.ratingValueMode}
+            onChange={look.onSelectRatingValueMode}
+          />
+        </ControlRow>
 
-      <ControlRow label="Icon shape">
-        <OptionPills
-          options={ICON_SHAPE_OPTIONS}
-          value={look.iconShape}
-          onChange={look.onSelectIconShape}
-        />
-      </ControlRow>
+        <ControlRow label="Icon shape">
+          <OptionPills
+            options={ICON_SHAPE_OPTIONS}
+            value={look.iconShape}
+            onChange={look.onSelectIconShape}
+          />
+        </ControlRow>
+      </PanelSection>
 
-      <ControlRow label="Genre badges">
-        <OptionPills
-          options={GENRE_BADGE_MODE_OPTIONS}
-          value={look.activeGenreBadgeMode}
-          onChange={look.onSelectGenreBadgeMode}
-        />
-          <p className="xrdb-control-description">Adds a strip of genre labels to the poster. Choose to highlight the primary genre or show all genres.</p>
-      </ControlRow>
+      <PanelSection
+        heading="Genre badges"
+        description="Optional genre labels that add context to the poster artwork."
+      >
+        <ControlRow label="Genre badges">
+          <OptionPills
+            options={GENRE_BADGE_MODE_OPTIONS}
+            value={look.activeGenreBadgeMode}
+            onChange={look.onSelectGenreBadgeMode}
+          />
+          <p className="xrdb-control-description">Add genre labels highlighting the primary genre or showing all genres.</p>
+        </ControlRow>
 
-      {look.activeGenreBadgeMode !== 'off' ? (
-        <>
-          <ControlRow label="Genre style">
-            <OptionPills
-              options={GENRE_BADGE_STYLE_OPTIONS}
-              value={look.activeGenreBadgeStyle}
-              onChange={look.onSelectGenreBadgeStyle}
-            />
-          </ControlRow>
-          <ControlRow label="Genre position">
-            <OptionPills
-              options={GENRE_BADGE_POSITION_OPTIONS}
-              value={look.activeGenreBadgePosition}
-              onChange={look.onSelectGenreBadgePosition}
-            />
-              <p className="xrdb-control-description">Where on the poster the genre label strip appears.</p>
-          </ControlRow>
-          <ControlRow label="Genre size">
-            <div className="xrdb-number-control">
-              <input
-                type="number"
-                className="xrdb-number-input"
-                value={look.activeGenreBadgeScale}
-                min={70}
-                max={200}
-                onChange={(e) => look.onSelectGenreBadgeScale(Number(e.target.value))}
-                aria-label="Genre badge size"
-                title="Scale genre badges relative to their default size. 100 is default."
+        {look.activeGenreBadgeMode !== 'off' ? (
+          <>
+            <ControlRow label="Genre style">
+              <OptionPills
+                options={GENRE_BADGE_STYLE_OPTIONS}
+                value={look.activeGenreBadgeStyle}
+                onChange={look.onSelectGenreBadgeStyle}
               />
-              <span className="xrdb-number-unit">%</span>
-            </div>
-          </ControlRow>
-          {look.activeGenreBadgeStyle === 'clean' ? (
-            <ControlRow label="Clean overlay strength">
+            </ControlRow>
+            <ControlRow label="Genre position">
+              <OptionPills
+                options={GENRE_BADGE_POSITION_OPTIONS}
+                value={look.activeGenreBadgePosition}
+                onChange={look.onSelectGenreBadgePosition}
+              />
+              <p className="xrdb-control-description">Where on the poster the genre label strip appears.</p>
+            </ControlRow>
+            <ControlRow label="Genre size">
               <div className="xrdb-number-control">
                 <input
                   type="number"
                   className="xrdb-number-input"
-                  value={look.activeGenreBadgeBackgroundOpacity}
-                  min={0}
-                  max={100}
-                  onChange={(e) => look.onSelectGenreBadgeBackgroundOpacity(Number(e.target.value))}
-                  aria-label="Clean genre overlay strength"
-                  title="Controls the black gradient strength behind clean genre text. 0 disables it."
+                  value={look.activeGenreBadgeScale}
+                  min={70}
+                  max={200}
+                  onChange={(e) => look.onSelectGenreBadgeScale(Number(e.target.value))}
+                  aria-label="Genre badge size"
+                  title="Scale genre badges relative to their default size. 100 is default."
                 />
                 <span className="xrdb-number-unit">%</span>
               </div>
             </ControlRow>
-          ) : null}
-        </>
-      ) : null}
+            {look.activeGenreBadgeStyle === 'clean' ? (
+              <ControlRow label="Clean overlay strength">
+                <div className="xrdb-number-control">
+                  <input
+                    type="number"
+                    className="xrdb-number-input"
+                    value={look.activeGenreBadgeBackgroundOpacity}
+                    min={0}
+                    max={100}
+                    onChange={(e) => look.onSelectGenreBadgeBackgroundOpacity(Number(e.target.value))}
+                    aria-label="Clean genre overlay strength"
+                    title="Controls the black gradient strength behind clean genre text. 0 disables it."
+                  />
+                  <span className="xrdb-number-unit">%</span>
+                </div>
+              </ControlRow>
+            ) : null}
+          </>
+        ) : null}
+      </PanelSection>
     </div>
   );
 }
@@ -254,55 +288,62 @@ export function PositionPanel() {
     <div className="xrdb-panel-position">
       <h2 className="xrdb-subtab-panel-title">Position</h2>
 
-      <ControlRow label="Ratings layout">
-        <OptionPills
-          options={POSTER_RATING_LAYOUT_OPTIONS}
-          value={look.posterRatingsLayout}
-          onChange={look.onSelectPosterRatingsLayout}
-        />
-          <p className="xrdb-control-description">How rating badges are arranged on the poster — stacked in corners, side by side, or in a horizontal bar.</p>
-      </ControlRow>
-
-      <ControlRow label="Edge offset">
-        <div className="xrdb-number-control">
-          <input
-            type="number"
-            className="xrdb-number-input"
-            value={look.posterEdgeOffset}
-            min={0}
-            max={200}
-            onChange={(e) => look.onSelectPosterEdgeOffset(Number(e.target.value))}
-            aria-label="Edge offset in pixels"
-            title="Distance in pixels between badge stacks and the image edge."
+      <PanelSection
+        heading="Rating placement"
+        description="How and where rating badges are positioned on the poster artwork."
+      >
+        <ControlRow label="Ratings layout">
+          <OptionPills
+            options={POSTER_RATING_LAYOUT_OPTIONS}
+            value={look.posterRatingsLayout}
+            onChange={look.onSelectPosterRatingsLayout}
           />
-          <span className="xrdb-number-unit">px</span>
-        </div>
-      </ControlRow>
+          <p className="xrdb-control-description">Choose between corner stacks, side-by-side arrangement, or a horizontal bar.</p>
+        </ControlRow>
 
-      <ControlRow label="Rating size">
-        <div className="xrdb-number-control">
-          <input
-            type="number"
-            className="xrdb-number-input"
-            value={look.activeRatingBadgeScale}
-            min={70}
-            max={200}
-            onChange={(e) => look.onSelectRatingBadgeScale(Number(e.target.value))}
-            aria-label="Rating badge size"
-            title="Scale rating badges relative to their default size. 100 is default."
-          />
-          <span className="xrdb-number-unit">%</span>
-        </div>
-      </ControlRow>
+        <ControlRow label="Edge offset">
+          <div className="xrdb-number-control">
+            <input
+              type="number"
+              className="xrdb-number-input"
+              value={look.posterEdgeOffset}
+              min={0}
+              max={200}
+              onChange={(e) => look.onSelectPosterEdgeOffset(Number(e.target.value))}
+              aria-label="Edge offset in pixels"
+              title="Distance in pixels between badge stacks and the image edge."
+            />
+            <span className="xrdb-number-unit">px</span>
+          </div>
+        </ControlRow>
+
+        <ControlRow label="Rating size">
+          <div className="xrdb-number-control">
+            <input
+              type="number"
+              className="xrdb-number-input"
+              value={look.activeRatingBadgeScale}
+              min={70}
+              max={200}
+              onChange={(e) => look.onSelectRatingBadgeScale(Number(e.target.value))}
+              aria-label="Rating badge size"
+              title="Scale rating badges relative to their default size. 100 is default."
+            />
+            <span className="xrdb-number-unit">%</span>
+          </div>
+        </ControlRow>
+      </PanelSection>
 
       {look.shouldShowSideRatingPlacement ? (
-        <ControlRow label="Side ratings">
-          <OptionPills
-            options={SIDE_RATING_POSITION_OPTIONS}
-            value={look.activeSideRatingsPosition}
-            onChange={look.onSelectSideRatingsPosition}
-          />
-        </ControlRow>
+        <PanelSection heading="Additional ratings">
+          <ControlRow label="Side ratings">
+            <OptionPills
+              options={SIDE_RATING_POSITION_OPTIONS}
+              value={look.activeSideRatingsPosition}
+              onChange={look.onSelectSideRatingsPosition}
+            />
+          </ControlRow>
+        </PanelSection>
       ) : null}
     </div>
   );
