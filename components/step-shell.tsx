@@ -12,6 +12,7 @@ import { XrdbDropdown } from '@/components/xrdb-dropdown';
 
 type ArtworkStep = Exclude<WorkflowStep, 'integrations'>;
 type ControlTab = 'providers' | 'style' | 'position' | 'advanced' | 'quality';
+type PreviewMode = 'workspace' | 'floating';
 
 const CONTROL_TABS: Array<{ key: ControlTab; label: string; hint: string }> = [
   { key: 'providers', label: 'Providers', hint: 'Source priority, fallback order, and API key settings' },
@@ -147,11 +148,31 @@ export function StepShell({
   const [activeTab, setActiveTab] = useState<ControlTab>('providers');
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [fullScreenOpen, setFullScreenOpen] = useState(false);
+  const [previewMode, setPreviewMode] = useState<PreviewMode>('workspace');
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [floatingPreviewPosition, setFloatingPreviewPosition] = useState(() => {
+    if (typeof window === 'undefined') {
+      return { x: 12, y: 96 };
+    }
+    const width = 360;
+    const rightOffset = 20;
+    const bottomOffset = 24;
+    return {
+      x: Math.max(12, window.innerWidth - width - rightOffset),
+      y: Math.max(84, window.innerHeight - 220 - bottomOffset),
+    };
+  });
+  const [floatingPreviewDragging, setFloatingPreviewDragging] = useState(false);
+  const [floatingPreviewResizing, setFloatingPreviewResizing] = useState(false);
+  const [floatingPreviewSize, setFloatingPreviewSize] = useState({ width: 360, height: 242 });
   const [imgLoaded, setImgLoaded] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
   const fullscreenRef = useRef<HTMLDivElement>(null);
   const targetInputRef = useRef<HTMLInputElement>(null);
   const searchDebounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const floatingDragOffsetRef = useRef({ x: 0, y: 0 });
+  const floatingPreviewWindowRef = useRef<HTMLDivElement>(null);
+  const floatingResizeStartRef = useRef({ pointerX: 0, pointerY: 0, width: 360, height: 242 });
 
   const ctx = useOptionalConfiguratorContext();
   const router = useRouter();
@@ -163,6 +184,7 @@ export function StepShell({
   const onPreviewImageLoad = centerStage?.onPreviewImageLoad;
   const onPreviewImageError = centerStage?.onPreviewImageError;
   const onSelectPreviewType = centerStage?.onSelectPreviewType;
+  const effectivePreviewMode: PreviewMode = isMobileViewport ? 'workspace' : previewMode;
 
   useEffect(() => {
     return () => {
@@ -171,6 +193,97 @@ export function StepShell({
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(max-width: 919px)');
+    const update = () => {
+      setIsMobileViewport(mediaQuery.matches);
+    };
+
+    update();
+    mediaQuery.addEventListener('change', update);
+    return () => {
+      mediaQuery.removeEventListener('change', update);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (effectivePreviewMode !== 'floating') {
+      return;
+    }
+
+    const handlePointerMove = (event: PointerEvent) => {
+      setFloatingPreviewPosition((current) => {
+        const maxX = Math.max(12, window.innerWidth - floatingPreviewSize.width - 12);
+        const maxY = Math.max(84, window.innerHeight - floatingPreviewSize.height - 12);
+        const nextX = Math.min(maxX, Math.max(12, event.clientX - floatingDragOffsetRef.current.x));
+        const nextY = Math.min(maxY, Math.max(84, event.clientY - floatingDragOffsetRef.current.y));
+        if (nextX === current.x && nextY === current.y) {
+          return current;
+        }
+        return { x: nextX, y: nextY };
+      });
+    };
+
+    const stopDragging = () => {
+      setFloatingPreviewDragging(false);
+    };
+
+    if (floatingPreviewDragging) {
+      window.addEventListener('pointermove', handlePointerMove);
+      window.addEventListener('pointerup', stopDragging);
+      window.addEventListener('pointercancel', stopDragging);
+    }
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', stopDragging);
+      window.removeEventListener('pointercancel', stopDragging);
+    };
+  }, [effectivePreviewMode, floatingPreviewDragging, floatingPreviewSize.height, floatingPreviewSize.width]);
+
+  useEffect(() => {
+    if (effectivePreviewMode !== 'floating') {
+      return;
+    }
+
+    const handlePointerMove = (event: PointerEvent) => {
+      setFloatingPreviewSize((current) => {
+        const deltaX = event.clientX - floatingResizeStartRef.current.pointerX;
+        const deltaY = event.clientY - floatingResizeStartRef.current.pointerY;
+        const maxWidth = Math.min(560, Math.max(280, window.innerWidth - 24));
+        const maxHeight = Math.max(220, window.innerHeight - 96);
+        const nextWidth = Math.min(maxWidth, Math.max(280, floatingResizeStartRef.current.width + deltaX));
+        const nextHeight = Math.min(maxHeight, Math.max(220, floatingResizeStartRef.current.height + deltaY));
+
+        if (nextWidth === current.width && nextHeight === current.height) {
+          return current;
+        }
+
+        return { width: nextWidth, height: nextHeight };
+      });
+    };
+
+    const stopResizing = () => {
+      setFloatingPreviewResizing(false);
+    };
+
+    if (floatingPreviewResizing) {
+      window.addEventListener('pointermove', handlePointerMove);
+      window.addEventListener('pointerup', stopResizing);
+      window.addEventListener('pointercancel', stopResizing);
+    }
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', stopResizing);
+      window.removeEventListener('pointercancel', stopResizing);
+    };
+  }, [effectivePreviewMode, floatingPreviewResizing]);
 
   useEffect(() => {
     onSelectPreviewType?.(step as Parameters<NonNullable<typeof onSelectPreviewType>>[0]);
@@ -327,54 +440,88 @@ export function StepShell({
       aria-label={`${step} step shell`}
       data-docs-capture-ready={docsCaptureReady ? 'true' : undefined}
     >
-      <div className="xrdb-preview-band" role="region" aria-label={`${step} preview`}>
-        <div className="xrdb-preview-band-head">
-          <h1 className="xrdb-preview-band-title">{WORKFLOW_STEPS[stepIndex]?.label ?? 'Artwork'} workspace</h1>
-          <div className="xrdb-preview-band-actions">
-            <button className="xrdb-btn xrdb-btn-secondary xrdb-inspect-desktop" type="button" onClick={() => setOverlayOpen(true)}>
-              Inspect
-            </button>
+      {effectivePreviewMode === 'workspace' ? (
+        <div className="xrdb-preview-band" role="region" aria-label={`${step} preview`} data-preview-mode={effectivePreviewMode}>
+          <div className="xrdb-preview-band-head">
+            <h1 className="xrdb-preview-band-title">{WORKFLOW_STEPS[stepIndex]?.label ?? 'Artwork'} workspace</h1>
+            <div className="xrdb-preview-band-actions">
+              <div className="xrdb-preview-mode-switch" role="group" aria-label="Preview mode">
+                <button
+                  type="button"
+                  className={`xrdb-preview-mode-btn${effectivePreviewMode === 'workspace' ? ' xrdb-preview-mode-btn-active' : ''}`}
+                  onClick={() => setPreviewMode('workspace')}
+                  aria-pressed={effectivePreviewMode === 'workspace'}
+                >
+                  Resizable
+                </button>
+                <button
+                  type="button"
+                  className={`xrdb-preview-mode-btn${previewMode === 'floating' ? ' xrdb-preview-mode-btn-active' : ''}`}
+                  onClick={() => setPreviewMode('floating')}
+                  aria-pressed={previewMode === 'floating'}
+                  disabled={isMobileViewport}
+                  title={isMobileViewport ? 'Floating mode is desktop only' : 'Switch to floating preview'}
+                >
+                  Floating
+                </button>
+              </div>
+              <button className="xrdb-btn xrdb-btn-secondary xrdb-inspect-desktop" type="button" onClick={() => setOverlayOpen(true)}>
+                Inspect
+              </button>
+            </div>
           </div>
-        </div>
 
-        <button
-          className={`xrdb-preview-canvas xrdb-preview-canvas-${step}`}
-          type="button"
-          onClick={() => setOverlayOpen(true)}
-          aria-label={`Open ${step} preview overlay`}
-        >
-          {previewUrl && !previewErrored ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              className={`xrdb-preview-img${imgLoaded ? ' xrdb-preview-img-loaded' : ''}`}
-              src={previewUrl}
-              alt={`${step} preview`}
-              onLoad={() => {
-                setImgLoaded(true);
-                onPreviewImageLoad?.(previewUrl);
-              }}
-              onError={() => {
-                setImgLoaded(false);
-                void onPreviewImageError?.(previewUrl);
-              }}
-            />
-          ) : (
-            previewErrored ? (
-              <>
-                <span className="xrdb-preview-canvas-label">Preview failed to load</span>
-                <span className="xrdb-preview-canvas-hint">Check your proxy URL and server keys, then try a different title to regenerate</span>
-              </>
+          <button
+            className={`xrdb-preview-canvas xrdb-preview-canvas-${step}`}
+            type="button"
+            onClick={() => setOverlayOpen(true)}
+            aria-label={`Open ${step} preview overlay`}
+          >
+            {previewUrl && !previewErrored ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                className={`xrdb-preview-img${imgLoaded ? ' xrdb-preview-img-loaded' : ''}`}
+                src={previewUrl}
+                alt={`${step} preview`}
+                onLoad={() => {
+                  setImgLoaded(true);
+                  onPreviewImageLoad?.(previewUrl);
+                }}
+                onError={() => {
+                  setImgLoaded(false);
+                  void onPreviewImageError?.(previewUrl);
+                }}
+              />
             ) : (
-              <>
-                <span className="xrdb-preview-canvas-label">{WORKFLOW_STEPS[stepIndex]?.previewLabel}</span>
-                <span className="xrdb-preview-canvas-hint">Tap or click to inspect larger preview</span>
-              </>
-            )
-          )}
-        </button>
-      </div>
+              previewErrored ? (
+                <>
+                  <span className="xrdb-preview-canvas-label">Preview failed to load</span>
+                  <span className="xrdb-preview-canvas-hint">Check your proxy URL and server keys, then try a different title to regenerate</span>
+                </>
+              ) : (
+                <>
+                  <span className="xrdb-preview-canvas-label">{WORKFLOW_STEPS[stepIndex]?.previewLabel}</span>
+                  <span className="xrdb-preview-canvas-hint">Tap or click to inspect larger preview</span>
+                </>
+              )
+            )}
+          </button>
+        </div>
+      ) : null}
 
       <div className="xrdb-step-controls" role="region" aria-label="Step controls">
+        {effectivePreviewMode === 'floating' ? (
+          <div className="xrdb-floating-mode-banner" role="status">
+            <p className="xrdb-floating-mode-text">Floating preview is active.</p>
+            <button
+              type="button"
+              className="xrdb-btn xrdb-btn-secondary"
+              onClick={() => setPreviewMode('workspace')}
+            >
+              Return to resizable
+            </button>
+          </div>
+        ) : null}
         {mediaTarget ? (
           <div className="xrdb-target-toolbar" aria-label="Preview target controls">
             <label className="xrdb-target-field">
@@ -657,6 +804,107 @@ export function StepShell({
               </>
             )}
           </button>
+        </div>
+      ) : null}
+
+      {effectivePreviewMode === 'floating' && !isMobileViewport ? (
+        <div
+          ref={floatingPreviewWindowRef}
+          className={`xrdb-preview-floating-window${floatingPreviewDragging ? ' xrdb-preview-floating-window-dragging' : ''}${floatingPreviewResizing ? ' xrdb-preview-floating-window-resizing' : ''}`}
+          style={{
+            left: `${floatingPreviewPosition.x}px`,
+            top: `${floatingPreviewPosition.y}px`,
+            width: `${floatingPreviewSize.width}px`,
+            height: `${floatingPreviewSize.height}px`,
+          }}
+        >
+          <div
+            className="xrdb-preview-floating-handle"
+            role="button"
+            tabIndex={0}
+            onPointerDown={(event) => {
+              const rect = event.currentTarget.parentElement?.getBoundingClientRect();
+              if (!rect) {
+                return;
+              }
+              floatingDragOffsetRef.current = {
+                x: event.clientX - rect.left,
+                y: event.clientY - rect.top,
+              };
+              setFloatingPreviewDragging(true);
+            }}
+            onKeyDown={(event) => {
+              const stepSize = 16;
+              if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+                return;
+              }
+              event.preventDefault();
+              setFloatingPreviewPosition((current) => {
+                const maxX = Math.max(12, window.innerWidth - floatingPreviewSize.width - 12);
+                const maxY = Math.max(84, window.innerHeight - floatingPreviewSize.height - 12);
+                const deltaX = event.key === 'ArrowLeft' ? -stepSize : event.key === 'ArrowRight' ? stepSize : 0;
+                const deltaY = event.key === 'ArrowUp' ? -stepSize : event.key === 'ArrowDown' ? stepSize : 0;
+                return {
+                  x: Math.min(maxX, Math.max(12, current.x + deltaX)),
+                  y: Math.min(maxY, Math.max(84, current.y + deltaY)),
+                };
+              });
+            }}
+            aria-label="Drag floating preview"
+          >
+            Floating preview
+          </div>
+          <button
+            className={`xrdb-preview-floating-canvas xrdb-preview-canvas-${step}`}
+            type="button"
+            onClick={() => setOverlayOpen(true)}
+            aria-label={`Open ${step} preview overlay`}
+          >
+            {previewUrl && !previewErrored ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                className={`xrdb-preview-img${imgLoaded ? ' xrdb-preview-img-loaded' : ''}`}
+                src={previewUrl}
+                alt={`${step} preview`}
+                onLoad={() => {
+                  setImgLoaded(true);
+                  onPreviewImageLoad?.(previewUrl);
+                }}
+                onError={() => {
+                  setImgLoaded(false);
+                  void onPreviewImageError?.(previewUrl);
+                }}
+              />
+            ) : (
+              previewErrored ? (
+                <>
+                  <span className="xrdb-preview-canvas-label">Preview failed to load</span>
+                  <span className="xrdb-preview-canvas-hint">Check your proxy URL and server keys, then try a different title to regenerate</span>
+                </>
+              ) : (
+                <>
+                  <span className="xrdb-preview-canvas-label">{WORKFLOW_STEPS[stepIndex]?.previewLabel}</span>
+                  <span className="xrdb-preview-canvas-hint">Tap or click to inspect larger preview</span>
+                </>
+              )
+            )}
+          </button>
+          <button
+            type="button"
+            className="xrdb-preview-floating-resize-grip"
+            onPointerDown={(event) => {
+              event.preventDefault();
+              floatingResizeStartRef.current = {
+                pointerX: event.clientX,
+                pointerY: event.clientY,
+                width: floatingPreviewSize.width,
+                height: floatingPreviewSize.height,
+              };
+              setFloatingPreviewResizing(true);
+            }}
+            aria-label="Resize floating preview"
+            title="Drag to resize floating preview"
+          />
         </div>
       ) : null}
 
