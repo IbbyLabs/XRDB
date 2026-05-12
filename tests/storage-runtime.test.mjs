@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, rmSync, utimesSync } from 'node:fs';
+import { chmodSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, utimesSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -108,6 +108,85 @@ test('object storage writes, reads, and prunes expired images inside the configu
     assert.equal(existsSync(filePath), false);
     assert.equal(existsSync(metadataPath), false);
     assert.equal(await storageModule.getCachedImageFromObjectStorage(key), null);
+  });
+});
+
+test('object storage prunes oldest files when byte budget is exceeded', async (t) => {
+  await withTempDataDir(t, async (tempDir) => {
+    const storageModule = await importFresh('../lib/imageObjectStorage.ts');
+    const firstKey = storageModule.buildObjectStorageImageKey('first');
+    const secondKey = storageModule.buildObjectStorageImageKey('second');
+    const thirdKey = storageModule.buildObjectStorageImageKey('third');
+
+    const createPayload = (value) => ({
+      body: new Uint8Array([value, value, value, value, value, value]).buffer,
+      contentType: 'image/png',
+      cacheControl: 'public, max-age=300',
+    });
+
+    await storageModule.putCachedImageToObjectStorage(firstKey, createPayload(1));
+    await storageModule.putCachedImageToObjectStorage(secondKey, createPayload(2));
+    await storageModule.putCachedImageToObjectStorage(thirdKey, createPayload(3));
+
+    const cacheDir = join(tempDir, 'cache', 'images');
+    const firstPath = join(cacheDir, 'final_first.png');
+    const secondPath = join(cacheDir, 'final_second.png');
+    const thirdPath = join(cacheDir, 'final_third.png');
+
+    const older = new Date(Date.now() - 10_000);
+    const old = new Date(Date.now() - 5_000);
+    const newest = new Date(Date.now() - 1_000);
+    utimesSync(firstPath, older, older);
+    utimesSync(secondPath, old, old);
+    utimesSync(thirdPath, newest, newest);
+
+    storageModule.pruneObjectStorageCache({ dir: cacheDir, maxFiles: 10, maxBytes: 10 });
+
+    assert.equal(existsSync(firstPath), false);
+    assert.equal(existsSync(`${firstPath}.json`), false);
+    assert.equal(existsSync(secondPath), false);
+    assert.equal(existsSync(`${secondPath}.json`), false);
+    assert.equal(existsSync(thirdPath), true);
+    assert.equal(existsSync(`${thirdPath}.json`), true);
+  });
+});
+
+test('object storage prunes oldest files when file budget is exceeded', async (t) => {
+  await withTempDataDir(t, async (tempDir) => {
+    const storageModule = await importFresh('../lib/imageObjectStorage.ts');
+    const keys = ['alpha', 'beta', 'gamma'];
+
+    for (const [index, key] of keys.entries()) {
+      await storageModule.putCachedImageToObjectStorage(
+        storageModule.buildObjectStorageImageKey(key),
+        {
+          body: new Uint8Array([index + 1]).buffer,
+          contentType: 'image/png',
+          cacheControl: 'public, max-age=300',
+        },
+      );
+    }
+
+    const cacheDir = join(tempDir, 'cache', 'images');
+    const alphaPath = join(cacheDir, 'final_alpha.png');
+    const betaPath = join(cacheDir, 'final_beta.png');
+    const gammaPath = join(cacheDir, 'final_gamma.png');
+
+    const older = new Date(Date.now() - 10_000);
+    const old = new Date(Date.now() - 5_000);
+    const newest = new Date(Date.now() - 1_000);
+    utimesSync(alphaPath, older, older);
+    utimesSync(betaPath, old, old);
+    utimesSync(gammaPath, newest, newest);
+
+    storageModule.pruneObjectStorageCache({ dir: cacheDir, maxFiles: 2, maxBytes: 1000 });
+
+    assert.equal(existsSync(alphaPath), false);
+    assert.equal(existsSync(betaPath), true);
+    assert.equal(existsSync(gammaPath), true);
+
+    const cachedFiles = readdirSync(cacheDir).filter((entry) => !entry.endsWith('.json'));
+    assert.deepEqual(cachedFiles.sort(), ['final_beta.png', 'final_gamma.png']);
   });
 });
 

@@ -22,6 +22,8 @@ type ObjectStorageResult = {
 };
 
 const IMAGE_CACHE_PRUNE_INTERVAL_MS = 10 * 60 * 1000;
+const IMAGE_CACHE_MAX_FILES = 2000;
+const IMAGE_CACHE_MAX_BYTES = 1024 * 1024 * 1024;
 
 type GlobalObjectStorageState = typeof globalThis & {
   __xrdbImageCachePruneTimers?: Map<string, NodeJS.Timeout>;
@@ -38,8 +40,10 @@ const ensureObjectStoragePrunerStarted = () => {
     return;
   }
 
-  pruneExpiredObjectStorageImages();
-  const timer = setInterval(pruneExpiredObjectStorageImages, IMAGE_CACHE_PRUNE_INTERVAL_MS);
+  pruneObjectStorageCache({ dir: cacheDir });
+  const timer = setInterval(() => {
+    pruneObjectStorageCache({ dir: cacheDir });
+  }, IMAGE_CACHE_PRUNE_INTERVAL_MS);
   timer.unref?.();
   timers.set(cacheDir, timer);
 };
@@ -80,7 +84,7 @@ export const putCachedImageToObjectStorage = async (
   payload: { body: ArrayBuffer; contentType: string; cacheControl: string }
 ) => {
   ensureObjectStoragePrunerStarted();
-  const { filePath, metadataPath } = getObjectStoragePaths(key);
+  const { cacheDir, filePath, metadataPath } = getObjectStoragePaths(key);
 
   try {
     mkdirSync(dirname(filePath), { recursive: true });
@@ -98,44 +102,59 @@ export const putCachedImageToObjectStorage = async (
     logger.error(`Error writing cached image ${key}:`, error);
   }
 
-  if (Math.random() < 0.02) {
-    await pruneOldestImageCache(5000);
-  }
+  pruneObjectStorageCache({ dir: cacheDir });
 };
 
-const pruneOldestImageCache = async (maxFiles: number) => {
+export const pruneObjectStorageCache = (options?: {
+  dir?: string;
+  maxFiles?: number;
+  maxBytes?: number;
+}) => {
   const globalState = globalThis as GlobalObjectStorageState;
-  const cacheDir = ensureObjectStorageDir();
+  const cacheDir = ensureObjectStorageDir(options?.dir);
   const inFlight = globalState.__xrdbImageCachePruneInFlight || new Set<string>();
   globalState.__xrdbImageCachePruneInFlight = inFlight;
+  const maxFiles = Math.max(1, Math.trunc(options?.maxFiles ?? IMAGE_CACHE_MAX_FILES));
+  const maxBytes = Math.max(1, Math.trunc(options?.maxBytes ?? IMAGE_CACHE_MAX_BYTES));
 
   if (inFlight.has(cacheDir)) return;
   inFlight.add(cacheDir);
 
   try {
+    pruneExpiredObjectStorageImages(cacheDir);
+
     const entries = readdirSync(cacheDir, { withFileTypes: true });
     const files = entries
       .filter((e) => e.isFile() && !e.name.endsWith('.json'))
       .map((e) => {
         const p = join(cacheDir, e.name);
         try {
-          return { name: e.name, path: p, mtimeMs: statSync(p).mtimeMs };
+          const stats = statSync(p);
+          return { name: e.name, path: p, mtimeMs: stats.mtimeMs, sizeBytes: stats.size };
         } catch {
           return null;
         }
       })
-      .filter((f): f is { name: string; path: string; mtimeMs: number } => Boolean(f));
+      .filter((f): f is { name: string; path: string; mtimeMs: number; sizeBytes: number } => Boolean(f));
 
-    if (files.length <= maxFiles) return;
+    let remainingFiles = files.length;
+    let remainingBytes = files.reduce((total, file) => total + file.sizeBytes, 0);
+
+    if (remainingFiles <= maxFiles && remainingBytes <= maxBytes) return;
 
     files.sort((a, b) => a.mtimeMs - b.mtimeMs);
-    const toDelete = files.slice(0, files.length - maxFiles);
 
-    for (const f of toDelete) {
+    for (const f of files) {
+      if (remainingFiles <= maxFiles && remainingBytes <= maxBytes) {
+        break;
+      }
+
       try {
         unlinkSync(f.path);
         const metaPath = `${f.path}.json`;
         if (existsSync(metaPath)) unlinkSync(metaPath);
+        remainingFiles -= 1;
+        remainingBytes -= f.sizeBytes;
       } catch {}
     }
   } catch (error) {
