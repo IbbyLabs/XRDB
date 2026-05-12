@@ -43,6 +43,10 @@
     "dev:with-comparison": "concurrently -k -n app,comparison -c cyan,magenta \"pnpm dev\" \"pnpm comparison:watch\"",
     "pretest": "npm run ensure:native && npm run sync-matrix:generate",
     "test": "node --experimental-strip-types --test tests/**/*.test.mjs",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:report": "playwright show-report",
     "lint": "eslint .",
     "knip": "knip --reporter compact",
     "docker:up": "docker compose -f local-compose.yaml up -d --build",
@@ -87,6 +91,8 @@
     "undici": "^7.24.4"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.3",
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "4.1.11",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
@@ -96,6 +102,7 @@
     "eslint": "9.39.1",
     "eslint-config-next": "16.0.8",
     "knip": "^6.7.0",
+    "lighthouse": "^13.3.0",
     "tailwindcss": "4.1.11",
     "typescript": "5.9.3"
   },
