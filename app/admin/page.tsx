@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { isAdminEnabled, verifyAdminCookie } from '@/lib/adminAuth';
+import { AdminNotConfigured } from './login/not-configured';
 import { AdminMetricsPanel } from '@/components/admin-metrics-panel';
 import { AdminCachePanel } from '@/components/admin-cache-panel';
 import { AdminProfilesPanel } from '@/components/admin-profiles-panel';
@@ -12,7 +13,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function AdminPage() {
   if (!isAdminEnabled()) {
-    return null;
+    return <AdminNotConfigured />;
   }
 
   const authenticated = await verifyAdminCookie();
