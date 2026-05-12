@@ -6,6 +6,7 @@ import { useConfiguratorContext } from '@/lib/configuratorProvider';
 import { RATING_PROVIDER_OPTIONS } from '@/lib/ratingProviderCatalog';
 import { RATING_STYLE_OPTIONS, ICON_SHAPE_OPTIONS, QUALITY_BADGE_STYLE_OPTIONS } from '@/lib/ratingAppearance';
 import { POSTER_RATING_LAYOUT_OPTIONS } from '@/lib/posterLayoutOptions';
+import { SCOREBAR_STYLE_OPTIONS } from '@/lib/scorebarConfig';
 import { RATING_VALUE_MODE_OPTIONS } from '@/lib/ratingDisplay';
 import { GENRE_BADGE_MODE_OPTIONS, GENRE_BADGE_STYLE_OPTIONS, GENRE_BADGE_POSITION_OPTIONS } from '@/lib/genreBadge';
 import { SIDE_RATING_POSITION_OPTIONS } from '@/lib/sideRatingPosition';
@@ -164,6 +165,88 @@ export function StylePanel() {
           <p className="xrdb-control-description">Choose how ratings appear — as a card, an icon with a number, or a compact badge row.</p>
         </ControlRow>
 
+        {pres.activeRatingPresentation === 'scorebar' ? (
+          <>
+            <ControlRow label="Bar style">
+              <OptionPills
+                options={SCOREBAR_STYLE_OPTIONS}
+                value={look.scorebarStyle}
+                onChange={look.onSelectScorebarStyle}
+              />
+            </ControlRow>
+            <ControlRow label="Low colour">
+              <div className="xrdb-color-control">
+                <input
+                  type="color"
+                  className="xrdb-color-input"
+                  value={look.scorebarLowColor}
+                  onChange={(e) => look.onSelectScorebarLowColor(e.target.value)}
+                  aria-label="Scorebar low colour"
+                  title="Colour for scores below the low threshold."
+                />
+                <span className="xrdb-color-value">{look.scorebarLowColor}</span>
+              </div>
+            </ControlRow>
+            <ControlRow label="Mid colour">
+              <div className="xrdb-color-control">
+                <input
+                  type="color"
+                  className="xrdb-color-input"
+                  value={look.scorebarMidColor}
+                  onChange={(e) => look.onSelectScorebarMidColor(e.target.value)}
+                  aria-label="Scorebar mid colour"
+                  title="Colour for scores between the low and high thresholds."
+                />
+                <span className="xrdb-color-value">{look.scorebarMidColor}</span>
+              </div>
+            </ControlRow>
+            <ControlRow label="High colour">
+              <div className="xrdb-color-control">
+                <input
+                  type="color"
+                  className="xrdb-color-input"
+                  value={look.scorebarHighColor}
+                  onChange={(e) => look.onSelectScorebarHighColor(e.target.value)}
+                  aria-label="Scorebar high colour"
+                  title="Colour for scores at or above the high threshold."
+                />
+                <span className="xrdb-color-value">{look.scorebarHighColor}</span>
+              </div>
+            </ControlRow>
+            <ControlRow label="Low threshold">
+              <div className="xrdb-number-control">
+                <input
+                  type="number"
+                  className="xrdb-number-input"
+                  value={look.scorebarLowThreshold}
+                  min={0}
+                  max={100}
+                  onChange={(e) => look.onSelectScorebarLowThreshold(Number(e.target.value))}
+                  aria-label="Scorebar low threshold"
+                  title="Scores below this value use the low colour."
+                />
+                <span className="xrdb-number-unit">%</span>
+              </div>
+            </ControlRow>
+            <ControlRow label="High threshold">
+              <div className="xrdb-number-control">
+                <input
+                  type="number"
+                  className="xrdb-number-input"
+                  value={look.scorebarHighThreshold}
+                  min={0}
+                  max={100}
+                  onChange={(e) => look.onSelectScorebarHighThreshold(Number(e.target.value))}
+                  aria-label="Scorebar high threshold"
+                  title="Scores at or above this value use the high colour."
+                />
+                <span className="xrdb-number-unit">%</span>
+              </div>
+            </ControlRow>
+            <p className="xrdb-control-description">The bar shows the averaged score across your selected providers as a single colour coded strip below the poster.</p>
+          </>
+        ) : null}
+
         <ControlRow label="Artwork source">
           <OptionPills
             options={look.activeArtworkSourceOptions}
@@ -298,7 +381,7 @@ export function PositionPanel() {
             value={look.posterRatingsLayout}
             onChange={look.onSelectPosterRatingsLayout}
           />
-          <p className="xrdb-control-description">Choose between corner stacks, side-by-side arrangement, or a horizontal bar.</p>
+          <p className="xrdb-control-description">Choose between corner stacks or side-by-side arrangement.</p>
         </ControlRow>
 
         <ControlRow label="Edge offset">

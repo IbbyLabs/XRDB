@@ -154,6 +154,18 @@ import {
   normalizeProxyCatalogRules,
   type ProxyCatalogRule,
 } from './proxyCatalogRules.ts';
+import {
+  DEFAULT_SCOREBAR_STYLE,
+  DEFAULT_SCOREBAR_LOW_COLOR,
+  DEFAULT_SCOREBAR_MID_COLOR,
+  DEFAULT_SCOREBAR_HIGH_COLOR,
+  DEFAULT_SCOREBAR_LOW_THRESHOLD,
+  DEFAULT_SCOREBAR_HIGH_THRESHOLD,
+  normalizeScorebarStyle,
+  normalizeScorebarColor,
+  normalizeScorebarThreshold,
+  type ScorebarStyle,
+} from './scorebarConfig.ts';
 export type StreamBadgesSetting = 'auto' | 'on' | 'off';
 export type QualityBadgesSide = 'left' | 'right';
 export type PosterQualityBadgesPosition = 'auto' | QualityBadgesSide;
@@ -386,6 +398,12 @@ export type SharedXrdbSettings = {
   logoRatingsMax: number | null;
   logoBackground: LogoBackground;
   logoBottomRatingsRow: boolean;
+  scorebarStyle: ScorebarStyle;
+  scorebarLowColor: string;
+  scorebarMidColor: string;
+  scorebarHighColor: string;
+  scorebarLowThreshold: number;
+  scorebarHighThreshold: number;
   ratingProviderAppearanceOverrides: RatingProviderAppearanceOverrides;
   qualityBadgeAppearanceOverrides: QualityBadgeAppearanceOverrides;
 };
@@ -702,6 +720,12 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   logoRatingsMax: null,
   logoBackground: 'transparent',
   logoBottomRatingsRow: false,
+  scorebarStyle: DEFAULT_SCOREBAR_STYLE,
+  scorebarLowColor: DEFAULT_SCOREBAR_LOW_COLOR,
+  scorebarMidColor: DEFAULT_SCOREBAR_MID_COLOR,
+  scorebarHighColor: DEFAULT_SCOREBAR_HIGH_COLOR,
+  scorebarLowThreshold: DEFAULT_SCOREBAR_LOW_THRESHOLD,
+  scorebarHighThreshold: DEFAULT_SCOREBAR_HIGH_THRESHOLD,
   ratingProviderAppearanceOverrides: {},
   qualityBadgeAppearanceOverrides: {},
 });
@@ -1865,6 +1889,27 @@ export const normalizeSharedXrdbSettings = (value: unknown, options?: { skipCros
       candidate.logoBottomRatingsRow,
       defaults.logoBottomRatingsRow,
     ),
+    scorebarStyle: normalizeScorebarStyle(candidate.scorebarStyle as string | null | undefined),
+    scorebarLowColor: normalizeScorebarColor(
+      candidate.scorebarLowColor as string | null | undefined,
+      defaults.scorebarLowColor,
+    ),
+    scorebarMidColor: normalizeScorebarColor(
+      candidate.scorebarMidColor as string | null | undefined,
+      defaults.scorebarMidColor,
+    ),
+    scorebarHighColor: normalizeScorebarColor(
+      candidate.scorebarHighColor as string | null | undefined,
+      defaults.scorebarHighColor,
+    ),
+    scorebarLowThreshold: normalizeScorebarThreshold(
+      candidate.scorebarLowThreshold as number | string | null | undefined,
+      defaults.scorebarLowThreshold,
+    ),
+    scorebarHighThreshold: normalizeScorebarThreshold(
+      candidate.scorebarHighThreshold as number | string | null | undefined,
+      defaults.scorebarHighThreshold,
+    ),
     ratingProviderAppearanceOverrides: normalizeRatingProviderAppearanceOverrides(
       candidate.ratingProviderAppearanceOverrides,
     ),
@@ -2609,6 +2654,24 @@ const buildSharedPayload = (settings: SharedXrdbSettings, options?: SharedPayloa
   }
   if (settings.logoBottomRatingsRow) {
     payload.logoBottomRatingsRow = true;
+  }
+  if (settings.scorebarStyle !== DEFAULT_SCOREBAR_STYLE) {
+    payload.scorebarStyle = settings.scorebarStyle;
+  }
+  if (settings.scorebarLowColor !== DEFAULT_SCOREBAR_LOW_COLOR) {
+    payload.scorebarLowColor = settings.scorebarLowColor;
+  }
+  if (settings.scorebarMidColor !== DEFAULT_SCOREBAR_MID_COLOR) {
+    payload.scorebarMidColor = settings.scorebarMidColor;
+  }
+  if (settings.scorebarHighColor !== DEFAULT_SCOREBAR_HIGH_COLOR) {
+    payload.scorebarHighColor = settings.scorebarHighColor;
+  }
+  if (settings.scorebarLowThreshold !== DEFAULT_SCOREBAR_LOW_THRESHOLD) {
+    payload.scorebarLowThreshold = settings.scorebarLowThreshold;
+  }
+  if (settings.scorebarHighThreshold !== DEFAULT_SCOREBAR_HIGH_THRESHOLD) {
+    payload.scorebarHighThreshold = settings.scorebarHighThreshold;
   }
   const providerAppearance = encodeRatingProviderAppearanceOverrides(
     settings.ratingProviderAppearanceOverrides,

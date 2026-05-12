@@ -245,6 +245,7 @@ export const PRESENTATION_SECTION_ORDER: RatingPresentation[] = [
   'standard',
   'editorial',
   'ring',
+  'scorebar',
   'average',
   'dual',
   'minimal',
@@ -256,7 +257,9 @@ export const PRESENTATION_SECTION_ORDER: RatingPresentation[] = [
 export const getPresentationOrderForType = (type: MediaSearchPreviewType): RatingPresentation[] =>
   type === 'poster'
     ? PRESENTATION_SECTION_ORDER
-    : PRESENTATION_SECTION_ORDER.filter((p) => p !== 'ring' && p !== 'editorial' && p !== 'blockbuster');
+    : PRESENTATION_SECTION_ORDER.filter(
+        (p) => p !== 'ring' && p !== 'editorial' && p !== 'blockbuster' && p !== 'scorebar',
+      );
 
 export const WORKSPACE_CENTER_VIEW_OPTIONS: Array<{
   id: 'showcase' | 'preview' | 'guide';

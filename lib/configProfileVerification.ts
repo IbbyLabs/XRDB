@@ -63,6 +63,11 @@ import {
   GENRE_BADGE_POSITION_OPTIONS,
   GENRE_BADGE_STYLE_OPTIONS,
 } from './genreBadge.ts';
+import {
+  DEFAULT_SCOREBAR_HIGH_THRESHOLD,
+  DEFAULT_SCOREBAR_LOW_THRESHOLD,
+  SCOREBAR_STYLE_OPTIONS,
+} from './scorebarConfig.ts';
 
 type ConfigProfileBrowserFamily =
   | 'credentials'
@@ -137,6 +142,12 @@ export const CONFIG_PROFILE_LEGACY_SHARED_OPTION_KEYS = [
   'sideRatingsOffset',
   'providerAppearance',
   'qualityBadgeAppearance',
+  'scorebarHighColor',
+  'scorebarHighThreshold',
+  'scorebarLowColor',
+  'scorebarLowThreshold',
+  'scorebarMidColor',
+  'scorebarStyle',
 ] as const;
 
 const STRING_CASES = ['alpha', 'omega'] as const;
@@ -320,6 +331,12 @@ const buildEntries = () => {
     { key: 'backdropSideRatingsOffset', coverageValues: toIntegerRange(0, 100, DEFAULT_SIDE_RATING_OFFSET), requiredParams: { backdropRatingsLayout: 'right-vertical', backdropSideRatingsPosition: 'custom' }, browserFamily: 'position', surfaces: ['backdrop'] },
     { key: 'sideRatingsPosition', coverageValues: sideRatingPositionValues, browserFamily: 'position', surfaces: ['legacy-alias'] },
     { key: 'sideRatingsOffset', coverageValues: toIntegerRange(0, 100), requiredParams: { sideRatingsPosition: 'custom' }, browserFamily: 'position', surfaces: ['legacy-alias'] },
+    { key: 'scorebarStyle', coverageValues: SCOREBAR_STYLE_OPTIONS.map((o) => o.id), requiredParams: { posterRatingsLayout: 'scorebar' }, browserFamily: 'appearance', surfaces: ['poster'] },
+    { key: 'scorebarLowColor', coverageValues: HEX_COLOR_CASES, requiredParams: { posterRatingsLayout: 'scorebar' }, browserFamily: 'appearance', surfaces: ['poster'] },
+    { key: 'scorebarMidColor', coverageValues: HEX_COLOR_CASES, requiredParams: { posterRatingsLayout: 'scorebar' }, browserFamily: 'appearance', surfaces: ['poster'] },
+    { key: 'scorebarHighColor', coverageValues: HEX_COLOR_CASES, requiredParams: { posterRatingsLayout: 'scorebar' }, browserFamily: 'appearance', surfaces: ['poster'] },
+    { key: 'scorebarLowThreshold', coverageValues: toIntegerRange(0, 100, DEFAULT_SCOREBAR_LOW_THRESHOLD), requiredParams: { posterRatingsLayout: 'scorebar' }, browserFamily: 'appearance', surfaces: ['poster'] },
+    { key: 'scorebarHighThreshold', coverageValues: toIntegerRange(0, 100, DEFAULT_SCOREBAR_HIGH_THRESHOLD), requiredParams: { posterRatingsLayout: 'scorebar' }, browserFamily: 'appearance', surfaces: ['poster'] },
   ];
 
   for (const key of ['posterRatings', 'backdropRatings', 'thumbnailRatings', 'logoRatings']) {
