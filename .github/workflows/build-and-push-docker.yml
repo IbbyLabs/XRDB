@@ -211,6 +211,23 @@ jobs:
             echo "WEBHOOK_URL secret is not configured. Skipping Discord dev build notification."
           fi
 
+      - name: Resolve last successful build SHA
+        id: last_build_sha
+        if: ${{ steps.dev_webhook.outputs.enabled == 'true' }}
+        env:
+          EVENT_BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          last_dev_tag="$(git tag --sort=-creatordate --list 'dev-*' | head -1)"
+          if [ -n "${last_dev_tag}" ]; then
+            last_sha="$(git rev-list -n1 "${last_dev_tag}")"
+            echo "before_sha=${last_sha}" >> "$GITHUB_OUTPUT"
+            echo "Resolved last successful build SHA from tag ${last_dev_tag}: ${last_sha}"
+          else
+            echo "before_sha=${EVENT_BEFORE}" >> "$GITHUB_OUTPUT"
+            echo "No dev tags found, falling back to event before SHA: ${EVENT_BEFORE}"
+          fi
+
       - name: Post dev build to Discord
         if: ${{ steps.dev_webhook.outputs.enabled == 'true' }}
         env:
@@ -218,7 +235,7 @@ jobs:
           DISCORD_ROLE_ID: '1500618567614206072'
           REPOSITORY: ${{ github.repository }}
           DEPLOYMENT_VERSION: ${{ steps.version_meta.outputs.deployment_version }}
-          BEFORE_SHA: ${{ github.event.before }}
+          BEFORE_SHA: ${{ steps.last_build_sha.outputs.before_sha }}
           AFTER_SHA: ${{ github.sha }}
           DEV_TRACK_TAG: ${{ steps.version_meta.outputs.dev_track_tag }}
           BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
