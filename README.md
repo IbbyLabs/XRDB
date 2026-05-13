@@ -108,31 +108,15 @@ The doc refresh and release workflows rotate through a curated, varied set of pr
 
 <table>
   <tr>
-    <td><strong>Dune Part Two</strong><br>Dark canvas, square ratings, TMDB / Rotten Tomatoes / Metacritic / Letterboxd</td>
+    <td><strong>Stranger Things</strong><br>Dark canvas, square ratings, TMDB / Rotten Tomatoes / Metacritic User / Letterboxd</td>
     <td><strong>Attack on Titan</strong><br>Japanese text, TMDB / MyAnimeList / AniList / Kitsu, transparent canvas</td>
     <td><strong>Game of Thrones</strong><br>French text, plain ratings, TMDB / IMDb / Trakt / Metacritic, transparent canvas</td>
   </tr>
   <tr>
-    <td><a href="https://extendedratings.com/preview/dune-part-two-logo?cb=readme-preview-dune-part-two-logo-v1-25-1"><img src="https://extendedratings.com/preview/dune-part-two-logo?cb=readme-preview-dune-part-two-logo-v1-25-1" alt="Dune Part Two logo live preview" width="320"></a></td>
+    <td><a href="https://extendedratings.com/preview/stranger-things-logo?cb=readme-preview-stranger-things-logo-v1-25-1"><img src="https://extendedratings.com/preview/stranger-things-logo?cb=readme-preview-stranger-things-logo-v1-25-1" alt="Stranger Things logo live preview" width="320"></a></td>
     <td><a href="https://extendedratings.com/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v1-25-1"><img src="https://extendedratings.com/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v1-25-1" alt="Attack on Titan logo live preview" width="320"></a></td>
     <td><a href="https://extendedratings.com/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v1-25-1"><img src="https://extendedratings.com/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v1-25-1" alt="Game of Thrones logo live preview" width="320"></a></td>
-### Badge Styles
-
-<table>
-  <tr>
-    <td><strong>Dune Part Two</strong><br>Community badge gold, TMDB / IMDb, glass ratings</td>
-    <td><strong>Game of Thrones</strong><br>Community badge rainbow, TMDB / IMDb, glass ratings</td>
-    <td><strong>Stranger Things</strong><br>Tile quality badges, TMDB / IMDb, glass ratings</td>
-    <td><strong>Attack on Titan</strong><br>Tile quality badges, MyAnimeList / AniList, backdrop</td>
   </tr>
-  <tr>
-    <td><a href="https://extendedratings.com/preview/dune-part-two-poster-community-badge-gold?cb=readme-preview-dune-part-two-poster-community-badge-gold-v1-25-1"><img src="https://extendedratings.com/preview/dune-part-two-poster-community-badge-gold?cb=readme-preview-dune-part-two-poster-community-badge-gold-v1-25-1" alt="Dune Part Two community badge gold poster live preview" width="220"></a></td>
-    <td><a href="https://extendedratings.com/preview/game-of-thrones-poster-community-badge-rainbow?cb=readme-preview-game-of-thrones-poster-community-badge-rainbow-v1-25-1"><img src="https://extendedratings.com/preview/game-of-thrones-poster-community-badge-rainbow?cb=readme-preview-game-of-thrones-poster-community-badge-rainbow-v1-25-1" alt="Game of Thrones community badge rainbow poster live preview" width="220"></a></td>
-    <td><a href="https://extendedratings.com/preview/stranger-things-poster-tile?cb=readme-preview-stranger-things-poster-tile-v1-25-1"><img src="https://extendedratings.com/preview/stranger-things-poster-tile?cb=readme-preview-stranger-things-poster-tile-v1-25-1" alt="Stranger Things tile quality badges poster live preview" width="220"></a></td>
-    <td><a href="https://extendedratings.com/preview/attack-on-titan-backdrop-tile?cb=readme-preview-attack-on-titan-backdrop-tile-v1-25-1"><img src="https://extendedratings.com/preview/attack-on-titan-backdrop-tile?cb=readme-preview-attack-on-titan-backdrop-tile-v1-25-1" alt="Attack on Titan tile quality badges backdrop live preview" width="320"></a></td>
-  </tr>
-</table>
-
 </table>
 ## Rendering Option Comparisons
 
@@ -929,7 +913,7 @@ Anime gets extra fallback help when possible. If TMDB is missing good text, XRDB
 
 ### Metadata Translation In Action
 
-These screenshots were regenerated from the local April 27, 2026 codebase using deterministic proxy fixtures.
+These screenshots were regenerated from the local May 13, 2026 codebase using deterministic proxy fixtures.
 
 To make each merge mode visible on demand, a local fixture addon returned controlled source addon metadata for three real IDs:
 
