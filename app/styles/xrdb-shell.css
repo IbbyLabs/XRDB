@@ -1459,11 +1459,17 @@
 	}
 
 	.xrdb-nav-tabs {
+		justify-content: flex-start;
 		overflow-x: auto;
 		-webkit-overflow-scrolling: touch;
+		overscroll-behavior-x: contain;
 		scrollbar-width: none;
 		mask-image: linear-gradient(to right, transparent 0, #000 10px, #000 calc(100% - 10px), transparent 100%);
 		padding-inline: 0.125rem;
+	}
+
+	.xrdb-nav-tabs > * {
+		flex-shrink: 0;
 	}
 
 	.xrdb-nav-tabs::-webkit-scrollbar {
@@ -1532,9 +1538,15 @@
 
 @media (max-width: 1040px) {
 	.xrdb-nav-tabs {
+		justify-content: flex-start;
 		overflow-x: auto;
 		-webkit-overflow-scrolling: touch;
+		overscroll-behavior-x: contain;
 		scrollbar-width: none;
+	}
+
+	.xrdb-nav-tabs > * {
+		flex-shrink: 0;
 	}
 
 	.xrdb-nav-tabs::-webkit-scrollbar {
