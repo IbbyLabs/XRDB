@@ -1,6 +1,8 @@
 import {
   ALLOCINE_LOGO_DATA_URI,
   ALLOCINE_PRESS_LOGO_DATA_URI,
+  IMDB_LOGO_DATA_URI,
+  LETTERBOXD_LOGO_DATA_URI,
   METACRITIC_LOGO_DATA_URI,
   TRAKT_LOGO_DATA_URI,
 } from './ratingProviderBrandAssets.ts';
@@ -21,7 +23,7 @@ const providerCatalog = [
   {
     id: 'imdb',
     label: 'IMDb',
-    iconUrl: 'https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://imdb.com&size=128',
+    iconUrl: IMDB_LOGO_DATA_URI,
     accentColor: '#f5c518',
     iconCornerRadius: 8,
   },
@@ -59,7 +61,7 @@ const providerCatalog = [
   {
     id: 'letterboxd',
     label: 'Letterboxd',
-    iconUrl: 'https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=http://letterboxd.com&size=128',
+    iconUrl: LETTERBOXD_LOGO_DATA_URI,
     accentColor: '#00a5ff',
   },
   {

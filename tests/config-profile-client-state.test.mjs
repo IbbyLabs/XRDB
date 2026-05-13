@@ -15,6 +15,7 @@ import {
   shouldClearConfigProfileUnlockSession,
   toConfigModeAiometadataUrl,
 } from '../lib/configProfileClientState.ts';
+import { encodeQualityBadgeAppearanceOverrides } from '../lib/badgeCustomization.ts';
 import { buildProfileParams, buildProxyPayload, parseSavedUiConfig } from '../lib/uiConfig.ts';
 
 test('isProtectedConfigProfileId accepts UUID profile identifiers', () => {
@@ -248,6 +249,39 @@ test('buildSavedProfileComparableParams keeps provider-credential omissions stab
       snapshotReady: true,
     }),
     true,
+  );
+});
+
+test('buildSavedProfileComparableParams preserves quality badge appearance without provider appearance', () => {
+  const qualityBadgeAppearance = encodeQualityBadgeAppearanceOverrides({
+    atmos: {
+      iconUrl: 'https://cdn.example.com/atmos.svg',
+    },
+  });
+
+  const savedParams = {
+    xrdbKey: 'shared-xrdb-key-000',
+    posterRatings: 'imdb,tmdb',
+    qualityBadgeAppearance,
+  };
+
+  const currentParams = {
+    qualityBadgeAppearance,
+    posterRatings: 'imdb,tmdb',
+    xrdbKey: 'shared-xrdb-key-000',
+  };
+
+  const savedFingerprint = buildConfigProfileFingerprint(
+    buildSavedProfileComparableParams(savedParams),
+  );
+
+  assert.equal(
+    hasConfigProfileUnsavedChanges({
+      currentParams: buildSavedProfileComparableParams(currentParams),
+      savedFingerprint,
+      snapshotReady: true,
+    }),
+    false,
   );
 });
 
