@@ -177,10 +177,7 @@ export type PartnerAuthResult =
   | { status: 'rate-limited'; message: string; retryAfterMs: number };
 
 export const getConfiguredPartnerProfiles = () =>
-  parsePartnerProfiles(
-    process.env.XRDB_PARTNER_ACCESS_KEYS,
-    process.env.XRDB_PARTNER_KEYS,
-  );
+  parsePartnerProfiles(process.env.XRDB_PARTNER_ACCESS_KEYS);
 
 export const authorizePartnerRequest = ({
   method,

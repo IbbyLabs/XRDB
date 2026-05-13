@@ -41,11 +41,10 @@ All cache TTL values are in **milliseconds**.
 |---|---|---|
 | `XRDB_TRUST_PROXY_HEADERS` | — | Trust forwarded host/protocol headers from a reverse proxy. |
 | `XRDB_REQUEST_API_KEY` | — | Single shared key for render and proxy access. |
-| `XRDB_REQUEST_API_KEYS` | — | Comma-separated list of valid request keys. |
-| `XRDB_PARTNER_ACCESS_KEYS` | — | Signed partner access profiles. Format: `partnerId:secret:perMinute:burst`, comma/semicolon/newline-separated. Example: `partner:super-secret:1200:300`. |
-| `XRDB_PARTNER_KEYS` | — | Legacy alias for `XRDB_PARTNER_ACCESS_KEYS`. |
+| `XRDB_REQUEST_API_KEYS` | — | Comma separated list of valid request keys. |
+| `XRDB_PARTNER_ACCESS_KEYS` | — | Signed partner access profiles. Format: `partnerId:secret:perMinute:burst`, comma, semicolon, or newline separated. Example: `partner:supersecret:1200:300`. |
 | `XRDB_PROXY_ALLOWED_ORIGINS` | `*` | CORS allowlist for proxy responses. |
-| `XRDB_CONFIG_ENCRYPTION_KEY` | auto-generated | 64 hex-character string (32 bytes) used to encrypt saved config profiles at rest. Losing this key makes existing profiles unreadable. Generate: `openssl rand -hex 32`. |
+| `XRDB_CONFIG_ENCRYPTION_KEY` | auto generated | 64 hex character string (32 bytes) used to encrypt saved config profiles at rest. Losing this key makes existing profiles unreadable. Generate: `openssl rand -hex 32`. |
 | `XRDB_INACTIVE_CONFIG_PRUNE_DAYS` | `-1` | Days of inactivity before a saved config profile is deleted on startup. `-1` disables pruning. |
 | `ADMIN_KEY` | — | Enables the admin dashboard at `/admin` when set. Generate: `openssl rand -hex 32`. |
 
