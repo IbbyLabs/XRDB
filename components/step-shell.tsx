@@ -19,7 +19,7 @@ const CONTROL_TABS: Array<{ key: ControlTab; label: string; hint: string }> = [
   { key: 'style', label: 'Style', hint: 'Typography, badges, tint, and treatment options' },
   { key: 'position', label: 'Position', hint: 'Badge stacks, title blocks, and overlay placement' },
   { key: 'quality', label: 'Quality', hint: 'Stream badges, quality badges, and certification position' },
-  { key: 'advanced', label: 'Advanced', hint: 'Edge case overrides and behavior tuning' },
+  { key: 'advanced', label: 'Advanced', hint: 'Edge case overrides and behaviour tuning' },
 ];
 
 function looksLikeMediaTarget(value: string, step: ArtworkStep): boolean {
@@ -63,13 +63,13 @@ const PANEL_COPY: Record<ArtworkStep, Record<ControlTab, { title: string; body: 
     },
     advanced: {
       title: 'Poster advanced controls',
-      body: 'Advanced poster behavior and edge case tuning controls appear in this section.',
+      body: 'Advanced poster behaviour and edge case tuning controls appear in this section.',
     },
   },
   backdrop: {
     providers: {
       title: 'Backdrop providers',
-      body: 'Provider controls for backdrop sourcing and fallback behavior appear in this panel.',
+      body: 'Provider controls for backdrop sourcing and fallback behaviour appear in this panel.',
     },
     style: {
       title: 'Backdrop style controls',
@@ -107,7 +107,7 @@ const PANEL_COPY: Record<ArtworkStep, Record<ControlTab, { title: string; body: 
     },
     advanced: {
       title: 'Thumbnail advanced controls',
-      body: 'Advanced thumbnail behavior and compatibility options appear in this section.',
+      body: 'Advanced thumbnail behaviour and compatibility options appear in this section.',
     },
   },
   logo: {
@@ -117,7 +117,7 @@ const PANEL_COPY: Record<ArtworkStep, Record<ControlTab, { title: string; body: 
     },
     style: {
       title: 'Logo style controls',
-      body: 'Logo style controls for scale, blend, and cleanup behavior appear in this panel.',
+      body: 'Logo style controls for scale, blend, and cleanup behaviour appear in this panel.',
     },
     position: {
       title: 'Logo position controls',

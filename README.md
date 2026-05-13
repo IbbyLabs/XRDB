@@ -116,7 +116,23 @@ The doc refresh and release workflows rotate through a curated, varied set of pr
     <td><a href="https://extendedratings.com/preview/dune-part-two-logo?cb=readme-preview-dune-part-two-logo-v1-25-1"><img src="https://extendedratings.com/preview/dune-part-two-logo?cb=readme-preview-dune-part-two-logo-v1-25-1" alt="Dune Part Two logo live preview" width="320"></a></td>
     <td><a href="https://extendedratings.com/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v1-25-1"><img src="https://extendedratings.com/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v1-25-1" alt="Attack on Titan logo live preview" width="320"></a></td>
     <td><a href="https://extendedratings.com/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v1-25-1"><img src="https://extendedratings.com/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v1-25-1" alt="Game of Thrones logo live preview" width="320"></a></td>
+### Badge Styles
+
+<table>
+  <tr>
+    <td><strong>Dune Part Two</strong><br>Community badge gold, TMDB / IMDb, glass ratings</td>
+    <td><strong>Game of Thrones</strong><br>Community badge rainbow, TMDB / IMDb, glass ratings</td>
+    <td><strong>Stranger Things</strong><br>Tile quality badges, TMDB / IMDb, glass ratings</td>
+    <td><strong>Attack on Titan</strong><br>Tile quality badges, MyAnimeList / AniList, backdrop</td>
   </tr>
+  <tr>
+    <td><a href="https://extendedratings.com/preview/dune-part-two-poster-community-badge-gold?cb=readme-preview-dune-part-two-poster-community-badge-gold-v1-25-1"><img src="https://extendedratings.com/preview/dune-part-two-poster-community-badge-gold?cb=readme-preview-dune-part-two-poster-community-badge-gold-v1-25-1" alt="Dune Part Two community badge gold poster live preview" width="220"></a></td>
+    <td><a href="https://extendedratings.com/preview/game-of-thrones-poster-community-badge-rainbow?cb=readme-preview-game-of-thrones-poster-community-badge-rainbow-v1-25-1"><img src="https://extendedratings.com/preview/game-of-thrones-poster-community-badge-rainbow?cb=readme-preview-game-of-thrones-poster-community-badge-rainbow-v1-25-1" alt="Game of Thrones community badge rainbow poster live preview" width="220"></a></td>
+    <td><a href="https://extendedratings.com/preview/stranger-things-poster-tile?cb=readme-preview-stranger-things-poster-tile-v1-25-1"><img src="https://extendedratings.com/preview/stranger-things-poster-tile?cb=readme-preview-stranger-things-poster-tile-v1-25-1" alt="Stranger Things tile quality badges poster live preview" width="220"></a></td>
+    <td><a href="https://extendedratings.com/preview/attack-on-titan-backdrop-tile?cb=readme-preview-attack-on-titan-backdrop-tile-v1-25-1"><img src="https://extendedratings.com/preview/attack-on-titan-backdrop-tile?cb=readme-preview-attack-on-titan-backdrop-tile-v1-25-1" alt="Attack on Titan tile quality badges backdrop live preview" width="320"></a></td>
+  </tr>
+</table>
+
 </table>
 ## Rendering Option Comparisons
 
@@ -142,6 +158,12 @@ Transparent provider icons now stay transparent across every badge style. In `gl
 
 <p align="center">
   <img src="docs/images/render-comparisons/anime-logo-comparison.png" alt="Anime logo comparison showing transparent plain, transparent glass with a neutral Kitsu chip, and dark square settings" width="920">
+
+### Badge Style Options
+
+<p align="center">
+  <img src="docs/images/render-comparisons/badge-style-comparison.png" alt="Badge style comparison showing community badge gold, community badge rainbow, and tile badge styles across poster and backdrop types" width="920">
+</p>
 </p>
 
 ## Scalability & Docker

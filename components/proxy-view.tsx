@@ -291,7 +291,7 @@ export function ProxyView() {
           {catalogOpen && (
             <div className="border-t border-[color:var(--border)] p-4 space-y-3">
               <p className="text-[13px] leading-5 text-[color:var(--muted)]">
-                Tune catalog names, visibility, and search behavior for the generated XRDB proxy manifest.
+                Tune catalog names, visibility, and search behaviour for the generated XRDB proxy manifest.
               </p>
 
               {proxyCatalogRules.length > 0 && (

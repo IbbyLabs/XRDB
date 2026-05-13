@@ -2,6 +2,7 @@ export const DOC_STATIC_ASSET_PATHS = {
   moviePosterComparison: 'docs/images/render-comparisons/movie-poster-comparison.png',
   showBackdropComparison: 'docs/images/render-comparisons/show-backdrop-comparison.png',
   animeLogoComparison: 'docs/images/render-comparisons/anime-logo-comparison.png',
+  badgeStyleComparison: 'docs/images/render-comparisons/badge-style-comparison.png',
   proxyTranslationFillMissingMovieFr: 'docs/images/metadata-translation/proxy-translation-fill-missing-movie-fr.png',
   proxyTranslationPreferLanguageShowFrBe:
     'docs/images/metadata-translation/proxy-translation-prefer-language-show-fr-be.png',
@@ -15,6 +16,7 @@ export const DOC_RENDER_COMPARISON_OUTPUTS = [
   DOC_STATIC_ASSET_PATHS.moviePosterComparison,
   DOC_STATIC_ASSET_PATHS.showBackdropComparison,
   DOC_STATIC_ASSET_PATHS.animeLogoComparison,
+  DOC_STATIC_ASSET_PATHS.badgeStyleComparison,
 ];
 
 export const DOC_METADATA_EXAMPLE_OUTPUTS = [

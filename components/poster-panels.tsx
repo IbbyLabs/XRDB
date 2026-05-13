@@ -766,7 +766,7 @@ export function QualityPanel() {
             })
           ) : (
             <p className="xrdb-control-description">
-              Enable at least one quality badge to customize its icon URL.
+              Enable at least one quality badge to customise its icon URL.
             </p>
           )}
         </>

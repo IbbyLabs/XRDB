@@ -236,21 +236,21 @@ GET /thumbnail/xrdbid:tt12343534/S01E07.jpg?episodeSourceProvider=kitsu&episodeS
             <li><strong>Labeled average</strong> — aggregate with a label</li>
             <li><strong>Critics + Audience</strong> — separate critic and audience aggregates</li>
             <li><strong>Compact Critics + Audience</strong> — separate compact critic and audience chips</li>
-            <li><strong>Compact Ring</strong> — poster only score ring with separate center and progress sources</li>
+            <li><strong>Compact Ring</strong> — poster only score ring with separate centre and progress sources</li>
             <li><strong>Editorial</strong> — poster score mark integrated into the artwork</li>
             <li><strong>Blockbuster</strong> — premium variant</li>
             <li><strong>None</strong> — disables rating badges, aggregate overlays, provider overlays, and stream badges</li>
           </ul>
           <p>
-            Compact Ring uses <code>posterRingValueSource</code> for the center value and <code>posterRingProgressSource</code> for the stroke.
-            Center fill transparency is controlled by <code>posterRingCenterOpacity</code> (0 to 100).
+            Compact Ring uses <code>posterRingValueSource</code> for the centre value and <code>posterRingProgressSource</code> for the stroke.
+            Centre fill transparency is controlled by <code>posterRingCenterOpacity</code> (0 to 100).
             Sources can be <code>overall</code>, <code>critics</code>, <code>audience</code>, <code>priority-critics</code>, <code>priority-audience</code>, <code>highest</code>, or a provider id.
             Aggregate sources try their selected lane, then overall, then <code>posterRingCriticsPriority</code> or <code>posterRingAudiencePriority</code>.
             Exact provider selections stay strict.
           </p>
           <p>
             Badge styles (glass, square, plain, stacked, media, silver, tile, community-badge) control the visual treatment.
-            The tile style renders a dark card with a colored left accent strip, configurable per badge via tile color params.
+            The tile style renders a dark card with a coloured left accent strip, configurable per badge via tile colour params.
             The community-badge style uses curated SVG assets in four themes: gold, white, rainbow, and black, selectable via <code>communityBadgeTheme</code>.
             Per-badge style overrides (<code>ageRatingBadgeStyle</code>, <code>releaseStatusBadgeStyle</code>) let individual slots use a different style from the row default.
             Custom icons can be supplied for any badge slot via <code>qualityBadgeAppearance</code> (base64url JSON).
@@ -355,7 +355,7 @@ GET /thumbnail/xrdbid:tt12343534/S01E07.jpg?episodeSourceProvider=kitsu&episodeS
             The Quality Badges panel exposes poster placement controls for supported row and side layouts, disables shared placement when certification is the only visible quality badge, lets the age rating inherit, group with the shared badges, or move independently for the active poster layout, and includes bulk enable and hide actions for visible quality badges.
             Logo type output supports <code>logoStreamBadges</code> for an independent stream badge list.
             HD badge detection activates automatically when the media filename contains a 1080p or 720p token and 4K is absent.
-            Tile style accent colors are configurable globally via <code>qualityBadgesTileAccentColor</code> and per slot via <code>networkTileColor</code>, <code>ageRatingTileColor</code>, <code>releaseStatusTileColor</code>, and <code>genreBadgeTileAccentColor</code>.
+            Tile style accent colours are configurable globally via <code>qualityBadgesTileAccentColor</code> and per slot via <code>networkTileColor</code>, <code>ageRatingTileColor</code>, <code>releaseStatusTileColor</code>, and <code>genreBadgeTileAccentColor</code>.
           </p>
           <p>
             Slider based customisation controls snap back to their defaults when you move close to the baseline and show a Default readout, while keeping keys, manifest inputs, and the current target unchanged.

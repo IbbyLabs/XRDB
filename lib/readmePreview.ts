@@ -26,7 +26,8 @@ type ReadmePreviewDescriptionKey =
   | 'poster-layout'
   | 'backdrop-layout'
   | 'logo-background'
-  | 'age-rating';
+  | 'age-rating'
+  | 'quality-badge-style';
 
 type ReadmePreviewDefinitionInput = Omit<ReadmePreviewDefinition, 'description'> & {
   descriptionKeys: readonly ReadmePreviewDescriptionKey[];
@@ -186,6 +187,24 @@ const resolveReadmePreviewDescriptionPart = (
 
   if (key === 'logo-background') {
     return definition.params.logoBackground === 'dark' ? 'dark canvas' : 'transparent canvas';
+  }
+
+
+  if (key === 'quality-badge-style') {
+    const qbStyle = (
+      definition.params.posterQualityBadgesStyle ||
+      definition.params.backdropQualityBadgesStyle ||
+      definition.params.logoQualityBadgesStyle ||
+      ''
+    ).toLowerCase();
+    if (qbStyle === 'community-badge') {
+      const theme = (definition.params.communityBadgeTheme || 'gold').toLowerCase();
+      return `community badge ${theme}`;
+    }
+    if (qbStyle === 'tile') return 'tile quality badges';
+    if (qbStyle === 'media') return 'media quality badges';
+    if (qbStyle === 'silver') return 'silver quality badges';
+    return 'custom quality badges';
   }
 
   return 'detached age rating';
@@ -495,6 +514,80 @@ const README_PREVIEW_POOL: ReadonlyArray<ReadmePreviewDefinition> = [
       logoRatings: 'tmdb,tomatoes,metacriticuser,letterboxd',
       ratingStyle: 'square',
       logoBackground: 'dark',
+    },
+  }),
+  buildReadmePreviewDefinition({
+    slug: 'dune-part-two-poster-community-badge-gold',
+    imageType: 'poster',
+    id: 'tt15239678',
+    extension: 'jpg',
+    title: 'Dune Part Two',
+    titleGroup: 'dune-part-two',
+    uniquenessFingerprint: 'poster-community-badge-gold',
+    coverageTags: ['community-badge', 'quality-badges', 'english'],
+    descriptionKeys: ['quality-badge-style', 'providers'],
+    params: {
+      lang: 'en',
+      posterRatings: 'tmdb,imdb',
+      ratingStyle: 'glass',
+      posterQualityBadgesStyle: 'community-badge',
+      communityBadgeTheme: 'gold',
+      posterQualityBadgesMax: '2',
+    },
+  }),
+  buildReadmePreviewDefinition({
+    slug: 'game-of-thrones-poster-community-badge-rainbow',
+    imageType: 'poster',
+    id: 'tt0944947',
+    extension: 'jpg',
+    title: 'Game of Thrones',
+    titleGroup: 'game-of-thrones',
+    uniquenessFingerprint: 'poster-community-badge-rainbow',
+    coverageTags: ['community-badge', 'quality-badges', 'english'],
+    descriptionKeys: ['quality-badge-style', 'providers'],
+    params: {
+      lang: 'en',
+      posterRatings: 'tmdb,imdb',
+      ratingStyle: 'glass',
+      posterQualityBadgesStyle: 'community-badge',
+      communityBadgeTheme: 'rainbow',
+      posterQualityBadgesMax: '2',
+    },
+  }),
+  buildReadmePreviewDefinition({
+    slug: 'stranger-things-poster-tile',
+    imageType: 'poster',
+    id: 'tt4574334',
+    extension: 'jpg',
+    title: 'Stranger Things',
+    titleGroup: 'stranger-things',
+    uniquenessFingerprint: 'poster-tile-quality-badges',
+    coverageTags: ['tile-badge', 'quality-badges', 'english'],
+    descriptionKeys: ['quality-badge-style', 'providers'],
+    params: {
+      lang: 'en',
+      posterRatings: 'tmdb,imdb',
+      ratingStyle: 'glass',
+      posterQualityBadgesStyle: 'tile',
+      posterQualityBadgesMax: '2',
+    },
+  }),
+  buildReadmePreviewDefinition({
+    slug: 'attack-on-titan-backdrop-tile',
+    imageType: 'backdrop',
+    id: 'mal:16498',
+    extension: 'jpg',
+    title: 'Attack on Titan',
+    titleGroup: 'attack-on-titan',
+    uniquenessFingerprint: 'backdrop-tile-quality-badges',
+    coverageTags: ['tile-badge', 'quality-badges', 'anime'],
+    descriptionKeys: ['quality-badge-style', 'providers'],
+    params: {
+      lang: 'en',
+      backdropRatings: 'myanimelist,anilist',
+      ratingStyle: 'glass',
+      backdropQualityBadgesStyle: 'tile',
+      backdropQualityBadgesMax: '2',
     },
   }),
 ] as const;

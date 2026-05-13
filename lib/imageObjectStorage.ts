@@ -22,12 +22,14 @@ type ObjectStorageResult = {
 };
 
 const IMAGE_CACHE_PRUNE_INTERVAL_MS = 10 * 60 * 1000;
+const IMAGE_CACHE_PRUNE_WRITE_DEBOUNCE_MS = 30 * 1000;
 const IMAGE_CACHE_MAX_FILES = 2000;
 const IMAGE_CACHE_MAX_BYTES = 1024 * 1024 * 1024;
 
 type GlobalObjectStorageState = typeof globalThis & {
   __xrdbImageCachePruneTimers?: Map<string, NodeJS.Timeout>;
   __xrdbImageCachePruneInFlight?: Set<string>;
+  __xrdbImageCachePruneLastAt?: Map<string, number>;
 };
 
 const ensureObjectStoragePrunerStarted = () => {
@@ -102,7 +104,14 @@ export const putCachedImageToObjectStorage = async (
     logger.error(`Error writing cached image ${key}:`, error);
   }
 
-  pruneObjectStorageCache({ dir: cacheDir });
+  const globalState = globalThis as GlobalObjectStorageState;
+  const pruneLastAt = globalState.__xrdbImageCachePruneLastAt || new Map<string, number>();
+  globalState.__xrdbImageCachePruneLastAt = pruneLastAt;
+  const now = Date.now();
+  if (now - (pruneLastAt.get(cacheDir) ?? 0) >= IMAGE_CACHE_PRUNE_WRITE_DEBOUNCE_MS) {
+    pruneLastAt.set(cacheDir, now);
+    pruneObjectStorageCache({ dir: cacheDir });
+  }
 };
 
 export const pruneObjectStorageCache = (options?: {
