@@ -20,6 +20,7 @@ import { resolveQualityBadgeHeight } from './qualityBadgeLayout.ts';
 import { FALLBACK_IMAGE_LANGUAGE } from './imageRouteConfig.ts';
 import { POSTER_EDGE_INSET_BASE } from './posterEdgeOffset.ts';
 import { fetchBlockbusterBlurbsWithFallback } from './imageRouteBlockbuster.ts';
+import { DEFAULT_PROVIDER_ICON_SCALE_PERCENT } from './badgeCustomization.ts';
 import type { PhaseDurations, CachedJsonResponse } from './imageRouteRuntime.ts';
 import type { RatingBadge } from './imageRouteRenderer.ts';
 import type { PosterRatingLayout } from './posterLayoutOptions.ts';
@@ -598,7 +599,14 @@ export const resolveImageRouteRenderLayout = async (input: {
     }
 
     if (logoVisibleBadgeCount < cappedRatingBadges.length) {
-      cappedRatingBadges = cappedRatingBadges.slice(0, logoVisibleBadgeCount);
+      cappedRatingBadges = cappedRatingBadges.slice(0, logoVisibleBadgeCount).map((badge) =>
+        badge.iconScalePercent === undefined || badge.iconScalePercent === DEFAULT_PROVIDER_ICON_SCALE_PERCENT
+          ? badge
+          : {
+              ...badge,
+              iconScalePercent: DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
+            },
+      );
     }
 
     const fittedLogoMetrics = fitLogoRowMetrics(Math.max(1, cappedRatingBadges.length));
