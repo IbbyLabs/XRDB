@@ -325,6 +325,13 @@ GET /thumbnail/xrdbid:tt12343534/S01E07.jpg?episodeSourceProvider=kitsu&episodeS
             XRDB reads provider API keys from server environment variables. Configure <code>XRDB_TMDB_API_KEY</code> plus <code>MDBLIST_API_KEY</code> or <code>MDBLIST_API_KEYS</code> for the simplest shared setup.
           </p>
           <p>
+            For server to server partner request signing, configure <code>XRDB_PARTNER_ACCESS_KEYS</code> and follow the developer setup guide at{' '}
+            <a href={`${BRAND_GITHUB_URL}/blob/main/docs/partner-signed-access.md`} target="_blank" rel="noreferrer" className="text-[color:var(--accent-text)] hover:text-[color:var(--ink)] underline underline-offset-2">
+              docs/partner-signed-access.md
+            </a>
+            .
+          </p>
+          <p>
             Generated URLs omit embedded credentials when server keys exist, and masked exports omit <code>xrdbKey</code> too. Optional per request overrides such as <code>tmdbKey</code>, <code>mdblistKey</code>, and <code>fanartKey</code> still work for advanced integrations.
           </p>
           <p>
