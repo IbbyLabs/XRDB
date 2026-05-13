@@ -1016,7 +1016,7 @@ XRDB includes a built in admin dashboard at `/admin`. It is disabled by default 
 | `XRDB_CONFIG_ENCRYPTION_KEY` | auto generated | 64 hex character (32 byte) key used to encrypt saved config profile params and stored proxy references at rest. Set this explicitly in production and back it up. Generate with `openssl rand -hex 32`. |
 | `XRDB_INACTIVE_CONFIG_PRUNE_DAYS` | `-1` (disabled) | Days of inactivity before a saved config profile is pruned on startup. Inactivity is measured from the last image request that resolved the profile. Set to `-1` to disable pruning. |
 | `ADMIN_KEY` | (empty) | Set a strong unique key to enable the admin dashboard at `/admin`. Leave empty to disable (returns 404). Generate with `openssl rand -hex 32`. |
-| `XRDB_INSTANCE_HTML` | (empty) | Raw HTML injected above the mode cards on the entry page. For self-hosted instances only. Rendered as-is with no sanitization — you are responsible for the content. Leave empty on the official public deployment. |
+| `XRDB_INSTANCE_HTML` | (empty) | Raw HTML injected above the mode cards on the entry page. For self hosted instances only. Rendered as is with no sanitization, you are responsible for the content. Leave empty on the official public deployment. |
 | `XRDB_PROXY_ALLOWED_ORIGINS` | (empty) | Comma separated CORS allowlist. Empty = `*` |
 | `XRDB_PREVIEW_ORIGIN` | `http://127.0.0.1:3000` | Trusted preview fetch origin used by `/preview/{slug}`. Set this explicitly in production. The legacy `PREVIEW_INTERNAL_ORIGIN` alias is still accepted during migration. |
 | `XRDB_PORT` | `3000` | Host port used by `local-compose.yaml` |
@@ -1150,7 +1150,7 @@ Recommended hardening activation order for the one-wave rollout:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `XRDB_POSTER_WARM_ENABLED` | `true` | Enables the scheduled poster warming job when a source list is configured. Warm requests use a lean poster rating profile by default so cache priming does not depend on MDBList-backed providers. |
-| `XRDB_POSTER_WARM_SOURCE` | (empty) | Inline comma-separated or newline-separated list of poster targets. Supports explicit IDs such as `tt0133093`, `tmdb:movie:603`, `tmdb:tv:1396`, or full poster URLs. URL query params are not preserved. |
+| `XRDB_POSTER_WARM_SOURCE` | (empty) | Inline comma separated or newline separated list of poster targets. Supports explicit IDs such as `tt0133093`, `tmdb:movie:603`, `tmdb:tv:1396`, or full poster URLs. URL query params are not preserved. |
 | `XRDB_POSTER_WARM_SOURCE_FILE` | (empty) | Optional file path for a poster warming source list. File targets are merged with `XRDB_POSTER_WARM_SOURCE`. |
 | `XRDB_POSTER_WARM_TMDB_ENABLED` | `false` | When `true`, XRDB fetches fresh TMDB popular and now playing ids (6 endpoints, up to 120 raw results) before each warm pass and merges them with static warm targets. |
 | `XRDB_POSTER_WARM_TMDB_LIMIT` | `100` | Maximum number of TMDB ids to merge into a warm pass. |

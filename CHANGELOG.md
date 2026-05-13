@@ -484,7 +484,7 @@
   
   Problem
   • Compact Ring could appear visually incomplete at scores very close to 100 because a tiny arc gap remained.
-  • Ring center transparency was not user configurable in a robust end to end way.
+  • Ring center transparency was not user configurable in a reliable end to end way.
   • Omitted center opacity could incorrectly behave like zero transparency in some paths.
   
   What changed
@@ -2465,7 +2465,7 @@
 ## [v1.8.0] - 05/04/2026
 
 ### Added
-* streamline workspace and experience mode UX
+* improve workspace and experience mode UX
 * FR-42 BUG-52 BUG-53 refine media target controls
 * add custom Discord widget popover with polished card
   

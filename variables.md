@@ -1,6 +1,6 @@
 # XRDB Environment Variable Reference
 
-This file documents every supported environment variable. Normal self-hosted deployments only need the values in `env.template`. The sections below cover advanced tuning, operator controls, and internal override hooks that are intentionally kept out of the main setup template.
+This file documents every supported environment variable. Normal self hosted deployments only need the values in `env.template`. The sections below cover advanced tuning, operator controls, and internal override hooks that are intentionally kept out of the main setup template.
 
 All cache TTL values are in **milliseconds**.
 
@@ -67,8 +67,8 @@ All cache TTL values are in **milliseconds**.
 |---|---|---|
 | `XRDB_TMDB_READ_ACCESS_TOKEN` | `TMDB_READ_ACCESS_TOKEN` | Preferred TMDB read access token. |
 | `XRDB_TMDB_API_KEY` | `TMDB_API_KEY`, `TMDB_KEY` | TMDB v3 API key fallback. |
-| `MDBLIST_API_KEY` | — | MDBList key used as a server-side fallback for rating aggregation. |
-| `MDBLIST_API_KEYS` | — | Comma-separated pool of MDBList keys for larger shared hosts. |
+| `MDBLIST_API_KEY` | — | MDBList key used as a server side fallback for rating aggregation. |
+| `MDBLIST_API_KEYS` | — | Comma separated pool of MDBList keys for larger shared hosts. |
 | `XRDB_MAL_CLIENT_ID` | `MAL_CLIENT_ID` | MyAnimeList v2 client id. Falls back to Jikan when blank. |
 | `XRDB_TRAKT_CLIENT_ID` | `TRAKT_CLIENT_ID` | Trakt client id for direct rating lookups. |
 | `OMDB_KEY` | `XRDB_OMDB_API_KEY`, `OMDB_API_KEY` | OMDb API key for poster lookups when `posterArtworkSource=omdb`. |
@@ -177,7 +177,7 @@ Enable individual features by setting `CACHE_HARDENING_ENABLED=true` first.
 | Variable | Default | Description |
 |---|---|---|
 | `XRDB_POSTER_WARM_ENABLED` | `true` | Enable scheduled poster cache warming when a source is configured. |
-| `XRDB_POSTER_WARM_SOURCE` | — | Inline comma- or newline-separated poster targets. Supports explicit IDs or full poster URLs. |
+| `XRDB_POSTER_WARM_SOURCE` | — | Inline comma or newline separated poster targets. Supports explicit IDs or full poster URLs. |
 | `XRDB_POSTER_WARM_SOURCE_FILE` | — | Optional file path for warming targets. Merged with `XRDB_POSTER_WARM_SOURCE`. |
 | `XRDB_POSTER_WARM_TMDB_ENABLED` | `false` | Fetch fresh TMDB popular and now-playing IDs (6 endpoints) before each warm pass. |
 | `XRDB_POSTER_WARM_TMDB_LIMIT` | `100` | Max TMDB IDs to merge per warm pass. |
