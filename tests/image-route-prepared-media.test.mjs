@@ -552,6 +552,76 @@ test('prepared media state keeps the digital release status badge in quality bad
   assert.equal(state.streamBadges[0]?.label, 'Digital Release');
 });
 
+test('prepared media state includes configured trending and recognition tags in quality badge output', async () => {
+  const state = await prepareImageRouteMediaState({
+    ...createBaseInput(),
+    imageType: 'poster',
+    mediaType: 'movie',
+    media: {
+      id: 777,
+      title: 'Trending Example',
+      release_date: '2025-05-01',
+      genres: [],
+      popularity: 410,
+      vote_average: 8.3,
+      vote_count: 7000,
+    },
+    mediaId: 'tt0133093',
+    isKitsu: false,
+    idPrefix: 'tt0133093',
+    hasNativeAnimeInput: false,
+    allowAnimeOnlyRatings: false,
+    hasConfirmedAnimeMapping: false,
+    shouldApplyStreamBadges: true,
+    qualityBadgePreferences: ['top10', 'toprated', 'fanfavourite', 'oscarwinner'],
+    useRawKitsuFallback: false,
+    rawFallbackImageUrl: null,
+    sourceFallbackUrl: 'https://images.example.com/poster.jpg',
+    fetchJsonCached: async (key) => {
+      if (key.includes(':details:en:bundle:v2:')) {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            vote_average: 8.3,
+            vote_count: 7000,
+            popularity: 410,
+            genres: [],
+            images: {
+              posters: [],
+              backdrops: [],
+              logos: [],
+            },
+            external_ids: {
+              imdb_id: 'tt0133093',
+            },
+            keywords: {
+              keywords: [{ name: 'Oscar winner' }],
+            },
+          },
+        };
+      }
+
+      if (key.includes(':watch-providers:v1')) {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            results: {},
+          },
+        };
+      }
+
+      throw new Error(`unexpected fetch ${key}`);
+    },
+  });
+
+  assert.deepEqual(
+    state.streamBadges.map((badge) => badge.key),
+    ['top10', 'fanfavourite', 'toprated', 'oscarwinner'],
+  );
+});
+
 test('prepared media state uses episode TMDB ratings for thumbnail backdrops', async () => {
   const state = await prepareImageRouteMediaState({
     ...createBaseInput(),

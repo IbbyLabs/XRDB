@@ -436,7 +436,7 @@ For the current source-of-truth sync inventory, see [docs/sync-settings-matrix.m
 | `thumbnailIconShape` | Clipping shape for thumbnail rating provider icons | `original` \| `circle` \| `squircle` \| `rounded` | `original` |
 | `logoIconShape` | Clipping shape for logo rating provider icons | `original` \| `circle` \| `squircle` \| `rounded` | `original` |
 | `iconShape` | Legacy shared icon clipping alias. Applies the same shape to all types when type specific values are not present. | `original` \| `circle` \| `squircle` \| `rounded` | `original` |
-| `qualityBadgeAppearance` | Per-badge icon URL overrides. Base64url-encoded JSON object where each key is a badge slot (`certification`, `releasestatus`, `netflix`, `hbo`, `primevideo`, `disneyplus`, `appletvplus`, `hulu`, `paramountplus`, `peacock`, `4k`, `hd`, `bluray`, `hdr`, `dolbyvision`, `dolbyatmos`, `remux`, `bdremux`) and each value is `{"iconUrl":"..."}` accepting inline data URIs or external `https://` URLs | Base64url JSON | - |
+| `qualityBadgeAppearance` | Per-badge icon URL overrides. Base64url-encoded JSON object where each key is a badge slot (`certification`, `releasestatus`, `trendingtoday`, `trendingweek`, `top10`, `top25`, `bingeready`, `fanfavourite`, `toprated`, `oscarwinner`, `oscarnominee`, `emmywinner`, `emmynominee`, `netflix`, `hbo`, `primevideo`, `disneyplus`, `appletvplus`, `hulu`, `paramountplus`, `peacock`, `4k`, `hd`, `bluray`, `hdr`, `dolbyvision`, `dolbyatmos`, `remux`, `bdremux`) and each value is `{"iconUrl":"..."}` accepting inline data URIs or external `https://` URLs | Base64url JSON | - |
 | `posterRatingBadgeScale` | Poster rating badge scale | Number (`70-200`) | `100` |
 | `backdropRatingBadgeScale` | Backdrop rating badge scale | Number (`70-200`) | `100` |
 | `thumbnailRatingBadgeScale` | Thumbnail rating badge scale | Number (`70-200`) | `100` |
@@ -647,7 +647,7 @@ backdropIconShape       | original, circle, squircle, rounded backdrop icon clip
 thumbnailIconShape      | original, circle, squircle, rounded thumbnail icon clipping                                  | original
 logoIconShape           | original, circle, squircle, rounded logo icon clipping                                       | original
 iconShape               | legacy shared icon clipping alias applied when type specific values are absent               | original
-qualityBadgeAppearance  | base64url JSON per-badge icon overrides. Keys: certification, releasestatus, netflix, hbo, primevideo, disneyplus, appletvplus, hulu, paramountplus, peacock, 4k, hd, bluray, hdr, dolbyvision, dolbyatmos, remux, bdremux. Each value: {"iconUrl":"..."} accepting data URIs or https URLs | -
+qualityBadgeAppearance  | base64url JSON per-badge icon overrides. Keys: certification, releasestatus, trendingtoday, trendingweek, top10, top25, bingeready, fanfavourite, toprated, oscarwinner, oscarnominee, emmywinner, emmynominee, netflix, hbo, primevideo, disneyplus, appletvplus, hulu, paramountplus, peacock, 4k, hd, bluray, hdr, dolbyvision, dolbyatmos, remux, bdremux. Each value: {"iconUrl":"..."} accepting data URIs or https URLs | -
 posterQualityBadgesMax  | Number (1+)                                                          | auto
 backdropQualityBadgesMax| Number (1+)                                                          | auto
 thumbnailQualityBadgesMax| Number (1+)                                                         | auto
