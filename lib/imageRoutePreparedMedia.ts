@@ -28,6 +28,7 @@ import {
   type RandomPosterTextMode,
 } from './imageRouteConfig.ts';
 import {
+  buildTrendingRecognitionBadges,
   buildNetworkBadgesFromTvNetworks,
   buildNetworkBadgesFromWatchProviderResults,
   buildCertificationBadgeMeta,
@@ -454,6 +455,7 @@ let selectedPosterLogoPath: string | null = null;
 let selectedPosterIsTextless = false;
 let certificationBadgeLabel: string | null = null;
 let releaseStatusBadge: RatingBadge | null = null;
+let trendingRecognitionBadges: RatingBadge[] = [];
 let streamBadgesDeferred = false;
 let bundledWatchProviderResults: unknown = null;
 let movieHasPhysicalMediaRelease: boolean | null = null;
@@ -546,7 +548,7 @@ const detailsBundlePromise = !useRawKitsuFallback
   ? (async () => {
     const loadDetailsBundle = async (language: string, includeImageLanguageValue: string) => {
       const detailsUrl =
-        `${TMDB_API_BASE_URL}/${mediaType}/${media.id}?api_key=${tmdbKey}&language=${language}&append_to_response=${['images', 'external_ids', certificationAppendTarget].filter(Boolean).join(',')}&include_image_language=${encodeURIComponent(includeImageLanguageValue)}`;
+        `${TMDB_API_BASE_URL}/${mediaType}/${media.id}?api_key=${tmdbKey}&language=${language}&append_to_response=${['images', 'external_ids', certificationAppendTarget, 'keywords'].filter(Boolean).join(',')}&include_image_language=${encodeURIComponent(includeImageLanguageValue)}`;
 
       const [detailsResponse, fallbackDetailsResponse, watchProvidersResponse] = await Promise.all([
         fetchJsonCached(
@@ -559,7 +561,7 @@ const detailsBundlePromise = !useRawKitsuFallback
         language !== FALLBACK_IMAGE_LANGUAGE
           ? fetchJsonCached(
             `tmdb:${mediaType}:${media.id}:details:${useOriginalImageLanguage ? `original:${FALLBACK_IMAGE_LANGUAGE}` : FALLBACK_IMAGE_LANGUAGE}:bundle:v2:${includeImageLanguageValue}`,
-            `${TMDB_API_BASE_URL}/${mediaType}/${media.id}?api_key=${tmdbKey}&language=${FALLBACK_IMAGE_LANGUAGE}&append_to_response=${['images', 'external_ids', certificationAppendTarget].filter(Boolean).join(',')}&include_image_language=${encodeURIComponent(includeImageLanguageValue)}`,
+            `${TMDB_API_BASE_URL}/${mediaType}/${media.id}?api_key=${tmdbKey}&language=${FALLBACK_IMAGE_LANGUAGE}&append_to_response=${['images', 'external_ids', certificationAppendTarget, 'keywords'].filter(Boolean).join(',')}&include_image_language=${encodeURIComponent(includeImageLanguageValue)}`,
             TMDB_CACHE_TTL_MS,
             phases,
             'tmdb'
@@ -837,6 +839,20 @@ if (!useRawKitsuFallback && detailsBundlePromise) {
           accentColor: resolvedReleaseStatusBadge.accentColor,
         }
       : null;
+    trendingRecognitionBadges =
+      mediaType === 'movie' || mediaType === 'tv'
+        ? buildTrendingRecognitionBadges({
+            media,
+            details,
+            mediaType,
+          }).map((badge) => ({
+            key: badge.key,
+            label: badge.label,
+            value: '',
+            iconUrl: '',
+            accentColor: badge.accentColor,
+          }))
+        : [];
   }
   primaryGenreFamily = resolvePrimaryGenreFamily(
     [
@@ -1105,7 +1121,7 @@ if (imageType !== 'logo') {
           accentColor: badge.accentColor,
         }))
       : [];
-  streamBadges = [...networkBadges, ...watchProviderBadges, ...streamBadges];
+  streamBadges = [...trendingRecognitionBadges, ...networkBadges, ...watchProviderBadges, ...streamBadges];
 }
 const enabledQualityBadgeSet = new Set(qualityBadgePreferences);
 streamBadges = MEDIA_FEATURE_BADGE_ORDER.flatMap((badgeKey) => {

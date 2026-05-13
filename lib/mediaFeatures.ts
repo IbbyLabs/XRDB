@@ -3,6 +3,17 @@ import { buildTmdbProviderLogoUrl } from './imageRouteSourceUrls.ts';
 export type MediaFeatureBadgeKey =
   | 'certification'
   | 'releasestatus'
+  | 'trendingtoday'
+  | 'trendingweek'
+  | 'top10'
+  | 'top25'
+  | 'bingeready'
+  | 'fanfavourite'
+  | 'toprated'
+  | 'oscarwinner'
+  | 'oscarnominee'
+  | 'emmywinner'
+  | 'emmynominee'
   | 'netflix'
   | 'hbo'
   | 'primevideo'
@@ -76,6 +87,61 @@ const MEDIA_FEATURE_META_BY_KEY: Record<MediaFeatureBadgeKey, MediaFeatureBadgeM
     key: 'releasestatus',
     label: 'Release Status',
     accentColor: '#f97316',
+  },
+  trendingtoday: {
+    key: 'trendingtoday',
+    label: 'Trending Today',
+    accentColor: '#f97316',
+  },
+  trendingweek: {
+    key: 'trendingweek',
+    label: 'Trending This Week',
+    accentColor: '#fb923c',
+  },
+  top10: {
+    key: 'top10',
+    label: 'Top 10',
+    accentColor: '#ef4444',
+  },
+  top25: {
+    key: 'top25',
+    label: 'Top 25',
+    accentColor: '#f97316',
+  },
+  bingeready: {
+    key: 'bingeready',
+    label: 'Binge Ready',
+    accentColor: '#8b5cf6',
+  },
+  fanfavourite: {
+    key: 'fanfavourite',
+    label: 'Fan Favourite',
+    accentColor: '#ec4899',
+  },
+  toprated: {
+    key: 'toprated',
+    label: 'Top Rated',
+    accentColor: '#22c55e',
+  },
+  oscarwinner: {
+    key: 'oscarwinner',
+    label: 'Oscar Winner',
+    accentColor: '#facc15',
+  },
+  oscarnominee: {
+    key: 'oscarnominee',
+    label: 'Oscar Nominee',
+    accentColor: '#fde047',
+  },
+  emmywinner: {
+    key: 'emmywinner',
+    label: 'Emmy Winner',
+    accentColor: '#eab308',
+  },
+  emmynominee: {
+    key: 'emmynominee',
+    label: 'Emmy Nominee',
+    accentColor: '#facc15',
   },
   netflix: {
     key: 'netflix',
@@ -161,6 +227,17 @@ const MEDIA_FEATURE_META_BY_KEY: Record<MediaFeatureBadgeKey, MediaFeatureBadgeM
 export const MEDIA_FEATURE_BADGE_ORDER: MediaFeatureBadgeKey[] = [
   'certification',
   'releasestatus',
+  'trendingtoday',
+  'trendingweek',
+  'top10',
+  'top25',
+  'bingeready',
+  'fanfavourite',
+  'toprated',
+  'oscarwinner',
+  'oscarnominee',
+  'emmywinner',
+  'emmynominee',
   'netflix',
   'hbo',
   'primevideo',
@@ -624,3 +701,97 @@ export const buildCertificationBadgeMeta = (label: string): MediaFeatureBadgeMet
   ...MEDIA_FEATURE_META_BY_KEY.certification,
   label: normalizeCertificationBadgeLabel(label) || '',
 });
+
+const extractKeywordNames = (payload: unknown) => {
+  const source = payload && typeof payload === 'object' ? payload : null;
+  if (!source) return [] as string[];
+  const keywordList = Array.isArray((source as Record<string, unknown>).keywords)
+    ? ((source as Record<string, unknown>).keywords as unknown[])
+    : Array.isArray((source as Record<string, unknown>).results)
+      ? ((source as Record<string, unknown>).results as unknown[])
+      : [];
+
+  return keywordList
+    .map((entry) =>
+      entry && typeof entry === 'object' && typeof (entry as { name?: unknown }).name === 'string'
+        ? String((entry as { name: string }).name).trim().toLowerCase()
+        : '',
+    )
+    .filter((entry) => entry.length > 0);
+};
+
+export const buildTrendingRecognitionBadges = ({
+  media,
+  details,
+  mediaType,
+}: {
+  media: any;
+  details: any;
+  mediaType: 'movie' | 'tv';
+}) => {
+  const badges: MediaFeatureBadgeMeta[] = [];
+  const voteAverage = Number(details?.vote_average ?? media?.vote_average);
+  const voteCount = Number(details?.vote_count ?? media?.vote_count);
+  const popularity = Number(details?.popularity ?? media?.popularity);
+  const seasonCount = Number(details?.number_of_seasons ?? media?.number_of_seasons);
+  const episodeCount = Number(details?.number_of_episodes ?? media?.number_of_episodes);
+  const status = String(details?.status ?? media?.status ?? '').trim().toLowerCase();
+  const keywords = extractKeywordNames(details?.keywords ?? media?.keywords);
+
+  if (Number.isFinite(popularity) && popularity >= 95) {
+    badges.push(MEDIA_FEATURE_META_BY_KEY.trendingweek);
+  }
+  if (Number.isFinite(popularity) && popularity >= 180) {
+    badges.push(MEDIA_FEATURE_META_BY_KEY.trendingtoday);
+  }
+  if (Number.isFinite(popularity) && popularity >= 260) {
+    badges.push(MEDIA_FEATURE_META_BY_KEY.top25);
+  }
+  if (Number.isFinite(popularity) && popularity >= 360) {
+    badges.push(MEDIA_FEATURE_META_BY_KEY.top10);
+  }
+
+  if (Number.isFinite(voteAverage) && Number.isFinite(voteCount) && voteAverage >= 8 && voteCount >= 500) {
+    badges.push(MEDIA_FEATURE_META_BY_KEY.toprated);
+  }
+  if (Number.isFinite(voteAverage) && Number.isFinite(voteCount) && voteAverage >= 7.2 && voteCount >= 3000) {
+    badges.push(MEDIA_FEATURE_META_BY_KEY.fanfavourite);
+  }
+
+  if (
+    mediaType === 'tv' &&
+    Number.isFinite(seasonCount) &&
+    Number.isFinite(episodeCount) &&
+    seasonCount >= 2 &&
+    episodeCount >= 16 &&
+    ['ended', 'returning series', 'planned', 'in production'].includes(status)
+  ) {
+    badges.push(MEDIA_FEATURE_META_BY_KEY.bingeready);
+  }
+
+  const hasOscarWinner = keywords.some(
+    (entry) => entry.includes('oscar') && (entry.includes('winner') || entry.includes('won')),
+  );
+  const hasOscarNominee = keywords.some(
+    (entry) => entry.includes('oscar') && (entry.includes('nominee') || entry.includes('nominated')),
+  );
+  const hasEmmyWinner = keywords.some(
+    (entry) => entry.includes('emmy') && (entry.includes('winner') || entry.includes('won')),
+  );
+  const hasEmmyNominee = keywords.some(
+    (entry) => entry.includes('emmy') && (entry.includes('nominee') || entry.includes('nominated')),
+  );
+
+  if (hasOscarWinner) badges.push(MEDIA_FEATURE_META_BY_KEY.oscarwinner);
+  if (hasOscarNominee) badges.push(MEDIA_FEATURE_META_BY_KEY.oscarnominee);
+  if (hasEmmyWinner) badges.push(MEDIA_FEATURE_META_BY_KEY.emmywinner);
+  if (hasEmmyNominee) badges.push(MEDIA_FEATURE_META_BY_KEY.emmynominee);
+
+  const deduped = new Map<MediaFeatureBadgeKey, MediaFeatureBadgeMeta>();
+  for (const badge of badges) {
+    if (!deduped.has(badge.key)) {
+      deduped.set(badge.key, badge);
+    }
+  }
+  return [...deduped.values()];
+};
