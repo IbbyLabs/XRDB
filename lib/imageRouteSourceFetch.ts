@@ -1,4 +1,4 @@
-import { TMDB_CACHE_TTL_MS } from './imageRouteConfig.ts';
+import { TMDB_CACHE_TTL_MS, SOURCE_IMAGE_FETCH_TIMEOUT_MS } from './imageRouteConfig.ts';
 import {
   getCachedImageFromObjectStorage,
   isObjectStorageConfigured,
@@ -23,17 +23,22 @@ export const fetchSourceImageUncached = async (
   fallbackTtlMs: number,
   fetchImpl: typeof fetch = fetch,
 ): Promise<RenderedImagePayload> => {
-  const sourceResponse = await fetchImpl(imgUrl, { cache: 'no-store' });
-  if (!sourceResponse.ok) {
-    throw new HttpError('Image not found', sourceResponse.status || 404);
-  }
-
-  return {
-    body: await sourceResponse.arrayBuffer(),
-    contentType: sourceResponse.headers.get('content-type') || 'image/jpeg',
-    cacheControl:
-      sourceResponse.headers.get('cache-control') || buildSourceImageFallbackCacheControl(fallbackTtlMs),
-  };
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), SOURCE_IMAGE_FETCH_TIMEOUT_MS);
+    try {
+      const sourceResponse = await fetchImpl(imgUrl, { cache: 'no-store', signal: controller.signal });
+      if (!sourceResponse.ok) {
+        throw new HttpError('Image not found', sourceResponse.status || 404);
+      }
+      return {
+        body: await sourceResponse.arrayBuffer(),
+        contentType: sourceResponse.headers.get('content-type') || 'image/jpeg',
+        cacheControl:
+          sourceResponse.headers.get('cache-control') || buildSourceImageFallbackCacheControl(fallbackTtlMs),
+      };
+    } finally {
+      clearTimeout(timeoutId);
+    }
 };
 
 export const getSourceImagePayload = async (

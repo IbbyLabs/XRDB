@@ -583,6 +583,12 @@ export const TORRENTIO_TIMEOUT_MS = parseCacheTtlMs(
   500,
   10 * 1000,
 );
+  export const SOURCE_IMAGE_FETCH_TIMEOUT_MS = (() => {
+    const rawValue = Number(process.env.XRDB_SOURCE_IMAGE_FETCH_TIMEOUT_MS);
+    if (!Number.isFinite(rawValue) || rawValue <= 0) return 10_000;
+    return Math.max(500, Math.min(60_000, rawValue));
+  })();
+
 export const TORRENTIO_DIRECT_CANDIDATE_BASE_URL = resolveTorrentioBaseUrl(
   process.env.XRDB_TORRENTIO_DIRECT_CANDIDATE_BASE_URL,
   'https://torrentio.stremio.ru',
