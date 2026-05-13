@@ -210,7 +210,8 @@ export const buildQualityBadgeRowOverlays = ({
     qualityBadgeScalePercent,
     layout: 'row',
   });
-  const maxBadgeWidth = Math.max(64, outputWidth - rowEdgeInset * 2);
+  const availableWidth = outputWidth - rowEdgeInset * 2;
+  const maxBadgeWidth = Math.max(64, availableWidth);
   const badgeWidth = Math.min(
     Math.max(64, Math.round(qualityHeight * 1.75)),
     maxBadgeWidth
@@ -219,8 +220,11 @@ export const buildQualityBadgeRowOverlays = ({
   const targetRowCount = imageType === 'poster' ? Math.max(1, Math.ceil(rowBadges.length / 3)) : 1;
   const badgeRows = splitBadgesAcrossRowCount(rowBadges, targetRowCount);
   const specRows = badgeRows
-    .map((badgeRow) =>
-      badgeRow
+    .map((badgeRow) => {
+      const badgesInRow = badgeRow.length;
+      const gapsWidth = Math.max(0, badgesInRow - 1) * rowGap;
+      const maxBadgeWidthForRow = Math.max(64, Math.floor((availableWidth - gapsWidth) / badgesInRow));
+      return badgeRow
         .map((badge) =>
           buildClampedQualityBadgeSpec({
             badge,
@@ -229,15 +233,14 @@ export const buildQualityBadgeRowOverlays = ({
             widthHint: usesIntrinsicQualityBadgeWidths(qualityBadgesStyle, badge)
               ? undefined
               : badgeWidth,
-            maxBadgeWidth,
+            maxBadgeWidth: maxBadgeWidthForRow,
           })
         )
-        .filter((spec): spec is NonNullable<typeof spec> => Boolean(spec))
-    )
+        .filter((spec): spec is NonNullable<typeof spec> => Boolean(spec));
+    })
     .filter((specRow) => specRow.length > 0)
     .map((specRow) => {
       if (imageType !== 'logo') return specRow;
-      const availableWidth = outputWidth - rowEdgeInset * 2;
       const clipped: typeof specRow = [];
       let usedWidth = 0;
       for (const spec of specRow) {
