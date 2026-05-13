@@ -4,6 +4,7 @@ import { FANART_API_KEY, MDBLIST_API_KEYS, SIMKL_CLIENT_ID, TMDB_API_KEY } from 
 import { getMdbListResponseMessage } from '@/lib/imageRouteMdbList';
 import { fetchTmdbServer, hasServerTmdbCredentials } from '@/lib/tmdbServerAuth';
 import { getConfiguredXrdbRequestKeys } from '@/lib/xrdbRequestKey';
+import { getConfiguredPartnerProfiles } from '@/lib/partnerAccess';
 
 export const dynamic = 'force-dynamic';
 
@@ -195,7 +196,8 @@ const buildStatusPayload = async (): Promise<IntegrationStatusPayload> => {
 
   return {
     checkedAt: Date.now(),
-    requestProtectionEnabled: getConfiguredXrdbRequestKeys().length > 0,
+    requestProtectionEnabled:
+      getConfiguredXrdbRequestKeys().length > 0 || getConfiguredPartnerProfiles().length > 0,
     providers: {
       tmdb,
       mdblist,

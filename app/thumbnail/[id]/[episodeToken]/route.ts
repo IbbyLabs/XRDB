@@ -4,11 +4,16 @@ import {
   getConfiguredXrdbRequestKeys,
   isXrdbRequestAuthorized,
 } from '@/lib/xrdbRequestKey';
+import {
+  authorizePartnerRequest,
+  getConfiguredPartnerProfiles,
+} from '@/lib/partnerAccess';
 import { handleImageRequest } from '@/lib/imageRouteHandler';
 import { getConfigProfile } from '@/lib/dbCore';
 import { XRDB_DEFAULT_EPISODE_PROFILE_ID } from '@/lib/imageRouteConfig';
 import { buildThumbnailBackdropUrl } from '@/lib/thumbnailRoute';
 const XRDB_REQUEST_API_KEYS = getConfiguredXrdbRequestKeys();
+const XRDB_PARTNER_PROFILES = getConfiguredPartnerProfiles();
 
 export async function GET(
   request: Request,
@@ -18,7 +23,30 @@ export async function GET(
   const configId = requestUrl.searchParams.get('config') ?? XRDB_DEFAULT_EPISODE_PROFILE_ID;
   const configFallbackKey = configId ? (getConfigProfile(configId)?.xrdbKey ?? null) : null;
 
+  const partnerAuth = authorizePartnerRequest({
+    method: request.method,
+    pathname: requestUrl.pathname,
+    searchParams: requestUrl.searchParams,
+    headers: new Headers(request.headers),
+    profiles: XRDB_PARTNER_PROFILES,
+  });
+  const isPartnerAuthorized = partnerAuth.status === 'ok';
+
+  if (partnerAuth.status === 'unauthorized') {
+    return new Response(partnerAuth.message, { status: 401 });
+  }
+
+  if (partnerAuth.status === 'rate-limited') {
+    return new Response(partnerAuth.message, {
+      status: 429,
+      headers: {
+        'Retry-After': String(Math.max(1, Math.ceil(partnerAuth.retryAfterMs / 1000))),
+      },
+    });
+  }
+
   if (
+    !isPartnerAuthorized &&
     !isXrdbRequestAuthorized({
       configuredKeys: XRDB_REQUEST_API_KEYS,
       searchParams: requestUrl.searchParams,

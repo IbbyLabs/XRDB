@@ -1012,6 +1012,8 @@ XRDB includes a built in admin dashboard at `/admin`. It is disabled by default 
 | `XRDB_REQUEST_LOG_LEVEL` | `off` | Optional override for routine image request logs. Leave unset to keep request logs disabled by default. Accepted values: `off`, `debug`, `info`, `warn`, `error`. |
 | `XRDB_REQUEST_API_KEY` | (empty) | Single shared request key that gates render and proxy access on private hosts |
 | `XRDB_REQUEST_API_KEYS` | (empty) | Comma separated list of valid request keys when multiple keys are needed |
+| `XRDB_PARTNER_ACCESS_KEYS` | (empty) | Signed partner access profiles for server-to-server integrations. Format per entry: `partnerId:secret:perMinute:burst` with comma, semicolon, or newline separators |
+| `XRDB_PARTNER_KEYS` | (empty) | Legacy alias for `XRDB_PARTNER_ACCESS_KEYS` |
 | `XRDB_CONFIG_ENCRYPTION_KEY` | auto generated | 64 hex character (32 byte) key used to encrypt saved config profile params and stored proxy references at rest. Set this explicitly in production and back it up. Generate with `openssl rand -hex 32`. |
 | `XRDB_INACTIVE_CONFIG_PRUNE_DAYS` | `-1` (disabled) | Days of inactivity before a saved config profile is pruned on startup. Inactivity is measured from the last image request that resolved the profile. Set to `-1` to disable pruning. |
 | `ADMIN_KEY` | (empty) | Set a strong unique key to enable the admin dashboard at `/admin`. Leave empty to disable (returns 404). Generate with `openssl rand -hex 32`. |
