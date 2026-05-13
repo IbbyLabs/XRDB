@@ -428,6 +428,7 @@ export const executeImageRouteRender = async ({
         effectiveBackdropRatingsLayout,
         backdropBottomRatingsRow: requestState.backdropBottomRatingsRow,
         logoBottomRatingsRow: requestState.logoBottomRatingsRow,
+        logoRatingsMax: requestState.logoRatingsMax,
         posterRatingBadgeScale: requestState.posterRatingBadgeScale,
         backdropRatingBadgeScale: requestState.backdropRatingBadgeScale,
         logoRatingBadgeScale: requestState.logoRatingBadgeScale,

@@ -86,6 +86,7 @@ export const resolveImageRouteRenderLayout = async (input: {
   effectiveBackdropRatingsLayout: BackdropRatingLayout;
   backdropBottomRatingsRow: boolean;
   logoBottomRatingsRow: boolean;
+  logoRatingsMax?: number | null;
   posterRatingBadgeScale: number;
   backdropRatingBadgeScale: number;
   logoRatingBadgeScale: number;
@@ -598,15 +599,22 @@ export const resolveImageRouteRenderLayout = async (input: {
       logoVisibleBadgeCount -= 1;
     }
 
-    if (logoVisibleBadgeCount < cappedRatingBadges.length) {
-      cappedRatingBadges = cappedRatingBadges.slice(0, logoVisibleBadgeCount).map((badge) =>
-        badge.iconScalePercent === undefined || badge.iconScalePercent === DEFAULT_PROVIDER_ICON_SCALE_PERCENT
+    const shouldNormalizeAutoLogoIconScale = input.logoRatingsMax === null || input.logoRatingsMax === undefined;
+    if (shouldNormalizeAutoLogoIconScale) {
+      cappedRatingBadges = cappedRatingBadges.map((badge, badgeIndex) =>
+        badgeIndex >= logoVisibleBadgeCount ||
+        badge.iconScalePercent === undefined ||
+        badge.iconScalePercent === DEFAULT_PROVIDER_ICON_SCALE_PERCENT
           ? badge
           : {
               ...badge,
               iconScalePercent: DEFAULT_PROVIDER_ICON_SCALE_PERCENT,
             },
       );
+    }
+
+    if (logoVisibleBadgeCount < cappedRatingBadges.length) {
+      cappedRatingBadges = cappedRatingBadges.slice(0, logoVisibleBadgeCount);
     }
 
     const fittedLogoMetrics = fitLogoRowMetrics(Math.max(1, cappedRatingBadges.length));

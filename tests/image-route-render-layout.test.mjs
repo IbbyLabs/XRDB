@@ -393,6 +393,7 @@ test('image route render layout normalizes icon scale when logo badges are auto-
 test('image route render layout preserves icon scale when logo badges are manually limited', async () => {
   const layout = await resolveImageRouteRenderLayout({
     imageType: 'logo',
+    logoRatingsMax: 3,
     isThumbnailRequest: false,
     ratingPresentation: 'standard',
     outputWidth: 420,
@@ -428,6 +429,50 @@ test('image route render layout preserves icon scale when logo badges are manual
 
   assert.equal(layout.cappedRatingBadges.length, 3);
   assert.equal(layout.cappedRatingBadges[1]?.iconScalePercent, 88);
+});
+
+test('image route render layout normalizes icon scale in auto logo mode even without trimming', async () => {
+  const layout = await resolveImageRouteRenderLayout({
+    imageType: 'logo',
+    isThumbnailRequest: false,
+    ratingPresentation: 'standard',
+    outputWidth: 620,
+    outputHeight: 320,
+    overlayAutoScale: 1,
+    displayRatingBadges: [
+      createBadge('imdb', '7.5'),
+      { ...createBadge('simkl', '8.2'), iconScalePercent: 88 },
+      createBadge('tmdb', '8.0'),
+    ],
+    streamBadges: [],
+    effectivePosterRatingsLayout: 'top',
+    effectivePosterRatingsMaxPerSide: null,
+    effectiveBackdropRatingsLayout: 'top',
+    backdropBottomRatingsRow: false,
+    logoBottomRatingsRow: false,
+    logoRatingsMax: null,
+    posterRatingBadgeScale: 100,
+    backdropRatingBadgeScale: 100,
+    logoRatingBadgeScale: 100,
+    posterQualityBadgeScale: 100,
+    backdropQualityBadgeScale: 100,
+    ratingStyle: 'plain',
+    qualityBadgesMax: null,
+    mediaType: 'movie',
+    media: { id: 1 },
+    tmdbKey: 'tmdb-key',
+    requestedImageLang: 'en',
+    phases: { ...phases },
+    fetchJsonCached: async () => {
+      throw new Error('unexpected fetch');
+    },
+  });
+
+  assert.equal(layout.cappedRatingBadges.length, 3);
+  assert.deepEqual(
+    layout.cappedRatingBadges.map((badge) => badge.iconScalePercent ?? 100),
+    [100, 100, 100],
+  );
 });
 
 test('image route render layout keeps stacked poster badge scale meaningful in dense side layouts', async () => {
