@@ -9,6 +9,10 @@ import {
   isXrdbRequestAuthorized,
   resolveProvidedXrdbRequestKey,
 } from '@/lib/xrdbRequestKey';
+import {
+  authorizePartnerRequest,
+  getConfiguredPartnerProfiles,
+} from '@/lib/partnerAccess';
 import { PROTECTED_CONFIG_ID_RE } from '@/lib/dbCore';
 import { recordRequest } from '@/lib/adminMetrics';
 import { assertSafeSourceUrl, fetchWithOneRedirect } from '@/lib/networkSecurity';
@@ -31,6 +35,7 @@ import {
 } from '@/lib/proxyRouteRuntime';
 
 const XRDB_REQUEST_API_KEYS = getConfiguredXrdbRequestKeys();
+const XRDB_PARTNER_PROFILES = getConfiguredPartnerProfiles();
 const PROXY_ALLOWED_ORIGINS = process.env.XRDB_PROXY_ALLOWED_ORIGINS;
 
 const buildError = (request: NextRequest, message: string, status = 400) =>
@@ -99,7 +104,30 @@ export async function handleProxyGet(
     fallbackKey: config.xrdbKey,
   });
 
+  const partnerAuth = authorizePartnerRequest({
+    method: request.method,
+    pathname: request.nextUrl.pathname,
+    searchParams: request.nextUrl.searchParams,
+    headers: request.headers,
+    profiles: XRDB_PARTNER_PROFILES,
+  });
+  const isPartnerAuthorized = partnerAuth.status === 'ok';
+  if (isPartnerAuthorized) {
+    trackedProvidedKey = `partner:${partnerAuth.partnerId}`;
+  }
+
+  if (partnerAuth.status === 'unauthorized') {
+    return finalize(buildError(request, partnerAuth.message, 401));
+  }
+
+  if (partnerAuth.status === 'rate-limited') {
+    const response = buildError(request, partnerAuth.message, 429);
+    response.headers.set('Retry-After', String(Math.max(1, Math.ceil(partnerAuth.retryAfterMs / 1000))));
+    return finalize(response);
+  }
+
   if (
+    !isPartnerAuthorized &&
     !isXrdbRequestAuthorized({
       configuredKeys: XRDB_REQUEST_API_KEYS,
       searchParams: request.nextUrl.searchParams,

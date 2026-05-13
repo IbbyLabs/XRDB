@@ -9,6 +9,10 @@ import {
   resolveProvidedXrdbRequestKey,
 } from '@/lib/xrdbRequestKey';
 import {
+  authorizePartnerRequest,
+  getConfiguredPartnerProfiles,
+} from '@/lib/partnerAccess';
+import {
   ALLOWED_IMAGE_TYPES,
   XRDB_REQUEST_API_KEYS,
 } from '@/lib/imageRouteConfig';
@@ -30,6 +34,7 @@ import { logger } from '@/lib/serverLogger';
 import { recordRequest } from '@/lib/adminMetrics';
 
 const finalImageInFlight = new Map<string, Promise<RenderedImagePayload>>();
+const XRDB_PARTNER_PROFILES = getConfiguredPartnerProfiles();
 
 export async function handleImageRequest(
   request: NextRequest,
@@ -66,7 +71,40 @@ export async function handleImageRequest(
     fallbackKey: configFallbackKey,
   });
 
+  const partnerAuth = authorizePartnerRequest({
+    method: request.method,
+    pathname: request.nextUrl.pathname,
+    searchParams: request.nextUrl.searchParams,
+    headers: request.headers,
+    profiles: XRDB_PARTNER_PROFILES,
+  });
+  const isPartnerAuthorized = partnerAuth.status === 'ok';
+  const metricsProvidedKey = isPartnerAuthorized
+    ? `partner:${partnerAuth.partnerId}`
+    : providedRequestKey;
+
+  if (partnerAuth.status === 'unauthorized') {
+    const unauthorizedResponse = respond(partnerAuth.message, 401);
+    recordRequest('image', 401, performance.now() - requestStartedAt, id, {
+      configId,
+      providedKey: `partner:${providedRequestKey || 'missing'}`,
+    });
+    return unauthorizedResponse;
+  }
+
+  if (partnerAuth.status === 'rate-limited') {
+    const rateLimitedResponse = respond(partnerAuth.message, 429, {
+      'Retry-After': String(Math.max(1, Math.ceil(partnerAuth.retryAfterMs / 1000))),
+    });
+    recordRequest('image', 429, performance.now() - requestStartedAt, id, {
+      configId,
+      providedKey: `partner:${providedRequestKey || 'rate-limited'}`,
+    });
+    return rateLimitedResponse;
+  }
+
   if (
+    !isPartnerAuthorized &&
     !isXrdbRequestAuthorized({
       configuredKeys: XRDB_REQUEST_API_KEYS,
       searchParams: request.nextUrl.searchParams,
@@ -77,7 +115,7 @@ export async function handleImageRequest(
     const unauthorizedResponse = respond(XRDB_REQUEST_KEY_ERROR_MESSAGE, 401);
     recordRequest('image', 401, performance.now() - requestStartedAt, id, {
       configId,
-      providedKey: providedRequestKey,
+      providedKey: metricsProvidedKey,
     });
     return unauthorizedResponse;
   }
@@ -132,7 +170,7 @@ export async function handleImageRequest(
     );
     recordRequest('image', 200, totalMs, id, {
       configId,
-      providedKey: providedRequestKey,
+      providedKey: metricsProvidedKey,
     });
     return finalResponse;
   } catch (error: any) {
@@ -140,7 +178,7 @@ export async function handleImageRequest(
       const errResponse = respond(error.message, error.status, error.headers);
       recordRequest('image', error.status, performance.now() - requestStartedAt, id, {
         configId,
-        providedKey: providedRequestKey,
+        providedKey: metricsProvidedKey,
       });
       return errResponse;
     }
@@ -161,7 +199,7 @@ export async function handleImageRequest(
       );
       recordRequest('image', 502, performance.now() - requestStartedAt, id, {
         configId,
-        providedKey: providedRequestKey,
+        providedKey: metricsProvidedKey,
       });
       return r502;
     }
@@ -173,7 +211,7 @@ export async function handleImageRequest(
     const r500 = respond(`Error: ${message}${stack}`, 500);
     recordRequest('image', 500, performance.now() - requestStartedAt, id, {
       configId,
-      providedKey: providedRequestKey,
+      providedKey: metricsProvidedKey,
     });
     return r500;
   }
