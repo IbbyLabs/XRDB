@@ -86,3 +86,26 @@ export const TRAKT_LOGO_DATA_URI = buildSvgDataUri(`
     </g>
   </svg>
 `);
+
+export const IMDB_LOGO_DATA_URI = buildSvgDataUri(`
+  <svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+    <rect x="8" y="22" width="80" height="52" rx="10" fill="#f5c518"/>
+    <text
+      x="48"
+      y="56"
+      text-anchor="middle"
+      font-family="'Arial Black','Noto Sans',Arial,sans-serif"
+      font-size="24"
+      font-weight="900"
+      fill="#111827"
+    >IMDb</text>
+  </svg>
+`);
+
+export const LETTERBOXD_LOGO_DATA_URI = buildSvgDataUri(`
+  <svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+    <circle cx="26" cy="48" r="16" fill="#00e054"/>
+    <circle cx="48" cy="48" r="16" fill="#ff8000"/>
+    <circle cx="70" cy="48" r="16" fill="#00a5ff"/>
+  </svg>
+`);
