@@ -947,12 +947,12 @@ export function ThemePageContent() {
                       className={`xrdb-themes-preview-block xrdb-themes-preview-block-btn${activePreviewEditor === key ? ' xrdb-themes-preview-block-active' : ''}`}
                       style={{ background: effectivePalette[key as PreviewTokenKey] }}
                       onClick={() => openPreviewEditor(key as PreviewTokenKey)}
-                      aria-label={`Edit ${label} color`}
+                      aria-label={`Edit ${label} colour`}
                     />
                     <span className="xrdb-themes-preview-name">{label}</span>
                     <span className="xrdb-themes-preview-value">{effectivePalette[key as PreviewTokenKey]}</span>
                     {activePreviewEditor === key && (
-                      <div className="xrdb-themes-preview-editor" role="group" aria-label={`${label} color editor`}>
+                      <div className="xrdb-themes-preview-editor" role="group" aria-label={`${label} colour editor`}>
                         <input
                           type="color"
                           value={normalizeHex(previewHexDraft) || cssColorToHex(effectivePalette[key as PreviewTokenKey]) || '#000000'}
@@ -961,7 +961,7 @@ export function ThemePageContent() {
                             applyPreviewHex(key as PreviewTokenKey, event.target.value);
                           }}
                           className="xrdb-themes-preview-color-input"
-                          aria-label={`${label} color wheel`}
+                          aria-label={`${label} colour wheel`}
                         />
                         <input
                           type="text"

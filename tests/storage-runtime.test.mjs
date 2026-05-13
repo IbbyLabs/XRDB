@@ -190,7 +190,7 @@ test('object storage prunes oldest files when file budget is exceeded', async (t
   });
 });
 
-test('metadata cache prunes oldest entries automatically on every write when count exceeds limit', async (t) => {
+test('metadata cache prunes oldest entries when count exceeds limit via direct call', async (t) => {
   await withTempDataDir(t, async () => {
     const cacheModule = await importFresh('../lib/metadataStore.ts');
 
@@ -206,7 +206,7 @@ test('metadata cache prunes oldest entries automatically on every write when cou
   });
 });
 
-test('metadata cache prunes expired entries automatically on every write', async (t) => {
+test('metadata cache prunes expired entries on read and via first-write triggered prune', async (t) => {
   await withTempDataDir(t, async () => {
     const cacheModule = await importFresh('../lib/metadataStore.ts');
 
@@ -221,6 +221,24 @@ test('metadata cache prunes expired entries automatically on every write', async
     const { getDb, ensureDbInitialized } = await importFresh('../lib/sqliteStore.ts');
     ensureDbInitialized();
     const row = getDb().prepare('SELECT COUNT(*) as count FROM metadata_cache WHERE expires_at <= ?').get(Date.now());
+    assert.equal(Number(row.count), 0);
+  });
+});
+
+test('metadata cache first write triggers prune clearing expired entries when no prune has previously run', async (t) => {
+  await withTempDataDir(t, async () => {
+    const cacheModule = await importFresh('../lib/metadataStore.ts');
+    const { getDb, ensureDbInitialized } = await importFresh('../lib/sqliteStore.ts');
+
+    const db = getDb();
+    ensureDbInitialized();
+    const expired = Date.now() - 1_000;
+    db.prepare('INSERT INTO metadata_cache (key, value, expires_at, last_accessed_at) VALUES (?, ?, ?, ?)').run('stale:a', '"x"', expired, expired);
+    db.prepare('INSERT INTO metadata_cache (key, value, expires_at, last_accessed_at) VALUES (?, ?, ?, ?)').run('stale:b', '"y"', expired, expired);
+
+    cacheModule.setMetadata('trigger:fresh', 'z', 60_000);
+
+    const row = db.prepare('SELECT COUNT(*) as count FROM metadata_cache WHERE expires_at <= ?').get(Date.now());
     assert.equal(Number(row.count), 0);
   });
 });

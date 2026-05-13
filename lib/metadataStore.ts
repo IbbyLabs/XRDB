@@ -2,6 +2,9 @@ import { getDb, ensureDbInitialized } from './sqliteStore.ts';
 import { METADATA_CACHE_MAX_ENTRIES } from './imageRouteConfig.ts';
 import { recordCacheEvent } from './adminMetrics.ts';
 
+const METADATA_PRUNE_WRITE_DEBOUNCE_MS = 30 * 1000;
+let lastPruneAt = 0;
+
 type MetadataRow = {
   value: string;
   expires_at: number;
@@ -56,8 +59,11 @@ export const setMetadata = (key: string, value: any, ttlMs: number) => {
     'INSERT OR REPLACE INTO metadata_cache (key, value, expires_at, last_accessed_at) VALUES (?, ?, ?, ?)',
   ).run(key, storedValue, expiresAt, now);
   recordCacheEvent('set', key.split(':')[0]);
-  pruneExpiredMetadata();
-  pruneOldestMetadata(METADATA_CACHE_MAX_ENTRIES);
+  if (now - lastPruneAt >= METADATA_PRUNE_WRITE_DEBOUNCE_MS) {
+    lastPruneAt = now;
+    pruneExpiredMetadata();
+    pruneOldestMetadata(METADATA_CACHE_MAX_ENTRIES);
+  }
 };
 
 export const deleteMetadata = (key: string) => {

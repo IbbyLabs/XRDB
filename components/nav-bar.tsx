@@ -83,7 +83,7 @@ function ThemeModePopover() {
       <button
         type="button"
         className="xrdb-theme-icon-btn"
-        aria-label={`Color mode: ${activeModeLabel}. Tap to change.`}
+        aria-label={`Colour mode: ${activeModeLabel}. Tap to change.`}
         aria-expanded={open}
         aria-haspopup="listbox"
         onClick={() => setOpen(o => !o)}

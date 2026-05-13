@@ -1268,6 +1268,96 @@ const generateComparisonBoards = async ({
         imageFit: 'contain',
       });
       logRefreshStep('Saved anime logo comparison board');
+
+      const badgeStyleCards = [
+        {
+          title: 'Community badge gold poster',
+          caption: 'Dune Part Two poster, TMDB plus IMDb, community badge gold theme, glass ratings.',
+          image: await fetchBuffer(
+            buildRenderUrl({
+              origin: renderServer.origin,
+              type: 'poster',
+              id: 'tt15239678',
+              params: {
+                lang: 'en',
+                posterRatings: 'tmdb,imdb',
+                ratingStyle: 'glass',
+                posterQualityBadgesStyle: 'community-badge',
+                communityBadgeTheme: 'gold',
+                posterQualityBadgesMax: '2',
+              },
+            }),
+          ),
+        },
+        {
+          title: 'Community badge rainbow poster',
+          caption: 'Game of Thrones poster, TMDB plus IMDb, community badge rainbow theme, glass ratings.',
+          image: await fetchBuffer(
+            buildRenderUrl({
+              origin: renderServer.origin,
+              type: 'poster',
+              id: 'tt0944947',
+              params: {
+                lang: 'en',
+                posterRatings: 'tmdb,imdb',
+                ratingStyle: 'glass',
+                posterQualityBadgesStyle: 'community-badge',
+                communityBadgeTheme: 'rainbow',
+                posterQualityBadgesMax: '2',
+              },
+            }),
+          ),
+        },
+        {
+          title: 'Tile badges poster',
+          caption: 'Stranger Things poster, TMDB plus IMDb, tile style quality badges, glass ratings.',
+          image: await fetchBuffer(
+            buildRenderUrl({
+              origin: renderServer.origin,
+              type: 'poster',
+              id: 'tt4574334',
+              params: {
+                lang: 'en',
+                posterRatings: 'tmdb,imdb',
+                ratingStyle: 'glass',
+                posterQualityBadgesStyle: 'tile',
+                posterQualityBadgesMax: '2',
+              },
+            }),
+          ),
+        },
+        {
+          title: 'Tile badges backdrop',
+          caption: 'Attack on Titan backdrop, MyAnimeList plus AniList, tile style quality badges, glass ratings.',
+          image: await fetchBuffer(
+            buildRenderUrl({
+              origin: renderServer.origin,
+              type: 'backdrop',
+              id: 'mal:16498',
+              params: {
+                lang: 'en',
+                backdropRatings: 'myanimelist,anilist',
+                ratingStyle: 'glass',
+                backdropQualityBadgesStyle: 'tile',
+                backdropQualityBadgesMax: '2',
+              },
+            }),
+          ),
+        },
+      ];
+
+      await createBoard({
+        outputPath: resolveDocAssetPath(DOC_STATIC_ASSET_PATHS.badgeStyleComparison),
+        width: 1900,
+        height: 1400,
+        title: 'Badge Style Comparison',
+        subtitle: 'Community badge and tile badge styles across poster and backdrop types',
+        stamp: `Captured from the local app on ${CAPTURE_DATE}.`,
+        cards: badgeStyleCards,
+        imageHeight: 290,
+        imageFit: 'cover',
+      });
+      logRefreshStep('Saved badge style comparison board');
     }
 
     if (includeCaptures) {
