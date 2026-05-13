@@ -21,6 +21,39 @@ export type QualityBadgeOverlaySpec = {
   left: number;
 };
 
+const buildClampedQualityBadgeSpec = ({
+  badge,
+  qualityHeight,
+  qualityBadgesStyle,
+  widthHint,
+  maxBadgeWidth,
+}: {
+  badge: QualityBadgeInput;
+  qualityHeight: number;
+  qualityBadgesStyle: QualityBadgeStyle;
+  widthHint?: number;
+  maxBadgeWidth?: number;
+}) => {
+  const initialSpec = buildQualityBadgeSvg(
+    badge,
+    qualityHeight,
+    widthHint,
+    qualityBadgesStyle,
+  );
+  if (!initialSpec) return null;
+  if (!maxBadgeWidth || initialSpec.width <= maxBadgeWidth) {
+    return initialSpec;
+  }
+  return (
+    buildQualityBadgeSvg(
+      badge,
+      qualityHeight,
+      maxBadgeWidth,
+      qualityBadgesStyle,
+    ) ?? initialSpec
+  );
+};
+
 const resolveQualityBadgeEdgeInset = (
   imageType: ImageType,
   posterEdgeInset: number,
@@ -32,22 +65,23 @@ export const measureQualityBadgeColumnWidth = ({
   qualityHeight,
   qualityBadgesStyle,
   uniformBadgeWidth,
+  maxBadgeWidth,
 }: {
   columnBadges: QualityBadgeInput[];
   qualityHeight: number;
   qualityBadgesStyle: QualityBadgeStyle;
   uniformBadgeWidth: number;
+  maxBadgeWidth?: number;
 }) => {
   return columnBadges.reduce((maxWidth, badge) => {
-    if (!usesIntrinsicQualityBadgeWidths(qualityBadgesStyle, badge)) {
-      return Math.max(maxWidth, uniformBadgeWidth);
-    }
-    const spec = buildQualityBadgeSvg(
+    const useIntrinsicWidth = usesIntrinsicQualityBadgeWidths(qualityBadgesStyle, badge);
+    const spec = buildClampedQualityBadgeSpec({
       badge,
       qualityHeight,
-      undefined,
-      qualityBadgesStyle
-    );
+      qualityBadgesStyle,
+      widthHint: useIntrinsicWidth ? undefined : uniformBadgeWidth,
+      maxBadgeWidth,
+    });
     return Math.max(maxWidth, spec?.width ?? 0);
   }, 0);
 };
@@ -99,24 +133,26 @@ export const buildQualityBadgeColumnOverlays = ({
   });
   const qualityHeight = columnLayout.height;
   const qualityGap = columnLayout.gap;
+  const maxBadgeWidth = Math.max(72, outputWidth - rowEdgeInset * 2);
   const uniformBadgeWidth = Math.min(
     Math.max(72, Math.round(qualityHeight * 1.75)),
-    Math.max(72, outputWidth - rowEdgeInset * 2)
+    maxBadgeWidth
   );
   let rowY = Math.max(badgeTopOffset, startY);
   const overlays: QualityBadgeOverlaySpec[] = [];
 
   for (const badge of columnBadges) {
     const useIntrinsicWidth = usesIntrinsicQualityBadgeWidths(qualityBadgesStyle, badge);
-    const spec = buildQualityBadgeSvg(
+    const spec = buildClampedQualityBadgeSpec({
       badge,
       qualityHeight,
-      useIntrinsicWidth ? undefined : uniformBadgeWidth,
-      qualityBadgesStyle
-    );
+      qualityBadgesStyle,
+      widthHint: useIntrinsicWidth ? undefined : uniformBadgeWidth,
+      maxBadgeWidth,
+    });
     if (!spec) continue;
 
-    const badgeWidth = useIntrinsicWidth ? spec.width : Math.min(spec.width, uniformBadgeWidth);
+    const badgeWidth = spec.width;
     const rowX =
       side === 'right'
         ? Math.max(rowEdgeInset, outputWidth - badgeWidth - rowEdgeInset)
@@ -174,9 +210,10 @@ export const buildQualityBadgeRowOverlays = ({
     qualityBadgeScalePercent,
     layout: 'row',
   });
+  const maxBadgeWidth = Math.max(64, outputWidth - rowEdgeInset * 2);
   const badgeWidth = Math.min(
     Math.max(64, Math.round(qualityHeight * 1.75)),
-    Math.max(64, outputWidth - rowEdgeInset * 2)
+    maxBadgeWidth
   );
   const rowGap = resolveQualityBadgeGap({ badgeGap, layout: 'row' });
   const targetRowCount = imageType === 'poster' ? Math.max(1, Math.ceil(rowBadges.length / 3)) : 1;
@@ -185,12 +222,15 @@ export const buildQualityBadgeRowOverlays = ({
     .map((badgeRow) =>
       badgeRow
         .map((badge) =>
-          buildQualityBadgeSvg(
+          buildClampedQualityBadgeSpec({
             badge,
             qualityHeight,
-            usesIntrinsicQualityBadgeWidths(qualityBadgesStyle, badge) ? undefined : badgeWidth,
-            qualityBadgesStyle
-          )
+            qualityBadgesStyle,
+            widthHint: usesIntrinsicQualityBadgeWidths(qualityBadgesStyle, badge)
+              ? undefined
+              : badgeWidth,
+            maxBadgeWidth,
+          })
         )
         .filter((spec): spec is NonNullable<typeof spec> => Boolean(spec))
     )
@@ -284,19 +324,21 @@ export const buildQualityBadgeColumnOverlaysAt = ({
   let rowY = Math.max(badgeTopOffset, startY);
   const clampedX = Math.round(x);
   const minX = resolveQualityBadgeEdgeInset(imageType, posterEdgeInset, backdropEdgeInset);
+  const maxBadgeWidth = Math.max(72, outputWidth - minX * 2);
   const overlays: QualityBadgeOverlaySpec[] = [];
 
   for (const badge of columnBadges) {
     const useIntrinsicWidth = usesIntrinsicQualityBadgeWidths(qualityBadgesStyle, badge);
-    const spec = buildQualityBadgeSvg(
+    const spec = buildClampedQualityBadgeSpec({
       badge,
       qualityHeight,
-      useIntrinsicWidth ? undefined : uniformBadgeWidth,
-      qualityBadgesStyle
-    );
+      qualityBadgesStyle,
+      widthHint: useIntrinsicWidth ? undefined : uniformBadgeWidth,
+      maxBadgeWidth,
+    });
     if (!spec) continue;
 
-    const badgeWidth = useIntrinsicWidth ? spec.width : uniformBadgeWidth;
+    const badgeWidth = spec.width;
     const adjustedX = Math.max(
       minX,
       Math.min(clampedX, Math.max(minX, outputWidth - badgeWidth - minX))

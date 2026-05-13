@@ -137,3 +137,65 @@ test('image route quality placement keeps release status overlays wider than the
     assert.ok(overlays[0].width > 100, `${qualityBadgesStyle} width ${overlays[0].width}`);
   }
 });
+
+test('image route quality placement clamps intrinsic full-badge width in poster rows', () => {
+  const wideIconUrl =
+    'data:image/svg+xml;base64,' +
+    Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 40"><rect width="220" height="40" rx="8" fill="#111827"/></svg>',
+    ).toString('base64');
+
+  const overlays = buildQualityBadgeRowOverlays({
+    rowBadges: [
+      { key: '4k', label: '4K', iconUrl: wideIconUrl, fullBadge: true },
+      { key: 'dolbyvision', label: 'Dolby Vision', iconUrl: wideIconUrl, fullBadge: true },
+      { key: 'dolbyatmos', label: 'Dolby Atmos', iconUrl: wideIconUrl, fullBadge: true },
+    ],
+    rowY: 84,
+    origin: 'top',
+    imageType: 'poster',
+    outputWidth: 420,
+    referenceBadgeHeight: 52,
+    qualityBadgeScalePercent: 170,
+    badgeGap: 10,
+    qualityBadgesStyle: 'glass',
+    posterEdgeInset: 24,
+    backdropEdgeInset: 12,
+  });
+
+  assert.equal(overlays.length, 3);
+  assert.equal(overlays.every((overlay) => overlay.width <= 372), true);
+  assert.equal(overlays.every((overlay) => overlay.left >= 24), true);
+  assert.equal(overlays.every((overlay) => overlay.left + overlay.width <= 396), true);
+});
+
+test('image route quality placement clamps intrinsic full-badge width in backdrop columns', () => {
+  const wideIconUrl =
+    'data:image/svg+xml;base64,' +
+    Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 40"><rect width="260" height="40" rx="8" fill="#38bdf8"/></svg>',
+    ).toString('base64');
+
+  const overlays = buildQualityBadgeColumnOverlaysAt({
+    columnBadges: [
+      { key: '4k', label: '4K', iconUrl: wideIconUrl, fullBadge: true },
+      { key: 'dolbyatmos', label: 'Dolby Atmos', iconUrl: wideIconUrl, fullBadge: true },
+    ],
+    startY: 24,
+    x: 120,
+    qualityHeight: 64,
+    uniformBadgeWidth: 112,
+    imageType: 'backdrop',
+    outputWidth: 360,
+    badgeTopOffset: 18,
+    badgeGap: 10,
+    qualityBadgesStyle: 'plain',
+    posterEdgeInset: 20,
+    backdropEdgeInset: 24,
+  });
+
+  assert.equal(overlays.length, 2);
+  assert.equal(overlays.every((overlay) => overlay.width <= 312), true);
+  assert.equal(overlays.every((overlay) => overlay.left >= 24), true);
+  assert.equal(overlays.every((overlay) => overlay.left + overlay.width <= 336), true);
+});
