@@ -116,6 +116,7 @@ export function IntegrationsStep() {
   const { inputsPanelProps } = useConfiguratorContext();
   const accessKeys = inputsPanelProps.accessKeysProps;
   const [hostStatus, setHostStatus] = useState<IntegrationStatusPayload | null>(null);
+  const [statusLoadState, setStatusLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [statusError, setStatusError] = useState<string | null>(null);
   const [showAdvancedHostOptions, setShowAdvancedHostOptions] = useState(false);
   const [showRequestKey, setShowRequestKey] = useState(false);
@@ -129,6 +130,7 @@ export function IntegrationsStep() {
     let active = true;
 
     void (async () => {
+      setStatusLoadState('loading');
       const response = await fetch('/api/configurator-integrations-status', { cache: 'no-store' });
       if (!response.ok) {
         throw new Error('Unable to load host integration status.');
@@ -139,10 +141,13 @@ export function IntegrationsStep() {
       }
       setHostStatus(payload);
       setStatusError(null);
+      setStatusLoadState('ready');
     })().catch((error: unknown) => {
       if (!active) {
         return;
       }
+      setHostStatus(null);
+      setStatusLoadState('error');
       setStatusError(error instanceof Error ? error.message : 'Unable to load host integration status.');
     });
 
@@ -165,9 +170,13 @@ export function IntegrationsStep() {
     [dirtyFields],
   );
 
-  const requestKeyMessage = hostStatus?.requestProtectionEnabled
-    ? 'This host requires an XRDB request key. Ask your host for one, then paste it here.'
-    : 'This host does not require an XRDB request key right now.';
+  const hostStatusLoading = statusLoadState === 'loading';
+
+  const requestKeyMessage = hostStatusLoading
+    ? 'Checking host request protection settings now.'
+    : hostStatus?.requestProtectionEnabled
+      ? 'This host requires an XRDB request key. Ask your host for one, then paste it here.'
+      : 'This host does not require an XRDB request key right now.';
 
   const hideAdvancedHostOptions = isNewbieHost && !showAdvancedHostOptions;
 
@@ -228,7 +237,7 @@ export function IntegrationsStep() {
         <div className="mx-auto max-w-6xl space-y-4">
           <div className="xrdb-panel rounded-2xl p-5 md:p-6 space-y-3">
             <div className="space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
                 Step 1
               </p>
               <h1 className="text-2xl font-semibold tracking-tight text-[color:var(--ink)] sm:text-3xl">
@@ -238,7 +247,7 @@ export function IntegrationsStep() {
                 Most people can keep this simple. If the host already shows ready, skip personal keys and continue.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
+            <div className="flex flex-wrap gap-2 text-[12px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
               <span className="rounded-full border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-1.5">
                 Host status is optional
               </span>
@@ -246,6 +255,17 @@ export function IntegrationsStep() {
                 Keep personal keys local
               </span>
             </div>
+            {hostStatusLoading ? (
+              <p className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
+                <span className="h-2 w-2 rounded-full bg-[color:var(--accent)] animate-pulse" aria-hidden="true" />
+                Checking host integrations now.
+              </p>
+            ) : null}
+            {statusLoadState === 'error' && statusError ? (
+              <p className="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
+                {statusError} Refresh to try again.
+              </p>
+            ) : null}
           </div>
 
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
@@ -272,7 +292,7 @@ export function IntegrationsStep() {
                   </div>
 
                   <label className="block space-y-2">
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
+                    <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
                       XRDB request key
                     </span>
                     <div className="relative">
@@ -286,7 +306,7 @@ export function IntegrationsStep() {
                       <button
                         type="button"
                         onClick={() => setShowRequestKey((current) => !current)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[color:var(--muted)] transition-colors hover:text-[color:var(--ink)]"
+                        className="absolute right-1 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-[color:var(--muted)] transition-colors hover:text-[color:var(--ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bg-surface)]"
                         aria-label={showRequestKey ? 'Hide XRDB request key' : 'Show XRDB request key'}
                       >
                         {showRequestKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -296,7 +316,7 @@ export function IntegrationsStep() {
 
                   <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] p-4">
                     <label className="block space-y-2">
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
+                      <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
                         TMDB ID scope
                       </span>
                       <XrdbDropdown
@@ -324,6 +344,20 @@ export function IntegrationsStep() {
                   const draftValue = draftValues[provider.field];
                   const isDirty = dirtyFields[provider.field];
                   const revealFieldKey = provider.field as keyof typeof EMPTY_REVEAL;
+                  const hostBadge = hostStatusLoading
+                    ? 'Checking host'
+                    : host?.working
+                      ? 'Host ready'
+                      : host?.present
+                        ? 'Host check failed'
+                        : 'Bring your own';
+                  const hostDotClass = hostStatusLoading
+                    ? 'bg-[color:var(--accent)] animate-pulse'
+                    : host?.working
+                      ? 'bg-[color:var(--accent)]'
+                      : host?.present
+                        ? 'bg-[color:var(--status-warning)]'
+                        : 'bg-[color:var(--muted)]';
 
                   return (
                     <div key={provider.id} className="xrdb-panel rounded-2xl p-5 space-y-4">
@@ -338,29 +372,30 @@ export function IntegrationsStep() {
                             <span>{provider.title}</span>
                             <ExternalLink className="h-4 w-4" />
                           </a>
+                          <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
+                            <span className="inline-flex h-8 items-center gap-2 rounded-full border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3">
+                              <span className={`h-2 w-2 rounded-full ${hostDotClass}`} aria-hidden="true" />
+                              {hostBadge}
+                            </span>
+                            <span className={`inline-flex h-8 items-center rounded-full border px-3 ${hasPersonalValue ? 'border-[color:var(--accent)] bg-[color:var(--bg-surface)] text-[color:var(--ink)]' : 'border-[color:var(--border)] bg-transparent text-[color:var(--muted)]'}`}>
+                              {hasPersonalValue ? 'Personal saved' : 'No personal key'}
+                            </span>
+                          </div>
                           <p className="text-[13px] leading-6 text-[color:var(--muted)]">{provider.help}</p>
-                        </div>
-                        <div className="flex flex-col items-end gap-2 text-[11px] font-semibold uppercase tracking-[0.1em]">
-                          <span className={`inline-flex h-8 items-center whitespace-nowrap rounded-full border px-3 ${host?.working ? 'border-[color:var(--accent)] bg-[color:var(--bg-surface)] text-[color:var(--ink)]' : host?.present ? 'border-[color:var(--border)] bg-[color:var(--bg-surface)] text-[color:var(--muted)]' : 'border-[color:var(--border)] bg-transparent text-[color:var(--muted)]'}`}>
-                            {host?.working ? 'Host ready' : host?.present ? 'Host check failed' : 'Bring your own'}
-                          </span>
-                          <span className={`inline-flex h-8 items-center whitespace-nowrap rounded-full border px-3 ${hasPersonalValue ? 'border-[color:var(--accent)] bg-[color:var(--bg-surface)] text-[color:var(--ink)]' : 'border-[color:var(--border)] bg-transparent text-[color:var(--muted)]'}`}>
-                            {hasPersonalValue ? 'Personal saved' : 'No personal key'}
-                          </span>
                         </div>
                       </div>
 
                       <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] p-4 space-y-3">
                         <p className="text-[12px] leading-6 text-[color:var(--muted)]">
-                          {describeProviderMessage(host)}
+                          {hostStatusLoading ? 'Checking whether this host already has a working key for this provider.' : describeProviderMessage(host)}
                         </p>
-                        <p className="text-[11px] leading-5 text-[color:var(--muted)]">
-                          Latest host check: {formatCheckTime(host?.checkedAt ?? null)}
+                        <p className="text-[12px] leading-5 text-[color:var(--muted)]">
+                          Latest host check: {hostStatusLoading ? 'Checking now' : formatCheckTime(host?.checkedAt ?? null)}
                         </p>
                       </div>
 
                       <label className="block space-y-2">
-                        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
+                        <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
                           Your key
                         </span>
                         <div className="relative">
@@ -378,7 +413,7 @@ export function IntegrationsStep() {
                             <button
                               type="button"
                               onClick={() => toggleRevealField(revealFieldKey)}
-                              className="rounded-full p-1.5 text-[color:var(--muted)] transition-colors hover:text-[color:var(--ink)]"
+                              className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[color:var(--muted)] transition-colors hover:text-[color:var(--ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bg-base)]"
                               aria-label={revealedFields[revealFieldKey] ? `Hide ${provider.title}` : `Show ${provider.title}`}
                             >
                               {revealedFields[revealFieldKey] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -387,7 +422,7 @@ export function IntegrationsStep() {
                         </div>
                       </label>
 
-                      <div className="flex items-center justify-between gap-3 text-[11px] leading-5 text-[color:var(--muted)]">
+                      <div className="flex items-center justify-between gap-3 text-[12px] leading-5 text-[color:var(--muted)]">
                         <span>
                           {isDirty
                             ? draftValue.trim()

@@ -96,7 +96,7 @@ h1, h2, h3 {
 
 .skip-to-content {
 	position: absolute;
-	top: -100%;
+	top: 1rem;
 	left: 1rem;
 	z-index: 9999;
 	padding: 0.5rem 1rem;
@@ -107,11 +107,12 @@ h1, h2, h3 {
 	font-size: 0.875rem;
 	font-weight: 600;
 	text-decoration: none;
-	transition: top 0.1s;
+	transform: translateY(calc(-100% - 1rem));
+	transition: transform 0.1s;
 }
 
 .skip-to-content:focus {
-	top: 1rem;
+	transform: translateY(0);
 }
 
 .sr-only {

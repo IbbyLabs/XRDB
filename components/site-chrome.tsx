@@ -495,35 +495,36 @@ function ConfiguratorAccordionSection({
           : 'border-[color:var(--border)] bg-[color:var(--bg-elevated)]'
       }`}
     >
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left"
-      >
+      <div className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <div className="text-sm font-semibold text-[color:var(--ink)]">{title}</div>
-            {referenceHref ? (
-              <a
-                href={referenceHref}
-                onClick={(e) => e.stopPropagation()}
-                className="text-[12px] font-medium text-[color:var(--accent-text)] hover:text-[color:var(--ink)] transition-colors"
-              >
-                Reference
-              </a>
-            ) : null}
-          </div>
-          <div className="mt-0.5 text-[11px] leading-5 text-[color:var(--muted)]">{description}</div>
+          <div className="text-sm font-semibold text-[color:var(--ink)]">{title}</div>
+          <div className="mt-0.5 text-[12px] leading-5 text-[color:var(--muted)]">{description}</div>
         </div>
-        <div className="flex shrink-0 items-center gap-2" onClick={(event) => event.stopPropagation()}>
+        <div className="flex shrink-0 items-center gap-2">
+          {referenceHref ? (
+            <a
+              href={referenceHref}
+              className="inline-flex min-h-11 items-center rounded-full px-3 text-[12px] font-medium text-[color:var(--accent-text)] hover:text-[color:var(--ink)] transition-colors"
+            >
+              Reference
+            </a>
+          ) : null}
           {actions}
-          <ChevronRight
-            className={`h-4 w-4 shrink-0 text-[color:var(--muted)] transition-transform ${
-              isOpen ? 'rotate-90 text-[color:var(--accent-text)]' : ''
-            }`}
-          />
+          <button
+            type="button"
+            onClick={onToggle}
+            aria-expanded={isOpen}
+            aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${title}`}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[color:var(--muted)] transition-colors hover:text-[color:var(--ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bg-elevated)]"
+          >
+            <ChevronRight
+              className={`h-4 w-4 shrink-0 transition-transform ${
+                isOpen ? 'rotate-90 text-[color:var(--accent-text)]' : ''
+              }`}
+            />
+          </button>
         </div>
-      </button>
+      </div>
       <div className="xrdb-accordion-body" data-open={isOpen}>
         <div className="xrdb-accordion-inner">
           <div className="border-t border-[color:var(--border)] px-4 py-3">{children}</div>
