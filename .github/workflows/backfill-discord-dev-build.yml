@@ -1,0 +1,123 @@
+name: Backfill Discord Dev Build Notification
+run-name: ${{ format('Backfill Discord dev build for {0}', github.event.inputs.target_ref) }}
+
+"on":
+  workflow_dispatch:
+    inputs:
+      target_ref:
+        description: Commit SHA, tag, or branch to post as the missed dev build.
+        required: true
+        type: string
+      before_ref:
+        description: Optional commit SHA, tag, or branch used as compare baseline.
+        required: false
+        type: string
+      deployment_version:
+        description: Optional label shown in Discord. Leave empty to auto-generate.
+        required: false
+        type: string
+      dev_track_tag:
+        description: Optional tracking tag text shown in Discord summary.
+        required: false
+        type: string
+      build_url:
+        description: Optional build or notes URL shown in Discord summary.
+        required: false
+        type: string
+      discord_role_id:
+        description: Optional Discord role mention ID.
+        required: false
+        default: "1500618567614206072"
+        type: string
+
+jobs:
+  backfill-dev-discord:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve commit range and payload metadata
+        id: resolve
+        env:
+          TARGET_REF: ${{ github.event.inputs.target_ref }}
+          BEFORE_REF: ${{ github.event.inputs.before_ref }}
+          INPUT_DEPLOYMENT_VERSION: ${{ github.event.inputs.deployment_version }}
+          INPUT_DEV_TRACK_TAG: ${{ github.event.inputs.dev_track_tag }}
+          INPUT_BUILD_URL: ${{ github.event.inputs.build_url }}
+          DEFAULT_BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+
+          git fetch --force --tags origin
+
+          after_sha="$(git rev-parse "${TARGET_REF}^{commit}")"
+
+          before_sha=""
+          if [ -n "${BEFORE_REF}" ]; then
+            before_sha="$(git rev-parse "${BEFORE_REF}^{commit}")"
+          else
+            before_sha="$(git rev-parse "${after_sha}^" 2>/dev/null || true)"
+          fi
+
+          short_sha="$(git rev-parse --short=7 "${after_sha}")"
+          stamp="$(date -u +'%Y%m%d.%H%M')"
+
+          deployment_version="${INPUT_DEPLOYMENT_VERSION}"
+          if [ -z "${deployment_version}" ]; then
+            deployment_version="dev.backfill.${stamp}.${short_sha}"
+          fi
+
+          dev_track_tag="${INPUT_DEV_TRACK_TAG}"
+          if [ -z "${dev_track_tag}" ]; then
+            dev_track_tag="backfill-${short_sha}"
+          fi
+
+          build_url="${INPUT_BUILD_URL}"
+          if [ -z "${build_url}" ]; then
+            build_url="${DEFAULT_BUILD_URL}"
+          fi
+
+          echo "after_sha=${after_sha}" >> "$GITHUB_OUTPUT"
+          echo "before_sha=${before_sha}" >> "$GITHUB_OUTPUT"
+          echo "deployment_version=${deployment_version}" >> "$GITHUB_OUTPUT"
+          echo "dev_track_tag=${dev_track_tag}" >> "$GITHUB_OUTPUT"
+          echo "build_url=${build_url}" >> "$GITHUB_OUTPUT"
+
+          echo "Resolved after SHA: ${after_sha}"
+          if [ -n "${before_sha}" ]; then
+            echo "Resolved before SHA: ${before_sha}"
+          else
+            echo "No before SHA resolved; script will fall back to commit history mode."
+          fi
+
+      - name: Check Discord webhook secret
+        id: webhook
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+        run: |
+          if [ -n "${WEBHOOK_URL}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "WEBHOOK_URL secret is not configured. Skipping Discord dev build backfill notification."
+          fi
+
+      - name: Post backfill dev build notification to Discord
+        if: ${{ steps.webhook.outputs.enabled == 'true' }}
+        env:
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          DISCORD_ROLE_ID: ${{ github.event.inputs.discord_role_id }}
+          REPOSITORY: ${{ github.repository }}
+          DEPLOYMENT_VERSION: ${{ steps.resolve.outputs.deployment_version }}
+          BEFORE_SHA: ${{ steps.resolve.outputs.before_sha }}
+          AFTER_SHA: ${{ steps.resolve.outputs.after_sha }}
+          DEV_TRACK_TAG: ${{ steps.resolve.outputs.dev_track_tag }}
+          BUILD_URL: ${{ steps.resolve.outputs.build_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node ./.github/scripts/post-discord-dev-build.mjs

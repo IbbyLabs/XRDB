@@ -185,6 +185,17 @@ Discord notifications can share the same webhook and channel for both release an
 - `DISCORD_ROLE_ID` keeps public release pings
 - dev publish notifications use a dedicated role mention ID hardcoded in workflow for main-branch dev image publishes
 
+Manual backfill for missed dev build notifications:
+
+1. Open Actions and run `Backfill Discord Dev Build Notification`.
+2. Set `target_ref` to the missed commit SHA, tag, or branch.
+3. Optionally set `before_ref` when you need a custom compare baseline. If omitted, the workflow uses the target commit parent.
+4. Optionally set `deployment_version` to match the original dev label shown in Discord.
+5. Optionally set `dev_track_tag` and `build_url` when you want custom summary links.
+6. Leave `discord_role_id` as default unless you need a different mention role.
+
+The workflow posts through the existing `.github/scripts/post-discord-dev-build.mjs` path, so message format stays aligned with normal main-branch dev notifications.
+
 Pull examples:
 
 ```bash
