@@ -196,11 +196,11 @@ export function StepShell({
   const overlayRef = useRef<HTMLDivElement>(null);
   const fullscreenRef = useRef<HTMLDivElement>(null);
   const targetInputRef = useRef<HTMLInputElement>(null);
-  const searchDebounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchDebounceTimeoutRef = useRef<number | null>(null);
   const floatingDragOffsetRef = useRef({ x: 0, y: 0 });
   const floatingPreviewWindowRef = useRef<HTMLDivElement>(null);
   const floatingResizeStartRef = useRef({ pointerX: 0, pointerY: 0, width: 360, height: 242 });
-  const quickStartDismissTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const quickStartDismissTimeoutRef = useRef<number | null>(null);
 
 
   const ctx = useOptionalConfiguratorContext();
@@ -475,7 +475,7 @@ export function StepShell({
       return;
     }
 
-    searchDebounceTimeoutRef.current = setTimeout(() => {
+    searchDebounceTimeoutRef.current = window.setTimeout(() => {
       mediaTarget.onMediaSearchSubmit();
     }, 300);
   };
