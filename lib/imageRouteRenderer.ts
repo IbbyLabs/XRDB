@@ -95,6 +95,7 @@ import {
   type BlockbusterBlurb,
 } from './imageRouteBlockbusterReview.ts';
 import { buildBadgeSvg } from './imageRouteBadgeSvg.ts';
+import { buildQualityBadgeSvg } from './imageRouteQualityBadge.ts';
 import { resolveQualityBadgeColumnLayout, resolveQualityBadgeHeight } from './qualityBadgeLayout.ts';
 import type { ScorebarConfig } from './scorebarConfig.ts';
 import { DEFAULT_SCOREBAR_CONFIG, getScorebarThresholdColor } from './scorebarConfig.ts';
@@ -185,6 +186,9 @@ type FastRenderInput = {
   backdropEdgeInset: number;
   badges: RatingBadge[];
   qualityBadges: RatingBadge[];
+  trendingTagPosition: 'auto' | 'top' | 'bottom';
+  trendingTagStylePreset: 'auto-minimal' | QualityBadgeStyle;
+  trendingTagTextColor: string | null;
   qualityBadgesSide: QualityBadgesSide;
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
   posterQualityBadgeOffsetX?: number;
@@ -415,6 +419,299 @@ const getQualityBadgeIconDataUri = createQualityBadgeIconDataUriResolver({
 
 export { getQualityBadgeIconDataUri };
 
+// Trending badge type identifiers
+const POSTER_TRENDING_BADGE_KEYS = new Set([
+  'trending',
+  'trendingtoday',
+  'trendingweek',
+  'popular',
+  'viral',
+]);
+
+const isPosterTrendingBadge = (badge: RatingBadge): boolean => {
+  return POSTER_TRENDING_BADGE_KEYS.has(badge.key);
+};
+
+type TrendingOverlayStyleProfile = {
+  textColor: string;
+  textStrokeAlpha: number;
+  textWeight: number;
+  letterSpacing: number;
+  plateOpacityScale: number;
+  radiusScale: number;
+  plateTint: { r: number; g: number; b: number };
+};
+
+const resolveTrendingOverlayStyleProfile = (
+  qualityBadgesStyle: QualityBadgeStyle,
+  stylePreset: 'auto-minimal' | QualityBadgeStyle,
+  communityBadgeTheme?: CommunityBadgeTheme,
+): TrendingOverlayStyleProfile => {
+  if (stylePreset === 'auto-minimal') {
+    return {
+      textColor: '#f8fbff',
+      textStrokeAlpha: 0.5,
+      textWeight: 680,
+      letterSpacing: 0.2,
+      plateOpacityScale: 0.74,
+      radiusScale: 0.56,
+      plateTint: { r: 9, g: 12, b: 20 },
+    };
+  }
+
+  const effectiveStyle = stylePreset === 'auto-minimal' ? qualityBadgesStyle : stylePreset;
+
+  if (effectiveStyle === 'community-badge') {
+    if (communityBadgeTheme === 'gold') {
+      return {
+        textColor: '#f2d89a',
+        textStrokeAlpha: 0.62,
+        textWeight: 720,
+        letterSpacing: 0.3,
+        plateOpacityScale: 1.06,
+        radiusScale: 0.9,
+        plateTint: { r: 26, g: 20, b: 10 },
+      };
+    }
+    if (communityBadgeTheme === 'rainbow') {
+      return {
+        textColor: '#f5f8ff',
+        textStrokeAlpha: 0.58,
+        textWeight: 710,
+        letterSpacing: 0.3,
+        plateOpacityScale: 1,
+        radiusScale: 0.86,
+        plateTint: { r: 16, g: 18, b: 28 },
+      };
+    }
+    if (communityBadgeTheme === 'black') {
+      return {
+        textColor: '#f4f8ff',
+        textStrokeAlpha: 0.6,
+        textWeight: 705,
+        letterSpacing: 0.28,
+        plateOpacityScale: 0.92,
+        radiusScale: 0.82,
+        plateTint: { r: 6, g: 8, b: 14 },
+      };
+    }
+    return {
+      textColor: '#f8fbff',
+      textStrokeAlpha: 0.57,
+      textWeight: 705,
+      letterSpacing: 0.27,
+      plateOpacityScale: 0.96,
+      radiusScale: 0.84,
+      plateTint: { r: 17, g: 20, b: 28 },
+    };
+  }
+
+  if (effectiveStyle === 'square' || effectiveStyle === 'tile') {
+    return {
+      textColor: '#f8fbff',
+      textStrokeAlpha: 0.58,
+      textWeight: 710,
+      letterSpacing: 0.24,
+      plateOpacityScale: 0.98,
+      radiusScale: 0.5,
+      plateTint: { r: 12, g: 14, b: 22 },
+    };
+  }
+
+  if (effectiveStyle === 'plain' || effectiveStyle === 'media' || effectiveStyle === 'silver') {
+    return {
+      textColor: '#f8fbff',
+      textStrokeAlpha: 0.52,
+      textWeight: 690,
+      letterSpacing: 0.22,
+      plateOpacityScale: 0.62,
+      radiusScale: 0.48,
+      plateTint: { r: 7, g: 10, b: 16 },
+    };
+  }
+
+  return {
+    textColor: '#f8fbff',
+    textStrokeAlpha: 0.56,
+    textWeight: 700,
+    letterSpacing: 0.26,
+    plateOpacityScale: 0.9,
+    radiusScale: 0.8,
+    plateTint: { r: 10, g: 13, b: 22 },
+  };
+};
+
+const escapeSvgText = (value: string): string =>
+  value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+
+// Build blurred background for trending tags overlay
+const buildPosterTrendingTagsBlurredBackground = async (
+  sharpFactory: Awaited<ReturnType<typeof getSharpFactory>>,
+  posterBuffer: Buffer,
+  regionLeft: number,
+  regionTop: number,
+  regionWidth: number,
+  regionHeight: number,
+  styleProfile: TrendingOverlayStyleProfile,
+): Promise<{
+  buffer: Buffer;
+  width: number;
+  height: number;
+  left: number;
+  top: number;
+  relativeLuma: number;
+}> => {
+  const extracted = sharpFactory(posterBuffer)
+    .extract({
+      left: regionLeft,
+      top: regionTop,
+      width: regionWidth,
+      height: regionHeight,
+    });
+
+  const blurred = extracted.blur(3.2);
+
+  const blurredBuffer = await blurred.png().toBuffer();
+  const regionStats = await sharpFactory(blurredBuffer).stats();
+  const meanR = regionStats.channels[0]?.mean ?? 0;
+  const meanG = regionStats.channels[1]?.mean ?? 0;
+  const meanB = regionStats.channels[2]?.mean ?? 0;
+  const relativeLuma = (0.2126 * meanR + 0.7152 * meanG + 0.0722 * meanB) / 255;
+  const adaptiveAlpha =
+    Math.max(0.02, Math.min(0.11, 0.028 + relativeLuma * 0.077)) * styleProfile.plateOpacityScale;
+
+  const subtleOverlay = await sharpFactory({
+    create: {
+      width: regionWidth,
+      height: regionHeight,
+      channels: 4,
+      background: {
+        r: styleProfile.plateTint.r,
+        g: styleProfile.plateTint.g,
+        b: styleProfile.plateTint.b,
+        alpha: adaptiveAlpha,
+      },
+    },
+  })
+    .png()
+    .toBuffer();
+
+  const composite = sharpFactory(blurredBuffer)
+    .composite([
+      {
+        input: subtleOverlay,
+        left: 0,
+        top: 0,
+      },
+    ]);
+
+  const blendedBuffer = await composite.png().toBuffer();
+
+  const inset = Math.max(1, Math.round(regionHeight * 0.03));
+  const maskRadius = Math.max(5, Math.round(regionHeight * 0.12 * styleProfile.radiusScale));
+  const contentWidth = Math.max(1, regionWidth - inset * 2);
+  const contentHeight = Math.max(1, regionHeight - inset * 2);
+  const edgeFade = Math.max(12, Math.round(regionWidth * 0.09));
+  const edgeMid = Math.min(0.99, Math.max(0.72, 0.8 + relativeLuma * 0.12)).toFixed(2);
+  const edgeOuter = Math.min(0.88, Math.max(0.58, 0.7 + relativeLuma * 0.1)).toFixed(2);
+  const maskSvg = `
+    <svg width="${regionWidth}" height="${regionHeight}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${regionWidth} ${regionHeight}">
+      <defs>
+        <linearGradient id="trendMaskX" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="rgba(255,255,255,0)"/>
+          <stop offset="${Math.round((edgeFade / Math.max(1, contentWidth)) * 100)}%" stop-color="rgba(255,255,255,${edgeOuter})"/>
+          <stop offset="50%" stop-color="rgba(255,255,255,${edgeMid})"/>
+          <stop offset="${Math.max(0, 100 - Math.round((edgeFade / Math.max(1, contentWidth)) * 100))}%" stop-color="rgba(255,255,255,${edgeOuter})"/>
+          <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+        </linearGradient>
+      </defs>
+      <rect
+        x="${inset}"
+        y="${inset}"
+        width="${contentWidth}"
+        height="${contentHeight}"
+        rx="${maskRadius}"
+        ry="${maskRadius}"
+        fill="url(#trendMaskX)"
+      />
+    </svg>
+  `;
+
+  const finalBuffer = await sharpFactory(blendedBuffer)
+    .composite([
+      {
+        input: Buffer.from(maskSvg),
+        blend: 'dest-in',
+      },
+    ])
+    .png()
+    .toBuffer();
+
+  return {
+    buffer: finalBuffer,
+    width: regionWidth,
+    height: regionHeight,
+    left: regionLeft,
+    top: regionTop,
+    relativeLuma,
+  };
+};
+
+// Build text overlay for trending tags
+const buildPosterTrendingTagsOverlay = (
+  tags: string[],
+  width: number,
+  height: number,
+  config: {
+    styleProfile: TrendingOverlayStyleProfile;
+    textColor: string;
+    textStrokeAlpha: number;
+    surroundWithSeparatorDots?: boolean;
+  }
+): string => {
+  if (!tags || tags.length === 0) return '';
+
+  const baseText = tags.map((tag) => tag.toUpperCase()).join(' • ');
+  const displayText = escapeSvgText(
+    config.surroundWithSeparatorDots ? `• ${baseText} •` : baseText,
+  );
+
+  let fontSize = 21;
+  if (width < 280) fontSize = 17;
+  else if (width < 350) fontSize = 19;
+
+  const fontFamily = "-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Segoe UI','Inter','Noto Sans','DejaVu Sans',sans-serif";
+  const textY = Math.round(height * 0.53);
+
+  return `
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}">
+      <defs>
+        <style>
+          .trend-strip-text { font-weight: ${config.styleProfile.textWeight}; letter-spacing: ${config.styleProfile.letterSpacing}px; }
+        </style>
+      </defs>
+      <text
+        class="trend-strip-text"
+        x="${Math.round(width / 2)}"
+        y="${textY}"
+        font-size="${fontSize}"
+        font-family="${fontFamily}"
+        stroke="rgba(0,0,0,${config.textStrokeAlpha.toFixed(2)})"
+        stroke-width="1.05"
+        paint-order="stroke fill"
+        fill="${config.textColor}"
+        text-anchor="middle"
+        dominant-baseline="middle"
+      >${displayText}</text>
+    </svg>
+  `;
+};
+
 export const renderWithSharp = async (
   input: FastRenderInput,
   phases: PhaseDurations
@@ -601,6 +898,10 @@ export const renderWithSharp = async (
       })
     );
 
+    // Extract trending badges for separate center overlay
+    const trendingBadges = resolvedQualityBadges.filter(isPosterTrendingBadge);
+    const nonTrendingBadges = resolvedQualityBadges.filter((b) => !isPosterTrendingBadge(b));
+
     const sideColumnMetrics: BadgeLayoutMetrics = {
       iconSize: input.badgeIconSize,
       fontSize: input.badgeFontSize,
@@ -657,7 +958,18 @@ export const renderWithSharp = async (
     const cleanPosterReservedBottomHeight = cleanPosterGenreModeActive
       ? cleanPosterGenreHeight + Math.max(10, Math.round(input.badgeGap * 1.8))
       : 0;
-    const effectiveBadgeBottomOffset = input.badgeBottomOffset + cleanPosterReservedBottomHeight;
+    const requestedTrendingPosition =
+      input.imageType === 'poster' ? input.trendingTagPosition : 'auto';
+    const bottomTrendingReservedHeight =
+      input.imageType === 'poster' && requestedTrendingPosition === 'bottom'
+        ? (input.trendingTagStylePreset === 'community-badge'
+            ? 62
+            : input.trendingTagStylePreset === 'auto-minimal'
+              ? 52
+              : 58) + Math.max(6, Math.round(input.badgeGap * 0.8))
+        : 0;
+    const effectiveBadgeBottomOffset =
+      input.badgeBottomOffset + cleanPosterReservedBottomHeight + bottomTrendingReservedHeight;
     const resolveSideBadgeStartY = (
       columnBadges: RatingBadge[],
       metrics: BadgeLayoutMetrics = sideColumnMetrics,
@@ -677,12 +989,20 @@ export const renderWithSharp = async (
       input.posterRatingsLayout !== 'left' &&
       input.posterRatingsLayout !== 'right' &&
       input.posterRatingsLayout !== 'left-right';
+    const effectivePosterQualityBadgesPosition =
+      input.imageType === 'poster' && requestedTrendingPosition !== 'auto'
+        ? input.posterQualityBadgesPosition === requestedTrendingPosition
+          ? requestedTrendingPosition === 'top'
+            ? 'bottom'
+            : 'top'
+          : input.posterQualityBadgesPosition
+        : input.posterQualityBadgesPosition;
     const posterQualityBadgePlacement =
       input.imageType === 'poster'
         ? resolvePosterQualityBadgePlacement(
             input.posterRatingsLayout,
             input.qualityBadgesSide,
-            input.posterQualityBadgesPosition
+            effectivePosterQualityBadgesPosition
           )
         : null;
     const posterQualityBadgeSidePlacement =
@@ -723,9 +1043,13 @@ export const renderWithSharp = async (
         ? resolvedQualityBadges.find((badge) => badge.key === 'certification') ?? null
         : null;
     const posterSharedQualityBadges =
-      extractedAgeRatingBadge === null || input.ageRatingBadgePosition === 'grouped'
-        ? resolvedQualityBadges
-        : resolvedQualityBadges.filter((badge) => badge.key !== 'certification');
+      input.imageType === 'poster'
+        ? extractedAgeRatingBadge === null || input.ageRatingBadgePosition === 'grouped'
+          ? nonTrendingBadges
+          : nonTrendingBadges.filter((badge) => badge.key !== 'certification')
+        : extractedAgeRatingBadge === null || input.ageRatingBadgePosition === 'grouped'
+          ? resolvedQualityBadges
+          : resolvedQualityBadges.filter((badge) => badge.key !== 'certification');
     const editorialOverlayBottom =
       input.imageType === 'poster' && input.editorialOverlay
         ? input.editorialOverlay.top + input.editorialOverlay.height
@@ -1207,6 +1531,9 @@ export const renderWithSharp = async (
         : rowY;
 
       overlays.push({ input: Buffer.from(badgeSvg), top: translatedTop, left: translatedLeft });
+      if (input.imageType === 'poster') {
+        trackGenreCollisionRect(translatedLeft, translatedTop, badgeWidth, ratingBadgeHeight);
+      }
     };
     const appendQualityBadgeOverlays = (
       qualityBadgeOverlays: ReturnType<typeof buildQualityBadgeRowOverlays>,
@@ -2356,6 +2683,169 @@ export const renderWithSharp = async (
         top: genreBadgeOverlay.top,
         left: genreBadgeOverlay.left,
       });
+    }
+
+    // Render trending tags overlay for posters
+    if (input.imageType === 'poster' && trendingBadges.length > 0) {
+      const trendingTagLabels = trendingBadges.map((b) => b.label || b.key).filter((label): label is string => Boolean(label));
+      if (trendingTagLabels.length > 0) {
+        const useAutoMinimalTrendingStyle = input.trendingTagStylePreset === 'auto-minimal';
+        const trendingStyleProfile = resolveTrendingOverlayStyleProfile(
+          input.qualityBadgesStyle,
+          input.trendingTagStylePreset,
+          input.communityBadgeTheme,
+        );
+        const styledQualityBadge = !useAutoMinimalTrendingStyle
+          ? buildQualityBadgeSvg(
+              {
+                key: trendingBadges[0]?.key || 'trendingweek',
+                label: trendingTagLabels.join(' • '),
+                communityBadgeTheme: input.communityBadgeTheme,
+                styleOverride: input.trendingTagStylePreset,
+              },
+              48,
+              undefined,
+              input.trendingTagStylePreset,
+            )
+          : null;
+        const overlayWidth = styledQualityBadge
+          ? Math.min(styledQualityBadge.width, input.outputWidth - 46)
+          : Math.max(220, Math.min(Math.round(input.outputWidth * 0.53), input.outputWidth - 46));
+        const overlayHeight = styledQualityBadge ? styledQualityBadge.height : 46;
+        const overlayLeft = Math.round((input.outputWidth - overlayWidth) / 2);
+        const desiredOverlayTop =
+          requestedTrendingPosition === 'top'
+            ? input.badgeTopOffset + Math.max(6, Math.round(input.badgeGap * 0.4))
+            : requestedTrendingPosition === 'bottom'
+              ? Math.max(
+                  input.badgeTopOffset + 8,
+                  input.outputHeight - input.badgeBottomOffset - overlayHeight - Math.max(4, Math.round(input.badgeGap * 0.2)),
+                )
+              : Math.round(input.outputHeight * 0.61);
+        const titleCollisionTop = genreCollisionRects
+          .filter((rect) => rect.top > Math.round(input.outputHeight * 0.42))
+          .reduce((minTop, rect) => Math.min(minTop, rect.top), Number.POSITIVE_INFINITY);
+        const safeOverlayTop = Number.isFinite(titleCollisionTop)
+          ? Math.max(
+              input.badgeTopOffset + 8,
+              Math.round(titleCollisionTop - overlayHeight - Math.max(1, Math.round(input.badgeGap * 0.2))),
+            )
+          : desiredOverlayTop;
+        let overlayTop =
+          requestedTrendingPosition === 'top' || requestedTrendingPosition === 'bottom'
+            ? desiredOverlayTop
+            : Math.min(desiredOverlayTop, safeOverlayTop);
+
+        const minOverlayTop = input.badgeTopOffset + 8;
+        const maxOverlayTop = Math.max(
+          minOverlayTop,
+          input.outputHeight - input.badgeBottomOffset - overlayHeight - Math.max(4, Math.round(input.badgeGap * 0.2)),
+        );
+        const placementPadding = Math.max(4, Math.round(input.badgeGap * 0.25));
+        const movementStep = Math.max(4, Math.round(input.badgeGap * 0.65));
+        const collidesAt = (candidateTop: number) => {
+          const candidateLeft = overlayLeft;
+          const candidateRight = overlayLeft + overlayWidth;
+          const candidateBottom = candidateTop + overlayHeight;
+          return genreCollisionRects.some((rect) => {
+            const rectLeft = rect.left - placementPadding;
+            const rectTop = rect.top - placementPadding;
+            const rectRight = rect.left + rect.width + placementPadding;
+            const rectBottom = rect.top + rect.height + placementPadding;
+            return (
+              candidateLeft < rectRight &&
+              candidateRight > rectLeft &&
+              candidateTop < rectBottom &&
+              candidateBottom > rectTop
+            );
+          });
+        };
+
+        overlayTop = Math.max(minOverlayTop, Math.min(maxOverlayTop, overlayTop));
+        if (requestedTrendingPosition === 'top') {
+          while (collidesAt(overlayTop) && overlayTop + movementStep <= maxOverlayTop) {
+            overlayTop += movementStep;
+          }
+        } else if (requestedTrendingPosition === 'bottom') {
+          while (collidesAt(overlayTop) && overlayTop - movementStep >= minOverlayTop) {
+            overlayTop -= movementStep;
+          }
+        } else {
+          let candidateTop = overlayTop;
+          while (collidesAt(candidateTop) && candidateTop - movementStep >= minOverlayTop) {
+            candidateTop -= movementStep;
+          }
+          if (collidesAt(candidateTop)) {
+            candidateTop = overlayTop;
+            while (collidesAt(candidateTop) && candidateTop + movementStep <= maxOverlayTop) {
+              candidateTop += movementStep;
+            }
+          }
+          overlayTop = candidateTop;
+        }
+
+        if (styledQualityBadge) {
+          overlays.push({
+            input: Buffer.from(styledQualityBadge.svg),
+            top: overlayTop,
+            left: overlayLeft,
+          });
+          trackGenreCollisionRect(overlayLeft, overlayTop, overlayWidth, overlayHeight);
+        } else {
+          // Get the underlying poster data to create blur background
+          const baseOverlay = overlays[0];
+          if (baseOverlay) {
+            // Build blurred background
+            const blurBackground = await buildPosterTrendingTagsBlurredBackground(
+              sharp,
+              baseOverlay.input,
+              overlayLeft,
+              overlayTop,
+              overlayWidth,
+              overlayHeight,
+              trendingStyleProfile,
+            );
+
+            // Add blurred background overlay
+            overlays.push({
+              input: blurBackground.buffer,
+              top: blurBackground.top,
+              left: blurBackground.left,
+            });
+
+            // Build text overlay with integrated rounded corners frame
+            const textOverlaySvg = buildPosterTrendingTagsOverlay(
+              trendingTagLabels,
+              overlayWidth,
+              overlayHeight,
+              {
+                styleProfile: trendingStyleProfile,
+                textColor:
+                  input.trendingTagTextColor && input.trendingTagTextColor.trim().length > 0
+                    ? input.trendingTagTextColor
+                    : blurBackground.relativeLuma > 0.66
+                    ? trendingStyleProfile.textColor === '#f2d89a'
+                      ? '#ebcc85'
+                      : '#f3f7fb'
+                    : trendingStyleProfile.textColor,
+                textStrokeAlpha:
+                  blurBackground.relativeLuma > 0.66
+                    ? Math.max(0.4, trendingStyleProfile.textStrokeAlpha - 0.08)
+                    : trendingStyleProfile.textStrokeAlpha,
+                surroundWithSeparatorDots: true,
+              }
+            );
+            if (textOverlaySvg) {
+              overlays.push({
+                input: Buffer.from(textOverlaySvg),
+                top: overlayTop,
+                left: overlayLeft,
+              });
+              trackGenreCollisionRect(overlayLeft, overlayTop, overlayWidth, overlayHeight);
+            }
+          }
+        }
+      }
     }
 
     const finalImage = await renderFinalCompositeImage({

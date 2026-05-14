@@ -451,6 +451,9 @@ export function useConfiguratorOutputs({
   posterQualityBadgePreferences,
   posterQualityBadgeScale,
   posterQualityBadgesPosition,
+  posterTrendingTagPosition,
+  posterTrendingTagStylePreset,
+  posterTrendingTagTextColor,
   posterQualityBadgeOffsetX,
   posterQualityBadgeOffsetY,
   ageRatingBadgePosition,
@@ -657,6 +660,9 @@ export function useConfiguratorOutputs({
   posterQualityBadgePreferences: string[];
   posterQualityBadgeScale: number;
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
+  posterTrendingTagPosition: 'auto' | 'top' | 'bottom';
+  posterTrendingTagStylePreset: 'auto-minimal' | QualityBadgeStyle;
+  posterTrendingTagTextColor: string;
   posterQualityBadgeOffsetX: number;
   posterQualityBadgeOffsetY: number;
   ageRatingBadgePosition: AgeRatingBadgePosition;
@@ -875,6 +881,20 @@ export function useConfiguratorOutputs({
         : previewType === 'logo'
           ? logoQualityBadgePreferences
           : posterQualityBadgePreferences;
+    const hasPosterTrendingBadgePreference = qualityBadgePreferencesForType.some((badgeKey) =>
+      ['trending', 'trendingtoday', 'trendingweek', 'popular', 'viral'].includes(badgeKey),
+    );
+    const shouldInjectTrendingPreviewBadge =
+      previewType === 'poster' &&
+      !hasPosterTrendingBadgePreference &&
+      (
+        posterTrendingTagPosition !== 'auto' ||
+        posterTrendingTagStylePreset !== 'auto-minimal' ||
+        (posterTrendingTagTextColor ?? '').trim().length > 0
+      );
+    const effectiveQualityBadgePreferencesForType = shouldInjectTrendingPreviewBadge
+      ? [...qualityBadgePreferencesForType, 'trendingweek']
+      : qualityBadgePreferencesForType;
     const remuxDisplayModeForType =
       previewType === 'backdrop'
         ? backdropRemuxDisplayMode
@@ -1130,7 +1150,7 @@ export function useConfiguratorOutputs({
         : previewType === 'logo'
           ? 'logoQualityBadges'
           : 'posterQualityBadges',
-      qualityBadgePreferencesForType.join(','),
+      effectiveQualityBadgePreferencesForType.join(','),
     );
     if (activeQualityBadgesMax !== null) {
       query.set(
@@ -1232,6 +1252,19 @@ export function useConfiguratorOutputs({
       }
       if (posterEdgeOffset !== DEFAULT_POSTER_EDGE_OFFSET) {
         query.set('posterEdgeOffset', String(posterEdgeOffset));
+      }
+      if (posterTrendingTagPosition !== 'auto') {
+        query.set('posterTrendingTagPosition', posterTrendingTagPosition);
+      }
+      if (posterTrendingTagStylePreset !== 'auto-minimal') {
+        query.set('posterTrendingTagStyle', posterTrendingTagStylePreset);
+      }
+      if (posterTrendingTagStylePreset === 'community-badge' && communityBadgeTheme !== DEFAULT_COMMUNITY_BADGE_THEME) {
+        query.set('posterTrendingCommunityTheme', communityBadgeTheme);
+      }
+      const normalizedTrendingTextColor = (posterTrendingTagTextColor ?? '').trim();
+      if (normalizedTrendingTextColor) {
+        query.set('posterTrendingTagTextColor', normalizedTrendingTextColor);
       }
       if (posterNoBackgroundBadgeOutlineWidth !== DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX) {
         query.set('posterNoBackgroundBadgeOutlineWidth', String(posterNoBackgroundBadgeOutlineWidth));
