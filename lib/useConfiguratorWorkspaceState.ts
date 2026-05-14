@@ -204,6 +204,9 @@ export function useConfiguratorWorkspaceState() {
   const [logoStreamBadges, setLogoStreamBadges] = useState<StreamBadgesSetting>('auto');
   const [qualityBadgesSide, setQualityBadgesSide] = useState<QualityBadgesSide>('left');
   const [posterQualityBadgesPosition, setPosterQualityBadgesPosition] = useState<PosterQualityBadgesPosition>('auto');
+  const [posterTrendingTagPosition, setPosterTrendingTagPosition] = useState<'auto' | 'top' | 'bottom'>('auto');
+  const [posterTrendingTagStylePreset, setPosterTrendingTagStylePreset] = useState<'auto-minimal' | QualityBadgeStyle>('auto-minimal');
+  const [posterTrendingTagTextColor, setPosterTrendingTagTextColor] = useState<string>('');
   const [posterQualityBadgeOffsetX, setPosterQualityBadgeOffsetX] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
   const [posterQualityBadgeOffsetY, setPosterQualityBadgeOffsetY] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
   const [ageRatingBadgePosition, setAgeRatingBadgePosition] = useState<AgeRatingBadgePosition>('inherit');
@@ -879,6 +882,9 @@ export function useConfiguratorWorkspaceState() {
     posterQualityBadgeScale,
     posterQualityBadgesMax,
     posterQualityBadgesPosition,
+    posterTrendingTagPosition,
+    posterTrendingTagStylePreset,
+    posterTrendingTagTextColor,
     posterQualityBadgeOffsetX,
     posterQualityBadgeOffsetY,
     ageRatingBadgePosition,
@@ -1139,6 +1145,9 @@ export function useConfiguratorWorkspaceState() {
     setPosterQualityBadgeScale,
     setPosterQualityBadgesMax,
     setPosterQualityBadgesPosition,
+    setPosterTrendingTagPosition,
+    setPosterTrendingTagStylePreset,
+    setPosterTrendingTagTextColor,
     setPosterQualityBadgeOffsetX,
     setPosterQualityBadgeOffsetY,
     setAgeRatingBadgePosition,

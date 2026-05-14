@@ -38,6 +38,9 @@ type FinalImageRenderSeedInput = {
   logoBottomRatingsRow: boolean;
   qualityBadgesSide: string;
   posterQualityBadgesPosition: string;
+  trendingTagPosition: string;
+  trendingTagStylePreset: string;
+  trendingTagTextColor: string | null;
   posterQualityBadgeOffsetX: number;
   posterQualityBadgeOffsetY: number;
   ageRatingBadgePosition: string;
@@ -174,11 +177,21 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
     isPoster && (input.posterRatingsLayout === 'top' || input.posterRatingsLayout === 'bottom')
       ? input.posterQualityBadgesPosition
       : '-',
+    isPoster ? input.trendingTagPosition : '-',
+    isPoster ? input.trendingTagStylePreset : '-',
+    isPoster ? input.trendingTagTextColor || '-' : '-',
     isPoster ? String(input.posterQualityBadgeOffsetX ?? 0) : '-',
     isPoster ? String(input.posterQualityBadgeOffsetY ?? 0) : '-',
     isPoster ? input.ageRatingBadgePosition : '-',
     input.qualityBadgesStyle,
-    (input.qualityBadgesStyle === 'community-badge' || input.ageRatingBadgeStyle === 'community-badge' || input.releaseStatusBadgeStyle === 'community-badge') ? input.communityBadgeTheme : '-',
+    (
+      input.qualityBadgesStyle === 'community-badge' ||
+      input.ageRatingBadgeStyle === 'community-badge' ||
+      input.releaseStatusBadgeStyle === 'community-badge' ||
+      (isPoster && input.trendingTagStylePreset === 'community-badge')
+    )
+      ? input.communityBadgeTheme
+      : '-',
     input.ageRatingBadgeStyle ?? '-',
     input.releaseStatusBadgeStyle ?? '-',
     String(input.qualityBadgesMax ?? 'auto'),

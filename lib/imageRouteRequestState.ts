@@ -297,6 +297,9 @@ export type ImageRouteRequestState = {
   sideRatingsOffset: number;
   qualityBadgesSide: QualityBadgesSide;
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
+  trendingTagPosition: 'auto' | 'top' | 'bottom';
+  trendingTagStylePreset: 'auto-minimal' | QualityBadgeStyle;
+  trendingTagTextColor: string | null;
   posterQualityBadgeOffsetX: number;
   posterQualityBadgeOffsetY: number;
   ageRatingBadgePosition: AgeRatingBadgePosition;
@@ -900,7 +903,8 @@ export const resolveImageRouteRequestState = async ({
   const genreBadgeTileAccentColor =
     normalizeHexColor(searchParams.get('genreBadgeTileAccentColor')) || null;
   const communityBadgeTheme = normalizeCommunityBadgeTheme(
-    searchParams.get('communityBadgeTheme'),
+    searchParams.get('posterTrendingCommunityTheme') ??
+      searchParams.get('communityBadgeTheme'),
   );
   const ageRatingBadgeStyle = normalizeQualityBadgesStyleOrNull(
     searchParams.get('ageRatingBadgeStyle'),
@@ -1110,6 +1114,32 @@ export const resolveImageRouteRequestState = async ({
   const qualityBadgesSide = normalizeQualityBadgesSide(
     searchParams.get('qualityBadgesSide') || searchParams.get('qualityBadgesPosition'),
   );
+  const trendingTagPositionParam =
+    searchParams.get('posterTrendingTagPosition') ?? searchParams.get('trendingTagPosition');
+  const trendingTagPosition: 'auto' | 'top' | 'bottom' =
+    trendingTagPositionParam === 'top' || trendingTagPositionParam === 'bottom'
+      ? trendingTagPositionParam
+      : 'auto';
+  const trendingTagStyleParam =
+    searchParams.get('posterTrendingTagStyle') ?? searchParams.get('trendingTagStyle');
+  const normalizedTrendingStyleParam = String(trendingTagStyleParam || '').trim().toLowerCase();
+  const trendingTagStylePreset: 'auto-minimal' | QualityBadgeStyle =
+    !normalizedTrendingStyleParam
+      ? 'auto-minimal'
+      : normalizedTrendingStyleParam === 'auto-minimal'
+      ? 'auto-minimal'
+      : normalizeQualityBadgesStyle(trendingTagStyleParam);
+  const trendingTagTextColorRaw =
+    searchParams.get('posterTrendingTagTextColor') ?? searchParams.get('trendingTagTextColor');
+  const trendingTagTextColor = (() => {
+    const normalized = String(trendingTagTextColorRaw || '').trim();
+    if (!normalized) return null;
+    return /^#?[a-fA-F0-9]{6}$/.test(normalized)
+      ? normalized.startsWith('#')
+        ? normalized.toLowerCase()
+        : `#${normalized.toLowerCase()}`
+      : null;
+  })();
   const posterQualityBadgesPosition = normalizePosterQualityBadgesPosition(
     searchParams.get('posterQualityBadgesPosition'),
   );
@@ -1682,6 +1712,9 @@ export const resolveImageRouteRequestState = async ({
     logoBottomRatingsRow: effectiveLogoBottomRatingsRow,
     qualityBadgesSide,
     posterQualityBadgesPosition,
+    trendingTagPosition,
+    trendingTagStylePreset,
+    trendingTagTextColor,
     posterQualityBadgeOffsetX,
     posterQualityBadgeOffsetY,
     ageRatingBadgePosition,
@@ -1795,6 +1828,9 @@ export const resolveImageRouteRequestState = async ({
     sideRatingsOffset,
     qualityBadgesSide,
     posterQualityBadgesPosition,
+    trendingTagPosition,
+    trendingTagStylePreset,
+    trendingTagTextColor,
     posterQualityBadgeOffsetX,
     posterQualityBadgeOffsetY,
     ageRatingBadgePosition,

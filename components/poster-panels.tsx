@@ -566,6 +566,15 @@ export function QualityPanel() {
   const q = ctx.inputsPanelProps.qualityProps;
   const look = ctx.inputsPanelProps.lookProps;
   const isAdvancedMode = ctx.experienceMode === 'advanced';
+  const trendingPositionOptions = [
+    { id: 'auto', label: 'Auto' },
+    { id: 'top', label: 'Top' },
+    { id: 'bottom', label: 'Bottom' },
+  ] as const;
+  const trendingStylePresetOptions = [
+    { id: 'auto-minimal', label: 'Auto minimal' },
+    ...QUALITY_BADGE_STYLE_OPTIONS,
+  ] as const;
 
   const allEnabled = q.activeQualityBadgePreferences.length === QUALITY_BADGE_OPTIONS.length;
   const enabledCount = q.activeQualityBadgePreferences.length;
@@ -680,6 +689,51 @@ export function QualityPanel() {
             onChange={q.onSelectPosterQualityBadgePosition}
           />
         </ControlRow>
+      ) : null}
+
+      <ControlRow label="Trending position">
+        <OptionPills
+          options={trendingPositionOptions}
+          value={q.posterTrendingTagPosition}
+          onChange={q.onSelectPosterTrendingTagPosition}
+        />
+      </ControlRow>
+
+      <ControlRow label="Trending background">
+        <p className="xrdb-control-description">Adaptive minimal</p>
+      </ControlRow>
+
+      {isAdvancedMode ? (
+        <>
+          <ControlRow label="Trending style">
+            <OptionPills
+              options={trendingStylePresetOptions}
+              value={q.posterTrendingTagStylePreset}
+              onChange={q.onSelectPosterTrendingTagStylePreset}
+            />
+          </ControlRow>
+          <ControlRow label="Trending text colour">
+            <div className="xrdb-control-stack">
+              <p className="xrdb-control-description">Applies to auto minimal too.</p>
+              <div className="xrdb-color-input-row">
+                <input
+                  type="color"
+                  className="xrdb-color-input"
+                  value={q.posterTrendingTagTextColor || '#f8fbff'}
+                  onChange={(event) => q.onSelectPosterTrendingTagTextColor(event.target.value)}
+                  aria-label="Trending tag text colour"
+                />
+                <button
+                  type="button"
+                  className="xrdb-btn-ghost"
+                  onClick={() => q.onSelectPosterTrendingTagTextColor('')}
+                >
+                  Auto
+                </button>
+              </div>
+            </div>
+          </ControlRow>
+        </>
       ) : null}
 
       <ul className="xrdb-provider-list" role="list">
