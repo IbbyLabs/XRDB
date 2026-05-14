@@ -29,6 +29,7 @@ import {
 } from './imageRouteConfig.ts';
 import {
   buildTrendingRecognitionBadges,
+  type TrendingRankingMembership,
   buildNetworkBadgesFromTvNetworks,
   buildNetworkBadgesFromWatchProviderResults,
   buildCertificationBadgeMeta,
@@ -220,6 +221,38 @@ export type PreparedImageRouteMediaState = {
 };
 
 const ANIME_ONLY_RATING_PROVIDER_SET = new Set<RatingPreference>(['myanimelist', 'anilist', 'kitsu']);
+const SOURCE_BACKED_TRENDING_BADGE_KEYS = new Set<BadgeKey>([
+  'trendingtoday',
+  'trendingweek',
+  'top10',
+  'top25',
+]);
+const TMDB_TRENDING_RANK_CACHE_TTL_MS = Math.min(TMDB_CACHE_TTL_MS, 6 * 60 * 60 * 1000);
+
+const resolveTmdbTrendingRank = ({
+  responses,
+  mediaId,
+}: {
+  responses: CachedJsonResponse[];
+  mediaId: number;
+}) => {
+  for (let pageIndex = 0; pageIndex < responses.length; pageIndex += 1) {
+    const results = Array.isArray(responses[pageIndex]?.data?.results)
+      ? responses[pageIndex].data.results
+      : [];
+    const itemIndex = results.findIndex((entry: unknown) => {
+      if (!entry || typeof entry !== 'object') {
+        return false;
+      }
+      const entryId = Number((entry as { id?: unknown }).id);
+      return Number.isFinite(entryId) && entryId === mediaId;
+    });
+    if (itemIndex >= 0) {
+      return pageIndex * 20 + itemIndex + 1;
+    }
+  }
+  return null;
+};
 
 export const prepareImageRouteMediaState = async (input: {
   imageType: 'poster' | 'backdrop' | 'logo';
@@ -501,6 +534,10 @@ const shouldRenderRawKitsuFallbackRating =
   useRawKitsuFallback && needsKitsuRating && typeof rawFallbackKitsuRating === 'string' && rawFallbackKitsuRating.length > 0;
 const shouldRenderRatings = shouldApplyRatings;
 const shouldRenderStreamBadges = shouldApplyStreamBadges && !resolveIsAnimeContent();
+const shouldFetchSourceBackedTrendingRanks =
+  shouldRenderStreamBadges &&
+  (mediaType === 'movie' || mediaType === 'tv') &&
+  qualityBadgePreferences.some((badgeKey) => SOURCE_BACKED_TRENDING_BADGE_KEYS.has(badgeKey as BadgeKey));
 const shouldRenderBadges =
   shouldRenderRatings ||
   shouldRenderStreamBadges ||
@@ -544,6 +581,38 @@ const streamBadgesCacheWindow =
 const streamBadgesCacheKey = shouldRenderStreamBadges
   ? `torrentio:${streamBadgesCacheWindow ?? 0}`
   : 'off';
+const trendingRankingMembershipPromise: Promise<TrendingRankingMembership | null> =
+  shouldFetchSourceBackedTrendingRanks && media?.id != null && mediaType
+    ? (async () => {
+        const tmdbMediaId = Number(media.id);
+        if (!Number.isFinite(tmdbMediaId)) {
+          return null;
+        }
+
+        const fetchTrendingWindowResponses = async (window: 'day' | 'week') =>
+          Promise.all(
+            [1, 2].map((page) =>
+              fetchJsonCached(
+                `tmdb:${mediaType}:trending:${window}:page:${page}:v1`,
+                `${TMDB_API_BASE_URL}/trending/${mediaType}/${window}?api_key=${tmdbKey}&page=${page}`,
+                TMDB_TRENDING_RANK_CACHE_TTL_MS,
+                phases,
+                'tmdb',
+              ),
+            ),
+          );
+
+        const [dayResponses, weekResponses] = await Promise.all([
+          fetchTrendingWindowResponses('day'),
+          fetchTrendingWindowResponses('week'),
+        ]);
+
+        return {
+          trendingDayRank: resolveTmdbTrendingRank({ responses: dayResponses, mediaId: tmdbMediaId }),
+          trendingWeekRank: resolveTmdbTrendingRank({ responses: weekResponses, mediaId: tmdbMediaId }),
+        };
+      })()
+    : Promise.resolve(null);
 const detailsBundlePromise = !useRawKitsuFallback
   ? (async () => {
     const loadDetailsBundle = async (language: string, includeImageLanguageValue: string) => {
@@ -845,6 +914,7 @@ if (!useRawKitsuFallback && detailsBundlePromise) {
             media,
             details,
             mediaType,
+            rankingMembership: await trendingRankingMembershipPromise,
           }).map((badge) => ({
             key: badge.key,
             label: badge.label,

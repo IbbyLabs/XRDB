@@ -84,26 +84,27 @@ function buildCommunityFallbackBadge(
 ): { svg: string; width: number; height: number } {
   const safeLabel = String(label || '').trim().toUpperCase() || 'BADGE';
   const words = safeLabel.split(/\s+/).filter(Boolean);
-  const shouldSplit = words.length > 1 && safeLabel.length > 10;
+  const shouldSplit = words.length > 1 && safeLabel.length > 12;
   const lines = shouldSplit
     ? [words.slice(0, Math.ceil(words.length / 2)).join(' '), words.slice(Math.ceil(words.length / 2)).join(' ')]
     : [safeLabel];
-  const fontSize = Math.max(11, Math.round(targetHeight * (lines.length > 1 ? 0.22 : 0.3)));
+  const fontSize = Math.max(12, Math.round(targetHeight * (lines.length > 1 ? 0.26 : 0.34)));
   const longest = lines.reduce((max, line) => Math.max(max, line.length), 0);
-  const width = Math.max(Math.round(targetHeight * 1.45), Math.round(longest * fontSize * 0.68 + targetHeight * 0.9));
+  const width = Math.max(Math.round(targetHeight * 1.55), Math.round(longest * fontSize * 0.7 + targetHeight * 0.98));
   const outerRx = Math.max(8, Math.round(targetHeight * 0.2));
   const innerRx = Math.max(6, Math.round(targetHeight * 0.15));
   const defs = theme === 'rainbow'
     ? `<defs>${THEME_BG_GRADIENT[theme]}${RAINBOW_GRADIENT_MARKUP}</defs>`
     : `<defs>${THEME_BG_GRADIENT[theme]}</defs>`;
   const textColor = resolveCommunityTextColor(key, theme);
+  const lineGap = Math.max(11, Math.round(fontSize * 1.1));
   const lineY = lines.length > 1
-    ? [Math.round(targetHeight * 0.36), Math.round(targetHeight * 0.64)]
-    : [Math.round(targetHeight * 0.6)];
+    ? [Math.round(targetHeight / 2 - lineGap / 2), Math.round(targetHeight / 2 + lineGap / 2)]
+    : [Math.round(targetHeight / 2)];
   const textSvg = lines
     .map(
       (line, index) =>
-        `<text x="${Math.round(width / 2)}" y="${lineY[index]}" text-anchor="middle" dominant-baseline="middle" fill="${textColor}" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-weight="900" font-size="${fontSize}" letter-spacing="0.6">${line}</text>`,
+        `<text x="${Math.round(width / 2)}" y="${lineY[index]}" text-anchor="middle" dominant-baseline="middle" fill="${textColor}" font-family="Avenir Next, Helvetica Neue, Arial, sans-serif" font-weight="900" font-size="${fontSize}" letter-spacing="0.4">${line}</text>`,
     )
     .join('');
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${targetHeight}" role="img" aria-label="${safeLabel}">${defs}<rect x="2" y="2" width="${Math.max(0, width - 4)}" height="${Math.max(0, targetHeight - 4)}" rx="${outerRx}" fill="url(#bg)" stroke="${THEME_FRAME_STROKE[theme]}" stroke-width="3"/><rect x="8" y="10" width="${Math.max(0, width - 16)}" height="${Math.max(0, targetHeight - 20)}" rx="${innerRx}" fill="#0c1018" fill-opacity="0.72"/>${textSvg}</svg>`;

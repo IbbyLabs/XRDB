@@ -453,6 +453,7 @@ export function useConfiguratorOutputs({
   posterQualityBadgesPosition,
   posterTrendingTagPosition,
   posterTrendingTagStylePreset,
+  posterTrendingCommunityBadgeTheme,
   posterTrendingTagTextColor,
   posterQualityBadgeOffsetX,
   posterQualityBadgeOffsetY,
@@ -662,6 +663,7 @@ export function useConfiguratorOutputs({
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
   posterTrendingTagPosition: 'auto' | 'top' | 'bottom';
   posterTrendingTagStylePreset: 'auto-minimal' | QualityBadgeStyle;
+  posterTrendingCommunityBadgeTheme: CommunityBadgeTheme;
   posterTrendingTagTextColor: string;
   posterQualityBadgeOffsetX: number;
   posterQualityBadgeOffsetY: number;
@@ -1266,8 +1268,8 @@ export function useConfiguratorOutputs({
       if (posterTrendingTagStylePreset !== 'auto-minimal') {
         query.set('posterTrendingTagStyle', posterTrendingTagStylePreset);
       }
-      if (posterTrendingTagStylePreset === 'community-badge' && communityBadgeTheme !== DEFAULT_COMMUNITY_BADGE_THEME) {
-        query.set('posterTrendingCommunityTheme', communityBadgeTheme);
+      if (posterTrendingTagStylePreset === 'community-badge' && posterTrendingCommunityBadgeTheme !== DEFAULT_COMMUNITY_BADGE_THEME) {
+        query.set('posterTrendingCommunityTheme', posterTrendingCommunityBadgeTheme);
       }
       const normalizedTrendingTextColor = (posterTrendingTagTextColor ?? '').trim();
       if (normalizedTrendingTextColor) {
@@ -1526,6 +1528,7 @@ export function useConfiguratorOutputs({
     posterQualityBadgeOffsetY,
     posterTrendingTagPosition,
     posterTrendingTagStylePreset,
+    posterTrendingCommunityBadgeTheme,
     posterTrendingTagTextColor,
     ageRatingBadgePosition,
     posterQualityBadgesStyle,
