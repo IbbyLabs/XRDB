@@ -22,7 +22,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
 
     steps:
@@ -211,33 +211,65 @@ jobs:
             echo "WEBHOOK_URL secret is not configured. Skipping Discord dev build notification."
           fi
 
-      - name: Resolve last successful build SHA
-        id: last_build_sha
+      - name: Resolve last successful Discord dev notification SHA
+        id: last_dev_notification
         if: ${{ steps.dev_webhook.outputs.enabled == 'true' }}
         env:
           EVENT_BEFORE: ${{ github.event.before }}
         run: |
           set -euo pipefail
-          last_dev_tag="$(git tag --sort=-creatordate --list 'dev-*' | head -1)"
-          if [ -n "${last_dev_tag}" ]; then
-            last_sha="$(git rev-list -n1 "${last_dev_tag}")"
-            echo "before_sha=${last_sha}" >> "$GITHUB_OUTPUT"
-            echo "Resolved last successful build SHA from tag ${last_dev_tag}: ${last_sha}"
+          checkpoint_tag='discord-dev-notified'
+          checkpoint_sha=''
+
+          git fetch --force --tags origin
+
+          if git rev-parse -q --verify "refs/tags/${checkpoint_tag}" >/dev/null; then
+            checkpoint_sha="$(git rev-list -n1 "refs/tags/${checkpoint_tag}")"
+            echo "Found Discord checkpoint tag ${checkpoint_tag}: ${checkpoint_sha}"
           else
-            echo "before_sha=${EVENT_BEFORE}" >> "$GITHUB_OUTPUT"
-            echo "No dev tags found, falling back to event before SHA: ${EVENT_BEFORE}"
+            echo "No Discord checkpoint tag found."
           fi
 
+          before_sha="${checkpoint_sha}"
+          if [ -z "${before_sha}" ]; then
+            before_sha="${EVENT_BEFORE}"
+            echo "Falling back to event before SHA: ${before_sha}"
+          fi
+
+          skip_notification='false'
+          if [ -n "${checkpoint_sha}" ] && [ "${checkpoint_sha}" = "${GITHUB_SHA}" ]; then
+            skip_notification='true'
+            echo 'Current commit already has a Discord dev notification checkpoint. Skipping duplicate post.'
+          fi
+
+          echo "checkpoint_tag=${checkpoint_tag}" >> "$GITHUB_OUTPUT"
+          echo "checkpoint_sha=${checkpoint_sha}" >> "$GITHUB_OUTPUT"
+          echo "before_sha=${before_sha}" >> "$GITHUB_OUTPUT"
+          echo "skip_notification=${skip_notification}" >> "$GITHUB_OUTPUT"
+
       - name: Post dev build to Discord
-        if: ${{ steps.dev_webhook.outputs.enabled == 'true' }}
+        if: ${{ steps.dev_webhook.outputs.enabled == 'true' && steps.last_dev_notification.outputs.skip_notification != 'true' }}
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
           DISCORD_ROLE_ID: '1500618567614206072'
           REPOSITORY: ${{ github.repository }}
           DEPLOYMENT_VERSION: ${{ steps.version_meta.outputs.deployment_version }}
-          BEFORE_SHA: ${{ steps.last_build_sha.outputs.before_sha }}
+          BEFORE_SHA: ${{ steps.last_dev_notification.outputs.before_sha }}
           AFTER_SHA: ${{ github.sha }}
           DEV_TRACK_TAG: ${{ steps.version_meta.outputs.dev_track_tag }}
           BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node ./.github/scripts/post-discord-dev-build.mjs
+
+      - name: Update Discord dev notification checkpoint
+        if: ${{ steps.dev_webhook.outputs.enabled == 'true' && steps.last_dev_notification.outputs.skip_notification != 'true' }}
+        env:
+          CHECKPOINT_TAG: ${{ steps.last_dev_notification.outputs.checkpoint_tag }}
+        run: |
+          set -euo pipefail
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          git tag --force "${CHECKPOINT_TAG}" "${GITHUB_SHA}"
+          git push --force origin "refs/tags/${CHECKPOINT_TAG}"

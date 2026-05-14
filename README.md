@@ -185,6 +185,8 @@ Discord notifications can share the same webhook and channel for both release an
 - `DISCORD_ROLE_ID` keeps public release pings
 - dev publish notifications use a dedicated role mention ID hardcoded in workflow for main-branch dev image publishes
 
+Dev notification catchup is automatic. The publish workflow stores a checkpoint tag (`discord-dev-notified`) after each successful dev Discord post and uses it as the next compare baseline, so any commits missed during a failed run are included on the next successful run.
+
 Manual backfill for missed dev build notifications:
 
 1. Open Actions and run `Backfill Discord Dev Build Notification`.
@@ -195,6 +197,7 @@ Manual backfill for missed dev build notifications:
 6. Leave `discord_role_id` as default unless you need a different mention role.
 
 The workflow posts through the existing `.github/scripts/post-discord-dev-build.mjs` path, so message format stays aligned with normal main-branch dev notifications.
+The manual backfill flow does not move the automatic checkpoint tag. It is intended for recovery posts when you want a specific historical range immediately.
 
 Pull examples:
 
