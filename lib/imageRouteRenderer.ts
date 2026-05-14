@@ -459,7 +459,7 @@ const resolveTrendingOverlayStyleProfile = (
     };
   }
 
-  const effectiveStyle = stylePreset === 'auto-minimal' ? qualityBadgesStyle : stylePreset;
+  const effectiveStyle: QualityBadgeStyle = stylePreset;
 
   if (effectiveStyle === 'community-badge') {
     if (communityBadgeTheme === 'gold') {
@@ -989,14 +989,7 @@ export const renderWithSharp = async (
       input.posterRatingsLayout !== 'left' &&
       input.posterRatingsLayout !== 'right' &&
       input.posterRatingsLayout !== 'left-right';
-    const effectivePosterQualityBadgesPosition =
-      input.imageType === 'poster' && requestedTrendingPosition !== 'auto'
-        ? input.posterQualityBadgesPosition === requestedTrendingPosition
-          ? requestedTrendingPosition === 'top'
-            ? 'bottom'
-            : 'top'
-          : input.posterQualityBadgesPosition
-        : input.posterQualityBadgesPosition;
+    const effectivePosterQualityBadgesPosition = input.posterQualityBadgesPosition;
     const posterQualityBadgePlacement =
       input.imageType === 'poster'
         ? resolvePosterQualityBadgePlacement(
@@ -2701,11 +2694,16 @@ export const renderWithSharp = async (
                 key: trendingBadges[0]?.key || 'trendingweek',
                 label: trendingTagLabels.join(' • '),
                 communityBadgeTheme: input.communityBadgeTheme,
-                styleOverride: input.trendingTagStylePreset,
+                styleOverride:
+                  input.trendingTagStylePreset === 'auto-minimal'
+                    ? undefined
+                    : input.trendingTagStylePreset,
               },
               48,
               undefined,
-              input.trendingTagStylePreset,
+              input.trendingTagStylePreset === 'auto-minimal'
+                ? input.qualityBadgesStyle
+                : input.trendingTagStylePreset,
             )
           : null;
         const overlayWidth = styledQualityBadge

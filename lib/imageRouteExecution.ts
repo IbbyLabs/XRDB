@@ -329,6 +329,24 @@ export const executeImageRouteRender = async ({
         });
       }
 
+      if (requestState.imageType === 'poster' && requestState.forceTrendingPreviewBadge) {
+        const trendingKeys = new Set(['trending', 'trendingtoday', 'trendingweek']);
+        const hasRenderedTrendingBadge = streamBadges.some((badge) => trendingKeys.has(String(badge.key)));
+        if (!hasRenderedTrendingBadge) {
+          const preferredTrendingKey = requestState.qualityBadgePreferences.find((key) => trendingKeys.has(String(key)));
+          const resolvedTrendingKey =
+            preferredTrendingKey === 'trendingtoday' || preferredTrendingKey === 'trendingweek'
+              ? preferredTrendingKey
+              : 'trendingweek';
+          const trendingLabel =
+            resolvedTrendingKey === 'trendingtoday' ? 'Trending Today' : 'Trending This Week';
+          streamBadges = [
+            { key: resolvedTrendingKey, label: trendingLabel, value: '', iconUrl: '', accentColor: '' },
+            ...streamBadges,
+          ];
+        }
+      }
+
       const displayState = resolveImageRouteDisplayState({
         imageType: requestState.imageType,
         ratingPresentation: requestState.ratingPresentation,

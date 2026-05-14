@@ -328,6 +328,7 @@ export type ImageRouteRequestState = {
   simklClientId: string;
   simklClientSource: 'query' | 'session' | 'server' | 'none';
   debugRatings: boolean;
+  forceTrendingPreviewBadge: boolean;
   idPrefix: string;
   inputAnimeMappingProvider: AnimeMappingProvider | null;
   inputAnimeMappingExternalId: string | null;
@@ -1417,6 +1418,9 @@ export const resolveImageRouteRequestState = async ({
   const debugRatings = /^(1|true|yes|on)$/i.test(
     String(searchParams.get('debugRatings') || '').trim(),
   );
+  const forceTrendingPreviewBadge = /^(1|true|yes|on)$/i.test(
+    String(searchParams.get('posterTrendingPreview') || '').trim(),
+  );
   const {
     episodeSourceProviderValue,
     episodeSourceId: explicitEpisodeSourceId,
@@ -1859,6 +1863,7 @@ export const resolveImageRouteRequestState = async ({
     simklClientId,
     simklClientSource,
     debugRatings,
+    forceTrendingPreviewBadge,
     idPrefix,
     inputAnimeMappingProvider,
     inputAnimeMappingExternalId,

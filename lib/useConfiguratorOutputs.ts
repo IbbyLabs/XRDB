@@ -892,6 +892,13 @@ export function useConfiguratorOutputs({
         posterTrendingTagStylePreset !== 'auto-minimal' ||
         (posterTrendingTagTextColor ?? '').trim().length > 0
       );
+    const shouldForcePosterTrendingPreview =
+      previewType === 'poster' &&
+      (
+        posterTrendingTagPosition !== 'auto' ||
+        posterTrendingTagStylePreset !== 'auto-minimal' ||
+        (posterTrendingTagTextColor ?? '').trim().length > 0
+      );
     const effectiveQualityBadgePreferencesForType = shouldInjectTrendingPreviewBadge
       ? [...qualityBadgePreferencesForType, 'trendingweek']
       : qualityBadgePreferencesForType;
@@ -1266,6 +1273,9 @@ export function useConfiguratorOutputs({
       if (normalizedTrendingTextColor) {
         query.set('posterTrendingTagTextColor', normalizedTrendingTextColor);
       }
+      if (shouldForcePosterTrendingPreview) {
+        query.set('posterTrendingPreview', '1');
+      }
       if (posterNoBackgroundBadgeOutlineWidth !== DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_WIDTH_PX) {
         query.set('posterNoBackgroundBadgeOutlineWidth', String(posterNoBackgroundBadgeOutlineWidth));
         if (posterNoBackgroundBadgeOutlineColor !== DEFAULT_NO_BACKGROUND_BADGE_OUTLINE_COLOR) {
@@ -1514,6 +1524,9 @@ export function useConfiguratorOutputs({
     posterQualityBadgesPosition,
     posterQualityBadgeOffsetX,
     posterQualityBadgeOffsetY,
+    posterTrendingTagPosition,
+    posterTrendingTagStylePreset,
+    posterTrendingTagTextColor,
     ageRatingBadgePosition,
     posterQualityBadgesStyle,
     posterRemuxDisplayMode,

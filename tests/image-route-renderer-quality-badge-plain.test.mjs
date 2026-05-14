@@ -47,10 +47,34 @@ const hasNonWhitePixelInRect = async (buffer, left, top, width, height) => {
   return false;
 };
 
+const countNonWhitePixelsInRect = async (buffer, left, top, width, height) => {
+  const { data, info } = await sharp(buffer)
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  let count = 0;
+  for (let y = top; y < Math.min(info.height, top + height); y += 1) {
+    for (let x = left; x < Math.min(info.width, left + width); x += 1) {
+      const pixelIndex = (y * info.width + x) * info.channels;
+      const r = data[pixelIndex];
+      const g = data[pixelIndex + 1];
+      const b = data[pixelIndex + 2];
+      if (r < 240 || g < 240 || b < 240) {
+        count += 1;
+      }
+    }
+  }
+
+  return count;
+};
+
 const createPosterRenderInput = ({
   imgUrl,
   posterQualityBadgeOffsetX = 0,
   posterQualityBadgeOffsetY = 0,
+  qualityBadges = [createQualityBadge('hdr', 'HDR')],
+  posterTitleText = null,
+  posterLogoUrl = null,
 }) => ({
   imageType: 'poster',
   ratingPresentation: 'standard',
@@ -66,8 +90,8 @@ const createPosterRenderInput = ({
   logoBadgeMaxWidth: 0,
   logoBadgesPerRow: 0,
   posterRowHorizontalInset: 24,
-  posterTitleText: null,
-  posterLogoUrl: null,
+  posterTitleText,
+  posterLogoUrl,
   editorialOverlay: null,
   compactRingOverlay: null,
   genreBadge: null,
@@ -80,7 +104,7 @@ const createPosterRenderInput = ({
   badgeBottomOffset: 20,
   backdropEdgeInset: 12,
   badges: [],
-  qualityBadges: [createQualityBadge('hdr', 'HDR')],
+  qualityBadges,
   qualityBadgesSide: 'left',
   posterQualityBadgesPosition: 'auto',
   posterQualityBadgeOffsetX,
@@ -157,6 +181,47 @@ test('poster quality badge offsets clamp to safe render bounds', async () => {
 
   assert.ok(leftEdgeBandHasBadge);
   assert.equal(rightCenterBandHasBadge, false);
+});
+
+test('poster trending tags render in center region above logo while regular quality badges stay in bottom row', async () => {
+  const sourceSvg =
+    "<svg xmlns='http://www.w3.org/2000/svg' width='400' height='600' viewBox='0 0 400 600'><rect width='400' height='600' fill='#ffffff'/></svg>";
+  const logoSvg =
+    "<svg xmlns='http://www.w3.org/2000/svg' width='220' height='80' viewBox='0 0 220 80'><rect width='220' height='80' rx='14' fill='#111827'/></svg>";
+  const imgUrl = `data:image/svg+xml,${encodeURIComponent(sourceSvg)}`;
+  const posterLogoUrl = `data:image/svg+xml,${encodeURIComponent(logoSvg)}`;
+
+  const baseline = await renderWithSharp(
+    createPosterRenderInput({
+      imgUrl,
+      posterTitleText: 'Sample',
+      posterLogoUrl,
+      qualityBadges: [createQualityBadge('hdr', 'HDR')],
+    }),
+    { ...phases },
+  );
+  const withTrending = await renderWithSharp(
+    createPosterRenderInput({
+      imgUrl,
+      posterTitleText: 'Sample',
+      posterLogoUrl,
+      qualityBadges: [
+        createQualityBadge('hdr', 'HDR'),
+        createQualityBadge('trendingtoday', 'Trending Today'),
+        createQualityBadge('trendingweek', 'Trending This Week'),
+      ],
+    }),
+    { ...phases },
+  );
+
+  const baselineCenterCount = await countNonWhitePixelsInRect(baseline.body, 80, 250, 240, 210);
+  const trendingCenterCount = await countNonWhitePixelsInRect(withTrending.body, 80, 250, 240, 210);
+  const baselineBottom = await hasNonWhitePixelInRect(baseline.body, 120, 510, 160, 70);
+  const trendingBottom = await hasNonWhitePixelInRect(withTrending.body, 120, 510, 160, 70);
+
+  assert.ok(trendingCenterCount > baselineCenterCount + 500);
+  assert.ok(baselineBottom);
+  assert.ok(trendingBottom);
 });
 
 test('adaptive plain plate appears on busy backgrounds and stays off on flat backgrounds', async () => {
