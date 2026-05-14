@@ -46,6 +46,7 @@ type FinalImageRenderSeedInput = {
   ageRatingBadgePosition: string;
   qualityBadgesStyle: string;
   communityBadgeTheme: string;
+  trendingCommunityBadgeTheme: string;
   ageRatingBadgeStyle: string | null;
   releaseStatusBadgeStyle: string | null;
   qualityBadgesMax: number | null;
@@ -190,7 +191,11 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
       input.releaseStatusBadgeStyle === 'community-badge' ||
       (isPoster && input.trendingTagStylePreset === 'community-badge')
     )
-      ? input.communityBadgeTheme
+      ? (
+          isPoster && input.trendingTagStylePreset === 'community-badge'
+            ? input.trendingCommunityBadgeTheme
+            : input.communityBadgeTheme
+        )
       : '-',
     input.ageRatingBadgeStyle ?? '-',
     input.releaseStatusBadgeStyle ?? '-',

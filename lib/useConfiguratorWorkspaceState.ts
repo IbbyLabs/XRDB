@@ -206,6 +206,7 @@ export function useConfiguratorWorkspaceState() {
   const [posterQualityBadgesPosition, setPosterQualityBadgesPosition] = useState<PosterQualityBadgesPosition>('auto');
   const [posterTrendingTagPosition, setPosterTrendingTagPosition] = useState<'auto' | 'top' | 'bottom'>('auto');
   const [posterTrendingTagStylePreset, setPosterTrendingTagStylePreset] = useState<'auto-minimal' | QualityBadgeStyle>('auto-minimal');
+  const [posterTrendingCommunityBadgeTheme, setPosterTrendingCommunityBadgeTheme] = useState<CommunityBadgeTheme>(DEFAULT_COMMUNITY_BADGE_THEME);
   const [posterTrendingTagTextColor, setPosterTrendingTagTextColor] = useState<string>('');
   const [posterQualityBadgeOffsetX, setPosterQualityBadgeOffsetX] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
   const [posterQualityBadgeOffsetY, setPosterQualityBadgeOffsetY] = useState<number>(DEFAULT_RATING_STACK_OFFSET_PX);
@@ -884,6 +885,7 @@ export function useConfiguratorWorkspaceState() {
     posterQualityBadgesPosition,
     posterTrendingTagPosition,
     posterTrendingTagStylePreset,
+    posterTrendingCommunityBadgeTheme,
     posterTrendingTagTextColor,
     posterQualityBadgeOffsetX,
     posterQualityBadgeOffsetY,
@@ -1147,6 +1149,7 @@ export function useConfiguratorWorkspaceState() {
     setPosterQualityBadgesPosition,
     setPosterTrendingTagPosition,
     setPosterTrendingTagStylePreset,
+    setPosterTrendingCommunityBadgeTheme,
     setPosterTrendingTagTextColor,
     setPosterQualityBadgeOffsetX,
     setPosterQualityBadgeOffsetY,

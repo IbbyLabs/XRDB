@@ -531,6 +531,40 @@ test('prepared media state keeps the digital release status badge in quality bad
         };
       }
 
+      if (key.includes(':trending:day:page:1:')) {
+        return {
+          ok: true,
+          status: 200,
+          data: { results: [] },
+        };
+      }
+
+      if (key.includes(':trending:day:page:2:')) {
+        return {
+          ok: true,
+          status: 200,
+          data: { results: [] },
+        };
+      }
+
+      if (key.includes(':trending:week:page:1:')) {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            results: Array.from({ length: 7 }, (_, index) => ({ id: index + 1 })).concat({ id: 777 }),
+          },
+        };
+      }
+
+      if (key.includes(':trending:week:page:2:')) {
+        return {
+          ok: true,
+          status: 200,
+          data: { results: [] },
+        };
+      }
+
       if (key.includes(':watch-providers:v1')) {
         return {
           ok: true,
@@ -599,6 +633,49 @@ test('prepared media state includes configured trending and recognition tags in 
               keywords: [{ name: 'Oscar winner' }],
             },
           },
+        };
+      }
+
+      if (key.includes(':trending:day:page:1:v1')) {
+        return {
+          ok: true,
+          status: 200,
+          data: { results: [] },
+        };
+      }
+
+      if (key.includes(':trending:day:page:2:v1')) {
+        return {
+          ok: true,
+          status: 200,
+          data: { results: [] },
+        };
+      }
+
+      if (key.includes(':trending:week:page:1:v1')) {
+        return {
+          ok: true,
+          status: 200,
+          data: {
+            results: [
+              { id: 1 },
+              { id: 2 },
+              { id: 3 },
+              { id: 4 },
+              { id: 5 },
+              { id: 6 },
+              { id: 7 },
+              { id: 777 },
+            ],
+          },
+        };
+      }
+
+      if (key.includes(':trending:week:page:2:v1')) {
+        return {
+          ok: true,
+          status: 200,
+          data: { results: [] },
         };
       }
 

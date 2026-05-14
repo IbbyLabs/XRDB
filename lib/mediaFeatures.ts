@@ -43,6 +43,11 @@ export type MediaFeatureFlags = {
 
 export type RemuxDisplayMode = 'composite' | 'separate';
 
+export type TrendingRankingMembership = {
+  trendingDayRank: number | null;
+  trendingWeekRank: number | null;
+};
+
 type MediaFeatureBadgeMeta = {
   key: MediaFeatureBadgeKey;
   label: string;
@@ -724,30 +729,36 @@ export const buildTrendingRecognitionBadges = ({
   media,
   details,
   mediaType,
+  rankingMembership,
 }: {
   media: any;
   details: any;
   mediaType: 'movie' | 'tv';
+  rankingMembership?: TrendingRankingMembership | null;
 }) => {
   const badges: MediaFeatureBadgeMeta[] = [];
   const voteAverage = Number(details?.vote_average ?? media?.vote_average);
   const voteCount = Number(details?.vote_count ?? media?.vote_count);
-  const popularity = Number(details?.popularity ?? media?.popularity);
   const seasonCount = Number(details?.number_of_seasons ?? media?.number_of_seasons);
   const episodeCount = Number(details?.number_of_episodes ?? media?.number_of_episodes);
   const status = String(details?.status ?? media?.status ?? '').trim().toLowerCase();
   const keywords = extractKeywordNames(details?.keywords ?? media?.keywords);
+  const trendingDayRank = rankingMembership?.trendingDayRank ?? null;
+  const trendingWeekRank = rankingMembership?.trendingWeekRank ?? null;
+  const hasTrendingDayRank = typeof trendingDayRank === 'number' && Number.isFinite(trendingDayRank);
+  const hasTrendingWeekRank =
+    typeof trendingWeekRank === 'number' && Number.isFinite(trendingWeekRank);
 
-  if (Number.isFinite(popularity) && popularity >= 95) {
+  if (hasTrendingWeekRank) {
     badges.push(MEDIA_FEATURE_META_BY_KEY.trendingweek);
   }
-  if (Number.isFinite(popularity) && popularity >= 180) {
+  if (hasTrendingDayRank) {
     badges.push(MEDIA_FEATURE_META_BY_KEY.trendingtoday);
   }
-  if (Number.isFinite(popularity) && popularity >= 260) {
+  if (hasTrendingWeekRank && trendingWeekRank <= 25) {
     badges.push(MEDIA_FEATURE_META_BY_KEY.top25);
   }
-  if (Number.isFinite(popularity) && popularity >= 360) {
+  if (hasTrendingWeekRank && trendingWeekRank <= 10) {
     badges.push(MEDIA_FEATURE_META_BY_KEY.top10);
   }
 

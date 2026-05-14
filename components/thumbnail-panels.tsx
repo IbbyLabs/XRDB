@@ -489,7 +489,7 @@ export function AdvancedPanel() {
                           type="url"
                           className="xrdb-url-input"
                           value={iconUrl}
-                          placeholder="https://example.com/badge.png"
+                          placeholder="https://example.com/badge.png or https://example.com/badge.svg"
                           onChange={(event) => {
                             const nextUrl = event.target.value.trim();
                             q.onUpdateQualityBadgeAppearanceOverride((current) => {

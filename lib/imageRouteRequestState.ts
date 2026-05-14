@@ -305,6 +305,7 @@ export type ImageRouteRequestState = {
   ageRatingBadgePosition: AgeRatingBadgePosition;
   qualityBadgesStyle: QualityBadgeStyle;
   communityBadgeTheme: CommunityBadgeTheme;
+  trendingCommunityBadgeTheme: CommunityBadgeTheme;
   ageRatingBadgeStyle: QualityBadgeStyle | null;
   releaseStatusBadgeStyle: QualityBadgeStyle | null;
   qualityBadgesMax: number | null;
@@ -904,6 +905,9 @@ export const resolveImageRouteRequestState = async ({
   const genreBadgeTileAccentColor =
     normalizeHexColor(searchParams.get('genreBadgeTileAccentColor')) || null;
   const communityBadgeTheme = normalizeCommunityBadgeTheme(
+    searchParams.get('communityBadgeTheme'),
+  );
+  const trendingCommunityBadgeTheme = normalizeCommunityBadgeTheme(
     searchParams.get('posterTrendingCommunityTheme') ??
       searchParams.get('communityBadgeTheme'),
   );
@@ -1724,6 +1728,7 @@ export const resolveImageRouteRequestState = async ({
     ageRatingBadgePosition,
     qualityBadgesStyle,
     communityBadgeTheme,
+    trendingCommunityBadgeTheme,
     ageRatingBadgeStyle,
     releaseStatusBadgeStyle,
     qualityBadgesMax,
@@ -1840,6 +1845,7 @@ export const resolveImageRouteRequestState = async ({
     ageRatingBadgePosition,
     qualityBadgesStyle,
     communityBadgeTheme,
+    trendingCommunityBadgeTheme,
     ageRatingBadgeStyle,
     releaseStatusBadgeStyle,
     qualityBadgesMax,

@@ -439,6 +439,27 @@ ${buildMediaPlate(width, {
     `<defs><filter id="${filterId}" x="-28%" y="-34%" width="156%" height="188%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="1.2" stdDeviation="2.4" flood-color="#020617" flood-opacity="0.66" /><feDropShadow dx="0" dy="0" stdDeviation="1.35" flood-color="#020617" flood-opacity="0.28" /></filter></defs>`;
   const buildPlainQualitySurface = (width: number, filterId: string) =>
     `<rect x="5" y="7" width="${Math.max(0, width - 10)}" height="${Math.max(0, h - 14)}" rx="${Math.max(8, Math.round(h * 0.24))}" fill="rgba(2,6,23,0.10)" filter="url(#${filterId})" />`;
+  const buildSilverQualitySurface = (width: number, insetX = 2) => {
+    const rx = Math.max(8, Math.round(h * 0.24));
+    const outerX = Math.max(0, insetX);
+    const outerWidth = Math.max(0, width - outerX * 2);
+    const innerX = outerX + 4;
+    const innerWidth = Math.max(0, width - outerX * 2 - 4);
+    const innerHeight = Math.max(0, h - 4);
+    return `
+      <defs>
+        <linearGradient id="silverBadgeFill" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="rgba(245,245,244,0.16)" />
+          <stop offset="42%" stop-color="rgba(148,163,184,0.11)" />
+          <stop offset="100%" stop-color="rgba(15,23,42,0.22)" />
+        </linearGradient>
+        <filter id="quality-badge-silver-surface" x="-24%" y="-24%" width="148%" height="148%" color-interpolation-filters="sRGB">
+          <feDropShadow dx="0" dy="1" stdDeviation="1.8" flood-color="#020617" flood-opacity="0.52" />
+        </filter>
+      </defs>
+      <rect x="${outerX}" y="2" width="${outerWidth}" height="${innerHeight}" rx="${rx}" fill="url(#silverBadgeFill)" stroke="rgba(229,231,235,0.52)" stroke-width="1.2" filter="url(#quality-badge-silver-surface)" />
+      <rect x="${innerX}" y="5" width="${Math.max(0, width - outerX * 2 - 8)}" height="${Math.max(0, Math.round(h * 0.34))}" rx="${Math.max(6, rx - 3)}" fill="rgba(255,255,255,0.06)" />`;
+  };
   const buildSilverQualityMarkDefs = (filterId: string) =>
     `<defs><filter id="${filterId}" x="-25%" y="-30%" width="150%" height="170%" color-interpolation-filters="sRGB"><feDropShadow in="SourceAlpha" dx="0" dy="1.1" stdDeviation="1.8" flood-color="#020617" flood-opacity="0.52" result="silver-shadow" /><feFlood flood-color="#f4f4f5" flood-opacity="0.96" result="silver-fill" /><feComposite in="silver-fill" in2="SourceAlpha" operator="in" result="silver-mark" /><feMerge><feMergeNode in="silver-shadow" /><feMergeNode in="silver-mark" /></feMerge></filter></defs>`;
   const buildSilverQualityTextDefs = (filterId: string) =>
@@ -651,7 +672,10 @@ ${effectiveStyle === 'plain' ? plainStroke : rect}
     return buildAssetBackedBadgeSvg('bdremux', 'standard');
   }
 
-  const accentColor = mediaFrameByKey[key as MediaFeatureBadgeKey]?.stroke ?? 'rgba(255,255,255,0.68)';
+  const accentColor =
+    effectiveStyle === 'media'
+      ? mediaFrameByKey[key as MediaFeatureBadgeKey]?.stroke ?? '#7dd3fc'
+      : mediaFrameByKey[key as MediaFeatureBadgeKey]?.stroke ?? 'rgba(255,255,255,0.68)';
   const resolvedAccentColor = badge.accentColor || accentColor;
 
   if (hasStreamingServiceLogo) {
@@ -721,10 +745,30 @@ ${buildCenteredProviderLogoImage({
     };
   }
 
-  const textSize = Math.round(h * 0.33);
-  const sidePadding = Math.max(10, Math.round(h * 0.24));
+  const textSize =
+    key === 'releasestatus'
+      ? Math.max(13, Math.round(h * 0.33))
+      : Math.max(
+          14,
+          Math.round(
+            h *
+              (effectiveStyle === 'glass'
+                ? 0.37
+                : effectiveStyle === 'square'
+                  ? 0.36
+                  : effectiveStyle === 'media'
+                    ? 0.35
+                    : effectiveStyle === 'silver'
+                      ? 0.35
+                      : 0.34),
+          ),
+        );
+  const sidePadding =
+    effectiveStyle === 'plain' || effectiveStyle === 'silver'
+      ? Math.max(14, Math.round(h * 0.3))
+      : Math.max(10, Math.round(h * 0.24));
   const textWidth = widthOverride ?? estimateQualityTextBadgeWidth(label, textSize, sidePadding);
-  const textY = Math.round(h * 0.66);
+  const textY = Math.round(h / 2);
   if (effectiveStyle === 'media') {
     return {
       width: textWidth,
@@ -732,23 +776,27 @@ ${buildCenteredProviderLogoImage({
       svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${textWidth}" height="${h}" viewBox="0 0 ${textWidth} ${h}">
 ${buildMediaPlate(textWidth, {
   stroke: hexColorToRgba(resolvedAccentColor, 0.68, 'rgba(255,255,255,0.68)'),
-  fill: 'rgba(12,18,32,0.24)',
-  strokeScale: 0.78,
-  radiusScale: 0.27,
-  highlightOpacity: 0.055,
+  fill: 'rgba(7,16,28,0.34)',
+  strokeScale: 0.92,
+  radiusScale: 0.2,
+  highlightOpacity: 0.09,
 })}
-<text x="${textWidth / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${hexColorToRgba(resolvedAccentColor, 0.97, '#f5f5f4')}" letter-spacing="0.012em">${escapeXml(label)}</text>
+<text x="${textWidth / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="900" text-anchor="middle" dominant-baseline="middle" fill="${hexColorToRgba(resolvedAccentColor, 0.99, '#dbeafe')}" letter-spacing="0.08em">${escapeXml(label)}</text>
 </svg>`,
     };
   }
 
   const rect = buildRect(textWidth, resolvedAccentColor);
-  const plainStroke =
-    effectiveStyle === 'plain' ? buildPlainQualitySurface(textWidth, 'quality-badge-text-fallback-surface') : '';
-  const filter = effectiveStyle === 'plain' ? ' filter="url(#quality-badge-text-fallback-shadow)"' : '';
+  const silverSurface = effectiveStyle === 'silver'
+    ? buildSilverQualitySurface(textWidth, Math.max(14, Math.round(h * 0.34)))
+    : '';
+  const plainStroke = effectiveStyle === 'plain' ? '' : '';
+  const filter = effectiveStyle === 'plain' ? ' filter="url(#quality-badge-text-fallback-shadow)"' : effectiveStyle === 'silver' ? ' filter="url(#quality-badge-silver-text)"' : '';
   const defs =
     effectiveStyle === 'plain'
       ? `${buildPlainQualityShadowDefs('quality-badge-text-fallback-surface')}<defs><filter id="quality-badge-text-fallback-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="0.9" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.50" /></filter></defs>`
+      : effectiveStyle === 'silver'
+        ? buildSilverQualityTextDefs('quality-badge-silver-text')
       : '';
   const textFill =
     effectiveStyle === 'plain' ? hexColorToRgba(resolvedAccentColor, 0.95, '#f5f5f4') : '#f5f5f4';
@@ -757,8 +805,8 @@ ${buildMediaPlate(textWidth, {
     height: h,
     svg: `<svg xmlns="http://www.w3.org/2000/svg" width="${textWidth}" height="${h}" viewBox="0 0 ${textWidth} ${h}">
 ${defs}
-${effectiveStyle === 'plain' ? plainStroke : rect}
-<text x="${textWidth / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="800" text-anchor="middle" fill="${textFill}"${effectiveStyle === 'plain' ? plainTextOutlineAttributes : ''}${filter}>${escapeXml(label)}</text>
+${effectiveStyle === 'plain' ? plainStroke : effectiveStyle === 'silver' ? silverSurface : rect}
+<text x="${textWidth / 2}" y="${textY}" font-family="${fontFamily}" font-size="${textSize}" font-weight="${effectiveStyle === 'glass' ? '900' : effectiveStyle === 'square' ? '850' : '800'}" text-anchor="middle" dominant-baseline="middle" fill="${effectiveStyle === 'silver' ? silverText : textFill}" letter-spacing="${effectiveStyle === 'glass' ? '0.06em' : effectiveStyle === 'square' ? '0.045em' : '0.02em'}"${effectiveStyle === 'plain' ? plainTextOutlineAttributes : ''}${filter}>${escapeXml(label)}</text>
 </svg>`,
   };
 };

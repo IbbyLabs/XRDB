@@ -13,6 +13,7 @@ import {
   outputFormatToExtension,
   type OutputFormat,
 } from './imageRouteMedia.ts';
+import type { BadgeKey } from './imageRouteConfig.ts';
 import { resolveImageRouteMediaTarget } from './imageRouteMediaTarget.ts';
 import { prepareImageRouteMediaState } from './imageRoutePreparedMedia.ts';
 import { resolveImageRouteDisplayState } from './imageRouteDisplayState.ts';
@@ -97,6 +98,49 @@ export const resolveFinalImageCacheTtlMs = ({
   return renderedRatingCacheTtlCandidates.length > 0
     ? Math.min(...renderedRatingCacheTtlCandidates)
     : TMDB_CACHE_TTL_MS;
+};
+
+const TRENDING_PREVIEW_KEYS = new Set<BadgeKey>([
+  'trendingtoday',
+  'trendingweek',
+  'top10',
+  'top25',
+  'bingeready',
+  'fanfavourite',
+  'toprated',
+  'oscarwinner',
+  'oscarnominee',
+  'emmywinner',
+  'emmynominee',
+]);
+
+export const buildForcedPreviewTrendingBadges = ({
+  existingBadges,
+  qualityBadgePreferences,
+}: {
+  existingBadges: Array<{ key: string }>;
+  qualityBadgePreferences: string[];
+}) => {
+  const hasRealTrendingBadge = existingBadges.some((badge) =>
+    TRENDING_PREVIEW_KEYS.has(badge.key as BadgeKey),
+  );
+  if (hasRealTrendingBadge) {
+    return [];
+  }
+
+  const previewKey =
+    qualityBadgePreferences.find((key) => TRENDING_PREVIEW_KEYS.has(key as BadgeKey)) ??
+    'trendingweek';
+
+  return [
+    {
+      key: previewKey as BadgeKey,
+      label: 'Preview Tag',
+      value: '',
+      iconUrl: '',
+      accentColor: '',
+    },
+  ];
 };
 
 export const executeImageRouteRender = async ({
@@ -330,20 +374,12 @@ export const executeImageRouteRender = async ({
       }
 
       if (requestState.imageType === 'poster' && requestState.forceTrendingPreviewBadge) {
-        const trendingKeys = new Set(['trending', 'trendingtoday', 'trendingweek']);
-        const hasRenderedTrendingBadge = streamBadges.some((badge) => trendingKeys.has(String(badge.key)));
-        if (!hasRenderedTrendingBadge) {
-          const preferredTrendingKey = requestState.qualityBadgePreferences.find((key) => trendingKeys.has(String(key)));
-          const resolvedTrendingKey =
-            preferredTrendingKey === 'trendingtoday' || preferredTrendingKey === 'trendingweek'
-              ? preferredTrendingKey
-              : 'trendingweek';
-          const trendingLabel =
-            resolvedTrendingKey === 'trendingtoday' ? 'Trending Today' : 'Trending This Week';
-          streamBadges = [
-            { key: resolvedTrendingKey, label: trendingLabel, value: '', iconUrl: '', accentColor: '' },
-            ...streamBadges,
-          ];
+        const syntheticTrendingBadges = buildForcedPreviewTrendingBadges({
+          existingBadges: streamBadges,
+          qualityBadgePreferences: requestState.qualityBadgePreferences,
+        });
+        if (syntheticTrendingBadges.length > 0) {
+          streamBadges = [...syntheticTrendingBadges, ...streamBadges];
         }
       }
 
@@ -519,6 +555,7 @@ export const executeImageRouteRender = async ({
           ageRatingBadgePosition: requestState.ageRatingBadgePosition,
           qualityBadgesStyle: requestState.qualityBadgesStyle,
           communityBadgeTheme: requestState.communityBadgeTheme,
+          trendingCommunityBadgeTheme: requestState.trendingCommunityBadgeTheme,
           qualityBadgeScalePercent: renderLayout.effectiveQualityBadgeScalePercent,
           posterRatingsLayout: effectivePosterRatingsLayout,
           posterRatingsMaxPerSide: effectivePosterRatingsMaxPerSide,

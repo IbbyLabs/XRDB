@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  buildTrendingRecognitionBadges,
   buildNetworkBadgesFromTvNetworks,
   buildNetworkBadgesFromWatchProviderResults,
   buildMediaFeatureBadgesFromFlags,
@@ -148,6 +149,55 @@ test('generic media badge labels collapse user facing hyphens into spaces', () =
 
 test('certification badge meta stores sanitized labels', () => {
   assert.equal(buildCertificationBadgeMeta('tv-ma').label, 'TV MA');
+});
+
+test('trending recognition badges use source-backed ranking membership for time-window labels', () => {
+  const badges = buildTrendingRecognitionBadges({
+    media: {
+      popularity: 999,
+      vote_average: 8.2,
+      vote_count: 6000,
+    },
+    details: {
+      popularity: 999,
+      vote_average: 8.2,
+      vote_count: 6000,
+      keywords: { keywords: [] },
+    },
+    mediaType: 'movie',
+    rankingMembership: {
+      trendingDayRank: 4,
+      trendingWeekRank: 9,
+    },
+  });
+
+  assert.deepEqual(
+    badges.map((badge) => badge.key),
+    ['trendingweek', 'trendingtoday', 'top25', 'top10', 'toprated', 'fanfavourite'],
+  );
+});
+
+test('trending recognition badges do not infer time-window labels from popularity alone', () => {
+  const badges = buildTrendingRecognitionBadges({
+    media: {
+      popularity: 999,
+      vote_average: 8.2,
+      vote_count: 6000,
+    },
+    details: {
+      popularity: 999,
+      vote_average: 8.2,
+      vote_count: 6000,
+      keywords: { keywords: [] },
+    },
+    mediaType: 'movie',
+    rankingMembership: null,
+  });
+
+  assert.deepEqual(
+    badges.map((badge) => badge.key),
+    ['toprated', 'fanfavourite'],
+  );
 });
 
 test('movie certification resolution prefers the requested region first', () => {

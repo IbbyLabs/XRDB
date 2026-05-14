@@ -572,7 +572,7 @@ export function QualityPanel() {
     { id: 'bottom', label: 'Bottom' },
   ] as const;
   const trendingStylePresetOptions = [
-    { id: 'auto-minimal', label: 'Auto minimal' },
+    { id: 'auto-minimal', label: 'Auto Minimal' },
     ...QUALITY_BADGE_STYLE_OPTIONS,
   ] as const;
 
@@ -699,10 +699,6 @@ export function QualityPanel() {
         />
       </ControlRow>
 
-      <ControlRow label="Trending background">
-        <p className="xrdb-control-description">Adaptive minimal</p>
-      </ControlRow>
-
       {isAdvancedMode ? (
         <>
           <ControlRow label="Trending style">
@@ -712,27 +708,38 @@ export function QualityPanel() {
               onChange={q.onSelectPosterTrendingTagStylePreset}
             />
           </ControlRow>
-          <ControlRow label="Trending text colour">
-            <div className="xrdb-control-stack">
-              <p className="xrdb-control-description">Applies to auto minimal too.</p>
-              <div className="xrdb-color-input-row">
-                <input
-                  type="color"
-                  className="xrdb-color-input"
-                  value={q.posterTrendingTagTextColor || '#f8fbff'}
-                  onChange={(event) => q.onSelectPosterTrendingTagTextColor(event.target.value)}
-                  aria-label="Trending tag text colour"
-                />
-                <button
-                  type="button"
-                  className="xrdb-btn-ghost"
-                  onClick={() => q.onSelectPosterTrendingTagTextColor('')}
-                >
-                  Auto
-                </button>
+          {q.posterTrendingTagStylePreset === 'community-badge' ? (
+            <ControlRow label="Trending theme">
+              <OptionPills
+                options={COMMUNITY_BADGE_THEME_OPTIONS}
+                value={q.posterTrendingCommunityBadgeTheme}
+                onChange={q.onSelectPosterTrendingCommunityBadgeTheme}
+              />
+            </ControlRow>
+          ) : null}
+          {q.posterTrendingTagStylePreset === 'auto-minimal' ? (
+            <ControlRow label="Trending text colour">
+              <div className="xrdb-control-stack">
+                <p className="xrdb-control-description">Only available for Auto Minimal.</p>
+                <div className="xrdb-color-input-row">
+                  <input
+                    type="color"
+                    className="xrdb-color-input"
+                    value={q.posterTrendingTagTextColor || '#f8fbff'}
+                    onChange={(event) => q.onSelectPosterTrendingTagTextColor(event.target.value)}
+                    aria-label="Trending tag text colour"
+                  />
+                  <button
+                    type="button"
+                    className="xrdb-btn-ghost"
+                    onClick={() => q.onSelectPosterTrendingTagTextColor('')}
+                  >
+                    Auto
+                  </button>
+                </div>
               </div>
-            </div>
-          </ControlRow>
+            </ControlRow>
+          ) : null}
         </>
       ) : null}
 
@@ -772,7 +779,7 @@ export function QualityPanel() {
                       type="url"
                       className="xrdb-url-input"
                       value={iconUrl}
-                      placeholder="https://example.com/badge.png"
+                      placeholder="https://example.com/badge.png or https://example.com/badge.svg"
                       onChange={(event) => {
                         const nextUrl = event.target.value.trim();
                         q.onUpdateQualityBadgeAppearanceOverride((current) => {
