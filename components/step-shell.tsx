@@ -43,6 +43,30 @@ function looksLikeMediaTarget(value: string, step: ArtworkStep): boolean {
   return /^tmdb:(movie|tv):\d+$/i.test(trimmed);
 }
 
+function looksLikeMalformedMediaTarget(value: string, step: ArtworkStep): boolean {
+  const trimmed = value.trim();
+  if (!trimmed || looksLikeMediaTarget(trimmed, step)) {
+    return false;
+  }
+
+  if (/^(imdb:|tt\d*)/i.test(trimmed)) {
+    return true;
+  }
+
+  if (/^tmdb:/i.test(trimmed)) {
+    return true;
+  }
+
+  return false;
+}
+
+function mediaTargetFormatHint(step: ArtworkStep): string {
+  if (step === 'thumbnail') {
+    return 'Use imdb:tt1234567, tmdb:movie:603, or tmdb:tv:1399:1:1 for episodes.';
+  }
+  return 'Use imdb:tt1234567, tt1234567, tmdb:movie:603, or tmdb:tv:1399.';
+}
+
 const PANEL_COPY: Record<ArtworkStep, Record<ControlTab, { title: string; body: string }>> = {
   poster: {
     providers: {
@@ -166,6 +190,9 @@ export function StepShell({
   const [floatingPreviewResizing, setFloatingPreviewResizing] = useState(false);
   const [floatingPreviewSize, setFloatingPreviewSize] = useState({ width: 360, height: 242 });
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [targetValidationMessage, setTargetValidationMessage] = useState<string | null>(null);
+  const [targetValidationVariant, setTargetValidationVariant] = useState<'idle' | 'success' | 'error'>('idle');
+  const [showQuickStartHint, setShowQuickStartHint] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
   const fullscreenRef = useRef<HTMLDivElement>(null);
   const targetInputRef = useRef<HTMLInputElement>(null);
@@ -173,6 +200,7 @@ export function StepShell({
   const floatingDragOffsetRef = useRef({ x: 0, y: 0 });
   const floatingPreviewWindowRef = useRef<HTMLDivElement>(null);
   const floatingResizeStartRef = useRef({ pointerX: 0, pointerY: 0, width: 360, height: 242 });
+  const quickStartDismissTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 
   const ctx = useOptionalConfiguratorContext();
@@ -318,7 +346,9 @@ export function StepShell({
         activeElement instanceof HTMLElement &&
         (activeElement.tagName === 'INPUT' ||
           activeElement.tagName === 'SELECT' ||
-          activeElement.tagName === 'TEXTAREA');
+          activeElement.tagName === 'TEXTAREA' ||
+          activeElement.getAttribute('role') === 'textbox' ||
+          activeElement.isContentEditable);
 
       if (event.key === 'Escape') {
         if (fullScreenOpen) {
@@ -332,6 +362,22 @@ export function StepShell({
       }
 
       if (inInput) {
+        return;
+      }
+
+      if (event.key === '/' && !overlayOpen && !fullScreenOpen) {
+        event.preventDefault();
+        targetInputRef.current?.focus();
+        targetInputRef.current?.select();
+        return;
+      }
+
+      if (!event.metaKey && !event.ctrlKey && !event.altKey && /^[1-5]$/.test(event.key) && !overlayOpen && !fullScreenOpen) {
+        const tab = visibleTabs[Number.parseInt(event.key, 10) - 1];
+        if (tab) {
+          event.preventDefault();
+          setActiveTab(tab.key);
+        }
         return;
       }
 
@@ -362,7 +408,7 @@ export function StepShell({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [overlayOpen, fullScreenOpen, nextStep, router, ctx]);
+  }, [overlayOpen, fullScreenOpen, nextStep, router, ctx, visibleTabs]);
 
   const handleTargetSubmit = () => {
     if (!mediaTarget) {
@@ -370,11 +416,23 @@ export function StepShell({
     }
 
     const trimmed = targetInputRef.current?.value.trim() ?? '';
+    setTargetValidationMessage(null);
+    setTargetValidationVariant('idle');
     if (!trimmed) {
       return;
     }
 
+    if (looksLikeMalformedMediaTarget(trimmed, step)) {
+      dismissQuickStartHint();
+      setTargetValidationMessage(`That ID format is not valid. ${mediaTargetFormatHint(step)}`);
+      setTargetValidationVariant('error');
+      return;
+    }
+
     if (looksLikeMediaTarget(trimmed, step)) {
+      dismissQuickStartHint();
+      setTargetValidationMessage(`ID recognised. Press Search or Enter to load ${step === 'thumbnail' ? 'this episode' : 'this title'}.`);
+      setTargetValidationVariant('success');
       if (step === 'thumbnail') {
         mediaTarget.onThumbnailEpisodeChange(trimmed);
       } else {
@@ -398,9 +456,22 @@ export function StepShell({
     }
 
     const trimmed = value.trim();
+    setTargetValidationMessage(null);
+    setTargetValidationVariant('idle');
     mediaTarget.onMediaSearchQueryChange(trimmed);
+    dismissQuickStartHint();
 
     if (!trimmed || looksLikeMediaTarget(trimmed, step)) {
+      if (trimmed) {
+        setTargetValidationMessage(`ID recognised. Press Search or Enter to load ${step === 'thumbnail' ? 'this episode' : 'this title'}.`);
+        setTargetValidationVariant('success');
+      }
+      return;
+    }
+
+    if (looksLikeMalformedMediaTarget(trimmed, step)) {
+      setTargetValidationMessage(`ID format check: ${mediaTargetFormatHint(step)}`);
+      setTargetValidationVariant('error');
       return;
     }
 
@@ -434,6 +505,45 @@ export function StepShell({
   };
 
   const docsCaptureReady = ctx?.docsCaptureReady ?? false;
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const storageKey = `xrdb-step-quick-start-dismissed-${step}`;
+    const frame = window.requestAnimationFrame(() => {
+      const dismissed = window.localStorage.getItem(storageKey) === '1';
+      setShowQuickStartHint(!dismissed);
+
+      if (!dismissed) {
+        if (quickStartDismissTimeoutRef.current) {
+          clearTimeout(quickStartDismissTimeoutRef.current);
+        }
+        quickStartDismissTimeoutRef.current = window.setTimeout(() => {
+          window.localStorage.setItem(storageKey, '1');
+          setShowQuickStartHint(false);
+        }, 8000);
+      }
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      if (quickStartDismissTimeoutRef.current) {
+        clearTimeout(quickStartDismissTimeoutRef.current);
+      }
+    };
+  }, [step]);
+
+  const dismissQuickStartHint = () => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(`xrdb-step-quick-start-dismissed-${step}`, '1');
+    }
+    if (quickStartDismissTimeoutRef.current) {
+      clearTimeout(quickStartDismissTimeoutRef.current);
+    }
+    setShowQuickStartHint(false);
+  };
 
   return (
     <section
@@ -544,6 +654,22 @@ export function StepShell({
                   placeholder="e.g. Inception or imdb:tt1375666"
                   aria-label="Search title or ID"
                   aria-busy={mediaTarget.mediaSearchLoading}
+                  aria-describedby={targetValidationMessage ? 'poster-target-feedback' : undefined}
+                  onBlur={(event) => {
+                    const trimmed = event.currentTarget.value.trim();
+                    if (!trimmed) {
+                      return;
+                    }
+                    if (looksLikeMediaTarget(trimmed, step)) {
+                      setTargetValidationMessage(`ID recognised. Press Search or Enter to load ${step === 'thumbnail' ? 'this episode' : 'this title'}.`);
+                      setTargetValidationVariant('success');
+                      return;
+                    }
+                    if (looksLikeMalformedMediaTarget(trimmed, step)) {
+                      setTargetValidationMessage(`That ID format is not valid. ${mediaTargetFormatHint(step)}`);
+                      setTargetValidationVariant('error');
+                    }
+                  }}
                 />
                 <button
                   type="button"
@@ -563,6 +689,7 @@ export function StepShell({
                 </button>
               </div>
               <p className="xrdb-target-help">Type a title to search, or paste an IMDb or TMDB ID to switch the preview target directly.</p>
+              <p className="xrdb-target-shortcuts">Shortcuts: Press / to focus search. Press 1 to 5 to jump tabs.</p>
             </label>
             {mediaTarget.tmdbKeyAvailable ? (
               <div className="xrdb-target-lang-field">
@@ -634,8 +761,14 @@ export function StepShell({
                 </label>
               </div>
             ) : null}
-            {mediaTarget.mediaSearchError ? (
-              <p className="xrdb-target-error" role="alert">{mediaTarget.mediaSearchError}</p>
+            {mediaTarget.mediaSearchError || targetValidationMessage ? (
+              <p
+                id="poster-target-feedback"
+                className={`xrdb-target-error${targetValidationVariant === 'success' ? ' xrdb-target-error-success' : ''}`}
+                role="alert"
+              >
+                {targetValidationMessage ?? mediaTarget.mediaSearchError}
+              </p>
             ) : null}
             {mediaTarget.pinnedTargets.length ? (
               <div className="xrdb-target-pins" aria-label="Pinned targets">
@@ -710,6 +843,25 @@ export function StepShell({
                 })}
               </div>
             ) : null}
+          </div>
+        ) : null}
+
+        {showQuickStartHint ? (
+          <div className="xrdb-step-quickstart" role="status" aria-live="polite">
+            <p className="xrdb-step-quickstart-copy">Quick start: choose Providers first, then tune Style and Position. Advanced controls are optional.</p>
+            <button
+              type="button"
+              className="xrdb-step-quickstart-dismiss"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.localStorage.setItem(`xrdb-step-quick-start-dismissed-${step}`, '1');
+                }
+                setShowQuickStartHint(false);
+              }}
+              aria-label="Dismiss quick start guidance"
+            >
+              Dismiss
+            </button>
           </div>
         ) : null}
 

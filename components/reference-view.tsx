@@ -16,6 +16,7 @@ import {
 } from '@/lib/siteBrand';
 
 const SECTIONS = [
+  { id: 'overview', label: 'Overview' },
   { id: 'route-examples', label: 'Route examples' },
   { id: 'id-formats', label: 'ID formats' },
   { id: 'artwork-sources', label: 'Artwork sources' },
@@ -32,7 +33,7 @@ const SECTIONS = [
 type SectionId = (typeof SECTIONS)[number]['id'];
 
 export function ReferenceView() {
-  const [activeSection, setActiveSection] = useState<SectionId>('route-examples');
+  const [activeSection, setActiveSection] = useState<SectionId>('overview');
   const [mobileOpen, setMobileOpen] = useState(false);
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
@@ -105,7 +106,7 @@ export function ReferenceView() {
     <div className="xrdb-reference-layout w-full px-4 py-6 md:px-6 md:py-8 lg:grid lg:grid-cols-[minmax(14rem,17rem)_minmax(0,1fr)] lg:items-start lg:gap-8">
       <nav className="hidden lg:block min-w-0 lg:sticky lg:top-20 self-start z-10">
         <div className="xrdb-panel rounded-2xl p-4 space-y-1">
-          <div className="text-[11px] font-semibold uppercase tracking-wide text-[color:var(--muted)] mb-3">Contents</div>
+          <div className="text-[12px] font-semibold uppercase tracking-wide text-[color:var(--muted)] mb-3">Contents</div>
           {SECTIONS.map((section) => (
             <a
               key={section.id}
@@ -126,20 +127,21 @@ export function ReferenceView() {
         <button
           type="button"
           onClick={() => setMobileOpen((prev) => !prev)}
+          aria-expanded={mobileOpen}
+          aria-controls="reference-mobile-sections"
           className="xrdb-panel w-full rounded-xl px-4 py-3 flex items-center justify-between text-sm font-semibold text-[color:var(--ink)]"
         >
           <span>Jump to: {activeLabel}</span>
           <ChevronDown className={`h-4 w-4 text-[color:var(--muted)] transition-transform ${mobileOpen ? 'rotate-180' : ''}`} />
         </button>
         {mobileOpen && (
-          <div className="xrdb-reference-mobile-menu" role="listbox" aria-label="Reference sections">
+          <nav id="reference-mobile-sections" className="xrdb-reference-mobile-menu" aria-label="Reference sections">
             {SECTIONS.map((section) => (
               <a
                 key={section.id}
                 href={`#${section.id}`}
                 onClick={() => setMobileOpen(false)}
-                role="option"
-                aria-selected={activeSection === section.id}
+                aria-current={activeSection === section.id ? 'true' : undefined}
                 className={`block rounded-lg px-3 py-2 text-[13px] transition-colors ${
                   activeSection === section.id
                     ? 'bg-[color:var(--accent-dim)] text-[color:var(--accent-text)] font-semibold'
@@ -149,11 +151,34 @@ export function ReferenceView() {
                 {section.label}
               </a>
             ))}
-          </div>
+          </nav>
         )}
       </div>
 
       <div className="min-w-0 space-y-10 lg:pt-1">
+        <ReferenceSection id="overview" title="Overview" ref={registerRef('overview')}>
+          <p>
+            Use this page as a quick map before you tune details. Start with route patterns, then pick ID formats, then adjust source and presentation controls.
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <a href="#route-examples" className="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2 text-[13px] font-semibold text-[color:var(--ink)] hover:border-[color:color-mix(in_oklch,var(--accent)_40%,var(--border))] transition-colors">
+              Start with route examples
+            </a>
+            <a href="#id-formats" className="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2 text-[13px] font-semibold text-[color:var(--ink)] hover:border-[color:color-mix(in_oklch,var(--accent)_40%,var(--border))] transition-colors">
+              Pick the right ID format
+            </a>
+            <a href="#proxy" className="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2 text-[13px] font-semibold text-[color:var(--ink)] hover:border-[color:color-mix(in_oklch,var(--accent)_40%,var(--border))] transition-colors">
+              Configure proxy behavior
+            </a>
+            <a href="#aiometadata-exports" className="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2 text-[13px] font-semibold text-[color:var(--ink)] hover:border-[color:color-mix(in_oklch,var(--accent)_40%,var(--border))] transition-colors">
+              Copy AIOMetadata exports
+            </a>
+          </div>
+          <p>
+            If you are new to XRDB: run Poster first, keep default provider ordering, then add proxy controls only after your base artwork output looks right.
+          </p>
+        </ReferenceSection>
+
         <ReferenceSection id="route-examples" title="Route examples" ref={registerRef('route-examples')}>
           <p>
             XRDB provides three main image endpoints. Poster, backdrop, and logo artwork uses{' '}

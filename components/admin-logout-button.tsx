@@ -11,7 +11,7 @@ export function AdminLogoutButton() {
   };
 
   return (
-    <button className="xrdb-admin-logout-btn" onClick={logout}>
+    <button className="xrdb-admin-logout-btn" onClick={logout} type="button">
       Sign out
     </button>
   );

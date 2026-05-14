@@ -85,7 +85,7 @@ function ThemeModePopover() {
         className="xrdb-theme-icon-btn"
         aria-label={`Colour mode: ${activeModeLabel}. Tap to change.`}
         aria-expanded={open}
-        aria-haspopup="listbox"
+        aria-haspopup="menu"
         onClick={() => setOpen(o => !o)}
       >
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -93,13 +93,13 @@ function ThemeModePopover() {
         </svg>
       </button>
       {open ? (
-        <div className="xrdb-nav-mode-popover" role="listbox" aria-label="Color mode">
+        <div className="xrdb-nav-mode-popover" role="menu" aria-label="Color mode">
           {MODE_OPTIONS.map(({ value, label }) => (
             <button
               key={value}
               type="button"
-              role="option"
-              aria-selected={pref === value}
+              role="menuitemradio"
+              aria-checked={pref === value}
               className={`xrdb-nav-mode-popover-item${pref === value ? ' xrdb-nav-mode-popover-item-active' : ''}`}
               onClick={() => handleSelect(value)}
             >
@@ -156,7 +156,7 @@ export function NavBar({ adminEnabled = false }: { adminEnabled?: boolean }) {
             </div>
           </Link>
           <div className="xrdb-nav-build-meta" aria-label={`Build ${NAV_VERSION_LABEL}`}>
-            <span className="xrdb-nav-brand-version">{NAV_VERSION_LABEL}</span>
+            <span className="xrdb-nav-brand-version">Live {NAV_VERSION_LABEL}</span>
             {NAV_VERSION_COMMIT_HASH && NAV_VERSION_COMMIT_URL ? (
               <a
                 className="xrdb-nav-commit-link"
@@ -165,7 +165,7 @@ export function NavBar({ adminEnabled = false }: { adminEnabled?: boolean }) {
                 rel="noopener noreferrer"
                 aria-label={`Open commit ${NAV_VERSION_COMMIT_HASH}`}
               >
-                {NAV_VERSION_COMMIT_HASH}
+                Build details
               </a>
             ) : null}
           </div>
