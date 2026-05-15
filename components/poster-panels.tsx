@@ -343,14 +343,16 @@ export function StylePanel() {
                 onChange={look.onSelectGenreBadgeStyle}
               />
             </ControlRow>
-            <ControlRow label="Genre position">
-              <OptionPills
-                options={GENRE_BADGE_POSITION_OPTIONS}
-                value={look.activeGenreBadgePosition}
-                onChange={look.onSelectGenreBadgePosition}
-              />
-              <p className="xrdb-control-description">Where on the poster the genre label strip appears.</p>
-            </ControlRow>
+            {look.activeGenreBadgeStyle !== 'clean' ? (
+              <ControlRow label="Genre position">
+                <OptionPills
+                  options={GENRE_BADGE_POSITION_OPTIONS}
+                  value={look.activeGenreBadgePosition}
+                  onChange={look.onSelectGenreBadgePosition}
+                />
+                <p className="xrdb-control-description">Where on the poster the genre label strip appears.</p>
+              </ControlRow>
+            ) : null}
             <ControlRow label="Genre size">
               <div className="xrdb-number-control">
                 <input
