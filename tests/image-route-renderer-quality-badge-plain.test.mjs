@@ -68,6 +68,27 @@ const countNonWhitePixelsInRect = async (buffer, left, top, width, height) => {
   return count;
 };
 
+const countBrightPixelsInRect = async (buffer, left, top, width, height) => {
+  const { data, info } = await sharp(buffer)
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  let count = 0;
+  for (let y = top; y < Math.min(info.height, top + height); y += 1) {
+    for (let x = left; x < Math.min(info.width, left + width); x += 1) {
+      const pixelIndex = (y * info.width + x) * info.channels;
+      const r = data[pixelIndex];
+      const g = data[pixelIndex + 1];
+      const b = data[pixelIndex + 2];
+      if (r > 185 && g > 185 && b > 185) {
+        count += 1;
+      }
+    }
+  }
+
+  return count;
+};
+
 const createPosterRenderInput = ({
   imgUrl,
   posterQualityBadgeOffsetX = 0,
@@ -222,6 +243,63 @@ test('poster trending tags render in center region above logo while regular qual
   assert.ok(trendingCenterCount > baselineCenterCount + 500);
   assert.ok(baselineBottom);
   assert.ok(trendingBottom);
+});
+
+test('auto-minimal trending tags do not occlude clean genre label in poster layouts', async () => {
+  const sourceSvg =
+    "<svg xmlns='http://www.w3.org/2000/svg' width='400' height='600' viewBox='0 0 400 600'><defs><linearGradient id='bg' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#1f2937'/><stop offset='60%' stop-color='#111827'/><stop offset='100%' stop-color='#030712'/></linearGradient></defs><rect width='400' height='600' fill='url(#bg)'/></svg>";
+  const imgUrl = `data:image/svg+xml,${encodeURIComponent(sourceSvg)}`;
+
+  const baseInput = createPosterRenderInput({
+    imgUrl,
+    posterTitleText: 'Breaking Bad',
+    qualityBadges: [createQualityBadge('hdr', 'HDR')],
+  });
+
+  const genreBadge = {
+    familyId: 'crime',
+    label: 'Crime',
+    accentColor: '#22c55e',
+    mode: 'text',
+    style: 'clean',
+    position: 'bottomCenter',
+    scalePercent: 118,
+    borderWidth: 1,
+    backgroundOpacity: 56,
+  };
+
+  const noTrending = await renderWithSharp(
+    {
+      ...baseInput,
+      genreBadge,
+      trendingTagPosition: 'auto',
+      trendingTagStylePreset: 'auto-minimal',
+    },
+    { ...phases },
+  );
+
+  const withTrending = await renderWithSharp(
+    {
+      ...baseInput,
+      genreBadge,
+      qualityBadges: [
+        createQualityBadge('hdr', 'HDR'),
+        createQualityBadge('bingeready', 'Binge Ready'),
+        createQualityBadge('fanfavourite', 'Fan Favourite'),
+      ],
+      trendingTagPosition: 'auto',
+      trendingTagStylePreset: 'auto-minimal',
+    },
+    { ...phases },
+  );
+
+  const noTrendingGenreBright = await countBrightPixelsInRect(noTrending.body, 120, 556, 160, 24);
+  const withTrendingGenreBright = await countBrightPixelsInRect(withTrending.body, 120, 556, 160, 24);
+  const withTrendingTagBright = await countBrightPixelsInRect(withTrending.body, 40, 480, 320, 70);
+
+  assert.ok(noTrendingGenreBright > 150);
+  assert.ok(withTrendingTagBright > 1200);
+  assert.ok(withTrendingGenreBright > Math.floor(noTrendingGenreBright * 0.7));
 });
 
 test('adaptive plain plate appears on busy backgrounds and stays off on flat backgrounds', async () => {

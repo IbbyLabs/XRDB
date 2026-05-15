@@ -2702,6 +2702,14 @@ export const renderWithSharp = async (
         top: genreBadgeOverlay.top,
         left: genreBadgeOverlay.left,
       });
+      if (cleanPosterGenreModeActive) {
+        trackGenreCollisionRect(
+          genreBadgeOverlay.left,
+          genreBadgeOverlay.top,
+          genreBadgeOverlay.width,
+          genreBadgeOverlay.height,
+        );
+      }
     }
 
     // Render trending tags overlay for posters
