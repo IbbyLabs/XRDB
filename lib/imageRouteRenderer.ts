@@ -187,7 +187,14 @@ type FastRenderInput = {
   backdropEdgeInset: number;
   badges: RatingBadge[];
   qualityBadges: RatingBadge[];
-  trendingTagPosition: 'auto' | 'top' | 'bottom';
+  trendingTagPosition:
+    | 'auto'
+    | 'top-left'
+    | 'top-center'
+    | 'top-right'
+    | 'bottom-left'
+    | 'bottom-center'
+    | 'bottom-right';
   trendingTagStylePreset: 'auto-minimal' | QualityBadgeStyle;
   trendingTagTextColor: string | null;
   qualityBadgesSide: QualityBadgesSide;
@@ -983,11 +990,39 @@ export const renderWithSharp = async (
     const requestedTrendingPosition =
       input.imageType === 'poster'
         ? input.trendingTagPosition === 'auto' && input.trendingTagStylePreset === 'auto-minimal'
-          ? 'bottom'
+          ? 'bottom-center'
           : input.trendingTagPosition
         : 'auto';
+    const trendingVerticalPosition: 'top' | 'bottom' | 'auto' =
+      requestedTrendingPosition === 'top-left' ||
+      requestedTrendingPosition === 'top-center' ||
+      requestedTrendingPosition === 'top-right'
+        ? 'top'
+        : requestedTrendingPosition === 'bottom-left' ||
+          requestedTrendingPosition === 'bottom-center' ||
+          requestedTrendingPosition === 'bottom-right'
+          ? 'bottom'
+          : 'auto';
+    const trendingHorizontalPosition: 'left' | 'center' | 'right' =
+      requestedTrendingPosition === 'top-left' || requestedTrendingPosition === 'bottom-left'
+        ? 'left'
+        : requestedTrendingPosition === 'top-right' || requestedTrendingPosition === 'bottom-right'
+          ? 'right'
+          : 'center';
+    const resolveTrendingOverlayLeft = (overlayWidth: number) => {
+      const normalizedInset = Math.max(12, posterEdgeInset);
+      const minLeft = Math.max(0, normalizedInset);
+      const maxLeft = Math.max(minLeft, input.outputWidth - overlayWidth - normalizedInset);
+      const desiredLeft =
+        trendingHorizontalPosition === 'left'
+          ? minLeft
+          : trendingHorizontalPosition === 'right'
+            ? maxLeft
+            : Math.round((input.outputWidth - overlayWidth) / 2);
+      return Math.max(minLeft, Math.min(maxLeft, desiredLeft));
+    };
     const bottomTrendingReservedHeight =
-      input.imageType === 'poster' && requestedTrendingPosition === 'bottom'
+      input.imageType === 'poster' && trendingVerticalPosition === 'bottom' && trendingBadges.length > 0
         ? (input.trendingTagStylePreset === 'community-badge'
             ? 62
             : input.trendingTagStylePreset === 'auto-minimal'
@@ -2733,8 +2768,6 @@ export const renderWithSharp = async (
             input.trendingTagStylePreset === 'auto-minimal'
               ? input.qualityBadgesStyle
               : input.trendingTagStylePreset;
-          const overlayWidth = Math.max(240, Math.min(input.outputWidth - 24, Math.round(input.outputWidth * 0.9)));
-          const overlayLeft = Math.round((input.outputWidth - overlayWidth) / 2);
           const badgeGap = Math.max(10, Math.round(input.badgeGap * 0.9));
           const styledTrendingBadges = displayTrendingBadges
             .map((badge) =>
@@ -2753,14 +2786,19 @@ export const renderWithSharp = async (
             .filter((badge): badge is NonNullable<typeof badge> => Boolean(badge));
           const centeredBadgeRows = styledTrendingBadges.map((badge) => [badge]);
           if (centeredBadgeRows.length > 0) {
+            const centeredOverlayWidth = Math.max(240, Math.min(input.outputWidth - 24, Math.round(input.outputWidth * 0.9)));
+            const sideAnchoredOverlayWidth = Math.max(220, Math.min(input.outputWidth - 24, Math.round(input.outputWidth * 0.62)));
+            const overlayWidth =
+              trendingHorizontalPosition === 'center' ? centeredOverlayWidth : sideAnchoredOverlayWidth;
+            const overlayLeft = resolveTrendingOverlayLeft(overlayWidth);
             const stripHeight = centeredBadgeRows.reduce(
               (sum, row, index) => sum + Math.max(...row.map((badge) => badge.height)) + (index > 0 ? badgeGap : 0),
               0,
             ) + 18;
             const preferredStripTop =
-              requestedTrendingPosition === 'top'
+              trendingVerticalPosition === 'top'
                 ? input.badgeTopOffset
-                : requestedTrendingPosition === 'bottom'
+                : trendingVerticalPosition === 'bottom'
                   ? Math.max(
                       input.badgeTopOffset,
                       input.outputHeight - input.badgeBottomOffset - stripHeight,
@@ -2771,7 +2809,7 @@ export const renderWithSharp = async (
               top: preferredStripTop,
               width: overlayWidth,
               height: stripHeight,
-              preference: requestedTrendingPosition === 'bottom' ? 'up' : 'down',
+              preference: trendingVerticalPosition === 'bottom' ? 'up' : 'down',
               minTop: input.badgeTopOffset,
               maxTop: Math.max(input.badgeTopOffset, input.finalOutputHeight - stripHeight),
             });
@@ -2780,7 +2818,13 @@ export const renderWithSharp = async (
             for (const row of centeredBadgeRows) {
               const rowHeight = Math.max(...row.map((badge) => badge.height));
               const rowWidth = row.reduce((sum, badge) => sum + badge.width, 0);
-              const badgeLeft = Math.round((input.outputWidth - rowWidth) / 2);
+              const rowInset = Math.max(8, Math.round(input.badgeGap * 0.6));
+              const badgeLeft =
+                trendingHorizontalPosition === 'left'
+                  ? Math.round(overlayLeft + rowInset)
+                  : trendingHorizontalPosition === 'right'
+                    ? Math.round(overlayLeft + overlayWidth - rowWidth - rowInset)
+                    : Math.round(overlayLeft + (overlayWidth - rowWidth) / 2);
               let currentLeft = badgeLeft;
               for (const badge of row) {
                 overlays.push({
@@ -2795,11 +2839,14 @@ export const renderWithSharp = async (
             }
           }
         } else {
-          const overlayWidth = Math.max(320, Math.min(input.outputWidth - 24, Math.round(input.outputWidth * 0.95)));
+          const centeredOverlayWidth = Math.max(320, Math.min(input.outputWidth - 24, Math.round(input.outputWidth * 0.95)));
+          const sideAnchoredOverlayWidth = Math.max(220, Math.min(input.outputWidth - 24, Math.round(input.outputWidth * 0.74)));
+          const overlayWidth =
+            trendingHorizontalPosition === 'center' ? centeredOverlayWidth : sideAnchoredOverlayWidth;
           const overlayHeight = Math.max(56, Math.round(input.badgeIconSize * 2.15));
-          const overlayLeft = Math.round((input.outputWidth - overlayWidth) / 2);
+          const overlayLeft = resolveTrendingOverlayLeft(overlayWidth);
           const preferredTop =
-            requestedTrendingPosition === 'top'
+            trendingVerticalPosition === 'top'
               ? input.badgeTopOffset
               : Math.max(
                   input.badgeTopOffset,
@@ -2810,7 +2857,7 @@ export const renderWithSharp = async (
             top: preferredTop,
             width: overlayWidth,
             height: overlayHeight,
-            preference: requestedTrendingPosition === 'top' ? 'down' : 'up',
+            preference: trendingVerticalPosition === 'top' ? 'down' : 'up',
             minTop: input.badgeTopOffset,
             maxTop: Math.max(input.badgeTopOffset, input.finalOutputHeight - overlayHeight),
           });

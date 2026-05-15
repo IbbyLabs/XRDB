@@ -94,6 +94,8 @@ const createPosterRenderInput = ({
   posterQualityBadgeOffsetX = 0,
   posterQualityBadgeOffsetY = 0,
   qualityBadges = [createQualityBadge('hdr', 'HDR')],
+  trendingTagPosition,
+  trendingTagStylePreset,
   posterTitleText = null,
   posterLogoUrl = null,
 }) => ({
@@ -126,6 +128,8 @@ const createPosterRenderInput = ({
   backdropEdgeInset: 12,
   badges: [],
   qualityBadges,
+  trendingTagPosition,
+  trendingTagStylePreset,
   qualityBadgesSide: 'left',
   posterQualityBadgesPosition: 'auto',
   posterQualityBadgeOffsetX,
@@ -243,6 +247,44 @@ test('poster trending tags render in center region above logo while regular qual
   assert.ok(trendingCenterCount > baselineCenterCount + 500);
   assert.ok(baselineBottom);
   assert.ok(trendingBottom);
+});
+
+test('poster trending tags respect top-left and top-right anchor positions', async () => {
+  const sourceSvg =
+    "<svg xmlns='http://www.w3.org/2000/svg' width='400' height='600' viewBox='0 0 400 600'><rect width='400' height='600' fill='#ffffff'/></svg>";
+  const imgUrl = `data:image/svg+xml,${encodeURIComponent(sourceSvg)}`;
+  const trendingOnlyBadges = [
+    createQualityBadge('trendingtoday', 'Trending Today'),
+    createQualityBadge('trendingweek', 'Trending This Week'),
+    createQualityBadge('bingeready', 'Binge Ready'),
+  ];
+
+  const topLeft = await renderWithSharp(
+    createPosterRenderInput({
+      imgUrl,
+      qualityBadges: trendingOnlyBadges,
+      trendingTagPosition: 'top-left',
+      trendingTagStylePreset: 'community-badge',
+    }),
+    { ...phases },
+  );
+  const topRight = await renderWithSharp(
+    createPosterRenderInput({
+      imgUrl,
+      qualityBadges: trendingOnlyBadges,
+      trendingTagPosition: 'top-right',
+      trendingTagStylePreset: 'community-badge',
+    }),
+    { ...phases },
+  );
+
+  const leftRegionTopLeft = await countNonWhitePixelsInRect(topLeft.body, 8, 14, 170, 220);
+  const rightRegionTopLeft = await countNonWhitePixelsInRect(topLeft.body, 222, 14, 170, 220);
+  const leftRegionTopRight = await countNonWhitePixelsInRect(topRight.body, 8, 14, 170, 220);
+  const rightRegionTopRight = await countNonWhitePixelsInRect(topRight.body, 222, 14, 170, 220);
+
+  assert.ok(leftRegionTopLeft > rightRegionTopLeft + 350);
+  assert.ok(rightRegionTopRight > leftRegionTopRight + 350);
 });
 
 test('auto-minimal trending tags do not occlude clean genre label in poster layouts', async () => {

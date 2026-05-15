@@ -297,7 +297,14 @@ export type ImageRouteRequestState = {
   sideRatingsOffset: number;
   qualityBadgesSide: QualityBadgesSide;
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
-  trendingTagPosition: 'auto' | 'top' | 'bottom';
+  trendingTagPosition:
+    | 'auto'
+    | 'top-left'
+    | 'top-center'
+    | 'top-right'
+    | 'bottom-left'
+    | 'bottom-center'
+    | 'bottom-right';
   trendingTagStylePreset: 'auto-minimal' | QualityBadgeStyle;
   trendingTagTextColor: string | null;
   posterQualityBadgeOffsetX: number;
@@ -1121,9 +1128,22 @@ export const resolveImageRouteRequestState = async ({
   );
   const trendingTagPositionParam =
     searchParams.get('posterTrendingTagPosition') ?? searchParams.get('trendingTagPosition');
-  const trendingTagPosition: 'auto' | 'top' | 'bottom' =
-    trendingTagPositionParam === 'top' || trendingTagPositionParam === 'bottom'
-      ? trendingTagPositionParam
+  const normalizedTrendingTagPosition = String(trendingTagPositionParam || '').trim().toLowerCase();
+  const trendingTagPosition:
+    | 'auto'
+    | 'top-left'
+    | 'top-center'
+    | 'top-right'
+    | 'bottom-left'
+    | 'bottom-center'
+    | 'bottom-right' =
+    normalizedTrendingTagPosition === 'top-left' ||
+    normalizedTrendingTagPosition === 'top-center' ||
+    normalizedTrendingTagPosition === 'top-right' ||
+    normalizedTrendingTagPosition === 'bottom-left' ||
+    normalizedTrendingTagPosition === 'bottom-center' ||
+    normalizedTrendingTagPosition === 'bottom-right'
+      ? normalizedTrendingTagPosition
       : 'auto';
   const trendingTagStyleParam =
     searchParams.get('posterTrendingTagStyle') ?? searchParams.get('trendingTagStyle');
