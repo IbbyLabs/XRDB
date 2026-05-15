@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import sharp from 'sharp';
 
 import { createProviderIconDataUriResolver } from '../lib/imageRouteProviderIcon.ts';
 import { buildProviderIconMemoryCacheKey } from '../lib/imageRouteSourceUrls.ts';
@@ -9,6 +10,10 @@ const createSharpDouble = () => {
   const factory = () => ({
     resize(width, height, options) {
       calls.push({ method: 'resize', width, height, options });
+      return this;
+    },
+    trim() {
+      calls.push({ method: 'trim' });
       return this;
     },
     png(options) {
@@ -139,6 +144,79 @@ test('image route provider icon fetches, rounds, caches, and writes processed ic
   assert.match(roundedMask, /width="192"/);
   assert.match(roundedMask, /height="192"/);
   assert.match(roundedMask, /rx="24"/);
+  assert.ok(sharpDouble.calls.some((call) => call.method === 'trim'));
+});
+
+const measureOpaqueBounds = async (buffer) => {
+  const { data, info } = await sharp(buffer)
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  let minX = info.width;
+  let minY = info.height;
+  let maxX = -1;
+  let maxY = -1;
+
+  for (let y = 0; y < info.height; y += 1) {
+    for (let x = 0; x < info.width; x += 1) {
+      const alpha = data[(y * info.width + x) * info.channels + 3];
+      if (alpha > 0) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+
+  if (maxX < minX || maxY < minY) {
+    return { width: 0, height: 0 };
+  }
+
+  return {
+    width: maxX - minX + 1,
+    height: maxY - minY + 1,
+  };
+};
+
+test('image route provider icon normalizes transparent padding for consistent visual footprint', async () => {
+  const getProviderIconDataUri = createProviderIconDataUriResolver({
+    getMetadata: () => null,
+    setMetadata: () => {},
+    readProviderIconFromStorage: async () => null,
+    writeProviderIconToStorage: async () => {},
+    stripCornerBackgroundFromIcon: async (_sharp, buffer) => buffer,
+    getSharpFactory: async () => sharp,
+    assertSafeSourceUrlImpl: async (value) => new URL(value),
+    fetchSafeIconImpl: async (url) => {
+      const padded = url.includes('padded');
+      const boxSize = padded ? 98 : 158;
+      const offset = Math.round((192 - boxSize) / 2);
+      const svg = `<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"192\" height=\"192\" viewBox=\"0 0 192 192\"><rect width=\"192\" height=\"192\" fill=\"rgba(0,0,0,0)\"/><rect x=\"${offset}\" y=\"${offset}\" width=\"${boxSize}\" height=\"${boxSize}\" rx=\"20\" fill=\"#22c55e\"/></svg>`;
+      return new Response(Buffer.from(svg), {
+        status: 200,
+        headers: { 'Content-Type': 'image/svg+xml' },
+      });
+    },
+  });
+
+  const tightDataUri = await getProviderIconDataUri('https://img.example/tight.svg');
+  const paddedDataUri = await getProviderIconDataUri('https://img.example/padded.svg');
+
+  assert.ok(tightDataUri);
+  assert.ok(paddedDataUri);
+
+  const tightBuffer = Buffer.from(tightDataUri.split(',')[1], 'base64');
+  const paddedBuffer = Buffer.from(paddedDataUri.split(',')[1], 'base64');
+
+  const tightBounds = await measureOpaqueBounds(tightBuffer);
+  const paddedBounds = await measureOpaqueBounds(paddedBuffer);
+
+  const widthDelta = Math.abs(tightBounds.width - paddedBounds.width);
+  const heightDelta = Math.abs(tightBounds.height - paddedBounds.height);
+
+  assert.ok(widthDelta <= 4, `expected normalized width delta <= 4, got ${widthDelta}`);
+  assert.ok(heightDelta <= 4, `expected normalized height delta <= 4, got ${heightDelta}`);
 });
 
 test('image route provider icon rejects unsafe hosts before fetching', async () => {

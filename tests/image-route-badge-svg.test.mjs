@@ -352,3 +352,28 @@ test('image route badge svg scales glass border width with badge height', () => 
   assert.ok(baseStroke > 0);
   assert.ok(scaledStroke > baseStroke, `expected scaled stroke (${scaledStroke}) > base stroke (${baseStroke})`);
 });
+
+test('image route badge svg keeps plain readable surface opacity subtle', () => {
+  const svg = buildBadgeSvg({
+    width: 128,
+    height: 42,
+    iconSize: 24,
+    fontSize: 18,
+    paddingX: 14,
+    gap: 10,
+    accentColor: '#38bdf8',
+    monogram: 'TM',
+    value: '7.9',
+    ratingStyle: 'plain',
+    preferReadablePlainSurface: true,
+  });
+
+  assert.match(svg, /plain-badge-surface-fill/);
+  assert.match(svg, /flood-opacity="0\.58"/);
+  assert.match(svg, /flood-opacity="0\.26"/);
+  assert.match(svg, /stop-opacity="0\.16"/);
+  assert.match(svg, /stop-opacity="0\.11"/);
+  assert.match(svg, /fill="rgba\(255,255,255,0\.035\)"/);
+  assert.doesNotMatch(svg, /flood-opacity="0\.72"/);
+  assert.doesNotMatch(svg, /stop-opacity="0\.22"/);
+});

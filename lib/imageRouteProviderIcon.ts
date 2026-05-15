@@ -31,6 +31,30 @@ const buildIconShapeMask = (shape: IconShape, size: number): string | null => {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"><rect width="${size}" height="${size}" rx="${rx}" ry="${rx}" fill="white"/></svg>`;
 };
 
+const normalizeProviderIconVisualFootprint = async (
+  sharp: any,
+  buffer: Buffer,
+  outputSize: number,
+) => {
+  try {
+    const trimmed = await sharp(buffer)
+      .trim()
+      .png({ compressionLevel: 6 })
+      .toBuffer();
+
+    return await sharp(trimmed)
+      .resize(outputSize, outputSize, {
+        fit: 'contain',
+        kernel: 'lanczos3',
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      })
+      .png({ compressionLevel: 6 })
+      .toBuffer();
+  } catch {
+    return buffer;
+  }
+};
+
 export const createProviderIconDataUriResolver = ({
   getMetadata,
   setMetadata,
@@ -93,6 +117,11 @@ export const createProviderIconDataUriResolver = ({
           .png({ compressionLevel: 6 })
           .toBuffer();
         let outputBuffer = await stripCornerBackgroundFromIcon(sharp, resizedBuffer);
+        outputBuffer = await normalizeProviderIconVisualFootprint(
+          sharp,
+          outputBuffer,
+          providerIconOutputSize,
+        );
         if (iconShape !== 'original') {
           const shapeMask = buildIconShapeMask(iconShape, providerIconOutputSize);
           if (shapeMask) {
