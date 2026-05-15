@@ -57,6 +57,12 @@ type FinalImageRenderSeedInput = {
   backdropSideRatingsPosition: string;
   backdropSideRatingsOffset: number;
   ratingPresentation: string;
+  scorebarStyle: string;
+  scorebarLowColor: string;
+  scorebarMidColor: string;
+  scorebarHighColor: string;
+  scorebarLowThreshold: number;
+  scorebarHighThreshold: number;
   posterRingValueSource: string;
   posterRingProgressSource: string;
   posterRingCenterOpacity: number;
@@ -210,6 +216,16 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
       ? String(input.backdropSideRatingsOffset)
       : '-',
     input.ratingPresentation,
+    isPoster && input.ratingPresentation === 'scorebar' ? input.scorebarStyle : '-',
+    isPoster && input.ratingPresentation === 'scorebar' ? input.scorebarLowColor : '-',
+    isPoster && input.ratingPresentation === 'scorebar' ? input.scorebarMidColor : '-',
+    isPoster && input.ratingPresentation === 'scorebar' ? input.scorebarHighColor : '-',
+    isPoster && input.ratingPresentation === 'scorebar'
+      ? String(input.scorebarLowThreshold)
+      : '-',
+    isPoster && input.ratingPresentation === 'scorebar'
+      ? String(input.scorebarHighThreshold)
+      : '-',
     isPoster && input.ratingPresentation === 'ring' ? input.posterRingValueSource : '-',
     isPoster && input.ratingPresentation === 'ring' ? input.posterRingProgressSource : '-',
     isPoster && input.ratingPresentation === 'ring' ? String(input.posterRingCenterOpacity) : '-',

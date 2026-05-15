@@ -38,6 +38,12 @@ const createInput = (overrides = {}) => ({
   backdropSideRatingsPosition: 'center',
   backdropSideRatingsOffset: 50,
   ratingPresentation: 'average',
+  scorebarStyle: 'progress',
+  scorebarLowColor: '#e05252',
+  scorebarMidColor: '#e0a452',
+  scorebarHighColor: '#52c97f',
+  scorebarLowThreshold: 50,
+  scorebarHighThreshold: 75,
   posterRingValueSource: 'highest',
   posterRingProgressSource: 'tmdb',
   posterRingCenterOpacity: 86,
@@ -256,6 +262,56 @@ test('final image render seed scopes poster quality badge offsets to poster rend
 
   assert.notEqual(basePosterKey, changedPosterKey);
   assert.equal(baseBackdropKey, changedBackdropKey);
+});
+
+test('final image render seed changes when scorebar style changes for poster scorebar presentation', () => {
+  const baseKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'poster', ratingPresentation: 'scorebar', scorebarStyle: 'solid' }),
+  );
+  const changedKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'poster', ratingPresentation: 'scorebar', scorebarStyle: 'gradient' }),
+  );
+
+  assert.notEqual(baseKey, changedKey);
+});
+
+test('final image render seed changes when scorebar colors change for poster scorebar presentation', () => {
+  const baseKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'poster', ratingPresentation: 'scorebar' }),
+  );
+  const changedKey = buildFinalImageRenderSeedKey(
+    createInput({
+      imageType: 'poster',
+      ratingPresentation: 'scorebar',
+      scorebarLowColor: '#111111',
+      scorebarMidColor: '#222222',
+      scorebarHighColor: '#333333',
+      scorebarLowThreshold: 41,
+      scorebarHighThreshold: 82,
+    }),
+  );
+
+  assert.notEqual(baseKey, changedKey);
+});
+
+test('final image render seed ignores scorebar fields when rating presentation is not scorebar', () => {
+  const baseKey = buildFinalImageRenderSeedKey(
+    createInput({ imageType: 'poster', ratingPresentation: 'average' }),
+  );
+  const changedKey = buildFinalImageRenderSeedKey(
+    createInput({
+      imageType: 'poster',
+      ratingPresentation: 'average',
+      scorebarStyle: 'gradient',
+      scorebarLowColor: '#111111',
+      scorebarMidColor: '#222222',
+      scorebarHighColor: '#333333',
+      scorebarLowThreshold: 41,
+      scorebarHighThreshold: 82,
+    }),
+  );
+
+  assert.equal(baseKey, changedKey);
 });
 
 test('final image render seed changes when quality badge appearance overrides change', () => {

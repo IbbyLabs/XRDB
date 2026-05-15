@@ -2349,7 +2349,37 @@ export const renderWithSharp = async (
         style === 'gradient'
           ? `<linearGradient id="sg" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" stop-color="${scorebarConfig.lowColor}"/><stop offset="50%" stop-color="${scorebarConfig.midColor}"/><stop offset="100%" stop-color="${scorebarConfig.highColor}"/></linearGradient>`
           : '';
-      const barSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${barWidth}" height="${SCOREBAR_CANVAS_HEIGHT}"><defs><linearGradient id="sbScrim" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="46%" stop-color="rgba(0,0,0,0.16)"/><stop offset="100%" stop-color="rgba(0,0,0,0.34)"/></linearGradient>${gradientDef}${shadowFilter}</defs><rect x="0" y="0" width="${barWidth}" height="${SCOREBAR_CANVAS_HEIGHT}" fill="url(#sbScrim)"/><g filter="url(#sh)"><rect x="0" y="${SCOREBAR_TRACK_Y}" width="${barWidth}" height="${SCOREBAR_BAR_HEIGHT}" rx="999" ry="999" fill="${trackFill}" stroke="${trackStroke}" stroke-width="1"/>${fillWidth > 0 ? `<rect x="0" y="${SCOREBAR_TRACK_Y}" width="${fillWidth}" height="${SCOREBAR_BAR_HEIGHT}" rx="999" ry="999" fill="${fillPaint}"/>` : ''}</g></svg>`;
+      let scorebarFillSvg = '';
+      if (style === 'progress') {
+        const segmentCount = 10;
+        const segmentGap = 2;
+        const segmentWidth = Math.max(2, (barWidth - segmentGap * (segmentCount - 1)) / segmentCount);
+        const progressTrackFill = 'rgba(255, 255, 255, 0.12)';
+        const progressValue = Math.max(0, Math.min(100, score));
+        let segmentsSvg = '';
+        for (let index = 0; index < segmentCount; index += 1) {
+          const segmentX = Math.round(index * (segmentWidth + segmentGap) * 1000) / 1000;
+          const scoreStart = (index / segmentCount) * 100;
+          const scoreEnd = ((index + 1) / segmentCount) * 100;
+          const fillPercent = Math.max(0, Math.min(1, (progressValue - scoreStart) / (scoreEnd - scoreStart)));
+          const segmentMidScore = (scoreStart + scoreEnd) / 2;
+          const segmentFillColor = getScorebarThresholdColor(segmentMidScore, scorebarConfig);
+          segmentsSvg += `<rect x="${segmentX}" y="${SCOREBAR_TRACK_Y}" width="${segmentWidth}" height="${SCOREBAR_BAR_HEIGHT}" rx="2" ry="2" fill="${progressTrackFill}"/>`;
+          if (fillPercent > 0) {
+            const activeWidth = Math.max(0, Math.min(segmentWidth, segmentWidth * fillPercent));
+            segmentsSvg += `<rect x="${segmentX}" y="${SCOREBAR_TRACK_Y}" width="${activeWidth}" height="${SCOREBAR_BAR_HEIGHT}" rx="2" ry="2" fill="${segmentFillColor}"/>`;
+          }
+        }
+        const markerX = Math.max(0, Math.min(barWidth, Math.round((progressValue / 100) * barWidth * 1000) / 1000));
+        const markerY = SCOREBAR_TRACK_Y + SCOREBAR_BAR_HEIGHT / 2;
+        const markerSvg = progressValue > 0
+          ? `<circle cx="${markerX}" cy="${markerY}" r="2.2" fill="rgba(255,255,255,0.95)"/>`
+          : '';
+        scorebarFillSvg = `${segmentsSvg}${markerSvg}`;
+      } else if (fillWidth > 0) {
+        scorebarFillSvg = `<rect x="0" y="${SCOREBAR_TRACK_Y}" width="${fillWidth}" height="${SCOREBAR_BAR_HEIGHT}" rx="999" ry="999" fill="${fillPaint}"/>`;
+      }
+      const barSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${barWidth}" height="${SCOREBAR_CANVAS_HEIGHT}"><defs><linearGradient id="sbScrim" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="46%" stop-color="rgba(0,0,0,0.16)"/><stop offset="100%" stop-color="rgba(0,0,0,0.34)"/></linearGradient>${gradientDef}${shadowFilter}</defs><rect x="0" y="0" width="${barWidth}" height="${SCOREBAR_CANVAS_HEIGHT}" fill="url(#sbScrim)"/><g filter="url(#sh)"><rect x="0" y="${SCOREBAR_TRACK_Y}" width="${barWidth}" height="${SCOREBAR_BAR_HEIGHT}" rx="999" ry="999" fill="${trackFill}" stroke="${trackStroke}" stroke-width="1"/>${scorebarFillSvg}</g></svg>`;
       overlays.push({ input: Buffer.from(barSvg), top: barY, left: barX });
     }
 
