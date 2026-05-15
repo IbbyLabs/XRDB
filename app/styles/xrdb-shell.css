@@ -3790,6 +3790,14 @@
 	display: flex;
 }
 
+.xrdb-provider-row[draggable='true'] {
+	cursor: grab;
+}
+
+.xrdb-provider-row[draggable='true']:active {
+	cursor: grabbing;
+}
+
 .xrdb-provider-toggle {
 	display: flex;
 	align-items: center;
