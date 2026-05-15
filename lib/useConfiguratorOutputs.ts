@@ -661,7 +661,14 @@ export function useConfiguratorOutputs({
   posterQualityBadgePreferences: string[];
   posterQualityBadgeScale: number;
   posterQualityBadgesPosition: PosterQualityBadgesPosition;
-  posterTrendingTagPosition: 'auto' | 'top' | 'bottom';
+  posterTrendingTagPosition:
+    | 'auto'
+    | 'top-left'
+    | 'top-center'
+    | 'top-right'
+    | 'bottom-left'
+    | 'bottom-center'
+    | 'bottom-right';
   posterTrendingTagStylePreset: 'auto-minimal' | QualityBadgeStyle;
   posterTrendingCommunityBadgeTheme: CommunityBadgeTheme;
   posterTrendingTagTextColor: string;

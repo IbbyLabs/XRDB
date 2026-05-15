@@ -595,8 +595,12 @@ export function QualityPanel() {
   const isAdvancedMode = ctx.experienceMode === 'advanced';
   const trendingPositionOptions = [
     { id: 'auto', label: 'Auto' },
-    { id: 'top', label: 'Top' },
-    { id: 'bottom', label: 'Bottom' },
+    { id: 'top-left', label: 'Top left' },
+    { id: 'top-center', label: 'Top center' },
+    { id: 'top-right', label: 'Top right' },
+    { id: 'bottom-left', label: 'Bottom left' },
+    { id: 'bottom-center', label: 'Bottom center' },
+    { id: 'bottom-right', label: 'Bottom right' },
   ] as const;
   const trendingStylePresetOptions = [
     { id: 'auto-minimal', label: 'Auto Minimal' },

@@ -204,7 +204,15 @@ export function useConfiguratorWorkspaceState() {
   const [logoStreamBadges, setLogoStreamBadges] = useState<StreamBadgesSetting>('auto');
   const [qualityBadgesSide, setQualityBadgesSide] = useState<QualityBadgesSide>('left');
   const [posterQualityBadgesPosition, setPosterQualityBadgesPosition] = useState<PosterQualityBadgesPosition>('auto');
-  const [posterTrendingTagPosition, setPosterTrendingTagPosition] = useState<'auto' | 'top' | 'bottom'>('auto');
+  const [posterTrendingTagPosition, setPosterTrendingTagPosition] = useState<
+    | 'auto'
+    | 'top-left'
+    | 'top-center'
+    | 'top-right'
+    | 'bottom-left'
+    | 'bottom-center'
+    | 'bottom-right'
+  >('auto');
   const [posterTrendingTagStylePreset, setPosterTrendingTagStylePreset] = useState<'auto-minimal' | QualityBadgeStyle>('auto-minimal');
   const [posterTrendingCommunityBadgeTheme, setPosterTrendingCommunityBadgeTheme] = useState<CommunityBadgeTheme>(DEFAULT_COMMUNITY_BADGE_THEME);
   const [posterTrendingTagTextColor, setPosterTrendingTagTextColor] = useState<string>('');

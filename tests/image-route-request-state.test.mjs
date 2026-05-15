@@ -108,6 +108,42 @@ test('image route request state parses mixed-provider episode hints and isolates
   assert.notEqual(hintedState.renderSeedKey, plainState.renderSeedKey);
 });
 
+test('image route request state preserves anchor-only poster trending tag positions', async () => {
+  const anchoredState = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt12343534.jpg?tmdbKey=tmdb-key&posterTrendingTagPosition=top-left',
+    ),
+    imageType: 'poster',
+    id: 'tt12343534.jpg',
+  });
+  const legacyTopState = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt12343534.jpg?tmdbKey=tmdb-key&posterTrendingTagPosition=top',
+    ),
+    imageType: 'poster',
+    id: 'tt12343534.jpg',
+  });
+  const legacyBottomState = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt12343534.jpg?tmdbKey=tmdb-key&posterTrendingTagPosition=bottom',
+    ),
+    imageType: 'poster',
+    id: 'tt12343534.jpg',
+  });
+  const invalidState = await resolveImageRouteRequestState({
+    request: createRequest(
+      'https://example.com/poster/tt12343534.jpg?tmdbKey=tmdb-key&posterTrendingTagPosition=middle-center',
+    ),
+    imageType: 'poster',
+    id: 'tt12343534.jpg',
+  });
+
+  assert.equal(anchoredState.trendingTagPosition, 'top-left');
+  assert.equal(legacyTopState.trendingTagPosition, 'auto');
+  assert.equal(legacyBottomState.trendingTagPosition, 'auto');
+  assert.equal(invalidState.trendingTagPosition, 'auto');
+});
+
 test('image route request state selects the strongest mixed-library episode authority candidate', async () => {
   const state = await resolveImageRouteRequestState({
     request: createRequest(
