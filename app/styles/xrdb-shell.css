@@ -4726,6 +4726,17 @@
 	color: var(--muted);
 }
 
+.xrdb-save-option-warning {
+	margin: 0;
+	padding: 0.5rem 0.625rem;
+	border-radius: 8px;
+	border: 1px solid var(--status-warning-border);
+	background: var(--status-warning-bg);
+	color: var(--status-warning);
+	font-size: 0.75rem;
+	line-height: 1.45;
+}
+
 .xrdb-save-pill-row {
 	display: flex;
 	gap: 0.375rem;

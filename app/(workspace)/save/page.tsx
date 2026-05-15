@@ -241,6 +241,17 @@ export default function SavePage() {
     [displayedAiometadataPatternRows],
   );
 
+  const displayedPosterPattern = useMemo(
+    () => displayedAiometadataPatternRows.find((row) => row.key === 'poster')?.value ?? '',
+    [displayedAiometadataPatternRows],
+  );
+
+  const isTmdbPosterIdMode =
+    exportPanelsProps.posterIdMode === 'auto' || exportPanelsProps.posterIdMode === 'tmdb';
+
+  const tmdbPosterPatternNeedsTypePlaceholder =
+    isTmdbPosterIdMode && displayedPosterPattern.includes('tmdb:{type}:{tmdb_id}');
+
   const installableAiometadataPatternRows = useMemo<AiometadataPatternRow[]>(() => {
     if (displayedAiometadataPatternRows.length) {
       return displayedAiometadataPatternRows;
@@ -1050,6 +1061,11 @@ export default function SavePage() {
                         </button>
                       ))}
                     </div>
+                    {tmdbPosterPatternNeedsTypePlaceholder ? (
+                      <p className="xrdb-save-option-warning" role="status" aria-live="polite">
+                        TMDB poster links need both media type and TMDB id. If your target cannot fill type, use IMDb mode for wider compatibility.
+                      </p>
+                    ) : null}
                   </div>
 
                   <div className="xrdb-save-option-group">
