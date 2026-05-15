@@ -29,7 +29,17 @@ const normalizeTmdbId = (parts: string[], mediaType?: string | null) => {
   }
 
   if (parts.length < 2 || !parts[1]) {
-    return null;
+    const malformedTail = parts.slice(2).filter(Boolean);
+    if (malformedTail.length === 0) {
+      return null;
+    }
+
+    const inferredKind = normalizeMediaKind(mediaType);
+    if (inferredKind) {
+      return `tmdb:${inferredKind}:${malformedTail.join(':')}`;
+    }
+
+    return `tmdb:${malformedTail.join(':')}`;
   }
 
   const inferredKind = normalizeMediaKind(mediaType);

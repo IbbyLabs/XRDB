@@ -255,6 +255,17 @@ test('image route request state rejects ambiguous strict TMDB ids for backdrop r
   );
 });
 
+test('image route request state normalizes malformed TMDB placeholder ids for poster renders', async () => {
+  const state = await resolveImageRouteRequestState({
+    request: createRequest('https://example.com/poster/tmdb::603.jpg?idSource=tmdb&tmdbKey=tmdb-key'),
+    imageType: 'poster',
+    id: 'tmdb::603.jpg',
+  });
+
+  assert.equal(state.cleanId, 'tmdb:603');
+  assert.equal(state.mediaId, '603');
+});
+
 test('image route request state prefers thumbnail ratings for thumbnail backdrop requests', async () => {
   const state = await resolveImageRouteRequestState({
     request: createRequest(

@@ -1620,6 +1620,8 @@ test('proxy ID normalization canonicalizes MAL aliases for anime image rewrites'
   assert.equal(normalizeXrdbId('imdb:tt0944947:2', 'series'), 'imdb:tt0944947:2');
   assert.equal(normalizeXrdbId('tmdb:tv:1399:2', 'series'), 'tmdb:tv:1399:2');
   assert.equal(normalizeXrdbId('tmdb:series:1399:2', 'series'), 'tmdb:tv:1399:2');
+  assert.equal(normalizeXrdbId('tmdb::1399', 'series'), 'tmdb:tv:1399');
+  assert.equal(normalizeXrdbId('tmdb::603', null), 'tmdb:603');
 });
 
 test('AIOMetadata export supports tvdb and xrdbid episode thumbnail patterns', () => {
