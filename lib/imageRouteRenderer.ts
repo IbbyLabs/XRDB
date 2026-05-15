@@ -699,9 +699,8 @@ const buildPosterTrendingTagsOverlay = (
     config.surroundWithSeparatorDots ? `• ${baseText} •` : baseText,
   );
 
-  let fontSize = 21;
-  if (width < 280) fontSize = 17;
-  else if (width < 350) fontSize = 19;
+  const fontSize = Math.max(17, Math.min(64, Math.round(height * 0.37)));
+  const strokeWidth = Math.max(1.05, Math.min(2.9, Number((fontSize * 0.054).toFixed(2))));
 
   const availableTextWidth = Math.max(1, width - 28);
   const estimatedTextWidth = estimateGeneratedLogoLineWidth(
@@ -730,7 +729,7 @@ const buildPosterTrendingTagsOverlay = (
         font-size="${fontSize}"
         font-family="${fontFamily}"
         stroke="rgba(0,0,0,${config.textStrokeAlpha.toFixed(2)})"
-        stroke-width="1.05"
+        stroke-width="${strokeWidth}"
         paint-order="stroke fill"
         fill="${config.textColor}"
         text-anchor="middle"
@@ -2808,7 +2807,7 @@ export const renderWithSharp = async (
                   communityBadgeTheme: effectiveTrendingCommunityBadgeTheme,
                   styleOverride: trendingPresetForBadge,
                 },
-                48,
+                posterQualityRowReferenceHeight,
                 undefined,
                 trendingPresetForBadge,
               ),

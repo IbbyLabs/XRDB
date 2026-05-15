@@ -287,6 +287,57 @@ test('poster trending tags respect top-left and top-right anchor positions', asy
   assert.ok(rightRegionTopRight > leftRegionTopRight + 350);
 });
 
+test('styled poster trending badges scale up with larger poster outputs', async () => {
+  const sourceSvg =
+    "<svg xmlns='http://www.w3.org/2000/svg' width='2000' height='2926' viewBox='0 0 2000 2926'><rect width='2000' height='2926' fill='#ffffff'/></svg>";
+  const imgUrl = `data:image/svg+xml,${encodeURIComponent(sourceSvg)}`;
+  const trendingOnlyBadges = [
+    createQualityBadge('trendingtoday', 'Trending Today'),
+    createQualityBadge('trendingweek', 'Trending This Week'),
+  ];
+
+  const normal = await renderWithSharp(
+    createPosterRenderInput({
+      imgUrl,
+      qualityBadges: trendingOnlyBadges,
+      trendingTagPosition: 'top-left',
+      trendingTagStylePreset: 'community-badge',
+      posterQualityBadgeOffsetX: 0,
+      posterQualityBadgeOffsetY: 0,
+    }),
+    { ...phases },
+  );
+
+  const fourK = await renderWithSharp(
+    {
+      ...createPosterRenderInput({
+        imgUrl,
+        qualityBadges: trendingOnlyBadges,
+        trendingTagPosition: 'top-left',
+        trendingTagStylePreset: 'community-badge',
+      }),
+      outputWidth: 2000,
+      outputHeight: 2926,
+      finalOutputHeight: 2926,
+      badgeIconSize: 92,
+      badgeFontSize: 68,
+      badgePaddingX: 38,
+      badgePaddingY: 24,
+      badgeGap: 22,
+      badgeTopOffset: 56,
+      badgeBottomOffset: 56,
+      posterEdgeInset: 56,
+      posterRowHorizontalInset: 56,
+    },
+    { ...phases },
+  );
+
+  const normalTopLeftDensity = await countNonWhitePixelsInRect(normal.body, 8, 14, 170, 220);
+  const fourKTopLeftDensity = await countNonWhitePixelsInRect(fourK.body, 40, 40, 760, 720);
+
+  assert.ok(fourKTopLeftDensity > normalTopLeftDensity * 3);
+});
+
 test('auto-minimal trending tags do not occlude clean genre label in poster layouts', async () => {
   const sourceSvg =
     "<svg xmlns='http://www.w3.org/2000/svg' width='400' height='600' viewBox='0 0 400 600'><defs><linearGradient id='bg' x1='0' y1='0' x2='0' y2='1'><stop offset='0%' stop-color='#1f2937'/><stop offset='60%' stop-color='#111827'/><stop offset='100%' stop-color='#030712'/></linearGradient></defs><rect width='400' height='600' fill='url(#bg)'/></svg>";
@@ -342,6 +393,85 @@ test('auto-minimal trending tags do not occlude clean genre label in poster layo
   assert.ok(noTrendingGenreBright > 150);
   assert.ok(withTrendingTagBright > 1200);
   assert.ok(withTrendingGenreBright > Math.floor(noTrendingGenreBright * 0.7));
+});
+
+test('auto-minimal trending text remains proportionally visible at 4K poster size', async () => {
+  const sourceSvg =
+    "<svg xmlns='http://www.w3.org/2000/svg' width='2000' height='2926' viewBox='0 0 2000 2926'><rect width='2000' height='2926' fill='#ffffff'/></svg>";
+  const imgUrl = `data:image/svg+xml,${encodeURIComponent(sourceSvg)}`;
+  const trendingOnlyBadges = [
+    createQualityBadge('trendingtoday', 'Trending Today'),
+    createQualityBadge('trendingweek', 'Trending This Week'),
+  ];
+
+  const normal = await renderWithSharp(
+    createPosterRenderInput({
+      imgUrl,
+      qualityBadges: trendingOnlyBadges,
+      trendingTagPosition: 'auto',
+      trendingTagStylePreset: 'auto-minimal',
+    }),
+    { ...phases },
+  );
+
+  const fourK = await renderWithSharp(
+    {
+      ...createPosterRenderInput({
+        imgUrl,
+        qualityBadges: trendingOnlyBadges,
+        trendingTagPosition: 'auto',
+        trendingTagStylePreset: 'auto-minimal',
+      }),
+      outputWidth: 2000,
+      outputHeight: 2926,
+      finalOutputHeight: 2926,
+      badgeIconSize: 92,
+      badgeFontSize: 68,
+      badgePaddingX: 38,
+      badgePaddingY: 24,
+      badgeGap: 22,
+      badgeTopOffset: 56,
+      badgeBottomOffset: 56,
+      posterEdgeInset: 56,
+      posterRowHorizontalInset: 56,
+    },
+    { ...phases },
+  );
+
+  const sampleByRatio = (width, height) => ({
+    x: Math.round(width * 0.1),
+    y: Math.round(height * 0.8),
+    w: Math.round(width * 0.8),
+    h: Math.round(height * 0.1167),
+  });
+
+  const normalRegion = sampleByRatio(400, 600);
+  const fourKRegion = sampleByRatio(2000, 2926);
+
+  const normalBright = await countBrightPixelsInRect(
+    normal.body,
+    normalRegion.x,
+    normalRegion.y,
+    normalRegion.w,
+    normalRegion.h,
+  );
+  const fourKBright = await countBrightPixelsInRect(
+    fourK.body,
+    fourKRegion.x,
+    fourKRegion.y,
+    fourKRegion.w,
+    fourKRegion.h,
+  );
+
+  const normalDensity = normalBright / (normalRegion.w * normalRegion.h);
+  const fourKDensity = fourKBright / (fourKRegion.w * fourKRegion.h);
+
+  assert.ok(normalBright > 250);
+  assert.ok(fourKBright > 4000);
+  assert.ok(
+    fourKDensity > normalDensity * 0.55,
+    `expected 4k trending text density to remain proportional, normal=${normalDensity.toFixed(4)} 4k=${fourKDensity.toFixed(4)}`,
+  );
 });
 
 test('adaptive plain plate appears on busy backgrounds and stays off on flat backgrounds', async () => {
