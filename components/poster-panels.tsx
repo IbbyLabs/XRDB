@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { Fragment, type ReactNode } from 'react';
+import { Fragment, type DragEvent, type ReactNode, useRef } from 'react';
 import { useConfiguratorContext } from '@/lib/configuratorProvider';
 import { RATING_PROVIDER_OPTIONS } from '@/lib/ratingProviderCatalog';
 import { RATING_STYLE_OPTIONS, ICON_SHAPE_OPTIONS, QUALITY_BADGE_STYLE_OPTIONS } from '@/lib/ratingAppearance';
@@ -83,11 +83,26 @@ function PanelSection({
 
 export function ProvidersPanel() {
   const ctx = useConfiguratorContext();
-  const { ratingProviderRows, onToggleRatingPreference, onSelectAllRatingPreferencesEnabled } =
+  const { ratingProviderRows, onReorderRatingPreference, onToggleRatingPreference, onSelectAllRatingPreferencesEnabled } =
     ctx.inputsPanelProps.providersProps;
+  const dragFromIndexRef = useRef<number | null>(null);
 
   const allEnabled = ratingProviderRows.every((r) => r.enabled);
   const enabledCount = ratingProviderRows.filter((r) => r.enabled).length;
+
+  const handleProviderDragOver = (event: DragEvent<HTMLLIElement>) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleProviderDrop = (toIndex: number) => {
+    const fromIndex = dragFromIndexRef.current;
+    dragFromIndexRef.current = null;
+    if (fromIndex === null || fromIndex === toIndex) {
+      return;
+    }
+    onReorderRatingPreference(fromIndex, toIndex);
+  };
 
   return (
     <div className="xrdb-panel-providers">
@@ -106,10 +121,22 @@ export function ProvidersPanel() {
       </div>
 
       <ul className="xrdb-provider-list" role="list">
-        {ratingProviderRows.map((row) => {
+        {ratingProviderRows.map((row, index) => {
           const meta = RATING_PROVIDER_OPTIONS.find((p) => p.id === row.id);
           return (
-            <li key={row.id} className="xrdb-provider-row">
+            <li
+              key={row.id}
+              className="xrdb-provider-row"
+              draggable
+              onDragStart={() => {
+                dragFromIndexRef.current = index;
+              }}
+              onDragOver={handleProviderDragOver}
+              onDrop={() => handleProviderDrop(index)}
+              onDragEnd={() => {
+                dragFromIndexRef.current = null;
+              }}
+            >
               <button
                 type="button"
                 className={`xrdb-provider-toggle${row.enabled ? ' xrdb-provider-toggle-on' : ''}`}
