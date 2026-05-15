@@ -125,6 +125,17 @@ export function IntegrationsStep() {
   const [revealedFields, setRevealedFields] = useState(EMPTY_REVEAL);
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [clientHostname, setClientHostname] = useState('');
+
+  useEffect(() => {
+    const frameId = window.requestAnimationFrame(() => {
+      setClientHostname(window.location.hostname.toLowerCase());
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -159,11 +170,10 @@ export function IntegrationsStep() {
   const personalStatusById = accessKeys.personalProviderKeyStatus;
   const personalMaskedPreviewById = accessKeys.personalProviderKeyMaskedPreview;
 
-  const hostname = typeof window !== 'undefined' ? window.location.hostname.toLowerCase() : '';
   const isNewbieHost =
-    hostname === 'extendedratings.com'
-    || hostname === 'www.extendedratings.com'
-    || hostname.endsWith('.extendedratings.com');
+    clientHostname === 'extendedratings.com'
+    || clientHostname === 'www.extendedratings.com'
+    || clientHostname.endsWith('.extendedratings.com');
 
   const hasPendingChanges = useMemo(
     () => Object.values(dirtyFields).some(Boolean),
