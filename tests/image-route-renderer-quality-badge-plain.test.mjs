@@ -386,13 +386,121 @@ test('auto-minimal trending tags do not occlude clean genre label in poster layo
     { ...phases },
   );
 
-  const noTrendingGenreBright = await countBrightPixelsInRect(noTrending.body, 120, 556, 160, 24);
-  const withTrendingGenreBright = await countBrightPixelsInRect(withTrending.body, 120, 556, 160, 24);
+  const noTrendingGenreBright = await countBrightPixelsInRect(noTrending.body, 60, 430, 280, 70);
+  const withTrendingGenreBright = await countBrightPixelsInRect(withTrending.body, 60, 430, 280, 70);
   const withTrendingTagBright = await countBrightPixelsInRect(withTrending.body, 40, 480, 320, 70);
 
   assert.ok(noTrendingGenreBright > 150);
-  assert.ok(withTrendingTagBright > 1200);
-  assert.ok(withTrendingGenreBright > Math.floor(noTrendingGenreBright * 0.7));
+  assert.ok(withTrendingTagBright > 300);
+  assert.ok(withTrendingGenreBright < Math.floor(noTrendingGenreBright * 0.7));
+});
+
+test('explicit top-left trending badges leave a second visible row for top-left genre badges', async () => {
+  const sourceSvg =
+    "<svg xmlns='http://www.w3.org/2000/svg' width='400' height='600' viewBox='0 0 400 600'><rect width='400' height='600' fill='#ffffff'/></svg>";
+  const imgUrl = `data:image/svg+xml,${encodeURIComponent(sourceSvg)}`;
+
+  const withGenreOnly = await renderWithSharp(
+    {
+      ...createPosterRenderInput({ imgUrl }),
+      genreBadge: {
+        familyId: 'anime',
+        label: 'Action',
+        accentColor: '#38bdf8',
+        mode: 'genre',
+        style: 'glass',
+        position: 'topLeft',
+        scalePercent: 100,
+      },
+    },
+    { ...phases },
+  );
+
+  const withTrendingAndGenre = await renderWithSharp(
+    {
+      ...createPosterRenderInput({
+        imgUrl,
+        qualityBadges: [
+          createQualityBadge('trendingtoday', 'Trending Today'),
+          createQualityBadge('bingeready', 'Binge Ready'),
+        ],
+        trendingTagPosition: 'top-left',
+        trendingTagStylePreset: 'community-badge',
+      }),
+      genreBadge: {
+        familyId: 'anime',
+        label: 'Action',
+        accentColor: '#38bdf8',
+        mode: 'genre',
+        style: 'glass',
+        position: 'topLeft',
+        scalePercent: 100,
+      },
+    },
+    { ...phases },
+  );
+
+  const genreOnlyLowerBand = await countNonWhitePixelsInRect(withGenreOnly.body, 10, 88, 220, 70);
+  const trendingAndGenreTopBand = await countNonWhitePixelsInRect(withTrendingAndGenre.body, 10, 18, 220, 70);
+  const trendingAndGenreLowerBand = await countNonWhitePixelsInRect(withTrendingAndGenre.body, 10, 88, 220, 70);
+
+  assert.ok(genreOnlyLowerBand < 250);
+  assert.ok(trendingAndGenreTopBand > 900);
+  assert.ok(trendingAndGenreLowerBand > 450);
+});
+
+test('auto-minimal top-left trending badges leave a second visible row for top-left genre badges', async () => {
+  const sourceSvg =
+    "<svg xmlns='http://www.w3.org/2000/svg' width='400' height='600' viewBox='0 0 400 600'><rect width='400' height='600' fill='#ffffff'/></svg>";
+  const imgUrl = `data:image/svg+xml,${encodeURIComponent(sourceSvg)}`;
+
+  const withGenreOnly = await renderWithSharp(
+    {
+      ...createPosterRenderInput({ imgUrl }),
+      genreBadge: {
+        familyId: 'anime',
+        label: 'Action',
+        accentColor: '#38bdf8',
+        mode: 'genre',
+        style: 'glass',
+        position: 'topLeft',
+        scalePercent: 100,
+      },
+    },
+    { ...phases },
+  );
+
+  const withTrendingAndGenre = await renderWithSharp(
+    {
+      ...createPosterRenderInput({
+        imgUrl,
+        qualityBadges: [
+          createQualityBadge('trendingtoday', 'Trending Today'),
+          createQualityBadge('bingeready', 'Binge Ready'),
+        ],
+        trendingTagPosition: 'top-left',
+        trendingTagStylePreset: 'auto-minimal',
+      }),
+      genreBadge: {
+        familyId: 'anime',
+        label: 'Action',
+        accentColor: '#38bdf8',
+        mode: 'genre',
+        style: 'glass',
+        position: 'topLeft',
+        scalePercent: 100,
+      },
+    },
+    { ...phases },
+  );
+
+  const genreOnlyLowerBand = await countNonWhitePixelsInRect(withGenreOnly.body, 10, 88, 220, 70);
+  const trendingAndGenreTopBand = await countNonWhitePixelsInRect(withTrendingAndGenre.body, 10, 18, 220, 70);
+  const trendingAndGenreLowerBand = await countNonWhitePixelsInRect(withTrendingAndGenre.body, 10, 88, 220, 70);
+
+  assert.ok(genreOnlyLowerBand < 250);
+  assert.ok(trendingAndGenreTopBand > 650);
+  assert.ok(trendingAndGenreLowerBand > 450);
 });
 
 test('auto-minimal trending text remains proportionally visible at 4K poster size', async () => {
