@@ -2731,6 +2731,125 @@ export const renderWithSharp = async (
       );
     }
 
+    const prospectiveTrendingCollisionRects: GenreCollisionRect[] = [];
+    if (
+      input.imageType === 'poster' &&
+      trendingBadges.length > 0 &&
+      requestedTrendingPosition !== 'auto'
+    ) {
+      const maxTrendingBadges = input.trendingTagStylePreset === 'auto-minimal' ? 2 : 3;
+      const displayTrendingBadges = trendingBadges.slice(0, maxTrendingBadges);
+      const trendingTagLabels = displayTrendingBadges
+        .map((badge) => badge.label || badge.key)
+        .filter((label): label is string => Boolean(label));
+      if (trendingTagLabels.length > 0) {
+        if (input.trendingTagStylePreset === 'auto-minimal') {
+          const centeredOverlayWidth = Math.max(
+            320,
+            Math.min(input.outputWidth - 24, Math.round(input.outputWidth * 0.95)),
+          );
+          const sideAnchoredOverlayWidth = Math.max(
+            220,
+            Math.min(input.outputWidth - 24, Math.round(input.outputWidth * 0.74)),
+          );
+          const overlayWidth =
+            trendingHorizontalPosition === 'center'
+              ? centeredOverlayWidth
+              : sideAnchoredOverlayWidth;
+          const overlayHeight = Math.max(56, Math.round(input.badgeIconSize * 2.15));
+          const overlayLeft = resolveTrendingOverlayLeft(overlayWidth);
+          const renderTopOffset = Math.max(
+            input.badgeTopOffset,
+            Math.round(input.outputHeight - input.badgeBottomOffset - overlayHeight - 12),
+          );
+          const preferredTop =
+            trendingVerticalPosition === 'top' ? input.badgeTopOffset : renderTopOffset;
+          const overlayTop = resolveTopWithoutBadgeCollision({
+            left: overlayLeft,
+            top: preferredTop,
+            width: overlayWidth,
+            height: overlayHeight,
+            preference: trendingVerticalPosition === 'top' ? 'down' : 'up',
+            minTop: input.badgeTopOffset,
+            maxTop: Math.max(input.badgeTopOffset, input.finalOutputHeight - overlayHeight),
+          });
+
+          prospectiveTrendingCollisionRects.push({
+            left: overlayLeft,
+            top: overlayTop,
+            width: overlayWidth,
+            height: overlayHeight,
+          });
+        } else {
+          const trendingPresetForBadge: QualityBadgeStyle = input.trendingTagStylePreset;
+          const badgeGap = Math.max(10, Math.round(input.badgeGap * 0.9));
+          const styledTrendingBadges = displayTrendingBadges
+            .map((badge) =>
+              buildQualityBadgeSvg(
+                {
+                  key: badge.key,
+                  label: badge.label || badge.key,
+                  communityBadgeTheme:
+                    input.trendingCommunityBadgeTheme ?? input.communityBadgeTheme,
+                  styleOverride: trendingPresetForBadge,
+                },
+                posterQualityRowReferenceHeight,
+                undefined,
+                trendingPresetForBadge,
+              ),
+            )
+            .filter((badge): badge is NonNullable<typeof badge> => Boolean(badge));
+          const centeredBadgeRows = styledTrendingBadges.map((badge) => [badge]);
+          if (centeredBadgeRows.length > 0) {
+            const centeredOverlayWidth = Math.max(
+              240,
+              Math.min(input.outputWidth - 24, Math.round(input.outputWidth * 0.9)),
+            );
+            const sideAnchoredOverlayWidth = Math.max(
+              220,
+              Math.min(input.outputWidth - 24, Math.round(input.outputWidth * 0.62)),
+            );
+            const overlayWidth =
+              trendingHorizontalPosition === 'center'
+                ? centeredOverlayWidth
+                : sideAnchoredOverlayWidth;
+            const overlayLeft = resolveTrendingOverlayLeft(overlayWidth);
+            const stripHeight =
+              centeredBadgeRows.reduce(
+                (sum, row, index) =>
+                  sum + Math.max(...row.map((badge) => badge.height)) + (index > 0 ? badgeGap : 0),
+                0,
+              ) + 18;
+            const preferredStripTop =
+              trendingVerticalPosition === 'top'
+                ? input.badgeTopOffset
+                : trendingVerticalPosition === 'bottom'
+                  ? Math.max(
+                      input.badgeTopOffset,
+                      input.outputHeight - input.badgeBottomOffset - stripHeight,
+                    )
+                  : Math.round((input.outputHeight - stripHeight) / 2);
+            const stripTop = resolveTopWithoutBadgeCollision({
+              left: overlayLeft,
+              top: preferredStripTop,
+              width: overlayWidth,
+              height: stripHeight,
+              preference: trendingVerticalPosition === 'bottom' ? 'up' : 'down',
+              minTop: input.badgeTopOffset,
+              maxTop: Math.max(input.badgeTopOffset, input.finalOutputHeight - stripHeight),
+            });
+
+            prospectiveTrendingCollisionRects.push({
+              left: overlayLeft,
+              top: stripTop,
+              width: overlayWidth,
+              height: stripHeight,
+            });
+          }
+        }
+      }
+    }
+
     const genreBadgeOverlay = resolveGenreBadgeOverlay({
       genreBadge: input.genreBadge ?? null,
       imageType: input.imageType,
@@ -2743,7 +2862,7 @@ export const renderWithSharp = async (
       collisionRects:
         input.imageType === 'poster' && input.ratingPresentation === 'blockbuster'
           ? []
-          : genreCollisionRects,
+          : [...genreCollisionRects, ...prospectiveTrendingCollisionRects],
     });
     if (genreBadgeOverlay && input.genreBadge?.style === 'clean' && input.genreBadge.mode !== 'off') {
       const rawOpacity = Math.max(0, Math.min(100, input.genreBadge.backgroundOpacity ?? DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT)) / 100;

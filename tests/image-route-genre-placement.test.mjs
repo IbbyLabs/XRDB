@@ -59,6 +59,34 @@ test('image route genre placement nudges downward to avoid top collisions', () =
   assert.equal(overlay.top > 24, true);
 });
 
+test('image route genre placement nudges away from a same-quadrant trending collision rect', () => {
+  const overlay = resolveGenreBadgeOverlay({
+    genreBadge: {
+      ...baseGenreBadge,
+      position: 'topLeft',
+    },
+    imageType: 'poster',
+    outputWidth: 400,
+    outputHeight: 600,
+    badgeTopOffset: 20,
+    badgeBottomOffset: 20,
+    badgeGap: 10,
+    posterEdgeInset: 18,
+    collisionRects: [
+      {
+        left: 18,
+        top: 20,
+        width: 220,
+        height: 60,
+      },
+    ],
+  });
+
+  assert.ok(overlay);
+  assert.equal(overlay.left, 18);
+  assert.equal(overlay.top >= 89, true);
+});
+
 test('image route genre placement nudges upward from bottom collisions', () => {
   const overlay = resolveGenreBadgeOverlay({
     genreBadge: {
