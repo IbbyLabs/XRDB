@@ -49,7 +49,7 @@ RUN apt-get update \
     fonts-dejavu-core \
     fonts-freefont-ttf \
     gosu \
-    shadow \
+    passwd \
     fonts-noto-core \
   && rm -rf /var/lib/apt/lists/*
 

@@ -7,6 +7,9 @@ run-name: ${{ format('Promote Docker latest from {0}', github.event.workflow_run
     types:
       - completed
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 concurrency:
   group: promote-docker-latest
   cancel-in-progress: false

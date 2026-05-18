@@ -7,6 +7,9 @@ run-name: ${{ format('Publish GitHub release {0}', github.event.workflow_run.hea
     types:
       - completed
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 concurrency:
   group: create-github-release-${{ github.event.workflow_run.head_branch }}
   cancel-in-progress: false

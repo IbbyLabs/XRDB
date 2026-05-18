@@ -15,6 +15,9 @@ run-name: >-
         required: false
         type: string
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   discord-release:
     runs-on: ubuntu-latest

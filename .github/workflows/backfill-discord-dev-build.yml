@@ -30,6 +30,9 @@ run-name: ${{ format('Backfill Discord dev build for {0}', github.event.inputs.t
         default: "1500618567614206072"
         type: string
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   backfill-dev-discord:
     runs-on: ubuntu-latest

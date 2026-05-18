@@ -14,6 +14,9 @@ run-name: >-
       - "v*"
   workflow_dispatch: {}
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 concurrency:
   group: build-and-push-docker-${{ github.ref }}
   cancel-in-progress: false
