@@ -23,8 +23,12 @@ if [ "$(id -u)" = "0" ]; then
 
   mkdir -p "$DATA_DIR"
 
-  groupmod -o -g "$PGID" node 2>/dev/null || true
-  usermod -o -u "$PUID" node 2>/dev/null || true
+  if command -v groupmod >/dev/null 2>&1 && command -v usermod >/dev/null 2>&1; then
+    groupmod -o -g "$PGID" node 2>/dev/null || true
+    usermod -o -u "$PUID" node 2>/dev/null || true
+  else
+    echo "[xrdb] Warning: usermod/groupmod are unavailable; skipping PUID/PGID remap." >&2
+  fi
 
   if ! chown -R node:node "$DATA_DIR" 2>/dev/null; then
     echo "[xrdb] Warning: unable to change ownership for $DATA_DIR before startup." >&2
