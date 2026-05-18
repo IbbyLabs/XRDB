@@ -1167,10 +1167,6 @@ export const renderReadmePreviewGallerySection = ({
     '',
     'These are live requests against production so readers can see current poster, backdrop, and logo output directly inside GitHub.',
     '',
-    'The gallery can use the optional server side preview env vars `XRDB_README_PREVIEW_TMDB_KEY` and `XRDB_README_PREVIEW_MDBLIST_KEY` when you want isolated preview traffic. Otherwise it falls back to the main server TMDB credential so the README does not need to expose a raw API key.',
-    '',
-    'The doc refresh and release workflows rotate through a curated, varied set of preview cards. Each preview URL includes a `cb` cache buster token so GitHub fetches the current release selection.',
-    '',
     sections,
     '',
   ].join('\n');

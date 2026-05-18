@@ -87,7 +87,8 @@ test('README preview gallery output renders the generated section and replaces t
     version: '1.9.0',
   });
 
-  assert.match(section, /rotate through a curated, varied set of preview cards/i);
+  assert.match(section, /## Live Preview Gallery/);
+  assert.match(section, /live requests against production/i);
   assert.match(section, /readme-preview-attack-on-titan-poster-v1-9-0/);
   assert.match(section, /Japanese text, TMDB \/ MyAnimeList \/ AniList \/ Kitsu, top and bottom rows/);
   assert.match(section, /Square ratings, TMDB \/ Rotten Tomatoes \/ Metacritic \/ Letterboxd, clean text, split side layout/);
