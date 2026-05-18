@@ -100,6 +100,8 @@ nocorrect docker compose -f local-compose.yaml up -d --build
 nocorrect docker compose -f compose.yaml up -d --build xrdb
 ```
 
+If startup reports data-directory permission issues in non-default Docker uid/gid environments, set optional `PUID` and `PGID` in `.env` to match the host owner of your mounted data folder.
+
 ### 4. Open the app
 
 - Main UI: `http://localhost:3000` or your configured hostname

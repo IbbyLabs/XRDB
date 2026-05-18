@@ -71,4 +71,4 @@ If credentials are missing, XRDB will block admin login setup and show guidance 
 1. If images fail to render, confirm `TMDB_KEY` is valid.
 2. If ratings are missing, confirm `MDBLIST_KEY` or provider-specific keys.
 3. If admin login fails, re-check `ADMIN_USERNAME` and `ADMIN_PASSWORD` values and restart the container.
-4. If profile save fails in DB mode, confirm data directory permissions and writable mounts.
+4. If profile save fails in DB mode, confirm data directory permissions and writable mounts. In non-default Docker uid/gid setups, set `PUID` and `PGID` in `.env` to match the host owner of the mounted data directory.

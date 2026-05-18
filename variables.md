@@ -27,6 +27,8 @@ All cache TTL values are in **milliseconds**.
 | `DOCKER_DATA_DIR` | `./data` | Stack data root for compose.yaml. Mounts `${DOCKER_DATA_DIR}/xrdb` into `/app/data`. |
 | `DOCKER_NETWORK` | `aio_default` | Docker network name used by the stack compose file. |
 | `DOCKER_NETWORK_EXTERNAL` | `true` | Set `true` when the Docker network already exists outside this repo. |
+| `PUID` | `1000` | Optional uid override for the container `node` user to match host bind-mount ownership in non-default Docker setups. Leave unset for default behavior. |
+| `PGID` | `1000` | Optional gid override for the container `node` group to match host bind-mount ownership in non-default Docker setups. Leave unset for default behavior. |
 | `XRDB_PREVIEW_ORIGIN` | `http://127.0.0.1:3000` | Internal origin used by `/preview/[slug]` when the app calls itself. Also accepted: `PREVIEW_INTERNAL_ORIGIN`. |
 | `XRDB_TRAEFIK_ENTRYPOINTS` | `websecure` | Traefik entrypoints for the stack compose file. |
 | `XRDB_TRAEFIK_CERTRESOLVER` | `letsencrypt` | Traefik certificate resolver for the stack compose file. |

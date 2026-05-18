@@ -18,7 +18,13 @@ resolve_data_dir() {
 DATA_DIR="$(resolve_data_dir)"
 
 if [ "$(id -u)" = "0" ]; then
+  PUID="${PUID:-1000}"
+  PGID="${PGID:-1000}"
+
   mkdir -p "$DATA_DIR"
+
+  groupmod -o -g "$PGID" node 2>/dev/null || true
+  usermod -o -u "$PUID" node 2>/dev/null || true
 
   if ! chown -R node:node "$DATA_DIR" 2>/dev/null; then
     echo "[xrdb] Warning: unable to change ownership for $DATA_DIR before startup." >&2
