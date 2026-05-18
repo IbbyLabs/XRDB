@@ -33,6 +33,7 @@ const SHARED_IMAGE_QUERY_KEYS = [
   'posterQualityBadgeOffsetY',
   'ageRatingBadgePosition',
   'qualityBadgesStyle',
+  'qualityBadgeAppearance',
   'providerAppearance',
   'ratingPresentation',
   'aggregateRatingSource',
@@ -170,6 +171,11 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
     'logoGenreBadgeBorderWidth',
     'logoGenreBadgeBackgroundOpacity',
     'logoGenreBadgeAnimeGrouping',
+    'logoStreamBadges',
+    'logoQualityBadges',
+    'logoQualityBadgesStyle',
+    'logoQualityBadgeScale',
+    'logoQualityBadgesMax',
     'logoRatings',
     'logoRatingsMax',
     'logoBackground',
@@ -321,6 +327,12 @@ export type ProxyConfig = {
   thumbnailQualityBadges?: string;
   thumbnailQualityBadgesStyle?: string;
   thumbnailQualityBadgeScale?: string;
+  logoStreamBadges?: string;
+  logoQualityBadges?: string;
+  logoQualityBadgesStyle?: string;
+  logoQualityBadgeScale?: string;
+  logoQualityBadgesMax?: string;
+  qualityBadgeAppearance?: string;
   posterQualityBadgesMax?: string;
   backdropQualityBadgesMax?: string;
   thumbnailQualityBadgesMax?: string;
