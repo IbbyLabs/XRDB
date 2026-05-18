@@ -89,6 +89,27 @@ const countBrightPixelsInRect = async (buffer, left, top, width, height) => {
   return count;
 };
 
+const averageLumaInRect = async (buffer, left, top, width, height) => {
+  const { data, info } = await sharp(buffer)
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  let total = 0;
+  let samples = 0;
+  for (let y = top; y < Math.min(info.height, top + height); y += 1) {
+    for (let x = left; x < Math.min(info.width, left + width); x += 1) {
+      const pixelIndex = (y * info.width + x) * info.channels;
+      const r = data[pixelIndex];
+      const g = data[pixelIndex + 1];
+      const b = data[pixelIndex + 2];
+      total += 0.2126 * r + 0.7152 * g + 0.0722 * b;
+      samples += 1;
+    }
+  }
+
+  return samples > 0 ? total / samples : 0;
+};
+
 const createPosterRenderInput = ({
   imgUrl,
   posterQualityBadgeOffsetX = 0,
@@ -501,6 +522,74 @@ test('auto-minimal top-left trending badges leave a second visible row for top-l
   assert.ok(genreOnlyLowerBand < 250);
   assert.ok(trendingAndGenreTopBand > 650);
   assert.ok(trendingAndGenreLowerBand > 450);
+});
+
+test('auto-minimal trending strip renders two visible rows for Binge Ready and Fan Favourite', async () => {
+  const sourceSvg =
+    "<svg xmlns='http://www.w3.org/2000/svg' width='400' height='600' viewBox='0 0 400 600'><rect width='400' height='600' fill='#ffffff'/></svg>";
+  const imgUrl = `data:image/svg+xml,${encodeURIComponent(sourceSvg)}`;
+
+  const withTrending = await renderWithSharp(
+    createPosterRenderInput({
+      imgUrl,
+      qualityBadges: [
+        createQualityBadge('hdr', 'HDR'),
+        createQualityBadge('bingeready', 'Binge Ready'),
+        createQualityBadge('fanfavourite', 'Fan Favourite'),
+      ],
+      trendingTagPosition: 'auto',
+      trendingTagStylePreset: 'auto-minimal',
+    }),
+    { ...phases },
+  );
+
+  const upperLine = await countBrightPixelsInRect(withTrending.body, 40, 480, 320, 28);
+  const lowerLine = await countBrightPixelsInRect(withTrending.body, 40, 512, 320, 28);
+
+  assert.ok(upperLine > 170);
+  assert.ok(lowerLine > 170);
+});
+
+test('clean poster scrim darkens gradually without a sharp top cutoff', async () => {
+  const sourceSvg =
+    "<svg xmlns='http://www.w3.org/2000/svg' width='400' height='600' viewBox='0 0 400 600'><rect width='400' height='600' fill='#ffffff'/></svg>";
+  const imgUrl = `data:image/svg+xml,${encodeURIComponent(sourceSvg)}`;
+
+  const noScrim = await renderWithSharp(
+    createPosterRenderInput({
+      imgUrl,
+      qualityBadges: [createQualityBadge('hdr', 'HDR')],
+    }),
+    { ...phases },
+  );
+
+  const withScrim = await renderWithSharp(
+    {
+      ...createPosterRenderInput({
+        imgUrl,
+        qualityBadges: [createQualityBadge('hdr', 'HDR')],
+      }),
+      genreBadge: {
+        familyId: 'crime',
+        label: 'Crime',
+        accentColor: '#22c55e',
+        mode: 'text',
+        style: 'clean',
+        position: 'bottomCenter',
+        scalePercent: 118,
+        borderWidth: 1,
+        backgroundOpacity: 56,
+      },
+    },
+    { ...phases },
+  );
+
+  const topNoScrimLuma = await averageLumaInRect(noScrim.body, 80, 420, 240, 60);
+  const topScrimLuma = await averageLumaInRect(withScrim.body, 80, 420, 240, 60);
+  const lowerScrimLuma = await averageLumaInRect(withScrim.body, 80, 500, 240, 60);
+
+  assert.ok(topScrimLuma < topNoScrimLuma - 1);
+  assert.ok(lowerScrimLuma < topScrimLuma - 10);
 });
 
 test('auto-minimal trending text remains proportionally visible at 4K poster size', async () => {
