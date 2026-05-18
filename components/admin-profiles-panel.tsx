@@ -161,6 +161,7 @@ export function AdminProfilesPanel() {
   const [searchInput, setSearchInput] = useState('');
   const [passwordFilter, setPasswordFilter] = useState<'any' | 'set' | 'none'>('any');
   const [lockFilter, setLockFilter] = useState<'any' | 'locked' | 'ok'>('any');
+  const [inactiveFilter, setInactiveFilter] = useState<'any' | 'active' | 'inactive'>('any');
   const [activeQuery, setActiveQuery] = useState('');
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [comboOpen, setComboOpen] = useState(false);
@@ -254,9 +255,11 @@ export function AdminProfilesPanel() {
       const isLocked = p.lockedUntil !== null && p.lockedUntil > Date.now();
       if (lockFilter === 'locked' && !isLocked) return false;
       if (lockFilter === 'ok' && isLocked) return false;
+      if (inactiveFilter === 'active' && p.isInactive) return false;
+      if (inactiveFilter === 'inactive' && !p.isInactive) return false;
       return true;
     });
-  }, [profiles, passwordFilter, lockFilter]);
+  }, [profiles, passwordFilter, lockFilter, inactiveFilter]);
 
   const comboSuggestions = useMemo(() => {
     if (!profiles || !searchInput.trim()) return [];
@@ -383,6 +386,15 @@ export function AdminProfilesPanel() {
           ]}
           onChange={setLockFilter}
         />
+        <AdminDropdown
+          value={inactiveFilter}
+          options={[
+            { value: 'any', label: 'Activity: any' },
+            { value: 'active', label: 'Activity: active' },
+            { value: 'inactive', label: 'Activity: inactive' },
+          ]}
+          onChange={setInactiveFilter}
+        />
       </div>
       <div className="xrdb-admin-section-body" style={{ padding: 0 }}>
         {!profiles ? (
@@ -425,7 +437,9 @@ export function AdminProfilesPanel() {
                         )}
                       </td>
                       <td>
-                        {p.lockedUntil && p.lockedUntil > Date.now() ? (
+                        {p.isInactive ? (
+                          <span className="xrdb-admin-badge xrdb-admin-badge--warn">Inactive</span>
+                        ) : p.lockedUntil && p.lockedUntil > Date.now() ? (
                           <span className="xrdb-admin-badge xrdb-admin-badge--err">Locked</span>
                         ) : p.failedAttempts > 0 ? (
                           <span className="xrdb-admin-badge xrdb-admin-badge--warn">{p.failedAttempts} failed</span>

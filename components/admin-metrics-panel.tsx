@@ -267,7 +267,11 @@ export function AdminMetricsPanel() {
             value={snapshot.trackedIdentityRequestsLast24Hours}
             sub={`${snapshot.anonymousRequestsLast24Hours.toLocaleString()} anonymous`}
           />
-          <StatCard label="Config profiles" value={snapshot.totalConfigProfiles} />
+          <StatCard
+            label="Config profiles"
+            value={snapshot.totalActiveConfigProfiles}
+            sub={`${snapshot.totalInactiveConfigProfiles.toLocaleString()} inactive`}
+          />
         </div>
         {(snapshot.topKeysByVolume.length > 0 || snapshot.anonymousRequestsLast24Hours > 0) && (
           <div className="xrdb-admin-subsection">
