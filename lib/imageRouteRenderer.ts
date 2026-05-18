@@ -694,35 +694,52 @@ const buildPosterTrendingTagsOverlay = (
 ): string => {
   if (!tags || tags.length === 0) return '';
 
-  const baseText = tags.map((tag) => tag.toUpperCase()).join(' • ');
-  const displayText = escapeSvgText(
-    config.surroundWithSeparatorDots ? `• ${baseText} •` : baseText,
-  );
+  const normalizedTags = tags
+    .map((tag) => tag.trim().toUpperCase())
+    .filter((tag) => tag.length > 0)
+    .slice(0, 2);
+  if (normalizedTags.length === 0) return '';
 
-  const fontSize = Math.max(17, Math.min(64, Math.round(height * 0.37)));
-  const strokeWidth = Math.max(1.05, Math.min(2.9, Number((fontSize * 0.054).toFixed(2))));
+  const baseLines =
+    normalizedTags.length > 1 ? normalizedTags : [normalizedTags.join(' • ')];
+  const textLines = config.surroundWithSeparatorDots
+    ? baseLines.map((line) => `• ${line} •`)
+    : baseLines;
+  const lineCount = textLines.length;
 
   const availableTextWidth = Math.max(1, width - 28);
-  const estimatedTextWidth = estimateGeneratedLogoLineWidth(
-    config.surroundWithSeparatorDots ? `• ${baseText} •` : baseText,
-    fontSize,
-  );
-  const textLengthAttribute =
-    estimatedTextWidth > availableTextWidth
-      ? ` textLength="${availableTextWidth}" lengthAdjust="spacingAndGlyphs"`
-      : '';
+  const verticalPadding = Math.max(10, Math.round(height * 0.12));
+  const usableHeight = Math.max(1, height - verticalPadding * 2);
+  const targetLineHeight = lineCount > 1 ? 2.35 : 1.45;
+  let fontSize = Math.max(14, Math.min(64, Math.round(usableHeight / targetLineHeight)));
+
+  while (
+    fontSize > 13 &&
+    textLines.some((line) => estimateGeneratedLogoLineWidth(line, fontSize) > availableTextWidth)
+  ) {
+    fontSize -= 1;
+  }
+
+  const strokeWidth = Math.max(1.05, Math.min(2.9, Number((fontSize * 0.054).toFixed(2))));
+  const lineStep =
+    lineCount > 1
+      ? Math.max(fontSize + Math.round(fontSize * 0.32), Math.round(usableHeight / lineCount))
+      : 0;
+  const firstLineY =
+    lineCount > 1
+      ? Math.round(height * 0.5 - (lineStep * (lineCount - 1)) / 2)
+      : Math.round(height * 0.5);
 
   const fontFamily = "-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Segoe UI','Inter','Noto Sans','DejaVu Sans',sans-serif";
-  const textY = Math.round(height * 0.5);
-
-  return `
-    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}">
-      <defs>
-        <style>
-          .trend-strip-text { font-weight: ${config.styleProfile.textWeight}; letter-spacing: ${config.styleProfile.letterSpacing}px; }
-        </style>
-      </defs>
-      <text
+  const textElements = textLines
+    .map((line, index) => {
+      const estimatedLineWidth = estimateGeneratedLogoLineWidth(line, fontSize);
+      const textLengthAttribute =
+        estimatedLineWidth > availableTextWidth
+          ? ` textLength="${availableTextWidth}" lengthAdjust="spacingAndGlyphs"`
+          : '';
+      const textY = lineCount > 1 ? firstLineY + lineStep * index : firstLineY;
+      return `<text
         class="trend-strip-text"
         x="${Math.round(width / 2)}"
         y="${textY}"
@@ -735,7 +752,18 @@ const buildPosterTrendingTagsOverlay = (
         text-anchor="middle"
         dominant-baseline="middle"
         ${textLengthAttribute}
-      >${displayText}</text>
+      >${escapeSvgText(line)}</text>`;
+    })
+    .join('\n');
+
+  return `
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}">
+      <defs>
+        <style>
+          .trend-strip-text { font-weight: ${config.styleProfile.textWeight}; letter-spacing: ${config.styleProfile.letterSpacing}px; }
+        </style>
+      </defs>
+      ${textElements}
     </svg>
   `;
 };
@@ -2867,15 +2895,17 @@ export const renderWithSharp = async (
     if (genreBadgeOverlay && input.genreBadge?.style === 'clean' && input.genreBadge.mode !== 'off') {
       const rawOpacity = Math.max(0, Math.min(100, input.genreBadge.backgroundOpacity ?? DEFAULT_GENRE_BADGE_BACKGROUND_OPACITY_PERCENT)) / 100;
       if (rawOpacity !== 0) {
-      const scrimMaxOpacity = Math.min(0.99, 0.8 + rawOpacity * 0.25).toFixed(2);
-      const scrimMidOpacity = Math.min(0.96, Number(scrimMaxOpacity) * 0.9).toFixed(2);
+      const scrimMaxOpacity = Math.min(0.93, 0.72 + rawOpacity * 0.21).toFixed(2);
+      const scrimHighOpacity = Math.min(0.84, Number(scrimMaxOpacity) * 0.78).toFixed(2);
+      const scrimMidOpacity = Math.min(0.62, Number(scrimMaxOpacity) * 0.52).toFixed(2);
+      const scrimLowOpacity = Math.min(0.26, Number(scrimMaxOpacity) * 0.2).toFixed(2);
       const scrimWidth = input.outputWidth;
       const scrimLeft = 0;
       const scrimTop = cleanPosterGenreModeActive
-        ? Math.max(0, genreBadgeOverlay.top - Math.round(genreBadgeOverlay.height * 0.2))
-        : Math.round(input.outputHeight * 0.4);
+        ? Math.max(0, genreBadgeOverlay.top - Math.round(genreBadgeOverlay.height * 1.05))
+        : Math.round(input.outputHeight * 0.26);
       const scrimHeight = Math.max(1, input.outputHeight - scrimTop);
-      const scrimSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${scrimWidth}" height="${scrimHeight}"><defs><linearGradient id="cleanBotScrim" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="68%" stop-color="rgba(0,0,0,${scrimMidOpacity})"/><stop offset="100%" stop-color="rgba(0,0,0,${scrimMaxOpacity})"/></linearGradient></defs><rect width="${scrimWidth}" height="${scrimHeight}" fill="url(#cleanBotScrim)"/></svg>`;
+      const scrimSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${scrimWidth}" height="${scrimHeight}"><defs><linearGradient id="cleanBotScrim" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(0,0,0,0)"/><stop offset="24%" stop-color="rgba(0,0,0,${scrimLowOpacity})"/><stop offset="52%" stop-color="rgba(0,0,0,${scrimMidOpacity})"/><stop offset="78%" stop-color="rgba(0,0,0,${scrimHighOpacity})"/><stop offset="100%" stop-color="rgba(0,0,0,${scrimMaxOpacity})"/></linearGradient></defs><rect width="${scrimWidth}" height="${scrimHeight}" fill="url(#cleanBotScrim)"/></svg>`;
       overlays.push({ input: Buffer.from(scrimSvg), top: scrimTop, left: scrimLeft });
       }
     }
