@@ -3668,6 +3668,10 @@
 		flex: 1;
 	}
 
+	.xrdb-desktop-only {
+		display: none;
+	}
+
 	.xrdb-target-toolbar {
 		grid-template-columns: 1fr;
 	}
