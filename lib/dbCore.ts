@@ -203,6 +203,8 @@ const SCHEMA_MIGRATIONS = [
   `ALTER TABLE config_profiles ADD COLUMN failed_attempts INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE config_profiles ADD COLUMN locked_until INTEGER`,
   `ALTER TABLE config_profiles ADD COLUMN unlock_version INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE config_profiles ADD COLUMN is_inactive INTEGER DEFAULT 0`,
+  `ALTER TABLE config_profiles ADD COLUMN inactive_marked_at INTEGER`,
   `CREATE TABLE IF NOT EXISTS community_templates (id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT NOT NULL, author TEXT NOT NULL, tags TEXT NOT NULL DEFAULT '[]', config TEXT NOT NULL, approved INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`,
   `CREATE INDEX IF NOT EXISTS community_templates_approved_idx ON community_templates (approved, created_at)`,
   `CREATE TABLE IF NOT EXISTS admin_request_log (id TEXT PRIMARY KEY, route_type TEXT NOT NULL, status_code INTEGER NOT NULL, duration_ms REAL NOT NULL, media_id TEXT, created_at INTEGER NOT NULL)`,
@@ -235,6 +237,8 @@ type ConfigProfileRow = {
   created_at?: number;
   updated_at?: number;
   last_accessed_at?: number | null;
+  is_inactive?: number | null;
+  inactive_marked_at?: number | null;
 };
 
 export type ConfigProfileMetadata = {
@@ -247,6 +251,8 @@ export type ConfigProfileMetadata = {
   createdAt: number | null;
   updatedAt: number | null;
   lastAccessedAt: number | null;
+  isInactive: boolean;
+  inactiveMarkedAt: number | null;
 };
 
 let _configEncryptionKey: Buffer | null = null;
@@ -343,6 +349,11 @@ const normalizeConfigProfileMetadata = (
   lastAccessedAt:
     typeof row.last_accessed_at === 'number' && Number.isFinite(row.last_accessed_at)
       ? row.last_accessed_at
+      : null,
+  isInactive: (row.is_inactive ?? 0) !== 0,
+  inactiveMarkedAt:
+    typeof row.inactive_marked_at === 'number' && Number.isFinite(row.inactive_marked_at)
+      ? row.inactive_marked_at
       : null,
 });
 
@@ -528,6 +539,12 @@ export const ensureDbInitialized = () => {
     const pruneDays = parseInt(pruneDaysRaw, 10);
     if (Number.isFinite(pruneDays) && pruneDays > 0) {
       pruneInactiveConfigProfiles(pruneDays);
+    }
+
+    const purgeDaysRaw = String(process.env.XRDB_INACTIVE_CONFIG_PURGE_DAYS ?? '').trim();
+    const purgeDays = parseInt(purgeDaysRaw, 10);
+    if (Number.isFinite(purgeDays) && purgeDays > 0) {
+      purgeInactiveConfigProfiles(purgeDays);
     }
   }
 };
@@ -747,11 +764,24 @@ const pruneInactiveConfigProfiles = (days: number): void => {
   ensureDbInitialized();
   const db = getDb();
   const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  db.prepare(
+    `UPDATE config_profiles
+     SET is_inactive = 1, inactive_marked_at = ?
+     WHERE is_inactive = 0
+       AND ((last_accessed_at IS NOT NULL AND last_accessed_at < ?)
+            OR (last_accessed_at IS NULL AND created_at < ?))`,
+  ).run(now, cutoff, cutoff);
+};
+
+const purgeInactiveConfigProfiles = (days: number): void => {
+  ensureDbInitialized();
+  const db = getDb();
+  const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
   db.prepare(
     `DELETE FROM config_profiles
-     WHERE (last_accessed_at IS NOT NULL AND last_accessed_at < ?)
-        OR (last_accessed_at IS NULL AND created_at < ?)`,
-  ).run(cutoff, cutoff);
+     WHERE is_inactive = 1 AND inactive_marked_at IS NOT NULL AND inactive_marked_at < ?`,
+  ).run(cutoff);
 };
 
 export const createOrReuseProxyReference = <Value extends Record<string, unknown>>(

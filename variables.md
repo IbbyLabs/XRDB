@@ -45,7 +45,8 @@ All cache TTL values are in **milliseconds**.
 | `XRDB_PARTNER_ACCESS_KEYS` | — | Signed partner access profiles. Format: `partnerId:secret:perMinute:burst`, comma, semicolon, or newline separated. Example: `partner:supersecret:1200:300`. |
 | `XRDB_PROXY_ALLOWED_ORIGINS` | `*` | CORS allowlist for proxy responses. |
 | `XRDB_CONFIG_ENCRYPTION_KEY` | auto generated | 64 hex character string (32 bytes) used to encrypt saved config profiles at rest. Losing this key makes existing profiles unreadable. Generate: `openssl rand -hex 32`. |
-| `XRDB_INACTIVE_CONFIG_PRUNE_DAYS` | `-1` | Days of inactivity before a saved config profile is deleted on startup. `-1` disables pruning. |
+| `XRDB_INACTIVE_CONFIG_PRUNE_DAYS` | `-1` | Days of inactivity before a saved config profile is marked as inactive on startup. After marking, configs do not count toward active user metrics. Inactive configs are preserved for returning users. `-1` disables marking. |
+| `XRDB_INACTIVE_CONFIG_PURGE_DAYS` | `0` | Optional threshold for hard deletion after marking. If > 0, marked-inactive configs older than this many days are permanently deleted on startup. Default `0` disables hard deletion (only soft marking is performed). |
 | `ADMIN_KEY` | — | Enables the admin dashboard at `/admin` when set. Generate: `openssl rand -hex 32`. |
 
 ---

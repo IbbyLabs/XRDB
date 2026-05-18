@@ -50,7 +50,9 @@ export type MetricsSnapshot = {
   activeUsersLast24Hours: number;
   activeConfigUsersLast24Hours: number;
   activeKeyUsersLast24Hours: number;
-  totalConfigProfiles: number;
+  totalActiveConfigProfiles: number;
+  totalInactiveConfigProfiles: number;
+  totalConfigProfilesPendingPurge: number;
   prewarmRuns: number;
   prewarmTotalWarmed: number;
   prewarmTotalFailed: number;
@@ -288,9 +290,24 @@ export const getMetricsSnapshot = (): MetricsSnapshot => {
 
   const anonymousRequestsLast24Hours = requestsLast24Hours - trackedIdentityRequestsLast24Hours;
 
-  const totalConfigProfiles = (
-    db.prepare('SELECT COUNT(*) as n FROM config_profiles').get() as { n: number }
+  const totalActiveConfigProfiles = (
+    db.prepare('SELECT COUNT(*) as n FROM config_profiles WHERE is_inactive = 0').get() as { n: number }
   ).n;
+
+  const totalInactiveConfigProfiles = (
+    db.prepare('SELECT COUNT(*) as n FROM config_profiles WHERE is_inactive = 1').get() as { n: number }
+  ).n;
+
+  const purgeDaysRaw = String(process.env.XRDB_INACTIVE_CONFIG_PURGE_DAYS ?? '').trim();
+  const purgeDays = parseInt(purgeDaysRaw, 10);
+  let totalConfigProfilesPendingPurge = 0;
+  if (Number.isFinite(purgeDays) && purgeDays > 0) {
+    const purgeThreshold = Date.now() - purgeDays * 24 * 60 * 60 * 1000;
+    const result = db.prepare(
+      'SELECT COUNT(*) as n FROM config_profiles WHERE is_inactive = 1 AND inactive_marked_at IS NOT NULL AND inactive_marked_at < ?',
+    ).get(purgeThreshold) as { n: number };
+    totalConfigProfilesPendingPurge = result.n;
+  }
 
   const prewarmAggregate = db.prepare(
     'SELECT COUNT(*) as runs, COALESCE(SUM(warmed), 0) as warmed, COALESCE(SUM(failed), 0) as failed FROM admin_prewarm_runs',
@@ -395,7 +412,9 @@ export const getMetricsSnapshot = (): MetricsSnapshot => {
     activeUsersLast24Hours,
     activeConfigUsersLast24Hours,
     activeKeyUsersLast24Hours,
-    totalConfigProfiles,
+    totalActiveConfigProfiles,
+    totalInactiveConfigProfiles,
+    totalConfigProfilesPendingPurge,
     prewarmRuns: prewarmAggregate.runs,
     prewarmTotalWarmed: prewarmAggregate.warmed,
     prewarmTotalFailed: prewarmAggregate.failed,
