@@ -567,7 +567,7 @@ export function StepShell({
                 </button>
                 <button
                   type="button"
-                  className={`xrdb-preview-mode-btn${previewMode === 'floating' ? ' xrdb-preview-mode-btn-active' : ''}`}
+                  className={`xrdb-preview-mode-btn xrdb-desktop-only${previewMode === 'floating' ? ' xrdb-preview-mode-btn-active' : ''}`}
                   onClick={() => setPreviewMode('floating')}
                   aria-pressed={previewMode === 'floating'}
                   disabled={isMobileViewport}
