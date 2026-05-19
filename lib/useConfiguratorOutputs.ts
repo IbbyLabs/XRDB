@@ -160,6 +160,36 @@ const AGGREGATE_SOURCE_ACCENT_BY_ID = AGGREGATE_RATING_SOURCE_ACCENTS;
 
 const maskSensitiveText = (value: string) => value.replace(/[^\s]/g, '*');
 
+const buildDocsCapturePreviewUrl = (previewType: 'poster' | 'backdrop' | 'thumbnail' | 'logo') => {
+  const label = previewType.charAt(0).toUpperCase() + previewType.slice(1);
+  const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-label="${label} preview placeholder">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#172036"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#5c7cff"/>
+      <stop offset="100%" stop-color="#86b3ff"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" rx="40" fill="url(#bg)"/>
+  <rect x="72" y="72" width="420" height="576" rx="28" fill="#121a2d" stroke="rgba(255,255,255,0.08)"/>
+  <rect x="102" y="104" width="120" height="16" rx="8" fill="url(#accent)"/>
+  <rect x="102" y="140" width="210" height="12" rx="6" fill="rgba(255,255,255,0.18)"/>
+  <rect x="102" y="168" width="180" height="12" rx="6" fill="rgba(255,255,255,0.14)"/>
+  <rect x="102" y="538" width="300" height="14" rx="7" fill="rgba(255,255,255,0.14)"/>
+  <rect x="102" y="566" width="240" height="14" rx="7" fill="rgba(255,255,255,0.12)"/>
+  <text x="560" y="214" fill="#f3f5ff" font-family="Arial, sans-serif" font-size="48" font-weight="700">XRDB Docs Capture</text>
+  <text x="560" y="270" fill="#b7c4e6" font-family="Arial, sans-serif" font-size="30" font-weight="600">${label} preview</text>
+  <text x="560" y="330" fill="#90a0c6" font-family="Arial, sans-serif" font-size="22">Fast local placeholder used only for docs capture.</text>
+  <text x="560" y="366" fill="#90a0c6" font-family="Arial, sans-serif" font-size="22">It keeps the release script deterministic and avoids slow artwork fetches.</text>
+</svg>`;
+
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+};
+
 export type AiometadataPatternRow = {
   description: string;
   key: 'poster' | 'background' | 'logo' | 'episode';
@@ -471,6 +501,7 @@ export function useConfiguratorOutputs({
   posterSideRatingsPosition,
   posterStreamBadges,
   previewType,
+  isDocsCapture,
   proxyUrlVisible,
   qualityBadgesSide,
   posterNoBackgroundBadgeOutlineColor,
@@ -688,6 +719,7 @@ export function useConfiguratorOutputs({
   posterSideRatingsPosition: SideRatingPosition;
   posterStreamBadges: StreamBadgesSetting;
   previewType: 'poster' | 'backdrop' | 'thumbnail' | 'logo';
+  isDocsCapture: boolean;
   proxyUrlVisible: boolean;
   qualityBadgesSide: QualityBadgesSide;
   posterNoBackgroundBadgeOutlineColor: string;
@@ -734,6 +766,9 @@ export function useConfiguratorOutputs({
   const [previewLoadedForUrl, setPreviewLoadedForUrl] = useState('');
 
   const previewUrl = useMemo(() => {
+    if (isDocsCapture) {
+      return buildDocsCapturePreviewUrl(previewType);
+    }
     const normalizedXrdbKey = xrdbKey.trim();
     const normalizedTmdbKey = allowClientProviderCredentials ? tmdbKey.trim() : '';
     const normalizedFanartKey = allowClientProviderCredentials ? fanartKey.trim() : '';

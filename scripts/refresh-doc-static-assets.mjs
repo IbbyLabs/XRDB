@@ -961,7 +961,14 @@ const generateMetadataExamples = async () => {
   }
 };
 
-const buildWorkspaceCaptureUrl = (origin, { path: routePath = '/', requirePreview = false } = {}) => {
+const buildWorkspaceCaptureUrl = (
+  origin,
+  {
+    path: routePath = '/',
+    requirePreview = false,
+    panels = ['configurator', 'center-view', 'addon-proxy', 'quick-actions'],
+  } = {},
+) => {
   const previewKeys = readPreviewEnvKeys();
   const url = new URL(routePath, origin);
   url.searchParams.set('docsCapture', '1');
@@ -980,10 +987,7 @@ const buildWorkspaceCaptureUrl = (origin, { path: routePath = '/', requirePrevie
   );
   url.searchParams.set('captureProxyTranslateMeta', 'true');
   url.searchParams.set('captureProxyDebugMetaTranslation', 'true');
-  url.searchParams.set(
-    'capturePanels',
-    ['configurator', 'center-view', 'addon-proxy', 'quick-actions'].join(','),
-  );
+  url.searchParams.set('capturePanels', panels.join(','));
   return url.toString();
 };
 
@@ -993,12 +997,15 @@ const generateWorkspaceCaptures = async (origin) => {
   const proxyViewportPath = path.join(captureDir, 'proxy-viewport.png');
 
   await captureScreenshot({
-    url: buildWorkspaceCaptureUrl(origin, { path: '/poster', requirePreview: true }),
+    url: buildWorkspaceCaptureUrl(origin, {
+      path: '/poster',
+      requirePreview: true,
+      panels: ['configurator', 'center-view'],
+    }),
     outputPath: previewViewportPath,
     width: 1280,
     height: 900,
     waitForSelector: '.xrdb-page',
-    fullPage: true,
   });
 
   await captureScreenshot({
