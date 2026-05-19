@@ -997,7 +997,7 @@ const generateWorkspaceCaptures = async (origin) => {
     outputPath: previewViewportPath,
     width: 1280,
     height: 900,
-    waitForSelector: '.xrdb-page[data-docs-capture-ready="true"]',
+    waitForSelector: '.xrdb-page',
     fullPage: true,
   });
 
@@ -1006,7 +1006,7 @@ const generateWorkspaceCaptures = async (origin) => {
     outputPath: proxyViewportPath,
     width: 1440,
     height: 1200,
-    waitForSelector: '.xrdb-page[data-docs-capture-ready="true"]',
+    waitForSelector: '.xrdb-page',
     fullPage: true,
   });
 
