@@ -21,20 +21,40 @@ const anchor = `v${version}`
 const readme = await fs.readFile(README_PATH, 'utf8');
 const markerPattern =
   /(<!-- changelog-links:start -->\n)([\s\S]*?)(\n<!-- changelog-links:end -->)/;
+const tipText = `> **Changelog:** read the [full changelog](CHANGELOG.md) or jump straight to the [latest entry](CHANGELOG.md#${anchor}).`;
+const changelogLine = `- [Changelog](CHANGELOG.md) (latest: [v${version}](CHANGELOG.md#${anchor}))`;
 
-if (!markerPattern.test(readme)) {
-  throw new Error('README changelog link markers were not found.');
+let updatedReadme = readme;
+
+if (markerPattern.test(updatedReadme)) {
+  updatedReadme = updatedReadme.replace(
+    markerPattern,
+    [
+      '$1',
+      '> [!TIP]',
+      tipText,
+      '$3',
+    ].join('\n'),
+  );
+} else {
+  const changelogLinePattern = /^- \[Changelog\]\(CHANGELOG\.md\)(?:\s*\(latest:\s*\[v[^\]]+\]\(CHANGELOG\.md#[^)]+\)\))?\s*$/m;
+  if (changelogLinePattern.test(updatedReadme)) {
+    updatedReadme = updatedReadme.replace(changelogLinePattern, changelogLine);
+  } else {
+    const docsLinksPattern = /(## Docs Links\n\n)([\s\S]*?)(\n## )/;
+    if (!docsLinksPattern.test(updatedReadme)) {
+      throw new Error('Unable to update changelog link: neither changelog markers nor a Docs Links section were found in README.md.');
+    }
+    updatedReadme = updatedReadme.replace(
+      docsLinksPattern,
+      (_, prefix, body, suffix) => {
+        const trimmedBody = body.replace(/\n+$/u, '');
+        const nextBody = `${trimmedBody}\n${changelogLine}\n`;
+        return `${prefix}${nextBody}${suffix}`;
+      },
+    );
+  }
 }
-
-const updatedReadme = readme.replace(
-  markerPattern,
-  [
-    '$1',
-    '> [!TIP]',
-    `> **Changelog:** read the [full changelog](CHANGELOG.md) or jump straight to the [latest entry](CHANGELOG.md#${anchor}).`,
-    '$3',
-  ].join('\n'),
-);
 
 if (updatedReadme !== readme) {
   await fs.writeFile(README_PATH, updatedReadme);
