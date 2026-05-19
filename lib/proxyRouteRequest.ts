@@ -19,13 +19,13 @@ const parseAllowedOrigins = (raw: string | undefined | null) => {
     .filter((value) => value.length > 0);
 };
 
-const parseForwardedProto = (value: string | null) => {
+export const parseForwardedProto = (value: string | null) => {
   const candidate = (value || '').split(',')[0]?.trim().toLowerCase();
   if (candidate === 'http' || candidate === 'https') return candidate;
   return null;
 };
 
-const parseForwardedHost = (value: string | null) => {
+export const parseForwardedHost = (value: string | null) => {
   const candidate = (value || '').split(',')[0]?.trim();
   if (!candidate) return null;
   try {

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { BRAND_DISPLAY_NAME, BRAND_NAME } from './siteBrand.ts';
+import { parseForwardedHost, parseForwardedProto } from './proxyRouteRequest.ts';
 
 const DEFAULT_APP_URL = 'http://localhost:3000';
 const SITE_TITLE = `${BRAND_NAME} | Artwork Engine for Stremio`;
@@ -8,7 +9,55 @@ const SITE_DESCRIPTION =
 const SITE_SOCIAL_DESCRIPTION =
   'Add IMDb ratings and quality badges to your Stremio posters. Self hosted, open source, and works with AIOMetadata.';
 
-const resolveMetadataBase = (appUrl?: string) => new URL(appUrl || DEFAULT_APP_URL);
+type RuntimeMetadataBaseContext = {
+  requestUrl: string;
+  hostHeader: string | null;
+  forwardedHostHeader: string | null;
+  forwardedProtoHeader: string | null;
+  trustForwarded: boolean;
+  appUrl?: string;
+};
+
+const resolveMetadataBase = (appUrl?: string) => {
+  try {
+    return new URL(appUrl || DEFAULT_APP_URL);
+  } catch {
+    return new URL(DEFAULT_APP_URL);
+  }
+};
+
+const resolveRequestProto = (requestUrl: string) => {
+  try {
+    const proto = new URL(requestUrl).protocol.replace(':', '').toLowerCase();
+    return proto === 'https' ? 'https' : 'http';
+  } catch {
+    return 'http';
+  }
+};
+
+const resolveRuntimeMetadataBase = ({
+  requestUrl,
+  hostHeader,
+  forwardedHostHeader,
+  forwardedProtoHeader,
+  trustForwarded,
+  appUrl,
+}: RuntimeMetadataBaseContext) => {
+  if (trustForwarded) {
+    const forwardedHost = parseForwardedHost(forwardedHostHeader);
+    if (forwardedHost) {
+      const forwardedProto = parseForwardedProto(forwardedProtoHeader) || 'https';
+      return new URL(`${forwardedProto}://${forwardedHost}`);
+    }
+  }
+
+  const requestHost = parseForwardedHost(hostHeader);
+  if (requestHost) {
+    return new URL(`${resolveRequestProto(requestUrl)}://${requestHost}`);
+  }
+
+  return resolveMetadataBase(appUrl);
+};
 
 export const siteViewport: Viewport = {
   themeColor: '#020108',
@@ -53,3 +102,8 @@ export const buildSiteMetadata = (appUrl?: string): Metadata => ({
     images: [{ url: '/discord-banner.png', width: 1376, height: 768, alt: 'XRDB | Artwork Engine for Stremio' }],
   },
 });
+
+export const buildRuntimeSiteMetadata = (context: RuntimeMetadataBaseContext): Metadata => {
+  const metadataBase = resolveRuntimeMetadataBase(context).toString();
+  return buildSiteMetadata(metadataBase);
+};
