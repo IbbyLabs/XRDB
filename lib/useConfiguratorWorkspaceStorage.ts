@@ -118,8 +118,6 @@ export function useConfiguratorWorkspaceStorage({
     didHydrateFromStorageRef.current = true;
 
     let cancelled = false;
-    const isDocsCapture = typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('docsCapture');
-    const scheduleStateUpdate = isDocsCapture ? (cb: () => void) => cb() : queueMicrotask;
 
     try {
       const settingsRaw =
@@ -155,7 +153,7 @@ export function useConfiguratorWorkspaceStorage({
       if (raw) {
         const parsed = parseSavedUiConfig(raw, { skipCrossTypeFallbacks: true });
         if (!parsed) {
-          scheduleStateUpdate(() => {
+          queueMicrotask(() => {
             if (cancelled) {
               return;
             }
@@ -165,7 +163,7 @@ export function useConfiguratorWorkspaceStorage({
           });
           return;
         }
-        scheduleStateUpdate(() => {
+        queueMicrotask(() => {
           if (cancelled) {
             return;
           }
@@ -178,7 +176,7 @@ export function useConfiguratorWorkspaceStorage({
 
       const legacyRaw = window.localStorage.getItem(LEGACY_API_KEY_CONFIG_STORAGE_KEY);
       if (!legacyRaw) {
-        scheduleStateUpdate(() => {
+        queueMicrotask(() => {
           if (cancelled) {
             return;
           }
@@ -189,7 +187,7 @@ export function useConfiguratorWorkspaceStorage({
       }
 
       const legacy = JSON.parse(legacyRaw) as LegacyApiKeyConfigStorage;
-      scheduleStateUpdate(() => {
+      queueMicrotask(() => {
         if (cancelled) {
           return;
         }
@@ -221,7 +219,7 @@ export function useConfiguratorWorkspaceStorage({
         setUiSettingsLoaded(true);
       });
     } catch {
-      scheduleStateUpdate(() => {
+      queueMicrotask(() => {
         if (cancelled) {
           return;
         }
