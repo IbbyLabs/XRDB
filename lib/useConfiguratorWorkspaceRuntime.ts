@@ -2130,6 +2130,7 @@ export function useConfiguratorWorkspaceRuntime({
     posterSideRatingsPosition,
     posterStreamBadges,
     previewType,
+    isDocsCapture: Boolean(docsCaptureConfig),
     proxyUrlVisible: showProxyUrl,
     qualityBadgesSide,
     posterNoBackgroundBadgeOutlineColor,
