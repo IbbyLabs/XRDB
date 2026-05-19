@@ -1633,6 +1633,7 @@ export function useConfiguratorOutputs({
     providerCredentialSessionVersion,
     tmdbIdScope,
     tmdbKey,
+    isDocsCapture,
   ]);
 
   const previewErrored = Boolean(previewUrl) && previewErroredForUrl === previewUrl;
