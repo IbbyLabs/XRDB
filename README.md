@@ -109,6 +109,19 @@ If startup reports data-directory permission issues in non-default Docker uid/gi
 - Configurator: `/{type}` where type is `poster`, `backdrop`, `logo`, or `thumbnail`
 - Health check: `/api/health`
 
+### 5. Metadata base URL behavior
+
+XRDB resolves metadata base URL at runtime for Open Graph, Twitter card, and icon links.
+
+Resolution order:
+1. `X-Forwarded-Host` and `X-Forwarded-Proto` when `XRDB_TRUST_PROXY_HEADERS=true`
+2. `Host` header from the incoming request
+3. `NEXT_PUBLIC_APP_URL` fallback
+4. `http://localhost:3000` default
+
+For reverse-proxy deployments, enable `XRDB_TRUST_PROXY_HEADERS=true`.
+If you need an explicit fixed fallback, set `NEXT_PUBLIC_APP_URL=https://your-domain` in `.env`.
+
 ## API Quick Reference
 
 ### Render routes

@@ -30,6 +30,7 @@ All cache TTL values are in **milliseconds**.
 | `PUID` | `1000` | Optional uid override for the container `node` user to match host bind-mount ownership in non-default Docker setups. Leave unset for default behavior. |
 | `PGID` | `1000` | Optional gid override for the container `node` group to match host bind-mount ownership in non-default Docker setups. Leave unset for default behavior. |
 | `XRDB_PREVIEW_ORIGIN` | `http://127.0.0.1:3000` | Internal origin used by `/preview/[slug]` when the app calls itself. Also accepted: `PREVIEW_INTERNAL_ORIGIN`. |
+| `NEXT_PUBLIC_APP_URL` | — | Optional public URL fallback for metadata base URL resolution. When unset, metadata base resolves at runtime from request headers. |
 | `XRDB_TRAEFIK_ENTRYPOINTS` | `websecure` | Traefik entrypoints for the stack compose file. |
 | `XRDB_TRAEFIK_CERTRESOLVER` | `letsencrypt` | Traefik certificate resolver for the stack compose file. |
 | `HTTP_PROXY` | — | Optional outbound HTTP proxy. |
@@ -50,6 +51,17 @@ All cache TTL values are in **milliseconds**.
 | `XRDB_INACTIVE_CONFIG_PRUNE_DAYS` | `-1` | Days of inactivity before a saved config profile is marked as inactive on startup. After marking, configs do not count toward active user metrics. Inactive configs are preserved for returning users. `-1` disables marking. |
 | `XRDB_INACTIVE_CONFIG_PURGE_DAYS` | `0` | Optional threshold for hard deletion after marking. If > 0, marked-inactive configs older than this many days are permanently deleted on startup. Default `0` disables hard deletion (only soft marking is performed). |
 | `ADMIN_KEY` | — | Enables the admin dashboard at `/admin` when set. Generate: `openssl rand -hex 32`. |
+
+### Metadata base URL runtime resolution
+
+XRDB resolves metadata base URL (used by Open Graph, Twitter cards, and icon links) at runtime using this order:
+
+1. `X-Forwarded-Host` and `X-Forwarded-Proto` when `XRDB_TRUST_PROXY_HEADERS=true`
+2. `Host` header from the incoming request
+3. `NEXT_PUBLIC_APP_URL` fallback
+4. `http://localhost:3000` default
+
+For Traefik and similar reverse proxies, enable `XRDB_TRUST_PROXY_HEADERS=true` and keep `NEXT_PUBLIC_APP_URL` optional.
 
 ---
 
