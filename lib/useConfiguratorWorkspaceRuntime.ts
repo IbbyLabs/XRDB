@@ -2333,6 +2333,32 @@ export function useConfiguratorWorkspaceRuntime({
     && areSetsEqual(openWorkspacePanels, docsCaptureConfig.panels),
   );
 
+  // Diagnostic logging for docs capture readiness
+  if (docsCaptureConfig && typeof window !== 'undefined') {
+    if (!docsCaptureReady) {
+      const reasons = [];
+      if (!docsCaptureConfig) reasons.push('docsCaptureConfig is null');
+      if (showExperienceModal) reasons.push('showExperienceModal is true');
+      if (experienceMode !== docsCaptureConfig.experienceMode) reasons.push(`experienceMode mismatch: "${experienceMode}" vs "${docsCaptureConfig.experienceMode}"`);
+      if (experienceModeDraft !== docsCaptureConfig.experienceMode) reasons.push(`experienceModeDraft mismatch: "${experienceModeDraft}" vs "${docsCaptureConfig.experienceMode}"`);
+      if (workspaceCenterView !== docsCaptureConfig.workspaceCenterView) reasons.push(`workspaceCenterView mismatch: "${workspaceCenterView}" vs "${docsCaptureConfig.workspaceCenterView}"`);
+      if (previewType !== docsCaptureConfig.previewType) reasons.push(`previewType mismatch: "${previewType}" vs "${docsCaptureConfig.previewType}"`);
+      if (tmdbKey.trim() !== docsCaptureConfig.tmdbKey) reasons.push('tmdbKey mismatch');
+      if (mdblistKey.trim() !== docsCaptureConfig.mdblistKey) reasons.push('mdblistKey mismatch');
+      if (proxyManifestUrl.trim() !== docsCaptureConfig.proxyManifestUrl) reasons.push('proxyManifestUrl mismatch');
+      if (proxyTranslateMeta !== docsCaptureConfig.proxyTranslateMeta) reasons.push(`proxyTranslateMeta mismatch: ${proxyTranslateMeta} vs ${docsCaptureConfig.proxyTranslateMeta}`);
+      if (proxyTranslateMetaMode !== docsCaptureConfig.proxyTranslateMetaMode) reasons.push(`proxyTranslateMetaMode mismatch: "${proxyTranslateMetaMode}" vs "${docsCaptureConfig.proxyTranslateMetaMode}"`);
+      if (proxyDebugMetaTranslation !== docsCaptureConfig.proxyDebugMetaTranslation) reasons.push(`proxyDebugMetaTranslation mismatch: ${proxyDebugMetaTranslation} vs ${docsCaptureConfig.proxyDebugMetaTranslation}`);
+      if (docsCaptureConfig.requirePreview && !previewLoaded) reasons.push('previewLoaded is false (and requirePreview is true)');
+      if (!areSetsEqual(openWorkspacePanels, docsCaptureConfig.panels)) reasons.push(`panels mismatch: [${Array.from(openWorkspacePanels).join(',')}] vs [${Array.from(docsCaptureConfig.panels).join(',')}]`);
+      if (reasons.length > 0) {
+        console.log('[docs:capture] NOT READY:', reasons.join('; '));
+      }
+    } else {
+      console.log('[docs:capture] READY - data-docs-capture-ready attribute will be set');
+    }
+  }
+
   const workspaceActions = useConfiguratorWorkspaceActions({
     applyWorkspaceConfig,
     buildCurrentUiConfig,
