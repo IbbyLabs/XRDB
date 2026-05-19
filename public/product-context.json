@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v1.25.1",
-  "generatedAt": "2026-05-13T21:21:57.381Z",
+  "xrdbTag": "v2.0.0",
+  "generatedAt": "2026-05-19T19:18:11.047Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -76,11 +76,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
-        "use last successful dev tag as Discord compare base",
-        "Refresh static assets.",
-        "README docs and add cache optimization foundation",
-        "BUG-135 Add timeout to source image fetches",
-        "BUG-127 calculate badge width per row to prevent overflow"
+        "include docs capture in preview memo dependencies",
+        "unify docs refresh gate and support v2 README changelog links",
+        "stabilize docs capture preview flow",
+        "simplify capture readiness condition to prevent memory exhaustion",
+        "refresh script hanging on static asset capture"
       ]
     },
     {
@@ -91,15 +91,12 @@
         "Backdrop sizes: normal 1280x720, large 1920x1080, 4k 3840x2160.",
         "Artwork sources in route config: tmdb, fanart, cinemeta, omdb, random, blackbar.",
         "Explicit input id sources: imdb, tmdb, tvdb, mal, kitsu, anilist, anidb.",
-        "AIOMetadata export patterns are generated from the configurator export flow.",
-        "AIOMetadata episode thumbnail patterns default anime-native episode modes to canonical series placeholders and keep raw {id} only for explicit source-faithful output.",
-        "Episode thumbnail exports can append episodeSourceProvider, episodeSourceId, episodeSourceSeason, episodeSourceEpisode, and episodeAbsolute when the public token alone would lose provider episode authority."
+        "AIOMetadata export patterns are generated from the configurator export flow."
       ]
     },
     {
       "heading": "Metadata and proxy behavior",
       "lines": [
-        "Server managed provider keys are the default runtime model. Generated configurator URLs omit provider credentials when server keys exist.",
         "Configured base URLs: TMDB https://api.themoviedb.org/3, anime mapping https://animemapping.stremio.dpdns.org, Kitsu https://kitsu.io/api/edge, OMDb https://www.omdbapi.com.",
         "Optional server side provider support exists for MyAnimeList, Trakt, SIMKL, Fanart, OMDb.",
         "Proxy manifest direct query mode requires url plus either server provider keys or tmdbKey and mdblistKey query params.",
@@ -111,7 +108,6 @@
       "heading": "Runtime and deployment notes",
       "lines": [
         "Tagged releases run through the npm release scripts and the npm version lifecycle.",
-        "Tagged releases publish GitHub release notes and GHCR container images.",
         "compose.yaml is the stack path and local-compose.yaml is the standalone local path.",
         "Project support link: https://kofi.ibbylabs.dev."
       ]
