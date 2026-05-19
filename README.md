@@ -150,8 +150,7 @@ AIOMetadata export patterns are available from the configurator export flow and 
 - [Compose stacks](compose.yaml)
 - [Standalone compose](local-compose.yaml)
 - [Environment template](env.template)
-- [Changelog](CHANGELOG.md)
-
+- [Changelog](CHANGELOG.md) (latest: [v1.25.1](CHANGELOG.md#v1-25-1))
 ## Documentation Image Index
 
 - `docs/images/demo-videos/poster-workspace.png`
