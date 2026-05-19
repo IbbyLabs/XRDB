@@ -3,84 +3,6 @@
 > [!NOTE]
 > This changelog may contain duplicate entries for certain changes. This occurs when an upstream commit is followed by a corresponding conventional commit used for release management and repository standards.
 
-<a id="v1-2-2"></a>
-
-<a id="v1-2-3"></a>
-
-<a id="v1-3-0"></a>
-
-<a id="v1-4-0"></a>
-
-<a id="v1-4-1"></a>
-
-<a id="v1-4-2"></a>
-
-<a id="v1-5-0"></a>
-
-<a id="v1-6-0"></a>
-
-<a id="v1-7-0"></a>
-
-<a id="v1-7-1"></a>
-
-<a id="v1-8-0"></a>
-
-<a id="v1-8-1"></a>
-
-<a id="v1-8-2"></a>
-
-<a id="v1-8-3"></a>
-
-<a id="v1-8-4"></a>
-
-<a id="v1-9-0"></a>
-
-<a id="v1-10-0"></a>
-
-<a id="v1-10-1"></a>
-
-<a id="v1-11-0"></a>
-
-<a id="v1-12-0"></a>
-
-<a id="v1-13-0"></a>
-
-<a id="v1-13-1"></a>
-
-<a id="v1-14-0"></a>
-
-<a id="v1-15-0"></a>
-
-<a id="v1-15-1"></a>
-
-<a id="v1-16-0"></a>
-
-<a id="v1-16-1"></a>
-
-<a id="v1-17-0"></a>
-
-<a id="v1-17-1"></a>
-
-<a id="v1-17-2"></a>
-
-<a id="v1-18-0"></a>
-
-<a id="v1-18-1"></a>
-
-<a id="v1-18-2"></a>
-
-<a id="v1-19-0"></a>
-
-<a id="v1-19-1"></a>
-
-<a id="v1-20-0"></a>
-
-<a id="v1-20-1"></a>
-
-<a id="v1-21-0"></a>
-
-<a id="v1-21-1"></a>
-
 ## Unreleased
 
 ### Added
@@ -89,33 +11,750 @@
 
 ### Documentation
 
-<a id="v1-21-2"></a>
+<a id="v2-0-0"></a>
 
-<a id="v1-22-0"></a>
+## [v2.0.0] - 19/05/2026
 
-<a id="v1-22-1"></a>
+### Added
+* add optional uid remap and simplify env template
+  
+  Add optional container uid/gid remap support so self hosted Docker setups can
+  align runtime permissions with host mounted data directories without changing
+  default behavior.
+  
+  Simplify env.template by removing stack level and optional advanced variables
+  that are not required in the local deployment template:
+  • removed DOCKER_DATA_DIR
+  • removed DOCKER_NETWORK
+  • removed DOCKER_NETWORK_EXTERNAL
+  • removed PUID
+  • removed PGID
+  
+  Also add concise troubleshooting guidance for permission mismatch scenarios in
+  self host docs and keep canonical advanced variable references in variables.md.
+* Replace inactive config hard deletion with soft marking
+  
+  Replace hard deletion of inactive saved configurations with a visible marking system.
+  After N days of inactivity, configurations are now marked as inactive and removed from
+  active user metrics, but preserved for returning users. Optional hard deletion can be
+  enabled via XRDB_INACTIVE_CONFIG_PURGE_DAYS for eventual cleanup after a much longer
+  grace period.
+  
+  Changes:
+  • Database: Added is_inactive and inactive_marked_at columns to track marked state
+  • Admin metrics: Split active/inactive/pending purge counts; active user metric now
+    excludes marked inactive configs (same accuracy, non destructive)
+  • Admin dashboard: Added Activity filter for browsing active/inactive configs; showed
+    "Inactive" badge on marked profiles; display separate inactive count in metrics panel
+  • Environment: XRDB_INACTIVE_CONFIG_PRUNE_DAYS now marks instead of deletes; added
+    XRDB_INACTIVE_CONFIG_PURGE_DAYS (optional, default disabled) for eventual deletion
+    after much longer threshold
+* add customizable trending tag styles and safe poster placement
+* FR-98 add trending and recognition quality tags
+  
+  Adds new quality badge options for trending, ranking, and awards signals.
+  
+  Keeps tag controls aligned with existing per type badge preferences and appearance overrides.
+  
+  Includes validation coverage so generated artwork surfaces stable tag output.
+* add signed partner access controls
+  
+  • Adds server to server partner request signing with replay protection and nonce checks.
+  
+  • Enforces per partner rate limits so shared single IP traffic is isolated and controlled.
+  
+  • Preserves existing request key authorization as fallback while adding partner profile support and documentation.
+* README docs and add cache optimization foundation
+  
+  **Documentation & Preview Improvements**
+  • Add "Badge Styles" live preview section to README showcasing community badge (gold/rainbow) and tile badge variants across poster and backdrop types
+  • Add static "Badge Style Options" comparison board reference in Rendering Option Comparisons section with full artwork examples
+  • Expand README preview pool from 3 default entries to 7 with new badge style variants: community badge gold poster, community badge rainbow poster, tile badges poster, tile badges backdrop
+  • Wire badgeStyleComparison path into doc static asset manifest for tracked asset generation
+  • Implement 4th comparison board generation in refresh doc static assets script with correct board layout (4 card badge comparison)
+  • Test coverage: all 1086 tests pass, lint clean, build succeeds
+  
+  **User Facing Copy Standardisation**
+  • Standardise all user facing text to British English spelling by default
+  • Convert color → colour, customize → customise, behavior → behaviour, center/centre, centered/centred across UI components
+  • Apply to nav bar, theme page content, backdrop panels, poster panels, thumbnail panels, logo panels, proxy view, step shell, reference view, and community templates
+  • This is now a hard rule for all future UI and copy work; internal code comments and variable names remain American English for codebase consistency
+  
+  **Cache & Performance Foundation**
+  • Add 30 second write level debounce to image cache pruning (IMAGE_CACHE_PRUNE_WRITE_DEBOUNCE_MS constant)
+  • Add 30 second write level debounce to metadata cache pruning (METADATA_PRUNE_WRITE_DEBOUNCE_MS constant)
+  • Remove 5% and 2% random sampling from prune paths; both pruneObjectStorageCache and pruneExpiredMetadata/pruneOldestMetadata now run unconditionally after debounce window elapses
+  • Pruning operations maintain 10 minute interval timer and on read expiry deletion; debounce only applies to write path frequency
+  • Technical impact: prevents sustained CPU spikes and frequent FS scans during cache fill and warmup bursts by batching pruning operations
+  • Add regression tests in storage runtime.test.mjs for byte budget and file count eviction, plus automatic oldest entry and expired entry cleanup
+  • Test coverage: 1086 tests pass (including 2 new cache pruning regression tests)
+* FR-54 add Filmweb provider support
+  
+  • Adds Filmweb as an available rating source so Polish audience scores can appear alongside existing providers
+  • Uses Filmweb's own hosted icon so provider badges match the real service branding
+  • Improves title matching and score handling so Filmweb results stay consistent across lookup, display, and fallback flows
+  • Adds regression coverage to keep Filmweb fetch, parsing, formatting, and icon behavior working locally
+* add scorebar rating display mode
+  
+  • Ratings can now be displayed as a colour bar beneath the poster
+    instead of a floating badge, giving more space for the score visual.
+  • Three bar styles are available: solid fill, gradient blend, and a
+    progress bar fill that grows with the rating value.
+  • The bar colour changes automatically across three configurable bands,
+    so low, mid, and high scores each show a distinct colour.
+  • All six scorebar settings (style, three colours, two thresholds) are
+    included in shareable config links and round trip correctly through
+    save and restore flows.
+  • Default values are omitted from config links to keep URLs short.
+  • Scorebar controls appear in the configurator only when the scorebar
+    presentation is selected, keeping the UI uncluttered for other modes.
+* improve site title, description, and social preview metadata
+  
+  • Rewrite site title to "XRDB | Artwork Engine for Stremio" to replace
+    the triple stacked brand name that appeared in browser tabs
+  • Upgrade OG and Twitter image declarations from bare path strings to
+    objects with explicit dimensions and alt text so chat clients show
+    a correctly sized preview image
+  • Add siteName and locale to the OpenGraph block for richer embeds
+  • Update site metadata test to cover the new image object shape
+* add panel section hierarchy to poster workspace
+  
+  Add PanelSection component for visual grouping of related controls within poster workspace panels.
+  
+  Style panel:
+  • Group presentation controls (Presentation, Artwork Source, Rating Style, Image Text, Rating Values, Icon Shape) under 'Presentation and display' section with descriptive header
+  • Move Genre Badges controls to separate section with toggle and conditional sub controls (style, position, size, overlay strength)
+  • Add section descriptions to contextualise user choices
+  
+  Position panel:
+  • Group core placement controls (Ratings Layout, Edge Offset, Rating Size) under 'Rating placement' section
+  • Move conditional Side Ratings control to separate 'Additional ratings' section
+  
+  CSS hierarchy styling:
+  • Add section borders with subtle fade for visual separation
+  • Apply accent color to section headings with uppercase treatment
+  • Maintain section spacing and breathing room without adding clutter
+* add floating return to preview button for resizable workspace mode
+  
+  • Adds a floating up arrow button anchored bottom right when using resizable preview mode
+  • Button scrolls smoothly back to the preview area when users are scrolled deep into controls
+  • Button only visible in resizable mode; hidden when floating preview is active
+  • Uses 44px minimum touch target size for accessibility
+  • Positioned z index 44 to not obstruct floating preview (z index 45)
+  • Hidden on mobile viewports (≤919px) to match resizable only behaviour on small screens
+* add resizable and floating preview modes for artwork workspace
+  
+  • Adds a new preview mode switch with two options: Resizable and Floating
+  • Adds a floating preview window that can be moved around the screen while editing controls
+  • Adds a dedicated resize handle on the floating preview so people can drag to change its size easily
+  • Hides the in page workspace preview area while Floating mode is active to free up editing space
+  • Adds a clear return action to switch back to the default Resizable workspace preview mode
+  • Keeps preview overlay and full screen viewing available in both modes
+  • Keeps mobile behavior safe by defaulting to Resizable mode on small screens
+* conflict resolution and split login behavior
+  
+  • Entry page login always applies the saved profile directly. Logging
+    in there loads your configuration immediately with no conflict prompt.
+  
+  • Save page login detects when local settings differ from the saved
+    profile and shows a conflict banner so you can choose what to keep.
+* add guided slider legends and stabilize preview swatch editing
+  
+  • Added gradient legends with low, mid, and high cues across custom theme
+    sliders so color mapping is clear before dragging
+  • Added interactive preview swatch editing with color wheel and hex input
+    for Background, Surface, Elevated, Accent, and Text
+  • Fixed swatch regression where editing one token could reset another by
+    moving to token specific preview overrides
+  • Improved OKLCH and hex conversion sync so preview chips and displayed values
+    stay consistent during successive edits
+* v2 — full UI redesign, theme system, admin panel, community themes
+  
+  This is the v2 release of XRDB. It replaces the v1 configurator first
+  interface with a structured workspace, introduces a complete design
+  system rewrite, adds a theme engine with community sharing, and ships a
+  new admin panel for self hosters.
+  
+  UI and Design System
+  • Replaced the v1 single page configurator with a step based workspace
+    (Integrations, Poster, Backdrop, Thumbnail, Logo) navigated via a
+    persistent nav bar
+  • Rewrote the CSS foundation from ad hoc variables to a full OKLCH token
+    system with semantic surface, accent, ink, border, elevation, and
+    status tokens
+  • Replaced all legacy hex/rgba color values; design system now supports
+    live theme switching by swapping palette tokens at the root
+  • Removed glassmorphism and glow heavy decorative styles; updated
+    typography scale, shell layout, and responsive breakpoints
+  
+  Theme Engine (v2)
+  • Added XRDBThemeV2 type with a typed XRDBPalette (bgBase, bgMid,
+    bgSurface, bgElevated, accent, accentDim, accentText, ink, muted,
+    border, scrim)
+  • Ships with built in preset themes; users can create and save personal
+    themes locally
+  • Theme family and mode columns added to community_themes table via
+    migration for light/dark family grouping
+  
+  Community Themes
+  • Users can browse, submit, and apply community contributed themes from
+    the themes workspace
+  • Submission flow validates OKLCH palette values before accepting
+  • New API routes: GET/POST /api/themes/community, POST
+    /api/themes/submit
+  
+  AIOMetadata Integration
+  • POST /api/aiometadata/install profile: lets AIOMetadata instances push
+    a config profile directly into XRDB without manual URL import
+  • Public AIOMetadata instance list sourced from lib/aiometadataPublicInstances.ts
+  • Integrations step surfaces connection status for linked AIOMetadata
+    instances via /api/configurator integrations status
+  
+  Community Templates
+  • GET/POST /api/templates and /api/templates/[id]: stored in SQLite via
+    communityTemplateStore; separate from themes
+  • Admin can review and manage submissions via the admin panel
+  
+  Admin Panel
+  • New /admin route with login gated access (cookie session, 7 day TTL)
+    protected by ADMIN_KEY env var
+  • Admin panels: cache management, config health, instance metrics, config
+    profile management, template review, theme moderation
+  • New API routes under /api/admin/: cache, config, health, login,
+    logout, metrics, prewarm, profiles, stats, templates, themes
+  • Admin key verified via constant time comparison; bearer token auth
+    also supported for API access
+  
+  Entry and Experience Mode
+  • The workspace entry page now handles experience mode selection (simple
+    vs advanced) with keyboard navigation (arrow keys, Home key)
+  • Config profile login dialog integrated directly into the entry page
+  • Instance branding slot supports custom logo/name for self hosted
+    deployments
+  
+  Configurator Hooks Refactor
+  • Configurator logic split into focused hook modules:
+    lib/configuratorHooks/ui.ts, workspace.ts, index.ts
+  • Removes previous monolithic hook surface
+  
+  Branding and Assets
+  • New XRDB logo.svg, xrdb logo.png, ibbylabs logo.png added to public/
+  • Favicon set regenerated from new SVG source (16, 32, 96, 180, 512px)
+  • generate favicons.mjs script added for future favicon regeneration
+    (pnpm generate:favicons)
+  • Web app manifest icons updated
+  
+  Documentation and Config
+  • variables.md added: full reference for all supported environment
+    variables
+  • env.selfhost.template removed; consolidated into env.template
+  • knip.config.ts added for dead code analysis (pnpm knip)
+  • README updated to reflect v2 workspace structure and new features
+  
+  CI and Deployment
+  • Docker build workflow updated for v2
+  • post discord dev build.mjs added for dev build Discord notifications
+  • compose.yaml updated
+  
+  Search and Target UX Fixes
+  • Fixed search input losing focus after each keystroke caused by
+    mediaSearchQuery being part of the React key on the input element
+  • Poster thumbnails now appear in pinned target cards and the active
+    target row, consistent with search result cards
+  • PinnedTarget type extended with posterUrl; pin handlers carry poster
+    through from search results and active target
+  • media resolve API route now returns posterUrl alongside title so
+    artwork is available immediately after shuffle or page load
+  • Title resolve effect now fetches poster even when title is already
+    known from static samples, closing the shuffle then pin blank poster gap
 
-<a id="v1-22-2"></a>
+### Fixed
+* include docs capture in preview memo dependencies
+  
+  • keep preview URL memo dependencies aligned with docs capture mode
+  • fix lint failure from manual memoization dependency checks
+  • keep docs capture preview path stable during verification and release gates
+* unify docs refresh gate and support v2 README changelog links
+* stabilize docs capture preview flow
+* simplify capture readiness condition to prevent memory exhaustion
+  
+  The strict capture readiness gate required 14 state conditions to converge simultaneously, triggering excessive re renders that exhausted the Next.js dev server heap during doc asset capture.
+  
+  Changed Playwright wait condition from the strict data docs capture ready="true" attribute to simply waiting for the .xrdb page element to exist. This is sufficient for capturing screenshots and avoids the render storm.
+* refresh script hanging on static asset capture
+  
+  The release script was timing out while waiting for page readiness to converge. The root cause was that storage state hydration was deferred to the microtask queue, creating unpredictable timing gaps that exceeded the Playwright wait timeout.
+  
+  Changes:
+  • Detect docs capture mode via `?docsCapture` URL parameter
+  • Apply storage hydration synchronously when capturing, ensuring experienceModeDraft state converges immediately
+  • Preserve existing async behavior for normal user sessions
+  • Increase Playwright timeout from 1800ms to 5000ms as safety net
+  • Add comprehensive diagnostic logging to identify which page readiness condition fails
+* resolve social metadata URLs from runtime host
+  
+  • Makes Open Graph and Twitter card URLs resolve from the live request host instead of build time localhost fallback
+  • Uses trusted forwarded host and protocol headers when proxy trust is enabled
+  • Falls back safely to request host, explicit public URL override, then localhost default
+  • Prevents broken preview images in Discord and other link preview clients on dev and self hosted domains
+  • Adds regression tests for host resolution precedence and malformed header fallback
+  • Updates deployment docs to explain runtime metadata base resolution and optional override behavior
+* resolve docker runtime package failure and harden action runtime compatibility
+  
+  Fix the Docker publish workflow failure caused by an invalid Debian runtime package
+  name in the image build stage, and add workflow level Node 24 action runtime opt in
+  to stay ahead of the GitHub Actions Node 20 deprecation window.
+  
+  Changes:
+  • Docker runtime image:
+  • Replaced unavailable Debian package `shadow` with `passwd` in `Dockerfile`
+  • Entrypoint hardening:
+  • Added `groupmod`/`usermod` availability guard in `scripts/docker entrypoint.sh`
+  • Keeps startup resilient by warning and continuing when remap tools are unavailable
+  • Workflow runtime compatibility:
+  • Added `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'` to:
+  • `.github/workflows/build and push docker.yml`
+  • `.github/workflows/ci.yml`
+  • `.github/workflows/create github release.yml`
+  • `.github/workflows/backfill discord dev build.yml`
+  • `.github/workflows/notify discord on release.yml`
+  • `.github/workflows/promote docker latest.yml`
+  
+  Why:
+  • CI log showed Docker build failure at apt install step:
+  • `E: Unable to locate package shadow`
+  • Actions warning indicated impending Node 20 runtime deprecation on runners
+* BUG-146 smooth clean scrim and auto minimal trending stack
+  
+  Improve poster readability in clean mode by smoothing the lower scrim fade so the transition looks natural on bright artwork.
+  Keep auto minimal trending labels readable by rendering two label cases as separate centered rows instead of compressing into one line.
+  Add focused regression checks for clean scrim falloff and two row trending label visibility in the poster renderer test suite.
+* add missing badge keys to proxy config schema
+  
+  Six badge related query parameters were silently dropped when encoding
+  proxy URLs because they were absent from the allowlists in proxyConfigSchema.ts.
+  The profile persistence path in uiConfig.ts already included all six keys
+  and did not require changes.
+  
+  Changes:
+  • Add qualityBadgeAppearance to SHARED_IMAGE_QUERY_KEYS so custom badge
+    icon overrides survive proxy encoding across all image types
+  • Add logoStreamBadges, logoQualityBadges, logoQualityBadgesStyle,
+    logoQualityBadgeScale, logoQualityBadgesMax to IMAGE_QUERY_KEYS_BY_TYPE.logo
+    so logo specific badge on/off and style settings are no longer dropped
+  • Add all six keys as optional string properties on the ProxyConfig type
+  
+  Before this fix, a user who disabled quality badges on the logo type or
+  configured custom streaming service badge settings would see their changes
+  work in the live preview and in direct pattern URLs, but the proxy URL would
+  revert to defaults — stripping the values silently at encode time.
+* BUG-147 inline toggle layout now keeps label and toggle adjacent
+  
+  Inline toggles such as "Bottom Row" and "Black bar" were separated across the
+  full width due to `justify content: space between;` on `.xrdb control row inline`.
+  
+  Changed to `justify content: flex start;` to render label and toggle as an
+  adjacent pair rather than stretched to opposite edges. Fixes visual separation
+  affecting all inline toggle controls across the configurator.
+  
+  Affected controls:
+  • Thumbnail position "Bottom Row" toggle
+  • Backdrop position "Bottom Row" toggle
+  • All "Black bar" toggles (thumbnail, backdrop, poster, logo)
+* BUG-149 hide floating preview toggle on mobile
+  
+  • Floating preview toggle is now hidden entirely on mobile instead of rendered disabled
+  • Mobile users no longer see misleading disabled controls suggesting resize capability is unavailable
+  • Desktop viewport (>919px) behavior unchanged; toggle remains visible and functional
+  • Touch users get clean workspace only layout without hover inaccessible tooltips
+* BUG-148 prevent genre and trending badge overlap
+  
+  • Keep genre badges readable when trending badges use the same poster corner
+  • Preserve existing auto trending behavior while improving explicit badge placements
+  • Add regression coverage for same position poster badge layouts
+* BUG-144 keep trending overlays proportional across poster sizes
+  
+  Styled trending badges now scale with poster sized quality badge metrics instead of a fixed height.
+  Auto minimal trending strip text now scales from overlay size with proportional stroke width.
+  Added regression coverage for styled trending growth and auto minimal 4K text density.
+* BUG-145 make score bar styles refresh and render distinctly
+  
+  • Score bar style and color changes now refresh preview output immediately without requiring unrelated setting changes.
+  • Progress style now renders as segmented progress with a clear current position marker, so it no longer looks identical to Solid.
+  • Solid and Gradient keep their expected behavior while remaining visually distinct from Progress.
+  • Added regression coverage to protect cache key refresh behavior and style level render differences.
+* BUG-143 hide genre position control for clean poster genre style Remove no op genre position controls when clean style is active in poster workspace Keep genre position controls available for non clean styles Preserve renderer behavior where clean genre remains bottom anchored
+* BUG-143 add full trending tag anchor parity for poster overlays
+  
+  Expand trending tag position controls to top and bottom left center right anchors
+  Parse and round trip new anchors through request and output flows
+  Apply anchor aware renderer placement with collision safe vertical resolution
+  Add regression tests for request parsing and renderer anchoring
+  Fix reserved bottom spacing to apply only when trending badges exist
+* BUG-143 normalize provider icon footprint and soften plain badge surface fade
+  
+  normalizes provider icon visual footprint by trimming transparent bounds and re centering to the canonical icon canvas
+  reduces plain readable surface shadow and gradient intensity to keep fades subtle while preserving readability
+  adds deterministic regression tests for icon footprint consistency and plain surface opacity tuning
+* BUG-143 prevent clean genre text overlap with trending labels
+  
+  Keeps genre labels readable when clean genre style and auto minimal trending labels are enabled together
+  Resolves label placement so trending chips stay clear of the genre row in poster outputs
+  Adds regression coverage to lock this behavior and prevent overlap from returning
+* BUG-143 recover malformed TMDB poster IDs from TMDB source exports
+  
+  • Prevents poster outputs from disappearing when upstream TMDB source URLs omit the media type segment
+  • Keeps TMDB source links renderable by normalizing malformed IDs instead of dropping the request
+  • Adds regression tests for malformed TMDB ID normalization and poster request state handling
+* prevent first load crash on Integrations page
+  
+  • Keeps initial page rendering stable so Integrations no longer throws a transient runtime error on first open
+  • Ensures host status cards appear consistently instead of briefly showing conflicting states
+  • Preserves existing integrations behavior while removing the hydration mismatch trigger
+* restore drag reorder for rating providers
+  
+  Bring back click and drag provider ordering across poster, backdrop, thumbnail, and logo workspaces.
+  Keep existing provider enable and disable toggles unchanged while restoring reorder behavior.
+  Add clear drag cursor feedback so reorder interactions are easier to discover.
+* auto catch up missed dev Discord notifications
+  
+  • persist last successful dev notification checkpoint as tag `discord dev notified`
+  • use checkpoint SHA as next notification baseline so missed commits are included on the next successful run
+  • skip duplicate notifications when current SHA already matches checkpoint
+* correct browser timeout ref typing
+* ui polish and refinements
+* keep trending preview tags factual
+  
+  • Prevent preview only placeholder tags from replacing real trend and recognition badges
+  • Use TMDB trending day and week rank membership for Trending Today, Trending This Week, Top 10, and Top 25 labels
+* restore trending tag preview updates
+  
+  Ensure trending style changes show up immediately in poster preview instead of appearing stuck.
+  
+  Add a preview only trending fallback so style and text color controls remain visible even when the selected title has no live trending signal.
+  
+  Refresh image cache identity for this behavior update so older cached renders do not mask current preview settings.
+* use last successful dev tag as Discord compare base
+* Refresh static assets.
+* BUG-135 Add timeout to source image fetches
+  
+  Source image fetch calls had no timeout, causing the fetch to hang indefinitely
+  when connecting to slow or unresponsive image URLs. This was especially
+  problematic for AIOMetadata provider logos, where a single slow fetch could
+  block the entire image rendering pipeline for 15+ seconds.
+  
+  Changes:
+  • Add SOURCE_IMAGE_FETCH_TIMEOUT_MS constant (default 10s, configurable)
+  • Use AbortController with timeout in fetchSourceImageUncached()
+  • Fetch now aborts after 10 seconds instead of hanging indefinitely
+  • Follows existing timeout pattern from githubRelease.ts
+  
+  Impact:
+  • Logo rendering no longer hangs on slow artwork sources
+  • Image generation completes within reasonable time bounds
+  • Fallback paths can be attempted after timeout
+  
+  Tests: 1085 passing, 0 failing | Lint: Clean | Build: Success
+* BUG-127 calculate badge width per row to prevent overflow
+  
+  Custom quality badges with full intrinsic width now clamp correctly when multiple badges appear in a single row. The previous global maxBadgeWidth calculation did not account for sequential badge positioning, causing oversized full badge assets to overflow the available row width.
+  
+  Changes:
+  • Refactored `buildQualityBadgeRowOverlays()` to calculate maxBadgeWidth per row
+  • Width formula: (availableWidth, rowGaps) / badgeCount, accounting for badge count and gaps
+  • Each row now receives a row specific maxBadgeWidth based on its badge count
+  • All badges in a row stay within layout bounds, even when intrinsic width full badges are present
+* BUG-123 normalize logo badge icon scale in auto mode
+  
+  • Ensures all logo badges in auto mode use normalized icon scale for consistent sizing
+  • Preserves manual scale for explicit logo badge overrides
+  • Passes logoRatingsMax through layout pipeline for correct auto/manual detection
+  • Updates regression tests to cover auto/manual logo badge scale and edge cases
+  • Validated: all tests pass, no lint errors
+* BUG-127 keep custom quality badges aligned when scaled
+  
+  • Custom quality badges now stay in the correct position when larger size settings are used.
+  • Wide custom badge icons are constrained so they do not drift out of layout bounds.
+  • Offset controls now behave consistently across DV, 4K, and Atmos style badge setups.
+  • Added regression tests to keep row and column quality badge placement stable.
+* BUG-129 align auto limited provider logo rendering
+  
+  • Third provider logo now stays aligned and consistent when logo rows are auto limited by size.
+  • Manual three logo setups keep their existing appearance behavior.
+  • Added regression coverage so auto limited and manual limited cases remain stable.
+* BUG-137 stabilize rating logos and BUG-131 protect custom badge save flow
+  
+  • IMDb and Letterboxd now use built in logo assets so logo rendering no longer depends on remote favicon availability
+  • Added regression checks to keep IMDb and Letterboxd provider logos pinned to embedded assets
+* BUG-138 restore mobile access to Poster and Backdrop tabs
+  
+  • Mobile tab scrolling now starts from a stable left edge so Poster and Backdrop stay reachable.
+  • Navigation swipe behavior is more reliable on affected mobile browsers.
+  • This protects users from getting stuck on only Thumbnail and Logo in the top bar.
+* admin panel shows blank page instead of login form
+  
+  • Admin layout was returning null when ADMIN_KEY was unset, silently
+    blocking all child rendering including the login form
+  • Add force dynamic to the admin layout so the ADMIN_KEY env var is
+    always read at request time and never cached as false during the build
+  • Replace silent null returns in both admin pages with a visible
+    not configured card that tells the user to set ADMIN_KEY
+* make metadata cache pruning deterministic on every write
+  
+  • Removes probabilistic 5%/2% pruning sample rates from metadataStore
+  • pruneExpiredMetadata and pruneOldestMetadata now run on every setMetadata call
+  • Adds regression tests for automatic eviction and expired entry cleanup
+  • Pairs with the earlier disk cache byte budget and deterministic prune fix to close the full cache footprint risk across both storage layers
+* tighten image cache pruning
+  
+  • Keeps the image cache from growing without clear limits during normal use
+  • Removes older cached files once storage use or file count gets too high
+  • Preserves faster repeat loads while reducing long term disk growth
+  • Adds regression coverage for both size based and file count eviction
+* handle mislabeled custom badge SVG icons
+  
+  • Custom badge icons now keep working when a badge host serves an SVG file with the wrong file type header.
+  • SVG badge links are more reliable for self hosted setups that sit behind redirects, file proxies, or storage providers with inconsistent metadata.
+  • Added regression coverage so these custom badge icons keep rendering after future renderer changes.
+* improve custom SVG badge icon reliability
+  
+  • Keep custom badge icons visible when SVG files omit explicit size attributes.
+  • Retry image conversion with safe dimensions so badge icons still render instead of disappearing.
+  • Add regression coverage to prevent SVG badge rendering from breaking in future updates.
+* anchor mobile preview action and remove floating overlap
+  
+  Keeps the mobile preview action tied to the customization section instead of floating over content
+  Improves scroll behavior so controls stay readable and feel stable while editing
+  Preserves quick preview access without covering workspace controls
+* improve tab guidance and remove overlap controls
+  
+  Shows clear section guidance directly under workspace tabs so help is visible without hover
+  Increases key touch targets to improve tap accuracy during frequent edits
+  Removes the floating bottom navigation overlay to keep editing content unobstructed
+* restore community badge theme selection in all workspaces
+  
+  • Badge theme picker (gold, white, rainbow, black) now appears in the Quality
+    panel for poster, backdrop, thumbnail, and logo workspaces whenever the
+    community badge style is active
+  • Choosing a theme is no longer blocked — users who pick the community badge
+    style can now select the exact look they want without being stuck on the default
+  • Logo workspace reads its own badge style setting correctly while still using
+    the shared theme value and save behavior
+* restore custom badge icon controls and display mode toggle
+  
+  • Custom icon images can be set per quality badges
+  • A display option now lets you choose between showing the logo alongside the
+    badge text or filling the badge with just the logo image
+* stabilize tab strip alignment; restore clean overlay strength control
+  
+  The Simple/Advanced toggle was only shown on step routes. On all other routes it
+  disappeared, shrinking the right rail and causing the centered tab strip to shift
+  noticeably. Toggle visibility is now tied to configurator context availability so
+  the right rail stays the same width on every route.
+  
+  The clean genre overlay intensity setting existed in state and serialization but
+  had no visible control in the redesigned configurator. Added a Clean overlay
+  strength control (0–100%) to poster, backdrop, and thumbnail style panels. The
+  control appears only when genre badges are enabled and genre style is set to clean.
+  Logo was intentionally excluded as it has no genre badge capability.
+* stabilize nowMs initial value to prevent SSR hydration mismatch
+* stabilize quality badge layout and restore age rating toggle
+  
+  • Poster quality badges now keep a cleaner, more predictable alignment instead of being over shifted by collision handling.
+  • Age Rating is now included in the quality badge selector, so counts, enable all, and manual toggles stay consistent.
+  • Badge placement behavior now matches the intended structured pattern seen on other surfaces.
+* save button and login preserve
+  
+  • Login no longer silently overwrites local settings: conflict detection
+    now checks whether local settings differ from the server profile before
+    applying; if local has changes, they are kept and the Save button
+    remains enabled so the user can persist them
+* restore back button, simplify nav labels, fix inspect visibility
+  
+  • Restore Back button in sticky nav using prevStep (hidden on first step only)
+  • Simplify sticky nav labels from "Next: Backdrop" / removed Back to plain "Next" / "Back"
+  • Fix preview band top offset from 0 to 52px so Inspect button always sticks
+    below the nav bar instead of disappearing behind it
+* prevent logo artwork from being compressed by oversized badge bands
+  
+  When ratings are enabled on logo artwork, a badge band is appended below
+  the logo canvas, extending the total image height. Downstream clients
+  (Stremio, Aurora) scale the entire image to fit their logo cell, causing
+  the logo portion to shrink by up to 35% depending on badge load.
+  
+  This change enforces a 65% minimum logo portion ratio. After the badge
+  band height is finalised, if the band would push the logo below 65% of
+  the total output height, the logo canvas height is expanded to satisfy
+  the floor:
+  
+    logoImageHeight = max(baseHeight, ceil(bandHeight * 0.65 / 0.35))
+  
+  For a 320px base logo with a 200px band (total 520px), the logo canvas
+  is raised to 372px, keeping it at 65% of the 572px total instead of
+  shrinking to 62%. Lighter configs (170px minimum band) keep the existing
+  320px base unchanged.
+  
+  • No change to badge band height or badge content
+  • Logo renders larger in the output image, reducing client side compression
+  • imageRouteExecution already passes renderLayout.logoImageHeight so no
+    execution layer changes are needed
+  • Test updated to assert minimum ratio rather than a fixed legacy height
+* move build meta chip outside home link to resolve nested anchor errors
+  
+  • The commit hash chip and version label were nested inside the XRDB
+    home anchor, causing two browser console errors for nested anchor
+    elements and one recoverable hydration mismatch in the Next.js dev
+    overlay
+  • Extracted the build meta block to a sibling element so the home link
+    wraps only the brand mark and name, and the chip remains visually
+    adjacent without violating HTML nesting rules
+* restore edge alignment and center primary tabs in header
+  
+  • Keeps brand content pinned to the left and mode/theme controls pinned to the right in fullscreen layouts
+  • Centers the primary navigation tab strip as its own middle zone so layout intent stays consistent across desktop and tablet
+  • Removes the header width cap that was causing the whole navbar content to drift toward the middle
+* prevent badge group pileup by nudging quality overlays away from occupied regions
+  
+  • Quality badge overlays now detect overlap with already placed rating and strip
+    regions before compositing, and nudge vertically to the nearest clear position
+  • Bottom placements prefer nudging upward; top and side placements prefer
+    downward, matching expected visual priority order
+  • Detached age rating overlays follow the same nudge logic so they do not stack
+    with quality columns sharing the same anchor side
+* feature logo mark on home page hero
+  
+  • The XRDB logo mark now appears above the brand name on the entry
+    page, giving it clear visual priority as the first thing a user
+    sees when landing on the app
+* expose badge size controls for all artwork types
+  
+  • Rating, genre, and quality badge size controls (70–200%) are now
+    available in the Style, Position, and Quality tabs for all four
+    artwork types (poster, backdrop, thumbnail, logo)
+  • Controls use a percentage scale where 100 is default, letting users
+    make badges smaller or larger to suit their artwork
+  • Genre size appears in the Style tab alongside genre position when
+    genre badges are enabled; rating size in the Position tab; quality
+    badge size in the Quality tab
+* move Inspect action to bottom nav on mobile
+  
+  • Inspect button in the preview band header is now hidden on screens narrower than 920px
+  • A matching Inspect button appears in the bottom sticky action bar on mobile, next to the Next CTA, within easy thumb reach
+  • Desktop behavior is unchanged — Inspect remains in the sticky preview controls header at all times
+* collapse theme mode switcher to icon popover on mobile
+  
+  • On screens narrower than 640px the full Auto / Light / Dark / Midnight
+    pill is now hidden and replaced by a compact crescent moon icon button
+  • Tapping the icon opens a small dropdown where users can pick any mode;
+    selecting a mode applies it immediately and closes the panel
+  • The escape key and tapping outside also close the panel
+  • Primary nav tabs now have the full horizontal row to themselves on
+    mobile, so all pages are reachable without the theme controls pushing
+    them out of view
+* show signed in indicator and update action when authenticated
+  
+  • When signed in, the entry page now shows a clear indicator: a green dot
+    plus the first 8 characters of the profile UUID in monospace, so users
+    can tell at a glance that they are logged in and which profile is active
+  • The Login button changes to Save & Export (link to the save page) when
+    authenticated, replacing an action that had no effect while already
+    logged in
+  • Start and the secondary button now use a shared flex class that keeps
+    both buttons equally sized, centered, and away from the card edges on
+    all screen widths
+* discord release notes now render bullet markers correctly
+  
+  Detailed release items in continuation embeds were rendering
+  with a dash instead of the expected bullet marker, causing the
+  CI workflow to fail on every run.
+* settings no longer reset silently when loading a profile
+  
+  When a user logged into a saved profile, the workspace silently
+  replaced all their local settings with whatever was stored in
+  the profile. Any changes made before logging in were lost, and
+  the Save button immediately showed Saved because local state
+  now matched the profile.
+  
+  • On login, local settings are now compared against the profile
+    before anything is applied
+  • If they differ, a conflict banner is shown with two choices:
+    keep your local settings and save them to the profile, or
+    discard local changes and load from the profile
+  • Nothing is overwritten without an explicit user action
+  • Profile creation (first time UUID flow) is unaffected
+* all 5 subtabs now fit on one row
+  
+  Grid was hardcoded to 4 columns but there are 5 subtabs
+  (Providers, Style, Position, Quality, Advanced). The fifth
+  tab was wrapping to a second row.
+  
+  • Changed subtab grid from 4 to 5 equal columns
+  • Reduced tab padding from 0.5rem 1rem to 0.375rem 0.5rem
+  • Reduced tab font size from 0.8125rem to 0.75rem
+  
+  All five tabs now sit in a single row on desktop. Mobile
+  2 column layout is unchanged.
+* remove duplicate release bullets and add explicit UK publish time
+  
+  • keeps one top level bullet per release item in Discord embeds
+  • normalizes detail lines so nested bullets do not render as duplicated points
+* resolve completed redesign regressions from today LS tracker
+  
+  • Removes duplicate step bars so each workspace now shows a single clear progress flow (LS 35).
+  • Improves top navigation branding by making the XRDB lockup easier to read and keeping build details inline (LS 36).
+  • Brings full Enable all and Disable all parity to provider controls across poster, backdrop, thumbnail, and logo editing (LS 37).
+  • Expands preview space on desktop and mobile so artwork is easier to review without extra clicks (LS 38).
+  • Switches development build labels to a clean dev format and updates docs so version labeling is less confusing (LS 40).
+  • Simplifies the Integrations screen so first time users can complete setup faster with less text overload (LS 41).
+  • Hides advanced host options by default on the newbie host path while keeping them available when needed (LS 42).
+  • Fixes status chips that looked broken by preventing awkward wrapping and improving readability (LS 43).
+  • Normalizes chip height and alignment so provider cards stay visually consistent (LS 44).
+  • Restores quality badge controls in the redesigned UI for all artwork types with a dedicated Quality tab and complete toggles/settings (LS 45).
+* read instance branding html at runtime
+  
+  • Custom entry banner content now follows the live container environment value instead of a build time snapshot
+  • Restarting with updated environment settings now updates the entry banner without needing a new image build
+  • Keeps the full entry experience unchanged while making self hosted branding updates reliable
+* stop truncating dev build release notes
+* restore docs capture ready signal to proxy page
+* BUG-133 harden sqlite startup against bind mount permission failures
+  
+  • add container entrypoint that prepares the XRDB data directory, attempts ownership repair as root, then drops to node before launch
+  • add DB preflight checks for writable parent directories before opening sqlite and before writing config key material
+  • replace generic SQLITE_CANTOPEN surfacing with actionable permission diagnostics and host side recovery guidance
+  • add runtime regression coverage for non writable data directory behavior
+  • document data directory permission recovery notes in environment template
+* reset Unreleased template during changelog updates
+  
+  Prevent stale released items from persisting in the Unreleased section by making
+  the changelog updater rebuild top matter deterministically on each run.
+  
+  • add a canonical UNRELEASED_TEMPLATE in the updater
+  • add helper logic to extract existing versioned sections only
+  • rebuild changelog top as: header note + empty Unreleased template
+  • insert the new release entry after the template
+  • append previously versioned release sections unchanged
+  • apply the same template behavior in rebuild mode
+  
+  Also perform a one time changelog cleanup by removing stale shipped entries from
+  the current Unreleased section while keeping all tagged version entries intact.
 
-<a id="v1-22-3"></a>
+### Documentation
+* refresh static doc assets
+* stripped documentation for ease of use and literacy.
+* clarify cache TTL ranges and MDBList tuning guidance
 
-<a id="v1-22-4"></a>
+### Other Changes
+* add cross browser workspace smoke coverage
+* add manual Discord dev build notification backfill workflow
+* update multiple project areas
+* Added a guide for partner access.
+* fix image.source label casing to match canonical repo name
+  
+  The OCI image.source label referenced the lowercase form of the repo
+  (IbbyLabs/xrdb) while every other committed reference in the project
+  uses the canonical uppercase form (IbbyLabs/XRDB). Corrected to match.
 
-<a id="v1-22-5"></a>
-
-<a id="v1-22-6"></a>
-
-<a id="v1-22-7"></a>
-
-<a id="v1-23-0"></a>
-
-<a id="v1-23-1"></a>
-
-<a id="v1-24-0"></a>
-
-<a id="v1-25-0"></a>
-
-<a id="v1-25-1"></a>
 
 ## [v1.25.1] - 27/04/2026
 
