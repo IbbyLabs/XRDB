@@ -16,14 +16,16 @@ These are live requests against production so readers can see current poster, ba
 
 <table>
   <tr>
-    <td><strong>Anime poster profile</strong><br>Japanese text, TMDB / MyAnimeList / AniList / Kitsu, top and bottom rows</td>
-    <td><strong>Cinema poster profile</strong><br>Square ratings, TMDB / Rotten Tomatoes / Metacritic / Letterboxd, clean text, split side layout</td>
-    <td><strong>Compact poster profile</strong><br>Minimal overlays, readable text lane, reduced badge footprint</td>
+    <td><strong>Attack on Titan</strong><br>Japanese text, TMDB / MyAnimeList / AniList / Kitsu, top and bottom rows</td>
+    <td><strong>Dune Part Two</strong><br>Square ratings, TMDB / Rotten Tomatoes / Metacritic / Letterboxd, clean text, split side layout</td>
+    <td><strong>Stranger Things</strong><br>French text, glass ratings, TMDB / IMDb / Rotten Tomatoes / Metacritic User, stream badges, bottom row layout</td>
+    <td><strong>Game of Thrones</strong><br>Plain ratings, TMDB / IMDb / Trakt / Metacritic, split side layout, detached age rating</td>
   </tr>
   <tr>
-    <td><a href="https://extendedratings.com/preview/attack-on-titan-poster"><img src="https://extendedratings.com/preview/attack-on-titan-poster" alt="Anime poster preview" width="360"></a></td>
-    <td><a href="https://extendedratings.com/preview/dune-part-two-poster"><img src="https://extendedratings.com/preview/dune-part-two-poster" alt="Cinema poster preview" width="360"></a></td>
-    <td><a href="https://extendedratings.com/preview/the-boys-poster"><img src="https://extendedratings.com/preview/the-boys-poster" alt="Compact poster preview" width="360"></a></td>
+    <td><a href="https://extendedratings.com/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v1-25-1"><img src="https://extendedratings.com/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v1-25-1" alt="Attack on Titan poster live preview" width="220"></a></td>
+    <td><a href="https://extendedratings.com/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v1-25-1"><img src="https://extendedratings.com/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v1-25-1" alt="Dune Part Two poster live preview" width="220"></a></td>
+    <td><a href="https://extendedratings.com/preview/stranger-things-poster?cb=readme-preview-stranger-things-poster-v1-25-1"><img src="https://extendedratings.com/preview/stranger-things-poster?cb=readme-preview-stranger-things-poster-v1-25-1" alt="Stranger Things poster live preview" width="220"></a></td>
+    <td><a href="https://extendedratings.com/preview/game-of-thrones-poster?cb=readme-preview-game-of-thrones-poster-v1-25-1"><img src="https://extendedratings.com/preview/game-of-thrones-poster?cb=readme-preview-game-of-thrones-poster-v1-25-1" alt="Game of Thrones poster live preview" width="220"></a></td>
   </tr>
 </table>
 
@@ -31,12 +33,14 @@ These are live requests against production so readers can see current poster, ba
 
 <table>
   <tr>
-    <td><strong>Backdrop profile</strong><br>Centered score row with restrained overlays</td>
-    <td><strong>Minimal backdrop profile</strong><br>Primary title and score only</td>
+    <td><strong>Attack on Titan</strong><br>Japanese text, TMDB / MyAnimeList / AniList / Kitsu, centered stack</td>
+    <td><strong>The Boys</strong><br>Plain ratings, TMDB / IMDb / Trakt / Roger Ebert, centered stack, original text</td>
+    <td><strong>Stranger Things</strong><br>Square ratings, TMDB / Rotten Tomatoes / Metacritic / Letterboxd, stream badges, right side stack</td>
   </tr>
   <tr>
-    <td><a href="https://extendedratings.com/preview/game-of-thrones-backdrop"><img src="https://extendedratings.com/preview/game-of-thrones-backdrop" alt="Backdrop preview" width="500"></a></td>
-    <td><a href="https://extendedratings.com/preview/interstellar-backdrop"><img src="https://extendedratings.com/preview/interstellar-backdrop" alt="Minimal backdrop preview" width="500"></a></td>
+    <td><a href="https://extendedratings.com/preview/attack-on-titan-backdrop?cb=readme-preview-attack-on-titan-backdrop-v1-25-1"><img src="https://extendedratings.com/preview/attack-on-titan-backdrop?cb=readme-preview-attack-on-titan-backdrop-v1-25-1" alt="Attack on Titan backdrop live preview" width="320"></a></td>
+    <td><a href="https://extendedratings.com/preview/the-boys-backdrop?cb=readme-preview-the-boys-backdrop-v1-25-1"><img src="https://extendedratings.com/preview/the-boys-backdrop?cb=readme-preview-the-boys-backdrop-v1-25-1" alt="The Boys backdrop live preview" width="320"></a></td>
+    <td><a href="https://extendedratings.com/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v1-25-1"><img src="https://extendedratings.com/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v1-25-1" alt="Stranger Things backdrop live preview" width="320"></a></td>
   </tr>
 </table>
 
@@ -44,18 +48,19 @@ These are live requests against production so readers can see current poster, ba
 
 <table>
   <tr>
-    <td><strong>Logo profile</strong><br>Provider badges and quality badges tuned for logo layouts</td>
-    <td><strong>Minimal logo profile</strong><br>Sparse overlays for cleaner title focus</td>
+    <td><strong>Dune Part Two</strong><br>Dark canvas, square ratings, TMDB / Rotten Tomatoes / Metacritic / Letterboxd</td>
+    <td><strong>Attack on Titan</strong><br>Japanese text, TMDB / MyAnimeList / AniList / Kitsu, transparent canvas</td>
+    <td><strong>Game of Thrones</strong><br>French text, plain ratings, TMDB / IMDb / Trakt / Metacritic, transparent canvas</td>
   </tr>
   <tr>
-    <td><a href="https://extendedratings.com/preview/the-boys-logo"><img src="https://extendedratings.com/preview/the-boys-logo" alt="Logo preview" width="500"></a></td>
-    <td><a href="https://extendedratings.com/preview/arcane-logo"><img src="https://extendedratings.com/preview/arcane-logo" alt="Minimal logo preview" width="500"></a></td>
+    <td><a href="https://extendedratings.com/preview/dune-part-two-logo?cb=readme-preview-dune-part-two-logo-v1-25-1"><img src="https://extendedratings.com/preview/dune-part-two-logo?cb=readme-preview-dune-part-two-logo-v1-25-1" alt="Dune Part Two logo live preview" width="320"></a></td>
+    <td><a href="https://extendedratings.com/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v1-25-1"><img src="https://extendedratings.com/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v1-25-1" alt="Attack on Titan logo live preview" width="320"></a></td>
+    <td><a href="https://extendedratings.com/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v1-25-1"><img src="https://extendedratings.com/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v1-25-1" alt="Game of Thrones logo live preview" width="320"></a></td>
   </tr>
 </table>
-
 ## Rendering Option Comparisons
 
-These screenshots were regenerated from the local May 18, 2026 codebase.
+These screenshots were regenerated from the local May 19, 2026 codebase.
 
 For side by side rendering mode examples, see:
 - [Poster style comparisons](public/assets/readme-poster-comparison-board.png)
