@@ -642,6 +642,7 @@ export function StepShell({
                   key={mediaTarget.activePreviewTitle || mediaTarget.mediaId || `${step}-target`}
                   ref={targetInputRef}
                   type="search"
+                  suppressHydrationWarning
                   defaultValue={mediaTarget.mediaSearchQuery.trim() || mediaTarget.activePreviewTitle || mediaTarget.mediaId}
                   onChange={(event) => handleTargetInputChange(event.target.value)}
                   onKeyDown={(event) => {
