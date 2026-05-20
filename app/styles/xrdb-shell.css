@@ -2763,9 +2763,12 @@
 
 .xrdb-target-pins {
 	grid-column: 1 / -1;
-	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
+	display: flex;
+	flex-wrap: wrap;
 	gap: 0.5rem;
+	overflow-x: auto;
+	overscroll-behavior-x: contain;
+	padding-bottom: 0.1rem;
 }
 
 .xrdb-target-pin-card {
@@ -2774,6 +2777,9 @@
 	grid-template-columns: minmax(0, 1fr) auto;
 	gap: 0;
 	align-items: stretch;
+	flex: 1 1 15rem;
+	min-width: 13rem;
+	max-width: 100%;
 	border: 1px solid var(--border);
 	border-radius: 8px;
 	background: var(--bg-surface);
@@ -2814,8 +2820,8 @@
 	font-weight: 600;
 	line-height: 1.2;
 	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
+	white-space: normal;
+	overflow-wrap: anywhere;
 }
 
 .xrdb-target-pin-id {
