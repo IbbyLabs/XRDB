@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v2.0.0",
-  "generatedAt": "2026-05-19T19:18:11.047Z",
+  "xrdbTag": "v2.1.0",
+  "generatedAt": "2026-05-20T02:29:10.331Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -76,11 +76,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "reduce client server hydration mismatch noise on search input",
+        "BUG-150 and BUG-154 finalize pin layout readability and not found log visibility",
+        "BUG-151 restore compact aggregate controls across all artwork types",
         "include docs capture in preview memo dependencies",
-        "unify docs refresh gate and support v2 README changelog links",
-        "stabilize docs capture preview flow",
-        "simplify capture readiness condition to prevent memory exhaustion",
-        "refresh script hanging on static asset capture"
+        "unify docs refresh gate and support v2 README changelog links"
       ]
     },
     {
