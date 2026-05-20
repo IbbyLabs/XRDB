@@ -11,7 +11,33 @@
 
 ### Documentation
 
-<a id="v2-0-0"></a>
+<a id="v2-1-0"></a>
+
+## [v2.1.0] - 20/05/2026
+
+### Added
+* BUG-151 restore compact aggregate controls across all artwork types
+  
+  • Restore the missing Compact Average customization controls after the presentation rewrite.
+  • Bring poster, backdrop, thumbnail, and logo back to consistent behavior for aggregate controls.
+  • Re enable Dynamic stops editing directly in Style so custom score color ramps can be tuned again.
+  • Re enable Accent bar visibility and offset controls for compact aggregate presentations.
+  • Keep behavior aligned with existing rendering and URL export logic by wiring only the missing UI controls.
+
+### Fixed
+* reduce client server hydration mismatch noise on search input
+  
+  add hydration warning suppression for dynamic preview target search input
+  keep SSR output stable while allowing client only input attributes to differ safely
+* BUG-150 and BUG-154 finalize pin layout readability and not found log visibility
+  
+  make pinned target cards wrap cleanly and remain readable at dense counts
+  preserve distinct card boundaries across workspace routes
+  add handler level warn logging for HttpError responses so not found failures stay visible across log level modes
+
+### Documentation
+* refresh static doc assets
+
 
 ## [v2.0.0] - 19/05/2026
 
