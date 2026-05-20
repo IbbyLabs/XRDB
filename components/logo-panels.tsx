@@ -4,6 +4,14 @@ import Image from 'next/image';
 import { Fragment, type DragEvent, type ReactNode, useRef } from 'react';
 import { useConfiguratorContext } from '@/lib/configuratorProvider';
 import { RATING_PROVIDER_OPTIONS } from '@/lib/ratingProviderCatalog';
+import {
+  AGGREGATE_ACCENT_MODE_OPTIONS,
+  AGGREGATE_RATING_SOURCE_OPTIONS,
+  MAX_AGGREGATE_ACCENT_BAR_OFFSET,
+  MIN_AGGREGATE_ACCENT_BAR_OFFSET,
+  RATING_PRESENTATION_OPTIONS,
+} from '@/lib/ratingPresentation';
+import { DynamicStopsEditor } from '@/components/dynamic-stops-editor';
 import { QUALITY_BADGE_STYLE_OPTIONS, RATING_STYLE_OPTIONS, ICON_SHAPE_OPTIONS } from '@/lib/ratingAppearance';
 import { QUALITY_BADGE_OPTIONS } from '@/lib/badgeCustomization';
 import { COMMUNITY_BADGE_THEME_OPTIONS } from '@/lib/communityBadgeTheme';
@@ -139,6 +147,11 @@ export function ProvidersPanel() {
 export function StylePanel() {
   const ctx = useConfiguratorContext();
   const look = ctx.inputsPanelProps.lookProps;
+  const pres = ctx.inputsPanelProps.presentationProps;
+
+  const presentationOptions = pres.presentationOrder
+    .map((id) => RATING_PRESENTATION_OPTIONS.find((o) => o.id === id))
+    .filter((o): o is (typeof RATING_PRESENTATION_OPTIONS)[number] => o !== undefined);
 
   const logoBackgroundOptions = [
     { id: 'transparent' as const, label: 'Transparent' },
@@ -148,6 +161,79 @@ export function StylePanel() {
   return (
     <div className="xrdb-panel-style">
       <h2 className="xrdb-subtab-panel-title">Style</h2>
+
+      <ControlRow label="Presentation">
+        <OptionPills
+          options={presentationOptions}
+          value={pres.activeRatingPresentation}
+          onChange={pres.onSelectRatingPresentation}
+        />
+      </ControlRow>
+
+      {pres.usesAggregatePresentation ? (
+        <>
+          {pres.showsAggregateRatingSource ? (
+            <ControlRow label="Aggregate source">
+              <OptionPills
+                options={AGGREGATE_RATING_SOURCE_OPTIONS}
+                value={pres.activeAggregateRatingSource}
+                onChange={pres.onSelectAggregateRatingSource}
+              />
+            </ControlRow>
+          ) : null}
+
+          <ControlRow label="Accent mode">
+            <OptionPills
+              options={AGGREGATE_ACCENT_MODE_OPTIONS}
+              value={pres.aggregateAccentMode}
+              onChange={pres.onSelectAggregateAccentMode}
+            />
+          </ControlRow>
+
+          {pres.aggregateAccentMode === 'dynamic' ? (
+            <ControlRow label="Dynamic stops">
+              <DynamicStopsEditor
+                value={pres.aggregateDynamicStops}
+                onChange={pres.onSelectAggregateDynamicStops}
+              />
+            </ControlRow>
+          ) : null}
+
+          {pres.showsAggregateAccentBarOffset ? (
+            <>
+              <ControlRow label="Accent bar" inline>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={pres.aggregateAccentBarVisible}
+                  className={`xrdb-toggle${pres.aggregateAccentBarVisible ? ' xrdb-toggle-on' : ''}`}
+                  onClick={pres.onToggleAggregateAccentBarVisible}
+                >
+                  {pres.aggregateAccentBarVisible ? 'On' : 'Off'}
+                </button>
+              </ControlRow>
+
+              <ControlRow label="Accent bar offset">
+                <div className="xrdb-number-control">
+                  <input
+                    type="number"
+                    className="xrdb-number-input"
+                    value={pres.aggregateAccentBarOffset}
+                    min={MIN_AGGREGATE_ACCENT_BAR_OFFSET}
+                    max={MAX_AGGREGATE_ACCENT_BAR_OFFSET}
+                    onChange={(event) =>
+                      pres.onSelectAggregateAccentBarOffset(Number(event.target.value))
+                    }
+                    aria-label="Aggregate accent bar offset"
+                    title="Vertical offset for compact accent bars."
+                  />
+                  <span className="xrdb-number-unit">px</span>
+                </div>
+              </ControlRow>
+            </>
+          ) : null}
+        </>
+      ) : null}
 
       <ControlRow label="Artwork source">
         <OptionPills
