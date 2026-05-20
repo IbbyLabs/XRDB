@@ -175,6 +175,12 @@ export async function handleImageRequest(
     return finalResponse;
   } catch (error: any) {
     if (error instanceof HttpError) {
+      logger.warn(
+        '[XRDB] request failed %s %s: %s',
+        request.method,
+        request.nextUrl.pathname,
+        error.message,
+      );
       const errResponse = respond(error.message, error.status, error.headers);
       recordRequest('image', error.status, performance.now() - requestStartedAt, id, {
         configId,
