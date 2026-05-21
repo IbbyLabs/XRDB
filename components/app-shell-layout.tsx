@@ -1,32 +1,27 @@
-'use client';
-
-import { useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 import { NavBar } from '@/components/nav-bar';
-import { IntegrationsOverlay } from '@/components/integrations-overlay';
 import { PageFooter } from '@/components/site-chrome';
 import type { ConfiguratorEnvAccessKeys } from '@/lib/configuratorEnvAccessKeys';
 import { ConfiguratorProvider } from '@/lib/configuratorProvider';
+import { isAdminEnabled } from '@/lib/adminAuth';
 
 export function AppShellLayout({
   children,
   envAccessKeys,
-  adminEnabled,
 }: {
   children: ReactNode;
   envAccessKeys: ConfiguratorEnvAccessKeys;
-  adminEnabled: boolean;
 }) {
-  const [integrationsOpen, setIntegrationsOpen] = useState(false);
+  const adminEnabled = isAdminEnabled();
   return (
     <ConfiguratorProvider envAccessKeys={envAccessKeys}>
       <div className="xrdb-app-shell">
         <header className="xrdb-app-chrome">
-          <NavBar adminEnabled={adminEnabled} onOpenIntegrations={() => setIntegrationsOpen(true)} />
+          <NavBar adminEnabled={adminEnabled} />
         </header>
         <main id="main-content" className="xrdb-app-content">{children}</main>
         <PageFooter />
-        <IntegrationsOverlay open={integrationsOpen} onClose={() => setIntegrationsOpen(false)} />
       </div>
     </ConfiguratorProvider>
   );

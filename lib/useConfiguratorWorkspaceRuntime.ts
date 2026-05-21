@@ -2190,11 +2190,8 @@ export function useConfiguratorWorkspaceRuntime({
     showProxyUrl,
   });
   const {
-    activeControlPopupId,
-    handleCloseControlPopup,
     handleContinueExperienceMode,
     handleExitWizard,
-    handleOpenControlPopup,
     handleSelectExperienceMode,
     openWorkspacePanels,
     setOpenWorkspacePanels,
@@ -2566,11 +2563,6 @@ export function useConfiguratorWorkspaceRuntime({
     setExperienceModeDraft,
     showExperienceModal,
     uiSettingsLoaded,
-    workspaceUiProps: {
-      activeControlPopupId,
-      closeControlPopup: handleCloseControlPopup,
-      openControlPopup: handleOpenControlPopup,
-    },
     workspaceColumnsProps,
   };
 }
