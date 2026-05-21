@@ -3,8 +3,7 @@
 import Image from 'next/image';
 import { Fragment, type DragEvent, type ReactNode, useRef } from 'react';
 import { useConfiguratorContext } from '@/lib/configuratorProvider';
-import { ControlPopupDialog } from '@/components/control-popup-dialog';
-import { RATING_PROVIDER_OPTIONS, type RatingPreference } from '@/lib/ratingProviderCatalog';
+import { RATING_PROVIDER_OPTIONS } from '@/lib/ratingProviderCatalog';
 import { RATING_STYLE_OPTIONS, ICON_SHAPE_OPTIONS, QUALITY_BADGE_STYLE_OPTIONS } from '@/lib/ratingAppearance';
 import { POSTER_RATING_LAYOUT_OPTIONS } from '@/lib/posterLayoutOptions';
 import { SCOREBAR_STYLE_OPTIONS } from '@/lib/scorebarConfig';
@@ -91,36 +90,12 @@ function PanelSection({
 
 export function ProvidersPanel() {
   const ctx = useConfiguratorContext();
-  const ui = ctx.workspaceUiProps;
   const { ratingProviderRows, onReorderRatingPreference, onToggleRatingPreference, onSelectAllRatingPreferencesEnabled } =
     ctx.inputsPanelProps.providersProps;
   const dragFromIndexRef = useRef<number | null>(null);
-  const providerPopupId = 'poster-provider-tuning';
-  const topProviderIds: RatingPreference[] = ['tmdb', 'mdblist', 'imdb'];
 
   const allEnabled = ratingProviderRows.every((r) => r.enabled);
   const enabledCount = ratingProviderRows.filter((r) => r.enabled).length;
-  const ratingsEnabled = enabledCount > 0;
-  const topProviderRows = topProviderIds
-    .map((id) => ratingProviderRows.find((row) => row.id === id))
-    .filter((row): row is (typeof ratingProviderRows)[number] => row !== undefined);
-
-  const handleEnableTopProviders = () => {
-    onSelectAllRatingPreferencesEnabled(false);
-    topProviderRows.forEach((row) => {
-      if (!row.enabled) {
-        onToggleRatingPreference(row.id);
-      }
-    });
-  };
-
-  const handleToggleRatings = () => {
-    if (ratingsEnabled) {
-      onSelectAllRatingPreferencesEnabled(false);
-      return;
-    }
-    handleEnableTopProviders();
-  };
 
   const handleProviderDragOver = (event: DragEvent<HTMLLIElement>) => {
     event.preventDefault();
@@ -142,60 +117,6 @@ export function ProvidersPanel() {
         <h2 className="xrdb-subtab-panel-title">Rating providers</h2>
         <div className="xrdb-panel-header-actions">
           <span className="xrdb-panel-summary">{enabledCount} of {ratingProviderRows.length} enabled</span>
-        </div>
-      </div>
-
-      <ControlRow label="Ratings" inline>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={ratingsEnabled}
-          className={`xrdb-toggle${ratingsEnabled ? ' xrdb-toggle-on' : ''}`}
-          onClick={handleToggleRatings}
-        >
-          {ratingsEnabled ? 'On' : 'Off'}
-        </button>
-        <p className="xrdb-control-description">When on, top providers turn on by default and presentation controls become available.</p>
-      </ControlRow>
-
-      {ratingsEnabled ? (
-        <ControlRow label="Top providers">
-          <div className="xrdb-option-pills" role="group" aria-label="Top provider quick toggles">
-            {topProviderRows.map((row) => {
-              const meta = RATING_PROVIDER_OPTIONS.find((p) => p.id === row.id);
-              return (
-                <button
-                  key={row.id}
-                  type="button"
-                  className={`xrdb-option-pill${row.enabled ? ' xrdb-option-pill-active' : ''}`}
-                  aria-pressed={row.enabled}
-                  onClick={() => onToggleRatingPreference(row.id)}
-                >
-                  {meta?.label ?? row.id}
-                </button>
-              );
-            })}
-          </div>
-        </ControlRow>
-      ) : null}
-
-      <button
-        type="button"
-        className="xrdb-btn-ghost"
-        onClick={() => ui.openControlPopup(providerPopupId)}
-        aria-label="Open provider tuning"
-      >
-        Open provider tuning
-      </button>
-
-      <ControlPopupDialog
-        open={ui.activeControlPopupId === providerPopupId}
-        title="Provider tuning"
-        description="Enable providers, reorder preference, and tune source priority."
-        onClose={ui.closeControlPopup}
-      >
-        <div className="xrdb-panel-header-actions">
-          <span className="xrdb-panel-summary">{enabledCount} of {ratingProviderRows.length} enabled</span>
           <button
             type="button"
             className="xrdb-btn-ghost"
@@ -204,50 +125,50 @@ export function ProvidersPanel() {
             {allEnabled ? 'Disable all' : 'Enable all'}
           </button>
         </div>
+      </div>
 
-        <ul className="xrdb-provider-list" role="list">
-          {ratingProviderRows.map((row, index) => {
-            const meta = RATING_PROVIDER_OPTIONS.find((p) => p.id === row.id);
-            return (
-              <li
-                key={row.id}
-                className="xrdb-provider-row"
-                draggable
-                onDragStart={() => {
-                  dragFromIndexRef.current = index;
-                }}
-                onDragOver={handleProviderDragOver}
-                onDrop={() => handleProviderDrop(index)}
-                onDragEnd={() => {
-                  dragFromIndexRef.current = null;
-                }}
+      <ul className="xrdb-provider-list" role="list">
+        {ratingProviderRows.map((row, index) => {
+          const meta = RATING_PROVIDER_OPTIONS.find((p) => p.id === row.id);
+          return (
+            <li
+              key={row.id}
+              className="xrdb-provider-row"
+              draggable
+              onDragStart={() => {
+                dragFromIndexRef.current = index;
+              }}
+              onDragOver={handleProviderDragOver}
+              onDrop={() => handleProviderDrop(index)}
+              onDragEnd={() => {
+                dragFromIndexRef.current = null;
+              }}
+            >
+              <button
+                type="button"
+                className={`xrdb-provider-toggle${row.enabled ? ' xrdb-provider-toggle-on' : ''}`}
+                role="switch"
+                aria-checked={row.enabled}
+                onClick={() => onToggleRatingPreference(row.id)}
               >
-                <button
-                  type="button"
-                  className={`xrdb-provider-toggle${row.enabled ? ' xrdb-provider-toggle-on' : ''}`}
-                  role="switch"
-                  aria-checked={row.enabled}
-                  onClick={() => onToggleRatingPreference(row.id)}
-                >
-                  {meta?.iconUrl ? (
-                    <Image
-                      src={meta.iconUrl}
-                      alt=""
-                      className="xrdb-provider-icon"
-                      width={20}
-                      height={20}
-                      aria-hidden="true"
-                      unoptimized
-                    />
-                  ) : null}
-                  <span className="xrdb-provider-name">{meta?.label ?? row.id}</span>
-                  <span className="xrdb-provider-status-dot" aria-hidden="true" />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </ControlPopupDialog>
+                {meta?.iconUrl ? (
+                  <Image
+                    src={meta.iconUrl}
+                    alt=""
+                    className="xrdb-provider-icon"
+                    width={20}
+                    height={20}
+                    aria-hidden="true"
+                    unoptimized
+                  />
+                ) : null}
+                <span className="xrdb-provider-name">{meta?.label ?? row.id}</span>
+                <span className="xrdb-provider-status-dot" aria-hidden="true" />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
@@ -256,17 +177,6 @@ export function StylePanel() {
   const ctx = useConfiguratorContext();
   const look = ctx.inputsPanelProps.lookProps;
   const pres = ctx.inputsPanelProps.presentationProps;
-  const { ratingProviderRows, onToggleRatingPreference, onSelectAllRatingPreferencesEnabled } =
-    ctx.inputsPanelProps.providersProps;
-  const ui = ctx.workspaceUiProps;
-
-  const presentationPopupId = 'poster-style-presentation';
-  const aggregatePopupId = 'poster-style-aggregate';
-  const scorebarPopupId = 'poster-style-scorebar';
-  const appearancePopupId = 'poster-style-appearance';
-  const genrePopupId = 'poster-style-genre';
-  const ratingsEnabled = ratingProviderRows.some((row) => row.enabled);
-  const genreBadgesEnabled = look.activeGenreBadgeMode !== 'off';
 
   const presentationOptions = pres.presentationOrder
     .map((id) => RATING_PRESENTATION_OPTIONS.find((o) => o.id === id))
@@ -280,270 +190,162 @@ export function StylePanel() {
         heading="Presentation and display"
         description="Controls how rating scores are displayed and the overall visual appearance of the poster."
       >
-        <ControlRow label="Presentation" inline>
-          <button
-            type="button"
-            className="xrdb-btn-ghost"
-            onClick={() => ui.openControlPopup(presentationPopupId)}
-            aria-label="Open presentation tuning"
-            disabled={!ratingsEnabled}
-          >
-            Open presentation
-          </button>
-        </ControlRow>
-
-        {ratingsEnabled && pres.usesAggregatePresentation ? (
-          <ControlRow label="Aggregate tuning" inline>
-            <button
-              type="button"
-              className="xrdb-btn-ghost"
-              onClick={() => ui.openControlPopup(aggregatePopupId)}
-              aria-label="Open advanced aggregate tuning"
-            >
-              Open advanced
-            </button>
-          </ControlRow>
-        ) : null}
-
-        {ratingsEnabled && pres.activeRatingPresentation === 'scorebar' ? (
-          <ControlRow label="Scorebar tuning" inline>
-            <button
-              type="button"
-              className="xrdb-btn-ghost"
-              onClick={() => ui.openControlPopup(scorebarPopupId)}
-              aria-label="Open advanced scorebar tuning"
-            >
-              Open advanced
-            </button>
-          </ControlRow>
-        ) : null}
-
-        <ControlRow label="Appearance tuning" inline>
-          <button
-            type="button"
-            className="xrdb-btn-ghost"
-            onClick={() => ui.openControlPopup(appearancePopupId)}
-            aria-label="Open advanced appearance tuning"
-            disabled={!ratingsEnabled}
-          >
-            Open advanced
-          </button>
-        </ControlRow>
-
-        {!ratingsEnabled ? (
-          <p className="xrdb-control-description">Enable Ratings in Providers to unlock style controls.</p>
-        ) : null}
-      </PanelSection>
-
-      <PanelSection
-        heading="Genre badges"
-        description="Optional genre labels that add context to the poster artwork."
-      >
-        {ratingsEnabled ? (
-          <ControlRow label="Genre badges" inline>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={genreBadgesEnabled}
-              className={`xrdb-toggle${genreBadgesEnabled ? ' xrdb-toggle-on' : ''}`}
-              onClick={() =>
-                look.onSelectGenreBadgeMode(genreBadgesEnabled ? 'off' : 'text')
-              }
-            >
-              {genreBadgesEnabled ? 'On' : 'Off'}
-            </button>
-            {genreBadgesEnabled ? (
-              <button
-                type="button"
-                className="xrdb-btn-ghost"
-                onClick={() => ui.openControlPopup(genrePopupId)}
-                aria-label="Open advanced genre badge tuning"
-              >
-                Open advanced
-              </button>
-            ) : null}
-            <p className="xrdb-control-description">Add genre labels highlighting the primary genre or showing all genres.</p>
-          </ControlRow>
-        ) : (
-          <p className="xrdb-control-description">Enable Ratings in Providers to unlock genre badge controls.</p>
-        )}
-      </PanelSection>
-
-      <ControlPopupDialog
-        open={ui.activeControlPopupId === presentationPopupId}
-        title="Presentation tuning"
-        description="Choose how ratings are displayed on the poster."
-        onClose={ui.closeControlPopup}
-      >
         <ControlRow label="Presentation">
           <OptionPills
             options={presentationOptions}
             value={pres.activeRatingPresentation}
             onChange={pres.onSelectRatingPresentation}
           />
-          <p className="xrdb-control-description">Choose how ratings appear as a card, icon value badge, or compact row.</p>
-        </ControlRow>
-      </ControlPopupDialog>
-
-      <ControlPopupDialog
-        open={ratingsEnabled && ui.activeControlPopupId === aggregatePopupId}
-        title="Aggregate tuning"
-        description="Advanced controls for aggregate presentation behaviour."
-        onClose={ui.closeControlPopup}
-      >
-        {pres.showsAggregateRatingSource ? (
-          <ControlRow label="Aggregate source">
-            <OptionPills
-              options={AGGREGATE_RATING_SOURCE_OPTIONS}
-              value={pres.activeAggregateRatingSource}
-              onChange={pres.onSelectAggregateRatingSource}
-            />
-          </ControlRow>
-        ) : null}
-
-        <ControlRow label="Accent mode">
-          <OptionPills
-            options={AGGREGATE_ACCENT_MODE_OPTIONS}
-            value={pres.aggregateAccentMode}
-            onChange={pres.onSelectAggregateAccentMode}
-          />
+          <p className="xrdb-control-description">Choose how ratings appear — as a card, an icon with a number, or a compact badge row.</p>
         </ControlRow>
 
-        {pres.aggregateAccentMode === 'dynamic' ? (
-          <ControlRow label="Dynamic stops">
-            <DynamicStopsEditor
-              value={pres.aggregateDynamicStops}
-              onChange={pres.onSelectAggregateDynamicStops}
-            />
-          </ControlRow>
-        ) : null}
-
-        {pres.showsAggregateAccentBarOffset ? (
+        {pres.usesAggregatePresentation ? (
           <>
-            <ControlRow label="Accent bar" inline>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={pres.aggregateAccentBarVisible}
-                className={`xrdb-toggle${pres.aggregateAccentBarVisible ? ' xrdb-toggle-on' : ''}`}
-                onClick={pres.onToggleAggregateAccentBarVisible}
-              >
-                {pres.aggregateAccentBarVisible ? 'On' : 'Off'}
-              </button>
+            {pres.showsAggregateRatingSource ? (
+              <ControlRow label="Aggregate source">
+                <OptionPills
+                  options={AGGREGATE_RATING_SOURCE_OPTIONS}
+                  value={pres.activeAggregateRatingSource}
+                  onChange={pres.onSelectAggregateRatingSource}
+                />
+              </ControlRow>
+            ) : null}
+
+            <ControlRow label="Accent mode">
+              <OptionPills
+                options={AGGREGATE_ACCENT_MODE_OPTIONS}
+                value={pres.aggregateAccentMode}
+                onChange={pres.onSelectAggregateAccentMode}
+              />
             </ControlRow>
 
-            <ControlRow label="Accent bar offset">
+            {pres.aggregateAccentMode === 'dynamic' ? (
+              <ControlRow label="Dynamic stops">
+                <DynamicStopsEditor
+                  value={pres.aggregateDynamicStops}
+                  onChange={pres.onSelectAggregateDynamicStops}
+                />
+              </ControlRow>
+            ) : null}
+
+            {pres.showsAggregateAccentBarOffset ? (
+              <>
+                <ControlRow label="Accent bar" inline>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={pres.aggregateAccentBarVisible}
+                    className={`xrdb-toggle${pres.aggregateAccentBarVisible ? ' xrdb-toggle-on' : ''}`}
+                    onClick={pres.onToggleAggregateAccentBarVisible}
+                  >
+                    {pres.aggregateAccentBarVisible ? 'On' : 'Off'}
+                  </button>
+                </ControlRow>
+
+                <ControlRow label="Accent bar offset">
+                  <div className="xrdb-number-control">
+                    <input
+                      type="number"
+                      className="xrdb-number-input"
+                      value={pres.aggregateAccentBarOffset}
+                      min={MIN_AGGREGATE_ACCENT_BAR_OFFSET}
+                      max={MAX_AGGREGATE_ACCENT_BAR_OFFSET}
+                      onChange={(event) =>
+                        pres.onSelectAggregateAccentBarOffset(Number(event.target.value))
+                      }
+                      aria-label="Aggregate accent bar offset"
+                      title="Vertical offset for compact accent bars."
+                    />
+                    <span className="xrdb-number-unit">px</span>
+                  </div>
+                </ControlRow>
+              </>
+            ) : null}
+          </>
+        ) : null}
+
+        {pres.activeRatingPresentation === 'scorebar' ? (
+          <>
+            <ControlRow label="Bar style">
+              <OptionPills
+                options={SCOREBAR_STYLE_OPTIONS}
+                value={look.scorebarStyle}
+                onChange={look.onSelectScorebarStyle}
+              />
+            </ControlRow>
+            <ControlRow label="Low colour">
+              <div className="xrdb-color-control">
+                <input
+                  type="color"
+                  className="xrdb-color-input"
+                  value={look.scorebarLowColor}
+                  onChange={(e) => look.onSelectScorebarLowColor(e.target.value)}
+                  aria-label="Scorebar low colour"
+                  title="Colour for scores below the low threshold."
+                />
+                <span className="xrdb-color-value">{look.scorebarLowColor}</span>
+              </div>
+            </ControlRow>
+            <ControlRow label="Mid colour">
+              <div className="xrdb-color-control">
+                <input
+                  type="color"
+                  className="xrdb-color-input"
+                  value={look.scorebarMidColor}
+                  onChange={(e) => look.onSelectScorebarMidColor(e.target.value)}
+                  aria-label="Scorebar mid colour"
+                  title="Colour for scores between the low and high thresholds."
+                />
+                <span className="xrdb-color-value">{look.scorebarMidColor}</span>
+              </div>
+            </ControlRow>
+            <ControlRow label="High colour">
+              <div className="xrdb-color-control">
+                <input
+                  type="color"
+                  className="xrdb-color-input"
+                  value={look.scorebarHighColor}
+                  onChange={(e) => look.onSelectScorebarHighColor(e.target.value)}
+                  aria-label="Scorebar high colour"
+                  title="Colour for scores at or above the high threshold."
+                />
+                <span className="xrdb-color-value">{look.scorebarHighColor}</span>
+              </div>
+            </ControlRow>
+            <ControlRow label="Low threshold">
               <div className="xrdb-number-control">
                 <input
                   type="number"
                   className="xrdb-number-input"
-                  value={pres.aggregateAccentBarOffset}
-                  min={MIN_AGGREGATE_ACCENT_BAR_OFFSET}
-                  max={MAX_AGGREGATE_ACCENT_BAR_OFFSET}
-                  onChange={(event) =>
-                    pres.onSelectAggregateAccentBarOffset(Number(event.target.value))
-                  }
-                  aria-label="Aggregate accent bar offset"
-                  title="Vertical offset for compact accent bars."
+                  value={look.scorebarLowThreshold}
+                  min={0}
+                  max={100}
+                  onChange={(e) => look.onSelectScorebarLowThreshold(Number(e.target.value))}
+                  aria-label="Scorebar low threshold"
+                  title="Scores below this value use the low colour."
                 />
-                <span className="xrdb-number-unit">px</span>
+                <span className="xrdb-number-unit">%</span>
               </div>
             </ControlRow>
+            <ControlRow label="High threshold">
+              <div className="xrdb-number-control">
+                <input
+                  type="number"
+                  className="xrdb-number-input"
+                  value={look.scorebarHighThreshold}
+                  min={0}
+                  max={100}
+                  onChange={(e) => look.onSelectScorebarHighThreshold(Number(e.target.value))}
+                  aria-label="Scorebar high threshold"
+                  title="Scores at or above this value use the high colour."
+                />
+                <span className="xrdb-number-unit">%</span>
+              </div>
+            </ControlRow>
+            <p className="xrdb-control-description">The bar shows the averaged score across your selected providers as a single colour coded strip below the poster.</p>
           </>
         ) : null}
-      </ControlPopupDialog>
 
-      <ControlPopupDialog
-        open={ratingsEnabled && ui.activeControlPopupId === scorebarPopupId}
-        title="Scorebar tuning"
-        description="Advanced controls for scorebar colours and thresholds."
-        onClose={ui.closeControlPopup}
-      >
-        <ControlRow label="Bar style">
-          <OptionPills
-            options={SCOREBAR_STYLE_OPTIONS}
-            value={look.scorebarStyle}
-            onChange={look.onSelectScorebarStyle}
-          />
-        </ControlRow>
-        <ControlRow label="Low colour">
-          <div className="xrdb-color-control">
-            <input
-              type="color"
-              className="xrdb-color-input"
-              value={look.scorebarLowColor}
-              onChange={(e) => look.onSelectScorebarLowColor(e.target.value)}
-              aria-label="Scorebar low colour"
-              title="Colour for scores below the low threshold."
-            />
-            <span className="xrdb-color-value">{look.scorebarLowColor}</span>
-          </div>
-        </ControlRow>
-        <ControlRow label="Mid colour">
-          <div className="xrdb-color-control">
-            <input
-              type="color"
-              className="xrdb-color-input"
-              value={look.scorebarMidColor}
-              onChange={(e) => look.onSelectScorebarMidColor(e.target.value)}
-              aria-label="Scorebar mid colour"
-              title="Colour for scores between the low and high thresholds."
-            />
-            <span className="xrdb-color-value">{look.scorebarMidColor}</span>
-          </div>
-        </ControlRow>
-        <ControlRow label="High colour">
-          <div className="xrdb-color-control">
-            <input
-              type="color"
-              className="xrdb-color-input"
-              value={look.scorebarHighColor}
-              onChange={(e) => look.onSelectScorebarHighColor(e.target.value)}
-              aria-label="Scorebar high colour"
-              title="Colour for scores at or above the high threshold."
-            />
-            <span className="xrdb-color-value">{look.scorebarHighColor}</span>
-          </div>
-        </ControlRow>
-        <ControlRow label="Low threshold">
-          <div className="xrdb-number-control">
-            <input
-              type="number"
-              className="xrdb-number-input"
-              value={look.scorebarLowThreshold}
-              min={0}
-              max={100}
-              onChange={(e) => look.onSelectScorebarLowThreshold(Number(e.target.value))}
-              aria-label="Scorebar low threshold"
-              title="Scores below this value use the low colour."
-            />
-            <span className="xrdb-number-unit">%</span>
-          </div>
-        </ControlRow>
-        <ControlRow label="High threshold">
-          <div className="xrdb-number-control">
-            <input
-              type="number"
-              className="xrdb-number-input"
-              value={look.scorebarHighThreshold}
-              min={0}
-              max={100}
-              onChange={(e) => look.onSelectScorebarHighThreshold(Number(e.target.value))}
-              aria-label="Scorebar high threshold"
-              title="Scores at or above this value use the high colour."
-            />
-            <span className="xrdb-number-unit">%</span>
-          </div>
-        </ControlRow>
-        <p className="xrdb-control-description">The bar shows the averaged score across your selected providers as a single colour coded strip below the poster.</p>
-      </ControlPopupDialog>
-
-      <ControlPopupDialog
-        open={ui.activeControlPopupId === appearancePopupId}
-        title="Appearance tuning"
-        description="Advanced controls for source, style, and rating visual behaviour."
-        onClose={ui.closeControlPopup}
-      >
         <ControlRow label="Artwork source">
           <OptionPills
             options={look.activeArtworkSourceOptions}
@@ -556,13 +358,11 @@ export function StylePanel() {
         </ControlRow>
 
         <ControlRow label="Rating style">
-          {ratingsEnabled ? (
-            <OptionPills
-              options={RATING_STYLE_OPTIONS}
-              value={look.activeRatingStyle}
-              onChange={look.onSelectRatingStyle}
-            />
-          ) : null}
+          <OptionPills
+            options={RATING_STYLE_OPTIONS}
+            value={look.activeRatingStyle}
+            onChange={look.onSelectRatingStyle}
+          />
         </ControlRow>
 
         <ControlRow label="Image text">
@@ -577,31 +377,25 @@ export function StylePanel() {
         </ControlRow>
 
         <ControlRow label="Rating values">
-          {ratingsEnabled ? (
-            <OptionPills
-              options={RATING_VALUE_MODE_OPTIONS}
-              value={look.ratingValueMode}
-              onChange={look.onSelectRatingValueMode}
-            />
-          ) : null}
+          <OptionPills
+            options={RATING_VALUE_MODE_OPTIONS}
+            value={look.ratingValueMode}
+            onChange={look.onSelectRatingValueMode}
+          />
         </ControlRow>
 
         <ControlRow label="Icon shape">
-          {ratingsEnabled ? (
-            <OptionPills
-              options={ICON_SHAPE_OPTIONS}
-              value={look.iconShape}
-              onChange={look.onSelectIconShape}
-            />
-          ) : null}
+          <OptionPills
+            options={ICON_SHAPE_OPTIONS}
+            value={look.iconShape}
+            onChange={look.onSelectIconShape}
+          />
         </ControlRow>
-      </ControlPopupDialog>
+      </PanelSection>
 
-      <ControlPopupDialog
-        open={ratingsEnabled && ui.activeControlPopupId === genrePopupId}
-        title="Genre badge tuning"
-        description="Advanced controls for genre badge mode, placement, and styling."
-        onClose={ui.closeControlPopup}
+      <PanelSection
+        heading="Genre badges"
+        description="Optional genre labels that add context to the poster artwork."
       >
         <ControlRow label="Genre badges">
           <OptionPills
@@ -609,6 +403,7 @@ export function StylePanel() {
             value={look.activeGenreBadgeMode}
             onChange={look.onSelectGenreBadgeMode}
           />
+          <p className="xrdb-control-description">Add genre labels highlighting the primary genre or showing all genres.</p>
         </ControlRow>
 
         {look.activeGenreBadgeMode !== 'off' ? (
@@ -664,7 +459,7 @@ export function StylePanel() {
             ) : null}
           </>
         ) : null}
-      </ControlPopupDialog>
+      </PanelSection>
     </div>
   );
 }
@@ -672,43 +467,22 @@ export function StylePanel() {
 export function PositionPanel() {
   const ctx = useConfiguratorContext();
   const look = ctx.inputsPanelProps.lookProps;
-  const { ratingProviderRows } = ctx.inputsPanelProps.providersProps;
-  const ui = ctx.workspaceUiProps;
-  const positionPopupId = 'poster-position-placement';
-  const ratingsEnabled = ratingProviderRows.some((row) => row.enabled);
 
   return (
     <div className="xrdb-panel-position">
       <h2 className="xrdb-subtab-panel-title">Position</h2>
 
-      <ControlRow label="Rating position" inline>
-        <button
-          type="button"
-          className="xrdb-btn-ghost"
-          onClick={() => ui.openControlPopup(positionPopupId)}
-          aria-label="Open rating position settings"
-          disabled={!ratingsEnabled}
-        >
-          Configure
-        </button>
-        {!ratingsEnabled ? (
-          <p className="xrdb-control-description">Enable Ratings in Providers to unlock position controls.</p>
-        ) : null}
-      </ControlRow>
-
-      <ControlPopupDialog
-        open={ratingsEnabled && ui.activeControlPopupId === positionPopupId}
-        title="Rating position"
-        description="Layout, spacing, and placement of rating badges on the poster."
-        onClose={ui.closeControlPopup}
+      <PanelSection
+        heading="Rating placement"
+        description="How and where rating badges are positioned on the poster artwork."
       >
-        <ControlRow label="Layout">
+        <ControlRow label="Ratings layout">
           <OptionPills
             options={POSTER_RATING_LAYOUT_OPTIONS}
             value={look.posterRatingsLayout}
             onChange={look.onSelectPosterRatingsLayout}
           />
-          <p className="xrdb-control-description">Choose between corner stacks or side by side arrangement.</p>
+          <p className="xrdb-control-description">Choose between corner stacks or side-by-side arrangement.</p>
         </ControlRow>
 
         <ControlRow label="Edge offset">
@@ -742,8 +516,10 @@ export function PositionPanel() {
             <span className="xrdb-number-unit">%</span>
           </div>
         </ControlRow>
+      </PanelSection>
 
-        {look.shouldShowSideRatingPlacement ? (
+      {look.shouldShowSideRatingPlacement ? (
+        <PanelSection heading="Additional ratings">
           <ControlRow label="Side ratings">
             <OptionPills
               options={SIDE_RATING_POSITION_OPTIONS}
@@ -751,8 +527,8 @@ export function PositionPanel() {
               onChange={look.onSelectSideRatingsPosition}
             />
           </ControlRow>
-        ) : null}
-      </ControlPopupDialog>
+        </PanelSection>
+      ) : null}
     </div>
   );
 }
@@ -760,13 +536,48 @@ export function PositionPanel() {
 export function AdvancedPanel() {
   const ctx = useConfiguratorContext();
   const look = ctx.inputsPanelProps.lookProps;
-  const ui = ctx.workspaceUiProps;
-  const limitsPopupId = 'poster-advanced-limits';
-  const randomPopupId = 'poster-advanced-random';
 
   return (
     <div className="xrdb-panel-advanced">
       <h2 className="xrdb-subtab-panel-title">Advanced</h2>
+
+      <ControlRow label="Max ratings total">
+        <div className="xrdb-number-control">
+          <input
+            type="number"
+            className="xrdb-number-input"
+            value={look.posterRatingsMax ?? ''}
+            min={1}
+            max={40}
+            placeholder="Auto"
+            onChange={(e) =>
+              look.onSelectPosterRatingsMax(e.target.value === '' ? null : Number(e.target.value))
+            }
+            aria-label="Maximum ratings total"
+            title="Maximum number of rating badges to show. Leave blank to let XRDB decide automatically."
+          />
+        </div>
+      </ControlRow>
+
+      <ControlRow label="Max per side">
+        <div className="xrdb-number-control">
+          <input
+            type="number"
+            className="xrdb-number-input"
+            value={look.posterRatingsMaxPerSide ?? ''}
+            min={1}
+            max={20}
+            placeholder="Auto"
+            onChange={(e) =>
+              look.onSelectPosterRatingsMaxPerSide(
+                e.target.value === '' ? null : Number(e.target.value),
+              )
+            }
+            aria-label="Maximum ratings per side"
+            title="Maximum badges on each side of the image when using side layout."
+          />
+        </div>
+      </ControlRow>
 
       <ControlRow label="Image size">
         <OptionPills
@@ -786,140 +597,68 @@ export function AdvancedPanel() {
           aria-checked={look.activeBlackBarEnabled}
           className={`xrdb-toggle${look.activeBlackBarEnabled ? ' xrdb-toggle-on' : ''}`}
           onClick={look.onToggleBlackBar}
-                  title="Adds a semi transparent bar behind rating badges to improve readability on bright or textured images."
+                  title="Adds a semi-transparent bar behind rating badges to improve readability on bright or textured images."
         >
           {look.activeBlackBarEnabled ? 'On' : 'Off'}
         </button>
       </ControlRow>
 
-      <ControlRow label="Rating limits" inline>
-        <button
-          type="button"
-          className="xrdb-btn-ghost"
-          onClick={() => ui.openControlPopup(limitsPopupId)}
-          aria-label="Open advanced rating limits"
-        >
-          Open advanced
-        </button>
-      </ControlRow>
-
       {look.activeArtworkSource === 'random' ? (
-        <ControlRow label="Random source tuning" inline>
-          <button
-            type="button"
-            className="xrdb-btn-ghost"
-            onClick={() => ui.openControlPopup(randomPopupId)}
-            aria-label="Open advanced random source tuning"
-          >
-            Open advanced
-          </button>
-        </ControlRow>
+        <>
+          <ControlRow label="Random text">
+            <OptionPills
+              options={[
+                { id: 'any' as const, label: 'Any' },
+                { id: 'text' as const, label: 'Text' },
+                { id: 'textless' as const, label: 'Textless' },
+              ]}
+              value={look.randomPosterText}
+              onChange={look.onSelectRandomPosterText}
+            />
+          </ControlRow>
+
+          <ControlRow label="Random language">
+            <OptionPills
+              options={[
+                { id: 'any' as const, label: 'Any' },
+                { id: 'requested' as const, label: 'Requested' },
+                { id: 'fallback' as const, label: 'Fallback' },
+              ]}
+              value={look.randomPosterLanguage}
+              onChange={look.onSelectRandomPosterLanguage}
+            />
+          </ControlRow>
+
+          <ControlRow label="Random fallback">
+            <OptionPills
+              options={[
+                { id: 'best' as const, label: 'Best match' },
+                { id: 'original' as const, label: 'Original' },
+              ]}
+              value={look.randomPosterFallback}
+              onChange={look.onSelectRandomPosterFallback}
+            />
+          </ControlRow>
+
+          <ControlRow label="Min votes">
+            <div className="xrdb-number-control">
+              <input
+                type="number"
+                className="xrdb-number-input"
+                value={look.randomPosterMinVoteCount ?? ''}
+                min={0}
+                placeholder="Any"
+                onChange={(e) =>
+                  look.onSelectRandomPosterMinVoteCount(
+                    e.target.value === '' ? null : Number(e.target.value),
+                  )
+                }
+                aria-label="Minimum vote count"
+              />
+            </div>
+          </ControlRow>
+        </>
       ) : null}
-
-      <ControlPopupDialog
-        open={ui.activeControlPopupId === limitsPopupId}
-        title="Rating limits"
-        description="Advanced controls for optional badge limits. Leave fields blank for automatic behavior."
-        onClose={ui.closeControlPopup}
-      >
-        <ControlRow label="Max ratings total">
-          <div className="xrdb-number-control">
-            <input
-              type="number"
-              className="xrdb-number-input"
-              value={look.posterRatingsMax ?? ''}
-              min={1}
-              max={40}
-              placeholder="Auto"
-              onChange={(e) =>
-                look.onSelectPosterRatingsMax(e.target.value === '' ? null : Number(e.target.value))
-              }
-              aria-label="Maximum ratings total"
-              title="Maximum number of rating badges to show. Leave blank to let XRDB decide automatically."
-            />
-          </div>
-        </ControlRow>
-
-        <ControlRow label="Max per side">
-          <div className="xrdb-number-control">
-            <input
-              type="number"
-              className="xrdb-number-input"
-              value={look.posterRatingsMaxPerSide ?? ''}
-              min={1}
-              max={20}
-              placeholder="Auto"
-              onChange={(e) =>
-                look.onSelectPosterRatingsMaxPerSide(
-                  e.target.value === '' ? null : Number(e.target.value),
-                )
-              }
-              aria-label="Maximum ratings per side"
-              title="Maximum badges on each side of the image when using side layout."
-            />
-          </div>
-        </ControlRow>
-      </ControlPopupDialog>
-
-      <ControlPopupDialog
-        open={ui.activeControlPopupId === randomPopupId}
-        title="Random source tuning"
-        description="Advanced controls for random artwork selection when the source is set to random."
-        onClose={ui.closeControlPopup}
-      >
-        <ControlRow label="Random text">
-          <OptionPills
-            options={[
-              { id: 'any' as const, label: 'Any' },
-              { id: 'text' as const, label: 'Text' },
-              { id: 'textless' as const, label: 'Textless' },
-            ]}
-            value={look.randomPosterText}
-            onChange={look.onSelectRandomPosterText}
-          />
-        </ControlRow>
-
-        <ControlRow label="Random language">
-          <OptionPills
-            options={[
-              { id: 'any' as const, label: 'Any' },
-              { id: 'requested' as const, label: 'Requested' },
-              { id: 'fallback' as const, label: 'Fallback' },
-            ]}
-            value={look.randomPosterLanguage}
-            onChange={look.onSelectRandomPosterLanguage}
-          />
-        </ControlRow>
-
-        <ControlRow label="Random fallback">
-          <OptionPills
-            options={[
-              { id: 'best' as const, label: 'Best match' },
-              { id: 'original' as const, label: 'Original' },
-            ]}
-            value={look.randomPosterFallback}
-            onChange={look.onSelectRandomPosterFallback}
-          />
-        </ControlRow>
-
-        <ControlRow label="Min votes">
-          <div className="xrdb-number-control">
-            <input
-              type="number"
-              className="xrdb-number-input"
-              value={look.randomPosterMinVoteCount ?? ''}
-              min={0}
-              placeholder="Any"
-              onChange={(e) =>
-                look.onSelectRandomPosterMinVoteCount(
-                  e.target.value === '' ? null : Number(e.target.value),
-                )
-              }
-              aria-label="Minimum vote count"
-            />
-          </div>
-        </ControlRow>
-      </ControlPopupDialog>
     </div>
   );
 }
@@ -927,12 +666,7 @@ export function QualityPanel() {
   const ctx = useConfiguratorContext();
   const q = ctx.inputsPanelProps.qualityProps;
   const look = ctx.inputsPanelProps.lookProps;
-  const ui = ctx.workspaceUiProps;
   const isAdvancedMode = ctx.experienceMode === 'advanced';
-  const streamPopupId = 'poster-quality-stream';
-  const stylePopupId = 'poster-quality-style';
-  const trendingPopupId = 'poster-quality-trending';
-  const customIconsPopupId = 'poster-quality-custom-icons';
   const trendingPositionOptions = [
     { id: 'auto', label: 'Auto' },
     { id: 'top-left', label: 'Top left' },
@@ -972,304 +706,237 @@ export function QualityPanel() {
         </div>
       </div>
 
-      <ControlRow label="Stream badges" inline>
-        <button
-          type="button"
-          className="xrdb-btn-ghost"
-          onClick={() => ui.openControlPopup(streamPopupId)}
-          aria-label="Open stream badge settings"
-        >
-          Configure
-        </button>
+      <ControlRow label="Stream badges">
+        <OptionPills
+          options={q.streamBadgeOptions}
+          value={q.activeStreamBadges}
+          onChange={q.onSelectStreamBadges}
+        />
       </ControlRow>
 
-      <ControlRow label="Badge style" inline>
-        <button
-          type="button"
-          className="xrdb-btn-ghost"
-          onClick={() => ui.openControlPopup(stylePopupId)}
-          aria-label="Open badge style settings"
-        >
-          Configure
-        </button>
+      <ControlRow label="Badge style">
+        <OptionPills
+          options={QUALITY_BADGE_STYLE_OPTIONS}
+          value={q.activeQualityBadgesStyle}
+          onChange={q.onSelectQualityBadgeStyle}
+        />
       </ControlRow>
 
-      <ControlRow label="Trending" inline>
-        <button
-          type="button"
-          className="xrdb-btn-ghost"
-          onClick={() => ui.openControlPopup(trendingPopupId)}
-          aria-label="Open trending badge settings"
-        >
-          Configure
-        </button>
-      </ControlRow>
-
-      {isAdvancedMode ? (
-        <ControlRow label="Custom icons" inline>
-          <button
-            type="button"
-            className="xrdb-btn-ghost"
-            onClick={() => ui.openControlPopup(customIconsPopupId)}
-            aria-label="Open custom badge icon settings"
-          >
-            Configure
-          </button>
+      {q.activeQualityBadgesStyle === 'community-badge' ? (
+        <ControlRow label="Badge theme">
+          <OptionPills
+            options={COMMUNITY_BADGE_THEME_OPTIONS}
+            value={q.communityBadgeTheme}
+            onChange={q.onSelectCommunityBadgeTheme}
+          />
         </ControlRow>
       ) : null}
 
-      <ControlPopupDialog
-        open={ui.activeControlPopupId === streamPopupId}
-        title="Stream badges"
-        description="Choose stream badge mode and which quality badges to include."
-        onClose={ui.closeControlPopup}
-      >
-        <ControlRow label="Stream mode">
+      <ControlRow label="Max badges">
+        <div className="xrdb-number-control">
+          <input
+            type="number"
+            className="xrdb-number-input"
+            value={q.activeQualityBadgesMax ?? ''}
+            min={0}
+            max={20}
+            placeholder="Auto"
+            onChange={(e) =>
+              q.onSelectQualityBadgesMax(e.target.value === '' ? null : Number(e.target.value))
+            }
+            aria-label="Maximum quality badges"
+            title="Maximum number of quality badges to show. Leave blank for automatic."
+          />
+        </div>
+      </ControlRow>
+
+      <ControlRow label="Badge size">
+        <div className="xrdb-number-control">
+          <input
+            type="number"
+            className="xrdb-number-input"
+            value={look.activeQualityBadgeScale}
+            min={70}
+            max={200}
+            onChange={(e) => look.onSelectQualityBadgeScale(Number(e.target.value))}
+            aria-label="Quality badge size"
+            title="Scale quality badges relative to their default size. 100 is default."
+          />
+          <span className="xrdb-number-unit">%</span>
+        </div>
+      </ControlRow>
+
+      {q.shouldShowAgeRatingBadgePosition && q.ageRatingBadgePositionOptions.length > 0 ? (
+        <ControlRow label="Age rating position">
           <OptionPills
-            options={q.streamBadgeOptions}
-            value={q.activeStreamBadges}
-            onChange={q.onSelectStreamBadges}
+            options={q.ageRatingBadgePositionOptions}
+            value={q.activeAgeRatingBadgePosition}
+            onChange={q.onSelectAgeRatingBadgePosition}
           />
         </ControlRow>
+      ) : null}
 
-        <ul className="xrdb-provider-list" role="list">
-          {QUALITY_BADGE_OPTIONS.map((badge) => {
-            const enabled = q.activeQualityBadgePreferences.includes(badge.id);
-            return (
-              <li key={badge.id} className="xrdb-provider-row">
-                <button
-                  type="button"
-                  className={`xrdb-provider-toggle${enabled ? ' xrdb-provider-toggle-on' : ''}`}
-                  role="switch"
-                  aria-checked={enabled}
-                  onClick={() => q.onToggleQualityBadgePreference(badge.id)}
-                >
-                  <span className="xrdb-provider-name">{badge.label}</span>
-                  <span className="xrdb-provider-status-dot" aria-hidden="true" />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </ControlPopupDialog>
-
-      <ControlPopupDialog
-        open={ui.activeControlPopupId === stylePopupId}
-        title="Badge style"
-        description="Style, sizing, and placement of quality badges on the poster."
-        onClose={ui.closeControlPopup}
-      >
-        <ControlRow label="Style">
+      {q.shouldShowQualityBadgesSide ? (
+        <ControlRow label="Badge side">
           <OptionPills
-            options={QUALITY_BADGE_STYLE_OPTIONS}
-            value={q.activeQualityBadgesStyle}
-            onChange={q.onSelectQualityBadgeStyle}
+            options={q.qualityBadgeSideOptions}
+            value={q.qualityBadgesSide}
+            onChange={q.onSelectQualityBadgesSide}
           />
         </ControlRow>
+      ) : null}
 
-        {q.activeQualityBadgesStyle === 'community-badge' ? (
-          <ControlRow label="Theme">
-            <OptionPills
-              options={COMMUNITY_BADGE_THEME_OPTIONS}
-              value={q.communityBadgeTheme}
-              onChange={q.onSelectCommunityBadgeTheme}
-            />
-          </ControlRow>
-        ) : null}
-
-        <ControlRow label="Max badges">
-          <div className="xrdb-number-control">
-            <input
-              type="number"
-              className="xrdb-number-input"
-              value={q.activeQualityBadgesMax ?? ''}
-              min={0}
-              max={20}
-              placeholder="Auto"
-              onChange={(e) =>
-                q.onSelectQualityBadgesMax(e.target.value === '' ? null : Number(e.target.value))
-              }
-              aria-label="Maximum quality badges"
-              title="Maximum number of quality badges to show. Leave blank for automatic."
-            />
-          </div>
-        </ControlRow>
-
-        <ControlRow label="Badge size">
-          <div className="xrdb-number-control">
-            <input
-              type="number"
-              className="xrdb-number-input"
-              value={look.activeQualityBadgeScale}
-              min={70}
-              max={200}
-              onChange={(e) => look.onSelectQualityBadgeScale(Number(e.target.value))}
-              aria-label="Quality badge size"
-              title="Scale quality badges relative to their default size. 100 is default."
-            />
-            <span className="xrdb-number-unit">%</span>
-          </div>
-        </ControlRow>
-
-        {q.shouldShowAgeRatingBadgePosition && q.ageRatingBadgePositionOptions.length > 0 ? (
-          <ControlRow label="Age rating position">
-            <OptionPills
-              options={q.ageRatingBadgePositionOptions}
-              value={q.activeAgeRatingBadgePosition}
-              onChange={q.onSelectAgeRatingBadgePosition}
-            />
-          </ControlRow>
-        ) : null}
-
-        {q.shouldShowQualityBadgesSide ? (
-          <ControlRow label="Badge side">
-            <OptionPills
-              options={q.qualityBadgeSideOptions}
-              value={q.qualityBadgesSide}
-              onChange={q.onSelectQualityBadgesSide}
-            />
-          </ControlRow>
-        ) : null}
-
-        {q.shouldShowQualityBadgesPosition ? (
-          <ControlRow label="Badge position">
-            <OptionPills
-              options={q.qualityBadgePositionOptions}
-              value={q.posterQualityBadgesPosition}
-              onChange={q.onSelectPosterQualityBadgePosition}
-            />
-          </ControlRow>
-        ) : null}
-      </ControlPopupDialog>
-
-      <ControlPopupDialog
-        open={ui.activeControlPopupId === trendingPopupId}
-        title="Trending badge"
-        description="Position and style of the trending badge on the poster."
-        onClose={ui.closeControlPopup}
-      >
-        <ControlRow label="Position">
+      {q.shouldShowQualityBadgesPosition ? (
+        <ControlRow label="Badge position">
           <OptionPills
-            options={trendingPositionOptions}
-            value={q.posterTrendingTagPosition}
-            onChange={q.onSelectPosterTrendingTagPosition}
+            options={q.qualityBadgePositionOptions}
+            value={q.posterQualityBadgesPosition}
+            onChange={q.onSelectPosterQualityBadgePosition}
           />
         </ControlRow>
+      ) : null}
 
-        {isAdvancedMode ? (
-          <>
-            <ControlRow label="Style">
+      <ControlRow label="Trending position">
+        <OptionPills
+          options={trendingPositionOptions}
+          value={q.posterTrendingTagPosition}
+          onChange={q.onSelectPosterTrendingTagPosition}
+        />
+      </ControlRow>
+
+      {isAdvancedMode ? (
+        <>
+          <ControlRow label="Trending style">
+            <OptionPills
+              options={trendingStylePresetOptions}
+              value={q.posterTrendingTagStylePreset}
+              onChange={q.onSelectPosterTrendingTagStylePreset}
+            />
+          </ControlRow>
+          {q.posterTrendingTagStylePreset === 'community-badge' ? (
+            <ControlRow label="Trending theme">
               <OptionPills
-                options={trendingStylePresetOptions}
-                value={q.posterTrendingTagStylePreset}
-                onChange={q.onSelectPosterTrendingTagStylePreset}
+                options={COMMUNITY_BADGE_THEME_OPTIONS}
+                value={q.posterTrendingCommunityBadgeTheme}
+                onChange={q.onSelectPosterTrendingCommunityBadgeTheme}
               />
             </ControlRow>
-            {q.posterTrendingTagStylePreset === 'community-badge' ? (
-              <ControlRow label="Theme">
-                <OptionPills
-                  options={COMMUNITY_BADGE_THEME_OPTIONS}
-                  value={q.posterTrendingCommunityBadgeTheme}
-                  onChange={q.onSelectPosterTrendingCommunityBadgeTheme}
-                />
-              </ControlRow>
-            ) : null}
-            {q.posterTrendingTagStylePreset === 'auto-minimal' ? (
-              <ControlRow label="Text colour">
-                <div className="xrdb-control-stack">
-                  <p className="xrdb-control-description">Only available for Auto Minimal.</p>
-                  <div className="xrdb-color-input-row">
-                    <input
-                      type="color"
-                      className="xrdb-color-input"
-                      value={q.posterTrendingTagTextColor || '#f8fbff'}
-                      onChange={(event) => q.onSelectPosterTrendingTagTextColor(event.target.value)}
-                      aria-label="Trending tag text colour"
-                    />
-                    <button
-                      type="button"
-                      className="xrdb-btn-ghost"
-                      onClick={() => q.onSelectPosterTrendingTagTextColor('')}
-                    >
-                      Auto
-                    </button>
-                  </div>
-                </div>
-              </ControlRow>
-            ) : null}
-          </>
-        ) : null}
-      </ControlPopupDialog>
-
-      <ControlPopupDialog
-        open={ui.activeControlPopupId === customIconsPopupId}
-        title="Custom badge icons"
-        description="Advanced controls for icon URLs and display mode on enabled quality badges."
-        onClose={ui.closeControlPopup}
-      >
-        {enabledCustomizableBadges.length > 0 ? (
-          enabledCustomizableBadges.map((badge) => {
-            const iconUrl = q.qualityBadgeAppearanceOverrides[badge.id]?.iconUrl ?? '';
-            const isLogoOnly = q.qualityBadgeAppearanceOverrides[badge.id]?.fullBadge === true;
-            return (
-              <Fragment key={badge.id}>
-                <ControlRow label={`${badge.label} URL`}>
+          ) : null}
+          {q.posterTrendingTagStylePreset === 'auto-minimal' ? (
+            <ControlRow label="Trending text colour">
+              <div className="xrdb-control-stack">
+                <p className="xrdb-control-description">Only available for Auto Minimal.</p>
+                <div className="xrdb-color-input-row">
                   <input
-                    type="url"
-                    className="xrdb-url-input"
-                    value={iconUrl}
-                    placeholder="https://example.com/badge.png or https://example.com/badge.svg"
-                    onChange={(event) => {
-                      const nextUrl = event.target.value.trim();
-                      q.onUpdateQualityBadgeAppearanceOverride((current) => {
-                        const next = { ...current };
-                        if (!nextUrl) {
-                          delete next[badge.id];
-                          return next;
-                        }
-                        next[badge.id] = {
-                          ...(current[badge.id] ?? {}),
-                          iconUrl: nextUrl,
-                        };
-                        return next;
-                      });
-                    }}
-                    aria-label={`${badge.label} custom icon URL`}
+                    type="color"
+                    className="xrdb-color-input"
+                    value={q.posterTrendingTagTextColor || '#f8fbff'}
+                    onChange={(event) => q.onSelectPosterTrendingTagTextColor(event.target.value)}
+                    aria-label="Trending tag text colour"
                   />
-                </ControlRow>
-                {iconUrl ? (
-                  <ControlRow label="Display">
-                    <OptionPills
-                      options={[
-                        { id: 'text', label: 'Logo + text' },
-                        { id: 'icon', label: 'Logo only' },
-                      ] as const}
-                      value={isLogoOnly ? 'icon' : 'text'}
-                      onChange={(mode) => {
+                  <button
+                    type="button"
+                    className="xrdb-btn-ghost"
+                    onClick={() => q.onSelectPosterTrendingTagTextColor('')}
+                  >
+                    Auto
+                  </button>
+                </div>
+              </div>
+            </ControlRow>
+          ) : null}
+        </>
+      ) : null}
+
+      <ul className="xrdb-provider-list" role="list">
+        {QUALITY_BADGE_OPTIONS.map((badge) => {
+          const enabled = q.activeQualityBadgePreferences.includes(badge.id);
+          return (
+            <li key={badge.id} className="xrdb-provider-row">
+              <button
+                type="button"
+                className={`xrdb-provider-toggle${enabled ? ' xrdb-provider-toggle-on' : ''}`}
+                role="switch"
+                aria-checked={enabled}
+                onClick={() => q.onToggleQualityBadgePreference(badge.id)}
+              >
+                <span className="xrdb-provider-name">{badge.label}</span>
+                <span className="xrdb-provider-status-dot" aria-hidden="true" />
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
+      {isAdvancedMode ? (
+        <>
+          <div className="xrdb-panel-header">
+            <h2 className="xrdb-subtab-panel-title">Custom badge icons</h2>
+          </div>
+          {enabledCustomizableBadges.length > 0 ? (
+            enabledCustomizableBadges.map((badge) => {
+              const iconUrl = q.qualityBadgeAppearanceOverrides[badge.id]?.iconUrl ?? '';
+              const isLogoOnly = q.qualityBadgeAppearanceOverrides[badge.id]?.fullBadge === true;
+              return (
+                <Fragment key={badge.id}>
+                  <ControlRow label={`${badge.label} URL`}>
+                    <input
+                      type="url"
+                      className="xrdb-url-input"
+                      value={iconUrl}
+                      placeholder="https://example.com/badge.png or https://example.com/badge.svg"
+                      onChange={(event) => {
+                        const nextUrl = event.target.value.trim();
                         q.onUpdateQualityBadgeAppearanceOverride((current) => {
-                          const existing = current[badge.id];
-                          if (!existing?.iconUrl) return current;
-                          const next = { ...existing };
-                          if (mode === 'icon') {
-                            next.fullBadge = true;
-                          } else {
-                            delete next.fullBadge;
+                          const next = { ...current };
+                          if (!nextUrl) {
+                            delete next[badge.id];
+                            return next;
                           }
-                          return { ...current, [badge.id]: next };
+                          next[badge.id] = {
+                            ...(current[badge.id] ?? {}),
+                            iconUrl: nextUrl,
+                          };
+                          return next;
                         });
                       }}
+                      aria-label={`${badge.label} custom icon URL`}
                     />
                   </ControlRow>
-                ) : null}
-              </Fragment>
-            );
-          })
-        ) : (
-          <p className="xrdb-control-description">
-            Enable at least one quality badge to customise its icon URL.
-          </p>
-        )}
-      </ControlPopupDialog>
+                  {iconUrl ? (
+                    <ControlRow label="Display">
+                      <OptionPills
+                        options={[
+                          { id: 'text', label: 'Logo + text' },
+                          { id: 'icon', label: 'Logo only' },
+                        ] as const}
+                        value={isLogoOnly ? 'icon' : 'text'}
+                        onChange={(mode) => {
+                          q.onUpdateQualityBadgeAppearanceOverride((current) => {
+                            const existing = current[badge.id];
+                            if (!existing?.iconUrl) return current;
+                            const next = { ...existing };
+                            if (mode === 'icon') {
+                              next.fullBadge = true;
+                            } else {
+                              delete next.fullBadge;
+                            }
+                            return { ...current, [badge.id]: next };
+                          });
+                        }}
+                      />
+                    </ControlRow>
+                  ) : null}
+                </Fragment>
+              );
+            })
+          ) : (
+            <p className="xrdb-control-description">
+              Enable at least one quality badge to customise its icon URL.
+            </p>
+          )}
+        </>
+      ) : null}
     </div>
   );
 }

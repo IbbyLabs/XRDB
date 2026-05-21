@@ -125,7 +125,7 @@ const UTIL_TABS = [
   { label: 'Reference', href: '/reference' },
 ] as const;
 
-export function NavBar({ adminEnabled = false, onOpenIntegrations }: { adminEnabled?: boolean; onOpenIntegrations?: () => void }) {
+export function NavBar({ adminEnabled = false }: { adminEnabled?: boolean }) {
   const pathname = usePathname();
   const configurator = useOptionalConfiguratorContext();
   const activeMode = configurator?.experienceMode ?? 'simple';
@@ -155,6 +155,20 @@ export function NavBar({ adminEnabled = false, onOpenIntegrations }: { adminEnab
               </div>
             </div>
           </Link>
+          <div className="xrdb-nav-build-meta" aria-label={`Build ${NAV_VERSION_LABEL}`}>
+            <span className="xrdb-nav-brand-version">Live {NAV_VERSION_LABEL}</span>
+            {NAV_VERSION_COMMIT_HASH && NAV_VERSION_COMMIT_URL ? (
+              <a
+                className="xrdb-nav-commit-link"
+                href={NAV_VERSION_COMMIT_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Open commit ${NAV_VERSION_COMMIT_HASH}`}
+              >
+                Build details
+              </a>
+            ) : null}
+          </div>
         </div>
 
         <div className="xrdb-nav-tabs">
@@ -172,15 +186,6 @@ export function NavBar({ adminEnabled = false, onOpenIntegrations }: { adminEnab
           </div>
           <div className="xrdb-nav-divider" aria-hidden="true" />
           <div className="xrdb-nav-util-tabs">
-            {onOpenIntegrations ? (
-              <button
-                type="button"
-                className="xrdb-nav-tab"
-                onClick={onOpenIntegrations}
-              >
-                Integrations
-              </button>
-            ) : null}
             {UTIL_TABS.map(tab => (
               <Link
                 key={tab.href}
@@ -204,34 +209,32 @@ export function NavBar({ adminEnabled = false, onOpenIntegrations }: { adminEnab
               </>
             ) : null}
           </div>
-          {showModeToggle ? (
-            <>
-              <span className="xrdb-nav-divider" aria-hidden="true" />
-              <div className="xrdb-nav-controls">
-                <div className="xrdb-mode-toggle" role="group" aria-label="Interface mode">
-                  <button
-                    className={`xrdb-mode-btn${activeMode === 'simple' ? ' xrdb-mode-btn-active' : ''}`}
-                    onClick={() => handleModeSelect('simple')}
-                    aria-pressed={activeMode === 'simple'}
-                    type="button"
-                  >
-                    Simple
-                  </button>
-                  <button
-                    className={`xrdb-mode-btn${activeMode === 'advanced' ? ' xrdb-mode-btn-active' : ''}`}
-                    onClick={() => handleModeSelect('advanced')}
-                    aria-pressed={activeMode === 'advanced'}
-                    type="button"
-                  >
-                    Advanced
-                  </button>
-                </div>
-              </div>
-            </>
-          ) : null}
         </div>
 
         <div className="xrdb-nav-right">
+          {showModeToggle ? (
+            <div className="xrdb-nav-controls">
+              <div className="xrdb-mode-toggle" role="group" aria-label="Interface mode">
+                <button
+                  className={`xrdb-mode-btn${activeMode === 'simple' ? ' xrdb-mode-btn-active' : ''}`}
+                  onClick={() => handleModeSelect('simple')}
+                  aria-pressed={activeMode === 'simple'}
+                  type="button"
+                >
+                  Simple
+                </button>
+                <button
+                  className={`xrdb-mode-btn${activeMode === 'advanced' ? ' xrdb-mode-btn-active' : ''}`}
+                  onClick={() => handleModeSelect('advanced')}
+                  aria-pressed={activeMode === 'advanced'}
+                  type="button"
+                >
+                  Advanced
+                </button>
+              </div>
+            </div>
+          ) : null}
+
           <div className="xrdb-nav-theme-tools">
             <span className="xrdb-nav-theme-control-full"><ThemeModeControl /></span>
             <span className="xrdb-nav-theme-control-compact"><ThemeModePopover /></span>
@@ -249,23 +252,6 @@ export function NavBar({ adminEnabled = false, onOpenIntegrations }: { adminEnab
               </Link>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="xrdb-nav-meta-row" aria-label={`Build ${NAV_VERSION_LABEL}`}>
-        <div className="xrdb-nav-build-meta">
-          <span className="xrdb-nav-brand-version">Live {NAV_VERSION_LABEL}</span>
-          {NAV_VERSION_COMMIT_HASH && NAV_VERSION_COMMIT_URL ? (
-            <a
-              className="xrdb-nav-commit-link"
-              href={NAV_VERSION_COMMIT_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={`Open commit ${NAV_VERSION_COMMIT_HASH}`}
-            >
-              Build details
-            </a>
-          ) : null}
         </div>
       </div>
     </nav>

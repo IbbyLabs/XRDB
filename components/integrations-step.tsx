@@ -2,9 +2,8 @@
 
 import Link from 'next/link';
 import { ExternalLink, Eye, EyeOff } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import { ControlPopupDialog } from '@/components/control-popup-dialog';
 import { XrdbDropdown } from '@/components/xrdb-dropdown';
 import { useConfiguratorContext } from '@/lib/configuratorProvider';
 
@@ -114,7 +113,7 @@ const describeProviderMessage = (status: ProviderIntegrationStatus | undefined) 
 };
 
 export function IntegrationsStep() {
-  const { inputsPanelProps, workspaceUiProps } = useConfiguratorContext();
+  const { inputsPanelProps } = useConfiguratorContext();
   const accessKeys = inputsPanelProps.accessKeysProps;
   const [hostStatus, setHostStatus] = useState<IntegrationStatusPayload | null>(null);
   const [statusLoadState, setStatusLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -176,6 +175,11 @@ export function IntegrationsStep() {
     || clientHostname === 'www.extendedratings.com'
     || clientHostname.endsWith('.extendedratings.com');
 
+  const hasPendingChanges = useMemo(
+    () => Object.values(dirtyFields).some(Boolean),
+    [dirtyFields],
+  );
+
   const hostStatusLoading = statusLoadState === 'loading';
 
   const requestKeyMessage = hostStatusLoading
@@ -185,9 +189,6 @@ export function IntegrationsStep() {
       : 'This host does not require an XRDB request key right now.';
 
   const hideAdvancedHostOptions = isNewbieHost && !showAdvancedHostOptions;
-  const hostPopupId = 'integrations-host-settings';
-
-  const getProviderPopupId = (providerId: ProviderIntegrationId) => `integrations-provider-${providerId}`;
 
   const handleDraftChange = (field: ProviderDraftField, value: string) => {
     setDraftValues((current) => ({
@@ -213,8 +214,8 @@ export function IntegrationsStep() {
     }));
   };
 
-  const handleSaveProviderField = async (field: ProviderDraftField) => {
-    if (!dirtyFields[field]) {
+  const handleSave = async () => {
+    if (!hasPendingChanges) {
       return;
     }
 
@@ -222,21 +223,21 @@ export function IntegrationsStep() {
     setSaveError(null);
 
     try {
-      await accessKeys.onSavePersonalProviderKeys({
-        [field]: draftValues[field].trim(),
-      });
-      setDraftValues((current) => ({
-        ...current,
-        [field]: '',
-      }));
-      setDirtyFields((current) => ({
-        ...current,
-        [field]: false,
-      }));
+      const updates: Partial<typeof draftValues> = {};
+
+      for (const provider of PROVIDERS) {
+        if (dirtyFields[provider.field]) {
+          updates[provider.field] = draftValues[provider.field].trim();
+        }
+      }
+
+      await accessKeys.onSavePersonalProviderKeys(updates);
+      setDraftValues(EMPTY_DRAFT);
+      setDirtyFields(EMPTY_DIRTY);
       setSaveState('saved');
     } catch (error) {
       setSaveState('error');
-      setSaveError(error instanceof Error ? error.message : 'Unable to save your provider key.');
+      setSaveError(error instanceof Error ? error.message : 'Unable to save your provider keys.');
     }
   };
 
@@ -258,7 +259,7 @@ export function IntegrationsStep() {
             </div>
             <div className="flex flex-wrap gap-2 text-[12px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
               <span className="rounded-full border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-1.5">
-                Configure only what you need
+                Host status is optional
               </span>
               <span className="rounded-full border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-1.5">
                 Keep personal keys local
@@ -270,16 +271,6 @@ export function IntegrationsStep() {
                 Checking host integrations now.
               </p>
             ) : null}
-            {saveError ? (
-              <p className="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
-                {saveError}
-              </p>
-            ) : null}
-            {saveState === 'saved' ? (
-              <p className="rounded-xl border border-[color:var(--accent)] bg-[color:var(--bg-surface)] px-3 py-2 text-[12px] leading-5 text-[color:var(--ink)]">
-                Personal key update saved.
-              </p>
-            ) : null}
             {statusLoadState === 'error' && statusError ? (
               <p className="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
                 {statusError} Refresh to try again.
@@ -287,253 +278,229 @@ export function IntegrationsStep() {
             ) : null}
           </div>
 
-          <div className="space-y-4">
-            {hideAdvancedHostOptions ? (
-              <div className="xrdb-panel rounded-2xl p-5 space-y-3">
-                <h2 className="text-sm font-semibold text-[color:var(--ink)]">Host settings</h2>
-                <p className="text-[13px] leading-6 text-[color:var(--muted)]">
-                  {requestKeyMessage} Advanced host options are hidden by default for this site.
-                </p>
-                <button
-                  type="button"
-                  className="xrdb-btn xrdb-btn-secondary"
-                  onClick={() => setShowAdvancedHostOptions(true)}
-                >
-                  Show advanced host options
-                </button>
-              </div>
-            ) : (
-              <div className="xrdb-panel rounded-2xl p-5 space-y-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-2">
-                    <h2 className="text-base font-semibold text-[color:var(--ink)]">Host settings</h2>
-                    <p className="text-[13px] leading-6 text-[color:var(--muted)]">{requestKeyMessage}</p>
-                  </div>
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+            <div className="space-y-4">
+              {hideAdvancedHostOptions ? (
+                <div className="xrdb-panel rounded-2xl p-5 space-y-3">
+                  <h2 className="text-sm font-semibold text-[color:var(--ink)]">Host settings</h2>
+                  <p className="text-[13px] leading-6 text-[color:var(--muted)]">
+                    {requestKeyMessage} Advanced host options are hidden by default for this site.
+                  </p>
                   <button
                     type="button"
                     className="xrdb-btn xrdb-btn-secondary"
-                    onClick={() => workspaceUiProps.openControlPopup(hostPopupId)}
+                    onClick={() => setShowAdvancedHostOptions(true)}
                   >
-                    Configure
+                    Show advanced host options
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
-                  <span className={`inline-flex h-8 items-center rounded-full border px-3 ${hostStatus?.requestProtectionEnabled ? 'border-[color:var(--accent)] bg-[color:var(--bg-surface)] text-[color:var(--ink)]' : 'border-[color:var(--border)] bg-transparent text-[color:var(--muted)]'}`}>
-                    {hostStatus?.requestProtectionEnabled ? 'Request key required' : 'Request key optional'}
-                  </span>
-                  <span className="inline-flex h-8 items-center rounded-full border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3">
-                    Last check: {hostStatusLoading ? 'Checking' : formatCheckTime(hostStatus?.checkedAt ?? null)}
-                  </span>
-                </div>
-              </div>
-            )}
+              ) : (
+                <div className="xrdb-panel rounded-2xl p-5 space-y-4">
+                  <div className="space-y-2">
+                    <h2 className="text-sm font-semibold text-[color:var(--ink)]">Host settings</h2>
+                    <p className="text-[13px] leading-6 text-[color:var(--muted)]">{requestKeyMessage}</p>
+                  </div>
 
-            <div className="grid gap-4 lg:grid-cols-2">
-              {PROVIDERS.map((provider) => {
-                const host = hostStatus?.providers[provider.id];
-                const maskedPreview = personalMaskedPreviewById[provider.id];
-                const hasPersonalValue = personalStatusById[provider.id];
-                const hostBadge = hostStatusLoading
-                  ? 'Checking host'
-                  : host?.working
-                    ? 'Host ready'
-                    : host?.present
-                      ? 'Host check failed'
-                      : 'Bring your own';
-                const hostDotClass = hostStatusLoading
-                  ? 'bg-[color:var(--accent)] animate-pulse'
-                  : host?.working
-                    ? 'bg-[color:var(--accent)]'
-                    : host?.present
-                      ? 'bg-[color:var(--status-warning)]'
-                      : 'bg-[color:var(--muted)]';
-
-                return (
-                  <div key={provider.id} className="xrdb-panel rounded-2xl p-5 space-y-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 space-y-2">
-                        <a
-                          href={provider.href}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex items-center gap-1.5 text-base font-semibold text-[color:var(--ink)] transition-colors hover:text-[color:var(--accent)]"
-                        >
-                          <span>{provider.title}</span>
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                        <p className="text-[13px] leading-6 text-[color:var(--muted)]">{provider.help}</p>
-                      </div>
+                  <label className="block space-y-2">
+                    <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
+                      XRDB request key
+                    </span>
+                    <div className="relative">
+                      <input
+                        type={showRequestKey ? 'text' : 'password'}
+                        value={accessKeys.xrdbKey}
+                        onChange={(event) => accessKeys.onXrdbKeyChange(event.target.value)}
+                        placeholder="Optional host key"
+                        className="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] py-3 pl-3 pr-11 text-[13px] leading-5 text-[color:var(--ink)] outline-none transition-colors placeholder:text-[color:var(--muted)] focus:border-[color:var(--accent)]"
+                      />
                       <button
                         type="button"
-                        className="xrdb-btn xrdb-btn-secondary"
-                        onClick={() => workspaceUiProps.openControlPopup(getProviderPopupId(provider.id))}
+                        onClick={() => setShowRequestKey((current) => !current)}
+                        className="absolute right-1 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-[color:var(--muted)] transition-colors hover:text-[color:var(--ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bg-surface)]"
+                        aria-label={showRequestKey ? 'Hide XRDB request key' : 'Show XRDB request key'}
                       >
-                        Configure
+                        {showRequestKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
+                  </label>
 
-                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
-                      <span className="inline-flex h-8 items-center gap-2 rounded-full border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3">
-                        <span className={`h-2 w-2 rounded-full ${hostDotClass}`} aria-hidden="true" />
-                        {hostBadge}
+                  <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] p-4">
+                    <label className="block space-y-2">
+                      <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
+                        TMDB ID scope
                       </span>
-                      <span className={`inline-flex h-8 items-center rounded-full border px-3 ${hasPersonalValue ? 'border-[color:var(--accent)] bg-[color:var(--bg-surface)] text-[color:var(--ink)]' : 'border-[color:var(--border)] bg-transparent text-[color:var(--muted)]'}`}>
-                        {hasPersonalValue ? 'Personal saved' : 'No personal key'}
-                      </span>
-                    </div>
-
-                    <p className="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
-                      {hostStatusLoading ? 'Checking whether this host already has a working key for this provider.' : describeProviderMessage(host)}
-                    </p>
-
-                    <p className="text-[12px] leading-5 text-[color:var(--muted)]">
-                      {hasPersonalValue
-                        ? maskedPreview
-                          ? `Using personal key ${maskedPreview}.`
-                          : 'Using your personal key from this session.'
-                        : host?.working
-                          ? 'Using host key by default.'
-                          : 'No active key yet. Open Configure to add one.'}
+                      <XrdbDropdown
+                        value={accessKeys.tmdbIdScope}
+                        onChange={(nextValue) => accessKeys.onTmdbIdScopeChange(nextValue as typeof accessKeys.tmdbIdScope)}
+                        ariaLabel="TMDB ID scope"
+                        options={accessKeys.tmdbIdScopeOptions.map((option) => ({
+                          value: option.id,
+                          label: option.label,
+                        }))}
+                      />
+                    </label>
+                    <p className="mt-3 text-[12px] leading-6 text-[color:var(--muted)]">
+                      {accessKeys.xrdbRequestKeyHelpCopy}
                     </p>
                   </div>
-                );
-              })}
+                </div>
+              )}
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                {PROVIDERS.map((provider) => {
+                  const host = hostStatus?.providers[provider.id];
+                  const maskedPreview = personalMaskedPreviewById[provider.id];
+                  const hasPersonalValue = personalStatusById[provider.id];
+                  const draftValue = draftValues[provider.field];
+                  const isDirty = dirtyFields[provider.field];
+                  const revealFieldKey = provider.field as keyof typeof EMPTY_REVEAL;
+                  const hostBadge = hostStatusLoading
+                    ? 'Checking host'
+                    : host?.working
+                      ? 'Host ready'
+                      : host?.present
+                        ? 'Host check failed'
+                        : 'Bring your own';
+                  const hostDotClass = hostStatusLoading
+                    ? 'bg-[color:var(--accent)] animate-pulse'
+                    : host?.working
+                      ? 'bg-[color:var(--accent)]'
+                      : host?.present
+                        ? 'bg-[color:var(--status-warning)]'
+                        : 'bg-[color:var(--muted)]';
+
+                  return (
+                    <div key={provider.id} className="xrdb-panel rounded-2xl p-5 space-y-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 space-y-2">
+                          <a
+                            href={provider.href}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 text-base font-semibold text-[color:var(--ink)] transition-colors hover:text-[color:var(--accent)]"
+                          >
+                            <span>{provider.title}</span>
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                          <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
+                            <span className="inline-flex h-8 items-center gap-2 rounded-full border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3">
+                              <span className={`h-2 w-2 rounded-full ${hostDotClass}`} aria-hidden="true" />
+                              {hostBadge}
+                            </span>
+                            <span className={`inline-flex h-8 items-center rounded-full border px-3 ${hasPersonalValue ? 'border-[color:var(--accent)] bg-[color:var(--bg-surface)] text-[color:var(--ink)]' : 'border-[color:var(--border)] bg-transparent text-[color:var(--muted)]'}`}>
+                              {hasPersonalValue ? 'Personal saved' : 'No personal key'}
+                            </span>
+                          </div>
+                          <p className="text-[13px] leading-6 text-[color:var(--muted)]">{provider.help}</p>
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] p-4 space-y-3">
+                        <p className="text-[12px] leading-6 text-[color:var(--muted)]">
+                          {hostStatusLoading ? 'Checking whether this host already has a working key for this provider.' : describeProviderMessage(host)}
+                        </p>
+                        <p className="text-[12px] leading-5 text-[color:var(--muted)]">
+                          Latest host check: {hostStatusLoading ? 'Checking now' : formatCheckTime(host?.checkedAt ?? null)}
+                        </p>
+                      </div>
+
+                      <label className="block space-y-2">
+                        <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
+                          Your key
+                        </span>
+                        <div className="relative">
+                          <input
+                            type={revealedFields[revealFieldKey] ? 'text' : 'password'}
+                            value={draftValue}
+                            onChange={(event) => handleDraftChange(provider.field, event.target.value)}
+                            placeholder={!isDirty && maskedPreview ? maskedPreview : provider.placeholder}
+                            autoCapitalize="none"
+                            autoComplete="new-password"
+                            spellCheck={false}
+                            className="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-base)] py-3 pl-3 pr-20 text-[13px] leading-5 text-[color:var(--ink)] outline-none transition-colors placeholder:text-[color:var(--muted)] focus:border-[color:var(--accent)]"
+                          />
+                          <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => toggleRevealField(revealFieldKey)}
+                              className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[color:var(--muted)] transition-colors hover:text-[color:var(--ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bg-base)]"
+                              aria-label={revealedFields[revealFieldKey] ? `Hide ${provider.title}` : `Show ${provider.title}`}
+                            >
+                              {revealedFields[revealFieldKey] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </button>
+                          </div>
+                        </div>
+                      </label>
+
+                      <div className="flex items-center justify-between gap-3 text-[12px] leading-5 text-[color:var(--muted)]">
+                        <span>
+                          {isDirty
+                            ? draftValue.trim()
+                              ? hasPersonalValue
+                                ? 'Will replace your saved key.'
+                                : 'Will save a new personal key.'
+                              : hasPersonalValue
+                                ? 'Will remove your saved key.'
+                                : 'Will keep this field empty.'
+                            : hasPersonalValue
+                              ? maskedPreview
+                                ? `Saved as ${maskedPreview}.`
+                                : 'Saved on this session.'
+                              : 'Not saved yet.'}
+                        </span>
+                        {(hasPersonalValue || draftValue) ? (
+                          <button
+                            type="button"
+                            onClick={() => handleClearField(provider.field)}
+                            className="rounded-full border border-[color:var(--border)] px-2.5 py-1 font-semibold uppercase tracking-[0.14em] text-[color:var(--muted)] transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--ink)]"
+                          >
+                            Clear
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="xrdb-panel rounded-2xl p-5 space-y-4">
+                <h2 className="text-sm font-semibold text-[color:var(--ink)]">Save your changes</h2>
+                <p className="text-[13px] leading-6 text-[color:var(--muted)]">
+                  Save only the fields you changed. You can keep every provider blank when the host already shows as ready.
+                </p>
+                <p className="text-[12px] leading-6 text-[color:var(--muted)]">
+                  Personal keys stay in this browser session and are not added to saved profiles or exported links.
+                </p>
+                {statusError ? (
+                  <p className="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
+                    {statusError}
+                  </p>
+                ) : null}
+                {saveError ? (
+                  <p className="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] px-3 py-2 text-[12px] leading-5 text-[color:var(--muted)]">
+                    {saveError}
+                  </p>
+                ) : null}
+                {saveState === 'saved' ? (
+                  <p className="rounded-xl border border-[color:var(--accent)] bg-[color:var(--bg-surface)] px-3 py-2 text-[12px] leading-5 text-[color:var(--ink)]">
+                    Personal provider keys updated for this session.
+                  </p>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={() => void handleSave()}
+                  disabled={!hasPendingChanges || saveState === 'saving'}
+                  className="xrdb-btn xrdb-btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {saveState === 'saving' ? 'Saving' : hasPendingChanges ? 'Save personal keys' : 'Nothing to save'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-
-      <ControlPopupDialog
-        open={workspaceUiProps.activeControlPopupId === hostPopupId}
-        title="Host settings"
-        description="Manage request protection and TMDB ID scope for this browser session."
-        onClose={workspaceUiProps.closeControlPopup}
-      >
-        <label className="block space-y-2">
-          <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
-            XRDB request key
-          </span>
-          <div className="relative">
-            <input
-              type={showRequestKey ? 'text' : 'password'}
-              value={accessKeys.xrdbKey}
-              onChange={(event) => accessKeys.onXrdbKeyChange(event.target.value)}
-              placeholder="Optional host key"
-              className="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] py-3 pl-3 pr-11 text-[13px] leading-5 text-[color:var(--ink)] outline-none transition-colors placeholder:text-[color:var(--muted)] focus:border-[color:var(--accent)]"
-            />
-            <button
-              type="button"
-              onClick={() => setShowRequestKey((current) => !current)}
-              className="absolute right-1 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-[color:var(--muted)] transition-colors hover:text-[color:var(--ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bg-surface)]"
-              aria-label={showRequestKey ? 'Hide XRDB request key' : 'Show XRDB request key'}
-            >
-              {showRequestKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-        </label>
-
-        <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-surface)] p-4">
-          <label className="block space-y-2">
-            <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
-              TMDB ID scope
-            </span>
-            <XrdbDropdown
-              value={accessKeys.tmdbIdScope}
-              onChange={(nextValue) => accessKeys.onTmdbIdScopeChange(nextValue as typeof accessKeys.tmdbIdScope)}
-              ariaLabel="TMDB ID scope"
-              options={accessKeys.tmdbIdScopeOptions.map((option) => ({
-                value: option.id,
-                label: option.label,
-              }))}
-            />
-          </label>
-          <p className="mt-3 text-[12px] leading-6 text-[color:var(--muted)]">
-            {accessKeys.xrdbRequestKeyHelpCopy}
-          </p>
-        </div>
-      </ControlPopupDialog>
-
-      {PROVIDERS.map((provider) => {
-        const maskedPreview = personalMaskedPreviewById[provider.id];
-        const hasPersonalValue = personalStatusById[provider.id];
-        const draftValue = draftValues[provider.field];
-        const isDirty = dirtyFields[provider.field];
-        const revealFieldKey = provider.field as keyof typeof EMPTY_REVEAL;
-
-        return (
-          <ControlPopupDialog
-            key={provider.id}
-            open={workspaceUiProps.activeControlPopupId === getProviderPopupId(provider.id)}
-            title={`${provider.title} settings`}
-            description="Add or replace your personal key for this session."
-            onClose={workspaceUiProps.closeControlPopup}
-          >
-            <label className="block space-y-2">
-              <span className="text-[12px] font-semibold uppercase tracking-[0.16em] text-[color:var(--muted)]">
-                Your key
-              </span>
-              <div className="relative">
-                <input
-                  type={revealedFields[revealFieldKey] ? 'text' : 'password'}
-                  value={draftValue}
-                  onChange={(event) => handleDraftChange(provider.field, event.target.value)}
-                  placeholder={!isDirty && maskedPreview ? maskedPreview : provider.placeholder}
-                  autoCapitalize="none"
-                  autoComplete="new-password"
-                  spellCheck={false}
-                  className="w-full rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-base)] py-3 pl-3 pr-20 text-[13px] leading-5 text-[color:var(--ink)] outline-none transition-colors placeholder:text-[color:var(--muted)] focus:border-[color:var(--accent)]"
-                />
-                <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => toggleRevealField(revealFieldKey)}
-                    className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[color:var(--muted)] transition-colors hover:text-[color:var(--ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bg-base)]"
-                    aria-label={revealedFields[revealFieldKey] ? `Hide ${provider.title}` : `Show ${provider.title}`}
-                  >
-                    {revealedFields[revealFieldKey] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
-                </div>
-              </div>
-            </label>
-
-            <div className="flex items-center justify-between gap-3 text-[12px] leading-5 text-[color:var(--muted)]">
-              <span>
-                {isDirty
-                  ? draftValue.trim()
-                    ? hasPersonalValue
-                      ? 'Will replace your saved key.'
-                      : 'Will save a new personal key.'
-                    : hasPersonalValue
-                      ? 'Will remove your saved key.'
-                      : 'Will keep this field empty.'
-                  : hasPersonalValue
-                    ? maskedPreview
-                      ? `Saved as ${maskedPreview}.`
-                      : 'Saved on this session.'
-                    : 'Not saved yet.'}
-              </span>
-              {(hasPersonalValue || draftValue) ? (
-                <button
-                  type="button"
-                  onClick={() => handleClearField(provider.field)}
-                  className="rounded-full border border-[color:var(--border)] px-2.5 py-1 font-semibold uppercase tracking-[0.14em] text-[color:var(--muted)] transition-colors hover:border-[color:var(--accent)] hover:text-[color:var(--ink)]"
-                >
-                  Clear
-                </button>
-              ) : null}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => void handleSaveProviderField(provider.field)}
-              disabled={!dirtyFields[provider.field] || saveState === 'saving'}
-              className="xrdb-btn xrdb-btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {saveState === 'saving' ? 'Saving' : dirtyFields[provider.field] ? 'Save key' : 'No changes'}
-            </button>
-          </ControlPopupDialog>
-        );
-      })}
 
       <div className="xrdb-step-nav-sticky" role="navigation" aria-label="Step navigation">
         <Link href="/poster" className="xrdb-btn xrdb-btn-primary">
