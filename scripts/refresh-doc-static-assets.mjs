@@ -1369,24 +1369,21 @@ const generateComparisonBoards = async ({
 
     if (includeCaptures) {
       logRefreshStep('Generating workspace captures');
-      if (RENDER_ORIGIN_OVERRIDE) {
-        const captureServer = await startNextDevServer({
-          port: CAPTURE_NEXT_PORT,
-          env: {
-            NEXT_PUBLIC_XRDB_ENABLE_DOCS_CAPTURE: 'true',
-            XRDB_ALLOW_PRIVATE_SOURCES_FOR_TESTS: 'true',
-          },
-        });
+      await terminateProcess(renderServer.nextProcess);
+      const captureServer = await startNextDevServer({
+        port: CAPTURE_NEXT_PORT,
+        env: {
+          NEXT_PUBLIC_XRDB_ENABLE_DOCS_CAPTURE: 'true',
+          XRDB_ALLOW_PRIVATE_SOURCES_FOR_TESTS: 'true',
+        },
+      });
 
-        try {
-          await generateWorkspaceCaptures(captureServer.origin);
-        } catch (error) {
-          throw new Error(`${String(error)}\n\n${captureServer.getLogs()}`);
-        } finally {
-          await terminateProcess(captureServer.nextProcess);
-        }
-      } else {
-        await generateWorkspaceCaptures(renderServer.origin);
+      try {
+        await generateWorkspaceCaptures(captureServer.origin);
+      } catch (error) {
+        throw new Error(`${String(error)}\n\n${captureServer.getLogs()}`);
+      } finally {
+        await terminateProcess(captureServer.nextProcess);
       }
     }
   } catch (error) {
