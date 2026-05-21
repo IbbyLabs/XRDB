@@ -155,20 +155,6 @@ export function NavBar({ adminEnabled = false }: { adminEnabled?: boolean }) {
               </div>
             </div>
           </Link>
-          <div className="xrdb-nav-build-meta" aria-label={`Build ${NAV_VERSION_LABEL}`}>
-            <span className="xrdb-nav-brand-version">Live {NAV_VERSION_LABEL}</span>
-            {NAV_VERSION_COMMIT_HASH && NAV_VERSION_COMMIT_URL ? (
-              <a
-                className="xrdb-nav-commit-link"
-                href={NAV_VERSION_COMMIT_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`Open commit ${NAV_VERSION_COMMIT_HASH}`}
-              >
-                Build details
-              </a>
-            ) : null}
-          </div>
         </div>
 
         <div className="xrdb-nav-tabs">
@@ -253,6 +239,20 @@ export function NavBar({ adminEnabled = false }: { adminEnabled?: boolean }) {
             </div>
           </div>
         </div>
+      </div>
+      <div className="xrdb-nav-meta-row" aria-label={`Build ${NAV_VERSION_LABEL}`}>
+        <span className="xrdb-nav-brand-version">Live {NAV_VERSION_LABEL}</span>
+        {NAV_VERSION_COMMIT_HASH && NAV_VERSION_COMMIT_URL ? (
+          <a
+            className="xrdb-nav-commit-link"
+            href={NAV_VERSION_COMMIT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Open commit ${NAV_VERSION_COMMIT_HASH}`}
+          >
+            Build details
+          </a>
+        ) : null}
       </div>
     </nav>
   );
