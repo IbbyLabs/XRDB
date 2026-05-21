@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Pin } from 'lucide-react';
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { buildEpisodePreviewMediaTarget, parseEpisodePreviewMediaTarget } from '@/lib/episodeIdentity';
 import { useOptionalConfiguratorContext } from '@/lib/configuratorProvider';
 import { useFocusTrap } from '@/lib/useFocusTrap';
@@ -13,6 +13,13 @@ import { XrdbDropdown } from '@/components/xrdb-dropdown';
 type ArtworkStep = Exclude<WorkflowStep, 'integrations'>;
 type ControlTab = 'providers' | 'style' | 'position' | 'advanced' | 'quality';
 type PreviewMode = 'workspace' | 'floating';
+type PreviewHeightPreset = 'compact' | 'default' | 'tall';
+
+const PREVIEW_HEIGHTS: Record<PreviewHeightPreset, string> = {
+  compact: '30vh',
+  default: '44vh',
+  tall: '62vh',
+};
 
 const CONTROL_TABS: Array<{ key: ControlTab; label: string; hint: string }> = [
   { key: 'providers', label: 'Providers', hint: 'Source priority, fallback order, and API key settings' },
@@ -169,10 +176,10 @@ export function StepShell({
   step: ArtworkStep;
   panels?: Partial<Record<ControlTab, ReactNode>>;
 }) {
-  const [activeTab, setActiveTab] = useState<ControlTab>('providers');
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [fullScreenOpen, setFullScreenOpen] = useState(false);
   const [previewMode, setPreviewMode] = useState<PreviewMode>('workspace');
+  const [previewHeightPreset, setPreviewHeightPreset] = useState<PreviewHeightPreset | null>(null);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [floatingPreviewPosition, setFloatingPreviewPosition] = useState(() => {
     if (typeof window === 'undefined') {
@@ -201,11 +208,14 @@ export function StepShell({
   const floatingPreviewWindowRef = useRef<HTMLDivElement>(null);
   const floatingResizeStartRef = useRef({ pointerX: 0, pointerY: 0, width: 360, height: 242 });
   const quickStartDismissTimeoutRef = useRef<number | null>(null);
+  const sectionRefs = useRef<Partial<Record<ControlTab, HTMLElement | null>>>({});
 
 
   const ctx = useOptionalConfiguratorContext();
   const router = useRouter();
   const experienceMode = ctx?.experienceMode ?? 'simple';
+  const closeControlPopup = ctx?.workspaceUiProps?.closeControlPopup;
+  const activeControlPopupId = ctx?.workspaceUiProps?.activeControlPopupId ?? null;
   const mediaTarget = ctx?.inputsPanelProps.mediaTargetProps;
   const centerStage = ctx?.workspaceColumnsProps?.centerStageProps;
   const previewUrl = centerStage?.previewUrl ?? null;
@@ -222,6 +232,26 @@ export function StepShell({
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    const frame = window.requestAnimationFrame(() => {
+      const stored = window.localStorage.getItem('xrdb-preview-height-preset') as PreviewHeightPreset | null;
+      if (stored && stored in PREVIEW_HEIGHTS) {
+        setPreviewHeightPreset(stored);
+      }
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  const handleSetPreviewHeight = (preset: PreviewHeightPreset) => {
+    setPreviewHeightPreset(preset);
+    window.localStorage.setItem('xrdb-preview-height-preset', preset);
+  };
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -323,18 +353,25 @@ export function StepShell({
   const prevStep = stepIndex > 0 ? WORKFLOW_STEPS[stepIndex - 1] : null;
 
   const visibleTabs = useMemo(
-    () => (experienceMode === 'simple' ? CONTROL_TABS.filter((tab) => tab.key !== 'advanced' && tab.key !== 'quality') : CONTROL_TABS),
+    () => (experienceMode === 'simple' ? CONTROL_TABS.filter((tab) => tab.key !== 'advanced') : CONTROL_TABS),
     [experienceMode],
   );
+  const quickStartIntro =
+    experienceMode === 'simple'
+      ? 'Start with the first two cards, then open Configure only when you need deeper changes.'
+      : 'Use cards to move fast between sections. Keep dense tuning inside Configure popups.';
   const thumbnailEpisodeTarget = useMemo(() => {
     if (step !== 'thumbnail' || !mediaTarget) {
       return null;
     }
     return parseEpisodePreviewMediaTarget(mediaTarget.mediaId);
   }, [mediaTarget, step]);
-  const effectiveActiveTab: ControlTab =
-    experienceMode === 'simple' && (activeTab === 'advanced' || activeTab === 'quality') ? 'providers' : activeTab;
-  const activeTabDefinition = visibleTabs.find((tab) => tab.key === effectiveActiveTab);
+  const handleSectionShortcut = useCallback((nextTab: ControlTab) => {
+    closeControlPopup?.();
+    requestAnimationFrame(() => {
+      sectionRefs.current[nextTab]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [closeControlPopup]);
 
   useFocusTrap(overlayRef, overlayOpen);
   useFocusTrap(fullscreenRef, fullScreenOpen);
@@ -349,6 +386,7 @@ export function StepShell({
           activeElement.tagName === 'TEXTAREA' ||
           activeElement.getAttribute('role') === 'textbox' ||
           activeElement.isContentEditable);
+      const controlPopupOpen = Boolean(activeControlPopupId);
 
       if (event.key === 'Escape') {
         if (fullScreenOpen) {
@@ -357,11 +395,19 @@ export function StepShell({
         }
         if (overlayOpen) {
           setOverlayOpen(false);
+          return;
+        }
+        if (controlPopupOpen) {
+          closeControlPopup?.();
         }
         return;
       }
 
       if (inInput) {
+        return;
+      }
+
+      if (controlPopupOpen) {
         return;
       }
 
@@ -376,7 +422,7 @@ export function StepShell({
         const tab = visibleTabs[Number.parseInt(event.key, 10) - 1];
         if (tab) {
           event.preventDefault();
-          setActiveTab(tab.key);
+          handleSectionShortcut(tab.key);
         }
         return;
       }
@@ -408,7 +454,13 @@ export function StepShell({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [overlayOpen, fullScreenOpen, nextStep, router, ctx, visibleTabs]);
+  }, [overlayOpen, fullScreenOpen, nextStep, router, ctx, visibleTabs, handleSectionShortcut, closeControlPopup, activeControlPopupId]);
+
+  useEffect(() => {
+    if (experienceMode === 'simple') {
+      closeControlPopup?.();
+    }
+  }, [experienceMode, closeControlPopup]);
 
   const handleTargetSubmit = () => {
     if (!mediaTarget) {
@@ -552,22 +604,36 @@ export function StepShell({
       data-docs-capture-ready={docsCaptureReady ? 'true' : undefined}
     >
       {effectivePreviewMode === 'workspace' ? (
-        <div className="xrdb-preview-band" role="region" aria-label={`${step} preview`} data-preview-mode={effectivePreviewMode}>
+        <div className="xrdb-preview-band" role="region" aria-label={`${step} preview`} data-preview-mode={effectivePreviewMode} style={effectivePreviewMode === 'workspace' ? { height: PREVIEW_HEIGHTS[previewHeightPreset ?? 'default'] } : undefined}>
           <div className="xrdb-preview-band-head">
             <h1 className="xrdb-preview-band-title">{WORKFLOW_STEPS[stepIndex]?.label ?? 'Artwork'} workspace</h1>
             <div className="xrdb-preview-band-actions">
-              <div className="xrdb-preview-mode-switch" role="group" aria-label="Preview mode">
+              <div className="xrdb-preview-mode-switch" role="group" aria-label="Preview height">
+                {(['compact', 'default', 'tall'] as const).map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    className={`xrdb-preview-mode-btn${(previewHeightPreset ?? 'default') === preset ? ' xrdb-preview-mode-btn-active' : ''}`}
+                    onClick={() => handleSetPreviewHeight(preset)}
+                    aria-pressed={(previewHeightPreset ?? 'default') === preset}
+                    aria-label={`${preset} preview height`}
+                  >
+                    {preset === 'compact' ? 'S' : preset === 'default' ? 'M' : 'L'}
+                  </button>
+                ))}
+              </div>
+              <div className="xrdb-preview-mode-switch xrdb-desktop-only" role="group" aria-label="Preview mode">
                 <button
                   type="button"
                   className={`xrdb-preview-mode-btn${effectivePreviewMode === 'workspace' ? ' xrdb-preview-mode-btn-active' : ''}`}
                   onClick={() => setPreviewMode('workspace')}
                   aria-pressed={effectivePreviewMode === 'workspace'}
                 >
-                  Resizable
+                  Docked
                 </button>
                 <button
                   type="button"
-                  className={`xrdb-preview-mode-btn xrdb-desktop-only${previewMode === 'floating' ? ' xrdb-preview-mode-btn-active' : ''}`}
+                  className={`xrdb-preview-mode-btn${previewMode === 'floating' ? ' xrdb-preview-mode-btn-active' : ''}`}
                   onClick={() => setPreviewMode('floating')}
                   aria-pressed={previewMode === 'floating'}
                   disabled={isMobileViewport}
@@ -690,7 +756,7 @@ export function StepShell({
                 </button>
               </div>
               <p className="xrdb-target-help">Type a title to search, or paste an IMDb or TMDB ID to switch the preview target directly.</p>
-              <p className="xrdb-target-shortcuts">Shortcuts: Press / to focus search. Press 1 to 5 to jump tabs.</p>
+              <p className="xrdb-target-shortcuts">Shortcuts: Press / to focus search. Press 1 to 5 to jump sections.</p>
             </label>
             {mediaTarget.tmdbKeyAvailable ? (
               <div className="xrdb-target-lang-field">
@@ -866,39 +932,68 @@ export function StepShell({
           </div>
         ) : null}
 
-        <div className="xrdb-subtabs" role="tablist" aria-label="Control sections">
-          {visibleTabs.map(tab => (
-            <button
-              key={tab.key}
-              type="button"
-              role="tab"
-              aria-selected={effectiveActiveTab === tab.key}
-              aria-controls={`panel-${tab.key}`}
-              id={`tab-${tab.key}`}
-              className={`xrdb-subtab${effectiveActiveTab === tab.key ? ' xrdb-subtab-active' : ''}`}
-              onClick={() => setActiveTab(tab.key)}
-              title={tab.hint}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="xrdb-subtabs-guidance xrdb-subtabs-guidance-static" role="status" aria-live="polite">
+          Move through Providers, Style, Position, Quality, and Advanced in one continuous flow. Centered popups keep dense tuning close without breaking context.
         </div>
-        <p className="xrdb-subtabs-guidance" role="status" aria-live="polite">
-          {activeTabDefinition?.hint ?? PANEL_COPY[step][effectiveActiveTab].body}
-        </p>
 
-        <div
-          id={`panel-${effectiveActiveTab}`}
-          role="tabpanel"
-          aria-labelledby={`tab-${effectiveActiveTab}`}
-          className="xrdb-subtab-panel"
-        >
-          {panels?.[effectiveActiveTab] ?? (
-            <>
-              <h2 className="xrdb-subtab-panel-title">{PANEL_COPY[step][effectiveActiveTab].title}</h2>
-              <p className="xrdb-subtab-panel-body">{PANEL_COPY[step][effectiveActiveTab].body}</p>
-            </>
-          )}
+        <section className="xrdb-quickstart-rail" aria-label="Quick start controls">
+          <div className="xrdb-quickstart-head">
+            <h2 className="xrdb-quickstart-title">Quick start</h2>
+            <p className="xrdb-quickstart-intro">{quickStartIntro}</p>
+          </div>
+          <div className="xrdb-quickstart-grid" role="list">
+            {visibleTabs.map((tab, index) => (
+              <article key={`quickstart-${tab.key}`} className="xrdb-quickstart-card" role="listitem">
+                <div className="xrdb-quickstart-card-head">
+                  <span className="xrdb-quickstart-card-index" aria-hidden="true">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <p className="xrdb-quickstart-card-label">{tab.label}</p>
+                </div>
+                <p className="xrdb-quickstart-card-hint">{tab.hint}</p>
+                <button
+                  type="button"
+                  className="xrdb-btn xrdb-btn-secondary xrdb-quickstart-card-action"
+                  onClick={() => handleSectionShortcut(tab.key)}
+                >
+                  Open {tab.label}
+                </button>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <div className="xrdb-control-sections" aria-label="Control sections">
+          {visibleTabs.map((tab, index) => (
+            <section
+              key={tab.key}
+              ref={(node) => {
+                sectionRefs.current[tab.key] = node;
+              }}
+              id={`section-${tab.key}`}
+              className="xrdb-control-section"
+              aria-labelledby={`section-title-${tab.key}`}
+            >
+              <div className="xrdb-control-section-lead">
+                <span className="xrdb-control-section-index" aria-hidden="true">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
+                <div className="xrdb-control-section-copy">
+                  <p id={`section-title-${tab.key}`} className="xrdb-control-section-kicker">{tab.label}</p>
+                  <p className="xrdb-control-section-hint">{tab.hint}</p>
+                </div>
+              </div>
+
+              <div className="xrdb-control-section-body">
+                {panels?.[tab.key] ?? (
+                  <>
+                    <h2 className="xrdb-subtab-panel-title">{PANEL_COPY[step][tab.key].title}</h2>
+                    <p className="xrdb-subtab-panel-body">{PANEL_COPY[step][tab.key].body}</p>
+                  </>
+                )}
+              </div>
+            </section>
+          ))}
         </div>
 
         <button

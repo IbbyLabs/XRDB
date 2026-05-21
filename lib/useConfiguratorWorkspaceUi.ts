@@ -46,6 +46,7 @@ export function useConfiguratorWorkspaceUi<TPanel extends string, TSection exten
     () => new Set(initialOpenPanels),
   );
   const [openWorkspaceSection, setOpenWorkspaceSection] = useState<TSection | null>(null);
+  const [activeControlPopupId, setActiveControlPopupId] = useState<string | null>(null);
 
   const handleCopyConfig = useCallback(() => {
     if (!configString) {
@@ -130,6 +131,14 @@ export function useConfiguratorWorkspaceUi<TPanel extends string, TSection exten
     setOpenWorkspaceSection((current) => (current === sectionId ? null : sectionId));
   }, []);
 
+  const handleOpenControlPopup = useCallback((popupId: string) => {
+    setActiveControlPopupId(popupId);
+  }, []);
+
+  const handleCloseControlPopup = useCallback(() => {
+    setActiveControlPopupId(null);
+  }, []);
+
   const handleSelectExperienceMode = useCallback(
     (nextMode: ConfiguratorExperienceMode) => {
       setExperienceMode(nextMode);
@@ -157,14 +166,17 @@ export function useConfiguratorWorkspaceUi<TPanel extends string, TSection exten
   }, [showExperienceModal]);
 
   return {
+    activeControlPopupId,
     aiometadataCopied,
     configCopied,
     handleBeginWizard,
+    handleCloseControlPopup,
     handleContinueExperienceMode,
     handleCopyAiometadata,
     handleCopyConfig,
     handleCopyProxy,
     handleExitWizard,
+    handleOpenControlPopup,
     handleSelectExperienceMode,
     handleToggleWorkspacePanel,
     handleToggleWorkspaceSection,
@@ -175,6 +187,7 @@ export function useConfiguratorWorkspaceUi<TPanel extends string, TSection exten
     openWorkspaceSection,
     proxyCopied,
     setOpenWorkspacePanels,
+    setActiveControlPopupId,
     showConfigString,
     showProxyUrl,
     wizardAnswers,
