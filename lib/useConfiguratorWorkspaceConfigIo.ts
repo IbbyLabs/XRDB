@@ -153,6 +153,10 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   posterQualityBadgesPosition: WorkspaceSettings['posterQualityBadgesPosition'];
   posterQualityBadgeOffsetX: WorkspaceSettings['posterQualityBadgeOffsetX'];
   posterQualityBadgeOffsetY: WorkspaceSettings['posterQualityBadgeOffsetY'];
+  posterTrendingTagPosition: WorkspaceSettings['posterTrendingTagPosition'];
+  posterTrendingTagStylePreset: WorkspaceSettings['posterTrendingTagStylePreset'];
+  posterTrendingCommunityBadgeTheme: WorkspaceSettings['posterTrendingCommunityBadgeTheme'];
+  posterTrendingTagTextColor: WorkspaceSettings['posterTrendingTagTextColor'];
   ageRatingBadgePosition: WorkspaceSettings['ageRatingBadgePosition'];
   posterQualityBadgesStyle: WorkspaceSettings['posterQualityBadgesStyle'];
   posterQualityBadgesMax: WorkspaceSettings['posterQualityBadgesMax'];
@@ -346,6 +350,10 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setPosterQualityBadgesPosition: Setter<WorkspaceSettings['posterQualityBadgesPosition']>;
   setPosterQualityBadgeOffsetX: Setter<WorkspaceSettings['posterQualityBadgeOffsetX']>;
   setPosterQualityBadgeOffsetY: Setter<WorkspaceSettings['posterQualityBadgeOffsetY']>;
+  setPosterTrendingTagPosition: Setter<WorkspaceSettings['posterTrendingTagPosition']>;
+  setPosterTrendingTagStylePreset: Setter<WorkspaceSettings['posterTrendingTagStylePreset']>;
+  setPosterTrendingCommunityBadgeTheme: Setter<WorkspaceSettings['posterTrendingCommunityBadgeTheme']>;
+  setPosterTrendingTagTextColor: Setter<WorkspaceSettings['posterTrendingTagTextColor']>;
   setAgeRatingBadgePosition: Setter<WorkspaceSettings['ageRatingBadgePosition']>;
   setPosterQualityBadgesStyle: Setter<WorkspaceSettings['posterQualityBadgesStyle']>;
   setPosterQualityBadgesMax: Setter<WorkspaceSettings['posterQualityBadgesMax']>;
@@ -553,6 +561,10 @@ export function useConfiguratorWorkspaceConfigIo({
   posterQualityBadgesPosition,
   posterQualityBadgeOffsetX,
   posterQualityBadgeOffsetY,
+  posterTrendingTagPosition,
+  posterTrendingTagStylePreset,
+  posterTrendingCommunityBadgeTheme,
+  posterTrendingTagTextColor,
   ageRatingBadgePosition,
   posterQualityBadgesStyle,
   posterQualityBadgesMax,
@@ -746,6 +758,10 @@ export function useConfiguratorWorkspaceConfigIo({
   setPosterQualityBadgesPosition,
   setPosterQualityBadgeOffsetX,
   setPosterQualityBadgeOffsetY,
+  setPosterTrendingTagPosition,
+  setPosterTrendingTagStylePreset,
+  setPosterTrendingCommunityBadgeTheme,
+  setPosterTrendingTagTextColor,
   setAgeRatingBadgePosition,
   setPosterQualityBadgesStyle,
   setPosterQualityBadgesMax,
@@ -891,6 +907,10 @@ export function useConfiguratorWorkspaceConfigIo({
       setPosterQualityBadgesPosition(normalized.settings.posterQualityBadgesPosition);
       setPosterQualityBadgeOffsetX(normalized.settings.posterQualityBadgeOffsetX);
       setPosterQualityBadgeOffsetY(normalized.settings.posterQualityBadgeOffsetY);
+      setPosterTrendingTagPosition(normalized.settings.posterTrendingTagPosition);
+      setPosterTrendingTagStylePreset(normalized.settings.posterTrendingTagStylePreset);
+      setPosterTrendingCommunityBadgeTheme(normalized.settings.posterTrendingCommunityBadgeTheme);
+      setPosterTrendingTagTextColor(normalized.settings.posterTrendingTagTextColor);
       setAgeRatingBadgePosition(normalized.settings.ageRatingBadgePosition);
       setPosterQualityBadgePreferences(normalized.settings.posterQualityBadgePreferences);
       setBackdropQualityBadgePreferences(normalized.settings.backdropQualityBadgePreferences);
@@ -1135,6 +1155,10 @@ export function useConfiguratorWorkspaceConfigIo({
       setPosterQualityBadgesPosition,
       setPosterQualityBadgeOffsetX,
       setPosterQualityBadgeOffsetY,
+      setPosterTrendingTagPosition,
+      setPosterTrendingTagStylePreset,
+      setPosterTrendingCommunityBadgeTheme,
+      setPosterTrendingTagTextColor,
       setAgeRatingBadgePosition,
       setPosterQualityBadgesStyle,
       setPosterQualityBadgesMax,
@@ -1287,6 +1311,10 @@ export function useConfiguratorWorkspaceConfigIo({
         posterQualityBadgesPosition,
         posterQualityBadgeOffsetX,
         posterQualityBadgeOffsetY,
+        posterTrendingTagPosition,
+        posterTrendingTagStylePreset,
+        posterTrendingCommunityBadgeTheme,
+        posterTrendingTagTextColor,
         ageRatingBadgePosition,
         posterQualityBadgePreferences,
         backdropQualityBadgePreferences,
@@ -1551,6 +1579,10 @@ export function useConfiguratorWorkspaceConfigIo({
       posterQualityBadgesPosition,
       posterQualityBadgeOffsetX,
       posterQualityBadgeOffsetY,
+      posterTrendingTagPosition,
+      posterTrendingTagStylePreset,
+      posterTrendingCommunityBadgeTheme,
+      posterTrendingTagTextColor,
       ageRatingBadgePosition,
       posterQualityBadgesStyle,
       posterQualityBadgesMax,

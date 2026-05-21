@@ -90,6 +90,10 @@ const IMAGE_QUERY_KEYS_BY_TYPE = {
   'posterQualityBadgesMax',
   'posterQualityBadgeOffsetX',
   'posterQualityBadgeOffsetY',
+  'posterTrendingTagPosition',
+  'posterTrendingTagStyle',
+  'posterTrendingCommunityTheme',
+  'posterTrendingTagTextColor',
   'posterRatings',
     'posterRatingBadgeScale',
     'posterRatingPresentation',
@@ -288,6 +292,10 @@ export type ProxyConfig = {
   posterQualityBadgesPosition?: string;
   posterQualityBadgeOffsetX?: string;
   posterQualityBadgeOffsetY?: string;
+  posterTrendingTagPosition?: string;
+  posterTrendingTagStyle?: string;
+  posterTrendingCommunityTheme?: string;
+  posterTrendingTagTextColor?: string;
   ageRatingBadgePosition?: string;
   qualityBadgesStyle?: string;
   providerAppearance?: string;
@@ -521,6 +529,10 @@ const CONFIG_STRING_KEYS = [
   'thumbnailQualityBadgesStyle',
   'thumbnailQualityBadgeScale',
   'posterQualityBadgesMax',
+  'posterTrendingTagPosition',
+  'posterTrendingTagStyle',
+  'posterTrendingCommunityTheme',
+  'posterTrendingTagTextColor',
   'backdropQualityBadgesMax',
   'thumbnailQualityBadgesMax',
   'ratingStyle',
