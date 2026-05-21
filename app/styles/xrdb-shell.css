@@ -1122,7 +1122,7 @@
 .xrdb-nav {
 	background: var(--bg-surface);
 	border-bottom: 1px solid var(--border);
-	height: 52px;
+	height: auto;
 	flex-shrink: 0;
 }
 
@@ -1131,9 +1131,18 @@
 	grid-template-columns: minmax(0, max-content) minmax(0, 1fr) minmax(0, max-content);
 	align-items: center;
 	gap: 0.9rem;
-	height: 100%;
+	height: 52px;
 	padding: 0 1rem;
 	width: 100%;
+}
+
+.xrdb-nav-meta-row {
+	display: flex;
+	align-items: center;
+	gap: 0.36rem;
+	padding: 0 1rem 0.34rem;
+	margin-left: 3.1rem;
+	line-height: 1;
 }
 
 .xrdb-nav-brand {
@@ -1491,7 +1500,7 @@
 		display: none;
 	}
 
-	.xrdb-nav-build-meta {
+	.xrdb-nav-meta-row {
 		display: none;
 	}
 
@@ -1533,6 +1542,65 @@
 	.xrdb-mode-btn {
 		font-size: 0.68rem;
 		padding: 3px 7px;
+	}
+}
+
+@media (max-width: 1500px) {
+	.xrdb-nav-brand-label {
+		display: none;
+	}
+
+	.xrdb-nav-commit-link {
+		display: none;
+	}
+
+	.xrdb-nav-brand-version {
+		max-width: 160px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.xrdb-nav-tabs {
+		justify-content: flex-start;
+		overflow-x: auto;
+		-webkit-overflow-scrolling: touch;
+		overscroll-behavior-x: contain;
+		scrollbar-width: none;
+		max-width: 100%;
+		padding-inline: 0.125rem;
+	}
+
+	.xrdb-nav-tabs > * {
+		flex-shrink: 0;
+	}
+
+	.xrdb-nav-tabs::-webkit-scrollbar {
+		display: none;
+	}
+
+	.xrdb-nav-tab {
+		padding: 0 0.44rem;
+		font-size: 0.74rem;
+	}
+
+	.xrdb-nav-divider {
+		margin: 0 0.25rem;
+	}
+}
+
+@media (max-width: 1900px) {
+	.xrdb-nav-inner {
+		gap: 1.1rem;
+	}
+
+	.xrdb-nav-tabs {
+		padding-inline-start: 0.5rem;
+	}
+
+	.xrdb-nav-brand-version {
+		max-width: 120px;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 }
 
