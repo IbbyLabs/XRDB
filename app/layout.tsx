@@ -3,6 +3,7 @@ import { headers } from 'next/headers';
 
 import { AppShellLayout } from '@/components/app-shell-layout';
 import { RootLayoutShell } from '@/components/root-layout-shell';
+import { isAdminEnabled } from '@/lib/adminAuth';
 import { getConfiguratorEnvAccessKeys } from '@/lib/configuratorEnvAccessKeys';
 import { scheduleImdbDatasetSync } from '@/lib/imdbDatasetScheduler';
 import { buildRuntimeSiteMetadata, siteViewport } from '@/lib/siteMetadata';
@@ -33,9 +34,10 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   scheduleImdbDatasetSync();
   const envAccessKeys = getConfiguratorEnvAccessKeys();
+  const adminEnabled = isAdminEnabled();
   return (
     <RootLayoutShell>
-      <AppShellLayout envAccessKeys={envAccessKeys}>{children}</AppShellLayout>
+      <AppShellLayout envAccessKeys={envAccessKeys} adminEnabled={adminEnabled}>{children}</AppShellLayout>
     </RootLayoutShell>
   );
 }
