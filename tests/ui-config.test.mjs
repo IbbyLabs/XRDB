@@ -1748,6 +1748,41 @@ test('episode artwork overrides stay type scoped across config and AIOMetadata e
   assert.equal((patterns?.logoUrlPattern ?? '').includes('backdropEpisodeArtwork='), false);
 });
 
+test('poster trending tag style settings persist in AIOMetadata and proxy exports', () => {
+  const config = normalizeSavedUiConfig({
+    settings: {
+      tmdbKey: 'tmdb-key-123',
+      mdblistKey: 'mdblist-key-456',
+      posterTrendingTagPosition: 'top-center',
+      posterTrendingTagStyle: 'glass',
+      posterTrendingCommunityBadgeTheme: 'gold',
+      posterTrendingTagTextColor: '#f8fbff',
+    },
+    proxy: {
+      manifestUrl: 'https://addon.example.com/manifest.json',
+    },
+  });
+
+  const patterns = buildAiometadataUrlPatterns('https://xrdb.example.com/', config.settings, {
+    hideCredentials: true,
+  });
+
+  assert.match(patterns?.posterUrlPattern ?? '', /posterTrendingTagPosition=top-center/);
+  assert.match(patterns?.posterUrlPattern ?? '', /posterTrendingTagStyle=glass/);
+  assert.match(patterns?.posterUrlPattern ?? '', /posterTrendingTagTextColor=%23f8fbff/);
+  assert.equal((patterns?.backgroundUrlPattern ?? '').includes('posterTrendingTagPosition='), false);
+  assert.equal((patterns?.logoUrlPattern ?? '').includes('posterTrendingTagPosition='), false);
+
+  const proxyUrl = buildProxyUrl('https://xrdb.example.com', config.proxy, config.settings);
+  const encodedConfig = proxyUrl.split('/proxy/')[1]?.replace('/manifest.json', '');
+  assert.ok(encodedConfig);
+  const decodedProxy = decodeProxyConfig(encodedConfig);
+
+  assert.equal(decodedProxy?.posterTrendingTagPosition, 'top-center');
+  assert.equal(decodedProxy?.posterTrendingTagStyle, 'glass');
+  assert.equal(decodedProxy?.posterTrendingTagTextColor, '#f8fbff');
+});
+
 test('TMDB ID scope helpers detect explicit and ambiguous forms', () => {
   assert.equal(hasExplicitTmdbMediaTypeInXrdbId('tmdb:movie:603'), true);
   assert.equal(hasExplicitTmdbMediaTypeInXrdbId('tmdb:tv:1399:2'), true);

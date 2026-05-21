@@ -367,6 +367,17 @@ export type SharedXrdbSettings = {
   networkTileColor: string;
   genreBadgeTileAccentColor: string;
   communityBadgeTheme: CommunityBadgeTheme;
+  posterTrendingTagPosition:
+    | 'auto'
+    | 'top-left'
+    | 'top-center'
+    | 'top-right'
+    | 'bottom-left'
+    | 'bottom-center'
+    | 'bottom-right';
+  posterTrendingTagStylePreset: 'auto-minimal' | QualityBadgeStyle;
+  posterTrendingCommunityBadgeTheme: CommunityBadgeTheme;
+  posterTrendingTagTextColor: string;
   ageRatingBadgeStyle: QualityBadgeStyle | null;
   releaseStatusBadgeStyle: QualityBadgeStyle | null;
   posterRatingXOffsetPillGlass: number;
@@ -689,6 +700,10 @@ export const createDefaultSharedXrdbSettings = (): SharedXrdbSettings => ({
   networkTileColor: '',
   genreBadgeTileAccentColor: '',
   communityBadgeTheme: DEFAULT_COMMUNITY_BADGE_THEME,
+  posterTrendingTagPosition: 'auto',
+  posterTrendingTagStylePreset: 'auto-minimal',
+  posterTrendingCommunityBadgeTheme: DEFAULT_COMMUNITY_BADGE_THEME,
+  posterTrendingTagTextColor: '',
   ageRatingBadgeStyle: null,
   releaseStatusBadgeStyle: null,
   posterRatingXOffsetPillGlass: DEFAULT_RATING_STACK_OFFSET_PX,
@@ -1742,6 +1757,39 @@ export const normalizeSharedXrdbSettings = (value: unknown, options?: { skipCros
     genreBadgeTileAccentColor:
       normalizeHexColor(candidate.genreBadgeTileAccentColor) || defaults.genreBadgeTileAccentColor,
     communityBadgeTheme: normalizeCommunityBadgeTheme(candidate.communityBadgeTheme as string | null | undefined),
+    posterTrendingTagPosition: (() => {
+      const normalized =
+        typeof candidate.posterTrendingTagPosition === 'string'
+          ? candidate.posterTrendingTagPosition.trim().toLowerCase()
+          : '';
+      return normalized === 'top-left' ||
+        normalized === 'top-center' ||
+        normalized === 'top-right' ||
+        normalized === 'bottom-left' ||
+        normalized === 'bottom-center' ||
+        normalized === 'bottom-right'
+        ? normalized
+        : 'auto';
+    })(),
+    posterTrendingTagStylePreset: (() => {
+      const normalized =
+        typeof candidate.posterTrendingTagStylePreset === 'string'
+          ? candidate.posterTrendingTagStylePreset.trim().toLowerCase()
+          : typeof candidate.posterTrendingTagStyle === 'string'
+            ? candidate.posterTrendingTagStyle.trim().toLowerCase()
+          : '';
+      if (!normalized || normalized === 'auto-minimal') {
+        return 'auto-minimal';
+      }
+      return normalizeQualityBadgeStyle(normalized);
+    })(),
+    posterTrendingCommunityBadgeTheme: normalizeCommunityBadgeTheme(
+      (typeof candidate.posterTrendingCommunityBadgeTheme === 'string'
+        ? candidate.posterTrendingCommunityBadgeTheme
+        : candidate.posterTrendingCommunityTheme) as string | null | undefined,
+    ),
+    posterTrendingTagTextColor:
+      normalizeHexColor(candidate.posterTrendingTagTextColor) || defaults.posterTrendingTagTextColor,
     ageRatingBadgeStyle: normalizeQualityBadgeStyleOrNull(candidate.ageRatingBadgeStyle as string | null | undefined),
     releaseStatusBadgeStyle: normalizeQualityBadgeStyleOrNull(candidate.releaseStatusBadgeStyle as string | null | undefined),
     posterRatingXOffsetPillGlass: normalizeRatingStackOffsetPx(
@@ -2265,6 +2313,24 @@ const buildSharedPayload = (settings: SharedXrdbSettings, options?: SharedPayloa
   }
   if (settings.posterQualityBadgeOffsetY !== DEFAULT_RATING_STACK_OFFSET_PX) {
     payload.posterQualityBadgeOffsetY = settings.posterQualityBadgeOffsetY;
+  }
+  if (settings.posterTrendingTagPosition !== 'auto') {
+    payload.posterTrendingTagPosition = settings.posterTrendingTagPosition;
+  }
+  if (settings.posterTrendingTagStylePreset !== 'auto-minimal') {
+    payload.posterTrendingTagStyle = settings.posterTrendingTagStylePreset;
+  }
+  if (
+    settings.posterTrendingTagStylePreset === 'community-badge' &&
+    settings.posterTrendingCommunityBadgeTheme !== DEFAULT_COMMUNITY_BADGE_THEME
+  ) {
+    payload.posterTrendingCommunityTheme = settings.posterTrendingCommunityBadgeTheme;
+  }
+  {
+    const normalizedTrendingTextColor = (settings.posterTrendingTagTextColor ?? '').trim();
+    if (normalizedTrendingTextColor) {
+      payload.posterTrendingTagTextColor = normalizedTrendingTextColor;
+    }
   }
   if (settings.ageRatingBadgePosition !== 'inherit') {
     payload.ageRatingBadgePosition = settings.ageRatingBadgePosition;
