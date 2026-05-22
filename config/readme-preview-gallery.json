@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "version": "2.2.0",
   "seed": "2.2.0",
-  "selectedAt": "2026-05-22T02:02:41.404Z",
+  "selectedAt": "2026-05-22T20:33:39.092Z",
   "activeSlugs": {
     "poster": [
       "attack-on-titan-poster",
@@ -16,7 +16,7 @@
       "stranger-things-backdrop"
     ],
     "logo": [
-      "stranger-things-logo",
+      "dune-part-two-logo",
       "attack-on-titan-logo",
       "game-of-thrones-logo"
     ]
@@ -39,8 +39,8 @@
     ],
     "logo": [
       "the-boys-logo",
-      "dune-part-two-logo",
       "stranger-things-logo",
+      "dune-part-two-logo",
       "attack-on-titan-logo",
       "game-of-thrones-logo"
     ]
