@@ -405,6 +405,7 @@ const startNextDevServer = async ({
       cwd: ROOT_DIR,
       env: {
         ...process.env,
+        NODE_OPTIONS: [process.env.NODE_OPTIONS, '--max-old-space-size=12288'].filter(Boolean).join(' '),
         ...env,
       },
       stdio: ['ignore', 'pipe', 'pipe'],
