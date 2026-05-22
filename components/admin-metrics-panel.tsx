@@ -260,6 +260,35 @@ export function AdminMetricsPanel() {
           <StatCard label="Final image deletes" variant="secondary" value={snapshot.finalImageCacheDeletes} />
           <StatCard label="Final image events (24h)" variant="secondary" value={snapshot.finalImageCacheEventsLast24Hours} />
         </div>
+        {snapshot.finalImageCacheCohorts.length > 0 && (
+          <div className="xrdb-admin-subsection">
+            <div className="xrdb-admin-subsection-label">UUID cohorts</div>
+            <div className="xrdb-admin-table-wrap">
+              <table className="xrdb-admin-table">
+                <thead>
+                  <tr>
+                    <th>Cohort</th>
+                    <th>Hit rate</th>
+                    <th>Hits</th>
+                    <th>Misses</th>
+                    <th>24h events</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {snapshot.finalImageCacheCohorts.map((cohort) => (
+                    <tr key={cohort.cohortHash}>
+                      <td className="cell-muted xrdb-admin-id">{cohort.cohortHash.slice(0, 10)}</td>
+                      <td>{(cohort.hitRate * 100).toFixed(1)}%</td>
+                      <td>{cohort.hits.toLocaleString()}</td>
+                      <td>{cohort.misses.toLocaleString()}</td>
+                      <td>{cohort.eventsLast24Hours.toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         <SectionLabel>Active users</SectionLabel>
         <div className="xrdb-admin-stat-grid">
