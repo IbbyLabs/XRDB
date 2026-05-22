@@ -90,12 +90,29 @@ function PanelSection({
 
 export function ProvidersPanel() {
   const ctx = useConfiguratorContext();
-  const { ratingProviderRows, onReorderRatingPreference, onToggleRatingPreference, onSelectAllRatingPreferencesEnabled } =
-    ctx.inputsPanelProps.providersProps;
+  const {
+    ratingProviderRows,
+    ratingProviderAppearanceOverrides,
+    activeProviderEditorId,
+    onReorderRatingPreference,
+    onToggleRatingPreference,
+    onSelectAllRatingPreferencesEnabled,
+    onSelectActiveProviderEditorId,
+    onUpdateProviderAppearanceOverride,
+  } = ctx.inputsPanelProps.providersProps;
   const dragFromIndexRef = useRef<number | null>(null);
 
   const allEnabled = ratingProviderRows.every((r) => r.enabled);
   const enabledCount = ratingProviderRows.filter((r) => r.enabled).length;
+  const activeProviderMeta =
+    RATING_PROVIDER_OPTIONS.find((provider) => provider.id === activeProviderEditorId) ||
+    RATING_PROVIDER_OPTIONS[0] ||
+    null;
+  const activeProviderOverride = activeProviderMeta
+    ? ratingProviderAppearanceOverrides[activeProviderMeta.id] || {}
+    : {};
+  const activeProviderIconUrl =
+    typeof activeProviderOverride.iconUrl === 'string' ? activeProviderOverride.iconUrl : '';
 
   const handleProviderDragOver = (event: DragEvent<HTMLLIElement>) => {
     event.preventDefault();
@@ -169,6 +186,69 @@ export function ProvidersPanel() {
           );
         })}
       </ul>
+
+      {activeProviderMeta ? (
+        <>
+          <ControlRow label="Edit provider">
+            <OptionPills
+              options={ratingProviderRows.flatMap((row) => {
+                const meta = RATING_PROVIDER_OPTIONS.find((provider) => provider.id === row.id);
+                return meta ? [{ id: meta.id, label: meta.label }] : [];
+              })}
+              value={activeProviderMeta.id}
+              onChange={onSelectActiveProviderEditorId}
+            />
+          </ControlRow>
+
+          <ControlRow label="Custom icon URL">
+            <div className="xrdb-control-stack">
+              <input
+                type="url"
+                className="xrdb-url-input"
+                value={activeProviderIconUrl}
+                placeholder="https://example.com/provider.png or https://example.com/provider.svg"
+                onChange={(event) =>
+                  onUpdateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                    ...current,
+                    iconUrl: event.target.value,
+                  }))
+                }
+                aria-label={`${activeProviderMeta.label} custom icon URL`}
+              />
+              {activeProviderIconUrl ? (
+                <button
+                  type="button"
+                  className="xrdb-btn-ghost"
+                  onClick={() =>
+                    onUpdateProviderAppearanceOverride(activeProviderMeta.id, (current) => ({
+                      ...current,
+                      iconUrl: '',
+                    }))
+                  }
+                >
+                  Reset
+                </button>
+              ) : null}
+            </div>
+          </ControlRow>
+
+          <ControlRow label="Preview">
+            <div className="xrdb-provider-toggle xrdb-provider-toggle-on" aria-live="polite">
+              {(activeProviderIconUrl || activeProviderMeta.iconUrl) ? (
+                <Image
+                  src={activeProviderIconUrl || activeProviderMeta.iconUrl}
+                  alt={`${activeProviderMeta.label} icon preview`}
+                  className="xrdb-provider-icon"
+                  width={20}
+                  height={20}
+                  unoptimized
+                />
+              ) : null}
+              <span className="xrdb-provider-name">{activeProviderMeta.label}</span>
+            </div>
+          </ControlRow>
+        </>
+      ) : null}
     </div>
   );
 }
