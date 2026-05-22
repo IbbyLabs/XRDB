@@ -11,7 +11,19 @@
 
 ### Documentation
 
-<a id="v2-2-0"></a>
+<a id="v2-2-1"></a>
+
+## [v2.2.1] - 22/05/2026
+
+### Fixed
+* restore custom provider icon URL editing across artwork workspaces
+  
+  Restores custom provider icon URL controls for poster, backdrop, thumbnail, and logo workspaces.
+  Adds provider selection, reset action, and live icon preview in the Providers panel.
+
+### Documentation
+* refresh static doc assets
+
 
 ## [v2.2.0] - 22/05/2026
 
