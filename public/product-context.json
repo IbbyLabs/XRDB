@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v2.1.0",
-  "generatedAt": "2026-05-20T02:29:10.331Z",
+  "xrdbTag": "v2.1.1",
+  "generatedAt": "2026-05-22T00:01:18.280Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -76,11 +76,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
-        "reduce client server hydration mismatch noise on search input",
-        "BUG-150 and BUG-154 finalize pin layout readability and not found log visibility",
-        "BUG-151 restore compact aggregate controls across all artwork types",
-        "include docs capture in preview memo dependencies",
-        "unify docs refresh gate and support v2 README changelog links"
+        "always use a fresh capture server for workspace viewport screenshots",
+        "prevent header metadata overlap in workspace chrome",
+        "preserve trending tag styling across exported artwork outputs",
+        "revert [WIP] FR-110 simplify configurator",
+        "[WIP] FR-110 simplify configurator Redesigns the configurator experience to feel simpler, clearer, and easier to navigate while preserving full control for advanced use."
       ]
     },
     {

@@ -11,7 +11,43 @@
 
 ### Documentation
 
-<a id="v2-1-0"></a>
+<a id="v2-1-1"></a>
+
+## [v2.1.1] - 22/05/2026
+
+### Added
+* [WIP] FR-110 simplify configurator Redesigns the configurator experience to feel simpler, clearer, and easier to navigate while preserving full control for advanced use.
+  
+  • Reworks the main workspace layout to reduce visual noise and improve scanning
+  • Moves dense option groups into focused popup flows so the primary screen stays clean
+  • Improves navigation structure and section grouping for a more guided setup path
+  • Refreshes control presentation and spacing for stronger readability across large forms
+  • Refines preview and panel behavior so tuning artwork feels more consistent and less fragmented
+  • Unifies interaction patterns across poster, backdrop, thumbnail, and logo workspaces
+  • Enhances responsive behavior so the redesigned interface remains usable across screen sizes
+  • Improves overall polish and cohesion of the configurator
+
+### Fixed
+* always use a fresh capture server for workspace viewport screenshots
+* prevent header metadata overlap in workspace chrome
+  
+  Keep route tabs, version details, and mode controls readable at collision prone desktop widths
+  Move build and version metadata into a dedicated row so it no longer competes with navigation space
+  Preserve clear header behavior across home and configurator routes
+* preserve trending tag styling across exported artwork outputs
+  
+  Keeps your saved trending tag style and position when artwork is opened through proxy and AIOMetadata URLs
+  Ensures custom trending tag text color and community theme choices stay consistent outside the configurator preview
+  Adds regression coverage so saved profile exports and imports continue to keep these settings intact
+
+### Documentation
+* refresh static doc assets
+
+### Reverted
+* revert [WIP] FR-110 simplify configurator
+  
+  This reverts commit 7872fce3d307203b190359a3d94e08ae6c147f47.
+
 
 ## [v2.1.0] - 20/05/2026
 
