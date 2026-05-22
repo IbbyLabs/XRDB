@@ -11,7 +11,32 @@
 
 ### Documentation
 
-<a id="v2-1-1"></a>
+<a id="v2-2-0"></a>
+
+## [v2.2.0] - 22/05/2026
+
+### Added
+* add UUID cohort trends for final image cache visibility
+  
+  Shows masked UUID cohort activity so cache behavior can be reviewed by cohort instead of only global totals
+  Keeps final image cache totals accurate while adding cohort level hit and miss breakdowns
+  Adds a focused regression test to ensure cohort totals and global totals stay aligned
+* add uuid scoped poster caching with admin cache controls and metrics
+  
+  • Adds optional UUID based poster image caching so repeated poster requests can reuse stored final images
+  • Extends warm runs to populate UUID scoped poster cache entries for faster follow up requests
+  • Adds admin controls to flush final image cache entries without clearing all cache data
+  • Adds admin cache visibility for final image counts, storage size, and cache event trends
+  • Updates environment documentation and tests for new cache settings
+
+### Fixed
+* use Turbopack for doc asset capture server to prevent OOM
+* prevent doc capture timeout on proxy route compilation
+* increase Next.js dev server heap limit for doc asset refresh
+
+### Documentation
+* refresh static doc assets
+
 
 ## [v2.1.1] - 22/05/2026
 

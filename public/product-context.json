@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v2.1.1",
-  "generatedAt": "2026-05-22T00:01:18.280Z",
+  "xrdbTag": "v2.2.0",
+  "generatedAt": "2026-05-22T02:02:41.444Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -76,11 +76,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
-        "always use a fresh capture server for workspace viewport screenshots",
-        "prevent header metadata overlap in workspace chrome",
-        "preserve trending tag styling across exported artwork outputs",
-        "revert [WIP] FR-110 simplify configurator",
-        "[WIP] FR-110 simplify configurator Redesigns the configurator experience to feel simpler, clearer, and easier to navigate while preserving full control for advanced use."
+        "use Turbopack for doc asset capture server to prevent OOM",
+        "prevent doc capture timeout on proxy route compilation",
+        "increase Next.js dev server heap limit for doc asset refresh",
+        "add UUID cohort trends for final image cache visibility",
+        "add uuid scoped poster caching with admin cache controls and metrics"
       ]
     },
     {
