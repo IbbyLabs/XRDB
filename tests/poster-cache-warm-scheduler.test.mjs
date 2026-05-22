@@ -23,6 +23,7 @@ const CONFIG = {
   imdbLimit: 500,
   recentEnabled: false,
   recentLimit: 500,
+  cacheUuids: [],
 };
 
 test('poster warm scheduler avoids overlap and respects the warm interval', async () => {

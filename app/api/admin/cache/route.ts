@@ -2,6 +2,7 @@ import { type NextRequest } from 'next/server';
 import { isAdminEnabled, verifyAdminRequest } from '@/lib/adminAuth';
 import { getDb, ensureDbInitialized } from '@/lib/sqliteStore';
 import { getCacheEventStats } from '@/lib/adminMetrics';
+import { clearObjectStorageCache, getObjectStorageCacheStats } from '@/lib/imageObjectStorage';
 
 const getCacheTableStats = () => {
   ensureDbInitialized();
@@ -30,9 +31,10 @@ export async function GET(request: NextRequest) {
   if (!verifyAdminRequest(request)) return new Response('Unauthorized', { status: 401 });
 
   const tableStats = getCacheTableStats();
+  const objectStorageStats = getObjectStorageCacheStats();
   const eventStats = getCacheEventStats();
 
-  return Response.json({ tableStats, eventStats });
+  return Response.json({ tableStats, objectStorageStats, eventStats });
 }
 
 export async function DELETE(request: NextRequest) {
@@ -51,13 +53,20 @@ export async function DELETE(request: NextRequest) {
     return Response.json({ ok: true, deleted: result.changes });
   }
 
-  if (mode === 'all') {
-    const result = db.prepare('DELETE FROM metadata_cache').run();
-    return Response.json({ ok: true, deleted: result.changes });
+  if (mode === 'final') {
+    const deleted = clearObjectStorageCache({ mode: 'final' });
+    return Response.json({ ok: true, deleted, scope: 'image-final' });
   }
 
-  const result = db
+  if (mode === 'all') {
+    const metadataDeleted = db.prepare('DELETE FROM metadata_cache').run().changes;
+    const imageDeleted = clearObjectStorageCache({ mode: 'all' });
+    return Response.json({ ok: true, deleted: metadataDeleted + imageDeleted, metadataDeleted, imageDeleted });
+  }
+
+  const metadataDeleted = db
     .prepare('DELETE FROM metadata_cache WHERE expires_at <= ?')
-    .run(Date.now());
-  return Response.json({ ok: true, deleted: result.changes });
+    .run(Date.now()).changes;
+  const imageDeleted = clearObjectStorageCache({ mode: 'expired' });
+  return Response.json({ ok: true, deleted: metadataDeleted + imageDeleted, metadataDeleted, imageDeleted });
 }

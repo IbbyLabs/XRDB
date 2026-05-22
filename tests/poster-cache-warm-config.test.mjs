@@ -104,3 +104,16 @@ test('poster warm config enables scheduler when only dynamic sources are enabled
     else process.env.XRDB_POSTER_WARM_TMDB_ENABLED = previousTmdbEnabled;
   }
 });
+
+test('poster warm config parses cache UUID list and caps to five entries', () => {
+  const previousCacheUuids = process.env.XRDB_POSTER_CACHE_UUIDS;
+  process.env.XRDB_POSTER_CACHE_UUIDS = 'a,b,c,d,e,f';
+
+  try {
+    const config = resolvePosterCacheWarmConfig();
+    assert.deepEqual(config.cacheUuids, ['a', 'b', 'c', 'd', 'e']);
+  } finally {
+    if (previousCacheUuids === undefined) delete process.env.XRDB_POSTER_CACHE_UUIDS;
+    else process.env.XRDB_POSTER_CACHE_UUIDS = previousCacheUuids;
+  }
+});

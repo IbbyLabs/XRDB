@@ -12,6 +12,7 @@ import {
   readObjectStorageMetadata,
 } from './imageObjectStoragePrune.ts';
 import { logger } from './serverLogger.ts';
+import { recordCacheEvent } from './adminMetrics.ts';
 
 export { buildObjectStorageImageKey } from './imageObjectStoragePaths.ts';
 
@@ -19,6 +20,14 @@ type ObjectStorageResult = {
   body: ArrayBuffer;
   contentType: string;
   cacheControl: string;
+};
+
+export type ObjectStorageCacheStats = {
+  totalFiles: number;
+  totalBytes: number;
+  expiredFiles: number;
+  finalFiles: number;
+  finalBytes: number;
 };
 
 const IMAGE_CACHE_PRUNE_INTERVAL_MS = 10 * 60 * 1000;
@@ -52,11 +61,94 @@ const ensureObjectStoragePrunerStarted = () => {
 
 export const isObjectStorageConfigured = () => true;
 
+const toKeyPrefix = (key: string) => {
+  if (key.startsWith('final/')) return 'image:final';
+  if (key.startsWith('source/')) return 'image:source';
+  return 'image';
+};
+
+const listObjectStorageFiles = (dir = resolveObjectStorageDir()) => {
+  const cacheDir = ensureObjectStorageDir(dir);
+  const entries = readdirSync(cacheDir, { withFileTypes: true });
+  return entries
+    .filter((entry) => entry.isFile() && !entry.name.endsWith('.json'))
+    .map((entry) => {
+      const path = join(cacheDir, entry.name);
+      const metadataPath = `${path}.json`;
+      const stats = statSync(path);
+      return {
+        name: entry.name,
+        path,
+        metadataPath,
+        sizeBytes: stats.size,
+      };
+    });
+};
+
+export const getObjectStorageCacheStats = (dir = resolveObjectStorageDir()): ObjectStorageCacheStats => {
+  const files = listObjectStorageFiles(dir);
+  let totalBytes = 0;
+  let expiredFiles = 0;
+  let finalFiles = 0;
+  let finalBytes = 0;
+
+  for (const file of files) {
+    totalBytes += file.sizeBytes;
+    if (isCachedObjectExpired(file.path, file.metadataPath)) {
+      expiredFiles += 1;
+    }
+    if (file.name.startsWith('final_')) {
+      finalFiles += 1;
+      finalBytes += file.sizeBytes;
+    }
+  }
+
+  return {
+    totalFiles: files.length,
+    totalBytes,
+    expiredFiles,
+    finalFiles,
+    finalBytes,
+  };
+};
+
+export const clearObjectStorageCache = ({
+  mode,
+  dir,
+}: {
+  mode: 'expired' | 'all' | 'final';
+  dir?: string;
+}) => {
+  const files = listObjectStorageFiles(dir);
+  let deleted = 0;
+
+  for (const file of files) {
+    const matchesMode =
+      mode === 'all' ||
+      (mode === 'final' && file.name.startsWith('final_')) ||
+      (mode === 'expired' && isCachedObjectExpired(file.path, file.metadataPath));
+
+    if (!matchesMode) {
+      continue;
+    }
+
+    deleteCachedObject(file.path, file.metadataPath);
+    deleted += 1;
+  }
+
+  if (deleted > 0) {
+    recordCacheEvent('delete', mode === 'final' ? 'image:final' : 'image');
+  }
+
+  return deleted;
+};
+
 export const getCachedImageFromObjectStorage = async (key: string): Promise<ObjectStorageResult | null> => {
   ensureObjectStoragePrunerStarted();
   const { filePath, metadataPath } = getObjectStoragePaths(key);
 
   if (!existsSync(filePath) || !existsSync(metadataPath)) {
+    recordCacheEvent('miss', toKeyPrefix(key));
     return null;
   }
 
@@ -64,18 +156,21 @@ export const getCachedImageFromObjectStorage = async (key: string): Promise<Obje
     const body = readFileSync(filePath);
     if (isCachedObjectExpired(filePath, metadataPath)) {
       deleteCachedObject(filePath, metadataPath);
+      recordCacheEvent('miss', toKeyPrefix(key));
       return null;
     }
 
     const metadata = readObjectStorageMetadata(metadataPath) || {};
     const cacheControl = metadata.cacheControl || 'public, max-age=300';
 
+    recordCacheEvent('hit', toKeyPrefix(key));
     return {
       body: body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength),
       contentType: metadata.contentType || 'image/png',
       cacheControl,
     };
   } catch (error) {
+    recordCacheEvent('miss', toKeyPrefix(key));
     logger.error(`Error reading cached image ${key}:`, error);
     return null;
   }
@@ -100,6 +195,7 @@ export const putCachedImageToObjectStorage = async (
       }),
       'utf8'
     );
+    recordCacheEvent('set', toKeyPrefix(key));
   } catch (error) {
     logger.error(`Error writing cached image ${key}:`, error);
   }

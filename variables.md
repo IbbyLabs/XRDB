@@ -45,6 +45,7 @@ All cache TTL values are in **milliseconds**.
 | `XRDB_TRUST_PROXY_HEADERS` | — | Trust forwarded host/protocol headers from a reverse proxy. |
 | `XRDB_REQUEST_API_KEY` | — | Single shared key for render and proxy access. |
 | `XRDB_REQUEST_API_KEYS` | — | Comma separated list of valid request keys. |
+| `XRDB_POSTER_CACHE_UUIDS` | — | Optional comma separated list of request keys that enable UUID-scoped persistent poster final-image caching. First 5 values are used. |
 | `XRDB_PARTNER_ACCESS_KEYS` | — | Signed partner access profiles. Format: `partnerId:secret:perMinute:burst`, comma, semicolon, or newline separated. Example: `partner:supersecret:1200:300`. |
 | `XRDB_PROXY_ALLOWED_ORIGINS` | `*` | CORS allowlist for proxy responses. |
 | `XRDB_CONFIG_ENCRYPTION_KEY` | auto generated | 64 hex character string (32 bytes) used to encrypt saved config profiles at rest. Losing this key makes existing profiles unreadable. Generate: `openssl rand -hex 32`. |
@@ -206,6 +207,7 @@ Enable individual features by setting `CACHE_HARDENING_ENABLED=true` first.
 | `XRDB_POSTER_WARM_CHECK_INTERVAL_MS` | `900000` (15 min) | How often XRDB checks whether a warming run is due. |
 | `XRDB_POSTER_WARM_CONCURRENCY` | `2` | Max concurrent poster warm jobs. |
 | `XRDB_POSTER_WARM_LOG` | `false` | Enable summary logging for warming runs. |
+| `XRDB_POSTER_CACHE_UUIDS` | — | Optional comma separated list of request keys. When set, warm runs also pre-populate UUID-scoped poster final-image cache entries for these keys. |
 
 ---
 

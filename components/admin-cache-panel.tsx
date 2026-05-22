@@ -18,6 +18,13 @@ type CacheEventStats = {
 
 type CacheData = {
   tableStats: CacheTableStats;
+  objectStorageStats: {
+    totalFiles: number;
+    totalBytes: number;
+    expiredFiles: number;
+    finalFiles: number;
+    finalBytes: number;
+  };
   eventStats: CacheEventStats;
 };
 
@@ -44,8 +51,9 @@ export function AdminCachePanel() {
     load();
   }, [load]);
 
-  const flush = async (mode: 'expired' | 'all') => {
+  const flush = async (mode: 'expired' | 'all' | 'final') => {
     if (mode === 'all' && !window.confirm('Flush all cache entries? Active entries will be removed.')) return;
+    if (mode === 'final' && !window.confirm('Flush all final image cache entries?')) return;
     setFlushing(mode);
     try {
       await fetch(`/api/admin/cache?mode=${mode}`, { method: 'DELETE' });
@@ -80,7 +88,7 @@ export function AdminCachePanel() {
     );
   }
 
-  const { tableStats, eventStats } = data;
+  const { tableStats, objectStorageStats, eventStats } = data;
 
   return (
     <div className="xrdb-admin-section">
@@ -93,6 +101,13 @@ export function AdminCachePanel() {
             disabled={flushing !== null}
           >
             {flushing === 'expired' ? 'Pruning…' : 'Prune expired'}
+          </button>
+          <button
+            className="xrdb-admin-btn xrdb-admin-btn--danger"
+            onClick={() => flush('final')}
+            disabled={flushing !== null}
+          >
+            {flushing === 'final' ? 'Flushing…' : 'Flush final images'}
           </button>
           <button
             className="xrdb-admin-btn xrdb-admin-btn--danger"
@@ -125,6 +140,20 @@ export function AdminCachePanel() {
             <div className="xrdb-admin-stat-value">{(eventStats.hitRate * 100).toFixed(1)}%</div>
             <div className="xrdb-admin-stat-sub">
               {eventStats.hits.toLocaleString()} hits / {eventStats.misses.toLocaleString()} misses
+            </div>
+          </div>
+          <div className="xrdb-admin-stat-card">
+            <div className="xrdb-admin-stat-label">Final images</div>
+            <div className="xrdb-admin-stat-value">{objectStorageStats.finalFiles.toLocaleString()}</div>
+            <div className="xrdb-admin-stat-sub">
+              {(objectStorageStats.finalBytes / (1024 * 1024)).toFixed(1)} MB stored
+            </div>
+          </div>
+          <div className="xrdb-admin-stat-card">
+            <div className="xrdb-admin-stat-label">Image cache files</div>
+            <div className="xrdb-admin-stat-value">{objectStorageStats.totalFiles.toLocaleString()}</div>
+            <div className="xrdb-admin-stat-sub">
+              {objectStorageStats.expiredFiles.toLocaleString()} expired
             </div>
           </div>
         </div>

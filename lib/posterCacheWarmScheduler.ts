@@ -13,6 +13,7 @@ import { buildPosterWarmSearchParams } from './posterCacheWarmSearchParams.ts';
 import { logger } from './serverLogger.ts';
 import { readPosterWarmSource, resolvePosterCacheWarmConfig } from './posterCacheWarmConfig.ts';
 import { recordPrewarmRun } from './adminMetrics.ts';
+import { XRDB_REQUEST_KEY_QUERY_PARAM } from './xrdbRequestKey.ts';
 
 const PREWARM_SNAPSHOT_KEY = 'prewarm:hot_snapshot';
 const PREWARM_SNAPSHOT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -71,11 +72,18 @@ type PosterWarmSchedulerState = typeof globalThis & {
 
 const getSchedulerState = () => globalThis as PosterWarmSchedulerState;
 
-const createPosterWarmRequest = (targetId: string, extraSearchParams?: URLSearchParams): ImageRouteRequestInput => {
+const createPosterWarmRequest = (
+  targetId: string,
+  extraSearchParams?: URLSearchParams,
+  cacheUuid?: string,
+): ImageRouteRequestInput => {
   const url = new URL(`https://xrdb.internal/poster/${encodeURIComponent(targetId)}.jpg`);
   const warmSearchParams = buildPosterWarmSearchParams(extraSearchParams);
   for (const [key, value] of warmSearchParams) {
     url.searchParams.set(key, value);
+  }
+  if (cacheUuid) {
+    url.searchParams.set(XRDB_REQUEST_KEY_QUERY_PARAM, cacheUuid);
   }
   return {
     nextUrl: {
@@ -87,8 +95,12 @@ const createPosterWarmRequest = (targetId: string, extraSearchParams?: URLSearch
   };
 };
 
-const warmPosterTarget = async (targetId: string, extraSearchParams?: URLSearchParams) => {
-  const request = createPosterWarmRequest(targetId, extraSearchParams);
+const warmPosterTarget = async (
+  targetId: string,
+  extraSearchParams?: URLSearchParams,
+  cacheUuid?: string,
+) => {
+  const request = createPosterWarmRequest(targetId, extraSearchParams, cacheUuid);
   const phases: PhaseDurations = {
     auth: 0,
     tmdb: 0,
@@ -178,37 +190,43 @@ export const runPosterCacheWarm = async () => {
     failed: 0,
   };
 
+  const cacheUuids = config.cacheUuids.length > 0 ? config.cacheUuids : [null];
+
   await Promise.all(
-    targets.map((targetId) =>
-      limit(async () => {
-        try {
-          await warmPosterTarget(targetId);
-          summary.warmed += 1;
-        } catch (error) {
-          summary.failed += 1;
-          logger.warn(
-            `[XRDB] poster warm failed for ${targetId}:`,
-            error instanceof Error ? error.message : error,
-          );
-        }
-      }),
+    targets.flatMap((targetId) =>
+      cacheUuids.map((cacheUuid) =>
+        limit(async () => {
+          try {
+            await warmPosterTarget(targetId, undefined, cacheUuid || undefined);
+            summary.warmed += 1;
+          } catch (error) {
+            summary.failed += 1;
+            logger.warn(
+              `[XRDB] poster warm failed for ${targetId}${cacheUuid ? ` (uuid)` : ''}:`,
+              error instanceof Error ? error.message : error,
+            );
+          }
+        }),
+      ),
     ),
   );
 
   await Promise.all(
-    recentEntries.map(({ id, searchParams }) =>
-      limit(async () => {
-        try {
-          await warmPosterTarget(id, searchParams);
-          summary.warmed += 1;
-        } catch (error) {
-          summary.failed += 1;
-          logger.warn(
-            `[XRDB] poster warm failed for recent entry ${id}:`,
-            error instanceof Error ? error.message : error,
-          );
-        }
-      }),
+    recentEntries.flatMap(({ id, searchParams }) =>
+      cacheUuids.map((cacheUuid) =>
+        limit(async () => {
+          try {
+            await warmPosterTarget(id, searchParams, cacheUuid || undefined);
+            summary.warmed += 1;
+          } catch (error) {
+            summary.failed += 1;
+            logger.warn(
+              `[XRDB] poster warm failed for recent entry ${id}${cacheUuid ? ` (uuid)` : ''}:`,
+              error instanceof Error ? error.message : error,
+            );
+          }
+        }),
+      ),
     ),
   );
 
