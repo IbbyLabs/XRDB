@@ -332,6 +332,18 @@ const waitForHttp = async (url, attempts = 90) => {
   throw new Error(`Timed out waiting for ${url}`);
 };
 
+const prewarmRoute = async (url, timeoutMs = 360_000) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    await fetch(url, { cache: 'no-store', signal: controller.signal });
+  } catch {
+    // Abort or connection error is acceptable; the goal is to trigger compilation
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
 const runCommand = async ({
   command,
   args,
@@ -1009,8 +1021,12 @@ const generateWorkspaceCaptures = async (origin) => {
     waitForSelector: '.xrdb-page',
   });
 
+  const proxyUrl = buildWorkspaceCaptureUrl(origin, { path: '/proxy' });
+  logRefreshStep('Pre-warming proxy route (triggering Next.js compilation)');
+  await prewarmRoute(proxyUrl);
+
   await captureScreenshot({
-    url: buildWorkspaceCaptureUrl(origin, { path: '/proxy' }),
+    url: proxyUrl,
     outputPath: proxyViewportPath,
     width: 1440,
     height: 1200,
