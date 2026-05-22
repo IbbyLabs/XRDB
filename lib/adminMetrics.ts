@@ -70,6 +70,12 @@ export type MetricsSnapshot = {
     targetCount: number;
   } | null;
   cacheHitRate: number;
+  finalImageCacheHits: number;
+  finalImageCacheMisses: number;
+  finalImageCacheSets: number;
+  finalImageCacheDeletes: number;
+  finalImageCacheEventsLast24Hours: number;
+  finalImageCacheHitRate: number;
   uptimeSince: number | null;
   latencyP50Ms: number | null;
   latencyP95Ms: number | null;
@@ -240,6 +246,36 @@ export const getMetricsSnapshot = (): MetricsSnapshot => {
       .get(oneDayAgo) as { n: number }
   ).n;
 
+  const finalImageCacheHits = (
+    db
+      .prepare(`SELECT COUNT(*) as n FROM admin_cache_events WHERE event_type = 'hit' AND key_prefix = 'image:final'`)
+      .get() as { n: number }
+  ).n;
+
+  const finalImageCacheMisses = (
+    db
+      .prepare(`SELECT COUNT(*) as n FROM admin_cache_events WHERE event_type = 'miss' AND key_prefix = 'image:final'`)
+      .get() as { n: number }
+  ).n;
+
+  const finalImageCacheSets = (
+    db
+      .prepare(`SELECT COUNT(*) as n FROM admin_cache_events WHERE event_type = 'set' AND key_prefix = 'image:final'`)
+      .get() as { n: number }
+  ).n;
+
+  const finalImageCacheDeletes = (
+    db
+      .prepare(`SELECT COUNT(*) as n FROM admin_cache_events WHERE event_type = 'delete' AND key_prefix = 'image:final'`)
+      .get() as { n: number }
+  ).n;
+
+  const finalImageCacheEventsLast24Hours = (
+    db
+      .prepare(`SELECT COUNT(*) as n FROM admin_cache_events WHERE created_at >= ? AND key_prefix = 'image:final'`)
+      .get(oneDayAgo) as { n: number }
+  ).n;
+
   const activeUsersLastHour = (
     db.prepare(
       `SELECT COUNT(DISTINCT CASE
@@ -393,6 +429,7 @@ export const getMetricsSnapshot = (): MetricsSnapshot => {
   }
 
   const cacheTotal = cacheHits + cacheMisses;
+  const finalImageCacheTotal = finalImageCacheHits + finalImageCacheMisses;
 
   return {
     totalRequests: total,
@@ -434,6 +471,12 @@ export const getMetricsSnapshot = (): MetricsSnapshot => {
         }
       : null,
     cacheHitRate: cacheTotal > 0 ? cacheHits / cacheTotal : 0,
+    finalImageCacheHits,
+    finalImageCacheMisses,
+    finalImageCacheSets,
+    finalImageCacheDeletes,
+    finalImageCacheEventsLast24Hours,
+    finalImageCacheHitRate: finalImageCacheTotal > 0 ? finalImageCacheHits / finalImageCacheTotal : 0,
     uptimeSince: firstRow?.created_at ?? null,
     latencyP50Ms,
     latencyP95Ms,

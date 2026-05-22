@@ -122,6 +122,7 @@ type FinalImageRenderSeedInput = {
   omdbKeyHash: string;
   sourceFallbackKey: string;
   canonicalEpisodeHintKey?: string;
+  posterCacheUuid?: string | null;
   renderCacheBuster: string;
 };
 
@@ -292,6 +293,7 @@ export const buildFinalImageRenderSeedKey = (input: FinalImageRenderSeedInput) =
       : '-',
     input.sourceFallbackKey || '-',
     input.canonicalEpisodeHintKey || '-',
+    isPoster ? (input.posterCacheUuid || '-') : '-',
     input.renderCacheBuster || '-',
     'v15',
   ].join('|');

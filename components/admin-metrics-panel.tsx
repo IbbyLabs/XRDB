@@ -249,6 +249,17 @@ export function AdminMetricsPanel() {
           <StatCard label="Deletes" variant="secondary" value={snapshot.cacheDeletes} />
           <StatCard label="Lookups (24h)" variant="secondary" value={snapshot.cacheEventsLast24Hours} />
         </div>
+        <div className="xrdb-admin-stat-grid">
+          <StatCard
+            label="Final image hit rate"
+            variant="hero"
+            value={`${(snapshot.finalImageCacheHitRate * 100).toFixed(1)}%`}
+            sub={`${snapshot.finalImageCacheHits.toLocaleString()} hits / ${snapshot.finalImageCacheMisses.toLocaleString()} misses`}
+          />
+          <StatCard label="Final image sets" variant="secondary" value={snapshot.finalImageCacheSets} />
+          <StatCard label="Final image deletes" variant="secondary" value={snapshot.finalImageCacheDeletes} />
+          <StatCard label="Final image events (24h)" variant="secondary" value={snapshot.finalImageCacheEventsLast24Hours} />
+        </div>
 
         <SectionLabel>Active users</SectionLabel>
         <div className="xrdb-admin-stat-grid">

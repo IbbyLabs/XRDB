@@ -33,6 +33,9 @@ const safeCompareText = (left: string, right: string) => {
 export const getConfiguredXrdbRequestKeys = () =>
   parseXrdbRequestKeyList(process.env.XRDB_REQUEST_API_KEYS, process.env.XRDB_REQUEST_API_KEY);
 
+export const getConfiguredPosterCacheUuids = () =>
+  parseXrdbRequestKeyList(process.env.XRDB_POSTER_CACHE_UUIDS).slice(0, 5);
+
 export const getXrdbRequestKeyFromSearchParams = (searchParams: URLSearchParams) => {
   const queryKey =
     searchParams.get(XRDB_REQUEST_KEY_QUERY_PARAM) ||
@@ -94,4 +97,24 @@ export const isXrdbRequestAuthorized = ({
   }
 
   return configuredKeys.some((configuredKey) => safeCompareText(providedKey, configuredKey));
+};
+
+export const resolvePosterCacheUuid = ({
+  providedKey,
+  configuredUuids,
+}: {
+  providedKey: string | null;
+  configuredUuids: string[];
+}) => {
+  if (!providedKey) {
+    return null;
+  }
+
+  for (const configuredUuid of configuredUuids) {
+    if (safeCompareText(providedKey, configuredUuid)) {
+      return configuredUuid;
+    }
+  }
+
+  return null;
 };

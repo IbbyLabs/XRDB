@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 
 import { parseBool, parseMs, parsePositiveInt } from './imdbDatasetLookupSchedulerConfig.ts';
+import { getConfiguredPosterCacheUuids } from './xrdbRequestKey.ts';
 
 export type PosterCacheWarmConfig = {
   enabled: boolean;
@@ -18,6 +19,7 @@ export type PosterCacheWarmConfig = {
   imdbLimit: number;
   recentEnabled: boolean;
   recentLimit: number;
+  cacheUuids: string[];
 };
 
 const POSTER_ROUTE_RE = /\/poster\/([^/?#]+)\.(?:jpe?g|png|webp|avif)$/i;
@@ -95,5 +97,6 @@ export const resolvePosterCacheWarmConfig = (): PosterCacheWarmConfig => {
     imdbLimit: Math.max(1, Math.min(5000, parsePositiveInt(process.env.XRDB_POSTER_WARM_IMDB_LIMIT, 500))),
     recentEnabled,
     recentLimit: Math.max(1, Math.min(2000, parsePositiveInt(process.env.XRDB_POSTER_WARM_RECENT_LIMIT, 500))),
+    cacheUuids: getConfiguredPosterCacheUuids(),
   };
 };

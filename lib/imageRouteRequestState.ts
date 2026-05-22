@@ -192,6 +192,11 @@ import {
   HttpError,
   sha1Hex,
 } from './imageRouteRuntime.ts';
+import {
+  getConfiguredPosterCacheUuids,
+  resolvePosterCacheUuid,
+  resolveProvidedXrdbRequestKey,
+} from './xrdbRequestKey.ts';
 import { hasServerTmdbCredentials } from './tmdbServerAuth.ts';
 import { pickOutputFormat, type OutputFormat } from './imageRouteMedia.ts';
 import {
@@ -411,6 +416,7 @@ export type ImageRouteRequestState = {
   fanartKey: string;
   fanartClientKey: string;
   sourceFallbackUrl: string | null;
+  posterCacheUuid: string | null;
   renderSeedKey: string;
   effectiveRatingPreferences: RatingPreference[];
   selectedRatings: Set<RatingPreference>;
@@ -1654,7 +1660,20 @@ export const resolveImageRouteRequestState = async ({
   const streamBadgesCacheKeySeed = shouldApplyStreamBadges
     ? `torrentio:${streamBadgesSeedWindow ?? 0}`
     : 'off';
+  const providedRequestKey = resolveProvidedXrdbRequestKey({
+    searchParams,
+    headers: request.headers,
+    fallbackKey: null,
+  });
+  const posterCacheUuid =
+    imageType === 'poster'
+      ? resolvePosterCacheUuid({
+          providedKey: providedRequestKey,
+          configuredUuids: getConfiguredPosterCacheUuids(),
+        })
+      : null;
   const shouldCacheFinalImage =
+    Boolean(posterCacheUuid) ||
     shouldApplyRatings ||
     shouldApplyStreamBadges ||
     shouldRenderLogoBackground ||
@@ -1824,6 +1843,7 @@ export const resolveImageRouteRequestState = async ({
     omdbKeyHash,
     sourceFallbackKey,
     canonicalEpisodeHintKey,
+    posterCacheUuid,
     renderCacheBuster,
   });
 
@@ -1970,6 +1990,7 @@ export const resolveImageRouteRequestState = async ({
     fanartKey,
     fanartClientKey,
     sourceFallbackUrl,
+    posterCacheUuid,
     renderSeedKey,
     effectiveRatingPreferences,
     selectedRatings,
