@@ -408,11 +408,12 @@ const runCommand = async ({
 const startNextDevServer = async ({
   port,
   env = {},
+  useTurbopack = DOC_USE_TURBOPACK,
 }) => {
-  logRefreshStep(`Starting local Next dev server on port ${port}${DOC_USE_TURBOPACK ? ' with Turbopack' : ''}`);
+  logRefreshStep(`Starting local Next dev server on port ${port}${useTurbopack ? ' with Turbopack' : ''}`);
   const nextProcess = spawn(
     process.platform === 'win32' ? 'npx.cmd' : 'npx',
-    ['next', 'dev', ...(DOC_USE_TURBOPACK ? ['--turbo'] : []), '-p', String(port), '-H', '127.0.0.1'],
+    ['next', 'dev', ...(useTurbopack ? ['--turbo'] : []), '-p', String(port), '-H', '127.0.0.1'],
     {
       cwd: ROOT_DIR,
       env: {
@@ -1389,6 +1390,7 @@ const generateComparisonBoards = async ({
       await terminateProcess(renderServer.nextProcess);
       const captureServer = await startNextDevServer({
         port: CAPTURE_NEXT_PORT,
+        useTurbopack: true,
         env: {
           NEXT_PUBLIC_XRDB_ENABLE_DOCS_CAPTURE: 'true',
           XRDB_ALLOW_PRIVATE_SOURCES_FOR_TESTS: 'true',
