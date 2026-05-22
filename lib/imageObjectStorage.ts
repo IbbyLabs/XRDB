@@ -61,7 +61,10 @@ const ensureObjectStoragePrunerStarted = () => {
 
 export const isObjectStorageConfigured = () => true;
 
-const toKeyPrefix = (key: string) => {
+const toKeyPrefix = (key: string, cohortKey?: string | null) => {
+  if (cohortKey) {
+    return `image:final:cohort:${cohortKey}`;
+  }
   if (key.startsWith('final/')) return 'image:final';
   if (key.startsWith('source/')) return 'image:source';
   return 'image';
@@ -143,12 +146,15 @@ export const clearObjectStorageCache = ({
   return deleted;
 };
 
-export const getCachedImageFromObjectStorage = async (key: string): Promise<ObjectStorageResult | null> => {
+export const getCachedImageFromObjectStorage = async (
+  key: string,
+  cohortKey?: string | null,
+): Promise<ObjectStorageResult | null> => {
   ensureObjectStoragePrunerStarted();
   const { filePath, metadataPath } = getObjectStoragePaths(key);
 
   if (!existsSync(filePath) || !existsSync(metadataPath)) {
-    recordCacheEvent('miss', toKeyPrefix(key));
+    recordCacheEvent('miss', toKeyPrefix(key, cohortKey));
     return null;
   }
 
@@ -156,21 +162,21 @@ export const getCachedImageFromObjectStorage = async (key: string): Promise<Obje
     const body = readFileSync(filePath);
     if (isCachedObjectExpired(filePath, metadataPath)) {
       deleteCachedObject(filePath, metadataPath);
-      recordCacheEvent('miss', toKeyPrefix(key));
+      recordCacheEvent('miss', toKeyPrefix(key, cohortKey));
       return null;
     }
 
     const metadata = readObjectStorageMetadata(metadataPath) || {};
     const cacheControl = metadata.cacheControl || 'public, max-age=300';
 
-    recordCacheEvent('hit', toKeyPrefix(key));
+    recordCacheEvent('hit', toKeyPrefix(key, cohortKey));
     return {
       body: body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength),
       contentType: metadata.contentType || 'image/png',
       cacheControl,
     };
   } catch (error) {
-    recordCacheEvent('miss', toKeyPrefix(key));
+    recordCacheEvent('miss', toKeyPrefix(key, cohortKey));
     logger.error(`Error reading cached image ${key}:`, error);
     return null;
   }
@@ -179,6 +185,8 @@ export const getCachedImageFromObjectStorage = async (key: string): Promise<Obje
 export const putCachedImageToObjectStorage = async (
   key: string,
   payload: { body: ArrayBuffer; contentType: string; cacheControl: string }
+  ,
+  cohortKey?: string | null,
 ) => {
   ensureObjectStoragePrunerStarted();
   const { cacheDir, filePath, metadataPath } = getObjectStoragePaths(key);
@@ -195,7 +203,7 @@ export const putCachedImageToObjectStorage = async (
       }),
       'utf8'
     );
-    recordCacheEvent('set', toKeyPrefix(key));
+    recordCacheEvent('set', toKeyPrefix(key, cohortKey));
   } catch (error) {
     logger.error(`Error writing cached image ${key}:`, error);
   }

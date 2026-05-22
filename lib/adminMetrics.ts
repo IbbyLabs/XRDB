@@ -76,6 +76,15 @@ export type MetricsSnapshot = {
   finalImageCacheDeletes: number;
   finalImageCacheEventsLast24Hours: number;
   finalImageCacheHitRate: number;
+  finalImageCacheCohorts: {
+    cohortHash: string;
+    hits: number;
+    misses: number;
+    sets: number;
+    deletes: number;
+    eventsLast24Hours: number;
+    hitRate: number;
+  }[];
   uptimeSince: number | null;
   latencyP50Ms: number | null;
   latencyP95Ms: number | null;
@@ -246,35 +255,86 @@ export const getMetricsSnapshot = (): MetricsSnapshot => {
       .get(oneDayAgo) as { n: number }
   ).n;
 
+  const finalImageCachePrefixClause = "(key_prefix = 'image:final' OR key_prefix LIKE 'image:final:cohort:%')";
+
   const finalImageCacheHits = (
     db
-      .prepare(`SELECT COUNT(*) as n FROM admin_cache_events WHERE event_type = 'hit' AND key_prefix = 'image:final'`)
+      .prepare(`SELECT COUNT(*) as n FROM admin_cache_events WHERE ${finalImageCachePrefixClause} AND event_type = 'hit'`)
       .get() as { n: number }
   ).n;
 
   const finalImageCacheMisses = (
     db
-      .prepare(`SELECT COUNT(*) as n FROM admin_cache_events WHERE event_type = 'miss' AND key_prefix = 'image:final'`)
+      .prepare(`SELECT COUNT(*) as n FROM admin_cache_events WHERE ${finalImageCachePrefixClause} AND event_type = 'miss'`)
       .get() as { n: number }
   ).n;
 
   const finalImageCacheSets = (
     db
-      .prepare(`SELECT COUNT(*) as n FROM admin_cache_events WHERE event_type = 'set' AND key_prefix = 'image:final'`)
+      .prepare(`SELECT COUNT(*) as n FROM admin_cache_events WHERE ${finalImageCachePrefixClause} AND event_type = 'set'`)
       .get() as { n: number }
   ).n;
 
   const finalImageCacheDeletes = (
     db
-      .prepare(`SELECT COUNT(*) as n FROM admin_cache_events WHERE event_type = 'delete' AND key_prefix = 'image:final'`)
+      .prepare(`SELECT COUNT(*) as n FROM admin_cache_events WHERE ${finalImageCachePrefixClause} AND event_type = 'delete'`)
       .get() as { n: number }
   ).n;
 
   const finalImageCacheEventsLast24Hours = (
     db
-      .prepare(`SELECT COUNT(*) as n FROM admin_cache_events WHERE created_at >= ? AND key_prefix = 'image:final'`)
+      .prepare(`SELECT COUNT(*) as n FROM admin_cache_events WHERE created_at >= ? AND ${finalImageCachePrefixClause}`)
       .get(oneDayAgo) as { n: number }
   ).n;
+
+  const finalImageCohortRows = db
+    .prepare(
+      `SELECT event_type, key_prefix, created_at
+       FROM admin_cache_events
+       WHERE key_prefix LIKE 'image:final:cohort:%'`,
+    )
+    .all() as { event_type: string; key_prefix: string; created_at: number }[];
+
+  const finalImageCohortMap = new Map<string, {
+    hits: number;
+    misses: number;
+    sets: number;
+    deletes: number;
+    eventsLast24Hours: number;
+  }>();
+
+  for (const row of finalImageCohortRows) {
+    const existing = finalImageCohortMap.get(row.key_prefix) ?? {
+      hits: 0,
+      misses: 0,
+      sets: 0,
+      deletes: 0,
+      eventsLast24Hours: 0,
+    };
+
+    if (row.event_type === 'hit') existing.hits += 1;
+    if (row.event_type === 'miss') existing.misses += 1;
+    if (row.event_type === 'set') existing.sets += 1;
+    if (row.event_type === 'delete') existing.deletes += 1;
+    if (row.created_at >= oneDayAgo) existing.eventsLast24Hours += 1;
+    finalImageCohortMap.set(row.key_prefix, existing);
+  }
+
+  const finalImageCacheCohorts = [...finalImageCohortMap.entries()]
+    .map(([cohortKey, counts]) => {
+      const total = counts.hits + counts.misses;
+      return {
+        cohortHash: cohortKey.replace('image:final:cohort:', ''),
+        ...counts,
+        hitRate: total > 0 ? counts.hits / total : 0,
+      };
+    })
+    .sort((left, right) => {
+      const leftTotal = left.hits + left.misses + left.sets + left.deletes;
+      const rightTotal = right.hits + right.misses + right.sets + right.deletes;
+      return rightTotal - leftTotal || left.cohortHash.localeCompare(right.cohortHash);
+    })
+    .slice(0, 5);
 
   const activeUsersLastHour = (
     db.prepare(
@@ -477,6 +537,7 @@ export const getMetricsSnapshot = (): MetricsSnapshot => {
     finalImageCacheDeletes,
     finalImageCacheEventsLast24Hours,
     finalImageCacheHitRate: finalImageCacheTotal > 0 ? finalImageCacheHits / finalImageCacheTotal : 0,
+    finalImageCacheCohorts,
     uptimeSince: firstRow?.created_at ?? null,
     latencyP50Ms,
     latencyP95Ms,

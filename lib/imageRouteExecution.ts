@@ -226,9 +226,15 @@ export const executeImageRouteRender = async ({
         sha1Hex(requestState.renderSeedKey),
         outputFormatToExtension(requestState.outputFormat as OutputFormat),
       );
+      const finalImageCacheCohortKey = requestState.posterCacheUuid
+        ? `cohort:${sha1Hex(requestState.posterCacheUuid).slice(0, 12)}`
+        : null;
 
       if (requestState.shouldCacheFinalImage && objectStorageEnabled && !requestState.configMigrationDeadline) {
-        const cachedFinalImage = await getCachedImageFromObjectStorage(finalObjectStorageKey);
+        const cachedFinalImage = await getCachedImageFromObjectStorage(
+          finalObjectStorageKey,
+          finalImageCacheCohortKey,
+        );
         if (cachedFinalImage) {
           objectStorageHit = true;
           return cachedFinalImage;
@@ -610,7 +616,7 @@ export const executeImageRouteRender = async ({
 
       if (requestState.shouldCacheFinalImage && !requestState.configMigrationDeadline && !streamBadgesDeferred) {
         try {
-          await putCachedImageToObjectStorage(finalObjectStorageKey, finalPayload);
+          await putCachedImageToObjectStorage(finalObjectStorageKey, finalPayload, finalImageCacheCohortKey);
         } catch {
         }
       }
