@@ -22,6 +22,11 @@ function highlightMatch(id: string, query: string): React.ReactNode {
 
 type DropdownOption<T extends string> = { value: T; label: string };
 
+type ResetPasswordResponse = {
+  error?: string;
+  resetPassword?: string;
+};
+
 function AdminDropdown<T extends string>({
   value,
   options,
@@ -219,14 +224,22 @@ export function AdminProfilesPanel() {
   };
 
   const resetPassword = async (id: string) => {
-    if (!confirm('Reset password for this profile? It will become accessible without a password.')) return;
+    if (!confirm('Reset password for this profile? A new recovery password will be generated.')) return;
     setWorking(id + ':reset');
     try {
-      await fetch(`/api/admin/profiles/${encodeURIComponent(id)}`, {
+      const response = await fetch(`/api/admin/profiles/${encodeURIComponent(id)}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'reset-password' }),
       });
+      const payload = (await response.json().catch(() => null)) as ResetPasswordResponse | null;
+      if (!response.ok) {
+        setError(payload?.error || 'Failed to reset password.');
+        return;
+      }
+      if (typeof payload?.resetPassword === 'string' && payload.resetPassword.trim()) {
+        window.alert(`Recovery password:\n${payload.resetPassword}\n\nUse this password to log in, then change it.`);
+      }
       await load(activeQuery);
     } finally {
       setWorking(null);
@@ -465,13 +478,13 @@ export function AdminProfilesPanel() {
                               {working === p.id + ':unlock' ? '…' : 'Unlock'}
                             </button>
                           ) : null}
-                          {p.hasPassword && (
+                          {!p.isLegacy && (
                             <button
                               className="xrdb-admin-btn"
                               onClick={() => resetPassword(p.id)}
                               disabled={working !== null}
                             >
-                              {working === p.id + ':reset' ? '…' : 'Reset password'}
+                              {working === p.id + ':reset' ? '…' : (p.hasPassword ? 'Reset password' : 'Set password')}
                             </button>
                           )}
                           <button

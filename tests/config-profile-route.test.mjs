@@ -145,3 +145,27 @@ test('config profile route helpers migrate legacy profiles into protected UUID-b
     });
   });
 });
+
+test('config profile route helpers do not report migration-required for UUID profiles with missing passwords', async (t) => {
+  await withTempDataDir(t, async () => {
+    const authModule = await importFresh('../lib/configProfileAuth.ts');
+    const routeModule = await importFresh('../lib/configProfileRoute.ts');
+    const dbModule = await importFresh('../lib/dbCore.ts');
+
+    const passwordHash = await authModule.hashConfigPassword('correct horse');
+    const id = dbModule.createProtectedConfigProfile({ tmdbKey: 'tmdb', mdblistKey: 'mdb' }, passwordHash);
+
+    assert.equal(dbModule.clearConfigProfilePassword(id), true);
+
+    const unlock = await routeModule.unlockConfigProfileFromBody(id, { password: 'correct horse' });
+    assert.equal(unlock.status, 409);
+    assert.equal(unlock.body.isLegacy, false);
+    assert.match(String(unlock.body.error), /no password/i);
+
+    const authorized = routeModule.authorizeConfigProfileManagement(new Headers(), id);
+    assert.equal(authorized.ok, false);
+    assert.equal(authorized.status, 409);
+    assert.equal(authorized.body.isLegacy, false);
+    assert.match(String(authorized.body.error), /no password/i);
+  });
+});
