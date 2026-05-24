@@ -1,6 +1,10 @@
 import { type NextRequest } from 'next/server';
+import { randomUUID } from 'node:crypto';
 import { isAdminEnabled, verifyAdminRequest } from '@/lib/adminAuth';
-import { deleteConfigProfile, clearConfigProfilePassword, unlockConfigProfile, getConfigProfileMetadata, getConfigProfile } from '@/lib/dbCore';
+import { deleteConfigProfile, rotateConfigProfilePassword, unlockConfigProfile, getConfigProfileMetadata, getConfigProfile } from '@/lib/dbCore';
+import { hashConfigPassword } from '@/lib/configProfileAuth';
+
+const buildAdminRecoveryPassword = () => `xrdb-${randomUUID().replace(/-/g, '').slice(0, 12)}`;
 
 export async function GET(
   request: NextRequest,
@@ -49,11 +53,13 @@ export async function PATCH(
   }
 
   if (body.action === 'reset-password') {
-    const updated = clearConfigProfilePassword(id);
+    const resetPassword = buildAdminRecoveryPassword();
+    const passwordHash = await hashConfigPassword(resetPassword);
+    const updated = rotateConfigProfilePassword(id, passwordHash);
     if (!updated) {
       return Response.json({ error: 'Profile not found' }, { status: 404 });
     }
-    return Response.json({ ok: true, profile: getConfigProfileMetadata(id) });
+    return Response.json({ ok: true, profile: updated, resetPassword });
   }
 
   if (body.action === 'unlock') {

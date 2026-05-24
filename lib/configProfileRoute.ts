@@ -33,6 +33,25 @@ type AuthSuccess = {
 
 type ConfigProfileAuthResult = AuthFailure | AuthSuccess;
 
+const buildMissingPasswordManagementError = (metadata: ConfigProfileMetadata) => {
+  if (metadata.isLegacy) {
+    return {
+      status: 409,
+      body: {
+        error: 'Legacy profiles must be migrated before they can be managed.',
+        isLegacy: metadata.isLegacy,
+      },
+    };
+  }
+  return {
+    status: 409,
+    body: {
+      error: 'This UUID profile has no password. Ask an admin to reset the password, then try again.',
+      isLegacy: metadata.isLegacy,
+    },
+  };
+};
+
 const normalizeParamsRecord = (value: unknown): Record<string, string> | null => {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return null;
@@ -117,10 +136,7 @@ export const unlockConfigProfileFromBody = async (id: string, body: unknown) => 
     return { status: 404, body: { error: 'Not found' } };
   }
   if (!metadata.hasPassword) {
-    return {
-      status: 409,
-      body: { error: 'Legacy profiles must be migrated before they can be managed.', isLegacy: metadata.isLegacy },
-    };
+    return buildMissingPasswordManagementError(metadata);
   }
   if (typeof metadata.lockedUntil === 'number' && metadata.lockedUntil > Date.now()) {
     return {
@@ -180,10 +196,11 @@ export const authorizeConfigProfileManagement = (
     return { ok: false, status: 404, body: { error: 'Not found' } };
   }
   if (!metadata.hasPassword) {
+    const missingPassword = buildMissingPasswordManagementError(metadata);
     return {
       ok: false,
-      status: 409,
-      body: { error: 'Legacy profiles must be migrated before they can be managed.', isLegacy: metadata.isLegacy },
+      status: missingPassword.status,
+      body: missingPassword.body,
     };
   }
   if (typeof metadata.lockedUntil === 'number' && metadata.lockedUntil > Date.now()) {
