@@ -11,7 +11,22 @@
 
 ### Documentation
 
-<a id="v2-2-1"></a>
+<a id="v2-2-2"></a>
+
+## [v2.2.2] - 24/05/2026
+
+### Fixed
+* keep UUID profiles recoverable after admin password reset
+  
+  generate and persist a recovery password on admin reset instead of clearing auth
+  expose the recovery password in admin so login recovery is immediate
+  allow setting a password for UUID profiles that currently have none
+  return a UUID no password recovery error instead of a legacy migration required error
+  add regression coverage for UUID missing password auth behavior
+
+### Documentation
+* refresh static doc assets
+
 
 ## [v2.2.1] - 22/05/2026
 
