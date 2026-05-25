@@ -20,6 +20,7 @@ import {
   RATING_PRESENTATION_OPTIONS,
 } from '@/lib/ratingPresentation';
 import { DynamicStopsEditor } from '@/components/dynamic-stops-editor';
+import { ColorSwatchControl } from '@/components/color-swatch-control';
 
 function ControlRow({
   label,
@@ -306,6 +307,59 @@ export function StylePanel() {
                   onChange={pres.onSelectAggregateDynamicStops}
                 />
               </ControlRow>
+            ) : null}
+
+            {pres.aggregateAccentMode === 'custom' ? (
+              <>
+                <ControlRow label="Accent colour">
+                  <ColorSwatchControl
+                    value={pres.aggregateAccentColor}
+                    onChange={pres.onSelectAggregateAccentColor}
+                    ariaLabel="Aggregate accent colour"
+                    title="Custom accent colour for aggregate badges and overlays."
+                  />
+                </ControlRow>
+                <ControlRow label="Critics accent colour">
+                  <ColorSwatchControl
+                    value={pres.aggregateCriticsAccentColor}
+                    onChange={pres.onSelectAggregateCriticsAccentColor}
+                    ariaLabel="Critics accent colour"
+                    title="Custom accent colour used when the aggregate source is critics."
+                  />
+                </ControlRow>
+                <ControlRow label="Audience accent colour">
+                  <ColorSwatchControl
+                    value={pres.aggregateAudienceAccentColor}
+                    onChange={pres.onSelectAggregateAudienceAccentColor}
+                    ariaLabel="Audience accent colour"
+                    title="Custom accent colour used when the aggregate source is audience."
+                  />
+                </ControlRow>
+                <ControlRow label="Value colour">
+                  <ColorSwatchControl
+                    value={pres.aggregateValueColor}
+                    onChange={pres.onSelectAggregateValueColor}
+                    ariaLabel="Aggregate value colour"
+                    title="Text colour for custom aggregate badges and overlays."
+                  />
+                </ControlRow>
+                <ControlRow label="Critics value colour">
+                  <ColorSwatchControl
+                    value={pres.aggregateCriticsValueColor}
+                    onChange={pres.onSelectAggregateCriticsValueColor}
+                    ariaLabel="Critics value colour"
+                    title="Text colour used when the aggregate source is critics."
+                  />
+                </ControlRow>
+                <ControlRow label="Audience value colour">
+                  <ColorSwatchControl
+                    value={pres.aggregateAudienceValueColor}
+                    onChange={pres.onSelectAggregateAudienceValueColor}
+                    ariaLabel="Audience value colour"
+                    title="Text colour used when the aggregate source is audience."
+                  />
+                </ControlRow>
+              </>
             ) : null}
 
             {pres.showsAggregateAccentBarOffset ? (
