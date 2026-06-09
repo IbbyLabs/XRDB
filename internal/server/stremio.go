@@ -92,11 +92,8 @@ func registerStremioAddon(mux *http.ServeMux, cfg config.Config) {
 			return
 		}
 
-		// Determine XRDB mediaType from Stremio type.
+		// Both movie and series use poster as the XRDB render type.
 		xrdbType := "poster"
-		if mediaType == "series" {
-			xrdbType = "poster"
-		}
 
 		// Build base URL for XRDB renders. Derive from the incoming request.
 		scheme := "https"

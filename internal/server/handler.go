@@ -1,7 +1,9 @@
 package server
 
 import (
+	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"io/fs"
@@ -115,11 +117,13 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			}
 		}
 
-		// Include raw configParam as a tiebreaker when no profile was loaded,
-		// so different raw config strings produce different cache keys.
+		// Include a fingerprint of configParam when no profile was loaded so
+		// different inline configs produce different cache keys without allowing
+		// attackers to poison the cache with unbounded unique raw strings.
 		cfgKeyInput := imageconfig.CacheKey(imgCfg)
 		if !profileLoaded {
-			cfgKeyInput = cfgKeyInput + ":" + configParam
+			h := sha256.Sum256([]byte(configParam))
+			cfgKeyInput = cfgKeyInput + ":" + hex.EncodeToString(h[:8])
 		}
 		cacheKey := render.CacheKey(mediaType, id, cfgKeyInput, uuid)
 		var pngBytes []byte
