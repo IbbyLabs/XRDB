@@ -1,6 +1,11 @@
 SHELL := /bin/sh
 
-.PHONY: run test bench build build-web build-all docker-build up down
+.PHONY: all clean run test bench build build-web build-all docker-build up down
+
+all: build-all
+
+clean:
+	rm -rf internal/ui/dist web/.next web/out
 
 run:
 	go run ./cmd/api
