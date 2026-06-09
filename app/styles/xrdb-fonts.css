@@ -1,3 +1,0 @@
-/* Font loading is handled by next/font in root-layout-shell.tsx.
-   CSS variables --font-body and --font-display are injected at runtime.
-   Local font files are managed by the Next.js font optimization pipeline. */

@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { execSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -11,9 +13,7 @@ if (!rawVersion) {
 
 const ROOT_DIR = process.cwd();
 const CHANGELOG_PATH = path.join(ROOT_DIR, 'CHANGELOG.md');
-const PACKAGE_JSON_PATH = path.join(ROOT_DIR, 'package.json');
 const CHANGELOG = fs.readFileSync(CHANGELOG_PATH, 'utf8');
-const PACKAGE_JSON = JSON.parse(fs.readFileSync(PACKAGE_JSON_PATH, 'utf8'));
 const TAG = String(rawVersion).startsWith('v') ? String(rawVersion).trim() : `v${String(rawVersion).trim()}`;
 
 function escapeRegExp(value) {
@@ -29,21 +29,13 @@ function getVersionAnchor(version) {
 }
 
 function getRepositoryWebUrl() {
-  const repositoryUrl = String(PACKAGE_JSON?.repository?.url || '').trim();
-  if (repositoryUrl) {
-    return repositoryUrl
-      .replace(/^git\+/, '')
-      .replace(/\.git$/i, '')
-      .replace(/^git@github\.com:/i, 'https://github.com/');
-  }
-
   try {
     const remoteUrl = execSync('git remote get-url origin', { encoding: 'utf8' }).trim();
     return remoteUrl
       .replace(/\.git$/i, '')
       .replace(/^git@github\.com:/i, 'https://github.com/');
   } catch {
-    throw new Error('Unable to determine repository URL.');
+    throw new Error('Unable to determine repository URL from git remote.');
   }
 }
 
@@ -59,7 +51,7 @@ function hasTag(tag) {
 function getPreviousReleaseTag(tag) {
   const tags = execSync('git tag --list "v[0-9]*" --sort=version:refname', { encoding: 'utf8' })
     .split('\n')
-    .map(entry => entry.trim())
+    .map((t) => t.trim())
     .filter(Boolean);
   const currentIndex = tags.indexOf(tag);
   if (currentIndex <= 0) return null;
@@ -72,19 +64,11 @@ function getChangelogSection(version) {
   if (!headingMatch || headingMatch.index == null) {
     throw new Error(`Could not find changelog section for ${version}.`);
   }
-
-  const headingStart = headingMatch.index;
-  const bodyStart = headingStart + headingMatch[0].length;
+  const bodyStart = headingMatch.index + headingMatch[0].length;
   const remaining = CHANGELOG.slice(bodyStart);
   const nextSectionMatch = remaining.match(/\n<a id="[^"]+"><\/a>\n\n## \[|\n## \[/);
-  const section = (nextSectionMatch && nextSectionMatch.index != null
-    ? remaining.slice(0, nextSectionMatch.index)
-    : remaining).trim();
-
-  if (!section) {
-    throw new Error(`Changelog section for ${version} is empty.`);
-  }
-
+  const section = (nextSectionMatch?.index != null ? remaining.slice(0, nextSectionMatch.index) : remaining).trim();
+  if (!section) throw new Error(`Changelog section for ${version} is empty.`);
   return section;
 }
 
@@ -99,15 +83,7 @@ const changelogLine = compareUrl
   ? `> **Changelog:** read the [matching entry](${changelogUrl}) or browse the [full compare](${compareUrl}).`
   : `> **Changelog:** read the [matching entry](${changelogUrl}).`;
 
-const lines = [
-  '> [!TIP]',
-  changelogLine,
-];
-
-lines.push('');
-lines.push(sectionBody);
-lines.push('');
-
+const lines = ['> [!TIP]', changelogLine, '', sectionBody, ''];
 const output = `${lines.join('\n')}\n`;
 
 if (outputPath) {

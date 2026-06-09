@@ -1,34 +1,39 @@
 services:
-  xrdb:
-    container_name: xrdb
-    image: ghcr.io/ibbylabs/xrdb:${XRDB_IMAGE_TAG:-latest}
-    restart: unless-stopped
-    env_file:
-      - .env
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: xrdb-api:dev
+    container_name: xrdb-api
     environment:
-      NODE_ENV: ${NODE_ENV:-production}
-      PORT: 3000
-      HOSTNAME: 0.0.0.0
-      XRDB_PREVIEW_ORIGIN: ${XRDB_PREVIEW_ORIGIN:-}
-      PREVIEW_INTERNAL_ORIGIN: ${PREVIEW_INTERNAL_ORIGIN:-http://127.0.0.1:3000}
-      HTTP_PROXY: ${HTTP_PROXY:-}
-      HTTPS_PROXY: ${HTTPS_PROXY:-}
-    expose:
-      - 3000
+      XRDB_ADDR: ":8787"
+      XRDB_VERSION: "dev"
+      XRDB_DB: "/data/xrdb.db"
+      XRDB_CACHE_DIR: "/data/cache"
+    ports:
+      - "8787:8787"
     volumes:
-      - ${DOCKER_DATA_DIR:-./data}/xrdb:/app/data
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.xrdb.rule=Host(`${XRDB_HOSTNAME?}`)"
-      - "traefik.http.routers.xrdb.entrypoints=${XRDB_TRAEFIK_ENTRYPOINTS:-websecure}"
-      - "traefik.http.routers.xrdb.tls.certresolver=${XRDB_TRAEFIK_CERTRESOLVER:-letsencrypt}"
-      - "traefik.http.services.xrdb.loadbalancer.server.port=3000"
-      # - "traefik.http.routers.xrdb.middlewares=authelia@docker"
-    profiles:
-      - xrdb
-      - all
+      - xrdb-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8787/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
-networks:
-  default:
-    name: ${DOCKER_NETWORK:-aio_default}
-    external: ${DOCKER_NETWORK_EXTERNAL:-true}
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    image: xrdb-web:dev
+    container_name: xrdb-web
+    environment:
+      XRDB_API_BASE_URL: "http://api:8787"
+    ports:
+      - "3001:3001"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  xrdb-data:
