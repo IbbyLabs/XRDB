@@ -61,7 +61,9 @@ func init() {
 		img := image.NewNRGBA(image.Rect(0, 0, dim.Width, dim.Height))
 		draw.Draw(img, img.Bounds(), &image.Uniform{C: c}, image.Point{}, draw.Src)
 		var buf bytes.Buffer
-		_ = png.Encode(&buf, img)
+		if err := png.Encode(&buf, img); err != nil {
+			panic("render: failed to encode placeholder PNG: " + err.Error())
+		}
 		placeholderPNGs[t] = buf.Bytes()
 	}
 }

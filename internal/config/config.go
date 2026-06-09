@@ -80,7 +80,7 @@ func Load() Config {
 		CacheTTL:      cacheTTL,
 		TMDBAPIKey:    os.Getenv("XRDB_TMDB_API_KEY"),
 		TMDBReadToken: os.Getenv("XRDB_TMDB_READ_TOKEN"),
-		MDBListAPIKey: os.Getenv("MDBLIST_API_KEY"),
+		MDBListAPIKey: os.Getenv("XRDB_MDBLIST_API_KEY"),
 		OMDBAPIKey:    os.Getenv("XRDB_OMDB_API_KEY"),
 		FanartAPIKey:  os.Getenv("XRDB_FANART_API_KEY"),
 		TraktClientID:  os.Getenv("XRDB_TRAKT_CLIENT_ID"),

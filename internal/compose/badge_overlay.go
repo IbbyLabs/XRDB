@@ -198,8 +198,8 @@ func shortProviderName(name string) string {
 	case "Paramount Plus", "Paramount+":
 		return "Paramount+"
 	default:
-		if len(name) > 12 {
-			return name[:12]
+		if len([]rune(name)) > 12 {
+			return string([]rune(name)[:12])
 		}
 		return name
 	}

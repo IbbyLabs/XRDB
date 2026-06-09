@@ -141,7 +141,7 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store) {
 				return
 			}
 		}
-		safeID := strings.NewReplacer(`"`, "_", "\n", "_", "\r", "_").Replace(id)
+		safeID := strings.NewReplacer(`"`, "_", "\n", "_", "\r", "_", `\`, "_", ";", "_").Replace(id)
 		env := profile.ExportEnvelope{Version: 1, Profiles: []profile.Profile{*p}}
 		w.Header().Set("Content-Disposition", `attachment; filename="xrdb-profile-`+safeID+`.json"`)
 		writeJSON(w, http.StatusOK, env)
@@ -179,7 +179,7 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store) {
 					res.Skipped++
 					continue
 				}
-				res.Errors = append(res.Errors, p.ID+": "+err.Error())
+				res.Errors = append(res.Errors, p.ID+": failed to save")
 				continue
 			}
 			res.Imported++
