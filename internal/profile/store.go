@@ -8,21 +8,26 @@ import (
 	"time"
 
 	_ "modernc.org/sqlite"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const schemaVersion = 1
 
 // Profile is the canonical profile record.
 type Profile struct {
-	ID        string          `json:"id"`
-	Name      string          `json:"name,omitempty"`
-	Type      string          `json:"type"`
-	UUID      string          `json:"uuid,omitempty"`
-	Config    json.RawMessage `json:"config"`
-	Version   int             `json:"version"`
-	CreatedAt string          `json:"createdAt"`
-	UpdatedAt string          `json:"updatedAt"`
+	ID           string          `json:"id"`
+	Name         string          `json:"name,omitempty"`
+	Type         string          `json:"type"`
+	UUID         string          `json:"uuid,omitempty"`
+	Config       json.RawMessage `json:"config"`
+	Version      int             `json:"version"`
+	CreatedAt    string          `json:"createdAt"`
+	UpdatedAt    string          `json:"updatedAt"`
+	PasswordHash string          `json:"-"` // bcrypt hash; empty = no password
 }
+
+// ErrWrongPassword is returned when a password-protected profile is accessed with an incorrect password.
+var ErrWrongPassword = errors.New("wrong password")
 
 // ErrNotFound is returned when a requested profile does not exist.
 var ErrNotFound = errors.New("profile not found")
@@ -57,17 +62,23 @@ func (s *Store) Close() error {
 func applySchema(db *sql.DB) error {
 	_, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS profiles (
-			id         TEXT    NOT NULL PRIMARY KEY,
-			name       TEXT    NOT NULL DEFAULT '',
-			type       TEXT    NOT NULL,
-			uuid       TEXT    NOT NULL DEFAULT '',
-			config     TEXT    NOT NULL DEFAULT '{}',
-			version    INTEGER NOT NULL DEFAULT 1,
-			created_at TEXT    NOT NULL,
-			updated_at TEXT    NOT NULL
+			id            TEXT    NOT NULL PRIMARY KEY,
+			name          TEXT    NOT NULL DEFAULT '',
+			type          TEXT    NOT NULL,
+			uuid          TEXT    NOT NULL DEFAULT '',
+			config        TEXT    NOT NULL DEFAULT '{}',
+			version       INTEGER NOT NULL DEFAULT 1,
+			created_at    TEXT    NOT NULL,
+			updated_at    TEXT    NOT NULL,
+			password_hash TEXT    NOT NULL DEFAULT ''
 		) STRICT;
 	`)
-	return err
+	if err != nil {
+		return err
+	}
+	// Migrate existing databases that don't have the password_hash column yet.
+	_, _ = db.Exec(`ALTER TABLE profiles ADD COLUMN password_hash TEXT NOT NULL DEFAULT ''`)
+	return nil
 }
 
 // Save inserts a new profile. Returns ErrConflict if the ID already exists.
@@ -88,9 +99,9 @@ func (s *Store) Save(p *Profile) error {
 	p.UpdatedAt = now
 
 	_, err = s.db.Exec(
-		`INSERT INTO profiles (id, name, type, uuid, config, version, created_at, updated_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-		p.ID, p.Name, p.Type, p.UUID, string(cfg), p.Version, p.CreatedAt, p.UpdatedAt,
+		`INSERT INTO profiles (id, name, type, uuid, config, version, created_at, updated_at, password_hash)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		p.ID, p.Name, p.Type, p.UUID, string(cfg), p.Version, p.CreatedAt, p.UpdatedAt, p.PasswordHash,
 	)
 	if err != nil {
 		if isConflict(err) {
@@ -104,10 +115,61 @@ func (s *Store) Save(p *Profile) error {
 // Get retrieves a profile by ID. Returns ErrNotFound if it does not exist.
 func (s *Store) Get(id string) (*Profile, error) {
 	row := s.db.QueryRow(
-		`SELECT id, name, type, uuid, config, version, created_at, updated_at
+		`SELECT id, name, type, uuid, config, version, created_at, updated_at, password_hash
 		 FROM profiles WHERE id = ?`, id,
 	)
 	return scanProfile(row)
+}
+
+// HasPassword reports whether the profile with the given ID has a password set.
+func (s *Store) HasPassword(id string) (bool, error) {
+	p, err := s.Get(id)
+	if err != nil {
+		return false, err
+	}
+	return p.PasswordHash != "", nil
+}
+
+// SetPassword hashes and stores a password for a profile.
+// Pass an empty string to clear the password.
+func (s *Store) SetPassword(id, password string) error {
+	var hash string
+	if password != "" {
+		b, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			return fmt.Errorf("hash password: %w", err)
+		}
+		hash = string(b)
+	}
+	res, err := s.db.Exec(
+		`UPDATE profiles SET password_hash = ?, updated_at = ? WHERE id = ?`,
+		hash, time.Now().UTC().Format(time.RFC3339Nano), id,
+	)
+	if err != nil {
+		return fmt.Errorf("set password: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
+// CheckPassword verifies a plaintext password against the stored hash.
+// Returns nil on success, ErrWrongPassword on mismatch, ErrNotFound if
+// the profile doesn't exist, or nil if the profile has no password set.
+func (s *Store) CheckPassword(id, password string) error {
+	p, err := s.Get(id)
+	if err != nil {
+		return err
+	}
+	if p.PasswordHash == "" {
+		return nil
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(p.PasswordHash), []byte(password)); err != nil {
+		return ErrWrongPassword
+	}
+	return nil
 }
 
 // Update replaces config, name, uuid, and updated_at for an existing profile.
@@ -141,6 +203,19 @@ func (s *Store) Update(p *Profile) error {
 	return nil
 }
 
+// Delete removes a profile by ID. Returns ErrNotFound if it does not exist.
+func (s *Store) Delete(id string) error {
+	res, err := s.db.Exec(`DELETE FROM profiles WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("delete profile: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 // ExportEnvelope is the canonical export format for one or more profiles.
 type ExportEnvelope struct {
 	Version  int       `json:"version"`
@@ -150,7 +225,7 @@ type ExportEnvelope struct {
 // List returns all profiles ordered by created_at ascending.
 func (s *Store) List() ([]*Profile, error) {
 	rows, err := s.db.Query(
-		`SELECT id, name, type, uuid, config, version, created_at, updated_at
+		`SELECT id, name, type, uuid, config, version, created_at, updated_at, password_hash
 		 FROM profiles ORDER BY created_at ASC`,
 	)
 	if err != nil {
@@ -161,7 +236,7 @@ func (s *Store) List() ([]*Profile, error) {
 	for rows.Next() {
 		var p Profile
 		var cfgStr string
-		if err := rows.Scan(&p.ID, &p.Name, &p.Type, &p.UUID, &cfgStr, &p.Version, &p.CreatedAt, &p.UpdatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.Name, &p.Type, &p.UUID, &cfgStr, &p.Version, &p.CreatedAt, &p.UpdatedAt, &p.PasswordHash); err != nil {
 			return nil, fmt.Errorf("scan profile: %w", err)
 		}
 		p.Config = json.RawMessage(cfgStr)
@@ -173,7 +248,7 @@ func (s *Store) List() ([]*Profile, error) {
 func scanProfile(row *sql.Row) (*Profile, error) {
 	var p Profile
 	var cfgStr string
-	err := row.Scan(&p.ID, &p.Name, &p.Type, &p.UUID, &cfgStr, &p.Version, &p.CreatedAt, &p.UpdatedAt)
+	err := row.Scan(&p.ID, &p.Name, &p.Type, &p.UUID, &cfgStr, &p.Version, &p.CreatedAt, &p.UpdatedAt, &p.PasswordHash)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}

@@ -6,6 +6,8 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+
+	"xrdb_rewrite/internal/config"
 )
 
 type renderRequestFixture struct {
@@ -40,7 +42,7 @@ func (w *noopResponseWriter) reset() {
 }
 
 func BenchmarkHealthzHandler(b *testing.B) {
-	h := NewHandler("bench", nil, nil, nil)
+	h := NewHandler("bench", nil, nil, nil, nil, config.Config{})
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 
 	b.ReportAllocs()
@@ -55,7 +57,7 @@ func BenchmarkHealthzHandler(b *testing.B) {
 }
 
 func BenchmarkRenderPlaceholderHandler(b *testing.B) {
-	h := NewHandler("bench", nil, nil, nil)
+	h := NewHandler("bench", nil, nil, nil, nil, config.Config{})
 	req := httptest.NewRequest(http.MethodGet, "/render-placeholder?type=poster&id=tt0816692&config=compact&uuid=abc123", nil)
 
 	b.ReportAllocs()
@@ -71,7 +73,7 @@ func BenchmarkRenderPlaceholderHandler(b *testing.B) {
 
 func BenchmarkRenderPlaceholderHandlerFromFixtures(b *testing.B) {
 	fixtures := loadRenderRequestFixtures(b)
-	h := NewHandler("bench", nil, nil, nil)
+	h := NewHandler("bench", nil, nil, nil, nil, config.Config{})
 	requests := make([]*http.Request, 0, len(fixtures))
 	for _, f := range fixtures {
 		path := "/render-placeholder?type=" + f.Type + "&id=" + f.ID + "&config=" + f.Config + "&uuid=" + f.UUID
@@ -91,7 +93,7 @@ func BenchmarkRenderPlaceholderHandlerFromFixtures(b *testing.B) {
 }
 
 func BenchmarkRenderPlaceholderHandlerNoopWriter(b *testing.B) {
-	h := NewHandler("bench", nil, nil, nil)
+	h := NewHandler("bench", nil, nil, nil, nil, config.Config{})
 	req := httptest.NewRequest(http.MethodGet, "/render-placeholder?type=poster&id=tt0816692&config=compact&uuid=abc123", nil)
 	w := newNoopResponseWriter()
 
@@ -107,7 +109,7 @@ func BenchmarkRenderPlaceholderHandlerNoopWriter(b *testing.B) {
 }
 
 func BenchmarkRenderPlaceholderHandlerWithSimulation(b *testing.B) {
-	h := NewHandler("bench", nil, nil, nil)
+	h := NewHandler("bench", nil, nil, nil, nil, config.Config{})
 	req := httptest.NewRequest(http.MethodGet, "/render-placeholder?type=poster&id=tt0816692&config=compact&uuid=abc123&simulate=1", nil)
 
 	b.ReportAllocs()
@@ -122,7 +124,7 @@ func BenchmarkRenderPlaceholderHandlerWithSimulation(b *testing.B) {
 }
 
 func BenchmarkRenderPlaceholderHandlerWithSimulationLight(b *testing.B) {
-	h := NewHandler("bench", nil, nil, nil)
+	h := NewHandler("bench", nil, nil, nil, nil, config.Config{})
 	req := httptest.NewRequest(http.MethodGet, "/render-placeholder?type=poster&id=tt0816692&config=compact&uuid=abc123&simulate=light", nil)
 
 	b.ReportAllocs()
@@ -137,7 +139,7 @@ func BenchmarkRenderPlaceholderHandlerWithSimulationLight(b *testing.B) {
 }
 
 func BenchmarkRenderPlaceholderHandlerWithSimulationMedium(b *testing.B) {
-	h := NewHandler("bench", nil, nil, nil)
+	h := NewHandler("bench", nil, nil, nil, nil, config.Config{})
 	req := httptest.NewRequest(http.MethodGet, "/render-placeholder?type=poster&id=tt0816692&config=compact&uuid=abc123&simulate=medium", nil)
 
 	b.ReportAllocs()
@@ -152,7 +154,7 @@ func BenchmarkRenderPlaceholderHandlerWithSimulationMedium(b *testing.B) {
 }
 
 func BenchmarkRenderPlaceholderHandlerWithSimulationHeavy(b *testing.B) {
-	h := NewHandler("bench", nil, nil, nil)
+	h := NewHandler("bench", nil, nil, nil, nil, config.Config{})
 	req := httptest.NewRequest(http.MethodGet, "/render-placeholder?type=poster&id=tt0816692&config=compact&uuid=abc123&simulate=heavy", nil)
 
 	b.ReportAllocs()
@@ -167,7 +169,7 @@ func BenchmarkRenderPlaceholderHandlerWithSimulationHeavy(b *testing.B) {
 }
 
 func BenchmarkRenderImagePoster(b *testing.B) {
-	h := NewHandler("bench", nil, nil, nil)
+	h := NewHandler("bench", nil, nil, nil, nil, config.Config{})
 	req := httptest.NewRequest(http.MethodGet, "/poster/tt0816692?config=compact&uuid=abc123", nil)
 	w := newNoopResponseWriter()
 	b.ReportAllocs()
@@ -182,7 +184,7 @@ func BenchmarkRenderImagePoster(b *testing.B) {
 }
 
 func BenchmarkRenderImageBackdrop(b *testing.B) {
-	h := NewHandler("bench", nil, nil, nil)
+	h := NewHandler("bench", nil, nil, nil, nil, config.Config{})
 	req := httptest.NewRequest(http.MethodGet, "/backdrop/tt0816692?config=compact&uuid=abc123", nil)
 	w := newNoopResponseWriter()
 	b.ReportAllocs()
@@ -197,7 +199,7 @@ func BenchmarkRenderImageBackdrop(b *testing.B) {
 }
 
 func BenchmarkRenderImageThumbnail(b *testing.B) {
-	h := NewHandler("bench", nil, nil, nil)
+	h := NewHandler("bench", nil, nil, nil, nil, config.Config{})
 	req := httptest.NewRequest(http.MethodGet, "/thumbnail/tt0816692?config=compact&uuid=abc123", nil)
 	w := newNoopResponseWriter()
 	b.ReportAllocs()
@@ -212,7 +214,7 @@ func BenchmarkRenderImageThumbnail(b *testing.B) {
 }
 
 func BenchmarkRenderImageLogo(b *testing.B) {
-	h := NewHandler("bench", nil, nil, nil)
+	h := NewHandler("bench", nil, nil, nil, nil, config.Config{})
 	req := httptest.NewRequest(http.MethodGet, "/logo/tt0816692?config=compact&uuid=abc123", nil)
 	w := newNoopResponseWriter()
 	b.ReportAllocs()
@@ -228,7 +230,7 @@ func BenchmarkRenderImageLogo(b *testing.B) {
 
 func BenchmarkRenderImageFromFixtures(b *testing.B) {
 	fixtures := loadRenderRequestFixtures(b)
-	h := NewHandler("bench", nil, nil, nil)
+	h := NewHandler("bench", nil, nil, nil, nil, config.Config{})
 	requests := make([]*http.Request, 0, len(fixtures))
 	for _, f := range fixtures {
 		path := "/" + f.Type + "/" + f.ID + "?config=" + f.Config + "&uuid=" + f.UUID

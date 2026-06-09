@@ -1,21 +1,26 @@
 package server
 
 import (
+	"crypto/subtle"
 	"encoding/json"
-	"errors"
 	"io"
+	"io/fs"
 	"net/http"
 	"net/url"
+	"path"
 	"strconv"
 	"strings"
 	"time"
 
 	"xrdb_rewrite/internal/cache"
 	"xrdb_rewrite/internal/compose"
+	"xrdb_rewrite/internal/config"
 	"xrdb_rewrite/internal/imageconfig"
 	"xrdb_rewrite/internal/metrics"
 	"xrdb_rewrite/internal/profile"
 	"xrdb_rewrite/internal/render"
+	"xrdb_rewrite/internal/settings"
+	"xrdb_rewrite/internal/templates"
 )
 
 type statusResponse struct {
@@ -32,7 +37,9 @@ type renderPlaceholderResponse struct {
 	CacheKey string `json:"cacheKey"`
 }
 
-func NewHandler(version string, store *profile.Store, pipeline *compose.Pipeline, renderCache *cache.Cache) http.Handler {
+// NewHandler builds the HTTP mux. Pass a non-nil staticFS to serve an embedded
+// frontend (SPA) at the root; nil disables static file serving.
+func NewHandler(version string, store *profile.Store, settingsStore *settings.Store, pipeline *compose.Pipeline, renderCache *cache.Cache, cfg config.Config, staticFS ...fs.FS) http.Handler {
 	ms := metrics.New()
 	mux := http.NewServeMux()
 
@@ -52,38 +59,64 @@ func NewHandler(version string, store *profile.Store, pipeline *compose.Pipeline
 		writeJSON(w, http.StatusOK, statusResponse{Service: "xrdb-api", Status: "ready", Version: version})
 	})
 
-	mux.HandleFunc("/{type}/{id}", func(w http.ResponseWriter, r *http.Request) {
+	// Register each valid media type explicitly so SPA routes like /admin/{id}
+	// are not captured by a generic wildcard.
+	renderHandler := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			ms.Record(r.URL.Path, http.StatusMethodNotAllowed, latMs(start))
 			return
 		}
-		mediaType := r.PathValue("type")
-		id := r.PathValue("id")
-		if !render.IsValidMediaType(mediaType) {
-			http.Error(w, "invalid media type", http.StatusBadRequest)
-			ms.Record(r.URL.Path, http.StatusBadRequest, latMs(start))
-			return
+		// Extract the first path segment as media type (e.g. "poster" from "/poster/tt123").
+		mediaType := strings.TrimPrefix(r.URL.Path, "/")
+		if i := strings.Index(mediaType, "/"); i >= 0 {
+			mediaType = mediaType[:i]
 		}
+		id := r.PathValue("id")
 		raw := r.URL.RawQuery
 		configParam := queryValue(raw, "config", "default")
 		uuid := queryValue(raw, "uuid", "none")
 
+		// Enforce global API key if configured.
+		if cfg.APIKey != "" && !bearerMatches(r, cfg.APIKey) {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			ms.Record(r.URL.Path, http.StatusUnauthorized, latMs(start))
+			return
+		}
+
 		// Resolve profile config if a profile ID is provided.
 		// profileLoaded tracks whether we loaded a real profile (affects cache key).
-		cfg := imageconfig.Default()
+		imgCfg := imageconfig.Default()
 		profileLoaded := false
-		if store != nil && configParam != "default" {
-			if p, err := store.Get(configParam); err == nil {
-				cfg = imageconfig.Parse(p.Config)
+		if configParam != "default" {
+			if len(configParam) > 0 && configParam[0] == '{' {
+				// Inline JSON config — used by the live preview without a saved profile.
+				imgCfg = imageconfig.Parse(json.RawMessage(configParam))
 				profileLoaded = true
+			} else if store != nil {
+				if p, err := store.Get(configParam); err == nil {
+					// Profile password check.
+					if p.PasswordHash != "" {
+						pw := r.Header.Get("X-Profile-Password")
+						if pw == "" {
+							pw = queryValue(raw, "password", "")
+						}
+						if err := store.CheckPassword(configParam, pw); err != nil {
+							http.Error(w, "profile password required", http.StatusUnauthorized)
+							ms.Record(r.URL.Path, http.StatusUnauthorized, latMs(start))
+							return
+						}
+					}
+					imgCfg = imageconfig.Parse(p.Config)
+					profileLoaded = true
+				}
 			}
 		}
 
 		// Include raw configParam as a tiebreaker when no profile was loaded,
 		// so different raw config strings produce different cache keys.
-		cfgKeyInput := imageconfig.CacheKey(cfg)
+		cfgKeyInput := imageconfig.CacheKey(imgCfg)
 		if !profileLoaded {
 			cfgKeyInput = cfgKeyInput + ":" + configParam
 		}
@@ -97,21 +130,23 @@ func NewHandler(version string, store *profile.Store, pipeline *compose.Pipeline
 			}
 		}
 		if !fromCache {
+			var renderResult *compose.Result
 			if pipeline != nil {
-				result, _ := pipeline.Render(r.Context(), compose.Request{
+				renderResult, _ = pipeline.Render(r.Context(), compose.Request{
 					MediaType: mediaType,
 					MediaID:   id,
-					Config:    cfg,
+					Config:    imgCfg,
 				})
-				if result != nil {
-					pngBytes = result.ImageBytes
+				if renderResult != nil {
+					pngBytes = renderResult.ImageBytes
 				}
 			}
 			if len(pngBytes) == 0 {
 				pngBytes = render.PlaceholderPNG(mediaType)
 			}
 			if renderCache != nil {
-				_ = renderCache.Set(cacheKey, pngBytes)
+				ttl := effectiveTTL(renderResult, cfg.ProviderTTLs)
+				_ = renderCache.SetWithTTL(cacheKey, pngBytes, ttl)
 			}
 		}
 		if fromCache {
@@ -122,7 +157,10 @@ func NewHandler(version string, store *profile.Store, pipeline *compose.Pipeline
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write(pngBytes)
 		ms.Record("/"+mediaType, http.StatusOK, latMs(start))
-	})
+	}
+	for _, mt := range []string{"poster", "backdrop", "thumbnail", "logo"} {
+		mux.HandleFunc("/"+mt+"/{id}", renderHandler)
+	}
 
 	mux.HandleFunc("/render-placeholder", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -144,192 +182,146 @@ func NewHandler(version string, store *profile.Store, pipeline *compose.Pipeline
 		writeRenderPlaceholderJSON(w, mediaType, id, key)
 	})
 
-	mux.HandleFunc("/profile", func(w http.ResponseWriter, r *http.Request) {
-		if store == nil {
-			http.Error(w, "profile store unavailable", http.StatusServiceUnavailable)
-			return
-		}
-		switch r.Method {
-		case http.MethodGet:
-			profiles, err := store.List()
-			if err != nil {
-				http.Error(w, "internal error", http.StatusInternalServerError)
-				return
-			}
-			if profiles == nil {
-				profiles = []*profile.Profile{}
-			}
-			writeJSON(w, http.StatusOK, profiles)
-		case http.MethodPost:
-			body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
-			if err != nil {
-				http.Error(w, "read body", http.StatusBadRequest)
-				return
-			}
-			var p profile.Profile
-			if err := json.Unmarshal(body, &p); err != nil {
-				http.Error(w, "invalid JSON", http.StatusBadRequest)
-				return
-			}
-			if err := store.Save(&p); err != nil {
-				if errors.Is(err, profile.ErrConflict) {
-					http.Error(w, "profile already exists", http.StatusConflict)
-					return
-				}
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			writeJSON(w, http.StatusCreated, &p)
-		default:
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		}
-	})
+	registerProfileRoutes(mux, store)
+	registerAdminRoutes(mux, ms, cfg, settingsStore, pipeline, renderCache)
 
-	mux.HandleFunc("/profile/{id}", func(w http.ResponseWriter, r *http.Request) {
-		if store == nil {
-			http.Error(w, "profile store unavailable", http.StatusServiceUnavailable)
-			return
-		}
-		id := r.PathValue("id")
-		switch r.Method {
-		case http.MethodGet:
-			p, err := store.Get(id)
-			if err != nil {
-				if errors.Is(err, profile.ErrNotFound) {
-					http.Error(w, "not found", http.StatusNotFound)
-					return
-				}
-				http.Error(w, "internal error", http.StatusInternalServerError)
-				return
-			}
-			writeJSON(w, http.StatusOK, p)
-		case http.MethodPut:
-			body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
-			if err != nil {
-				http.Error(w, "read body", http.StatusBadRequest)
-				return
-			}
-			var p profile.Profile
-			if err := json.Unmarshal(body, &p); err != nil {
-				http.Error(w, "invalid JSON", http.StatusBadRequest)
-				return
-			}
-			p.ID = id
-			if err := store.Update(&p); err != nil {
-				if errors.Is(err, profile.ErrNotFound) {
-					http.Error(w, "not found", http.StatusNotFound)
-					return
-				}
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			updated, err := store.Get(id)
-			if err != nil {
-				http.Error(w, "internal error", http.StatusInternalServerError)
-				return
-			}
-			writeJSON(w, http.StatusOK, updated)
-		default:
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		}
-	})
-
-	mux.HandleFunc("/profile/{id}/export", func(w http.ResponseWriter, r *http.Request) {
-		if store == nil {
-			http.Error(w, "profile store unavailable", http.StatusServiceUnavailable)
-			return
-		}
+	// Templates: GET /api/templates — list all built-in templates.
+	// GET /api/templates/{id} — single template by ID.
+	mux.HandleFunc("/api/templates", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		id := r.PathValue("id")
-		p, err := store.Get(id)
-		if err != nil {
-			if errors.Is(err, profile.ErrNotFound) {
-				http.Error(w, "not found", http.StatusNotFound)
-				return
-			}
-			http.Error(w, "internal error", http.StatusInternalServerError)
-			return
-		}
-		env := profile.ExportEnvelope{Version: 1, Profiles: []profile.Profile{*p}}
-		w.Header().Set("Content-Disposition", `attachment; filename="xrdb-profile-`+id+`.json"`)
-		writeJSON(w, http.StatusOK, env)
+		writeJSON(w, http.StatusOK, templates.All())
 	})
-
-	mux.HandleFunc("/profile/import", func(w http.ResponseWriter, r *http.Request) {
-		if store == nil {
-			http.Error(w, "profile store unavailable", http.StatusServiceUnavailable)
-			return
-		}
-		if r.Method != http.MethodPost {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		body, err := io.ReadAll(io.LimitReader(r.Body, 4<<20))
-		if err != nil {
-			http.Error(w, "read body", http.StatusBadRequest)
-			return
-		}
-		var env profile.ExportEnvelope
-		if err := json.Unmarshal(body, &env); err != nil {
-			http.Error(w, "invalid JSON", http.StatusBadRequest)
-			return
-		}
-		type importResult struct {
-			Imported int      `json:"imported"`
-			Skipped  int      `json:"skipped"`
-			Errors   []string `json:"errors,omitempty"`
-		}
-		var res importResult
-		for i := range env.Profiles {
-			p := &env.Profiles[i]
-			if err := store.Save(p); err != nil {
-				if errors.Is(err, profile.ErrConflict) {
-					res.Skipped++
-					continue
-				}
-				res.Errors = append(res.Errors, p.ID+": "+err.Error())
-				continue
-			}
-			res.Imported++
-		}
-		status := http.StatusOK
-		if res.Imported == 0 && len(res.Errors) > 0 {
-			status = http.StatusUnprocessableEntity
-		}
-		writeJSON(w, status, res)
-	})
-
-	mux.HandleFunc("/api/admin/metrics", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/templates/", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		writeJSON(w, http.StatusOK, ms.Snapshot())
+		id := strings.TrimPrefix(r.URL.Path, "/api/templates/")
+		if id == "" {
+			writeJSON(w, http.StatusOK, templates.All())
+			return
+		}
+		tmpl, ok := templates.ByID(id)
+		if !ok {
+			http.Error(w, "template not found", http.StatusNotFound)
+			return
+		}
+		writeJSON(w, http.StatusOK, tmpl)
 	})
 
-	mux.HandleFunc("/api/admin/cache", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
-		}
-		if renderCache == nil {
-			type cacheInfo struct {
-				Status string `json:"status"`
-			}
-			writeJSON(w, http.StatusOK, cacheInfo{Status: "cache not configured"})
-			return
-		}
-		writeJSON(w, http.StatusOK, renderCache.Stats())
-	})
+	// ── Stremio addon endpoints ──────────────────────────────────────────────────
+	// XRDB acts as a Stremio resource addon that serves enhanced artwork.
+	// The addon only provides "meta" resources (no catalog, no streams).
+	// Stremio consumers point their addon URL at /stremio/.
+	//
+	// GET /stremio/manifest.json
+	// GET /stremio/meta/{type}/{id}.json
+	registerStremioAddon(mux, cfg)
+
+	// Static file handler — registered last so API routes take precedence.
+	if len(staticFS) > 0 && staticFS[0] != nil {
+		mux.HandleFunc("/", staticFileHandler(staticFS[0]))
+	}
 
 	return mux
 }
 
+// staticFileHandler serves an embedded SPA using a recording wrapper that
+// intercepts 404s and applies Next.js-style resolution:
+//  1. /_next/... and files with extensions → exact match or 404.html
+//  2. /admin, /configurator → {slug}.html
+//  3. Unknown extension-less paths → index.html (SPA fallback)
+func staticFileHandler(fsys fs.FS) http.HandlerFunc {
+	fileServer := http.FileServerFS(fsys)
+
+	serveContent := func(w http.ResponseWriter, r *http.Request, name string) {
+		f, err := fsys.Open(name)
+		if err != nil {
+			return
+		}
+		st, err := f.Stat()
+		f.Close()
+		if err != nil {
+			return
+		}
+		content, err := fsys.Open(name)
+		if err != nil {
+			return
+		}
+		rc, ok := content.(io.ReadSeekCloser)
+		if !ok {
+			content.Close()
+			return
+		}
+		defer rc.Close()
+		w.Header().Set("Content-Type", mime(name))
+		http.ServeContent(w, r, st.Name(), st.ModTime(), rc)
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		p := strings.TrimPrefix(path.Clean(r.URL.Path), "/")
+
+		// Pass asset requests (contain a dot) directly to the file server.
+		if strings.Contains(p, ".") {
+			fileServer.ServeHTTP(w, r)
+			return
+		}
+
+		// Root.
+		if p == "" || p == "." {
+			serveContent(w, r, "index.html")
+			return
+		}
+
+		// Try {slug}.html (e.g. "admin" → "admin.html").
+		if f, err := fsys.Open(p + ".html"); err == nil {
+			f.Close()
+			serveContent(w, r, p+".html")
+			return
+		}
+
+		// SPA fallback for unknown routes.
+		serveContent(w, r, "index.html")
+	}
+}
+
+func mime(name string) string {
+	switch {
+	case strings.HasSuffix(name, ".html"):
+		return "text/html; charset=utf-8"
+	case strings.HasSuffix(name, ".js"):
+		return "application/javascript"
+	case strings.HasSuffix(name, ".css"):
+		return "text/css"
+	case strings.HasSuffix(name, ".json"):
+		return "application/json"
+	case strings.HasSuffix(name, ".svg"):
+		return "image/svg+xml"
+	case strings.HasSuffix(name, ".woff2"):
+		return "font/woff2"
+	case strings.HasSuffix(name, ".woff"):
+		return "font/woff"
+	case strings.HasSuffix(name, ".png"):
+		return "image/png"
+	case strings.HasSuffix(name, ".ico"):
+		return "image/x-icon"
+	default:
+		return "application/octet-stream"
+	}
+}
+
 func latMs(start time.Time) float64 {
 	return float64(time.Since(start).Microseconds()) / 1000.0
+}
+
+// bearerMatches checks that the request carries "Authorization: Bearer <want>".
+// Uses constant-time comparison to prevent timing attacks.
+func bearerMatches(r *http.Request, want string) bool {
+	got := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+	return subtle.ConstantTimeCompare([]byte(got), []byte(want)) == 1
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload any) {
@@ -441,3 +433,4 @@ func simulationLevel(value string) (string, bool) {
 		return "", false
 	}
 }
+

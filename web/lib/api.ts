@@ -130,3 +130,61 @@ export async function fetchCacheStats(): Promise<CacheStats> {
   if (!res.ok) throw new Error(`cache stats failed: ${res.status}`);
   return res.json() as Promise<CacheStats>;
 }
+
+// ── Settings (integrations) ────────────────────────────────────────────────
+
+export interface SettingStatus {
+  key: string;
+  set: boolean;
+}
+
+export async function fetchSettings(adminKey?: string): Promise<SettingStatus[]> {
+  const headers: Record<string, string> = {};
+  if (adminKey) headers['Authorization'] = `Bearer ${adminKey}`;
+  const res = await fetch(`${base()}/api/admin/settings`, { headers });
+  if (!res.ok) throw new Error(`settings fetch failed: ${res.status}`);
+  return res.json() as Promise<SettingStatus[]>;
+}
+
+export async function setSetting(key: string, value: string, adminKey?: string): Promise<void> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (adminKey) headers['Authorization'] = `Bearer ${adminKey}`;
+  const res = await fetch(`${base()}/api/admin/settings`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify({ key, value }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `set setting failed: ${res.status}`);
+  }
+}
+
+export async function deleteSetting(key: string, adminKey?: string): Promise<void> {
+  const headers: Record<string, string> = {};
+  if (adminKey) headers['Authorization'] = `Bearer ${adminKey}`;
+  const res = await fetch(`${base()}/api/admin/settings?key=${encodeURIComponent(key)}`, {
+    method: 'DELETE',
+    headers,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || `delete setting failed: ${res.status}`);
+  }
+}
+
+// ── Templates ──────────────────────────────────────────────────────────────
+
+export interface Template {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  config: Record<string, unknown>;
+}
+
+export async function fetchTemplates(): Promise<Template[]> {
+  const res = await fetch(`${base()}/api/templates`);
+  if (!res.ok) throw new Error(`templates fetch failed: ${res.status}`);
+  return res.json() as Promise<Template[]>;
+}

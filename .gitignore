@@ -6,7 +6,9 @@ fixtures/parity/
 
 # Build artifacts
 web/.next/
+web/out/
 web/node_modules/
+internal/ui/dist/
 web/test-results/
 web/playwright-report/
 web/.playwright/

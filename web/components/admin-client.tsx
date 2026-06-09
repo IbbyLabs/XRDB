@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { Activity, HardDrive, RefreshCw, AlertCircle } from 'lucide-react';
+import { Activity, HardDrive, RefreshCw, AlertCircle, Flame } from 'lucide-react';
 import { fetchMetrics, fetchCacheStats, type MetricsSnapshot, type CacheStats } from '@/lib/api';
 
 function fmt(n: number, decimals = 1): string {
@@ -102,11 +102,105 @@ function CachePanel({ data }: { data: CacheStats }) {
   );
 }
 
-type Tab = 'metrics' | 'cache';
+// ── Warm panel ────────────────────────────────────────────────────────────────
+
+function WarmPanel() {
+  const [ids, setIds]           = useState('');
+  const [mediaType, setType]    = useState('poster');
+  const [submitting, setSub]    = useState(false);
+  const [result, setResult]     = useState<string | null>(null);
+  const [error, setError]       = useState<string | null>(null);
+
+  const handleWarm = async () => {
+    const list = ids.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+    if (list.length === 0) { setError('Enter at least one ID'); return; }
+    setSub(true); setError(null); setResult(null);
+    try {
+      const res = await fetch('/api/admin/warm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: list, mediaType }),
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `HTTP ${res.status}`);
+      }
+      const data = await res.json() as { accepted: number; mediaType: string };
+      setResult(`Warming ${data.accepted} ${data.mediaType}(s) in background.`);
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setSub(false);
+    }
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: '640px' }}>
+      <p className="xrdb-section-sub" style={{ margin: 0 }}>
+        Pre-render posters into the cache. Accepts IMDb IDs, TMDB IDs, or any ID supported by your configured providers. One per line or comma-separated.
+      </p>
+
+      <div>
+        <label className="xrdb-label" htmlFor="warm-ids">Media IDs</label>
+        <textarea
+          id="warm-ids"
+          className="xrdb-input"
+          rows={6}
+          value={ids}
+          onChange={e => { setIds(e.target.value); setError(null); }}
+          placeholder={"tt0111161\ntt0468569\ntt0816692"}
+          style={{ fontFamily: 'var(--font-mono, monospace)', resize: 'vertical', marginTop: '0.35rem' }}
+        />
+      </div>
+
+      <div>
+        <label className="xrdb-label" htmlFor="warm-type">Media type</label>
+        <select
+          id="warm-type"
+          className="xrdb-input"
+          value={mediaType}
+          onChange={e => setType(e.target.value)}
+          style={{ marginTop: '0.35rem' }}
+        >
+          <option value="poster">Poster</option>
+          <option value="backdrop">Backdrop</option>
+          <option value="thumbnail">Thumbnail</option>
+          <option value="logo">Logo</option>
+        </select>
+      </div>
+
+      {error && (
+        <div className="xrdb-notice xrdb-notice-error" role="alert">
+          <AlertCircle size={14} aria-hidden />
+          <span>{error}</span>
+        </div>
+      )}
+      {result && (
+        <div className="xrdb-notice xrdb-notice-success" role="status">
+          <Flame size={14} aria-hidden />
+          <span>{result}</span>
+        </div>
+      )}
+
+      <div>
+        <button
+          className="xrdb-btn xrdb-btn-primary"
+          onClick={handleWarm}
+          disabled={submitting || !ids.trim()}
+        >
+          {submitting ? 'Queuing…' : 'Warm cache'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+type Tab = 'metrics' | 'cache' | 'warm';
 
 const TABS: { id: Tab; label: string; icon: typeof Activity }[] = [
   { id: 'metrics', label: 'Metrics', icon: Activity },
   { id: 'cache',   label: 'Cache',   icon: HardDrive },
+  { id: 'warm',    label: 'Warm',    icon: Flame },
 ];
 
 export function AdminClient() {
@@ -117,6 +211,7 @@ export function AdminClient() {
   const [error, setError]     = useState<string | null>(null);
 
   const load = useCallback(async (t: Tab) => {
+    if (t === 'warm') return;
     setLoading(true);
     setError(null);
     try {
@@ -134,6 +229,7 @@ export function AdminClient() {
 
   const switchTab = (t: Tab) => {
     setTab(t);
+    if (t === 'warm') return;
     if ((t === 'metrics' && !metrics) || (t === 'cache' && !cache)) {
       void load(t);
     }
@@ -198,6 +294,7 @@ export function AdminClient() {
           )}
           {!loading && id === 'metrics' && metrics && <MetricsPanel data={metrics} />}
           {!loading && id === 'cache'   && cache   && <CachePanel   data={cache}   />}
+          {id === 'warm' && tab === 'warm' && <WarmPanel />}
         </div>
       ))}
     </div>

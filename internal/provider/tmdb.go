@@ -77,17 +77,47 @@ func (t *TMDB) resolveID(ctx context.Context, mediaType, id string) (string, str
 }
 
 func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string) (*MediaMeta, error) {
-	path := tmdbBaseURL + "/" + mediaType + "/" + id + "?append_to_response=images"
+	path := tmdbBaseURL + "/" + mediaType + "/" + id +
+		"?append_to_response=images,release_dates,content_ratings,watch%2Fproviders"
 	var result struct {
-		Title            string  `json:"title"`
-		Name             string  `json:"name"` // TV
-		Overview         string  `json:"overview"`
-		ReleaseDate      string  `json:"release_date"`
-		FirstAirDate     string  `json:"first_air_date"`
-		VoteAverage      float64 `json:"vote_average"`
-		VoteCount        int     `json:"vote_count"`
-		PosterPath       string  `json:"poster_path"`
-		BackdropPath     string  `json:"backdrop_path"`
+		Title        string  `json:"title"`
+		Name         string  `json:"name"` // TV
+		Overview     string  `json:"overview"`
+		ReleaseDate  string  `json:"release_date"`
+		FirstAirDate string  `json:"first_air_date"`
+		VoteAverage  float64 `json:"vote_average"`
+		VoteCount    int     `json:"vote_count"`
+		PosterPath   string  `json:"poster_path"`
+		BackdropPath string  `json:"backdrop_path"`
+		Genres       []struct {
+			Name string `json:"name"`
+		} `json:"genres"`
+		ReleaseDates struct {
+			Results []struct {
+				Iso3166 string `json:"iso_3166_1"`
+				Dates   []struct {
+					Certification string `json:"certification"`
+				} `json:"release_dates"`
+			} `json:"results"`
+		} `json:"release_dates"`
+		ContentRatings struct {
+			Results []struct {
+				Iso3166 string `json:"iso_3166_1"`
+				Rating  string `json:"rating"`
+			} `json:"results"`
+		} `json:"content_ratings"`
+		WatchProviders struct {
+			Results map[string]struct {
+				Flatrate []struct {
+					ProviderID   int    `json:"provider_id"`
+					ProviderName string `json:"provider_name"`
+				} `json:"flatrate"`
+				Rent []struct {
+					ProviderID   int    `json:"provider_id"`
+					ProviderName string `json:"provider_name"`
+				} `json:"rent"`
+			} `json:"results"`
+		} `json:"watch/providers"`
 	}
 	if err := t.get(ctx, path, &result); err != nil {
 		return nil, err
@@ -126,6 +156,61 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string) (*MediaM
 			Label:  fmt.Sprintf("%.1f", result.VoteAverage),
 		}}
 	}
+
+	// Genres
+	if len(result.Genres) > 0 {
+		genres := make([]string, 0, len(result.Genres))
+		for _, g := range result.Genres {
+			if g.Name != "" {
+				genres = append(genres, g.Name)
+			}
+		}
+		meta.Genres = genres
+	}
+
+	// Content rating — prefer US certification
+	for _, r := range result.ReleaseDates.Results {
+		if r.Iso3166 == "US" {
+			for _, d := range r.Dates {
+				if d.Certification != "" {
+					meta.ContentRating = d.Certification
+					break
+				}
+			}
+			break
+		}
+	}
+	// TV content ratings
+	if meta.ContentRating == "" {
+		for _, r := range result.ContentRatings.Results {
+			if r.Iso3166 == "US" && r.Rating != "" {
+				meta.ContentRating = r.Rating
+				break
+			}
+		}
+	}
+
+	// Watch providers — US flatrate first, then rent
+	if us, ok := result.WatchProviders.Results["US"]; ok {
+		seen := make(map[int]bool)
+		for _, p := range us.Flatrate {
+			if !seen[p.ProviderID] && p.ProviderName != "" {
+				seen[p.ProviderID] = true
+				meta.WatchProviders = append(meta.WatchProviders, WatchProvider{
+					ID: p.ProviderID, Name: p.ProviderName,
+				})
+			}
+		}
+		for _, p := range us.Rent {
+			if !seen[p.ProviderID] && p.ProviderName != "" {
+				seen[p.ProviderID] = true
+				meta.WatchProviders = append(meta.WatchProviders, WatchProvider{
+					ID: p.ProviderID, Name: p.ProviderName,
+				})
+			}
+		}
+	}
+
 	return meta, nil
 }
 

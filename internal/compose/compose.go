@@ -8,12 +8,14 @@ import (
 	"context"
 	"fmt"
 	"image"
-	"image/color"
 	"image/draw"
 	"image/jpeg"
 	"image/png"
 	"net/http"
+	"sync"
 	"time"
+
+	xdraw "golang.org/x/image/draw"
 
 	"xrdb_rewrite/internal/imageconfig"
 	"xrdb_rewrite/internal/provider"
@@ -29,10 +31,11 @@ type Request struct {
 
 // Result holds the composed image bytes and metadata.
 type Result struct {
-	ImageBytes  []byte
-	ContentType string
-	CacheKey    string
-	FromCache   bool
+	ImageBytes        []byte
+	ContentType       string
+	CacheKey          string
+	FromCache         bool
+	ContributingProviders []string // names of providers that returned data
 }
 
 // Pipeline orchestrates metadata fetch + image composition.
@@ -78,6 +81,11 @@ func New(reg *provider.Registry) *Pipeline {
 	}
 }
 
+// NewWithFetcher creates a Pipeline with a custom image fetcher (for testing).
+func NewWithFetcher(reg *provider.Registry, f imageFetcher) *Pipeline {
+	return &Pipeline{providers: reg, fetcher: f}
+}
+
 // Render executes the composition pipeline for the given request.
 // Falls back to a type-colored placeholder if any step fails.
 func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
@@ -88,59 +96,80 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		ContentType: "image/png",
 	}
 
-	// Attempt to fetch source image via primary provider
-	sourceBytes, err := p.fetchSourceImage(ctx, req)
+	sourceBytes, meta, err := p.fetchSourceImageAndMeta(ctx, req)
 	if err != nil || len(sourceBytes) == 0 {
-		// Fall back to placeholder
 		result.ImageBytes = render.PlaceholderPNG(req.MediaType)
 		return result, nil
 	}
 
-	// Decode source image
 	srcImg, err := decodeImage(sourceBytes)
 	if err != nil {
 		result.ImageBytes = render.PlaceholderPNG(req.MediaType)
 		return result, nil
 	}
 
-	// Resize to canonical dimensions
 	resized := resizeFit(srcImg, dim.Width, dim.Height)
 
-	// Compose ratings overlay
-	composed := composeRatings(resized, req)
+	// Convert to NRGBA once — all overlay functions draw in-place.
+	composed := toNRGBA(resized)
 
-	// Encode as PNG
+	allRatings, ratingProviders := p.collectRatingsWithProviders(ctx, req, meta.Ratings)
+	result.ContributingProviders = append([]string{string(req.Config.ArtworkSource)}, ratingProviders...)
+	if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
+		drawBadgesInPlace(composed, allRatings, req.Config)
+	}
+	if len(req.Config.Badges) > 0 {
+		drawQualityBadges(composed, req.Config.Badges)
+	}
+	if req.Config.AgeRating && meta.ContentRating != "" {
+		drawAgeRatingBadge(composed, meta.ContentRating, req.Config.AgeRatingPos)
+	}
+	if req.Config.Genre && len(meta.Genres) > 0 {
+		drawGenreBadge(composed, meta.Genres, req.Config.GenrePos)
+	}
+	if req.Config.Providers && len(meta.WatchProviders) > 0 {
+		drawProviderBadges(composed, meta.WatchProviders)
+	}
+	if req.Config.AggregateBar {
+		drawAggregateBar(composed, allRatings, req.Config)
+	}
+	if req.Config.Trending {
+		drawTrendingBadge(composed)
+	}
+
 	var buf bytes.Buffer
 	if err := png.Encode(&buf, composed); err != nil {
 		result.ImageBytes = render.PlaceholderPNG(req.MediaType)
 		return result, nil
 	}
+
 	result.ImageBytes = buf.Bytes()
 	return result, nil
 }
 
-// fetchSourceImage attempts to get the artwork URL from the first available provider.
-func (p *Pipeline) fetchSourceImage(ctx context.Context, req Request) ([]byte, error) {
+// fetchSourceImageAndMeta fetches the artwork bytes and metadata from the configured provider.
+func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]byte, *provider.MediaMeta, error) {
 	provName := string(req.Config.ArtworkSource)
 	prov := p.providers.Get(provName)
 	if prov == nil {
 		prov = p.providers.Get("tmdb")
 	}
 	if prov == nil {
-		return nil, fmt.Errorf("no provider available for %q", provName)
+		return nil, nil, fmt.Errorf("no provider available for %q", provName)
 	}
 
 	meta, err := prov.Fetch(ctx, req.MediaType, req.MediaID)
 	if err != nil {
-		return nil, fmt.Errorf("provider fetch: %w", err)
+		return nil, nil, fmt.Errorf("provider fetch: %w", err)
 	}
 
 	artworkURL := selectArtworkURL(meta, req.MediaType)
 	if artworkURL == "" {
-		return nil, fmt.Errorf("no artwork URL in metadata")
+		return nil, meta, fmt.Errorf("no artwork URL in metadata")
 	}
 
-	return p.fetcher.Fetch(ctx, artworkURL)
+	data, err := p.fetcher.Fetch(ctx, artworkURL)
+	return data, meta, err
 }
 
 func selectArtworkURL(meta *provider.MediaMeta, mediaType string) string {
@@ -160,7 +189,6 @@ func selectArtworkURL(meta *provider.MediaMeta, mediaType string) string {
 // decodeImage decodes JPEG or PNG bytes into an image.Image.
 func decodeImage(data []byte) (image.Image, error) {
 	r := bytes.NewReader(data)
-	// Try PNG first, then JPEG
 	img, err := png.Decode(r)
 	if err == nil {
 		return img, nil
@@ -169,18 +197,15 @@ func decodeImage(data []byte) (image.Image, error) {
 	return jpeg.Decode(r)
 }
 
-// resizeFit scales img to fit within maxW×maxH using nearest-neighbor resampling,
-// maintaining aspect ratio and cropping to fill exact dimensions.
+// resizeFit scales src to cover maxW×maxH using bilinear interpolation,
+// then center-crops to exact dimensions.
 func resizeFit(src image.Image, maxW, maxH int) image.Image {
 	srcB := src.Bounds()
-	srcW := srcB.Dx()
-	srcH := srcB.Dy()
-
+	srcW, srcH := srcB.Dx(), srcB.Dy()
 	if srcW == 0 || srcH == 0 {
 		return image.NewNRGBA(image.Rect(0, 0, maxW, maxH))
 	}
 
-	// Scale to cover (crop to fill)
 	scaleX := float64(maxW) / float64(srcW)
 	scaleY := float64(maxH) / float64(srcH)
 	scale := scaleX
@@ -188,58 +213,90 @@ func resizeFit(src image.Image, maxW, maxH int) image.Image {
 		scale = scaleY
 	}
 
-	scaledW := int(float64(srcW) * scale)
-	scaledH := int(float64(srcH) * scale)
+	scaledW := int(float64(srcW)*scale + 0.5)
+	scaledH := int(float64(srcH)*scale + 0.5)
+	if scaledW < maxW {
+		scaledW = maxW
+	}
+	if scaledH < maxH {
+		scaledH = maxH
+	}
 
-	// Center-crop
+	scaled := image.NewNRGBA(image.Rect(0, 0, scaledW, scaledH))
+	xdraw.BiLinear.Scale(scaled, scaled.Bounds(), src, srcB, xdraw.Over, nil)
+
 	offsetX := (scaledW - maxW) / 2
 	offsetY := (scaledH - maxH) / 2
-
 	dst := image.NewNRGBA(image.Rect(0, 0, maxW, maxH))
-	for dy := 0; dy < maxH; dy++ {
-		for dx := 0; dx < maxW; dx++ {
-			sx := int(float64(dx+offsetX) / scale)
-			sy := int(float64(dy+offsetY) / scale)
-			if sx < srcB.Min.X {
-				sx = srcB.Min.X
-			} else if sx >= srcB.Max.X {
-				sx = srcB.Max.X - 1
-			}
-			if sy < srcB.Min.Y {
-				sy = srcB.Min.Y
-			} else if sy >= srcB.Max.Y {
-				sy = srcB.Max.Y - 1
-			}
-			dst.Set(dx, dy, src.At(sx, sy))
-		}
-	}
+	draw.Draw(dst, dst.Bounds(), scaled, image.Pt(offsetX, offsetY), draw.Src)
 	return dst
 }
 
-// composeRatings draws a semi-transparent ratings bar onto the image.
-func composeRatings(base image.Image, req Request) image.Image {
-	if len(req.Config.Ratings) == 0 {
-		return base
+// collectRatings calls all non-artwork providers in parallel and merges their ratings
+// with those already returned by the artwork source. Duplicate sources are deduplicated.
+func (p *Pipeline) collectRatings(ctx context.Context, req Request, artworkRatings []provider.Rating) []provider.Rating {
+	ratings, _ := p.collectRatingsWithProviders(ctx, req, artworkRatings)
+	return ratings
+}
+
+// collectRatingsWithProviders is like collectRatings but also returns the
+// names of every non-artwork provider that returned data (for TTL selection).
+func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request, artworkRatings []provider.Rating) ([]provider.Rating, []string) {
+	all := make([]provider.Rating, len(artworkRatings))
+	copy(all, artworkRatings)
+	seen := make(map[string]bool, len(all))
+	for _, r := range all {
+		seen[r.Source] = true
 	}
 
-	bounds := base.Bounds()
-	out := image.NewNRGBA(bounds)
-	draw.Draw(out, bounds, base, bounds.Min, draw.Src)
-
-	// Draw a semi-transparent bar at the bottom (or top per layout)
-	barH := bounds.Dy() / 8
-	if barH < 20 {
-		barH = 20
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+	var contributors []string
+	artworkSource := string(req.Config.ArtworkSource)
+	for _, name := range p.providers.Names() {
+		if name == artworkSource {
+			continue
+		}
+		prov := p.providers.Get(name)
+		if prov == nil {
+			continue
+		}
+		wg.Add(1)
+		go func(prov provider.Provider) {
+			defer wg.Done()
+			meta, err := prov.Fetch(ctx, req.MediaType, req.MediaID)
+			if err != nil || meta == nil {
+				return
+			}
+			mu.Lock()
+			defer mu.Unlock()
+			contributed := false
+			for _, r := range meta.Ratings {
+				if !seen[r.Source] {
+					seen[r.Source] = true
+					all = append(all, r)
+					contributed = true
+				}
+			}
+			if contributed {
+				contributors = append(contributors, prov.Name())
+			}
+		}(prov)
 	}
-	barY := bounds.Max.Y - barH
-	if req.Config.RatingsLayout == imageconfig.LayoutTop {
-		barY = 0
-	}
-	barColor := color.NRGBA{R: 0, G: 0, B: 0, A: 180}
-	barRect := image.Rect(bounds.Min.X, barY, bounds.Max.X, barY+barH)
-	draw.Draw(out, barRect, &image.Uniform{C: barColor}, image.Point{}, draw.Over)
+	wg.Wait()
+	return all, contributors
+}
 
-	return out
+// toNRGBA converts any image.Image to *image.NRGBA for in-place drawing.
+// If src is already *image.NRGBA, it is returned as-is.
+func toNRGBA(src image.Image) *image.NRGBA {
+	if dst, ok := src.(*image.NRGBA); ok {
+		return dst
+	}
+	bounds := src.Bounds()
+	dst := image.NewNRGBA(bounds)
+	draw.Draw(dst, bounds, src, bounds.Min, draw.Src)
+	return dst
 }
 
 func buildCacheKey(req Request) string {

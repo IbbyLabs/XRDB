@@ -4,3 +4,8 @@ README.md
 docs
 bench
 *.log
+# Web node_modules excluded — Docker builds them fresh
+web/node_modules
+web/.next
+# Local build artifact excluded — Docker web-builder produces it
+internal/ui/dist

@@ -54,15 +54,22 @@ const (
 // Config is the canonical, normalized render config for a media request.
 // All fields carry explicit defaults; zero values are never used in render logic.
 type Config struct {
-	Size           MediaSize     `json:"size"`
-	ArtworkSource  ArtworkSource `json:"artworkSource"`
-	Language       string        `json:"language"`
+	Size           MediaSize      `json:"size"`
+	ArtworkSource  ArtworkSource  `json:"artworkSource"`
+	Language       string         `json:"language"`
 	TextPreference TextPreference `json:"textPreference"`
-	Ratings        []string      `json:"ratings"`
-	RatingsLayout  RatingsLayout `json:"ratingsLayout"`
-	Badges         []string      `json:"badges,omitempty"`
-	AgeRating      bool          `json:"ageRating"`
-	AgeRatingPos   string        `json:"ageRatingPos,omitempty"`
+	Ratings        []string       `json:"ratings"`
+	RatingsLayout  RatingsLayout  `json:"ratingsLayout"`
+	Badges         []string       `json:"badges,omitempty"`
+	AgeRating      bool           `json:"ageRating"`
+	AgeRatingPos   string         `json:"ageRatingPos,omitempty"`
+	Genre             bool           `json:"genre"`
+	GenrePos          string         `json:"genrePos,omitempty"`
+	Providers         bool           `json:"providers"`
+	ProvidersCountry  string         `json:"providersCountry,omitempty"`
+	AggregateBar      bool           `json:"aggregateBar"`
+	AggregateBarPos   string         `json:"aggregateBarPos,omitempty"` // "top" | "bottom"
+	Trending          bool           `json:"trending"`
 }
 
 // Default returns a Config populated with production defaults.
@@ -90,6 +97,13 @@ type raw struct {
 	Badges         []string `json:"badges"`
 	AgeRating      *bool    `json:"ageRating"`
 	AgeRatingPos   *string  `json:"ageRatingPos"`
+	Genre            *bool    `json:"genre"`
+	GenrePos         *string  `json:"genrePos"`
+	Providers        *bool    `json:"providers"`
+	ProvidersCountry *string  `json:"providersCountry"`
+	AggregateBar     *bool    `json:"aggregateBar"`
+	AggregateBarPos  *string  `json:"aggregateBarPos"`
+	Trending         *bool    `json:"trending"`
 }
 
 // Parse deserializes a profile config JSON blob into a normalized Config.
@@ -139,6 +153,30 @@ func Parse(data json.RawMessage) Config {
 	if r.AgeRatingPos != nil && strings.TrimSpace(*r.AgeRatingPos) != "" {
 		cfg.AgeRatingPos = strings.TrimSpace(*r.AgeRatingPos)
 	}
+	if r.Genre != nil {
+		cfg.Genre = *r.Genre
+	}
+	if r.GenrePos != nil && strings.TrimSpace(*r.GenrePos) != "" {
+		cfg.GenrePos = strings.TrimSpace(*r.GenrePos)
+	}
+	if r.Providers != nil {
+		cfg.Providers = *r.Providers
+	}
+	if r.ProvidersCountry != nil && strings.TrimSpace(*r.ProvidersCountry) != "" {
+		cfg.ProvidersCountry = strings.ToUpper(strings.TrimSpace(*r.ProvidersCountry))
+	}
+	if r.AggregateBar != nil {
+		cfg.AggregateBar = *r.AggregateBar
+	}
+	if r.AggregateBarPos != nil {
+		switch strings.ToLower(strings.TrimSpace(*r.AggregateBarPos)) {
+		case "top", "bottom":
+			cfg.AggregateBarPos = strings.ToLower(strings.TrimSpace(*r.AggregateBarPos))
+		}
+	}
+	if r.Trending != nil {
+		cfg.Trending = *r.Trending
+	}
 	return cfg
 }
 
@@ -148,15 +186,22 @@ func Parse(data json.RawMessage) Config {
 func CacheKey(cfg Config) string {
 	// Canonical serialization: sort ratings and badges, then marshal.
 	type canonical struct {
-		Size           MediaSize     `json:"size"`
-		ArtworkSource  ArtworkSource `json:"artworkSource"`
-		Language       string        `json:"language"`
-		TextPreference TextPreference `json:"textPreference"`
-		Ratings        []string      `json:"ratings"`
-		RatingsLayout  RatingsLayout `json:"ratingsLayout"`
-		Badges         []string      `json:"badges"`
-		AgeRating      bool          `json:"ageRating"`
-		AgeRatingPos   string        `json:"ageRatingPos"`
+		Size             MediaSize      `json:"size"`
+		ArtworkSource    ArtworkSource  `json:"artworkSource"`
+		Language         string         `json:"language"`
+		TextPreference   TextPreference `json:"textPreference"`
+		Ratings          []string       `json:"ratings"`
+		RatingsLayout    RatingsLayout  `json:"ratingsLayout"`
+		Badges           []string       `json:"badges"`
+		AgeRating        bool           `json:"ageRating"`
+		AgeRatingPos     string         `json:"ageRatingPos"`
+		Genre            bool           `json:"genre"`
+		GenrePos         string         `json:"genrePos"`
+		Providers        bool           `json:"providers"`
+		ProvidersCountry string         `json:"providersCountry"`
+		AggregateBar     bool           `json:"aggregateBar"`
+		AggregateBarPos  string         `json:"aggregateBarPos"`
+		Trending         bool           `json:"trending"`
 	}
 	ratings := make([]string, len(cfg.Ratings))
 	copy(ratings, cfg.Ratings)
@@ -166,15 +211,22 @@ func CacheKey(cfg Config) string {
 	sort.Strings(badges)
 
 	c := canonical{
-		Size:           cfg.Size,
-		ArtworkSource:  cfg.ArtworkSource,
-		Language:       cfg.Language,
-		TextPreference: cfg.TextPreference,
-		Ratings:        ratings,
-		RatingsLayout:  cfg.RatingsLayout,
-		Badges:         badges,
-		AgeRating:      cfg.AgeRating,
-		AgeRatingPos:   cfg.AgeRatingPos,
+		Size:             cfg.Size,
+		ArtworkSource:    cfg.ArtworkSource,
+		Language:         cfg.Language,
+		TextPreference:   cfg.TextPreference,
+		Ratings:          ratings,
+		RatingsLayout:    cfg.RatingsLayout,
+		Badges:           badges,
+		AgeRating:        cfg.AgeRating,
+		AgeRatingPos:     cfg.AgeRatingPos,
+		Genre:            cfg.Genre,
+		GenrePos:         cfg.GenrePos,
+		Providers:        cfg.Providers,
+		ProvidersCountry: cfg.ProvidersCountry,
+		AggregateBar:     cfg.AggregateBar,
+		AggregateBarPos:  cfg.AggregateBarPos,
+		Trending:         cfg.Trending,
 	}
 	b, _ := json.Marshal(c)
 	sum := sha256.Sum256(b)

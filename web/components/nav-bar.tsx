@@ -2,12 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, Settings, Github } from 'lucide-react';
+import { LayoutGrid, Settings, Github, Plug } from 'lucide-react';
 import { BRAND_NAME, BRAND_GITHUB_URL } from '@/lib/brand';
 
 const NAV_LINKS = [
   { href: '/configurator', label: 'Configurator', icon: LayoutGrid },
-  { href: '/admin', label: 'Admin', icon: Settings },
+  { href: '/integrations', label: 'Integrations', icon: Plug       },
+  { href: '/admin',        label: 'Admin',         icon: Settings   },
 ];
 
 export function NavBar() {

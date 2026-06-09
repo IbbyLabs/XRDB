@@ -6,16 +6,25 @@ import (
 	"time"
 )
 
+// WatchProvider is a streaming/rental service that carries a media item.
+type WatchProvider struct {
+	ID   int    // TMDB provider_id
+	Name string // e.g. "Netflix", "Amazon Prime Video"
+}
+
 // MediaMeta holds the metadata for a piece of media fetched from a provider.
 type MediaMeta struct {
-	Title       string
-	Year        int
-	Overview    string
-	PosterURL   string   // canonical poster image URL
-	BackdropURL string   // canonical backdrop image URL
-	LogoURL     string   // logo image URL (may be empty)
-	Ratings     []Rating // from this provider
-	Language    string   // language of the returned artwork
+	Title          string
+	Year           int
+	Overview       string
+	PosterURL      string          // canonical poster image URL
+	BackdropURL    string          // canonical backdrop image URL
+	LogoURL        string          // logo image URL (may be empty)
+	Ratings        []Rating        // from this provider
+	Language       string          // language of the returned artwork
+	ContentRating  string          // e.g. "TV-MA", "R", "PG-13" (may be empty)
+	Genres         []string        // e.g. ["Action","Drama"] (may be empty)
+	WatchProviders []WatchProvider // streaming/rental services (may be empty)
 }
 
 // Rating is a single provider rating observation.

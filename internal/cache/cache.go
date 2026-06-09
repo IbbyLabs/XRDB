@@ -75,12 +75,21 @@ func (c *Cache) Get(key string) (*Entry, bool) {
 	return e, true
 }
 
-// Set stores data for key in both tiers.
+// Set stores data for key using the cache's default TTL.
 func (c *Cache) Set(key string, data []byte) error {
+	return c.SetWithTTL(key, data, 0)
+}
+
+// SetWithTTL stores data for key with an explicit TTL.
+// If ttl is zero the cache's default TTL is used.
+func (c *Cache) SetWithTTL(key string, data []byte, ttl time.Duration) error {
+	if ttl <= 0 {
+		ttl = c.ttl
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	exp := time.Now().Add(c.ttl)
+	exp := time.Now().Add(ttl)
 	e := &Entry{Data: data, ExpiresAt: exp}
 	c.store(key, e)
 
