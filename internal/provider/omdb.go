@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -39,8 +40,9 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 		return nil, fmt.Errorf("omdb: only IMDb tt-IDs are supported, got %q", id)
 	}
 
-	url := omdbBaseURL + "?i=" + id + "&tomatoes=true&apikey=" + o.apiKey
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	params := url.Values{"i": {id}, "tomatoes": {"true"}, "apikey": {o.apiKey}}
+	reqURL := omdbBaseURL + "?" + params.Encode()
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("omdb: build request: %w", err)
 	}

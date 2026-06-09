@@ -43,7 +43,7 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store) {
 					http.Error(w, "profile already exists", http.StatusConflict)
 					return
 				}
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, "failed to save profile", http.StatusInternalServerError)
 				return
 			}
 			writeJSON(w, http.StatusCreated, &p)
@@ -87,7 +87,7 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store) {
 					http.Error(w, "not found", http.StatusNotFound)
 					return
 				}
-				http.Error(w, err.Error(), http.StatusBadRequest)
+				http.Error(w, "failed to update profile", http.StatusInternalServerError)
 				return
 			}
 			updated, err := store.Get(id)

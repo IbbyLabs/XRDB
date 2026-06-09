@@ -11,6 +11,7 @@ import (
 	"image/draw"
 	"image/jpeg"
 	"image/png"
+	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -49,6 +50,8 @@ type imageFetcher interface {
 	Fetch(ctx context.Context, url string) ([]byte, error)
 }
 
+const maxImageBytes = 20 * 1024 * 1024 // 20 MiB
+
 // httpFetcher is the production imageFetcher.
 type httpFetcher struct {
 	client *http.Client
@@ -67,10 +70,16 @@ func (f *httpFetcher) Fetch(ctx context.Context, url string) ([]byte, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("image fetch: http %d for %s", resp.StatusCode, url)
 	}
+	lr := &io.LimitedReader{R: resp.Body, N: maxImageBytes + 1}
 	var buf bytes.Buffer
 	buf.Grow(512 * 1024)
-	_, err = buf.ReadFrom(resp.Body)
-	return buf.Bytes(), err
+	if _, err = buf.ReadFrom(lr); err != nil {
+		return nil, err
+	}
+	if lr.N == 0 {
+		return nil, fmt.Errorf("image fetch: response exceeds %d bytes for %s", maxImageBytes, url)
+	}
+	return buf.Bytes(), nil
 }
 
 // New creates a Pipeline with the given provider registry.

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -44,8 +45,9 @@ func (m *MDBList) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, 
 		mdbType = "show"
 	}
 
-	url := fmt.Sprintf("%s/imdb/%s/%s?apikey=%s", mdblistBase, mdbType, id, m.apiKey)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	params := url.Values{"apikey": {m.apiKey}}
+	endpoint := fmt.Sprintf("%s/imdb/%s/%s?%s", mdblistBase, mdbType, id, params.Encode())
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, err
 	}

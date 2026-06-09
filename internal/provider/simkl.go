@@ -6,11 +6,14 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"time"
 )
 
 const simklBaseURL = "https://api.simkl.com"
+
+var simklIMDbIDRe = regexp.MustCompile(`^tt\d+$`)
 
 // SIMKL is the Simkl.com ratings and metadata provider.
 // Requires a SIMKL Client-ID.
@@ -44,7 +47,7 @@ func (s *SIMKL) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, er
 		}
 		simklID = raw
 
-	case strings.HasPrefix(id, "tt"):
+	case simklIMDbIDRe.MatchString(id):
 		// Lookup SIMKL ID via IMDb ID.
 		var err error
 		simklID, err = s.lookupByIMDB(ctx, id)

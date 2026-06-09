@@ -3,7 +3,6 @@ package compose
 import (
 	"image"
 	"image/color"
-	"math"
 
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
@@ -20,7 +19,7 @@ func fillRoundedRect(dst *image.NRGBA, r image.Rectangle, radius int, c color.NR
 				cx, cy := cornerCenter(x, y, r, radius)
 				dx := float64(x) - cx + 0.5
 				dy := float64(y) - cy + 0.5
-				if math.Sqrt(dx*dx+dy*dy) > cr {
+				if dx*dx+dy*dy > cr*cr {
 					continue
 				}
 			}
@@ -94,7 +93,7 @@ func drawRectBorder(dst *image.NRGBA, r image.Rectangle, radius int, c color.NRG
 				cx, cy := cornerCenter(x, y, r, radius)
 				dx := float64(x) - cx + 0.5
 				dy := float64(y) - cy + 0.5
-				if math.Sqrt(dx*dx+dy*dy) > cr {
+				if dx*dx+dy*dy > cr*cr {
 					continue
 				}
 			}

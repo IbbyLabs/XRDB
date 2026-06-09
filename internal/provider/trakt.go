@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
+	"regexp"
 	"time"
 )
 
 const traktBaseURL = "https://api.trakt.tv"
+
+var traktIMDbIDRe = regexp.MustCompile(`^tt\d+$`)
 
 // Trakt is the Trakt.tv ratings provider.
 // Requires a Trakt Client-ID (OAuth app or V2 API key).
@@ -31,7 +33,7 @@ func (t *Trakt) Name() string { return "trakt" }
 
 // Fetch retrieves Trakt ratings. id must be an IMDb tt-prefixed ID (e.g. "tt0468569").
 func (t *Trakt) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, error) {
-	if !strings.HasPrefix(id, "tt") {
+	if !traktIMDbIDRe.MatchString(id) {
 		return nil, fmt.Errorf("trakt: unsupported id %q (expected tt<imdb-id>)", id)
 	}
 

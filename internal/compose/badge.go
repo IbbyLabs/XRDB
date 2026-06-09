@@ -24,14 +24,18 @@ var (
 func ensureFaces() {
 	onceFaces.Do(func() {
 		if tt, err := opentype.Parse(gobold.TTF); err == nil {
-			faceValue, _ = opentype.NewFace(tt, &opentype.FaceOptions{
+			if f, err := opentype.NewFace(tt, &opentype.FaceOptions{
 				Size: 14, DPI: 72, Hinting: font.HintingFull,
-			})
+			}); err == nil {
+				faceValue = f
+			}
 		}
 		if tt, err := opentype.Parse(goregular.TTF); err == nil {
-			faceLabel, _ = opentype.NewFace(tt, &opentype.FaceOptions{
+			if f, err := opentype.NewFace(tt, &opentype.FaceOptions{
 				Size: 9, DPI: 72, Hinting: font.HintingFull,
-			})
+			}); err == nil {
+				faceLabel = f
+			}
 		}
 	})
 }

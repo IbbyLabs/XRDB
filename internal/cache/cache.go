@@ -45,18 +45,21 @@ func New(dir string, ttl time.Duration, maxEntries int) (*Cache, error) {
 // Get returns a cached entry for key, or (nil, false) on miss or expiry.
 func (c *Cache) Get(key string) (*Entry, bool) {
 	c.mu.Lock()
-	defer c.mu.Unlock()
 
-	// Hot tier
+	// Hot tier — check without holding for I/O.
 	if e, ok := c.hot[key]; ok {
 		if time.Now().Before(e.ExpiresAt) {
+			c.touch(key)
+			c.mu.Unlock()
 			return e, true
 		}
 		c.evict(key)
 	}
+	diskPath := c.diskPath(key)
+	c.mu.Unlock()
 
-	// Disk tier
-	data, err := os.ReadFile(c.diskPath(key))
+	// Disk tier — no lock held during filesystem I/O.
+	data, err := os.ReadFile(diskPath)
 	if err != nil {
 		return nil, false
 	}
@@ -67,11 +70,13 @@ func (c *Cache) Get(key string) (*Entry, bool) {
 	exp := int64(data[0])<<56 | int64(data[1])<<48 | int64(data[2])<<40 | int64(data[3])<<32 |
 		int64(data[4])<<24 | int64(data[5])<<16 | int64(data[6])<<8 | int64(data[7])
 	if time.Now().UnixNano() > exp {
-		_ = os.Remove(c.diskPath(key))
+		_ = os.Remove(diskPath)
 		return nil, false
 	}
 	e := &Entry{Data: data[8:], ExpiresAt: time.Unix(0, exp)}
+	c.mu.Lock()
 	c.store(key, e)
+	c.mu.Unlock()
 	return e, true
 }
 
@@ -86,14 +91,15 @@ func (c *Cache) SetWithTTL(key string, data []byte, ttl time.Duration) error {
 	if ttl <= 0 {
 		ttl = c.ttl
 	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	exp := time.Now().Add(ttl)
 	e := &Entry{Data: data, ExpiresAt: exp}
-	c.store(key, e)
 
-	// Persist to disk
+	c.mu.Lock()
+	c.store(key, e)
+	diskPath := c.diskPath(key)
+	c.mu.Unlock()
+
+	// Persist to disk — no lock held during filesystem I/O.
 	expNs := exp.UnixNano()
 	hdr := [8]byte{
 		byte(expNs >> 56), byte(expNs >> 48), byte(expNs >> 40), byte(expNs >> 32),
@@ -103,7 +109,7 @@ func (c *Cache) SetWithTTL(key string, data []byte, ttl time.Duration) error {
 	copy(payload[:8], hdr[:])
 	copy(payload[8:], data)
 
-	if err := os.WriteFile(c.diskPath(key), payload, 0o644); err != nil {
+	if err := os.WriteFile(diskPath, payload, 0o644); err != nil {
 		return fmt.Errorf("cache write: %w", err)
 	}
 	return nil
@@ -112,13 +118,17 @@ func (c *Cache) SetWithTTL(key string, data []byte, ttl time.Duration) error {
 // Stats returns a snapshot of cache state.
 func (c *Cache) Stats() Stats {
 	c.mu.Lock()
-	defer c.mu.Unlock()
-	entries, _ := filepath.Glob(filepath.Join(c.dir, "*.bin"))
+	hotCount := len(c.hot)
+	dir := c.dir
+	ttl := c.ttl
+	c.mu.Unlock()
+
+	entries, _ := filepath.Glob(filepath.Join(dir, "*.bin"))
 	return Stats{
-		HotEntries:  len(c.hot),
+		HotEntries:  hotCount,
 		DiskEntries: len(entries),
-		Dir:         c.dir,
-		TTL:         c.ttl.String(),
+		Dir:         dir,
+		TTL:         ttl.String(),
 	}
 }
 
@@ -133,7 +143,7 @@ type Stats struct {
 func (c *Cache) store(key string, e *Entry) {
 	if _, exists := c.hot[key]; !exists {
 		if len(c.hot) >= c.maxEntries {
-			// Evict oldest
+			// Evict least-recently used (front of order slice).
 			if len(c.order) > 0 {
 				oldest := c.order[0]
 				c.order = c.order[1:]
@@ -141,8 +151,22 @@ func (c *Cache) store(key string, e *Entry) {
 			}
 		}
 		c.order = append(c.order, key)
+	} else {
+		c.touch(key)
 	}
 	c.hot[key] = e
+}
+
+// touch moves key to the most-recently-used position (end of order).
+// Must be called with c.mu held.
+func (c *Cache) touch(key string) {
+	for i, k := range c.order {
+		if k == key {
+			c.order = append(c.order[:i], c.order[i+1:]...)
+			c.order = append(c.order, key)
+			return
+		}
+	}
 }
 
 func (c *Cache) evict(key string) {
