@@ -132,7 +132,10 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 			var explicit struct {
 				PasswordHash *string `json:"passwordHash"`
 			}
-			_ = json.Unmarshal(body, &explicit)
+			if err := json.Unmarshal(body, &explicit); err != nil {
+				http.Error(w, "invalid JSON", http.StatusBadRequest)
+				return
+			}
 			p.ID = id
 			if explicit.PasswordHash == nil || *explicit.PasswordHash != "" {
 				// Field omitted or non-empty (setting hash directly unsupported) → preserve.

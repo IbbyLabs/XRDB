@@ -146,11 +146,11 @@ func (d *IMDbDataset) download(ctx context.Context, dest string) error {
 		return fmt.Errorf("http %d from imdb dataset", resp.StatusCode)
 	}
 
-	tmp := dest + ".tmp"
-	f, err := os.Create(tmp)
+	f, err := os.CreateTemp(filepath.Dir(dest), "imdb-*.tmp")
 	if err != nil {
 		return fmt.Errorf("create tmp: %w", err)
 	}
+	tmp := f.Name()
 	defer func() { _ = os.Remove(tmp) }()
 
 	buf := bufio.NewWriterSize(f, 1<<20)

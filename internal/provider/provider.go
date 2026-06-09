@@ -4,7 +4,6 @@ package provider
 import (
 	"context"
 	"sort"
-	"sync"
 	"time"
 )
 
@@ -48,10 +47,12 @@ type Provider interface {
 
 // inflightCall tracks an in-progress fetch so concurrent callers for the same
 // key can wait on the single in-flight request rather than issuing duplicates.
+// done is closed by the leader when the fetch completes; followers select on it
+// alongside ctx.Done() so a canceled context is not blocked by a slow fetch.
 type inflightCall struct {
-	wg  sync.WaitGroup
-	val *MediaMeta
-	err error
+	done chan struct{}
+	val  *MediaMeta
+	err  error
 }
 
 // CachedFetch wraps a Provider with a simple in-memory TTL cache and
@@ -93,20 +94,24 @@ func (c *CachedFetch) Fetch(ctx context.Context, mediaType, id string) (*MediaMe
 		c.mu.Unlock()
 		return entry.meta, nil
 	}
-	// Coalesce: if a fetch is already in-flight for this key, wait for it.
+	// Coalesce: if a fetch is already in-flight for this key, wait for it
+	// while respecting context cancellation.
 	if call, ok := c.inflight[key]; ok {
 		c.mu.Unlock()
-		call.wg.Wait()
-		return call.val, call.err
+		select {
+		case <-call.done:
+			return call.val, call.err
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
 	}
 	// Register a new in-flight call before releasing the lock.
-	call := &inflightCall{}
-	call.wg.Add(1)
+	call := &inflightCall{done: make(chan struct{})}
 	c.inflight[key] = call
 	c.mu.Unlock()
 
 	call.val, call.err = c.inner.Fetch(ctx, mediaType, id)
-	call.wg.Done()
+	close(call.done)
 
 	c.mu.Lock()
 	delete(c.inflight, key)

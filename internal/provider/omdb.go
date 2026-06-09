@@ -91,8 +91,8 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 			if n := parseSlashScore(r.Value); n >= 0 {
 				meta.Ratings = append(meta.Ratings, Rating{
 					Source: "metacritic",
-					Value:  n, // parseSlashScore already returns 0-10 scale
-					Label:  fmt.Sprintf("%.0f", n),
+					Value:  n,       // parseSlashScore already returns 0-10 scale
+					Label:  r.Value, // preserve original display string e.g. "74/100"
 				})
 			}
 		case "Internet Movie Database":

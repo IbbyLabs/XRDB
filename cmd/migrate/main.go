@@ -39,6 +39,9 @@ func main() {
 	if absReport == absInput {
 		exitWithErr("--report must differ from --input to avoid overwriting the source file")
 	}
+	if absOutput == absReport {
+		exitWithErr("--output must differ from --report to avoid overwriting the report with profiles")
+	}
 
 	raw, err := os.ReadFile(*inputPath)
 	if err != nil {
