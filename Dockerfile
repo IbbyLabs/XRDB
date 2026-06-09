@@ -20,7 +20,9 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/xrdb-api ./cmd/api
 
 # Stage 3: minimal runtime image
 FROM alpine:3.21
-RUN adduser -D -H -s /sbin/nologin appuser
+RUN adduser -D -H -s /sbin/nologin appuser \
+    && mkdir -p /data \
+    && chown appuser:appuser /data
 USER appuser
 WORKDIR /app
 COPY --from=go-builder /out/xrdb-api /app/xrdb-api
