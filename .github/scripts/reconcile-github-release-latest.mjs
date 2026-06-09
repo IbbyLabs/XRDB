@@ -108,9 +108,13 @@ export async function main() {
   const releases = await requestJson(`${apiUrl}/releases?per_page=100`, token);
   let allReleases = Array.isArray(releases) ? releases : [];
   if (currentTag) {
-    const tagRelease = await requestJson(`${apiUrl}/releases/tags/${encodeURIComponent(currentTag)}`, token);
-    if (tagRelease && typeof tagRelease.id !== 'undefined' && !allReleases.some((r) => r.id === tagRelease.id)) {
-      allReleases = [...allReleases, tagRelease];
+    try {
+      const tagRelease = await requestJson(`${apiUrl}/releases/tags/${encodeURIComponent(currentTag)}`, token);
+      if (tagRelease && typeof tagRelease.id !== 'undefined' && !allReleases.some((r) => r.id === tagRelease.id)) {
+        allReleases = [...allReleases, tagRelease];
+      }
+    } catch {
+      // Tag release may not exist yet; fall back to the list already fetched.
     }
   }
   const latest = resolveLatestPublishedReleaseId(allReleases);

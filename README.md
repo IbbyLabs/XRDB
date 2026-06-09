@@ -26,7 +26,7 @@ Binds to `:8787` by default. Set `XRDB_ADDR` to change the port.
 **Web**
 
 ```sh
-cd web && npm install && npm run dev
+cd web && npm ci && npm run dev
 ```
 
 Opens on `http://localhost:3001`.
