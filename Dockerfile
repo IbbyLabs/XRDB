@@ -20,6 +20,7 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/xrdb-api ./cmd/api
 
 # Stage 3: minimal runtime image
 FROM alpine:3.21
+ARG XRDB_BUILD_VERSION
 RUN adduser -D -H -s /sbin/nologin appuser \
     && mkdir -p /data \
     && chown appuser:appuser /data
@@ -30,5 +31,6 @@ VOLUME ["/data"]
 EXPOSE 8787
 ENV XRDB_ADDR=:8787 \
     XRDB_DB=/data/xrdb.db \
-    XRDB_CACHE_DIR=/data/cache
+    XRDB_CACHE_DIR=/data/cache \
+    XRDB_VERSION=${XRDB_BUILD_VERSION}
 CMD ["/app/xrdb-api"]

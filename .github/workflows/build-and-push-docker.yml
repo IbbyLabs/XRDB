@@ -26,6 +26,7 @@ jobs:
       deployment_version: ${{ steps.meta.outputs.deployment_version }}
       dev_track_tag: ${{ steps.meta.outputs.dev_track_tag }}
       publish_dev: ${{ steps.meta.outputs.publish_dev }}
+      publish_release_alias: ${{ steps.meta.outputs.publish_release_alias }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,11 +47,12 @@ jobs:
           deployment_version=""
           dev_track_tag=""
           publish_dev="false"
+          publish_release_alias="false"
 
           if [ "${REF_TYPE}" = "tag" ] && printf '%s' "${REF_NAME}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
             deployment_version="${REF_NAME}"
             dev_track_tag="dev-${REF_NAME#v}"
-            publish_dev="true"
+            publish_release_alias="true"
           elif [ "${REF_TYPE}" = "branch" ] && [ "${REF_NAME}" = "${DEFAULT_BRANCH}" ]; then
             deployment_version="dev.${stamp}.${short_sha}"
             dev_track_tag="dev-${stamp/./-}-${short_sha}"
@@ -58,12 +60,12 @@ jobs:
           else
             deployment_version="manual-${stamp}-${short_sha}"
             dev_track_tag="manual-${short_sha}"
-            publish_dev="false"
           fi
 
           echo "deployment_version=${deployment_version}" >> "$GITHUB_OUTPUT"
           echo "dev_track_tag=${dev_track_tag}" >> "$GITHUB_OUTPUT"
           echo "publish_dev=${publish_dev}" >> "$GITHUB_OUTPUT"
+          echo "publish_release_alias=${publish_release_alias}" >> "$GITHUB_OUTPUT"
 
   build:
     name: Build ${{ matrix.name }}
@@ -100,7 +102,7 @@ jobs:
           tags: |
             type=raw,value=${{ github.ref_name }},enable=${{ github.ref_type == 'tag' }}
             type=raw,value=dev,enable=${{ needs.version.outputs.publish_dev == 'true' }}
-            type=raw,value=${{ needs.version.outputs.dev_track_tag }},enable=${{ needs.version.outputs.publish_dev == 'true' }}
+            type=raw,value=${{ needs.version.outputs.dev_track_tag }},enable=${{ needs.version.outputs.publish_dev == 'true' || needs.version.outputs.publish_release_alias == 'true' }}
             type=sha,prefix=manual-,enable=${{ github.event_name == 'workflow_dispatch' && needs.version.outputs.publish_dev != 'true' }}
           labels: |
             org.opencontainers.image.title=XRDB
