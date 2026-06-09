@@ -70,6 +70,16 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store) {
 				http.Error(w, "internal error", http.StatusInternalServerError)
 				return
 			}
+			if p.PasswordHash != "" {
+				pw := r.Header.Get("X-Profile-Password")
+				if pw == "" {
+					pw = r.URL.Query().Get("password")
+				}
+				if err := store.CheckPassword(id, pw); err != nil {
+					http.Error(w, "profile password required", http.StatusUnauthorized)
+					return
+				}
+			}
 			writeJSON(w, http.StatusOK, p)
 		case http.MethodPut:
 			body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))

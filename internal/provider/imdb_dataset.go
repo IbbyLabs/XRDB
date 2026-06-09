@@ -74,6 +74,7 @@ func (d *IMDbDataset) Fetch(ctx context.Context, mediaType, id string) (*MediaMe
 		Ratings: []Rating{{
 			Source: "imdb",
 			Value:  entry.Rating,
+			Votes:  entry.Votes,
 			Label:  fmt.Sprintf("%.1f", entry.Rating),
 		}},
 	}, nil
