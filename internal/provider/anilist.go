@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -49,8 +50,8 @@ func (a *AniList) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, 
 	}
 
 	// Parse the numeric ID for the GraphQL variable.
-	var numericID int
-	if _, err := fmt.Sscanf(alID, "%d", &numericID); err != nil {
+	numericID, err := strconv.Atoi(alID)
+	if err != nil {
 		return nil, fmt.Errorf("anilist: invalid numeric id in %q", id)
 	}
 

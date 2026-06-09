@@ -321,7 +321,11 @@ func latMs(start time.Time) float64 {
 // bearerMatches checks that the request carries "Authorization: Bearer <want>".
 // Uses constant-time comparison to prevent timing attacks.
 func bearerMatches(r *http.Request, want string) bool {
-	got := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+	auth := r.Header.Get("Authorization")
+	if !strings.HasPrefix(auth, "Bearer ") {
+		return false
+	}
+	got := auth[len("Bearer "):]
 	return subtle.ConstantTimeCompare([]byte(got), []byte(want)) == 1
 }
 

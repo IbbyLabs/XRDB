@@ -137,7 +137,9 @@ func Parse(data json.RawMessage) Config {
 		}
 	}
 	if len(r.Ratings) > 0 {
-		cfg.Ratings = dedupeStrings(r.Ratings)
+		if valid := dedupeStrings(r.Ratings); len(valid) > 0 {
+			cfg.Ratings = valid
+		}
 	}
 	if r.RatingsLayout != nil {
 		if v := normalizeRatingsLayout(*r.RatingsLayout); v != "" {
@@ -234,12 +236,23 @@ func CacheKey(cfg Config) string {
 }
 
 // CanonicalJSON returns the canonical JSON representation of cfg, suitable for
-// export and import round-trips.
+// export and import round-trips. Ratings and Badges are sorted for stable output.
 func CanonicalJSON(cfg Config) (json.RawMessage, error) {
+	out := cfg
+	if len(out.Ratings) > 0 {
+		out.Ratings = make([]string, len(cfg.Ratings))
+		copy(out.Ratings, cfg.Ratings)
+		sort.Strings(out.Ratings)
+	}
+	if len(out.Badges) > 0 {
+		out.Badges = make([]string, len(cfg.Badges))
+		copy(out.Badges, cfg.Badges)
+		sort.Strings(out.Badges)
+	}
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	enc.SetEscapeHTML(false)
-	if err := enc.Encode(cfg); err != nil {
+	if err := enc.Encode(out); err != nil {
 		return nil, err
 	}
 	return json.RawMessage(bytes.TrimRight(buf.Bytes(), "\n")), nil

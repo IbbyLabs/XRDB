@@ -22,6 +22,7 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"xrdb_rewrite/internal/config"
@@ -85,6 +86,12 @@ func registerStremioAddon(mux *http.ServeMux, cfg config.Config) {
 		}
 		mediaType, id := parts[0], parts[1]
 
+		// Only movie and series are supported.
+		if mediaType != "movie" && mediaType != "series" {
+			http.NotFound(w, r)
+			return
+		}
+
 		// Determine XRDB mediaType from Stremio type.
 		xrdbType := "poster"
 		if mediaType == "series" {
@@ -108,8 +115,8 @@ func registerStremioAddon(mux *http.ServeMux, cfg config.Config) {
 		// If an API key is required, embed it as a query parameter.
 		// Note: exposing the key in URLs is a trade-off for Stremio compatibility.
 		if cfg.APIKey != "" {
-			posterURL += "?key=" + cfg.APIKey
-			backdropURL += "?key=" + cfg.APIKey
+			posterURL += "?key=" + url.QueryEscape(cfg.APIKey)
+			backdropURL += "?key=" + url.QueryEscape(cfg.APIKey)
 		}
 
 		resp := stremioMetaResponse{

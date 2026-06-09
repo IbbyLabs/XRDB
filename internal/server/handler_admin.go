@@ -196,7 +196,9 @@ func warmPosters(
 			if _, ok := renderCache.Get(cacheKey); ok {
 				return // already cached
 			}
-			result, err := pipeline.Render(context.Background(), req)
+			ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				defer cancel()
+				result, err := pipeline.Render(ctx, req)
 			if err != nil || result == nil || len(result.ImageBytes) == 0 {
 				log.Printf("warm: skip %s/%s: %v", mediaType, id, err)
 				return
