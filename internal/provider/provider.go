@@ -83,6 +83,11 @@ func (c *CachedFetch) Fetch(ctx context.Context, mediaType, id string) (*MediaMe
 		return nil, err
 	}
 	c.mu.Lock()
+	// Re-check: another goroutine may have fetched and stored while we were fetching.
+	if existing, ok := c.store[key]; ok && time.Now().Before(existing.expiresAt) {
+		c.mu.Unlock()
+		return existing.meta, nil
+	}
 	c.store[key] = &cacheEntry{meta: meta, expiresAt: time.Now().Add(c.ttl)}
 	c.mu.Unlock()
 	return meta, nil

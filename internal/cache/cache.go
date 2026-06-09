@@ -75,6 +75,12 @@ func (c *Cache) Get(key string) (*Entry, bool) {
 	}
 	e := &Entry{Data: data[8:], ExpiresAt: time.Unix(0, exp)}
 	c.mu.Lock()
+	// Re-check hot tier: another goroutine may have promoted this entry while we were reading disk.
+	if existing, ok := c.hot[key]; ok && time.Now().Before(existing.ExpiresAt) {
+		c.touch(key)
+		c.mu.Unlock()
+		return existing, true
+	}
 	c.store(key, e)
 	c.mu.Unlock()
 	return e, true
