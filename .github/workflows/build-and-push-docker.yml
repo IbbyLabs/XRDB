@@ -82,7 +82,7 @@ jobs:
           - name: web
             image: ghcr.io/${{ github.repository }}-web
             context: ./web
-            dockerfile: web/Dockerfile
+            dockerfile: Dockerfile
 
     steps:
       - name: Checkout
