@@ -29,9 +29,15 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store) {
 			}
 			writeJSON(w, http.StatusOK, profiles)
 		case http.MethodPost:
-			body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+			r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+			body, err := io.ReadAll(r.Body)
 			if err != nil {
-				http.Error(w, "read body", http.StatusBadRequest)
+				var mbe *http.MaxBytesError
+				if errors.As(err, &mbe) {
+					http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+				} else {
+					http.Error(w, "read body", http.StatusBadRequest)
+				}
 				return
 			}
 			var p profile.Profile
@@ -82,8 +88,14 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store) {
 			}
 			writeJSON(w, http.StatusOK, p)
 		case http.MethodPut:
-			body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+			r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+			body, err := io.ReadAll(r.Body)
 			if err != nil {
+				var mbe *http.MaxBytesError
+				if errors.As(err, &mbe) {
+					http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+					return
+				}
 				http.Error(w, "read body", http.StatusBadRequest)
 				return
 			}
@@ -166,9 +178,15 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store) {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		body, err := io.ReadAll(io.LimitReader(r.Body, 4<<20))
+		r.Body = http.MaxBytesReader(w, r.Body, 4<<20)
+		body, err := io.ReadAll(r.Body)
 		if err != nil {
-			http.Error(w, "read body", http.StatusBadRequest)
+			var mbe *http.MaxBytesError
+			if errors.As(err, &mbe) {
+				http.Error(w, "request body too large", http.StatusRequestEntityTooLarge)
+			} else {
+				http.Error(w, "read body", http.StatusBadRequest)
+			}
 			return
 		}
 		var env profile.ExportEnvelope

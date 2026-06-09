@@ -66,6 +66,7 @@ func (s *Store) Snapshot() Snapshot {
 	if n > ringSize {
 		n = ringSize
 	}
+	total := s.total.Load()
 	records := make([]Record, n)
 	for i := 0; i < n; i++ {
 		idx := (s.head - n + i) % ringSize
@@ -87,7 +88,7 @@ func (s *Store) Snapshot() Snapshot {
 
 	sortFloat64s(latencies)
 	return Snapshot{
-		TotalRequests: s.total.Load(),
+		TotalRequests: total,
 		ByStatus:      byStatus,
 		ByRoute:       byRoute,
 		P50Ms:         percentile(latencies, 50),

@@ -68,7 +68,7 @@ func Load() Config {
 	}
 	cacheTTL := 72 * time.Hour
 	if raw := os.Getenv("XRDB_CACHE_TTL_HOURS"); raw != "" {
-		if d, err := time.ParseDuration(raw + "h"); err == nil {
+		if d, err := time.ParseDuration(raw + "h"); err == nil && d > 0 {
 			cacheTTL = d
 		}
 	}

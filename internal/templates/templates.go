@@ -20,7 +20,9 @@ type Template struct {
 // All returns a copy of all built-in templates sorted by category then name.
 func All() []Template {
 	out := make([]Template, len(builtins))
-	copy(out, builtins)
+	for i, t := range builtins {
+		out[i] = deepCopyTemplate(t)
+	}
 	sort.Slice(out, func(i, j int) bool {
 		if out[i].Category != out[j].Category {
 			return out[i].Category < out[j].Category
@@ -34,10 +36,19 @@ func All() []Template {
 func ByID(id string) (Template, bool) {
 	for _, t := range builtins {
 		if t.ID == id {
-			return t, true
+			return deepCopyTemplate(t), true
 		}
 	}
 	return Template{}, false
+}
+
+func deepCopyTemplate(t Template) Template {
+	if t.Config != nil {
+		cp := make(json.RawMessage, len(t.Config))
+		copy(cp, t.Config)
+		t.Config = cp
+	}
+	return t
 }
 
 func cfg(raw string) json.RawMessage { return json.RawMessage(raw) }
