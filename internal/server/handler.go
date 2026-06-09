@@ -187,7 +187,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		writeRenderPlaceholderJSON(w, mediaType, id, key)
 	})
 
-	registerProfileRoutes(mux, store)
+	registerProfileRoutes(mux, store, cfg)
 	registerAdminRoutes(mux, ms, cfg, settingsStore, pipeline, renderCache)
 
 	// Templates: GET /api/templates — list all built-in templates.

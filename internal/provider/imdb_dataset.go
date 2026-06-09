@@ -99,9 +99,7 @@ func (d *IMDbDataset) ensureLoaded(ctx context.Context) error {
 	path := filepath.Join(d.dataDir, imdbDatasetFile)
 	if needsRefresh(path, imdbDatasetMaxAge) {
 		if err := d.download(ctx, path); err != nil {
-			d.loaded = true
-			d.loadErr = fmt.Errorf("download: %w", err)
-			return d.loadErr
+			return fmt.Errorf("download: %w", err)
 		}
 	}
 
@@ -156,7 +154,7 @@ func (d *IMDbDataset) download(ctx context.Context, dest string) error {
 	defer func() { _ = os.Remove(tmp) }()
 
 	buf := bufio.NewWriterSize(f, 1<<20)
-	if _, err := io.Copy(buf, resp.Body); err != nil {
+	if _, err := io.Copy(buf, io.LimitReader(resp.Body, 100<<20)); err != nil {
 		_ = f.Close()
 		return fmt.Errorf("write: %w", err)
 	}

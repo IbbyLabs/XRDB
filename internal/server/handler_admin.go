@@ -60,7 +60,14 @@ func registerAdminRoutes(
 	// Settings: GET returns all keys (values masked), PUT upserts a single key,
 	// DELETE removes a key by ?key= query param.
 	mux.HandleFunc("/api/admin/settings", func(w http.ResponseWriter, r *http.Request) {
-		if cfg.AdminKey != "" && !bearerMatches(r, cfg.AdminKey) {
+		// Write operations require AdminKey to be configured and match.
+		// GET remains accessible when no key is set (read-only, values masked).
+		if r.Method != http.MethodGet {
+			if cfg.AdminKey == "" || !bearerMatches(r, cfg.AdminKey) {
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				return
+			}
+		} else if cfg.AdminKey != "" && !bearerMatches(r, cfg.AdminKey) {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -126,7 +133,7 @@ func registerAdminRoutes(
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		if cfg.AdminKey != "" && !bearerMatches(r, cfg.AdminKey) {
+		if cfg.AdminKey == "" || !bearerMatches(r, cfg.AdminKey) {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}

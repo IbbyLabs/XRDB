@@ -3,6 +3,7 @@ package provider
 
 import (
 	"context"
+	"sort"
 	"time"
 )
 
@@ -116,11 +117,12 @@ func (r *Registry) Get(name string) Provider {
 	return r.providers[name]
 }
 
-// Names returns all registered provider names.
+// Names returns all registered provider names in sorted order.
 func (r *Registry) Names() []string {
 	out := make([]string, 0, len(r.providers))
 	for k := range r.providers {
 		out = append(out, k)
 	}
+	sort.Strings(out)
 	return out
 }

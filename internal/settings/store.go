@@ -24,7 +24,8 @@ func Open(path string) (*Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("settings: open db: %w", err)
 	}
-	db.SetMaxOpenConns(1)
+	db.SetMaxOpenConns(5)
+	db.SetMaxIdleConns(1)
 	if err := applySchema(db); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("settings: apply schema: %w", err)
@@ -72,7 +73,10 @@ func (s *Store) Set(key, value string) error {
 // Delete removes a key. No-op if absent.
 func (s *Store) Delete(key string) error {
 	_, err := s.db.Exec(`DELETE FROM settings WHERE key = ?`, key)
-	return err
+	if err != nil {
+		return fmt.Errorf("settings delete %q: %w", key, err)
+	}
+	return nil
 }
 
 // All returns all key-value pairs as a map.

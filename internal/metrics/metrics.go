@@ -47,8 +47,8 @@ func New() *Store {
 
 // Record adds an observation to the store.
 func (s *Store) Record(route string, status int, latencyMs float64) {
-	s.total.Add(1)
 	s.mu.Lock()
+	s.total.Add(1)
 	s.ring[s.head%ringSize] = Record{
 		Route:      route,
 		StatusCode: status,

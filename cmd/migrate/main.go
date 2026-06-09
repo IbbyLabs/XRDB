@@ -21,6 +21,12 @@ func main() {
 	if *inputPath == "" {
 		exitWithErr("input is required")
 	}
+	if *outputPath == *inputPath {
+		exitWithErr("--output must differ from --input to avoid overwriting the source file")
+	}
+	if *reportPath == *inputPath {
+		exitWithErr("--report must differ from --input to avoid overwriting the source file")
+	}
 
 	raw, err := os.ReadFile(*inputPath)
 	if err != nil {

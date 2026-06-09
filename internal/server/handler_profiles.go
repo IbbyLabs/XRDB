@@ -7,12 +7,17 @@ import (
 	"net/http"
 	"strings"
 
+	"xrdb_rewrite/internal/config"
 	"xrdb_rewrite/internal/profile"
 )
 
 // registerProfileRoutes mounts all /profile/* handlers onto mux.
-func registerProfileRoutes(mux *http.ServeMux, store *profile.Store) {
+func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.Config) {
 	mux.HandleFunc("/profile", func(w http.ResponseWriter, r *http.Request) {
+		if cfg.APIKey != "" && !bearerMatches(r, cfg.APIKey) {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
 		if store == nil {
 			http.Error(w, "profile store unavailable", http.StatusServiceUnavailable)
 			return
@@ -60,6 +65,10 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store) {
 	})
 
 	mux.HandleFunc("/profile/{id}", func(w http.ResponseWriter, r *http.Request) {
+		if cfg.APIKey != "" && !bearerMatches(r, cfg.APIKey) {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
 		if store == nil {
 			http.Error(w, "profile store unavailable", http.StatusServiceUnavailable)
 			return
@@ -78,9 +87,6 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store) {
 			}
 			if p.PasswordHash != "" {
 				pw := r.Header.Get("X-Profile-Password")
-				if pw == "" {
-					pw = r.URL.Query().Get("password")
-				}
 				if err := store.CheckPassword(id, pw); err != nil {
 					http.Error(w, "profile password required", http.StatusUnauthorized)
 					return
@@ -88,6 +94,22 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store) {
 			}
 			writeJSON(w, http.StatusOK, p)
 		case http.MethodPut:
+			existing, err := store.Get(id)
+			if err != nil {
+				if errors.Is(err, profile.ErrNotFound) {
+					http.Error(w, "not found", http.StatusNotFound)
+					return
+				}
+				http.Error(w, "internal error", http.StatusInternalServerError)
+				return
+			}
+			if existing.PasswordHash != "" {
+				pw := r.Header.Get("X-Profile-Password")
+				if err := store.CheckPassword(id, pw); err != nil {
+					http.Error(w, "profile password required", http.StatusUnauthorized)
+					return
+				}
+			}
 			r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
 			body, err := io.ReadAll(r.Body)
 			if err != nil {
@@ -105,6 +127,9 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store) {
 				return
 			}
 			p.ID = id
+			if p.PasswordHash == "" {
+				p.PasswordHash = existing.PasswordHash
+			}
 			if err := store.Update(&p); err != nil {
 				if errors.Is(err, profile.ErrNotFound) {
 					http.Error(w, "not found", http.StatusNotFound)
@@ -120,6 +145,22 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store) {
 			}
 			writeJSON(w, http.StatusOK, updated)
 		case http.MethodDelete:
+			existing, err := store.Get(id)
+			if err != nil {
+				if errors.Is(err, profile.ErrNotFound) {
+					http.Error(w, "not found", http.StatusNotFound)
+					return
+				}
+				http.Error(w, "internal error", http.StatusInternalServerError)
+				return
+			}
+			if existing.PasswordHash != "" {
+				pw := r.Header.Get("X-Profile-Password")
+				if err := store.CheckPassword(id, pw); err != nil {
+					http.Error(w, "profile password required", http.StatusUnauthorized)
+					return
+				}
+			}
 			if err := store.Delete(id); err != nil {
 				if errors.Is(err, profile.ErrNotFound) {
 					http.Error(w, "not found", http.StatusNotFound)
@@ -135,6 +176,10 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store) {
 	})
 
 	mux.HandleFunc("/profile/{id}/export", func(w http.ResponseWriter, r *http.Request) {
+		if cfg.APIKey != "" && !bearerMatches(r, cfg.APIKey) {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
 		if store == nil {
 			http.Error(w, "profile store unavailable", http.StatusServiceUnavailable)
 			return
@@ -155,9 +200,6 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store) {
 		}
 		if p.PasswordHash != "" {
 			pw := r.Header.Get("X-Profile-Password")
-			if pw == "" {
-				pw = r.URL.Query().Get("password")
-			}
 			if err := store.CheckPassword(id, pw); err != nil {
 				http.Error(w, "profile password required", http.StatusUnauthorized)
 				return
@@ -170,6 +212,10 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store) {
 	})
 
 	mux.HandleFunc("/profile/import", func(w http.ResponseWriter, r *http.Request) {
+		if cfg.APIKey != "" && !bearerMatches(r, cfg.APIKey) {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
 		if store == nil {
 			http.Error(w, "profile store unavailable", http.StatusServiceUnavailable)
 			return

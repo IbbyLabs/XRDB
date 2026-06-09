@@ -44,10 +44,14 @@ func TestOMDBParsesRatings(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	o := &OMDB{apiKey: "test", httpClient: srv.Client()}
-	// Patch base URL by monkey-patching isn't available; use custom URL scheme.
-	// We test parse helpers directly instead.
-	_ = o
+	o := &OMDB{apiKey: "test", httpClient: srv.Client(), baseURL: srv.URL + "/"}
+	meta, err := o.Fetch(context.Background(), "movie", "tt0468569")
+	if err != nil {
+		t.Fatalf("Fetch: %v", err)
+	}
+	if len(meta.Ratings) != 3 {
+		t.Errorf("expected 3 ratings, got %d", len(meta.Ratings))
+	}
 
 	// Test parsePercent
 	if v := parsePercent("85%"); v < 8.4 || v > 8.6 {
@@ -75,11 +79,11 @@ func TestOMDBHTTPError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	o := &OMDB{apiKey: "bad", httpClient: srv.Client()}
-	// Use a test server URL override
-	_ = o
-	// Direct HTTP error path: the test verifies parsePercent/parseSlashScore above.
-	// Full HTTP path would require URL injection — covered by mdblist pattern if needed.
+	o := &OMDB{apiKey: "bad", httpClient: srv.Client(), baseURL: srv.URL + "/"}
+	_, err := o.Fetch(context.Background(), "movie", "tt0468569")
+	if err == nil {
+		t.Error("expected error for HTTP 401 response")
+	}
 }
 
 func TestOMDBAPIErrorResponse(t *testing.T) {
@@ -91,19 +95,15 @@ func TestOMDBAPIErrorResponse(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	// Test using a custom http client pointing to test server.
 	o := &OMDB{
 		apiKey:     "test",
-		httpClient: &http.Client{},
+		httpClient: srv.Client(),
+		baseURL:    srv.URL + "/",
 	}
-	// We can't easily inject the test URL without refactoring; test the logic path.
-	// Instead verify the error path exists by testing with a real-looking URL that will fail.
 	_, err := o.Fetch(context.Background(), "movie", "tt9999999")
-	// Should fail (network error to real OMDB with fake key) — just verify it's an error.
 	if err == nil {
-		t.Log("note: live OMDB call unexpectedly succeeded in test (may have network access)")
+		t.Error("expected error for OMDB API error response")
 	}
-	srv.Close()
 }
 
 func TestOMDBImplementsProvider(t *testing.T) {

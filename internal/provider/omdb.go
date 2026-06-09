@@ -18,6 +18,7 @@ const omdbBaseURL = "https://www.omdbapi.com/"
 type OMDB struct {
 	apiKey     string
 	httpClient *http.Client
+	baseURL    string // overrides omdbBaseURL; used in tests
 }
 
 // NewOMDB creates an OMDB provider.
@@ -40,8 +41,12 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 		return nil, fmt.Errorf("omdb: only IMDb tt-IDs are supported, got %q", id)
 	}
 
+	base := omdbBaseURL
+	if o.baseURL != "" {
+		base = o.baseURL
+	}
 	params := url.Values{"i": {id}, "tomatoes": {"true"}, "apikey": {o.apiKey}}
-	reqURL := omdbBaseURL + "?" + params.Encode()
+	reqURL := base + "?" + params.Encode()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("omdb: build request: %w", err)

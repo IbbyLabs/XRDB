@@ -2,7 +2,6 @@ package settings
 
 import (
 	"errors"
-	"os"
 	"path/filepath"
 	"testing"
 )
@@ -96,5 +95,4 @@ func TestPersistence(t *testing.T) {
 	if err != nil || v != "persisted" {
 		t.Errorf("persistence failed: got %q, %v", v, err)
 	}
-	_ = os.Remove(path)
 }

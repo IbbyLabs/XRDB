@@ -46,6 +46,10 @@ func applySettingsOverrides(cfg *config.Config, s *settings.Store) {
 func main() {
 	cfg := config.Load()
 
+	if cfg.DBPath == "" {
+		log.Fatal("db path cannot be empty (set XRDB_DB)")
+	}
+
 	store, err := profile.Open(cfg.DBPath)
 	if err != nil {
 		log.Fatalf("open profile store: %v", err)
