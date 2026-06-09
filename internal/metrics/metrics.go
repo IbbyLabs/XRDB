@@ -2,6 +2,7 @@
 package metrics
 
 import (
+	"sort"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -107,14 +108,5 @@ func percentile(sorted []float64, p int) float64 {
 }
 
 func sortFloat64s(s []float64) {
-	// insertion sort — ring is small (≤2000) so this is fine
-	for i := 1; i < len(s); i++ {
-		v := s[i]
-		j := i - 1
-		for j >= 0 && s[j] > v {
-			s[j+1] = s[j]
-			j--
-		}
-		s[j+1] = v
-	}
+	sort.Float64s(s)
 }
