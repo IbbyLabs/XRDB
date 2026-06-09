@@ -1,0 +1,39 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: xrdb-api:dev
+    container_name: xrdb-api
+    environment:
+      XRDB_ADDR: ":8787"
+      XRDB_VERSION: "dev"
+      XRDB_DB: "/data/xrdb.db"
+      XRDB_CACHE_DIR: "/data/cache"
+    ports:
+      - "8787:8787"
+    volumes:
+      - xrdb-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8787/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    image: xrdb-web:dev
+    container_name: xrdb-web
+    environment:
+      XRDB_API_BASE_URL: "http://api:8787"
+    ports:
+      - "3001:3001"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  xrdb-data:

@@ -1,0 +1,31 @@
+# Internal development artifacts
+docs/
+bench/
+fixtures/bench/
+fixtures/parity/
+
+# Build artifacts
+web/.next/
+web/node_modules/
+web/test-results/
+web/playwright-report/
+web/.playwright/
+
+# Runtime data
+output/
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# Secrets and environment
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go test cache (local)
+*.test
