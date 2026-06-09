@@ -22,6 +22,8 @@ jobs:
   version:
     name: Compute version metadata
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       deployment_version: ${{ steps.meta.outputs.deployment_version }}
       dev_track_tag: ${{ steps.meta.outputs.dev_track_tag }}
