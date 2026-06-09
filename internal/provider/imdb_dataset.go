@@ -154,9 +154,18 @@ func (d *IMDbDataset) download(ctx context.Context, dest string) error {
 	defer func() { _ = os.Remove(tmp) }()
 
 	buf := bufio.NewWriterSize(f, 1<<20)
-	if _, err := io.Copy(buf, io.LimitReader(resp.Body, 100<<20)); err != nil {
+	lr := &io.LimitedReader{R: resp.Body, N: 100 << 20}
+	if _, err := io.Copy(buf, lr); err != nil {
 		_ = f.Close()
 		return fmt.Errorf("write: %w", err)
+	}
+	if lr.N == 0 {
+		// Limit was reached — probe one extra byte to detect overflow.
+		var probe [1]byte
+		if n, _ := resp.Body.Read(probe[:]); n > 0 {
+			_ = f.Close()
+			return fmt.Errorf("dataset response exceeds 100 MiB limit")
+		}
 	}
 	if err := buf.Flush(); err != nil {
 		_ = f.Close()

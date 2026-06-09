@@ -21,10 +21,22 @@ func main() {
 	if *inputPath == "" {
 		exitWithErr("input is required")
 	}
-	if *outputPath == *inputPath {
+	absInput, err := filepath.Abs(*inputPath)
+	if err != nil {
+		exitWithErr(fmt.Sprintf("cannot resolve input path: %v", err))
+	}
+	absOutput, err := filepath.Abs(*outputPath)
+	if err != nil {
+		exitWithErr(fmt.Sprintf("cannot resolve output path: %v", err))
+	}
+	absReport, err := filepath.Abs(*reportPath)
+	if err != nil {
+		exitWithErr(fmt.Sprintf("cannot resolve report path: %v", err))
+	}
+	if absOutput == absInput {
 		exitWithErr("--output must differ from --input to avoid overwriting the source file")
 	}
-	if *reportPath == *inputPath {
+	if absReport == absInput {
 		exitWithErr("--report must differ from --input to avoid overwriting the source file")
 	}
 

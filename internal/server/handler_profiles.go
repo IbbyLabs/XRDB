@@ -126,10 +126,19 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 				http.Error(w, "invalid JSON", http.StatusBadRequest)
 				return
 			}
+			// profile.Profile.PasswordHash has json:"-" so it is never set by
+			// the unmarshal above. Use a second decode to detect whether the
+			// caller explicitly sent "passwordHash": "" to clear the password.
+			var explicit struct {
+				PasswordHash *string `json:"passwordHash"`
+			}
+			_ = json.Unmarshal(body, &explicit)
 			p.ID = id
-			if p.PasswordHash == "" {
+			if explicit.PasswordHash == nil || *explicit.PasswordHash != "" {
+				// Field omitted or non-empty (setting hash directly unsupported) → preserve.
 				p.PasswordHash = existing.PasswordHash
 			}
+			// explicit.PasswordHash points to "" → clear: leave p.PasswordHash as ""
 			if err := store.Update(&p); err != nil {
 				if errors.Is(err, profile.ErrNotFound) {
 					http.Error(w, "not found", http.StatusNotFound)

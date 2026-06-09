@@ -53,6 +53,21 @@ func TestOMDBParsesRatings(t *testing.T) {
 		t.Errorf("expected 3 ratings, got %d", len(meta.Ratings))
 	}
 
+	// Verify per-source values are correctly parsed and scaled.
+	ratingsBySource := make(map[string]float64, len(meta.Ratings))
+	for _, r := range meta.Ratings {
+		ratingsBySource[r.Source] = r.Value
+	}
+	if v := ratingsBySource["imdb"]; v < 8.9 || v > 9.1 {
+		t.Errorf("imdb rating = %v, want ~9.0", v)
+	}
+	if v := ratingsBySource["rt"]; v < 8.4 || v > 8.6 {
+		t.Errorf("rt rating = %v, want ~8.5", v)
+	}
+	if v := ratingsBySource["metacritic"]; v < 7.3 || v > 7.5 {
+		t.Errorf("metacritic rating = %v, want ~7.4", v)
+	}
+
 	// Test parsePercent
 	if v := parsePercent("85%"); v < 8.4 || v > 8.6 {
 		t.Errorf("parsePercent(85%%) = %v, want ~8.5", v)

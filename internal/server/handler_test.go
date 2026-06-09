@@ -653,10 +653,12 @@ func TestWarmEndpointMethodNotAllowed(t *testing.T) {
 }
 
 func TestWarmEndpointNoPipeline(t *testing.T) {
-	h := NewHandler("test", nil, nil, nil, nil, config.Config{})
+	h := NewHandler("test", nil, nil, nil, nil, config.Config{AdminKey: "test-key"})
 	rr := httptest.NewRecorder()
 	body := strings.NewReader(`{"ids":["tt0468569"],"mediaType":"poster"}`)
-	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/api/admin/warm", body))
+	req := httptest.NewRequest(http.MethodPost, "/api/admin/warm", body)
+	req.Header.Set("Authorization", "Bearer test-key")
+	h.ServeHTTP(rr, req)
 	if rr.Code != http.StatusServiceUnavailable {
 		t.Errorf("expected 503 (no pipeline), got %d", rr.Code)
 	}

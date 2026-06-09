@@ -4,6 +4,7 @@ package provider
 import (
 	"context"
 	"sort"
+	"sync"
 	"time"
 )
 
@@ -45,12 +46,22 @@ type Provider interface {
 	Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, error)
 }
 
-// CachedFetch wraps a Provider with a simple in-memory TTL cache.
+// inflightCall tracks an in-progress fetch so concurrent callers for the same
+// key can wait on the single in-flight request rather than issuing duplicates.
+type inflightCall struct {
+	wg  sync.WaitGroup
+	val *MediaMeta
+	err error
+}
+
+// CachedFetch wraps a Provider with a simple in-memory TTL cache and
+// single-flight request coalescing (concurrent identical keys share one fetch).
 type CachedFetch struct {
-	inner Provider
-	ttl   time.Duration
-	mu    cacheMu
-	store map[string]*cacheEntry
+	inner    Provider
+	ttl      time.Duration
+	mu       cacheMu
+	store    map[string]*cacheEntry
+	inflight map[string]*inflightCall
 }
 
 type cacheEntry struct {
@@ -61,37 +72,50 @@ type cacheEntry struct {
 // NewCachedFetch wraps provider p with a TTL cache.
 func NewCachedFetch(p Provider, ttl time.Duration) *CachedFetch {
 	return &CachedFetch{
-		inner: p,
-		ttl:   ttl,
-		store: make(map[string]*cacheEntry),
+		inner:    p,
+		ttl:      ttl,
+		store:    make(map[string]*cacheEntry),
+		inflight: make(map[string]*inflightCall),
 	}
 }
 
 // Name satisfies the Provider interface.
 func (c *CachedFetch) Name() string { return c.inner.Name() }
 
-// Fetch returns a cached result if fresh, otherwise delegates to the inner provider.
+// Fetch returns a cached result if fresh, otherwise delegates to the inner
+// provider. Concurrent calls for the same key are coalesced: only one upstream
+// request is issued and all waiters receive the same result.
 func (c *CachedFetch) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, error) {
 	key := mediaType + ":" + id
+
 	c.mu.Lock()
-	entry, ok := c.store[key]
-	c.mu.Unlock()
-	if ok && time.Now().Before(entry.expiresAt) {
+	if entry, ok := c.store[key]; ok && time.Now().Before(entry.expiresAt) {
+		c.mu.Unlock()
 		return entry.meta, nil
 	}
-	meta, err := c.inner.Fetch(ctx, mediaType, id)
-	if err != nil {
-		return nil, err
-	}
-	c.mu.Lock()
-	// Re-check: another goroutine may have fetched and stored while we were fetching.
-	if existing, ok := c.store[key]; ok && time.Now().Before(existing.expiresAt) {
+	// Coalesce: if a fetch is already in-flight for this key, wait for it.
+	if call, ok := c.inflight[key]; ok {
 		c.mu.Unlock()
-		return existing.meta, nil
+		call.wg.Wait()
+		return call.val, call.err
 	}
-	c.store[key] = &cacheEntry{meta: meta, expiresAt: time.Now().Add(c.ttl)}
+	// Register a new in-flight call before releasing the lock.
+	call := &inflightCall{}
+	call.wg.Add(1)
+	c.inflight[key] = call
 	c.mu.Unlock()
-	return meta, nil
+
+	call.val, call.err = c.inner.Fetch(ctx, mediaType, id)
+	call.wg.Done()
+
+	c.mu.Lock()
+	delete(c.inflight, key)
+	if call.err == nil {
+		c.store[key] = &cacheEntry{meta: call.val, expiresAt: time.Now().Add(c.ttl)}
+	}
+	c.mu.Unlock()
+
+	return call.val, call.err
 }
 
 // Registry holds a set of named providers for lookup.
