@@ -1,0 +1,126 @@
+package provider
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strings"
+	"time"
+)
+
+// Jikan is the public unofficial MyAnimeList REST API (no auth required).
+const jikanBaseURL = "https://api.jikan.moe/v4/anime/"
+
+// MAL is the MyAnimeList metadata provider via the Jikan public API.
+// IDs must be prefixed with "mal:" e.g. "mal:20".
+type MAL struct {
+	httpClient *http.Client
+}
+
+// NewMAL creates a MAL provider. No API key is required (uses public Jikan API).
+func NewMAL() *MAL {
+	return &MAL{
+		httpClient: &http.Client{Timeout: 10 * time.Second},
+	}
+}
+
+func (m *MAL) Name() string { return "mal" }
+
+// Fetch retrieves MAL metadata. id must be prefixed "mal:<numeric-id>".
+func (m *MAL) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, error) {
+	malID, ok := stripPrefix(id, "mal:")
+	if !ok {
+		return nil, fmt.Errorf("mal: unsupported id %q (expected mal:<id>)", id)
+	}
+
+	url := jikanBaseURL + malID
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("mal: build request: %w", err)
+	}
+	resp, err := m.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("mal: http get: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, fmt.Errorf("mal: anime not found for id %q", id)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("mal: http %d", resp.StatusCode)
+	}
+
+	var result struct {
+		Data struct {
+			TitleEnglish string  `json:"title_english"`
+			Title        string  `json:"title"`
+			Synopsis     string  `json:"synopsis"`
+			Score        float64 `json:"score"`
+			Year         int     `json:"year"`
+			Genres       []struct {
+				Name string `json:"name"`
+			} `json:"genres"`
+			Images struct {
+				JPG struct {
+					LargeImageURL string `json:"large_image_url"`
+					ImageURL      string `json:"image_url"`
+				} `json:"jpg"`
+			} `json:"images"`
+		} `json:"data"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("mal: decode: %w", err)
+	}
+
+	d := result.Data
+	title := d.TitleEnglish
+	if title == "" {
+		title = d.Title
+	}
+
+	meta := &MediaMeta{
+		Title:    title,
+		Year:     d.Year,
+		Overview: d.Synopsis,
+		Language: "en",
+	}
+
+	posterURL := d.Images.JPG.LargeImageURL
+	if posterURL == "" {
+		posterURL = d.Images.JPG.ImageURL
+	}
+	meta.PosterURL = posterURL
+
+	if len(d.Genres) > 0 {
+		genres := make([]string, 0, len(d.Genres))
+		for _, g := range d.Genres {
+			if g.Name != "" {
+				genres = append(genres, g.Name)
+			}
+		}
+		meta.Genres = genres
+	}
+
+	if d.Score > 0 {
+		meta.Ratings = []Rating{{
+			Source: "mal",
+			Value:  d.Score,
+			Label:  fmt.Sprintf("%.1f", d.Score),
+		}}
+	}
+
+	return meta, nil
+}
+
+// stripPrefix returns (suffix, true) if s has the given prefix, else ("", false).
+func stripPrefix(s, prefix string) (string, bool) {
+	if !strings.HasPrefix(s, prefix) {
+		return "", false
+	}
+	rest := strings.TrimPrefix(s, prefix)
+	if rest == "" {
+		return "", false
+	}
+	return rest, true
+}
