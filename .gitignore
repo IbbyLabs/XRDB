@@ -1,32 +1,34 @@
-.DS_Store
-Thumbs.db
-.idea/
-.cache/
-.idea/
-.next/
-.pnpm-store/
-.qodo/
-.swc/
-.turbo/
-.vercel/
-.vscode/
-backups/
-coverage/
-data/*
-!data/poster-warm-targets.txt
-node_modules/
+# Internal development artifacts
+docs/
+bench/
+fixtures/bench/
+fixtures/parity/
+
+# Build artifacts
+web/.next/
+web/out/
+web/node_modules/
+internal/ui/dist/
+web/test-results/
+web/playwright-report/
+web/.playwright/
+
+# Runtime data
 output/
-public/commits.json
-*.log
+data/
+xrdb-cache/
 *.db
 *.db-shm
 *.db-wal
-*.sqlite
+
+# Secrets and environment
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-future.md
-tsconfig.tsbuildinfo
-.local-backup/
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Go test cache (local)
+*.test

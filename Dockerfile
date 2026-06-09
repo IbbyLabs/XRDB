@@ -1,73 +1,32 @@
-FROM node:22-bookworm-slim AS base
+# Stage 1: build the Next.js static export
+FROM node:22-alpine AS web-builder
+WORKDIR /src/web
+COPY web/package.json web/package-lock.json ./
+RUN npm ci --ignore-scripts
+COPY web ./
+RUN npm run build
+# Output lands in /src/internal/ui/dist (distDir in next.config.ts)
 
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV PNPM_HOME=/pnpm
-ENV PATH=$PNPM_HOME:$PATH
+# Stage 2: build the Go binary (with embedded UI)
+FROM golang:1.25-alpine AS go-builder
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY cmd ./cmd
+COPY internal ./internal
+# Pull in the static export produced by the web builder
+COPY --from=web-builder /src/internal/ui/dist ./internal/ui/dist
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/xrdb-api ./cmd/api
 
-RUN corepack enable
-
-FROM base AS install
+# Stage 3: minimal runtime image
+FROM alpine:3.21
+RUN adduser -D -H -s /sbin/nologin appuser
+USER appuser
 WORKDIR /app
-
-COPY package.json pnpm-lock.yaml ./
-COPY scripts ./scripts
-
-RUN pnpm install --frozen-lockfile
-
-FROM base AS build
-WORKDIR /app
-
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends git \
-  && rm -rf /var/lib/apt/lists/*
-
-ARG XRDB_BUILD_VERSION
-ARG NEXT_PUBLIC_DEPLOYMENT_VERSION
-ENV XRDB_BUILD_VERSION=${XRDB_BUILD_VERSION}
-ENV NEXT_PUBLIC_DEPLOYMENT_VERSION=${NEXT_PUBLIC_DEPLOYMENT_VERSION}
-
-COPY --from=install /app/node_modules ./node_modules
-COPY . .
-
-RUN mkdir -p /app/public
-RUN pnpm run build
-
-FROM node:22-bookworm-slim AS runtime
-WORKDIR /app
-
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=3000
-
-LABEL org.opencontainers.image.title="IbbyLabs Media Service"
-LABEL org.opencontainers.image.description="Dynamic media artwork service with rating overlays and proxy tooling."
-LABEL org.opencontainers.image.source="https://github.com/IbbyLabs/XRDB"
-
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-    fontconfig \
-    fonts-dejavu-core \
-    fonts-freefont-ttf \
-    gosu \
-    passwd \
-    fonts-noto-core \
-  && rm -rf /var/lib/apt/lists/*
-
-COPY --from=build /app/.next/standalone ./
-COPY --from=build /app/.next/static ./.next/static
-COPY --from=build /app/public ./public
-COPY --from=build /app/data/poster-warm-targets.txt ./poster-warm-targets.txt
-COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-
-ENV XRDB_POSTER_WARM_SOURCE_FILE=./poster-warm-targets.txt
-
-RUN mkdir -p /app/data \
-  && chown -R node:node /app \
-  && chmod +x /usr/local/bin/docker-entrypoint.sh
-
-VOLUME ["/app/data"]
-
-EXPOSE 3000
-
-ENTRYPOINT ["docker-entrypoint.sh"]
-CMD ["node", "server.js"]
+COPY --from=go-builder /out/xrdb-api /app/xrdb-api
+VOLUME ["/data"]
+EXPOSE 8787
+ENV XRDB_ADDR=:8787 \
+    XRDB_DB=/data/xrdb.db \
+    XRDB_CACHE_DIR=/data/cache
+CMD ["/app/xrdb-api"]
