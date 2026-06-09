@@ -59,7 +59,10 @@ func (a *AniList) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, 
 		"query":     anilistQuery,
 		"variables": map[string]any{"id": numericID},
 	}
-	bodyBytes, _ := json.Marshal(payload)
+	bodyBytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("anilist: build payload: %w", err)
+	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, anilistGraphQLURL,
 		bytes.NewReader(bodyBytes))

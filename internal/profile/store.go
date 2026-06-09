@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -274,19 +275,7 @@ func isConflict(err error) bool {
 	if err == nil {
 		return false
 	}
-	return contains(err.Error(), "UNIQUE constraint failed") ||
-		contains(err.Error(), "constraint failed: profiles.id")
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(s) > 0 && containsStr(s, substr))
-}
-
-func containsStr(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
+	msg := err.Error()
+	return strings.Contains(msg, "UNIQUE constraint failed") ||
+		strings.Contains(msg, "constraint failed: profiles.id")
 }

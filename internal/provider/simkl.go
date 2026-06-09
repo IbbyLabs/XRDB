@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+var simklNumericIDRe = regexp.MustCompile(`^\d+$`)
+
 const simklBaseURL = "https://api.simkl.com"
 
 var simklIMDbIDRe = regexp.MustCompile(`^tt\d+$`)
@@ -44,6 +46,9 @@ func (s *SIMKL) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, er
 		raw, ok := stripPrefix(id, "simkl:")
 		if !ok {
 			return nil, fmt.Errorf("simkl: empty id in %q", id)
+		}
+		if !simklNumericIDRe.MatchString(raw) {
+			return nil, fmt.Errorf("simkl: non-numeric id %q", id)
 		}
 		simklID = raw
 

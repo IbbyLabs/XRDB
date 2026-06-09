@@ -3,6 +3,7 @@ package compose
 import (
 	"image"
 	"image/color"
+	"log"
 	"strings"
 	"sync"
 
@@ -23,19 +24,23 @@ var (
 
 func ensureFaces() {
 	onceFaces.Do(func() {
-		if tt, err := opentype.Parse(gobold.TTF); err == nil {
-			if f, err := opentype.NewFace(tt, &opentype.FaceOptions{
-				Size: 14, DPI: 72, Hinting: font.HintingFull,
-			}); err == nil {
-				faceValue = f
-			}
+		if tt, err := opentype.Parse(gobold.TTF); err != nil {
+			log.Printf("compose: parse bold font: %v", err)
+		} else if f, err := opentype.NewFace(tt, &opentype.FaceOptions{
+			Size: 14, DPI: 72, Hinting: font.HintingFull,
+		}); err != nil {
+			log.Printf("compose: create bold face: %v", err)
+		} else {
+			faceValue = f
 		}
-		if tt, err := opentype.Parse(goregular.TTF); err == nil {
-			if f, err := opentype.NewFace(tt, &opentype.FaceOptions{
-				Size: 9, DPI: 72, Hinting: font.HintingFull,
-			}); err == nil {
-				faceLabel = f
-			}
+		if tt, err := opentype.Parse(goregular.TTF); err != nil {
+			log.Printf("compose: parse regular font: %v", err)
+		} else if f, err := opentype.NewFace(tt, &opentype.FaceOptions{
+			Size: 9, DPI: 72, Hinting: font.HintingFull,
+		}); err != nil {
+			log.Printf("compose: create regular face: %v", err)
+		} else {
+			faceLabel = f
 		}
 	})
 }

@@ -123,10 +123,14 @@ func (c *Cache) Stats() Stats {
 	ttl := c.ttl
 	c.mu.Unlock()
 
-	entries, _ := filepath.Glob(filepath.Join(dir, "*.bin"))
+	entries, err := filepath.Glob(filepath.Join(dir, "*.bin"))
+	diskEntries := len(entries)
+	if err != nil {
+		diskEntries = -1
+	}
 	return Stats{
 		HotEntries:  hotCount,
-		DiskEntries: len(entries),
+		DiskEntries: diskEntries,
 		Dir:         dir,
 		TTL:         ttl.String(),
 	}

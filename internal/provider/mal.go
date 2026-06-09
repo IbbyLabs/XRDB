@@ -75,15 +75,17 @@ func (m *MAL) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, erro
 
 	d := result.Data
 	title := d.TitleEnglish
+	lang := "en"
 	if title == "" {
 		title = d.Title
+		lang = "ja"
 	}
 
 	meta := &MediaMeta{
 		Title:    title,
 		Year:     d.Year,
 		Overview: d.Synopsis,
-		Language: "en",
+		Language: lang,
 	}
 
 	posterURL := d.Images.JPG.LargeImageURL
