@@ -79,7 +79,8 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		uuid := queryValue(raw, "uuid", "none")
 
 		// Enforce global API key if configured.
-		if cfg.APIKey != "" && !bearerMatches(r, cfg.APIKey) {
+		// Accept via Authorization: Bearer header or ?key= query param (for Stremio compatibility).
+		if cfg.APIKey != "" && !bearerMatches(r, cfg.APIKey) && !keyParamMatches(raw, cfg.APIKey) {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			ms.Record(r.URL.Path, http.StatusUnauthorized, latMs(start))
 			return
@@ -321,6 +322,13 @@ func latMs(start time.Time) float64 {
 // Uses constant-time comparison to prevent timing attacks.
 func bearerMatches(r *http.Request, want string) bool {
 	got := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+	return subtle.ConstantTimeCompare([]byte(got), []byte(want)) == 1
+}
+
+// keyParamMatches checks that the ?key= query parameter equals want.
+// Uses constant-time comparison to prevent timing attacks.
+func keyParamMatches(rawQuery, want string) bool {
+	got := queryValue(rawQuery, "key", "")
 	return subtle.ConstantTimeCompare([]byte(got), []byte(want)) == 1
 }
 

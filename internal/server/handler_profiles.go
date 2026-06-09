@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 
 	"xrdb_rewrite/internal/profile"
 )
@@ -130,8 +131,19 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store) {
 			http.Error(w, "internal error", http.StatusInternalServerError)
 			return
 		}
+		if p.PasswordHash != "" {
+			pw := r.Header.Get("X-Profile-Password")
+			if pw == "" {
+				pw = r.URL.Query().Get("password")
+			}
+			if err := store.CheckPassword(id, pw); err != nil {
+				http.Error(w, "profile password required", http.StatusUnauthorized)
+				return
+			}
+		}
+		safeID := strings.NewReplacer(`"`, "_", "\n", "_", "\r", "_").Replace(id)
 		env := profile.ExportEnvelope{Version: 1, Profiles: []profile.Profile{*p}}
-		w.Header().Set("Content-Disposition", `attachment; filename="xrdb-profile-`+id+`.json"`)
+		w.Header().Set("Content-Disposition", `attachment; filename="xrdb-profile-`+safeID+`.json"`)
 		writeJSON(w, http.StatusOK, env)
 	})
 
