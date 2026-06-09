@@ -84,11 +84,6 @@ export function ConfiguratorClient() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [mediaType, mediaId, config, triggerPreview]);
 
-  useEffect(() => {
-    triggerPreview(mediaType, mediaId, config, true);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const aspect = MEDIA_TYPES.find(t => t.id === mediaType)?.aspect ?? '2/3';
 
   const flash = useCallback((type: 'error' | 'success' | 'info', message: string) => {
@@ -275,8 +270,10 @@ export function ConfiguratorClient() {
             ] as const).map(tab => (
               <button
                 key={tab.id}
+                id={`${uid}-tab-${tab.id}`}
                 role="tab"
                 aria-selected={activeTab === tab.id}
+                aria-controls={`${uid}-panel-${tab.id}`}
                 className={`cfg-tab${activeTab === tab.id ? ' cfg-tab--active' : ''}`}
                 onClick={() => setActiveTab(tab.id)}
               >
@@ -287,32 +284,40 @@ export function ConfiguratorClient() {
           </div>
 
           {activeTab === 'display' && (
-            <DisplayPanel uid={uid} config={config} onUpdate={updateConfig} onToggleBadge={toggleBadge} onReset={() => setConfig(DEFAULT_CONFIG)} />
+            <div id={`${uid}-panel-display`} role="tabpanel" aria-labelledby={`${uid}-tab-display`}>
+              <DisplayPanel uid={uid} config={config} onUpdate={updateConfig} onToggleBadge={toggleBadge} onReset={() => setConfig(DEFAULT_CONFIG)} />
+            </div>
           )}
 
           {activeTab === 'ratings' && (
-            <RatingsPanel uid={uid} config={config} onUpdate={updateConfig} onToggleRating={toggleRating} />
+            <div id={`${uid}-panel-ratings`} role="tabpanel" aria-labelledby={`${uid}-tab-ratings`}>
+              <RatingsPanel uid={uid} config={config} onUpdate={updateConfig} onToggleRating={toggleRating} />
+            </div>
           )}
 
           {activeTab === 'templates' && (
-            <TemplatesPanel onApply={(t) => {
-              const parsed = t.config as Partial<ConfigState>;
-              setConfig(c => ({ ...c, ...parsed }));
-              setActiveTab('display');
-            }} />
+            <div id={`${uid}-panel-templates`} role="tabpanel" aria-labelledby={`${uid}-tab-templates`}>
+              <TemplatesPanel onApply={(t) => {
+                const parsed = t.config as Partial<ConfigState>;
+                setConfig(c => ({ ...c, ...parsed }));
+                setActiveTab('display');
+              }} />
+            </div>
           )}
 
           {activeTab === 'profile' && (
-            <ProfilePanel
-              uid={uid}
-              profileId={profileId} setProfileId={setProfileId}
-              profileName={profileName} setProfileName={setProfileName}
-              recentProfiles={recentProfiles}
-              isPending={isPending}
-              importText={importText} setImportText={setImportText}
-              showImport={showImport} setShowImport={setShowImport}
-              onSave={handleSaveProfile} onExport={handleExport} onImport={handleImport}
-            />
+            <div id={`${uid}-panel-profile`} role="tabpanel" aria-labelledby={`${uid}-tab-profile`}>
+              <ProfilePanel
+                uid={uid}
+                profileId={profileId} setProfileId={setProfileId}
+                profileName={profileName} setProfileName={setProfileName}
+                recentProfiles={recentProfiles}
+                isPending={isPending}
+                importText={importText} setImportText={setImportText}
+                showImport={showImport} setShowImport={setShowImport}
+                onSave={handleSaveProfile} onExport={handleExport} onImport={handleImport}
+              />
+            </div>
           )}
         </div>
       </div>

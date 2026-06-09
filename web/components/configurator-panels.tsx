@@ -109,8 +109,8 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating }: RatingsP
       </div>
       <div className="xrdb-card-body cfg-fields">
         <div className="cfg-field">
-          <label className="xrdb-label" htmlFor={`${uid}-layout`}>Position</label>
-          <div className="cfg-layout-grid">
+          <span className="xrdb-label" id={`${uid}-layout-label`}>Position</span>
+          <div className="cfg-layout-grid" role="group" aria-labelledby={`${uid}-layout-label`}>
             {LAYOUT_OPTIONS.map(o => (
               <button
                 key={o.id}

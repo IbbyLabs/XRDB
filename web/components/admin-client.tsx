@@ -4,6 +4,8 @@ import { useState, useCallback, useEffect } from 'react';
 import { Activity, HardDrive, RefreshCw, AlertCircle, Flame } from 'lucide-react';
 import { fetchMetrics, fetchCacheStats, type MetricsSnapshot, type CacheStats } from '@/lib/api';
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
+
 function fmt(n: number, decimals = 1): string {
   return n.toFixed(decimals);
 }
@@ -116,7 +118,7 @@ function WarmPanel() {
     if (list.length === 0) { setError('Enter at least one ID'); return; }
     setSub(true); setError(null); setResult(null);
     try {
-      const res = await fetch('/api/admin/warm', {
+      const res = await fetch(`${API_BASE}/api/admin/warm`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ids: list, mediaType }),

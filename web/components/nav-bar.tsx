@@ -30,7 +30,7 @@ export function NavBar() {
           key={href}
           href={href}
           className="xrdb-nav-link"
-          aria-current={pathname.startsWith(href) ? 'page' : undefined}
+          aria-current={pathname === href || pathname.startsWith(href + '/') ? 'page' : undefined}
         >
           <Icon size={14} aria-hidden="true" />
           {label}

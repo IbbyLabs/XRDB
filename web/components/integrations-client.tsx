@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useId } from 'react';
+import { useState, useEffect, useCallback, useId, useRef } from 'react';
 import { Check, AlertCircle, X, Plug, Eye, EyeOff, Trash2 } from 'lucide-react';
 import { fetchSettings, setSetting, deleteSetting, type SettingStatus } from '@/lib/api';
 
@@ -157,7 +157,8 @@ function KeyRow({
   const uid = useId();
   const [value, setValue] = useState('');
   const [show, setShow]   = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving]   = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [localError, setLocalError] = useState('');
 
   const handleSave = async () => {
@@ -213,8 +214,13 @@ function KeyRow({
           {isSet && (
             <button
               className="xrdb-btn xrdb-btn-ghost"
-              onClick={onDelete}
-              disabled={saving}
+              onClick={async () => {
+                if (deleting) return;
+                setDeleting(true);
+                setLocalError('');
+                try { await onDelete(); } catch (e) { setLocalError(normalizeError(e)); } finally { setDeleting(false); }
+              }}
+              disabled={saving || deleting}
               aria-label={`Remove ${keyDef.label}`}
               style={{ flexShrink: 0, color: 'var(--muted)' }}
             >
@@ -244,10 +250,14 @@ export function IntegrationsClient() {
   const [statuses, setStatuses] = useState<Record<string, boolean>>({});
   const [loading, setLoading]   = useState(true);
   const [notice, setNotice]     = useState<{ type: 'error' | 'success' | 'info'; message: string } | null>(null);
+  const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const flash = useCallback((type: 'error' | 'success' | 'info', msg: string) => {
     setNotice({ type, message: msg });
-    if (type !== 'error') setTimeout(() => setNotice(null), 4000);
+    if (noticeTimer.current) clearTimeout(noticeTimer.current);
+    if (type !== 'error') {
+      noticeTimer.current = setTimeout(() => setNotice(null), 4000);
+    }
   }, []);
 
   const loadStatuses = useCallback(async () => {

@@ -14,4 +14,6 @@ COPY --from=builder /web/.next/static ./.next/static
 EXPOSE 3001
 ENV PORT=3001 \
     HOSTNAME=0.0.0.0
+HEALTHCHECK --interval=15s --timeout=3s --start-period=10s --retries=3 \
+  CMD wget -q -O - http://127.0.0.1:3001/ || exit 1
 CMD ["node", "server.js"]

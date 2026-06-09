@@ -17,7 +17,10 @@
 
   --accent:        oklch(var(--accent-l) var(--accent-c) var(--hue));
   --accent-dim:    oklch(19%  0.09  var(--hue));
+  --accent-subtle: var(--accent-dim);
   --accent-text:   oklch(76%  0.10  var(--hue));
+
+  --surface: var(--bg-elevated);
 
   --ink:    oklch(93%  0.007 var(--hue));
   --muted:  oklch(62%  0.012 var(--hue));

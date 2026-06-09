@@ -45,7 +45,7 @@ export interface HealthResponse {
 }
 
 function base(): string {
-  if (typeof window !== 'undefined') return '';
+  if (typeof window !== 'undefined') return process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
   return API_BASE;
 }
 
