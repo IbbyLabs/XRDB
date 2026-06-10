@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useId, useRef } from 'react';
-import { Check, AlertCircle, X, Plug, Eye, EyeOff, Trash2 } from 'lucide-react';
+import { Check, AlertCircle, X, Plug, Eye, EyeOff, Trash2, ChevronDown } from 'lucide-react';
 import { fetchSettings, setSetting, deleteSetting } from '@/lib/api';
 
 // ── Provider definitions ──────────────────────────────────────────────────────
@@ -122,21 +122,21 @@ function normalizeError(e: unknown): string {
   return msg;
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// ── Notice ────────────────────────────────────────────────────────────────────
 
 function Notice({
   type, message, onDismiss,
 }: { type: 'error' | 'success' | 'info'; message: string; onDismiss?: () => void }) {
   return (
     <div
-      className={`xrdb-notice xrdb-notice-${type}`}
+      className={`notice notice-${type}`}
       role={type === 'error' ? 'alert' : 'status'}
       aria-live={type === 'error' ? 'assertive' : 'polite'}
     >
       {type === 'error' ? <AlertCircle size={14} aria-hidden /> : <Check size={14} aria-hidden />}
       <span style={{ flex: 1 }}>{message}</span>
       {onDismiss && (
-        <button onClick={onDismiss} className="xrdb-notice-dismiss" aria-label="Dismiss">
+        <button onClick={onDismiss} className="notice-dismiss" aria-label="Dismiss">
           <X size={12} aria-hidden />
         </button>
       )}
@@ -176,69 +176,128 @@ function KeyRow({
   };
 
   return (
-    <div className="int-key-row">
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <label className="xrdb-label" htmlFor={uid}>{keyDef.label}</label>
-        {keyDef.hint && <span className="xrdb-field-hint">{keyDef.hint}</span>}
-        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.35rem' }}>
-          <div style={{ position: 'relative', flex: 1 }}>
-            <input
-              id={uid}
-              className="xrdb-input"
-              type={show ? 'text' : 'password'}
-              value={value}
-              onChange={e => { setValue(e.target.value); setLocalError(''); }}
-              onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
-              placeholder={isSet ? '••••••••  (set — enter new value to replace)' : keyDef.placeholder}
-              style={{ paddingRight: '2.5rem' }}
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <button
-              className="int-show-btn"
-              type="button"
-              onClick={() => setShow(v => !v)}
-              aria-label={show ? 'Hide key' : 'Show key'}
-            >
-              {show ? <EyeOff size={13} aria-hidden /> : <Eye size={13} aria-hidden />}
-            </button>
-          </div>
+    <div className="field">
+      <label className="label" htmlFor={uid}>
+        {keyDef.label}
+        {isSet && <span className="sr-only"> (configured)</span>}
+      </label>
+      {keyDef.hint && <span className="hint" style={{ marginTop: 0 }}>{keyDef.hint}</span>}
+      <div className="key-row" style={{ marginTop: 'var(--sp-1)' }}>
+        <div className="key-input-wrap">
+          <input
+            id={uid}
+            className="input"
+            type={show ? 'text' : 'password'}
+            value={value}
+            onChange={e => { setValue(e.target.value); setLocalError(''); }}
+            onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
+            placeholder={isSet ? '••••••••  (set — enter new value to replace)' : keyDef.placeholder}
+            style={{ paddingRight: '2.5rem' }}
+            autoComplete="off"
+            spellCheck={false}
+          />
           <button
-            className="xrdb-btn xrdb-btn-primary"
-            onClick={handleSave}
-            disabled={saving || !value.trim()}
+            className="key-show-btn"
+            type="button"
+            onClick={() => setShow(v => !v)}
+            aria-label={show ? 'Hide key' : 'Show key'}
+          >
+            {show ? <EyeOff size={13} aria-hidden /> : <Eye size={13} aria-hidden />}
+          </button>
+        </div>
+        <button
+          className="btn btn-primary"
+          onClick={handleSave}
+          disabled={saving || !value.trim()}
+          style={{ flexShrink: 0 }}
+        >
+          {saving ? 'Saving…' : 'Save'}
+        </button>
+        {isSet && (
+          <button
+            className="btn btn-ghost"
+            onClick={async () => {
+              if (deleting) return;
+              setDeleting(true);
+              setLocalError('');
+              try { await onDelete(); } catch (e) { setLocalError(normalizeError(e)); } finally { setDeleting(false); }
+            }}
+            disabled={saving || deleting}
+            aria-label={`Remove ${keyDef.label}`}
             style={{ flexShrink: 0 }}
           >
-            {saving ? 'Saving…' : 'Save'}
+            <Trash2 size={13} aria-hidden />
           </button>
-          {isSet && (
-            <button
-              className="xrdb-btn xrdb-btn-ghost"
-              onClick={async () => {
-                if (deleting) return;
-                setDeleting(true);
-                setLocalError('');
-                try { await onDelete(); } catch (e) { setLocalError(normalizeError(e)); } finally { setDeleting(false); }
-              }}
-              disabled={saving || deleting}
-              aria-label={`Remove ${keyDef.label}`}
-              style={{ flexShrink: 0, color: 'var(--muted)' }}
-            >
-              <Trash2 size={13} aria-hidden />
-            </button>
-          )}
-        </div>
-        {localError && (
-          <span className="xrdb-field-hint" style={{ color: 'var(--error, #ef4444)', marginTop: '0.25rem' }}>
-            {localError}
-          </span>
         )}
       </div>
+      {localError && (
+        <span className="hint hint-error" role="alert">{localError}</span>
+      )}
+    </div>
+  );
+}
 
-      <div className="int-key-status" aria-label={isSet ? 'Configured' : 'Not configured'}>
-        {isSet
-          ? <span className="int-status-dot int-status-dot--set" title="Configured" aria-hidden />
-          : <span className="int-status-dot int-status-dot--unset" title="Not configured" aria-hidden />}
+// ── Provider row (progressive disclosure) ─────────────────────────────────────
+
+function ProviderRow({
+  integration, statuses, onSave, onDelete, defaultOpen,
+}: {
+  integration: Integration;
+  statuses: Record<string, boolean>;
+  onSave: (key: string, value: string) => Promise<void>;
+  onDelete: (key: string) => Promise<void>;
+  defaultOpen: boolean;
+}) {
+  const uid = useId();
+  const [open, setOpen] = useState(defaultOpen);
+  const anySet = integration.keys.some(k => statuses[k.key]);
+
+  return (
+    <div className={`provider${open ? ' provider--open' : ''}`}>
+      <button
+        className="provider-summary"
+        onClick={() => setOpen(v => !v)}
+        aria-expanded={open}
+        aria-controls={`${uid}-detail`}
+      >
+        <span className="provider-dot" style={{ background: integration.accent }} aria-hidden />
+        <span className="provider-name">{integration.name}</span>
+        <span className="provider-blurb">{integration.description}</span>
+        <span
+          className={`provider-state${anySet ? ' provider-state--on' : ''}`}
+        >
+          {anySet ? (
+            <><Check size={10} aria-hidden /> Connected</>
+          ) : (
+            <><Plug size={10} aria-hidden /> Not connected</>
+          )}
+        </span>
+        <ChevronDown size={14} className="provider-chevron" aria-hidden />
+      </button>
+
+      <div className="provider-detail" id={`${uid}-detail`}>
+        <div className="provider-detail-inner">
+          <div className="provider-detail-pad">
+            <p className="hint" style={{ marginTop: 0 }}>{integration.description}</p>
+            {integration.keys.map(k => (
+              <KeyRow
+                key={k.key}
+                keyDef={k}
+                isSet={!!statuses[k.key]}
+                onSave={(value) => onSave(k.key, value)}
+                onDelete={() => onDelete(k.key)}
+              />
+            ))}
+            <a
+              href={integration.docsUrl}
+              className="docs-link"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Get an API key →
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -299,83 +358,39 @@ export function IntegrationsClient() {
   ).length;
 
   return (
-    <div className="xrdb-page-inner">
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1 className="xrdb-section-title">Integrations</h1>
-        <p className="xrdb-section-sub">
+    <div className="page-inner" style={{ maxWidth: '920px' }}>
+      <div className="page-head">
+        <h1 className="page-title">Integrations</h1>
+        <p className="page-sub">
           Connect third-party services. Keys are stored in the database and override environment variables.
-          {!loading && (
-            <span style={{ marginLeft: '0.5rem', color: 'var(--muted)' }}>
-              {connectedCount}/{INTEGRATIONS.length} configured.
-            </span>
-          )}
+          {!loading && ` ${connectedCount}/${INTEGRATIONS.length} configured.`}
         </p>
       </div>
 
       {notice && (
-        <div style={{ marginBottom: '1.25rem' }}>
+        <div style={{ marginBottom: 'var(--sp-4)' }}>
           <Notice {...notice} onDismiss={() => setNotice(null)} />
         </div>
       )}
 
       {loading ? (
-        <div className="int-loading" aria-busy="true">
-          {[0, 1, 2, 3].map(i => (
-            <div key={i} className="xrdb-skeleton int-skeleton-card" />
+        <div className="provider-list" aria-busy="true">
+          {[0, 1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="skeleton" style={{ height: '3.6rem', borderRadius: 'var(--radius-lg)' }} />
           ))}
         </div>
       ) : (
-        <div className="int-grid">
-          {INTEGRATIONS.map(int => {
-            const anySet = int.keys.some(k => statuses[k.key]);
-            return (
-              <div key={int.id} className="xrdb-card">
-                <div className="xrdb-card-header">
-                  <span
-                    className="int-accent-dot"
-                    style={{ background: int.accent }}
-                    aria-hidden
-                  />
-                  <span className="xrdb-card-title">{int.name}</span>
-                  <span
-                    className={`int-badge${anySet ? ' int-badge--active' : ''}`}
-                    aria-label={anySet ? 'Connected' : 'Not connected'}
-                  >
-                    {anySet ? (
-                      <><Check size={10} aria-hidden /> Connected</>
-                    ) : (
-                      <><Plug size={10} aria-hidden /> Not connected</>
-                    )}
-                  </span>
-                </div>
-
-                <div className="xrdb-card-body">
-                  <p className="int-description">{int.description}</p>
-
-                  <div className="int-keys">
-                    {int.keys.map(k => (
-                      <KeyRow
-                        key={k.key}
-                        keyDef={k}
-                        isSet={!!statuses[k.key]}
-                        onSave={(value) => handleSave(k.key, value)}
-                        onDelete={() => handleDelete(k.key)}
-                      />
-                    ))}
-                  </div>
-
-                  <a
-                    href={int.docsUrl}
-                    className="int-docs-link"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Get an API key →
-                  </a>
-                </div>
-              </div>
-            );
-          })}
+        <div className="provider-list">
+          {INTEGRATIONS.map((int, i) => (
+            <ProviderRow
+              key={int.id}
+              integration={int}
+              statuses={statuses}
+              onSave={handleSave}
+              onDelete={handleDelete}
+              defaultOpen={i === 0 && connectedCount === 0}
+            />
+          ))}
         </div>
       )}
     </div>
