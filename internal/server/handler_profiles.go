@@ -1,15 +1,29 @@
 package server
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 	"strings"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"xrdb_rewrite/internal/config"
 	"xrdb_rewrite/internal/profile"
 )
+
+// generateProfileID returns a short, URL-safe, unguessable profile ID.
+func generateProfileID() string {
+	const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789"
+	b := make([]byte, 10)
+	_, _ = rand.Read(b)
+	for i := range b {
+		b[i] = alphabet[int(b[i])%len(alphabet)]
+	}
+	return string(b)
+}
 
 // registerProfileRoutes mounts all /profile/* handlers onto mux.
 func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.Config) {
@@ -50,12 +64,37 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 				http.Error(w, "invalid JSON", http.StatusBadRequest)
 				return
 			}
-			if err := store.Save(&p); err != nil {
-				if errors.Is(err, profile.ErrConflict) {
-					http.Error(w, "profile already exists", http.StatusConflict)
+			// Plaintext password rides alongside the profile fields; it is
+			// hashed here and never stored or echoed back.
+			var extra struct {
+				Password string `json:"password"`
+			}
+			if err := json.Unmarshal(body, &extra); err != nil {
+				http.Error(w, "invalid JSON", http.StatusBadRequest)
+				return
+			}
+			if extra.Password != "" {
+				hash, err := bcrypt.GenerateFromPassword([]byte(extra.Password), bcrypt.DefaultCost)
+				if err != nil {
+					http.Error(w, "failed to hash password", http.StatusInternalServerError)
 					return
 				}
-				http.Error(w, "failed to save profile", http.StatusInternalServerError)
+				p.PasswordHash = string(hash)
+			}
+			if p.ID == "" {
+				p.ID = generateProfileID()
+			}
+			if err := store.Save(&p); err != nil {
+				switch {
+				case errors.Is(err, profile.ErrConflict):
+					http.Error(w, "profile already exists", http.StatusConflict)
+				case errors.Is(err, profile.ErrAliasTaken):
+					http.Error(w, "alias already in use", http.StatusConflict)
+				case errors.Is(err, profile.ErrInvalidAlias):
+					http.Error(w, err.Error(), http.StatusBadRequest)
+				default:
+					http.Error(w, "failed to save profile", http.StatusInternalServerError)
+				}
 				return
 			}
 			writeJSON(w, http.StatusCreated, &p)
@@ -76,7 +115,8 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 		id := r.PathValue("id")
 		switch r.Method {
 		case http.MethodGet:
-			p, err := store.Get(id)
+			// Accept either the generated ID or the memorable alias.
+			p, err := store.Resolve(id)
 			if err != nil {
 				if errors.Is(err, profile.ErrNotFound) {
 					http.Error(w, "not found", http.StatusNotFound)
@@ -87,14 +127,14 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 			}
 			if p.PasswordHash != "" {
 				pw := r.Header.Get("X-Profile-Password")
-				if err := store.CheckPassword(id, pw); err != nil {
+				if err := store.CheckPassword(p.ID, pw); err != nil {
 					http.Error(w, "profile password required", http.StatusUnauthorized)
 					return
 				}
 			}
 			writeJSON(w, http.StatusOK, p)
 		case http.MethodPut:
-			existing, err := store.Get(id)
+			existing, err := store.Resolve(id)
 			if err != nil {
 				if errors.Is(err, profile.ErrNotFound) {
 					http.Error(w, "not found", http.StatusNotFound)
@@ -105,7 +145,7 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 			}
 			if existing.PasswordHash != "" {
 				pw := r.Header.Get("X-Profile-Password")
-				if err := store.CheckPassword(id, pw); err != nil {
+				if err := store.CheckPassword(existing.ID, pw); err != nil {
 					http.Error(w, "profile password required", http.StatusUnauthorized)
 					return
 				}
@@ -126,38 +166,54 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 				http.Error(w, "invalid JSON", http.StatusBadRequest)
 				return
 			}
-			// profile.Profile.PasswordHash has json:"-" so it is never set by
-			// the unmarshal above. Use a second decode to detect whether the
-			// caller explicitly sent "passwordHash": "" to clear the password.
-			var explicit struct {
-				PasswordHash *string `json:"passwordHash"`
+			// Optional plaintext password field: omitted → keep current,
+			// "" → remove protection, value → replace. Alias follows the
+			// same omitted-means-preserve rule.
+			var extra struct {
+				Password *string `json:"password"`
+				Alias    *string `json:"alias"`
 			}
-			if err := json.Unmarshal(body, &explicit); err != nil {
+			if err := json.Unmarshal(body, &extra); err != nil {
 				http.Error(w, "invalid JSON", http.StatusBadRequest)
 				return
 			}
-			p.ID = id
-			if explicit.PasswordHash == nil || *explicit.PasswordHash != "" {
-				// Field omitted or non-empty (setting hash directly unsupported) → preserve.
-				p.PasswordHash = existing.PasswordHash
-			}
-			// explicit.PasswordHash points to "" → clear: leave p.PasswordHash as ""
-			if err := store.Update(&p); err != nil {
-				if errors.Is(err, profile.ErrNotFound) {
-					http.Error(w, "not found", http.StatusNotFound)
-					return
+			p.ID = existing.ID
+			p.PasswordHash = existing.PasswordHash
+			if extra.Password != nil {
+				p.PasswordHash = ""
+				if *extra.Password != "" {
+					hash, err := bcrypt.GenerateFromPassword([]byte(*extra.Password), bcrypt.DefaultCost)
+					if err != nil {
+						http.Error(w, "failed to hash password", http.StatusInternalServerError)
+						return
+					}
+					p.PasswordHash = string(hash)
 				}
-				http.Error(w, "failed to update profile", http.StatusInternalServerError)
+			}
+			if extra.Alias == nil {
+				p.Alias = existing.Alias
+			}
+			if err := store.Update(&p); err != nil {
+				switch {
+				case errors.Is(err, profile.ErrNotFound):
+					http.Error(w, "not found", http.StatusNotFound)
+				case errors.Is(err, profile.ErrAliasTaken):
+					http.Error(w, "alias already in use", http.StatusConflict)
+				case errors.Is(err, profile.ErrInvalidAlias):
+					http.Error(w, err.Error(), http.StatusBadRequest)
+				default:
+					http.Error(w, "failed to update profile", http.StatusInternalServerError)
+				}
 				return
 			}
-			updated, err := store.Get(id)
+			updated, err := store.Get(existing.ID)
 			if err != nil {
 				http.Error(w, "internal error", http.StatusInternalServerError)
 				return
 			}
 			writeJSON(w, http.StatusOK, updated)
 		case http.MethodDelete:
-			existing, err := store.Get(id)
+			existing, err := store.Resolve(id)
 			if err != nil {
 				if errors.Is(err, profile.ErrNotFound) {
 					http.Error(w, "not found", http.StatusNotFound)
@@ -168,12 +224,12 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 			}
 			if existing.PasswordHash != "" {
 				pw := r.Header.Get("X-Profile-Password")
-				if err := store.CheckPassword(id, pw); err != nil {
+				if err := store.CheckPassword(existing.ID, pw); err != nil {
 					http.Error(w, "profile password required", http.StatusUnauthorized)
 					return
 				}
 			}
-			if err := store.Delete(id); err != nil {
+			if err := store.Delete(existing.ID); err != nil {
 				if errors.Is(err, profile.ErrNotFound) {
 					http.Error(w, "not found", http.StatusNotFound)
 					return
