@@ -31,8 +31,7 @@ var (
 	onceIcons   sync.Once
 	ratingIcons map[string]image.Image
 
-	fontBoldParsed    *opentype.Font
-	fontRegularParsed *opentype.Font
+	fontBoldParsed *opentype.Font
 
 	// scaledFaces caches value faces for non-1 output scales (large/4k).
 	scaledFaces sync.Map // float64 → font.Face
@@ -54,15 +53,12 @@ func ensureFaces() {
 		}
 		if tt, err := opentype.Parse(goregular.TTF); err != nil {
 			log.Printf("compose: parse regular font: %v", err)
+		} else if f, err := opentype.NewFace(tt, &opentype.FaceOptions{
+			Size: 9, DPI: 72, Hinting: font.HintingFull,
+		}); err != nil {
+			log.Printf("compose: create regular face: %v", err)
 		} else {
-			fontRegularParsed = tt
-			if f, err := opentype.NewFace(tt, &opentype.FaceOptions{
-				Size: 9, DPI: 72, Hinting: font.HintingFull,
-			}); err != nil {
-				log.Printf("compose: create regular face: %v", err)
-			} else {
-				faceLabel = f
-			}
+			faceLabel = f
 		}
 	})
 }
