@@ -1,19 +1,21 @@
 'use client';
 
 import {
-  useState, useCallback, useRef, useTransition, useId, useEffect,
+  useState, useCallback, useRef, useId, useEffect,
 } from 'react';
-import { RefreshCw, Settings2, Star, Film, LayoutTemplate } from 'lucide-react';
+import { Settings2, Star, Film, Rocket } from 'lucide-react';
+import { renderUrl, type MediaType, type Template } from '@/lib/api';
 import {
-  renderUrl, createProfile, exportProfile, importProfiles,
-  type MediaType, type Profile,
-} from '@/lib/api';
-import {
-  MEDIA_TYPES, DEFAULT_CONFIG, PROFILE_ID_RE, PREVIEW_DEBOUNCE_MS,
-  readSession, normalizeError, type ConfigState,
+  MEDIA_TYPES, DEFAULT_CONFIG, PREVIEW_DEBOUNCE_MS,
+  readSession, type ConfigState,
 } from './configurator-types';
 import { Notice, DisplayPanel } from './configurator-display';
-import { TemplatesPanel, RatingsPanel, ProfilePanel } from './configurator-panels';
+import { TemplateStrip, RatingsPanel } from './configurator-panels';
+import { ProfilePanel, type LoadedProfile } from './profile-panel';
+import { InstallPanel } from './install-panel';
+import { MediaSearch } from './media-search';
+import { CopyButton } from './copy-button';
+import { tablistKeyNav } from './tablist';
 
 export function ConfiguratorClient() {
   const uid = useId();
@@ -24,42 +26,44 @@ export function ConfiguratorClient() {
   const [mediaId, setMediaId] = useState(
     () => readSession<string>('xrdb-media-id', 'tt0468569'),
   );
-  const [config, setConfig] = useState<ConfigState>(
-    () => readSession<ConfigState>('xrdb-config', DEFAULT_CONFIG),
+  const [mediaTitle, setMediaTitle] = useState(
+    () => readSession<string>('xrdb-media-title', 'The Dark Knight (2008)'),
   );
-  const [profileId, setProfileId]     = useState('');
-  const [profileName, setProfileName] = useState('');
+  const [config, setConfig] = useState<ConfigState>(
+    // Merge over defaults so configs persisted before new fields existed
+    // (e.g. badgeStyle/badgeTheme) still produce a complete state.
+    () => ({ ...DEFAULT_CONFIG, ...readSession<Partial<ConfigState>>('xrdb-config', {}) }),
+  );
+  const [appliedTemplate, setAppliedTemplate] = useState<string | null>(null);
+  const [loadedProfile, setLoadedProfile] = useState<LoadedProfile | null>(null);
   const [notice, setNotice] = useState<{ type: 'error' | 'success' | 'info'; message: string } | null>(null);
-  const [recentProfiles, setRecentProfiles] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return [];
-    try { return JSON.parse(localStorage.getItem('xrdb-recent') ?? '[]') as string[]; } catch { return []; }
-  });
 
   const [previewSrc, setPreviewSrc] = useState('');
   const [previewKey, setPreviewKey] = useState(0);
   const [imgLoading, setImgLoading] = useState(false);
   const [imgError, setImgError]     = useState(false);
 
-  const [isPending, startTransition] = useTransition();
-  const [importText, setImportText]  = useState('');
-  const [showImport, setShowImport]  = useState(false);
-  const [activeTab, setActiveTab]    = useState<'display' | 'ratings' | 'profile' | 'templates'>('display');
+  const [activeTab, setActiveTab] = useState<'display' | 'ratings' | 'profile' | 'install'>('display');
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const undoConfigRef = useRef<ConfigState | null>(null);
+  const [undoAvailable, setUndoAvailable] = useState(false);
 
   useEffect(() => {
     try {
       sessionStorage.setItem('xrdb-media-type', JSON.stringify(mediaType));
       sessionStorage.setItem('xrdb-media-id',   JSON.stringify(mediaId));
+      sessionStorage.setItem('xrdb-media-title', JSON.stringify(mediaTitle));
       sessionStorage.setItem('xrdb-config',      JSON.stringify(config));
     } catch { /* unavailable */ }
-  }, [mediaType, mediaId, config]);
+  }, [mediaType, mediaId, mediaTitle, config]);
 
   const buildSrc = useCallback((type: MediaType, id: string, cfg: ConfigState) => {
     return renderUrl(type, id || 'tt0468569', JSON.stringify({
       size: cfg.size, artworkSource: cfg.artworkSource, language: cfg.language,
       textPreference: cfg.textPreference, ratingsLayout: cfg.ratingsLayout,
+      badgeStyle: cfg.badgeStyle, badgeTheme: cfg.badgeTheme,
       ratings: cfg.ratings, ageRating: cfg.ageRating, ageRatingPos: cfg.ageRatingPos,
       genre: cfg.genre, genrePos: cfg.genrePos, badges: cfg.badges,
       providers: cfg.providers, aggregateBar: cfg.aggregateBar,
@@ -90,191 +94,172 @@ export function ConfiguratorClient() {
     setNotice({ type, message });
     if (noticeTimer.current) clearTimeout(noticeTimer.current);
     if (type !== 'error') {
-      noticeTimer.current = setTimeout(() => setNotice(null), 4000);
+      noticeTimer.current = setTimeout(() => setNotice(null), 5000);
     }
   }, []);
 
-  const addRecent = useCallback((id: string) => {
-    setRecentProfiles(prev => {
-      const next = [id, ...prev.filter(p => p !== id)].slice(0, 5);
-      try { localStorage.setItem('xrdb-recent', JSON.stringify(next)); } catch {}
-      return next;
-    });
-  }, []);
+  const markManualEdit = () => {
+    setAppliedTemplate(null);
+    setUndoAvailable(false);
+  };
 
   const updateConfig = <K extends keyof ConfigState>(key: K, value: ConfigState[K]) => {
+    markManualEdit();
     setConfig(c => ({ ...c, [key]: value }));
   };
 
   const toggleRating = (r: string) => {
+    markManualEdit();
     setConfig(c => ({
       ...c, ratings: c.ratings.includes(r) ? c.ratings.filter(x => x !== r) : [...c.ratings, r],
     }));
   };
 
   const toggleBadge = (b: string) => {
+    markManualEdit();
     setConfig(c => ({
       ...c, badges: c.badges.includes(b) ? c.badges.filter(x => x !== b) : [...c.badges, b],
     }));
   };
 
-  const handleSaveProfile = () => {
-    const trimmed = profileId.trim();
-    if (!trimmed) { flash('error', 'Profile ID is required'); return; }
-    if (!PROFILE_ID_RE.test(trimmed)) {
-      flash('error', 'Profile ID: letters, numbers, hyphens, underscores only');
-      return;
+  const applyTemplate = (t: Template) => {
+    const parsed = t.config as Partial<ConfigState>;
+    undoConfigRef.current = config;
+    setConfig(c => ({ ...c, ...parsed }));
+    setAppliedTemplate(t.id);
+    flash('info', `Template "${t.name}" applied`);
+    setUndoAvailable(true);
+  };
+
+  const undoTemplate = () => {
+    if (undoConfigRef.current) {
+      setConfig(undoConfigRef.current);
+      undoConfigRef.current = null;
     }
-    startTransition(async () => {
-      try {
-        await createProfile({ id: trimmed, name: profileName.trim() || trimmed, type: mediaType, config: config as unknown as Record<string, unknown> });
-        addRecent(trimmed);
-        flash('success', `Profile "${trimmed}" saved`);
-      } catch (e) { flash('error', normalizeError(e)); }
-    });
+    setAppliedTemplate(null);
+    setUndoAvailable(false);
+    setNotice(null);
   };
 
-  const handleExport = () => {
-    if (!profileId.trim()) { flash('error', 'Enter a profile ID to export'); return; }
-    startTransition(async () => {
-      try {
-        const envelope = await exportProfile(profileId.trim());
-        const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: 'application/json' });
-        const url  = URL.createObjectURL(blob);
-        const a    = document.createElement('a');
-        a.href = url; a.download = `xrdb-profile-${profileId.trim()}.json`;
-        a.click(); URL.revokeObjectURL(url);
-        flash('success', 'Profile exported');
-      } catch (e) { flash('error', normalizeError(e)); }
-    });
+  const handleLoadConfig = (loaded: Partial<ConfigState>) => {
+    markManualEdit();
+    setConfig({ ...DEFAULT_CONFIG, ...loaded });
   };
 
-  const handleImport = () => {
-    startTransition(async () => {
-      try {
-        let envelope: { version: number; profiles: Profile[] };
-        try {
-          envelope = JSON.parse(importText) as { version: number; profiles: Profile[] };
-        } catch {
-          flash('error', 'Invalid JSON — expected {"version":1,"profiles":[...]}');
-          return;
-        }
-        const result = await importProfiles(envelope);
-        flash('success', `Imported ${result.imported}, skipped ${result.skipped}`);
-        setImportText(''); setShowImport(false);
-      } catch (e) { flash('error', normalizeError(e)); }
-    });
+  const handleMediaSelect = (id: string, title: string) => {
+    setMediaId(id);
+    setMediaTitle(title);
   };
 
   return (
-    <div className="xrdb-page-inner">
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h1 className="xrdb-section-title">Configurator</h1>
-        <p className="xrdb-section-sub">Adjust settings and watch the preview update live.</p>
+    <div className="page-inner">
+      <div className="page-head">
+        <h1 className="page-title">Configurator</h1>
+        <p className="page-sub">Pick a template, watch the preview update live, copy the URL.</p>
       </div>
 
       {notice && (
-        <div style={{ marginBottom: '1rem' }}>
-          <Notice {...notice} onDismiss={() => setNotice(null)} />
+        <div style={{ marginBottom: 'var(--sp-4)' }}>
+          <Notice
+            {...notice}
+            onDismiss={() => setNotice(null)}
+            actionLabel={undoAvailable && notice.type === 'info' ? 'Undo' : undefined}
+            onAction={undoAvailable && notice.type === 'info' ? undoTemplate : undefined}
+          />
         </div>
       )}
+
+      <TemplateStrip appliedId={appliedTemplate} onApply={applyTemplate} />
 
       <div className="cfg-layout">
 
         {/* ── Preview column ───────────────────────────────────────── */}
-        <div className="cfg-preview-col">
-          <div role="tablist" aria-label="Media type" className="xrdb-type-tabs">
+        <div className="cfg-col">
+          <div role="tablist" aria-label="Media type" className="seg" onKeyDown={tablistKeyNav}>
             {MEDIA_TYPES.map(t => (
-              <button key={t.id} role="tab" aria-selected={mediaType === t.id} className="xrdb-type-tab" onClick={() => setMediaType(t.id)}>
+              <button
+                key={t.id}
+                role="tab"
+                aria-selected={mediaType === t.id}
+                tabIndex={mediaType === t.id ? 0 : -1}
+                className="seg-item"
+                onClick={() => setMediaType(t.id)}
+              >
                 {t.label}
               </button>
             ))}
           </div>
 
-          <div className="xrdb-preview-frame" style={{ aspectRatio: aspect, maxHeight: mediaType === 'poster' ? '540px' : '320px' }}>
+          <div
+            className="preview-stage"
+            style={{
+              aspectRatio: aspect,
+              height: mediaType === 'poster' ? '560px' : mediaType === 'logo' ? '170px' : '330px',
+              maxWidth: '100%',
+              alignSelf: 'center',
+            }}
+          >
             {imgError ? (
-              <div className="xrdb-preview-empty" role="status">
+              <div className="preview-empty" role="status">
                 <span>Preview unavailable</span>
-                <span style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.25rem' }}>
-                  Check the backend is running
-                </span>
+                <span className="hint">Check the backend is running</span>
               </div>
             ) : (
               <>
-                {imgLoading && <div className="xrdb-skeleton" style={{ position: 'absolute', inset: 0 }} aria-busy="true" aria-label="Loading preview" />}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {imgLoading && <div className="skeleton" style={{ position: 'absolute', inset: 0 }} aria-busy="true" aria-label="Loading preview" />}
+                {previewSrc && (
+                /* eslint-disable-next-line @next/next/no-img-element */
                 <img
                   key={previewKey}
                   src={previewSrc}
                   alt={`${mediaType} preview`}
-                  className="xrdb-preview-img"
-                  style={{ opacity: imgLoading ? 0 : 1, transition: 'opacity 0.25s' }}
+                  className="preview-img"
+                  style={{ opacity: imgLoading ? 0 : 1, transition: 'opacity var(--dur-3) var(--ease-out)' }}
                   onLoad={() => setImgLoading(false)}
                   onError={() => { setImgLoading(false); setImgError(true); }}
                 />
+                )}
               </>
             )}
           </div>
 
-          <div className="xrdb-card">
-            <div className="xrdb-card-body" style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
-              <div style={{ flex: 1 }}>
-                <label className="xrdb-label" htmlFor={`${uid}-media-id`}>Media ID</label>
-                <input
-                  id={`${uid}-media-id`}
-                  className="xrdb-input"
-                  value={mediaId}
-                  onChange={e => setMediaId(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') triggerPreview(mediaType, mediaId, config, true); }}
-                  placeholder="tt0468569"
-                />
-                <span className="xrdb-field-hint">IMDb tt-ID or TMDB integer ID</span>
-              </div>
-              <button className="xrdb-btn xrdb-btn-ghost" style={{ whiteSpace: 'nowrap' }} onClick={() => triggerPreview(mediaType, mediaId, config, true)} aria-label="Refresh preview now">
-                <RefreshCw size={14} aria-hidden />
-                Refresh
-              </button>
-            </div>
-          </div>
-
           {previewSrc && (
-            <div className="xrdb-card">
-              <div className="xrdb-card-body">
-                <label className="xrdb-label">Image URL</label>
-                <div className="cfg-url-row">
-                  <code className="cfg-url-code" title={previewSrc}>
-                    {previewSrc.length > 72 ? previewSrc.slice(0, 72) + '…' : previewSrc}
-                  </code>
-                  <button
-                    className="xrdb-btn xrdb-btn-ghost"
-                    style={{ flexShrink: 0, fontSize: '0.72rem', padding: '0.2rem 0.55rem', minHeight: '2rem' }}
-                    onClick={() => navigator.clipboard.writeText(previewSrc).then(() => flash('success', 'URL copied'), () => flash('error', 'Copy failed'))}
-                    aria-label="Copy image URL"
-                  >
-                    Copy
-                  </button>
-                </div>
+            <div>
+              <span className="label" id={`${uid}-url-label`}>Image URL</span>
+              <div className="urlbar" aria-labelledby={`${uid}-url-label`}>
+                <code className="urlbar-code" title={previewSrc}>
+                  {previewSrc}
+                </code>
+                <CopyButton text={previewSrc} label="Copy image URL" />
               </div>
             </div>
           )}
+
+          <MediaSearch
+            mediaId={mediaId}
+            mediaTitle={mediaTitle}
+            onSelect={handleMediaSelect}
+            onError={msg => flash('error', msg)}
+          />
         </div>
 
         {/* ── Controls column ──────────────────────────────────────── */}
-        <div className="cfg-controls-col">
-          <div className="cfg-tab-bar" role="tablist" aria-label="Settings panel">
+        <div className="cfg-col">
+          <div className="tabs" role="tablist" aria-label="Settings panel" onKeyDown={tablistKeyNav}>
             {([
-              { id: 'display',   label: 'Display',   icon: <Settings2      size={13} aria-hidden /> },
-              { id: 'ratings',   label: 'Ratings',   icon: <Star           size={13} aria-hidden /> },
-              { id: 'templates', label: 'Templates', icon: <LayoutTemplate size={13} aria-hidden /> },
-              { id: 'profile',   label: 'Profile',   icon: <Film           size={13} aria-hidden /> },
+              { id: 'display', label: 'Display', icon: <Settings2 size={13} aria-hidden /> },
+              { id: 'ratings', label: 'Ratings', icon: <Star      size={13} aria-hidden /> },
+              { id: 'profile', label: 'Profile', icon: <Film      size={13} aria-hidden /> },
+              { id: 'install', label: 'Install', icon: <Rocket    size={13} aria-hidden /> },
             ] as const).map(tab => (
               <button
                 key={tab.id}
                 id={`${uid}-tab-${tab.id}`}
                 role="tab"
                 aria-selected={activeTab === tab.id}
+                tabIndex={activeTab === tab.id ? 0 : -1}
                 aria-controls={`${uid}-panel-${tab.id}`}
-                className={`cfg-tab${activeTab === tab.id ? ' cfg-tab--active' : ''}`}
+                className="tab"
                 onClick={() => setActiveTab(tab.id)}
               >
                 {tab.icon}
@@ -284,38 +269,36 @@ export function ConfiguratorClient() {
           </div>
 
           {activeTab === 'display' && (
-            <div id={`${uid}-panel-display`} role="tabpanel" aria-labelledby={`${uid}-tab-display`}>
-              <DisplayPanel uid={uid} config={config} onUpdate={updateConfig} onToggleBadge={toggleBadge} onReset={() => setConfig(DEFAULT_CONFIG)} />
+            <div id={`${uid}-panel-display`} role="tabpanel" aria-labelledby={`${uid}-tab-display`} className="tabpanel-enter">
+              <DisplayPanel uid={uid} config={config} onUpdate={updateConfig} onToggleBadge={toggleBadge} onReset={() => { markManualEdit(); setConfig(DEFAULT_CONFIG); }} />
             </div>
           )}
 
           {activeTab === 'ratings' && (
-            <div id={`${uid}-panel-ratings`} role="tabpanel" aria-labelledby={`${uid}-tab-ratings`}>
+            <div id={`${uid}-panel-ratings`} role="tabpanel" aria-labelledby={`${uid}-tab-ratings`} className="tabpanel-enter">
               <RatingsPanel uid={uid} config={config} onUpdate={updateConfig} onToggleRating={toggleRating} />
             </div>
           )}
 
-          {activeTab === 'templates' && (
-            <div id={`${uid}-panel-templates`} role="tabpanel" aria-labelledby={`${uid}-tab-templates`}>
-              <TemplatesPanel onApply={(t) => {
-                const parsed = t.config as Partial<ConfigState>;
-                setConfig(c => ({ ...c, ...parsed }));
-                setActiveTab('display');
-              }} />
+          {activeTab === 'profile' && (
+            <div id={`${uid}-panel-profile`} role="tabpanel" aria-labelledby={`${uid}-tab-profile`} className="tabpanel-enter">
+              <ProfilePanel
+                config={config}
+                mediaType={mediaType}
+                mediaId={mediaId}
+                loaded={loadedProfile}
+                setLoaded={setLoadedProfile}
+                onLoadConfig={handleLoadConfig}
+                flash={flash}
+              />
             </div>
           )}
 
-          {activeTab === 'profile' && (
-            <div id={`${uid}-panel-profile`} role="tabpanel" aria-labelledby={`${uid}-tab-profile`}>
-              <ProfilePanel
-                uid={uid}
-                profileId={profileId} setProfileId={setProfileId}
-                profileName={profileName} setProfileName={setProfileName}
-                recentProfiles={recentProfiles}
-                isPending={isPending}
-                importText={importText} setImportText={setImportText}
-                showImport={showImport} setShowImport={setShowImport}
-                onSave={handleSaveProfile} onExport={handleExport} onImport={handleImport}
+          {activeTab === 'install' && (
+            <div id={`${uid}-panel-install`} role="tabpanel" aria-labelledby={`${uid}-tab-install`} className="tabpanel-enter">
+              <InstallPanel
+                configKey={loadedProfile ? (loadedProfile.alias || loadedProfile.id) : ''}
+                onNotice={flash}
               />
             </div>
           )}

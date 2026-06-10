@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
 
-test('configurator page loads with media type and ID inputs', async ({ page }) => {
+test('configurator page loads with media type tabs and title search', async ({ page }) => {
   await page.goto('/configurator');
   await expect(page.getByRole('heading', { name: /configurator/i })).toBeVisible();
-  await expect(page.getByLabel(/media id/i)).toBeVisible();
+  await expect(page.getByLabel(/find a title/i)).toBeVisible();
 });
 
 test('configurator shows preview section', async ({ page }) => {
@@ -13,25 +13,29 @@ test('configurator shows preview section', async ({ page }) => {
 
 test('configurator has media type tabs', async ({ page }) => {
   await page.goto('/configurator');
-  await expect(page.getByRole('button', { name: /poster/i })).toBeVisible();
-  await expect(page.getByRole('button', { name: /backdrop/i })).toBeVisible();
+  await expect(page.getByRole('tab', { name: /poster/i })).toBeVisible();
+  await expect(page.getByRole('tab', { name: /backdrop/i })).toBeVisible();
 });
 
-test('configurator media ID input accepts text', async ({ page }) => {
+test('direct ID entry selects the title', async ({ page }) => {
   await page.goto('/configurator');
-  const input = page.getByLabel(/media id/i);
+  const input = page.getByLabel(/find a title/i);
   await input.fill('tt0816692');
-  await expect(input).toHaveValue('tt0816692');
+  await input.press('Enter');
+  await expect(page.locator('.media-current-title')).toHaveText('tt0816692');
 });
 
-test('configurator profile card is present', async ({ page }) => {
+test('configurator profile tab is present', async ({ page }) => {
   await page.goto('/configurator');
-  await expect(page.getByText(/profile/i).first()).toBeVisible();
+  await expect(page.getByRole('tab', { name: /profile/i })).toBeVisible();
+  await expect(page.getByRole('tab', { name: /install/i })).toBeVisible();
 });
 
-test('configurator persists media ID across reload', async ({ page }) => {
+test('configurator persists selected media across reload', async ({ page }) => {
   await page.goto('/configurator');
-  await page.getByLabel(/media id/i).fill('tt1234567');
+  const input = page.getByLabel(/find a title/i);
+  await input.fill('tt1234567');
+  await input.press('Enter');
   await page.reload();
-  await expect(page.getByLabel(/media id/i)).toHaveValue('tt1234567');
+  await expect(page.locator('.media-current-title')).toHaveText('tt1234567');
 });

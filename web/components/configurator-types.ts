@@ -41,6 +41,17 @@ export const LAYOUT_OPTIONS = [
   { id: 'none',       label: 'Hidden'      },
 ] as const;
 
+export const BADGE_STYLE_OPTIONS = [
+  { id: 'pill',   label: 'Pill'   },
+  { id: 'square', label: 'Square' },
+  { id: 'glass',  label: 'Glass'  },
+] as const;
+
+export const BADGE_THEME_OPTIONS = [
+  { id: 'dark',  label: 'Dark'  },
+  { id: 'light', label: 'Light' },
+] as const;
+
 export const RATING_OPTIONS: { id: string; label: string; accent: string; group?: string }[] = [
   { id: 'imdb',       label: 'IMDb',        accent: '#f5c518' },
   { id: 'tmdb',       label: 'TMDB',        accent: '#01b4e4' },
@@ -93,6 +104,8 @@ export interface ConfigState {
   language: string;
   textPreference: string;
   ratingsLayout: string;
+  badgeStyle: string;
+  badgeTheme: string;
   ratings: string[];
   ageRating: boolean;
   ageRatingPos: string;
@@ -111,6 +124,8 @@ export const DEFAULT_CONFIG: ConfigState = {
   language: 'en',
   textPreference: 'original',
   ratingsLayout: 'bottom',
+  badgeStyle: 'pill',
+  badgeTheme: 'dark',
   ratings: ['imdb', 'tmdb'],
   ageRating: false,
   ageRatingPos: 'inherit',

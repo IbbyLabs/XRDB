@@ -94,3 +94,24 @@ func TestPlaceholderPNGTypesAreDifferent(t *testing.T) {
 		}
 	}
 }
+
+func TestDimensionsForSize(t *testing.T) {
+	cases := []struct {
+		mediaType, size string
+		wantW, wantH    int
+	}{
+		{"poster", "normal", 580, 859},
+		{"poster", "large", 870, 1289},
+		{"poster", "4k", 1740, 2577},
+		{"backdrop", "4k", 3840, 2160},
+		{"thumbnail", "large", 480, 270},
+		{"poster", "bogus", 580, 859},
+	}
+	for _, tc := range cases {
+		d := DimensionsForSize(tc.mediaType, tc.size)
+		if d.Width != tc.wantW || d.Height != tc.wantH {
+			t.Errorf("DimensionsForSize(%q,%q) = %dx%d, want %dx%d",
+				tc.mediaType, tc.size, d.Width, d.Height, tc.wantW, tc.wantH)
+		}
+	}
+}

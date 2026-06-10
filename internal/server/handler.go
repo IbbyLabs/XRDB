@@ -91,19 +91,11 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				imgCfg = imageconfig.Parse(json.RawMessage(configParam))
 				profileLoaded = true
 			} else if store != nil {
-				if p, err := store.Get(configParam); err == nil {
-					// Profile password check.
-					if p.PasswordHash != "" {
-						pw := r.Header.Get("X-Profile-Password")
-						if pw == "" {
-							pw = queryValue(raw, "password", "")
-						}
-						if err := store.CheckPassword(configParam, pw); err != nil {
-							http.Error(w, "profile password required", http.StatusUnauthorized)
-							ms.Record(r.URL.Path, http.StatusUnauthorized, latMs(start))
-							return
-						}
-					}
+				// configParam may be a profile ID or a memorable alias.
+				// Rendering is intentionally public: artwork URLs are pasted
+				// into media apps that can't send credentials. The profile
+				// password protects editing (PUT/DELETE), not viewing.
+				if p, err := store.Resolve(configParam); err == nil {
 					imgCfg = imageconfig.Parse(p.Config)
 					profileLoaded = true
 				}
@@ -181,6 +173,8 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	})
 
 	registerProfileRoutes(mux, store, cfg)
+	registerMediaRoutes(mux, pipeline)
+	registerAIOMRoutes(mux)
 	registerAdminRoutes(mux, ms, cfg, settingsStore, pipeline, renderCache)
 
 	// Templates: GET /api/templates — list all built-in templates.
@@ -224,7 +218,24 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		mux.HandleFunc("/", staticFileHandler(staticFS[0]))
 	}
 
-	return mux
+	return corsMiddleware(mux)
+}
+
+// corsMiddleware allows the web frontend to call the API cross-origin —
+// required for split deployments (separate web container) and local dev,
+// where the frontend runs on a different port than the API.
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		if r.Method == http.MethodOptions {
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Profile-Password")
+			w.Header().Set("Access-Control-Max-Age", "86400")
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // staticFileHandler serves an embedded SPA using a recording wrapper that

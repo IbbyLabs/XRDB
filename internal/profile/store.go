@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -18,6 +19,7 @@ const schemaVersion = 1
 type Profile struct {
 	ID           string          `json:"id"`
 	Name         string          `json:"name,omitempty"`
+	Alias        string          `json:"alias,omitempty"` // memorable lowercase handle, unique
 	Type         string          `json:"type"`
 	UUID         string          `json:"uuid,omitempty"`
 	Config       json.RawMessage `json:"config"`
@@ -25,6 +27,7 @@ type Profile struct {
 	CreatedAt    string          `json:"createdAt"`
 	UpdatedAt    string          `json:"updatedAt"`
 	PasswordHash string          `json:"-"` // bcrypt hash; empty = no password
+	HasPassword  bool            `json:"hasPassword"`
 }
 
 // ErrWrongPassword is returned when a password-protected profile is accessed with an incorrect password.
@@ -35,6 +38,17 @@ var ErrNotFound = errors.New("profile not found")
 
 // ErrConflict is returned when a profile ID already exists on Save.
 var ErrConflict = errors.New("profile already exists")
+
+// ErrAliasTaken is returned when the requested alias belongs to another profile.
+var ErrAliasTaken = errors.New("alias already in use")
+
+// ErrInvalidAlias is returned for aliases that aren't 3-32 lowercase letters.
+var ErrInvalidAlias = errors.New("alias must be 3-32 lowercase letters (a-z only)")
+
+var aliasRe = regexp.MustCompile(`^[a-z]{3,32}$`)
+
+// ValidAlias reports whether alias is acceptable: lowercase letters only.
+func ValidAlias(alias string) bool { return aliasRe.MatchString(alias) }
 
 // Store provides SQLite-backed profile persistence.
 type Store struct {
@@ -79,7 +93,22 @@ func applySchema(db *sql.DB) error {
 	}
 	// Migrate existing databases that don't have the password_hash column yet.
 	_, _ = db.Exec(`ALTER TABLE profiles ADD COLUMN password_hash TEXT NOT NULL DEFAULT ''`)
+	// Alias column + uniqueness (empty aliases are exempt via partial index).
+	_, _ = db.Exec(`ALTER TABLE profiles ADD COLUMN alias TEXT NOT NULL DEFAULT ''`)
+	_, _ = db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_alias ON profiles(alias) WHERE alias != ''`)
 	return nil
+}
+
+// validateAlias normalizes and checks an alias; empty is allowed (no alias).
+func validateAlias(alias string) (string, error) {
+	alias = strings.ToLower(strings.TrimSpace(alias))
+	if alias == "" {
+		return "", nil
+	}
+	if !ValidAlias(alias) {
+		return "", ErrInvalidAlias
+	}
+	return alias, nil
 }
 
 // Save inserts a new profile. Returns ErrConflict if the ID already exists.
@@ -94,30 +123,55 @@ func (s *Store) Save(p *Profile) error {
 	if err != nil {
 		return fmt.Errorf("invalid config: %w", err)
 	}
+	alias, err := validateAlias(p.Alias)
+	if err != nil {
+		return err
+	}
+	p.Alias = alias
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	p.Version = schemaVersion
 	p.CreatedAt = now
 	p.UpdatedAt = now
 
 	_, err = s.db.Exec(
-		`INSERT INTO profiles (id, name, type, uuid, config, version, created_at, updated_at, password_hash)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		p.ID, p.Name, p.Type, p.UUID, string(cfg), p.Version, p.CreatedAt, p.UpdatedAt, p.PasswordHash,
+		`INSERT INTO profiles (id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		p.ID, p.Name, p.Alias, p.Type, p.UUID, string(cfg), p.Version, p.CreatedAt, p.UpdatedAt, p.PasswordHash,
 	)
 	if err != nil {
+		if isAliasConflict(err) {
+			return ErrAliasTaken
+		}
 		if isConflict(err) {
 			return ErrConflict
 		}
 		return fmt.Errorf("insert profile: %w", err)
 	}
+	p.HasPassword = p.PasswordHash != ""
 	return nil
 }
 
 // Get retrieves a profile by ID. Returns ErrNotFound if it does not exist.
 func (s *Store) Get(id string) (*Profile, error) {
 	row := s.db.QueryRow(
-		`SELECT id, name, type, uuid, config, version, created_at, updated_at, password_hash
+		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash
 		 FROM profiles WHERE id = ?`, id,
+	)
+	return scanProfile(row)
+}
+
+// Resolve retrieves a profile by ID or, failing that, by alias.
+func (s *Store) Resolve(idOrAlias string) (*Profile, error) {
+	p, err := s.Get(idOrAlias)
+	if err == nil {
+		return p, nil
+	}
+	if !errors.Is(err, ErrNotFound) {
+		return nil, err
+	}
+	row := s.db.QueryRow(
+		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash
+		 FROM profiles WHERE alias = ? AND alias != ''`, strings.ToLower(strings.TrimSpace(idOrAlias)),
 	)
 	return scanProfile(row)
 }
@@ -173,8 +227,8 @@ func (s *Store) CheckPassword(id, password string) error {
 	return nil
 }
 
-// Update replaces config, name, uuid, and updated_at for an existing profile.
-// Returns ErrNotFound if the profile does not exist.
+// Update replaces config, name, alias, uuid, password hash, and updated_at
+// for an existing profile. Returns ErrNotFound if the profile does not exist.
 func (s *Store) Update(p *Profile) error {
 	if p.ID == "" {
 		return errors.New("profile id is required")
@@ -183,15 +237,23 @@ func (s *Store) Update(p *Profile) error {
 	if err != nil {
 		return fmt.Errorf("invalid config: %w", err)
 	}
+	alias, err := validateAlias(p.Alias)
+	if err != nil {
+		return err
+	}
+	p.Alias = alias
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	p.UpdatedAt = now
 
 	res, err := s.db.Exec(
-		`UPDATE profiles SET name = ?, uuid = ?, config = ?, updated_at = ?
+		`UPDATE profiles SET name = ?, alias = ?, uuid = ?, config = ?, updated_at = ?, password_hash = ?
 		 WHERE id = ?`,
-		p.Name, p.UUID, string(cfg), now, p.ID,
+		p.Name, p.Alias, p.UUID, string(cfg), now, p.PasswordHash, p.ID,
 	)
 	if err != nil {
+		if isAliasConflict(err) {
+			return ErrAliasTaken
+		}
 		return fmt.Errorf("update profile: %w", err)
 	}
 	n, err := res.RowsAffected()
@@ -226,7 +288,7 @@ type ExportEnvelope struct {
 // List returns all profiles ordered by created_at ascending.
 func (s *Store) List() ([]*Profile, error) {
 	rows, err := s.db.Query(
-		`SELECT id, name, type, uuid, config, version, created_at, updated_at, password_hash
+		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash
 		 FROM profiles ORDER BY created_at ASC`,
 	)
 	if err != nil {
@@ -237,10 +299,11 @@ func (s *Store) List() ([]*Profile, error) {
 	for rows.Next() {
 		var p Profile
 		var cfgStr string
-		if err := rows.Scan(&p.ID, &p.Name, &p.Type, &p.UUID, &cfgStr, &p.Version, &p.CreatedAt, &p.UpdatedAt, &p.PasswordHash); err != nil {
+		if err := rows.Scan(&p.ID, &p.Name, &p.Alias, &p.Type, &p.UUID, &cfgStr, &p.Version, &p.CreatedAt, &p.UpdatedAt, &p.PasswordHash); err != nil {
 			return nil, fmt.Errorf("scan profile: %w", err)
 		}
 		p.Config = json.RawMessage(cfgStr)
+		p.HasPassword = p.PasswordHash != ""
 		out = append(out, &p)
 	}
 	return out, rows.Err()
@@ -249,7 +312,7 @@ func (s *Store) List() ([]*Profile, error) {
 func scanProfile(row *sql.Row) (*Profile, error) {
 	var p Profile
 	var cfgStr string
-	err := row.Scan(&p.ID, &p.Name, &p.Type, &p.UUID, &cfgStr, &p.Version, &p.CreatedAt, &p.UpdatedAt, &p.PasswordHash)
+	err := row.Scan(&p.ID, &p.Name, &p.Alias, &p.Type, &p.UUID, &cfgStr, &p.Version, &p.CreatedAt, &p.UpdatedAt, &p.PasswordHash)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -257,6 +320,7 @@ func scanProfile(row *sql.Row) (*Profile, error) {
 		return nil, fmt.Errorf("scan profile: %w", err)
 	}
 	p.Config = json.RawMessage(cfgStr)
+	p.HasPassword = p.PasswordHash != ""
 	return &p, nil
 }
 
@@ -278,4 +342,8 @@ func isConflict(err error) bool {
 	msg := err.Error()
 	return strings.Contains(msg, "UNIQUE constraint failed") ||
 		strings.Contains(msg, "constraint failed: profiles.id")
+}
+
+func isAliasConflict(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "profiles.alias")
 }

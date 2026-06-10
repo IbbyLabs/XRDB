@@ -581,36 +581,94 @@ func TestProfilePasswordProtection(t *testing.T) {
 		t.Fatalf("SetPassword: %v", err)
 	}
 
-	// Accessing locked profile without password → 401
+	// Rendering with a protected profile stays public: artwork URLs are
+	// consumed by media apps that cannot send credentials. The password
+	// protects editing, not viewing.
 	rr = httptest.NewRecorder()
 	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/poster/tt0816692?config=locked", nil))
-	if rr.Code != http.StatusUnauthorized {
-		t.Errorf("no password: expected 401, got %d", rr.Code)
+	if rr.Code != http.StatusOK {
+		t.Errorf("render without password: expected 200, got %d", rr.Code)
 	}
 
-	// With wrong password → 401
-	req := httptest.NewRequest(http.MethodGet, "/poster/tt0816692?config=locked", nil)
-	req.Header.Set("X-Profile-Password", "wrong")
+	// Reading the profile config without the password → 401
 	rr = httptest.NewRecorder()
-	h.ServeHTTP(rr, req)
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/profile/locked", nil))
 	if rr.Code != http.StatusUnauthorized {
-		t.Errorf("wrong password: expected 401, got %d", rr.Code)
+		t.Errorf("profile read without password: expected 401, got %d", rr.Code)
 	}
 
-	// With correct password via header → 200
-	req = httptest.NewRequest(http.MethodGet, "/poster/tt0816692?config=locked", nil)
+	// Updating without the password → 401
+	rr = httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPut, "/profile/locked",
+		strings.NewReader(`{"type":"poster","config":{}}`)))
+	if rr.Code != http.StatusUnauthorized {
+		t.Errorf("update without password: expected 401, got %d", rr.Code)
+	}
+
+	// Deleting without the password → 401
+	rr = httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodDelete, "/profile/locked", nil))
+	if rr.Code != http.StatusUnauthorized {
+		t.Errorf("delete without password: expected 401, got %d", rr.Code)
+	}
+
+	// Updating with the correct password → 200
+	req := httptest.NewRequest(http.MethodPut, "/profile/locked",
+		strings.NewReader(`{"type":"poster","config":{}}`))
 	req.Header.Set("X-Profile-Password", "mypassword")
 	rr = httptest.NewRecorder()
 	h.ServeHTTP(rr, req)
 	if rr.Code != http.StatusOK {
-		t.Errorf("correct password header: expected 200, got %d", rr.Code)
+		t.Errorf("update with password: expected 200, got %d: %s", rr.Code, rr.Body.String())
+	}
+}
+
+func TestProfileAliasFlow(t *testing.T) {
+	store := openTestStore(t)
+	h := NewHandler("test", store, nil, nil, nil, config.Config{})
+
+	// Create with alias + password, no ID — the server generates one.
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/profile",
+		strings.NewReader(`{"type":"poster","alias":"myhandle","config":{"genre":true},"password":"pw1"}`)))
+	if rr.Code != http.StatusCreated {
+		t.Fatalf("create: expected 201, got %d: %s", rr.Code, rr.Body.String())
+	}
+	var created struct {
+		ID    string `json:"id"`
+		Alias string `json:"alias"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &created); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	if created.ID == "" {
+		t.Fatal("expected a generated profile ID")
+	}
+	if created.Alias != "myhandle" {
+		t.Fatalf("alias = %q", created.Alias)
 	}
 
-	// With correct password via query param → 200
+	// Render by alias works without a password.
 	rr = httptest.NewRecorder()
-	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/poster/tt0816692?config=locked&password=mypassword", nil))
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/poster/tt0816692?config=myhandle", nil))
 	if rr.Code != http.StatusOK {
-		t.Errorf("correct password query: expected 200, got %d", rr.Code)
+		t.Errorf("render by alias: expected 200, got %d", rr.Code)
+	}
+
+	// Invalid alias is rejected.
+	rr = httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/profile",
+		strings.NewReader(`{"type":"poster","alias":"Bad-Alias9","config":{}}`)))
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("invalid alias: expected 400, got %d", rr.Code)
+	}
+
+	// Duplicate alias is rejected.
+	rr = httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/profile",
+		strings.NewReader(`{"type":"poster","alias":"myhandle","config":{}}`)))
+	if rr.Code != http.StatusConflict {
+		t.Errorf("duplicate alias: expected 409, got %d", rr.Code)
 	}
 }
 

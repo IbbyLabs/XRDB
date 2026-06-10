@@ -35,3 +35,9 @@ Thumbs.db
 
 # Go test cache (local)
 *.test
+
+# Settings store sidecar DB
+*.db.settings
+
+# Impeccable critique snapshots (local design tooling)
+.impeccable/

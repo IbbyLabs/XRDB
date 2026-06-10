@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
-	"image/jpeg"
+	_ "image/jpeg" // register JPEG decoding
 	"image/png"
 	"io"
 	"net/http"
@@ -17,6 +17,7 @@ import (
 	"time"
 
 	xdraw "golang.org/x/image/draw"
+	_ "golang.org/x/image/webp" // register WebP decoding (metahub serves WebP)
 
 	"xrdb_rewrite/internal/imageconfig"
 	"xrdb_rewrite/internal/provider"
@@ -82,6 +83,13 @@ func (f *httpFetcher) Fetch(ctx context.Context, url string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+// TMDBClient returns the registered TMDB provider, or nil. The media
+// search/trending/lookup endpoints are TMDB-backed.
+func (p *Pipeline) TMDBClient() *provider.TMDB {
+	t, _ := p.providers.Get("tmdb").(*provider.TMDB)
+	return t
+}
+
 // New creates a Pipeline with the given provider registry.
 func New(reg *provider.Registry) *Pipeline {
 	return &Pipeline{
@@ -98,7 +106,7 @@ func NewWithFetcher(reg *provider.Registry, f imageFetcher) *Pipeline {
 // Render executes the composition pipeline for the given request.
 // Falls back to a type-colored placeholder if any step fails.
 func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
-	dim := render.DimensionsFor(req.MediaType)
+	dim := render.DimensionsForSize(req.MediaType, string(req.Config.Size))
 	cacheKey := buildCacheKey(req)
 	result := &Result{
 		CacheKey:    cacheKey,
@@ -167,10 +175,23 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 		return nil, nil, fmt.Errorf("no provider available for %q", provName)
 	}
 
-	meta, err := prov.Fetch(ctx, req.MediaType, req.MediaID)
+	opts := provider.ArtworkOptions{
+		Language:       req.Config.Language,
+		TextPreference: string(req.Config.TextPreference),
+		Size:           string(req.Config.Size),
+	}
+	var meta *provider.MediaMeta
+	var err error
+	if af, ok := prov.(provider.ArtworkFetcher); ok {
+		meta, err = af.FetchArtwork(ctx, req.MediaType, req.MediaID, opts)
+	} else {
+		meta, err = prov.Fetch(ctx, req.MediaType, req.MediaID)
+	}
 	if err != nil {
 		return nil, nil, fmt.Errorf("provider fetch: %w", err)
 	}
+
+	p.enrichMetaForOverlays(ctx, req, meta)
 
 	artworkURL := selectArtworkURL(meta, req.MediaType)
 	if artworkURL == "" {
@@ -179,6 +200,36 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 
 	data, err := p.fetcher.Fetch(ctx, artworkURL)
 	return data, meta, err
+}
+
+// enrichMetaForOverlays fills overlay metadata (content rating, genres, watch
+// providers) from TMDB when the artwork source doesn't supply it. Without this,
+// switching artwork to fanart/cinemeta would silently drop the age/genre/
+// provider badges even though the data exists.
+func (p *Pipeline) enrichMetaForOverlays(ctx context.Context, req Request, meta *provider.MediaMeta) {
+	needsRating := req.Config.AgeRating && meta.ContentRating == ""
+	needsGenres := req.Config.Genre && len(meta.Genres) == 0
+	needsProviders := req.Config.Providers && len(meta.WatchProviders) == 0
+	if !needsRating && !needsGenres && !needsProviders {
+		return
+	}
+	tmdb := p.providers.Get("tmdb")
+	if tmdb == nil || tmdb.Name() == string(req.Config.ArtworkSource) {
+		return
+	}
+	extra, err := tmdb.Fetch(ctx, req.MediaType, req.MediaID)
+	if err != nil || extra == nil {
+		return
+	}
+	if needsRating {
+		meta.ContentRating = extra.ContentRating
+	}
+	if needsGenres {
+		meta.Genres = extra.Genres
+	}
+	if needsProviders {
+		meta.WatchProviders = extra.WatchProviders
+	}
 }
 
 func selectArtworkURL(meta *provider.MediaMeta, mediaType string) string {
@@ -195,15 +246,10 @@ func selectArtworkURL(meta *provider.MediaMeta, mediaType string) string {
 	}
 }
 
-// decodeImage decodes JPEG or PNG bytes into an image.Image.
+// decodeImage decodes PNG, JPEG, or WebP bytes into an image.Image.
 func decodeImage(data []byte) (image.Image, error) {
-	r := bytes.NewReader(data)
-	img, err := png.Decode(r)
-	if err == nil {
-		return img, nil
-	}
-	_, _ = r.Seek(0, 0)
-	return jpeg.Decode(r)
+	img, _, err := image.Decode(bytes.NewReader(data))
+	return img, err
 }
 
 // resizeFit scales src to cover maxW×maxH using bilinear interpolation,

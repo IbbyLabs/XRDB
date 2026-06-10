@@ -2,7 +2,8 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { Activity, HardDrive, RefreshCw, AlertCircle, Flame } from 'lucide-react';
-import { fetchMetrics, fetchCacheStats, type MetricsSnapshot, type CacheStats } from '@/lib/api';
+import { fetchMetrics, fetchCacheStats, adminAuthHeaders, type MetricsSnapshot, type CacheStats } from '@/lib/api';
+import { tablistKeyNav } from './tablist';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
 
@@ -23,10 +24,10 @@ function MetricsPanel({ data }: { data: MetricsSnapshot }) {
   const statusEntries = Object.entries(data.byStatus).sort((a, b) => Number(a[0]) - Number(b[0]));
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      <div>
-        <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--ink)', marginBottom: '0.75rem' }}>Latency</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
+    <div>
+      <div className="admin-section">
+        <h2 className="admin-section-title">Latency</h2>
+        <div className="stat-strip">
           {([
             { label: 'p50', value: fmt(data.p50Ms), unit: 'ms' },
             { label: 'p95', value: fmt(data.p95Ms), unit: 'ms' },
@@ -34,24 +35,24 @@ function MetricsPanel({ data }: { data: MetricsSnapshot }) {
             { label: 'Total requests', value: data.totalRequests.toLocaleString(), unit: '' },
             { label: 'Uptime', value: fmtUptime(data.uptimeSeconds), unit: '' },
           ] as { label: string; value: string; unit: string }[]).map(({ label, value, unit }) => (
-            <div key={label} className="xrdb-stat">
-              <span className="xrdb-stat-label">{label}</span>
-              <span className="xrdb-stat-value">{value}{unit}</span>
+            <div key={label} className="stat-cell">
+              <span className="stat-label">{label}</span>
+              <span className="stat-value">{value}{unit}</span>
             </div>
           ))}
         </div>
       </div>
 
       {statusEntries.length > 0 && (
-        <div>
-          <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--ink)', marginBottom: '0.75rem' }}>Status codes</h2>
-          <div className="xrdb-card">
-            <table className="xrdb-table">
+        <div className="admin-section">
+          <h2 className="admin-section-title">Status codes</h2>
+          <div className="panel">
+            <table className="table">
               <thead><tr><th scope="col">Status</th><th scope="col">Requests</th></tr></thead>
               <tbody>
                 {statusEntries.map(([code, count]) => (
                   <tr key={code}>
-                    <td><span className="xrdb-mono">{code}</span></td>
+                    <td><span className="mono">{code}</span></td>
                     <td>{count.toLocaleString()}</td>
                   </tr>
                 ))}
@@ -62,15 +63,15 @@ function MetricsPanel({ data }: { data: MetricsSnapshot }) {
       )}
 
       {topRoutes.length > 0 && (
-        <div>
-          <h2 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--ink)', marginBottom: '0.75rem' }}>Top routes</h2>
-          <div className="xrdb-card">
-            <table className="xrdb-table">
+        <div className="admin-section">
+          <h2 className="admin-section-title">Top routes</h2>
+          <div className="panel">
+            <table className="table">
               <thead><tr><th scope="col">Route</th><th scope="col">Requests</th></tr></thead>
               <tbody>
                 {topRoutes.map(([route, count]) => (
                   <tr key={route}>
-                    <td><span className="xrdb-mono">{route}</span></td>
+                    <td><span className="mono">{route}</span></td>
                     <td>{count.toLocaleString()}</td>
                   </tr>
                 ))}
@@ -85,19 +86,19 @@ function MetricsPanel({ data }: { data: MetricsSnapshot }) {
 
 function CachePanel({ data }: { data: CacheStats }) {
   if (data.status) {
-    return <div className="xrdb-notice xrdb-notice-info" role="status">{data.status}</div>;
+    return <div className="notice notice-info" role="status">{data.status}</div>;
   }
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
-        <div className="xrdb-stat"><span className="xrdb-stat-label">Hot entries</span><span className="xrdb-stat-value">{data.hotEntries}</span></div>
-        <div className="xrdb-stat"><span className="xrdb-stat-label">Disk entries</span><span className="xrdb-stat-value">{data.diskEntries}</span></div>
-        <div className="xrdb-stat"><span className="xrdb-stat-label">TTL</span><span className="xrdb-stat-value" style={{ fontSize: '1.1rem' }}>{data.ttl}</span></div>
+    <div className="admin-section">
+      <div className="stat-strip">
+        <div className="stat-cell"><span className="stat-label">Hot entries</span><span className="stat-value">{data.hotEntries}</span></div>
+        <div className="stat-cell"><span className="stat-label">Disk entries</span><span className="stat-value">{data.diskEntries}</span></div>
+        <div className="stat-cell"><span className="stat-label">TTL</span><span className="stat-value stat-value--sm">{data.ttl}</span></div>
       </div>
-      <div className="xrdb-card">
-        <div className="xrdb-card-body">
-          <span className="xrdb-label">Cache directory</span>
-          <span className="xrdb-mono" style={{ display: 'block', marginTop: '0.25rem', wordBreak: 'break-all' }}>{data.dir}</span>
+      <div className="panel">
+        <div className="panel-body">
+          <span className="label">Cache directory</span>
+          <span className="mono" style={{ display: 'inline-block', marginTop: 'var(--sp-1)', wordBreak: 'break-all' }}>{data.dir}</span>
         </div>
       </div>
     </div>
@@ -120,7 +121,7 @@ function WarmPanel() {
     try {
       const res = await fetch(`${API_BASE}/api/admin/warm`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...adminAuthHeaders() },
         body: JSON.stringify({ ids: list, mediaType }),
       });
       if (!res.ok) {
@@ -137,32 +138,31 @@ function WarmPanel() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', maxWidth: '640px' }}>
-      <p className="xrdb-section-sub" style={{ margin: 0 }}>
+    <div className="cfg-fields" style={{ maxWidth: '640px' }}>
+      <p className="page-sub" style={{ margin: 0 }}>
         Pre-render posters into the cache. Accepts IMDb IDs, TMDB IDs, or any ID supported by your configured providers. One per line or comma-separated.
       </p>
 
-      <div>
-        <label className="xrdb-label" htmlFor="warm-ids">Media IDs</label>
+      <div className="field">
+        <label className="label" htmlFor="warm-ids">Media IDs</label>
         <textarea
           id="warm-ids"
-          className="xrdb-input"
+          className="input"
           rows={6}
           value={ids}
           onChange={e => { setIds(e.target.value); setError(null); }}
           placeholder={"tt0111161\ntt0468569\ntt0816692"}
-          style={{ fontFamily: 'var(--font-mono, monospace)', resize: 'vertical', marginTop: '0.35rem' }}
+          style={{ fontFamily: 'var(--font-mono-stack)', resize: 'vertical' }}
         />
       </div>
 
-      <div>
-        <label className="xrdb-label" htmlFor="warm-type">Media type</label>
+      <div className="field">
+        <label className="label" htmlFor="warm-type">Media type</label>
         <select
           id="warm-type"
-          className="xrdb-input"
+          className="select"
           value={mediaType}
           onChange={e => setType(e.target.value)}
-          style={{ marginTop: '0.35rem' }}
         >
           <option value="poster">Poster</option>
           <option value="backdrop">Backdrop</option>
@@ -172,13 +172,13 @@ function WarmPanel() {
       </div>
 
       {error && (
-        <div className="xrdb-notice xrdb-notice-error" role="alert">
+        <div className="notice notice-error" role="alert">
           <AlertCircle size={14} aria-hidden />
           <span>{error}</span>
         </div>
       )}
       {result && (
-        <div className="xrdb-notice xrdb-notice-success" role="status">
+        <div className="notice notice-success" role="status">
           <Flame size={14} aria-hidden />
           <span>{result}</span>
         </div>
@@ -186,7 +186,7 @@ function WarmPanel() {
 
       <div>
         <button
-          className="xrdb-btn xrdb-btn-primary"
+          className="btn btn-primary"
           onClick={handleWarm}
           disabled={submitting || !ids.trim()}
         >
@@ -239,33 +239,34 @@ export function AdminClient() {
   };
 
   return (
-    <div className="xrdb-page-inner">
+    <div className="page-inner">
       <div className="admin-header">
         <div>
-          <h1 className="xrdb-section-title">Admin</h1>
-          <p className="xrdb-section-sub">Runtime metrics and cache diagnostics.</p>
+          <h1 className="page-title">Admin</h1>
+          <p className="page-sub">Runtime metrics and cache diagnostics.</p>
         </div>
         <button
-          className="xrdb-btn xrdb-btn-ghost"
+          className="btn btn-ghost"
           onClick={() => void load(tab)}
           disabled={loading}
           aria-label="Refresh data"
         >
-          <RefreshCw size={13} aria-hidden="true" className={loading ? 'xrdb-spin' : ''} />
+          <RefreshCw size={13} aria-hidden="true" className={loading ? 'spin' : ''} />
           Refresh
         </button>
       </div>
 
-      <div role="tablist" aria-label="Admin sections" className="admin-tabs">
+      <div role="tablist" aria-label="Admin sections" className="tabs" style={{ marginBottom: 'var(--sp-4)' }} onKeyDown={tablistKeyNav}>
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             role="tab"
             id={`tab-${id}`}
             aria-selected={tab === id}
+            tabIndex={tab === id ? 0 : -1}
             aria-controls={`panel-${id}`}
             onClick={() => switchTab(id)}
-            className={`admin-tab${tab === id ? ' admin-tab--active' : ''}`}
+            className="tab"
           >
             <Icon size={13} aria-hidden="true" />
             {label}
@@ -274,7 +275,7 @@ export function AdminClient() {
       </div>
 
       {error && (
-        <div className="xrdb-notice xrdb-notice-error" style={{ marginBottom: '1rem' }} role="alert">
+        <div className="notice notice-error" style={{ marginBottom: 'var(--sp-4)' }} role="alert">
           <AlertCircle size={14} aria-hidden="true" style={{ flexShrink: 0 }} />
           <span>{error}</span>
         </div>
@@ -287,11 +288,12 @@ export function AdminClient() {
           id={`panel-${id}`}
           aria-labelledby={`tab-${id}`}
           hidden={tab !== id}
+          className={tab === id ? 'tabpanel-enter' : undefined}
         >
           {loading && tab === id && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }} aria-label="Loading data" aria-busy="true">
+            <div className="stat-strip" aria-label="Loading data" aria-busy="true" style={{ border: 'none', background: 'transparent', gap: 'var(--sp-3)' }}>
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="xrdb-skeleton" style={{ height: '5rem' }} />
+                <div key={i} className="skeleton" style={{ height: '5rem', flex: '1 1 9rem' }} />
               ))}
             </div>
           )}
