@@ -40,6 +40,23 @@ const (
 	TextRandom      TextPreference = "random"
 )
 
+// BadgeStyle controls the visual treatment of rating badges.
+type BadgeStyle string
+
+const (
+	BadgePill   BadgeStyle = "pill"
+	BadgeSquare BadgeStyle = "square"
+	BadgeGlass  BadgeStyle = "glass"
+)
+
+// BadgeTheme controls the rating badge color scheme.
+type BadgeTheme string
+
+const (
+	ThemeDark  BadgeTheme = "dark"
+	ThemeLight BadgeTheme = "light"
+)
+
 // RatingsLayout controls where the ratings row is placed.
 type RatingsLayout string
 
@@ -60,6 +77,8 @@ type Config struct {
 	TextPreference TextPreference `json:"textPreference"`
 	Ratings        []string       `json:"ratings"`
 	RatingsLayout  RatingsLayout  `json:"ratingsLayout"`
+	BadgeStyle     BadgeStyle     `json:"badgeStyle"`
+	BadgeTheme     BadgeTheme     `json:"badgeTheme"`
 	Badges         []string       `json:"badges,omitempty"`
 	AgeRating      bool           `json:"ageRating"`
 	AgeRatingPos   string         `json:"ageRatingPos,omitempty"`
@@ -81,6 +100,8 @@ func Default() Config {
 		TextPreference: TextOriginal,
 		Ratings:        []string{"tmdb", "imdb"},
 		RatingsLayout:  LayoutBottom,
+		BadgeStyle:     BadgePill,
+		BadgeTheme:     ThemeDark,
 		AgeRating:      true,
 		AgeRatingPos:   "inherit",
 	}
@@ -94,6 +115,8 @@ type raw struct {
 	TextPreference *string  `json:"textPreference"`
 	Ratings        []string `json:"ratings"`
 	RatingsLayout  *string  `json:"ratingsLayout"`
+	BadgeStyle     *string  `json:"badgeStyle"`
+	BadgeTheme     *string  `json:"badgeTheme"`
 	Badges         []string `json:"badges"`
 	AgeRating      *bool    `json:"ageRating"`
 	AgeRatingPos   *string  `json:"ageRatingPos"`
@@ -146,6 +169,24 @@ func Parse(data json.RawMessage) Config {
 			cfg.RatingsLayout = v
 		}
 	}
+	if r.BadgeStyle != nil {
+		switch strings.ToLower(strings.TrimSpace(*r.BadgeStyle)) {
+		case "pill":
+			cfg.BadgeStyle = BadgePill
+		case "square":
+			cfg.BadgeStyle = BadgeSquare
+		case "glass":
+			cfg.BadgeStyle = BadgeGlass
+		}
+	}
+	if r.BadgeTheme != nil {
+		switch strings.ToLower(strings.TrimSpace(*r.BadgeTheme)) {
+		case "dark":
+			cfg.BadgeTheme = ThemeDark
+		case "light":
+			cfg.BadgeTheme = ThemeLight
+		}
+	}
 	if len(r.Badges) > 0 {
 		cfg.Badges = dedupeStrings(r.Badges)
 	}
@@ -194,6 +235,8 @@ func CacheKey(cfg Config) string {
 		TextPreference   TextPreference `json:"textPreference"`
 		Ratings          []string       `json:"ratings"`
 		RatingsLayout    RatingsLayout  `json:"ratingsLayout"`
+		BadgeStyle       BadgeStyle     `json:"badgeStyle"`
+		BadgeTheme       BadgeTheme     `json:"badgeTheme"`
 		Badges           []string       `json:"badges"`
 		AgeRating        bool           `json:"ageRating"`
 		AgeRatingPos     string         `json:"ageRatingPos"`
@@ -219,6 +262,8 @@ func CacheKey(cfg Config) string {
 		TextPreference:   cfg.TextPreference,
 		Ratings:          ratings,
 		RatingsLayout:    cfg.RatingsLayout,
+		BadgeStyle:       cfg.BadgeStyle,
+		BadgeTheme:       cfg.BadgeTheme,
 		Badges:           badges,
 		AgeRating:        cfg.AgeRating,
 		AgeRatingPos:     cfg.AgeRatingPos,

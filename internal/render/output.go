@@ -30,15 +30,37 @@ func IsValidMediaType(t string) bool {
 // DimensionsFor returns the canonical output dimensions for a media type.
 // Unknown types fall back to poster dimensions.
 func DimensionsFor(mediaType string) Dimensions {
+	return DimensionsForSize(mediaType, "normal")
+}
+
+// sizeMultipliers scales the canonical dimensions per requested output size.
+var sizeMultipliers = map[string]float64{
+	"normal": 1,
+	"large":  1.5,
+	"4k":     3,
+}
+
+// DimensionsForSize returns output dimensions for a media type at the
+// requested size ("normal", "large", "4k"). Unknown sizes fall back to normal.
+func DimensionsForSize(mediaType, size string) Dimensions {
+	var d Dimensions
 	switch mediaType {
 	case "backdrop":
-		return Dimensions{1280, 720}
+		d = Dimensions{1280, 720}
 	case "thumbnail":
-		return Dimensions{320, 180}
+		d = Dimensions{320, 180}
 	case "logo":
-		return Dimensions{800, 200}
+		d = Dimensions{800, 200}
 	default:
-		return Dimensions{580, 859}
+		d = Dimensions{580, 859}
+	}
+	mult, ok := sizeMultipliers[size]
+	if !ok {
+		mult = 1
+	}
+	return Dimensions{
+		Width:  int(float64(d.Width)*mult + 0.5),
+		Height: int(float64(d.Height)*mult + 0.5),
 	}
 }
 
