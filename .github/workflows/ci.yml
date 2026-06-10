@@ -12,68 +12,56 @@ on:
       - main
   pull_request: {}
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-
 jobs:
-  validate:
+  go:
+    name: Go
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5.3.0
         with:
-          version: 10.32.1
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Verify legacy naming is absent
-        run: pnpm run verify:legacy-name
-
-      - name: Verify README doc asset manifest
-        run: pnpm run docs:verify-manifest
-
-      - name: Check docs refresh prerequisites
-        id: docs_refresh
-        env:
-          XRDB_README_PREVIEW_TMDB_KEY: ${{ secrets.XRDB_README_PREVIEW_TMDB_KEY }}
-          XRDB_README_PREVIEW_MDBLIST_KEY: ${{ secrets.XRDB_README_PREVIEW_MDBLIST_KEY }}
-        run: |
-          if [ -n "${XRDB_README_PREVIEW_TMDB_KEY}" ]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "XRDB_README_PREVIEW_TMDB_KEY is not configured. Skipping full docs refresh diff."
-          fi
-
-      - name: Install Playwright browser for docs refresh
-        if: ${{ steps.docs_refresh.outputs.enabled == 'true' }}
-        run: npx --yes playwright install --with-deps chromium
-
-      - name: Verify refreshed doc assets are clean
-        if: ${{ steps.docs_refresh.outputs.enabled == 'true' }}
-        env:
-          XRDB_README_PREVIEW_TMDB_KEY: ${{ secrets.XRDB_README_PREVIEW_TMDB_KEY }}
-          XRDB_README_PREVIEW_MDBLIST_KEY: ${{ secrets.XRDB_README_PREVIEW_MDBLIST_KEY }}
-        run: |
-          pnpm run docs:refresh-assets
-          git diff --exit-code -- README.md docs/images
+          go-version-file: go.mod
+          cache: true
 
       - name: Lint
-        run: pnpm run lint
-
-      - name: Test
-        run: pnpm run test
+        uses: golangci/golangci-lint-action@v6.1.1
+        with:
+          version: v1.64.5
 
       - name: Build
-        run: pnpm run build
+        run: go build ./...
+
+      - name: Test
+        run: go test ./...
+
+  web:
+    name: Web
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4.3.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npm run type-check
+
+      - name: Build
+        run: npm run build

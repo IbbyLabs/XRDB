@@ -14,74 +14,29 @@ run-name: >-
       - "v*"
   workflow_dispatch: {}
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-
 concurrency:
   group: build-and-push-docker-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  build:
+  version:
+    name: Compute version metadata
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      packages: write
-
+      contents: read
+    outputs:
+      deployment_version: ${{ steps.meta.outputs.deployment_version }}
+      dev_track_tag: ${{ steps.meta.outputs.dev_track_tag }}
+      publish_dev: ${{ steps.meta.outputs.publish_dev }}
+      publish_release_alias: ${{ steps.meta.outputs.publish_release_alias }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.32.1
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Verify legacy naming is absent
-        run: pnpm run verify:legacy-name
-
-      - name: Verify README doc asset manifest
-        run: pnpm run docs:verify-manifest
-
-      - name: Check docs refresh prerequisites
-        id: docs_refresh
-        env:
-          XRDB_README_PREVIEW_TMDB_KEY: ${{ secrets.XRDB_README_PREVIEW_TMDB_KEY }}
-          XRDB_README_PREVIEW_MDBLIST_KEY: ${{ secrets.XRDB_README_PREVIEW_MDBLIST_KEY }}
-        run: |
-          if [ -n "${XRDB_README_PREVIEW_TMDB_KEY}" ]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "XRDB_README_PREVIEW_TMDB_KEY is not configured. Skipping full docs refresh diff."
-          fi
-
-      - name: Install Playwright browser for docs refresh
-        if: ${{ steps.docs_refresh.outputs.enabled == 'true' }}
-        run: npx --yes playwright install --with-deps chromium
-
-      - name: Verify refreshed doc assets are clean
-        if: ${{ steps.docs_refresh.outputs.enabled == 'true' }}
-        env:
-          XRDB_README_PREVIEW_TMDB_KEY: ${{ secrets.XRDB_README_PREVIEW_TMDB_KEY }}
-          XRDB_README_PREVIEW_MDBLIST_KEY: ${{ secrets.XRDB_README_PREVIEW_MDBLIST_KEY }}
-        run: |
-          pnpm run docs:refresh-assets
-          git diff --exit-code -- README.md docs/images
-
       - name: Compute deployment version metadata
-        id: version_meta
+        id: meta
         env:
           REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
@@ -94,83 +49,70 @@ jobs:
           deployment_version=""
           dev_track_tag=""
           publish_dev="false"
+          publish_release_alias="false"
 
           if [ "${REF_TYPE}" = "tag" ] && printf '%s' "${REF_NAME}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
             deployment_version="${REF_NAME}"
             dev_track_tag="dev-${REF_NAME#v}"
-            publish_dev="true"
+            publish_release_alias="true"
           elif [ "${REF_TYPE}" = "branch" ] && [ "${REF_NAME}" = "${DEFAULT_BRANCH}" ]; then
-            git fetch --force --tags origin
-            latest_tag="$(git tag --list 'v[0-9]*.[0-9]*.[0-9]*' | sort -V | tail -n 1)"
-            if [ -z "${latest_tag}" ]; then
-              latest_tag="v0.0.0"
-            fi
-
-            base_version="${latest_tag#v}"
-            IFS='.' read -r major minor patch <<< "${base_version}"
-
-            if [ "${latest_tag}" = "v0.0.0" ]; then
-              subjects="$(git log --format=%s)"
-              bodies="$(git log --format=%B)"
-            else
-              subjects="$(git log --format=%s "${latest_tag}..HEAD")"
-              bodies="$(git log --format=%B "${latest_tag}..HEAD")"
-            fi
-
-            bump="patch"
-            if printf '%s\n%s\n' "${subjects}" "${bodies}" | grep -Eq 'BREAKING CHANGE|BREAKING-CHANGE|^[a-zA-Z]+\([^)]+\)!:|^[a-zA-Z]+!:'; then
-              bump="major"
-            elif printf '%s' "${subjects}" | grep -Eq '^feat\([^)]+\):|^feat:'; then
-              bump="minor"
-            fi
-
-            case "${bump}" in
-              major)
-                major=$((major + 1))
-                minor=0
-                patch=0
-                ;;
-              minor)
-                minor=$((minor + 1))
-                patch=0
-                ;;
-              *)
-                patch=$((patch + 1))
-                ;;
-            esac
-
             deployment_version="dev.${stamp}.${short_sha}"
             dev_track_tag="dev-${stamp/./-}-${short_sha}"
             publish_dev="true"
           else
             deployment_version="manual-${stamp}-${short_sha}"
             dev_track_tag="manual-${short_sha}"
-            publish_dev="false"
           fi
 
           echo "deployment_version=${deployment_version}" >> "$GITHUB_OUTPUT"
           echo "dev_track_tag=${dev_track_tag}" >> "$GITHUB_OUTPUT"
           echo "publish_dev=${publish_dev}" >> "$GITHUB_OUTPUT"
+          echo "publish_release_alias=${publish_release_alias}" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    needs: version
+    permissions:
+      contents: write
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - name: api
+            image: ghcr.io/${{ github.repository }}
+            context: .
+            dockerfile: Dockerfile
+          - name: web
+            image: ghcr.io/${{ github.repository }}-web
+            context: ./web
+            dockerfile: Dockerfile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: ${{ matrix.image }}
           flavor: |
             latest=false
           tags: |
             type=raw,value=${{ github.ref_name }},enable=${{ github.ref_type == 'tag' }}
-            type=raw,value=dev,enable=${{ steps.version_meta.outputs.publish_dev == 'true' }}
-            type=raw,value=${{ steps.version_meta.outputs.dev_track_tag }},enable=${{ steps.version_meta.outputs.publish_dev == 'true' }}
-            type=sha,prefix=manual-,enable=${{ github.event_name == 'workflow_dispatch' && steps.version_meta.outputs.publish_dev != 'true' }}
+            type=raw,value=dev,enable=${{ needs.version.outputs.publish_dev == 'true' }}
+            type=raw,value=${{ needs.version.outputs.dev_track_tag }},enable=${{ needs.version.outputs.publish_dev == 'true' || needs.version.outputs.publish_release_alias == 'true' }}
+            type=sha,prefix=manual-,enable=${{ github.event_name == 'workflow_dispatch' && needs.version.outputs.publish_dev != 'true' }}
           labels: |
             org.opencontainers.image.title=XRDB
-            org.opencontainers.image.description=XRDB generates poster, backdrop, and logo images with dynamic ratings on the fly.
+            org.opencontainers.image.description=XRDB generates poster, backdrop, and logo images with ratings overlays on the fly.
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.documentation=${{ github.server_url }}/${{ github.repository }}#readme
-            org.opencontainers.image.version=${{ steps.version_meta.outputs.deployment_version }}
+            org.opencontainers.image.version=${{ needs.version.outputs.deployment_version }}
             org.opencontainers.image.revision=${{ github.sha }}
 
       - name: Set up QEMU
@@ -189,21 +131,33 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
           platforms: linux/amd64,linux/arm64
           push: true
           build-args: |
-            XRDB_BUILD_VERSION=${{ steps.version_meta.outputs.deployment_version }}
-            NEXT_PUBLIC_DEPLOYMENT_VERSION=${{ steps.version_meta.outputs.deployment_version }}
+            XRDB_BUILD_VERSION=${{ needs.version.outputs.deployment_version }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           provenance: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
 
-      - name: Check Discord webhook secret for dev notifications
-        id: dev_webhook
-        if: ${{ github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch && steps.version_meta.outputs.publish_dev == 'true' }}
+  notify-dev:
+    name: Notify Discord (dev build)
+    runs-on: ubuntu-latest
+    needs: [version, build]
+    if: ${{ github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch && needs.version.outputs.publish_dev == 'true' }}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check Discord webhook secret
+        id: webhook
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
         run: |
@@ -211,68 +165,50 @@ jobs:
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "WEBHOOK_URL secret is not configured. Skipping Discord dev build notification."
           fi
 
-      - name: Resolve last successful Discord dev notification SHA
-        id: last_dev_notification
-        if: ${{ steps.dev_webhook.outputs.enabled == 'true' }}
+      - name: Resolve last Discord dev notification SHA
+        id: last_notification
+        if: ${{ steps.webhook.outputs.enabled == 'true' }}
         env:
           EVENT_BEFORE: ${{ github.event.before }}
         run: |
           set -euo pipefail
           checkpoint_tag='discord-dev-notified'
           checkpoint_sha=''
-
           git fetch --force --tags origin
-
           if git rev-parse -q --verify "refs/tags/${checkpoint_tag}" >/dev/null; then
             checkpoint_sha="$(git rev-list -n1 "refs/tags/${checkpoint_tag}")"
-            echo "Found Discord checkpoint tag ${checkpoint_tag}: ${checkpoint_sha}"
-          else
-            echo "No Discord checkpoint tag found."
           fi
-
-          before_sha="${checkpoint_sha}"
-          if [ -z "${before_sha}" ]; then
-            before_sha="${EVENT_BEFORE}"
-            echo "Falling back to event before SHA: ${before_sha}"
-          fi
-
-          skip_notification='false'
+          before_sha="${checkpoint_sha:-${EVENT_BEFORE}}"
+          skip='false'
           if [ -n "${checkpoint_sha}" ] && [ "${checkpoint_sha}" = "${GITHUB_SHA}" ]; then
-            skip_notification='true'
-            echo 'Current commit already has a Discord dev notification checkpoint. Skipping duplicate post.'
+            skip='true'
           fi
-
           echo "checkpoint_tag=${checkpoint_tag}" >> "$GITHUB_OUTPUT"
-          echo "checkpoint_sha=${checkpoint_sha}" >> "$GITHUB_OUTPUT"
           echo "before_sha=${before_sha}" >> "$GITHUB_OUTPUT"
-          echo "skip_notification=${skip_notification}" >> "$GITHUB_OUTPUT"
+          echo "skip=${skip}" >> "$GITHUB_OUTPUT"
 
       - name: Post dev build to Discord
-        if: ${{ steps.dev_webhook.outputs.enabled == 'true' && steps.last_dev_notification.outputs.skip_notification != 'true' }}
+        if: ${{ steps.webhook.outputs.enabled == 'true' && steps.last_notification.outputs.skip != 'true' }}
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
           DISCORD_ROLE_ID: '1500618567614206072'
           REPOSITORY: ${{ github.repository }}
-          DEPLOYMENT_VERSION: ${{ steps.version_meta.outputs.deployment_version }}
-          BEFORE_SHA: ${{ steps.last_dev_notification.outputs.before_sha }}
+          DEPLOYMENT_VERSION: ${{ needs.version.outputs.deployment_version }}
+          BEFORE_SHA: ${{ steps.last_notification.outputs.before_sha }}
           AFTER_SHA: ${{ github.sha }}
-          DEV_TRACK_TAG: ${{ steps.version_meta.outputs.dev_track_tag }}
+          DEV_TRACK_TAG: ${{ needs.version.outputs.dev_track_tag }}
           BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node ./.github/scripts/post-discord-dev-build.mjs
 
-      - name: Update Discord dev notification checkpoint
-        if: ${{ steps.dev_webhook.outputs.enabled == 'true' && steps.last_dev_notification.outputs.skip_notification != 'true' }}
+      - name: Update Discord checkpoint tag
+        if: ${{ steps.webhook.outputs.enabled == 'true' && steps.last_notification.outputs.skip != 'true' }}
         env:
-          CHECKPOINT_TAG: ${{ steps.last_dev_notification.outputs.checkpoint_tag }}
+          CHECKPOINT_TAG: ${{ steps.last_notification.outputs.checkpoint_tag }}
         run: |
-          set -euo pipefail
-
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-
           git tag --force "${CHECKPOINT_TAG}" "${GITHUB_SHA}"
           git push --force origin "refs/tags/${CHECKPOINT_TAG}"

@@ -1,0 +1,27 @@
+{
+  "profiles": [
+    {
+      "id": "tt0816692",
+      "name": "Interstellar",
+      "type": "poster",
+      "uuid": "alpha-123",
+      "config": {
+        "layout": "compact",
+        "rating": "imdb",
+        "year": true
+      },
+      "legacyBackground": "on"
+    },
+    {
+      "id": "tt0110912",
+      "name": "Pulp Fiction",
+      "type": "poster",
+      "config": {
+        "layout": "minimal",
+        "rating": "tmdb",
+        "genre": true
+      },
+      "legacyBadgeMode": "legacy"
+    }
+  ]
+}
