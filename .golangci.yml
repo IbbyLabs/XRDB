@@ -1,0 +1,12 @@
+version: "2"
+
+linters:
+  settings:
+    errcheck:
+      exclude-functions:
+        - (io.Closer).Close
+        - (*net/http.Response).Body.Close
+        - (*database/sql.Rows).Close
+        - (*os.File).Close
+        - (*compress/gzip.Reader).Close
+        - (*compress/gzip.Writer).Close

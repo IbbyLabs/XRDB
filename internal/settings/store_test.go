@@ -13,7 +13,7 @@ func openTmp(t *testing.T) *Store {
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
-	t.Cleanup(func() { s.Close() })
+	t.Cleanup(func() { _ = s.Close() })
 	return s
 }
 
@@ -90,7 +90,7 @@ func TestPersistence(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopen: %v", err)
 	}
-	defer s2.Close()
+	defer func() { _ = s2.Close() }()
 	v, err := s2.Get("key")
 	if err != nil || v != "persisted" {
 		t.Errorf("persistence failed: got %q, %v", v, err)

@@ -27,7 +27,7 @@ func Open(path string) (*Store, error) {
 	db.SetMaxOpenConns(5)
 	db.SetMaxIdleConns(1)
 	if err := applySchema(db); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("settings: apply schema: %w", err)
 	}
 	return &Store{db: db}, nil

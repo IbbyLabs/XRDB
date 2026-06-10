@@ -68,9 +68,9 @@ func TestCachedFetchExpires(t *testing.T) {
 	stub := &stubProvider{name: "s", meta: &MediaMeta{Title: "Test"}}
 	cached := NewCachedFetch(stub, time.Millisecond)
 
-	cached.Fetch(context.Background(), "movie", "123")
+	_, _ = cached.Fetch(context.Background(), "movie", "123")
 	time.Sleep(5 * time.Millisecond)
-	cached.Fetch(context.Background(), "movie", "123")
+	_, _ = cached.Fetch(context.Background(), "movie", "123")
 	if stub.calls != 2 {
 		t.Errorf("expected 2 inner calls after expiry, got %d", stub.calls)
 	}
@@ -88,7 +88,7 @@ func TestTMDBClientParsesResponse(t *testing.T) {
 			"backdrop_path": "/backdrop.jpg",
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer srv.Close()
 
