@@ -1,11 +1,15 @@
 SHELL := /bin/sh
 
-.PHONY: all clean run test bench build build-web build-all docker-build up down
+.PHONY: all clean dev run test bench build build-web build-all docker-build up down
 
 all: build-all
 
 clean:
 	rm -rf internal/ui/dist web/.next web/out
+
+# Local dev stack: API on :8787 + web on :3001, keys from .env. Ctrl-C stops both.
+dev:
+	./scripts/dev.sh
 
 run:
 	go run ./cmd/api
