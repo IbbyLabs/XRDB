@@ -31,13 +31,6 @@ type statusResponse struct {
 	Version string `json:"version"`
 }
 
-type renderPlaceholderResponse struct {
-	Service string `json:"service"`
-	Status  string `json:"status"`
-	Type    string `json:"type"`
-	ID      string `json:"id"`
-	CacheKey string `json:"cacheKey"`
-}
 
 // NewHandler builds the HTTP mux. Pass a non-nil staticFS to serve an embedded
 // frontend (SPA) at the root; nil disables static file serving.
@@ -258,7 +251,7 @@ func staticFileHandler(fsys fs.FS) http.HandlerFunc {
 		}
 		rc, ok := content.(io.ReadSeekCloser)
 		if !ok {
-			content.Close()
+			_ = content.Close()
 			return
 		}
 		defer rc.Close()
