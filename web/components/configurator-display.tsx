@@ -6,7 +6,7 @@ import type {
 } from './configurator-types';
 import {
   ARTWORK_OPTIONS, SIZE_OPTIONS, TEXT_PREF_OPTIONS, LANG_OPTIONS,
-  AGE_POS_OPTIONS, GENRE_POS_OPTIONS, QUALITY_BADGE_OPTIONS, DEFAULT_CONFIG,
+  AGE_POS_OPTIONS, GENRE_POS_OPTIONS, QUALITY_BADGE_OPTIONS,
 } from './configurator-types';
 
 // ── Notice ────────────────────────────────────────────────────────────────────

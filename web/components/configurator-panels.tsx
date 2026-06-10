@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   Save, Download, Upload, Check, AlertCircle, Star, Film, LayoutTemplate,
 } from 'lucide-react';
-import { fetchTemplates, type Template, type Profile } from '@/lib/api';
+import { fetchTemplates, type Template } from '@/lib/api';
 import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import { LAYOUT_OPTIONS, RATING_OPTIONS } from './configurator-types';
 

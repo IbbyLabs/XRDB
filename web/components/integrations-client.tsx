@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useId, useRef } from 'react';
 import { Check, AlertCircle, X, Plug, Eye, EyeOff, Trash2 } from 'lucide-react';
-import { fetchSettings, setSetting, deleteSetting, type SettingStatus } from '@/lib/api';
+import { fetchSettings, setSetting, deleteSetting } from '@/lib/api';
 
 // ── Provider definitions ──────────────────────────────────────────────────────
 
@@ -279,6 +279,7 @@ export function IntegrationsClient() {
     }
   }, [flash]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadStatuses(); }, [loadStatuses]);
 
   const handleSave = async (key: string, value: string) => {

@@ -26,6 +26,9 @@ xrdb-cache/
 .env.*
 !.env.example
 
+# Local notes
+.notes
+
 # OS
 .DS_Store
 Thumbs.db

@@ -3,10 +3,10 @@
 import {
   useState, useCallback, useRef, useTransition, useId, useEffect,
 } from 'react';
-import { RefreshCw, Settings2, Star, Film, LayoutTemplate, AlertCircle, Check, X } from 'lucide-react';
+import { RefreshCw, Settings2, Star, Film, LayoutTemplate } from 'lucide-react';
 import {
   renderUrl, createProfile, exportProfile, importProfiles,
-  type MediaType, type Profile, type Template,
+  type MediaType, type Profile,
 } from '@/lib/api';
 import {
   MEDIA_TYPES, DEFAULT_CONFIG, PROFILE_ID_RE, PREVIEW_DEBOUNCE_MS,

@@ -227,6 +227,7 @@ export function AdminClient() {
   }, []);
 
   // Load initial data in useEffect, not during render
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load('metrics'); }, [load]);
 
   const switchTab = (t: Tab) => {
