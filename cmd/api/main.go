@@ -94,6 +94,8 @@ func main() {
 	reg.Register(provider.NewMAL())
 	reg.Register(provider.NewAniList())
 	reg.Register(provider.NewKitsu())
+	// Cinemeta (Stremio) — public artwork/metadata, no key required.
+	reg.Register(provider.NewCinemeta())
 	var pipeline *compose.Pipeline
 	if len(reg.Names()) > 0 {
 		pipeline = compose.New(reg)

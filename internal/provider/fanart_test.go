@@ -23,13 +23,9 @@ func TestFanartNoKey(t *testing.T) {
 	}
 }
 
-func TestFanartIMDbIDRejected(t *testing.T) {
-	f := NewFanart("key")
-	_, err := f.Fetch(context.Background(), "movie", "tt0468569")
-	if err == nil {
-		t.Error("expected error for IMDb ID")
-	}
-}
+// IMDb tt-IDs are accepted by the Fanart movies endpoint; rejecting them
+// pre-flight (the old behavior) broke every render configured with fanart
+// artwork, since the configurator works with tt-IDs.
 
 func TestFanartParsesMoviePosterAndLogo(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -62,13 +58,17 @@ func TestFanartParsesMoviePosterAndLogo(t *testing.T) {
 	raw["movieposter"] = postersJSON
 	raw["hdmovielogo"] = logosJSON
 
-	posterURL := bestFanartURL(raw, "movieposter")
+	posterURL := bestFanartURL(raw, "", "movieposter")
 	if posterURL != "https://example.com/poster.jpg" {
 		t.Errorf("expected en poster, got %q", posterURL)
 	}
-	logoURL := bestFanartURL(raw, "hdmovielogo")
+	logoURL := bestFanartURL(raw, "", "hdmovielogo")
 	if logoURL != "https://example.com/logo.png" {
 		t.Errorf("expected en logo, got %q", logoURL)
+	}
+	dePoster := bestFanartURL(raw, "de", "movieposter")
+	if dePoster != "https://example.com/poster_de.jpg" {
+		t.Errorf("expected de poster for lang=de, got %q", dePoster)
 	}
 
 	_ = f
@@ -81,7 +81,7 @@ func TestFanartFallsBackToNonEnglish(t *testing.T) {
 	})
 	raw["movieposter"] = imagesJSON
 
-	url := bestFanartURL(raw, "movieposter")
+	url := bestFanartURL(raw, "", "movieposter")
 	if url != "https://example.com/poster_de.jpg" {
 		t.Errorf("expected fallback to non-English, got %q", url)
 	}
@@ -89,7 +89,7 @@ func TestFanartFallsBackToNonEnglish(t *testing.T) {
 
 func TestFanartReturnsEmptyOnMissingKeys(t *testing.T) {
 	raw := map[string]json.RawMessage{}
-	url := bestFanartURL(raw, "movieposter", "tvposter")
+	url := bestFanartURL(raw, "", "movieposter", "tvposter")
 	if url != "" {
 		t.Errorf("expected empty URL for missing keys, got %q", url)
 	}
