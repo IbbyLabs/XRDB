@@ -4,32 +4,28 @@ Artwork and metadata overlays for your media library. Configure ratings badges, 
 
 ## Running with Docker
 
+One container — the web UI is embedded in the Go binary and served on the same port as the API.
+
 ```sh
 docker compose up --build
 ```
 
-- API: `http://localhost:8787`
-- Web: `http://localhost:3001`
+- UI + API: `http://localhost:8787`
 
 Data (SQLite + render cache) is stored in a named volume so it survives restarts.
 
 ## Running locally
 
-**API**
-
 ```sh
-go run ./cmd/api
+make dev
 ```
 
-Binds to `:8787` by default. Set `XRDB_ADDR` to change the port.
-
-**Web**
+Starts the API on `http://localhost:8787` and the web dev server on `http://localhost:3001` (provider keys are read from `.env`). Or run them individually:
 
 ```sh
-cd web && npm ci && npm run dev
+go run ./cmd/api                  # API on :8787 (XRDB_ADDR to change)
+cd web && npm ci && npm run dev   # web on :3001
 ```
-
-Opens on `http://localhost:3001`.
 
 ## Migrating profiles from a previous install
 

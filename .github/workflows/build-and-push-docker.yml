@@ -79,13 +79,11 @@ jobs:
     strategy:
       matrix:
         include:
+          # Single image: the web UI is statically exported and embedded in
+          # the Go binary (see Dockerfile stages).
           - name: api
             image: ghcr.io/${{ github.repository }}
             context: .
-            dockerfile: Dockerfile
-          - name: web
-            image: ghcr.io/${{ github.repository }}-web
-            context: ./web
             dockerfile: Dockerfile
 
     steps:
