@@ -213,7 +213,7 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 		if p.PasswordHash != "" {
 			pw := r.Header.Get("X-Profile-Password")
 			if err := store.CheckPassword(id, pw); err != nil {
-				http.Error(w, "profile password required", http.StatusUnauthorized)
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
 				return
 			}
 		}

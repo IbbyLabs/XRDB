@@ -65,7 +65,10 @@ func TestRenderFallsBackOnNoArtworkURL(t *testing.T) {
 	stub := &provider.StubProvider{ProviderName: "tmdb", Meta: &provider.MediaMeta{Title: "Test"}}
 	p := &Pipeline{providers: testRegistry(stub), fetcher: &stubImageFetcher{}}
 	req := Request{MediaType: "poster", MediaID: "tt0816692", Config: imageconfig.Default()}
-	res, _ := p.Render(context.Background(), req)
+	res, err := p.Render(context.Background(), req)
+	if err != nil {
+		t.Fatalf("Render: %v", err)
+	}
 	if !bytes.Equal(res.ImageBytes, render.PlaceholderPNG("poster")) {
 		t.Error("expected fallback placeholder when no artwork URL")
 	}
@@ -112,7 +115,10 @@ func TestRenderJPEGSource(t *testing.T) {
 		fetcher:   &stubImageFetcher{data: srcJPEG},
 	}
 	req := Request{MediaType: "poster", MediaID: "tt1", Config: imageconfig.Default()}
-	res, _ := p.Render(context.Background(), req)
+	res, err := p.Render(context.Background(), req)
+	if err != nil {
+		t.Fatalf("Render: %v", err)
+	}
 	if _, err := png.Decode(bytes.NewReader(res.ImageBytes)); err != nil {
 		t.Errorf("expected valid PNG output from JPEG source: %v", err)
 	}
