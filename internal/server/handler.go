@@ -248,7 +248,7 @@ func staticFileHandler(fsys fs.FS) http.HandlerFunc {
 			return
 		}
 		st, err := f.Stat()
-		f.Close()
+		_ = f.Close()
 		if err != nil {
 			return
 		}
@@ -283,7 +283,7 @@ func staticFileHandler(fsys fs.FS) http.HandlerFunc {
 
 		// Try {slug}.html (e.g. "admin" → "admin.html").
 		if f, err := fsys.Open(p + ".html"); err == nil {
-			f.Close()
+			_ = f.Close()
 			serveContent(w, r, p+".html")
 			return
 		}

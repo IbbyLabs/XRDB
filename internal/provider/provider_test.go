@@ -88,7 +88,7 @@ func TestTMDBClientParsesResponse(t *testing.T) {
 			"backdrop_path": "/backdrop.jpg",
 		}
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer srv.Close()
 

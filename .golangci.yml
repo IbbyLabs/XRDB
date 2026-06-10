@@ -5,7 +5,7 @@ linters:
     errcheck:
       exclude-functions:
         - (io.Closer).Close
-        - (*net/http.Response.Body).Close
+        - (*net/http.Response).Body.Close
         - (*database/sql.Rows).Close
         - (*os.File).Close
         - (*compress/gzip.Reader).Close

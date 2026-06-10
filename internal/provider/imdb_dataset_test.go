@@ -16,7 +16,7 @@ func writeFakeTSV(t *testing.T, dir string) string {
 	if err != nil {
 		t.Fatalf("create tsv: %v", err)
 	}
-	defer func() { _ = f.Close() }()
+	defer f.Close()
 	gz := gzip.NewWriter(f)
 	_, _ = gz.Write([]byte("tconst\taverageRating\tnumVotes\n"))
 	_, _ = gz.Write([]byte("tt0468569\t9.0\t2500000\n"))
