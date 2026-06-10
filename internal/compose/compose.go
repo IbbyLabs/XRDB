@@ -202,7 +202,7 @@ func decodeImage(data []byte) (image.Image, error) {
 	if err == nil {
 		return img, nil
 	}
-	r.Seek(0, 0)
+	_, _ = r.Seek(0, 0)
 	return jpeg.Decode(r)
 }
 

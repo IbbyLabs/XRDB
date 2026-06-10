@@ -68,9 +68,9 @@ func TestCachedFetchExpires(t *testing.T) {
 	stub := &stubProvider{name: "s", meta: &MediaMeta{Title: "Test"}}
 	cached := NewCachedFetch(stub, time.Millisecond)
 
-	cached.Fetch(context.Background(), "movie", "123")
+	_, _ = cached.Fetch(context.Background(), "movie", "123")
 	time.Sleep(5 * time.Millisecond)
-	cached.Fetch(context.Background(), "movie", "123")
+	_, _ = cached.Fetch(context.Background(), "movie", "123")
 	if stub.calls != 2 {
 		t.Errorf("expected 2 inner calls after expiry, got %d", stub.calls)
 	}
