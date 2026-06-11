@@ -1,5 +1,8 @@
 import Link from 'next/link';
 import { LayoutGrid } from 'lucide-react';
+import type { Metadata } from 'next';
+
+export const metadata: Metadata = { title: '404 — XRDB' };
 
 export default function NotFound() {
   return (

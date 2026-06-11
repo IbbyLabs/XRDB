@@ -21,7 +21,16 @@ interface RecentProfile {
 const RECENTS_KEY = 'xrdb-recent-profiles';
 
 function readRecents(): RecentProfile[] {
-  try { return JSON.parse(localStorage.getItem(RECENTS_KEY) ?? '[]') as RecentProfile[]; } catch { return []; }
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(RECENTS_KEY) ?? '[]');
+    if (!Array.isArray(parsed)) return [];
+    // Stored data can be corrupted or from an older shape — keep only
+    // well-formed entries so consumers can trust .key and .name.
+    return parsed.filter((item): item is RecentProfile =>
+      typeof item === 'object' && item !== null
+      && typeof (item as RecentProfile).key === 'string'
+      && typeof (item as RecentProfile).name === 'string');
+  } catch { return []; }
 }
 
 function writeRecents(list: RecentProfile[]): RecentProfile[] {

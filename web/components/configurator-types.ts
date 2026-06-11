@@ -174,7 +174,9 @@ export function decodeShare(fragment: string): ShareState | null {
     const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
     const parsed = JSON.parse(new TextDecoder().decode(bytes)) as Partial<ShareState>;
     if (!parsed || typeof parsed.id !== 'string' || typeof parsed.cfg !== 'object' || parsed.cfg === null) return null;
-    const t = MEDIA_TYPES.some(m => m.id === parsed.t) ? (parsed.t as MediaType) : 'poster';
+    const t = typeof parsed.t === 'string' && MEDIA_TYPES.some(m => m.id === parsed.t)
+      ? (parsed.t as MediaType)
+      : 'poster';
     return {
       t,
       id: parsed.id,
