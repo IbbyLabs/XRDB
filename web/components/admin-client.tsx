@@ -46,7 +46,7 @@ function MetricsPanel({ data }: { data: MetricsSnapshot }) {
       {statusEntries.length > 0 && (
         <div className="admin-section">
           <h2 className="admin-section-title">Status codes</h2>
-          <div className="panel">
+          <div className="panel panel-table">
             <table className="table">
               <thead><tr><th scope="col">Status</th><th scope="col">Requests</th></tr></thead>
               <tbody>
@@ -65,7 +65,7 @@ function MetricsPanel({ data }: { data: MetricsSnapshot }) {
       {topRoutes.length > 0 && (
         <div className="admin-section">
           <h2 className="admin-section-title">Top routes</h2>
-          <div className="panel">
+          <div className="panel panel-table">
             <table className="table">
               <thead><tr><th scope="col">Route</th><th scope="col">Requests</th></tr></thead>
               <tbody>

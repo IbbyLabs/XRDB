@@ -19,7 +19,7 @@ const INTEGRATIONS: Integration[] = [
   {
     id: 'tmdb',
     name: 'TMDB',
-    description: 'Artwork, metadata, genres, content ratings, watch providers. Required for most features.',
+    description: 'Artwork, metadata, and ratings — required for most features.',
     docsUrl: 'https://developer.themoviedb.org/docs/getting-started',
     accent: '#01b4e4',
     keys: [
@@ -40,7 +40,7 @@ const INTEGRATIONS: Integration[] = [
   {
     id: 'mdblist',
     name: 'MDBList',
-    description: 'Aggregated ratings from IMDb, Rotten Tomatoes, Metacritic, Letterboxd, Trakt, and more in a single API call.',
+    description: 'Aggregated ratings from IMDb, RT, Metacritic, Letterboxd, and more.',
     docsUrl: 'https://mdblist.com/api/',
     accent: '#8b5cf6',
     keys: [
@@ -82,7 +82,7 @@ const INTEGRATIONS: Integration[] = [
   {
     id: 'trakt',
     name: 'Trakt',
-    description: 'Direct Trakt community ratings. Accepts IMDb IDs. MDBList already includes Trakt scores — use this for a dedicated connection.',
+    description: 'Direct Trakt community ratings with automatic IMDb ID lookup.',
     docsUrl: 'https://trakt.tv/oauth/applications',
     accent: '#ed1c24',
     keys: [
@@ -97,7 +97,7 @@ const INTEGRATIONS: Integration[] = [
   {
     id: 'simkl',
     name: 'SIMKL',
-    description: 'SIMKL community ratings. Use SIMKL IDs (simkl:12345) or IMDb IDs for automatic lookup.',
+    description: 'SIMKL community ratings with automatic IMDb ID lookup.',
     docsUrl: 'https://simkl.com/apps/',
     accent: '#1cb0f6',
     keys: [
@@ -192,7 +192,6 @@ function KeyRow({
             onChange={e => { setValue(e.target.value); setLocalError(''); }}
             onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
             placeholder={isSet ? '••••••••  (set — enter new value to replace)' : keyDef.placeholder}
-            style={{ paddingRight: '2.5rem' }}
             autoComplete="off"
             spellCheck={false}
           />
@@ -278,7 +277,7 @@ function ProviderRow({
       <div className="provider-detail" id={`${uid}-detail`}>
         <div className="provider-detail-inner">
           <div className="provider-detail-pad">
-            <p className="hint" style={{ marginTop: 0 }}>{integration.description}</p>
+            <p className="hint provider-desc" style={{ marginTop: 0 }}>{integration.description}</p>
             {integration.keys.map(k => (
               <KeyRow
                 key={k.key}
