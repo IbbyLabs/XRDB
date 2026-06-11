@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  fetchAniListFallbackAsset,
+  fetchMyAnimeListFallbackAsset,
   fetchKitsuFallbackAsset,
   normalizeKitsuTitleCandidate,
   pickKitsuImageUrl,
@@ -100,4 +102,70 @@ test('image route kitsu fallback builds poster backdrop and logo assets', async 
   assert.equal(logo?.title, 'Example Show');
   assert.match(String(logo?.imageUrl), /^data:image\/svg\+xml,/);
   assert.equal(typeof logo?.logoAspectRatio, 'number');
+});
+
+test('image route provider fallback builds MAL assets via Jikan fallback', async () => {
+  const fetchJsonCached = async (key) => {
+    if (key.startsWith('jikan:anime:16498:details')) {
+      return {
+        ok: true,
+        status: 200,
+        data: {
+          data: {
+            title: 'Shingeki no Kyojin',
+            score: 8.57,
+            images: {
+              jpg: {
+                large_image_url: 'https://cdn.example/aot-large.jpg',
+              },
+            },
+          },
+        },
+      };
+    }
+
+    return { ok: false, status: 404, data: null };
+  };
+
+  const poster = await fetchMyAnimeListFallbackAsset('mal:16498', 'poster', phases, fetchJsonCached);
+  const logo = await fetchMyAnimeListFallbackAsset('16498', 'logo', phases, fetchJsonCached);
+
+  assert.equal(poster?.imageUrl, 'https://cdn.example/aot-large.jpg');
+  assert.equal(poster?.rating, '8.6');
+  assert.equal(poster?.title, 'Shingeki no Kyojin');
+  assert.match(String(logo?.imageUrl), /^data:image\/svg\+xml,/);
+});
+
+test('image route provider fallback builds AniList assets', async () => {
+  const fetchJsonCached = async (key) => {
+    if (key.startsWith('anilist:anime:16498:details')) {
+      return {
+        ok: true,
+        status: 200,
+        data: {
+          data: {
+            Media: {
+              title: {
+                romaji: 'Shingeki no Kyojin',
+              },
+              averageScore: 85,
+              coverImage: {
+                extraLarge: 'https://cdn.example/anilist-cover.jpg',
+              },
+              bannerImage: 'https://cdn.example/anilist-banner.jpg',
+            },
+          },
+        },
+      };
+    }
+
+    return { ok: false, status: 404, data: null };
+  };
+
+  const poster = await fetchAniListFallbackAsset('anilist:16498', 'poster', phases, fetchJsonCached);
+  const backdrop = await fetchAniListFallbackAsset('16498', 'backdrop', phases, fetchJsonCached);
+
+  assert.equal(poster?.imageUrl, 'https://cdn.example/anilist-cover.jpg');
+  assert.equal(poster?.rating, '85');
+  assert.equal(backdrop?.imageUrl, 'https://cdn.example/anilist-banner.jpg');
 });

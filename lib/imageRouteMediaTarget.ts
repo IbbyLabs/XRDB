@@ -18,7 +18,11 @@ import {
   fetchAnimeReverseMappingPayload,
   fetchAnimeReverseMappingResolution,
 } from './imageRouteAnimeReverse.ts';
-import { fetchKitsuFallbackAsset } from './imageRouteKitsuFallback.ts';
+import {
+  fetchAniListFallbackAsset,
+  fetchKitsuFallbackAsset,
+  fetchMyAnimeListFallbackAsset,
+} from './imageRouteKitsuFallback.ts';
 import {
   resolveTmdbEpisodeByAirYear,
   resolveTvdbEpisodeToTmdb,
@@ -38,6 +42,7 @@ import {
   type CanonicalAnimeProvider,
   type CanonicalSeriesIdentity,
 } from './canonicalAnimeIdentity/index.ts';
+import type { RatingPreference } from './ratingProviderCatalog.ts';
 
 type RouteFetchJson = (
   key: string,
@@ -63,6 +68,7 @@ type ResolvedImageRouteMediaTarget = {
   useRawKitsuFallback: boolean;
   rawFallbackImageUrl: string | null;
   rawFallbackKitsuRating: string | null;
+  rawFallbackProviderRatings: Partial<Record<RatingPreference, string>>;
   rawFallbackTitle: string | null;
   rawFallbackLogoAspectRatio: number | null;
   mappedImdbId: string | null;
@@ -147,11 +153,37 @@ let mediaType: 'movie' | 'tv' | null = null;
 let useRawKitsuFallback = false;
 let rawFallbackImageUrl: string | null = null;
 let rawFallbackKitsuRating: string | null = null;
+let rawFallbackProviderRatings: Partial<Record<RatingPreference, string>> = {};
 let rawFallbackTitle: string | null = null;
 let rawFallbackLogoAspectRatio: number | null = null;
 let mappedImdbId: string | null = null;
 let canonicalSeriesIdentity: CanonicalSeriesIdentity | null = null;
 let canonicalEpisodeIdentity: CanonicalEpisodeIdentity | null = null;
+
+const applyRawFallbackAsset = ({
+  fallbackAsset,
+  ratingProvider,
+}: {
+  fallbackAsset: { imageUrl: string | null; rating: string | null; title: string | null; logoAspectRatio: number | null } | null;
+  ratingProvider?: RatingPreference;
+}) => {
+  rawFallbackImageUrl = fallbackAsset?.imageUrl || null;
+  rawFallbackTitle = fallbackAsset?.title || null;
+  rawFallbackLogoAspectRatio = fallbackAsset?.logoAspectRatio ?? null;
+  const fallbackRating = fallbackAsset?.rating || null;
+  if (ratingProvider && fallbackRating) {
+    rawFallbackProviderRatings = {
+      ...rawFallbackProviderRatings,
+      [ratingProvider]: fallbackRating,
+    };
+  }
+  if (ratingProvider === 'kitsu') {
+    rawFallbackKitsuRating = fallbackRating;
+  }
+  useRawKitsuFallback = true;
+  allowAnimeOnlyRatings = true;
+  hasConfirmedAnimeMapping = true;
+};
 
 const buildCanonicalRawInput = () => {
   const rawProvider = isKitsu
@@ -492,16 +524,10 @@ if (isTmdb) {
 
   if (!tmdbId) {
     const kitsuFallbackAsset = await fetchKitsuFallbackAsset(mediaId, imageType, phases, fetchJsonCached);
-    rawFallbackImageUrl = kitsuFallbackAsset?.imageUrl || null;
-    rawFallbackKitsuRating = kitsuFallbackAsset?.rating || null;
-    rawFallbackTitle = kitsuFallbackAsset?.title || null;
-    rawFallbackLogoAspectRatio = kitsuFallbackAsset?.logoAspectRatio ?? null;
+    applyRawFallbackAsset({ fallbackAsset: kitsuFallbackAsset, ratingProvider: 'kitsu' });
     if (!rawFallbackImageUrl) {
       throw new HttpError('TMDB ID not found for Kitsu ID', 404);
     }
-    useRawKitsuFallback = true;
-    allowAnimeOnlyRatings = true;
-    hasConfirmedAnimeMapping = true;
   } else {
     const mappedMediaTypeCandidates: Array<'movie' | 'tv'> =
       mappingSubtype === 'movie' ? ['movie', 'tv'] : ['tv', 'movie'];
@@ -526,16 +552,10 @@ if (isTmdb) {
 
     if (!media || !mediaType) {
       const kitsuFallbackAsset = await fetchKitsuFallbackAsset(mediaId, imageType, phases, fetchJsonCached);
-      rawFallbackImageUrl = kitsuFallbackAsset?.imageUrl || null;
-      rawFallbackKitsuRating = kitsuFallbackAsset?.rating || null;
-      rawFallbackTitle = kitsuFallbackAsset?.title || null;
-      rawFallbackLogoAspectRatio = kitsuFallbackAsset?.logoAspectRatio ?? null;
+      applyRawFallbackAsset({ fallbackAsset: kitsuFallbackAsset, ratingProvider: 'kitsu' });
       if (!rawFallbackImageUrl) {
         throw new HttpError('Movie/Show not found on TMDB', 404);
       }
-      useRawKitsuFallback = true;
-      allowAnimeOnlyRatings = true;
-      hasConfirmedAnimeMapping = true;
     }
   }
 } else if (
@@ -604,15 +624,44 @@ if (isTmdb) {
     allowAnimeOnlyRatings = true;
     hasConfirmedAnimeMapping = true;
   } else if (reverseMappedAnimeTarget.kind === 'kitsu-fallback') {
-    rawFallbackImageUrl = reverseMappedAnimeTarget.fallbackAsset.imageUrl || null;
-    rawFallbackKitsuRating = reverseMappedAnimeTarget.fallbackAsset.rating || null;
-    rawFallbackTitle = reverseMappedAnimeTarget.fallbackAsset.title || null;
-    rawFallbackLogoAspectRatio = reverseMappedAnimeTarget.fallbackAsset.logoAspectRatio ?? null;
-    useRawKitsuFallback = true;
-    allowAnimeOnlyRatings = true;
-    hasConfirmedAnimeMapping = true;
+    applyRawFallbackAsset({
+      fallbackAsset: reverseMappedAnimeTarget.fallbackAsset,
+      ratingProvider: 'kitsu',
+    });
   } else if (!reverseMappedAnimeTarget.tmdbId) {
-    throw new HttpError('TMDB ID not found for anime mapping ID', 404);
+    let providerFallbackAsset:
+      | { imageUrl: string | null; rating: string | null; title: string | null; logoAspectRatio: number | null }
+      | null = null;
+
+    if (inputAnimeMappingProvider === 'mal') {
+      providerFallbackAsset = await fetchMyAnimeListFallbackAsset(
+        inputAnimeMappingExternalId,
+        imageType,
+        phases,
+        fetchJsonCached,
+      );
+      applyRawFallbackAsset({ fallbackAsset: providerFallbackAsset, ratingProvider: 'myanimelist' });
+    } else if (inputAnimeMappingProvider === 'anilist') {
+      providerFallbackAsset = await fetchAniListFallbackAsset(
+        inputAnimeMappingExternalId,
+        imageType,
+        phases,
+        fetchJsonCached,
+      );
+      applyRawFallbackAsset({ fallbackAsset: providerFallbackAsset, ratingProvider: 'anilist' });
+    } else if (inputAnimeMappingProvider === 'kitsu') {
+      providerFallbackAsset = await fetchKitsuFallbackAsset(
+        inputAnimeMappingExternalId,
+        imageType,
+        phases,
+        fetchJsonCached,
+      );
+      applyRawFallbackAsset({ fallbackAsset: providerFallbackAsset, ratingProvider: 'kitsu' });
+    }
+
+    if (!rawFallbackImageUrl) {
+      throw new HttpError('TMDB ID not found for anime mapping ID', 404);
+    }
   }
 } else {
   const findResponse = await fetchJsonCached(
@@ -680,6 +729,7 @@ if (!media && !useRawKitsuFallback) {
     useRawKitsuFallback,
     rawFallbackImageUrl,
     rawFallbackKitsuRating,
+    rawFallbackProviderRatings,
     rawFallbackTitle,
     rawFallbackLogoAspectRatio,
     mappedImdbId,

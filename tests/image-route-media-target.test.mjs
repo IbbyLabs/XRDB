@@ -662,3 +662,117 @@ test('image route media target uses Kitsu fallback asset when reverse mapping fe
     assert.equal(result.media, null);
   });
 });
+
+test('image route media target uses MAL fallback asset when reverse mapping cannot resolve TMDB', async (t) => {
+  await withTempDataDir(t, async () => {
+    const result = await resolveImageRouteMediaTarget({
+      imageType: 'poster',
+      isThumbnailRequest: false,
+      tmdbKey: 'tmdb-key',
+      phases: { ...phases },
+      fetchJsonCached: async (key) => {
+        if (key.startsWith('anime:reverse:') || key.startsWith('tmdb:reverse:') || key.startsWith('canonical:reverse:')) {
+          throw new Error('getaddrinfo ENOTFOUND animemapping.stremio.dpdns.org');
+        }
+        if (key.startsWith('mal:anime:16498:details:') || key.startsWith('jikan:anime:16498:details')) {
+          return {
+            ok: true,
+            status: 200,
+            data: {
+              title: 'Shingeki no Kyojin',
+              mean: 8.57,
+              main_picture: {
+                large: 'https://cdn.example/mal-aot.jpg',
+              },
+            },
+          };
+        }
+        throw new Error(`Unexpected key: ${key}`);
+      },
+      fetchTextCached: async () => createTextResponse(),
+      mediaId: '16498',
+      season: null,
+      episode: null,
+      isTmdb: false,
+      isTvdb: false,
+      isCanonId: false,
+      isKitsu: false,
+      inputAnimeMappingProvider: 'mal',
+      inputAnimeMappingExternalId: '16498',
+      cleanId: 'mal:16498',
+      idPrefix: 'mal',
+      explicitTmdbMediaType: null,
+      tvdbSeriesId: null,
+      hasNativeAnimeInput: true,
+      allowAnimeOnlyRatings: true,
+      hasConfirmedAnimeMapping: true,
+      tmdbEpOrder: 'tmdb',
+    });
+
+    assert.equal(result.useRawKitsuFallback, true);
+    assert.equal(result.rawFallbackImageUrl, 'https://cdn.example/mal-aot.jpg');
+    assert.equal(result.rawFallbackProviderRatings.myanimelist, '8.6');
+    assert.equal(result.rawFallbackTitle, 'Shingeki no Kyojin');
+    assert.equal(result.media, null);
+  });
+});
+
+test('image route media target uses AniList fallback asset when reverse mapping cannot resolve TMDB', async (t) => {
+  await withTempDataDir(t, async () => {
+    const result = await resolveImageRouteMediaTarget({
+      imageType: 'poster',
+      isThumbnailRequest: false,
+      tmdbKey: 'tmdb-key',
+      phases: { ...phases },
+      fetchJsonCached: async (key) => {
+        if (key.startsWith('anime:reverse:') || key.startsWith('tmdb:reverse:') || key.startsWith('canonical:reverse:')) {
+          throw new Error('getaddrinfo ENOTFOUND animemapping.stremio.dpdns.org');
+        }
+        if (key.startsWith('anilist:anime:16498:details')) {
+          return {
+            ok: true,
+            status: 200,
+            data: {
+              data: {
+                Media: {
+                  title: {
+                    romaji: 'Shingeki no Kyojin',
+                  },
+                  averageScore: 85,
+                  coverImage: {
+                    extraLarge: 'https://cdn.example/anilist-aot.jpg',
+                  },
+                },
+              },
+            },
+          };
+        }
+        throw new Error(`Unexpected key: ${key}`);
+      },
+      fetchTextCached: async () => createTextResponse(),
+      mediaId: '16498',
+      season: null,
+      episode: null,
+      isTmdb: false,
+      isTvdb: false,
+      isCanonId: false,
+      isKitsu: false,
+      inputAnimeMappingProvider: 'anilist',
+      inputAnimeMappingExternalId: '16498',
+      cleanId: 'anilist:16498',
+      idPrefix: 'anilist',
+      explicitTmdbMediaType: null,
+      tvdbSeriesId: null,
+      hasNativeAnimeInput: true,
+      allowAnimeOnlyRatings: true,
+      hasConfirmedAnimeMapping: true,
+      tmdbEpOrder: 'tmdb',
+    });
+
+    assert.equal(result.useRawKitsuFallback, true);
+    assert.equal(result.rawFallbackImageUrl, 'https://cdn.example/anilist-aot.jpg');
+    assert.equal(result.rawFallbackProviderRatings.anilist, '85');
+    assert.equal(result.rawFallbackTitle, 'Shingeki no Kyojin');
+    assert.equal(result.media, null);
+  });
+});
