@@ -3,11 +3,11 @@
 import {
   useState, useCallback, useRef, useId, useEffect,
 } from 'react';
-import { Settings2, Star, Film, Rocket } from 'lucide-react';
+import { Settings2, Star, Film, Rocket, Link2, Maximize2 } from 'lucide-react';
 import { renderUrl, type MediaType, type Template } from '@/lib/api';
 import {
   MEDIA_TYPES, DEFAULT_CONFIG, PREVIEW_DEBOUNCE_MS,
-  readSession, type ConfigState,
+  readSession, encodeShare, decodeShare, type ConfigState,
 } from './configurator-types';
 import { Notice, DisplayPanel } from './configurator-display';
 import { TemplateStrip, RatingsPanel } from './configurator-panels';
@@ -30,13 +30,27 @@ export function ConfiguratorClient() {
   // so reading storage during the first render mismatches the server HTML
   // (React #418). The config merge keeps sessions saved before new fields
   // existed (e.g. badgeStyle/badgeTheme) complete.
+  // A share link (#c=…) beats the stored session — someone sent this exact
+  // look — and is consumed from the URL so refreshes fall back to the session.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMediaType(readSession<MediaType>('xrdb-media-type', 'poster'));
-    setMediaId(readSession<string>('xrdb-media-id', 'tt0468569'));
-    setMediaTitle(readSession<string>('xrdb-media-title', 'The Dark Knight (2008)'));
-    setConfig({ ...DEFAULT_CONFIG, ...readSession<Partial<ConfigState>>('xrdb-config', {}) });
+    const shared = window.location.hash.startsWith('#c=')
+      ? decodeShare(window.location.hash.slice(3))
+      : null;
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (shared) {
+      setMediaType(shared.t);
+      setMediaId(shared.id);
+      setMediaTitle(shared.title);
+      setConfig(shared.cfg);
+      history.replaceState(null, '', window.location.pathname + window.location.search);
+    } else {
+      setMediaType(readSession<MediaType>('xrdb-media-type', 'poster'));
+      setMediaId(readSession<string>('xrdb-media-id', 'tt0468569'));
+      setMediaTitle(readSession<string>('xrdb-media-title', 'The Dark Knight (2008)'));
+      setConfig({ ...DEFAULT_CONFIG, ...readSession<Partial<ConfigState>>('xrdb-config', {}) });
+    }
     setHydrated(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
   const [appliedTemplate, setAppliedTemplate] = useState<string | null>(null);
   const [loadedProfile, setLoadedProfile] = useState<LoadedProfile | null>(null);
@@ -156,6 +170,17 @@ export function ConfiguratorClient() {
     setMediaTitle(title);
   };
 
+  const shareLook = async () => {
+    const fragment = encodeShare({ t: mediaType, id: mediaId, title: mediaTitle, cfg: config });
+    const link = `${window.location.origin}${window.location.pathname}#c=${fragment}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      flash('success', 'Share link copied — anyone who opens it sees this exact look');
+    } catch {
+      flash('error', 'Could not copy the link — your browser blocked clipboard access');
+    }
+  };
+
   return (
     <div className="page-inner">
       <div className="page-head">
@@ -219,6 +244,7 @@ export function ConfiguratorClient() {
                   src={previewSrc}
                   alt={`${mediaType} preview`}
                   className="preview-img"
+                  decoding="async"
                   style={{ opacity: imgLoading ? 0 : 1, transition: 'opacity var(--dur-3) var(--ease-out)' }}
                   onLoad={() => setImgLoading(false)}
                   onError={() => { setImgLoading(false); setImgError(true); }}
@@ -227,6 +253,24 @@ export function ConfiguratorClient() {
               </>
             )}
           </div>
+
+          {previewSrc && (
+            <div className="preview-actions">
+              <a
+                className="btn btn-ghost btn-sm"
+                href={previewSrc}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Maximize2 size={13} aria-hidden />
+                Full size
+              </a>
+              <button className="btn btn-ghost btn-sm" onClick={() => void shareLook()}>
+                <Link2 size={13} aria-hidden />
+                Share this look
+              </button>
+            </div>
+          )}
 
           {previewSrc && (
             <div>
