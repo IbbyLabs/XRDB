@@ -93,7 +93,6 @@ export const QUALITY_BADGE_OPTIONS: { id: string; label: string }[] = [
   { id: 'imax',      label: 'IMAX'         },
 ];
 
-export const PROFILE_ID_RE = /^[a-zA-Z0-9_-]+$/;
 export const PREVIEW_DEBOUNCE_MS = 500;
 
 // ── Types ─────────────────────────────────────────────────────────────────────

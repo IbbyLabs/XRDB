@@ -236,12 +236,19 @@ func selectArtworkURL(meta *provider.MediaMeta, mediaType string) string {
 	switch mediaType {
 	case "backdrop":
 		return meta.BackdropURL
+	case "thumbnail":
+		// Thumbnails are 16:9 — wide backdrop art crops correctly; a 2:3
+		// poster center-cropped into that frame loses heads and titles.
+		if meta.BackdropURL != "" {
+			return meta.BackdropURL
+		}
+		return meta.PosterURL
 	case "logo":
 		if meta.LogoURL != "" {
 			return meta.LogoURL
 		}
 		return meta.PosterURL
-	default: // poster, thumbnail
+	default: // poster
 		return meta.PosterURL
 	}
 }
@@ -287,15 +294,10 @@ func resizeFit(src image.Image, maxW, maxH int) image.Image {
 	return dst
 }
 
-// collectRatings calls all non-artwork providers in parallel and merges their ratings
-// with those already returned by the artwork source. Duplicate sources are deduplicated.
-func (p *Pipeline) collectRatings(ctx context.Context, req Request, artworkRatings []provider.Rating) []provider.Rating {
-	ratings, _ := p.collectRatingsWithProviders(ctx, req, artworkRatings)
-	return ratings
-}
-
-// collectRatingsWithProviders is like collectRatings but also returns the
-// names of every non-artwork provider that returned data (for TTL selection).
+// collectRatingsWithProviders calls all non-artwork providers in parallel and
+// merges their ratings with those already returned by the artwork source.
+// Duplicate sources are deduplicated. Also returns the names of every
+// non-artwork provider that returned data (for TTL selection).
 func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request, artworkRatings []provider.Rating) ([]provider.Rating, []string) {
 	all := make([]provider.Rating, len(artworkRatings))
 	copy(all, artworkRatings)
