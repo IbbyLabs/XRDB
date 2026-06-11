@@ -207,6 +207,7 @@ export const executeImageRouteRender = async ({
       const useRawKitsuFallback = resolvedMediaTarget.useRawKitsuFallback;
       const rawFallbackImageUrl = resolvedMediaTarget.rawFallbackImageUrl;
       const rawFallbackKitsuRating = resolvedMediaTarget.rawFallbackKitsuRating;
+      const rawFallbackProviderRatings = resolvedMediaTarget.rawFallbackProviderRatings;
       const rawFallbackTitle = resolvedMediaTarget.rawFallbackTitle;
       const rawFallbackLogoAspectRatio = resolvedMediaTarget.rawFallbackLogoAspectRatio;
       const mappedImdbId = resolvedMediaTarget.mappedImdbId;
@@ -309,6 +310,7 @@ export const executeImageRouteRender = async ({
         useRawKitsuFallback,
         rawFallbackImageUrl,
         rawFallbackKitsuRating,
+        rawFallbackProviderRatings,
         rawFallbackTitle,
         rawFallbackLogoAspectRatio,
         canonicalSeriesIdentity,

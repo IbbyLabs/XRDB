@@ -322,6 +322,7 @@ export const prepareImageRouteMediaState = async (input: {
   useRawKitsuFallback: boolean;
   rawFallbackImageUrl: string | null;
   rawFallbackKitsuRating: string | null;
+  rawFallbackProviderRatings: Partial<Record<RatingPreference, string>>;
   rawFallbackTitle: string | null;
   rawFallbackLogoAspectRatio: number | null;
   canonicalSeriesIdentity?: CanonicalSeriesIdentity | null;
@@ -350,6 +351,7 @@ export const prepareImageRouteMediaState = async (input: {
     useRawKitsuFallback,
     rawFallbackImageUrl,
     rawFallbackKitsuRating,
+    rawFallbackProviderRatings,
     rawFallbackTitle,
     rawFallbackLogoAspectRatio,
     canonicalSeriesIdentity,
@@ -530,8 +532,9 @@ const needsMyAnimeListRating = requestedExternalRatings.has('myanimelist');
 const needsTraktRating = requestedExternalRatings.has('trakt');
 const needsSimklRating = requestedExternalRatings.has('simkl');
 const hasMdbListApiKey = MDBLIST_API_KEYS.length > 0;
+const fallbackKitsuRating = rawFallbackProviderRatings.kitsu || rawFallbackKitsuRating;
 const shouldRenderRawKitsuFallbackRating =
-  useRawKitsuFallback && needsKitsuRating && typeof rawFallbackKitsuRating === 'string' && rawFallbackKitsuRating.length > 0;
+  useRawKitsuFallback && needsKitsuRating && typeof fallbackKitsuRating === 'string' && fallbackKitsuRating.length > 0;
 const shouldRenderRatings = shouldApplyRatings;
 const shouldRenderStreamBadges = shouldApplyStreamBadges && !resolveIsAnimeContent();
 const shouldFetchSourceBackedTrendingRanks =
@@ -1229,8 +1232,25 @@ if (input.qualityBadgeAppearanceOverrides) {
   });
 }
 if (shouldRenderRawKitsuFallbackRating) {
-  providerRatings.set('kitsu', rawFallbackKitsuRating as string);
-  renderedRatingTtlByProvider.set('kitsu', KITSU_CACHE_TTL_MS);
+  const existingKitsuRating = normalizeRatingValue(providerRatings.get('kitsu') || null);
+  if (!existingKitsuRating) {
+    providerRatings.set('kitsu', fallbackKitsuRating as string);
+    renderedRatingTtlByProvider.set('kitsu', KITSU_CACHE_TTL_MS);
+  }
+}
+
+const rawFallbackProviderEntries = Object.entries(rawFallbackProviderRatings || {}) as Array<[
+  RatingPreference,
+  string,
+]>;
+for (const [provider, value] of rawFallbackProviderEntries) {
+  if (!requestedExternalRatings.has(provider)) continue;
+  const normalized = normalizeRatingValue(value);
+  if (!normalized) continue;
+  const existingProviderRating = normalizeRatingValue(providerRatings.get(provider) || null);
+  if (existingProviderRating) continue;
+  providerRatings.set(provider, normalized);
+  renderedRatingTtlByProvider.set(provider, KITSU_CACHE_TTL_MS);
 }
 
   return {

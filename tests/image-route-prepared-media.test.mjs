@@ -80,6 +80,7 @@ const createBaseInput = () => ({
   useRawKitsuFallback: true,
   rawFallbackImageUrl: 'https://kitsu.example/fallback.jpg',
   rawFallbackKitsuRating: '88',
+  rawFallbackProviderRatings: { kitsu: '88' },
   rawFallbackTitle: 'Fallback Example',
   rawFallbackLogoAspectRatio: null,
 });

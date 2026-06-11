@@ -67,24 +67,33 @@ export const fetchCanonicalProviderMapping = async ({
     if (episode) params.set('ep', episode);
     if (season) params.set('s', season);
     const query = params.toString();
-    const response = await fetchJsonCached(
-      `anime:kitsu:${trimmedExternalId}:s:${season || '-'}:e:${episode || '-'}`,
-      `${ANIME_MAPPING_BASE_URL}/kitsu/${encodeURIComponent(trimmedExternalId)}${query ? `?${query}` : ''}`,
-      KITSU_CACHE_TTL_MS,
-      phases,
-      'tmdb',
-    );
-    resolution = buildAnimeReverseMappingResolution(response.ok ? response.data : null);
+
+    try {
+      const response = await fetchJsonCached(
+        `anime:kitsu:${trimmedExternalId}:s:${season || '-'}:e:${episode || '-'}`,
+        `${ANIME_MAPPING_BASE_URL}/kitsu/${encodeURIComponent(trimmedExternalId)}${query ? `?${query}` : ''}`,
+        KITSU_CACHE_TTL_MS,
+        phases,
+        'tmdb',
+      );
+      resolution = buildAnimeReverseMappingResolution(response.ok ? response.data : null);
+    } catch {
+      resolution = buildAnimeReverseMappingResolution(null);
+    }
   } else if (normalizedProvider) {
-    resolution = await fetchAnimeReverseMappingResolution({
-      provider: normalizedProvider,
-      externalId: trimmedExternalId,
-      season,
-      episode,
-      phases,
-      fetchJsonCached,
-      cacheNamespace: 'canonical',
-    });
+    try {
+      resolution = await fetchAnimeReverseMappingResolution({
+        provider: normalizedProvider,
+        externalId: trimmedExternalId,
+        season,
+        episode,
+        phases,
+        fetchJsonCached,
+        cacheNamespace: 'canonical',
+      });
+    } catch {
+      resolution = buildAnimeReverseMappingResolution(null);
+    }
   }
 
   return {
