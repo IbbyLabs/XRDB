@@ -6,6 +6,9 @@ const legacyNeedle = String.fromCharCode(101, 114, 100, 98);
 // ratingposterdb.com contains the substring as part of "poster" + "db".
 const allowedPatterns = [
   /ratingpost[^\s]*/i,
+  /posterdb/i,
+  new RegExp(`realbestia1/${legacyNeedle}`, 'i'),
+  new RegExp(`github\\.com/realbestia1/${legacyNeedle}`, 'i'),
 ];
 
 const runGit = (args, { allowFailure = false } = {}) => {
