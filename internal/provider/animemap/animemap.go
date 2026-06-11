@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -447,11 +448,20 @@ func (m *Mapper) resolveFallback(ctx context.Context, id string) (IDs, bool) {
 	if strings.HasPrefix(id, "tt") {
 		source = "imdb"
 	}
-	url := fmt.Sprintf("%s/%s?id=%s&include=myanimelist,anilist,kitsu", m.fallbackURL, source, id)
+
+	// Construct URL with proper query parameter encoding
+	u, err := url.Parse(m.fallbackURL + "/" + source)
+	if err != nil {
+		return IDs{}, false
+	}
+	q := u.Query()
+	q.Set("id", id)
+	q.Set("include", "myanimelist,anilist,kitsu")
+	u.RawQuery = q.Encode()
 
 	fctx, cancel := context.WithTimeout(ctx, fallbackTimeout)
 	defer cancel()
-	ids, found, err := m.fetchFallback(fctx, url)
+	ids, found, err := m.fetchFallback(fctx, u.String())
 	if err != nil {
 		return IDs{}, false // transient failure: don't negative-cache
 	}
