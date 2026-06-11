@@ -963,3 +963,35 @@ test('override upsert rolls back fully when series materialization is invalid', 
     assert.deepEqual(seriesRows, []);
   });
 });
+test('canonical series resolution fails open when mapping host is unreachable', async (t) => {
+  await withTempDataDir(t, async () => {
+    const fetchJsonCached = async () => {
+      throw new Error('getaddrinfo ENOTFOUND animemapping.stremio.dpdns.org');
+    };
+
+    const series = await resolveCanonicalSeriesIdentity({
+      input: {
+        rawId: 'kitsu:42765',
+        rawProvider: 'kitsu',
+        rawExternalId: '42765',
+        mediaType: 'tv',
+        season: null,
+        episode: null,
+        absoluteEpisode: null,
+        episodeProvider: null,
+        episodeSourceId: null,
+        episodeSourceSeason: null,
+        episodeSourceEpisode: null,
+        episodeAbsolute: null,
+        tmdbEpOrder: 'tmdb',
+      },
+      phases,
+      fetchJsonCached,
+    });
+
+    assert.equal(series.provider, 'kitsu');
+    assert.equal(series.externalId, '42765');
+    assert.equal(series.source, 'raw');
+    assert.equal(series.mappedIds.tmdb, undefined);
+  });
+});

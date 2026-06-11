@@ -603,3 +603,62 @@ test('image route media target TVDB path falls back to consolidated remap when s
   assert.equal(result.season, '2');
   assert.equal(result.episode, '3');
 });
+
+test('image route media target uses Kitsu fallback asset when reverse mapping fetch fails', async (t) => {
+  await withTempDataDir(t, async () => {
+    const result = await resolveImageRouteMediaTarget({
+      imageType: 'poster',
+      isThumbnailRequest: false,
+      tmdbKey: 'tmdb-key',
+      phases: { ...phases },
+      fetchJsonCached: async (key) => {
+        if (key.startsWith('anime:kitsu:') || key.startsWith('kitsu:mapping:')) {
+          throw new Error('getaddrinfo ENOTFOUND animemapping.stremio.dpdns.org');
+        }
+        if (key.startsWith('kitsu:anime:42765:details')) {
+          return {
+            ok: true,
+            status: 200,
+            data: {
+              data: {
+                attributes: {
+                  averageRating: '84.5',
+                  canonicalTitle: 'Attack on Titan',
+                  posterImage: {
+                    medium: 'https://media.kitsu.app/anime/poster_images/7442/medium.jpg',
+                  },
+                },
+              },
+            },
+          };
+        }
+        throw new Error(`Unexpected key: ${key}`);
+      },
+      fetchTextCached: async () => createTextResponse(),
+      mediaId: '42765',
+      season: null,
+      episode: null,
+      isTmdb: false,
+      isTvdb: false,
+      isCanonId: false,
+      isKitsu: true,
+      inputAnimeMappingProvider: null,
+      inputAnimeMappingExternalId: null,
+      cleanId: 'kitsu:42765',
+      idPrefix: 'kitsu',
+      explicitTmdbMediaType: null,
+      tvdbSeriesId: null,
+      hasNativeAnimeInput: true,
+      allowAnimeOnlyRatings: false,
+      hasConfirmedAnimeMapping: false,
+      tmdbEpOrder: 'tmdb',
+    });
+
+    assert.equal(result.useRawKitsuFallback, true);
+    assert.equal(result.rawFallbackKitsuRating, '84.5');
+    assert.equal(result.rawFallbackTitle, 'Attack on Titan');
+    assert.equal(result.allowAnimeOnlyRatings, true);
+    assert.equal(result.hasConfirmedAnimeMapping, true);
+    assert.equal(result.media, null);
+  });
+});

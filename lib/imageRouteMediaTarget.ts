@@ -430,14 +430,21 @@ if (isTmdb) {
   if (episode) {
     mappingUrl += `?ep=${episode}`;
   }
-  const mappingResponse = await fetchJsonCached(
-    `kitsu:mapping:${mediaId}:${episode || '-'}`,
-    mappingUrl,
-    KITSU_CACHE_TTL_MS,
-    phases,
-    'tmdb'
-  );
-  const mappingData = mappingResponse.data || {};
+
+  let mappingData: any = {};
+  try {
+    const mappingResponse = await fetchJsonCached(
+      `kitsu:mapping:${mediaId}:${episode || '-'}`,
+      mappingUrl,
+      KITSU_CACHE_TTL_MS,
+      phases,
+      'tmdb'
+    );
+    mappingData = mappingResponse.data || {};
+  } catch {
+    mappingData = {};
+  }
+
   const mappingSubtype = extractAnimeSubtypeFromAnimemapping(mappingData);
   const mappingImdbCandidates = [
     mappingData.mappings?.ids?.imdb,
@@ -465,17 +472,21 @@ if (isTmdb) {
   }
 
   if (mappingSubtype !== 'movie' && !season) {
-    const seasonProbeResponse = await fetchJsonCached(
-      `kitsu:mapping:${mediaId}:1`,
-      `${ANIME_MAPPING_BASE_URL}/kitsu/${mediaId}?ep=1`,
-      KITSU_CACHE_TTL_MS,
-      phases,
-      'tmdb'
-    );
-    const seasonProbeData = seasonProbeResponse.data;
-    const seasonProbeEpisodeTarget = extractTmdbEpisodeTargetFromAnimemapping(seasonProbeData);
-    if (seasonProbeEpisodeTarget?.season) {
-      season = seasonProbeEpisodeTarget.season;
+    try {
+      const seasonProbeResponse = await fetchJsonCached(
+        `kitsu:mapping:${mediaId}:1`,
+        `${ANIME_MAPPING_BASE_URL}/kitsu/${mediaId}?ep=1`,
+        KITSU_CACHE_TTL_MS,
+        phases,
+        'tmdb'
+      );
+      const seasonProbeData = seasonProbeResponse.data;
+      const seasonProbeEpisodeTarget = extractTmdbEpisodeTargetFromAnimemapping(seasonProbeData);
+      if (seasonProbeEpisodeTarget?.season) {
+        season = seasonProbeEpisodeTarget.season;
+      }
+    } catch {
+      // Keep season unset when reverse mapping is unavailable.
     }
   }
 
@@ -496,17 +507,21 @@ if (isTmdb) {
       mappingSubtype === 'movie' ? ['movie', 'tv'] : ['tv', 'movie'];
 
     for (const mappedMediaType of mappedMediaTypeCandidates) {
-      const mappedMediaResponse = await fetchJsonCached(
-        `tmdb:${mappedMediaType}:${tmdbId}`,
-        `${TMDB_API_BASE_URL}/${mappedMediaType}/${tmdbId}?api_key=${tmdbKey}`,
-        TMDB_CACHE_TTL_MS,
-        phases,
-        'tmdb'
-      );
-      if (!mappedMediaResponse.ok) continue;
-      media = mappedMediaResponse.data;
-      mediaType = mappedMediaType;
-      break;
+      try {
+        const mappedMediaResponse = await fetchJsonCached(
+          `tmdb:${mappedMediaType}:${tmdbId}`,
+          `${TMDB_API_BASE_URL}/${mappedMediaType}/${tmdbId}?api_key=${tmdbKey}`,
+          TMDB_CACHE_TTL_MS,
+          phases,
+          'tmdb'
+        );
+        if (!mappedMediaResponse.ok) continue;
+        media = mappedMediaResponse.data;
+        mediaType = mappedMediaType;
+        break;
+      } catch {
+        // Try the next media type candidate or fall back to raw Kitsu assets below.
+      }
     }
 
     if (!media || !mediaType) {
