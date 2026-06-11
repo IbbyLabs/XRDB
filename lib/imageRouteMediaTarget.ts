@@ -585,14 +585,6 @@ if (isTmdb) {
         fetchJsonCached,
       );
       applyRawFallbackAsset({ fallbackAsset: providerFallbackAsset, ratingProvider: 'anilist' });
-    } else if (inputAnimeMappingProvider === 'kitsu') {
-      providerFallbackAsset = await fetchKitsuFallbackAsset(
-        inputAnimeMappingExternalId,
-        imageType,
-        phases,
-        fetchJsonCached,
-      );
-      applyRawFallbackAsset({ fallbackAsset: providerFallbackAsset, ratingProvider: 'kitsu' });
     }
   };
 
@@ -639,13 +631,19 @@ if (isTmdb) {
     reverseMappedAnimeTarget = null;
   }
 
-  if (reverseMappedAnimeTarget?.kind === 'tmdb') {
-    media = reverseMappedAnimeTarget.media;
-    mediaType = reverseMappedAnimeTarget.mediaType;
+  const reverseMappedTmdbId = reverseMappedAnimeTarget?.tmdbId ?? reverseMapping.mappedIds.tmdb;
+  const usableReverseMappedTmdbTarget =
+    reverseMappedAnimeTarget?.kind === 'tmdb' && reverseMappedTmdbId
+      ? reverseMappedAnimeTarget
+      : null;
+
+  if (usableReverseMappedTmdbTarget) {
+    media = usableReverseMappedTmdbTarget.media;
+    mediaType = usableReverseMappedTmdbTarget.mediaType;
     if (
       reverseMapping.tmdbEpisodeTarget &&
-      reverseMappedAnimeTarget.mediaType === 'tv' &&
-      String(reverseMappedAnimeTarget.media?.id || '') === reverseMapping.tmdbEpisodeTarget.id
+      usableReverseMappedTmdbTarget.mediaType === 'tv' &&
+      String(usableReverseMappedTmdbTarget.media?.id || '') === reverseMapping.tmdbEpisodeTarget.id
     ) {
       season = reverseMapping.tmdbEpisodeTarget.season;
       episode = reverseMapping.tmdbEpisodeTarget.episode;
@@ -671,13 +669,18 @@ if (isTmdb) {
     }
     allowAnimeOnlyRatings = true;
     hasConfirmedAnimeMapping = true;
-  } else if (reverseMappedAnimeTarget?.kind === 'kitsu-fallback') {
-    applyRawFallbackAsset({
-      fallbackAsset: reverseMappedAnimeTarget.fallbackAsset,
-      ratingProvider: 'kitsu',
-    });
-  } else if (!reverseMappedAnimeTarget?.tmdbId) {
-    await resolveProviderNativeFallback();
+  } else {
+    if (reverseMappedAnimeTarget?.kind === 'kitsu-fallback') {
+      applyRawFallbackAsset({
+        fallbackAsset: reverseMappedAnimeTarget.fallbackAsset,
+        ratingProvider: 'kitsu',
+      });
+    }
+
+    if (!rawFallbackImageUrl && (!reverseMappedTmdbId || !usableReverseMappedTmdbTarget)) {
+      await resolveProviderNativeFallback();
+    }
+
     if (!rawFallbackImageUrl) {
       throw new HttpError('TMDB ID not found for anime mapping ID', 404);
     }
