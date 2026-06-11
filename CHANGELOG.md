@@ -20,6 +20,12 @@ All notable changes to XRDB are documented here.
 
 ### Fixed
 
+- Anime ratings (MyAnimeList, AniList, Kitsu) never rendered: the pipeline
+  passed IMDb/TMDB IDs straight to the anime providers, which only accept
+  their own ID space. A new anime ID mapper translates IDs via a disk-cached
+  [Fribb/anime-lists](https://github.com/Fribb/anime-lists) dataset with a
+  live API fallback — replacing the v2 approach that depended on a single
+  third-party mapping host (now offline with a DNS failure)
 - Fanart.tv rejected IMDb tt-IDs (every configurator render) and misrouted movie backdrops
 - Thumbnails now prefer backdrop artwork over center-cropped posters
 - Overlay metadata (age/genre/providers) backfills from TMDB when the artwork source lacks it

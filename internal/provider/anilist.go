@@ -18,12 +18,14 @@ const anilistGraphQLURL = "https://graphql.anilist.co"
 // IDs must be prefixed with "al:" e.g. "al:21".
 type AniList struct {
 	httpClient *http.Client
+	baseURL    string // overridable for tests; defaults to anilistGraphQLURL
 }
 
 // NewAniList creates an AniList provider. No API key is required.
 func NewAniList() *AniList {
 	return &AniList{
 		httpClient: &http.Client{Timeout: 10 * time.Second},
+		baseURL:    anilistGraphQLURL,
 	}
 }
 
@@ -65,7 +67,11 @@ func (a *AniList) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, 
 		return nil, fmt.Errorf("anilist: build payload: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, anilistGraphQLURL,
+	base := a.baseURL
+	if base == "" {
+		base = anilistGraphQLURL
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, base,
 		bytes.NewReader(bodyBytes))
 	if err != nil {
 		return nil, fmt.Errorf("anilist: build request: %w", err)
