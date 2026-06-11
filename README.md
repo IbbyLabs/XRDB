@@ -1,18 +1,36 @@
-# XRDB
+# XRDB — eXtended Ratings DataBase
 
-Artwork and metadata overlays for your media library. Configure ratings badges, posters, backdrops, and thumbnails — served by a pure-Go render pipeline built for speed.
+Ratings overlays and artwork for your media library. XRDB fetches posters,
+backdrops, thumbnails, and logos, composes rating badges and metadata onto
+them, and serves the result as PNGs — built for Plex, Jellyfin, Stremio
+(via AIOMetadata), and anything else that takes an image URL.
 
-## Running with Docker
+- **One container.** The web configurator is embedded in a single Go binary.
+- **Fast.** Pure-Go render pipeline with a two-tier (memory + disk) cache.
+- **12 rating sources** with official provider logos: IMDb, TMDB, Rotten
+  Tomatoes (critics + audience), Metacritic, Letterboxd, MDBList, Trakt,
+  SIMKL, MyAnimeList, AniList, Kitsu.
+- **Configurable overlays:** rating badges (pill/square/glass, dark/light),
+  quality badges (4K/HDR/DV/…), age rating, genres, streaming providers,
+  aggregate score bar, trending tag — across normal/large/4K output sizes.
+- **Profiles** with memorable aliases and password-protected editing; the
+  artwork URL is just `…/poster/{id}?config=your-alias`.
 
-One container — the web UI is embedded in the Go binary and served on the same port as the API.
+## Quick start
 
 ```sh
-docker compose up --build
+docker run -d --name xrdb -p 8787:8787 -v xrdb-data:/data \
+  -e XRDB_ADMIN_KEY=choose-a-strong-key \
+  ghcr.io/ibbylabs/xrdb:latest
 ```
 
-- UI + API: `http://localhost:8787`
+Open `http://localhost:8787`, add your provider keys under **Integrations**
+(TMDB at minimum), then build your look in the **Configurator** and save it
+as a profile. Or with compose: `docker compose up --build`.
 
-Data (SQLite + render cache) is stored in a named volume so it survives restarts.
+Environment reference: [variables.md](variables.md) ·
+Template: [env.template](env.template) ·
+Upgrading from v2: [docs/migrating-to-v3.md](docs/migrating-to-v3.md)
 
 ## Running locally
 
@@ -20,38 +38,56 @@ Data (SQLite + render cache) is stored in a named volume so it survives restarts
 make dev
 ```
 
-Starts the API on `http://localhost:8787` and the web dev server on `http://localhost:3001` (provider keys are read from `.env`). Or run them individually:
+Starts the API on `http://localhost:8787` and the web dev server on
+`http://localhost:3001` (provider keys are read from `.env`). Or run them
+individually:
 
 ```sh
 go run ./cmd/api                  # API on :8787 (XRDB_ADDR to change)
 cd web && npm ci && npm run dev   # web on :3001
 ```
 
-## Migrating profiles from a previous install
-
-```sh
-go run ./cmd/migrate -input fixtures/migration/sample-legacy-profiles.json
-```
-
 ## API endpoints
 
 | Method | Path | Description |
 |---|---|---|
-| `GET` | `/{type}/{id}` | Render image (`poster`, `backdrop`, `thumbnail`, `logo`) |
-| `GET` | `/profile` | List all profiles |
-| `POST` | `/profile` | Create a profile |
-| `GET` | `/profile/{id}` | Get a profile |
-| `PUT` | `/profile/{id}` | Update a profile |
+| `GET` | `/{type}/{id}?config=…` | Render image — `type` is `poster`, `backdrop`, `thumbnail`, or `logo`; `config` is a profile ID, alias, or inline JSON |
+| `GET` | `/healthz`, `/readyz` | Health and readiness |
+| `GET/POST` | `/profile` | List / create profiles (ID generated when omitted) |
+| `GET/PUT/DELETE` | `/profile/{id-or-alias}` | Read / update / delete (password-protected when set) |
 | `GET` | `/profile/{id}/export` | Export a profile as JSON |
 | `POST` | `/profile/import` | Import profiles from JSON |
-| `GET` | `/healthz` | Health check |
-| `GET` | `/api/admin/metrics` | Request metrics |
-| `GET` | `/api/admin/cache` | Cache stats |
+| `GET` | `/api/templates` | Built-in config templates |
+| `GET` | `/api/search?q=` | Title search (TMDB-backed) |
+| `GET` | `/api/trending` | Trending titles |
+| `GET` | `/api/lookup?type=&id=` | TMDB ID → IMDb ID |
+| `POST` | `/api/aiometadata/install` | One-click AIOMetadata setup |
+| `GET` | `/api/admin/metrics`, `/api/admin/cache` | Runtime metrics, cache stats † |
+| `POST` | `/api/admin/warm` | Pre-render IDs into the cache † |
+| `GET/PUT/DELETE` | `/api/admin/settings` | Integration keys † |
+| `GET` | `/stremio/manifest.json`, `/stremio/meta/…` | Stremio addon endpoints |
+
+† requires `Authorization: Bearer $XRDB_ADMIN_KEY` when configured.
+
+## Migrating profiles from a previous install
+
+```sh
+go run ./cmd/migrate -input legacy-profiles.json
+```
+
+Converts v2 profiles to the v3 schema with a per-profile report — see the
+[migration guide](docs/migrating-to-v3.md).
 
 ## Development
 
 ```sh
 make test       # run all tests
 make bench      # render benchmarks
-make build      # compile binaries
+make build-all  # web export + go build (embedded UI)
 ```
+
+---
+
+XRDB by [IbbyLabs](https://github.com/IbbyLabs) ·
+[Support](https://kofi.ibbylabs.dev) ·
+[Discord](https://discord.gg/wPY2pcqjmm)
