@@ -20,20 +20,24 @@ import { tablistKeyNav } from './tablist';
 export function ConfiguratorClient() {
   const uid = useId();
 
-  const [mediaType, setMediaType] = useState<MediaType>(
-    () => readSession<MediaType>('xrdb-media-type', 'poster'),
-  );
-  const [mediaId, setMediaId] = useState(
-    () => readSession<string>('xrdb-media-id', 'tt0468569'),
-  );
-  const [mediaTitle, setMediaTitle] = useState(
-    () => readSession<string>('xrdb-media-title', 'The Dark Knight (2008)'),
-  );
-  const [config, setConfig] = useState<ConfigState>(
-    // Merge over defaults so configs persisted before new fields existed
-    // (e.g. badgeStyle/badgeTheme) still produce a complete state.
-    () => ({ ...DEFAULT_CONFIG, ...readSession<Partial<ConfigState>>('xrdb-config', {}) }),
-  );
+  const [mediaType, setMediaType] = useState<MediaType>('poster');
+  const [mediaId, setMediaId] = useState('tt0468569');
+  const [mediaTitle, setMediaTitle] = useState('The Dark Knight (2008)');
+  const [config, setConfig] = useState<ConfigState>(DEFAULT_CONFIG);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Restore persisted state after mount: the page is statically prerendered,
+  // so reading storage during the first render mismatches the server HTML
+  // (React #418). The config merge keeps sessions saved before new fields
+  // existed (e.g. badgeStyle/badgeTheme) complete.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMediaType(readSession<MediaType>('xrdb-media-type', 'poster'));
+    setMediaId(readSession<string>('xrdb-media-id', 'tt0468569'));
+    setMediaTitle(readSession<string>('xrdb-media-title', 'The Dark Knight (2008)'));
+    setConfig({ ...DEFAULT_CONFIG, ...readSession<Partial<ConfigState>>('xrdb-config', {}) });
+    setHydrated(true);
+  }, []);
   const [appliedTemplate, setAppliedTemplate] = useState<string | null>(null);
   const [loadedProfile, setLoadedProfile] = useState<LoadedProfile | null>(null);
   const [notice, setNotice] = useState<{ type: 'error' | 'success' | 'info'; message: string } | null>(null);
@@ -51,13 +55,14 @@ export function ConfiguratorClient() {
   const [undoAvailable, setUndoAvailable] = useState(false);
 
   useEffect(() => {
+    if (!hydrated) return; // don't clobber storage with defaults pre-restore
     try {
       sessionStorage.setItem('xrdb-media-type', JSON.stringify(mediaType));
       sessionStorage.setItem('xrdb-media-id',   JSON.stringify(mediaId));
       sessionStorage.setItem('xrdb-media-title', JSON.stringify(mediaTitle));
       sessionStorage.setItem('xrdb-config',      JSON.stringify(config));
     } catch { /* unavailable */ }
-  }, [mediaType, mediaId, mediaTitle, config]);
+  }, [hydrated, mediaType, mediaId, mediaTitle, config]);
 
   const buildSrc = useCallback((type: MediaType, id: string, cfg: ConfigState) => {
     return renderUrl(type, id || 'tt0468569', JSON.stringify({

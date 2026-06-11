@@ -32,10 +32,17 @@ export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSea
   const [open, setOpen] = useState(false);
   const [searching, setSearching] = useState(false);
   const [shuffling, setShuffling] = useState(false);
-  const [pins, setPins] = useState<PinnedItem[]>(readPins);
+  const [pins, setPins] = useState<PinnedItem[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const trendingRef = useRef<TitleResult[] | null>(null);
+
+  // Restore pins after mount — reading localStorage during the first render
+  // mismatches the statically prerendered HTML (React #418).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPins(readPins());
+  }, []);
 
   useEffect(() => {
     if (!open) return;
