@@ -97,6 +97,7 @@ func main() {
 		CacheDir:    cfg.CacheDir,
 		DatasetURL:  cfg.AnimeMapURL,
 		FallbackURL: cfg.AnimeMapFallbackURL,
+		TTL:         cfg.AnimeMapRefresh,
 	})
 	reg.Register(provider.NewAnimeMapped(provider.NewMAL(), animeMapper))
 	reg.Register(provider.NewAnimeMapped(provider.NewAniList(), animeMapper))

@@ -54,6 +54,7 @@ back to a live per-ID lookup.
 |---|---|---|
 | `XRDB_ANIME_MAP_URL` | Fribb anime-lists (GitHub raw, jsDelivr mirror) | Override the mapping dataset URL. |
 | `XRDB_ANIME_MAP_FALLBACK_URL` | `https://arm.haglund.dev/api/v2` | Live per-ID mapping API for titles the dataset misses. Set to `off` to disable. |
+| `XRDB_ANIME_MAP_REFRESH_HOURS` | `168` (7 days) | How old the cached dataset may get before a background re-download. Refreshes never block renders; a failed refresh keeps the existing copy. |
 
 ## Cache tuning
 

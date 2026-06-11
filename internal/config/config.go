@@ -23,6 +23,7 @@ type Config struct {
 	IMDbDatasetDir      string                   // directory for cached IMDb dataset file; empty = disabled
 	AnimeMapURL         string                   // override anime ID mapping dataset URL; empty = default
 	AnimeMapFallbackURL string                   // live anime mapping API base URL; "off" disables
+	AnimeMapRefresh     time.Duration            // anime mapping dataset refresh interval; 0 = default (7 days)
 	ProviderTTLs        map[string]time.Duration // per-provider TTL overrides; key = provider name
 	AdminKey            string                   // protects /api/admin/* routes
 	APIKey              string                   // if set, required on all render routes
@@ -74,6 +75,12 @@ func Load() Config {
 			cacheTTL = d
 		}
 	}
+	var animeMapRefresh time.Duration
+	if raw := os.Getenv("XRDB_ANIME_MAP_REFRESH_HOURS"); raw != "" {
+		if h, err := strconv.ParseFloat(raw, 64); err == nil && h > 0 {
+			animeMapRefresh = time.Duration(h * float64(time.Hour))
+		}
+	}
 	return Config{
 		Address:             addr,
 		Version:             version,
@@ -90,6 +97,7 @@ func Load() Config {
 		IMDbDatasetDir:      os.Getenv("XRDB_IMDB_DATASET_DIR"),
 		AnimeMapURL:         os.Getenv("XRDB_ANIME_MAP_URL"),
 		AnimeMapFallbackURL: os.Getenv("XRDB_ANIME_MAP_FALLBACK_URL"),
+		AnimeMapRefresh:     animeMapRefresh,
 		ProviderTTLs:        loadProviderTTLs(cacheTTL),
 		AdminKey:            os.Getenv("XRDB_ADMIN_KEY"),
 		APIKey:              os.Getenv("XRDB_API_KEY"),
