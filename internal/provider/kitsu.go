@@ -16,12 +16,14 @@ const kitsuBaseURL = "https://kitsu.io/api/edge/anime/"
 // IDs must be prefixed with "kitsu:" e.g. "kitsu:7442".
 type Kitsu struct {
 	httpClient *http.Client
+	baseURL    string // overridable for tests; defaults to kitsuBaseURL
 }
 
 // NewKitsu creates a Kitsu provider. No API key is required.
 func NewKitsu() *Kitsu {
 	return &Kitsu{
 		httpClient: &http.Client{Timeout: 10 * time.Second},
+		baseURL:    kitsuBaseURL,
 	}
 }
 
@@ -34,7 +36,11 @@ func (k *Kitsu) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, er
 		return nil, fmt.Errorf("kitsu: unsupported id %q (expected kitsu:<id>)", id)
 	}
 
-	url := kitsuBaseURL + kitsuID
+	base := k.baseURL
+	if base == "" {
+		base = kitsuBaseURL
+	}
+	url := base + kitsuID
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("kitsu: build request: %w", err)

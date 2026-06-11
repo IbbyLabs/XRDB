@@ -41,6 +41,21 @@ protect editing that profile (rendering with a profile stays public).
 No key is required for: Cinemeta artwork (Stremio/metahub), MyAnimeList,
 AniList, and Kitsu ratings — those work out of the box.
 
+## Anime ID mapping
+
+Anime ratings need the render ID (IMDb/TMDB) translated to MAL/AniList/Kitsu
+IDs. XRDB downloads the community
+[Fribb/anime-lists](https://github.com/Fribb/anime-lists) dataset (~6 MB) into
+`XRDB_CACHE_DIR` on first use, refreshes it weekly, and keeps serving the
+cached copy if the source is unreachable. Titles missing from the dataset fall
+back to a live per-ID lookup.
+
+| Variable | Default | Description |
+|---|---|---|
+| `XRDB_ANIME_MAP_URL` | Fribb anime-lists (GitHub raw, jsDelivr mirror) | Override the primary mapping dataset URL. **Note:** The mapper uses a hard-coded jsDelivr/GitHub raw mirror as fallback when the primary source is unreachable. For self-hosted or air-gapped deployments requiring full URL control, the mirror must be changed in the mapper source code. |
+| `XRDB_ANIME_MAP_FALLBACK_URL` | `https://arm.haglund.dev/api/v2` | Live per-ID mapping API for titles the dataset misses. Set to `off` to disable. |
+| `XRDB_ANIME_MAP_REFRESH_HOURS` | `168` (7 days) | How old the cached dataset may get before a background re-download. Refreshes never block renders; a failed refresh keeps the existing copy. |
+
 ## Cache tuning
 
 | Variable | Default | Description |

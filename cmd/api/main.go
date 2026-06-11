@@ -15,6 +15,7 @@ import (
 	"xrdb_rewrite/internal/config"
 	"xrdb_rewrite/internal/profile"
 	"xrdb_rewrite/internal/provider"
+	"xrdb_rewrite/internal/provider/animemap"
 	"xrdb_rewrite/internal/server"
 	"xrdb_rewrite/internal/settings"
 	"xrdb_rewrite/internal/ui"
@@ -90,10 +91,17 @@ func main() {
 	if cfg.IMDbDatasetDir != "" {
 		reg.Register(provider.NewIMDbDataset(cfg.IMDbDatasetDir))
 	}
-	// Anime providers — public APIs, no key required.
-	reg.Register(provider.NewMAL())
-	reg.Register(provider.NewAniList())
-	reg.Register(provider.NewKitsu())
+	// Anime providers — public APIs, no key required. Wrapped with the anime
+	// ID mapper so IMDb/TMDB render IDs resolve to MAL/AniList/Kitsu IDs.
+	animeMapper := animemap.New(animemap.Options{
+		CacheDir:    cfg.CacheDir,
+		DatasetURL:  cfg.AnimeMapURL,
+		FallbackURL: cfg.AnimeMapFallbackURL,
+		TTL:         cfg.AnimeMapRefresh,
+	})
+	reg.Register(provider.NewAnimeMapped(provider.NewMAL(), animeMapper))
+	reg.Register(provider.NewAnimeMapped(provider.NewAniList(), animeMapper))
+	reg.Register(provider.NewAnimeMapped(provider.NewKitsu(), animeMapper))
 	// Cinemeta (Stremio) — public artwork/metadata, no key required.
 	reg.Register(provider.NewCinemeta())
 	var pipeline *compose.Pipeline

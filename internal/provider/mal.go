@@ -16,12 +16,14 @@ const jikanBaseURL = "https://api.jikan.moe/v4/anime/"
 // IDs must be prefixed with "mal:" e.g. "mal:20".
 type MAL struct {
 	httpClient *http.Client
+	baseURL    string // overridable for tests; defaults to jikanBaseURL
 }
 
 // NewMAL creates a MAL provider. No API key is required (uses public Jikan API).
 func NewMAL() *MAL {
 	return &MAL{
 		httpClient: &http.Client{Timeout: 10 * time.Second},
+		baseURL:    jikanBaseURL,
 	}
 }
 
@@ -34,7 +36,11 @@ func (m *MAL) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, erro
 		return nil, fmt.Errorf("mal: unsupported id %q (expected mal:<id>)", id)
 	}
 
-	url := jikanBaseURL + malID
+	base := m.baseURL
+	if base == "" {
+		base = jikanBaseURL
+	}
+	url := base + malID
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("mal: build request: %w", err)
