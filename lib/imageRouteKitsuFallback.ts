@@ -280,14 +280,17 @@ export const fetchMyAnimeListFallbackAsset = async (
         }
       );
       if (jikanResponse.ok) {
-        const payload = jikanResponse.data?.data || {};
+        const payload = jikanResponse.data?.data || jikanResponse.data || {};
         title =
           title ||
           normalizeKitsuTitleCandidate(payload.title_english) ||
           normalizeKitsuTitleCandidate(payload.title) ||
           normalizeKitsuTitleCandidate(payload.title_japanese);
-        posterUrl = posterUrl || pickJikanImageUrl(payload.images);
-        rating = rating || normalizeRatingValue(payload.score);
+        posterUrl =
+          posterUrl ||
+          pickJikanImageUrl(payload.images) ||
+          pickMyAnimeListImageUrl(payload.main_picture);
+        rating = rating || normalizeRatingValue(payload.score ?? payload.mean);
       }
     } catch {
       // Ignore network errors and return null below.
