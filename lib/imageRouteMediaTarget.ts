@@ -564,34 +564,82 @@ if (isTmdb) {
   inputAnimeMappingProvider !== 'imdb' &&
   inputAnimeMappingProvider !== 'tmdb'
 ) {
-  const reverseMapping = await fetchAnimeReverseMappingResolution({
-    provider: inputAnimeMappingProvider,
-    externalId: inputAnimeMappingExternalId,
-    season,
-    episode,
-    phases,
-    fetchJsonCached,
-    cacheNamespace: 'tmdb',
-  });
-  const reverseMappedAnimeTarget = await resolveReverseMappedAnimeImageTarget({
-    imageType,
-    tmdbId: reverseMapping.mappedIds.tmdb,
-    kitsuId: reverseMapping.mappedIds.kitsu,
-    fetchTmdbMedia: async (mappedTmdbId, mappedMediaType) => {
-      const mappedMediaResponse = await fetchJsonCached(
-        `tmdb:${mappedMediaType}:${mappedTmdbId}`,
-        `${TMDB_API_BASE_URL}/${mappedMediaType}/${mappedTmdbId}?api_key=${tmdbKey}`,
-        TMDB_CACHE_TTL_MS,
-        phases,
-        'tmdb'
-      );
-      return mappedMediaResponse.ok ? mappedMediaResponse.data : null;
-    },
-    fetchKitsuFallbackAsset: (kitsuId, fallbackImageType) =>
-      fetchKitsuFallbackAsset(kitsuId, fallbackImageType, phases, fetchJsonCached),
-  });
+  const resolveProviderNativeFallback = async () => {
+    let providerFallbackAsset:
+      | { imageUrl: string | null; rating: string | null; title: string | null; logoAspectRatio: number | null }
+      | null = null;
 
-  if (reverseMappedAnimeTarget.kind === 'tmdb') {
+    if (inputAnimeMappingProvider === 'mal') {
+      providerFallbackAsset = await fetchMyAnimeListFallbackAsset(
+        inputAnimeMappingExternalId,
+        imageType,
+        phases,
+        fetchJsonCached,
+      );
+      applyRawFallbackAsset({ fallbackAsset: providerFallbackAsset, ratingProvider: 'myanimelist' });
+    } else if (inputAnimeMappingProvider === 'anilist') {
+      providerFallbackAsset = await fetchAniListFallbackAsset(
+        inputAnimeMappingExternalId,
+        imageType,
+        phases,
+        fetchJsonCached,
+      );
+      applyRawFallbackAsset({ fallbackAsset: providerFallbackAsset, ratingProvider: 'anilist' });
+    } else if (inputAnimeMappingProvider === 'kitsu') {
+      providerFallbackAsset = await fetchKitsuFallbackAsset(
+        inputAnimeMappingExternalId,
+        imageType,
+        phases,
+        fetchJsonCached,
+      );
+      applyRawFallbackAsset({ fallbackAsset: providerFallbackAsset, ratingProvider: 'kitsu' });
+    }
+  };
+
+  let reverseMapping;
+  let reverseMappedAnimeTarget;
+  try {
+    reverseMapping = await fetchAnimeReverseMappingResolution({
+      provider: inputAnimeMappingProvider,
+      externalId: inputAnimeMappingExternalId,
+      season,
+      episode,
+      phases,
+      fetchJsonCached,
+      cacheNamespace: 'tmdb',
+    });
+    reverseMappedAnimeTarget = await resolveReverseMappedAnimeImageTarget({
+      imageType,
+      tmdbId: reverseMapping.mappedIds.tmdb,
+      kitsuId: reverseMapping.mappedIds.kitsu,
+      fetchTmdbMedia: async (mappedTmdbId, mappedMediaType) => {
+        const mappedMediaResponse = await fetchJsonCached(
+          `tmdb:${mappedMediaType}:${mappedTmdbId}`,
+          `${TMDB_API_BASE_URL}/${mappedMediaType}/${mappedTmdbId}?api_key=${tmdbKey}`,
+          TMDB_CACHE_TTL_MS,
+          phases,
+          'tmdb'
+        );
+        return mappedMediaResponse.ok ? mappedMediaResponse.data : null;
+      },
+      fetchKitsuFallbackAsset: (kitsuId, fallbackImageType) =>
+        fetchKitsuFallbackAsset(kitsuId, fallbackImageType, phases, fetchJsonCached),
+    });
+  } catch {
+    reverseMapping = {
+      payload: null,
+      mappedIds: {
+        tmdb: null,
+        kitsu: null,
+        anilist: null,
+        mal: null,
+      },
+      tmdbEpisodeTarget: null,
+    };
+    reverseMappedAnimeTarget = null;
+  }
+
+  if (reverseMappedAnimeTarget?.kind === 'tmdb') {
     media = reverseMappedAnimeTarget.media;
     mediaType = reverseMappedAnimeTarget.mediaType;
     if (
@@ -623,42 +671,13 @@ if (isTmdb) {
     }
     allowAnimeOnlyRatings = true;
     hasConfirmedAnimeMapping = true;
-  } else if (reverseMappedAnimeTarget.kind === 'kitsu-fallback') {
+  } else if (reverseMappedAnimeTarget?.kind === 'kitsu-fallback') {
     applyRawFallbackAsset({
       fallbackAsset: reverseMappedAnimeTarget.fallbackAsset,
       ratingProvider: 'kitsu',
     });
-  } else if (!reverseMappedAnimeTarget.tmdbId) {
-    let providerFallbackAsset:
-      | { imageUrl: string | null; rating: string | null; title: string | null; logoAspectRatio: number | null }
-      | null = null;
-
-    if (inputAnimeMappingProvider === 'mal') {
-      providerFallbackAsset = await fetchMyAnimeListFallbackAsset(
-        inputAnimeMappingExternalId,
-        imageType,
-        phases,
-        fetchJsonCached,
-      );
-      applyRawFallbackAsset({ fallbackAsset: providerFallbackAsset, ratingProvider: 'myanimelist' });
-    } else if (inputAnimeMappingProvider === 'anilist') {
-      providerFallbackAsset = await fetchAniListFallbackAsset(
-        inputAnimeMappingExternalId,
-        imageType,
-        phases,
-        fetchJsonCached,
-      );
-      applyRawFallbackAsset({ fallbackAsset: providerFallbackAsset, ratingProvider: 'anilist' });
-    } else if (inputAnimeMappingProvider === 'kitsu') {
-      providerFallbackAsset = await fetchKitsuFallbackAsset(
-        inputAnimeMappingExternalId,
-        imageType,
-        phases,
-        fetchJsonCached,
-      );
-      applyRawFallbackAsset({ fallbackAsset: providerFallbackAsset, ratingProvider: 'kitsu' });
-    }
-
+  } else if (!reverseMappedAnimeTarget?.tmdbId) {
+    await resolveProviderNativeFallback();
     if (!rawFallbackImageUrl) {
       throw new HttpError('TMDB ID not found for anime mapping ID', 404);
     }

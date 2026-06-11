@@ -1265,7 +1265,7 @@ for (const [provider, value] of rawFallbackProviderEntries) {
     streamBadgesDeferred,
     posterTitleText,
     posterLogoUrl,
-    providerRatingsEnabled: providerRatingsPromise !== null || rawFallbackProviderEntries.length > 0,
+    providerRatingsEnabled: providerRatingsPromise !== null,
     transientProviderFailureTtlMs,
     shouldRenderBadges,
   };
