@@ -149,6 +149,43 @@ export function readSession<T>(key: string, fallback: T): T {
   } catch { return fallback; }
 }
 
+// ── Shareable links ───────────────────────────────────────────────────────────
+// The full configurator state travels in the URL hash (#c=…) so a look can be
+// shared or bookmarked. base64url keeps it copy-paste safe in chat apps.
+
+export interface ShareState {
+  t: MediaType;
+  id: string;
+  title: string;
+  cfg: ConfigState;
+}
+
+export function encodeShare(state: ShareState): string {
+  const json = JSON.stringify(state);
+  const bytes = new TextEncoder().encode(json);
+  let bin = '';
+  bytes.forEach(b => { bin += String.fromCharCode(b); });
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+export function decodeShare(fragment: string): ShareState | null {
+  try {
+    const b64 = fragment.replace(/-/g, '+').replace(/_/g, '/');
+    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    const parsed = JSON.parse(new TextDecoder().decode(bytes)) as Partial<ShareState>;
+    if (!parsed || typeof parsed.id !== 'string' || typeof parsed.cfg !== 'object' || parsed.cfg === null) return null;
+    const t = MEDIA_TYPES.some(m => m.id === parsed.t) ? (parsed.t as MediaType) : 'poster';
+    return {
+      t,
+      id: parsed.id,
+      title: typeof parsed.title === 'string' ? parsed.title : parsed.id,
+      cfg: { ...DEFAULT_CONFIG, ...parsed.cfg },
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function normalizeError(e: unknown): string {
   const msg = (e as Error).message ?? 'Unknown error';
   if (msg.includes('Failed to fetch') || msg.includes('NetworkError'))

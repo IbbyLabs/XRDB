@@ -686,7 +686,6 @@ textarea.input { min-height: 0; line-height: 1.5; }
   border-radius: var(--radius-lg);
   overflow: hidden;
   position: relative;
-  box-shadow: var(--shadow-2);
 }
 
 .preview-img {
@@ -1075,7 +1074,25 @@ textarea.input { min-height: 0; line-height: 1.5; }
   pointer-events: none;
 }
 
-.media-search-input { padding-left: 2.25rem; }
+.kbd-hint {
+  position: absolute;
+  right: var(--sp-3);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0 0.4rem;
+  font-family: var(--font-mono-stack);
+  font-size: var(--text-xs);
+  line-height: 1.4rem;
+  color: var(--subtle);
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+}
+.media-search-input:focus + .kbd-hint { display: none; }
+@media (pointer: coarse) { .kbd-hint { display: none; } }
+
+.media-search-input { padding-left: 2.25rem; padding-right: 2.5rem; }
 
 .media-results {
   position: absolute;
@@ -1249,6 +1266,7 @@ textarea.input { min-height: 0; line-height: 1.5; }
 .provider-blurb {
   flex: 1;
   min-width: 0;
+  max-width: 70ch;
   font-size: var(--text-xs);
   color: var(--muted);
   overflow: hidden;
@@ -1256,6 +1274,8 @@ textarea.input { min-height: 0; line-height: 1.5; }
   white-space: nowrap;
   transition: opacity var(--dur-2) var(--ease-out);
 }
+
+.provider-desc { max-width: 70ch; }
 /* The detail panel repeats the description in full — fade the truncated one */
 .provider--open .provider-blurb { opacity: 0; }
 
@@ -1312,28 +1332,44 @@ textarea.input { min-height: 0; line-height: 1.5; }
   gap: var(--sp-2);
 }
 
+/* Composite control: the wrap carries the input chrome so the reveal
+   button can be a plain flex child (no absolute positioning — the
+   accordion's overflow clip must never cut a positioned descendant). */
 .key-input-wrap {
-  position: relative;
   flex: 1;
   min-width: 0;
+  display: flex;
+  align-items: center;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color var(--dur-1) var(--ease-out), box-shadow var(--dur-1) var(--ease-out);
 }
+.key-input-wrap:focus-within {
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+}
+.key-input-wrap .input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+}
+.key-input-wrap .input:focus { border: none; box-shadow: none; }
 
 .key-show-btn {
-  position: absolute;
-  right: var(--sp-2);
-  top: 50%;
-  transform: translateY(-50%);
+  flex-shrink: 0;
   background: transparent;
   border: none;
   cursor: pointer;
   color: var(--muted);
-  padding: var(--sp-1);
+  padding: var(--sp-2) var(--sp-3);
+  align-self: stretch;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: color var(--dur-1) var(--ease-out);
 }
-.key-show-btn::before { content: ''; position: absolute; inset: -8px; }
 .key-show-btn:hover { color: var(--ink); }
 
 .docs-link {
@@ -1343,6 +1379,10 @@ textarea.input { min-height: 0; line-height: 1.5; }
   align-self: flex-start;
 }
 .docs-link:hover { text-decoration: underline; }
+
+/* A panel that holds a bare table: inset it so rows never sit flush
+   against the panel border. */
+.panel-table { padding: var(--sp-2); }
 
 /* ── Admin ─────────────────────────────────────────────────────────── */
 
@@ -1371,9 +1411,21 @@ textarea.input { min-height: 0; line-height: 1.5; }
 
 /* ── Home ──────────────────────────────────────────────────────────── */
 
-.home { max-width: 920px; }
+.home {
+  max-width: 920px;
+  display: flex;
+  flex-direction: column;
+  /* fill the viewport below the nav so the footer rests at the bottom */
+  min-height: calc(100dvh - 3.5rem);
+}
 
-.home-hero { padding: var(--sp-8) 0 var(--sp-7); }
+.home-hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--sp-7) 0;
+}
 
 .home-logo {
   width: 4.5rem;
@@ -1449,6 +1501,52 @@ textarea.input { min-height: 0; line-height: 1.5; }
 }
 .home-footer-links a:hover { color: var(--ink); }
 
+/* ── Preview actions ───────────────────────────────────────────────── */
+
+.preview-actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* ── Not found ─────────────────────────────────────────────────────── */
+
+.notfound {
+  min-height: calc(100dvh - 3.5rem - var(--sp-6) - var(--sp-7));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--sp-3);
+}
+
+.notfound-code {
+  font-family: var(--font-display-stack);
+  font-size: var(--text-hero);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--accent-text);
+}
+
+.notfound-title {
+  font-family: var(--font-display-stack);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.notfound-sub {
+  color: var(--muted);
+  font-size: var(--text-sm);
+  max-width: 28rem;
+  text-wrap: pretty;
+}
+
+.notfound .btn { margin-top: var(--sp-3); }
+
 /* ── Admin lock screen ─────────────────────────────────────────────── */
 
 .admin-lock {
@@ -1492,7 +1590,7 @@ textarea.input { min-height: 0; line-height: 1.5; }
 
   .page-inner { padding: var(--sp-5) var(--sp-4) var(--sp-6); }
 
-  .home-hero { padding: var(--sp-6) 0 var(--sp-5); }
+  .home-hero { padding: var(--sp-6) 0; }
   .home-title { font-size: 2.5rem; }
 
   .stat-cell { flex-basis: 50%; border-right: none; border-bottom: 1px solid var(--border); }

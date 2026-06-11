@@ -36,12 +36,28 @@ export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSea
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const trendingRef = useRef<TitleResult[] | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Restore pins after mount — reading localStorage during the first render
   // mismatches the statically prerendered HTML (React #418).
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPins(readPins());
+  }, []);
+
+  // "/" jumps to the title search from anywhere on the page, unless the user
+  // is already typing in a field.
+  useEffect(() => {
+    const onSlash = (e: KeyboardEvent) => {
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = document.activeElement;
+      if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement
+        || el instanceof HTMLSelectElement || (el instanceof HTMLElement && el.isContentEditable)) return;
+      e.preventDefault();
+      inputRef.current?.focus();
+    };
+    document.addEventListener('keydown', onSlash);
+    return () => document.removeEventListener('keydown', onSlash);
   }, []);
 
   useEffect(() => {
@@ -170,6 +186,7 @@ export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSea
           <Search size={14} aria-hidden className="media-search-icon" />
           <input
             id={`${uid}-q`}
+            ref={inputRef}
             className="input media-search-input"
             value={query}
             onChange={e => { setQuery(e.target.value); runSearch(e.target.value); }}
@@ -182,6 +199,7 @@ export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSea
             autoComplete="off"
             spellCheck={false}
           />
+          <kbd className="kbd-hint" aria-hidden>/</kbd>
         </div>
         {searching && <span className="hint">Searching…</span>}
         {open && (

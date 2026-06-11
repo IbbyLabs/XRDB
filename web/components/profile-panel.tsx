@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useId } from 'react';
-import { Save, Download, FolderOpen, Trash2, LogOut, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useId } from 'react';
+import { Save, Download, FolderOpen, Trash2, LogOut, RefreshCw, History } from 'lucide-react';
 import {
   createProfile, getProfile, updateProfile, deleteProfile, exportProfile,
   renderOrigin, type MediaType,
@@ -10,6 +10,32 @@ import type { ConfigState } from './configurator-types';
 import { CopyButton } from './copy-button';
 
 const ALIAS_RE = /^[a-z]{3,32}$/;
+
+// ── Recent profiles (this browser only) ────────────────────────────────────
+
+interface RecentProfile {
+  key: string;  // alias when set, otherwise id
+  name: string;
+}
+
+const RECENTS_KEY = 'xrdb-recent-profiles';
+
+function readRecents(): RecentProfile[] {
+  try { return JSON.parse(localStorage.getItem(RECENTS_KEY) ?? '[]') as RecentProfile[]; } catch { return []; }
+}
+
+function writeRecents(list: RecentProfile[]): RecentProfile[] {
+  try { localStorage.setItem(RECENTS_KEY, JSON.stringify(list)); } catch { /* unavailable */ }
+  return list;
+}
+
+function pushRecent(list: RecentProfile[], entry: RecentProfile): RecentProfile[] {
+  return writeRecents([entry, ...list.filter(r => r.key !== entry.key)].slice(0, 5));
+}
+
+function dropRecent(list: RecentProfile[], ...keys: string[]): RecentProfile[] {
+  return writeRecents(list.filter(r => !keys.includes(r.key)));
+}
 
 /** A profile this browser session has unlocked. */
 export interface LoadedProfile {
@@ -42,6 +68,14 @@ export function ProfilePanel({
   const [loadKey, setLoadKey] = useState('');
   const [loadPassword, setLoadPassword] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [recents, setRecents] = useState<RecentProfile[]>([]);
+
+  // Restored after mount — localStorage reads during the first render
+  // mismatch the statically prerendered HTML (React #418).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setRecents(readRecents());
+  }, []);
 
   const configKey = loaded ? (loaded.alias || loaded.id) : '';
   const sampleUrl = configKey
@@ -76,6 +110,10 @@ export function ProfilePanel({
         password,
       });
       setName(''); setAlias(''); setPassword('');
+      setRecents(r => pushRecent(r, {
+        key: created.alias || created.id,
+        name: created.name || created.alias || created.id,
+      }));
       flash('success', `Profile saved — your config key is "${created.alias || created.id}"`);
     } catch (e) {
       flash('error', (e as Error).message);
@@ -84,8 +122,8 @@ export function ProfilePanel({
     }
   };
 
-  const handleLoad = async () => {
-    const key = loadKey.trim();
+  const handleLoad = async (keyOverride?: string) => {
+    const key = (keyOverride ?? loadKey).trim();
     if (!key) { flash('error', 'Enter a profile ID or alias'); return; }
     setBusy(true);
     try {
@@ -99,6 +137,10 @@ export function ProfilePanel({
         password: loadPassword,
       });
       setLoadKey(''); setLoadPassword('');
+      setRecents(r => pushRecent(r, {
+        key: p.alias || p.id,
+        name: p.name || p.alias || p.id,
+      }));
       flash('success', `Loaded "${p.name || p.alias || p.id}" — you're now editing it`);
     } catch (e) {
       flash('error', (e as Error).message);
@@ -134,6 +176,7 @@ export function ProfilePanel({
     setBusy(true);
     try {
       await deleteProfile(loaded.id, loaded.password || undefined);
+      setRecents(r => dropRecent(r, loaded.id, loaded.alias));
       setLoaded(null);
       setConfirmDelete(false);
       flash('success', 'Profile deleted');
@@ -299,10 +342,35 @@ export function ProfilePanel({
             autoComplete="off"
           />
         </div>
-        <button className="btn btn-ghost" onClick={handleLoad} disabled={busy}>
+        <button className="btn btn-ghost" onClick={() => void handleLoad()} disabled={busy}>
           <FolderOpen size={13} aria-hidden />
           {busy ? 'Loading…' : 'Load profile'}
         </button>
+
+        {recents.length > 0 && (
+          <div className="field">
+            <span className="label">
+              <History size={12} aria-hidden style={{ verticalAlign: '-2px', marginRight: 'var(--sp-1)' }} />
+              Recent on this browser
+            </span>
+            <div className="pin-row">
+              {recents.map(r => (
+                <button
+                  key={r.key}
+                  className="chip"
+                  onClick={() => void handleLoad(r.key)}
+                  disabled={busy}
+                  title={`Load "${r.name}" (${r.key})`}
+                >
+                  {r.name}
+                </button>
+              ))}
+            </div>
+            <span className="hint">
+              Password-protected profiles still need their password above.
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );
