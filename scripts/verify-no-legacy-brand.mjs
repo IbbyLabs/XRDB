@@ -54,7 +54,11 @@ const filterAllowed = (output) =>
     .filter((line) => {
       const lower = line.toLowerCase();
       if (!lower.includes(legacyNeedle)) return false;
-      return !allowedPatterns.some((re) => re.test(line));
+      const sanitized = allowedPatterns.reduce(
+        (result, pattern) => result.replace(pattern, ''),
+        line,
+      );
+      return sanitized.toLowerCase().includes(legacyNeedle);
     })
     .join('\n');
 
