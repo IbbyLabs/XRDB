@@ -167,12 +167,6 @@ export async function importProfiles(envelope: ExportEnvelope): Promise<{ import
   return res.json() as Promise<{ imported: number; skipped: number; errors?: string[] }>;
 }
 
-export async function fetchProfiles(): Promise<Profile[]> {
-  const res = await fetch(`${base()}/profile`);
-  if (!res.ok) throw new Error(`list profiles failed: ${res.status}`);
-  return res.json() as Promise<Profile[]>;
-}
-
 export async function fetchMetrics(): Promise<MetricsSnapshot> {
   const res = await fetch(`${base()}/api/admin/metrics`, { headers: adminAuthHeaders() });
   if (!res.ok) throw new Error(`metrics failed: ${res.status}`);
