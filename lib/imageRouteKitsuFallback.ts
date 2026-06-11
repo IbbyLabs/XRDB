@@ -304,7 +304,7 @@ export const fetchMyAnimeListFallbackAsset = async (
     title,
     rating,
   });
-  return fallbackAsset.imageUrl ? fallbackAsset : null;
+  return fallbackAsset;
 };
 
 const ANILIST_FALLBACK_DETAILS_QUERY = `
@@ -376,7 +376,7 @@ export const fetchAniListFallbackAsset = async (
       title,
       rating,
     });
-    return fallbackAsset.imageUrl ? fallbackAsset : null;
+    return fallbackAsset;
   } catch {
     return null;
   }

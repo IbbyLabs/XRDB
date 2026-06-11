@@ -136,6 +136,35 @@ test('image route provider fallback builds MAL assets via Jikan fallback', async
   assert.match(String(logo?.imageUrl), /^data:image\/svg\+xml,/);
 });
 
+test('image route provider fallback keeps MAL rating and title when artwork is missing', async () => {
+  const fetchJsonCached = async (key) => {
+    if (key.startsWith('jikan:anime:16498:details')) {
+      return {
+        ok: true,
+        status: 200,
+        data: {
+          data: {
+            title: 'Shingeki no Kyojin',
+            score: 8.57,
+            images: {},
+          },
+        },
+      };
+    }
+
+    return { ok: false, status: 404, data: null };
+  };
+
+  const poster = await fetchMyAnimeListFallbackAsset('mal:16498', 'poster', phases, fetchJsonCached);
+
+  assert.deepEqual(poster, {
+    imageUrl: null,
+    rating: '8.6',
+    title: 'Shingeki no Kyojin',
+    logoAspectRatio: null,
+  });
+});
+
 test('image route provider fallback builds AniList assets', async () => {
   const fetchJsonCached = async (key) => {
     if (key.startsWith('anilist:anime:16498:details')) {
@@ -168,4 +197,38 @@ test('image route provider fallback builds AniList assets', async () => {
   assert.equal(poster?.imageUrl, 'https://cdn.example/anilist-cover.jpg');
   assert.equal(poster?.rating, '85');
   assert.equal(backdrop?.imageUrl, 'https://cdn.example/anilist-banner.jpg');
+});
+
+test('image route provider fallback keeps AniList rating and title when artwork is missing', async () => {
+  const fetchJsonCached = async (key) => {
+    if (key.startsWith('anilist:anime:16498:details')) {
+      return {
+        ok: true,
+        status: 200,
+        data: {
+          data: {
+            Media: {
+              title: {
+                romaji: 'Shingeki no Kyojin',
+              },
+              averageScore: 85,
+              coverImage: null,
+              bannerImage: null,
+            },
+          },
+        },
+      };
+    }
+
+    return { ok: false, status: 404, data: null };
+  };
+
+  const poster = await fetchAniListFallbackAsset('anilist:16498', 'poster', phases, fetchJsonCached);
+
+  assert.deepEqual(poster, {
+    imageUrl: null,
+    rating: '85',
+    title: 'Shingeki no Kyojin',
+    logoAspectRatio: null,
+  });
 });
