@@ -257,6 +257,103 @@ test('image route provider ratings resolve all anime providers for typed TMDB in
   assert.equal(result.ratings.get('imdb'), '9.0');
 });
 
+test('image route provider ratings fall back to anime title search when reverse mapping is unavailable', async () => {
+  const renderedRatingTtlByProvider = new Map();
+  const requestedKeys = [];
+
+  const result = await resolveImageRouteProviderRatings(
+    {
+      cleanId: 'tmdb:tv:37854',
+      imageType: 'poster',
+      mediaType: 'tv',
+      media: {
+        id: 37854,
+        name: 'One Piece',
+        original_name: 'One Piece',
+        first_air_date: '1999-10-20',
+      },
+      mediaId: '37854',
+      isTmdb: true,
+      isKitsu: false,
+      isAniListInput: false,
+      idPrefix: 'tmdb',
+      season: null,
+      episode: null,
+      mappedImdbId: null,
+      inputAnimeMappingProvider: 'tmdb',
+      inputAnimeMappingExternalId: '37854',
+      requestedExternalRatings: new Set(['myanimelist', 'anilist', 'kitsu', 'tmdb']),
+      shouldAttemptAnimeMapping: true,
+      initialAllowAnimeOnlyRatings: false,
+      initialHasConfirmedAnimeMapping: false,
+      resolvedRatingMediaType: 'tv',
+      releaseDate: '1999-10-20',
+      mdblistKey: null,
+      hasMdbListApiKey: false,
+      simklClientId: '',
+      phases: { auth: 0, tmdb: 0, mdb: 0, fanart: 0, stream: 0, render: 0 },
+      fetchJsonCached: async (key) => {
+        requestedKeys.push(key);
+        if (key.startsWith('anilist:anime:title:One Piece:rating')) {
+          return {
+            ok: true,
+            status: 200,
+            data: { data: { Media: { id: 21, averageScore: 88 } } },
+          };
+        }
+        if (key.startsWith('jikan:anime:title:One Piece:rating')) {
+          return {
+            ok: true,
+            status: 200,
+            data: { data: [{ mal_id: 21, score: 8.72 }] },
+          };
+        }
+        if (key.startsWith('kitsu:anime:title:One Piece:rating')) {
+          return {
+            ok: true,
+            status: 200,
+            data: { data: [{ id: '12', attributes: { averageRating: '86.4' } }] },
+          };
+        }
+        return createEmptyResponse();
+      },
+      getMetadata: () => null,
+      setMetadata: () => {},
+      detailsBundlePromise: null,
+      renderedRatingTtlByProvider,
+      undiciFetchImpl: async () => {
+        throw new Error('unexpected undici fetch');
+      },
+    },
+    {
+      fetchMalIdFromReverseMapping: async () => null,
+      fetchKitsuIdFromReverseMapping: async () => null,
+      fetchAniListIdFromReverseMapping: async () => null,
+      fetchAniListRating: async () => null,
+      fetchKitsuRating: async () => null,
+      fetchMyAnimeListRating: async () => null,
+      fetchTraktRating: async () => null,
+      fetchSimklRating: async () => null,
+      fetchMdbListRatings: async () => null,
+      getImdbRatingFromDataset: () => null,
+      normalizeRatingValue: (value) => {
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? numeric.toFixed(1) : null;
+      },
+    },
+  );
+
+  assert.equal(result.allowAnimeOnlyRatings, true);
+  assert.equal(result.hasConfirmedAnimeMapping, false);
+  assert.equal(result.ratings.get('myanimelist'), '8.7');
+  assert.equal(result.ratings.get('anilist'), '88.0');
+  assert.equal(result.ratings.get('kitsu'), '86.4');
+  assert.ok(renderedRatingTtlByProvider.has('myanimelist'));
+  assert.ok(renderedRatingTtlByProvider.has('anilist'));
+  assert.ok(renderedRatingTtlByProvider.has('kitsu'));
+  assert.ok(requestedKeys.some((key) => key.startsWith('anilist:anime:title:One Piece:rating')));
+});
+
 test('image route provider ratings resolve imdb dependent providers from bundled external ids', async () => {
   const mdbCalls = [];
   const traktCalls = [];

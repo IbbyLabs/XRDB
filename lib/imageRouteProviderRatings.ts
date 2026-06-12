@@ -14,7 +14,9 @@ import {
   fetchMyAnimeListRating,
 } from './imageRouteAnimeRatings.ts';
 import {
+  ANILIST_GRAPHQL_URL,
   IMDB_DATASET_CACHE_TTL_MS,
+  JIKAN_API_BASE_URL,
   KITSU_CACHE_TTL_MS,
   MDBLIST_CACHE_TTL_MS,
   MDBLIST_OLD_MOVIE_CACHE_TTL_MS,
@@ -23,6 +25,7 @@ import {
   type BadgeKey,
 } from './imageRouteConfig.ts';
 import {
+  BROWSER_LIKE_USER_AGENT,
   fetchAllocineRatings,
   fetchFilmwebRating,
   fetchSimklRating,
@@ -35,6 +38,7 @@ import {
   MDBLIST_BACKED_RATING_PROVIDERS,
   type RatingPreference,
 } from './ratingProviderCatalog.ts';
+import { KITSU_API_BASE_URL } from './serviceBaseUrls.ts';
 import type {
   CachedJsonNetworkObserver,
   CachedJsonResponse,
@@ -110,6 +114,33 @@ const DEFAULT_DEPS: ProviderRatingsDeps = {
 };
 
 const ANIME_ONLY_RATING_PROVIDER_SET = new Set<RatingPreference>(['myanimelist', 'anilist', 'kitsu']);
+
+const ANILIST_TITLE_RATING_QUERY = `
+  query XrdbAnimeTitleRating($search: String) {
+    Media(search: $search, type: ANIME) {
+      id
+      averageScore
+      meanScore
+    }
+  }
+`;
+
+const pickAnimeTitleSearchQuery = (media: MediaRecord | null) => {
+  const candidates = [
+    media?.original_name,
+    media?.name,
+    media?.original_title,
+    media?.title,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate !== 'string') continue;
+    const normalized = candidate.replace(/\s+/g, ' ').trim();
+    if (normalized) return normalized;
+  }
+
+  return null;
+};
 
 type ResolvedProviderRatings = {
   ratings: Map<RatingPreference, string>;
@@ -303,6 +334,96 @@ export const resolveImageRouteProviderRatings = async (
     }
   };
 
+  const resolveAnimeRatingsByTitleFallback = async () => {
+    const searchTitle = pickAnimeTitleSearchQuery(input.media);
+    if (!searchTitle) return;
+
+    if (needsAniListRating && !aniListId) {
+      try {
+        const response = await input.fetchJsonCached(
+          `anilist:anime:title:${searchTitle}:rating`,
+          ANILIST_GRAPHQL_URL,
+          KITSU_CACHE_TTL_MS,
+          input.phases,
+          'mdb',
+          {
+            method: 'POST',
+            headers: {
+              'content-type': 'application/json',
+              accept: 'application/json',
+              'User-Agent': BROWSER_LIKE_USER_AGENT,
+            },
+            body: JSON.stringify({
+              query: ANILIST_TITLE_RATING_QUERY,
+              variables: { search: searchTitle },
+            }),
+          },
+        );
+        const media = response.ok && !response.data?.errors ? response.data?.data?.Media : null;
+        const rating = runtimeDeps.normalizeRatingValue(media?.averageScore ?? media?.meanScore);
+        if (rating) {
+          combinedRatings.set('anilist', rating);
+          input.renderedRatingTtlByProvider.set('anilist', KITSU_CACHE_TTL_MS);
+        }
+      } catch {
+      }
+    }
+
+    if (needsMyAnimeListRating && !malId) {
+      try {
+        const response = await input.fetchJsonCached(
+          `jikan:anime:title:${searchTitle}:rating`,
+          `${JIKAN_API_BASE_URL}/anime?q=${encodeURIComponent(searchTitle)}&limit=1`,
+          KITSU_CACHE_TTL_MS,
+          input.phases,
+          'mdb',
+          {
+            headers: {
+              accept: 'application/json',
+              'User-Agent': BROWSER_LIKE_USER_AGENT,
+            },
+          },
+        );
+        const media = response.ok ? response.data?.data?.[0] : null;
+        const rating = runtimeDeps.normalizeRatingValue(media?.score);
+        if (rating) {
+          combinedRatings.set('myanimelist', rating);
+          input.renderedRatingTtlByProvider.set('myanimelist', KITSU_CACHE_TTL_MS);
+        }
+      } catch {
+      }
+    }
+
+    if (needsKitsuRating && !kitsuId) {
+      try {
+        const response = await input.fetchJsonCached(
+          `kitsu:anime:title:${searchTitle}:rating`,
+          `${KITSU_API_BASE_URL}/anime?filter[text]=${encodeURIComponent(searchTitle)}&page[limit]=1`,
+          KITSU_CACHE_TTL_MS,
+          input.phases,
+          'mdb',
+          {
+            headers: {
+              accept: 'application/vnd.api+json',
+              'User-Agent': BROWSER_LIKE_USER_AGENT,
+            },
+          },
+        );
+        const media = response.ok ? response.data?.data?.[0] : null;
+        const rating = runtimeDeps.normalizeRatingValue(media?.attributes?.averageRating);
+        if (rating) {
+          combinedRatings.set('kitsu', rating);
+          input.renderedRatingTtlByProvider.set('kitsu', KITSU_CACHE_TTL_MS);
+        }
+      } catch {
+      }
+    }
+
+    if (['myanimelist', 'anilist', 'kitsu'].some((provider) => combinedRatings.has(provider as RatingPreference))) {
+      allowAnimeOnlyRatings = true;
+    }
+  };
+
   const resolveAnimeRatingIds = async () => {
     if (!input.shouldAttemptAnimeMapping) return;
 
@@ -325,6 +446,10 @@ export const resolveImageRouteProviderRatings = async (
 
   if (needsAnimeOnlyRatings && input.shouldAttemptAnimeMapping && (!kitsuId || !aniListId || !malId)) {
     await resolveAnimeRatingIds();
+  }
+  setAnimeMappingState();
+  if (needsAnimeOnlyRatings && input.shouldAttemptAnimeMapping && (!kitsuId || !aniListId || !malId)) {
+    await resolveAnimeRatingsByTitleFallback();
   }
   setAnimeMappingState();
 
