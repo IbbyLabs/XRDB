@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v2.2.2",
-  "generatedAt": "2026-05-24T01:15:43.620Z",
+  "xrdbTag": "v2.2.3",
+  "generatedAt": "2026-06-12T00:08:55.383Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -76,11 +76,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
-        "keep UUID profiles recoverable after admin password reset",
-        "restore custom provider icon URL editing across artwork workspaces",
-        "use Turbopack for doc asset capture server to prevent OOM",
-        "prevent doc capture timeout on proxy route compilation",
-        "increase Next.js dev server heap limit for doc asset refresh"
+        "recover TMDB anime ratings without mapping",
+        "tighten legacy name allowlist",
+        "ignore archival legacy name references",
+        "fail open when mapping host is unreachable",
+        "restore missing aggregate color controls"
       ]
     },
     {

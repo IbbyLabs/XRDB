@@ -11,7 +11,32 @@
 
 ### Documentation
 
-<a id="v2-2-2"></a>
+<a id="v2-2-3"></a>
+
+## [v2.2.3] - 12/06/2026
+
+### Fixed
+* recover TMDB anime ratings without mapping
+* tighten legacy name allowlist
+* ignore archival legacy name references
+* fail open when mapping host is unreachable
+  
+  * fix(anime): fail open when mapping host is unreachable
+  
+  * fix(anime): add provider native MAL/AniList fallback paths
+  
+  * test(anime): fix CI fallback contracts
+  
+  * fix(anime): tolerate MAL shaped Jikan fallback payloads
+  
+  * fix(anime): harden reverse mapped fallback handling
+  
+  * fix(anime): preserve provider fallback ratings without artwork
+* restore missing aggregate color controls
+
+### Documentation
+* refresh static doc assets (3 commits)
+
 
 ## [v2.2.2] - 24/05/2026
 
