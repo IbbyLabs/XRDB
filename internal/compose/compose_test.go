@@ -315,7 +315,7 @@ func TestQualityBadgesDrawOnImage(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 580, 859))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
 
-	drawQualityBadges(img, []string{"4k", "hdr", "dv"})
+	_ = drawQualityBadges(img, []string{"4k", "hdr", "dv"}, 1.0)
 
 	// Quality badges are drawn in the top-right corner.
 	// Sample top-right quadrant for any non-white pixel.
@@ -338,7 +338,7 @@ func TestQualityBadgesNoopOnEmpty(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 100, 150))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
 	before := clonePixels(img)
-	drawQualityBadges(img, nil)
+	_ = drawQualityBadges(img, nil, 1.0)
 	after := clonePixels(img)
 	if before != after {
 		t.Error("drawQualityBadges with nil tokens must not modify the image")
@@ -350,7 +350,7 @@ func TestQualityBadgesNoopOnEmpty(t *testing.T) {
 func TestAgeRatingBadgeDrawsTL(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 580, 859))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
-	drawAgeRatingBadge(img, "TV-MA", "tl")
+	drawAgeRatingBadge(img, "TV-MA", "tl", 1.0)
 
 	// Top-left corner should have non-white pixels.
 	nonWhite := 0
@@ -371,7 +371,7 @@ func TestAgeRatingBadgeNoopOnEmptyRating(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 100, 150))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{200, 200, 200, 255}}, image.Point{}, draw.Src)
 	before := clonePixels(img)
-	drawAgeRatingBadge(img, "", "tl")
+	drawAgeRatingBadge(img, "", "tl", 1.0)
 	after := clonePixels(img)
 	if before != after {
 		t.Error("drawAgeRatingBadge with empty rating must not modify the image")
@@ -383,7 +383,7 @@ func TestAgeRatingBadgeNoopOnEmptyRating(t *testing.T) {
 func TestGenreBadgeDrawsBL(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 580, 859))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
-	drawGenreBadge(img, []string{"Action", "Drama", "Thriller"}, "bl")
+	drawGenreBadge(img, []string{"Action", "Drama", "Thriller"}, "bl", 1.0)
 
 	bounds := img.Bounds()
 	nonWhite := 0
@@ -403,14 +403,14 @@ func TestGenreBadgeDrawsBL(t *testing.T) {
 func TestGenreBadgeLimitsToThreeGenres(t *testing.T) {
 	// Just verify no panic with many genres.
 	img := image.NewNRGBA(image.Rect(0, 0, 580, 859))
-	drawGenreBadge(img, []string{"Action", "Drama", "Thriller", "Horror", "Sci-Fi"}, "bl")
+	drawGenreBadge(img, []string{"Action", "Drama", "Thriller", "Horror", "Sci-Fi"}, "bl", 1.0)
 }
 
 func TestGenreBadgeNoopOnEmpty(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 100, 150))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{128, 128, 128, 255}}, image.Point{}, draw.Src)
 	before := clonePixels(img)
-	drawGenreBadge(img, nil, "bl")
+	drawGenreBadge(img, nil, "bl", 1.0)
 	after := clonePixels(img)
 	if before != after {
 		t.Error("drawGenreBadge with empty genres must not modify the image")
@@ -579,7 +579,7 @@ func TestAggregateBarFiltersUnselectedSources(t *testing.T) {
 func TestTrendingBadgeDrawsOnImage(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 300, 450))
 	before := clonePixels(img)
-	drawTrendingBadge(img)
+	drawTrendingBadge(img, 1.0)
 	after := clonePixels(img)
 	if before == after {
 		t.Error("expected pixels to change after drawTrendingBadge")

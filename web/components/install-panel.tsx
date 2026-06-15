@@ -42,7 +42,7 @@ export function InstallPanel({ configKey, onNotice }: InstallPanelProps) {
   const [selectedInstance, setSelectedInstance] = useState(PUBLIC_INSTANCES[0].url);
   const [customUrl, setCustomUrl] = useState('');
   const isCustom = selectedInstance === '__custom__';
-  const baseUrl = isCustom ? customUrl : selectedInstance;
+  const baseUrl = isCustom ? customUrl.trim() : selectedInstance;
   const isPublic = PUBLIC_URLS.has(baseUrl);
   const [userUUID, setUserUUID] = useState('');
   const [password, setPassword] = useState('');
@@ -60,7 +60,7 @@ export function InstallPanel({ configKey, onNotice }: InstallPanelProps) {
         baseUrl,
         userUUID: userUUID.trim(),
         password,
-        addonPassword: addonPassword || undefined,
+        addonPassword: !isPublic && addonPassword ? addonPassword : undefined,
         posterUrlPattern: patterns.poster,
         backgroundUrlPattern: patterns.backdrop,
         logoUrlPattern: patterns.logo,
@@ -114,6 +114,7 @@ export function InstallPanel({ configKey, onNotice }: InstallPanelProps) {
               onChange={e => setCustomUrl(e.target.value)}
               placeholder="https://your-aiom-instance.example.com"
               spellCheck={false}
+              required
               aria-label="Custom instance URL"
             />
           )}
@@ -162,7 +163,7 @@ export function InstallPanel({ configKey, onNotice }: InstallPanelProps) {
         <button
           className="btn btn-primary"
           onClick={handleInstall}
-          disabled={installing || !configKey || !userUUID.trim() || !password}
+          disabled={installing || !configKey || !userUUID.trim() || !password || (isCustom && !customUrl.trim())}
         >
           <Rocket size={14} aria-hidden />
           {installing ? 'Installing…' : 'Install to AIOMetadata'}
