@@ -19,8 +19,7 @@ const PUBLIC_INSTANCES = [
 
 function normaliseOrigin(raw: string): string {
   try {
-    const u = new URL(raw);
-    return `${u.protocol}//${u.host}`;
+    return new URL(raw.trim()).origin;
   } catch {
     return raw;
   }

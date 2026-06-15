@@ -412,10 +412,15 @@ func drawBadgesSplitSide(out *image.NRGBA, specs []badgeSpec, innerH, rowGap, ed
 
 	midY := bounds.Min.Y + bounds.Dy()/2
 	minY := bounds.Min.Y + edgeY
+	maxYLeft := bounds.Max.Y - edgeY - leftH
+	maxYRight := bounds.Max.Y - edgeY - rightH
 
 	y := midY - leftH/2
 	if y < minY {
 		y = minY
+	}
+	if y > maxYLeft {
+		y = maxYLeft
 	}
 	for i := range left {
 		left[i].x = bounds.Min.X + edgeX
@@ -426,6 +431,9 @@ func drawBadgesSplitSide(out *image.NRGBA, specs []badgeSpec, innerH, rowGap, ed
 	y = midY - rightH/2
 	if y < minY {
 		y = minY
+	}
+	if y > maxYRight {
+		y = maxYRight
 	}
 	for i := range right {
 		right[i].x = bounds.Max.X - edgeX - right[i].w
