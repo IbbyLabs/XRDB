@@ -315,7 +315,10 @@ func TestQualityBadgesDrawOnImage(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 580, 859))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
 
-	_ = drawQualityBadges(img, []string{"4k", "hdr", "dv"}, 1.0)
+	got := drawQualityBadges(img, []string{"4k", "hdr", "dv"}, 1.0)
+	if got == 0 {
+		t.Error("drawQualityBadges returned 0 for non-empty tokens")
+	}
 
 	// Quality badges are drawn in the top-right corner.
 	// Sample top-right quadrant for any non-white pixel.
@@ -338,8 +341,11 @@ func TestQualityBadgesNoopOnEmpty(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 100, 150))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
 	before := clonePixels(img)
-	_ = drawQualityBadges(img, nil, 1.0)
+	got := drawQualityBadges(img, nil, 1.0)
 	after := clonePixels(img)
+	if got != 0 {
+		t.Errorf("drawQualityBadges returned %d for nil tokens, want 0", got)
+	}
 	if before != after {
 		t.Error("drawQualityBadges with nil tokens must not modify the image")
 	}
@@ -414,6 +420,48 @@ func TestGenreBadgeNoopOnEmpty(t *testing.T) {
 	after := clonePixels(img)
 	if before != after {
 		t.Error("drawGenreBadge with empty genres must not modify the image")
+	}
+}
+
+// ── Scale coverage (1.5× and 3.0×) ──────────────────────────────────────────
+
+func TestOverlayFunctionsAtLargeScales(t *testing.T) {
+	for _, scale := range []float64{1.5, 3.0} {
+		scale := scale
+		t.Run(fmt.Sprintf("scale=%.1f", scale), func(t *testing.T) {
+			w := int(580 * scale)
+			h := int(859 * scale)
+
+			img := image.NewNRGBA(image.Rect(0, 0, w, h))
+			draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
+
+			// drawQualityBadges: must return > 0 for non-empty tokens
+			got := drawQualityBadges(img, []string{"4k", "hdr"}, scale)
+			if got == 0 {
+				t.Errorf("drawQualityBadges returned 0 at scale %.1f", scale)
+			}
+
+			// drawAgeRatingBadge: must change pixels
+			beforeAge := clonePixels(img)
+			drawAgeRatingBadge(img, "TV-MA", "br", scale)
+			if clonePixels(img) == beforeAge {
+				t.Errorf("drawAgeRatingBadge had no effect at scale %.1f", scale)
+			}
+
+			// drawGenreBadge: must change pixels
+			beforeGenre := clonePixels(img)
+			drawGenreBadge(img, []string{"Action", "Drama"}, "bl", scale)
+			if clonePixels(img) == beforeGenre {
+				t.Errorf("drawGenreBadge had no effect at scale %.1f", scale)
+			}
+
+			// drawTrendingBadge: must change pixels
+			beforeTrend := clonePixels(img)
+			drawTrendingBadge(img, scale)
+			if clonePixels(img) == beforeTrend {
+				t.Errorf("drawTrendingBadge had no effect at scale %.1f", scale)
+			}
+		})
 	}
 }
 
