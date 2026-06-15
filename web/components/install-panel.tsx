@@ -17,7 +17,16 @@ const PUBLIC_INSTANCES = [
   { label: 'ForTheWizards (wizaardd)',        url: 'https://aiometadata.forthewizards.uk' },
 ];
 
-const PUBLIC_URLS = new Set(PUBLIC_INSTANCES.map(i => i.url));
+function normaliseOrigin(raw: string): string {
+  try {
+    const u = new URL(raw);
+    return `${u.protocol}//${u.host}`;
+  } catch {
+    return raw;
+  }
+}
+
+const PUBLIC_URLS = new Set(PUBLIC_INSTANCES.map(i => normaliseOrigin(i.url)));
 
 /** Artwork URL patterns for AIOMetadata's custom-art fields. */
 export function aiomPatterns(configKey: string) {
@@ -43,7 +52,7 @@ export function InstallPanel({ configKey, onNotice }: InstallPanelProps) {
   const [customUrl, setCustomUrl] = useState('');
   const isCustom = selectedInstance === '__custom__';
   const baseUrl = isCustom ? customUrl.trim() : selectedInstance;
-  const isPublic = PUBLIC_URLS.has(baseUrl);
+  const isPublic = PUBLIC_URLS.has(normaliseOrigin(baseUrl));
   const [userUUID, setUserUUID] = useState('');
   const [password, setPassword] = useState('');
   const [addonPassword, setAddonPassword] = useState('');
