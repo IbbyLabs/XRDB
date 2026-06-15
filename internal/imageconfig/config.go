@@ -66,22 +66,23 @@ const (
 	LayoutLeft      RatingsLayout = "left"
 	LayoutRight     RatingsLayout = "right"
 	LayoutSplitSide RatingsLayout = "split-side"
+	LayoutNone      RatingsLayout = "none"
 )
 
 // Config is the canonical, normalized render config for a media request.
 // All fields carry explicit defaults; zero values are never used in render logic.
 type Config struct {
-	Size           MediaSize      `json:"size"`
-	ArtworkSource  ArtworkSource  `json:"artworkSource"`
-	Language       string         `json:"language"`
-	TextPreference TextPreference `json:"textPreference"`
-	Ratings        []string       `json:"ratings"`
-	RatingsLayout  RatingsLayout  `json:"ratingsLayout"`
-	BadgeStyle     BadgeStyle     `json:"badgeStyle"`
-	BadgeTheme     BadgeTheme     `json:"badgeTheme"`
-	Badges         []string       `json:"badges,omitempty"`
-	AgeRating      bool           `json:"ageRating"`
-	AgeRatingPos   string         `json:"ageRatingPos,omitempty"`
+	Size              MediaSize      `json:"size"`
+	ArtworkSource     ArtworkSource  `json:"artworkSource"`
+	Language          string         `json:"language"`
+	TextPreference    TextPreference `json:"textPreference"`
+	Ratings           []string       `json:"ratings"`
+	RatingsLayout     RatingsLayout  `json:"ratingsLayout"`
+	BadgeStyle        BadgeStyle     `json:"badgeStyle"`
+	BadgeTheme        BadgeTheme     `json:"badgeTheme"`
+	Badges            []string       `json:"badges,omitempty"`
+	AgeRating         bool           `json:"ageRating"`
+	AgeRatingPos      string         `json:"ageRatingPos,omitempty"`
 	Genre             bool           `json:"genre"`
 	GenrePos          string         `json:"genrePos,omitempty"`
 	Providers         bool           `json:"providers"`
@@ -89,6 +90,7 @@ type Config struct {
 	AggregateBar      bool           `json:"aggregateBar"`
 	AggregateBarPos   string         `json:"aggregateBarPos,omitempty"` // "top" | "bottom"
 	Trending          bool           `json:"trending"`
+	BackdropAsPoster  bool           `json:"backdropAsPoster,omitempty"`
 }
 
 // Default returns a Config populated with production defaults.
@@ -127,6 +129,7 @@ type raw struct {
 	AggregateBar     *bool    `json:"aggregateBar"`
 	AggregateBarPos  *string  `json:"aggregateBarPos"`
 	Trending         *bool    `json:"trending"`
+	BackdropAsPoster *bool    `json:"backdropAsPoster"`
 }
 
 // Parse deserializes a profile config JSON blob into a normalized Config.
@@ -220,6 +223,9 @@ func Parse(data json.RawMessage) Config {
 	if r.Trending != nil {
 		cfg.Trending = *r.Trending
 	}
+	if r.BackdropAsPoster != nil {
+		cfg.BackdropAsPoster = *r.BackdropAsPoster
+	}
 	return cfg
 }
 
@@ -247,6 +253,7 @@ func CacheKey(cfg Config) string {
 		AggregateBar     bool           `json:"aggregateBar"`
 		AggregateBarPos  string         `json:"aggregateBarPos"`
 		Trending         bool           `json:"trending"`
+		BackdropAsPoster bool           `json:"backdropAsPoster"`
 	}
 	ratings := make([]string, len(cfg.Ratings))
 	copy(ratings, cfg.Ratings)
@@ -274,6 +281,7 @@ func CacheKey(cfg Config) string {
 		AggregateBar:     cfg.AggregateBar,
 		AggregateBarPos:  cfg.AggregateBarPos,
 		Trending:         cfg.Trending,
+		BackdropAsPoster: cfg.BackdropAsPoster,
 	}
 	b, _ := json.Marshal(c)
 	sum := sha256.Sum256(b)
@@ -357,6 +365,8 @@ func normalizeRatingsLayout(v string) RatingsLayout {
 		return LayoutRight
 	case "split-side", "splittside", "split_side":
 		return LayoutSplitSide
+	case "none", "hidden", "off":
+		return LayoutNone
 	}
 	return ""
 }

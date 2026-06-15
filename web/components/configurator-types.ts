@@ -42,9 +42,9 @@ export const LAYOUT_OPTIONS = [
 ] as const;
 
 export const BADGE_STYLE_OPTIONS = [
-  { id: 'pill',   label: 'Pill'   },
-  { id: 'square', label: 'Square' },
-  { id: 'glass',  label: 'Glass'  },
+  { id: 'pill',   label: 'Pill'    },
+  { id: 'square', label: 'Square'  },
+  { id: 'glass',  label: 'Outline' },
 ] as const;
 
 export const BADGE_THEME_OPTIONS = [
@@ -115,6 +115,7 @@ export interface ConfigState {
   aggregateBar: boolean;
   aggregateBarPos: string;
   trending: boolean;
+  backdropAsPoster: boolean;
 }
 
 export const DEFAULT_CONFIG: ConfigState = {
@@ -135,6 +136,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   aggregateBar: false,
   aggregateBarPos: 'bottom',
   trending: false,
+  backdropAsPoster: false,
 };
 
 export type UpdateConfigFn = <K extends keyof ConfigState>(key: K, value: ConfigState[K]) => void;

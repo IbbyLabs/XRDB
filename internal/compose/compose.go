@@ -130,28 +130,30 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// Convert to NRGBA once — all overlay functions draw in-place.
 	composed := toNRGBA(resized)
 
+	scale := outputScale(req.Config.Size)
+
 	allRatings, ratingProviders := p.collectRatingsWithProviders(ctx, req, meta.Ratings)
 	result.ContributingProviders = append([]string{string(req.Config.ArtworkSource)}, ratingProviders...)
 	if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
 		drawBadgesInPlace(composed, allRatings, req.Config)
 	}
 	if len(req.Config.Badges) > 0 {
-		drawQualityBadges(composed, req.Config.Badges)
+		drawQualityBadges(composed, req.Config.Badges, scale)
 	}
 	if req.Config.AgeRating && meta.ContentRating != "" {
-		drawAgeRatingBadge(composed, meta.ContentRating, req.Config.AgeRatingPos)
+		drawAgeRatingBadge(composed, meta.ContentRating, req.Config.AgeRatingPos, scale)
 	}
 	if req.Config.Genre && len(meta.Genres) > 0 {
-		drawGenreBadge(composed, meta.Genres, req.Config.GenrePos)
+		drawGenreBadge(composed, meta.Genres, req.Config.GenrePos, scale)
 	}
 	if req.Config.Providers && len(meta.WatchProviders) > 0 {
-		drawProviderBadges(composed, meta.WatchProviders)
+		drawProviderBadges(composed, meta.WatchProviders, scale)
 	}
 	if req.Config.AggregateBar {
 		drawAggregateBar(composed, allRatings, req.Config)
 	}
 	if req.Config.Trending {
-		drawTrendingBadge(composed)
+		drawTrendingBadge(composed, scale)
 	}
 
 	var buf bytes.Buffer
@@ -193,7 +195,7 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 
 	p.enrichMetaForOverlays(ctx, req, meta)
 
-	artworkURL := selectArtworkURL(meta, req.MediaType)
+	artworkURL := selectArtworkURL(meta, req.MediaType, req.Config)
 	if artworkURL == "" {
 		return nil, meta, fmt.Errorf("no artwork URL in metadata")
 	}
@@ -232,7 +234,7 @@ func (p *Pipeline) enrichMetaForOverlays(ctx context.Context, req Request, meta 
 	}
 }
 
-func selectArtworkURL(meta *provider.MediaMeta, mediaType string) string {
+func selectArtworkURL(meta *provider.MediaMeta, mediaType string, cfg imageconfig.Config) string {
 	switch mediaType {
 	case "backdrop":
 		return meta.BackdropURL
@@ -249,6 +251,11 @@ func selectArtworkURL(meta *provider.MediaMeta, mediaType string) string {
 		}
 		return meta.PosterURL
 	default: // poster
+		if cfg.BackdropAsPoster && meta.BackdropURL != "" {
+			// Use the backdrop center-cropped to poster dimensions.
+			// resizeFit already handles the cover-and-crop, so no extra work here.
+			return meta.BackdropURL
+		}
 		return meta.PosterURL
 	}
 }

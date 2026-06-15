@@ -161,7 +161,9 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating }: RatingsP
             </div>
           ))}
           <span className="hint" style={{ marginTop: 0 }}>
-            Displayed in the order selected
+            Displayed in the order selected. Only sources that have data for
+            the specific title will appear — selecting a source does not
+            guarantee it shows up if the provider has no rating for that title.
           </span>
         </fieldset>
       </div>

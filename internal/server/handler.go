@@ -110,6 +110,10 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			h := sha256.Sum256([]byte(configParam))
 			cfgKeyInput = cfgKeyInput + ":" + hex.EncodeToString(h[:8])
 		}
+		// Append the cache-buster value so ?cb=timestamp produces a fresh key.
+		if cb := queryValue(raw, "cb", ""); cb != "" {
+			cfgKeyInput = cfgKeyInput + ":cb=" + cb
+		}
 		cacheKey := render.CacheKey(mediaType, id, cfgKeyInput, uuid)
 		var pngBytes []byte
 		fromCache := false

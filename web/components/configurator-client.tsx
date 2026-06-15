@@ -87,6 +87,7 @@ export function ConfiguratorClient() {
       genre: cfg.genre, genrePos: cfg.genrePos, badges: cfg.badges,
       providers: cfg.providers, aggregateBar: cfg.aggregateBar,
       aggregateBarPos: cfg.aggregateBarPos, trending: cfg.trending,
+      backdropAsPoster: cfg.backdropAsPoster,
     }));
   }, []);
 
@@ -319,7 +320,7 @@ export function ConfiguratorClient() {
 
           {activeTab === 'display' && (
             <div id={`${uid}-panel-display`} role="tabpanel" aria-labelledby={`${uid}-tab-display`} className="tabpanel-enter">
-              <DisplayPanel uid={uid} config={config} onUpdate={updateConfig} onToggleBadge={toggleBadge} onReset={() => { markManualEdit(); setConfig(DEFAULT_CONFIG); }} />
+              <DisplayPanel uid={uid} mediaType={mediaType} config={config} onUpdate={updateConfig} onToggleBadge={toggleBadge} onReset={() => { markManualEdit(); setConfig(DEFAULT_CONFIG); }} />
             </div>
           )}
 

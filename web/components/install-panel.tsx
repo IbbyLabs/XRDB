@@ -5,6 +5,20 @@ import { Rocket, ExternalLink } from 'lucide-react';
 import { installToAIOM, renderOrigin } from '@/lib/api';
 import { CopyButton } from './copy-button';
 
+const PUBLIC_INSTANCES = [
+  { label: 'ElfHosted (elfhosted.com)',       url: 'https://aiometadata.elfhosted.com' },
+  { label: 'MidnightIgnite',                  url: 'https://aiometadatafortheweebs.midnightignite.me' },
+  { label: 'Stremio.ru (kuu)',                url: 'https://aiometadata.stremio.ru' },
+  { label: 'Viren070',                        url: 'https://aiometadata.viren070.me' },
+  { label: 'ForTheWeak',                      url: 'https://aiometadata.fortheweak.cloud' },
+  { label: 'ForTheWeak (nhyira.dev)',         url: 'https://aiometadatafortheweak.nhyira.dev' },
+  { label: 'Omni (12312023)',                 url: 'https://aiometadata.12312023.xyz' },
+  { label: 'ATBP Hosting',                    url: 'https://aiomd.atbphosting.com' },
+  { label: 'ForTheWizards (wizaardd)',        url: 'https://aiometadata.forthewizards.uk' },
+];
+
+const PUBLIC_URLS = new Set(PUBLIC_INSTANCES.map(i => i.url));
+
 /** Artwork URL patterns for AIOMetadata's custom-art fields. */
 export function aiomPatterns(configKey: string) {
   const origin = renderOrigin();
@@ -25,7 +39,11 @@ interface InstallPanelProps {
 
 export function InstallPanel({ configKey, onNotice }: InstallPanelProps) {
   const uid = useId();
-  const [baseUrl, setBaseUrl] = useState('');
+  const [selectedInstance, setSelectedInstance] = useState(PUBLIC_INSTANCES[0].url);
+  const [customUrl, setCustomUrl] = useState('');
+  const isCustom = selectedInstance === '__custom__';
+  const baseUrl = isCustom ? customUrl : selectedInstance;
+  const isPublic = PUBLIC_URLS.has(baseUrl);
   const [userUUID, setUserUUID] = useState('');
   const [password, setPassword] = useState('');
   const [addonPassword, setAddonPassword] = useState('');
@@ -77,15 +95,28 @@ export function InstallPanel({ configKey, onNotice }: InstallPanelProps) {
 
         <div className="field">
           <label className="label" htmlFor={`${uid}-base`}>Instance</label>
-          <input
+          <select
             id={`${uid}-base`}
-            className="input"
-            value={baseUrl}
-            onChange={e => setBaseUrl(e.target.value)}
-            placeholder="https://aiometadata.elfhosted.com"
-            spellCheck={false}
-          />
-          <span className="hint">Leave empty for the ElfHosted public instance</span>
+            className="select"
+            value={selectedInstance}
+            onChange={e => setSelectedInstance(e.target.value)}
+          >
+            {PUBLIC_INSTANCES.map(i => (
+              <option key={i.url} value={i.url}>{i.label}</option>
+            ))}
+            <option value="__custom__">Custom URL…</option>
+          </select>
+          {isCustom && (
+            <input
+              className="input"
+              style={{ marginTop: 'var(--sp-2)' }}
+              value={customUrl}
+              onChange={e => setCustomUrl(e.target.value)}
+              placeholder="https://your-aiom-instance.example.com"
+              spellCheck={false}
+              aria-label="Custom instance URL"
+            />
+          )}
         </div>
 
         <div className="field">
@@ -113,18 +144,20 @@ export function InstallPanel({ configKey, onNotice }: InstallPanelProps) {
           />
         </div>
 
-        <div className="field">
-          <label className="label" htmlFor={`${uid}-apw`}>Addon password (self-hosted only)</label>
-          <input
-            id={`${uid}-apw`}
-            className="input"
-            type="password"
-            value={addonPassword}
-            onChange={e => setAddonPassword(e.target.value)}
-            autoComplete="off"
-          />
-          <span className="hint">Only needed when your instance sets ADDON_PASSWORD</span>
-        </div>
+        {!isPublic && (
+          <div className="field">
+            <label className="label" htmlFor={`${uid}-apw`}>Addon password</label>
+            <input
+              id={`${uid}-apw`}
+              className="input"
+              type="password"
+              value={addonPassword}
+              onChange={e => setAddonPassword(e.target.value)}
+              autoComplete="off"
+            />
+            <span className="hint">Only needed when your instance sets ADDON_PASSWORD</span>
+          </div>
+        )}
 
         <button
           className="btn btn-primary"

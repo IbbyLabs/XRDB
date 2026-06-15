@@ -84,13 +84,14 @@ function ToggleRow({ label, hint, checked, onChange }: {
 
 interface DisplayPanelProps {
   uid: string;
+  mediaType: string;
   config: ConfigState;
   onUpdate: UpdateConfigFn;
   onToggleBadge: (b: string) => void;
   onReset: () => void;
 }
 
-export function DisplayPanel({ uid, config, onUpdate, onToggleBadge, onReset }: DisplayPanelProps) {
+export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, onReset }: DisplayPanelProps) {
   return (
     <div className="panel">
       <div className="panel-body cfg-fields">
@@ -138,6 +139,15 @@ export function DisplayPanel({ uid, config, onUpdate, onToggleBadge, onReset }: 
             {TEXT_PREF_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
           </select>
         </Field>
+
+        {mediaType === 'poster' && (
+          <ToggleRow
+            label="Use backdrop as poster"
+            hint="Center-crop the backdrop image instead of the standard poster"
+            checked={config.backdropAsPoster}
+            onChange={() => onUpdate('backdropAsPoster', !config.backdropAsPoster)}
+          />
+        )}
 
         <ToggleRow
           label="Age rating badge"

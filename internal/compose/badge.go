@@ -1,6 +1,7 @@
 package compose
 
 import (
+	"bytes"
 	"embed"
 	"image"
 	"image/color"
@@ -26,15 +27,18 @@ var ratingIconFS embed.FS
 var (
 	onceFaces sync.Once
 	faceValue font.Face // 14px bold — rating value (normal scale)
-	faceLabel font.Face // 9px regular — small labels (overlays)
+	faceLabel font.Face // 11px regular — overlay labels (normal scale)
 
 	onceIcons   sync.Once
 	ratingIcons map[string]image.Image
 
-	fontBoldParsed *opentype.Font
+	fontBoldParsed    *opentype.Font
+	fontRegularParsed *opentype.Font
 
-	// scaledFaces caches value faces for non-1 output scales (large/4k).
-	scaledFaces sync.Map // float64 → font.Face
+	// scaledValueFaces / scaledLabelFaces cache faces keyed by int(scale*100)
+	// to avoid float64 map key precision issues.
+	scaledValueFaces sync.Map
+	scaledLabelFaces sync.Map
 )
 
 func ensureFaces() {
@@ -53,12 +57,15 @@ func ensureFaces() {
 		}
 		if tt, err := opentype.Parse(goregular.TTF); err != nil {
 			log.Printf("compose: parse regular font: %v", err)
-		} else if f, err := opentype.NewFace(tt, &opentype.FaceOptions{
-			Size: 9, DPI: 72, Hinting: font.HintingFull,
-		}); err != nil {
-			log.Printf("compose: create regular face: %v", err)
 		} else {
-			faceLabel = f
+			fontRegularParsed = tt
+			if f, err := opentype.NewFace(tt, &opentype.FaceOptions{
+				Size: 11, DPI: 72, Hinting: font.HintingFull,
+			}); err != nil {
+				log.Printf("compose: create regular face: %v", err)
+			} else {
+				faceLabel = f
+			}
 		}
 	})
 }
@@ -76,7 +83,7 @@ func ensureIcons() {
 			if err != nil {
 				continue
 			}
-			img, err := png.Decode(strings.NewReader(string(data)))
+			img, err := png.Decode(bytes.NewReader(data))
 			if err != nil {
 				continue
 			}
@@ -85,12 +92,13 @@ func ensureIcons() {
 	})
 }
 
-// valueFaceFor returns a bold value face sized for the output scale.
+// valueFaceFor returns a bold face scaled for the output size.
 func valueFaceFor(scale float64) font.Face {
 	if scale == 1 || fontBoldParsed == nil {
 		return faceValue
 	}
-	if f, ok := scaledFaces.Load(scale); ok {
+	key := int(scale * 100)
+	if f, ok := scaledValueFaces.Load(key); ok {
 		return f.(font.Face)
 	}
 	f, err := opentype.NewFace(fontBoldParsed, &opentype.FaceOptions{
@@ -99,7 +107,27 @@ func valueFaceFor(scale float64) font.Face {
 	if err != nil {
 		return faceValue
 	}
-	scaledFaces.Store(scale, f)
+	scaledValueFaces.Store(key, f)
+	return f
+}
+
+// labelFaceFor returns a regular face scaled for the output size.
+// Used by badge_overlay.go for quality/provider/genre label text.
+func labelFaceFor(scale float64) font.Face {
+	if scale == 1 || fontRegularParsed == nil {
+		return faceLabel
+	}
+	key := int(scale * 100)
+	if f, ok := scaledLabelFaces.Load(key); ok {
+		return f.(font.Face)
+	}
+	f, err := opentype.NewFace(fontRegularParsed, &opentype.FaceOptions{
+		Size: 11 * scale, DPI: 72, Hinting: font.HintingFull,
+	})
+	if err != nil {
+		return faceLabel
+	}
+	scaledLabelFaces.Store(key, f)
 	return f
 }
 
@@ -121,7 +149,7 @@ var providerAccent = map[string]color.NRGBA{
 	"tmdb":       {R: 1, G: 180, B: 228, A: 255},
 	"imdb":       {R: 245, G: 197, B: 24, A: 255},
 	"rt":         {R: 250, G: 50, B: 10, A: 255},
-	"rtaudience":  {R: 250, G: 130, B: 10, A: 255},
+	"rtaudience": {R: 250, G: 130, B: 10, A: 255},
 	"metacritic": {R: 255, G: 204, B: 52, A: 255},
 	"mdblist":    {R: 139, G: 92, B: 246, A: 255},
 	"letterboxd": {R: 0, G: 169, B: 157, A: 255},
@@ -167,42 +195,97 @@ func chromeFor(cfg imageconfig.Config) badgeChrome {
 	case imageconfig.BadgeSquare:
 		c.radius = func(int) int { return 0 }
 	case imageconfig.BadgeGlass:
-		// Capsule shape, see-through fill, hairline edge.
+		// Outline style: fully transparent fill, rounded capsule, visible border only.
+		// Visually distinct from Pill (which has a solid fill).
 		c.radius = func(innerH int) int { return innerH / 2 }
-		c.bg = color.NRGBA{R: 16, G: 16, B: 24, A: 110}
-		c.border = color.NRGBA{R: 255, G: 255, B: 255, A: 70}
+		c.bg = color.NRGBA{A: 0}
+		c.border = color.NRGBA{R: 255, G: 255, B: 255, A: 200}
 	case imageconfig.BadgePill:
-		// True capsule: fully rounded ends.
+		// Solid capsule: fully rounded ends, opaque fill.
 		c.radius = func(innerH int) int { return innerH / 2 }
 	}
 	if cfg.BadgeTheme == imageconfig.ThemeLight {
-		c.bg = color.NRGBA{R: 246, G: 246, B: 248, A: 240}
-		c.valueColor = color.NRGBA{R: 18, G: 18, B: 24, A: 255}
-		c.iconColor = color.NRGBA{R: 30, G: 30, B: 38, A: 255}
 		if cfg.BadgeStyle == imageconfig.BadgeGlass {
-			c.bg = color.NRGBA{R: 246, G: 246, B: 248, A: 165}
-			c.border = color.NRGBA{R: 0, G: 0, B: 0, A: 60}
+			c.bg = color.NRGBA{A: 0}
+			c.border = color.NRGBA{R: 0, G: 0, B: 0, A: 200}
+			c.valueColor = color.NRGBA{R: 18, G: 18, B: 24, A: 255}
+			c.iconColor = color.NRGBA{R: 30, G: 30, B: 38, A: 255}
+		} else {
+			c.bg = color.NRGBA{R: 246, G: 246, B: 248, A: 240}
+			c.valueColor = color.NRGBA{R: 18, G: 18, B: 24, A: 255}
+			c.iconColor = color.NRGBA{R: 30, G: 30, B: 38, A: 255}
 		}
 	}
 	return c
 }
 
+// badgeSpec holds pre-computed layout info for a single rating badge.
+type badgeSpec struct {
+	value  string
+	valW   int
+	icon   image.Image
+	w      int
+	accent color.NRGBA
+	x      int // resolved x position, set during layout
+}
+
+// drawRatingRow renders a horizontal slice of badge specs at row y.
+func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSize, iconGap, accentW int, face font.Face, chrome badgeChrome) {
+	radius := chrome.radius(innerH)
+	fm := face.Metrics()
+	valAscent := fm.Ascent.Ceil()
+	valDescent := fm.Descent.Ceil()
+	valH := valAscent + valDescent
+
+	for _, sp := range specs {
+		bRect := image.Rect(sp.x, y, sp.x+sp.w, y+innerH)
+		if chrome.bg.A > 0 {
+			fillRoundedRect(out, bRect, radius, chrome.bg)
+		}
+		if chrome.border.A > 0 {
+			drawRectBorder(out, bRect, radius, chrome.border)
+		}
+
+		iconTint := chrome.iconColor
+		contentX := sp.x
+		if radius < innerH/2 {
+			aRect := image.Rect(sp.x, y, sp.x+accentW, y+innerH)
+			fillRect(out, aRect.Intersect(bRect), sp.accent)
+			contentX += accentW
+		} else {
+			iconTint = sp.accent
+		}
+		contentX += padX
+
+		if sp.icon != nil {
+			iRect := image.Rect(contentX, y+(innerH-iconSize)/2, contentX+iconSize, y+(innerH-iconSize)/2+iconSize)
+			drawTintedIcon(out, iRect, sp.icon, iconTint)
+			contentX += iconSize + iconGap
+		}
+
+		valY := y + (innerH-valH)/2 + valAscent
+		drawText(out, face, contentX, valY, chrome.valueColor, sp.value)
+	}
+}
+
 // drawBadgesInPlace composites rating badges onto out according to the render config.
-// Badges carry the provider's official glyph plus the score, wrap onto
-// multiple rows when they would overflow, and scale with the output size.
-func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config) {
+// Returns the pixel height consumed (zero when layout is none).
+func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config) int {
+	if cfg.RatingsLayout == imageconfig.LayoutNone {
+		return 0
+	}
 	if len(ratings) == 0 {
-		return
+		return 0
 	}
 	ensureFaces()
 	ensureIcons()
 	if faceValue == nil {
-		return
+		return 0
 	}
 
 	filtered := filterRatings(ratings, cfg.Ratings)
 	if len(filtered) == 0 {
-		return
+		return 0
 	}
 
 	scale := outputScale(cfg.Size)
@@ -216,27 +299,18 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 
 	var (
 		accentW  = s(3)
-		padX     = s(8)
-		padY     = s(5)
-		iconSize = s(15)
+		padX     = s(9)
+		padY     = s(6)
+		iconSize = s(17)
 		iconGap  = s(5)
-		badgeGap = s(6)
-		rowGap   = s(6)
-		edgeX    = s(10)
-		edgeY    = s(10)
+		badgeGap = s(7)
+		rowGap   = s(7)
+		edgeX    = s(12)
+		edgeY    = s(12)
 	)
 
 	innerH := padY*2 + maxInt(valH, iconSize)
 	chrome := chromeFor(cfg)
-	radius := chrome.radius(innerH)
-
-	type badgeSpec struct {
-		value  string
-		valW   int
-		icon   image.Image
-		w      int
-		accent color.NRGBA
-	}
 
 	bounds := out.Bounds()
 	maxRowW := bounds.Dx() - edgeX*2
@@ -262,8 +336,11 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 		})
 	}
 
-	// Greedy row wrap: keep badge order, start a new row when the next badge
-	// would overflow the drawable width.
+	if cfg.RatingsLayout == imageconfig.LayoutSplitSide {
+		return drawBadgesSplitSide(out, specs, innerH, rowGap, edgeX, edgeY, padX, iconSize, iconGap, accentW, face, chrome, bounds)
+	}
+
+	// Greedy row wrap for top/bottom layouts.
 	var rows [][]badgeSpec
 	var row []badgeSpec
 	rowW := 0
@@ -286,8 +363,12 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 	}
 
 	totalH := len(rows)*innerH + (len(rows)-1)*rowGap
+
 	startY := bounds.Max.Y - edgeY - totalH
 	if cfg.RatingsLayout == imageconfig.LayoutTop {
+		startY = bounds.Min.Y + edgeY
+	}
+	if startY < bounds.Min.Y+edgeY {
 		startY = bounds.Min.Y + edgeY
 	}
 
@@ -304,40 +385,49 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 		if x < bounds.Min.X+edgeX {
 			x = bounds.Min.X + edgeX
 		}
-		for _, sp := range r {
-			bRect := image.Rect(x, y, x+sp.w, y+innerH)
-			fillRoundedRect(out, bRect, radius, chrome.bg)
-			if chrome.border.A > 0 {
-				drawRectBorder(out, bRect, radius, chrome.border)
-			}
-
-			// Accent strip hugs the left edge. Skip it on capsule shapes
-			// where a straight strip would poke out of the round end —
-			// tint the icon with the provider accent instead.
-			iconTint := chrome.iconColor
-			contentX := x
-			if radius < innerH/2 {
-				aRect := image.Rect(x, y, x+accentW, y+innerH)
-				fillRect(out, aRect.Intersect(bRect), sp.accent)
-				contentX += accentW
-			} else {
-				iconTint = sp.accent
-			}
-			contentX += padX
-
-			if sp.icon != nil {
-				iRect := image.Rect(contentX, y+(innerH-iconSize)/2, contentX+iconSize, y+(innerH-iconSize)/2+iconSize)
-				drawTintedIcon(out, iRect, sp.icon, iconTint)
-				contentX += iconSize + iconGap
-			}
-
-			valY := y + (innerH-valH)/2 + valAscent
-			drawText(out, face, contentX, valY, chrome.valueColor, sp.value)
-
-			x += sp.w + badgeGap
+		for i := range r {
+			r[i].x = x
+			x += r[i].w + badgeGap
 		}
+		drawRatingRow(out, r, y, innerH, padX, iconSize, iconGap, accentW, face, chrome)
 		y += innerH + rowGap
 	}
+
+	return totalH
+}
+
+// drawBadgesSplitSide renders the first half of badges vertically on the left
+// edge and the second half on the right edge, both centered vertically.
+func drawBadgesSplitSide(out *image.NRGBA, specs []badgeSpec, innerH, rowGap, edgeX, edgeY, padX, iconSize, iconGap, accentW int, face font.Face, chrome badgeChrome, bounds image.Rectangle) int {
+	if len(specs) == 0 {
+		return 0
+	}
+	mid := (len(specs) + 1) / 2
+	left := specs[:mid]
+	right := specs[mid:]
+
+	leftH := len(left)*innerH + (len(left)-1)*rowGap
+	rightH := len(right)*innerH + (len(right)-1)*rowGap
+	totalH := maxInt(leftH, rightH)
+
+	midY := bounds.Min.Y + bounds.Dy()/2
+
+	y := midY - leftH/2
+	for i := range left {
+		left[i].x = bounds.Min.X + edgeX
+		drawRatingRow(out, left[i:i+1], y, innerH, padX, iconSize, iconGap, accentW, face, chrome)
+		y += innerH + rowGap
+	}
+
+	y = midY - rightH/2
+	for i := range right {
+		right[i].x = bounds.Max.X - edgeX - right[i].w
+		drawRatingRow(out, right[i:i+1], y, innerH, padX, iconSize, iconGap, accentW, face, chrome)
+		y += innerH + rowGap
+	}
+
+	_ = edgeY
+	return totalH
 }
 
 func maxInt(a, b int) int {

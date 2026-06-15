@@ -55,26 +55,26 @@ func qualityBadgeLabel(token string) string {
 }
 
 // drawQualityBadges renders quality/format badges (4K, HDR, DV, …) stacked
-// in the top-right corner of the image.
-func drawQualityBadges(base *image.NRGBA, tokens []string) {
+// in the top-right corner. Returns the total pixel height consumed.
+func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64) int {
 	if len(tokens) == 0 {
-		return
+		return 0
 	}
 	ensureFaces()
-	if faceLabel == nil {
-		return
+	face := labelFaceFor(scale)
+	if face == nil {
+		return 0
 	}
 
-	const (
-		padX     = 6
-		padY     = 4
-		badgeGap = 4
-		edgeX    = 10
-		edgeY    = 10
-		radius   = 3
-	)
+	s := func(v float64) int { return int(v*scale + 0.5) }
+	padX := s(6)
+	padY := s(4)
+	badgeGap := s(4)
+	edgeX := s(10)
+	edgeY := s(10)
+	radius := s(3)
 
-	lm := faceLabel.Metrics()
+	lm := face.Metrics()
 	lAscent := lm.Ascent.Ceil()
 	lDescent := lm.Descent.Ceil()
 	badgeH := padY*2 + lAscent + lDescent
@@ -84,40 +84,42 @@ func drawQualityBadges(base *image.NRGBA, tokens []string) {
 	y := bounds.Min.Y + edgeY
 	for _, tok := range tokens {
 		label := qualityBadgeLabel(tok)
-		lw := textWidth(faceLabel, label)
+		lw := textWidth(face, label)
 		bw := padX*2 + lw
 		x := bounds.Max.X - edgeX - bw
 		bRect := image.Rect(x, y, x+bw, y+badgeH)
 		fillRoundedRect(base, bRect, radius, qualityBadgeColor(tok))
 		tx := x + padX
 		ty := y + padY + lAscent
-		drawText(base, faceLabel, tx, ty, color.White, label)
+		drawText(base, face, tx, ty, color.White, label)
 		y += badgeH + badgeGap
 	}
+
+	return len(tokens)*badgeH + (len(tokens)-1)*badgeGap
 }
 
 // ── Age rating badge ──────────────────────────────────────────────────────────
 
 // drawAgeRatingBadge renders a content rating badge (e.g. "TV-MA", "R")
 // in the corner specified by pos ("tl", "tr", "bl", "br", "inherit").
-// "inherit" defaults to "tl".
-func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string) {
+// "inherit" defaults to "br" so it does not conflict with the trending badge (TL)
+// or quality badges (TR).
+func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale float64) {
 	if rating == "" {
 		return
 	}
 	ensureFaces()
-	face := faceLabel
+	face := labelFaceFor(scale)
 	if face == nil {
 		return
 	}
 
-	const (
-		padX   = 7
-		padY   = 4
-		edgeX  = 10
-		edgeY  = 10
-		radius = 3
-	)
+	s := func(v float64) int { return int(v*scale + 0.5) }
+	padX := s(7)
+	padY := s(4)
+	edgeX := s(10)
+	edgeY := s(10)
+	radius := s(3)
 
 	fm := face.Metrics()
 	ascent := fm.Ascent.Ceil()
@@ -129,23 +131,23 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string) {
 
 	resolvedPos := pos
 	if resolvedPos == "" || resolvedPos == "inherit" {
-		resolvedPos = "tl"
+		resolvedPos = "br"
 	}
 
 	var x, y int
 	switch resolvedPos {
+	case "tl":
+		x = bounds.Min.X + edgeX
+		y = bounds.Min.Y + edgeY
 	case "tr":
 		x = bounds.Max.X - edgeX - bw
 		y = bounds.Min.Y + edgeY
 	case "bl":
 		x = bounds.Min.X + edgeX
 		y = bounds.Max.Y - edgeY - bh
-	case "br":
+	default: // "br"
 		x = bounds.Max.X - edgeX - bw
 		y = bounds.Max.Y - edgeY - bh
-	default: // "tl"
-		x = bounds.Min.X + edgeX
-		y = bounds.Min.Y + edgeY
 	}
 
 	bg := color.NRGBA{R: 30, G: 30, B: 30, A: 220}
@@ -208,12 +210,12 @@ func shortProviderName(name string) string {
 // drawProviderBadges renders streaming provider chips as a horizontal row
 // along the bottom of the image, above any ratings strip.
 // At most 4 providers are shown to avoid crowding.
-func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider) {
+func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, scale float64) {
 	if len(providers) == 0 {
 		return
 	}
 	ensureFaces()
-	face := faceLabel
+	face := labelFaceFor(scale)
 	if face == nil {
 		return
 	}
@@ -223,14 +225,13 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider) {
 		shown = shown[:4]
 	}
 
-	const (
-		padX     = 6
-		padY     = 3
-		badgeGap = 5
-		edgeX    = 10
-		edgeY    = 55 // above ratings strip
-		radius   = 3
-	)
+	s := func(v float64) int { return int(v*scale + 0.5) }
+	padX := s(6)
+	padY := s(3)
+	badgeGap := s(5)
+	edgeX := s(10)
+	edgeY := s(55) // above ratings strip
+	radius := s(3)
 
 	fm := face.Metrics()
 	ascent := fm.Ascent.Ceil()
@@ -243,14 +244,13 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider) {
 		label string
 		w     int
 		color color.NRGBA
-		prov  provider.WatchProvider
 	}
 	specs := make([]spec, 0, len(shown))
 	totalW := 0
 	for i, p := range shown {
 		lbl := shortProviderName(p.Name)
 		lw := padX*2 + textWidth(face, lbl)
-		specs = append(specs, spec{label: lbl, w: lw, color: providerColor(p.ID), prov: p})
+		specs = append(specs, spec{label: lbl, w: lw, color: providerColor(p.ID)})
 		totalW += lw
 		if i > 0 {
 			totalW += badgeGap
@@ -263,13 +263,13 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider) {
 	}
 	y := bounds.Max.Y - edgeY - badgeH
 
-	for _, s := range specs {
-		bRect := image.Rect(x, y, x+s.w, y+badgeH)
-		fillRoundedRect(base, bRect, radius, s.color)
+	for _, sp := range specs {
+		bRect := image.Rect(x, y, x+sp.w, y+badgeH)
+		fillRoundedRect(base, bRect, radius, sp.color)
 		tx := x + padX
 		ty := y + padY + ascent
-		drawText(base, face, tx, ty, color.White, s.label)
-		x += s.w + badgeGap
+		drawText(base, face, tx, ty, color.White, sp.label)
+		x += sp.w + badgeGap
 	}
 }
 
@@ -277,12 +277,12 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider) {
 
 // drawGenreBadge renders a genre pill at the bottom-left corner (or pos).
 // Shows at most 3 genres separated by " · ".
-func drawGenreBadge(base *image.NRGBA, genres []string, pos string) {
+func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float64) {
 	if len(genres) == 0 {
 		return
 	}
 	ensureFaces()
-	face := faceLabel
+	face := labelFaceFor(scale)
 	if face == nil {
 		return
 	}
@@ -293,13 +293,12 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string) {
 	}
 	label := strings.Join(shown, " · ")
 
-	const (
-		padX   = 8
-		padY   = 4
-		edgeX  = 10
-		edgeY  = 10
-		radius = 3
-	)
+	s := func(v float64) int { return int(v*scale + 0.5) }
+	padX := s(8)
+	padY := s(4)
+	edgeX := s(10)
+	edgeY := s(10)
+	radius := s(3)
 
 	fm := face.Metrics()
 	ascent := fm.Ascent.Ceil()
@@ -348,7 +347,6 @@ func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imagecon
 	if len(ratings) == 0 {
 		return
 	}
-	ensureFaces()
 
 	allowed := make(map[string]bool, len(cfg.Ratings))
 	for _, r := range cfg.Ratings {
@@ -371,10 +369,15 @@ func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imagecon
 	}
 	avg := sum / float64(n) // 0–10 scale
 
+	scale := outputScale(cfg.Size)
+	barH := int(10*scale + 0.5)
+	if barH < 4 {
+		barH = 4
+	}
+
 	bounds := base.Bounds()
 	w := bounds.Dx()
 
-	const barH = 10
 	var barY int
 	pos := strings.ToLower(cfg.AggregateBarPos)
 	if pos == "top" {
@@ -410,27 +413,28 @@ func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imagecon
 
 // ── Trending badge ────────────────────────────────────────────────────────────
 
-// drawTrendingBadge draws a small "TRENDING" label badge at the top-left corner.
-func drawTrendingBadge(base *image.NRGBA) {
+// drawTrendingBadge draws a "TRENDING" label badge at the top-left corner.
+func drawTrendingBadge(base *image.NRGBA, scale float64) {
 	ensureFaces()
-	if faceLabel == nil {
+	face := labelFaceFor(scale)
+	if face == nil {
 		return
 	}
 
-	const (
-		label  = "TRENDING"
-		padX   = 7
-		padY   = 4
-		edgeX  = 8
-		edgeY  = 8
-		radius = 3
-	)
+	const label = "TRENDING"
 
-	fm := faceLabel.Metrics()
+	s := func(v float64) int { return int(v*scale + 0.5) }
+	padX := s(7)
+	padY := s(4)
+	edgeX := s(8)
+	edgeY := s(8)
+	radius := s(3)
+
+	fm := face.Metrics()
 	ascent := fm.Ascent.Ceil()
 	descent := fm.Descent.Ceil()
 	bh := padY*2 + ascent + descent
-	bw := padX*2 + textWidth(faceLabel, label)
+	bw := padX*2 + textWidth(face, label)
 
 	bounds := base.Bounds()
 	x := bounds.Min.X + edgeX
@@ -438,5 +442,5 @@ func drawTrendingBadge(base *image.NRGBA) {
 
 	bg := color.NRGBA{R: 231, G: 76, B: 60, A: 230}
 	fillRoundedRect(base, image.Rect(x, y, x+bw, y+bh), radius, bg)
-	drawText(base, faceLabel, x+padX, y+padY+ascent, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, label)
+	drawText(base, face, x+padX, y+padY+ascent, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, label)
 }
