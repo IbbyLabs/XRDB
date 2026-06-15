@@ -134,8 +134,9 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 
 	allRatings, ratingProviders := p.collectRatingsWithProviders(ctx, req, meta.Ratings)
 	result.ContributingProviders = append([]string{string(req.Config.ArtworkSource)}, ratingProviders...)
+	var ratingsH int
 	if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
-		drawBadgesInPlace(composed, allRatings, req.Config)
+		ratingsH = drawBadgesInPlace(composed, allRatings, req.Config)
 	}
 	if len(req.Config.Badges) > 0 {
 		drawQualityBadges(composed, req.Config.Badges, scale)
@@ -147,7 +148,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		drawGenreBadge(composed, meta.Genres, req.Config.GenrePos, scale)
 	}
 	if req.Config.Providers && len(meta.WatchProviders) > 0 {
-		drawProviderBadges(composed, meta.WatchProviders, scale)
+		drawProviderBadges(composed, meta.WatchProviders, scale, ratingsH)
 	}
 	if req.Config.AggregateBar {
 		drawAggregateBar(composed, allRatings, req.Config)

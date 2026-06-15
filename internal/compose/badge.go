@@ -411,8 +411,12 @@ func drawBadgesSplitSide(out *image.NRGBA, specs []badgeSpec, innerH, rowGap, ed
 	totalH := maxInt(leftH, rightH)
 
 	midY := bounds.Min.Y + bounds.Dy()/2
+	minY := bounds.Min.Y + edgeY
 
 	y := midY - leftH/2
+	if y < minY {
+		y = minY
+	}
 	for i := range left {
 		left[i].x = bounds.Min.X + edgeX
 		drawRatingRow(out, left[i:i+1], y, innerH, padX, iconSize, iconGap, accentW, face, chrome)
@@ -420,13 +424,15 @@ func drawBadgesSplitSide(out *image.NRGBA, specs []badgeSpec, innerH, rowGap, ed
 	}
 
 	y = midY - rightH/2
+	if y < minY {
+		y = minY
+	}
 	for i := range right {
 		right[i].x = bounds.Max.X - edgeX - right[i].w
 		drawRatingRow(out, right[i:i+1], y, innerH, padX, iconSize, iconGap, accentW, face, chrome)
 		y += innerH + rowGap
 	}
 
-	_ = edgeY
 	return totalH
 }
 
