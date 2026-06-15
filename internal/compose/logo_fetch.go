@@ -12,24 +12,37 @@ import (
 	"time"
 )
 
-const tmdbLogoBase = "https://image.tmdb.org/t/p/w92"
+const (
+	tmdbLogoBase          = "https://image.tmdb.org/t/p/w92"
+	logoFailureRetryAfter = 10 * time.Minute
+)
+
+type logoCacheEntry struct {
+	img      *image.NRGBA
+	failedAt time.Time
+}
 
 var (
-	logoCache  sync.Map // logo_path → *image.NRGBA (nil = known error)
+	logoCache  sync.Map // logo_path → logoCacheEntry
 	logoClient = &http.Client{Timeout: 3 * time.Second}
 )
 
 // fetchProviderLogo downloads and caches a TMDB provider logo by its path.
 // Returns nil on any error so callers fall back to text rendering.
+// Failed lookups are retried after logoFailureRetryAfter to handle transient errors.
 func fetchProviderLogo(logoPath string) *image.NRGBA {
 	if logoPath == "" {
 		return nil
 	}
 	if v, ok := logoCache.Load(logoPath); ok {
-		if v == nil {
+		entry := v.(logoCacheEntry)
+		if entry.img != nil {
+			return entry.img
+		}
+		if time.Since(entry.failedAt) < logoFailureRetryAfter {
 			return nil
 		}
-		return v.(*image.NRGBA)
+		// Retry window elapsed — fall through to re-fetch.
 	}
 
 	resp, err := logoClient.Get(tmdbLogoBase + logoPath)
@@ -37,25 +50,25 @@ func fetchProviderLogo(logoPath string) *image.NRGBA {
 		if resp != nil {
 			resp.Body.Close()
 		}
-		logoCache.Store(logoPath, nil)
+		logoCache.Store(logoPath, logoCacheEntry{failedAt: time.Now()})
 		return nil
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		logoCache.Store(logoPath, nil)
+		logoCache.Store(logoPath, logoCacheEntry{failedAt: time.Now()})
 		return nil
 	}
 
 	src, _, err := image.Decode(bytes.NewReader(body))
 	if err != nil {
-		logoCache.Store(logoPath, nil)
+		logoCache.Store(logoPath, logoCacheEntry{failedAt: time.Now()})
 		return nil
 	}
 
 	nrgba := imageToNRGBA(src)
-	logoCache.Store(logoPath, nrgba)
+	logoCache.Store(logoPath, logoCacheEntry{img: nrgba})
 	return nrgba
 }
 

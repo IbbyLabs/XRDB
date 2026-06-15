@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 	"strings"
+	"sync"
 
 	"xrdb_rewrite/internal/imageconfig"
 	"xrdb_rewrite/internal/provider"
@@ -211,7 +212,9 @@ func shortProviderName(name string) string {
 // along the bottom of the image, above any ratings strip. When TMDB logo
 // images are available they are composited as square icons; otherwise the
 // provider name is rendered as text. At most 4 providers are shown.
-func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, scale float64) {
+// ratingsH is the pixel height consumed by the ratings overlay so provider
+// badges sit above it rather than overlapping.
+func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, scale float64, ratingsH int) {
 	if len(providers) == 0 {
 		return
 	}
@@ -231,7 +234,7 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 	padY := s(3)
 	badgeGap := s(5)
 	edgeX := s(10)
-	edgeY := s(55) // above ratings strip
+	edgeY := ratingsH + s(10) // gap above ratings strip (or above bottom edge)
 	radius := s(3)
 
 	fm := face.Metrics()
@@ -240,6 +243,18 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 	badgeH := padY*2 + ascent + descent
 
 	bounds := base.Bounds()
+
+	// Pre-fetch logos in parallel to avoid blocking serially on each HTTP request.
+	logos := make([]*image.NRGBA, len(shown))
+	var wg sync.WaitGroup
+	for i, p := range shown {
+		wg.Add(1)
+		go func(i int, path string) {
+			defer wg.Done()
+			logos[i] = fetchProviderLogo(path)
+		}(i, p.LogoPath)
+	}
+	wg.Wait()
 
 	type spec struct {
 		label string
@@ -251,7 +266,7 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 	specs := make([]spec, 0, len(shown))
 	totalW := 0
 	for i, p := range shown {
-		logo := fetchProviderLogo(p.LogoPath)
+		logo := logos[i]
 		var w int
 		if logo != nil {
 			// Square icon badge: badgeH × badgeH
