@@ -461,6 +461,30 @@ func TestOverlayFunctionsAtLargeScales(t *testing.T) {
 			if clonePixels(img) == beforeTrend {
 				t.Errorf("drawTrendingBadge had no effect at scale %.1f", scale)
 			}
+
+			// drawProviderBadges: must change pixels
+			beforeProv := clonePixels(img)
+			drawProviderBadges(img, []provider.WatchProvider{{ID: 8, Name: "Netflix"}}, scale)
+			if clonePixels(img) == beforeProv {
+				t.Errorf("drawProviderBadges had no effect at scale %.1f", scale)
+			}
+
+			// drawAggregateBar: cfg.Size drives its internal scale factor
+			var cfgSize imageconfig.MediaSize
+			if scale >= 2.5 {
+				cfgSize = imageconfig.Size4K
+			} else {
+				cfgSize = imageconfig.SizeLarge
+			}
+			barCfg := imageconfig.Default()
+			barCfg.AggregateBar = true
+			barCfg.AggregateBarPos = "bottom"
+			barCfg.Size = cfgSize
+			beforeBar := clonePixels(img)
+			drawAggregateBar(img, []provider.Rating{{Source: "tmdb", Value: 8.0}}, barCfg)
+			if clonePixels(img) == beforeBar {
+				t.Errorf("drawAggregateBar had no effect at scale %.1f", scale)
+			}
 		})
 	}
 }
