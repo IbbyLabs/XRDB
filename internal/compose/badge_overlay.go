@@ -208,6 +208,49 @@ func shortProviderName(name string) string {
 	}
 }
 
+// providerInitials returns a 1-2 character abbreviation for use in the
+// text fallback badge when a logo image is unavailable.
+func providerInitials(name string) string {
+	switch name {
+	case "Netflix":
+		return "N"
+	case "Amazon Prime Video", "Amazon Video", "Prime":
+		return "Pr"
+	case "Disney Plus", "Disney+":
+		return "D+"
+	case "HBO Max", "Max":
+		return "MX"
+	case "Hulu":
+		return "Hu"
+	case "Paramount Plus", "Paramount+":
+		return "P+"
+	case "Apple TV Plus", "Apple TV+", "Apple TV":
+		return "TV"
+	case "Peacock Premium", "Peacock":
+		return "Pk"
+	case "Starz":
+		return "St"
+	}
+	runes := []rune(name)
+	// If name ends with "+", use first char + "+".
+	if len(runes) > 1 && runes[len(runes)-1] == '+' {
+		return strings.ToUpper(string(runes[0])) + "+"
+	}
+	// Multi-word: first letter of each of the first two words.
+	words := strings.Fields(name)
+	if len(words) >= 2 {
+		r0, r1 := []rune(words[0]), []rune(words[1])
+		if len(r0) > 0 && len(r1) > 0 {
+			return strings.ToUpper(string(r0[0])) + strings.ToUpper(string(r1[0]))
+		}
+	}
+	// Single word: first two characters.
+	if len(runes) >= 2 {
+		return strings.ToUpper(string(runes[:2]))
+	}
+	return strings.ToUpper(name)
+}
+
 // drawProviderBadges renders streaming provider chips as a horizontal row
 // along the bottom of the image, above any ratings strip. When TMDB logo
 // images are available they are composited as square icons; otherwise the
@@ -230,7 +273,6 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 	}
 
 	s := func(v float64) int { return int(v*scale + 0.5) }
-	padX := s(6)
 	padY := s(3)
 	badgeGap := s(5)
 	edgeX := s(10)
@@ -263,24 +305,20 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 		bg    color.NRGBA
 	}
 
+	boldFace := valueFaceFor(scale)
+
 	specs := make([]spec, 0, len(shown))
 	totalW := 0
 	for i, p := range shown {
 		logo := logos[i]
-		var w int
-		if logo != nil {
-			// Square icon badge: badgeH × badgeH
-			w = badgeH
-		} else {
-			lbl := shortProviderName(p.Name)
-			w = padX*2 + textWidth(face, lbl)
-		}
-		var lbl string
-		if logo == nil {
-			lbl = shortProviderName(p.Name)
-		}
-		specs = append(specs, spec{label: lbl, logo: logo, w: w, bg: providerColor(p.ID)})
-		totalW += w
+		// Both logo and text-fallback use a square badge so the row is uniform.
+		specs = append(specs, spec{
+			label: providerInitials(p.Name),
+			logo:  logo,
+			w:     badgeH,
+			bg:    providerColor(p.ID),
+		})
+		totalW += badgeH
 		if i > 0 {
 			totalW += badgeGap
 		}
@@ -292,21 +330,41 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 	}
 	y := bounds.Max.Y - edgeY - badgeH
 
+	cardMargin := s(2)
+	cardRadius := s(2)
+
 	for _, sp := range specs {
 		bRect := image.Rect(x, y, x+sp.w, y+badgeH)
 		fillRoundedRect(base, bRect, radius, sp.bg)
 
 		if sp.logo != nil {
-			// Scale logo to fit inside the badge with 2px padding.
+			// Composite logo inside the badge with 2px padding.
 			pad := s(2)
 			inner := badgeH - 2*pad
 			if inner > 0 {
 				drawLogoScaled(base, sp.logo, image.Rect(x+pad, y+pad, x+pad+inner, y+pad+inner))
 			}
 		} else {
-			tx := x + padX
-			ty := y + padY + ascent
-			drawText(base, face, tx, ty, color.White, sp.label)
+			// White card inset with brand-colored initials — looks like a logo
+			// placeholder that matches the visual weight of real logo badges.
+			cardRect := image.Rect(
+				x+cardMargin, y+cardMargin,
+				x+sp.w-cardMargin, y+badgeH-cardMargin,
+			)
+			fillRoundedRect(base, cardRect, cardRadius, color.NRGBA{R: 255, G: 255, B: 255, A: 245})
+
+			if boldFace != nil {
+				bm := boldFace.Metrics()
+				bAscent := bm.Ascent.Ceil()
+				bDescent := bm.Descent.Ceil()
+				bH := bAscent + bDescent
+				bW := textWidth(boldFace, sp.label)
+				cardW := cardRect.Dx()
+				cardH := cardRect.Dy()
+				tx := cardRect.Min.X + (cardW-bW)/2
+				ty := cardRect.Min.Y + (cardH-bH)/2 + bAscent
+				drawText(base, boldFace, tx, ty, sp.bg, sp.label)
+			}
 		}
 		x += sp.w + badgeGap
 	}
