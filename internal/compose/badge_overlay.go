@@ -208,8 +208,9 @@ func shortProviderName(name string) string {
 }
 
 // drawProviderBadges renders streaming provider chips as a horizontal row
-// along the bottom of the image, above any ratings strip.
-// At most 4 providers are shown to avoid crowding.
+// along the bottom of the image, above any ratings strip. When TMDB logo
+// images are available they are composited as square icons; otherwise the
+// provider name is rendered as text. At most 4 providers are shown.
 func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, scale float64) {
 	if len(providers) == 0 {
 		return
@@ -242,16 +243,29 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 
 	type spec struct {
 		label string
+		logo  *image.NRGBA // nil = use text
 		w     int
-		color color.NRGBA
+		bg    color.NRGBA
 	}
+
 	specs := make([]spec, 0, len(shown))
 	totalW := 0
 	for i, p := range shown {
-		lbl := shortProviderName(p.Name)
-		lw := padX*2 + textWidth(face, lbl)
-		specs = append(specs, spec{label: lbl, w: lw, color: providerColor(p.ID)})
-		totalW += lw
+		logo := fetchProviderLogo(p.LogoPath)
+		var w int
+		if logo != nil {
+			// Square icon badge: badgeH × badgeH
+			w = badgeH
+		} else {
+			lbl := shortProviderName(p.Name)
+			w = padX*2 + textWidth(face, lbl)
+		}
+		var lbl string
+		if logo == nil {
+			lbl = shortProviderName(p.Name)
+		}
+		specs = append(specs, spec{label: lbl, logo: logo, w: w, bg: providerColor(p.ID)})
+		totalW += w
 		if i > 0 {
 			totalW += badgeGap
 		}
@@ -265,11 +279,61 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 
 	for _, sp := range specs {
 		bRect := image.Rect(x, y, x+sp.w, y+badgeH)
-		fillRoundedRect(base, bRect, radius, sp.color)
-		tx := x + padX
-		ty := y + padY + ascent
-		drawText(base, face, tx, ty, color.White, sp.label)
+		fillRoundedRect(base, bRect, radius, sp.bg)
+
+		if sp.logo != nil {
+			// Scale logo to fit inside the badge with 2px padding.
+			pad := s(2)
+			inner := badgeH - 2*pad
+			if inner > 0 {
+				drawLogoScaled(base, sp.logo, image.Rect(x+pad, y+pad, x+pad+inner, y+pad+inner))
+			}
+		} else {
+			tx := x + padX
+			ty := y + padY + ascent
+			drawText(base, face, tx, ty, color.White, sp.label)
+		}
 		x += sp.w + badgeGap
+	}
+}
+
+// drawLogoScaled composites src into dst rectangle using nearest-neighbour
+// scaling. Transparent logo pixels are skipped (src has straight alpha).
+func drawLogoScaled(dst *image.NRGBA, src *image.NRGBA, dstRect image.Rectangle) {
+	sb := src.Bounds()
+	dw := dstRect.Dx()
+	dh := dstRect.Dy()
+	if dw <= 0 || dh <= 0 || sb.Dx() <= 0 || sb.Dy() <= 0 {
+		return
+	}
+	for dy := 0; dy < dh; dy++ {
+		sy := sb.Min.Y + dy*sb.Dy()/dh
+		for dx := 0; dx < dw; dx++ {
+			sx := sb.Min.X + dx*sb.Dx()/dw
+			sp := src.NRGBAAt(sx, sy)
+			if sp.A == 0 {
+				continue
+			}
+			px := dstRect.Min.X + dx
+			py := dstRect.Min.Y + dy
+			if !image.Pt(px, py).In(dst.Bounds()) {
+				continue
+			}
+			if sp.A == 255 {
+				dst.SetNRGBA(px, py, sp)
+				continue
+			}
+			// Alpha blend over existing pixel.
+			dp := dst.NRGBAAt(px, py)
+			a := uint32(sp.A)
+			ia := 255 - a
+			dst.SetNRGBA(px, py, color.NRGBA{
+				R: uint8((uint32(sp.R)*a + uint32(dp.R)*ia) / 255),
+				G: uint8((uint32(sp.G)*a + uint32(dp.G)*ia) / 255),
+				B: uint8((uint32(sp.B)*a + uint32(dp.B)*ia) / 255),
+				A: uint8((a*255 + uint32(dp.A)*ia) / 255),
+			})
+		}
 	}
 }
 

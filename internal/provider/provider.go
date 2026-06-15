@@ -9,8 +9,9 @@ import (
 
 // WatchProvider is a streaming/rental service that carries a media item.
 type WatchProvider struct {
-	ID   int    // TMDB provider_id
-	Name string // e.g. "Netflix", "Amazon Prime Video"
+	ID       int    // TMDB provider_id
+	Name     string // e.g. "Netflix", "Amazon Prime Video"
+	LogoPath string // TMDB logo_path, e.g. "/t2yyOv40HZeVlLjYsCsPHnWLk4W.jpg" (may be empty)
 }
 
 // MediaMeta holds the metadata for a piece of media fetched from a provider.

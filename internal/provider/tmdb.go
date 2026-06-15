@@ -133,10 +133,12 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 				Flatrate []struct {
 					ProviderID   int    `json:"provider_id"`
 					ProviderName string `json:"provider_name"`
+					LogoPath     string `json:"logo_path"`
 				} `json:"flatrate"`
 				Rent []struct {
 					ProviderID   int    `json:"provider_id"`
 					ProviderName string `json:"provider_name"`
+					LogoPath     string `json:"logo_path"`
 				} `json:"rent"`
 			} `json:"results"`
 		} `json:"watch/providers"`
@@ -232,7 +234,7 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 			if !seen[p.ProviderID] && p.ProviderName != "" {
 				seen[p.ProviderID] = true
 				meta.WatchProviders = append(meta.WatchProviders, WatchProvider{
-					ID: p.ProviderID, Name: p.ProviderName,
+					ID: p.ProviderID, Name: p.ProviderName, LogoPath: p.LogoPath,
 				})
 			}
 		}
@@ -240,7 +242,7 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 			if !seen[p.ProviderID] && p.ProviderName != "" {
 				seen[p.ProviderID] = true
 				meta.WatchProviders = append(meta.WatchProviders, WatchProvider{
-					ID: p.ProviderID, Name: p.ProviderName,
+					ID: p.ProviderID, Name: p.ProviderName, LogoPath: p.LogoPath,
 				})
 			}
 		}
