@@ -185,29 +185,6 @@ func providerColor(id int) color.NRGBA {
 	return color.NRGBA{R: 50, G: 50, B: 50, A: 255}
 }
 
-// shortProviderName returns a compact display name for the badge.
-func shortProviderName(name string) string {
-	switch name {
-	case "Amazon Prime Video", "Amazon Video":
-		return "Prime"
-	case "Apple TV Plus", "Apple TV+":
-		return "Apple TV"
-	case "Disney Plus", "Disney+":
-		return "Disney+"
-	case "HBO Max", "Max":
-		return "Max"
-	case "Peacock Premium", "Peacock":
-		return "Peacock"
-	case "Paramount Plus", "Paramount+":
-		return "Paramount+"
-	default:
-		if len([]rune(name)) > 12 {
-			return string([]rune(name)[:12])
-		}
-		return name
-	}
-}
-
 // providerInitials returns a 1-2 character abbreviation for use in the
 // text fallback badge when a logo image is unavailable.
 func providerInitials(name string) string {
