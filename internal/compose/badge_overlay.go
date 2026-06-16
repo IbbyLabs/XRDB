@@ -567,9 +567,24 @@ func drawTrendingBadge(base *image.NRGBA, scale float64) {
 
 	// Main fill: vivid red-orange gradient approximated by two fills.
 	fillRoundedRect(base, rect, radius, color.NRGBA{R: 220, G: 50, B: 40, A: 245})
-	// Lighter top half for a subtle sheen.
-	topHalf := image.Rect(x, y, x+bw, y+bh/2)
-	fillRoundedRect(base, topHalf, radius, color.NRGBA{R: 255, G: 80, B: 60, A: 60})
+	// Lighter top-half sheen. We clip to the badge's own corner circles (using
+	// rect + radius) rather than rounding topHalf's corners, which would create
+	// a visible curved line at the midpoint ("double bubble" artefact).
+	sheenC := color.NRGBA{R: 255, G: 80, B: 60, A: 60}
+	cr2 := float64(radius) * float64(radius)
+	for py := y; py < y+bh/2; py++ {
+		for px := x; px < x+bw; px++ {
+			if inCornerZone(px, py, rect, radius) {
+				cx, cy := cornerCenter(px, py, rect, radius)
+				ddx := float64(px) - cx + 0.5
+				ddy := float64(py) - cy + 0.5
+				if ddx*ddx+ddy*ddy > cr2 {
+					continue
+				}
+			}
+			base.SetNRGBA(px, py, sheenC)
+		}
+	}
 
 	drawText(base, face, x+padX, y+padY+ascent, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, label)
 }

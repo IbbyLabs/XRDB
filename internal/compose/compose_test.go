@@ -710,6 +710,42 @@ func TestBackdropAsPosterAutoEnablesLogoOverlay(t *testing.T) {
 	}
 }
 
+func TestBackdropAsPosterNoLogoWhenBackdropURLEmpty(t *testing.T) {
+	// When BackdropAsPoster is true but BackdropURL is empty (provider has no
+	// backdrop), the pipeline falls back to poster artwork. The logo overlay must
+	// NOT fire in that case to avoid double-stamping a poster's baked-in title.
+	logoFetched := false
+	fetcher := &recordingFetcher{
+		data: makeTestPNG(300, 450, color.NRGBA{50, 50, 80, 255}),
+		onFetch: func(url string) {
+			if url == "http://fake/logo.png" {
+				logoFetched = true
+			}
+		},
+	}
+	stub := &provider.StubProvider{
+		ProviderName: "tmdb",
+		Meta: &provider.MediaMeta{
+			PosterURL:   "http://fake/poster.jpg",
+			BackdropURL: "", // no backdrop available
+			LogoURL:     "http://fake/logo.png",
+		},
+	}
+	p := &Pipeline{providers: testRegistry(stub), fetcher: fetcher}
+
+	cfg := imageconfig.Default()
+	cfg.BackdropAsPoster = true
+	cfg.BackdropLogo = false
+	req := Request{MediaType: "poster", MediaID: "tt1", Config: cfg}
+
+	if _, err := p.Render(context.Background(), req); err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	if logoFetched {
+		t.Error("logo overlay must not fire when BackdropURL is empty (poster fallback)")
+	}
+}
+
 // recordingFetcher wraps a stubImageFetcher and calls onFetch for each URL.
 type recordingFetcher struct {
 	data    []byte
