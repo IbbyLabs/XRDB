@@ -91,6 +91,7 @@ type Config struct {
 	AggregateBarPos   string         `json:"aggregateBarPos,omitempty"` // "top" | "bottom"
 	Trending          bool           `json:"trending"`
 	BackdropAsPoster  bool           `json:"backdropAsPoster,omitempty"`
+	BackdropLogo      bool           `json:"backdropLogo,omitempty"`
 }
 
 // Default returns a Config populated with production defaults.
@@ -130,6 +131,7 @@ type raw struct {
 	AggregateBarPos  *string  `json:"aggregateBarPos"`
 	Trending         *bool    `json:"trending"`
 	BackdropAsPoster *bool    `json:"backdropAsPoster"`
+	BackdropLogo     *bool    `json:"backdropLogo"`
 }
 
 // Parse deserializes a profile config JSON blob into a normalized Config.
@@ -226,6 +228,9 @@ func Parse(data json.RawMessage) Config {
 	if r.BackdropAsPoster != nil {
 		cfg.BackdropAsPoster = *r.BackdropAsPoster
 	}
+	if r.BackdropLogo != nil {
+		cfg.BackdropLogo = *r.BackdropLogo
+	}
 	return cfg
 }
 
@@ -254,6 +259,7 @@ func CacheKey(cfg Config) string {
 		AggregateBarPos  string         `json:"aggregateBarPos"`
 		Trending         bool           `json:"trending"`
 		BackdropAsPoster bool           `json:"backdropAsPoster"`
+		BackdropLogo     bool           `json:"backdropLogo"`
 	}
 	ratings := make([]string, len(cfg.Ratings))
 	copy(ratings, cfg.Ratings)
@@ -282,6 +288,7 @@ func CacheKey(cfg Config) string {
 		AggregateBarPos:  cfg.AggregateBarPos,
 		Trending:         cfg.Trending,
 		BackdropAsPoster: cfg.BackdropAsPoster,
+		BackdropLogo:     cfg.BackdropLogo,
 	}
 	b, _ := json.Marshal(c)
 	sum := sha256.Sum256(b)
