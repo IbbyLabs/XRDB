@@ -26,7 +26,10 @@ function normaliseOrigin(raw: string): string {
 }
 
 function isValidUrl(raw: string): boolean {
-  try { new URL(raw); return true; } catch { return false; }
+  try {
+    const u = new URL(raw);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch { return false; }
 }
 
 const PUBLIC_URLS = new Set(PUBLIC_INSTANCES.map(i => normaliseOrigin(i.url)));
