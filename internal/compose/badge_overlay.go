@@ -582,7 +582,15 @@ func drawTrendingBadge(base *image.NRGBA, scale float64) {
 					continue
 				}
 			}
-			base.SetNRGBA(px, py, sheenC)
+			dp := base.NRGBAAt(px, py)
+			a := uint32(sheenC.A)
+			ia := 255 - a
+			base.SetNRGBA(px, py, color.NRGBA{
+				R: uint8((uint32(sheenC.R)*a + uint32(dp.R)*ia) / 255),
+				G: uint8((uint32(sheenC.G)*a + uint32(dp.G)*ia) / 255),
+				B: uint8((uint32(sheenC.B)*a + uint32(dp.B)*ia) / 255),
+				A: uint8((a*255 + uint32(dp.A)*ia) / 255),
+			})
 		}
 	}
 
