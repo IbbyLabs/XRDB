@@ -125,7 +125,17 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		return result, nil
 	}
 
-	resized := resizeFit(srcImg, dim.Width, dim.Height)
+	// Use saliency-aware cropping when a backdrop is the source so that
+	// off-centre subjects are not clipped by a naive centre crop.
+	usesBackdrop := req.MediaType == "backdrop" ||
+		(req.MediaType == "poster" && req.Config.BackdropAsPoster) ||
+		req.MediaType == "thumbnail"
+	var resized image.Image
+	if usesBackdrop {
+		resized = resizeFitSmart(srcImg, dim.Width, dim.Height)
+	} else {
+		resized = resizeFit(srcImg, dim.Width, dim.Height)
+	}
 
 	// Convert to NRGBA once — all overlay functions draw in-place.
 	composed := toNRGBA(resized)
@@ -155,6 +165,11 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	}
 	if req.Config.Trending {
 		drawTrendingBadge(composed, scale)
+	}
+	if req.Config.BackdropLogo && usesBackdrop && meta.LogoURL != "" {
+		if logoBytes, err := p.fetcher.Fetch(ctx, meta.LogoURL); err == nil {
+			drawBackdropLogoOverlay(composed, logoBytes)
+		}
 	}
 
 	var buf bytes.Buffer
