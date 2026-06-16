@@ -28,9 +28,24 @@ else
   echo "warning: no .env — images may render as placeholders (no API keys)" >&2
 fi
 
-# Kill any lingering server on the test port.
+# Kill any lingering server on the test port — but only if it looks like this
+# project's API server. Refuse to kill unrelated processes that happen to be
+# using the same port, and tell the user to pick a different one instead.
 pid="$(lsof -nP -t -iTCP:"$PORT" -sTCP:LISTEN 2>/dev/null || true)"
-[ -n "$pid" ] && kill "$pid" 2>/dev/null && sleep 1 || true
+if [ -n "$pid" ]; then
+  cmd="$(ps -p "$pid" -o command= 2>/dev/null || true)"
+  case "$cmd" in
+    *"./cmd/api"*|*"xrdb-api"*|*"go run"*"cmd/api"*)
+      kill "$pid" 2>/dev/null || true
+      sleep 1
+      ;;
+    *)
+      echo "error: port $PORT is already in use by an unrelated process (pid $pid: $cmd)." >&2
+      echo "Choose another port: ./scripts/visual-test.sh <port>" >&2
+      exit 1
+      ;;
+  esac
+fi
 
 cleanup() { [ -n "${API_PID:-}" ] && kill "$API_PID" 2>/dev/null || true; }
 trap cleanup EXIT INT TERM
@@ -62,22 +77,46 @@ EOF
 }
 
 echo "Rendering test images …"
+failures=0
 
 # 1. Backdrop-as-poster with logo overlay — The Dark Knight (tt0468569)
-curl -sf "${BASE}/poster/tt0468569?config=$(encode "$BACKDROP_LOGO")" -o "$OUT/1-backdrop-logo-batman.png" && echo "  1/4 backdrop+logo (Batman)" || echo "  1/4 FAILED"
+if curl -sf "${BASE}/poster/tt0468569?config=$(encode "$BACKDROP_LOGO")" -o "$OUT/1-backdrop-logo-batman.png"; then
+  echo "  1/4 backdrop+logo (Batman)"
+else
+  echo "  1/4 FAILED" >&2; failures=$((failures+1))
+fi
 
 # 2. Logo letterbox — The Dark Knight
-curl -sf "${BASE}/logo/tt0468569" -o "$OUT/2-logo-letterbox-batman.png" && echo "  2/4 logo letterbox (Batman)" || echo "  2/4 FAILED"
+if curl -sf "${BASE}/logo/tt0468569" -o "$OUT/2-logo-letterbox-batman.png"; then
+  echo "  2/4 logo letterbox (Batman)"
+else
+  echo "  2/4 FAILED" >&2; failures=$((failures+1))
+fi
 
 # 3. Standard poster — The Shawshank Redemption (tt0111161)
-curl -sf "${BASE}/poster/tt0111161?config=$(encode "$STANDARD")" -o "$OUT/3-standard-poster-shawshank.png" && echo "  3/4 standard poster (Shawshank)" || echo "  3/4 FAILED"
+if curl -sf "${BASE}/poster/tt0111161?config=$(encode "$STANDARD")" -o "$OUT/3-standard-poster-shawshank.png"; then
+  echo "  3/4 standard poster (Shawshank)"
+else
+  echo "  3/4 FAILED" >&2; failures=$((failures+1))
+fi
 
 # 4. Backdrop+logo+providers — Shawshank
-curl -sf "${BASE}/poster/tt0111161?config=$(encode "$WITH_PROVIDERS")" -o "$OUT/4-backdrop-logo-providers-shawshank.png" && echo "  4/4 backdrop+providers (Shawshank)" || echo "  4/4 FAILED"
+if curl -sf "${BASE}/poster/tt0111161?config=$(encode "$WITH_PROVIDERS")" -o "$OUT/4-backdrop-logo-providers-shawshank.png"; then
+  echo "  4/4 backdrop+providers (Shawshank)"
+else
+  echo "  4/4 FAILED" >&2; failures=$((failures+1))
+fi
+
+if [ "$failures" -gt 0 ]; then
+  echo "error: $failures render case(s) failed — check /tmp/xrdb-visual-test-server.log" >&2
+  exit 1
+fi
 
 echo ""
 echo "Images saved to $OUT/"
-ls -lh "$OUT/"*.png 2>/dev/null | awk '{print "  " $5 "  " $9}'
+find "$OUT" -maxdepth 1 -name '*.png' | sort | while read -r f; do
+  printf "  %s  %s\n" "$(wc -c < "$f" | awk '{printf "%.1fK", $1/1024}')" "$f"
+done
 
 # Open on macOS, display on Linux.
 if command -v open >/dev/null 2>&1; then
