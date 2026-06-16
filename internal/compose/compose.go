@@ -131,9 +131,14 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		(req.MediaType == "poster" && req.Config.BackdropAsPoster) ||
 		req.MediaType == "thumbnail"
 	var resized image.Image
-	if usesBackdrop {
+	switch {
+	case usesBackdrop:
 		resized = resizeFitSmart(srcImg, dim.Width, dim.Height)
-	} else {
+	case req.MediaType == "logo":
+		// Logo images should be letterboxed, not cover-cropped, so the
+		// title text is never clipped at the edges.
+		resized = resizeContain(srcImg, dim.Width, dim.Height)
+	default:
 		resized = resizeFit(srcImg, dim.Width, dim.Height)
 	}
 
@@ -166,9 +171,14 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	if req.Config.Trending {
 		drawTrendingBadge(composed, scale)
 	}
-	if req.Config.BackdropLogo && usesBackdrop && meta.LogoURL != "" {
+	// Show the logo overlay when explicitly requested OR when the user has
+	// chosen to use the backdrop as a poster (backdrop images don't carry
+	// baked-in title text, so the overlay is the only way to show the title).
+	wantsLogoOverlay := req.Config.BackdropLogo ||
+		(req.MediaType == "poster" && req.Config.BackdropAsPoster)
+	if wantsLogoOverlay && meta.LogoURL != "" {
 		if logoBytes, err := p.fetcher.Fetch(ctx, meta.LogoURL); err == nil {
-			drawBackdropLogoOverlay(composed, logoBytes)
+			drawBackdropLogoOverlay(composed, logoBytes, ratingsH)
 		}
 	}
 

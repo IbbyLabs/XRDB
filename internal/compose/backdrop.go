@@ -129,12 +129,49 @@ func resizeFitSmart(src image.Image, maxW, maxH int) image.Image {
 	return dst
 }
 
+// resizeContain scales src to fit entirely within maxW×maxH (letterbox / pillarbox)
+// using bilinear interpolation. Unlike resizeFit, it never crops — transparent
+// pixels fill any gap so the full source image is always visible.
+func resizeContain(src image.Image, maxW, maxH int) image.Image {
+	srcB := src.Bounds()
+	srcW, srcH := srcB.Dx(), srcB.Dy()
+	if srcW == 0 || srcH == 0 {
+		return image.NewNRGBA(image.Rect(0, 0, maxW, maxH))
+	}
+
+	scaleX := float64(maxW) / float64(srcW)
+	scaleY := float64(maxH) / float64(srcH)
+	scale := scaleX
+	if scaleY < scale {
+		scale = scaleY
+	}
+
+	scaledW := int(float64(srcW)*scale + 0.5)
+	scaledH := int(float64(srcH)*scale + 0.5)
+	if scaledW < 1 {
+		scaledW = 1
+	}
+	if scaledH < 1 {
+		scaledH = 1
+	}
+
+	dst := image.NewNRGBA(image.Rect(0, 0, maxW, maxH))
+	scaled := image.NewNRGBA(image.Rect(0, 0, scaledW, scaledH))
+	xdraw.BiLinear.Scale(scaled, scaled.Bounds(), src, srcB, xdraw.Over, nil)
+
+	offX := (maxW - scaledW) / 2
+	offY := (maxH - scaledH) / 2
+	draw.Draw(dst, image.Rect(offX, offY, offX+scaledW, offY+scaledH), scaled, image.Point{}, draw.Src)
+	return dst
+}
+
 // drawBackdropLogoOverlay composites a title logo image onto base. The logo is
 // scaled to fit within 65% of the base width and 20% of the base height, then
-// centred horizontally and placed in the lower-third (72% from top). A
-// semi-transparent gradient scrim is drawn behind the logo so it remains
-// legible over bright backdrops.
-func drawBackdropLogoOverlay(base *image.NRGBA, logoData []byte) {
+// centred horizontally and placed clear of the bottom-reserved area (ratings
+// strip + provider chips). A semi-transparent gradient scrim is drawn behind
+// the logo so it remains legible over bright backdrops.
+// ratingsH is the pixel height consumed by the ratings strip at the bottom.
+func drawBackdropLogoOverlay(base *image.NRGBA, logoData []byte, ratingsH int) {
 	if len(logoData) == 0 {
 		return
 	}
@@ -172,12 +209,22 @@ func drawBackdropLogoOverlay(base *image.NRGBA, logoData []byte) {
 	xdraw.CatmullRom.Scale(scaled, scaled.Bounds(), logoImg, lB, xdraw.Over, nil)
 
 	x := (baseW - dstW) / 2
-	logoTopY := int(float64(baseH)*0.72) - dstH/2
+
+	// Reserve space for the bottom overlay strip (ratings + provider chips).
+	// Add an extra 16px gap so the logo scrim never grazes the chip row.
+	bottomReserved := ratingsH + 16
+	usableH := baseH - bottomReserved
+	if usableH < dstH {
+		usableH = dstH
+	}
+
+	// Centre the logo in the lower-third of the usable area (≈68% from top).
+	logoTopY := int(float64(usableH)*0.68) - dstH/2
 	if logoTopY < 0 {
 		logoTopY = 0
 	}
-	if logoTopY+dstH > baseH {
-		logoTopY = baseH - dstH
+	if logoTopY+dstH > usableH {
+		logoTopY = usableH - dstH
 	}
 
 	// Vertical gradient scrim behind the logo for legibility over bright areas.
