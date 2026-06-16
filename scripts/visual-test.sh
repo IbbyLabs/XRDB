@@ -53,15 +53,19 @@ trap cleanup EXIT INT TERM
 XRDB_ADDR=":$PORT" go run ./cmd/api >/tmp/xrdb-visual-test-server.log 2>&1 &
 API_PID=$!
 
+# All HTTP calls use bounded timeouts so the script cannot hang indefinitely
+# if the local server stalls. 2s connect timeout, 30s overall max per request.
+curl_t() { curl -sSf --connect-timeout 2 --max-time 30 "$@"; }
+
 # Wait for the server to be ready.
 echo "Starting API server on :$PORT …"
 i=0
 while [ $i -lt 20 ]; do
-  curl -sf "http://localhost:$PORT/healthz" >/dev/null 2>&1 && break
+  curl_t "http://localhost:$PORT/healthz" >/dev/null 2>&1 && break
   sleep 0.5
   i=$((i+1))
 done
-curl -sf "http://localhost:$PORT/healthz" >/dev/null 2>&1 || { echo "Server failed to start. See /tmp/xrdb-visual-test-server.log" >&2; exit 1; }
+curl_t "http://localhost:$PORT/healthz" >/dev/null 2>&1 || { echo "Server failed to start. See /tmp/xrdb-visual-test-server.log" >&2; exit 1; }
 echo "Server ready."
 
 BASE="http://localhost:$PORT"
@@ -80,28 +84,28 @@ echo "Rendering test images …"
 failures=0
 
 # 1. Backdrop-as-poster with logo overlay — The Dark Knight (tt0468569)
-if curl -sf "${BASE}/poster/tt0468569?config=$(encode "$BACKDROP_LOGO")" -o "$OUT/1-backdrop-logo-batman.png"; then
+if curl_t "${BASE}/poster/tt0468569?config=$(encode "$BACKDROP_LOGO")" -o "$OUT/1-backdrop-logo-batman.png"; then
   echo "  1/4 backdrop+logo (Batman)"
 else
   echo "  1/4 FAILED" >&2; failures=$((failures+1))
 fi
 
 # 2. Logo letterbox — The Dark Knight
-if curl -sf "${BASE}/logo/tt0468569" -o "$OUT/2-logo-letterbox-batman.png"; then
+if curl_t "${BASE}/logo/tt0468569" -o "$OUT/2-logo-letterbox-batman.png"; then
   echo "  2/4 logo letterbox (Batman)"
 else
   echo "  2/4 FAILED" >&2; failures=$((failures+1))
 fi
 
 # 3. Standard poster — The Shawshank Redemption (tt0111161)
-if curl -sf "${BASE}/poster/tt0111161?config=$(encode "$STANDARD")" -o "$OUT/3-standard-poster-shawshank.png"; then
+if curl_t "${BASE}/poster/tt0111161?config=$(encode "$STANDARD")" -o "$OUT/3-standard-poster-shawshank.png"; then
   echo "  3/4 standard poster (Shawshank)"
 else
   echo "  3/4 FAILED" >&2; failures=$((failures+1))
 fi
 
 # 4. Backdrop+logo+providers — Shawshank
-if curl -sf "${BASE}/poster/tt0111161?config=$(encode "$WITH_PROVIDERS")" -o "$OUT/4-backdrop-logo-providers-shawshank.png"; then
+if curl_t "${BASE}/poster/tt0111161?config=$(encode "$WITH_PROVIDERS")" -o "$OUT/4-backdrop-logo-providers-shawshank.png"; then
   echo "  4/4 backdrop+providers (Shawshank)"
 else
   echo "  4/4 FAILED" >&2; failures=$((failures+1))
