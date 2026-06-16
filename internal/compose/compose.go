@@ -174,8 +174,12 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// Show the logo overlay when explicitly requested OR when the user has
 	// chosen to use the backdrop as a poster (backdrop images don't carry
 	// baked-in title text, so the overlay is the only way to show the title).
+	// Auto-enable the logo overlay only when an actual backdrop is in use.
+	// If BackdropURL is empty the pipeline falls back to poster artwork (which
+	// already carries baked-in title text), so adding a logo overlay there would
+	// double-stamp the title.
 	wantsLogoOverlay := req.Config.BackdropLogo ||
-		(req.MediaType == "poster" && req.Config.BackdropAsPoster)
+		(req.MediaType == "poster" && req.Config.BackdropAsPoster && meta.BackdropURL != "")
 	if wantsLogoOverlay && meta.LogoURL != "" {
 		if logoBytes, err := p.fetcher.Fetch(ctx, meta.LogoURL); err == nil {
 			drawBackdropLogoOverlay(composed, logoBytes, ratingsH)
