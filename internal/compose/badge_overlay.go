@@ -55,12 +55,52 @@ func qualityBadgeLabel(token string) string {
 	}
 }
 
+// hdrHierarchy lists badge tokens that are implied by a superior token.
+// When the superior is present, the implied badges are removed to avoid
+// redundant stacking (e.g. HDR10+ already implies HDR10 and HDR).
+var hdrHierarchy = []struct {
+	superior string
+	drops    []string
+}{
+	{"dv", []string{"hdr10plus", "hdr10", "hdr"}},
+	{"hdr10plus", []string{"hdr10", "hdr"}},
+	{"hdr10", []string{"hdr"}},
+}
+
+// dedupeQualityTokens removes badges that are implied by a higher-tier badge
+// already in the list.
+func dedupeQualityTokens(tokens []string) []string {
+	present := make(map[string]bool, len(tokens))
+	for _, t := range tokens {
+		present[strings.ToLower(t)] = true
+	}
+	drop := make(map[string]bool)
+	for _, rule := range hdrHierarchy {
+		if present[rule.superior] {
+			for _, d := range rule.drops {
+				drop[d] = true
+			}
+		}
+	}
+	if len(drop) == 0 {
+		return tokens
+	}
+	out := make([]string, 0, len(tokens))
+	for _, t := range tokens {
+		if !drop[strings.ToLower(t)] {
+			out = append(out, t)
+		}
+	}
+	return out
+}
+
 // drawQualityBadges renders quality/format badges (4K, HDR, DV, …) stacked
 // in the top-right corner. Returns the total pixel height consumed.
 func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64) int {
 	if len(tokens) == 0 {
 		return 0
 	}
+	tokens = dedupeQualityTokens(tokens)
 	ensureFaces()
 	face := labelFaceFor(scale)
 	if face == nil {
@@ -68,12 +108,12 @@ func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64) int {
 	}
 
 	s := func(v float64) int { return int(v*scale + 0.5) }
-	padX := s(6)
-	padY := s(4)
+	padX := s(8)
+	padY := s(5)
 	badgeGap := s(4)
 	edgeX := s(10)
 	edgeY := s(10)
-	radius := s(3)
+	radius := s(4)
 
 	lm := face.Metrics()
 	lAscent := lm.Ascent.Ceil()
@@ -230,12 +270,12 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 	}
 
 	s := func(v float64) int { return int(v*scale + 0.5) }
-	padX := s(6)
-	padY := s(3)
-	badgeGap := s(5)
+	padX := s(7)
+	padY := s(4)
+	badgeGap := s(6)
 	edgeX := s(10)
-	edgeY := ratingsH + s(10) // gap above ratings strip (or above bottom edge)
-	radius := s(3)
+	edgeY := ratingsH + s(18) // extra clearance above ratings / poster title text
+	radius := s(4)
 
 	fm := face.Metrics()
 	ascent := fm.Ascent.Ceil()
@@ -492,7 +532,8 @@ func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imagecon
 
 // ── Trending badge ────────────────────────────────────────────────────────────
 
-// drawTrendingBadge draws a "TRENDING" label badge at the top-left corner.
+// drawTrendingBadge draws a "↑ TRENDING" pill badge at the top-left corner.
+// It uses a capsule shape with a subtle gradient effect via two layered fills.
 func drawTrendingBadge(base *image.NRGBA, scale float64) {
 	ensureFaces()
 	face := labelFaceFor(scale)
@@ -500,26 +541,35 @@ func drawTrendingBadge(base *image.NRGBA, scale float64) {
 		return
 	}
 
-	const label = "TRENDING"
+	const label = "↑ TRENDING"
 
 	s := func(v float64) int { return int(v*scale + 0.5) }
-	padX := s(7)
+	padX := s(9)
 	padY := s(4)
 	edgeX := s(8)
 	edgeY := s(8)
-	radius := s(3)
 
 	fm := face.Metrics()
 	ascent := fm.Ascent.Ceil()
 	descent := fm.Descent.Ceil()
 	bh := padY*2 + ascent + descent
 	bw := padX*2 + textWidth(face, label)
+	radius := bh / 2 // full capsule
 
 	bounds := base.Bounds()
 	x := bounds.Min.X + edgeX
 	y := bounds.Min.Y + edgeY
+	rect := image.Rect(x, y, x+bw, y+bh)
 
-	bg := color.NRGBA{R: 231, G: 76, B: 60, A: 230}
-	fillRoundedRect(base, image.Rect(x, y, x+bw, y+bh), radius, bg)
+	// Shadow layer for depth.
+	shadowRect := image.Rect(x+1, y+1, x+bw+1, y+bh+1)
+	fillRoundedRect(base, shadowRect, radius, color.NRGBA{R: 0, G: 0, B: 0, A: 80})
+
+	// Main fill: vivid red-orange gradient approximated by two fills.
+	fillRoundedRect(base, rect, radius, color.NRGBA{R: 220, G: 50, B: 40, A: 245})
+	// Lighter top half for a subtle sheen.
+	topHalf := image.Rect(x, y, x+bw, y+bh/2)
+	fillRoundedRect(base, topHalf, radius, color.NRGBA{R: 255, G: 80, B: 60, A: 60})
+
 	drawText(base, face, x+padX, y+padY+ascent, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, label)
 }

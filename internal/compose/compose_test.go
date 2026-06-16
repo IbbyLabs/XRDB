@@ -672,3 +672,99 @@ func TestAnimeProviderAccentColors(t *testing.T) {
 		}
 	}
 }
+
+// ── Backdrop logo auto-enable ─────────────────────────────────────────────────
+
+func TestBackdropAsPosterAutoEnablesLogoOverlay(t *testing.T) {
+	// When BackdropAsPoster is true, Render should attempt to fetch the logo
+	// URL from meta (even when BackdropLogo is false).
+	logoFetched := false
+	fetcher := &recordingFetcher{
+		data: makeTestPNG(300, 450, color.NRGBA{50, 50, 80, 255}),
+		onFetch: func(url string) {
+			if url == "http://fake/logo.png" {
+				logoFetched = true
+			}
+		},
+	}
+	stub := &provider.StubProvider{
+		ProviderName: "tmdb",
+		Meta: &provider.MediaMeta{
+			PosterURL:  "http://fake/poster.jpg",
+			BackdropURL: "http://fake/backdrop.jpg",
+			LogoURL:    "http://fake/logo.png",
+		},
+	}
+	p := &Pipeline{providers: testRegistry(stub), fetcher: fetcher}
+
+	cfg := imageconfig.Default()
+	cfg.BackdropAsPoster = true
+	cfg.BackdropLogo = false // must still trigger logo fetch
+	req := Request{MediaType: "poster", MediaID: "tt1", Config: cfg}
+
+	if _, err := p.Render(context.Background(), req); err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	if !logoFetched {
+		t.Error("expected logo fetch when BackdropAsPoster=true, got none")
+	}
+}
+
+// recordingFetcher wraps a stubImageFetcher and calls onFetch for each URL.
+type recordingFetcher struct {
+	data    []byte
+	onFetch func(string)
+}
+
+func (r *recordingFetcher) Fetch(_ context.Context, url string) ([]byte, error) {
+	if r.onFetch != nil {
+		r.onFetch(url)
+	}
+	return r.data, nil
+}
+
+// ── HDR hierarchy deduplication ───────────────────────────────────────────────
+
+func TestDedupeQualityTokensHDRHierarchy(t *testing.T) {
+	cases := []struct {
+		in   []string
+		want []string
+	}{
+		{[]string{"hdr10plus", "hdr10", "hdr"}, []string{"hdr10plus"}},
+		{[]string{"4k", "hdr10", "hdr"}, []string{"4k", "hdr10"}},
+		{[]string{"dv", "hdr10plus", "hdr10", "hdr", "atmos"}, []string{"dv", "atmos"}},
+		{[]string{"4k", "atmos", "imax"}, []string{"4k", "atmos", "imax"}},
+		{[]string{"hdr"}, []string{"hdr"}},
+	}
+	for _, tc := range cases {
+		got := dedupeQualityTokens(tc.in)
+		if len(got) != len(tc.want) {
+			t.Errorf("dedupeQualityTokens(%v): got %v, want %v", tc.in, got, tc.want)
+			continue
+		}
+		for i := range got {
+			if got[i] != tc.want[i] {
+				t.Errorf("dedupeQualityTokens(%v)[%d]: got %q, want %q", tc.in, i, got[i], tc.want[i])
+			}
+		}
+	}
+}
+
+// ── resizeContain ─────────────────────────────────────────────────────────────
+
+func TestResizeContainNeverExceedsBounds(t *testing.T) {
+	cases := []struct{ sw, sh, mw, mh int }{
+		{1000, 200, 500, 125},  // wider source → letterboxed
+		{200, 1000, 500, 125},  // taller source → pillarboxed
+		{400, 100, 500, 125},   // same aspect
+	}
+	for _, tc := range cases {
+		src := image.NewNRGBA(image.Rect(0, 0, tc.sw, tc.sh))
+		out := resizeContain(src, tc.mw, tc.mh)
+		b := out.Bounds()
+		if b.Dx() != tc.mw || b.Dy() != tc.mh {
+			t.Errorf("resizeContain(%dx%d → %dx%d): got canvas %dx%d",
+				tc.sw, tc.sh, tc.mw, tc.mh, b.Dx(), b.Dy())
+		}
+	}
+}
