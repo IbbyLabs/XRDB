@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"xrdb_rewrite/internal/cache"
@@ -16,6 +17,25 @@ import (
 	"xrdb_rewrite/internal/render"
 	"xrdb_rewrite/internal/settings"
 )
+
+func refreshTMDBCredentials(pipeline *compose.Pipeline, settingsStore *settings.Store) {
+	if pipeline == nil || settingsStore == nil {
+		return
+	}
+	tmdb := pipeline.TMDBClient()
+	if tmdb == nil {
+		return
+	}
+	apiKey := os.Getenv("XRDB_TMDB_API_KEY")
+	readToken := os.Getenv("XRDB_TMDB_READ_TOKEN")
+	if v, err := settingsStore.Get("tmdb_api_key"); err == nil && v != "" {
+		apiKey = v
+	}
+	if v, err := settingsStore.Get("tmdb_read_token"); err == nil && v != "" {
+		readToken = v
+	}
+	tmdb.UpdateCredentials(apiKey, readToken)
+}
 
 // registerAdminRoutes mounts all /api/admin/* handlers onto mux.
 func registerAdminRoutes(
@@ -109,6 +129,7 @@ func registerAdminRoutes(
 				http.Error(w, "internal error", http.StatusInternalServerError)
 				return
 			}
+			refreshTMDBCredentials(pipeline, settingsStore)
 			w.WriteHeader(http.StatusNoContent)
 		case http.MethodDelete:
 			key := r.URL.Query().Get("key")
@@ -120,6 +141,7 @@ func registerAdminRoutes(
 				http.Error(w, "internal error", http.StatusInternalServerError)
 				return
 			}
+			refreshTMDBCredentials(pipeline, settingsStore)
 			w.WriteHeader(http.StatusNoContent)
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)

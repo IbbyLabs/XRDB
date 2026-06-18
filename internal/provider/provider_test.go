@@ -3,17 +3,19 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
 
 // stubProvider is a Provider that returns a fixed MediaMeta.
 type stubProvider struct {
-	name string
-	meta *MediaMeta
-	err  error
+	name  string
+	meta  *MediaMeta
+	err   error
 	calls int
 }
 
@@ -79,12 +81,12 @@ func TestCachedFetchExpires(t *testing.T) {
 func TestTMDBClientParsesResponse(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := map[string]any{
-			"title":        "Inception",
-			"overview":     "A thief...",
-			"release_date": "2010-07-16",
-			"vote_average": 8.4,
-			"vote_count":   35000,
-			"poster_path":  "/poster.jpg",
+			"title":         "Inception",
+			"overview":      "A thief...",
+			"release_date":  "2010-07-16",
+			"vote_average":  8.4,
+			"vote_count":    35000,
+			"poster_path":   "/poster.jpg",
 			"backdrop_path": "/backdrop.jpg",
 		}
 		w.Header().Set("Content-Type", "application/json")
@@ -113,5 +115,36 @@ func TestTMDBClientParsesResponse(t *testing.T) {
 	}
 	if result.VoteAverage != 8.4 {
 		t.Errorf("expected 8.4, got %f", result.VoteAverage)
+	}
+}
+
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+func TestTMDBUpdateCredentialsUsesLatestToken(t *testing.T) {
+	t.Parallel()
+
+	var gotAuth string
+	client := &http.Client{Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		gotAuth = req.Header.Get("Authorization")
+		body := io.NopCloser(strings.NewReader(`{"results":[]}`))
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Body:       body,
+			Request:    req,
+		}, nil
+	})}
+
+	p := &TMDB{httpClient: client}
+	p.UpdateCredentials("api-key-1", "read-token-1")
+	if _, err := p.SearchTitles(context.Background(), "matrix"); err != nil {
+		t.Fatalf("search titles: %v", err)
+	}
+	if gotAuth != "Bearer read-token-1" {
+		t.Fatalf("expected bearer token to update, got %q", gotAuth)
 	}
 }

@@ -111,6 +111,8 @@ const INTEGRATIONS: Integration[] = [
   },
 ];
 
+const TMDB_ONBOARDING_KEY = 'xrdb-integrations-tmdb-onboarding-v1';
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function normalizeError(e: unknown): string {
@@ -125,8 +127,8 @@ function normalizeError(e: unknown): string {
 // ── Notice ────────────────────────────────────────────────────────────────────
 
 function Notice({
-  type, message, onDismiss,
-}: { type: 'error' | 'success' | 'info'; message: string; onDismiss?: () => void }) {
+  type, message, onDismiss, actionLabel, onAction,
+}: { type: 'error' | 'success' | 'info'; message: string; onDismiss?: () => void; actionLabel?: string; onAction?: () => void }) {
   return (
     <div
       className={`notice notice-${type}`}
@@ -135,6 +137,11 @@ function Notice({
     >
       {type === 'error' ? <AlertCircle size={14} aria-hidden /> : <Check size={14} aria-hidden />}
       <span style={{ flex: 1 }}>{message}</span>
+      {actionLabel && onAction && (
+        <button onClick={onAction} className="btn btn-ghost btn-sm">
+          {actionLabel}
+        </button>
+      )}
       {onDismiss && (
         <button onClick={onDismiss} className="notice-dismiss" aria-label="Dismiss">
           <X size={12} aria-hidden />
@@ -239,20 +246,21 @@ function KeyRow({
 // ── Provider row (progressive disclosure) ─────────────────────────────────────
 
 function ProviderRow({
-  integration, statuses, onSave, onDelete, defaultOpen,
+  integration, statuses, onSave, onDelete, defaultOpen, rowId,
 }: {
   integration: Integration;
   statuses: Record<string, boolean>;
   onSave: (key: string, value: string) => Promise<void>;
   onDelete: (key: string) => Promise<void>;
   defaultOpen: boolean;
+  rowId?: string;
 }) {
   const uid = useId();
   const [open, setOpen] = useState(defaultOpen);
   const anySet = integration.keys.some(k => statuses[k.key]);
 
   return (
-    <div className={`provider${open ? ' provider--open' : ''}`}>
+    <div className={`provider${open ? ' provider--open' : ''}`} id={rowId}>
       <button
         className="provider-summary"
         onClick={() => setOpen(v => !v)}
@@ -308,7 +316,22 @@ export function IntegrationsClient() {
   const [statuses, setStatuses] = useState<Record<string, boolean>>({});
   const [loading, setLoading]   = useState(true);
   const [notice, setNotice]     = useState<{ type: 'error' | 'success' | 'info'; message: string } | null>(null);
+  const [showTmdbPrompt, setShowTmdbPrompt] = useState(false);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const tmdbConfigured = !!statuses.tmdb_api_key || !!statuses.tmdb_read_token;
+
+  const focusTmdbRow = useCallback(() => {
+    const row = document.getElementById('integrations-tmdb');
+    if (!row) return;
+    const summary = row.querySelector<HTMLButtonElement>('.provider-summary');
+    if (summary?.getAttribute('aria-expanded') === 'false') {
+      summary.click();
+    }
+    row.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    const input = row.querySelector<HTMLInputElement>('input');
+    window.setTimeout(() => input?.focus(), 0);
+  }, []);
 
   const flash = useCallback((type: 'error' | 'success' | 'info', msg: string) => {
     setNotice({ type, message: msg });
@@ -340,6 +363,25 @@ export function IntegrationsClient() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadStatuses(); }, [loadStatuses]);
 
+  useEffect(() => {
+    if (loading) return;
+    if (tmdbConfigured) {
+      setShowTmdbPrompt(false);
+      try { localStorage.removeItem(TMDB_ONBOARDING_KEY); } catch { /* unavailable */ }
+      return;
+    }
+    try {
+      setShowTmdbPrompt(localStorage.getItem(TMDB_ONBOARDING_KEY) !== 'seen');
+    } catch {
+      setShowTmdbPrompt(true);
+    }
+  }, [loading, tmdbConfigured]);
+
+  const dismissTmdbPrompt = () => {
+    setShowTmdbPrompt(false);
+    try { localStorage.setItem(TMDB_ONBOARDING_KEY, 'seen'); } catch { /* unavailable */ }
+  };
+
   const handleSave = async (key: string, value: string) => {
     await setSetting(key, value);
     setStatuses(s => ({ ...s, [key]: true }));
@@ -366,6 +408,18 @@ export function IntegrationsClient() {
         </p>
       </div>
 
+      {!loading && showTmdbPrompt && !tmdbConfigured && (
+        <div style={{ marginBottom: 'var(--sp-4)' }}>
+          <Notice
+            type="info"
+            message="TMDB powers shuffle, search, and most artwork. Add that key first so the rest of the app works out of the box."
+            actionLabel="Open TMDB"
+            onAction={focusTmdbRow}
+            onDismiss={dismissTmdbPrompt}
+          />
+        </div>
+      )}
+
       {notice && (
         <div style={{ marginBottom: 'var(--sp-4)' }}>
           <Notice {...notice} onDismiss={() => setNotice(null)} />
@@ -388,6 +442,7 @@ export function IntegrationsClient() {
               onSave={handleSave}
               onDelete={handleDelete}
               defaultOpen={i === 0 && connectedCount === 0}
+              rowId={int.id === 'tmdb' ? 'integrations-tmdb' : undefined}
             />
           ))}
         </div>
