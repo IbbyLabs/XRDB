@@ -315,6 +315,7 @@ function ProviderRow({
 export function IntegrationsClient() {
   const [statuses, setStatuses] = useState<Record<string, boolean>>({});
   const [loading, setLoading]   = useState(true);
+  const [settingsUnauthorized, setSettingsUnauthorized] = useState(false);
   const [notice, setNotice]     = useState<{ type: 'error' | 'success' | 'info'; message: string } | null>(null);
   const [showTmdbPrompt, setShowTmdbPrompt] = useState(false);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -347,12 +348,15 @@ export function IntegrationsClient() {
       const map: Record<string, boolean> = {};
       for (const s of data) map[s.key] = s.set;
       setStatuses(map);
+      setSettingsUnauthorized(false);
     } catch (e) {
       // 401 is expected when no admin key is set — show non-blocking info
       const msg = normalizeError(e);
       if (msg.includes('Admin key')) {
+        setSettingsUnauthorized(true);
         flash('info', 'Admin key required to view/edit integration settings. Set XRDB_ADMIN_KEY in your environment.');
       } else {
+        setSettingsUnauthorized(false);
         flash('error', msg);
       }
     } finally {
@@ -365,9 +369,13 @@ export function IntegrationsClient() {
 
   useEffect(() => {
     if (loading) return;
+    if (settingsUnauthorized) {
+      setShowTmdbPrompt(false);
+      return;
+    }
     if (tmdbConfigured) {
       setShowTmdbPrompt(false);
-      try { localStorage.removeItem(TMDB_ONBOARDING_KEY); } catch { /* unavailable */ }
+      try { localStorage.setItem(TMDB_ONBOARDING_KEY, 'seen'); } catch { /* unavailable */ }
       return;
     }
     try {
@@ -375,7 +383,7 @@ export function IntegrationsClient() {
     } catch {
       setShowTmdbPrompt(true);
     }
-  }, [loading, tmdbConfigured]);
+  }, [loading, tmdbConfigured, settingsUnauthorized]);
 
   const dismissTmdbPrompt = () => {
     setShowTmdbPrompt(false);
@@ -408,7 +416,7 @@ export function IntegrationsClient() {
         </p>
       </div>
 
-      {!loading && showTmdbPrompt && !tmdbConfigured && (
+      {!loading && !settingsUnauthorized && showTmdbPrompt && !tmdbConfigured && (
         <div style={{ marginBottom: 'var(--sp-4)' }}>
           <Notice
             type="info"

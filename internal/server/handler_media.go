@@ -9,6 +9,10 @@ import (
 	"xrdb_rewrite/internal/provider"
 )
 
+func tmdbUnavailable(t *provider.TMDB) bool {
+	return t == nil || !t.HasCredentials()
+}
+
 // registerMediaRoutes mounts title search/trending/lookup endpoints used by
 // the configurator's preview tools. All are TMDB-backed and read-only.
 func registerMediaRoutes(mux *http.ServeMux, pipeline *compose.Pipeline) {
@@ -25,11 +29,7 @@ func registerMediaRoutes(mux *http.ServeMux, pipeline *compose.Pipeline) {
 			return
 		}
 		t := tmdbFor()
-		if t == nil {
-			http.Error(w, "search requires a TMDB key", http.StatusServiceUnavailable)
-			return
-		}
-		if ready, ok := any(t).(interface{ HasCredentials() bool }); ok && !ready.HasCredentials() {
+		if tmdbUnavailable(t) {
 			http.Error(w, "search requires a TMDB key", http.StatusServiceUnavailable)
 			return
 		}
@@ -55,11 +55,7 @@ func registerMediaRoutes(mux *http.ServeMux, pipeline *compose.Pipeline) {
 			return
 		}
 		t := tmdbFor()
-		if t == nil {
-			http.Error(w, "trending requires a TMDB key", http.StatusServiceUnavailable)
-			return
-		}
-		if ready, ok := any(t).(interface{ HasCredentials() bool }); ok && !ready.HasCredentials() {
+		if tmdbUnavailable(t) {
 			http.Error(w, "trending requires a TMDB key", http.StatusServiceUnavailable)
 			return
 		}
@@ -80,11 +76,7 @@ func registerMediaRoutes(mux *http.ServeMux, pipeline *compose.Pipeline) {
 			return
 		}
 		t := tmdbFor()
-		if t == nil {
-			http.Error(w, "lookup requires a TMDB key", http.StatusServiceUnavailable)
-			return
-		}
-		if ready, ok := any(t).(interface{ HasCredentials() bool }); ok && !ready.HasCredentials() {
+		if tmdbUnavailable(t) {
 			http.Error(w, "lookup requires a TMDB key", http.StatusServiceUnavailable)
 			return
 		}
