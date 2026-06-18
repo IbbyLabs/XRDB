@@ -412,8 +412,8 @@ export function IntegrationsClient() {
         <div style={{ marginBottom: 'var(--sp-4)' }}>
           <Notice
             type="info"
-            message="TMDB powers shuffle, search, and most artwork. Add that key first so the rest of the app works out of the box."
-            actionLabel="Open TMDB"
+            message="Shuffle and search need TMDB. Add that key first so the rest of the app works out of the box."
+            actionLabel="Set up TMDB"
             onAction={focusTmdbRow}
             onDismiss={dismissTmdbPrompt}
           />
