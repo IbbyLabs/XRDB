@@ -29,6 +29,10 @@ func registerMediaRoutes(mux *http.ServeMux, pipeline *compose.Pipeline) {
 			http.Error(w, "search requires a TMDB key", http.StatusServiceUnavailable)
 			return
 		}
+		if ready, ok := any(t).(interface{ HasCredentials() bool }); ok && !ready.HasCredentials() {
+			http.Error(w, "search requires a TMDB key", http.StatusServiceUnavailable)
+			return
+		}
 		q := strings.TrimSpace(r.URL.Query().Get("q"))
 		if q == "" {
 			writeJSON(w, http.StatusOK, []provider.TitleResult{})
@@ -55,6 +59,10 @@ func registerMediaRoutes(mux *http.ServeMux, pipeline *compose.Pipeline) {
 			http.Error(w, "trending requires a TMDB key", http.StatusServiceUnavailable)
 			return
 		}
+		if ready, ok := any(t).(interface{ HasCredentials() bool }); ok && !ready.HasCredentials() {
+			http.Error(w, "trending requires a TMDB key", http.StatusServiceUnavailable)
+			return
+		}
 		results, err := t.TrendingTitles(r.Context())
 		if err != nil {
 			http.Error(w, "trending failed", http.StatusBadGateway)
@@ -73,6 +81,10 @@ func registerMediaRoutes(mux *http.ServeMux, pipeline *compose.Pipeline) {
 		}
 		t := tmdbFor()
 		if t == nil {
+			http.Error(w, "lookup requires a TMDB key", http.StatusServiceUnavailable)
+			return
+		}
+		if ready, ok := any(t).(interface{ HasCredentials() bool }); ok && !ready.HasCredentials() {
 			http.Error(w, "lookup requires a TMDB key", http.StatusServiceUnavailable)
 			return
 		}

@@ -69,9 +69,7 @@ func main() {
 	}
 
 	reg := provider.NewRegistry()
-	if cfg.TMDBAPIKey != "" || cfg.TMDBReadToken != "" {
-		reg.Register(provider.NewTMDB(cfg.TMDBAPIKey, cfg.TMDBReadToken))
-	}
+	reg.Register(provider.NewTMDB(cfg.TMDBAPIKey, cfg.TMDBReadToken))
 	if cfg.MDBListAPIKey != "" {
 		reg.Register(provider.NewMDBList(cfg.MDBListAPIKey))
 	}

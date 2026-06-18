@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -18,6 +19,7 @@ const tmdbImageBase = "https://image.tmdb.org/t/p"
 
 // TMDB is the TMDB metadata provider.
 type TMDB struct {
+	mu         sync.RWMutex
 	apiKey     string
 	readToken  string
 	httpClient *http.Client
@@ -26,10 +28,39 @@ type TMDB struct {
 // NewTMDB creates a TMDB provider. Provide either apiKey or readToken (readToken preferred).
 func NewTMDB(apiKey, readToken string) *TMDB {
 	return &TMDB{
-		apiKey:    apiKey,
-		readToken: readToken,
+		apiKey:     apiKey,
+		readToken:  readToken,
 		httpClient: &http.Client{Timeout: 10 * time.Second},
 	}
+}
+
+// SetHTTPClient replaces the transport used for TMDB requests.
+func (t *TMDB) SetHTTPClient(client *http.Client) {
+	if client == nil {
+		return
+	}
+	t.httpClient = client
+}
+
+// UpdateCredentials swaps the live TMDB credentials without replacing the
+// provider, so UI-saved keys take effect immediately.
+func (t *TMDB) UpdateCredentials(apiKey, readToken string) {
+	t.mu.Lock()
+	t.apiKey = apiKey
+	t.readToken = readToken
+	t.mu.Unlock()
+}
+
+func (t *TMDB) credentials() (string, string) {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+	return t.apiKey, t.readToken
+}
+
+// HasCredentials reports whether the provider can make authenticated TMDB requests.
+func (t *TMDB) HasCredentials() bool {
+	apiKey, readToken := t.credentials()
+	return apiKey != "" || readToken != ""
 }
 
 func (t *TMDB) Name() string { return "tmdb" }
@@ -43,7 +74,8 @@ func (t *TMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 // FetchArtwork retrieves TMDB metadata honoring artwork language, text
 // preference, and size options when selecting poster/backdrop/logo variants.
 func (t *TMDB) FetchArtwork(ctx context.Context, mediaType, id string, opts ArtworkOptions) (*MediaMeta, error) {
-	if t.apiKey == "" && t.readToken == "" {
+	apiKey, readToken := t.credentials()
+	if apiKey == "" && readToken == "" {
 		return nil, fmt.Errorf("tmdb: no api key or read token configured")
 	}
 	// resolve IMDb ID → TMDB ID if needed
@@ -437,11 +469,12 @@ func (t *TMDB) get(ctx context.Context, path string, out any) error {
 	if err != nil {
 		return err
 	}
-	if t.readToken != "" {
-		req.Header.Set("Authorization", "Bearer "+t.readToken)
+	apiKey, readToken := t.credentials()
+	if readToken != "" {
+		req.Header.Set("Authorization", "Bearer "+readToken)
 	} else {
 		q := req.URL.Query()
-		q.Set("api_key", t.apiKey)
+		q.Set("api_key", apiKey)
 		req.URL.RawQuery = q.Encode()
 	}
 	resp, err := t.httpClient.Do(req)

@@ -2,8 +2,10 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"image/png"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -14,6 +16,8 @@ import (
 	"xrdb_rewrite/internal/compose"
 	"xrdb_rewrite/internal/config"
 	"xrdb_rewrite/internal/profile"
+	"xrdb_rewrite/internal/provider"
+	"xrdb_rewrite/internal/settings"
 )
 
 func openTestStore(t *testing.T) *profile.Store {
@@ -428,6 +432,69 @@ func TestAdminCacheOK(t *testing.T) {
 	}
 }
 
+func TestAdminSettingsRefreshesTMDBProvider(t *testing.T) {
+	t.Setenv("XRDB_TMDB_API_KEY", "env-key")
+	t.Setenv("XRDB_TMDB_READ_TOKEN", "")
+
+	dir := t.TempDir()
+	settingsStore, err := settings.Open(filepath.Join(dir, "settings.db"))
+	if err != nil {
+		t.Fatalf("open settings store: %v", err)
+	}
+	t.Cleanup(func() { _ = settingsStore.Close() })
+
+	var gotAPIKey string
+	client := &http.Client{Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+		gotAPIKey = req.URL.Query().Get("api_key")
+		body := io.NopCloser(strings.NewReader(`{"results":[]}`))
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     make(http.Header),
+			Body:       body,
+			Request:    req,
+		}, nil
+	})}
+
+	reg := provider.NewRegistry()
+	tmdb := provider.NewTMDB("", "")
+	tmdb.SetHTTPClient(client)
+	reg.Register(tmdb)
+	pipeline := compose.New(reg)
+
+	h := NewHandler("test", nil, settingsStore, pipeline, nil, config.Config{AdminKey: "secret"})
+
+	putReq := httptest.NewRequest(http.MethodPut, "/api/admin/settings", strings.NewReader(`{"key":"tmdb_api_key","value":"ui-key"}`))
+	putReq.Header.Set("Authorization", "Bearer secret")
+	putRR := httptest.NewRecorder()
+	h.ServeHTTP(putRR, putReq)
+	if putRR.Code != http.StatusNoContent {
+		t.Fatalf("expected 204 from settings save, got %d: %s", putRR.Code, putRR.Body.String())
+	}
+
+	if _, err := pipeline.TMDBClient().SearchTitles(context.Background(), "matrix"); err != nil {
+		t.Fatalf("search after save: %v", err)
+	}
+	if gotAPIKey != "ui-key" {
+		t.Fatalf("expected UI key to be active, got %q", gotAPIKey)
+	}
+
+	gotAPIKey = ""
+	deleteReq := httptest.NewRequest(http.MethodDelete, "/api/admin/settings?key=tmdb_api_key", nil)
+	deleteReq.Header.Set("Authorization", "Bearer secret")
+	deleteRR := httptest.NewRecorder()
+	h.ServeHTTP(deleteRR, deleteReq)
+	if deleteRR.Code != http.StatusNoContent {
+		t.Fatalf("expected 204 from settings delete, got %d: %s", deleteRR.Code, deleteRR.Body.String())
+	}
+
+	if _, err := pipeline.TMDBClient().SearchTitles(context.Background(), "matrix"); err != nil {
+		t.Fatalf("search after delete: %v", err)
+	}
+	if gotAPIKey != "env-key" {
+		t.Fatalf("expected env fallback to be active, got %q", gotAPIKey)
+	}
+}
+
 func TestProfileStoreUnavailable(t *testing.T) {
 	h := NewHandler("test", nil, nil, nil, nil, config.Config{})
 	rr := httptest.NewRecorder()
@@ -741,4 +808,10 @@ func TestEffectiveTTLMissingProvider(t *testing.T) {
 	if got != 24*time.Hour {
 		t.Errorf("expected 24h (only known provider), got %v", got)
 	}
+}
+
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
 }
