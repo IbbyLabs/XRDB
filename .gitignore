@@ -7,7 +7,8 @@ fixtures/parity/
 web/.next/
 web/out/
 web/node_modules/
-internal/ui/dist/
+internal/ui/dist/*
+!internal/ui/dist/.keep
 web/test-results/
 web/playwright-report/
 web/.playwright/
