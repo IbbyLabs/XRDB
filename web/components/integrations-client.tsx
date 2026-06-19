@@ -316,6 +316,7 @@ export function IntegrationsClient() {
   const [statuses, setStatuses] = useState<Record<string, boolean>>({});
   const [loading, setLoading]   = useState(true);
   const [settingsUnauthorized, setSettingsUnauthorized] = useState(false);
+  const [settingsLoadFailed, setSettingsLoadFailed] = useState(false);
   const [notice, setNotice]     = useState<{ type: 'error' | 'success' | 'info'; message: string } | null>(null);
   const [showTmdbPrompt, setShowTmdbPrompt] = useState(false);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -349,14 +350,17 @@ export function IntegrationsClient() {
       for (const s of data) map[s.key] = s.set;
       setStatuses(map);
       setSettingsUnauthorized(false);
+      setSettingsLoadFailed(false);
     } catch (e) {
       // 401 is expected when no admin key is set — show non-blocking info
       const msg = normalizeError(e);
       if (msg.includes('Admin key')) {
         setSettingsUnauthorized(true);
+        setSettingsLoadFailed(false);
         flash('info', 'Admin key required to view/edit integration settings. Set XRDB_ADMIN_KEY in your environment.');
       } else {
         setSettingsUnauthorized(false);
+        setSettingsLoadFailed(true);
         flash('error', msg);
       }
     } finally {
@@ -369,6 +373,10 @@ export function IntegrationsClient() {
 
   useEffect(() => {
     if (loading) return;
+    if (settingsLoadFailed) {
+      setShowTmdbPrompt(false);
+      return;
+    }
     if (settingsUnauthorized) {
       setShowTmdbPrompt(false);
       return;
@@ -383,7 +391,7 @@ export function IntegrationsClient() {
     } catch {
       setShowTmdbPrompt(true);
     }
-  }, [loading, tmdbConfigured, settingsUnauthorized]);
+  }, [loading, tmdbConfigured, settingsUnauthorized, settingsLoadFailed]);
 
   const dismissTmdbPrompt = () => {
     setShowTmdbPrompt(false);
@@ -416,7 +424,7 @@ export function IntegrationsClient() {
         </p>
       </div>
 
-      {!loading && !settingsUnauthorized && showTmdbPrompt && !tmdbConfigured && (
+      {!loading && !settingsLoadFailed && !settingsUnauthorized && showTmdbPrompt && !tmdbConfigured && (
         <div style={{ marginBottom: 'var(--sp-4)' }}>
           <Notice
             type="info"
