@@ -374,6 +374,7 @@ export function IntegrationsClient() {
   useEffect(() => {
     if (loading) return;
     if (settingsLoadFailed) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowTmdbPrompt(false);
       return;
     }
