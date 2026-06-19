@@ -1,6 +1,11 @@
 version: "2"
 
 linters:
+  exclusions:
+    paths:
+      - web/node_modules
+      - web/.next
+      - web/out
   settings:
     errcheck:
       exclude-functions:
