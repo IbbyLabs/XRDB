@@ -18,6 +18,7 @@ import (
 	"xrdb_rewrite/internal/profile"
 	"xrdb_rewrite/internal/provider"
 	"xrdb_rewrite/internal/settings"
+	"xrdb_rewrite/internal/testutil"
 )
 
 func openTestStore(t *testing.T) *profile.Store {
@@ -444,7 +445,7 @@ func TestAdminSettingsRefreshesTMDBProvider(t *testing.T) {
 	t.Cleanup(func() { _ = settingsStore.Close() })
 
 	var gotAPIKey string
-	client := &http.Client{Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+	client := &http.Client{Transport: testutil.RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
 		gotAPIKey = req.URL.Query().Get("api_key")
 		body := io.NopCloser(strings.NewReader(`{"results":[]}`))
 		return &http.Response{
@@ -808,10 +809,4 @@ func TestEffectiveTTLMissingProvider(t *testing.T) {
 	if got != 24*time.Hour {
 		t.Errorf("expected 24h (only known provider), got %v", got)
 	}
-}
-
-type roundTripperFunc func(*http.Request) (*http.Response, error)
-
-func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
-	return f(req)
 }

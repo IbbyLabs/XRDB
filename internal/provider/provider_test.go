@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"xrdb_rewrite/internal/testutil"
 )
 
 // stubProvider is a Provider that returns a fixed MediaMeta.
@@ -118,17 +120,11 @@ func TestTMDBClientParsesResponse(t *testing.T) {
 	}
 }
 
-type roundTripperFunc func(*http.Request) (*http.Response, error)
-
-func (f roundTripperFunc) RoundTrip(req *http.Request) (*http.Response, error) {
-	return f(req)
-}
-
 func TestTMDBUpdateCredentialsUsesLatestToken(t *testing.T) {
 	t.Parallel()
 
 	var gotAuth string
-	client := &http.Client{Transport: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+	client := &http.Client{Transport: testutil.RoundTripperFunc(func(req *http.Request) (*http.Response, error) {
 		gotAuth = req.Header.Get("Authorization")
 		body := io.NopCloser(strings.NewReader(`{"results":[]}`))
 		return &http.Response{
