@@ -302,6 +302,7 @@ test('workspace normalization ignores legacy proxy enabled flags', () => {
     translateMetaMode: 'fill-missing',
     debugMetaTranslation: false,
     proxyTypes: ['movie', 'series', 'anime'],
+    imageTypes: ['poster', 'backdrop', 'thumbnail', 'logo'],
     episodeIdMode: 'imdb',
     catalogRules: [],
   });
