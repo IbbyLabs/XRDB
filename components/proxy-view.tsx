@@ -20,7 +20,7 @@ import {
   readProxyCatalogDescriptors,
   type ProxyCatalogRule,
 } from '@/lib/proxyCatalogRules';
-import type { ProxyMediaType } from '@/lib/uiConfig';
+import { PROXY_IMAGE_TYPES, type ProxyImageType, type ProxyMediaType } from '@/lib/uiConfig';
 
 export function ProxyView() {
   const { workspaceColumnsProps, isDocsCapture } = useConfiguratorContext();
@@ -122,17 +122,15 @@ export function ProxyView() {
   const proxyTypeSet = useMemo(() => new Set(proxyTypes), [proxyTypes]);
   const proxyImageTypeSet = useMemo(() => new Set(proxyImageTypes), [proxyImageTypes]);
 
-  const toggleImageType = (type: 'poster' | 'backdrop' | 'thumbnail' | 'logo', enabled: boolean) => {
+  const toggleImageType = (type: ProxyImageType, enabled: boolean) => {
     const nextSet = new Set(proxyImageTypes);
     if (enabled) {
       nextSet.add(type);
     } else {
       nextSet.delete(type);
     }
-    const ordered = (['poster', 'backdrop', 'thumbnail', 'logo'] as const).filter((t) => nextSet.has(t));
-    if (ordered.length > 0) {
-      onChangeProxyImageTypes(ordered);
-    }
+    const ordered = PROXY_IMAGE_TYPES.filter((t) => nextSet.has(t));
+    onChangeProxyImageTypes(ordered);
   };
   const canGenerateProxy = Boolean(effectiveGeneratedProxyUrl);
   const displayedProxyUrl =

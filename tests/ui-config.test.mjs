@@ -887,6 +887,24 @@ test('server managed exports omit provider credentials when server fallbacks are
   assert.equal('simklClientId' in decodedProxy, false);
 });
 
+test('proxy imageTypes partial selection round-trips through URL serialization', () => {
+  const config = buildSampleSettings();
+  const baseUrl = 'https://xrdb.example.com';
+
+  const proxyWithPartialTypes = { ...config.proxy, imageTypes: ['poster'] };
+  const proxyUrl = buildProxyUrl(baseUrl, proxyWithPartialTypes, config.settings);
+  assert.match(proxyUrl, /^https:\/\/xrdb\.example\.com\/proxy\/.+\/manifest\.json$/);
+
+  const encodedConfig = proxyUrl.split('/proxy/')[1]?.replace('/manifest.json', '');
+  assert.ok(encodedConfig);
+  const payload = JSON.parse(decodeBase64Url(encodedConfig));
+
+  assert.equal('posterEnabled' in payload, false);
+  assert.equal(payload.backdropEnabled, false);
+  assert.equal(payload.thumbnailEnabled, false);
+  assert.equal(payload.logoEnabled, false);
+});
+
 test('saved profile params can preserve xrdbKey while omitting provider credentials', () => {
   const config = buildSampleSettings();
 

@@ -155,6 +155,11 @@ import {
   type ProxyCatalogRule,
 } from './proxyCatalogRules.ts';
 import {
+  type ProxyImageType,
+  PROXY_IMAGE_TYPES,
+} from './proxyConfigSchema.ts';
+export type { ProxyImageType };
+import {
   DEFAULT_SCOREBAR_STYLE,
   DEFAULT_SCOREBAR_LOW_COLOR,
   DEFAULT_SCOREBAR_MID_COLOR,
@@ -197,8 +202,6 @@ export type LogoBackground = 'transparent' | 'dark';
 export type TmdbIdScopeMode = 'soft' | 'strict';
 export type ProxyMediaType = 'movie' | 'series' | 'anime';
 const PROXY_MEDIA_TYPES: readonly ProxyMediaType[] = ['movie', 'series', 'anime'];
-export type ProxyImageType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
-const PROXY_IMAGE_TYPES: readonly ProxyImageType[] = ['poster', 'backdrop', 'thumbnail', 'logo'];
 const PROXY_IMAGE_TYPE_SET = new Set<ProxyImageType>(PROXY_IMAGE_TYPES);
 type XrdbImageType = 'poster' | 'backdrop' | 'logo';
 type SharedPayloadOptions = {

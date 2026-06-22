@@ -91,6 +91,7 @@ import {
   type RandomPosterLanguageMode,
   type RandomPosterTextMode,
   type ProxyImageType,
+  PROXY_IMAGE_TYPES,
   type ProxyMediaType,
   type QualityBadgesSide,
   type StreamBadgesSetting,
@@ -389,7 +390,7 @@ export function useConfiguratorWorkspaceState() {
   const [proxyTranslateMetaMode, setProxyTranslateMetaMode] = useState<MetadataTranslationMode>(DEFAULT_METADATA_TRANSLATION_MODE);
   const [proxyDebugMetaTranslation, setProxyDebugMetaTranslation] = useState(false);
   const [proxyTypes, setProxyTypes] = useState<ProxyMediaType[]>(['movie', 'series', 'anime']);
-  const [proxyImageTypes, setProxyImageTypes] = useState<ProxyImageType[]>(['poster', 'backdrop', 'thumbnail', 'logo']);
+  const [proxyImageTypes, setProxyImageTypes] = useState<ProxyImageType[]>([...PROXY_IMAGE_TYPES]);
   const [proxyCatalogRules, setProxyCatalogRules] = useState<ProxyCatalogRule[]>([]);
   const [showConfigString, setShowConfigString] = useState(false);
   const [showProxyUrl, setShowProxyUrl] = useState(false);
