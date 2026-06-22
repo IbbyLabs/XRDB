@@ -23,7 +23,7 @@ simpler configurator.
    ```yaml
    services:
      xrdb:
-       image: ghcr.io/ibbylabs/xrdb:latest
+       image: ghcr.io/ibbylabs/xrdb:dev
        ports: ["8787:8787"]
        volumes: ["xrdb-data:/data"]
        environment:
