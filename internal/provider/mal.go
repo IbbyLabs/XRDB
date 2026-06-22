@@ -19,11 +19,20 @@ type MAL struct {
 	baseURL    string // overridable for tests; defaults to jikanBaseURL
 }
 
-// NewMAL creates a MAL provider. No API key is required (uses public Jikan API).
+// NewMAL creates a MAL provider using the public Jikan API.
 func NewMAL() *MAL {
+	return NewMALWithURL("")
+}
+
+// NewMALWithURL creates a MAL provider with a custom Jikan base URL.
+// Pass an empty string to use the default public endpoint.
+func NewMALWithURL(baseURL string) *MAL {
+	if baseURL == "" {
+		baseURL = jikanBaseURL
+	}
 	return &MAL{
 		httpClient: &http.Client{Timeout: 10 * time.Second},
-		baseURL:    jikanBaseURL,
+		baseURL:    baseURL,
 	}
 }
 

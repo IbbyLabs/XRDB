@@ -97,7 +97,7 @@ func main() {
 		FallbackURL: cfg.AnimeMapFallbackURL,
 		TTL:         cfg.AnimeMapRefresh,
 	})
-	reg.Register(provider.NewAnimeMapped(provider.NewMAL(), animeMapper))
+	reg.Register(provider.NewAnimeMapped(provider.NewMALWithURL(cfg.JikanURL), animeMapper))
 	reg.Register(provider.NewAnimeMapped(provider.NewAniList(), animeMapper))
 	reg.Register(provider.NewAnimeMapped(provider.NewKitsu(), animeMapper))
 	// Cinemeta (Stremio) — public artwork/metadata, no key required.
