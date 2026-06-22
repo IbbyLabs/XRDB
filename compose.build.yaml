@@ -8,6 +8,9 @@ services:
       dockerfile: Dockerfile
     image: xrdb:dev
     container_name: xrdb
+    env_file:
+      - path: .env
+        required: false
     environment:
       XRDB_ADDR: ":8787"
       XRDB_VERSION: "dev"
