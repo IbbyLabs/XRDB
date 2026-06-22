@@ -90,6 +90,7 @@ import {
   type RandomPosterFallbackMode,
   type RandomPosterLanguageMode,
   type RandomPosterTextMode,
+  type ProxyImageType,
   type ProxyMediaType,
   type QualityBadgesSide,
   type StreamBadgesSetting,
@@ -388,6 +389,7 @@ export function useConfiguratorWorkspaceState() {
   const [proxyTranslateMetaMode, setProxyTranslateMetaMode] = useState<MetadataTranslationMode>(DEFAULT_METADATA_TRANSLATION_MODE);
   const [proxyDebugMetaTranslation, setProxyDebugMetaTranslation] = useState(false);
   const [proxyTypes, setProxyTypes] = useState<ProxyMediaType[]>(['movie', 'series', 'anime']);
+  const [proxyImageTypes, setProxyImageTypes] = useState<ProxyImageType[]>(['poster', 'backdrop', 'thumbnail', 'logo']);
   const [proxyCatalogRules, setProxyCatalogRules] = useState<ProxyCatalogRule[]>([]);
   const [showConfigString, setShowConfigString] = useState(false);
   const [showProxyUrl, setShowProxyUrl] = useState(false);
@@ -914,6 +916,7 @@ export function useConfiguratorWorkspaceState() {
     previewType,
     proxyDebugMetaTranslation,
     proxyCatalogRules,
+    proxyImageTypes,
     proxyManifestUrl,
     proxyTypes,
     proxyTranslateMeta,
@@ -1177,6 +1180,7 @@ export function useConfiguratorWorkspaceState() {
     setPreviewType,
     setProxyDebugMetaTranslation,
     setProxyCatalogRules,
+    setProxyImageTypes,
     setProxyManifestUrl,
     setProxyTypes,
     setProxyTranslateMeta,

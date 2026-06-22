@@ -197,6 +197,9 @@ export type LogoBackground = 'transparent' | 'dark';
 export type TmdbIdScopeMode = 'soft' | 'strict';
 export type ProxyMediaType = 'movie' | 'series' | 'anime';
 const PROXY_MEDIA_TYPES: readonly ProxyMediaType[] = ['movie', 'series', 'anime'];
+export type ProxyImageType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
+const PROXY_IMAGE_TYPES: readonly ProxyImageType[] = ['poster', 'backdrop', 'thumbnail', 'logo'];
+const PROXY_IMAGE_TYPE_SET = new Set<ProxyImageType>(PROXY_IMAGE_TYPES);
 type XrdbImageType = 'poster' | 'backdrop' | 'logo';
 type SharedPayloadOptions = {
   allowMissingTmdbKey?: boolean;
@@ -444,6 +447,7 @@ export type SavedProxySettings = {
   translateMetaMode: MetadataTranslationMode;
   debugMetaTranslation: boolean;
   proxyTypes: ProxyMediaType[];
+  imageTypes: ProxyImageType[];
   episodeIdMode: EpisodeIdMode;
   catalogRules: ProxyCatalogRule[];
 };
@@ -537,6 +541,29 @@ const normalizeProxyMediaTypes = (
 
 const hasAllProxyMediaTypes = (value: ProxyMediaType[]) =>
   PROXY_MEDIA_TYPES.every((type) => value.includes(type));
+
+const normalizeProxyImageType = (value: unknown): ProxyImageType | null => {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (PROXY_IMAGE_TYPE_SET.has(normalized as ProxyImageType)) return normalized as ProxyImageType;
+  return null;
+};
+
+const normalizeProxyImageTypes = (
+  value: unknown,
+  fallback: ProxyImageType[],
+): ProxyImageType[] => {
+  const rawValues = Array.isArray(value) ? value : [];
+  const selected = new Set<ProxyImageType>();
+  for (const rawValue of rawValues) {
+    const normalized = normalizeProxyImageType(rawValue);
+    if (normalized) selected.add(normalized);
+  }
+  const ordered = PROXY_IMAGE_TYPES.filter((type) => selected.has(type));
+  return ordered.length > 0 ? ordered : [...fallback];
+};
+
+const hasAllProxyImageTypes = (value: ProxyImageType[]) =>
+  PROXY_IMAGE_TYPES.every((type) => value.includes(type));
 
 const normalizeEpisodeArtworkMode = (
   value: unknown,
@@ -754,6 +781,7 @@ export const createDefaultSavedUiConfig = (): SavedUiConfig => ({
     translateMetaMode: DEFAULT_METADATA_TRANSLATION_MODE,
     debugMetaTranslation: false,
     proxyTypes: [...PROXY_MEDIA_TYPES],
+    imageTypes: [...PROXY_IMAGE_TYPES],
     episodeIdMode: DEFAULT_EPISODE_ID_MODE,
     catalogRules: [],
   },
@@ -1981,6 +2009,7 @@ export const normalizeSavedUiConfig = (value: unknown, options?: { skipCrossType
       translateMetaMode?: unknown;
       debugMetaTranslation?: unknown;
       proxyTypes?: unknown;
+      imageTypes?: unknown;
       episodeIdMode?: unknown;
       catalogRules?: unknown;
     };
@@ -2004,6 +2033,7 @@ export const normalizeSavedUiConfig = (value: unknown, options?: { skipCrossType
         defaults.proxy.debugMetaTranslation,
       ),
       proxyTypes: normalizeProxyMediaTypes(candidate.proxy?.proxyTypes, defaults.proxy.proxyTypes),
+      imageTypes: normalizeProxyImageTypes(candidate.proxy?.imageTypes, defaults.proxy.imageTypes),
       episodeIdMode: normalizeEpisodeIdMode(
         candidate.proxy?.episodeIdMode,
         defaults.proxy.episodeIdMode,
@@ -3135,6 +3165,14 @@ export const buildProxyPayload = (
   const encodedCatalogPlan = encodeProxyCatalogRules(proxy.catalogRules);
   if (encodedCatalogPlan) {
     payload.catalogPlan = encodedCatalogPlan;
+  }
+  const normalizedImageTypes = normalizeProxyImageTypes(proxy.imageTypes, [...PROXY_IMAGE_TYPES]);
+  if (!hasAllProxyImageTypes(normalizedImageTypes)) {
+    const imageTypeSet = new Set(normalizedImageTypes);
+    if (!imageTypeSet.has('poster')) payload.posterEnabled = false;
+    if (!imageTypeSet.has('backdrop')) payload.backdropEnabled = false;
+    if (!imageTypeSet.has('thumbnail')) payload.thumbnailEnabled = false;
+    if (!imageTypeSet.has('logo')) payload.logoEnabled = false;
   }
 
   return payload;
