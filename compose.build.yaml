@@ -1,11 +1,16 @@
 services:
-  # Single container: the web UI is statically exported and embedded in the
-  # Go binary, which serves it alongside the API on the same port.
+  # Builds the image from source before running.
+  # Use this if you want to build your own image rather than pulling from GHCR.
+  # For most users, compose.yaml (pre-built image) is the right choice.
   xrdb:
-    image: ghcr.io/ibbylabs/xrdb:dev
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: xrdb:dev
     container_name: xrdb
     environment:
       XRDB_ADDR: ":8787"
+      XRDB_VERSION: "dev"
       XRDB_DB: "/data/xrdb.db"
       XRDB_CACHE_DIR: "/data/cache"
     ports:
