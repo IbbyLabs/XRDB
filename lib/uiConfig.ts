@@ -159,6 +159,7 @@ import {
   PROXY_IMAGE_TYPES,
 } from './proxyConfigSchema.ts';
 export type { ProxyImageType };
+export { PROXY_IMAGE_TYPES };
 import {
   DEFAULT_SCOREBAR_STYLE,
   DEFAULT_SCOREBAR_LOW_COLOR,
