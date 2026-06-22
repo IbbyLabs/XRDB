@@ -2,6 +2,7 @@ import type { EpisodeIdMode } from './episodeIdentity.ts';
 import type { MetadataTranslationMode } from './metadataTranslation.ts';
 
 export type ProxyImageType = 'poster' | 'backdrop' | 'thumbnail' | 'logo';
+export const PROXY_IMAGE_TYPES: readonly ProxyImageType[] = ['poster', 'backdrop', 'thumbnail', 'logo'];
 
 const SHARED_IMAGE_QUERY_KEYS = [
   'fanartKey',

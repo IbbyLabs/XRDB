@@ -173,6 +173,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   posterSideRatingsPosition: WorkspaceSettings['posterSideRatingsPosition'];
   posterStreamBadges: WorkspaceSettings['posterStreamBadges'];
   proxyDebugMetaTranslation: WorkspaceProxy['debugMetaTranslation'];
+  proxyImageTypes: WorkspaceProxy['imageTypes'];
   proxyTypes: WorkspaceProxy['proxyTypes'];
   proxyCatalogRules: ProxyCatalogRule[];
   proxyManifestUrl: WorkspaceProxy['manifestUrl'];
@@ -369,6 +370,7 @@ type UseConfiguratorWorkspaceConfigIoArgs = {
   setPosterSideRatingsPosition: Setter<WorkspaceSettings['posterSideRatingsPosition']>;
   setPosterStreamBadges: Setter<WorkspaceSettings['posterStreamBadges']>;
   setProxyDebugMetaTranslation: Setter<WorkspaceProxy['debugMetaTranslation']>;
+  setProxyImageTypes: Setter<WorkspaceProxy['imageTypes']>;
   setProxyTypes: Setter<WorkspaceProxy['proxyTypes']>;
   setProxyCatalogRules: Setter<ProxyCatalogRule[]>;
   setProxyManifestUrl: Setter<WorkspaceProxy['manifestUrl']>;
@@ -581,6 +583,7 @@ export function useConfiguratorWorkspaceConfigIo({
   posterSideRatingsPosition,
   posterStreamBadges,
   proxyDebugMetaTranslation,
+  proxyImageTypes,
   proxyTypes,
   proxyCatalogRules,
   proxyManifestUrl,
@@ -777,6 +780,7 @@ export function useConfiguratorWorkspaceConfigIo({
   setPosterSideRatingsPosition,
   setPosterStreamBadges,
   setProxyDebugMetaTranslation,
+  setProxyImageTypes,
   setProxyTypes,
   setProxyCatalogRules,
   setProxyManifestUrl,
@@ -1027,6 +1031,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setProxyTranslateMetaMode(normalized.proxy.translateMetaMode);
       setProxyDebugMetaTranslation(normalized.proxy.debugMetaTranslation);
       setProxyTypes(normalized.proxy.proxyTypes);
+      setProxyImageTypes(normalized.proxy.imageTypes);
       setProxyCatalogRules(normalized.proxy.catalogRules);
       setEpisodeIdMode(normalized.proxy.episodeIdMode);
     },
@@ -1173,6 +1178,7 @@ export function useConfiguratorWorkspaceConfigIo({
       setPosterSideRatingsPosition,
       setPosterStreamBadges,
       setProxyDebugMetaTranslation,
+      setProxyImageTypes,
       setProxyCatalogRules,
       setProxyManifestUrl,
       setProxyTypes,
@@ -1441,6 +1447,7 @@ export function useConfiguratorWorkspaceConfigIo({
           translateMetaMode: proxyTranslateMetaMode,
           debugMetaTranslation: proxyDebugMetaTranslation,
           proxyTypes,
+          imageTypes: proxyImageTypes,
           episodeIdMode,
           catalogRules: proxyCatalogRules,
         },
@@ -1599,6 +1606,7 @@ export function useConfiguratorWorkspaceConfigIo({
       posterSideRatingsPosition,
       posterStreamBadges,
       proxyDebugMetaTranslation,
+      proxyImageTypes,
       proxyTypes,
       proxyCatalogRules,
       proxyManifestUrl,
