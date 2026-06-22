@@ -664,6 +664,8 @@ export function buildConfiguratorPageProps({
         onToggleProxyDebugMetaTranslation: workspaceState.setProxyDebugMetaTranslation,
         proxyTypes: workspaceState.proxyTypes,
         onChangeProxyTypes: workspaceState.setProxyTypes,
+        proxyImageTypes: workspaceState.proxyImageTypes,
+        onChangeProxyImageTypes: workspaceState.setProxyImageTypes,
         proxyCatalogRules: workspaceState.proxyCatalogRules,
         onChangeProxyCatalogRules: workspaceState.setProxyCatalogRules,
         proxyPayload: buildProxyPayload(baseUrl, outputs.currentUiConfig.proxy, outputs.currentUiConfig.settings, {

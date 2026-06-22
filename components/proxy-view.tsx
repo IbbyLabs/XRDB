@@ -20,7 +20,7 @@ import {
   readProxyCatalogDescriptors,
   type ProxyCatalogRule,
 } from '@/lib/proxyCatalogRules';
-import type { ProxyMediaType } from '@/lib/uiConfig';
+import { PROXY_IMAGE_TYPES, type ProxyImageType, type ProxyMediaType } from '@/lib/uiConfig';
 
 export function ProxyView() {
   const { workspaceColumnsProps, isDocsCapture } = useConfiguratorContext();
@@ -37,6 +37,8 @@ export function ProxyView() {
     onToggleProxyDebugMetaTranslation,
     proxyTypes,
     onChangeProxyTypes,
+    proxyImageTypes,
+    onChangeProxyImageTypes,
     proxyCatalogRules,
     onChangeProxyCatalogRules,
     proxyPayload,
@@ -118,6 +120,18 @@ export function ProxyView() {
     [proxyCatalogRules],
   );
   const proxyTypeSet = useMemo(() => new Set(proxyTypes), [proxyTypes]);
+  const proxyImageTypeSet = useMemo(() => new Set(proxyImageTypes), [proxyImageTypes]);
+
+  const toggleImageType = (type: ProxyImageType, enabled: boolean) => {
+    const nextSet = new Set(proxyImageTypes);
+    if (enabled) {
+      nextSet.add(type);
+    } else {
+      nextSet.delete(type);
+    }
+    const ordered = PROXY_IMAGE_TYPES.filter((t) => nextSet.has(t));
+    onChangeProxyImageTypes(ordered);
+  };
   const canGenerateProxy = Boolean(effectiveGeneratedProxyUrl);
   const displayedProxyUrl =
     effectiveGeneratedProxyUrl ||
@@ -227,6 +241,34 @@ export function ProxyView() {
                     <span>{option.label}</span>
                   </label>
                 ))}
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-[12px] font-semibold uppercase tracking-wide text-[color:var(--muted)]">Artwork filter</p>
+                <p className="text-[13px] leading-5 text-[color:var(--muted)]">
+                  Choose which artwork types XRDB replaces. Unchecked types pass through from the source addon unchanged.
+                </p>
+                <div className="grid gap-2 sm:grid-cols-4">
+                  {([
+                    { id: 'poster' as const, label: 'Poster' },
+                    { id: 'backdrop' as const, label: 'Backdrop' },
+                    { id: 'thumbnail' as const, label: 'Thumbnail' },
+                    { id: 'logo' as const, label: 'Logo' },
+                  ]).map((option) => (
+                    <label
+                      key={option.id}
+                      className="inline-flex items-center gap-2 rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-base)] px-3 py-2.5 text-[13px] font-medium text-[color:var(--ink)] cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={proxyImageTypeSet.has(option.id)}
+                        onChange={(event) => toggleImageType(option.id, event.target.checked)}
+                        className="h-3.5 w-3.5 accent-[var(--accent)]"
+                      />
+                      <span>{option.label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <div className="rounded-xl border border-[color:var(--border)] bg-[color:var(--bg-base)]">
