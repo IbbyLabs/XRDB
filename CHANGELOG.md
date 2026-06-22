@@ -11,7 +11,53 @@
 
 ### Documentation
 
-<a id="v2-2-3"></a>
+<a id="v2-2-4"></a>
+
+## [v2.2.4] - 23/06/2026
+
+### Added
+* add per artwork type filter to proxy builder (#40)
+  
+  * feat(proxy): FR-118 add per artwork type filter to proxy builder
+  
+  Adds poster/backdrop/thumbnail/logo checkboxes in the proxy builder
+  Step 2 panel so users can choose which artwork types XRDB replaces.
+  Unchecked types pass through unchanged from the source addon.
+  
+  Closes FR-118
+  
+  * test(ui config): add imageTypes to proxy normalization snapshot
+  
+  The workspace normalization test was missing imageTypes from its deepEqual
+  assertion after FR-118 added the field to SavedProxySettings.
+  
+  * refactor(proxy): consolidate ProxyImageType into proxyConfigSchema; fix toggleImageType
+  
+  Move PROXY_IMAGE_TYPES and ProxyImageType out of uiConfig.ts into
+  proxyConfigSchema.ts as the single source of truth. uiConfig.ts now
+  imports and re exports them; proxy view.tsx and useConfiguratorWorkspaceState.ts
+  import from there instead of hardcoding the list.
+  
+  Remove the ordered.length > 0 guard in toggleImageType so all selection
+  changes — including clearing all types — propagate to the parent rather
+  than being silently swallowed.
+  
+  Add a round trip test: partial imageTypes selection encodes through
+  buildProxyUrl and decodes with the correct posterEnabled/backdropEnabled/
+  thumbnailEnabled/logoEnabled flags intact.
+  
+  * fix(uiConfig): re export PROXY_IMAGE_TYPES so consumers can import it
+  
+  The value was imported from proxyConfigSchema.ts but only the type was
+  re exported, leaving useConfiguratorWorkspaceState and proxy view unable
+  to import PROXY_IMAGE_TYPES from @/lib/uiConfig.
+
+### Documentation
+* refresh static doc assets
+
+### Other Changes
+* disable dev track publishing for release tags
+
 
 ## [v2.2.3] - 12/06/2026
 
