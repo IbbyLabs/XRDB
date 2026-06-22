@@ -11,7 +11,7 @@ import (
 )
 
 const mappedTestDataset = `[
-  {"type":"TV","mal_id":21,"anilist_id":21,"kitsu_id":12,"imdb_id":"tt0388629","themoviedb_id":{"tv":37854}}
+  {"type":"TV","mal_id":21,"anilist_id":21,"kitsu_id":12,"imdb_id":["tt0388629"],"themoviedb_id":{"tv":37854}}
 ]`
 
 func newTestAnimeMapper(t *testing.T) *animemap.Mapper {

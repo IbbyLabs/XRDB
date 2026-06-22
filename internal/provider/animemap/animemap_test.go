@@ -13,11 +13,13 @@ import (
 )
 
 // sampleDataset mirrors the Fribb/anime-lists mini-list shape (synthetic IDs).
+// imdb_id is an array as of the 2026-06 dataset format change.
 const sampleDataset = `[
-  {"type":"TV","mal_id":21,"anilist_id":21,"kitsu_id":12,"imdb_id":"tt0388629","themoviedb_id":{"tv":37854},"tvdb_id":81797},
-  {"type":"MOVIE","mal_id":199,"anilist_id":199,"kitsu_id":176,"imdb_id":"tt0245429","themoviedb_id":129},
-  {"type":"TV","mal_id":50000,"anilist_id":60000,"kitsu_id":70000,"imdb_id":"tt9999999","themoviedb_id":{"tv":4242},"season":{"tvdb":2,"tmdb":2}},
-  {"type":"TV","mal_id":51,"anilist_id":61,"kitsu_id":71,"imdb_id":"tt9999999","themoviedb_id":{"tv":4242},"season":{"tvdb":1,"tmdb":1}},
+  {"type":"TV","mal_id":21,"anilist_id":21,"kitsu_id":12,"imdb_id":["tt0388629"],"themoviedb_id":{"tv":37854},"tvdb_id":81797},
+  {"type":"MOVIE","mal_id":199,"anilist_id":199,"kitsu_id":176,"imdb_id":["tt0245429"],"themoviedb_id":{"movie":129},"season":{"tvdb":1,"tmdb":1}},
+  {"type":"TV","mal_id":50000,"anilist_id":60000,"kitsu_id":70000,"imdb_id":["tt9999999"],"themoviedb_id":{"tv":4242},"season":{"tvdb":2,"tmdb":2}},
+  {"type":"TV","mal_id":51,"anilist_id":61,"kitsu_id":71,"imdb_id":["tt9999999"],"themoviedb_id":{"tv":4242},"season":{"tvdb":1,"tmdb":1}},
+  {"type":"TV","mal_id":300,"anilist_id":300,"kitsu_id":300,"imdb_id":["tt3333333","tt4444444"],"themoviedb_id":{"tv":9999}},
   {"type":"TV","anime-planet_id":"slug-only"}
 ]`
 
@@ -53,6 +55,8 @@ func TestResolveFromDataset(t *testing.T) {
 		{"tmdb tv numeric via backdrop", "backdrop", "37854", IDs{MAL: 21, AniList: 21, Kitsu: 12}, true},
 		{"tmdb tv numeric via poster falls through", "poster", "37854", IDs{MAL: 21, AniList: 21, Kitsu: 12}, true},
 		{"season 1 preferred over season 2", "poster", "tt9999999", IDs{MAL: 51, AniList: 61, Kitsu: 71}, true},
+		{"multi-imdb first id", "poster", "tt3333333", IDs{MAL: 300, AniList: 300, Kitsu: 300}, true},
+		{"multi-imdb second id", "poster", "tt4444444", IDs{MAL: 300, AniList: 300, Kitsu: 300}, true},
 		{"non-anime", "poster", "tt0468569", IDs{}, false},
 		{"garbage", "poster", "not-an-id", IDs{}, false},
 		{"empty", "poster", "", IDs{}, false},

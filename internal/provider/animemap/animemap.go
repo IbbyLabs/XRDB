@@ -383,7 +383,7 @@ type datasetEntry struct {
 	MALID     flexInt   `json:"mal_id"`
 	AniListID flexInt   `json:"anilist_id"`
 	KitsuID   flexInt   `json:"kitsu_id"`
-	IMDbID    string    `json:"imdb_id"`
+	IMDbID    []string  `json:"imdb_id"`
 	TMDBID    tmdbRef   `json:"themoviedb_id"`
 	Season    seasonRef `json:"season"`
 }
@@ -405,8 +405,10 @@ func buildIndexes(data []byte) (map[string]indexed, map[int]indexed, map[int]ind
 			continue
 		}
 		item := indexed{ids: ids, rank: e.Season.rank}
-		if e.IMDbID != "" {
-			insert(imdb, e.IMDbID, item)
+		for _, imdbID := range e.IMDbID {
+			if imdbID != "" {
+				insert(imdb, imdbID, item)
+			}
 		}
 		if e.TMDBID.Movie != 0 {
 			insert(movie, e.TMDBID.Movie, item)
