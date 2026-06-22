@@ -21,6 +21,7 @@ type Config struct {
 	TraktClientID       string
 	SIMKLClientID       string
 	IMDbDatasetDir      string                   // directory for cached IMDb dataset file; empty = disabled
+	JikanURL            string                   // override Jikan API base URL; empty = public api.jikan.moe
 	AnimeMapURL         string                   // override anime ID mapping dataset URL; empty = default
 	AnimeMapFallbackURL string                   // live anime mapping API base URL; "off" disables
 	AnimeMapRefresh     time.Duration            // anime mapping dataset refresh interval; 0 = default (7 days)
@@ -95,6 +96,7 @@ func Load() Config {
 		TraktClientID:       os.Getenv("XRDB_TRAKT_CLIENT_ID"),
 		SIMKLClientID:       os.Getenv("XRDB_SIMKL_CLIENT_ID"),
 		IMDbDatasetDir:      os.Getenv("XRDB_IMDB_DATASET_DIR"),
+		JikanURL:            os.Getenv("XRDB_JIKAN_URL"),
 		AnimeMapURL:         os.Getenv("XRDB_ANIME_MAP_URL"),
 		AnimeMapFallbackURL: os.Getenv("XRDB_ANIME_MAP_FALLBACK_URL"),
 		AnimeMapRefresh:     animeMapRefresh,
