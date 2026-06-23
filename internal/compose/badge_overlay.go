@@ -765,11 +765,7 @@ func drawProgressRing(base *image.NRGBA, cx, cy, outerR, innerR int, sweepFrac f
 	if face == nil {
 		return
 	}
-	label := fmt.Sprintf("%.1f", sweepFrac*10)
-	// Trim trailing ".0" for whole numbers to save space
-	if strings.HasSuffix(label, ".0") {
-		label = label[:len(label)-2]
-	}
+	label := strings.TrimSuffix(fmt.Sprintf("%.1f", sweepFrac*10), ".0")
 	tw := textWidth(face, label)
 	fm := face.Metrics()
 	ascent := fm.Ascent.Ceil()
@@ -787,11 +783,7 @@ func drawCompactWings(base *image.NRGBA, avg float64, fillColor color.NRGBA, pos
 	}
 	s := func(v float64) int { return int(v*scale + 0.5) }
 
-	label := fmt.Sprintf("%.1f", avg)
-	if strings.HasSuffix(label, ".0") {
-		label = label[:len(label)-2]
-	}
-
+	label := strings.TrimSuffix(fmt.Sprintf("%.1f", avg), ".0")
 	tw := textWidth(face, label)
 	fm := face.Metrics()
 	ascent := fm.Ascent.Ceil()
@@ -869,12 +861,18 @@ func drawArcOnly(base *image.NRGBA, cx, cy, innerR, outerR int, startAngle, swee
 
 // angleBetween returns true if angle lies in [lo, hi] with wrap-around handling.
 func angleBetween(angle, lo, hi float64) bool {
-	// Normalise both bounds to (-π, π] range that Atan2 returns
+	// Normalise both bounds to (-π, π] range that Atan2 returns.
 	for lo > math.Pi {
 		lo -= 2 * math.Pi
 	}
 	for lo < -math.Pi {
 		lo += 2 * math.Pi
+	}
+	for hi > math.Pi {
+		hi -= 2 * math.Pi
+	}
+	for hi < -math.Pi {
+		hi += 2 * math.Pi
 	}
 	if lo <= hi {
 		return angle >= lo && angle <= hi
