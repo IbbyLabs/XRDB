@@ -3,6 +3,7 @@ package compose
 import (
 	"image"
 	"image/color"
+	"math"
 
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
@@ -19,7 +20,14 @@ func fillRoundedRect(dst *image.NRGBA, r image.Rectangle, radius int, c color.NR
 				cx, cy := cornerCenter(x, y, r, radius)
 				dx := float64(x) - cx + 0.5
 				dy := float64(y) - cy + 0.5
-				if dx*dx+dy*dy > cr*cr {
+				dist := math.Sqrt(dx*dx + dy*dy)
+				if dist >= cr+0.5 {
+					continue
+				}
+				if dist > cr-0.5 {
+					// Sub-pixel coverage at the arc edge — blend instead of hard clip.
+					coverage := cr + 0.5 - dist
+					blendPixel(dst, x, y, color.NRGBA{R: c.R, G: c.G, B: c.B, A: uint8(float64(c.A) * coverage)})
 					continue
 				}
 			}
@@ -113,7 +121,13 @@ func drawRectBorder(dst *image.NRGBA, r image.Rectangle, radius int, c color.NRG
 				cx, cy := cornerCenter(x, y, r, radius)
 				dx := float64(x) - cx + 0.5
 				dy := float64(y) - cy + 0.5
-				if dx*dx+dy*dy > cr*cr {
+				dist := math.Sqrt(dx*dx + dy*dy)
+				if dist >= cr+0.5 {
+					continue
+				}
+				if dist > cr-0.5 {
+					coverage := cr + 0.5 - dist
+					blendPixel(dst, x, y, color.NRGBA{R: c.R, G: c.G, B: c.B, A: uint8(float64(c.A) * coverage)})
 					continue
 				}
 			}

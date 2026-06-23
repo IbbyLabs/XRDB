@@ -726,38 +726,60 @@ func drawProgressRing(base *image.NRGBA, cx, cy, outerR, innerR int, sweepFrac f
 	trackColor := color.NRGBA{R: 0, G: 0, B: 0, A: 140}
 	bgColor := color.NRGBA{R: 0, G: 0, B: 0, A: 160}
 
-	outerR2 := float64(outerR * outerR)
-	innerR2 := float64(innerR * innerR)
-	innerRbg := float64((innerR - 1) * (innerR - 1))
+	outerRf := float64(outerR)
+	innerRf := float64(innerR)
+	innerBgRf := float64(innerR - 1)
 
 	sweep := sweepFrac * 2 * math.Pi
 	startAngle := -math.Pi / 2 // top
 
-	for py := cy - outerR; py <= cy+outerR; py++ {
-		for px := cx - outerR; px <= cx+outerR; px++ {
+	for py := cy - outerR - 1; py <= cy+outerR+1; py++ {
+		for px := cx - outerR - 1; px <= cx+outerR+1; px++ {
 			dx := float64(px) - float64(cx) + 0.5
 			dy := float64(py) - float64(cy) + 0.5
-			d2 := dx*dx + dy*dy
+			dist := math.Sqrt(dx*dx + dy*dy)
 
-			if d2 < innerRbg {
-				// Inner circle background
-				blendPixel(base, px, py, bgColor)
+			// Outer edge coverage: fade out beyond outerR.
+			outerCov := outerRf + 0.5 - dist
+			if outerCov <= 0 {
 				continue
 			}
-			if d2 < innerR2 || d2 > outerR2 {
+			if outerCov > 1 {
+				outerCov = 1
+			}
+
+			// Inner background disk (full solid fill inside innerR-1).
+			bgCov := innerBgRf + 0.5 - dist
+			if bgCov > 1 {
+				bgCov = 1
+			}
+			if bgCov > 0 {
+				blendPixel(base, px, py, color.NRGBA{R: bgColor.R, G: bgColor.G, B: bgColor.B, A: uint8(float64(bgColor.A) * bgCov * outerCov)})
 				continue
 			}
-			// In the annular ring: check angle for fill vs track
+
+			// Annular ring zone. Skip pixels fully inside the inner hole.
+			innerCov := dist - (innerRf - 0.5)
+			if innerCov <= 0 {
+				continue
+			}
+			if innerCov > 1 {
+				innerCov = 1
+			}
+
+			ringAlpha := outerCov * innerCov
 			angle := math.Atan2(dy, dx)
 			rel := angle - startAngle
 			for rel < 0 {
 				rel += 2 * math.Pi
 			}
+			var c color.NRGBA
 			if rel <= sweep {
-				blendPixel(base, px, py, fillColor)
+				c = fillColor
 			} else {
-				blendPixel(base, px, py, trackColor)
+				c = trackColor
 			}
+			blendPixel(base, px, py, color.NRGBA{R: c.R, G: c.G, B: c.B, A: uint8(float64(c.A) * ringAlpha)})
 		}
 	}
 
