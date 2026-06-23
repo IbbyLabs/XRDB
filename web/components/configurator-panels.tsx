@@ -95,37 +95,41 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating }: RatingsP
           </div>
         </div>
 
-        <div className="field">
-          <span className="label" id={`${uid}-bstyle-label`}>Badge style</span>
-          <div className="opt-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }} role="group" aria-labelledby={`${uid}-bstyle-label`}>
-            {BADGE_STYLE_OPTIONS.map(o => (
-              <button
-                key={o.id}
-                className={`opt-btn${config.badgeStyle === o.id ? ' opt-btn--active' : ''}`}
-                onClick={() => onUpdate('badgeStyle', o.id)}
-                aria-pressed={config.badgeStyle === o.id}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        {config.ratingsLayout !== 'none' && (
+          <>
+            <div className="field">
+              <span className="label" id={`${uid}-bstyle-label`}>Badge style</span>
+              <div className="opt-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }} role="group" aria-labelledby={`${uid}-bstyle-label`}>
+                {BADGE_STYLE_OPTIONS.map(o => (
+                  <button
+                    key={o.id}
+                    className={`opt-btn${config.badgeStyle === o.id ? ' opt-btn--active' : ''}`}
+                    onClick={() => onUpdate('badgeStyle', o.id)}
+                    aria-pressed={config.badgeStyle === o.id}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-        <div className="field">
-          <span className="label" id={`${uid}-btheme-label`}>Badge theme</span>
-          <div className="opt-grid" role="group" aria-labelledby={`${uid}-btheme-label`}>
-            {BADGE_THEME_OPTIONS.map(o => (
-              <button
-                key={o.id}
-                className={`opt-btn${config.badgeTheme === o.id ? ' opt-btn--active' : ''}`}
-                onClick={() => onUpdate('badgeTheme', o.id)}
-                aria-pressed={config.badgeTheme === o.id}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
-        </div>
+            <div className="field">
+              <span className="label" id={`${uid}-btheme-label`}>Badge theme</span>
+              <div className="opt-grid" role="group" aria-labelledby={`${uid}-btheme-label`}>
+                {BADGE_THEME_OPTIONS.map(o => (
+                  <button
+                    key={o.id}
+                    className={`opt-btn${config.badgeTheme === o.id ? ' opt-btn--active' : ''}`}
+                    onClick={() => onUpdate('badgeTheme', o.id)}
+                    aria-pressed={config.badgeTheme === o.id}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
 
         {config.ratings.length > 0 && (
           <>
