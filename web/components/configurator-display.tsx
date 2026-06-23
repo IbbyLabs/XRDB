@@ -223,25 +223,29 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           </span>
         </fieldset>
 
-        <ToggleRow
-          label="Aggregate bar"
-          hint="Score bar across the image edge"
-          checked={config.aggregateBar}
-          onChange={() => onUpdate('aggregateBar', !config.aggregateBar)}
-        />
+        {config.ratings.length > 0 && (
+          <>
+            <ToggleRow
+              label="Aggregate bar"
+              hint="Score bar across the image edge"
+              checked={config.aggregateBar}
+              onChange={() => onUpdate('aggregateBar', !config.aggregateBar)}
+            />
 
-        {config.aggregateBar && (
-          <Field label="Bar position" htmlFor={`${uid}-barpos`}>
-            <select
-              id={`${uid}-barpos`}
-              className="select"
-              value={config.aggregateBarPos}
-              onChange={e => onUpdate('aggregateBarPos', e.target.value)}
-            >
-              <option value="bottom">Bottom</option>
-              <option value="top">Top</option>
-            </select>
-          </Field>
+            {config.aggregateBar && (
+              <Field label="Bar position" htmlFor={`${uid}-barpos`}>
+                <select
+                  id={`${uid}-barpos`}
+                  className="select"
+                  value={config.aggregateBarPos}
+                  onChange={e => onUpdate('aggregateBarPos', e.target.value)}
+                >
+                  <option value="bottom">Bottom</option>
+                  <option value="top">Top</option>
+                </select>
+              </Field>
+            )}
+          </>
         )}
 
         <ToggleRow

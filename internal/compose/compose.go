@@ -171,6 +171,9 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	if req.Config.Trending {
 		drawTrendingBadge(composed, scale)
 	}
+	if req.Config.RatingRing {
+		drawAverageRatingRing(composed, allRatings, req.Config, scale)
+	}
 	// Show the logo overlay when explicitly requested OR when the user has
 	// chosen to use the backdrop as a poster (backdrop images don't carry
 	// baked-in title text, so the overlay is the only way to show the title).

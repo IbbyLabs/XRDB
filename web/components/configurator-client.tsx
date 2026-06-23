@@ -88,6 +88,8 @@ export function ConfiguratorClient() {
       providers: cfg.providers, aggregateBar: cfg.aggregateBar,
       aggregateBarPos: cfg.aggregateBarPos, trending: cfg.trending,
       backdropAsPoster: cfg.backdropAsPoster,
+      ratingRing: cfg.ratingRing, ratingRingStyle: cfg.ratingRingStyle,
+      ratingRingPos: cfg.ratingRingPos, ratingRingColor: cfg.ratingRingColor,
     }));
   }, []);
 

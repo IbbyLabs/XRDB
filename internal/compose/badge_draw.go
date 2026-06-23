@@ -75,6 +75,26 @@ func textWidth(face font.Face, s string) int {
 	return font.MeasureString(face, s).Ceil()
 }
 
+// blendPixel alpha-blends color c over the existing pixel at (x, y).
+func blendPixel(dst *image.NRGBA, x, y int, c color.NRGBA) {
+	if !image.Pt(x, y).In(dst.Bounds()) {
+		return
+	}
+	if c.A == 255 {
+		dst.SetNRGBA(x, y, c)
+		return
+	}
+	dp := dst.NRGBAAt(x, y)
+	a := uint32(c.A)
+	ia := 255 - a
+	dst.SetNRGBA(x, y, color.NRGBA{
+		R: uint8((uint32(c.R)*a + uint32(dp.R)*ia) / 255),
+		G: uint8((uint32(c.G)*a + uint32(dp.G)*ia) / 255),
+		B: uint8((uint32(c.B)*a + uint32(dp.B)*ia) / 255),
+		A: uint8((a*255 + uint32(dp.A)*ia) / 255),
+	})
+}
+
 // drawRectBorder draws a 1px border around a rounded rectangle.
 func drawRectBorder(dst *image.NRGBA, r image.Rectangle, radius int, c color.NRGBA) {
 	cr := float64(radius)
