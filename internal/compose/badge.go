@@ -199,18 +199,20 @@ func outputScale(size imageconfig.MediaSize) float64 {
 
 // providerAccent returns a provider-specific accent color for the badge strip.
 var providerAccent = map[string]color.NRGBA{
-	"tmdb":       {R: 1, G: 180, B: 228, A: 255},
-	"imdb":       {R: 245, G: 197, B: 24, A: 255},
-	"rt":         {R: 250, G: 50, B: 10, A: 255},
-	"rtaudience": {R: 250, G: 130, B: 10, A: 255},
-	"metacritic": {R: 255, G: 204, B: 52, A: 255},
-	"mdblist":    {R: 139, G: 92, B: 246, A: 255},
-	"letterboxd": {R: 0, G: 169, B: 157, A: 255},
-	"trakt":      {R: 237, G: 28, B: 36, A: 255},
-	"simkl":      {R: 28, G: 176, B: 246, A: 255},
-	"anilist":    {R: 2, G: 169, B: 255, A: 255},
-	"mal":        {R: 44, G: 111, B: 187, A: 255},
-	"kitsu":      {R: 247, G: 110, B: 24, A: 255},
+	"tmdb":           {R: 1, G: 180, B: 228, A: 255},
+	"imdb":           {R: 245, G: 197, B: 24, A: 255},
+	"rt":             {R: 250, G: 50, B: 10, A: 255},
+	"rtaudience":     {R: 250, G: 130, B: 10, A: 255},
+	"metacritic":     {R: 255, G: 204, B: 52, A: 255},
+	"metacriticuser": {R: 255, G: 204, B: 52, A: 255},
+	"rogerebert":     {R: 193, G: 18, B: 31, A: 255},
+	"mdblist":        {R: 139, G: 92, B: 246, A: 255},
+	"letterboxd":     {R: 0, G: 169, B: 157, A: 255},
+	"trakt":          {R: 237, G: 28, B: 36, A: 255},
+	"simkl":          {R: 28, G: 176, B: 246, A: 255},
+	"anilist":        {R: 2, G: 169, B: 255, A: 255},
+	"mal":            {R: 44, G: 111, B: 187, A: 255},
+	"kitsu":          {R: 247, G: 110, B: 24, A: 255},
 }
 
 func accentFor(source string) color.NRGBA {

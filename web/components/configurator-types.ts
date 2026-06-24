@@ -52,19 +52,21 @@ export const BADGE_THEME_OPTIONS = [
   { id: 'light', label: 'Light' },
 ] as const;
 
-export const RATING_OPTIONS: { id: string; label: string; accent: string; group?: string }[] = [
-  { id: 'imdb',       label: 'IMDb',        accent: '#f5c518' },
-  { id: 'tmdb',       label: 'TMDB',        accent: '#01b4e4' },
-  { id: 'rt',         label: 'RT critics',  accent: '#fa320a' },
-  { id: 'rtaudience', label: 'RT audience', accent: '#fa320a' },
-  { id: 'metacritic', label: 'Metacritic',  accent: '#ffcc34' },
-  { id: 'letterboxd', label: 'Letterboxd',  accent: '#00a99d' },
-  { id: 'mdblist',    label: 'MDBList',     accent: '#8b5cf6' },
-  { id: 'trakt',      label: 'Trakt',       accent: '#ed1c24' },
-  { id: 'simkl',      label: 'SIMKL',       accent: '#1cb0f6' },
-  { id: 'mal',        label: 'MyAnimeList', accent: '#2c6fbb', group: 'anime' },
-  { id: 'anilist',    label: 'AniList',     accent: '#02a9ff', group: 'anime' },
-  { id: 'kitsu',      label: 'Kitsu',       accent: '#f76e18', group: 'anime' },
+export const RATING_OPTIONS: { id: string; label: string; accent: string; icon: string; group?: string }[] = [
+  { id: 'imdb',           label: 'IMDb',            accent: '#f5c518', icon: '/rating-logos/imdb.svg' },
+  { id: 'tmdb',           label: 'TMDB',            accent: '#01b4e4', icon: '/rating-logos/tmdb.svg' },
+  { id: 'rt',             label: 'RT critics',      accent: '#fa320a', icon: '/rating-logos/rt.svg' },
+  { id: 'rtaudience',     label: 'RT audience',     accent: '#fa320a', icon: '/rating-logos/rtaudience.svg' },
+  { id: 'metacritic',     label: 'Metacritic',      accent: '#ffcc34', icon: '/rating-logos/metacritic.svg' },
+  { id: 'metacriticuser', label: 'Metacritic User', accent: '#ffcc34', icon: '/rating-logos/metacriticuser.svg' },
+  { id: 'letterboxd',     label: 'Letterboxd',      accent: '#00a99d', icon: '/rating-logos/letterboxd.svg' },
+  { id: 'mdblist',        label: 'MDBList',         accent: '#8b5cf6', icon: '/rating-logos/mdblist.svg' },
+  { id: 'trakt',          label: 'Trakt',           accent: '#ed1c24', icon: '/rating-logos/trakt.svg' },
+  { id: 'simkl',          label: 'SIMKL',           accent: '#1cb0f6', icon: '/rating-logos/simkl.svg' },
+  { id: 'rogerebert',     label: 'Roger Ebert',     accent: '#c1121f', icon: '/rating-logos/rogerebert.png' },
+  { id: 'mal',            label: 'MyAnimeList',     accent: '#2c6fbb', icon: '/rating-logos/mal.svg', group: 'anime' },
+  { id: 'anilist',        label: 'AniList',         accent: '#02a9ff', icon: '/rating-logos/anilist.svg', group: 'anime' },
+  { id: 'kitsu',          label: 'Kitsu',           accent: '#f76e18', icon: '/rating-logos/kitsu.svg', group: 'anime' },
 ];
 
 export const AGE_POS_OPTIONS = [

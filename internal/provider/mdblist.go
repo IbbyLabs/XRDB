@@ -81,8 +81,8 @@ func (m *MDBList) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, 
 }
 
 type mdblistPayload struct {
-	Score   float64          `json:"score"`
-	Ratings []mdblistRating  `json:"ratings"`
+	Score   float64         `json:"score"`
+	Ratings []mdblistRating `json:"ratings"`
 }
 
 type mdblistRating struct {
@@ -184,7 +184,10 @@ func mdblistNormalize(source string, value float64) (float64, string) {
 	case "letterboxd":
 		// 0–5 scale → normalise to 0–10
 		return value * 2, fmt.Sprintf("%.1f", value)
-	case "mdblist", "trakt", "rogerebert", "commonsense":
+	case "rogerebert":
+		// Roger Ebert uses a 0–4 star scale.
+		return value / 4 * 10, fmt.Sprintf("%.1f", value)
+	case "mdblist", "trakt", "commonsense":
 		// 0–100 aggregate
 		return value / 10, fmt.Sprintf("%.0f", value)
 	case "mal", "anilist":

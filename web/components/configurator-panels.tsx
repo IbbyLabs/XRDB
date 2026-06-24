@@ -76,6 +76,8 @@ interface RatingsPanelProps {
 }
 
 export function RatingsPanel({ uid, config, onUpdate, onToggleRating }: RatingsPanelProps) {
+  // Track source logos that fail to load so we fall back to the accent dot.
+  const [logoFailed, setLogoFailed] = useState<Record<string, boolean>>({});
   return (
     <div className="panel">
       <div className="panel-body cfg-fields">
@@ -222,7 +224,20 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating }: RatingsP
                       onClick={() => onToggleRating(r.id)}
                       aria-pressed={active}
                     >
-                      <span className="src-dot" style={{ background: r.accent }} aria-hidden />
+                      {r.icon && !logoFailed[r.id] ? (
+                        <img
+                          className="src-logo"
+                          src={r.icon}
+                          alt=""
+                          aria-hidden
+                          width={18}
+                          height={18}
+                          loading="lazy"
+                          onError={() => setLogoFailed(prev => ({ ...prev, [r.id]: true }))}
+                        />
+                      ) : (
+                        <span className="src-dot" style={{ background: r.accent }} aria-hidden />
+                      )}
                       <span className="src-label">{r.label}</span>
                       <span className="src-check" aria-hidden>
                         {active ? <Check size={12} /> : null}
