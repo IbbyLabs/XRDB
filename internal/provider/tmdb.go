@@ -215,7 +215,7 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		meta.BackdropURL = tmdbImageBase + backdropRes + backdropPath
 	}
 	if logoPath := selectImagePath(result.Images.Logos, "", lang, ""); logoPath != "" {
-		meta.LogoURL = tmdbImageBase + "/w500" + logoPath
+		meta.LogoURL = tmdbImageBase + "/w780" + logoPath
 	}
 	if result.VoteAverage > 0 {
 		meta.Ratings = []Rating{{

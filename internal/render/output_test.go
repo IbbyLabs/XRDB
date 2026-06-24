@@ -21,11 +21,11 @@ func TestIsValidMediaType(t *testing.T) {
 
 func TestDimensionsFor(t *testing.T) {
 	cases := []struct{ mediaType string; w, h int }{
-		{"poster", 580, 859},
+		{"poster", 780, 1170},
 		{"backdrop", 1280, 720},
 		{"thumbnail", 320, 180},
 		{"logo", 800, 200},
-		{"unknown", 580, 859},
+		{"unknown", 780, 1170},
 	}
 	for _, tc := range cases {
 		d := DimensionsFor(tc.mediaType)
@@ -53,7 +53,7 @@ func TestPlaceholderPNGIsDeterministic(t *testing.T) {
 
 func TestPlaceholderPNGDecodesWithCorrectDimensions(t *testing.T) {
 	cases := []struct{ mediaType string; w, h int }{
-		{"poster", 580, 859},
+		{"poster", 780, 1170},
 		{"backdrop", 1280, 720},
 		{"thumbnail", 320, 180},
 		{"logo", 800, 200},
@@ -100,12 +100,12 @@ func TestDimensionsForSize(t *testing.T) {
 		mediaType, size string
 		wantW, wantH    int
 	}{
-		{"poster", "normal", 580, 859},
-		{"poster", "large", 870, 1289},
-		{"poster", "4k", 1740, 2577},
+		{"poster", "normal", 780, 1170},
+		{"poster", "large", 1170, 1755},
+		{"poster", "4k", 2340, 3510},
 		{"backdrop", "4k", 3840, 2160},
 		{"thumbnail", "large", 480, 270},
-		{"poster", "bogus", 580, 859},
+		{"poster", "bogus", 780, 1170},
 	}
 	for _, tc := range cases {
 		d := DimensionsForSize(tc.mediaType, tc.size)
