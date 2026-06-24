@@ -92,10 +92,9 @@ type Config struct {
 	Trending          bool           `json:"trending"`
 	BackdropAsPoster  bool           `json:"backdropAsPoster,omitempty"`
 	BackdropLogo      bool           `json:"backdropLogo,omitempty"`
-	RatingRing        bool           `json:"ratingRing,omitempty"`
-	RatingRingStyle   string         `json:"ratingRingStyle,omitempty"` // "ring" | "compact"
-	RatingRingPos     string         `json:"ratingRingPos,omitempty"`   // "tl" | "tr" | "bl" | "br"
-	RatingRingColor   string         `json:"ratingRingColor,omitempty"` // "" = auto (green/amber/red), else "#RRGGBB"
+	RatingRing      bool   `json:"ratingRing,omitempty"`
+	RatingRingPos   string `json:"ratingRingPos,omitempty"`   // "tl" | "tr" | "bl" | "br"
+	RatingRingColor string `json:"ratingRingColor,omitempty"` // "" = auto (green/amber/red), else "#RRGGBB"
 }
 
 // Default returns a Config populated with production defaults.
@@ -136,10 +135,9 @@ type raw struct {
 	Trending         *bool    `json:"trending"`
 	BackdropAsPoster *bool    `json:"backdropAsPoster"`
 	BackdropLogo     *bool    `json:"backdropLogo"`
-	RatingRing       *bool    `json:"ratingRing"`
-	RatingRingStyle  *string  `json:"ratingRingStyle"`
-	RatingRingPos    *string  `json:"ratingRingPos"`
-	RatingRingColor  *string  `json:"ratingRingColor"`
+	RatingRing      *bool   `json:"ratingRing"`
+	RatingRingPos   *string `json:"ratingRingPos"`
+	RatingRingColor *string `json:"ratingRingColor"`
 }
 
 // Parse deserializes a profile config JSON blob into a normalized Config.
@@ -242,14 +240,6 @@ func Parse(data json.RawMessage) Config {
 	if r.RatingRing != nil {
 		cfg.RatingRing = *r.RatingRing
 	}
-	if r.RatingRingStyle != nil {
-		switch strings.ToLower(strings.TrimSpace(*r.RatingRingStyle)) {
-		case "ring", "full":
-			cfg.RatingRingStyle = "ring"
-		case "compact", "wings":
-			cfg.RatingRingStyle = "compact"
-		}
-	}
 	if r.RatingRingPos != nil {
 		switch strings.ToLower(strings.TrimSpace(*r.RatingRingPos)) {
 		case "tl", "tr", "bl", "br":
@@ -286,12 +276,11 @@ func CacheKey(cfg Config) string {
 		AggregateBar     bool           `json:"aggregateBar"`
 		AggregateBarPos  string         `json:"aggregateBarPos"`
 		Trending         bool           `json:"trending"`
-		BackdropAsPoster bool           `json:"backdropAsPoster"`
-		BackdropLogo     bool           `json:"backdropLogo"`
-		RatingRing       bool           `json:"ratingRing"`
-		RatingRingStyle  string         `json:"ratingRingStyle"`
-		RatingRingPos    string         `json:"ratingRingPos"`
-		RatingRingColor  string         `json:"ratingRingColor"`
+		BackdropAsPoster bool   `json:"backdropAsPoster"`
+		BackdropLogo     bool   `json:"backdropLogo"`
+		RatingRing       bool   `json:"ratingRing"`
+		RatingRingPos    string `json:"ratingRingPos"`
+		RatingRingColor  string `json:"ratingRingColor"`
 	}
 	ratings := make([]string, len(cfg.Ratings))
 	copy(ratings, cfg.Ratings)
@@ -322,7 +311,6 @@ func CacheKey(cfg Config) string {
 		BackdropAsPoster: cfg.BackdropAsPoster,
 		BackdropLogo:     cfg.BackdropLogo,
 		RatingRing:       cfg.RatingRing,
-		RatingRingStyle:  cfg.RatingRingStyle,
 		RatingRingPos:    cfg.RatingRingPos,
 		RatingRingColor:  cfg.RatingRingColor,
 	}

@@ -48,7 +48,7 @@ func ensureFaces() {
 		} else {
 			fontBoldParsed = tt
 			if f, err := opentype.NewFace(tt, &opentype.FaceOptions{
-				Size: 14, DPI: 72, Hinting: font.HintingFull,
+				Size: 16, DPI: 96, Hinting: font.HintingFull,
 			}); err != nil {
 				log.Printf("compose: create bold face: %v", err)
 			} else {
@@ -60,7 +60,7 @@ func ensureFaces() {
 		} else {
 			fontRegularParsed = tt
 			if f, err := opentype.NewFace(tt, &opentype.FaceOptions{
-				Size: 11, DPI: 72, Hinting: font.HintingFull,
+				Size: 13, DPI: 96, Hinting: font.HintingFull,
 			}); err != nil {
 				log.Printf("compose: create regular face: %v", err)
 			} else {
@@ -102,7 +102,7 @@ func valueFaceFor(scale float64) font.Face {
 		return f.(font.Face)
 	}
 	f, err := opentype.NewFace(fontBoldParsed, &opentype.FaceOptions{
-		Size: 14 * scale, DPI: 72, Hinting: font.HintingFull,
+		Size: 16 * scale, DPI: 96, Hinting: font.HintingFull,
 	})
 	if err != nil {
 		return faceValue
@@ -122,7 +122,7 @@ func labelFaceFor(scale float64) font.Face {
 		return f.(font.Face)
 	}
 	f, err := opentype.NewFace(fontRegularParsed, &opentype.FaceOptions{
-		Size: 11 * scale, DPI: 72, Hinting: font.HintingFull,
+		Size: 13 * scale, DPI: 96, Hinting: font.HintingFull,
 	})
 	if err != nil {
 		return faceLabel
@@ -299,12 +299,12 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 
 	var (
 		accentW  = s(3)
-		padX     = s(9)
-		padY     = s(6)
-		iconSize = s(17)
+		padX     = s(10)
+		padY     = s(7)
+		iconSize = s(20)
 		iconGap  = s(5)
-		badgeGap = s(7)
-		rowGap   = s(7)
+		badgeGap = s(8)
+		rowGap   = s(8)
 		edgeX    = s(12)
 		edgeY    = s(12)
 	)
