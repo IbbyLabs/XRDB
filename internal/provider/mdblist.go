@@ -140,7 +140,9 @@ func normalizeMDBSource(raw string) string {
 		return "imdb"
 	case "tomatoes":
 		return "rt"
-	case "tomatoes_audience":
+	case "tomatoes_audience", "popcorn", "popcornmeter", "popcorntime":
+		// MDBList reports the Rotten Tomatoes audience (popcornmeter) score under
+		// the "popcorn" source; "tomatoes_audience" is kept for compatibility.
 		return "rtaudience"
 	case "metacritic":
 		return "metacritic"
