@@ -18,23 +18,147 @@ import (
 
 // ── Quality badges (4K, HDR, DV, etc.) ───────────────────────────────────────
 
-// qualityBadgeColors maps badge token → background color.
-var qualityBadgeColors = map[string]color.NRGBA{
-	"4k":        {R: 0, G: 180, B: 228, A: 255},  // teal-blue
-	"hdr":       {R: 255, G: 165, B: 0, A: 255},   // amber
-	"hdr10":     {R: 255, G: 165, B: 0, A: 255},
-	"hdr10plus": {R: 255, G: 140, B: 0, A: 255},
-	"dv":        {R: 0, G: 140, B: 255, A: 255},   // Dolby blue
-	"dts":       {R: 80, G: 80, B: 80, A: 255},
-	"atmos":     {R: 30, G: 30, B: 120, A: 255},
-	"imax":      {R: 20, G: 20, B: 20, A: 255},
+// tileChrome bundles the colors used to draw an overlay tile.
+type tileChrome struct {
+	fill   color.NRGBA
+	border color.NRGBA // zero alpha = no border
+	shadow color.NRGBA // zero alpha = no shadow
 }
 
-func qualityBadgeColor(token string) color.NRGBA {
-	if c, ok := qualityBadgeColors[strings.ToLower(token)]; ok {
-		return c
+// drawSoftTile draws a rounded "frosted" tile: an offset drop shadow, a fill,
+// and an optional 1px border. Callers draw content inside r afterwards.
+func drawSoftTile(base *image.NRGBA, r image.Rectangle, radius int, ch tileChrome) {
+	if ch.shadow.A > 0 {
+		off := maxInt(1, r.Dy()/18)
+		fillRoundedRect(base, r.Add(image.Pt(0, off)), radius, ch.shadow)
 	}
-	return color.NRGBA{R: 60, G: 60, B: 60, A: 255}
+	fillRoundedRect(base, r, radius, ch.fill)
+	if ch.border.A > 0 {
+		drawRectBorder(base, r, radius, ch.border)
+	}
+}
+
+// meanLuminance returns the average perceived luminance (0..1) of the opaque
+// pixels of img, or 0.5 if there are none. Used to choose a contrasting tile
+// color behind a provider logo (light logos get a dark tile, and vice versa).
+func meanLuminance(img *image.NRGBA) float64 {
+	b := img.Bounds()
+	if b.Dx() == 0 || b.Dy() == 0 {
+		return 0.5
+	}
+	stepX := maxInt(1, b.Dx()/48)
+	stepY := maxInt(1, b.Dy()/48)
+	var sum, n float64
+	for y := b.Min.Y; y < b.Max.Y; y += stepY {
+		for x := b.Min.X; x < b.Max.X; x += stepX {
+			p := img.NRGBAAt(x, y)
+			if p.A < 40 {
+				continue
+			}
+			sum += (0.299*float64(p.R) + 0.587*float64(p.G) + 0.114*float64(p.B)) / 255
+			n++
+		}
+	}
+	if n == 0 {
+		return 0.5
+	}
+	return sum / n
+}
+
+// opaqueFraction returns the fraction of sampled pixels that are (near-)opaque.
+// A value near 1 means the logo carries a baked-in rectangular background
+// rather than a transparent cut-out mark.
+func opaqueFraction(img *image.NRGBA) float64 {
+	b := img.Bounds()
+	if b.Dx() == 0 || b.Dy() == 0 {
+		return 0
+	}
+	stepX := maxInt(1, b.Dx()/48)
+	stepY := maxInt(1, b.Dy()/48)
+	var opaque, total float64
+	for y := b.Min.Y; y < b.Max.Y; y += stepY {
+		for x := b.Min.X; x < b.Max.X; x += stepX {
+			total++
+			if img.NRGBAAt(x, y).A > 200 {
+				opaque++
+			}
+		}
+	}
+	if total == 0 {
+		return 0
+	}
+	return opaque / total
+}
+
+// nonTransparentBounds returns the bounding box of the non-transparent pixels
+// of img, or the empty rectangle if it is fully transparent. Used to reserve a
+// logo's wordmark region so overlays never draw over it.
+func nonTransparentBounds(img *image.NRGBA) image.Rectangle {
+	b := img.Bounds()
+	minX, minY := b.Max.X, b.Max.Y
+	maxX, maxY := b.Min.X, b.Min.Y
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			if img.NRGBAAt(x, y).A > 12 {
+				if x < minX {
+					minX = x
+				}
+				if y < minY {
+					minY = y
+				}
+				if x+1 > maxX {
+					maxX = x + 1
+				}
+				if y+1 > maxY {
+					maxY = y + 1
+				}
+			}
+		}
+	}
+	if minX >= maxX || minY >= maxY {
+		return image.Rectangle{}
+	}
+	return image.Rect(minX, minY, maxX, maxY)
+}
+
+// trimTransparent returns img cropped to its non-transparent bounding box, so a
+// logo with transparent padding fills its chip. Returns img unchanged if it is
+// fully transparent or already tight.
+func trimTransparent(img *image.NRGBA) *image.NRGBA {
+	b := img.Bounds()
+	minX, minY := b.Max.X, b.Max.Y
+	maxX, maxY := b.Min.X, b.Min.Y
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			if img.NRGBAAt(x, y).A > 12 {
+				if x < minX {
+					minX = x
+				}
+				if y < minY {
+					minY = y
+				}
+				if x+1 > maxX {
+					maxX = x + 1
+				}
+				if y+1 > maxY {
+					maxY = y + 1
+				}
+			}
+		}
+	}
+	if minX >= maxX || minY >= maxY {
+		return img
+	}
+	if minX == b.Min.X && minY == b.Min.Y && maxX == b.Max.X && maxY == b.Max.Y {
+		return img
+	}
+	out := image.NewNRGBA(image.Rect(0, 0, maxX-minX, maxY-minY))
+	for y := minY; y < maxY; y++ {
+		for x := minX; x < maxX; x++ {
+			out.SetNRGBA(x-minX, y-minY, img.NRGBAAt(x, y))
+		}
+	}
+	return out
 }
 
 // qualityBadgeLabel returns the display string for a badge token.
@@ -100,49 +224,70 @@ func dedupeQualityTokens(tokens []string) []string {
 	return out
 }
 
-// drawQualityBadges renders quality/format badges (4K, HDR, DV, …) stacked
-// in the top-right corner. Returns the total pixel height consumed.
-func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64) int {
+// drawQualityBadges renders quality/format badges as a right-aligned stack of
+// frosted tiles in the top-right corner. Tokens with a brand logo asset (IMAX,
+// Dolby Vision/Atmos, HDR10, HDR10+) show the white logo; others (4K, HDR, …)
+// fall back to bold text. Tiles are placed via occ so they never overlap other
+// overlays. Returns the number of badges drawn.
+func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64, occ *occupancy) int {
 	if len(tokens) == 0 {
 		return 0
 	}
 	tokens = dedupeQualityTokens(tokens)
 	ensureFaces()
-	face := labelFaceFor(scale)
+	ensureBadgeLogos()
+	face := badgeFaceFor(scale)
 	if face == nil {
 		return 0
 	}
 
 	s := func(v float64) int { return int(v*scale + 0.5) }
-	padX := s(8)
-	padY := s(5)
-	badgeGap := s(4)
-	edgeX := s(10)
-	edgeY := s(10)
-	radius := s(4)
+	tileH := s(34)
+	logoH := s(18)
+	padX := s(11)
+	gap := s(7)
+	edgeX := s(12)
+	edgeY := s(12)
+	radius := s(7)
 
-	lm := face.Metrics()
-	lAscent := lm.Ascent.Ceil()
-	lDescent := lm.Descent.Ceil()
-	badgeH := padY*2 + lAscent + lDescent
+	fm := face.Metrics()
+	ascent := fm.Ascent.Ceil()
+	descent := fm.Descent.Ceil()
 
-	bounds := base.Bounds()
-
-	y := bounds.Min.Y + edgeY
-	for _, tok := range tokens {
-		label := qualityBadgeLabel(tok)
-		lw := textWidth(face, label)
-		bw := padX*2 + lw
-		x := bounds.Max.X - edgeX - bw
-		bRect := image.Rect(x, y, x+bw, y+badgeH)
-		fillRoundedRect(base, bRect, radius, qualityBadgeColor(tok))
-		tx := x + padX
-		ty := y + padY + lAscent
-		drawText(base, face, tx, ty, color.White, label)
-		y += badgeH + badgeGap
+	chrome := tileChrome{
+		fill:   color.NRGBA{R: 16, G: 18, B: 24, A: 180},
+		border: color.NRGBA{R: 255, G: 255, B: 255, A: 38},
+		shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 90},
 	}
 
-	return len(tokens)*badgeH + (len(tokens)-1)*badgeGap
+	drawn := 0
+	for _, tok := range tokens {
+		logo := badgeLogos[strings.ToLower(tok)]
+		var tileW, contentW int
+		if logo != nil {
+			lb := logo.Bounds()
+			contentW = int(float64(lb.Dx())*float64(logoH)/float64(lb.Dy()) + 0.5)
+		} else {
+			contentW = textWidth(face, qualityBadgeLabel(tok))
+		}
+		tileW = padX*2 + contentW
+
+		r := occ.place("tr", tileW, tileH, edgeX, edgeY, gap)
+		drawSoftTile(base, r, radius, chrome)
+
+		if logo != nil {
+			lb := logo.Bounds()
+			band := image.Rect(r.Min.X+padX, r.Min.Y+(tileH-logoH)/2, r.Max.X-padX, r.Min.Y+(tileH-logoH)/2+logoH)
+			drawLogoScaled(base, logo, fitRect(lb.Dx(), lb.Dy(), band))
+		} else {
+			label := qualityBadgeLabel(tok)
+			tx := r.Min.X + padX
+			ty := r.Min.Y + (tileH-(ascent+descent))/2 + ascent
+			drawText(base, face, tx, ty, color.White, label)
+		}
+		drawn++
+	}
+	return drawn
 }
 
 // ── Age rating badge ──────────────────────────────────────────────────────────
@@ -151,7 +296,7 @@ func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64) int {
 // in the corner specified by pos ("tl", "tr", "bl", "br", "inherit").
 // "inherit" defaults to "br" so it does not conflict with the trending badge (TL)
 // or quality badges (TR).
-func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale float64) {
+func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale float64, occ *occupancy) {
 	if rating == "" {
 		return
 	}
@@ -162,11 +307,11 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 	}
 
 	s := func(v float64) int { return int(v*scale + 0.5) }
-	padX := s(7)
-	padY := s(4)
-	edgeX := s(10)
-	edgeY := s(10)
-	radius := s(3)
+	padX := s(8)
+	padY := s(5)
+	edgeX := s(12)
+	edgeY := s(12)
+	radius := s(5)
 
 	fm := face.Metrics()
 	ascent := fm.Ascent.Ceil()
@@ -174,62 +319,21 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 	bh := padY*2 + ascent + descent
 	bw := padX*2 + textWidth(face, rating)
 
-	bounds := base.Bounds()
-
 	resolvedPos := pos
 	if resolvedPos == "" || resolvedPos == "inherit" {
 		resolvedPos = "br"
 	}
 
-	var x, y int
-	switch resolvedPos {
-	case "tl":
-		x = bounds.Min.X + edgeX
-		y = bounds.Min.Y + edgeY
-	case "tr":
-		x = bounds.Max.X - edgeX - bw
-		y = bounds.Min.Y + edgeY
-	case "bl":
-		x = bounds.Min.X + edgeX
-		y = bounds.Max.Y - edgeY - bh
-	default: // "br"
-		x = bounds.Max.X - edgeX - bw
-		y = bounds.Max.Y - edgeY - bh
-	}
-
-	bg := color.NRGBA{R: 30, G: 30, B: 30, A: 220}
-	bRect := image.Rect(x, y, x+bw, y+bh)
-	fillRoundedRect(base, bRect, radius, bg)
-
-	borderColor := color.NRGBA{R: 200, G: 200, B: 200, A: 180}
-	drawRectBorder(base, bRect, radius, borderColor)
-
-	tx := x + padX
-	ty := y + padY + ascent
-	drawText(base, face, tx, ty, color.White, rating)
+	r := occ.place(resolvedPos, bw, bh, edgeX, edgeY, s(7))
+	drawSoftTile(base, r, radius, tileChrome{
+		fill:   color.NRGBA{R: 22, G: 24, B: 30, A: 225},
+		border: color.NRGBA{R: 235, G: 235, B: 240, A: 150},
+		shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 80},
+	})
+	drawText(base, face, r.Min.X+padX, r.Min.Y+padY+ascent, color.White, rating)
 }
 
 // ── Provider icon badges ──────────────────────────────────────────────────────
-
-// providerColors maps well-known TMDB provider_id values → brand color.
-var providerColors = map[int]color.NRGBA{
-	8:   {R: 229, G: 9, B: 20, A: 255},    // Netflix
-	9:   {R: 0, G: 168, B: 225, A: 255},   // Amazon Prime
-	337: {R: 17, G: 23, B: 65, A: 255},    // Disney+
-	384: {R: 0, G: 40, B: 160, A: 255},    // HBO Max / Max
-	15:  {R: 240, G: 120, B: 0, A: 255},   // Hulu
-	531: {R: 2, G: 144, B: 208, A: 255},   // Paramount+
-	350: {R: 0, G: 100, B: 220, A: 255},   // Apple TV+
-	386: {R: 120, G: 0, B: 200, A: 255},   // Peacock
-	43:  {R: 230, G: 50, B: 30, A: 255},   // Starz
-}
-
-func providerColor(id int) color.NRGBA {
-	if c, ok := providerColors[id]; ok {
-		return c
-	}
-	return color.NRGBA{R: 50, G: 50, B: 50, A: 255}
-}
 
 // shortProviderName returns a compact display name for the badge.
 func shortProviderName(name string) string {
@@ -260,7 +364,7 @@ func shortProviderName(name string) string {
 // provider name is rendered as text. At most 4 providers are shown.
 // ratingsH is the pixel height consumed by the ratings overlay so provider
 // badges sit above it rather than overlapping.
-func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, scale float64, ratingsH int) {
+func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, scale float64, ratingsH int, occ *occupancy) {
 	if len(providers) == 0 {
 		return
 	}
@@ -271,26 +375,29 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 	}
 
 	shown := providers
-	if len(shown) > 4 {
-		shown = shown[:4]
+	if len(shown) > 5 {
+		shown = shown[:5]
 	}
 
 	s := func(v float64) int { return int(v*scale + 0.5) }
-	padX := s(7)
-	padY := s(4)
-	badgeGap := s(6)
-	edgeX := s(10)
-	edgeY := ratingsH + s(18) // extra clearance above ratings / poster title text
-	radius := s(4)
+	tileH := s(38)
+	logoH := s(26)
+	padIn := s(7)
+	textPadX := s(10)
+	gap := s(8)
+	edgeX := s(12)
+	bottomGap := ratingsH + s(16) // clearance above ratings / poster title text
+	radius := s(8)
+	maxLogoW := s(76)
+	bezel := s(3)
 
 	fm := face.Metrics()
 	ascent := fm.Ascent.Ceil()
 	descent := fm.Descent.Ceil()
-	badgeH := padY*2 + ascent + descent
 
 	bounds := base.Bounds()
 
-	// Pre-fetch logos in parallel to avoid blocking serially on each HTTP request.
+	// Pre-fetch logos in parallel to avoid blocking serially on each request.
 	logos := make([]*image.NRGBA, len(shown))
 	var wg sync.WaitGroup
 	for i, p := range shown {
@@ -302,59 +409,97 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 	}
 	wg.Wait()
 
-	type spec struct {
-		label string
-		logo  *image.NRGBA // nil = use text
-		w     int
-		bg    color.NRGBA
+	type chip struct {
+		logo   *image.NRGBA
+		label  string // used when logo is nil
+		w      int
+		innerW int
+		innerH int
+		baked  bool // logo has a baked-in background → render as app-icon tile
+		dark   bool // for transparent marks: dark tile (light logo) vs light tile
 	}
 
-	specs := make([]spec, 0, len(shown))
+	chips := make([]chip, 0, len(shown))
 	totalW := 0
 	for i, p := range shown {
-		logo := logos[i]
-		var w int
-		if logo != nil {
-			// Square icon badge: badgeH × badgeH
-			w = badgeH
-		} else {
-			lbl := shortProviderName(p.Name)
-			w = padX*2 + textWidth(face, lbl)
-		}
-		var lbl string
-		if logo == nil {
-			lbl = shortProviderName(p.Name)
-		}
-		specs = append(specs, spec{label: lbl, logo: logo, w: w, bg: providerColor(p.ID)})
-		totalW += w
-		if i > 0 {
-			totalW += badgeGap
-		}
-	}
-
-	x := (bounds.Dx() - totalW) / 2
-	if x < edgeX {
-		x = edgeX
-	}
-	y := bounds.Max.Y - edgeY - badgeH
-
-	for _, sp := range specs {
-		bRect := image.Rect(x, y, x+sp.w, y+badgeH)
-		fillRoundedRect(base, bRect, radius, sp.bg)
-
-		if sp.logo != nil {
-			// Scale logo to fit inside the badge with 2px padding.
-			pad := s(2)
-			inner := badgeH - 2*pad
-			if inner > 0 {
-				drawLogoScaled(base, sp.logo, image.Rect(x+pad, y+pad, x+pad+inner, y+pad+inner))
+		var c chip
+		if raw := logos[i]; raw != nil {
+			logo := trimTransparent(raw)
+			c.logo = logo
+			c.baked = opaqueFraction(logo) > 0.82
+			lb := logo.Bounds()
+			aspect := float64(lb.Dx()) / float64(lb.Dy())
+			ih := logoH
+			if c.baked {
+				ih = tileH - 2*bezel
+			}
+			iw := int(aspect*float64(ih) + 0.5)
+			if iw > maxLogoW {
+				iw = maxLogoW
+				ih = int(float64(iw)/aspect + 0.5)
+			}
+			c.innerW, c.innerH = iw, ih
+			if c.baked {
+				c.w = iw + 2*bezel
+			} else {
+				c.w = iw + 2*padIn
+				c.dark = meanLuminance(logo) > 0.6
 			}
 		} else {
-			tx := x + padX
-			ty := y + padY + ascent
-			drawText(base, face, tx, ty, color.White, sp.label)
+			c.label = shortProviderName(p.Name)
+			c.w = textPadX*2 + textWidth(face, c.label)
+			c.dark = true
 		}
-		x += sp.w + badgeGap
+		chips = append(chips, c)
+		totalW += c.w
+		if i > 0 {
+			totalW += gap
+		}
+	}
+
+	x := bounds.Min.X + (bounds.Dx()-totalW)/2
+	if x < bounds.Min.X+edgeX {
+		x = bounds.Min.X + edgeX
+	}
+	y := bounds.Max.Y - bottomGap - tileH
+
+	// Reserve the whole chip strip so corner overlays (e.g. the ring) avoid it.
+	occ.reserve(image.Rect(x, y, x+totalW, y+tileH))
+
+	shadow := color.NRGBA{R: 0, G: 0, B: 0, A: 80}
+	shOff := maxInt(1, tileH/16)
+	for _, c := range chips {
+		r := image.Rect(x, y, x+c.w, y+tileH)
+		fillRoundedRect(base, r.Add(image.Pt(0, shOff)), radius, shadow)
+
+		switch {
+		case c.baked:
+			// Logo fills the tile as a rounded app-icon; a neutral backing
+			// shows through any internal transparency, and corners are clipped.
+			fillRoundedRect(base, r, radius, color.NRGBA{R: 18, G: 20, B: 26, A: 255})
+			inner := image.Rect(r.Min.X+bezel, r.Min.Y+bezel, r.Max.X-bezel, r.Max.Y-bezel)
+			drawLogoRoundClipped(base, c.logo, inner, radius-bezel)
+			drawRectBorder(base, r, radius, color.NRGBA{R: 255, G: 255, B: 255, A: 38})
+		case c.logo != nil:
+			// Transparent mark centered on a contrasting tile.
+			fill := color.NRGBA{R: 20, G: 22, B: 28, A: 235}
+			border := color.NRGBA{R: 255, G: 255, B: 255, A: 30}
+			if !c.dark {
+				fill = color.NRGBA{R: 245, G: 246, B: 248, A: 240}
+				border = color.NRGBA{R: 0, G: 0, B: 0, A: 28}
+			}
+			fillRoundedRect(base, r, radius, fill)
+			drawRectBorder(base, r, radius, border)
+			band := image.Rect(r.Min.X+padIn, r.Min.Y+(tileH-c.innerH)/2, r.Max.X-padIn, r.Min.Y+(tileH-c.innerH)/2+c.innerH)
+			drawLogoScaled(base, c.logo, fitRect(c.logo.Bounds().Dx(), c.logo.Bounds().Dy(), band))
+		default:
+			// Text fallback chip.
+			fillRoundedRect(base, r, radius, color.NRGBA{R: 20, G: 22, B: 28, A: 235})
+			drawRectBorder(base, r, radius, color.NRGBA{R: 255, G: 255, B: 255, A: 30})
+			ty := r.Min.Y + (tileH-(ascent+descent))/2 + ascent
+			drawText(base, face, r.Min.X+textPadX, ty, color.NRGBA{R: 240, G: 240, B: 245, A: 255}, c.label)
+		}
+		x += c.w + gap
 	}
 }
 
@@ -396,11 +541,39 @@ func drawLogoScaled(dst *image.NRGBA, src *image.NRGBA, dstRect image.Rectangle)
 	}
 }
 
+// drawLogoRoundClipped scales src to fill dstRect (src's aspect should already
+// match dstRect's) and composites it clipped to the rounded rectangle, so a
+// provider logo with a baked-in background reads as a clean "app-icon" tile.
+func drawLogoRoundClipped(dst, src *image.NRGBA, dstRect image.Rectangle, radius int) {
+	if dstRect.Dx() <= 0 || dstRect.Dy() <= 0 || src.Bounds().Dx() <= 0 || src.Bounds().Dy() <= 0 {
+		return
+	}
+	scaled := image.NewNRGBA(image.Rect(0, 0, dstRect.Dx(), dstRect.Dy()))
+	xdraw.CatmullRom.Scale(scaled, scaled.Bounds(), src, src.Bounds(), xdraw.Over, nil)
+	for py := dstRect.Min.Y; py < dstRect.Max.Y; py++ {
+		for px := dstRect.Min.X; px < dstRect.Max.X; px++ {
+			cov, skip := cornerCoverage(px, py, dstRect, radius)
+			if skip {
+				continue
+			}
+			sp := scaled.NRGBAAt(px-dstRect.Min.X, py-dstRect.Min.Y)
+			if sp.A == 0 {
+				continue
+			}
+			a := sp.A
+			if cov < 1 {
+				a = uint8(float64(sp.A) * cov)
+			}
+			blendPixel(dst, px, py, color.NRGBA{R: sp.R, G: sp.G, B: sp.B, A: a})
+		}
+	}
+}
+
 // ── Genre badge ───────────────────────────────────────────────────────────────
 
 // drawGenreBadge renders a genre pill at the bottom-left corner (or pos).
 // Shows at most 3 genres separated by " · ".
-func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float64) {
+func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float64, occ *occupancy) {
 	if len(genres) == 0 {
 		return
 	}
@@ -417,11 +590,11 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	label := strings.Join(shown, " · ")
 
 	s := func(v float64) int { return int(v*scale + 0.5) }
-	padX := s(8)
-	padY := s(4)
-	edgeX := s(10)
-	edgeY := s(10)
-	radius := s(3)
+	padX := s(10)
+	padY := s(5)
+	edgeX := s(12)
+	edgeY := s(12)
+	radius := s(5)
 
 	fm := face.Metrics()
 	ascent := fm.Ascent.Ceil()
@@ -429,36 +602,18 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	bh := padY*2 + ascent + descent
 	bw := padX*2 + textWidth(face, label)
 
-	bounds := base.Bounds()
-
 	resolvedPos := pos
 	if resolvedPos == "" || resolvedPos == "inherit" {
 		resolvedPos = "bl"
 	}
 
-	var x, y int
-	switch resolvedPos {
-	case "tl":
-		x = bounds.Min.X + edgeX
-		y = bounds.Min.Y + edgeY
-	case "tr":
-		x = bounds.Max.X - edgeX - bw
-		y = bounds.Min.Y + edgeY
-	case "br":
-		x = bounds.Max.X - edgeX - bw
-		y = bounds.Max.Y - edgeY - bh
-	default: // "bl"
-		x = bounds.Min.X + edgeX
-		y = bounds.Max.Y - edgeY - bh
-	}
-
-	bg := color.NRGBA{R: 0, G: 0, B: 0, A: 190}
-	bRect := image.Rect(x, y, x+bw, y+bh)
-	fillRoundedRect(base, bRect, radius, bg)
-
-	tx := x + padX
-	ty := y + padY + ascent
-	drawText(base, face, tx, ty, color.NRGBA{R: 220, G: 220, B: 220, A: 255}, label)
+	r := occ.place(resolvedPos, bw, bh, edgeX, edgeY, s(7))
+	drawSoftTile(base, r, radius, tileChrome{
+		fill:   color.NRGBA{R: 8, G: 9, B: 12, A: 200},
+		border: color.NRGBA{R: 255, G: 255, B: 255, A: 28},
+		shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 70},
+	})
+	drawText(base, face, r.Min.X+padX, r.Min.Y+padY+ascent, color.NRGBA{R: 225, G: 225, B: 228, A: 255}, label)
 }
 
 // ── Aggregate rating bar ──────────────────────────────────────────────────────
@@ -524,11 +679,11 @@ func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imagecon
 	var fillColor color.NRGBA
 	switch {
 	case avg >= 8.0:
-		fillColor = color.NRGBA{R: 39, G: 174, B: 96, A: 230}  // green
+		fillColor = color.NRGBA{R: 39, G: 174, B: 96, A: 230} // green
 	case avg >= 5.0:
 		fillColor = color.NRGBA{R: 230, G: 126, B: 34, A: 230} // amber
 	default:
-		fillColor = color.NRGBA{R: 192, G: 57, B: 43, A: 230}  // red
+		fillColor = color.NRGBA{R: 192, G: 57, B: 43, A: 230} // red
 	}
 
 	fillRect(base, image.Rect(bounds.Min.X, barY, bounds.Min.X+fillW, barY+barH), fillColor)
@@ -536,69 +691,55 @@ func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imagecon
 
 // ── Trending badge ────────────────────────────────────────────────────────────
 
-// drawTrendingBadge draws a "↑ TRENDING" pill badge at the top-left corner.
-// It uses a capsule shape with a subtle gradient effect via two layered fills.
-func drawTrendingBadge(base *image.NRGBA, scale float64) {
+// drawTrendingBadge draws a premium "TRENDING" pill at the top-left corner: a
+// warm vertical gradient capsule with a drawn up-arrow glyph, bold label, and a
+// soft drop shadow. Placed via occ so it never overlaps other overlays.
+func drawTrendingBadge(base *image.NRGBA, scale float64, occ *occupancy) {
 	ensureFaces()
-	face := labelFaceFor(scale)
+	face := badgeFaceFor(scale)
 	if face == nil {
 		return
 	}
 
-	const label = "↑ TRENDING"
+	const label = "TRENDING"
 
 	s := func(v float64) int { return int(v*scale + 0.5) }
-	padX := s(9)
-	padY := s(4)
-	edgeX := s(8)
-	edgeY := s(8)
+	padX := s(13)
+	padY := s(7)
+	edgeX := s(12)
+	edgeY := s(12)
+	iconGap := s(7)
 
 	fm := face.Metrics()
 	ascent := fm.Ascent.Ceil()
 	descent := fm.Descent.Ceil()
 	bh := padY*2 + ascent + descent
-	bw := padX*2 + textWidth(face, label)
+	iconW := s(12)
+	tw := textWidth(face, label)
+	bw := padX*2 + iconW + iconGap + tw
 	radius := bh / 2 // full capsule
 
-	bounds := base.Bounds()
-	x := bounds.Min.X + edgeX
-	y := bounds.Min.Y + edgeY
-	rect := image.Rect(x, y, x+bw, y+bh)
+	r := occ.place("tl", bw, bh, edgeX, edgeY, s(7))
 
-	// Shadow layer for depth.
-	shadowRect := image.Rect(x+1, y+1, x+bw+1, y+bh+1)
-	fillRoundedRect(base, shadowRect, radius, color.NRGBA{R: 0, G: 0, B: 0, A: 80})
+	// Dark frosted capsule that matches the quality-badge tiles — understated,
+	// not a loud bright pill. The warmth comes from the accent glyph, not the
+	// fill, so it reads as a refined callout rather than an eyesore.
+	off := maxInt(1, bh/12)
+	fillRoundedRect(base, r.Add(image.Pt(0, off)), radius, color.NRGBA{R: 0, G: 0, B: 0, A: 105})
+	fillRoundedRect(base, r, radius, color.NRGBA{R: 18, G: 20, B: 26, A: 233})
+	drawRectBorder(base, r, radius, color.NRGBA{R: 255, G: 150, B: 92, A: 66}) // warm hairline
 
-	// Main fill: vivid red-orange gradient approximated by two fills.
-	fillRoundedRect(base, rect, radius, color.NRGBA{R: 220, G: 50, B: 40, A: 245})
-	// Lighter top-half sheen. We clip to the badge's own corner circles (using
-	// rect + radius) rather than rounding topHalf's corners, which would create
-	// a visible curved line at the midpoint ("double bubble" artefact).
-	sheenC := color.NRGBA{R: 255, G: 80, B: 60, A: 60}
-	cr2 := float64(radius) * float64(radius)
-	for py := y; py < y+bh/2; py++ {
-		for px := x; px < x+bw; px++ {
-			if inCornerZone(px, py, rect, radius) {
-				cx, cy := cornerCenter(px, py, rect, radius)
-				ddx := float64(px) - cx + 0.5
-				ddy := float64(py) - cy + 0.5
-				if ddx*ddx+ddy*ddy > cr2 {
-					continue
-				}
-			}
-			dp := base.NRGBAAt(px, py)
-			a := uint32(sheenC.A)
-			ia := 255 - a
-			base.SetNRGBA(px, py, color.NRGBA{
-				R: uint8((uint32(sheenC.R)*a + uint32(dp.R)*ia) / 255),
-				G: uint8((uint32(sheenC.G)*a + uint32(dp.G)*ia) / 255),
-				B: uint8((uint32(sheenC.B)*a + uint32(dp.B)*ia) / 255),
-				A: uint8((a*255 + uint32(dp.A)*ia) / 255),
-			})
-		}
-	}
+	// Warm flame accent, vertically centered to the cap height.
+	flame := color.NRGBA{R: 255, G: 126, B: 42, A: 255}
+	glyphH := ascent
+	ax := r.Min.X + padX
+	atop := r.Min.Y + (bh-glyphH)/2
+	fillFlame(base, ax+iconW/2, atop, iconW/2, glyphH, flame)
 
-	drawText(base, face, x+padX, y+padY+ascent, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, label)
+	// Label in a warm off-white.
+	tx := ax + iconW + iconGap
+	ty := r.Min.Y + padY + ascent
+	drawText(base, face, tx, ty, color.NRGBA{R: 255, G: 244, B: 238, A: 255}, label)
 }
 
 // ── Average rating ring ───────────────────────────────────────────────────────
@@ -606,7 +747,7 @@ func drawTrendingBadge(base *image.NRGBA, scale float64) {
 // drawAverageRatingRing renders a circular progress ring in the configured
 // corner. The ring shows the average of the selected rating sources as a
 // progress arc coloured green/amber/red or a custom hex colour.
-func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, scale float64) {
+func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, scale float64, occ *occupancy) {
 	if !cfg.RatingRing || len(ratings) == 0 || len(cfg.Ratings) == 0 {
 		return
 	}
@@ -619,7 +760,6 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 	fillColor := ratingRingFillColor(avg, cfg.RatingRingColor)
 
 	s := func(v float64) int { return int(v*scale + 0.5) }
-	bounds := base.Bounds()
 	edgeX := s(12)
 	edgeY := s(12)
 
@@ -633,7 +773,12 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 
 	outerR := s(32)
 	innerR := s(22)
-	cx, cy := ringCenter(pos, bounds, edgeX, edgeY, outerR)
+	// Place the ring's bounding box, dodging any overlay already reserved in
+	// the requested corner (age/genre badges, provider chips, ratings strip).
+	d := outerR * 2
+	r := occ.place(pos, d, d, edgeX, edgeY, s(8))
+	cx := r.Min.X + outerR
+	cy := r.Min.Y + outerR
 	drawProgressRing(base, cx, cy, outerR, innerR, avg/10.0, fillColor, valueFace)
 }
 
@@ -694,20 +839,6 @@ func parseHexColor(s string) (color.NRGBA, error) {
 		return color.NRGBA{}, err
 	}
 	return color.NRGBA{R: b[0], G: b[1], B: b[2], A: 255}, nil
-}
-
-// ringCenter returns the pixel center of a ring placed at the given corner.
-func ringCenter(pos string, bounds image.Rectangle, edgeX, edgeY, radius int) (int, int) {
-	switch pos {
-	case "tl":
-		return bounds.Min.X + edgeX + radius, bounds.Min.Y + edgeY + radius
-	case "tr":
-		return bounds.Max.X - edgeX - radius, bounds.Min.Y + edgeY + radius
-	case "bl":
-		return bounds.Min.X + edgeX + radius, bounds.Max.Y - edgeY - radius
-	default: // "br"
-		return bounds.Max.X - edgeX - radius, bounds.Max.Y - edgeY - radius
-	}
 }
 
 // drawProgressRing draws a circular progress arc onto base.
@@ -786,4 +917,3 @@ func drawProgressRing(base *image.NRGBA, cx, cy, outerR, innerR int, sweepFrac f
 	ty := cy + (ascent-descent)/2
 	drawText(base, face, tx, ty, color.NRGBA{R: 255, G: 255, B: 255, A: 240}, label)
 }
-

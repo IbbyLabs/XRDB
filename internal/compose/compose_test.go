@@ -78,7 +78,7 @@ func TestRenderProducesCorrectDimensions(t *testing.T) {
 	srcPNG := makeTestPNG(800, 1200, color.NRGBA{50, 50, 80, 255})
 	stub := &provider.StubProvider{
 		ProviderName: "tmdb",
-		Meta: &provider.MediaMeta{Title: "Test", PosterURL: "http://fake/poster.jpg"},
+		Meta:         &provider.MediaMeta{Title: "Test", PosterURL: "http://fake/poster.jpg"},
 	}
 	p := &Pipeline{
 		providers: testRegistry(stub),
@@ -108,7 +108,7 @@ func TestRenderJPEGSource(t *testing.T) {
 	srcJPEG := makeTestJPEG(640, 960)
 	stub := &provider.StubProvider{
 		ProviderName: "tmdb",
-		Meta: &provider.MediaMeta{PosterURL: "http://fake/poster.jpg"},
+		Meta:         &provider.MediaMeta{PosterURL: "http://fake/poster.jpg"},
 	}
 	p := &Pipeline{
 		providers: testRegistry(stub),
@@ -315,7 +315,7 @@ func TestQualityBadgesDrawOnImage(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 580, 859))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
 
-	got := drawQualityBadges(img, []string{"4k", "hdr", "dv"}, 1.0)
+	got := drawQualityBadges(img, []string{"4k", "hdr", "dv"}, 1.0, newOccupancy(img.Bounds()))
 	if got == 0 {
 		t.Error("drawQualityBadges returned 0 for non-empty tokens")
 	}
@@ -341,7 +341,7 @@ func TestQualityBadgesNoopOnEmpty(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 100, 150))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
 	before := clonePixels(img)
-	got := drawQualityBadges(img, nil, 1.0)
+	got := drawQualityBadges(img, nil, 1.0, newOccupancy(img.Bounds()))
 	after := clonePixels(img)
 	if got != 0 {
 		t.Errorf("drawQualityBadges returned %d for nil tokens, want 0", got)
@@ -356,7 +356,7 @@ func TestQualityBadgesNoopOnEmpty(t *testing.T) {
 func TestAgeRatingBadgeDrawsTL(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 580, 859))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
-	drawAgeRatingBadge(img, "TV-MA", "tl", 1.0)
+	drawAgeRatingBadge(img, "TV-MA", "tl", 1.0, newOccupancy(img.Bounds()))
 
 	// Top-left corner should have non-white pixels.
 	nonWhite := 0
@@ -377,7 +377,7 @@ func TestAgeRatingBadgeNoopOnEmptyRating(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 100, 150))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{200, 200, 200, 255}}, image.Point{}, draw.Src)
 	before := clonePixels(img)
-	drawAgeRatingBadge(img, "", "tl", 1.0)
+	drawAgeRatingBadge(img, "", "tl", 1.0, newOccupancy(img.Bounds()))
 	after := clonePixels(img)
 	if before != after {
 		t.Error("drawAgeRatingBadge with empty rating must not modify the image")
@@ -389,7 +389,7 @@ func TestAgeRatingBadgeNoopOnEmptyRating(t *testing.T) {
 func TestGenreBadgeDrawsBL(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 580, 859))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
-	drawGenreBadge(img, []string{"Action", "Drama", "Thriller"}, "bl", 1.0)
+	drawGenreBadge(img, []string{"Action", "Drama", "Thriller"}, "bl", 1.0, newOccupancy(img.Bounds()))
 
 	bounds := img.Bounds()
 	nonWhite := 0
@@ -409,14 +409,14 @@ func TestGenreBadgeDrawsBL(t *testing.T) {
 func TestGenreBadgeLimitsToThreeGenres(t *testing.T) {
 	// Just verify no panic with many genres.
 	img := image.NewNRGBA(image.Rect(0, 0, 580, 859))
-	drawGenreBadge(img, []string{"Action", "Drama", "Thriller", "Horror", "Sci-Fi"}, "bl", 1.0)
+	drawGenreBadge(img, []string{"Action", "Drama", "Thriller", "Horror", "Sci-Fi"}, "bl", 1.0, newOccupancy(img.Bounds()))
 }
 
 func TestGenreBadgeNoopOnEmpty(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 100, 150))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{128, 128, 128, 255}}, image.Point{}, draw.Src)
 	before := clonePixels(img)
-	drawGenreBadge(img, nil, "bl", 1.0)
+	drawGenreBadge(img, nil, "bl", 1.0, newOccupancy(img.Bounds()))
 	after := clonePixels(img)
 	if before != after {
 		t.Error("drawGenreBadge with empty genres must not modify the image")
@@ -436,35 +436,35 @@ func TestOverlayFunctionsAtLargeScales(t *testing.T) {
 			draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
 
 			// drawQualityBadges: must return > 0 for non-empty tokens
-			got := drawQualityBadges(img, []string{"4k", "hdr"}, scale)
+			got := drawQualityBadges(img, []string{"4k", "hdr"}, scale, newOccupancy(img.Bounds()))
 			if got == 0 {
 				t.Errorf("drawQualityBadges returned 0 at scale %.1f", scale)
 			}
 
 			// drawAgeRatingBadge: must change pixels
 			beforeAge := clonePixels(img)
-			drawAgeRatingBadge(img, "TV-MA", "br", scale)
+			drawAgeRatingBadge(img, "TV-MA", "br", scale, newOccupancy(img.Bounds()))
 			if clonePixels(img) == beforeAge {
 				t.Errorf("drawAgeRatingBadge had no effect at scale %.1f", scale)
 			}
 
 			// drawGenreBadge: must change pixels
 			beforeGenre := clonePixels(img)
-			drawGenreBadge(img, []string{"Action", "Drama"}, "bl", scale)
+			drawGenreBadge(img, []string{"Action", "Drama"}, "bl", scale, newOccupancy(img.Bounds()))
 			if clonePixels(img) == beforeGenre {
 				t.Errorf("drawGenreBadge had no effect at scale %.1f", scale)
 			}
 
 			// drawTrendingBadge: must change pixels
 			beforeTrend := clonePixels(img)
-			drawTrendingBadge(img, scale)
+			drawTrendingBadge(img, scale, newOccupancy(img.Bounds()))
 			if clonePixels(img) == beforeTrend {
 				t.Errorf("drawTrendingBadge had no effect at scale %.1f", scale)
 			}
 
 			// drawProviderBadges: must change pixels
 			beforeProv := clonePixels(img)
-			drawProviderBadges(img, []provider.WatchProvider{{ID: 8, Name: "Netflix"}}, scale, 0)
+			drawProviderBadges(img, []provider.WatchProvider{{ID: 8, Name: "Netflix"}}, scale, 0, newOccupancy(img.Bounds()))
 			if clonePixels(img) == beforeProv {
 				t.Errorf("drawProviderBadges had no effect at scale %.1f", scale)
 			}
@@ -628,7 +628,7 @@ func TestAggregateBarTopPosition(t *testing.T) {
 func TestAggregateBarFiltersUnselectedSources(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 300, 450))
 	ratings := []provider.Rating{
-		{Source: "tmdb", Value: 9.0},   // in Ratings
+		{Source: "tmdb", Value: 9.0},       // in Ratings
 		{Source: "letterboxd", Value: 1.0}, // not in Ratings — excluded
 	}
 	cfg := imageconfig.Default()
@@ -651,7 +651,7 @@ func TestAggregateBarFiltersUnselectedSources(t *testing.T) {
 func TestTrendingBadgeDrawsOnImage(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 300, 450))
 	before := clonePixels(img)
-	drawTrendingBadge(img, 1.0)
+	drawTrendingBadge(img, 1.0, newOccupancy(img.Bounds()))
 	after := clonePixels(img)
 	if before == after {
 		t.Error("expected pixels to change after drawTrendingBadge")
@@ -690,9 +690,9 @@ func TestBackdropAsPosterAutoEnablesLogoOverlay(t *testing.T) {
 	stub := &provider.StubProvider{
 		ProviderName: "tmdb",
 		Meta: &provider.MediaMeta{
-			PosterURL:  "http://fake/poster.jpg",
+			PosterURL:   "http://fake/poster.jpg",
 			BackdropURL: "http://fake/backdrop.jpg",
-			LogoURL:    "http://fake/logo.png",
+			LogoURL:     "http://fake/logo.png",
 		},
 	}
 	p := &Pipeline{providers: testRegistry(stub), fetcher: fetcher}
@@ -790,9 +790,9 @@ func TestDedupeQualityTokensHDRHierarchy(t *testing.T) {
 
 func TestResizeContainNeverExceedsBounds(t *testing.T) {
 	cases := []struct{ sw, sh, mw, mh int }{
-		{1000, 200, 500, 125},  // wider source → letterboxed
-		{200, 1000, 500, 125},  // taller source → pillarboxed
-		{400, 100, 500, 125},   // same aspect
+		{1000, 200, 500, 125}, // wider source → letterboxed
+		{200, 1000, 500, 125}, // taller source → pillarboxed
+		{400, 100, 500, 125},  // same aspect
 	}
 	for _, tc := range cases {
 		src := image.NewNRGBA(image.Rect(0, 0, tc.sw, tc.sh))

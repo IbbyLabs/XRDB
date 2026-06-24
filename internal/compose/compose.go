@@ -33,10 +33,10 @@ type Request struct {
 
 // Result holds the composed image bytes and metadata.
 type Result struct {
-	ImageBytes        []byte
-	ContentType       string
-	CacheKey          string
-	FromCache         bool
+	ImageBytes            []byte
+	ContentType           string
+	CacheKey              string
+	FromCache             bool
 	ContributingProviders []string // names of providers that returned data
 }
 
@@ -125,6 +125,11 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		return result, nil
 	}
 
+	// Collect ratings up front so the logo letterbox can reserve a clear band
+	// for the rating strip beneath the wordmark.
+	allRatings, ratingProviders := p.collectRatingsWithProviders(ctx, req, meta.Ratings)
+	result.ContributingProviders = append([]string{string(req.Config.ArtworkSource)}, ratingProviders...)
+
 	// Use saliency-aware cropping when a backdrop is the source so that
 	// off-centre subjects are not clipped by a naive centre crop.
 	usesBackdrop := req.MediaType == "backdrop" ||
@@ -135,9 +140,20 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	case usesBackdrop:
 		resized = resizeFitSmart(srcImg, dim.Width, dim.Height)
 	case req.MediaType == "logo":
-		// Logo images should be letterboxed, not cover-cropped, so the
-		// title text is never clipped at the edges.
-		resized = resizeContain(srcImg, dim.Width, dim.Height)
+		// Letterbox the logo above a clear band reserved for the rating strip so
+		// rating/age overlays sit beneath the wordmark instead of cropping it.
+		// The logo is still letterboxed, never cover-cropped.
+		logoH := dim.Height
+		if band := ratingsBandHeight(dim.Width, allRatings, req.Config); band > 0 {
+			if maxBand := dim.Height / 2; band > maxBand {
+				band = maxBand
+			}
+			logoH = dim.Height - band
+		}
+		boxed := resizeContain(srcImg, dim.Width, logoH)
+		canvas := image.NewNRGBA(image.Rect(0, 0, dim.Width, dim.Height))
+		draw.Draw(canvas, image.Rect(0, 0, dim.Width, logoH), boxed, image.Point{}, draw.Src)
+		resized = canvas
 	default:
 		resized = resizeFit(srcImg, dim.Width, dim.Height)
 	}
@@ -147,32 +163,53 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 
 	scale := outputScale(req.Config.Size)
 
-	allRatings, ratingProviders := p.collectRatingsWithProviders(ctx, req, meta.Ratings)
-	result.ContributingProviders = append([]string{string(req.Config.ArtworkSource)}, ratingProviders...)
+	// occ tracks regions claimed by overlays so corner-anchored badges and the
+	// average-rating ring are placed without overlapping one another or, on the
+	// logo media type, the wordmark itself.
+	occ := newOccupancy(composed.Bounds())
+	if req.MediaType == "logo" {
+		// Reserve the wordmark's content box so no overlay draws over the title.
+		occ.reserve(nonTransparentBounds(composed))
+	}
+
 	var ratingsH int
 	if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
 		ratingsH = drawBadgesInPlace(composed, allRatings, req.Config)
+		if ratingsH > 0 {
+			// Reserve the full-width band the ratings strip occupies so corner
+			// overlays (notably the ring) float clear of it.
+			b := composed.Bounds()
+			band := int(20*scale + 0.5)
+			switch req.Config.RatingsLayout {
+			case imageconfig.LayoutTop:
+				occ.reserve(image.Rect(b.Min.X, b.Min.Y, b.Max.X, b.Min.Y+ratingsH+band))
+			case imageconfig.LayoutSplitSide:
+				// Side-anchored: corner overlays rarely conflict — left unreserved.
+			default:
+				occ.reserve(image.Rect(b.Min.X, b.Max.Y-ratingsH-band, b.Max.X, b.Max.Y))
+			}
+		}
 	}
 	if len(req.Config.Badges) > 0 {
-		drawQualityBadges(composed, req.Config.Badges, scale)
+		drawQualityBadges(composed, req.Config.Badges, scale, occ)
 	}
 	if req.Config.AgeRating && meta.ContentRating != "" {
-		drawAgeRatingBadge(composed, meta.ContentRating, req.Config.AgeRatingPos, scale)
+		drawAgeRatingBadge(composed, meta.ContentRating, req.Config.AgeRatingPos, scale, occ)
 	}
 	if req.Config.Genre && len(meta.Genres) > 0 {
-		drawGenreBadge(composed, meta.Genres, req.Config.GenrePos, scale)
+		drawGenreBadge(composed, meta.Genres, req.Config.GenrePos, scale, occ)
 	}
 	if req.Config.Providers && len(meta.WatchProviders) > 0 {
-		drawProviderBadges(composed, meta.WatchProviders, scale, ratingsH)
+		drawProviderBadges(composed, meta.WatchProviders, scale, ratingsH, occ)
 	}
 	if req.Config.AggregateBar {
 		drawAggregateBar(composed, allRatings, req.Config)
 	}
 	if req.Config.Trending {
-		drawTrendingBadge(composed, scale)
+		drawTrendingBadge(composed, scale, occ)
 	}
 	if req.Config.RatingRing {
-		drawAverageRatingRing(composed, allRatings, req.Config, scale)
+		drawAverageRatingRing(composed, allRatings, req.Config, scale, occ)
 	}
 	// Show the logo overlay when explicitly requested OR when the user has
 	// chosen to use the backdrop as a poster (backdrop images don't carry

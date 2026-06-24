@@ -142,3 +142,52 @@ func drawRectBorder(dst *image.NRGBA, r image.Rectangle, radius int, c color.NRG
 		}
 	}
 }
+
+// fitRect returns the largest rectangle with the srcW×srcH aspect ratio that
+// fits inside dst, centered within it.
+func fitRect(srcW, srcH int, dst image.Rectangle) image.Rectangle {
+	if srcW <= 0 || srcH <= 0 || dst.Dx() <= 0 || dst.Dy() <= 0 {
+		return dst
+	}
+	scale := math.Min(float64(dst.Dx())/float64(srcW), float64(dst.Dy())/float64(srcH))
+	w := int(float64(srcW)*scale + 0.5)
+	h := int(float64(srcH)*scale + 0.5)
+	x := dst.Min.X + (dst.Dx()-w)/2
+	y := dst.Min.Y + (dst.Dy()-h)/2
+	return image.Rect(x, y, x+w, y+h)
+}
+
+// fillFlame draws a small upward flame/teardrop: a point at the apex (cx, topY)
+// tapering down to a rounded base of half-width halfW whose bottom sits at
+// topY+height. Used as the "trending" accent.
+func fillFlame(dst *image.NRGBA, cx, topY, halfW, height int, c color.NRGBA) {
+	if height <= 0 || halfW <= 0 {
+		return
+	}
+	r := float64(halfW)
+	apex := float64(topY)
+	// Centre of the rounded base, placed so the base bottom touches topY+height.
+	cyc := float64(topY+height) - r
+	if cyc <= apex {
+		cyc = apex + 1
+	}
+	for y := 0; y < height; y++ {
+		py := float64(topY + y)
+		var hw float64
+		if py <= cyc {
+			// Upper taper: 0 at the apex, growing convexly to r at the base.
+			t := (py - apex) / (cyc - apex)
+			hw = r * math.Pow(t, 0.7)
+		} else {
+			// Rounded base.
+			dy := py - cyc
+			if dy < r {
+				hw = math.Sqrt(r*r - dy*dy)
+			}
+		}
+		ihw := int(hw + 0.5)
+		for x := cx - ihw; x <= cx+ihw; x++ {
+			blendPixel(dst, x, topY+y, c)
+		}
+	}
+}

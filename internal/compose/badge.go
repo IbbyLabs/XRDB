@@ -24,6 +24,9 @@ import (
 //go:embed assets/ratings/*.png
 var ratingIconFS embed.FS
 
+//go:embed assets/badges/*.png
+var badgeIconFS embed.FS
+
 var (
 	onceFaces sync.Once
 	faceValue font.Face // 22pt bold — rating value (normal scale)
@@ -32,13 +35,17 @@ var (
 	onceIcons   sync.Once
 	ratingIcons map[string]image.Image
 
+	onceBadgeLogos sync.Once
+	badgeLogos     map[string]*image.NRGBA // quality-badge brand logos (white on transparent)
+
 	fontBoldParsed    *opentype.Font
 	fontRegularParsed *opentype.Font
 
-	// scaledValueFaces / scaledLabelFaces cache faces keyed by int(scale*100)
-	// to avoid float64 map key precision issues.
+	// scaledValueFaces / scaledLabelFaces / scaledBadgeFaces cache faces keyed
+	// by int(scale*100) to avoid float64 map key precision issues.
 	scaledValueFaces sync.Map
 	scaledLabelFaces sync.Map
+	scaledBadgeFaces sync.Map
 )
 
 func ensureFaces() {
@@ -128,6 +135,52 @@ func labelFaceFor(scale float64) font.Face {
 		return faceLabel
 	}
 	scaledLabelFaces.Store(key, f)
+	return f
+}
+
+// ensureBadgeLogos lazily loads the quality-badge brand logos (IMAX, Dolby
+// Vision/Atmos, HDR10, HDR10+). They are white-on-transparent PNGs keyed by
+// badge token (e.g. "dv", "atmos", "imax", "hdr10", "hdr10plus").
+func ensureBadgeLogos() {
+	onceBadgeLogos.Do(func() {
+		badgeLogos = make(map[string]*image.NRGBA)
+		entries, err := badgeIconFS.ReadDir("assets/badges")
+		if err != nil {
+			log.Printf("compose: read badge logos: %v", err)
+			return
+		}
+		for _, e := range entries {
+			data, err := badgeIconFS.ReadFile("assets/badges/" + e.Name())
+			if err != nil {
+				continue
+			}
+			img, err := png.Decode(bytes.NewReader(data))
+			if err != nil {
+				continue
+			}
+			badgeLogos[strings.TrimSuffix(e.Name(), ".png")] = toNRGBA(img)
+		}
+	})
+}
+
+// badgeFaceFor returns a bold face sized for quality-badge text fallbacks —
+// tokens without a brand logo asset (e.g. "4K", "HDR", "DTS").
+func badgeFaceFor(scale float64) font.Face {
+	const pt = 15.5
+	if fontBoldParsed == nil {
+		return faceValue
+	}
+	key := int(scale * 100)
+	if f, ok := scaledBadgeFaces.Load(key); ok {
+		return f.(font.Face)
+	}
+	f, err := opentype.NewFace(fontBoldParsed, &opentype.FaceOptions{
+		Size: pt * scale, DPI: 96, Hinting: font.HintingFull,
+	})
+	if err != nil {
+		return faceValue
+	}
+	scaledBadgeFaces.Store(key, f)
 	return f
 }
 
@@ -268,6 +321,86 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 	}
 }
 
+// ratingStripDims holds the scale-resolved layout constants for the rating
+// strip, shared by drawBadgesInPlace (which draws it) and ratingsBandHeight
+// (which measures it) so the reserved band height always matches the draw.
+type ratingStripDims struct {
+	accentW, padX, padY, iconSize, iconGap, badgeGap, rowGap, edgeX, edgeY int
+}
+
+func ratingStripDimsFor(scale float64) ratingStripDims {
+	s := func(v float64) int { return int(v*scale + 0.5) }
+	return ratingStripDims{
+		accentW:  s(4),
+		padX:     s(14),
+		padY:     s(10),
+		iconSize: s(28),
+		iconGap:  s(7),
+		badgeGap: s(11),
+		rowGap:   s(11),
+		edgeX:    s(16),
+		edgeY:    s(16),
+	}
+}
+
+// ratingsBandHeight returns the vertical space (strip plus edge margins) the
+// rating strip occupies for a frame of width frameW, so the logo can be
+// letterboxed above a clear band.
+func ratingsBandHeight(frameW int, ratings []provider.Rating, cfg imageconfig.Config) int {
+	if cfg.RatingsLayout == imageconfig.LayoutNone || cfg.RatingsLayout == imageconfig.LayoutSplitSide {
+		return 0
+	}
+	if len(cfg.Ratings) == 0 {
+		return 0
+	}
+	filtered := filterRatings(ratings, cfg.Ratings)
+	if len(filtered) == 0 {
+		return 0
+	}
+	ensureFaces()
+	ensureIcons()
+	if faceValue == nil {
+		return 0
+	}
+	scale := outputScale(cfg.Size)
+	face := valueFaceFor(scale)
+	fm := face.Metrics()
+	valH := fm.Ascent.Ceil() + fm.Descent.Ceil()
+	d := ratingStripDimsFor(scale)
+	accentW, padX, iconSize, iconGap, badgeGap := d.accentW, d.padX, d.iconSize, d.iconGap, d.badgeGap
+	padY, rowGap, edgeX, edgeY := d.padY, d.rowGap, d.edgeX, d.edgeY
+	innerH := padY*2 + maxInt(valH, iconSize)
+	maxRowW := frameW - edgeX*2
+	rowW, rows := 0, 0
+	for _, r := range filtered {
+		value := r.Label
+		if value == "" {
+			value = "N/A"
+		}
+		bw := accentW + padX + textWidth(face, value) + padX
+		if ratingIcons[r.Source] != nil {
+			bw += iconSize + iconGap
+		}
+		need := bw
+		if rowW > 0 {
+			need += badgeGap
+		}
+		if rowW > 0 && rowW+need > maxRowW {
+			rows++
+			rowW = bw
+		} else {
+			rowW += need
+		}
+	}
+	if rowW > 0 {
+		rows++
+	}
+	if rows == 0 {
+		return 0
+	}
+	return rows*innerH + (rows-1)*rowGap + edgeY*2
+}
+
 // drawBadgesInPlace composites rating badges onto out according to the render config.
 // Returns the pixel height consumed (zero when layout is none).
 func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config) int {
@@ -289,7 +422,6 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 	}
 
 	scale := outputScale(cfg.Size)
-	s := func(v float64) int { return int(v*scale + 0.5) }
 
 	face := valueFaceFor(scale)
 	fm := face.Metrics()
@@ -297,17 +429,9 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 	valDescent := fm.Descent.Ceil()
 	valH := valAscent + valDescent
 
-	var (
-		accentW  = s(4)
-		padX     = s(14)
-		padY     = s(10)
-		iconSize = s(28)
-		iconGap  = s(7)
-		badgeGap = s(11)
-		rowGap   = s(11)
-		edgeX    = s(16)
-		edgeY    = s(16)
-	)
+	d := ratingStripDimsFor(scale)
+	accentW, padX, padY, iconSize := d.accentW, d.padX, d.padY, d.iconSize
+	iconGap, badgeGap, rowGap, edgeX, edgeY := d.iconGap, d.badgeGap, d.rowGap, d.edgeX, d.edgeY
 
 	innerH := padY*2 + maxInt(valH, iconSize)
 	chrome := chromeFor(cfg)

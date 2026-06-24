@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	tmdbLogoBase          = "https://image.tmdb.org/t/p/w92"
+	tmdbLogoBase          = "https://image.tmdb.org/t/p/w185"
 	logoFailureRetryAfter = 10 * time.Minute
 )
 
