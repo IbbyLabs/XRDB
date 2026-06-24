@@ -387,10 +387,10 @@ func drawLogoScaled(dst *image.NRGBA, src *image.NRGBA, dstRect image.Rectangle)
 			a := uint32(sp.A)
 			ia := 255 - a
 			dst.SetNRGBA(px, py, color.NRGBA{
-				R: uint8((uint32(sp.R)*a + uint32(dp.R)*ia) / 255),
-				G: uint8((uint32(sp.G)*a + uint32(dp.G)*ia) / 255),
-				B: uint8((uint32(sp.B)*a + uint32(dp.B)*ia) / 255),
-				A: uint8((a*255 + uint32(dp.A)*ia) / 255),
+				R: uint8((uint32(sp.R)*a + uint32(dp.R)*uint32(dp.A)*ia/255) / 255),
+				G: uint8((uint32(sp.G)*a + uint32(dp.G)*uint32(dp.A)*ia/255) / 255),
+				B: uint8((uint32(sp.B)*a + uint32(dp.B)*uint32(dp.A)*ia/255) / 255),
+				A: uint8(a + uint32(dp.A)*ia/255),
 			})
 		}
 	}
