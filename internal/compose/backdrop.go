@@ -120,7 +120,7 @@ func resizeFitSmart(src image.Image, maxW, maxH int) image.Image {
 	}
 
 	scaled := image.NewNRGBA(image.Rect(0, 0, scaledW, scaledH))
-	xdraw.BiLinear.Scale(scaled, scaled.Bounds(), src, srcB, xdraw.Over, nil)
+	xdraw.CatmullRom.Scale(scaled, scaled.Bounds(), src, srcB, xdraw.Over, nil)
 
 	offX, offY := saliencyCropOffset(scaled, maxW, maxH)
 
@@ -157,7 +157,7 @@ func resizeContain(src image.Image, maxW, maxH int) image.Image {
 
 	dst := image.NewNRGBA(image.Rect(0, 0, maxW, maxH))
 	scaled := image.NewNRGBA(image.Rect(0, 0, scaledW, scaledH))
-	xdraw.BiLinear.Scale(scaled, scaled.Bounds(), src, srcB, xdraw.Over, nil)
+	xdraw.CatmullRom.Scale(scaled, scaled.Bounds(), src, srcB, xdraw.Over, nil)
 
 	offX := (maxW - scaledW) / 2
 	offY := (maxH - scaledH) / 2

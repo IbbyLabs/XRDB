@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	xdraw "golang.org/x/image/draw"
 	"golang.org/x/image/font"
 
 	"xrdb_rewrite/internal/imageconfig"
@@ -357,25 +358,24 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 	}
 }
 
-// drawLogoScaled composites src into dst rectangle using nearest-neighbour
-// scaling. Transparent logo pixels are skipped (src has straight alpha).
+// drawLogoScaled composites src into dst rectangle using CatmullRom
+// resampling for sharp, high-quality scaling. Alpha is composited over
+// the existing destination pixels.
 func drawLogoScaled(dst *image.NRGBA, src *image.NRGBA, dstRect image.Rectangle) {
-	sb := src.Bounds()
-	dw := dstRect.Dx()
-	dh := dstRect.Dy()
-	if dw <= 0 || dh <= 0 || sb.Dx() <= 0 || sb.Dy() <= 0 {
+	if dstRect.Dx() <= 0 || dstRect.Dy() <= 0 || src.Bounds().Dx() <= 0 || src.Bounds().Dy() <= 0 {
 		return
 	}
-	for dy := 0; dy < dh; dy++ {
-		sy := sb.Min.Y + dy*sb.Dy()/dh
-		for dx := 0; dx < dw; dx++ {
-			sx := sb.Min.X + dx*sb.Dx()/dw
-			sp := src.NRGBAAt(sx, sy)
+	scaled := image.NewNRGBA(image.Rect(0, 0, dstRect.Dx(), dstRect.Dy()))
+	xdraw.CatmullRom.Scale(scaled, scaled.Bounds(), src, src.Bounds(), xdraw.Over, nil)
+	sb := scaled.Bounds()
+	for py := dstRect.Min.Y; py < dstRect.Max.Y; py++ {
+		sy := sb.Min.Y + (py - dstRect.Min.Y)
+		for px := dstRect.Min.X; px < dstRect.Max.X; px++ {
+			sx := sb.Min.X + (px - dstRect.Min.X)
+			sp := scaled.NRGBAAt(sx, sy)
 			if sp.A == 0 {
 				continue
 			}
-			px := dstRect.Min.X + dx
-			py := dstRect.Min.Y + dy
 			if !image.Pt(px, py).In(dst.Bounds()) {
 				continue
 			}
@@ -383,7 +383,6 @@ func drawLogoScaled(dst *image.NRGBA, src *image.NRGBA, dstRect image.Rectangle)
 				dst.SetNRGBA(px, py, sp)
 				continue
 			}
-			// Alpha blend over existing pixel.
 			dp := dst.NRGBAAt(px, py)
 			a := uint32(sp.A)
 			ia := 255 - a
@@ -604,9 +603,9 @@ func drawTrendingBadge(base *image.NRGBA, scale float64) {
 
 // ── Average rating ring ───────────────────────────────────────────────────────
 
-// drawAverageRatingRing renders a circular rating ring (or compact wings) in
-// the configured corner. The ring shows the average of the selected rating
-// sources as a progress arc coloured green/amber/red or a custom hex colour.
+// drawAverageRatingRing renders a circular progress ring in the configured
+// corner. The ring shows the average of the selected rating sources as a
+// progress arc coloured green/amber/red or a custom hex colour.
 func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, scale float64) {
 	if !cfg.RatingRing || len(ratings) == 0 || len(cfg.Ratings) == 0 {
 		return
@@ -624,10 +623,6 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 	edgeX := s(12)
 	edgeY := s(12)
 
-	style := cfg.RatingRingStyle
-	if style == "" {
-		style = "ring"
-	}
 	pos := cfg.RatingRingPos
 	if pos == "" {
 		pos = "br"
@@ -636,15 +631,10 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 	ensureFaces()
 	valueFace := valueFaceFor(scale)
 
-	switch style {
-	case "compact":
-		drawCompactWings(base, avg, fillColor, pos, bounds, edgeX, edgeY, scale, valueFace)
-	default: // "ring"
-		outerR := s(32)
-		innerR := s(22)
-		cx, cy := ringCenter(pos, bounds, edgeX, edgeY, outerR)
-		drawProgressRing(base, cx, cy, outerR, innerR, avg/10.0, fillColor, valueFace)
-	}
+	outerR := s(32)
+	innerR := s(22)
+	cx, cy := ringCenter(pos, bounds, edgeX, edgeY, outerR)
+	drawProgressRing(base, cx, cy, outerR, innerR, avg/10.0, fillColor, valueFace)
 }
 
 // ratingRingAverage computes the normalised (0–10) average of ratings whose
@@ -797,108 +787,3 @@ func drawProgressRing(base *image.NRGBA, cx, cy, outerR, innerR int, sweepFrac f
 	drawText(base, face, tx, ty, color.NRGBA{R: 255, G: 255, B: 255, A: 240}, label)
 }
 
-// drawCompactWings draws two small curved arcs flanking the score number,
-// positioned in the requested corner — a compact "wings" style indicator.
-func drawCompactWings(base *image.NRGBA, avg float64, fillColor color.NRGBA, pos string, bounds image.Rectangle, edgeX, edgeY int, scale float64, face font.Face) {
-	if face == nil {
-		return
-	}
-	s := func(v float64) int { return int(v*scale + 0.5) }
-
-	label := strings.TrimSuffix(fmt.Sprintf("%.1f", avg), ".0")
-	tw := textWidth(face, label)
-	fm := face.Metrics()
-	ascent := fm.Ascent.Ceil()
-	descent := fm.Descent.Ceil()
-	textH := ascent + descent
-
-	wingR := s(14) // arc radius
-	padX := s(6)   // gap between text and wing center
-	padY := s(5)
-	totalW := wingR + padX + tw + padX + wingR
-	totalH := textH + padY*2
-
-	// Compute top-left of the widget bounding box
-	var ox, oy int
-	switch pos {
-	case "tl":
-		ox = bounds.Min.X + edgeX
-		oy = bounds.Min.Y + edgeY
-	case "tr":
-		ox = bounds.Max.X - edgeX - totalW
-		oy = bounds.Min.Y + edgeY
-	case "bl":
-		ox = bounds.Min.X + edgeX
-		oy = bounds.Max.Y - edgeY - totalH
-	default: // "br"
-		ox = bounds.Max.X - edgeX - totalW
-		oy = bounds.Max.Y - edgeY - totalH
-	}
-
-	// Background pill behind the whole widget
-	bgRect := image.Rect(ox, oy, ox+totalW, oy+totalH)
-	fillRoundedRect(base, bgRect, totalH/2, color.NRGBA{R: 0, G: 0, B: 0, A: 160})
-
-	cy := oy + totalH/2
-	sweep := (avg / 10.0) * math.Pi * 1.5 // up to 270° per wing at max score
-
-	// Left wing: arc centered left of text, opening rightward (right half of circle)
-	lx := ox + wingR
-	drawArcOnly(base, lx, cy, wingR-s(3), wingR, math.Pi/2, sweep, fillColor)
-
-	// Right wing: arc centered right of text, opening leftward (left half of circle)
-	rx := ox + totalW - wingR
-	drawArcOnly(base, rx, cy, wingR-s(3), wingR, -math.Pi/2, sweep, fillColor)
-
-	// Score text
-	tx := ox + wingR + padX
-	ty := oy + padY + ascent
-	drawText(base, face, tx, ty, color.NRGBA{R: 255, G: 255, B: 255, A: 240}, label)
-}
-
-// drawArcOnly paints pixels in the annular sector defined by [innerR, outerR]
-// and a symmetric sweep of sweepRad radians centred on startAngle.
-func drawArcOnly(base *image.NRGBA, cx, cy, innerR, outerR int, startAngle, sweepRad float64, c color.NRGBA) {
-	outer2 := float64(outerR * outerR)
-	inner2 := float64(innerR * innerR)
-	halfSweep := sweepRad / 2
-	endA := startAngle + halfSweep
-	startA := startAngle - halfSweep
-
-	for py := cy - outerR; py <= cy+outerR; py++ {
-		for px := cx - outerR; px <= cx+outerR; px++ {
-			dx := float64(px) - float64(cx) + 0.5
-			dy := float64(py) - float64(cy) + 0.5
-			d2 := dx*dx + dy*dy
-			if d2 < inner2 || d2 > outer2 {
-				continue
-			}
-			angle := math.Atan2(dy, dx)
-			if angleBetween(angle, startA, endA) {
-				blendPixel(base, px, py, c)
-			}
-		}
-	}
-}
-
-// angleBetween returns true if angle lies in [lo, hi] with wrap-around handling.
-func angleBetween(angle, lo, hi float64) bool {
-	// Normalise both bounds to (-π, π] range that Atan2 returns.
-	for lo > math.Pi {
-		lo -= 2 * math.Pi
-	}
-	for lo < -math.Pi {
-		lo += 2 * math.Pi
-	}
-	for hi > math.Pi {
-		hi -= 2 * math.Pi
-	}
-	for hi < -math.Pi {
-		hi += 2 * math.Pi
-	}
-	if lo <= hi {
-		return angle >= lo && angle <= hi
-	}
-	// Wraps around
-	return angle >= lo || angle <= hi
-}

@@ -83,11 +83,6 @@ export const GENRE_POS_OPTIONS = [
   { id: 'tr',      label: 'Top right'    },
 ] as const;
 
-export const RING_STYLE_OPTIONS = [
-  { id: 'ring',    label: 'Ring'  },
-  { id: 'compact', label: 'Wings' },
-] as const;
-
 export const RING_POS_OPTIONS = [
   { id: 'br', label: 'Bottom right' },
   { id: 'bl', label: 'Bottom left'  },
@@ -129,7 +124,6 @@ export interface ConfigState {
   trending: boolean;
   backdropAsPoster: boolean;
   ratingRing: boolean;
-  ratingRingStyle: string;
   ratingRingPos: string;
   ratingRingColor: string;
 }
@@ -154,7 +148,6 @@ export const DEFAULT_CONFIG: ConfigState = {
   trending: false,
   backdropAsPoster: false,
   ratingRing: false,
-  ratingRingStyle: 'ring',
   ratingRingPos: 'br',
   ratingRingColor: '',
 };

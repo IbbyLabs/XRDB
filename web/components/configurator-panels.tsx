@@ -6,7 +6,7 @@ import { fetchTemplates, type Template } from '@/lib/api';
 import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   LAYOUT_OPTIONS, RATING_OPTIONS, BADGE_STYLE_OPTIONS, BADGE_THEME_OPTIONS,
-  RING_STYLE_OPTIONS, RING_POS_OPTIONS,
+  RING_POS_OPTIONS,
 } from './configurator-types';
 
 // ── Template strip ────────────────────────────────────────────────────────────
@@ -135,7 +135,7 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating }: RatingsP
           <>
             <div className="field">
               <span className="label" id={`${uid}-ring-label`}>Average ring</span>
-              <div className="opt-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }} role="group" aria-labelledby={`${uid}-ring-label`}>
+              <div className="opt-grid" role="group" aria-labelledby={`${uid}-ring-label`}>
                 <button
                   className={`opt-btn${!config.ratingRing ? ' opt-btn--active' : ''}`}
                   onClick={() => onUpdate('ratingRing', false)}
@@ -143,16 +143,13 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating }: RatingsP
                 >
                   Off
                 </button>
-                {RING_STYLE_OPTIONS.map(o => (
-                  <button
-                    key={o.id}
-                    className={`opt-btn${config.ratingRing && config.ratingRingStyle === o.id ? ' opt-btn--active' : ''}`}
-                    onClick={() => { onUpdate('ratingRing', true); onUpdate('ratingRingStyle', o.id); }}
-                    aria-pressed={config.ratingRing && config.ratingRingStyle === o.id}
-                  >
-                    {o.label}
-                  </button>
-                ))}
+                <button
+                  className={`opt-btn${config.ratingRing ? ' opt-btn--active' : ''}`}
+                  onClick={() => onUpdate('ratingRing', true)}
+                  aria-pressed={config.ratingRing}
+                >
+                  Ring
+                </button>
               </div>
             </div>
 

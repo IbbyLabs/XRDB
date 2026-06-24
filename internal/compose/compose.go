@@ -325,7 +325,7 @@ func resizeFit(src image.Image, maxW, maxH int) image.Image {
 	}
 
 	scaled := image.NewNRGBA(image.Rect(0, 0, scaledW, scaledH))
-	xdraw.BiLinear.Scale(scaled, scaled.Bounds(), src, srcB, xdraw.Over, nil)
+	xdraw.CatmullRom.Scale(scaled, scaled.Bounds(), src, srcB, xdraw.Over, nil)
 
 	offsetX := (scaledW - maxW) / 2
 	offsetY := (scaledH - maxH) / 2
