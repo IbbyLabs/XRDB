@@ -52,7 +52,7 @@ func DimensionsForSize(mediaType, size string) Dimensions {
 	case "logo":
 		d = Dimensions{800, 200}
 	default:
-		d = Dimensions{580, 859}
+		d = Dimensions{780, 1170}
 	}
 	mult, ok := sizeMultipliers[size]
 	if !ok {
