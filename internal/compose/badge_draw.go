@@ -3,6 +3,7 @@ package compose
 import (
 	"image"
 	"image/color"
+	"math"
 
 	"golang.org/x/image/font"
 	"golang.org/x/image/math/fixed"
@@ -12,16 +13,15 @@ import (
 func fillRoundedRect(dst *image.NRGBA, r image.Rectangle, radius int, c color.NRGBA) {
 	bounds := dst.Bounds()
 	r = r.Intersect(bounds)
-	cr := float64(radius)
 	for y := r.Min.Y; y < r.Max.Y; y++ {
 		for x := r.Min.X; x < r.Max.X; x++ {
-			if inCornerZone(x, y, r, radius) {
-				cx, cy := cornerCenter(x, y, r, radius)
-				dx := float64(x) - cx + 0.5
-				dy := float64(y) - cy + 0.5
-				if dx*dx+dy*dy > cr*cr {
-					continue
-				}
+			cov, skip := cornerCoverage(x, y, r, radius)
+			if skip {
+				continue
+			}
+			if cov < 1 {
+				blendPixel(dst, x, y, color.NRGBA{R: c.R, G: c.G, B: c.B, A: uint8(float64(c.A) * cov)})
+				continue
 			}
 			dst.SetNRGBA(x, y, c)
 		}
@@ -46,6 +46,28 @@ func cornerCenter(x, y int, r image.Rectangle, radius int) (float64, float64) {
 		cy = float64(r.Max.Y - radius)
 	}
 	return cx, cy
+}
+
+// cornerCoverage returns the anti-aliased sub-pixel coverage for (x, y) at the
+// rounded corners of r. skip=true means the pixel is outside the arc and should
+// be discarded. When skip is false, coverage is in (0,1]: callers should blend
+// at partial alpha when coverage < 1, or write fully when coverage == 1.
+func cornerCoverage(x, y int, r image.Rectangle, radius int) (coverage float64, skip bool) {
+	if !inCornerZone(x, y, r, radius) {
+		return 1, false
+	}
+	cx, cy := cornerCenter(x, y, r, radius)
+	dx := float64(x) - cx + 0.5
+	dy := float64(y) - cy + 0.5
+	cr := float64(radius)
+	dist := math.Sqrt(dx*dx + dy*dy)
+	if dist >= cr+0.5 {
+		return 0, true
+	}
+	if dist > cr-0.5 {
+		return cr + 0.5 - dist, false
+	}
+	return 1, false
 }
 
 // fillRect fills a rectangle on dst with c (no alpha blending).
@@ -97,7 +119,6 @@ func blendPixel(dst *image.NRGBA, x, y int, c color.NRGBA) {
 
 // drawRectBorder draws a 1px border around a rounded rectangle.
 func drawRectBorder(dst *image.NRGBA, r image.Rectangle, radius int, c color.NRGBA) {
-	cr := float64(radius)
 	b := dst.Bounds()
 	for x := r.Min.X; x < r.Max.X; x++ {
 		onEdge := x == r.Min.X || x == r.Max.X-1
@@ -109,13 +130,13 @@ func drawRectBorder(dst *image.NRGBA, r image.Rectangle, radius int, c color.NRG
 			if !pt.In(b) {
 				continue
 			}
-			if inCornerZone(x, y, r, radius) {
-				cx, cy := cornerCenter(x, y, r, radius)
-				dx := float64(x) - cx + 0.5
-				dy := float64(y) - cy + 0.5
-				if dx*dx+dy*dy > cr*cr {
-					continue
-				}
+			cov, skip := cornerCoverage(x, y, r, radius)
+			if skip {
+				continue
+			}
+			if cov < 1 {
+				blendPixel(dst, x, y, color.NRGBA{R: c.R, G: c.G, B: c.B, A: uint8(float64(c.A) * cov)})
+				continue
 			}
 			dst.SetNRGBA(x, y, c)
 		}
