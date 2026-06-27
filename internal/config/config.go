@@ -20,14 +20,17 @@ type Config struct {
 	FanartAPIKey        string
 	TraktClientID       string
 	SIMKLClientID       string
-	IMDbDatasetDir      string                   // directory for cached IMDb dataset file; empty = disabled
-	JikanURL            string                   // override Jikan API base URL; empty = public api.jikan.moe
-	AnimeMapURL         string                   // override anime ID mapping dataset URL; empty = default
-	AnimeMapFallbackURL string                   // live anime mapping API base URL; "off" disables
-	AnimeMapRefresh     time.Duration            // anime mapping dataset refresh interval; 0 = default (7 days)
-	ProviderTTLs        map[string]time.Duration // per-provider TTL overrides; key = provider name
-	AdminKey            string                   // protects /api/admin/* routes
-	APIKey              string                   // if set, required on all render routes
+	IMDbDatasetDir      string // directory for cached IMDb dataset file; empty = disabled
+	JikanURL            string // override Jikan API base URL; empty = public api.jikan.moe
+	AnimeMapURL         string // override anime ID mapping dataset URL; empty = default
+	AnimeMapFallbackURL string // live anime mapping API base URL; "off" disables
+	// AnimeMapSupplementURL is the secondary anime mapping dataset (nattadasu);
+	// "" uses the built-in default, "off" disables it.
+	AnimeMapSupplementURL string
+	AnimeMapRefresh       time.Duration            // anime mapping dataset refresh interval; 0 = default (7 days)
+	ProviderTTLs          map[string]time.Duration // per-provider TTL overrides; key = provider name
+	AdminKey              string                   // protects /api/admin/* routes
+	APIKey                string                   // if set, required on all render routes
 }
 
 // loadProviderTTLs builds the per-provider TTL map.
@@ -83,25 +86,26 @@ func Load() Config {
 		}
 	}
 	return Config{
-		Address:             addr,
-		Version:             version,
-		DBPath:              dbPath,
-		CacheDir:            cacheDir,
-		CacheTTL:            cacheTTL,
-		TMDBAPIKey:          os.Getenv("XRDB_TMDB_API_KEY"),
-		TMDBReadToken:       os.Getenv("XRDB_TMDB_READ_TOKEN"),
-		MDBListAPIKey:       os.Getenv("XRDB_MDBLIST_API_KEY"),
-		OMDBAPIKey:          os.Getenv("XRDB_OMDB_API_KEY"),
-		FanartAPIKey:        os.Getenv("XRDB_FANART_API_KEY"),
-		TraktClientID:       os.Getenv("XRDB_TRAKT_CLIENT_ID"),
-		SIMKLClientID:       os.Getenv("XRDB_SIMKL_CLIENT_ID"),
-		IMDbDatasetDir:      os.Getenv("XRDB_IMDB_DATASET_DIR"),
-		JikanURL:            os.Getenv("XRDB_JIKAN_URL"),
-		AnimeMapURL:         os.Getenv("XRDB_ANIME_MAP_URL"),
-		AnimeMapFallbackURL: os.Getenv("XRDB_ANIME_MAP_FALLBACK_URL"),
-		AnimeMapRefresh:     animeMapRefresh,
-		ProviderTTLs:        loadProviderTTLs(cacheTTL),
-		AdminKey:            os.Getenv("XRDB_ADMIN_KEY"),
-		APIKey:              os.Getenv("XRDB_API_KEY"),
+		Address:               addr,
+		Version:               version,
+		DBPath:                dbPath,
+		CacheDir:              cacheDir,
+		CacheTTL:              cacheTTL,
+		TMDBAPIKey:            os.Getenv("XRDB_TMDB_API_KEY"),
+		TMDBReadToken:         os.Getenv("XRDB_TMDB_READ_TOKEN"),
+		MDBListAPIKey:         os.Getenv("XRDB_MDBLIST_API_KEY"),
+		OMDBAPIKey:            os.Getenv("XRDB_OMDB_API_KEY"),
+		FanartAPIKey:          os.Getenv("XRDB_FANART_API_KEY"),
+		TraktClientID:         os.Getenv("XRDB_TRAKT_CLIENT_ID"),
+		SIMKLClientID:         os.Getenv("XRDB_SIMKL_CLIENT_ID"),
+		IMDbDatasetDir:        os.Getenv("XRDB_IMDB_DATASET_DIR"),
+		JikanURL:              os.Getenv("XRDB_JIKAN_URL"),
+		AnimeMapURL:           os.Getenv("XRDB_ANIME_MAP_URL"),
+		AnimeMapFallbackURL:   os.Getenv("XRDB_ANIME_MAP_FALLBACK_URL"),
+		AnimeMapSupplementURL: os.Getenv("XRDB_ANIME_MAP_SUPPLEMENT_URL"),
+		AnimeMapRefresh:       animeMapRefresh,
+		ProviderTTLs:          loadProviderTTLs(cacheTTL),
+		AdminKey:              os.Getenv("XRDB_ADMIN_KEY"),
+		APIKey:                os.Getenv("XRDB_API_KEY"),
 	}
 }
