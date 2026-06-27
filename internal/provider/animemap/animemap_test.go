@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -58,6 +60,21 @@ func eventually(cond func() bool) bool {
 		time.Sleep(10 * time.Millisecond)
 	}
 	return cond()
+}
+
+// roundTripperFunc adapts a function to http.RoundTripper for instrumenting
+// outbound requests in tests.
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+func mustHost(t *testing.T, rawURL string) string {
+	t.Helper()
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		t.Fatalf("parse %q: %v", rawURL, err)
+	}
+	return u.Host
 }
 
 func TestResolveFromDataset(t *testing.T) {
@@ -296,16 +313,21 @@ func TestSupplementFillsGapAndPrimaryWins(t *testing.T) {
 // TestSupplementDisabledWhenOff verifies SupplementURL:"off" never fetches the
 // supplement and never resolves supplement-only ids.
 func TestSupplementDisabledWhenOff(t *testing.T) {
-	var supHits atomic.Int32
 	primary := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(sampleDataset))
 	}))
 	defer primary.Close()
-	supplement := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		supHits.Add(1)
-		_, _ = w.Write([]byte(sampleSupplement))
-	}))
-	defer supplement.Close()
+
+	// Instrument the client to prove no request reaches anything but the
+	// primary while the supplement is disabled.
+	primaryHost := mustHost(t, primary.URL)
+	var nonPrimary atomic.Int32
+	client := &http.Client{Transport: roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+		if r.URL.Host != primaryHost {
+			nonPrimary.Add(1)
+		}
+		return http.DefaultTransport.RoundTrip(r)
+	})}
 
 	m := New(Options{
 		CacheDir:      t.TempDir(),
@@ -313,19 +335,63 @@ func TestSupplementDisabledWhenOff(t *testing.T) {
 		MirrorURL:     primary.URL,
 		SupplementURL: "off",
 		FallbackURL:   "off",
+		HTTPClient:    client,
 	})
 
 	if _, ok := m.Resolve(context.Background(), "poster", "tt0388629"); !ok {
 		t.Fatal("expected primary mapping with supplement off")
 	}
+	// A supplement-only id never resolves while the supplement is disabled.
 	for i := 0; i < 5; i++ {
 		if _, ok := m.Resolve(context.Background(), "poster", "tt5550000"); ok {
 			t.Fatal("supplement-only id resolved while supplement disabled")
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
-	if supHits.Load() != 0 {
-		t.Fatalf("supplement was fetched while disabled: %d hits", supHits.Load())
+	if n := nonPrimary.Load(); n != 0 {
+		t.Fatalf("unexpected non-primary outbound requests while supplement disabled: %d", n)
+	}
+}
+
+// TestPrimaryColdLoadIsSingleFlight verifies that concurrent first callers wait
+// for the primary's blocking cold-load instead of falling through, and that the
+// dataset is downloaded only once.
+func TestPrimaryColdLoadIsSingleFlight(t *testing.T) {
+	var hits atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		hits.Add(1)
+		time.Sleep(150 * time.Millisecond) // simulate a slow cold download
+		_, _ = w.Write([]byte(sampleDataset))
+	}))
+	defer srv.Close()
+
+	m := New(Options{
+		CacheDir:      t.TempDir(),
+		DatasetURL:    srv.URL,
+		MirrorURL:     srv.URL,
+		FallbackURL:   "off",
+		SupplementURL: "off",
+	})
+
+	const n = 8
+	var wg sync.WaitGroup
+	var resolved atomic.Int32
+	wg.Add(n)
+	for i := 0; i < n; i++ {
+		go func() {
+			defer wg.Done()
+			if _, ok := m.Resolve(context.Background(), "poster", "tt0388629"); ok {
+				resolved.Add(1)
+			}
+		}()
+	}
+	wg.Wait()
+
+	if got := resolved.Load(); got != n {
+		t.Fatalf("expected all %d concurrent cold-start callers to resolve, got %d", n, got)
+	}
+	if got := hits.Load(); got != 1 {
+		t.Fatalf("expected single-flight download (1 hit), got %d", got)
 	}
 }
 
