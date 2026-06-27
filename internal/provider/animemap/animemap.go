@@ -126,6 +126,7 @@ type source struct {
 	loadedAt    time.Time
 	lastAttempt time.Time
 	refreshing  bool
+	loading     chan struct{} // non-nil while a blocking cold-load is in flight (single-flight)
 	byIMDb      map[string]indexed
 	byTMDBMovie map[int]indexed
 	byTMDBTV    map[int]indexed
@@ -251,15 +252,24 @@ func (s *source) lookupLocked(mediaType, id string) (IDs, bool) {
 // render latency never depends on the upstream host.
 func (s *source) ensureLoaded() {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 
 	if !s.loaded {
 		if err := s.loadFromDiskLocked(); err == nil {
 			s.loaded = true
 		}
 	}
+	// A blocking cold-load is already in flight: wait for it instead of falling
+	// through to a lookup on empty indexes. This makes the first download a true
+	// single-flight for concurrent callers, honoring the blocking guarantee.
+	if !s.loaded && s.loading != nil {
+		ch := s.loading
+		s.mu.Unlock()
+		<-ch
+		return
+	}
 	stale := !s.loaded || time.Since(s.loadedAt) > s.ttl
 	if !stale || s.refreshing || time.Since(s.lastAttempt) < retryBackoff {
+		s.mu.Unlock()
 		return
 	}
 	s.lastAttempt = time.Now()
@@ -268,18 +278,27 @@ func (s *source) ensureLoaded() {
 		// source with no data yet (background initial download).
 		s.refreshing = true
 		go s.refresh()
+		s.mu.Unlock()
 		return
 	}
-	// Blocking source with no usable dataset at all: block this first caller on
-	// the download so the very first anime render can still succeed.
+	// Blocking source with no usable dataset at all: download synchronously so
+	// the very first anime render can still succeed, and publish a loading
+	// channel so concurrent callers wait on this same load.
+	ch := make(chan struct{})
+	s.loading = ch
 	s.mu.Unlock()
+
 	err := s.downloadAndStore()
+
 	s.mu.Lock()
 	if err == nil {
 		if err := s.loadFromDiskLocked(); err == nil {
 			s.loaded = true
 		}
 	}
+	s.loading = nil
+	close(ch)
+	s.mu.Unlock()
 }
 
 func (s *source) refresh() {
