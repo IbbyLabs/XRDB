@@ -3,8 +3,14 @@
 //
 // The primary source is the community-maintained Fribb/anime-lists dataset,
 // downloaded once and cached on disk so lookups are local and survive upstream
-// outages. Entries missing from the dataset fall back to a live mapping API
-// (arm.haglund.dev by default) with per-ID caching, including negative results.
+// outages. A secondary "supplement" source (nattadasu/animeApi) fills gaps the
+// primary misses — chiefly anime films, OVAs and specials whose IMDb/TMDB
+// linkage the Fribb lineage lacks. Entries missing from both datasets fall back
+// to a live mapping API (arm.haglund.dev by default) with per-ID caching,
+// including negative results.
+//
+// Supplement data (nattadasu/animeApi) is licensed ODbL v1.0 + DbCL v1.0;
+// attribution: https://github.com/nattadasu/animeApi.
 package animemap
 
 import (
@@ -41,8 +47,16 @@ const (
 	// DefaultFallbackURL is the live per-ID mapping API used for titles the
 	// dataset doesn't cover yet. Set to "off" in Options to disable.
 	DefaultFallbackURL = "https://arm.haglund.dev/api/v2"
+	// DefaultSupplementURL is nattadasu/animeApi's aggregated dataset (~32 MB).
+	// It is loaded as a secondary offline source for IMDb/TMDB titles the Fribb
+	// primary and the live fallback both miss (mostly films/OVAs/specials). Set
+	// to "off" in Options to disable. There is no public mirror large enough to
+	// serve this file, so it has none; the disk cache and non-blocking load
+	// keep it resilient to upstream outages.
+	DefaultSupplementURL = "https://raw.githubusercontent.com/nattadasu/animeApi/v3/database/animeapi.json"
 
 	datasetFileName    = "anime-map.json"
+	supplementFileName = "anime-map-supplement.json"
 	maxDatasetBytes    = 64 * 1024 * 1024
 	downloadTimeout    = 60 * time.Second
 	retryBackoff       = 5 * time.Minute
@@ -53,35 +67,26 @@ const (
 
 // Options configures a Mapper.
 type Options struct {
-	CacheDir    string        // directory for the cached dataset file (required)
-	DatasetURL  string        // override dataset URL (default Fribb anime-lists)
-	MirrorURL   string        // override mirror URL
-	FallbackURL string        // live mapping API base URL; "off" disables
-	TTL         time.Duration // dataset refresh interval (default 7 days)
-	HTTPClient  *http.Client  // override HTTP client (tests)
+	CacheDir            string        // directory for the cached dataset files (required)
+	DatasetURL          string        // override primary dataset URL (default Fribb anime-lists)
+	MirrorURL           string        // override primary mirror URL
+	FallbackURL         string        // live mapping API base URL; "off" disables
+	SupplementURL       string        // secondary dataset URL (default nattadasu); "off" disables
+	SupplementMirrorURL string        // optional mirror for the supplement (default none)
+	TTL                 time.Duration // dataset refresh interval (default 7 days)
+	HTTPClient          *http.Client  // override HTTP client (tests)
 }
 
-// Mapper resolves media IDs to anime-service IDs using a disk-cached dataset
+// Mapper resolves media IDs to anime-service IDs using disk-cached datasets
 // with a live API fallback. Safe for concurrent use.
 type Mapper struct {
-	datasetURL  string
-	mirrorURL   string
+	primary    *source // Fribb dataset (blocks first render until loaded)
+	supplement *source // nattadasu dataset; nil when disabled (best-effort, non-blocking)
+	httpClient *http.Client
+
 	fallbackURL string
-	path        string
-	ttl         time.Duration
-	httpClient  *http.Client
-
-	mu          sync.Mutex
-	loaded      bool
-	loadedAt    time.Time
-	lastAttempt time.Time
-	refreshing  bool
-	byIMDb      map[string]indexed
-	byTMDBMovie map[int]indexed
-	byTMDBTV    map[int]indexed
-
-	fbMu    sync.Mutex
-	fbCache map[string]fallbackEntry
+	fbMu        sync.Mutex
+	fbCache     map[string]fallbackEntry
 }
 
 // indexed pairs resolved IDs with a season rank so first-season entries win
@@ -97,7 +102,36 @@ type fallbackEntry struct {
 	expires time.Time
 }
 
-// New creates a Mapper. The dataset loads lazily on first Resolve.
+// datasetParser turns raw dataset bytes into the IMDb, TMDB-movie and TMDB-TV
+// indexes. Different sources carry different on-disk schemas but share this
+// index shape.
+type datasetParser func(data []byte) (imdb map[string]indexed, movie map[int]indexed, tv map[int]indexed, err error)
+
+// source is one disk-cached dataset (primary or supplement) with its own
+// indexes and refresh lifecycle. Safe for concurrent use.
+type source struct {
+	url        string
+	mirror     string
+	path       string
+	ttl        time.Duration
+	httpClient *http.Client
+	parse      datasetParser
+	// blocking makes the very first caller wait on the initial download so the
+	// first anime render can succeed. The supplement is non-blocking: when it
+	// has no data yet it downloads in the background and contributes once ready.
+	blocking bool
+
+	mu          sync.Mutex
+	loaded      bool
+	loadedAt    time.Time
+	lastAttempt time.Time
+	refreshing  bool
+	byIMDb      map[string]indexed
+	byTMDBMovie map[int]indexed
+	byTMDBTV    map[int]indexed
+}
+
+// New creates a Mapper. Datasets load lazily on first Resolve.
 func New(opts Options) *Mapper {
 	if opts.DatasetURL == "" {
 		opts.DatasetURL = DefaultDatasetURL
@@ -111,46 +145,80 @@ func New(opts Options) *Mapper {
 	if strings.EqualFold(opts.FallbackURL, "off") {
 		opts.FallbackURL = ""
 	}
+	if opts.SupplementURL == "" {
+		opts.SupplementURL = DefaultSupplementURL
+	}
+	if strings.EqualFold(opts.SupplementURL, "off") {
+		opts.SupplementURL = ""
+	}
 	if opts.TTL <= 0 {
 		opts.TTL = 7 * 24 * time.Hour
 	}
 	if opts.HTTPClient == nil {
 		opts.HTTPClient = &http.Client{Timeout: downloadTimeout}
 	}
-	return &Mapper{
-		datasetURL:  opts.DatasetURL,
-		mirrorURL:   opts.MirrorURL,
-		fallbackURL: strings.TrimRight(opts.FallbackURL, "/"),
-		path:        filepath.Join(opts.CacheDir, datasetFileName),
-		ttl:         opts.TTL,
+
+	m := &Mapper{
 		httpClient:  opts.HTTPClient,
+		fallbackURL: strings.TrimRight(opts.FallbackURL, "/"),
 		fbCache:     make(map[string]fallbackEntry),
+		primary: &source{
+			url:        opts.DatasetURL,
+			mirror:     opts.MirrorURL,
+			path:       filepath.Join(opts.CacheDir, datasetFileName),
+			ttl:        opts.TTL,
+			httpClient: opts.HTTPClient,
+			parse:      buildIndexes,
+			blocking:   true,
+		},
 	}
+	if opts.SupplementURL != "" {
+		m.supplement = &source{
+			url:        opts.SupplementURL,
+			mirror:     opts.SupplementMirrorURL,
+			path:       filepath.Join(opts.CacheDir, supplementFileName),
+			ttl:        opts.TTL,
+			httpClient: opts.HTTPClient,
+			parse:      buildSupplementIndexes,
+			blocking:   false,
+		}
+	}
+	return m
 }
 
 // Resolve maps a media ID (IMDb "tt…" or numeric TMDB) to anime-service IDs.
 // mediaType is the render type (poster/backdrop/…) and is only used to break
 // the movie/TV ambiguity of bare numeric TMDB IDs, mirroring the TMDB
-// provider's heuristic. Returns ok=false when the title isn't a known anime.
+// provider's heuristic. The primary dataset is consulted first, then the
+// supplement, then the live fallback. Returns ok=false when the title isn't a
+// known anime.
 func (m *Mapper) Resolve(ctx context.Context, mediaType, id string) (IDs, bool) {
 	id = strings.TrimSpace(id)
 	if id == "" {
 		return IDs{}, false
 	}
-	m.ensureLoaded()
-
-	m.mu.Lock()
-	ids, ok := m.lookupLocked(mediaType, id)
-	m.mu.Unlock()
-	if ok {
+	if ids, ok := m.primary.lookup(mediaType, id); ok {
 		return ids, true
+	}
+	if m.supplement != nil {
+		if ids, ok := m.supplement.lookup(mediaType, id); ok {
+			return ids, true
+		}
 	}
 	return m.resolveFallback(ctx, id)
 }
 
-func (m *Mapper) lookupLocked(mediaType, id string) (IDs, bool) {
+// lookup loads the source if needed, then resolves id against its indexes.
+func (s *source) lookup(mediaType, id string) (IDs, bool) {
+	s.ensureLoaded()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.lookupLocked(mediaType, id)
+}
+
+func (s *source) lookupLocked(mediaType, id string) (IDs, bool) {
 	if strings.HasPrefix(id, "tt") {
-		if e, ok := m.byIMDb[id]; ok {
+		if e, ok := s.byIMDb[id]; ok {
 			return e.ids, true
 		}
 		return IDs{}, false
@@ -162,9 +230,9 @@ func (m *Mapper) lookupLocked(mediaType, id string) (IDs, bool) {
 	// Bare numeric TMDB IDs are ambiguous between movie and TV; follow the
 	// TMDB provider's heuristic (backdrop ⇒ TV first) and try the other space
 	// second rather than failing.
-	first, second := m.byTMDBMovie, m.byTMDBTV
+	first, second := s.byTMDBMovie, s.byTMDBTV
 	if mediaType == "tv" || mediaType == "series" || mediaType == "backdrop" {
-		first, second = m.byTMDBTV, m.byTMDBMovie
+		first, second = s.byTMDBTV, s.byTMDBMovie
 	}
 	if e, ok := first[n]; ok {
 		return e.ids, true
@@ -176,100 +244,104 @@ func (m *Mapper) lookupLocked(mediaType, id string) (IDs, bool) {
 }
 
 // ensureLoaded loads the disk cache and downloads the dataset when missing or
-// stale. A missing dataset downloads synchronously (single-flight, throttled);
-// a stale-but-present dataset is served immediately and refreshed in the
-// background so render latency never depends on the upstream host.
-func (m *Mapper) ensureLoaded() {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+// stale. For a blocking source a missing dataset downloads synchronously
+// (single-flight, throttled) so the first render can still succeed; for a
+// non-blocking source it downloads in the background. A stale-but-present
+// dataset is always served immediately and refreshed in the background so
+// render latency never depends on the upstream host.
+func (s *source) ensureLoaded() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
-	if !m.loaded {
-		if err := m.loadFromDiskLocked(); err == nil {
-			m.loaded = true
+	if !s.loaded {
+		if err := s.loadFromDiskLocked(); err == nil {
+			s.loaded = true
 		}
 	}
-	stale := !m.loaded || time.Since(m.loadedAt) > m.ttl
-	if !stale || m.refreshing || time.Since(m.lastAttempt) < retryBackoff {
+	stale := !s.loaded || time.Since(s.loadedAt) > s.ttl
+	if !stale || s.refreshing || time.Since(s.lastAttempt) < retryBackoff {
 		return
 	}
-	m.lastAttempt = time.Now()
-	if m.loaded {
-		m.refreshing = true
-		go m.refresh()
+	s.lastAttempt = time.Now()
+	if s.loaded || !s.blocking {
+		// Already have usable data (background refresh), or a non-blocking
+		// source with no data yet (background initial download).
+		s.refreshing = true
+		go s.refresh()
 		return
 	}
-	// No usable dataset at all: block this first caller on the download so
-	// the very first anime render can still succeed.
-	m.mu.Unlock()
-	err := m.downloadAndStore()
-	m.mu.Lock()
+	// Blocking source with no usable dataset at all: block this first caller on
+	// the download so the very first anime render can still succeed.
+	s.mu.Unlock()
+	err := s.downloadAndStore()
+	s.mu.Lock()
 	if err == nil {
-		if err := m.loadFromDiskLocked(); err == nil {
-			m.loaded = true
+		if err := s.loadFromDiskLocked(); err == nil {
+			s.loaded = true
 		}
 	}
 }
 
-func (m *Mapper) refresh() {
-	err := m.downloadAndStore()
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.refreshing = false
+func (s *source) refresh() {
+	err := s.downloadAndStore()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.refreshing = false
 	if err == nil {
-		if err := m.loadFromDiskLocked(); err == nil {
-			m.loaded = true
+		if err := s.loadFromDiskLocked(); err == nil {
+			s.loaded = true
 		}
 	}
 }
 
-func (m *Mapper) loadFromDiskLocked() error {
-	info, err := os.Stat(m.path)
+func (s *source) loadFromDiskLocked() error {
+	info, err := os.Stat(s.path)
 	if err != nil {
 		return err
 	}
-	data, err := os.ReadFile(m.path)
+	data, err := os.ReadFile(s.path)
 	if err != nil {
 		return err
 	}
-	imdb, movie, tv, err := buildIndexes(data)
+	imdb, movie, tv, err := s.parse(data)
 	if err != nil {
 		return err
 	}
-	m.byIMDb, m.byTMDBMovie, m.byTMDBTV = imdb, movie, tv
-	m.loadedAt = info.ModTime()
+	s.byIMDb, s.byTMDBMovie, s.byTMDBTV = imdb, movie, tv
+	s.loadedAt = info.ModTime()
 	return nil
 }
 
-func (m *Mapper) downloadAndStore() error {
-	data, err := m.fetchDataset(m.datasetURL)
-	if err != nil && m.mirrorURL != "" {
-		data, err = m.fetchDataset(m.mirrorURL)
+func (s *source) downloadAndStore() error {
+	data, err := s.fetchDataset(s.url)
+	if err != nil && s.mirror != "" {
+		data, err = s.fetchDataset(s.mirror)
 	}
 	if err != nil {
 		return err
 	}
 	// Validate before persisting so a bad body never replaces a good cache.
-	if _, _, _, err := buildIndexes(data); err != nil {
+	if _, _, _, err := s.parse(data); err != nil {
 		return fmt.Errorf("animemap: invalid dataset: %w", err)
 	}
-	if err := os.MkdirAll(filepath.Dir(m.path), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
 		return err
 	}
-	tmp := m.path + ".tmp"
+	tmp := s.path + ".tmp"
 	if err := os.WriteFile(tmp, data, 0o644); err != nil {
 		return err
 	}
-	return os.Rename(tmp, m.path)
+	return os.Rename(tmp, s.path)
 }
 
-func (m *Mapper) fetchDataset(url string) ([]byte, error) {
+func (s *source) fetchDataset(url string) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), downloadTimeout)
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := m.httpClient.Do(req)
+	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("animemap: fetch dataset: %w", err)
 	}
@@ -420,6 +492,58 @@ func buildIndexes(data []byte) (map[string]indexed, map[int]indexed, map[int]ind
 	return imdb, movie, tv, nil
 }
 
+// supplementEntry mirrors the relevant fields of a nattadasu/animeApi row.
+// Numeric fields tolerate JSON null and string-encoded numbers via flexInt.
+type supplementEntry struct {
+	IMDb     string  `json:"imdb"`
+	TMDB     flexInt `json:"themoviedb"`
+	TMDBType string  `json:"themoviedb_type"`
+	MAL      flexInt `json:"myanimelist"`
+	AniList  flexInt `json:"anilist"`
+	Kitsu    flexInt `json:"kitsu"`
+}
+
+// buildSupplementIndexes parses the nattadasu/animeApi dataset. It indexes only
+// rows that carry an IMDb/TMDB key and at least one target ID, so the large raw
+// file collapses to the few thousand entries XRDB can actually use.
+func buildSupplementIndexes(data []byte) (map[string]indexed, map[int]indexed, map[int]indexed, error) {
+	var entries []supplementEntry
+	if err := json.Unmarshal(data, &entries); err != nil {
+		return nil, nil, nil, err
+	}
+	if len(entries) == 0 {
+		return nil, nil, nil, fmt.Errorf("empty supplement dataset")
+	}
+	imdb := make(map[string]indexed)
+	movie := make(map[int]indexed)
+	tv := make(map[int]indexed)
+	for _, e := range entries {
+		ids := IDs{MAL: int(e.MAL), AniList: int(e.AniList), Kitsu: int(e.Kitsu)}
+		if ids.empty() {
+			continue
+		}
+		// The supplement has no season field; rank 0 means first-seen wins on
+		// the rare duplicate key, matching insert's tie-break.
+		item := indexed{ids: ids, rank: 0}
+		if strings.HasPrefix(e.IMDb, "tt") {
+			insert(imdb, e.IMDb, item)
+		}
+		if n := int(e.TMDB); n != 0 {
+			// Use the explicit type; an unknown/blank type goes to the movie
+			// index, and lookup's movie⇄TV fall-through still resolves it.
+			if strings.EqualFold(e.TMDBType, "tv") {
+				insert(tv, n, item)
+			} else {
+				insert(movie, n, item)
+			}
+		}
+	}
+	if len(imdb) == 0 && len(movie) == 0 && len(tv) == 0 {
+		return nil, nil, nil, fmt.Errorf("supplement dataset has no usable mappings")
+	}
+	return imdb, movie, tv, nil
+}
+
 // insert keeps the best-ranked entry per key: season-less or first-season
 // rows beat later seasons, and the first row wins ties (dataset order).
 func insert[K comparable](idx map[K]indexed, key K, item indexed) {
@@ -431,7 +555,7 @@ func insert[K comparable](idx map[K]indexed, key K, item indexed) {
 
 // ── live API fallback ────────────────────────────────────────────────────────
 
-// resolveFallback queries the live mapping API for IDs the dataset doesn't
+// resolveFallback queries the live mapping API for IDs the datasets don't
 // cover. Results — including misses — are cached so non-anime titles don't
 // trigger a network call on every render.
 func (m *Mapper) resolveFallback(ctx context.Context, id string) (IDs, bool) {
