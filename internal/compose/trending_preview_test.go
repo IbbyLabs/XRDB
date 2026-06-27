@@ -30,13 +30,20 @@ func TestTrendingStyles(t *testing.T) {
 	const scale = 2.0
 	const cardW, cardH = 780, 112
 
+	seen := map[[4]uint64]string{}
 	for _, tc := range trendingStyleCases {
 		card := image.NewNRGBA(image.Rect(0, 0, cardW, cardH))
 		paintBackdropGradient(card)
 		before := clonePixels(card)
 		drawTrendingBadgeStyled(card, scale, newOccupancy(card.Bounds()), tc.style)
-		if clonePixels(card) == before {
+		after := clonePixels(card)
+		if after == before {
 			t.Errorf("trending style %q drew nothing", tc.caption)
+		}
+		if prev, ok := seen[after]; ok {
+			t.Errorf("trending style %q rendered identically to %q", tc.caption, prev)
+		} else {
+			seen[after] = tc.caption
 		}
 	}
 
