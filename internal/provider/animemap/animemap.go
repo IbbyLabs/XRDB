@@ -288,6 +288,16 @@ func (s *source) ensureLoaded() {
 	s.loading = ch
 	s.mu.Unlock()
 
+	// Always reset loading and unblock waiters — even if downloadAndStore
+	// panics — so a panic can't permanently wedge every future blocking caller
+	// on a channel that never closes.
+	defer func() {
+		s.mu.Lock()
+		s.loading = nil
+		close(ch)
+		s.mu.Unlock()
+	}()
+
 	err := s.downloadAndStore()
 
 	s.mu.Lock()
@@ -296,8 +306,6 @@ func (s *source) ensureLoaded() {
 			s.loaded = true
 		}
 	}
-	s.loading = nil
-	close(ch)
 	s.mu.Unlock()
 }
 
