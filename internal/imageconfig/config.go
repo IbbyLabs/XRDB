@@ -69,32 +69,45 @@ const (
 	LayoutNone      RatingsLayout = "none"
 )
 
+// TrendingStyle controls the composition of the trending badge: which accent
+// glyph it carries and whether the "TRENDING" wordmark is shown.
+type TrendingStyle string
+
+const (
+	TrendingArrowWord TrendingStyle = "arrow-word" // rising arrow + TRENDING
+	TrendingFlameWord TrendingStyle = "flame-word" // flame + TRENDING
+	TrendingWord      TrendingStyle = "word"       // TRENDING only
+	TrendingArrow     TrendingStyle = "arrow"      // rising arrow only
+	TrendingFlame     TrendingStyle = "flame"      // flame only
+)
+
 // Config is the canonical, normalized render config for a media request.
 // All fields carry explicit defaults; zero values are never used in render logic.
 type Config struct {
-	Size              MediaSize      `json:"size"`
-	ArtworkSource     ArtworkSource  `json:"artworkSource"`
-	Language          string         `json:"language"`
-	TextPreference    TextPreference `json:"textPreference"`
-	Ratings           []string       `json:"ratings"`
-	RatingsLayout     RatingsLayout  `json:"ratingsLayout"`
-	BadgeStyle        BadgeStyle     `json:"badgeStyle"`
-	BadgeTheme        BadgeTheme     `json:"badgeTheme"`
-	Badges            []string       `json:"badges,omitempty"`
-	AgeRating         bool           `json:"ageRating"`
-	AgeRatingPos      string         `json:"ageRatingPos,omitempty"`
-	Genre             bool           `json:"genre"`
-	GenrePos          string         `json:"genrePos,omitempty"`
-	Providers         bool           `json:"providers"`
-	ProvidersCountry  string         `json:"providersCountry,omitempty"`
-	AggregateBar      bool           `json:"aggregateBar"`
-	AggregateBarPos   string         `json:"aggregateBarPos,omitempty"` // "top" | "bottom"
-	Trending          bool           `json:"trending"`
-	BackdropAsPoster  bool           `json:"backdropAsPoster,omitempty"`
-	BackdropLogo      bool           `json:"backdropLogo,omitempty"`
-	RatingRing      bool   `json:"ratingRing,omitempty"`
-	RatingRingPos   string `json:"ratingRingPos,omitempty"`   // "tl" | "tr" | "bl" | "br"
-	RatingRingColor string `json:"ratingRingColor,omitempty"` // "" = auto (green/amber/red), else "#RRGGBB"
+	Size             MediaSize      `json:"size"`
+	ArtworkSource    ArtworkSource  `json:"artworkSource"`
+	Language         string         `json:"language"`
+	TextPreference   TextPreference `json:"textPreference"`
+	Ratings          []string       `json:"ratings"`
+	RatingsLayout    RatingsLayout  `json:"ratingsLayout"`
+	BadgeStyle       BadgeStyle     `json:"badgeStyle"`
+	BadgeTheme       BadgeTheme     `json:"badgeTheme"`
+	Badges           []string       `json:"badges,omitempty"`
+	AgeRating        bool           `json:"ageRating"`
+	AgeRatingPos     string         `json:"ageRatingPos,omitempty"`
+	Genre            bool           `json:"genre"`
+	GenrePos         string         `json:"genrePos,omitempty"`
+	Providers        bool           `json:"providers"`
+	ProvidersCountry string         `json:"providersCountry,omitempty"`
+	AggregateBar     bool           `json:"aggregateBar"`
+	AggregateBarPos  string         `json:"aggregateBarPos,omitempty"` // "top" | "bottom"
+	Trending         bool           `json:"trending"`
+	TrendingStyle    TrendingStyle  `json:"trendingStyle"`
+	BackdropAsPoster bool           `json:"backdropAsPoster,omitempty"`
+	BackdropLogo     bool           `json:"backdropLogo,omitempty"`
+	RatingRing       bool           `json:"ratingRing,omitempty"`
+	RatingRingPos    string         `json:"ratingRingPos,omitempty"`   // "tl" | "tr" | "bl" | "br"
+	RatingRingColor  string         `json:"ratingRingColor,omitempty"` // "" = auto (green/amber/red), else "#RRGGBB"
 }
 
 // Default returns a Config populated with production defaults.
@@ -110,22 +123,23 @@ func Default() Config {
 		BadgeTheme:     ThemeDark,
 		AgeRating:      true,
 		AgeRatingPos:   "inherit",
+		TrendingStyle:  TrendingArrowWord,
 	}
 }
 
 // raw is the loose JSON shape we accept from profile config fields.
 type raw struct {
-	Size           *string  `json:"size"`
-	ArtworkSource  *string  `json:"artworkSource"`
-	Language       *string  `json:"language"`
-	TextPreference *string  `json:"textPreference"`
-	Ratings        []string `json:"ratings"`
-	RatingsLayout  *string  `json:"ratingsLayout"`
-	BadgeStyle     *string  `json:"badgeStyle"`
-	BadgeTheme     *string  `json:"badgeTheme"`
-	Badges         []string `json:"badges"`
-	AgeRating      *bool    `json:"ageRating"`
-	AgeRatingPos   *string  `json:"ageRatingPos"`
+	Size             *string  `json:"size"`
+	ArtworkSource    *string  `json:"artworkSource"`
+	Language         *string  `json:"language"`
+	TextPreference   *string  `json:"textPreference"`
+	Ratings          []string `json:"ratings"`
+	RatingsLayout    *string  `json:"ratingsLayout"`
+	BadgeStyle       *string  `json:"badgeStyle"`
+	BadgeTheme       *string  `json:"badgeTheme"`
+	Badges           []string `json:"badges"`
+	AgeRating        *bool    `json:"ageRating"`
+	AgeRatingPos     *string  `json:"ageRatingPos"`
 	Genre            *bool    `json:"genre"`
 	GenrePos         *string  `json:"genrePos"`
 	Providers        *bool    `json:"providers"`
@@ -133,11 +147,12 @@ type raw struct {
 	AggregateBar     *bool    `json:"aggregateBar"`
 	AggregateBarPos  *string  `json:"aggregateBarPos"`
 	Trending         *bool    `json:"trending"`
+	TrendingStyle    *string  `json:"trendingStyle"`
 	BackdropAsPoster *bool    `json:"backdropAsPoster"`
 	BackdropLogo     *bool    `json:"backdropLogo"`
-	RatingRing      *bool   `json:"ratingRing"`
-	RatingRingPos   *string `json:"ratingRingPos"`
-	RatingRingColor *string `json:"ratingRingColor"`
+	RatingRing       *bool    `json:"ratingRing"`
+	RatingRingPos    *string  `json:"ratingRingPos"`
+	RatingRingColor  *string  `json:"ratingRingColor"`
 }
 
 // Parse deserializes a profile config JSON blob into a normalized Config.
@@ -231,6 +246,11 @@ func Parse(data json.RawMessage) Config {
 	if r.Trending != nil {
 		cfg.Trending = *r.Trending
 	}
+	if r.TrendingStyle != nil {
+		if v := normalizeTrendingStyle(*r.TrendingStyle); v != "" {
+			cfg.TrendingStyle = v
+		}
+	}
 	if r.BackdropAsPoster != nil {
 		cfg.BackdropAsPoster = *r.BackdropAsPoster
 	}
@@ -276,11 +296,12 @@ func CacheKey(cfg Config) string {
 		AggregateBar     bool           `json:"aggregateBar"`
 		AggregateBarPos  string         `json:"aggregateBarPos"`
 		Trending         bool           `json:"trending"`
-		BackdropAsPoster bool   `json:"backdropAsPoster"`
-		BackdropLogo     bool   `json:"backdropLogo"`
-		RatingRing       bool   `json:"ratingRing"`
-		RatingRingPos    string `json:"ratingRingPos"`
-		RatingRingColor  string `json:"ratingRingColor"`
+		TrendingStyle    TrendingStyle  `json:"trendingStyle"`
+		BackdropAsPoster bool           `json:"backdropAsPoster"`
+		BackdropLogo     bool           `json:"backdropLogo"`
+		RatingRing       bool           `json:"ratingRing"`
+		RatingRingPos    string         `json:"ratingRingPos"`
+		RatingRingColor  string         `json:"ratingRingColor"`
 	}
 	ratings := make([]string, len(cfg.Ratings))
 	copy(ratings, cfg.Ratings)
@@ -308,6 +329,7 @@ func CacheKey(cfg Config) string {
 		AggregateBar:     cfg.AggregateBar,
 		AggregateBarPos:  cfg.AggregateBarPos,
 		Trending:         cfg.Trending,
+		TrendingStyle:    cfg.TrendingStyle,
 		BackdropAsPoster: cfg.BackdropAsPoster,
 		BackdropLogo:     cfg.BackdropLogo,
 		RatingRing:       cfg.RatingRing,
@@ -380,6 +402,22 @@ func normalizeTextPreference(v string) TextPreference {
 		return TextAlternative
 	case "random":
 		return TextRandom
+	}
+	return ""
+}
+
+func normalizeTrendingStyle(v string) TrendingStyle {
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "arrow-word", "arrowword", "arrow_word":
+		return TrendingArrowWord
+	case "flame-word", "flameword", "flame_word":
+		return TrendingFlameWord
+	case "word", "word-only", "wordonly":
+		return TrendingWord
+	case "arrow", "arrow-only", "arrowonly":
+		return TrendingArrow
+	case "flame", "flame-only", "flameonly":
+		return TrendingFlame
 	}
 	return ""
 }
