@@ -52,6 +52,14 @@ export const BADGE_THEME_OPTIONS = [
   { id: 'light', label: 'Light' },
 ] as const;
 
+export const TREND_STYLE_OPTIONS = [
+  { id: 'arrow-word', label: 'Arrow + word' },
+  { id: 'flame-word', label: 'Flame + word' },
+  { id: 'arrow',      label: 'Arrow only'   },
+  { id: 'flame',      label: 'Flame only'   },
+  { id: 'word',       label: 'Word only'    },
+] as const;
+
 export const RATING_OPTIONS: { id: string; label: string; accent: string; icon: string; group?: string }[] = [
   { id: 'imdb',           label: 'IMDb',            accent: '#f5c518', icon: '/rating-logos/imdb.svg' },
   { id: 'tmdb',           label: 'TMDB',            accent: '#01b4e4', icon: '/rating-logos/tmdb.svg' },
@@ -124,6 +132,7 @@ export interface ConfigState {
   aggregateBar: boolean;
   aggregateBarPos: string;
   trending: boolean;
+  trendingStyle: string;
   backdropAsPoster: boolean;
   ratingRing: boolean;
   ratingRingPos: string;
@@ -148,6 +157,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   aggregateBar: false,
   aggregateBarPos: 'bottom',
   trending: false,
+  trendingStyle: 'arrow-word',
   backdropAsPoster: false,
   ratingRing: false,
   ratingRingPos: 'br',

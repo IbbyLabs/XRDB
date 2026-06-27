@@ -157,37 +157,146 @@ func fitRect(srcW, srcH int, dst image.Rectangle) image.Rectangle {
 	return image.Rect(x, y, x+w, y+h)
 }
 
-// fillFlame draws a small upward flame/teardrop: a point at the apex (cx, topY)
-// tapering down to a rounded base of half-width halfW whose bottom sits at
-// topY+height. Used as the "trending" accent.
-func fillFlame(dst *image.NRGBA, cx, topY, halfW, height int, c color.NRGBA) {
-	if height <= 0 || halfW <= 0 {
+// ptf is a floating-point point used for vector glyph paths.
+type ptf struct{ x, y float64 }
+
+// distToSegment returns the distance from (px, py) to the line segment a→b.
+func distToSegment(px, py float64, a, b ptf) float64 {
+	vx, vy := b.x-a.x, b.y-a.y
+	wx, wy := px-a.x, py-a.y
+	seg2 := vx*vx + vy*vy
+	t := 0.0
+	if seg2 > 0 {
+		t = (wx*vx + wy*vy) / seg2
+		if t < 0 {
+			t = 0
+		} else if t > 1 {
+			t = 1
+		}
+	}
+	dx := px - (a.x + t*vx)
+	dy := py - (a.y + t*vy)
+	return math.Sqrt(dx*dx + dy*dy)
+}
+
+// strokePolyline draws an anti-aliased thick polyline through pts. Joints and
+// caps are rounded (the fill is the half-width neighbourhood of the path), so
+// it stays crisp at small sizes. halfW is the half stroke width in pixels.
+func strokePolyline(dst *image.NRGBA, pts []ptf, halfW float64, c color.NRGBA) {
+	if len(pts) < 2 || halfW <= 0 {
 		return
 	}
-	r := float64(halfW)
-	apex := float64(topY)
-	// Centre of the rounded base, placed so the base bottom touches topY+height.
-	cyc := float64(topY+height) - r
-	if cyc <= apex {
-		cyc = apex + 1
+	minX, minY := math.Inf(1), math.Inf(1)
+	maxX, maxY := math.Inf(-1), math.Inf(-1)
+	for _, p := range pts {
+		minX, maxX = math.Min(minX, p.x), math.Max(maxX, p.x)
+		minY, maxY = math.Min(minY, p.y), math.Max(maxY, p.y)
 	}
-	for y := 0; y < height; y++ {
-		py := float64(topY + y)
-		var hw float64
+	pad := halfW + 1
+	x0, x1 := int(math.Floor(minX-pad)), int(math.Ceil(maxX+pad))
+	y0, y1 := int(math.Floor(minY-pad)), int(math.Ceil(maxY+pad))
+	for y := y0; y <= y1; y++ {
+		for x := x0; x <= x1; x++ {
+			px, py := float64(x)+0.5, float64(y)+0.5
+			d := math.Inf(1)
+			for i := 0; i+1 < len(pts); i++ {
+				if dd := distToSegment(px, py, pts[i], pts[i+1]); dd < d {
+					d = dd
+				}
+			}
+			cov := halfW + 0.5 - d
+			if cov <= 0 {
+				continue
+			}
+			if cov > 1 {
+				cov = 1
+			}
+			blendPixel(dst, x, y, color.NRGBA{R: c.R, G: c.G, B: c.B, A: uint8(float64(c.A) * cov)})
+		}
+	}
+}
+
+// fillTrendArrow draws the canonical "trending up" glyph — a rising zig-zag
+// line ending in a corner arrowhead at the top-right — inside the w×h box whose
+// top-left is (x, y). Stroke half-width is halfW. Reads instantly as "trending"
+// and stays sharp where a small filled flame turns to mush.
+func fillTrendArrow(dst *image.NRGBA, x, y, w, h int, halfW float64, c color.NRGBA) {
+	p := func(nx, ny float64) ptf {
+		return ptf{x: float64(x) + nx*float64(w), y: float64(y) + ny*float64(h)}
+	}
+	// Stock-chart wiggle up to the tip at the top-right corner.
+	strokePolyline(dst, []ptf{p(0.05, 0.74), p(0.40, 0.40), p(0.56, 0.56), p(0.93, 0.16)}, halfW, c)
+	// Corner arrowhead: one arm left, one arm down, meeting at the tip.
+	strokePolyline(dst, []ptf{p(0.62, 0.16), p(0.93, 0.16), p(0.93, 0.47)}, halfW, c)
+}
+
+// lighten blends c toward white by fraction f (0..1), preserving alpha.
+func lighten(c color.NRGBA, f float64) color.NRGBA {
+	mix := func(v uint8) uint8 {
+		nv := float64(v) + (255-float64(v))*f
+		if nv > 255 {
+			nv = 255
+		}
+		return uint8(nv)
+	}
+	return color.NRGBA{R: mix(c.R), G: mix(c.G), B: mix(c.B), A: c.A}
+}
+
+// flameTongue fills one asymmetric flame tongue with horizontal anti-aliasing.
+// apexY is the tip, r the base half-width, height the full height. lean curls
+// the tip sideways (strongest near the tip); tipPow controls tip sharpness
+// (higher = sharper). Used by fillFlameSharp to stack an inner + outer flame.
+func flameTongue(dst *image.NRGBA, cx, apexY, r, height, lean, tipPow float64, c color.NRGBA) {
+	cyc := apexY + height - r // centre of the rounded base
+	if cyc <= apexY {
+		cyc = apexY + 1
+	}
+	for y := int(math.Floor(apexY)); y < int(math.Ceil(apexY+height)); y++ {
+		py := float64(y) + 0.5
+		if py < apexY {
+			continue
+		}
+		var hw, tt float64
 		if py <= cyc {
-			// Upper taper: 0 at the apex, growing convexly to r at the base.
-			t := (py - apex) / (cyc - apex)
-			hw = r * math.Pow(t, 0.7)
+			tt = (py - apexY) / (cyc - apexY)
+			hw = r * math.Pow(tt, tipPow)
 		} else {
-			// Rounded base.
-			dy := py - cyc
-			if dy < r {
+			tt = 1
+			if dy := py - cyc; dy < r {
 				hw = math.Sqrt(r*r - dy*dy)
 			}
 		}
-		ihw := int(hw + 0.5)
-		for x := cx - ihw; x <= cx+ihw; x++ {
-			blendPixel(dst, x, topY+y, c)
+		if hw < 0.4 {
+			continue
+		}
+		center := cx + lean*r*math.Sin((1-tt)*1.6) // curl, strongest at the tip
+		left, right := center-hw, center+hw
+		for x := int(math.Floor(left)); x < int(math.Ceil(right)); x++ {
+			cov := math.Min(float64(x)+1, right) - math.Max(float64(x), left)
+			if cov <= 0 {
+				continue
+			}
+			if cov > 1 {
+				cov = 1
+			}
+			blendPixel(dst, x, y, color.NRGBA{R: c.R, G: c.G, B: c.B, A: uint8(float64(c.A) * cov)})
 		}
 	}
+}
+
+// fillFlameSharp draws a stylized flame: an asymmetric tongue with a curled,
+// sharp tip over a lighter inner flame, so it reads as fire rather than a plain
+// teardrop. cx is the base centre, topY the apex, halfW the base half-width.
+func fillFlameSharp(dst *image.NRGBA, cx, topY, halfW, height int, c color.NRGBA) {
+	if height <= 0 || halfW <= 0 {
+		return
+	}
+	fcx, ftop := float64(cx), float64(topY)
+	fhw, fh := float64(halfW), float64(height)
+	// Outer flame: pronounced rightward hook at a sharp tip breaks the
+	// symmetric-teardrop read.
+	flameTongue(dst, fcx, ftop, fhw, fh, 0.58, 1.05, c)
+	// Hot core: large, bright, lifted — the bright inner flame is what sells
+	// "fire" rather than "water drop".
+	flameTongue(dst, fcx+fhw*0.20, ftop+fh*0.30, fhw*0.58, fh*0.64, 0.40, 1.15, lighten(c, 0.74))
 }

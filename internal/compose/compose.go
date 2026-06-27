@@ -206,7 +206,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		drawAggregateBar(composed, allRatings, req.Config)
 	}
 	if req.Config.Trending {
-		drawTrendingBadge(composed, scale, occ)
+		drawTrendingBadgeStyled(composed, scale, occ, trendingStyleFromConfig(req.Config.TrendingStyle))
 	}
 	if req.Config.RatingRing {
 		drawAverageRatingRing(composed, allRatings, req.Config, scale, occ)

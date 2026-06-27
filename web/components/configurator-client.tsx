@@ -87,6 +87,7 @@ export function ConfiguratorClient() {
       genre: cfg.genre, genrePos: cfg.genrePos, badges: cfg.badges,
       providers: cfg.providers, aggregateBar: cfg.aggregateBar,
       aggregateBarPos: cfg.aggregateBarPos, trending: cfg.trending,
+      trendingStyle: cfg.trendingStyle,
       backdropAsPoster: cfg.backdropAsPoster,
       ratingRing: cfg.ratingRing,
       ratingRingPos: cfg.ratingRingPos, ratingRingColor: cfg.ratingRingColor,

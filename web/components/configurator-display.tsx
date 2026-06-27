@@ -4,7 +4,7 @@ import { Check, AlertCircle } from 'lucide-react';
 import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   ARTWORK_OPTIONS, SIZE_OPTIONS, TEXT_PREF_OPTIONS, LANG_OPTIONS,
-  AGE_POS_OPTIONS, GENRE_POS_OPTIONS, QUALITY_BADGE_OPTIONS,
+  AGE_POS_OPTIONS, GENRE_POS_OPTIONS, QUALITY_BADGE_OPTIONS, TREND_STYLE_OPTIONS,
 } from './configurator-types';
 
 // ── Notice ────────────────────────────────────────────────────────────────────
@@ -250,10 +250,23 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
 
         <ToggleRow
           label="Trending badge"
-          hint="Show TRENDING label in top-left corner"
+          hint="Show a trending badge in the top-left corner"
           checked={config.trending}
           onChange={() => onUpdate('trending', !config.trending)}
         />
+
+        {config.trending && (
+          <Field label="Trending style" htmlFor={`${uid}-trendstyle`}>
+            <select
+              id={`${uid}-trendstyle`}
+              className="select"
+              value={config.trendingStyle}
+              onChange={e => onUpdate('trendingStyle', e.target.value)}
+            >
+              {TREND_STYLE_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+            </select>
+          </Field>
+        )}
 
         <button className="btn btn-ghost btn-sm" style={{ alignSelf: 'flex-start' }} onClick={onReset}>
           Reset to defaults

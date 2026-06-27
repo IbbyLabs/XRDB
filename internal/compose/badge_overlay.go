@@ -691,10 +691,60 @@ func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imagecon
 
 // ── Trending badge ────────────────────────────────────────────────────────────
 
+// trendingStyle selects the composition of the trending badge: which accent
+// glyph it carries and whether the "TRENDING" wordmark is shown.
+type trendingStyle int
+
+const (
+	trendingArrowWord trendingStyle = iota // ↗ rising arrow + TRENDING
+	trendingFlameWord                      // flame + TRENDING
+	trendingWordOnly                       // TRENDING only
+	trendingArrowOnly                      // ↗ rising arrow only
+	trendingFlameOnly                      // flame only
+)
+
+// defaultTrendingStyle is the production composition for the trending badge.
+const defaultTrendingStyle = trendingArrowWord
+
+// trendingAccent is the warm orange used for the badge's glyph and hairline.
+var trendingAccent = color.NRGBA{R: 255, G: 126, B: 42, A: 255}
+
+func (t trendingStyle) hasIcon() bool { return t != trendingWordOnly }
+func (t trendingStyle) hasLabel() bool {
+	return t != trendingArrowOnly && t != trendingFlameOnly
+}
+func (t trendingStyle) isArrow() bool {
+	return t == trendingArrowWord || t == trendingArrowOnly
+}
+
+// trendingStyleFromConfig maps the imageconfig enum to the internal draw style,
+// falling back to the arrow+word default for empty or unknown values.
+func trendingStyleFromConfig(s imageconfig.TrendingStyle) trendingStyle {
+	switch s {
+	case imageconfig.TrendingFlameWord:
+		return trendingFlameWord
+	case imageconfig.TrendingWord:
+		return trendingWordOnly
+	case imageconfig.TrendingArrow:
+		return trendingArrowOnly
+	case imageconfig.TrendingFlame:
+		return trendingFlameOnly
+	default:
+		return trendingArrowWord
+	}
+}
+
 // drawTrendingBadge draws a premium "TRENDING" pill at the top-left corner: a
-// warm vertical gradient capsule with a drawn up-arrow glyph, bold label, and a
-// soft drop shadow. Placed via occ so it never overlaps other overlays.
+// dark frosted capsule with a warm accent glyph, bold label, and a soft drop
+// shadow. Placed via occ so it never overlaps other overlays.
 func drawTrendingBadge(base *image.NRGBA, scale float64, occ *occupancy) {
+	drawTrendingBadgeStyled(base, scale, occ, defaultTrendingStyle)
+}
+
+// drawTrendingBadgeStyled renders the trending badge in the given composition.
+// The public drawTrendingBadge wraps it with defaultTrendingStyle; the extra
+// seam lets the visual-preview harness render every option from one code path.
+func drawTrendingBadgeStyled(base *image.NRGBA, scale float64, occ *occupancy, style trendingStyle) {
 	ensureFaces()
 	face := badgeFaceFor(scale)
 	if face == nil {
@@ -714,9 +764,30 @@ func drawTrendingBadge(base *image.NRGBA, scale float64, occ *occupancy) {
 	ascent := fm.Ascent.Ceil()
 	descent := fm.Descent.Ceil()
 	bh := padY*2 + ascent + descent
-	iconW := s(12)
-	tw := textWidth(face, label)
-	bw := padX*2 + iconW + iconGap + tw
+	glyphH := ascent
+
+	// The arrow reads best in a near-square box; the flame is narrower.
+	iconW := 0
+	if style.hasIcon() {
+		if style.isArrow() {
+			iconW = int(float64(glyphH)*0.92 + 0.5)
+		} else {
+			iconW = s(12)
+		}
+	}
+	tw := 0
+	if style.hasLabel() {
+		tw = textWidth(face, label)
+	}
+
+	bw := padX * 2
+	if style.hasIcon() {
+		bw += iconW
+	}
+	if style.hasIcon() && style.hasLabel() {
+		bw += iconGap
+	}
+	bw += tw
 	radius := bh / 2 // full capsule
 
 	r := occ.place("tl", bw, bh, edgeX, edgeY, s(7))
@@ -729,17 +800,27 @@ func drawTrendingBadge(base *image.NRGBA, scale float64, occ *occupancy) {
 	fillRoundedRect(base, r, radius, color.NRGBA{R: 18, G: 20, B: 26, A: 233})
 	drawRectBorder(base, r, radius, color.NRGBA{R: 255, G: 150, B: 92, A: 66}) // warm hairline
 
-	// Warm flame accent, vertically centered to the cap height.
-	flame := color.NRGBA{R: 255, G: 126, B: 42, A: 255}
-	glyphH := ascent
+	// Warm accent glyph, vertically centered to the cap height.
 	ax := r.Min.X + padX
 	atop := r.Min.Y + (bh-glyphH)/2
-	fillFlame(base, ax+iconW/2, atop, iconW/2, glyphH, flame)
+	if style.hasIcon() {
+		if style.isArrow() {
+			halfW := math.Max(1.1, float64(glyphH)/8.5)
+			fillTrendArrow(base, ax, atop, iconW, glyphH, halfW, trendingAccent)
+		} else {
+			fillFlameSharp(base, ax+iconW/2, atop, iconW/2, glyphH, trendingAccent)
+		}
+	}
 
 	// Label in a warm off-white.
-	tx := ax + iconW + iconGap
-	ty := r.Min.Y + padY + ascent
-	drawText(base, face, tx, ty, color.NRGBA{R: 255, G: 244, B: 238, A: 255}, label)
+	if style.hasLabel() {
+		tx := ax
+		if style.hasIcon() {
+			tx += iconW + iconGap
+		}
+		ty := r.Min.Y + padY + ascent
+		drawText(base, face, tx, ty, color.NRGBA{R: 255, G: 244, B: 238, A: 255}, label)
+	}
 }
 
 // ── Average rating ring ───────────────────────────────────────────────────────
