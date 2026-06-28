@@ -6,15 +6,15 @@ import { installToAIOM, renderOrigin } from '@/lib/api';
 import { CopyButton } from './copy-button';
 
 const PUBLIC_INSTANCES = [
-  { label: 'ElfHosted (elfhosted.com)',       url: 'https://aiometadata.elfhosted.com' },
-  { label: 'MidnightIgnite',                  url: 'https://aiometadatafortheweebs.midnightignite.me' },
-  { label: 'Stremio.ru (kuu)',                url: 'https://aiometadata.stremio.ru' },
-  { label: 'Viren070',                        url: 'https://aiometadata.viren070.me' },
-  { label: 'ForTheWeak',                      url: 'https://aiometadata.fortheweak.cloud' },
-  { label: 'ForTheWeak (nhyira.dev)',         url: 'https://aiometadatafortheweak.nhyira.dev' },
-  { label: 'Omni (12312023)',                 url: 'https://aiometadata.12312023.xyz' },
-  { label: 'ATBP Hosting',                    url: 'https://aiomd.atbphosting.com' },
-  { label: 'ForTheWizards (wizaardd)',        url: 'https://aiometadata.forthewizards.uk' },
+  { label: 'ElfHosted', url: 'https://aiometadata.elfhosted.com' },
+  { label: 'Midnight',  url: 'https://aiometadatafortheweebs.midnightignite.me' },
+  { label: 'Kuu',       url: 'https://aiometadata.stremio.ru' },
+  { label: 'Viren',     url: 'https://aiometadata.viren070.me' },
+  { label: 'Yeb',       url: 'https://aiometadata.fortheweak.cloud' },
+  { label: 'Nhyira',    url: 'https://aiometadatafortheweak.nhyira.dev' },
+  { label: 'Omni',      url: 'https://aiometadata.12312023.xyz' },
+  { label: 'ATBP',      url: 'https://aiomd.atbphosting.com' },
+  { label: 'Wizaardd',  url: 'https://aiometadata.forthewizards.uk' },
 ];
 
 function normaliseOrigin(raw: string): string {
