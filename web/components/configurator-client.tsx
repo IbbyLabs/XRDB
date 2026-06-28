@@ -48,7 +48,10 @@ export function ConfiguratorClient() {
       setConfigs(shared.cfgs);
       history.replaceState(null, '', window.location.pathname + window.location.search);
     } else {
-      setMediaType(readSession<MediaType>('xrdb-media-type', 'poster'));
+      // Validate the stored media type before it indexes `configs` — a stale or
+      // corrupted session value would otherwise make the active config undefined.
+      const storedType = readSession<string>('xrdb-media-type', 'poster');
+      setMediaType(MEDIA_TYPES.some(t => t.id === storedType) ? (storedType as MediaType) : 'poster');
       setMediaId(readSession<string>('xrdb-media-id', 'tt0468569'));
       setMediaTitle(readSession<string>('xrdb-media-title', 'The Dark Knight (2008)'));
       // Prefer the per-surface store; fall back to (and migrate) the older

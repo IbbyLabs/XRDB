@@ -185,6 +185,12 @@ func registerAdminRoutes(
 		if mediaType == "" {
 			mediaType = "poster"
 		}
+		// ParseSurface resolves config per surface, so an unknown mediaType would
+		// silently warm Default() instead of the requested surface. Reject it.
+		if !imageconfig.IsSurface(mediaType) {
+			http.Error(w, "unsupported mediaType", http.StatusBadRequest)
+			return
+		}
 
 		imgCfg := imageconfig.Default()
 		if body.Config != "" {

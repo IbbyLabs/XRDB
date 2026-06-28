@@ -157,7 +157,19 @@ type raw struct {
 
 // Surfaces are the distinct render targets a single profile can style
 // independently. They mirror the media-type path segments served by the API.
+// This is the single source of truth for valid surfaces; server routing and
+// validation derive from it rather than re-declaring the literals.
 var Surfaces = []string{"poster", "backdrop", "thumbnail", "logo"}
+
+// IsSurface reports whether name is a recognized render surface.
+func IsSurface(name string) bool {
+	for _, s := range Surfaces {
+		if s == name {
+			return true
+		}
+	}
+	return false
+}
 
 // surfaceEnvelope is the optional per-surface wrapper. When a profile config
 // carries a non-empty "surfaces" object, each render surface is configured
