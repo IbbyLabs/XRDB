@@ -96,11 +96,14 @@ export function InstallPanel({ configKey, onNotice }: InstallPanelProps) {
       <div className="panel-body cfg-fields">
         {!configKey && (
           <p className="hint" style={{ marginTop: 0 }}>
-            Save a profile first — the install needs a config key so AIOMetadata
-            can request your artwork.
+            Save a profile first in the <strong>Profile</strong> tab. The
+            one-click install and the artwork URL patterns both need a saved
+            config key — without one the links carry no styling and AIOMetadata
+            falls back to default art.
           </p>
         )}
 
+        {configKey && (<>
         <div className="field">
           <span className="label">AIOMetadata — one-click setup</span>
           <span className="hint" style={{ marginTop: 0 }}>
@@ -221,6 +224,7 @@ export function InstallPanel({ configKey, onNotice }: InstallPanelProps) {
             </div>
           </div>
         ))}
+        </>)}
       </div>
     </div>
   );
