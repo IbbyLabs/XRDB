@@ -194,6 +194,13 @@ func registerAdminRoutes(
 
 		imgCfg := imageconfig.Default()
 		if body.Config != "" {
+			// Unlike the public render path (which degrades gracefully), this is
+			// an operator tool — surface a malformed config instead of silently
+			// warming Default().
+			if !json.Valid([]byte(body.Config)) {
+				http.Error(w, "invalid config JSON", http.StatusBadRequest)
+				return
+			}
 			imgCfg = imageconfig.ParseSurface(json.RawMessage(body.Config), mediaType)
 		}
 
