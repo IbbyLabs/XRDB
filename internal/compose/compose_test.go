@@ -9,6 +9,7 @@ import (
 	"image/draw"
 	"image/jpeg"
 	"image/png"
+	"sync"
 	"testing"
 
 	"xrdb_rewrite/internal/imageconfig"
@@ -72,6 +73,81 @@ func TestRenderFallsBackOnNoArtworkURL(t *testing.T) {
 	if !bytes.Equal(res.ImageBytes, render.PlaceholderPNG("poster")) {
 		t.Error("expected fallback placeholder when no artwork URL")
 	}
+}
+
+// fallbackRatingStub mimics a real rating provider AFTER the surface/content-type
+// decouple: it serves a rating for a series, and when given no content-type hint
+// it self-resolves (the movie->series fallback the real providers now perform)
+// rather than dropping the rating. It records every content-type arg it receives
+// so the test can prove the artwork surface never leaks in as a content type.
+type fallbackRatingStub struct {
+	name string
+	mu   sync.Mutex
+	seen []string
+}
+
+func (s *fallbackRatingStub) Name() string { return s.name }
+
+func (s *fallbackRatingStub) Fetch(_ context.Context, contentType, _ string) (*provider.MediaMeta, error) {
+	s.mu.Lock()
+	s.seen = append(s.seen, contentType)
+	s.mu.Unlock()
+	switch contentType {
+	case "series", "": // explicit hint, or no hint (provider falls back internally)
+		return &provider.MediaMeta{Ratings: []provider.Rating{{Source: s.name, Value: 8.5, Label: "8.5"}}}, nil
+	default:
+		return nil, fmt.Errorf("%s: not found for %q", s.name, contentType)
+	}
+}
+
+// TestRatingsMatchAcrossPosterAndBackdrop verifies the fix at the pipeline layer:
+// collected ratings depend only on the title's content type, never on the artwork
+// surface. It covers both the Stremio path (explicit ?type=series) and the
+// configurator/AIOM path (no hint) — the exact scenario from the bug report where
+// the poster ring disagreed with the backdrop ring.
+func TestRatingsMatchAcrossPosterAndBackdrop(t *testing.T) {
+	for _, ct := range []string{"series", ""} {
+		stub := &fallbackRatingStub{name: "mdblist"}
+		// Default ArtworkSource is tmdb, so the mdblist stub is in the rating
+		// fan-out (collectRatingsWithProviders only skips the artwork source).
+		p := &Pipeline{providers: testRegistry(stub), fetcher: &stubImageFetcher{}}
+		cfg := imageconfig.Default()
+
+		poster := Request{MediaType: "poster", ContentType: ct, MediaID: "tt2250192", Config: cfg}
+		backdrop := Request{MediaType: "backdrop", ContentType: ct, MediaID: "tt2250192", Config: cfg}
+
+		pr, _ := p.collectRatingsWithProviders(context.Background(), poster, nil)
+		br, _ := p.collectRatingsWithProviders(context.Background(), backdrop, nil)
+
+		if len(pr) == 0 || len(br) == 0 {
+			t.Fatalf("ct=%q: expected ratings on both surfaces, got poster=%d backdrop=%d", ct, len(pr), len(br))
+		}
+		if !sameRatingSet(pr, br) {
+			t.Fatalf("ct=%q: ratings differ across surfaces: poster=%v backdrop=%v", ct, pr, br)
+		}
+		for _, got := range stub.seen {
+			switch got {
+			case "poster", "backdrop", "thumbnail", "logo":
+				t.Fatalf("ct=%q: provider received artwork surface %q as a content type", ct, got)
+			}
+		}
+	}
+}
+
+func sameRatingSet(a, b []provider.Rating) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	ma := make(map[string]float64, len(a))
+	for _, r := range a {
+		ma[r.Source] = r.Value
+	}
+	for _, r := range b {
+		if v, ok := ma[r.Source]; !ok || v != r.Value {
+			return false
+		}
+	}
+	return true
 }
 
 func TestRenderProducesCorrectDimensions(t *testing.T) {
