@@ -155,7 +155,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		_, _ = w.Write(pngBytes)
 		ms.Record("/"+mediaType, http.StatusOK, latMs(start))
 	}
-	for _, mt := range []string{"poster", "backdrop", "thumbnail", "logo"} {
+	for _, mt := range imageconfig.Surfaces {
 		mux.HandleFunc("/"+mt+"/{id}", renderHandler)
 	}
 

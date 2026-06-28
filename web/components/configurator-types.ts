@@ -182,10 +182,27 @@ export const DEFAULT_SURFACE_CONFIGS: SurfaceConfigs = {
   logo:      { ...DEFAULT_CONFIG },
 };
 
-/** Fill any missing/invalid fields of a partial config from the defaults. */
+/** Coerce only the string entries of an array-typed field; fall back to default. */
+function coerceStringArray(value: unknown, fallback: string[]): string[] {
+  if (!Array.isArray(value)) return [...fallback];
+  return value.filter((v): v is string => typeof v === 'string');
+}
+
+/**
+ * Fill any missing/invalid fields of a partial config from the defaults. Array
+ * fields are validated explicitly — malformed stored/shared data (e.g.
+ * `ratings: "imdb"` or `badges: {}`) would otherwise crash the controls that
+ * call array methods on them.
+ */
 function coerceConfig(raw: unknown): ConfigState {
   if (!raw || typeof raw !== 'object') return { ...DEFAULT_CONFIG };
-  return { ...DEFAULT_CONFIG, ...(raw as Partial<ConfigState>) };
+  const input = raw as Partial<Record<keyof ConfigState, unknown>>;
+  return {
+    ...DEFAULT_CONFIG,
+    ...(raw as Partial<ConfigState>),
+    ratings: coerceStringArray(input.ratings, DEFAULT_CONFIG.ratings),
+    badges: coerceStringArray(input.badges, DEFAULT_CONFIG.badges),
+  };
 }
 
 /** Seed all four surfaces from one flat config (legacy → per-surface). */
@@ -277,7 +294,7 @@ export function decodeShare(fragment: string): ShareState | null {
     if (!hasCfgs && !hasCfg) return null;
     const cfgs = hasCfgs
       ? fromStoredConfig({ surfaces: parsed.cfgs })
-      : cloneToAllSurfaces({ ...DEFAULT_CONFIG, ...(parsed.cfg as Partial<ConfigState>) });
+      : cloneToAllSurfaces(coerceConfig(parsed.cfg));
     const t = typeof parsed.t === 'string' && MEDIA_TYPES.some(m => m.id === parsed.t)
       ? (parsed.t as MediaType)
       : 'poster';

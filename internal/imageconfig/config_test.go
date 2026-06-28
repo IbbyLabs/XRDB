@@ -186,6 +186,19 @@ func TestParseSurfaceEmptyReturnsDefault(t *testing.T) {
 	}
 }
 
+func TestIsSurface(t *testing.T) {
+	for _, s := range Surfaces {
+		if !IsSurface(s) {
+			t.Errorf("IsSurface(%q) = false, want true", s)
+		}
+	}
+	for _, bad := range []string{"", "movie", "Poster", "banner", "logo "} {
+		if IsSurface(bad) {
+			t.Errorf("IsSurface(%q) = true, want false", bad)
+		}
+	}
+}
+
 func TestCacheKeyStableForSameConfig(t *testing.T) {
 	cfg := Default()
 	k1 := CacheKey(cfg)
