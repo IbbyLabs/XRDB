@@ -88,7 +88,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		if configParam != "default" {
 			if len(configParam) > 0 && configParam[0] == '{' {
 				// Inline JSON config — used by the live preview without a saved profile.
-				imgCfg = imageconfig.Parse(json.RawMessage(configParam))
+				imgCfg = imageconfig.ParseSurface(json.RawMessage(configParam), mediaType)
 				profileLoaded = true
 			} else if store != nil {
 				// configParam may be a profile ID or a memorable alias.
@@ -96,7 +96,9 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				// into media apps that can't send credentials. The profile
 				// password protects editing (PUT/DELETE), not viewing.
 				if p, err := store.Resolve(configParam); err == nil {
-					imgCfg = imageconfig.Parse(p.Config)
+					// A profile config can style each surface independently;
+					// resolve the one for this request's media type.
+					imgCfg = imageconfig.ParseSurface(p.Config, mediaType)
 					profileLoaded = true
 				}
 			}

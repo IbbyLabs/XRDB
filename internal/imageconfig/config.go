@@ -155,7 +155,39 @@ type raw struct {
 	RatingRingColor  *string  `json:"ratingRingColor"`
 }
 
-// Parse deserializes a profile config JSON blob into a normalized Config.
+// Surfaces are the distinct render targets a single profile can style
+// independently. They mirror the media-type path segments served by the API.
+var Surfaces = []string{"poster", "backdrop", "thumbnail", "logo"}
+
+// surfaceEnvelope is the optional per-surface wrapper. When a profile config
+// carries a non-empty "surfaces" object, each render surface is configured
+// independently. A flat config (no "surfaces" key) applies to every surface,
+// preserving every profile saved before per-surface settings existed.
+type surfaceEnvelope struct {
+	Surfaces map[string]json.RawMessage `json:"surfaces"`
+}
+
+// ParseSurface resolves the Config for a single render surface from a profile
+// config blob. The blob may be either the per-surface envelope
+// {"surfaces":{"poster":{…},"backdrop":{…}}} or a legacy flat config that
+// applies uniformly to every surface. A missing or unknown surface within an
+// envelope falls back to Default(); a flat or empty blob is parsed as before.
+func ParseSurface(data json.RawMessage, surface string) Config {
+	if len(data) == 0 {
+		return Default()
+	}
+	var env surfaceEnvelope
+	if err := json.Unmarshal(data, &env); err == nil && len(env.Surfaces) > 0 {
+		if sub, ok := env.Surfaces[surface]; ok {
+			return Parse(sub)
+		}
+		return Default()
+	}
+	// Flat config — applies to every surface (legacy / live-preview shape).
+	return Parse(data)
+}
+
+// Parse deserializes a flat profile config JSON blob into a normalized Config.
 // Missing or invalid fields fall back to Default() values.
 // An empty or nil blob returns Default().
 func Parse(data json.RawMessage) Config {

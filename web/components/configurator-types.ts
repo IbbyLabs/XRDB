@@ -166,6 +166,74 @@ export const DEFAULT_CONFIG: ConfigState = {
 
 export type UpdateConfigFn = <K extends keyof ConfigState>(key: K, value: ConfigState[K]) => void;
 
+// ── Per-surface configs ─────────────────────────────────────────────────────────
+// Each surface (poster, backdrop, thumbnail, logo) is styled independently.
+// A single profile carries all four; the backend resolves the right one from
+// the request path.
+
+export type SurfaceConfigs = Record<MediaType, ConfigState>;
+
+export const STORED_CONFIG_VERSION = 2;
+
+export const DEFAULT_SURFACE_CONFIGS: SurfaceConfigs = {
+  poster:    { ...DEFAULT_CONFIG },
+  backdrop:  { ...DEFAULT_CONFIG },
+  thumbnail: { ...DEFAULT_CONFIG },
+  logo:      { ...DEFAULT_CONFIG },
+};
+
+/** Fill any missing/invalid fields of a partial config from the defaults. */
+function coerceConfig(raw: unknown): ConfigState {
+  if (!raw || typeof raw !== 'object') return { ...DEFAULT_CONFIG };
+  return { ...DEFAULT_CONFIG, ...(raw as Partial<ConfigState>) };
+}
+
+/** Seed all four surfaces from one flat config (legacy → per-surface). */
+export function cloneToAllSurfaces(cfg: ConfigState): SurfaceConfigs {
+  return {
+    poster:    { ...cfg },
+    backdrop:  { ...cfg },
+    thumbnail: { ...cfg },
+    logo:      { ...cfg },
+  };
+}
+
+/**
+ * Build the stored profile config — the per-surface envelope. Saved profiles use
+ * `{ v, surfaces: { poster, backdrop, thumbnail, logo } }` so every surface
+ * renders with its own settings under a single profile key.
+ */
+export function toStoredConfig(configs: SurfaceConfigs): Record<string, unknown> {
+  return {
+    v: STORED_CONFIG_VERSION,
+    surfaces: {
+      poster:    configs.poster,
+      backdrop:  configs.backdrop,
+      thumbnail: configs.thumbnail,
+      logo:      configs.logo,
+    },
+  };
+}
+
+/**
+ * Parse a stored profile config back into per-surface state. Accepts both the
+ * per-surface envelope and a legacy flat config (applied to every surface), so
+ * profiles and share links saved before per-surface settings keep working.
+ */
+export function fromStoredConfig(raw: unknown): SurfaceConfigs {
+  if (raw && typeof raw === 'object' && 'surfaces' in raw) {
+    const surfaces = ((raw as { surfaces?: Record<string, unknown> }).surfaces) ?? {};
+    return {
+      poster:    coerceConfig(surfaces.poster),
+      backdrop:  coerceConfig(surfaces.backdrop),
+      thumbnail: coerceConfig(surfaces.thumbnail),
+      logo:      coerceConfig(surfaces.logo),
+    };
+  }
+  // Legacy flat config — apply uniformly to every surface.
+  return cloneToAllSurfaces(coerceConfig(raw));
+}
+
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
 export function readSession<T>(key: string, fallback: T): T {
@@ -184,7 +252,7 @@ export interface ShareState {
   t: MediaType;
   id: string;
   title: string;
-  cfg: ConfigState;
+  cfgs: SurfaceConfigs;
 }
 
 export function encodeShare(state: ShareState): string {
@@ -199,8 +267,17 @@ export function decodeShare(fragment: string): ShareState | null {
   try {
     const b64 = fragment.replace(/-/g, '+').replace(/_/g, '/');
     const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-    const parsed = JSON.parse(new TextDecoder().decode(bytes)) as Partial<ShareState>;
-    if (!parsed || typeof parsed.id !== 'string' || typeof parsed.cfg !== 'object' || parsed.cfg === null) return null;
+    const parsed = JSON.parse(new TextDecoder().decode(bytes)) as
+      Partial<ShareState> & { cfg?: unknown; cfgs?: unknown };
+    if (!parsed || typeof parsed.id !== 'string') return null;
+    // Accept the per-surface shape (cfgs) and the legacy single-config shape
+    // (cfg, applied to every surface) so older links still resolve.
+    const hasCfgs = !!parsed.cfgs && typeof parsed.cfgs === 'object';
+    const hasCfg = !!parsed.cfg && typeof parsed.cfg === 'object';
+    if (!hasCfgs && !hasCfg) return null;
+    const cfgs = hasCfgs
+      ? fromStoredConfig({ surfaces: parsed.cfgs })
+      : cloneToAllSurfaces({ ...DEFAULT_CONFIG, ...(parsed.cfg as Partial<ConfigState>) });
     const t = typeof parsed.t === 'string' && MEDIA_TYPES.some(m => m.id === parsed.t)
       ? (parsed.t as MediaType)
       : 'poster';
@@ -208,7 +285,7 @@ export function decodeShare(fragment: string): ShareState | null {
       t,
       id: parsed.id,
       title: typeof parsed.title === 'string' ? parsed.title : parsed.id,
-      cfg: { ...DEFAULT_CONFIG, ...parsed.cfg },
+      cfgs,
     };
   } catch {
     return null;

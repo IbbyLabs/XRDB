@@ -188,7 +188,7 @@ func registerAdminRoutes(
 
 		imgCfg := imageconfig.Default()
 		if body.Config != "" {
-			imgCfg = imageconfig.Parse(json.RawMessage(body.Config))
+			imgCfg = imageconfig.ParseSurface(json.RawMessage(body.Config), mediaType)
 		}
 
 		// Kick off warming in the background; respond immediately.
