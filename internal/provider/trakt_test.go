@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -105,5 +106,32 @@ func TestTraktShowPath(t *testing.T) {
 	p := NewTrakt("clientid")
 	if p.Name() != "trakt" {
 		t.Error("unexpected name")
+	}
+}
+
+// TestTraktFallsBackToShowsOnMovie404 verifies a series with no content-type
+// hint resolves via /shows after /movies 404s, instead of dropping the rating.
+func TestTraktFallsBackToShowsOnMovie404(t *testing.T) {
+	var paths []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		if strings.Contains(r.URL.Path, "/movies/") {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"rating": 9.1, "votes": 5000})
+	}))
+	defer srv.Close()
+
+	tr := &Trakt{clientID: "k", baseURL: srv.URL, httpClient: srv.Client()}
+	meta, err := tr.Fetch(context.Background(), "", "tt2250192")
+	if err != nil {
+		t.Fatalf("Fetch: %v", err)
+	}
+	if meta == nil || len(meta.Ratings) != 1 || meta.Ratings[0].Source != "trakt" {
+		t.Fatalf("expected one trakt rating from shows fallback, got %+v", meta)
+	}
+	if len(paths) != 2 || !strings.Contains(paths[0], "/movies/") || !strings.Contains(paths[1], "/shows/") {
+		t.Fatalf("expected movies then shows, got %v", paths)
 	}
 }

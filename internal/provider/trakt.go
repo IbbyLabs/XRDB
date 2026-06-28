@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -18,6 +19,7 @@ var traktIMDbIDRe = regexp.MustCompile(`^tt\d+$`)
 // Accepts IMDb IDs (tt-prefixed) and returns a Trakt community rating.
 type Trakt struct {
 	clientID   string
+	baseURL    string // overrides traktBaseURL; set in tests
 	httpClient *http.Client
 }
 
@@ -37,13 +39,29 @@ func (t *Trakt) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, er
 		return nil, fmt.Errorf("trakt: unsupported id %q (expected tt<imdb-id>)", id)
 	}
 
-	// Determine Trakt path segment from mediaType.
-	segment := "movies"
-	if mediaType == "show" || mediaType == "tv" || mediaType == "series" {
-		segment = "shows"
+	// Trakt serves movies and shows from distinct path segments, but the artwork
+	// surface doesn't disambiguate. Try the type implied by the content-type
+	// hint first, then fall back to the other on a not-found rather than dropping
+	// the rating (the historical series-poster bug).
+	primary, secondary := "movies", "shows"
+	if isSeriesType(mediaType) {
+		primary, secondary = "shows", "movies"
 	}
+	meta, err := t.fetchSegment(ctx, primary, id)
+	if errors.Is(err, errNotFound) {
+		meta, err = t.fetchSegment(ctx, secondary, id)
+	}
+	return meta, err
+}
 
-	url := fmt.Sprintf("%s/%s/%s/ratings", traktBaseURL, segment, id)
+// fetchSegment queries one Trakt segment ("movies" or "shows"). It returns a
+// wrapped errNotFound on a 404 so Fetch can retry the other segment.
+func (t *Trakt) fetchSegment(ctx context.Context, segment, id string) (*MediaMeta, error) {
+	base := traktBaseURL
+	if t.baseURL != "" {
+		base = t.baseURL
+	}
+	url := fmt.Sprintf("%s/%s/%s/ratings", base, segment, id)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("trakt: build request: %w", err)
@@ -58,7 +76,7 @@ func (t *Trakt) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, er
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, fmt.Errorf("trakt: not found for id %q", id)
+		return nil, fmt.Errorf("trakt: %s not found for id %q: %w", segment, id, errNotFound)
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("trakt: http %d", resp.StatusCode)

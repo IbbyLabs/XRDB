@@ -228,11 +228,10 @@ func (s *source) lookupLocked(mediaType, id string) (IDs, bool) {
 	if err != nil {
 		return IDs{}, false
 	}
-	// Bare numeric TMDB IDs are ambiguous between movie and TV; follow the
-	// TMDB provider's heuristic (backdrop ⇒ TV first) and try the other space
-	// second rather than failing.
+	// Bare numeric TMDB IDs are ambiguous between movie and TV; prefer the space
+	// implied by the content type and try the other second rather than failing.
 	first, second := s.byTMDBMovie, s.byTMDBTV
-	if mediaType == "tv" || mediaType == "series" || mediaType == "backdrop" {
+	if mediaType == "tv" || mediaType == "series" || mediaType == "show" {
 		first, second = s.byTMDBTV, s.byTMDBMovie
 	}
 	if e, ok := first[n]; ok {

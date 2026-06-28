@@ -31,7 +31,6 @@ type statusResponse struct {
 	Version string `json:"version"`
 }
 
-
 // NewHandler builds the HTTP mux. Pass a non-nil staticFS to serve an embedded
 // frontend (SPA) at the root; nil disables static file serving.
 func NewHandler(version string, store *profile.Store, settingsStore *settings.Store, pipeline *compose.Pipeline, renderCache *cache.Cache, cfg config.Config, staticFS ...fs.FS) http.Handler {
@@ -130,9 +129,10 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			var renderResult *compose.Result
 			if pipeline != nil {
 				renderResult, _ = pipeline.Render(r.Context(), compose.Request{
-					MediaType: mediaType,
-					MediaID:   id,
-					Config:    imgCfg,
+					MediaType:   mediaType,
+					ContentType: normalizeContentType(queryValue(raw, "type", "")),
+					MediaID:     id,
+					Config:      imgCfg,
 				})
 				if renderResult != nil {
 					pngBytes = renderResult.ImageBytes
@@ -357,6 +357,22 @@ func writeJSON(w http.ResponseWriter, status int, payload any) {
 	_ = json.NewEncoder(w).Encode(payload)
 }
 
+// normalizeContentType maps a content-type hint from the request (the optional
+// ?type= param emitted by the Stremio meta handler and the configurator) to a
+// canonical "movie"|"series", or "" when absent/unknown. Artwork surface names
+// are deliberately not treated as content types — that conflation is what made
+// series posters/logos resolve as movies and drop most of their ratings.
+func normalizeContentType(s string) string {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "movie", "movies":
+		return "movie"
+	case "series", "tv", "show", "shows":
+		return "series"
+	default:
+		return ""
+	}
+}
+
 func writeRenderPlaceholderJSON(w http.ResponseWriter, mediaType, id, cacheKey string) {
 	buf := make([]byte, 0, 200)
 	buf = append(buf, '{')
@@ -460,4 +476,3 @@ func simulationLevel(value string) (string, bool) {
 		return "", false
 	}
 }
-

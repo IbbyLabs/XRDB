@@ -26,9 +26,14 @@ import (
 
 // Request is the input to the composition pipeline.
 type Request struct {
-	MediaType string // poster|backdrop|thumbnail|logo
-	MediaID   string // media identifier (IMDB tt-ID or TMDB numeric ID)
-	Config    imageconfig.Config
+	MediaType string // artwork surface: poster|backdrop|thumbnail|logo
+	// ContentType is the title kind ("movie"|"series"), distinct from the
+	// artwork surface. It is what rating providers need to query the right
+	// endpoint. May be empty when the caller doesn't know it, in which case
+	// providers self-resolve (try movie, fall back to series).
+	ContentType string
+	MediaID     string // media identifier (IMDB tt-ID or TMDB numeric ID)
+	Config      imageconfig.Config
 }
 
 // Result holds the composed image bytes and metadata.
@@ -254,10 +259,12 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 	}
 	var meta *provider.MediaMeta
 	var err error
+	// Providers are queried by content type (movie/series), never by the artwork
+	// surface; the surface only decides which image URL we pick below.
 	if af, ok := prov.(provider.ArtworkFetcher); ok {
-		meta, err = af.FetchArtwork(ctx, req.MediaType, req.MediaID, opts)
+		meta, err = af.FetchArtwork(ctx, req.ContentType, req.MediaID, opts)
 	} else {
-		meta, err = prov.Fetch(ctx, req.MediaType, req.MediaID)
+		meta, err = prov.Fetch(ctx, req.ContentType, req.MediaID)
 	}
 	if err != nil {
 		return nil, nil, fmt.Errorf("provider fetch: %w", err)
@@ -289,7 +296,7 @@ func (p *Pipeline) enrichMetaForOverlays(ctx context.Context, req Request, meta 
 	if tmdb == nil || tmdb.Name() == string(req.Config.ArtworkSource) {
 		return
 	}
-	extra, err := tmdb.Fetch(ctx, req.MediaType, req.MediaID)
+	extra, err := tmdb.Fetch(ctx, req.ContentType, req.MediaID)
 	if err != nil || extra == nil {
 		return
 	}
@@ -398,7 +405,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 		wg.Add(1)
 		go func(prov provider.Provider) {
 			defer wg.Done()
-			meta, err := prov.Fetch(ctx, req.MediaType, req.MediaID)
+			meta, err := prov.Fetch(ctx, req.ContentType, req.MediaID)
 			if err != nil || meta == nil {
 				return
 			}

@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -23,6 +24,7 @@ var simklIMDbIDRe = regexp.MustCompile(`^tt\d+$`)
 // (via SIMKL's ID lookup). When given an IMDb ID, an extra lookup call is made.
 type SIMKL struct {
 	clientID   string
+	baseURL    string // overrides simklBaseURL; set in tests
 	httpClient *http.Client
 }
 
@@ -64,13 +66,30 @@ func (s *SIMKL) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, er
 		return nil, fmt.Errorf("simkl: unsupported id %q (expected simkl:<id> or tt<imdb-id>)", id)
 	}
 
-	segment := "movies"
-	if mediaType == "show" || mediaType == "tv" || mediaType == "series" {
-		segment = "tv"
+	// SIMKL serves movies and TV from distinct segments, but the artwork surface
+	// doesn't disambiguate. Try the type implied by the content-type hint first,
+	// then fall back to the other on a not-found rather than dropping the rating.
+	primary, secondary := "movies", "tv"
+	if isSeriesType(mediaType) {
+		primary, secondary = "tv", "movies"
 	}
+	meta, err := s.fetchSegment(ctx, primary, simklID, id)
+	if errors.Is(err, errNotFound) {
+		meta, err = s.fetchSegment(ctx, secondary, simklID, id)
+	}
+	return meta, err
+}
 
+// fetchSegment queries one SIMKL segment ("movies" or "tv"). origID is the
+// caller's original ID, used only for error messages. It returns a wrapped
+// errNotFound on a 404 so Fetch can retry the other segment.
+func (s *SIMKL) fetchSegment(ctx context.Context, segment, simklID, origID string) (*MediaMeta, error) {
+	base := simklBaseURL
+	if s.baseURL != "" {
+		base = s.baseURL
+	}
 	u := fmt.Sprintf("%s/%s/%s?client_id=%s&extended=full",
-		simklBaseURL, segment, simklID, url.QueryEscape(s.clientID))
+		base, segment, simklID, url.QueryEscape(s.clientID))
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return nil, fmt.Errorf("simkl: build request: %w", err)
@@ -82,7 +101,7 @@ func (s *SIMKL) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, er
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, fmt.Errorf("simkl: not found for id %q", id)
+		return nil, fmt.Errorf("simkl: %s not found for %q: %w", segment, origID, errNotFound)
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("simkl: http %d", resp.StatusCode)
@@ -143,8 +162,12 @@ func (s *SIMKL) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, er
 
 // lookupByIMDB resolves an IMDb ID to a SIMKL numeric ID.
 func (s *SIMKL) lookupByIMDB(ctx context.Context, imdbID string) (string, error) {
+	base := simklBaseURL
+	if s.baseURL != "" {
+		base = s.baseURL
+	}
 	u := fmt.Sprintf("%s/search/id?client_id=%s&imdb=%s",
-		simklBaseURL, url.QueryEscape(s.clientID), imdbID)
+		base, url.QueryEscape(s.clientID), imdbID)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return "", fmt.Errorf("simkl lookup: build request: %w", err)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -196,5 +197,61 @@ func TestMDBListDeduplicatesSources(t *testing.T) {
 	// mdblist appears in ratings array AND as aggregate; deduplicated
 	if counts["mdblist"] != 1 {
 		t.Errorf("expected 1 mdblist rating, got %d", counts["mdblist"])
+	}
+}
+
+// TestMDBListFallsBackToShowOnMovie404 reproduces the poster/logo bug: a series
+// requested with no content-type hint (as the poster/logo surfaces do) must not
+// silently drop its ratings. movie is tried first, 404s, then show succeeds.
+func TestMDBListFallsBackToShowOnMovie404(t *testing.T) {
+	var paths []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		if strings.Contains(r.URL.Path, "/imdb/movie/") {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"score":   75.0,
+			"ratings": []map[string]any{{"source": "imdb", "value": 7.4, "votes": 100}},
+		})
+	}))
+	defer srv.Close()
+
+	m := &MDBList{apiKey: "k", baseURL: srv.URL, httpClient: srv.Client()}
+	meta, err := m.Fetch(context.Background(), "", "tt2250192")
+	if err != nil {
+		t.Fatalf("Fetch: %v", err)
+	}
+	if meta == nil || len(meta.Ratings) == 0 {
+		t.Fatal("expected ratings from show fallback, got none")
+	}
+	if len(paths) != 2 || !strings.Contains(paths[0], "/imdb/movie/") || !strings.Contains(paths[1], "/imdb/show/") {
+		t.Fatalf("expected movie then show, got %v", paths)
+	}
+}
+
+// TestMDBListSeriesHintHitsShowDirectly verifies a correct content-type hint
+// avoids the wasted movie request entirely.
+func TestMDBListSeriesHintHitsShowDirectly(t *testing.T) {
+	var paths []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		if strings.Contains(r.URL.Path, "/imdb/movie/") {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"score": 80.0})
+	}))
+	defer srv.Close()
+
+	m := &MDBList{apiKey: "k", baseURL: srv.URL, httpClient: srv.Client()}
+	if _, err := m.Fetch(context.Background(), "series", "tt2250192"); err != nil {
+		t.Fatalf("Fetch: %v", err)
+	}
+	if len(paths) != 1 || !strings.Contains(paths[0], "/imdb/show/") {
+		t.Fatalf("series hint should hit show directly, got %v", paths)
 	}
 }

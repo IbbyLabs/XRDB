@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -17,6 +18,7 @@ const mdblistBase = "https://api.mdblist.com"
 // (IMDb, Rotten Tomatoes, Metacritic, Letterboxd, Trakt, and MDBList's own aggregate).
 type MDBList struct {
 	apiKey     string
+	baseURL    string // overrides mdblistBase; set in tests
 	httpClient *http.Client
 }
 
@@ -40,13 +42,31 @@ func (m *MDBList) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, 
 		return nil, fmt.Errorf("mdblist: requires imdb tt-id, got %q", id)
 	}
 
-	mdbType := "movie"
-	if mediaType == "tv" || mediaType == "series" || mediaType == "backdrop" {
-		mdbType = "show"
+	// MDBList serves movies and shows from distinct endpoints, but the artwork
+	// surface (poster/backdrop/logo) doesn't tell us which. Try the type implied
+	// by the content-type hint first, then fall back to the other on a not-found.
+	// Without this, a series requested via the poster/logo surfaces hits the
+	// movie endpoint, 404s, and every MDBList-sourced rating silently vanishes.
+	primary, secondary := "movie", "show"
+	if isSeriesType(mediaType) {
+		primary, secondary = "show", "movie"
 	}
+	meta, err := m.fetchType(ctx, primary, id)
+	if errors.Is(err, errNotFound) {
+		meta, err = m.fetchType(ctx, secondary, id)
+	}
+	return meta, err
+}
 
+// fetchType queries one MDBList endpoint (mdbType is "movie" or "show"). It
+// returns a wrapped errNotFound on a 404 so Fetch can retry the other type.
+func (m *MDBList) fetchType(ctx context.Context, mdbType, id string) (*MediaMeta, error) {
+	base := mdblistBase
+	if m.baseURL != "" {
+		base = m.baseURL
+	}
 	params := url.Values{"apikey": {m.apiKey}}
-	endpoint := fmt.Sprintf("%s/imdb/%s/%s?%s", mdblistBase, mdbType, id, params.Encode())
+	endpoint := fmt.Sprintf("%s/imdb/%s/%s?%s", base, mdbType, id, params.Encode())
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, err
@@ -64,7 +84,7 @@ func (m *MDBList) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, 
 	case http.StatusUnauthorized, http.StatusForbidden:
 		return nil, fmt.Errorf("mdblist: unauthorized (check api key)")
 	case http.StatusNotFound:
-		return nil, fmt.Errorf("mdblist: not found for %q", id)
+		return nil, fmt.Errorf("mdblist: %s not found for %q: %w", mdbType, id, errNotFound)
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("mdblist: http %d", resp.StatusCode)

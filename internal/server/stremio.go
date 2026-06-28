@@ -30,16 +30,16 @@ import (
 
 // stremioManifest is the Stremio addon manifest shape (subset used by XRDB).
 type stremioManifest struct {
-	ID          string              `json:"id"`
-	Version     string              `json:"version"`
-	Name        string              `json:"name"`
-	Description string              `json:"description"`
-	Logo        string              `json:"logo,omitempty"`
-	Resources   []string            `json:"resources"`
-	Types       []string            `json:"types"`
-	IDPrefixes  []string            `json:"idPrefixes"`
-	Catalogs    []any               `json:"catalogs"`
-	BehaviorHints stremioHints      `json:"behaviorHints"`
+	ID            string       `json:"id"`
+	Version       string       `json:"version"`
+	Name          string       `json:"name"`
+	Description   string       `json:"description"`
+	Logo          string       `json:"logo,omitempty"`
+	Resources     []string     `json:"resources"`
+	Types         []string     `json:"types"`
+	IDPrefixes    []string     `json:"idPrefixes"`
+	Catalogs      []any        `json:"catalogs"`
+	BehaviorHints stremioHints `json:"behaviorHints"`
 }
 
 type stremioHints struct {
@@ -62,14 +62,14 @@ type stremioMeta struct {
 func registerStremioAddon(mux *http.ServeMux, cfg config.Config) {
 	mux.HandleFunc("/stremio/manifest.json", stremioMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		manifest := stremioManifest{
-			ID:          "com.ibbylabs.xrdb",
-			Version:     cfg.Version,
-			Name:        "XRDB",
-			Description: "Enhanced movie and series artwork powered by XRDB — overlaid ratings, quality badges, and more.",
-			Resources:   []string{"meta"},
-			Types:       []string{"movie", "series"},
-			IDPrefixes:  []string{"tt"},
-			Catalogs:    []any{},
+			ID:            "com.ibbylabs.xrdb",
+			Version:       cfg.Version,
+			Name:          "XRDB",
+			Description:   "Enhanced movie and series artwork powered by XRDB — overlaid ratings, quality badges, and more.",
+			Resources:     []string{"meta"},
+			Types:         []string{"movie", "series"},
+			IDPrefixes:    []string{"tt"},
+			Catalogs:      []any{},
 			BehaviorHints: stremioHints{},
 		}
 		writeJSON(w, http.StatusOK, manifest)
@@ -106,15 +106,18 @@ func registerStremioAddon(mux *http.ServeMux, cfg config.Config) {
 		}
 		base := fmt.Sprintf("%s://%s", scheme, host)
 
-		posterURL := fmt.Sprintf("%s/%s/%s", base, xrdbType, id)
-		backdropURL := fmt.Sprintf("%s/backdrop/%s", base, id)
-
+		// Carry the content type (movie|series) so the render pipeline can pass
+		// it to the rating providers. Without it, providers fall back to guessing
+		// movie-vs-series from the artwork surface — the bug that made series
+		// posters resolve as movies and drop most of their ratings.
+		q := url.Values{"type": {mediaType}}
 		// If an API key is required, embed it as a query parameter.
 		// Note: exposing the key in URLs is a trade-off for Stremio compatibility.
 		if cfg.APIKey != "" {
-			posterURL += "?key=" + url.QueryEscape(cfg.APIKey)
-			backdropURL += "?key=" + url.QueryEscape(cfg.APIKey)
+			q.Set("key", cfg.APIKey)
 		}
+		posterURL := fmt.Sprintf("%s/%s/%s?%s", base, xrdbType, id, q.Encode())
+		backdropURL := fmt.Sprintf("%s/backdrop/%s?%s", base, id, q.Encode())
 
 		resp := stremioMetaResponse{
 			Meta: stremioMeta{

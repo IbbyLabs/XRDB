@@ -109,9 +109,10 @@ func (t *TMDB) resolveID(ctx context.Context, mediaType, id string) (string, str
 		}
 		return "", "", fmt.Errorf("no TMDB match for IMDB id %q", id)
 	}
-	// Normalize media type
+	// Normalize media type. Only movie/series are meaningful here; artwork
+	// surface names (poster/backdrop/logo) are not content-type hints.
 	resolvedType := "movie"
-	if mediaType == "tv" || mediaType == "series" || mediaType == "backdrop" {
+	if isSeriesType(mediaType) {
 		resolvedType = "tv"
 	}
 	return id, resolvedType, nil
