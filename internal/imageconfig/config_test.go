@@ -118,6 +118,74 @@ func TestParseDeduplicatesRatings(t *testing.T) {
 	}
 }
 
+func TestParseSurfaceFlatConfigAppliesToEverySurface(t *testing.T) {
+	// A legacy flat config (no "surfaces" key) must resolve identically for
+	// every surface so profiles saved before per-surface settings keep working.
+	raw := json.RawMessage(`{"size":"large","artworkSource":"fanart","language":"ja"}`)
+	for _, surface := range Surfaces {
+		cfg := ParseSurface(raw, surface)
+		if cfg.Size != SizeLarge {
+			t.Errorf("surface %q Size: got %q, want large", surface, cfg.Size)
+		}
+		if cfg.ArtworkSource != ArtworkFanart {
+			t.Errorf("surface %q ArtworkSource: got %q, want fanart", surface, cfg.ArtworkSource)
+		}
+		if cfg.Language != "ja" {
+			t.Errorf("surface %q Language: got %q, want ja", surface, cfg.Language)
+		}
+	}
+}
+
+func TestParseSurfaceResolvesEachSurfaceIndependently(t *testing.T) {
+	raw := json.RawMessage(`{
+		"v": 2,
+		"surfaces": {
+			"poster":   {"size":"4k","artworkSource":"tmdb","ratingsLayout":"bottom"},
+			"backdrop": {"size":"normal","artworkSource":"fanart","ratingsLayout":"none"}
+		}
+	}`)
+
+	poster := ParseSurface(raw, "poster")
+	if poster.Size != Size4K {
+		t.Errorf("poster Size: got %q, want 4k", poster.Size)
+	}
+	if poster.ArtworkSource != ArtworkTMDB {
+		t.Errorf("poster ArtworkSource: got %q, want tmdb", poster.ArtworkSource)
+	}
+	if poster.RatingsLayout != LayoutBottom {
+		t.Errorf("poster RatingsLayout: got %q, want bottom", poster.RatingsLayout)
+	}
+
+	backdrop := ParseSurface(raw, "backdrop")
+	if backdrop.Size != SizeNormal {
+		t.Errorf("backdrop Size: got %q, want normal", backdrop.Size)
+	}
+	if backdrop.ArtworkSource != ArtworkFanart {
+		t.Errorf("backdrop ArtworkSource: got %q, want fanart", backdrop.ArtworkSource)
+	}
+	if backdrop.RatingsLayout != LayoutNone {
+		t.Errorf("backdrop RatingsLayout: got %q, want none", backdrop.RatingsLayout)
+	}
+}
+
+func TestParseSurfaceMissingSurfaceFallsBackToDefault(t *testing.T) {
+	// Envelope present but the requested surface is absent → Default().
+	raw := json.RawMessage(`{"surfaces":{"poster":{"size":"4k"}}}`)
+	got := ParseSurface(raw, "logo")
+	want := Default()
+	if got.Size != want.Size || got.ArtworkSource != want.ArtworkSource {
+		t.Errorf("missing surface should fall back to Default(), got %+v", got)
+	}
+}
+
+func TestParseSurfaceEmptyReturnsDefault(t *testing.T) {
+	got := ParseSurface(nil, "poster")
+	want := Default()
+	if got.Size != want.Size || got.Language != want.Language {
+		t.Errorf("ParseSurface(nil) != Default(): got %+v", got)
+	}
+}
+
 func TestCacheKeyStableForSameConfig(t *testing.T) {
 	cfg := Default()
 	k1 := CacheKey(cfg)

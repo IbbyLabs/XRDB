@@ -6,8 +6,9 @@ import {
 import { Settings2, Star, Film, Rocket, Link2, Maximize2 } from 'lucide-react';
 import { renderUrl, type MediaType, type Template } from '@/lib/api';
 import {
-  MEDIA_TYPES, DEFAULT_CONFIG, PREVIEW_DEBOUNCE_MS,
-  readSession, encodeShare, decodeShare, type ConfigState,
+  MEDIA_TYPES, DEFAULT_CONFIG, DEFAULT_SURFACE_CONFIGS, PREVIEW_DEBOUNCE_MS,
+  readSession, encodeShare, decodeShare, cloneToAllSurfaces, fromStoredConfig,
+  type ConfigState, type SurfaceConfigs,
 } from './configurator-types';
 import { Notice, DisplayPanel } from './configurator-display';
 import { TemplateStrip, RatingsPanel } from './configurator-panels';
@@ -23,8 +24,11 @@ export function ConfiguratorClient() {
   const [mediaType, setMediaType] = useState<MediaType>('poster');
   const [mediaId, setMediaId] = useState('tt0468569');
   const [mediaTitle, setMediaTitle] = useState('The Dark Knight (2008)');
-  const [config, setConfig] = useState<ConfigState>(DEFAULT_CONFIG);
+  const [configs, setConfigs] = useState<SurfaceConfigs>(DEFAULT_SURFACE_CONFIGS);
   const [hydrated, setHydrated] = useState(false);
+  // The surface currently being edited / previewed. Each surface keeps its own
+  // settings; switching the media-type tab switches which one these controls edit.
+  const config = configs[mediaType];
 
   // Restore persisted state after mount: the page is statically prerendered,
   // so reading storage during the first render mismatches the server HTML
@@ -41,13 +45,21 @@ export function ConfiguratorClient() {
       setMediaType(shared.t);
       setMediaId(shared.id);
       setMediaTitle(shared.title);
-      setConfig(shared.cfg);
+      setConfigs(shared.cfgs);
       history.replaceState(null, '', window.location.pathname + window.location.search);
     } else {
       setMediaType(readSession<MediaType>('xrdb-media-type', 'poster'));
       setMediaId(readSession<string>('xrdb-media-id', 'tt0468569'));
       setMediaTitle(readSession<string>('xrdb-media-title', 'The Dark Knight (2008)'));
-      setConfig({ ...DEFAULT_CONFIG, ...readSession<Partial<ConfigState>>('xrdb-config', {}) });
+      // Prefer the per-surface store; fall back to (and migrate) the older
+      // single-config session so a mid-session upgrade keeps the user's look.
+      const storedSurfaces = readSession<Record<string, unknown> | null>('xrdb-configs', null);
+      if (storedSurfaces) {
+        setConfigs(fromStoredConfig({ surfaces: storedSurfaces }));
+      } else {
+        const legacy = readSession<Partial<ConfigState> | null>('xrdb-config', null);
+        setConfigs(legacy ? cloneToAllSurfaces({ ...DEFAULT_CONFIG, ...legacy }) : DEFAULT_SURFACE_CONFIGS);
+      }
     }
     setHydrated(true);
     /* eslint-enable react-hooks/set-state-in-effect */
@@ -65,7 +77,7 @@ export function ConfiguratorClient() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const undoConfigRef = useRef<ConfigState | null>(null);
+  const undoConfigsRef = useRef<SurfaceConfigs | null>(null);
   const [undoAvailable, setUndoAvailable] = useState(false);
 
   useEffect(() => {
@@ -74,9 +86,9 @@ export function ConfiguratorClient() {
       sessionStorage.setItem('xrdb-media-type', JSON.stringify(mediaType));
       sessionStorage.setItem('xrdb-media-id',   JSON.stringify(mediaId));
       sessionStorage.setItem('xrdb-media-title', JSON.stringify(mediaTitle));
-      sessionStorage.setItem('xrdb-config',      JSON.stringify(config));
+      sessionStorage.setItem('xrdb-configs',     JSON.stringify(configs));
     } catch { /* unavailable */ }
-  }, [hydrated, mediaType, mediaId, mediaTitle, config]);
+  }, [hydrated, mediaType, mediaId, mediaTitle, configs]);
 
   const buildSrc = useCallback((type: MediaType, id: string, cfg: ConfigState) => {
     return renderUrl(type, id || 'tt0468569', JSON.stringify({
@@ -128,45 +140,57 @@ export function ConfiguratorClient() {
 
   const updateConfig = <K extends keyof ConfigState>(key: K, value: ConfigState[K]) => {
     markManualEdit();
-    setConfig(c => ({ ...c, [key]: value }));
+    setConfigs(cs => ({ ...cs, [mediaType]: { ...cs[mediaType], [key]: value } }));
   };
 
   const toggleRating = (r: string) => {
     markManualEdit();
-    setConfig(c => ({
-      ...c, ratings: c.ratings.includes(r) ? c.ratings.filter(x => x !== r) : [...c.ratings, r],
-    }));
+    setConfigs(cs => {
+      const cur = cs[mediaType];
+      return { ...cs, [mediaType]: {
+        ...cur, ratings: cur.ratings.includes(r) ? cur.ratings.filter(x => x !== r) : [...cur.ratings, r],
+      } };
+    });
   };
 
   const toggleBadge = (b: string) => {
     markManualEdit();
-    setConfig(c => ({
-      ...c, badges: c.badges.includes(b) ? c.badges.filter(x => x !== b) : [...c.badges, b],
-    }));
+    setConfigs(cs => {
+      const cur = cs[mediaType];
+      return { ...cs, [mediaType]: {
+        ...cur, badges: cur.badges.includes(b) ? cur.badges.filter(x => x !== b) : [...cur.badges, b],
+      } };
+    });
   };
 
   const applyTemplate = (t: Template) => {
     const parsed = t.config as Partial<ConfigState>;
-    undoConfigRef.current = config;
-    setConfig(c => ({ ...c, ...parsed }));
+    undoConfigsRef.current = configs;
+    setConfigs(cs => ({ ...cs, [mediaType]: { ...cs[mediaType], ...parsed } }));
     setAppliedTemplate(t.id);
-    flash('info', `Template "${t.name}" applied`);
+    flash('info', `Template "${t.name}" applied to ${mediaType}`);
     setUndoAvailable(true);
   };
 
   const undoTemplate = () => {
-    if (undoConfigRef.current) {
-      setConfig(undoConfigRef.current);
-      undoConfigRef.current = null;
+    if (undoConfigsRef.current) {
+      setConfigs(undoConfigsRef.current);
+      undoConfigsRef.current = null;
     }
     setAppliedTemplate(null);
     setUndoAvailable(false);
     setNotice(null);
   };
 
-  const handleLoadConfig = (loaded: Partial<ConfigState>) => {
+  const handleLoadConfigs = (loaded: SurfaceConfigs) => {
     markManualEdit();
-    setConfig({ ...DEFAULT_CONFIG, ...loaded });
+    setConfigs(loaded);
+  };
+
+  const copyToAllSurfaces = () => {
+    markManualEdit();
+    setConfigs(cs => cloneToAllSurfaces(cs[mediaType]));
+    flash('success', `Applied ${mediaType} settings to every surface`);
   };
 
   const handleMediaSelect = (id: string, title: string) => {
@@ -175,7 +199,7 @@ export function ConfiguratorClient() {
   };
 
   const shareLook = async () => {
-    const fragment = encodeShare({ t: mediaType, id: mediaId, title: mediaTitle, cfg: config });
+    const fragment = encodeShare({ t: mediaType, id: mediaId, title: mediaTitle, cfgs: configs });
     const link = `${window.location.origin}${window.location.pathname}#c=${fragment}`;
     try {
       await navigator.clipboard.writeText(link);
@@ -321,9 +345,23 @@ export function ConfiguratorClient() {
             ))}
           </div>
 
+          {(activeTab === 'display' || activeTab === 'ratings') && (
+            <div
+              className="surface-scope"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--sp-2)', flexWrap: 'wrap', marginBottom: 'var(--sp-3)' }}
+            >
+              <span className="hint" style={{ margin: 0 }}>
+                Editing <strong>{MEDIA_TYPES.find(t => t.id === mediaType)?.label ?? mediaType}</strong> settings — each surface is configured separately.
+              </span>
+              <button className="btn btn-ghost btn-sm" onClick={copyToAllSurfaces}>
+                Copy to all surfaces
+              </button>
+            </div>
+          )}
+
           {activeTab === 'display' && (
             <div id={`${uid}-panel-display`} role="tabpanel" aria-labelledby={`${uid}-tab-display`} className="tabpanel-enter">
-              <DisplayPanel uid={uid} mediaType={mediaType} config={config} onUpdate={updateConfig} onToggleBadge={toggleBadge} onReset={() => { markManualEdit(); setConfig(DEFAULT_CONFIG); }} />
+              <DisplayPanel uid={uid} mediaType={mediaType} config={config} onUpdate={updateConfig} onToggleBadge={toggleBadge} onReset={() => { markManualEdit(); setConfigs(cs => ({ ...cs, [mediaType]: { ...DEFAULT_CONFIG } })); }} />
             </div>
           )}
 
@@ -336,12 +374,12 @@ export function ConfiguratorClient() {
           {activeTab === 'profile' && (
             <div id={`${uid}-panel-profile`} role="tabpanel" aria-labelledby={`${uid}-tab-profile`} className="tabpanel-enter">
               <ProfilePanel
-                config={config}
+                configs={configs}
                 mediaType={mediaType}
                 mediaId={mediaId}
                 loaded={loadedProfile}
                 setLoaded={setLoadedProfile}
-                onLoadConfig={handleLoadConfig}
+                onLoadConfigs={handleLoadConfigs}
                 flash={flash}
               />
             </div>

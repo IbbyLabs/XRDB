@@ -6,7 +6,7 @@ import {
   createProfile, getProfile, updateProfile, deleteProfile, exportProfile,
   renderOrigin, type MediaType,
 } from '@/lib/api';
-import type { ConfigState } from './configurator-types';
+import { toStoredConfig, fromStoredConfig, type SurfaceConfigs } from './configurator-types';
 import { CopyButton } from './copy-button';
 
 const ALIAS_RE = /^[a-z]{3,32}$/;
@@ -56,17 +56,17 @@ export interface LoadedProfile {
 }
 
 interface ProfilePanelProps {
-  config: ConfigState;
+  configs: SurfaceConfigs;
   mediaType: MediaType;
   mediaId: string;
   loaded: LoadedProfile | null;
   setLoaded: (p: LoadedProfile | null) => void;
-  onLoadConfig: (config: Partial<ConfigState>) => void;
+  onLoadConfigs: (configs: SurfaceConfigs) => void;
   flash: (type: 'error' | 'success' | 'info', message: string) => void;
 }
 
 export function ProfilePanel({
-  config, mediaType, mediaId, loaded, setLoaded, onLoadConfig, flash,
+  configs, mediaType, mediaId, loaded, setLoaded, onLoadConfigs, flash,
 }: ProfilePanelProps) {
   const uid = useId();
   const [name, setName] = useState('');
@@ -108,7 +108,7 @@ export function ProfilePanel({
         name: name.trim(),
         alias: trimmedAlias || undefined,
         type: mediaType,
-        config: config as unknown as Record<string, unknown>,
+        config: toStoredConfig(configs),
         password: password || undefined,
       });
       setLoaded({
@@ -137,7 +137,7 @@ export function ProfilePanel({
     setBusy(true);
     try {
       const p = await getProfile(key, loadPassword || undefined);
-      onLoadConfig(p.config as Partial<ConfigState>);
+      onLoadConfigs(fromStoredConfig(p.config));
       setLoaded({
         id: p.id,
         alias: p.alias ?? '',
@@ -167,7 +167,7 @@ export function ProfilePanel({
         {
           name: loaded.name,
           type: mediaType,
-          config: config as unknown as Record<string, unknown>,
+          config: toStoredConfig(configs),
         },
         loaded.password || undefined,
       );
