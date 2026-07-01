@@ -8,6 +8,9 @@ import (
 	"os"
 	"strconv"
 	"testing"
+
+	"xrdb_rewrite/internal/imageconfig"
+	"xrdb_rewrite/internal/provider"
 )
 
 // ratingRingCases enumerates representative scores for both the coverage
@@ -36,7 +39,7 @@ func TestRatingRingStyles(t *testing.T) {
 	const tile = 240
 
 	ensureFaces()
-	face := valueFaceFor(scale)
+	face := valueFaceFor(scale * ringValueFontScale)
 	outerR := int(32 * scale)
 
 	seen := map[[4]uint64]string{}
@@ -85,4 +88,69 @@ func TestRatingRingStyles(t *testing.T) {
 		t.Fatalf("encode: %v", err)
 	}
 	t.Logf("wrote %s (%dx%d)", out, sheet.Bounds().Dx(), sheet.Bounds().Dy())
+}
+
+// TestBottomBandPlacement drives the full bottom-band overlay stack the way
+// Render does (ratings strip, quality badges, age badge, genre pill, provider
+// chips, trending tag) and asserts no two reserved regions overlap. It also
+// asserts storefront duplicates collapse to one chip per brand. When BAND_OUT
+// names a path it writes a poster-sized PNG for eyeballing:
+//
+//	BAND_OUT=/path/poster.png go test ./internal/compose -run TestBottomBandPlacement
+func TestBottomBandPlacement(t *testing.T) {
+	const scale = 1.0
+	card := image.NewNRGBA(image.Rect(0, 0, 780, 1170))
+	paintBackdropGradient(card)
+
+	cfg := imageconfig.Default()
+	cfg.Ratings = []string{"tmdb", "imdb"}
+	cfg.BadgeStyle = imageconfig.BadgeSquare
+	ratings := []provider.Rating{
+		{Source: "tmdb", Label: "8.5"},
+		{Source: "imdb", Label: "7.8"},
+	}
+
+	occ := newOccupancy(card.Bounds())
+	ratingsH := drawBadgesInPlace(card, ratings, cfg)
+	if ratingsH > 0 {
+		b := card.Bounds()
+		const band = 20 * scale
+		occ.reserve(image.Rect(b.Min.X, b.Max.Y-ratingsH-band, b.Max.X, b.Max.Y))
+	}
+	drawQualityBadges(card, []string{"imax", "atmos", "dv", "4k"}, scale, occ)
+	drawAgeRatingBadge(card, "TV-MA", "br", scale, occ)
+	drawGenreBadge(card, []string{"Mystery", "Drama", "Sci-Fi"}, "bl", scale, occ)
+	providers := []provider.WatchProvider{
+		{ID: 1, Name: "fuboTV"},
+		{ID: 2, Name: "MGM Plus"},
+		{ID: 3, Name: "MGM Plus Amazon Channel"},
+		{ID: 4, Name: "MGM+ Roku Premium Channel"},
+		{ID: 5, Name: "Philo"},
+	}
+	if got := len(dedupeProviders(providers)); got != 3 {
+		t.Errorf("dedupeProviders kept %d entries, want 3 (fuboTV, MGM+, Philo)", got)
+	}
+	drawProviderBadges(card, providers, scale, occ)
+	drawTrendingBadgeStyled(card, scale, occ, trendingArrowWord)
+
+	for i := 0; i < len(occ.rects); i++ {
+		for j := i + 1; j < len(occ.rects); j++ {
+			if occ.rects[i].Overlaps(occ.rects[j]) {
+				t.Errorf("reserved regions overlap: %v vs %v", occ.rects[i], occ.rects[j])
+			}
+		}
+	}
+
+	out := os.Getenv("BAND_OUT")
+	if out == "" {
+		return
+	}
+	f, err := os.Create(out)
+	if err != nil {
+		t.Fatalf("create %s: %v", out, err)
+	}
+	defer f.Close()
+	if err := png.Encode(f, card); err != nil {
+		t.Fatalf("encode: %v", err)
+	}
 }

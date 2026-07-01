@@ -223,10 +223,17 @@ func accentFor(source string) color.NRGBA {
 }
 
 // drawTintedIcon paints icon (a white-on-transparent glyph) into dst at rect,
-// recolored to tint, using the glyph's alpha as the mask.
+// recolored to tint, using the glyph's alpha as the mask. The glyph is trimmed
+// of transparent padding and scaled with its aspect ratio preserved, so marks
+// fill the box instead of being squeezed to its shape.
 func drawTintedIcon(dst *image.NRGBA, rect image.Rectangle, icon image.Image, tint color.NRGBA) {
+	glyph := trimTransparent(toNRGBA(icon))
+	rect = fitRect(glyph.Bounds().Dx(), glyph.Bounds().Dy(), rect)
+	if rect.Dx() <= 0 || rect.Dy() <= 0 {
+		return
+	}
 	scaled := image.NewNRGBA(image.Rect(0, 0, rect.Dx(), rect.Dy()))
-	xdraw.CatmullRom.Scale(scaled, scaled.Bounds(), icon, icon.Bounds(), xdraw.Over, nil)
+	xdraw.CatmullRom.Scale(scaled, scaled.Bounds(), glyph, glyph.Bounds(), xdraw.Over, nil)
 	draw.DrawMask(dst, rect, &image.Uniform{C: tint}, image.Point{}, scaled, image.Point{}, draw.Over)
 }
 
@@ -336,8 +343,8 @@ func ratingStripDimsFor(scale float64) ratingStripDims {
 		accentW:  s(4),
 		padX:     s(14),
 		padY:     s(10),
-		iconSize: s(28),
-		iconGap:  s(7),
+		iconSize: s(34),
+		iconGap:  s(8),
 		badgeGap: s(11),
 		rowGap:   s(11),
 		edgeX:    s(16),

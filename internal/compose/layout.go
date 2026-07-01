@@ -61,11 +61,36 @@ func (o *occupancy) place(corner string, w, h, edgeX, edgeY, gap int) image.Rect
 	if o == nil {
 		return r
 	}
+	r = o.resolve(r, corner == "tl" || corner == "tr", gap)
+	o.reserve(r)
+	return r
+}
 
-	// Stack away from the anchored edge: top corners push downward, bottom
-	// corners push upward. Iterate because one shift can introduce a new
-	// overlap with a different reserved rectangle.
-	towardTop := corner == "tl" || corner == "tr"
+// placeCentered positions a w×h box horizontally centred, anchored edgeY above
+// the bottom edge, then shifts it upward until it clears previously reserved
+// rectangles. The chosen rectangle is reserved and returned. Used for wide
+// bottom strips (provider chips) that are not corner-anchored.
+func (o *occupancy) placeCentered(w, h, edgeX, edgeY, gap int) image.Rectangle {
+	b := o.boundsOrZero()
+	x := b.Min.X + (b.Dx()-w)/2
+	if x < b.Min.X+edgeX {
+		x = b.Min.X + edgeX
+	}
+	r := image.Rect(x, b.Max.Y-edgeY-h, x+w, b.Max.Y-edgeY)
+	if o == nil {
+		return r
+	}
+	r = o.resolve(r, false, gap)
+	o.reserve(r)
+	return r
+}
+
+// resolve shifts r along the vertical axis (down when towardTop, up otherwise)
+// until it no longer collides with reserved rectangles. Iterates because one
+// shift can introduce a new overlap with a different reserved rectangle.
+func (o *occupancy) resolve(r image.Rectangle, towardTop bool, gap int) image.Rectangle {
+	// Stack away from the anchored edge: top-anchored boxes push downward,
+	// bottom-anchored boxes push upward.
 	for i := 0; i < 16 && o.overlaps(r); i++ {
 		shift := 0
 		for _, e := range o.rects {
@@ -91,7 +116,6 @@ func (o *occupancy) place(corner string, w, h, edgeX, edgeY, gap int) image.Rect
 			r = r.Sub(image.Pt(0, shift))
 		}
 	}
-	o.reserve(r)
 	return r
 }
 

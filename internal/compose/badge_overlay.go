@@ -359,13 +359,73 @@ func shortProviderName(name string) string {
 	}
 }
 
+// providerStorefrontSuffixes are storefront/plan qualifiers TMDB appends to a
+// base brand, producing near-duplicate entries with distinct provider IDs
+// (e.g. "MGM Plus", "MGM Plus Amazon Channel", "MGM+ Roku Premium Channel").
+var providerStorefrontSuffixes = []string{
+	"amazon channel",
+	"apple tv channel",
+	"roku premium channel",
+	"prime video channel",
+	"standard with ads",
+	"basic with ads",
+	"with ads",
+	"premium",
+}
+
+// providerBrandKey canonicalises a provider name so storefront variants of the
+// same service collapse to one brand: lowercase, storefront suffixes stripped,
+// "plus" folded into "+", and everything but letters, digits and '+' dropped.
+func providerBrandKey(name string) string {
+	n := strings.ToLower(strings.TrimSpace(name))
+	for changed := true; changed; {
+		changed = false
+		for _, suffix := range providerStorefrontSuffixes {
+			if trimmed := strings.TrimSuffix(strings.TrimSpace(n), suffix); trimmed != n {
+				n = strings.TrimSpace(trimmed)
+				changed = true
+			}
+		}
+	}
+	fields := strings.Fields(n)
+	for i, f := range fields {
+		if f == "plus" {
+			fields[i] = "+"
+		}
+	}
+	n = strings.Join(fields, "")
+	var b strings.Builder
+	for _, r := range n {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '+' {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+// dedupeProviders keeps the first occurrence of each brand, collapsing
+// storefront variants that TMDB lists under separate provider IDs.
+func dedupeProviders(providers []provider.WatchProvider) []provider.WatchProvider {
+	seen := make(map[string]bool, len(providers))
+	out := make([]provider.WatchProvider, 0, len(providers))
+	for _, p := range providers {
+		key := providerBrandKey(p.Name)
+		if key == "" || seen[key] {
+			continue
+		}
+		seen[key] = true
+		out = append(out, p)
+	}
+	return out
+}
+
 // drawProviderBadges renders streaming provider chips as a horizontal row
 // along the bottom of the image, above any ratings strip. When TMDB logo
 // images are available they are composited as square icons; otherwise the
-// provider name is rendered as text. At most 4 providers are shown.
-// ratingsH is the pixel height consumed by the ratings overlay so provider
-// badges sit above it rather than overlapping.
-func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, scale float64, ratingsH int, occ *occupancy) {
+// provider name is rendered as text. Storefront duplicates are collapsed and
+// at most 5 brands are shown. The strip is placed through occ so it stacks
+// clear of the ratings band and any corner badges already reserved.
+func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, scale float64, occ *occupancy) {
 	if len(providers) == 0 {
 		return
 	}
@@ -375,28 +435,26 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 		return
 	}
 
-	shown := providers
+	shown := dedupeProviders(providers)
 	if len(shown) > 5 {
 		shown = shown[:5]
 	}
 
 	s := func(v float64) int { return int(v*scale + 0.5) }
-	tileH := s(38)
-	logoH := s(26)
-	padIn := s(7)
-	textPadX := s(10)
+	tileH := s(44)
+	logoH := s(31)
+	padIn := s(8)
+	textPadX := s(11)
 	gap := s(8)
 	edgeX := s(12)
-	bottomGap := ratingsH + s(16) // clearance above ratings / poster title text
-	radius := s(8)
-	maxLogoW := s(76)
+	edgeY := s(16) // clearance above the bottom edge / poster title text
+	radius := s(9)
+	maxLogoW := s(88)
 	bezel := s(3)
 
 	fm := face.Metrics()
 	ascent := fm.Ascent.Ceil()
 	descent := fm.Descent.Ceil()
-
-	bounds := base.Bounds()
 
 	// Pre-fetch logos in parallel to avoid blocking serially on each request.
 	logos := make([]*image.NRGBA, len(shown))
@@ -458,14 +516,10 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 		}
 	}
 
-	x := bounds.Min.X + (bounds.Dx()-totalW)/2
-	if x < bounds.Min.X+edgeX {
-		x = bounds.Min.X + edgeX
-	}
-	y := bounds.Max.Y - bottomGap - tileH
-
-	// Reserve the whole chip strip so corner overlays (e.g. the ring) avoid it.
-	occ.reserve(image.Rect(x, y, x+totalW, y+tileH))
+	// Place the whole strip through the occupancy tracker so it stacks above
+	// the ratings band and clears corner badges instead of drawing over them.
+	strip := occ.placeCentered(totalW, tileH, edgeX, edgeY, s(8))
+	x, y := strip.Min.X, strip.Min.Y
 
 	shadow := color.NRGBA{R: 0, G: 0, B: 0, A: 80}
 	shOff := maxInt(1, tileH/16)
@@ -851,7 +905,7 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 	}
 
 	ensureFaces()
-	valueFace := valueFaceFor(scale)
+	valueFace := valueFaceFor(scale * ringValueFontScale)
 
 	outerR := s(32)
 	// Place the ring's bounding box, dodging any overlay already reserved in
@@ -863,6 +917,10 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 	label := strconv.Itoa(int(math.Round(avg * 10)))
 	drawProgressRing(base, cx, cy, outerR, avg/10.0, fillColor, valueFace, label)
 }
+
+// ringValueFontScale shrinks the ring's value label relative to the standard
+// badge value face so the digits sit comfortably inside the centre disk.
+const ringValueFontScale = 0.85
 
 // ratingRingAverage computes the normalised (0–10) average of ratings whose
 // source is in the allowlist. Returns (avg, true) or (0, false) if no data.
@@ -1002,7 +1060,7 @@ func drawProgressRing(base *image.NRGBA, cx, cy, outerR int, sweepFrac float64, 
 			// intensity (half the peak), keeping the halo subtle and the
 			// arc itself crisp.
 			if edge := dArc - halfW; edge > 0 {
-				glow := 0.4 * (0.58*math.Exp(-edge*edge/(2*sigmaWide*sigmaWide)) +
+				glow := 0.3 * (0.58*math.Exp(-edge*edge/(2*sigmaWide*sigmaWide)) +
 					0.92*math.Exp(-edge*edge/(2*sigmaTight*sigmaTight)))
 				if a := glow * float64(fillColor.A); a >= 1 {
 					blendPixel(base, px, py, color.NRGBA{R: fillColor.R, G: fillColor.G, B: fillColor.B, A: uint8(a)})
