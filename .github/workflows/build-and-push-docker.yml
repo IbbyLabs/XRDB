@@ -6,6 +6,10 @@ run-name: >-
       || format('Docker publish {0}', github.ref_name)
   }}
 
+# Each architecture builds on its native runner (amd64 on ubuntu-latest,
+# arm64 on ubuntu-24.04-arm) instead of emulating arm64 through QEMU. Builds
+# push by digest only; the merge job stitches the digests into one tagged
+# multi-arch manifest.
 "on":
   push:
     branches:
@@ -29,6 +33,7 @@ jobs:
       dev_track_tag: ${{ steps.meta.outputs.dev_track_tag }}
       publish_dev: ${{ steps.meta.outputs.publish_dev }}
       publish_release_alias: ${{ steps.meta.outputs.publish_release_alias }}
+      image: ${{ steps.meta.outputs.image }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -68,24 +73,27 @@ jobs:
           echo "dev_track_tag=${dev_track_tag}" >> "$GITHUB_OUTPUT"
           echo "publish_dev=${publish_dev}" >> "$GITHUB_OUTPUT"
           echo "publish_release_alias=${publish_release_alias}" >> "$GITHUB_OUTPUT"
+          # ghcr image names must be lowercase.
+          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
   build:
-    name: Build ${{ matrix.name }}
-    runs-on: ubuntu-latest
+    name: Build (${{ matrix.suffix }})
+    runs-on: ${{ matrix.runner }}
     needs: version
     permissions:
-      contents: write
+      contents: read
       packages: write
     strategy:
       matrix:
+        # Single image: the web UI is statically exported and embedded in
+        # the Go binary (see Dockerfile stages).
         include:
-          # Single image: the web UI is statically exported and embedded in
-          # the Go binary (see Dockerfile stages).
-          - name: api
-            image: ghcr.io/${{ github.repository }}
-            context: .
-            dockerfile: Dockerfile
-
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            suffix: amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            suffix: arm64
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -96,14 +104,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ matrix.image }}
-          flavor: |
-            latest=false
-          tags: |
-            type=raw,value=${{ github.ref_name }},enable=${{ github.ref_type == 'tag' }}
-            type=raw,value=dev,enable=${{ needs.version.outputs.publish_dev == 'true' }}
-            type=raw,value=${{ needs.version.outputs.dev_track_tag }},enable=${{ needs.version.outputs.publish_dev == 'true' || needs.version.outputs.publish_release_alias == 'true' }}
-            type=sha,prefix=manual-,enable=${{ github.event_name == 'workflow_dispatch' && needs.version.outputs.publish_dev != 'true' }}
+          images: ${{ needs.version.outputs.image }}
           labels: |
             org.opencontainers.image.title=XRDB
             org.opencontainers.image.description=XRDB generates poster, backdrop, and logo images with ratings overlays on the fly.
@@ -112,9 +113,6 @@ jobs:
             org.opencontainers.image.documentation=${{ github.server_url }}/${{ github.repository }}#readme
             org.opencontainers.image.version=${{ needs.version.outputs.deployment_version }}
             org.opencontainers.image.revision=${{ github.sha }}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -126,25 +124,108 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push by digest
+        id: build
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.context }}
-          file: ${{ matrix.dockerfile }}
-          platforms: linux/amd64,linux/arm64
+          context: .
+          file: Dockerfile
+          platforms: ${{ matrix.platform }}
           push: true
           build-args: |
             XRDB_BUILD_VERSION=${{ needs.version.outputs.deployment_version }}
-          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           provenance: true
-          cache-from: type=gha,scope=${{ matrix.name }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+          outputs: type=image,name=${{ needs.version.outputs.image }},push-by-digest=true,name-canonical=true
+          cache-from: type=gha,scope=${{ matrix.suffix }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.suffix }}
+
+      - name: Export digest
+        run: echo "${{ steps.build.outputs.digest }}" > "/tmp/${{ matrix.suffix }}"
+
+      - name: Upload digest artifact
+        uses: actions/upload-artifact@v7
+        with:
+          path: /tmp/${{ matrix.suffix }}
+          archive: false
+          retention-days: 1
+
+  merge:
+    name: Merge manifests and tag
+    runs-on: ubuntu-latest
+    needs: [version, build]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v8
+        with:
+          path: /tmp/digests
+          pattern: '{amd64,arm64}'
+          merge-multiple: true
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ needs.version.outputs.image }}
+          flavor: |
+            latest=false
+          tags: |
+            type=raw,value=${{ github.ref_name }},enable=${{ github.ref_type == 'tag' }}
+            type=raw,value=dev,enable=${{ needs.version.outputs.publish_dev == 'true' }}
+            type=raw,value=${{ needs.version.outputs.dev_track_tag }},enable=${{ needs.version.outputs.publish_dev == 'true' || needs.version.outputs.publish_release_alias == 'true' }}
+            type=sha,prefix=manual-,enable=${{ github.event_name == 'workflow_dispatch' && needs.version.outputs.publish_dev != 'true' }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push manifest
+        env:
+          IMAGE: ${{ needs.version.outputs.image }}
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          set -euo pipefail
+
+          tag_args=()
+          while IFS= read -r tag; do
+            if [ -n "${tag}" ]; then
+              tag_args+=(-t "${tag}")
+            fi
+          done <<< "${TAGS}"
+
+          if [ "${#tag_args[@]}" -eq 0 ]; then
+            echo "No tags resolved for this run; refusing to push an untagged manifest." >&2
+            exit 1
+          fi
+
+          docker buildx imagetools create "${tag_args[@]}" \
+            "${IMAGE}@$(cat /tmp/digests/amd64)" \
+            "${IMAGE}@$(cat /tmp/digests/arm64)"
+
+      - name: Summary
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          {
+            echo "Pushed multi-arch manifest (linux/amd64, linux/arm64):"
+            echo '```'
+            echo "${TAGS}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
   notify-dev:
     name: Notify Discord (dev build)
     runs-on: ubuntu-latest
-    needs: [version, build]
+    needs: [version, merge]
     if: ${{ github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch && needs.version.outputs.publish_dev == 'true' }}
     permissions:
       contents: write
