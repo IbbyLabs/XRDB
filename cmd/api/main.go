@@ -108,10 +108,11 @@ func main() {
 		pipeline = compose.New(reg)
 	}
 
-	renderCache, err := cache.New(cfg.CacheDir, cfg.CacheTTL, 300)
+	renderCache, err := cache.New(cfg.CacheDir, cfg.CacheTTL, 300, 256<<20)
 	if err != nil {
 		log.Fatalf("open render cache: %v", err)
 	}
+	defer renderCache.Close()
 
 	handler := server.NewHandler(cfg.Version, store, settingsStore, pipeline, renderCache, cfg, ui.FS())
 
