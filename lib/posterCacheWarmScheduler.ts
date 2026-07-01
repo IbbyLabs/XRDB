@@ -54,6 +54,7 @@ type PosterWarmSummary = {
 
 type PosterWarmTargetSet = {
   targets: string[];
+  freshTargets: string[];
   recentEntries: Array<{ id: string; searchParams: URLSearchParams }>;
   staticCount: number;
   tmdbCount: number;
@@ -149,7 +150,10 @@ export const resolvePosterWarmTargets = async ({
   ]);
   const recentEntries = config.recentEnabled ? fetchRecentEntries(config.recentLimit) : [];
   const snapshotTargets = loadPrewarmSnapshot();
-  const mergedSet = new Set([...snapshotTargets, ...staticTargets, ...tmdbTargets, ...mdblistTargets, ...imdbTargets]);
+  // freshTargets excludes restored snapshot ids: the snapshot must be rebuilt from live
+  // sources each run, otherwise every id ever warmed is re-saved and the warm set only grows.
+  const freshTargets = [...new Set([...staticTargets, ...tmdbTargets, ...mdblistTargets, ...imdbTargets])];
+  const mergedSet = new Set([...snapshotTargets, ...freshTargets]);
   const targets = rankTargetsByPopularity([...mergedSet], recentEntries);
 
   if (config.logEnabled) {
@@ -160,6 +164,7 @@ export const resolvePosterWarmTargets = async ({
 
   return {
     targets,
+    freshTargets,
     recentEntries,
     staticCount: staticTargets.length,
     tmdbCount: tmdbTargets.length,
@@ -173,14 +178,14 @@ export const resolvePosterWarmTargets = async ({
 export const runPosterCacheWarm = async () => {
   const startedAt = Date.now();
   const config = resolvePosterCacheWarmConfig();
-  const { targets, recentEntries, staticCount, tmdbCount, mdblistCount, imdbCount, recentCount, snapshotCount } =
+  const { targets, freshTargets, recentEntries, staticCount, tmdbCount, mdblistCount, imdbCount, recentCount, snapshotCount } =
     await resolvePosterWarmTargets({ config });
   const totalTargets = targets.length + recentEntries.length;
   if (!config.enabled || totalTargets === 0) {
     return { warmed: 0, skipped: 0, failed: 0 } satisfies PosterWarmSummary;
   }
-  if (targets.length > 0) {
-    savePrewarmSnapshot(targets);
+  if (freshTargets.length > 0) {
+    savePrewarmSnapshot(freshTargets);
   }
 
   const limit = createConcurrencyLimit(config.concurrency);

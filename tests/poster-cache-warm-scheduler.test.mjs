@@ -100,6 +100,11 @@ test('poster warm target resolution merges and deduplicates static and dynamic s
   });
 
   assert.deepEqual(result.targets, ['tt0133093', 'tmdb:movie:603', 'tmdb:tv:1396', 'tt0111161']);
+  assert.deepEqual(
+    result.freshTargets,
+    ['tt0133093', 'tmdb:movie:603', 'tmdb:tv:1396', 'tt0111161'],
+    'freshTargets carries only live source ids, never restored snapshot ids',
+  );
   assert.deepEqual(result.recentEntries, []);
   assert.equal(result.staticCount, 2);
   assert.equal(result.tmdbCount, 2);

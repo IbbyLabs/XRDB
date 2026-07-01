@@ -195,6 +195,13 @@ CREATE TABLE IF NOT EXISTS admin_prewarm_runs (
 );
 
 CREATE INDEX IF NOT EXISTS admin_prewarm_runs_completed_idx ON admin_prewarm_runs (completed_at DESC);
+
+CREATE TABLE IF NOT EXISTS admin_counters (
+  name TEXT PRIMARY KEY,
+  value INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS admin_cache_events_prefix_idx ON admin_cache_events (key_prefix, created_at DESC);
 `;
 
 const SCHEMA_MIGRATIONS = [
@@ -218,6 +225,8 @@ const SCHEMA_MIGRATIONS = [
   `CREATE INDEX IF NOT EXISTS admin_cache_events_created_idx ON admin_cache_events (created_at DESC)`,
   `CREATE TABLE IF NOT EXISTS admin_prewarm_runs (id TEXT PRIMARY KEY, started_at INTEGER NOT NULL, completed_at INTEGER NOT NULL, warmed INTEGER NOT NULL, skipped INTEGER NOT NULL, failed INTEGER NOT NULL, static_count INTEGER NOT NULL, tmdb_count INTEGER NOT NULL, mdblist_count INTEGER NOT NULL, imdb_count INTEGER NOT NULL, recent_count INTEGER NOT NULL, snapshot_count INTEGER NOT NULL, target_count INTEGER NOT NULL)`,
   `CREATE INDEX IF NOT EXISTS admin_prewarm_runs_completed_idx ON admin_prewarm_runs (completed_at DESC)`,
+  `CREATE TABLE IF NOT EXISTS admin_counters (name TEXT PRIMARY KEY, value INTEGER NOT NULL DEFAULT 0)`,
+  `CREATE INDEX IF NOT EXISTS admin_cache_events_prefix_idx ON admin_cache_events (key_prefix, created_at DESC)`,
 ];
 
 const MIGRATION_WINDOW_MS = 48 * 60 * 60 * 1000;
