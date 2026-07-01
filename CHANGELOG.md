@@ -11,7 +11,31 @@
 
 ### Documentation
 
-<a id="v2-3-0"></a>
+<a id="v2-3-1"></a>
+
+## [v2.3.1] - 01/07/2026
+
+### Fixed
+* bound metrics telemetry growth and stop warm snapshot accumulation
+  
+  admin_request_log and admin_cache_events grew without limit, and the
+  metrics endpoint full scanned both on every admin panel poll. With
+  better sqlite3 being synchronous, each poll blocked the event loop for
+  the whole scan, which pinned CPU and ballooned memory on long uptimes.
+  
+  Rows now expire after a 7 day window (XRDB_ADMIN_METRICS_RETENTION_MS
+  to override), pruned in bounded batches on write. Lifetime totals move
+  to an admin_counters table, seeded once from existing rows so numbers
+  carry over. Cohort stats aggregate in SQL instead of loading every row,
+  and latency percentiles sort a bounded sample in process.
+  
+  The poster warm snapshot now saves only ids from live sources. It
+  previously re saved the restored snapshot as well, so the warm set
+  could only ever grow toward the cap, inflating every warm run.
+
+### Documentation
+* refresh static doc assets
+
 
 ## [v2.3.0] - 23/06/2026
 
