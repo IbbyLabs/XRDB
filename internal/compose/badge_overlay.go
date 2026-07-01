@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -853,14 +854,14 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 	valueFace := valueFaceFor(scale)
 
 	outerR := s(32)
-	innerR := s(22)
 	// Place the ring's bounding box, dodging any overlay already reserved in
 	// the requested corner (age/genre badges, provider chips, ratings strip).
 	d := outerR * 2
 	r := occ.place(pos, d, d, edgeX, edgeY, s(8))
 	cx := r.Min.X + outerR
 	cy := r.Min.Y + outerR
-	drawProgressRing(base, cx, cy, outerR, innerR, avg/10.0, fillColor, valueFace)
+	label := strconv.Itoa(int(math.Round(avg * 10)))
+	drawProgressRing(base, cx, cy, outerR, avg/10.0, fillColor, valueFace, label)
 }
 
 // ratingRingAverage computes the normalised (0–10) average of ratings whose
@@ -888,7 +889,7 @@ func ratingRingAverage(ratings []provider.Rating, allowed []string) (float64, bo
 }
 
 // ratingRingFillColor returns the arc fill colour: a custom hex when provided,
-// otherwise green/amber/red thresholds matching the aggregate bar.
+// otherwise a five-band score palette (deep red → red → amber → lime → green).
 func ratingRingFillColor(avg float64, hexColor string) color.NRGBA {
 	if hexColor != "" {
 		if c, err := parseHexColor(hexColor); err == nil {
@@ -896,12 +897,16 @@ func ratingRingFillColor(avg float64, hexColor string) color.NRGBA {
 		}
 	}
 	switch {
-	case avg >= 8.0:
-		return color.NRGBA{R: 39, G: 174, B: 96, A: 230}
-	case avg >= 5.0:
-		return color.NRGBA{R: 230, G: 126, B: 34, A: 230}
+	case avg >= 8.5:
+		return color.NRGBA{R: 22, G: 163, B: 74, A: 255} // #16a34a
+	case avg >= 7.5:
+		return color.NRGBA{R: 132, G: 204, B: 22, A: 255} // #84cc16
+	case avg >= 6.0:
+		return color.NRGBA{R: 245, G: 158, B: 11, A: 255} // #f59e0b
+	case avg >= 4.0:
+		return color.NRGBA{R: 220, G: 38, B: 38, A: 255} // #dc2626
 	default:
-		return color.NRGBA{R: 192, G: 57, B: 43, A: 230}
+		return color.NRGBA{R: 127, G: 29, B: 29, A: 255} // #7f1d1d
 	}
 }
 
@@ -922,79 +927,115 @@ func parseHexColor(s string) (color.NRGBA, error) {
 	return color.NRGBA{R: b[0], G: b[1], B: b[2], A: 255}, nil
 }
 
-// drawProgressRing draws a circular progress arc onto base.
-// sweepFrac is in [0, 1]; the arc starts at the top and goes clockwise.
-func drawProgressRing(base *image.NRGBA, cx, cy, outerR, innerR int, sweepFrac float64, fillColor color.NRGBA, face font.Face) {
-	trackColor := color.NRGBA{R: 0, G: 0, B: 0, A: 140}
-	bgColor := color.NRGBA{R: 0, G: 0, B: 0, A: 160}
+// drawProgressRing draws the score ring: a faint full-circle track, a glowing
+// accent arc with rounded caps sweeping clockwise from the top, and a dark
+// centre disk holding the value label. sweepFrac is in [0, 1]; near 100% the
+// arc snaps to a seamless full circle so no cap seam shows.
+func drawProgressRing(base *image.NRGBA, cx, cy, outerR int, sweepFrac float64, fillColor color.NRGBA, face font.Face, label string) {
+	size := float64(outerR) * 2
+	stroke := math.Max(7, size*0.11)
+	halfW := stroke / 2
+	ringR := (size - stroke) / 2 // arc stroke centreline radius
+	diskR := ringR - stroke*0.38 // centre disk tucks just under the arc's inner edge
 
-	outerRf := float64(outerR)
-	innerRf := float64(innerR)
-	innerBgRf := float64(innerR - 1)
+	trackColor := color.NRGBA{R: 255, G: 255, B: 255, A: 46}
+	diskColor := color.NRGBA{R: 8, G: 11, B: 16, A: 219}
 
+	// Two-layer halo around the arc — a wide soft wash plus a tight bright
+	// core — so the accent reads as lit neon rather than a flat band.
+	sigmaWide := math.Max(8, stroke*1.1)
+	sigmaTight := math.Max(3, stroke*0.55)
+
+	if sweepFrac < 0 {
+		sweepFrac = 0
+	}
+	if sweepFrac > 1 {
+		sweepFrac = 1
+	}
+	full := sweepFrac >= 0.995
 	sweep := sweepFrac * 2 * math.Pi
 	startAngle := -math.Pi / 2 // top
 
-	for py := cy - outerR - 1; py <= cy+outerR+1; py++ {
-		for px := cx - outerR - 1; px <= cx+outerR+1; px++ {
-			dx := float64(px) - float64(cx) + 0.5
-			dy := float64(py) - float64(cy) + 0.5
+	endAngle := startAngle + sweep
+	capStartX, capStartY := ringR*math.Cos(startAngle), ringR*math.Sin(startAngle)
+	capEndX, capEndY := ringR*math.Cos(endAngle), ringR*math.Sin(endAngle)
+
+	// The halo bleeds a little past the ring's bounding box; clip it to a
+	// modest margin so it fades out instead of washing over neighbours.
+	pad := int(math.Max(9, size*0.17)) + 1
+	for py := cy - outerR - pad; py <= cy+outerR+pad; py++ {
+		for px := cx - outerR - pad; px <= cx+outerR+pad; px++ {
+			dx := float64(px-cx) + 0.5
+			dy := float64(py-cy) + 0.5
 			dist := math.Sqrt(dx*dx + dy*dy)
 
-			// Outer edge coverage: fade out beyond outerR.
-			outerCov := outerRf + 0.5 - dist
-			if outerCov <= 0 {
-				continue
-			}
-			if outerCov > 1 {
-				outerCov = 1
-			}
-
-			// Inner background disk (full solid fill inside innerR-1).
-			bgCov := innerBgRf + 0.5 - dist
-			if bgCov > 1 {
-				bgCov = 1
-			}
-			if bgCov > 0 {
-				blendPixel(base, px, py, color.NRGBA{R: bgColor.R, G: bgColor.G, B: bgColor.B, A: uint8(float64(bgColor.A) * bgCov * outerCov)})
-				continue
+			// Track: faint full circle underneath everything.
+			if cov := halfW + 0.5 - math.Abs(dist-ringR); cov > 0 {
+				if cov > 1 {
+					cov = 1
+				}
+				blendPixel(base, px, py, color.NRGBA{R: trackColor.R, G: trackColor.G, B: trackColor.B, A: uint8(float64(trackColor.A) * cov)})
 			}
 
-			// Annular ring zone. Skip pixels fully inside the inner hole.
-			innerCov := dist - (innerRf - 0.5)
-			if innerCov <= 0 {
-				continue
-			}
-			if innerCov > 1 {
-				innerCov = 1
+			// Distance from the arc's stroke centreline. Outside the swept
+			// angle the nearest points are the cap centres, which is what
+			// produces the rounded end caps.
+			dArc := math.Inf(1)
+			if sweepFrac > 0 {
+				if full {
+					dArc = math.Abs(dist - ringR)
+				} else {
+					rel := math.Atan2(dy, dx) - startAngle
+					for rel < 0 {
+						rel += 2 * math.Pi
+					}
+					if rel <= sweep {
+						dArc = math.Abs(dist - ringR)
+					} else {
+						dArc = math.Min(math.Hypot(dx-capStartX, dy-capStartY), math.Hypot(dx-capEndX, dy-capEndY))
+					}
+				}
 			}
 
-			ringAlpha := outerCov * innerCov
-			angle := math.Atan2(dy, dx)
-			rel := angle - startAngle
-			for rel < 0 {
-				rel += 2 * math.Pi
+			// Halo outside the stroke, drawn under the arc itself. The
+			// amplitude sits just under a Gaussian-blurred stroke's edge
+			// intensity (half the peak), keeping the halo subtle and the
+			// arc itself crisp.
+			if edge := dArc - halfW; edge > 0 {
+				glow := 0.4 * (0.58*math.Exp(-edge*edge/(2*sigmaWide*sigmaWide)) +
+					0.92*math.Exp(-edge*edge/(2*sigmaTight*sigmaTight)))
+				if a := glow * float64(fillColor.A); a >= 1 {
+					blendPixel(base, px, py, color.NRGBA{R: fillColor.R, G: fillColor.G, B: fillColor.B, A: uint8(a)})
+				}
 			}
-			var c color.NRGBA
-			if rel <= sweep {
-				c = fillColor
-			} else {
-				c = trackColor
+
+			// Arc stroke with anti-aliased edges.
+			if cov := halfW + 0.5 - dArc; cov > 0 {
+				if cov > 1 {
+					cov = 1
+				}
+				blendPixel(base, px, py, color.NRGBA{R: fillColor.R, G: fillColor.G, B: fillColor.B, A: uint8(float64(fillColor.A) * cov)})
 			}
-			blendPixel(base, px, py, color.NRGBA{R: c.R, G: c.G, B: c.B, A: uint8(float64(c.A) * ringAlpha)})
+
+			// Centre disk sits over the arc's inner edge and its halo.
+			if cov := diskR + 0.5 - dist; cov > 0 {
+				if cov > 1 {
+					cov = 1
+				}
+				blendPixel(base, px, py, color.NRGBA{R: diskColor.R, G: diskColor.G, B: diskColor.B, A: uint8(float64(diskColor.A) * cov)})
+			}
 		}
 	}
 
 	// Score label centered in the ring
-	if face == nil {
+	if face == nil || label == "" {
 		return
 	}
-	label := strings.TrimSuffix(fmt.Sprintf("%.1f", sweepFrac*10), ".0")
 	tw := textWidth(face, label)
 	fm := face.Metrics()
 	ascent := fm.Ascent.Ceil()
 	descent := fm.Descent.Ceil()
 	tx := cx - tw/2
 	ty := cy + (ascent-descent)/2
-	drawText(base, face, tx, ty, color.NRGBA{R: 255, G: 255, B: 255, A: 240}, label)
+	drawText(base, face, tx, ty, color.NRGBA{R: 248, G: 250, B: 252, A: 255}, label)
 }
