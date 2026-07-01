@@ -6,6 +6,10 @@ run-name: >-
       || format('Docker publish {0}', github.ref_name)
   }}
 
+# Each architecture builds on its native runner (amd64 on ubuntu-latest,
+# arm64 on ubuntu-24.04-arm) instead of emulating arm64 through QEMU. Builds
+# push by digest only; the merge job stitches the digests into one tagged
+# multi-arch manifest after source verification passes.
 "on":
   push:
     branches:
@@ -22,63 +26,21 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
+  version:
+    name: Compute version metadata
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      packages: write
-
+      contents: read
+    outputs:
+      deployment_version: ${{ steps.version_meta.outputs.deployment_version }}
+      dev_track_tag: ${{ steps.version_meta.outputs.dev_track_tag }}
+      publish_dev: ${{ steps.version_meta.outputs.publish_dev }}
+      image: ${{ steps.version_meta.outputs.image }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.32.1
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Verify legacy naming is absent
-        run: pnpm run verify:legacy-name
-
-      - name: Verify README doc asset manifest
-        run: pnpm run docs:verify-manifest
-
-      - name: Check docs refresh prerequisites
-        id: docs_refresh
-        env:
-          XRDB_README_PREVIEW_TMDB_KEY: ${{ secrets.XRDB_README_PREVIEW_TMDB_KEY }}
-          XRDB_README_PREVIEW_MDBLIST_KEY: ${{ secrets.XRDB_README_PREVIEW_MDBLIST_KEY }}
-        run: |
-          if [ -n "${XRDB_README_PREVIEW_TMDB_KEY}" ]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "XRDB_README_PREVIEW_TMDB_KEY is not configured. Skipping full docs refresh diff."
-          fi
-
-      - name: Install Playwright browser for docs refresh
-        if: ${{ steps.docs_refresh.outputs.enabled == 'true' }}
-        run: npx --yes playwright install --with-deps chromium
-
-      - name: Verify refreshed doc assets are clean
-        if: ${{ steps.docs_refresh.outputs.enabled == 'true' }}
-        env:
-          XRDB_README_PREVIEW_TMDB_KEY: ${{ secrets.XRDB_README_PREVIEW_TMDB_KEY }}
-          XRDB_README_PREVIEW_MDBLIST_KEY: ${{ secrets.XRDB_README_PREVIEW_MDBLIST_KEY }}
-        run: |
-          pnpm run docs:refresh-assets
-          git diff --exit-code -- README.md docs/images
 
       - name: Compute deployment version metadata
         id: version_meta
@@ -151,30 +113,101 @@ jobs:
           echo "deployment_version=${deployment_version}" >> "$GITHUB_OUTPUT"
           echo "dev_track_tag=${dev_track_tag}" >> "$GITHUB_OUTPUT"
           echo "publish_dev=${publish_dev}" >> "$GITHUB_OUTPUT"
+          # ghcr image names must be lowercase.
+          echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+  verify:
+    name: Verify sources
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify legacy naming is absent
+        run: pnpm run verify:legacy-name
+
+      - name: Verify README doc asset manifest
+        run: pnpm run docs:verify-manifest
+
+      - name: Check docs refresh prerequisites
+        id: docs_refresh
+        env:
+          XRDB_README_PREVIEW_TMDB_KEY: ${{ secrets.XRDB_README_PREVIEW_TMDB_KEY }}
+          XRDB_README_PREVIEW_MDBLIST_KEY: ${{ secrets.XRDB_README_PREVIEW_MDBLIST_KEY }}
+        run: |
+          if [ -n "${XRDB_README_PREVIEW_TMDB_KEY}" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "XRDB_README_PREVIEW_TMDB_KEY is not configured. Skipping full docs refresh diff."
+          fi
+
+      - name: Install Playwright browser for docs refresh
+        if: ${{ steps.docs_refresh.outputs.enabled == 'true' }}
+        run: npx --yes playwright install --with-deps chromium
+
+      - name: Verify refreshed doc assets are clean
+        if: ${{ steps.docs_refresh.outputs.enabled == 'true' }}
+        env:
+          XRDB_README_PREVIEW_TMDB_KEY: ${{ secrets.XRDB_README_PREVIEW_TMDB_KEY }}
+          XRDB_README_PREVIEW_MDBLIST_KEY: ${{ secrets.XRDB_README_PREVIEW_MDBLIST_KEY }}
+        run: |
+          pnpm run docs:refresh-assets
+          git diff --exit-code -- README.md docs/images
+
+  build:
+    name: Build (${{ matrix.suffix }})
+    runs-on: ${{ matrix.runner }}
+    needs: version
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            suffix: amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            suffix: arm64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}
-          flavor: |
-            latest=false
-          tags: |
-            type=raw,value=${{ github.ref_name }},enable=${{ github.ref_type == 'tag' }}
-            type=raw,value=dev,enable=${{ steps.version_meta.outputs.publish_dev == 'true' }}
-            type=raw,value=${{ steps.version_meta.outputs.dev_track_tag }},enable=${{ steps.version_meta.outputs.publish_dev == 'true' }}
-            type=sha,prefix=manual-,enable=${{ github.event_name == 'workflow_dispatch' && steps.version_meta.outputs.publish_dev != 'true' }}
+          images: ${{ needs.version.outputs.image }}
           labels: |
             org.opencontainers.image.title=XRDB
             org.opencontainers.image.description=XRDB generates poster, backdrop, and logo images with dynamic ratings on the fly.
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.documentation=${{ github.server_url }}/${{ github.repository }}#readme
-            org.opencontainers.image.version=${{ steps.version_meta.outputs.deployment_version }}
+            org.opencontainers.image.version=${{ needs.version.outputs.deployment_version }}
             org.opencontainers.image.revision=${{ github.sha }}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -186,24 +219,119 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push
+      - name: Build and push by digest
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ matrix.platform }}
           push: true
           build-args: |
-            XRDB_BUILD_VERSION=${{ steps.version_meta.outputs.deployment_version }}
-            NEXT_PUBLIC_DEPLOYMENT_VERSION=${{ steps.version_meta.outputs.deployment_version }}
-          tags: ${{ steps.meta.outputs.tags }}
+            XRDB_BUILD_VERSION=${{ needs.version.outputs.deployment_version }}
+            NEXT_PUBLIC_DEPLOYMENT_VERSION=${{ needs.version.outputs.deployment_version }}
           labels: ${{ steps.meta.outputs.labels }}
           provenance: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          outputs: type=image,name=${{ needs.version.outputs.image }},push-by-digest=true,name-canonical=true
+          cache-from: type=gha,scope=${{ matrix.suffix }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.suffix }}
+
+      - name: Export digest
+        run: echo "${{ steps.build.outputs.digest }}" > "/tmp/${{ matrix.suffix }}"
+
+      - name: Upload digest artifact
+        uses: actions/upload-artifact@v7
+        with:
+          path: /tmp/${{ matrix.suffix }}
+          archive: false
+          retention-days: 1
+
+  merge:
+    name: Merge manifests and tag
+    runs-on: ubuntu-latest
+    needs: [version, verify, build]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v8
+        with:
+          path: /tmp/digests
+          pattern: '{amd64,arm64}'
+          merge-multiple: true
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ needs.version.outputs.image }}
+          flavor: |
+            latest=false
+          tags: |
+            type=raw,value=${{ github.ref_name }},enable=${{ github.ref_type == 'tag' }}
+            type=raw,value=dev,enable=${{ needs.version.outputs.publish_dev == 'true' }}
+            type=raw,value=${{ needs.version.outputs.dev_track_tag }},enable=${{ needs.version.outputs.publish_dev == 'true' }}
+            type=sha,prefix=manual-,enable=${{ github.event_name == 'workflow_dispatch' && needs.version.outputs.publish_dev != 'true' }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create and push manifest
+        env:
+          IMAGE: ${{ needs.version.outputs.image }}
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          set -euo pipefail
+
+          tag_args=()
+          while IFS= read -r tag; do
+            if [ -n "${tag}" ]; then
+              tag_args+=(-t "${tag}")
+            fi
+          done <<< "${TAGS}"
+
+          if [ "${#tag_args[@]}" -eq 0 ]; then
+            echo "No tags resolved for this run; refusing to push an untagged manifest." >&2
+            exit 1
+          fi
+
+          docker buildx imagetools create "${tag_args[@]}" \
+            "${IMAGE}@$(cat /tmp/digests/amd64)" \
+            "${IMAGE}@$(cat /tmp/digests/arm64)"
+
+      - name: Summary
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          {
+            echo "Pushed multi-arch manifest (linux/amd64, linux/arm64):"
+            echo '```'
+            echo "${TAGS}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  notify-dev:
+    name: Notify Discord (dev build)
+    runs-on: ubuntu-latest
+    needs: [version, merge]
+    if: ${{ github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch && needs.version.outputs.publish_dev == 'true' }}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Check Discord webhook secret for dev notifications
         id: dev_webhook
-        if: ${{ github.ref_type == 'branch' && github.ref_name == github.event.repository.default_branch && steps.version_meta.outputs.publish_dev == 'true' }}
         env:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
         run: |
@@ -256,10 +384,10 @@ jobs:
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
           DISCORD_ROLE_ID: '1500618567614206072'
           REPOSITORY: ${{ github.repository }}
-          DEPLOYMENT_VERSION: ${{ steps.version_meta.outputs.deployment_version }}
+          DEPLOYMENT_VERSION: ${{ needs.version.outputs.deployment_version }}
           BEFORE_SHA: ${{ steps.last_dev_notification.outputs.before_sha }}
           AFTER_SHA: ${{ github.sha }}
-          DEV_TRACK_TAG: ${{ steps.version_meta.outputs.dev_track_tag }}
+          DEV_TRACK_TAG: ${{ needs.version.outputs.dev_track_tag }}
           BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node ./.github/scripts/post-discord-dev-build.mjs
