@@ -60,7 +60,7 @@ These are live requests against production so readers can see current poster, ba
 </table>
 ## Rendering Option Comparisons
 
-These screenshots were regenerated from the local June 23, 2026 codebase.
+These screenshots were regenerated from the local July 1, 2026 codebase.
 
 For side by side rendering mode examples, see:
 - [Poster style comparisons](public/assets/readme-poster-comparison-board.png)
