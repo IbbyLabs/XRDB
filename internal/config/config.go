@@ -1,6 +1,7 @@
 package config
 
 import (
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -89,7 +90,9 @@ func Load() Config {
 	}
 	var cacheMaxBytes int64 = 256 << 20
 	if raw := os.Getenv("XRDB_CACHE_MAX_MB"); raw != "" {
-		if n, err := strconv.ParseInt(raw, 10, 64); err == nil && n > 0 {
+		// Bound before shifting: values above MaxInt64>>20 MiB would overflow
+		// the byte conversion and wrap the cap negative.
+		if n, err := strconv.ParseInt(raw, 10, 64); err == nil && n > 0 && n <= math.MaxInt64>>20 {
 			cacheMaxBytes = n << 20
 		}
 	}
