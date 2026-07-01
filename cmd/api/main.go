@@ -108,7 +108,7 @@ func main() {
 		pipeline = compose.New(reg)
 	}
 
-	renderCache, err := cache.New(cfg.CacheDir, cfg.CacheTTL, 300, 256<<20)
+	renderCache, err := cache.New(cfg.CacheDir, cfg.CacheTTL, cfg.CacheMaxEntries, cfg.CacheMaxBytes)
 	if err != nil {
 		log.Fatalf("open render cache: %v", err)
 	}

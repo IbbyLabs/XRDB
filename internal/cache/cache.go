@@ -4,6 +4,7 @@ package cache
 import (
 	"container/list"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -55,8 +56,9 @@ type Cache struct {
 	diskFiles atomic.Int64
 	diskBytes atomic.Int64
 
-	stop chan struct{}
-	done chan struct{}
+	stop     chan struct{}
+	stopOnce sync.Once
+	done     chan struct{}
 }
 
 // New creates a Cache backed by dir, bounded in memory by maxEntries and
@@ -80,12 +82,9 @@ func New(dir string, ttl time.Duration, maxEntries int, maxBytes int64) (*Cache,
 }
 
 // Close stops the background disk sweep and waits for it to exit.
+// Safe to call multiple times and from concurrent goroutines.
 func (c *Cache) Close() {
-	select {
-	case <-c.stop:
-	default:
-		close(c.stop)
-	}
+	c.stopOnce.Do(func() { close(c.stop) })
 	<-c.done
 }
 
@@ -164,13 +163,8 @@ func (c *Cache) SetWithTTL(key string, data []byte, ttl time.Duration) error {
 	c.mu.Unlock()
 
 	// Persist to disk — no lock held during filesystem I/O.
-	expNs := exp.UnixNano()
-	hdr := [expiryHeaderSize]byte{
-		byte(expNs >> 56), byte(expNs >> 48), byte(expNs >> 40), byte(expNs >> 32),
-		byte(expNs >> 24), byte(expNs >> 16), byte(expNs >> 8), byte(expNs),
-	}
 	payload := make([]byte, expiryHeaderSize+len(data))
-	copy(payload[:expiryHeaderSize], hdr[:])
+	binary.BigEndian.PutUint64(payload[:expiryHeaderSize], uint64(exp.UnixNano()))
 	copy(payload[expiryHeaderSize:], data)
 
 	var prevSize int64 = -1
@@ -329,8 +323,7 @@ func readExpiry(path string) (int64, bool) {
 
 // decodeExpiry parses the big-endian Unix nanosecond expiry header.
 func decodeExpiry(hdr []byte) int64 {
-	return int64(hdr[0])<<56 | int64(hdr[1])<<48 | int64(hdr[2])<<40 | int64(hdr[3])<<32 |
-		int64(hdr[4])<<24 | int64(hdr[5])<<16 | int64(hdr[6])<<8 | int64(hdr[7])
+	return int64(binary.BigEndian.Uint64(hdr))
 }
 
 func (c *Cache) diskPath(key string) string {
