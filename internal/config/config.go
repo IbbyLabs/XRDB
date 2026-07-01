@@ -1,6 +1,7 @@
 package config
 
 import (
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -13,6 +14,8 @@ type Config struct {
 	DBPath              string
 	CacheDir            string
 	CacheTTL            time.Duration
+	CacheMaxEntries     int   // hot tier entry cap
+	CacheMaxBytes       int64 // hot tier byte cap
 	TMDBAPIKey          string
 	TMDBReadToken       string
 	MDBListAPIKey       string
@@ -79,6 +82,20 @@ func Load() Config {
 			cacheTTL = d
 		}
 	}
+	cacheMaxEntries := 300
+	if raw := os.Getenv("XRDB_CACHE_MAX_ENTRIES"); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+			cacheMaxEntries = n
+		}
+	}
+	var cacheMaxBytes int64 = 256 << 20
+	if raw := os.Getenv("XRDB_CACHE_MAX_MB"); raw != "" {
+		// Bound before shifting: values above MaxInt64>>20 MiB would overflow
+		// the byte conversion and wrap the cap negative.
+		if n, err := strconv.ParseInt(raw, 10, 64); err == nil && n > 0 && n <= math.MaxInt64>>20 {
+			cacheMaxBytes = n << 20
+		}
+	}
 	var animeMapRefresh time.Duration
 	if raw := os.Getenv("XRDB_ANIME_MAP_REFRESH_HOURS"); raw != "" {
 		if h, err := strconv.ParseFloat(raw, 64); err == nil && h > 0 {
@@ -91,6 +108,8 @@ func Load() Config {
 		DBPath:                dbPath,
 		CacheDir:              cacheDir,
 		CacheTTL:              cacheTTL,
+		CacheMaxEntries:       cacheMaxEntries,
+		CacheMaxBytes:         cacheMaxBytes,
 		TMDBAPIKey:            os.Getenv("XRDB_TMDB_API_KEY"),
 		TMDBReadToken:         os.Getenv("XRDB_TMDB_READ_TOKEN"),
 		MDBListAPIKey:         os.Getenv("XRDB_MDBLIST_API_KEY"),
