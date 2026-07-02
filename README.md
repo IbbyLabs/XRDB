@@ -22,10 +22,10 @@ These are live requests against production so readers can see current poster, ba
     <td><strong>Game of Thrones</strong><br>Plain ratings, TMDB / IMDb / Trakt / Metacritic, split side layout, detached age rating</td>
   </tr>
   <tr>
-    <td><a href="https://extendedratings.com/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v2-3-3"><img src="https://extendedratings.com/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v2-3-3" alt="Attack on Titan poster live preview" width="220"></a></td>
-    <td><a href="https://extendedratings.com/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v2-3-3"><img src="https://extendedratings.com/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v2-3-3" alt="Dune Part Two poster live preview" width="220"></a></td>
-    <td><a href="https://extendedratings.com/preview/stranger-things-poster?cb=readme-preview-stranger-things-poster-v2-3-3"><img src="https://extendedratings.com/preview/stranger-things-poster?cb=readme-preview-stranger-things-poster-v2-3-3" alt="Stranger Things poster live preview" width="220"></a></td>
-    <td><a href="https://extendedratings.com/preview/game-of-thrones-poster?cb=readme-preview-game-of-thrones-poster-v2-3-3"><img src="https://extendedratings.com/preview/game-of-thrones-poster?cb=readme-preview-game-of-thrones-poster-v2-3-3" alt="Game of Thrones poster live preview" width="220"></a></td>
+    <td><a href="https://extendedratings.com/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v2-3-4"><img src="https://extendedratings.com/preview/attack-on-titan-poster?cb=readme-preview-attack-on-titan-poster-v2-3-4" alt="Attack on Titan poster live preview" width="220"></a></td>
+    <td><a href="https://extendedratings.com/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v2-3-4"><img src="https://extendedratings.com/preview/dune-part-two-poster?cb=readme-preview-dune-part-two-poster-v2-3-4" alt="Dune Part Two poster live preview" width="220"></a></td>
+    <td><a href="https://extendedratings.com/preview/stranger-things-poster?cb=readme-preview-stranger-things-poster-v2-3-4"><img src="https://extendedratings.com/preview/stranger-things-poster?cb=readme-preview-stranger-things-poster-v2-3-4" alt="Stranger Things poster live preview" width="220"></a></td>
+    <td><a href="https://extendedratings.com/preview/game-of-thrones-poster?cb=readme-preview-game-of-thrones-poster-v2-3-4"><img src="https://extendedratings.com/preview/game-of-thrones-poster?cb=readme-preview-game-of-thrones-poster-v2-3-4" alt="Game of Thrones poster live preview" width="220"></a></td>
   </tr>
 </table>
 
@@ -38,9 +38,9 @@ These are live requests against production so readers can see current poster, ba
     <td><strong>Stranger Things</strong><br>Square ratings, TMDB / Rotten Tomatoes / Metacritic / Letterboxd, stream badges, right side stack</td>
   </tr>
   <tr>
-    <td><a href="https://extendedratings.com/preview/attack-on-titan-backdrop?cb=readme-preview-attack-on-titan-backdrop-v2-3-3"><img src="https://extendedratings.com/preview/attack-on-titan-backdrop?cb=readme-preview-attack-on-titan-backdrop-v2-3-3" alt="Attack on Titan backdrop live preview" width="320"></a></td>
-    <td><a href="https://extendedratings.com/preview/the-boys-backdrop?cb=readme-preview-the-boys-backdrop-v2-3-3"><img src="https://extendedratings.com/preview/the-boys-backdrop?cb=readme-preview-the-boys-backdrop-v2-3-3" alt="The Boys backdrop live preview" width="320"></a></td>
-    <td><a href="https://extendedratings.com/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v2-3-3"><img src="https://extendedratings.com/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v2-3-3" alt="Stranger Things backdrop live preview" width="320"></a></td>
+    <td><a href="https://extendedratings.com/preview/attack-on-titan-backdrop?cb=readme-preview-attack-on-titan-backdrop-v2-3-4"><img src="https://extendedratings.com/preview/attack-on-titan-backdrop?cb=readme-preview-attack-on-titan-backdrop-v2-3-4" alt="Attack on Titan backdrop live preview" width="320"></a></td>
+    <td><a href="https://extendedratings.com/preview/the-boys-backdrop?cb=readme-preview-the-boys-backdrop-v2-3-4"><img src="https://extendedratings.com/preview/the-boys-backdrop?cb=readme-preview-the-boys-backdrop-v2-3-4" alt="The Boys backdrop live preview" width="320"></a></td>
+    <td><a href="https://extendedratings.com/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v2-3-4"><img src="https://extendedratings.com/preview/stranger-things-backdrop?cb=readme-preview-stranger-things-backdrop-v2-3-4" alt="Stranger Things backdrop live preview" width="320"></a></td>
   </tr>
 </table>
 
@@ -48,14 +48,14 @@ These are live requests against production so readers can see current poster, ba
 
 <table>
   <tr>
-    <td><strong>Dune Part Two</strong><br>Dark canvas, square ratings, TMDB / Rotten Tomatoes / Metacritic / Letterboxd</td>
+    <td><strong>Stranger Things</strong><br>Dark canvas, square ratings, TMDB / Rotten Tomatoes / Metacritic User / Letterboxd</td>
     <td><strong>Attack on Titan</strong><br>Japanese text, TMDB / MyAnimeList / AniList / Kitsu, transparent canvas</td>
     <td><strong>Game of Thrones</strong><br>French text, plain ratings, TMDB / IMDb / Trakt / Metacritic, transparent canvas</td>
   </tr>
   <tr>
-    <td><a href="https://extendedratings.com/preview/dune-part-two-logo?cb=readme-preview-dune-part-two-logo-v2-3-3"><img src="https://extendedratings.com/preview/dune-part-two-logo?cb=readme-preview-dune-part-two-logo-v2-3-3" alt="Dune Part Two logo live preview" width="320"></a></td>
-    <td><a href="https://extendedratings.com/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v2-3-3"><img src="https://extendedratings.com/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v2-3-3" alt="Attack on Titan logo live preview" width="320"></a></td>
-    <td><a href="https://extendedratings.com/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v2-3-3"><img src="https://extendedratings.com/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v2-3-3" alt="Game of Thrones logo live preview" width="320"></a></td>
+    <td><a href="https://extendedratings.com/preview/stranger-things-logo?cb=readme-preview-stranger-things-logo-v2-3-4"><img src="https://extendedratings.com/preview/stranger-things-logo?cb=readme-preview-stranger-things-logo-v2-3-4" alt="Stranger Things logo live preview" width="320"></a></td>
+    <td><a href="https://extendedratings.com/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v2-3-4"><img src="https://extendedratings.com/preview/attack-on-titan-logo?cb=readme-preview-attack-on-titan-logo-v2-3-4" alt="Attack on Titan logo live preview" width="320"></a></td>
+    <td><a href="https://extendedratings.com/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v2-3-4"><img src="https://extendedratings.com/preview/game-of-thrones-logo?cb=readme-preview-game-of-thrones-logo-v2-3-4" alt="Game of Thrones logo live preview" width="320"></a></td>
   </tr>
 </table>
 ## Rendering Option Comparisons
@@ -155,7 +155,7 @@ AIOMetadata export patterns are available from the configurator export flow and 
 - [Compose stacks](compose.yaml)
 - [Standalone compose](local-compose.yaml)
 - [Environment template](env.template)
-- [Changelog](CHANGELOG.md) (latest: [v2.3.3](CHANGELOG.md#v2-3-3))
+- [Changelog](CHANGELOG.md) (latest: [v2.3.4](CHANGELOG.md#v2-3-4))
 ## Documentation Image Index
 
 - `docs/images/demo-videos/poster-workspace.png`

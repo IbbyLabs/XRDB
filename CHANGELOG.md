@@ -11,7 +11,22 @@
 
 ### Documentation
 
-<a id="v2-3-3"></a>
+<a id="v2-3-4"></a>
+
+## [v2.3.4] - 02/07/2026
+
+### Fixed
+* BUG-162 gate profile save on server keys and explain when blocked
+  
+  Saved profiles omit provider credentials and are served with the instance's
+  own keys, so they can only be created when the server has TMDB and MDBList keys
+  configured. The Save button still enabled on personal (session only) keys, so it
+  lit up and then failed with a generic "required settings" error that named
+  nothing.
+  
+  Make the button gate match the actual requirement, and when saving is blocked
+  show a specific message listing which server keys the instance is missing.
+
 
 ## [v2.3.3] - 02/07/2026
 
