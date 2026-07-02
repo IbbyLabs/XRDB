@@ -151,6 +151,17 @@ export function buildConfiguratorPageProps({
   workspaceUi: WorkspaceUiState;
   mediaTargetSearch: MediaTargetSearchState;
 }) {
+  // A saved profile omits provider credentials and is served using the
+  // instance's own keys, so it can only be created when the server itself has
+  // TMDB and MDBList keys configured. Personal keys entered in the configurator
+  // live in a per-session store and are never written to the profile, so they
+  // cannot back one.
+  const profileSaveMissingServerKeys: Array<'TMDB' | 'MDBList'> = [
+    ...(hasServerTmdbKey ? [] : (['TMDB'] as const)),
+    ...(hasServerMdblistKey ? [] : (['MDBList'] as const)),
+  ];
+  const canSaveProfile = profileSaveMissingServerKeys.length === 0;
+
   return {
     inputsPanelProps: {
       isOpen: workspaceUi.openWorkspacePanels.has('configurator'),
@@ -613,9 +624,11 @@ export function buildConfiguratorPageProps({
         onToggleAiometadata: () => workspaceUi.handleToggleWorkspacePanel('aio-urls'),
         displayedConfigString: outputs.displayedConfigString,
         canGenerateConfig: workspaceSummary.canGenerateConfig,
-        canSaveProfile:
-          (workspaceState.personalProviderKeyStatus.tmdb || hasServerTmdbKey)
-          && (workspaceState.personalProviderKeyStatus.mdblist || hasServerMdblistKey),
+        canSaveProfile,
+        profileSaveRequirement: {
+          ready: canSaveProfile,
+          missingServerKeys: profileSaveMissingServerKeys,
+        },
         configCopied: workspaceUi.configCopied,
         showConfigString: outputs.isConfigStringVisible,
         onCopyConfig: workspaceUi.handleCopyConfig,

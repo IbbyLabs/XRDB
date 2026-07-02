@@ -4884,6 +4884,12 @@
 	color: var(--status-success);
 }
 
+.xrdb-save-status-warn {
+	background: var(--status-warning-bg);
+	border: 1px solid var(--status-warning-border);
+	color: var(--status-warning);
+}
+
 .xrdb-reference-mobile-nav {
 	position: sticky;
 	background: var(--bg-base);

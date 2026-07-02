@@ -28,6 +28,11 @@ async function readErrorMessage(response: Response, fallback: string) {
   return payload?.error || fallback;
 }
 
+function formatKeyList(keys: readonly string[]): string {
+  if (keys.length <= 1) return keys[0] ?? '';
+  return `${keys.slice(0, -1).join(', ')} and ${keys[keys.length - 1]}`;
+}
+
 export default function SavePage() {
   const ctx = useConfiguratorContext();
   const { exportPanelsProps } = ctx.workspaceColumnsProps;
@@ -106,6 +111,11 @@ export default function SavePage() {
   }, [instanceMenuOpen]);
 
   const currentSaveParams = exportPanelsProps.buildSaveParams();
+  const missingSaveServerKeys = exportPanelsProps.profileSaveRequirement.missingServerKeys;
+  const canSaveProfile = exportPanelsProps.profileSaveRequirement.ready;
+  const saveBlockedReason = canSaveProfile
+    ? null
+    : `This instance has no ${formatKeyList(missingSaveServerKeys)} API key configured. Saved profiles are served with the server's own keys, so add ${missingSaveServerKeys.length > 1 ? 'them' : 'it'} to the server environment before saving a profile.`;
   const currentComparableSaveParams = useMemo(
     () => buildSavedProfileComparableParams(currentSaveParams),
     [currentSaveParams],
@@ -407,7 +417,9 @@ export default function SavePage() {
   const handleSaveProfile = useCallback(async () => {
     const params = currentSaveParams;
     if (!params) {
-      setProfileError('Cannot save profile until required settings are available.');
+      setProfileError(
+        saveBlockedReason ?? 'Cannot save profile until required settings are available.',
+      );
       return;
     }
 
@@ -483,6 +495,7 @@ export default function SavePage() {
     activeProfileId,
     activeUnlockToken,
     currentSaveParams,
+    saveBlockedReason,
     savePasswordConfirmInput,
     savePasswordInput,
     unlockAndLoadProfile,
@@ -928,7 +941,7 @@ export default function SavePage() {
                     className="xrdb-save-action-btn xrdb-save-action-primary"
                     onClick={() => void handleSaveProfile()}
                     type="button"
-                      disabled={profileBusy || !hasPendingSaveChanges}
+                      disabled={profileBusy || !hasPendingSaveChanges || !canSaveProfile}
                   >
                       {profileBusy ? 'Working' : hasPendingSaveChanges ? 'Save changes' : 'Saved'}
                   </button>
@@ -960,7 +973,7 @@ export default function SavePage() {
                     className="xrdb-save-action-btn xrdb-save-action-primary"
                     onClick={() => void handleSaveProfile()}
                     type="button"
-                    disabled={profileBusy}
+                    disabled={profileBusy || !canSaveProfile}
                   >
                     {profileBusy ? 'Working' : 'Create UUID'}
                   </button>
@@ -976,6 +989,7 @@ export default function SavePage() {
               </>
             )}
 
+            {saveBlockedReason && !profileError ? <p className="xrdb-save-status xrdb-save-status-warn" role="status">{saveBlockedReason}</p> : null}
             {profileError ? <p className="xrdb-save-status xrdb-save-status-error" role="alert">{profileError}</p> : null}
             {profileStatus ? <p className="xrdb-save-status xrdb-save-status-ok" aria-live="polite">{profileStatus}</p> : null}
           </section>
