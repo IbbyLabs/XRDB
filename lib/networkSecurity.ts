@@ -152,8 +152,21 @@ const allowPrivateSourcesForTests = () =>
   process.env.XRDB_ALLOW_PRIVATE_SOURCES_FOR_TESTS === 'true' &&
   process.env.NODE_ENV !== 'production';
 
-const getSafeSourceDispatcher = () =>
-  allowPrivateSourcesForTests() ? undefined : (getSafeSourceProxyDispatcher() || SAFE_SOURCE_DISPATCHER);
+// The gluetun HTTP_PROXY exists to give Torrentio a VPN exit (datacenter IPs get
+// throttled there). Safe-source fetches — external badge/provider icons and the /proxy
+// addon route — hit ordinary public URLs that do not need masking, so they go direct by
+// default (still via the SSRF-guarded dispatcher). Set XRDB_SAFE_SOURCE_USE_PROXY=true to
+// route them back through the proxy if a geo-locked source ever needs it.
+const safeSourceShouldUseProxy = () =>
+  ['1', 'true', 'yes', 'on'].includes(
+    String(process.env.XRDB_SAFE_SOURCE_USE_PROXY ?? '').trim().toLowerCase(),
+  );
+
+const getSafeSourceDispatcher = () => {
+  if (allowPrivateSourcesForTests()) return undefined;
+  if (safeSourceShouldUseProxy()) return getSafeSourceProxyDispatcher() || SAFE_SOURCE_DISPATCHER;
+  return SAFE_SOURCE_DISPATCHER;
+};
 
 export const assertSafeSourceUrl = async (input: string) => {
   const raw = String(input || '').trim();
