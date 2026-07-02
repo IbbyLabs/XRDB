@@ -11,7 +11,20 @@
 
 ### Documentation
 
-<a id="v2-3-2"></a>
+<a id="v2-3-3"></a>
+
+## [v2.3.3] - 02/07/2026
+
+### Fixed
+* send safe source fetches direct instead of via the VPN
+  
+  External badge/provider icon fetches and the /proxy addon route were routed
+  through HTTP_PROXY (the VPN exit meant for Torrentio) because they share the
+  same proxy dispatcher selection. They hit ordinary public URLs that do not
+  need masking, so default them to a direct SSRF guarded dispatcher. Torrentio
+  keeps its own dispatcher and is unaffected. Set XRDB_SAFE_SOURCE_USE_PROXY=true
+  to restore the old behaviour for a geo locked source.
+
 
 ## [v2.3.2] - 02/07/2026
 
