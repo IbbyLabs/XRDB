@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v2.3.1",
-  "generatedAt": "2026-07-01T21:06:46.965Z",
+  "xrdbTag": "v2.3.2",
+  "generatedAt": "2026-07-02T14:30:27.021Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -78,9 +78,7 @@
       "lines": [
         "bound metrics telemetry growth and stop warm snapshot accumulation",
         "FR-118 add per artwork type filter to proxy builder",
-        "recover TMDB anime ratings without mapping",
-        "tighten legacy name allowlist",
-        "ignore archival legacy name references"
+        "recover TMDB anime ratings without mapping"
       ]
     },
     {

@@ -11,7 +11,29 @@
 
 ### Documentation
 
-<a id="v2-3-1"></a>
+<a id="v2-3-2"></a>
+
+## [v2.3.2] - 02/07/2026
+
+### Fixed
+* classify upstream fetch timeouts as 504 instead of 500
+  
+  An aborted source image or provider fetch surfaces as a DOMException
+  AbortError/TimeoutError. It was falling through to the generic handler,
+  which logged the entire DOMException (every INDEX_SIZE_ERR..DATA_CLONE_ERR
+  constant) and returned 500. Detect these and return 504 with a single
+  concise log line, matching how other upstream failures are handled.
+
+### Other Changes
+* build each Docker arch on its native runner
+  
+  Split the single QEMU emulated build into per arch jobs (amd64 on
+  ubuntu latest, arm64 on ubuntu 24.04 arm) that push by digest with
+  per arch build caches. A merge job stitches the digests into one
+  tagged multi arch manifest, so source verification runs in parallel
+  with the builds and tags only land after it passes. Discord dev
+  notifications move to their own job after the merge.
+
 
 ## [v2.3.1] - 01/07/2026
 
