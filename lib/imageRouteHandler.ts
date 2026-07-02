@@ -189,10 +189,39 @@ export async function handleImageRequest(
       return errResponse;
     }
 
-    logger.error('[XRDB] render failed', error);
-
     const message = typeof error?.message === 'string' ? error.message : 'Unknown error';
     const normalizedMessage = message.toLowerCase();
+
+    // An aborted upstream fetch (source image / provider) surfaces here as a DOMException
+    // AbortError (code 20) or TimeoutError (code 23). It is an upstream timeout, not a
+    // render bug, so classify it as 504 and log one concise line instead of dumping the
+    // whole DOMException (which spells out every INDEX_SIZE_ERR..DATA_CLONE_ERR constant).
+    const isUpstreamTimeout =
+      error?.name === 'AbortError' ||
+      error?.name === 'TimeoutError' ||
+      error?.code === 20 ||
+      error?.code === 23 ||
+      normalizedMessage.includes('operation was aborted');
+    if (isUpstreamTimeout) {
+      logger.warn(
+        '[XRDB] upstream timeout %s %s: %s',
+        request.method,
+        request.nextUrl.pathname,
+        message,
+      );
+      const r504 = respond(
+        'Upstream request timed out. Check server outbound network to TMDB/MDBList.',
+        504,
+      );
+      recordRequest('image', 504, performance.now() - requestStartedAt, id, {
+        configId,
+        providedKey: metricsProvidedKey,
+      });
+      return r504;
+    }
+
+    logger.error('[XRDB] render failed', error);
+
     if (
       normalizedMessage.includes('fetch failed') ||
       normalizedMessage.includes('enotfound') ||
