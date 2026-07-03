@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v2.3.4",
-  "generatedAt": "2026-07-02T21:56:39.508Z",
+  "xrdbTag": "v2.3.5",
+  "generatedAt": "2026-07-03T11:27:31.130Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -76,6 +76,7 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "BUG-163 honor image region so fr FR logos aren't served as fr CA",
         "BUG-162 gate profile save on server keys and explain when blocked",
         "send safe source fetches direct instead of via the VPN",
         "bound metrics telemetry growth and stop warm snapshot accumulation"

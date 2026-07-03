@@ -11,7 +11,18 @@
 
 ### Documentation
 
-<a id="v2-3-4"></a>
+<a id="v2-3-5"></a>
+
+## [v2.3.5] - 03/07/2026
+
+### Fixed
+* BUG-163 honor image region so fr FR logos aren't served as fr CA
+  
+  TMDB tags images with iso_3166_1 (region) but selection normalized to base
+  language only, so fr FR and fr CA logos were indistinguishable and the first
+  same language asset won. Prefer an exact region match across posters, backdrops,
+  and logos, falling back to same language, fallback language, then neutral.
+
 
 ## [v2.3.4] - 02/07/2026
 
