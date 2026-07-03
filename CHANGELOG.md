@@ -11,7 +11,20 @@
 
 ### Documentation
 
-<a id="v2-3-5"></a>
+<a id="v2-3-6"></a>
+
+## [v2.3.6] - 03/07/2026
+
+### Fixed
+* version image URLs so releases bust CDN and browser caches
+  
+  Fold the render cache version into poster/backdrop/logo/thumbnail URLs (v=) for
+  both the configurator preview and the AIOMetadata URL patterns. A version bump
+  already re renders on the origin, but the unchanged URL kept serving stale
+  CDN/browser copies until the ~7 day cache TTL. Extract the version into a
+  client safe leaf module so the client bundle can read it without importing
+  server only config.
+
 
 ## [v2.3.5] - 03/07/2026
 
