@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v2.3.6",
-  "generatedAt": "2026-07-03T12:25:16.775Z",
+  "xrdbTag": "v2.3.7",
+  "generatedAt": "2026-07-03T12:27:36.562Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -76,6 +76,7 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "stage the render cache version file on version bump",
         "version image URLs so releases bust CDN and browser caches",
         "BUG-163 honor image region so fr FR logos aren't served as fr CA",
         "BUG-162 gate profile save on server keys and explain when blocked",

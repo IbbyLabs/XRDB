@@ -11,7 +11,17 @@
 
 ### Documentation
 
-<a id="v2-3-6"></a>
+<a id="v2-3-7"></a>
+
+## [v2.3.7] - 03/07/2026
+
+### Fixed
+* stage the render cache version file on version bump
+  
+  The render cache version moved to lib/imageRenderCacheVersion.ts, but the
+  version lifecycle still staged the old lib/imageRouteConfig.ts, so the bumped
+  token was left uncommitted and never shipped.
+
 
 ## [v2.3.6] - 03/07/2026
 
