@@ -1,3 +1,4 @@
+import { IMAGE_URL_CACHE_TOKEN } from './imageRenderCacheVersion.ts';
 import {
   DEFAULT_BACKDROP_RATING_LAYOUT,
   normalizeBackdropRatingLayout,
@@ -3048,6 +3049,9 @@ export const buildAiometadataUrlPatterns = (
           }
           return [key, value] as [string, string];
         }),
+        // Bust CDN/browser caches on release: a version bump changes the URL so consumers
+        // fetch the freshly rendered image instead of a stale cached one.
+        ['v', IMAGE_URL_CACHE_TOKEN] as [string, string],
       ]).toString(),
     );
 

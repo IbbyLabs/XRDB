@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 
+import { IMAGE_URL_CACHE_TOKEN } from './imageRenderCacheVersion.ts';
 import {
   DEFAULT_BACKDROP_GENRE_BADGE_BORDER_WIDTH_PX,
   DEFAULT_BADGE_SCALE_PERCENT,
@@ -305,6 +306,7 @@ const buildGenreSamplePreviewUrl = ({
   }
 
   const query = new URLSearchParams({ lang: sample.lang });
+  query.set('v', IMAGE_URL_CACHE_TOKEN);
   if (normalizedXrdbKey) {
     query.set('xrdbKey', normalizedXrdbKey);
   }
@@ -982,6 +984,7 @@ export function useConfiguratorOutputs({
       ratingStyle: ratingStyleForType,
       lang,
     });
+    query.set('v', IMAGE_URL_CACHE_TOKEN);
     if (normalizedXrdbKey) {
       query.set('xrdbKey', normalizedXrdbKey);
     }

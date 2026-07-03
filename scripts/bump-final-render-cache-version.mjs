@@ -8,7 +8,7 @@ const CACHE_VERSION_RE =
 export function incrementFinalImageRendererCacheVersion(source) {
   const match = source.match(CACHE_VERSION_RE);
   if (!match) {
-    throw new Error('Could not find FINAL_IMAGE_RENDERER_CACHE_VERSION in lib/imageRouteConfig.ts');
+    throw new Error('Could not find FINAL_IMAGE_RENDERER_CACHE_VERSION in lib/imageRenderCacheVersion.ts');
   }
 
   const currentVersion = Number.parseInt(match[2], 10);
@@ -37,7 +37,7 @@ const isDirectRun = (() => {
 
 if (isDirectRun) {
   const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-  const targetPath = path.join(repoRoot, 'lib', 'imageRouteConfig.ts');
+  const targetPath = path.join(repoRoot, 'lib', 'imageRenderCacheVersion.ts');
   const source = readFileSync(targetPath, 'utf8');
   const { currentVersion, nextVersion, updatedSource } = incrementFinalImageRendererCacheVersion(source);
 
