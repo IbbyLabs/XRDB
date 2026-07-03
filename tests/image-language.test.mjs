@@ -90,6 +90,52 @@ test('pickByLanguageOrNeutral returns null when no preferred fallback or neutral
   assert.equal(picked, null);
 });
 
+test('pickByLanguageWithFallback prefers the exact region over an earlier same-language variant', () => {
+  const logos = [
+    { iso_639_1: 'fr', iso_3166_1: 'CA', file_path: '/fr-ca.png' },
+    { iso_639_1: 'fr', iso_3166_1: 'FR', file_path: '/fr-fr.png' },
+  ];
+
+  assert.equal(pickByLanguageWithFallback(logos, 'fr-FR', 'en')?.file_path, '/fr-fr.png');
+  assert.equal(pickByLanguageWithFallback(logos, 'fr-CA', 'en')?.file_path, '/fr-ca.png');
+});
+
+test('pickByLanguageOrNeutral prefers the exact region over an earlier same-language variant', () => {
+  const logos = [
+    { iso_639_1: 'fr', iso_3166_1: 'CA', file_path: '/fr-ca.png' },
+    { iso_639_1: 'fr', iso_3166_1: 'FR', file_path: '/fr-fr.png' },
+  ];
+
+  assert.equal(pickByLanguageOrNeutral(logos, 'fr-FR', 'en')?.file_path, '/fr-fr.png');
+});
+
+test('region-qualified request still accepts a same-language asset when the region is absent', () => {
+  const logos = [
+    { iso_639_1: 'fr', iso_3166_1: 'CA', file_path: '/fr-ca.png' },
+    { iso_639_1: 'en', iso_3166_1: 'US', file_path: '/en.png' },
+  ];
+
+  assert.equal(pickByLanguageWithFallback(logos, 'fr-FR', 'en')?.file_path, '/fr-ca.png');
+});
+
+test('region-qualified request prefers a region-neutral variant over a different region', () => {
+  const logos = [
+    { iso_639_1: 'fr', iso_3166_1: 'CA', file_path: '/fr-ca.png' },
+    { iso_639_1: 'fr', iso_3166_1: null, file_path: '/fr-neutral.png' },
+  ];
+
+  assert.equal(pickByLanguageWithFallback(logos, 'fr-FR', 'en')?.file_path, '/fr-neutral.png');
+});
+
+test('language-only request keeps first same-language match regardless of region', () => {
+  const logos = [
+    { iso_639_1: 'fr', iso_3166_1: 'CA', file_path: '/fr-ca.png' },
+    { iso_639_1: 'fr', iso_3166_1: 'FR', file_path: '/fr-fr.png' },
+  ];
+
+  assert.equal(pickByLanguageWithFallback(logos, 'fr', 'en')?.file_path, '/fr-ca.png');
+});
+
 test('filterByLanguageWithFallback keeps requested fallback and neutral entries when available', () => {
   const logos = [
     { iso_639_1: 'he', file_path: '/he.png' },

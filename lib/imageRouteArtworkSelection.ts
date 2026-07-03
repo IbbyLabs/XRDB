@@ -27,7 +27,7 @@ import {
   artworkTextSelectionNeedsProviderTextlessSupport,
 } from './artworkTextSupport.ts';
 import { resolveOmdbPosterUrl } from './imageRouteOmdb.ts';
-import { pickByLanguageOrNeutral, pickByLanguageWithFallback } from './imageLanguage.ts';
+import { normalizeImageLanguage, pickByLanguageOrNeutral, pickByLanguageWithFallback } from './imageLanguage.ts';
 import { BROWSER_LIKE_USER_AGENT } from './imageRouteExternalRatings.ts';
 import { fetchFanartArtwork } from './imageRouteFanart.ts';
 import type { PhaseDurations, CachedJsonResponse } from './imageRouteRuntime.ts';
@@ -60,6 +60,7 @@ type ArtworkFetchJson = (
 type TmdbImageAsset = {
   file_path?: string | null;
   iso_639_1?: string | null;
+  iso_3166_1?: string | null;
   aspect_ratio?: number | null;
 };
 
@@ -367,9 +368,11 @@ export const createImageRouteArtworkSelector = (
       input.requestedImageLang,
       fallbackImageLang,
     );
+    const requestedLogoBaseLanguage = normalizeImageLanguage(input.requestedImageLang);
+    const fallbackLogoBaseLanguage = normalizeImageLanguage(fallbackImageLang);
     const scopedLogoCollection = logoCollection.filter((logo) => {
-      const language = String(logo?.iso_639_1 || '').trim().toLowerCase();
-      return !language || language === input.requestedImageLang || language === fallbackImageLang;
+      const language = normalizeImageLanguage(logo?.iso_639_1);
+      return !language || language === requestedLogoBaseLanguage || language === fallbackLogoBaseLanguage;
     });
     const randomLogoCandidate = pickDeterministicItemBySeed(
       [...new Map(

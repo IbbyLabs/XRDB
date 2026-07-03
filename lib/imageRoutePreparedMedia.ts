@@ -1049,7 +1049,7 @@ if (!useRawKitsuFallback && detailsBundlePromise) {
     );
     if (logoFallbackImagesResponse.ok) {
       const logoFallbackImages = logoFallbackImagesResponse.data || {};
-      const logoFallback = pickByLanguageOrNeutral<{ iso_639_1?: string | null; file_path?: string | null }>(
+      const logoFallback = pickByLanguageOrNeutral<{ iso_639_1?: string | null; iso_3166_1?: string | null; file_path?: string | null }>(
         logoFallbackImages.logos || [],
         effectiveRequestedImageLang,
         FALLBACK_IMAGE_LANGUAGE

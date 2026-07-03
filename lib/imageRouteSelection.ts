@@ -17,6 +17,7 @@ import { sha1Hex } from './imageRouteRuntime.ts';
 type RoutedImageCandidate = {
   file_path?: string | null;
   iso_639_1?: string | null;
+  iso_3166_1?: string | null;
   width?: number | null;
   height?: number | null;
   vote_average?: number | null;
