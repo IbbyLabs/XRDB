@@ -388,6 +388,24 @@ func TestProfileExportAndImport(t *testing.T) {
 	}
 }
 
+func TestProfileExportByAlias(t *testing.T) {
+	store := openTestStore(t)
+	h := NewHandler("test", store, nil, nil, nil, config.Config{})
+
+	createBody := `{"id":"exp2","alias":"myalias","type":"poster","name":"Aliased","config":{}}`
+	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/profile", strings.NewReader(createBody)))
+
+	// Export addressed by the alias (not the id) must resolve, like the other routes.
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/profile/myalias/export", nil))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("export by alias: expected 200, got %d: %s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(rr.Body.String(), `"exp2"`) {
+		t.Error("export by alias should return the underlying profile")
+	}
+}
+
 func TestProfileImportSkipsDuplicates(t *testing.T) {
 	store := openTestStore(t)
 	h := NewHandler("test", store, nil, nil, nil, config.Config{})

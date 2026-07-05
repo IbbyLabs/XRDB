@@ -257,7 +257,9 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 			return
 		}
 		id := r.PathValue("id")
-		p, err := store.Get(id)
+		// Resolve id-or-alias so export matches the other profile routes; the UI
+		// exports by id, but a hand-built /profile/{alias}/export should work too.
+		p, err := store.Resolve(id)
 		if err != nil {
 			if errors.Is(err, profile.ErrNotFound) {
 				http.Error(w, "not found", http.StatusNotFound)
@@ -268,12 +270,12 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 		}
 		if p.PasswordHash != "" {
 			pw := r.Header.Get("X-Profile-Password")
-			if err := store.CheckPassword(id, pw); err != nil {
+			if err := store.CheckPassword(p.ID, pw); err != nil {
 				http.Error(w, "unauthorized", http.StatusUnauthorized)
 				return
 			}
 		}
-		safeID := strings.NewReplacer(`"`, "_", "\n", "_", "\r", "_", `\`, "_", ";", "_").Replace(id)
+		safeID := strings.NewReplacer(`"`, "_", "\n", "_", "\r", "_", `\`, "_", ";", "_").Replace(p.ID)
 		env := profile.ExportEnvelope{Version: 1, Profiles: []profile.Profile{*p}}
 		w.Header().Set("Content-Disposition", `attachment; filename="xrdb-profile-`+safeID+`.json"`)
 		writeJSON(w, http.StatusOK, env)
