@@ -11,7 +11,13 @@
 
 ### Documentation
 
-<a id="v2-3-7"></a>
+<a id="v2-3-8"></a>
+
+## [v2.3.8] - 05/07/2026
+
+### Fixed
+* add enable/disable all control to logo quality badges
+
 
 ## [v2.3.7] - 03/07/2026
 
