@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useId } from 'react';
-import { Save, Download, FolderOpen, Trash2, LogOut, RefreshCw, History } from 'lucide-react';
+import { useState, useEffect, useId, useRef } from 'react';
+import { Save, Download, Upload, FolderOpen, Trash2, LogOut, RefreshCw, History } from 'lucide-react';
 import {
-  createProfile, getProfile, updateProfile, deleteProfile, exportProfile,
+  createProfile, getProfile, updateProfile, deleteProfile, exportProfile, importProfiles,
   renderOrigin, type MediaType,
 } from '@/lib/api';
 import { toStoredConfig, fromStoredConfig, type SurfaceConfigs } from './configurator-types';
@@ -203,11 +203,36 @@ export function ProfilePanel({
       const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = url; a.download = `xrdb-profile-${loaded.id}.json`;
-      a.click(); URL.revokeObjectURL(url);
+      a.href = url;
+      a.download = `xrdb-profile-${loaded.id}.json`;
+      // Anchor must be in the DOM for the click to register in some browsers
+      // (notably mobile), and the object URL must outlive the click — revoking
+      // it synchronously cancels the download.
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 0);
       flash('success', 'Profile exported');
     } catch (e) {
       flash('error', (e as Error).message);
+    }
+  };
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportFile = async (file: File) => {
+    setBusy(true);
+    try {
+      const envelope = JSON.parse(await file.text());
+      const result = await importProfiles(envelope);
+      const parts = [`Imported ${result.imported} profile${result.imported === 1 ? '' : 's'}`];
+      if (result.skipped) parts.push(`${result.skipped} skipped`);
+      flash(result.imported > 0 ? 'success' : 'info', parts.join(', ') + '. Load one by its ID or alias.');
+    } catch (e) {
+      const msg = e instanceof SyntaxError ? 'not a valid XRDB profile file' : (e as Error).message;
+      flash('error', `Import failed — ${msg}`);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -354,6 +379,27 @@ export function ProfilePanel({
         <button className="btn btn-ghost" onClick={() => void handleLoad()} disabled={busy}>
           <FolderOpen size={13} aria-hidden />
           {busy ? 'Loading…' : 'Load profile'}
+        </button>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/json,.json"
+          style={{ display: 'none' }}
+          onChange={e => {
+            const file = e.target.files?.[0];
+            if (file) void handleImportFile(file);
+            e.target.value = ''; // allow re-importing the same file
+          }}
+        />
+        <button
+          className="btn btn-ghost"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={busy}
+          aria-label="Import a profile from a JSON file"
+        >
+          <Upload size={13} aria-hidden />
+          Import from file
         </button>
 
         {recents.length > 0 && (
