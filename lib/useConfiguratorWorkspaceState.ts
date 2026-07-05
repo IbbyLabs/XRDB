@@ -675,21 +675,16 @@ export function useConfiguratorWorkspaceState() {
     }
     setLogoAggregateAccentBarOffset(value);
   }, [previewType]);
+  // Accent bar visibility persists as a single shared field, so keep every
+  // media type in lockstep. Writing only the active type meant a saved "off"
+  // state was restored to one type on load and reverted to the default "on"
+  // for the rest.
   const setAggregateAccentBarVisible = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
-    if (previewType === 'poster') {
-      setPosterAggregateAccentBarVisible(value);
-      return;
-    }
-    if (previewType === 'backdrop') {
-      setBackdropAggregateAccentBarVisible(value);
-      return;
-    }
-    if (previewType === 'thumbnail') {
-      setThumbnailAggregateAccentBarVisible(value);
-      return;
-    }
+    setPosterAggregateAccentBarVisible(value);
+    setBackdropAggregateAccentBarVisible(value);
+    setThumbnailAggregateAccentBarVisible(value);
     setLogoAggregateAccentBarVisible(value);
-  }, [previewType]);
+  }, []);
 
   return {
     activeProviderEditorId,

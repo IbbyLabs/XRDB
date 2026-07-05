@@ -16,12 +16,26 @@ import {
   toConfigModeAiometadataUrl,
 } from '../lib/configProfileClientState.ts';
 import { encodeQualityBadgeAppearanceOverrides } from '../lib/badgeCustomization.ts';
-import { buildProfileParams, buildProxyPayload, parseSavedUiConfig } from '../lib/uiConfig.ts';
+import { buildProfileParams, buildProxyPayload, normalizeSavedUiConfig, parseSavedUiConfig } from '../lib/uiConfig.ts';
 
 test('isProtectedConfigProfileId accepts UUID profile identifiers', () => {
   assert.equal(isProtectedConfigProfileId('550e8400-e29b-41d4-a716-446655440000'), true);
   assert.equal(isProtectedConfigProfileId('xr_deadbeef'), false);
   assert.equal(isProtectedConfigProfileId(''), false);
+});
+
+test('a disabled accent bar survives the save and reveal round trip', () => {
+  const { settings } = normalizeSavedUiConfig({ settings: { aggregateAccentBarVisible: false } });
+  const params = buildProfileParams(settings, {
+    allowMissingTmdbKey: true,
+    allowMissingMdblistKey: true,
+    preserveXrdbKey: true,
+  });
+
+  assert.equal(params?.aggregateAccentBarVisible, 'false');
+
+  const { normalizedConfig } = buildRevealedConfigState(params ?? {});
+  assert.equal(normalizedConfig.settings.aggregateAccentBarVisible, false);
 });
 
 test('getNextAiometadataUrlMode defaults to config when a protected profile becomes active', () => {
