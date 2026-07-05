@@ -11,7 +11,19 @@
 
 ### Documentation
 
-<a id="v2-3-9"></a>
+<a id="v2-3-10"></a>
+
+## [v2.3.10] - 05/07/2026
+
+### Fixed
+* keep all aggregate accent settings in sync across media types
+  
+  The accent mode, accent/value colors, dynamic stops, and bar offset
+  persist as single shared fields but were stored per media type and only
+  written for the active type. A saved value was restored to one type on
+  load and reverted to the default for the rest. Apply each to every type,
+  matching the accent bar visibility fix.
+
 
 ## [v2.3.9] - 05/07/2026
 

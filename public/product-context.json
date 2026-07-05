@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v2.3.9",
-  "generatedAt": "2026-07-05T21:50:48.568Z",
+  "xrdbTag": "v2.3.10",
+  "generatedAt": "2026-07-05T21:54:10.569Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -76,11 +76,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "keep all aggregate accent settings in sync across media types",
         "keep the accent bar disabled across media types when saved",
         "add enable/disable all control to logo quality badges",
         "stage the render cache version file on version bump",
-        "version image URLs so releases bust CDN and browser caches",
-        "BUG-163 honor image region so fr FR logos aren't served as fr CA"
+        "version image URLs so releases bust CDN and browser caches"
       ]
     },
     {
