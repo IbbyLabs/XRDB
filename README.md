@@ -21,8 +21,10 @@ them, and serves the result as PNGs — built for Plex, Jellyfin, Stremio
 ```sh
 docker run -d --name xrdb -p 8787:8787 -v xrdb-data:/data \
   -e XRDB_ADMIN_KEY=choose-a-strong-key \
-  ghcr.io/ibbylabs/xrdb:latest
+  ghcr.io/ibbylabs/xrdb:dev
 ```
+
+v3 ships on `:dev` (port `8787`); `:latest` is still v2 (port `3000`).
 
 Open `http://localhost:8787`, add your provider keys under **Integrations**
 (TMDB at minimum), then build your look in the **Configurator** and save it
