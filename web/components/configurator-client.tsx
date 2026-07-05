@@ -5,6 +5,7 @@ import {
 } from 'react';
 import { Settings2, Star, Film, Rocket, Link2, Maximize2 } from 'lucide-react';
 import { renderUrl, type MediaType, type Template } from '@/lib/api';
+import { getRenderKey, setRenderKey } from '@/lib/render-key';
 import {
   MEDIA_TYPES, DEFAULT_CONFIG, DEFAULT_SURFACE_CONFIGS, PREVIEW_DEBOUNCE_MS,
   readSession, encodeShare, decodeShare, cloneToAllSurfaces, fromStoredConfig,
@@ -26,6 +27,10 @@ export function ConfiguratorClient() {
   const [mediaTitle, setMediaTitle] = useState('The Dark Knight (2008)');
   const [configs, setConfigs] = useState<SurfaceConfigs>(DEFAULT_SURFACE_CONFIGS);
   const [hydrated, setHydrated] = useState(false);
+  // Instance render key (XRDB_API_KEY). Empty on an open instance; on a keyed
+  // one the operator enters it under the Install tab and it flows into the
+  // preview/image URLs and profile saves.
+  const [renderKey, setRenderKeyState] = useState('');
   // The surface currently being edited / previewed. Each surface keeps its own
   // settings; switching the media-type tab switches which one these controls edit.
   const config = configs[mediaType];
@@ -64,6 +69,7 @@ export function ConfiguratorClient() {
         setConfigs(legacy ? cloneToAllSurfaces({ ...DEFAULT_CONFIG, ...legacy }) : DEFAULT_SURFACE_CONFIGS);
       }
     }
+    setRenderKeyState(getRenderKey());
     setHydrated(true);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
@@ -106,7 +112,12 @@ export function ConfiguratorClient() {
       backdropAsPoster: cfg.backdropAsPoster,
       ratingRing: cfg.ratingRing,
       ratingRingPos: cfg.ratingRingPos, ratingRingColor: cfg.ratingRingColor,
-    }));
+    }), renderKey);
+  }, [renderKey]);
+
+  const applyRenderKey = useCallback((value: string) => {
+    setRenderKeyState(value);
+    setRenderKey(value);
   }, []);
 
   const triggerPreview = useCallback((type: MediaType, id: string, cfg: ConfigState, immediate = false) => {
@@ -392,6 +403,8 @@ export function ConfiguratorClient() {
             <div id={`${uid}-panel-install`} role="tabpanel" aria-labelledby={`${uid}-tab-install`} className="tabpanel-enter">
               <InstallPanel
                 configKey={loadedProfile ? (loadedProfile.alias || loadedProfile.id) : ''}
+                renderKey={renderKey}
+                onRenderKeyChange={applyRenderKey}
                 onNotice={flash}
               />
             </div>

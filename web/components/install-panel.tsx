@@ -34,25 +34,34 @@ function isValidUrl(raw: string): boolean {
 
 const PUBLIC_URLS = new Set(PUBLIC_INSTANCES.map(i => normaliseOrigin(i.url)));
 
-/** Artwork URL patterns for AIOMetadata's custom-art fields. */
-export function aiomPatterns(configKey: string) {
+/** Artwork URL patterns for AIOMetadata's custom-art fields. On a keyed
+ *  instance the render key rides along so AIOMetadata's server-side fetches
+ *  authenticate. */
+export function aiomPatterns(configKey: string, renderKey?: string) {
   const origin = renderOrigin();
-  const cfg = configKey ? `?config=${encodeURIComponent(configKey)}` : '';
+  const params = new URLSearchParams();
+  if (configKey) params.set('config', configKey);
+  if (renderKey) params.set('key', renderKey);
+  const qs = params.toString();
+  const suffix = qs ? `?${qs}` : '';
   return {
-    poster:    `${origin}/poster/{imdb_id}${cfg}`,
-    backdrop:  `${origin}/backdrop/{imdb_id}${cfg}`,
-    logo:      `${origin}/logo/{imdb_id}${cfg}`,
-    thumbnail: `${origin}/thumbnail/{imdb_id}${cfg}`,
+    poster:    `${origin}/poster/{imdb_id}${suffix}`,
+    backdrop:  `${origin}/backdrop/{imdb_id}${suffix}`,
+    logo:      `${origin}/logo/{imdb_id}${suffix}`,
+    thumbnail: `${origin}/thumbnail/{imdb_id}${suffix}`,
   };
 }
 
 interface InstallPanelProps {
   /** Saved profile key (alias preferred, else ID); empty = unsaved config. */
   configKey: string;
+  /** Instance render key (XRDB_API_KEY) the operator entered, if any. */
+  renderKey: string;
+  onRenderKeyChange: (value: string) => void;
   onNotice: (type: 'error' | 'success' | 'info', message: string) => void;
 }
 
-export function InstallPanel({ configKey, onNotice }: InstallPanelProps) {
+export function InstallPanel({ configKey, renderKey, onRenderKeyChange, onNotice }: InstallPanelProps) {
   const uid = useId();
   const [selectedInstance, setSelectedInstance] = useState(PUBLIC_INSTANCES[0].url);
   const [customUrl, setCustomUrl] = useState('');
@@ -66,7 +75,7 @@ export function InstallPanel({ configKey, onNotice }: InstallPanelProps) {
   const [installing, setInstalling] = useState(false);
   const [installUrl, setInstallUrl] = useState('');
 
-  const patterns = aiomPatterns(configKey);
+  const patterns = aiomPatterns(configKey, renderKey);
 
   const handleInstall = async () => {
     setInstalling(true);
@@ -94,6 +103,26 @@ export function InstallPanel({ configKey, onNotice }: InstallPanelProps) {
   return (
     <div className="panel">
       <div className="panel-body cfg-fields">
+        <div className="field">
+          <label className="label" htmlFor={`${uid}-instance-key`}>Instance API key</label>
+          <input
+            id={`${uid}-instance-key`}
+            className="input"
+            type="password"
+            value={renderKey}
+            onChange={e => onRenderKeyChange(e.target.value)}
+            placeholder="Only if this instance sets XRDB_API_KEY"
+            spellCheck={false}
+            autoComplete="off"
+            aria-label="Instance API key"
+          />
+          <span className="hint">
+            Needed only when the server sets <code>XRDB_API_KEY</code>. It&apos;s woven
+            into the preview, image URLs, and the patterns below, and lets you save
+            profiles. Kept in this browser session only.
+          </span>
+        </div>
+
         {!configKey && (
           <p className="hint" style={{ marginTop: 0 }}>
             Save a profile first in the <strong>Profile</strong> tab. The
