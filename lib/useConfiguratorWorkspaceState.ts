@@ -540,145 +540,64 @@ export function useConfiguratorWorkspaceState() {
         : previewType === 'thumbnail'
           ? thumbnailAggregateAccentBarVisible
           : logoAggregateAccentBarVisible;
+  // Aggregate accent settings persist as single shared fields, so keep every
+  // media type in lockstep. Writing only the active type meant a saved value
+  // was restored to one type on load and reverted to the default for the rest
+  // (e.g. an accent bar switched off reading as on again after reloading).
   const setAggregateAccentMode = useCallback((value: AggregateAccentMode | ((prev: AggregateAccentMode) => AggregateAccentMode)) => {
-    if (previewType === 'poster') {
-      setPosterAggregateAccentMode(value);
-      return;
-    }
-    if (previewType === 'backdrop') {
-      setBackdropAggregateAccentMode(value);
-      return;
-    }
-    if (previewType === 'thumbnail') {
-      setThumbnailAggregateAccentMode(value);
-      return;
-    }
+    setPosterAggregateAccentMode(value);
+    setBackdropAggregateAccentMode(value);
+    setThumbnailAggregateAccentMode(value);
     setLogoAggregateAccentMode(value);
-  }, [previewType]);
+  }, []);
   const setAggregateAccentColor = useCallback((value: string | ((prev: string) => string)) => {
-    if (previewType === 'poster') {
-      setPosterAggregateAccentColor(value);
-      return;
-    }
-    if (previewType === 'backdrop') {
-      setBackdropAggregateAccentColor(value);
-      return;
-    }
-    if (previewType === 'thumbnail') {
-      setThumbnailAggregateAccentColor(value);
-      return;
-    }
+    setPosterAggregateAccentColor(value);
+    setBackdropAggregateAccentColor(value);
+    setThumbnailAggregateAccentColor(value);
     setLogoAggregateAccentColor(value);
-  }, [previewType]);
+  }, []);
   const setAggregateCriticsAccentColor = useCallback((value: string | ((prev: string) => string)) => {
-    if (previewType === 'poster') {
-      setPosterAggregateCriticsAccentColor(value);
-      return;
-    }
-    if (previewType === 'backdrop') {
-      setBackdropAggregateCriticsAccentColor(value);
-      return;
-    }
-    if (previewType === 'thumbnail') {
-      setThumbnailAggregateCriticsAccentColor(value);
-      return;
-    }
+    setPosterAggregateCriticsAccentColor(value);
+    setBackdropAggregateCriticsAccentColor(value);
+    setThumbnailAggregateCriticsAccentColor(value);
     setLogoAggregateCriticsAccentColor(value);
-  }, [previewType]);
+  }, []);
   const setAggregateAudienceAccentColor = useCallback((value: string | ((prev: string) => string)) => {
-    if (previewType === 'poster') {
-      setPosterAggregateAudienceAccentColor(value);
-      return;
-    }
-    if (previewType === 'backdrop') {
-      setBackdropAggregateAudienceAccentColor(value);
-      return;
-    }
-    if (previewType === 'thumbnail') {
-      setThumbnailAggregateAudienceAccentColor(value);
-      return;
-    }
+    setPosterAggregateAudienceAccentColor(value);
+    setBackdropAggregateAudienceAccentColor(value);
+    setThumbnailAggregateAudienceAccentColor(value);
     setLogoAggregateAudienceAccentColor(value);
-  }, [previewType]);
+  }, []);
   const setAggregateValueColor = useCallback((value: string | ((prev: string) => string)) => {
-    if (previewType === 'poster') {
-      setPosterAggregateValueColor(value);
-      return;
-    }
-    if (previewType === 'backdrop') {
-      setBackdropAggregateValueColor(value);
-      return;
-    }
-    if (previewType === 'thumbnail') {
-      setThumbnailAggregateValueColor(value);
-      return;
-    }
+    setPosterAggregateValueColor(value);
+    setBackdropAggregateValueColor(value);
+    setThumbnailAggregateValueColor(value);
     setLogoAggregateValueColor(value);
-  }, [previewType]);
+  }, []);
   const setAggregateCriticsValueColor = useCallback((value: string | ((prev: string) => string)) => {
-    if (previewType === 'poster') {
-      setPosterAggregateCriticsValueColor(value);
-      return;
-    }
-    if (previewType === 'backdrop') {
-      setBackdropAggregateCriticsValueColor(value);
-      return;
-    }
-    if (previewType === 'thumbnail') {
-      setThumbnailAggregateCriticsValueColor(value);
-      return;
-    }
+    setPosterAggregateCriticsValueColor(value);
+    setBackdropAggregateCriticsValueColor(value);
+    setThumbnailAggregateCriticsValueColor(value);
     setLogoAggregateCriticsValueColor(value);
-  }, [previewType]);
+  }, []);
   const setAggregateAudienceValueColor = useCallback((value: string | ((prev: string) => string)) => {
-    if (previewType === 'poster') {
-      setPosterAggregateAudienceValueColor(value);
-      return;
-    }
-    if (previewType === 'backdrop') {
-      setBackdropAggregateAudienceValueColor(value);
-      return;
-    }
-    if (previewType === 'thumbnail') {
-      setThumbnailAggregateAudienceValueColor(value);
-      return;
-    }
+    setPosterAggregateAudienceValueColor(value);
+    setBackdropAggregateAudienceValueColor(value);
+    setThumbnailAggregateAudienceValueColor(value);
     setLogoAggregateAudienceValueColor(value);
-  }, [previewType]);
+  }, []);
   const setAggregateDynamicStops = useCallback((value: string | ((prev: string) => string)) => {
-    if (previewType === 'poster') {
-      setPosterAggregateDynamicStops(value);
-      return;
-    }
-    if (previewType === 'backdrop') {
-      setBackdropAggregateDynamicStops(value);
-      return;
-    }
-    if (previewType === 'thumbnail') {
-      setThumbnailAggregateDynamicStops(value);
-      return;
-    }
+    setPosterAggregateDynamicStops(value);
+    setBackdropAggregateDynamicStops(value);
+    setThumbnailAggregateDynamicStops(value);
     setLogoAggregateDynamicStops(value);
-  }, [previewType]);
+  }, []);
   const setAggregateAccentBarOffset = useCallback((value: number | ((prev: number) => number)) => {
-    if (previewType === 'poster') {
-      setPosterAggregateAccentBarOffset(value);
-      return;
-    }
-    if (previewType === 'backdrop') {
-      setBackdropAggregateAccentBarOffset(value);
-      return;
-    }
-    if (previewType === 'thumbnail') {
-      setThumbnailAggregateAccentBarOffset(value);
-      return;
-    }
+    setPosterAggregateAccentBarOffset(value);
+    setBackdropAggregateAccentBarOffset(value);
+    setThumbnailAggregateAccentBarOffset(value);
     setLogoAggregateAccentBarOffset(value);
-  }, [previewType]);
-  // Accent bar visibility persists as a single shared field, so keep every
-  // media type in lockstep. Writing only the active type meant a saved "off"
-  // state was restored to one type on load and reverted to the default "on"
-  // for the rest.
+  }, []);
   const setAggregateAccentBarVisible = useCallback((value: boolean | ((prev: boolean) => boolean)) => {
     setPosterAggregateAccentBarVisible(value);
     setBackdropAggregateAccentBarVisible(value);
