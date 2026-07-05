@@ -530,6 +530,7 @@ export function AdvancedPanel() {
       const isAdvancedMode = ctx.experienceMode === 'advanced';
 
       const enabledCount = look.logoQualityBadgePreferences.length;
+      const allEnabled = enabledCount === QUALITY_BADGE_OPTIONS.length;
       const customizableBadgeOptions = QUALITY_BADGE_OPTIONS.filter(
         (badge) => badge.id !== 'certification' && badge.id !== 'releasestatus',
       );
@@ -543,6 +544,13 @@ export function AdvancedPanel() {
             <h2 className="xrdb-subtab-panel-title">Quality badges</h2>
             <div className="xrdb-panel-header-actions">
               <span className="xrdb-panel-summary">{enabledCount} of {QUALITY_BADGE_OPTIONS.length} enabled</span>
+              <button
+                type="button"
+                className="xrdb-btn-ghost"
+                onClick={() => look.onSelectAllQualityBadgePreferencesEnabled(!allEnabled)}
+              >
+                {allEnabled ? 'Disable all' : 'Enable all'}
+              </button>
             </div>
           </div>
 

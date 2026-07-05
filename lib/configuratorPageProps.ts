@@ -423,6 +423,8 @@ export function buildConfiguratorPageProps({
         onSelectLogoQualityBadgesStyle: workspaceState.setLogoQualityBadgesStyle,
         onSelectLogoQualityBadgesMax: workspaceState.setLogoQualityBadgesMax,
         onToggleQualityBadgePreference: workspaceActions.toggleQualityBadgePreference,
+        onSelectAllQualityBadgePreferencesEnabled:
+          workspaceActions.setAllQualityBadgePreferencesEnabled,
         onSelectRatingBadgeScale: activeWorkspaceSettings.setActiveRatingBadgeScale,
         onSelectGenreBadgeScale: activeWorkspaceSettings.setActiveGenreBadgeScale,
         onSelectGenreBadgeOffsetX: activeWorkspaceSettings.setActiveGenreBadgeOffsetX,
