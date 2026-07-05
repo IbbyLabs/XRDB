@@ -115,3 +115,23 @@ func TestSelectImagePath(t *testing.T) {
 		}
 	}
 }
+
+func TestSelectImagePathSkipsSVG(t *testing.T) {
+	en := "en"
+	// The top-voted logo is an SVG the raster pipeline can't decode; selection
+	// must fall through to the best renderable (PNG) instead of picking it.
+	images := []tmdbImage{
+		{FilePath: "/top.svg", Iso639: &en, VoteAverage: 9},
+		{FilePath: "/good.png", Iso639: &en, VoteAverage: 5},
+	}
+	if got := selectImagePath(images, "", "en", ""); got != "/good.png" {
+		t.Errorf("expected the PNG logo, got %q", got)
+	}
+	if got := selectImagePath(images, "", "en", "random"); got != "/good.png" {
+		t.Errorf("random must still skip SVG, got %q", got)
+	}
+	// Only an SVG available and no default → nothing renderable, return empty.
+	if got := selectImagePath([]tmdbImage{{FilePath: "/only.svg", Iso639: &en, VoteAverage: 9}}, "", "en", ""); got != "" {
+		t.Errorf("expected empty when only SVG available, got %q", got)
+	}
+}

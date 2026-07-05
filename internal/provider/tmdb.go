@@ -366,11 +366,17 @@ func selectImagePath(images []tmdbImage, defaultPath, lang, pref string) string 
 		}
 		return strings.ToLower(*img.Iso639)
 	}
+	// TMDB serves many logos as SVG, which the raster render pipeline can't
+	// decode. Skip them so selection never lands on an undecodable image and
+	// falls through to a placeholder.
+	isRenderable := func(path string) bool {
+		return path != "" && !strings.HasSuffix(strings.ToLower(path), ".svg")
+	}
 	// bestBy returns the highest-voted image matching the predicate.
 	bestBy := func(match func(tmdbImage) bool) string {
 		best, bestVotes := "", -1.0
 		for _, img := range images {
-			if img.FilePath == "" || !match(img) {
+			if !isRenderable(img.FilePath) || !match(img) {
 				continue
 			}
 			if img.VoteAverage > bestVotes {
@@ -398,7 +404,7 @@ func selectImagePath(images []tmdbImage, defaultPath, lang, pref string) string 
 		}
 		var candidates []tmdbImage
 		for _, img := range images {
-			if img.FilePath == "" || img.FilePath == base {
+			if !isRenderable(img.FilePath) || img.FilePath == base {
 				continue
 			}
 			if lang == "" || inLang(img) || langOf(img) == "en" || textless(img) {
@@ -417,7 +423,7 @@ func selectImagePath(images []tmdbImage, defaultPath, lang, pref string) string 
 	case "random":
 		candidates := make([]string, 0, len(images))
 		for _, img := range images {
-			if img.FilePath != "" {
+			if isRenderable(img.FilePath) {
 				candidates = append(candidates, img.FilePath)
 			}
 		}
