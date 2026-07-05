@@ -822,6 +822,72 @@ func TestBackdropAsPosterNoLogoWhenBackdropURLEmpty(t *testing.T) {
 	}
 }
 
+func TestCleanTextPreferenceAppliesLogoOverlay(t *testing.T) {
+	// "Clean" is the textless base with the title logo composited back on top,
+	// so Render must fetch and overlay the logo — that's what sets it apart from
+	// plain "textless" (which leaves the art bare).
+	logoFetched := false
+	fetcher := &recordingFetcher{
+		data: makeTestPNG(300, 450, color.NRGBA{50, 50, 80, 255}),
+		onFetch: func(url string) {
+			if url == "http://fake/logo.png" {
+				logoFetched = true
+			}
+		},
+	}
+	stub := &provider.StubProvider{
+		ProviderName: "tmdb",
+		Meta: &provider.MediaMeta{
+			PosterURL: "http://fake/poster.jpg",
+			LogoURL:   "http://fake/logo.png",
+		},
+	}
+	p := &Pipeline{providers: testRegistry(stub), fetcher: fetcher}
+
+	cfg := imageconfig.Default()
+	cfg.TextPreference = imageconfig.TextClean
+	req := Request{MediaType: "poster", MediaID: "tt1", Config: cfg}
+
+	if _, err := p.Render(context.Background(), req); err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	if !logoFetched {
+		t.Error("expected logo overlay for the clean text preference, got none")
+	}
+}
+
+func TestTextlessTextPreferenceDoesNotOverlayLogo(t *testing.T) {
+	// Plain "textless" leaves the art bare: no logo overlay.
+	logoFetched := false
+	fetcher := &recordingFetcher{
+		data: makeTestPNG(300, 450, color.NRGBA{50, 50, 80, 255}),
+		onFetch: func(url string) {
+			if url == "http://fake/logo.png" {
+				logoFetched = true
+			}
+		},
+	}
+	stub := &provider.StubProvider{
+		ProviderName: "tmdb",
+		Meta: &provider.MediaMeta{
+			PosterURL: "http://fake/poster.jpg",
+			LogoURL:   "http://fake/logo.png",
+		},
+	}
+	p := &Pipeline{providers: testRegistry(stub), fetcher: fetcher}
+
+	cfg := imageconfig.Default()
+	cfg.TextPreference = imageconfig.TextTextless
+	req := Request{MediaType: "poster", MediaID: "tt1", Config: cfg}
+
+	if _, err := p.Render(context.Background(), req); err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	if logoFetched {
+		t.Error("plain textless must not overlay a logo")
+	}
+}
+
 // recordingFetcher wraps a stubImageFetcher and calls onFetch for each URL.
 type recordingFetcher struct {
 	data    []byte

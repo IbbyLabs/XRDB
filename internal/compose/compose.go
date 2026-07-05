@@ -223,7 +223,13 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// If BackdropURL is empty the pipeline falls back to poster artwork (which
 	// already carries baked-in title text), so adding a logo overlay there would
 	// double-stamp the title.
+	//
+	// "Clean" artwork is the textless base with the title logo composited back
+	// on top — that logo overlay is exactly what distinguishes it from plain
+	// "textless", which leaves the art bare. (Not on the logo surface, whose
+	// base image is already the wordmark.)
 	wantsLogoOverlay := req.Config.BackdropLogo ||
+		(req.Config.TextPreference == imageconfig.TextClean && req.MediaType != "logo") ||
 		(req.MediaType == "poster" && req.Config.BackdropAsPoster && meta.BackdropURL != "")
 	if wantsLogoOverlay && meta.LogoURL != "" {
 		if logoBytes, err := p.fetcher.Fetch(ctx, meta.LogoURL); err == nil {
