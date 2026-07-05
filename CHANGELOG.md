@@ -11,7 +11,18 @@
 
 ### Documentation
 
-<a id="v2-3-8"></a>
+<a id="v2-3-9"></a>
+
+## [v2.3.9] - 05/07/2026
+
+### Fixed
+* keep the accent bar disabled across media types when saved
+  
+  Accent bar visibility persists as a single shared field, but the
+  workspace stored it per media type and only wrote the active type. A
+  saved off state was restored to one type and reverted to the default on
+  for the rest, so it read as always on after reloading with a UUID.
+
 
 ## [v2.3.8] - 05/07/2026
 
