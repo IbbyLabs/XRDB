@@ -48,7 +48,9 @@ export function aiomPatterns(configKey: string, renderKey?: string) {
     poster:    `${origin}/poster/{imdb_id}${suffix}`,
     backdrop:  `${origin}/backdrop/{imdb_id}${suffix}`,
     logo:      `${origin}/logo/{imdb_id}${suffix}`,
-    thumbnail: `${origin}/thumbnail/{imdb_id}${suffix}`,
+    // Episode thumbnails carry the season/episode so XRDB renders and rates the
+    // specific episode. {season}/{episode} are AIOMetadata placeholders.
+    thumbnail: `${origin}/thumbnail/{imdb_id}:{season}:{episode}${suffix}`,
   };
 }
 

@@ -118,6 +118,61 @@ func (t *TMDB) resolveID(ctx context.Context, mediaType, id string) (string, str
 	return id, resolvedType, nil
 }
 
+// EpisodeInfo holds the per-episode data resolved from TMDB: the episode still
+// image, TMDB's own episode rating, and the episode's IMDb tconst (so other
+// providers can look up per-episode ratings).
+type EpisodeInfo struct {
+	Name     string
+	StillURL string
+	IMDbID   string
+	Rating   *Rating
+}
+
+// FetchEpisode resolves a single episode of a series. seriesID may be an IMDb
+// tt-id or a TMDB numeric id. Returns the episode still, TMDB episode rating,
+// and the episode's own IMDb id — the pieces needed for per-episode thumbnails.
+func (t *TMDB) FetchEpisode(ctx context.Context, seriesID string, season, episode int, opts ArtworkOptions) (*EpisodeInfo, error) {
+	apiKey, readToken := t.credentials()
+	if apiKey == "" && readToken == "" {
+		return nil, fmt.Errorf("tmdb: no api key or read token configured")
+	}
+	tmdbID, _, err := t.resolveID(ctx, "series", seriesID)
+	if err != nil {
+		return nil, fmt.Errorf("tmdb: resolve series %q: %w", seriesID, err)
+	}
+	path := fmt.Sprintf("%s/tv/%s/season/%d/episode/%d?append_to_response=external_ids",
+		tmdbBaseURL, tmdbID, season, episode)
+	var result struct {
+		Name        string  `json:"name"`
+		StillPath   string  `json:"still_path"`
+		VoteAverage float64 `json:"vote_average"`
+		VoteCount   int     `json:"vote_count"`
+		ExternalIDs struct {
+			IMDbID string `json:"imdb_id"`
+		} `json:"external_ids"`
+	}
+	if err := t.get(ctx, path, &result); err != nil {
+		return nil, err
+	}
+	info := &EpisodeInfo{Name: result.Name, IMDbID: result.ExternalIDs.IMDbID}
+	stillRes := "/w780"
+	if opts.Size == "large" || opts.Size == "4k" {
+		stillRes = "/original"
+	}
+	if result.StillPath != "" {
+		info.StillURL = tmdbImageBase + stillRes + result.StillPath
+	}
+	if result.VoteAverage > 0 {
+		info.Rating = &Rating{
+			Source: "tmdb",
+			Value:  result.VoteAverage,
+			Votes:  result.VoteCount,
+			Label:  fmt.Sprintf("%.1f", result.VoteAverage),
+		}
+	}
+	return info, nil
+}
+
 func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts ArtworkOptions) (*MediaMeta, error) {
 	lang := strings.ToLower(strings.TrimSpace(opts.Language))
 	// Pull image variants in the preferred language plus English and

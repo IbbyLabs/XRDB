@@ -13,6 +13,8 @@ import (
 	"image/png"
 	"io"
 	"net/http"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -118,7 +120,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		ContentType: "image/png",
 	}
 
-	sourceBytes, meta, err := p.fetchSourceImageAndMeta(ctx, req)
+	sourceBytes, meta, ratingID, err := p.fetchSourceImageAndMeta(ctx, req)
 	if err != nil || len(sourceBytes) == 0 {
 		result.ImageBytes = render.PlaceholderPNG(req.MediaType)
 		return result, nil
@@ -131,8 +133,11 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	}
 
 	// Collect ratings up front so the logo letterbox can reserve a clear band
-	// for the rating strip beneath the wordmark.
-	allRatings, ratingProviders := p.collectRatingsWithProviders(ctx, req, meta.Ratings)
+	// for the rating strip beneath the wordmark. ratingID differs from
+	// req.MediaID for episodes, so per-episode ratings resolve correctly.
+	ratingReq := req
+	ratingReq.MediaID = ratingID
+	allRatings, ratingProviders := p.collectRatingsWithProviders(ctx, ratingReq, meta.Ratings)
 	result.ContributingProviders = append([]string{string(req.Config.ArtworkSource)}, ratingProviders...)
 
 	// Use saliency-aware cropping when a backdrop is the source so that
@@ -247,15 +252,82 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	return result, nil
 }
 
-// fetchSourceImageAndMeta fetches the artwork bytes and metadata from the configured provider.
-func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]byte, *provider.MediaMeta, error) {
+// parseEpisodeID detects an episode identifier of the form
+// "<series>:<season>:<episode>" — the Stremio/AIOMetadata format for series
+// episodes, where <series> may be an IMDb tt-id, "tmdb:<id>", or a bare numeric
+// TMDB id (e.g. "tt0903747:1:1", "tmdb:1396:1:1"). Anime episode schemes
+// (kitsu:/mal:) are left to their own providers and not matched here.
+func parseEpisodeID(id string) (series string, season, episode int, ok bool) {
+	parts := strings.Split(id, ":")
+	if len(parts) < 3 {
+		return "", 0, 0, false
+	}
+	e, err1 := strconv.Atoi(parts[len(parts)-1])
+	s, err2 := strconv.Atoi(parts[len(parts)-2])
+	if err1 != nil || err2 != nil {
+		return "", 0, 0, false
+	}
+	series = strings.Join(parts[:len(parts)-2], ":")
+	// TMDB seasons can be 0 (specials); episodes are 1-based.
+	if series == "" || s < 0 || e < 1 {
+		return "", 0, 0, false
+	}
+	return series, s, e, true
+}
+
+// fetchEpisode resolves per-episode artwork and ratings for a series episode.
+// It returns the episode still bytes, a meta seeded with TMDB's episode rating,
+// and the id under which the remaining rating providers should be queried (the
+// episode's own IMDb tconst when known, so their ratings are per-episode too).
+// handled is false when this isn't resolvable as an episode, so the caller
+// falls back to normal series-level artwork.
+func (p *Pipeline) fetchEpisode(ctx context.Context, req Request, series string, season, episode int) ([]byte, *provider.MediaMeta, string, bool) {
+	tmdb := p.TMDBClient()
+	if tmdb == nil {
+		return nil, nil, "", false
+	}
+	seriesID := strings.TrimPrefix(series, "tmdb:")
+	info, err := tmdb.FetchEpisode(ctx, seriesID, season, episode, provider.ArtworkOptions{
+		Language: req.Config.Language,
+		Size:     string(req.Config.Size),
+	})
+	if err != nil || info == nil || info.StillURL == "" {
+		return nil, nil, "", false
+	}
+	data, err := p.fetcher.Fetch(ctx, info.StillURL)
+	if err != nil || len(data) == 0 {
+		return nil, nil, "", false
+	}
+	meta := &provider.MediaMeta{}
+	if info.Rating != nil {
+		meta.Ratings = []provider.Rating{*info.Rating}
+	}
+	ratingID := req.MediaID
+	if info.IMDbID != "" {
+		ratingID = info.IMDbID
+	}
+	return data, meta, ratingID, true
+}
+
+// fetchSourceImageAndMeta fetches the artwork bytes and metadata from the
+// configured provider. The returned string is the id under which ratings
+// should be collected — normally req.MediaID, but the episode's own IMDb tconst
+// for a series-episode request so ratings resolve per-episode.
+func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]byte, *provider.MediaMeta, string, error) {
+	// Series-episode requests (thumbnails from AIOMetadata) resolve the episode
+	// still + per-episode ratings instead of the series-level artwork.
+	if series, season, episode, ok := parseEpisodeID(req.MediaID); ok {
+		if data, meta, ratingID, handled := p.fetchEpisode(ctx, req, series, season, episode); handled {
+			return data, meta, ratingID, nil
+		}
+	}
 	provName := string(req.Config.ArtworkSource)
 	prov := p.providers.Get(provName)
 	if prov == nil {
 		prov = p.providers.Get("tmdb")
 	}
 	if prov == nil {
-		return nil, nil, fmt.Errorf("no provider available for %q", provName)
+		return nil, nil, req.MediaID, fmt.Errorf("no provider available for %q", provName)
 	}
 
 	opts := provider.ArtworkOptions{
@@ -273,18 +345,18 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 		meta, err = prov.Fetch(ctx, req.ContentType, req.MediaID)
 	}
 	if err != nil {
-		return nil, nil, fmt.Errorf("provider fetch: %w", err)
+		return nil, nil, req.MediaID, fmt.Errorf("provider fetch: %w", err)
 	}
 
 	p.enrichMetaForOverlays(ctx, req, meta)
 
 	artworkURL := selectArtworkURL(meta, req.MediaType, req.Config)
 	if artworkURL == "" {
-		return nil, meta, fmt.Errorf("no artwork URL in metadata")
+		return nil, meta, req.MediaID, fmt.Errorf("no artwork URL in metadata")
 	}
 
 	data, err := p.fetcher.Fetch(ctx, artworkURL)
-	return data, meta, err
+	return data, meta, req.MediaID, err
 }
 
 // enrichMetaForOverlays fills overlay metadata (content rating, genres, watch

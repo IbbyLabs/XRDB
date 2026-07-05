@@ -888,6 +888,33 @@ func TestTextlessTextPreferenceDoesNotOverlayLogo(t *testing.T) {
 	}
 }
 
+func TestParseEpisodeID(t *testing.T) {
+	cases := []struct {
+		id      string
+		series  string
+		season  int
+		episode int
+		ok      bool
+	}{
+		{"tt0903747:1:1", "tt0903747", 1, 1, true},
+		{"tt0903747:5:14", "tt0903747", 5, 14, true},
+		{"tmdb:1396:2:7", "tmdb:1396", 2, 7, true},
+		{"1396:0:1", "1396", 0, 1, true}, // season 0 = specials
+		{"tt0903747", "", 0, 0, false},   // no season/episode → not an episode
+		{"tt0903747:1", "", 0, 0, false}, // missing episode
+		{"tt0903747:x:1", "", 0, 0, false},
+		{"tt0903747:1:0", "", 0, 0, false}, // episodes are 1-based
+		{"", "", 0, 0, false},
+	}
+	for _, c := range cases {
+		series, season, episode, ok := parseEpisodeID(c.id)
+		if ok != c.ok || series != c.series || season != c.season || episode != c.episode {
+			t.Errorf("parseEpisodeID(%q) = (%q,%d,%d,%v), want (%q,%d,%d,%v)",
+				c.id, series, season, episode, ok, c.series, c.season, c.episode, c.ok)
+		}
+	}
+}
+
 // recordingFetcher wraps a stubImageFetcher and calls onFetch for each URL.
 type recordingFetcher struct {
 	data    []byte
