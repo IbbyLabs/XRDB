@@ -623,6 +623,43 @@ func TestAPIKeyProtectsRenderRoutes(t *testing.T) {
 	}
 }
 
+// The configurator preview is a same-origin browser <img> that carries no key,
+// so the gate must let genuine same-origin requests through while still
+// rejecting the server-side and cross-origin fetches the key is meant to block.
+func TestAPIKeyExemptsSameOriginPreview(t *testing.T) {
+	cfg := config.Config{APIKey: "renderkey"}
+	h := NewHandler("test", nil, nil, nil, nil, cfg)
+
+	render := func(setup func(*http.Request)) int {
+		req := httptest.NewRequest(http.MethodGet, "/poster/tt0816692", nil)
+		if setup != nil {
+			setup(req)
+		}
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, req)
+		return rr.Code
+	}
+
+	cases := []struct {
+		name  string
+		setup func(*http.Request)
+		want  int
+	}{
+		{"same-origin img preview", func(r *http.Request) { r.Header.Set("Sec-Fetch-Site", "same-origin") }, http.StatusOK},
+		{"same-host referer fallback", func(r *http.Request) { r.Header.Set("Referer", "http://"+r.Host+"/configurator") }, http.StatusOK},
+		{"cross-site hotlink", func(r *http.Request) { r.Header.Set("Sec-Fetch-Site", "cross-site") }, http.StatusUnauthorized},
+		{"same-site neighbour", func(r *http.Request) { r.Header.Set("Sec-Fetch-Site", "same-site") }, http.StatusUnauthorized},
+		{"direct navigation", func(r *http.Request) { r.Header.Set("Sec-Fetch-Site", "none") }, http.StatusUnauthorized},
+		{"other-host referer", func(r *http.Request) { r.Header.Set("Referer", "http://evil.example/") }, http.StatusUnauthorized},
+		{"server-side fetch (no headers)", nil, http.StatusUnauthorized},
+	}
+	for _, tc := range cases {
+		if got := render(tc.setup); got != tc.want {
+			t.Errorf("%s: expected %d, got %d", tc.name, tc.want, got)
+		}
+	}
+}
+
 func TestAPIKeyDoesNotBlockHealthz(t *testing.T) {
 	cfg := config.Config{APIKey: "renderkey"}
 	h := NewHandler("test", nil, nil, nil, nil, cfg)

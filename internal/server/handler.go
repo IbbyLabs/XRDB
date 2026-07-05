@@ -72,9 +72,10 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		configParam := queryValue(raw, "config", "default")
 		uuid := queryValue(raw, "uuid", "none")
 
-		// Enforce global API key if configured.
-		// Accept via Authorization: Bearer header or ?key= query param (for Stremio compatibility).
-		if cfg.APIKey != "" && !bearerMatches(r, cfg.APIKey) && !keyParamMatches(raw, cfg.APIKey) {
+		// Enforce global API key if configured. Accept via Authorization: Bearer
+		// header or ?key= query param (for Stremio compatibility). The
+		// configurator's own preview <img> is exempt — see sameOriginRender.
+		if cfg.APIKey != "" && !bearerMatches(r, cfg.APIKey) && !keyParamMatches(raw, cfg.APIKey) && !sameOriginRender(r) {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			ms.Record(r.URL.Path, http.StatusUnauthorized, latMs(start))
 			return
@@ -349,6 +350,31 @@ func bearerMatches(r *http.Request, want string) bool {
 func keyParamMatches(rawQuery, want string) bool {
 	got := queryValue(rawQuery, "key", "")
 	return subtle.ConstantTimeCompare([]byte(got), []byte(want)) == 1
+}
+
+// sameOriginRender reports whether a render request is the configurator's own
+// preview loading in a browser, which the API-key gate exempts. XRDB_API_KEY
+// exists to gate programmatic and external use — AIOMetadata and Stremio fetch
+// server-side, hotlinks load cross-origin — and all of those still require the
+// key. Sec-Fetch-Site is set by the browser and cannot be forged from page
+// JavaScript; only a genuine same-origin request (the embedded <img>) is let
+// through. same-site is intentionally not accepted, so a neighbour on a shared
+// parent domain can't hotlink for free.
+func sameOriginRender(r *http.Request) bool {
+	switch r.Header.Get("Sec-Fetch-Site") {
+	case "same-origin":
+		return true
+	case "same-site", "cross-site", "none":
+		return false
+	}
+	// Clients that omit Fetch Metadata (older Safari) fall back to a same-host
+	// Referer. Server-side fetchers send no Referer, so they stay gated.
+	if ref := r.Header.Get("Referer"); ref != "" {
+		if u, err := url.Parse(ref); err == nil && u.Host != "" {
+			return u.Host == r.Host
+		}
+	}
+	return false
 }
 
 func writeJSON(w http.ResponseWriter, status int, payload any) {
