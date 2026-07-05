@@ -164,8 +164,13 @@ func TestRenderImagePosterOK(t *testing.T) {
 	rr := httptest.NewRecorder()
 	h.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d", rr.Code)
+	// No pipeline is configured, so this renders a placeholder: a valid PNG with
+	// the right headers, served as a non-cacheable 404 (see placeholder handling).
+	if rr.Code != http.StatusNotFound {
+		t.Fatalf("expected 404 placeholder, got %d", rr.Code)
+	}
+	if cc := rr.Header().Get("Cache-Control"); cc != "no-store" {
+		t.Fatalf("placeholder must be non-cacheable, got Cache-Control %q", cc)
 	}
 	if ct := rr.Header().Get("Content-Type"); ct != "image/png" {
 		t.Fatalf("expected Content-Type image/png, got %q", ct)
@@ -184,8 +189,9 @@ func TestRenderImageAllFamilies(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/"+mt+"/tt0816692", nil)
 		rr := httptest.NewRecorder()
 		h.ServeHTTP(rr, req)
-		if rr.Code != http.StatusOK {
-			t.Fatalf("%s: expected 200, got %d", mt, rr.Code)
+		// No pipeline → placeholder, served as a 404 (still a valid PNG).
+		if rr.Code != http.StatusNotFound {
+			t.Fatalf("%s: expected 404 placeholder, got %d", mt, rr.Code)
 		}
 		if ct := rr.Header().Get("Content-Type"); ct != "image/png" {
 			t.Fatalf("%s: expected Content-Type image/png, got %q", mt, ct)
@@ -631,13 +637,13 @@ func TestAPIKeyProtectsRenderRoutes(t *testing.T) {
 		t.Errorf("no key: expected 401, got %d", rr.Code)
 	}
 
-	// Correct key → 200 (placeholder rendered since no pipeline)
+	// Correct key → passes the gate; no pipeline means a placeholder (404), not 401.
 	req := httptest.NewRequest(http.MethodGet, "/poster/tt0816692", nil)
 	req.Header.Set("Authorization", "Bearer renderkey")
 	rr = httptest.NewRecorder()
 	h.ServeHTTP(rr, req)
-	if rr.Code != http.StatusOK {
-		t.Errorf("correct key: expected 200, got %d", rr.Code)
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("correct key: expected 404 placeholder (gate passed), got %d", rr.Code)
 	}
 }
 
@@ -663,8 +669,10 @@ func TestAPIKeyExemptsSameOriginPreview(t *testing.T) {
 		setup func(*http.Request)
 		want  int
 	}{
-		{"same-origin img preview", func(r *http.Request) { r.Header.Set("Sec-Fetch-Site", "same-origin") }, http.StatusOK},
-		{"same-host referer fallback", func(r *http.Request) { r.Header.Set("Referer", "http://"+r.Host+"/configurator") }, http.StatusOK},
+		// Passing the gate yields a placeholder (404, no pipeline) — the point is
+		// it's not 401.
+		{"same-origin img preview", func(r *http.Request) { r.Header.Set("Sec-Fetch-Site", "same-origin") }, http.StatusNotFound},
+		{"same-host referer fallback", func(r *http.Request) { r.Header.Set("Referer", "http://"+r.Host+"/configurator") }, http.StatusNotFound},
 		{"cross-site hotlink", func(r *http.Request) { r.Header.Set("Sec-Fetch-Site", "cross-site") }, http.StatusUnauthorized},
 		{"same-site neighbour", func(r *http.Request) { r.Header.Set("Sec-Fetch-Site", "same-site") }, http.StatusUnauthorized},
 		{"direct navigation", func(r *http.Request) { r.Header.Set("Sec-Fetch-Site", "none") }, http.StatusUnauthorized},
@@ -709,8 +717,9 @@ func TestProfilePasswordProtection(t *testing.T) {
 	// protects editing, not viewing.
 	rr = httptest.NewRecorder()
 	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/poster/tt0816692?config=locked", nil))
-	if rr.Code != http.StatusOK {
-		t.Errorf("render without password: expected 200, got %d", rr.Code)
+	// Viewing is public (not password-gated); no pipeline means a placeholder 404.
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("render without password: expected 404 placeholder (not blocked), got %d", rr.Code)
 	}
 
 	// Reading the profile config without the password → 401
@@ -774,8 +783,9 @@ func TestProfileAliasFlow(t *testing.T) {
 	// Render by alias works without a password.
 	rr = httptest.NewRecorder()
 	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/poster/tt0816692?config=myhandle", nil))
-	if rr.Code != http.StatusOK {
-		t.Errorf("render by alias: expected 200, got %d", rr.Code)
+	// Alias resolves and reaches the render; no pipeline means a placeholder 404.
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("render by alias: expected 404 placeholder (alias resolved), got %d", rr.Code)
 	}
 
 	// Invalid alias is rejected.

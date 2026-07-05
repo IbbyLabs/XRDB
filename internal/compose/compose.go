@@ -45,6 +45,10 @@ type Result struct {
 	CacheKey              string
 	FromCache             bool
 	ContributingProviders []string // names of providers that returned data
+	// Placeholder is true when ImageBytes is a fallback placeholder rather than
+	// real artwork — the caller must not cache it (a transient failure would
+	// otherwise be frozen for the whole TTL) and should signal that downstream.
+	Placeholder bool
 }
 
 // Pipeline orchestrates metadata fetch + image composition.
@@ -123,12 +127,14 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	sourceBytes, meta, ratingID, err := p.fetchSourceImageAndMeta(ctx, req)
 	if err != nil || len(sourceBytes) == 0 {
 		result.ImageBytes = render.PlaceholderPNG(req.MediaType)
+		result.Placeholder = true
 		return result, nil
 	}
 
 	srcImg, err := decodeImage(sourceBytes)
 	if err != nil {
 		result.ImageBytes = render.PlaceholderPNG(req.MediaType)
+		result.Placeholder = true
 		return result, nil
 	}
 
@@ -245,6 +251,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	var buf bytes.Buffer
 	if err := png.Encode(&buf, composed); err != nil {
 		result.ImageBytes = render.PlaceholderPNG(req.MediaType)
+		result.Placeholder = true
 		return result, nil
 	}
 

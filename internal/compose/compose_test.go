@@ -60,6 +60,9 @@ func TestRenderFallsBackToPlaceholderOnProviderError(t *testing.T) {
 	if !bytes.Equal(res.ImageBytes, render.PlaceholderPNG("poster")) {
 		t.Error("expected fallback placeholder on provider error")
 	}
+	if !res.Placeholder {
+		t.Error("expected Placeholder=true so the caller skips caching and signals no-store")
+	}
 }
 
 func TestRenderFallsBackOnNoArtworkURL(t *testing.T) {

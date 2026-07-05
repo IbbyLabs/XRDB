@@ -126,6 +126,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				fromCache = true
 			}
 		}
+		placeholder := false
 		if !fromCache {
 			var renderResult *compose.Result
 			if pipeline != nil {
@@ -137,24 +138,38 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				})
 				if renderResult != nil {
 					pngBytes = renderResult.ImageBytes
+					placeholder = renderResult.Placeholder
 				}
 			}
 			if len(pngBytes) == 0 {
 				pngBytes = render.PlaceholderPNG(mediaType)
+				placeholder = true
 			}
-			if renderCache != nil {
+			// Never cache a placeholder: a transient failure would otherwise be
+			// frozen for the whole TTL, and downstream caches that key on a 200
+			// (e.g. an nginx proxy_cache) would pin the broken image for as long
+			// as they hold it. Only real artwork is cached.
+			if renderCache != nil && !placeholder {
 				ttl := effectiveTTL(renderResult, cfg.ProviderTTLs)
 				_ = renderCache.SetWithTTL(cacheKey, pngBytes, ttl)
 			}
 		}
-		if fromCache {
-			w.Header().Set("X-Cache", "HIT")
-		}
 		w.Header().Set("Content-Type", "image/png")
 		w.Header().Set("X-Cache-Key", cacheKey)
-		w.WriteHeader(http.StatusOK)
+		status := http.StatusOK
+		if placeholder {
+			// Signal "no artwork" with a non-cacheable 404 so caches/CDNs don't
+			// store the fallback, and AIOMetadata's image proxy falls back to the
+			// original art instead of serving the placeholder. The next request
+			// retries and serves (and caches) real art once it's available.
+			w.Header().Set("Cache-Control", "no-store")
+			status = http.StatusNotFound
+		} else if fromCache {
+			w.Header().Set("X-Cache", "HIT")
+		}
+		w.WriteHeader(status)
 		_, _ = w.Write(pngBytes)
-		ms.Record("/"+mediaType, http.StatusOK, latMs(start))
+		ms.Record("/"+mediaType, status, latMs(start))
 	}
 	for _, mt := range imageconfig.Surfaces {
 		mux.HandleFunc("/"+mt+"/{id}", renderHandler)
