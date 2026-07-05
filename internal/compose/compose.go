@@ -321,42 +321,112 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 			return data, meta, ratingID, nil
 		}
 	}
-	provName := string(req.Config.ArtworkSource)
-	prov := p.providers.Get(provName)
-	if prov == nil {
-		prov = p.providers.Get("tmdb")
-	}
-	if prov == nil {
-		return nil, nil, req.MediaID, fmt.Errorf("no provider available for %q", provName)
-	}
-
 	opts := provider.ArtworkOptions{
 		Language:       req.Config.Language,
 		TextPreference: string(req.Config.TextPreference),
 		Size:           string(req.Config.Size),
 	}
-	var meta *provider.MediaMeta
-	var err error
-	// Providers are queried by content type (movie/series), never by the artwork
-	// surface; the surface only decides which image URL we pick below.
-	if af, ok := prov.(provider.ArtworkFetcher); ok {
-		meta, err = af.FetchArtwork(ctx, req.ContentType, req.MediaID, opts)
-	} else {
-		meta, err = prov.Fetch(ctx, req.ContentType, req.MediaID)
+	// Try the configured artwork source first, then fall back across the other
+	// image-capable providers so a surface missing from one source (most often a
+	// logo) is filled from wherever it exists. baseMeta keeps the first
+	// provider's metadata for overlays, backfilling image URLs it lacked.
+	var baseMeta *provider.MediaMeta
+	for _, name := range p.artworkOrder(string(req.Config.ArtworkSource)) {
+		prov := p.providers.Get(name)
+		if prov == nil {
+			continue
+		}
+		var meta *provider.MediaMeta
+		var err error
+		// Providers are queried by content type (movie/series), never by the
+		// artwork surface; the surface only decides which image URL we pick.
+		if af, ok := prov.(provider.ArtworkFetcher); ok {
+			meta, err = af.FetchArtwork(ctx, req.ContentType, req.MediaID, opts)
+		} else {
+			meta, err = prov.Fetch(ctx, req.ContentType, req.MediaID)
+		}
+		if err != nil || meta == nil {
+			continue
+		}
+		if baseMeta == nil {
+			baseMeta = meta
+		} else {
+			mergeArtworkURLs(baseMeta, meta)
+		}
+		// Strict per-surface selection: no logo→poster substitution yet, so the
+		// loop keeps trying other providers for a real logo first.
+		if url := selectSurfaceURL(meta, req.MediaType, req.Config); url != "" {
+			if data, ferr := p.fetcher.Fetch(ctx, url); ferr == nil && len(data) > 0 {
+				p.enrichMetaForOverlays(ctx, req, baseMeta)
+				return data, baseMeta, req.MediaID, nil
+			}
+		}
 	}
-	if err != nil {
-		return nil, nil, req.MediaID, fmt.Errorf("provider fetch: %w", err)
+	if baseMeta == nil {
+		return nil, nil, req.MediaID, fmt.Errorf("no artwork provider returned metadata")
 	}
-
-	p.enrichMetaForOverlays(ctx, req, meta)
-
-	artworkURL := selectArtworkURL(meta, req.MediaType, req.Config)
-	if artworkURL == "" {
-		return nil, meta, req.MediaID, fmt.Errorf("no artwork URL in metadata")
+	// No provider had the exact surface. Last resort allows a poster to stand in
+	// for a missing logo/thumbnail, using art merged from every source tried.
+	p.enrichMetaForOverlays(ctx, req, baseMeta)
+	if url := selectArtworkURL(baseMeta, req.MediaType, req.Config); url != "" {
+		if data, err := p.fetcher.Fetch(ctx, url); err == nil && len(data) > 0 {
+			return data, baseMeta, req.MediaID, nil
+		}
 	}
+	return nil, baseMeta, req.MediaID, fmt.Errorf("no artwork URL in metadata")
+}
 
-	data, err := p.fetcher.Fetch(ctx, artworkURL)
-	return data, meta, req.MediaID, err
+// artworkOrder lists providers to try for artwork: the configured source first,
+// then the remaining image-capable providers as fallbacks. Providers not
+// registered (e.g. Fanart without an API key) are skipped by the caller.
+func (p *Pipeline) artworkOrder(primary string) []string {
+	order := make([]string, 0, 4)
+	if primary != "" {
+		order = append(order, primary)
+	}
+	for _, name := range []string{"fanart", "tmdb", "cinemeta"} {
+		if name != primary {
+			order = append(order, name)
+		}
+	}
+	return order
+}
+
+// selectSurfaceURL returns the provider's own image for the requested surface,
+// WITHOUT the logo→poster substitution selectArtworkURL applies — so the
+// fallback loop exhausts every provider for a real logo before settling.
+func selectSurfaceURL(meta *provider.MediaMeta, surface string, cfg imageconfig.Config) string {
+	switch surface {
+	case "backdrop":
+		return meta.BackdropURL
+	case "thumbnail":
+		if meta.BackdropURL != "" {
+			return meta.BackdropURL
+		}
+		return meta.PosterURL
+	case "logo":
+		return meta.LogoURL
+	default: // poster
+		if cfg.BackdropAsPoster && meta.BackdropURL != "" {
+			return meta.BackdropURL
+		}
+		return meta.PosterURL
+	}
+}
+
+// mergeArtworkURLs backfills image URLs missing from dst with those from src, so
+// overlays (e.g. the clean-artwork logo) can use art discovered on a fallback
+// provider even when the base source lacked it.
+func mergeArtworkURLs(dst, src *provider.MediaMeta) {
+	if dst.PosterURL == "" {
+		dst.PosterURL = src.PosterURL
+	}
+	if dst.BackdropURL == "" {
+		dst.BackdropURL = src.BackdropURL
+	}
+	if dst.LogoURL == "" {
+		dst.LogoURL = src.LogoURL
+	}
 }
 
 // enrichMetaForOverlays fills overlay metadata (content rating, genres, watch

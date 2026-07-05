@@ -888,6 +888,75 @@ func TestTextlessTextPreferenceDoesNotOverlayLogo(t *testing.T) {
 	}
 }
 
+func TestLogoFallsBackAcrossProviders(t *testing.T) {
+	// The configured source (tmdb) has no logo; the pipeline must fall back to
+	// Fanart's logo rather than the poster or a placeholder.
+	fetched := ""
+	fetcher := &recordingFetcher{
+		data:    makeTestPNG(800, 200, color.NRGBA{10, 10, 10, 255}),
+		onFetch: func(url string) { fetched = url },
+	}
+	reg := provider.NewRegistry()
+	reg.Register(&provider.StubProvider{ProviderName: "tmdb", Meta: &provider.MediaMeta{PosterURL: "http://tmdb/poster.jpg"}})
+	reg.Register(&provider.StubProvider{ProviderName: "fanart", Meta: &provider.MediaMeta{LogoURL: "http://fanart/logo.png"}})
+	p := &Pipeline{providers: reg, fetcher: fetcher}
+
+	cfg := imageconfig.Default()
+	cfg.ArtworkSource = imageconfig.ArtworkTMDB
+	if _, err := p.Render(context.Background(), Request{MediaType: "logo", MediaID: "tt1", Config: cfg}); err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	if fetched != "http://fanart/logo.png" {
+		t.Errorf("expected the Fanart logo to be used, got %q", fetched)
+	}
+}
+
+func TestPrimaryLogoWinsWithoutFallback(t *testing.T) {
+	// When the configured source has the logo, its logo is used — the fallback
+	// provider's logo is not fetched. (Fanart is still queried for ratings, but
+	// that goes through provider.Fetch, not the image fetcher.)
+	fetched := ""
+	fetcher := &recordingFetcher{
+		data:    makeTestPNG(800, 200, color.NRGBA{10, 10, 10, 255}),
+		onFetch: func(url string) { fetched = url },
+	}
+	reg := provider.NewRegistry()
+	reg.Register(&provider.StubProvider{ProviderName: "tmdb", Meta: &provider.MediaMeta{LogoURL: "http://tmdb/logo.png"}})
+	reg.Register(&provider.StubProvider{ProviderName: "fanart", Meta: &provider.MediaMeta{LogoURL: "http://fanart/logo.png"}})
+	p := &Pipeline{providers: reg, fetcher: fetcher}
+
+	cfg := imageconfig.Default()
+	cfg.ArtworkSource = imageconfig.ArtworkTMDB
+	if _, err := p.Render(context.Background(), Request{MediaType: "logo", MediaID: "tt1", Config: cfg}); err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	if fetched != "http://tmdb/logo.png" {
+		t.Errorf("expected the primary (tmdb) logo, got %q", fetched)
+	}
+}
+
+func TestLogoLastResortFallsBackToPoster(t *testing.T) {
+	// No provider has a logo: the last-resort selection lets the poster stand in
+	// rather than returning a placeholder.
+	fetched := ""
+	fetcher := &recordingFetcher{
+		data:    makeTestPNG(300, 450, color.NRGBA{10, 10, 10, 255}),
+		onFetch: func(url string) { fetched = url },
+	}
+	reg := provider.NewRegistry()
+	reg.Register(&provider.StubProvider{ProviderName: "tmdb", Meta: &provider.MediaMeta{PosterURL: "http://tmdb/poster.jpg"}})
+	p := &Pipeline{providers: reg, fetcher: fetcher}
+
+	cfg := imageconfig.Default()
+	cfg.ArtworkSource = imageconfig.ArtworkTMDB
+	if _, err := p.Render(context.Background(), Request{MediaType: "logo", MediaID: "tt1", Config: cfg}); err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	if fetched != "http://tmdb/poster.jpg" {
+		t.Errorf("expected poster last-resort fallback, got %q", fetched)
+	}
+}
+
 func TestParseEpisodeID(t *testing.T) {
 	cases := []struct {
 		id      string
