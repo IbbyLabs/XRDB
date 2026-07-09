@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import {
   CONFIGURATOR_WIZARD_QUESTION_ORDER,
@@ -19,7 +19,6 @@ export function useConfiguratorWorkspaceUi<TPanel extends string, TSection exten
   setExperienceModeDraft,
   setShowExperienceModal,
   showConfigString,
-  showExperienceModal,
   showProxyUrl,
 }: {
   aiometadataCopyBlock: string;
@@ -143,18 +142,6 @@ export function useConfiguratorWorkspaceUi<TPanel extends string, TSection exten
     setExperienceMode(experienceModeDraft);
     setShowExperienceModal(false);
   }, [experienceModeDraft, setExperienceMode, setShowExperienceModal]);
-
-  useEffect(() => {
-    if (typeof document === 'undefined' || !showExperienceModal) {
-      return;
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [showExperienceModal]);
 
   return {
     aiometadataCopied,
