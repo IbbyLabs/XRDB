@@ -11,7 +11,15 @@
 
 ### Documentation
 
-<a id="v2-3-10"></a>
+<a id="v2-3-11"></a>
+
+## [v2.3.11] - 09/07/2026
+
+### Fixed
+* remove global body scroll lock that trapped page scrolling
+  
+  The workspace UI hook ran on every route via the shared provider and locked body scroll whenever the experience mode flag was set, but no modal is rendered to release it. First time visitors landing on pages like /reference could not scroll. Drop the lock.
+
 
 ## [v2.3.10] - 05/07/2026
 

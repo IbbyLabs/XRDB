@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": 1,
-  "xrdbTag": "v2.3.10",
-  "generatedAt": "2026-07-05T21:54:10.569Z",
+  "xrdbTag": "v2.3.11",
+  "generatedAt": "2026-07-09T12:30:06.085Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -76,11 +76,11 @@
     {
       "heading": "Recent XRDB feature highlights",
       "lines": [
+        "remove global body scroll lock that trapped page scrolling",
         "keep all aggregate accent settings in sync across media types",
         "keep the accent bar disabled across media types when saved",
         "add enable/disable all control to logo quality badges",
-        "stage the render cache version file on version bump",
-        "version image URLs so releases bust CDN and browser caches"
+        "stage the render cache version file on version bump"
       ]
     },
     {
