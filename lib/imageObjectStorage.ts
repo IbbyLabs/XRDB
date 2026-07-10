@@ -13,6 +13,7 @@ import {
 } from './imageObjectStoragePrune.ts';
 import { logger } from './serverLogger.ts';
 import { recordCacheEvent } from './adminMetrics.ts';
+import { parseNonNegativeInt } from './imageRouteConfig.ts';
 
 export { buildObjectStorageImageKey } from './imageObjectStoragePaths.ts';
 
@@ -32,8 +33,21 @@ export type ObjectStorageCacheStats = {
 
 const IMAGE_CACHE_PRUNE_INTERVAL_MS = 10 * 60 * 1000;
 const IMAGE_CACHE_PRUNE_WRITE_DEBOUNCE_MS = 30 * 1000;
-const IMAGE_CACHE_MAX_FILES = 2000;
-const IMAGE_CACHE_MAX_BYTES = 1024 * 1024 * 1024;
+const DEFAULT_IMAGE_CACHE_MAX_FILES = 20000;
+const DEFAULT_IMAGE_CACHE_MAX_BYTES = 8 * 1024 * 1024 * 1024;
+
+// Final rendered posters are the same for any client requesting the same title
+// with the same visual settings, so a larger retained set turns repeat views
+// into cache hits instead of re-renders. Both limits are overridable for
+// deployments with tighter or looser disk budgets.
+export const resolveImageCacheLimits = (env: NodeJS.ProcessEnv = process.env) => {
+  const maxFiles = parseNonNegativeInt(env.XRDB_IMAGE_CACHE_MAX_FILES);
+  const maxMb = parseNonNegativeInt(env.XRDB_IMAGE_CACHE_MAX_MB);
+  return {
+    maxFiles: maxFiles !== null && maxFiles > 0 ? maxFiles : DEFAULT_IMAGE_CACHE_MAX_FILES,
+    maxBytes: maxMb !== null && maxMb > 0 ? maxMb * 1024 * 1024 : DEFAULT_IMAGE_CACHE_MAX_BYTES,
+  };
+};
 
 type GlobalObjectStorageState = typeof globalThis & {
   __xrdbImageCachePruneTimers?: Map<string, NodeJS.Timeout>;
@@ -227,8 +241,9 @@ export const pruneObjectStorageCache = (options?: {
   const cacheDir = ensureObjectStorageDir(options?.dir);
   const inFlight = globalState.__xrdbImageCachePruneInFlight || new Set<string>();
   globalState.__xrdbImageCachePruneInFlight = inFlight;
-  const maxFiles = Math.max(1, Math.trunc(options?.maxFiles ?? IMAGE_CACHE_MAX_FILES));
-  const maxBytes = Math.max(1, Math.trunc(options?.maxBytes ?? IMAGE_CACHE_MAX_BYTES));
+  const limits = resolveImageCacheLimits();
+  const maxFiles = Math.max(1, Math.trunc(options?.maxFiles ?? limits.maxFiles));
+  const maxBytes = Math.max(1, Math.trunc(options?.maxBytes ?? limits.maxBytes));
 
   if (inFlight.has(cacheDir)) return;
   inFlight.add(cacheDir);

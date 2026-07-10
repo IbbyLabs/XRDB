@@ -795,7 +795,10 @@ const startStreamBadgesWarm =
       const torrentioId = torrentioType === 'series'
         ? `${baseTorrentioId}:${season || '1'}:${episode || '1'}`
         : baseTorrentioId;
-      const torrentioCacheTtlMs = getAdaptiveStreamCacheTtlMs({
+      // Reuse the adaptive TTL already resolved for the render-seed cache window
+      // above; the bucket is identical for the same title, so recomputing here
+      // only duplicated the work and its log line on every request.
+      const torrentioCacheTtlMs = streamBadgesWindowTtlMs ?? getAdaptiveStreamCacheTtlMs({
         id: baseTorrentioId,
         mediaType: torrentioType,
         releaseDate: mediaType === 'movie' ? media?.release_date : media?.first_air_date,
