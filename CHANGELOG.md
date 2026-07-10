@@ -11,7 +11,25 @@
 
 ### Documentation
 
-<a id="v2-3-11"></a>
+<a id="v2-3-12"></a>
+
+## [v2.3.12] - 10/07/2026
+
+### Fixed
+* remove global body scroll lock that trapped page scrolling
+  
+  The workspace UI hook ran on every route via the shared provider and locked body scroll whenever the experience mode flag was set, but no modal is rendered to release it. First time visitors landing on pages like /reference could not scroll. Drop the lock.
+
+### Performance
+* retain more rendered posters and stop recomputing stream TTL
+  
+  The rendered image cache was hardcoded to 2000 files, so under normal traffic
+  every entry was evicted within minutes and popular posters were re rendered on
+  each view. Make the file and byte caps env tunable (XRDB_IMAGE_CACHE_MAX_FILES,
+  XRDB_IMAGE_CACHE_MAX_MB) and raise the defaults so repeat views hit the cache.
+  Also reuse the adaptive stream cache TTL already computed for the render seed
+  instead of recomputing it (and re logging) per request.
+
 
 ## [v2.3.11] - 09/07/2026
 
