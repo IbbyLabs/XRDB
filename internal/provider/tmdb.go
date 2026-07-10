@@ -87,35 +87,80 @@ func (t *TMDB) FetchArtwork(ctx context.Context, mediaType, id string, opts Artw
 }
 
 func (t *TMDB) resolveID(ctx context.Context, mediaType, id string) (string, string, error) {
-	// IMDB tt-IDs need find endpoint to get TMDB ID
+	id = strings.TrimSpace(id)
+
+	// IMDB tt-IDs need the find endpoint to get a TMDB ID.
 	if strings.HasPrefix(id, "tt") {
-		path := tmdbBaseURL + "/find/" + id + "?external_source=imdb_id"
-		var result struct {
-			MovieResults []struct {
-				ID int `json:"id"`
-			} `json:"movie_results"`
-			TVResults []struct {
-				ID int `json:"id"`
-			} `json:"tv_results"`
-		}
-		if err := t.get(ctx, path, &result); err != nil {
+		tmdbID, resolvedType, found, err := t.findByExternalID(ctx, id, "imdb_id")
+		if err != nil {
 			return "", "", err
 		}
-		if len(result.MovieResults) > 0 {
-			return strconv.Itoa(result.MovieResults[0].ID), "movie", nil
-		}
-		if len(result.TVResults) > 0 {
-			return strconv.Itoa(result.TVResults[0].ID), "tv", nil
+		if found {
+			return tmdbID, resolvedType, nil
 		}
 		return "", "", fmt.Errorf("no TMDB match for IMDB id %q", id)
 	}
+
+	// TVDB IDs (emitted by AIOMetadata's imdb-less art fallback, e.g.
+	// "tvdb:81189") resolve via TMDB's find endpoint keyed on the TVDB source.
+	if rest, ok := stripPrefix(id, "tvdb:"); ok {
+		tmdbID, resolvedType, found, err := t.findByExternalID(ctx, rest, "tvdb_id")
+		if err != nil {
+			return "", "", err
+		}
+		if found {
+			return tmdbID, resolvedType, nil
+		}
+		return "", "", fmt.Errorf("no TMDB match for TVDB id %q", id)
+	}
+
+	// Native TMDB IDs may arrive bare ("1396"), scheme-prefixed ("tmdb:1396"),
+	// or carrying a content-type token ("tmdb:series:1396", "series:1396") —
+	// the composite forms AIOMetadata emits when it has no IMDb id for a title.
+	rest := id
+	if r, ok := stripPrefix(rest, "tmdb:"); ok {
+		rest = r
+	}
+	for _, tok := range []string{"movie:", "series:", "tv:"} {
+		if r, ok := stripPrefix(rest, tok); ok {
+			mediaType = strings.TrimSuffix(tok, ":")
+			rest = r
+			break
+		}
+	}
+
 	// Normalize media type. Only movie/series are meaningful here; artwork
 	// surface names (poster/backdrop/logo) are not content-type hints.
 	resolvedType := "movie"
 	if isSeriesType(mediaType) {
 		resolvedType = "tv"
 	}
-	return id, resolvedType, nil
+	return rest, resolvedType, nil
+}
+
+// findByExternalID resolves an external identifier (an IMDb tt-id or a TVDB id)
+// to a TMDB id via TMDB's /find endpoint. found is false when TMDB returns no
+// match; err is non-nil only on a transport/decoding failure.
+func (t *TMDB) findByExternalID(ctx context.Context, externalID, source string) (id, contentType string, found bool, err error) {
+	path := tmdbBaseURL + "/find/" + url.PathEscape(externalID) + "?external_source=" + source
+	var result struct {
+		MovieResults []struct {
+			ID int `json:"id"`
+		} `json:"movie_results"`
+		TVResults []struct {
+			ID int `json:"id"`
+		} `json:"tv_results"`
+	}
+	if err := t.get(ctx, path, &result); err != nil {
+		return "", "", false, err
+	}
+	if len(result.MovieResults) > 0 {
+		return strconv.Itoa(result.MovieResults[0].ID), "movie", true, nil
+	}
+	if len(result.TVResults) > 0 {
+		return strconv.Itoa(result.TVResults[0].ID), "tv", true, nil
+	}
+	return "", "", false, nil
 }
 
 // EpisodeInfo holds the per-episode data resolved from TMDB: the episode still
