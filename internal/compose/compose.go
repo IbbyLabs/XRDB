@@ -12,6 +12,7 @@ import (
 	_ "image/jpeg" // register JPEG decoding
 	"image/png"
 	"io"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -22,6 +23,7 @@ import (
 	_ "golang.org/x/image/webp" // register WebP decoding (metahub serves WebP)
 
 	"xrdb_rewrite/internal/imageconfig"
+	"xrdb_rewrite/internal/logging"
 	"xrdb_rewrite/internal/provider"
 	"xrdb_rewrite/internal/render"
 )
@@ -55,6 +57,7 @@ type Result struct {
 type Pipeline struct {
 	providers *provider.Registry
 	fetcher   imageFetcher
+	logger    *slog.Logger
 }
 
 // imageFetcher abstracts HTTP image retrieval for testing.
@@ -106,12 +109,22 @@ func New(reg *provider.Registry) *Pipeline {
 	return &Pipeline{
 		providers: reg,
 		fetcher:   &httpFetcher{client: &http.Client{Timeout: 15 * time.Second}},
+		logger:    slog.Default(),
 	}
 }
 
 // NewWithFetcher creates a Pipeline with a custom image fetcher (for testing).
 func NewWithFetcher(reg *provider.Registry, f imageFetcher) *Pipeline {
-	return &Pipeline{providers: reg, fetcher: f}
+	return &Pipeline{providers: reg, fetcher: f, logger: slog.Default()}
+}
+
+// log returns the pipeline logger, falling back to the slog default so a
+// Pipeline built without one (e.g. a struct literal in a test) never panics.
+func (p *Pipeline) log() *slog.Logger {
+	if p.logger == nil {
+		return slog.Default()
+	}
+	return p.logger
 }
 
 // Render executes the composition pipeline for the given request.
@@ -126,6 +139,10 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 
 	sourceBytes, meta, ratingID, err := p.fetchSourceImageAndMeta(ctx, req)
 	if err != nil || len(sourceBytes) == 0 {
+		p.log().WarnContext(ctx, "No source artwork was available; serving a placeholder",
+			"id", logging.RequestID(ctx),
+			"media_type", req.MediaType, "media_id", req.MediaID,
+			"artwork_source", string(req.Config.ArtworkSource), "error", err)
 		result.ImageBytes = render.PlaceholderPNG(req.MediaType)
 		result.Placeholder = true
 		return result, nil
@@ -133,6 +150,10 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 
 	srcImg, err := decodeImage(sourceBytes)
 	if err != nil {
+		p.log().WarnContext(ctx, "The source artwork could not be decoded; serving a placeholder",
+			"id", logging.RequestID(ctx),
+			"media_type", req.MediaType, "media_id", req.MediaID,
+			"bytes", len(sourceBytes), "error", err)
 		result.ImageBytes = render.PlaceholderPNG(req.MediaType)
 		result.Placeholder = true
 		return result, nil
@@ -353,6 +374,10 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 			meta, err = prov.Fetch(ctx, req.ContentType, req.MediaID)
 		}
 		if err != nil || meta == nil {
+			p.log().DebugContext(ctx, "A metadata provider returned no result",
+				"id", logging.RequestID(ctx),
+				"provider", name, "media_type", req.MediaType, "media_id", req.MediaID,
+				"error", err)
 			continue
 		}
 		if baseMeta == nil {

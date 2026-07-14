@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,6 +14,7 @@ import (
 	"xrdb_rewrite/internal/cache"
 	"xrdb_rewrite/internal/compose"
 	"xrdb_rewrite/internal/config"
+	"xrdb_rewrite/internal/logging"
 	"xrdb_rewrite/internal/profile"
 	"xrdb_rewrite/internal/provider"
 	"xrdb_rewrite/internal/provider/animemap"
@@ -48,6 +49,9 @@ func applySettingsOverrides(cfg *config.Config, s *settings.Store) {
 func main() {
 	cfg := config.Load()
 
+	logger := logging.New(cfg.LogLevel)
+	slog.SetDefault(logger)
+
 	// Keep the Go heap under the container's memory cap so GC runs before the
 	// kernel OOM-kills the process. GOMEMLIMIT is also honoured natively.
 	if cfg.MemoryLimitBytes > 0 {
@@ -55,18 +59,20 @@ func main() {
 	}
 
 	if cfg.DBPath == "" {
-		log.Fatal("db path cannot be empty (set XRDB_DB)")
+		logger.Error("Database path is empty; set XRDB_DB")
+		os.Exit(1)
 	}
 
 	store, err := profile.Open(cfg.DBPath)
 	if err != nil {
-		log.Fatalf("open profile store: %v", err)
+		logger.Error("Failed to open the profile store", "error", err)
+		os.Exit(1)
 	}
 	defer func() { _ = store.Close() }()
 
 	settingsStore, err := settings.Open(cfg.DBPath + ".settings")
 	if err != nil {
-		log.Printf("warn: could not open settings store: %v", err)
+		logger.Warn("Could not open the settings store", "error", err)
 	}
 	if settingsStore != nil {
 		defer func() { _ = settingsStore.Close() }()
@@ -117,9 +123,22 @@ func main() {
 
 	renderCache, err := cache.New(cfg.CacheDir, cfg.CacheTTL, cfg.CacheMaxEntries, cfg.CacheMaxBytes)
 	if err != nil {
-		log.Fatalf("open render cache: %v", err)
+		logger.Error("Failed to open the render cache", "error", err)
+		os.Exit(1)
 	}
 	defer renderCache.Close()
+
+	logger.Info("Starting XRDB",
+		"version", cfg.Version,
+		"addr", cfg.Address,
+		"log_level", cfg.LogLevel,
+		"render_concurrency", cfg.RenderConcurrency,
+		"memory_limit_mb", cfg.MemoryLimitBytes>>20,
+		"cache_max_entries", cfg.CacheMaxEntries,
+		"cache_max_mb", cfg.CacheMaxBytes>>20,
+		"providers", reg.Names(),
+		"imdb_dataset", cfg.IMDbDatasetDir != "",
+	)
 
 	handler := server.NewHandler(cfg.Version, store, settingsStore, pipeline, renderCache, cfg, ui.FS())
 
@@ -133,9 +152,10 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("api listening on %s", cfg.Address)
+		logger.Info("HTTP server listening", "addr", cfg.Address)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("server error: %v", err)
+			logger.Error("HTTP server stopped unexpectedly", "error", err)
+			os.Exit(1)
 		}
 	}()
 
@@ -145,7 +165,8 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	logger.Info("Shutting down")
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Printf("shutdown error: %v", err)
+		logger.Error("Graceful shutdown failed", "error", err)
 	}
 }

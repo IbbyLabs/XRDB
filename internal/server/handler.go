@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"io"
 	"io/fs"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"path"
@@ -18,6 +19,7 @@ import (
 	"xrdb_rewrite/internal/compose"
 	"xrdb_rewrite/internal/config"
 	"xrdb_rewrite/internal/imageconfig"
+	"xrdb_rewrite/internal/logging"
 	"xrdb_rewrite/internal/metrics"
 	"xrdb_rewrite/internal/profile"
 	"xrdb_rewrite/internal/render"
@@ -35,6 +37,7 @@ type statusResponse struct {
 // frontend (SPA) at the root; nil disables static file serving.
 func NewHandler(version string, store *profile.Store, settingsStore *settings.Store, pipeline *compose.Pipeline, renderCache *cache.Cache, cfg config.Config, staticFS ...fs.FS) http.Handler {
 	ms := metrics.New()
+	logger := slog.Default()
 	mux := http.NewServeMux()
 	renderLimiter := newConcurrencyLimiter(cfg.RenderConcurrency)
 
@@ -133,6 +136,10 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			// warm catalogue reload isn't throttled. If the client hangs up or
 			// the request times out while queued, drop it without spending a slot.
 			if !renderLimiter.acquire(r.Context()) {
+				logger.WarnContext(r.Context(), "Render aborted while waiting for a free render slot",
+					"id", logging.RequestID(r.Context()),
+					"media_type", mediaType, "media_id", id,
+					"reason", "the client disconnected or all render slots were busy")
 				ms.Record("/"+mediaType, http.StatusServiceUnavailable, latMs(start))
 				return
 			}
@@ -180,6 +187,11 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		}
 		w.WriteHeader(status)
 		_, _ = w.Write(pngBytes)
+		logger.DebugContext(r.Context(), "Served an artwork render",
+			"id", logging.RequestID(r.Context()),
+			"media_type", mediaType, "media_id", id,
+			"status", status, "from_cache", fromCache, "placeholder", placeholder,
+			"bytes", len(pngBytes), "latency_ms", int64(latMs(start)))
 		ms.Record("/"+mediaType, status, latMs(start))
 	}
 	for _, mt := range imageconfig.Surfaces {
@@ -252,7 +264,76 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		mux.HandleFunc("/", staticFileHandler(staticFS[0]))
 	}
 
-	return corsMiddleware(mux)
+	return accessLogMiddleware(logger, corsMiddleware(mux))
+}
+
+// statusRecorder captures the response status and byte count for access logging.
+type statusRecorder struct {
+	http.ResponseWriter
+	status int
+	bytes  int
+}
+
+func (r *statusRecorder) WriteHeader(code int) {
+	r.status = code
+	r.ResponseWriter.WriteHeader(code)
+}
+
+func (r *statusRecorder) Write(b []byte) (int, error) {
+	if r.status == 0 {
+		r.status = http.StatusOK
+	}
+	n, err := r.ResponseWriter.Write(b)
+	r.bytes += n
+	return n, err
+}
+
+// accessLogMiddleware assigns each request a correlation id, exposes it as
+// X-Request-Id, and logs one line per request with method, path, status, and
+// latency. Health and readiness probes are skipped to keep the log readable.
+func accessLogMiddleware(logger *slog.Logger, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		reqID := logging.NewRequestID()
+		ctx := logging.WithRequestID(r.Context(), reqID)
+		w.Header().Set("X-Request-Id", reqID)
+		rec := &statusRecorder{ResponseWriter: w}
+		next.ServeHTTP(rec, r.WithContext(ctx))
+
+		if r.URL.Path == "/healthz" || r.URL.Path == "/readyz" {
+			return
+		}
+		status := rec.status
+		if status == 0 {
+			status = http.StatusOK
+		}
+		logger.LogAttrs(r.Context(), slog.LevelInfo, "Handled an HTTP request",
+			slog.String("id", reqID),
+			slog.String("method", r.Method),
+			slog.String("path", r.URL.Path),
+			slog.String("query", logging.RedactQuery(r.URL.RawQuery)),
+			slog.Int("status", status),
+			slog.Int64("latency_ms", time.Since(start).Milliseconds()),
+			slog.Int("bytes", rec.bytes),
+			slog.String("client_ip", clientIP(r)),
+		)
+	})
+}
+
+// clientIP returns the best-effort originating client address, preferring the
+// Cloudflare and forwarded headers set by the public reverse proxy over the
+// direct connection address.
+func clientIP(r *http.Request) string {
+	if cf := r.Header.Get("CF-Connecting-Ip"); cf != "" {
+		return cf
+	}
+	if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
+		if i := strings.IndexByte(fwd, ','); i >= 0 {
+			return strings.TrimSpace(fwd[:i])
+		}
+		return strings.TrimSpace(fwd)
+	}
+	return r.RemoteAddr
 }
 
 // corsMiddleware allows the web frontend to call the API cross-origin —

@@ -37,6 +37,7 @@ type Config struct {
 	APIKey                string                   // if set, required on all render routes
 	RenderConcurrency     int                      // max simultaneous renders; caps memory under bursts
 	MemoryLimitBytes      int64                    // soft heap limit (debug.SetMemoryLimit); 0 = unset
+	LogLevel              string                   // debug|info|warn|error (default info)
 }
 
 // loadProviderTTLs builds the per-provider TTL map.
@@ -70,6 +71,10 @@ func Load() Config {
 	version := os.Getenv("XRDB_VERSION")
 	if version == "" {
 		version = "dev"
+	}
+	logLevel := os.Getenv("XRDB_LOG_LEVEL")
+	if logLevel == "" {
+		logLevel = "info"
 	}
 	dbPath := os.Getenv("XRDB_DB")
 	if dbPath == "" {
@@ -151,5 +156,6 @@ func Load() Config {
 		APIKey:                os.Getenv("XRDB_API_KEY"),
 		RenderConcurrency:     renderConcurrency,
 		MemoryLimitBytes:      memoryLimitBytes,
+		LogLevel:              logLevel,
 	}
 }

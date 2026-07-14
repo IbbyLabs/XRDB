@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
@@ -242,12 +242,12 @@ func warmPosters(
 			defer cancel()
 			result, err := pipeline.Render(ctx, req)
 			if err != nil || result == nil || len(result.ImageBytes) == 0 {
-				log.Printf("warm: skip %s/%s: %v", mediaType, id, err)
+				slog.Warn("Skipped warming an item", "media_type", mediaType, "media_id", id, "error", err)
 				return
 			}
 			ttl := effectiveTTL(result, ttls)
 			if err := renderCache.SetWithTTL(cacheKey, result.ImageBytes, ttl); err != nil {
-				log.Printf("warm: cache write %s/%s: %v", mediaType, id, err)
+				slog.Warn("Failed to cache a warmed render", "media_type", mediaType, "media_id", id, "error", err)
 			}
 		}(id)
 	}

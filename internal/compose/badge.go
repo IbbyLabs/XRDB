@@ -7,7 +7,7 @@ import (
 	"image/color"
 	"image/draw"
 	"image/png"
-	"log"
+	"log/slog"
 	"strings"
 	"sync"
 
@@ -51,25 +51,25 @@ var (
 func ensureFaces() {
 	onceFaces.Do(func() {
 		if tt, err := opentype.Parse(gobold.TTF); err != nil {
-			log.Printf("compose: parse bold font: %v", err)
+			slog.Warn("Failed to parse the bold font", "error", err)
 		} else {
 			fontBoldParsed = tt
 			if f, err := opentype.NewFace(tt, &opentype.FaceOptions{
 				Size: 22, DPI: 96, Hinting: font.HintingFull,
 			}); err != nil {
-				log.Printf("compose: create bold face: %v", err)
+				slog.Warn("Failed to create the bold font face", "error", err)
 			} else {
 				faceValue = f
 			}
 		}
 		if tt, err := opentype.Parse(goregular.TTF); err != nil {
-			log.Printf("compose: parse regular font: %v", err)
+			slog.Warn("Failed to parse the regular font", "error", err)
 		} else {
 			fontRegularParsed = tt
 			if f, err := opentype.NewFace(tt, &opentype.FaceOptions{
 				Size: 17, DPI: 96, Hinting: font.HintingFull,
 			}); err != nil {
-				log.Printf("compose: create regular face: %v", err)
+				slog.Warn("Failed to create the regular font face", "error", err)
 			} else {
 				faceLabel = f
 			}
@@ -82,7 +82,7 @@ func ensureIcons() {
 		ratingIcons = make(map[string]image.Image)
 		entries, err := ratingIconFS.ReadDir("assets/ratings")
 		if err != nil {
-			log.Printf("compose: read rating icons: %v", err)
+			slog.Warn("Failed to read the rating icons", "error", err)
 			return
 		}
 		for _, e := range entries {
@@ -146,7 +146,7 @@ func ensureBadgeLogos() {
 		badgeLogos = make(map[string]*image.NRGBA)
 		entries, err := badgeIconFS.ReadDir("assets/badges")
 		if err != nil {
-			log.Printf("compose: read badge logos: %v", err)
+			slog.Warn("Failed to read the badge logos", "error", err)
 			return
 		}
 		for _, e := range entries {
