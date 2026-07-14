@@ -3,6 +3,7 @@ package config
 import (
 	"math"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -34,6 +35,8 @@ type Config struct {
 	ProviderTTLs          map[string]time.Duration // per-provider TTL overrides; key = provider name
 	AdminKey              string                   // protects /api/admin/* routes
 	APIKey                string                   // if set, required on all render routes
+	RenderConcurrency     int                      // max simultaneous renders; caps memory under bursts
+	MemoryLimitBytes      int64                    // soft heap limit (debug.SetMemoryLimit); 0 = unset
 }
 
 // loadProviderTTLs builds the per-provider TTL map.
@@ -96,6 +99,26 @@ func Load() Config {
 			cacheMaxBytes = n << 20
 		}
 	}
+	// Cap concurrent renders so a burst of catalogue requests can't spawn
+	// unbounded image composites and exhaust memory. Scales with CPUs; override
+	// with XRDB_RENDER_CONCURRENCY.
+	renderConcurrency := 2 * runtime.NumCPU()
+	if renderConcurrency < 4 {
+		renderConcurrency = 4
+	}
+	if raw := os.Getenv("XRDB_RENDER_CONCURRENCY"); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+			renderConcurrency = n
+		}
+	}
+	// Optional soft heap limit so the Go runtime GCs harder before the container
+	// cgroup cap triggers a kernel OOM-kill. Set to roughly the container limit.
+	var memoryLimitBytes int64
+	if raw := os.Getenv("XRDB_MEMORY_LIMIT_MB"); raw != "" {
+		if n, err := strconv.ParseInt(raw, 10, 64); err == nil && n > 0 && n <= math.MaxInt64>>20 {
+			memoryLimitBytes = n << 20
+		}
+	}
 	var animeMapRefresh time.Duration
 	if raw := os.Getenv("XRDB_ANIME_MAP_REFRESH_HOURS"); raw != "" {
 		if h, err := strconv.ParseFloat(raw, 64); err == nil && h > 0 {
@@ -126,5 +149,7 @@ func Load() Config {
 		ProviderTTLs:          loadProviderTTLs(cacheTTL),
 		AdminKey:              os.Getenv("XRDB_ADMIN_KEY"),
 		APIKey:                os.Getenv("XRDB_API_KEY"),
+		RenderConcurrency:     renderConcurrency,
+		MemoryLimitBytes:      memoryLimitBytes,
 	}
 }

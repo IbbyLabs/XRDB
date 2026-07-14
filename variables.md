@@ -14,6 +14,8 @@ settings store and take precedence on restart).
 | `XRDB_DB` | `xrdb.db` | SQLite database path for profiles. Use `/data/xrdb.db` in Docker. A `<path>.settings` sidecar holds integration keys saved via the UI. |
 | `XRDB_CACHE_DIR` | `xrdb-cache` | Directory for the rendered-image disk cache. Use `/data/cache` in Docker. |
 | `XRDB_CACHE_TTL_HOURS` | `72` | Default time rendered images stay cached, in hours (fractions allowed). |
+| `XRDB_RENDER_CONCURRENCY` | `2x CPU cores` | Maximum simultaneous renders. Bounds memory when a client loads a full catalogue at once; lower it on memory-constrained hosts. |
+| `XRDB_MEMORY_LIMIT_MB` | unset | Soft heap limit in MiB (`debug.SetMemoryLimit`). Set to roughly the container memory limit so the runtime GCs before a kernel OOM-kill. `GOMEMLIMIT` also works. |
 
 ## Security
 

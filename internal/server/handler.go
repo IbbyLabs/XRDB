@@ -36,6 +36,7 @@ type statusResponse struct {
 func NewHandler(version string, store *profile.Store, settingsStore *settings.Store, pipeline *compose.Pipeline, renderCache *cache.Cache, cfg config.Config, staticFS ...fs.FS) http.Handler {
 	ms := metrics.New()
 	mux := http.NewServeMux()
+	renderLimiter := newConcurrencyLimiter(cfg.RenderConcurrency)
 
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -128,6 +129,13 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		}
 		placeholder := false
 		if !fromCache {
+			// Only real renders are gated; cache hits above pass freely, so a
+			// warm catalogue reload isn't throttled. If the client hangs up or
+			// the request times out while queued, drop it without spending a slot.
+			if !renderLimiter.acquire(r.Context()) {
+				ms.Record("/"+mediaType, http.StatusServiceUnavailable, latMs(start))
+				return
+			}
 			var renderResult *compose.Result
 			if pipeline != nil {
 				renderResult, _ = pipeline.Render(r.Context(), compose.Request{
@@ -153,6 +161,9 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				ttl := effectiveTTL(renderResult, cfg.ProviderTTLs)
 				_ = renderCache.SetWithTTL(cacheKey, pngBytes, ttl)
 			}
+			// Free the slot before writing to the client so a slow consumer
+			// doesn't hold a render slot for the duration of the download.
+			renderLimiter.release()
 		}
 		w.Header().Set("Content-Type", "image/png")
 		w.Header().Set("X-Cache-Key", cacheKey)

@@ -11,10 +11,13 @@ services:
       XRDB_ADDR: ":8787"
       XRDB_DB: "/data/xrdb.db"
       XRDB_CACHE_DIR: "/data/cache"
+      # Keep the Go heap under mem_limit so GC runs before a kernel OOM-kill.
+      XRDB_MEMORY_LIMIT_MB: "512"
     ports:
       - "8787:8787"
     volumes:
       - xrdb-data:/data
+    mem_limit: 512m
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8787/healthz"]

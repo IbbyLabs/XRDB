@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"syscall"
 	"time"
 
@@ -46,6 +47,12 @@ func applySettingsOverrides(cfg *config.Config, s *settings.Store) {
 
 func main() {
 	cfg := config.Load()
+
+	// Keep the Go heap under the container's memory cap so GC runs before the
+	// kernel OOM-kills the process. GOMEMLIMIT is also honoured natively.
+	if cfg.MemoryLimitBytes > 0 {
+		debug.SetMemoryLimit(cfg.MemoryLimitBytes)
+	}
 
 	if cfg.DBPath == "" {
 		log.Fatal("db path cannot be empty (set XRDB_DB)")
