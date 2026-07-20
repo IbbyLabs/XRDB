@@ -100,6 +100,18 @@ export const RING_POS_OPTIONS = [
   { id: 'tl', label: 'Top left'     },
 ] as const;
 
+// Six-position placement (four corners + horizontal centres) for the advanced
+// badge controls. "inherit" leaves the element at its default position.
+export const SIX_POS_OPTIONS = [
+  { id: 'inherit', label: 'Auto'          },
+  { id: 'tl',      label: 'Top left'      },
+  { id: 'tc',      label: 'Top center'    },
+  { id: 'tr',      label: 'Top right'     },
+  { id: 'bl',      label: 'Bottom left'   },
+  { id: 'bc',      label: 'Bottom center' },
+  { id: 'br',      label: 'Bottom right'  },
+] as const;
+
 export const QUALITY_BADGE_OPTIONS: { id: string; label: string }[] = [
   { id: '4k',        label: '4K'           },
   { id: 'hdr',       label: 'HDR'          },
@@ -137,6 +149,17 @@ export interface ConfigState {
   ratingRing: boolean;
   ratingRingPos: string;
   ratingRingColor: string;
+  // Advanced (v2 parity) — fine-grained styling. Zero/empty means "default".
+  ratingBadgeScale: number;
+  ratingsMax: number; // 0 = no cap
+  genreBadgeScale: number;
+  genreBadgeOffsetX: number;
+  genreBadgeOffsetY: number;
+  genreBadgeBackgroundOpacity: number; // 0 = default
+  qualityBadgesPos: string; // 'inherit' | six positions
+  qualityBadgeScale: number;
+  aggregateAccentColor: string; // '' = auto score-band
+  trendingPos: string; // 'inherit' | six positions
 }
 
 export const DEFAULT_CONFIG: ConfigState = {
@@ -162,6 +185,16 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingRing: false,
   ratingRingPos: 'br',
   ratingRingColor: '',
+  ratingBadgeScale: 0,
+  ratingsMax: 0,
+  genreBadgeScale: 0,
+  genreBadgeOffsetX: 0,
+  genreBadgeOffsetY: 0,
+  genreBadgeBackgroundOpacity: 0,
+  qualityBadgesPos: 'inherit',
+  qualityBadgeScale: 0,
+  aggregateAccentColor: '',
+  trendingPos: 'inherit',
 };
 
 export type UpdateConfigFn = <K extends keyof ConfigState>(key: K, value: ConfigState[K]) => void;

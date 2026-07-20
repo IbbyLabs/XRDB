@@ -12,7 +12,7 @@ import {
   type ConfigState, type SurfaceConfigs,
 } from './configurator-types';
 import { Notice, DisplayPanel } from './configurator-display';
-import { TemplateStrip, RatingsPanel } from './configurator-panels';
+import { TemplateStrip, RatingsPanel, AdvancedPanel } from './configurator-panels';
 import { ProfilePanel, type LoadedProfile } from './profile-panel';
 import { InstallPanel } from './install-panel';
 import { MediaSearch } from './media-search';
@@ -100,7 +100,7 @@ export function ConfiguratorClient() {
   }, [hydrated, mediaType, mediaId, mediaTitle, configs]);
 
   const buildSrc = useCallback((type: MediaType, id: string, cfg: ConfigState) => {
-    return renderUrl(type, id || 'tt0468569', JSON.stringify({
+    const payload: Record<string, unknown> = {
       size: cfg.size, artworkSource: cfg.artworkSource, language: cfg.language,
       textPreference: cfg.textPreference, ratingsLayout: cfg.ratingsLayout,
       badgeStyle: cfg.badgeStyle, badgeTheme: cfg.badgeTheme,
@@ -112,7 +112,21 @@ export function ConfiguratorClient() {
       backdropAsPoster: cfg.backdropAsPoster,
       ratingRing: cfg.ratingRing,
       ratingRingPos: cfg.ratingRingPos, ratingRingColor: cfg.ratingRingColor,
-    }), renderKey);
+      // Advanced styling. Zero-valued numbers mean "default" and are harmless to
+      // send; ratingsMax is the exception — 0 there would cap to zero badges, so
+      // it is only included when the user set a real cap.
+      ratingBadgeScale: cfg.ratingBadgeScale,
+      genreBadgeScale: cfg.genreBadgeScale,
+      genreBadgeOffsetX: cfg.genreBadgeOffsetX,
+      genreBadgeOffsetY: cfg.genreBadgeOffsetY,
+      genreBadgeBackgroundOpacity: cfg.genreBadgeBackgroundOpacity,
+      qualityBadgesPos: cfg.qualityBadgesPos,
+      qualityBadgeScale: cfg.qualityBadgeScale,
+      aggregateAccentColor: cfg.aggregateAccentColor,
+      trendingPos: cfg.trendingPos,
+    };
+    if (cfg.ratingsMax > 0) payload.ratingsMax = cfg.ratingsMax;
+    return renderUrl(type, id || 'tt0468569', JSON.stringify(payload), renderKey);
   }, [renderKey]);
 
   const applyRenderKey = useCallback((value: string) => {
@@ -382,6 +396,7 @@ export function ConfiguratorClient() {
           {activeTab === 'ratings' && (
             <div id={`${uid}-panel-ratings`} role="tabpanel" aria-labelledby={`${uid}-tab-ratings`} className="tabpanel-enter">
               <RatingsPanel uid={uid} config={config} onUpdate={updateConfig} onToggleRating={toggleRating} />
+              <AdvancedPanel uid={uid} config={config} onUpdate={updateConfig} />
             </div>
           )}
 

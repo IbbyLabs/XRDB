@@ -6,7 +6,7 @@ import { fetchTemplates, type Template } from '@/lib/api';
 import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   LAYOUT_OPTIONS, RATING_OPTIONS, BADGE_STYLE_OPTIONS, BADGE_THEME_OPTIONS,
-  RING_POS_OPTIONS,
+  RING_POS_OPTIONS, SIX_POS_OPTIONS,
 } from './configurator-types';
 
 // ── Template strip ────────────────────────────────────────────────────────────
@@ -256,5 +256,127 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating }: RatingsP
         </fieldset>
       </div>
     </div>
+  );
+}
+
+// ── Advanced panel (v2 parity fine-grained styling) ───────────────────────────
+
+/** A labelled numeric field. Zero renders as the placeholder ("default"). */
+function NumField({
+  id, label, value, onChange, min, max, step = 1, placeholder = 'default', hint,
+}: {
+  id: string; label: string; value: number; onChange: (v: number) => void;
+  min: number; max: number; step?: number; placeholder?: string; hint?: string;
+}) {
+  return (
+    <div className="field">
+      <label className="label" htmlFor={id}>{label}</label>
+      <input
+        id={id}
+        className="input"
+        type="number"
+        inputMode="numeric"
+        min={min}
+        max={max}
+        step={step}
+        value={value === 0 ? '' : value}
+        placeholder={placeholder}
+        onChange={e => {
+          const n = e.target.value === '' ? 0 : Number(e.target.value);
+          onChange(Number.isFinite(n) ? n : 0);
+        }}
+        style={{ maxWidth: '9rem' }}
+      />
+      {hint && <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>{hint}</span>}
+    </div>
+  );
+}
+
+/** A six-position picker backed by a native select for compactness. */
+function PosSelect({
+  id, label, value, onChange,
+}: { id: string; label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="field">
+      <label className="label" htmlFor={id}>{label}</label>
+      <select id={id} className="select" value={value} onChange={e => onChange(e.target.value)} style={{ maxWidth: '12rem' }}>
+        {SIX_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+      </select>
+    </div>
+  );
+}
+
+/**
+ * AdvancedPanel exposes the fine-grained badge controls carried over from v2:
+ * per-element scale, position, offset, opacity, and colour. It is collapsed by
+ * default so the common controls stay uncluttered.
+ */
+export function AdvancedPanel({ uid, config, onUpdate }: {
+  uid: string; config: ConfigState; onUpdate: UpdateConfigFn;
+}) {
+  return (
+    <details className="adv-details" style={{ marginTop: 'var(--sp-4)' }}>
+      <summary className="label" style={{ cursor: 'pointer', userSelect: 'none' }}>
+        Advanced styling
+      </summary>
+      <div className="cfg-fields" style={{ marginTop: 'var(--sp-3)' }}>
+        <p className="hint" style={{ marginTop: 0 }}>
+          Fine-grained control over each badge. Blank numbers use the default.
+          These apply to the surface you are editing.
+        </p>
+
+        <span className="label">Rating badges</span>
+        <NumField id={`${uid}-rating-scale`} label="Scale (%)" value={config.ratingBadgeScale}
+          onChange={v => onUpdate('ratingBadgeScale', v)} min={70} max={200} step={5}
+          hint="70–200. Blank keeps the default size." />
+        <NumField id={`${uid}-ratings-max`} label="Max badges" value={config.ratingsMax}
+          onChange={v => onUpdate('ratingsMax', v)} min={0} max={20} placeholder="no cap"
+          hint="0 shows all selected sources that have data." />
+
+        <span className="label" style={{ marginTop: 'var(--sp-3)' }}>Quality badges</span>
+        <PosSelect id={`${uid}-quality-pos`} label="Position" value={config.qualityBadgesPos}
+          onChange={v => onUpdate('qualityBadgesPos', v)} />
+        <NumField id={`${uid}-quality-scale`} label="Scale (%)" value={config.qualityBadgeScale}
+          onChange={v => onUpdate('qualityBadgeScale', v)} min={70} max={200} step={5} />
+
+        <span className="label" style={{ marginTop: 'var(--sp-3)' }}>Genre badge</span>
+        <NumField id={`${uid}-genre-scale`} label="Scale (%)" value={config.genreBadgeScale}
+          onChange={v => onUpdate('genreBadgeScale', v)} min={70} max={200} step={5} />
+        <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
+          <NumField id={`${uid}-genre-ox`} label="Offset X" value={config.genreBadgeOffsetX}
+            onChange={v => onUpdate('genreBadgeOffsetX', v)} min={-320} max={320} />
+          <NumField id={`${uid}-genre-oy`} label="Offset Y" value={config.genreBadgeOffsetY}
+            onChange={v => onUpdate('genreBadgeOffsetY', v)} min={-320} max={320} />
+        </div>
+        <NumField id={`${uid}-genre-op`} label="Background opacity (%)" value={config.genreBadgeBackgroundOpacity}
+          onChange={v => onUpdate('genreBadgeBackgroundOpacity', v)} min={0} max={100} step={5} />
+
+        <span className="label" style={{ marginTop: 'var(--sp-3)' }}>Aggregate bar</span>
+        <div className="field">
+          <label className="label" htmlFor={`${uid}-agg-color`}>Accent color</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+            <input
+              id={`${uid}-agg-color`}
+              type="color"
+              value={config.aggregateAccentColor || '#3355ff'}
+              onChange={e => onUpdate('aggregateAccentColor', e.target.value)}
+              style={{ width: 36, height: 28, padding: 2, border: '1px solid var(--border)', borderRadius: 4, background: 'none', cursor: 'pointer' }}
+            />
+            <button
+              className={`opt-btn${!config.aggregateAccentColor ? ' opt-btn--active' : ''}`}
+              onClick={() => onUpdate('aggregateAccentColor', '')}
+              aria-pressed={!config.aggregateAccentColor}
+              style={{ flex: 1 }}
+            >
+              Auto (score-based)
+            </button>
+          </div>
+        </div>
+
+        <span className="label" style={{ marginTop: 'var(--sp-3)' }}>Trending tag</span>
+        <PosSelect id={`${uid}-trending-pos`} label="Position" value={config.trendingPos}
+          onChange={v => onUpdate('trendingPos', v)} />
+      </div>
+    </details>
   );
 }
