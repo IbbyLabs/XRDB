@@ -930,3 +930,48 @@ func TestProfileImportDoesNotClobberExisting(t *testing.T) {
 		t.Errorf("existing profile was mutated by import: %s", rr.Body.String())
 	}
 }
+
+// Saving a non-TMDB provider key through the settings API must activate that
+// provider live, proving the credential refresh covers every keyed provider and
+// not just TMDB.
+func TestSettingsSaveActivatesAnyProviderLive(t *testing.T) {
+	settingsStore, err := settings.Open(t.TempDir() + "/s.db")
+	if err != nil {
+		t.Fatalf("settings.Open: %v", err)
+	}
+	t.Cleanup(func() { _ = settingsStore.Close() })
+
+	reg := provider.NewRegistry()
+	mdb := provider.NewMDBList("") // registered without a key, dormant
+	reg.Register(mdb)
+	pipeline := compose.New(reg)
+
+	if mdb.HasCredentials() {
+		t.Fatal("mdblist should start without credentials")
+	}
+
+	h := NewHandler("test", nil, settingsStore, pipeline, nil, config.Config{AdminKey: "secret"})
+
+	put := httptest.NewRequest(http.MethodPut, "/api/admin/settings",
+		strings.NewReader(`{"key":"mdblist_api_key","value":"live-key"}`))
+	put.Header.Set("Authorization", "Bearer secret")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, put)
+	if rr.Code != http.StatusNoContent {
+		t.Fatalf("settings save: got %d: %s", rr.Code, rr.Body.String())
+	}
+	if !mdb.HasCredentials() {
+		t.Error("mdblist was not activated by the saved key")
+	}
+
+	del := httptest.NewRequest(http.MethodDelete, "/api/admin/settings?key=mdblist_api_key", nil)
+	del.Header.Set("Authorization", "Bearer secret")
+	rr = httptest.NewRecorder()
+	h.ServeHTTP(rr, del)
+	if rr.Code != http.StatusNoContent {
+		t.Fatalf("settings delete: got %d", rr.Code)
+	}
+	if mdb.HasCredentials() {
+		t.Error("mdblist should be dormant again after the key is cleared")
+	}
+}

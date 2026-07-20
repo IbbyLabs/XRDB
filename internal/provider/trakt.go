@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"sync"
 	"time"
 )
 
@@ -18,9 +19,29 @@ var traktIMDbIDRe = regexp.MustCompile(`^tt\d+$`)
 // Requires a Trakt Client-ID (OAuth app or V2 API key).
 // Accepts IMDb IDs (tt-prefixed) and returns a Trakt community rating.
 type Trakt struct {
+	mu         sync.RWMutex
 	clientID   string
 	baseURL    string // overrides traktBaseURL; set in tests
 	httpClient *http.Client
+}
+
+// UpdateCredentials swaps the live credential so a value saved in the UI takes
+// effect without a restart.
+func (t *Trakt) UpdateCredentials(clientID string) {
+	t.mu.Lock()
+	t.clientID = clientID
+	t.mu.Unlock()
+}
+
+// HasCredentials reports whether the provider can make authenticated requests.
+func (t *Trakt) HasCredentials() bool {
+	return t.cred() != ""
+}
+
+func (t *Trakt) cred() string {
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+	return t.clientID
 }
 
 // NewTrakt creates a Trakt provider with the given Client-ID.
@@ -66,7 +87,7 @@ func (t *Trakt) fetchSegment(ctx context.Context, segment, id string) (*MediaMet
 	if err != nil {
 		return nil, fmt.Errorf("trakt: build request: %w", err)
 	}
-	req.Header.Set("trakt-api-key", t.clientID)
+	req.Header.Set("trakt-api-key", t.cred())
 	req.Header.Set("trakt-api-version", "2")
 	req.Header.Set("Content-Type", "application/json")
 

@@ -104,6 +104,24 @@ func (p *Pipeline) TMDBClient() *provider.TMDB {
 	return t
 }
 
+// Provider returns the registered provider by name, or nil. Used to push
+// UI-saved credentials into a live provider without a restart.
+func (p *Pipeline) Provider(name string) provider.Provider {
+	return p.providers.Get(name)
+}
+
+// providerReady reports whether a credential-gated provider is currently
+// configured. Keyless public providers (which do not implement HasCredentials)
+// are always ready. This lets the render path register every keyed provider up
+// front and simply skip the ones without a key, so a key saved at runtime
+// activates its provider without a restart or re-registration.
+func providerReady(p provider.Provider) bool {
+	if hc, ok := p.(interface{ HasCredentials() bool }); ok {
+		return hc.HasCredentials()
+	}
+	return true
+}
+
 // New creates a Pipeline with the given provider registry.
 func New(reg *provider.Registry) *Pipeline {
 	return &Pipeline{
@@ -364,6 +382,9 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 		if prov == nil {
 			continue
 		}
+		if !providerReady(prov) {
+			continue
+		}
 		var meta *provider.MediaMeta
 		var err error
 		// Providers are queried by content type (movie/series), never by the
@@ -580,6 +601,9 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 		}
 		prov := p.providers.Get(name)
 		if prov == nil {
+			continue
+		}
+		if !providerReady(prov) {
 			continue
 		}
 		wg.Add(1)

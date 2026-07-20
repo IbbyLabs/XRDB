@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -16,9 +17,29 @@ const omdbBaseURL = "https://www.omdbapi.com/"
 // OMDB is the Open Movie Database metadata provider.
 // It returns Rotten Tomatoes and Metacritic ratings for movies and TV.
 type OMDB struct {
+	mu         sync.RWMutex
 	apiKey     string
 	httpClient *http.Client
 	baseURL    string // overrides omdbBaseURL; used in tests
+}
+
+// UpdateCredentials swaps the live credential so a value saved in the UI takes
+// effect without a restart.
+func (o *OMDB) UpdateCredentials(apiKey string) {
+	o.mu.Lock()
+	o.apiKey = apiKey
+	o.mu.Unlock()
+}
+
+// HasCredentials reports whether the provider can make authenticated requests.
+func (o *OMDB) HasCredentials() bool {
+	return o.cred() != ""
+}
+
+func (o *OMDB) cred() string {
+	o.mu.RLock()
+	defer o.mu.RUnlock()
+	return o.apiKey
 }
 
 // NewOMDB creates an OMDB provider.
@@ -34,7 +55,7 @@ func (o *OMDB) Name() string { return "omdb" }
 // Fetch retrieves OMDB ratings for a media item.
 // Only IMDb tt-IDs are supported; numeric IDs are not resolved.
 func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, error) {
-	if o.apiKey == "" {
+	if o.cred() == "" {
 		return nil, fmt.Errorf("omdb: no api key configured")
 	}
 	if !strings.HasPrefix(id, "tt") {
@@ -45,7 +66,7 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 	if o.baseURL != "" {
 		base = o.baseURL
 	}
-	params := url.Values{"i": {id}, "tomatoes": {"true"}, "apikey": {o.apiKey}}
+	params := url.Values{"i": {id}, "tomatoes": {"true"}, "apikey": {o.cred()}}
 	reqURL := base + "?" + params.Encode()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {

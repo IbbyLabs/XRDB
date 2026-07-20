@@ -19,23 +19,42 @@ import (
 	"xrdb_rewrite/internal/settings"
 )
 
-func refreshTMDBCredentials(pipeline *compose.Pipeline, settingsStore *settings.Store) {
+// refreshProviderCredentials pushes the effective credential for every keyed
+// provider into its live client, so a key saved or cleared through the settings
+// API takes effect without a restart. Effective value is the stored key, or the
+// environment variable when none is stored — the same precedence as startup.
+func refreshProviderCredentials(pipeline *compose.Pipeline, settingsStore *settings.Store) {
 	if pipeline == nil || settingsStore == nil {
 		return
 	}
-	tmdb := pipeline.TMDBClient()
-	if tmdb == nil {
-		return
+	effective := func(settingsKey, envVar string) string {
+		if v, err := settingsStore.Get(settingsKey); err == nil && v != "" {
+			return v
+		}
+		return os.Getenv(envVar)
 	}
-	apiKey := os.Getenv("XRDB_TMDB_API_KEY")
-	readToken := os.Getenv("XRDB_TMDB_READ_TOKEN")
-	if v, err := settingsStore.Get("tmdb_api_key"); err == nil && v != "" {
-		apiKey = v
+
+	// TMDB takes two credentials, so it does not fit the single-key shape below.
+	if tmdb := pipeline.TMDBClient(); tmdb != nil {
+		tmdb.UpdateCredentials(
+			effective("tmdb_api_key", "XRDB_TMDB_API_KEY"),
+			effective("tmdb_read_token", "XRDB_TMDB_READ_TOKEN"),
+		)
 	}
-	if v, err := settingsStore.Get("tmdb_read_token"); err == nil && v != "" {
-		readToken = v
+
+	// The remaining providers each take a single key or client id.
+	type singleKeyed interface{ UpdateCredentials(string) }
+	for _, m := range []struct{ provider, settingsKey, envVar string }{
+		{"mdblist", "mdblist_api_key", "XRDB_MDBLIST_API_KEY"},
+		{"omdb", "omdb_api_key", "XRDB_OMDB_API_KEY"},
+		{"fanart", "fanart_api_key", "XRDB_FANART_API_KEY"},
+		{"trakt", "trakt_client_id", "XRDB_TRAKT_CLIENT_ID"},
+		{"simkl", "simkl_client_id", "XRDB_SIMKL_CLIENT_ID"},
+	} {
+		if kp, ok := pipeline.Provider(m.provider).(singleKeyed); ok {
+			kp.UpdateCredentials(effective(m.settingsKey, m.envVar))
+		}
 	}
-	tmdb.UpdateCredentials(apiKey, readToken)
 }
 
 // registerAdminRoutes mounts all /api/admin/* handlers onto mux.
@@ -229,7 +248,7 @@ func registerAdminRoutes(
 				http.Error(w, "internal error", http.StatusInternalServerError)
 				return
 			}
-			refreshTMDBCredentials(pipeline, settingsStore)
+			refreshProviderCredentials(pipeline, settingsStore)
 			w.WriteHeader(http.StatusNoContent)
 		case http.MethodDelete:
 			key := r.URL.Query().Get("key")
@@ -241,7 +260,7 @@ func registerAdminRoutes(
 				http.Error(w, "internal error", http.StatusInternalServerError)
 				return
 			}
-			refreshTMDBCredentials(pipeline, settingsStore)
+			refreshProviderCredentials(pipeline, settingsStore)
 			w.WriteHeader(http.StatusNoContent)
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)

@@ -6,17 +6,38 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
 const fanartMoviesURL = "https://webservice.fanart.tv/v3/movies/"
-const fanartTVURL     = "https://webservice.fanart.tv/v3/tv/"
+const fanartTVURL = "https://webservice.fanart.tv/v3/tv/"
 
 // Fanart is the Fanart.tv metadata provider.
 // It returns high-quality logos, posters, and art images.
 type Fanart struct {
+	mu         sync.RWMutex
 	apiKey     string
 	httpClient *http.Client
+}
+
+// UpdateCredentials swaps the live credential so a value saved in the UI takes
+// effect without a restart.
+func (f *Fanart) UpdateCredentials(apiKey string) {
+	f.mu.Lock()
+	f.apiKey = apiKey
+	f.mu.Unlock()
+}
+
+// HasCredentials reports whether the provider can make authenticated requests.
+func (f *Fanart) HasCredentials() bool {
+	return f.cred() != ""
+}
+
+func (f *Fanart) cred() string {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+	return f.apiKey
 }
 
 // NewFanart creates a Fanart.tv provider.
@@ -39,7 +60,7 @@ func (f *Fanart) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, e
 // FetchArtwork retrieves Fanart.tv artwork, preferring images in the
 // requested language when available.
 func (f *Fanart) FetchArtwork(ctx context.Context, mediaType, id string, opts ArtworkOptions) (*MediaMeta, error) {
-	if f.apiKey == "" {
+	if f.cred() == "" {
 		return nil, fmt.Errorf("fanart: no api key configured")
 	}
 
@@ -76,7 +97,7 @@ func (f *Fanart) FetchArtwork(ctx context.Context, mediaType, id string, opts Ar
 }
 
 func (f *Fanart) fetchRaw(ctx context.Context, base, id string) (map[string]json.RawMessage, error) {
-	url := base + id + "?api_key=" + f.apiKey
+	url := base + id + "?api_key=" + f.cred()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("fanart: build request: %w", err)

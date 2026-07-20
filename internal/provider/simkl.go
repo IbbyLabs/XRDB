@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -23,9 +24,29 @@ var simklIMDbIDRe = regexp.MustCompile(`^tt\d+$`)
 // Accepts SIMKL-prefixed IDs (e.g. "simkl:2012") or IMDb tt-prefixed IDs
 // (via SIMKL's ID lookup). When given an IMDb ID, an extra lookup call is made.
 type SIMKL struct {
+	mu         sync.RWMutex
 	clientID   string
 	baseURL    string // overrides simklBaseURL; set in tests
 	httpClient *http.Client
+}
+
+// UpdateCredentials swaps the live credential so a value saved in the UI takes
+// effect without a restart.
+func (s *SIMKL) UpdateCredentials(clientID string) {
+	s.mu.Lock()
+	s.clientID = clientID
+	s.mu.Unlock()
+}
+
+// HasCredentials reports whether the provider can make authenticated requests.
+func (s *SIMKL) HasCredentials() bool {
+	return s.cred() != ""
+}
+
+func (s *SIMKL) cred() string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.clientID
 }
 
 // NewSIMKL creates a SIMKL provider with the given Client-ID.
@@ -89,7 +110,7 @@ func (s *SIMKL) fetchSegment(ctx context.Context, segment, simklID, origID strin
 		base = s.baseURL
 	}
 	u := fmt.Sprintf("%s/%s/%s?client_id=%s&extended=full",
-		base, segment, simklID, url.QueryEscape(s.clientID))
+		base, segment, simklID, url.QueryEscape(s.cred()))
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return nil, fmt.Errorf("simkl: build request: %w", err)
@@ -167,7 +188,7 @@ func (s *SIMKL) lookupByIMDB(ctx context.Context, imdbID string) (string, error)
 		base = s.baseURL
 	}
 	u := fmt.Sprintf("%s/search/id?client_id=%s&imdb=%s",
-		base, url.QueryEscape(s.clientID), imdbID)
+		base, url.QueryEscape(s.cred()), imdbID)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return "", fmt.Errorf("simkl lookup: build request: %w", err)

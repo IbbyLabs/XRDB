@@ -92,22 +92,16 @@ func main() {
 	}
 
 	reg := provider.NewRegistry()
+	// Register every keyed provider unconditionally, even without a key at boot.
+	// Each stays dormant until it has a credential (the render path skips a
+	// provider whose HasCredentials is false), so a key added through the admin
+	// UI activates its provider live without a restart or re-registration.
 	reg.Register(provider.NewTMDB(cfg.TMDBAPIKey, cfg.TMDBReadToken))
-	if cfg.MDBListAPIKey != "" {
-		reg.Register(provider.NewMDBList(cfg.MDBListAPIKey))
-	}
-	if cfg.OMDBAPIKey != "" {
-		reg.Register(provider.NewOMDB(cfg.OMDBAPIKey))
-	}
-	if cfg.FanartAPIKey != "" {
-		reg.Register(provider.NewFanart(cfg.FanartAPIKey))
-	}
-	if cfg.TraktClientID != "" {
-		reg.Register(provider.NewTrakt(cfg.TraktClientID))
-	}
-	if cfg.SIMKLClientID != "" {
-		reg.Register(provider.NewSIMKL(cfg.SIMKLClientID))
-	}
+	reg.Register(provider.NewMDBList(cfg.MDBListAPIKey))
+	reg.Register(provider.NewOMDB(cfg.OMDBAPIKey))
+	reg.Register(provider.NewFanart(cfg.FanartAPIKey))
+	reg.Register(provider.NewTrakt(cfg.TraktClientID))
+	reg.Register(provider.NewSIMKL(cfg.SIMKLClientID))
 	// IMDb local dataset — enabled when XRDB_IMDB_DATASET_DIR is set.
 	if cfg.IMDbDatasetDir != "" {
 		reg.Register(provider.NewIMDbDataset(cfg.IMDbDatasetDir))
