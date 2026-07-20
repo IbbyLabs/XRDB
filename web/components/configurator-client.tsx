@@ -39,6 +39,10 @@ export function ConfiguratorClient() {
   // The surface currently being edited / previewed. Each surface keeps its own
   // settings; switching the media-type tab switches which one these controls edit.
   const config = configs[mediaType];
+  // Mirror of the live configs, so undo/redo can read the current state without a
+  // stale closure and without mutating refs inside a setState updater. Event
+  // handlers run after commit, so this stays current for them.
+  const configsRef = useRef(configs);
 
   // Restore persisted state after mount: the page is statically prerendered,
   // so reading storage during the first render mismatches the server HTML
@@ -116,6 +120,8 @@ export function ConfiguratorClient() {
       sessionStorage.setItem('xrdb-configs',     JSON.stringify(configs));
     } catch { /* unavailable */ }
   }, [hydrated, mediaType, mediaId, mediaTitle, configs]);
+
+  useEffect(() => { configsRef.current = configs; }, [configs]);
 
   const buildSrc = useCallback((type: MediaType, id: string, cfg: ConfigState) => {
     const payload: Record<string, unknown> = {
@@ -225,10 +231,8 @@ export function ConfiguratorClient() {
     if (!prev) return;
     lastEditRef.current = null;
     // Capture the state we're leaving so it can be redone.
-    setConfigs(current => {
-      redoRef.current.push(current);
-      return prev;
-    });
+    redoRef.current.push(configsRef.current);
+    setConfigs(prev);
     setCanRedo(true);
     setCanUndo(historyRef.current.length > 0);
     setAppliedTemplate(null);
@@ -239,10 +243,8 @@ export function ConfiguratorClient() {
     const next = redoRef.current.pop();
     if (!next) return;
     lastEditRef.current = null;
-    setConfigs(current => {
-      historyRef.current.push(current);
-      return next;
-    });
+    historyRef.current.push(configsRef.current);
+    setConfigs(next);
     setCanUndo(true);
     setCanRedo(redoRef.current.length > 0);
     setAppliedTemplate(null);
