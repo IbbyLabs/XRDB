@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useId } from 'react';
+import { useState, useEffect, useRef, useId, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Palette, Check } from 'lucide-react';
 
 // Each theme recolors the entire token system through one hue.
@@ -41,32 +41,58 @@ export function ThemeSwitcher() {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<ThemeId>(storedTheme);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const optionsRef = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
     if (!open) return;
     const onPointer = (e: PointerEvent) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
     };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
-    };
     document.addEventListener('pointerdown', onPointer);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('pointerdown', onPointer);
-      document.removeEventListener('keydown', onKey);
-    };
+    return () => document.removeEventListener('pointerdown', onPointer);
   }, [open]);
+
+  // On open, move focus into the menu onto the checked option (radiogroup convention).
+  useEffect(() => {
+    if (!open) return;
+    const i = THEMES.findIndex(t => t.id === active);
+    optionsRef.current[i < 0 ? 0 : i]?.focus();
+  }, [open, active]);
+
+  const closeToTrigger = () => {
+    setOpen(false);
+    triggerRef.current?.focus();
+  };
+
+  // Arrow keys move the selection (applying the theme live) and focus; Escape
+  // closes and returns focus to the trigger — the ARIA radiogroup contract.
+  const onMenuKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape') { e.preventDefault(); closeToTrigger(); return; }
+    const cur = THEMES.findIndex(t => t.id === active);
+    let next = -1;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = (cur + 1) % THEMES.length;
+    else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') next = (cur - 1 + THEMES.length) % THEMES.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = THEMES.length - 1;
+    if (next < 0) return;
+    e.preventDefault();
+    const id = THEMES[next].id;
+    setActive(id);
+    applyTheme(id);
+    optionsRef.current[next]?.focus();
+  };
 
   const select = (id: ThemeId) => {
     setActive(id);
     applyTheme(id);
-    setOpen(false);
+    closeToTrigger();
   };
 
   return (
     <div className="theme-menu-wrap" ref={wrapRef}>
       <button
+        ref={triggerRef}
         className="nav-link"
         style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
         onClick={() => setOpen(v => !v)}
@@ -79,12 +105,20 @@ export function ThemeSwitcher() {
       </button>
 
       {open && (
-        <div id={`${uid}-menu`} className="theme-menu" role="radiogroup" aria-label="UI theme">
-          {THEMES.map(t => (
+        <div
+          id={`${uid}-menu`}
+          className="theme-menu"
+          role="radiogroup"
+          aria-label="UI theme"
+          onKeyDown={onMenuKeyDown}
+        >
+          {THEMES.map((t, i) => (
             <button
               key={t.id}
+              ref={el => { optionsRef.current[i] = el; }}
               role="radio"
               aria-checked={active === t.id}
+              tabIndex={active === t.id ? 0 : -1}
               className="theme-option"
               onClick={() => select(t.id)}
             >

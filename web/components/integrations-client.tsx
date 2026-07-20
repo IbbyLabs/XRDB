@@ -282,7 +282,10 @@ function ProviderRow({
         <ChevronDown size={14} className="provider-chevron" aria-hidden />
       </button>
 
-      <div className="provider-detail" id={`${uid}-detail`}>
+      {/* inert (not hidden) keeps the collapse animation while removing the
+          collapsed content from the tab order and the a11y tree, so
+          aria-expanded="false" no longer hides reachable inputs. */}
+      <div className="provider-detail" id={`${uid}-detail`} inert={!open}>
         <div className="provider-detail-inner">
           <div className="provider-detail-pad">
             <p className="hint provider-desc" style={{ marginTop: 0 }}>{integration.description}</p>
@@ -370,6 +373,9 @@ export function IntegrationsClient() {
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadStatuses(); }, [loadStatuses]);
+
+  // Clear a pending notice timer on unmount so it can't setState after teardown.
+  useEffect(() => () => { if (noticeTimer.current) clearTimeout(noticeTimer.current); }, []);
 
   useEffect(() => {
     if (loading) return;
