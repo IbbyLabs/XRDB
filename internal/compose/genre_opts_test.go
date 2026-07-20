@@ -189,3 +189,29 @@ func TestAgeRatingStylesChangeRender(t *testing.T) {
 		}
 	}
 }
+
+func TestScorebarBandColorsAndThresholds(t *testing.T) {
+	ratings := []provider.Rating{{Source: "imdb", Value: 6.5, Label: "6.5"}}
+	base := imageconfig.Config{Ratings: []string{"imdb"}, AggregateBar: true, AggregateBarPos: "bottom"}
+
+	def := genreTestImage()
+	drawAggregateBar(def, ratings, base)
+
+	// A custom mid-band color must change the fill for a mid score (6.5 in [5,8)).
+	midColor := base
+	midColor.ScorebarMidColor = "#8b5cf6"
+	m := genreTestImage()
+	drawAggregateBar(m, ratings, midColor)
+	if !imagesDiffer(def, m) {
+		t.Error("scorebar mid color did not change the render")
+	}
+
+	// Moving the high threshold below 6.5 promotes it to the high band → green.
+	thr := base
+	thr.ScorebarHighThreshold = 6.0
+	tImg := genreTestImage()
+	drawAggregateBar(tImg, ratings, thr)
+	if !imagesDiffer(def, tImg) {
+		t.Error("scorebar threshold change did not change the band")
+	}
+}

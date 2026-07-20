@@ -242,6 +242,13 @@ type RatingBadgeConfig struct {
 type AggregateConfig struct {
 	AggregateAccentColor string `json:"aggregateAccentColor,omitempty"` // "#RRGGBB" bar fill; "" = auto 3-band
 	AggregateValueColor  string `json:"aggregateValueColor,omitempty"`  // "#RRGGBB" value text; "" = default
+	// Scorebar band overrides. When a color is set it replaces the built-in
+	// green/amber/red for that band; thresholds (0-10) move the band boundaries.
+	ScorebarLowColor      string  `json:"scorebarLowColor,omitempty"`
+	ScorebarMidColor      string  `json:"scorebarMidColor,omitempty"`
+	ScorebarHighColor     string  `json:"scorebarHighColor,omitempty"`
+	ScorebarLowThreshold  float64 `json:"scorebarLowThreshold,omitempty"`  // below = low band; 0 = default 5.0
+	ScorebarHighThreshold float64 `json:"scorebarHighThreshold,omitempty"` // at/above = high band; 0 = default 8.0
 }
 
 // QualityBadgeConfig groups the quality-badge (4K/HDR/DV/…) styling controls.
@@ -378,8 +385,13 @@ type rawRating struct {
 }
 
 type rawAggregate struct {
-	AggregateAccentColor *string `json:"aggregateAccentColor"`
-	AggregateValueColor  *string `json:"aggregateValueColor"`
+	AggregateAccentColor  *string  `json:"aggregateAccentColor"`
+	AggregateValueColor   *string  `json:"aggregateValueColor"`
+	ScorebarLowColor      *string  `json:"scorebarLowColor"`
+	ScorebarMidColor      *string  `json:"scorebarMidColor"`
+	ScorebarHighColor     *string  `json:"scorebarHighColor"`
+	ScorebarLowThreshold  *float64 `json:"scorebarLowThreshold"`
+	ScorebarHighThreshold *float64 `json:"scorebarHighThreshold"`
 }
 
 // Surfaces are the distinct render targets a single profile can style
@@ -628,6 +640,21 @@ func parseAggregate(cfg *Config, r *raw) {
 	}
 	if r.AggregateValueColor != nil && isHexColor(*r.AggregateValueColor) {
 		cfg.AggregateValueColor = strings.TrimSpace(*r.AggregateValueColor)
+	}
+	if r.ScorebarLowColor != nil && isHexColor(*r.ScorebarLowColor) {
+		cfg.ScorebarLowColor = strings.TrimSpace(*r.ScorebarLowColor)
+	}
+	if r.ScorebarMidColor != nil && isHexColor(*r.ScorebarMidColor) {
+		cfg.ScorebarMidColor = strings.TrimSpace(*r.ScorebarMidColor)
+	}
+	if r.ScorebarHighColor != nil && isHexColor(*r.ScorebarHighColor) {
+		cfg.ScorebarHighColor = strings.TrimSpace(*r.ScorebarHighColor)
+	}
+	if r.ScorebarLowThreshold != nil && *r.ScorebarLowThreshold > 0 && *r.ScorebarLowThreshold <= 10 {
+		cfg.ScorebarLowThreshold = *r.ScorebarLowThreshold
+	}
+	if r.ScorebarHighThreshold != nil && *r.ScorebarHighThreshold > 0 && *r.ScorebarHighThreshold <= 10 {
+		cfg.ScorebarHighThreshold = *r.ScorebarHighThreshold
 	}
 }
 

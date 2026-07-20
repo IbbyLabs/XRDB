@@ -860,18 +860,33 @@ func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imagecon
 	}
 
 	var fillColor color.NRGBA
-	// A custom accent color overrides the auto green/amber/red band.
+	// A custom accent color overrides the whole bar. Otherwise the score picks a
+	// band, each of whose color and boundary the scorebar fields can override.
 	if custom, err := parseHexColor(cfg.AggregateAccentColor); cfg.AggregateAccentColor != "" && err == nil {
 		custom.A = 230
 		fillColor = custom
 	} else {
+		lowT, highT := 5.0, 8.0
+		if cfg.ScorebarLowThreshold > 0 {
+			lowT = cfg.ScorebarLowThreshold
+		}
+		if cfg.ScorebarHighThreshold > 0 {
+			highT = cfg.ScorebarHighThreshold
+		}
+		bandColor := func(override string, def color.NRGBA) color.NRGBA {
+			if c, err := parseHexColor(override); override != "" && err == nil {
+				c.A = 230
+				return c
+			}
+			return def
+		}
 		switch {
-		case avg >= 8.0:
-			fillColor = color.NRGBA{R: 39, G: 174, B: 96, A: 230} // green
-		case avg >= 5.0:
-			fillColor = color.NRGBA{R: 230, G: 126, B: 34, A: 230} // amber
+		case avg >= highT:
+			fillColor = bandColor(cfg.ScorebarHighColor, color.NRGBA{R: 39, G: 174, B: 96, A: 230}) // green
+		case avg >= lowT:
+			fillColor = bandColor(cfg.ScorebarMidColor, color.NRGBA{R: 230, G: 126, B: 34, A: 230}) // amber
 		default:
-			fillColor = color.NRGBA{R: 192, G: 57, B: 43, A: 230} // red
+			fillColor = bandColor(cfg.ScorebarLowColor, color.NRGBA{R: 192, G: 57, B: 43, A: 230}) // red
 		}
 	}
 
