@@ -96,6 +96,10 @@ func applySchema(db *sql.DB) error {
 	// Alias column + uniqueness (empty aliases are exempt via partial index).
 	_, _ = db.Exec(`ALTER TABLE profiles ADD COLUMN alias TEXT NOT NULL DEFAULT ''`)
 	_, _ = db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_alias ON profiles(alias) WHERE alias != ''`)
+	// Index the uuid so migrated v2 config-string URLs (?config=<uuid>) resolve
+	// without a table scan. Not unique: a uuid is a legacy identity, and two
+	// profiles sharing one would be a migration bug we do not want to hard-fail.
+	_, _ = db.Exec(`CREATE INDEX IF NOT EXISTS idx_profiles_uuid ON profiles(uuid) WHERE uuid != ''`)
 	return nil
 }
 
@@ -160,7 +164,10 @@ func (s *Store) Get(id string) (*Profile, error) {
 	return scanProfile(row)
 }
 
-// Resolve retrieves a profile by ID or, failing that, by alias.
+// Resolve retrieves a profile by ID, then alias, then legacy v2 uuid. The uuid
+// fallback keeps live v2 artwork URLs (?config=<uuid>) working after a v3
+// cutover: the uuid is preserved on migrated profiles but is not the primary
+// key, so without this a valid old URL would 404 even though the data is there.
 func (s *Store) Resolve(idOrAlias string) (*Profile, error) {
 	p, err := s.Get(idOrAlias)
 	if err == nil {
@@ -169,9 +176,24 @@ func (s *Store) Resolve(idOrAlias string) (*Profile, error) {
 	if !errors.Is(err, ErrNotFound) {
 		return nil, err
 	}
+	key := strings.ToLower(strings.TrimSpace(idOrAlias))
 	row := s.db.QueryRow(
 		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash
-		 FROM profiles WHERE alias = ? AND alias != ''`, strings.ToLower(strings.TrimSpace(idOrAlias)),
+		 FROM profiles WHERE alias = ? AND alias != ''`, key,
+	)
+	p, err = scanProfile(row)
+	if err == nil {
+		return p, nil
+	}
+	if !errors.Is(err, ErrNotFound) {
+		return nil, err
+	}
+	// Legacy uuid identity. Match the raw input, not the lowercased alias key:
+	// v2 uuids are case-sensitive config strings. Pick the oldest on the vanishing
+	// chance two profiles share a uuid, so resolution is deterministic.
+	row = s.db.QueryRow(
+		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash
+		 FROM profiles WHERE uuid = ? AND uuid != '' ORDER BY created_at LIMIT 1`, strings.TrimSpace(idOrAlias),
 	)
 	return scanProfile(row)
 }
