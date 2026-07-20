@@ -48,7 +48,7 @@ func TestRatingRingStyles(t *testing.T) {
 		paintBackdropGradient(card)
 		fill := ratingRingFillColor(avg, hex)
 		label := strconv.Itoa(int(math.Round(avg * 10)))
-		drawProgressRing(card, tile/2, tile/2, outerR, avg/10.0, fill, face, label)
+		drawProgressRing(card, tile/2, tile/2, outerR, avg/10.0, fill, face, label, 0)
 		return card
 	}
 	for _, tc := range ratingRingCases {

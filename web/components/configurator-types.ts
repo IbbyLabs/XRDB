@@ -177,6 +177,7 @@ export interface ConfigState {
   ageRatingTileColor: string;
   trendingPos: string; // 'inherit' | six positions
   logoBackground: string; // 'transparent' | 'dark'
+  ringCenterOpacity: number; // 0 = default
 }
 
 export const DEFAULT_CONFIG: ConfigState = {
@@ -223,6 +224,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ageRatingTileColor: '',
   trendingPos: 'inherit',
   logoBackground: 'transparent',
+  ringCenterOpacity: 0,
 };
 
 export type UpdateConfigFn = <K extends keyof ConfigState>(key: K, value: ConfigState[K]) => void;

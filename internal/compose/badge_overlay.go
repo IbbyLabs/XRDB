@@ -1071,7 +1071,7 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 	cx := r.Min.X + outerR
 	cy := r.Min.Y + outerR
 	label := strconv.Itoa(int(math.Round(avg * 10)))
-	drawProgressRing(base, cx, cy, outerR, avg/10.0, fillColor, valueFace, label)
+	drawProgressRing(base, cx, cy, outerR, avg/10.0, fillColor, valueFace, label, cfg.RingCenterOpacity)
 }
 
 // ringValueFontScale shrinks the ring's value label relative to the standard
@@ -1145,7 +1145,7 @@ func parseHexColor(s string) (color.NRGBA, error) {
 // accent arc with rounded caps sweeping clockwise from the top, and a dark
 // centre disk holding the value label. sweepFrac is in [0, 1]; near 100% the
 // arc snaps to a seamless full circle so no cap seam shows.
-func drawProgressRing(base *image.NRGBA, cx, cy, outerR int, sweepFrac float64, fillColor color.NRGBA, face font.Face, label string) {
+func drawProgressRing(base *image.NRGBA, cx, cy, outerR int, sweepFrac float64, fillColor color.NRGBA, face font.Face, label string, centerOpacity int) {
 	size := float64(outerR) * 2
 	stroke := math.Max(7, size*0.11)
 	halfW := stroke / 2
@@ -1154,6 +1154,9 @@ func drawProgressRing(base *image.NRGBA, cx, cy, outerR int, sweepFrac float64, 
 
 	trackColor := color.NRGBA{R: 255, G: 255, B: 255, A: 46}
 	diskColor := color.NRGBA{R: 8, G: 11, B: 16, A: 219}
+	if centerOpacity != 0 {
+		diskColor.A = uint8(centerOpacity * 255 / 100)
+	}
 
 	// Two-layer halo around the arc — a wide soft wash plus a tight bright
 	// core — so the accent reads as lit neon rather than a flat band.

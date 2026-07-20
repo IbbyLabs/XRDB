@@ -482,6 +482,11 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
         <ColorField id={`${uid}-trending-color`} label="Text color" value={config.trendingTextColor}
           onChange={v => onUpdate('trendingTextColor', v)} fallback="#fff4ee" resetLabel="Default" />
 
+        <span className="label" style={{ marginTop: 'var(--sp-3)' }}>Rating ring</span>
+        <NumField id={`${uid}-ring-center-op`} label="Center opacity (%)" value={config.ringCenterOpacity}
+          onChange={v => onUpdate('ringCenterOpacity', v)} min={0} max={100} step={5}
+          hint="Opacity of the disc behind the ring's number. Blank keeps the default." />
+
         <span className="label" style={{ marginTop: 'var(--sp-3)' }}>Logo surface</span>
         <div className="field">
           <span className="label" id={`${uid}-logo-bg-label`}>Background (logo type)</span>

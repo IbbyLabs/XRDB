@@ -225,3 +225,17 @@ func TestTrendingTextColorChangesRender(t *testing.T) {
 		t.Error("trending text color did not change the render")
 	}
 }
+
+func TestRingCenterOpacityChangesRender(t *testing.T) {
+	ratings := []provider.Rating{{Source: "imdb", Value: 8.0, Label: "8.0"}}
+	base := imageconfig.Config{Ratings: []string{"imdb"}, RatingRing: true, RatingRingPos: "br"}
+	def := genreTestImage()
+	drawAverageRatingRing(def, ratings, base, 2.0, newOccupancy(def.Bounds()))
+	op := base
+	op.RingCenterOpacity = 40
+	img := genreTestImage()
+	drawAverageRatingRing(img, ratings, op, 2.0, newOccupancy(img.Bounds()))
+	if !imagesDiffer(def, img) {
+		t.Error("ring center opacity did not change the render")
+	}
+}

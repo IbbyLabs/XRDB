@@ -119,6 +119,7 @@ type Config struct {
 	AggregateConfig
 	AgeRatingConfig
 	PerSurfaceBaseConfig
+	RatingRingConfig
 
 	// Legacy carries config keys XRDB does not yet model — chiefly per-surface
 	// fields from a migrated v2 profile whose matching v3 control has not
@@ -264,6 +265,12 @@ type QualityBadgeConfig struct {
 	QualityBadgesTileAccentColor string `json:"qualityBadgesTileAccentColor,omitempty"` // "#RRGGBB" for the tile style
 }
 
+// RatingRingConfig groups the compact rating-ring options beyond the existing
+// flat RatingRing/RatingRingPos/RatingRingColor fields.
+type RatingRingConfig struct {
+	RingCenterOpacity int `json:"ringCenterOpacity,omitempty"` // 0-100 opacity of the centre disk; 0 = default
+}
+
 // PerSurfaceBaseConfig groups per-surface base-artwork options that aren't
 // badge styling. Only meaningful on the surface they name.
 type PerSurfaceBaseConfig struct {
@@ -351,6 +358,7 @@ type raw struct {
 	rawAggregate
 	rawAge
 	rawSurface
+	rawRing
 }
 
 // rawGenre is the loose parse shape for GenreBadgeConfig, embedded in raw so its
@@ -389,6 +397,10 @@ type rawAge struct {
 
 type rawSurface struct {
 	LogoBackground *string `json:"logoBackground"`
+}
+
+type rawRing struct {
+	RingCenterOpacity *int `json:"ringCenterOpacity"`
 }
 
 type rawRating struct {
@@ -571,6 +583,7 @@ func Parse(data json.RawMessage) Config {
 	parseAggregate(&cfg, &r)
 	parseAge(&cfg, &r)
 	parseSurface(&cfg, &r)
+	parseRing(&cfg, &r)
 	cfg.Legacy = collectLegacy(data)
 	return cfg
 }
@@ -632,6 +645,12 @@ func parseRating(cfg *Config, r *raw) {
 	if r.RatingsMax != nil && *r.RatingsMax >= 0 {
 		m := clampInt(*r.RatingsMax, 0, 20)
 		cfg.RatingsMax = &m
+	}
+}
+
+func parseRing(cfg *Config, r *raw) {
+	if r.RingCenterOpacity != nil && *r.RingCenterOpacity != 0 {
+		cfg.RingCenterOpacity = clampInt(*r.RingCenterOpacity, 1, 100)
 	}
 }
 
@@ -786,6 +805,7 @@ func CacheKey(cfg Config) string {
 		AggregateConfig
 		AgeRatingConfig
 		PerSurfaceBaseConfig
+		RatingRingConfig
 	}
 	ratings := make([]string, len(cfg.Ratings))
 	copy(ratings, cfg.Ratings)
