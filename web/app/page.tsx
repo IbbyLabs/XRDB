@@ -8,7 +8,7 @@ export default function HomePage() {
 
       <section className="home-hero">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/xrdb-logo.png" alt="" className="home-logo" aria-hidden="true" />
+        <img src="/xrdb-logo.png" alt="" className="home-logo" aria-hidden="true" width={512} height={512} />
         <h1 className="home-title">
           <span className="home-title-x">X</span>RDB
         </h1>
@@ -29,7 +29,7 @@ export default function HomePage() {
       <footer className="home-footer">
         <span className="home-footer-brand">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/ibbylabs-icon-hex.png" alt="" className="footer-mark" aria-hidden="true" />
+          <img src="/ibbylabs-icon-hex.png" alt="" className="footer-mark" aria-hidden="true" width={200} height={212} />
           {BRAND_NAME} by IbbyLabs
         </span>
         <span className="home-footer-links">

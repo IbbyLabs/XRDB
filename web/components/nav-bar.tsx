@@ -42,7 +42,7 @@ export function NavBar() {
     <nav className="nav" aria-label="Main navigation">
       <Link href="/" className="nav-brand" aria-label={`${BRAND_NAME} home`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/xrdb-logo.png" alt="" className="nav-logo" aria-hidden="true" />
+        <img src="/xrdb-logo.png" alt="" className="nav-logo" aria-hidden="true" width={512} height={512} />
         <span>
           <span className="nav-brand-x">X</span>RDB
         </span>
