@@ -789,6 +789,29 @@ textarea.input { min-height: 0; line-height: 1.5; }
 }
 .cfg-help-steps strong { color: var(--ink); font-weight: 600; }
 
+/* Help / documentation page prose. */
+.help { max-width: 72ch; }
+.help section { margin-bottom: var(--sp-6); }
+.help h2 {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  margin-bottom: var(--sp-3);
+  padding-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--border);
+}
+.help p { color: var(--muted); margin-bottom: var(--sp-3); }
+.help ol { padding-left: 1.25rem; display: flex; flex-direction: column; gap: var(--sp-2); color: var(--muted); }
+.help ol strong, .help dt { color: var(--ink); font-weight: 600; }
+.help dl { display: grid; grid-template-columns: minmax(8rem, max-content) 1fr; gap: var(--sp-2) var(--sp-4); }
+.help dt { font-size: var(--text-sm); }
+.help dd { margin: 0; color: var(--muted); font-size: var(--text-sm); }
+.help code { font-size: 0.85em; padding: 0.1em 0.35em; background: var(--bg-elevated); border-radius: var(--radius-sm); }
+.help-note { font-size: var(--text-sm); }
+@media (max-width: 560px) {
+  .help dl { grid-template-columns: 1fr; gap: 0 0; }
+  .help dd { margin-bottom: var(--sp-2); }
+}
+
 /* Advanced numeric field: a compact number input beside a range slider so the
    bounds are visible and values can be scrubbed against the live preview. */
 .numfield-row {

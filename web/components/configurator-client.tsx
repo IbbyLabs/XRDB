@@ -332,7 +332,8 @@ export function ConfiguratorClient() {
           <li>Save a profile to get a config key, then open <strong>Install</strong> to use it in your media setup.</li>
         </ol>
         <p className="hint" style={{ marginTop: 0 }}>
-          Stuck? <a href={BRAND_DISCORD_URL} target="_blank" rel="noreferrer">Ask in the Discord</a>.
+          Full guide in <a href="/help">Help</a>. Stuck?{' '}
+          <a href={BRAND_DISCORD_URL} target="_blank" rel="noreferrer">Ask in the Discord</a>.
         </p>
       </details>
 

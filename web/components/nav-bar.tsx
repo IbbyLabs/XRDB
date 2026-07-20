@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, Settings, Github, Plug } from 'lucide-react';
+import { LayoutGrid, Settings, Github, Plug, CircleHelp } from 'lucide-react';
 import { BRAND_NAME, BRAND_GITHUB_URL } from '@/lib/brand';
 import { fetchHealth } from '@/lib/api';
 import { ThemeSwitcher } from './theme-switcher';
@@ -11,6 +11,7 @@ import { ThemeSwitcher } from './theme-switcher';
 const NAV_LINKS = [
   { href: '/configurator', label: 'Configurator', icon: LayoutGrid },
   { href: '/integrations', label: 'Integrations', icon: Plug },
+  { href: '/help',         label: 'Help',         icon: CircleHelp },
   { href: '/admin',        label: 'Admin',        icon: Settings },
 ];
 
