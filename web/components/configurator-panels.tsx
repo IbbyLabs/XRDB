@@ -292,6 +292,39 @@ function NumField({
   );
 }
 
+/** A labelled color field with an "auto/none" reset when a fallback exists. */
+function ColorField({
+  id, label, value, onChange, fallback = '#3355ff', resetLabel,
+}: {
+  id: string; label: string; value: string; onChange: (v: string) => void;
+  fallback?: string; resetLabel?: string;
+}) {
+  return (
+    <div className="field">
+      <label className="label" htmlFor={id}>{label}</label>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+        <input
+          id={id}
+          type="color"
+          value={value || fallback}
+          onChange={e => onChange(e.target.value)}
+          style={{ width: 36, height: 28, padding: 2, border: '1px solid var(--border)', borderRadius: 4, background: 'none', cursor: 'pointer' }}
+        />
+        {resetLabel && (
+          <button
+            className={`opt-btn${!value ? ' opt-btn--active' : ''}`}
+            onClick={() => onChange('')}
+            aria-pressed={!value}
+            style={{ flex: 1 }}
+          >
+            {resetLabel}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /** A six-position picker backed by a native select for compactness. */
 function PosSelect({
   id, label, value, onChange,
@@ -399,6 +432,20 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
             </button>
           </div>
         </div>
+        <details className="adv-details">
+          <summary className="hint" style={{ cursor: 'pointer', userSelect: 'none' }}>Scorebar bands (when accent is auto)</summary>
+          <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>
+            <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
+              <ColorField id={`${uid}-sb-low`} label="Low" value={config.scorebarLowColor} onChange={v => onUpdate('scorebarLowColor', v)} fallback="#c0392b" resetLabel="Auto" />
+              <ColorField id={`${uid}-sb-mid`} label="Mid" value={config.scorebarMidColor} onChange={v => onUpdate('scorebarMidColor', v)} fallback="#e67e22" resetLabel="Auto" />
+              <ColorField id={`${uid}-sb-high`} label="High" value={config.scorebarHighColor} onChange={v => onUpdate('scorebarHighColor', v)} fallback="#27ae60" resetLabel="Auto" />
+            </div>
+            <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
+              <NumField id={`${uid}-sb-lowt`} label="Low threshold" value={config.scorebarLowThreshold} onChange={v => onUpdate('scorebarLowThreshold', v)} min={0} max={10} step={0.5} placeholder="5" />
+              <NumField id={`${uid}-sb-hight`} label="High threshold" value={config.scorebarHighThreshold} onChange={v => onUpdate('scorebarHighThreshold', v)} min={0} max={10} step={0.5} placeholder="8" />
+            </div>
+          </div>
+        </details>
 
         <span className="label" style={{ marginTop: 'var(--sp-3)' }}>Age rating badge</span>
         <div className="field">
@@ -432,6 +479,8 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
         <span className="label" style={{ marginTop: 'var(--sp-3)' }}>Trending tag</span>
         <PosSelect id={`${uid}-trending-pos`} label="Position" value={config.trendingPos}
           onChange={v => onUpdate('trendingPos', v)} />
+        <ColorField id={`${uid}-trending-color`} label="Text color" value={config.trendingTextColor}
+          onChange={v => onUpdate('trendingTextColor', v)} fallback="#fff4ee" resetLabel="Default" />
       </div>
     </details>
   );
