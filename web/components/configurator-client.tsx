@@ -189,10 +189,12 @@ export function ConfiguratorClient() {
 
   const aspect = MEDIA_TYPES.find(t => t.id === mediaType)?.aspect ?? '2/3';
 
-  const flash = useCallback((type: 'error' | 'success' | 'info', message: string) => {
+  const flash = useCallback((type: 'error' | 'success' | 'info', message: string, opts?: { persist?: boolean }) => {
     setNotice({ type, message });
     if (noticeTimer.current) clearTimeout(noticeTimer.current);
-    if (type !== 'error') {
+    // Errors and persistent notices (e.g. a saved config key the user must copy)
+    // stay until dismissed; ordinary confirmations clear themselves.
+    if (type !== 'error' && !opts?.persist) {
       noticeTimer.current = setTimeout(() => setNotice(null), 5000);
     }
   }, []);
@@ -443,12 +445,9 @@ export function ConfiguratorClient() {
           </div>
 
           {(activeTab === 'display' || activeTab === 'ratings') && (
-            <div
-              className="surface-scope"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--sp-2)', flexWrap: 'wrap', marginBottom: 'var(--sp-3)' }}
-            >
-              <span className="hint" style={{ margin: 0 }}>
-                Editing <strong>{MEDIA_TYPES.find(t => t.id === mediaType)?.label ?? mediaType}</strong> settings — each surface is configured separately.
+            <div className="surface-scope">
+              <span className="surface-scope-text">
+                Editing <strong>{MEDIA_TYPES.find(t => t.id === mediaType)?.label ?? mediaType}</strong> — the other surfaces (backdrop, thumbnail, logo) keep their own settings.
               </span>
               <button className="btn btn-ghost btn-sm" onClick={copyToAllSurfaces}>
                 Copy to all surfaces

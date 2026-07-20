@@ -62,7 +62,7 @@ interface ProfilePanelProps {
   loaded: LoadedProfile | null;
   setLoaded: (p: LoadedProfile | null) => void;
   onLoadConfigs: (configs: SurfaceConfigs) => void;
-  flash: (type: 'error' | 'success' | 'info', message: string) => void;
+  flash: (type: 'error' | 'success' | 'info', message: string, opts?: { persist?: boolean }) => void;
 }
 
 export function ProfilePanel({
@@ -123,7 +123,7 @@ export function ProfilePanel({
         key: created.alias || created.id,
         name: created.name || created.alias || created.id,
       }));
-      flash('success', `Profile saved — your config key is "${created.alias || created.id}"`);
+      flash('success', `Profile saved — your config key is "${created.alias || created.id}"`, { persist: true });
     } catch (e) {
       flash('error', (e as Error).message);
     } finally {

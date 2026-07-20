@@ -720,6 +720,29 @@ textarea.input { min-height: 0; line-height: 1.5; }
   .preview-img { transition: none; }
 }
 
+/* Surface-scope callout: makes the per-surface editing model visible so a change
+   to Poster isn't silently missing on the other surfaces. */
+.surface-scope {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius);
+}
+
+.surface-scope-text {
+  font-size: var(--text-sm);
+  color: var(--ink);
+  min-width: 0;
+}
+
+.surface-scope-text strong { color: var(--accent-text); }
+
 .preview-empty {
   display: flex;
   flex-direction: column;
