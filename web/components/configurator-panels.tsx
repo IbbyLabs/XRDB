@@ -432,6 +432,9 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
               </button>
             ))}
           </div>
+          <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>
+            {RATING_PRESENTATION_OPTIONS.find(o => o.id === config.ratingPresentation)?.desc}
+          </span>
         </div>
         <NumField id={`${uid}-rating-scale`} label="Scale (%)" value={config.ratingBadgeScale}
           onChange={v => onUpdate('ratingBadgeScale', v)} min={70} max={200} step={5}

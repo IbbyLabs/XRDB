@@ -12,10 +12,10 @@ export const MEDIA_TYPES: { id: MediaType; label: string; aspect: string }[] = [
 ];
 
 export const ARTWORK_OPTIONS = [
-  { id: 'tmdb',     label: 'TMDB' },
-  { id: 'fanart',   label: 'Fanart.tv' },
-  { id: 'cinemeta', label: 'Cinemeta' },
-  { id: 'random',   label: 'Random' },
+  { id: 'tmdb',     label: 'TMDB',      desc: 'The Movie Database — broad, reliable poster coverage' },
+  { id: 'fanart',   label: 'Fanart.tv', desc: 'Fanart.tv — high-resolution, often textless artwork' },
+  { id: 'cinemeta', label: 'Cinemeta',  desc: "Stremio's Cinemeta catalogue artwork" },
+  { id: 'random',   label: 'Random',    desc: 'Pick a different source on each render' },
 ] as const;
 
 export const SIZE_OPTIONS = [
@@ -25,11 +25,11 @@ export const SIZE_OPTIONS = [
 ] as const;
 
 export const TEXT_PREF_OPTIONS = [
-  { id: 'original',    label: 'Original'    },
-  { id: 'clean',       label: 'Clean'       },
-  { id: 'textless',    label: 'Textless'    },
-  { id: 'alternative', label: 'Alternative' },
-  { id: 'random',      label: 'Random'      },
+  { id: 'original',    label: 'Original',    desc: 'The poster as-is, including its title text' },
+  { id: 'clean',       label: 'Clean',       desc: 'Prefer artwork with minimal text' },
+  { id: 'textless',    label: 'Textless',    desc: 'Prefer artwork with no title text at all' },
+  { id: 'alternative', label: 'Alternative', desc: 'An alternate poster where one is available' },
+  { id: 'random',      label: 'Random',      desc: 'A different pick on each render' },
 ] as const;
 
 export const LANG_OPTIONS = ['en','de','fr','es','pt','it','ja','ko','zh'] as const;
@@ -113,12 +113,12 @@ export const SIX_POS_OPTIONS = [
 ] as const;
 
 export const RATING_PRESENTATION_OPTIONS = [
-  { id: 'standard',  label: 'Standard'  },
-  { id: 'minimal',   label: 'Minimal'   },
-  { id: 'dual',      label: 'Dual'      },
-  { id: 'scorebar',  label: 'Score bar' },
-  { id: 'editorial', label: 'Editorial' },
-  { id: 'none',      label: 'Hidden'    },
+  { id: 'standard',  label: 'Standard',  desc: 'A row of individual rating badges' },
+  { id: 'minimal',   label: 'Minimal',   desc: 'One pill with the overall average score' },
+  { id: 'dual',      label: 'Dual',      desc: 'Critics score on top, audience score below' },
+  { id: 'scorebar',  label: 'Score bar', desc: 'A full-width bar coloured by the average score' },
+  { id: 'editorial', label: 'Editorial', desc: 'Magazine style: a genre label over a large score' },
+  { id: 'none',      label: 'Hidden',    desc: 'Hide ratings on this surface entirely' },
 ] as const;
 
 export const QUALITY_STYLE_OPTIONS = [

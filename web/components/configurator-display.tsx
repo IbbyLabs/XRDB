@@ -96,7 +96,11 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
     <div className="panel">
       <div className="panel-body cfg-fields">
 
-        <Field label="Artwork source" htmlFor={`${uid}-artwork`}>
+        <Field
+          label="Artwork source"
+          htmlFor={`${uid}-artwork`}
+          hint={ARTWORK_OPTIONS.find(o => o.id === config.artworkSource)?.desc}
+        >
           <select
             id={`${uid}-artwork`}
             className="select"
@@ -129,7 +133,11 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           </select>
         </Field>
 
-        <Field label="Text on poster" htmlFor={`${uid}-text`} hint="Whether to prefer text-free artwork">
+        <Field
+          label="Text on poster"
+          htmlFor={`${uid}-text`}
+          hint={TEXT_PREF_OPTIONS.find(o => o.id === config.textPreference)?.desc}
+        >
           <select
             id={`${uid}-text`}
             className="select"
@@ -268,9 +276,19 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           </Field>
         )}
 
-        <button className="btn btn-ghost btn-sm" style={{ alignSelf: 'flex-start' }} onClick={onReset}>
-          Reset to defaults
-        </button>
+        <div>
+          <button
+            className="btn btn-ghost btn-sm"
+            style={{ alignSelf: 'flex-start' }}
+            onClick={onReset}
+            title={`Reset every setting for the ${mediaType} surface, including ratings and advanced styling`}
+          >
+            Reset {mediaType} to defaults
+          </button>
+          <span className="hint" style={{ marginTop: 'var(--sp-2)' }}>
+            Resets all {mediaType} settings — display, ratings and advanced. Undoable with Ctrl/Cmd+Z.
+          </span>
+        </div>
       </div>
     </div>
   );
