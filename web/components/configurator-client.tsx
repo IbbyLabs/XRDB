@@ -134,6 +134,7 @@ export function ConfiguratorClient() {
       ageRatingBadgeStyle: cfg.ageRatingBadgeStyle === 'default' ? '' : cfg.ageRatingBadgeStyle,
       ageRatingTileColor: cfg.ageRatingTileColor,
       trendingPos: cfg.trendingPos,
+      logoBackground: cfg.logoBackground,
     };
     if (cfg.ratingsMax > 0) payload.ratingsMax = cfg.ratingsMax;
     return renderUrl(type, id || 'tt0468569', JSON.stringify(payload), renderKey);

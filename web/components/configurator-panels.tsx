@@ -481,6 +481,23 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
           onChange={v => onUpdate('trendingPos', v)} />
         <ColorField id={`${uid}-trending-color`} label="Text color" value={config.trendingTextColor}
           onChange={v => onUpdate('trendingTextColor', v)} fallback="#fff4ee" resetLabel="Default" />
+
+        <span className="label" style={{ marginTop: 'var(--sp-3)' }}>Logo surface</span>
+        <div className="field">
+          <span className="label" id={`${uid}-logo-bg-label`}>Background (logo type)</span>
+          <div className="opt-grid" role="group" aria-labelledby={`${uid}-logo-bg-label`}>
+            {[{ id: 'transparent', label: 'Transparent' }, { id: 'dark', label: 'Dark panel' }].map(o => (
+              <button
+                key={o.id}
+                className={`opt-btn${config.logoBackground === o.id ? ' opt-btn--active' : ''}`}
+                onClick={() => onUpdate('logoBackground', o.id)}
+                aria-pressed={config.logoBackground === o.id}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </details>
   );

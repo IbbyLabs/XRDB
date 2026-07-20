@@ -118,6 +118,7 @@ type Config struct {
 	RatingBadgeConfig
 	AggregateConfig
 	AgeRatingConfig
+	PerSurfaceBaseConfig
 
 	// Legacy carries config keys XRDB does not yet model — chiefly per-surface
 	// fields from a migrated v2 profile whose matching v3 control has not
@@ -263,6 +264,12 @@ type QualityBadgeConfig struct {
 	QualityBadgesTileAccentColor string `json:"qualityBadgesTileAccentColor,omitempty"` // "#RRGGBB" for the tile style
 }
 
+// PerSurfaceBaseConfig groups per-surface base-artwork options that aren't
+// badge styling. Only meaningful on the surface they name.
+type PerSurfaceBaseConfig struct {
+	LogoBackground string `json:"logoBackground,omitempty"` // transparent (default) | dark
+}
+
 // AgeRatingConfig groups the age/content-rating badge styling. The badge's
 // on/off (AgeRating) and position (AgeRatingPos) stay flat.
 type AgeRatingConfig struct {
@@ -343,6 +350,7 @@ type raw struct {
 	rawRating
 	rawAggregate
 	rawAge
+	rawSurface
 }
 
 // rawGenre is the loose parse shape for GenreBadgeConfig, embedded in raw so its
@@ -377,6 +385,10 @@ type rawTrending struct {
 type rawAge struct {
 	AgeRatingBadgeStyle *string `json:"ageRatingBadgeStyle"`
 	AgeRatingTileColor  *string `json:"ageRatingTileColor"`
+}
+
+type rawSurface struct {
+	LogoBackground *string `json:"logoBackground"`
 }
 
 type rawRating struct {
@@ -558,6 +570,7 @@ func Parse(data json.RawMessage) Config {
 	parseRating(&cfg, &r)
 	parseAggregate(&cfg, &r)
 	parseAge(&cfg, &r)
+	parseSurface(&cfg, &r)
 	cfg.Legacy = collectLegacy(data)
 	return cfg
 }
@@ -619,6 +632,15 @@ func parseRating(cfg *Config, r *raw) {
 	if r.RatingsMax != nil && *r.RatingsMax >= 0 {
 		m := clampInt(*r.RatingsMax, 0, 20)
 		cfg.RatingsMax = &m
+	}
+}
+
+func parseSurface(cfg *Config, r *raw) {
+	if r.LogoBackground != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.LogoBackground)); v {
+		case "transparent", "dark":
+			cfg.LogoBackground = v
+		}
 	}
 }
 
@@ -763,6 +785,7 @@ func CacheKey(cfg Config) string {
 		RatingBadgeConfig
 		AggregateConfig
 		AgeRatingConfig
+		PerSurfaceBaseConfig
 	}
 	ratings := make([]string, len(cfg.Ratings))
 	copy(ratings, cfg.Ratings)
@@ -772,36 +795,37 @@ func CacheKey(cfg Config) string {
 	sort.Strings(badges)
 
 	c := canonical{
-		Size:               cfg.Size,
-		ArtworkSource:      cfg.ArtworkSource,
-		Language:           cfg.Language,
-		TextPreference:     cfg.TextPreference,
-		Ratings:            ratings,
-		RatingsLayout:      cfg.RatingsLayout,
-		BadgeStyle:         cfg.BadgeStyle,
-		BadgeTheme:         cfg.BadgeTheme,
-		Badges:             badges,
-		AgeRating:          cfg.AgeRating,
-		AgeRatingPos:       cfg.AgeRatingPos,
-		Genre:              cfg.Genre,
-		GenrePos:           cfg.GenrePos,
-		Providers:          cfg.Providers,
-		ProvidersCountry:   cfg.ProvidersCountry,
-		AggregateBar:       cfg.AggregateBar,
-		AggregateBarPos:    cfg.AggregateBarPos,
-		Trending:           cfg.Trending,
-		TrendingStyle:      cfg.TrendingStyle,
-		BackdropAsPoster:   cfg.BackdropAsPoster,
-		BackdropLogo:       cfg.BackdropLogo,
-		RatingRing:         cfg.RatingRing,
-		RatingRingPos:      cfg.RatingRingPos,
-		RatingRingColor:    cfg.RatingRingColor,
-		GenreBadgeConfig:   cfg.GenreBadgeConfig,
-		QualityBadgeConfig: cfg.QualityBadgeConfig,
-		TrendingConfig:     cfg.TrendingConfig,
-		RatingBadgeConfig:  cfg.RatingBadgeConfig,
-		AggregateConfig:    cfg.AggregateConfig,
-		AgeRatingConfig:    cfg.AgeRatingConfig,
+		Size:                 cfg.Size,
+		ArtworkSource:        cfg.ArtworkSource,
+		Language:             cfg.Language,
+		TextPreference:       cfg.TextPreference,
+		Ratings:              ratings,
+		RatingsLayout:        cfg.RatingsLayout,
+		BadgeStyle:           cfg.BadgeStyle,
+		BadgeTheme:           cfg.BadgeTheme,
+		Badges:               badges,
+		AgeRating:            cfg.AgeRating,
+		AgeRatingPos:         cfg.AgeRatingPos,
+		Genre:                cfg.Genre,
+		GenrePos:             cfg.GenrePos,
+		Providers:            cfg.Providers,
+		ProvidersCountry:     cfg.ProvidersCountry,
+		AggregateBar:         cfg.AggregateBar,
+		AggregateBarPos:      cfg.AggregateBarPos,
+		Trending:             cfg.Trending,
+		TrendingStyle:        cfg.TrendingStyle,
+		BackdropAsPoster:     cfg.BackdropAsPoster,
+		BackdropLogo:         cfg.BackdropLogo,
+		RatingRing:           cfg.RatingRing,
+		RatingRingPos:        cfg.RatingRingPos,
+		RatingRingColor:      cfg.RatingRingColor,
+		GenreBadgeConfig:     cfg.GenreBadgeConfig,
+		QualityBadgeConfig:   cfg.QualityBadgeConfig,
+		TrendingConfig:       cfg.TrendingConfig,
+		RatingBadgeConfig:    cfg.RatingBadgeConfig,
+		AggregateConfig:      cfg.AggregateConfig,
+		AgeRatingConfig:      cfg.AgeRatingConfig,
+		PerSurfaceBaseConfig: cfg.PerSurfaceBaseConfig,
 	}
 	b, _ := json.Marshal(c)
 	// Fold any preserved-but-unmodeled fields into the key so two migrated

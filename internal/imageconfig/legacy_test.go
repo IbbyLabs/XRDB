@@ -12,14 +12,14 @@ func TestParsePreservesUnknownFields(t *testing.T) {
 	in := json.RawMessage(`{
 		"language": "fr",
 		"posterRatingsMax": 4,
-		"logoBackground": true,
+		"posterEdgeOffset": 5,
 		"aggregateAccentMode": "dynamic"
 	}`)
 	cfg := Parse(in)
 	if cfg.Language != "fr" {
 		t.Fatalf("known field lost: language = %q", cfg.Language)
 	}
-	for _, k := range []string{"posterRatingsMax", "logoBackground", "aggregateAccentMode"} {
+	for _, k := range []string{"posterRatingsMax", "posterEdgeOffset", "aggregateAccentMode"} {
 		if _, ok := cfg.Legacy[k]; !ok {
 			t.Errorf("unknown field %q not preserved in Legacy", k)
 		}
@@ -38,7 +38,7 @@ func TestParseNoUnknownFieldsLeavesLegacyNil(t *testing.T) {
 
 // Export then re-import must round-trip the preserved fields intact.
 func TestCanonicalJSONRoundTripsLegacyFields(t *testing.T) {
-	cfg := Parse(json.RawMessage(`{"language":"de","posterRatingsMax":6,"logoBackground":true}`))
+	cfg := Parse(json.RawMessage(`{"language":"de","posterRatingsMax":6,"posterEdgeOffset":5}`))
 	raw, err := CanonicalJSON(cfg)
 	if err != nil {
 		t.Fatalf("CanonicalJSON: %v", err)
@@ -50,8 +50,8 @@ func TestCanonicalJSONRoundTripsLegacyFields(t *testing.T) {
 	if string(restored.Legacy["posterRatingsMax"]) != "6" {
 		t.Errorf("posterRatingsMax not round-tripped: %s", restored.Legacy["posterRatingsMax"])
 	}
-	if string(restored.Legacy["logoBackground"]) != "true" {
-		t.Errorf("logoBackground not round-tripped: %s", restored.Legacy["logoBackground"])
+	if string(restored.Legacy["posterEdgeOffset"]) != "5" {
+		t.Errorf("posterEdgeOffset not round-tripped: %s", restored.Legacy["posterEdgeOffset"])
 	}
 }
 
@@ -275,5 +275,18 @@ func TestRatingAndAggregateGroupsRoundTrip(t *testing.T) {
 	// invalid color rejected
 	if Parse(json.RawMessage(`{"aggregateAccentColor":"blue"}`)).AggregateAccentColor != "" {
 		t.Error("invalid aggregate color accepted")
+	}
+}
+
+func TestLogoBackgroundRoundTrips(t *testing.T) {
+	cfg := Parse(json.RawMessage(`{"logoBackground":"dark"}`))
+	if cfg.LogoBackground != "dark" {
+		t.Fatalf("logoBackground lost: %q", cfg.LogoBackground)
+	}
+	if len(cfg.Legacy) != 0 {
+		t.Errorf("logoBackground leaked to Legacy: %v", cfg.Legacy)
+	}
+	if Parse(json.RawMessage(`{"logoBackground":"neon"}`)).LogoBackground != "" {
+		t.Error("invalid logoBackground accepted")
 	}
 }

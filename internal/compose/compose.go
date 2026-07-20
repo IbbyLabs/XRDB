@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"image"
+	"image/color"
 	"image/draw"
 	_ "image/jpeg" // register JPEG decoding
 	"image/png"
@@ -207,7 +208,12 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		}
 		boxed := resizeContain(srcImg, dim.Width, logoH)
 		canvas := image.NewNRGBA(image.Rect(0, 0, dim.Width, dim.Height))
-		draw.Draw(canvas, image.Rect(0, 0, dim.Width, logoH), boxed, image.Point{}, draw.Src)
+		// A "dark" logo background fills the otherwise-transparent canvas with an
+		// opaque dark panel, so a light wordmark reads on a pale surface behind it.
+		if req.Config.LogoBackground == "dark" {
+			draw.Draw(canvas, canvas.Bounds(), &image.Uniform{C: color.NRGBA{R: 18, G: 20, B: 26, A: 255}}, image.Point{}, draw.Src)
+		}
+		draw.Draw(canvas, image.Rect(0, 0, dim.Width, logoH), boxed, image.Point{}, draw.Over)
 		resized = canvas
 	default:
 		resized = resizeFit(srcImg, dim.Width, dim.Height)

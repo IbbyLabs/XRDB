@@ -176,6 +176,7 @@ export interface ConfigState {
   ageRatingBadgeStyle: string; // 'default' | plain | tile
   ageRatingTileColor: string;
   trendingPos: string; // 'inherit' | six positions
+  logoBackground: string; // 'transparent' | 'dark'
 }
 
 export const DEFAULT_CONFIG: ConfigState = {
@@ -221,6 +222,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ageRatingBadgeStyle: 'default',
   ageRatingTileColor: '',
   trendingPos: 'inherit',
+  logoBackground: 'transparent',
 };
 
 export type UpdateConfigFn = <K extends keyof ConfigState>(key: K, value: ConfigState[K]) => void;
