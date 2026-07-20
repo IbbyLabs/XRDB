@@ -23,7 +23,7 @@
   /* Ink ramp — body text ≥ 4.5:1 on every surface above */
   --ink:    oklch(94% 0.008 var(--hue));
   --muted:  oklch(72% 0.014 var(--hue));
-  --subtle: oklch(58% 0.012 var(--hue));
+  --subtle: oklch(63% 0.012 var(--hue));
 
   /* Accent — the only saturated voice in the UI */
   --accent:        oklch(var(--accent-l) var(--accent-c) var(--hue));
@@ -1123,7 +1123,11 @@ textarea.input { min-height: 0; line-height: 1.5; }
   pointer-events: none;
 }
 .media-search-input:focus + .kbd-hint { display: none; }
-@media (pointer: coarse) { .kbd-hint { display: none; } }
+@media (pointer: coarse) {
+  .kbd-hint { display: none; }
+  /* Enlarge the smaller controls to a comfortable finger target on touch. */
+  .btn-sm, .chip, .pin-chip-btn, .pin-chip-x { min-height: 2.75rem; }
+}
 
 .media-search-input { padding-left: 2.25rem; padding-right: 2.5rem; }
 
