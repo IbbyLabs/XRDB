@@ -299,3 +299,17 @@ func TestEditorialPresentationRenders(t *testing.T) {
 		t.Error("editorial presentation drew nothing")
 	}
 }
+
+func TestProviderAccentOverrideChangesRender(t *testing.T) {
+	ratings := []provider.Rating{{Source: "imdb", Value: 8.5, Label: "8.5"}}
+	base := imageconfig.Config{Ratings: []string{"imdb"}, RatingsLayout: imageconfig.LayoutBottom}
+	def := genreTestImage()
+	drawBadgesInPlace(def, ratings, base)
+	ov := base
+	ov.RatingProviderOverrides = map[string]string{"imdb": "#8b5cf6"}
+	img := genreTestImage()
+	drawBadgesInPlace(img, ratings, ov)
+	if !imagesDiffer(def, img) {
+		t.Error("provider accent override did not change the render")
+	}
+}

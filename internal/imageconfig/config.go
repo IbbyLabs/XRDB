@@ -240,6 +240,9 @@ type RatingBadgeConfig struct {
 	RatingBadgeOffsetX int    `json:"ratingBadgeOffsetX,omitempty"` // px nudge of the whole strip
 	RatingBadgeOffsetY int    `json:"ratingBadgeOffsetY,omitempty"`
 	RatingPresentation string `json:"ratingPresentation,omitempty"` // standard|editorial|none (others modeled)
+	// RatingProviderOverrides maps a provider source (e.g. "imdb") to a
+	// "#RRGGBB" accent color that replaces the built-in one for that badge.
+	RatingProviderOverrides map[string]string `json:"ratingProviderOverrides,omitempty"`
 }
 
 // AggregateConfig groups the aggregate-score-bar appearance controls. The bar's
@@ -411,11 +414,12 @@ type rawRing struct {
 }
 
 type rawRating struct {
-	RatingBadgeScale   *int    `json:"ratingBadgeScale"`
-	RatingsMax         *int    `json:"ratingsMax"`
-	RatingBadgeOffsetX *int    `json:"ratingBadgeOffsetX"`
-	RatingBadgeOffsetY *int    `json:"ratingBadgeOffsetY"`
-	RatingPresentation *string `json:"ratingPresentation"`
+	RatingBadgeScale        *int              `json:"ratingBadgeScale"`
+	RatingsMax              *int              `json:"ratingsMax"`
+	RatingBadgeOffsetX      *int              `json:"ratingBadgeOffsetX"`
+	RatingBadgeOffsetY      *int              `json:"ratingBadgeOffsetY"`
+	RatingPresentation      *string           `json:"ratingPresentation"`
+	RatingProviderOverrides map[string]string `json:"ratingProviderOverrides"`
 }
 
 type rawAggregate struct {
@@ -667,6 +671,18 @@ func parseRating(cfg *Config, r *raw) {
 		case "standard", "minimal", "dual", "editorial", "scorebar", "none":
 			cfg.RatingPresentation = v
 		}
+	}
+	if len(r.RatingProviderOverrides) > 0 {
+		var m map[string]string
+		for k, v := range r.RatingProviderOverrides {
+			if isHexColor(v) {
+				if m == nil {
+					m = make(map[string]string, len(r.RatingProviderOverrides))
+				}
+				m[strings.ToLower(strings.TrimSpace(k))] = strings.TrimSpace(v)
+			}
+		}
+		cfg.RatingProviderOverrides = m
 	}
 }
 

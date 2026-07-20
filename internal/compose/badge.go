@@ -215,6 +215,17 @@ var providerAccent = map[string]color.NRGBA{
 	"kitsu":          {R: 247, G: 110, B: 24, A: 255},
 }
 
+// resolveProviderAccent returns the per-config override color for a provider if
+// one is set, otherwise the built-in accent.
+func resolveProviderAccent(cfg imageconfig.Config, source string) color.NRGBA {
+	if hex, ok := cfg.RatingProviderOverrides[source]; ok {
+		if c, err := parseHexColor(hex); err == nil {
+			return c
+		}
+	}
+	return accentFor(source)
+}
+
 func accentFor(source string) color.NRGBA {
 	if c, ok := providerAccent[source]; ok {
 		return c
@@ -473,7 +484,7 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 			valW:   vw,
 			icon:   icon,
 			w:      bw,
-			accent: accentFor(r.Source),
+			accent: resolveProviderAccent(cfg, r.Source),
 		})
 	}
 
