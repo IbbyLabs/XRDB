@@ -743,6 +743,24 @@ textarea.input { min-height: 0; line-height: 1.5; }
 
 .surface-scope-text strong { color: var(--accent-text); }
 
+/* Advanced-panel section headers: a top rule + accent-tinted label turns the
+   long flat scroll of controls into distinct, scannable groups. */
+.adv-section {
+  display: block;
+  margin-top: var(--sp-5);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.adv-section--first {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
 .preview-empty {
   display: flex;
   flex-direction: column;

@@ -417,7 +417,7 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
           These apply to the surface you are editing.
         </p>
 
-        <span className="label">Rating badges</span>
+        <span className="adv-section adv-section--first">Rating badges</span>
         <div className="field">
           <span className="label" id={`${uid}-rating-pres-label`}>Presentation</span>
           <div className="opt-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }} role="group" aria-labelledby={`${uid}-rating-pres-label`}>
@@ -450,7 +450,7 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
         </div>
         <ProviderOverrides uid={uid} config={config} onUpdate={onUpdate} />
 
-        <span className="label" style={{ marginTop: 'var(--sp-3)' }}>Quality badges</span>
+        <span className="adv-section">Quality badges</span>
         <PosSelect id={`${uid}-quality-pos`} label="Position" value={config.qualityBadgesPos}
           onChange={v => onUpdate('qualityBadgesPos', v)} />
         <NumField id={`${uid}-quality-scale`} label="Scale (%)" value={config.qualityBadgeScale}
@@ -483,7 +483,7 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
           </div>
         )}
 
-        <span className="label" style={{ marginTop: 'var(--sp-3)' }}>Genre badge</span>
+        <span className="adv-section">Genre badge</span>
         <NumField id={`${uid}-genre-scale`} label="Scale (%)" value={config.genreBadgeScale}
           onChange={v => onUpdate('genreBadgeScale', v)} min={70} max={200} step={5} />
         <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
@@ -495,7 +495,7 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
         <NumField id={`${uid}-genre-op`} label="Background opacity (%)" value={config.genreBadgeBackgroundOpacity}
           onChange={v => onUpdate('genreBadgeBackgroundOpacity', v)} min={0} max={100} step={5} />
 
-        <span className="label" style={{ marginTop: 'var(--sp-3)' }}>Aggregate bar</span>
+        <span className="adv-section">Aggregate bar</span>
         <div className="field">
           <label className="label" htmlFor={`${uid}-agg-color`}>Accent color</label>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
@@ -531,7 +531,7 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
           </div>
         </details>
 
-        <span className="label" style={{ marginTop: 'var(--sp-3)' }}>Age rating badge</span>
+        <span className="adv-section">Age rating badge</span>
         <div className="field">
           <span className="label" id={`${uid}-age-style-label`}>Style</span>
           <div className="opt-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }} role="group" aria-labelledby={`${uid}-age-style-label`}>
@@ -560,13 +560,13 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
           </div>
         )}
 
-        <span className="label" style={{ marginTop: 'var(--sp-3)' }}>Trending tag</span>
+        <span className="adv-section">Trending tag</span>
         <PosSelect id={`${uid}-trending-pos`} label="Position" value={config.trendingPos}
           onChange={v => onUpdate('trendingPos', v)} />
         <ColorField id={`${uid}-trending-color`} label="Text color" value={config.trendingTextColor}
           onChange={v => onUpdate('trendingTextColor', v)} fallback="#fff4ee" resetLabel="Default" />
 
-        <span className="label" style={{ marginTop: 'var(--sp-3)' }}>Rating ring</span>
+        <span className="adv-section">Rating ring</span>
         <NumField id={`${uid}-ring-center-op`} label="Center opacity (%)" value={config.ringCenterOpacity}
           onChange={v => onUpdate('ringCenterOpacity', v)} min={0} max={100} step={5}
           hint="Opacity of the disc behind the ring's number. Blank keeps the default." />
@@ -585,7 +585,7 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
           </select>
         </div>
 
-        <span className="label" style={{ marginTop: 'var(--sp-3)' }}>Logo surface</span>
+        <span className="adv-section">Logo surface</span>
         <div className="field">
           <span className="label" id={`${uid}-logo-bg-label`}>Background (logo type)</span>
           <div className="opt-grid" role="group" aria-labelledby={`${uid}-logo-bg-label`}>
