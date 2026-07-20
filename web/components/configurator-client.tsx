@@ -3,7 +3,7 @@
 import {
   useState, useCallback, useRef, useId, useEffect,
 } from 'react';
-import { Settings2, Star, Film, Rocket, Link2, Maximize2, Undo2 } from 'lucide-react';
+import { Settings2, Star, Film, Rocket, Link2, Maximize2, Undo2, Redo2 } from 'lucide-react';
 import { renderUrl, type MediaType, type Template } from '@/lib/api';
 import { getRenderKey, setRenderKey } from '@/lib/render-key';
 import {
@@ -99,6 +99,10 @@ export function ConfiguratorClient() {
   // Undo control or Cmd/Ctrl+Z. Capped so a long session can't grow it unbounded.
   const historyRef = useRef<SurfaceConfigs[]>([]);
   const [canUndo, setCanUndo] = useState(false);
+  // Undone states, for redo. Any fresh edit clears this (you can't redo down a
+  // branch you've diverged from).
+  const redoRef = useRef<SurfaceConfigs[]>([]);
+  const [canRedo, setCanRedo] = useState(false);
   // Tracks the last-edited field so a burst of edits to one control (typing into
   // a number field) collapses into a single undo step instead of one per keystroke.
   const lastEditRef = useRef<{ key: string; t: number } | null>(null);
@@ -203,20 +207,44 @@ export function ConfiguratorClient() {
     }
   }, []);
 
-  // Snapshot the current surface set before a mutation so it can be undone.
+  // Snapshot the current surface set before a mutation so it can be undone. A
+  // fresh edit invalidates any redo branch.
   const pushHistory = useCallback((current: SurfaceConfigs) => {
     const h = historyRef.current;
     h.push(current);
     if (h.length > HISTORY_MAX) h.shift();
     setCanUndo(true);
+    if (redoRef.current.length > 0) {
+      redoRef.current = [];
+      setCanRedo(false);
+    }
   }, []);
 
   const undo = useCallback(() => {
     const prev = historyRef.current.pop();
     if (!prev) return;
     lastEditRef.current = null;
-    setConfigs(prev);
+    // Capture the state we're leaving so it can be redone.
+    setConfigs(current => {
+      redoRef.current.push(current);
+      return prev;
+    });
+    setCanRedo(true);
     setCanUndo(historyRef.current.length > 0);
+    setAppliedTemplate(null);
+    setNotice(null);
+  }, []);
+
+  const redo = useCallback(() => {
+    const next = redoRef.current.pop();
+    if (!next) return;
+    lastEditRef.current = null;
+    setConfigs(current => {
+      historyRef.current.push(current);
+      return next;
+    });
+    setCanUndo(true);
+    setCanRedo(redoRef.current.length > 0);
     setAppliedTemplate(null);
     setNotice(null);
   }, []);
@@ -289,16 +317,20 @@ export function ConfiguratorClient() {
   // where the browser's own text undo should win.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!(e.metaKey || e.ctrlKey) || e.shiftKey || e.key.toLowerCase() !== 'z') return;
+      if (!(e.metaKey || e.ctrlKey)) return;
+      const k = e.key.toLowerCase();
+      if (k !== 'z' && k !== 'y') return;
       const el = e.target as HTMLElement | null;
       const tag = el?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || el?.isContentEditable) return;
       e.preventDefault();
-      undo();
+      // Ctrl/Cmd+Z undoes; Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y redoes.
+      if (k === 'y' || (k === 'z' && e.shiftKey)) redo();
+      else undo();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [undo]);
+  }, [undo, redo]);
 
   const handleMediaSelect = (id: string, title: string) => {
     setMediaId(id);
@@ -429,6 +461,15 @@ export function ConfiguratorClient() {
               >
                 <Undo2 size={13} aria-hidden />
                 Undo
+              </button>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={redo}
+                disabled={!canRedo}
+                title="Redo (Ctrl/Cmd+Shift+Z)"
+              >
+                <Redo2 size={13} aria-hidden />
+                Redo
               </button>
             </div>
           )}

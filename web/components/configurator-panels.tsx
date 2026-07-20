@@ -290,7 +290,7 @@ function NumField({
           min={min}
           max={max}
           step={step}
-          value={value === 0 ? '' : value}
+          value={isDefault ? '' : value}
           placeholder={placeholder}
           onChange={e => {
             const n = e.target.value === '' ? 0 : Number(e.target.value);
