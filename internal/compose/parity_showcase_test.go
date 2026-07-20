@@ -110,6 +110,17 @@ func TestParityShowcase(t *testing.T) {
 				drawBadgesInPlace(c, ratings, ratingCfg(func(cf *imageconfig.Config) { cf.BadgeStyle = imageconfig.BadgeGlass }))
 			}},
 		},
+		"presentation-editorial": {
+			{"standard", func(c *image.NRGBA) {
+				drawBadgesInPlace(c, ratings, ratingCfg(func(*imageconfig.Config) {}))
+			}},
+			{"editorial", func(c *image.NRGBA) {
+				drawEditorialRating(c, ratings, []string{"Crime", "Drama"}, ratingCfg(func(*imageconfig.Config) {}), 2.0, newOccupancy(c.Bounds()))
+			}},
+			{"editorial (accent)", func(c *image.NRGBA) {
+				drawEditorialRating(c, ratings, []string{"Sci-Fi"}, ratingCfg(func(cf *imageconfig.Config) { cf.RatingRingColor = "#3355ff" }), 2.0, newOccupancy(c.Bounds()))
+			}},
+		},
 		"aggregate-bar": {
 			{"auto (score-banded)", func(c *image.NRGBA) {
 				drawAggregateBar(c, ratings, ratingCfg(func(cf *imageconfig.Config) { cf.AggregateBar = true; cf.AggregateBarPos = "bottom" }))

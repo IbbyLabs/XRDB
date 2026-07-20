@@ -112,6 +112,12 @@ export const SIX_POS_OPTIONS = [
   { id: 'br',      label: 'Bottom right'  },
 ] as const;
 
+export const RATING_PRESENTATION_OPTIONS = [
+  { id: 'standard',  label: 'Standard'  },
+  { id: 'editorial', label: 'Editorial' },
+  { id: 'none',      label: 'Hidden'    },
+] as const;
+
 export const QUALITY_STYLE_OPTIONS = [
   { id: 'default', label: 'Glass' },
   { id: 'plain',   label: 'Plain' },
@@ -160,6 +166,7 @@ export interface ConfigState {
   ratingsMax: number; // 0 = no cap
   ratingBadgeOffsetX: number;
   ratingBadgeOffsetY: number;
+  ratingPresentation: string; // standard|editorial|none
   genreBadgeScale: number;
   genreBadgeOffsetX: number;
   genreBadgeOffsetY: number;
@@ -211,6 +218,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingsMax: 0,
   ratingBadgeOffsetX: 0,
   ratingBadgeOffsetY: 0,
+  ratingPresentation: 'standard',
   genreBadgeScale: 0,
   genreBadgeOffsetX: 0,
   genreBadgeOffsetY: 0,

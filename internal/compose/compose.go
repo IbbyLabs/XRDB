@@ -234,8 +234,22 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	}
 
 	var ratingsH int
-	if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
-		ratingsH = drawBadgesInPlace(composed, allRatings, req.Config)
+	// The presentation mode decides how ratings appear. "none" hides them;
+	// "editorial" replaces the badge strip with a genre label above a large
+	// score; anything else uses the standard badge strip.
+	switch req.Config.RatingPresentation {
+	case "none":
+		// Ratings intentionally hidden.
+	case "editorial":
+		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
+			drawEditorialRating(composed, allRatings, meta.Genres, req.Config, scale, occ)
+		}
+	default:
+		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
+			ratingsH = drawBadgesInPlace(composed, allRatings, req.Config)
+		}
+	}
+	{
 		if ratingsH > 0 {
 			// Reserve the full-width band the ratings strip occupies so corner
 			// overlays (notably the ring) float clear of it.

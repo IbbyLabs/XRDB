@@ -6,7 +6,7 @@ import { fetchTemplates, type Template } from '@/lib/api';
 import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   LAYOUT_OPTIONS, RATING_OPTIONS, BADGE_STYLE_OPTIONS, BADGE_THEME_OPTIONS,
-  RING_POS_OPTIONS, SIX_POS_OPTIONS, QUALITY_STYLE_OPTIONS,
+  RING_POS_OPTIONS, SIX_POS_OPTIONS, QUALITY_STYLE_OPTIONS, RATING_PRESENTATION_OPTIONS,
 } from './configurator-types';
 
 // ── Template strip ────────────────────────────────────────────────────────────
@@ -359,6 +359,21 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
         </p>
 
         <span className="label">Rating badges</span>
+        <div className="field">
+          <span className="label" id={`${uid}-rating-pres-label`}>Presentation</span>
+          <div className="opt-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }} role="group" aria-labelledby={`${uid}-rating-pres-label`}>
+            {RATING_PRESENTATION_OPTIONS.map(o => (
+              <button
+                key={o.id}
+                className={`opt-btn${config.ratingPresentation === o.id ? ' opt-btn--active' : ''}`}
+                onClick={() => onUpdate('ratingPresentation', o.id)}
+                aria-pressed={config.ratingPresentation === o.id}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <NumField id={`${uid}-rating-scale`} label="Scale (%)" value={config.ratingBadgeScale}
           onChange={v => onUpdate('ratingBadgeScale', v)} min={70} max={200} step={5}
           hint="70–200. Blank keeps the default size." />

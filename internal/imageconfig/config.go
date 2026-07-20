@@ -235,10 +235,11 @@ func mergeLegacy(marshalled []byte, legacy map[string]json.RawMessage) ([]byte, 
 // RatingBadgeConfig groups the rating-badge sizing and count controls. Style,
 // theme, layout, and the ratings allow-list remain flat fields on Config.
 type RatingBadgeConfig struct {
-	RatingBadgeScale   int  `json:"ratingBadgeScale,omitempty"`   // percent 70-200; 0 = 100
-	RatingsMax         *int `json:"ratingsMax,omitempty"`         // cap on badge count; nil = no cap
-	RatingBadgeOffsetX int  `json:"ratingBadgeOffsetX,omitempty"` // px nudge of the whole strip
-	RatingBadgeOffsetY int  `json:"ratingBadgeOffsetY,omitempty"` //
+	RatingBadgeScale   int    `json:"ratingBadgeScale,omitempty"`   // percent 70-200; 0 = 100
+	RatingsMax         *int   `json:"ratingsMax,omitempty"`         // cap on badge count; nil = no cap
+	RatingBadgeOffsetX int    `json:"ratingBadgeOffsetX,omitempty"` // px nudge of the whole strip
+	RatingBadgeOffsetY int    `json:"ratingBadgeOffsetY,omitempty"`
+	RatingPresentation string `json:"ratingPresentation,omitempty"` // standard|editorial|none (others modeled)
 }
 
 // AggregateConfig groups the aggregate-score-bar appearance controls. The bar's
@@ -410,10 +411,11 @@ type rawRing struct {
 }
 
 type rawRating struct {
-	RatingBadgeScale   *int `json:"ratingBadgeScale"`
-	RatingsMax         *int `json:"ratingsMax"`
-	RatingBadgeOffsetX *int `json:"ratingBadgeOffsetX"`
-	RatingBadgeOffsetY *int `json:"ratingBadgeOffsetY"`
+	RatingBadgeScale   *int    `json:"ratingBadgeScale"`
+	RatingsMax         *int    `json:"ratingsMax"`
+	RatingBadgeOffsetX *int    `json:"ratingBadgeOffsetX"`
+	RatingBadgeOffsetY *int    `json:"ratingBadgeOffsetY"`
+	RatingPresentation *string `json:"ratingPresentation"`
 }
 
 type rawAggregate struct {
@@ -659,6 +661,12 @@ func parseRating(cfg *Config, r *raw) {
 	}
 	if r.RatingBadgeOffsetY != nil {
 		cfg.RatingBadgeOffsetY = clampInt(*r.RatingBadgeOffsetY, -320, 320)
+	}
+	if r.RatingPresentation != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.RatingPresentation)); v {
+		case "standard", "minimal", "dual", "editorial", "scorebar", "none":
+			cfg.RatingPresentation = v
+		}
 	}
 }
 

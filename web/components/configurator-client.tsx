@@ -118,6 +118,7 @@ export function ConfiguratorClient() {
       ratingBadgeScale: cfg.ratingBadgeScale,
       ratingBadgeOffsetX: cfg.ratingBadgeOffsetX,
       ratingBadgeOffsetY: cfg.ratingBadgeOffsetY,
+      ratingPresentation: cfg.ratingPresentation === 'standard' ? '' : cfg.ratingPresentation,
       genreBadgeScale: cfg.genreBadgeScale,
       genreBadgeOffsetX: cfg.genreBadgeOffsetX,
       genreBadgeOffsetY: cfg.genreBadgeOffsetY,

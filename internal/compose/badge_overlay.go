@@ -799,6 +799,44 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	drawText(base, face, tx, ty, textColor, label)
 }
 
+// drawEditorialRating renders the magazine-style "editorial" presentation: the
+// first genre in an accent color above a large average score, anchored top-left.
+// It mirrors v2's editorial mode (e.g. "Crime" over "9.0").
+func drawEditorialRating(base *image.NRGBA, ratings []provider.Rating, genres []string, cfg imageconfig.Config, scale float64, occ *occupancy) {
+	avg, ok := ratingRingAverage(ratings, cfg.Ratings)
+	if !ok {
+		return
+	}
+	ensureFaces()
+	s := func(v float64) int { return int(v*scale + 0.5) }
+	x := base.Bounds().Min.X + s(16)
+	y := base.Bounds().Min.Y + s(14)
+
+	accent := color.NRGBA{R: 232, G: 146, B: 42, A: 255} // warm editorial orange
+	if cfg.RatingRingColor != "" {
+		if c, err := parseHexColor(cfg.RatingRingColor); err == nil {
+			accent = c
+		}
+	}
+
+	if len(genres) > 0 {
+		gf := labelFaceFor(scale)
+		gm := gf.Metrics()
+		drawText(base, gf, x, y+gm.Ascent.Ceil(), accent, genres[0])
+		y += gm.Height.Ceil() + s(2)
+	}
+
+	bigFace := valueFaceFor(scale * 2.4)
+	bm := bigFace.Metrics()
+	label := strconv.FormatFloat(avg, 'f', 1, 64)
+	// Soft shadow for legibility on bright artwork, then the value.
+	drawText(base, bigFace, x+maxInt(1, s(1)), y+bm.Ascent.Ceil()+maxInt(1, s(1)), color.NRGBA{A: 150}, label)
+	drawText(base, bigFace, x, y+bm.Ascent.Ceil(), color.White, label)
+
+	// Reserve the region so other overlays avoid it.
+	occ.reserve(image.Rect(x, base.Bounds().Min.Y, x+s(120), y+bm.Height.Ceil()))
+}
+
 // ── Aggregate rating bar ──────────────────────────────────────────────────────
 
 // drawAggregateBar draws a full-width score bar on top or bottom of the image.

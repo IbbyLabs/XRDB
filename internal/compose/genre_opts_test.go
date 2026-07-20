@@ -282,3 +282,20 @@ func TestRingValueProgressSources(t *testing.T) {
 		t.Error("unknown ring source should fall back to the average")
 	}
 }
+
+func TestEditorialPresentationRenders(t *testing.T) {
+	ratings := []provider.Rating{{Source: "imdb", Value: 8.5, Label: "8.5"}, {Source: "tmdb", Value: 7.9, Label: "7.9"}}
+	cfg := imageconfig.Config{Ratings: []string{"imdb", "tmdb"}}
+	img := genreTestImage()
+	drawEditorialRating(img, ratings, []string{"Crime"}, cfg, 2.0, newOccupancy(img.Bounds()))
+	// Editorial draws (non-empty) and differs from the standard strip.
+	std := genreTestImage()
+	drawBadgesInPlace(std, ratings, imageconfig.Config{Ratings: []string{"imdb", "tmdb"}, RatingsLayout: imageconfig.LayoutBottom})
+	if !imagesDiffer(img, std) {
+		t.Error("editorial presentation matched the standard strip")
+	}
+	blank := genreTestImage()
+	if !imagesDiffer(img, blank) {
+		t.Error("editorial presentation drew nothing")
+	}
+}
