@@ -1161,7 +1161,11 @@ textarea.input { min-height: 0; line-height: 1.5; }
   text-align: left;
   transition: background var(--dur-1) var(--ease-out);
 }
-.media-result:hover { background: var(--bg-hover); }
+.media-result:hover,
+.media-result--active { background: var(--bg-hover); }
+/* Keyboard-highlighted option gets a full inset hairline so arrow-key focus is
+   distinguishable from a plain mouse hover. */
+.media-result--active { box-shadow: inset 0 0 0 1px var(--accent-border); }
 
 .media-result-title {
   font-size: var(--text-sm);

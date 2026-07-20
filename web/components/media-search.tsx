@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useId, useCallback } from 'react';
+import { useState, useEffect, useRef, useId, useCallback, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Search, Shuffle, Pin, X } from 'lucide-react';
 import { searchTitles, trendingTitles, renderIDFor, type TitleResult } from '@/lib/api';
 
@@ -30,6 +30,9 @@ export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSea
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<TitleResult[]>([]);
   const [open, setOpen] = useState(false);
+  // Which result the keyboard has "highlighted" in the listbox; -1 = none. Drives
+  // aria-activedescendant so a screen reader announces the active option.
+  const [activeIndex, setActiveIndex] = useState(-1);
   const [searching, setSearching] = useState(false);
   const [shuffling, setShuffling] = useState(false);
   const [pins, setPins] = useState<PinnedItem[]>([]);
@@ -37,6 +40,13 @@ export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSea
   const wrapRef = useRef<HTMLDivElement>(null);
   const trendingRef = useRef<TitleResult[] | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const optionId = (i: number) => `${uid}-opt-${i}`;
+
+  const closeList = useCallback(() => {
+    setOpen(false);
+    setActiveIndex(-1);
+  }, []);
 
   // Restore pins after mount — reading localStorage during the first render
   // mismatches the statically prerendered HTML (React #418).
@@ -63,23 +73,31 @@ export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSea
   useEffect(() => {
     if (!open) return;
     const onPointer = (e: PointerEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) closeList();
     };
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') closeList(); };
     document.addEventListener('pointerdown', onPointer);
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('pointerdown', onPointer);
       document.removeEventListener('keydown', onKey);
     };
-  }, [open]);
+  }, [open, closeList]);
+
+  // Keep the keyboard-highlighted option scrolled into view.
+  useEffect(() => {
+    if (activeIndex < 0) return;
+    document.getElementById(optionId(activeIndex))?.scrollIntoView({ block: 'nearest' });
+    // optionId is derived from the stable uid; only activeIndex drives this.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeIndex]);
 
   const runSearch = useCallback((q: string) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const trimmed = q.trim();
     if (trimmed.length < 2 || DIRECT_ID_RE.test(trimmed)) {
       setResults([]);
-      setOpen(false);
+      closeList();
       return;
     }
     debounceRef.current = setTimeout(async () => {
@@ -87,6 +105,7 @@ export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSea
       try {
         const hits = await searchTitles(trimmed);
         setResults(hits);
+        setActiveIndex(-1);
         setOpen(hits.length > 0);
       } catch {
         onError('Search is unavailable — check the TMDB key on this instance.');
@@ -94,10 +113,10 @@ export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSea
         setSearching(false);
       }
     }, 350);
-  }, [onError]);
+  }, [onError, closeList]);
 
   const selectResult = async (t: TitleResult) => {
-    setOpen(false);
+    closeList();
     setQuery('');
     const id = await renderIDFor(t);
     onSelect(id, t.year ? `${t.title} (${t.year})` : t.title);
@@ -108,9 +127,33 @@ export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSea
     if (DIRECT_ID_RE.test(trimmed)) {
       onSelect(trimmed, trimmed);
       setQuery('');
-      setOpen(false);
+      closeList();
     } else if (results.length > 0) {
-      void selectResult(results[0]);
+      void selectResult(results[activeIndex >= 0 ? activeIndex : 0]);
+    }
+  };
+
+  // Full listbox keyboard model: arrows move the active option, Enter selects it,
+  // Escape closes. Matches the combobox/listbox ARIA the markup declares.
+  const onInputKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown') {
+      if (results.length === 0) return;
+      e.preventDefault();
+      if (!open) { setOpen(true); setActiveIndex(0); return; }
+      setActiveIndex(i => Math.min(i + 1, results.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      if (!open) return;
+      e.preventDefault();
+      setActiveIndex(i => (i <= 0 ? 0 : i - 1));
+    } else if (e.key === 'Enter') {
+      if (open && activeIndex >= 0 && activeIndex < results.length) {
+        e.preventDefault();
+        void selectResult(results[activeIndex]);
+      } else {
+        handleDirect();
+      }
+    } else if (e.key === 'Escape') {
+      if (open) { e.preventDefault(); closeList(); }
     }
   };
 
@@ -190,12 +233,13 @@ export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSea
             className="input media-search-input"
             value={query}
             onChange={e => { setQuery(e.target.value); runSearch(e.target.value); }}
-            onKeyDown={e => { if (e.key === 'Enter') handleDirect(); }}
+            onKeyDown={onInputKeyDown}
             onFocus={() => { if (results.length > 0) setOpen(true); }}
             placeholder="Search by name, or paste an IMDb / TMDB ID"
             role="combobox"
             aria-expanded={open}
             aria-controls={`${uid}-results`}
+            aria-activedescendant={open && activeIndex >= 0 ? optionId(activeIndex) : undefined}
             autoComplete="off"
             spellCheck={false}
           />
@@ -204,12 +248,14 @@ export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSea
         {searching && <span className="hint">Searching…</span>}
         {open && (
           <ul id={`${uid}-results`} className="media-results" role="listbox">
-            {results.map(t => (
+            {results.map((t, i) => (
               <li key={`${t.mediaType}-${t.tmdbId}`}>
                 <button
-                  className="media-result"
+                  id={optionId(i)}
+                  className={`media-result${i === activeIndex ? ' media-result--active' : ''}`}
                   role="option"
-                  aria-selected="false"
+                  aria-selected={i === activeIndex}
+                  onMouseMove={() => setActiveIndex(i)}
                   onClick={() => void selectResult(t)}
                 >
                   <span className="media-result-title">{t.title}</span>
