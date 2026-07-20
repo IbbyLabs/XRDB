@@ -167,6 +167,7 @@ export interface ConfigState {
   ratingBadgeOffsetX: number;
   ratingBadgeOffsetY: number;
   ratingPresentation: string; // standard|editorial|none
+  ratingProviderOverrides: Record<string, string>; // source id → hex accent; empty = none
   genreBadgeScale: number;
   genreBadgeOffsetX: number;
   genreBadgeOffsetY: number;
@@ -219,6 +220,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingBadgeOffsetX: 0,
   ratingBadgeOffsetY: 0,
   ratingPresentation: 'standard',
+  ratingProviderOverrides: {},
   genreBadgeScale: 0,
   genreBadgeOffsetX: 0,
   genreBadgeOffsetY: 0,
@@ -267,6 +269,16 @@ function coerceStringArray(value: unknown, fallback: string[]): string[] {
   return value.filter((v): v is string => typeof v === 'string');
 }
 
+/** Keep only string→string entries of a map field; drop anything malformed. */
+function coerceStringMap(value: unknown): Record<string, string> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof v === 'string') out[k] = v;
+  }
+  return out;
+}
+
 /**
  * Fill any missing/invalid fields of a partial config from the defaults. Array
  * fields are validated explicitly — malformed stored/shared data (e.g.
@@ -281,6 +293,7 @@ function coerceConfig(raw: unknown): ConfigState {
     ...(raw as Partial<ConfigState>),
     ratings: coerceStringArray(input.ratings, DEFAULT_CONFIG.ratings),
     badges: coerceStringArray(input.badges, DEFAULT_CONFIG.badges),
+    ratingProviderOverrides: coerceStringMap(input.ratingProviderOverrides),
   };
 }
 

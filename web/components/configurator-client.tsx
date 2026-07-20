@@ -143,6 +143,9 @@ export function ConfiguratorClient() {
       ringProgressSource: cfg.ringProgressSource === 'overall' ? '' : cfg.ringProgressSource,
     };
     if (cfg.ratingsMax > 0) payload.ratingsMax = cfg.ratingsMax;
+    if (Object.keys(cfg.ratingProviderOverrides).length > 0) {
+      payload.ratingProviderOverrides = cfg.ratingProviderOverrides;
+    }
     return renderUrl(type, id || 'tt0468569', JSON.stringify(payload), renderKey);
   }, [renderKey]);
 

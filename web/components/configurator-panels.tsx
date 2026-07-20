@@ -340,6 +340,65 @@ function PosSelect({
 }
 
 /**
+ * ProviderOverrides lets each selected rating source use a custom accent colour
+ * instead of its brand default. Only the sources currently in the poster show
+ * up here, so the list tracks the Sources selection.
+ */
+function ProviderOverrides({ uid, config, onUpdate }: {
+  uid: string; config: ConfigState; onUpdate: UpdateConfigFn;
+}) {
+  const selected = RATING_OPTIONS.filter(r => config.ratings.includes(r.id));
+  if (selected.length === 0) return null;
+
+  const setOverride = (id: string, hex: string) => {
+    onUpdate('ratingProviderOverrides', { ...config.ratingProviderOverrides, [id]: hex });
+  };
+  const clearOverride = (id: string) => {
+    const next = { ...config.ratingProviderOverrides };
+    delete next[id];
+    onUpdate('ratingProviderOverrides', next);
+  };
+
+  return (
+    <details className="adv-details">
+      <summary className="hint" style={{ cursor: 'pointer', userSelect: 'none' }}>
+        Per-provider colors
+      </summary>
+      <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>
+        <p className="hint" style={{ marginTop: 0 }}>
+          Override a source&apos;s accent colour. Sources without an override keep their brand colour.
+        </p>
+        {selected.map(r => {
+          const override = config.ratingProviderOverrides[r.id];
+          return (
+            <div className="field" key={r.id}>
+              <label className="label" htmlFor={`${uid}-provover-${r.id}`}>{r.label}</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+                <input
+                  id={`${uid}-provover-${r.id}`}
+                  type="color"
+                  value={override || r.accent}
+                  onChange={e => setOverride(r.id, e.target.value)}
+                  style={{ width: 36, height: 28, padding: 2, border: '1px solid var(--border)', borderRadius: 4, background: 'none', cursor: 'pointer' }}
+                />
+                <button
+                  className={`opt-btn${!override ? ' opt-btn--active' : ''}`}
+                  onClick={() => clearOverride(r.id)}
+                  aria-pressed={!override}
+                  style={{ flex: 1 }}
+                >
+                  Brand default
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </details>
+  );
+}
+
+/**
  * AdvancedPanel exposes the fine-grained badge controls carried over from v2:
  * per-element scale, position, offset, opacity, and colour. It is collapsed by
  * default so the common controls stay uncluttered.
@@ -386,6 +445,7 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
           <NumField id={`${uid}-rating-oy`} label="Offset Y" value={config.ratingBadgeOffsetY}
             onChange={v => onUpdate('ratingBadgeOffsetY', v)} min={-320} max={320} />
         </div>
+        <ProviderOverrides uid={uid} config={config} onUpdate={onUpdate} />
 
         <span className="label" style={{ marginTop: 'var(--sp-3)' }}>Quality badges</span>
         <PosSelect id={`${uid}-quality-pos`} label="Position" value={config.qualityBadgesPos}
