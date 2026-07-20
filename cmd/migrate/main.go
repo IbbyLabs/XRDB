@@ -69,6 +69,12 @@ func main() {
 	}
 
 	fmt.Printf("migration completed: input=%d migrated=%d unsupported=%d\n", report.InputProfiles, report.MigratedProfiles, len(report.UnsupportedFields))
+	if len(report.DeferredConfigFields) > 0 {
+		// Deferred fields are preserved on the profile, not dropped — call that
+		// out so the count does not read as data loss.
+		fmt.Printf("config fields: %d rendered now, %d preserved for later (see report)\n",
+			report.MappedConfigFields, len(report.DeferredConfigFields))
+	}
 	fmt.Printf("report: %s\n", *reportPath)
 	if !*validateOnly {
 		fmt.Printf("output: %s\n", *outputPath)

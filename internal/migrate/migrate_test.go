@@ -92,3 +92,56 @@ func TestParseLegacyEnvelopeSupportsArrayAndEnvelope(t *testing.T) {
 		t.Fatalf("expected envelope format to parse: %v", err)
 	}
 }
+
+func TestMigrateClassifiesConfigFields(t *testing.T) {
+	input := LegacyEnvelope{Profiles: []map[string]json.RawMessage{
+		{
+			"id":   json.RawMessage(`"p1"`),
+			"type": json.RawMessage(`"poster"`),
+			// "language" and "ratings" are modeled by v3; the prefixed and
+			// aggregate fields are preserved but not yet rendered.
+			"config": json.RawMessage(`{"language":"en","ratings":["imdb"],"posterRatingsMax":4,"aggregateAccentMode":"dynamic"}`),
+		},
+	}}
+
+	_, report, err := MigrateLegacyProfiles(input, "src", time.Date(2026, 7, 16, 0, 0, 0, 0, time.UTC))
+	if err != nil {
+		t.Fatalf("migrate: %v", err)
+	}
+	if report.MappedConfigFields != 2 {
+		t.Errorf("mapped config fields = %d, want 2 (language, ratings)", report.MappedConfigFields)
+	}
+	if report.DeferredConfigSummary["posterRatingsMax"] != 1 {
+		t.Errorf("posterRatingsMax not reported as deferred: %v", report.DeferredConfigSummary)
+	}
+	if report.DeferredConfigSummary["aggregateAccentMode"] != 1 {
+		t.Errorf("aggregateAccentMode not reported as deferred: %v", report.DeferredConfigSummary)
+	}
+	if len(report.DeferredConfigFields) != 2 {
+		t.Errorf("expected 2 deferred fields, got %d", len(report.DeferredConfigFields))
+	}
+	// Deferred is transparency, not loss: the config blob is passed through whole.
+	if report.DeferredConfigFields[0].Field != "aggregateAccentMode" {
+		t.Errorf("deferred fields not sorted: %+v", report.DeferredConfigFields)
+	}
+}
+
+func TestMigrateModeledOnlyConfigHasNoDeferrals(t *testing.T) {
+	input := LegacyEnvelope{Profiles: []map[string]json.RawMessage{
+		{
+			"id":     json.RawMessage(`"p1"`),
+			"type":   json.RawMessage(`"poster"`),
+			"config": json.RawMessage(`{"language":"fr","badgeStyle":"glass"}`),
+		},
+	}}
+	_, report, err := MigrateLegacyProfiles(input, "src", time.Now())
+	if err != nil {
+		t.Fatalf("migrate: %v", err)
+	}
+	if len(report.DeferredConfigFields) != 0 {
+		t.Errorf("expected no deferrals, got %+v", report.DeferredConfigFields)
+	}
+	if report.MappedConfigFields != 2 {
+		t.Errorf("mapped = %d, want 2", report.MappedConfigFields)
+	}
+}

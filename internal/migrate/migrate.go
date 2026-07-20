@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"sort"
 	"time"
+
+	"xrdb_rewrite/internal/imageconfig"
 )
 
 type LegacyEnvelope struct {
@@ -30,12 +32,27 @@ type UnsupportedField struct {
 	Reason       string `json:"reason"`
 }
 
+// DeferredField is a config key preserved on a migrated profile that XRDB does
+// not yet render. Nothing is lost: the value stays on the profile and is served
+// unchanged once the matching v3 control ships. Listing them turns silent
+// omission into a visible, recoverable deferral.
+type DeferredField struct {
+	ProfileIndex int    `json:"profileIndex"`
+	Field        string `json:"field"`
+}
+
 type MigrationReport struct {
 	GeneratedAt        string             `json:"generatedAt"`
 	InputProfiles      int                `json:"inputProfiles"`
 	MigratedProfiles   int                `json:"migratedProfiles"`
 	UnsupportedFields  []UnsupportedField `json:"unsupportedFields"`
 	UnsupportedSummary map[string]int     `json:"unsupportedSummary"`
+	// MappedConfigFields counts config keys XRDB renders today, across all
+	// profiles. DeferredConfigFields lists the keys preserved but not yet
+	// rendered, so a migrating user sees exactly what is carried over untouched.
+	MappedConfigFields    int             `json:"mappedConfigFields"`
+	DeferredConfigFields  []DeferredField `json:"deferredConfigFields"`
+	DeferredConfigSummary map[string]int  `json:"deferredConfigSummary"`
 }
 
 var requiredFields = []string{"id", "type", "config"}
@@ -66,10 +83,12 @@ func ParseLegacyEnvelope(data []byte) (LegacyEnvelope, error) {
 
 func MigrateLegacyProfiles(envelope LegacyEnvelope, source string, now time.Time) ([]OutputProfile, MigrationReport, error) {
 	report := MigrationReport{
-		GeneratedAt:        now.UTC().Format(time.RFC3339),
-		InputProfiles:      len(envelope.Profiles),
-		UnsupportedFields:  make([]UnsupportedField, 0),
-		UnsupportedSummary: make(map[string]int),
+		GeneratedAt:           now.UTC().Format(time.RFC3339),
+		InputProfiles:         len(envelope.Profiles),
+		UnsupportedFields:     make([]UnsupportedField, 0),
+		UnsupportedSummary:    make(map[string]int),
+		DeferredConfigFields:  make([]DeferredField, 0),
+		DeferredConfigSummary: make(map[string]int),
 	}
 
 	out := make([]OutputProfile, 0, len(envelope.Profiles))
@@ -97,6 +116,20 @@ func MigrateLegacyProfiles(envelope LegacyEnvelope, source string, now time.Time
 		var configCheck map[string]json.RawMessage
 		if err := json.Unmarshal(config, &configCheck); err != nil {
 			return nil, report, fmt.Errorf("profile %d has malformed config object", i)
+		}
+		// Classify every config key so the user sees which of their settings XRDB
+		// renders today (mapped) and which are carried over untouched (deferred).
+		// The config blob itself is stored verbatim either way — nothing is lost.
+		for key := range configCheck {
+			if imageconfig.IsModeledKey(key) {
+				report.MappedConfigFields++
+				continue
+			}
+			report.DeferredConfigFields = append(report.DeferredConfigFields, DeferredField{
+				ProfileIndex: i,
+				Field:        key,
+			})
+			report.DeferredConfigSummary[key]++
 		}
 
 		name := ""
@@ -142,6 +175,14 @@ func MigrateLegacyProfiles(envelope LegacyEnvelope, source string, now time.Time
 	sort.Slice(report.UnsupportedFields, func(i, j int) bool {
 		a := report.UnsupportedFields[i]
 		b := report.UnsupportedFields[j]
+		if a.ProfileIndex != b.ProfileIndex {
+			return a.ProfileIndex < b.ProfileIndex
+		}
+		return a.Field < b.Field
+	})
+	sort.Slice(report.DeferredConfigFields, func(i, j int) bool {
+		a := report.DeferredConfigFields[i]
+		b := report.DeferredConfigFields[j]
 		if a.ProfileIndex != b.ProfileIndex {
 			return a.ProfileIndex < b.ProfileIndex
 		}
