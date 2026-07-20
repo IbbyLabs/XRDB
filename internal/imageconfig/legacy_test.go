@@ -106,3 +106,49 @@ func TestLegacyValuesAreCompacted(t *testing.T) {
 		t.Errorf("preserved value not compacted: %s", spaced.Legacy["blob"])
 	}
 }
+
+// A JSON null preserved field must survive round-trips without becoming a
+// dropped key or a Go nil that re-marshals differently.
+func TestLegacyPreservesNullValue(t *testing.T) {
+	cfg := Parse(json.RawMessage(`{"language":"en","weirdField":null}`))
+	if _, ok := cfg.Legacy["weirdField"]; !ok {
+		t.Fatal("null-valued unknown field was dropped")
+	}
+	r1, _ := CanonicalJSON(cfg)
+	r2, _ := CanonicalJSON(Parse(r1))
+	if !bytes.Equal(r1, r2) {
+		t.Errorf("null field not stable across round-trips:\n%s\n%s", r1, r2)
+	}
+}
+
+// Legacy must never shadow a modeled field even if one is placed there directly.
+func TestMergeLegacyNeverShadowsModeledField(t *testing.T) {
+	cfg := Default()
+	cfg.Language = "en"
+	// Force a collision: a modeled key smuggled into the legacy bag.
+	cfg.Legacy = map[string]json.RawMessage{"language": json.RawMessage(`"HACKED"`)}
+	raw, err := CanonicalJSON(cfg)
+	if err != nil {
+		t.Fatalf("CanonicalJSON: %v", err)
+	}
+	restored := Parse(raw)
+	if restored.Language != "en" {
+		t.Errorf("legacy shadowed a modeled field: language = %q", restored.Language)
+	}
+	if _, ok := restored.Legacy["language"]; ok {
+		t.Error("a modeled key persisted in the legacy bag")
+	}
+}
+
+// Nested-object legacy values with differing key order must hash the same only
+// if logically identical; Go's json.Compact preserves key order, so we document
+// the actual behavior: same source order → stable, which is what round-trips need.
+func TestLegacyNestedObjectRoundTripStable(t *testing.T) {
+	cfg := Parse(json.RawMessage(`{"nested":{"z":1,"a":2,"m":[3,4]}}`))
+	r1, _ := CanonicalJSON(cfg)
+	r2, _ := CanonicalJSON(Parse(r1))
+	r3, _ := CanonicalJSON(Parse(r2))
+	if !bytes.Equal(r1, r2) || !bytes.Equal(r2, r3) {
+		t.Errorf("nested legacy object not a fixed point:\n1:%s\n2:%s\n3:%s", r1, r2, r3)
+	}
+}
