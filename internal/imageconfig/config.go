@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"reflect"
 	"sort"
 	"strings"
 )
@@ -108,6 +109,91 @@ type Config struct {
 	RatingRing       bool           `json:"ratingRing,omitempty"`
 	RatingRingPos    string         `json:"ratingRingPos,omitempty"`   // "tl" | "tr" | "bl" | "br"
 	RatingRingColor  string         `json:"ratingRingColor,omitempty"` // "" = auto (green/amber/red), else "#RRGGBB"
+
+	// Legacy carries config keys XRDB does not yet model — chiefly per-surface
+	// fields from a migrated v2 profile whose matching v3 control has not
+	// shipped. They are preserved verbatim through Parse/CanonicalJSON
+	// round-trips and folded into the cache key, so a migrated config is never
+	// silently reduced to the subset v3 understands. They do not affect
+	// rendering. As each field gains a real home above, it stops landing here.
+	Legacy map[string]json.RawMessage `json:"-"`
+}
+
+// knownKeys is the set of top-level config keys Parse models directly, derived
+// from the raw parse struct so it can never drift from the fields above. Any
+// other key a config carries is preserved in Config.Legacy rather than dropped.
+// "surfaces" is reserved for the per-surface envelope (see ParseSurface) and is
+// never treated as a legacy field.
+var knownKeys = func() map[string]struct{} {
+	m := map[string]struct{}{"surfaces": {}}
+	t := reflect.TypeOf(raw{})
+	for i := 0; i < t.NumField(); i++ {
+		name, _, _ := strings.Cut(t.Field(i).Tag.Get("json"), ",")
+		if name != "" && name != "-" {
+			m[name] = struct{}{}
+		}
+	}
+	return m
+}()
+
+// IsModeledKey reports whether a top-level config key is one XRDB renders today,
+// as opposed to one preserved verbatim in Config.Legacy. The migration tooling
+// uses it to tell a user which of their v2 fields are honoured now and which are
+// carried forward untouched until the matching control ships.
+func IsModeledKey(key string) bool {
+	_, ok := knownKeys[key]
+	return ok
+}
+
+// collectLegacy returns the keys of data that Parse does not model, compacted so
+// round-trips and cache keys are stable. Returns nil when there are none.
+func collectLegacy(data json.RawMessage) map[string]json.RawMessage {
+	var all map[string]json.RawMessage
+	if err := json.Unmarshal(data, &all); err != nil {
+		return nil
+	}
+	var legacy map[string]json.RawMessage
+	for k, v := range all {
+		if _, known := knownKeys[k]; known {
+			continue
+		}
+		if legacy == nil {
+			legacy = make(map[string]json.RawMessage, 4)
+		}
+		legacy[k] = compactRaw(v)
+	}
+	return legacy
+}
+
+// compactRaw strips insignificant whitespace so a preserved value hashes and
+// serializes identically regardless of how it was originally spaced.
+func compactRaw(v json.RawMessage) json.RawMessage {
+	var buf bytes.Buffer
+	if err := json.Compact(&buf, v); err != nil {
+		return v
+	}
+	return json.RawMessage(append([]byte(nil), buf.Bytes()...))
+}
+
+// mergeLegacy overlays a config's legacy keys onto an already-marshalled config
+// object, skipping any key that is actually modeled so legacy can never shadow a
+// real field. The result marshals with sorted keys (encoding/json orders map
+// keys), keeping output deterministic.
+func mergeLegacy(marshalled []byte, legacy map[string]json.RawMessage) ([]byte, error) {
+	if len(legacy) == 0 {
+		return marshalled, nil
+	}
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(marshalled, &m); err != nil {
+		return nil, err
+	}
+	for k, v := range legacy {
+		if _, known := knownKeys[k]; known {
+			continue
+		}
+		m[k] = v
+	}
+	return json.Marshal(m)
 }
 
 // Default returns a Config populated with production defaults.
@@ -313,6 +399,7 @@ func Parse(data json.RawMessage) Config {
 	if r.RatingRingColor != nil && strings.TrimSpace(*r.RatingRingColor) != "" {
 		cfg.RatingRingColor = strings.TrimSpace(*r.RatingRingColor)
 	}
+	cfg.Legacy = collectLegacy(data)
 	return cfg
 }
 
@@ -381,6 +468,12 @@ func CacheKey(cfg Config) string {
 		RatingRingColor:  cfg.RatingRingColor,
 	}
 	b, _ := json.Marshal(c)
+	// Fold any preserved-but-unmodeled fields into the key so two migrated
+	// configs that differ only in a not-yet-honoured field don't collide in the
+	// cache. Legacy-free configs hash exactly as before.
+	if merged, err := mergeLegacy(b, cfg.Legacy); err == nil {
+		b = merged
+	}
 	sum := sha256.Sum256(b)
 	return hex.EncodeToString(sum[:])
 }
@@ -405,7 +498,14 @@ func CanonicalJSON(cfg Config) (json.RawMessage, error) {
 	if err := enc.Encode(out); err != nil {
 		return nil, err
 	}
-	return json.RawMessage(bytes.TrimRight(buf.Bytes(), "\n")), nil
+	marshalled := bytes.TrimRight(buf.Bytes(), "\n")
+	// Re-attach preserved fields so an export/import round-trip keeps every key a
+	// migrated config carried, not just the ones v3 models today.
+	merged, err := mergeLegacy(marshalled, out.Legacy)
+	if err != nil {
+		return nil, err
+	}
+	return json.RawMessage(merged), nil
 }
 
 func normalizeMediaSize(v string) MediaSize {
