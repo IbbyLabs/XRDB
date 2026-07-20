@@ -116,6 +116,8 @@ export function ConfiguratorClient() {
       // send; ratingsMax is the exception — 0 there would cap to zero badges, so
       // it is only included when the user set a real cap.
       ratingBadgeScale: cfg.ratingBadgeScale,
+      ratingBadgeOffsetX: cfg.ratingBadgeOffsetX,
+      ratingBadgeOffsetY: cfg.ratingBadgeOffsetY,
       genreBadgeScale: cfg.genreBadgeScale,
       genreBadgeOffsetX: cfg.genreBadgeOffsetX,
       genreBadgeOffsetY: cfg.genreBadgeOffsetY,

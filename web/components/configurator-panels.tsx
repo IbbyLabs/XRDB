@@ -365,6 +365,12 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
         <NumField id={`${uid}-ratings-max`} label="Max badges" value={config.ratingsMax}
           onChange={v => onUpdate('ratingsMax', v)} min={0} max={20} placeholder="no cap"
           hint="0 shows all selected sources that have data." />
+        <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
+          <NumField id={`${uid}-rating-ox`} label="Offset X" value={config.ratingBadgeOffsetX}
+            onChange={v => onUpdate('ratingBadgeOffsetX', v)} min={-320} max={320} />
+          <NumField id={`${uid}-rating-oy`} label="Offset Y" value={config.ratingBadgeOffsetY}
+            onChange={v => onUpdate('ratingBadgeOffsetY', v)} min={-320} max={320} />
+        </div>
 
         <span className="label" style={{ marginTop: 'var(--sp-3)' }}>Quality badges</span>
         <PosSelect id={`${uid}-quality-pos`} label="Position" value={config.qualityBadgesPos}

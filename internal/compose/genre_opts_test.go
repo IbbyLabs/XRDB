@@ -239,3 +239,18 @@ func TestRingCenterOpacityChangesRender(t *testing.T) {
 		t.Error("ring center opacity did not change the render")
 	}
 }
+
+func TestRatingBadgeOffsetChangesRender(t *testing.T) {
+	ratings := []provider.Rating{{Source: "imdb", Value: 8.5, Label: "8.5"}, {Source: "tmdb", Value: 7.9, Label: "7.9"}}
+	base := imageconfig.Config{Ratings: []string{"imdb", "tmdb"}, RatingsLayout: imageconfig.LayoutBottom}
+	def := genreTestImage()
+	drawBadgesInPlace(def, ratings, base)
+	off := base
+	off.RatingBadgeOffsetX = -40
+	off.RatingBadgeOffsetY = -50
+	img := genreTestImage()
+	drawBadgesInPlace(img, ratings, off)
+	if !imagesDiffer(def, img) {
+		t.Error("rating badge offset did not change the render")
+	}
+}

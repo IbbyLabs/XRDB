@@ -235,8 +235,10 @@ func mergeLegacy(marshalled []byte, legacy map[string]json.RawMessage) ([]byte, 
 // RatingBadgeConfig groups the rating-badge sizing and count controls. Style,
 // theme, layout, and the ratings allow-list remain flat fields on Config.
 type RatingBadgeConfig struct {
-	RatingBadgeScale int  `json:"ratingBadgeScale,omitempty"` // percent 70-200; 0 = 100
-	RatingsMax       *int `json:"ratingsMax,omitempty"`       // cap on badge count; nil = no cap
+	RatingBadgeScale   int  `json:"ratingBadgeScale,omitempty"`   // percent 70-200; 0 = 100
+	RatingsMax         *int `json:"ratingsMax,omitempty"`         // cap on badge count; nil = no cap
+	RatingBadgeOffsetX int  `json:"ratingBadgeOffsetX,omitempty"` // px nudge of the whole strip
+	RatingBadgeOffsetY int  `json:"ratingBadgeOffsetY,omitempty"` //
 }
 
 // AggregateConfig groups the aggregate-score-bar appearance controls. The bar's
@@ -404,8 +406,10 @@ type rawRing struct {
 }
 
 type rawRating struct {
-	RatingBadgeScale *int `json:"ratingBadgeScale"`
-	RatingsMax       *int `json:"ratingsMax"`
+	RatingBadgeScale   *int `json:"ratingBadgeScale"`
+	RatingsMax         *int `json:"ratingsMax"`
+	RatingBadgeOffsetX *int `json:"ratingBadgeOffsetX"`
+	RatingBadgeOffsetY *int `json:"ratingBadgeOffsetY"`
 }
 
 type rawAggregate struct {
@@ -645,6 +649,12 @@ func parseRating(cfg *Config, r *raw) {
 	if r.RatingsMax != nil && *r.RatingsMax >= 0 {
 		m := clampInt(*r.RatingsMax, 0, 20)
 		cfg.RatingsMax = &m
+	}
+	if r.RatingBadgeOffsetX != nil {
+		cfg.RatingBadgeOffsetX = clampInt(*r.RatingBadgeOffsetX, -320, 320)
+	}
+	if r.RatingBadgeOffsetY != nil {
+		cfg.RatingBadgeOffsetY = clampInt(*r.RatingBadgeOffsetY, -320, 320)
 	}
 }
 

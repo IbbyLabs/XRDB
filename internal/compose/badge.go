@@ -512,6 +512,7 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 	if startY < bounds.Min.Y+edgeY {
 		startY = bounds.Min.Y + edgeY
 	}
+	startY += cfg.RatingBadgeOffsetY
 
 	y := startY
 	for _, r := range rows {
@@ -526,6 +527,7 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 		if x < bounds.Min.X+edgeX {
 			x = bounds.Min.X + edgeX
 		}
+		x += cfg.RatingBadgeOffsetX
 		for i := range r {
 			r[i].x = x
 			x += r[i].w + badgeGap

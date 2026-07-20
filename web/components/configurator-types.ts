@@ -158,6 +158,8 @@ export interface ConfigState {
   // Advanced (v2 parity) — fine-grained styling. Zero/empty means "default".
   ratingBadgeScale: number;
   ratingsMax: number; // 0 = no cap
+  ratingBadgeOffsetX: number;
+  ratingBadgeOffsetY: number;
   genreBadgeScale: number;
   genreBadgeOffsetX: number;
   genreBadgeOffsetY: number;
@@ -205,6 +207,8 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingRingColor: '',
   ratingBadgeScale: 0,
   ratingsMax: 0,
+  ratingBadgeOffsetX: 0,
+  ratingBadgeOffsetY: 0,
   genreBadgeScale: 0,
   genreBadgeOffsetX: 0,
   genreBadgeOffsetY: 0,
