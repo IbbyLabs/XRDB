@@ -3,7 +3,7 @@
 import {
   useState, useCallback, useRef, useId, useEffect,
 } from 'react';
-import { Settings2, Star, Film, Rocket, Link2, Maximize2 } from 'lucide-react';
+import { Settings2, Star, Film, Rocket, Link2, Maximize2, Undo2 } from 'lucide-react';
 import { renderUrl, type MediaType, type Template } from '@/lib/api';
 import { getRenderKey, setRenderKey } from '@/lib/render-key';
 import {
@@ -18,6 +18,10 @@ import { InstallPanel } from './install-panel';
 import { MediaSearch } from './media-search';
 import { CopyButton } from './copy-button';
 import { tablistKeyNav } from './tablist';
+
+// Cap on the undo stack — deep enough for a real editing session, bounded so it
+// can't grow without limit.
+const HISTORY_MAX = 50;
 
 export function ConfiguratorClient() {
   const uid = useId();
@@ -81,13 +85,19 @@ export function ConfiguratorClient() {
   const [previewKey, setPreviewKey] = useState(0);
   const [imgLoading, setImgLoading] = useState(false);
   const [imgError, setImgError]     = useState(false);
+  // True from the moment a control changes until the debounced render fires, so
+  // an edit is acknowledged immediately instead of feeling ignored for ~500ms.
+  const [previewPending, setPreviewPending] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'display' | 'ratings' | 'profile' | 'install'>('display');
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const undoConfigsRef = useRef<SurfaceConfigs | null>(null);
-  const [undoAvailable, setUndoAvailable] = useState(false);
+  // Undo history: every config mutation snapshots the previous surface set here,
+  // so any change — a manual edit or a template — can be stepped back with the
+  // Undo control or Cmd/Ctrl+Z. Capped so a long session can't grow it unbounded.
+  const historyRef = useRef<SurfaceConfigs[]>([]);
+  const [canUndo, setCanUndo] = useState(false);
 
   useEffect(() => {
     if (!hydrated) return; // don't clobber storage with defaults pre-restore
@@ -157,16 +167,22 @@ export function ConfiguratorClient() {
   const triggerPreview = useCallback((type: MediaType, id: string, cfg: ConfigState, immediate = false) => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     const run = () => {
+      setPreviewPending(false);
       setPreviewSrc(buildSrc(type, id, cfg));
       setPreviewKey(k => k + 1);
       setImgError(false);
       setImgLoading(true);
     };
     if (immediate) { run(); return; }
+    setPreviewPending(true);
     debounceRef.current = setTimeout(run, PREVIEW_DEBOUNCE_MS);
   }, [buildSrc]);
 
   useEffect(() => {
+    // A config/media change schedules a debounced render and marks the preview
+    // pending right away; the synchronous set is intentional feedback, not a
+    // cascade to avoid.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     triggerPreview(mediaType, mediaId, config);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [mediaType, mediaId, config, triggerPreview]);
@@ -181,18 +197,32 @@ export function ConfiguratorClient() {
     }
   }, []);
 
-  const markManualEdit = () => {
+  // Snapshot the current surface set before a mutation so it can be undone.
+  const pushHistory = useCallback((current: SurfaceConfigs) => {
+    const h = historyRef.current;
+    h.push(current);
+    if (h.length > HISTORY_MAX) h.shift();
+    setCanUndo(true);
+  }, []);
+
+  const undo = useCallback(() => {
+    const prev = historyRef.current.pop();
+    if (!prev) return;
+    setConfigs(prev);
+    setCanUndo(historyRef.current.length > 0);
     setAppliedTemplate(null);
-    setUndoAvailable(false);
-  };
+    setNotice(null);
+  }, []);
 
   const updateConfig = <K extends keyof ConfigState>(key: K, value: ConfigState[K]) => {
-    markManualEdit();
+    pushHistory(configs);
+    setAppliedTemplate(null);
     setConfigs(cs => ({ ...cs, [mediaType]: { ...cs[mediaType], [key]: value } }));
   };
 
   const toggleRating = (r: string) => {
-    markManualEdit();
+    pushHistory(configs);
+    setAppliedTemplate(null);
     setConfigs(cs => {
       const cur = cs[mediaType];
       return { ...cs, [mediaType]: {
@@ -202,7 +232,8 @@ export function ConfiguratorClient() {
   };
 
   const toggleBadge = (b: string) => {
-    markManualEdit();
+    pushHistory(configs);
+    setAppliedTemplate(null);
     setConfigs(cs => {
       const cur = cs[mediaType];
       return { ...cs, [mediaType]: {
@@ -213,33 +244,39 @@ export function ConfiguratorClient() {
 
   const applyTemplate = (t: Template) => {
     const parsed = t.config as Partial<ConfigState>;
-    undoConfigsRef.current = configs;
+    pushHistory(configs);
     setConfigs(cs => ({ ...cs, [mediaType]: { ...cs[mediaType], ...parsed } }));
     setAppliedTemplate(t.id);
     flash('info', `Template "${t.name}" applied to ${mediaType}`);
-    setUndoAvailable(true);
-  };
-
-  const undoTemplate = () => {
-    if (undoConfigsRef.current) {
-      setConfigs(undoConfigsRef.current);
-      undoConfigsRef.current = null;
-    }
-    setAppliedTemplate(null);
-    setUndoAvailable(false);
-    setNotice(null);
   };
 
   const handleLoadConfigs = (loaded: SurfaceConfigs) => {
-    markManualEdit();
+    pushHistory(configs);
+    setAppliedTemplate(null);
     setConfigs(loaded);
   };
 
   const copyToAllSurfaces = () => {
-    markManualEdit();
+    pushHistory(configs);
+    setAppliedTemplate(null);
     setConfigs(cs => cloneToAllSurfaces(cs[mediaType]));
     flash('success', `Applied ${mediaType} settings to every surface`);
   };
+
+  // Cmd/Ctrl+Z undoes the last config change — but not while typing in a field,
+  // where the browser's own text undo should win.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!(e.metaKey || e.ctrlKey) || e.shiftKey || e.key.toLowerCase() !== 'z') return;
+      const el = e.target as HTMLElement | null;
+      const tag = el?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || el?.isContentEditable) return;
+      e.preventDefault();
+      undo();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [undo]);
 
   const handleMediaSelect = (id: string, title: string) => {
     setMediaId(id);
@@ -269,8 +306,8 @@ export function ConfiguratorClient() {
           <Notice
             {...notice}
             onDismiss={() => setNotice(null)}
-            actionLabel={undoAvailable && notice.type === 'info' ? 'Undo' : undefined}
-            onAction={undoAvailable && notice.type === 'info' ? undoTemplate : undefined}
+            actionLabel={canUndo && notice.type === 'info' ? 'Undo' : undefined}
+            onAction={canUndo && notice.type === 'info' ? undo : undefined}
           />
         </div>
       )}
@@ -297,7 +334,7 @@ export function ConfiguratorClient() {
           </div>
 
           <div
-            className="preview-stage"
+            className={`preview-stage${previewPending ? ' is-updating' : ''}`}
             style={{
               aspectRatio: aspect,
               height: mediaType === 'poster' ? '560px' : mediaType === 'logo' ? '170px' : '330px',
@@ -305,6 +342,9 @@ export function ConfiguratorClient() {
               alignSelf: 'center',
             }}
           >
+            {previewPending && !imgError && (
+              <span className="preview-status" aria-hidden="true">Updating…</span>
+            )}
             {imgError ? (
               <div className="preview-empty" role="status">
                 <span>Preview unavailable</span>
@@ -344,6 +384,15 @@ export function ConfiguratorClient() {
               <button className="btn btn-ghost btn-sm" onClick={() => void shareLook()}>
                 <Link2 size={13} aria-hidden />
                 Share this look
+              </button>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={undo}
+                disabled={!canUndo}
+                title="Undo the last change (Ctrl/Cmd+Z)"
+              >
+                <Undo2 size={13} aria-hidden />
+                Undo
               </button>
             </div>
           )}
@@ -409,7 +458,7 @@ export function ConfiguratorClient() {
 
           {activeTab === 'display' && (
             <div id={`${uid}-panel-display`} role="tabpanel" aria-labelledby={`${uid}-tab-display`} className="tabpanel-enter">
-              <DisplayPanel uid={uid} mediaType={mediaType} config={config} onUpdate={updateConfig} onToggleBadge={toggleBadge} onReset={() => { markManualEdit(); setConfigs(cs => ({ ...cs, [mediaType]: { ...DEFAULT_CONFIG } })); }} />
+              <DisplayPanel uid={uid} mediaType={mediaType} config={config} onUpdate={updateConfig} onToggleBadge={toggleBadge} onReset={() => { pushHistory(configs); setAppliedTemplate(null); setConfigs(cs => ({ ...cs, [mediaType]: { ...DEFAULT_CONFIG } })); }} />
             </div>
           )}
 
