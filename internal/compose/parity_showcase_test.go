@@ -81,6 +81,20 @@ func TestParityShowcase(t *testing.T) {
 				drawQualityBadges(c, quality, 2.0, newOccupancy(c.Bounds()), qualityBadgeOpts{max: &two})
 			}},
 		},
+		"quality-styles": {
+			{"default (glass)", func(c *image.NRGBA) {
+				drawQualityBadges(c, quality, 2.0, newOccupancy(c.Bounds()), qualityBadgeOpts{})
+			}},
+			{"plain", func(c *image.NRGBA) {
+				drawQualityBadges(c, quality, 2.0, newOccupancy(c.Bounds()), qualityBadgeOpts{style: "plain"})
+			}},
+			{"tile #3355ff", func(c *image.NRGBA) {
+				drawQualityBadges(c, quality, 2.0, newOccupancy(c.Bounds()), qualityBadgeOpts{style: "tile", tileColor: "#3355ff"})
+			}},
+			{"tile #8b5cf6", func(c *image.NRGBA) {
+				drawQualityBadges(c, quality, 2.0, newOccupancy(c.Bounds()), qualityBadgeOpts{style: "tile", tileColor: "#8b5cf6"})
+			}},
+		},
 		"rating-badges": {
 			{"default", func(c *image.NRGBA) {
 				drawBadgesInPlace(c, ratings, ratingCfg(func(*imageconfig.Config) {}))

@@ -112,6 +112,12 @@ export const SIX_POS_OPTIONS = [
   { id: 'br',      label: 'Bottom right'  },
 ] as const;
 
+export const QUALITY_STYLE_OPTIONS = [
+  { id: 'default', label: 'Glass' },
+  { id: 'plain',   label: 'Plain' },
+  { id: 'tile',    label: 'Tile'  },
+] as const;
+
 export const QUALITY_BADGE_OPTIONS: { id: string; label: string }[] = [
   { id: '4k',        label: '4K'           },
   { id: 'hdr',       label: 'HDR'          },
@@ -158,6 +164,8 @@ export interface ConfigState {
   genreBadgeBackgroundOpacity: number; // 0 = default
   qualityBadgesPos: string; // 'inherit' | six positions
   qualityBadgeScale: number;
+  qualityBadgesStyle: string; // 'default' | plain | tile
+  qualityBadgesTileAccentColor: string;
   aggregateAccentColor: string; // '' = auto score-band
   trendingPos: string; // 'inherit' | six positions
 }
@@ -193,6 +201,8 @@ export const DEFAULT_CONFIG: ConfigState = {
   genreBadgeBackgroundOpacity: 0,
   qualityBadgesPos: 'inherit',
   qualityBadgeScale: 0,
+  qualityBadgesStyle: 'default',
+  qualityBadgesTileAccentColor: '',
   aggregateAccentColor: '',
   trendingPos: 'inherit',
 };

@@ -122,6 +122,8 @@ export function ConfiguratorClient() {
       genreBadgeBackgroundOpacity: cfg.genreBadgeBackgroundOpacity,
       qualityBadgesPos: cfg.qualityBadgesPos,
       qualityBadgeScale: cfg.qualityBadgeScale,
+      qualityBadgesStyle: cfg.qualityBadgesStyle === 'default' ? '' : cfg.qualityBadgesStyle,
+      qualityBadgesTileAccentColor: cfg.qualityBadgesTileAccentColor,
       aggregateAccentColor: cfg.aggregateAccentColor,
       trendingPos: cfg.trendingPos,
     };

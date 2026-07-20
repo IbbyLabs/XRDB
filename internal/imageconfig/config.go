@@ -246,12 +246,13 @@ type AggregateConfig struct {
 // QualityBadgeConfig groups the quality-badge (4K/HDR/DV/…) styling controls.
 // Zero values keep the original fixed appearance.
 type QualityBadgeConfig struct {
-	QualityBadgesPos    string `json:"qualityBadgesPos,omitempty"`    // tl|tr|bl|br|tc|bc; "" = tr
-	QualityBadgeScale   int    `json:"qualityBadgeScale,omitempty"`   // percent 70-200; 0 = 100
-	QualityBadgeOffsetX int    `json:"qualityBadgeOffsetX,omitempty"` //
-	QualityBadgeOffsetY int    `json:"qualityBadgeOffsetY,omitempty"` //
-	QualityBadgesStyle  string `json:"qualityBadgesStyle,omitempty"`  // modeled; not yet drawn
-	QualityBadgesMax    *int   `json:"qualityBadgesMax,omitempty"`    // cap on badge count; nil = no cap
+	QualityBadgesPos             string `json:"qualityBadgesPos,omitempty"`             // tl|tr|bl|br|tc|bc; "" = tr
+	QualityBadgeScale            int    `json:"qualityBadgeScale,omitempty"`            // percent 70-200; 0 = 100
+	QualityBadgeOffsetX          int    `json:"qualityBadgeOffsetX,omitempty"`          //
+	QualityBadgeOffsetY          int    `json:"qualityBadgeOffsetY,omitempty"`          //
+	QualityBadgesStyle           string `json:"qualityBadgesStyle,omitempty"`           // glass | plain | tile
+	QualityBadgesMax             *int   `json:"qualityBadgesMax,omitempty"`             // cap on badge count; nil = no cap
+	QualityBadgesTileAccentColor string `json:"qualityBadgesTileAccentColor,omitempty"` // "#RRGGBB" for the tile style
 }
 
 // TrendingConfig groups the trending-tag styling not already covered by the
@@ -343,12 +344,13 @@ type rawGenre struct {
 
 // rawQuality and rawTrending mirror their config groups for parsing.
 type rawQuality struct {
-	QualityBadgesPos    *string `json:"qualityBadgesPos"`
-	QualityBadgeScale   *int    `json:"qualityBadgeScale"`
-	QualityBadgeOffsetX *int    `json:"qualityBadgeOffsetX"`
-	QualityBadgeOffsetY *int    `json:"qualityBadgeOffsetY"`
-	QualityBadgesStyle  *string `json:"qualityBadgesStyle"`
-	QualityBadgesMax    *int    `json:"qualityBadgesMax"`
+	QualityBadgesPos             *string `json:"qualityBadgesPos"`
+	QualityBadgeScale            *int    `json:"qualityBadgeScale"`
+	QualityBadgeOffsetX          *int    `json:"qualityBadgeOffsetX"`
+	QualityBadgeOffsetY          *int    `json:"qualityBadgeOffsetY"`
+	QualityBadgesStyle           *string `json:"qualityBadgesStyle"`
+	QualityBadgesMax             *int    `json:"qualityBadgesMax"`
+	QualityBadgesTileAccentColor *string `json:"qualityBadgesTileAccentColor"`
 }
 
 type rawTrending struct {
@@ -566,6 +568,9 @@ func parseQuality(cfg *Config, r *raw) {
 	if r.QualityBadgesMax != nil && *r.QualityBadgesMax >= 0 {
 		m := clampInt(*r.QualityBadgesMax, 0, 20)
 		cfg.QualityBadgesMax = &m
+	}
+	if r.QualityBadgesTileAccentColor != nil && isHexColor(*r.QualityBadgesTileAccentColor) {
+		cfg.QualityBadgesTileAccentColor = strings.TrimSpace(*r.QualityBadgesTileAccentColor)
 	}
 }
 

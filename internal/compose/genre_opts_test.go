@@ -158,3 +158,19 @@ func TestGenreBadgeStylesChangeRender(t *testing.T) {
 		}
 	}
 }
+
+func TestQualityBadgeStylesChangeRender(t *testing.T) {
+	toks := []string{"4k", "hdr"}
+	def := genreTestImage()
+	drawQualityBadges(def, toks, 2.0, newOccupancy(def.Bounds()), qualityBadgeOpts{})
+	for name, opts := range map[string]qualityBadgeOpts{
+		"plain": {style: "plain"},
+		"tile":  {style: "tile", tileColor: "#3355ff"},
+	} {
+		img := genreTestImage()
+		drawQualityBadges(img, toks, 2.0, newOccupancy(img.Bounds()), opts)
+		if !imagesDiffer(def, img) {
+			t.Errorf("quality style %q did not change the render", name)
+		}
+	}
+}

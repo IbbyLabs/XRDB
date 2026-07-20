@@ -237,7 +237,9 @@ type qualityBadgeOpts struct {
 	scalePercent int    // 0 = 100
 	offsetX      int
 	offsetY      int
-	max          *int // cap on badge count; nil = no cap
+	max          *int   // cap on badge count; nil = no cap
+	style        string // "" | glass | plain | tile
+	tileColor    string // "#RRGGBB" for the tile style
 }
 
 func qualityOptsFromConfig(cfg imageconfig.Config) qualityBadgeOpts {
@@ -247,6 +249,8 @@ func qualityOptsFromConfig(cfg imageconfig.Config) qualityBadgeOpts {
 		offsetX:      cfg.QualityBadgeOffsetX,
 		offsetY:      cfg.QualityBadgeOffsetY,
 		max:          cfg.QualityBadgesMax,
+		style:        cfg.QualityBadgesStyle,
+		tileColor:    cfg.QualityBadgesTileAccentColor,
 	}
 }
 
@@ -289,6 +293,18 @@ func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64, occ *o
 		fill:   color.NRGBA{R: 16, G: 18, B: 24, A: 180},
 		border: color.NRGBA{R: 255, G: 255, B: 255, A: 38},
 		shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 90},
+	}
+	switch opts.style {
+	case "tile":
+		if c, err := parseHexColor(opts.tileColor); opts.tileColor != "" && err == nil {
+			c.A = 220
+			chrome.fill = c
+		}
+	case "plain":
+		// A lighter, near-transparent tile so the white logos and text stay
+		// legible without the full frosted chrome.
+		chrome.fill.A = 70
+		chrome.border.A = 60
 	}
 
 	drawn := 0

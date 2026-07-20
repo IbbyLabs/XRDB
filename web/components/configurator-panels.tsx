@@ -6,7 +6,7 @@ import { fetchTemplates, type Template } from '@/lib/api';
 import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   LAYOUT_OPTIONS, RATING_OPTIONS, BADGE_STYLE_OPTIONS, BADGE_THEME_OPTIONS,
-  RING_POS_OPTIONS, SIX_POS_OPTIONS,
+  RING_POS_OPTIONS, SIX_POS_OPTIONS, QUALITY_STYLE_OPTIONS,
 } from './configurator-types';
 
 // ── Template strip ────────────────────────────────────────────────────────────
@@ -338,6 +338,33 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
           onChange={v => onUpdate('qualityBadgesPos', v)} />
         <NumField id={`${uid}-quality-scale`} label="Scale (%)" value={config.qualityBadgeScale}
           onChange={v => onUpdate('qualityBadgeScale', v)} min={70} max={200} step={5} />
+        <div className="field">
+          <span className="label" id={`${uid}-quality-style-label`}>Style</span>
+          <div className="opt-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }} role="group" aria-labelledby={`${uid}-quality-style-label`}>
+            {QUALITY_STYLE_OPTIONS.map(o => (
+              <button
+                key={o.id}
+                className={`opt-btn${config.qualityBadgesStyle === o.id ? ' opt-btn--active' : ''}`}
+                onClick={() => onUpdate('qualityBadgesStyle', o.id)}
+                aria-pressed={config.qualityBadgesStyle === o.id}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {config.qualityBadgesStyle === 'tile' && (
+          <div className="field">
+            <label className="label" htmlFor={`${uid}-quality-tile-color`}>Tile color</label>
+            <input
+              id={`${uid}-quality-tile-color`}
+              type="color"
+              value={config.qualityBadgesTileAccentColor || '#3355ff'}
+              onChange={e => onUpdate('qualityBadgesTileAccentColor', e.target.value)}
+              style={{ width: 36, height: 28, padding: 2, border: '1px solid var(--border)', borderRadius: 4, background: 'none', cursor: 'pointer' }}
+            />
+          </div>
+        )}
 
         <span className="label" style={{ marginTop: 'var(--sp-3)' }}>Genre badge</span>
         <NumField id={`${uid}-genre-scale`} label="Scale (%)" value={config.genreBadgeScale}
