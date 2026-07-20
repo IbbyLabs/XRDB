@@ -35,7 +35,7 @@ func TestTrendingStyles(t *testing.T) {
 		card := image.NewNRGBA(image.Rect(0, 0, cardW, cardH))
 		paintBackdropGradient(card)
 		before := clonePixels(card)
-		drawTrendingBadgeStyled(card, scale, newOccupancy(card.Bounds()), tc.style, "")
+		drawTrendingBadgeStyled(card, scale, newOccupancy(card.Bounds()), tc.style, "", "")
 		after := clonePixels(card)
 		if after == before {
 			t.Errorf("trending style %q drew nothing", tc.caption)
@@ -58,7 +58,7 @@ func TestTrendingStyles(t *testing.T) {
 	for i, tc := range trendingStyleCases {
 		card := image.NewNRGBA(image.Rect(0, 0, cardW, cardH))
 		paintBackdropGradient(card)
-		drawTrendingBadgeStyled(card, scale, newOccupancy(card.Bounds()), tc.style, "")
+		drawTrendingBadgeStyled(card, scale, newOccupancy(card.Bounds()), tc.style, "", "")
 		if capFace != nil {
 			drawText(card, capFace, 350, cardH/2+capFace.Metrics().Ascent.Ceil()/2-4,
 				color.NRGBA{R: 152, G: 160, B: 172, A: 255}, tc.caption)

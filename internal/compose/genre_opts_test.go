@@ -74,9 +74,9 @@ func TestQualityAndTrendingOptsChangeRender(t *testing.T) {
 
 	// Trending at a different position must move the badge.
 	tl := genreTestImage()
-	drawTrendingBadgeStyled(tl, 1.0, newOccupancy(tl.Bounds()), trendingArrowWord, "")
+	drawTrendingBadgeStyled(tl, 1.0, newOccupancy(tl.Bounds()), trendingArrowWord, "", "")
 	br := genreTestImage()
-	drawTrendingBadgeStyled(br, 1.0, newOccupancy(br.Bounds()), trendingArrowWord, "br")
+	drawTrendingBadgeStyled(br, 1.0, newOccupancy(br.Bounds()), trendingArrowWord, "br", "")
 	if !imagesDiffer(tl, br) {
 		t.Error("trending position did not change the render")
 	}
@@ -213,5 +213,15 @@ func TestScorebarBandColorsAndThresholds(t *testing.T) {
 	drawAggregateBar(tImg, ratings, thr)
 	if !imagesDiffer(def, tImg) {
 		t.Error("scorebar threshold change did not change the band")
+	}
+}
+
+func TestTrendingTextColorChangesRender(t *testing.T) {
+	def := genreTestImage()
+	drawTrendingBadgeStyled(def, 2.0, newOccupancy(def.Bounds()), trendingArrowWord, "", "")
+	col := genreTestImage()
+	drawTrendingBadgeStyled(col, 2.0, newOccupancy(col.Bounds()), trendingArrowWord, "", "#00ffcc")
+	if !imagesDiffer(def, col) {
+		t.Error("trending text color did not change the render")
 	}
 }

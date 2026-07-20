@@ -145,16 +145,16 @@ func TestParityShowcase(t *testing.T) {
 		},
 		"trending-position": {
 			{"top-left (default)", func(c *image.NRGBA) {
-				drawTrendingBadgeStyled(c, 2.0, newOccupancy(c.Bounds()), trendingArrowWord, "")
+				drawTrendingBadgeStyled(c, 2.0, newOccupancy(c.Bounds()), trendingArrowWord, "", "")
 			}},
 			{"top-center", func(c *image.NRGBA) {
-				drawTrendingBadgeStyled(c, 2.0, newOccupancy(c.Bounds()), trendingArrowWord, "tc")
+				drawTrendingBadgeStyled(c, 2.0, newOccupancy(c.Bounds()), trendingArrowWord, "tc", "")
 			}},
 			{"top-right", func(c *image.NRGBA) {
-				drawTrendingBadgeStyled(c, 2.0, newOccupancy(c.Bounds()), trendingArrowWord, "tr")
+				drawTrendingBadgeStyled(c, 2.0, newOccupancy(c.Bounds()), trendingArrowWord, "tr", "")
 			}},
 			{"bottom-right", func(c *image.NRGBA) {
-				drawTrendingBadgeStyled(c, 2.0, newOccupancy(c.Bounds()), trendingArrowWord, "br")
+				drawTrendingBadgeStyled(c, 2.0, newOccupancy(c.Bounds()), trendingArrowWord, "br", "")
 			}},
 		},
 	}

@@ -942,13 +942,13 @@ func trendingStyleFromConfig(s imageconfig.TrendingStyle) trendingStyle {
 // dark frosted capsule with a warm accent glyph, bold label, and a soft drop
 // shadow. Placed via occ so it never overlaps other overlays.
 func drawTrendingBadge(base *image.NRGBA, scale float64, occ *occupancy) {
-	drawTrendingBadgeStyled(base, scale, occ, defaultTrendingStyle, "")
+	drawTrendingBadgeStyled(base, scale, occ, defaultTrendingStyle, "", "")
 }
 
 // drawTrendingBadgeStyled renders the trending badge in the given composition.
 // The public drawTrendingBadge wraps it with defaultTrendingStyle; the extra
 // seam lets the visual-preview harness render every option from one code path.
-func drawTrendingBadgeStyled(base *image.NRGBA, scale float64, occ *occupancy, style trendingStyle, pos string) {
+func drawTrendingBadgeStyled(base *image.NRGBA, scale float64, occ *occupancy, style trendingStyle, pos, textColor string) {
 	if pos == "" {
 		pos = "tl"
 	}
@@ -1026,7 +1026,11 @@ func drawTrendingBadgeStyled(base *image.NRGBA, scale float64, occ *occupancy, s
 			tx += iconW + iconGap
 		}
 		ty := r.Min.Y + padY + ascent
-		drawText(base, face, tx, ty, color.NRGBA{R: 255, G: 244, B: 238, A: 255}, label)
+		labelCol := color.NRGBA{R: 255, G: 244, B: 238, A: 255}
+		if c, err := parseHexColor(textColor); textColor != "" && err == nil {
+			labelCol = c
+		}
+		drawText(base, face, tx, ty, labelCol, label)
 	}
 }
 

@@ -131,7 +131,7 @@ func TestBottomBandPlacement(t *testing.T) {
 		t.Errorf("dedupeProviders kept %d entries, want 3 (fuboTV, MGM+, Philo)", got)
 	}
 	drawProviderBadges(card, providers, scale, occ)
-	drawTrendingBadgeStyled(card, scale, occ, trendingArrowWord, "")
+	drawTrendingBadgeStyled(card, scale, occ, trendingArrowWord, "", "")
 
 	for i := 0; i < len(occ.rects); i++ {
 		for j := i + 1; j < len(occ.rects); j++ {
