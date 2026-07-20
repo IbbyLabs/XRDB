@@ -1,11 +1,14 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { Activity, HardDrive, RefreshCw, AlertCircle, Flame, ScrollText } from 'lucide-react';
+import { Activity, HardDrive, RefreshCw, AlertCircle, Flame, ScrollText, SlidersHorizontal } from 'lucide-react';
 import {
   fetchMetrics, fetchCacheStats, adminAuthHeaders,
   fetchLogLevel, setLogLevel, clearLogLevel,
+  fetchMemoryLimit, setMemoryLimit, clearMemoryLimit,
+  fetchTTLs, setTTL, clearTTL,
   type MetricsSnapshot, type CacheStats, type LogLevelState,
+  type MemoryLimitState, type TTLEntry,
 } from '@/lib/api';
 import { tablistKeyNav } from './tablist';
 
@@ -226,6 +229,167 @@ function LogLevelPanel() {
   );
 }
 
+// ── Runtime panel (memory limit + provider TTLs) ──────────────────────────────
+
+const SOURCE_LABEL: Record<string, string> = {
+  stored: 'set here',
+  environment: 'from env var',
+  default: 'default',
+};
+
+function RuntimePanel() {
+  const [mem, setMem]       = useState<MemoryLimitState | null>(null);
+  const [ttls, setTtls]     = useState<TTLEntry[] | null>(null);
+  const [memDraft, setMemDraft] = useState('');
+  const [busy, setBusy]     = useState<string | null>(null);
+  const [error, setError]   = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const [m, t] = await Promise.all([fetchMemoryLimit(), fetchTTLs()]);
+      setMem(m); setMemDraft(m.limitMb ? String(m.limitMb) : ''); setTtls(t);
+    } catch (e) { setError((e as Error).message); }
+  }, []);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void load(); }, [load]);
+
+  const applyMem = async () => {
+    const mb = memDraft.trim() === '' ? 0 : Number(memDraft);
+    if (!Number.isFinite(mb) || mb < 0) { setError('Memory limit must be a non-negative number'); return; }
+    setBusy('mem'); setError(null);
+    try { const m = await setMemoryLimit(Math.floor(mb)); setMem(m); setMemDraft(m.limitMb ? String(m.limitMb) : ''); }
+    catch (e) { setError((e as Error).message); }
+    finally { setBusy(null); }
+  };
+  const revertMem = async () => {
+    setBusy('mem'); setError(null);
+    try { const m = await clearMemoryLimit(); setMem(m); setMemDraft(m.limitMb ? String(m.limitMb) : ''); }
+    catch (e) { setError((e as Error).message); }
+    finally { setBusy(null); }
+  };
+
+  const applyTTL = async (provider: string, hours: number) => {
+    setBusy('ttl:' + provider); setError(null);
+    try { setTtls(await setTTL(provider, hours)); }
+    catch (e) { setError((e as Error).message); }
+    finally { setBusy(null); }
+  };
+  const revertTTL = async (provider: string) => {
+    setBusy('ttl:' + provider); setError(null);
+    try { setTtls(await clearTTL(provider)); }
+    catch (e) { setError((e as Error).message); }
+    finally { setBusy(null); }
+  };
+
+  if (!mem || !ttls) {
+    return error
+      ? <div className="notice notice-error" role="alert"><AlertCircle size={14} aria-hidden /><span>{error}</span></div>
+      : <div className="skeleton" style={{ height: '12rem' }} aria-label="Loading runtime settings" aria-busy="true" />;
+  }
+
+  return (
+    <div className="cfg-fields" style={{ maxWidth: '720px' }}>
+      <p className="page-sub" style={{ margin: 0 }}>
+        Operational limits applied to the running server. Changes take effect immediately
+        and persist across restarts; clearing one reverts to its environment value.
+      </p>
+
+      {error && (
+        <div className="notice notice-error" role="alert">
+          <AlertCircle size={14} aria-hidden /><span>{error}</span>
+        </div>
+      )}
+
+      <div className="field">
+        <label className="label" htmlFor="mem-limit">Memory limit (MiB)</label>
+        <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'center', flexWrap: 'wrap' }}>
+          <input
+            id="mem-limit"
+            className="input"
+            inputMode="numeric"
+            style={{ width: '9rem' }}
+            placeholder="no limit"
+            value={memDraft}
+            onChange={e => { setMemDraft(e.target.value); setError(null); }}
+          />
+          <button className="btn btn-primary" onClick={() => void applyMem()} disabled={busy !== null}>
+            {busy === 'mem' ? 'Applying…' : 'Apply'}
+          </button>
+          {mem.source === 'stored' && (
+            <button className="btn btn-ghost" onClick={() => void revertMem()} disabled={busy !== null}>
+              Revert
+            </button>
+          )}
+          <span className="page-sub" style={{ margin: 0 }}>
+            {mem.limitMb ? `${mem.limitMb} MiB` : 'no limit'} ({SOURCE_LABEL[mem.source] ?? mem.source})
+          </span>
+        </div>
+        <p className="page-sub" style={{ margin: 'var(--sp-1) 0 0' }}>
+          Soft heap cap so the runtime collects garbage before the container is OOM-killed. Empty means no limit.
+        </p>
+      </div>
+
+      <div className="field">
+        <span className="label">Provider cache TTLs (hours)</span>
+        <p className="page-sub" style={{ margin: '0 0 var(--sp-2)' }}>
+          How long each source&apos;s ratings stay cached. A render caches for the shortest contributing provider&apos;s TTL.
+        </p>
+        <div className="panel panel-table">
+          <table className="table">
+            <thead><tr><th scope="col">Provider</th><th scope="col">Hours</th><th scope="col">Source</th><th scope="col"><span className="sr-only">Actions</span></th></tr></thead>
+            <tbody>
+              {ttls.map(t => <TTLRow key={`${t.provider}:${t.hours}:${t.source}`} entry={t} busy={busy} onApply={applyTTL} onRevert={revertTTL} />)}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TTLRow({ entry, busy, onApply, onRevert }: {
+  entry: TTLEntry;
+  busy: string | null;
+  onApply: (provider: string, hours: number) => void;
+  onRevert: (provider: string) => void;
+}) {
+  // Seeded from the entry; the parent gives each row a key that includes the
+  // value, so a revert or external change remounts the row with a fresh draft.
+  const [draft, setDraft] = useState(String(entry.hours));
+  const rowBusy = busy === 'ttl:' + entry.provider;
+  return (
+    <tr>
+      <td><span className="mono">{entry.provider}</span></td>
+      <td>
+        <input
+          className="input"
+          inputMode="decimal"
+          style={{ width: '6rem' }}
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          aria-label={`${entry.provider} cache TTL in hours`}
+        />
+      </td>
+      <td><span className="page-sub">{SOURCE_LABEL[entry.source] ?? entry.source}</span></td>
+      <td style={{ whiteSpace: 'nowrap' }}>
+        <button
+          className="btn btn-ghost btn-sm"
+          onClick={() => { const h = Number(draft); if (Number.isFinite(h) && h >= 0) onApply(entry.provider, h); }}
+          disabled={busy !== null}
+        >
+          {rowBusy ? '…' : 'Set'}
+        </button>
+        {entry.source === 'stored' && (
+          <button className="btn btn-ghost btn-sm" onClick={() => onRevert(entry.provider)} disabled={busy !== null}>
+            Reset
+          </button>
+        )}
+      </td>
+    </tr>
+  );
+}
+
 // ── Warm panel ────────────────────────────────────────────────────────────────
 
 function WarmPanel() {
@@ -318,12 +482,13 @@ function WarmPanel() {
   );
 }
 
-type Tab = 'metrics' | 'cache' | 'logs' | 'warm';
+type Tab = 'metrics' | 'cache' | 'logs' | 'runtime' | 'warm';
 
 const TABS: { id: Tab; label: string; icon: typeof Activity }[] = [
   { id: 'metrics', label: 'Metrics', icon: Activity },
   { id: 'cache',   label: 'Cache',   icon: HardDrive },
   { id: 'logs',    label: 'Logs',    icon: ScrollText },
+  { id: 'runtime', label: 'Runtime', icon: SlidersHorizontal },
   { id: 'warm',    label: 'Warm',    icon: Flame },
 ];
 
@@ -335,7 +500,7 @@ export function AdminClient() {
   const [error, setError]     = useState<string | null>(null);
 
   const load = useCallback(async (t: Tab) => {
-    if (t === 'warm' || t === 'logs') return;
+    if (t === 'warm' || t === 'logs' || t === 'runtime') return;
     setLoading(true);
     setError(null);
     try {
@@ -354,7 +519,7 @@ export function AdminClient() {
 
   const switchTab = (t: Tab) => {
     setTab(t);
-    if (t === 'warm' || t === 'logs') return;
+    if (t === 'warm' || t === 'logs' || t === 'runtime') return;
     if ((t === 'metrics' && !metrics) || (t === 'cache' && !cache)) {
       void load(t);
     }
@@ -422,6 +587,7 @@ export function AdminClient() {
           {!loading && id === 'metrics' && metrics && <MetricsPanel data={metrics} />}
           {!loading && id === 'cache'   && cache   && <CachePanel   data={cache}   />}
           {id === 'logs' && tab === 'logs' && <LogLevelPanel />}
+          {id === 'runtime' && tab === 'runtime' && <RuntimePanel />}
           {id === 'warm' && tab === 'warm' && <WarmPanel />}
         </div>
       ))}

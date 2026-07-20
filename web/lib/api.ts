@@ -248,6 +248,89 @@ export async function clearLogLevel(): Promise<LogLevelState> {
   return res.json() as Promise<LogLevelState>;
 }
 
+// ── Memory limit ─────────────────────────────────────────────────────────────
+
+export interface MemoryLimitState {
+  /** Soft heap limit in MiB; 0 means no limit. */
+  limitMb: number;
+  /** 'stored' | 'environment' | 'default'. */
+  source: string;
+  /** Value of XRDB_MEMORY_LIMIT_MB, or '' when unset. */
+  env: string;
+  persisted: boolean;
+}
+
+export async function fetchMemoryLimit(): Promise<MemoryLimitState> {
+  const res = await fetch(`${base()}/api/admin/memory-limit`, { headers: adminAuthHeaders() });
+  if (!res.ok) throw new Error(`memory limit fetch failed: ${res.status}`);
+  return res.json() as Promise<MemoryLimitState>;
+}
+
+export async function setMemoryLimit(limitMb: number): Promise<MemoryLimitState> {
+  const res = await fetch(`${base()}/api/admin/memory-limit`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...adminAuthHeaders() },
+    body: JSON.stringify({ limitMb }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text.trim() || `set memory limit failed: ${res.status}`);
+  }
+  return res.json() as Promise<MemoryLimitState>;
+}
+
+export async function clearMemoryLimit(): Promise<MemoryLimitState> {
+  const res = await fetch(`${base()}/api/admin/memory-limit`, {
+    method: 'DELETE',
+    headers: adminAuthHeaders(),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text.trim() || `clear memory limit failed: ${res.status}`);
+  }
+  return res.json() as Promise<MemoryLimitState>;
+}
+
+// ── Provider cache TTLs ──────────────────────────────────────────────────────
+
+export interface TTLEntry {
+  provider: string;
+  hours: number;
+  /** 'stored' | 'environment' | 'default'. */
+  source: string;
+}
+
+export async function fetchTTLs(): Promise<TTLEntry[]> {
+  const res = await fetch(`${base()}/api/admin/ttls`, { headers: adminAuthHeaders() });
+  if (!res.ok) throw new Error(`ttls fetch failed: ${res.status}`);
+  return res.json() as Promise<TTLEntry[]>;
+}
+
+export async function setTTL(provider: string, hours: number): Promise<TTLEntry[]> {
+  const res = await fetch(`${base()}/api/admin/ttls`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...adminAuthHeaders() },
+    body: JSON.stringify({ provider, hours }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text.trim() || `set ttl failed: ${res.status}`);
+  }
+  return res.json() as Promise<TTLEntry[]>;
+}
+
+export async function clearTTL(provider: string): Promise<TTLEntry[]> {
+  const res = await fetch(`${base()}/api/admin/ttls?provider=${encodeURIComponent(provider)}`, {
+    method: 'DELETE',
+    headers: adminAuthHeaders(),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text.trim() || `clear ttl failed: ${res.status}`);
+  }
+  return res.json() as Promise<TTLEntry[]>;
+}
+
 // ── Settings (integrations) ────────────────────────────────────────────────
 
 export interface SettingStatus {
