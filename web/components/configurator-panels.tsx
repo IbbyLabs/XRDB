@@ -261,39 +261,63 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating }: RatingsP
 
 // ── Advanced panel (v2 parity fine-grained styling) ───────────────────────────
 
-/** A labelled numeric field. Zero renders as the placeholder ("default"). */
+/**
+ * A labelled numeric field paired with a range slider so the valid range is
+ * visible and values can be scrubbed against the live preview, not just typed.
+ * Zero renders the number as the "default" placeholder. For most fields 0 is a
+ * "use the default" sentinel below the real range; pass `zeroIsDefault={false}`
+ * for fields where 0 is a genuine value (e.g. a centred offset).
+ */
 function NumField({
-  id, label, value, onChange, min, max, step = 1, placeholder = 'default', hint,
+  id, label, value, onChange, min, max, step = 1, placeholder = 'default', hint, zeroIsDefault = true,
 }: {
   id: string; label: string; value: number; onChange: (v: number) => void;
-  min: number; max: number; step?: number; placeholder?: string; hint?: string;
+  min: number; max: number; step?: number; placeholder?: string; hint?: string; zeroIsDefault?: boolean;
 }) {
+  const isDefault = zeroIsDefault && value === 0;
+  // When the value is the default sentinel the slider rests at min; otherwise it
+  // mirrors the current value, clamped so a stale out-of-range value still shows.
+  const sliderValue = isDefault ? min : Math.max(min, Math.min(max, value));
   return (
     <div className="field">
       <label className="label" htmlFor={id}>{label}</label>
-      <input
-        id={id}
-        className="input"
-        type="number"
-        inputMode="numeric"
-        min={min}
-        max={max}
-        step={step}
-        value={value === 0 ? '' : value}
-        placeholder={placeholder}
-        onChange={e => {
-          const n = e.target.value === '' ? 0 : Number(e.target.value);
-          onChange(Number.isFinite(n) ? n : 0);
-        }}
-        onBlur={() => {
-          // Snap an out-of-range entry back into [min, max] on commit. 0 is the
-          // "default" sentinel and is always allowed through.
-          if (value === 0) return;
-          const clamped = Math.max(min, Math.min(max, value));
-          if (clamped !== value) onChange(clamped);
-        }}
-        style={{ maxWidth: '9rem' }}
-      />
+      <div className="numfield-row">
+        <input
+          id={id}
+          className="input numfield-num"
+          type="number"
+          inputMode="numeric"
+          min={min}
+          max={max}
+          step={step}
+          value={value === 0 ? '' : value}
+          placeholder={placeholder}
+          onChange={e => {
+            const n = e.target.value === '' ? 0 : Number(e.target.value);
+            onChange(Number.isFinite(n) ? n : 0);
+          }}
+          onBlur={() => {
+            // Snap an out-of-range entry back into [min, max] on commit. 0 is the
+            // "default" sentinel and is always allowed through.
+            if (value === 0) return;
+            const clamped = Math.max(min, Math.min(max, value));
+            if (clamped !== value) onChange(clamped);
+          }}
+        />
+        <input
+          type="range"
+          className="numfield-range"
+          min={min}
+          max={max}
+          step={step}
+          value={sliderValue}
+          onChange={e => onChange(Number(e.target.value))}
+          aria-label={`${label} slider`}
+        />
+      </div>
+      {isDefault && (
+        <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>Using the default — drag or type to set a value.</span>
+      )}
       {hint && <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>{hint}</span>}
     </div>
   );
@@ -451,9 +475,9 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
           hint="0 shows all selected sources that have data." />
         <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
           <NumField id={`${uid}-rating-ox`} label="Offset X" value={config.ratingBadgeOffsetX}
-            onChange={v => onUpdate('ratingBadgeOffsetX', v)} min={-320} max={320} />
+            onChange={v => onUpdate('ratingBadgeOffsetX', v)} min={-320} max={320} zeroIsDefault={false} />
           <NumField id={`${uid}-rating-oy`} label="Offset Y" value={config.ratingBadgeOffsetY}
-            onChange={v => onUpdate('ratingBadgeOffsetY', v)} min={-320} max={320} />
+            onChange={v => onUpdate('ratingBadgeOffsetY', v)} min={-320} max={320} zeroIsDefault={false} />
         </div>
         <ProviderOverrides uid={uid} config={config} onUpdate={onUpdate} />
 
@@ -495,9 +519,9 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
           onChange={v => onUpdate('genreBadgeScale', v)} min={70} max={200} step={5} />
         <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
           <NumField id={`${uid}-genre-ox`} label="Offset X" value={config.genreBadgeOffsetX}
-            onChange={v => onUpdate('genreBadgeOffsetX', v)} min={-320} max={320} />
+            onChange={v => onUpdate('genreBadgeOffsetX', v)} min={-320} max={320} zeroIsDefault={false} />
           <NumField id={`${uid}-genre-oy`} label="Offset Y" value={config.genreBadgeOffsetY}
-            onChange={v => onUpdate('genreBadgeOffsetY', v)} min={-320} max={320} />
+            onChange={v => onUpdate('genreBadgeOffsetY', v)} min={-320} max={320} zeroIsDefault={false} />
         </div>
         <NumField id={`${uid}-genre-op`} label="Background opacity (%)" value={config.genreBadgeBackgroundOpacity}
           onChange={v => onUpdate('genreBadgeBackgroundOpacity', v)} min={0} max={100} step={5} />

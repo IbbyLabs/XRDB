@@ -789,6 +789,22 @@ textarea.input { min-height: 0; line-height: 1.5; }
 }
 .cfg-help-steps strong { color: var(--ink); font-weight: 600; }
 
+/* Advanced numeric field: a compact number input beside a range slider so the
+   bounds are visible and values can be scrubbed against the live preview. */
+.numfield-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+.numfield-num { max-width: 6rem; flex: 0 0 auto; }
+.numfield-range {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 1.5rem;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 /* Native colour picker, styled to the token set. Shared by every colour control
    so the swatch stays identical across the panels. */
 .color-swatch {
