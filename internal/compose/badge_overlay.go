@@ -230,11 +230,41 @@ func dedupeQualityTokens(tokens []string) []string {
 // Dolby Vision/Atmos, HDR10, HDR10+) show the white logo; others (4K, HDR, …)
 // fall back to bold text. Tiles are placed via occ so they never overlap other
 // overlays. Returns the number of badges drawn.
-func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64, occ *occupancy) int {
+// qualityBadgeOpts carries per-config quality-badge styling. Its zero value
+// keeps the original fixed appearance (top-right, no extra scale or offset).
+type qualityBadgeOpts struct {
+	pos          string // "" = tr
+	scalePercent int    // 0 = 100
+	offsetX      int
+	offsetY      int
+	max          *int // cap on badge count; nil = no cap
+}
+
+func qualityOptsFromConfig(cfg imageconfig.Config) qualityBadgeOpts {
+	return qualityBadgeOpts{
+		pos:          cfg.QualityBadgesPos,
+		scalePercent: cfg.QualityBadgeScale,
+		offsetX:      cfg.QualityBadgeOffsetX,
+		offsetY:      cfg.QualityBadgeOffsetY,
+		max:          cfg.QualityBadgesMax,
+	}
+}
+
+func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64, occ *occupancy, opts qualityBadgeOpts) int {
 	if len(tokens) == 0 {
 		return 0
 	}
 	tokens = dedupeQualityTokens(tokens)
+	if opts.max != nil && len(tokens) > *opts.max {
+		tokens = tokens[:*opts.max]
+	}
+	if opts.scalePercent != 0 {
+		scale *= float64(opts.scalePercent) / 100
+	}
+	pos := opts.pos
+	if pos == "" {
+		pos = "tr"
+	}
 	ensureFaces()
 	ensureBadgeLogos()
 	face := badgeFaceFor(scale)
@@ -273,7 +303,10 @@ func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64, occ *o
 		}
 		tileW = padX*2 + contentW
 
-		r := occ.place("tr", tileW, tileH, edgeX, edgeY, gap)
+		r := occ.place(pos, tileW, tileH, edgeX, edgeY, gap)
+		if opts.offsetX != 0 || opts.offsetY != 0 {
+			r = r.Add(image.Pt(opts.offsetX, opts.offsetY))
+		}
 		drawSoftTile(base, r, radius, chrome)
 
 		if logo != nil {
@@ -825,13 +858,16 @@ func trendingStyleFromConfig(s imageconfig.TrendingStyle) trendingStyle {
 // dark frosted capsule with a warm accent glyph, bold label, and a soft drop
 // shadow. Placed via occ so it never overlaps other overlays.
 func drawTrendingBadge(base *image.NRGBA, scale float64, occ *occupancy) {
-	drawTrendingBadgeStyled(base, scale, occ, defaultTrendingStyle)
+	drawTrendingBadgeStyled(base, scale, occ, defaultTrendingStyle, "")
 }
 
 // drawTrendingBadgeStyled renders the trending badge in the given composition.
 // The public drawTrendingBadge wraps it with defaultTrendingStyle; the extra
 // seam lets the visual-preview harness render every option from one code path.
-func drawTrendingBadgeStyled(base *image.NRGBA, scale float64, occ *occupancy, style trendingStyle) {
+func drawTrendingBadgeStyled(base *image.NRGBA, scale float64, occ *occupancy, style trendingStyle, pos string) {
+	if pos == "" {
+		pos = "tl"
+	}
 	ensureFaces()
 	face := badgeFaceFor(scale)
 	if face == nil {
@@ -877,7 +913,7 @@ func drawTrendingBadgeStyled(base *image.NRGBA, scale float64, occ *occupancy, s
 	bw += tw
 	radius := bh / 2 // full capsule
 
-	r := occ.place("tl", bw, bh, edgeX, edgeY, s(7))
+	r := occ.place(pos, bw, bh, edgeX, edgeY, s(7))
 
 	// Dark frosted capsule that matches the quality-badge tiles — understated,
 	// not a loud bright pill. The warmth comes from the accent glyph, not the

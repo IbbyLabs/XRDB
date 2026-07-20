@@ -113,6 +113,8 @@ type Config struct {
 	// Grouped component controls. Anonymous embeds keep the JSON flat (one key
 	// per field, matching v2's naming) while grouping the Go source by concern.
 	GenreBadgeConfig
+	QualityBadgeConfig
+	TrendingConfig
 
 	// Legacy carries config keys XRDB does not yet model — chiefly per-surface
 	// fields from a migrated v2 profile whose matching v3 control has not
@@ -225,6 +227,24 @@ func mergeLegacy(marshalled []byte, legacy map[string]json.RawMessage) ([]byte, 
 	return json.Marshal(m)
 }
 
+// QualityBadgeConfig groups the quality-badge (4K/HDR/DV/…) styling controls.
+// Zero values keep the original fixed appearance.
+type QualityBadgeConfig struct {
+	QualityBadgesPos    string `json:"qualityBadgesPos,omitempty"`    // tl|tr|bl|br|tc|bc; "" = tr
+	QualityBadgeScale   int    `json:"qualityBadgeScale,omitempty"`   // percent 70-200; 0 = 100
+	QualityBadgeOffsetX int    `json:"qualityBadgeOffsetX,omitempty"` //
+	QualityBadgeOffsetY int    `json:"qualityBadgeOffsetY,omitempty"` //
+	QualityBadgesStyle  string `json:"qualityBadgesStyle,omitempty"`  // modeled; not yet drawn
+	QualityBadgesMax    *int   `json:"qualityBadgesMax,omitempty"`    // cap on badge count; nil = no cap
+}
+
+// TrendingConfig groups the trending-tag styling not already covered by the
+// existing Trending/TrendingStyle fields.
+type TrendingConfig struct {
+	TrendingPos       string `json:"trendingPos,omitempty"`       // tl|tr|bl|br|tc|bc; "" = tl
+	TrendingTextColor string `json:"trendingTextColor,omitempty"` // "#RRGGBB"; modeled, not yet drawn
+}
+
 // GenreBadgeConfig groups the genre-badge styling controls. v2 exposed these
 // per surface (poster*/backdrop*/thumbnail*/logo*); v3 needs one field each
 // because the surfaces envelope already resolves an independent Config per
@@ -286,6 +306,8 @@ type raw struct {
 	RatingRingColor  *string  `json:"ratingRingColor"`
 
 	rawGenre
+	rawQuality
+	rawTrending
 }
 
 // rawGenre is the loose parse shape for GenreBadgeConfig, embedded in raw so its
@@ -299,6 +321,21 @@ type rawGenre struct {
 	GenreBadgeBorderWidth       *float64 `json:"genreBadgeBorderWidth"`
 	GenreBadgeBackgroundOpacity *int     `json:"genreBadgeBackgroundOpacity"`
 	GenreBadgeTileAccentColor   *string  `json:"genreBadgeTileAccentColor"`
+}
+
+// rawQuality and rawTrending mirror their config groups for parsing.
+type rawQuality struct {
+	QualityBadgesPos    *string `json:"qualityBadgesPos"`
+	QualityBadgeScale   *int    `json:"qualityBadgeScale"`
+	QualityBadgeOffsetX *int    `json:"qualityBadgeOffsetX"`
+	QualityBadgeOffsetY *int    `json:"qualityBadgeOffsetY"`
+	QualityBadgesStyle  *string `json:"qualityBadgesStyle"`
+	QualityBadgesMax    *int    `json:"qualityBadgesMax"`
+}
+
+type rawTrending struct {
+	TrendingPos       *string `json:"trendingPos"`
+	TrendingTextColor *string `json:"trendingTextColor"`
 }
 
 // Surfaces are the distinct render targets a single profile can style
@@ -460,8 +497,57 @@ func Parse(data json.RawMessage) Config {
 		cfg.RatingRingColor = strings.TrimSpace(*r.RatingRingColor)
 	}
 	parseGenre(&cfg, &r)
+	parseQuality(&cfg, &r)
+	parseTrending(&cfg, &r)
 	cfg.Legacy = collectLegacy(data)
 	return cfg
+}
+
+// sixPos validates a six-position placement token, returning "" if invalid.
+func sixPos(v string) string {
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "tl", "tr", "bl", "br", "tc", "bc":
+		return strings.ToLower(strings.TrimSpace(v))
+	}
+	return ""
+}
+
+func parseQuality(cfg *Config, r *raw) {
+	if r.QualityBadgesPos != nil {
+		if p := sixPos(*r.QualityBadgesPos); p != "" {
+			cfg.QualityBadgesPos = p
+		}
+	}
+	if r.QualityBadgeScale != nil && *r.QualityBadgeScale != 0 {
+		cfg.QualityBadgeScale = clampInt(*r.QualityBadgeScale, 70, 200)
+	}
+	if r.QualityBadgeOffsetX != nil {
+		cfg.QualityBadgeOffsetX = clampInt(*r.QualityBadgeOffsetX, -320, 320)
+	}
+	if r.QualityBadgeOffsetY != nil {
+		cfg.QualityBadgeOffsetY = clampInt(*r.QualityBadgeOffsetY, -320, 320)
+	}
+	if r.QualityBadgesStyle != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.QualityBadgesStyle)); v {
+		case "glass", "square", "plain", "media", "silver", "tile", "community-badge":
+			cfg.QualityBadgesStyle = v
+		}
+	}
+	if r.QualityBadgesMax != nil && *r.QualityBadgesMax >= 0 {
+		m := clampInt(*r.QualityBadgesMax, 0, 20)
+		cfg.QualityBadgesMax = &m
+	}
+}
+
+func parseTrending(cfg *Config, r *raw) {
+	if r.TrendingPos != nil {
+		if p := sixPos(*r.TrendingPos); p != "" {
+			cfg.TrendingPos = p
+		}
+	}
+	if r.TrendingTextColor != nil && isHexColor(*r.TrendingTextColor) {
+		cfg.TrendingTextColor = strings.TrimSpace(*r.TrendingTextColor)
+	}
 }
 
 // clampInt bounds v to [lo, hi].
@@ -564,6 +650,8 @@ func CacheKey(cfg Config) string {
 		// Grouped components keep their omitempty tags, so a config with none of
 		// these set hashes exactly as it did before the fields existed.
 		GenreBadgeConfig
+		QualityBadgeConfig
+		TrendingConfig
 	}
 	ratings := make([]string, len(cfg.Ratings))
 	copy(ratings, cfg.Ratings)
@@ -573,31 +661,33 @@ func CacheKey(cfg Config) string {
 	sort.Strings(badges)
 
 	c := canonical{
-		Size:             cfg.Size,
-		ArtworkSource:    cfg.ArtworkSource,
-		Language:         cfg.Language,
-		TextPreference:   cfg.TextPreference,
-		Ratings:          ratings,
-		RatingsLayout:    cfg.RatingsLayout,
-		BadgeStyle:       cfg.BadgeStyle,
-		BadgeTheme:       cfg.BadgeTheme,
-		Badges:           badges,
-		AgeRating:        cfg.AgeRating,
-		AgeRatingPos:     cfg.AgeRatingPos,
-		Genre:            cfg.Genre,
-		GenrePos:         cfg.GenrePos,
-		Providers:        cfg.Providers,
-		ProvidersCountry: cfg.ProvidersCountry,
-		AggregateBar:     cfg.AggregateBar,
-		AggregateBarPos:  cfg.AggregateBarPos,
-		Trending:         cfg.Trending,
-		TrendingStyle:    cfg.TrendingStyle,
-		BackdropAsPoster: cfg.BackdropAsPoster,
-		BackdropLogo:     cfg.BackdropLogo,
-		RatingRing:       cfg.RatingRing,
-		RatingRingPos:    cfg.RatingRingPos,
-		RatingRingColor:  cfg.RatingRingColor,
-		GenreBadgeConfig: cfg.GenreBadgeConfig,
+		Size:               cfg.Size,
+		ArtworkSource:      cfg.ArtworkSource,
+		Language:           cfg.Language,
+		TextPreference:     cfg.TextPreference,
+		Ratings:            ratings,
+		RatingsLayout:      cfg.RatingsLayout,
+		BadgeStyle:         cfg.BadgeStyle,
+		BadgeTheme:         cfg.BadgeTheme,
+		Badges:             badges,
+		AgeRating:          cfg.AgeRating,
+		AgeRatingPos:       cfg.AgeRatingPos,
+		Genre:              cfg.Genre,
+		GenrePos:           cfg.GenrePos,
+		Providers:          cfg.Providers,
+		ProvidersCountry:   cfg.ProvidersCountry,
+		AggregateBar:       cfg.AggregateBar,
+		AggregateBarPos:    cfg.AggregateBarPos,
+		Trending:           cfg.Trending,
+		TrendingStyle:      cfg.TrendingStyle,
+		BackdropAsPoster:   cfg.BackdropAsPoster,
+		BackdropLogo:       cfg.BackdropLogo,
+		RatingRing:         cfg.RatingRing,
+		RatingRingPos:      cfg.RatingRingPos,
+		RatingRingColor:    cfg.RatingRingColor,
+		GenreBadgeConfig:   cfg.GenreBadgeConfig,
+		QualityBadgeConfig: cfg.QualityBadgeConfig,
+		TrendingConfig:     cfg.TrendingConfig,
 	}
 	b, _ := json.Marshal(c)
 	// Fold any preserved-but-unmodeled fields into the key so two migrated

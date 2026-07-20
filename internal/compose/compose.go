@@ -246,7 +246,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		}
 	}
 	if len(req.Config.Badges) > 0 {
-		drawQualityBadges(composed, req.Config.Badges, scale, occ)
+		drawQualityBadges(composed, req.Config.Badges, scale, occ, qualityOptsFromConfig(req.Config))
 	}
 	if req.Config.AgeRating && meta.ContentRating != "" {
 		drawAgeRatingBadge(composed, meta.ContentRating, req.Config.AgeRatingPos, scale, occ)
@@ -261,7 +261,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		drawAggregateBar(composed, allRatings, req.Config)
 	}
 	if req.Config.Trending {
-		drawTrendingBadgeStyled(composed, scale, occ, trendingStyleFromConfig(req.Config.TrendingStyle))
+		drawTrendingBadgeStyled(composed, scale, occ, trendingStyleFromConfig(req.Config.TrendingStyle), req.Config.TrendingPos)
 	}
 	if req.Config.RatingRing {
 		drawAverageRatingRing(composed, allRatings, req.Config, scale, occ)

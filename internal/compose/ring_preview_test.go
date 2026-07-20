@@ -117,7 +117,7 @@ func TestBottomBandPlacement(t *testing.T) {
 		const band = 20 * scale
 		occ.reserve(image.Rect(b.Min.X, b.Max.Y-ratingsH-band, b.Max.X, b.Max.Y))
 	}
-	drawQualityBadges(card, []string{"imax", "atmos", "dv", "4k"}, scale, occ)
+	drawQualityBadges(card, []string{"imax", "atmos", "dv", "4k"}, scale, occ, qualityBadgeOpts{})
 	drawAgeRatingBadge(card, "TV-MA", "br", scale, occ)
 	drawGenreBadge(card, []string{"Mystery", "Drama", "Sci-Fi"}, "bl", scale, occ, genreBadgeOpts{})
 	providers := []provider.WatchProvider{
@@ -131,7 +131,7 @@ func TestBottomBandPlacement(t *testing.T) {
 		t.Errorf("dedupeProviders kept %d entries, want 3 (fuboTV, MGM+, Philo)", got)
 	}
 	drawProviderBadges(card, providers, scale, occ)
-	drawTrendingBadgeStyled(card, scale, occ, trendingArrowWord)
+	drawTrendingBadgeStyled(card, scale, occ, trendingArrowWord, "")
 
 	for i := 0; i < len(occ.rects); i++ {
 		for j := i + 1; j < len(occ.rects); j++ {

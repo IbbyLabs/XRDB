@@ -394,7 +394,7 @@ func TestQualityBadgesDrawOnImage(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 580, 859))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
 
-	got := drawQualityBadges(img, []string{"4k", "hdr", "dv"}, 1.0, newOccupancy(img.Bounds()))
+	got := drawQualityBadges(img, []string{"4k", "hdr", "dv"}, 1.0, newOccupancy(img.Bounds()), qualityBadgeOpts{})
 	if got == 0 {
 		t.Error("drawQualityBadges returned 0 for non-empty tokens")
 	}
@@ -420,7 +420,7 @@ func TestQualityBadgesNoopOnEmpty(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 100, 150))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
 	before := clonePixels(img)
-	got := drawQualityBadges(img, nil, 1.0, newOccupancy(img.Bounds()))
+	got := drawQualityBadges(img, nil, 1.0, newOccupancy(img.Bounds()), qualityBadgeOpts{})
 	after := clonePixels(img)
 	if got != 0 {
 		t.Errorf("drawQualityBadges returned %d for nil tokens, want 0", got)
@@ -515,7 +515,7 @@ func TestOverlayFunctionsAtLargeScales(t *testing.T) {
 			draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
 
 			// drawQualityBadges: must return > 0 for non-empty tokens
-			got := drawQualityBadges(img, []string{"4k", "hdr"}, scale, newOccupancy(img.Bounds()))
+			got := drawQualityBadges(img, []string{"4k", "hdr"}, scale, newOccupancy(img.Bounds()), qualityBadgeOpts{})
 			if got == 0 {
 				t.Errorf("drawQualityBadges returned 0 at scale %.1f", scale)
 			}

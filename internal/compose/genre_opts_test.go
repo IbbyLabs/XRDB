@@ -54,3 +54,38 @@ func TestGenreOptsFromConfig(t *testing.T) {
 		t.Errorf("opts mismatch: %+v", opts)
 	}
 }
+
+func TestQualityAndTrendingOptsChangeRender(t *testing.T) {
+	base := genreTestImage()
+	drawQualityBadges(base, []string{"4k", "hdr"}, 1.0, newOccupancy(base.Bounds()), qualityBadgeOpts{})
+
+	for name, opts := range map[string]qualityBadgeOpts{
+		"pos":    {pos: "bl"},
+		"scale":  {scalePercent: 160},
+		"offset": {offsetX: 30, offsetY: 20},
+	} {
+		img := genreTestImage()
+		drawQualityBadges(img, []string{"4k", "hdr"}, 1.0, newOccupancy(img.Bounds()), opts)
+		if !imagesDiffer(base, img) {
+			t.Errorf("quality %s opts did not change the render", name)
+		}
+	}
+
+	// Trending at a different position must move the badge.
+	tl := genreTestImage()
+	drawTrendingBadgeStyled(tl, 1.0, newOccupancy(tl.Bounds()), trendingArrowWord, "")
+	br := genreTestImage()
+	drawTrendingBadgeStyled(br, 1.0, newOccupancy(br.Bounds()), trendingArrowWord, "br")
+	if !imagesDiffer(tl, br) {
+		t.Error("trending position did not change the render")
+	}
+}
+
+func TestQualityMaxCapsCount(t *testing.T) {
+	two := 2
+	img := genreTestImage()
+	n := drawQualityBadges(img, []string{"4k", "hdr", "dv", "atmos"}, 1.0, newOccupancy(img.Bounds()), qualityBadgeOpts{max: &two})
+	if n != 2 {
+		t.Errorf("expected max to cap at 2, drew %d", n)
+	}
+}

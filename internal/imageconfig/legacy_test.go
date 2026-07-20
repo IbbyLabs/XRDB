@@ -236,3 +236,24 @@ func TestGenreBadgeAbsentDoesNotChangeCacheKey(t *testing.T) {
 		t.Error("a set genre scale did not change the cache key")
 	}
 }
+
+func TestQualityAndTrendingGroupsRoundTrip(t *testing.T) {
+	in := json.RawMessage(`{"qualityBadgesPos":"bl","qualityBadgeScale":130,"qualityBadgeOffsetX":5,"qualityBadgeOffsetY":-3,"qualityBadgesMax":2,"trendingPos":"br","trendingTextColor":"#00ffcc"}`)
+	cfg := Parse(in)
+	if cfg.QualityBadgesPos != "bl" || cfg.QualityBadgeScale != 130 || cfg.QualityBadgeOffsetX != 5 || cfg.QualityBadgeOffsetY != -3 {
+		t.Errorf("quality fields lost: %+v", cfg.QualityBadgeConfig)
+	}
+	if cfg.QualityBadgesMax == nil || *cfg.QualityBadgesMax != 2 {
+		t.Errorf("qualityBadgesMax lost: %v", cfg.QualityBadgesMax)
+	}
+	if cfg.TrendingPos != "br" || cfg.TrendingTextColor != "#00ffcc" {
+		t.Errorf("trending fields lost: %+v", cfg.TrendingConfig)
+	}
+	if len(cfg.Legacy) != 0 {
+		t.Errorf("keys leaked to Legacy: %v", cfg.Legacy)
+	}
+	// Invalid position is rejected, not stored.
+	if Parse(json.RawMessage(`{"qualityBadgesPos":"middle"}`)).QualityBadgesPos != "" {
+		t.Error("invalid position accepted")
+	}
+}
