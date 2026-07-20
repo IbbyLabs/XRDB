@@ -761,6 +761,34 @@ textarea.input { min-height: 0; line-height: 1.5; }
   border-top: none;
 }
 
+/* First-run orientation: collapsed by default so it never blocks returning
+   users, but there for a newcomer to expand. */
+.cfg-help {
+  margin-bottom: var(--sp-4);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.cfg-help > summary {
+  cursor: pointer;
+  user-select: none;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--accent-text);
+}
+.cfg-help-steps {
+  margin: var(--sp-3) 0 var(--sp-2);
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  font-size: var(--text-sm);
+  color: var(--muted);
+  max-width: 68ch;
+}
+.cfg-help-steps strong { color: var(--ink); font-weight: 600; }
+
 /* Native colour picker, styled to the token set. Shared by every colour control
    so the swatch stays identical across the panels. */
 .color-swatch {

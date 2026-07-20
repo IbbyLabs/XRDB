@@ -18,6 +18,7 @@ import { InstallPanel } from './install-panel';
 import { MediaSearch } from './media-search';
 import { CopyButton } from './copy-button';
 import { tablistKeyNav } from './tablist';
+import { BRAND_DISCORD_URL } from '@/lib/brand';
 
 // Cap on the undo stack — deep enough for a real editing session, bounded so it
 // can't grow without limit.
@@ -321,6 +322,19 @@ export function ConfiguratorClient() {
         <h1 className="page-title">Configurator</h1>
         <p className="page-sub">Pick a template, watch the preview update live, copy the URL.</p>
       </div>
+
+      <details className="cfg-help">
+        <summary>New to XRDB? How this works</summary>
+        <ol className="cfg-help-steps">
+          <li>Find a title — search by name, or paste an IMDb / TMDB ID.</li>
+          <li>Adjust the controls; the preview updates live. Undo any change with Ctrl/Cmd+Z.</li>
+          <li>Each surface (poster, backdrop, thumbnail, logo) is styled on its own — use <strong>Copy to all surfaces</strong> to match them.</li>
+          <li>Save a profile to get a config key, then open <strong>Install</strong> to use it in your media setup.</li>
+        </ol>
+        <p className="hint" style={{ marginTop: 0 }}>
+          Stuck? <a href={BRAND_DISCORD_URL} target="_blank" rel="noreferrer">Ask in the Discord</a>.
+        </p>
+      </details>
 
       {notice && (
         <div style={{ marginBottom: 'var(--sp-4)' }}>
