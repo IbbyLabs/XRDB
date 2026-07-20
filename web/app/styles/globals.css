@@ -761,6 +761,18 @@ textarea.input { min-height: 0; line-height: 1.5; }
   border-top: none;
 }
 
+/* Native colour picker, styled to the token set. Shared by every colour control
+   so the swatch stays identical across the panels. */
+.color-swatch {
+  width: 36px;
+  height: 28px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: none;
+  cursor: pointer;
+}
+
 .preview-empty {
   display: flex;
   flex-direction: column;

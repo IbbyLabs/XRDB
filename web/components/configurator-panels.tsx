@@ -181,7 +181,7 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating }: RatingsP
                       type="color"
                       value={config.ratingRingColor || '#27ae60'}
                       onChange={e => onUpdate('ratingRingColor', e.target.value)}
-                      style={{ width: 36, height: 28, padding: 2, border: '1px solid var(--border)', borderRadius: 4, background: 'none', cursor: 'pointer' }}
+                      className="color-swatch"
                     />
                     <button
                       className={`opt-btn${!config.ratingRingColor ? ' opt-btn--active' : ''}`}
@@ -315,7 +315,7 @@ function ColorField({
           type="color"
           value={value || fallback}
           onChange={e => onChange(e.target.value)}
-          style={{ width: 36, height: 28, padding: 2, border: '1px solid var(--border)', borderRadius: 4, background: 'none', cursor: 'pointer' }}
+          className="color-swatch"
         />
         {resetLabel && (
           <button
@@ -386,7 +386,7 @@ function ProviderOverrides({ uid, config, onUpdate }: {
                   type="color"
                   value={override || r.accent}
                   onChange={e => setOverride(r.id, e.target.value)}
-                  style={{ width: 36, height: 28, padding: 2, border: '1px solid var(--border)', borderRadius: 4, background: 'none', cursor: 'pointer' }}
+                  className="color-swatch"
                 />
                 <button
                   className={`opt-btn${!override ? ' opt-btn--active' : ''}`}
@@ -485,7 +485,7 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
               type="color"
               value={config.qualityBadgesTileAccentColor || '#3355ff'}
               onChange={e => onUpdate('qualityBadgesTileAccentColor', e.target.value)}
-              style={{ width: 36, height: 28, padding: 2, border: '1px solid var(--border)', borderRadius: 4, background: 'none', cursor: 'pointer' }}
+              className="color-swatch"
             />
           </div>
         )}
@@ -511,7 +511,7 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
               type="color"
               value={config.aggregateAccentColor || '#3355ff'}
               onChange={e => onUpdate('aggregateAccentColor', e.target.value)}
-              style={{ width: 36, height: 28, padding: 2, border: '1px solid var(--border)', borderRadius: 4, background: 'none', cursor: 'pointer' }}
+              className="color-swatch"
             />
             <button
               className={`opt-btn${!config.aggregateAccentColor ? ' opt-btn--active' : ''}`}
@@ -562,7 +562,7 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
               type="color"
               value={config.ageRatingTileColor || '#3355ff'}
               onChange={e => onUpdate('ageRatingTileColor', e.target.value)}
-              style={{ width: 36, height: 28, padding: 2, border: '1px solid var(--border)', borderRadius: 4, background: 'none', cursor: 'pointer' }}
+              className="color-swatch"
             />
           </div>
         )}
