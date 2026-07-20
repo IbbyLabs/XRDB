@@ -78,6 +78,10 @@ export function ProfilePanel({
   const [loadPassword, setLoadPassword] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [recents, setRecents] = useState<RecentProfile[]>([]);
+  // Serialized configs as last saved to / loaded from the server, so the panel
+  // can tell the user when the current edit diverges from the stored profile.
+  const [savedSnapshot, setSavedSnapshot] = useState('');
+  const isDirty = loaded !== null && savedSnapshot !== '' && JSON.stringify(configs) !== savedSnapshot;
 
   // Restored after mount — localStorage reads during the first render
   // mismatch the statically prerendered HTML (React #418).
@@ -119,6 +123,7 @@ export function ProfilePanel({
         password,
       });
       setName(''); setAlias(''); setPassword('');
+      setSavedSnapshot(JSON.stringify(configs));
       setRecents(r => pushRecent(r, {
         key: created.alias || created.id,
         name: created.name || created.alias || created.id,
@@ -137,7 +142,9 @@ export function ProfilePanel({
     setBusy(true);
     try {
       const p = await getProfile(key, loadPassword || undefined);
-      onLoadConfigs(fromStoredConfig(p.config));
+      const loadedCfgs = fromStoredConfig(p.config);
+      onLoadConfigs(loadedCfgs);
+      setSavedSnapshot(JSON.stringify(loadedCfgs));
       setLoaded({
         id: p.id,
         alias: p.alias ?? '',
@@ -171,6 +178,7 @@ export function ProfilePanel({
         },
         loaded.password || undefined,
       );
+      setSavedSnapshot(JSON.stringify(configs));
       flash('success', 'Profile updated');
     } catch (e) {
       flash('error', (e as Error).message);
@@ -242,9 +250,14 @@ export function ProfilePanel({
       <div className="panel">
         <div className="panel-body cfg-fields">
           <div className="profile-banner">
-            <span className="profile-banner-name">{loaded.name || loaded.alias || loaded.id}</span>
+            <span className="profile-banner-name">
+              {loaded.name || loaded.alias || loaded.id}
+              {isDirty && <span className="profile-dirty"> · Unsaved changes</span>}
+            </span>
             <span className="hint" style={{ marginTop: 0 }}>
-              Editing this profile — changes apply when you press Update.
+              {isDirty
+                ? 'You have unsaved edits — press Update to save them to this profile.'
+                : 'Editing this profile — changes apply when you press Update.'}
             </span>
           </div>
 

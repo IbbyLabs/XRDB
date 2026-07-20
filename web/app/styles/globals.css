@@ -1247,6 +1247,8 @@ textarea.input { min-height: 0; line-height: 1.5; }
   .kbd-hint { display: none; }
   /* Enlarge the smaller controls to a comfortable finger target on touch. */
   .btn-sm, .chip, .pin-chip-btn, .pin-chip-x { min-height: 2.75rem; }
+  /* Give the range slider a taller hit area so its thumb is easy to grab. */
+  .numfield-range { height: 2.75rem; }
 }
 
 .media-search-input { padding-left: 2.25rem; padding-right: 2.5rem; }
@@ -1377,6 +1379,8 @@ textarea.input { min-height: 0; line-height: 1.5; }
   font-weight: 600;
   color: var(--accent-text);
 }
+
+.profile-dirty { color: var(--warn); }
 
 /* ── Integrations ──────────────────────────────────────────────────── */
 

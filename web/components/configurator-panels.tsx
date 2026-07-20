@@ -524,7 +524,7 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
             onChange={v => onUpdate('genreBadgeOffsetY', v)} min={-320} max={320} zeroIsDefault={false} />
         </div>
         <NumField id={`${uid}-genre-op`} label="Background opacity (%)" value={config.genreBadgeBackgroundOpacity}
-          onChange={v => onUpdate('genreBadgeBackgroundOpacity', v)} min={0} max={100} step={5} />
+          onChange={v => onUpdate('genreBadgeBackgroundOpacity', v)} min={5} max={100} step={5} />
 
         <span className="adv-section">Aggregate bar</span>
         <div className="field">
