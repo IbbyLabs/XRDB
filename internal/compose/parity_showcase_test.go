@@ -52,6 +52,20 @@ func TestParityShowcase(t *testing.T) {
 				drawGenreBadge(c, genres, "bl", 2.0, newOccupancy(c.Bounds()), genreBadgeOpts{bgOpacity: 45})
 			}},
 		},
+		"genre-styles": {
+			{"default (glass)", func(c *image.NRGBA) {
+				drawGenreBadge(c, genres, "bl", 2.0, newOccupancy(c.Bounds()), genreBadgeOpts{})
+			}},
+			{"plain (no tile)", func(c *image.NRGBA) {
+				drawGenreBadge(c, genres, "bl", 2.0, newOccupancy(c.Bounds()), genreBadgeOpts{style: "plain"})
+			}},
+			{"tile #3355ff", func(c *image.NRGBA) {
+				drawGenreBadge(c, genres, "bl", 2.0, newOccupancy(c.Bounds()), genreBadgeOpts{style: "tile", tileColor: "#3355ff"})
+			}},
+			{"tile #e67e22", func(c *image.NRGBA) {
+				drawGenreBadge(c, genres, "bl", 2.0, newOccupancy(c.Bounds()), genreBadgeOpts{style: "tile", tileColor: "#e67e22"})
+			}},
+		},
 		"quality-badges": {
 			{"default (top-right)", func(c *image.NRGBA) {
 				drawQualityBadges(c, quality, 2.0, newOccupancy(c.Bounds()), qualityBadgeOpts{})

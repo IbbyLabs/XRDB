@@ -668,7 +668,9 @@ type genreBadgeOpts struct {
 	scalePercent int // 0 = 100 (no extra scaling)
 	offsetX      int // px nudge from the resolved corner
 	offsetY      int
-	bgOpacity    int // 0 = default (200/255); else 1-100 mapped to alpha
+	bgOpacity    int    // 0 = default (200/255); else 1-100 mapped to alpha
+	style        string // "" | glass | square | plain | clean | tile
+	tileColor    string // "#RRGGBB" for the tile style
 }
 
 // genreOptsFromConfig extracts the genre-badge styling from a resolved Config.
@@ -678,6 +680,8 @@ func genreOptsFromConfig(cfg imageconfig.Config) genreBadgeOpts {
 		offsetX:      cfg.GenreBadgeOffsetX,
 		offsetY:      cfg.GenreBadgeOffsetY,
 		bgOpacity:    cfg.GenreBadgeBackgroundOpacity,
+		style:        cfg.GenreBadgeStyle,
+		tileColor:    cfg.GenreBadgeTileAccentColor,
 	}
 }
 
@@ -724,6 +728,25 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	if opts.offsetX != 0 || opts.offsetY != 0 {
 		r = r.Add(image.Pt(opts.offsetX, opts.offsetY))
 	}
+	textColor := color.NRGBA{R: 225, G: 225, B: 228, A: 255}
+	tx, ty := r.Min.X+padX, r.Min.Y+padY+ascent
+	switch opts.style {
+	case "plain":
+		// No tile: draw the label with a dark shadow so it stays legible on any
+		// background, matching v2's outlined "plain" treatment.
+		drawText(base, face, tx+maxInt(1, s(1)), ty+maxInt(1, s(1)), color.NRGBA{R: 0, G: 0, B: 0, A: 180}, label)
+		drawText(base, face, tx, ty, color.White, label)
+		return
+	case "tile":
+		fill := color.NRGBA{R: 8, G: 9, B: 12, A: 235}
+		if c, err := parseHexColor(opts.tileColor); opts.tileColor != "" && err == nil {
+			c.A = 235
+			fill = c
+		}
+		drawSoftTile(base, r, radius, tileChrome{fill: fill, shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 70}})
+		drawText(base, face, tx, ty, color.White, label)
+		return
+	}
 	fill := color.NRGBA{R: 8, G: 9, B: 12, A: 200}
 	if opts.bgOpacity != 0 {
 		fill.A = uint8(opts.bgOpacity * 255 / 100)
@@ -733,7 +756,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		border: color.NRGBA{R: 255, G: 255, B: 255, A: 28},
 		shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 70},
 	})
-	drawText(base, face, r.Min.X+padX, r.Min.Y+padY+ascent, color.NRGBA{R: 225, G: 225, B: 228, A: 255}, label)
+	drawText(base, face, tx, ty, textColor, label)
 }
 
 // ── Aggregate rating bar ──────────────────────────────────────────────────────

@@ -141,3 +141,20 @@ func TestRatingsMaxCapsBadges(t *testing.T) {
 		t.Error("ratingsMax cap did not change the render")
 	}
 }
+
+func TestGenreBadgeStylesChangeRender(t *testing.T) {
+	genres := []string{"Action", "Drama"}
+	def := genreTestImage()
+	drawGenreBadge(def, genres, "bl", 2.0, newOccupancy(def.Bounds()), genreBadgeOpts{})
+
+	for name, opts := range map[string]genreBadgeOpts{
+		"plain": {style: "plain"},
+		"tile":  {style: "tile", tileColor: "#3355ff"},
+	} {
+		img := genreTestImage()
+		drawGenreBadge(img, genres, "bl", 2.0, newOccupancy(img.Bounds()), opts)
+		if !imagesDiffer(def, img) {
+			t.Errorf("genre style %q did not change the render", name)
+		}
+	}
+}
