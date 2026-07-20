@@ -285,6 +285,13 @@ function NumField({
           const n = e.target.value === '' ? 0 : Number(e.target.value);
           onChange(Number.isFinite(n) ? n : 0);
         }}
+        onBlur={() => {
+          // Snap an out-of-range entry back into [min, max] on commit. 0 is the
+          // "default" sentinel and is always allowed through.
+          if (value === 0) return;
+          const clamped = Math.max(min, Math.min(max, value));
+          if (clamped !== value) onChange(clamped);
+        }}
         style={{ maxWidth: '9rem' }}
       />
       {hint && <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>{hint}</span>}

@@ -98,6 +98,9 @@ export function ConfiguratorClient() {
   // Undo control or Cmd/Ctrl+Z. Capped so a long session can't grow it unbounded.
   const historyRef = useRef<SurfaceConfigs[]>([]);
   const [canUndo, setCanUndo] = useState(false);
+  // Tracks the last-edited field so a burst of edits to one control (typing into
+  // a number field) collapses into a single undo step instead of one per keystroke.
+  const lastEditRef = useRef<{ key: string; t: number } | null>(null);
 
   useEffect(() => {
     if (!hydrated) return; // don't clobber storage with defaults pre-restore
@@ -210,6 +213,7 @@ export function ConfiguratorClient() {
   const undo = useCallback(() => {
     const prev = historyRef.current.pop();
     if (!prev) return;
+    lastEditRef.current = null;
     setConfigs(prev);
     setCanUndo(historyRef.current.length > 0);
     setAppliedTemplate(null);
@@ -217,12 +221,23 @@ export function ConfiguratorClient() {
   }, []);
 
   const updateConfig = <K extends keyof ConfigState>(key: K, value: ConfigState[K]) => {
-    pushHistory(configs);
+    // Setting a value to what it already is (re-picking the active option) is a
+    // no-op and shouldn't create an undo step.
+    if (configs[mediaType][key] === value) return;
+    // Coalesce a run of edits to the same field within a short window into one
+    // undo step, so typing "150" is one Ctrl+Z, not three.
+    const now = Date.now();
+    const last = lastEditRef.current;
+    if (!last || last.key !== String(key) || now - last.t > 500) {
+      pushHistory(configs);
+    }
+    lastEditRef.current = { key: String(key), t: now };
     setAppliedTemplate(null);
     setConfigs(cs => ({ ...cs, [mediaType]: { ...cs[mediaType], [key]: value } }));
   };
 
   const toggleRating = (r: string) => {
+    lastEditRef.current = null;
     pushHistory(configs);
     setAppliedTemplate(null);
     setConfigs(cs => {
@@ -234,6 +249,7 @@ export function ConfiguratorClient() {
   };
 
   const toggleBadge = (b: string) => {
+    lastEditRef.current = null;
     pushHistory(configs);
     setAppliedTemplate(null);
     setConfigs(cs => {
@@ -246,6 +262,7 @@ export function ConfiguratorClient() {
 
   const applyTemplate = (t: Template) => {
     const parsed = t.config as Partial<ConfigState>;
+    lastEditRef.current = null;
     pushHistory(configs);
     setConfigs(cs => ({ ...cs, [mediaType]: { ...cs[mediaType], ...parsed } }));
     setAppliedTemplate(t.id);
@@ -253,12 +270,14 @@ export function ConfiguratorClient() {
   };
 
   const handleLoadConfigs = (loaded: SurfaceConfigs) => {
+    lastEditRef.current = null;
     pushHistory(configs);
     setAppliedTemplate(null);
     setConfigs(loaded);
   };
 
   const copyToAllSurfaces = () => {
+    lastEditRef.current = null;
     pushHistory(configs);
     setAppliedTemplate(null);
     setConfigs(cs => cloneToAllSurfaces(cs[mediaType]));
@@ -457,7 +476,7 @@ export function ConfiguratorClient() {
 
           {activeTab === 'display' && (
             <div id={`${uid}-panel-display`} role="tabpanel" aria-labelledby={`${uid}-tab-display`} className="tabpanel-enter">
-              <DisplayPanel uid={uid} mediaType={mediaType} config={config} onUpdate={updateConfig} onToggleBadge={toggleBadge} onReset={() => { pushHistory(configs); setAppliedTemplate(null); setConfigs(cs => ({ ...cs, [mediaType]: { ...DEFAULT_CONFIG } })); }} />
+              <DisplayPanel uid={uid} mediaType={mediaType} config={config} onUpdate={updateConfig} onToggleBadge={toggleBadge} onReset={() => { lastEditRef.current = null; pushHistory(configs); setAppliedTemplate(null); setConfigs(cs => ({ ...cs, [mediaType]: { ...DEFAULT_CONFIG } })); }} />
             </div>
           )}
 
