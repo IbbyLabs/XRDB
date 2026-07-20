@@ -118,7 +118,7 @@ func TestBottomBandPlacement(t *testing.T) {
 		occ.reserve(image.Rect(b.Min.X, b.Max.Y-ratingsH-band, b.Max.X, b.Max.Y))
 	}
 	drawQualityBadges(card, []string{"imax", "atmos", "dv", "4k"}, scale, occ, qualityBadgeOpts{})
-	drawAgeRatingBadge(card, "TV-MA", "br", scale, occ)
+	drawAgeRatingBadge(card, "TV-MA", "br", scale, occ, ageRatingOpts{})
 	drawGenreBadge(card, []string{"Mystery", "Drama", "Sci-Fi"}, "bl", scale, occ, genreBadgeOpts{})
 	providers := []provider.WatchProvider{
 		{ID: 1, Name: "fuboTV"},

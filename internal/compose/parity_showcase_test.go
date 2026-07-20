@@ -129,6 +129,20 @@ func TestParityShowcase(t *testing.T) {
 				}))
 			}},
 		},
+		"age-rating-styles": {
+			{"default", func(c *image.NRGBA) {
+				drawAgeRatingBadge(c, "TV-MA", "br", 2.0, newOccupancy(c.Bounds()), ageRatingOpts{})
+			}},
+			{"plain", func(c *image.NRGBA) {
+				drawAgeRatingBadge(c, "TV-MA", "br", 2.0, newOccupancy(c.Bounds()), ageRatingOpts{style: "plain"})
+			}},
+			{"tile red", func(c *image.NRGBA) {
+				drawAgeRatingBadge(c, "TV-MA", "br", 2.0, newOccupancy(c.Bounds()), ageRatingOpts{style: "tile", tileColor: "#c0392b"})
+			}},
+			{"tile green", func(c *image.NRGBA) {
+				drawAgeRatingBadge(c, "TV-MA", "br", 2.0, newOccupancy(c.Bounds()), ageRatingOpts{style: "tile", tileColor: "#27ae60"})
+			}},
+		},
 		"trending-position": {
 			{"top-left (default)", func(c *image.NRGBA) {
 				drawTrendingBadgeStyled(c, 2.0, newOccupancy(c.Bounds()), trendingArrowWord, "")

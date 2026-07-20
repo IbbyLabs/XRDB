@@ -125,6 +125,8 @@ export function ConfiguratorClient() {
       qualityBadgesStyle: cfg.qualityBadgesStyle === 'default' ? '' : cfg.qualityBadgesStyle,
       qualityBadgesTileAccentColor: cfg.qualityBadgesTileAccentColor,
       aggregateAccentColor: cfg.aggregateAccentColor,
+      ageRatingBadgeStyle: cfg.ageRatingBadgeStyle === 'default' ? '' : cfg.ageRatingBadgeStyle,
+      ageRatingTileColor: cfg.ageRatingTileColor,
       trendingPos: cfg.trendingPos,
     };
     if (cfg.ratingsMax > 0) payload.ratingsMax = cfg.ratingsMax;

@@ -435,7 +435,7 @@ func TestQualityBadgesNoopOnEmpty(t *testing.T) {
 func TestAgeRatingBadgeDrawsTL(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 580, 859))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
-	drawAgeRatingBadge(img, "TV-MA", "tl", 1.0, newOccupancy(img.Bounds()))
+	drawAgeRatingBadge(img, "TV-MA", "tl", 1.0, newOccupancy(img.Bounds()), ageRatingOpts{})
 
 	// Top-left corner should have non-white pixels.
 	nonWhite := 0
@@ -456,7 +456,7 @@ func TestAgeRatingBadgeNoopOnEmptyRating(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 100, 150))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{200, 200, 200, 255}}, image.Point{}, draw.Src)
 	before := clonePixels(img)
-	drawAgeRatingBadge(img, "", "tl", 1.0, newOccupancy(img.Bounds()))
+	drawAgeRatingBadge(img, "", "tl", 1.0, newOccupancy(img.Bounds()), ageRatingOpts{})
 	after := clonePixels(img)
 	if before != after {
 		t.Error("drawAgeRatingBadge with empty rating must not modify the image")
@@ -522,7 +522,7 @@ func TestOverlayFunctionsAtLargeScales(t *testing.T) {
 
 			// drawAgeRatingBadge: must change pixels
 			beforeAge := clonePixels(img)
-			drawAgeRatingBadge(img, "TV-MA", "br", scale, newOccupancy(img.Bounds()))
+			drawAgeRatingBadge(img, "TV-MA", "br", scale, newOccupancy(img.Bounds()), ageRatingOpts{})
 			if clonePixels(img) == beforeAge {
 				t.Errorf("drawAgeRatingBadge had no effect at scale %.1f", scale)
 			}

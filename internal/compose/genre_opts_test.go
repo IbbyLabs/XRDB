@@ -174,3 +174,18 @@ func TestQualityBadgeStylesChangeRender(t *testing.T) {
 		}
 	}
 }
+
+func TestAgeRatingStylesChangeRender(t *testing.T) {
+	def := genreTestImage()
+	drawAgeRatingBadge(def, "TV-MA", "br", 2.0, newOccupancy(def.Bounds()), ageRatingOpts{})
+	for name, opts := range map[string]ageRatingOpts{
+		"plain": {style: "plain"},
+		"tile":  {style: "tile", tileColor: "#c0392b"},
+	} {
+		img := genreTestImage()
+		drawAgeRatingBadge(img, "TV-MA", "br", 2.0, newOccupancy(img.Bounds()), opts)
+		if !imagesDiffer(def, img) {
+			t.Errorf("age style %q did not change the render", name)
+		}
+	}
+}

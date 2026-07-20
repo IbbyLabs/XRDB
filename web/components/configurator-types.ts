@@ -167,6 +167,8 @@ export interface ConfigState {
   qualityBadgesStyle: string; // 'default' | plain | tile
   qualityBadgesTileAccentColor: string;
   aggregateAccentColor: string; // '' = auto score-band
+  ageRatingBadgeStyle: string; // 'default' | plain | tile
+  ageRatingTileColor: string;
   trendingPos: string; // 'inherit' | six positions
 }
 
@@ -204,6 +206,8 @@ export const DEFAULT_CONFIG: ConfigState = {
   qualityBadgesStyle: 'default',
   qualityBadgesTileAccentColor: '',
   aggregateAccentColor: '',
+  ageRatingBadgeStyle: 'default',
+  ageRatingTileColor: '',
   trendingPos: 'inherit',
 };
 

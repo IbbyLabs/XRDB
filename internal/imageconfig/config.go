@@ -117,6 +117,7 @@ type Config struct {
 	TrendingConfig
 	RatingBadgeConfig
 	AggregateConfig
+	AgeRatingConfig
 
 	// Legacy carries config keys XRDB does not yet model — chiefly per-surface
 	// fields from a migrated v2 profile whose matching v3 control has not
@@ -255,6 +256,13 @@ type QualityBadgeConfig struct {
 	QualityBadgesTileAccentColor string `json:"qualityBadgesTileAccentColor,omitempty"` // "#RRGGBB" for the tile style
 }
 
+// AgeRatingConfig groups the age/content-rating badge styling. The badge's
+// on/off (AgeRating) and position (AgeRatingPos) stay flat.
+type AgeRatingConfig struct {
+	AgeRatingBadgeStyle string `json:"ageRatingBadgeStyle,omitempty"` // glass | plain | tile
+	AgeRatingTileColor  string `json:"ageRatingTileColor,omitempty"`  // "#RRGGBB" for the tile style
+}
+
 // TrendingConfig groups the trending-tag styling not already covered by the
 // existing Trending/TrendingStyle fields.
 type TrendingConfig struct {
@@ -327,6 +335,7 @@ type raw struct {
 	rawTrending
 	rawRating
 	rawAggregate
+	rawAge
 }
 
 // rawGenre is the loose parse shape for GenreBadgeConfig, embedded in raw so its
@@ -356,6 +365,11 @@ type rawQuality struct {
 type rawTrending struct {
 	TrendingPos       *string `json:"trendingPos"`
 	TrendingTextColor *string `json:"trendingTextColor"`
+}
+
+type rawAge struct {
+	AgeRatingBadgeStyle *string `json:"ageRatingBadgeStyle"`
+	AgeRatingTileColor  *string `json:"ageRatingTileColor"`
 }
 
 type rawRating struct {
@@ -531,6 +545,7 @@ func Parse(data json.RawMessage) Config {
 	parseTrending(&cfg, &r)
 	parseRating(&cfg, &r)
 	parseAggregate(&cfg, &r)
+	parseAge(&cfg, &r)
 	cfg.Legacy = collectLegacy(data)
 	return cfg
 }
@@ -592,6 +607,18 @@ func parseRating(cfg *Config, r *raw) {
 	if r.RatingsMax != nil && *r.RatingsMax >= 0 {
 		m := clampInt(*r.RatingsMax, 0, 20)
 		cfg.RatingsMax = &m
+	}
+}
+
+func parseAge(cfg *Config, r *raw) {
+	if r.AgeRatingBadgeStyle != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.AgeRatingBadgeStyle)); v {
+		case "glass", "plain", "tile":
+			cfg.AgeRatingBadgeStyle = v
+		}
+	}
+	if r.AgeRatingTileColor != nil && isHexColor(*r.AgeRatingTileColor) {
+		cfg.AgeRatingTileColor = strings.TrimSpace(*r.AgeRatingTileColor)
 	}
 }
 
@@ -708,6 +735,7 @@ func CacheKey(cfg Config) string {
 		TrendingConfig
 		RatingBadgeConfig
 		AggregateConfig
+		AgeRatingConfig
 	}
 	ratings := make([]string, len(cfg.Ratings))
 	copy(ratings, cfg.Ratings)
@@ -746,6 +774,7 @@ func CacheKey(cfg Config) string {
 		TrendingConfig:     cfg.TrendingConfig,
 		RatingBadgeConfig:  cfg.RatingBadgeConfig,
 		AggregateConfig:    cfg.AggregateConfig,
+		AgeRatingConfig:    cfg.AgeRatingConfig,
 	}
 	b, _ := json.Marshal(c)
 	// Fold any preserved-but-unmodeled fields into the key so two migrated

@@ -400,6 +400,35 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
           </div>
         </div>
 
+        <span className="label" style={{ marginTop: 'var(--sp-3)' }}>Age rating badge</span>
+        <div className="field">
+          <span className="label" id={`${uid}-age-style-label`}>Style</span>
+          <div className="opt-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }} role="group" aria-labelledby={`${uid}-age-style-label`}>
+            {QUALITY_STYLE_OPTIONS.map(o => (
+              <button
+                key={o.id}
+                className={`opt-btn${config.ageRatingBadgeStyle === o.id ? ' opt-btn--active' : ''}`}
+                onClick={() => onUpdate('ageRatingBadgeStyle', o.id)}
+                aria-pressed={config.ageRatingBadgeStyle === o.id}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {config.ageRatingBadgeStyle === 'tile' && (
+          <div className="field">
+            <label className="label" htmlFor={`${uid}-age-tile-color`}>Tile color</label>
+            <input
+              id={`${uid}-age-tile-color`}
+              type="color"
+              value={config.ageRatingTileColor || '#3355ff'}
+              onChange={e => onUpdate('ageRatingTileColor', e.target.value)}
+              style={{ width: 36, height: 28, padding: 2, border: '1px solid var(--border)', borderRadius: 4, background: 'none', cursor: 'pointer' }}
+            />
+          </div>
+        )}
+
         <span className="label" style={{ marginTop: 'var(--sp-3)' }}>Trending tag</span>
         <PosSelect id={`${uid}-trending-pos`} label="Position" value={config.trendingPos}
           onChange={v => onUpdate('trendingPos', v)} />

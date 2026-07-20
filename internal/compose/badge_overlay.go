@@ -346,7 +346,17 @@ func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64, occ *o
 // in the corner specified by pos ("tl", "tr", "bl", "br", "inherit").
 // "inherit" defaults to "br" so it does not conflict with the trending badge (TL)
 // or quality badges (TR).
-func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale float64, occ *occupancy) {
+// ageRatingOpts carries the age-rating badge styling. Zero value = default.
+type ageRatingOpts struct {
+	style     string // "" | glass | plain | tile
+	tileColor string // "#RRGGBB" for the tile style
+}
+
+func ageOptsFromConfig(cfg imageconfig.Config) ageRatingOpts {
+	return ageRatingOpts{style: cfg.AgeRatingBadgeStyle, tileColor: cfg.AgeRatingTileColor}
+}
+
+func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale float64, occ *occupancy, opts ageRatingOpts) {
 	if rating == "" {
 		return
 	}
@@ -375,12 +385,26 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 	}
 
 	r := occ.place(resolvedPos, bw, bh, edgeX, edgeY, s(7))
-	drawSoftTile(base, r, radius, tileChrome{
+	tx, ty := r.Min.X+padX, r.Min.Y+padY+ascent
+	if opts.style == "plain" {
+		drawText(base, face, tx+maxInt(1, s(1)), ty+maxInt(1, s(1)), color.NRGBA{R: 0, G: 0, B: 0, A: 180}, rating)
+		drawText(base, face, tx, ty, color.White, rating)
+		return
+	}
+	chrome := tileChrome{
 		fill:   color.NRGBA{R: 22, G: 24, B: 30, A: 225},
 		border: color.NRGBA{R: 235, G: 235, B: 240, A: 150},
 		shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 80},
-	})
-	drawText(base, face, r.Min.X+padX, r.Min.Y+padY+ascent, color.White, rating)
+	}
+	if opts.style == "tile" {
+		if c, err := parseHexColor(opts.tileColor); opts.tileColor != "" && err == nil {
+			c.A = 235
+			chrome.fill = c
+			chrome.border = color.NRGBA{}
+		}
+	}
+	drawSoftTile(base, r, radius, chrome)
+	drawText(base, face, tx, ty, color.White, rating)
 }
 
 // ── Provider icon badges ──────────────────────────────────────────────────────
