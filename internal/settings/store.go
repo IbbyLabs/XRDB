@@ -14,6 +14,10 @@ import (
 // named here so the startup restore and the admin handler cannot drift apart.
 const LogLevelKey = "log_level"
 
+// MemoryLimitKey holds the operator-chosen soft heap limit, in whole MiB. Same
+// startup-restore and admin-handler contract as LogLevelKey.
+const MemoryLimitKey = "memory_limit_mb"
+
 // ErrNotFound is returned when a key does not exist.
 var ErrNotFound = errors.New("settings: key not found")
 

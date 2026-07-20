@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"math"
 	"net/http"
 	"os"
 	"os/signal"
 	"runtime/debug"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -54,6 +56,15 @@ func applySettingsOverrides(cfg *config.Config, s *settings.Store) {
 			slog.Warn("Ignored an unrecognised stored log level", "stored", v, "level", logging.LevelName())
 		}
 	}
+	// A memory limit chosen through the admin API likewise wins over the env var
+	// on restart. Stored as whole MiB; 0 means the operator turned the limit off.
+	if v, err := s.Get(settings.MemoryLimitKey); err == nil && v != "" {
+		if mb, perr := strconv.ParseInt(v, 10, 64); perr == nil && mb >= 0 && mb <= math.MaxInt64>>20 {
+			cfg.MemoryLimitBytes = mb << 20
+		} else {
+			slog.Warn("Ignored an unparseable stored memory limit", "stored", v)
+		}
+	}
 }
 
 func main() {
@@ -61,12 +72,6 @@ func main() {
 
 	logger := logging.New(cfg.LogLevel)
 	slog.SetDefault(logger)
-
-	// Keep the Go heap under the container's memory cap so GC runs before the
-	// kernel OOM-kills the process. GOMEMLIMIT is also honoured natively.
-	if cfg.MemoryLimitBytes > 0 {
-		debug.SetMemoryLimit(cfg.MemoryLimitBytes)
-	}
 
 	if cfg.DBPath == "" {
 		logger.Error("Database path is empty; set XRDB_DB")
@@ -89,6 +94,14 @@ func main() {
 		// Overlay settings-store keys on top of env vars so UI-configured keys
 		// take precedence without requiring an env change.
 		applySettingsOverrides(&cfg, settingsStore)
+	}
+
+	// Apply the effective memory limit after the settings overlay, so a value
+	// saved through the admin API wins over XRDB_MEMORY_LIMIT_MB. Keeping the Go
+	// heap under the container cap makes GC run before a kernel OOM-kill;
+	// GOMEMLIMIT is also honoured natively.
+	if cfg.MemoryLimitBytes > 0 {
+		debug.SetMemoryLimit(cfg.MemoryLimitBytes)
 	}
 
 	reg := provider.NewRegistry()

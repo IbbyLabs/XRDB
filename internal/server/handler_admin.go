@@ -5,8 +5,11 @@ import (
 	"encoding/json"
 	"io"
 	"log/slog"
+	"math"
 	"net/http"
 	"os"
+	"runtime/debug"
+	"strconv"
 	"time"
 
 	"xrdb_rewrite/internal/cache"
@@ -55,6 +58,30 @@ func refreshProviderCredentials(pipeline *compose.Pipeline, settingsStore *setti
 			kp.UpdateCredentials(effective(m.settingsKey, m.envVar))
 		}
 	}
+}
+
+// applyMemoryLimit sets the runtime soft heap limit. A value of zero or less
+// means "no limit" (the runtime spelling of that is math.MaxInt64).
+func applyMemoryLimit(limitMB int64) {
+	if limitMB <= 0 {
+		debug.SetMemoryLimit(math.MaxInt64)
+		return
+	}
+	debug.SetMemoryLimit(limitMB << 20)
+}
+
+// memoryLimitMBFromEnv reads XRDB_MEMORY_LIMIT_MB, returning 0 (no limit) when
+// unset or unparseable.
+func memoryLimitMBFromEnv() int64 {
+	raw := os.Getenv("XRDB_MEMORY_LIMIT_MB")
+	if raw == "" {
+		return 0
+	}
+	n, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || n < 0 {
+		return 0
+	}
+	return n
 }
 
 // registerAdminRoutes mounts all /api/admin/* handlers onto mux.
@@ -190,6 +217,107 @@ func registerAdminRoutes(
 			logging.SetLevel(fallback)
 			slog.InfoContext(r.Context(), "Cleared the stored log level",
 				"previous", previous, "level", logging.LevelName())
+			respond()
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
+	// Memory limit: GET reports the soft heap limit in force and where it came
+	// from, PUT changes it on the running process (debug.SetMemoryLimit is safe
+	// to call at any time), DELETE reverts to the environment. A value set here
+	// persists and wins over XRDB_MEMORY_LIMIT_MB on the next start. Raising the
+	// limit live lets an operator give a loaded instance headroom without the
+	// restart that would drop its warm cache.
+	mux.HandleFunc("/api/admin/memory-limit", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			if cfg.AdminKey == "" || !bearerMatches(r, cfg.AdminKey) {
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				return
+			}
+		} else if cfg.AdminKey != "" && !bearerMatches(r, cfg.AdminKey) {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		source := func() string {
+			if settingsStore != nil {
+				if v, err := settingsStore.Get(settings.MemoryLimitKey); err == nil && v != "" {
+					return "stored"
+				}
+			}
+			if os.Getenv("XRDB_MEMORY_LIMIT_MB") != "" {
+				return "environment"
+			}
+			return "default"
+		}
+		// currentLimitMB reports the live soft limit in MiB, or 0 when unset
+		// (the runtime uses math.MaxInt64 to mean "no limit").
+		currentLimitMB := func() int64 {
+			cur := debug.SetMemoryLimit(-1)
+			if cur == math.MaxInt64 {
+				return 0
+			}
+			return cur >> 20
+		}
+		type limitState struct {
+			LimitMB   int64  `json:"limitMb"`
+			Source    string `json:"source"`
+			Env       string `json:"env"`
+			Persisted bool   `json:"persisted"`
+		}
+		respond := func() {
+			writeJSON(w, http.StatusOK, limitState{
+				LimitMB:   currentLimitMB(),
+				Source:    source(),
+				Env:       os.Getenv("XRDB_MEMORY_LIMIT_MB"),
+				Persisted: settingsStore != nil,
+			})
+		}
+
+		switch r.Method {
+		case http.MethodGet:
+			respond()
+		case http.MethodPut:
+			var body struct {
+				LimitMB int64 `json:"limitMb"`
+			}
+			if err := json.NewDecoder(io.LimitReader(r.Body, 1024)).Decode(&body); err != nil {
+				http.Error(w, "invalid JSON", http.StatusBadRequest)
+				return
+			}
+			// Negative is nonsense; an over-large value would overflow the byte
+			// conversion. Zero is allowed and means "no soft limit".
+			if body.LimitMB < 0 || body.LimitMB > math.MaxInt64>>20 {
+				http.Error(w, "limitMb out of range", http.StatusBadRequest)
+				return
+			}
+			previous := currentLimitMB()
+			applyMemoryLimit(body.LimitMB)
+			if settingsStore != nil {
+				if err := settingsStore.Set(settings.MemoryLimitKey, strconv.FormatInt(body.LimitMB, 10)); err != nil {
+					slog.WarnContext(r.Context(), "Changed the memory limit but could not persist it; it will revert on restart",
+						"error", err, "limit_mb", body.LimitMB)
+				}
+			}
+			slog.InfoContext(r.Context(), "Changed the memory limit",
+				"previous_mb", previous, "limit_mb", body.LimitMB)
+			respond()
+		case http.MethodDelete:
+			if settingsStore == nil {
+				http.Error(w, "settings store unavailable", http.StatusServiceUnavailable)
+				return
+			}
+			if err := settingsStore.Delete(settings.MemoryLimitKey); err != nil {
+				http.Error(w, "internal error", http.StatusInternalServerError)
+				return
+			}
+			// Revert to the environment value, or no limit when it is unset. Not
+			// cfg.MemoryLimitBytes: startup folds a stored value into it.
+			previous := currentLimitMB()
+			applyMemoryLimit(memoryLimitMBFromEnv())
+			slog.InfoContext(r.Context(), "Cleared the stored memory limit",
+				"previous_mb", previous, "limit_mb", currentLimitMB())
 			respond()
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
