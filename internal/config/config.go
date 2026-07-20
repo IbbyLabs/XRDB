@@ -9,6 +9,11 @@ import (
 	"time"
 )
 
+// DefaultLogLevel is the verbosity used when neither XRDB_LOG_LEVEL nor a
+// stored override is set. Exported so the admin revert path can fall back to
+// the same value the loader would pick.
+const DefaultLogLevel = "info"
+
 type Config struct {
 	Address             string
 	Version             string
@@ -74,7 +79,7 @@ func Load() Config {
 	}
 	logLevel := os.Getenv("XRDB_LOG_LEVEL")
 	if logLevel == "" {
-		logLevel = "info"
+		logLevel = DefaultLogLevel
 	}
 	dbPath := os.Getenv("XRDB_DB")
 	if dbPath == "" {

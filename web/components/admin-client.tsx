@@ -1,8 +1,12 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { Activity, HardDrive, RefreshCw, AlertCircle, Flame } from 'lucide-react';
-import { fetchMetrics, fetchCacheStats, adminAuthHeaders, type MetricsSnapshot, type CacheStats } from '@/lib/api';
+import { Activity, HardDrive, RefreshCw, AlertCircle, Flame, ScrollText } from 'lucide-react';
+import {
+  fetchMetrics, fetchCacheStats, adminAuthHeaders,
+  fetchLogLevel, setLogLevel, clearLogLevel,
+  type MetricsSnapshot, type CacheStats, type LogLevelState,
+} from '@/lib/api';
 import { tablistKeyNav } from './tablist';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
@@ -105,6 +109,123 @@ function CachePanel({ data }: { data: CacheStats }) {
   );
 }
 
+// ── Log level panel ───────────────────────────────────────────────────────────
+
+/** How each level reads to an operator deciding what to switch to. */
+const LEVEL_HINTS: Record<string, string> = {
+  debug: 'Every render, provider miss, and cache decision. Noisy; use while diagnosing.',
+  info:  'Lifecycle and one line per request. The normal setting.',
+  warn:  'Degraded paths and fallbacks only.',
+  error: 'Failures only. Quietest; hides the context around a problem.',
+};
+
+/** Plain-English explanation of which layer supplied the level in force. */
+const SOURCE_HINTS: Record<string, string> = {
+  stored:      'Set here, and kept across restarts.',
+  environment: 'From XRDB_LOG_LEVEL. Changing it here overrides it.',
+  default:     'Nothing configured it, so the built-in default applies.',
+};
+
+function LogLevelPanel() {
+  const [state, setState]   = useState<LogLevelState | null>(null);
+  const [busy, setBusy]     = useState<string | null>(null);
+  const [error, setError]   = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try { setState(await fetchLogLevel()); }
+    catch (e) { setError((e as Error).message); }
+  }, []);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void load(); }, [load]);
+
+  const apply = async (level: string) => {
+    setBusy(level); setError(null);
+    try { setState(await setLogLevel(level)); }
+    catch (e) { setError((e as Error).message); }
+    finally { setBusy(null); }
+  };
+
+  const revert = async () => {
+    setBusy('revert'); setError(null);
+    try { setState(await clearLogLevel()); }
+    catch (e) { setError((e as Error).message); }
+    finally { setBusy(null); }
+  };
+
+  if (!state) {
+    return error
+      ? <div className="notice notice-error" role="alert"><AlertCircle size={14} aria-hidden />
+          <span>{error}</span></div>
+      : <div className="skeleton" style={{ height: '9rem' }} aria-label="Loading log level" aria-busy="true" />;
+  }
+
+  return (
+    <div className="cfg-fields" style={{ maxWidth: '640px' }}>
+      <p className="page-sub" style={{ margin: 0 }}>
+        Verbosity of the JSON logs on stdout. Changes apply to the running server straight
+        away, so you can raise detail on a live problem without restarting and losing it.
+      </p>
+
+      <div className="field">
+        <span className="label" id="log-level-label">Level</span>
+        <div role="group" aria-labelledby="log-level-label" className="tabs" style={{ marginTop: 'var(--sp-1)' }}>
+          {state.levels.map(level => (
+            <button
+              key={level}
+              type="button"
+              className="tab"
+              aria-pressed={state.level === level}
+              disabled={busy !== null}
+              onClick={() => void apply(level)}
+              title={LEVEL_HINTS[level]}
+            >
+              {busy === level ? '…' : level}
+            </button>
+          ))}
+        </div>
+        <p className="page-sub" style={{ margin: 'var(--sp-2) 0 0' }}>
+          {LEVEL_HINTS[state.level]}
+        </p>
+      </div>
+
+      <div className="panel">
+        <div className="panel-body">
+          <span className="label">Source</span>
+          <p style={{ margin: 'var(--sp-1) 0 0' }}>
+            {SOURCE_HINTS[state.source] ?? state.source}
+          </p>
+          {state.env && (
+            <p className="page-sub" style={{ margin: 'var(--sp-2) 0 0' }}>
+              XRDB_LOG_LEVEL is <span className="mono">{state.env}</span>
+            </p>
+          )}
+          {!state.persisted && (
+            <p className="page-sub" style={{ margin: 'var(--sp-2) 0 0' }}>
+              The settings store is unavailable, so a change here lasts only until the next restart.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {error && (
+        <div className="notice notice-error" role="alert">
+          <AlertCircle size={14} aria-hidden />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {state.source === 'stored' && (
+        <div>
+          <button className="btn btn-ghost" onClick={() => void revert()} disabled={busy !== null}>
+            {busy === 'revert' ? 'Reverting…' : 'Revert to environment'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Warm panel ────────────────────────────────────────────────────────────────
 
 function WarmPanel() {
@@ -197,11 +318,12 @@ function WarmPanel() {
   );
 }
 
-type Tab = 'metrics' | 'cache' | 'warm';
+type Tab = 'metrics' | 'cache' | 'logs' | 'warm';
 
 const TABS: { id: Tab; label: string; icon: typeof Activity }[] = [
   { id: 'metrics', label: 'Metrics', icon: Activity },
   { id: 'cache',   label: 'Cache',   icon: HardDrive },
+  { id: 'logs',    label: 'Logs',    icon: ScrollText },
   { id: 'warm',    label: 'Warm',    icon: Flame },
 ];
 
@@ -213,7 +335,7 @@ export function AdminClient() {
   const [error, setError]     = useState<string | null>(null);
 
   const load = useCallback(async (t: Tab) => {
-    if (t === 'warm') return;
+    if (t === 'warm' || t === 'logs') return;
     setLoading(true);
     setError(null);
     try {
@@ -232,7 +354,7 @@ export function AdminClient() {
 
   const switchTab = (t: Tab) => {
     setTab(t);
-    if (t === 'warm') return;
+    if (t === 'warm' || t === 'logs') return;
     if ((t === 'metrics' && !metrics) || (t === 'cache' && !cache)) {
       void load(t);
     }
@@ -243,7 +365,7 @@ export function AdminClient() {
       <div className="admin-header">
         <div>
           <h1 className="page-title">Admin</h1>
-          <p className="page-sub">Runtime metrics and cache diagnostics.</p>
+          <p className="page-sub">Runtime metrics, cache diagnostics, and log verbosity.</p>
         </div>
         <button
           className="btn btn-ghost"
@@ -299,6 +421,7 @@ export function AdminClient() {
           )}
           {!loading && id === 'metrics' && metrics && <MetricsPanel data={metrics} />}
           {!loading && id === 'cache'   && cache   && <CachePanel   data={cache}   />}
+          {id === 'logs' && tab === 'logs' && <LogLevelPanel />}
           {id === 'warm' && tab === 'warm' && <WarmPanel />}
         </div>
       ))}

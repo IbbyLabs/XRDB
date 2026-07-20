@@ -75,3 +75,72 @@ func TestNewLevelGating(t *testing.T) {
 		}
 	}
 }
+
+func TestParseLevel(t *testing.T) {
+	cases := []struct {
+		in    string
+		want  slog.Level
+		known bool
+	}{
+		{"debug", slog.LevelDebug, true},
+		{"INFO", slog.LevelInfo, true},
+		{" Warn ", slog.LevelWarn, true},
+		{"warning", slog.LevelWarn, true},
+		{"error", slog.LevelError, true},
+		{"", slog.LevelInfo, false},
+		{"loud", slog.LevelInfo, false},
+	}
+	for _, c := range cases {
+		got, ok := ParseLevel(c.in)
+		if got != c.want || ok != c.known {
+			t.Errorf("ParseLevel(%q) = (%v, %v), want (%v, %v)", c.in, got, ok, c.want, c.known)
+		}
+	}
+}
+
+func TestSetLevelChangesOutputOfExistingLogger(t *testing.T) {
+	var buf bytes.Buffer
+	// Mirror New's wiring against a buffer so the assertion reads real output.
+	lg := slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: level}))
+
+	t.Cleanup(func() { SetLevel("info") })
+
+	if !SetLevel("info") {
+		t.Fatal("SetLevel(info) rejected a valid level")
+	}
+	lg.Debug("hidden")
+	if buf.Len() != 0 {
+		t.Errorf("debug line emitted at info level: %s", buf.String())
+	}
+
+	if !SetLevel("debug") {
+		t.Fatal("SetLevel(debug) rejected a valid level")
+	}
+	lg.Debug("visible")
+	if !strings.Contains(buf.String(), "visible") {
+		t.Errorf("debug line missing after raising verbosity: %s", buf.String())
+	}
+}
+
+func TestSetLevelRejectsUnknownAndKeepsCurrent(t *testing.T) {
+	t.Cleanup(func() { SetLevel("info") })
+	SetLevel("error")
+	if SetLevel("verbose") {
+		t.Error("SetLevel accepted an unknown level")
+	}
+	if got := LevelName(); got != "error" {
+		t.Errorf("level changed on a rejected set: got %q, want error", got)
+	}
+}
+
+func TestLevelNameRoundTrip(t *testing.T) {
+	t.Cleanup(func() { SetLevel("info") })
+	for _, name := range Levels {
+		if !SetLevel(name) {
+			t.Fatalf("SetLevel(%q) rejected a documented level", name)
+		}
+		if got := LevelName(); got != name {
+			t.Errorf("LevelName after SetLevel(%q) = %q", name, got)
+		}
+	}
+}

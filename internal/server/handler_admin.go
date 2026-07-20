@@ -13,6 +13,7 @@ import (
 	"xrdb_rewrite/internal/compose"
 	"xrdb_rewrite/internal/config"
 	"xrdb_rewrite/internal/imageconfig"
+	"xrdb_rewrite/internal/logging"
 	"xrdb_rewrite/internal/metrics"
 	"xrdb_rewrite/internal/render"
 	"xrdb_rewrite/internal/settings"
@@ -75,6 +76,105 @@ func registerAdminRoutes(
 			return
 		}
 		writeJSON(w, http.StatusOK, renderCache.Stats())
+	})
+
+	// Log level: GET reports the level in force and where it came from, PUT
+	// changes it on the running process. A level saved here is persisted and
+	// wins over XRDB_LOG_LEVEL on the next start; DELETE drops back to the
+	// environment. Verbosity is deliberately changeable without a restart —
+	// restarting to debug a live problem discards the state being debugged.
+	mux.HandleFunc("/api/admin/log-level", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			if cfg.AdminKey == "" || !bearerMatches(r, cfg.AdminKey) {
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				return
+			}
+		} else if cfg.AdminKey != "" && !bearerMatches(r, cfg.AdminKey) {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		// source describes which layer supplied the level in force, so an
+		// operator can tell why a value they set elsewhere is not winning.
+		source := func() string {
+			if settingsStore != nil {
+				if v, err := settingsStore.Get(settings.LogLevelKey); err == nil && v != "" {
+					return "stored"
+				}
+			}
+			if os.Getenv("XRDB_LOG_LEVEL") != "" {
+				return "environment"
+			}
+			return "default"
+		}
+		type levelState struct {
+			Level     string   `json:"level"`
+			Source    string   `json:"source"`
+			Levels    []string `json:"levels"`
+			Env       string   `json:"env"`
+			Persisted bool     `json:"persisted"`
+		}
+		respond := func() {
+			writeJSON(w, http.StatusOK, levelState{
+				Level:     logging.LevelName(),
+				Source:    source(),
+				Levels:    logging.Levels,
+				Env:       os.Getenv("XRDB_LOG_LEVEL"),
+				Persisted: settingsStore != nil,
+			})
+		}
+
+		switch r.Method {
+		case http.MethodGet:
+			respond()
+		case http.MethodPut:
+			var body struct {
+				Level string `json:"level"`
+			}
+			if err := json.NewDecoder(io.LimitReader(r.Body, 1024)).Decode(&body); err != nil {
+				http.Error(w, "invalid JSON", http.StatusBadRequest)
+				return
+			}
+			previous := logging.LevelName()
+			if !logging.SetLevel(body.Level) {
+				http.Error(w, "unsupported level", http.StatusBadRequest)
+				return
+			}
+			// Persist so the choice survives a restart. A store failure must not
+			// undo the live change: the operator asked for this verbosity now.
+			if settingsStore != nil {
+				if err := settingsStore.Set(settings.LogLevelKey, logging.LevelName()); err != nil {
+					slog.WarnContext(r.Context(), "Changed the log level but could not persist it; it will revert on restart",
+						"error", err, "level", logging.LevelName())
+				}
+			}
+			slog.InfoContext(r.Context(), "Changed the log level",
+				"previous", previous, "level", logging.LevelName())
+			respond()
+		case http.MethodDelete:
+			if settingsStore == nil {
+				http.Error(w, "settings store unavailable", http.StatusServiceUnavailable)
+				return
+			}
+			if err := settingsStore.Delete(settings.LogLevelKey); err != nil {
+				http.Error(w, "internal error", http.StatusInternalServerError)
+				return
+			}
+			// Fall back to the environment, or the built-in default when unset.
+			// Not cfg.LogLevel: startup folds a stored level into it, so it can
+			// hold the very value being cleared.
+			fallback := os.Getenv("XRDB_LOG_LEVEL")
+			if fallback == "" {
+				fallback = config.DefaultLogLevel
+			}
+			previous := logging.LevelName()
+			logging.SetLevel(fallback)
+			slog.InfoContext(r.Context(), "Cleared the stored log level",
+				"previous", previous, "level", logging.LevelName())
+			respond()
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
 	})
 
 	// Settings: GET returns all keys (values masked), PUT upserts a single key,

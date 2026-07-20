@@ -44,6 +44,16 @@ func applySettingsOverrides(cfg *config.Config, s *settings.Store) {
 			*m.dest = v
 		}
 	}
+	// A level chosen through the admin API outlives the restart that would
+	// otherwise drop it back to XRDB_LOG_LEVEL. Reject a stored value that no
+	// longer parses rather than starting up quieter than the operator expects.
+	if v, err := s.Get(settings.LogLevelKey); err == nil && v != "" {
+		if logging.SetLevel(v) {
+			cfg.LogLevel = v
+		} else {
+			slog.Warn("Ignored an unrecognised stored log level", "stored", v, "level", logging.LevelName())
+		}
+	}
 }
 
 func main() {

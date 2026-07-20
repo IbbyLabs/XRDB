@@ -202,6 +202,52 @@ export async function fetchCacheStats(): Promise<CacheStats> {
   return res.json() as Promise<CacheStats>;
 }
 
+// ── Log level ──────────────────────────────────────────────────────────────
+
+export interface LogLevelState {
+  /** The level in force right now. */
+  level: string;
+  /** Which layer supplied it: 'stored' | 'environment' | 'default'. */
+  source: string;
+  /** Accepted level names, least to most severe. */
+  levels: string[];
+  /** Value of XRDB_LOG_LEVEL, or '' when unset. */
+  env: string;
+  /** Whether a change can outlive a restart. */
+  persisted: boolean;
+}
+
+export async function fetchLogLevel(): Promise<LogLevelState> {
+  const res = await fetch(`${base()}/api/admin/log-level`, { headers: adminAuthHeaders() });
+  if (!res.ok) throw new Error(`log level fetch failed: ${res.status}`);
+  return res.json() as Promise<LogLevelState>;
+}
+
+export async function setLogLevel(level: string): Promise<LogLevelState> {
+  const res = await fetch(`${base()}/api/admin/log-level`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...adminAuthHeaders() },
+    body: JSON.stringify({ level }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text.trim() || `set log level failed: ${res.status}`);
+  }
+  return res.json() as Promise<LogLevelState>;
+}
+
+export async function clearLogLevel(): Promise<LogLevelState> {
+  const res = await fetch(`${base()}/api/admin/log-level`, {
+    method: 'DELETE',
+    headers: adminAuthHeaders(),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text.trim() || `clear log level failed: ${res.status}`);
+  }
+  return res.json() as Promise<LogLevelState>;
+}
+
 // ── Settings (integrations) ────────────────────────────────────────────────
 
 export interface SettingStatus {

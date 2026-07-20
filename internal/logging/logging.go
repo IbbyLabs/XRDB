@@ -13,21 +13,66 @@ import (
 	"strings"
 )
 
-// New returns a JSON slog.Logger writing to stdout at the given level. Accepts
-// "debug", "info", "warn", "error" (case-insensitive); anything else is info.
-func New(level string) *slog.Logger {
-	var lvl slog.Level
-	switch strings.ToLower(strings.TrimSpace(level)) {
+// level holds the process-wide verbosity. A slog.LevelVar is safe for
+// concurrent use and is read on every log call, so changing it takes effect
+// immediately on a running server without rebuilding the handler.
+var level = new(slog.LevelVar)
+
+// Levels are the accepted level names, ordered least to most severe. Exported
+// so callers (the admin API, the UI) can offer the same set the parser accepts.
+var Levels = []string{"debug", "info", "warn", "error"}
+
+// ParseLevel maps a level name to a slog.Level, accepting the names in Levels
+// case-insensitively plus "warning" as an alias for "warn". The bool reports
+// whether the name was recognised; unrecognised names yield info.
+func ParseLevel(name string) (slog.Level, bool) {
+	switch strings.ToLower(strings.TrimSpace(name)) {
 	case "debug":
-		lvl = slog.LevelDebug
+		return slog.LevelDebug, true
+	case "info":
+		return slog.LevelInfo, true
 	case "warn", "warning":
-		lvl = slog.LevelWarn
+		return slog.LevelWarn, true
 	case "error":
-		lvl = slog.LevelError
+		return slog.LevelError, true
 	default:
-		lvl = slog.LevelInfo
+		return slog.LevelInfo, false
 	}
-	h := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: lvl})
+}
+
+// SetLevel changes the verbosity of the running process. It reports whether the
+// name was recognised; on an unrecognised name the level is left untouched
+// rather than silently reset to info.
+func SetLevel(name string) bool {
+	lvl, ok := ParseLevel(name)
+	if !ok {
+		return false
+	}
+	level.Set(lvl)
+	return true
+}
+
+// LevelName returns the current level as one of the names in Levels.
+func LevelName() string {
+	switch level.Level() {
+	case slog.LevelDebug:
+		return "debug"
+	case slog.LevelWarn:
+		return "warn"
+	case slog.LevelError:
+		return "error"
+	default:
+		return "info"
+	}
+}
+
+// New returns a JSON slog.Logger writing to stdout at the given level. Accepts
+// the names in Levels (case-insensitive); anything else is info. The handler
+// reads the level dynamically, so SetLevel affects loggers already handed out.
+func New(name string) *slog.Logger {
+	lvl, _ := ParseLevel(name)
+	level.Set(lvl)
+	h := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level})
 	return slog.New(h)
 }
 

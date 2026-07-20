@@ -10,6 +10,10 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+// LogLevelKey is the settings key holding the operator-chosen log level. It is
+// named here so the startup restore and the admin handler cannot drift apart.
+const LogLevelKey = "log_level"
+
 // ErrNotFound is returned when a key does not exist.
 var ErrNotFound = errors.New("settings: key not found")
 
