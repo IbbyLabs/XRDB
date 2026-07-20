@@ -468,7 +468,7 @@ func TestAgeRatingBadgeNoopOnEmptyRating(t *testing.T) {
 func TestGenreBadgeDrawsBL(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 580, 859))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
-	drawGenreBadge(img, []string{"Action", "Drama", "Thriller"}, "bl", 1.0, newOccupancy(img.Bounds()))
+	drawGenreBadge(img, []string{"Action", "Drama", "Thriller"}, "bl", 1.0, newOccupancy(img.Bounds()), genreBadgeOpts{})
 
 	bounds := img.Bounds()
 	nonWhite := 0
@@ -488,14 +488,14 @@ func TestGenreBadgeDrawsBL(t *testing.T) {
 func TestGenreBadgeLimitsToThreeGenres(t *testing.T) {
 	// Just verify no panic with many genres.
 	img := image.NewNRGBA(image.Rect(0, 0, 580, 859))
-	drawGenreBadge(img, []string{"Action", "Drama", "Thriller", "Horror", "Sci-Fi"}, "bl", 1.0, newOccupancy(img.Bounds()))
+	drawGenreBadge(img, []string{"Action", "Drama", "Thriller", "Horror", "Sci-Fi"}, "bl", 1.0, newOccupancy(img.Bounds()), genreBadgeOpts{})
 }
 
 func TestGenreBadgeNoopOnEmpty(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 100, 150))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{128, 128, 128, 255}}, image.Point{}, draw.Src)
 	before := clonePixels(img)
-	drawGenreBadge(img, nil, "bl", 1.0, newOccupancy(img.Bounds()))
+	drawGenreBadge(img, nil, "bl", 1.0, newOccupancy(img.Bounds()), genreBadgeOpts{})
 	after := clonePixels(img)
 	if before != after {
 		t.Error("drawGenreBadge with empty genres must not modify the image")
@@ -529,7 +529,7 @@ func TestOverlayFunctionsAtLargeScales(t *testing.T) {
 
 			// drawGenreBadge: must change pixels
 			beforeGenre := clonePixels(img)
-			drawGenreBadge(img, []string{"Action", "Drama"}, "bl", scale, newOccupancy(img.Bounds()))
+			drawGenreBadge(img, []string{"Action", "Drama"}, "bl", scale, newOccupancy(img.Bounds()), genreBadgeOpts{})
 			if clonePixels(img) == beforeGenre {
 				t.Errorf("drawGenreBadge had no effect at scale %.1f", scale)
 			}

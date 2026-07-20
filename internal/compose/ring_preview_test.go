@@ -119,7 +119,7 @@ func TestBottomBandPlacement(t *testing.T) {
 	}
 	drawQualityBadges(card, []string{"imax", "atmos", "dv", "4k"}, scale, occ)
 	drawAgeRatingBadge(card, "TV-MA", "br", scale, occ)
-	drawGenreBadge(card, []string{"Mystery", "Drama", "Sci-Fi"}, "bl", scale, occ)
+	drawGenreBadge(card, []string{"Mystery", "Drama", "Sci-Fi"}, "bl", scale, occ, genreBadgeOpts{})
 	providers := []provider.WatchProvider{
 		{ID: 1, Name: "fuboTV"},
 		{ID: 2, Name: "MGM Plus"},

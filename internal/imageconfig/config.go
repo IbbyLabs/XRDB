@@ -110,6 +110,10 @@ type Config struct {
 	RatingRingPos    string         `json:"ratingRingPos,omitempty"`   // "tl" | "tr" | "bl" | "br"
 	RatingRingColor  string         `json:"ratingRingColor,omitempty"` // "" = auto (green/amber/red), else "#RRGGBB"
 
+	// Grouped component controls. Anonymous embeds keep the JSON flat (one key
+	// per field, matching v2's naming) while grouping the Go source by concern.
+	GenreBadgeConfig
+
 	// Legacy carries config keys XRDB does not yet model — chiefly per-surface
 	// fields from a migrated v2 profile whose matching v3 control has not
 	// shipped. They are preserved verbatim through Parse/CanonicalJSON
@@ -126,13 +130,24 @@ type Config struct {
 // never treated as a legacy field.
 var knownKeys = func() map[string]struct{} {
 	m := map[string]struct{}{"surfaces": {}}
-	t := reflect.TypeOf(raw{})
-	for i := 0; i < t.NumField(); i++ {
-		name, _, _ := strings.Cut(t.Field(i).Tag.Get("json"), ",")
-		if name != "" && name != "-" {
-			m[name] = struct{}{}
+	// Recurse into anonymously embedded structs: grouped config components embed
+	// their raw counterparts, and encoding/json promotes their fields to the
+	// flat top-level object, so their json tags are known keys too.
+	var walk func(t reflect.Type)
+	walk = func(t reflect.Type) {
+		for i := 0; i < t.NumField(); i++ {
+			f := t.Field(i)
+			if f.Anonymous && f.Type.Kind() == reflect.Struct {
+				walk(f.Type)
+				continue
+			}
+			name, _, _ := strings.Cut(f.Tag.Get("json"), ",")
+			if name != "" && name != "-" {
+				m[name] = struct{}{}
+			}
 		}
 	}
+	walk(reflect.TypeOf(raw{}))
 	return m
 }()
 
@@ -210,6 +225,22 @@ func mergeLegacy(marshalled []byte, legacy map[string]json.RawMessage) ([]byte, 
 	return json.Marshal(m)
 }
 
+// GenreBadgeConfig groups the genre-badge styling controls. v2 exposed these
+// per surface (poster*/backdrop*/thumbnail*/logo*); v3 needs one field each
+// because the surfaces envelope already resolves an independent Config per
+// surface. Zero values mean "use the built-in default", so an unset config
+// renders exactly as before these fields existed.
+type GenreBadgeConfig struct {
+	GenreBadgeMode              string  `json:"genreBadgeMode,omitempty"`              // off | text | icon | both
+	GenreBadgeStyle             string  `json:"genreBadgeStyle,omitempty"`             // glass | square | plain | clean | tile
+	GenreBadgeScale             int     `json:"genreBadgeScale,omitempty"`             // percent 70-200; 0 = 100
+	GenreBadgeOffsetX           int     `json:"genreBadgeOffsetX,omitempty"`           // px nudge from the resolved corner
+	GenreBadgeOffsetY           int     `json:"genreBadgeOffsetY,omitempty"`           //
+	GenreBadgeBorderWidth       float64 `json:"genreBadgeBorderWidth,omitempty"`       // px; 0 = default hairline
+	GenreBadgeBackgroundOpacity int     `json:"genreBadgeBackgroundOpacity,omitempty"` // 0-100; 0 = default
+	GenreBadgeTileAccentColor   string  `json:"genreBadgeTileAccentColor,omitempty"`   // "#RRGGBB" for the tile style
+}
+
 // Default returns a Config populated with production defaults.
 func Default() Config {
 	return Config{
@@ -253,6 +284,21 @@ type raw struct {
 	RatingRing       *bool    `json:"ratingRing"`
 	RatingRingPos    *string  `json:"ratingRingPos"`
 	RatingRingColor  *string  `json:"ratingRingColor"`
+
+	rawGenre
+}
+
+// rawGenre is the loose parse shape for GenreBadgeConfig, embedded in raw so its
+// keys unmarshal from the same flat object.
+type rawGenre struct {
+	GenreBadgeMode              *string  `json:"genreBadgeMode"`
+	GenreBadgeStyle             *string  `json:"genreBadgeStyle"`
+	GenreBadgeScale             *int     `json:"genreBadgeScale"`
+	GenreBadgeOffsetX           *int     `json:"genreBadgeOffsetX"`
+	GenreBadgeOffsetY           *int     `json:"genreBadgeOffsetY"`
+	GenreBadgeBorderWidth       *float64 `json:"genreBadgeBorderWidth"`
+	GenreBadgeBackgroundOpacity *int     `json:"genreBadgeBackgroundOpacity"`
+	GenreBadgeTileAccentColor   *string  `json:"genreBadgeTileAccentColor"`
 }
 
 // Surfaces are the distinct render targets a single profile can style
@@ -413,8 +459,76 @@ func Parse(data json.RawMessage) Config {
 	if r.RatingRingColor != nil && strings.TrimSpace(*r.RatingRingColor) != "" {
 		cfg.RatingRingColor = strings.TrimSpace(*r.RatingRingColor)
 	}
+	parseGenre(&cfg, &r)
 	cfg.Legacy = collectLegacy(data)
 	return cfg
+}
+
+// clampInt bounds v to [lo, hi].
+func clampInt(v, lo, hi int) int {
+	if v < lo {
+		return lo
+	}
+	if v > hi {
+		return hi
+	}
+	return v
+}
+
+// parseGenre reads the genre-badge styling controls, validating enums and
+// clamping numeric ranges so a hostile or stale value can't distort a render.
+func parseGenre(cfg *Config, r *raw) {
+	if r.GenreBadgeMode != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.GenreBadgeMode)); v {
+		case "off", "text", "icon", "both":
+			cfg.GenreBadgeMode = v
+		}
+	}
+	if r.GenreBadgeStyle != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.GenreBadgeStyle)); v {
+		case "glass", "square", "plain", "clean", "tile":
+			cfg.GenreBadgeStyle = v
+		}
+	}
+	if r.GenreBadgeScale != nil && *r.GenreBadgeScale != 0 {
+		cfg.GenreBadgeScale = clampInt(*r.GenreBadgeScale, 70, 200)
+	}
+	if r.GenreBadgeOffsetX != nil {
+		cfg.GenreBadgeOffsetX = clampInt(*r.GenreBadgeOffsetX, -320, 320)
+	}
+	if r.GenreBadgeOffsetY != nil {
+		cfg.GenreBadgeOffsetY = clampInt(*r.GenreBadgeOffsetY, -320, 320)
+	}
+	if r.GenreBadgeBorderWidth != nil && *r.GenreBadgeBorderWidth > 0 {
+		w := *r.GenreBadgeBorderWidth
+		if w > 8 {
+			w = 8
+		}
+		cfg.GenreBadgeBorderWidth = w
+	}
+	if r.GenreBadgeBackgroundOpacity != nil && *r.GenreBadgeBackgroundOpacity != 0 {
+		cfg.GenreBadgeBackgroundOpacity = clampInt(*r.GenreBadgeBackgroundOpacity, 1, 100)
+	}
+	if r.GenreBadgeTileAccentColor != nil && isHexColor(*r.GenreBadgeTileAccentColor) {
+		cfg.GenreBadgeTileAccentColor = strings.TrimSpace(*r.GenreBadgeTileAccentColor)
+	}
+}
+
+// isHexColor reports whether s is a "#RGB" or "#RRGGBB" color string.
+func isHexColor(s string) bool {
+	s = strings.TrimSpace(s)
+	if len(s) != 4 && len(s) != 7 {
+		return false
+	}
+	if s[0] != '#' {
+		return false
+	}
+	for _, c := range s[1:] {
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+			return false
+		}
+	}
+	return true
 }
 
 // CacheKey returns a deterministic hex string for the config, suitable for use
@@ -447,6 +561,9 @@ func CacheKey(cfg Config) string {
 		RatingRing       bool           `json:"ratingRing"`
 		RatingRingPos    string         `json:"ratingRingPos"`
 		RatingRingColor  string         `json:"ratingRingColor"`
+		// Grouped components keep their omitempty tags, so a config with none of
+		// these set hashes exactly as it did before the fields existed.
+		GenreBadgeConfig
 	}
 	ratings := make([]string, len(cfg.Ratings))
 	copy(ratings, cfg.Ratings)
@@ -480,6 +597,7 @@ func CacheKey(cfg Config) string {
 		RatingRing:       cfg.RatingRing,
 		RatingRingPos:    cfg.RatingRingPos,
 		RatingRingColor:  cfg.RatingRingColor,
+		GenreBadgeConfig: cfg.GenreBadgeConfig,
 	}
 	b, _ := json.Marshal(c)
 	// Fold any preserved-but-unmodeled fields into the key so two migrated

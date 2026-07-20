@@ -628,9 +628,33 @@ func drawLogoRoundClipped(dst, src *image.NRGBA, dstRect image.Rectangle, radius
 
 // drawGenreBadge renders a genre pill at the bottom-left corner (or pos).
 // Shows at most 3 genres separated by " · ".
-func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float64, occ *occupancy) {
+// genreBadgeOpts carries the per-config genre-badge styling. Its zero value
+// reproduces the original fixed appearance, so an unconfigured render is
+// unchanged.
+type genreBadgeOpts struct {
+	scalePercent int // 0 = 100 (no extra scaling)
+	offsetX      int // px nudge from the resolved corner
+	offsetY      int
+	bgOpacity    int // 0 = default (200/255); else 1-100 mapped to alpha
+}
+
+// genreOptsFromConfig extracts the genre-badge styling from a resolved Config.
+func genreOptsFromConfig(cfg imageconfig.Config) genreBadgeOpts {
+	return genreBadgeOpts{
+		scalePercent: cfg.GenreBadgeScale,
+		offsetX:      cfg.GenreBadgeOffsetX,
+		offsetY:      cfg.GenreBadgeOffsetY,
+		bgOpacity:    cfg.GenreBadgeBackgroundOpacity,
+	}
+}
+
+func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float64, occ *occupancy, opts genreBadgeOpts) {
 	if len(genres) == 0 {
 		return
+	}
+	// A per-config scale multiplier (percent) rides on top of the output scale.
+	if opts.scalePercent != 0 {
+		scale *= float64(opts.scalePercent) / 100
 	}
 	ensureFaces()
 	face := labelFaceFor(scale)
@@ -663,8 +687,16 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	}
 
 	r := occ.place(resolvedPos, bw, bh, edgeX, edgeY, s(7))
+	// Manual offset nudge, applied after corner placement.
+	if opts.offsetX != 0 || opts.offsetY != 0 {
+		r = r.Add(image.Pt(opts.offsetX, opts.offsetY))
+	}
+	fill := color.NRGBA{R: 8, G: 9, B: 12, A: 200}
+	if opts.bgOpacity != 0 {
+		fill.A = uint8(opts.bgOpacity * 255 / 100)
+	}
 	drawSoftTile(base, r, radius, tileChrome{
-		fill:   color.NRGBA{R: 8, G: 9, B: 12, A: 200},
+		fill:   fill,
 		border: color.NRGBA{R: 255, G: 255, B: 255, A: 28},
 		shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 70},
 	})

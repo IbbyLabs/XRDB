@@ -252,7 +252,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		drawAgeRatingBadge(composed, meta.ContentRating, req.Config.AgeRatingPos, scale, occ)
 	}
 	if req.Config.Genre && len(meta.Genres) > 0 {
-		drawGenreBadge(composed, meta.Genres, req.Config.GenrePos, scale, occ)
+		drawGenreBadge(composed, meta.Genres, req.Config.GenrePos, scale, occ, genreOptsFromConfig(req.Config))
 	}
 	if req.Config.Providers && len(meta.WatchProviders) > 0 {
 		drawProviderBadges(composed, meta.WatchProviders, scale, occ)

@@ -174,3 +174,65 @@ func TestLegacyPreservesIntegerPrecision(t *testing.T) {
 		t.Errorf("integer precision lost: %s", cfg.Legacy["bigid"])
 	}
 }
+
+// The genre-badge group round-trips through Parse and CanonicalJSON, is reported
+// as modeled (not deferred in migration), and affects the cache key.
+func TestGenreBadgeGroupRoundTrips(t *testing.T) {
+	in := json.RawMessage(`{"genre":true,"genreBadgeMode":"both","genreBadgeStyle":"tile","genreBadgeScale":150,"genreBadgeOffsetX":12,"genreBadgeOffsetY":-8,"genreBadgeBorderWidth":2,"genreBadgeBackgroundOpacity":80,"genreBadgeTileAccentColor":"#ff8800"}`)
+	cfg := Parse(in)
+	if cfg.GenreBadgeMode != "both" || cfg.GenreBadgeStyle != "tile" {
+		t.Fatalf("genre enums lost: %+v", cfg.GenreBadgeConfig)
+	}
+	if cfg.GenreBadgeScale != 150 || cfg.GenreBadgeOffsetX != 12 || cfg.GenreBadgeOffsetY != -8 {
+		t.Errorf("genre numerics lost: %+v", cfg.GenreBadgeConfig)
+	}
+	if cfg.GenreBadgeBorderWidth != 2 || cfg.GenreBadgeBackgroundOpacity != 80 || cfg.GenreBadgeTileAccentColor != "#ff8800" {
+		t.Errorf("genre appearance lost: %+v", cfg.GenreBadgeConfig)
+	}
+	// Nothing should have fallen into Legacy — all keys are modeled now.
+	if len(cfg.Legacy) != 0 {
+		t.Errorf("genre keys leaked into Legacy: %v", cfg.Legacy)
+	}
+	for _, k := range []string{"genreBadgeMode", "genreBadgeScale", "genreBadgeTileAccentColor"} {
+		if !IsModeledKey(k) {
+			t.Errorf("%q should be a modeled key", k)
+		}
+	}
+	// Round-trip through canonical output.
+	raw, _ := CanonicalJSON(cfg)
+	if Parse(raw).GenreBadgeScale != 150 {
+		t.Error("genre scale did not survive the canonical round-trip")
+	}
+}
+
+func TestGenreBadgeValidationClampsAndRejects(t *testing.T) {
+	cfg := Parse(json.RawMessage(`{"genreBadgeMode":"bogus","genreBadgeScale":9999,"genreBadgeBackgroundOpacity":500,"genreBadgeTileAccentColor":"notacolor"}`))
+	if cfg.GenreBadgeMode != "" {
+		t.Errorf("invalid mode accepted: %q", cfg.GenreBadgeMode)
+	}
+	if cfg.GenreBadgeScale != 200 {
+		t.Errorf("scale not clamped to 200: %d", cfg.GenreBadgeScale)
+	}
+	if cfg.GenreBadgeBackgroundOpacity != 100 {
+		t.Errorf("opacity not clamped to 100: %d", cfg.GenreBadgeBackgroundOpacity)
+	}
+	if cfg.GenreBadgeTileAccentColor != "" {
+		t.Errorf("invalid color accepted: %q", cfg.GenreBadgeTileAccentColor)
+	}
+}
+
+// A config that sets no genre-group field must hash identically to how it did
+// before the group existed — the omitempty-embed promise.
+func TestGenreBadgeAbsentDoesNotChangeCacheKey(t *testing.T) {
+	// Two configs identical except one names a genre field at its zero value.
+	a := Parse(json.RawMessage(`{"language":"en","genre":true}`))
+	b := Parse(json.RawMessage(`{"language":"en","genre":true,"genreBadgeScale":0}`))
+	if CacheKey(a) != CacheKey(b) {
+		t.Error("a zero-valued genre field changed the cache key")
+	}
+	// But a real genre value must change it.
+	c := Parse(json.RawMessage(`{"language":"en","genre":true,"genreBadgeScale":150}`))
+	if CacheKey(a) == CacheKey(c) {
+		t.Error("a set genre scale did not change the cache key")
+	}
+}
