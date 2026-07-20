@@ -98,3 +98,22 @@ func TestResolveEmptyUUIDDoesNotMatchBlanks(t *testing.T) {
 		t.Errorf("blank key resolved a uuid-less profile: %v", err)
 	}
 }
+
+func TestGetByUUID(t *testing.T) {
+	s := openTestStore(t)
+	saveProfile(t, s, &Profile{ID: "id-1", Type: "poster", UUID: "u-1", Config: mustConfig(t, map[string]any{})})
+
+	got, err := s.GetByUUID("u-1")
+	if err != nil {
+		t.Fatalf("GetByUUID: %v", err)
+	}
+	if got.ID != "id-1" {
+		t.Errorf("got %q, want id-1", got.ID)
+	}
+	if _, err := s.GetByUUID("nope"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("unknown uuid: got %v, want ErrNotFound", err)
+	}
+	if _, err := s.GetByUUID(""); !errors.Is(err, ErrNotFound) {
+		t.Errorf("empty uuid: got %v, want ErrNotFound", err)
+	}
+}

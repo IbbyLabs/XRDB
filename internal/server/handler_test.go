@@ -875,3 +875,58 @@ func TestEffectiveTTLMissingProvider(t *testing.T) {
 		t.Errorf("expected 24h (only known provider), got %v", got)
 	}
 }
+
+// A profile whose legacy uuid already exists is a re-import under a possibly
+// different id; it must be skipped, not duplicated.
+func TestProfileImportIsIdempotentByUUID(t *testing.T) {
+	store := openTestStore(t)
+	h := NewHandler("test", store, nil, nil, nil, config.Config{})
+
+	first := `{"version":1,"profiles":[{"id":"new-id-1","type":"poster","uuid":"legacy-xyz","config":{}}]}`
+	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/profile/import", strings.NewReader(first)))
+
+	// Same uuid, different id: the same v2 config re-migrated.
+	second := `{"version":1,"profiles":[{"id":"new-id-2","type":"poster","uuid":"legacy-xyz","config":{}}]}`
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/profile/import", strings.NewReader(second)))
+
+	var res map[string]any
+	if err := json.Unmarshal(rr.Body.Bytes(), &res); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if res["skipped"] != float64(1) {
+		t.Errorf("expected the duplicate uuid to be skipped, got %v", res["skipped"])
+	}
+	if res["imported"] != float64(0) {
+		t.Errorf("expected 0 imported, got %v", res["imported"])
+	}
+	// The second id must not have been created.
+	rr2 := httptest.NewRecorder()
+	h.ServeHTTP(rr2, httptest.NewRequest(http.MethodGet, "/profile/new-id-2", nil))
+	if rr2.Code != http.StatusNotFound {
+		t.Errorf("duplicate-uuid profile was created: got %d", rr2.Code)
+	}
+}
+
+// Importing v2 profiles into a store that already holds unrelated v3 profiles
+// must not touch the existing ones.
+func TestProfileImportDoesNotClobberExisting(t *testing.T) {
+	store := openTestStore(t)
+	h := NewHandler("test", store, nil, nil, nil, config.Config{})
+
+	// An existing v3 profile with a distinctive config.
+	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/profile",
+		strings.NewReader(`{"id":"v3-native","type":"poster","config":{"language":"ja"}}`)))
+
+	body := `{"version":1,"profiles":[{"id":"v2-imported","type":"poster","uuid":"u1","config":{"language":"de"}}]}`
+	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/profile/import", strings.NewReader(body)))
+
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/profile/v3-native", nil))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("existing profile gone after import: %d", rr.Code)
+	}
+	if !strings.Contains(rr.Body.String(), `"ja"`) {
+		t.Errorf("existing profile was mutated by import: %s", rr.Body.String())
+	}
+}

@@ -198,6 +198,22 @@ func (s *Store) Resolve(idOrAlias string) (*Profile, error) {
 	return scanProfile(row)
 }
 
+// GetByUUID retrieves the oldest profile carrying the given legacy v2 uuid, or
+// ErrNotFound if none does. An empty uuid never matches. Used by import to stay
+// idempotent: a profile whose uuid is already present is a re-import, not a new
+// profile.
+func (s *Store) GetByUUID(uuid string) (*Profile, error) {
+	uuid = strings.TrimSpace(uuid)
+	if uuid == "" {
+		return nil, ErrNotFound
+	}
+	row := s.db.QueryRow(
+		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash
+		 FROM profiles WHERE uuid = ? AND uuid != '' ORDER BY created_at LIMIT 1`, uuid,
+	)
+	return scanProfile(row)
+}
+
 // HasPassword reports whether the profile with the given ID has a password set.
 func (s *Store) HasPassword(id string) (bool, error) {
 	p, err := s.Get(id)

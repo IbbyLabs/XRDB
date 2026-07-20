@@ -318,6 +318,20 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 		var res importResult
 		for i := range env.Profiles {
 			p := &env.Profiles[i]
+			// Idempotent by legacy uuid: a profile whose uuid is already present
+			// is the same v2 config re-imported under a possibly different id, so
+			// skip it rather than create a second profile for one identity. The
+			// id-based conflict below covers re-imports that reuse the same id.
+			if p.UUID != "" {
+				switch _, err := store.GetByUUID(p.UUID); {
+				case err == nil:
+					res.Skipped++
+					continue
+				case !errors.Is(err, profile.ErrNotFound):
+					res.Errors = append(res.Errors, p.ID+": failed to check for an existing profile")
+					continue
+				}
+			}
 			if err := store.Save(p); err != nil {
 				if errors.Is(err, profile.ErrConflict) {
 					res.Skipped++
