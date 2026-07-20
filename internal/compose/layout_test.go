@@ -62,3 +62,24 @@ func TestOccupancyNilSafe(t *testing.T) {
 	}
 	o.reserve(image.Rect(0, 0, 5, 5)) // must not panic
 }
+
+func TestPlaceCenterPositions(t *testing.T) {
+	b := image.Rect(0, 0, 400, 600)
+	o := newOccupancy(b)
+	// top-center: horizontally centred, anchored near the top.
+	tc := o.place("tc", 100, 40, 10, 10, 7)
+	if cx := (tc.Min.X + tc.Max.X) / 2; cx < 190 || cx > 210 {
+		t.Errorf("tc not horizontally centred: center=%d", cx)
+	}
+	if tc.Min.Y > 60 {
+		t.Errorf("tc not anchored to the top: y=%d", tc.Min.Y)
+	}
+	o2 := newOccupancy(b)
+	bc := o2.place("bc", 100, 40, 10, 10, 7)
+	if cx := (bc.Min.X + bc.Max.X) / 2; cx < 190 || cx > 210 {
+		t.Errorf("bc not horizontally centred: center=%d", cx)
+	}
+	if bc.Max.Y < 540 {
+		t.Errorf("bc not anchored to the bottom: y=%d", bc.Max.Y)
+	}
+}

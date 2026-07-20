@@ -36,24 +36,31 @@ func (o *occupancy) overlaps(r image.Rectangle) bool {
 	return false
 }
 
-// place positions a w×h box anchored at the given corner ("tl", "tr", "bl",
-// "br"), then shifts it along the vertical axis — away from the anchored edge —
-// until it no longer collides with previously reserved rectangles. The chosen
-// rectangle is reserved and returned.
+// place positions a w×h box anchored at the given position, then shifts it
+// along the vertical axis — away from the anchored edge — until it no longer
+// collides with previously reserved rectangles. The chosen rectangle is
+// reserved and returned. Positions: the four corners "tl"/"tr"/"bl"/"br" and the
+// horizontal-centre variants "tc" (top) and "bc" (bottom); an unknown value
+// falls back to "br".
 //
 // edgeX/edgeY are the inset from the image edges; gap is the minimum spacing
 // kept between the placed box and any box it would otherwise overlap. A nil
 // tracker simply returns the anchored rectangle without collision handling.
 func (o *occupancy) place(corner string, w, h, edgeX, edgeY, gap int) image.Rectangle {
 	b := o.boundsOrZero()
+	centreX := b.Min.X + (b.Dx()-w)/2
 	var x, y int
 	switch corner {
 	case "tl":
 		x, y = b.Min.X+edgeX, b.Min.Y+edgeY
 	case "tr":
 		x, y = b.Max.X-edgeX-w, b.Min.Y+edgeY
+	case "tc":
+		x, y = centreX, b.Min.Y+edgeY
 	case "bl":
 		x, y = b.Min.X+edgeX, b.Max.Y-edgeY-h
+	case "bc":
+		x, y = centreX, b.Max.Y-edgeY-h
 	default: // "br"
 		x, y = b.Max.X-edgeX-w, b.Max.Y-edgeY-h
 	}
@@ -61,7 +68,8 @@ func (o *occupancy) place(corner string, w, h, edgeX, edgeY, gap int) image.Rect
 	if o == nil {
 		return r
 	}
-	r = o.resolve(r, corner == "tl" || corner == "tr", gap)
+	towardTop := corner == "tl" || corner == "tr" || corner == "tc"
+	r = o.resolve(r, towardTop, gap)
 	o.reserve(r)
 	return r
 }
