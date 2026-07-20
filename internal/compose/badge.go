@@ -429,8 +429,16 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 	if len(filtered) == 0 {
 		return 0
 	}
+	// A per-config cap keeps only the first N badges (already provider-ordered).
+	if cfg.RatingsMax != nil && len(filtered) > *cfg.RatingsMax {
+		filtered = filtered[:*cfg.RatingsMax]
+	}
 
 	scale := outputScale(cfg.Size)
+	// A per-config scale multiplier (percent) sizes the whole rating strip.
+	if cfg.RatingBadgeScale != 0 {
+		scale *= float64(cfg.RatingBadgeScale) / 100
+	}
 
 	face := valueFaceFor(scale)
 	fm := face.Metrics()

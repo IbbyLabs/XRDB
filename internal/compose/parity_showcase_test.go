@@ -6,6 +6,9 @@ import (
 	"image/png"
 	"os"
 	"testing"
+
+	"xrdb_rewrite/internal/imageconfig"
+	"xrdb_rewrite/internal/provider"
 )
 
 // TestParityShowcase renders the config-driven genre/quality/trending controls
@@ -18,6 +21,16 @@ func TestParityShowcase(t *testing.T) {
 	outDir := os.Getenv("PARITY_OUT")
 	genres := []string{"Action", "Sci-Fi", "Thriller"}
 	quality := []string{"4k", "hdr", "dv", "atmos"}
+	ratings := []provider.Rating{
+		{Source: "imdb", Value: 8.5, Label: "8.5"},
+		{Source: "tmdb", Value: 7.9, Label: "7.9"},
+		{Source: "rt", Value: 9.2, Label: "92%"},
+	}
+	ratingCfg := func(mut func(c *imageconfig.Config)) imageconfig.Config {
+		c := imageconfig.Config{Ratings: []string{"imdb", "tmdb", "rt"}, RatingsLayout: imageconfig.LayoutBottom, BadgeStyle: imageconfig.BadgePill, BadgeTheme: imageconfig.ThemeDark}
+		mut(&c)
+		return c
+	}
 
 	type variant struct {
 		caption string
@@ -52,6 +65,40 @@ func TestParityShowcase(t *testing.T) {
 			{"max 2", func(c *image.NRGBA) {
 				two := 2
 				drawQualityBadges(c, quality, 2.0, newOccupancy(c.Bounds()), qualityBadgeOpts{max: &two})
+			}},
+		},
+		"rating-badges": {
+			{"default", func(c *image.NRGBA) {
+				drawBadgesInPlace(c, ratings, ratingCfg(func(*imageconfig.Config) {}))
+			}},
+			{"scale 150%", func(c *image.NRGBA) {
+				drawBadgesInPlace(c, ratings, ratingCfg(func(cf *imageconfig.Config) { cf.RatingBadgeScale = 150 }))
+			}},
+			{"max 2", func(c *image.NRGBA) {
+				two := 2
+				drawBadgesInPlace(c, ratings, ratingCfg(func(cf *imageconfig.Config) { cf.RatingsMax = &two }))
+			}},
+			{"glass style", func(c *image.NRGBA) {
+				drawBadgesInPlace(c, ratings, ratingCfg(func(cf *imageconfig.Config) { cf.BadgeStyle = imageconfig.BadgeGlass }))
+			}},
+		},
+		"aggregate-bar": {
+			{"auto (score-banded)", func(c *image.NRGBA) {
+				drawAggregateBar(c, ratings, ratingCfg(func(cf *imageconfig.Config) { cf.AggregateBar = true; cf.AggregateBarPos = "bottom" }))
+			}},
+			{"custom #3355ff", func(c *image.NRGBA) {
+				drawAggregateBar(c, ratings, ratingCfg(func(cf *imageconfig.Config) {
+					cf.AggregateBar = true
+					cf.AggregateBarPos = "bottom"
+					cf.AggregateAccentColor = "#3355ff"
+				}))
+			}},
+			{"top, custom #ff8800", func(c *image.NRGBA) {
+				drawAggregateBar(c, ratings, ratingCfg(func(cf *imageconfig.Config) {
+					cf.AggregateBar = true
+					cf.AggregateBarPos = "top"
+					cf.AggregateAccentColor = "#ff8800"
+				}))
 			}},
 		},
 		"trending-position": {

@@ -257,3 +257,23 @@ func TestQualityAndTrendingGroupsRoundTrip(t *testing.T) {
 		t.Error("invalid position accepted")
 	}
 }
+
+func TestRatingAndAggregateGroupsRoundTrip(t *testing.T) {
+	cfg := Parse(json.RawMessage(`{"ratingBadgeScale":140,"ratingsMax":3,"aggregateAccentColor":"#3355ff","aggregateValueColor":"#ffffff"}`))
+	if cfg.RatingBadgeScale != 140 {
+		t.Errorf("ratingBadgeScale lost: %d", cfg.RatingBadgeScale)
+	}
+	if cfg.RatingsMax == nil || *cfg.RatingsMax != 3 {
+		t.Errorf("ratingsMax lost: %v", cfg.RatingsMax)
+	}
+	if cfg.AggregateAccentColor != "#3355ff" || cfg.AggregateValueColor != "#ffffff" {
+		t.Errorf("aggregate colors lost: %+v", cfg.AggregateConfig)
+	}
+	if len(cfg.Legacy) != 0 {
+		t.Errorf("keys leaked to Legacy: %v", cfg.Legacy)
+	}
+	// invalid color rejected
+	if Parse(json.RawMessage(`{"aggregateAccentColor":"blue"}`)).AggregateAccentColor != "" {
+		t.Error("invalid aggregate color accepted")
+	}
+}

@@ -797,13 +797,19 @@ func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imagecon
 	}
 
 	var fillColor color.NRGBA
-	switch {
-	case avg >= 8.0:
-		fillColor = color.NRGBA{R: 39, G: 174, B: 96, A: 230} // green
-	case avg >= 5.0:
-		fillColor = color.NRGBA{R: 230, G: 126, B: 34, A: 230} // amber
-	default:
-		fillColor = color.NRGBA{R: 192, G: 57, B: 43, A: 230} // red
+	// A custom accent color overrides the auto green/amber/red band.
+	if custom, err := parseHexColor(cfg.AggregateAccentColor); cfg.AggregateAccentColor != "" && err == nil {
+		custom.A = 230
+		fillColor = custom
+	} else {
+		switch {
+		case avg >= 8.0:
+			fillColor = color.NRGBA{R: 39, G: 174, B: 96, A: 230} // green
+		case avg >= 5.0:
+			fillColor = color.NRGBA{R: 230, G: 126, B: 34, A: 230} // amber
+		default:
+			fillColor = color.NRGBA{R: 192, G: 57, B: 43, A: 230} // red
+		}
 	}
 
 	fillRect(base, image.Rect(bounds.Min.X, barY, bounds.Min.X+fillW, barY+barH), fillColor)

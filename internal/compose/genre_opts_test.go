@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"xrdb_rewrite/internal/imageconfig"
+	"xrdb_rewrite/internal/provider"
 )
 
 func genreTestImage() *image.NRGBA {
@@ -87,5 +88,56 @@ func TestQualityMaxCapsCount(t *testing.T) {
 	n := drawQualityBadges(img, []string{"4k", "hdr", "dv", "atmos"}, 1.0, newOccupancy(img.Bounds()), qualityBadgeOpts{max: &two})
 	if n != 2 {
 		t.Errorf("expected max to cap at 2, drew %d", n)
+	}
+}
+
+func TestRatingScaleAndAggregateColorChangeRender(t *testing.T) {
+	ratings := []provider.Rating{
+		{Source: "imdb", Value: 8.5, Label: "8.5"},
+		{Source: "tmdb", Value: 7.9, Label: "7.9"},
+	}
+	base := imageconfig.Config{Ratings: []string{"imdb", "tmdb"}, RatingsLayout: imageconfig.LayoutBottom}
+
+	img1 := genreTestImage()
+	drawBadgesInPlace(img1, ratings, base)
+	scaled := base
+	scaled.RatingBadgeScale = 170
+	img2 := genreTestImage()
+	drawBadgesInPlace(img2, ratings, scaled)
+	if !imagesDiffer(img1, img2) {
+		t.Error("rating badge scale did not change the render")
+	}
+
+	// Aggregate bar: a custom accent color must change the fill.
+	aggBase := imageconfig.Config{Ratings: []string{"imdb", "tmdb"}, AggregateBar: true, AggregateBarPos: "bottom"}
+	a1 := genreTestImage()
+	drawAggregateBar(a1, ratings, aggBase)
+	aggColor := aggBase
+	aggColor.AggregateAccentColor = "#3355ff"
+	a2 := genreTestImage()
+	drawAggregateBar(a2, ratings, aggColor)
+	if !imagesDiffer(a1, a2) {
+		t.Error("aggregate accent color did not change the render")
+	}
+}
+
+func TestRatingsMaxCapsBadges(t *testing.T) {
+	ratings := []provider.Rating{
+		{Source: "imdb", Value: 8.5, Label: "8.5"},
+		{Source: "tmdb", Value: 7.9, Label: "7.9"},
+		{Source: "rt", Value: 9.0, Label: "90%"},
+	}
+	one := 1
+	capped := imageconfig.Config{Ratings: []string{"imdb", "tmdb", "rt"}, RatingsLayout: imageconfig.LayoutBottom, RatingBadgeConfig: imageconfig.RatingBadgeConfig{RatingsMax: &one}}
+	full := imageconfig.Config{Ratings: []string{"imdb", "tmdb", "rt"}, RatingsLayout: imageconfig.LayoutBottom}
+	imgCap := genreTestImage()
+	hCap := drawBadgesInPlace(imgCap, ratings, capped)
+	imgFull := genreTestImage()
+	hFull := drawBadgesInPlace(imgFull, ratings, full)
+	if hCap == 0 || hFull == 0 {
+		t.Fatal("expected both to draw a strip")
+	}
+	if !imagesDiffer(imgCap, imgFull) {
+		t.Error("ratingsMax cap did not change the render")
 	}
 }

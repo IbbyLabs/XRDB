@@ -115,6 +115,8 @@ type Config struct {
 	GenreBadgeConfig
 	QualityBadgeConfig
 	TrendingConfig
+	RatingBadgeConfig
+	AggregateConfig
 
 	// Legacy carries config keys XRDB does not yet model — chiefly per-surface
 	// fields from a migrated v2 profile whose matching v3 control has not
@@ -227,6 +229,20 @@ func mergeLegacy(marshalled []byte, legacy map[string]json.RawMessage) ([]byte, 
 	return json.Marshal(m)
 }
 
+// RatingBadgeConfig groups the rating-badge sizing and count controls. Style,
+// theme, layout, and the ratings allow-list remain flat fields on Config.
+type RatingBadgeConfig struct {
+	RatingBadgeScale int  `json:"ratingBadgeScale,omitempty"` // percent 70-200; 0 = 100
+	RatingsMax       *int `json:"ratingsMax,omitempty"`       // cap on badge count; nil = no cap
+}
+
+// AggregateConfig groups the aggregate-score-bar appearance controls. The bar's
+// on/off and position stay flat (AggregateBar / AggregateBarPos).
+type AggregateConfig struct {
+	AggregateAccentColor string `json:"aggregateAccentColor,omitempty"` // "#RRGGBB" bar fill; "" = auto 3-band
+	AggregateValueColor  string `json:"aggregateValueColor,omitempty"`  // "#RRGGBB" value text; "" = default
+}
+
 // QualityBadgeConfig groups the quality-badge (4K/HDR/DV/…) styling controls.
 // Zero values keep the original fixed appearance.
 type QualityBadgeConfig struct {
@@ -308,6 +324,8 @@ type raw struct {
 	rawGenre
 	rawQuality
 	rawTrending
+	rawRating
+	rawAggregate
 }
 
 // rawGenre is the loose parse shape for GenreBadgeConfig, embedded in raw so its
@@ -336,6 +354,16 @@ type rawQuality struct {
 type rawTrending struct {
 	TrendingPos       *string `json:"trendingPos"`
 	TrendingTextColor *string `json:"trendingTextColor"`
+}
+
+type rawRating struct {
+	RatingBadgeScale *int `json:"ratingBadgeScale"`
+	RatingsMax       *int `json:"ratingsMax"`
+}
+
+type rawAggregate struct {
+	AggregateAccentColor *string `json:"aggregateAccentColor"`
+	AggregateValueColor  *string `json:"aggregateValueColor"`
 }
 
 // Surfaces are the distinct render targets a single profile can style
@@ -499,6 +527,8 @@ func Parse(data json.RawMessage) Config {
 	parseGenre(&cfg, &r)
 	parseQuality(&cfg, &r)
 	parseTrending(&cfg, &r)
+	parseRating(&cfg, &r)
+	parseAggregate(&cfg, &r)
 	cfg.Legacy = collectLegacy(data)
 	return cfg
 }
@@ -547,6 +577,25 @@ func parseTrending(cfg *Config, r *raw) {
 	}
 	if r.TrendingTextColor != nil && isHexColor(*r.TrendingTextColor) {
 		cfg.TrendingTextColor = strings.TrimSpace(*r.TrendingTextColor)
+	}
+}
+
+func parseRating(cfg *Config, r *raw) {
+	if r.RatingBadgeScale != nil && *r.RatingBadgeScale != 0 {
+		cfg.RatingBadgeScale = clampInt(*r.RatingBadgeScale, 70, 200)
+	}
+	if r.RatingsMax != nil && *r.RatingsMax >= 0 {
+		m := clampInt(*r.RatingsMax, 0, 20)
+		cfg.RatingsMax = &m
+	}
+}
+
+func parseAggregate(cfg *Config, r *raw) {
+	if r.AggregateAccentColor != nil && isHexColor(*r.AggregateAccentColor) {
+		cfg.AggregateAccentColor = strings.TrimSpace(*r.AggregateAccentColor)
+	}
+	if r.AggregateValueColor != nil && isHexColor(*r.AggregateValueColor) {
+		cfg.AggregateValueColor = strings.TrimSpace(*r.AggregateValueColor)
 	}
 }
 
@@ -652,6 +701,8 @@ func CacheKey(cfg Config) string {
 		GenreBadgeConfig
 		QualityBadgeConfig
 		TrendingConfig
+		RatingBadgeConfig
+		AggregateConfig
 	}
 	ratings := make([]string, len(cfg.Ratings))
 	copy(ratings, cfg.Ratings)
@@ -688,6 +739,8 @@ func CacheKey(cfg Config) string {
 		GenreBadgeConfig:   cfg.GenreBadgeConfig,
 		QualityBadgeConfig: cfg.QualityBadgeConfig,
 		TrendingConfig:     cfg.TrendingConfig,
+		RatingBadgeConfig:  cfg.RatingBadgeConfig,
+		AggregateConfig:    cfg.AggregateConfig,
 	}
 	b, _ := json.Marshal(c)
 	// Fold any preserved-but-unmodeled fields into the key so two migrated
