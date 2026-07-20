@@ -180,6 +180,8 @@ export interface ConfigState {
   trendingPos: string; // 'inherit' | six positions
   logoBackground: string; // 'transparent' | 'dark'
   ringCenterOpacity: number; // 0 = default
+  ringValueSource: string; // 'overall' | provider id
+  ringProgressSource: string;
 }
 
 export const DEFAULT_CONFIG: ConfigState = {
@@ -229,6 +231,8 @@ export const DEFAULT_CONFIG: ConfigState = {
   trendingPos: 'inherit',
   logoBackground: 'transparent',
   ringCenterOpacity: 0,
+  ringValueSource: 'overall',
+  ringProgressSource: 'overall',
 };
 
 export type UpdateConfigFn = <K extends keyof ConfigState>(key: K, value: ConfigState[K]) => void;

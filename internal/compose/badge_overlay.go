@@ -1049,7 +1049,19 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 		return
 	}
 
-	fillColor := ratingRingFillColor(avg, cfg.RatingRingColor)
+	// The centre value and the arc fill can each draw from a specific provider
+	// instead of the overall average, so e.g. the number is IMDb while the fill
+	// reflects the aggregate. Unset or "overall" keeps the average for both.
+	value := avg
+	if v, ok := ratingRingSourceValue(ratings, cfg.RingValueSource); ok {
+		value = v
+	}
+	progress := avg
+	if v, ok := ratingRingSourceValue(ratings, cfg.RingProgressSource); ok {
+		progress = v
+	}
+
+	fillColor := ratingRingFillColor(value, cfg.RatingRingColor)
 
 	s := func(v float64) int { return int(v*scale + 0.5) }
 	edgeX := s(12)
@@ -1070,8 +1082,24 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 	r := occ.place(pos, d, d, edgeX, edgeY, s(8))
 	cx := r.Min.X + outerR
 	cy := r.Min.Y + outerR
-	label := strconv.Itoa(int(math.Round(avg * 10)))
-	drawProgressRing(base, cx, cy, outerR, avg/10.0, fillColor, valueFace, label, cfg.RingCenterOpacity)
+	label := strconv.Itoa(int(math.Round(value * 10)))
+	drawProgressRing(base, cx, cy, outerR, progress/10.0, fillColor, valueFace, label, cfg.RingCenterOpacity)
+}
+
+// ratingRingSourceValue returns a specific provider's 0-10 value for the ring,
+// or (0,false) when source is empty/"overall" (the caller keeps the average) or
+// that provider has no value.
+func ratingRingSourceValue(ratings []provider.Rating, source string) (float64, bool) {
+	source = strings.ToLower(strings.TrimSpace(source))
+	if source == "" || source == "overall" || source == "average" {
+		return 0, false
+	}
+	for _, r := range ratings {
+		if strings.ToLower(r.Source) == source && r.Value > 0 {
+			return r.Value, true
+		}
+	}
+	return 0, false
 }
 
 // ringValueFontScale shrinks the ring's value label relative to the standard

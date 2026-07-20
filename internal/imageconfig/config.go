@@ -270,7 +270,9 @@ type QualityBadgeConfig struct {
 // RatingRingConfig groups the compact rating-ring options beyond the existing
 // flat RatingRing/RatingRingPos/RatingRingColor fields.
 type RatingRingConfig struct {
-	RingCenterOpacity int `json:"ringCenterOpacity,omitempty"` // 0-100 opacity of the centre disk; 0 = default
+	RingCenterOpacity  int    `json:"ringCenterOpacity,omitempty"`  // 0-100 opacity of the centre disk; 0 = default
+	RingValueSource    string `json:"ringValueSource,omitempty"`    // "" / "overall" = average, else a provider (e.g. "imdb")
+	RingProgressSource string `json:"ringProgressSource,omitempty"` // source for the arc fill; same values
 }
 
 // PerSurfaceBaseConfig groups per-surface base-artwork options that aren't
@@ -402,7 +404,9 @@ type rawSurface struct {
 }
 
 type rawRing struct {
-	RingCenterOpacity *int `json:"ringCenterOpacity"`
+	RingCenterOpacity  *int    `json:"ringCenterOpacity"`
+	RingValueSource    *string `json:"ringValueSource"`
+	RingProgressSource *string `json:"ringProgressSource"`
 }
 
 type rawRating struct {
@@ -661,6 +665,12 @@ func parseRating(cfg *Config, r *raw) {
 func parseRing(cfg *Config, r *raw) {
 	if r.RingCenterOpacity != nil && *r.RingCenterOpacity != 0 {
 		cfg.RingCenterOpacity = clampInt(*r.RingCenterOpacity, 1, 100)
+	}
+	if r.RingValueSource != nil && strings.TrimSpace(*r.RingValueSource) != "" {
+		cfg.RingValueSource = strings.ToLower(strings.TrimSpace(*r.RingValueSource))
+	}
+	if r.RingProgressSource != nil && strings.TrimSpace(*r.RingProgressSource) != "" {
+		cfg.RingProgressSource = strings.ToLower(strings.TrimSpace(*r.RingProgressSource))
 	}
 }
 

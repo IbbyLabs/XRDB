@@ -254,3 +254,31 @@ func TestRatingBadgeOffsetChangesRender(t *testing.T) {
 		t.Error("rating badge offset did not change the render")
 	}
 }
+
+func TestRingValueProgressSources(t *testing.T) {
+	ratings := []provider.Rating{
+		{Source: "imdb", Value: 9.5, Label: "9.5"},
+		{Source: "tmdb", Value: 5.0, Label: "5.0"},
+	}
+	base := imageconfig.Config{Ratings: []string{"imdb", "tmdb"}, RatingRing: true, RatingRingPos: "br"}
+	def := genreTestImage()
+	drawAverageRatingRing(def, ratings, base, 2.0, newOccupancy(def.Bounds()))
+
+	// Value from imdb (9.5) vs the average (7.25) must render a different number.
+	valSrc := base
+	valSrc.RingValueSource = "imdb"
+	img := genreTestImage()
+	drawAverageRatingRing(img, ratings, valSrc, 2.0, newOccupancy(img.Bounds()))
+	if !imagesDiffer(def, img) {
+		t.Error("ring value source did not change the render")
+	}
+
+	// Unknown source falls back to the average (no change).
+	unk := base
+	unk.RingValueSource = "nonesuch"
+	img2 := genreTestImage()
+	drawAverageRatingRing(img2, ratings, unk, 2.0, newOccupancy(img2.Bounds()))
+	if imagesDiffer(def, img2) {
+		t.Error("unknown ring source should fall back to the average")
+	}
+}

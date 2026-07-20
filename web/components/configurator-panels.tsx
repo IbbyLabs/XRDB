@@ -492,6 +492,20 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
         <NumField id={`${uid}-ring-center-op`} label="Center opacity (%)" value={config.ringCenterOpacity}
           onChange={v => onUpdate('ringCenterOpacity', v)} min={0} max={100} step={5}
           hint="Opacity of the disc behind the ring's number. Blank keeps the default." />
+        <div className="field">
+          <label className="label" htmlFor={`${uid}-ring-value-src`}>Value source</label>
+          <select id={`${uid}-ring-value-src`} className="select" value={config.ringValueSource} onChange={e => onUpdate('ringValueSource', e.target.value)} style={{ maxWidth: '12rem' }}>
+            <option value="overall">Overall average</option>
+            {RATING_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+          </select>
+        </div>
+        <div className="field">
+          <label className="label" htmlFor={`${uid}-ring-prog-src`}>Fill source</label>
+          <select id={`${uid}-ring-prog-src`} className="select" value={config.ringProgressSource} onChange={e => onUpdate('ringProgressSource', e.target.value)} style={{ maxWidth: '12rem' }}>
+            <option value="overall">Overall average</option>
+            {RATING_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+          </select>
+        </div>
 
         <span className="label" style={{ marginTop: 'var(--sp-3)' }}>Logo surface</span>
         <div className="field">
