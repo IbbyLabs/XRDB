@@ -2,6 +2,9 @@ package profile
 
 import (
 	"errors"
+	"fmt"
+	"sync"
+	"sync/atomic"
 	"testing"
 )
 
@@ -115,5 +118,60 @@ func TestGetByUUID(t *testing.T) {
 	}
 	if _, err := s.GetByUUID(""); !errors.Is(err, ErrNotFound) {
 		t.Errorf("empty uuid: got %v, want ErrNotFound", err)
+	}
+}
+
+// The unique uuid index keeps import idempotent under concurrency: many
+// simultaneous inserts of one legacy identity must yield exactly one profile.
+func TestConcurrentSaveSameUUIDKeepsOne(t *testing.T) {
+	s := openTestStore(t)
+	const n = 12
+	var wg sync.WaitGroup
+	var okCount, conflictCount int32
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			err := s.Save(&Profile{
+				ID:     fmt.Sprintf("id-%d", i),
+				Type:   "poster",
+				UUID:   "shared-legacy-uuid",
+				Config: mustConfig(t, map[string]any{}),
+			})
+			switch {
+			case err == nil:
+				atomic.AddInt32(&okCount, 1)
+			case errors.Is(err, ErrConflict):
+				atomic.AddInt32(&conflictCount, 1)
+			default:
+				t.Errorf("unexpected error: %v", err)
+			}
+		}(i)
+	}
+	wg.Wait()
+
+	if okCount != 1 {
+		t.Errorf("expected exactly 1 successful insert, got %d", okCount)
+	}
+	if conflictCount != n-1 {
+		t.Errorf("expected %d conflicts, got %d", n-1, conflictCount)
+	}
+	if _, err := s.GetByUUID("shared-legacy-uuid"); err != nil {
+		t.Errorf("the surviving profile is not resolvable by uuid: %v", err)
+	}
+}
+
+// A uuid stored with incidental whitespace must still resolve by its clean value,
+// because the write path trims it to match the trimmed read paths.
+func TestUUIDTrimmedOnWrite(t *testing.T) {
+	s := openTestStore(t)
+	saveProfile(t, s, &Profile{ID: "id-1", Type: "poster", UUID: "  padded-uuid  ", Config: mustConfig(t, map[string]any{})})
+
+	got, err := s.Resolve("padded-uuid")
+	if err != nil {
+		t.Fatalf("padded uuid did not resolve by its clean value: %v", err)
+	}
+	if got.UUID != "padded-uuid" {
+		t.Errorf("stored uuid not trimmed: %q", got.UUID)
 	}
 }

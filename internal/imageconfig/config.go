@@ -160,19 +160,33 @@ func collectLegacy(data json.RawMessage) map[string]json.RawMessage {
 		if legacy == nil {
 			legacy = make(map[string]json.RawMessage, 4)
 		}
-		legacy[k] = compactRaw(v)
+		legacy[k] = canonicalizeRaw(v)
 	}
 	return legacy
 }
 
-// compactRaw strips insignificant whitespace so a preserved value hashes and
-// serializes identically regardless of how it was originally spaced.
-func compactRaw(v json.RawMessage) json.RawMessage {
-	var buf bytes.Buffer
-	if err := json.Compact(&buf, v); err != nil {
+// canonicalizeRaw returns a preserved value in a stable form: nested object keys
+// are sorted and insignificant whitespace removed, so two logically identical
+// values hash and serialize identically regardless of key order or spacing.
+// Numbers are decoded with full fidelity (json.Number), so no integer precision
+// is lost. Values that don't decode fall back to whitespace compaction.
+func canonicalizeRaw(v json.RawMessage) json.RawMessage {
+	dec := json.NewDecoder(bytes.NewReader(v))
+	dec.UseNumber()
+	var decoded any
+	if err := dec.Decode(&decoded); err != nil {
+		var buf bytes.Buffer
+		if err := json.Compact(&buf, v); err != nil {
+			return v
+		}
+		return json.RawMessage(append([]byte(nil), buf.Bytes()...))
+	}
+	// json.Marshal emits map keys in sorted order, giving a canonical form.
+	b, err := json.Marshal(decoded)
+	if err != nil {
 		return v
 	}
-	return json.RawMessage(append([]byte(nil), buf.Bytes()...))
+	return json.RawMessage(b)
 }
 
 // mergeLegacy overlays a config's legacy keys onto an already-marshalled config

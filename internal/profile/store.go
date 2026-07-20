@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	_ "modernc.org/sqlite"
 	"golang.org/x/crypto/bcrypt"
+	_ "modernc.org/sqlite"
 )
 
 const schemaVersion = 1
@@ -97,9 +97,13 @@ func applySchema(db *sql.DB) error {
 	_, _ = db.Exec(`ALTER TABLE profiles ADD COLUMN alias TEXT NOT NULL DEFAULT ''`)
 	_, _ = db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_alias ON profiles(alias) WHERE alias != ''`)
 	// Index the uuid so migrated v2 config-string URLs (?config=<uuid>) resolve
-	// without a table scan. Not unique: a uuid is a legacy identity, and two
-	// profiles sharing one would be a migration bug we do not want to hard-fail.
-	_, _ = db.Exec(`CREATE INDEX IF NOT EXISTS idx_profiles_uuid ON profiles(uuid) WHERE uuid != ''`)
+	// without a table scan, and make it unique so import stays idempotent even
+	// under concurrent requests: a second insert of the same legacy identity
+	// fails the constraint and is skipped rather than duplicating the profile.
+	// Empty uuids (v3-native profiles) are exempt via the partial predicate.
+	// Replace any earlier non-unique index from before uniqueness was enforced.
+	_, _ = db.Exec(`DROP INDEX IF EXISTS idx_profiles_uuid`)
+	_, _ = db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_uuid ON profiles(uuid) WHERE uuid != ''`)
 	return nil
 }
 
@@ -132,6 +136,10 @@ func (s *Store) Save(p *Profile) error {
 		return err
 	}
 	p.Alias = alias
+	// Store the uuid trimmed so it matches the trimmed key every read path uses;
+	// otherwise a padded stored uuid would silently fail both URL resolution and
+	// import de-duplication.
+	p.UUID = strings.TrimSpace(p.UUID)
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	p.Version = schemaVersion
 	p.CreatedAt = now
@@ -193,7 +201,7 @@ func (s *Store) Resolve(idOrAlias string) (*Profile, error) {
 	// chance two profiles share a uuid, so resolution is deterministic.
 	row = s.db.QueryRow(
 		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash
-		 FROM profiles WHERE uuid = ? AND uuid != '' ORDER BY created_at LIMIT 1`, strings.TrimSpace(idOrAlias),
+		 FROM profiles WHERE uuid = ? AND uuid != '' ORDER BY created_at, id LIMIT 1`, strings.TrimSpace(idOrAlias),
 	)
 	return scanProfile(row)
 }
@@ -209,7 +217,7 @@ func (s *Store) GetByUUID(uuid string) (*Profile, error) {
 	}
 	row := s.db.QueryRow(
 		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash
-		 FROM profiles WHERE uuid = ? AND uuid != '' ORDER BY created_at LIMIT 1`, uuid,
+		 FROM profiles WHERE uuid = ? AND uuid != '' ORDER BY created_at, id LIMIT 1`, uuid,
 	)
 	return scanProfile(row)
 }
@@ -280,6 +288,7 @@ func (s *Store) Update(p *Profile) error {
 		return err
 	}
 	p.Alias = alias
+	p.UUID = strings.TrimSpace(p.UUID)
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	p.UpdatedAt = now
 

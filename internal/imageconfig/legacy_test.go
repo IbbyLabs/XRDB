@@ -152,3 +152,25 @@ func TestLegacyNestedObjectRoundTripStable(t *testing.T) {
 		t.Errorf("nested legacy object not a fixed point:\n1:%s\n2:%s\n3:%s", r1, r2, r3)
 	}
 }
+
+// A preserved value must hash the same regardless of nested object key order —
+// the determinism the cache key promises.
+func TestLegacyNestedKeyOrderIsCanonical(t *testing.T) {
+	a := Parse(json.RawMessage(`{"blob":{"a":1,"b":2}}`))
+	b := Parse(json.RawMessage(`{"blob":{"b":2,"a":1}}`))
+	if CacheKey(a) != CacheKey(b) {
+		t.Errorf("nested key order changed the cache key:\n a=%s\n b=%s",
+			a.Legacy["blob"], b.Legacy["blob"])
+	}
+	if string(a.Legacy["blob"]) != `{"a":1,"b":2}` {
+		t.Errorf("nested value not canonicalized to sorted keys: %s", a.Legacy["blob"])
+	}
+}
+
+// Large integers in a preserved value must survive without float rounding.
+func TestLegacyPreservesIntegerPrecision(t *testing.T) {
+	cfg := Parse(json.RawMessage(`{"bigid":123456789012345678}`))
+	if string(cfg.Legacy["bigid"]) != "123456789012345678" {
+		t.Errorf("integer precision lost: %s", cfg.Legacy["bigid"])
+	}
+}
