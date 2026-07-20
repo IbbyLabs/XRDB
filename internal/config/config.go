@@ -49,21 +49,35 @@ type Config struct {
 // Each provider can be overridden via XRDB_TTL_<PROVIDER> (in hours, float).
 // Example: XRDB_TTL_MDBLIST=4 sets a 4-hour TTL for mdblist ratings.
 // Unset providers inherit the global defaultTTL.
-func loadProviderTTLs(defaultTTL time.Duration) map[string]time.Duration {
-	providers := []string{
-		"tmdb", "mdblist", "omdb", "fanart",
-		"trakt", "simkl", "mal", "anilist", "kitsu", "imdb_local",
-	}
-	ttls := make(map[string]time.Duration, len(providers))
-	for _, name := range providers {
-		key := "XRDB_TTL_" + strings.ToUpper(strings.ReplaceAll(name, "_", ""))
-		if raw := os.Getenv(key); raw != "" {
-			if h, err := strconv.ParseFloat(raw, 64); err == nil && h > 0 {
-				ttls[name] = time.Duration(h * float64(time.Hour))
-				continue
-			}
+// TTLProviders lists the providers whose cache TTL can be tuned. Exported so the
+// admin API offers the same set the loader knows about.
+var TTLProviders = []string{
+	"tmdb", "mdblist", "omdb", "fanart",
+	"trakt", "simkl", "mal", "anilist", "kitsu", "imdb_local",
+}
+
+// ProviderTTLEnvVar returns the environment variable that overrides a provider's
+// cache TTL, e.g. "tmdb" -> "XRDB_TTL_TMDB", "imdb_local" -> "XRDB_TTL_IMDBLOCAL".
+func ProviderTTLEnvVar(name string) string {
+	return "XRDB_TTL_" + strings.ToUpper(strings.ReplaceAll(name, "_", ""))
+}
+
+// ProviderEnvTTL returns a provider's TTL from its environment variable, or
+// defaultTTL when unset or invalid. This is the value a runtime override reverts
+// to when cleared, so it must match what the loader would pick.
+func ProviderEnvTTL(name string, defaultTTL time.Duration) time.Duration {
+	if raw := os.Getenv(ProviderTTLEnvVar(name)); raw != "" {
+		if h, err := strconv.ParseFloat(raw, 64); err == nil && h > 0 {
+			return time.Duration(h * float64(time.Hour))
 		}
-		ttls[name] = defaultTTL
+	}
+	return defaultTTL
+}
+
+func loadProviderTTLs(defaultTTL time.Duration) map[string]time.Duration {
+	ttls := make(map[string]time.Duration, len(TTLProviders))
+	for _, name := range TTLProviders {
+		ttls[name] = ProviderEnvTTL(name, defaultTTL)
 	}
 	return ttls
 }

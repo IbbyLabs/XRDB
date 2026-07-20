@@ -92,6 +92,7 @@ func registerAdminRoutes(
 	settingsStore *settings.Store,
 	pipeline *compose.Pipeline,
 	renderCache *cache.Cache,
+	ttls *ttlStore,
 ) {
 	mux.HandleFunc("/api/admin/metrics", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -324,6 +325,111 @@ func registerAdminRoutes(
 		}
 	})
 
+	// Provider cache TTLs: GET lists each provider's TTL in hours and its source,
+	// PUT overrides one provider's TTL live, DELETE reverts one to the
+	// environment default. A render caches for the shortest contributing
+	// provider's TTL, so lowering one makes that source refresh sooner without a
+	// restart. Stored values win over env defaults on the next start.
+	mux.HandleFunc("/api/admin/ttls", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			if cfg.AdminKey == "" || !bearerMatches(r, cfg.AdminKey) {
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				return
+			}
+		} else if cfg.AdminKey != "" && !bearerMatches(r, cfg.AdminKey) {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		if ttls == nil {
+			http.Error(w, "ttl store unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		sourceOf := func(provider string) string {
+			if settingsStore != nil {
+				if v, err := settingsStore.Get(settings.TTLKey(provider)); err == nil && v != "" {
+					return "stored"
+				}
+			}
+			if os.Getenv(config.ProviderTTLEnvVar(provider)) != "" {
+				return "environment"
+			}
+			return "default"
+		}
+		type ttlEntry struct {
+			Provider string  `json:"provider"`
+			Hours    float64 `json:"hours"`
+			Source   string  `json:"source"`
+		}
+		respond := func() {
+			names := ttls.providers()
+			out := make([]ttlEntry, 0, len(names))
+			for _, name := range names {
+				d, _ := ttls.get(name)
+				out = append(out, ttlEntry{
+					Provider: name,
+					Hours:    d.Hours(),
+					Source:   sourceOf(name),
+				})
+			}
+			writeJSON(w, http.StatusOK, out)
+		}
+
+		switch r.Method {
+		case http.MethodGet:
+			respond()
+		case http.MethodPut:
+			var body struct {
+				Provider string  `json:"provider"`
+				Hours    float64 `json:"hours"`
+			}
+			if err := json.NewDecoder(io.LimitReader(r.Body, 1024)).Decode(&body); err != nil {
+				http.Error(w, "invalid JSON", http.StatusBadRequest)
+				return
+			}
+			if _, known := ttls.get(body.Provider); !known {
+				http.Error(w, "unknown provider", http.StatusBadRequest)
+				return
+			}
+			// Guard against a NaN/Inf or absurd value overflowing the duration.
+			if body.Hours < 0 || body.Hours != body.Hours || body.Hours > 24*365 {
+				http.Error(w, "hours out of range", http.StatusBadRequest)
+				return
+			}
+			ttls.set(body.Provider, time.Duration(body.Hours*float64(time.Hour)))
+			if settingsStore != nil {
+				if err := settingsStore.Set(settings.TTLKey(body.Provider), strconv.FormatFloat(body.Hours, 'g', -1, 64)); err != nil {
+					slog.WarnContext(r.Context(), "Changed a provider TTL but could not persist it; it will revert on restart",
+						"error", err, "provider", body.Provider, "hours", body.Hours)
+				}
+			}
+			slog.InfoContext(r.Context(), "Changed a provider cache TTL",
+				"provider", body.Provider, "hours", body.Hours)
+			respond()
+		case http.MethodDelete:
+			provider := r.URL.Query().Get("provider")
+			if _, known := ttls.get(provider); !known {
+				http.Error(w, "unknown provider", http.StatusBadRequest)
+				return
+			}
+			if settingsStore == nil {
+				http.Error(w, "settings store unavailable", http.StatusServiceUnavailable)
+				return
+			}
+			if err := settingsStore.Delete(settings.TTLKey(provider)); err != nil {
+				http.Error(w, "internal error", http.StatusInternalServerError)
+				return
+			}
+			// Revert the live value to the environment default, past the stored
+			// value we just removed.
+			ttls.set(provider, config.ProviderEnvTTL(provider, cfg.CacheTTL))
+			slog.InfoContext(r.Context(), "Cleared a stored provider TTL",
+				"provider", provider)
+			respond()
+		default:
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		}
+	})
+
 	// Settings: GET returns all keys (values masked), PUT upserts a single key,
 	// DELETE removes a key by ?key= query param.
 	mux.HandleFunc("/api/admin/settings", func(w http.ResponseWriter, r *http.Request) {
@@ -454,7 +560,7 @@ func registerAdminRoutes(
 		// Kick off warming in the background; respond immediately.
 		ids := make([]string, len(body.IDs))
 		copy(ids, body.IDs)
-		go warmPosters(pipeline, renderCache, ids, mediaType, imgCfg, cfg.ProviderTTLs)
+		go warmPosters(pipeline, renderCache, ids, mediaType, imgCfg, ttls)
 
 		type warmResponse struct {
 			Accepted  int    `json:"accepted"`
@@ -472,7 +578,7 @@ func warmPosters(
 	ids []string,
 	mediaType string,
 	imgCfg imageconfig.Config,
-	ttls map[string]time.Duration,
+	ttls *ttlStore,
 ) {
 	const concurrency = 4
 	sem := make(chan struct{}, concurrency)
@@ -505,14 +611,16 @@ func warmPosters(
 }
 
 // effectiveTTL returns the minimum TTL across all providers that contributed to
-// a render result. Falls back to 0 (cache default) when result or ttls is nil.
-func effectiveTTL(result *compose.Result, ttls map[string]time.Duration) time.Duration {
-	if result == nil || len(ttls) == 0 || len(result.ContributingProviders) == 0 {
+// a render result. Falls back to 0 (cache default) when result or the store is
+// nil. Reading from the live store means a TTL changed at runtime applies to the
+// next render without a restart.
+func effectiveTTL(result *compose.Result, ttls *ttlStore) time.Duration {
+	if result == nil || ttls == nil || len(result.ContributingProviders) == 0 {
 		return 0
 	}
 	var min time.Duration
 	for _, name := range result.ContributingProviders {
-		if t, ok := ttls[name]; ok && t > 0 {
+		if t, ok := ttls.get(name); ok && t > 0 {
 			if min == 0 || t < min {
 				min = t
 			}

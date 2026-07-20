@@ -65,6 +65,19 @@ func applySettingsOverrides(cfg *config.Config, s *settings.Store) {
 			slog.Warn("Ignored an unparseable stored memory limit", "stored", v)
 		}
 	}
+	// Per-provider TTLs chosen through the admin API win over the env defaults on
+	// restart. Stored as hours under "ttl_<provider>".
+	for name := range cfg.ProviderTTLs {
+		v, err := s.Get(settings.TTLKey(name))
+		if err != nil || v == "" {
+			continue
+		}
+		if h, perr := strconv.ParseFloat(v, 64); perr == nil && h >= 0 {
+			cfg.ProviderTTLs[name] = time.Duration(h * float64(time.Hour))
+		} else {
+			slog.Warn("Ignored an unparseable stored provider TTL", "provider", name, "stored", v)
+		}
+	}
 }
 
 func main() {

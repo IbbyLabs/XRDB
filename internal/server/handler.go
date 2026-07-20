@@ -40,6 +40,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	logger := slog.Default()
 	mux := http.NewServeMux()
 	renderLimiter := newConcurrencyLimiter(cfg.RenderConcurrency)
+	ttls := newTTLStore(cfg.ProviderTTLs)
 
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -165,7 +166,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			// (e.g. an nginx proxy_cache) would pin the broken image for as long
 			// as they hold it. Only real artwork is cached.
 			if renderCache != nil && !placeholder {
-				ttl := effectiveTTL(renderResult, cfg.ProviderTTLs)
+				ttl := effectiveTTL(renderResult, ttls)
 				_ = renderCache.SetWithTTL(cacheKey, pngBytes, ttl)
 			}
 			// Free the slot before writing to the client so a slow consumer
@@ -221,7 +222,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	registerProfileRoutes(mux, store, cfg)
 	registerMediaRoutes(mux, pipeline)
 	registerAIOMRoutes(mux)
-	registerAdminRoutes(mux, ms, cfg, settingsStore, pipeline, renderCache)
+	registerAdminRoutes(mux, ms, cfg, settingsStore, pipeline, renderCache, ttls)
 
 	// Templates: GET /api/templates — list all built-in templates.
 	// GET /api/templates/{id} — single template by ID.

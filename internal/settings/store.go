@@ -18,6 +18,10 @@ const LogLevelKey = "log_level"
 // startup-restore and admin-handler contract as LogLevelKey.
 const MemoryLimitKey = "memory_limit_mb"
 
+// TTLKey returns the settings key holding a provider's operator-chosen cache TTL
+// (stored in hours), e.g. TTLKey("tmdb") == "ttl_tmdb".
+func TTLKey(provider string) string { return "ttl_" + provider }
+
 // ErrNotFound is returned when a key does not exist.
 var ErrNotFound = errors.New("settings: key not found")
 
