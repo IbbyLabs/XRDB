@@ -463,6 +463,87 @@ func TestAgeRatingBadgeNoopOnEmptyRating(t *testing.T) {
 	}
 }
 
+// ── Minimal / dual presentation tests ────────────────────────────────────────
+
+func presentationRatings() []provider.Rating {
+	return []provider.Rating{
+		{Source: "imdb", Value: 9.0, Label: "9.0"},
+		{Source: "tmdb", Value: 8.5, Label: "8.5"},
+		{Source: "rt", Value: 9.4, Label: "94%"}, // critic
+	}
+}
+
+func TestMinimalRatingDrawsTopPill(t *testing.T) {
+	img := image.NewNRGBA(image.Rect(0, 0, 580, 859))
+	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
+	cfg := imageconfig.Config{Ratings: []string{"imdb", "tmdb", "rt"}}
+	drawMinimalRating(img, presentationRatings(), cfg, 1.0, newOccupancy(img.Bounds()))
+
+	// A centred pill near the top should leave non-white pixels there and none
+	// near the bottom (minimal draws a single top pill only).
+	if !hasNonWhite(img, 220, 10, 360, 60) {
+		t.Error("minimal presentation drew no pill in the top-centre band")
+	}
+	if hasNonWhite(img, 220, 800, 360, 850) {
+		t.Error("minimal presentation should not draw at the bottom")
+	}
+}
+
+func TestDualRatingDrawsCriticsAndAudience(t *testing.T) {
+	img := image.NewNRGBA(image.Rect(0, 0, 580, 859))
+	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
+	cfg := imageconfig.Config{Ratings: []string{"imdb", "tmdb", "rt"}}
+	drawDualRating(img, presentationRatings(), cfg, 1.0, newOccupancy(img.Bounds()))
+
+	if !hasNonWhite(img, 200, 10, 380, 60) {
+		t.Error("dual presentation drew no critics pill at the top")
+	}
+	if !hasNonWhite(img, 200, 800, 380, 855) {
+		t.Error("dual presentation drew no audience pill at the bottom")
+	}
+}
+
+func TestSplitCriticsAudienceClassification(t *testing.T) {
+	critics, audience, hasC, hasA := splitCriticsAudience(presentationRatings(), []string{"imdb", "tmdb", "rt"})
+	if !hasC || !hasA {
+		t.Fatalf("expected both halves present, got hasC=%v hasA=%v", hasC, hasA)
+	}
+	// rt is the only critic source → critics == rt value.
+	if critics != 9.4 {
+		t.Errorf("critics = %v, want 9.4 (rt only)", critics)
+	}
+	// imdb + tmdb averaged for the audience.
+	if want := (9.0 + 8.5) / 2; audience != want {
+		t.Errorf("audience = %v, want %v (imdb+tmdb)", audience, want)
+	}
+}
+
+func TestPresentationPillsNoopOnEmpty(t *testing.T) {
+	img := image.NewNRGBA(image.Rect(0, 0, 200, 300))
+	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{200, 200, 200, 255}}, image.Point{}, draw.Src)
+	cfg := imageconfig.Config{Ratings: []string{"imdb"}}
+	before := clonePixels(img)
+	drawMinimalRating(img, nil, cfg, 1.0, newOccupancy(img.Bounds()))
+	drawDualRating(img, nil, cfg, 1.0, newOccupancy(img.Bounds()))
+	if before != clonePixels(img) {
+		t.Error("presentation pills must not modify the image with no ratings")
+	}
+}
+
+// hasNonWhite reports whether the rectangle [x0,x1)×[y0,y1) contains any visible
+// non-white pixel.
+func hasNonWhite(img *image.NRGBA, x0, y0, x1, y1 int) bool {
+	for x := x0; x < x1; x++ {
+		for y := y0; y < y1; y++ {
+			r, g, b, a := img.At(x, y).RGBA()
+			if a > 0 && (r < 65535 || g < 65535 || b < 65535) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // ── Genre badge tests ────────────────────────────────────────────────────────
 
 func TestGenreBadgeDrawsBL(t *testing.T) {

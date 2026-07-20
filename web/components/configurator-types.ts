@@ -114,6 +114,8 @@ export const SIX_POS_OPTIONS = [
 
 export const RATING_PRESENTATION_OPTIONS = [
   { id: 'standard',  label: 'Standard'  },
+  { id: 'minimal',   label: 'Minimal'   },
+  { id: 'dual',      label: 'Dual'      },
   { id: 'editorial', label: 'Editorial' },
   { id: 'none',      label: 'Hidden'    },
 ] as const;

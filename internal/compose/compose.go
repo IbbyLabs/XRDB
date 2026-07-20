@@ -244,6 +244,14 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
 			drawEditorialRating(composed, allRatings, meta.Genres, req.Config, scale, occ)
 		}
+	case "minimal":
+		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
+			drawMinimalRating(composed, allRatings, req.Config, scale, occ)
+		}
+	case "dual":
+		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
+			drawDualRating(composed, allRatings, req.Config, scale, occ)
+		}
 	default:
 		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
 			ratingsH = drawBadgesInPlace(composed, allRatings, req.Config)

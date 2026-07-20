@@ -837,6 +837,145 @@ func drawEditorialRating(base *image.NRGBA, ratings []provider.Rating, genres []
 	occ.reserve(image.Rect(x, base.Bounds().Min.Y, x+s(120), y+bm.Height.Ceil()))
 }
 
+// ── Minimal / dual score pills ────────────────────────────────────────────────
+
+// criticsSources are the professional-critic rating providers. Everything else
+// (user/audience votes) is treated as an audience score by the dual split.
+var criticsSources = map[string]bool{
+	"rt": true, "metacritic": true, "rogerebert": true,
+}
+
+// splitCriticsAudience averages the allowed ratings into a critics score and an
+// audience score, following the provider classification above. Sources with no
+// value are skipped; ok flags report which halves have data.
+func splitCriticsAudience(ratings []provider.Rating, allowed []string) (critics, audience float64, hasCritics, hasAudience bool) {
+	allow := make(map[string]bool, len(allowed))
+	for _, a := range allowed {
+		allow[a] = true
+	}
+	var cs, as float64
+	var cn, an int
+	for _, r := range ratings {
+		if len(allowed) > 0 && !allow[r.Source] {
+			continue
+		}
+		if r.Value <= 0 {
+			continue
+		}
+		if criticsSources[r.Source] {
+			cs += r.Value
+			cn++
+		} else {
+			as += r.Value
+			an++
+		}
+	}
+	if cn > 0 {
+		critics = cs / float64(cn)
+		hasCritics = true
+	}
+	if an > 0 {
+		audience = as / float64(an)
+		hasAudience = true
+	}
+	return
+}
+
+// scorePillHeight is the capsule height for the minimal/dual score pills at the
+// given scale. Kept as a helper so top and bottom pills can be positioned before
+// they are drawn.
+func scorePillHeight(scale float64) int {
+	ensureFaces()
+	return valueFaceFor(scale*1.25).Metrics().Height.Ceil() + int(8*scale+0.5)
+}
+
+// drawScorePill draws a centered rounded capsule with an optional accent label
+// segment ("CRITICS") followed by a score ("9.4"). cx is the horizontal centre;
+// topY is the top edge. The drawn rect is reserved in occ when non-nil.
+func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, accent color.NRGBA, scale float64, occ *occupancy) {
+	ensureFaces()
+	s := func(v float64) int { return int(v*scale + 0.5) }
+	labelFace := labelFaceFor(scale)
+	valueFace := valueFaceFor(scale * 1.25)
+
+	padX := s(12)
+	innerGap := s(9)
+	labelPad := s(9)
+	capH := scorePillHeight(scale)
+
+	labelW := 0
+	if label != "" {
+		labelW = textWidth(labelFace, label) + labelPad*2
+	}
+	scoreW := textWidth(valueFace, score)
+	contentW := labelW + scoreW
+	if label != "" {
+		contentW += innerGap
+	}
+	capW := contentW + padX*2
+	x0 := cx - capW/2
+	rect := image.Rect(x0, topY, x0+capW, topY+capH)
+
+	// Drop shadow, then the dark frosted capsule.
+	shadow := rect.Add(image.Pt(0, s(2)))
+	fillRoundedRect(base, shadow, capH/2, color.NRGBA{A: 90})
+	fillRoundedRect(base, rect, capH/2, color.NRGBA{R: 22, G: 22, B: 26, A: 226})
+	drawRectBorder(base, rect, capH/2, color.NRGBA{R: 255, G: 255, B: 255, A: 28})
+
+	cursor := x0 + padX
+	if label != "" {
+		segInset := s(4)
+		segRect := image.Rect(cursor, topY+segInset, cursor+labelW, topY+capH-segInset)
+		fillRoundedRect(base, segRect, segRect.Dy()/2, accent)
+		lm := labelFace.Metrics()
+		ly := segRect.Min.Y + (segRect.Dy()-lm.Height.Ceil())/2 + lm.Ascent.Ceil()
+		drawText(base, labelFace, cursor+labelPad, ly, color.White, label)
+		cursor += labelW + innerGap
+	}
+
+	vm := valueFace.Metrics()
+	vy := topY + (capH-vm.Height.Ceil())/2 + vm.Ascent.Ceil()
+	drawText(base, valueFace, cursor+s(1), vy+s(1), color.NRGBA{A: 150}, score)
+	drawText(base, valueFace, cursor, vy, color.White, score)
+
+	if occ != nil {
+		occ.reserve(rect)
+	}
+}
+
+// drawMinimalRating shows a single centred pill with the overall average score
+// at the top of the artwork. The pill carries no label segment, so it stays a
+// clean dark capsule regardless of accent config.
+func drawMinimalRating(base *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, scale float64, occ *occupancy) {
+	avg, ok := ratingRingAverage(ratings, cfg.Ratings)
+	if !ok {
+		return
+	}
+	b := base.Bounds()
+	drawScorePill(base, b.Min.X+b.Dx()/2, b.Min.Y+int(14*scale+0.5),
+		"", strconv.FormatFloat(avg, 'f', 1, 64), color.NRGBA{}, scale, occ)
+}
+
+// drawDualRating shows a critics pill at the top and an audience pill at the
+// bottom, each an averaged score for its provider group.
+func drawDualRating(base *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, scale float64, occ *occupancy) {
+	critics, audience, hasC, hasA := splitCriticsAudience(ratings, cfg.Ratings)
+	b := base.Bounds()
+	cx := b.Min.X + b.Dx()/2
+	pad := int(14*scale + 0.5)
+	criticsAccent := color.NRGBA{R: 39, G: 174, B: 96, A: 255}   // green
+	audienceAccent := color.NRGBA{R: 52, G: 152, B: 219, A: 255} // blue
+	if hasC {
+		drawScorePill(base, cx, b.Min.Y+pad, "CRITICS",
+			strconv.FormatFloat(critics, 'f', 1, 64), criticsAccent, scale, occ)
+	}
+	if hasA {
+		topY := b.Max.Y - scorePillHeight(scale) - pad
+		drawScorePill(base, cx, topY, "AUDIENCE",
+			strconv.FormatFloat(audience, 'f', 1, 64), audienceAccent, scale, occ)
+	}
+}
+
 // ── Aggregate rating bar ──────────────────────────────────────────────────────
 
 // drawAggregateBar draws a full-width score bar on top or bottom of the image.

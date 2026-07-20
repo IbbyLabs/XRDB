@@ -121,6 +121,14 @@ func TestParityShowcase(t *testing.T) {
 				drawEditorialRating(c, ratings, []string{"Sci-Fi"}, ratingCfg(func(cf *imageconfig.Config) { cf.RatingRingColor = "#3355ff" }), 2.0, newOccupancy(c.Bounds()))
 			}},
 		},
+		"presentation-modes": {
+			{"minimal", func(c *image.NRGBA) {
+				drawMinimalRating(c, ratings, ratingCfg(func(*imageconfig.Config) {}), 1.5, newOccupancy(c.Bounds()))
+			}},
+			{"dual", func(c *image.NRGBA) {
+				drawDualRating(c, ratings, ratingCfg(func(*imageconfig.Config) {}), 1.5, newOccupancy(c.Bounds()))
+			}},
+		},
 		"aggregate-bar": {
 			{"auto (score-banded)", func(c *image.NRGBA) {
 				drawAggregateBar(c, ratings, ratingCfg(func(cf *imageconfig.Config) { cf.AggregateBar = true; cf.AggregateBarPos = "bottom" }))
