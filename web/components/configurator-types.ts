@@ -116,6 +116,7 @@ export const RATING_PRESENTATION_OPTIONS = [
   { id: 'standard',  label: 'Standard'  },
   { id: 'minimal',   label: 'Minimal'   },
   { id: 'dual',      label: 'Dual'      },
+  { id: 'scorebar',  label: 'Score bar' },
   { id: 'editorial', label: 'Editorial' },
   { id: 'none',      label: 'Hidden'    },
 ] as const;

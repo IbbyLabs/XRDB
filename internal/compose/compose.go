@@ -252,6 +252,12 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
 			drawDualRating(composed, allRatings, req.Config, scale, occ)
 		}
+	case "scorebar":
+		// Replace the badge strip with a single full-width score bar coloured by
+		// the aggregate score.
+		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
+			drawAggregateBar(composed, allRatings, req.Config)
+		}
 	default:
 		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
 			ratingsH = drawBadgesInPlace(composed, allRatings, req.Config)

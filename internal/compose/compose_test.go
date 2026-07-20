@@ -503,6 +503,17 @@ func TestDualRatingDrawsCriticsAndAudience(t *testing.T) {
 	}
 }
 
+func TestScorebarPresentationDrawsBottomBar(t *testing.T) {
+	img := image.NewNRGBA(image.Rect(0, 0, 580, 859))
+	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
+	cfg := imageconfig.Config{Ratings: []string{"imdb", "tmdb", "rt"}}
+	cfg.AggregateBarPos = "bottom"
+	drawAggregateBar(img, presentationRatings(), cfg)
+	if !hasNonWhite(img, 0, 850, 580, 859) {
+		t.Error("scorebar presentation drew no bar along the bottom edge")
+	}
+}
+
 func TestSplitCriticsAudienceClassification(t *testing.T) {
 	critics, audience, hasC, hasA := splitCriticsAudience(presentationRatings(), []string{"imdb", "tmdb", "rt"})
 	if !hasC || !hasA {
