@@ -535,8 +535,9 @@ export function AdminClient() {
         <button
           className="btn btn-ghost"
           onClick={() => void load(tab)}
-          disabled={loading}
+          disabled={loading || (tab !== 'metrics' && tab !== 'cache')}
           aria-label="Refresh data"
+          title={tab === 'metrics' || tab === 'cache' ? 'Refresh this panel' : 'This panel loads on its own'}
         >
           <RefreshCw size={13} aria-hidden="true" className={loading ? 'spin' : ''} />
           Refresh

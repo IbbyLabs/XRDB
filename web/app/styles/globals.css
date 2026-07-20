@@ -1547,7 +1547,9 @@ textarea.input { min-height: 0; line-height: 1.5; }
 
 /* A panel that holds a bare table: inset it so rows never sit flush
    against the panel border. */
-.panel-table { padding: var(--sp-2); }
+/* Scroll wide tables (long unbroken route strings) inside their own box instead
+   of pushing horizontal scroll onto the whole page. */
+.panel-table { padding: var(--sp-2); overflow-x: auto; }
 
 /* ── Admin ─────────────────────────────────────────────────────────── */
 
