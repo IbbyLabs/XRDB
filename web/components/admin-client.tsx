@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { Activity, HardDrive, RefreshCw, AlertCircle, Flame, ScrollText, SlidersHorizontal } from 'lucide-react';
+import { Activity, HardDrive, RefreshCw, AlertCircle, Check, Flame, ScrollText, SlidersHorizontal } from 'lucide-react';
 import {
   fetchMetrics, fetchCacheStats, adminAuthHeaders,
   fetchLogLevel, setLogLevel, clearLogLevel,
@@ -133,8 +133,10 @@ function LogLevelPanel() {
   const [state, setState]   = useState<LogLevelState | null>(null);
   const [busy, setBusy]     = useState<string | null>(null);
   const [error, setError]   = useState<string | null>(null);
+  const [ok, setOk]         = useState<string | null>(null);
 
   const load = useCallback(async () => {
+    setError(null);
     try { setState(await fetchLogLevel()); }
     catch (e) { setError((e as Error).message); }
   }, []);
@@ -143,15 +145,15 @@ function LogLevelPanel() {
   useEffect(() => { void load(); }, [load]);
 
   const apply = async (level: string) => {
-    setBusy(level); setError(null);
-    try { setState(await setLogLevel(level)); }
+    setBusy(level); setError(null); setOk(null);
+    try { setState(await setLogLevel(level)); setOk(`Log level set to ${level} on the running server.`); }
     catch (e) { setError((e as Error).message); }
     finally { setBusy(null); }
   };
 
   const revert = async () => {
-    setBusy('revert'); setError(null);
-    try { setState(await clearLogLevel()); }
+    setBusy('revert'); setError(null); setOk(null);
+    try { const s = await clearLogLevel(); setState(s); setOk(`Reverted to the environment level (${s.level}).`); }
     catch (e) { setError((e as Error).message); }
     finally { setBusy(null); }
   };
@@ -159,7 +161,8 @@ function LogLevelPanel() {
   if (!state) {
     return error
       ? <div className="notice notice-error" role="alert"><AlertCircle size={14} aria-hidden />
-          <span>{error}</span></div>
+          <span style={{ flex: 1 }}>{error}</span>
+          <button className="btn btn-ghost btn-sm" onClick={() => void load()}>Try again</button></div>
       : <div className="skeleton" style={{ height: '9rem' }} aria-label="Loading log level" aria-busy="true" />;
   }
 
@@ -217,6 +220,12 @@ function LogLevelPanel() {
           <span>{error}</span>
         </div>
       )}
+      {ok && (
+        <div className="notice notice-success" role="status">
+          <Check size={14} aria-hidden />
+          <span>{ok}</span>
+        </div>
+      )}
 
       {state.source === 'stored' && (
         <div>
@@ -243,8 +252,11 @@ function RuntimePanel() {
   const [memDraft, setMemDraft] = useState('');
   const [busy, setBusy]     = useState<string | null>(null);
   const [error, setError]   = useState<string | null>(null);
+  const [ok, setOk]         = useState<string | null>(null);
+  const [confirmLowMem, setConfirmLowMem] = useState(false);
 
   const load = useCallback(async () => {
+    setError(null);
     try {
       const [m, t] = await Promise.all([fetchMemoryLimit(), fetchTTLs()]);
       setMem(m); setMemDraft(m.limitMb ? String(m.limitMb) : ''); setTtls(t);
@@ -257,34 +269,50 @@ function RuntimePanel() {
   const applyMem = async () => {
     const mb = memDraft.trim() === '' ? 0 : Number(memDraft);
     if (!Number.isFinite(mb) || mb < 0) { setError('Memory limit must be a non-negative number'); return; }
-    setBusy('mem'); setError(null);
-    try { const m = await setMemoryLimit(Math.floor(mb)); setMem(m); setMemDraft(m.limitMb ? String(m.limitMb) : ''); }
+    const floored = Math.floor(mb);
+    // A very low cap can send the live server straight into GC thrash or OOM, so
+    // require a second press to confirm an under-128 MiB value.
+    if (floored > 0 && floored < 128 && !confirmLowMem) {
+      setError(`${floored} MiB is very low and could thrash GC or OOM the running server. Press Apply again to confirm.`);
+      setConfirmLowMem(true);
+      return;
+    }
+    setBusy('mem'); setError(null); setOk(null); setConfirmLowMem(false);
+    try {
+      const m = await setMemoryLimit(floored); setMem(m); setMemDraft(m.limitMb ? String(m.limitMb) : '');
+      setOk(m.limitMb ? `Memory limit set to ${m.limitMb} MiB.` : 'Memory limit cleared — no cap.');
+    }
     catch (e) { setError((e as Error).message); }
     finally { setBusy(null); }
   };
   const revertMem = async () => {
-    setBusy('mem'); setError(null);
-    try { const m = await clearMemoryLimit(); setMem(m); setMemDraft(m.limitMb ? String(m.limitMb) : ''); }
+    setBusy('mem'); setError(null); setOk(null); setConfirmLowMem(false);
+    try {
+      const m = await clearMemoryLimit(); setMem(m); setMemDraft(m.limitMb ? String(m.limitMb) : '');
+      setOk(`Reverted to the environment memory limit (${m.limitMb ? `${m.limitMb} MiB` : 'no cap'}).`);
+    }
     catch (e) { setError((e as Error).message); }
     finally { setBusy(null); }
   };
 
   const applyTTL = async (provider: string, hours: number) => {
-    setBusy('ttl:' + provider); setError(null);
-    try { setTtls(await setTTL(provider, hours)); }
+    setBusy('ttl:' + provider); setError(null); setOk(null);
+    try { setTtls(await setTTL(provider, hours)); setOk(`${provider} cache TTL set to ${hours}h.`); }
     catch (e) { setError((e as Error).message); }
     finally { setBusy(null); }
   };
   const revertTTL = async (provider: string) => {
-    setBusy('ttl:' + provider); setError(null);
-    try { setTtls(await clearTTL(provider)); }
+    setBusy('ttl:' + provider); setError(null); setOk(null);
+    try { setTtls(await clearTTL(provider)); setOk(`${provider} cache TTL reverted to its environment value.`); }
     catch (e) { setError((e as Error).message); }
     finally { setBusy(null); }
   };
 
   if (!mem || !ttls) {
     return error
-      ? <div className="notice notice-error" role="alert"><AlertCircle size={14} aria-hidden /><span>{error}</span></div>
+      ? <div className="notice notice-error" role="alert"><AlertCircle size={14} aria-hidden />
+          <span style={{ flex: 1 }}>{error}</span>
+          <button className="btn btn-ghost btn-sm" onClick={() => void load()}>Try again</button></div>
       : <div className="skeleton" style={{ height: '12rem' }} aria-label="Loading runtime settings" aria-busy="true" />;
   }
 
@@ -300,6 +328,11 @@ function RuntimePanel() {
           <AlertCircle size={14} aria-hidden /><span>{error}</span>
         </div>
       )}
+      {ok && (
+        <div className="notice notice-success" role="status">
+          <Check size={14} aria-hidden /><span>{ok}</span>
+        </div>
+      )}
 
       <div className="field">
         <label className="label" htmlFor="mem-limit">Memory limit (MiB)</label>
@@ -311,7 +344,7 @@ function RuntimePanel() {
             style={{ width: '9rem' }}
             placeholder="no limit"
             value={memDraft}
-            onChange={e => { setMemDraft(e.target.value); setError(null); }}
+            onChange={e => { setMemDraft(e.target.value); setError(null); setConfirmLowMem(false); }}
           />
           <button className="btn btn-primary" onClick={() => void applyMem()} disabled={busy !== null}>
             {busy === 'mem' ? 'Applying…' : 'Apply'}
