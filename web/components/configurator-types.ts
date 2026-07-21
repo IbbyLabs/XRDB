@@ -15,6 +15,7 @@ export const ARTWORK_OPTIONS = [
   { id: 'tmdb',     label: 'TMDB',      desc: 'The Movie Database — broad, reliable poster coverage' },
   { id: 'fanart',   label: 'Fanart.tv', desc: 'Fanart.tv — high-resolution, often textless artwork' },
   { id: 'cinemeta', label: 'Cinemeta',  desc: "Stremio's Cinemeta catalogue artwork" },
+  { id: 'omdb',     label: 'OMDb',      desc: 'OMDb poster art; posters only, and needs an OMDb API key' },
   { id: 'random',   label: 'Random',    desc: 'Pick a different source on each render' },
 ] as const;
 

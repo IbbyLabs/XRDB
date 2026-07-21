@@ -85,6 +85,7 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 	var result struct {
 		Response string `json:"Response"` // "True" or "False"
 		Error    string `json:"Error,omitempty"`
+		Poster   string `json:"Poster"` // absolute URL, or "N/A" when absent
 		Ratings  []struct {
 			Source string `json:"Source"`
 			Value  string `json:"Value"`
@@ -98,6 +99,10 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 	}
 
 	meta := &MediaMeta{}
+	// OMDB reports a missing poster as the literal "N/A".
+	if u := strings.TrimSpace(result.Poster); strings.HasPrefix(u, "http") {
+		meta.PosterURL = u
+	}
 	for _, r := range result.Ratings {
 		switch r.Source {
 		case "Rotten Tomatoes":

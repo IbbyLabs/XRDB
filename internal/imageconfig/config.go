@@ -27,6 +27,7 @@ const (
 	ArtworkTMDB     ArtworkSource = "tmdb"
 	ArtworkFanart   ArtworkSource = "fanart"
 	ArtworkCinemeta ArtworkSource = "cinemeta"
+	ArtworkOMDB     ArtworkSource = "omdb"
 	ArtworkRandom   ArtworkSource = "random"
 )
 
@@ -1096,6 +1097,8 @@ func normalizeArtworkSource(v string) ArtworkSource {
 		return ArtworkFanart
 	case "cinemeta", "imdb":
 		return ArtworkCinemeta
+	case "omdb":
+		return ArtworkOMDB
 	case "random":
 		return ArtworkRandom
 	}

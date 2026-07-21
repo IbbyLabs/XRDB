@@ -432,7 +432,7 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 	// logo) is filled from wherever it exists. baseMeta keeps the first
 	// provider's metadata for overlays, backfilling image URLs it lacked.
 	var baseMeta *provider.MediaMeta
-	for _, name := range p.artworkOrder(string(req.Config.ArtworkSource)) {
+	for _, name := range p.artworkOrder(string(req.Config.ArtworkSource), req.MediaType) {
 		prov := p.providers.Get(name)
 		if prov == nil {
 			continue
@@ -487,7 +487,12 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 // artworkOrder lists providers to try for artwork: the configured source first,
 // then the remaining image-capable providers as fallbacks. Providers not
 // registered (e.g. Fanart without an API key) are skipped by the caller.
-func (p *Pipeline) artworkOrder(primary string) []string {
+func (p *Pipeline) artworkOrder(primary, surface string) []string {
+	// OMDB only ever returns a poster, so on other surfaces it cannot be the
+	// primary; fall straight through to the general sources.
+	if primary == string(imageconfig.ArtworkOMDB) && surface != "poster" {
+		primary = ""
+	}
 	order := make([]string, 0, 4)
 	if primary != "" {
 		order = append(order, primary)

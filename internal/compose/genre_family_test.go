@@ -93,3 +93,28 @@ func TestGenreBadgeIconModes(t *testing.T) {
 		t.Error("the tile style should ignore the icon mode")
 	}
 }
+
+// OMDB only ever supplies a poster, so it may lead the order on the poster
+// surface and must step aside everywhere else.
+func TestArtworkOrderGatesOMDBToPosters(t *testing.T) {
+	p := &Pipeline{}
+	poster := p.artworkOrder("omdb", "poster")
+	if len(poster) == 0 || poster[0] != "omdb" {
+		t.Errorf("omdb should lead on posters, got %v", poster)
+	}
+	for _, surface := range []string{"backdrop", "logo", "thumbnail"} {
+		order := p.artworkOrder("omdb", surface)
+		for _, name := range order {
+			if name == "omdb" {
+				t.Errorf("omdb should not appear for %s, got %v", surface, order)
+			}
+		}
+		if len(order) == 0 {
+			t.Errorf("%s must still have fallback sources", surface)
+		}
+	}
+	// An unrelated primary is untouched on every surface.
+	if got := p.artworkOrder("fanart", "backdrop"); got[0] != "fanart" {
+		t.Errorf("fanart should lead, got %v", got)
+	}
+}
