@@ -50,6 +50,13 @@ function MetricsPanel({ data }: { data: MetricsSnapshot }) {
         </div>
       </div>
 
+      {data.totalRequests === 0 && (
+        <p className="page-sub" style={{ margin: 'var(--sp-3) 0 0' }}>
+          No requests recorded yet — status codes and top routes will appear here once your
+          library starts requesting artwork.
+        </p>
+      )}
+
       {statusEntries.length > 0 && (
         <div className="admin-section">
           <h2 className="admin-section-title">Status codes</h2>
@@ -108,6 +115,10 @@ function CachePanel({ data }: { data: CacheStats }) {
           <span className="mono" style={{ display: 'inline-block', marginTop: 'var(--sp-1)', wordBreak: 'break-all' }}>{data.dir}</span>
         </div>
       </div>
+      <p className="page-sub" style={{ margin: 'var(--sp-2) 0 0' }}>
+        These are read-only diagnostics. Per-provider cache lifetimes (TTLs) are configured
+        under the <strong>Runtime</strong> tab.
+      </p>
     </div>
   );
 }
