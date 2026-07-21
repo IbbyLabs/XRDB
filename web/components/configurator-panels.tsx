@@ -6,7 +6,8 @@ import { fetchTemplates, type Template } from '@/lib/api';
 import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   LAYOUT_OPTIONS, RATING_OPTIONS, BADGE_STYLE_OPTIONS, BADGE_THEME_OPTIONS,
-  RING_POS_OPTIONS, SIX_POS_OPTIONS, QUALITY_STYLE_OPTIONS, RATING_PRESENTATION_OPTIONS,
+  RING_POS_OPTIONS, SIX_POS_OPTIONS, QUALITY_STYLE_OPTIONS, GENRE_STYLE_OPTIONS,
+  RATING_PRESENTATION_OPTIONS,
 } from './configurator-types';
 
 // ── Template strip ────────────────────────────────────────────────────────────
@@ -486,6 +487,15 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
           onChange={v => onUpdate('qualityBadgesPos', v)} />
         <NumField id={`${uid}-quality-scale`} label="Scale (%)" value={config.qualityBadgeScale}
           onChange={v => onUpdate('qualityBadgeScale', v)} min={70} max={200} step={5} />
+        <NumField id={`${uid}-quality-max`} label="Max badges" value={config.qualityBadgesMax}
+          onChange={v => onUpdate('qualityBadgesMax', v)} min={0} max={12} placeholder="all"
+          hint="0 shows every badge you selected." />
+        <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
+          <NumField id={`${uid}-quality-ox`} label="Offset X" value={config.qualityBadgeOffsetX}
+            onChange={v => onUpdate('qualityBadgeOffsetX', v)} min={-320} max={320} zeroIsDefault={false} />
+          <NumField id={`${uid}-quality-oy`} label="Offset Y" value={config.qualityBadgeOffsetY}
+            onChange={v => onUpdate('qualityBadgeOffsetY', v)} min={-320} max={320} zeroIsDefault={false} />
+        </div>
         <div className="field">
           <span className="label" id={`${uid}-quality-style-label`}>Style</span>
           <div className="opt-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }} role="group" aria-labelledby={`${uid}-quality-style-label`}>
@@ -515,6 +525,21 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
         )}
 
         <span className="adv-section">Genre badge</span>
+        <div className="field">
+          <span className="label" id={`${uid}-genre-style-label`}>Style</span>
+          <div className="opt-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }} role="group" aria-labelledby={`${uid}-genre-style-label`}>
+            {GENRE_STYLE_OPTIONS.map(o => (
+              <button
+                key={o.id}
+                className={`opt-btn${config.genreBadgeStyle === o.id ? ' opt-btn--active' : ''}`}
+                onClick={() => onUpdate('genreBadgeStyle', o.id)}
+                aria-pressed={config.genreBadgeStyle === o.id}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <NumField id={`${uid}-genre-scale`} label="Scale (%)" value={config.genreBadgeScale}
           onChange={v => onUpdate('genreBadgeScale', v)} min={70} max={200} step={5} />
         <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
@@ -527,6 +552,9 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
           onChange={v => onUpdate('genreBadgeBackgroundOpacity', v)} min={5} max={100} step={5} />
 
         <span className="adv-section">Aggregate bar</span>
+        <NumField id={`${uid}-agg-offset`} label="Bar offset (px)" value={config.aggregateBarOffset}
+          onChange={v => onUpdate('aggregateBarOffset', v)} min={-12} max={12} zeroIsDefault={false}
+          hint="Nudge the bar inward from its edge (−12 to 12)." />
         <div className="field">
           <label className="label" htmlFor={`${uid}-agg-color`}>Accent color</label>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>

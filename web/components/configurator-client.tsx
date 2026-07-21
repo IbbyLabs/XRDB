@@ -149,9 +149,13 @@ export function ConfiguratorClient() {
       genreBadgeBackgroundOpacity: cfg.genreBadgeBackgroundOpacity,
       qualityBadgesPos: cfg.qualityBadgesPos,
       qualityBadgeScale: cfg.qualityBadgeScale,
+      qualityBadgeOffsetX: cfg.qualityBadgeOffsetX,
+      qualityBadgeOffsetY: cfg.qualityBadgeOffsetY,
       qualityBadgesStyle: cfg.qualityBadgesStyle === 'default' ? '' : cfg.qualityBadgesStyle,
       qualityBadgesTileAccentColor: cfg.qualityBadgesTileAccentColor,
+      genreBadgeStyle: cfg.genreBadgeStyle === 'default' ? '' : cfg.genreBadgeStyle,
       aggregateAccentColor: cfg.aggregateAccentColor,
+      aggregateBarOffset: cfg.aggregateBarOffset,
       scorebarLowColor: cfg.scorebarLowColor,
       scorebarMidColor: cfg.scorebarMidColor,
       scorebarHighColor: cfg.scorebarHighColor,
@@ -167,6 +171,7 @@ export function ConfiguratorClient() {
       ringProgressSource: cfg.ringProgressSource === 'overall' ? '' : cfg.ringProgressSource,
     };
     if (cfg.ratingsMax > 0) payload.ratingsMax = cfg.ratingsMax;
+    if (cfg.qualityBadgesMax > 0) payload.qualityBadgesMax = cfg.qualityBadgesMax;
     if (Object.keys(cfg.ratingProviderOverrides).length > 0) {
       payload.ratingProviderOverrides = cfg.ratingProviderOverrides;
     }

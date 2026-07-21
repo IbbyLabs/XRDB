@@ -1018,10 +1018,14 @@ func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imagecon
 
 	var barY int
 	pos := strings.ToLower(cfg.AggregateBarPos)
+	// A positive offset nudges the bar inward from its edge; negative pushes it
+	// toward (and off) the edge. Scaled with the output so it reads the same
+	// across sizes.
+	off := int(float64(cfg.AggregateBarOffset)*scale + 0.5)
 	if pos == "top" {
-		barY = bounds.Min.Y
+		barY = bounds.Min.Y + off
 	} else {
-		barY = bounds.Max.Y - barH
+		barY = bounds.Max.Y - barH - off
 	}
 
 	trackColor := color.NRGBA{R: 0, G: 0, B: 0, A: 120}

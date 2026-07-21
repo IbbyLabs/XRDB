@@ -127,6 +127,14 @@ export const QUALITY_STYLE_OPTIONS = [
   { id: 'tile',    label: 'Tile'  },
 ] as const;
 
+export const GENRE_STYLE_OPTIONS = [
+  { id: 'default', label: 'Glass'  },
+  { id: 'square',  label: 'Square' },
+  { id: 'plain',   label: 'Plain'  },
+  { id: 'clean',   label: 'Clean'  },
+  { id: 'tile',    label: 'Tile'   },
+] as const;
+
 export const QUALITY_BADGE_OPTIONS: { id: string; label: string }[] = [
   { id: '4k',        label: '4K'           },
   { id: 'hdr',       label: 'HDR'          },
@@ -177,9 +185,14 @@ export interface ConfigState {
   genreBadgeBackgroundOpacity: number; // 0 = default
   qualityBadgesPos: string; // 'inherit' | six positions
   qualityBadgeScale: number;
+  qualityBadgesMax: number; // 0 = show all
+  qualityBadgeOffsetX: number;
+  qualityBadgeOffsetY: number;
   qualityBadgesStyle: string; // 'default' | plain | tile
   qualityBadgesTileAccentColor: string;
+  genreBadgeStyle: string; // 'default' | glass | square | plain | clean | tile
   aggregateAccentColor: string; // '' = auto score-band
+  aggregateBarOffset: number; // px inward nudge, -12..12; 0 = flush
   scorebarLowColor: string;
   scorebarMidColor: string;
   scorebarHighColor: string;
@@ -230,9 +243,14 @@ export const DEFAULT_CONFIG: ConfigState = {
   genreBadgeBackgroundOpacity: 0,
   qualityBadgesPos: 'inherit',
   qualityBadgeScale: 0,
+  qualityBadgesMax: 0,
+  qualityBadgeOffsetX: 0,
+  qualityBadgeOffsetY: 0,
   qualityBadgesStyle: 'default',
   qualityBadgesTileAccentColor: '',
+  genreBadgeStyle: 'default',
   aggregateAccentColor: '',
+  aggregateBarOffset: 0,
   scorebarLowColor: '',
   scorebarMidColor: '',
   scorebarHighColor: '',

@@ -250,6 +250,7 @@ type RatingBadgeConfig struct {
 type AggregateConfig struct {
 	AggregateAccentColor string `json:"aggregateAccentColor,omitempty"` // "#RRGGBB" bar fill; "" = auto 3-band
 	AggregateValueColor  string `json:"aggregateValueColor,omitempty"`  // "#RRGGBB" value text; "" = default
+	AggregateBarOffset   int    `json:"aggregateBarOffset,omitempty"`   // px nudge inward from the edge; 0 = flush
 	// Scorebar band overrides. When a color is set it replaces the built-in
 	// green/amber/red for that band; thresholds (0-10) move the band boundaries.
 	ScorebarLowColor      string  `json:"scorebarLowColor,omitempty"`
@@ -296,7 +297,7 @@ type AgeRatingConfig struct {
 // existing Trending/TrendingStyle fields.
 type TrendingConfig struct {
 	TrendingPos       string `json:"trendingPos,omitempty"`       // tl|tr|bl|br|tc|bc; "" = tl
-	TrendingTextColor string `json:"trendingTextColor,omitempty"` // "#RRGGBB"; modeled, not yet drawn
+	TrendingTextColor string `json:"trendingTextColor,omitempty"` // "#RRGGBB" for the trending label text
 }
 
 // GenreBadgeConfig groups the genre-badge styling controls. v2 exposed these
@@ -425,6 +426,7 @@ type rawRating struct {
 type rawAggregate struct {
 	AggregateAccentColor  *string  `json:"aggregateAccentColor"`
 	AggregateValueColor   *string  `json:"aggregateValueColor"`
+	AggregateBarOffset    *int     `json:"aggregateBarOffset"`
 	ScorebarLowColor      *string  `json:"scorebarLowColor"`
 	ScorebarMidColor      *string  `json:"scorebarMidColor"`
 	ScorebarHighColor     *string  `json:"scorebarHighColor"`
@@ -725,6 +727,9 @@ func parseAggregate(cfg *Config, r *raw) {
 	}
 	if r.AggregateValueColor != nil && isHexColor(*r.AggregateValueColor) {
 		cfg.AggregateValueColor = strings.TrimSpace(*r.AggregateValueColor)
+	}
+	if r.AggregateBarOffset != nil {
+		cfg.AggregateBarOffset = clampInt(*r.AggregateBarOffset, -12, 12)
 	}
 	if r.ScorebarLowColor != nil && isHexColor(*r.ScorebarLowColor) {
 		cfg.ScorebarLowColor = strings.TrimSpace(*r.ScorebarLowColor)
