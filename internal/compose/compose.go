@@ -289,7 +289,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		drawGenreBadge(composed, meta.Genres, req.Config.GenrePos, scale, occ, genreOptsFromConfig(req.Config))
 	}
 	if req.Config.Providers && len(meta.WatchProviders) > 0 {
-		drawProviderBadges(composed, meta.WatchProviders, scale, occ)
+		drawProviderBadges(composed, meta.WatchProviders, scale, occ, req.Config.NetworkTileColor)
 	}
 	if req.Config.AggregateBar {
 		drawAggregateBar(composed, allRatings, req.Config)

@@ -508,7 +508,7 @@ func dedupeProviders(providers []provider.WatchProvider) []provider.WatchProvide
 // provider name is rendered as text. Storefront duplicates are collapsed and
 // at most 5 brands are shown. The strip is placed through occ so it stacks
 // clear of the ratings band and any corner badges already reserved.
-func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, scale float64, occ *occupancy) {
+func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, scale float64, occ *occupancy, tileColor string) {
 	if len(providers) == 0 {
 		return
 	}
@@ -516,6 +516,12 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 	face := labelFaceFor(scale)
 	if face == nil {
 		return
+	}
+
+	// An optional custom tile colour behind the chips.
+	netTile, hasNetTile := color.NRGBA{}, false
+	if c, err := parseHexColor(tileColor); tileColor != "" && err == nil {
+		netTile, hasNetTile = c, true
 	}
 
 	shown := dedupeProviders(providers)
@@ -614,7 +620,11 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 		case c.baked:
 			// Logo fills the tile as a rounded app-icon; a neutral backing
 			// shows through any internal transparency, and corners are clipped.
-			fillRoundedRect(base, r, radius, color.NRGBA{R: 18, G: 20, B: 26, A: 255})
+			bakedFill := color.NRGBA{R: 18, G: 20, B: 26, A: 255}
+			if hasNetTile {
+				bakedFill = color.NRGBA{R: netTile.R, G: netTile.G, B: netTile.B, A: 255}
+			}
+			fillRoundedRect(base, r, radius, bakedFill)
 			inner := image.Rect(r.Min.X+bezel, r.Min.Y+bezel, r.Max.X-bezel, r.Max.Y-bezel)
 			drawLogoRoundClipped(base, c.logo, inner, radius-bezel)
 			drawRectBorder(base, r, radius, color.NRGBA{R: 255, G: 255, B: 255, A: 38})
@@ -626,13 +636,20 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 				fill = color.NRGBA{R: 245, G: 246, B: 248, A: 240}
 				border = color.NRGBA{R: 0, G: 0, B: 0, A: 28}
 			}
+			if hasNetTile {
+				fill = color.NRGBA{R: netTile.R, G: netTile.G, B: netTile.B, A: 235}
+			}
 			fillRoundedRect(base, r, radius, fill)
 			drawRectBorder(base, r, radius, border)
 			band := image.Rect(r.Min.X+padIn, r.Min.Y+(tileH-c.innerH)/2, r.Max.X-padIn, r.Min.Y+(tileH-c.innerH)/2+c.innerH)
 			drawLogoScaled(base, c.logo, fitRect(c.logo.Bounds().Dx(), c.logo.Bounds().Dy(), band))
 		default:
 			// Text fallback chip.
-			fillRoundedRect(base, r, radius, color.NRGBA{R: 20, G: 22, B: 28, A: 235})
+			textFill := color.NRGBA{R: 20, G: 22, B: 28, A: 235}
+			if hasNetTile {
+				textFill = color.NRGBA{R: netTile.R, G: netTile.G, B: netTile.B, A: 235}
+			}
+			fillRoundedRect(base, r, radius, textFill)
 			drawRectBorder(base, r, radius, color.NRGBA{R: 255, G: 255, B: 255, A: 30})
 			ty := r.Min.Y + (tileH-(ascent+descent))/2 + ascent
 			drawText(base, face, r.Min.X+textPadX, ty, color.NRGBA{R: 240, G: 240, B: 245, A: 255}, c.label)

@@ -204,6 +204,46 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           onChange={() => onUpdate('providers', !config.providers)}
         />
 
+        {config.providers && (
+          <>
+            <Field
+              label="Provider country"
+              htmlFor={`${uid}-provider-country`}
+              hint="ISO country code for availability (e.g. US, GB). Blank uses the default."
+            >
+              <input
+                id={`${uid}-provider-country`}
+                className="input"
+                value={config.providersCountry}
+                onChange={e => onUpdate('providersCountry', e.target.value.toUpperCase().slice(0, 2))}
+                placeholder="default"
+                maxLength={2}
+                style={{ maxWidth: '6rem', textTransform: 'uppercase' }}
+              />
+            </Field>
+            <div className="field">
+              <label className="label" htmlFor={`${uid}-network-tile`}>Chip tile color</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+                <input
+                  id={`${uid}-network-tile`}
+                  type="color"
+                  value={config.networkTileColor || '#14161a'}
+                  onChange={e => onUpdate('networkTileColor', e.target.value)}
+                  className="color-swatch"
+                />
+                <button
+                  className={`opt-btn${!config.networkTileColor ? ' opt-btn--active' : ''}`}
+                  onClick={() => onUpdate('networkTileColor', '')}
+                  aria-pressed={!config.networkTileColor}
+                  style={{ flex: 1 }}
+                >
+                  Default
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
         <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
           <legend className="label" style={{ marginBottom: 'var(--sp-2)' }}>
             Quality badges

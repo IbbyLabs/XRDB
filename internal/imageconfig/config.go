@@ -100,6 +100,7 @@ type Config struct {
 	GenrePos         string         `json:"genrePos,omitempty"`
 	Providers        bool           `json:"providers"`
 	ProvidersCountry string         `json:"providersCountry,omitempty"`
+	NetworkTileColor string         `json:"networkTileColor,omitempty"` // "#RRGGBB" tile behind provider chips
 	AggregateBar     bool           `json:"aggregateBar"`
 	AggregateBarPos  string         `json:"aggregateBarPos,omitempty"` // "top" | "bottom"
 	Trending         bool           `json:"trending"`
@@ -352,6 +353,7 @@ type raw struct {
 	GenrePos         *string  `json:"genrePos"`
 	Providers        *bool    `json:"providers"`
 	ProvidersCountry *string  `json:"providersCountry"`
+	NetworkTileColor *string  `json:"networkTileColor"`
 	AggregateBar     *bool    `json:"aggregateBar"`
 	AggregateBarPos  *string  `json:"aggregateBarPos"`
 	Trending         *bool    `json:"trending"`
@@ -560,6 +562,9 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.ProvidersCountry != nil && strings.TrimSpace(*r.ProvidersCountry) != "" {
 		cfg.ProvidersCountry = strings.ToUpper(strings.TrimSpace(*r.ProvidersCountry))
+	}
+	if r.NetworkTileColor != nil && isHexColor(*r.NetworkTileColor) {
+		cfg.NetworkTileColor = strings.TrimSpace(*r.NetworkTileColor)
 	}
 	if r.AggregateBar != nil {
 		cfg.AggregateBar = *r.AggregateBar
@@ -852,6 +857,7 @@ func CacheKey(cfg Config) string {
 		GenrePos         string         `json:"genrePos"`
 		Providers        bool           `json:"providers"`
 		ProvidersCountry string         `json:"providersCountry"`
+		NetworkTileColor string         `json:"networkTileColor"`
 		AggregateBar     bool           `json:"aggregateBar"`
 		AggregateBarPos  string         `json:"aggregateBarPos"`
 		Trending         bool           `json:"trending"`
@@ -895,6 +901,7 @@ func CacheKey(cfg Config) string {
 		GenrePos:             cfg.GenrePos,
 		Providers:            cfg.Providers,
 		ProvidersCountry:     cfg.ProvidersCountry,
+		NetworkTileColor:     cfg.NetworkTileColor,
 		AggregateBar:         cfg.AggregateBar,
 		AggregateBarPos:      cfg.AggregateBarPos,
 		Trending:             cfg.Trending,
