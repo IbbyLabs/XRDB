@@ -241,6 +241,10 @@ type RatingBadgeConfig struct {
 	RatingBadgeOffsetX int    `json:"ratingBadgeOffsetX,omitempty"` // px nudge of the whole strip
 	RatingBadgeOffsetY int    `json:"ratingBadgeOffsetY,omitempty"`
 	RatingPresentation string `json:"ratingPresentation,omitempty"` // standard|editorial|none (others modeled)
+	// Split-side layout geometry.
+	SideRatingsPosition string `json:"sideRatingsPosition,omitempty"` // top|middle|bottom|custom; "" = middle
+	SideRatingsOffset   int    `json:"sideRatingsOffset,omitempty"`   // px vertical offset for the custom position
+	RatingsMaxPerSide   int    `json:"ratingsMaxPerSide,omitempty"`   // cap badges per side; 0 = no cap
 	// RatingProviderOverrides maps a provider source (e.g. "imdb") to a
 	// "#RRGGBB" accent color that replaces the built-in one for that badge.
 	RatingProviderOverrides map[string]string `json:"ratingProviderOverrides,omitempty"`
@@ -424,6 +428,9 @@ type rawRating struct {
 	RatingBadgeOffsetX      *int              `json:"ratingBadgeOffsetX"`
 	RatingBadgeOffsetY      *int              `json:"ratingBadgeOffsetY"`
 	RatingPresentation      *string           `json:"ratingPresentation"`
+	SideRatingsPosition     *string           `json:"sideRatingsPosition"`
+	SideRatingsOffset       *int              `json:"sideRatingsOffset"`
+	RatingsMaxPerSide       *int              `json:"ratingsMaxPerSide"`
 	RatingProviderOverrides map[string]string `json:"ratingProviderOverrides"`
 }
 
@@ -682,6 +689,18 @@ func parseRating(cfg *Config, r *raw) {
 		case "standard", "minimal", "average", "dual", "dual-minimal", "editorial", "scorebar", "none":
 			cfg.RatingPresentation = v
 		}
+	}
+	if r.SideRatingsPosition != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.SideRatingsPosition)); v {
+		case "top", "middle", "bottom", "custom":
+			cfg.SideRatingsPosition = v
+		}
+	}
+	if r.SideRatingsOffset != nil {
+		cfg.SideRatingsOffset = clampInt(*r.SideRatingsOffset, -400, 400)
+	}
+	if r.RatingsMaxPerSide != nil {
+		cfg.RatingsMaxPerSide = clampInt(*r.RatingsMaxPerSide, 0, 20)
 	}
 	if len(r.RatingProviderOverrides) > 0 {
 		var m map[string]string

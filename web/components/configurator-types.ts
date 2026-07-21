@@ -194,6 +194,9 @@ export interface ConfigState {
   ratingBadgeOffsetX: number;
   ratingBadgeOffsetY: number;
   ratingPresentation: string; // standard|editorial|none
+  sideRatingsPosition: string; // top|middle|bottom|custom (split-side layout)
+  sideRatingsOffset: number; // px vertical offset for the custom position
+  ratingsMaxPerSide: number; // cap badges per side; 0 = no cap
   ratingProviderOverrides: Record<string, string>; // source id → hex accent; empty = none
   genreBadgeScale: number;
   genreBadgeOffsetX: number;
@@ -257,6 +260,9 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingBadgeOffsetX: 0,
   ratingBadgeOffsetY: 0,
   ratingPresentation: 'standard',
+  sideRatingsPosition: 'middle',
+  sideRatingsOffset: 0,
+  ratingsMaxPerSide: 0,
   ratingProviderOverrides: {},
   genreBadgeScale: 0,
   genreBadgeOffsetX: 0,

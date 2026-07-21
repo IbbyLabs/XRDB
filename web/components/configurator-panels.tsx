@@ -98,6 +98,39 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating }: RatingsP
           </div>
         </div>
 
+        {config.ratingsLayout === 'split-side' && (
+          <>
+            <div className="field">
+              <label className="label" htmlFor={`${uid}-side-pos`}>Side ratings vertical</label>
+              <select id={`${uid}-side-pos`} className="select" value={config.sideRatingsPosition}
+                onChange={e => onUpdate('sideRatingsPosition', e.target.value)} style={{ maxWidth: '12rem' }}>
+                <option value="middle">Middle</option>
+                <option value="top">Top</option>
+                <option value="bottom">Bottom</option>
+                <option value="custom">Custom offset</option>
+              </select>
+            </div>
+            {config.sideRatingsPosition === 'custom' && (
+              <div className="field">
+                <label className="label" htmlFor={`${uid}-side-offset`}>Vertical offset (px)</label>
+                <input id={`${uid}-side-offset`} className="input" type="number" inputMode="numeric"
+                  min={-400} max={400} value={config.sideRatingsOffset || ''}
+                  placeholder="0"
+                  onChange={e => onUpdate('sideRatingsOffset', e.target.value === '' ? 0 : Number(e.target.value))}
+                  style={{ maxWidth: '9rem' }} />
+              </div>
+            )}
+            <div className="field">
+              <label className="label" htmlFor={`${uid}-max-per-side`}>Max per side</label>
+              <input id={`${uid}-max-per-side`} className="input" type="number" inputMode="numeric"
+                min={0} max={20} value={config.ratingsMaxPerSide || ''}
+                placeholder="no cap"
+                onChange={e => onUpdate('ratingsMaxPerSide', e.target.value === '' ? 0 : Number(e.target.value))}
+                style={{ maxWidth: '9rem' }} />
+            </div>
+          </>
+        )}
+
         {config.ratingsLayout !== 'none' && (
           <>
             <div className="field">

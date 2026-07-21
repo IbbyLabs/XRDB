@@ -489,7 +489,11 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 	}
 
 	if cfg.RatingsLayout == imageconfig.LayoutSplitSide {
-		return drawBadgesSplitSide(out, specs, innerH, rowGap, edgeX, edgeY, padX, iconSize, iconGap, accentW, face, chrome, bounds)
+		return drawBadgesSplitSide(out, specs, innerH, rowGap, edgeX, edgeY, padX, iconSize, iconGap, accentW, face, chrome, bounds, sideRatingsOpts{
+			position:   cfg.SideRatingsPosition,
+			offset:     int(float64(cfg.SideRatingsOffset)*scale + 0.5),
+			maxPerSide: cfg.RatingsMaxPerSide,
+		})
 	}
 
 	// Greedy row wrap for top/bottom layouts.
@@ -552,13 +556,29 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 
 // drawBadgesSplitSide renders the first half of badges vertically on the left
 // edge and the second half on the right edge, both centered vertically.
-func drawBadgesSplitSide(out *image.NRGBA, specs []badgeSpec, innerH, rowGap, edgeX, edgeY, padX, iconSize, iconGap, accentW int, face font.Face, chrome badgeChrome, bounds image.Rectangle) int {
+// sideRatingsOpts controls the split-side layout's vertical anchoring and the
+// per-side badge cap. Its zero value keeps the original centred, uncapped layout.
+type sideRatingsOpts struct {
+	position   string // top | middle | bottom | custom; "" = middle
+	offset     int    // px vertical offset for the custom position (already scaled)
+	maxPerSide int    // cap badges per side; 0 = no cap
+}
+
+func drawBadgesSplitSide(out *image.NRGBA, specs []badgeSpec, innerH, rowGap, edgeX, edgeY, padX, iconSize, iconGap, accentW int, face font.Face, chrome badgeChrome, bounds image.Rectangle, opts sideRatingsOpts) int {
 	if len(specs) == 0 {
 		return 0
 	}
 	mid := (len(specs) + 1) / 2
 	left := specs[:mid]
 	right := specs[mid:]
+	if opts.maxPerSide > 0 {
+		if len(left) > opts.maxPerSide {
+			left = left[:opts.maxPerSide]
+		}
+		if len(right) > opts.maxPerSide {
+			right = right[:opts.maxPerSide]
+		}
+	}
 
 	leftH := len(left)*innerH + (len(left)-1)*rowGap
 	rightH := len(right)*innerH + (len(right)-1)*rowGap
@@ -566,35 +586,42 @@ func drawBadgesSplitSide(out *image.NRGBA, specs []badgeSpec, innerH, rowGap, ed
 
 	midY := bounds.Min.Y + bounds.Dy()/2
 	minY := bounds.Min.Y + edgeY
-	maxYLeft := bounds.Max.Y - edgeY - leftH
-	maxYRight := bounds.Max.Y - edgeY - rightH
-	if maxYLeft < minY {
-		maxYLeft = minY
-	}
-	if maxYRight < minY {
-		maxYRight = minY
+
+	// anchorY resolves a column's top based on the configured vertical position,
+	// then clamps it inside the safe [minY, maxY] band.
+	anchorY := func(colH int) int {
+		var y int
+		switch opts.position {
+		case "top":
+			y = minY
+		case "bottom":
+			y = bounds.Max.Y - edgeY - colH
+		case "custom":
+			y = midY - colH/2 + opts.offset
+		default: // middle
+			y = midY - colH/2
+		}
+		maxY := bounds.Max.Y - edgeY - colH
+		if maxY < minY {
+			maxY = minY
+		}
+		if y < minY {
+			y = minY
+		}
+		if y > maxY {
+			y = maxY
+		}
+		return y
 	}
 
-	y := midY - leftH/2
-	if y < minY {
-		y = minY
-	}
-	if y > maxYLeft {
-		y = maxYLeft
-	}
+	y := anchorY(leftH)
 	for i := range left {
 		left[i].x = bounds.Min.X + edgeX
 		drawRatingRow(out, left[i:i+1], y, innerH, padX, iconSize, iconGap, accentW, face, chrome)
 		y += innerH + rowGap
 	}
 
-	y = midY - rightH/2
-	if y < minY {
-		y = minY
-	}
-	if y > maxYRight {
-		y = maxYRight
-	}
+	y = anchorY(rightH)
 	for i := range right {
 		right[i].x = bounds.Max.X - edgeX - right[i].w
 		drawRatingRow(out, right[i:i+1], y, innerH, padX, iconSize, iconGap, accentW, face, chrome)
