@@ -129,6 +129,13 @@ export const QUALITY_STYLE_OPTIONS = [
   { id: 'tile',    label: 'Tile'  },
 ] as const;
 
+export const AGE_STYLE_OPTIONS = [
+  { id: 'default', label: 'Glass'  },
+  { id: 'square',  label: 'Square' },
+  { id: 'plain',   label: 'Plain'  },
+  { id: 'tile',    label: 'Tile'   },
+] as const;
+
 export const GENRE_STYLE_OPTIONS = [
   { id: 'default', label: 'Glass'  },
   { id: 'square',  label: 'Square' },

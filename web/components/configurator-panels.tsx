@@ -7,7 +7,7 @@ import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   LAYOUT_OPTIONS, RATING_OPTIONS, BADGE_STYLE_OPTIONS, BADGE_THEME_OPTIONS,
   RING_POS_OPTIONS, SIX_POS_OPTIONS, QUALITY_STYLE_OPTIONS, GENRE_STYLE_OPTIONS,
-  AGGREGATE_SOURCE_OPTIONS, SCOREBAR_STYLE_OPTIONS, RATING_PRESENTATION_OPTIONS,
+  AGE_STYLE_OPTIONS, AGGREGATE_SOURCE_OPTIONS, SCOREBAR_STYLE_OPTIONS, RATING_PRESENTATION_OPTIONS,
 } from './configurator-types';
 
 // ── Template strip ────────────────────────────────────────────────────────────
@@ -676,8 +676,8 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
         <span className="adv-section">Age rating badge</span>
         <div className="field">
           <span className="label" id={`${uid}-age-style-label`}>Style</span>
-          <div className="opt-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }} role="group" aria-labelledby={`${uid}-age-style-label`}>
-            {QUALITY_STYLE_OPTIONS.map(o => (
+          <div className="opt-grid" style={{ gridTemplateColumns: '1fr 1fr' }} role="group" aria-labelledby={`${uid}-age-style-label`}>
+            {AGE_STYLE_OPTIONS.map(o => (
               <button
                 key={o.id}
                 className={`opt-btn${config.ageRatingBadgeStyle === o.id ? ' opt-btn--active' : ''}`}
@@ -718,6 +718,8 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
             <option value="overall">Overall average</option>
             <option value="critics">Critics average</option>
             <option value="audience">Audience average</option>
+            <option value="priority-critics">Top critic</option>
+            <option value="priority-audience">Top audience</option>
             <option value="highest">Highest score</option>
             {RATING_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
           </select>
@@ -728,6 +730,8 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
             <option value="overall">Overall average</option>
             <option value="critics">Critics average</option>
             <option value="audience">Audience average</option>
+            <option value="priority-critics">Top critic</option>
+            <option value="priority-audience">Top audience</option>
             <option value="highest">Highest score</option>
             {RATING_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
           </select>

@@ -413,7 +413,11 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 			chrome.border = color.NRGBA{}
 		}
 	}
-	drawSoftTile(base, r, radius, chrome)
+	rad := radius
+	if opts.style == "square" {
+		rad = 0 // sharp-cornered tile
+	}
+	drawSoftTile(base, r, rad, chrome)
 	drawText(base, face, tx, ty, color.White, rating)
 }
 
@@ -1406,6 +1410,30 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 // ratingRingSourceValue returns a specific provider's 0-10 value for the ring,
 // or (0,false) when source is empty/"overall" (the caller keeps the average) or
 // that provider has no value.
+// firstAvailableRating returns the value of the first source in the priority
+// order that is allowed and carries a value.
+func firstAvailableRating(ratings []provider.Rating, allowed []string, order []string) (float64, bool) {
+	allow := make(map[string]bool, len(allowed))
+	for _, s := range allowed {
+		allow[s] = true
+	}
+	bySource := make(map[string]float64, len(ratings))
+	for _, r := range ratings {
+		if r.Value > 0 {
+			bySource[strings.ToLower(r.Source)] = r.Value
+		}
+	}
+	for _, s := range order {
+		if len(allowed) > 0 && !allow[s] {
+			continue
+		}
+		if v, ok := bySource[s]; ok {
+			return v, true
+		}
+	}
+	return 0, false
+}
+
 func ratingRingSourceValue(ratings []provider.Rating, source string, allowed []string) (float64, bool) {
 	source = strings.ToLower(strings.TrimSpace(source))
 	switch source {
@@ -1432,6 +1460,10 @@ func ratingRingSourceValue(ratings []provider.Rating, source string, allowed []s
 			}
 		}
 		return best, ok
+	case "priority-critics":
+		return firstAvailableRating(ratings, allowed, []string{"rt", "metacritic", "rogerebert"})
+	case "priority-audience":
+		return firstAvailableRating(ratings, allowed, []string{"imdb", "tmdb", "trakt", "letterboxd", "mdblist", "rtaudience", "simkl"})
 	}
 	// Otherwise treat it as a specific provider id.
 	for _, r := range ratings {
