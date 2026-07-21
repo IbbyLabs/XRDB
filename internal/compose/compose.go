@@ -410,9 +410,16 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 		}
 	}
 	opts := provider.ArtworkOptions{
-		Language:       req.Config.Language,
-		TextPreference: string(req.Config.TextPreference),
-		Size:           string(req.Config.Size),
+		Language:           req.Config.Language,
+		TextPreference:     string(req.Config.TextPreference),
+		Size:               string(req.Config.Size),
+		RandomText:         req.Config.RandomPosterText,
+		RandomLanguage:     req.Config.RandomPosterLanguage,
+		RandomMinVoteCount: req.Config.RandomPosterMinVoteCount,
+		RandomMinVoteAvg:   req.Config.RandomPosterMinVoteAverage,
+		RandomMinWidth:     req.Config.RandomPosterMinWidth,
+		RandomMinHeight:    req.Config.RandomPosterMinHeight,
+		RandomFallback:     req.Config.RandomPosterFallback,
 	}
 	// Try the configured artwork source first, then fall back across the other
 	// image-capable providers so a surface missing from one source (most often a

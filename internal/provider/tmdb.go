@@ -307,15 +307,16 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		posterRes, backdropRes = "/original", "/original"
 	}
 
-	posterPath := selectImagePath(result.Images.Posters, result.PosterPath, lang, opts.TextPreference)
+	posterPath := selectImagePath(result.Images.Posters, result.PosterPath, lang, opts)
 	if posterPath != "" {
 		meta.PosterURL = tmdbImageBase + posterRes + posterPath
 	}
-	backdropPath := selectImagePath(result.Images.Backdrops, result.BackdropPath, lang, opts.TextPreference)
+	backdropPath := selectImagePath(result.Images.Backdrops, result.BackdropPath, lang, opts)
 	if backdropPath != "" {
 		meta.BackdropURL = tmdbImageBase + backdropRes + backdropPath
 	}
-	if logoPath := selectImagePath(result.Images.Logos, "", lang, ""); logoPath != "" {
+	// Logos never use the random text/quality filters.
+	if logoPath := selectImagePath(result.Images.Logos, "", lang, ArtworkOptions{}); logoPath != "" {
 		meta.LogoURL = tmdbImageBase + "/w780" + logoPath
 	}
 	if result.VoteAverage > 0 {
@@ -389,6 +390,9 @@ type tmdbImage struct {
 	FilePath    string  `json:"file_path"`
 	Iso639      *string `json:"iso_639_1"`
 	VoteAverage float64 `json:"vote_average"`
+	VoteCount   int     `json:"vote_count"`
+	Width       int     `json:"width"`
+	Height      int     `json:"height"`
 }
 
 // selectImagePath picks an image variant according to language and text
@@ -400,7 +404,8 @@ type tmdbImage struct {
 //   - "textless" / "clean": language-neutral art (no baked-in title text)
 //   - "alternative": a different variant than the default pick
 //   - "random": any candidate, varies between cache refreshes
-func selectImagePath(images []tmdbImage, defaultPath, lang, pref string) string {
+func selectImagePath(images []tmdbImage, defaultPath, lang string, opts ArtworkOptions) string {
+	pref := opts.TextPreference
 	if len(images) == 0 {
 		return defaultPath
 	}
@@ -466,14 +471,47 @@ func selectImagePath(images []tmdbImage, defaultPath, lang, pref string) string 
 			return candidates[0].FilePath
 		}
 	case "random":
-		candidates := make([]string, 0, len(images))
+		candidates := make([]tmdbImage, 0, len(images))
 		for _, img := range images {
-			if isRenderable(img.FilePath) {
-				candidates = append(candidates, img.FilePath)
+			if !isRenderable(img.FilePath) {
+				continue
 			}
+			switch opts.RandomText {
+			case "text":
+				if textless(img) {
+					continue
+				}
+			case "textless":
+				if !textless(img) {
+					continue
+				}
+			}
+			if opts.RandomLanguage == "requested" && lang != "" && !inLang(img) {
+				continue
+			}
+			if img.VoteCount < opts.RandomMinVoteCount {
+				continue
+			}
+			if img.VoteAverage < opts.RandomMinVoteAvg {
+				continue
+			}
+			if opts.RandomMinWidth > 0 && img.Width < opts.RandomMinWidth {
+				continue
+			}
+			if opts.RandomMinHeight > 0 && img.Height < opts.RandomMinHeight {
+				continue
+			}
+			candidates = append(candidates, img)
 		}
 		if len(candidates) > 0 {
-			return candidates[rand.Intn(len(candidates))]
+			return candidates[rand.Intn(len(candidates))].FilePath
+		}
+		// No candidate passed the filters — fall back.
+		if opts.RandomFallback == "original" {
+			return defaultPath
+		}
+		if p := bestBy(func(tmdbImage) bool { return true }); p != "" {
+			return p
 		}
 	}
 

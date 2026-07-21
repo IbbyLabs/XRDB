@@ -8,6 +8,14 @@ type ArtworkOptions struct {
 	Language       string // preferred artwork language code, e.g. "en", "ja"
 	TextPreference string // original | clean | textless | alternative | random
 	Size           string // normal | large | 4k — drives source resolution
+	// Filters applied when TextPreference is "random".
+	RandomText         string // any | text | textless; "" = any
+	RandomLanguage     string // any | requested; "" = any
+	RandomMinVoteCount int    // skip candidates below this vote count
+	RandomMinVoteAvg   float64
+	RandomMinWidth     int
+	RandomMinHeight    int
+	RandomFallback     string // best | original; "" = best
 }
 
 // ArtworkFetcher is an optional interface for providers that can apply

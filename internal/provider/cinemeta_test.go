@@ -109,7 +109,7 @@ func TestSelectImagePath(t *testing.T) {
 		if tc.name == "empty images returns default" {
 			imgs = nil
 		}
-		got := selectImagePath(imgs, "/default.jpg", tc.lang, tc.pref)
+		got := selectImagePath(imgs, "/default.jpg", tc.lang, ArtworkOptions{TextPreference: tc.pref})
 		if got != tc.want {
 			t.Errorf("%s: got %q, want %q", tc.name, got, tc.want)
 		}
@@ -124,14 +124,14 @@ func TestSelectImagePathSkipsSVG(t *testing.T) {
 		{FilePath: "/top.svg", Iso639: &en, VoteAverage: 9},
 		{FilePath: "/good.png", Iso639: &en, VoteAverage: 5},
 	}
-	if got := selectImagePath(images, "", "en", ""); got != "/good.png" {
+	if got := selectImagePath(images, "", "en", ArtworkOptions{}); got != "/good.png" {
 		t.Errorf("expected the PNG logo, got %q", got)
 	}
-	if got := selectImagePath(images, "", "en", "random"); got != "/good.png" {
+	if got := selectImagePath(images, "", "en", ArtworkOptions{TextPreference: "random"}); got != "/good.png" {
 		t.Errorf("random must still skip SVG, got %q", got)
 	}
 	// Only an SVG available and no default → nothing renderable, return empty.
-	if got := selectImagePath([]tmdbImage{{FilePath: "/only.svg", Iso639: &en, VoteAverage: 9}}, "", "en", ""); got != "" {
+	if got := selectImagePath([]tmdbImage{{FilePath: "/only.svg", Iso639: &en, VoteAverage: 9}}, "", "en", ArtworkOptions{}); got != "" {
 		t.Errorf("expected empty when only SVG available, got %q", got)
 	}
 }

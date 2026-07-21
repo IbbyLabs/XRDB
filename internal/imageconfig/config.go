@@ -102,17 +102,17 @@ type Config struct {
 	ProvidersCountry string         `json:"providersCountry,omitempty"`
 	NetworkTileColor string         `json:"networkTileColor,omitempty"` // "#RRGGBB" tile behind provider chips
 	// Outline for background-less ("plain") badge text.
-	NoBackgroundBadgeOutlineColor string `json:"noBackgroundBadgeOutlineColor,omitempty"` // "#RRGGBB"; "" = default shadow
-	NoBackgroundBadgeOutlineWidth int    `json:"noBackgroundBadgeOutlineWidth,omitempty"` // px; 0 = default
-	AggregateBar     bool           `json:"aggregateBar"`
-	AggregateBarPos  string         `json:"aggregateBarPos,omitempty"` // "top" | "bottom"
-	Trending         bool           `json:"trending"`
-	TrendingStyle    TrendingStyle  `json:"trendingStyle"`
-	BackdropAsPoster bool           `json:"backdropAsPoster,omitempty"`
-	BackdropLogo     bool           `json:"backdropLogo,omitempty"`
-	RatingRing       bool           `json:"ratingRing,omitempty"`
-	RatingRingPos    string         `json:"ratingRingPos,omitempty"`   // "tl" | "tr" | "bl" | "br"
-	RatingRingColor  string         `json:"ratingRingColor,omitempty"` // "" = auto (green/amber/red), else "#RRGGBB"
+	NoBackgroundBadgeOutlineColor string        `json:"noBackgroundBadgeOutlineColor,omitempty"` // "#RRGGBB"; "" = default shadow
+	NoBackgroundBadgeOutlineWidth int           `json:"noBackgroundBadgeOutlineWidth,omitempty"` // px; 0 = default
+	AggregateBar                  bool          `json:"aggregateBar"`
+	AggregateBarPos               string        `json:"aggregateBarPos,omitempty"` // "top" | "bottom"
+	Trending                      bool          `json:"trending"`
+	TrendingStyle                 TrendingStyle `json:"trendingStyle"`
+	BackdropAsPoster              bool          `json:"backdropAsPoster,omitempty"`
+	BackdropLogo                  bool          `json:"backdropLogo,omitempty"`
+	RatingRing                    bool          `json:"ratingRing,omitempty"`
+	RatingRingPos                 string        `json:"ratingRingPos,omitempty"`   // "tl" | "tr" | "bl" | "br"
+	RatingRingColor               string        `json:"ratingRingColor,omitempty"` // "" = auto (green/amber/red), else "#RRGGBB"
 
 	// Grouped component controls. Anonymous embeds keep the JSON flat (one key
 	// per field, matching v2's naming) while grouping the Go source by concern.
@@ -124,6 +124,7 @@ type Config struct {
 	AgeRatingConfig
 	PerSurfaceBaseConfig
 	RatingRingConfig
+	RandomPosterConfig
 
 	// Legacy carries config keys XRDB does not yet model — chiefly per-surface
 	// fields from a migrated v2 profile whose matching v3 control has not
@@ -253,12 +254,24 @@ type RatingBadgeConfig struct {
 	RatingProviderOverrides map[string]string `json:"ratingProviderOverrides,omitempty"`
 }
 
+// RandomPosterConfig groups the filters applied when the artwork source is
+// "random", so a random pick can be constrained to quality/size/language.
+type RandomPosterConfig struct {
+	RandomPosterText           string  `json:"randomPosterText,omitempty"`           // any | text | textless
+	RandomPosterLanguage       string  `json:"randomPosterLanguage,omitempty"`       // any | requested
+	RandomPosterMinVoteCount   int     `json:"randomPosterMinVoteCount,omitempty"`   // 0 = no floor
+	RandomPosterMinVoteAverage float64 `json:"randomPosterMinVoteAverage,omitempty"` // 0 = no floor
+	RandomPosterMinWidth       int     `json:"randomPosterMinWidth,omitempty"`
+	RandomPosterMinHeight      int     `json:"randomPosterMinHeight,omitempty"`
+	RandomPosterFallback       string  `json:"randomPosterFallback,omitempty"` // best | original; "" = best
+}
+
 // AggregateConfig groups the aggregate-score-bar appearance controls. The bar's
 // on/off and position stay flat (AggregateBar / AggregateBarPos).
 type AggregateConfig struct {
-	AggregateAccentColor string `json:"aggregateAccentColor,omitempty"` // "#RRGGBB" bar fill; "" = auto 3-band
-	AggregateValueColor  string `json:"aggregateValueColor,omitempty"`  // "#RRGGBB" value text; "" = default
-	AggregateBarOffset   int    `json:"aggregateBarOffset,omitempty"`   // px nudge inward from the edge; 0 = flush
+	AggregateAccentColor  string `json:"aggregateAccentColor,omitempty"`  // "#RRGGBB" bar fill; "" = auto 3-band
+	AggregateValueColor   string `json:"aggregateValueColor,omitempty"`   // "#RRGGBB" value text; "" = default
+	AggregateBarOffset    int    `json:"aggregateBarOffset,omitempty"`    // px nudge inward from the edge; 0 = flush
 	AggregateRatingSource string `json:"aggregateRatingSource,omitempty"` // overall | critics | audience; "" = overall
 	ScorebarStyle         string `json:"scorebarStyle,omitempty"`         // progress | solid | gradient; "" = progress
 	// Scorebar band overrides. When a color is set it replaces the built-in
@@ -345,33 +358,33 @@ func Default() Config {
 
 // raw is the loose JSON shape we accept from profile config fields.
 type raw struct {
-	Size             *string  `json:"size"`
-	ArtworkSource    *string  `json:"artworkSource"`
-	Language         *string  `json:"language"`
-	TextPreference   *string  `json:"textPreference"`
-	Ratings          []string `json:"ratings"`
-	RatingsLayout    *string  `json:"ratingsLayout"`
-	BadgeStyle       *string  `json:"badgeStyle"`
-	BadgeTheme       *string  `json:"badgeTheme"`
-	Badges           []string `json:"badges"`
-	AgeRating        *bool    `json:"ageRating"`
-	AgeRatingPos     *string  `json:"ageRatingPos"`
-	Genre            *bool    `json:"genre"`
-	GenrePos         *string  `json:"genrePos"`
-	Providers        *bool    `json:"providers"`
-	ProvidersCountry *string  `json:"providersCountry"`
-	NetworkTileColor *string  `json:"networkTileColor"`
-	NoBackgroundBadgeOutlineColor *string `json:"noBackgroundBadgeOutlineColor"`
-	NoBackgroundBadgeOutlineWidth *int    `json:"noBackgroundBadgeOutlineWidth"`
-	AggregateBar     *bool    `json:"aggregateBar"`
-	AggregateBarPos  *string  `json:"aggregateBarPos"`
-	Trending         *bool    `json:"trending"`
-	TrendingStyle    *string  `json:"trendingStyle"`
-	BackdropAsPoster *bool    `json:"backdropAsPoster"`
-	BackdropLogo     *bool    `json:"backdropLogo"`
-	RatingRing       *bool    `json:"ratingRing"`
-	RatingRingPos    *string  `json:"ratingRingPos"`
-	RatingRingColor  *string  `json:"ratingRingColor"`
+	Size                          *string  `json:"size"`
+	ArtworkSource                 *string  `json:"artworkSource"`
+	Language                      *string  `json:"language"`
+	TextPreference                *string  `json:"textPreference"`
+	Ratings                       []string `json:"ratings"`
+	RatingsLayout                 *string  `json:"ratingsLayout"`
+	BadgeStyle                    *string  `json:"badgeStyle"`
+	BadgeTheme                    *string  `json:"badgeTheme"`
+	Badges                        []string `json:"badges"`
+	AgeRating                     *bool    `json:"ageRating"`
+	AgeRatingPos                  *string  `json:"ageRatingPos"`
+	Genre                         *bool    `json:"genre"`
+	GenrePos                      *string  `json:"genrePos"`
+	Providers                     *bool    `json:"providers"`
+	ProvidersCountry              *string  `json:"providersCountry"`
+	NetworkTileColor              *string  `json:"networkTileColor"`
+	NoBackgroundBadgeOutlineColor *string  `json:"noBackgroundBadgeOutlineColor"`
+	NoBackgroundBadgeOutlineWidth *int     `json:"noBackgroundBadgeOutlineWidth"`
+	AggregateBar                  *bool    `json:"aggregateBar"`
+	AggregateBarPos               *string  `json:"aggregateBarPos"`
+	Trending                      *bool    `json:"trending"`
+	TrendingStyle                 *string  `json:"trendingStyle"`
+	BackdropAsPoster              *bool    `json:"backdropAsPoster"`
+	BackdropLogo                  *bool    `json:"backdropLogo"`
+	RatingRing                    *bool    `json:"ratingRing"`
+	RatingRingPos                 *string  `json:"ratingRingPos"`
+	RatingRingColor               *string  `json:"ratingRingColor"`
 
 	rawGenre
 	rawQuality
@@ -381,6 +394,18 @@ type raw struct {
 	rawAge
 	rawSurface
 	rawRing
+	rawRandom
+}
+
+// rawRandom is the loose parse shape for RandomPosterConfig.
+type rawRandom struct {
+	RandomPosterText           *string  `json:"randomPosterText"`
+	RandomPosterLanguage       *string  `json:"randomPosterLanguage"`
+	RandomPosterMinVoteCount   *int     `json:"randomPosterMinVoteCount"`
+	RandomPosterMinVoteAverage *float64 `json:"randomPosterMinVoteAverage"`
+	RandomPosterMinWidth       *int     `json:"randomPosterMinWidth"`
+	RandomPosterMinHeight      *int     `json:"randomPosterMinHeight"`
+	RandomPosterFallback       *string  `json:"randomPosterFallback"`
 }
 
 // rawGenre is the loose parse shape for GenreBadgeConfig, embedded in raw so its
@@ -627,6 +652,7 @@ func Parse(data json.RawMessage) Config {
 	parseAge(&cfg, &r)
 	parseSurface(&cfg, &r)
 	parseRing(&cfg, &r)
+	parseRandom(&cfg, &r)
 	cfg.Legacy = collectLegacy(data)
 	return cfg
 }
@@ -799,6 +825,41 @@ func parseAggregate(cfg *Config, r *raw) {
 	}
 }
 
+// parseRandom reads the random-poster filters, validating enums and clamping
+// numeric floors.
+func parseRandom(cfg *Config, r *raw) {
+	if r.RandomPosterText != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.RandomPosterText)); v {
+		case "any", "text", "textless":
+			cfg.RandomPosterText = v
+		}
+	}
+	if r.RandomPosterLanguage != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.RandomPosterLanguage)); v {
+		case "any", "requested":
+			cfg.RandomPosterLanguage = v
+		}
+	}
+	if r.RandomPosterMinVoteCount != nil {
+		cfg.RandomPosterMinVoteCount = clampInt(*r.RandomPosterMinVoteCount, 0, 100000)
+	}
+	if r.RandomPosterMinVoteAverage != nil && *r.RandomPosterMinVoteAverage >= 0 && *r.RandomPosterMinVoteAverage <= 10 {
+		cfg.RandomPosterMinVoteAverage = *r.RandomPosterMinVoteAverage
+	}
+	if r.RandomPosterMinWidth != nil {
+		cfg.RandomPosterMinWidth = clampInt(*r.RandomPosterMinWidth, 0, 10000)
+	}
+	if r.RandomPosterMinHeight != nil {
+		cfg.RandomPosterMinHeight = clampInt(*r.RandomPosterMinHeight, 0, 10000)
+	}
+	if r.RandomPosterFallback != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.RandomPosterFallback)); v {
+		case "best", "original":
+			cfg.RandomPosterFallback = v
+		}
+	}
+}
+
 // clampInt bounds v to [lo, hi].
 func clampInt(v, lo, hi int) int {
 	if v < lo {
@@ -872,33 +933,33 @@ func isHexColor(s string) bool {
 func CacheKey(cfg Config) string {
 	// Canonical serialization: sort ratings and badges, then marshal.
 	type canonical struct {
-		Size             MediaSize      `json:"size"`
-		ArtworkSource    ArtworkSource  `json:"artworkSource"`
-		Language         string         `json:"language"`
-		TextPreference   TextPreference `json:"textPreference"`
-		Ratings          []string       `json:"ratings"`
-		RatingsLayout    RatingsLayout  `json:"ratingsLayout"`
-		BadgeStyle       BadgeStyle     `json:"badgeStyle"`
-		BadgeTheme       BadgeTheme     `json:"badgeTheme"`
-		Badges           []string       `json:"badges"`
-		AgeRating        bool           `json:"ageRating"`
-		AgeRatingPos     string         `json:"ageRatingPos"`
-		Genre            bool           `json:"genre"`
-		GenrePos         string         `json:"genrePos"`
-		Providers        bool           `json:"providers"`
-		ProvidersCountry string         `json:"providersCountry"`
-		NetworkTileColor string         `json:"networkTileColor"`
-		NoBackgroundBadgeOutlineColor string `json:"noBackgroundBadgeOutlineColor"`
-		NoBackgroundBadgeOutlineWidth int    `json:"noBackgroundBadgeOutlineWidth"`
-		AggregateBar     bool           `json:"aggregateBar"`
-		AggregateBarPos  string         `json:"aggregateBarPos"`
-		Trending         bool           `json:"trending"`
-		TrendingStyle    TrendingStyle  `json:"trendingStyle"`
-		BackdropAsPoster bool           `json:"backdropAsPoster"`
-		BackdropLogo     bool           `json:"backdropLogo"`
-		RatingRing       bool           `json:"ratingRing"`
-		RatingRingPos    string         `json:"ratingRingPos"`
-		RatingRingColor  string         `json:"ratingRingColor"`
+		Size                          MediaSize      `json:"size"`
+		ArtworkSource                 ArtworkSource  `json:"artworkSource"`
+		Language                      string         `json:"language"`
+		TextPreference                TextPreference `json:"textPreference"`
+		Ratings                       []string       `json:"ratings"`
+		RatingsLayout                 RatingsLayout  `json:"ratingsLayout"`
+		BadgeStyle                    BadgeStyle     `json:"badgeStyle"`
+		BadgeTheme                    BadgeTheme     `json:"badgeTheme"`
+		Badges                        []string       `json:"badges"`
+		AgeRating                     bool           `json:"ageRating"`
+		AgeRatingPos                  string         `json:"ageRatingPos"`
+		Genre                         bool           `json:"genre"`
+		GenrePos                      string         `json:"genrePos"`
+		Providers                     bool           `json:"providers"`
+		ProvidersCountry              string         `json:"providersCountry"`
+		NetworkTileColor              string         `json:"networkTileColor"`
+		NoBackgroundBadgeOutlineColor string         `json:"noBackgroundBadgeOutlineColor"`
+		NoBackgroundBadgeOutlineWidth int            `json:"noBackgroundBadgeOutlineWidth"`
+		AggregateBar                  bool           `json:"aggregateBar"`
+		AggregateBarPos               string         `json:"aggregateBarPos"`
+		Trending                      bool           `json:"trending"`
+		TrendingStyle                 TrendingStyle  `json:"trendingStyle"`
+		BackdropAsPoster              bool           `json:"backdropAsPoster"`
+		BackdropLogo                  bool           `json:"backdropLogo"`
+		RatingRing                    bool           `json:"ratingRing"`
+		RatingRingPos                 string         `json:"ratingRingPos"`
+		RatingRingColor               string         `json:"ratingRingColor"`
 		// Grouped components keep their omitempty tags, so a config with none of
 		// these set hashes exactly as it did before the fields existed.
 		GenreBadgeConfig
@@ -909,6 +970,7 @@ func CacheKey(cfg Config) string {
 		AgeRatingConfig
 		PerSurfaceBaseConfig
 		RatingRingConfig
+		RandomPosterConfig
 	}
 	ratings := make([]string, len(cfg.Ratings))
 	copy(ratings, cfg.Ratings)
@@ -918,40 +980,42 @@ func CacheKey(cfg Config) string {
 	sort.Strings(badges)
 
 	c := canonical{
-		Size:                 cfg.Size,
-		ArtworkSource:        cfg.ArtworkSource,
-		Language:             cfg.Language,
-		TextPreference:       cfg.TextPreference,
-		Ratings:              ratings,
-		RatingsLayout:        cfg.RatingsLayout,
-		BadgeStyle:           cfg.BadgeStyle,
-		BadgeTheme:           cfg.BadgeTheme,
-		Badges:               badges,
-		AgeRating:            cfg.AgeRating,
-		AgeRatingPos:         cfg.AgeRatingPos,
-		Genre:                cfg.Genre,
-		GenrePos:             cfg.GenrePos,
-		Providers:            cfg.Providers,
-		ProvidersCountry:     cfg.ProvidersCountry,
-		NetworkTileColor:     cfg.NetworkTileColor,
+		Size:                          cfg.Size,
+		ArtworkSource:                 cfg.ArtworkSource,
+		Language:                      cfg.Language,
+		TextPreference:                cfg.TextPreference,
+		Ratings:                       ratings,
+		RatingsLayout:                 cfg.RatingsLayout,
+		BadgeStyle:                    cfg.BadgeStyle,
+		BadgeTheme:                    cfg.BadgeTheme,
+		Badges:                        badges,
+		AgeRating:                     cfg.AgeRating,
+		AgeRatingPos:                  cfg.AgeRatingPos,
+		Genre:                         cfg.Genre,
+		GenrePos:                      cfg.GenrePos,
+		Providers:                     cfg.Providers,
+		ProvidersCountry:              cfg.ProvidersCountry,
+		NetworkTileColor:              cfg.NetworkTileColor,
 		NoBackgroundBadgeOutlineColor: cfg.NoBackgroundBadgeOutlineColor,
 		NoBackgroundBadgeOutlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
-		AggregateBar:         cfg.AggregateBar,
-		AggregateBarPos:      cfg.AggregateBarPos,
-		Trending:             cfg.Trending,
-		TrendingStyle:        cfg.TrendingStyle,
-		BackdropAsPoster:     cfg.BackdropAsPoster,
-		BackdropLogo:         cfg.BackdropLogo,
-		RatingRing:           cfg.RatingRing,
-		RatingRingPos:        cfg.RatingRingPos,
-		RatingRingColor:      cfg.RatingRingColor,
-		GenreBadgeConfig:     cfg.GenreBadgeConfig,
-		QualityBadgeConfig:   cfg.QualityBadgeConfig,
-		TrendingConfig:       cfg.TrendingConfig,
-		RatingBadgeConfig:    cfg.RatingBadgeConfig,
-		AggregateConfig:      cfg.AggregateConfig,
-		AgeRatingConfig:      cfg.AgeRatingConfig,
-		PerSurfaceBaseConfig: cfg.PerSurfaceBaseConfig,
+		AggregateBar:                  cfg.AggregateBar,
+		AggregateBarPos:               cfg.AggregateBarPos,
+		Trending:                      cfg.Trending,
+		TrendingStyle:                 cfg.TrendingStyle,
+		BackdropAsPoster:              cfg.BackdropAsPoster,
+		BackdropLogo:                  cfg.BackdropLogo,
+		RatingRing:                    cfg.RatingRing,
+		RatingRingPos:                 cfg.RatingRingPos,
+		RatingRingColor:               cfg.RatingRingColor,
+		GenreBadgeConfig:              cfg.GenreBadgeConfig,
+		QualityBadgeConfig:            cfg.QualityBadgeConfig,
+		TrendingConfig:                cfg.TrendingConfig,
+		RatingBadgeConfig:             cfg.RatingBadgeConfig,
+		AggregateConfig:               cfg.AggregateConfig,
+		AgeRatingConfig:               cfg.AgeRatingConfig,
+		PerSurfaceBaseConfig:          cfg.PerSurfaceBaseConfig,
+		RatingRingConfig:              cfg.RatingRingConfig,
+		RandomPosterConfig:            cfg.RandomPosterConfig,
 	}
 	b, _ := json.Marshal(c)
 	// Fold any preserved-but-unmodeled fields into the key so two migrated

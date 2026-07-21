@@ -126,6 +126,13 @@ export function ConfiguratorClient() {
   const buildSrc = useCallback((type: MediaType, id: string, cfg: ConfigState) => {
     const payload: Record<string, unknown> = {
       size: cfg.size, artworkSource: cfg.artworkSource, language: cfg.language,
+      randomPosterText: cfg.randomPosterText === 'any' ? '' : cfg.randomPosterText,
+      randomPosterLanguage: cfg.randomPosterLanguage === 'any' ? '' : cfg.randomPosterLanguage,
+      randomPosterMinVoteCount: cfg.randomPosterMinVoteCount,
+      randomPosterMinVoteAverage: cfg.randomPosterMinVoteAverage,
+      randomPosterMinWidth: cfg.randomPosterMinWidth,
+      randomPosterMinHeight: cfg.randomPosterMinHeight,
+      randomPosterFallback: cfg.randomPosterFallback === 'best' ? '' : cfg.randomPosterFallback,
       textPreference: cfg.textPreference, ratingsLayout: cfg.ratingsLayout,
       badgeStyle: cfg.badgeStyle, badgeTheme: cfg.badgeTheme,
       ratings: cfg.ratings, ageRating: cfg.ageRating, ageRatingPos: cfg.ageRatingPos,

@@ -166,6 +166,13 @@ export const PREVIEW_DEBOUNCE_MS = 500;
 export interface ConfigState {
   size: string;
   artworkSource: string;
+  randomPosterText: string; // any | text | textless
+  randomPosterLanguage: string; // any | requested
+  randomPosterMinVoteCount: number;
+  randomPosterMinVoteAverage: number;
+  randomPosterMinWidth: number;
+  randomPosterMinHeight: number;
+  randomPosterFallback: string; // best | original
   language: string;
   textPreference: string;
   ratingsLayout: string;
@@ -235,6 +242,13 @@ export interface ConfigState {
 export const DEFAULT_CONFIG: ConfigState = {
   size: 'normal',
   artworkSource: 'tmdb',
+  randomPosterText: 'any',
+  randomPosterLanguage: 'any',
+  randomPosterMinVoteCount: 0,
+  randomPosterMinVoteAverage: 0,
+  randomPosterMinWidth: 0,
+  randomPosterMinHeight: 0,
+  randomPosterFallback: 'best',
   language: 'en',
   textPreference: 'original',
   ratingsLayout: 'bottom',

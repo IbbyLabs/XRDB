@@ -111,6 +111,60 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           </select>
         </Field>
 
+        {config.artworkSource === 'random' && (
+          <fieldset style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 'var(--sp-3)', margin: 0 }}>
+            <legend className="label" style={{ padding: '0 var(--sp-1)' }}>Random filters</legend>
+            <div className="cfg-fields">
+              <Field label="Text" htmlFor={`${uid}-rp-text`}>
+                <select id={`${uid}-rp-text`} className="select" value={config.randomPosterText}
+                  onChange={e => onUpdate('randomPosterText', e.target.value)} style={{ maxWidth: '10rem' }}>
+                  <option value="any">Any</option>
+                  <option value="text">With text</option>
+                  <option value="textless">Textless</option>
+                </select>
+              </Field>
+              <Field label="Language" htmlFor={`${uid}-rp-lang`}>
+                <select id={`${uid}-rp-lang`} className="select" value={config.randomPosterLanguage}
+                  onChange={e => onUpdate('randomPosterLanguage', e.target.value)} style={{ maxWidth: '10rem' }}>
+                  <option value="any">Any</option>
+                  <option value="requested">Requested only</option>
+                </select>
+              </Field>
+              <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
+                <Field label="Min votes" htmlFor={`${uid}-rp-vc`}>
+                  <input id={`${uid}-rp-vc`} className="input" type="number" inputMode="numeric" min={0}
+                    value={config.randomPosterMinVoteCount || ''} placeholder="0" style={{ maxWidth: '7rem' }}
+                    onChange={e => onUpdate('randomPosterMinVoteCount', e.target.value === '' ? 0 : Number(e.target.value))} />
+                </Field>
+                <Field label="Min score" htmlFor={`${uid}-rp-va`}>
+                  <input id={`${uid}-rp-va`} className="input" type="number" inputMode="decimal" min={0} max={10} step={0.5}
+                    value={config.randomPosterMinVoteAverage || ''} placeholder="0" style={{ maxWidth: '7rem' }}
+                    onChange={e => onUpdate('randomPosterMinVoteAverage', e.target.value === '' ? 0 : Number(e.target.value))} />
+                </Field>
+              </div>
+              <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
+                <Field label="Min width" htmlFor={`${uid}-rp-w`}>
+                  <input id={`${uid}-rp-w`} className="input" type="number" inputMode="numeric" min={0}
+                    value={config.randomPosterMinWidth || ''} placeholder="0" style={{ maxWidth: '7rem' }}
+                    onChange={e => onUpdate('randomPosterMinWidth', e.target.value === '' ? 0 : Number(e.target.value))} />
+                </Field>
+                <Field label="Min height" htmlFor={`${uid}-rp-h`}>
+                  <input id={`${uid}-rp-h`} className="input" type="number" inputMode="numeric" min={0}
+                    value={config.randomPosterMinHeight || ''} placeholder="0" style={{ maxWidth: '7rem' }}
+                    onChange={e => onUpdate('randomPosterMinHeight', e.target.value === '' ? 0 : Number(e.target.value))} />
+                </Field>
+              </div>
+              <Field label="Fallback" htmlFor={`${uid}-rp-fb`} hint="When nothing passes the filters.">
+                <select id={`${uid}-rp-fb`} className="select" value={config.randomPosterFallback}
+                  onChange={e => onUpdate('randomPosterFallback', e.target.value)} style={{ maxWidth: '10rem' }}>
+                  <option value="best">Best rated</option>
+                  <option value="original">Original pick</option>
+                </select>
+              </Field>
+            </div>
+          </fieldset>
+        )}
+
         <Field label="Resolution" htmlFor={`${uid}-size`}>
           <select
             id={`${uid}-size`}
