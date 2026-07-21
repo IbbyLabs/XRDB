@@ -31,6 +31,20 @@ test('sharing works without the async clipboard API', async ({ page }) => {
   await expect(page.locator('.notice')).toHaveText(/share link copied/i);
 });
 
+test('the copy is acknowledged where the click happened', async ({ page }) => {
+  await gotoConfigurator(page);
+
+  // The notice renders at the top of the page and this button sits well below
+  // it, so a confirmation that only appears up there is one nobody sees.
+  const btn = shareButton(page);
+  await btn.scrollIntoViewIfNeeded();
+  await btn.click();
+
+  const copied = page.getByRole('button', { name: /link copied/i });
+  await expect(copied).toBeVisible();
+  await expect(copied).toBeInViewport();
+});
+
 test('the shared link rebuilds the look for someone else', async ({ page, context, browser }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await gotoConfigurator(page);

@@ -3,7 +3,7 @@
 import {
   useState, useCallback, useRef, useId, useEffect,
 } from 'react';
-import { Settings2, Star, SlidersHorizontal, Film, Rocket, Link2, Maximize2, Undo2, Redo2 } from 'lucide-react';
+import { Settings2, Star, SlidersHorizontal, Film, Rocket, Link2, Maximize2, Undo2, Redo2, Check, X } from 'lucide-react';
 import { renderUrl, type MediaType, type Template } from '@/lib/api';
 import { getRenderKey, setRenderKey } from '@/lib/render-key';
 import { copyText } from '@/lib/clipboard';
@@ -121,6 +121,11 @@ export function ConfiguratorClient() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Acknowledgement shown on the share button itself, so the result of the
+  // click is visible without scrolling back up to the notice.
+  const [shareState, setShareState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const shareTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (shareTimer.current) clearTimeout(shareTimer.current); }, []);
   // Undo history: every config mutation snapshots the previous surface set here,
   // so any change — a manual edit or a template — can be stepped back with the
   // Undo control or Cmd/Ctrl+Z. Capped so a long session can't grow it unbounded.
@@ -413,7 +418,15 @@ export function ConfiguratorClient() {
   const shareLook = async () => {
     const fragment = encodeShare({ t: mediaType, id: mediaId, title: mediaTitle, cfgs: configs });
     const link = `${window.location.origin}${window.location.pathname}#c=${fragment}`;
-    if (await copyText(link)) {
+    const ok = await copyText(link);
+    // The notice explains what the link does, but it renders at the top of the
+    // page while this button sits down in the preview column, so on anything
+    // shorter than the whole page it lands out of sight. The button says the
+    // short version itself, where the click happened.
+    setShareState(ok ? 'copied' : 'failed');
+    if (shareTimer.current) clearTimeout(shareTimer.current);
+    shareTimer.current = setTimeout(() => setShareState('idle'), 2000);
+    if (ok) {
       flash('success', 'Share link copied — anyone who opens it sees this exact look');
     } else {
       flash('error', 'Could not copy the link — your browser blocked clipboard access');
@@ -521,9 +534,16 @@ export function ConfiguratorClient() {
                 <Maximize2 size={13} aria-hidden />
                 Full size
               </a>
-              <button className="btn btn-ghost btn-sm" onClick={() => void shareLook()}>
-                <Link2 size={13} aria-hidden />
-                Share this look
+              <button
+                className={`btn btn-ghost btn-sm${shareState === 'failed' ? ' btn-danger' : ''}`}
+                onClick={() => void shareLook()}
+              >
+                {shareState === 'copied' ? <Check size={13} aria-hidden />
+                  : shareState === 'failed' ? <X size={13} aria-hidden />
+                  : <Link2 size={13} aria-hidden />}
+                {shareState === 'copied' ? 'Link copied'
+                  : shareState === 'failed' ? 'Copy failed'
+                  : 'Share this look'}
               </button>
               <button
                 className="btn btn-ghost btn-sm"
