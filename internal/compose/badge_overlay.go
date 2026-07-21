@@ -778,6 +778,7 @@ type genreBadgeOpts struct {
 	offsetX      int // px nudge from the resolved corner
 	offsetY      int
 	bgOpacity    int     // 0 = default (200/255); else 1-100 mapped to alpha
+	mode         string  // "" | text | icon | both; icon modes label by genre family
 	style        string  // "" | glass | square | plain | clean | tile
 	tileColor    string  // "#RRGGBB" for the tile style
 	borderWidth  float64 // px border on the tile; 0 = default hairline
@@ -812,6 +813,7 @@ func genreOptsFromConfig(cfg imageconfig.Config) genreBadgeOpts {
 		offsetX:      cfg.GenreBadgeOffsetX,
 		offsetY:      cfg.GenreBadgeOffsetY,
 		bgOpacity:    cfg.GenreBadgeBackgroundOpacity,
+		mode:         cfg.GenreBadgeMode,
 		style:        cfg.GenreBadgeStyle,
 		tileColor:    cfg.GenreBadgeTileAccentColor,
 		borderWidth:  cfg.GenreBadgeBorderWidth,
@@ -840,6 +842,22 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	}
 	label := strings.Join(shown, " · ")
 
+	// The icon modes label the badge with the resolved family ("SCI FI") rather
+	// than the raw genre list, and tint it with that family's accent. The clean
+	// and tile styles have no room for a glyph, so they stay text-only.
+	mode := opts.mode
+	if opts.style == "clean" || opts.style == "tile" {
+		mode = "text"
+	}
+	var fam *genreFamily
+	if mode == "icon" || mode == "both" {
+		if fam = resolveGenreFamily(genres); fam == nil {
+			mode = "text"
+		} else {
+			label = fam.label
+		}
+	}
+
 	s := func(v float64) int { return int(v*scale + 0.5) }
 	padX := s(10)
 	padY := s(5)
@@ -853,6 +871,17 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	bh := padY*2 + ascent + descent
 	bw := padX*2 + textWidth(face, label)
 
+	iconSize, iconGap := 0, 0
+	switch mode {
+	case "both":
+		iconSize = maxInt(1, (ascent+descent)*95/100)
+		iconGap = maxInt(s(4), iconSize*16/100)
+		bw = padX*2 + iconSize + iconGap + textWidth(face, label)
+	case "icon":
+		iconSize = maxInt(1, (ascent+descent)*95/100)
+		bw = padX*2 + iconSize
+	}
+
 	resolvedPos := pos
 	if resolvedPos == "" || resolvedPos == "inherit" {
 		resolvedPos = "bl"
@@ -865,6 +894,28 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	}
 	textColor := color.NRGBA{R: 225, G: 225, B: 228, A: 255}
 	tx, ty := r.Min.X+padX, r.Min.Y+padY+ascent
+
+	// drawIcon paints the family glyph and reports the accent to tint the label.
+	drawIcon := func() color.NRGBA {
+		if fam == nil || iconSize <= 0 {
+			return textColor
+		}
+		accent, err := parseHexColor(fam.accent)
+		if err != nil {
+			return textColor
+		}
+		accent.A = 255
+		iconX := r.Min.X + padX
+		if mode == "icon" {
+			iconX = r.Min.X + (bw-iconSize)/2
+		}
+		drawGenreIcon(base, fam.id, accent, color.NRGBA{R: 5, G: 7, B: 11, A: 255},
+			iconX, r.Min.Y+(bh-iconSize)/2, iconSize)
+		return accent
+	}
+	if mode == "both" {
+		tx = r.Min.X + padX + iconSize + iconGap
+	}
 	switch opts.style {
 	case "plain":
 		// No tile: a configurable outline (or the default drop shadow) keeps the
@@ -874,7 +925,13 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			oc = c
 			ow = maxInt(1, int(float64(opts.outlineWidth)*scale+0.5))
 		}
-		drawLabelWithOutline(base, face, tx, ty, color.White, oc, ow, label)
+		labelCol := color.NRGBA{R: 255, G: 255, B: 255, A: 255}
+		if accent := drawIcon(); mode != "text" {
+			labelCol = accent
+		}
+		if mode != "icon" {
+			drawLabelWithOutline(base, face, tx, ty, labelCol, oc, ow, label)
+		}
 		return
 	case "tile":
 		fill := color.NRGBA{R: 8, G: 9, B: 12, A: 235}
@@ -904,7 +961,12 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		borderWidth: borderW,
 		shadow:      color.NRGBA{R: 0, G: 0, B: 0, A: 70},
 	})
-	drawText(base, face, tx, ty, textColor, label)
+	if accent := drawIcon(); mode != "text" {
+		textColor = accent
+	}
+	if mode != "icon" {
+		drawText(base, face, tx, ty, textColor, label)
+	}
 }
 
 // drawEditorialRating renders the magazine-style "editorial" presentation: the

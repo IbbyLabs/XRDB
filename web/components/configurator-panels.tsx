@@ -7,7 +7,7 @@ import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   LAYOUT_OPTIONS, RATING_OPTIONS, BADGE_STYLE_OPTIONS, BADGE_THEME_OPTIONS,
   RING_POS_OPTIONS, SIX_POS_OPTIONS, QUALITY_STYLE_OPTIONS, GENRE_STYLE_OPTIONS,
-  AGE_STYLE_OPTIONS, AGGREGATE_SOURCE_OPTIONS, AGGREGATE_ACCENT_MODE_OPTIONS, SCOREBAR_STYLE_OPTIONS, RATING_PRESENTATION_OPTIONS,
+  AGE_STYLE_OPTIONS, GENRE_MODE_OPTIONS, AGGREGATE_SOURCE_OPTIONS, AGGREGATE_ACCENT_MODE_OPTIONS, SCOREBAR_STYLE_OPTIONS, RATING_PRESENTATION_OPTIONS,
 } from './configurator-types';
 
 // ── Template strip ────────────────────────────────────────────────────────────
@@ -558,6 +558,26 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
         )}
 
         <span className="adv-section">Genre badge</span>
+        <div className="field">
+          <span className="label" id={`${uid}-genre-mode-label`}>Display</span>
+          <div className="opt-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }} role="group" aria-labelledby={`${uid}-genre-mode-label`}>
+            {GENRE_MODE_OPTIONS.map(o => (
+              <button
+                key={o.id}
+                className={`opt-btn${config.genreBadgeMode === o.id ? ' opt-btn--active' : ''}`}
+                onClick={() => onUpdate('genreBadgeMode', o.id)}
+                aria-pressed={config.genreBadgeMode === o.id}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+          <p className="hint">
+            {config.genreBadgeMode === 'default'
+              ? 'Lists up to three genre names.'
+              : 'Shows a glyph for the title’s main genre. The Clean and Tile styles stay text-only.'}
+          </p>
+        </div>
         <div className="field">
           <span className="label" id={`${uid}-genre-style-label`}>Style</span>
           <div className="opt-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }} role="group" aria-labelledby={`${uid}-genre-style-label`}>

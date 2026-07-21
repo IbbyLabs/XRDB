@@ -168,6 +168,7 @@ export function ConfiguratorClient() {
       qualityBadgesStyle: cfg.qualityBadgesStyle === 'default' ? '' : cfg.qualityBadgesStyle,
       qualityBadgesTileAccentColor: cfg.qualityBadgesTileAccentColor,
       genreBadgeStyle: cfg.genreBadgeStyle === 'default' ? '' : cfg.genreBadgeStyle,
+      genreBadgeMode: cfg.genreBadgeMode === 'default' ? '' : cfg.genreBadgeMode,
       aggregateAccentColor: cfg.aggregateAccentColor,
       aggregateAccentMode: cfg.aggregateAccentMode,
       aggregateBarOffset: cfg.aggregateBarOffset,

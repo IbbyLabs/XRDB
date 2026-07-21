@@ -57,3 +57,39 @@ func TestGenreFamilyAccentsAreValidHex(t *testing.T) {
 		}
 	}
 }
+
+// The icon modes must change the render, and the styles with no room for a
+// glyph must fall back to text.
+func TestGenreBadgeIconModes(t *testing.T) {
+	genres := []string{"Science Fiction"}
+
+	text := genreTestImage()
+	drawGenreBadge(text, genres, "tl", 2.0, newOccupancy(text.Bounds()), genreBadgeOpts{})
+
+	for _, mode := range []string{"icon", "both"} {
+		img := genreTestImage()
+		drawGenreBadge(img, genres, "tl", 2.0, newOccupancy(img.Bounds()), genreBadgeOpts{mode: mode})
+		if !imagesDiffer(text, img) {
+			t.Errorf("genre mode %q did not change the render", mode)
+		}
+	}
+
+	// A title with no genres has no family, so an icon mode renders nothing new.
+	empty := genreTestImage()
+	drawGenreBadge(empty, nil, "tl", 2.0, newOccupancy(empty.Bounds()), genreBadgeOpts{mode: "both"})
+	blank := genreTestImage()
+	if imagesDiffer(empty, blank) {
+		t.Error("an empty genre list should draw no badge at all")
+	}
+
+	// The tile style has no room for a glyph: icon mode must match plain text.
+	tileText := genreTestImage()
+	drawGenreBadge(tileText, genres, "tl", 2.0, newOccupancy(tileText.Bounds()),
+		genreBadgeOpts{style: "tile"})
+	tileIcon := genreTestImage()
+	drawGenreBadge(tileIcon, genres, "tl", 2.0, newOccupancy(tileIcon.Bounds()),
+		genreBadgeOpts{style: "tile", mode: "both"})
+	if imagesDiffer(tileText, tileIcon) {
+		t.Error("the tile style should ignore the icon mode")
+	}
+}

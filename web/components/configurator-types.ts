@@ -138,6 +138,12 @@ export const AGE_STYLE_OPTIONS = [
   { id: 'silver',  label: 'Silver' },
 ] as const;
 
+export const GENRE_MODE_OPTIONS = [
+  { id: 'default', label: 'Text' },
+  { id: 'icon',    label: 'Icon' },
+  { id: 'both',    label: 'Both' },
+] as const;
+
 export const GENRE_STYLE_OPTIONS = [
   { id: 'default', label: 'Glass'  },
   { id: 'square',  label: 'Square' },
@@ -237,6 +243,7 @@ export interface ConfigState {
   qualityBadgesStyle: string; // 'default' | plain | tile
   qualityBadgesTileAccentColor: string;
   genreBadgeStyle: string; // 'default' | glass | square | plain | clean | tile
+  genreBadgeMode: string;  // 'default' (text) | icon | both
   aggregateAccentColor: string; // '' = auto score-band
   aggregateAccentMode: string;  // '' = auto score-band
   aggregateBarOffset: number; // px inward nudge, -12..12; 0 = flush
@@ -314,6 +321,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   qualityBadgesStyle: 'default',
   qualityBadgesTileAccentColor: '',
   genreBadgeStyle: 'default',
+  genreBadgeMode: 'default',
   aggregateAccentColor: '',
   aggregateAccentMode: '',
   aggregateBarOffset: 0,
