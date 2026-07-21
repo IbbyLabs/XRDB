@@ -739,6 +739,28 @@ type genreBadgeOpts struct {
 	style        string  // "" | glass | square | plain | clean | tile
 	tileColor    string  // "#RRGGBB" for the tile style
 	borderWidth  float64 // px border on the tile; 0 = default hairline
+	outlineColor string  // "#RRGGBB" outline for the plain style; "" = default shadow
+	outlineWidth int     // px outline width for the plain style; 0 = default
+}
+
+// drawLabelWithOutline draws label at the given baseline with a text outline.
+// With outlineW <= 0 it falls back to a single soft drop shadow — the original
+// "plain" look. Used by the background-less badge styles.
+func drawLabelWithOutline(base *image.NRGBA, face font.Face, x, y int, textCol, outlineCol color.Color, outlineW int, label string) {
+	if outlineW <= 0 {
+		drawText(base, face, x+1, y+1, color.NRGBA{A: 180}, label)
+		drawText(base, face, x, y, textCol, label)
+		return
+	}
+	for dx := -outlineW; dx <= outlineW; dx++ {
+		for dy := -outlineW; dy <= outlineW; dy++ {
+			if dx == 0 && dy == 0 {
+				continue
+			}
+			drawText(base, face, x+dx, y+dy, outlineCol, label)
+		}
+	}
+	drawText(base, face, x, y, textCol, label)
 }
 
 // genreOptsFromConfig extracts the genre-badge styling from a resolved Config.
@@ -751,6 +773,8 @@ func genreOptsFromConfig(cfg imageconfig.Config) genreBadgeOpts {
 		style:        cfg.GenreBadgeStyle,
 		tileColor:    cfg.GenreBadgeTileAccentColor,
 		borderWidth:  cfg.GenreBadgeBorderWidth,
+		outlineColor: cfg.NoBackgroundBadgeOutlineColor,
+		outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
 	}
 }
 
@@ -801,10 +825,14 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	tx, ty := r.Min.X+padX, r.Min.Y+padY+ascent
 	switch opts.style {
 	case "plain":
-		// No tile: draw the label with a dark shadow so it stays legible on any
-		// background, matching v2's outlined "plain" treatment.
-		drawText(base, face, tx+maxInt(1, s(1)), ty+maxInt(1, s(1)), color.NRGBA{R: 0, G: 0, B: 0, A: 180}, label)
-		drawText(base, face, tx, ty, color.White, label)
+		// No tile: a configurable outline (or the default drop shadow) keeps the
+		// label legible on any background.
+		oc, ow := color.NRGBA{}, 0
+		if c, err := parseHexColor(opts.outlineColor); opts.outlineColor != "" && err == nil {
+			oc = c
+			ow = maxInt(1, int(float64(opts.outlineWidth)*scale+0.5))
+		}
+		drawLabelWithOutline(base, face, tx, ty, color.White, oc, ow, label)
 		return
 	case "tile":
 		fill := color.NRGBA{R: 8, G: 9, B: 12, A: 235}

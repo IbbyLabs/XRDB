@@ -586,6 +586,31 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
         <NumField id={`${uid}-genre-border`} label="Border width (px)" value={config.genreBadgeBorderWidth}
           onChange={v => onUpdate('genreBadgeBorderWidth', v)} min={0} max={6} placeholder="hairline"
           hint="Outline thickness on the genre tile." />
+        <div className="field">
+          <label className="label" htmlFor={`${uid}-plain-outline`}>Plain-style outline</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+            <input
+              id={`${uid}-plain-outline`}
+              type="color"
+              value={config.noBackgroundBadgeOutlineColor || '#000000'}
+              onChange={e => onUpdate('noBackgroundBadgeOutlineColor', e.target.value)}
+              className="color-swatch"
+            />
+            <button
+              className={`opt-btn${!config.noBackgroundBadgeOutlineColor ? ' opt-btn--active' : ''}`}
+              onClick={() => onUpdate('noBackgroundBadgeOutlineColor', '')}
+              aria-pressed={!config.noBackgroundBadgeOutlineColor}
+              style={{ flex: 1 }}
+            >
+              Default shadow
+            </button>
+          </div>
+          <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>
+            Text outline for background-less (plain) badges.
+          </span>
+        </div>
+        <NumField id={`${uid}-plain-outline-w`} label="Outline width (px)" value={config.noBackgroundBadgeOutlineWidth}
+          onChange={v => onUpdate('noBackgroundBadgeOutlineWidth', v)} min={0} max={6} placeholder="default" />
 
         <span className="adv-section">Aggregate bar</span>
         <div className="field">

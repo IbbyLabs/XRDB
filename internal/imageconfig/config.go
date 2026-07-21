@@ -101,6 +101,9 @@ type Config struct {
 	Providers        bool           `json:"providers"`
 	ProvidersCountry string         `json:"providersCountry,omitempty"`
 	NetworkTileColor string         `json:"networkTileColor,omitempty"` // "#RRGGBB" tile behind provider chips
+	// Outline for background-less ("plain") badge text.
+	NoBackgroundBadgeOutlineColor string `json:"noBackgroundBadgeOutlineColor,omitempty"` // "#RRGGBB"; "" = default shadow
+	NoBackgroundBadgeOutlineWidth int    `json:"noBackgroundBadgeOutlineWidth,omitempty"` // px; 0 = default
 	AggregateBar     bool           `json:"aggregateBar"`
 	AggregateBarPos  string         `json:"aggregateBarPos,omitempty"` // "top" | "bottom"
 	Trending         bool           `json:"trending"`
@@ -358,6 +361,8 @@ type raw struct {
 	Providers        *bool    `json:"providers"`
 	ProvidersCountry *string  `json:"providersCountry"`
 	NetworkTileColor *string  `json:"networkTileColor"`
+	NoBackgroundBadgeOutlineColor *string `json:"noBackgroundBadgeOutlineColor"`
+	NoBackgroundBadgeOutlineWidth *int    `json:"noBackgroundBadgeOutlineWidth"`
 	AggregateBar     *bool    `json:"aggregateBar"`
 	AggregateBarPos  *string  `json:"aggregateBarPos"`
 	Trending         *bool    `json:"trending"`
@@ -572,6 +577,12 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.NetworkTileColor != nil && isHexColor(*r.NetworkTileColor) {
 		cfg.NetworkTileColor = strings.TrimSpace(*r.NetworkTileColor)
+	}
+	if r.NoBackgroundBadgeOutlineColor != nil && isHexColor(*r.NoBackgroundBadgeOutlineColor) {
+		cfg.NoBackgroundBadgeOutlineColor = strings.TrimSpace(*r.NoBackgroundBadgeOutlineColor)
+	}
+	if r.NoBackgroundBadgeOutlineWidth != nil {
+		cfg.NoBackgroundBadgeOutlineWidth = clampInt(*r.NoBackgroundBadgeOutlineWidth, 0, 6)
 	}
 	if r.AggregateBar != nil {
 		cfg.AggregateBar = *r.AggregateBar
@@ -877,6 +888,8 @@ func CacheKey(cfg Config) string {
 		Providers        bool           `json:"providers"`
 		ProvidersCountry string         `json:"providersCountry"`
 		NetworkTileColor string         `json:"networkTileColor"`
+		NoBackgroundBadgeOutlineColor string `json:"noBackgroundBadgeOutlineColor"`
+		NoBackgroundBadgeOutlineWidth int    `json:"noBackgroundBadgeOutlineWidth"`
 		AggregateBar     bool           `json:"aggregateBar"`
 		AggregateBarPos  string         `json:"aggregateBarPos"`
 		Trending         bool           `json:"trending"`
@@ -921,6 +934,8 @@ func CacheKey(cfg Config) string {
 		Providers:            cfg.Providers,
 		ProvidersCountry:     cfg.ProvidersCountry,
 		NetworkTileColor:     cfg.NetworkTileColor,
+		NoBackgroundBadgeOutlineColor: cfg.NoBackgroundBadgeOutlineColor,
+		NoBackgroundBadgeOutlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
 		AggregateBar:         cfg.AggregateBar,
 		AggregateBarPos:      cfg.AggregateBarPos,
 		Trending:             cfg.Trending,
