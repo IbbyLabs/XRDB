@@ -564,6 +564,21 @@ textarea.input { min-height: 0; line-height: 1.5; }
   border-bottom: 2px solid transparent;
   transition: color var(--dur-1) var(--ease-out), border-color var(--dur-1) var(--ease-out);
 }
+/* Forces the config tabs onto their own row at every width, so the split
+   between per-surface and whole-config destinations is deliberate. */
+.tabs-break {
+  flex-basis: 100%;
+  height: var(--sp-2);
+}
+
+.tabs-group {
+  align-self: center;
+  /* matches .tab's inline padding so the caption aligns with the row above */
+  padding: 0 var(--sp-2);
+  font-size: var(--text-xs);
+  color: var(--subtle);
+}
+
 .tab:hover { color: var(--ink); }
 .tab[aria-selected="true"],
 .tab[aria-pressed="true"],

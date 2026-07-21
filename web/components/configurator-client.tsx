@@ -24,6 +24,21 @@ import { BRAND_DISCORD_URL } from '@/lib/brand';
 // can't grow without limit.
 const HISTORY_MAX = 50;
 
+// Two kinds of destination share one tab row: the first three style the
+// surface being previewed, the last two act on the whole saved config.
+const SURFACE_TABS = [
+  { id: 'display',  label: 'Display',  icon: <Settings2         size={13} aria-hidden /> },
+  { id: 'ratings',  label: 'Ratings',  icon: <Star              size={13} aria-hidden /> },
+  { id: 'advanced', label: 'Advanced', icon: <SlidersHorizontal size={13} aria-hidden /> },
+] as const;
+
+const CONFIG_TABS = [
+  { id: 'profile', label: 'Profile', icon: <Film   size={13} aria-hidden /> },
+  { id: 'install', label: 'Install', icon: <Rocket size={13} aria-hidden /> },
+] as const;
+
+type TabId = (typeof SURFACE_TABS)[number]['id'] | (typeof CONFIG_TABS)[number]['id'];
+
 export function ConfiguratorClient() {
   const uid = useId();
 
@@ -94,7 +109,7 @@ export function ConfiguratorClient() {
   // an edit is acknowledged immediately instead of feeling ignored for ~500ms.
   const [previewPending, setPreviewPending] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'display' | 'ratings' | 'advanced' | 'profile' | 'install'>('display');
+  const [activeTab, setActiveTab] = useState<TabId>('display');
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -305,6 +320,22 @@ export function ConfiguratorClient() {
       } };
     });
   };
+
+  const renderTab = (tab: { id: TabId; label: string; icon: React.ReactNode }) => (
+    <button
+      key={tab.id}
+      id={`${uid}-tab-${tab.id}`}
+      role="tab"
+      aria-selected={activeTab === tab.id}
+      tabIndex={activeTab === tab.id ? 0 : -1}
+      aria-controls={`${uid}-panel-${tab.id}`}
+      className="tab"
+      onClick={() => setActiveTab(tab.id)}
+    >
+      {tab.icon}
+      {tab.label}
+    </button>
+  );
 
   const toggleBadge = (b: string) => {
     lastEditRef.current = null;
@@ -526,27 +557,14 @@ export function ConfiguratorClient() {
         {/* ── Controls column ──────────────────────────────────────── */}
         <div className="cfg-col">
           <div className="tabs" role="tablist" aria-label="Settings panel" onKeyDown={tablistKeyNav}>
-            {([
-              { id: 'display',  label: 'Display',  icon: <Settings2        size={13} aria-hidden /> },
-              { id: 'ratings',  label: 'Ratings',  icon: <Star             size={13} aria-hidden /> },
-              { id: 'advanced', label: 'Advanced', icon: <SlidersHorizontal size={13} aria-hidden /> },
-              { id: 'profile',  label: 'Profile',  icon: <Film             size={13} aria-hidden /> },
-              { id: 'install',  label: 'Install',  icon: <Rocket           size={13} aria-hidden /> },
-            ] as const).map(tab => (
-              <button
-                key={tab.id}
-                id={`${uid}-tab-${tab.id}`}
-                role="tab"
-                aria-selected={activeTab === tab.id}
-                tabIndex={activeTab === tab.id ? 0 : -1}
-                aria-controls={`${uid}-panel-${tab.id}`}
-                className="tab"
-                onClick={() => setActiveTab(tab.id)}
-              >
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
+            {SURFACE_TABS.map(renderTab)}
+
+            {/* Profile and Install act on the whole config rather than the
+                surface being styled, so they hold their own row instead of
+                wrapping into one by chance. */}
+            <span className="tabs-break" aria-hidden="true" />
+            <span className="tabs-group" aria-hidden="true">This config</span>
+            {CONFIG_TABS.map(renderTab)}
           </div>
 
           {(activeTab === 'display' || activeTab === 'ratings' || activeTab === 'advanced') && (
