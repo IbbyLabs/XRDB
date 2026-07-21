@@ -679,7 +679,7 @@ func parseRating(cfg *Config, r *raw) {
 	}
 	if r.RatingPresentation != nil {
 		switch v := strings.ToLower(strings.TrimSpace(*r.RatingPresentation)); v {
-		case "standard", "minimal", "dual", "editorial", "scorebar", "none":
+		case "standard", "minimal", "average", "dual", "dual-minimal", "editorial", "scorebar", "none":
 			cfg.RatingPresentation = v
 		}
 	}

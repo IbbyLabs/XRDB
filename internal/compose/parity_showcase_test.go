@@ -126,7 +126,7 @@ func TestParityShowcase(t *testing.T) {
 				drawMinimalRating(c, ratings, ratingCfg(func(*imageconfig.Config) {}), 1.5, newOccupancy(c.Bounds()))
 			}},
 			{"dual", func(c *image.NRGBA) {
-				drawDualRating(c, ratings, ratingCfg(func(*imageconfig.Config) {}), 1.5, newOccupancy(c.Bounds()))
+				drawDualRating(c, ratings, ratingCfg(func(*imageconfig.Config) {}), 1.5, newOccupancy(c.Bounds()), true)
 			}},
 		},
 		"aggregate-bar": {

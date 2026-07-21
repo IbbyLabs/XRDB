@@ -996,20 +996,39 @@ func drawMinimalRating(base *image.NRGBA, ratings []provider.Rating, cfg imageco
 
 // drawDualRating shows a critics pill at the top and an audience pill at the
 // bottom, each an averaged score for its provider group.
-func drawDualRating(base *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, scale float64, occ *occupancy) {
+// drawAverageRating shows a single centred pill labelled "AVG" with the overall
+// average — like minimal, but explicitly named.
+func drawAverageRating(base *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, scale float64, occ *occupancy) {
+	avg, ok := ratingRingAverage(ratings, cfg.Ratings)
+	if !ok {
+		return
+	}
+	b := base.Bounds()
+	accent := color.NRGBA{R: 90, G: 98, B: 112, A: 255} // neutral slate label
+	drawScorePill(base, b.Min.X+b.Dx()/2, b.Min.Y+int(14*scale+0.5),
+		"AVG", strconv.FormatFloat(avg, 'f', 1, 64), accent, scale, occ)
+}
+
+// drawDualRating shows a critics pill (top) and an audience pill (bottom). When
+// labeled is false the pills carry just the score (the "dual-minimal" mode).
+func drawDualRating(base *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, scale float64, occ *occupancy, labeled bool) {
 	critics, audience, hasC, hasA := splitCriticsAudience(ratings, cfg.Ratings)
 	b := base.Bounds()
 	cx := b.Min.X + b.Dx()/2
 	pad := int(14*scale + 0.5)
 	criticsAccent := color.NRGBA{R: 39, G: 174, B: 96, A: 255}   // green
 	audienceAccent := color.NRGBA{R: 52, G: 152, B: 219, A: 255} // blue
+	criticsLabel, audienceLabel := "", ""
+	if labeled {
+		criticsLabel, audienceLabel = "CRITICS", "AUDIENCE"
+	}
 	if hasC {
-		drawScorePill(base, cx, b.Min.Y+pad, "CRITICS",
+		drawScorePill(base, cx, b.Min.Y+pad, criticsLabel,
 			strconv.FormatFloat(critics, 'f', 1, 64), criticsAccent, scale, occ)
 	}
 	if hasA {
 		topY := b.Max.Y - scorePillHeight(scale) - pad
-		drawScorePill(base, cx, topY, "AUDIENCE",
+		drawScorePill(base, cx, topY, audienceLabel,
 			strconv.FormatFloat(audience, 'f', 1, 64), audienceAccent, scale, occ)
 	}
 }

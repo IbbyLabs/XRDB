@@ -115,7 +115,9 @@ export const SIX_POS_OPTIONS = [
 export const RATING_PRESENTATION_OPTIONS = [
   { id: 'standard',  label: 'Standard',  desc: 'A row of individual rating badges' },
   { id: 'minimal',   label: 'Minimal',   desc: 'One pill with the overall average score' },
+  { id: 'average',   label: 'Average',   desc: 'One pill labelled AVG with the overall average' },
   { id: 'dual',      label: 'Dual',      desc: 'Critics score on top, audience score below' },
+  { id: 'dual-minimal', label: 'Dual (minimal)', desc: 'Critics and audience pills without labels' },
   { id: 'scorebar',  label: 'Score bar', desc: 'A full-width bar coloured by the average score' },
   { id: 'editorial', label: 'Editorial', desc: 'Magazine style: a genre label over a large score' },
   { id: 'none',      label: 'Hidden',    desc: 'Hide ratings on this surface entirely' },

@@ -250,7 +250,15 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		}
 	case "dual":
 		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
-			drawDualRating(composed, allRatings, req.Config, scale, occ)
+			drawDualRating(composed, allRatings, req.Config, scale, occ, true)
+		}
+	case "dual-minimal":
+		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
+			drawDualRating(composed, allRatings, req.Config, scale, occ, false)
+		}
+	case "average":
+		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
+			drawAverageRating(composed, allRatings, req.Config, scale, occ)
 		}
 	case "scorebar":
 		// Replace the badge strip with a single full-width score bar coloured by
