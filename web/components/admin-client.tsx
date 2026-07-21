@@ -422,11 +422,11 @@ function TTLRow({ entry, busy, onApply, onRevert }: {
           onClick={() => { const h = Number(draft); if (Number.isFinite(h) && h >= 0) onApply(entry.provider, h); }}
           disabled={busy !== null}
         >
-          {rowBusy ? '…' : 'Set'}
+          {rowBusy ? '…' : 'Apply'}
         </button>
         {entry.source === 'stored' && (
           <button className="btn btn-ghost btn-sm" onClick={() => onRevert(entry.provider)} disabled={busy !== null}>
-            Reset
+            Revert
           </button>
         )}
       </td>

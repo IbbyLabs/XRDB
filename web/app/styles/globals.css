@@ -550,6 +550,7 @@ textarea.input { min-height: 0; line-height: 1.5; }
 }
 .tab:hover { color: var(--ink); }
 .tab[aria-selected="true"],
+.tab[aria-pressed="true"],
 .tab--active {
   color: var(--ink);
   border-bottom-color: var(--accent);
