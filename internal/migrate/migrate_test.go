@@ -10,11 +10,11 @@ import (
 func TestMigrateLegacyProfilesSuccess(t *testing.T) {
 	input := LegacyEnvelope{Profiles: []map[string]json.RawMessage{
 		{
-			"id":         json.RawMessage(`"tt0816692"`),
-			"name":       json.RawMessage(`"Interstellar"`),
-			"type":       json.RawMessage(`"poster"`),
-			"uuid":       json.RawMessage(`"abc123"`),
-			"config":     json.RawMessage(`{"layout":"compact","rating":"imdb"}`),
+			"id":          json.RawMessage(`"tt0816692"`),
+			"name":        json.RawMessage(`"Interstellar"`),
+			"type":        json.RawMessage(`"poster"`),
+			"uuid":        json.RawMessage(`"abc123"`),
+			"config":      json.RawMessage(`{"layout":"compact","rating":"imdb"}`),
 			"legacyField": json.RawMessage(`"dropped"`),
 		},
 	}}
@@ -57,9 +57,9 @@ func TestMigrateLegacyProfilesFailFastOnMissingRequired(t *testing.T) {
 func TestMigrateLegacyProfilesDeterministic(t *testing.T) {
 	input := LegacyEnvelope{Profiles: []map[string]json.RawMessage{
 		{
-			"id":         json.RawMessage(`"tt0816692"`),
-			"type":       json.RawMessage(`"poster"`),
-			"config":     json.RawMessage(`{"layout":"compact"}`),
+			"id":          json.RawMessage(`"tt0816692"`),
+			"type":        json.RawMessage(`"poster"`),
+			"config":      json.RawMessage(`{"layout":"compact"}`),
 			"legacyField": json.RawMessage(`"dropped"`),
 		},
 	}}

@@ -1,6 +1,10 @@
 package compose
 
-import "testing"
+import (
+	"testing"
+
+	"xrdb_rewrite/internal/imageconfig"
+)
 
 func TestResolveGenreFamily(t *testing.T) {
 	for _, tc := range []struct {
@@ -146,5 +150,75 @@ func TestReleaseStatusBadge(t *testing.T) {
 		if imagesDiffer(blank, img) {
 			t.Errorf("status %q should draw nothing", status)
 		}
+	}
+}
+
+// Anime grouping decides whether a mapped anime reads as ANIME, folds in with
+// animation generally, or defers to its next strongest genre.
+func TestGenreFamilyAnimeGrouping(t *testing.T) {
+	// Ghost in the Shell: animated, science fiction, action.
+	genres := []string{"Animation", "Science Fiction", "Action"}
+
+	for _, tc := range []struct {
+		grouping string
+		isAnime  bool
+		want     string
+	}{
+		{"", true, "anime"}, // split is the default
+		{"split", true, "anime"},
+		{"animation", true, "animation"}, // folded in with animation
+		{"secondary", true, "scifi"},     // defers to the next strongest genre
+		{"split", false, "animation"},    // not mapped as anime
+		{"secondary", false, "scifi"},    // secondary applies to animation too
+	} {
+		got := resolveGenreFamilyGrouped(genres, tc.isAnime, tc.grouping)
+		if got == nil || got.id != tc.want {
+			id := "nil"
+			if got != nil {
+				id = got.id
+			}
+			t.Errorf("grouping=%q isAnime=%v: got %s, want %s", tc.grouping, tc.isAnime, id, tc.want)
+		}
+	}
+
+	// With nothing else to fall back to, secondary keeps the anime family.
+	only := resolveGenreFamilyGrouped([]string{"Animation"}, true, "secondary")
+	if only == nil || only.id != "anime" {
+		t.Error("secondary with no other genre should stay on anime")
+	}
+}
+
+// Cinemeta returns IMDb's genre vocabulary, which spells several of these
+// differently from TMDB. They must still reach the right family.
+func TestGenreFamilyIMDbVocabulary(t *testing.T) {
+	for _, tc := range []struct{ genre, want string }{
+		{"Sci-Fi", "scifi"},
+		{"Reality-TV", "reality"},
+		{"Talk-Show", "talk"},
+		{"Musical", "music"},
+		{"Documentary", "documentary"},
+	} {
+		got := resolveGenreFamily([]string{tc.genre})
+		if got == nil || got.id != tc.want {
+			id := "nil"
+			if got != nil {
+				id = got.id
+			}
+			t.Errorf("%q resolved to %s, want %s", tc.genre, id, tc.want)
+		}
+	}
+}
+
+// An explicit value colour must override the style/theme default.
+func TestAggregateValueColorOverridesBadgeText(t *testing.T) {
+	cfg := imageconfig.Config{Ratings: []string{"imdb"}}
+	def := chromeFor(cfg)
+	cfg.AggregateValueColor = "#ff00ff"
+	got := chromeFor(cfg)
+	if got.valueColor == def.valueColor {
+		t.Error("aggregateValueColor did not change the badge value colour")
+	}
+	if got.valueColor.R != 255 || got.valueColor.G != 0 || got.valueColor.B != 255 {
+		t.Errorf("unexpected value colour %+v", got.valueColor)
 	}
 }

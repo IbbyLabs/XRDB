@@ -7,7 +7,7 @@ import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   LAYOUT_OPTIONS, RATING_OPTIONS, BADGE_STYLE_OPTIONS, BADGE_THEME_OPTIONS,
   RING_POS_OPTIONS, SIX_POS_OPTIONS, QUALITY_STYLE_OPTIONS, GENRE_STYLE_OPTIONS,
-  AGE_STYLE_OPTIONS, GENRE_MODE_OPTIONS, AGGREGATE_SOURCE_OPTIONS, AGGREGATE_ACCENT_MODE_OPTIONS, SCOREBAR_STYLE_OPTIONS, RATING_PRESENTATION_OPTIONS,
+  AGE_STYLE_OPTIONS, GENRE_MODE_OPTIONS, ANIME_GROUPING_OPTIONS, AGGREGATE_SOURCE_OPTIONS, AGGREGATE_ACCENT_MODE_OPTIONS, SCOREBAR_STYLE_OPTIONS, RATING_PRESENTATION_OPTIONS,
 } from './configurator-types';
 
 // ── Template strip ────────────────────────────────────────────────────────────
@@ -576,6 +576,20 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
             {config.genreBadgeMode === 'default'
               ? 'Lists up to three genre names.'
               : 'Shows a glyph for the title’s main genre. The Clean and Tile styles stay text-only.'}
+          </p>
+        </div>
+        <div className="field">
+          <label className="label" htmlFor={`${uid}-anime-grouping`}>Anime</label>
+          <select
+            id={`${uid}-anime-grouping`}
+            className="select"
+            value={config.genreBadgeAnimeGrouping}
+            onChange={e => onUpdate('genreBadgeAnimeGrouping', e.target.value)}
+          >
+            {ANIME_GROUPING_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+          </select>
+          <p className="hint">
+            {ANIME_GROUPING_OPTIONS.find(o => o.id === config.genreBadgeAnimeGrouping)?.desc}
           </p>
         </div>
         <div className="field">

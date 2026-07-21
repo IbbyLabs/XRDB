@@ -334,6 +334,7 @@ type TrendingConfig struct {
 // surface. Zero values mean "use the built-in default", so an unset config
 // renders exactly as before these fields existed.
 type GenreBadgeConfig struct {
+	GenreBadgeAnimeGrouping     string  `json:"genreBadgeAnimeGrouping,omitempty"`     // split | animation | secondary; "" = split
 	GenreBadgeMode              string  `json:"genreBadgeMode,omitempty"`              // off | text | icon | both
 	GenreBadgeStyle             string  `json:"genreBadgeStyle,omitempty"`             // glass | square | plain | clean | tile
 	GenreBadgeScale             int     `json:"genreBadgeScale,omitempty"`             // percent 70-200; 0 = 100
@@ -418,6 +419,7 @@ type rawRandom struct {
 // rawGenre is the loose parse shape for GenreBadgeConfig, embedded in raw so its
 // keys unmarshal from the same flat object.
 type rawGenre struct {
+	GenreBadgeAnimeGrouping     *string  `json:"genreBadgeAnimeGrouping"`
 	GenreBadgeMode              *string  `json:"genreBadgeMode"`
 	GenreBadgeStyle             *string  `json:"genreBadgeStyle"`
 	GenreBadgeScale             *int     `json:"genreBadgeScale"`
@@ -903,6 +905,12 @@ func clampInt(v, lo, hi int) int {
 // parseGenre reads the genre-badge styling controls, validating enums and
 // clamping numeric ranges so a hostile or stale value can't distort a render.
 func parseGenre(cfg *Config, r *raw) {
+	if r.GenreBadgeAnimeGrouping != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.GenreBadgeAnimeGrouping)); v {
+		case "split", "animation", "secondary":
+			cfg.GenreBadgeAnimeGrouping = v
+		}
+	}
 	if r.GenreBadgeMode != nil {
 		switch v := strings.ToLower(strings.TrimSpace(*r.GenreBadgeMode)); v {
 		case "off", "text", "icon", "both":

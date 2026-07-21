@@ -27,6 +27,7 @@ type MediaMeta struct {
 	ContentRating  string          // e.g. "TV-MA", "R", "PG-13" (may be empty)
 	ReleaseStatus  string          // "digital" | "cinemas" (may be empty; movies only)
 	Genres         []string        // e.g. ["Action","Drama"] (may be empty)
+	IsAnime        bool            // the title matched the anime ID mapping
 	WatchProviders []WatchProvider // streaming/rental services (may be empty)
 }
 

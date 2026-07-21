@@ -48,7 +48,40 @@ func normalizeGenreName(v string) string {
 // is a fixed priority chain, first match wins, so a title tagged both Fantasy
 // and Adventure lands on Fantasy rather than Action. Returns nil when the title
 // has no genres at all; an unrecognised genre resolves to the "other" family.
+//
+// Matching is on genre names, which assumes they arrive in English. The TMDB
+// details request deliberately sends no language parameter for that reason:
+// adding one would return localised names ("Science-Fiction", "Guerre &
+// Politique") and collapse every non-English title into the "other" family.
 func resolveGenreFamily(genres []string) *genreFamily {
+	return resolveGenreFamilyGrouped(genres, false, "")
+}
+
+// resolveGenreFamilyGrouped buckets genres with anime handling. isAnime marks a
+// title the anime mapper recognised; grouping controls where those land:
+//
+//	split (default) — anime gets its own family
+//	animation       — anime is folded in with everything else animated
+//	secondary       — anime and animation both defer to the next strongest
+//	                  genre, so a title reads by what it is rather than how
+//	                  it was drawn
+func resolveGenreFamilyGrouped(genres []string, isAnime bool, grouping string) *genreFamily {
+	primary := resolveFamilyPass(genres, true, isAnime, grouping)
+	if grouping != "secondary" || primary == nil {
+		return primary
+	}
+	if primary.id != "anime" && primary.id != "animation" {
+		return primary
+	}
+	// Re-run with the animated families suppressed and take that instead, unless
+	// nothing else matched at all.
+	if secondary := resolveFamilyPass(genres, false, isAnime, grouping); secondary != nil && secondary.id != "other" {
+		return secondary
+	}
+	return primary
+}
+
+func resolveFamilyPass(genres []string, includeAnimated, isAnime bool, grouping string) *genreFamily {
 	names := make(map[string]bool, len(genres))
 	for _, g := range genres {
 		if n := normalizeGenreName(g); n != "" {
@@ -67,14 +100,24 @@ func resolveGenreFamily(genres []string) *genreFamily {
 		return false
 	}
 
+	if includeAnimated {
+		switch {
+		case has("anime"):
+			return &familyAnime
+		case isAnime:
+			if grouping == "animation" {
+				return &familyAnimation
+			}
+			return &familyAnime
+		case has("animation", "animated"):
+			return &familyAnimation
+		}
+	}
+
 	switch {
-	case has("anime"):
-		return &familyAnime
-	case has("animation", "animated"):
-		return &familyAnimation
 	case has("horror"):
 		return &familyHorror
-	case has("documentary"):
+	case has("documentary", "docuseries"):
 		return &familyDocumentary
 	case has("comedy"):
 		return &familyComedy
@@ -84,7 +127,7 @@ func resolveGenreFamily(genres []string) *genreFamily {
 
 	// Fantasy outranks sci-fi unless the title is explicitly science fiction,
 	// which keeps the combined "Sci-Fi & Fantasy" TV genre on the sci-fi side.
-	explicitSciFi := has("science fiction")
+	explicitSciFi := has("science fiction", "sci fi")
 	if has("fantasy") && !explicitSciFi {
 		return &familyFantasy
 	}
@@ -99,9 +142,9 @@ func resolveGenreFamily(genres []string) *genreFamily {
 		return &familyAction
 	case has("drama"):
 		return &familyDrama
-	case has("music"):
+	case has("music", "musical"):
 		return &familyMusic
-	case has("reality"):
+	case has("reality", "reality tv"):
 		return &familyReality
 	case has("family"):
 		return &familyFamily
@@ -113,9 +156,9 @@ func resolveGenreFamily(genres []string) *genreFamily {
 		return &familyNews
 	case has("soap"):
 		return &familySoap
-	case has("talk"):
+	case has("talk", "talk show"):
 		return &familyTalk
-	case has("tv movie"):
+	case has("tv movie", "tv special"):
 		return &familyTVMovie
 	case has("war & politics"):
 		return &familyWarPolitics

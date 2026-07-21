@@ -26,6 +26,7 @@ import (
 	"xrdb_rewrite/internal/imageconfig"
 	"xrdb_rewrite/internal/logging"
 	"xrdb_rewrite/internal/provider"
+	"xrdb_rewrite/internal/provider/animemap"
 	"xrdb_rewrite/internal/render"
 )
 
@@ -59,6 +60,28 @@ type Pipeline struct {
 	providers *provider.Registry
 	fetcher   imageFetcher
 	logger    *slog.Logger
+	// anime resolves whether a title is a known anime, so the genre badge can
+	// tell anime apart from animation generally. Optional: nil disables it.
+	anime animeResolver
+}
+
+// animeResolver reports whether a media ID belongs to a known anime. Satisfied
+// by *animemap.Mapper, which answers from an in-memory index with no network
+// call on the render path.
+type animeResolver interface {
+	Resolve(ctx context.Context, mediaType, id string) (animemap.IDs, bool)
+}
+
+// SetAnimeResolver attaches the anime ID mapper.
+func (p *Pipeline) SetAnimeResolver(r animeResolver) { p.anime = r }
+
+// isAnimeTitle reports whether the requested title is a known anime.
+func (p *Pipeline) isAnimeTitle(ctx context.Context, req Request) bool {
+	if p.anime == nil {
+		return false
+	}
+	_, ok := p.anime.Resolve(ctx, req.MediaType, req.MediaID)
+	return ok
 }
 
 // imageFetcher abstracts HTTP image retrieval for testing.
@@ -185,6 +208,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	ratingReq.MediaID = ratingID
 	allRatings, ratingProviders := p.collectRatingsWithProviders(ctx, ratingReq, meta.Ratings)
 	result.ContributingProviders = append([]string{string(req.Config.ArtworkSource)}, ratingProviders...)
+	meta.IsAnime = p.isAnimeTitle(ctx, req)
 
 	// Use saliency-aware cropping when a backdrop is the source so that
 	// off-centre subjects are not clipped by a naive centre crop.
@@ -264,7 +288,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		// Replace the badge strip with a single full-width score bar coloured by
 		// the aggregate score.
 		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
-			drawAggregateBar(composed, allRatings, req.Config, meta.Genres)
+			drawAggregateBar(composed, allRatings, req.Config, meta.Genres, meta.IsAnime)
 		}
 	default:
 		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
@@ -297,13 +321,13 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		drawReleaseStatusBadge(composed, meta.ReleaseStatus, req.Config.ReleaseStatusPos, scale, occ)
 	}
 	if req.Config.Genre && len(meta.Genres) > 0 {
-		drawGenreBadge(composed, meta.Genres, req.Config.GenrePos, scale, occ, genreOptsFromConfig(req.Config))
+		drawGenreBadge(composed, meta.Genres, req.Config.GenrePos, scale, occ, genreOptsFromConfig(req.Config, meta.IsAnime))
 	}
 	if req.Config.Providers && len(meta.WatchProviders) > 0 {
 		drawProviderBadges(composed, meta.WatchProviders, scale, occ, req.Config.NetworkTileColor)
 	}
 	if req.Config.AggregateBar {
-		drawAggregateBar(composed, allRatings, req.Config, meta.Genres)
+		drawAggregateBar(composed, allRatings, req.Config, meta.Genres, meta.IsAnime)
 	}
 	if req.Config.Trending {
 		drawTrendingBadgeStyled(composed, scale, occ, trendingStyleFromConfig(req.Config.TrendingStyle), req.Config.TrendingPos, req.Config.TrendingTextColor)
@@ -429,6 +453,8 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 		RandomMinWidth:     req.Config.RandomPosterMinWidth,
 		RandomMinHeight:    req.Config.RandomPosterMinHeight,
 		RandomFallback:     req.Config.RandomPosterFallback,
+
+		WatchProvidersCountry: req.Config.ProvidersCountry,
 	}
 	// Try the configured artwork source first, then fall back across the other
 	// image-capable providers so a surface missing from one source (most often a
@@ -560,7 +586,16 @@ func (p *Pipeline) enrichMetaForOverlays(ctx context.Context, req Request, meta 
 	if tmdb == nil || tmdb.Name() == string(req.Config.ArtworkSource) {
 		return
 	}
-	extra, err := tmdb.Fetch(ctx, req.ContentType, req.MediaID)
+	var extra *provider.MediaMeta
+	var err error
+	// The top-up needs the configured region too, or the provider badges would
+	// fall back to US whenever artwork came from somewhere other than TMDB.
+	if af, ok := tmdb.(provider.ArtworkFetcher); ok {
+		extra, err = af.FetchArtwork(ctx, req.ContentType, req.MediaID,
+			provider.ArtworkOptions{WatchProvidersCountry: req.Config.ProvidersCountry})
+	} else {
+		extra, err = tmdb.Fetch(ctx, req.ContentType, req.MediaID)
+	}
 	if err != nil || extra == nil {
 		return
 	}

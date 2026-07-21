@@ -827,6 +827,8 @@ type genreBadgeOpts struct {
 	offsetY      int
 	bgOpacity    int     // 0 = default (200/255); else 1-100 mapped to alpha
 	mode         string  // "" | text | icon | both; icon modes label by genre family
+	isAnime      bool    // the title matched the anime ID mapping
+	grouping     string  // "" | split | animation | secondary
 	style        string  // "" | glass | square | plain | clean | tile
 	tileColor    string  // "#RRGGBB" for the tile style
 	borderWidth  float64 // px border on the tile; 0 = default hairline
@@ -855,13 +857,15 @@ func drawLabelWithOutline(base *image.NRGBA, face font.Face, x, y int, textCol, 
 }
 
 // genreOptsFromConfig extracts the genre-badge styling from a resolved Config.
-func genreOptsFromConfig(cfg imageconfig.Config) genreBadgeOpts {
+func genreOptsFromConfig(cfg imageconfig.Config, isAnime bool) genreBadgeOpts {
 	return genreBadgeOpts{
 		scalePercent: cfg.GenreBadgeScale,
 		offsetX:      cfg.GenreBadgeOffsetX,
 		offsetY:      cfg.GenreBadgeOffsetY,
 		bgOpacity:    cfg.GenreBadgeBackgroundOpacity,
 		mode:         cfg.GenreBadgeMode,
+		isAnime:      isAnime,
+		grouping:     cfg.GenreBadgeAnimeGrouping,
 		style:        cfg.GenreBadgeStyle,
 		tileColor:    cfg.GenreBadgeTileAccentColor,
 		borderWidth:  cfg.GenreBadgeBorderWidth,
@@ -899,7 +903,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	}
 	var fam *genreFamily
 	if mode == "icon" || mode == "both" {
-		if fam = resolveGenreFamily(genres); fam == nil {
+		if fam = resolveGenreFamilyGrouped(genres, opts.isAnime, opts.grouping); fam == nil {
 			mode = "text"
 		} else {
 			label = fam.label
@@ -1218,7 +1222,7 @@ func drawDualRating(base *image.NRGBA, ratings []provider.Rating, cfg imageconfi
 // drawAggregateBar draws a full-width score bar on top or bottom of the image.
 // The bar fill is colored green/amber/red based on the normalised average score (0–10).
 // Filtered by the config.Ratings allowlist so only visible sources contribute.
-func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, genres []string) {
+func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, genres []string, isAnime bool) {
 	if len(ratings) == 0 {
 		return
 	}
@@ -1317,7 +1321,7 @@ func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imagecon
 		accentHex = ""
 	case "genre":
 		accentHex = ""
-		if fam := resolveGenreFamily(genres); fam != nil {
+		if fam := resolveGenreFamilyGrouped(genres, isAnime, cfg.GenreBadgeAnimeGrouping); fam != nil {
 			accentHex = fam.accent
 		}
 	case "source":

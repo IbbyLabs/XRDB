@@ -50,7 +50,7 @@ func TestGenreBadgeOptsChangeRender(t *testing.T) {
 // genreOptsFromConfig must map the config fields through unchanged.
 func TestGenreOptsFromConfig(t *testing.T) {
 	cfg := imageconfig.Parse([]byte(`{"genreBadgeScale":150,"genreBadgeOffsetX":10,"genreBadgeOffsetY":-5,"genreBadgeBackgroundOpacity":60}`))
-	opts := genreOptsFromConfig(cfg)
+	opts := genreOptsFromConfig(cfg, false)
 	if opts.scalePercent != 150 || opts.offsetX != 10 || opts.offsetY != -5 || opts.bgOpacity != 60 {
 		t.Errorf("opts mismatch: %+v", opts)
 	}
@@ -111,11 +111,11 @@ func TestRatingScaleAndAggregateColorChangeRender(t *testing.T) {
 	// Aggregate bar: a custom accent color must change the fill.
 	aggBase := imageconfig.Config{Ratings: []string{"imdb", "tmdb"}, AggregateBar: true, AggregateBarPos: "bottom"}
 	a1 := genreTestImage()
-	drawAggregateBar(a1, ratings, aggBase, nil)
+	drawAggregateBar(a1, ratings, aggBase, nil, false)
 	aggColor := aggBase
 	aggColor.AggregateAccentColor = "#3355ff"
 	a2 := genreTestImage()
-	drawAggregateBar(a2, ratings, aggColor, nil)
+	drawAggregateBar(a2, ratings, aggColor, nil, false)
 	if !imagesDiffer(a1, a2) {
 		t.Error("aggregate accent color did not change the render")
 	}
@@ -131,23 +131,23 @@ func TestAggregateAccentModeGenre(t *testing.T) {
 	bands := genreTestImage()
 	drawAggregateBar(bands, ratings, imageconfig.Config{
 		Ratings: []string{"imdb"}, AggregateBar: true, AggregateBarPos: "bottom",
-	}, []string{"Horror"})
+	}, []string{"Horror"}, false)
 
 	horror := genreTestImage()
-	drawAggregateBar(horror, ratings, cfg, []string{"Horror"})
+	drawAggregateBar(horror, ratings, cfg, []string{"Horror"}, false)
 	if !imagesDiffer(bands, horror) {
 		t.Error("genre accent mode did not override the score band colour")
 	}
 
 	comedy := genreTestImage()
-	drawAggregateBar(comedy, ratings, cfg, []string{"Comedy"})
+	drawAggregateBar(comedy, ratings, cfg, []string{"Comedy"}, false)
 	if !imagesDiffer(horror, comedy) {
 		t.Error("different genre families produced the same bar colour")
 	}
 
 	// With no genres there is no family, so the bar falls back to the bands.
 	none := genreTestImage()
-	drawAggregateBar(none, ratings, cfg, nil)
+	drawAggregateBar(none, ratings, cfg, nil, false)
 	if imagesDiffer(bands, none) {
 		t.Error("genre accent mode with no genres should fall back to the score bands")
 	}
@@ -230,13 +230,13 @@ func TestScorebarBandColorsAndThresholds(t *testing.T) {
 	base := imageconfig.Config{Ratings: []string{"imdb"}, AggregateBar: true, AggregateBarPos: "bottom"}
 
 	def := genreTestImage()
-	drawAggregateBar(def, ratings, base, nil)
+	drawAggregateBar(def, ratings, base, nil, false)
 
 	// A custom mid-band color must change the fill for a mid score (6.5 in [5,8)).
 	midColor := base
 	midColor.ScorebarMidColor = "#8b5cf6"
 	m := genreTestImage()
-	drawAggregateBar(m, ratings, midColor, nil)
+	drawAggregateBar(m, ratings, midColor, nil, false)
 	if !imagesDiffer(def, m) {
 		t.Error("scorebar mid color did not change the render")
 	}
@@ -245,7 +245,7 @@ func TestScorebarBandColorsAndThresholds(t *testing.T) {
 	thr := base
 	thr.ScorebarHighThreshold = 6.0
 	tImg := genreTestImage()
-	drawAggregateBar(tImg, ratings, thr, nil)
+	drawAggregateBar(tImg, ratings, thr, nil, false)
 	if !imagesDiffer(def, tImg) {
 		t.Error("scorebar threshold change did not change the band")
 	}

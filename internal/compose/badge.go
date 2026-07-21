@@ -43,9 +43,9 @@ var (
 
 	// scaledValueFaces / scaledLabelFaces / scaledBadgeFaces cache faces keyed
 	// by int(scale*100) to avoid float64 map key precision issues.
-	scaledValueFaces sync.Map
-	scaledLabelFaces sync.Map
-	scaledBadgeFaces sync.Map
+	scaledValueFaces   sync.Map
+	scaledLabelFaces   sync.Map
+	scaledBadgeFaces   sync.Map
 	scaledEyebrowFaces sync.Map
 )
 
@@ -310,6 +310,11 @@ func chromeFor(cfg imageconfig.Config) badgeChrome {
 			c.valueColor = color.NRGBA{R: 18, G: 18, B: 24, A: 255}
 			c.iconColor = color.NRGBA{R: 30, G: 30, B: 38, A: 255}
 		}
+	}
+	// An explicit value colour overrides whatever the style and theme picked.
+	if v, err := parseHexColor(cfg.AggregateValueColor); cfg.AggregateValueColor != "" && err == nil {
+		v.A = 255
+		c.valueColor = v
 	}
 	return c
 }

@@ -171,6 +171,7 @@ export function ConfiguratorClient() {
       qualityBadgesTileAccentColor: cfg.qualityBadgesTileAccentColor,
       genreBadgeStyle: cfg.genreBadgeStyle === 'default' ? '' : cfg.genreBadgeStyle,
       genreBadgeMode: cfg.genreBadgeMode === 'default' ? '' : cfg.genreBadgeMode,
+      genreBadgeAnimeGrouping: cfg.genreBadgeAnimeGrouping === 'default' ? '' : cfg.genreBadgeAnimeGrouping,
       aggregateAccentColor: cfg.aggregateAccentColor,
       aggregateAccentMode: cfg.aggregateAccentMode,
       aggregateBarOffset: cfg.aggregateBarOffset,

@@ -139,6 +139,12 @@ export const AGE_STYLE_OPTIONS = [
   { id: 'silver',  label: 'Silver' },
 ] as const;
 
+export const ANIME_GROUPING_OPTIONS = [
+  { id: 'default',   label: 'Own badge',  desc: 'Anime gets its own ANIME badge' },
+  { id: 'animation', label: 'As animation', desc: 'Anime is folded in with animation generally' },
+  { id: 'secondary', label: 'Next genre', desc: 'Anime and animation defer to the next strongest genre' },
+] as const;
+
 export const GENRE_MODE_OPTIONS = [
   { id: 'default', label: 'Text' },
   { id: 'icon',    label: 'Icon' },
@@ -247,6 +253,7 @@ export interface ConfigState {
   qualityBadgesTileAccentColor: string;
   genreBadgeStyle: string; // 'default' | glass | square | plain | clean | tile
   genreBadgeMode: string;  // 'default' (text) | icon | both
+  genreBadgeAnimeGrouping: string; // 'default' (split) | animation | secondary
   aggregateAccentColor: string; // '' = auto score-band
   aggregateAccentMode: string;  // '' = auto score-band
   aggregateBarOffset: number; // px inward nudge, -12..12; 0 = flush
@@ -327,6 +334,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   qualityBadgesTileAccentColor: '',
   genreBadgeStyle: 'default',
   genreBadgeMode: 'default',
+  genreBadgeAnimeGrouping: 'default',
   aggregateAccentColor: '',
   aggregateAccentMode: '',
   aggregateBarOffset: 0,

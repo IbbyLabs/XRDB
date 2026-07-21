@@ -375,8 +375,12 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		}
 	}
 
-	// Watch providers — US flatrate first, then rent
-	if us, ok := result.WatchProviders.Results["US"]; ok {
+	// Watch providers — flatrate first, then rent, for the requested region.
+	region := strings.ToUpper(strings.TrimSpace(opts.WatchProvidersCountry))
+	if region == "" {
+		region = "US"
+	}
+	if us, ok := result.WatchProviders.Results[region]; ok {
 		seen := make(map[int]bool)
 		for _, p := range us.Flatrate {
 			if !seen[p.ProviderID] && p.ProviderName != "" {
