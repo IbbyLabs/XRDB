@@ -154,6 +154,7 @@ export const SCOREBAR_STYLE_OPTIONS = [
   { id: 'progress', label: 'Progress' },
   { id: 'solid',    label: 'Solid'    },
   { id: 'gradient', label: 'Gradient' },
+  { id: 'dynamic',  label: 'Dynamic'  },
 ] as const;
 
 export const QUALITY_BADGE_OPTIONS: { id: string; label: string }[] = [

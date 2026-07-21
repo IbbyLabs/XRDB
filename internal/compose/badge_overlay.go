@@ -1191,6 +1191,26 @@ func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imagecon
 			}
 			fillRect(base, image.Rect(x, barY, x+1, barY+barH), c)
 		}
+	case "dynamic":
+		// A partial fill proportional to the score, coloured by a continuous
+		// low→mid→high interpolation of the score itself (no hard band steps).
+		dynC := fillColor
+		if cfg.AggregateAccentColor == "" {
+			t := avg / 10.0
+			if t < 0.5 {
+				dynC = lerpColor(lowC, midC, t/0.5)
+			} else {
+				dynC = lerpColor(midC, highC, (t-0.5)/0.5)
+			}
+		}
+		fillW := int(float64(w) * (avg / 10.0))
+		if fillW < 1 {
+			fillW = 1
+		}
+		if fillW > w {
+			fillW = w
+		}
+		fillRect(base, image.Rect(bounds.Min.X, barY, bounds.Min.X+fillW, barY+barH), dynC)
 	default: // progress — a partial fill proportional to the score
 		fillW := int(float64(w) * (avg / 10.0))
 		if fillW < 1 {

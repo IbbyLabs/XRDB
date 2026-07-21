@@ -812,7 +812,7 @@ func parseAggregate(cfg *Config, r *raw) {
 	}
 	if r.ScorebarStyle != nil {
 		switch v := strings.ToLower(strings.TrimSpace(*r.ScorebarStyle)); v {
-		case "progress", "solid", "gradient":
+		case "progress", "solid", "gradient", "dynamic":
 			cfg.ScorebarStyle = v
 		}
 	}
