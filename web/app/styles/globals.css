@@ -183,6 +183,9 @@ code, pre { font-family: var(--font-mono-stack); }
   align-items: center;
   gap: var(--sp-2);
   margin-right: var(--sp-4);
+  /* the brand is the only elastic item in the bar: it absorbs narrow
+     viewports so a long build version can't widen the whole page */
+  min-width: 0;
   text-decoration: none;
   color: var(--ink);
   font-family: var(--font-display-stack);
@@ -191,14 +194,17 @@ code, pre { font-family: var(--font-mono-stack); }
   letter-spacing: -0.01em;
 }
 .nav-brand-x { color: var(--accent-text); }
+.nav-word { flex-shrink: 0; }
 
 .nav-logo {
   width: 1.5rem;
   height: 1.5rem;
   display: block;
+  flex-shrink: 0;
 }
 
 .nav-badge {
+  min-width: 0;
   padding: 0.1rem 0.4rem;
   background: var(--accent-dim);
   color: var(--accent-text);
@@ -206,7 +212,11 @@ code, pre { font-family: var(--font-mono-stack); }
   font-size: 0.7rem;
   font-weight: 600;
   letter-spacing: 0.06em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+.nav-badge-short { display: none; }
 
 .nav-spacer { flex: 1; }
 
@@ -223,6 +233,8 @@ code, pre { font-family: var(--font-mono-stack); }
   text-decoration: none;
   transition: color var(--dur-1) var(--ease-out);
 }
+.nav-link,
+.theme-menu-wrap { flex-shrink: 0; }
 .nav-link:hover { color: var(--ink); }
 .nav-link[aria-current="page"] { color: var(--ink); }
 .nav-link[aria-current="page"]::after {
@@ -1765,6 +1777,23 @@ textarea.input { min-height: 0; line-height: 1.5; }
   .stat-cell:last-child { border-bottom: none; }
 
   .provider-blurb { display: none; }
+}
+
+@media (max-width: 640px) {
+  /* a dev build id is too wide for a phone bar, so trade it for the short form */
+  .nav-badge-full { display: none; }
+  .nav-badge-short { display: inline; }
+}
+
+@media (max-width: 480px) {
+  /* the logo carries the brand once the bar runs out of room */
+  .nav-word { display: none; }
+  .nav-brand { margin-right: var(--sp-2); }
+}
+
+@media (max-width: 360px) {
+  /* nothing legible fits here, and half a build id helps nobody */
+  .nav-badge { display: none; }
 }
 
 /* ── Reduced motion ────────────────────────────────────────────────── */

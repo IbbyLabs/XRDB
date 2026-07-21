@@ -17,6 +17,17 @@ const NAV_LINKS = [
 
 const FALLBACK_VERSION = 'v3';
 
+/**
+ * Dev builds stamp `channel.date.time.sha`, which is far too wide for a phone
+ * bar. Narrow screens get the channel and the commit, the two parts that
+ * identify a build. Release tags (`v3.1.0`) are short enough to keep whole.
+ */
+function compactVersion(version: string): string {
+  const parts = version.split('.');
+  if (parts.length < 3 || version.length <= 10) return version;
+  return `${parts[0]}·${parts[parts.length - 1]}`;
+}
+
 function useDeploymentVersion(): string {
   const [version, setVersion] = useState(FALLBACK_VERSION);
   useEffect(() => {
@@ -44,10 +55,13 @@ export function NavBar() {
       <Link href="/" className="nav-brand" aria-label={`${BRAND_NAME} home`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/xrdb-logo.png" alt="" className="nav-logo" aria-hidden="true" width={512} height={512} />
-        <span>
+        <span className="nav-word">
           <span className="nav-brand-x">X</span>RDB
         </span>
-        <span className="nav-badge" title={`${BRAND_NAME} deployment version`}>{version}</span>
+        <span className="nav-badge" title={`${BRAND_NAME} deployment version: ${version}`}>
+          <span className="nav-badge-full">{version}</span>
+          <span className="nav-badge-short">{compactVersion(version)}</span>
+        </span>
       </Link>
 
       <span className="nav-spacer" />
