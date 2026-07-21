@@ -426,7 +426,7 @@ function ProviderOverrides({ uid, config, onUpdate }: {
 
   return (
     <details className="adv-details">
-      <summary className="hint" style={{ cursor: 'pointer', userSelect: 'none' }}>
+      <summary>
         Per-provider colors
       </summary>
       <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>
@@ -465,21 +465,16 @@ function ProviderOverrides({ uid, config, onUpdate }: {
 
 /**
  * AdvancedPanel exposes the fine-grained badge controls carried over from v2:
- * per-element scale, position, offset, opacity, and colour. It is collapsed by
- * default so the common controls stay uncluttered.
+ * per-element scale, position, offset, opacity, and colour.
  */
 export function AdvancedPanel({ uid, config, onUpdate }: {
   uid: string; config: ConfigState; onUpdate: UpdateConfigFn;
 }) {
   return (
-    <details className="adv-details" style={{ marginTop: 'var(--sp-4)' }}>
-      <summary className="label" style={{ cursor: 'pointer', userSelect: 'none' }}>
-        Advanced styling
-      </summary>
-      <div className="cfg-fields" style={{ marginTop: 'var(--sp-3)' }}>
+    <div className="panel">
+      <div className="panel-body cfg-fields">
         <p className="hint" style={{ marginTop: 0 }}>
           Fine-grained control over each badge. Blank numbers use the default.
-          These apply to the surface you are editing.
         </p>
 
         <span className="adv-section adv-section--first">Rating badges</span>
@@ -507,7 +502,7 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
         <NumField id={`${uid}-ratings-max`} label="Max badges" value={config.ratingsMax}
           onChange={v => onUpdate('ratingsMax', v)} min={0} max={20} placeholder="no cap"
           hint="0 shows all selected sources that have data." />
-        <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
+        <div className="numfield-pair">
           <NumField id={`${uid}-rating-ox`} label="Offset X" value={config.ratingBadgeOffsetX}
             onChange={v => onUpdate('ratingBadgeOffsetX', v)} min={-320} max={320} zeroIsDefault={false} />
           <NumField id={`${uid}-rating-oy`} label="Offset Y" value={config.ratingBadgeOffsetY}
@@ -523,7 +518,7 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
         <NumField id={`${uid}-quality-max`} label="Max badges" value={config.qualityBadgesMax}
           onChange={v => onUpdate('qualityBadgesMax', v)} min={0} max={12} placeholder="all"
           hint="0 shows every badge you selected." />
-        <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
+        <div className="numfield-pair">
           <NumField id={`${uid}-quality-ox`} label="Offset X" value={config.qualityBadgeOffsetX}
             onChange={v => onUpdate('qualityBadgeOffsetX', v)} min={-320} max={320} zeroIsDefault={false} />
           <NumField id={`${uid}-quality-oy`} label="Offset Y" value={config.qualityBadgeOffsetY}
@@ -609,7 +604,7 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
         </div>
         <NumField id={`${uid}-genre-scale`} label="Scale (%)" value={config.genreBadgeScale}
           onChange={v => onUpdate('genreBadgeScale', v)} min={70} max={200} step={5} />
-        <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
+        <div className="numfield-pair">
           <NumField id={`${uid}-genre-ox`} label="Offset X" value={config.genreBadgeOffsetX}
             onChange={v => onUpdate('genreBadgeOffsetX', v)} min={-320} max={320} zeroIsDefault={false} />
           <NumField id={`${uid}-genre-oy`} label="Offset Y" value={config.genreBadgeOffsetY}
@@ -711,14 +706,14 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
           </div>
         )}
         <details className="adv-details">
-          <summary className="hint" style={{ cursor: 'pointer', userSelect: 'none' }}>Scorebar bands (when accent is auto)</summary>
+          <summary>Scorebar bands (when accent is auto)</summary>
           <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>
             <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
               <ColorField id={`${uid}-sb-low`} label="Low" value={config.scorebarLowColor} onChange={v => onUpdate('scorebarLowColor', v)} fallback="#c0392b" resetLabel="Auto" />
               <ColorField id={`${uid}-sb-mid`} label="Mid" value={config.scorebarMidColor} onChange={v => onUpdate('scorebarMidColor', v)} fallback="#e67e22" resetLabel="Auto" />
               <ColorField id={`${uid}-sb-high`} label="High" value={config.scorebarHighColor} onChange={v => onUpdate('scorebarHighColor', v)} fallback="#27ae60" resetLabel="Auto" />
             </div>
-            <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap' }}>
+            <div className="numfield-pair">
               <NumField id={`${uid}-sb-lowt`} label="Low threshold" value={config.scorebarLowThreshold} onChange={v => onUpdate('scorebarLowThreshold', v)} min={0} max={10} step={0.5} placeholder="5" />
               <NumField id={`${uid}-sb-hight`} label="High threshold" value={config.scorebarHighThreshold} onChange={v => onUpdate('scorebarHighThreshold', v)} min={0} max={10} step={0.5} placeholder="8" />
             </div>
@@ -806,6 +801,6 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
           </div>
         </div>
       </div>
-    </details>
+    </div>
   );
 }

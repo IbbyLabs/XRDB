@@ -3,7 +3,7 @@
 import {
   useState, useCallback, useRef, useId, useEffect,
 } from 'react';
-import { Settings2, Star, Film, Rocket, Link2, Maximize2, Undo2, Redo2 } from 'lucide-react';
+import { Settings2, Star, SlidersHorizontal, Film, Rocket, Link2, Maximize2, Undo2, Redo2 } from 'lucide-react';
 import { renderUrl, type MediaType, type Template } from '@/lib/api';
 import { getRenderKey, setRenderKey } from '@/lib/render-key';
 import {
@@ -94,7 +94,7 @@ export function ConfiguratorClient() {
   // an edit is acknowledged immediately instead of feeling ignored for ~500ms.
   const [previewPending, setPreviewPending] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<'display' | 'ratings' | 'profile' | 'install'>('display');
+  const [activeTab, setActiveTab] = useState<'display' | 'ratings' | 'advanced' | 'profile' | 'install'>('display');
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -527,10 +527,11 @@ export function ConfiguratorClient() {
         <div className="cfg-col">
           <div className="tabs" role="tablist" aria-label="Settings panel" onKeyDown={tablistKeyNav}>
             {([
-              { id: 'display', label: 'Display', icon: <Settings2 size={13} aria-hidden /> },
-              { id: 'ratings', label: 'Ratings', icon: <Star      size={13} aria-hidden /> },
-              { id: 'profile', label: 'Profile', icon: <Film      size={13} aria-hidden /> },
-              { id: 'install', label: 'Install', icon: <Rocket    size={13} aria-hidden /> },
+              { id: 'display',  label: 'Display',  icon: <Settings2        size={13} aria-hidden /> },
+              { id: 'ratings',  label: 'Ratings',  icon: <Star             size={13} aria-hidden /> },
+              { id: 'advanced', label: 'Advanced', icon: <SlidersHorizontal size={13} aria-hidden /> },
+              { id: 'profile',  label: 'Profile',  icon: <Film             size={13} aria-hidden /> },
+              { id: 'install',  label: 'Install',  icon: <Rocket           size={13} aria-hidden /> },
             ] as const).map(tab => (
               <button
                 key={tab.id}
@@ -548,7 +549,7 @@ export function ConfiguratorClient() {
             ))}
           </div>
 
-          {(activeTab === 'display' || activeTab === 'ratings') && (
+          {(activeTab === 'display' || activeTab === 'ratings' || activeTab === 'advanced') && (
             <div className="surface-scope">
               <span className="surface-scope-text">
                 Editing <strong>{MEDIA_TYPES.find(t => t.id === mediaType)?.label ?? mediaType}</strong> — the other surfaces (backdrop, thumbnail, logo) keep their own settings.
@@ -568,6 +569,11 @@ export function ConfiguratorClient() {
           {activeTab === 'ratings' && (
             <div id={`${uid}-panel-ratings`} role="tabpanel" aria-labelledby={`${uid}-tab-ratings`} className="tabpanel-enter">
               <RatingsPanel uid={uid} config={config} onUpdate={updateConfig} onToggleRating={toggleRating} />
+            </div>
+          )}
+
+          {activeTab === 'advanced' && (
+            <div id={`${uid}-panel-advanced`} role="tabpanel" aria-labelledby={`${uid}-tab-advanced`} className="tabpanel-enter">
               <AdvancedPanel uid={uid} config={config} onUpdate={updateConfig} />
             </div>
           )}

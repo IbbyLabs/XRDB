@@ -539,15 +539,11 @@ textarea.input { min-height: 0; line-height: 1.5; }
 .tabs {
   display: flex;
   gap: var(--sp-1);
-  /* a phone can't fit five tabs, and the page itself must not scroll
-     sideways, so the row carries its own overflow */
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  /* inset instead of border-bottom so the rule adds no scroll height */
-  box-shadow: inset 0 -1px 0 var(--border);
+  /* neither a phone nor the 340px controls column fits five tabs on one
+     line, and a tab nobody can reach is worse than a second row */
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
 }
-.tabs::-webkit-scrollbar { display: none; }
 
 .tab {
   position: relative;
@@ -564,6 +560,7 @@ textarea.input { min-height: 0; line-height: 1.5; }
   background: transparent;
   border: none;
   cursor: pointer;
+  margin-bottom: -1px;
   border-bottom: 2px solid transparent;
   transition: color var(--dur-1) var(--ease-out), border-color var(--dur-1) var(--ease-out);
 }
@@ -774,6 +771,25 @@ textarea.input { min-height: 0; line-height: 1.5; }
   font-weight: 600;
   color: var(--ink);
 }
+
+/* Nested disclosures inside the advanced panel. They carry the same
+   affordance as the help disclosure so they don't read as inert labels. */
+.adv-details > summary {
+  cursor: pointer;
+  user-select: none;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--accent-text);
+}
+
+/* Offset X/Y sit side by side when there's room and fill the line when
+   they wrap, so their sliders match every other field's width. */
+.numfield-pair {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+.numfield-pair > .field { flex: 1 1 9rem; }
 
 .adv-section--first {
   margin-top: 0;
