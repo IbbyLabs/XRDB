@@ -306,7 +306,8 @@ type RatingRingConfig struct {
 // PerSurfaceBaseConfig groups per-surface base-artwork options that aren't
 // badge styling. Only meaningful on the surface they name.
 type PerSurfaceBaseConfig struct {
-	LogoBackground string `json:"logoBackground,omitempty"` // transparent (default) | dark
+	LogoBackground     string `json:"logoBackground,omitempty"`     // transparent (default) | dark
+	EpisodeArtworkMode string `json:"episodeArtworkMode,omitempty"` // still (default) | series | streaming
 }
 
 // AgeRatingConfig groups the age/content-rating badge styling. The badge's
@@ -443,7 +444,8 @@ type rawAge struct {
 }
 
 type rawSurface struct {
-	LogoBackground *string `json:"logoBackground"`
+	LogoBackground     *string `json:"logoBackground"`
+	EpisodeArtworkMode *string `json:"episodeArtworkMode"`
 }
 
 type rawRing struct {
@@ -770,6 +772,12 @@ func parseSurface(cfg *Config, r *raw) {
 		switch v := strings.ToLower(strings.TrimSpace(*r.LogoBackground)); v {
 		case "transparent", "dark":
 			cfg.LogoBackground = v
+		}
+	}
+	if r.EpisodeArtworkMode != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.EpisodeArtworkMode)); v {
+		case "still", "series", "streaming":
+			cfg.EpisodeArtworkMode = v
 		}
 	}
 }

@@ -165,6 +165,25 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           </fieldset>
         )}
 
+        {(mediaType === 'thumbnail' || mediaType === 'backdrop') && (
+          <Field
+            label="Episode artwork"
+            htmlFor={`${uid}-episode-art`}
+            hint="What a TV episode uses: its own still, the series artwork, or the streaming thumbnail."
+          >
+            <select
+              id={`${uid}-episode-art`}
+              className="select"
+              value={config.episodeArtworkMode}
+              onChange={e => onUpdate('episodeArtworkMode', e.target.value)}
+            >
+              <option value="still">Episode still</option>
+              <option value="series">Series artwork</option>
+              <option value="streaming">Streaming thumbnail</option>
+            </select>
+          </Field>
+        )}
+
         <Field label="Resolution" htmlFor={`${uid}-size`}>
           <select
             id={`${uid}-size`}

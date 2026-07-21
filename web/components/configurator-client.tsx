@@ -182,6 +182,7 @@ export function ConfiguratorClient() {
       ageRatingTileColor: cfg.ageRatingTileColor,
       trendingPos: cfg.trendingPos,
       logoBackground: cfg.logoBackground,
+      episodeArtworkMode: cfg.episodeArtworkMode === 'still' ? '' : cfg.episodeArtworkMode,
       ringCenterOpacity: cfg.ringCenterOpacity,
       ringValueSource: cfg.ringValueSource === 'overall' ? '' : cfg.ringValueSource,
       ringProgressSource: cfg.ringProgressSource === 'overall' ? '' : cfg.ringProgressSource,

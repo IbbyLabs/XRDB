@@ -370,6 +370,12 @@ func parseEpisodeID(id string) (series string, season, episode int, ok bool) {
 // handled is false when this isn't resolvable as an episode, so the caller
 // falls back to normal series-level artwork.
 func (p *Pipeline) fetchEpisode(ctx context.Context, req Request, series string, season, episode int) ([]byte, *provider.MediaMeta, string, bool) {
+	// "series" mode skips the episode still and falls through to the normal
+	// series artwork path. "still"/"streaming" (and the default) use the still —
+	// v3 has no separate streaming-thumbnail source, so streaming maps to still.
+	if req.Config.EpisodeArtworkMode == "series" {
+		return nil, nil, "", false
+	}
 	tmdb := p.TMDBClient()
 	if tmdb == nil {
 		return nil, nil, "", false

@@ -234,6 +234,7 @@ export interface ConfigState {
   ageRatingTileColor: string;
   trendingPos: string; // 'inherit' | six positions
   logoBackground: string; // 'transparent' | 'dark'
+  episodeArtworkMode: string; // 'still' | 'series' | 'streaming' (thumbnail/backdrop episodes)
   ringCenterOpacity: number; // 0 = default
   ringValueSource: string; // 'overall' | provider id
   ringProgressSource: string;
@@ -309,6 +310,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ageRatingTileColor: '',
   trendingPos: 'inherit',
   logoBackground: 'transparent',
+  episodeArtworkMode: 'still',
   ringCenterOpacity: 0,
   ringValueSource: 'overall',
   ringProgressSource: 'overall',
