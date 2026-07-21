@@ -1686,6 +1686,17 @@ textarea.input { min-height: 0; line-height: 1.5; }
   text-decoration: none;
   transition: color var(--dur-1) var(--ease-out);
 }
+
+/* A text link's line box is a fine mouse target and a poor thumb one, so
+   standalone secondary links get a full-height tap area on touch input. */
+@media (pointer: coarse) {
+  .home-footer-links a,
+  .docs-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+  }
+}
 .home-footer-links a:hover { color: var(--ink); }
 
 /* ── Preview actions ───────────────────────────────────────────────── */
@@ -1784,6 +1795,15 @@ textarea.input { min-height: 0; line-height: 1.5; }
   .stat-cell:last-child { border-bottom: none; }
 
   .provider-blurb { display: none; }
+}
+
+@media (max-width: 480px) {
+  /* the four actions wrap three-then-one and strand the last button in the
+     middle of its own row; an even two-up grid reads as a deliberate block */
+  .preview-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 @media (max-width: 640px) {
