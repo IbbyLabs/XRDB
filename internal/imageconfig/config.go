@@ -251,6 +251,8 @@ type AggregateConfig struct {
 	AggregateAccentColor string `json:"aggregateAccentColor,omitempty"` // "#RRGGBB" bar fill; "" = auto 3-band
 	AggregateValueColor  string `json:"aggregateValueColor,omitempty"`  // "#RRGGBB" value text; "" = default
 	AggregateBarOffset   int    `json:"aggregateBarOffset,omitempty"`   // px nudge inward from the edge; 0 = flush
+	AggregateRatingSource string `json:"aggregateRatingSource,omitempty"` // overall | critics | audience; "" = overall
+	ScorebarStyle         string `json:"scorebarStyle,omitempty"`         // progress | solid | gradient; "" = progress
 	// Scorebar band overrides. When a color is set it replaces the built-in
 	// green/amber/red for that band; thresholds (0-10) move the band boundaries.
 	ScorebarLowColor      string  `json:"scorebarLowColor,omitempty"`
@@ -427,6 +429,8 @@ type rawAggregate struct {
 	AggregateAccentColor  *string  `json:"aggregateAccentColor"`
 	AggregateValueColor   *string  `json:"aggregateValueColor"`
 	AggregateBarOffset    *int     `json:"aggregateBarOffset"`
+	AggregateRatingSource *string  `json:"aggregateRatingSource"`
+	ScorebarStyle         *string  `json:"scorebarStyle"`
 	ScorebarLowColor      *string  `json:"scorebarLowColor"`
 	ScorebarMidColor      *string  `json:"scorebarMidColor"`
 	ScorebarHighColor     *string  `json:"scorebarHighColor"`
@@ -730,6 +734,18 @@ func parseAggregate(cfg *Config, r *raw) {
 	}
 	if r.AggregateBarOffset != nil {
 		cfg.AggregateBarOffset = clampInt(*r.AggregateBarOffset, -12, 12)
+	}
+	if r.AggregateRatingSource != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.AggregateRatingSource)); v {
+		case "overall", "critics", "audience":
+			cfg.AggregateRatingSource = v
+		}
+	}
+	if r.ScorebarStyle != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.ScorebarStyle)); v {
+		case "progress", "solid", "gradient":
+			cfg.ScorebarStyle = v
+		}
 	}
 	if r.ScorebarLowColor != nil && isHexColor(*r.ScorebarLowColor) {
 		cfg.ScorebarLowColor = strings.TrimSpace(*r.ScorebarLowColor)

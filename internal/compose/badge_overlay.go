@@ -1012,21 +1012,39 @@ func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imagecon
 		allowed[r] = true
 	}
 
-	var sum float64
-	var n int
-	for _, r := range ratings {
-		if len(cfg.Ratings) > 0 && !allowed[r.Source] {
-			continue
+	// The bar can average all allowed sources (overall) or just the critics /
+	// audience half of them.
+	var avg float64
+	switch strings.ToLower(cfg.AggregateRatingSource) {
+	case "critics":
+		c, _, hasC, _ := splitCriticsAudience(ratings, cfg.Ratings)
+		if !hasC {
+			return
 		}
-		if r.Value > 0 {
-			sum += r.Value
-			n++
+		avg = c
+	case "audience":
+		_, a, _, hasA := splitCriticsAudience(ratings, cfg.Ratings)
+		if !hasA {
+			return
 		}
+		avg = a
+	default:
+		var sum float64
+		var n int
+		for _, r := range ratings {
+			if len(cfg.Ratings) > 0 && !allowed[r.Source] {
+				continue
+			}
+			if r.Value > 0 {
+				sum += r.Value
+				n++
+			}
+		}
+		if n == 0 {
+			return
+		}
+		avg = sum / float64(n) // 0–10 scale
 	}
-	if n == 0 {
-		return
-	}
-	avg := sum / float64(n) // 0–10 scale
 
 	scale := outputScale(cfg.Size)
 	barH := int(10*scale + 0.5)
@@ -1053,46 +1071,79 @@ func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imagecon
 	trackRect := image.Rect(bounds.Min.X, barY, bounds.Max.X, barY+barH)
 	fillRect(base, trackRect, trackColor)
 
-	fillW := int(float64(w) * (avg / 10.0))
-	if fillW < 1 {
-		fillW = 1
+	// Resolve the three band colours up front (honouring overrides): the gradient
+	// style needs all three, and the single fill picks one by score.
+	lowT, highT := 5.0, 8.0
+	if cfg.ScorebarLowThreshold > 0 {
+		lowT = cfg.ScorebarLowThreshold
 	}
-	if fillW > w {
-		fillW = w
+	if cfg.ScorebarHighThreshold > 0 {
+		highT = cfg.ScorebarHighThreshold
+	}
+	bandColor := func(override string, def color.NRGBA) color.NRGBA {
+		if c, err := parseHexColor(override); override != "" && err == nil {
+			c.A = 230
+			return c
+		}
+		return def
+	}
+	lowC := bandColor(cfg.ScorebarLowColor, color.NRGBA{R: 192, G: 57, B: 43, A: 230})   // red
+	midC := bandColor(cfg.ScorebarMidColor, color.NRGBA{R: 230, G: 126, B: 34, A: 230})  // amber
+	highC := bandColor(cfg.ScorebarHighColor, color.NRGBA{R: 39, G: 174, B: 96, A: 230}) // green
+
+	// A custom accent overrides the score-band colour for the single-fill styles.
+	fillColor := highC
+	switch {
+	case cfg.AggregateAccentColor != "":
+		if custom, err := parseHexColor(cfg.AggregateAccentColor); err == nil {
+			custom.A = 230
+			fillColor = custom
+		}
+	case avg >= highT:
+		fillColor = highC
+	case avg >= lowT:
+		fillColor = midC
+	default:
+		fillColor = lowC
 	}
 
-	var fillColor color.NRGBA
-	// A custom accent color overrides the whole bar. Otherwise the score picks a
-	// band, each of whose color and boundary the scorebar fields can override.
-	if custom, err := parseHexColor(cfg.AggregateAccentColor); cfg.AggregateAccentColor != "" && err == nil {
-		custom.A = 230
-		fillColor = custom
-	} else {
-		lowT, highT := 5.0, 8.0
-		if cfg.ScorebarLowThreshold > 0 {
-			lowT = cfg.ScorebarLowThreshold
-		}
-		if cfg.ScorebarHighThreshold > 0 {
-			highT = cfg.ScorebarHighThreshold
-		}
-		bandColor := func(override string, def color.NRGBA) color.NRGBA {
-			if c, err := parseHexColor(override); override != "" && err == nil {
-				c.A = 230
-				return c
+	switch strings.ToLower(cfg.ScorebarStyle) {
+	case "solid":
+		// The whole bar carries the single score-band colour.
+		fillRect(base, image.Rect(bounds.Min.X, barY, bounds.Max.X, barY+barH), fillColor)
+	case "gradient":
+		// A low→mid→high gradient runs the full width, independent of the score.
+		for x := bounds.Min.X; x < bounds.Max.X; x++ {
+			t := float64(x-bounds.Min.X) / float64(w)
+			var c color.NRGBA
+			if t < 0.5 {
+				c = lerpColor(lowC, midC, t/0.5)
+			} else {
+				c = lerpColor(midC, highC, (t-0.5)/0.5)
 			}
-			return def
+			fillRect(base, image.Rect(x, barY, x+1, barY+barH), c)
 		}
-		switch {
-		case avg >= highT:
-			fillColor = bandColor(cfg.ScorebarHighColor, color.NRGBA{R: 39, G: 174, B: 96, A: 230}) // green
-		case avg >= lowT:
-			fillColor = bandColor(cfg.ScorebarMidColor, color.NRGBA{R: 230, G: 126, B: 34, A: 230}) // amber
-		default:
-			fillColor = bandColor(cfg.ScorebarLowColor, color.NRGBA{R: 192, G: 57, B: 43, A: 230}) // red
+	default: // progress — a partial fill proportional to the score
+		fillW := int(float64(w) * (avg / 10.0))
+		if fillW < 1 {
+			fillW = 1
 		}
+		if fillW > w {
+			fillW = w
+		}
+		fillRect(base, image.Rect(bounds.Min.X, barY, bounds.Min.X+fillW, barY+barH), fillColor)
 	}
+}
 
-	fillRect(base, image.Rect(bounds.Min.X, barY, bounds.Min.X+fillW, barY+barH), fillColor)
+// lerpColor linearly interpolates between a and b by t in [0,1].
+func lerpColor(a, b color.NRGBA, t float64) color.NRGBA {
+	if t < 0 {
+		t = 0
+	} else if t > 1 {
+		t = 1
+	}
+	mix := func(x, y uint8) uint8 { return uint8(float64(x) + (float64(y)-float64(x))*t) }
+	return color.NRGBA{R: mix(a.R, b.R), G: mix(a.G, b.G), B: mix(a.B, b.B), A: mix(a.A, b.A)}
 }
 
 // ── Trending badge ────────────────────────────────────────────────────────────

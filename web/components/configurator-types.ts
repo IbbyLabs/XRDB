@@ -135,6 +135,18 @@ export const GENRE_STYLE_OPTIONS = [
   { id: 'tile',    label: 'Tile'   },
 ] as const;
 
+export const AGGREGATE_SOURCE_OPTIONS = [
+  { id: 'overall',  label: 'Overall'  },
+  { id: 'critics',  label: 'Critics'  },
+  { id: 'audience', label: 'Audience' },
+] as const;
+
+export const SCOREBAR_STYLE_OPTIONS = [
+  { id: 'progress', label: 'Progress' },
+  { id: 'solid',    label: 'Solid'    },
+  { id: 'gradient', label: 'Gradient' },
+] as const;
+
 export const QUALITY_BADGE_OPTIONS: { id: string; label: string }[] = [
   { id: '4k',        label: '4K'           },
   { id: 'hdr',       label: 'HDR'          },
@@ -194,6 +206,8 @@ export interface ConfigState {
   genreBadgeStyle: string; // 'default' | glass | square | plain | clean | tile
   aggregateAccentColor: string; // '' = auto score-band
   aggregateBarOffset: number; // px inward nudge, -12..12; 0 = flush
+  aggregateRatingSource: string; // overall | critics | audience
+  scorebarStyle: string; // progress | solid | gradient
   scorebarLowColor: string;
   scorebarMidColor: string;
   scorebarHighColor: string;
@@ -253,6 +267,8 @@ export const DEFAULT_CONFIG: ConfigState = {
   genreBadgeStyle: 'default',
   aggregateAccentColor: '',
   aggregateBarOffset: 0,
+  aggregateRatingSource: 'overall',
+  scorebarStyle: 'progress',
   scorebarLowColor: '',
   scorebarMidColor: '',
   scorebarHighColor: '',

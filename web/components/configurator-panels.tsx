@@ -7,7 +7,7 @@ import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   LAYOUT_OPTIONS, RATING_OPTIONS, BADGE_STYLE_OPTIONS, BADGE_THEME_OPTIONS,
   RING_POS_OPTIONS, SIX_POS_OPTIONS, QUALITY_STYLE_OPTIONS, GENRE_STYLE_OPTIONS,
-  RATING_PRESENTATION_OPTIONS,
+  AGGREGATE_SOURCE_OPTIONS, SCOREBAR_STYLE_OPTIONS, RATING_PRESENTATION_OPTIONS,
 } from './configurator-types';
 
 // ── Template strip ────────────────────────────────────────────────────────────
@@ -555,6 +555,28 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
           hint="Outline thickness on the genre tile." />
 
         <span className="adv-section">Aggregate bar</span>
+        <div className="field">
+          <label className="label" htmlFor={`${uid}-agg-source`}>Rating source</label>
+          <select id={`${uid}-agg-source`} className="select" value={config.aggregateRatingSource}
+            onChange={e => onUpdate('aggregateRatingSource', e.target.value)} style={{ maxWidth: '12rem' }}>
+            {AGGREGATE_SOURCE_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+          </select>
+        </div>
+        <div className="field">
+          <span className="label" id={`${uid}-scorebar-style-label`}>Bar style</span>
+          <div className="opt-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }} role="group" aria-labelledby={`${uid}-scorebar-style-label`}>
+            {SCOREBAR_STYLE_OPTIONS.map(o => (
+              <button
+                key={o.id}
+                className={`opt-btn${config.scorebarStyle === o.id ? ' opt-btn--active' : ''}`}
+                onClick={() => onUpdate('scorebarStyle', o.id)}
+                aria-pressed={config.scorebarStyle === o.id}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <NumField id={`${uid}-agg-offset`} label="Bar offset (px)" value={config.aggregateBarOffset}
           onChange={v => onUpdate('aggregateBarOffset', v)} min={-12} max={12} zeroIsDefault={false}
           hint="Nudge the bar inward from its edge (−12 to 12)." />

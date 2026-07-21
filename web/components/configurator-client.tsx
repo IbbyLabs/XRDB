@@ -157,6 +157,8 @@ export function ConfiguratorClient() {
       genreBadgeStyle: cfg.genreBadgeStyle === 'default' ? '' : cfg.genreBadgeStyle,
       aggregateAccentColor: cfg.aggregateAccentColor,
       aggregateBarOffset: cfg.aggregateBarOffset,
+      aggregateRatingSource: cfg.aggregateRatingSource === 'overall' ? '' : cfg.aggregateRatingSource,
+      scorebarStyle: cfg.scorebarStyle === 'progress' ? '' : cfg.scorebarStyle,
       scorebarLowColor: cfg.scorebarLowColor,
       scorebarMidColor: cfg.scorebarMidColor,
       scorebarHighColor: cfg.scorebarHighColor,
