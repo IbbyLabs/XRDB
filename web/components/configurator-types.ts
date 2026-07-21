@@ -237,6 +237,7 @@ export interface ConfigState {
   sideRatingsOffset: number; // px vertical offset for the custom position
   ratingsMaxPerSide: number; // cap badges per side; 0 = no cap
   ratingProviderOverrides: Record<string, string>; // source id → hex accent; empty = none
+  ratingProviderWeights: Record<string, number>; // source id → weight; no entry = 1, 0 = ignore
   genreBadgeScale: number;
   genreBadgeOffsetX: number;
   genreBadgeOffsetY: number;
@@ -273,6 +274,8 @@ export interface ConfigState {
   ringCenterOpacity: number; // 0 = default
   ringValueSource: string; // 'overall' | provider id
   ringProgressSource: string;
+  ringCriticsPriority: string[]; // order 'Top critic' walks; [] = built-in
+  ringAudiencePriority: string[]; // order 'Top audience' walks; [] = built-in
 }
 
 export const DEFAULT_CONFIG: ConfigState = {
@@ -318,6 +321,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   sideRatingsOffset: 0,
   ratingsMaxPerSide: 0,
   ratingProviderOverrides: {},
+  ratingProviderWeights: {},
   genreBadgeScale: 0,
   genreBadgeOffsetX: 0,
   genreBadgeOffsetY: 0,
@@ -354,7 +358,17 @@ export const DEFAULT_CONFIG: ConfigState = {
   ringCenterOpacity: 0,
   ringValueSource: 'overall',
   ringProgressSource: 'overall',
+  ringCriticsPriority: [],
+  ringAudiencePriority: [],
 };
+
+// The order the renderer walks for the 'Top critic' and 'Top audience' ring
+// modes when a config sets none of its own. Mirrors defaultCriticsPriority /
+// defaultAudiencePriority in internal/compose/badge_overlay.go.
+export const DEFAULT_CRITICS_PRIORITY = ['rt', 'metacritic', 'rogerebert'];
+export const DEFAULT_AUDIENCE_PRIORITY = [
+  'imdb', 'tmdb', 'trakt', 'letterboxd', 'mdblist', 'rtaudience', 'simkl',
+];
 
 export type UpdateConfigFn = <K extends keyof ConfigState>(key: K, value: ConfigState[K]) => void;
 
@@ -378,6 +392,16 @@ export const DEFAULT_SURFACE_CONFIGS: SurfaceConfigs = {
 function coerceStringArray(value: unknown, fallback: string[]): string[] {
   if (!Array.isArray(value)) return [...fallback];
   return value.filter((v): v is string => typeof v === 'string');
+}
+
+/** Keep only string→number entries of a map field; drop anything malformed. */
+function coerceNumberMap(value: unknown): Record<string, number> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof v === 'number' && Number.isFinite(v) && v >= 0) out[k] = v;
+  }
+  return out;
 }
 
 /** Keep only string→string entries of a map field; drop anything malformed. */
@@ -405,6 +429,9 @@ function coerceConfig(raw: unknown): ConfigState {
     ratings: coerceStringArray(input.ratings, DEFAULT_CONFIG.ratings),
     badges: coerceStringArray(input.badges, DEFAULT_CONFIG.badges),
     ratingProviderOverrides: coerceStringMap(input.ratingProviderOverrides),
+    ratingProviderWeights: coerceNumberMap(input.ratingProviderWeights),
+    ringCriticsPriority: coerceStringArray(input.ringCriticsPriority, []),
+    ringAudiencePriority: coerceStringArray(input.ringAudiencePriority, []),
   };
 }
 

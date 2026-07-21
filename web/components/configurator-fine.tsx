@@ -5,7 +5,7 @@ import {
   RATING_OPTIONS, SIX_POS_OPTIONS, QUALITY_STYLE_OPTIONS, GENRE_STYLE_OPTIONS,
   AGE_STYLE_OPTIONS, GENRE_MODE_OPTIONS, ANIME_GROUPING_OPTIONS,
   AGGREGATE_SOURCE_OPTIONS, AGGREGATE_ACCENT_MODE_OPTIONS, SCOREBAR_STYLE_OPTIONS,
-  RATING_PRESENTATION_OPTIONS,
+  RATING_PRESENTATION_OPTIONS, DEFAULT_CRITICS_PRIORITY, DEFAULT_AUDIENCE_PRIORITY,
 } from './configurator-types';
 
 /**
@@ -236,6 +236,53 @@ function ProviderOverrides({ uid, config, onUpdate }: GroupProps) {
   );
 }
 
+/**
+ * ProviderWeights sets how much each source counts wherever XRDB combines
+ * several into one number: the rating ring, the aggregate bar, and the averaged
+ * presentations. It changes those scores, never the individual badges.
+ */
+function ProviderWeights({ uid, config, onUpdate }: GroupProps) {
+  const selected = RATING_OPTIONS.filter(r => config.ratings.includes(r.id));
+  if (selected.length === 0) return null;
+
+  // 1 is the weight a source carries anyway, so storing it would only pad the
+  // config and the URL. Setting a source back to 1 drops its entry instead.
+  const setWeight = (id: string, weight: number) => {
+    const next = { ...config.ratingProviderWeights };
+    if (weight === 1) delete next[id];
+    else next[id] = weight;
+    onUpdate('ratingProviderWeights', next);
+  };
+
+  return (
+    <details className="adv-details">
+      <summary>
+        Per-provider weight
+      </summary>
+      <div className="cfg-fields" role="group" aria-label="Per-provider weight" style={{ marginTop: 'var(--sp-2)' }}>
+        <p className="hint" style={{ marginTop: 0 }}>
+          How much a source counts towards the ring, the score bar and the averaged
+          presentations. 1 is normal, 2 counts double, 0 leaves it out of those
+          scores while keeping its own badge.
+        </p>
+        {selected.map(r => (
+          <NumField
+            key={r.id}
+            id={`${uid}-weight-${r.id}`}
+            label={r.label}
+            value={config.ratingProviderWeights[r.id] ?? 1}
+            onChange={v => setWeight(r.id, v)}
+            min={0}
+            max={10}
+            step={0.5}
+            zeroIsDefault={false}
+          />
+        ))}
+      </div>
+    </details>
+  );
+}
+
 export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
   return (
     <FineGroup label="Rating badges">
@@ -260,6 +307,7 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
           onChange={v => onUpdate('ratingBadgeOffsetY', v)} min={-320} max={320} zeroIsDefault={false} />
       </div>
       <ProviderOverrides uid={uid} config={config} onUpdate={onUpdate} />
+      <ProviderWeights uid={uid} config={config} onUpdate={onUpdate} />
     </FineGroup>
   );
 }
@@ -288,6 +336,68 @@ function RingSourceSelect({
   );
 }
 
+const sourceLabel = (id: string) => RATING_OPTIONS.find(o => o.id === id)?.label ?? id;
+
+/**
+ * PriorityList orders the sources a "top critic" / "top audience" ring walks:
+ * the first one this title actually has a score for is the one shown. The list
+ * starts on the built-in order and only stores an order of its own once it is
+ * rearranged, so leaving it alone keeps whatever the default becomes.
+ */
+function PriorityList({
+  label, hint, order, fallback, onChange,
+}: {
+  label: string; hint: string; order: string[]; fallback: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const effective = order.length > 0 ? order : fallback;
+  const swap = (i: number, j: number) => {
+    if (j < 0 || j >= effective.length) return;
+    const next = [...effective];
+    [next[i], next[j]] = [next[j], next[i]];
+    onChange(next);
+  };
+
+  return (
+    <div className="field" role="group" aria-label={label}>
+      <span className="label">{label}</span>
+      <span className="hint" style={{ marginTop: 0, marginBottom: 'var(--sp-1)' }}>{hint}</span>
+      <ol className="priority-list">
+        {effective.map((id, i) => (
+          <li key={id} className="priority-row">
+            <span className="priority-rank" aria-hidden>{i + 1}</span>
+            <span className="priority-name">{sourceLabel(id)}</span>
+            <button
+              className="opt-btn priority-move"
+              onClick={() => swap(i, i - 1)}
+              disabled={i === 0}
+              aria-label={`Move ${sourceLabel(id)} up`}
+            >
+              ↑
+            </button>
+            <button
+              className="opt-btn priority-move"
+              onClick={() => swap(i, i + 1)}
+              disabled={i === effective.length - 1}
+              aria-label={`Move ${sourceLabel(id)} down`}
+            >
+              ↓
+            </button>
+          </li>
+        ))}
+      </ol>
+      <button
+        className={`opt-btn${order.length === 0 ? ' opt-btn--active' : ''}`}
+        onClick={() => onChange([])}
+        aria-pressed={order.length === 0}
+        style={{ marginTop: 'var(--sp-1)' }}
+      >
+        Default order
+      </button>
+    </div>
+  );
+}
+
 export function RatingRingFine({ uid, config, onUpdate }: GroupProps) {
   return (
     <FineGroup label="Rating ring">
@@ -298,6 +408,27 @@ export function RatingRingFine({ uid, config, onUpdate }: GroupProps) {
         value={config.ringValueSource} onChange={v => onUpdate('ringValueSource', v)} />
       <RingSourceSelect id={`${uid}-ring-prog-src`} label="Fill source"
         value={config.ringProgressSource} onChange={v => onUpdate('ringProgressSource', v)} />
+      <details className="adv-details">
+        <summary>
+          Top critic / top audience order
+        </summary>
+        <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>
+          <PriorityList
+            label="Critics"
+            hint="Used by the Top critic source."
+            order={config.ringCriticsPriority}
+            fallback={DEFAULT_CRITICS_PRIORITY}
+            onChange={v => onUpdate('ringCriticsPriority', v)}
+          />
+          <PriorityList
+            label="Audience"
+            hint="Used by the Top audience source."
+            order={config.ringAudiencePriority}
+            fallback={DEFAULT_AUDIENCE_PRIORITY}
+            onChange={v => onUpdate('ringAudiencePriority', v)}
+          />
+        </div>
+      </details>
     </FineGroup>
   );
 }

@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"math"
 	"reflect"
 	"sort"
 	"strings"
@@ -255,6 +256,12 @@ type RatingBadgeConfig struct {
 	// RatingProviderOverrides maps a provider source (e.g. "imdb") to a
 	// "#RRGGBB" accent color that replaces the built-in one for that badge.
 	RatingProviderOverrides map[string]string `json:"ratingProviderOverrides,omitempty"`
+	// RatingProviderWeights maps a provider source to how much its score counts
+	// wherever several sources are combined into one number: the rating ring,
+	// the aggregate bar, and the averaged presentations. 1 is normal, 2 counts
+	// double, 0 drops the source out of every computed score while leaving its
+	// own badge untouched. A source with no entry weighs 1.
+	RatingProviderWeights map[string]float64 `json:"ratingProviderWeights,omitempty"`
 }
 
 // RandomPosterConfig groups the filters applied when the artwork source is
@@ -305,6 +312,11 @@ type RatingRingConfig struct {
 	RingCenterOpacity  int    `json:"ringCenterOpacity,omitempty"`  // 0-100 opacity of the centre disk; 0 = default
 	RingValueSource    string `json:"ringValueSource,omitempty"`    // "" / "overall" = average, else a provider (e.g. "imdb")
 	RingProgressSource string `json:"ringProgressSource,omitempty"` // source for the arc fill; same values
+	// RingCriticsPriority and RingAudiencePriority order the sources the
+	// "priority-critics" and "priority-audience" modes walk: the first one with
+	// a score wins. Empty keeps the built-in order.
+	RingCriticsPriority  []string `json:"ringCriticsPriority,omitempty"`
+	RingAudiencePriority []string `json:"ringAudiencePriority,omitempty"`
 }
 
 // PerSurfaceBaseConfig groups per-surface base-artwork options that aren't
@@ -457,21 +469,24 @@ type rawSurface struct {
 }
 
 type rawRing struct {
-	RingCenterOpacity  *int    `json:"ringCenterOpacity"`
-	RingValueSource    *string `json:"ringValueSource"`
-	RingProgressSource *string `json:"ringProgressSource"`
+	RingCenterOpacity    *int     `json:"ringCenterOpacity"`
+	RingValueSource      *string  `json:"ringValueSource"`
+	RingProgressSource   *string  `json:"ringProgressSource"`
+	RingCriticsPriority  []string `json:"ringCriticsPriority"`
+	RingAudiencePriority []string `json:"ringAudiencePriority"`
 }
 
 type rawRating struct {
-	RatingBadgeScale        *int              `json:"ratingBadgeScale"`
-	RatingsMax              *int              `json:"ratingsMax"`
-	RatingBadgeOffsetX      *int              `json:"ratingBadgeOffsetX"`
-	RatingBadgeOffsetY      *int              `json:"ratingBadgeOffsetY"`
-	RatingPresentation      *string           `json:"ratingPresentation"`
-	SideRatingsPosition     *string           `json:"sideRatingsPosition"`
-	SideRatingsOffset       *int              `json:"sideRatingsOffset"`
-	RatingsMaxPerSide       *int              `json:"ratingsMaxPerSide"`
-	RatingProviderOverrides map[string]string `json:"ratingProviderOverrides"`
+	RatingBadgeScale        *int               `json:"ratingBadgeScale"`
+	RatingsMax              *int               `json:"ratingsMax"`
+	RatingBadgeOffsetX      *int               `json:"ratingBadgeOffsetX"`
+	RatingBadgeOffsetY      *int               `json:"ratingBadgeOffsetY"`
+	RatingPresentation      *string            `json:"ratingPresentation"`
+	SideRatingsPosition     *string            `json:"sideRatingsPosition"`
+	SideRatingsOffset       *int               `json:"sideRatingsOffset"`
+	RatingsMaxPerSide       *int               `json:"ratingsMaxPerSide"`
+	RatingProviderOverrides map[string]string  `json:"ratingProviderOverrides"`
+	RatingProviderWeights   map[string]float64 `json:"ratingProviderWeights"`
 }
 
 type rawAggregate struct {
@@ -768,7 +783,26 @@ func parseRating(cfg *Config, r *raw) {
 		}
 		cfg.RatingProviderOverrides = m
 	}
+	if len(r.RatingProviderWeights) > 0 {
+		var m map[string]float64
+		for k, v := range r.RatingProviderWeights {
+			// NaN and infinities would poison every average that reads the
+			// weight, so they're dropped rather than clamped to a guess.
+			if math.IsNaN(v) || math.IsInf(v, 0) || v < 0 {
+				continue
+			}
+			if m == nil {
+				m = make(map[string]float64, len(r.RatingProviderWeights))
+			}
+			m[strings.ToLower(strings.TrimSpace(k))] = math.Min(v, maxProviderWeight)
+		}
+		cfg.RatingProviderWeights = m
+	}
 }
+
+// maxProviderWeight caps how far one source can outvote the others. Ten is
+// already lopsided enough to read as "only this one counts".
+const maxProviderWeight = 10
 
 func parseRing(cfg *Config, r *raw) {
 	if r.RingCenterOpacity != nil && *r.RingCenterOpacity != 0 {
@@ -780,6 +814,25 @@ func parseRing(cfg *Config, r *raw) {
 	if r.RingProgressSource != nil && strings.TrimSpace(*r.RingProgressSource) != "" {
 		cfg.RingProgressSource = strings.ToLower(strings.TrimSpace(*r.RingProgressSource))
 	}
+	if v := normalizeSourceOrder(r.RingCriticsPriority); len(v) > 0 {
+		cfg.RingCriticsPriority = v
+	}
+	if v := normalizeSourceOrder(r.RingAudiencePriority); len(v) > 0 {
+		cfg.RingAudiencePriority = v
+	}
+}
+
+// normalizeSourceOrder cleans a provider-priority list: lowercased, trimmed,
+// blanks dropped, first mention of a source wins.
+func normalizeSourceOrder(in []string) []string {
+	if len(in) == 0 {
+		return nil
+	}
+	lowered := make([]string, 0, len(in))
+	for _, s := range in {
+		lowered = append(lowered, strings.ToLower(s))
+	}
+	return dedupeStrings(lowered)
 }
 
 func parseSurface(cfg *Config, r *raw) {

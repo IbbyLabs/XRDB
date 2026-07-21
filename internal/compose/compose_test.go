@@ -515,7 +515,8 @@ func TestScorebarPresentationDrawsBottomBar(t *testing.T) {
 }
 
 func TestSplitCriticsAudienceClassification(t *testing.T) {
-	critics, audience, hasC, hasA := splitCriticsAudience(presentationRatings(), []string{"imdb", "tmdb", "rt"})
+	critics, audience, hasC, hasA := splitCriticsAudience(presentationRatings(),
+		imageconfig.Config{Ratings: []string{"imdb", "tmdb", "rt"}})
 	if !hasC || !hasA {
 		t.Fatalf("expected both halves present, got hasC=%v hasA=%v", hasC, hasA)
 	}

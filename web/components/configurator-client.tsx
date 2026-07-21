@@ -230,6 +230,11 @@ export function ConfiguratorClient() {
     if (Object.keys(cfg.ratingProviderOverrides).length > 0) {
       payload.ratingProviderOverrides = cfg.ratingProviderOverrides;
     }
+    if (Object.keys(cfg.ratingProviderWeights).length > 0) {
+      payload.ratingProviderWeights = cfg.ratingProviderWeights;
+    }
+    if (cfg.ringCriticsPriority.length > 0) payload.ringCriticsPriority = cfg.ringCriticsPriority;
+    if (cfg.ringAudiencePriority.length > 0) payload.ringAudiencePriority = cfg.ringAudiencePriority;
     return renderUrl(type, id || 'tt0468569', JSON.stringify(payload), renderKey);
   }, [renderKey]);
 

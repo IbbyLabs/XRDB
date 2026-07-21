@@ -1025,7 +1025,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 // first genre in an accent color above a large average score, anchored top-left.
 // It mirrors v2's editorial mode (e.g. "Crime" over "9.0").
 func drawEditorialRating(base *image.NRGBA, ratings []provider.Rating, genres []string, cfg imageconfig.Config, scale float64, occ *occupancy) {
-	avg, ok := ratingRingAverage(ratings, cfg.Ratings)
+	avg, ok := ratingRingAverage(ratings, cfg)
 	if !ok {
 		return
 	}
@@ -1070,37 +1070,57 @@ var criticsSources = map[string]bool{
 // splitCriticsAudience averages the allowed ratings into a critics score and an
 // audience score, following the provider classification above. Sources with no
 // value are skipped; ok flags report which halves have data.
-func splitCriticsAudience(ratings []provider.Rating, allowed []string) (critics, audience float64, hasCritics, hasAudience bool) {
-	allow := make(map[string]bool, len(allowed))
-	for _, a := range allowed {
+func splitCriticsAudience(ratings []provider.Rating, cfg imageconfig.Config) (critics, audience float64, hasCritics, hasAudience bool) {
+	critics, hasCritics = weightedMean(ratings, cfg, func(source string) bool { return criticsSources[source] })
+	audience, hasAudience = weightedMean(ratings, cfg, func(source string) bool { return !criticsSources[source] })
+	return
+}
+
+// providerWeight reports how much a source counts in a combined score. Anything
+// unconfigured weighs 1, so a config with no weights behaves as a plain mean.
+func providerWeight(cfg imageconfig.Config, source string) float64 {
+	if len(cfg.RatingProviderWeights) == 0 {
+		return 1
+	}
+	w, ok := cfg.RatingProviderWeights[strings.ToLower(source)]
+	if !ok {
+		return 1
+	}
+	return w
+}
+
+// weightedMean averages the allowed ratings that pass want, each source counted
+// by its configured weight. A source weighted 0 contributes nothing and is not
+// counted against the total either, so zeroing one out is the same as not
+// selecting it as far as the score is concerned. Reports ok=false when nothing
+// contributed.
+func weightedMean(ratings []provider.Rating, cfg imageconfig.Config, want func(source string) bool) (float64, bool) {
+	allow := make(map[string]bool, len(cfg.Ratings))
+	for _, a := range cfg.Ratings {
 		allow[a] = true
 	}
-	var cs, as float64
-	var cn, an int
+	var sum, weight float64
 	for _, r := range ratings {
-		if len(allowed) > 0 && !allow[r.Source] {
+		if len(cfg.Ratings) > 0 && !allow[r.Source] {
 			continue
 		}
 		if r.Value <= 0 {
 			continue
 		}
-		if criticsSources[r.Source] {
-			cs += r.Value
-			cn++
-		} else {
-			as += r.Value
-			an++
+		if want != nil && !want(r.Source) {
+			continue
 		}
+		w := providerWeight(cfg, r.Source)
+		if w <= 0 {
+			continue
+		}
+		sum += r.Value * w
+		weight += w
 	}
-	if cn > 0 {
-		critics = cs / float64(cn)
-		hasCritics = true
+	if weight == 0 {
+		return 0, false
 	}
-	if an > 0 {
-		audience = as / float64(an)
-		hasAudience = true
-	}
-	return
+	return sum / weight, true
 }
 
 // scorePillHeight is the capsule height for the minimal/dual score pills at the
@@ -1169,7 +1189,7 @@ func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, accent 
 // at the top of the artwork. The pill carries no label segment, so it stays a
 // clean dark capsule regardless of accent config.
 func drawMinimalRating(base *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, scale float64, occ *occupancy) {
-	avg, ok := ratingRingAverage(ratings, cfg.Ratings)
+	avg, ok := ratingRingAverage(ratings, cfg)
 	if !ok {
 		return
 	}
@@ -1183,7 +1203,7 @@ func drawMinimalRating(base *image.NRGBA, ratings []provider.Rating, cfg imageco
 // drawAverageRating shows a single centred pill labelled "AVG" with the overall
 // average — like minimal, but explicitly named.
 func drawAverageRating(base *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, scale float64, occ *occupancy) {
-	avg, ok := ratingRingAverage(ratings, cfg.Ratings)
+	avg, ok := ratingRingAverage(ratings, cfg)
 	if !ok {
 		return
 	}
@@ -1196,7 +1216,7 @@ func drawAverageRating(base *image.NRGBA, ratings []provider.Rating, cfg imageco
 // drawDualRating shows a critics pill (top) and an audience pill (bottom). When
 // labeled is false the pills carry just the score (the "dual-minimal" mode).
 func drawDualRating(base *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, scale float64, occ *occupancy, labeled bool) {
-	critics, audience, hasC, hasA := splitCriticsAudience(ratings, cfg.Ratings)
+	critics, audience, hasC, hasA := splitCriticsAudience(ratings, cfg)
 	b := base.Bounds()
 	cx := b.Min.X + b.Dx()/2
 	pad := int(14*scale + 0.5)
@@ -1227,43 +1247,28 @@ func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imagecon
 		return
 	}
 
-	allowed := make(map[string]bool, len(cfg.Ratings))
-	for _, r := range cfg.Ratings {
-		allowed[r] = true
-	}
-
 	// The bar can average all allowed sources (overall) or just the critics /
 	// audience half of them.
 	var avg float64
 	switch strings.ToLower(cfg.AggregateRatingSource) {
 	case "critics":
-		c, _, hasC, _ := splitCriticsAudience(ratings, cfg.Ratings)
+		c, _, hasC, _ := splitCriticsAudience(ratings, cfg)
 		if !hasC {
 			return
 		}
 		avg = c
 	case "audience":
-		_, a, _, hasA := splitCriticsAudience(ratings, cfg.Ratings)
+		_, a, _, hasA := splitCriticsAudience(ratings, cfg)
 		if !hasA {
 			return
 		}
 		avg = a
 	default:
-		var sum float64
-		var n int
-		for _, r := range ratings {
-			if len(cfg.Ratings) > 0 && !allowed[r.Source] {
-				continue
-			}
-			if r.Value > 0 {
-				sum += r.Value
-				n++
-			}
-		}
-		if n == 0 {
+		v, ok := weightedMean(ratings, cfg, nil) // 0–10 scale
+		if !ok {
 			return
 		}
-		avg = sum / float64(n) // 0–10 scale
+		avg = v
 	}
 
 	scale := outputScale(cfg.Size)
@@ -1565,7 +1570,7 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 		return
 	}
 
-	avg, ok := ratingRingAverage(ratings, cfg.Ratings)
+	avg, ok := ratingRingAverage(ratings, cfg)
 	if !ok {
 		return
 	}
@@ -1574,11 +1579,11 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 	// instead of the overall average, so e.g. the number is IMDb while the fill
 	// reflects the aggregate. Unset or "overall" keeps the average for both.
 	value := avg
-	if v, ok := ratingRingSourceValue(ratings, cfg.RingValueSource, cfg.Ratings); ok {
+	if v, ok := ratingRingSourceValue(ratings, cfg.RingValueSource, cfg); ok {
 		value = v
 	}
 	progress := avg
-	if v, ok := ratingRingSourceValue(ratings, cfg.RingProgressSource, cfg.Ratings); ok {
+	if v, ok := ratingRingSourceValue(ratings, cfg.RingProgressSource, cfg); ok {
 		progress = v
 	}
 
@@ -1612,9 +1617,9 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 // that provider has no value.
 // firstAvailableRating returns the value of the first source in the priority
 // order that is allowed and carries a value.
-func firstAvailableRating(ratings []provider.Rating, allowed []string, order []string) (float64, bool) {
-	allow := make(map[string]bool, len(allowed))
-	for _, s := range allowed {
+func firstAvailableRating(ratings []provider.Rating, cfg imageconfig.Config, order []string) (float64, bool) {
+	allow := make(map[string]bool, len(cfg.Ratings))
+	for _, s := range cfg.Ratings {
 		allow[s] = true
 	}
 	bySource := make(map[string]float64, len(ratings))
@@ -1624,7 +1629,12 @@ func firstAvailableRating(ratings []provider.Rating, allowed []string, order []s
 		}
 	}
 	for _, s := range order {
-		if len(allowed) > 0 && !allow[s] {
+		if len(cfg.Ratings) > 0 && !allow[s] {
+			continue
+		}
+		// A source weighted to zero is one the config has taken out of the
+		// scoring, so it should not win the fallback either.
+		if providerWeight(cfg, s) <= 0 {
 			continue
 		}
 		if v, ok := bySource[s]; ok {
@@ -1634,25 +1644,47 @@ func firstAvailableRating(ratings []provider.Rating, allowed []string, order []s
 	return 0, false
 }
 
-func ratingRingSourceValue(ratings []provider.Rating, source string, allowed []string) (float64, bool) {
+// The order the "top critic" and "top audience" ring modes walk when a config
+// names no order of its own: best-known professional outlets first, then the
+// audience sources by breadth of voter base.
+var (
+	defaultCriticsPriority  = []string{"rt", "metacritic", "rogerebert"}
+	defaultAudiencePriority = []string{"imdb", "tmdb", "trakt", "letterboxd", "mdblist", "rtaudience", "simkl"}
+)
+
+// sourceOrder prefers a configured priority list, falling back to the built-in
+// one when the config leaves it unset.
+func sourceOrder(configured, fallback []string) []string {
+	if len(configured) > 0 {
+		return configured
+	}
+	return fallback
+}
+
+func ratingRingSourceValue(ratings []provider.Rating, source string, cfg imageconfig.Config) (float64, bool) {
 	source = strings.ToLower(strings.TrimSpace(source))
 	switch source {
 	case "", "overall", "average":
 		return 0, false
 	case "critics":
-		c, _, hasC, _ := splitCriticsAudience(ratings, allowed)
+		c, _, hasC, _ := splitCriticsAudience(ratings, cfg)
 		return c, hasC
 	case "audience":
-		_, a, _, hasA := splitCriticsAudience(ratings, allowed)
+		_, a, _, hasA := splitCriticsAudience(ratings, cfg)
 		return a, hasA
 	case "highest":
-		allow := make(map[string]bool, len(allowed))
-		for _, s := range allowed {
+		allow := make(map[string]bool, len(cfg.Ratings))
+		for _, s := range cfg.Ratings {
 			allow[s] = true
 		}
 		best, ok := 0.0, false
 		for _, r := range ratings {
-			if len(allowed) > 0 && !allow[r.Source] {
+			if len(cfg.Ratings) > 0 && !allow[r.Source] {
+				continue
+			}
+			// Zero-weighted sources are out of the scoring entirely, so one of
+			// them topping the list must not become the ring's number.
+			if providerWeight(cfg, r.Source) <= 0 {
 				continue
 			}
 			if r.Value > best {
@@ -1661,9 +1693,9 @@ func ratingRingSourceValue(ratings []provider.Rating, source string, allowed []s
 		}
 		return best, ok
 	case "priority-critics":
-		return firstAvailableRating(ratings, allowed, []string{"rt", "metacritic", "rogerebert"})
+		return firstAvailableRating(ratings, cfg, sourceOrder(cfg.RingCriticsPriority, defaultCriticsPriority))
 	case "priority-audience":
-		return firstAvailableRating(ratings, allowed, []string{"imdb", "tmdb", "trakt", "letterboxd", "mdblist", "rtaudience", "simkl"})
+		return firstAvailableRating(ratings, cfg, sourceOrder(cfg.RingAudiencePriority, defaultAudiencePriority))
 	}
 	// Otherwise treat it as a specific provider id.
 	for _, r := range ratings {
@@ -1679,27 +1711,15 @@ func ratingRingSourceValue(ratings []provider.Rating, source string, allowed []s
 const ringValueFontScale = 0.85
 
 // ratingRingAverage computes the normalised (0–10) average of ratings whose
-// source is in the allowlist. Returns (avg, true) or (0, false) if no data.
-func ratingRingAverage(ratings []provider.Rating, allowed []string) (float64, bool) {
-	allowSet := make(map[string]bool, len(allowed))
-	for _, r := range allowed {
-		allowSet[r] = true
-	}
-	var sum float64
-	var n int
-	for _, r := range ratings {
-		if !allowSet[r.Source] {
-			continue
-		}
-		if r.Value > 0 {
-			sum += r.Value
-			n++
-		}
-	}
-	if n == 0 {
+// source is in the allowlist, weighted per source. Returns (avg, true) or
+// (0, false) if no data.
+func ratingRingAverage(ratings []provider.Rating, cfg imageconfig.Config) (float64, bool) {
+	// An empty allow-list means nothing is selected rather than everything, so
+	// there is no score to show.
+	if len(cfg.Ratings) == 0 {
 		return 0, false
 	}
-	return sum / float64(n), true
+	return weightedMean(ratings, cfg, nil)
 }
 
 // ratingRingFillColor returns the arc fill colour: a custom hex when provided,

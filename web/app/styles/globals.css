@@ -905,6 +905,35 @@ textarea.input { min-height: 0; line-height: 1.5; }
   cursor: pointer;
 }
 
+/* Ordered fallback list: rank, source name, and the two reordering controls.
+   The rank column is fixed so the names line up as rows are moved. */
+.priority-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.priority-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.priority-rank {
+  flex: 0 0 1.25rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-size: var(--text-xs);
+}
+.priority-name { flex: 1 1 auto; min-width: 0; }
+.priority-move {
+  flex: 0 0 auto;
+  min-width: 2.25rem;
+  padding-inline: var(--sp-2);
+}
+.priority-move:disabled { opacity: 0.4; cursor: default; }
+
 /* Native colour picker, styled to the token set. Shared by every colour control
    so the swatch stays identical across the panels. */
 .color-swatch {
