@@ -9,6 +9,7 @@ RUN npm run build
 
 # Stage 2: build the Go binary (with embedded UI)
 FROM golang:1.25-alpine AS go-builder
+ARG XRDB_BUILD_VERSION
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
@@ -16,11 +17,14 @@ COPY cmd ./cmd
 COPY internal ./internal
 # Pull in the static export produced by the web builder
 COPY --from=web-builder /src/internal/ui/dist ./internal/ui/dist
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/xrdb-api ./cmd/api
+# Stamp the version into the binary rather than the image environment, so it
+# travels with the build itself and can't be carried forward onto a newer image.
+RUN CGO_ENABLED=0 go build -trimpath \
+    -ldflags="-s -w -X xrdb_rewrite/internal/config.buildVersion=${XRDB_BUILD_VERSION}" \
+    -o /out/xrdb-api ./cmd/api
 
 # Stage 3: minimal runtime image
 FROM alpine:3.21
-ARG XRDB_BUILD_VERSION
 RUN adduser -D -H -s /sbin/nologin appuser \
     && mkdir -p /data \
     && chown appuser:appuser /data
@@ -31,6 +35,5 @@ VOLUME ["/data"]
 EXPOSE 8787
 ENV XRDB_ADDR=:8787 \
     XRDB_DB=/data/xrdb.db \
-    XRDB_CACHE_DIR=/data/cache \
-    XRDB_VERSION=${XRDB_BUILD_VERSION}
+    XRDB_CACHE_DIR=/data/cache
 CMD ["/app/xrdb-api"]

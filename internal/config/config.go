@@ -82,15 +82,33 @@ func loadProviderTTLs(defaultTTL time.Duration) map[string]time.Duration {
 	return ttls
 }
 
+// buildVersion is stamped into the binary at link time (-X). Empty for a plain
+// `go build`, which is what makes the environment fallback below useful.
+var buildVersion string
+
+// resolveVersion reports the build this binary came from.
+//
+// The stamped value wins over the environment because it travels with the
+// binary and nothing downstream can desynchronise it. An environment variable
+// can: a container runtime that recreates a container on a new image while
+// carrying the previous container's environment forward will pin the old value
+// indefinitely, leaving a current build reporting a stale version.
+func resolveVersion() string {
+	if buildVersion != "" {
+		return buildVersion
+	}
+	if v := os.Getenv("XRDB_VERSION"); v != "" {
+		return v
+	}
+	return "dev"
+}
+
 func Load() Config {
 	addr := os.Getenv("XRDB_ADDR")
 	if addr == "" {
 		addr = ":8787"
 	}
-	version := os.Getenv("XRDB_VERSION")
-	if version == "" {
-		version = "dev"
-	}
+	version := resolveVersion()
 	logLevel := os.Getenv("XRDB_LOG_LEVEL")
 	if logLevel == "" {
 		logLevel = DefaultLogLevel
