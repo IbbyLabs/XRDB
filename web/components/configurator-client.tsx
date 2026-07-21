@@ -147,6 +147,7 @@ export function ConfiguratorClient() {
       genreBadgeOffsetX: cfg.genreBadgeOffsetX,
       genreBadgeOffsetY: cfg.genreBadgeOffsetY,
       genreBadgeBackgroundOpacity: cfg.genreBadgeBackgroundOpacity,
+      genreBadgeBorderWidth: cfg.genreBadgeBorderWidth,
       qualityBadgesPos: cfg.qualityBadgesPos,
       qualityBadgeScale: cfg.qualityBadgeScale,
       qualityBadgeOffsetX: cfg.qualityBadgeOffsetX,

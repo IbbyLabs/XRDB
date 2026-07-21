@@ -21,13 +21,15 @@ import (
 
 // tileChrome bundles the colors used to draw an overlay tile.
 type tileChrome struct {
-	fill   color.NRGBA
-	border color.NRGBA // zero alpha = no border
-	shadow color.NRGBA // zero alpha = no shadow
+	fill        color.NRGBA
+	border      color.NRGBA // zero alpha = no border
+	borderWidth int         // px; 0/1 = single hairline
+	shadow      color.NRGBA // zero alpha = no shadow
 }
 
 // drawSoftTile draws a rounded "frosted" tile: an offset drop shadow, a fill,
-// and an optional 1px border. Callers draw content inside r afterwards.
+// and an optional border (1px by default, thicker via borderWidth). Callers
+// draw content inside r afterwards.
 func drawSoftTile(base *image.NRGBA, r image.Rectangle, radius int, ch tileChrome) {
 	if ch.shadow.A > 0 {
 		off := maxInt(1, r.Dy()/18)
@@ -35,7 +37,15 @@ func drawSoftTile(base *image.NRGBA, r image.Rectangle, radius int, ch tileChrom
 	}
 	fillRoundedRect(base, r, radius, ch.fill)
 	if ch.border.A > 0 {
-		drawRectBorder(base, r, radius, ch.border)
+		bw := maxInt(1, ch.borderWidth)
+		// Thicken inward with concentric 1px strokes so corners stay rounded.
+		for i := 0; i < bw; i++ {
+			rr := r.Inset(i)
+			if rr.Dx() <= 0 || rr.Dy() <= 0 {
+				break
+			}
+			drawRectBorder(base, rr, maxInt(0, radius-i), ch.border)
+		}
 	}
 }
 
@@ -708,9 +718,10 @@ type genreBadgeOpts struct {
 	scalePercent int // 0 = 100 (no extra scaling)
 	offsetX      int // px nudge from the resolved corner
 	offsetY      int
-	bgOpacity    int    // 0 = default (200/255); else 1-100 mapped to alpha
-	style        string // "" | glass | square | plain | clean | tile
-	tileColor    string // "#RRGGBB" for the tile style
+	bgOpacity    int     // 0 = default (200/255); else 1-100 mapped to alpha
+	style        string  // "" | glass | square | plain | clean | tile
+	tileColor    string  // "#RRGGBB" for the tile style
+	borderWidth  float64 // px border on the tile; 0 = default hairline
 }
 
 // genreOptsFromConfig extracts the genre-badge styling from a resolved Config.
@@ -722,6 +733,7 @@ func genreOptsFromConfig(cfg imageconfig.Config) genreBadgeOpts {
 		bgOpacity:    cfg.GenreBadgeBackgroundOpacity,
 		style:        cfg.GenreBadgeStyle,
 		tileColor:    cfg.GenreBadgeTileAccentColor,
+		borderWidth:  cfg.GenreBadgeBorderWidth,
 	}
 }
 
@@ -791,10 +803,19 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	if opts.bgOpacity != 0 {
 		fill.A = uint8(opts.bgOpacity * 255 / 100)
 	}
+	border := color.NRGBA{R: 255, G: 255, B: 255, A: 28}
+	borderW := 0
+	if opts.borderWidth > 0 {
+		// A configured border reads as a deliberate outline, so make it opaque
+		// enough to see and scale its width with the output.
+		border.A = 150
+		borderW = maxInt(1, int(opts.borderWidth*scale+0.5))
+	}
 	drawSoftTile(base, r, radius, tileChrome{
-		fill:   fill,
-		border: color.NRGBA{R: 255, G: 255, B: 255, A: 28},
-		shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 70},
+		fill:        fill,
+		border:      border,
+		borderWidth: borderW,
+		shadow:      color.NRGBA{R: 0, G: 0, B: 0, A: 70},
 	})
 	drawText(base, face, tx, ty, textColor, label)
 }

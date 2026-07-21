@@ -550,6 +550,9 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
         </div>
         <NumField id={`${uid}-genre-op`} label="Background opacity (%)" value={config.genreBadgeBackgroundOpacity}
           onChange={v => onUpdate('genreBadgeBackgroundOpacity', v)} min={5} max={100} step={5} />
+        <NumField id={`${uid}-genre-border`} label="Border width (px)" value={config.genreBadgeBorderWidth}
+          onChange={v => onUpdate('genreBadgeBorderWidth', v)} min={0} max={6} placeholder="hairline"
+          hint="Outline thickness on the genre tile." />
 
         <span className="adv-section">Aggregate bar</span>
         <NumField id={`${uid}-agg-offset`} label="Bar offset (px)" value={config.aggregateBarOffset}
