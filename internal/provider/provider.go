@@ -25,6 +25,7 @@ type MediaMeta struct {
 	Ratings        []Rating        // from this provider
 	Language       string          // language of the returned artwork
 	ContentRating  string          // e.g. "TV-MA", "R", "PG-13" (may be empty)
+	ReleaseStatus  string          // "digital" | "cinemas" (may be empty; movies only)
 	Genres         []string        // e.g. ["Action","Drama"] (may be empty)
 	WatchProviders []WatchProvider // streaming/rental services (may be empty)
 }

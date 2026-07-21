@@ -252,6 +252,8 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 				Iso3166 string `json:"iso_3166_1"`
 				Dates   []struct {
 					Certification string `json:"certification"`
+					Type          int    `json:"type"`         // 2,3 = theatrical; 4 = digital; 5 = physical
+					ReleaseDate   string `json:"release_date"` // ISO 8601
 				} `json:"release_dates"`
 			} `json:"results"`
 		} `json:"release_dates"`
@@ -337,6 +339,18 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 			}
 		}
 		meta.Genres = genres
+	}
+
+	// Release status. Any region counts — a title out on digital somewhere is no
+	// longer cinemas-only — so the entries are flattened across regions first.
+	{
+		var entries []releaseEntry
+		for _, r := range result.ReleaseDates.Results {
+			for _, d := range r.Dates {
+				entries = append(entries, releaseEntry{kind: d.Type, date: d.ReleaseDate})
+			}
+		}
+		meta.ReleaseStatus = resolveReleaseStatus(entries, time.Now())
 	}
 
 	// Content rating — prefer US certification
@@ -631,4 +645,52 @@ func (t *TMDB) get(ctx context.Context, path string, out any) error {
 		return fmt.Errorf("tmdb http %d for %s", resp.StatusCode, path)
 	}
 	return json.NewDecoder(resp.Body).Decode(out)
+}
+
+// TMDB release types: 2 and 3 are limited and wide theatrical, 4 is digital.
+const (
+	releaseTypeTheatricalLimited = 2
+	releaseTypeTheatrical        = 3
+	releaseTypeDigital           = 4
+)
+
+// releaseEntry is one region's record of a release of a given kind.
+type releaseEntry struct {
+	kind int
+	date string
+}
+
+// releaseLanded reports whether any entry of one of the given kinds has already
+// happened. An entry with an unparseable date counts as landed: TMDB records
+// releases it knows about but cannot date, and those are titles already out.
+func releaseLanded(entries []releaseEntry, now time.Time, kinds ...int) bool {
+	for _, e := range entries {
+		matched := false
+		for _, k := range kinds {
+			if e.kind == k {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			continue
+		}
+		ts, err := time.Parse("2006-01-02T15:04:05.000Z", e.date)
+		if err != nil || !ts.After(now) {
+			return true
+		}
+	}
+	return false
+}
+
+// resolveReleaseStatus picks the badge-worthy release state, preferring digital
+// because a title available at home has moved past its cinema run.
+func resolveReleaseStatus(entries []releaseEntry, now time.Time) string {
+	switch {
+	case releaseLanded(entries, now, releaseTypeDigital):
+		return "digital"
+	case releaseLanded(entries, now, releaseTypeTheatricalLimited, releaseTypeTheatrical):
+		return "cinemas"
+	}
+	return ""
 }

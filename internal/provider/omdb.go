@@ -99,10 +99,7 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 	}
 
 	meta := &MediaMeta{}
-	// OMDB reports a missing poster as the literal "N/A".
-	if u := strings.TrimSpace(result.Poster); strings.HasPrefix(u, "http") {
-		meta.PosterURL = u
-	}
+	meta.PosterURL = omdbPosterURL(result.Poster)
 	for _, r := range result.Ratings {
 		switch r.Source {
 		case "Rotten Tomatoes":
@@ -163,4 +160,13 @@ func parseSlashScore(s string) float64 {
 		return -1
 	}
 	return num / denom * 10
+}
+
+// omdbPosterURL returns the poster URL from an OMDB response, or "" when there
+// is none: OMDB reports a missing poster as the literal "N/A".
+func omdbPosterURL(v string) string {
+	if u := strings.TrimSpace(v); strings.HasPrefix(u, "http") {
+		return u
+	}
+	return ""
 }

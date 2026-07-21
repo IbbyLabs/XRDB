@@ -459,6 +459,54 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 	drawText(base, face, tx, ty, textCol, rating)
 }
 
+// releaseStatusLabel maps a title's release state to its badge label and accent.
+// An unrecognised state draws nothing.
+func releaseStatusLabel(status string) (string, color.NRGBA, bool) {
+	switch status {
+	case "digital":
+		return "DIGITAL RELEASE", color.NRGBA{R: 56, G: 189, B: 248, A: 255}, true
+	case "cinemas":
+		return "IN CINEMAS", color.NRGBA{R: 249, G: 115, B: 22, A: 255}, true
+	}
+	return "", color.NRGBA{}, false
+}
+
+// drawReleaseStatusBadge marks whether a title is in cinemas or out on digital.
+func drawReleaseStatusBadge(base *image.NRGBA, status string, pos string, scale float64, occ *occupancy) {
+	label, accent, ok := releaseStatusLabel(status)
+	if !ok {
+		return
+	}
+	ensureFaces()
+	face := labelFaceFor(scale)
+	if face == nil {
+		return
+	}
+
+	s := func(v float64) int { return int(v*scale + 0.5) }
+	padX, padY := s(9), s(5)
+
+	fm := face.Metrics()
+	ascent, descent := fm.Ascent.Ceil(), fm.Descent.Ceil()
+	bh := padY*2 + ascent + descent
+	bw := padX*2 + textWidth(face, label)
+
+	resolvedPos := pos
+	if resolvedPos == "" || resolvedPos == "inherit" {
+		resolvedPos = "tr"
+	}
+
+	r := occ.place(resolvedPos, bw, bh, s(12), s(12), s(7))
+	border := accent
+	border.A = 220
+	drawSoftTile(base, r, s(5), tileChrome{
+		fill:   color.NRGBA{R: 10, G: 12, B: 18, A: 225},
+		border: border,
+		shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 80},
+	})
+	drawText(base, face, r.Min.X+padX, r.Min.Y+padY+ascent, accent, label)
+}
+
 // ── Provider icon badges ──────────────────────────────────────────────────────
 
 // shortProviderName returns a compact display name for the badge.

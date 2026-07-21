@@ -136,6 +136,8 @@ export function ConfiguratorClient() {
       textPreference: cfg.textPreference, ratingsLayout: cfg.ratingsLayout,
       badgeStyle: cfg.badgeStyle, badgeTheme: cfg.badgeTheme,
       ratings: cfg.ratings, ageRating: cfg.ageRating, ageRatingPos: cfg.ageRatingPos,
+      releaseStatus: cfg.releaseStatus,
+      releaseStatusPos: cfg.releaseStatusPos === 'inherit' ? '' : cfg.releaseStatusPos,
       genre: cfg.genre, genrePos: cfg.genrePos, badges: cfg.badges,
       providers: cfg.providers, providersCountry: cfg.providersCountry,
       networkTileColor: cfg.networkTileColor, aggregateBar: cfg.aggregateBar,

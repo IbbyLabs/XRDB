@@ -4,7 +4,7 @@ import { Check, AlertCircle } from 'lucide-react';
 import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   ARTWORK_OPTIONS, SIZE_OPTIONS, TEXT_PREF_OPTIONS, LANG_OPTIONS,
-  AGE_POS_OPTIONS, GENRE_POS_OPTIONS, QUALITY_BADGE_OPTIONS, TREND_STYLE_OPTIONS,
+  AGE_POS_OPTIONS, SIX_POS_OPTIONS, GENRE_POS_OPTIONS, QUALITY_BADGE_OPTIONS, TREND_STYLE_OPTIONS,
 } from './configurator-types';
 
 // ── Notice ────────────────────────────────────────────────────────────────────
@@ -236,6 +236,26 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           checked={config.ageRating}
           onChange={() => onUpdate('ageRating', !config.ageRating)}
         />
+
+        <ToggleRow
+          label="Release status badge"
+          hint="Mark films that are in cinemas or out on digital"
+          checked={config.releaseStatus}
+          onChange={() => onUpdate('releaseStatus', !config.releaseStatus)}
+        />
+
+        {config.releaseStatus && (
+          <Field label="Release badge position" htmlFor={`${uid}-relpos`}>
+            <select
+              id={`${uid}-relpos`}
+              className="select"
+              value={config.releaseStatusPos}
+              onChange={e => onUpdate('releaseStatusPos', e.target.value)}
+            >
+              {SIX_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+            </select>
+          </Field>
+        )}
 
         {config.ageRating && (
           <Field label="Age badge position" htmlFor={`${uid}-agepos`}>

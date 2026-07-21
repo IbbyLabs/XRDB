@@ -118,3 +118,33 @@ func TestArtworkOrderGatesOMDBToPosters(t *testing.T) {
 		t.Errorf("fanart should lead, got %v", got)
 	}
 }
+
+func TestReleaseStatusBadge(t *testing.T) {
+	blank := genreTestImage()
+
+	for _, status := range []string{"digital", "cinemas"} {
+		img := genreTestImage()
+		drawReleaseStatusBadge(img, status, "tr", 2.0, newOccupancy(img.Bounds()))
+		if !imagesDiffer(blank, img) {
+			t.Errorf("release status %q drew nothing", status)
+		}
+	}
+
+	// The two states must be visually distinct, not just both present.
+	digital := genreTestImage()
+	drawReleaseStatusBadge(digital, "digital", "tr", 2.0, newOccupancy(digital.Bounds()))
+	cinemas := genreTestImage()
+	drawReleaseStatusBadge(cinemas, "cinemas", "tr", 2.0, newOccupancy(cinemas.Bounds()))
+	if !imagesDiffer(digital, cinemas) {
+		t.Error("digital and cinemas rendered identically")
+	}
+
+	// An unknown or absent status must draw nothing at all.
+	for _, status := range []string{"", "physical", "nonsense"} {
+		img := genreTestImage()
+		drawReleaseStatusBadge(img, status, "tr", 2.0, newOccupancy(img.Bounds()))
+		if imagesDiffer(blank, img) {
+			t.Errorf("status %q should draw nothing", status)
+		}
+	}
+}

@@ -97,6 +97,8 @@ type Config struct {
 	Badges           []string       `json:"badges,omitempty"`
 	AgeRating        bool           `json:"ageRating"`
 	AgeRatingPos     string         `json:"ageRatingPos,omitempty"`
+	ReleaseStatus    bool           `json:"releaseStatus,omitempty"`
+	ReleaseStatusPos string         `json:"releaseStatusPos,omitempty"`
 	Genre            bool           `json:"genre"`
 	GenrePos         string         `json:"genrePos,omitempty"`
 	Providers        bool           `json:"providers"`
@@ -372,6 +374,8 @@ type raw struct {
 	Badges                        []string `json:"badges"`
 	AgeRating                     *bool    `json:"ageRating"`
 	AgeRatingPos                  *string  `json:"ageRatingPos"`
+	ReleaseStatus                 *bool    `json:"releaseStatus"`
+	ReleaseStatusPos              *string  `json:"releaseStatusPos"`
 	Genre                         *bool    `json:"genre"`
 	GenrePos                      *string  `json:"genrePos"`
 	Providers                     *bool    `json:"providers"`
@@ -592,6 +596,12 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.AgeRatingPos != nil && strings.TrimSpace(*r.AgeRatingPos) != "" {
 		cfg.AgeRatingPos = strings.TrimSpace(*r.AgeRatingPos)
+	}
+	if r.ReleaseStatus != nil {
+		cfg.ReleaseStatus = *r.ReleaseStatus
+	}
+	if r.ReleaseStatusPos != nil && strings.TrimSpace(*r.ReleaseStatusPos) != "" {
+		cfg.ReleaseStatusPos = strings.TrimSpace(*r.ReleaseStatusPos)
 	}
 	if r.Genre != nil {
 		cfg.Genre = *r.Genre
@@ -963,6 +973,8 @@ func CacheKey(cfg Config) string {
 		Badges                        []string       `json:"badges"`
 		AgeRating                     bool           `json:"ageRating"`
 		AgeRatingPos                  string         `json:"ageRatingPos"`
+		ReleaseStatus                 bool           `json:"releaseStatus"`
+		ReleaseStatusPos              string         `json:"releaseStatusPos"`
 		Genre                         bool           `json:"genre"`
 		GenrePos                      string         `json:"genrePos"`
 		Providers                     bool           `json:"providers"`
@@ -1010,6 +1022,8 @@ func CacheKey(cfg Config) string {
 		Badges:                        badges,
 		AgeRating:                     cfg.AgeRating,
 		AgeRatingPos:                  cfg.AgeRatingPos,
+		ReleaseStatus:                 cfg.ReleaseStatus,
+		ReleaseStatusPos:              cfg.ReleaseStatusPos,
 		Genre:                         cfg.Genre,
 		GenrePos:                      cfg.GenrePos,
 		Providers:                     cfg.Providers,

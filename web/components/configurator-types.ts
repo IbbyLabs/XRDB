@@ -204,6 +204,8 @@ export interface ConfigState {
   badgeTheme: string;
   ratings: string[];
   ageRating: boolean;
+  releaseStatus: boolean;
+  releaseStatusPos: string;
   ageRatingPos: string;
   genre: boolean;
   genrePos: string;
@@ -283,6 +285,8 @@ export const DEFAULT_CONFIG: ConfigState = {
   badgeTheme: 'dark',
   ratings: ['imdb', 'tmdb'],
   ageRating: false,
+  releaseStatus: false,
+  releaseStatusPos: 'inherit',
   ageRatingPos: 'inherit',
   genre: false,
   genrePos: 'inherit',
