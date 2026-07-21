@@ -1323,11 +1323,11 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 	// instead of the overall average, so e.g. the number is IMDb while the fill
 	// reflects the aggregate. Unset or "overall" keeps the average for both.
 	value := avg
-	if v, ok := ratingRingSourceValue(ratings, cfg.RingValueSource); ok {
+	if v, ok := ratingRingSourceValue(ratings, cfg.RingValueSource, cfg.Ratings); ok {
 		value = v
 	}
 	progress := avg
-	if v, ok := ratingRingSourceValue(ratings, cfg.RingProgressSource); ok {
+	if v, ok := ratingRingSourceValue(ratings, cfg.RingProgressSource, cfg.Ratings); ok {
 		progress = v
 	}
 
@@ -1359,11 +1359,34 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 // ratingRingSourceValue returns a specific provider's 0-10 value for the ring,
 // or (0,false) when source is empty/"overall" (the caller keeps the average) or
 // that provider has no value.
-func ratingRingSourceValue(ratings []provider.Rating, source string) (float64, bool) {
+func ratingRingSourceValue(ratings []provider.Rating, source string, allowed []string) (float64, bool) {
 	source = strings.ToLower(strings.TrimSpace(source))
-	if source == "" || source == "overall" || source == "average" {
+	switch source {
+	case "", "overall", "average":
 		return 0, false
+	case "critics":
+		c, _, hasC, _ := splitCriticsAudience(ratings, allowed)
+		return c, hasC
+	case "audience":
+		_, a, _, hasA := splitCriticsAudience(ratings, allowed)
+		return a, hasA
+	case "highest":
+		allow := make(map[string]bool, len(allowed))
+		for _, s := range allowed {
+			allow[s] = true
+		}
+		best, ok := 0.0, false
+		for _, r := range ratings {
+			if len(allowed) > 0 && !allow[r.Source] {
+				continue
+			}
+			if r.Value > best {
+				best, ok = r.Value, true
+			}
+		}
+		return best, ok
 	}
+	// Otherwise treat it as a specific provider id.
 	for _, r := range ratings {
 		if strings.ToLower(r.Source) == source && r.Value > 0 {
 			return r.Value, true

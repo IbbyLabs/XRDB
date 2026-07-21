@@ -658,6 +658,9 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
           <label className="label" htmlFor={`${uid}-ring-value-src`}>Value source</label>
           <select id={`${uid}-ring-value-src`} className="select" value={config.ringValueSource} onChange={e => onUpdate('ringValueSource', e.target.value)} style={{ maxWidth: '12rem' }}>
             <option value="overall">Overall average</option>
+            <option value="critics">Critics average</option>
+            <option value="audience">Audience average</option>
+            <option value="highest">Highest score</option>
             {RATING_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
           </select>
         </div>
@@ -665,6 +668,9 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
           <label className="label" htmlFor={`${uid}-ring-prog-src`}>Fill source</label>
           <select id={`${uid}-ring-prog-src`} className="select" value={config.ringProgressSource} onChange={e => onUpdate('ringProgressSource', e.target.value)} style={{ maxWidth: '12rem' }}>
             <option value="overall">Overall average</option>
+            <option value="critics">Critics average</option>
+            <option value="audience">Audience average</option>
+            <option value="highest">Highest score</option>
             {RATING_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
           </select>
         </div>
