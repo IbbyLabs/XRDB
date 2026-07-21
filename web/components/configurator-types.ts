@@ -152,6 +152,13 @@ export const AGGREGATE_SOURCE_OPTIONS = [
   { id: 'audience', label: 'Audience' },
 ] as const;
 
+export const AGGREGATE_ACCENT_MODE_OPTIONS = [
+  { id: 'default', label: 'Score bands' },
+  { id: 'genre',   label: 'Genre'       },
+  { id: 'source',  label: 'Source'      },
+  { id: 'custom',  label: 'Custom'      },
+] as const;
+
 export const SCOREBAR_STYLE_OPTIONS = [
   { id: 'progress', label: 'Progress' },
   { id: 'solid',    label: 'Solid'    },
@@ -231,6 +238,7 @@ export interface ConfigState {
   qualityBadgesTileAccentColor: string;
   genreBadgeStyle: string; // 'default' | glass | square | plain | clean | tile
   aggregateAccentColor: string; // '' = auto score-band
+  aggregateAccentMode: string;  // '' = auto score-band
   aggregateBarOffset: number; // px inward nudge, -12..12; 0 = flush
   aggregateRatingSource: string; // overall | critics | audience
   scorebarStyle: string; // progress | solid | gradient
@@ -307,6 +315,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   qualityBadgesTileAccentColor: '',
   genreBadgeStyle: 'default',
   aggregateAccentColor: '',
+  aggregateAccentMode: '',
   aggregateBarOffset: 0,
   aggregateRatingSource: 'overall',
   scorebarStyle: 'progress',

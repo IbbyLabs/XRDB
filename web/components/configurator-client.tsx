@@ -169,6 +169,7 @@ export function ConfiguratorClient() {
       qualityBadgesTileAccentColor: cfg.qualityBadgesTileAccentColor,
       genreBadgeStyle: cfg.genreBadgeStyle === 'default' ? '' : cfg.genreBadgeStyle,
       aggregateAccentColor: cfg.aggregateAccentColor,
+      aggregateAccentMode: cfg.aggregateAccentMode,
       aggregateBarOffset: cfg.aggregateBarOffset,
       aggregateRatingSource: cfg.aggregateRatingSource === 'overall' ? '' : cfg.aggregateRatingSource,
       scorebarStyle: cfg.scorebarStyle === 'progress' ? '' : cfg.scorebarStyle,

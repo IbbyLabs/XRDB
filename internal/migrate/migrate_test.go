@@ -100,7 +100,7 @@ func TestMigrateClassifiesConfigFields(t *testing.T) {
 			"type": json.RawMessage(`"poster"`),
 			// "language" and "ratings" are modeled by v3; the prefixed and
 			// aggregate fields are preserved but not yet rendered.
-			"config": json.RawMessage(`{"language":"en","ratings":["imdb"],"posterRatingsMax":4,"aggregateAccentMode":"dynamic"}`),
+			"config": json.RawMessage(`{"language":"en","ratings":["imdb"],"posterRatingsMax":4,"aggregateCriticsAccentColor":"#22c55e"}`),
 		},
 	}}
 
@@ -114,14 +114,14 @@ func TestMigrateClassifiesConfigFields(t *testing.T) {
 	if report.DeferredConfigSummary["posterRatingsMax"] != 1 {
 		t.Errorf("posterRatingsMax not reported as deferred: %v", report.DeferredConfigSummary)
 	}
-	if report.DeferredConfigSummary["aggregateAccentMode"] != 1 {
-		t.Errorf("aggregateAccentMode not reported as deferred: %v", report.DeferredConfigSummary)
+	if report.DeferredConfigSummary["aggregateCriticsAccentColor"] != 1 {
+		t.Errorf("aggregateCriticsAccentColor not reported as deferred: %v", report.DeferredConfigSummary)
 	}
 	if len(report.DeferredConfigFields) != 2 {
 		t.Errorf("expected 2 deferred fields, got %d", len(report.DeferredConfigFields))
 	}
 	// Deferred is transparency, not loss: the config blob is passed through whole.
-	if report.DeferredConfigFields[0].Field != "aggregateAccentMode" {
+	if report.DeferredConfigFields[0].Field != "aggregateCriticsAccentColor" {
 		t.Errorf("deferred fields not sorted: %+v", report.DeferredConfigFields)
 	}
 }

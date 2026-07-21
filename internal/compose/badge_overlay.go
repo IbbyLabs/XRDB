@@ -1108,7 +1108,7 @@ func drawDualRating(base *image.NRGBA, ratings []provider.Rating, cfg imageconfi
 // drawAggregateBar draws a full-width score bar on top or bottom of the image.
 // The bar fill is colored green/amber/red based on the normalised average score (0–10).
 // Filtered by the config.Ratings allowlist so only visible sources contribute.
-func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config) {
+func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, genres []string) {
 	if len(ratings) == 0 {
 		return
 	}
@@ -1197,20 +1197,48 @@ func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imagecon
 	midC := bandColor(cfg.ScorebarMidColor, color.NRGBA{R: 230, G: 126, B: 34, A: 230})  // amber
 	highC := bandColor(cfg.ScorebarHighColor, color.NRGBA{R: 39, G: 174, B: 96, A: 230}) // green
 
-	// A custom accent overrides the score-band colour for the single-fill styles.
+	// An accent overrides the score-band colour for the single-fill styles. The
+	// mode picks where that accent comes from; a bare accent colour with no mode
+	// set behaves as "custom".
+	accentHex := cfg.AggregateAccentColor
+	switch cfg.AggregateAccentMode {
+	case "dynamic":
+		// Colour by score, which is the score-band fallback below.
+		accentHex = ""
+	case "genre":
+		accentHex = ""
+		if fam := resolveGenreFamily(genres); fam != nil {
+			accentHex = fam.accent
+		}
+	case "source":
+		switch strings.ToLower(cfg.AggregateRatingSource) {
+		case "critics":
+			accentHex = "#22c55e"
+		case "audience":
+			accentHex = "#38bdf8"
+		default:
+			accentHex = "#f59e0b"
+		}
+	}
+
 	fillColor := highC
-	switch {
-	case cfg.AggregateAccentColor != "":
-		if custom, err := parseHexColor(cfg.AggregateAccentColor); err == nil {
+	hasAccent := false
+	if accentHex != "" {
+		if custom, err := parseHexColor(accentHex); err == nil {
 			custom.A = 230
 			fillColor = custom
+			hasAccent = true
 		}
-	case avg >= highT:
-		fillColor = highC
-	case avg >= lowT:
-		fillColor = midC
-	default:
-		fillColor = lowC
+	}
+	if !hasAccent {
+		switch {
+		case avg >= highT:
+			fillColor = highC
+		case avg >= lowT:
+			fillColor = midC
+		default:
+			fillColor = lowC
+		}
 	}
 
 	switch strings.ToLower(cfg.ScorebarStyle) {
@@ -1233,7 +1261,7 @@ func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imagecon
 		// A partial fill proportional to the score, coloured by a continuous
 		// low→mid→high interpolation of the score itself (no hard band steps).
 		dynC := fillColor
-		if cfg.AggregateAccentColor == "" {
+		if !hasAccent {
 			t := avg / 10.0
 			if t < 0.5 {
 				dynC = lerpColor(lowC, midC, t/0.5)

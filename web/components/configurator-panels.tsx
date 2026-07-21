@@ -7,7 +7,7 @@ import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   LAYOUT_OPTIONS, RATING_OPTIONS, BADGE_STYLE_OPTIONS, BADGE_THEME_OPTIONS,
   RING_POS_OPTIONS, SIX_POS_OPTIONS, QUALITY_STYLE_OPTIONS, GENRE_STYLE_OPTIONS,
-  AGE_STYLE_OPTIONS, AGGREGATE_SOURCE_OPTIONS, SCOREBAR_STYLE_OPTIONS, RATING_PRESENTATION_OPTIONS,
+  AGE_STYLE_OPTIONS, AGGREGATE_SOURCE_OPTIONS, AGGREGATE_ACCENT_MODE_OPTIONS, SCOREBAR_STYLE_OPTIONS, RATING_PRESENTATION_OPTIONS,
 } from './configurator-types';
 
 // ── Template strip ────────────────────────────────────────────────────────────
@@ -639,25 +639,43 @@ export function AdvancedPanel({ uid, config, onUpdate }: {
           onChange={v => onUpdate('aggregateBarOffset', v)} min={-12} max={12} zeroIsDefault={false}
           hint="Nudge the bar inward from its edge (−12 to 12)." />
         <div className="field">
-          <label className="label" htmlFor={`${uid}-agg-color`}>Accent color</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
-            <input
-              id={`${uid}-agg-color`}
-              type="color"
-              value={config.aggregateAccentColor || '#3355ff'}
-              onChange={e => onUpdate('aggregateAccentColor', e.target.value)}
-              className="color-swatch"
-            />
-            <button
-              className={`opt-btn${!config.aggregateAccentColor ? ' opt-btn--active' : ''}`}
-              onClick={() => onUpdate('aggregateAccentColor', '')}
-              aria-pressed={!config.aggregateAccentColor}
-              style={{ flex: 1 }}
-            >
-              Auto (score-based)
-            </button>
+          <span className="label" id={`${uid}-agg-accent-mode-label`}>Accent source</span>
+          <div className="opt-grid" style={{ gridTemplateColumns: '1fr 1fr' }} role="group" aria-labelledby={`${uid}-agg-accent-mode-label`}>
+            {AGGREGATE_ACCENT_MODE_OPTIONS.map(o => (
+              <button
+                key={o.id}
+                className={`opt-btn${(config.aggregateAccentMode || 'default') === o.id ? ' opt-btn--active' : ''}`}
+                onClick={() => onUpdate('aggregateAccentMode', o.id === 'default' ? '' : o.id)}
+                aria-pressed={(config.aggregateAccentMode || 'default') === o.id}
+              >
+                {o.label}
+              </button>
+            ))}
           </div>
+          <p className="hint">Genre colors the bar by the title&apos;s genre; Source colors it by the chosen rating source.</p>
         </div>
+        {config.aggregateAccentMode === 'custom' && (
+          <div className="field">
+            <label className="label" htmlFor={`${uid}-agg-color`}>Accent color</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+              <input
+                id={`${uid}-agg-color`}
+                type="color"
+                value={config.aggregateAccentColor || '#3355ff'}
+                onChange={e => onUpdate('aggregateAccentColor', e.target.value)}
+                className="color-swatch"
+              />
+              <button
+                className={`opt-btn${!config.aggregateAccentColor ? ' opt-btn--active' : ''}`}
+                onClick={() => onUpdate('aggregateAccentColor', '')}
+                aria-pressed={!config.aggregateAccentColor}
+                style={{ flex: 1 }}
+              >
+                Auto (score-based)
+              </button>
+            </div>
+          </div>
+        )}
         <details className="adv-details">
           <summary className="hint" style={{ cursor: 'pointer', userSelect: 'none' }}>Scorebar bands (when accent is auto)</summary>
           <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>

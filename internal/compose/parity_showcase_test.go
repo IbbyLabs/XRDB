@@ -131,21 +131,21 @@ func TestParityShowcase(t *testing.T) {
 		},
 		"aggregate-bar": {
 			{"auto (score-banded)", func(c *image.NRGBA) {
-				drawAggregateBar(c, ratings, ratingCfg(func(cf *imageconfig.Config) { cf.AggregateBar = true; cf.AggregateBarPos = "bottom" }))
+				drawAggregateBar(c, ratings, ratingCfg(func(cf *imageconfig.Config) { cf.AggregateBar = true; cf.AggregateBarPos = "bottom" }), nil)
 			}},
 			{"custom #3355ff", func(c *image.NRGBA) {
 				drawAggregateBar(c, ratings, ratingCfg(func(cf *imageconfig.Config) {
 					cf.AggregateBar = true
 					cf.AggregateBarPos = "bottom"
 					cf.AggregateAccentColor = "#3355ff"
-				}))
+				}), nil)
 			}},
 			{"top, custom #ff8800", func(c *image.NRGBA) {
 				drawAggregateBar(c, ratings, ratingCfg(func(cf *imageconfig.Config) {
 					cf.AggregateBar = true
 					cf.AggregateBarPos = "top"
 					cf.AggregateAccentColor = "#ff8800"
-				}))
+				}), nil)
 			}},
 		},
 		"age-rating-styles": {

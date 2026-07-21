@@ -508,7 +508,7 @@ func TestScorebarPresentationDrawsBottomBar(t *testing.T) {
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
 	cfg := imageconfig.Config{Ratings: []string{"imdb", "tmdb", "rt"}}
 	cfg.AggregateBarPos = "bottom"
-	drawAggregateBar(img, presentationRatings(), cfg)
+	drawAggregateBar(img, presentationRatings(), cfg, nil)
 	if !hasNonWhite(img, 0, 850, 580, 859) {
 		t.Error("scorebar presentation drew no bar along the bottom edge")
 	}
@@ -652,7 +652,7 @@ func TestOverlayFunctionsAtLargeScales(t *testing.T) {
 			barCfg.AggregateBarPos = "bottom"
 			barCfg.Size = cfgSize
 			beforeBar := clonePixels(img)
-			drawAggregateBar(img, []provider.Rating{{Source: "tmdb", Value: 8.0}}, barCfg)
+			drawAggregateBar(img, []provider.Rating{{Source: "tmdb", Value: 8.0}}, barCfg, nil)
 			if clonePixels(img) == beforeBar {
 				t.Errorf("drawAggregateBar had no effect at scale %.1f", scale)
 			}
@@ -762,7 +762,7 @@ func TestAggregateBarDrawsOnImage(t *testing.T) {
 	cfg.AggregateBarPos = "bottom"
 
 	before := clonePixels(img)
-	drawAggregateBar(img, ratings, cfg)
+	drawAggregateBar(img, ratings, cfg, nil)
 	after := clonePixels(img)
 
 	if before == after {
@@ -773,7 +773,7 @@ func TestAggregateBarDrawsOnImage(t *testing.T) {
 func TestAggregateBarNoopOnEmptyRatings(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 300, 450))
 	before := clonePixels(img)
-	drawAggregateBar(img, nil, imageconfig.Default())
+	drawAggregateBar(img, nil, imageconfig.Default(), nil)
 	after := clonePixels(img)
 	if before != after {
 		t.Error("expected no change on empty ratings")
@@ -788,7 +788,7 @@ func TestAggregateBarTopPosition(t *testing.T) {
 	cfg.AggregateBarPos = "top"
 	cfg.Ratings = []string{"imdb"}
 
-	drawAggregateBar(img, ratings, cfg)
+	drawAggregateBar(img, ratings, cfg, nil)
 	// At least the top row of the image should be non-zero.
 	r, g, b, a := img.At(0, 0).RGBA()
 	if r == 0 && g == 0 && b == 0 && a == 0 {
@@ -808,7 +808,7 @@ func TestAggregateBarFiltersUnselectedSources(t *testing.T) {
 	cfg.Ratings = []string{"tmdb"} // only tmdb
 
 	// With only tmdb (9.0), fill should be green.
-	drawAggregateBar(img, ratings, cfg)
+	drawAggregateBar(img, ratings, cfg, nil)
 	// The filled area at bottom-left should be green-ish.
 	bounds := img.Bounds()
 	px := img.NRGBAAt(bounds.Min.X+5, bounds.Max.Y-5)

@@ -264,7 +264,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		// Replace the badge strip with a single full-width score bar coloured by
 		// the aggregate score.
 		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
-			drawAggregateBar(composed, allRatings, req.Config)
+			drawAggregateBar(composed, allRatings, req.Config, meta.Genres)
 		}
 	default:
 		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
@@ -300,7 +300,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		drawProviderBadges(composed, meta.WatchProviders, scale, occ, req.Config.NetworkTileColor)
 	}
 	if req.Config.AggregateBar {
-		drawAggregateBar(composed, allRatings, req.Config)
+		drawAggregateBar(composed, allRatings, req.Config, meta.Genres)
 	}
 	if req.Config.Trending {
 		drawTrendingBadgeStyled(composed, scale, occ, trendingStyleFromConfig(req.Config.TrendingStyle), req.Config.TrendingPos, req.Config.TrendingTextColor)

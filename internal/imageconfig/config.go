@@ -270,10 +270,11 @@ type RandomPosterConfig struct {
 // on/off and position stay flat (AggregateBar / AggregateBarPos).
 type AggregateConfig struct {
 	AggregateAccentColor  string `json:"aggregateAccentColor,omitempty"`  // "#RRGGBB" bar fill; "" = auto 3-band
+	AggregateAccentMode   string `json:"aggregateAccentMode,omitempty"`   // custom | genre | source; "" = auto 3-band
 	AggregateValueColor   string `json:"aggregateValueColor,omitempty"`   // "#RRGGBB" value text; "" = default
 	AggregateBarOffset    int    `json:"aggregateBarOffset,omitempty"`    // px nudge inward from the edge; 0 = flush
 	AggregateRatingSource string `json:"aggregateRatingSource,omitempty"` // overall | critics | audience; "" = overall
-	ScorebarStyle         string `json:"scorebarStyle,omitempty"`         // progress | solid | gradient; "" = progress
+	ScorebarStyle         string `json:"scorebarStyle,omitempty"`         // progress | solid | gradient | dynamic; "" = progress
 	// Scorebar band overrides. When a color is set it replaces the built-in
 	// green/amber/red for that band; thresholds (0-10) move the band boundaries.
 	ScorebarLowColor      string  `json:"scorebarLowColor,omitempty"`
@@ -468,6 +469,7 @@ type rawRating struct {
 
 type rawAggregate struct {
 	AggregateAccentColor  *string  `json:"aggregateAccentColor"`
+	AggregateAccentMode   *string  `json:"aggregateAccentMode"`
 	AggregateValueColor   *string  `json:"aggregateValueColor"`
 	AggregateBarOffset    *int     `json:"aggregateBarOffset"`
 	AggregateRatingSource *string  `json:"aggregateRatingSource"`
@@ -795,6 +797,14 @@ func parseAge(cfg *Config, r *raw) {
 }
 
 func parseAggregate(cfg *Config, r *raw) {
+	if r.AggregateAccentMode != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.AggregateAccentMode)); v {
+		// "dynamic" colours the bar by score, which is what the score bands
+		// already do, so it is accepted and falls through to them.
+		case "custom", "genre", "source", "dynamic":
+			cfg.AggregateAccentMode = v
+		}
+	}
 	if r.AggregateAccentColor != nil && isHexColor(*r.AggregateAccentColor) {
 		cfg.AggregateAccentColor = strings.TrimSpace(*r.AggregateAccentColor)
 	}
