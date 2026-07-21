@@ -6,6 +6,7 @@ import {
 import { Settings2, Star, SlidersHorizontal, Film, Rocket, Link2, Maximize2, Undo2, Redo2 } from 'lucide-react';
 import { renderUrl, type MediaType, type Template } from '@/lib/api';
 import { getRenderKey, setRenderKey } from '@/lib/render-key';
+import { copyText } from '@/lib/clipboard';
 import {
   MEDIA_TYPES, DEFAULT_CONFIG, DEFAULT_SURFACE_CONFIGS, PREVIEW_DEBOUNCE_MS,
   readSession, encodeShare, decodeShare, cloneToAllSurfaces, fromStoredConfig,
@@ -412,10 +413,9 @@ export function ConfiguratorClient() {
   const shareLook = async () => {
     const fragment = encodeShare({ t: mediaType, id: mediaId, title: mediaTitle, cfgs: configs });
     const link = `${window.location.origin}${window.location.pathname}#c=${fragment}`;
-    try {
-      await navigator.clipboard.writeText(link);
+    if (await copyText(link)) {
       flash('success', 'Share link copied — anyone who opens it sees this exact look');
-    } catch {
+    } else {
       flash('error', 'Could not copy the link — your browser blocked clipboard access');
     }
   };
