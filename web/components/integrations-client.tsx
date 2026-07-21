@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useId, useRef } from 'react';
-import { Check, AlertCircle, X, Plug, Eye, EyeOff, Trash2, ChevronDown } from 'lucide-react';
+import { Check, AlertCircle, X, Plug, Eye, EyeOff, Trash2, ChevronDown, CircleHelp } from 'lucide-react';
 import { fetchSettings, setSetting, deleteSetting } from '@/lib/api';
 
 // ── Provider definitions ──────────────────────────────────────────────────────
@@ -166,6 +166,7 @@ function KeyRow({
   const [show, setShow]   = useState(false);
   const [saving, setSaving]   = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [localError, setLocalError] = useState('');
 
   const handleSave = async () => {
@@ -221,18 +222,24 @@ function KeyRow({
         </button>
         {isSet && (
           <button
-            className="btn btn-ghost"
+            className={`btn${confirmDelete ? ' btn-danger' : ' btn-ghost'}`}
             onClick={async () => {
               if (deleting) return;
+              // First click arms the confirm so a stray click can't wipe a key
+              // the operator may not have stored anywhere else.
+              if (!confirmDelete) { setConfirmDelete(true); return; }
               setDeleting(true);
               setLocalError('');
-              try { await onDelete(); } catch (e) { setLocalError(normalizeError(e)); } finally { setDeleting(false); }
+              try { await onDelete(); setConfirmDelete(false); }
+              catch (e) { setLocalError(normalizeError(e)); }
+              finally { setDeleting(false); }
             }}
             disabled={saving || deleting}
-            aria-label={`Remove ${keyDef.label}`}
+            aria-label={confirmDelete ? `Confirm removing ${keyDef.label}` : `Remove ${keyDef.label}`}
             style={{ flexShrink: 0 }}
           >
             <Trash2 size={13} aria-hidden />
+            {confirmDelete ? ' Confirm' : ''}
           </button>
         )}
       </div>
@@ -246,10 +253,11 @@ function KeyRow({
 // ── Provider row (progressive disclosure) ─────────────────────────────────────
 
 function ProviderRow({
-  integration, statuses, onSave, onDelete, defaultOpen, rowId,
+  integration, statuses, statusKnown, onSave, onDelete, defaultOpen, rowId,
 }: {
   integration: Integration;
   statuses: Record<string, boolean>;
+  statusKnown: boolean;
   onSave: (key: string, value: string) => Promise<void>;
   onDelete: (key: string) => Promise<void>;
   defaultOpen: boolean;
@@ -271,9 +279,11 @@ function ProviderRow({
         <span className="provider-name">{integration.name}</span>
         <span className="provider-blurb">{integration.description}</span>
         <span
-          className={`provider-state${anySet ? ' provider-state--on' : ''}`}
+          className={`provider-state${statusKnown && anySet ? ' provider-state--on' : ''}`}
         >
-          {anySet ? (
+          {!statusKnown ? (
+            <><CircleHelp size={10} aria-hidden /> Status unavailable</>
+          ) : anySet ? (
             <><Check size={10} aria-hidden /> Connected</>
           ) : (
             <><Plug size={10} aria-hidden /> Not connected</>
@@ -417,6 +427,10 @@ export function IntegrationsClient() {
     flash('success', 'Key removed');
   };
 
+  // When the settings fetch failed or was unauthorized, `statuses` is empty for
+  // reasons unrelated to whether keys are set — so don't assert "not connected"
+  // or a count the UI couldn't actually verify.
+  const statusKnown = !settingsLoadFailed && !settingsUnauthorized;
   const connectedCount = INTEGRATIONS.filter(int =>
     int.keys.some(k => statuses[k.key]),
   ).length;
@@ -427,7 +441,7 @@ export function IntegrationsClient() {
         <h1 className="page-title">Integrations</h1>
         <p className="page-sub">
           Connect third-party services. Keys are stored in the database and override environment variables.
-          {!loading && ` ${connectedCount}/${INTEGRATIONS.length} configured.`}
+          {!loading && statusKnown && ` ${connectedCount}/${INTEGRATIONS.length} configured.`}
         </p>
       </div>
 
@@ -462,9 +476,10 @@ export function IntegrationsClient() {
               key={int.id}
               integration={int}
               statuses={statuses}
+              statusKnown={statusKnown}
               onSave={handleSave}
               onDelete={handleDelete}
-              defaultOpen={i === 0 && connectedCount === 0}
+              defaultOpen={i === 0 && statusKnown && connectedCount === 0}
               rowId={int.id === 'tmdb' ? 'integrations-tmdb' : undefined}
             />
           ))}
