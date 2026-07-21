@@ -785,7 +785,7 @@ func parseSurface(cfg *Config, r *raw) {
 func parseAge(cfg *Config, r *raw) {
 	if r.AgeRatingBadgeStyle != nil {
 		switch v := strings.ToLower(strings.TrimSpace(*r.AgeRatingBadgeStyle)); v {
-		case "glass", "square", "plain", "tile":
+		case "glass", "square", "plain", "tile", "media", "silver":
 			cfg.AgeRatingBadgeStyle = v
 		}
 	}

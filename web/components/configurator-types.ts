@@ -134,6 +134,8 @@ export const AGE_STYLE_OPTIONS = [
   { id: 'square',  label: 'Square' },
   { id: 'plain',   label: 'Plain'  },
   { id: 'tile',    label: 'Tile'   },
+  { id: 'media',   label: 'Media'  },
+  { id: 'silver',  label: 'Silver' },
 ] as const;
 
 export const GENRE_STYLE_OPTIONS = [

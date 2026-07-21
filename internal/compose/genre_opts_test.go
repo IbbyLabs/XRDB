@@ -179,8 +179,11 @@ func TestAgeRatingStylesChangeRender(t *testing.T) {
 	def := genreTestImage()
 	drawAgeRatingBadge(def, "TV-MA", "br", 2.0, newOccupancy(def.Bounds()), ageRatingOpts{})
 	for name, opts := range map[string]ageRatingOpts{
-		"plain": {style: "plain"},
-		"tile":  {style: "tile", tileColor: "#c0392b"},
+		"plain":  {style: "plain"},
+		"tile":   {style: "tile", tileColor: "#c0392b"},
+		"square": {style: "square"},
+		"media":  {style: "media"},
+		"silver": {style: "silver"},
 	} {
 		img := genreTestImage()
 		drawAgeRatingBadge(img, "TV-MA", "br", 2.0, newOccupancy(img.Bounds()), opts)

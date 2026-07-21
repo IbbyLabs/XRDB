@@ -394,6 +394,37 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 		resolvedPos = "br"
 	}
 
+	// The "media" certification plate is a two-line badge — an "AGE" kicker over
+	// the value — so it needs its own taller geometry placed before the others.
+	if opts.style == "media" {
+		ef := eyebrowFaceFor(scale)
+		efm := ef.Metrics()
+		eAsc, eDesc := efm.Ascent.Ceil(), efm.Descent.Ceil()
+		gap := s(2)
+		bhM := padY*2 + eAsc + eDesc + gap + ascent + descent
+		bwM := maxInt(padX*2+textWidth(face, rating), padX*2+textWidth(ef, "AGE"))
+		r := occ.place(resolvedPos, bwM, bhM, edgeX, edgeY, s(7))
+		drawSoftTile(base, r, s(6), tileChrome{
+			fill:   color.NRGBA{R: 17, G: 24, B: 39, A: 214},
+			border: color.NRGBA{R: 255, G: 247, B: 237, A: 240},
+			shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 90},
+		})
+		// A thin sheen along the very top edge of the plate.
+		hlInset := s(3)
+		fillRect(base, image.Rect(r.Min.X+hlInset, r.Min.Y+hlInset,
+			r.Max.X-hlInset, r.Min.Y+bhM*16/100), color.NRGBA{R: 255, G: 255, B: 255, A: 16})
+		cx := r.Min.X + bwM/2
+		eyebrowCol := color.NRGBA{R: 255, G: 250, B: 245, A: 220}
+		valueCol := color.NRGBA{R: 255, G: 250, B: 245, A: 255}
+		ey := r.Min.Y + padY + eAsc
+		// A soft shadow keeps the kicker legible over the sheen.
+		drawText(base, ef, cx-textWidth(ef, "AGE")/2+1, ey+1, color.NRGBA{A: 150}, "AGE")
+		drawText(base, ef, cx-textWidth(ef, "AGE")/2, ey, eyebrowCol, "AGE")
+		vy := ey + eDesc + gap + ascent
+		drawText(base, face, cx-textWidth(face, rating)/2, vy, valueCol, rating)
+		return
+	}
+
 	r := occ.place(resolvedPos, bw, bh, edgeX, edgeY, s(7))
 	tx, ty := r.Min.X+padX, r.Min.Y+padY+ascent
 	if opts.style == "plain" {
@@ -405,6 +436,13 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 		fill:   color.NRGBA{R: 22, G: 24, B: 30, A: 225},
 		border: color.NRGBA{R: 235, G: 235, B: 240, A: 150},
 		shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 80},
+	}
+	textCol := color.NRGBA{R: 255, G: 255, B: 255, A: 255}
+	if opts.style == "silver" {
+		// A light bordered plate with an almost-transparent fill and silver text.
+		chrome.fill = color.NRGBA{R: 20, G: 22, B: 28, A: 45}
+		chrome.border = color.NRGBA{R: 244, G: 244, B: 245, A: 230}
+		textCol = color.NRGBA{R: 244, G: 244, B: 245, A: 245}
 	}
 	if opts.style == "tile" {
 		if c, err := parseHexColor(opts.tileColor); opts.tileColor != "" && err == nil {
@@ -418,7 +456,7 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 		rad = 0 // sharp-cornered tile
 	}
 	drawSoftTile(base, r, rad, chrome)
-	drawText(base, face, tx, ty, color.White, rating)
+	drawText(base, face, tx, ty, textCol, rating)
 }
 
 // ── Provider icon badges ──────────────────────────────────────────────────────

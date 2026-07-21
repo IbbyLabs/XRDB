@@ -46,6 +46,7 @@ var (
 	scaledValueFaces sync.Map
 	scaledLabelFaces sync.Map
 	scaledBadgeFaces sync.Map
+	scaledEyebrowFaces sync.Map
 )
 
 func ensureFaces() {
@@ -135,6 +136,27 @@ func labelFaceFor(scale float64) font.Face {
 		return faceLabel
 	}
 	scaledLabelFaces.Store(key, f)
+	return f
+}
+
+// eyebrowFaceFor returns a small bold face for the "AGE" kicker above a media
+// certification badge value. Roughly half the value face size.
+func eyebrowFaceFor(scale float64) font.Face {
+	ensureFaces()
+	if fontBoldParsed == nil {
+		return faceLabel
+	}
+	key := int(scale * 100)
+	if f, ok := scaledEyebrowFaces.Load(key); ok {
+		return f.(font.Face)
+	}
+	f, err := opentype.NewFace(fontBoldParsed, &opentype.FaceOptions{
+		Size: 11 * scale, DPI: 96, Hinting: font.HintingFull,
+	})
+	if err != nil {
+		return faceLabel
+	}
+	scaledEyebrowFaces.Store(key, f)
 	return f
 }
 
