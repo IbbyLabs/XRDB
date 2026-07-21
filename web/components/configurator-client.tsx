@@ -12,7 +12,7 @@ import {
   type ConfigState, type SurfaceConfigs,
 } from './configurator-types';
 import { Notice, DisplayPanel } from './configurator-display';
-import { TemplateStrip, RatingsPanel, AdvancedPanel } from './configurator-panels';
+import { TemplateStrip, RatingsPanel } from './configurator-panels';
 import { ProfilePanel, type LoadedProfile } from './profile-panel';
 import { InstallPanel } from './install-panel';
 import { MediaSearch } from './media-search';
@@ -24,12 +24,15 @@ import { BRAND_DISCORD_URL } from '@/lib/brand';
 // can't grow without limit.
 const HISTORY_MAX = 50;
 
-// Two kinds of destination share one tab row: the first three style the
-// surface being previewed, the last two act on the whole saved config.
+// Remembers whether the fine-tuning controls are revealed. A preference about
+// how the editor looks, not part of any config, so it outlives the session.
+const FINE_KEY = 'xrdb-fine-tuning';
+
+// Two kinds of destination share one tab row: the first two style the surface
+// being previewed, the last two act on the whole saved config.
 const SURFACE_TABS = [
-  { id: 'display',  label: 'Display',  icon: <Settings2         size={13} aria-hidden /> },
-  { id: 'ratings',  label: 'Ratings',  icon: <Star              size={13} aria-hidden /> },
-  { id: 'advanced', label: 'Advanced', icon: <SlidersHorizontal size={13} aria-hidden /> },
+  { id: 'display', label: 'Display', icon: <Settings2 size={13} aria-hidden /> },
+  { id: 'ratings', label: 'Ratings', icon: <Star      size={13} aria-hidden /> },
 ] as const;
 
 const CONFIG_TABS = [
@@ -51,6 +54,9 @@ export function ConfiguratorClient() {
   // one the operator enters it under the Install tab and it flows into the
   // preview/image URLs and profile saves.
   const [renderKey, setRenderKeyState] = useState('');
+  // Reveals each badge's scale, offset and colour controls beneath the badge
+  // itself. Off by default so the common controls stay a short list.
+  const [fine, setFine] = useState(false);
   // The surface currently being edited / previewed. Each surface keeps its own
   // settings; switching the media-type tab switches which one these controls edit.
   const config = configs[mediaType];
@@ -94,6 +100,7 @@ export function ConfiguratorClient() {
       }
     }
     setRenderKeyState(getRenderKey());
+    try { setFine(localStorage.getItem(FINE_KEY) === '1'); } catch { /* unavailable */ }
     setHydrated(true);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
@@ -135,6 +142,11 @@ export function ConfiguratorClient() {
       sessionStorage.setItem('xrdb-configs',     JSON.stringify(configs));
     } catch { /* unavailable */ }
   }, [hydrated, mediaType, mediaId, mediaTitle, configs]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    try { localStorage.setItem(FINE_KEY, fine ? '1' : '0'); } catch { /* unavailable */ }
+  }, [hydrated, fine]);
 
   useEffect(() => { configsRef.current = configs; }, [configs]);
 
@@ -567,32 +579,49 @@ export function ConfiguratorClient() {
             {CONFIG_TABS.map(renderTab)}
           </div>
 
-          {(activeTab === 'display' || activeTab === 'ratings' || activeTab === 'advanced') && (
-            <div className="surface-scope">
-              <span className="surface-scope-text">
-                Editing <strong>{MEDIA_TYPES.find(t => t.id === mediaType)?.label ?? mediaType}</strong> — the other surfaces (backdrop, thumbnail, logo) keep their own settings.
-              </span>
-              <button className="btn btn-ghost btn-sm" onClick={copyToAllSurfaces}>
-                Copy to all surfaces
-              </button>
-            </div>
+          {(activeTab === 'display' || activeTab === 'ratings') && (
+            <>
+              <div className="surface-scope">
+                <span className="surface-scope-text">
+                  Editing <strong>{MEDIA_TYPES.find(t => t.id === mediaType)?.label ?? mediaType}</strong> — the other surfaces (backdrop, thumbnail, logo) keep their own settings.
+                </span>
+                <button className="btn btn-ghost btn-sm" onClick={copyToAllSurfaces}>
+                  Copy to all surfaces
+                </button>
+              </div>
+
+              <div className="fine-bar">
+                <div>
+                  <span className="fine-bar-label">
+                    <SlidersHorizontal size={14} aria-hidden />
+                    Fine tuning
+                  </span>
+                  <span className="fine-bar-hint">
+                    Scale, offset and colour, shown with the badge itself. Blank fields use the default.
+                  </span>
+                </div>
+                <button
+                  role="switch"
+                  aria-checked={fine}
+                  className={`toggle${fine ? ' toggle--on' : ''}`}
+                  onClick={() => setFine(v => !v)}
+                  aria-label="Toggle fine tuning"
+                >
+                  <span className="toggle-thumb" />
+                </button>
+              </div>
+            </>
           )}
 
           {activeTab === 'display' && (
             <div id={`${uid}-panel-display`} role="tabpanel" aria-labelledby={`${uid}-tab-display`} className="tabpanel-enter">
-              <DisplayPanel uid={uid} mediaType={mediaType} config={config} onUpdate={updateConfig} onToggleBadge={toggleBadge} onReset={() => { lastEditRef.current = null; pushHistory(configs); setAppliedTemplate(null); setConfigs(cs => ({ ...cs, [mediaType]: { ...DEFAULT_CONFIG } })); }} />
+              <DisplayPanel uid={uid} mediaType={mediaType} config={config} onUpdate={updateConfig} onToggleBadge={toggleBadge} fine={fine} onReset={() => { lastEditRef.current = null; pushHistory(configs); setAppliedTemplate(null); setConfigs(cs => ({ ...cs, [mediaType]: { ...DEFAULT_CONFIG } })); }} />
             </div>
           )}
 
           {activeTab === 'ratings' && (
             <div id={`${uid}-panel-ratings`} role="tabpanel" aria-labelledby={`${uid}-tab-ratings`} className="tabpanel-enter">
-              <RatingsPanel uid={uid} config={config} onUpdate={updateConfig} onToggleRating={toggleRating} />
-            </div>
-          )}
-
-          {activeTab === 'advanced' && (
-            <div id={`${uid}-panel-advanced`} role="tabpanel" aria-labelledby={`${uid}-tab-advanced`} className="tabpanel-enter">
-              <AdvancedPanel uid={uid} config={config} onUpdate={updateConfig} />
+              <RatingsPanel uid={uid} config={config} onUpdate={updateConfig} onToggleRating={toggleRating} fine={fine} />
             </div>
           )}
 

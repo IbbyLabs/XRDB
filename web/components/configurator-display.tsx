@@ -6,6 +6,7 @@ import {
   ARTWORK_OPTIONS, SIZE_OPTIONS, TEXT_PREF_OPTIONS, LANG_OPTIONS,
   AGE_POS_OPTIONS, SIX_POS_OPTIONS, GENRE_POS_OPTIONS, QUALITY_BADGE_OPTIONS, TREND_STYLE_OPTIONS,
 } from './configurator-types';
+import { QualityFine, GenreFine, AggregateFine, AgeFine, TrendingFine } from './configurator-fine';
 
 // ── Notice ────────────────────────────────────────────────────────────────────
 
@@ -89,9 +90,11 @@ interface DisplayPanelProps {
   onUpdate: UpdateConfigFn;
   onToggleBadge: (b: string) => void;
   onReset: () => void;
+  /** Reveals the per-badge scale, offset and colour controls in place. */
+  fine: boolean;
 }
 
-export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, onReset }: DisplayPanelProps) {
+export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, onReset, fine }: DisplayPanelProps) {
   return (
     <div className="panel">
       <div className="panel-body cfg-fields">
@@ -230,6 +233,24 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           />
         )}
 
+        {mediaType === 'logo' && (
+          <Field
+            label="Logo background"
+            htmlFor={`${uid}-logo-bg`}
+            hint="A dark panel fills the transparent canvas so a light wordmark reads on a pale background."
+          >
+            <select
+              id={`${uid}-logo-bg`}
+              className="select"
+              value={config.logoBackground}
+              onChange={e => onUpdate('logoBackground', e.target.value)}
+            >
+              <option value="transparent">Transparent</option>
+              <option value="dark">Dark panel</option>
+            </select>
+          </Field>
+        )}
+
         <ToggleRow
           label="Age rating badge"
           hint="Show content rating in corner"
@@ -258,16 +279,19 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
         )}
 
         {config.ageRating && (
-          <Field label="Age badge position" htmlFor={`${uid}-agepos`}>
-            <select
-              id={`${uid}-agepos`}
-              className="select"
-              value={config.ageRatingPos}
-              onChange={e => onUpdate('ageRatingPos', e.target.value)}
-            >
-              {AGE_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
-            </select>
-          </Field>
+          <>
+            <Field label="Age badge position" htmlFor={`${uid}-agepos`}>
+              <select
+                id={`${uid}-agepos`}
+                className="select"
+                value={config.ageRatingPos}
+                onChange={e => onUpdate('ageRatingPos', e.target.value)}
+              >
+                {AGE_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+              </select>
+            </Field>
+            {fine && <AgeFine uid={uid} config={config} onUpdate={onUpdate} />}
+          </>
         )}
 
         <ToggleRow
@@ -278,16 +302,19 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
         />
 
         {config.genre && (
-          <Field label="Genre position" htmlFor={`${uid}-genrepos`}>
-            <select
-              id={`${uid}-genrepos`}
-              className="select"
-              value={config.genrePos}
-              onChange={e => onUpdate('genrePos', e.target.value)}
-            >
-              {GENRE_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
-            </select>
-          </Field>
+          <>
+            <Field label="Genre position" htmlFor={`${uid}-genrepos`}>
+              <select
+                id={`${uid}-genrepos`}
+                className="select"
+                value={config.genrePos}
+                onChange={e => onUpdate('genrePos', e.target.value)}
+              >
+                {GENRE_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+              </select>
+            </Field>
+            {fine && <GenreFine uid={uid} config={config} onUpdate={onUpdate} />}
+          </>
         )}
 
         <ToggleRow
@@ -362,6 +389,9 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           <span className="hint" style={{ marginTop: 'var(--sp-2)' }}>
             Rendered in the top-right corner
           </span>
+          {fine && config.badges.length > 0 && (
+            <QualityFine uid={uid} config={config} onUpdate={onUpdate} />
+          )}
         </fieldset>
 
         {config.ratings.length > 0 && (
@@ -374,17 +404,20 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
             />
 
             {config.aggregateBar && (
-              <Field label="Bar position" htmlFor={`${uid}-barpos`}>
-                <select
-                  id={`${uid}-barpos`}
-                  className="select"
-                  value={config.aggregateBarPos}
-                  onChange={e => onUpdate('aggregateBarPos', e.target.value)}
-                >
-                  <option value="bottom">Bottom</option>
-                  <option value="top">Top</option>
-                </select>
-              </Field>
+              <>
+                <Field label="Bar position" htmlFor={`${uid}-barpos`}>
+                  <select
+                    id={`${uid}-barpos`}
+                    className="select"
+                    value={config.aggregateBarPos}
+                    onChange={e => onUpdate('aggregateBarPos', e.target.value)}
+                  >
+                    <option value="bottom">Bottom</option>
+                    <option value="top">Top</option>
+                  </select>
+                </Field>
+                {fine && <AggregateFine uid={uid} config={config} onUpdate={onUpdate} />}
+              </>
             )}
           </>
         )}
@@ -397,16 +430,19 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
         />
 
         {config.trending && (
-          <Field label="Trending style" htmlFor={`${uid}-trendstyle`}>
-            <select
-              id={`${uid}-trendstyle`}
-              className="select"
-              value={config.trendingStyle}
-              onChange={e => onUpdate('trendingStyle', e.target.value)}
-            >
-              {TREND_STYLE_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
-            </select>
-          </Field>
+          <>
+            <Field label="Trending style" htmlFor={`${uid}-trendstyle`}>
+              <select
+                id={`${uid}-trendstyle`}
+                className="select"
+                value={config.trendingStyle}
+                onChange={e => onUpdate('trendingStyle', e.target.value)}
+              >
+                {TREND_STYLE_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+              </select>
+            </Field>
+            {fine && <TrendingFine uid={uid} config={config} onUpdate={onUpdate} />}
+          </>
         )}
 
         <div>
@@ -414,12 +450,12 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
             className="btn btn-ghost btn-sm"
             style={{ alignSelf: 'flex-start' }}
             onClick={onReset}
-            title={`Reset every setting for the ${mediaType} surface, including ratings and advanced styling`}
+            title={`Reset every setting for the ${mediaType} surface, including ratings and fine tuning`}
           >
             Reset {mediaType} to defaults
           </button>
           <span className="hint" style={{ marginTop: 'var(--sp-2)' }}>
-            Resets all {mediaType} settings — display, ratings and advanced. Undoable with Ctrl/Cmd+Z.
+            Resets all {mediaType} settings, including anything set under fine tuning. Undoable with Ctrl/Cmd+Z.
           </span>
         </div>
       </div>

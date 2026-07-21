@@ -34,7 +34,7 @@ async function expectEveryTabUsable(page: Page, names: string[]) {
 }
 
 const ADMIN_TABS = ['Metrics', 'Cache', 'Logs', 'Runtime', 'Warm'];
-const CONFIG_TABS = ['Display', 'Ratings', 'Advanced', 'Profile', 'Install'];
+const CONFIG_TABS = ['Display', 'Ratings', 'Profile', 'Install'];
 
 for (const [label, size] of [['phone', PHONE], ['desktop', DESKTOP]] as const) {
   test(`every admin tab is usable on ${label}`, async ({ page }) => {
@@ -51,7 +51,7 @@ for (const [label, size] of [['phone', PHONE], ['desktop', DESKTOP]] as const) {
 }
 
 test('per-surface and whole-config tabs hold separate rows', async ({ page }) => {
-  // 768px matters most: all five tabs fit on one line there, so the split
+  // 768px matters most: all four tabs fit on one line there, so the split
   // only holds if it's forced rather than a lucky wrap.
   for (const size of [PHONE, { width: 768, height: 900 }, DESKTOP]) {
     await page.setViewportSize(size);
@@ -65,21 +65,8 @@ test('per-surface and whole-config tabs hold separate rows', async ({ page }) =>
     });
 
     expect(rows, `grouping should hold at ${size.width}px`).toEqual([
-      ['Display', 'Ratings', 'Advanced'],
+      ['Display', 'Ratings'],
       ['Profile', 'Install'],
     ]);
   }
-});
-
-test('advanced styling lives on its own tab', async ({ page }) => {
-  await page.setViewportSize(DESKTOP);
-  await page.goto('/configurator');
-
-  await page.getByRole('tab', { name: /advanced/i }).click();
-  const panel = page.locator('#\\:r0\\:-panel-advanced, [id$="panel-advanced"]');
-  await expect(panel).toBeVisible();
-  // the eight per-badge sections, previously buried in a collapsed disclosure
-  await expect(panel.locator('.adv-section')).toHaveCount(8);
-  await expect(page.locator('.adv-details > summary')
-    .filter({ hasText: /^Advanced styling$/ })).toHaveCount(0);
 });

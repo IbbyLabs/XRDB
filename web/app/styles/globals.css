@@ -775,19 +775,51 @@ textarea.input { min-height: 0; line-height: 1.5; }
 
 .surface-scope-text strong { color: var(--accent-text); }
 
-/* Advanced-panel section headers: a top rule + accent-tinted label turns the
-   long flat scroll of controls into distinct, scannable groups. */
-.adv-section {
-  display: block;
-  margin-top: var(--sp-5);
-  padding-top: var(--sp-3);
-  border-top: 1px solid var(--border);
+/* The switch that reveals every badge's fine-tuning controls. It sits above the
+   panel rather than in it: it changes what the panel shows, it isn't one of the
+   settings being edited. Quieter than the scope banner it follows, so the two
+   bars don't compete. */
+.fine-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.fine-bar-label {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
   font-size: var(--text-sm);
   font-weight: 600;
   color: var(--ink);
 }
 
-/* Nested disclosures inside the advanced panel. They carry the same
+.fine-bar-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--text-xs);
+  color: var(--subtle);
+}
+
+/* One badge's fine-tuning controls. The indent and hairline tie them to the
+   control directly above so they read as part of that badge, not as a new
+   section. Tighter than the panel's own field rhythm for the same reason. */
+.fine-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-left: var(--sp-2);
+  padding-left: var(--sp-3);
+  border-left: 1px solid var(--border);
+}
+
+/* Nested disclosures inside a fine-tuning group. They carry the same
    affordance as the help disclosure so they don't read as inert labels. */
 .adv-details > summary {
   cursor: pointer;
@@ -805,12 +837,6 @@ textarea.input { min-height: 0; line-height: 1.5; }
   flex-wrap: wrap;
 }
 .numfield-pair > .field { flex: 1 1 9rem; }
-
-.adv-section--first {
-  margin-top: 0;
-  padding-top: 0;
-  border-top: none;
-}
 
 /* First-run orientation: collapsed by default so it never blocks returning
    users, but there for a newcomer to expand. */
