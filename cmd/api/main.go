@@ -146,6 +146,11 @@ func main() {
 	reg.Register(provider.NewAnimeMapped(provider.NewKitsu(), animeMapper))
 	// Cinemeta (Stremio) — public artwork/metadata, no key required.
 	reg.Register(provider.NewCinemeta())
+	// AlloCiné and Filmweb publish no API, so both are matched by title on their
+	// own sites. Each declares the sources it serves and is only called when one
+	// of them is selected, so an unused source costs nothing.
+	reg.Register(provider.NewAlloCine())
+	reg.Register(provider.NewFilmweb())
 	var pipeline *compose.Pipeline
 	if len(reg.Names()) > 0 {
 		pipeline = compose.New(reg)

@@ -146,6 +146,36 @@ func providerReady(p provider.Provider) bool {
 	return true
 }
 
+// providerWanted reports whether a provider is worth calling for this config.
+// A provider that declares its rating sources is skipped when none of them were
+// selected, which keeps a source that costs a site lookup from being fetched on
+// every render just to be discarded. Providers that declare nothing are always
+// called, as they were before.
+func providerWanted(p provider.Provider, selected []string) bool {
+	sourcer, ok := p.(provider.RatingSourcer)
+	if !ok {
+		return true
+	}
+	for _, source := range sourcer.RatingSources() {
+		for _, want := range selected {
+			if source == want {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// fetchRatings asks a provider for ratings the way that provider can be asked:
+// by id for most, by title for the ones with no id-based lookup.
+func (p *Pipeline) fetchRatings(ctx context.Context, prov provider.Provider, req Request, artwork *provider.MediaMeta) (*provider.MediaMeta, error) {
+	byTitle, ok := prov.(provider.TitleRatingProvider)
+	if !ok {
+		return prov.Fetch(ctx, req.ContentType, req.MediaID)
+	}
+	return byTitle.FetchByTitle(ctx, req.ContentType, artwork.Title, artwork.OriginalTitle, artwork.Year)
+}
+
 // New creates a Pipeline with the given provider registry.
 func New(reg *provider.Registry) *Pipeline {
 	return &Pipeline{
@@ -206,7 +236,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// req.MediaID for episodes, so per-episode ratings resolve correctly.
 	ratingReq := req
 	ratingReq.MediaID = ratingID
-	allRatings, ratingProviders := p.collectRatingsWithProviders(ctx, ratingReq, meta.Ratings)
+	allRatings, ratingProviders := p.collectRatingsWithProviders(ctx, ratingReq, meta)
 	result.ContributingProviders = append([]string{string(req.Config.ArtworkSource)}, ratingProviders...)
 	meta.IsAnime = p.isAnimeTitle(ctx, req)
 
@@ -681,9 +711,12 @@ func resizeFit(src image.Image, maxW, maxH int) image.Image {
 // merges their ratings with those already returned by the artwork source.
 // Duplicate sources are deduplicated. Also returns the names of every
 // non-artwork provider that returned data (for TTL selection).
-func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request, artworkRatings []provider.Rating) ([]provider.Rating, []string) {
-	all := make([]provider.Rating, len(artworkRatings))
-	copy(all, artworkRatings)
+func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request, artwork *provider.MediaMeta) ([]provider.Rating, []string) {
+	if artwork == nil {
+		artwork = &provider.MediaMeta{}
+	}
+	all := make([]provider.Rating, len(artwork.Ratings))
+	copy(all, artwork.Ratings)
 	seen := make(map[string]bool, len(all))
 	for _, r := range all {
 		seen[r.Source] = true
@@ -704,10 +737,13 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 		if !providerReady(prov) {
 			continue
 		}
+		if !providerWanted(prov, req.Config.Ratings) {
+			continue
+		}
 		wg.Add(1)
 		go func(prov provider.Provider) {
 			defer wg.Done()
-			meta, err := prov.Fetch(ctx, req.ContentType, req.MediaID)
+			meta, err := p.fetchRatings(ctx, prov, req, artwork)
 			if err != nil || meta == nil {
 				return
 			}

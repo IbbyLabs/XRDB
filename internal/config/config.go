@@ -54,6 +54,7 @@ type Config struct {
 var TTLProviders = []string{
 	"tmdb", "mdblist", "omdb", "fanart",
 	"trakt", "simkl", "mal", "anilist", "kitsu", "imdb_local",
+	"allocine", "filmweb",
 }
 
 // ProviderTTLEnvVar returns the environment variable that overrides a provider's

@@ -73,6 +73,9 @@ export const RATING_OPTIONS: { id: string; label: string; accent: string; icon: 
   { id: 'trakt',          label: 'Trakt',           accent: '#ed1c24', icon: '/rating-logos/trakt.svg' },
   { id: 'simkl',          label: 'SIMKL',           accent: '#1cb0f6', icon: '/rating-logos/simkl.svg' },
   { id: 'rogerebert',     label: 'Roger Ebert',     accent: '#c1121f', icon: '/rating-logos/rogerebert.png' },
+  { id: 'allocine',       label: 'AlloCiné',        accent: '#fecc00', icon: '/rating-logos/allocine.svg' },
+  { id: 'allocinepress',  label: 'AlloCiné Press',  accent: '#f59e0b', icon: '/rating-logos/allocinepress.svg' },
+  { id: 'filmweb',        label: 'Filmweb',         accent: '#ecb014', icon: '/rating-logos/filmweb.png' },
   { id: 'mal',            label: 'MyAnimeList',     accent: '#2c6fbb', icon: '/rating-logos/mal.svg', group: 'anime' },
   { id: 'anilist',        label: 'AniList',         accent: '#02a9ff', icon: '/rating-logos/anilist.svg', group: 'anime' },
   { id: 'kitsu',          label: 'Kitsu',           accent: '#f76e18', icon: '/rating-logos/kitsu.svg', group: 'anime' },
@@ -365,9 +368,9 @@ export const DEFAULT_CONFIG: ConfigState = {
 // The order the renderer walks for the 'Top critic' and 'Top audience' ring
 // modes when a config sets none of its own. Mirrors defaultCriticsPriority /
 // defaultAudiencePriority in internal/compose/badge_overlay.go.
-export const DEFAULT_CRITICS_PRIORITY = ['rt', 'metacritic', 'rogerebert'];
+export const DEFAULT_CRITICS_PRIORITY = ['rt', 'metacritic', 'rogerebert', 'allocinepress'];
 export const DEFAULT_AUDIENCE_PRIORITY = [
-  'imdb', 'tmdb', 'trakt', 'letterboxd', 'mdblist', 'rtaudience', 'simkl',
+  'imdb', 'tmdb', 'trakt', 'letterboxd', 'mdblist', 'rtaudience', 'simkl', 'allocine', 'filmweb',
 ];
 
 export type UpdateConfigFn = <K extends keyof ConfigState>(key: K, value: ConfigState[K]) => void;

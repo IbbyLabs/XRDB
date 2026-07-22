@@ -16,7 +16,11 @@ type WatchProvider struct {
 
 // MediaMeta holds the metadata for a piece of media fetched from a provider.
 type MediaMeta struct {
-	Title          string
+	Title string
+	// OriginalTitle is the title in the original language, when it differs from
+	// Title. Sources that are matched by name rather than by id search both, as
+	// a national site often indexes only one of the two.
+	OriginalTitle  string
 	Year           int
 	Overview       string
 	PosterURL      string          // canonical poster image URL
@@ -46,6 +50,24 @@ type Provider interface {
 	// Fetch retrieves metadata for a media item identified by id.
 	// id format is provider-specific; TMDB uses numeric IDs, IMDB uses tt-prefixed.
 	Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, error)
+}
+
+// RatingSourcer is implemented by a provider that knows exactly which rating
+// sources it can supply, letting the render path skip it when none of them were
+// selected. Most providers return a spread of sources for free once they have
+// answered and have no reason to implement this; it earns its keep for the ones
+// whose lookup is expensive enough that it should only happen on request.
+type RatingSourcer interface {
+	RatingSources() []string
+}
+
+// TitleRatingProvider is implemented by a provider that has no way to look a
+// title up by id and needs its name and year instead. The render path already
+// holds both by the time ratings are collected, so it calls FetchByTitle for
+// these rather than Fetch.
+type TitleRatingProvider interface {
+	Provider
+	FetchByTitle(ctx context.Context, mediaType, title, originalTitle string, year int) (*MediaMeta, error)
 }
 
 // inflightCall tracks an in-progress fetch so concurrent callers for the same

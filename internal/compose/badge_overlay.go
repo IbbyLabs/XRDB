@@ -1064,7 +1064,7 @@ func drawEditorialRating(base *image.NRGBA, ratings []provider.Rating, genres []
 // criticsSources are the professional-critic rating providers. Everything else
 // (user/audience votes) is treated as an audience score by the dual split.
 var criticsSources = map[string]bool{
-	"rt": true, "metacritic": true, "rogerebert": true,
+	"rt": true, "metacritic": true, "rogerebert": true, "allocinepress": true,
 }
 
 // splitCriticsAudience averages the allowed ratings into a critics score and an
@@ -1671,8 +1671,10 @@ func firstAvailableRating(ratings []provider.Rating, cfg imageconfig.Config, ord
 // names no order of its own: best-known professional outlets first, then the
 // audience sources by breadth of voter base.
 var (
-	defaultCriticsPriority  = []string{"rt", "metacritic", "rogerebert"}
-	defaultAudiencePriority = []string{"imdb", "tmdb", "trakt", "letterboxd", "mdblist", "rtaudience", "simkl"}
+	defaultCriticsPriority  = []string{"rt", "metacritic", "rogerebert", "allocinepress"}
+	defaultAudiencePriority = []string{
+		"imdb", "tmdb", "trakt", "letterboxd", "mdblist", "rtaudience", "simkl", "allocine", "filmweb",
+	}
 )
 
 // sourceOrder prefers a configured priority list, falling back to the built-in

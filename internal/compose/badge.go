@@ -235,6 +235,9 @@ var providerAccent = map[string]color.NRGBA{
 	"anilist":        {R: 2, G: 169, B: 255, A: 255},
 	"mal":            {R: 44, G: 111, B: 187, A: 255},
 	"kitsu":          {R: 247, G: 110, B: 24, A: 255},
+	"allocine":       {R: 254, G: 204, B: 0, A: 255},
+	"allocinepress":  {R: 245, G: 158, B: 11, A: 255},
+	"filmweb":        {R: 236, G: 176, B: 20, A: 255},
 }
 
 // resolveProviderAccent returns the per-config override color for a provider if

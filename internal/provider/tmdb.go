@@ -230,16 +230,18 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		"?append_to_response=images,release_dates,content_ratings,watch%2Fproviders" +
 		"&include_image_language=" + imgLangs
 	var result struct {
-		Title        string  `json:"title"`
-		Name         string  `json:"name"` // TV
-		Overview     string  `json:"overview"`
-		ReleaseDate  string  `json:"release_date"`
-		FirstAirDate string  `json:"first_air_date"`
-		VoteAverage  float64 `json:"vote_average"`
-		VoteCount    int     `json:"vote_count"`
-		PosterPath   string  `json:"poster_path"`
-		BackdropPath string  `json:"backdrop_path"`
-		Images       struct {
+		Title         string  `json:"title"`
+		Name          string  `json:"name"` // TV
+		OriginalTitle string  `json:"original_title"`
+		OriginalName  string  `json:"original_name"` // TV
+		Overview      string  `json:"overview"`
+		ReleaseDate   string  `json:"release_date"`
+		FirstAirDate  string  `json:"first_air_date"`
+		VoteAverage   float64 `json:"vote_average"`
+		VoteCount     int     `json:"vote_count"`
+		PosterPath    string  `json:"poster_path"`
+		BackdropPath  string  `json:"backdrop_path"`
+		Images        struct {
 			Posters   []tmdbImage `json:"posters"`
 			Backdrops []tmdbImage `json:"backdrops"`
 			Logos     []tmdbImage `json:"logos"`
@@ -295,11 +297,17 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		year, _ = strconv.Atoi(date[:4])
 	}
 
+	originalTitle := result.OriginalTitle
+	if originalTitle == "" {
+		originalTitle = result.OriginalName
+	}
+
 	meta := &MediaMeta{
-		Title:    title,
-		Year:     year,
-		Overview: result.Overview,
-		Language: "en",
+		Title:         title,
+		OriginalTitle: originalTitle,
+		Year:          year,
+		Overview:      result.Overview,
+		Language:      "en",
 	}
 
 	// Source resolution: w780/w1280 are plenty for normal output, but large

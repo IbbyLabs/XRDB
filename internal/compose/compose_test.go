@@ -250,8 +250,8 @@ func TestCollectRatingsMergesProviders(t *testing.T) {
 	p := &Pipeline{providers: reg, fetcher: &stubImageFetcher{}}
 	req := Request{MediaType: "poster", MediaID: "tt1234567", Config: cfg}
 
-	artworkRatings := []provider.Rating{{Source: "tmdb", Value: 7.5, Label: "7.5"}}
-	all, _ := p.collectRatingsWithProviders(context.Background(), req, artworkRatings)
+	artwork := &provider.MediaMeta{Ratings: []provider.Rating{{Source: "tmdb", Value: 7.5, Label: "7.5"}}}
+	all, _ := p.collectRatingsWithProviders(context.Background(), req, artwork)
 
 	bySource := make(map[string]provider.Rating)
 	for _, r := range all {
@@ -296,8 +296,8 @@ func TestCollectRatingsDeduplicatesAcrossProviders(t *testing.T) {
 	pipe := &Pipeline{providers: reg, fetcher: &stubImageFetcher{}}
 	req := Request{MediaType: "poster", MediaID: "tt1234567", Config: cfg}
 
-	artworkRatings := []provider.Rating{{Source: "imdb", Value: 7.0, Label: "7.0"}}
-	all, _ := pipe.collectRatingsWithProviders(context.Background(), req, artworkRatings)
+	artwork := &provider.MediaMeta{Ratings: []provider.Rating{{Source: "imdb", Value: 7.0, Label: "7.0"}}}
+	all, _ := pipe.collectRatingsWithProviders(context.Background(), req, artwork)
 
 	var imdbCount int
 	for _, r := range all {
@@ -738,7 +738,7 @@ func TestCollectRatingsSkipsArtworkProvider(t *testing.T) {
 	pipe := &Pipeline{providers: reg, fetcher: &stubImageFetcher{}}
 	req := Request{MediaType: "poster", MediaID: "tt1", Config: cfg}
 
-	initial := []provider.Rating{{Source: "tmdb", Value: 7.5}}
+	initial := &provider.MediaMeta{Ratings: []provider.Rating{{Source: "tmdb", Value: 7.5}}}
 	all, _ := pipe.collectRatingsWithProviders(context.Background(), req, initial)
 
 	// should only have the artwork ratings, artwork provider not called again
