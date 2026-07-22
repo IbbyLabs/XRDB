@@ -45,7 +45,7 @@ func TestScoreTitleMatchRanksExactAboveLoose(t *testing.T) {
 	exact := scoreTitleMatch("Dune", wanted)
 	prefix := scoreTitleMatch("Dune: Part Two", wanted)
 	none := scoreTitleMatch("Arrival", wanted)
-	if !(exact > prefix && prefix > none) {
+	if exact <= prefix || prefix <= none {
 		t.Errorf("expected exact > prefix > none, got %d, %d, %d", exact, prefix, none)
 	}
 	if none != 0 {
