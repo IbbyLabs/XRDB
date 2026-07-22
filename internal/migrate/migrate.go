@@ -53,6 +53,11 @@ type MigrationReport struct {
 	MappedConfigFields    int             `json:"mappedConfigFields"`
 	DeferredConfigFields  []DeferredField `json:"deferredConfigFields"`
 	DeferredConfigSummary map[string]int  `json:"deferredConfigSummary"`
+	// ConvertedConfigFields counts v2 keys translated into the shape XRDB
+	// renders from. They are also counted as mapped, since after conversion
+	// they do render; the summary names them so a user can see what moved.
+	ConvertedConfigFields  int            `json:"convertedConfigFields"`
+	ConvertedConfigSummary map[string]int `json:"convertedConfigSummary"`
 }
 
 var requiredFields = []string{"id", "type", "config"}
@@ -83,12 +88,13 @@ func ParseLegacyEnvelope(data []byte) (LegacyEnvelope, error) {
 
 func MigrateLegacyProfiles(envelope LegacyEnvelope, source string, now time.Time) ([]OutputProfile, MigrationReport, error) {
 	report := MigrationReport{
-		GeneratedAt:           now.UTC().Format(time.RFC3339),
-		InputProfiles:         len(envelope.Profiles),
-		UnsupportedFields:     make([]UnsupportedField, 0),
-		UnsupportedSummary:    make(map[string]int),
-		DeferredConfigFields:  make([]DeferredField, 0),
-		DeferredConfigSummary: make(map[string]int),
+		GeneratedAt:            now.UTC().Format(time.RFC3339),
+		InputProfiles:          len(envelope.Profiles),
+		UnsupportedFields:      make([]UnsupportedField, 0),
+		UnsupportedSummary:     make(map[string]int),
+		DeferredConfigFields:   make([]DeferredField, 0),
+		DeferredConfigSummary:  make(map[string]int),
+		ConvertedConfigSummary: make(map[string]int),
 	}
 
 	out := make([]OutputProfile, 0, len(envelope.Profiles))
@@ -117,11 +123,27 @@ func MigrateLegacyProfiles(envelope LegacyEnvelope, source string, now time.Time
 		if err := json.Unmarshal(config, &configCheck); err != nil {
 			return nil, report, fmt.Errorf("profile %d has malformed config object", i)
 		}
+		// Translate v2's per-surface keys into the envelope XRDB renders from.
+		// The original keys stay on the profile untouched, so this only ever
+		// adds; a translation that goes wrong can lose nothing.
+		converted, stats, err := ConvertConfig(config)
+		if err != nil {
+			return nil, report, fmt.Errorf("profile %d config could not be converted: %w", i, err)
+		}
+		config = converted
+		convertedKeys := make(map[string]bool, len(stats.ConvertedFields))
+		for _, key := range stats.ConvertedFields {
+			convertedKeys[key] = true
+			report.ConvertedConfigSummary[key]++
+		}
+		report.ConvertedConfigFields += stats.Converted
+
 		// Classify every config key so the user sees which of their settings XRDB
-		// renders today (mapped) and which are carried over untouched (deferred).
-		// The config blob itself is stored verbatim either way — nothing is lost.
+		// renders today (mapped or converted) and which are carried over
+		// untouched (deferred). The config blob itself is stored verbatim either
+		// way — nothing is lost.
 		for key := range configCheck {
-			if imageconfig.IsModeledKey(key) {
+			if imageconfig.IsModeledKey(key) || convertedKeys[key] {
 				report.MappedConfigFields++
 				continue
 			}

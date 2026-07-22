@@ -98,8 +98,9 @@ func TestMigrateClassifiesConfigFields(t *testing.T) {
 		{
 			"id":   json.RawMessage(`"p1"`),
 			"type": json.RawMessage(`"poster"`),
-			// "language" and "ratings" are modeled by v3; the prefixed and
-			// aggregate fields are preserved but not yet rendered.
+			// "language" and "ratings" are modeled as they stand, "posterRatingsMax"
+			// converts into the poster surface, and the aggregate colour has no
+			// home yet so it is carried untouched.
 			"config": json.RawMessage(`{"language":"en","ratings":["imdb"],"posterRatingsMax":4,"aggregateCriticsAccentColor":"#22c55e"}`),
 		},
 	}}
@@ -108,17 +109,17 @@ func TestMigrateClassifiesConfigFields(t *testing.T) {
 	if err != nil {
 		t.Fatalf("migrate: %v", err)
 	}
-	if report.MappedConfigFields != 2 {
-		t.Errorf("mapped config fields = %d, want 2 (language, ratings)", report.MappedConfigFields)
+	if report.MappedConfigFields != 3 {
+		t.Errorf("mapped config fields = %d, want 3 (language, ratings, posterRatingsMax)", report.MappedConfigFields)
 	}
-	if report.DeferredConfigSummary["posterRatingsMax"] != 1 {
-		t.Errorf("posterRatingsMax not reported as deferred: %v", report.DeferredConfigSummary)
+	if report.ConvertedConfigSummary["posterRatingsMax"] != 1 {
+		t.Errorf("posterRatingsMax not reported as converted: %v", report.ConvertedConfigSummary)
 	}
 	if report.DeferredConfigSummary["aggregateCriticsAccentColor"] != 1 {
 		t.Errorf("aggregateCriticsAccentColor not reported as deferred: %v", report.DeferredConfigSummary)
 	}
-	if len(report.DeferredConfigFields) != 2 {
-		t.Errorf("expected 2 deferred fields, got %d", len(report.DeferredConfigFields))
+	if len(report.DeferredConfigFields) != 1 {
+		t.Errorf("expected 1 deferred field, got %d", len(report.DeferredConfigFields))
 	}
 	// Deferred is transparency, not loss: the config blob is passed through whole.
 	if report.DeferredConfigFields[0].Field != "aggregateCriticsAccentColor" {
