@@ -1,8 +1,9 @@
 import { test, expect, type Page } from '@playwright/test';
 
-// Per-provider weights and the top-critic/top-audience order both change what
-// number the renderer prints, so what matters is that a change in the controls
-// reaches the render URL the poster is fetched from.
+// The source weighting splits 100% between the selected rating sources, and the
+// top-critic / top-audience order decides which single source those ring modes
+// read. Both change what number the poster prints, so what matters is that the
+// controls stay whole and that a change reaches the render URL.
 
 async function openFineTuning(page: Page) {
   await page.goto('/configurator');
@@ -20,33 +21,70 @@ async function enableRing(page: Page) {
   await page.getByRole('button', { name: 'Ring', exact: true }).click();
 }
 
+async function openWeighting(page: Page) {
+  await page.getByText('Source weighting').click();
+  return page.getByRole('group', { name: 'Source weighting' });
+}
+
+/** Every source's share, read straight off the number inputs. */
+async function shares(group: ReturnType<Page['getByRole']>): Promise<number[]> {
+  return (await group.locator('input[type="number"]').all())
+    .reduce(async (acc, input) => [...(await acc), Number(await input.inputValue())],
+      Promise.resolve([] as number[]));
+}
+
 const renderUrl = (page: Page) => page.locator('.urlbar-code').first();
 
-test('a provider weight reaches the render URL', async ({ page }) => {
+test('the weighting starts as an even split that adds up to 100', async ({ page }) => {
   await openFineTuning(page);
+  const group = await openWeighting(page);
+
+  const values = await shares(group);
+  expect(values.length).toBeGreaterThan(1);
+  expect(values.reduce((a, b) => a + b, 0)).toBe(100);
+  // An untouched split is the renderer's own default, so it should not need
+  // spelling out in the URL.
   await expect(renderUrl(page)).not.toContainText('ratingProviderWeights');
-
-  await page.getByText('Per-provider weight').click();
-  const weights = page.getByRole('group', { name: 'Per-provider weight' });
-  await weights.getByLabel('IMDb', { exact: true }).fill('4');
-
-  await expect(renderUrl(page)).toContainText('ratingProviderWeights');
-  await expect(renderUrl(page)).toContainText('4');
+  await expect(group).toContainText('100%');
 });
 
-test('weighting a source back to normal drops it from the URL again', async ({ page }) => {
+test('moving one source rebalances the rest to keep the total at 100', async ({ page }) => {
   await openFineTuning(page);
-  await page.getByText('Per-provider weight').click();
-  const weights = page.getByRole('group', { name: 'Per-provider weight' });
-  const imdb = weights.getByLabel('IMDb', { exact: true });
+  const group = await openWeighting(page);
 
-  await imdb.fill('3');
+  await group.getByRole('spinbutton', { name: 'IMDb (%)' }).fill('70');
   await expect(renderUrl(page)).toContainText('ratingProviderWeights');
 
-  // A source at 1 counts exactly as much as one that was never touched, so it
-  // should leave the config rather than sit in it as a no-op.
-  await imdb.fill('1');
+  const values = await shares(group);
+  expect(values.reduce((a, b) => a + b, 0)).toBe(100);
+  expect(values[0]).toBe(70);
+});
+
+test('a source added after weighting gets a share instead of counting for nothing', async ({ page }) => {
+  await openFineTuning(page);
+  const group = await openWeighting(page);
+  await group.getByRole('spinbutton', { name: 'IMDb (%)' }).fill('80');
+
+  const before = (await shares(group)).length;
+  await page.getByRole('button', { name: /^Trakt/ }).click();
+
+  const after = await shares(group);
+  expect(after.length).toBe(before + 1);
+  expect(after.reduce((a, b) => a + b, 0)).toBe(100);
+  // The point of the sync: the newcomer carries real weight rather than 0.
+  expect(after[after.length - 1]).toBeGreaterThan(0);
+});
+
+test('even split clears the weighting from the URL again', async ({ page }) => {
+  await openFineTuning(page);
+  const group = await openWeighting(page);
+
+  await group.getByRole('spinbutton', { name: 'IMDb (%)' }).fill('65');
+  await expect(renderUrl(page)).toContainText('ratingProviderWeights');
+
+  await group.getByRole('button', { name: 'Even split' }).click();
   await expect(renderUrl(page)).not.toContainText('ratingProviderWeights');
+  expect((await shares(group)).reduce((a, b) => a + b, 0)).toBe(100);
 });
 
 test('reordering the critics list reaches the render URL', async ({ page }) => {

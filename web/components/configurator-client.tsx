@@ -7,6 +7,7 @@ import { Settings2, Star, SlidersHorizontal, Film, Rocket, Link2, Maximize2, Und
 import { renderUrl, type MediaType, type Template } from '@/lib/api';
 import { getRenderKey, setRenderKey } from '@/lib/render-key';
 import { copyText } from '@/lib/clipboard';
+import { syncShares } from '@/lib/shares';
 import {
   MEDIA_TYPES, DEFAULT_CONFIG, DEFAULT_SURFACE_CONFIGS, PREVIEW_DEBOUNCE_MS,
   readSession, encodeShare, decodeShare, cloneToAllSurfaces, fromStoredConfig,
@@ -338,8 +339,15 @@ export function ConfiguratorClient() {
     setAppliedTemplate(null);
     setConfigs(cs => {
       const cur = cs[mediaType];
+      const ratings = cur.ratings.includes(r)
+        ? cur.ratings.filter(x => x !== r)
+        : [...cur.ratings, r];
       return { ...cs, [mediaType]: {
-        ...cur, ratings: cur.ratings.includes(r) ? cur.ratings.filter(x => x !== r) : [...cur.ratings, r],
+        ...cur,
+        ratings,
+        // A tuned weighting is per-source, so changing which sources are in
+        // play has to redistribute it or the new one would count for nothing.
+        ratingProviderWeights: syncShares(ratings, cur.ratingProviderWeights),
       } };
     });
   };

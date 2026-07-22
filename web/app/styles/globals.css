@@ -905,6 +905,23 @@ textarea.input { min-height: 0; line-height: 1.5; }
   cursor: pointer;
 }
 
+/* Running total under the per-source weighting. It always reads 100%, which is
+   the point: it confirms the split is whole rather than asking for a fix. */
+.share-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--border);
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+.share-total-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  font-weight: 600;
+}
+
 /* Ordered fallback list: rank, source name, and the two reordering controls.
    The rank column is fixed so the names line up as rows are moved. */
 .priority-list {

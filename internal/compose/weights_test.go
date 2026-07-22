@@ -21,62 +21,87 @@ func weightTestRatings() []provider.Rating {
 
 func closeTo(got, want float64) bool { return math.Abs(got-want) < 0.0001 }
 
-func TestWeightedAverageFavoursHeavierSources(t *testing.T) {
+func TestSharesDecideHowMuchEachSourceCounts(t *testing.T) {
 	cfg := imageconfig.Config{Ratings: []string{"imdb", "tmdb"}}
 
-	plain, ok := ratingRingAverage(weightTestRatings(), cfg)
-	if !ok || !closeTo(plain, 7.5) {
-		t.Fatalf("unweighted average = %v (ok=%v), want 7.5", plain, ok)
+	even, ok := ratingRingAverage(weightTestRatings(), cfg)
+	if !ok || !closeTo(even, 7.5) {
+		t.Fatalf("even split = %v (ok=%v), want 7.5", even, ok)
 	}
 
-	// imdb counted three times over: (9*3 + 6*1) / 4.
-	cfg.RatingProviderWeights = map[string]float64{"imdb": 3}
+	// 75% imdb, 25% tmdb: 9*0.75 + 6*0.25.
+	cfg.RatingProviderWeights = map[string]float64{"imdb": 75, "tmdb": 25}
 	weighted, ok := ratingRingAverage(weightTestRatings(), cfg)
 	if !ok || !closeTo(weighted, 8.25) {
-		t.Errorf("weighted average = %v (ok=%v), want 8.25", weighted, ok)
+		t.Errorf("75/25 split = %v (ok=%v), want 8.25", weighted, ok)
 	}
 }
 
-func TestZeroWeightDropsASourceFromTheAverage(t *testing.T) {
+func TestUnsetSourcesSplitWhatIsLeftOfTheHundred(t *testing.T) {
+	// Only imdb is pinned, so tmdb and rt divide the remaining 40 between them.
+	// 9*0.6 + 6*0.2 + 8*0.2.
+	cfg := imageconfig.Config{Ratings: []string{"imdb", "tmdb", "rt"}}
+	cfg.RatingProviderWeights = map[string]float64{"imdb": 60}
+	avg, ok := ratingRingAverage(weightTestRatings(), cfg)
+	if !ok || !closeTo(avg, 8.2) {
+		t.Errorf("partial shares = %v (ok=%v), want 8.2", avg, ok)
+	}
+}
+
+func TestNoSharesIsAnEvenSplit(t *testing.T) {
+	// The feature has to be free when unused: no shares means the same number
+	// the renderer produced before shares existed.
+	cfg := imageconfig.Config{Ratings: []string{"imdb", "tmdb", "rt", "metacritic"}}
+	avg, ok := ratingRingAverage(weightTestRatings(), cfg)
+	if !ok || !closeTo(avg, (9.0+6.0+8.0+4.0)/4) {
+		t.Errorf("average = %v (ok=%v), want the plain mean", avg, ok)
+	}
+}
+
+func TestZeroShareDropsASource(t *testing.T) {
 	cfg := imageconfig.Config{Ratings: []string{"imdb", "tmdb"}}
-	cfg.RatingProviderWeights = map[string]float64{"tmdb": 0}
+	cfg.RatingProviderWeights = map[string]float64{"imdb": 100, "tmdb": 0}
 	avg, ok := ratingRingAverage(weightTestRatings(), cfg)
 	if !ok || !closeTo(avg, 9.0) {
 		t.Errorf("average = %v (ok=%v), want 9.0 (imdb alone)", avg, ok)
 	}
 
-	// Every selected source zeroed leaves nothing to average, which reads the
+	// Every selected source on zero leaves nothing to average, which reads the
 	// same as having no ratings at all rather than as a score of zero.
 	all := cfg
 	all.RatingProviderWeights = map[string]float64{"imdb": 0, "tmdb": 0}
 	if _, ok := ratingRingAverage(weightTestRatings(), all); ok {
-		t.Error("expected no score when every source is weighted 0")
+		t.Error("expected no score when every source is on a zero share")
 	}
 }
 
-func TestWeightsApplyToBothHalvesOfTheSplit(t *testing.T) {
+func TestAMissingSourceHandsItsShareToTheRest(t *testing.T) {
+	// rogerebert is selected and carries a third of the score, but this title
+	// has no Roger Ebert rating. The other two should split the whole score
+	// between them in proportion rather than the missing one scoring zero.
+	cfg := imageconfig.Config{Ratings: []string{"imdb", "tmdb", "rogerebert"}}
+	cfg.RatingProviderWeights = map[string]float64{"imdb": 50, "tmdb": 30, "rogerebert": 20}
+	avg, ok := ratingRingAverage(weightTestRatings(), cfg)
+	// 50/80 imdb + 30/80 tmdb, not 9*0.5 + 6*0.3 + 0*0.2.
+	if !ok || !closeTo(avg, (9.0*50+6.0*30)/80) {
+		t.Errorf("average = %v (ok=%v), want the share spread over what has data", avg, ok)
+	}
+}
+
+func TestSharesApplyToBothHalvesOfTheSplit(t *testing.T) {
 	cfg := imageconfig.Config{Ratings: []string{"imdb", "tmdb", "rt", "metacritic"}}
-	cfg.RatingProviderWeights = map[string]float64{"rt": 3, "tmdb": 0}
+	cfg.RatingProviderWeights = map[string]float64{"imdb": 40, "tmdb": 0, "rt": 45, "metacritic": 15}
 	critics, audience, hasC, hasA := splitCriticsAudience(weightTestRatings(), cfg)
 	if !hasC || !hasA {
 		t.Fatalf("expected both halves, got hasC=%v hasA=%v", hasC, hasA)
 	}
-	// Critics: (8*3 + 4*1) / 4. Audience: tmdb zeroed, so imdb alone.
-	if !closeTo(critics, 7.0) {
-		t.Errorf("critics = %v, want 7.0", critics)
+	// Each half keeps the sources' relative shares: critics 45:15, audience is
+	// imdb alone once tmdb is zeroed.
+	if !closeTo(critics, (8.0*45+4.0*15)/60) {
+		t.Errorf("critics = %v, want the 45:15 blend", critics)
 	}
 	if !closeTo(audience, 9.0) {
 		t.Errorf("audience = %v, want 9.0", audience)
-	}
-}
-
-func TestUnweightedConfigMatchesAPlainMean(t *testing.T) {
-	// The feature has to be free when unused: no weights means the same number
-	// the renderer produced before weights existed.
-	cfg := imageconfig.Config{Ratings: []string{"imdb", "tmdb", "rt", "metacritic"}}
-	avg, ok := ratingRingAverage(weightTestRatings(), cfg)
-	if !ok || !closeTo(avg, (9.0+6.0+8.0+4.0)/4) {
-		t.Errorf("average = %v (ok=%v), want the plain mean", avg, ok)
 	}
 }
 
@@ -111,11 +136,11 @@ func TestPriorityFallsThroughSourcesWithoutAScore(t *testing.T) {
 	}
 }
 
-func TestZeroWeightIsSkippedBySingleSourceModes(t *testing.T) {
+func TestZeroShareIsSkippedBySingleSourceModes(t *testing.T) {
 	cfg := imageconfig.Config{Ratings: []string{"imdb", "tmdb", "rt", "metacritic"}}
-	cfg.RatingProviderWeights = map[string]float64{"imdb": 0, "rt": 0}
-	// "highest" would pick imdb's 9.0, then rt's 8.0, but both are weighted
-	// out, so the best remaining score wins.
+	cfg.RatingProviderWeights = map[string]float64{"imdb": 0, "rt": 0, "tmdb": 50, "metacritic": 50}
+	// "highest" would pick imdb's 9.0, then rt's 8.0, but both are on a zero
+	// share, so the best remaining score wins.
 	if v, ok := ratingRingSourceValue(weightTestRatings(), "highest", cfg); !ok || v != 6.0 {
 		t.Errorf("highest = %v (ok=%v), want tmdb's 6.0", v, ok)
 	}
@@ -125,36 +150,36 @@ func TestZeroWeightIsSkippedBySingleSourceModes(t *testing.T) {
 	}
 }
 
-func TestWeightsChangeTheRingRender(t *testing.T) {
+func TestSharesChangeTheRingRender(t *testing.T) {
 	cfg := imageconfig.Config{
 		Ratings:       []string{"imdb", "tmdb"},
 		RatingRing:    true,
 		RatingRingPos: "br",
 	}
-	plain := genreTestImage()
-	drawAverageRatingRing(plain, weightTestRatings(), cfg, 2.0, newOccupancy(plain.Bounds()))
+	even := genreTestImage()
+	drawAverageRatingRing(even, weightTestRatings(), cfg, 2.0, newOccupancy(even.Bounds()))
 
 	weighted := cfg
-	weighted.RatingProviderWeights = map[string]float64{"imdb": 5}
+	weighted.RatingProviderWeights = map[string]float64{"imdb": 90, "tmdb": 10}
 	img := genreTestImage()
 	drawAverageRatingRing(img, weightTestRatings(), weighted, 2.0, newOccupancy(img.Bounds()))
 
-	if !imagesDiffer(plain, img) {
-		t.Error("provider weights did not change the ring render")
+	if !imagesDiffer(even, img) {
+		t.Error("provider shares did not change the ring render")
 	}
 }
 
-func TestWeightsChangeTheAggregateBarRender(t *testing.T) {
+func TestSharesChangeTheAggregateBarRender(t *testing.T) {
 	cfg := imageconfig.Config{Ratings: []string{"imdb", "tmdb"}, AggregateBar: true, AggregateBarPos: "bottom"}
-	plain := genreTestImage()
-	drawAggregateBar(plain, weightTestRatings(), cfg, nil, false)
+	even := genreTestImage()
+	drawAggregateBar(even, weightTestRatings(), cfg, nil, false)
 
 	weighted := cfg
-	weighted.RatingProviderWeights = map[string]float64{"tmdb": 0}
+	weighted.RatingProviderWeights = map[string]float64{"imdb": 100, "tmdb": 0}
 	img := genreTestImage()
 	drawAggregateBar(img, weightTestRatings(), weighted, nil, false)
 
-	if !imagesDiffer(plain, img) {
-		t.Error("provider weights did not change the aggregate bar render")
+	if !imagesDiffer(even, img) {
+		t.Error("provider shares did not change the aggregate bar render")
 	}
 }

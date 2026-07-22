@@ -256,11 +256,12 @@ type RatingBadgeConfig struct {
 	// RatingProviderOverrides maps a provider source (e.g. "imdb") to a
 	// "#RRGGBB" accent color that replaces the built-in one for that badge.
 	RatingProviderOverrides map[string]string `json:"ratingProviderOverrides,omitempty"`
-	// RatingProviderWeights maps a provider source to how much its score counts
-	// wherever several sources are combined into one number: the rating ring,
-	// the aggregate bar, and the averaged presentations. 1 is normal, 2 counts
-	// double, 0 drops the source out of every computed score while leaving its
-	// own badge untouched. A source with no entry weighs 1.
+	// RatingProviderWeights maps a provider source to its percent share of any
+	// score built from several sources: the rating ring, the aggregate bar, and
+	// the averaged presentations. Shares add up to 100 across the selected
+	// sources; anything left unset splits whatever remains, so an empty map is
+	// an even split. A source on 0 drops out of those scores while its own badge
+	// stays. A source with no rating for a title hands its share to the rest.
 	RatingProviderWeights map[string]float64 `json:"ratingProviderWeights,omitempty"`
 }
 
@@ -800,9 +801,8 @@ func parseRating(cfg *Config, r *raw) {
 	}
 }
 
-// maxProviderWeight caps how far one source can outvote the others. Ten is
-// already lopsided enough to read as "only this one counts".
-const maxProviderWeight = 10
+// maxProviderWeight is a full share: one source carrying the whole score.
+const maxProviderWeight = 100
 
 func parseRing(cfg *Config, r *raw) {
 	if r.RingCenterOpacity != nil && *r.RingCenterOpacity != 0 {

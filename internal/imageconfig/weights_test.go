@@ -6,14 +6,15 @@ import (
 )
 
 func TestProviderWeightsRoundTrip(t *testing.T) {
-	cfg := Parse(json.RawMessage(`{"ratingProviderWeights":{"IMDb":2.5,"tmdb":0}}`))
-	if got := cfg.RatingProviderWeights["imdb"]; got != 2.5 {
-		t.Errorf("imdb weight = %v, want 2.5", got)
+	cfg := Parse(json.RawMessage(`{"ratingProviderWeights":{"IMDb":62.5,"tmdb":0}}`))
+	if got := cfg.RatingProviderWeights["imdb"]; got != 62.5 {
+		t.Errorf("imdb share = %v, want 62.5", got)
 	}
-	// Zero is a real setting ("ignore this source"), not an absent one.
+	// Zero is a real setting ("this source does not count"), not an absent one.
+	// It has to survive parsing, or a source could never be switched off.
 	got, ok := cfg.RatingProviderWeights["tmdb"]
 	if !ok || got != 0 {
-		t.Errorf("tmdb weight = %v (present=%v), want 0 present", got, ok)
+		t.Errorf("tmdb share = %v (present=%v), want 0 present", got, ok)
 	}
 	if len(cfg.Legacy) != 0 {
 		t.Errorf("ratingProviderWeights leaked to Legacy: %v", cfg.Legacy)
@@ -21,15 +22,15 @@ func TestProviderWeightsRoundTrip(t *testing.T) {
 }
 
 func TestProviderWeightsRejectUnusableValues(t *testing.T) {
-	cfg := Parse(json.RawMessage(`{"ratingProviderWeights":{"imdb":-3,"tmdb":1e9,"rt":1.5}}`))
+	cfg := Parse(json.RawMessage(`{"ratingProviderWeights":{"imdb":-3,"tmdb":1e9,"rt":33.5}}`))
 	if _, ok := cfg.RatingProviderWeights["imdb"]; ok {
-		t.Error("negative weight accepted")
+		t.Error("negative share accepted")
 	}
 	if got := cfg.RatingProviderWeights["tmdb"]; got != maxProviderWeight {
-		t.Errorf("oversized weight = %v, want clamp to %v", got, float64(maxProviderWeight))
+		t.Errorf("oversized share = %v, want clamp to a full %v", got, float64(maxProviderWeight))
 	}
-	if got := cfg.RatingProviderWeights["rt"]; got != 1.5 {
-		t.Errorf("rt weight = %v, want 1.5", got)
+	if got := cfg.RatingProviderWeights["rt"]; got != 33.5 {
+		t.Errorf("rt share = %v, want 33.5", got)
 	}
 }
 
@@ -59,7 +60,7 @@ func TestWeightsAndPriorityChangeTheCacheKey(t *testing.T) {
 	// Both change what the rendered image says, so a cached render from before
 	// the change must not be served after it.
 	plain := Parse(json.RawMessage(`{"ratings":["imdb","tmdb"]}`))
-	weighted := Parse(json.RawMessage(`{"ratings":["imdb","tmdb"],"ratingProviderWeights":{"imdb":3}}`))
+	weighted := Parse(json.RawMessage(`{"ratings":["imdb","tmdb"],"ratingProviderWeights":{"imdb":70}}`))
 	ordered := Parse(json.RawMessage(`{"ratings":["imdb","tmdb"],"ringAudiencePriority":["tmdb","imdb"]}`))
 
 	if CacheKey(plain) == CacheKey(weighted) {

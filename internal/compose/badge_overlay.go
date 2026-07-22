@@ -1076,41 +1076,63 @@ func splitCriticsAudience(ratings []provider.Rating, cfg imageconfig.Config) (cr
 	return
 }
 
-// providerWeight reports how much a source counts in a combined score. Anything
-// unconfigured weighs 1, so a config with no weights behaves as a plain mean.
-func providerWeight(cfg imageconfig.Config, source string) float64 {
-	if len(cfg.RatingProviderWeights) == 0 {
-		return 1
-	}
-	w, ok := cfg.RatingProviderWeights[strings.ToLower(source)]
-	if !ok {
-		return 1
-	}
-	return w
-}
-
-// weightedMean averages the allowed ratings that pass want, each source counted
-// by its configured weight. A source weighted 0 contributes nothing and is not
-// counted against the total either, so zeroing one out is the same as not
-// selecting it as far as the score is concerned. Reports ok=false when nothing
-// contributed.
-func weightedMean(ratings []provider.Rating, cfg imageconfig.Config, want func(source string) bool) (float64, bool) {
-	allow := make(map[string]bool, len(cfg.Ratings))
-	for _, a := range cfg.Ratings {
-		allow[a] = true
-	}
-	var sum, weight float64
-	for _, r := range ratings {
-		if len(cfg.Ratings) > 0 && !allow[r.Source] {
+// resolveShares gives every selected source its share of a combined score.
+//
+// A source's share is whatever the config set for it. Sources the config left
+// alone divide up whatever is left of the 100, which is what makes an empty
+// config an equal split without needing a case of its own, and lets a config
+// that only pins one source leave the rest to sort themselves out.
+func resolveShares(cfg imageconfig.Config) map[string]float64 {
+	shares := make(map[string]float64, len(cfg.Ratings))
+	var assigned float64
+	var unset []string
+	for _, source := range cfg.Ratings {
+		if w, ok := cfg.RatingProviderWeights[strings.ToLower(source)]; ok {
+			shares[source] = w
+			assigned += w
 			continue
 		}
+		unset = append(unset, source)
+	}
+	if len(unset) > 0 {
+		leftover := shareTotal - assigned
+		if leftover < 0 {
+			leftover = 0
+		}
+		each := leftover / float64(len(unset))
+		for _, source := range unset {
+			shares[source] = each
+		}
+	}
+	return shares
+}
+
+// shareTotal is what a full set of provider shares adds up to.
+const shareTotal = 100
+
+// weightedMean averages the allowed ratings that pass want, each source counted
+// by its share. A source on a 0 share contributes nothing and is not counted
+// against the total either, so zeroing one out is the same as not selecting it
+// as far as the score is concerned. A source with no rating for this title drops
+// out the same way, which spreads its share across the ones that do have data.
+// Reports ok=false when nothing contributed.
+func weightedMean(ratings []provider.Rating, cfg imageconfig.Config, want func(source string) bool) (float64, bool) {
+	shares := resolveShares(cfg)
+	// With no allow-list there is nothing to divide shares between, so every
+	// source that has a score counts once, as the plain mean did.
+	unfiltered := len(cfg.Ratings) == 0
+	var sum, weight float64
+	for _, r := range ratings {
 		if r.Value <= 0 {
 			continue
 		}
 		if want != nil && !want(r.Source) {
 			continue
 		}
-		w := providerWeight(cfg, r.Source)
+		w := shares[r.Source]
+		if unfiltered {
+			w = 1
+		}
 		if w <= 0 {
 			continue
 		}
@@ -1628,13 +1650,14 @@ func firstAvailableRating(ratings []provider.Rating, cfg imageconfig.Config, ord
 			bySource[strings.ToLower(r.Source)] = r.Value
 		}
 	}
+	shares := resolveShares(cfg)
 	for _, s := range order {
 		if len(cfg.Ratings) > 0 && !allow[s] {
 			continue
 		}
-		// A source weighted to zero is one the config has taken out of the
+		// A source on a zero share is one the config has taken out of the
 		// scoring, so it should not win the fallback either.
-		if providerWeight(cfg, s) <= 0 {
+		if len(cfg.Ratings) > 0 && shares[s] <= 0 {
 			continue
 		}
 		if v, ok := bySource[s]; ok {
@@ -1677,14 +1700,15 @@ func ratingRingSourceValue(ratings []provider.Rating, source string, cfg imageco
 		for _, s := range cfg.Ratings {
 			allow[s] = true
 		}
+		shares := resolveShares(cfg)
 		best, ok := 0.0, false
 		for _, r := range ratings {
 			if len(cfg.Ratings) > 0 && !allow[r.Source] {
 				continue
 			}
-			// Zero-weighted sources are out of the scoring entirely, so one of
+			// A source on a zero share is out of the scoring entirely, so one of
 			// them topping the list must not become the ring's number.
-			if providerWeight(cfg, r.Source) <= 0 {
+			if len(cfg.Ratings) > 0 && shares[r.Source] <= 0 {
 				continue
 			}
 			if r.Value > best {

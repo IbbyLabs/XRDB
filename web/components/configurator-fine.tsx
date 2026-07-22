@@ -7,6 +7,7 @@ import {
   AGGREGATE_SOURCE_OPTIONS, AGGREGATE_ACCENT_MODE_OPTIONS, SCOREBAR_STYLE_OPTIONS,
   RATING_PRESENTATION_OPTIONS, DEFAULT_CRITICS_PRIORITY, DEFAULT_AUDIENCE_PRIORITY,
 } from './configurator-types';
+import { resolveShares, rebalance } from '@/lib/shares';
 
 /**
  * The fine-tuning controls for one badge: scale, position, offset, opacity and
@@ -237,47 +238,64 @@ function ProviderOverrides({ uid, config, onUpdate }: GroupProps) {
 }
 
 /**
- * ProviderWeights sets how much each source counts wherever XRDB combines
- * several into one number: the rating ring, the aggregate bar, and the averaged
- * presentations. It changes those scores, never the individual badges.
+ * ProviderWeights splits 100% between the selected sources, deciding how much
+ * each one counts wherever XRDB combines several into one number: the rating
+ * ring, the aggregate bar, and the averaged presentations. It changes those
+ * scores, never the individual badges.
+ *
+ * Moving one source moves the others, so the split always totals 100 and there
+ * is no invalid state to warn about or correct.
  */
 function ProviderWeights({ uid, config, onUpdate }: GroupProps) {
   const selected = RATING_OPTIONS.filter(r => config.ratings.includes(r.id));
   if (selected.length === 0) return null;
 
-  // 1 is the weight a source carries anyway, so storing it would only pad the
-  // config and the URL. Setting a source back to 1 drops its entry instead.
-  const setWeight = (id: string, weight: number) => {
-    const next = { ...config.ratingProviderWeights };
-    if (weight === 1) delete next[id];
-    else next[id] = weight;
-    onUpdate('ratingProviderWeights', next);
+  const ids = selected.map(r => r.id);
+  const shares = resolveShares(ids, config.ratingProviderWeights);
+  const isEven = Object.keys(config.ratingProviderWeights).length === 0;
+
+  const setShare = (id: string, share: number) => {
+    onUpdate('ratingProviderWeights', rebalance(ids, shares, id, share));
   };
 
   return (
     <details className="adv-details">
       <summary>
-        Per-provider weight
+        Source weighting
       </summary>
-      <div className="cfg-fields" role="group" aria-label="Per-provider weight" style={{ marginTop: 'var(--sp-2)' }}>
+      <div className="cfg-fields" role="group" aria-label="Source weighting" style={{ marginTop: 'var(--sp-2)' }}>
         <p className="hint" style={{ marginTop: 0 }}>
-          How much a source counts towards the ring, the score bar and the averaged
-          presentations. 1 is normal, 2 counts double, 0 leaves it out of those
-          scores while keeping its own badge.
+          How the ring, the score bar and the averaged presentations divide their
+          score between sources. Moving one adjusts the rest to keep the total at
+          100%. A source on 0% stops counting but keeps its own badge, and one
+          with no rating for a title hands its share to the others.
         </p>
         {selected.map(r => (
           <NumField
             key={r.id}
             id={`${uid}-weight-${r.id}`}
-            label={r.label}
-            value={config.ratingProviderWeights[r.id] ?? 1}
-            onChange={v => setWeight(r.id, v)}
+            label={`${r.label} (%)`}
+            value={shares[r.id] ?? 0}
+            onChange={v => setShare(r.id, v)}
             min={0}
-            max={10}
-            step={0.5}
+            max={100}
+            step={1}
             zeroIsDefault={false}
           />
         ))}
+        <div className="share-total">
+          <span>Total</span>
+          <span className="share-total-value">
+            {ids.reduce((sum, id) => sum + (shares[id] ?? 0), 0)}%
+          </span>
+        </div>
+        <button
+          className={`opt-btn${isEven ? ' opt-btn--active' : ''}`}
+          onClick={() => onUpdate('ratingProviderWeights', {})}
+          aria-pressed={isEven}
+        >
+          Even split
+        </button>
       </div>
     </details>
   );
