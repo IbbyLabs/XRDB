@@ -982,3 +982,34 @@ func TestSettingsSaveActivatesAnyProviderLive(t *testing.T) {
 		t.Error("mdblist should be dormant again after the key is cleared")
 	}
 }
+
+func TestImportAcceptsABareProfileArray(t *testing.T) {
+	// The migration tool used to write a bare array rather than an envelope, so
+	// a file produced by an older copy of it still has to import.
+	store := openTestStore(t)
+	h := NewHandler("test", store, nil, nil, nil, config.Config{})
+
+	body := `[{"id":"legacy1","type":"poster","config":{"ratings":["imdb"]},"version":1}]`
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/profile/import", strings.NewReader(body)))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("import: expected 200, got %d: %s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(rr.Body.String(), `"imported":1`) {
+		t.Errorf("expected one profile imported, got %s", rr.Body.String())
+	}
+	if _, err := store.Get("legacy1"); err != nil {
+		t.Errorf("imported profile not stored: %v", err)
+	}
+}
+
+func TestImportStillRejectsRealRubbish(t *testing.T) {
+	// Accepting a second shape must not turn into accepting anything.
+	store := openTestStore(t)
+	h := NewHandler("test", store, nil, nil, nil, config.Config{})
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/profile/import", strings.NewReader(`"nope"`)))
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for a non-profile body, got %d", rr.Code)
+	}
+}

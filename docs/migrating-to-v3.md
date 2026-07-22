@@ -61,10 +61,17 @@ simpler configurator.
      -d @output/migration/migrated-profiles.json
    ```
 
-   v2 settings that have no v3 equivalent are dropped and listed in the
-   migration report. Open each migrated profile in the configurator to
-   confirm the result, and consider giving it an **alias** — a memorable
-   handle that works anywhere the ID does.
+   Nothing is discarded. Per-surface keys are translated into the shape v3
+   renders from, rating sources are renamed where v2 spelled them differently
+   (`tomatoes`, `tomatoesaudience` and `myanimelist` become `rt`, `rtaudience`
+   and `mal`), and provider weights are converted from v2's multipliers to
+   percent shares that keep the same balance. Settings v3 has no control for
+   yet stay on the profile untouched and are listed in the report, so they
+   start working if and when the matching control ships.
+
+   Open each migrated profile in the configurator to confirm the result, and
+   consider giving it an **alias** — a memorable handle that works anywhere the
+   ID does.
 
 4. **Update your artwork URLs.** The URL shape changed:
 
@@ -78,27 +85,27 @@ simpler configurator.
 
 ## Feature parity
 
-Carried over (often improved): all four output families, 12 rating sources
+Carried over (often improved): all four output families, 17 rating sources
 with official provider logos, quality/age/genre/streaming badges, aggregate
 score bar, trending tag, templates, profiles (now with aliases, generated
 IDs, and password-protected editing), Stremio addon endpoints, render cache
 with per-provider TTLs, IMDb local dataset, AIOMetadata install, admin
 metrics/cache/warm panel.
 
-New in v3: title search, trending shuffle, pinned preview items, badge
-styles (pill/square/glass) and dark/light badge themes, six switchable UI
-themes, one-command install, and markedly faster rendering.
+New in v3: per-surface configuration (poster, backdrop, thumbnail and logo
+each keep their own sources, layouts and styling), title search, trending
+shuffle, pinned preview items, badge styles (pill/square/glass) and dark/light
+badge themes, six switchable UI themes, source weighting as percent shares,
+random-poster filters, episode artwork modes, AlloCiné and Filmweb ratings,
+one-command install, and markedly faster rendering.
 
 Not carried over (by design — the v3 configurator stays simple):
 
-- **Per-output-type configuration** — v2 let poster/backdrop/thumbnail/logo
-  each have their own sources, layouts, and styles; v3 applies one config to
-  all four. The most-requested v2 depth; planned as profiles-per-type if
-  demand returns.
-- **Fine-grained badge geometry** — per-badge scales, pixel offsets, border
-  widths, custom tile colors, provider appearance overrides.
-- **Random-poster filters** (min votes/size/fallback), `blackbar`/OMDB
-  artwork sources, episode-still thumbnail modes.
+- **Fine-grained badge geometry** — per-style pixel offsets (glass vs square),
+  icon shape, and provider appearance overrides beyond accent colour.
+- **Quality badge depth** — per-type badge preferences and remux display mode.
+- **Community badges** and the split critics/audience aggregate colours.
+- `blackbar` artwork source.
 - **Stremio proxy with catalog rules and metadata translation** — v3 ships
   plain addon endpoints instead.
 - **Partner signed access, poster warming schedules, config encryption,

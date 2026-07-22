@@ -39,7 +39,18 @@ var v2BaseRenames = map[string]string{
 	"trendingTagPosition":      "trendingPos",
 	"trendingTagTextColor":     "trendingTextColor",
 	"episodeArtwork":           "episodeArtworkMode",
+	// v2's rating styles were glass/square/plain/stacked/tile; XRDB reads
+	// glass and square and ignores the three it has no layout for, which
+	// leaves those profiles on the default rather than on something wrong.
+	"ratingStyle": "badgeStyle",
+	// v2 switched streaming badges with a word, XRDB with a flag.
+	"streamBadges": "providers",
 }
+
+// v2WordFlags are keys v2 spelled as a word and XRDB models as a flag. Only
+// "off" and "none" turn the feature off; every other v2 value turned it on in
+// some form.
+var v2WordFlags = map[string]bool{"providers": true}
 
 // v2SourceRenames maps v2's rating source ids to XRDB's. Every other id is
 // shared between the two, including the AlloCiné and Filmweb sources.
@@ -103,9 +114,27 @@ func ConvertConfig(raw json.RawMessage) (json.RawMessage, ConvertStats, error) {
 
 	// Rating source ids and provider weights carry v2 spellings and v2 meaning,
 	// so they need more than a new key name.
+	dropped := make(map[string]bool)
 	for _, s := range v2Surfaces {
 		renameSourceList(surfaces[s])
+		convertWordFlags(surfaces[s])
 		convertWeights(surfaces[s])
+		for _, key := range pruneUnreadable(surfaces[s]) {
+			dropped[key] = true
+		}
+	}
+	// A converted key that XRDB cannot read is left out of the envelope and off
+	// the converted list, so it reports as carried rather than as applied. The
+	// original is still on the profile either way.
+	for key, surface := range converted {
+		base := key
+		if _, b := splitSurfaceKey(key); b != "" {
+			base = b
+		}
+		if target, ok := translateBase(base); ok && dropped[target] {
+			delete(converted, key)
+			_ = surface
+		}
 	}
 
 	out := make(map[string]json.RawMessage, len(original)+1)
@@ -244,6 +273,53 @@ func convertWeights(surface map[string]json.RawMessage) {
 	if encoded, err := json.Marshal(out); err == nil {
 		surface["ratingProviderWeights"] = encoded
 	}
+}
+
+// convertWordFlags turns v2's word settings into the flags XRDB models. A value
+// that is already a flag is left as it is, so re-running this changes nothing.
+func convertWordFlags(surface map[string]json.RawMessage) {
+	for key := range v2WordFlags {
+		raw, ok := surface[key]
+		if !ok {
+			continue
+		}
+		var word string
+		if err := json.Unmarshal(raw, &word); err != nil {
+			continue // already a flag, or something else entirely
+		}
+		on := true
+		switch strings.ToLower(strings.TrimSpace(word)) {
+		case "off", "none", "false", "":
+			on = false
+		}
+		if encoded, err := json.Marshal(on); err == nil {
+			surface[key] = encoded
+		}
+	}
+}
+
+// pruneUnreadable drops the keys XRDB cannot read from a surface, returning
+// their names.
+//
+// XRDB falls back to defaults for a whole config when one value carries the
+// wrong JSON type, so a single v2 value that changed shape between versions
+// would otherwise take every other setting on that surface down with it. Losing
+// one setting is a gap; losing the surface is the thing this must never do.
+func pruneUnreadable(surface map[string]json.RawMessage) []string {
+	if encoded, err := json.Marshal(surface); err == nil && imageconfig.Accepts(encoded) {
+		return nil
+	}
+	var dropped []string
+	for key, value := range surface {
+		one, err := json.Marshal(map[string]json.RawMessage{key: value})
+		if err == nil && imageconfig.Accepts(one) {
+			continue
+		}
+		delete(surface, key)
+		dropped = append(dropped, key)
+	}
+	sort.Strings(dropped)
+	return dropped
 }
 
 // selectedSources reads the surface's rating source list, already renamed.

@@ -26,6 +26,14 @@ type OutputProfile struct {
 	SourceLine int             `json:"sourceLine"`
 }
 
+// OutputEnvelope wraps the migrated profiles in the shape XRDB's own profile
+// export and import use, so the file the migration writes is one a running
+// instance accepts as-is.
+type OutputEnvelope struct {
+	Version  int             `json:"version"`
+	Profiles []OutputProfile `json:"profiles"`
+}
+
 type UnsupportedField struct {
 	ProfileIndex int    `json:"profileIndex"`
 	Field        string `json:"field"`

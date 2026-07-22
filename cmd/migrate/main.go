@@ -63,17 +63,25 @@ func main() {
 	}
 
 	if !*validateOnly {
-		if err := writeJSON(*outputPath, profiles); err != nil {
+		// Written in the same envelope /profile/import reads and /profile/export
+		// writes, so the migrated file can be posted straight at a running
+		// instance without being reshaped first.
+		out := migrate.OutputEnvelope{Version: 1, Profiles: profiles}
+		if err := writeJSON(*outputPath, out); err != nil {
 			exitWithErr(fmt.Sprintf("failed to write migrated output: %v", err))
 		}
 	}
 
 	fmt.Printf("migration completed: input=%d migrated=%d unsupported=%d\n", report.InputProfiles, report.MigratedProfiles, len(report.UnsupportedFields))
+	if report.ConvertedConfigFields > 0 {
+		fmt.Printf("config fields: %d rendered now (%d translated from v2's per-surface keys)\n",
+			report.MappedConfigFields, report.ConvertedConfigFields)
+	}
 	if len(report.DeferredConfigFields) > 0 {
 		// Deferred fields are preserved on the profile, not dropped — call that
 		// out so the count does not read as data loss.
-		fmt.Printf("config fields: %d rendered now, %d preserved for later (see report)\n",
-			report.MappedConfigFields, len(report.DeferredConfigFields))
+		fmt.Printf("%d field(s) have no control in XRDB yet and are kept on the profile untouched (see report)\n",
+			len(report.DeferredConfigFields))
 	}
 	fmt.Printf("report: %s\n", *reportPath)
 	if !*validateOnly {

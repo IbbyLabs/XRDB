@@ -548,6 +548,18 @@ func ParseSurface(data json.RawMessage, surface string) Config {
 	return Parse(data)
 }
 
+// Accepts reports whether Parse would read this config rather than fall back to
+// defaults wholesale. Parse discards the entire blob when any one value carries
+// the wrong JSON type, so a caller assembling a config from another source can
+// use this to keep a single bad value from taking every other setting with it.
+func Accepts(data json.RawMessage) bool {
+	if len(data) == 0 {
+		return true
+	}
+	var r raw
+	return json.Unmarshal(data, &r) == nil
+}
+
 // Parse deserializes a flat profile config JSON blob into a normalized Config.
 // Missing or invalid fields fall back to Default() values.
 // An empty or nil blob returns Default().

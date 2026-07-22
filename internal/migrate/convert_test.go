@@ -251,3 +251,90 @@ func TestGlobalRenamesReachEverySurface(t *testing.T) {
 		t.Errorf("logo language = %q, want ja", got)
 	}
 }
+
+func TestOutputEnvelopeMatchesWhatImportExpects(t *testing.T) {
+	// The migrated file is meant to be posted straight at /profile/import. A
+	// bare array parsed as an envelope yields no profiles, which is how the
+	// documented migration command came to fail with "invalid JSON".
+	profiles := []OutputProfile{{Version: 1, ID: "p1", Type: "poster", Config: json.RawMessage(`{}`)}}
+	encoded, err := json.Marshal(OutputEnvelope{Version: 1, Profiles: profiles})
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	// Mirrors profile.ExportEnvelope without importing the store package.
+	var envelope struct {
+		Version  int               `json:"version"`
+		Profiles []json.RawMessage `json:"profiles"`
+	}
+	if err := json.Unmarshal(encoded, &envelope); err != nil {
+		t.Fatalf("migrated output does not parse as an import envelope: %v", err)
+	}
+	if envelope.Version != 1 || len(envelope.Profiles) != 1 {
+		t.Errorf("envelope = %+v, want version 1 with one profile", envelope)
+	}
+}
+
+func TestOneBadValueDoesNotTakeTheSurfaceWithIt(t *testing.T) {
+	// XRDB reads a config all-or-nothing: one value of the wrong JSON type and
+	// it falls back to defaults for everything. A v2 value that changed shape
+	// between versions must cost only itself.
+	out := convert(t, `{
+		"posterRatingsMax": 4,
+		"posterRatingBadgeScale": 150,
+		"posterGenre": "yes-please"
+	}`)
+	poster := surfaceOf(t, out, "poster")
+	if poster.RatingsMax == nil || *poster.RatingsMax != 4 {
+		t.Errorf("ratingsMax = %v, want 4 kept despite a bad sibling", poster.RatingsMax)
+	}
+	if poster.RatingBadgeScale != 150 {
+		t.Errorf("ratingBadgeScale = %d, want 150 kept despite a bad sibling", poster.RatingBadgeScale)
+	}
+	// And the bad one is still on the profile, just not in the envelope.
+	var all map[string]json.RawMessage
+	if err := json.Unmarshal(out, &all); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if _, ok := all["posterGenre"]; !ok {
+		t.Error("the unreadable value was dropped from the profile entirely")
+	}
+}
+
+func TestASurfaceOfNothingButBadValuesStillLeavesTheProfileIntact(t *testing.T) {
+	out := convert(t, `{"posterGenre":"yes-please","posterAgeRating":"maybe"}`)
+	var all map[string]json.RawMessage
+	if err := json.Unmarshal(out, &all); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	for _, key := range []string{"posterGenre", "posterAgeRating"} {
+		if _, ok := all[key]; !ok {
+			t.Errorf("key %q was lost", key)
+		}
+	}
+}
+
+func TestWordSettingsBecomeFlags(t *testing.T) {
+	// v2 switched streaming badges with a word. Copied across as a string it
+	// would be unreadable and pruned, quietly losing the setting.
+	on := convert(t, `{"posterStreamBadges":"auto"}`)
+	if !surfaceOf(t, on, "poster").Providers {
+		t.Error("streamBadges auto should turn providers on")
+	}
+	off := convert(t, `{"posterStreamBadges":"off"}`)
+	if surfaceOf(t, off, "poster").Providers {
+		t.Error("streamBadges off should leave providers off")
+	}
+}
+
+func TestRatingStyleMapsWhereXRDBHasTheStyle(t *testing.T) {
+	square := convert(t, `{"posterRatingStyle":"square"}`)
+	if got := surfaceOf(t, square, "poster").BadgeStyle; string(got) != "square" {
+		t.Errorf("badgeStyle = %q, want square", got)
+	}
+	// v2 had styles XRDB has no layout for; those stay on the default rather
+	// than turning into something the user never chose.
+	stacked := convert(t, `{"posterRatingStyle":"stacked"}`)
+	if got := surfaceOf(t, stacked, "poster").BadgeStyle; string(got) == "stacked" {
+		t.Errorf("badgeStyle = %q, want a style XRDB actually has", got)
+	}
+}

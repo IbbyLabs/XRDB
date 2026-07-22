@@ -307,8 +307,15 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 		}
 		var env profile.ExportEnvelope
 		if err := json.Unmarshal(body, &env); err != nil {
-			http.Error(w, "invalid JSON", http.StatusBadRequest)
-			return
+			// Older migration output was a bare array of profiles rather than
+			// an envelope. Accepting both means a file produced by any version
+			// of the tool still imports.
+			var bare []profile.Profile
+			if bareErr := json.Unmarshal(body, &bare); bareErr != nil {
+				http.Error(w, "invalid JSON", http.StatusBadRequest)
+				return
+			}
+			env = profile.ExportEnvelope{Version: 1, Profiles: bare}
 		}
 		type importResult struct {
 			Imported int      `json:"imported"`
