@@ -15,6 +15,7 @@ import (
 
 	"xrdb_rewrite/internal/compose"
 	"xrdb_rewrite/internal/config"
+	"xrdb_rewrite/internal/imageconfig"
 	"xrdb_rewrite/internal/profile"
 	"xrdb_rewrite/internal/provider"
 	"xrdb_rewrite/internal/settings"
@@ -1011,5 +1012,36 @@ func TestImportStillRejectsRealRubbish(t *testing.T) {
 	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/profile/import", strings.NewReader(`"nope"`)))
 	if rr.Code != http.StatusBadRequest {
 		t.Errorf("expected 400 for a non-profile body, got %d", rr.Code)
+	}
+}
+
+func TestImportConvertsAV2ProfileOnTheWayIn(t *testing.T) {
+	// A migrating user should be able to post their v2 export at a running
+	// instance and have it render, without first running a separate tool they
+	// would need a Go toolchain and the source to build.
+	store := openTestStore(t)
+	h := NewHandler("test", store, nil, nil, nil, config.Config{})
+
+	v2 := `{"profiles":[{"id":"v2p","type":"poster","config":{
+		"posterRatingPreferences":["imdb","tomatoes"],
+		"posterRatingsMax":4
+	}}]}`
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/profile/import", strings.NewReader(v2)))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("import: expected 200, got %d: %s", rr.Code, rr.Body.String())
+	}
+
+	p, err := store.Get("v2p")
+	if err != nil {
+		t.Fatalf("stored profile: %v", err)
+	}
+	cfg := imageconfig.ParseSurface(p.Config, "poster")
+	if cfg.RatingsMax == nil || *cfg.RatingsMax != 4 {
+		t.Errorf("ratingsMax = %v, want 4 after conversion", cfg.RatingsMax)
+	}
+	// v2 spelled Rotten Tomatoes differently; unrenamed it would just vanish.
+	if len(cfg.Ratings) != 2 || cfg.Ratings[1] != "rt" {
+		t.Errorf("ratings = %v, want imdb and rt", cfg.Ratings)
 	}
 }

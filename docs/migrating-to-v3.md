@@ -51,14 +51,22 @@ simpler configurator.
    partner access keys, config encryption, prune schedules, …) belong to
    features that don't exist in v3 — see the parity section below.
 
-3. **Migrate profiles.** Export your v2 profiles, then convert and import:
+3. **Migrate profiles.** Export your v2 profiles and post the file straight at
+   your v3 instance. It is translated on the way in:
 
    ```sh
-   go run ./cmd/migrate -input legacy-profiles.json
-   # writes output/migration/migrated-profiles.json + a per-profile report
    curl -X POST http://localhost:8787/profile/import \
      -H "Content-Type: application/json" \
-     -d @output/migration/migrated-profiles.json
+     -d @legacy-profiles.json
+   ```
+
+   If you want to see what will happen before committing to it, the migration
+   tool writes a per-profile report (requires the source checkout):
+
+   ```sh
+   go run ./cmd/migrate -input legacy-profiles.json --validate-only
+   # lists what converts, what is carried untouched, and any API keys the
+   # profiles still hold
    ```
 
    Nothing is discarded. Per-surface keys are translated into the shape v3

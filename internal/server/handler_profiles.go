@@ -11,6 +11,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"xrdb_rewrite/internal/config"
+	"xrdb_rewrite/internal/migrate"
 	"xrdb_rewrite/internal/profile"
 )
 
@@ -325,6 +326,13 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 		var res importResult
 		for i := range env.Profiles {
 			p := &env.Profiles[i]
+			// A v2 export can be posted here directly: its per-surface keys are
+			// translated on the way in, and a config already in XRDB's shape is
+			// left exactly as it is. That saves a migrating user from having to
+			// run a separate tool before their profiles will render.
+			if converted, _, err := migrate.ConvertConfig(p.Config); err == nil {
+				p.Config = converted
+			}
 			// Idempotent by legacy uuid: a profile whose uuid is already present
 			// is the same v2 config re-imported under a possibly different id, so
 			// skip it rather than create a second profile for one identity. The
