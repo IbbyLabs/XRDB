@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"xrdb_rewrite/internal/imageconfig"
@@ -66,6 +67,25 @@ type MigrationReport struct {
 	// they do render; the summary names them so a user can see what moved.
 	ConvertedConfigFields  int            `json:"convertedConfigFields"`
 	ConvertedConfigSummary map[string]int `json:"convertedConfigSummary"`
+	// CredentialConfigFields names profiles still carrying a v2 API key in
+	// their config. Nothing is removed; XRDB reads keys from its own settings,
+	// so these can be cleared once the migration is confirmed.
+	CredentialConfigFields []DeferredField `json:"credentialConfigFields,omitempty"`
+}
+
+// credentialFields are v2 config keys that held an API key or client id. v2
+// kept them on the profile; XRDB reads credentials from its own settings
+// instead. They are preserved like any other key, so a profile that carried a
+// key still carries it — including into an export — which is worth telling the
+// user about rather than deciding for them.
+var credentialFields = map[string]struct{}{
+	"tmdbKey":       {},
+	"mdblistKey":    {},
+	"fanartKey":     {},
+	"simklClientId": {},
+	"xrdbKey":       {},
+	"omdbKey":       {},
+	"traktClientId": {},
 }
 
 var requiredFields = []string{"id", "type", "config"}
@@ -151,6 +171,14 @@ func MigrateLegacyProfiles(envelope LegacyEnvelope, source string, now time.Time
 		// untouched (deferred). The config blob itself is stored verbatim either
 		// way — nothing is lost.
 		for key := range configCheck {
+			// A key that held a credential is flagged whether or not it also
+			// renders, since the point is that it travels with the profile.
+			if _, isCredential := credentialFields[key]; isCredential && !isEmptyJSON(configCheck[key]) {
+				report.CredentialConfigFields = append(report.CredentialConfigFields, DeferredField{
+					ProfileIndex: i,
+					Field:        key,
+				})
+			}
 			if imageconfig.IsModeledKey(key) || convertedKeys[key] {
 				report.MappedConfigFields++
 				continue
@@ -221,6 +249,14 @@ func MigrateLegacyProfiles(envelope LegacyEnvelope, source string, now time.Time
 
 	report.MigratedProfiles = len(out)
 	return out, report, nil
+}
+
+// isEmptyJSON reports whether a value is absent in every sense that matters
+// here: null, or an empty string. A blank credential field is not one to warn
+// about.
+func isEmptyJSON(raw json.RawMessage) bool {
+	trimmed := strings.TrimSpace(string(raw))
+	return trimmed == "" || trimmed == "null" || trimmed == `""`
 }
 
 func unmarshalString(raw json.RawMessage) (string, error) {

@@ -77,6 +77,11 @@ func main() {
 		fmt.Printf("config fields: %d rendered now (%d translated from v2's per-surface keys)\n",
 			report.MappedConfigFields, report.ConvertedConfigFields)
 	}
+	if len(report.CredentialConfigFields) > 0 {
+		fmt.Printf("note: %d profile field(s) still hold a v2 API key. XRDB reads keys from its own\n"+
+			"      settings, so you can clear them once the migration looks right (see report)\n",
+			len(report.CredentialConfigFields))
+	}
 	if len(report.DeferredConfigFields) > 0 {
 		// Deferred fields are preserved on the profile, not dropped — call that
 		// out so the count does not read as data loss.

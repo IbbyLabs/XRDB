@@ -2,7 +2,9 @@ package migrate
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
+	"time"
 
 	"xrdb_rewrite/internal/imageconfig"
 )
@@ -336,5 +338,32 @@ func TestRatingStyleMapsWhereXRDBHasTheStyle(t *testing.T) {
 	stacked := convert(t, `{"posterRatingStyle":"stacked"}`)
 	if got := surfaceOf(t, stacked, "poster").BadgeStyle; string(got) == "stacked" {
 		t.Errorf("badgeStyle = %q, want a style XRDB actually has", got)
+	}
+}
+
+func TestCredentialsInAV2ProfileAreFlaggedNotRemoved(t *testing.T) {
+	// v2 kept API keys on the profile. They are preserved like everything else,
+	// which means they travel into an export too, so the report has to say so.
+	input := LegacyEnvelope{Profiles: []map[string]json.RawMessage{{
+		"id":     json.RawMessage(`"p1"`),
+		"type":   json.RawMessage(`"poster"`),
+		"config": json.RawMessage(`{"tmdbKey":"secret-value","mdblistKey":"","posterRatingsMax":3}`),
+	}}}
+	out, report, err := MigrateLegacyProfiles(input, "src", time.Unix(0, 0))
+	if err != nil {
+		t.Fatalf("migrate: %v", err)
+	}
+	if len(report.CredentialConfigFields) != 1 || report.CredentialConfigFields[0].Field != "tmdbKey" {
+		t.Errorf("credential fields = %+v, want just tmdbKey", report.CredentialConfigFields)
+	}
+	// A blank key is nothing to warn about.
+	for _, f := range report.CredentialConfigFields {
+		if f.Field == "mdblistKey" {
+			t.Error("an empty credential field was flagged")
+		}
+	}
+	// And it is still there: flagging is not removing.
+	if !strings.Contains(string(out[0].Config), "secret-value") {
+		t.Error("the credential was stripped rather than preserved")
 	}
 }

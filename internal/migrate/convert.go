@@ -67,6 +67,10 @@ type ConvertStats struct {
 	Converted int `json:"converted"`
 	// ConvertedFields lists the distinct v2 keys that were translated.
 	ConvertedFields []string `json:"convertedFields,omitempty"`
+	// UnreadableFields lists XRDB keys a v2 value could not be carried into
+	// because its shape differs between the versions. The original value stays
+	// on the profile; it just does not drive the render.
+	UnreadableFields []string `json:"unreadableFields,omitempty"`
 }
 
 // ConvertConfig translates a v2 profile config into one XRDB renders, keeping
@@ -166,6 +170,10 @@ func ConvertConfig(raw json.RawMessage) (json.RawMessage, ConvertStats, error) {
 		stats.ConvertedFields = append(stats.ConvertedFields, k)
 	}
 	sort.Strings(stats.ConvertedFields)
+	for k := range dropped {
+		stats.UnreadableFields = append(stats.UnreadableFields, k)
+	}
+	sort.Strings(stats.UnreadableFields)
 	return result, stats, nil
 }
 
