@@ -191,6 +191,12 @@ export const AGGREGATE_SOURCE_OPTIONS = [
   { id: 'audience', label: 'Audience' },
 ] as const;
 
+export const TREND_TAG_STYLE_OPTIONS = [
+  { id: '',       label: 'Glass'  },
+  { id: 'square', label: 'Square' },
+  { id: 'plain',  label: 'Plain'  },
+] as const;
+
 export const AGGREGATE_ACCENT_MODE_OPTIONS = [
   { id: 'default', label: 'Score bands' },
   { id: 'genre',   label: 'Genre'       },
@@ -311,6 +317,7 @@ export interface ConfigState {
   scorebarLowThreshold: number; // 0 = default 5
   scorebarHighThreshold: number; // 0 = default 8
   trendingTextColor: string;
+  trendingTagStyle: string; // '' = glass; square | plain
   ageRatingBadgeStyle: string; // 'default' | plain | tile
   ageRatingTileColor: string;
   trendingPos: string; // 'inherit' | six positions
@@ -413,6 +420,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   scorebarLowThreshold: 0,
   scorebarHighThreshold: 0,
   trendingTextColor: '',
+  trendingTagStyle: '',
   ageRatingBadgeStyle: 'default',
   ageRatingTileColor: '',
   trendingPos: 'inherit',

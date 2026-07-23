@@ -6,7 +6,7 @@ import {
   AGE_STYLE_OPTIONS, GENRE_MODE_OPTIONS, ANIME_GROUPING_OPTIONS,
   AGGREGATE_SOURCE_OPTIONS, AGGREGATE_ACCENT_MODE_OPTIONS, SCOREBAR_STYLE_OPTIONS,
   RATING_PRESENTATION_OPTIONS, RATING_VALUE_MODE_OPTIONS, RELEASE_STATUS_STYLE_OPTIONS,
-  ICON_SHAPE_OPTIONS,
+  ICON_SHAPE_OPTIONS, TREND_TAG_STYLE_OPTIONS,
   DEFAULT_CRITICS_PRIORITY, DEFAULT_AUDIENCE_PRIORITY,
 } from './configurator-types';
 import { resolveShares, rebalance } from '@/lib/shares';
@@ -797,6 +797,14 @@ export function AgeFine({ uid, config, onUpdate }: GroupProps) {
 export function TrendingFine({ uid, config, onUpdate }: GroupProps) {
   return (
     <FineGroup label="Trending badge">
+      <StyleGrid
+        id={`${uid}-trending-tag-style-label`}
+        label="Surface"
+        options={TREND_TAG_STYLE_OPTIONS}
+        value={config.trendingTagStyle}
+        onChange={v => onUpdate('trendingTagStyle', v)}
+        hint="Glass keeps the warm capsule; plain drops the surface behind the tag."
+      />
       <PosSelect id={`${uid}-trending-pos`} label="Position" value={config.trendingPos}
         onChange={v => onUpdate('trendingPos', v)} />
       <ColorField id={`${uid}-trending-color`} label="Text color" value={config.trendingTextColor}

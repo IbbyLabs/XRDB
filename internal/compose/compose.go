@@ -360,7 +360,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		drawAggregateBar(composed, allRatings, req.Config, meta.Genres, meta.IsAnime)
 	}
 	if req.Config.Trending {
-		drawTrendingBadgeStyled(composed, scale, occ, trendingStyleFromConfig(req.Config.TrendingStyle), req.Config.TrendingPos, req.Config.TrendingTextColor)
+		drawTrendingBadgeSurfaced(composed, scale, occ, trendingStyleFromConfig(req.Config.TrendingStyle), req.Config.TrendingPos, req.Config.TrendingTextColor, req.Config.TrendingTagStyle)
 	}
 	if req.Config.RatingRing {
 		drawAverageRatingRing(composed, allRatings, req.Config, scale, occ)

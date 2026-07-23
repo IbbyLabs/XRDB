@@ -33,12 +33,15 @@ var v2BaseRenames = map[string]string{
 	"lang":                     "language",
 	"imageSize":                "size",
 	"imageText":                "textPreference",
-	"genreBadgePosition":       "genrePos",
-	"ageRatingBadgePosition":   "ageRatingPos",
-	"qualityBadgesPosition":    "qualityBadgesPos",
-	"trendingTagPosition":      "trendingPos",
-	"trendingTagTextColor":     "trendingTextColor",
-	"episodeArtwork":           "episodeArtworkMode",
+	// v2's genreBadge held the mode (text/icon/both/off); XRDB splits that into a
+	// genre flag and a genreBadgeMode, handled after the rename.
+	"genreBadge":             "genreBadgeMode",
+	"genreBadgePosition":     "genrePos",
+	"ageRatingBadgePosition": "ageRatingPos",
+	"qualityBadgesPosition":  "qualityBadgesPos",
+	"trendingTagPosition":    "trendingPos",
+	"trendingTagTextColor":   "trendingTextColor",
+	"episodeArtwork":         "episodeArtworkMode",
 	// v2's rating styles were glass/square/plain/stacked/tile; XRDB reads
 	// glass and square and ignores the three it has no layout for, which
 	// leaves those profiles on the default rather than on something wrong.
@@ -122,6 +125,7 @@ func ConvertConfig(raw json.RawMessage) (json.RawMessage, ConvertStats, error) {
 	for _, s := range v2Surfaces {
 		renameSourceList(surfaces[s])
 		convertWordFlags(surfaces[s])
+		convertGenreBadge(surfaces[s])
 		convertWeights(surfaces[s])
 		for _, key := range pruneUnreadable(surfaces[s]) {
 			dropped[key] = true
@@ -228,6 +232,32 @@ func renameSourceList(surface map[string]json.RawMessage) {
 	}
 	if encoded, err := json.Marshal(ids); err == nil {
 		surface["ratings"] = encoded
+	}
+}
+
+// convertGenreBadge splits v2's single genreBadge mode into XRDB's genre flag
+// plus a genreBadgeMode. "off" turns the badge off and carries no mode; any
+// other value turns it on and keeps the mode, so a v2 profile with genre badges
+// keeps them instead of losing them for want of the flag.
+func convertGenreBadge(surface map[string]json.RawMessage) {
+	raw, ok := surface["genreBadgeMode"]
+	if !ok {
+		return
+	}
+	var mode string
+	if err := json.Unmarshal(raw, &mode); err != nil {
+		return
+	}
+	on := true
+	switch strings.ToLower(strings.TrimSpace(mode)) {
+	case "off", "none", "false", "":
+		on = false
+	}
+	if encoded, err := json.Marshal(on); err == nil {
+		surface["genre"] = encoded
+	}
+	if !on {
+		delete(surface, "genreBadgeMode")
 	}
 }
 

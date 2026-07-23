@@ -380,3 +380,14 @@ func TestParseClampsTheEdgeOffset(t *testing.T) {
 		t.Errorf("edge offset = %d, want it clamped to 0", got)
 	}
 }
+
+func TestParseReadsTheTrendingTagStyle(t *testing.T) {
+	if got := Parse(json.RawMessage(`{"trendingTagStyle":"square"}`)).TrendingTagStyle; got != "square" {
+		t.Errorf("trending tag style = %q, want square", got)
+	}
+	// v2's community-badge style has no home here, so it is ignored rather than
+	// applied as something wrong.
+	if got := Parse(json.RawMessage(`{"trendingTagStyle":"community-badge"}`)).TrendingTagStyle; got != "" {
+		t.Errorf("unsupported style parsed as %q, want the default", got)
+	}
+}

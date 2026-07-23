@@ -384,6 +384,10 @@ type AgeRatingConfig struct {
 type TrendingConfig struct {
 	TrendingPos       string `json:"trendingPos,omitempty"`       // tl|tr|bl|br|tc|bc; "" = tl
 	TrendingTextColor string `json:"trendingTextColor,omitempty"` // "#RRGGBB" for the trending label text
+	// TrendingTagStyle is the tag's surface treatment, separate from the glyph
+	// choice above: glass (the default warm capsule), square (sharp corners) or
+	// plain (glyph and label with no surface).
+	TrendingTagStyle string `json:"trendingTagStyle,omitempty"`
 }
 
 // GenreBadgeConfig groups the genre-badge styling controls. v2 exposed these
@@ -500,6 +504,7 @@ type rawQuality struct {
 }
 
 type rawTrending struct {
+	TrendingTagStyle  *string `json:"trendingTagStyle"`
 	TrendingPos       *string `json:"trendingPos"`
 	TrendingTextColor *string `json:"trendingTextColor"`
 }
@@ -813,6 +818,12 @@ func parseTrending(cfg *Config, r *raw) {
 	}
 	if r.TrendingTextColor != nil && isHexColor(*r.TrendingTextColor) {
 		cfg.TrendingTextColor = strings.TrimSpace(*r.TrendingTextColor)
+	}
+	if r.TrendingTagStyle != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.TrendingTagStyle)); v {
+		case "glass", "square", "plain":
+			cfg.TrendingTagStyle = v
+		}
 	}
 }
 

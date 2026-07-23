@@ -386,3 +386,27 @@ func TestAHyphenatedRatingValueModeStillConverts(t *testing.T) {
 		t.Errorf("poster rating value mode = %q, want normalized100", got)
 	}
 }
+
+func TestV2GenreBadgeTurnsIntoTheGenreFlagAndMode(t *testing.T) {
+	// A v2 profile with genre badges set to "text" must keep them, which means
+	// the genre flag on and the mode carried across.
+	out := convert(t, `{"posterGenreBadge":"text"}`)
+	poster := surfaceOf(t, out, "poster")
+	if !poster.Genre {
+		t.Error("the genre flag must be on when v2 had a genre badge mode")
+	}
+	if poster.GenreBadgeMode != "text" {
+		t.Errorf("genre badge mode = %q, want text", poster.GenreBadgeMode)
+	}
+}
+
+func TestV2GenreBadgeOffTurnsTheFlagOff(t *testing.T) {
+	out := convert(t, `{"genreBadge":"off"}`)
+	poster := surfaceOf(t, out, "poster")
+	if poster.Genre {
+		t.Error("an off genre badge must leave the genre flag off")
+	}
+	if poster.GenreBadgeMode != "" {
+		t.Errorf("an off genre badge must carry no mode, got %q", poster.GenreBadgeMode)
+	}
+}

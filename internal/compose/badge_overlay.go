@@ -1642,6 +1642,13 @@ func drawTrendingBadge(base *image.NRGBA, scale float64, occ *occupancy) {
 // The public drawTrendingBadge wraps it with defaultTrendingStyle; the extra
 // seam lets the visual-preview harness render every option from one code path.
 func drawTrendingBadgeStyled(base *image.NRGBA, scale float64, occ *occupancy, style trendingStyle, pos, textColor string) {
+	drawTrendingBadgeSurfaced(base, scale, occ, style, pos, textColor, "")
+}
+
+// drawTrendingBadgeSurfaced adds the tag's surface treatment on top of the glyph
+// composition: "square" swaps the capsule for a sharp-cornered tile, "plain"
+// drops the surface entirely, and anything else keeps the warm frosted capsule.
+func drawTrendingBadgeSurfaced(base *image.NRGBA, scale float64, occ *occupancy, style trendingStyle, pos, textColor, surface string) {
 	if pos == "" {
 		pos = "tl"
 	}
@@ -1694,11 +1701,17 @@ func drawTrendingBadgeStyled(base *image.NRGBA, scale float64, occ *occupancy, s
 
 	// Dark frosted capsule that matches the quality-badge tiles — understated,
 	// not a loud bright pill. The warmth comes from the accent glyph, not the
-	// fill, so it reads as a refined callout rather than an eyesore.
-	off := maxInt(1, bh/12)
-	fillRoundedRect(base, r.Add(image.Pt(0, off)), radius, color.NRGBA{R: 0, G: 0, B: 0, A: 105})
-	fillRoundedRect(base, r, radius, color.NRGBA{R: 18, G: 20, B: 26, A: 233})
-	drawRectBorder(base, r, radius, color.NRGBA{R: 255, G: 150, B: 92, A: 66}) // warm hairline
+	// fill, so it reads as a refined callout rather than an eyesore. A square
+	// surface uses the same tile with sharp corners; a plain surface skips it.
+	if surface == "square" {
+		radius = s(5)
+	}
+	if surface != "plain" {
+		off := maxInt(1, bh/12)
+		fillRoundedRect(base, r.Add(image.Pt(0, off)), radius, color.NRGBA{R: 0, G: 0, B: 0, A: 105})
+		fillRoundedRect(base, r, radius, color.NRGBA{R: 18, G: 20, B: 26, A: 233})
+		drawRectBorder(base, r, radius, color.NRGBA{R: 255, G: 150, B: 92, A: 66}) // warm hairline
+	}
 
 	// Warm accent glyph, vertically centered to the cap height.
 	ax := r.Min.X + padX
