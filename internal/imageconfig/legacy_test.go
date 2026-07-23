@@ -13,13 +13,13 @@ func TestParsePreservesUnknownFields(t *testing.T) {
 		"language": "fr",
 		"posterRatingsMax": 4,
 		"posterEdgeOffset": 5,
-		"aggregateCriticsAccentColor": "#22c55e"
+		"communityBadgeTheme": "neon"
 	}`)
 	cfg := Parse(in)
 	if cfg.Language != "fr" {
 		t.Fatalf("known field lost: language = %q", cfg.Language)
 	}
-	for _, k := range []string{"posterRatingsMax", "posterEdgeOffset", "aggregateCriticsAccentColor"} {
+	for _, k := range []string{"posterRatingsMax", "posterEdgeOffset", "communityBadgeTheme"} {
 		if _, ok := cfg.Legacy[k]; !ok {
 			t.Errorf("unknown field %q not preserved in Legacy", k)
 		}

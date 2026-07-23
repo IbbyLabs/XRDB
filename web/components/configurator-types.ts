@@ -179,6 +179,7 @@ export const AGGREGATE_ACCENT_MODE_OPTIONS = [
   { id: 'default', label: 'Score bands' },
   { id: 'genre',   label: 'Genre'       },
   { id: 'source',  label: 'Source'      },
+  { id: 'dynamic', label: 'By score'    },
   { id: 'custom',  label: 'Custom'      },
 ] as const;
 
@@ -270,6 +271,14 @@ export interface ConfigState {
   aggregateAccentMode: string;  // '' = auto score-band
   aggregateBarOffset: number; // px inward nudge, -12..12; 0 = flush
   aggregateRatingSource: string; // overall | critics | audience
+  aggregateValueColor: string; // '' = white
+  aggregateCriticsAccentColor: string; // '' = falls back to aggregateAccentColor
+  aggregateAudienceAccentColor: string;
+  aggregateCriticsValueColor: string; // '' = falls back to aggregateValueColor
+  aggregateAudienceValueColor: string;
+  aggregateDynamicStops: string; // 'score:#RRGGBB' pairs on a 0-100 scale; '' = built-in bands
+  aggregateAccentBarVisible: boolean; // the colour rail on an aggregate pill
+  aggregateAccentBarOffset: number; // px nudge of that rail
   scorebarStyle: string; // progress | solid | gradient
   scorebarLowColor: string;
   scorebarMidColor: string;
@@ -355,6 +364,14 @@ export const DEFAULT_CONFIG: ConfigState = {
   aggregateAccentMode: '',
   aggregateBarOffset: 0,
   aggregateRatingSource: 'overall',
+  aggregateValueColor: '',
+  aggregateCriticsAccentColor: '',
+  aggregateAudienceAccentColor: '',
+  aggregateCriticsValueColor: '',
+  aggregateAudienceValueColor: '',
+  aggregateDynamicStops: '',
+  aggregateAccentBarVisible: true,
+  aggregateAccentBarOffset: 0,
   scorebarStyle: 'progress',
   scorebarLowColor: '',
   scorebarMidColor: '',

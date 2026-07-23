@@ -9,6 +9,7 @@ import (
 	"math"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -292,7 +293,23 @@ type AggregateConfig struct {
 	AggregateValueColor   string `json:"aggregateValueColor,omitempty"`   // "#RRGGBB" value text; "" = default
 	AggregateBarOffset    int    `json:"aggregateBarOffset,omitempty"`    // px nudge inward from the edge; 0 = flush
 	AggregateRatingSource string `json:"aggregateRatingSource,omitempty"` // overall | critics | audience; "" = overall
-	ScorebarStyle         string `json:"scorebarStyle,omitempty"`         // progress | solid | gradient | dynamic; "" = progress
+	// Critics and audience carry their own accent and value colours, so a dual
+	// presentation can tell the two scores apart. Each falls back to the shared
+	// colour above when it is unset.
+	AggregateCriticsAccentColor  string `json:"aggregateCriticsAccentColor,omitempty"`
+	AggregateAudienceAccentColor string `json:"aggregateAudienceAccentColor,omitempty"`
+	AggregateCriticsValueColor   string `json:"aggregateCriticsValueColor,omitempty"`
+	AggregateAudienceValueColor  string `json:"aggregateAudienceValueColor,omitempty"`
+	// AggregateDynamicStops maps scores to colours for the "dynamic" accent
+	// mode, as "score:#RRGGBB" pairs on a 0-100 scale, e.g.
+	// "0:#7f1d1d,40:#dc2626,75:#84cc16". Colours are interpolated between stops.
+	// Empty falls back to the built-in red/amber/green bands.
+	AggregateDynamicStops string `json:"aggregateDynamicStops,omitempty"`
+	// The accent rail is the colour bar on an aggregate badge. Nil visibility
+	// means shown; the offset nudges it along the badge.
+	AggregateAccentBarVisible *bool  `json:"aggregateAccentBarVisible,omitempty"`
+	AggregateAccentBarOffset  int    `json:"aggregateAccentBarOffset,omitempty"`
+	ScorebarStyle             string `json:"scorebarStyle,omitempty"` // progress | solid | gradient | dynamic; "" = progress
 	// Scorebar band overrides. When a color is set it replaces the built-in
 	// green/amber/red for that band; thresholds (0-10) move the band boundaries.
 	ScorebarLowColor      string  `json:"scorebarLowColor,omitempty"`
@@ -499,11 +516,20 @@ type rawRating struct {
 }
 
 type rawAggregate struct {
-	AggregateAccentColor  *string  `json:"aggregateAccentColor"`
-	AggregateAccentMode   *string  `json:"aggregateAccentMode"`
-	AggregateValueColor   *string  `json:"aggregateValueColor"`
-	AggregateBarOffset    *int     `json:"aggregateBarOffset"`
-	AggregateRatingSource *string  `json:"aggregateRatingSource"`
+	AggregateAccentColor  *string `json:"aggregateAccentColor"`
+	AggregateAccentMode   *string `json:"aggregateAccentMode"`
+	AggregateValueColor   *string `json:"aggregateValueColor"`
+	AggregateBarOffset    *int    `json:"aggregateBarOffset"`
+	AggregateRatingSource *string `json:"aggregateRatingSource"`
+
+	AggregateCriticsAccentColor  *string `json:"aggregateCriticsAccentColor"`
+	AggregateAudienceAccentColor *string `json:"aggregateAudienceAccentColor"`
+	AggregateCriticsValueColor   *string `json:"aggregateCriticsValueColor"`
+	AggregateAudienceValueColor  *string `json:"aggregateAudienceValueColor"`
+	AggregateDynamicStops        *string `json:"aggregateDynamicStops"`
+	AggregateAccentBarVisible    *bool   `json:"aggregateAccentBarVisible"`
+	AggregateAccentBarOffset     *int    `json:"aggregateAccentBarOffset"`
+
 	ScorebarStyle         *string  `json:"scorebarStyle"`
 	ScorebarLowColor      *string  `json:"scorebarLowColor"`
 	ScorebarMidColor      *string  `json:"scorebarMidColor"`
@@ -914,6 +940,30 @@ func parseAggregate(cfg *Config, r *raw) {
 	if r.AggregateBarOffset != nil {
 		cfg.AggregateBarOffset = clampInt(*r.AggregateBarOffset, -12, 12)
 	}
+	if r.AggregateCriticsAccentColor != nil && isHexColor(*r.AggregateCriticsAccentColor) {
+		cfg.AggregateCriticsAccentColor = strings.TrimSpace(*r.AggregateCriticsAccentColor)
+	}
+	if r.AggregateAudienceAccentColor != nil && isHexColor(*r.AggregateAudienceAccentColor) {
+		cfg.AggregateAudienceAccentColor = strings.TrimSpace(*r.AggregateAudienceAccentColor)
+	}
+	if r.AggregateCriticsValueColor != nil && isHexColor(*r.AggregateCriticsValueColor) {
+		cfg.AggregateCriticsValueColor = strings.TrimSpace(*r.AggregateCriticsValueColor)
+	}
+	if r.AggregateAudienceValueColor != nil && isHexColor(*r.AggregateAudienceValueColor) {
+		cfg.AggregateAudienceValueColor = strings.TrimSpace(*r.AggregateAudienceValueColor)
+	}
+	if r.AggregateDynamicStops != nil {
+		if stops := strings.TrimSpace(*r.AggregateDynamicStops); ParseDynamicStops(stops) != nil {
+			cfg.AggregateDynamicStops = stops
+		}
+	}
+	if r.AggregateAccentBarVisible != nil {
+		visible := *r.AggregateAccentBarVisible
+		cfg.AggregateAccentBarVisible = &visible
+	}
+	if r.AggregateAccentBarOffset != nil {
+		cfg.AggregateAccentBarOffset = clampInt(*r.AggregateAccentBarOffset, -40, 40)
+	}
 	if r.AggregateRatingSource != nil {
 		switch v := strings.ToLower(strings.TrimSpace(*r.AggregateRatingSource)); v {
 		case "overall", "critics", "audience":
@@ -1035,6 +1085,45 @@ func parseGenre(cfg *Config, r *raw) {
 }
 
 // isHexColor reports whether s is a "#RGB" or "#RRGGBB" color string.
+// DynamicStop is one point on the score-to-colour ramp the dynamic aggregate
+// accent mode follows.
+type DynamicStop struct {
+	Score float64 // 0-100
+	Color string  // "#RRGGBB"
+}
+
+// ParseDynamicStops reads a v2 stop list such as
+// "0:#7f1d1d,40:#dc2626,75:#84cc16" into stops ordered by score. It returns nil
+// when nothing usable is present, so a malformed value falls back to the
+// built-in bands rather than rendering an arbitrary colour.
+func ParseDynamicStops(raw string) []DynamicStop {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return nil
+	}
+	var stops []DynamicStop
+	for _, part := range strings.Split(raw, ",") {
+		scoreText, colorText, ok := strings.Cut(strings.TrimSpace(part), ":")
+		if !ok {
+			continue
+		}
+		score, err := strconv.ParseFloat(strings.TrimSpace(scoreText), 64)
+		if err != nil || score < 0 || score > 100 {
+			continue
+		}
+		colorText = strings.TrimSpace(colorText)
+		if !isHexColor(colorText) {
+			continue
+		}
+		stops = append(stops, DynamicStop{Score: score, Color: colorText})
+	}
+	if len(stops) == 0 {
+		return nil
+	}
+	sort.Slice(stops, func(i, j int) bool { return stops[i].Score < stops[j].Score })
+	return stops
+}
+
 func isHexColor(s string) bool {
 	s = strings.TrimSpace(s)
 	if len(s) != 4 && len(s) != 7 {

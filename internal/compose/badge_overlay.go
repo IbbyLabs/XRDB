@@ -1156,7 +1156,69 @@ func scorePillHeight(scale float64) int {
 // drawScorePill draws a centered rounded capsule with an optional accent label
 // segment ("CRITICS") followed by a score ("9.4"). cx is the horizontal centre;
 // topY is the top edge. The drawn rect is reserved in occ when non-nil.
-func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, accent color.NRGBA, scale float64, occ *occupancy) {
+// scorePillStyle carries the resolved colours and accent-rail treatment for one
+// aggregate pill.
+type scorePillStyle struct {
+	accent color.NRGBA
+	value  color.NRGBA
+	// accentShown is false when the config hides the accent rail, leaving a
+	// plain dark capsule.
+	accentShown  bool
+	accentOffset int // px nudge of the rail along the pill
+}
+
+// aggregatePillStyle resolves how one aggregate pill is coloured. Critics and
+// audience take their own colours when set so a dual presentation can tell the
+// two apart, and fall back to the shared aggregate colours, then to the
+// built-in accent for that source.
+func aggregatePillStyle(cfg imageconfig.Config, source string, genres []string, isAnime bool, score float64, fallback color.NRGBA) scorePillStyle {
+	style := scorePillStyle{
+		accent:       fallback,
+		value:        color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+		accentShown:  cfg.AggregateAccentBarVisible == nil || *cfg.AggregateAccentBarVisible,
+		accentOffset: cfg.AggregateAccentBarOffset,
+	}
+
+	accentHex := ""
+	switch cfg.AggregateAccentMode {
+	case "dynamic":
+		accentHex = dynamicAccentHex(score, cfg.AggregateDynamicStops)
+	case "genre":
+		if fam := resolveGenreFamilyGrouped(genres, isAnime, cfg.GenreBadgeAnimeGrouping); fam != nil {
+			accentHex = fam.accent
+		}
+	case "custom":
+		switch source {
+		case "critics":
+			accentHex = cfg.AggregateCriticsAccentColor
+		case "audience":
+			accentHex = cfg.AggregateAudienceAccentColor
+		}
+		if accentHex == "" {
+			accentHex = cfg.AggregateAccentColor
+		}
+	}
+	if c, err := parseHexColor(accentHex); accentHex != "" && err == nil {
+		style.accent = c
+	}
+
+	valueHex := ""
+	switch source {
+	case "critics":
+		valueHex = cfg.AggregateCriticsValueColor
+	case "audience":
+		valueHex = cfg.AggregateAudienceValueColor
+	}
+	if valueHex == "" {
+		valueHex = cfg.AggregateValueColor
+	}
+	if c, err := parseHexColor(valueHex); valueHex != "" && err == nil {
+		style.value = c
+	}
+	return style
+}
+
+func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, style scorePillStyle, scale float64, occ *occupancy) {
 	ensureFaces()
 	s := func(v float64) int { return int(v*scale + 0.5) }
 	labelFace := labelFaceFor(scale)
@@ -1190,7 +1252,10 @@ func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, accent 
 	if label != "" {
 		segInset := s(4)
 		segRect := image.Rect(cursor, topY+segInset, cursor+labelW, topY+capH-segInset)
-		fillRoundedRect(base, segRect, segRect.Dy()/2, accent)
+		if style.accentShown {
+			railOffset := int(float64(style.accentOffset)*scale + 0.5)
+			fillRoundedRect(base, segRect.Add(image.Pt(railOffset, 0)), segRect.Dy()/2, style.accent)
+		}
 		lm := labelFace.Metrics()
 		ly := segRect.Min.Y + (segRect.Dy()-lm.Height.Ceil())/2 + lm.Ascent.Ceil()
 		drawText(base, labelFace, cursor+labelPad, ly, color.White, label)
@@ -1200,7 +1265,7 @@ func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, accent 
 	vm := valueFace.Metrics()
 	vy := topY + (capH-vm.Height.Ceil())/2 + vm.Ascent.Ceil()
 	drawText(base, valueFace, cursor+s(1), vy+s(1), color.NRGBA{A: 150}, score)
-	drawText(base, valueFace, cursor, vy, color.White, score)
+	drawText(base, valueFace, cursor, vy, style.value, score)
 
 	if occ != nil {
 		occ.reserve(rect)
@@ -1210,34 +1275,36 @@ func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, accent 
 // drawMinimalRating shows a single centred pill with the overall average score
 // at the top of the artwork. The pill carries no label segment, so it stays a
 // clean dark capsule regardless of accent config.
-func drawMinimalRating(base *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, scale float64, occ *occupancy) {
+func drawMinimalRating(base *image.NRGBA, ratings []provider.Rating, genres []string, isAnime bool, cfg imageconfig.Config, scale float64, occ *occupancy) {
 	avg, ok := ratingRingAverage(ratings, cfg)
 	if !ok {
 		return
 	}
 	b := base.Bounds()
+	style := aggregatePillStyle(cfg, "overall", genres, isAnime, avg, color.NRGBA{})
 	drawScorePill(base, b.Min.X+b.Dx()/2, b.Min.Y+int(14*scale+0.5),
-		"", formatRatingValue(avg, cfg.RatingValueMode), color.NRGBA{}, scale, occ)
+		"", formatRatingValue(avg, cfg.RatingValueMode), style, scale, occ)
 }
 
 // drawDualRating shows a critics pill at the top and an audience pill at the
 // bottom, each an averaged score for its provider group.
 // drawAverageRating shows a single centred pill labelled "AVG" with the overall
 // average — like minimal, but explicitly named.
-func drawAverageRating(base *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, scale float64, occ *occupancy) {
+func drawAverageRating(base *image.NRGBA, ratings []provider.Rating, genres []string, isAnime bool, cfg imageconfig.Config, scale float64, occ *occupancy) {
 	avg, ok := ratingRingAverage(ratings, cfg)
 	if !ok {
 		return
 	}
 	b := base.Bounds()
 	accent := color.NRGBA{R: 90, G: 98, B: 112, A: 255} // neutral slate label
+	style := aggregatePillStyle(cfg, "overall", genres, isAnime, avg, accent)
 	drawScorePill(base, b.Min.X+b.Dx()/2, b.Min.Y+int(14*scale+0.5),
-		"AVG", formatRatingValue(avg, cfg.RatingValueMode), accent, scale, occ)
+		"AVG", formatRatingValue(avg, cfg.RatingValueMode), style, scale, occ)
 }
 
 // drawDualRating shows a critics pill (top) and an audience pill (bottom). When
 // labeled is false the pills carry just the score (the "dual-minimal" mode).
-func drawDualRating(base *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, scale float64, occ *occupancy, labeled bool) {
+func drawDualRating(base *image.NRGBA, ratings []provider.Rating, genres []string, isAnime bool, cfg imageconfig.Config, scale float64, occ *occupancy, labeled bool) {
 	critics, audience, hasC, hasA := splitCriticsAudience(ratings, cfg)
 	b := base.Bounds()
 	cx := b.Min.X + b.Dx()/2
@@ -1249,13 +1316,15 @@ func drawDualRating(base *image.NRGBA, ratings []provider.Rating, cfg imageconfi
 		criticsLabel, audienceLabel = "CRITICS", "AUDIENCE"
 	}
 	if hasC {
+		style := aggregatePillStyle(cfg, "critics", genres, isAnime, critics, criticsAccent)
 		drawScorePill(base, cx, b.Min.Y+pad, criticsLabel,
-			formatRatingValue(critics, cfg.RatingValueMode), criticsAccent, scale, occ)
+			formatRatingValue(critics, cfg.RatingValueMode), style, scale, occ)
 	}
 	if hasA {
+		style := aggregatePillStyle(cfg, "audience", genres, isAnime, audience, audienceAccent)
 		topY := b.Max.Y - scorePillHeight(scale) - pad
 		drawScorePill(base, cx, topY, audienceLabel,
-			formatRatingValue(audience, cfg.RatingValueMode), audienceAccent, scale, occ)
+			formatRatingValue(audience, cfg.RatingValueMode), style, scale, occ)
 	}
 }
 
@@ -1344,8 +1413,9 @@ func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imagecon
 	accentHex := cfg.AggregateAccentColor
 	switch cfg.AggregateAccentMode {
 	case "dynamic":
-		// Colour by score, which is the score-band fallback below.
-		accentHex = ""
+		// Colour by score: a configured stop ramp if there is one, otherwise the
+		// score-band fallback below.
+		accentHex = dynamicAccentHex(avg, cfg.AggregateDynamicStops)
 	case "genre":
 		accentHex = ""
 		if fam := resolveGenreFamilyGrouped(genres, isAnime, cfg.GenreBadgeAnimeGrouping); fam != nil {
@@ -1431,6 +1501,43 @@ func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imagecon
 }
 
 // lerpColor linearly interpolates between a and b by t in [0,1].
+// dynamicAccentHex picks a colour for a 0-10 score from a configured stop ramp,
+// blending between the two stops it falls between. Stops are given on a 0-100
+// scale, matching how they are written in the config. An empty string means
+// there is no usable ramp, so the caller keeps its own fallback.
+func dynamicAccentHex(score float64, stops string) string {
+	parsed := imageconfig.ParseDynamicStops(stops)
+	if len(parsed) == 0 {
+		return ""
+	}
+	at := score * 10
+	if at <= parsed[0].Score {
+		return parsed[0].Color
+	}
+	last := parsed[len(parsed)-1]
+	if at >= last.Score {
+		return last.Color
+	}
+	for i := 1; i < len(parsed); i++ {
+		lo, hi := parsed[i-1], parsed[i]
+		if at > hi.Score {
+			continue
+		}
+		loColor, errLo := parseHexColor(lo.Color)
+		hiColor, errHi := parseHexColor(hi.Color)
+		if errLo != nil || errHi != nil {
+			return lo.Color
+		}
+		span := hi.Score - lo.Score
+		if span <= 0 {
+			return hi.Color
+		}
+		mixed := lerpColor(loColor, hiColor, (at-lo.Score)/span)
+		return fmt.Sprintf("#%02x%02x%02x", mixed.R, mixed.G, mixed.B)
+	}
+	return last.Color
+}
+
 func lerpColor(a, b color.NRGBA, t float64) color.NRGBA {
 	if t < 0 {
 		t = 0

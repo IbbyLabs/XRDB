@@ -477,7 +477,7 @@ func TestMinimalRatingDrawsTopPill(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 580, 859))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
 	cfg := imageconfig.Config{Ratings: []string{"imdb", "tmdb", "rt"}}
-	drawMinimalRating(img, presentationRatings(), cfg, 1.0, newOccupancy(img.Bounds()))
+	drawMinimalRating(img, presentationRatings(), nil, false, cfg, 1.0, newOccupancy(img.Bounds()))
 
 	// A centred pill near the top should leave non-white pixels there and none
 	// near the bottom (minimal draws a single top pill only).
@@ -493,7 +493,7 @@ func TestDualRatingDrawsCriticsAndAudience(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 580, 859))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{255, 255, 255, 255}}, image.Point{}, draw.Src)
 	cfg := imageconfig.Config{Ratings: []string{"imdb", "tmdb", "rt"}}
-	drawDualRating(img, presentationRatings(), cfg, 1.0, newOccupancy(img.Bounds()), true)
+	drawDualRating(img, presentationRatings(), nil, false, cfg, 1.0, newOccupancy(img.Bounds()), true)
 
 	if !hasNonWhite(img, 200, 10, 380, 60) {
 		t.Error("dual presentation drew no critics pill at the top")
@@ -535,8 +535,8 @@ func TestPresentationPillsNoopOnEmpty(t *testing.T) {
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.NRGBA{200, 200, 200, 255}}, image.Point{}, draw.Src)
 	cfg := imageconfig.Config{Ratings: []string{"imdb"}}
 	before := clonePixels(img)
-	drawMinimalRating(img, nil, cfg, 1.0, newOccupancy(img.Bounds()))
-	drawDualRating(img, nil, cfg, 1.0, newOccupancy(img.Bounds()), true)
+	drawMinimalRating(img, nil, nil, false, cfg, 1.0, newOccupancy(img.Bounds()))
+	drawDualRating(img, nil, nil, false, cfg, 1.0, newOccupancy(img.Bounds()), true)
 	if before != clonePixels(img) {
 		t.Error("presentation pills must not modify the image with no ratings")
 	}

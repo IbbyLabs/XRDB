@@ -133,6 +133,29 @@ function ColorField({
   );
 }
 
+/** A labelled on/off switch, matching the display panel's toggle rows. */
+function ToggleField({ id, label, hint, checked, onChange }: {
+  id: string; label: string; hint?: string; checked: boolean; onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="toggle-row">
+      <div>
+        <span className="label" style={{ marginBottom: 0 }} id={`${id}-label`}>{label}</span>
+        {hint ? <span className="hint" style={{ marginTop: 0 }}>{hint}</span> : null}
+      </div>
+      <button
+        role="switch"
+        aria-checked={checked}
+        aria-labelledby={`${id}-label`}
+        className={`toggle${checked ? ' toggle--on' : ''}`}
+        onClick={() => onChange(!checked)}
+      >
+        <span className="toggle-thumb" />
+      </button>
+    </div>
+  );
+}
+
 /** A six-position picker backed by a native select for compactness. */
 function PosSelect({
   id, label, value, onChange,
@@ -628,6 +651,47 @@ export function AggregateFine({ uid, config, onUpdate }: GroupProps) {
           </div>
         </div>
       )}
+      {config.aggregateAccentMode === 'custom' && (
+        <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
+          <ColorField id={`${uid}-agg-critics-accent`} label="Critics accent" value={config.aggregateCriticsAccentColor}
+            onChange={v => onUpdate('aggregateCriticsAccentColor', v)} fallback="#22c55e" resetLabel="Shared" />
+          <ColorField id={`${uid}-agg-audience-accent`} label="Audience accent" value={config.aggregateAudienceAccentColor}
+            onChange={v => onUpdate('aggregateAudienceAccentColor', v)} fallback="#38bdf8" resetLabel="Shared" />
+        </div>
+      )}
+      {config.aggregateAccentMode === 'dynamic' && (
+        <div className="field">
+          <label className="label" htmlFor={`${uid}-agg-stops`}>Colour stops</label>
+          <input
+            id={`${uid}-agg-stops`}
+            type="text"
+            className="input"
+            value={config.aggregateDynamicStops}
+            placeholder="0:#7f1d1d,40:#dc2626,75:#84cc16"
+            onChange={e => onUpdate('aggregateDynamicStops', e.target.value)}
+          />
+          <p className="hint">Score to colour, on a 0–100 scale. Colours blend between stops. Blank uses the built-in bands.</p>
+        </div>
+      )}
+      <details className="adv-details">
+        <summary>Score value colours</summary>
+        <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>
+          <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
+            <ColorField id={`${uid}-agg-value`} label="Value" value={config.aggregateValueColor}
+              onChange={v => onUpdate('aggregateValueColor', v)} fallback="#ffffff" resetLabel="White" />
+            <ColorField id={`${uid}-agg-critics-value`} label="Critics value" value={config.aggregateCriticsValueColor}
+              onChange={v => onUpdate('aggregateCriticsValueColor', v)} fallback="#ffffff" resetLabel="Shared" />
+            <ColorField id={`${uid}-agg-audience-value`} label="Audience value" value={config.aggregateAudienceValueColor}
+              onChange={v => onUpdate('aggregateAudienceValueColor', v)} fallback="#ffffff" resetLabel="Shared" />
+          </div>
+          <ToggleField id={`${uid}-agg-rail`} label="Accent rail"
+            checked={config.aggregateAccentBarVisible}
+            onChange={v => onUpdate('aggregateAccentBarVisible', v)}
+            hint="The colour block behind a critics or audience label." />
+          <NumField id={`${uid}-agg-rail-offset`} label="Rail offset (px)" value={config.aggregateAccentBarOffset}
+            onChange={v => onUpdate('aggregateAccentBarOffset', v)} min={-40} max={40} zeroIsDefault={false} />
+        </div>
+      </details>
       <details className="adv-details">
         <summary>Scorebar bands (when accent is auto)</summary>
         <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>

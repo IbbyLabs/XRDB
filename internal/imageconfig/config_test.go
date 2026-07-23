@@ -283,3 +283,57 @@ func TestRatingValueModeIsAModeledKey(t *testing.T) {
 		t.Error("ratingValueMode must be modeled so a migrated v2 profile converts it")
 	}
 }
+
+func TestParseReadsTheSplitAggregateColours(t *testing.T) {
+	data := json.RawMessage(`{
+		"aggregateCriticsAccentColor":"#22c55e",
+		"aggregateAudienceAccentColor":"#38bdf8",
+		"aggregateCriticsValueColor":"#ffffff",
+		"aggregateAudienceValueColor":"#000000",
+		"aggregateAccentBarVisible":false,
+		"aggregateAccentBarOffset":7
+	}`)
+	cfg := Parse(data)
+	if cfg.AggregateCriticsAccentColor != "#22c55e" || cfg.AggregateAudienceAccentColor != "#38bdf8" {
+		t.Errorf("accent colours: %+v", cfg.AggregateConfig)
+	}
+	if cfg.AggregateCriticsValueColor != "#ffffff" || cfg.AggregateAudienceValueColor != "#000000" {
+		t.Errorf("value colours: %+v", cfg.AggregateConfig)
+	}
+	if cfg.AggregateAccentBarVisible == nil || *cfg.AggregateAccentBarVisible {
+		t.Error("the accent bar must read as hidden")
+	}
+	if cfg.AggregateAccentBarOffset != 7 {
+		t.Errorf("accent bar offset = %d, want 7", cfg.AggregateAccentBarOffset)
+	}
+}
+
+func TestParseRejectsAColourThatIsNotOne(t *testing.T) {
+	cfg := Parse(json.RawMessage(`{"aggregateCriticsAccentColor":"green"}`))
+	if cfg.AggregateCriticsAccentColor != "" {
+		t.Errorf("got %q, want the field left unset", cfg.AggregateCriticsAccentColor)
+	}
+}
+
+func TestParseDynamicStopsOrdersAndValidates(t *testing.T) {
+	stops := ParseDynamicStops("75:#84cc16,0:#7f1d1d,40:#dc2626")
+	if len(stops) != 3 {
+		t.Fatalf("got %d stops, want 3", len(stops))
+	}
+	if stops[0].Score != 0 || stops[2].Score != 75 {
+		t.Errorf("stops are not ordered by score: %+v", stops)
+	}
+	if ParseDynamicStops("0:notacolour,over:#ffffff") != nil {
+		t.Error("a list with no usable stop must parse as nothing")
+	}
+	if ParseDynamicStops("200:#ffffff") != nil {
+		t.Error("a score outside 0-100 is not a usable stop")
+	}
+}
+
+func TestAStopListThatParsesToNothingIsNotStored(t *testing.T) {
+	cfg := Parse(json.RawMessage(`{"aggregateDynamicStops":"nonsense"}`))
+	if cfg.AggregateDynamicStops != "" {
+		t.Errorf("got %q, want the field left unset", cfg.AggregateDynamicStops)
+	}
+}

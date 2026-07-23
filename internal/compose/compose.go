@@ -300,19 +300,19 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		}
 	case "minimal":
 		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
-			drawMinimalRating(composed, allRatings, req.Config, scale, occ)
+			drawMinimalRating(composed, allRatings, meta.Genres, meta.IsAnime, req.Config, scale, occ)
 		}
 	case "dual":
 		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
-			drawDualRating(composed, allRatings, req.Config, scale, occ, true)
+			drawDualRating(composed, allRatings, meta.Genres, meta.IsAnime, req.Config, scale, occ, true)
 		}
 	case "dual-minimal":
 		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
-			drawDualRating(composed, allRatings, req.Config, scale, occ, false)
+			drawDualRating(composed, allRatings, meta.Genres, meta.IsAnime, req.Config, scale, occ, false)
 		}
 	case "average":
 		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
-			drawAverageRating(composed, allRatings, req.Config, scale, occ)
+			drawAverageRating(composed, allRatings, meta.Genres, meta.IsAnime, req.Config, scale, occ)
 		}
 	case "scorebar":
 		// Replace the badge strip with a single full-width score bar coloured by

@@ -123,10 +123,10 @@ func TestParityShowcase(t *testing.T) {
 		},
 		"presentation-modes": {
 			{"minimal", func(c *image.NRGBA) {
-				drawMinimalRating(c, ratings, ratingCfg(func(*imageconfig.Config) {}), 1.5, newOccupancy(c.Bounds()))
+				drawMinimalRating(c, ratings, nil, false, ratingCfg(func(*imageconfig.Config) {}), 1.5, newOccupancy(c.Bounds()))
 			}},
 			{"dual", func(c *image.NRGBA) {
-				drawDualRating(c, ratings, ratingCfg(func(*imageconfig.Config) {}), 1.5, newOccupancy(c.Bounds()), true)
+				drawDualRating(c, ratings, nil, false, ratingCfg(func(*imageconfig.Config) {}), 1.5, newOccupancy(c.Bounds()), true)
 			}},
 		},
 		"aggregate-bar": {
