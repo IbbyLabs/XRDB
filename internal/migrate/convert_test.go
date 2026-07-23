@@ -410,3 +410,19 @@ func TestV2GenreBadgeOffTurnsTheFlagOff(t *testing.T) {
 		t.Errorf("an off genre badge must carry no mode, got %q", poster.GenreBadgeMode)
 	}
 }
+
+func TestV2ProviderAppearanceDecodesAccentAndIconScale(t *testing.T) {
+	// v2 packed "source.accent.iconScale.…" per provider; the accent and scale
+	// have a home in v3, the rest describes a badge v3 does not draw.
+	out := convert(t, `{"providerAppearance":"trakt.7c3aed.118.86.74.logo.0.86,imdb.facc15.100"}`)
+	poster := surfaceOf(t, out, "poster")
+	if poster.RatingProviderOverrides["trakt"] != "#7c3aed" {
+		t.Errorf("trakt accent = %q, want #7c3aed", poster.RatingProviderOverrides["trakt"])
+	}
+	if poster.RatingProviderIconScale["trakt"] != 118 {
+		t.Errorf("trakt icon scale = %d, want 118", poster.RatingProviderIconScale["trakt"])
+	}
+	if poster.RatingProviderOverrides["imdb"] != "#facc15" {
+		t.Errorf("imdb accent = %q, want #facc15", poster.RatingProviderOverrides["imdb"])
+	}
+}

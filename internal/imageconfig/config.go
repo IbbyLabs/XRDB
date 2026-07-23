@@ -281,6 +281,11 @@ type RatingBadgeConfig struct {
 	// RatingProviderOverrides maps a provider source (e.g. "imdb") to a
 	// "#RRGGBB" accent color that replaces the built-in one for that badge.
 	RatingProviderOverrides map[string]string `json:"ratingProviderOverrides,omitempty"`
+	// RatingProviderIconScale maps a provider source to a percent size for its
+	// mark within the badge, 50-150, so a mark that reads small (a wordmark) can
+	// be grown and a busy one shrunk. The mark scales inside the shared badge
+	// box, so the row height stays even.
+	RatingProviderIconScale map[string]int `json:"ratingProviderIconScale,omitempty"`
 	// RatingProviderWeights maps a provider source to its percent share of any
 	// score built from several sources: the rating ring, the aggregate bar, and
 	// the averaged presentations. Shares add up to 100 across the selected
@@ -547,6 +552,7 @@ type rawRating struct {
 	SideRatingsOffset       *int               `json:"sideRatingsOffset"`
 	RatingsMaxPerSide       *int               `json:"ratingsMaxPerSide"`
 	RatingProviderOverrides map[string]string  `json:"ratingProviderOverrides"`
+	RatingProviderIconScale map[string]int     `json:"ratingProviderIconScale"`
 	RatingProviderWeights   map[string]float64 `json:"ratingProviderWeights"`
 }
 
@@ -910,6 +916,19 @@ func parseRating(cfg *Config, r *raw) {
 			}
 		}
 		cfg.RatingProviderOverrides = m
+	}
+	if len(r.RatingProviderIconScale) > 0 {
+		var m map[string]int
+		for k, v := range r.RatingProviderIconScale {
+			if v <= 0 {
+				continue
+			}
+			if m == nil {
+				m = make(map[string]int, len(r.RatingProviderIconScale))
+			}
+			m[strings.ToLower(strings.TrimSpace(k))] = clampInt(v, 50, 150)
+		}
+		cfg.RatingProviderIconScale = m
 	}
 	if len(r.RatingProviderWeights) > 0 {
 		var m map[string]float64

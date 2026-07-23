@@ -391,3 +391,16 @@ func TestParseReadsTheTrendingTagStyle(t *testing.T) {
 		t.Errorf("unsupported style parsed as %q, want the default", got)
 	}
 }
+
+func TestParseReadsPerProviderIconScale(t *testing.T) {
+	cfg := Parse(json.RawMessage(`{"ratingProviderIconScale":{"IMDb":130,"trakt":0,"rt":999}}`))
+	if cfg.RatingProviderIconScale["imdb"] != 130 {
+		t.Errorf("imdb scale = %d, want 130 (and the key lowercased)", cfg.RatingProviderIconScale["imdb"])
+	}
+	if _, ok := cfg.RatingProviderIconScale["trakt"]; ok {
+		t.Error("a zero scale carries no meaning and must be dropped")
+	}
+	if cfg.RatingProviderIconScale["rt"] != 150 {
+		t.Errorf("rt scale = %d, want it clamped to 150", cfg.RatingProviderIconScale["rt"])
+	}
+}

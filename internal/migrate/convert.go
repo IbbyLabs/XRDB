@@ -55,6 +55,11 @@ var v2BaseRenames = map[string]string{
 // some form.
 var v2WordFlags = map[string]bool{"providers": true}
 
+// v2DecodeSourceKeys are v2 keys XRDB does not model directly but decodes into
+// keys it does. They are seeded into each surface so the per-surface decoders
+// can read them, then removed again so only the decoded result remains.
+var v2DecodeSourceKeys = map[string]bool{"providerAppearance": true}
+
 // v2SourceRenames maps v2's rating source ids to XRDB's. Every other id is
 // shared between the two, including the AlloCiné and Filmweb sources.
 var v2SourceRenames = map[string]string{
@@ -91,6 +96,7 @@ func ConvertConfig(raw json.RawMessage) (json.RawMessage, ConvertStats, error) {
 	}
 
 	converted := make(map[string]string) // v2 key -> surface it landed on
+	seededDecodeSource := false
 	surfaces := make(map[string]map[string]json.RawMessage, len(v2Surfaces))
 	for _, s := range v2Surfaces {
 		surfaces[s] = make(map[string]json.RawMessage)
@@ -106,16 +112,24 @@ func ConvertConfig(raw json.RawMessage) (json.RawMessage, ConvertStats, error) {
 					surfaces[s][target] = value
 				}
 				converted[key] = "all"
+			} else if v2DecodeSourceKeys[base] {
+				for _, s := range v2Surfaces {
+					surfaces[s][base] = value
+				}
+				seededDecodeSource = true
 			}
 			continue
 		}
 		if target, ok := translateBase(base); ok {
 			surfaces[surface][target] = value
 			converted[key] = surface
+		} else if v2DecodeSourceKeys[base] {
+			surfaces[surface][base] = value
+			seededDecodeSource = true
 		}
 	}
 
-	if len(converted) == 0 {
+	if len(converted) == 0 && !seededDecodeSource {
 		return raw, stats, nil
 	}
 
@@ -126,6 +140,7 @@ func ConvertConfig(raw json.RawMessage) (json.RawMessage, ConvertStats, error) {
 		renameSourceList(surfaces[s])
 		convertWordFlags(surfaces[s])
 		convertGenreBadge(surfaces[s])
+		convertProviderAppearance(surfaces[s])
 		convertWeights(surfaces[s])
 		for _, key := range pruneUnreadable(surfaces[s]) {
 			dropped[key] = true
@@ -258,6 +273,106 @@ func convertGenreBadge(surface map[string]json.RawMessage) {
 	}
 	if !on {
 		delete(surface, "genreBadgeMode")
+	}
+}
+
+// convertProviderAppearance decodes v2's providerAppearance string into the
+// per-provider fields XRDB renders. v2 packed several settings per source into a
+// dot record, "source.accent.iconScale.width.height.mode.line.opacity", with
+// records joined by commas. Only the accent colour and the icon scale have a
+// home here; the rest described v2's stacked badge, which XRDB does not draw, so
+// they are left behind. The original string stays untouched in the config.
+func convertProviderAppearance(surface map[string]json.RawMessage) {
+	raw, ok := surface["providerAppearance"]
+	if !ok {
+		return
+	}
+	var encoded string
+	if err := json.Unmarshal(raw, &encoded); err != nil {
+		return
+	}
+	overrides := map[string]string{}
+	scales := map[string]int{}
+	for _, record := range strings.Split(encoded, ",") {
+		parts := strings.Split(strings.TrimSpace(record), ".")
+		if len(parts) < 2 {
+			continue
+		}
+		source := strings.ToLower(strings.TrimSpace(parts[0]))
+		if source == "" {
+			continue
+		}
+		if hex := normalizeHexToken(parts[1]); hex != "" {
+			overrides[source] = hex
+		}
+		if len(parts) >= 3 {
+			if n, err := strconv.Atoi(strings.TrimSpace(parts[2])); err == nil && n > 0 {
+				scales[source] = n
+			}
+		}
+	}
+	mergeStringMapKey(surface, "ratingProviderOverrides", overrides)
+	mergeIntMapKey(surface, "ratingProviderIconScale", scales)
+	// The decoded result replaces the raw string, which stays preserved at the
+	// top level; leaving it in the surface would make it an unreadable field.
+	delete(surface, "providerAppearance")
+}
+
+// normalizeHexToken turns v2's bare 3- or 6-digit hex (no leading #) into a
+// "#rrggbb" string, or "" when it is not a colour.
+func normalizeHexToken(token string) string {
+	t := strings.ToLower(strings.TrimSpace(strings.TrimPrefix(token, "#")))
+	if len(t) != 3 && len(t) != 6 {
+		return ""
+	}
+	for _, c := range t {
+		isDigit := c >= '0' && c <= '9'
+		isHex := c >= 'a' && c <= 'f'
+		if !isDigit && !isHex {
+			return ""
+		}
+	}
+	if len(t) == 3 {
+		t = string([]byte{t[0], t[0], t[1], t[1], t[2], t[2]})
+	}
+	return "#" + t
+}
+
+// mergeStringMapKey folds decoded values into a surface key that may already
+// hold a map, without overwriting an entry the config set directly.
+func mergeStringMapKey(surface map[string]json.RawMessage, key string, add map[string]string) {
+	if len(add) == 0 {
+		return
+	}
+	existing := map[string]string{}
+	if raw, ok := surface[key]; ok {
+		_ = json.Unmarshal(raw, &existing)
+	}
+	for k, v := range add {
+		if _, set := existing[k]; !set {
+			existing[k] = v
+		}
+	}
+	if encoded, err := json.Marshal(existing); err == nil {
+		surface[key] = encoded
+	}
+}
+
+func mergeIntMapKey(surface map[string]json.RawMessage, key string, add map[string]int) {
+	if len(add) == 0 {
+		return
+	}
+	existing := map[string]int{}
+	if raw, ok := surface[key]; ok {
+		_ = json.Unmarshal(raw, &existing)
+	}
+	for k, v := range add {
+		if _, set := existing[k]; !set {
+			existing[k] = v
+		}
+	}
+	if encoded, err := json.Marshal(existing); err == nil {
+		surface[key] = encoded
 	}
 }
 

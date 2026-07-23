@@ -222,6 +222,12 @@ function ProviderOverrides({ uid, config, onUpdate }: GroupProps) {
     delete next[id];
     onUpdate('ratingProviderOverrides', next);
   };
+  const setScale = (id: string, pct: number) => {
+    const next = { ...config.ratingProviderIconScale };
+    if (pct === 100 || !pct) delete next[id];
+    else next[id] = pct;
+    onUpdate('ratingProviderIconScale', next);
+  };
 
   return (
     <details className="adv-details">
@@ -230,7 +236,7 @@ function ProviderOverrides({ uid, config, onUpdate }: GroupProps) {
       </summary>
       <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>
         <p className="hint" style={{ marginTop: 0 }}>
-          Override a source&apos;s accent colour. Sources without an override keep their brand colour.
+          Override a source&apos;s accent colour and mark size. Sources left alone keep their brand colour at full size.
         </p>
         {selected.map(r => {
           const override = config.ratingProviderOverrides[r.id];
@@ -254,6 +260,9 @@ function ProviderOverrides({ uid, config, onUpdate }: GroupProps) {
                   Brand default
                 </button>
               </div>
+              <NumField id={`${uid}-provscale-${r.id}`} label={`${r.label} mark size (%)`}
+                value={config.ratingProviderIconScale[r.id] ?? 0}
+                onChange={v => setScale(r.id, v)} min={50} max={150} step={5} placeholder="100" />
             </div>
           );
         })}

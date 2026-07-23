@@ -433,6 +433,8 @@ type badgeSpec struct {
 	colored bool
 	// iconShape clips the mark to a circle or rounded tile when set.
 	iconShape string
+	// iconScale sizes the mark within the badge box, as a percent; 0 = 100.
+	iconScale int
 	w         int
 	accent    color.NRGBA
 	x         int // resolved x position, set during layout
@@ -467,7 +469,20 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 		contentX += padX
 
 		if sp.icon != nil {
-			iRect := image.Rect(contentX, y+(innerH-iconSize)/2, contentX+iconSize, y+(innerH-iconSize)/2+iconSize)
+			// The mark scales within the shared box, so the row height holds even
+			// when one provider's mark is grown or shrunk.
+			drawSize := iconSize
+			if sp.iconScale > 0 {
+				drawSize = iconSize * sp.iconScale / 100
+				if lo := iconSize / 2; drawSize < lo {
+					drawSize = lo
+				}
+				if drawSize > innerH {
+					drawSize = innerH
+				}
+			}
+			iconTop := y + (innerH-drawSize)/2
+			iRect := image.Rect(contentX, iconTop, contentX+drawSize, iconTop+drawSize)
 			if sp.colored {
 				drawBrandIcon(out, iRect, sp.icon, sp.iconShape)
 			} else {
@@ -630,6 +645,7 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 			icon:      icon,
 			colored:   ratingIconColored[r.Source],
 			iconShape: cfg.IconShape,
+			iconScale: cfg.RatingProviderIconScale[r.Source],
 			w:         bw,
 			accent:    resolveProviderAccent(cfg, r.Source),
 		})

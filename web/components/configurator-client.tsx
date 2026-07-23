@@ -251,6 +251,9 @@ export function ConfiguratorClient() {
     if (Object.keys(cfg.ratingProviderOverrides).length > 0) {
       payload.ratingProviderOverrides = cfg.ratingProviderOverrides;
     }
+    if (Object.keys(cfg.ratingProviderIconScale).length > 0) {
+      payload.ratingProviderIconScale = cfg.ratingProviderIconScale;
+    }
     if (Object.keys(cfg.ratingProviderWeights).length > 0) {
       payload.ratingProviderWeights = cfg.ratingProviderWeights;
     }
