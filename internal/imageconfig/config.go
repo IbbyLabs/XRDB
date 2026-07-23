@@ -257,6 +257,10 @@ type RatingBadgeConfig struct {
 	// "normalized" is one decimal out of ten, "normalizedclean" drops a trailing
 	// ".0", and "normalized100" rounds to a whole number out of a hundred.
 	RatingValueMode string `json:"ratingValueMode,omitempty"`
+	// IconShape clips a provider's mark to a shape: circle, squircle (a softly
+	// rounded tile) or rounded (a lightly rounded one). Empty leaves the mark
+	// its own outline.
+	IconShape string `json:"iconShape,omitempty"`
 	// Split-side layout geometry.
 	SideRatingsPosition string `json:"sideRatingsPosition,omitempty"` // top|middle|bottom|custom; "" = middle
 	SideRatingsOffset   int    `json:"sideRatingsOffset,omitempty"`   // px vertical offset for the custom position
@@ -514,6 +518,7 @@ type rawRating struct {
 	RatingBadgeOffsetY      *int               `json:"ratingBadgeOffsetY"`
 	RatingPresentation      *string            `json:"ratingPresentation"`
 	RatingValueMode         *string            `json:"ratingValueMode"`
+	IconShape               *string            `json:"iconShape"`
 	SideRatingsPosition     *string            `json:"sideRatingsPosition"`
 	SideRatingsOffset       *int               `json:"sideRatingsOffset"`
 	RatingsMaxPerSide       *int               `json:"ratingsMaxPerSide"`
@@ -824,6 +829,14 @@ func parseRating(cfg *Config, r *raw) {
 			cfg.RatingValueMode = "normalizedclean"
 		case "normalizedhundred":
 			cfg.RatingValueMode = "normalized100"
+		}
+	}
+	if r.IconShape != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.IconShape)); v {
+		case "circle", "squircle", "rounded":
+			cfg.IconShape = v
+		case "original":
+			cfg.IconShape = ""
 		}
 	}
 	if r.SideRatingsPosition != nil {

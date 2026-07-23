@@ -6,6 +6,7 @@ import {
   AGE_STYLE_OPTIONS, GENRE_MODE_OPTIONS, ANIME_GROUPING_OPTIONS,
   AGGREGATE_SOURCE_OPTIONS, AGGREGATE_ACCENT_MODE_OPTIONS, SCOREBAR_STYLE_OPTIONS,
   RATING_PRESENTATION_OPTIONS, RATING_VALUE_MODE_OPTIONS, RELEASE_STATUS_STYLE_OPTIONS,
+  ICON_SHAPE_OPTIONS,
   DEFAULT_CRITICS_PRIORITY, DEFAULT_AUDIENCE_PRIORITY,
 } from './configurator-types';
 import { resolveShares, rebalance } from '@/lib/shares';
@@ -343,6 +344,15 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
         value={config.ratingValueMode}
         onChange={v => onUpdate('ratingValueMode', v)}
         hint={RATING_VALUE_MODE_OPTIONS.find(o => o.id === config.ratingValueMode)?.desc}
+      />
+      <StyleGrid
+        id={`${uid}-icon-shape-label`}
+        label="Icon shape"
+        options={ICON_SHAPE_OPTIONS}
+        value={config.iconShape}
+        onChange={v => onUpdate('iconShape', v)}
+        columns={4}
+        hint="Trim each provider's mark to a shape. Original keeps its own outline."
       />
       <NumField id={`${uid}-rating-scale`} label="Scale (%)" value={config.ratingBadgeScale}
         onChange={v => onUpdate('ratingBadgeScale', v)} min={70} max={200} step={5}

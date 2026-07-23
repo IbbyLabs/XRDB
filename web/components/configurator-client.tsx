@@ -190,6 +190,7 @@ export function ConfiguratorClient() {
       ratingBadgeOffsetY: cfg.ratingBadgeOffsetY,
       ratingPresentation: cfg.ratingPresentation === 'standard' ? '' : cfg.ratingPresentation,
       ratingValueMode: cfg.ratingValueMode === 'native' ? '' : cfg.ratingValueMode,
+      iconShape: cfg.iconShape,
       sideRatingsPosition: cfg.sideRatingsPosition === 'middle' ? '' : cfg.sideRatingsPosition,
       sideRatingsOffset: cfg.sideRatingsOffset,
       ratingsMaxPerSide: cfg.ratingsMaxPerSide,

@@ -270,23 +270,70 @@ func accentFor(source string) color.NRGBA {
 // recolored to tint, using the glyph's alpha as the mask. The glyph is trimmed
 // of transparent padding and scaled with its aspect ratio preserved, so marks
 // fill the box instead of being squeezed to its shape.
-func drawTintedIcon(dst *image.NRGBA, rect image.Rectangle, icon image.Image, tint color.NRGBA) {
+func drawTintedIcon(dst *image.NRGBA, rect image.Rectangle, icon image.Image, tint color.NRGBA, shape string) {
 	scaled, rect := scaleIconToFit(icon, rect)
 	if scaled == nil {
 		return
 	}
+	clipIconToShape(scaled, shape)
 	draw.DrawMask(dst, rect, &image.Uniform{C: tint}, image.Point{}, scaled, image.Point{}, draw.Over)
 }
 
 // drawBrandIcon paints a full-color brand mark as it is, so marks built from
 // several colors (Letterboxd's three dots, IMDb's black-on-yellow wordmark)
 // keep them instead of flattening to one silhouette.
-func drawBrandIcon(dst *image.NRGBA, rect image.Rectangle, icon image.Image) {
+func drawBrandIcon(dst *image.NRGBA, rect image.Rectangle, icon image.Image, shape string) {
 	scaled, rect := scaleIconToFit(icon, rect)
 	if scaled == nil {
 		return
 	}
+	clipIconToShape(scaled, shape)
 	draw.Draw(dst, rect, scaled, image.Point{}, draw.Over)
+}
+
+// clipIconToShape clears the alpha outside the requested shape, trimming a mark
+// to a circle or a rounded tile. An unrecognised shape leaves the mark alone.
+func clipIconToShape(img *image.NRGBA, shape string) {
+	var radiusFraction float64
+	switch shape {
+	case "circle":
+		radiusFraction = 0.5
+	case "squircle":
+		radiusFraction = 0.3
+	case "rounded":
+		radiusFraction = 0.15
+	default:
+		return
+	}
+	b := img.Bounds()
+	w, h := float64(b.Dx()), float64(b.Dy())
+	r := radiusFraction * math.Min(w, h)
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			if insideRoundedRect(float64(x-b.Min.X)+0.5, float64(y-b.Min.Y)+0.5, w, h, r) {
+				continue
+			}
+			c := img.NRGBAAt(x, y)
+			c.A = 0
+			img.SetNRGBA(x, y, c)
+		}
+	}
+}
+
+// insideRoundedRect reports whether a point sits inside a w by h rectangle whose
+// corners are rounded by r. A radius of half the shorter side gives a circle or
+// a stadium, matching how the shapes are named.
+func insideRoundedRect(x, y, w, h, r float64) bool {
+	if r <= 0 {
+		return x >= 0 && y >= 0 && x <= w && y <= h
+	}
+	if x < 0 || y < 0 || x > w || y > h {
+		return false
+	}
+	cx := math.Min(math.Max(x, r), w-r)
+	cy := math.Min(math.Max(y, r), h-r)
+	dx, dy := x-cx, y-cy
+	return dx*dx+dy*dy <= r*r
 }
 
 // scaleIconToFit trims an icon's transparent padding and scales it into rect
@@ -384,9 +431,11 @@ type badgeSpec struct {
 	// colored marks an icon that carries its own brand colors, so it is drawn
 	// as it is instead of being recolored to match the badge.
 	colored bool
-	w       int
-	accent  color.NRGBA
-	x       int // resolved x position, set during layout
+	// iconShape clips the mark to a circle or rounded tile when set.
+	iconShape string
+	w         int
+	accent    color.NRGBA
+	x         int // resolved x position, set during layout
 }
 
 // drawRatingRow renders a horizontal slice of badge specs at row y.
@@ -420,9 +469,9 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 		if sp.icon != nil {
 			iRect := image.Rect(contentX, y+(innerH-iconSize)/2, contentX+iconSize, y+(innerH-iconSize)/2+iconSize)
 			if sp.colored {
-				drawBrandIcon(out, iRect, sp.icon)
+				drawBrandIcon(out, iRect, sp.icon, sp.iconShape)
 			} else {
-				drawTintedIcon(out, iRect, sp.icon, iconTint)
+				drawTintedIcon(out, iRect, sp.icon, iconTint, sp.iconShape)
 			}
 			contentX += iconSize + iconGap
 		}
@@ -571,12 +620,13 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 			bw += iconSize + iconGap
 		}
 		specs = append(specs, badgeSpec{
-			value:   value,
-			valW:    vw,
-			icon:    icon,
-			colored: ratingIconColored[r.Source],
-			w:       bw,
-			accent:  resolveProviderAccent(cfg, r.Source),
+			value:     value,
+			valW:      vw,
+			icon:      icon,
+			colored:   ratingIconColored[r.Source],
+			iconShape: cfg.IconShape,
+			w:         bw,
+			accent:    resolveProviderAccent(cfg, r.Source),
 		})
 	}
 

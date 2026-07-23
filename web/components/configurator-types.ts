@@ -134,6 +134,13 @@ export const RATING_VALUE_MODE_OPTIONS = [
   { id: 'normalized100',   label: 'Out of a hundred', desc: 'Round every source to a whole number out of a hundred to keep badges compact' },
 ] as const;
 
+export const ICON_SHAPE_OPTIONS = [
+  { id: '',         label: 'Original' },
+  { id: 'circle',   label: 'Circle'   },
+  { id: 'squircle', label: 'Squircle' },
+  { id: 'rounded',  label: 'Rounded'  },
+] as const;
+
 export const QUALITY_STYLE_OPTIONS = [
   { id: 'default', label: 'Glass' },
   { id: 'plain',   label: 'Plain' },
@@ -256,6 +263,7 @@ export interface ConfigState {
   ratingBadgeOffsetY: number;
   ratingPresentation: string; // standard|editorial|none
   ratingValueMode: string; // native|normalized|normalizedclean|normalized100
+  iconShape: string; // '' = the mark's own outline; circle|squircle|rounded
   sideRatingsPosition: string; // top|middle|bottom|custom (split-side layout)
   sideRatingsOffset: number; // px vertical offset for the custom position
   ratingsMaxPerSide: number; // cap badges per side; 0 = no cap
@@ -351,6 +359,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingBadgeOffsetY: 0,
   ratingPresentation: 'standard',
   ratingValueMode: 'native',
+  iconShape: '',
   sideRatingsPosition: 'middle',
   sideRatingsOffset: 0,
   ratingsMaxPerSide: 0,
