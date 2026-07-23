@@ -11,7 +11,23 @@
 
 ### Documentation
 
-<a id="v2-3-12"></a>
+<a id="v2-3-13"></a>
+
+## [v2.3.13] - 23/07/2026
+
+### Fixed
+* keep the rating value mode across media types when saved
+  
+  The rating value mode persists as a single shared field, but the
+  workspace stored it per media type and only wrote the active type. A
+  saved value was restored to one type and reverted to the provider
+  default for the rest, so a normalised scale read as native again after
+  reloading and Letterboxd, Allocine and Roger Ebert scores went back to
+  their own /5 and /4 scales.
+  
+  Add a guardrail so every shared option setter has to write all four
+  media types.
+
 
 ## [v2.3.12] - 10/07/2026
 

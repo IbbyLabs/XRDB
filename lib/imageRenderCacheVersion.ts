@@ -6,7 +6,7 @@
 // suffix) is appended to image URLs as `v=` so a release also busts CDN and browser caches,
 // which key on the URL: the render-cache-version bump alone re-renders on the origin but the
 // unchanged URL keeps serving the stale cached image until its ~7-day TTL expires.
-export const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v157';
+export const FINAL_IMAGE_RENDERER_CACHE_VERSION = 'poster-backdrop-logo-v158';
 
 export const IMAGE_URL_CACHE_TOKEN =
   FINAL_IMAGE_RENDERER_CACHE_VERSION.match(/v(\d+)$/)?.[1] ?? FINAL_IMAGE_RENDERER_CACHE_VERSION;
