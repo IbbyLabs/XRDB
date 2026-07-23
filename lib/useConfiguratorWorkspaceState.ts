@@ -444,21 +444,16 @@ export function useConfiguratorWorkspaceState() {
         : previewType === 'thumbnail'
           ? thumbnailRatingValueMode
           : logoRatingValueMode;
+  // The rating value mode persists as a single shared field, so keep every
+  // media type in lockstep. Writing only the active type meant a saved value
+  // was restored to one type on load and reverted to the default for the rest,
+  // so a normalised scale read as the provider default again after reloading.
   const setRatingValueMode = useCallback((value: RatingValueMode | ((prev: RatingValueMode) => RatingValueMode)) => {
-    if (previewType === 'poster') {
-      setPosterRatingValueMode(value);
-      return;
-    }
-    if (previewType === 'backdrop') {
-      setBackdropRatingValueMode(value);
-      return;
-    }
-    if (previewType === 'thumbnail') {
-      setThumbnailRatingValueMode(value);
-      return;
-    }
+    setPosterRatingValueMode(value);
+    setBackdropRatingValueMode(value);
+    setThumbnailRatingValueMode(value);
     setLogoRatingValueMode(value);
-  }, [previewType]);
+  }, []);
 
   const aggregateAccentMode =
     previewType === 'poster'

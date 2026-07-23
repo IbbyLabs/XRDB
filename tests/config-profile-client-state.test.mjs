@@ -38,6 +38,20 @@ test('a disabled accent bar survives the save and reveal round trip', () => {
   assert.equal(normalizedConfig.settings.aggregateAccentBarVisible, false);
 });
 
+test('a normalised rating value mode survives the save and reveal round trip', () => {
+  const { settings } = normalizeSavedUiConfig({ settings: { ratingValueMode: 'normalized' } });
+  const params = buildProfileParams(settings, {
+    allowMissingTmdbKey: true,
+    allowMissingMdblistKey: true,
+    preserveXrdbKey: true,
+  });
+
+  assert.equal(params?.ratingValueMode, 'normalized');
+
+  const { normalizedConfig } = buildRevealedConfigState(params ?? {});
+  assert.equal(normalizedConfig.settings.ratingValueMode, 'normalized');
+});
+
 test('getNextAiometadataUrlMode defaults to config when a protected profile becomes active', () => {
   assert.equal(getNextAiometadataUrlMode({
     currentMode: 'inline',
