@@ -187,6 +187,7 @@ export function ConfiguratorClient() {
       ratingBadgeOffsetX: cfg.ratingBadgeOffsetX,
       ratingBadgeOffsetY: cfg.ratingBadgeOffsetY,
       ratingPresentation: cfg.ratingPresentation === 'standard' ? '' : cfg.ratingPresentation,
+      ratingValueMode: cfg.ratingValueMode === 'native' ? '' : cfg.ratingValueMode,
       sideRatingsPosition: cfg.sideRatingsPosition === 'middle' ? '' : cfg.sideRatingsPosition,
       sideRatingsOffset: cfg.sideRatingsOffset,
       ratingsMaxPerSide: cfg.ratingsMaxPerSide,

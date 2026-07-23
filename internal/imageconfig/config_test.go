@@ -244,3 +244,42 @@ func TestCanonicalJSONRoundTrip(t *testing.T) {
 		t.Errorf("round-trip Ratings: got %v", restored.Ratings)
 	}
 }
+
+func TestParseAcceptsEveryRatingValueModeSpelling(t *testing.T) {
+	// v2 wrote the hyphenated and long-form spellings, so a migrated profile can
+	// carry any of these and must land on the same canonical mode.
+	cases := map[string]string{
+		"native":             "native",
+		"normalized":         "normalized",
+		"Normalized":         "normalized",
+		" normalizedclean ":  "normalizedclean",
+		"normalized-clean":   "normalizedclean",
+		"normalized_clean":   "normalizedclean",
+		"normalizedcleanten": "normalizedclean",
+		"normalized100":      "normalized100",
+		"normalized-100":     "normalized100",
+		"normalizedhundred":  "normalized100",
+	}
+	for input, want := range cases {
+		data, err := json.Marshal(map[string]string{"ratingValueMode": input})
+		if err != nil {
+			t.Fatalf("marshal %q: %v", input, err)
+		}
+		if got := Parse(data).RatingValueMode; got != want {
+			t.Errorf("ratingValueMode %q parsed as %q, want %q", input, got, want)
+		}
+	}
+}
+
+func TestParseIgnoresAnUnknownRatingValueMode(t *testing.T) {
+	data := json.RawMessage(`{"ratingValueMode":"out-of-five"}`)
+	if got := Parse(data).RatingValueMode; got != "" {
+		t.Errorf("unknown mode parsed as %q, want the native default", got)
+	}
+}
+
+func TestRatingValueModeIsAModeledKey(t *testing.T) {
+	if !IsModeledKey("ratingValueMode") {
+		t.Error("ratingValueMode must be modeled so a migrated v2 profile converts it")
+	}
+}

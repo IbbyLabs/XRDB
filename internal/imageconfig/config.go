@@ -249,6 +249,13 @@ type RatingBadgeConfig struct {
 	RatingBadgeOffsetX int    `json:"ratingBadgeOffsetX,omitempty"` // px nudge of the whole strip
 	RatingBadgeOffsetY int    `json:"ratingBadgeOffsetY,omitempty"`
 	RatingPresentation string `json:"ratingPresentation,omitempty"` // standard|editorial|none (others modeled)
+	// RatingValueMode picks the scale rating values are drawn on. "native" (the
+	// default) keeps every source on its own scale, so IMDb reads out of ten,
+	// Letterboxd out of five and Rotten Tomatoes as a percentage. The normalized
+	// modes put every source on one shared scale so badges can be compared:
+	// "normalized" is one decimal out of ten, "normalizedclean" drops a trailing
+	// ".0", and "normalized100" rounds to a whole number out of a hundred.
+	RatingValueMode string `json:"ratingValueMode,omitempty"`
 	// Split-side layout geometry.
 	SideRatingsPosition string `json:"sideRatingsPosition,omitempty"` // top|middle|bottom|custom; "" = middle
 	SideRatingsOffset   int    `json:"sideRatingsOffset,omitempty"`   // px vertical offset for the custom position
@@ -483,6 +490,7 @@ type rawRating struct {
 	RatingBadgeOffsetX      *int               `json:"ratingBadgeOffsetX"`
 	RatingBadgeOffsetY      *int               `json:"ratingBadgeOffsetY"`
 	RatingPresentation      *string            `json:"ratingPresentation"`
+	RatingValueMode         *string            `json:"ratingValueMode"`
 	SideRatingsPosition     *string            `json:"sideRatingsPosition"`
 	SideRatingsOffset       *int               `json:"sideRatingsOffset"`
 	RatingsMaxPerSide       *int               `json:"ratingsMaxPerSide"`
@@ -770,6 +778,20 @@ func parseRating(cfg *Config, r *raw) {
 		switch v := strings.ToLower(strings.TrimSpace(*r.RatingPresentation)); v {
 		case "standard", "minimal", "average", "dual", "dual-minimal", "editorial", "scorebar", "none":
 			cfg.RatingPresentation = v
+		}
+	}
+	if r.RatingValueMode != nil {
+		// v2 wrote several spellings of the same mode, so fold separators away
+		// before matching rather than listing every variant.
+		v := strings.ToLower(strings.TrimSpace(*r.RatingValueMode))
+		v = strings.NewReplacer("-", "", "_", "", " ", "").Replace(v)
+		switch v {
+		case "native", "normalized", "normalizedclean", "normalized100":
+			cfg.RatingValueMode = v
+		case "normalizedcleanten":
+			cfg.RatingValueMode = "normalizedclean"
+		case "normalizedhundred":
+			cfg.RatingValueMode = "normalized100"
 		}
 	}
 	if r.SideRatingsPosition != nil {

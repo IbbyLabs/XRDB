@@ -367,3 +367,22 @@ func TestCredentialsInAV2ProfileAreFlaggedNotRemoved(t *testing.T) {
 		t.Error("the credential was stripped rather than preserved")
 	}
 }
+
+func TestTheRatingValueModeReachesEverySurface(t *testing.T) {
+	// v2 stored this as one shared field, so every surface has to inherit it.
+	out := convert(t, `{"ratingValueMode":"normalizedclean"}`)
+
+	for _, surface := range v2Surfaces {
+		if got := surfaceOf(t, out, surface).RatingValueMode; got != "normalizedclean" {
+			t.Errorf("%s rating value mode = %q, want normalizedclean", surface, got)
+		}
+	}
+}
+
+func TestAHyphenatedRatingValueModeStillConverts(t *testing.T) {
+	out := convert(t, `{"ratingValueMode":"normalized-100"}`)
+
+	if got := surfaceOf(t, out, "poster").RatingValueMode; got != "normalized100" {
+		t.Errorf("poster rating value mode = %q, want normalized100", got)
+	}
+}

@@ -8,6 +8,8 @@ import (
 	"image/draw"
 	"image/png"
 	"log/slog"
+	"math"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -423,7 +425,7 @@ func ratingsBandHeight(frameW int, ratings []provider.Rating, cfg imageconfig.Co
 	maxRowW := frameW - edgeX*2
 	rowW, rows := 0, 0
 	for _, r := range filtered {
-		value := r.Label
+		value := ratingBadgeValue(r, cfg.RatingValueMode)
 		if value == "" {
 			value = "N/A"
 		}
@@ -499,7 +501,7 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 
 	specs := make([]badgeSpec, 0, len(filtered))
 	for _, r := range filtered {
-		value := r.Label
+		value := ratingBadgeValue(r, cfg.RatingValueMode)
 		if value == "" {
 			value = "N/A"
 		}
@@ -666,6 +668,40 @@ func maxInt(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// formatRatingValue renders a 0-10 score on the scale mode asks for. Every
+// provider already reports its score normalized to ten, so this is the one
+// place that decides how a combined or normalized value reads.
+func formatRatingValue(value float64, mode string) string {
+	if mode == "normalized100" {
+		hundred := int(math.Round(value * 10))
+		if hundred < 0 {
+			hundred = 0
+		}
+		if hundred > 100 {
+			hundred = 100
+		}
+		return strconv.Itoa(hundred)
+	}
+	text := strconv.FormatFloat(value, 'f', 1, 64)
+	if mode == "normalizedclean" {
+		text = strings.TrimSuffix(text, ".0")
+	}
+	return text
+}
+
+// ratingBadgeValue returns the text drawn on a provider's badge. The native
+// mode keeps the provider's own label, so Letterboxd stays out of five and
+// Rotten Tomatoes keeps its percent sign; the normalized modes put every source
+// on one scale so the badges in a row can be read against each other.
+func ratingBadgeValue(r provider.Rating, mode string) string {
+	switch mode {
+	case "normalized", "normalizedclean", "normalized100":
+		return formatRatingValue(r.Value, mode)
+	default:
+		return r.Label
+	}
 }
 
 // filterRatings returns only the ratings whose source is in the want list.

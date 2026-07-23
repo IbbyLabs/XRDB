@@ -127,6 +127,13 @@ export const RATING_PRESENTATION_OPTIONS = [
   { id: 'none',      label: 'Hidden',    desc: 'Hide ratings on this surface entirely' },
 ] as const;
 
+export const RATING_VALUE_MODE_OPTIONS = [
+  { id: 'native',          label: 'Provider default', desc: 'Every source keeps its own scale, so Letterboxd stays out of five and Rotten Tomatoes stays a percentage' },
+  { id: 'normalized',      label: 'Out of ten',       desc: 'Put every source on a ten point scale so the badges can be read against each other' },
+  { id: 'normalizedclean', label: 'Out of ten, clean', desc: 'The same ten point scale with a trailing .0 trimmed, so 8.0 reads as 8' },
+  { id: 'normalized100',   label: 'Out of a hundred', desc: 'Round every source to a whole number out of a hundred to keep badges compact' },
+] as const;
+
 export const QUALITY_STYLE_OPTIONS = [
   { id: 'default', label: 'Glass' },
   { id: 'plain',   label: 'Plain' },
@@ -236,6 +243,7 @@ export interface ConfigState {
   ratingBadgeOffsetX: number;
   ratingBadgeOffsetY: number;
   ratingPresentation: string; // standard|editorial|none
+  ratingValueMode: string; // native|normalized|normalizedclean|normalized100
   sideRatingsPosition: string; // top|middle|bottom|custom (split-side layout)
   sideRatingsOffset: number; // px vertical offset for the custom position
   ratingsMaxPerSide: number; // cap badges per side; 0 = no cap
@@ -320,6 +328,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingBadgeOffsetX: 0,
   ratingBadgeOffsetY: 0,
   ratingPresentation: 'standard',
+  ratingValueMode: 'native',
   sideRatingsPosition: 'middle',
   sideRatingsOffset: 0,
   ratingsMaxPerSide: 0,

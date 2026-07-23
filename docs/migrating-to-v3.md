@@ -94,7 +94,8 @@ simpler configurator.
 ## Feature parity
 
 Carried over (often improved): all four output families, 17 rating sources
-with official provider logos, quality/age/genre/streaming badges, aggregate
+with official provider logos, the rating value scale (each provider's own
+scale, or every source normalised to ten or a hundred), quality/age/genre/streaming badges, aggregate
 score bar, trending tag, templates, profiles (now with aliases, generated
 IDs, and password-protected editing), Stremio addon endpoints, render cache
 with per-provider TTLs, IMDb local dataset, AIOMetadata install, admin

@@ -1050,7 +1050,7 @@ func drawEditorialRating(base *image.NRGBA, ratings []provider.Rating, genres []
 
 	bigFace := valueFaceFor(scale * 2.4)
 	bm := bigFace.Metrics()
-	label := strconv.FormatFloat(avg, 'f', 1, 64)
+	label := formatRatingValue(avg, cfg.RatingValueMode)
 	// Soft shadow for legibility on bright artwork, then the value.
 	drawText(base, bigFace, x+maxInt(1, s(1)), y+bm.Ascent.Ceil()+maxInt(1, s(1)), color.NRGBA{A: 150}, label)
 	drawText(base, bigFace, x, y+bm.Ascent.Ceil(), color.White, label)
@@ -1217,7 +1217,7 @@ func drawMinimalRating(base *image.NRGBA, ratings []provider.Rating, cfg imageco
 	}
 	b := base.Bounds()
 	drawScorePill(base, b.Min.X+b.Dx()/2, b.Min.Y+int(14*scale+0.5),
-		"", strconv.FormatFloat(avg, 'f', 1, 64), color.NRGBA{}, scale, occ)
+		"", formatRatingValue(avg, cfg.RatingValueMode), color.NRGBA{}, scale, occ)
 }
 
 // drawDualRating shows a critics pill at the top and an audience pill at the
@@ -1232,7 +1232,7 @@ func drawAverageRating(base *image.NRGBA, ratings []provider.Rating, cfg imageco
 	b := base.Bounds()
 	accent := color.NRGBA{R: 90, G: 98, B: 112, A: 255} // neutral slate label
 	drawScorePill(base, b.Min.X+b.Dx()/2, b.Min.Y+int(14*scale+0.5),
-		"AVG", strconv.FormatFloat(avg, 'f', 1, 64), accent, scale, occ)
+		"AVG", formatRatingValue(avg, cfg.RatingValueMode), accent, scale, occ)
 }
 
 // drawDualRating shows a critics pill (top) and an audience pill (bottom). When
@@ -1250,12 +1250,12 @@ func drawDualRating(base *image.NRGBA, ratings []provider.Rating, cfg imageconfi
 	}
 	if hasC {
 		drawScorePill(base, cx, b.Min.Y+pad, criticsLabel,
-			strconv.FormatFloat(critics, 'f', 1, 64), criticsAccent, scale, occ)
+			formatRatingValue(critics, cfg.RatingValueMode), criticsAccent, scale, occ)
 	}
 	if hasA {
 		topY := b.Max.Y - scorePillHeight(scale) - pad
 		drawScorePill(base, cx, topY, audienceLabel,
-			strconv.FormatFloat(audience, 'f', 1, 64), audienceAccent, scale, occ)
+			formatRatingValue(audience, cfg.RatingValueMode), audienceAccent, scale, occ)
 	}
 }
 

@@ -5,7 +5,8 @@ import {
   RATING_OPTIONS, SIX_POS_OPTIONS, QUALITY_STYLE_OPTIONS, GENRE_STYLE_OPTIONS,
   AGE_STYLE_OPTIONS, GENRE_MODE_OPTIONS, ANIME_GROUPING_OPTIONS,
   AGGREGATE_SOURCE_OPTIONS, AGGREGATE_ACCENT_MODE_OPTIONS, SCOREBAR_STYLE_OPTIONS,
-  RATING_PRESENTATION_OPTIONS, DEFAULT_CRITICS_PRIORITY, DEFAULT_AUDIENCE_PRIORITY,
+  RATING_PRESENTATION_OPTIONS, RATING_VALUE_MODE_OPTIONS,
+  DEFAULT_CRITICS_PRIORITY, DEFAULT_AUDIENCE_PRIORITY,
 } from './configurator-types';
 import { resolveShares, rebalance } from '@/lib/shares';
 
@@ -311,6 +312,14 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
         value={config.ratingPresentation}
         onChange={v => onUpdate('ratingPresentation', v)}
         hint={RATING_PRESENTATION_OPTIONS.find(o => o.id === config.ratingPresentation)?.desc}
+      />
+      <StyleGrid
+        id={`${uid}-rating-value-mode-label`}
+        label="Value scale"
+        options={RATING_VALUE_MODE_OPTIONS}
+        value={config.ratingValueMode}
+        onChange={v => onUpdate('ratingValueMode', v)}
+        hint={RATING_VALUE_MODE_OPTIONS.find(o => o.id === config.ratingValueMode)?.desc}
       />
       <NumField id={`${uid}-rating-scale`} label="Scale (%)" value={config.ratingBadgeScale}
         onChange={v => onUpdate('ratingBadgeScale', v)} min={70} max={200} step={5}
