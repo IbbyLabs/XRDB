@@ -366,6 +366,31 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
         <NumField id={`${uid}-rating-oy`} label="Offset Y" value={config.ratingBadgeOffsetY}
           onChange={v => onUpdate('ratingBadgeOffsetY', v)} min={-320} max={320} zeroIsDefault={false} />
       </div>
+      <ToggleField id={`${uid}-bottom-row`} label="Single bottom row"
+        checked={config.bottomRatingsRow}
+        onChange={v => onUpdate('bottomRatingsRow', v)}
+        hint="Keep every badge on one row along the bottom edge." />
+      <NumField id={`${uid}-edge-offset`} label="Edge inset (px)" value={config.posterEdgeOffset}
+        onChange={v => onUpdate('posterEdgeOffset', v)} min={0} max={80}
+        hint="Push the strip further in from the edge it sits against." />
+      <details className="adv-details">
+        <summary>Per-style nudges</summary>
+        <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>
+          <p className="hint">A nudge kept separately for each badge style, so switching style keeps both positions.</p>
+          <div className="numfield-pair">
+            <NumField id={`${uid}-off-x-glass`} label="Glass/pill X" value={config.ratingXOffsetPillGlass}
+              onChange={v => onUpdate('ratingXOffsetPillGlass', v)} min={-320} max={320} zeroIsDefault={false} />
+            <NumField id={`${uid}-off-y-glass`} label="Glass/pill Y" value={config.ratingYOffsetPillGlass}
+              onChange={v => onUpdate('ratingYOffsetPillGlass', v)} min={-320} max={320} zeroIsDefault={false} />
+          </div>
+          <div className="numfield-pair">
+            <NumField id={`${uid}-off-x-square`} label="Square X" value={config.ratingXOffsetSquare}
+              onChange={v => onUpdate('ratingXOffsetSquare', v)} min={-320} max={320} zeroIsDefault={false} />
+            <NumField id={`${uid}-off-y-square`} label="Square Y" value={config.ratingYOffsetSquare}
+              onChange={v => onUpdate('ratingYOffsetSquare', v)} min={-320} max={320} zeroIsDefault={false} />
+          </div>
+        </div>
+      </details>
       <ProviderOverrides uid={uid} config={config} onUpdate={onUpdate} />
       <ProviderWeights uid={uid} config={config} onUpdate={onUpdate} />
     </FineGroup>

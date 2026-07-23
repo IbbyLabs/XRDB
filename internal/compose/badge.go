@@ -529,6 +529,11 @@ func ratingsBandHeight(frameW int, ratings []provider.Rating, cfg imageconfig.Co
 	d := ratingStripDimsFor(scale)
 	accentW, padX, iconSize, iconGap, badgeGap := d.accentW, d.padX, d.iconSize, d.iconGap, d.badgeGap
 	padY, rowGap, edgeX, edgeY := d.padY, d.rowGap, d.edgeX, d.edgeY
+	// The configured edge offset pushes the strip further in from the edge it
+	// sits against, on top of the built-in inset.
+	edgeInset := int(float64(cfg.PosterEdgeOffset)*scale + 0.5)
+	edgeX += edgeInset
+	edgeY += edgeInset
 	innerH := padY*2 + maxInt(valH, iconSize)
 	maxRowW := frameW - edgeX*2
 	rowW, rows := 0, 0
@@ -638,38 +643,45 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 		})
 	}
 
-	// Greedy row wrap for top/bottom layouts.
+	// One bottom row keeps every badge on a single line along the bottom edge, so
+	// the strip reads as one band rather than wrapping into a block.
 	var rows [][]badgeSpec
-	var row []badgeSpec
-	rowW := 0
-	for _, sp := range specs {
-		need := sp.w
+	if cfg.BottomRatingsRow {
+		rows = [][]badgeSpec{specs}
+	} else {
+		// Greedy row wrap for top/bottom layouts.
+		var row []badgeSpec
+		rowW := 0
+		for _, sp := range specs {
+			need := sp.w
+			if len(row) > 0 {
+				need += badgeGap
+			}
+			if len(row) > 0 && rowW+need > maxRowW {
+				rows = append(rows, row)
+				row = nil
+				rowW = 0
+				need = sp.w
+			}
+			row = append(row, sp)
+			rowW += need
+		}
 		if len(row) > 0 {
-			need += badgeGap
-		}
-		if len(row) > 0 && rowW+need > maxRowW {
 			rows = append(rows, row)
-			row = nil
-			rowW = 0
-			need = sp.w
 		}
-		row = append(row, sp)
-		rowW += need
-	}
-	if len(row) > 0 {
-		rows = append(rows, row)
 	}
 
 	totalH := len(rows)*innerH + (len(rows)-1)*rowGap
 
 	startY := bounds.Max.Y - edgeY - totalH
-	if cfg.RatingsLayout == imageconfig.LayoutTop {
+	if cfg.RatingsLayout == imageconfig.LayoutTop && !cfg.BottomRatingsRow {
 		startY = bounds.Min.Y + edgeY
 	}
 	if startY < bounds.Min.Y+edgeY {
 		startY = bounds.Min.Y + edgeY
 	}
-	startY += cfg.RatingBadgeOffsetY
+	offsetX, offsetY := ratingStripOffsets(cfg)
+	startY += offsetY
 
 	y := startY
 	for _, r := range rows {
@@ -684,7 +696,7 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 		if x < bounds.Min.X+edgeX {
 			x = bounds.Min.X + edgeX
 		}
-		x += cfg.RatingBadgeOffsetX
+		x += offsetX
 		for i := range r {
 			r[i].x = x
 			x += r[i].w + badgeGap
@@ -812,6 +824,22 @@ func ratingBadgeValue(r provider.Rating, mode string) string {
 	default:
 		return r.Label
 	}
+}
+
+// ratingStripOffsets returns the total px nudge for the badge strip: the strip's
+// own offset plus the one kept for the active badge style.
+func ratingStripOffsets(cfg imageconfig.Config) (int, int) {
+	x, y := cfg.RatingBadgeOffsetX, cfg.RatingBadgeOffsetY
+	switch cfg.BadgeStyle {
+	case imageconfig.BadgeSquare:
+		x += cfg.RatingOffsetXSquare
+		y += cfg.RatingOffsetYSquare
+	default:
+		// Pill and glass share one nudge, as they did in the config this reads.
+		x += cfg.RatingOffsetXPillGlass
+		y += cfg.RatingOffsetYPillGlass
+	}
+	return x, y
 }
 
 // filterRatings returns only the ratings whose source is in the want list.

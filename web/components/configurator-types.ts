@@ -261,6 +261,12 @@ export interface ConfigState {
   ratingsMax: number; // 0 = no cap
   ratingBadgeOffsetX: number;
   ratingBadgeOffsetY: number;
+  ratingXOffsetPillGlass: number;
+  ratingYOffsetPillGlass: number;
+  ratingXOffsetSquare: number;
+  ratingYOffsetSquare: number;
+  posterEdgeOffset: number; // 0..80 extra inset from the edge
+  bottomRatingsRow: boolean; // keep every badge on one bottom row
   ratingPresentation: string; // standard|editorial|none
   ratingValueMode: string; // native|normalized|normalizedclean|normalized100
   iconShape: string; // '' = the mark's own outline; circle|squircle|rounded
@@ -357,6 +363,12 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingsMax: 0,
   ratingBadgeOffsetX: 0,
   ratingBadgeOffsetY: 0,
+  ratingXOffsetPillGlass: 0,
+  ratingYOffsetPillGlass: 0,
+  ratingXOffsetSquare: 0,
+  ratingYOffsetSquare: 0,
+  posterEdgeOffset: 0,
+  bottomRatingsRow: false,
   ratingPresentation: 'standard',
   ratingValueMode: 'native',
   iconShape: '',

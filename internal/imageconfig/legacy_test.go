@@ -12,14 +12,14 @@ func TestParsePreservesUnknownFields(t *testing.T) {
 	in := json.RawMessage(`{
 		"language": "fr",
 		"posterRatingsMax": 4,
-		"posterEdgeOffset": 5,
+		"qualityBadgesSide": "left",
 		"communityBadgeTheme": "neon"
 	}`)
 	cfg := Parse(in)
 	if cfg.Language != "fr" {
 		t.Fatalf("known field lost: language = %q", cfg.Language)
 	}
-	for _, k := range []string{"posterRatingsMax", "posterEdgeOffset", "communityBadgeTheme"} {
+	for _, k := range []string{"posterRatingsMax", "qualityBadgesSide", "communityBadgeTheme"} {
 		if _, ok := cfg.Legacy[k]; !ok {
 			t.Errorf("unknown field %q not preserved in Legacy", k)
 		}
@@ -38,7 +38,7 @@ func TestParseNoUnknownFieldsLeavesLegacyNil(t *testing.T) {
 
 // Export then re-import must round-trip the preserved fields intact.
 func TestCanonicalJSONRoundTripsLegacyFields(t *testing.T) {
-	cfg := Parse(json.RawMessage(`{"language":"de","posterRatingsMax":6,"posterEdgeOffset":5}`))
+	cfg := Parse(json.RawMessage(`{"language":"de","posterRatingsMax":6,"qualityBadgesSide":"left"}`))
 	raw, err := CanonicalJSON(cfg)
 	if err != nil {
 		t.Fatalf("CanonicalJSON: %v", err)
@@ -50,8 +50,8 @@ func TestCanonicalJSONRoundTripsLegacyFields(t *testing.T) {
 	if string(restored.Legacy["posterRatingsMax"]) != "6" {
 		t.Errorf("posterRatingsMax not round-tripped: %s", restored.Legacy["posterRatingsMax"])
 	}
-	if string(restored.Legacy["posterEdgeOffset"]) != "5" {
-		t.Errorf("posterEdgeOffset not round-tripped: %s", restored.Legacy["posterEdgeOffset"])
+	if string(restored.Legacy["qualityBadgesSide"]) != `"left"` {
+		t.Errorf("qualityBadgesSide not round-tripped: %s", restored.Legacy["qualityBadgesSide"])
 	}
 }
 

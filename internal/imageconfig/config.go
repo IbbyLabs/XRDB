@@ -245,10 +245,23 @@ func mergeLegacy(marshalled []byte, legacy map[string]json.RawMessage) ([]byte, 
 // RatingBadgeConfig groups the rating-badge sizing and count controls. Style,
 // theme, layout, and the ratings allow-list remain flat fields on Config.
 type RatingBadgeConfig struct {
-	RatingBadgeScale   int    `json:"ratingBadgeScale,omitempty"`   // percent 70-200; 0 = 100
-	RatingsMax         *int   `json:"ratingsMax,omitempty"`         // cap on badge count; nil = no cap
-	RatingBadgeOffsetX int    `json:"ratingBadgeOffsetX,omitempty"` // px nudge of the whole strip
-	RatingBadgeOffsetY int    `json:"ratingBadgeOffsetY,omitempty"`
+	RatingBadgeScale   int  `json:"ratingBadgeScale,omitempty"`   // percent 70-200; 0 = 100
+	RatingsMax         *int `json:"ratingsMax,omitempty"`         // cap on badge count; nil = no cap
+	RatingBadgeOffsetX int  `json:"ratingBadgeOffsetX,omitempty"` // px nudge of the whole strip
+	RatingBadgeOffsetY int  `json:"ratingBadgeOffsetY,omitempty"`
+	// Per-style nudges, added to the offsets above. Each badge style sits
+	// differently on the artwork, so a position tuned for one is wrong for the
+	// next; keeping a nudge per style means switching style keeps both.
+	RatingOffsetXPillGlass int `json:"ratingXOffsetPillGlass,omitempty"`
+	RatingOffsetYPillGlass int `json:"ratingYOffsetPillGlass,omitempty"`
+	RatingOffsetXSquare    int `json:"ratingXOffsetSquare,omitempty"`
+	RatingOffsetYSquare    int `json:"ratingYOffsetSquare,omitempty"`
+	// PosterEdgeOffset pushes the whole badge strip further in from the edge it
+	// sits against. 0 keeps the built-in inset.
+	PosterEdgeOffset int `json:"posterEdgeOffset,omitempty"`
+	// BottomRatingsRow keeps every badge on one row along the bottom edge
+	// instead of wrapping them or placing them by the layout's region.
+	BottomRatingsRow   bool   `json:"bottomRatingsRow,omitempty"`
 	RatingPresentation string `json:"ratingPresentation,omitempty"` // standard|editorial|none (others modeled)
 	// RatingValueMode picks the scale rating values are drawn on. "native" (the
 	// default) keeps every source on its own scale, so IMDb reads out of ten,
@@ -516,6 +529,12 @@ type rawRating struct {
 	RatingsMax              *int               `json:"ratingsMax"`
 	RatingBadgeOffsetX      *int               `json:"ratingBadgeOffsetX"`
 	RatingBadgeOffsetY      *int               `json:"ratingBadgeOffsetY"`
+	RatingOffsetXPillGlass  *int               `json:"ratingXOffsetPillGlass"`
+	RatingOffsetYPillGlass  *int               `json:"ratingYOffsetPillGlass"`
+	RatingOffsetXSquare     *int               `json:"ratingXOffsetSquare"`
+	RatingOffsetYSquare     *int               `json:"ratingYOffsetSquare"`
+	PosterEdgeOffset        *int               `json:"posterEdgeOffset"`
+	BottomRatingsRow        *bool              `json:"bottomRatingsRow"`
 	RatingPresentation      *string            `json:"ratingPresentation"`
 	RatingValueMode         *string            `json:"ratingValueMode"`
 	IconShape               *string            `json:"iconShape"`
@@ -810,6 +829,24 @@ func parseRating(cfg *Config, r *raw) {
 	}
 	if r.RatingBadgeOffsetY != nil {
 		cfg.RatingBadgeOffsetY = clampInt(*r.RatingBadgeOffsetY, -320, 320)
+	}
+	if r.RatingOffsetXPillGlass != nil {
+		cfg.RatingOffsetXPillGlass = clampInt(*r.RatingOffsetXPillGlass, -320, 320)
+	}
+	if r.RatingOffsetYPillGlass != nil {
+		cfg.RatingOffsetYPillGlass = clampInt(*r.RatingOffsetYPillGlass, -320, 320)
+	}
+	if r.RatingOffsetXSquare != nil {
+		cfg.RatingOffsetXSquare = clampInt(*r.RatingOffsetXSquare, -320, 320)
+	}
+	if r.RatingOffsetYSquare != nil {
+		cfg.RatingOffsetYSquare = clampInt(*r.RatingOffsetYSquare, -320, 320)
+	}
+	if r.PosterEdgeOffset != nil {
+		cfg.PosterEdgeOffset = clampInt(*r.PosterEdgeOffset, 0, 80)
+	}
+	if r.BottomRatingsRow != nil {
+		cfg.BottomRatingsRow = *r.BottomRatingsRow
 	}
 	if r.RatingPresentation != nil {
 		switch v := strings.ToLower(strings.TrimSpace(*r.RatingPresentation)); v {

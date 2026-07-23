@@ -350,3 +350,33 @@ func TestParseReadsTheReleaseStatusStyle(t *testing.T) {
 		t.Errorf("unknown style parsed as %q, want the default", got)
 	}
 }
+
+func TestParseReadsTheBadgeGeometry(t *testing.T) {
+	data := json.RawMessage(`{
+		"ratingXOffsetPillGlass":10,"ratingYOffsetPillGlass":-6,
+		"ratingXOffsetSquare":4,"ratingYOffsetSquare":8,
+		"posterEdgeOffset":30,"bottomRatingsRow":true
+	}`)
+	cfg := Parse(data)
+	if cfg.RatingOffsetXPillGlass != 10 || cfg.RatingOffsetYPillGlass != -6 {
+		t.Errorf("pill/glass offsets: %+v", cfg.RatingBadgeConfig)
+	}
+	if cfg.RatingOffsetXSquare != 4 || cfg.RatingOffsetYSquare != 8 {
+		t.Errorf("square offsets: %+v", cfg.RatingBadgeConfig)
+	}
+	if cfg.PosterEdgeOffset != 30 {
+		t.Errorf("edge offset = %d, want 30", cfg.PosterEdgeOffset)
+	}
+	if !cfg.BottomRatingsRow {
+		t.Error("the bottom ratings row must read as on")
+	}
+}
+
+func TestParseClampsTheEdgeOffset(t *testing.T) {
+	if got := Parse(json.RawMessage(`{"posterEdgeOffset":500}`)).PosterEdgeOffset; got != 80 {
+		t.Errorf("edge offset = %d, want it clamped to 80", got)
+	}
+	if got := Parse(json.RawMessage(`{"posterEdgeOffset":-10}`)).PosterEdgeOffset; got != 0 {
+		t.Errorf("edge offset = %d, want it clamped to 0", got)
+	}
+}
