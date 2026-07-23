@@ -58,7 +58,7 @@ var v2WordFlags = map[string]bool{"providers": true}
 // v2DecodeSourceKeys are v2 keys XRDB does not model directly but decodes into
 // keys it does. They are seeded into each surface so the per-surface decoders
 // can read them, then removed again so only the decoded result remains.
-var v2DecodeSourceKeys = map[string]bool{"providerAppearance": true}
+var v2DecodeSourceKeys = map[string]bool{"providerAppearance": true, "qualityBadgesSide": true}
 
 // v2SourceRenames maps v2's rating source ids to XRDB's. Every other id is
 // shared between the two, including the AlloCiné and Filmweb sources.
@@ -141,6 +141,7 @@ func ConvertConfig(raw json.RawMessage) (json.RawMessage, ConvertStats, error) {
 		convertWordFlags(surfaces[s])
 		convertGenreBadge(surfaces[s])
 		convertProviderAppearance(surfaces[s])
+		convertQualityBadgesSide(surfaces[s])
 		convertWeights(surfaces[s])
 		for _, key := range pruneUnreadable(surfaces[s]) {
 			dropped[key] = true
@@ -273,6 +274,37 @@ func convertGenreBadge(surface map[string]json.RawMessage) {
 	}
 	if !on {
 		delete(surface, "genreBadgeMode")
+	}
+}
+
+// convertQualityBadgesSide maps v2's left/right quality-badge side onto XRDB's
+// six-position quality-badge placement, which supersedes it. It only fills a
+// position the config did not set, so an explicit qualityBadgesPos wins.
+func convertQualityBadgesSide(surface map[string]json.RawMessage) {
+	raw, ok := surface["qualityBadgesSide"]
+	if !ok {
+		return
+	}
+	var side string
+	if err := json.Unmarshal(raw, &side); err != nil {
+		return
+	}
+	pos := ""
+	switch strings.ToLower(strings.TrimSpace(side)) {
+	case "left":
+		pos = "bl"
+	case "right":
+		pos = "br"
+	}
+	delete(surface, "qualityBadgesSide")
+	if pos == "" {
+		return
+	}
+	if _, set := surface["qualityBadgesPos"]; set {
+		return
+	}
+	if encoded, err := json.Marshal(pos); err == nil {
+		surface["qualityBadgesPos"] = encoded
 	}
 }
 

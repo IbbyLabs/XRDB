@@ -108,19 +108,29 @@ badge themes, six switchable UI themes, source weighting as percent shares,
 random-poster filters, episode artwork modes, AlloCiné and Filmweb ratings,
 one-command install, and markedly faster rendering.
 
-Not carried over (by design — the v3 configurator stays simple):
+Also carried now: badge icon shape, per-style badge offsets, the poster edge
+inset, a single bottom rating row, per-provider mark size, the split
+critics/audience aggregate colours with a dynamic score ramp, the release
+status badge styles, the trending tag surface, and the rating value scale. A v2
+profile that set any of these keeps them.
 
-- **Fine-grained badge geometry** — per-style pixel offsets (glass vs square),
-  icon shape, and provider appearance overrides beyond accent colour.
-- **Quality badge depth** — per-type badge preferences and remux display mode.
-- **Community badges** and the split critics/audience aggregate colours.
-- `blackbar` artwork source.
+Not carried over:
+
+- **Credentials on the profile** (TMDB, MDBList, Fanart, SIMKL, XRDB keys) — v3
+  reads these from the server, so they are preserved on the profile but not
+  applied. Set them once on your instance instead.
+- **Custom quality-badge icons** (`qualityBadgeAppearance`) — v3 has no
+  user-supplied icon fetch, so the built-in badge art is used.
+- **Community badge themes** — a hosted-v2 feature with no self-hosted
+  equivalent.
+- `blackbar` artwork source and the **strict TMDB ID scope** guard.
 - **Stremio proxy with catalog rules and metadata translation** — v3 ships
   plain addon endpoints instead.
 - **Partner signed access, poster warming schedules, config encryption,
   inactive-config pruning** — operational features from the hosted v2.
 
-If one of these blocks your migration, open an issue:
+Anything not carried stays preserved on the profile untouched, so nothing is
+lost. If one of these blocks your migration, open an issue:
 https://github.com/IbbyLabs/XRDB/issues
 
 ## Reporting problems

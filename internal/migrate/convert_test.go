@@ -426,3 +426,17 @@ func TestV2ProviderAppearanceDecodesAccentAndIconScale(t *testing.T) {
 		t.Errorf("imdb accent = %q, want #facc15", poster.RatingProviderOverrides["imdb"])
 	}
 }
+
+func TestV2QualityBadgesSideBecomesAPosition(t *testing.T) {
+	out := convert(t, `{"posterQualityBadgesSide":"left"}`)
+	if got := surfaceOf(t, out, "poster").QualityBadgesPos; got != "bl" {
+		t.Errorf("quality badges position = %q, want bl", got)
+	}
+}
+
+func TestAnExplicitQualityPositionWinsOverTheSide(t *testing.T) {
+	out := convert(t, `{"posterQualityBadgesSide":"left","posterQualityBadgesPosition":"tr"}`)
+	if got := surfaceOf(t, out, "poster").QualityBadgesPos; got != "tr" {
+		t.Errorf("quality badges position = %q, want the explicit tr", got)
+	}
+}
