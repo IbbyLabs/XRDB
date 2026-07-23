@@ -471,8 +471,19 @@ func releaseStatusLabel(status string) (string, color.NRGBA, bool) {
 	return "", color.NRGBA{}, false
 }
 
+// releaseStatusOpts carries the release-status badge styling. Zero value keeps
+// the accent-bordered plate the badge has always drawn.
+type releaseStatusOpts struct {
+	style     string // "" | glass | square | plain | tile | silver
+	tileColor string // "#RRGGBB" for the tile style
+}
+
+func releaseStatusOptsFromConfig(cfg imageconfig.Config) releaseStatusOpts {
+	return releaseStatusOpts{style: cfg.ReleaseStatusBadgeStyle, tileColor: cfg.ReleaseStatusTileColor}
+}
+
 // drawReleaseStatusBadge marks whether a title is in cinemas or out on digital.
-func drawReleaseStatusBadge(base *image.NRGBA, status string, pos string, scale float64, occ *occupancy) {
+func drawReleaseStatusBadge(base *image.NRGBA, status string, pos string, scale float64, occ *occupancy, opts releaseStatusOpts) {
 	label, accent, ok := releaseStatusLabel(status)
 	if !ok {
 		return
@@ -497,14 +508,41 @@ func drawReleaseStatusBadge(base *image.NRGBA, status string, pos string, scale 
 	}
 
 	r := occ.place(resolvedPos, bw, bh, s(12), s(12), s(7))
+	tx, ty := r.Min.X+padX, r.Min.Y+padY+ascent
+
+	if opts.style == "plain" {
+		drawText(base, face, tx+maxInt(1, s(1)), ty+maxInt(1, s(1)), color.NRGBA{R: 0, G: 0, B: 0, A: 180}, label)
+		drawText(base, face, tx, ty, accent, label)
+		return
+	}
+
 	border := accent
 	border.A = 220
-	drawSoftTile(base, r, s(5), tileChrome{
+	chrome := tileChrome{
 		fill:   color.NRGBA{R: 10, G: 12, B: 18, A: 225},
 		border: border,
 		shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 80},
-	})
-	drawText(base, face, r.Min.X+padX, r.Min.Y+padY+ascent, accent, label)
+	}
+	textCol := accent
+	switch opts.style {
+	case "silver":
+		chrome.fill = color.NRGBA{R: 20, G: 22, B: 28, A: 45}
+		chrome.border = color.NRGBA{R: 244, G: 244, B: 245, A: 230}
+		textCol = color.NRGBA{R: 244, G: 244, B: 245, A: 245}
+	case "tile":
+		if c, err := parseHexColor(opts.tileColor); opts.tileColor != "" && err == nil {
+			c.A = 235
+			chrome.fill = c
+			chrome.border = color.NRGBA{}
+			textCol = color.NRGBA{R: 255, G: 255, B: 255, A: 255}
+		}
+	}
+	radius := s(5)
+	if opts.style == "square" {
+		radius = 0
+	}
+	drawSoftTile(base, r, radius, chrome)
+	drawText(base, face, tx, ty, textCol, label)
 }
 
 // ── Provider icon badges ──────────────────────────────────────────────────────

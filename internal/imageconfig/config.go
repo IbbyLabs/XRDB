@@ -356,6 +356,10 @@ type PerSurfaceBaseConfig struct {
 type AgeRatingConfig struct {
 	AgeRatingBadgeStyle string `json:"ageRatingBadgeStyle,omitempty"` // glass | plain | tile
 	AgeRatingTileColor  string `json:"ageRatingTileColor,omitempty"`  // "#RRGGBB" for the tile style
+	// The release-status badge takes the same treatments as the age badge, so
+	// the two corner plates can be styled to match.
+	ReleaseStatusBadgeStyle string `json:"releaseStatusBadgeStyle,omitempty"` // glass | plain | tile | square | silver
+	ReleaseStatusTileColor  string `json:"releaseStatusTileColor,omitempty"`  // "#RRGGBB" for the tile style
 }
 
 // TrendingConfig groups the trending-tag styling not already covered by the
@@ -484,8 +488,10 @@ type rawTrending struct {
 }
 
 type rawAge struct {
-	AgeRatingBadgeStyle *string `json:"ageRatingBadgeStyle"`
-	AgeRatingTileColor  *string `json:"ageRatingTileColor"`
+	ReleaseStatusBadgeStyle *string `json:"releaseStatusBadgeStyle"`
+	ReleaseStatusTileColor  *string `json:"releaseStatusTileColor"`
+	AgeRatingBadgeStyle     *string `json:"ageRatingBadgeStyle"`
+	AgeRatingTileColor      *string `json:"ageRatingTileColor"`
 }
 
 type rawSurface struct {
@@ -919,6 +925,15 @@ func parseAge(cfg *Config, r *raw) {
 	}
 	if r.AgeRatingTileColor != nil && isHexColor(*r.AgeRatingTileColor) {
 		cfg.AgeRatingTileColor = strings.TrimSpace(*r.AgeRatingTileColor)
+	}
+	if r.ReleaseStatusBadgeStyle != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.ReleaseStatusBadgeStyle)); v {
+		case "glass", "square", "plain", "tile", "silver":
+			cfg.ReleaseStatusBadgeStyle = v
+		}
+	}
+	if r.ReleaseStatusTileColor != nil && isHexColor(*r.ReleaseStatusTileColor) {
+		cfg.ReleaseStatusTileColor = strings.TrimSpace(*r.ReleaseStatusTileColor)
 	}
 }
 

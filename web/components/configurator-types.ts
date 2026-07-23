@@ -140,6 +140,15 @@ export const QUALITY_STYLE_OPTIONS = [
   { id: 'tile',    label: 'Tile'  },
 ] as const;
 
+export const RELEASE_STATUS_STYLE_OPTIONS = [
+  { id: '',       label: 'Accent'  },
+  { id: 'glass',  label: 'Glass'   },
+  { id: 'square',  label: 'Square' },
+  { id: 'plain',  label: 'Plain'   },
+  { id: 'silver', label: 'Silver'  },
+  { id: 'tile',   label: 'Tile'    },
+] as const;
+
 export const AGE_STYLE_OPTIONS = [
   { id: 'default', label: 'Glass'  },
   { id: 'square',  label: 'Square' },
@@ -223,6 +232,8 @@ export interface ConfigState {
   ageRating: boolean;
   releaseStatus: boolean;
   releaseStatusPos: string;
+  releaseStatusBadgeStyle: string; // glass | square | plain | tile | silver
+  releaseStatusTileColor: string; // '#RRGGBB' for the tile style
   ageRatingPos: string;
   genre: boolean;
   genrePos: string;
@@ -316,6 +327,8 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratings: ['imdb', 'tmdb'],
   ageRating: false,
   releaseStatus: false,
+  releaseStatusBadgeStyle: '',
+  releaseStatusTileColor: '',
   releaseStatusPos: 'inherit',
   ageRatingPos: 'inherit',
   genre: false,

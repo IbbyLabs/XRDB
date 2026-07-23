@@ -64,9 +64,9 @@ func (k *Kitsu) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, er
 		Data struct {
 			Attributes struct {
 				Titles struct {
-					En     string `json:"en"`
-					EnJP   string `json:"en_jp"`
-					JaJP   string `json:"ja_jp"`
+					En   string `json:"en"`
+					EnJP string `json:"en_jp"`
+					JaJP string `json:"ja_jp"`
 				} `json:"titles"`
 				Synopsis      string `json:"synopsis"`
 				AverageRating string `json:"averageRating"` // e.g. "74.72"

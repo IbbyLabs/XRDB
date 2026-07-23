@@ -128,7 +128,7 @@ func TestReleaseStatusBadge(t *testing.T) {
 
 	for _, status := range []string{"digital", "cinemas"} {
 		img := genreTestImage()
-		drawReleaseStatusBadge(img, status, "tr", 2.0, newOccupancy(img.Bounds()))
+		drawReleaseStatusBadge(img, status, "tr", 2.0, newOccupancy(img.Bounds()), releaseStatusOpts{})
 		if !imagesDiffer(blank, img) {
 			t.Errorf("release status %q drew nothing", status)
 		}
@@ -136,9 +136,9 @@ func TestReleaseStatusBadge(t *testing.T) {
 
 	// The two states must be visually distinct, not just both present.
 	digital := genreTestImage()
-	drawReleaseStatusBadge(digital, "digital", "tr", 2.0, newOccupancy(digital.Bounds()))
+	drawReleaseStatusBadge(digital, "digital", "tr", 2.0, newOccupancy(digital.Bounds()), releaseStatusOpts{})
 	cinemas := genreTestImage()
-	drawReleaseStatusBadge(cinemas, "cinemas", "tr", 2.0, newOccupancy(cinemas.Bounds()))
+	drawReleaseStatusBadge(cinemas, "cinemas", "tr", 2.0, newOccupancy(cinemas.Bounds()), releaseStatusOpts{})
 	if !imagesDiffer(digital, cinemas) {
 		t.Error("digital and cinemas rendered identically")
 	}
@@ -146,7 +146,7 @@ func TestReleaseStatusBadge(t *testing.T) {
 	// An unknown or absent status must draw nothing at all.
 	for _, status := range []string{"", "physical", "nonsense"} {
 		img := genreTestImage()
-		drawReleaseStatusBadge(img, status, "tr", 2.0, newOccupancy(img.Bounds()))
+		drawReleaseStatusBadge(img, status, "tr", 2.0, newOccupancy(img.Bounds()), releaseStatusOpts{})
 		if imagesDiffer(blank, img) {
 			t.Errorf("status %q should draw nothing", status)
 		}

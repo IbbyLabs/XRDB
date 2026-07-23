@@ -20,7 +20,10 @@ func TestIsValidMediaType(t *testing.T) {
 }
 
 func TestDimensionsFor(t *testing.T) {
-	cases := []struct{ mediaType string; w, h int }{
+	cases := []struct {
+		mediaType string
+		w, h      int
+	}{
 		{"poster", 780, 1170},
 		{"backdrop", 1280, 720},
 		{"thumbnail", 320, 180},
@@ -52,7 +55,10 @@ func TestPlaceholderPNGIsDeterministic(t *testing.T) {
 }
 
 func TestPlaceholderPNGDecodesWithCorrectDimensions(t *testing.T) {
-	cases := []struct{ mediaType string; w, h int }{
+	cases := []struct {
+		mediaType string
+		w, h      int
+	}{
 		{"poster", 780, 1170},
 		{"backdrop", 1280, 720},
 		{"thumbnail", 320, 180},

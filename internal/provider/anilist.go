@@ -96,8 +96,8 @@ func (a *AniList) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, 
 					Romaji  string `json:"romaji"`
 					Native  string `json:"native"`
 				} `json:"title"`
-				Description  string  `json:"description"`
-				AverageScore int     `json:"averageScore"` // 0-100
+				Description  string   `json:"description"`
+				AverageScore int      `json:"averageScore"` // 0-100
 				Genres       []string `json:"genres"`
 				CoverImage   struct {
 					ExtraLarge string `json:"extraLarge"`

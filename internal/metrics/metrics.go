@@ -18,22 +18,22 @@ type Record struct {
 
 // Snapshot is a point-in-time view of collected metrics.
 type Snapshot struct {
-	TotalRequests int64              `json:"totalRequests"`
-	ByStatus      map[int]int64      `json:"byStatus"`
-	ByRoute       map[string]int64   `json:"byRoute"`
-	P50Ms         float64            `json:"p50Ms"`
-	P95Ms         float64            `json:"p95Ms"`
-	P99Ms         float64            `json:"p99Ms"`
-	UptimeSeconds float64            `json:"uptimeSeconds"`
+	TotalRequests int64            `json:"totalRequests"`
+	ByStatus      map[int]int64    `json:"byStatus"`
+	ByRoute       map[string]int64 `json:"byRoute"`
+	P50Ms         float64          `json:"p50Ms"`
+	P95Ms         float64          `json:"p95Ms"`
+	P99Ms         float64          `json:"p99Ms"`
+	UptimeSeconds float64          `json:"uptimeSeconds"`
 }
 
 // Store collects request metrics with a bounded ring buffer.
 type Store struct {
-	mu         sync.Mutex
-	ring       []Record
-	head       int
-	total      atomic.Int64
-	startedAt  time.Time
+	mu        sync.Mutex
+	ring      []Record
+	head      int
+	total     atomic.Int64
+	startedAt time.Time
 }
 
 const ringSize = 2000

@@ -172,6 +172,8 @@ export function ConfiguratorClient() {
       ratings: cfg.ratings, ageRating: cfg.ageRating, ageRatingPos: cfg.ageRatingPos,
       releaseStatus: cfg.releaseStatus,
       releaseStatusPos: cfg.releaseStatusPos === 'inherit' ? '' : cfg.releaseStatusPos,
+      releaseStatusBadgeStyle: cfg.releaseStatusBadgeStyle,
+      releaseStatusTileColor: cfg.releaseStatusTileColor,
       genre: cfg.genre, genrePos: cfg.genrePos, badges: cfg.badges,
       providers: cfg.providers, providersCountry: cfg.providersCountry,
       networkTileColor: cfg.networkTileColor, aggregateBar: cfg.aggregateBar,

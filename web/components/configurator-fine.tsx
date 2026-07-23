@@ -5,7 +5,7 @@ import {
   RATING_OPTIONS, SIX_POS_OPTIONS, QUALITY_STYLE_OPTIONS, GENRE_STYLE_OPTIONS,
   AGE_STYLE_OPTIONS, GENRE_MODE_OPTIONS, ANIME_GROUPING_OPTIONS,
   AGGREGATE_SOURCE_OPTIONS, AGGREGATE_ACCENT_MODE_OPTIONS, SCOREBAR_STYLE_OPTIONS,
-  RATING_PRESENTATION_OPTIONS, RATING_VALUE_MODE_OPTIONS,
+  RATING_PRESENTATION_OPTIONS, RATING_VALUE_MODE_OPTIONS, RELEASE_STATUS_STYLE_OPTIONS,
   DEFAULT_CRITICS_PRIORITY, DEFAULT_AUDIENCE_PRIORITY,
 } from './configurator-types';
 import { resolveShares, rebalance } from '@/lib/shares';
@@ -706,6 +706,28 @@ export function AggregateFine({ uid, config, onUpdate }: GroupProps) {
           </div>
         </div>
       </details>
+    </FineGroup>
+  );
+}
+
+export function ReleaseStatusFine({ uid, config, onUpdate }: GroupProps) {
+  return (
+    <FineGroup label="Release status badge">
+      <StyleGrid
+        id={`${uid}-release-style-label`}
+        label="Style"
+        options={RELEASE_STATUS_STYLE_OPTIONS}
+        value={config.releaseStatusBadgeStyle}
+        onChange={v => onUpdate('releaseStatusBadgeStyle', v)}
+        columns={3}
+        hint="Accent keeps the coloured border that marks cinema and digital releases."
+      />
+      {config.releaseStatusBadgeStyle === 'tile' && (
+        <ColorField id={`${uid}-release-tile-color`} label="Tile colour"
+          value={config.releaseStatusTileColor}
+          onChange={v => onUpdate('releaseStatusTileColor', v)}
+          fallback="#38bdf8" resetLabel="Auto" />
+      )}
     </FineGroup>
   );
 }

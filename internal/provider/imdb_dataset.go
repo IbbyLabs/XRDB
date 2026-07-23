@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	imdbRatingsURL     = "https://datasets.imdbws.com/title.ratings.tsv.gz"
-	imdbDatasetFile    = "imdb_ratings.tsv.gz"
-	imdbDatasetMaxAge  = 7 * 24 * time.Hour // re-download weekly
+	imdbRatingsURL    = "https://datasets.imdbws.com/title.ratings.tsv.gz"
+	imdbDatasetFile   = "imdb_ratings.tsv.gz"
+	imdbDatasetMaxAge = 7 * 24 * time.Hour // re-download weekly
 )
 
 // imdbEntry holds the data for one IMDb title.

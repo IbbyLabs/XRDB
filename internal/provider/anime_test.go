@@ -212,4 +212,3 @@ func TestKitsuHTTP404(t *testing.T) {
 func TestKitsuImplementsProvider(t *testing.T) {
 	var _ Provider = NewKitsu()
 }
-

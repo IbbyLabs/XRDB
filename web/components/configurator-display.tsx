@@ -6,7 +6,7 @@ import {
   ARTWORK_OPTIONS, SIZE_OPTIONS, TEXT_PREF_OPTIONS, LANG_OPTIONS,
   AGE_POS_OPTIONS, SIX_POS_OPTIONS, GENRE_POS_OPTIONS, QUALITY_BADGE_OPTIONS, TREND_STYLE_OPTIONS,
 } from './configurator-types';
-import { QualityFine, GenreFine, AggregateFine, AgeFine, TrendingFine } from './configurator-fine';
+import { QualityFine, GenreFine, AggregateFine, AgeFine, ReleaseStatusFine, TrendingFine } from './configurator-fine';
 
 // ── Notice ────────────────────────────────────────────────────────────────────
 
@@ -277,6 +277,8 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
             </select>
           </Field>
         )}
+
+        {config.releaseStatus && fine && <ReleaseStatusFine uid={uid} config={config} onUpdate={onUpdate} />}
 
         {config.ageRating && (
           <>

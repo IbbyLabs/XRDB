@@ -337,3 +337,16 @@ func TestAStopListThatParsesToNothingIsNotStored(t *testing.T) {
 		t.Errorf("got %q, want the field left unset", cfg.AggregateDynamicStops)
 	}
 }
+
+func TestParseReadsTheReleaseStatusStyle(t *testing.T) {
+	cfg := Parse(json.RawMessage(`{"releaseStatusBadgeStyle":"tile","releaseStatusTileColor":"#38bdf8"}`))
+	if cfg.ReleaseStatusBadgeStyle != "tile" {
+		t.Errorf("style = %q, want tile", cfg.ReleaseStatusBadgeStyle)
+	}
+	if cfg.ReleaseStatusTileColor != "#38bdf8" {
+		t.Errorf("tile colour = %q", cfg.ReleaseStatusTileColor)
+	}
+	if got := Parse(json.RawMessage(`{"releaseStatusBadgeStyle":"neon"}`)).ReleaseStatusBadgeStyle; got != "" {
+		t.Errorf("unknown style parsed as %q, want the default", got)
+	}
+}
