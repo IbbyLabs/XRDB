@@ -36,6 +36,9 @@ var (
 
 	onceIcons   sync.Once
 	ratingIcons map[string]image.Image
+	// ratingIconColored marks the sources whose icon carries its own brand
+	// colors, so it is drawn as it is rather than recolored to match the badge.
+	ratingIconColored map[string]bool
 
 	onceBadgeLogos sync.Once
 	badgeLogos     map[string]*image.NRGBA // quality-badge brand logos (white on transparent)
@@ -83,6 +86,7 @@ func ensureFaces() {
 func ensureIcons() {
 	onceIcons.Do(func() {
 		ratingIcons = make(map[string]image.Image)
+		ratingIconColored = make(map[string]bool)
 		entries, err := ratingIconFS.ReadDir("assets/ratings")
 		if err != nil {
 			slog.Warn("Failed to read the rating icons", "error", err)
@@ -97,7 +101,9 @@ func ensureIcons() {
 			if err != nil {
 				continue
 			}
-			ratingIcons[strings.TrimSuffix(e.Name(), ".png")] = img
+			source := strings.TrimSuffix(e.Name(), ".png")
+			ratingIcons[source] = img
+			ratingIconColored[source] = isBrandColored(img)
 		}
 	})
 }
@@ -265,14 +271,60 @@ func accentFor(source string) color.NRGBA {
 // of transparent padding and scaled with its aspect ratio preserved, so marks
 // fill the box instead of being squeezed to its shape.
 func drawTintedIcon(dst *image.NRGBA, rect image.Rectangle, icon image.Image, tint color.NRGBA) {
+	scaled, rect := scaleIconToFit(icon, rect)
+	if scaled == nil {
+		return
+	}
+	draw.DrawMask(dst, rect, &image.Uniform{C: tint}, image.Point{}, scaled, image.Point{}, draw.Over)
+}
+
+// drawBrandIcon paints a full-color brand mark as it is, so marks built from
+// several colors (Letterboxd's three dots, IMDb's black-on-yellow wordmark)
+// keep them instead of flattening to one silhouette.
+func drawBrandIcon(dst *image.NRGBA, rect image.Rectangle, icon image.Image) {
+	scaled, rect := scaleIconToFit(icon, rect)
+	if scaled == nil {
+		return
+	}
+	draw.Draw(dst, rect, scaled, image.Point{}, draw.Over)
+}
+
+// scaleIconToFit trims an icon's transparent padding and scales it into rect
+// with its aspect ratio kept, returning the scaled image and the rect it fills.
+// A nil image means there is nothing worth drawing.
+func scaleIconToFit(icon image.Image, rect image.Rectangle) (*image.NRGBA, image.Rectangle) {
 	glyph := trimTransparent(toNRGBA(icon))
 	rect = fitRect(glyph.Bounds().Dx(), glyph.Bounds().Dy(), rect)
 	if rect.Dx() <= 0 || rect.Dy() <= 0 {
-		return
+		return nil, rect
 	}
 	scaled := image.NewNRGBA(image.Rect(0, 0, rect.Dx(), rect.Dy()))
 	xdraw.CatmullRom.Scale(scaled, scaled.Bounds(), glyph, glyph.Bounds(), xdraw.Over, nil)
-	draw.DrawMask(dst, rect, &image.Uniform{C: tint}, image.Point{}, scaled, image.Point{}, draw.Over)
+	return scaled, rect
+}
+
+// isBrandColored reports whether an icon carries color of its own. The bundled
+// marks come in two kinds: white-on-transparent glyphs meant to be recolored to
+// match the badge, and full-color brand marks meant to be drawn as they are.
+// Deciding from the pixels means a mark starts rendering in color as soon as a
+// color asset replaces a white one, with no list to keep in step.
+func isBrandColored(icon image.Image) bool {
+	img := toNRGBA(icon)
+	b := img.Bounds()
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			c := img.NRGBAAt(x, y)
+			if c.A < 24 {
+				continue
+			}
+			// Anti-aliased edges of a white glyph stay near-white, so allow a
+			// little drift before calling a mark colored.
+			if c.R < 232 || c.G < 232 || c.B < 232 {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // badgeChrome bundles the style/theme-resolved drawing parameters.
@@ -326,12 +378,15 @@ func chromeFor(cfg imageconfig.Config) badgeChrome {
 
 // badgeSpec holds pre-computed layout info for a single rating badge.
 type badgeSpec struct {
-	value  string
-	valW   int
-	icon   image.Image
-	w      int
-	accent color.NRGBA
-	x      int // resolved x position, set during layout
+	value string
+	valW  int
+	icon  image.Image
+	// colored marks an icon that carries its own brand colors, so it is drawn
+	// as it is instead of being recolored to match the badge.
+	colored bool
+	w       int
+	accent  color.NRGBA
+	x       int // resolved x position, set during layout
 }
 
 // drawRatingRow renders a horizontal slice of badge specs at row y.
@@ -364,7 +419,11 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 
 		if sp.icon != nil {
 			iRect := image.Rect(contentX, y+(innerH-iconSize)/2, contentX+iconSize, y+(innerH-iconSize)/2+iconSize)
-			drawTintedIcon(out, iRect, sp.icon, iconTint)
+			if sp.colored {
+				drawBrandIcon(out, iRect, sp.icon)
+			} else {
+				drawTintedIcon(out, iRect, sp.icon, iconTint)
+			}
 			contentX += iconSize + iconGap
 		}
 
@@ -512,11 +571,12 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 			bw += iconSize + iconGap
 		}
 		specs = append(specs, badgeSpec{
-			value:  value,
-			valW:   vw,
-			icon:   icon,
-			w:      bw,
-			accent: resolveProviderAccent(cfg, r.Source),
+			value:   value,
+			valW:    vw,
+			icon:    icon,
+			colored: ratingIconColored[r.Source],
+			w:       bw,
+			accent:  resolveProviderAccent(cfg, r.Source),
 		})
 	}
 
