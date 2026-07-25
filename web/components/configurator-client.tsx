@@ -700,6 +700,7 @@ export function ConfiguratorClient() {
               <InstallPanel
                 configKey={loadedProfile ? (loadedProfile.alias || loadedProfile.id) : ''}
                 renderKey={renderKey}
+                versionToken={loadedProfile?.versionToken}
                 onRenderKeyChange={applyRenderKey}
                 onNotice={flash}
               />

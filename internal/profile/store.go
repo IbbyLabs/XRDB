@@ -1,7 +1,9 @@
 package profile
 
 import (
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -28,6 +30,19 @@ type Profile struct {
 	UpdatedAt    string          `json:"updatedAt"`
 	PasswordHash string          `json:"-"` // bcrypt hash; empty = no password
 	HasPassword  bool            `json:"hasPassword"`
+	// VersionToken changes whenever the profile is edited. Artwork URLs carry
+	// it so an edit produces a different URL: Stremio caches poster images for
+	// 24-48h client-side no matter what TTL the server sends, so changing the
+	// URL is the only reliable way to make an edit visible.
+	VersionToken string `json:"versionToken"`
+}
+
+// versionToken derives the short URL token for a profile revision. It hashes
+// the id alongside the timestamp so two profiles saved in the same instant
+// still get distinct tokens.
+func versionToken(id, updatedAt string) string {
+	sum := sha256.Sum256([]byte(id + "|" + updatedAt))
+	return hex.EncodeToString(sum[:])[:8]
 }
 
 // ErrWrongPassword is returned when a password-protected profile is accessed with an incorrect password.
@@ -160,6 +175,7 @@ func (s *Store) Save(p *Profile) error {
 		return fmt.Errorf("insert profile: %w", err)
 	}
 	p.HasPassword = p.PasswordHash != ""
+	p.VersionToken = versionToken(p.ID, p.UpdatedAt)
 	return nil
 }
 
@@ -351,6 +367,7 @@ func (s *Store) List() ([]*Profile, error) {
 		}
 		p.Config = json.RawMessage(cfgStr)
 		p.HasPassword = p.PasswordHash != ""
+		p.VersionToken = versionToken(p.ID, p.UpdatedAt)
 		out = append(out, &p)
 	}
 	return out, rows.Err()
@@ -368,6 +385,7 @@ func scanProfile(row *sql.Row) (*Profile, error) {
 	}
 	p.Config = json.RawMessage(cfgStr)
 	p.HasPassword = p.PasswordHash != ""
+	p.VersionToken = versionToken(p.ID, p.UpdatedAt)
 	return &p, nil
 }
 

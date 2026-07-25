@@ -124,11 +124,14 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		}
 		cacheKey := render.CacheKey(mediaType, id, cfgKeyInput, uuid)
 		var pngBytes []byte
+		contentType := ""
 		fromCache := false
+		var expiresAt time.Time
 		if renderCache != nil {
 			if e, ok := renderCache.Get(cacheKey); ok {
 				pngBytes = e.Data
 				fromCache = true
+				expiresAt = e.ExpiresAt
 			}
 		}
 		placeholder := false
@@ -155,6 +158,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				if renderResult != nil {
 					pngBytes = renderResult.ImageBytes
 					placeholder = renderResult.Placeholder
+					contentType = renderResult.ContentType
 				}
 			}
 			if len(pngBytes) == 0 {
@@ -165,17 +169,52 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			// frozen for the whole TTL, and downstream caches that key on a 200
 			// (e.g. an nginx proxy_cache) would pin the broken image for as long
 			// as they hold it. Only real artwork is cached.
-			if renderCache != nil && !placeholder {
+			if !placeholder {
 				ttl := effectiveTTL(renderResult, ttls)
-				_ = renderCache.SetWithTTL(cacheKey, pngBytes, ttl)
+				if renderCache != nil {
+					_ = renderCache.SetWithTTL(cacheKey, pngBytes, ttl)
+					if ttl <= 0 {
+						// Zero means "use the cache default"; resolve it so the
+						// freshness we advertise matches the one we apply.
+						ttl = renderCache.TTL()
+					}
+				}
+				if ttl > 0 {
+					expiresAt = time.Now().Add(ttl)
+				}
 			}
 			// Free the slot before writing to the client so a slow consumer
 			// doesn't hold a render slot for the duration of the download.
 			renderLimiter.release()
 		}
-		w.Header().Set("Content-Type", "image/png")
+		if contentType == "" {
+			// Cache entries carry no format marker, and an entry written by an
+			// earlier build may be PNG while this config now renders JPEG, so
+			// read the format off the bytes rather than assuming it.
+			contentType = render.SniffContentType(pngBytes)
+		}
+		w.Header().Set("Content-Type", contentType)
 		w.Header().Set("X-Cache-Key", cacheKey)
 		status := http.StatusOK
+		if !placeholder {
+			// The cache key is a digest of everything that determines these
+			// bytes, so it doubles as a strong validator.
+			etag := `"` + cacheKey + `"`
+			w.Header().Set("ETag", etag)
+			// Let downstream caches hold the render exactly as long as we will.
+			// The URL carries a profile-version token (see profileVersionToken),
+			// so an edited profile is a different URL and cannot be served stale
+			// from a downstream cache.
+			if maxAge := int(time.Until(expiresAt).Seconds()); maxAge > 0 {
+				w.Header().Set("Cache-Control", "public, max-age="+strconv.Itoa(maxAge))
+			}
+			if match := r.Header.Get("If-None-Match"); match != "" && etagMatches(match, etag) {
+				w.Header().Set("X-Cache", "HIT")
+				w.WriteHeader(http.StatusNotModified)
+				ms.Record("/"+mediaType, http.StatusNotModified, latMs(start))
+				return
+			}
+		}
 		if placeholder {
 			// Signal "no artwork" with a non-cacheable 404 so caches/CDNs don't
 			// store the fallback, and AIOMetadata's image proxy falls back to the
@@ -436,6 +475,23 @@ func mime(name string) string {
 	default:
 		return "application/octet-stream"
 	}
+}
+
+// etagMatches reports whether an If-None-Match header selects the given ETag.
+// The header is a comma-separated list, may be "*", and entries may carry the
+// weak "W/" prefix — which we treat as a match, since the two forms only differ
+// for byte-range requests and these responses are whole images.
+func etagMatches(header, etag string) bool {
+	for _, candidate := range strings.Split(header, ",") {
+		candidate = strings.TrimSpace(candidate)
+		if candidate == "*" {
+			return true
+		}
+		if strings.TrimPrefix(candidate, "W/") == etag {
+			return true
+		}
+	}
+	return false
 }
 
 func latMs(start time.Time) float64 {

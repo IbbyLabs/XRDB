@@ -34,6 +34,9 @@ export interface Profile {
   createdAt: string;
   updatedAt: string;
   hasPassword?: boolean;
+  /** Changes on every edit; artwork URLs carry it so downstream image caches
+   *  see a new URL rather than serving the old render. */
+  versionToken?: string;
 }
 
 function profilePasswordHeaders(password?: string): Record<string, string> {

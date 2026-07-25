@@ -37,11 +37,15 @@ const PUBLIC_URLS = new Set(PUBLIC_INSTANCES.map(i => normaliseOrigin(i.url)));
 /** Artwork URL patterns for AIOMetadata's custom-art fields. On a keyed
  *  instance the render key rides along so AIOMetadata's server-side fetches
  *  authenticate. */
-export function aiomPatterns(configKey: string, renderKey?: string) {
+export function aiomPatterns(configKey: string, renderKey?: string, versionToken?: string) {
   const origin = renderOrigin();
   const params = new URLSearchParams();
   if (configKey) params.set('config', configKey);
   if (renderKey) params.set('key', renderKey);
+  // Stremio holds poster images for 24-48h client-side regardless of the TTL
+  // the server sends, so an edited profile only becomes visible if the URL
+  // itself changes. The server ignores this parameter when rendering.
+  if (versionToken) params.set('v', versionToken);
   const qs = params.toString();
   const suffix = qs ? `?${qs}` : '';
   return {
@@ -59,11 +63,13 @@ interface InstallPanelProps {
   configKey: string;
   /** Instance render key (XRDB_API_KEY) the operator entered, if any. */
   renderKey: string;
+  /** Profile revision token, folded into the emitted URLs. */
+  versionToken?: string;
   onRenderKeyChange: (value: string) => void;
   onNotice: (type: 'error' | 'success' | 'info', message: string) => void;
 }
 
-export function InstallPanel({ configKey, renderKey, onRenderKeyChange, onNotice }: InstallPanelProps) {
+export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyChange, onNotice }: InstallPanelProps) {
   const uid = useId();
   const [selectedInstance, setSelectedInstance] = useState(PUBLIC_INSTANCES[0].url);
   const [customUrl, setCustomUrl] = useState('');
@@ -77,7 +83,7 @@ export function InstallPanel({ configKey, renderKey, onRenderKeyChange, onNotice
   const [installing, setInstalling] = useState(false);
   const [installUrl, setInstallUrl] = useState('');
 
-  const patterns = aiomPatterns(configKey, renderKey);
+  const patterns = aiomPatterns(configKey, renderKey, versionToken);
 
   const handleInstall = async () => {
     setInstalling(true);

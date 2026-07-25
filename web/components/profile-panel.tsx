@@ -53,6 +53,7 @@ export interface LoadedProfile {
   name: string;
   hasPassword: boolean;
   password: string; // held in memory for this session only
+  versionToken: string;
 }
 
 interface ProfilePanelProps {
@@ -93,6 +94,7 @@ export function ProfilePanel({
   const configKey = loaded ? (loaded.alias || loaded.id) : '';
   const sampleUrl = configKey
     ? `${renderOrigin()}/${mediaType}/${encodeURIComponent(mediaId)}?config=${encodeURIComponent(configKey)}`
+      + (loaded?.versionToken ? `&v=${encodeURIComponent(loaded.versionToken)}` : '')
     : '';
 
   const validateAlias = (value: string): boolean => {
@@ -121,6 +123,7 @@ export function ProfilePanel({
         name: created.name ?? '',
         hasPassword: !!password,
         password,
+        versionToken: created.versionToken ?? '',
       });
       setName(''); setAlias(''); setPassword('');
       setSavedSnapshot(JSON.stringify(configs));
@@ -151,6 +154,7 @@ export function ProfilePanel({
         name: p.name ?? '',
         hasPassword: !!p.hasPassword,
         password: loadPassword,
+        versionToken: p.versionToken ?? '',
       });
       setLoadKey(''); setLoadPassword('');
       setRecents(r => pushRecent(r, {
@@ -169,7 +173,7 @@ export function ProfilePanel({
     if (!loaded) return;
     setBusy(true);
     try {
-      await updateProfile(
+      const updated = await updateProfile(
         loaded.id,
         {
           name: loaded.name,
@@ -178,6 +182,9 @@ export function ProfilePanel({
         },
         loaded.password || undefined,
       );
+      // Adopt the new token so the install URLs shown from here on point at the
+      // edited profile rather than the revision the client already handed out.
+      setLoaded({ ...loaded, versionToken: updated.versionToken ?? '' });
       setSavedSnapshot(JSON.stringify(configs));
       flash('success', 'Profile updated');
     } catch (e) {
