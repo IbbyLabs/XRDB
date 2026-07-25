@@ -2,6 +2,24 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.1.0](https://github.com/IbbyLabs/XRDB/compare/v3.0.0...v3.1.0) (2026-07-25)
+
+
+### Added
+
+* **scripts:** add a release command that checks, tags and pushes ([b9608b6](https://github.com/IbbyLabs/XRDB/commit/b9608b6fda3845d77c31ee06d74b41316d687df2))
+
+
+### Fixed
+
+* **scripts:** do not abort the release when a tag fetch is rejected ([c477886](https://github.com/IbbyLabs/XRDB/commit/c4778868b5698d40eedfb3efcf9df8db06298795))
+* **scripts:** force-fetch marker tags so the refresh succeeds ([cf6ff53](https://github.com/IbbyLabs/XRDB/commit/cf6ff53eac2645e19e317fafc1d52ce3b77229ea))
+
+
+### Documentation
+
+* describe the automated release flow ([5dd39c0](https://github.com/IbbyLabs/XRDB/commit/5dd39c0afaa5a673bc66e44089511c98c23b7f84))
+
 ## [Unreleased]
 
 <a id="v3-0-0"></a>
