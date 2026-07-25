@@ -469,39 +469,39 @@ func Default() Config {
 
 // raw is the loose JSON shape we accept from profile config fields.
 type raw struct {
-	OutputFormat                  *string  `json:"outputFormat"`
-	OutputQuality                 *int     `json:"outputQuality"`
-	Size                          *string  `json:"size"`
-	ArtworkSource                 *string  `json:"artworkSource"`
-	Language                      *string  `json:"language"`
-	TextPreference                *string  `json:"textPreference"`
-	Ratings                       []string `json:"ratings"`
-	RatingsLayout                 *string  `json:"ratingsLayout"`
-	BadgeStyle                    *string  `json:"badgeStyle"`
-	BadgeTheme                    *string  `json:"badgeTheme"`
-	Badges                        []string `json:"badges"`
-	AgeRating                     *bool    `json:"ageRating"`
-	AgeRatingPos                  *string  `json:"ageRatingPos"`
-	ReleaseStatus                 *bool    `json:"releaseStatus"`
-	ReleaseStatusPos              *string  `json:"releaseStatusPos"`
-	TopRated                      *bool    `json:"topRated"`
-	TopRatedPos                   *string  `json:"topRatedPos"`
-	Genre                         *bool    `json:"genre"`
-	GenrePos                      *string  `json:"genrePos"`
-	Providers                     *bool    `json:"providers"`
-	ProvidersCountry              *string  `json:"providersCountry"`
-	NetworkTileColor              *string  `json:"networkTileColor"`
-	NoBackgroundBadgeOutlineColor *string  `json:"noBackgroundBadgeOutlineColor"`
-	NoBackgroundBadgeOutlineWidth *int     `json:"noBackgroundBadgeOutlineWidth"`
-	AggregateBar                  *bool    `json:"aggregateBar"`
-	AggregateBarPos               *string  `json:"aggregateBarPos"`
-	Trending                      *bool    `json:"trending"`
-	TrendingStyle                 *string  `json:"trendingStyle"`
-	BackdropAsPoster              *bool    `json:"backdropAsPoster"`
-	BackdropLogo                  *bool    `json:"backdropLogo"`
-	RatingRing                    *bool    `json:"ratingRing"`
-	RatingRingPos                 *string  `json:"ratingRingPos"`
-	RatingRingColor               *string  `json:"ratingRingColor"`
+	OutputFormat                  *string   `json:"outputFormat"`
+	OutputQuality                 *int      `json:"outputQuality"`
+	Size                          *string   `json:"size"`
+	ArtworkSource                 *string   `json:"artworkSource"`
+	Language                      *string   `json:"language"`
+	TextPreference                *string   `json:"textPreference"`
+	Ratings                       *[]string `json:"ratings"`
+	RatingsLayout                 *string   `json:"ratingsLayout"`
+	BadgeStyle                    *string   `json:"badgeStyle"`
+	BadgeTheme                    *string   `json:"badgeTheme"`
+	Badges                        []string  `json:"badges"`
+	AgeRating                     *bool     `json:"ageRating"`
+	AgeRatingPos                  *string   `json:"ageRatingPos"`
+	ReleaseStatus                 *bool     `json:"releaseStatus"`
+	ReleaseStatusPos              *string   `json:"releaseStatusPos"`
+	TopRated                      *bool     `json:"topRated"`
+	TopRatedPos                   *string   `json:"topRatedPos"`
+	Genre                         *bool     `json:"genre"`
+	GenrePos                      *string   `json:"genrePos"`
+	Providers                     *bool     `json:"providers"`
+	ProvidersCountry              *string   `json:"providersCountry"`
+	NetworkTileColor              *string   `json:"networkTileColor"`
+	NoBackgroundBadgeOutlineColor *string   `json:"noBackgroundBadgeOutlineColor"`
+	NoBackgroundBadgeOutlineWidth *int      `json:"noBackgroundBadgeOutlineWidth"`
+	AggregateBar                  *bool     `json:"aggregateBar"`
+	AggregateBarPos               *string   `json:"aggregateBarPos"`
+	Trending                      *bool     `json:"trending"`
+	TrendingStyle                 *string   `json:"trendingStyle"`
+	BackdropAsPoster              *bool     `json:"backdropAsPoster"`
+	BackdropLogo                  *bool     `json:"backdropLogo"`
+	RatingRing                    *bool     `json:"ratingRing"`
+	RatingRingPos                 *string   `json:"ratingRingPos"`
+	RatingRingColor               *string   `json:"ratingRingColor"`
 
 	rawGenre
 	rawQuality
@@ -718,10 +718,11 @@ func Parse(data json.RawMessage) Config {
 			cfg.TextPreference = v
 		}
 	}
-	if len(r.Ratings) > 0 {
-		if valid := dedupeStrings(r.Ratings); len(valid) > 0 {
-			cfg.Ratings = valid
-		}
+	// A pointer so an explicit empty selection is distinguishable from the key
+	// being absent. Deselecting every source has to mean no rating badges, not
+	// a silent return to the default pair.
+	if r.Ratings != nil {
+		cfg.Ratings = dedupeStrings(*r.Ratings)
 	}
 	if r.RatingsLayout != nil {
 		if v := normalizeRatingsLayout(*r.RatingsLayout); v != "" {

@@ -211,3 +211,26 @@ func TestParseAcceptsLegacySmallEnums(t *testing.T) {
 		}
 	}
 }
+
+// Deselecting every rating source has to mean no rating badges. An empty list
+// used to be indistinguishable from an absent one, so the default pair came
+// back and IMDb and TMDB could not be removed.
+func TestEmptyRatingSelectionIsHonoured(t *testing.T) {
+	if got := Parse(json.RawMessage(`{"ratings":[]}`)).Ratings; len(got) != 0 {
+		t.Errorf("an empty selection parsed to %v, want none", got)
+	}
+	// Absent still means the default.
+	if got := Parse(json.RawMessage(`{}`)).Ratings; len(got) == 0 {
+		t.Error("an absent selection dropped the default sources")
+	}
+	// A real selection is unaffected.
+	if got := Parse(json.RawMessage(`{"ratings":["rt","imdb","rt"]}`)).Ratings; len(got) != 2 {
+		t.Errorf("selection parsed to %v, want rt and imdb", got)
+	}
+	// An empty selection must key differently from the default, or the two
+	// share one cached image.
+	empty := Parse(json.RawMessage(`{"ratings":[]}`))
+	if CacheKey(empty) == CacheKey(Default()) {
+		t.Error("an empty selection shares a cache key with the default")
+	}
+}
