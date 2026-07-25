@@ -1,0 +1,65 @@
+name: Release Please
+run-name: Release management for ${{ github.sha }}
+
+# Keeps a release pull request up to date as conventional commits land on main.
+# Merging that PR writes the changelog, tags the version and publishes the
+# GitHub release. Nothing here needs a hand-written version number.
+
+"on":
+  push:
+    branches:
+      - main
+  workflow_dispatch: {}
+
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      # Needed to dispatch the image build below.
+      actions: write
+    outputs:
+      released: ${{ steps.release.outputs.release_created }}
+      tag: ${{ steps.release.outputs.tag_name }}
+
+    steps:
+      - name: Run release-please
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+
+      # A tag created with GITHUB_TOKEN does not fire another workflow's
+      # `push: tags` trigger, so the image build is dispatched against the new
+      # tag instead. Dispatching on the tag ref makes the build see it as a
+      # release rather than a manual run, which is what selects the release
+      # image tags and the :latest promotion downstream.
+      - name: Build the release image
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.release.outputs.tag_name }}
+        run: |
+          set -euo pipefail
+          echo "Dispatching the image build for ${TAG}"
+          gh workflow run build-and-push-docker.yml \
+            --repo "${GITHUB_REPOSITORY}" \
+            --ref "${TAG}"
+
+      - name: Summary
+        if: ${{ steps.release.outputs.release_created == 'true' }}
+        env:
+          TAG: ${{ steps.release.outputs.tag_name }}
+        run: |
+          {
+            echo "Released \`${TAG}\`."
+            echo ""
+            echo "The image build was dispatched against that tag; the \`:latest\`"
+            echo "promotion follows once it succeeds."
+          } >> "$GITHUB_STEP_SUMMARY"
