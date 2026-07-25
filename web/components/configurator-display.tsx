@@ -9,6 +9,12 @@ import {
 } from './configurator-types';
 import { QualityFine, GenreFine, AggregateFine, AgeFine, ReleaseStatusFine, TrendingFine } from './configurator-fine';
 
+// An unset position falls back to the top right, matching the renderer.
+function qualityPosLabel(pos: string): string {
+  const id = !pos || pos === 'inherit' ? 'tr' : pos;
+  return `in the ${(SIX_POS_OPTIONS.find(o => o.id === id)?.label ?? 'Top right').toLowerCase()}`;
+}
+
 // ── Notice ────────────────────────────────────────────────────────────────────
 
 export function Notice({
@@ -417,9 +423,9 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
             })}
           </div>
           <span className="hint" style={{ marginTop: 'var(--sp-2)' }}>
-            {supersededLabels.length > 0
-              ? `Rendered in the top-right corner. ${supersededLabels.join(' and ')} ${supersededLabels.length > 1 ? 'are' : 'is'} already covered by a higher format you picked, so ${supersededLabels.length > 1 ? 'they are' : 'it is'} not drawn.`
-              : 'Rendered in the top-right corner'}
+            {`Rendered ${qualityPosLabel(config.qualityBadgesPos)}. Corner positions stack into a column; the centre ones form a row.`}
+            {supersededLabels.length > 0 &&
+              ` ${supersededLabels.join(' and ')} ${supersededLabels.length > 1 ? 'are' : 'is'} already covered by a higher format you picked, so ${supersededLabels.length > 1 ? 'they are' : 'it is'} not drawn.`}
           </span>
           {fine && config.badges.length > 0 && (
             <QualityFine uid={uid} config={config} onUpdate={onUpdate} />
