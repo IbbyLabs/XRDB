@@ -1,6 +1,6 @@
 SHELL := /bin/sh
 
-.PHONY: all clean dev run test bench build build-web build-all docker-build up down
+.PHONY: all clean dev run test bench build build-web build-all docker-build up down release
 
 all: build-all
 
@@ -30,6 +30,12 @@ build-all: build-web
 
 build:
 	go build ./...
+
+# Cut a release: checks, then tag and push. The tag is the release.
+#   make release LEVEL=patch|minor|major   or   make release LEVEL=v3.2.0
+#   DRY_RUN=1 make release LEVEL=minor     to see what it would do
+release:
+	@./scripts/release.sh $(LEVEL)
 
 docker-build:
 	docker build -t xrdb-rewrite-api:dev .
