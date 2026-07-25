@@ -58,6 +58,20 @@ export function aiomPatterns(configKey: string, renderKey?: string, versionToken
   };
 }
 
+/** Install URLs for XRDB's own Stremio addon, bound to a saved profile.
+ *
+ *  The manifest URL is the install identity, so it deliberately carries no
+ *  version token: the token rides on the artwork URLs inside each meta
+ *  response, which Stremio refetches, so an edit lands without reinstalling. */
+export function stremioInstall(configKey: string) {
+  const manifest = `${renderOrigin()}/stremio/c/${encodeURIComponent(configKey)}/manifest.json`;
+  return {
+    manifest,
+    // stremio:// hands the URL to the desktop or mobile app directly.
+    deepLink: manifest.replace(/^https?:\/\//, 'stremio://'),
+  };
+}
+
 interface InstallPanelProps {
   /** Saved profile key (alias preferred, else ID); empty = unsaved config. */
   configKey: string;
@@ -84,6 +98,7 @@ export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyCh
   const [installUrl, setInstallUrl] = useState('');
 
   const patterns = aiomPatterns(configKey, renderKey, versionToken);
+  const stremio = stremioInstall(configKey);
 
   const handleInstall = async () => {
     setInstalling(true);
@@ -238,6 +253,38 @@ export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyCh
             </div>
           </div>
         )}
+
+        <div className="field" style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-4)' }}>
+          <span className="label">Stremio — install this profile directly</span>
+          <span className="hint" style={{ marginTop: 0 }}>
+            XRDB serves its own addon, so Stremio can use this profile without
+            AIOMetadata. It supplies poster and background art only, and it
+            answers for the same titles as Cinemeta — so install it below
+            Cinemeta, or stay with AIOMetadata above if you want logos, episode
+            thumbnails and full metadata.
+          </span>
+        </div>
+
+        <div className="field">
+          <span className="label">Addon manifest URL</span>
+          <div className="urlbar">
+            <code className="urlbar-code" title={stremio.manifest}>
+              {stremio.manifest}
+            </code>
+            <CopyButton text={stremio.manifest} label="Copy addon manifest URL" />
+            <a
+              className="btn btn-ghost btn-sm"
+              href={stremio.deepLink}
+              aria-label="Open in Stremio"
+              title="Open in Stremio"
+            >
+              <ExternalLink size={13} aria-hidden />
+            </a>
+          </div>
+          <span className="hint">
+            Editing this profile updates the art in place — no need to reinstall.
+          </span>
+        </div>
 
         <div className="field" style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-4)' }}>
           <span className="label">Manual setup</span>
