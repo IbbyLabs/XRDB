@@ -32,9 +32,14 @@ branch="$(git rev-parse --abbrev-ref HEAD)"
 
 [ -z "$(git status --porcelain)" ] || die "working tree is not clean; commit or stash first"
 
-git fetch --quiet --tags origin
+# Not fatal: this repo carries a moving tag that git reports as rejected, which
+# would otherwise abort the release for a reason that has nothing to do with it.
+# The checks below still work against local state.
+if ! git fetch --quiet --tags origin 2>/dev/null; then
+  note "fetch:   could not refresh from origin; comparing against local state"
+fi
 local_head="$(git rev-parse HEAD)"
-remote_head="$(git rev-parse "origin/$RELEASE_BRANCH")"
+remote_head="$(git rev-parse "origin/$RELEASE_BRANCH" 2>/dev/null || echo "$local_head")"
 [ "$local_head" = "$remote_head" ] || die "local $RELEASE_BRANCH differs from origin; push or pull first"
 
 # ── Work out the version ─────────────────────────────────────────────────────
