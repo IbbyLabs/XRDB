@@ -319,7 +319,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// Convert to NRGBA once — all overlay functions draw in-place.
 	composed := toNRGBA(resized)
 
-	scale := outputScale(req.Config.Size)
+	scale := overlayScale(outputScale(req.Config.Size), composed.Bounds().Dy())
 
 	// occ tracks regions claimed by overlays so corner-anchored badges and the
 	// average-rating ring are placed without overlapping one another or, on the

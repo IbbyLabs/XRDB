@@ -123,3 +123,28 @@ func absInt(v int) int {
 	}
 	return v
 }
+
+// Corner overlays are absolute like the rating strip, so the same cap applies.
+func TestOverlayScaleCapsSmallCanvasesOnly(t *testing.T) {
+	for _, tc := range []struct {
+		mt     string
+		capped bool
+	}{
+		{"poster", false},
+		{"backdrop", false},
+		{"thumbnail", true},
+		{"logo", true},
+	} {
+		dim := render.DimensionsForSize(tc.mt, "small")
+		got := overlayScale(1.0, dim.Height)
+		if tc.capped && got >= 1.0 {
+			t.Errorf("%s (%dpx tall): scale %v, want it reduced", tc.mt, dim.Height, got)
+		}
+		if !tc.capped && got != 1.0 {
+			t.Errorf("%s (%dpx tall): scale %v, want 1 (unreduced)", tc.mt, dim.Height, got)
+		}
+		if share := nominalOverlayTileH * got / float64(dim.Height); share > maxBadgeHeightShare+0.001 {
+			t.Errorf("%s: tile is %.1f%% of height, cap is %.0f%%", tc.mt, share*100, maxBadgeHeightShare*100)
+		}
+	}
+}

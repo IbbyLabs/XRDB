@@ -1172,6 +1172,22 @@ const (
 	maxBadgeWidthShare  = 0.33
 )
 
+// nominalOverlayTileH is the height of a corner-overlay tile at scale 1.
+const nominalOverlayTileH = 34.0
+
+// overlayScale caps the corner-overlay scale against the frame. The tiles are
+// absolute like the rating strip, so one is 3% of a 780x1170 poster and 19% of
+// a 320x180 thumbnail. Posters and backdrops sit inside the cap.
+func overlayScale(scale float64, frameH int) float64 {
+	if frameH <= 0 {
+		return scale
+	}
+	if capped := float64(frameH) * maxBadgeHeightShare / nominalOverlayTileH; capped < scale {
+		return capped
+	}
+	return scale
+}
+
 // fitBadgeScale reduces scale until the widest badge fits inside the frame.
 // It never grows the scale, so a strip that already fits is left alone.
 func fitBadgeScale(scale float64, frameW, frameH int, ratings []provider.Rating, cfg imageconfig.Config) float64 {
