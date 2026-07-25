@@ -1,0 +1,16 @@
+---
+name: "XRDB"
+guid: "6f6a1f4c-6f2f-4a4a-9a1e-2b7a5c0f1d21"
+version: "1.0.0.0"
+targetAbi: "10.10.0.0"
+framework: "net8.0"
+owner: "IbbyLabs"
+overview: "Artwork rendered by your XRDB instance"
+description: >
+  Offers posters, backdrops and logos from a self-hosted XRDB instance in
+  Jellyfin's own image picker, with ratings and metadata already composited
+  onto them. Artwork arrives by URL, so nothing is written into the library.
+category: "Metadata"
+artifacts:
+  - "Jellyfin.Plugin.Xrdb.dll"
+changelog: "Initial release."

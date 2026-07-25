@@ -1,7 +1,21 @@
 # Jellyfin
 
-Jellyfin reads artwork from the media folder, so XRDB reaches it by writing
-files. Set up [folder writing](folder-writing.md) first.
+There are two ways round, and the plugin is the nicer one.
+
+## Plugin (artwork by URL)
+
+The [XRDB plugin](../../clients/jellyfin/README.md) adds XRDB to Jellyfin's own
+image picker, so nothing is written into your library and a profile edit is
+picked up on the next fetch.
+
+It is written against the Jellyfin 10.10 plugin API and built in CI, but has
+not yet been verified against a running server, so treat the first install as
+a trial.
+
+## Folder writing (artwork on disk)
+
+The alternative, and the one to use if you would rather have the files
+locally. Set up [folder writing](folder-writing.md) first.
 
 ## Steps
 

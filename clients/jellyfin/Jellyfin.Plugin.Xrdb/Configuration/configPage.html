@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>XRDB</title>
+</head>
+<body>
+<div id="XrdbConfigPage" data-role="page" class="page type-interior pluginConfigurationPage"
+     data-controller="__plugin/XrdbConfigPage.js">
+  <div data-role="content">
+    <div class="content-primary">
+      <form id="XrdbConfigForm">
+        <div class="inputContainer">
+          <label class="inputLabel inputLabelUnfocused" for="ServerUrl">XRDB server URL</label>
+          <input id="ServerUrl" name="ServerUrl" type="url" is="emby-input" required
+                 placeholder="https://xrdb.example.com" />
+          <div class="fieldDescription">Where your XRDB instance is reachable from Jellyfin.</div>
+        </div>
+
+        <div class="inputContainer">
+          <label class="inputLabel inputLabelUnfocused" for="Profile">Profile alias</label>
+          <input id="Profile" name="Profile" type="text" is="emby-input" />
+          <div class="fieldDescription">
+            The saved profile whose look artwork takes. Leave empty for the instance defaults.
+          </div>
+        </div>
+
+        <div class="inputContainer">
+          <label class="inputLabel inputLabelUnfocused" for="ApiKey">Instance API key</label>
+          <input id="ApiKey" name="ApiKey" type="password" is="emby-input" />
+          <div class="fieldDescription">
+            Only needed when the server sets XRDB_API_KEY. Jellyfin fetches server-side,
+            so the key travels in the URL.
+          </div>
+        </div>
+
+        <label class="checkboxContainer">
+          <input is="emby-checkbox" type="checkbox" id="EnablePosters" name="EnablePosters" />
+          <span>Offer posters</span>
+        </label>
+        <label class="checkboxContainer">
+          <input is="emby-checkbox" type="checkbox" id="EnableBackdrops" name="EnableBackdrops" />
+          <span>Offer backdrops</span>
+        </label>
+        <label class="checkboxContainer">
+          <input is="emby-checkbox" type="checkbox" id="EnableLogos" name="EnableLogos" />
+          <span>Offer logos</span>
+        </label>
+
+        <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+          <span>Save</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    var XrdbConfig = { pluginUniqueId: '6f6a1f4c-6f2f-4a4a-9a1e-2b7a5c0f1d21' };
+
+    document.querySelector('#XrdbConfigPage').addEventListener('pageshow', function () {
+      Dashboard.showLoadingMsg();
+      ApiClient.getPluginConfiguration(XrdbConfig.pluginUniqueId).then(function (config) {
+        document.querySelector('#ServerUrl').value = config.ServerUrl || '';
+        document.querySelector('#Profile').value = config.Profile || '';
+        document.querySelector('#ApiKey').value = config.ApiKey || '';
+        document.querySelector('#EnablePosters').checked = config.EnablePosters !== false;
+        document.querySelector('#EnableBackdrops').checked = config.EnableBackdrops !== false;
+        document.querySelector('#EnableLogos').checked = config.EnableLogos !== false;
+        Dashboard.hideLoadingMsg();
+      });
+    });
+
+    document.querySelector('#XrdbConfigForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      Dashboard.showLoadingMsg();
+      ApiClient.getPluginConfiguration(XrdbConfig.pluginUniqueId).then(function (config) {
+        config.ServerUrl = document.querySelector('#ServerUrl').value.replace(/\/+$/, '');
+        config.Profile = document.querySelector('#Profile').value.trim();
+        config.ApiKey = document.querySelector('#ApiKey').value;
+        config.EnablePosters = document.querySelector('#EnablePosters').checked;
+        config.EnableBackdrops = document.querySelector('#EnableBackdrops').checked;
+        config.EnableLogos = document.querySelector('#EnableLogos').checked;
+        ApiClient.updatePluginConfiguration(XrdbConfig.pluginUniqueId, config).then(function (result) {
+          Dashboard.processPluginConfigurationUpdateResult(result);
+        });
+      });
+      return false;
+    });
+  </script>
+</div>
+</body>
+</html>
