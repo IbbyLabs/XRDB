@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"xrdb_rewrite/internal/config"
+	"xrdb_rewrite/internal/profile"
 )
 
 func TestStremioManifest(t *testing.T) {
@@ -159,5 +160,78 @@ func TestConfigureRedirectsToTheConfigurator(t *testing.T) {
 	}
 	if loc := rr.Header().Get("Location"); loc != "/configurator" {
 		t.Errorf("Location = %q, want /configurator", loc)
+	}
+}
+
+// A configured install must carry the profile into the artwork URLs, otherwise
+// the addon advertises itself as configurable and then ignores the config.
+func TestStremioConfiguredMetaCarriesTheProfile(t *testing.T) {
+	store := openTestStore(t)
+	p := &profile.Profile{ID: "p1", Alias: "mylook", Type: "poster", Config: []byte(`{"size":"normal"}`)}
+	if err := store.Save(p); err != nil {
+		t.Fatalf("save profile: %v", err)
+	}
+
+	h := NewHandler("test", store, nil, nil, nil, config.Config{})
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/stremio/c/mylook/meta/movie/tt0816692.json", nil))
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("got %d, want 200: %s", rr.Code, rr.Body.String())
+	}
+	var resp struct {
+		Meta struct {
+			Poster     string `json:"poster"`
+			Background string `json:"background"`
+		} `json:"meta"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	for name, got := range map[string]string{"poster": resp.Meta.Poster, "background": resp.Meta.Background} {
+		if !strings.Contains(got, "config=mylook") {
+			t.Errorf("%s URL %q does not carry the profile", name, got)
+		}
+		if !strings.Contains(got, "v="+p.VersionToken) {
+			t.Errorf("%s URL %q does not carry the version token", name, got)
+		}
+	}
+}
+
+// The unconfigured base must keep working exactly as before.
+func TestStremioDefaultMetaCarriesNoProfile(t *testing.T) {
+	h := NewHandler("test", nil, nil, nil, nil, config.Config{})
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/stremio/meta/movie/tt0816692.json", nil))
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("got %d, want 200", rr.Code)
+	}
+	if strings.Contains(rr.Body.String(), "config=") {
+		t.Errorf("default meta should carry no profile: %s", rr.Body.String())
+	}
+}
+
+func TestStremioConfiguredManifestIsServed(t *testing.T) {
+	h := NewHandler("test", nil, nil, nil, nil, config.Config{})
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/stremio/c/mylook/manifest.json", nil))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("got %d, want 200", rr.Code)
+	}
+}
+
+// An unknown profile must still render (falling back to the default look)
+// rather than breaking the addon for the user.
+func TestStremioUnknownProfileStillServesMeta(t *testing.T) {
+	store := openTestStore(t)
+	h := NewHandler("test", store, nil, nil, nil, config.Config{})
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/stremio/c/nosuch/meta/movie/tt0816692.json", nil))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("got %d, want 200", rr.Code)
+	}
+	if strings.Contains(rr.Body.String(), "v=") {
+		t.Error("no version token should be emitted for an unresolvable profile")
 	}
 }

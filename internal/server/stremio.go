@@ -16,6 +16,8 @@ package server
 // Endpoint summary:
 //   GET /stremio/manifest.json
 //   GET /stremio/meta/{type}/{id}.json
+//   GET /stremio/c/{config}/manifest.json
+//   GET /stremio/c/{config}/meta/{type}/{id}.json
 //
 // CORS is enabled on all /stremio/* routes (required by Stremio).
 
@@ -26,6 +28,7 @@ import (
 	"strings"
 
 	"xrdb_rewrite/internal/config"
+	"xrdb_rewrite/internal/profile"
 )
 
 // stremioManifest is the Stremio addon manifest shape (subset used by XRDB).
@@ -58,24 +61,40 @@ type stremioMeta struct {
 	Background string `json:"background,omitempty"`
 }
 
+// stremioManifestFor builds the addon manifest.
+func stremioManifestFor(cfg config.Config) stremioManifest {
+	return stremioManifest{
+		ID:          "com.ibbylabs.xrdb",
+		Version:     cfg.Version,
+		Name:        "XRDB",
+		Description: "Enhanced movie and series artwork powered by XRDB — overlaid ratings, quality badges, and more.",
+		Resources:   []string{"meta"},
+		Types:       []string{"movie", "series"},
+		IDPrefixes:  []string{"tt"},
+		Catalogs:    []any{},
+		// Advertising this is what makes Stremio show a Configure button on the
+		// addon, which opens /configure on this host.
+		BehaviorHints: stremioHints{Configurable: true},
+	}
+}
+
 // registerStremioAddon registers /stremio/* routes on mux.
-func registerStremioAddon(mux *http.ServeMux, cfg config.Config) {
-	mux.HandleFunc("/stremio/manifest.json", stremioMiddleware(func(w http.ResponseWriter, r *http.Request) {
-		manifest := stremioManifest{
-			ID:          "com.ibbylabs.xrdb",
-			Version:     cfg.Version,
-			Name:        "XRDB",
-			Description: "Enhanced movie and series artwork powered by XRDB — overlaid ratings, quality badges, and more.",
-			Resources:   []string{"meta"},
-			Types:       []string{"movie", "series"},
-			IDPrefixes:  []string{"tt"},
-			Catalogs:    []any{},
-			// Advertising this is what makes Stremio show a Configure button on
-			// the addon, which opens /configure on this host.
-			BehaviorHints: stremioHints{Configurable: true},
-		}
-		writeJSON(w, http.StatusOK, manifest)
-	}))
+//
+// Two bases are served:
+//
+//	/stremio/...            the instance default look
+//	/stremio/c/{config}/... a saved profile, by id or alias
+//
+// Stremio derives every resource URL from the directory it installed the
+// manifest from, so carrying the profile in the path is what lets one instance
+// serve a different look per user. Without it the addon would advertise itself
+// as configurable and then ignore whatever the user configured.
+func registerStremioAddon(mux *http.ServeMux, cfg config.Config, store *profile.Store) {
+	manifestHandler := stremioMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, stremioManifestFor(cfg))
+	})
+	mux.HandleFunc("/stremio/manifest.json", manifestHandler)
+	mux.HandleFunc("/stremio/c/{config}/manifest.json", manifestHandler)
 
 	// Stremio opens <addon-host>/configure for a configurable addon. The
 	// configurator lives at /configurator, so meet Stremio's convention here
@@ -88,60 +107,81 @@ func registerStremioAddon(mux *http.ServeMux, cfg config.Config) {
 		http.Redirect(w, r, "/configurator", http.StatusFound)
 	})
 
-	mux.HandleFunc("/stremio/meta/", stremioMiddleware(func(w http.ResponseWriter, r *http.Request) {
-		// Path: /stremio/meta/{type}/{id}.json
-		trimmed := strings.TrimPrefix(r.URL.Path, "/stremio/meta/")
-		trimmed = strings.TrimSuffix(trimmed, ".json")
-		parts := strings.SplitN(trimmed, "/", 2)
-		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-			http.Error(w, "invalid path", http.StatusBadRequest)
-			return
-		}
-		mediaType, id := parts[0], parts[1]
-
-		// Only movie and series are supported.
-		if mediaType != "movie" && mediaType != "series" {
-			http.NotFound(w, r)
-			return
-		}
-
-		// Both movie and series use poster as the XRDB render type.
-		xrdbType := "poster"
-
-		// Build base URL for XRDB renders. Derive from the incoming request.
-		scheme := "https"
-		if r.TLS == nil && (r.Header.Get("X-Forwarded-Proto") == "" || r.Header.Get("X-Forwarded-Proto") == "http") {
-			scheme = "http"
-		}
-		host := r.Host
-		if fwd := r.Header.Get("X-Forwarded-Host"); fwd != "" {
-			host = fwd
-		}
-		base := fmt.Sprintf("%s://%s", scheme, host)
-
-		// Carry the content type (movie|series) so the render pipeline can pass
-		// it to the rating providers. Without it, providers fall back to guessing
-		// movie-vs-series from the artwork surface — the bug that made series
-		// posters resolve as movies and drop most of their ratings.
-		q := url.Values{"type": {mediaType}}
-		// If an API key is required, embed it as a query parameter.
-		// Note: exposing the key in URLs is a trade-off for Stremio compatibility.
-		if cfg.APIKey != "" {
-			q.Set("key", cfg.APIKey)
-		}
-		posterURL := fmt.Sprintf("%s/%s/%s?%s", base, xrdbType, id, q.Encode())
-		backdropURL := fmt.Sprintf("%s/backdrop/%s?%s", base, id, q.Encode())
-
-		resp := stremioMetaResponse{
-			Meta: stremioMeta{
-				ID:         id,
-				Type:       mediaType,
-				Poster:     posterURL,
-				Background: backdropURL,
-			},
-		}
-		writeJSON(w, http.StatusOK, resp)
+	mux.HandleFunc("/stremio/c/{config}/meta/", stremioMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		configKey := r.PathValue("config")
+		prefix := "/stremio/c/" + configKey + "/meta/"
+		serveStremioMeta(w, r, cfg, store, configKey, strings.TrimPrefix(r.URL.Path, prefix))
 	}))
+
+	mux.HandleFunc("/stremio/meta/", stremioMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		serveStremioMeta(w, r, cfg, store, "", strings.TrimPrefix(r.URL.Path, "/stremio/meta/"))
+	}))
+}
+
+// serveStremioMeta answers a meta request for {type}/{id}.json, emitting artwork
+// URLs that point back at this instance's render routes. configKey is the
+// profile the install is bound to, or "" for the instance default.
+func serveStremioMeta(w http.ResponseWriter, r *http.Request, cfg config.Config, store *profile.Store, configKey, path string) {
+	trimmed := strings.TrimSuffix(path, ".json")
+	parts := strings.SplitN(trimmed, "/", 2)
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		http.Error(w, "invalid path", http.StatusBadRequest)
+		return
+	}
+	mediaType, id := parts[0], parts[1]
+
+	// Only movie and series are supported.
+	if mediaType != "movie" && mediaType != "series" {
+		http.NotFound(w, r)
+		return
+	}
+
+	// Both movie and series use poster as the XRDB render type.
+	xrdbType := "poster"
+
+	// Build base URL for XRDB renders. Derive from the incoming request.
+	scheme := "https"
+	if r.TLS == nil && (r.Header.Get("X-Forwarded-Proto") == "" || r.Header.Get("X-Forwarded-Proto") == "http") {
+		scheme = "http"
+	}
+	host := r.Host
+	if fwd := r.Header.Get("X-Forwarded-Host"); fwd != "" {
+		host = fwd
+	}
+	base := fmt.Sprintf("%s://%s", scheme, host)
+
+	// Carry the content type (movie|series) so the render pipeline can pass
+	// it to the rating providers. Without it, providers fall back to guessing
+	// movie-vs-series from the artwork surface — the bug that made series
+	// posters resolve as movies and drop most of their ratings.
+	q := url.Values{"type": {mediaType}}
+	if configKey != "" {
+		q.Set("config", configKey)
+		// Stremio re-fetches meta far more often than it re-fetches an image it
+		// already has, so this is the right place to hand it a fresh URL after
+		// a profile edit.
+		if store != nil {
+			if p, err := store.Resolve(configKey); err == nil && p.VersionToken != "" {
+				q.Set("v", p.VersionToken)
+			}
+		}
+	}
+	// If an API key is required, embed it as a query parameter.
+	// Note: exposing the key in URLs is a trade-off for Stremio compatibility.
+	if cfg.APIKey != "" {
+		q.Set("key", cfg.APIKey)
+	}
+	posterURL := fmt.Sprintf("%s/%s/%s?%s", base, xrdbType, id, q.Encode())
+	backdropURL := fmt.Sprintf("%s/backdrop/%s?%s", base, id, q.Encode())
+
+	writeJSON(w, http.StatusOK, stremioMetaResponse{
+		Meta: stremioMeta{
+			ID:         id,
+			Type:       mediaType,
+			Poster:     posterURL,
+			Background: backdropURL,
+		},
+	})
 }
 
 // stremioMiddleware wraps a handler with CORS headers required by Stremio.
