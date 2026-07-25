@@ -10,6 +10,7 @@ import (
 	"os"
 	"runtime/debug"
 	"strconv"
+	"strings"
 	"time"
 
 	"xrdb_rewrite/internal/cache"
@@ -107,7 +108,7 @@ func registerAdminRoutes(
 	})
 
 	mux.HandleFunc("/api/admin/cache", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
+		if r.Method != http.MethodGet && r.Method != http.MethodDelete {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
@@ -120,6 +121,23 @@ func registerAdminRoutes(
 				Status string `json:"status"`
 			}
 			writeJSON(w, http.StatusOK, cacheInfo{Status: "cache not configured"})
+			return
+		}
+		if r.Method == http.MethodDelete {
+			// DELETE /api/admin/cache            — drop every render
+			// DELETE /api/admin/cache?key=<hex>  — drop one, by the X-Cache-Key
+			//                                      value the render responses carry
+			if key := strings.TrimSpace(r.URL.Query().Get("key")); key != "" {
+				removed := renderCache.Delete(key)
+				slog.InfoContext(r.Context(), "Dropped a single render from the cache",
+					"id", logging.RequestID(r.Context()), "found", removed)
+				writeJSON(w, http.StatusOK, map[string]any{"removed": removed})
+				return
+			}
+			removed := renderCache.Purge()
+			slog.InfoContext(r.Context(), "Purged the render cache",
+				"id", logging.RequestID(r.Context()), "entries_removed", removed)
+			writeJSON(w, http.StatusOK, map[string]any{"purged": removed})
 			return
 		}
 		writeJSON(w, http.StatusOK, renderCache.Stats())

@@ -183,6 +183,67 @@ func (c *Cache) SetWithTTL(key string, data []byte, ttl time.Duration) error {
 	return nil
 }
 
+// TTL returns the default entry lifetime, which is what Set and SetWithTTL(0)
+// apply. Callers that advertise a freshness lifetime downstream need it to
+// resolve the "unset" case to the value the cache will actually use.
+func (c *Cache) TTL() time.Duration {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.ttl
+}
+
+// Delete removes a single entry from both tiers. It reports whether anything
+// was actually removed, so a caller can tell a real invalidation from a no-op.
+func (c *Cache) Delete(key string) bool {
+	c.mu.Lock()
+	removed := false
+	if el, ok := c.hot[key]; ok {
+		c.removeLocked(el)
+		removed = true
+	}
+	diskPath := c.diskPath(key)
+	c.mu.Unlock()
+
+	if info, err := os.Stat(diskPath); err == nil {
+		if os.Remove(diskPath) == nil {
+			c.diskFiles.Add(-1)
+			c.diskBytes.Add(-info.Size())
+			removed = true
+		}
+	}
+	return removed
+}
+
+// Purge empties both tiers and returns the number of disk entries removed.
+// Renders are reproducible from their sources, so dropping them all costs
+// latency on the next request rather than data.
+func (c *Cache) Purge() int {
+	c.mu.Lock()
+	c.hot = make(map[string]*list.Element, c.maxEntries)
+	c.lru.Init()
+	c.hotBytes = 0
+	dir := c.dir
+	c.mu.Unlock()
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return 0
+	}
+	removed := 0
+	for _, de := range entries {
+		if de.IsDir() || filepath.Ext(de.Name()) != ".bin" {
+			continue
+		}
+		if os.Remove(filepath.Join(dir, de.Name())) == nil {
+			removed++
+		}
+	}
+	// Re-derive the counters from what survived rather than assuming the
+	// directory is now empty: a concurrent Set may have written during the walk.
+	c.sweepWithBounds(maxDiskFiles, maxDiskBytes)
+	return removed
+}
+
 // Stats returns a snapshot of cache state without touching the filesystem.
 func (c *Cache) Stats() Stats {
 	c.mu.Lock()
