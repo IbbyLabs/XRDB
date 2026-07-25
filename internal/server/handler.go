@@ -74,7 +74,9 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		if i := strings.Index(mediaType, "/"); i >= 0 {
 			mediaType = mediaType[:i]
 		}
-		id := r.PathValue("id")
+		// Artwork URLs configured against v2 carry a file extension, and
+		// sometimes an "imdb:" prefix, on the id segment.
+		id := normalizeLegacyMediaID(r.PathValue("id"))
 		raw := r.URL.RawQuery
 		configParam := queryValue(raw, "config", "default")
 		uuid := queryValue(raw, "uuid", "none")
