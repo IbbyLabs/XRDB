@@ -191,8 +191,19 @@ func qualityBadgeLabel(token string) string {
 		return "ATMOS"
 	case "imax":
 		return "IMAX"
+	case "hd":
+		return "HD"
+	case "bluray":
+		return "BLU-RAY"
+	case "remux":
+		return "REMUX"
+	case "bdremux":
+		return "BD REMUX"
 	default:
-		return strings.ToUpper(token)
+		// Anything else is not a quality badge. Drawing its name in capitals is
+		// how a token that stood for some other feature ends up printed across
+		// the artwork, so it is left out instead.
+		return ""
 	}
 }
 
@@ -325,7 +336,11 @@ func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64, occ *o
 			lb := logo.Bounds()
 			contentW = int(float64(lb.Dx())*float64(logoH)/float64(lb.Dy()) + 0.5)
 		} else {
-			contentW = textWidth(face, qualityBadgeLabel(tok))
+			label := qualityBadgeLabel(tok)
+			if label == "" {
+				continue
+			}
+			contentW = textWidth(face, label)
 		}
 		tileW = padX*2 + contentW
 

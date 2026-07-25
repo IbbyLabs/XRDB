@@ -754,8 +754,27 @@ func Parse(data json.RawMessage) Config {
 			cfg.BadgeTheme = ThemeLight
 		}
 	}
+	// A v2 badge list carries features as well as quality tiles; split them so
+	// the tiles are drawn and the features raise their own setting instead of
+	// being printed as words. A setting the config states explicitly wins.
+	var badgeFeatures map[string]bool
 	if len(r.Badges) > 0 {
-		cfg.Badges = dedupeStrings(r.Badges)
+		cfg.Badges, badgeFeatures = normalizeBadges(r.Badges)
+	}
+	if badgeFeatures[featureAgeRating] && r.AgeRating == nil {
+		cfg.AgeRating = true
+	}
+	if badgeFeatures[featureRelease] && r.ReleaseStatus == nil {
+		cfg.ReleaseStatus = true
+	}
+	if badgeFeatures[featureTrending] && r.Trending == nil {
+		cfg.Trending = true
+	}
+	if badgeFeatures[featureTopRated] && r.TopRated == nil {
+		cfg.TopRated = true
+	}
+	if badgeFeatures[featureProviders] && r.Providers == nil {
+		cfg.Providers = true
 	}
 	if r.AgeRating != nil {
 		cfg.AgeRating = *r.AgeRating

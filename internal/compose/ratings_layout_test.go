@@ -213,3 +213,22 @@ func TestEachBadgeStyleRendersDistinctly(t *testing.T) {
 		}
 	}
 }
+
+// A token with no tile of its own must not be drawn as its own name: that is
+// how a migrated poster ended up with a column of words down the side.
+func TestUnknownQualityTokensAreNotDrawnAsText(t *testing.T) {
+	img := genreTestImage()
+	drawn := drawQualityBadges(img, []string{"oscarwinner", "netflix", "bingeready"}, 1.0, newOccupancy(img.Bounds()), qualityBadgeOpts{})
+	if drawn != 0 {
+		t.Errorf("drew %d badges for tokens with no tile", drawn)
+	}
+	if imagesDiffer(img, genreTestImage()) {
+		t.Error("tokens with no tile painted something")
+	}
+
+	// The real ones still draw.
+	img2 := genreTestImage()
+	if n := drawQualityBadges(img2, []string{"4k", "bluray", "remux"}, 1.0, newOccupancy(img2.Bounds()), qualityBadgeOpts{}); n != 3 {
+		t.Errorf("drew %d of 3 quality tiles", n)
+	}
+}
