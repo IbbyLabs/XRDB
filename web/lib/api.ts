@@ -455,3 +455,26 @@ export function renderOrigin(): string {
   if (typeof window !== 'undefined') return window.location.origin;
   return '';
 }
+
+/** Result of translating a v2 config into the shape v3 renders from. */
+export interface MigrateResult {
+  config: Record<string, unknown>;
+  read: number;
+  converted?: string[];
+  /** Settings kept on the profile but with no v3 control yet. */
+  carriedUntouched?: string[];
+}
+
+/** Translates a v2 artwork URL, its query string, or its JSON into a v3 config. */
+export async function migrateLegacyConfig(input: string): Promise<MigrateResult> {
+  const res = await fetch(`${base()}/api/migrate/config`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...renderAuthHeaders() },
+    body: JSON.stringify({ input }),
+  });
+  const body = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(body?.error || `Could not read that (${res.status})`);
+  }
+  return body as MigrateResult;
+}

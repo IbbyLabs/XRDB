@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect, useId, useRef } from 'react';
-import { Save, Download, Upload, FolderOpen, Trash2, LogOut, RefreshCw, History } from 'lucide-react';
+import { Save, Download, Upload, FolderOpen, Trash2, LogOut, RefreshCw, History, Wand2 } from 'lucide-react';
 import {
   createProfile, getProfile, updateProfile, deleteProfile, exportProfile, importProfiles,
   renderOrigin, type MediaType,
 } from '@/lib/api';
 import { toStoredConfig, fromStoredConfig, type SurfaceConfigs } from './configurator-types';
+import { migrateLegacyConfig, type MigrateResult } from '@/lib/api';
 import { CopyButton } from './copy-button';
 
 const ALIAS_RE = /^[a-z]{3,32}$/;
@@ -74,6 +75,11 @@ export function ProfilePanel({
   const [alias, setAlias] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
+
+  const [legacyInput, setLegacyInput] = useState('');
+  const [migrating, setMigrating] = useState(false);
+  const [migrateResult, setMigrateResult] = useState<MigrateResult | null>(null);
+  const [migrateError, setMigrateError] = useState('');
 
   const [loadKey, setLoadKey] = useState('');
   const [loadPassword, setLoadPassword] = useState('');
@@ -166,6 +172,23 @@ export function ProfilePanel({
       flash('error', (e as Error).message);
     } finally {
       setBusy(false);
+    }
+  };
+
+  const handleMigrate = async () => {
+    setMigrating(true);
+    setMigrateError('');
+    setMigrateResult(null);
+    try {
+      const result = await migrateLegacyConfig(legacyInput);
+      const cfgs = fromStoredConfig(result.config as Record<string, unknown>);
+      onLoadConfigs(cfgs);
+      setMigrateResult(result);
+      flash('success', `Brought ${result.read} setting${result.read === 1 ? '' : 's'} across. Save it as a profile to keep it.`);
+    } catch (e) {
+      setMigrateError((e as Error).message);
+    } finally {
+      setMigrating(false);
     }
   };
 
@@ -371,6 +394,51 @@ export function ProfilePanel({
           <Save size={13} aria-hidden />
           {busy ? 'Saving…' : 'Save profile'}
         </button>
+
+        <div className="field" style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-4)' }}>
+          <label className="label" htmlFor={`${uid}-legacy`}>Coming from v2?</label>
+          <span className="hint" style={{ marginTop: 0, marginBottom: 'var(--sp-2)' }}>
+            Paste an old artwork URL, its query string, or the config JSON. Your
+            settings are translated into this configurator, then you can save
+            them as a profile.
+          </span>
+          <textarea
+            id={`${uid}-legacy`}
+            className="input"
+            style={{ minHeight: '4.5rem', resize: 'vertical', fontFamily: 'var(--font-mono-stack)', fontSize: 'var(--text-xs)' }}
+            value={legacyInput}
+            onChange={e => { setLegacyInput(e.target.value); setMigrateError(''); }}
+            placeholder="https://old-host/poster/imdb:tt0816692.jpg?posterRatings=imdb,tomatoes&lang=en"
+            spellCheck={false}
+            autoComplete="off"
+            aria-describedby={migrateError ? `${uid}-legacy-error` : undefined}
+            aria-invalid={migrateError ? true : undefined}
+          />
+          {migrateError && (
+            <span className="hint hint-error" id={`${uid}-legacy-error`} role="alert">
+              {migrateError}{' '}Copy the whole URL from your media app, including
+              everything after the <code>?</code>.
+            </span>
+          )}
+          {migrateResult && !migrateError && (
+            <span className="hint" role="status">
+              Brought {migrateResult.read} setting{migrateResult.read === 1 ? '' : 's'} across.
+              {migrateResult.carriedUntouched?.length
+                ? ` ${migrateResult.carriedUntouched.length} had no match here and were left off: ${migrateResult.carriedUntouched.join(', ')}.`
+                : ' Everything had a match here.'}
+              {' '}Check the preview, then save it as a profile below.
+            </span>
+          )}
+          <button
+            className="btn btn-ghost"
+            style={{ marginTop: 'var(--sp-2)' }}
+            onClick={() => void handleMigrate()}
+            disabled={migrating || !legacyInput.trim()}
+          >
+            <Wand2 size={13} aria-hidden />
+            {migrating ? 'Converting…' : 'Convert to v3'}
+          </button>
+        </div>
 
         <div className="field" style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-4)' }}>
           <label className="label" htmlFor={`${uid}-loadkey`}>Load an existing profile</label>

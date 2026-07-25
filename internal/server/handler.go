@@ -301,6 +301,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	// GET /stremio/meta/{type}/{id}.json
 	registerStremioAddon(mux, cfg, store, trust)
 	registerRPDBCompat(mux)
+	registerMigrateRoutes(mux, cfg)
 	registerFolderWriterRoutes(mux, cfg, pipeline, store)
 
 	// Static file handler — registered last so API routes take precedence.
