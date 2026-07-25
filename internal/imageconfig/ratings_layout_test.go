@@ -37,6 +37,49 @@ func TestParseAcceptsLegacyRatingsLayoutSpellings(t *testing.T) {
 	}
 }
 
+// v2 wrote the same six placements three ways. An unrecognised token falls back
+// to the default, which moved every badge in a migrated profile.
+func TestSixPosAcceptsLegacySpellings(t *testing.T) {
+	cases := map[string]string{
+		"top-left": "tl", "left-top": "tl", "topLeft": "tl", "tl": "tl",
+		"top-right": "tr", "right-top": "tr", "topRight": "tr",
+		"top-center": "tc", "topCenter": "tc", "top-centre": "tc",
+		"bottom-left": "bl", "left-bottom": "bl", "bottomLeft": "bl",
+		"bottom-right": "br", "right-bottom": "br", "bottomRight": "br",
+		"bottom-center": "bc", "bottomCenter": "bc", "bottom_center": "bc",
+		"TOP-LEFT": "tl", "  top-left  ": "tl",
+	}
+	for in, want := range cases {
+		if got := sixPos(in); got != want {
+			t.Errorf("sixPos(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+// Anything that is not a placement must still be rejected, so a stray value
+// cannot silently move a badge somewhere the user never asked for.
+func TestSixPosRejectsUnknownValues(t *testing.T) {
+	for _, in := range []string{"", "middle", "grouped", "inherit", "centre", "diagonal", "top", "bottom", "left", "right"} {
+		if got := sixPos(in); got != "" {
+			t.Errorf("sixPos(%q) = %q, want \"\"", in, got)
+		}
+	}
+}
+
+// Placement reaches the config the renderer reads, not just the validator.
+func TestParseAcceptsLegacyBadgePositions(t *testing.T) {
+	cfg := Parse(json.RawMessage(`{"genrePos":"topCenter","ageRatingPos":"left-top","qualityBadgesPos":"bottom-right"}`))
+	if cfg.GenrePos != "tc" {
+		t.Errorf("genrePos = %q, want tc", cfg.GenrePos)
+	}
+	if cfg.AgeRatingPos != "tl" {
+		t.Errorf("ageRatingPos = %q, want tl", cfg.AgeRatingPos)
+	}
+	if cfg.QualityBadgesPos != "br" {
+		t.Errorf("qualityBadgesPos = %q, want br", cfg.QualityBadgesPos)
+	}
+}
+
 // Every layout must key differently, or two profiles that look different share
 // one cached image.
 func TestRatingsLayoutsProduceDistinctCacheKeys(t *testing.T) {

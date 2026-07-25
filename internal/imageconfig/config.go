@@ -745,26 +745,34 @@ func Parse(data json.RawMessage) Config {
 	if r.AgeRating != nil {
 		cfg.AgeRating = *r.AgeRating
 	}
-	if r.AgeRatingPos != nil && strings.TrimSpace(*r.AgeRatingPos) != "" {
-		cfg.AgeRatingPos = strings.TrimSpace(*r.AgeRatingPos)
+	if r.AgeRatingPos != nil {
+		if p := badgePos(*r.AgeRatingPos); p != "" {
+			cfg.AgeRatingPos = p
+		}
 	}
 	if r.ReleaseStatus != nil {
 		cfg.ReleaseStatus = *r.ReleaseStatus
 	}
-	if r.ReleaseStatusPos != nil && strings.TrimSpace(*r.ReleaseStatusPos) != "" {
-		cfg.ReleaseStatusPos = strings.TrimSpace(*r.ReleaseStatusPos)
+	if r.ReleaseStatusPos != nil {
+		if p := badgePos(*r.ReleaseStatusPos); p != "" {
+			cfg.ReleaseStatusPos = p
+		}
 	}
 	if r.TopRated != nil {
 		cfg.TopRated = *r.TopRated
 	}
-	if r.TopRatedPos != nil && strings.TrimSpace(*r.TopRatedPos) != "" {
-		cfg.TopRatedPos = strings.TrimSpace(*r.TopRatedPos)
+	if r.TopRatedPos != nil {
+		if p := badgePos(*r.TopRatedPos); p != "" {
+			cfg.TopRatedPos = p
+		}
 	}
 	if r.Genre != nil {
 		cfg.Genre = *r.Genre
 	}
-	if r.GenrePos != nil && strings.TrimSpace(*r.GenrePos) != "" {
-		cfg.GenrePos = strings.TrimSpace(*r.GenrePos)
+	if r.GenrePos != nil {
+		if p := badgePos(*r.GenrePos); p != "" {
+			cfg.GenrePos = p
+		}
 	}
 	if r.Providers != nil {
 		cfg.Providers = *r.Providers
@@ -829,13 +837,40 @@ func Parse(data json.RawMessage) Config {
 	return cfg
 }
 
+// sixPosAliases maps the spellings a v2 config uses for a placement onto the
+// short token the renderer reads. v2 wrote the same six positions three ways —
+// "top-left", "left-top" and "topLeft" — and an unrecognised token falls back
+// to the default, which silently moves every badge in a migrated profile.
+var sixPosAliases = map[string]string{
+	"topleft": "tl", "lefttop": "tl",
+	"topright": "tr", "righttop": "tr",
+	"topcenter": "tc", "centertop": "tc", "topcentre": "tc",
+	"bottomleft": "bl", "leftbottom": "bl",
+	"bottomright": "br", "rightbottom": "br",
+	"bottomcenter": "bc", "centerbottom": "bc", "bottomcentre": "bc",
+}
+
+// badgePos normalizes a corner placement for the badges that also accept
+// "inherit" (meaning "wherever the renderer puts you by default"). It returns
+// "" for anything it does not recognise, so the caller keeps the default rather
+// than handing the renderer a token it will silently ignore.
+func badgePos(v string) string {
+	if strings.EqualFold(strings.TrimSpace(v), "inherit") {
+		return "inherit"
+	}
+	return sixPos(v)
+}
+
 // sixPos validates a six-position placement token, returning "" if invalid.
 func sixPos(v string) string {
-	switch strings.ToLower(strings.TrimSpace(v)) {
+	v = strings.ToLower(strings.TrimSpace(v))
+	switch v {
 	case "tl", "tr", "bl", "br", "tc", "bc":
-		return strings.ToLower(strings.TrimSpace(v))
+		return v
 	}
-	return ""
+	// Fold the separators v2 used so one table covers every spelling.
+	folded := strings.NewReplacer("-", "", "_", "", " ", "").Replace(v)
+	return sixPosAliases[folded]
 }
 
 func parseQuality(cfg *Config, r *raw) {
