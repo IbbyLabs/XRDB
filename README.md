@@ -88,6 +88,25 @@ make bench      # render benchmarks
 make build-all  # web export + go build (embedded UI)
 ```
 
+## Attribution
+
+XRDB reads from third-party data sources. Their terms ask for the following,
+reproduced verbatim:
+
+<img src="web/public/rating-logos/tmdb.svg" alt="TMDB" height="14">
+
+> This product uses the TMDB API but is not endorsed or certified by TMDB.
+
+> Information courtesy of [IMDb](https://www.imdb.com). Used with permission.
+
+IMDb's dataset is licensed for personal and non-commercial use. Run your
+instance on that basis.
+
+Ratings sourced from Rotten Tomatoes, Metacritic, Letterboxd, AlloCiné and
+Filmweb are read from their public pages, as none of them publishes an API.
+They are cached hard and fall back to the last known good value when a source
+is unavailable, so XRDB reads each page far less often than once per render.
+
 ---
 
 XRDB by [IbbyLabs](https://github.com/IbbyLabs) ·

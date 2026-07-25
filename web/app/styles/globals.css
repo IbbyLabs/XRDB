@@ -1926,6 +1926,75 @@ textarea.input { min-height: 0; line-height: 1.5; }
   .nav-badge { display: none; }
 }
 
+/* ── Site footer ───────────────────────────────────────────────────── */
+
+/* Attribution the data providers require, kept quiet enough not to compete
+   with the configurator but legible enough to actually be attribution. */
+.site-footer {
+  margin-top: var(--sp-8);
+  border-top: 1px solid var(--border);
+  background: var(--bg-base);
+}
+
+.site-footer-inner {
+  max-width: var(--page-max, 1200px);
+  margin: 0 auto;
+  padding: var(--sp-5) var(--sp-4);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3) var(--sp-6);
+  font-size: var(--text-xs);
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.attribution {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  max-width: 42ch;
+}
+
+.attribution p { margin: 0; }
+
+.attribution-item {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  opacity: 0.75;
+  transition: opacity var(--duration-fast, 150ms) ease;
+}
+.attribution-item:hover { opacity: 1; }
+.attribution-item img { display: block; height: auto; }
+
+.site-footer-credit {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-left: auto;
+}
+
+.credit-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.credit-link img { border-radius: 50%; }
+
+.site-footer a {
+  color: var(--muted);
+  text-decoration: none;
+}
+.site-footer a:hover { color: var(--ink); }
+.credit-sep { opacity: 0.4; }
+
+@media (max-width: 720px) {
+  /* Stacked, and the credit stops being pushed to its own far edge. */
+  .site-footer-inner { gap: var(--sp-3); }
+  .site-footer-credit { margin-left: 0; flex-wrap: wrap; }
+}
+
 /* ── Reduced motion ────────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {

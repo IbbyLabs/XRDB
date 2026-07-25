@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Bricolage_Grotesque, Jost } from 'next/font/google';
 import './styles/globals.css';
 import { NavBar } from '@/components/nav-bar';
+import { SiteFooter } from '@/components/site-footer';
 import { BRAND_DISPLAY_NAME } from '@/lib/brand';
 
 const fontBody = Jost({
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main id="main" className="page">
           {children}
         </main>
+        <SiteFooter />
       </body>
     </html>
   );
