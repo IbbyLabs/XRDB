@@ -87,6 +87,7 @@ const (
 	LayoutLeft      RatingsLayout = "left"
 	LayoutRight     RatingsLayout = "right"
 	LayoutSplitSide RatingsLayout = "split-side"
+	LayoutTopBottom RatingsLayout = "top-bottom"
 	LayoutNone      RatingsLayout = "none"
 )
 
@@ -1301,6 +1302,16 @@ func isHexColor(s string) bool {
 	return true
 }
 
+// renderVersion invalidates every cached render when the compositor's output
+// changes for a config that itself did not change. Without it a fix to how an
+// existing setting is drawn keeps serving the old image until the cache TTL
+// expires, which reads as the fix not having shipped.
+//
+// Bump this whenever a change alters rendered pixels for an unchanged config.
+// It costs a full re-render, so it is not for changes that only affect configs
+// whose own key already moved.
+const renderVersion = "r2"
+
 // CacheKey returns a deterministic hex string for the config, suitable for use
 // as part of a render cache key. The key is stable: same logical config always
 // produces the same key regardless of field insertion order.
@@ -1410,7 +1421,7 @@ func CacheKey(cfg Config) string {
 	if merged, err := mergeLegacy(b, cfg.Legacy); err == nil {
 		b = merged
 	}
-	sum := sha256.Sum256(b)
+	sum := sha256.Sum256(append([]byte(renderVersion+"|"), b...))
 	return hex.EncodeToString(sum[:])
 }
 
@@ -1528,8 +1539,11 @@ func normalizeRatingsLayout(v string) RatingsLayout {
 		return LayoutLeft
 	case "right":
 		return LayoutRight
-	case "split-side", "splittside", "split_side":
+	// "left-right" is the spelling a v2 config carries for the same layout.
+	case "split-side", "splittside", "split_side", "left-right", "leftright", "left_right":
 		return LayoutSplitSide
+	case "top-bottom", "topbottom", "top_bottom":
+		return LayoutTopBottom
 	case "none", "hidden", "off":
 		return LayoutNone
 	}

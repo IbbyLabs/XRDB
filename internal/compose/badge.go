@@ -522,7 +522,9 @@ func ratingStripDimsFor(scale float64) ratingStripDims {
 // rating strip occupies for a frame of width frameW, so the logo can be
 // letterboxed above a clear band.
 func ratingsBandHeight(frameW int, ratings []provider.Rating, cfg imageconfig.Config) int {
-	if cfg.RatingsLayout == imageconfig.LayoutNone || cfg.RatingsLayout == imageconfig.LayoutSplitSide {
+	// Side-anchored layouts sit in a column against one edge, so they clear no
+	// full-width band for the logo to be letterboxed above.
+	if cfg.RatingsLayout == imageconfig.LayoutNone || isSideRatingsLayout(cfg.RatingsLayout) {
 		return 0
 	}
 	if len(cfg.Ratings) == 0 {
@@ -651,12 +653,18 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 		})
 	}
 
-	if cfg.RatingsLayout == imageconfig.LayoutSplitSide {
-		return drawBadgesSplitSide(out, specs, innerH, rowGap, edgeX, edgeY, padX, iconSize, iconGap, accentW, face, chrome, bounds, sideRatingsOpts{
+	if isSideRatingsLayout(cfg.RatingsLayout) {
+		left, right := splitBadgesForSideLayout(specs, cfg.RatingsLayout)
+		return drawBadgesSideColumns(out, left, right, innerH, rowGap, edgeX, edgeY, padX, iconSize, iconGap, accentW, face, chrome, bounds, sideRatingsOpts{
 			position:   cfg.SideRatingsPosition,
 			offset:     int(float64(cfg.SideRatingsOffset)*scale + 0.5),
 			maxPerSide: cfg.RatingsMaxPerSide,
 		})
+	}
+
+	if cfg.RatingsLayout == imageconfig.LayoutTopBottom {
+		offsetX, offsetY := ratingStripOffsets(cfg)
+		return drawBadgesTopBottom(out, specs, innerH, badgeGap, edgeX, edgeY, padX, iconSize, iconGap, accentW, face, chrome, bounds, offsetX, offsetY)
 	}
 
 	// One bottom row keeps every badge on a single line along the bottom edge, so
@@ -734,13 +742,65 @@ type sideRatingsOpts struct {
 	maxPerSide int    // cap badges per side; 0 = no cap
 }
 
-func drawBadgesSplitSide(out *image.NRGBA, specs []badgeSpec, innerH, rowGap, edgeX, edgeY, padX, iconSize, iconGap, accentW int, face font.Face, chrome badgeChrome, bounds image.Rectangle, opts sideRatingsOpts) int {
+// drawBadgesTopBottom puts the first half of the badges in a row against the
+// top edge and the rest against the bottom. It returns the height of one row,
+// which is the band each edge gives up.
+func drawBadgesTopBottom(out *image.NRGBA, specs []badgeSpec, innerH, badgeGap, edgeX, edgeY, padX, iconSize, iconGap, accentW int, face font.Face, chrome badgeChrome, bounds image.Rectangle, offsetX, offsetY int) int {
 	if len(specs) == 0 {
 		return 0
 	}
 	mid := (len(specs) + 1) / 2
-	left := specs[:mid]
-	right := specs[mid:]
+	drawRow := func(row []badgeSpec, y int) {
+		if len(row) == 0 {
+			return
+		}
+		rowW := 0
+		for i := range row {
+			rowW += row[i].w
+			if i > 0 {
+				rowW += badgeGap
+			}
+		}
+		x := bounds.Min.X + (bounds.Dx()-rowW)/2
+		if x < bounds.Min.X+edgeX {
+			x = bounds.Min.X + edgeX
+		}
+		x += offsetX
+		for i := range row {
+			row[i].x = x
+			x += row[i].w + badgeGap
+		}
+		drawRatingRow(out, row, y, innerH, padX, iconSize, iconGap, accentW, face, chrome)
+	}
+	drawRow(specs[:mid], bounds.Min.Y+edgeY+offsetY)
+	drawRow(specs[mid:], bounds.Max.Y-edgeY-innerH+offsetY)
+	return innerH
+}
+
+// isSideRatingsLayout reports whether the layout anchors badges to a vertical
+// column against the left or right edge rather than a horizontal band.
+func isSideRatingsLayout(l imageconfig.RatingsLayout) bool {
+	return l == imageconfig.LayoutSplitSide || l == imageconfig.LayoutLeft || l == imageconfig.LayoutRight
+}
+
+// splitBadgesForSideLayout assigns badges to the left and right columns. The
+// single-sided layouts put every badge in one column, which is the point of
+// choosing them over split-side.
+func splitBadgesForSideLayout(specs []badgeSpec, l imageconfig.RatingsLayout) (left, right []badgeSpec) {
+	switch l {
+	case imageconfig.LayoutLeft:
+		return specs, nil
+	case imageconfig.LayoutRight:
+		return nil, specs
+	}
+	mid := (len(specs) + 1) / 2
+	return specs[:mid], specs[mid:]
+}
+
+func drawBadgesSideColumns(out *image.NRGBA, left, right []badgeSpec, innerH, rowGap, edgeX, edgeY, padX, iconSize, iconGap, accentW int, face font.Face, chrome badgeChrome, bounds image.Rectangle, opts sideRatingsOpts) int {
+	if len(left)+len(right) == 0 {
+		return 0
+	}
 	if opts.maxPerSide > 0 {
 		if len(left) > opts.maxPerSide {
 			left = left[:opts.maxPerSide]
@@ -750,8 +810,16 @@ func drawBadgesSplitSide(out *image.NRGBA, specs []badgeSpec, innerH, rowGap, ed
 		}
 	}
 
-	leftH := len(left)*innerH + (len(left)-1)*rowGap
-	rightH := len(right)*innerH + (len(right)-1)*rowGap
+	// An empty column has no height: the arithmetic below would otherwise read
+	// one row gap as negative height, which a single-sided layout always hits.
+	columnHeight := func(n int) int {
+		if n == 0 {
+			return 0
+		}
+		return n*innerH + (n-1)*rowGap
+	}
+	leftH := columnHeight(len(left))
+	rightH := columnHeight(len(right))
 	totalH := maxInt(leftH, rightH)
 
 	midY := bounds.Min.Y + bounds.Dy()/2

@@ -36,11 +36,18 @@ export const TEXT_PREF_OPTIONS = [
 export const LANG_OPTIONS = ['en','de','fr','es','pt','it','ja','ko','zh'] as const;
 
 export const LAYOUT_OPTIONS = [
-  { id: 'bottom',     label: 'Bottom'      },
-  { id: 'top',        label: 'Top'         },
-  { id: 'split-side', label: 'Split sides' },
-  { id: 'none',       label: 'Hidden'      },
+  { id: 'bottom',     label: 'Bottom'       },
+  { id: 'top',        label: 'Top'          },
+  { id: 'left',       label: 'Left'         },
+  { id: 'right',      label: 'Right'        },
+  { id: 'split-side', label: 'Split sides'  },
+  { id: 'top-bottom', label: 'Top & bottom' },
+  { id: 'none',       label: 'Hidden'       },
 ] as const;
+
+// Layouts that stack ratings in a column against an edge, so they share the
+// vertical-position and per-column cap controls.
+export const SIDE_LAYOUTS: readonly string[] = ['split-side', 'left', 'right'];
 
 export const BADGE_STYLE_OPTIONS = [
   { id: 'pill',   label: 'Pill'    },

@@ -6,6 +6,7 @@ import { fetchTemplates, type Template } from '@/lib/api';
 import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   LAYOUT_OPTIONS, RATING_OPTIONS, BADGE_STYLE_OPTIONS, BADGE_THEME_OPTIONS, RING_POS_OPTIONS,
+  SIDE_LAYOUTS,
 } from './configurator-types';
 import { RatingBadgesFine, RatingRingFine } from './configurator-fine';
 
@@ -99,7 +100,7 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, fine }: Ra
           </div>
         </div>
 
-        {config.ratingsLayout === 'split-side' && (
+        {SIDE_LAYOUTS.includes(config.ratingsLayout) && (
           <>
             <div className="field">
               <label className="label" htmlFor={`${uid}-side-pos`}>Side ratings vertical</label>

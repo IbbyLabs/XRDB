@@ -377,7 +377,11 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 			switch req.Config.RatingsLayout {
 			case imageconfig.LayoutTop:
 				occ.reserve(image.Rect(b.Min.X, b.Min.Y, b.Max.X, b.Min.Y+ratingsH+band))
-			case imageconfig.LayoutSplitSide:
+			case imageconfig.LayoutTopBottom:
+				// Occupies a row against each edge, so both bands are spoken for.
+				occ.reserve(image.Rect(b.Min.X, b.Min.Y, b.Max.X, b.Min.Y+ratingsH+band))
+				occ.reserve(image.Rect(b.Min.X, b.Max.Y-ratingsH-band, b.Max.X, b.Max.Y))
+			case imageconfig.LayoutSplitSide, imageconfig.LayoutLeft, imageconfig.LayoutRight:
 				// Side-anchored: corner overlays rarely conflict — left unreserved.
 			default:
 				occ.reserve(image.Rect(b.Min.X, b.Max.Y-ratingsH-band, b.Max.X, b.Max.Y))
