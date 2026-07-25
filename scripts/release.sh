@@ -32,10 +32,10 @@ branch="$(git rev-parse --abbrev-ref HEAD)"
 
 [ -z "$(git status --porcelain)" ] || die "working tree is not clean; commit or stash first"
 
-# Not fatal: this repo carries a moving tag that git reports as rejected, which
-# would otherwise abort the release for a reason that has nothing to do with it.
-# The checks below still work against local state.
-if ! git fetch --quiet --tags origin 2>/dev/null; then
+# --force accepts the moving marker tags some workflows push, which git
+# otherwise reports as rejected. Still not fatal: offline should degrade to
+# checking local state rather than blocking a release.
+if ! git fetch --quiet --tags --force origin 2>/dev/null; then
   note "fetch:   could not refresh from origin; comparing against local state"
 fi
 local_head="$(git rev-parse HEAD)"
