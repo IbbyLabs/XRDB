@@ -7,8 +7,12 @@ import (
 
 func TestDefaultReturnsExpectedValues(t *testing.T) {
 	d := Default()
-	if d.Size != SizeNormal {
-		t.Errorf("Size: got %q, want %q", d.Size, SizeNormal)
+	// The default tier is the one that fits Stremio's 100 KB poster limit.
+	if d.Size != SizeSmall {
+		t.Errorf("Size: got %q, want %q", d.Size, SizeSmall)
+	}
+	if d.OutputFormat != OutputAuto {
+		t.Errorf("OutputFormat: got %q, want %q", d.OutputFormat, OutputAuto)
 	}
 	if d.ArtworkSource != ArtworkTMDB {
 		t.Errorf("ArtworkSource: got %q, want %q", d.ArtworkSource, ArtworkTMDB)

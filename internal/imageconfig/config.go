@@ -11,15 +11,32 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"xrdb_rewrite/internal/render"
 )
 
 // MediaSize is the requested output resolution variant.
 type MediaSize string
 
 const (
+	// SizeSmall composes on the same canvas as SizeNormal and downsamples on
+	// the way out. It is the only tier that fits Stremio's 100 KB meta-poster
+	// limit, so it is the default.
+	SizeSmall  MediaSize = "small"
 	SizeNormal MediaSize = "normal"
 	SizeLarge  MediaSize = "large"
 	Size4K     MediaSize = "4k"
+)
+
+// OutputFormat is the wire encoding for a delivered render.
+type OutputFormat string
+
+const (
+	// OutputAuto keeps transparency where a surface needs it (the logo) and
+	// uses JPEG everywhere else.
+	OutputAuto OutputFormat = "auto"
+	OutputJPEG OutputFormat = "jpeg"
+	OutputPNG  OutputFormat = "png"
 )
 
 // ArtworkSource controls which provider supplies the base artwork.
@@ -118,6 +135,9 @@ type Config struct {
 	RatingRing                    bool          `json:"ratingRing,omitempty"`
 	RatingRingPos                 string        `json:"ratingRingPos,omitempty"`   // "tl" | "tr" | "bl" | "br"
 	RatingRingColor               string        `json:"ratingRingColor,omitempty"` // "" = auto (green/amber/red), else "#RRGGBB"
+
+	OutputFormat  OutputFormat `json:"outputFormat,omitempty"`
+	OutputQuality int          `json:"outputQuality,omitempty"` // JPEG quality 40-100; 0 = default
 
 	// Grouped component controls. Anonymous embeds keep the JSON flat (one key
 	// per field, matching v2's naming) while grouping the Go source by concern.
@@ -415,7 +435,9 @@ type GenreBadgeConfig struct {
 // Default returns a Config populated with production defaults.
 func Default() Config {
 	return Config{
-		Size:           SizeNormal,
+		Size:           SizeSmall,
+		OutputFormat:   OutputAuto,
+		OutputQuality:  render.DefaultQuality,
 		ArtworkSource:  ArtworkTMDB,
 		Language:       "en",
 		TextPreference: TextOriginal,
@@ -431,6 +453,8 @@ func Default() Config {
 
 // raw is the loose JSON shape we accept from profile config fields.
 type raw struct {
+	OutputFormat                  *string  `json:"outputFormat"`
+	OutputQuality                 *int     `json:"outputQuality"`
 	Size                          *string  `json:"size"`
 	ArtworkSource                 *string  `json:"artworkSource"`
 	Language                      *string  `json:"language"`
@@ -651,6 +675,14 @@ func Parse(data json.RawMessage) Config {
 		if v := normalizeMediaSize(*r.Size); v != "" {
 			cfg.Size = v
 		}
+	}
+	if r.OutputFormat != nil {
+		if v := normalizeOutputFormat(*r.OutputFormat); v != "" {
+			cfg.OutputFormat = v
+		}
+	}
+	if r.OutputQuality != nil && *r.OutputQuality > 0 {
+		cfg.OutputQuality = clampInt(*r.OutputQuality, 40, 100)
 	}
 	if r.ArtworkSource != nil {
 		if v := normalizeArtworkSource(*r.ArtworkSource); v != "" {
@@ -1273,6 +1305,8 @@ func CacheKey(cfg Config) string {
 		RatingRing                    bool           `json:"ratingRing"`
 		RatingRingPos                 string         `json:"ratingRingPos"`
 		RatingRingColor               string         `json:"ratingRingColor"`
+		OutputFormat                  OutputFormat   `json:"outputFormat,omitempty"`
+		OutputQuality                 int            `json:"outputQuality,omitempty"`
 		// Grouped components keep their omitempty tags, so a config with none of
 		// these set hashes exactly as it did before the fields existed.
 		GenreBadgeConfig
@@ -1322,6 +1356,8 @@ func CacheKey(cfg Config) string {
 		RatingRing:                    cfg.RatingRing,
 		RatingRingPos:                 cfg.RatingRingPos,
 		RatingRingColor:               cfg.RatingRingColor,
+		OutputFormat:                  cfg.OutputFormat,
+		OutputQuality:                 cfg.OutputQuality,
 		GenreBadgeConfig:              cfg.GenreBadgeConfig,
 		QualityBadgeConfig:            cfg.QualityBadgeConfig,
 		TrendingConfig:                cfg.TrendingConfig,
@@ -1375,12 +1411,26 @@ func CanonicalJSON(cfg Config) (json.RawMessage, error) {
 
 func normalizeMediaSize(v string) MediaSize {
 	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "small", "compact", "stremio":
+		return SizeSmall
 	case "normal", "standard", "default":
 		return SizeNormal
 	case "large":
 		return SizeLarge
 	case "4k", "uhd", "ultra", "verylarge":
 		return Size4K
+	}
+	return ""
+}
+
+func normalizeOutputFormat(v string) OutputFormat {
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "auto", "":
+		return OutputAuto
+	case "jpeg", "jpg":
+		return OutputJPEG
+	case "png":
+		return OutputPNG
 	}
 	return ""
 }

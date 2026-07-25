@@ -11,7 +11,6 @@ import (
 	"image/color"
 	"image/draw"
 	_ "image/jpeg" // register JPEG decoding
-	"image/png"
 	"io"
 	"log/slog"
 	"net/http"
@@ -47,7 +46,6 @@ type Result struct {
 	ImageBytes            []byte
 	ContentType           string
 	CacheKey              string
-	FromCache             bool
 	ContributingProviders []string // names of providers that returned data
 	// Placeholder is true when ImageBytes is a fallback placeholder rather than
 	// real artwork — the caller must not cache it (a transient failure would
@@ -386,14 +384,19 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		}
 	}
 
-	var buf bytes.Buffer
-	if err := png.Encode(&buf, composed); err != nil {
+	data, contentType, err := render.Encode(composed, req.MediaType, string(req.Config.Size),
+		render.Format(req.Config.OutputFormat), req.Config.OutputQuality)
+	if err != nil {
+		p.log().WarnContext(ctx, "The composed artwork could not be encoded; serving a placeholder",
+			"id", logging.RequestID(ctx),
+			"media_type", req.MediaType, "media_id", req.MediaID, "error", err)
 		result.ImageBytes = render.PlaceholderPNG(req.MediaType)
 		result.Placeholder = true
 		return result, nil
 	}
 
-	result.ImageBytes = buf.Bytes()
+	result.ImageBytes = data
+	result.ContentType = contentType
 	return result, nil
 }
 

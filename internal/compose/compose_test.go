@@ -35,6 +35,22 @@ func makeTestPNG(w, h int, c color.NRGBA) []byte {
 	return buf.Bytes()
 }
 
+// makeNoisyPNG builds a high-entropy image. A solid fill compresses to almost
+// nothing, so a byte-budget assertion against one proves nothing; this is the
+// realistic worst case for JPEG.
+func makeNoisyPNG(w, h int) []byte {
+	img := image.NewNRGBA(image.Rect(0, 0, w, h))
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			v := uint32(x*2654435761) ^ uint32(y*2246822519)
+			img.SetNRGBA(x, y, color.NRGBA{uint8(v >> 3), uint8(v >> 11), uint8(v >> 19), 255})
+		}
+	}
+	var buf bytes.Buffer
+	_ = png.Encode(&buf, img)
+	return buf.Bytes()
+}
+
 func makeTestJPEG(w, h int) []byte {
 	img := image.NewRGBA(image.Rect(0, 0, w, h))
 	draw.Draw(img, img.Bounds(), &image.Uniform{C: color.RGBA{100, 100, 100, 255}}, image.Point{}, draw.Src)
@@ -172,14 +188,67 @@ func TestRenderProducesCorrectDimensions(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Render: %v", err)
 	}
-	img, err := png.Decode(bytes.NewReader(res.ImageBytes))
+	img, format, err := image.Decode(bytes.NewReader(res.ImageBytes))
 	if err != nil {
-		t.Fatalf("decode result PNG: %v", err)
+		t.Fatalf("decode result: %v", err)
+	}
+	if format != "jpeg" {
+		t.Errorf("poster format = %q, want jpeg", format)
 	}
 	b := img.Bounds()
-	want := render.DimensionsFor("poster")
+	want := render.DeliveryFor("poster", string(imageconfig.Default().Size))
 	if b.Dx() != want.Width || b.Dy() != want.Height {
 		t.Errorf("got %dx%d, want %dx%d", b.Dx(), b.Dy(), want.Width, want.Height)
+	}
+}
+
+// A poster must fit Stremio's 100 KB meta limit at the default config, which is
+// the whole reason the default tier downsamples on the way out.
+func TestDefaultPosterFitsStremioLimit(t *testing.T) {
+	stub := &provider.StubProvider{
+		ProviderName: "tmdb",
+		Meta:         &provider.MediaMeta{Title: "Test", PosterURL: "http://fake/poster.jpg"},
+	}
+	p := &Pipeline{
+		providers: testRegistry(stub),
+		fetcher:   &stubImageFetcher{data: makeNoisyPNG(1000, 1500)},
+	}
+	res, err := p.Render(context.Background(), Request{
+		MediaType: "poster", MediaID: "tt1", Config: imageconfig.Default(),
+	})
+	if err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	if res.Placeholder {
+		t.Fatal("expected a real render, got a placeholder")
+	}
+	const stremioMaxBytes = 100 * 1024
+	if len(res.ImageBytes) >= stremioMaxBytes {
+		t.Errorf("poster is %d bytes, must stay under %d", len(res.ImageBytes), stremioMaxBytes)
+	}
+	if res.ContentType != "image/jpeg" {
+		t.Errorf("ContentType = %q, want image/jpeg", res.ContentType)
+	}
+}
+
+// A logo carries transparency, so it must stay PNG no matter the tier.
+func TestLogoStaysPNG(t *testing.T) {
+	stub := &provider.StubProvider{
+		ProviderName: "tmdb",
+		Meta:         &provider.MediaMeta{Title: "Test", LogoURL: "http://fake/logo.png"},
+	}
+	p := &Pipeline{
+		providers: testRegistry(stub),
+		fetcher:   &stubImageFetcher{data: makeTestPNG(800, 200, color.NRGBA{200, 30, 30, 255})},
+	}
+	res, err := p.Render(context.Background(), Request{
+		MediaType: "logo", MediaID: "tt1", Config: imageconfig.Default(),
+	})
+	if err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	if _, format, err := image.Decode(bytes.NewReader(res.ImageBytes)); err != nil || format != "png" {
+		t.Errorf("logo format = %q (err %v), want png", format, err)
 	}
 }
 
@@ -198,8 +267,8 @@ func TestRenderJPEGSource(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Render: %v", err)
 	}
-	if _, err := png.Decode(bytes.NewReader(res.ImageBytes)); err != nil {
-		t.Errorf("expected valid PNG output from JPEG source: %v", err)
+	if _, _, err := image.Decode(bytes.NewReader(res.ImageBytes)); err != nil {
+		t.Errorf("expected decodable output from a JPEG source: %v", err)
 	}
 }
 
@@ -344,7 +413,11 @@ func TestMDBListRatingsAppearOnPoster(t *testing.T) {
 	reg.Register(tmdbStub)
 	reg.Register(mdbStub)
 
+	// Inspect pixels on a lossless, full-size render so the assertions test
+	// badge drawing rather than the delivery encoding.
 	cfg := imageconfig.Default()
+	cfg.Size = imageconfig.SizeNormal
+	cfg.OutputFormat = imageconfig.OutputPNG
 	cfg.ArtworkSource = "tmdb"
 	cfg.Ratings = []string{"tmdb", "imdb", "rt", "metacritic", "letterboxd"}
 
@@ -677,6 +750,8 @@ func TestRenderQualityAgeGenreOverlays(t *testing.T) {
 	}
 
 	cfg := imageconfig.Default()
+	cfg.Size = imageconfig.SizeNormal
+	cfg.OutputFormat = imageconfig.OutputPNG
 	cfg.AgeRating = true
 	cfg.AgeRatingPos = "tl"
 	cfg.Genre = true
