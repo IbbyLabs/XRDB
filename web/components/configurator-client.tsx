@@ -198,6 +198,7 @@ export function ConfiguratorClient() {
       bottomRatingsRow: cfg.bottomRatingsRow || undefined,
       ratingPresentation: cfg.ratingPresentation === 'standard' ? '' : cfg.ratingPresentation,
       ratingValueMode: cfg.ratingValueMode === 'native' ? '' : cfg.ratingValueMode,
+      ratingVoteCounts: cfg.ratingVoteCounts,
       iconShape: cfg.iconShape,
       sideRatingsPosition: cfg.sideRatingsPosition === 'middle' ? '' : cfg.sideRatingsPosition,
       sideRatingsOffset: cfg.sideRatingsOffset,

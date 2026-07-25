@@ -553,7 +553,7 @@ func ratingsBandHeight(frameW int, ratings []provider.Rating, cfg imageconfig.Co
 	maxRowW := frameW - edgeX*2
 	rowW, rows := 0, 0
 	for _, r := range filtered {
-		value := ratingBadgeValue(r, cfg.RatingValueMode)
+		value := ratingBadgeLabel(r, cfg)
 		if value == "" {
 			value = "N/A"
 		}
@@ -629,7 +629,7 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 
 	specs := make([]badgeSpec, 0, len(filtered))
 	for _, r := range filtered {
-		value := ratingBadgeValue(r, cfg.RatingValueMode)
+		value := ratingBadgeLabel(r, cfg)
 		if value == "" {
 			value = "N/A"
 		}
@@ -839,6 +839,34 @@ func ratingBadgeValue(r provider.Rating, mode string) string {
 		return formatRatingValue(r.Value, mode)
 	default:
 		return r.Label
+	}
+}
+
+// ratingBadgeLabel is the text drawn on a rating badge: the value, optionally
+// followed by the vote count. Only three of the sources report a count, so a
+// badge without one is left alone rather than padded with a zero that would
+// read as "nobody voted".
+func ratingBadgeLabel(r provider.Rating, cfg imageconfig.Config) string {
+	value := ratingBadgeValue(r, cfg.RatingValueMode)
+	if !cfg.RatingVoteCounts || r.Votes <= 0 {
+		return value
+	}
+	return value + " " + formatVoteCount(r.Votes)
+}
+
+// formatVoteCount abbreviates a vote count to something that fits on a badge.
+// Precision is deliberately low: the order of magnitude is the information, and
+// "2.9M" earns its space on a poster where "2,914,772" does not.
+func formatVoteCount(n int) string {
+	switch {
+	case n >= 1_000_000:
+		return strconv.FormatFloat(float64(n)/1_000_000, 'f', 1, 64) + "M"
+	case n >= 10_000:
+		return strconv.Itoa(n/1000) + "K"
+	case n >= 1_000:
+		return strconv.FormatFloat(float64(n)/1000, 'f', 1, 64) + "K"
+	default:
+		return strconv.Itoa(n)
 	}
 }
 

@@ -375,6 +375,10 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
         <NumField id={`${uid}-rating-oy`} label="Offset Y" value={config.ratingBadgeOffsetY}
           onChange={v => onUpdate('ratingBadgeOffsetY', v)} min={-320} max={320} zeroIsDefault={false} />
       </div>
+      <ToggleField id={`${uid}-vote-counts`} label="Show vote counts"
+        checked={config.ratingVoteCounts}
+        onChange={v => onUpdate('ratingVoteCounts', v)}
+        hint="Append the number of votes to each score. Only IMDb, MDBList and TMDB report one; other sources show the score alone." />
       <ToggleField id={`${uid}-bottom-row`} label="Single bottom row"
         checked={config.bottomRatingsRow}
         onChange={v => onUpdate('bottomRatingsRow', v)}

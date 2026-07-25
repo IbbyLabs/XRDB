@@ -292,6 +292,10 @@ type RatingBadgeConfig struct {
 	// "normalized" is one decimal out of ten, "normalizedclean" drops a trailing
 	// ".0", and "normalized100" rounds to a whole number out of a hundred.
 	RatingValueMode string `json:"ratingValueMode,omitempty"`
+	// RatingVoteCounts appends the vote count to each rating badge. Only IMDb,
+	// MDBList and TMDB report one, so the badges that have no count are left
+	// unchanged rather than padded with a zero.
+	RatingVoteCounts bool `json:"ratingVoteCounts,omitempty"`
 	// IconShape clips a provider's mark to a shape: circle, squircle (a softly
 	// rounded tile) or rounded (a lightly rounded one). Empty leaves the mark
 	// its own outline.
@@ -579,6 +583,7 @@ type rawRating struct {
 	BottomRatingsRow        *bool              `json:"bottomRatingsRow"`
 	RatingPresentation      *string            `json:"ratingPresentation"`
 	RatingValueMode         *string            `json:"ratingValueMode"`
+	RatingVoteCounts        *bool              `json:"ratingVoteCounts"`
 	IconShape               *string            `json:"iconShape"`
 	SideRatingsPosition     *string            `json:"sideRatingsPosition"`
 	SideRatingsOffset       *int               `json:"sideRatingsOffset"`
@@ -916,6 +921,9 @@ func parseRating(cfg *Config, r *raw) {
 		case "standard", "minimal", "average", "dual", "dual-minimal", "editorial", "scorebar", "none":
 			cfg.RatingPresentation = v
 		}
+	}
+	if r.RatingVoteCounts != nil {
+		cfg.RatingVoteCounts = *r.RatingVoteCounts
 	}
 	if r.RatingValueMode != nil {
 		// v2 wrote several spellings of the same mode, so fold separators away

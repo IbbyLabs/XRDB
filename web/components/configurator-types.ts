@@ -277,6 +277,7 @@ export interface ConfigState {
   bottomRatingsRow: boolean; // keep every badge on one bottom row
   ratingPresentation: string; // standard|editorial|none
   ratingValueMode: string; // native|normalized|normalizedclean|normalized100
+  ratingVoteCounts: boolean;
   iconShape: string; // '' = the mark's own outline; circle|squircle|rounded
   sideRatingsPosition: string; // top|middle|bottom|custom (split-side layout)
   sideRatingsOffset: number; // px vertical offset for the custom position
@@ -383,6 +384,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   bottomRatingsRow: false,
   ratingPresentation: 'standard',
   ratingValueMode: 'native',
+  ratingVoteCounts: false,
   iconShape: '',
   sideRatingsPosition: 'middle',
   sideRatingsOffset: 0,
