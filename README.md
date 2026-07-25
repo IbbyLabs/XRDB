@@ -41,6 +41,13 @@ Open `http://localhost:8787`, add your provider keys under **Integrations**
 (TMDB at minimum), then build your look in the **Configurator** and save it
 as a profile. Or with compose: `docker compose up --build`.
 
+Per-client setup: [Stremio](docs/setup/stremio.md) ·
+[AIOMetadata](docs/setup/aiometadata.md) ·
+[Jellyfin](docs/setup/jellyfin.md) ·
+[Emby](docs/setup/emby.md) ·
+[Kodi](docs/setup/kodi.md) ·
+[Plex](docs/setup/plex.md) — [overview](docs/setup/README.md)
+
 Environment reference: [variables.md](variables.md) ·
 Template: [env.template](env.template) ·
 Upgrading from v2: [docs/migrating-to-v3.md](docs/migrating-to-v3.md)
