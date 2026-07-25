@@ -1,13 +1,8 @@
-import { IntegrationsClient } from '@/components/integrations-client';
-import { AdminGate } from '@/components/admin-gate';
+import { UserKeysClient } from '@/components/user-keys-client';
 import type { Metadata } from 'next';
 
-export const metadata: Metadata = { title: 'Integrations — XRDB' };
+export const metadata: Metadata = { title: 'Your API keys — XRDB' };
 
 export default function IntegrationsPage() {
-  return (
-    <AdminGate>
-      <IntegrationsClient />
-    </AdminGate>
-  );
+  return <UserKeysClient />;
 }

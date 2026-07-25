@@ -1229,6 +1229,15 @@ textarea.input { min-height: 0; line-height: 1.5; }
 .notice-info    { background: var(--accent-dim); border: 1px solid var(--accent-border); color: var(--accent-text); }
 .notice-warn    { background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn); }
 
+/* A link inside explanatory text has to be findable without relying on colour
+   alone, so it carries an underline as well. */
+.hint a {
+  color: var(--accent-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.hint a:hover { color: var(--ink); }
+
 .notice-dismiss {
   display: flex;
   align-items: center;

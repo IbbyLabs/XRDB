@@ -6,7 +6,7 @@ import { fetchSettings, setSetting, deleteSetting } from '@/lib/api';
 
 // ── Provider definitions ──────────────────────────────────────────────────────
 
-interface Integration {
+export interface Integration {
   id: string;
   name: string;
   description: string;
@@ -15,7 +15,7 @@ interface Integration {
   accent: string;
 }
 
-const INTEGRATIONS: Integration[] = [
+export const INTEGRATIONS: Integration[] = [
   {
     id: 'tmdb',
     name: 'TMDB',
@@ -325,7 +325,9 @@ function ProviderRow({
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function IntegrationsClient() {
+// embedded drops the page heading and outer width: inside the admin tabs the
+// panel already has both, and a second page title reads as a nested page.
+export function IntegrationsClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [statuses, setStatuses] = useState<Record<string, boolean>>({});
   const [loading, setLoading]   = useState(true);
   const [settingsUnauthorized, setSettingsUnauthorized] = useState(false);
@@ -436,14 +438,16 @@ export function IntegrationsClient() {
   ).length;
 
   return (
-    <div className="page-inner" style={{ maxWidth: '920px' }}>
-      <div className="page-head">
-        <h1 className="page-title">Integrations</h1>
-        <p className="page-sub">
-          Connect third-party services. Keys are stored in the database and override environment variables.
-          {!loading && statusKnown && ` ${connectedCount}/${INTEGRATIONS.length} configured.`}
-        </p>
-      </div>
+    <div className={embedded ? '' : 'page-inner'} style={embedded ? undefined : { maxWidth: '920px' }}>
+      {!embedded && (
+        <div className="page-head">
+          <h1 className="page-title">Integrations</h1>
+          <p className="page-sub">
+            Connect third-party services. Keys are stored in the database and override environment variables.
+            {!loading && statusKnown && ` ${connectedCount}/${INTEGRATIONS.length} configured.`}
+          </p>
+        </div>
+      )}
 
       {!loading && !settingsLoadFailed && !settingsUnauthorized && showTmdbPrompt && !tmdbConfigured && (
         <div style={{ marginBottom: 'var(--sp-4)' }}>

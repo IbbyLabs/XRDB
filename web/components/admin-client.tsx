@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { Activity, HardDrive, RefreshCw, AlertCircle, Check, Flame, ScrollText, SlidersHorizontal } from 'lucide-react';
+import { Activity, HardDrive, RefreshCw, AlertCircle, Check, Flame, ScrollText, SlidersHorizontal, Plug } from 'lucide-react';
 import {
   fetchMetrics, fetchCacheStats, adminAuthHeaders,
   fetchLogLevel, setLogLevel, clearLogLevel,
@@ -11,6 +11,7 @@ import {
   type MemoryLimitState, type TTLEntry,
 } from '@/lib/api';
 import { tablistKeyNav } from './tablist';
+import { IntegrationsClient } from './integrations-client';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
 
@@ -526,7 +527,7 @@ function WarmPanel() {
   );
 }
 
-type Tab = 'metrics' | 'cache' | 'logs' | 'runtime' | 'warm';
+type Tab = 'metrics' | 'cache' | 'logs' | 'runtime' | 'warm' | 'keys';
 
 const TABS: { id: Tab; label: string; icon: typeof Activity }[] = [
   { id: 'metrics', label: 'Metrics', icon: Activity },
@@ -534,6 +535,7 @@ const TABS: { id: Tab; label: string; icon: typeof Activity }[] = [
   { id: 'logs',    label: 'Logs',    icon: ScrollText },
   { id: 'runtime', label: 'Runtime', icon: SlidersHorizontal },
   { id: 'warm',    label: 'Warm',    icon: Flame },
+  { id: 'keys',    label: 'Server keys', icon: Plug },
 ];
 
 export function AdminClient() {
@@ -544,7 +546,7 @@ export function AdminClient() {
   const [error, setError]     = useState<string | null>(null);
 
   const load = useCallback(async (t: Tab) => {
-    if (t === 'warm' || t === 'logs' || t === 'runtime') return;
+    if (t === 'warm' || t === 'logs' || t === 'runtime' || t === 'keys') return;
     setLoading(true);
     setError(null);
     try {
@@ -563,7 +565,7 @@ export function AdminClient() {
 
   const switchTab = (t: Tab) => {
     setTab(t);
-    if (t === 'warm' || t === 'logs' || t === 'runtime') return;
+    if (t === 'warm' || t === 'logs' || t === 'runtime' || t === 'keys') return;
     if ((t === 'metrics' && !metrics) || (t === 'cache' && !cache)) {
       void load(t);
     }
@@ -634,6 +636,7 @@ export function AdminClient() {
           {id === 'logs' && tab === 'logs' && <LogLevelPanel />}
           {id === 'runtime' && tab === 'runtime' && <RuntimePanel />}
           {id === 'warm' && tab === 'warm' && <WarmPanel />}
+          {id === 'keys' && tab === 'keys' && <IntegrationsClient embedded />}
         </div>
       ))}
     </div>
