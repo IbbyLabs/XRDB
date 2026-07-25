@@ -1028,6 +1028,13 @@ textarea.input { min-height: 0; line-height: 1.5; }
   border-color: var(--accent-border);
   color: var(--accent-text);
 }
+/* Picked, but a higher-tier format already covers it, so it is not drawn. The
+   dashed edge and struck label carry that without relying on colour alone. */
+.chip--superseded {
+  border-style: dashed;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
 
 .opt-grid {
   display: grid;

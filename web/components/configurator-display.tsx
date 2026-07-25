@@ -5,6 +5,7 @@ import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   ARTWORK_OPTIONS, SIZE_OPTIONS, TEXT_PREF_OPTIONS, LANG_OPTIONS,
   AGE_POS_OPTIONS, SIX_POS_OPTIONS, GENRE_POS_OPTIONS, QUALITY_BADGE_OPTIONS, TREND_STYLE_OPTIONS,
+  suppressedQualityBadges,
 } from './configurator-types';
 import { QualityFine, GenreFine, AggregateFine, AgeFine, ReleaseStatusFine, TrendingFine } from './configurator-fine';
 
@@ -95,6 +96,10 @@ interface DisplayPanelProps {
 }
 
 export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, onReset, fine }: DisplayPanelProps) {
+  const suppressed = suppressedQualityBadges(config.badges);
+  const supersededLabels = Object.keys(suppressed)
+    .map(id => QUALITY_BADGE_OPTIONS.find(o => o.id === id)?.label)
+    .filter((l): l is string => Boolean(l));
   return (
     <div className="panel">
       <div className="panel-body cfg-fields">
@@ -396,12 +401,15 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           <div className="chip-row">
             {QUALITY_BADGE_OPTIONS.map(b => {
               const active = config.badges.includes(b.id);
+              const supersededBy = suppressed[b.id];
+              const label = QUALITY_BADGE_OPTIONS.find(o => o.id === supersededBy)?.label;
               return (
                 <button
                   key={b.id}
-                  className={`chip${active ? ' chip--active' : ''}`}
+                  className={`chip${active ? ' chip--active' : ''}${supersededBy ? ' chip--superseded' : ''}`}
                   onClick={() => onToggleBadge(b.id)}
                   aria-pressed={active}
+                  title={supersededBy ? `${label} already covers ${b.label}, so it is not drawn` : undefined}
                 >
                   {b.label}
                 </button>
@@ -409,7 +417,9 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
             })}
           </div>
           <span className="hint" style={{ marginTop: 'var(--sp-2)' }}>
-            Rendered in the top-right corner
+            {supersededLabels.length > 0
+              ? `Rendered in the top-right corner. ${supersededLabels.join(' and ')} ${supersededLabels.length > 1 ? 'are' : 'is'} already covered by a higher format you picked, so ${supersededLabels.length > 1 ? 'they are' : 'it is'} not drawn.`
+              : 'Rendered in the top-right corner'}
           </span>
           {fine && config.badges.length > 0 && (
             <QualityFine uid={uid} config={config} onUpdate={onUpdate} />

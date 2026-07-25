@@ -229,6 +229,30 @@ export const QUALITY_BADGE_OPTIONS: { id: string; label: string }[] = [
   { id: 'imax',      label: 'IMAX'         },
 ];
 
+// A higher-tier format already implies the ones below it, so the renderer draws
+// only the highest selected and drops the rest. Mirrored here so the
+// configurator can say which of your picks will not appear, rather than
+// quietly rendering fewer badges than you selected.
+const QUALITY_BADGE_IMPLIES: Record<string, readonly string[]> = {
+  dv:        ['hdr10plus', 'hdr10', 'hdr'],
+  hdr10plus: ['hdr10', 'hdr'],
+  hdr10:     ['hdr'],
+};
+
+// suppressedQualityBadges maps each selected badge that will not be drawn to
+// the selected badge that supersedes it.
+export function suppressedQualityBadges(selected: readonly string[]): Record<string, string> {
+  const picked = new Set(selected.map(s => s.toLowerCase()));
+  const out: Record<string, string> = {};
+  for (const [superior, implied] of Object.entries(QUALITY_BADGE_IMPLIES)) {
+    if (!picked.has(superior)) continue;
+    for (const token of implied) {
+      if (picked.has(token)) out[token] = superior;
+    }
+  }
+  return out;
+}
+
 export const PREVIEW_DEBOUNCE_MS = 500;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
