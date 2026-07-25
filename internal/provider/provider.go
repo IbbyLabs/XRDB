@@ -28,6 +28,10 @@ type MediaMeta struct {
 	LogoURL        string          // logo image URL (may be empty)
 	Ratings        []Rating        // from this provider
 	Language       string          // language of the returned artwork
+	// IMDbID is the title's IMDb tt-id when the source knows it. Rating sources
+	// are keyed by it, so a request arriving under another scheme needs it to
+	// reach them.
+	IMDbID string
 	ContentRating  string          // e.g. "TV-MA", "R", "PG-13" (may be empty)
 	ReleaseStatus  string          // "digital" | "cinemas" (may be empty; movies only)
 	Genres         []string        // e.g. ["Action","Drama"] (may be empty)

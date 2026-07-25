@@ -236,7 +236,7 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		imgLangs = lang + ",en,null"
 	}
 	path := tmdbBaseURL + "/" + mediaType + "/" + id +
-		"?append_to_response=images,release_dates,content_ratings,watch%2Fproviders" +
+		"?append_to_response=images,release_dates,content_ratings,watch%2Fproviders,external_ids" +
 		"&include_image_language=" + imgLangs
 	var result struct {
 		Title         string  `json:"title"`
@@ -244,6 +244,11 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		OriginalTitle string  `json:"original_title"`
 		OriginalName  string  `json:"original_name"` // TV
 		Overview      string  `json:"overview"`
+		// Movies carry imdb_id at the top level, series only under external_ids.
+		IMDbID      string `json:"imdb_id"`
+		ExternalIDs struct {
+			IMDbID string `json:"imdb_id"`
+		} `json:"external_ids"`
 		ReleaseDate   string  `json:"release_date"`
 		FirstAirDate  string  `json:"first_air_date"`
 		VoteAverage   float64 `json:"vote_average"`
@@ -311,12 +316,17 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		originalTitle = result.OriginalName
 	}
 
+	imdbID := strings.TrimSpace(result.IMDbID)
+	if imdbID == "" {
+		imdbID = strings.TrimSpace(result.ExternalIDs.IMDbID)
+	}
 	meta := &MediaMeta{
 		Title:         title,
 		OriginalTitle: originalTitle,
 		Year:          year,
 		Overview:      result.Overview,
 		Language:      "en",
+		IMDbID:        imdbID,
 	}
 
 	// Source resolution: w780/w1280 are plenty for normal output, but large

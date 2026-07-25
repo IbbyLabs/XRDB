@@ -219,6 +219,21 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 	return meta, err
 }
 
+// ratingIDForSources swaps a non-IMDb id for the IMDb id the artwork source
+// reported. AIOMetadata substitutes a tmdb: id when a title has no IMDb id in
+// its own index, and the sources keyed by IMDb id return nothing for it, so the
+// artwork renders with genre and age badges but no rating badges.
+func ratingIDForSources(id string, meta *provider.MediaMeta) string {
+	if meta == nil || meta.IMDbID == "" || strings.HasPrefix(id, "tt") {
+		return id
+	}
+	// Episode ids carry season and episode after the title id; keep that tail.
+	if _, season, episode, ok := parseEpisodeID(id); ok {
+		return fmt.Sprintf("%s:%d:%d", meta.IMDbID, season, episode)
+	}
+	return meta.IMDbID
+}
+
 // New creates a Pipeline with the given provider registry.
 func New(reg *provider.Registry) *Pipeline {
 	return &Pipeline{
@@ -278,7 +293,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// for the rating strip beneath the wordmark. ratingID differs from
 	// req.MediaID for episodes, so per-episode ratings resolve correctly.
 	ratingReq := req
-	ratingReq.MediaID = ratingID
+	ratingReq.MediaID = ratingIDForSources(ratingID, meta)
 	allRatings, ratingProviders := p.collectRatingsWithProviders(ctx, ratingReq, meta)
 	result.ContributingProviders = append([]string{string(req.Config.ArtworkSource)}, ratingProviders...)
 	meta.IsAnime = p.isAnimeTitle(ctx, req)
