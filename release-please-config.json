@@ -47,5 +47,5 @@
     }
   },
   "pull-request-title-pattern": "chore${scope}: release${component} ${version}",
-  "pull-request-header": "The next release, kept up to date as commits land on main. Merging it tags the version, publishes the release, and builds the image."
+  "pull-request-header": ""
 }
