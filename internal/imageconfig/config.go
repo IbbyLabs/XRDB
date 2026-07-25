@@ -1252,6 +1252,10 @@ func parseRandom(cfg *Config, r *raw) {
 		switch v := strings.ToLower(strings.TrimSpace(*r.RandomPosterLanguage)); v {
 		case "any", "requested":
 			cfg.RandomPosterLanguage = v
+		case "fallback":
+			// v2's "fallback" prefers the requested language but takes any when
+			// nothing matches, which is what "requested" already does here.
+			cfg.RandomPosterLanguage = "requested"
 		}
 	}
 	if r.RandomPosterMinVoteCount != nil {
@@ -1289,7 +1293,12 @@ func clampInt(v, lo, hi int) int {
 // clamping numeric ranges so a hostile or stale value can't distort a render.
 func parseGenre(cfg *Config, r *raw) {
 	if r.GenreBadgeAnimeGrouping != nil {
+		// The aliases are v2's own: it folded several spellings onto these three.
 		switch v := strings.ToLower(strings.TrimSpace(*r.GenreBadgeAnimeGrouping)); v {
+		case "grouped", "group", "merge", "animationonly":
+			cfg.GenreBadgeAnimeGrouping = "animation"
+		case "replace", "secondarygenre", "replacesecondary":
+			cfg.GenreBadgeAnimeGrouping = "secondary"
 		case "split", "animation", "secondary":
 			cfg.GenreBadgeAnimeGrouping = v
 		}

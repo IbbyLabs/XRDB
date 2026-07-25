@@ -191,3 +191,23 @@ func TestParseRescalesLegacyScorebarThresholds(t *testing.T) {
 		t.Errorf("scorebarHighThreshold 7.5 -> %v, want 7.5", ten.ScorebarHighThreshold)
 	}
 }
+
+// v2 folds several spellings onto its own canonical values; the aliases here
+// are taken from that normalizer rather than guessed.
+func TestParseAcceptsLegacySmallEnums(t *testing.T) {
+	// "fallback" prefers the requested language but accepts any when nothing
+	// matches, which is what "requested" already does here.
+	if got := Parse(json.RawMessage(`{"randomPosterLanguage":"fallback"}`)).RandomPosterLanguage; got != "requested" {
+		t.Errorf("randomPosterLanguage fallback -> %q, want requested", got)
+	}
+	for _, in := range []string{"merge", "grouped", "group", "animationonly"} {
+		if got := Parse(json.RawMessage(`{"genreBadgeAnimeGrouping":"` + in + `"}`)).GenreBadgeAnimeGrouping; got != "animation" {
+			t.Errorf("genreBadgeAnimeGrouping %q -> %q, want animation", in, got)
+		}
+	}
+	for _, in := range []string{"replace", "secondarygenre", "replacesecondary"} {
+		if got := Parse(json.RawMessage(`{"genreBadgeAnimeGrouping":"` + in + `"}`)).GenreBadgeAnimeGrouping; got != "secondary" {
+			t.Errorf("genreBadgeAnimeGrouping %q -> %q, want secondary", in, got)
+		}
+	}
+}
