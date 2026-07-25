@@ -127,3 +127,37 @@ func contains(ss []string, s string) bool {
 	}
 	return false
 }
+
+func TestManifestAdvertisesConfigurable(t *testing.T) {
+	h := NewHandler("test", nil, nil, nil, nil, config.Config{})
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/stremio/manifest.json", nil))
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("manifest: got %d, want 200", rr.Code)
+	}
+	var manifest struct {
+		BehaviorHints struct {
+			Configurable bool `json:"configurable"`
+		} `json:"behaviorHints"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &manifest); err != nil {
+		t.Fatalf("decode manifest: %v", err)
+	}
+	if !manifest.BehaviorHints.Configurable {
+		t.Error("manifest does not advertise configurable, so Stremio shows no Configure button")
+	}
+}
+
+func TestConfigureRedirectsToTheConfigurator(t *testing.T) {
+	h := NewHandler("test", nil, nil, nil, nil, config.Config{})
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/configure", nil))
+
+	if rr.Code != http.StatusFound {
+		t.Fatalf("got %d, want 302", rr.Code)
+	}
+	if loc := rr.Header().Get("Location"); loc != "/configurator" {
+		t.Errorf("Location = %q, want /configurator", loc)
+	}
+}

@@ -62,18 +62,31 @@ type stremioMeta struct {
 func registerStremioAddon(mux *http.ServeMux, cfg config.Config) {
 	mux.HandleFunc("/stremio/manifest.json", stremioMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		manifest := stremioManifest{
-			ID:            "com.ibbylabs.xrdb",
-			Version:       cfg.Version,
-			Name:          "XRDB",
-			Description:   "Enhanced movie and series artwork powered by XRDB — overlaid ratings, quality badges, and more.",
-			Resources:     []string{"meta"},
-			Types:         []string{"movie", "series"},
-			IDPrefixes:    []string{"tt"},
-			Catalogs:      []any{},
-			BehaviorHints: stremioHints{},
+			ID:          "com.ibbylabs.xrdb",
+			Version:     cfg.Version,
+			Name:        "XRDB",
+			Description: "Enhanced movie and series artwork powered by XRDB — overlaid ratings, quality badges, and more.",
+			Resources:   []string{"meta"},
+			Types:       []string{"movie", "series"},
+			IDPrefixes:  []string{"tt"},
+			Catalogs:    []any{},
+			// Advertising this is what makes Stremio show a Configure button on
+			// the addon, which opens /configure on this host.
+			BehaviorHints: stremioHints{Configurable: true},
 		}
 		writeJSON(w, http.StatusOK, manifest)
 	}))
+
+	// Stremio opens <addon-host>/configure for a configurable addon. The
+	// configurator lives at /configurator, so meet Stremio's convention here
+	// rather than moving the page and breaking existing links.
+	mux.HandleFunc("/configure", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		http.Redirect(w, r, "/configurator", http.StatusFound)
+	})
 
 	mux.HandleFunc("/stremio/meta/", stremioMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		// Path: /stremio/meta/{type}/{id}.json
