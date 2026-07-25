@@ -50,9 +50,11 @@ export const LAYOUT_OPTIONS = [
 export const SIDE_LAYOUTS: readonly string[] = ['split-side', 'left', 'right'];
 
 export const BADGE_STYLE_OPTIONS = [
-  { id: 'pill',   label: 'Pill'    },
-  { id: 'square', label: 'Square'  },
-  { id: 'glass',  label: 'Outline' },
+  { id: 'pill',   label: 'Pill'          },
+  { id: 'square', label: 'Square'        },
+  { id: 'glass',  label: 'Outline'       },
+  { id: 'tile',   label: 'Tile'          },
+  { id: 'plain',  label: 'No background' },
 ] as const;
 
 export const BADGE_THEME_OPTIONS = [

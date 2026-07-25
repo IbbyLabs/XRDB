@@ -68,6 +68,10 @@ const (
 	BadgePill   BadgeStyle = "pill"
 	BadgeSquare BadgeStyle = "square"
 	BadgeGlass  BadgeStyle = "glass"
+	// BadgePlain draws the value with no tile behind it, carrying its own
+	// outline for legibility. BadgeTile is a dark rounded tile.
+	BadgePlain BadgeStyle = "plain"
+	BadgeTile  BadgeStyle = "tile"
 )
 
 // BadgeTheme controls the rating badge color scheme.
@@ -729,6 +733,11 @@ func Parse(data json.RawMessage) Config {
 			cfg.BadgeStyle = BadgeSquare
 		case "glass":
 			cfg.BadgeStyle = BadgeGlass
+		// v2 names these "No Background" and "Tile Dark".
+		case "plain", "none", "no-background", "nobackground":
+			cfg.BadgeStyle = BadgePlain
+		case "tile":
+			cfg.BadgeStyle = BadgeTile
 		}
 	}
 	if r.BadgeTheme != nil {
@@ -1579,6 +1588,15 @@ func normalizeRatingsLayout(v string) RatingsLayout {
 		return LayoutSplitSide
 	case "top-bottom", "topbottom", "top_bottom":
 		return LayoutTopBottom
+	// v2 gave the backdrop and thumbnail their own layout names. "center" is a
+	// horizontally centred row, which is what the bottom strip already draws;
+	// "right vertical" is the single right-hand column.
+	case "center", "centre", "centered", "centred":
+		return LayoutBottom
+	case "right-vertical", "rightvertical", "right_vertical", "right vertical":
+		return LayoutRight
+	case "left-vertical", "leftvertical", "left_vertical", "left vertical":
+		return LayoutLeft
 	case "none", "hidden", "off":
 		return LayoutNone
 	}

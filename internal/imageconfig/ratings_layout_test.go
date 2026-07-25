@@ -26,6 +26,12 @@ func TestParseAcceptsLegacyRatingsLayoutSpellings(t *testing.T) {
 		{"bottom", LayoutBottom},
 		{"none", LayoutNone},
 		{"LEFT-RIGHT", LayoutSplitSide},
+		// v2 gave the backdrop and thumbnail their own layout names.
+		{"center", LayoutBottom},
+		{"centre", LayoutBottom},
+		{"right-vertical", LayoutRight},
+		{"right vertical", LayoutRight},
+		{"left-vertical", LayoutLeft},
 	}
 	for _, tc := range cases {
 		t.Run(tc.in, func(t *testing.T) {
@@ -96,5 +102,36 @@ func TestRatingsLayoutsProduceDistinctCacheKeys(t *testing.T) {
 			t.Errorf("layouts %q and %q share cache key %s", prev, l, key)
 		}
 		seen[key] = l
+	}
+}
+
+// v2 offers two rating badge looks v3 had no token for: "No Background" and
+// "Tile Dark". Without them a migrated profile silently reverts to the pill.
+func TestParseAcceptsLegacyBadgeStyles(t *testing.T) {
+	cases := map[string]BadgeStyle{
+		"plain": BadgePlain, "no-background": BadgePlain, "none": BadgePlain,
+		"tile": BadgeTile, "TILE": BadgeTile,
+		"glass": BadgeGlass, "square": BadgeSquare, "pill": BadgePill,
+	}
+	for in, want := range cases {
+		cfg := Parse(json.RawMessage(`{"badgeStyle":"` + in + `"}`))
+		if cfg.BadgeStyle != want {
+			t.Errorf("badgeStyle %q parsed to %q, want %q", in, cfg.BadgeStyle, want)
+		}
+	}
+}
+
+// Each style must key differently, or two profiles that look different share a
+// cached image.
+func TestBadgeStylesProduceDistinctCacheKeys(t *testing.T) {
+	seen := map[string]BadgeStyle{}
+	for _, s := range []BadgeStyle{BadgePill, BadgeSquare, BadgeGlass, BadgePlain, BadgeTile} {
+		cfg := Default()
+		cfg.BadgeStyle = s
+		key := CacheKey(cfg)
+		if prev, dup := seen[key]; dup {
+			t.Errorf("styles %q and %q share cache key", prev, s)
+		}
+		seen[key] = s
 	}
 }

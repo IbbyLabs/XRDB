@@ -381,6 +381,13 @@ type badgeChrome struct {
 	border     color.NRGBA // zero alpha = no border
 	valueColor color.NRGBA
 	iconColor  color.NRGBA
+	// outline is drawn behind the value when there is no tile to separate it
+	// from the artwork. Zero alpha = no outline.
+	outline      color.NRGBA
+	outlineWidth int
+	// hideAccentBar suppresses the leading accent stripe for styles that have
+	// no tile for it to sit against; the provider colour goes on the mark.
+	hideAccentBar bool
 }
 
 func chromeFor(cfg imageconfig.Config) badgeChrome {
@@ -402,6 +409,25 @@ func chromeFor(cfg imageconfig.Config) badgeChrome {
 	case imageconfig.BadgePill:
 		// Solid capsule: fully rounded ends, opaque fill.
 		c.radius = func(innerH int) int { return innerH / 2 }
+	case imageconfig.BadgePlain:
+		// No tile at all, so the value carries its own outline or it disappears
+		// against light artwork.
+		c.radius = func(int) int { return 0 }
+		c.bg = color.NRGBA{A: 0}
+		c.outline = color.NRGBA{A: 180}
+		c.outlineWidth = 1
+		c.hideAccentBar = true
+		if w := cfg.NoBackgroundBadgeOutlineWidth; w > 0 {
+			c.outlineWidth = w
+		}
+		if o, err := parseHexColor(cfg.NoBackgroundBadgeOutlineColor); cfg.NoBackgroundBadgeOutlineColor != "" && err == nil {
+			o.A = 255
+			c.outline = o
+		}
+	case imageconfig.BadgeTile:
+		// Dark rounded tile, squarer than the pill.
+		c.radius = func(innerH int) int { return maxInt(2, innerH/5) }
+		c.bg = color.NRGBA{R: 16, G: 18, B: 24, A: 220}
 	}
 	if cfg.BadgeTheme == imageconfig.ThemeLight {
 		if cfg.BadgeStyle == imageconfig.BadgeGlass {
@@ -459,7 +485,7 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 
 		iconTint := chrome.iconColor
 		contentX := sp.x
-		if radius < innerH/2 {
+		if radius < innerH/2 && !chrome.hideAccentBar {
 			aRect := image.Rect(sp.x, y, sp.x+accentW, y+innerH)
 			fillRect(out, aRect.Intersect(bRect), sp.accent)
 			contentX += accentW
@@ -492,6 +518,18 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 		}
 
 		valY := y + (innerH-valH)/2 + valAscent
+		if chrome.outline.A > 0 && chrome.outlineWidth > 0 {
+			// Ring the glyphs rather than offsetting once, so the value stays
+			// legible whichever way the artwork is bright behind it.
+			for dy := -chrome.outlineWidth; dy <= chrome.outlineWidth; dy++ {
+				for dx := -chrome.outlineWidth; dx <= chrome.outlineWidth; dx++ {
+					if dx == 0 && dy == 0 {
+						continue
+					}
+					drawText(out, face, contentX+dx, valY+dy, chrome.outline, sp.value)
+				}
+			}
+		}
 		drawText(out, face, contentX, valY, chrome.valueColor, sp.value)
 	}
 }
