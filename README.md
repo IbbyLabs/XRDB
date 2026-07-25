@@ -32,10 +32,15 @@ look your whole library takes on.
 ```sh
 docker run -d --name xrdb -p 8787:8787 -v xrdb-data:/data \
   -e XRDB_ADMIN_KEY=choose-a-strong-key \
-  ghcr.io/ibbylabs/xrdb:dev
+  ghcr.io/ibbylabs/xrdb:latest
 ```
 
-v3 ships on `:dev` (port `8787`); `:latest` is still v2 (port `3000`).
+> [!IMPORTANT]
+> **Upgrading from v2:** v3 is a rewrite and `:latest` now points at it. The
+> port changes from `3000` to `8787`, data lives under `/data`, and profiles do
+> not carry over on their own — follow the
+> [migration guide](docs/migrating-to-v3.md) first. To stay on v2, pin
+> `ghcr.io/ibbylabs/xrdb:v2.3.13`.
 
 Open `http://localhost:8787`, add your provider keys under **Integrations**
 (TMDB at minimum), then build your look in the **Configurator** and save it
