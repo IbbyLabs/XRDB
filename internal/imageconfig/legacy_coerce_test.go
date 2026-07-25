@@ -24,8 +24,12 @@ func TestCoerceLegacyValue(t *testing.T) {
 		{"bool word", "bottomRatingsRow", `"on"`, `true`, true},
 		{"bool false", "bottomRatingsRow", `"off"`, `false`, true},
 
+		// A present-but-empty list is a v2 user having turned every item off, so
+		// it carries as an empty selection rather than reverting to a default.
+		{"empty list", "ratings", `""`, `[]`, true},
+		{"list of blanks", "ratings", `" , "`, `[]`, true},
+
 		// Left alone rather than guessed at.
-		{"empty list", "ratings", `""`, "", false},
 		{"already an array", "ratings", `["imdb"]`, "", false},
 		{"already a number", "ratingBadgeScale", `200`, "", false},
 		{"unparseable int", "ratingBadgeScale", `"huge"`, "", false},

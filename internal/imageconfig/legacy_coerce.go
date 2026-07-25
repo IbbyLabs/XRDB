@@ -64,8 +64,11 @@ func CoerceLegacyValue(key string, value json.RawMessage) (json.RawMessage, bool
 			return nil, false
 		}
 		items := splitLegacyList(s)
-		if len(items) == 0 {
-			return nil, false
+		if items == nil {
+			// The key is present and empty, which is a v2 user having turned
+			// every item off. Dropping it here reads as "unset" instead, and
+			// the setting comes back at whatever the default is.
+			items = []string{}
 		}
 		encoded, err := json.Marshal(items)
 		if err != nil {
