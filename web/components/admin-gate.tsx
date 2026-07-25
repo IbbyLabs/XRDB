@@ -65,6 +65,11 @@ export function AdminGate({ children }: { children: React.ReactNode }) {
             This area is for the instance owner. Enter the admin key
             (<code>XRDB_ADMIN_KEY</code>) configured on the server.
           </p>
+          <p className="hint" style={{ marginTop: 0, textAlign: 'center' }}>
+            Looking to use your own API keys? You do not need this. Open the{' '}
+            <a href="/configurator?tab=profile">configurator</a>, load your
+            profile and set them there — a profile needs a password first.
+          </p>
           <div className="field" style={{ width: '100%' }}>
             <label className="label" htmlFor={`${uid}-key`}>Admin key</label>
             <input
