@@ -870,6 +870,39 @@ func badgePos(v string) string {
 	return sixPos(v)
 }
 
+// scoreThreshold reads a score-bar threshold onto the 0-10 scale the renderer
+// compares against. v2 writes these on a 0-100 scale, which fell outside the
+// accepted range and left the threshold at its default.
+func scoreThreshold(v *float64) (float64, bool) {
+	if v == nil || *v <= 0 {
+		return 0, false
+	}
+	f := *v
+	if f > 10 && f <= 100 {
+		f /= 10
+	}
+	if f <= 0 || f > 10 {
+		return 0, false
+	}
+	return f, true
+}
+
+// qualityBadgesPos normalizes the quality-badge placement. v2 offers this one
+// as a side rather than a corner — "auto", "left" or "right" — because the
+// badges are always top-anchored, so a bare side resolves to the top corner on
+// that side.
+func qualityBadgesPos(v string) string {
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "left":
+		return "tl"
+	case "right":
+		return "tr"
+	case "auto":
+		return ""
+	}
+	return sixPos(v)
+}
+
 // sixPos validates a six-position placement token, returning "" if invalid.
 func sixPos(v string) string {
 	v = strings.ToLower(strings.TrimSpace(v))
@@ -884,7 +917,7 @@ func sixPos(v string) string {
 
 func parseQuality(cfg *Config, r *raw) {
 	if r.QualityBadgesPos != nil {
-		if p := sixPos(*r.QualityBadgesPos); p != "" {
+		if p := qualityBadgesPos(*r.QualityBadgesPos); p != "" {
 			cfg.QualityBadgesPos = p
 		}
 	}
@@ -965,6 +998,11 @@ func parseRating(cfg *Config, r *raw) {
 		switch v := strings.ToLower(strings.TrimSpace(*r.RatingPresentation)); v {
 		case "standard", "minimal", "average", "dual", "dual-minimal", "editorial", "scorebar", "none":
 			cfg.RatingPresentation = v
+		case "ring":
+			// v2's "Compact Ring" shows one ring and no badge strip. v3 draws the
+			// ring as its own overlay, so the preset is both settings together.
+			cfg.RatingRing = true
+			cfg.RatingPresentation = "none"
 		}
 	}
 	if r.RatingVoteCounts != nil {
@@ -1188,11 +1226,11 @@ func parseAggregate(cfg *Config, r *raw) {
 	if r.ScorebarHighColor != nil && isHexColor(*r.ScorebarHighColor) {
 		cfg.ScorebarHighColor = strings.TrimSpace(*r.ScorebarHighColor)
 	}
-	if r.ScorebarLowThreshold != nil && *r.ScorebarLowThreshold > 0 && *r.ScorebarLowThreshold <= 10 {
-		cfg.ScorebarLowThreshold = *r.ScorebarLowThreshold
+	if v, ok := scoreThreshold(r.ScorebarLowThreshold); ok {
+		cfg.ScorebarLowThreshold = v
 	}
-	if r.ScorebarHighThreshold != nil && *r.ScorebarHighThreshold > 0 && *r.ScorebarHighThreshold <= 10 {
-		cfg.ScorebarHighThreshold = *r.ScorebarHighThreshold
+	if v, ok := scoreThreshold(r.ScorebarHighThreshold); ok {
+		cfg.ScorebarHighThreshold = v
 	}
 }
 

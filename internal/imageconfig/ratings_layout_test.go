@@ -135,3 +135,59 @@ func TestBadgeStylesProduceDistinctCacheKeys(t *testing.T) {
 		seen[key] = s
 	}
 }
+
+// v2's "Compact Ring" is one ring and no badge strip. v3 draws the ring as its
+// own overlay, so the preset has to set both halves or nothing ring-like shows.
+func TestParseMapsLegacyRingPresentation(t *testing.T) {
+	cfg := Parse(json.RawMessage(`{"ratingPresentation":"ring"}`))
+	if !cfg.RatingRing {
+		t.Error("ratingPresentation \"ring\" did not turn the ring on")
+	}
+	if cfg.RatingPresentation != "none" {
+		t.Errorf("ratingPresentation = %q, want none so the badge strip is not also drawn", cfg.RatingPresentation)
+	}
+	// The presentations v3 already knew must be untouched.
+	for _, p := range []string{"standard", "minimal", "average", "dual", "dual-minimal", "editorial", "scorebar", "none"} {
+		got := Parse(json.RawMessage(`{"ratingPresentation":"` + p + `"}`))
+		if got.RatingPresentation != p {
+			t.Errorf("ratingPresentation %q parsed to %q", p, got.RatingPresentation)
+		}
+		if got.RatingRing {
+			t.Errorf("ratingPresentation %q turned the ring on", p)
+		}
+	}
+}
+
+// v2 states the quality-badge placement as a side, not a corner, because the
+// badges are always top-anchored.
+func TestParseMapsLegacyQualityBadgePosition(t *testing.T) {
+	cases := map[string]string{"left": "tl", "right": "tr", "tr": "tr", "bl": "bl", "bottom-right": "br"}
+	for in, want := range cases {
+		cfg := Parse(json.RawMessage(`{"qualityBadgesPos":"` + in + `"}`))
+		if cfg.QualityBadgesPos != want {
+			t.Errorf("qualityBadgesPos %q parsed to %q, want %q", in, cfg.QualityBadgesPos, want)
+		}
+	}
+	// "auto" means "wherever the renderer puts them", so it keeps the default.
+	def := Default().QualityBadgesPos
+	if got := Parse(json.RawMessage(`{"qualityBadgesPos":"auto"}`)).QualityBadgesPos; got != def {
+		t.Errorf("qualityBadgesPos auto = %q, want the default %q", got, def)
+	}
+}
+
+// v2 writes the score-bar thresholds on a 0-100 scale; the renderer compares
+// against 0-10, so an out-of-range value silently kept the default.
+func TestParseRescalesLegacyScorebarThresholds(t *testing.T) {
+	cfg := Parse(json.RawMessage(`{"scorebarHighThreshold":100,"scorebarLowThreshold":40}`))
+	if cfg.ScorebarHighThreshold != 10 {
+		t.Errorf("scorebarHighThreshold 100 -> %v, want 10", cfg.ScorebarHighThreshold)
+	}
+	if cfg.ScorebarLowThreshold != 4 {
+		t.Errorf("scorebarLowThreshold 40 -> %v, want 4", cfg.ScorebarLowThreshold)
+	}
+	// A value already on the 0-10 scale must pass through untouched.
+	ten := Parse(json.RawMessage(`{"scorebarHighThreshold":7.5}`))
+	if ten.ScorebarHighThreshold != 7.5 {
+		t.Errorf("scorebarHighThreshold 7.5 -> %v, want 7.5", ten.ScorebarHighThreshold)
+	}
+}
