@@ -61,6 +61,9 @@ type Pipeline struct {
 	// anime resolves whether a title is a known anime, so the genre badge can
 	// tell anime apart from animation generally. Optional: nil disables it.
 	anime animeResolver
+	// health remembers the last good result per source so a degraded source
+	// falls back instead of vanishing. Optional: nil disables the fallback.
+	health *provider.HealthTracker
 }
 
 // animeResolver reports whether a media ID belongs to a known anime. Satisfied
@@ -172,6 +175,48 @@ func (p *Pipeline) fetchRatings(ctx context.Context, prov provider.Provider, req
 		return prov.Fetch(ctx, req.ContentType, req.MediaID)
 	}
 	return byTitle.FetchByTitle(ctx, req.ContentType, artwork.Title, artwork.OriginalTitle, artwork.Year)
+}
+
+// SetHealthTracker attaches the source-health tracker. Optional: without one
+// the pipeline behaves as it did before, dropping a failed source silently.
+func (p *Pipeline) SetHealthTracker(h *provider.HealthTracker) { p.health = h }
+
+// Health returns the attached tracker, or nil.
+func (p *Pipeline) Health() *provider.HealthTracker { return p.health }
+
+// fetchRatingsResilient wraps fetchRatings with the last-known-good fallback.
+//
+// Two failure shapes matter and neither used to leave a trace. A hard error is
+// the obvious one. The quieter one is a success carrying no ratings, which is
+// what a scraped source produces the day its markup changes; treating that as a
+// real answer is what silently erased a badge from every render. Both fall back
+// to the previous good answer for the same title when one is remembered.
+func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Provider, req Request, artwork *provider.MediaMeta) (*provider.MediaMeta, error) {
+	meta, err := p.fetchRatings(ctx, prov, req, artwork)
+	if p.health == nil {
+		return meta, err
+	}
+	key := provider.GoodKey(prov.Name(), req.ContentType, req.MediaID)
+
+	if err == nil && meta != nil && len(meta.Ratings) > 0 {
+		p.health.Success(prov.Name(), key, meta)
+		return meta, nil
+	}
+	if err != nil {
+		p.health.Failure(prov.Name(), err)
+	}
+	if good, ok := p.health.LastGood(prov.Name(), key); ok {
+		p.log().WarnContext(ctx, "A ratings source is degraded; serving its last known good result",
+			"id", logging.RequestID(ctx), "source", prov.Name(),
+			"media_id", req.MediaID, "error", err)
+		return good, nil
+	}
+	if err == nil && meta != nil && len(meta.Ratings) == 0 {
+		// Nothing remembered and nothing returned. Record it so a source that
+		// starts answering empty still shows up as unhealthy.
+		p.health.Success(prov.Name(), key, meta)
+	}
+	return meta, err
 }
 
 // New creates a Pipeline with the given provider registry.
@@ -746,7 +791,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 		wg.Add(1)
 		go func(prov provider.Provider) {
 			defer wg.Done()
-			meta, err := p.fetchRatings(ctx, prov, req, artwork)
+			meta, err := p.fetchRatingsResilient(ctx, prov, req, artwork)
 			if err != nil || meta == nil {
 				return
 			}

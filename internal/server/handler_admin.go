@@ -19,6 +19,7 @@ import (
 	"xrdb_rewrite/internal/imageconfig"
 	"xrdb_rewrite/internal/logging"
 	"xrdb_rewrite/internal/metrics"
+	"xrdb_rewrite/internal/provider"
 	"xrdb_rewrite/internal/render"
 	"xrdb_rewrite/internal/settings"
 )
@@ -141,6 +142,42 @@ func registerAdminRoutes(
 			return
 		}
 		writeJSON(w, http.StatusOK, renderCache.Stats())
+	})
+
+	// Per-source health. Five rating sources are scraped rather than fetched
+	// from an API, so a markup change on any of them shows up as an empty
+	// result, not an error. This is where that becomes visible: a source with a
+	// rising staleServes count is broken even though renders still look right.
+	mux.HandleFunc("/api/admin/sources", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		if cfg.AdminKey != "" && !bearerMatches(r, cfg.AdminKey) {
+			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		type sourcesResponse struct {
+			Sources           []provider.SourceHealth `json:"sources"`
+			RememberedResults int                     `json:"rememberedResults"`
+			Degraded          int                     `json:"degraded"`
+		}
+		var health *provider.HealthTracker
+		if pipeline != nil {
+			health = pipeline.Health()
+		}
+		snapshot := health.Snapshot()
+		degraded := 0
+		for _, s := range snapshot {
+			if !s.Healthy {
+				degraded++
+			}
+		}
+		writeJSON(w, http.StatusOK, sourcesResponse{
+			Sources:           snapshot,
+			RememberedResults: health.RememberedResults(),
+			Degraded:          degraded,
+		})
 	})
 
 	// Log level: GET reports the level in force and where it came from, PUT

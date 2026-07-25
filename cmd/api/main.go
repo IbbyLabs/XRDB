@@ -157,6 +157,9 @@ func main() {
 		// Lets the genre badge tell anime apart from animation generally. The
 		// mapper answers from an in-memory index, so this costs no request time.
 		pipeline.SetAnimeResolver(animeMapper)
+		// Keeps the last good answer per source, so a source that breaks or gets
+		// throttled falls back instead of quietly dropping its badge.
+		pipeline.SetHealthTracker(provider.NewHealthTracker(0, 0))
 	}
 
 	renderCache, err := cache.New(cfg.CacheDir, cfg.CacheTTL, cfg.CacheMaxEntries, cfg.CacheMaxBytes)

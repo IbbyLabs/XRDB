@@ -11,6 +11,7 @@ import (
 	"image/png"
 	"sync"
 	"testing"
+	"time"
 
 	"xrdb_rewrite/internal/imageconfig"
 	"xrdb_rewrite/internal/provider"
@@ -1211,5 +1212,114 @@ func TestResizeContainNeverExceedsBounds(t *testing.T) {
 			t.Errorf("resizeContain(%dx%d → %dx%d): got canvas %dx%d",
 				tc.sw, tc.sh, tc.mw, tc.mh, b.Dx(), b.Dy())
 		}
+	}
+}
+
+// flakyProvider serves a rating until it is told to break, then behaves the way
+// a scraped source does when its markup changes: it succeeds with no ratings.
+type flakyProvider struct {
+	name   string
+	broken bool
+	empty  bool
+}
+
+func (f *flakyProvider) Name() string { return f.name }
+
+func (f *flakyProvider) Fetch(context.Context, string, string) (*provider.MediaMeta, error) {
+	switch {
+	case f.broken:
+		return nil, fmt.Errorf("%s: upstream refused", f.name)
+	case f.empty:
+		return &provider.MediaMeta{}, nil
+	default:
+		return &provider.MediaMeta{Ratings: []provider.Rating{
+			{Source: f.name, Value: 8.4, Label: "8.4"},
+		}}, nil
+	}
+}
+
+func ratingsFor(t *testing.T, p *Pipeline, req Request) []provider.Rating {
+	t.Helper()
+	all, _ := p.collectRatingsWithProviders(context.Background(), req, &provider.MediaMeta{})
+	return all
+}
+
+// The behaviour the whole change exists for: once a source has answered, a
+// later failure must not erase its badge.
+func TestDegradedSourceFallsBackToLastKnownGood(t *testing.T) {
+	flaky := &flakyProvider{name: "rt"}
+	p := &Pipeline{providers: testRegistry(flaky), fetcher: &stubImageFetcher{}}
+	p.SetHealthTracker(provider.NewHealthTracker(10, time.Hour))
+
+	cfg := imageconfig.Default()
+	cfg.Ratings = []string{"rt"}
+	req := Request{MediaType: "poster", ContentType: "movie", MediaID: "tt1", Config: cfg}
+
+	if got := ratingsFor(t, p, req); len(got) != 1 {
+		t.Fatalf("first fetch returned %d ratings, want 1", len(got))
+	}
+
+	flaky.broken = true
+	got := ratingsFor(t, p, req)
+	if len(got) != 1 || got[0].Source != "rt" {
+		t.Errorf("after the source broke, got %+v; expected the remembered rating", got)
+	}
+
+	// And the breakage must be visible rather than papered over.
+	snap := p.Health().Snapshot()
+	if len(snap) == 0 || snap[0].Healthy {
+		t.Errorf("expected rt to be reported unhealthy, got %+v", snap)
+	}
+	if snap[0].StaleServes == 0 {
+		t.Error("expected the fallback to be counted as a stale serve")
+	}
+}
+
+// The quieter failure: a scrape that still returns 200 but no longer finds the
+// rating in the page.
+func TestSilentlyEmptySourceFallsBack(t *testing.T) {
+	flaky := &flakyProvider{name: "letterboxd"}
+	p := &Pipeline{providers: testRegistry(flaky), fetcher: &stubImageFetcher{}}
+	p.SetHealthTracker(provider.NewHealthTracker(10, time.Hour))
+
+	cfg := imageconfig.Default()
+	cfg.Ratings = []string{"letterboxd"}
+	req := Request{MediaType: "poster", ContentType: "movie", MediaID: "tt1", Config: cfg}
+	ratingsFor(t, p, req)
+
+	flaky.empty = true
+	if got := ratingsFor(t, p, req); len(got) != 1 {
+		t.Errorf("an empty scrape erased the badge: got %+v", got)
+	}
+}
+
+// Without a tracker the pipeline must behave exactly as it did before.
+func TestNoTrackerMeansNoFallback(t *testing.T) {
+	flaky := &flakyProvider{name: "rt"}
+	p := &Pipeline{providers: testRegistry(flaky), fetcher: &stubImageFetcher{}}
+
+	cfg := imageconfig.Default()
+	cfg.Ratings = []string{"rt"}
+	req := Request{MediaType: "poster", ContentType: "movie", MediaID: "tt1", Config: cfg}
+	ratingsFor(t, p, req)
+
+	flaky.broken = true
+	if got := ratingsFor(t, p, req); len(got) != 0 {
+		t.Errorf("without a tracker the rating should drop, got %+v", got)
+	}
+}
+
+// A source that has never worked has nothing to fall back to, and must not
+// invent one.
+func TestNeverSuccessfulSourceHasNoFallback(t *testing.T) {
+	flaky := &flakyProvider{name: "rt", broken: true}
+	p := &Pipeline{providers: testRegistry(flaky), fetcher: &stubImageFetcher{}}
+	p.SetHealthTracker(provider.NewHealthTracker(10, time.Hour))
+
+	cfg := imageconfig.Default()
+	cfg.Ratings = []string{"rt"}
+	req := Request{MediaType: "poster", ContentType: "movie", MediaID: "tt1", Config: cfg}
+	if got := ratingsFor(t, p, req); len(got) != 0 {
+		t.Errorf("expected no ratings, got %+v", got)
 	}
 }
