@@ -1,5 +1,6 @@
 using System.Net.Http;
 using Jellyfin.Plugin.Xrdb.Configuration;
+using MediaBrowser.Common.Net;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
