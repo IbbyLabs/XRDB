@@ -364,8 +364,16 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
         hint="Trim each provider's mark to a shape. Original keeps its own outline."
       />
       <NumField id={`${uid}-rating-scale`} label="Scale (%)" value={config.ratingBadgeScale}
-        onChange={v => onUpdate('ratingBadgeScale', v)} min={70} max={200} step={5}
-        hint="70–200. Blank keeps the default size." />
+        onChange={v => onUpdate('ratingBadgeScale', v)} min={70} max={400} step={5}
+        hint="70–400. Blank keeps the default size." />
+      <ToggleField id={`${uid}-rating-hide-icon`} label="Hide provider marks"
+        checked={config.ratingIconHidden}
+        onChange={v => onUpdate('ratingIconHidden', v)}
+        hint="Show the score on its own, without the provider's logo." />
+      <ToggleField id={`${uid}-stacked-line`} label="Hide the stacked accent bar"
+        checked={config.stackedLineHidden}
+        onChange={v => onUpdate('stackedLineHidden', v)}
+        hint="Drops the coloured bar above the mark in the stacked style." />
       <NumField id={`${uid}-ratings-max`} label="Max badges" value={config.ratingsMax}
         onChange={v => onUpdate('ratingsMax', v)} min={0} max={20} placeholder="no cap"
         hint="0 shows all selected sources that have data." />

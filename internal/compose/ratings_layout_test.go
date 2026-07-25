@@ -232,3 +232,36 @@ func TestUnknownQualityTokensAreNotDrawnAsText(t *testing.T) {
 		t.Errorf("drew %d of 3 quality tiles", n)
 	}
 }
+
+// A large multiplier on a small frame used to draw a badge wider and taller
+// than the artwork, so the tile ran off the edge and took the score with it.
+// The scale is backed off to the biggest that fits instead.
+func TestBadgeScaleIsClampedToTheFrame(t *testing.T) {
+	ratings := layoutTestRatings()[:3]
+	cfg := layoutTestConfig(imageconfig.LayoutBottom)
+	cfg.Ratings = []string{"imdb", "tmdb", "rt"}
+	cfg.BadgeStyle = imageconfig.BadgeStacked
+	cfg.RatingBadgeScale = 400
+
+	img := genreTestImage()
+	drawBadgesInPlace(img, ratings, cfg)
+	painted := paintedBounds(t, img)
+	frame := genreTestImage().Bounds()
+
+	if painted.Min.X < frame.Min.X || painted.Max.X > frame.Max.X {
+		t.Errorf("badges ran off the sides: painted %v, frame %v", painted, frame)
+	}
+	if painted.Min.Y < frame.Min.Y || painted.Max.Y > frame.Max.Y {
+		t.Errorf("badges ran off the top or bottom: painted %v, frame %v", painted, frame)
+	}
+}
+
+// The clamp must not shrink a strip that already fits.
+func TestBadgeScaleClampLeavesAFittingStripAlone(t *testing.T) {
+	ratings := layoutTestRatings()[:2]
+	cfg := layoutTestConfig(imageconfig.LayoutBottom)
+	cfg.Ratings = []string{"imdb", "tmdb"}
+	if got := fitBadgeScale(1.0, 2000, 3000, ratings, cfg); got != 1.0 {
+		t.Errorf("a strip that fits was scaled to %v, want 1.0", got)
+	}
+}

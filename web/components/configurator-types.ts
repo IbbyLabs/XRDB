@@ -300,6 +300,8 @@ export interface ConfigState {
   ratingRingColor: string;
   // Advanced (v2 parity) — fine-grained styling. Zero/empty means "default".
   ratingBadgeScale: number;
+  ratingIconHidden: boolean;
+  stackedLineHidden: boolean;
   ratingsMax: number; // 0 = no cap
   ratingBadgeOffsetX: number;
   ratingBadgeOffsetY: number;
@@ -407,6 +409,8 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingRingPos: 'br',
   ratingRingColor: '',
   ratingBadgeScale: 0,
+  ratingIconHidden: false,
+  stackedLineHidden: false,
   ratingsMax: 0,
   ratingBadgeOffsetX: 0,
   ratingBadgeOffsetY: 0,

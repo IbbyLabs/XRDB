@@ -388,6 +388,10 @@ type badgeChrome struct {
 	// hideAccentBar suppresses the leading accent stripe for styles that have
 	// no tile for it to sit against; the provider colour goes on the mark.
 	hideAccentBar bool
+	// hideIcon draws the value on its own, with no provider mark.
+	hideIcon bool
+	// hideStackRail drops the accent rail above the mark in the stacked style.
+	hideStackRail bool
 	// stacked draws the badge as an accent rail above a centred mark with the
 	// value beneath. The remaining fields are its vertical metrics, filled in
 	// once the strip's scale is known.
@@ -400,14 +404,25 @@ type badgeChrome struct {
 
 // stackedBadgeInnerH is the height of a stacked badge: padding, accent rail,
 // the mark, then the value.
-func stackedBadgeInnerH(d ratingStripDims, valH int) int {
-	return d.padY*2 + d.accentW + d.iconGap + d.iconSize + stackedValueGap(d) + valH
+func stackedBadgeInnerH(d ratingStripDims, valH int, hideIcon, hideRail bool) int {
+	h := d.padY*2 + stackedValueGap(d) + valH
+	if !hideRail {
+		h += d.accentW + d.iconGap
+	}
+	if !hideIcon {
+		h += d.iconSize
+	}
+	return h
 }
 
 // stackedBadgeWidth sizes a stacked badge around whichever of the mark or the
 // value is wider, since both are centred rather than sitting side by side.
-func stackedBadgeWidth(d ratingStripDims, valW int) int {
-	return maxInt(d.iconSize, valW) + d.padX*2
+func stackedBadgeWidth(d ratingStripDims, valW int, hideIcon bool) int {
+	content := valW
+	if !hideIcon {
+		content = maxInt(d.iconSize, valW)
+	}
+	return content + d.padX*2
 }
 
 func stackedValueGap(d ratingStripDims) int { return maxInt(6, d.padY*3/5) }
@@ -419,6 +434,8 @@ func chromeFor(cfg imageconfig.Config) badgeChrome {
 		valueColor: color.NRGBA{R: 255, G: 255, B: 255, A: 255},
 		iconColor:  color.NRGBA{R: 235, G: 235, B: 240, A: 255},
 	}
+	c.hideIcon = cfg.RatingIconHidden
+	c.hideStackRail = cfg.StackedLineHidden
 	switch cfg.BadgeStyle {
 	case imageconfig.BadgeSquare:
 		c.radius = func(int) int { return 0 }
@@ -526,7 +543,7 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 		}
 		contentX += padX
 
-		if sp.icon != nil {
+		if sp.icon != nil && !chrome.hideIcon {
 			// The mark scales within the shared box, so the row height holds even
 			// when one provider's mark is grown or shrunk.
 			drawSize := iconSize
@@ -623,8 +640,9 @@ func ratingsBandHeight(frameW int, ratings []provider.Rating, cfg imageconfig.Co
 	edgeY += edgeInset
 	innerH := padY*2 + maxInt(valH, iconSize)
 	stacked := cfg.BadgeStyle == imageconfig.BadgeStacked
+	hideIcon := cfg.RatingIconHidden
 	if stacked {
-		innerH = stackedBadgeInnerH(d, valH)
+		innerH = stackedBadgeInnerH(d, valH, hideIcon, cfg.StackedLineHidden)
 	}
 	maxRowW := frameW - edgeX*2
 	rowW, rows := 0, 0
@@ -634,11 +652,11 @@ func ratingsBandHeight(frameW int, ratings []provider.Rating, cfg imageconfig.Co
 			value = "N/A"
 		}
 		bw := accentW + padX + textWidth(face, value) + padX
-		if ratingIcons[r.Source] != nil {
+		if ratingIcons[r.Source] != nil && !hideIcon {
 			bw += iconSize + iconGap
 		}
 		if stacked {
-			bw = stackedBadgeWidth(d, textWidth(face, value))
+			bw = stackedBadgeWidth(d, textWidth(face, value), hideIcon)
 		}
 		need := bw
 		if rowW > 0 {
@@ -689,6 +707,11 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 	if cfg.RatingBadgeScale != 0 {
 		scale *= float64(cfg.RatingBadgeScale) / 100
 	}
+	// A large multiplier on a small frame can make one badge wider than the
+	// artwork, which draws as a tile running off the edge. Back the scale off
+	// until the widest badge fits, so asking for more than fits gives the
+	// biggest that does rather than a clipped one.
+	scale = fitBadgeScale(scale, out.Bounds().Dx(), out.Bounds().Dy(), filtered, cfg)
 
 	face := valueFaceFor(scale)
 	fm := face.Metrics()
@@ -703,7 +726,7 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 	innerH := padY*2 + maxInt(valH, iconSize)
 	chrome := chromeFor(cfg)
 	if chrome.stacked {
-		innerH = stackedBadgeInnerH(d, valH)
+		innerH = stackedBadgeInnerH(d, valH, chrome.hideIcon, chrome.hideStackRail)
 		chrome.stackRailH = d.accentW
 		chrome.stackRailGap = d.iconGap
 		chrome.stackValueGap = stackedValueGap(d)
@@ -722,11 +745,11 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 		vw := textWidth(face, value)
 		icon := ratingIcons[r.Source]
 		bw := accentW + padX + vw + padX
-		if icon != nil {
+		if icon != nil && !chrome.hideIcon {
 			bw += iconSize + iconGap
 		}
 		if chrome.stacked {
-			bw = stackedBadgeWidth(d, vw)
+			bw = stackedBadgeWidth(d, vw, chrome.hideIcon)
 		}
 		specs = append(specs, badgeSpec{
 			value:     value,
@@ -1065,10 +1088,12 @@ func filterRatings(ratings []provider.Rating, want []string) []provider.Rating {
 func drawStackedBadge(out *image.NRGBA, sp badgeSpec, y, innerH, iconSize int, face font.Face, chrome badgeChrome, valAscent, valH int) {
 	// The rail reads as a heading for the badge, so it is a fraction of the
 	// tile rather than its full width.
-	railW := maxInt(12, sp.w*42/100)
-	railX := sp.x + (sp.w-railW)/2
 	railY := y + chrome.stackPadY
-	fillRect(out, image.Rect(railX, railY, railX+railW, railY+chrome.stackRailH), sp.accent)
+	if !chrome.hideStackRail {
+		railW := maxInt(12, sp.w*42/100)
+		railX := sp.x + (sp.w-railW)/2
+		fillRect(out, image.Rect(railX, railY, railX+railW, railY+chrome.stackRailH), sp.accent)
+	}
 
 	drawSize := iconSize
 	if sp.iconScale > 0 {
@@ -1080,8 +1105,12 @@ func drawStackedBadge(out *image.NRGBA, sp badgeSpec, y, innerH, iconSize int, f
 			drawSize = iconSize * 2
 		}
 	}
-	iconTop := railY + chrome.stackRailH + chrome.stackRailGap
-	if sp.icon != nil {
+	// With the rail hidden the mark moves up into the space it left.
+	iconTop := railY
+	if !chrome.hideStackRail {
+		iconTop = railY + chrome.stackRailH + chrome.stackRailGap
+	}
+	if sp.icon != nil && !chrome.hideIcon {
 		iRect := image.Rect(sp.x+(sp.w-drawSize)/2, iconTop, sp.x+(sp.w+drawSize)/2, iconTop+drawSize)
 		if sp.colored {
 			drawBrandIcon(out, iRect, sp.icon, sp.iconShape)
@@ -1090,10 +1119,98 @@ func drawStackedBadge(out *image.NRGBA, sp badgeSpec, y, innerH, iconSize int, f
 		}
 	}
 
-	valY := iconTop + iconSize + chrome.stackValueGap + valAscent
+	valTop := iconTop
+	if !chrome.hideIcon {
+		valTop += iconSize
+	}
+	valY := valTop + chrome.stackValueGap + valAscent
 	// Keep the value inside the tile when a grown mark has pushed it down.
 	if bottom := y + innerH - chrome.stackPadY; valY+valH-valAscent > bottom {
 		valY = bottom - (valH - valAscent)
 	}
 	drawText(out, face, sp.x+(sp.w-sp.valW)/2, valY, chrome.valueColor, sp.value)
+}
+
+// widestBadgeAt measures the widest single badge the strip would draw at scale.
+func widestBadgeAt(scale float64, ratings []provider.Rating, cfg imageconfig.Config) int {
+	face := valueFaceFor(scale)
+	d := ratingStripDimsFor(scale)
+	stacked := cfg.BadgeStyle == imageconfig.BadgeStacked
+	widest := 0
+	for _, r := range ratings {
+		value := ratingBadgeLabel(r, cfg)
+		if value == "" {
+			value = "N/A"
+		}
+		vw := textWidth(face, value)
+		var bw int
+		if stacked {
+			bw = stackedBadgeWidth(d, vw, cfg.RatingIconHidden)
+		} else {
+			bw = d.accentW + d.padX + vw + d.padX
+			if ratingIcons[r.Source] != nil && !cfg.RatingIconHidden {
+				bw += d.iconSize + d.iconGap
+			}
+		}
+		widest = maxInt(widest, bw)
+	}
+	return widest
+}
+
+// fitBadgeScale reduces scale until the widest badge fits inside the frame.
+// It never grows the scale, so a strip that already fits is left alone.
+func fitBadgeScale(scale float64, frameW, frameH int, ratings []provider.Rating, cfg imageconfig.Config) float64 {
+	if frameW <= 0 || frameH <= 0 || len(ratings) == 0 {
+		return scale
+	}
+	// A few passes is enough to bring any requested size inside the frame, and
+	// bounds the work.
+	for i := 0; i < 6; i++ {
+		d := ratingStripDimsFor(scale)
+		availW := frameW - d.edgeX*2
+		// A badge taller than the artwork pushes its own value off the edge, so
+		// height is checked alongside width. One row is the floor: below that
+		// there is nothing left to show.
+		availH := frameH - d.edgeY*2
+		widest := widestBadgeAt(scale, ratings, cfg)
+		tallest := badgeHeightAt(scale, cfg)
+		if availW <= 0 || availH <= 0 {
+			return scale
+		}
+		overW := widest > availW
+		overH := tallest > availH
+		if !overW && !overH {
+			return scale
+		}
+		ratio := 1.0
+		if overW && widest > 0 {
+			ratio = float64(availW) / float64(widest)
+		}
+		if overH && tallest > 0 {
+			if r := float64(availH) / float64(tallest); r < ratio {
+				ratio = r
+			}
+		}
+		reduced := scale * ratio
+		if reduced < 0.2 {
+			return 0.2
+		}
+		if reduced >= scale {
+			return scale
+		}
+		scale = reduced
+	}
+	return scale
+}
+
+// badgeHeightAt measures the height of a single badge at scale.
+func badgeHeightAt(scale float64, cfg imageconfig.Config) int {
+	face := valueFaceFor(scale)
+	fm := face.Metrics()
+	valH := fm.Ascent.Ceil() + fm.Descent.Ceil()
+	d := ratingStripDimsFor(scale)
+	if cfg.BadgeStyle == imageconfig.BadgeStacked {
+		return stackedBadgeInnerH(d, valH, cfg.RatingIconHidden, cfg.StackedLineHidden)
+	}
+	return d.padY*2 + maxInt(valH, d.iconSize)
 }

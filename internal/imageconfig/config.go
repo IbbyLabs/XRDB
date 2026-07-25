@@ -275,7 +275,12 @@ func mergeLegacy(marshalled []byte, legacy map[string]json.RawMessage) ([]byte, 
 // RatingBadgeConfig groups the rating-badge sizing and count controls. Style,
 // theme, layout, and the ratings allow-list remain flat fields on Config.
 type RatingBadgeConfig struct {
-	RatingBadgeScale   int  `json:"ratingBadgeScale,omitempty"`   // percent 70-200; 0 = 100
+	RatingBadgeScale   int  `json:"ratingBadgeScale,omitempty"`   // percent 70-400; 0 = 100
+	// StackedLineHidden drops the accent rail above the mark in the stacked
+	// style. Named for what it hides so the zero value keeps the rail.
+	StackedLineHidden bool `json:"stackedLineHidden,omitempty"`
+	// RatingIconHidden draws the value on its own, with no provider mark.
+	RatingIconHidden bool `json:"ratingIconHidden,omitempty"`
 	RatingsMax         *int `json:"ratingsMax,omitempty"`         // cap on badge count; nil = no cap
 	RatingBadgeOffsetX int  `json:"ratingBadgeOffsetX,omitempty"` // px nudge of the whole strip
 	RatingBadgeOffsetY int  `json:"ratingBadgeOffsetY,omitempty"`
@@ -580,6 +585,8 @@ type rawRing struct {
 
 type rawRating struct {
 	RatingBadgeScale        *int               `json:"ratingBadgeScale"`
+	StackedLineHidden       *bool              `json:"stackedLineHidden"`
+	RatingIconHidden        *bool              `json:"ratingIconHidden"`
 	RatingsMax              *int               `json:"ratingsMax"`
 	RatingBadgeOffsetX      *int               `json:"ratingBadgeOffsetX"`
 	RatingBadgeOffsetY      *int               `json:"ratingBadgeOffsetY"`
@@ -989,7 +996,13 @@ func parseTrending(cfg *Config, r *raw) {
 
 func parseRating(cfg *Config, r *raw) {
 	if r.RatingBadgeScale != nil && *r.RatingBadgeScale != 0 {
-		cfg.RatingBadgeScale = clampInt(*r.RatingBadgeScale, 70, 200)
+		cfg.RatingBadgeScale = clampInt(*r.RatingBadgeScale, 70, 400)
+	}
+	if r.StackedLineHidden != nil {
+		cfg.StackedLineHidden = *r.StackedLineHidden
+	}
+	if r.RatingIconHidden != nil {
+		cfg.RatingIconHidden = *r.RatingIconHidden
 	}
 	if r.RatingsMax != nil && *r.RatingsMax >= 0 {
 		m := clampInt(*r.RatingsMax, 0, 20)
