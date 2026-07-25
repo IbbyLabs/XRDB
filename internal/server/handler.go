@@ -22,6 +22,7 @@ import (
 	"xrdb_rewrite/internal/logging"
 	"xrdb_rewrite/internal/metrics"
 	"xrdb_rewrite/internal/profile"
+	"xrdb_rewrite/internal/provider"
 	"xrdb_rewrite/internal/render"
 	"xrdb_rewrite/internal/settings"
 	"xrdb_rewrite/internal/templates"
@@ -109,6 +110,12 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 					// resolve the one for this request's media type.
 					imgCfg = imageconfig.ParseSurface(p.Config, mediaType)
 					profileLoaded = true
+					// The owner's own provider credentials stand in for the
+					// server's for their renders. They ride on the context so
+					// the providers built at startup are reused as they are.
+					if len(p.ProviderKeys) > 0 {
+						r = r.WithContext(provider.WithKeys(r.Context(), p.ProviderKeys))
+					}
 				}
 			}
 		}

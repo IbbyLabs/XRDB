@@ -55,6 +55,9 @@ export interface LoadedProfile {
   hasPassword: boolean;
   password: string; // held in memory for this session only
   versionToken: string;
+  /** Providers this profile has its own key for. Names only — the values stay
+   *  on the server. */
+  keysSet?: string[];
 }
 
 interface ProfilePanelProps {
@@ -67,6 +70,17 @@ interface ProfilePanelProps {
   flash: (type: 'error' | 'success' | 'info', message: string, opts?: { persist?: boolean }) => void;
 }
 
+// The providers a profile owner can supply their own credential for. Must stay
+// in step with provider.SupportedKeys on the server.
+const PROVIDER_KEY_FIELDS = [
+  { id: 'tmdb',    label: 'TMDB' },
+  { id: 'mdblist', label: 'MDBList' },
+  { id: 'omdb',    label: 'OMDb' },
+  { id: 'fanart',  label: 'Fanart.tv' },
+  { id: 'trakt',   label: 'Trakt client ID' },
+  { id: 'simkl',   label: 'SIMKL client ID' },
+] as const;
+
 export function ProfilePanel({
   configs, mediaType, mediaId, loaded, setLoaded, onLoadConfigs, flash,
 }: ProfilePanelProps) {
@@ -74,6 +88,8 @@ export function ProfilePanel({
   const [name, setName] = useState('');
   const [alias, setAlias] = useState('');
   const [password, setPassword] = useState('');
+  // Typed-in keys only; a saved value is never sent back to the browser.
+  const [providerKeys, setProviderKeys] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
 
   const [legacyInput, setLegacyInput] = useState('');
@@ -161,6 +177,7 @@ export function ProfilePanel({
         hasPassword: !!p.hasPassword,
         password: loadPassword,
         versionToken: p.versionToken ?? '',
+        keysSet: p.keysSet ?? [],
       });
       setLoadKey(''); setLoadPassword('');
       setRecents(r => pushRecent(r, {
@@ -202,12 +219,16 @@ export function ProfilePanel({
           name: loaded.name,
           type: mediaType,
           config: toStoredConfig(configs),
+          // Only send keys the user actually typed, so an untouched field
+          // leaves whatever is stored alone.
+          ...(Object.keys(providerKeys).length > 0 ? { providerKeys } : {}),
         },
         loaded.password || undefined,
       );
       // Adopt the new token so the install URLs shown from here on point at the
       // edited profile rather than the revision the client already handed out.
-      setLoaded({ ...loaded, versionToken: updated.versionToken ?? '' });
+      setLoaded({ ...loaded, versionToken: updated.versionToken ?? '', keysSet: updated.keysSet ?? loaded.keysSet });
+      setProviderKeys({});
       setSavedSnapshot(JSON.stringify(configs));
       flash('success', 'Profile updated');
     } catch (e) {
@@ -308,6 +329,51 @@ export function ProfilePanel({
               <code className="urlbar-code" title={sampleUrl}>{sampleUrl}</code>
               <CopyButton text={sampleUrl} label="Copy artwork URL" />
             </div>
+          </div>
+
+          <div className="field" style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-4)' }}>
+            <span className="label">Your own API keys</span>
+            {!loaded.hasPassword ? (
+              <div className="notice notice-warn" role="note">
+                <span>
+                  Set a password on this profile before adding your own API keys.
+                  Without one, anyone who knows the profile ID can read it — and
+                  that would include your keys.
+                </span>
+              </div>
+            ) : (
+              <>
+                <span className="hint" style={{ marginTop: 0, marginBottom: 'var(--sp-2)' }}>
+                  Optional. A key here is used for this profile instead of the
+                  server&rsquo;s, which gets you your own rate limits. Leave a field
+                  blank to keep using the server&rsquo;s key. Saved keys are never shown
+                  again and never leave the server.
+                </span>
+                {PROVIDER_KEY_FIELDS.map(f => (
+                  <div className="field" key={f.id} style={{ marginBottom: 'var(--sp-2)' }}>
+                    <label className="label" htmlFor={`${uid}-key-${f.id}`}>
+                      {f.label}
+                      {loaded.keysSet?.includes(f.id) && (
+                        <span className="hint" style={{ marginLeft: 'var(--sp-2)' }}>saved</span>
+                      )}
+                    </label>
+                    <input
+                      id={`${uid}-key-${f.id}`}
+                      className="input"
+                      type="password"
+                      value={providerKeys[f.id] ?? ''}
+                      onChange={e => setProviderKeys({ ...providerKeys, [f.id]: e.target.value })}
+                      placeholder={loaded.keysSet?.includes(f.id) ? 'Saved — type to replace' : 'Using the server key'}
+                      spellCheck={false}
+                      autoComplete="off"
+                    />
+                  </div>
+                ))}
+                <span className="hint">
+                  Removing the password removes the stored keys with it.
+                </span>
+              </>
+            )}
           </div>
 
           <div className="cfg-actions">

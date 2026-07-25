@@ -34,6 +34,9 @@ export interface Profile {
   createdAt: string;
   updatedAt: string;
   hasPassword?: boolean;
+  /** Names of the providers this profile has its own API key for. The values
+   *  never leave the server, so only the names come back. */
+  keysSet?: string[];
   /** Changes on every edit; artwork URLs carry it so downstream image caches
    *  see a new URL rather than serving the old render. */
   versionToken?: string;
@@ -142,7 +145,7 @@ export async function getProfile(idOrAlias: string, password?: string): Promise<
 
 export async function updateProfile(
   id: string,
-  data: Partial<Profile> & { password?: string },
+  data: Partial<Profile> & { password?: string; providerKeys?: Record<string, string> },
   currentPassword?: string,
 ): Promise<Profile> {
   const res = await fetch(`${base()}/profile/${encodeURIComponent(id)}`, {

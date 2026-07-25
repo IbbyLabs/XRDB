@@ -31,10 +31,14 @@ func (f *Fanart) UpdateCredentials(apiKey string) {
 
 // HasCredentials reports whether the provider can make authenticated requests.
 func (f *Fanart) HasCredentials() bool {
-	return f.cred() != ""
+	return f.cred(context.Background()) != ""
 }
 
-func (f *Fanart) cred() string {
+func (f *Fanart) cred(ctx context.Context) string {
+	// An owner-supplied credential stands in for the server's for this render.
+	if k := keyFrom(ctx, KeyFanart); k != "" {
+		return k
+	}
 	f.mu.RLock()
 	defer f.mu.RUnlock()
 	return f.apiKey
@@ -60,7 +64,7 @@ func (f *Fanart) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, e
 // FetchArtwork retrieves Fanart.tv artwork, preferring images in the
 // requested language when available.
 func (f *Fanart) FetchArtwork(ctx context.Context, mediaType, id string, opts ArtworkOptions) (*MediaMeta, error) {
-	if f.cred() == "" {
+	if f.cred(ctx) == "" {
 		return nil, fmt.Errorf("fanart: no api key configured")
 	}
 
@@ -97,7 +101,7 @@ func (f *Fanart) FetchArtwork(ctx context.Context, mediaType, id string, opts Ar
 }
 
 func (f *Fanart) fetchRaw(ctx context.Context, base, id string) (map[string]json.RawMessage, error) {
-	url := base + id + "?api_key=" + f.cred()
+	url := base + id + "?api_key=" + f.cred(ctx)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("fanart: build request: %w", err)

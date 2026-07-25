@@ -33,10 +33,14 @@ func (o *OMDB) UpdateCredentials(apiKey string) {
 
 // HasCredentials reports whether the provider can make authenticated requests.
 func (o *OMDB) HasCredentials() bool {
-	return o.cred() != ""
+	return o.cred(context.Background()) != ""
 }
 
-func (o *OMDB) cred() string {
+func (o *OMDB) cred(ctx context.Context) string {
+	// An owner-supplied credential stands in for the server's for this render.
+	if k := keyFrom(ctx, KeyOMDB); k != "" {
+		return k
+	}
 	o.mu.RLock()
 	defer o.mu.RUnlock()
 	return o.apiKey
@@ -55,7 +59,7 @@ func (o *OMDB) Name() string { return "omdb" }
 // Fetch retrieves OMDB ratings for a media item.
 // Only IMDb tt-IDs are supported; numeric IDs are not resolved.
 func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, error) {
-	if o.cred() == "" {
+	if o.cred(ctx) == "" {
 		return nil, fmt.Errorf("omdb: no api key configured")
 	}
 	if !strings.HasPrefix(id, "tt") {
@@ -66,7 +70,7 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 	if o.baseURL != "" {
 		base = o.baseURL
 	}
-	params := url.Values{"i": {id}, "tomatoes": {"true"}, "apikey": {o.cred()}}
+	params := url.Values{"i": {id}, "tomatoes": {"true"}, "apikey": {o.cred(ctx)}}
 	reqURL := base + "?" + params.Encode()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {

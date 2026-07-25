@@ -13,6 +13,7 @@ import (
 	"xrdb_rewrite/internal/config"
 	"xrdb_rewrite/internal/migrate"
 	"xrdb_rewrite/internal/profile"
+	"xrdb_rewrite/internal/provider"
 )
 
 // generateProfileID returns a short, URL-safe, unguessable profile ID.
@@ -173,6 +174,9 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 			var extra struct {
 				Password *string `json:"password"`
 				Alias    *string `json:"alias"`
+				// ProviderKeys is write-only: omitted keeps what is stored, a
+				// named entry replaces it, and an empty value clears that one.
+				ProviderKeys map[string]string `json:"providerKeys"`
 			}
 			if err := json.Unmarshal(body, &extra); err != nil {
 				http.Error(w, "invalid JSON", http.StatusBadRequest)
@@ -193,6 +197,35 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 			}
 			if extra.Alias == nil {
 				p.Alias = existing.Alias
+			}
+			// Credentials are only ever stored behind a password. An
+			// unprotected profile is readable by anyone holding its id, so
+			// keeping someone's API key on one would put it in the open.
+			p.ProviderKeys = existing.ProviderKeys
+			if extra.ProviderKeys != nil {
+				if p.PasswordHash == "" {
+					writeJSON(w, http.StatusConflict, map[string]string{
+						"error": "Set a password on this profile before saving your own API keys.",
+						"code":  "password_required",
+					})
+					return
+				}
+				merged := map[string]string{}
+				for k, v := range existing.ProviderKeys {
+					merged[k] = v
+				}
+				for k, v := range extra.ProviderKeys {
+					if strings.TrimSpace(v) == "" {
+						delete(merged, strings.ToLower(strings.TrimSpace(k)))
+						continue
+					}
+					merged[strings.ToLower(strings.TrimSpace(k))] = v
+				}
+				p.ProviderKeys = provider.FilterSupported(merged)
+			}
+			// Removing the password takes the stored credentials with it.
+			if p.PasswordHash == "" {
+				p.ProviderKeys = nil
 			}
 			if err := store.Update(&p); err != nil {
 				switch {

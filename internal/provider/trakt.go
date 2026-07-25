@@ -35,10 +35,14 @@ func (t *Trakt) UpdateCredentials(clientID string) {
 
 // HasCredentials reports whether the provider can make authenticated requests.
 func (t *Trakt) HasCredentials() bool {
-	return t.cred() != ""
+	return t.cred(context.Background()) != ""
 }
 
-func (t *Trakt) cred() string {
+func (t *Trakt) cred(ctx context.Context) string {
+	// An owner-supplied credential stands in for the server's for this render.
+	if k := keyFrom(ctx, KeyTrakt); k != "" {
+		return k
+	}
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	return t.clientID
@@ -87,7 +91,7 @@ func (t *Trakt) fetchSegment(ctx context.Context, segment, id string) (*MediaMet
 	if err != nil {
 		return nil, fmt.Errorf("trakt: build request: %w", err)
 	}
-	req.Header.Set("trakt-api-key", t.cred())
+	req.Header.Set("trakt-api-key", t.cred(ctx))
 	req.Header.Set("trakt-api-version", "2")
 	req.Header.Set("Content-Type", "application/json")
 

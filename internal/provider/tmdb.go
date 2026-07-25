@@ -51,7 +51,16 @@ func (t *TMDB) UpdateCredentials(apiKey, readToken string) {
 	t.mu.Unlock()
 }
 
-func (t *TMDB) credentials() (string, string) {
+func (t *TMDB) credentials(ctx context.Context) (apiKey, readToken string) {
+	// An owner-supplied credential stands in for the server's for this render.
+	// TMDB issues two kinds and the endpoints differ, so which slot it fills is
+	// read off the value: a v4 read token is a JWT, a v3 key is a plain hex id.
+	if k := keyFrom(ctx, KeyTMDB); k != "" {
+		if strings.HasPrefix(k, "eyJ") {
+			return "", k
+		}
+		return k, ""
+	}
 	t.mu.RLock()
 	defer t.mu.RUnlock()
 	return t.apiKey, t.readToken
@@ -59,7 +68,7 @@ func (t *TMDB) credentials() (string, string) {
 
 // HasCredentials reports whether the provider can make authenticated TMDB requests.
 func (t *TMDB) HasCredentials() bool {
-	apiKey, readToken := t.credentials()
+	apiKey, readToken := t.credentials(context.Background())
 	return apiKey != "" || readToken != ""
 }
 
@@ -74,7 +83,7 @@ func (t *TMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 // FetchArtwork retrieves TMDB metadata honoring artwork language, text
 // preference, and size options when selecting poster/backdrop/logo variants.
 func (t *TMDB) FetchArtwork(ctx context.Context, mediaType, id string, opts ArtworkOptions) (*MediaMeta, error) {
-	apiKey, readToken := t.credentials()
+	apiKey, readToken := t.credentials(ctx)
 	if apiKey == "" && readToken == "" {
 		return nil, fmt.Errorf("tmdb: no api key or read token configured")
 	}
@@ -177,7 +186,7 @@ type EpisodeInfo struct {
 // tt-id or a TMDB numeric id. Returns the episode still, TMDB episode rating,
 // and the episode's own IMDb id — the pieces needed for per-episode thumbnails.
 func (t *TMDB) FetchEpisode(ctx context.Context, seriesID string, season, episode int, opts ArtworkOptions) (*EpisodeInfo, error) {
-	apiKey, readToken := t.credentials()
+	apiKey, readToken := t.credentials(ctx)
 	if apiKey == "" && readToken == "" {
 		return nil, fmt.Errorf("tmdb: no api key or read token configured")
 	}
@@ -640,7 +649,7 @@ func (t *TMDB) get(ctx context.Context, path string, out any) error {
 	if err != nil {
 		return err
 	}
-	apiKey, readToken := t.credentials()
+	apiKey, readToken := t.credentials(ctx)
 	if readToken != "" {
 		req.Header.Set("Authorization", "Bearer "+readToken)
 	} else {

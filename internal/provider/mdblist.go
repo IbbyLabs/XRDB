@@ -44,10 +44,14 @@ func (m *MDBList) UpdateCredentials(apiKey string) {
 
 // HasCredentials reports whether the provider can make authenticated requests.
 func (m *MDBList) HasCredentials() bool {
-	return m.key() != ""
+	return m.key(context.Background()) != ""
 }
 
-func (m *MDBList) key() string {
+func (m *MDBList) key(ctx context.Context) string {
+	// An owner-supplied credential stands in for the server's for this render.
+	if k := keyFrom(ctx, KeyMDBList); k != "" {
+		return k
+	}
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	return m.apiKey
@@ -56,7 +60,7 @@ func (m *MDBList) key() string {
 // Fetch retrieves multi-provider ratings from MDBList for the given IMDB tt-ID.
 // Returns an error (not a fatal failure) when the ID is not an IMDb tt-ID.
 func (m *MDBList) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, error) {
-	if m.key() == "" {
+	if m.key(ctx) == "" {
 		return nil, fmt.Errorf("mdblist: no api key configured")
 	}
 	if !strings.HasPrefix(id, "tt") {
@@ -86,7 +90,7 @@ func (m *MDBList) fetchType(ctx context.Context, mdbType, id string) (*MediaMeta
 	if m.baseURL != "" {
 		base = m.baseURL
 	}
-	params := url.Values{"apikey": {m.key()}}
+	params := url.Values{"apikey": {m.key(ctx)}}
 	endpoint := fmt.Sprintf("%s/imdb/%s/%s?%s", base, mdbType, id, params.Encode())
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {

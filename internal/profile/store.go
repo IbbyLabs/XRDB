@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -30,6 +31,12 @@ type Profile struct {
 	UpdatedAt    string          `json:"updatedAt"`
 	PasswordHash string          `json:"-"` // bcrypt hash; empty = no password
 	HasPassword  bool            `json:"hasPassword"`
+	// ProviderKeys holds the owner's own API keys, used in place of the
+	// server's for their renders. Never serialized: an unprotected profile is
+	// readable by anyone holding its id, so the values only ever travel inward.
+	// KeysSet names which are configured so the UI can show that without them.
+	ProviderKeys map[string]string `json:"-"`
+	KeysSet      []string          `json:"keysSet,omitempty"`
 	// VersionToken changes whenever the profile is edited. Artwork URLs carry
 	// it so an edit produces a different URL: Stremio caches poster images for
 	// 24-48h client-side no matter what TTL the server sends, so changing the
@@ -110,6 +117,8 @@ func applySchema(db *sql.DB) error {
 	_, _ = db.Exec(`ALTER TABLE profiles ADD COLUMN password_hash TEXT NOT NULL DEFAULT ''`)
 	// Alias column + uniqueness (empty aliases are exempt via partial index).
 	_, _ = db.Exec(`ALTER TABLE profiles ADD COLUMN alias TEXT NOT NULL DEFAULT ''`)
+	// The owner's own provider API keys, as a JSON object.
+	_, _ = db.Exec(`ALTER TABLE profiles ADD COLUMN provider_keys TEXT NOT NULL DEFAULT '{}'`)
 	_, _ = db.Exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_profiles_alias ON profiles(alias) WHERE alias != ''`)
 	// Index the uuid so migrated v2 config-string URLs (?config=<uuid>) resolve
 	// without a table scan, and make it unique so import stays idempotent even
@@ -161,9 +170,9 @@ func (s *Store) Save(p *Profile) error {
 	p.UpdatedAt = now
 
 	_, err = s.db.Exec(
-		`INSERT INTO profiles (id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		p.ID, p.Name, p.Alias, p.Type, p.UUID, string(cfg), p.Version, p.CreatedAt, p.UpdatedAt, p.PasswordHash,
+		`INSERT INTO profiles (id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		p.ID, p.Name, p.Alias, p.Type, p.UUID, string(cfg), p.Version, p.CreatedAt, p.UpdatedAt, p.PasswordHash, encodeProviderKeys(p.ProviderKeys),
 	)
 	if err != nil {
 		if isAliasConflict(err) {
@@ -182,7 +191,7 @@ func (s *Store) Save(p *Profile) error {
 // Get retrieves a profile by ID. Returns ErrNotFound if it does not exist.
 func (s *Store) Get(id string) (*Profile, error) {
 	row := s.db.QueryRow(
-		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash
+		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys
 		 FROM profiles WHERE id = ?`, id,
 	)
 	return scanProfile(row)
@@ -202,7 +211,7 @@ func (s *Store) Resolve(idOrAlias string) (*Profile, error) {
 	}
 	key := strings.ToLower(strings.TrimSpace(idOrAlias))
 	row := s.db.QueryRow(
-		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash
+		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys
 		 FROM profiles WHERE alias = ? AND alias != ''`, key,
 	)
 	p, err = scanProfile(row)
@@ -216,7 +225,7 @@ func (s *Store) Resolve(idOrAlias string) (*Profile, error) {
 	// v2 uuids are case-sensitive config strings. Pick the oldest on the vanishing
 	// chance two profiles share a uuid, so resolution is deterministic.
 	row = s.db.QueryRow(
-		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash
+		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys
 		 FROM profiles WHERE uuid = ? AND uuid != '' ORDER BY created_at, id LIMIT 1`, strings.TrimSpace(idOrAlias),
 	)
 	return scanProfile(row)
@@ -232,7 +241,7 @@ func (s *Store) GetByUUID(uuid string) (*Profile, error) {
 		return nil, ErrNotFound
 	}
 	row := s.db.QueryRow(
-		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash
+		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys
 		 FROM profiles WHERE uuid = ? AND uuid != '' ORDER BY created_at, id LIMIT 1`, uuid,
 	)
 	return scanProfile(row)
@@ -309,9 +318,9 @@ func (s *Store) Update(p *Profile) error {
 	p.UpdatedAt = now
 
 	res, err := s.db.Exec(
-		`UPDATE profiles SET name = ?, alias = ?, uuid = ?, config = ?, updated_at = ?, password_hash = ?
+		`UPDATE profiles SET name = ?, alias = ?, uuid = ?, config = ?, updated_at = ?, password_hash = ?, provider_keys = ?
 		 WHERE id = ?`,
-		p.Name, p.Alias, p.UUID, string(cfg), now, p.PasswordHash, p.ID,
+		p.Name, p.Alias, p.UUID, string(cfg), now, p.PasswordHash, encodeProviderKeys(p.ProviderKeys), p.ID,
 	)
 	if err != nil {
 		if isAliasConflict(err) {
@@ -351,7 +360,7 @@ type ExportEnvelope struct {
 // List returns all profiles ordered by created_at ascending.
 func (s *Store) List() ([]*Profile, error) {
 	rows, err := s.db.Query(
-		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash
+		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys
 		 FROM profiles ORDER BY created_at ASC`,
 	)
 	if err != nil {
@@ -361,12 +370,14 @@ func (s *Store) List() ([]*Profile, error) {
 	var out []*Profile
 	for rows.Next() {
 		var p Profile
-		var cfgStr string
-		if err := rows.Scan(&p.ID, &p.Name, &p.Alias, &p.Type, &p.UUID, &cfgStr, &p.Version, &p.CreatedAt, &p.UpdatedAt, &p.PasswordHash); err != nil {
+		var cfgStr, keysStr string
+		if err := rows.Scan(&p.ID, &p.Name, &p.Alias, &p.Type, &p.UUID, &cfgStr, &p.Version, &p.CreatedAt, &p.UpdatedAt, &p.PasswordHash, &keysStr); err != nil {
 			return nil, fmt.Errorf("scan profile: %w", err)
 		}
 		p.Config = json.RawMessage(cfgStr)
 		p.HasPassword = p.PasswordHash != ""
+		p.ProviderKeys = decodeProviderKeys(keysStr)
+		p.KeysSet = configuredKeyNames(p.ProviderKeys)
 		p.VersionToken = versionToken(p.ID, p.UpdatedAt)
 		out = append(out, &p)
 	}
@@ -375,8 +386,8 @@ func (s *Store) List() ([]*Profile, error) {
 
 func scanProfile(row *sql.Row) (*Profile, error) {
 	var p Profile
-	var cfgStr string
-	err := row.Scan(&p.ID, &p.Name, &p.Alias, &p.Type, &p.UUID, &cfgStr, &p.Version, &p.CreatedAt, &p.UpdatedAt, &p.PasswordHash)
+	var cfgStr, keysStr string
+	err := row.Scan(&p.ID, &p.Name, &p.Alias, &p.Type, &p.UUID, &cfgStr, &p.Version, &p.CreatedAt, &p.UpdatedAt, &p.PasswordHash, &keysStr)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -385,8 +396,56 @@ func scanProfile(row *sql.Row) (*Profile, error) {
 	}
 	p.Config = json.RawMessage(cfgStr)
 	p.HasPassword = p.PasswordHash != ""
+	p.ProviderKeys = decodeProviderKeys(keysStr)
+	p.KeysSet = configuredKeyNames(p.ProviderKeys)
 	p.VersionToken = versionToken(p.ID, p.UpdatedAt)
 	return &p, nil
+}
+
+// encodeProviderKeys serializes the owner's keys for storage, dropping blanks
+// so clearing one leaves nothing behind.
+func encodeProviderKeys(keys map[string]string) string {
+	trimmed := make(map[string]string, len(keys))
+	for k, v := range keys {
+		if v = strings.TrimSpace(v); v != "" {
+			trimmed[k] = v
+		}
+	}
+	if len(trimmed) == 0 {
+		return "{}"
+	}
+	b, err := json.Marshal(trimmed)
+	if err != nil {
+		return "{}"
+	}
+	return string(b)
+}
+
+func decodeProviderKeys(raw string) map[string]string {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	var out map[string]string
+	if err := json.Unmarshal([]byte(raw), &out); err != nil {
+		return nil
+	}
+	return out
+}
+
+// configuredKeyNames lists which providers have a key, so the UI can show that
+// without the values ever leaving the server.
+func configuredKeyNames(keys map[string]string) []string {
+	if len(keys) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(keys))
+	for k, v := range keys {
+		if strings.TrimSpace(v) != "" {
+			out = append(out, k)
+		}
+	}
+	sort.Strings(out)
+	return out
 }
 
 func normalizeConfig(raw json.RawMessage) (json.RawMessage, error) {

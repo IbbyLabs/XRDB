@@ -1227,6 +1227,7 @@ textarea.input { min-height: 0; line-height: 1.5; }
 .notice-error   { background: var(--err-bg);  border: 1px solid var(--err-border);  color: var(--err); }
 .notice-success { background: var(--ok-bg);   border: 1px solid var(--ok-border);   color: var(--ok); }
 .notice-info    { background: var(--accent-dim); border: 1px solid var(--accent-border); color: var(--accent-text); }
+.notice-warn    { background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn); }
 
 .notice-dismiss {
   display: flex;

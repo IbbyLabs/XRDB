@@ -40,10 +40,14 @@ func (s *SIMKL) UpdateCredentials(clientID string) {
 
 // HasCredentials reports whether the provider can make authenticated requests.
 func (s *SIMKL) HasCredentials() bool {
-	return s.cred() != ""
+	return s.cred(context.Background()) != ""
 }
 
-func (s *SIMKL) cred() string {
+func (s *SIMKL) cred(ctx context.Context) string {
+	// An owner-supplied credential stands in for the server's for this render.
+	if k := keyFrom(ctx, KeySIMKL); k != "" {
+		return k
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.clientID
@@ -110,7 +114,7 @@ func (s *SIMKL) fetchSegment(ctx context.Context, segment, simklID, origID strin
 		base = s.baseURL
 	}
 	u := fmt.Sprintf("%s/%s/%s?client_id=%s&extended=full",
-		base, segment, simklID, url.QueryEscape(s.cred()))
+		base, segment, simklID, url.QueryEscape(s.cred(ctx)))
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return nil, fmt.Errorf("simkl: build request: %w", err)
@@ -188,7 +192,7 @@ func (s *SIMKL) lookupByIMDB(ctx context.Context, imdbID string) (string, error)
 		base = s.baseURL
 	}
 	u := fmt.Sprintf("%s/search/id?client_id=%s&imdb=%s",
-		base, url.QueryEscape(s.cred()), imdbID)
+		base, url.QueryEscape(s.cred(ctx)), imdbID)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
 	if err != nil {
 		return "", fmt.Errorf("simkl lookup: build request: %w", err)
