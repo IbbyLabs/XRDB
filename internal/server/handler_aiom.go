@@ -26,6 +26,17 @@ func normalizeAIOMOrigin(raw string) (string, error) {
 	return u.Scheme + "://" + u.Host, nil
 }
 
+// upstreamStatus maps an AIOMetadata response status onto the one to return.
+// A rejected password or unknown UUID is the caller's error, not a gateway
+// failure, and 502 is also replaced by Cloudflare with its own plain-text page,
+// which strips the reason the caller needs to see.
+func upstreamStatus(code int) int {
+	if code >= 400 && code < 500 {
+		return http.StatusBadRequest
+	}
+	return http.StatusBadGateway
+}
+
 // registerAIOMRoutes mounts the AIOMetadata one-click install proxy.
 // The browser can't reach arbitrary AIOM instances cross-origin, so the
 // server performs the load → merge → update sequence on its behalf.
@@ -105,7 +116,7 @@ func registerAIOMRoutes(mux *http.ServeMux) {
 			if msg == "" {
 				msg = "failed to load the AIOMetadata profile"
 			}
-			writeJSON(w, http.StatusBadGateway, map[string]string{"error": msg})
+			writeJSON(w, upstreamStatus(loadResp.StatusCode), map[string]string{"error": msg})
 			return
 		}
 
@@ -147,7 +158,7 @@ func registerAIOMRoutes(mux *http.ServeMux) {
 			if msg == "" {
 				msg = "failed to update the AIOMetadata profile"
 			}
-			writeJSON(w, http.StatusBadGateway, map[string]string{"error": msg})
+			writeJSON(w, upstreamStatus(updateResp.StatusCode), map[string]string{"error": msg})
 			return
 		}
 
