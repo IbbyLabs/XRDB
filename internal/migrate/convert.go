@@ -48,6 +48,8 @@ var v2BaseRenames = map[string]string{
 	"ratingStyle": "badgeStyle",
 	// v2 switched streaming badges with a word, XRDB with a flag.
 	"streamBadges": "providers",
+	// v2's quality badge list; XRDB spells the same list "badges".
+	"qualityBadges": "badges",
 }
 
 // v2WordFlags are keys v2 spelled as a word and XRDB models as a flag. Only
@@ -137,6 +139,7 @@ func ConvertConfig(raw json.RawMessage) (json.RawMessage, ConvertStats, error) {
 	// so they need more than a new key name.
 	dropped := make(map[string]bool)
 	for _, s := range v2Surfaces {
+		coerceLegacyValues(surfaces[s])
 		renameSourceList(surfaces[s])
 		convertWordFlags(surfaces[s])
 		convertGenreBadge(surfaces[s])
@@ -229,6 +232,18 @@ func translateBase(base string) (string, bool) {
 		return base, true
 	}
 	return "", false
+}
+
+// coerceLegacyValues puts v2's string values back into the shapes Parse reads.
+// v2 stored its whole config as URL query parameters, so a list, a number and a
+// flag all arrive quoted; left that way they parse as nothing and the profile
+// silently falls back to a default the user never chose.
+func coerceLegacyValues(surface map[string]json.RawMessage) {
+	for key, value := range surface {
+		if coerced, ok := imageconfig.CoerceLegacyValue(key, value); ok {
+			surface[key] = coerced
+		}
+	}
 }
 
 // renameSourceList rewrites the selected rating sources into XRDB's spellings.
