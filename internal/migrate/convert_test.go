@@ -333,11 +333,13 @@ func TestRatingStyleMapsWhereXRDBHasTheStyle(t *testing.T) {
 	if got := surfaceOf(t, square, "poster").BadgeStyle; string(got) != "square" {
 		t.Errorf("badgeStyle = %q, want square", got)
 	}
-	// v2 had styles XRDB has no layout for; those stay on the default rather
-	// than turning into something the user never chose.
-	stacked := convert(t, `{"posterRatingStyle":"stacked"}`)
-	if got := surfaceOf(t, stacked, "poster").BadgeStyle; string(got) == "stacked" {
-		t.Errorf("badgeStyle = %q, want a style XRDB actually has", got)
+	// Every style v2 offers now has a rendering here, so each one carries over
+	// rather than reverting to the default the user never chose.
+	for _, style := range []string{"glass", "square", "plain", "stacked", "tile"} {
+		got := surfaceOf(t, convert(t, `{"posterRatingStyle":"`+style+`"}`), "poster").BadgeStyle
+		if string(got) != style {
+			t.Errorf("badgeStyle %q carried over as %q", style, got)
+		}
 	}
 }
 

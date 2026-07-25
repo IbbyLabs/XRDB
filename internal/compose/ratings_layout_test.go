@@ -163,3 +163,53 @@ func TestSideLayoutsReserveNoFullWidthBand(t *testing.T) {
 		t.Error("bottom layout reserved no band")
 	}
 }
+
+// The stacked style puts the mark above the value rather than beside it, so a
+// badge is taller than the horizontal styles and reads as a column.
+func TestStackedBadgeStyleIsTallerThanTheRowStyles(t *testing.T) {
+	// One rating, so the measurement is a single badge rather than a strip that
+	// wraps to a different number of rows per style.
+	ratings := layoutTestRatings()[:1]
+	cfg := layoutTestConfig(imageconfig.LayoutBottom)
+
+	pill := cfg
+	pill.BadgeStyle = imageconfig.BadgePill
+	stacked := cfg
+	stacked.BadgeStyle = imageconfig.BadgeStacked
+
+	imgPill := genreTestImage()
+	drawBadgesInPlace(imgPill, ratings, pill)
+	imgStacked := genreTestImage()
+	drawBadgesInPlace(imgStacked, ratings, stacked)
+
+	if !imagesDiffer(imgPill, imgStacked) {
+		t.Fatal("the stacked style renders the same as the pill")
+	}
+	if a, b := paintedBounds(t, imgStacked).Dy(), paintedBounds(t, imgPill).Dy(); a <= b {
+		t.Errorf("stacked badge height %d, want more than the pill's %d", a, b)
+	}
+}
+
+// Every rating style must render distinguishably, or picking one does nothing.
+func TestEachBadgeStyleRendersDistinctly(t *testing.T) {
+	ratings := layoutTestRatings()
+	styles := []imageconfig.BadgeStyle{
+		imageconfig.BadgePill, imageconfig.BadgeSquare, imageconfig.BadgeGlass,
+		imageconfig.BadgePlain, imageconfig.BadgeTile, imageconfig.BadgeStacked,
+	}
+	rendered := map[imageconfig.BadgeStyle]*image.NRGBA{}
+	for _, st := range styles {
+		cfg := layoutTestConfig(imageconfig.LayoutBottom)
+		cfg.BadgeStyle = st
+		img := genreTestImage()
+		drawBadgesInPlace(img, ratings, cfg)
+		rendered[st] = img
+	}
+	for i, a := range styles {
+		for _, b := range styles[i+1:] {
+			if !imagesDiffer(rendered[a], rendered[b]) {
+				t.Errorf("styles %q and %q render identically", a, b)
+			}
+		}
+	}
+}

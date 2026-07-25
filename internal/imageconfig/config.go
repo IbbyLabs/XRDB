@@ -72,6 +72,9 @@ const (
 	// outline for legibility. BadgeTile is a dark rounded tile.
 	BadgePlain BadgeStyle = "plain"
 	BadgeTile  BadgeStyle = "tile"
+	// BadgeStacked is the tall badge: an accent rail above a centred mark with
+	// the value beneath, rather than a horizontal row of the three.
+	BadgeStacked BadgeStyle = "stacked"
 )
 
 // BadgeTheme controls the rating badge color scheme.
@@ -738,6 +741,8 @@ func Parse(data json.RawMessage) Config {
 			cfg.BadgeStyle = BadgePlain
 		case "tile":
 			cfg.BadgeStyle = BadgeTile
+		case "stacked":
+			cfg.BadgeStyle = BadgeStacked
 		}
 	}
 	if r.BadgeTheme != nil {

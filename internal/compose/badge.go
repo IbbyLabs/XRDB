@@ -388,7 +388,29 @@ type badgeChrome struct {
 	// hideAccentBar suppresses the leading accent stripe for styles that have
 	// no tile for it to sit against; the provider colour goes on the mark.
 	hideAccentBar bool
+	// stacked draws the badge as an accent rail above a centred mark with the
+	// value beneath. The remaining fields are its vertical metrics, filled in
+	// once the strip's scale is known.
+	stacked       bool
+	stackRailH    int
+	stackRailGap  int
+	stackValueGap int
+	stackPadY     int
 }
+
+// stackedBadgeInnerH is the height of a stacked badge: padding, accent rail,
+// the mark, then the value.
+func stackedBadgeInnerH(d ratingStripDims, valH int) int {
+	return d.padY*2 + d.accentW + d.iconGap + d.iconSize + stackedValueGap(d) + valH
+}
+
+// stackedBadgeWidth sizes a stacked badge around whichever of the mark or the
+// value is wider, since both are centred rather than sitting side by side.
+func stackedBadgeWidth(d ratingStripDims, valW int) int {
+	return maxInt(d.iconSize, valW) + d.padX*2
+}
+
+func stackedValueGap(d ratingStripDims) int { return maxInt(6, d.padY*3/5) }
 
 func chromeFor(cfg imageconfig.Config) badgeChrome {
 	c := badgeChrome{
@@ -428,6 +450,11 @@ func chromeFor(cfg imageconfig.Config) badgeChrome {
 		// Dark rounded tile, squarer than the pill.
 		c.radius = func(innerH int) int { return maxInt(2, innerH/5) }
 		c.bg = color.NRGBA{R: 16, G: 18, B: 24, A: 220}
+	case imageconfig.BadgeStacked:
+		c.radius = func(innerH int) int { return maxInt(3, innerH/8) }
+		c.bg = color.NRGBA{R: 16, G: 18, B: 24, A: 215}
+		c.stacked = true
+		c.hideAccentBar = true
 	}
 	if cfg.BadgeTheme == imageconfig.ThemeLight {
 		if cfg.BadgeStyle == imageconfig.BadgeGlass {
@@ -481,6 +508,11 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 		}
 		if chrome.border.A > 0 {
 			drawRectBorder(out, bRect, radius, chrome.border)
+		}
+
+		if chrome.stacked {
+			drawStackedBadge(out, sp, y, innerH, iconSize, face, chrome, valAscent, valH)
+			continue
 		}
 
 		iconTint := chrome.iconColor
@@ -590,6 +622,10 @@ func ratingsBandHeight(frameW int, ratings []provider.Rating, cfg imageconfig.Co
 	edgeX += edgeInset
 	edgeY += edgeInset
 	innerH := padY*2 + maxInt(valH, iconSize)
+	stacked := cfg.BadgeStyle == imageconfig.BadgeStacked
+	if stacked {
+		innerH = stackedBadgeInnerH(d, valH)
+	}
 	maxRowW := frameW - edgeX*2
 	rowW, rows := 0, 0
 	for _, r := range filtered {
@@ -600,6 +636,9 @@ func ratingsBandHeight(frameW int, ratings []provider.Rating, cfg imageconfig.Co
 		bw := accentW + padX + textWidth(face, value) + padX
 		if ratingIcons[r.Source] != nil {
 			bw += iconSize + iconGap
+		}
+		if stacked {
+			bw = stackedBadgeWidth(d, textWidth(face, value))
 		}
 		need := bw
 		if rowW > 0 {
@@ -663,6 +702,13 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 
 	innerH := padY*2 + maxInt(valH, iconSize)
 	chrome := chromeFor(cfg)
+	if chrome.stacked {
+		innerH = stackedBadgeInnerH(d, valH)
+		chrome.stackRailH = d.accentW
+		chrome.stackRailGap = d.iconGap
+		chrome.stackValueGap = stackedValueGap(d)
+		chrome.stackPadY = d.padY
+	}
 
 	bounds := out.Bounds()
 	maxRowW := bounds.Dx() - edgeX*2
@@ -678,6 +724,9 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 		bw := accentW + padX + vw + padX
 		if icon != nil {
 			bw += iconSize + iconGap
+		}
+		if chrome.stacked {
+			bw = stackedBadgeWidth(d, vw)
 		}
 		specs = append(specs, badgeSpec{
 			value:     value,
@@ -1009,4 +1058,42 @@ func filterRatings(ratings []provider.Rating, want []string) []provider.Rating {
 		}
 	}
 	return out
+}
+
+// drawStackedBadge renders one badge as an accent rail above a centred mark
+// with the value beneath. The tile itself is already drawn by the caller.
+func drawStackedBadge(out *image.NRGBA, sp badgeSpec, y, innerH, iconSize int, face font.Face, chrome badgeChrome, valAscent, valH int) {
+	// The rail reads as a heading for the badge, so it is a fraction of the
+	// tile rather than its full width.
+	railW := maxInt(12, sp.w*42/100)
+	railX := sp.x + (sp.w-railW)/2
+	railY := y + chrome.stackPadY
+	fillRect(out, image.Rect(railX, railY, railX+railW, railY+chrome.stackRailH), sp.accent)
+
+	drawSize := iconSize
+	if sp.iconScale > 0 {
+		drawSize = iconSize * sp.iconScale / 100
+		if lo := iconSize / 2; drawSize < lo {
+			drawSize = lo
+		}
+		if drawSize > iconSize*2 {
+			drawSize = iconSize * 2
+		}
+	}
+	iconTop := railY + chrome.stackRailH + chrome.stackRailGap
+	if sp.icon != nil {
+		iRect := image.Rect(sp.x+(sp.w-drawSize)/2, iconTop, sp.x+(sp.w+drawSize)/2, iconTop+drawSize)
+		if sp.colored {
+			drawBrandIcon(out, iRect, sp.icon, sp.iconShape)
+		} else {
+			drawTintedIcon(out, iRect, sp.icon, chrome.iconColor, sp.iconShape)
+		}
+	}
+
+	valY := iconTop + iconSize + chrome.stackValueGap + valAscent
+	// Keep the value inside the tile when a grown mark has pushed it down.
+	if bottom := y + innerH - chrome.stackPadY; valY+valH-valAscent > bottom {
+		valY = bottom - (valH - valAscent)
+	}
+	drawText(out, face, sp.x+(sp.w-sp.valW)/2, valY, chrome.valueColor, sp.value)
 }
