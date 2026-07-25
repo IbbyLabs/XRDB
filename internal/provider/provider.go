@@ -33,6 +33,10 @@ type MediaMeta struct {
 	Genres         []string        // e.g. ["Action","Drama"] (may be empty)
 	IsAnime        bool            // the title matched the anime ID mapping
 	WatchProviders []WatchProvider // streaming/rental services (may be empty)
+	// TopRatedRank is the title's place in the locally computed top-rated film
+	// ranking, or 0 when it does not place. See imdb_toprated.go for why this
+	// is XRDB's own ranking rather than IMDb's published list.
+	TopRatedRank int
 }
 
 // Rating is a single provider rating observation.

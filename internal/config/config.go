@@ -15,21 +15,25 @@ import (
 const DefaultLogLevel = "info"
 
 type Config struct {
-	Address             string
-	Version             string
-	DBPath              string
-	CacheDir            string
-	CacheTTL            time.Duration
-	CacheMaxEntries     int   // hot tier entry cap
-	CacheMaxBytes       int64 // hot tier byte cap
-	TMDBAPIKey          string
-	TMDBReadToken       string
-	MDBListAPIKey       string
-	OMDBAPIKey          string
-	FanartAPIKey        string
-	TraktClientID       string
-	SIMKLClientID       string
-	IMDbDatasetDir      string // directory for cached IMDb dataset file; empty = disabled
+	Address         string
+	Version         string
+	DBPath          string
+	CacheDir        string
+	CacheTTL        time.Duration
+	CacheMaxEntries int   // hot tier entry cap
+	CacheMaxBytes   int64 // hot tier byte cap
+	TMDBAPIKey      string
+	TMDBReadToken   string
+	MDBListAPIKey   string
+	OMDBAPIKey      string
+	FanartAPIKey    string
+	TraktClientID   string
+	SIMKLClientID   string
+	IMDbDatasetDir  string // directory for cached IMDb dataset file; empty = disabled
+	// IMDbTopRated enables the locally computed top-rated film ranking. It is
+	// separate from IMDbDatasetDir because building it streams a second, much
+	// larger dataset on each refresh.
+	IMDbTopRated        bool
 	JikanURL            string // override Jikan API base URL; empty = public api.jikan.moe
 	AnimeMapURL         string // override anime ID mapping dataset URL; empty = default
 	AnimeMapFallbackURL string // live anime mapping API base URL; "off" disables
@@ -193,6 +197,7 @@ func Load() Config {
 		TraktClientID:         os.Getenv("XRDB_TRAKT_CLIENT_ID"),
 		SIMKLClientID:         os.Getenv("XRDB_SIMKL_CLIENT_ID"),
 		IMDbDatasetDir:        os.Getenv("XRDB_IMDB_DATASET_DIR"),
+		IMDbTopRated:          boolEnv("XRDB_IMDB_TOP_RATED"),
 		JikanURL:              os.Getenv("XRDB_JIKAN_URL"),
 		AnimeMapURL:           os.Getenv("XRDB_ANIME_MAP_URL"),
 		AnimeMapFallbackURL:   os.Getenv("XRDB_ANIME_MAP_FALLBACK_URL"),

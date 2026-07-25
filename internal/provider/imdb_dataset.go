@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -34,11 +35,21 @@ type IMDbDataset struct {
 	dataDir    string
 	httpClient *http.Client
 
-	mu      sync.RWMutex
-	index   map[string]imdbEntry // tconst → entry
-	loaded  bool
-	loadErr error
+	// topRated is opt-in: building it streams a second, much larger dataset,
+	// which is not a cost to impose on an operator who does not want the badge.
+	topRatedEnabled bool
+
+	mu       sync.RWMutex
+	index    map[string]imdbEntry // tconst → entry
+	topRated map[string]int       // tconst → rank, 1-based
+	loaded   bool
+	loadErr  error
 }
+
+// EnableTopRated turns on the top-rated ranking. It costs one streamed pass
+// over IMDb's title-basics dataset per refresh, needed to tell films apart from
+// the TV episodes that would otherwise dominate the list.
+func (d *IMDbDataset) EnableTopRated() { d.topRatedEnabled = true }
 
 // NewIMDbDataset creates a dataset provider. dataDir is where the TSV file is cached.
 func NewIMDbDataset(dataDir string) *IMDbDataset {
@@ -64,6 +75,7 @@ func (d *IMDbDataset) Fetch(ctx context.Context, mediaType, id string) (*MediaMe
 
 	d.mu.RLock()
 	entry, ok := d.index[id]
+	rank := d.topRated[id]
 	d.mu.RUnlock()
 
 	if !ok {
@@ -71,6 +83,7 @@ func (d *IMDbDataset) Fetch(ctx context.Context, mediaType, id string) (*MediaMe
 	}
 
 	return &MediaMeta{
+		TopRatedRank: rank,
 		Ratings: []Rating{{
 			Source: "imdb",
 			Value:  entry.Rating,
@@ -107,6 +120,16 @@ func (d *IMDbDataset) ensureLoaded(ctx context.Context) error {
 	d.loaded = true
 	d.index = idx
 	d.loadErr = err
+	if err == nil && d.topRatedEnabled {
+		// A failure here must not take the ratings down with it: the rank is a
+		// garnish, the ratings are the point.
+		if ranks, rankErr := buildTopRated(ctx, d.httpClient, idx); rankErr != nil {
+			slog.WarnContext(ctx, "Could not build the top-rated ranking; ratings are unaffected",
+				"error", rankErr)
+		} else {
+			d.topRated = ranks
+		}
+	}
 	return err
 }
 

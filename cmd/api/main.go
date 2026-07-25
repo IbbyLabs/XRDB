@@ -130,7 +130,11 @@ func main() {
 	reg.Register(provider.NewSIMKL(cfg.SIMKLClientID))
 	// IMDb local dataset — enabled when XRDB_IMDB_DATASET_DIR is set.
 	if cfg.IMDbDatasetDir != "" {
-		reg.Register(provider.NewIMDbDataset(cfg.IMDbDatasetDir))
+		imdbDataset := provider.NewIMDbDataset(cfg.IMDbDatasetDir)
+		if cfg.IMDbTopRated {
+			imdbDataset.EnableTopRated()
+		}
+		reg.Register(imdbDataset)
 	}
 	// Anime providers — public APIs, no key required. Wrapped with the anime
 	// ID mapper so IMDb/TMDB render IDs resolve to MAL/AniList/Kitsu IDs.
@@ -179,6 +183,7 @@ func main() {
 		"cache_max_mb", cfg.CacheMaxBytes>>20,
 		"providers", reg.Names(),
 		"imdb_dataset", cfg.IMDbDatasetDir != "",
+		"imdb_top_rated", cfg.IMDbTopRated,
 	)
 
 	handler := server.NewHandler(cfg.Version, store, settingsStore, pipeline, renderCache, cfg, ui.FS())
