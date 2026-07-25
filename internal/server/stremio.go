@@ -89,7 +89,7 @@ func stremioManifestFor(cfg config.Config) stremioManifest {
 // manifest from, so carrying the profile in the path is what lets one instance
 // serve a different look per user. Without it the addon would advertise itself
 // as configurable and then ignore whatever the user configured.
-func registerStremioAddon(mux *http.ServeMux, cfg config.Config, store *profile.Store) {
+func registerStremioAddon(mux *http.ServeMux, cfg config.Config, store *profile.Store, trust proxyTrust) {
 	manifestHandler := stremioMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, stremioManifestFor(cfg))
 	})
@@ -110,18 +110,18 @@ func registerStremioAddon(mux *http.ServeMux, cfg config.Config, store *profile.
 	mux.HandleFunc("/stremio/c/{config}/meta/", stremioMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		configKey := r.PathValue("config")
 		prefix := "/stremio/c/" + configKey + "/meta/"
-		serveStremioMeta(w, r, cfg, store, configKey, strings.TrimPrefix(r.URL.Path, prefix))
+		serveStremioMeta(w, r, cfg, store, trust, configKey, strings.TrimPrefix(r.URL.Path, prefix))
 	}))
 
 	mux.HandleFunc("/stremio/meta/", stremioMiddleware(func(w http.ResponseWriter, r *http.Request) {
-		serveStremioMeta(w, r, cfg, store, "", strings.TrimPrefix(r.URL.Path, "/stremio/meta/"))
+		serveStremioMeta(w, r, cfg, store, trust, "", strings.TrimPrefix(r.URL.Path, "/stremio/meta/"))
 	}))
 }
 
 // serveStremioMeta answers a meta request for {type}/{id}.json, emitting artwork
 // URLs that point back at this instance's render routes. configKey is the
 // profile the install is bound to, or "" for the instance default.
-func serveStremioMeta(w http.ResponseWriter, r *http.Request, cfg config.Config, store *profile.Store, configKey, path string) {
+func serveStremioMeta(w http.ResponseWriter, r *http.Request, cfg config.Config, store *profile.Store, trust proxyTrust, configKey, path string) {
 	trimmed := strings.TrimSuffix(path, ".json")
 	parts := strings.SplitN(trimmed, "/", 2)
 	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
@@ -139,16 +139,9 @@ func serveStremioMeta(w http.ResponseWriter, r *http.Request, cfg config.Config,
 	// Both movie and series use poster as the XRDB render type.
 	xrdbType := "poster"
 
-	// Build base URL for XRDB renders. Derive from the incoming request.
-	scheme := "https"
-	if r.TLS == nil && (r.Header.Get("X-Forwarded-Proto") == "" || r.Header.Get("X-Forwarded-Proto") == "http") {
-		scheme = "http"
-	}
-	host := r.Host
-	if fwd := r.Header.Get("X-Forwarded-Host"); fwd != "" {
-		host = fwd
-	}
-	base := fmt.Sprintf("%s://%s", scheme, host)
+	// Build base URL for XRDB renders from the incoming request. The forwarded
+	// hints are only believed when the peer is a trusted proxy.
+	base := fmt.Sprintf("%s://%s", forwardedScheme(r, trust), forwardedHost(r, trust))
 
 	// Carry the content type (movie|series) so the render pipeline can pass
 	// it to the rating providers. Without it, providers fall back to guessing

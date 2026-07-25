@@ -43,6 +43,15 @@ type Config struct {
 	RenderConcurrency     int                      // max simultaneous renders; caps memory under bursts
 	MemoryLimitBytes      int64                    // soft heap limit (debug.SetMemoryLimit); 0 = unset
 	LogLevel              string                   // debug|info|warn|error (default info)
+	// TrustedProxies is a comma-separated list of CIDRs or addresses whose
+	// X-Forwarded-* and CF-Connecting-IP headers may be believed. Empty means
+	// loopback plus the private ranges, which covers the usual reverse-proxy
+	// topology without letting a public client claim someone else's address.
+	TrustedProxies string
+	// TrustProxyHeaders believes forwarded headers from any peer. Needed when
+	// the proxy address is not predictable, and opt-in because it makes the
+	// client address spoofable.
+	TrustProxyHeaders bool
 }
 
 // loadProviderTTLs builds the per-provider TTL map.
@@ -195,5 +204,17 @@ func Load() Config {
 		RenderConcurrency:     renderConcurrency,
 		MemoryLimitBytes:      memoryLimitBytes,
 		LogLevel:              logLevel,
+		TrustedProxies:        os.Getenv("XRDB_TRUSTED_PROXIES"),
+		TrustProxyHeaders:     boolEnv("XRDB_TRUST_PROXY_HEADERS"),
 	}
+}
+
+// boolEnv reads a boolean environment variable, accepting the spellings people
+// actually write in a compose file. Anything unrecognised is false.
+func boolEnv(name string) bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv(name))) {
+	case "1", "true", "yes", "on":
+		return true
+	}
+	return false
 }

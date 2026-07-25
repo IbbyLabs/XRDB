@@ -41,6 +41,8 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	mux := http.NewServeMux()
 	renderLimiter := newConcurrencyLimiter(cfg.RenderConcurrency)
 	ttls := newTTLStore(cfg.ProviderTTLs)
+	// Forwarded headers are client input unless the peer is a known proxy.
+	trust := newProxyTrust(cfg.TrustedProxies, cfg.TrustProxyHeaders)
 
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
@@ -297,14 +299,14 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	//
 	// GET /stremio/manifest.json
 	// GET /stremio/meta/{type}/{id}.json
-	registerStremioAddon(mux, cfg, store)
+	registerStremioAddon(mux, cfg, store, trust)
 
 	// Static file handler — registered last so API routes take precedence.
 	if len(staticFS) > 0 && staticFS[0] != nil {
 		mux.HandleFunc("/", staticFileHandler(staticFS[0]))
 	}
 
-	return accessLogMiddleware(logger, corsMiddleware(mux))
+	return accessLogMiddleware(logger, trust, corsMiddleware(mux))
 }
 
 // statusRecorder captures the response status and byte count for access logging.
@@ -331,7 +333,7 @@ func (r *statusRecorder) Write(b []byte) (int, error) {
 // accessLogMiddleware assigns each request a correlation id, exposes it as
 // X-Request-Id, and logs one line per request with method, path, status, and
 // latency. Health and readiness probes are skipped to keep the log readable.
-func accessLogMiddleware(logger *slog.Logger, next http.Handler) http.Handler {
+func accessLogMiddleware(logger *slog.Logger, trust proxyTrust, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 		reqID := logging.NewRequestID()
@@ -355,25 +357,9 @@ func accessLogMiddleware(logger *slog.Logger, next http.Handler) http.Handler {
 			slog.Int("status", status),
 			slog.Int64("latency_ms", time.Since(start).Milliseconds()),
 			slog.Int("bytes", rec.bytes),
-			slog.String("client_ip", clientIP(r)),
+			slog.String("client_ip", clientIP(r, trust)),
 		)
 	})
-}
-
-// clientIP returns the best-effort originating client address, preferring the
-// Cloudflare and forwarded headers set by the public reverse proxy over the
-// direct connection address.
-func clientIP(r *http.Request) string {
-	if cf := r.Header.Get("CF-Connecting-Ip"); cf != "" {
-		return cf
-	}
-	if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
-		if i := strings.IndexByte(fwd, ','); i >= 0 {
-			return strings.TrimSpace(fwd[:i])
-		}
-		return strings.TrimSpace(fwd)
-	}
-	return r.RemoteAddr
 }
 
 // corsMiddleware allows the web frontend to call the API cross-origin —
