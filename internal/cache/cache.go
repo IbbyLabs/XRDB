@@ -53,6 +53,13 @@ type Cache struct {
 
 	// Maintained incrementally on Set/expiry and reconciled by each sweep,
 	// so Stats never has to enumerate the cache directory.
+	//
+	// diskMu serialises an incremental adjustment against the sweep's
+	// reconcile. Without it a Set landing between the sweep counting the
+	// directory and storing that count is either counted twice or lost, which
+	// is what made the reported entry count drift. Kept separate from mu so a
+	// reconcile never blocks a cache read.
+	diskMu    sync.RWMutex
 	diskFiles atomic.Int64
 	diskBytes atomic.Int64
 
@@ -115,12 +122,14 @@ func (c *Cache) Get(key string) (*Entry, bool) {
 	}
 	exp := decodeExpiry(data[:expiryHeaderSize])
 	if time.Now().UnixNano() > exp {
+		c.diskMu.RLock()
 		if info, statErr := os.Stat(diskPath); statErr == nil {
 			if os.Remove(diskPath) == nil {
 				c.diskFiles.Add(-1)
 				c.diskBytes.Add(-info.Size())
 			}
 		}
+		c.diskMu.RUnlock()
 		return nil, false
 	}
 	e := &Entry{Data: data[expiryHeaderSize:], ExpiresAt: time.Unix(0, exp)}
@@ -167,6 +176,12 @@ func (c *Cache) SetWithTTL(key string, data []byte, ttl time.Duration) error {
 	binary.BigEndian.PutUint64(payload[:expiryHeaderSize], uint64(exp.UnixNano()))
 	copy(payload[expiryHeaderSize:], data)
 
+	// The write and the counter adjustment are one critical section against the
+	// sweep's reconcile. Split apart, a reconcile can count the new file and
+	// then have this adjustment added on top of it.
+	c.diskMu.RLock()
+	defer c.diskMu.RUnlock()
+
 	var prevSize int64 = -1
 	if info, err := os.Stat(diskPath); err == nil {
 		prevSize = info.Size()
@@ -204,6 +219,7 @@ func (c *Cache) Delete(key string) bool {
 	diskPath := c.diskPath(key)
 	c.mu.Unlock()
 
+	c.diskMu.RLock()
 	if info, err := os.Stat(diskPath); err == nil {
 		if os.Remove(diskPath) == nil {
 			c.diskFiles.Add(-1)
@@ -211,6 +227,7 @@ func (c *Cache) Delete(key string) bool {
 			removed = true
 		}
 	}
+	c.diskMu.RUnlock()
 	return removed
 }
 
@@ -364,8 +381,14 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 		}
 	}
 
-	c.diskFiles.Store(int64(remaining))
-	c.diskBytes.Store(totalBytes)
+	// Recount under the exclusive side rather than storing the figures gathered
+	// above: those were taken before any deletions and while writes were still
+	// landing, so storing them would reintroduce the drift this guards against.
+	c.diskMu.Lock()
+	nFiles, nBytes := countDir(c.dir)
+	c.diskFiles.Store(nFiles)
+	c.diskBytes.Store(nBytes)
+	c.diskMu.Unlock()
 }
 
 // readExpiry reads the expiry header without loading the payload.
@@ -390,4 +413,25 @@ func decodeExpiry(hdr []byte) int64 {
 func (c *Cache) diskPath(key string) string {
 	sum := sha256.Sum256([]byte(key))
 	return filepath.Join(c.dir, hex.EncodeToString(sum[:])+".bin")
+}
+
+// countDir totals the cache entries on disk. Called only by the sweep's
+// reconcile, never by Stats, which reads the counters instead.
+func countDir(dir string) (nFiles int64, nBytes int64) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return 0, 0
+	}
+	for _, e := range entries {
+		if e.IsDir() || filepath.Ext(e.Name()) != ".bin" {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		nFiles++
+		nBytes += info.Size()
+	}
+	return nFiles, nBytes
 }
