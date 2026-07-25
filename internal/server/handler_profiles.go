@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"unicode"
 
 	"golang.org/x/crypto/bcrypt"
 
@@ -236,7 +237,7 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 				// later render with nothing saying why.
 				if err := provider.ValidateKeys(p.ProviderKeys); err != nil {
 					writeJSON(w, http.StatusBadRequest, map[string]string{
-						"error": err.Error(),
+						"error": sentence(err.Error()),
 						"code":  "invalid_key",
 					})
 					return
@@ -415,4 +416,14 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 		}
 		writeJSON(w, status, res)
 	})
+}
+
+// sentence capitalizes a message for display. Go error strings are lowercase by
+// convention, but these are shown to the person who typed the value.
+func sentence(msg string) string {
+	if msg == "" {
+		return msg
+	}
+	r := []rune(msg)
+	return string(unicode.ToUpper(r[0])) + string(r[1:])
 }
