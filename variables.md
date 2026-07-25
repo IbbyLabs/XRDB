@@ -24,6 +24,8 @@ settings store and take precedence on restart).
 |---|---|---|
 | `XRDB_ADMIN_KEY` | _(unset)_ | Protects the Admin and Integrations areas and `/api/admin/*`. **Set this on any public instance** — without it, admin pages are open to everyone. |
 | `XRDB_API_KEY` | _(unset)_ | When set, every render request must carry it (`Authorization: Bearer …` or `?key=`). Leave unset for public artwork URLs. |
+| `XRDB_TRUSTED_PROXIES` | loopback + private ranges | Comma-separated CIDRs or addresses whose `X-Forwarded-*` and `CF-Connecting-IP` headers are believed. Setting this replaces the defaults. |
+| `XRDB_TRUST_PROXY_HEADERS` | `false` | Believe forwarded headers from any peer. Needed when the proxy address is unpredictable; makes the client address spoofable. |
 
 Profile passwords are separate: set per profile in the configurator, they
 protect editing that profile (rendering with a profile stays public).
@@ -58,6 +60,31 @@ back to a live per-ID lookup.
 | `XRDB_ANIME_MAP_URL` | Fribb anime-lists (GitHub raw, jsDelivr mirror) | Override the primary mapping dataset URL. **Note:** The mapper uses a hard-coded jsDelivr/GitHub raw mirror as fallback when the primary source is unreachable. For self-hosted or air-gapped deployments requiring full URL control, the mirror must be changed in the mapper source code. |
 | `XRDB_ANIME_MAP_FALLBACK_URL` | `https://arm.haglund.dev/api/v2` | Live per-ID mapping API for titles the dataset misses. Set to `off` to disable. |
 | `XRDB_ANIME_MAP_REFRESH_HOURS` | `168` (7 days) | How old the cached dataset may get before a background re-download. Refreshes never block renders; a failed refresh keeps the existing copy. |
+
+## Top-rated ranking
+
+| Variable | Default | Description |
+|---|---|---|
+| `XRDB_IMDB_TOP_RATED` | `false` | Build a top-rated film ranking for the badge. Requires `XRDB_IMDB_DATASET_DIR`. Streams IMDb's title-basics dataset on each refresh to restrict the ranking to films, so it costs a large download; the ranking is XRDB's own, not IMDb's published list. |
+
+## Folder writing
+
+Writes rendered artwork into the media library for clients that cannot take a
+remote URL. Off unless enabled — this is the only feature that modifies files
+on disk. See [docs/setup/folder-writing.md](docs/setup/folder-writing.md).
+
+| Variable | Default | Description |
+|---|---|---|
+| `XRDB_FOLDER_WRITER` | `false` | Enable writing artwork into the library. |
+| `XRDB_LIBRARY_ROOTS` | _(unset)_ | Comma-separated directories to walk. Required when the folder writer is on. |
+| `XRDB_FOLDER_WRITER_PROFILE` | _(unset)_ | Profile id or alias whose look library artwork takes. Unset uses the defaults. |
+| `XRDB_FOLDER_WRITER_SURFACES` | `poster,backdrop` | Which artwork to write. `poster` → `poster.jpg`, `backdrop` → `fanart.jpg`, `logo` → `clearlogo.png`. |
+| `XRDB_FOLDER_WRITER_OVERWRITE` | `false` | Replace artwork already present. Off keeps posters curated by hand. |
+| `XRDB_FOLDER_WRITER_PACE_MS` | `250` | Delay between titles, so a first pass does not saturate the rating sources. |
+| `XRDB_FOLDER_WRITER_INTERVAL_H` | `0` | Re-run the pass every N hours. `0` disables the schedule; a manual trigger still works. |
+
+A title is only written when a `.nfo` beside it carries an IMDb or TMDB id.
+Anything else is reported and skipped rather than guessed at.
 
 ## Cache tuning
 
