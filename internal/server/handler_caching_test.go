@@ -47,7 +47,12 @@ func renderingHandler(t *testing.T) http.Handler {
 	reg := provider.NewRegistry()
 	reg.Register(&provider.StubProvider{
 		ProviderName: "tmdb",
-		Meta:         &provider.MediaMeta{Title: "Test", PosterURL: "http://fake/poster.jpg"},
+		Meta: &provider.MediaMeta{
+			Title:       "Test",
+			PosterURL:   "http://fake/poster.jpg",
+			BackdropURL: "http://fake/backdrop.jpg",
+			LogoURL:     "http://fake/logo.png",
+		},
 	})
 	pipeline := compose.NewWithFetcher(reg, fixedFetcher{data: testSourcePNG(t, 1000, 1500)})
 
