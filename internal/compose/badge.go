@@ -605,10 +605,21 @@ func ratingStripDimsFor(scale float64) ratingStripDims {
 	}
 }
 
+// resolveBadgeScale returns the scale the rating strip draws at: output scale
+// for the size, the configured percentage, then reduced to fit the frame.
+// Measuring and drawing share it so a reserved band matches its contents.
+func resolveBadgeScale(cfg imageconfig.Config, frameW, frameH int, ratings []provider.Rating) float64 {
+	scale := outputScale(cfg.Size)
+	if cfg.RatingBadgeScale != 0 {
+		scale *= float64(cfg.RatingBadgeScale) / 100
+	}
+	return fitBadgeScale(scale, frameW, frameH, ratings, cfg)
+}
+
 // ratingsBandHeight returns the vertical space (strip plus edge margins) the
-// rating strip occupies for a frame of width frameW, so the logo can be
+// rating strip occupies for a frameW x frameH frame, so the logo can be
 // letterboxed above a clear band.
-func ratingsBandHeight(frameW int, ratings []provider.Rating, cfg imageconfig.Config) int {
+func ratingsBandHeight(frameW, frameH int, ratings []provider.Rating, cfg imageconfig.Config) int {
 	// Side-anchored layouts sit in a column against one edge, so they clear no
 	// full-width band for the logo to be letterboxed above.
 	if cfg.RatingsLayout == imageconfig.LayoutNone || isSideRatingsLayout(cfg.RatingsLayout) {
@@ -626,7 +637,7 @@ func ratingsBandHeight(frameW int, ratings []provider.Rating, cfg imageconfig.Co
 	if faceValue == nil {
 		return 0
 	}
-	scale := outputScale(cfg.Size)
+	scale := resolveBadgeScale(cfg, frameW, frameH, filtered)
 	face := valueFaceFor(scale)
 	fm := face.Metrics()
 	valH := fm.Ascent.Ceil() + fm.Descent.Ceil()
@@ -697,21 +708,13 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 	if len(filtered) == 0 {
 		return 0
 	}
-	// A per-config cap keeps only the first N badges (already provider-ordered).
+	// A per-config cap keeps the first N of the sources that returned a value,
+	// in the configured order.
 	if cfg.RatingsMax != nil && len(filtered) > *cfg.RatingsMax {
 		filtered = filtered[:*cfg.RatingsMax]
 	}
 
-	scale := outputScale(cfg.Size)
-	// A per-config scale multiplier (percent) sizes the whole rating strip.
-	if cfg.RatingBadgeScale != 0 {
-		scale *= float64(cfg.RatingBadgeScale) / 100
-	}
-	// A large multiplier on a small frame can make one badge wider than the
-	// artwork, which draws as a tile running off the edge. Back the scale off
-	// until the widest badge fits, so asking for more than fits gives the
-	// biggest that does rather than a clipped one.
-	scale = fitBadgeScale(scale, out.Bounds().Dx(), out.Bounds().Dy(), filtered, cfg)
+	scale := resolveBadgeScale(cfg, out.Bounds().Dx(), out.Bounds().Dy(), filtered)
 
 	face := valueFaceFor(scale)
 	fm := face.Metrics()
@@ -1070,13 +1073,17 @@ func filterRatings(ratings []provider.Rating, want []string) []provider.Rating {
 	if len(want) == 0 {
 		return ratings
 	}
-	wantSet := make(map[string]bool, len(want))
-	for _, w := range want {
-		wantSet[w] = true
-	}
-	out := make([]provider.Rating, 0, len(ratings))
+	// Walk want, not ratings: providers answer in parallel, so arrival order
+	// varies per render. Configured order also drives the RatingsMax cap.
+	bySource := make(map[string]provider.Rating, len(ratings))
 	for _, r := range ratings {
-		if wantSet[r.Source] {
+		if _, seen := bySource[r.Source]; !seen {
+			bySource[r.Source] = r
+		}
+	}
+	out := make([]provider.Rating, 0, len(want))
+	for _, w := range want {
+		if r, ok := bySource[w]; ok {
 			out = append(out, r)
 		}
 	}
@@ -1157,6 +1164,14 @@ func widestBadgeAt(scale float64, ratings []provider.Rating, cfg imageconfig.Con
 	return widest
 }
 
+// Badge dimensions are absolute for a given scale: one badge is 5% of a
+// 780x1170 poster but 31% of a 320x180 thumbnail. Posters and backdrops sit
+// inside both caps.
+const (
+	maxBadgeHeightShare = 0.12
+	maxBadgeWidthShare  = 0.33
+)
+
 // fitBadgeScale reduces scale until the widest badge fits inside the frame.
 // It never grows the scale, so a strip that already fits is left alone.
 func fitBadgeScale(scale float64, frameW, frameH int, ratings []provider.Rating, cfg imageconfig.Config) float64 {
@@ -1168,10 +1183,16 @@ func fitBadgeScale(scale float64, frameW, frameH int, ratings []provider.Rating,
 	for i := 0; i < 6; i++ {
 		d := ratingStripDimsFor(scale)
 		availW := frameW - d.edgeX*2
+		if share := int(float64(frameW)*maxBadgeWidthShare + 0.5); share < availW {
+			availW = share
+		}
 		// A badge taller than the artwork pushes its own value off the edge, so
 		// height is checked alongside width. One row is the floor: below that
 		// there is nothing left to show.
 		availH := frameH - d.edgeY*2
+		if share := int(float64(frameH)*maxBadgeHeightShare + 0.5); share < availH {
+			availH = share
+		}
 		widest := widestBadgeAt(scale, ratings, cfg)
 		tallest := badgeHeightAt(scale, cfg)
 		if availW <= 0 || availH <= 0 {

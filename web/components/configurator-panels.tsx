@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Check } from 'lucide-react';
+import { Check, ChevronUp, ChevronDown } from 'lucide-react';
 import { fetchTemplates, type Template } from '@/lib/api';
 import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
@@ -74,11 +74,12 @@ interface RatingsPanelProps {
   config: ConfigState;
   onUpdate: UpdateConfigFn;
   onToggleRating: (r: string) => void;
+  onMoveRating: (r: string, dir: -1 | 1) => void;
   /** Reveals the per-badge scale, offset and colour controls in place. */
   fine: boolean;
 }
 
-export function RatingsPanel({ uid, config, onUpdate, onToggleRating, fine }: RatingsPanelProps) {
+export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRating, fine }: RatingsPanelProps) {
   // Track source logos that fail to load so we fall back to the accent dot.
   const [logoFailed, setLogoFailed] = useState<Record<string, boolean>>({});
   return (
@@ -289,10 +290,62 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, fine }: Ra
             </div>
           ))}
           <span className="hint" style={{ marginTop: 0 }}>
-            Displayed in the order selected. Only sources that have data for
-            the specific title will appear — selecting a source does not
-            guarantee it shows up if the provider has no rating for that title.
+            Only sources that have data for the specific title will appear —
+            selecting a source does not guarantee it shows up if the provider
+            has no rating for that title.
           </span>
+
+          {config.ratings.length > 1 && (
+            <div className="field" style={{ marginTop: 'var(--sp-3)' }}>
+              <span className="label" id={`${uid}-order-label`}>Order</span>
+              <span className="hint" style={{ marginTop: 0, marginBottom: 'var(--sp-2)' }}>
+                Badges are drawn in this order, skipping any source with no
+                rating for the title. With a maximum set, put the sources you
+                want first at the top.
+              </span>
+              <ol className="src-order" aria-labelledby={`${uid}-order-label`}>
+                {config.ratings.map((id, i) => {
+                  const opt = RATING_OPTIONS.find(o => o.id === id);
+                  return (
+                    <li className="src-order-row" key={id}>
+                      <span className="src-order-num" aria-hidden>{i + 1}</span>
+                      {opt?.icon && !logoFailed[id] ? (
+                        <img
+                          className="src-logo"
+                          src={opt.icon}
+                          alt=""
+                          aria-hidden
+                          width={18}
+                          height={18}
+                          loading="lazy"
+                          onError={() => setLogoFailed(prev => ({ ...prev, [id]: true }))}
+                        />
+                      ) : (
+                        <span className="src-dot" style={{ background: opt?.accent }} aria-hidden />
+                      )}
+                      <span className="src-label">{opt?.label ?? id}</span>
+                      <button
+                        className="src-order-btn"
+                        onClick={() => onMoveRating(id, -1)}
+                        disabled={i === 0}
+                        aria-label={`Move ${opt?.label ?? id} earlier`}
+                      >
+                        <ChevronUp size={13} aria-hidden />
+                      </button>
+                      <button
+                        className="src-order-btn"
+                        onClick={() => onMoveRating(id, 1)}
+                        disabled={i === config.ratings.length - 1}
+                        aria-label={`Move ${opt?.label ?? id} later`}
+                      >
+                        <ChevronDown size={13} aria-hidden />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          )}
         </fieldset>
       </div>
     </div>

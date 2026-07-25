@@ -328,41 +328,84 @@ func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64, occ *o
 		chrome.border.A = 60
 	}
 
-	drawn := 0
+	type tile struct {
+		logo  *image.NRGBA
+		label string
+		w     int
+	}
+	tiles := make([]tile, 0, len(tokens))
 	for _, tok := range tokens {
-		logo := badgeLogos[strings.ToLower(tok)]
-		var tileW, contentW int
-		if logo != nil {
-			lb := logo.Bounds()
+		t := tile{logo: badgeLogos[strings.ToLower(tok)]}
+		var contentW int
+		if t.logo != nil {
+			lb := t.logo.Bounds()
 			contentW = int(float64(lb.Dx())*float64(logoH)/float64(lb.Dy()) + 0.5)
 		} else {
-			label := qualityBadgeLabel(tok)
-			if label == "" {
+			t.label = qualityBadgeLabel(tok)
+			if t.label == "" {
 				continue
 			}
-			contentW = textWidth(face, label)
+			contentW = textWidth(face, t.label)
 		}
-		tileW = padX*2 + contentW
+		t.w = padX*2 + contentW
+		tiles = append(tiles, t)
+	}
 
-		r := occ.place(pos, tileW, tileH, edgeX, edgeY, gap)
+	paint := func(t tile, r image.Rectangle) {
 		if opts.offsetX != 0 || opts.offsetY != 0 {
 			r = r.Add(image.Pt(opts.offsetX, opts.offsetY))
 		}
 		drawSoftTile(base, r, radius, chrome)
-
-		if logo != nil {
-			lb := logo.Bounds()
+		if t.logo != nil {
+			lb := t.logo.Bounds()
 			band := image.Rect(r.Min.X+padX, r.Min.Y+(tileH-logoH)/2, r.Max.X-padX, r.Min.Y+(tileH-logoH)/2+logoH)
-			drawLogoScaled(base, logo, fitRect(lb.Dx(), lb.Dy(), band))
-		} else {
-			label := qualityBadgeLabel(tok)
-			tx := r.Min.X + padX
-			ty := r.Min.Y + (tileH-(ascent+descent))/2 + ascent
-			drawText(base, face, tx, ty, color.White, label)
+			drawLogoScaled(base, t.logo, fitRect(lb.Dx(), lb.Dy(), band))
+			return
 		}
-		drawn++
+		tx := r.Min.X + padX
+		ty := r.Min.Y + (tileH-(ascent+descent))/2 + ascent
+		drawText(base, face, tx, ty, color.White, t.label)
 	}
-	return drawn
+
+	// Centre anchors lay out as a row: per-tile placement puts every tile on the
+	// same x, which collision resolution stacks into a column.
+	if pos == "tc" || pos == "bc" {
+		availW := base.Bounds().Dx() - edgeX*2
+		var rows [][]tile
+		for i := 0; i < len(tiles); {
+			w, n := tiles[i].w, 1
+			for i+n < len(tiles) && w+gap+tiles[i+n].w <= availW {
+				w += gap + tiles[i+n].w
+				n++
+			}
+			rows = append(rows, tiles[i:i+n])
+			i += n
+		}
+		// Rows stack away from their edge, so a bottom anchor is filled last row
+		// first to keep the first row topmost.
+		for k := range rows {
+			row := rows[k]
+			if pos == "bc" {
+				row = rows[len(rows)-1-k]
+			}
+			w := -gap
+			for _, t := range row {
+				w += gap + t.w
+			}
+			r := occ.place(pos, w, tileH, edgeX, edgeY, gap)
+			x := r.Min.X
+			for _, t := range row {
+				paint(t, image.Rect(x, r.Min.Y, x+t.w, r.Min.Y+tileH))
+				x += t.w + gap
+			}
+		}
+		return len(tiles)
+	}
+
+	for _, t := range tiles {
+		paint(t, occ.place(pos, t.w, tileH, edgeX, edgeY, gap))
+	}
+	return len(tiles)
 }
 
 // ── Age rating badge ──────────────────────────────────────────────────────────

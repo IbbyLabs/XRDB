@@ -155,11 +155,11 @@ func TestEachRatingsLayoutRendersDistinctly(t *testing.T) {
 func TestSideLayoutsReserveNoFullWidthBand(t *testing.T) {
 	ratings := layoutTestRatings()
 	for _, l := range []imageconfig.RatingsLayout{imageconfig.LayoutLeft, imageconfig.LayoutRight, imageconfig.LayoutSplitSide} {
-		if h := ratingsBandHeight(600, ratings, layoutTestConfig(l)); h != 0 {
+		if h := ratingsBandHeight(600, 900, ratings, layoutTestConfig(l)); h != 0 {
 			t.Errorf("%s reserved a band of %d, want 0", l, h)
 		}
 	}
-	if h := ratingsBandHeight(600, ratings, layoutTestConfig(imageconfig.LayoutBottom)); h == 0 {
+	if h := ratingsBandHeight(600, 900, ratings, layoutTestConfig(imageconfig.LayoutBottom)); h == 0 {
 		t.Error("bottom layout reserved no band")
 	}
 }

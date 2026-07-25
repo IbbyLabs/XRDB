@@ -297,7 +297,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		// rating/age overlays sit beneath the wordmark instead of cropping it.
 		// The logo is still letterboxed, never cover-cropped.
 		logoH := dim.Height
-		if band := ratingsBandHeight(dim.Width, allRatings, req.Config); band > 0 {
+		if band := ratingsBandHeight(dim.Width, dim.Height, allRatings, req.Config); band > 0 {
 			if maxBand := dim.Height / 2; band > maxBand {
 				band = maxBand
 			}

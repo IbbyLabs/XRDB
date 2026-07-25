@@ -359,6 +359,21 @@ export function ConfiguratorClient() {
     setConfigs(cs => ({ ...cs, [mediaType]: { ...cs[mediaType], [key]: value } }));
   };
 
+  const moveRating = (r: string, dir: -1 | 1) => {
+    lastEditRef.current = null;
+    pushHistory(configs);
+    setAppliedTemplate(null);
+    setConfigs(cs => {
+      const cur = cs[mediaType];
+      const i = cur.ratings.indexOf(r);
+      const j = i + dir;
+      if (i < 0 || j < 0 || j >= cur.ratings.length) return cs;
+      const ratings = [...cur.ratings];
+      [ratings[i], ratings[j]] = [ratings[j], ratings[i]];
+      return { ...cs, [mediaType]: { ...cur, ratings } };
+    });
+  };
+
   const toggleRating = (r: string) => {
     lastEditRef.current = null;
     pushHistory(configs);
@@ -680,7 +695,7 @@ export function ConfiguratorClient() {
 
           {activeTab === 'ratings' && (
             <div id={`${uid}-panel-ratings`} role="tabpanel" aria-labelledby={`${uid}-tab-ratings`} className="tabpanel-enter">
-              <RatingsPanel uid={uid} config={config} onUpdate={updateConfig} onToggleRating={toggleRating} fine={fine} />
+              <RatingsPanel uid={uid} config={config} onUpdate={updateConfig} onToggleRating={toggleRating} onMoveRating={moveRating} fine={fine} />
             </div>
           )}
 
