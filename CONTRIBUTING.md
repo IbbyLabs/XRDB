@@ -65,5 +65,26 @@ running it locally saves a round trip.
 ## Commits
 
 Conventional commits (`feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`).
-Releases and the changelog are generated from them, so the type matters:
-`feat` cuts a minor version, `fix` a patch.
+The type is not decoration — the release version and the changelog are derived
+from it:
+
+- `fix:` → patch
+- `feat:` → minor
+- `feat!:` or a `BREAKING CHANGE:` footer → major
+
+Keep the message to what changed. A `commit-msg` hook rejects long subjects,
+long bodies, first person, and `Co-Authored-By` lines.
+
+## Releases
+
+Nothing is released by hand. Release Please watches `main` and keeps a
+`chore: release X.Y.Z` pull request up to date with the version it has worked
+out and the changelog it has written.
+
+Merging that pull request tags the version, publishes the GitHub release, and
+triggers the image build. `:latest` follows once the build succeeds, provided
+the new tag is the highest.
+
+If the changelog in that pull request needs a human touch — wording, or a
+change that landed and was reverted before release — edit the pull request
+before merging it.

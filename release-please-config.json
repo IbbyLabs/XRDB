@@ -8,17 +8,44 @@
       "include-v-in-tag": true,
       "bump-minor-pre-major": false,
       "changelog-sections": [
-        { "type": "feat", "section": "Added" },
-        { "type": "fix", "section": "Fixed" },
-        { "type": "perf", "section": "Performance" },
-        { "type": "refactor", "section": "Changed" },
-        { "type": "docs", "section": "Documentation" },
-        { "type": "ci", "section": "Build and CI", "hidden": true },
-        { "type": "test", "section": "Tests", "hidden": true },
-        { "type": "chore", "section": "Chores", "hidden": true }
+        {
+          "type": "feat",
+          "section": "Added"
+        },
+        {
+          "type": "fix",
+          "section": "Fixed"
+        },
+        {
+          "type": "perf",
+          "section": "Performance"
+        },
+        {
+          "type": "refactor",
+          "section": "Changed"
+        },
+        {
+          "type": "docs",
+          "section": "Documentation"
+        },
+        {
+          "type": "ci",
+          "section": "Build and CI",
+          "hidden": true
+        },
+        {
+          "type": "test",
+          "section": "Tests",
+          "hidden": true
+        },
+        {
+          "type": "chore",
+          "section": "Chores",
+          "hidden": true
+        }
       ]
     }
   },
-  "pull-request-title-pattern": "chore: release ${version}",
+  "pull-request-title-pattern": "chore${scope}: release${component} ${version}",
   "pull-request-header": "The next release, kept up to date as commits land on main. Merging it tags the version, publishes the release, and builds the image."
 }

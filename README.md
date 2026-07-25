@@ -114,6 +114,10 @@ make bench      # render benchmarks
 make build-all  # web export + go build (embedded UI)
 ```
 
+Releases are automated: conventional commits on `main` keep a release pull
+request up to date, and merging it tags the version, publishes the release, and
+builds the image.
+
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the local setup, the checks CI runs,
 and what tends to come up in review.
 
