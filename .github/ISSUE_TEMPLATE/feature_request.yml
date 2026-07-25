@@ -1,0 +1,22 @@
+name: Feature request
+description: Suggest a rating source, badge, or capability
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do
+      description: The goal, rather than the implementation. It often turns out there is already a way.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like XRDB to do
+
+  - type: input
+    id: source
+    attributes:
+      label: Data source
+      description: For a new rating source, where does the data come from and does it have a public API?

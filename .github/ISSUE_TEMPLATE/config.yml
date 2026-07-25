@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions and setup help
+    url: https://discord.gg/wPY2pcqjmm
+    about: Faster than an issue for "how do I ..." and configuration questions.

@@ -2,11 +2,15 @@
 
 Ratings overlays and artwork for your media library. XRDB fetches posters,
 backdrops, thumbnails, and logos, composes rating badges and metadata onto
-them, and serves the result as PNGs — built for Plex, Jellyfin, Stremio
-(via AIOMetadata), and anything else that takes an image URL.
+them, and serves the result as an image URL — built for Plex, Jellyfin,
+Stremio (via AIOMetadata), and anything else that takes one.
+
+![Posters rendered by XRDB, with rating, genre, age and quality badges](docs/images/samples.jpg)
 
 - **One container.** The web configurator is embedded in a single Go binary.
 - **Fast.** Pure-Go render pipeline with a two-tier (memory + disk) cache.
+- **Small.** A default poster is around 38 KB, inside Stremio's 100 KB limit
+  and under its 50 KB recommendation. Larger tiers are a setting away.
 - **12 rating sources** with official provider logos: IMDb, TMDB, Rotten
   Tomatoes (critics + audience), Metacritic, Letterboxd, MDBList, Trakt,
   SIMKL, MyAnimeList, AniList, Kitsu.
@@ -15,6 +19,13 @@ them, and serves the result as PNGs — built for Plex, Jellyfin, Stremio
   aggregate score bar, trending tag — across normal/large/4K output sizes.
 - **Profiles** with memorable aliases and password-protected editing; the
   artwork URL is just `…/poster/{id}?config=your-alias`.
+
+## The configurator
+
+Every control updates the preview immediately, so the look you approve is the
+look your whole library takes on.
+
+![The XRDB configurator, showing the live preview beside the controls](docs/images/configurator.jpg)
 
 ## Quick start
 
@@ -65,9 +76,12 @@ cd web && npm ci && npm run dev   # web on :3001
 | `GET` | `/api/lookup?type=&id=` | TMDB ID → IMDb ID |
 | `POST` | `/api/aiometadata/install` | One-click AIOMetadata setup |
 | `GET` | `/api/admin/metrics`, `/api/admin/cache` | Runtime metrics, cache stats † |
+| `DELETE` | `/api/admin/cache[?key=]` | Drop every render, or one by its `X-Cache-Key` † |
+| `GET` | `/api/admin/sources` | Per-source health; `staleServes` flags a broken source † |
 | `POST` | `/api/admin/warm` | Pre-render IDs into the cache † |
 | `GET/PUT/DELETE` | `/api/admin/settings` | Integration keys † |
-| `GET` | `/stremio/manifest.json`, `/stremio/meta/…` | Stremio addon endpoints |
+| `GET` | `/stremio/manifest.json`, `/stremio/meta/…` | Stremio addon, instance default look |
+| `GET` | `/stremio/c/{config}/manifest.json`, `/stremio/c/{config}/meta/…` | Stremio addon bound to a saved profile |
 
 † requires `Authorization: Bearer $XRDB_ADMIN_KEY` when configured.
 
@@ -87,6 +101,9 @@ make test       # run all tests
 make bench      # render benchmarks
 make build-all  # web export + go build (embedded UI)
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the local setup, the checks CI runs,
+and what tends to come up in review.
 
 ## Attribution
 

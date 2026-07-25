@@ -1,0 +1,62 @@
+name: Bug report
+description: Something renders wrong, fails, or behaves unexpectedly
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Artwork problems are much faster to diagnose with the URL that produced
+        them, so please include it if you have one.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      placeholder: |
+        1. Configure ...
+        2. Request /poster/tt0816692?config=...
+        3. The badge is ...
+    validations:
+      required: true
+
+  - type: input
+    id: url
+    attributes:
+      label: Artwork URL
+      description: The full render URL, if the problem is with an image. Remove your API key first.
+      placeholder: https://xrdb.example.com/poster/tt0816692?config=mylook
+
+  - type: input
+    id: version
+    attributes:
+      label: XRDB version
+      description: From the badge in the nav bar, or /healthz.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: How is it running
+      options:
+        - Docker
+        - Docker Compose
+        - Built from source
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Set XRDB_LOG_LEVEL=debug to get more. Check for API keys before pasting.
+      render: text
