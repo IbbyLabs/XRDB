@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.1.0](https://github.com/IbbyLabs/XRDB/compare/v3.0.0...v3.1.0) (2026-07-25)
+
+
+### Changed
+
+* Releases are now cut automatically from conventional commits, so the version
+  and this changelog no longer need writing by hand ([5dd39c0](https://github.com/IbbyLabs/XRDB/commit/5dd39c0afaa5a673bc66e44089511c98c23b7f84))
+
 ## [Unreleased]
 
 <a id="v3-0-0"></a>
