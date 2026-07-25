@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",
+    "postbuild": "node -e \"const f='../internal/ui/dist/.keep';require('fs').existsSync(f)||require('fs').writeFileSync(f,'placeholder for go:embed path used in CI lint/type-check\\n')\"",
     "start": "next start -p 3001",
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
