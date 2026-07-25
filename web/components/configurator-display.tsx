@@ -280,6 +280,26 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
 
         {config.releaseStatus && fine && <ReleaseStatusFine uid={uid} config={config} onUpdate={onUpdate} />}
 
+        <ToggleRow
+          label="Top rated badge"
+          hint="Mark films in the top-rated ranking. Needs the IMDb dataset with XRDB_IMDB_TOP_RATED enabled on the server."
+          checked={config.topRated}
+          onChange={() => onUpdate('topRated', !config.topRated)}
+        />
+
+        {config.topRated && (
+          <Field label="Top rated badge position" htmlFor={`${uid}-toppos`}>
+            <select
+              id={`${uid}-toppos`}
+              className="select"
+              value={config.topRatedPos}
+              onChange={e => onUpdate('topRatedPos', e.target.value)}
+            >
+              {SIX_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+            </select>
+          </Field>
+        )}
+
         {config.ageRating && (
           <>
             <Field label="Age badge position" htmlFor={`${uid}-agepos`}>

@@ -1323,3 +1323,58 @@ func TestNeverSuccessfulSourceHasNoFallback(t *testing.T) {
 		t.Errorf("expected no ratings, got %+v", got)
 	}
 }
+
+// rankProvider supplies a top-rated rank the way the local IMDb dataset does:
+// alongside its rating, not from the artwork source.
+type rankProvider struct{ rank int }
+
+func (r *rankProvider) Name() string { return "imdb_local" }
+
+func (r *rankProvider) Fetch(context.Context, string, string) (*provider.MediaMeta, error) {
+	return &provider.MediaMeta{
+		TopRatedRank: r.rank,
+		Ratings:      []provider.Rating{{Source: "imdb", Value: 9.0, Label: "9.0"}},
+	}, nil
+}
+
+func TestTopRatedRankReachesTheBadgeMeta(t *testing.T) {
+	p := &Pipeline{providers: testRegistry(&rankProvider{rank: 42}), fetcher: &stubImageFetcher{}}
+	cfg := imageconfig.Default()
+	cfg.Ratings = []string{"imdb"}
+
+	artwork := &provider.MediaMeta{}
+	req := Request{MediaType: "poster", ContentType: "movie", MediaID: "tt1", Config: cfg}
+	if _, _ = p.collectRatingsWithProviders(context.Background(), req, artwork); artwork.TopRatedRank != 42 {
+		t.Errorf("TopRatedRank = %d, want 42 carried onto the artwork meta", artwork.TopRatedRank)
+	}
+}
+
+// A title outside the ranking must draw nothing, not "TOP #0".
+func TestUnrankedTitleCarriesNoRank(t *testing.T) {
+	p := &Pipeline{providers: testRegistry(&rankProvider{rank: 0}), fetcher: &stubImageFetcher{}}
+	cfg := imageconfig.Default()
+	cfg.Ratings = []string{"imdb"}
+
+	artwork := &provider.MediaMeta{}
+	req := Request{MediaType: "poster", ContentType: "movie", MediaID: "tt1", Config: cfg}
+	if _, _ = p.collectRatingsWithProviders(context.Background(), req, artwork); artwork.TopRatedRank != 0 {
+		t.Errorf("TopRatedRank = %d, want 0", artwork.TopRatedRank)
+	}
+}
+
+// The badge changes pixels, so both its toggle and its position have to be part
+// of the cache key or two different looks would share one cached render.
+func TestTopRatedIsInTheCacheKey(t *testing.T) {
+	base := imageconfig.Default()
+	on := base
+	on.TopRated = true
+	moved := on
+	moved.TopRatedPos = "br"
+
+	if imageconfig.CacheKey(base) == imageconfig.CacheKey(on) {
+		t.Error("enabling the top-rated badge did not change the cache key")
+	}
+	if imageconfig.CacheKey(on) == imageconfig.CacheKey(moved) {
+		t.Error("moving the top-rated badge did not change the cache key")
+	}
+}

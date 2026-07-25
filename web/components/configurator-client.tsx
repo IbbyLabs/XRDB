@@ -171,6 +171,8 @@ export function ConfiguratorClient() {
       badgeStyle: cfg.badgeStyle, badgeTheme: cfg.badgeTheme,
       ratings: cfg.ratings, ageRating: cfg.ageRating, ageRatingPos: cfg.ageRatingPos,
       releaseStatus: cfg.releaseStatus,
+      topRated: cfg.topRated,
+      topRatedPos: cfg.topRatedPos === 'inherit' ? '' : cfg.topRatedPos,
       releaseStatusPos: cfg.releaseStatusPos === 'inherit' ? '' : cfg.releaseStatusPos,
       releaseStatusBadgeStyle: cfg.releaseStatusBadgeStyle,
       releaseStatusTileColor: cfg.releaseStatusTileColor,

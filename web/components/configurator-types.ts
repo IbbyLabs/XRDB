@@ -245,6 +245,8 @@ export interface ConfigState {
   ageRating: boolean;
   releaseStatus: boolean;
   releaseStatusPos: string;
+  topRated: boolean;
+  topRatedPos: string;
   releaseStatusBadgeStyle: string; // glass | square | plain | tile | silver
   releaseStatusTileColor: string; // '#RRGGBB' for the tile style
   ageRatingPos: string;
@@ -349,6 +351,8 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratings: ['imdb', 'tmdb'],
   ageRating: false,
   releaseStatus: false,
+  topRated: false,
+  topRatedPos: 'inherit',
   releaseStatusBadgeStyle: '',
   releaseStatusTileColor: '',
   releaseStatusPos: 'inherit',

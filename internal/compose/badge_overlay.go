@@ -2060,3 +2060,84 @@ func drawProgressRing(base *image.NRGBA, cx, cy, outerR int, sweepFrac float64, 
 	ty := cy + (ascent-descent)/2
 	drawText(base, face, tx, ty, color.NRGBA{R: 248, G: 250, B: 252, A: 255}, label)
 }
+
+// ── Top-rated rank badge ──────────────────────────────────────────────────────
+
+type topRatedOpts struct {
+	style     string // "" | glass | square | plain | tile | silver
+	tileColor string // "#RRGGBB" for the tile style
+}
+
+func topRatedOptsFromConfig(cfg imageconfig.Config) topRatedOpts {
+	return topRatedOpts{style: cfg.TopRatedBadgeStyle, tileColor: cfg.TopRatedTileColor}
+}
+
+// topRatedAccent is the gold this badge is drawn in. Rank is the one badge that
+// is a ranking rather than a measurement, and the colour is what separates it
+// at a glance from the rating badges next to it.
+var topRatedAccent = color.NRGBA{R: 245, G: 197, B: 66, A: 255}
+
+// drawTopRatedBadge marks a title's place in the top-rated ranking. rank is
+// 1-based; zero means the title does not place and nothing is drawn.
+func drawTopRatedBadge(base *image.NRGBA, rank int, pos string, scale float64, occ *occupancy, opts topRatedOpts) {
+	if rank <= 0 {
+		return
+	}
+	ensureFaces()
+	face := labelFaceFor(scale)
+	if face == nil {
+		return
+	}
+	// "TOP" carries the meaning; the bare number alone would read as anything.
+	label := "TOP #" + strconv.Itoa(rank)
+
+	s := func(v float64) int { return int(v*scale + 0.5) }
+	padX, padY := s(9), s(5)
+
+	fm := face.Metrics()
+	ascent, descent := fm.Ascent.Ceil(), fm.Descent.Ceil()
+	bh := padY*2 + ascent + descent
+	bw := padX*2 + textWidth(face, label)
+
+	resolvedPos := pos
+	if resolvedPos == "" || resolvedPos == "inherit" {
+		resolvedPos = "tl"
+	}
+
+	r := occ.place(resolvedPos, bw, bh, s(12), s(12), s(7))
+	tx, ty := r.Min.X+padX, r.Min.Y+padY+ascent
+
+	if opts.style == "plain" {
+		drawText(base, face, tx+maxInt(1, s(1)), ty+maxInt(1, s(1)), color.NRGBA{R: 0, G: 0, B: 0, A: 180}, label)
+		drawText(base, face, tx, ty, topRatedAccent, label)
+		return
+	}
+
+	border := topRatedAccent
+	border.A = 220
+	chrome := tileChrome{
+		fill:   color.NRGBA{R: 10, G: 12, B: 18, A: 225},
+		border: border,
+		shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 80},
+	}
+	textCol := topRatedAccent
+	switch opts.style {
+	case "silver":
+		chrome.fill = color.NRGBA{R: 20, G: 22, B: 28, A: 45}
+		chrome.border = color.NRGBA{R: 244, G: 244, B: 245, A: 230}
+		textCol = color.NRGBA{R: 244, G: 244, B: 245, A: 245}
+	case "tile":
+		if c, err := parseHexColor(opts.tileColor); opts.tileColor != "" && err == nil {
+			c.A = 235
+			chrome.fill = c
+			chrome.border = color.NRGBA{}
+			textCol = color.NRGBA{R: 255, G: 255, B: 255, A: 255}
+		}
+	}
+	radius := s(5)
+	if opts.style == "square" {
+		radius = 0
+	}
+	drawSoftTile(base, r, radius, chrome)
+	drawText(base, face, tx, ty, textCol, label)
+}

@@ -393,6 +393,9 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	if req.Config.ReleaseStatus && meta.ReleaseStatus != "" {
 		drawReleaseStatusBadge(composed, meta.ReleaseStatus, req.Config.ReleaseStatusPos, scale, occ, releaseStatusOptsFromConfig(req.Config))
 	}
+	if req.Config.TopRated && meta.TopRatedRank > 0 {
+		drawTopRatedBadge(composed, meta.TopRatedRank, req.Config.TopRatedPos, scale, occ, topRatedOptsFromConfig(req.Config))
+	}
 	if req.Config.Genre && len(meta.Genres) > 0 {
 		drawGenreBadge(composed, meta.Genres, req.Config.GenrePos, scale, occ, genreOptsFromConfig(req.Config, meta.IsAnime))
 	}
@@ -797,6 +800,11 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 			}
 			mu.Lock()
 			defer mu.Unlock()
+			// The rank arrives from whichever provider computes it, not from the
+			// artwork source, so carry it across onto the meta the badges read.
+			if meta.TopRatedRank > 0 && artwork.TopRatedRank == 0 {
+				artwork.TopRatedRank = meta.TopRatedRank
+			}
 			contributed := false
 			for _, r := range meta.Ratings {
 				if !seen[r.Source] {

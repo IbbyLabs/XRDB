@@ -118,6 +118,8 @@ type Config struct {
 	AgeRatingPos     string         `json:"ageRatingPos,omitempty"`
 	ReleaseStatus    bool           `json:"releaseStatus,omitempty"`
 	ReleaseStatusPos string         `json:"releaseStatusPos,omitempty"`
+	TopRated         bool           `json:"topRated,omitempty"`
+	TopRatedPos      string         `json:"topRatedPos,omitempty"`
 	Genre            bool           `json:"genre"`
 	GenrePos         string         `json:"genrePos,omitempty"`
 	Providers        bool           `json:"providers"`
@@ -400,6 +402,8 @@ type AgeRatingConfig struct {
 	AgeRatingTileColor  string `json:"ageRatingTileColor,omitempty"`  // "#RRGGBB" for the tile style
 	// The release-status badge takes the same treatments as the age badge, so
 	// the two corner plates can be styled to match.
+	TopRatedBadgeStyle      string `json:"topRatedBadgeStyle,omitempty"`      // glass|square|plain|tile|silver
+	TopRatedTileColor       string `json:"topRatedTileColor,omitempty"`       // "#RRGGBB" for the tile style
 	ReleaseStatusBadgeStyle string `json:"releaseStatusBadgeStyle,omitempty"` // glass | plain | tile | square | silver
 	ReleaseStatusTileColor  string `json:"releaseStatusTileColor,omitempty"`  // "#RRGGBB" for the tile style
 }
@@ -468,6 +472,8 @@ type raw struct {
 	AgeRatingPos                  *string  `json:"ageRatingPos"`
 	ReleaseStatus                 *bool    `json:"releaseStatus"`
 	ReleaseStatusPos              *string  `json:"releaseStatusPos"`
+	TopRated                      *bool    `json:"topRated"`
+	TopRatedPos                   *string  `json:"topRatedPos"`
 	Genre                         *bool    `json:"genre"`
 	GenrePos                      *string  `json:"genrePos"`
 	Providers                     *bool    `json:"providers"`
@@ -539,6 +545,8 @@ type rawTrending struct {
 }
 
 type rawAge struct {
+	TopRatedBadgeStyle      *string `json:"topRatedBadgeStyle"`
+	TopRatedTileColor       *string `json:"topRatedTileColor"`
 	ReleaseStatusBadgeStyle *string `json:"releaseStatusBadgeStyle"`
 	ReleaseStatusTileColor  *string `json:"releaseStatusTileColor"`
 	AgeRatingBadgeStyle     *string `json:"ageRatingBadgeStyle"`
@@ -739,6 +747,12 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.ReleaseStatusPos != nil && strings.TrimSpace(*r.ReleaseStatusPos) != "" {
 		cfg.ReleaseStatusPos = strings.TrimSpace(*r.ReleaseStatusPos)
+	}
+	if r.TopRated != nil {
+		cfg.TopRated = *r.TopRated
+	}
+	if r.TopRatedPos != nil && strings.TrimSpace(*r.TopRatedPos) != "" {
+		cfg.TopRatedPos = strings.TrimSpace(*r.TopRatedPos)
 	}
 	if r.Genre != nil {
 		cfg.Genre = *r.Genre
@@ -1038,6 +1052,15 @@ func parseAge(cfg *Config, r *raw) {
 	if r.AgeRatingTileColor != nil && isHexColor(*r.AgeRatingTileColor) {
 		cfg.AgeRatingTileColor = strings.TrimSpace(*r.AgeRatingTileColor)
 	}
+	if r.TopRatedBadgeStyle != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.TopRatedBadgeStyle)); v {
+		case "glass", "square", "plain", "tile", "silver":
+			cfg.TopRatedBadgeStyle = v
+		}
+	}
+	if r.TopRatedTileColor != nil && isHexColor(*r.TopRatedTileColor) {
+		cfg.TopRatedTileColor = strings.TrimSpace(*r.TopRatedTileColor)
+	}
 	if r.ReleaseStatusBadgeStyle != nil {
 		switch v := strings.ToLower(strings.TrimSpace(*r.ReleaseStatusBadgeStyle)); v {
 		case "glass", "square", "plain", "tile", "silver":
@@ -1288,6 +1311,8 @@ func CacheKey(cfg Config) string {
 		AgeRating                     bool           `json:"ageRating"`
 		AgeRatingPos                  string         `json:"ageRatingPos"`
 		ReleaseStatus                 bool           `json:"releaseStatus"`
+		TopRated                      bool           `json:"topRated,omitempty"`
+		TopRatedPos                   string         `json:"topRatedPos,omitempty"`
 		ReleaseStatusPos              string         `json:"releaseStatusPos"`
 		Genre                         bool           `json:"genre"`
 		GenrePos                      string         `json:"genrePos"`
@@ -1339,6 +1364,8 @@ func CacheKey(cfg Config) string {
 		AgeRating:                     cfg.AgeRating,
 		AgeRatingPos:                  cfg.AgeRatingPos,
 		ReleaseStatus:                 cfg.ReleaseStatus,
+		TopRated:                      cfg.TopRated,
+		TopRatedPos:                   cfg.TopRatedPos,
 		ReleaseStatusPos:              cfg.ReleaseStatusPos,
 		Genre:                         cfg.Genre,
 		GenrePos:                      cfg.GenrePos,
