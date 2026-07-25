@@ -46,7 +46,7 @@ func (o *OMDB) cred() string {
 func NewOMDB(apiKey string) *OMDB {
 	return &OMDB{
 		apiKey:     apiKey,
-		httpClient: &http.Client{Timeout: 10 * time.Second},
+		httpClient: newHTTPClient("omdb", 10*time.Second),
 	}
 }
 

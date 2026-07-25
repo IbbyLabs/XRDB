@@ -53,7 +53,7 @@ func (s *SIMKL) cred() string {
 func NewSIMKL(clientID string) *SIMKL {
 	return &SIMKL{
 		clientID:   clientID,
-		httpClient: &http.Client{Timeout: 10 * time.Second},
+		httpClient: newHTTPClient("simkl", 10*time.Second),
 	}
 }
 

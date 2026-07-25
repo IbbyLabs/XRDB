@@ -26,7 +26,7 @@ type AlloCine struct {
 
 // NewAlloCine creates the AlloCiné provider. It needs no credential.
 func NewAlloCine() *AlloCine {
-	return &AlloCine{httpClient: &http.Client{Timeout: 12 * time.Second}}
+	return &AlloCine{httpClient: newHTTPClient("allocine", 12*time.Second)}
 }
 
 func (a *AlloCine) Name() string { return "allocine" }

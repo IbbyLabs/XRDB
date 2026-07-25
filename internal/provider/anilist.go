@@ -24,7 +24,7 @@ type AniList struct {
 // NewAniList creates an AniList provider. No API key is required.
 func NewAniList() *AniList {
 	return &AniList{
-		httpClient: &http.Client{Timeout: 10 * time.Second},
+		httpClient: newHTTPClient("anilist", 10*time.Second),
 		baseURL:    anilistGraphQLURL,
 	}
 }

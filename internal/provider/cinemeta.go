@@ -25,7 +25,7 @@ type Cinemeta struct {
 func NewCinemeta() *Cinemeta {
 	return &Cinemeta{
 		baseURL:    cinemetaBaseURL,
-		httpClient: &http.Client{Timeout: 10 * time.Second},
+		httpClient: newHTTPClient("cinemeta", 10*time.Second),
 	}
 }
 
@@ -33,7 +33,7 @@ func NewCinemeta() *Cinemeta {
 func NewCinemetaWithBaseURL(base string) *Cinemeta {
 	return &Cinemeta{
 		baseURL:    base,
-		httpClient: &http.Client{Timeout: 10 * time.Second},
+		httpClient: newHTTPClient("cinemeta", 10*time.Second),
 	}
 }
 

@@ -22,7 +22,7 @@ type Kitsu struct {
 // NewKitsu creates a Kitsu provider. No API key is required.
 func NewKitsu() *Kitsu {
 	return &Kitsu{
-		httpClient: &http.Client{Timeout: 10 * time.Second},
+		httpClient: newHTTPClient("kitsu", 10*time.Second),
 		baseURL:    kitsuBaseURL,
 	}
 }

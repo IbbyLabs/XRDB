@@ -48,7 +48,7 @@ func (t *Trakt) cred() string {
 func NewTrakt(clientID string) *Trakt {
 	return &Trakt{
 		clientID:   clientID,
-		httpClient: &http.Client{Timeout: 10 * time.Second},
+		httpClient: newHTTPClient("trakt", 10*time.Second),
 	}
 }
 

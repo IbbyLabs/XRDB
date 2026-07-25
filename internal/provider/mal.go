@@ -31,7 +31,7 @@ func NewMALWithURL(baseURL string) *MAL {
 		baseURL = jikanBaseURL
 	}
 	return &MAL{
-		httpClient: &http.Client{Timeout: 10 * time.Second},
+		httpClient: newHTTPClient("mal", 10*time.Second),
 		baseURL:    baseURL,
 	}
 }

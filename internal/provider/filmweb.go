@@ -25,7 +25,7 @@ type Filmweb struct {
 
 // NewFilmweb creates the Filmweb provider. It needs no credential.
 func NewFilmweb() *Filmweb {
-	return &Filmweb{httpClient: &http.Client{Timeout: 12 * time.Second}}
+	return &Filmweb{httpClient: newHTTPClient("filmweb", 12*time.Second)}
 }
 
 func (f *Filmweb) Name() string { return "filmweb" }

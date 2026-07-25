@@ -182,6 +182,12 @@ func fetchText(ctx context.Context, client *http.Client, url string, headers map
 		return "", fmt.Errorf("http get: %w", err)
 	}
 	defer resp.Body.Close()
+	// The throttled transport normally turns these into a RateLimitError before
+	// the response gets here; this covers a client injected without it.
+	if isThrottleStatus(resp.StatusCode) {
+		return "", &RateLimitError{Source: req.URL.Host, Status: resp.StatusCode,
+			RetryAfter: retryAfter(resp.Header.Get("Retry-After"))}
+	}
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("http %d", resp.StatusCode)
 	}

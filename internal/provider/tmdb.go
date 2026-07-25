@@ -30,7 +30,7 @@ func NewTMDB(apiKey, readToken string) *TMDB {
 	return &TMDB{
 		apiKey:     apiKey,
 		readToken:  readToken,
-		httpClient: &http.Client{Timeout: 10 * time.Second},
+		httpClient: newHTTPClient("tmdb", 10*time.Second),
 	}
 }
 

@@ -28,7 +28,7 @@ type MDBList struct {
 func NewMDBList(apiKey string) *MDBList {
 	return &MDBList{
 		apiKey:     apiKey,
-		httpClient: &http.Client{Timeout: 10 * time.Second},
+		httpClient: newHTTPClient("mdblist", 10*time.Second),
 	}
 }
 
@@ -100,8 +100,9 @@ func (m *MDBList) fetchType(ctx context.Context, mdbType, id string) (*MediaMeta
 	defer resp.Body.Close()
 
 	switch resp.StatusCode {
-	case http.StatusTooManyRequests:
-		return nil, fmt.Errorf("mdblist: rate limited")
+	case http.StatusTooManyRequests, http.StatusServiceUnavailable:
+		return nil, &RateLimitError{Source: "mdblist", Status: resp.StatusCode,
+			RetryAfter: retryAfter(resp.Header.Get("Retry-After"))}
 	case http.StatusUnauthorized, http.StatusForbidden:
 		return nil, fmt.Errorf("mdblist: unauthorized (check api key)")
 	case http.StatusNotFound:

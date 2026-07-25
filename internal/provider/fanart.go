@@ -44,7 +44,7 @@ func (f *Fanart) cred() string {
 func NewFanart(apiKey string) *Fanart {
 	return &Fanart{
 		apiKey:     apiKey,
-		httpClient: &http.Client{Timeout: 10 * time.Second},
+		httpClient: newHTTPClient("fanart", 10*time.Second),
 	}
 }
 
