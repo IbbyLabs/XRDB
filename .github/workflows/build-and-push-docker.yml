@@ -33,6 +33,7 @@ jobs:
       dev_track_tag: ${{ steps.meta.outputs.dev_track_tag }}
       publish_dev: ${{ steps.meta.outputs.publish_dev }}
       publish_release_alias: ${{ steps.meta.outputs.publish_release_alias }}
+      publish_latest: ${{ steps.meta.outputs.publish_latest }}
       image: ${{ steps.meta.outputs.image }}
     steps:
       - name: Checkout
@@ -55,11 +56,26 @@ jobs:
           dev_track_tag=""
           publish_dev="false"
           publish_release_alias="false"
+          publish_latest="false"
 
           if [ "${REF_TYPE}" = "tag" ] && printf '%s' "${REF_NAME}" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
             deployment_version="${REF_NAME}"
             dev_track_tag="dev-${REF_NAME#v}"
             publish_release_alias="true"
+            # :latest belongs to the highest release, so a hotfix on an older
+            # line can publish without stealing it. Decided here rather than in
+            # a follow-on workflow: a run started with GITHUB_TOKEN cannot
+            # trigger one, so a separate promotion step would never fire.
+            git fetch --force --tags origin >/dev/null 2>&1 || true
+            highest="$(
+              {
+                printf '%s\n' "${REF_NAME}"
+                git tag --list 'v*'
+              } | awk '/^v[0-9]+(\.[0-9]+){2}$/ { print }' | sort -V | tail -n 1
+            )"
+            if [ "${REF_NAME}" = "${highest}" ]; then
+              publish_latest="true"
+            fi
           elif [ "${REF_TYPE}" = "branch" ] && [ "${REF_NAME}" = "${DEFAULT_BRANCH}" ]; then
             deployment_version="dev.${stamp}.${short_sha}"
             dev_track_tag="dev-${stamp/./-}-${short_sha}"
@@ -72,6 +88,7 @@ jobs:
           echo "deployment_version=${deployment_version}" >> "$GITHUB_OUTPUT"
           echo "dev_track_tag=${dev_track_tag}" >> "$GITHUB_OUTPUT"
           echo "publish_dev=${publish_dev}" >> "$GITHUB_OUTPUT"
+          echo "publish_latest=${publish_latest}" >> "$GITHUB_OUTPUT"
           echo "publish_release_alias=${publish_release_alias}" >> "$GITHUB_OUTPUT"
           # ghcr image names must be lowercase.
           echo "image=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
@@ -176,6 +193,7 @@ jobs:
             latest=false
           tags: |
             type=raw,value=${{ github.ref_name }},enable=${{ github.ref_type == 'tag' }}
+            type=raw,value=latest,enable=${{ needs.version.outputs.publish_latest == 'true' }}
             type=raw,value=dev,enable=${{ needs.version.outputs.publish_dev == 'true' }}
             type=raw,value=${{ needs.version.outputs.dev_track_tag }},enable=${{ needs.version.outputs.publish_dev == 'true' || needs.version.outputs.publish_release_alias == 'true' }}
             type=sha,prefix=manual-,enable=${{ github.event_name == 'workflow_dispatch' && needs.version.outputs.publish_dev != 'true' }}
