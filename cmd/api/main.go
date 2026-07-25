@@ -188,6 +188,13 @@ func main() {
 
 	handler := server.NewHandler(cfg.Version, store, settingsStore, pipeline, renderCache, cfg, ui.FS())
 
+	// Re-render library artwork on a schedule, so a profile edit reaches the
+	// files on disk without anyone triggering it. No-ops unless the folder
+	// writer is enabled and an interval is set.
+	scheduleCtx, stopSchedule := context.WithCancel(context.Background())
+	defer stopSchedule()
+	server.StartFolderWriterSchedule(scheduleCtx, cfg, pipeline, store, logger)
+
 	srv := &http.Server{
 		Addr:              cfg.Address,
 		Handler:           handler,

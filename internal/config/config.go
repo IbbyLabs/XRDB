@@ -56,6 +56,26 @@ type Config struct {
 	// the proxy address is not predictable, and opt-in because it makes the
 	// client address spoofable.
 	TrustProxyHeaders bool
+	// FolderWriter writes rendered artwork into the media library. Off by
+	// default and deliberately so: it is the only feature that modifies a
+	// user's files, and leaving it off keeps that guarantee intact.
+	FolderWriter bool
+	// LibraryRoots are the directories the folder writer walks.
+	LibraryRoots []string
+	// FolderWriterSurfaces limits which artwork is written; empty means poster
+	// and backdrop.
+	FolderWriterSurfaces []string
+	// FolderWriterProfile is the profile id or alias whose look library
+	// artwork takes; empty uses the defaults.
+	FolderWriterProfile string
+	// FolderWriterOverwrite replaces artwork already present. Off by default so
+	// a curated poster is not silently replaced.
+	FolderWriterOverwrite bool
+	// FolderWriterPace is the delay between titles, so a first pass over a
+	// large library does not saturate the rating sources.
+	FolderWriterPace time.Duration
+	// FolderWriterInterval re-runs the pass on a schedule; 0 disables it.
+	FolderWriterInterval time.Duration
 }
 
 // loadProviderTTLs builds the per-provider TTL map.
@@ -211,6 +231,13 @@ func Load() Config {
 		LogLevel:              logLevel,
 		TrustedProxies:        os.Getenv("XRDB_TRUSTED_PROXIES"),
 		TrustProxyHeaders:     boolEnv("XRDB_TRUST_PROXY_HEADERS"),
+		FolderWriter:          boolEnv("XRDB_FOLDER_WRITER"),
+		LibraryRoots:          listEnv("XRDB_LIBRARY_ROOTS"),
+		FolderWriterSurfaces:  listEnv("XRDB_FOLDER_WRITER_SURFACES"),
+		FolderWriterProfile:   os.Getenv("XRDB_FOLDER_WRITER_PROFILE"),
+		FolderWriterOverwrite: boolEnv("XRDB_FOLDER_WRITER_OVERWRITE"),
+		FolderWriterPace:      durationEnv("XRDB_FOLDER_WRITER_PACE_MS", time.Millisecond, 250*time.Millisecond),
+		FolderWriterInterval:  durationEnv("XRDB_FOLDER_WRITER_INTERVAL_H", time.Hour, 0),
 	}
 }
 
@@ -222,4 +249,30 @@ func boolEnv(name string) bool {
 		return true
 	}
 	return false
+}
+
+// listEnv reads a comma-separated environment variable into a trimmed slice.
+func listEnv(name string) []string {
+	var out []string
+	for _, part := range strings.Split(os.Getenv(name), ",") {
+		if p := strings.TrimSpace(part); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// durationEnv reads a numeric environment variable in the given unit. An unset
+// or unparseable value takes the fallback, so a typo does not turn a paced
+// scan into an unpaced one.
+func durationEnv(name string, unit time.Duration, fallback time.Duration) time.Duration {
+	raw := strings.TrimSpace(os.Getenv(name))
+	if raw == "" {
+		return fallback
+	}
+	n, err := strconv.ParseFloat(raw, 64)
+	if err != nil || n < 0 {
+		return fallback
+	}
+	return time.Duration(n * float64(unit))
 }
