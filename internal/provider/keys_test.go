@@ -52,3 +52,61 @@ func TestTMDBReadsBothCredentialKinds(t *testing.T) {
 		t.Errorf("fallback gave apiKey=%q readToken=%q", k, tok)
 	}
 }
+
+// A credential that does not match its provider is rejected where the person
+// can still fix it, rather than being routed on a guess and failing silently on
+// every later render.
+func TestValidateKey(t *testing.T) {
+	tmdbV3 := "0123456789abcdef0123456789abcdef"
+	tmdbV4 := "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJ4In0.c2ln"
+	cases := []struct {
+		name, key string
+		ok        bool
+	}{
+		{KeyTMDB, tmdbV3, true},
+		{KeyTMDB, tmdbV4, true},
+		{KeyTMDB, "", true}, // clearing is always allowed
+		// The case this exists for: an MDBList key pasted into the TMDB field
+		// used to be filed as a v3 key and 401 on every render.
+		{KeyTMDB, "mdblist-key-value", false},
+		{KeyTMDB, "eyJ-not-a-jwt", false},
+		{KeyTMDB, "0123456789abcdef", false}, // right alphabet, wrong length
+		{KeyMDBList, "mdblist-key-value", true},
+		{KeyOMDB, "abcd1234", true},
+		{KeyFanart, "0123456789abcdef0123456789abcdef", true},
+		{KeyTrakt, "short", false},
+		{KeySIMKL, "has spaces in it", false},
+		{"notaprovider", "x", false},
+	}
+	for _, tc := range cases {
+		err := ValidateKey(tc.name, tc.key)
+		if tc.ok && err != nil {
+			t.Errorf("ValidateKey(%s, %q) = %v, want accepted", tc.name, tc.key, err)
+		}
+		if !tc.ok && err == nil {
+			t.Errorf("ValidateKey(%s, %q) accepted, want rejected", tc.name, tc.key)
+		}
+	}
+}
+
+// The routing and the validation must agree on what a read token is, or a
+// credential accepted at save could still be filed into the wrong slot.
+func TestReadTokenDetectionMatchesValidation(t *testing.T) {
+	p := NewTMDB("", "")
+	for _, key := range []string{
+		"eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJ4In0.c2ln",
+		"0123456789abcdef0123456789abcdef",
+	} {
+		if err := ValidateKey(KeyTMDB, key); err != nil {
+			t.Fatalf("fixture rejected: %v", err)
+		}
+		apiKey, readToken := p.credentials(WithKeys(context.Background(), map[string]string{KeyTMDB: key}))
+		if IsTMDBReadToken(key) {
+			if readToken != key || apiKey != "" {
+				t.Errorf("read token routed to apiKey=%q readToken=%q", apiKey, readToken)
+			}
+		} else if apiKey != key || readToken != "" {
+			t.Errorf("v3 key routed to apiKey=%q readToken=%q", apiKey, readToken)
+		}
+	}
+}

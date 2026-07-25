@@ -210,6 +210,15 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 					})
 					return
 				}
+				// Credentials are encrypted at rest, so a server with no key
+				// configured says so rather than storing them in the clear.
+				if !store.CanStoreSecrets() {
+					writeJSON(w, http.StatusServiceUnavailable, map[string]string{
+						"error": "This server is not configured to store API keys. Its own keys are used for every render.",
+						"code":  "secrets_unavailable",
+					})
+					return
+				}
 				merged := map[string]string{}
 				for k, v := range existing.ProviderKeys {
 					merged[k] = v
@@ -222,6 +231,16 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 					merged[strings.ToLower(strings.TrimSpace(k))] = v
 				}
 				p.ProviderKeys = provider.FilterSupported(merged)
+				// Check the shape now, while the person can still fix the
+				// field, rather than letting a mistyped key fail on every
+				// later render with nothing saying why.
+				if err := provider.ValidateKeys(p.ProviderKeys); err != nil {
+					writeJSON(w, http.StatusBadRequest, map[string]string{
+						"error": err.Error(),
+						"code":  "invalid_key",
+					})
+					return
+				}
 			}
 			// Removing the password takes the stored credentials with it.
 			if p.PasswordHash == "" {

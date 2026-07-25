@@ -43,6 +43,9 @@ type Config struct {
 	AnimeMapRefresh       time.Duration            // anime mapping dataset refresh interval; 0 = default (7 days)
 	ProviderTTLs          map[string]time.Duration // per-provider TTL overrides; key = provider name
 	AdminKey              string                   // protects /api/admin/* routes
+	// ConfigEncryptionKey encrypts owner-supplied provider credentials at rest.
+	// Unset means the server will not accept them.
+	ConfigEncryptionKey string
 	APIKey                string                   // if set, required on all render routes
 	RenderConcurrency     int                      // max simultaneous renders; caps memory under bursts
 	MemoryLimitBytes      int64                    // soft heap limit (debug.SetMemoryLimit); 0 = unset
@@ -226,6 +229,7 @@ func Load() Config {
 		ProviderTTLs:          loadProviderTTLs(cacheTTL),
 		AdminKey:              os.Getenv("XRDB_ADMIN_KEY"),
 		APIKey:                os.Getenv("XRDB_API_KEY"),
+		ConfigEncryptionKey:   os.Getenv("XRDB_CONFIG_ENCRYPTION_KEY"),
 		RenderConcurrency:     renderConcurrency,
 		MemoryLimitBytes:      memoryLimitBytes,
 		LogLevel:              logLevel,

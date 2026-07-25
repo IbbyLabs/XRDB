@@ -97,6 +97,16 @@ func main() {
 		os.Exit(1)
 	}
 	defer func() { _ = store.Close() }()
+	// Owner-supplied provider credentials are encrypted at rest. Without a key
+	// the store refuses to hold them rather than writing them in the clear.
+	if err := store.SetEncryptionKey(cfg.ConfigEncryptionKey); err != nil {
+		logger.Error("Failed to install the config encryption key", "error", err)
+		os.Exit(1)
+	}
+	if !store.CanStoreSecrets() {
+		logger.Warn("No XRDB_CONFIG_ENCRYPTION_KEY is set, so profiles cannot store their own provider API keys",
+			"effect", "requests to save a key are refused; every render uses the server's keys")
+	}
 
 	settingsStore, err := settings.Open(cfg.DBPath + ".settings")
 	if err != nil {

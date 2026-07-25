@@ -52,7 +52,7 @@ func TestProviderKeysRejectedWithoutAPassword(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	rr := putProfile(t, h, p.ID, `{"type":"poster","config":{},"providerKeys":{"tmdb":"secret-value"}}`)
+	rr := putProfile(t, h, p.ID, `{"type":"poster","config":{},"providerKeys":{"tmdb":"0123456789abcdef0123456789abcdef"}}`)
 	if rr.Code != http.StatusConflict {
 		t.Fatalf("got %d, want 409: %s", rr.Code, rr.Body.String())
 	}
@@ -79,7 +79,7 @@ func TestProviderKeysStoredOnAProtectedProfile(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	rr := putProfile(t, h, p.ID, `{"type":"poster","config":{},"providerKeys":{"tmdb":"secret-value","mdblist":"other-value"}}`, "hunter2")
+	rr := putProfile(t, h, p.ID, `{"type":"poster","config":{},"providerKeys":{"tmdb":"0123456789abcdef0123456789abcdef","mdblist":"mdblist-key-value"}}`, "hunter2")
 	if rr.Code != http.StatusOK {
 		t.Fatalf("got %d, want 200: %s", rr.Code, rr.Body.String())
 	}
@@ -87,7 +87,7 @@ func TestProviderKeysStoredOnAProtectedProfile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if stored.ProviderKeys["tmdb"] != "secret-value" {
+	if stored.ProviderKeys["tmdb"] != "0123456789abcdef0123456789abcdef" {
 		t.Errorf("tmdb key not stored: %v", stored.KeysSet)
 	}
 	if got := strings.Join(stored.KeysSet, ","); got != "mdblist,tmdb" {
@@ -106,7 +106,7 @@ func TestProviderKeyValuesAreNeverReturned(t *testing.T) {
 	if err := store.SetPassword(p.ID, "hunter2"); err != nil {
 		t.Fatal(err)
 	}
-	if rr := putProfile(t, h, p.ID, `{"type":"poster","config":{},"providerKeys":{"tmdb":"secret-value"}}`, "hunter2"); rr.Code != http.StatusOK {
+	if rr := putProfile(t, h, p.ID, `{"type":"poster","config":{},"providerKeys":{"tmdb":"0123456789abcdef0123456789abcdef"}}`, "hunter2"); rr.Code != http.StatusOK {
 		t.Fatalf("put: %d %s", rr.Code, rr.Body.String())
 	}
 
@@ -118,7 +118,7 @@ func TestProviderKeyValuesAreNeverReturned(t *testing.T) {
 		if rr.Code != http.StatusOK {
 			t.Fatalf("GET %s = %d", path, rr.Code)
 		}
-		if strings.Contains(rr.Body.String(), "secret-value") {
+		if strings.Contains(rr.Body.String(), "0123456789abcdef0123456789abcdef") {
 			t.Errorf("GET %s leaked the key value", path)
 		}
 		if !strings.Contains(rr.Body.String(), "keysSet") {
@@ -138,7 +138,7 @@ func TestClearingThePasswordClearsTheKeys(t *testing.T) {
 	if err := store.SetPassword(p.ID, "hunter2"); err != nil {
 		t.Fatal(err)
 	}
-	if rr := putProfile(t, h, p.ID, `{"type":"poster","config":{},"providerKeys":{"tmdb":"secret-value"}}`, "hunter2"); rr.Code != http.StatusOK {
+	if rr := putProfile(t, h, p.ID, `{"type":"poster","config":{},"providerKeys":{"tmdb":"0123456789abcdef0123456789abcdef"}}`, "hunter2"); rr.Code != http.StatusOK {
 		t.Fatalf("put: %d", rr.Code)
 	}
 
@@ -164,7 +164,7 @@ func TestProviderKeysOmittedArePreservedAndBlankClearsOne(t *testing.T) {
 	if err := store.SetPassword(p.ID, "hunter2"); err != nil {
 		t.Fatal(err)
 	}
-	putProfile(t, h, p.ID, `{"type":"poster","config":{},"providerKeys":{"tmdb":"a","mdblist":"b"}}`, "hunter2")
+	putProfile(t, h, p.ID, `{"type":"poster","config":{},"providerKeys":{"tmdb":"0123456789abcdef0123456789abcdef","mdblist":"mdblist-key-value"}}`, "hunter2")
 
 	// Omitted: both survive an unrelated edit.
 	if rr := putProfile(t, h, p.ID, `{"type":"poster","config":{"size":"large"}}`, "hunter2"); rr.Code != http.StatusOK {
@@ -210,7 +210,7 @@ func TestOwnerKeyReachesTheProviderOnRender(t *testing.T) {
 	if err := store.SetPassword(p.ID, "pw"); err != nil {
 		t.Fatal(err)
 	}
-	if rr := putProfile(t, h, p.ID, `{"type":"poster","config":{},"providerKeys":{"tmdb":"owner-key"}}`, "pw"); rr.Code != http.StatusOK {
+	if rr := putProfile(t, h, p.ID, `{"type":"poster","config":{},"providerKeys":{"tmdb":"0123456789abcdef0123456789abcdef"}}`, "pw"); rr.Code != http.StatusOK {
 		t.Fatalf("store key: %d %s", rr.Code, rr.Body.String())
 	}
 
@@ -219,7 +219,7 @@ func TestOwnerKeyReachesTheProviderOnRender(t *testing.T) {
 	if rr.Code != http.StatusOK {
 		t.Fatalf("render: %d", rr.Code)
 	}
-	if stub.SawKey() != "owner-key" {
+	if stub.SawKey() != "0123456789abcdef0123456789abcdef" {
 		t.Errorf("provider saw %q, want the owner's key", stub.SawKey())
 	}
 
@@ -229,5 +229,30 @@ func TestOwnerKeyReachesTheProviderOnRender(t *testing.T) {
 	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/poster/tt0111161", nil))
 	if stub.SawKey() != "" {
 		t.Errorf("a profile-less render carried %q", stub.SawKey())
+	}
+}
+
+// A mistyped credential is refused at save, naming what was expected, rather
+// than being stored and failing on every later render.
+func TestAMistypedKeyIsRefusedAtSave(t *testing.T) {
+	h, store := keysHandler(t)
+	p := &profile.Profile{ID: newTestID(t), Type: "poster", Config: json.RawMessage(`{}`)}
+	if err := store.Save(p); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.SetPassword(p.ID, "pw"); err != nil {
+		t.Fatal(err)
+	}
+
+	rr := putProfile(t, h, p.ID, `{"type":"poster","config":{},"providerKeys":{"tmdb":"mdblist-key-value"}}`, "pw")
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("got %d, want 400: %s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(rr.Body.String(), "TMDB") {
+		t.Errorf("the message does not say which field is wrong: %s", rr.Body.String())
+	}
+	stored, _ := store.Get(p.ID)
+	if len(stored.KeysSet) != 0 {
+		t.Errorf("a rejected key was stored: %v", stored.KeysSet)
 	}
 }

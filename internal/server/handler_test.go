@@ -28,6 +28,11 @@ func openTestStore(t *testing.T) *profile.Store {
 	if err != nil {
 		t.Fatalf("open test store: %v", err)
 	}
+	// Provider credentials are encrypted at rest, so the store needs a key to
+	// hold any. A fixed one keeps the tests deterministic.
+	if err := s.SetEncryptionKey(strings.Repeat("a1", 32)); err != nil {
+		t.Fatalf("set encryption key: %v", err)
+	}
 	t.Cleanup(func() { _ = s.Close() })
 	return s
 }

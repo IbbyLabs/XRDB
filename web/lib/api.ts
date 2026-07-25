@@ -156,6 +156,14 @@ export async function updateProfile(
   if (res.status === 401) throw new Error(NEEDS_KEY_OR_PASSWORD);
   if (!res.ok) {
     const text = await res.text();
+    // The server answers a refused save with a sentence written for the person
+    // reading it; show that rather than the JSON around it.
+    try {
+      const body = JSON.parse(text) as { error?: string };
+      if (body.error) throw new Error(body.error);
+    } catch (e) {
+      if (e instanceof Error && e.message && !e.message.startsWith('Unexpected')) throw e;
+    }
     throw new Error(text || `update profile failed: ${res.status}`);
   }
   return res.json() as Promise<Profile>;

@@ -56,7 +56,7 @@ func (t *TMDB) credentials(ctx context.Context) (apiKey, readToken string) {
 	// TMDB issues two kinds and the endpoints differ, so which slot it fills is
 	// read off the value: a v4 read token is a JWT, a v3 key is a plain hex id.
 	if k := keyFrom(ctx, KeyTMDB); k != "" {
-		if strings.HasPrefix(k, "eyJ") {
+		if IsTMDBReadToken(k) {
 			return "", k
 		}
 		return k, ""

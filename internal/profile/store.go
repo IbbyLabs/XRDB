@@ -1,6 +1,7 @@
 package profile
 
 import (
+	"crypto/cipher"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
@@ -75,6 +76,9 @@ func ValidAlias(alias string) bool { return aliasRe.MatchString(alias) }
 // Store provides SQLite-backed profile persistence.
 type Store struct {
 	db *sql.DB
+	// aead encrypts provider credentials at rest; nil means the store cannot
+	// hold them. See secrets.go.
+	aead cipher.AEAD
 }
 
 // Open opens (or creates) the SQLite database at path and applies the schema.
@@ -169,10 +173,14 @@ func (s *Store) Save(p *Profile) error {
 	p.CreatedAt = now
 	p.UpdatedAt = now
 
+	sealedKeys, err := s.encodeProviderKeys(p.ProviderKeys)
+	if err != nil {
+		return err
+	}
 	_, err = s.db.Exec(
 		`INSERT INTO profiles (id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		p.ID, p.Name, p.Alias, p.Type, p.UUID, string(cfg), p.Version, p.CreatedAt, p.UpdatedAt, p.PasswordHash, encodeProviderKeys(p.ProviderKeys),
+		p.ID, p.Name, p.Alias, p.Type, p.UUID, string(cfg), p.Version, p.CreatedAt, p.UpdatedAt, p.PasswordHash, sealedKeys,
 	)
 	if err != nil {
 		if isAliasConflict(err) {
@@ -194,7 +202,7 @@ func (s *Store) Get(id string) (*Profile, error) {
 		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys
 		 FROM profiles WHERE id = ?`, id,
 	)
-	return scanProfile(row)
+	return s.scanProfile(row)
 }
 
 // Resolve retrieves a profile by ID, then alias, then legacy v2 uuid. The uuid
@@ -214,7 +222,7 @@ func (s *Store) Resolve(idOrAlias string) (*Profile, error) {
 		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys
 		 FROM profiles WHERE alias = ? AND alias != ''`, key,
 	)
-	p, err = scanProfile(row)
+	p, err = s.scanProfile(row)
 	if err == nil {
 		return p, nil
 	}
@@ -228,7 +236,7 @@ func (s *Store) Resolve(idOrAlias string) (*Profile, error) {
 		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys
 		 FROM profiles WHERE uuid = ? AND uuid != '' ORDER BY created_at, id LIMIT 1`, strings.TrimSpace(idOrAlias),
 	)
-	return scanProfile(row)
+	return s.scanProfile(row)
 }
 
 // GetByUUID retrieves the oldest profile carrying the given legacy v2 uuid, or
@@ -244,7 +252,7 @@ func (s *Store) GetByUUID(uuid string) (*Profile, error) {
 		`SELECT id, name, alias, type, uuid, config, version, created_at, updated_at, password_hash, provider_keys
 		 FROM profiles WHERE uuid = ? AND uuid != '' ORDER BY created_at, id LIMIT 1`, uuid,
 	)
-	return scanProfile(row)
+	return s.scanProfile(row)
 }
 
 // HasPassword reports whether the profile with the given ID has a password set.
@@ -317,10 +325,14 @@ func (s *Store) Update(p *Profile) error {
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 	p.UpdatedAt = now
 
+	sealedKeys, err := s.encodeProviderKeys(p.ProviderKeys)
+	if err != nil {
+		return err
+	}
 	res, err := s.db.Exec(
 		`UPDATE profiles SET name = ?, alias = ?, uuid = ?, config = ?, updated_at = ?, password_hash = ?, provider_keys = ?
 		 WHERE id = ?`,
-		p.Name, p.Alias, p.UUID, string(cfg), now, p.PasswordHash, encodeProviderKeys(p.ProviderKeys), p.ID,
+		p.Name, p.Alias, p.UUID, string(cfg), now, p.PasswordHash, sealedKeys, p.ID,
 	)
 	if err != nil {
 		if isAliasConflict(err) {
@@ -376,7 +388,7 @@ func (s *Store) List() ([]*Profile, error) {
 		}
 		p.Config = json.RawMessage(cfgStr)
 		p.HasPassword = p.PasswordHash != ""
-		p.ProviderKeys = decodeProviderKeys(keysStr)
+		p.ProviderKeys = s.decodeProviderKeys(keysStr)
 		p.KeysSet = configuredKeyNames(p.ProviderKeys)
 		p.VersionToken = versionToken(p.ID, p.UpdatedAt)
 		out = append(out, &p)
@@ -384,7 +396,7 @@ func (s *Store) List() ([]*Profile, error) {
 	return out, rows.Err()
 }
 
-func scanProfile(row *sql.Row) (*Profile, error) {
+func (s *Store) scanProfile(row *sql.Row) (*Profile, error) {
 	var p Profile
 	var cfgStr, keysStr string
 	err := row.Scan(&p.ID, &p.Name, &p.Alias, &p.Type, &p.UUID, &cfgStr, &p.Version, &p.CreatedAt, &p.UpdatedAt, &p.PasswordHash, &keysStr)
@@ -396,7 +408,7 @@ func scanProfile(row *sql.Row) (*Profile, error) {
 	}
 	p.Config = json.RawMessage(cfgStr)
 	p.HasPassword = p.PasswordHash != ""
-	p.ProviderKeys = decodeProviderKeys(keysStr)
+	p.ProviderKeys = s.decodeProviderKeys(keysStr)
 	p.KeysSet = configuredKeyNames(p.ProviderKeys)
 	p.VersionToken = versionToken(p.ID, p.UpdatedAt)
 	return &p, nil
@@ -404,7 +416,7 @@ func scanProfile(row *sql.Row) (*Profile, error) {
 
 // encodeProviderKeys serializes the owner's keys for storage, dropping blanks
 // so clearing one leaves nothing behind.
-func encodeProviderKeys(keys map[string]string) string {
+func (s *Store) encodeProviderKeys(keys map[string]string) (string, error) {
 	trimmed := make(map[string]string, len(keys))
 	for k, v := range keys {
 		if v = strings.TrimSpace(v); v != "" {
@@ -412,21 +424,22 @@ func encodeProviderKeys(keys map[string]string) string {
 		}
 	}
 	if len(trimmed) == 0 {
-		return "{}"
+		return "", nil
 	}
 	b, err := json.Marshal(trimmed)
 	if err != nil {
-		return "{}"
+		return "", fmt.Errorf("encode provider keys: %w", err)
 	}
-	return string(b)
+	return s.sealSecret(string(b))
 }
 
-func decodeProviderKeys(raw string) map[string]string {
-	if strings.TrimSpace(raw) == "" {
+func (s *Store) decodeProviderKeys(stored string) map[string]string {
+	plain := s.openSecret(stored)
+	if plain == "" {
 		return nil
 	}
 	var out map[string]string
-	if err := json.Unmarshal([]byte(raw), &out); err != nil {
+	if err := json.Unmarshal([]byte(plain), &out); err != nil {
 		return nil
 	}
 	return out
