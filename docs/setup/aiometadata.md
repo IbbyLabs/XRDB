@@ -20,11 +20,17 @@ Set AIOMetadata's poster provider to **custom** and paste these into its custom
 artwork fields, replacing the host and alias:
 
 ```
-https://your-xrdb-host/poster/{imdb_id}?config=your-alias
-https://your-xrdb-host/backdrop/{imdb_id}?config=your-alias
-https://your-xrdb-host/logo/{imdb_id}?config=your-alias
-https://your-xrdb-host/thumbnail/{imdb_id}:{season}:{episode}?config=your-alias
+https://your-xrdb-host/poster/{id}?config=your-alias
+https://your-xrdb-host/backdrop/{id}?config=your-alias
+https://your-xrdb-host/logo/{id}?config=your-alias
+https://your-xrdb-host/thumbnail/{id}:{season}:{episode}?config=your-alias
 ```
+
+Use `{id}` rather than `{imdb_id}`. Anime and TVDB-sourced catalogues give
+their items ids like `kitsu:123`, leaving `{imdb_id}` empty, and AIOMetadata
+drops the whole URL when a placeholder it references has no value, so those
+titles keep their plain artwork. XRDB reads `tt`, `tmdb:`, `tvdb:`, `kitsu:`,
+`mal:` and `anilist:` ids.
 
 The **Install** tab shows these ready to copy, with your alias already in place
 and a version token appended so an edit is picked up.

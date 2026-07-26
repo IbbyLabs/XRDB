@@ -48,13 +48,18 @@ export function aiomPatterns(configKey: string, renderKey?: string, versionToken
   if (versionToken) params.set('v', versionToken);
   const qs = params.toString();
   const suffix = qs ? `?${qs}` : '';
+  // {id} is the catalogue item's own id, which is always set. {imdb_id} is
+  // empty for anime and TVDB-sourced items, and AIOMetadata drops the whole
+  // URL when a placeholder it references has no value, so those titles would
+  // silently keep their plain artwork. XRDB reads tt, tmdb:, tvdb:, kitsu:,
+  // mal: and anilist: ids.
   return {
-    poster:    `${origin}/poster/{imdb_id}${suffix}`,
-    backdrop:  `${origin}/backdrop/{imdb_id}${suffix}`,
-    logo:      `${origin}/logo/{imdb_id}${suffix}`,
+    poster:    `${origin}/poster/{id}${suffix}`,
+    backdrop:  `${origin}/backdrop/{id}${suffix}`,
+    logo:      `${origin}/logo/{id}${suffix}`,
     // Episode thumbnails carry the season/episode so XRDB renders and rates the
     // specific episode. {season}/{episode} are AIOMetadata placeholders.
-    thumbnail: `${origin}/thumbnail/{imdb_id}:{season}:{episode}${suffix}`,
+    thumbnail: `${origin}/thumbnail/{id}:{season}:{episode}${suffix}`,
   };
 }
 
