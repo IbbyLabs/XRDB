@@ -98,6 +98,55 @@ type animeResolver interface {
 // SetAnimeResolver attaches the anime ID mapper.
 func (p *Pipeline) SetAnimeResolver(r animeResolver) { p.anime = r }
 
+// animeTargetResolver maps an anime-service id back to IMDb/TMDB. Optional:
+// a resolver that does not implement it leaves anime ids untranslated.
+type animeTargetResolver interface {
+	ResolveTarget(ctx context.Context, id string) (animemap.Target, bool)
+}
+
+// resolveAnimeID rewrites a MAL, AniList or Kitsu id into the IMDb or TMDB id
+// the artwork and rating sources are keyed on. Catalogues sourced from those
+// services hand out ids nothing else in the pipeline understands. A trailing
+// season and episode is carried across so episode thumbnails still resolve.
+func (p *Pipeline) resolveAnimeID(ctx context.Context, req Request) Request {
+	resolver, ok := p.anime.(animeTargetResolver)
+	if !ok || resolver == nil {
+		return req
+	}
+	service, num, ok := animemap.ParseAnimeID(req.MediaID)
+	if !ok {
+		return req
+	}
+	head := service + ":" + strconv.Itoa(num)
+	// Anything after the service and number is a season and episode. Split on
+	// the raw id rather than the rebuilt head, which differs for aliases.
+	tail := ""
+	if parts := strings.SplitN(req.MediaID, ":", 3); len(parts) == 3 {
+		tail = ":" + parts[2]
+	}
+	target, ok := resolver.ResolveTarget(ctx, head)
+	if !ok {
+		p.log().DebugContext(ctx, "No mainstream id is mapped for this anime id",
+			"id", logging.RequestID(ctx), "media_id", req.MediaID)
+		return req
+	}
+	switch {
+	case target.IMDb != "":
+		req.MediaID = target.IMDb + tail
+	case target.TMDB != 0:
+		kind := "series"
+		if target.TMDBType == "movie" {
+			kind = "movie"
+		}
+		req.MediaID = "tmdb:" + kind + ":" + strconv.Itoa(target.TMDB) + tail
+	default:
+		return req
+	}
+	p.log().DebugContext(ctx, "Resolved an anime id to its mainstream id",
+		"id", logging.RequestID(ctx), "from", head, "to", req.MediaID)
+	return req
+}
+
 // isAnimeTitle reports whether the requested title is a known anime.
 func (p *Pipeline) isAnimeTitle(ctx context.Context, req Request) bool {
 	if p.anime == nil {
@@ -280,6 +329,7 @@ func (p *Pipeline) log() *slog.Logger {
 // Render executes the composition pipeline for the given request.
 // Falls back to a type-colored placeholder if any step fails.
 func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
+	req = p.resolveAnimeID(ctx, req)
 	dim := render.DimensionsForSize(req.MediaType, string(req.Config.Size))
 	cacheKey := buildCacheKey(req)
 	result := &Result{

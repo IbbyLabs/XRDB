@@ -397,7 +397,7 @@ func TestPrimaryColdLoadIsSingleFlight(t *testing.T) {
 
 func TestBuildIndexesRejectsInvalid(t *testing.T) {
 	for _, bad := range []string{"", "{}", "[]", "not json"} {
-		if _, _, _, err := buildIndexes([]byte(bad)); err == nil {
+		if _, err := buildIndexes([]byte(bad)); err == nil {
 			t.Errorf("buildIndexes(%q): expected error", bad)
 		}
 	}
@@ -406,8 +406,72 @@ func TestBuildIndexesRejectsInvalid(t *testing.T) {
 func TestBuildSupplementIndexesRejectsInvalid(t *testing.T) {
 	// Last case parses but yields no usable mappings (no target ids).
 	for _, bad := range []string{"", "{}", "[]", "not json", `[{"title":"x","imdb":"tt0000000"}]`} {
-		if _, _, _, err := buildSupplementIndexes([]byte(bad)); err == nil {
+		if _, err := buildSupplementIndexes([]byte(bad)); err == nil {
 			t.Errorf("buildSupplementIndexes(%q): expected error", bad)
 		}
+	}
+}
+
+func TestParseAnimeID(t *testing.T) {
+	tests := []struct {
+		in      string
+		service string
+		num     int
+		ok      bool
+	}{
+		{"kitsu:12", "kitsu", 12, true},
+		{"mal:21", "mal", 21, true},
+		{"myanimelist:21", "mal", 21, true},
+		{"anilist:21", "anilist", 21, true},
+		{"KITSU:12", "kitsu", 12, true},
+		{"kitsu:12:1:5", "kitsu", 12, true},
+		{"tt0388629", "", 0, false},
+		{"tmdb:37854", "", 0, false},
+		{"kitsu:0", "", 0, false},
+		{"kitsu:abc", "", 0, false},
+		{"", "", 0, false},
+	}
+	for _, tc := range tests {
+		service, num, ok := ParseAnimeID(tc.in)
+		if ok != tc.ok || service != tc.service || num != tc.num {
+			t.Errorf("ParseAnimeID(%q) = (%q, %d, %v), want (%q, %d, %v)",
+				tc.in, service, num, ok, tc.service, tc.num, tc.ok)
+		}
+	}
+}
+
+// Catalogues sourced from MAL or Kitsu hand out ids no artwork or rating
+// source understands, so they have to resolve back to IMDb or TMDB.
+func TestResolveTargetFromDataset(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(sampleDataset))
+	}))
+	defer srv.Close()
+
+	m := newTestMapper(t, srv.URL, "")
+
+	tests := []struct {
+		name, id string
+		wantIMDb string
+		ok       bool
+	}{
+		{"kitsu tv", "kitsu:12", "tt0388629", true},
+		{"mal tv", "mal:21", "tt0388629", true},
+		{"anilist tv", "anilist:21", "tt0388629", true},
+		{"kitsu movie", "kitsu:176", "tt0245429", true},
+		{"episode id keeps resolving", "kitsu:12:1:5", "tt0388629", true},
+		{"unknown anime id", "kitsu:99999999", "", false},
+		{"not an anime id", "tt0388629", "", false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, ok := m.ResolveTarget(context.Background(), tc.id)
+			if ok != tc.ok {
+				t.Fatalf("ResolveTarget(%q) ok = %v, want %v", tc.id, ok, tc.ok)
+			}
+			if ok && got.IMDb != tc.wantIMDb {
+				t.Errorf("ResolveTarget(%q) IMDb = %q, want %q", tc.id, got.IMDb, tc.wantIMDb)
+			}
+		})
 	}
 }

@@ -38,6 +38,68 @@ type IDs struct {
 
 func (ids IDs) empty() bool { return ids.MAL == 0 && ids.AniList == 0 && ids.Kitsu == 0 }
 
+// Target is the mainstream identifier an anime id maps back to. Artwork and
+// most rating sources are keyed on IMDb or TMDB, so an anime id has to be
+// translated before anything else can be fetched for it.
+type Target struct {
+	IMDb string
+	TMDB int
+	// TMDBType is "movie" or "tv" when TMDB is set, and empty otherwise.
+	TMDBType string
+}
+
+func (t Target) empty() bool { return t.IMDb == "" && t.TMDB == 0 }
+
+// ParseAnimeID splits an anime-service id into its service and number.
+// Recognises mal, myanimelist, anilist and kitsu, with or without a "series"
+// or "movie" segment after the number.
+func ParseAnimeID(id string) (service string, num int, ok bool) {
+	id = strings.ToLower(strings.TrimSpace(id))
+	prefix, rest, found := strings.Cut(id, ":")
+	if !found {
+		return "", 0, false
+	}
+	switch prefix {
+	case "mal", "myanimelist":
+		service = "mal"
+	case "anilist":
+		service = "anilist"
+	case "kitsu":
+		service = "kitsu"
+	default:
+		return "", 0, false
+	}
+	// Kitsu episode ids carry a trailing ":season:episode" or similar.
+	if i := strings.Index(rest, ":"); i > 0 {
+		rest = rest[:i]
+	}
+	n, err := strconv.Atoi(strings.TrimSpace(rest))
+	if err != nil || n <= 0 {
+		return "", 0, false
+	}
+	return service, n, true
+}
+
+// animeKey is the reverse-index key for one anime-service id.
+func animeKey(service string, num int) string {
+	return service + ":" + strconv.Itoa(num)
+}
+
+// reverseKeys returns every key a title should be findable under.
+func reverseKeys(ids IDs) []string {
+	keys := make([]string, 0, 3)
+	if ids.MAL != 0 {
+		keys = append(keys, animeKey("mal", ids.MAL))
+	}
+	if ids.AniList != 0 {
+		keys = append(keys, animeKey("anilist", ids.AniList))
+	}
+	if ids.Kitsu != 0 {
+		keys = append(keys, animeKey("kitsu", ids.Kitsu))
+	}
+	return keys
+}
+
 const (
 	// DefaultDatasetURL is the Fribb/anime-lists "mini" list (~6 MB), which
 	// carries every ID XRDB needs (mal/anilist/kitsu/imdb/themoviedb).
@@ -103,9 +165,17 @@ type fallbackEntry struct {
 }
 
 // datasetParser turns raw dataset bytes into the IMDb, TMDB-movie and TMDB-TV
-// indexes. Different sources carry different on-disk schemas but share this
-// index shape.
-type datasetParser func(data []byte) (imdb map[string]indexed, movie map[int]indexed, tv map[int]indexed, err error)
+// indexes plus the reverse index from anime id back to IMDb/TMDB. Different
+// sources carry different on-disk schemas but share this index shape.
+type datasetParser func(data []byte) (idx indexes, err error)
+
+// indexes is one dataset's parsed lookup tables.
+type indexes struct {
+	imdb    map[string]indexed
+	movie   map[int]indexed
+	tv      map[int]indexed
+	reverse map[string]Target
+}
 
 // source is one disk-cached dataset (primary or supplement) with its own
 // indexes and refresh lifecycle. Safe for concurrent use.
@@ -130,6 +200,7 @@ type source struct {
 	byIMDb      map[string]indexed
 	byTMDBMovie map[int]indexed
 	byTMDBTV    map[int]indexed
+	byAnimeID   map[string]Target
 }
 
 // New creates a Mapper. Datasets load lazily on first Resolve.
@@ -207,6 +278,38 @@ func (m *Mapper) Resolve(ctx context.Context, mediaType, id string) (IDs, bool) 
 		}
 	}
 	return m.resolveFallback(ctx, id)
+}
+
+// ResolveTarget maps an anime-service id back to its IMDb/TMDB identifier.
+// Catalogues sourced from MAL or Kitsu hand out ids like "kitsu:123", which no
+// artwork or rating source understands on its own.
+func (m *Mapper) ResolveTarget(ctx context.Context, id string) (Target, bool) {
+	service, num, ok := ParseAnimeID(id)
+	if !ok {
+		return Target{}, false
+	}
+	key := animeKey(service, num)
+	if t, ok := m.primary.lookupTarget(key); ok {
+		return t, true
+	}
+	if m.supplement != nil {
+		if t, ok := m.supplement.lookupTarget(key); ok {
+			return t, true
+		}
+	}
+	return Target{}, false
+}
+
+// lookupTarget resolves an anime id against this source's reverse index.
+func (s *source) lookupTarget(key string) (Target, bool) {
+	s.ensureLoaded()
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	t, ok := s.byAnimeID[key]
+	if !ok || t.empty() {
+		return Target{}, false
+	}
+	return t, true
 }
 
 // lookup loads the source if needed, then resolves id against its indexes.
@@ -329,11 +432,11 @@ func (s *source) loadFromDiskLocked() error {
 	if err != nil {
 		return err
 	}
-	imdb, movie, tv, err := s.parse(data)
+	idx, err := s.parse(data)
 	if err != nil {
 		return err
 	}
-	s.byIMDb, s.byTMDBMovie, s.byTMDBTV = imdb, movie, tv
+	s.byIMDb, s.byTMDBMovie, s.byTMDBTV, s.byAnimeID = idx.imdb, idx.movie, idx.tv, idx.reverse
 	s.loadedAt = info.ModTime()
 	return nil
 }
@@ -347,7 +450,7 @@ func (s *source) downloadAndStore() error {
 		return err
 	}
 	// Validate before persisting so a bad body never replaces a good cache.
-	if _, _, _, err := s.parse(data); err != nil {
+	if _, err := s.parse(data); err != nil {
 		return fmt.Errorf("animemap: invalid dataset: %w", err)
 	}
 	if err := os.MkdirAll(filepath.Dir(s.path), 0o755); err != nil {
@@ -486,36 +589,67 @@ type datasetEntry struct {
 	Season    seasonRef `json:"season"`
 }
 
-func buildIndexes(data []byte) (map[string]indexed, map[int]indexed, map[int]indexed, error) {
+func buildIndexes(data []byte) (indexes, error) {
 	var entries []datasetEntry
 	if err := json.Unmarshal(data, &entries); err != nil {
-		return nil, nil, nil, err
+		return indexes{}, err
 	}
 	if len(entries) == 0 {
-		return nil, nil, nil, fmt.Errorf("empty dataset")
+		return indexes{}, fmt.Errorf("empty dataset")
 	}
-	imdb := make(map[string]indexed)
-	movie := make(map[int]indexed)
-	tv := make(map[int]indexed)
+	idx := indexes{
+		imdb:    make(map[string]indexed),
+		movie:   make(map[int]indexed),
+		tv:      make(map[int]indexed),
+		reverse: make(map[string]Target),
+	}
+	ranks := make(map[string]int)
 	for _, e := range entries {
 		ids := IDs{MAL: int(e.MALID), AniList: int(e.AniListID), Kitsu: int(e.KitsuID)}
 		if ids.empty() {
 			continue
 		}
 		item := indexed{ids: ids, rank: e.Season.rank}
+		var target Target
 		for _, imdbID := range e.IMDbID {
 			if imdbID != "" {
-				insert(imdb, imdbID, item)
+				insert(idx.imdb, imdbID, item)
+				if target.IMDb == "" {
+					target.IMDb = imdbID
+				}
 			}
 		}
 		if e.TMDBID.Movie != 0 {
-			insert(movie, e.TMDBID.Movie, item)
+			insert(idx.movie, e.TMDBID.Movie, item)
+			if target.TMDB == 0 {
+				target.TMDB, target.TMDBType = e.TMDBID.Movie, "movie"
+			}
 		}
 		if e.TMDBID.TV != 0 {
-			insert(tv, e.TMDBID.TV, item)
+			insert(idx.tv, e.TMDBID.TV, item)
+			if target.TMDB == 0 {
+				target.TMDB, target.TMDBType = e.TMDBID.TV, "tv"
+			}
 		}
+		insertTarget(idx.reverse, ranks, ids, target, e.Season.rank)
 	}
-	return imdb, movie, tv, nil
+	return idx, nil
+}
+
+// insertTarget records the mainstream ids a title maps back to, under every
+// anime id it is known by. Ranking matches insert: an earlier season wins, and
+// the first row wins ties. ranks carries the rank each key was stored at.
+func insertTarget(rev map[string]Target, ranks map[string]int, ids IDs, target Target, rank int) {
+	if target.empty() {
+		return
+	}
+	for _, key := range reverseKeys(ids) {
+		if _, ok := rev[key]; ok && ranks[key] <= rank {
+			continue
+		}
+		rev[key] = target
+		ranks[key] = rank
+	}
 }
 
 // supplementEntry mirrors the relevant fields of a nattadasu/animeApi row.
@@ -532,17 +666,19 @@ type supplementEntry struct {
 // buildSupplementIndexes parses the nattadasu/animeApi dataset. It indexes only
 // rows that carry an IMDb/TMDB key and at least one target ID, so the large raw
 // file collapses to the few thousand entries XRDB can actually use.
-func buildSupplementIndexes(data []byte) (map[string]indexed, map[int]indexed, map[int]indexed, error) {
+func buildSupplementIndexes(data []byte) (indexes, error) {
 	var entries []supplementEntry
 	if err := json.Unmarshal(data, &entries); err != nil {
-		return nil, nil, nil, err
+		return indexes{}, err
 	}
 	if len(entries) == 0 {
-		return nil, nil, nil, fmt.Errorf("empty supplement dataset")
+		return indexes{}, fmt.Errorf("empty supplement dataset")
 	}
 	imdb := make(map[string]indexed)
 	movie := make(map[int]indexed)
 	tv := make(map[int]indexed)
+	reverse := make(map[string]Target)
+	ranks := make(map[string]int)
 	for _, e := range entries {
 		ids := IDs{MAL: int(e.MAL), AniList: int(e.AniList), Kitsu: int(e.Kitsu)}
 		if ids.empty() {
@@ -551,10 +687,17 @@ func buildSupplementIndexes(data []byte) (map[string]indexed, map[int]indexed, m
 		// The supplement has no season field; rank 0 means first-seen wins on
 		// the rare duplicate key, matching insert's tie-break.
 		item := indexed{ids: ids, rank: 0}
+		var target Target
 		if strings.HasPrefix(e.IMDb, "tt") {
 			insert(imdb, e.IMDb, item)
+			target.IMDb = e.IMDb
 		}
 		if n := int(e.TMDB); n != 0 {
+			target.TMDB = n
+			target.TMDBType = "movie"
+			if strings.EqualFold(e.TMDBType, "tv") {
+				target.TMDBType = "tv"
+			}
 			// Use the explicit type; an unknown/blank type goes to the movie
 			// index, and lookup's movie⇄TV fall-through still resolves it.
 			if strings.EqualFold(e.TMDBType, "tv") {
@@ -563,11 +706,12 @@ func buildSupplementIndexes(data []byte) (map[string]indexed, map[int]indexed, m
 				insert(movie, n, item)
 			}
 		}
+		insertTarget(reverse, ranks, ids, target, 0)
 	}
 	if len(imdb) == 0 && len(movie) == 0 && len(tv) == 0 {
-		return nil, nil, nil, fmt.Errorf("supplement dataset has no usable mappings")
+		return indexes{}, fmt.Errorf("supplement dataset has no usable mappings")
 	}
-	return imdb, movie, tv, nil
+	return indexes{imdb: imdb, movie: movie, tv: tv, reverse: reverse}, nil
 }
 
 // insert keeps the best-ranked entry per key: season-less or first-season
