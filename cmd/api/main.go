@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"runtime/debug"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
@@ -165,6 +166,11 @@ func main() {
 	// of them is selected, so an unused source costs nothing.
 	reg.Register(provider.NewAlloCine())
 	reg.Register(provider.NewFilmweb())
+
+	// A provider without its key is skipped on every render and says nothing,
+	// so the sources it serves just never appear. Name them at startup.
+	logProviderReadiness(reg)
+
 	var pipeline *compose.Pipeline
 	if len(reg.Names()) > 0 {
 		pipeline = compose.New(reg)
@@ -231,5 +237,33 @@ func main() {
 	logger.Info("Shutting down")
 	if err := srv.Shutdown(ctx); err != nil {
 		logger.Error("Graceful shutdown failed", "error", err)
+	}
+}
+
+// logProviderReadiness reports which registered providers hold credentials.
+// Keyless providers are always ready and are not listed as waiting.
+func logProviderReadiness(reg *provider.Registry) {
+	var ready, waiting []string
+	for _, name := range reg.Names() {
+		p := reg.Get(name)
+		if p == nil {
+			continue
+		}
+		hc, keyed := p.(interface{ HasCredentials() bool })
+		switch {
+		case !keyed:
+			ready = append(ready, name)
+		case hc.HasCredentials():
+			ready = append(ready, name)
+		default:
+			waiting = append(waiting, name)
+		}
+	}
+	slog.Info("Registered the rating providers",
+		"ready", strings.Join(ready, ","),
+		"waiting_for_a_key", strings.Join(waiting, ","))
+	if len(waiting) > 0 {
+		slog.Warn("Some providers have no credentials, so the sources they serve will not appear",
+			"providers", strings.Join(waiting, ","))
 	}
 }

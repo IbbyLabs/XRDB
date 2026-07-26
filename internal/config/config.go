@@ -14,6 +14,18 @@ import (
 // the same value the loader would pick.
 const DefaultLogLevel = "info"
 
+// credential returns the first name that is set, so a deployment carried over
+// from v2 keeps working. v2 read several of these without the XRDB_ prefix, and
+// under the v3 name alone the provider is skipped with nothing to show for it.
+func credential(names ...string) string {
+	for _, name := range names {
+		if v := strings.TrimSpace(os.Getenv(name)); v != "" {
+			return v
+		}
+	}
+	return ""
+}
+
 type Config struct {
 	Address         string
 	Version         string
@@ -212,13 +224,13 @@ func Load() Config {
 		CacheTTL:              cacheTTL,
 		CacheMaxEntries:       cacheMaxEntries,
 		CacheMaxBytes:         cacheMaxBytes,
-		TMDBAPIKey:            os.Getenv("XRDB_TMDB_API_KEY"),
-		TMDBReadToken:         os.Getenv("XRDB_TMDB_READ_TOKEN"),
-		MDBListAPIKey:         os.Getenv("XRDB_MDBLIST_API_KEY"),
-		OMDBAPIKey:            os.Getenv("XRDB_OMDB_API_KEY"),
-		FanartAPIKey:          os.Getenv("XRDB_FANART_API_KEY"),
-		TraktClientID:         os.Getenv("XRDB_TRAKT_CLIENT_ID"),
-		SIMKLClientID:         os.Getenv("XRDB_SIMKL_CLIENT_ID"),
+		TMDBAPIKey:            credential("XRDB_TMDB_API_KEY", "TMDB_API_KEY"),
+		TMDBReadToken:         credential("XRDB_TMDB_READ_TOKEN", "TMDB_READ_TOKEN"),
+		MDBListAPIKey:         credential("XRDB_MDBLIST_API_KEY", "MDBLIST_API_KEY"),
+		OMDBAPIKey:            credential("XRDB_OMDB_API_KEY", "OMDB_API_KEY", "OMDB_KEY"),
+		FanartAPIKey:          credential("XRDB_FANART_API_KEY", "FANART_API_KEY"),
+		TraktClientID:         credential("XRDB_TRAKT_CLIENT_ID", "TRAKT_CLIENT_ID"),
+		SIMKLClientID:         credential("XRDB_SIMKL_CLIENT_ID", "SIMKL_CLIENT_ID"),
 		IMDbDatasetDir:        os.Getenv("XRDB_IMDB_DATASET_DIR"),
 		IMDbTopRated:          boolEnv("XRDB_IMDB_TOP_RATED"),
 		JikanURL:              os.Getenv("XRDB_JIKAN_URL"),
