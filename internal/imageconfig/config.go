@@ -366,6 +366,9 @@ type AggregateConfig struct {
 	// "0:#7f1d1d,40:#dc2626,75:#84cc16". Colours are interpolated between stops.
 	// Empty falls back to the built-in red/amber/green bands.
 	AggregateDynamicStops string `json:"aggregateDynamicStops,omitempty"`
+	// AggregateFillByScore fills the whole pill with the resolved accent instead
+	// of tinting only the accent rail.
+	AggregateFillByScore bool `json:"aggregateFillByScore,omitempty"`
 	// The accent rail is the colour bar on an aggregate badge. Nil visibility
 	// means shown; the offset nudges it along the badge.
 	AggregateAccentBarVisible *bool  `json:"aggregateAccentBarVisible,omitempty"`
@@ -620,6 +623,7 @@ type rawAggregate struct {
 	AggregateCriticsValueColor   *string `json:"aggregateCriticsValueColor"`
 	AggregateAudienceValueColor  *string `json:"aggregateAudienceValueColor"`
 	AggregateDynamicStops        *string `json:"aggregateDynamicStops"`
+	AggregateFillByScore         *bool   `json:"aggregateFillByScore"`
 	AggregateAccentBarVisible    *bool   `json:"aggregateAccentBarVisible"`
 	AggregateAccentBarOffset     *int    `json:"aggregateAccentBarOffset"`
 
@@ -1235,6 +1239,9 @@ func parseAggregate(cfg *Config, r *raw) {
 		if stops := strings.TrimSpace(*r.AggregateDynamicStops); ParseDynamicStops(stops) != nil {
 			cfg.AggregateDynamicStops = stops
 		}
+	}
+	if r.AggregateFillByScore != nil {
+		cfg.AggregateFillByScore = *r.AggregateFillByScore
 	}
 	if r.AggregateAccentBarVisible != nil {
 		visible := *r.AggregateAccentBarVisible

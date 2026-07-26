@@ -740,6 +740,10 @@ export function AggregateFine({ uid, config, onUpdate }: GroupProps) {
             <ColorField id={`${uid}-agg-audience-value`} label="Audience value" value={config.aggregateAudienceValueColor}
               onChange={v => onUpdate('aggregateAudienceValueColor', v)} fallback="#ffffff" resetLabel="Shared" />
           </div>
+          <ToggleField id={`${uid}-agg-fill`} label="Fill by score"
+            checked={config.aggregateFillByScore}
+            onChange={v => onUpdate('aggregateFillByScore', v)}
+            hint="Colour the whole pill with the accent instead of only the rail. With Accent source set to Dynamic this tints the badge by the score." />
           <ToggleField id={`${uid}-agg-rail`} label="Accent rail"
             checked={config.aggregateAccentBarVisible}
             onChange={v => onUpdate('aggregateAccentBarVisible', v)}

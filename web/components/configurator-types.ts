@@ -348,6 +348,7 @@ export interface ConfigState {
   aggregateCriticsValueColor: string; // '' = falls back to aggregateValueColor
   aggregateAudienceValueColor: string;
   aggregateDynamicStops: string; // 'score:#RRGGBB' pairs on a 0-100 scale; '' = built-in bands
+  aggregateFillByScore: boolean; // fill the whole pill with the accent, not just the rail
   aggregateAccentBarVisible: boolean; // the colour rail on an aggregate pill
   aggregateAccentBarOffset: number; // px nudge of that rail
   scorebarStyle: string; // progress | solid | gradient
@@ -457,6 +458,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   aggregateCriticsValueColor: '',
   aggregateAudienceValueColor: '',
   aggregateDynamicStops: '',
+  aggregateFillByScore: false,
   aggregateAccentBarVisible: true,
   aggregateAccentBarOffset: 0,
   scorebarStyle: 'progress',

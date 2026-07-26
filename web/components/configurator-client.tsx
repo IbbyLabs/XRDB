@@ -228,6 +228,7 @@ export function ConfiguratorClient() {
       aggregateCriticsValueColor: cfg.aggregateCriticsValueColor,
       aggregateAudienceValueColor: cfg.aggregateAudienceValueColor,
       aggregateDynamicStops: cfg.aggregateDynamicStops,
+      aggregateFillByScore: cfg.aggregateFillByScore || undefined,
       // Only sent when turned off, so a default config stays free of the key.
       aggregateAccentBarVisible: cfg.aggregateAccentBarVisible ? undefined : false,
       aggregateAccentBarOffset: cfg.aggregateAccentBarOffset,

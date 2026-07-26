@@ -49,6 +49,15 @@ func drawSoftTile(base *image.NRGBA, r image.Rectangle, radius int, ch tileChrom
 	}
 }
 
+// contrastingInk picks dark or light text for a filled badge body.
+func contrastingInk(bg color.NRGBA) color.NRGBA {
+	lum := (0.299*float64(bg.R) + 0.587*float64(bg.G) + 0.114*float64(bg.B)) / 255
+	if lum > 0.6 {
+		return color.NRGBA{R: 18, G: 18, B: 24, A: 255}
+	}
+	return color.NRGBA{R: 255, G: 255, B: 255, A: 255}
+}
+
 // meanLuminance returns the average perceived luminance (0..1) of the opaque
 // pixels of img, or 0.5 if there are none. Used to choose a contrasting tile
 // color behind a provider logo (light logos get a dark tile, and vice versa).
@@ -1322,6 +1331,26 @@ type scorePillStyle struct {
 	// plain dark capsule.
 	accentShown  bool
 	accentOffset int // px nudge of the rail along the pill
+	// fill replaces the dark capsule body. Zero alpha keeps the default.
+	fill color.NRGBA
+	// valueSet marks an explicitly configured value colour, which wins over the
+	// contrast pick made for a filled body.
+	valueSet bool
+	// radius maps the capsule height to its corner radius. Nil means a capsule.
+	radius func(int) int
+}
+
+// scorePillRadius maps the configured badge style onto the aggregate pill, so
+// one style choice covers both the per-source badges and the aggregate ones.
+func scorePillRadius(style imageconfig.BadgeStyle) func(int) int {
+	switch style {
+	case imageconfig.BadgeSquare:
+		return func(int) int { return 0 }
+	case imageconfig.BadgeTile, imageconfig.BadgeStacked:
+		return func(h int) int { return maxInt(2, h/5) }
+	default:
+		return func(h int) int { return h / 2 }
+	}
 }
 
 // aggregatePillStyle resolves how one aggregate pill is coloured. Critics and
@@ -1334,6 +1363,7 @@ func aggregatePillStyle(cfg imageconfig.Config, source string, genres []string, 
 		value:        color.NRGBA{R: 255, G: 255, B: 255, A: 255},
 		accentShown:  cfg.AggregateAccentBarVisible == nil || *cfg.AggregateAccentBarVisible,
 		accentOffset: cfg.AggregateAccentBarOffset,
+		radius:       scorePillRadius(cfg.BadgeStyle),
 	}
 
 	accentHex := ""
@@ -1357,6 +1387,10 @@ func aggregatePillStyle(cfg imageconfig.Config, source string, genres []string, 
 	}
 	if c, err := parseHexColor(accentHex); accentHex != "" && err == nil {
 		style.accent = c
+		if cfg.AggregateFillByScore {
+			c.A = 235
+			style.fill = c
+		}
 	}
 
 	valueHex := ""
@@ -1371,6 +1405,7 @@ func aggregatePillStyle(cfg imageconfig.Config, source string, genres []string, 
 	}
 	if c, err := parseHexColor(valueHex); valueHex != "" && err == nil {
 		style.value = c
+		style.valueSet = true
 	}
 	return style
 }
@@ -1399,11 +1434,24 @@ func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, style s
 	x0 := cx - capW/2
 	rect := image.Rect(x0, topY, x0+capW, topY+capH)
 
-	// Drop shadow, then the dark frosted capsule.
+	radius := capH / 2
+	if style.radius != nil {
+		radius = style.radius(capH)
+	}
+	body := color.NRGBA{R: 22, G: 22, B: 26, A: 226}
+	valueCol := style.value
+	if style.fill.A > 0 {
+		body = style.fill
+		if !style.valueSet {
+			valueCol = contrastingInk(body)
+		}
+	}
+
+	// Drop shadow, then the capsule.
 	shadow := rect.Add(image.Pt(0, s(2)))
-	fillRoundedRect(base, shadow, capH/2, color.NRGBA{A: 90})
-	fillRoundedRect(base, rect, capH/2, color.NRGBA{R: 22, G: 22, B: 26, A: 226})
-	drawRectBorder(base, rect, capH/2, color.NRGBA{R: 255, G: 255, B: 255, A: 28})
+	fillRoundedRect(base, shadow, radius, color.NRGBA{A: 90})
+	fillRoundedRect(base, rect, radius, body)
+	drawRectBorder(base, rect, radius, color.NRGBA{R: 255, G: 255, B: 255, A: 28})
 
 	cursor := x0 + padX
 	if label != "" {
@@ -1422,7 +1470,7 @@ func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, style s
 	vm := valueFace.Metrics()
 	vy := topY + (capH-vm.Height.Ceil())/2 + vm.Ascent.Ceil()
 	drawText(base, valueFace, cursor+s(1), vy+s(1), color.NRGBA{A: 150}, score)
-	drawText(base, valueFace, cursor, vy, style.value, score)
+	drawText(base, valueFace, cursor, vy, valueCol, score)
 
 	if occ != nil {
 		occ.reserve(rect)
