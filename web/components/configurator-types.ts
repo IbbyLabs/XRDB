@@ -222,14 +222,21 @@ export const SCOREBAR_STYLE_OPTIONS = [
   { id: 'dynamic',  label: 'Dynamic'  },
 ] as const;
 
+// Every token the renderer draws needs a chip here, or a config carrying one
+// renders a badge the user has no way to switch off.
 export const QUALITY_BADGE_OPTIONS: { id: string; label: string }[] = [
   { id: '4k',        label: '4K'           },
+  { id: 'hd',        label: 'HD'           },
   { id: 'hdr',       label: 'HDR'          },
   { id: 'hdr10',     label: 'HDR10'        },
   { id: 'hdr10plus', label: 'HDR10+'       },
   { id: 'dv',        label: 'Dolby Vision' },
+  { id: 'dts',       label: 'DTS'          },
   { id: 'atmos',     label: 'Atmos'        },
   { id: 'imax',      label: 'IMAX'         },
+  { id: 'bluray',    label: 'Blu-ray'      },
+  { id: 'remux',     label: 'Remux'        },
+  { id: 'bdremux',   label: 'BD Remux'     },
 ];
 
 // A higher-tier format already implies the ones below it, so the renderer draws
