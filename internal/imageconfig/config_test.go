@@ -172,13 +172,12 @@ func TestParseSurfaceResolvesEachSurfaceIndependently(t *testing.T) {
 	}
 }
 
-func TestParseSurfaceMissingSurfaceFallsBackToDefault(t *testing.T) {
-	// Envelope present but the requested surface is absent → Default().
+func TestParseSurfaceMissingSurfaceFallsBackToPoster(t *testing.T) {
+	// Envelope present but the requested surface is absent → the poster's.
 	raw := json.RawMessage(`{"surfaces":{"poster":{"size":"4k"}}}`)
 	got := ParseSurface(raw, "logo")
-	want := Default()
-	if got.Size != want.Size || got.ArtworkSource != want.ArtworkSource {
-		t.Errorf("missing surface should fall back to Default(), got %+v", got)
+	if got.Size != Size4K {
+		t.Errorf("missing surface Size = %q, want the poster's 4k", got.Size)
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"log/slog"
 	"math"
 	"reflect"
 	"sort"
@@ -663,7 +664,8 @@ type surfaceEnvelope struct {
 // config blob. The blob may be either the per-surface envelope
 // {"surfaces":{"poster":{…},"backdrop":{…}}} or a legacy flat config that
 // applies uniformly to every surface. A missing or unknown surface within an
-// envelope falls back to Default(); a flat or empty blob is parsed as before.
+// envelope falls back to the poster surface, then to Default(); a flat or empty
+// blob is parsed as before.
 func ParseSurface(data json.RawMessage, surface string) Config {
 	if len(data) == 0 {
 		return Default()
@@ -673,6 +675,15 @@ func ParseSurface(data json.RawMessage, surface string) Config {
 		if sub, ok := env.Surfaces[surface]; ok {
 			return Parse(sub)
 		}
+		// A surface the envelope never named still belongs to this profile, so
+		// it takes the poster's look rather than the stock one.
+		if sub, ok := env.Surfaces["poster"]; ok {
+			slog.Warn("Config has no entry for this surface, so the poster's is used",
+				"surface", surface)
+			return Parse(sub)
+		}
+		slog.Warn("Config has no entry for this surface and no poster to fall back on",
+			"surface", surface)
 		return Default()
 	}
 	// Flat config — applies to every surface (legacy / live-preview shape).
