@@ -983,8 +983,9 @@ func parseQuality(cfg *Config, r *raw) {
 			cfg.QualityBadgesStyle = v
 		}
 	}
-	if r.QualityBadgesMax != nil && *r.QualityBadgesMax >= 0 {
-		m := clampInt(*r.QualityBadgesMax, 0, 20)
+	// 0 means "no cap" here too; see RatingsMax.
+	if r.QualityBadgesMax != nil && *r.QualityBadgesMax > 0 {
+		m := clampInt(*r.QualityBadgesMax, 1, 20)
 		cfg.QualityBadgesMax = &m
 	}
 	if r.QualityBadgesTileAccentColor != nil && isHexColor(*r.QualityBadgesTileAccentColor) {
@@ -1019,8 +1020,10 @@ func parseRating(cfg *Config, r *raw) {
 	if r.RatingIconHidden != nil {
 		cfg.RatingIconHidden = *r.RatingIconHidden
 	}
-	if r.RatingsMax != nil && *r.RatingsMax >= 0 {
-		m := clampInt(*r.RatingsMax, 0, 20)
+	// A nil cap means "no cap", and the configurator sends 0 for that, so a
+	// stored 0 has to keep every badge rather than drop them all.
+	if r.RatingsMax != nil && *r.RatingsMax > 0 {
+		m := clampInt(*r.RatingsMax, 1, 20)
 		cfg.RatingsMax = &m
 	}
 	if r.RatingBadgeOffsetX != nil {
