@@ -174,20 +174,38 @@ func TestRatingsMaxCapsBadges(t *testing.T) {
 	}
 }
 
+// Every style the configurator offers must render differently from every other
+// one. Comparing only against the default would pass while two styles remain
+// pixel-identical to each other.
 func TestGenreBadgeStylesChangeRender(t *testing.T) {
 	genres := []string{"Action", "Drama"}
-	def := genreTestImage()
-	drawGenreBadge(def, genres, "bl", 2.0, newOccupancy(def.Bounds()), genreBadgeOpts{})
+	styles := map[string]genreBadgeOpts{
+		"default": {},
+		"glass":   {style: "glass"},
+		"square":  {style: "square"},
+		"plain":   {style: "plain"},
+		"clean":   {style: "clean"},
+		"tile":    {style: "tile", tileColor: "#3355ff"},
+	}
 
-	for name, opts := range map[string]genreBadgeOpts{
-		"plain": {style: "plain"},
-		"tile":  {style: "tile", tileColor: "#3355ff"},
-	} {
+	rendered := make(map[string]*image.NRGBA, len(styles))
+	for name, opts := range styles {
 		img := genreTestImage()
 		drawGenreBadge(img, genres, "bl", 2.0, newOccupancy(img.Bounds()), opts)
-		if !imagesDiffer(def, img) {
-			t.Errorf("genre style %q did not change the render", name)
+		rendered[name] = img
+	}
+
+	// "glass" is the id the default option carries, so the two match by design.
+	names := []string{"default", "square", "plain", "clean", "tile"}
+	for i, a := range names {
+		for _, b := range names[i+1:] {
+			if !imagesDiffer(rendered[a], rendered[b]) {
+				t.Errorf("genre styles %q and %q render identically", a, b)
+			}
 		}
+	}
+	if imagesDiffer(rendered["default"], rendered["glass"]) {
+		t.Error(`genre style "glass" should match the default`)
 	}
 }
 

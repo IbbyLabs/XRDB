@@ -239,23 +239,23 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		"?append_to_response=images,release_dates,content_ratings,watch%2Fproviders,external_ids" +
 		"&include_image_language=" + imgLangs
 	var result struct {
-		Title         string  `json:"title"`
-		Name          string  `json:"name"` // TV
-		OriginalTitle string  `json:"original_title"`
-		OriginalName  string  `json:"original_name"` // TV
-		Overview      string  `json:"overview"`
+		Title         string `json:"title"`
+		Name          string `json:"name"` // TV
+		OriginalTitle string `json:"original_title"`
+		OriginalName  string `json:"original_name"` // TV
+		Overview      string `json:"overview"`
 		// Movies carry imdb_id at the top level, series only under external_ids.
 		IMDbID      string `json:"imdb_id"`
 		ExternalIDs struct {
 			IMDbID string `json:"imdb_id"`
 		} `json:"external_ids"`
-		ReleaseDate   string  `json:"release_date"`
-		FirstAirDate  string  `json:"first_air_date"`
-		VoteAverage   float64 `json:"vote_average"`
-		VoteCount     int     `json:"vote_count"`
-		PosterPath    string  `json:"poster_path"`
-		BackdropPath  string  `json:"backdrop_path"`
-		Images        struct {
+		ReleaseDate  string  `json:"release_date"`
+		FirstAirDate string  `json:"first_air_date"`
+		VoteAverage  float64 `json:"vote_average"`
+		VoteCount    int     `json:"vote_count"`
+		PosterPath   string  `json:"poster_path"`
+		BackdropPath string  `json:"backdrop_path"`
+		Images       struct {
 			Posters   []tmdbImage `json:"posters"`
 			Backdrops []tmdbImage `json:"backdrops"`
 			Logos     []tmdbImage `json:"logos"`

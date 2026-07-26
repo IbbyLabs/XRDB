@@ -275,12 +275,12 @@ func mergeLegacy(marshalled []byte, legacy map[string]json.RawMessage) ([]byte, 
 // RatingBadgeConfig groups the rating-badge sizing and count controls. Style,
 // theme, layout, and the ratings allow-list remain flat fields on Config.
 type RatingBadgeConfig struct {
-	RatingBadgeScale   int  `json:"ratingBadgeScale,omitempty"`   // percent 70-400; 0 = 100
+	RatingBadgeScale int `json:"ratingBadgeScale,omitempty"` // percent 70-400; 0 = 100
 	// StackedLineHidden drops the accent rail above the mark in the stacked
 	// style. Named for what it hides so the zero value keeps the rail.
 	StackedLineHidden bool `json:"stackedLineHidden,omitempty"`
 	// RatingIconHidden draws the value on its own, with no provider mark.
-	RatingIconHidden bool `json:"ratingIconHidden,omitempty"`
+	RatingIconHidden   bool `json:"ratingIconHidden,omitempty"`
 	RatingsMax         *int `json:"ratingsMax,omitempty"`         // cap on badge count; nil = no cap
 	RatingBadgeOffsetX int  `json:"ratingBadgeOffsetX,omitempty"` // px nudge of the whole strip
 	RatingBadgeOffsetY int  `json:"ratingBadgeOffsetY,omitempty"`
@@ -1439,7 +1439,7 @@ func isHexColor(s string) bool {
 // Bump this whenever a change alters rendered pixels for an unchanged config.
 // It costs a full re-render, so it is not for changes that only affect configs
 // whose own key already moved.
-const renderVersion = "r5"
+const renderVersion = "r6"
 
 // CacheKey returns a deterministic hex string for the config, suitable for use
 // as part of a render cache key. The key is stable: same logical config always

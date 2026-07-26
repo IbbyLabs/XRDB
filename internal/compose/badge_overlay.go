@@ -979,7 +979,12 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		scale *= float64(opts.scalePercent) / 100
 	}
 	ensureFaces()
-	face := labelFaceFor(scale)
+	// The clean style sets its label larger than the tiled styles.
+	labelScale := scale
+	if opts.style == "clean" {
+		labelScale = scale * 1.2
+	}
+	face := labelFaceFor(labelScale)
 	if face == nil {
 		return
 	}
@@ -1013,10 +1018,16 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	edgeY := s(12)
 	radius := s(5)
 
+	// The square style carries an accent cap above the label.
+	capRoom := 0
+	if opts.style == "square" {
+		capRoom = s(7)
+	}
+
 	fm := face.Metrics()
 	ascent := fm.Ascent.Ceil()
 	descent := fm.Descent.Ceil()
-	bh := padY*2 + ascent + descent
+	bh := padY*2 + ascent + descent + capRoom
 	bw := padX*2 + textWidth(face, label)
 
 	iconSize, iconGap := 0, 0
@@ -1041,7 +1052,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		r = r.Add(image.Pt(opts.offsetX, opts.offsetY))
 	}
 	textColor := color.NRGBA{R: 225, G: 225, B: 228, A: 255}
-	tx, ty := r.Min.X+padX, r.Min.Y+padY+ascent
+	tx, ty := r.Min.X+padX, r.Min.Y+capRoom+padY+ascent
 
 	// drawIcon paints the family glyph and reports the accent to tint the label.
 	drawIcon := func() color.NRGBA {
@@ -1058,7 +1069,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			iconX = r.Min.X + (bw-iconSize)/2
 		}
 		drawGenreIcon(base, fam.id, accent, color.NRGBA{R: 5, G: 7, B: 11, A: 255},
-			iconX, r.Min.Y+(bh-iconSize)/2, iconSize)
+			iconX, r.Min.Y+capRoom+(bh-capRoom-iconSize)/2, iconSize)
 		return accent
 	}
 	if mode == "both" {
@@ -1089,6 +1100,56 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		}
 		drawSoftTile(base, r, radius, tileChrome{fill: fill, shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 70}})
 		drawText(base, face, tx, ty, color.White, label)
+		return
+	case "clean":
+		// No tile: a soft strip under the label carries it over the artwork.
+		// Blended rather than filled: fillRoundedRect replaces pixels, so a
+		// translucent fill would cut a hole in the artwork.
+		stripH := maxInt(2, s(3))
+		stripW := maxInt(s(18), textWidth(face, label)+s(6))
+		stripX := tx - s(3)
+		stripY := ty + s(4)
+		for y := stripY; y < stripY+stripH; y++ {
+			for x := stripX; x < stripX+stripW; x++ {
+				blendPixel(base, x, y, color.NRGBA{A: 110})
+			}
+		}
+		drawText(base, face, tx, ty, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, label)
+		return
+	case "square":
+		fill := color.NRGBA{R: 8, G: 11, B: 16, A: 224}
+		if opts.bgOpacity != 0 {
+			fill.A = uint8(opts.bgOpacity * 255 / 100)
+		}
+		drawSoftTile(base, r, maxInt(1, s(2)), tileChrome{
+			fill:        fill,
+			border:      color.NRGBA{R: 255, G: 255, B: 255, A: 24},
+			borderWidth: maxInt(1, s(1)),
+			shadow:      color.NRGBA{R: 0, G: 0, B: 0, A: 70},
+		})
+		capCol := color.NRGBA{R: 235, G: 235, B: 238, A: 235}
+		if fam != nil {
+			if a, err := parseHexColor(fam.accent); err == nil {
+				a.A = 235
+				capCol = a
+			}
+		}
+		if c, err := parseHexColor(opts.tileColor); opts.tileColor != "" && err == nil {
+			c.A = 235
+			capCol = c
+		}
+		capW := maxInt(s(16), bw*34/100)
+		capH := maxInt(2, capRoom*60/100)
+		capX := r.Min.X + (bw-capW)/2
+		capY := r.Min.Y + maxInt(1, s(3))
+		drawSoftTile(base, image.Rect(capX, capY, capX+capW, capY+capH), capH/2,
+			tileChrome{fill: capCol})
+		if accent := drawIcon(); mode != "text" {
+			textColor = accent
+		}
+		if mode != "icon" {
+			drawText(base, face, tx, ty, textColor, label)
+		}
 		return
 	}
 	fill := color.NRGBA{R: 8, G: 9, B: 12, A: 200}
