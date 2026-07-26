@@ -307,6 +307,12 @@ export function ConfiguratorClient() {
 
   const aspect = MEDIA_TYPES.find(t => t.id === mediaType)?.aspect ?? '2/3';
 
+  const otherSurfaceLabels = useMemo(() => {
+    const names = MEDIA_TYPES.filter(t => t.id !== mediaType).map(t => t.label);
+    if (names.length < 2) return names.join('');
+    return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  }, [mediaType]);
+
   const flash = useCallback((type: 'error' | 'success' | 'info', message: string, opts?: { persist?: boolean }) => {
     setNotice({ type, message });
     if (noticeTimer.current) clearTimeout(noticeTimer.current);
@@ -697,7 +703,8 @@ export function ConfiguratorClient() {
             <>
               <div className="surface-scope">
                 <span className="surface-scope-text">
-                  Editing <strong>{MEDIA_TYPES.find(t => t.id === mediaType)?.label ?? mediaType}</strong> — the other surfaces (backdrop, thumbnail, logo) keep their own settings.
+                  These settings apply to <strong>{MEDIA_TYPES.find(t => t.id === mediaType)?.label ?? mediaType}</strong> only.
+                  {' '}{otherSurfaceLabels} keep their own, including which badges show.
                 </span>
                 <button className="btn btn-ghost btn-sm" onClick={copyToAllSurfaces}>
                   Copy to all surfaces
