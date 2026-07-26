@@ -14,9 +14,8 @@ import (
 // the same value the loader would pick.
 const DefaultLogLevel = "info"
 
-// credential returns the first name that is set, so a deployment carried over
-// from v2 keeps working. v2 read several of these without the XRDB_ prefix, and
-// under the v3 name alone the provider is skipped with nothing to show for it.
+// credential returns the first name that is set. v2 read several of these
+// without the XRDB_ prefix.
 func credential(names ...string) string {
 	for _, name := range names {
 		if v := strings.TrimSpace(os.Getenv(name)); v != "" {
@@ -46,6 +45,8 @@ type Config struct {
 	// separate from IMDbDatasetDir because building it streams a second, much
 	// larger dataset on each refresh.
 	IMDbTopRated        bool
+	TrendingWindow      string // TMDB trending period: day|week
+	TrendingDepth       int    // how many trending titles earn the badge
 	JikanURL            string // override Jikan API base URL; empty = public api.jikan.moe
 	AnimeMapURL         string // override anime ID mapping dataset URL; empty = default
 	AnimeMapFallbackURL string // live anime mapping API base URL; "off" disables
@@ -58,10 +59,10 @@ type Config struct {
 	// ConfigEncryptionKey encrypts owner-supplied provider credentials at rest.
 	// Unset means the server will not accept them.
 	ConfigEncryptionKey string
-	APIKey                string                   // if set, required on all render routes
-	RenderConcurrency     int                      // max simultaneous renders; caps memory under bursts
-	MemoryLimitBytes      int64                    // soft heap limit (debug.SetMemoryLimit); 0 = unset
-	LogLevel              string                   // debug|info|warn|error (default info)
+	APIKey              string // if set, required on all render routes
+	RenderConcurrency   int    // max simultaneous renders; caps memory under bursts
+	MemoryLimitBytes    int64  // soft heap limit (debug.SetMemoryLimit); 0 = unset
+	LogLevel            string // debug|info|warn|error (default info)
 	// TrustedProxies is a comma-separated list of CIDRs or addresses whose
 	// X-Forwarded-* and CF-Connecting-IP headers may be believed. Empty means
 	// loopback plus the private ranges, which covers the usual reverse-proxy
@@ -153,6 +154,12 @@ func resolveVersion() string {
 }
 
 func Load() Config {
+	trendingDepth := 100
+	if raw := os.Getenv("XRDB_TRENDING_DEPTH"); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+			trendingDepth = n
+		}
+	}
 	addr := os.Getenv("XRDB_ADDR")
 	if addr == "" {
 		addr = ":8787"
@@ -233,6 +240,8 @@ func Load() Config {
 		SIMKLClientID:         credential("XRDB_SIMKL_CLIENT_ID", "SIMKL_CLIENT_ID"),
 		IMDbDatasetDir:        os.Getenv("XRDB_IMDB_DATASET_DIR"),
 		IMDbTopRated:          boolEnv("XRDB_IMDB_TOP_RATED"),
+		TrendingWindow:        os.Getenv("XRDB_TRENDING_WINDOW"),
+		TrendingDepth:         trendingDepth,
 		JikanURL:              os.Getenv("XRDB_JIKAN_URL"),
 		AnimeMapURL:           os.Getenv("XRDB_ANIME_MAP_URL"),
 		AnimeMapFallbackURL:   os.Getenv("XRDB_ANIME_MAP_FALLBACK_URL"),

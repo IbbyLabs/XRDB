@@ -64,6 +64,28 @@ type Pipeline struct {
 	// health remembers the last good result per source so a degraded source
 	// falls back instead of vanishing. Optional: nil disables the fallback.
 	health *provider.HealthTracker
+	// trending reports whether a title is trending. Optional: nil draws no badge.
+	trending trendingResolver
+}
+
+// trendingResolver is satisfied by *provider.TrendingIndex.
+type trendingResolver interface {
+	IsTrending(ctx context.Context, tmdbID, imdbID string) bool
+}
+
+// SetTrendingResolver attaches the trending index.
+func (p *Pipeline) SetTrendingResolver(t trendingResolver) { p.trending = t }
+
+// isTrending reports whether the title is in the trending list.
+func (p *Pipeline) isTrending(ctx context.Context, req Request, meta *provider.MediaMeta) bool {
+	if p.trending == nil {
+		return false
+	}
+	imdbID := ""
+	if meta != nil {
+		imdbID = meta.IMDbID
+	}
+	return p.trending.IsTrending(ctx, req.MediaID, imdbID)
 }
 
 // animeResolver reports whether a media ID belongs to a known anime. Satisfied
@@ -220,9 +242,7 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 }
 
 // ratingIDForSources swaps a non-IMDb id for the IMDb id the artwork source
-// reported. AIOMetadata substitutes a tmdb: id when a title has no IMDb id in
-// its own index, and the sources keyed by IMDb id return nothing for it, so the
-// artwork renders with genre and age badges but no rating badges.
+// reported. Rating sources are keyed by IMDb id.
 func ratingIDForSources(id string, meta *provider.MediaMeta) string {
 	if meta == nil || meta.IMDbID == "" || strings.HasPrefix(id, "tt") {
 		return id
@@ -424,7 +444,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	if req.Config.AggregateBar {
 		drawAggregateBar(composed, allRatings, req.Config, meta.Genres, meta.IsAnime)
 	}
-	if req.Config.Trending {
+	if req.Config.Trending && p.isTrending(ctx, req, meta) {
 		drawTrendingBadgeSurfaced(composed, scale, occ, trendingStyleFromConfig(req.Config.TrendingStyle), req.Config.TrendingPos, req.Config.TrendingTextColor, req.Config.TrendingTagStyle)
 	}
 	if req.Config.RatingRing {

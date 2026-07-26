@@ -167,8 +167,6 @@ func main() {
 	reg.Register(provider.NewAlloCine())
 	reg.Register(provider.NewFilmweb())
 
-	// A provider without its key is skipped on every render and says nothing,
-	// so the sources it serves just never appear. Name them at startup.
 	logProviderReadiness(reg)
 
 	var pipeline *compose.Pipeline
@@ -177,6 +175,12 @@ func main() {
 		// Lets the genre badge tell anime apart from animation generally. The
 		// mapper answers from an in-memory index, so this costs no request time.
 		pipeline.SetAnimeResolver(animeMapper)
+		if tmdb, ok := reg.Get("tmdb").(*provider.TMDB); ok && tmdb != nil {
+			pipeline.SetTrendingResolver(provider.NewTrendingIndex(tmdb, provider.TrendingOptions{
+				Window: cfg.TrendingWindow,
+				Depth:  cfg.TrendingDepth,
+			}))
+		}
 		// Keeps the last good answer per source, so a source that breaks or gets
 		// throttled falls back instead of quietly dropping its badge.
 		pipeline.SetHealthTracker(provider.NewHealthTracker(0, 0))
@@ -240,8 +244,8 @@ func main() {
 	}
 }
 
-// logProviderReadiness reports which registered providers hold credentials.
-// Keyless providers are always ready and are not listed as waiting.
+// logProviderReadiness reports which providers hold credentials. Keyless
+// providers are always ready.
 func logProviderReadiness(reg *provider.Registry) {
 	var ready, waiting []string
 	for _, name := range reg.Names() {
