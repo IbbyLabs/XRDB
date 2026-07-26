@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  useState, useCallback, useRef, useId, useEffect,
+  useState, useCallback, useRef, useId, useEffect, useMemo,
 } from 'react';
 import { Settings2, Star, SlidersHorizontal, Film, Rocket, Link2, Maximize2, Undo2, Redo2, Check, X } from 'lucide-react';
 import { renderUrl, type MediaType, type Template } from '@/lib/api';
@@ -21,6 +21,9 @@ import { MediaSearch } from './media-search';
 import { CopyButton } from './copy-button';
 import { tablistKeyNav } from './tablist';
 import { BRAND_DISCORD_URL } from '@/lib/brand';
+
+// A media id that already names a season and episode.
+const EPISODE_ID_RE = /:\d+:\d+$/;
 
 // Cap on the undo stack — deep enough for a real editing session, bounded so it
 // can't grow without limit.
@@ -49,6 +52,7 @@ export function ConfiguratorClient() {
 
   const [mediaType, setMediaType] = useState<MediaType>('poster');
   const [mediaId, setMediaId] = useState('tt0468569');
+  const [previewEpisode, setPreviewEpisode] = useState({ season: 1, episode: 1 });
   const [mediaTitle, setMediaTitle] = useState('The Dark Knight (2008)');
   const [configs, setConfigs] = useState<SurfaceConfigs>(DEFAULT_SURFACE_CONFIGS);
   const [hydrated, setHydrated] = useState(false);
@@ -285,14 +289,21 @@ export function ConfiguratorClient() {
     debounceRef.current = setTimeout(run, PREVIEW_DEBOUNCE_MS);
   }, [buildSrc]);
 
+  // Thumbnails are episode artwork, so the preview asks for one. A movie id
+  // falls back to its normal artwork server-side.
+  const previewId = useMemo(() => {
+    if (mediaType !== 'thumbnail' || EPISODE_ID_RE.test(mediaId)) return mediaId;
+    return `${mediaId}:${previewEpisode.season}:${previewEpisode.episode}`;
+  }, [mediaType, mediaId, previewEpisode]);
+
   useEffect(() => {
     // A config/media change schedules a debounced render and marks the preview
     // pending right away; the synchronous set is intentional feedback, not a
     // cascade to avoid.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    triggerPreview(mediaType, mediaId, config);
+    triggerPreview(mediaType, previewId, config);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [mediaType, mediaId, config, triggerPreview]);
+  }, [mediaType, previewId, config, triggerPreview]);
 
   const aspect = MEDIA_TYPES.find(t => t.id === mediaType)?.aspect ?? '2/3';
 
@@ -639,6 +650,34 @@ export function ConfiguratorClient() {
             onSelect={handleMediaSelect}
             onError={msg => flash('error', msg)}
           />
+
+          {mediaType === 'thumbnail' && !EPISODE_ID_RE.test(mediaId) && (
+            <div className="field" style={{ marginTop: 'var(--sp-3)' }}>
+              <span className="label" id={`${uid}-ep-label`}>Preview episode</span>
+              <div style={{ display: 'flex', gap: 'var(--sp-2)', alignItems: 'center' }}
+                role="group" aria-labelledby={`${uid}-ep-label`}>
+                <label className="hint" htmlFor={`${uid}-ep-season`}>Season</label>
+                <input
+                  id={`${uid}-ep-season`}
+                  className="input" type="number" inputMode="numeric"
+                  min={0} max={99} value={previewEpisode.season}
+                  onChange={e => setPreviewEpisode(p => ({ ...p, season: Math.max(0, Number(e.target.value) || 0) }))}
+                  style={{ maxWidth: '5rem' }}
+                />
+                <label className="hint" htmlFor={`${uid}-ep-episode`}>Episode</label>
+                <input
+                  id={`${uid}-ep-episode`}
+                  className="input" type="number" inputMode="numeric"
+                  min={1} max={999} value={previewEpisode.episode}
+                  onChange={e => setPreviewEpisode(p => ({ ...p, episode: Math.max(1, Number(e.target.value) || 1) }))}
+                  style={{ maxWidth: '5rem' }}
+                />
+              </div>
+              <span className="hint" style={{ marginTop: 'var(--sp-2)' }}>
+                Thumbnails are episode artwork. A movie falls back to its own artwork.
+              </span>
+            </div>
+          )}
         </div>
 
         {/* ── Controls column ──────────────────────────────────────── */}
