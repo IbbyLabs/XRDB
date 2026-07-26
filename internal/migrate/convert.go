@@ -145,6 +145,7 @@ func ConvertConfig(raw json.RawMessage) (json.RawMessage, ConvertStats, error) {
 		convertGenreBadge(surfaces[s])
 		convertProviderAppearance(surfaces[s])
 		convertQualityBadgesSide(surfaces[s])
+		convertRatingStyle(surfaces[s])
 		convertWeights(surfaces[s])
 		for _, key := range pruneUnreadable(surfaces[s]) {
 			dropped[key] = true
@@ -289,6 +290,26 @@ func convertGenreBadge(surface map[string]json.RawMessage) {
 	}
 	if !on {
 		delete(surface, "genreBadgeMode")
+	}
+}
+
+// convertRatingStyle maps v2's rating style values onto XRDB's. v2 "glass" is a
+// filled capsule, which XRDB spells "pill"; XRDB's own "glass" is a transparent
+// outline.
+func convertRatingStyle(surface map[string]json.RawMessage) {
+	raw, ok := surface["badgeStyle"]
+	if !ok {
+		return
+	}
+	var s string
+	if err := json.Unmarshal(raw, &s); err != nil {
+		return
+	}
+	if strings.ToLower(strings.TrimSpace(s)) != "glass" {
+		return
+	}
+	if encoded, err := json.Marshal("pill"); err == nil {
+		surface["badgeStyle"] = encoded
 	}
 }
 

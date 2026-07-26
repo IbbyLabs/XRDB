@@ -335,11 +335,31 @@ func TestRatingStyleMapsWhereXRDBHasTheStyle(t *testing.T) {
 	}
 	// Every style v2 offers now has a rendering here, so each one carries over
 	// rather than reverting to the default the user never chose.
-	for _, style := range []string{"glass", "square", "plain", "stacked", "tile"} {
+	for _, style := range []string{"square", "plain", "stacked", "tile"} {
 		got := surfaceOf(t, convert(t, `{"posterRatingStyle":"`+style+`"}`), "poster").BadgeStyle
 		if string(got) != style {
 			t.Errorf("badgeStyle %q carried over as %q", style, got)
 		}
+	}
+	// v2 drew "glass" as a filled capsule with a coloured icon plate. XRDB
+	// spells that "pill"; its own "glass" is a transparent outline.
+	got := surfaceOf(t, convert(t, `{"posterRatingStyle":"glass"}`), "poster").BadgeStyle
+	if string(got) != "pill" {
+		t.Errorf("v2 glass became %q, want pill", got)
+	}
+}
+
+// The glass remap keys off v2's "ratingStyle". A config already written in
+// XRDB's own spelling names a style XRDB has, so it passes through untouched.
+func TestNativeGlassSurvivesConversion(t *testing.T) {
+	in := `{"badgeStyle":"glass","language":"fr"}`
+	out := convert(t, in)
+	var got map[string]json.RawMessage
+	if err := json.Unmarshal(out, &got); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if s := string(got["badgeStyle"]); s != `"glass"` {
+		t.Errorf("badgeStyle = %s, want \"glass\"", s)
 	}
 }
 
