@@ -58,3 +58,63 @@ func TestARoundedTileKeepsMoreThanASquircle(t *testing.T) {
 		t.Errorf("expected circle < squircle < rounded, got %d, %d, %d", circle, squircle, rounded)
 	}
 }
+
+// Clipping alone cannot show a shape, because brand marks already sit inside
+// one: that is why the option read as doing nothing. Each shape has to be
+// visibly apart from the others once drawn, not a handful of pixels apart.
+func TestIconShapesAreVisiblyDistinctWhenDrawn(t *testing.T) {
+	const floor = 200
+
+	render := func(shape string) *image.NRGBA {
+		dst := image.NewNRGBA(image.Rect(0, 0, 80, 80))
+		for y := 0; y < 80; y++ {
+			for x := 0; x < 80; x++ {
+				dst.SetNRGBA(x, y, color.NRGBA{R: 20, G: 20, B: 26, A: 255})
+			}
+		}
+		accent := color.NRGBA{R: 245, G: 197, B: 24, A: 255}
+		drawBrandIcon(dst, image.Rect(8, 8, 72, 72), opaqueSquare(64), shape, accent)
+		return dst
+	}
+
+	diff := func(a, b *image.NRGBA) int {
+		n := 0
+		for y := 0; y < 80; y++ {
+			for x := 0; x < 80; x++ {
+				p, q := a.NRGBAAt(x, y), b.NRGBAAt(x, y)
+				d := abs8(p.R, q.R) + abs8(p.G, q.G) + abs8(p.B, q.B) + abs8(p.A, q.A)
+				if d > 24 {
+					n++
+				}
+			}
+		}
+		return n
+	}
+
+	shapes := []string{"", "circle", "squircle", "rounded"}
+	name := func(s string) string {
+		if s == "" {
+			return "original"
+		}
+		return s
+	}
+	rendered := make(map[string]*image.NRGBA, len(shapes))
+	for _, s := range shapes {
+		rendered[s] = render(s)
+	}
+	for i, a := range shapes {
+		for _, b := range shapes[i+1:] {
+			if n := diff(rendered[a], rendered[b]); n < floor {
+				t.Errorf("%s and %s differ by only %d pixels, want at least %d",
+					name(a), name(b), n, floor)
+			}
+		}
+	}
+}
+
+func abs8(a, b uint8) int {
+	if a > b {
+		return int(a - b)
+	}
+	return int(b - a)
+}

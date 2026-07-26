@@ -270,7 +270,9 @@ func accentFor(source string) color.NRGBA {
 // recolored to tint, using the glyph's alpha as the mask. The glyph is trimmed
 // of transparent padding and scaled with its aspect ratio preserved, so marks
 // fill the box instead of being squeezed to its shape.
-func drawTintedIcon(dst *image.NRGBA, rect image.Rectangle, icon image.Image, tint color.NRGBA, shape string) {
+func drawTintedIcon(dst *image.NRGBA, rect image.Rectangle, icon image.Image, tint color.NRGBA, shape string, accent color.NRGBA) {
+	drawIconPlate(dst, rect, shape, accent)
+	rect = insetForPlate(rect, shape)
 	scaled, rect := scaleIconToFit(icon, rect)
 	if scaled == nil {
 		return
@@ -279,16 +281,67 @@ func drawTintedIcon(dst *image.NRGBA, rect image.Rectangle, icon image.Image, ti
 	draw.DrawMask(dst, rect, &image.Uniform{C: tint}, image.Point{}, scaled, image.Point{}, draw.Over)
 }
 
+// insetForPlate shrinks the icon box so a mark sits inside its plate instead of
+// running to the edge.
+func insetForPlate(rect image.Rectangle, shape string) image.Rectangle {
+	if iconShapeRadius(shape) == 0 {
+		return rect
+	}
+	side := rect.Dx()
+	if rect.Dy() < side {
+		side = rect.Dy()
+	}
+	pad := maxInt(1, side*18/100)
+	inset := rect.Inset(pad)
+	if inset.Dx() <= 0 || inset.Dy() <= 0 {
+		return rect
+	}
+	return inset
+}
+
 // drawBrandIcon paints a full-color brand mark as it is, so marks built from
 // several colors (Letterboxd's three dots, IMDb's black-on-yellow wordmark)
 // keep them instead of flattening to one silhouette.
-func drawBrandIcon(dst *image.NRGBA, rect image.Rectangle, icon image.Image, shape string) {
+func drawBrandIcon(dst *image.NRGBA, rect image.Rectangle, icon image.Image, shape string, accent color.NRGBA) {
+	drawIconPlate(dst, rect, shape, accent)
+	rect = insetForPlate(rect, shape)
 	scaled, rect := scaleIconToFit(icon, rect)
 	if scaled == nil {
 		return
 	}
 	clipIconToShape(scaled, shape)
 	draw.Draw(dst, rect, scaled, image.Point{}, draw.Over)
+}
+
+// iconShapeRadius maps a shape name to its corner radius as a fraction of the
+// icon box. Zero means no shape was requested.
+func iconShapeRadius(shape string) float64 {
+	switch shape {
+	case "circle":
+		return 0.5
+	case "squircle":
+		return 0.3
+	case "rounded":
+		return 0.15
+	default:
+		return 0
+	}
+}
+
+// drawIconPlate fills the requested shape behind a mark. Clipping alone cannot
+// show a shape, because the marks already sit inside one; the plate is what
+// makes circle, squircle and rounded tell apart. accent tints its edge so the
+// plate reads as part of the source rather than a grey box.
+func drawIconPlate(dst *image.NRGBA, rect image.Rectangle, shape string, accent color.NRGBA) {
+	frac := iconShapeRadius(shape)
+	if frac == 0 {
+		return
+	}
+	r := int(frac*math.Min(float64(rect.Dx()), float64(rect.Dy())) + 0.5)
+	fillRoundedRect(dst, rect, r, color.NRGBA{R: 15, G: 23, B: 42, A: 235})
+	if accent.A > 0 {
+		drawRectBorder(dst, rect, r, color.NRGBA{R: accent.R, G: accent.G, B: accent.B, A: 200})
+	}
 }
 
 // clipIconToShape clears the alpha outside the requested shape, trimming a mark
@@ -559,9 +612,9 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 			iconTop := y + (innerH-drawSize)/2
 			iRect := image.Rect(contentX, iconTop, contentX+drawSize, iconTop+drawSize)
 			if sp.colored {
-				drawBrandIcon(out, iRect, sp.icon, sp.iconShape)
+				drawBrandIcon(out, iRect, sp.icon, sp.iconShape, sp.accent)
 			} else {
-				drawTintedIcon(out, iRect, sp.icon, iconTint, sp.iconShape)
+				drawTintedIcon(out, iRect, sp.icon, iconTint, sp.iconShape, sp.accent)
 			}
 			contentX += iconSize + iconGap
 		}
@@ -1120,9 +1173,9 @@ func drawStackedBadge(out *image.NRGBA, sp badgeSpec, y, innerH, iconSize int, f
 	if sp.icon != nil && !chrome.hideIcon {
 		iRect := image.Rect(sp.x+(sp.w-drawSize)/2, iconTop, sp.x+(sp.w+drawSize)/2, iconTop+drawSize)
 		if sp.colored {
-			drawBrandIcon(out, iRect, sp.icon, sp.iconShape)
+			drawBrandIcon(out, iRect, sp.icon, sp.iconShape, sp.accent)
 		} else {
-			drawTintedIcon(out, iRect, sp.icon, chrome.iconColor, sp.iconShape)
+			drawTintedIcon(out, iRect, sp.icon, chrome.iconColor, sp.iconShape, sp.accent)
 		}
 	}
 

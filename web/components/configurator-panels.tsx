@@ -150,6 +150,10 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
                   </button>
                 ))}
               </div>
+              <span className="hint" style={{ marginTop: 'var(--sp-2)' }}>
+                Coming from v2? Its glass badges are <strong>Pill</strong> here, and look closest
+                with Icon shape set to Circle. Outline is a transparent style of its own.
+              </span>
             </div>
 
             <div className="field">
