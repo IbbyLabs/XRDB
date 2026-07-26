@@ -37,6 +37,13 @@ const PUBLIC_URLS = new Set(PUBLIC_INSTANCES.map(i => normaliseOrigin(i.url)));
 /** Artwork URL patterns for AIOMetadata's custom-art fields. On a keyed
  *  instance the render key rides along so AIOMetadata's server-side fetches
  *  authenticate. */
+/** Hide the render key in a displayed URL. It authenticates the whole instance,
+ *  and these patterns get pasted into chat when someone asks for help, so the
+ *  copy button carries the real value and the screen never shows it. */
+export function maskRenderKey(url: string): string {
+  return url.replace(/([?&]key=)[^&]+/, '$1••••••••');
+}
+
 export function aiomPatterns(configKey: string, renderKey?: string, versionToken?: string) {
   const origin = renderOrigin();
   const params = new URLSearchParams();
@@ -308,7 +315,7 @@ export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyCh
           <div className="field" key={label}>
             <span className="label">{label}</span>
             <div className="urlbar">
-              <code className="urlbar-code" title={value}>{value}</code>
+              <code className="urlbar-code" title={maskRenderKey(value)}>{maskRenderKey(value)}</code>
               <CopyButton text={value} label={`Copy ${label.toLowerCase()}`} />
             </div>
           </div>
