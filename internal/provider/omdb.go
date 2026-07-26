@@ -56,6 +56,10 @@ func NewOMDB(apiKey string) *OMDB {
 
 func (o *OMDB) Name() string { return "omdb" }
 
+// RatingSources lists the ratings this provider can supply, so a render that
+// selected none of them skips the call.
+func (o *OMDB) RatingSources() []string { return []string{"imdb", "rt", "metacritic"} }
+
 // Fetch retrieves OMDB ratings for a media item.
 // Only IMDb tt-IDs are supported; numeric IDs are not resolved.
 func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, error) {

@@ -154,9 +154,23 @@ func (p *Pipeline) resolveAnimeID(ctx context.Context, req Request) Request {
 	return req
 }
 
+// needsAnimeFlag reports whether anything this config draws reads IsAnime.
+// Resolving it costs a mapper lookup, so a config that never reads it must not
+// pay for it. Mirrors the draw calls that take the flag.
+func needsAnimeFlag(cfg imageconfig.Config) bool {
+	if cfg.Genre || cfg.AggregateBar {
+		return true
+	}
+	switch cfg.RatingPresentation {
+	case "minimal", "dual", "dual-minimal", "average", "scorebar":
+		return true
+	}
+	return false
+}
+
 // isAnimeTitle reports whether the requested title is a known anime.
 func (p *Pipeline) isAnimeTitle(ctx context.Context, req Request) bool {
-	if p.anime == nil {
+	if p.anime == nil || !needsAnimeFlag(req.Config) {
 		return false
 	}
 	_, ok := p.anime.Resolve(ctx, req.MediaType, req.MediaID)
@@ -230,13 +244,20 @@ func providerReady(p provider.Provider) bool {
 // selected, which keeps a source that costs a site lookup from being fetched on
 // every render just to be discarded. Providers that declare nothing are always
 // called, as they were before.
-func providerWanted(p provider.Provider, selected []string) bool {
+func providerWanted(p provider.Provider, cfg imageconfig.Config) bool {
 	sourcer, ok := p.(provider.RatingSourcer)
 	if !ok {
 		return true
 	}
+	// The top-rated badge reads a rank that rides along with a provider's
+	// ratings, so a ranking source stays in even when its score is not shown.
+	if cfg.TopRated {
+		if r, ranks := p.(provider.Ranker); ranks && r.RanksTitles() {
+			return true
+		}
+	}
 	for _, source := range sourcer.RatingSources() {
-		for _, want := range selected {
+		for _, want := range cfg.Ratings {
 			if source == want {
 				return true
 			}
@@ -336,7 +357,11 @@ func (p *Pipeline) log() *slog.Logger {
 // Render executes the composition pipeline for the given request.
 // Falls back to a type-colored placeholder if any step fails.
 func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
+	timings := newRenderTimings()
+	defer func() { timings.log(ctx, p.log(), req) }()
+
 	req = p.resolveAnimeID(ctx, req)
+	timings.mark("anime_id")
 	dim := render.DimensionsForSize(req.MediaType, string(req.Config.Size))
 	cacheKey := buildCacheKey(req)
 	result := &Result{
@@ -345,6 +370,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	}
 
 	sourceBytes, meta, ratingID, err := p.fetchSourceImageAndMeta(ctx, req)
+	timings.mark("artwork")
 	if err != nil || len(sourceBytes) == 0 {
 		p.log().WarnContext(ctx, "No source artwork was available; serving a placeholder",
 			"id", logging.RequestID(ctx),
@@ -356,6 +382,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	}
 
 	srcImg, err := decodeImage(sourceBytes)
+	timings.mark("decode")
 	if err != nil {
 		p.log().WarnContext(ctx, "The source artwork could not be decoded; serving a placeholder",
 			"id", logging.RequestID(ctx),
@@ -372,8 +399,10 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	ratingReq := req
 	ratingReq.MediaID = ratingIDForSources(ratingID, meta)
 	allRatings, ratingProviders := p.collectRatingsWithProviders(ctx, ratingReq, meta)
+	timings.mark("ratings")
 	result.ContributingProviders = append([]string{string(req.Config.ArtworkSource)}, ratingProviders...)
 	meta.IsAnime = p.isAnimeTitle(ctx, req)
+	timings.mark("anime_lookup")
 
 	// Use saliency-aware cropping when a backdrop is the source so that
 	// off-centre subjects are not clipped by a naive centre crop.
@@ -410,6 +439,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 
 	// Convert to NRGBA once — all overlay functions draw in-place.
 	composed := toNRGBA(resized)
+	timings.mark("resize")
 
 	scale := overlayScale(outputScale(req.Config.Size), composed.Bounds().Dy())
 
@@ -522,14 +552,17 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	wantsLogoOverlay := req.Config.BackdropLogo ||
 		(req.Config.TextPreference == imageconfig.TextClean && req.MediaType != "logo") ||
 		(req.MediaType == "poster" && req.Config.BackdropAsPoster && meta.BackdropURL != "")
+	timings.mark("overlays")
 	if wantsLogoOverlay && meta.LogoURL != "" {
 		if logoBytes, err := p.fetcher.Fetch(ctx, meta.LogoURL); err == nil {
 			drawBackdropLogoOverlay(composed, logoBytes, ratingsH)
 		}
+		timings.mark("logo_overlay")
 	}
 
 	data, contentType, err := render.Encode(composed, req.MediaType, string(req.Config.Size),
 		render.Format(req.Config.OutputFormat), req.Config.OutputQuality)
+	timings.mark("encode")
 	if err != nil {
 		p.log().WarnContext(ctx, "The composed artwork could not be encoded; serving a placeholder",
 			"id", logging.RequestID(ctx),
@@ -884,13 +917,18 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 		if !providerReady(prov) {
 			continue
 		}
-		if !providerWanted(prov, req.Config.Ratings) {
+		if !providerWanted(prov, req.Config) {
 			continue
 		}
 		wg.Add(1)
 		go func(prov provider.Provider) {
 			defer wg.Done()
+			started := time.Now()
 			meta, err := p.fetchRatingsResilient(ctx, prov, req, artwork)
+			p.log().DebugContext(ctx, "A ratings source answered",
+				"id", logging.RequestID(ctx), "source", prov.Name(),
+				"media_id", req.MediaID, "took_ms", time.Since(started).Milliseconds(),
+				"ratings", len(ratingsOf(meta)), "error", err)
 			if err != nil || meta == nil {
 				return
 			}

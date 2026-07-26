@@ -61,6 +61,13 @@ func NewIMDbDataset(dataDir string) *IMDbDataset {
 
 func (d *IMDbDataset) Name() string { return "imdb_local" }
 
+// RatingSources lists the rating this provider can supply, so a render that
+// selected none of them skips the call.
+func (d *IMDbDataset) RatingSources() []string { return []string{"imdb"} }
+
+// RanksTitles reports that this provider also carries the top-rated rank.
+func (d *IMDbDataset) RanksTitles() bool { return d.topRatedEnabled }
+
 // Fetch returns an IMDb rating from the local dataset.
 // id must be a tt-prefixed IMDb ID (e.g. "tt0468569").
 // On first call the dataset is downloaded and parsed.

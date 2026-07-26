@@ -43,6 +43,15 @@ func NewAnimeMapped(inner Provider, mapper *animemap.Mapper) *AnimeMapped {
 // Name satisfies the Provider interface, reporting the inner provider's name.
 func (w *AnimeMapped) Name() string { return w.inner.Name() }
 
+// RatingSources forwards the wrapped provider's declaration. Without this the
+// wrapper hides it and the render path calls a source nobody selected.
+func (w *AnimeMapped) RatingSources() []string {
+	if s, ok := w.inner.(RatingSourcer); ok {
+		return s.RatingSources()
+	}
+	return nil
+}
+
 // Fetch translates id to the wrapped service's ID space and delegates.
 func (w *AnimeMapped) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, error) {
 	if strings.HasPrefix(id, w.prefix) {

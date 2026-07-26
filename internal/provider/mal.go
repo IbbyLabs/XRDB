@@ -38,6 +38,10 @@ func NewMALWithURL(baseURL string) *MAL {
 
 func (m *MAL) Name() string { return "mal" }
 
+// RatingSources lists the rating this provider can supply, so a render that
+// selected none of them skips the call.
+func (m *MAL) RatingSources() []string { return []string{"mal"} }
+
 // Fetch retrieves MAL metadata. id must be prefixed "mal:<numeric-id>".
 func (m *MAL) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, error) {
 	malID, ok := stripPrefix(id, "mal:")

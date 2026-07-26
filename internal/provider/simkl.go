@@ -63,6 +63,10 @@ func NewSIMKL(clientID string) *SIMKL {
 
 func (s *SIMKL) Name() string { return "simkl" }
 
+// RatingSources lists the rating this provider can supply, so a render that
+// selected none of them skips the call.
+func (s *SIMKL) RatingSources() []string { return []string{"simkl"} }
+
 // Fetch retrieves SIMKL ratings.
 // id may be "simkl:<numeric-id>" or a tt-prefixed IMDb ID for automatic lookup.
 func (s *SIMKL) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, error) {

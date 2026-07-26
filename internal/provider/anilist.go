@@ -31,6 +31,10 @@ func NewAniList() *AniList {
 
 func (a *AniList) Name() string { return "anilist" }
 
+// RatingSources lists the rating this provider can supply, so a render that
+// selected none of them skips the call.
+func (a *AniList) RatingSources() []string { return []string{"anilist"} }
+
 const anilistQuery = `
 query ($id: Int) {
   Media(id: $id, type: ANIME) {

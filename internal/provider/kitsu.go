@@ -29,6 +29,10 @@ func NewKitsu() *Kitsu {
 
 func (k *Kitsu) Name() string { return "kitsu" }
 
+// RatingSources lists the rating this provider can supply, so a render that
+// selected none of them skips the call.
+func (k *Kitsu) RatingSources() []string { return []string{"kitsu"} }
+
 // Fetch retrieves Kitsu metadata. id must be prefixed "kitsu:<numeric-id>".
 func (k *Kitsu) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, error) {
 	kitsuID, ok := stripPrefix(id, "kitsu:")

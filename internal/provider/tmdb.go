@@ -74,6 +74,10 @@ func (t *TMDB) HasCredentials() bool {
 
 func (t *TMDB) Name() string { return "tmdb" }
 
+// RatingSources lists the rating this provider can supply, so a render that
+// selected none of them skips the call.
+func (t *TMDB) RatingSources() []string { return []string{"tmdb"} }
+
 // Fetch retrieves TMDB metadata for a media item.
 // mediaType must be "movie" or "tv"; id must be a numeric TMDB ID or an IMDb tt-ID.
 func (t *TMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, error) {

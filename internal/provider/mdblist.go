@@ -179,6 +179,16 @@ func parseMDBListRatings(p mdblistPayload) []Rating {
 	return out
 }
 
+// RatingSources lists the ratings this provider can supply, so a render that
+// selected none of them skips the call. It must hold every identifier
+// normalizeMDBSource can return; TestMDBListDeclaresEverySourceItMaps checks that.
+func (m *MDBList) RatingSources() []string {
+	return []string{
+		"imdb", "rt", "rtaudience", "metacritic", "metacriticuser", "letterboxd",
+		"mdblist", "trakt", "tmdb", "rogerebert", "commonsense", "mal", "anilist",
+	}
+}
+
 // normalizeMDBSource maps MDBList source strings to canonical source identifiers.
 func normalizeMDBSource(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {

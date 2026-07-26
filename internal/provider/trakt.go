@@ -58,6 +58,10 @@ func NewTrakt(clientID string) *Trakt {
 
 func (t *Trakt) Name() string { return "trakt" }
 
+// RatingSources lists the rating this provider can supply, so a render that
+// selected none of them skips the call.
+func (t *Trakt) RatingSources() []string { return []string{"trakt"} }
+
 // Fetch retrieves Trakt ratings. id must be an IMDb tt-prefixed ID (e.g. "tt0468569").
 func (t *Trakt) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, error) {
 	if !traktIMDbIDRe.MatchString(id) {

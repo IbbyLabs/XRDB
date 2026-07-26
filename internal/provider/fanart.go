@@ -29,6 +29,10 @@ func (f *Fanart) UpdateCredentials(apiKey string) {
 	f.mu.Unlock()
 }
 
+// RatingSources is empty: Fanart serves artwork only. Declaring it keeps the
+// provider out of the ratings fan-out.
+func (f *Fanart) RatingSources() []string { return nil }
+
 // HasCredentials reports whether the provider can make authenticated requests.
 func (f *Fanart) HasCredentials() bool {
 	return f.cred(context.Background()) != ""

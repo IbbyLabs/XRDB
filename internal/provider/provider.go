@@ -62,11 +62,17 @@ type Provider interface {
 
 // RatingSourcer is implemented by a provider that knows exactly which rating
 // sources it can supply, letting the render path skip it when none of them were
-// selected. Most providers return a spread of sources for free once they have
-// answered and have no reason to implement this; it earns its keep for the ones
-// whose lookup is expensive enough that it should only happen on request.
+// selected. A provider that does not implement it is called on every render,
+// so a source left undeclared is a source fetched and thrown away.
 type RatingSourcer interface {
 	RatingSources() []string
+}
+
+// Ranker is implemented by a provider that supplies a top-rated rank alongside
+// its ratings. The rank is wanted independently of the score, so such a
+// provider is still called when the badge is on and its rating is not shown.
+type Ranker interface {
+	RanksTitles() bool
 }
 
 // TitleRatingProvider is implemented by a provider that has no way to look a

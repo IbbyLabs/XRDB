@@ -39,6 +39,10 @@ func NewCinemetaWithBaseURL(base string) *Cinemeta {
 
 func (c *Cinemeta) Name() string { return "cinemeta" }
 
+// RatingSources lists the rating this provider can supply, so a render that
+// selected none of them skips the call.
+func (c *Cinemeta) RatingSources() []string { return []string{"imdb"} }
+
 // Fetch retrieves Cinemeta metadata for an IMDb tt-ID.
 func (c *Cinemeta) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, error) {
 	return c.FetchArtwork(ctx, mediaType, id, ArtworkOptions{})
