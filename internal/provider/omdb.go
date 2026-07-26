@@ -82,7 +82,7 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 	}
 	resp, err := o.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("omdb: http get: %w", err)
+		return nil, fmt.Errorf("omdb: http get: %w", redactHTTPErr(err))
 	}
 	defer resp.Body.Close()
 

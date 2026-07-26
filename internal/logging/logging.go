@@ -106,6 +106,7 @@ func RequestID(ctx context.Context) string {
 var sensitiveParams = map[string]struct{}{
 	"key": {}, "apikey": {}, "api_key": {}, "token": {},
 	"password": {}, "pass": {}, "admin_key": {}, "adminkey": {}, "secret": {},
+	"client_id": {}, "client_secret": {},
 }
 
 // RedactQuery returns rawQuery with sensitive values replaced by "REDACTED".

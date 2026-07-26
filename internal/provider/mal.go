@@ -60,7 +60,7 @@ func (m *MAL) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, erro
 	}
 	resp, err := m.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("mal: http get: %w", err)
+		return nil, fmt.Errorf("mal: http get: %w", redactHTTPErr(err))
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusNotFound {

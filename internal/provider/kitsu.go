@@ -53,7 +53,7 @@ func (k *Kitsu) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, er
 
 	resp, err := k.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("kitsu: http get: %w", err)
+		return nil, fmt.Errorf("kitsu: http get: %w", redactHTTPErr(err))
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusNotFound {

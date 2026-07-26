@@ -113,7 +113,7 @@ func (f *Fanart) fetchRaw(ctx context.Context, base, id string) (map[string]json
 
 	resp, err := f.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("fanart: http get: %w", err)
+		return nil, fmt.Errorf("fanart: http get: %w", redactHTTPErr(err))
 	}
 	defer resp.Body.Close()
 

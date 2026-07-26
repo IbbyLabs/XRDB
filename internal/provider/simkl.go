@@ -126,7 +126,7 @@ func (s *SIMKL) fetchSegment(ctx context.Context, segment, simklID, origID strin
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("simkl: http get: %w", err)
+		return nil, fmt.Errorf("simkl: http get: %w", redactHTTPErr(err))
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusNotFound {
@@ -204,7 +204,7 @@ func (s *SIMKL) lookupByIMDB(ctx context.Context, imdbID string) (string, error)
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("simkl lookup: http get: %w", err)
+		return "", fmt.Errorf("simkl lookup: http get: %w", redactHTTPErr(err))
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {

@@ -99,7 +99,7 @@ func (m *MDBList) fetchType(ctx context.Context, mdbType, id string) (*MediaMeta
 
 	resp, err := m.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("mdblist: request: %w", err)
+		return nil, fmt.Errorf("mdblist: request: %w", redactHTTPErr(err))
 	}
 	defer resp.Body.Close()
 

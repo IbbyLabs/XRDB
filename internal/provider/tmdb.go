@@ -673,7 +673,7 @@ func (t *TMDB) get(ctx context.Context, path string, out any) error {
 	}
 	resp, err := t.httpClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("http get: %w", err)
+		return fmt.Errorf("http get: %w", redactHTTPErr(err))
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {

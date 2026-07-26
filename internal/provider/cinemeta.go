@@ -87,7 +87,7 @@ func (c *Cinemeta) fetchMeta(ctx context.Context, contentType, id string) (*Medi
 	}
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("cinemeta: %w", err)
+		return nil, fmt.Errorf("cinemeta: %w", redactHTTPErr(err))
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {

@@ -101,7 +101,7 @@ func (t *Trakt) fetchSegment(ctx context.Context, segment, id string) (*MediaMet
 
 	resp, err := t.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("trakt: http get: %w", err)
+		return nil, fmt.Errorf("trakt: http get: %w", redactHTTPErr(err))
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusNotFound {

@@ -85,7 +85,7 @@ func (a *AniList) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, 
 
 	resp, err := a.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("anilist: http post: %w", err)
+		return nil, fmt.Errorf("anilist: http post: %w", redactHTTPErr(err))
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
