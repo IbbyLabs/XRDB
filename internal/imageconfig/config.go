@@ -394,6 +394,9 @@ type QualityBadgeConfig struct {
 	QualityBadgesStyle           string `json:"qualityBadgesStyle,omitempty"`           // glass | plain | tile
 	QualityBadgesMax             *int   `json:"qualityBadgesMax,omitempty"`             // cap on badge count; nil = no cap
 	QualityBadgesTileAccentColor string `json:"qualityBadgesTileAccentColor,omitempty"` // "#RRGGBB" for the tile style
+	// QualityBadgesHidden draws none of them while leaving the selection alone,
+	// so turning them back on does not mean picking every badge again.
+	QualityBadgesHidden bool `json:"qualityBadgesHidden,omitempty"`
 }
 
 // RatingRingConfig groups the compact rating-ring options beyond the existing
@@ -557,6 +560,7 @@ type rawQuality struct {
 	QualityBadgesStyle           *string `json:"qualityBadgesStyle"`
 	QualityBadgesMax             *int    `json:"qualityBadgesMax"`
 	QualityBadgesTileAccentColor *string `json:"qualityBadgesTileAccentColor"`
+	QualityBadgesHidden          *bool   `json:"qualityBadgesHidden"`
 }
 
 type rawTrending struct {
@@ -987,6 +991,9 @@ func parseQuality(cfg *Config, r *raw) {
 	if r.QualityBadgesMax != nil && *r.QualityBadgesMax > 0 {
 		m := clampInt(*r.QualityBadgesMax, 1, 20)
 		cfg.QualityBadgesMax = &m
+	}
+	if r.QualityBadgesHidden != nil {
+		cfg.QualityBadgesHidden = *r.QualityBadgesHidden
 	}
 	if r.QualityBadgesTileAccentColor != nil && isHexColor(*r.QualityBadgesTileAccentColor) {
 		cfg.QualityBadgesTileAccentColor = strings.TrimSpace(*r.QualityBadgesTileAccentColor)

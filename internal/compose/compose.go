@@ -104,6 +104,13 @@ type animeTargetResolver interface {
 	ResolveTarget(ctx context.Context, id string) (animemap.Target, bool)
 }
 
+// showQualityBadges reports whether the quality row is drawn. The hidden switch
+// suppresses the row without touching the selection, so switching it back on
+// does not mean picking every badge again.
+func showQualityBadges(cfg imageconfig.Config) bool {
+	return len(cfg.Badges) > 0 && !cfg.QualityBadgesHidden
+}
+
 // resolveAnimeID rewrites a MAL, AniList or Kitsu id into the IMDb or TMDB id
 // the artwork and rating sources are keyed on. Catalogues sourced from those
 // services hand out ids nothing else in the pipeline understands. A trailing
@@ -473,7 +480,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 			}
 		}
 	}
-	if len(req.Config.Badges) > 0 {
+	if showQualityBadges(req.Config) {
 		drawQualityBadges(composed, req.Config.Badges, scale, occ, qualityOptsFromConfig(req.Config))
 	}
 	if req.Config.AgeRating && meta.ContentRating != "" {

@@ -404,7 +404,13 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
               <span className="count-pill">{config.badges.length}</span>
             )}
           </legend>
-          <div className="chip-row">
+          <ToggleRow
+            label="Show quality badges"
+            hint="Turn them all off without losing which ones you picked"
+            checked={!config.qualityBadgesHidden}
+            onChange={() => onUpdate('qualityBadgesHidden', !config.qualityBadgesHidden)}
+          />
+          <div className="chip-row" style={config.qualityBadgesHidden ? { opacity: 0.45 } : undefined}>
             {QUALITY_BADGE_OPTIONS.map(b => {
               const active = config.badges.includes(b.id);
               const supersededBy = suppressed[b.id];
