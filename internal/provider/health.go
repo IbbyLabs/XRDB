@@ -163,6 +163,13 @@ func (h *HealthTracker) Failure(source string, err error) {
 		if wait > maxCooldown {
 			wait = maxCooldown
 		}
+		// A spent allowance lasts until the source's window rolls over, which it
+		// does not tell us. Probing hourly costs a handful of requests a day
+		// instead of one per render, and picks the source back up soon after it
+		// resets whenever that happens to be.
+		if rl.QuotaExhausted {
+			wait = quotaCooldown
+		}
 		until := time.Now().Add(wait)
 		if until.After(st.cooldownUntil) {
 			st.cooldownUntil = until
@@ -178,6 +185,9 @@ func (h *HealthTracker) Failure(source string, err error) {
 const (
 	defaultCooldown = 30 * time.Second
 	maxCooldown     = 5 * time.Minute
+	// quotaCooldown applies when the allowance itself is spent rather than the
+	// moment being busy. The window it waits on is usually a day.
+	quotaCooldown = time.Hour
 )
 
 // CoolingOff reports whether a source is being held out after refusing on

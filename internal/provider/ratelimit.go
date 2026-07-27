@@ -9,6 +9,7 @@ import (
 	"math/rand/v2"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -24,6 +25,10 @@ type RateLimitError struct {
 	Source     string
 	RetryAfter time.Duration
 	Status     int
+	// QuotaExhausted marks a refusal that stands until the source's quota
+	// window rolls over. No amount of waiting inside the window helps, and
+	// every further request is spent on being refused again.
+	QuotaExhausted bool
 }
 
 func (e *RateLimitError) Error() string {
@@ -178,6 +183,16 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 			wait = backoff(attempt)
 		}
 
+		// A quota refusal cannot be retried out of. Spending the retry budget on
+		// it burns the very allowance that is exhausted.
+		if body := peek(resp); isQuotaRefusal(body) {
+			drain(resp)
+			t.log().WarnContext(req.Context(), "A ratings source has spent its request quota; holding it back",
+				"source", t.source, "status", lastStatus, "attempts", attempt+1)
+			return nil, &RateLimitError{Source: t.source, RetryAfter: wait,
+				Status: lastStatus, QuotaExhausted: true}
+		}
+
 		if attempt >= retries || wait > t.policy.MaxRetryWait {
 			// Drain a little so the connection can be reused, then report the
 			// refusal as a typed error rather than handing back a body the
@@ -239,6 +254,43 @@ func backoff(attempt int) time.Duration {
 		base = 8 * time.Second
 	}
 	return base + time.Duration(rand.Int64N(int64(base/2)))
+}
+
+// peek reads the front of a response body without closing it, so the caller can
+// still drain the rest. These refusals carry a short JSON reason and nothing
+// else, so a small prefix is the whole message.
+func peek(resp *http.Response) []byte {
+	if resp.Body == nil {
+		return nil
+	}
+	buf := make([]byte, 512)
+	n, _ := io.ReadFull(io.LimitReader(resp.Body, int64(len(buf))), buf)
+	return buf[:n]
+}
+
+// quotaMarkers are the phrases a source uses to say the refusal is a spent
+// allowance rather than a moment of pressure. SIMKL answers a spent daily
+// allowance with {"error":"app_limit_exceeded", ...}.
+var quotaMarkers = []string{
+	"app_limit_exceeded",
+	"daily request limit",
+	"quota exceeded",
+	"quota_exceeded",
+	"out of quota",
+}
+
+// isQuotaRefusal reports whether a refusal body says the allowance is spent.
+func isQuotaRefusal(body []byte) bool {
+	if len(body) == 0 {
+		return false
+	}
+	lower := strings.ToLower(string(body))
+	for _, m := range quotaMarkers {
+		if strings.Contains(lower, m) {
+			return true
+		}
+	}
+	return false
 }
 
 // drain reads and closes a response body so the connection can be reused.
