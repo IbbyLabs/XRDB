@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -12,6 +13,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"xrdb_rewrite/internal/logging"
 )
 
 const tmdbBaseURL = "https://api.themoviedb.org/3"
@@ -26,6 +29,8 @@ type TMDB struct {
 	// baseURL overrides the public API root for tests. Empty means tmdbBaseURL.
 	baseURL string
 }
+
+func (t *TMDB) log() *slog.Logger { return slog.Default() }
 
 // base returns the API root for this client.
 func (t *TMDB) base() string {
@@ -114,7 +119,7 @@ func (t *TMDB) resolveID(ctx context.Context, mediaType, id string) (string, str
 
 	// IMDB tt-IDs need the find endpoint to get a TMDB ID.
 	if strings.HasPrefix(id, "tt") {
-		match, found, err := t.findByExternalID(ctx, id, "imdb_id")
+		match, found, err := t.findByExternalID(ctx, id, "imdb_id", preferredBucket(mediaType))
 		if err != nil {
 			return "", "", err
 		}
@@ -127,7 +132,7 @@ func (t *TMDB) resolveID(ctx context.Context, mediaType, id string) (string, str
 	// TVDB IDs (emitted by AIOMetadata's imdb-less art fallback, e.g.
 	// "tvdb:81189") resolve via TMDB's find endpoint keyed on the TVDB source.
 	if rest, ok := stripPrefix(id, "tvdb:"); ok {
-		match, found, err := t.findByExternalID(ctx, rest, "tvdb_id")
+		match, found, err := t.findByExternalID(ctx, rest, "tvdb_id", preferredBucket(mediaType))
 		if err != nil {
 			return "", "", err
 		}
@@ -166,41 +171,100 @@ type externalMatch struct {
 	ID          string
 	ContentType string // "movie" | "tv"
 	Title       string
+	// Popularity is TMDB's own relevance score, used only to break a tie
+	// between two records claiming the same external id.
+	Popularity float64
 }
 
 // findByExternalID resolves an external identifier (an IMDb tt-id or a TVDB id)
 // to a TMDB id via TMDB's /find endpoint. found is false when TMDB returns no
 // match; err is non-nil only on a transport/decoding failure.
-func (t *TMDB) findByExternalID(ctx context.Context, externalID, source string) (match externalMatch, found bool, err error) {
+//
+// prefer is "movie", "tv", or "" and decides which record wins when the id is
+// attached to both. An IMDb id names one work, so two records mean TMDB holds a
+// duplicate and one of them is wrong.
+func (t *TMDB) findByExternalID(ctx context.Context, externalID, source, prefer string) (match externalMatch, found bool, err error) {
 	path := t.base() + "/find/" + url.PathEscape(externalID) + "?external_source=" + source
 	var result struct {
 		MovieResults []struct {
-			ID    int    `json:"id"`
-			Title string `json:"title"`
+			ID         int     `json:"id"`
+			Title      string  `json:"title"`
+			Popularity float64 `json:"popularity"`
 		} `json:"movie_results"`
 		TVResults []struct {
-			ID   int    `json:"id"`
-			Name string `json:"name"`
+			ID         int     `json:"id"`
+			Name       string  `json:"name"`
+			Popularity float64 `json:"popularity"`
 		} `json:"tv_results"`
 	}
 	if err := t.get(ctx, path, &result); err != nil {
 		return externalMatch{}, false, err
 	}
+	var movie, tv *externalMatch
 	if len(result.MovieResults) > 0 {
 		m := result.MovieResults[0]
-		return externalMatch{ID: strconv.Itoa(m.ID), ContentType: "movie", Title: m.Title}, true, nil
+		movie = &externalMatch{ID: strconv.Itoa(m.ID), ContentType: "movie", Title: m.Title, Popularity: m.Popularity}
 	}
 	if len(result.TVResults) > 0 {
 		s := result.TVResults[0]
-		return externalMatch{ID: strconv.Itoa(s.ID), ContentType: "tv", Title: s.Name}, true, nil
+		tv = &externalMatch{ID: strconv.Itoa(s.ID), ContentType: "tv", Title: s.Name, Popularity: s.Popularity}
 	}
-	return externalMatch{}, false, nil
+	switch {
+	case movie == nil && tv == nil:
+		return externalMatch{}, false, nil
+	case tv == nil:
+		return *movie, true, nil
+	case movie == nil:
+		return *tv, true, nil
+	}
+	chosen, why := resolveDuplicate(movie, tv, prefer)
+	t.log().WarnContext(ctx, "An external id is attached to two TMDB records; one of them is wrong",
+		"id", logging.RequestID(ctx), "external_id", externalID,
+		"movie", movie.ID, "movie_title", movie.Title,
+		"series", tv.ID, "series_title", tv.Title,
+		"chose", chosen.ContentType, "because", why)
+	return *chosen, true, nil
+}
+
+// resolveDuplicate picks between a movie and a series that claim the same
+// external id. A caller that knows the content type settles it outright.
+// Otherwise popularity does: a duplicate pairs a real title with a record
+// almost nobody looks at.
+func resolveDuplicate(movie, tv *externalMatch, prefer string) (*externalMatch, string) {
+	switch prefer {
+	case "movie":
+		return movie, "the caller asked for a movie"
+	case "tv":
+		return tv, "the caller asked for a series"
+	}
+	if tv.Popularity > movie.Popularity {
+		return tv, "the series is the more popular record"
+	}
+	return movie, "the movie is the more popular record"
+}
+
+// preferredBucket maps a content-type hint onto the /find bucket it belongs to.
+// An empty or unrecognised hint expresses no preference.
+func preferredBucket(mediaType string) string {
+	switch {
+	case isSeriesType(mediaType):
+		return "tv"
+	case isMovieType(mediaType):
+		return "movie"
+	default:
+		return ""
+	}
 }
 
 // IdentifyID resolves an IMDb tt-id or TVDB id to TMDB's own id and content
 // type, so a source matched through a third-party id index can be checked
 // against it. contentType is "movie" or "series".
-func (t *TMDB) IdentifyID(ctx context.Context, id string) (tmdbID, contentType string, err error) {
+//
+// hint is what the caller already knows the title to be, if anything. It settles
+// an id TMDB holds against two records, where resolving to the wrong one would
+// make every later check agree on the wrong title.
+func (t *TMDB) IdentifyID(ctx context.Context, id, hint string) (tmdbID, contentType string, err error) {
+	contentTypeHint := hint
 	id = strings.TrimSpace(id)
 	source := "imdb_id"
 	if rest, ok := stripPrefix(id, "tvdb:"); ok {
@@ -208,7 +272,7 @@ func (t *TMDB) IdentifyID(ctx context.Context, id string) (tmdbID, contentType s
 	} else if !strings.HasPrefix(id, "tt") {
 		return "", "", fmt.Errorf("tmdb: %q is not an external id", id)
 	}
-	match, found, err := t.findByExternalID(ctx, id, source)
+	match, found, err := t.findByExternalID(ctx, id, source, preferredBucket(contentTypeHint))
 	if err != nil {
 		return "", "", err
 	}
@@ -302,7 +366,7 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		// OriginalLanguage is the language the title was made in, which is what
 		// a request for the original language resolves to.
 		OriginalLanguage string `json:"original_language"`
-		Overview      string `json:"overview"`
+		Overview         string `json:"overview"`
 		// Movies carry imdb_id at the top level, series only under external_ids.
 		IMDbID      string `json:"imdb_id"`
 		ExternalIDs struct {

@@ -794,7 +794,7 @@ func (p *Pipeline) identify(ctx context.Context, req Request, order []string) (t
 	if !ok {
 		return "", ""
 	}
-	tmdbID, contentType, err := ident.IdentifyID(ctx, req.MediaID)
+	tmdbID, contentType, err := ident.IdentifyID(ctx, req.MediaID, req.ContentType)
 	if err != nil {
 		p.log().DebugContext(ctx, "Could not identify the title before fetching artwork",
 			"id", logging.RequestID(ctx), "media_id", req.MediaID, "error", err)

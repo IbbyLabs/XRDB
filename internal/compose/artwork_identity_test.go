@@ -17,11 +17,22 @@ type identifyingStub struct {
 	tmdbID      string
 	contentType string
 	identifies  int32
+	mu          sync.Mutex
+	gotHint     string
 }
 
-func (s *identifyingStub) IdentifyID(context.Context, string) (string, string, error) {
+func (s *identifyingStub) IdentifyID(_ context.Context, _, hint string) (string, string, error) {
 	atomic.AddInt32(&s.identifies, 1)
+	s.mu.Lock()
+	s.gotHint = hint
+	s.mu.Unlock()
 	return s.tmdbID, s.contentType, nil
+}
+
+func (s *identifyingStub) hint() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.gotHint
 }
 
 func (s *identifyingStub) Identifies() int { return int(atomic.LoadInt32(&s.identifies)) }
@@ -84,6 +95,43 @@ func TestFanartFirstIsGivenTheResolvedIdentity(t *testing.T) {
 	}
 	if tmdb.Identifies() != 1 {
 		t.Errorf("identify calls = %d, want 1", tmdb.Identifies())
+	}
+}
+
+// A stub that stops satisfying the interface makes the pipeline skip the lookup
+// silently rather than fail, so the mismatch has to be a build error.
+var _ provider.TitleIdentifier = (*identifyingStub)(nil)
+
+// An id TMDB holds against both a movie and a series is settled by the content
+// type the request stated, so it has to reach the lookup.
+func TestStatedContentTypeReachesTheIdentityLookup(t *testing.T) {
+	fanart := &recordingArtworkStub{
+		StubProvider: provider.StubProvider{
+			ProviderName: "fanart",
+			Meta:         &provider.MediaMeta{PosterURL: "http://fanart/poster.jpg"},
+		},
+	}
+	tmdb := &identifyingStub{
+		StubProvider: provider.StubProvider{
+			ProviderName: "tmdb",
+			Meta:         &provider.MediaMeta{Title: "The Five Star Weekend"},
+		},
+		tmdbID:      "283151",
+		contentType: "series",
+	}
+	reg := provider.NewRegistry()
+	reg.Register(fanart)
+	reg.Register(tmdb)
+	p := &Pipeline{providers: reg, fetcher: &recordingFetcher{data: makeTestPNG(600, 900, color.NRGBA{20, 20, 20, 255})}}
+
+	cfg := imageconfig.Default()
+	cfg.ArtworkSource = imageconfig.ArtworkFanart
+	req := Request{MediaType: "poster", ContentType: "series", MediaID: "tt35587659", Config: cfg}
+	if _, err := p.Render(context.Background(), req); err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	if got := tmdb.hint(); got != "series" {
+		t.Errorf("identity lookup got hint %q, want series", got)
 	}
 }
 

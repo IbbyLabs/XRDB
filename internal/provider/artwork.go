@@ -49,7 +49,8 @@ type ArtworkFetcher interface {
 }
 
 // TitleIdentifier resolves what an external id (an IMDb tt-id or "tvdb:") names.
-// contentType is "movie" or "series".
+// hint is the content type the caller already knows, or "". contentType is
+// "movie" or "series".
 type TitleIdentifier interface {
-	IdentifyID(ctx context.Context, id string) (tmdbID, contentType string, err error)
+	IdentifyID(ctx context.Context, id, hint string) (tmdbID, contentType string, err error)
 }
