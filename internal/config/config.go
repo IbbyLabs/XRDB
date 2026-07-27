@@ -31,7 +31,10 @@ type Config struct {
 	DBPath          string
 	CacheDir        string
 	CacheTTL        time.Duration
-	RatingsCacheTTL time.Duration
+	// DegradedCacheTTL caps how long a render that lost a badge to a failing
+	// source is cached.
+	DegradedCacheTTL time.Duration
+	RatingsCacheTTL  time.Duration
 	CacheMaxEntries int   // hot tier entry cap
 	CacheMaxBytes   int64 // hot tier byte cap
 	TMDBAPIKey      string
@@ -184,6 +187,18 @@ func Load() Config {
 			cacheTTL = d
 		}
 	}
+	// A render missing a badge because its source errored is held only briefly,
+	// so it re-renders soon after the source recovers instead of carrying the
+	// gap for the full cache TTL. Zero falls back to the normal TTL.
+	degradedCacheTTL := 20 * time.Minute
+	if raw := os.Getenv("XRDB_DEGRADED_CACHE_TTL_MINUTES"); raw != "" {
+		if d, err := time.ParseDuration(raw + "m"); err == nil && d >= 0 {
+			degradedCacheTTL = d
+		}
+	}
+	if degradedCacheTTL > cacheTTL {
+		degradedCacheTTL = cacheTTL
+	}
 	// Ratings are per title, so they outlive any one render config. Zero
 	// disables the cache.
 	ratingsCacheTTL := 6 * time.Hour
@@ -239,6 +254,7 @@ func Load() Config {
 		CacheDir:              cacheDir,
 		RatingsCacheTTL:       ratingsCacheTTL,
 		CacheTTL:              cacheTTL,
+		DegradedCacheTTL:      degradedCacheTTL,
 		CacheMaxEntries:       cacheMaxEntries,
 		CacheMaxBytes:         cacheMaxBytes,
 		TMDBAPIKey:            credential("XRDB_TMDB_API_KEY", "TMDB_API_KEY"),

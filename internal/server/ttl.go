@@ -13,6 +13,9 @@ import (
 type ttlStore struct {
 	mu   sync.RWMutex
 	ttls map[string]time.Duration
+	// degraded caps renders that lost a badge to a failing source. Zero leaves
+	// them on the normal TTL.
+	degraded time.Duration
 }
 
 func newTTLStore(seed map[string]time.Duration) *ttlStore {
@@ -52,6 +55,20 @@ func (s *ttlStore) providers() []string {
 	}
 	sort.Strings(out)
 	return out
+}
+
+// degradedTTL returns the cap for renders missing a badge, or zero if unset.
+func (s *ttlStore) degradedTTL() time.Duration {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.degraded
+}
+
+// setDegradedTTL sets the cap for renders missing a badge.
+func (s *ttlStore) setDegradedTTL(d time.Duration) {
+	s.mu.Lock()
+	s.degraded = d
+	s.mu.Unlock()
 }
 
 // set overrides one provider's TTL live.

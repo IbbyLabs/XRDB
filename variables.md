@@ -14,6 +14,7 @@ settings store and take precedence on restart).
 | `XRDB_DB` | `xrdb.db` | SQLite database path for profiles. Use `/data/xrdb.db` in Docker. A `<path>.settings` sidecar holds integration keys saved via the UI. |
 | `XRDB_CACHE_DIR` | `xrdb-cache` | Directory for the rendered-image disk cache. Use `/data/cache` in Docker. |
 | `XRDB_CACHE_TTL_HOURS` | `72` | Default time rendered images stay cached, in hours (fractions allowed). |
+| `XRDB_DEGRADED_CACHE_TTL_MINUTES` | `20` | How long a render missing a rating badge stays cached, in minutes. A source that is rate-limited or erroring drops its badge from the render; the short window lets that render redo itself once the source recovers rather than holding the gap for the full cache TTL. Capped at `XRDB_CACHE_TTL_HOURS`; `0` disables it and leaves such renders on the normal TTL. |
 | `XRDB_RATINGS_CACHE_TTL_HOURS` | `6` | How long one rating source's answer for one title is reused, in hours (fractions allowed). Ratings depend on the title rather than the render config, so this spares a repeat lookup when the same title is rendered under a different config. `0` disables it. |
 | `XRDB_RENDER_CONCURRENCY` | `2x CPU cores` | Maximum simultaneous renders. Bounds memory when a client loads a full catalogue at once; lower it on memory-constrained hosts. |
 | `XRDB_MEMORY_LIMIT_MB` | unset | Soft heap limit in MiB (`debug.SetMemoryLimit`). Set to roughly the container memory limit so the runtime GCs before a kernel OOM-kill. `GOMEMLIMIT` also works. |

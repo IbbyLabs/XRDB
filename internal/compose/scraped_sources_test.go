@@ -50,7 +50,7 @@ func TestScrapedSourceIsSkippedWhenNotSelected(t *testing.T) {
 	p := &Pipeline{providers: reg, fetcher: &stubImageFetcher{}}
 	req := Request{MediaType: "poster", MediaID: "tt0468569", Config: cfg}
 
-	all, _ := p.collectRatingsWithProviders(context.Background(), req, artworkMeta())
+	all, _, _ := p.collectRatingsWithProviders(context.Background(), req, artworkMeta())
 	if got := stub.calls.Load(); got != 0 {
 		t.Errorf("provider called %d times, want 0 when none of its sources are selected", got)
 	}
@@ -69,7 +69,7 @@ func TestScrapedSourceIsCalledByTitleWhenSelected(t *testing.T) {
 	p := &Pipeline{providers: reg, fetcher: &stubImageFetcher{}}
 	req := Request{MediaType: "poster", MediaID: "tt0468569", Config: cfg}
 
-	all, contributors := p.collectRatingsWithProviders(context.Background(), req, artworkMeta())
+	all, contributors, _ := p.collectRatingsWithProviders(context.Background(), req, artworkMeta())
 	if got := stub.calls.Load(); got != 1 {
 		t.Fatalf("provider called %d times, want 1", got)
 	}
@@ -97,7 +97,7 @@ func TestProvidersWithoutDeclaredSourcesStillRunAlways(t *testing.T) {
 	p := &Pipeline{providers: reg, fetcher: &stubImageFetcher{}}
 	req := Request{MediaType: "poster", MediaID: "tt0468569", Config: cfg}
 
-	all, _ := p.collectRatingsWithProviders(context.Background(), req, artworkMeta())
+	all, _, _ := p.collectRatingsWithProviders(context.Background(), req, artworkMeta())
 	if len(all) != 1 {
 		t.Errorf("ratings = %v, want the undeclared provider still consulted", all)
 	}

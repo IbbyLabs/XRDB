@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	xdraw "golang.org/x/image/draw"
@@ -51,6 +52,11 @@ type Result struct {
 	// real artwork — the caller must not cache it (a transient failure would
 	// otherwise be frozen for the whole TTL) and should signal that downstream.
 	Placeholder bool
+	// Degraded is true when a wanted rating source was asked and answered with
+	// an error, leaving its badge off artwork that is otherwise fine. The render
+	// is real and worth caching, but only briefly: the full TTL would hold the
+	// missing badge long after the source recovers.
+	Degraded bool
 }
 
 // Pipeline orchestrates metadata fetch + image composition.
@@ -427,9 +433,10 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// req.MediaID for episodes, so per-episode ratings resolve correctly.
 	ratingReq := req
 	ratingReq.MediaID = ratingIDForSources(ratingID, meta)
-	allRatings, ratingProviders := p.collectRatingsWithProviders(ctx, ratingReq, meta)
+	allRatings, ratingProviders, degraded := p.collectRatingsWithProviders(ctx, ratingReq, meta)
 	timings.mark("ratings")
 	result.ContributingProviders = append([]string{string(req.Config.ArtworkSource)}, ratingProviders...)
+	result.Degraded = degraded
 	meta.IsAnime = p.isAnimeTitle(ctx, req)
 	timings.mark("anime_lookup")
 
@@ -972,8 +979,13 @@ func resizeFit(src image.Image, maxW, maxH int) image.Image {
 // collectRatingsWithProviders calls all non-artwork providers in parallel and
 // merges their ratings with those already returned by the artwork source.
 // Duplicate sources are deduplicated. Also returns the names of every
-// non-artwork provider that returned data (for TTL selection).
-func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request, artwork *provider.MediaMeta) ([]provider.Rating, []string) {
+// non-artwork provider that returned data (for TTL selection), and whether any
+// source failed outright with nothing remembered to stand in for it.
+//
+// A source that answers with no rating is not degraded: most titles genuinely
+// lack a score on most sources, and treating that as a failure would put every
+// render on the short TTL.
+func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request, artwork *provider.MediaMeta) ([]provider.Rating, []string, bool) {
 	if artwork == nil {
 		artwork = &provider.MediaMeta{}
 	}
@@ -1010,6 +1022,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 	}
 
 	answers := make([]*provider.MediaMeta, len(called))
+	var degraded atomic.Bool
 	for i, prov := range called {
 		wg.Add(1)
 		go func(i int, prov provider.Provider) {
@@ -1020,7 +1033,13 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 				"id", logging.RequestID(ctx), "source", prov.Name(),
 				"media_id", req.MediaID, "took_ms", time.Since(started).Milliseconds(),
 				"ratings", len(ratingsOf(meta)), "error", err)
-			if err != nil || meta == nil {
+			if err != nil {
+				// The fallback to a remembered value has already been tried, so
+				// an error here means this badge is missing from the render.
+				degraded.Store(true)
+				return
+			}
+			if meta == nil {
 				return
 			}
 			answers[i] = meta
@@ -1049,7 +1068,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 			contributors = append(contributors, called[i].Name())
 		}
 	}
-	return all, contributors
+	return all, contributors, degraded.Load()
 }
 
 // toNRGBA converts any image.Image to *image.NRGBA for in-place drawing.

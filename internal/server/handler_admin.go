@@ -669,8 +669,11 @@ func warmPosters(
 // a render result. Falls back to 0 (cache default) when result or the store is
 // nil. Reading from the live store means a TTL changed at runtime applies to the
 // next render without a restart.
+// A render that lost a badge to a failing source is capped shorter still, so a
+// cooldown costs one render rather than a catalogue held that way until the TTL
+// runs out.
 func effectiveTTL(result *compose.Result, ttls *ttlStore) time.Duration {
-	if result == nil || ttls == nil || len(result.ContributingProviders) == 0 {
+	if result == nil || ttls == nil {
 		return 0
 	}
 	var min time.Duration
@@ -679,6 +682,11 @@ func effectiveTTL(result *compose.Result, ttls *ttlStore) time.Duration {
 			if min == 0 || t < min {
 				min = t
 			}
+		}
+	}
+	if result.Degraded {
+		if capTTL := ttls.degradedTTL(); capTTL > 0 && (min == 0 || capTTL < min) {
+			min = capTTL
 		}
 	}
 	return min

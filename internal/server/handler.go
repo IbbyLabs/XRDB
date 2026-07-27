@@ -42,6 +42,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	mux := http.NewServeMux()
 	renderLimiter := newConcurrencyLimiter(cfg.RenderConcurrency)
 	ttls := newTTLStore(cfg.ProviderTTLs)
+	ttls.setDegradedTTL(cfg.DegradedCacheTTL)
 	// Forwarded headers are client input unless the peer is a known proxy.
 	trust := newProxyTrust(cfg.TrustedProxies, cfg.TrustProxyHeaders)
 
