@@ -291,6 +291,15 @@ func (p *Pipeline) Health() *provider.HealthTracker { return p.health }
 // real answer is what silently erased a badge from every render. Both fall back
 // to the previous good answer for the same title when one is remembered.
 func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Provider, req Request, artwork *provider.MediaMeta) (*provider.MediaMeta, error) {
+	if p.health != nil && p.health.CoolingOff(prov.Name()) {
+		// The source is refusing on rate-limit grounds. Waiting for it to say so
+		// again costs the render seconds, so take the remembered value instead.
+		key := provider.GoodKey(prov.Name(), req.ContentType, req.MediaID)
+		if good, ok := p.health.LastGood(prov.Name(), key); ok {
+			return good, nil
+		}
+		return nil, fmt.Errorf("%s: rate limited, cooling off: %w", prov.Name(), provider.ErrRateLimited)
+	}
 	meta, err := p.fetchRatings(ctx, prov, req, artwork)
 	if p.health == nil {
 		return meta, err

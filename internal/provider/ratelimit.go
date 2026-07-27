@@ -44,9 +44,10 @@ func (e *RateLimitError) Unwrap() error { return ErrRateLimited }
 type RateLimit struct {
 	MinInterval time.Duration
 	MaxRetries  int
-	// MaxRetryWait caps how long a single Retry-After will be honoured. A
-	// source asking for ten minutes should fail the render fast and let the
-	// cached value stand, not hold a render slot for ten minutes.
+	// MaxRetryWait caps how long a single Retry-After will be honoured. These
+	// waits happen inside a live render, so the budget is the one a request can
+	// afford, not the one the source asked for. A longer wait ends the attempt
+	// and the refusal puts the source in cooldown instead.
 	MaxRetryWait time.Duration
 }
 
@@ -59,15 +60,19 @@ type RateLimit struct {
 //   - AniList publishes 90 requests/minute but drops to 30 in degraded
 //     windows, so it is paced for the degraded number rather than the happy one.
 var rateLimits = map[string]RateLimit{
-	"mal":     {MinInterval: time.Second, MaxRetries: 2, MaxRetryWait: 10 * time.Second},
-	"anilist": {MinInterval: 2 * time.Second, MaxRetries: 2, MaxRetryWait: 10 * time.Second},
-	"mdblist": {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: 10 * time.Second},
-	"trakt":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: 10 * time.Second},
-	"simkl":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: 10 * time.Second},
-	"kitsu":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: 10 * time.Second},
+	"mal":     {MinInterval: time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
+	"anilist": {MinInterval: 2 * time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
+	"mdblist": {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
+	"trakt":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
+	"simkl":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
+	"kitsu":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
 }
 
-var defaultRateLimit = RateLimit{MaxRetries: 2, MaxRetryWait: 5 * time.Second}
+// renderRetryBudget is how long a live render will sleep waiting for a source
+// to stop refusing. Beyond it the attempt ends and the source cools off.
+const renderRetryBudget = time.Second
+
+var defaultRateLimit = RateLimit{MaxRetries: 2, MaxRetryWait: renderRetryBudget}
 
 // rateLimitFor returns the policy for a source.
 func rateLimitFor(source string) RateLimit {

@@ -32,6 +32,10 @@ type sourceState struct {
 	successes       int64
 	failures        int64
 	staleServes     int64
+	// cooldownUntil is set when a source refuses for rate-limit reasons. Live
+	// renders skip it until then and serve the remembered value instead.
+	cooldownUntil time.Time
+	cooldowns     int64
 }
 
 type goodEntry struct {
@@ -56,6 +60,10 @@ type SourceHealth struct {
 	// because the live fetch failed. A rising number means a source is broken
 	// even while renders still look right.
 	StaleServes int64 `json:"staleServes"`
+	// CoolingOff is true while the source is held out of live renders after
+	// refusing on rate-limit grounds. Cooldowns counts how often that started.
+	CoolingOff bool  `json:"coolingOff"`
+	Cooldowns  int64 `json:"cooldowns"`
 }
 
 const (
@@ -142,6 +150,46 @@ func (h *HealthTracker) Failure(source string, err error) {
 	if err != nil {
 		st.lastError = truncateError(err.Error())
 	}
+
+	// A source that is refusing on rate-limit grounds will refuse the next
+	// render too, so hold it out for as long as it asked rather than paying
+	// the same wait again on every request.
+	var rl *RateLimitError
+	if errors.As(err, &rl) {
+		wait := rl.RetryAfter
+		if wait <= 0 {
+			wait = defaultCooldown
+		}
+		if wait > maxCooldown {
+			wait = maxCooldown
+		}
+		until := time.Now().Add(wait)
+		if until.After(st.cooldownUntil) {
+			st.cooldownUntil = until
+			st.cooldowns++
+		}
+	}
+}
+
+// Cooldown durations bound how long a rate-limited source is held out. The
+// floor keeps a source that refuses without a Retry-After from being retried
+// on the very next render; the ceiling keeps one asking for an hour from
+// disappearing for an hour.
+const (
+	defaultCooldown = 30 * time.Second
+	maxCooldown     = 5 * time.Minute
+)
+
+// CoolingOff reports whether a source is being held out after refusing on
+// rate-limit grounds, and must not be called by a live render.
+func (h *HealthTracker) CoolingOff(source string) bool {
+	if h == nil {
+		return false
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	st, ok := h.sources[source]
+	return ok && time.Now().Before(st.cooldownUntil)
 }
 
 // LastGood returns a remembered result for key, if one is still valid. It
@@ -188,6 +236,8 @@ func (h *HealthTracker) Snapshot() []SourceHealth {
 			Successes:       st.successes,
 			Failures:        st.failures,
 			StaleServes:     st.staleServes,
+			CoolingOff:      time.Now().Before(st.cooldownUntil),
+			Cooldowns:       st.cooldowns,
 		}
 		if !st.lastSuccess.IsZero() {
 			sh.LastSuccess = st.lastSuccess.UTC().Format(time.RFC3339)
