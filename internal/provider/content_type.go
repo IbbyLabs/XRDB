@@ -31,3 +31,14 @@ func isSeriesType(t string) bool {
 		return false
 	}
 }
+
+// isMovieType reports whether a content-type hint commits to a movie. An empty
+// or unrecognised hint does not.
+func isMovieType(t string) bool {
+	switch strings.ToLower(strings.TrimSpace(t)) {
+	case "movie", "movies", "film":
+		return true
+	default:
+		return false
+	}
+}

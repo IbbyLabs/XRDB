@@ -104,12 +104,12 @@ func (t *TMDB) resolveID(ctx context.Context, mediaType, id string) (string, str
 
 	// IMDB tt-IDs need the find endpoint to get a TMDB ID.
 	if strings.HasPrefix(id, "tt") {
-		tmdbID, resolvedType, found, err := t.findByExternalID(ctx, id, "imdb_id")
+		match, found, err := t.findByExternalID(ctx, id, "imdb_id")
 		if err != nil {
 			return "", "", err
 		}
 		if found {
-			return tmdbID, resolvedType, nil
+			return match.ID, match.ContentType, nil
 		}
 		return "", "", fmt.Errorf("no TMDB match for IMDB id %q", id)
 	}
@@ -117,12 +117,12 @@ func (t *TMDB) resolveID(ctx context.Context, mediaType, id string) (string, str
 	// TVDB IDs (emitted by AIOMetadata's imdb-less art fallback, e.g.
 	// "tvdb:81189") resolve via TMDB's find endpoint keyed on the TVDB source.
 	if rest, ok := stripPrefix(id, "tvdb:"); ok {
-		tmdbID, resolvedType, found, err := t.findByExternalID(ctx, rest, "tvdb_id")
+		match, found, err := t.findByExternalID(ctx, rest, "tvdb_id")
 		if err != nil {
 			return "", "", err
 		}
 		if found {
-			return tmdbID, resolvedType, nil
+			return match.ID, match.ContentType, nil
 		}
 		return "", "", fmt.Errorf("no TMDB match for TVDB id %q", id)
 	}
@@ -151,29 +151,64 @@ func (t *TMDB) resolveID(ctx context.Context, mediaType, id string) (string, str
 	return rest, resolvedType, nil
 }
 
+// externalMatch is what TMDB's /find endpoint says an external id names.
+type externalMatch struct {
+	ID          string
+	ContentType string // "movie" | "tv"
+	Title       string
+}
+
 // findByExternalID resolves an external identifier (an IMDb tt-id or a TVDB id)
 // to a TMDB id via TMDB's /find endpoint. found is false when TMDB returns no
 // match; err is non-nil only on a transport/decoding failure.
-func (t *TMDB) findByExternalID(ctx context.Context, externalID, source string) (id, contentType string, found bool, err error) {
+func (t *TMDB) findByExternalID(ctx context.Context, externalID, source string) (match externalMatch, found bool, err error) {
 	path := tmdbBaseURL + "/find/" + url.PathEscape(externalID) + "?external_source=" + source
 	var result struct {
 		MovieResults []struct {
-			ID int `json:"id"`
+			ID    int    `json:"id"`
+			Title string `json:"title"`
 		} `json:"movie_results"`
 		TVResults []struct {
-			ID int `json:"id"`
+			ID   int    `json:"id"`
+			Name string `json:"name"`
 		} `json:"tv_results"`
 	}
 	if err := t.get(ctx, path, &result); err != nil {
-		return "", "", false, err
+		return externalMatch{}, false, err
 	}
 	if len(result.MovieResults) > 0 {
-		return strconv.Itoa(result.MovieResults[0].ID), "movie", true, nil
+		m := result.MovieResults[0]
+		return externalMatch{ID: strconv.Itoa(m.ID), ContentType: "movie", Title: m.Title}, true, nil
 	}
 	if len(result.TVResults) > 0 {
-		return strconv.Itoa(result.TVResults[0].ID), "tv", true, nil
+		s := result.TVResults[0]
+		return externalMatch{ID: strconv.Itoa(s.ID), ContentType: "tv", Title: s.Name}, true, nil
 	}
-	return "", "", false, nil
+	return externalMatch{}, false, nil
+}
+
+// IdentifyID reports what an IMDb tt-id or TVDB id actually names, so a source
+// matched through a third-party id index can be checked against it. contentType
+// is "movie" or "series".
+func (t *TMDB) IdentifyID(ctx context.Context, id string) (title, contentType string, err error) {
+	id = strings.TrimSpace(id)
+	source := "imdb_id"
+	if rest, ok := stripPrefix(id, "tvdb:"); ok {
+		id, source = rest, "tvdb_id"
+	} else if !strings.HasPrefix(id, "tt") {
+		return "", "", fmt.Errorf("tmdb: %q is not an external id", id)
+	}
+	match, found, err := t.findByExternalID(ctx, id, source)
+	if err != nil {
+		return "", "", err
+	}
+	if !found {
+		return "", "", fmt.Errorf("tmdb: no match for external id %q", id)
+	}
+	if match.ContentType == "tv" {
+		return match.Title, "series", nil
+	}
+	return match.Title, "movie", nil
 }
 
 // EpisodeInfo holds the per-episode data resolved from TMDB: the episode still

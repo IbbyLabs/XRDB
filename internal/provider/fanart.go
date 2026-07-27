@@ -19,6 +19,23 @@ type Fanart struct {
 	mu         sync.RWMutex
 	apiKey     string
 	httpClient *http.Client
+	// Endpoint overrides for tests. Empty means the public Fanart.tv URLs.
+	moviesURL string
+	tvURL     string
+}
+
+func (f *Fanart) moviesEndpoint() string {
+	if f.moviesURL != "" {
+		return f.moviesURL
+	}
+	return fanartMoviesURL
+}
+
+func (f *Fanart) tvEndpoint() string {
+	if f.tvURL != "" {
+		return f.tvURL
+	}
+	return fanartTVURL
 }
 
 // UpdateCredentials swaps the live credential so a value saved in the UI takes
@@ -59,8 +76,6 @@ func NewFanart(apiKey string) *Fanart {
 func (f *Fanart) Name() string { return "fanart" }
 
 // Fetch retrieves Fanart.tv artwork for a media item.
-// The movies endpoint accepts both IMDb tt-IDs and TMDB numeric IDs; the TV
-// endpoint requires a TVDB numeric ID, so it is only tried for numeric IDs.
 func (f *Fanart) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, error) {
 	return f.FetchArtwork(ctx, mediaType, id, ArtworkOptions{})
 }
@@ -72,14 +87,16 @@ func (f *Fanart) FetchArtwork(ctx context.Context, mediaType, id string, opts Ar
 		return nil, fmt.Errorf("fanart: no api key configured")
 	}
 
-	// The output family (poster/backdrop/...) doesn't tell us movie vs TV,
-	// so try movies first, then TV for numeric (TVDB) IDs.
-	raw, err := f.fetchRaw(ctx, fanartMoviesURL, id)
-	if err != nil && !strings.HasPrefix(id, "tt") {
-		raw, err = f.fetchRaw(ctx, fanartTVURL, id)
-	}
+	raw, err := f.fetchRecord(ctx, mediaType, id)
 	if err != nil {
 		return nil, err
+	}
+
+	// Fanart's id index is the only thing tying this record to the request, and
+	// it carries wrong tt-ids. The record's own name is the check on it.
+	name := fanartRecordName(raw)
+	if want := strings.TrimSpace(opts.Title); want != "" && !titlesMatch(name, want) {
+		return nil, fmt.Errorf("fanart: record %q does not match requested title %q for id %q", name, want, id)
 	}
 
 	lang := strings.ToLower(strings.TrimSpace(opts.Language))
@@ -92,6 +109,8 @@ func (f *Fanart) FetchArtwork(ctx context.Context, mediaType, id string, opts Ar
 	if opts.TextPreference == "alternative" {
 		skip = 1
 	}
+	// The record name stays internal to the check above: title-keyed rating
+	// lookups read MediaMeta.Title, and this one is not an authority on it.
 	meta := &MediaMeta{}
 	meta.PosterURL = pickFanartURL(raw, lang, skip, "movieposter", "tvposter")
 	meta.BackdropURL = pickFanartURL(raw, lang, skip, "moviebackground", "showbackground")
@@ -102,6 +121,51 @@ func (f *Fanart) FetchArtwork(ctx context.Context, mediaType, id string, opts Ar
 	}
 
 	return meta, nil
+}
+
+// fetchRecord picks the endpoint that can answer for this content type.
+//
+// The movies endpoint accepts both IMDb tt-ids and TMDB numeric ids; the TV
+// endpoint accepts TVDB numeric ids only. A series under a tt-id therefore has
+// no endpoint that can answer it, and the movies endpoint answering anyway is a
+// movie record wearing the series' id.
+func (f *Fanart) fetchRecord(ctx context.Context, mediaType, id string) (map[string]json.RawMessage, error) {
+	if isSeriesType(mediaType) {
+		if strings.HasPrefix(id, "tt") {
+			return nil, fmt.Errorf("fanart: series %q needs a tvdb id, tt-ids resolve to movie records", id)
+		}
+		return f.fetchRaw(ctx, f.tvEndpoint(), id)
+	}
+	raw, err := f.fetchRaw(ctx, f.moviesEndpoint(), id)
+	// A caller that did not commit to "movie" may still hold a TVDB id.
+	if err != nil && !isMovieType(mediaType) && !strings.HasPrefix(id, "tt") {
+		raw, err = f.fetchRaw(ctx, f.tvEndpoint(), id)
+	}
+	return raw, err
+}
+
+// fanartRecordName reads the title Fanart holds for the record, or "".
+func fanartRecordName(raw map[string]json.RawMessage) string {
+	data, ok := raw["name"]
+	if !ok {
+		return ""
+	}
+	var name string
+	if err := json.Unmarshal(data, &name); err != nil {
+		return ""
+	}
+	return strings.TrimSpace(name)
+}
+
+// titlesMatch reports whether two titles plausibly name the same work.
+// Lenient on purpose: it only has to catch a record that is plainly something
+// else, and a false rejection drops artwork that was correct.
+func titlesMatch(a, b string) bool {
+	na, nb := foldTitle(a), foldTitle(b)
+	if na == "" || nb == "" {
+		return true
+	}
+	return strings.Contains(na, nb) || strings.Contains(nb, na)
 }
 
 func (f *Fanart) fetchRaw(ctx context.Context, base, id string) (map[string]json.RawMessage, error) {

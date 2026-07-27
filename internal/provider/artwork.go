@@ -9,8 +9,11 @@ type ArtworkOptions struct {
 	// Empty means US.
 	WatchProvidersCountry string
 	Language              string // preferred artwork language code, e.g. "en", "ja"
-	TextPreference        string // original | clean | textless | alternative | random
-	Size                  string // normal | large | 4k — drives source resolution
+	// Title is the title the caller already resolved, when it has one. Sources
+	// matched through a third-party id index check their record against it.
+	Title          string
+	TextPreference string // original | clean | textless | alternative | random
+	Size           string // normal | large | 4k — drives source resolution
 	// Filters applied when TextPreference is "random".
 	RandomText         string // any | text | textless; "" = any
 	RandomLanguage     string // any | requested; "" = any
@@ -26,4 +29,10 @@ type ArtworkOptions struct {
 // through plain Fetch and ignore these preferences.
 type ArtworkFetcher interface {
 	FetchArtwork(ctx context.Context, mediaType, id string, opts ArtworkOptions) (*MediaMeta, error)
+}
+
+// TitleIdentifier resolves what an external id (an IMDb tt-id or "tvdb:") names.
+// contentType is "movie" or "series".
+type TitleIdentifier interface {
+	IdentifyID(ctx context.Context, id string) (title, contentType string, err error)
 }

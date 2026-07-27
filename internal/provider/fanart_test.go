@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -112,4 +113,161 @@ func TestFanartHTTP404(t *testing.T) {
 
 func TestFanartImplementsProvider(t *testing.T) {
 	var _ Provider = NewFanart("key")
+}
+
+// fanartStub serves one record from both endpoints and records what was asked.
+func fanartStub(t *testing.T, record map[string]any) (*Fanart, *[]string) {
+	t.Helper()
+	var paths []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		_ = json.NewEncoder(w).Encode(record)
+	}))
+	t.Cleanup(srv.Close)
+	f := &Fanart{
+		apiKey:     "test",
+		httpClient: srv.Client(),
+		moviesURL:  srv.URL + "/movies/",
+		tvURL:      srv.URL + "/tv/",
+	}
+	return f, &paths
+}
+
+func tibetanDogRecord() map[string]any {
+	return map[string]any{
+		"name":    "The Tibetan Dog",
+		"imdb_id": "tt0434706",
+		"movieposter": []map[string]string{
+			{"url": "https://example.com/tibetan.jpg", "lang": "en", "id": "1"},
+		},
+		"hdmovielogo": []map[string]string{
+			{"url": "https://example.com/tibetan-logo.png", "lang": "en", "id": "2"},
+		},
+	}
+}
+
+// A tt-id names one title, so the movies endpoint cannot hold the answer for a
+// series; asking it anyway returns whichever movie record wears that id.
+func TestFanartRefusesMoviesEndpointForSeries(t *testing.T) {
+	f, paths := fanartStub(t, tibetanDogRecord())
+
+	_, err := f.FetchArtwork(context.Background(), "series", "tt0434706", ArtworkOptions{})
+	if err == nil {
+		t.Fatal("a series under a tt-id was served a movie record")
+	}
+	if len(*paths) != 0 {
+		t.Errorf("expected no upstream call, got %v", *paths)
+	}
+}
+
+func TestFanartSeriesWithTVDBIDUsesTVEndpoint(t *testing.T) {
+	f, paths := fanartStub(t, map[string]any{
+		"name": "Monster",
+		"tvposter": []map[string]string{
+			{"url": "https://example.com/monster.jpg", "lang": "en", "id": "1"},
+		},
+	})
+
+	meta, err := f.FetchArtwork(context.Background(), "series", "81189", ArtworkOptions{})
+	if err != nil {
+		t.Fatalf("FetchArtwork: %v", err)
+	}
+	if meta.PosterURL != "https://example.com/monster.jpg" {
+		t.Errorf("PosterURL = %q", meta.PosterURL)
+	}
+	if len(*paths) != 1 || !strings.HasPrefix((*paths)[0], "/tv/") {
+		t.Errorf("expected one /tv/ call, got %v", *paths)
+	}
+}
+
+// An explicit movie must not fall through to the TV endpoint: a TMDB numeric id
+// read as a TVDB id is the same mismatch in the other direction.
+func TestFanartMovieDoesNotFallBackToTV(t *testing.T) {
+	var paths []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+	f := &Fanart{apiKey: "test", httpClient: srv.Client(), moviesURL: srv.URL + "/movies/", tvURL: srv.URL + "/tv/"}
+
+	if _, err := f.FetchArtwork(context.Background(), "movie", "80079", ArtworkOptions{}); err == nil {
+		t.Fatal("expected an error")
+	}
+	for _, p := range paths {
+		if strings.HasPrefix(p, "/tv/") {
+			t.Errorf("movie request reached the TV endpoint: %v", paths)
+		}
+	}
+}
+
+func TestFanartUnknownTypeStillFallsBackToTV(t *testing.T) {
+	var paths []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+	f := &Fanart{apiKey: "test", httpClient: srv.Client(), moviesURL: srv.URL + "/movies/", tvURL: srv.URL + "/tv/"}
+
+	_, _ = f.FetchArtwork(context.Background(), "", "81189", ArtworkOptions{})
+	if len(paths) != 2 {
+		t.Fatalf("expected movies then tv, got %v", paths)
+	}
+}
+
+func TestFanartRejectsRecordNamingAnotherTitle(t *testing.T) {
+	f, _ := fanartStub(t, tibetanDogRecord())
+
+	_, err := f.FetchArtwork(context.Background(), "", "tt0434706", ArtworkOptions{Title: "Monster"})
+	if err == nil {
+		t.Fatal("a record named The Tibetan Dog was accepted for Monster")
+	}
+}
+
+func TestFanartKeepsRecordMatchingTheTitle(t *testing.T) {
+	f, _ := fanartStub(t, tibetanDogRecord())
+
+	meta, err := f.FetchArtwork(context.Background(), "", "tt2411128", ArtworkOptions{Title: "The Tibetan Dog"})
+	if err != nil {
+		t.Fatalf("FetchArtwork: %v", err)
+	}
+	if meta.PosterURL == "" {
+		t.Error("matching record returned no poster")
+	}
+}
+
+// Fanart is not an authority on the title, and MediaMeta.Title feeds title-keyed
+// rating lookups.
+func TestFanartDoesNotPublishRecordName(t *testing.T) {
+	f, _ := fanartStub(t, tibetanDogRecord())
+
+	meta, err := f.FetchArtwork(context.Background(), "", "tt2411128", ArtworkOptions{})
+	if err != nil {
+		t.Fatalf("FetchArtwork: %v", err)
+	}
+	if meta.Title != "" {
+		t.Errorf("Title = %q, want empty", meta.Title)
+	}
+}
+
+func TestTitlesMatch(t *testing.T) {
+	cases := []struct {
+		a, b string
+		want bool
+	}{
+		{"The Tibetan Dog", "Monster", false},
+		{"Monster", "Monster", true},
+		{"monster", "  Monster  ", true},
+		{"Monster: The Movie", "Monster", true},
+		{"Spider-Man", "Spider Man", true},
+		{"WALL·E", "WALL-E", true},
+		{"", "Monster", true},
+		{"Monster", "", true},
+	}
+	for _, c := range cases {
+		if got := titlesMatch(c.a, c.b); got != c.want {
+			t.Errorf("titlesMatch(%q, %q) = %v, want %v", c.a, c.b, got, c.want)
+		}
+	}
 }
