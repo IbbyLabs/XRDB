@@ -4,6 +4,7 @@ import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   RATING_OPTIONS, SIX_POS_OPTIONS, QUALITY_STYLE_OPTIONS, GENRE_STYLE_OPTIONS,
   AGE_STYLE_OPTIONS, GENRE_MODE_OPTIONS, ANIME_GROUPING_OPTIONS,
+  GENRE_ACCENT_OPTIONS, GENRE_LABEL_OPTIONS,
   AGGREGATE_SOURCE_OPTIONS, AGGREGATE_ACCENT_MODE_OPTIONS, SCOREBAR_STYLE_OPTIONS,
   RATING_PRESENTATION_OPTIONS, RATING_VALUE_MODE_OPTIONS, RELEASE_STATUS_STYLE_OPTIONS,
   ICON_SHAPE_OPTIONS, TREND_TAG_STYLE_OPTIONS,
@@ -614,6 +615,34 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
         value={config.genreBadgeStyle}
         onChange={v => onUpdate('genreBadgeStyle', v)}
       />
+      <div className="field">
+        <label className="label" htmlFor={`${uid}-genre-accent`}>Accent</label>
+        <select
+          id={`${uid}-genre-accent`}
+          className="select"
+          value={config.genreBadgeAccent}
+          onChange={e => onUpdate('genreBadgeAccent', e.target.value)}
+        >
+          {GENRE_ACCENT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+        </select>
+        <p className="hint">
+          {GENRE_ACCENT_OPTIONS.find(o => o.id === config.genreBadgeAccent)?.desc}
+        </p>
+      </div>
+      <div className="field">
+        <label className="label" htmlFor={`${uid}-genre-label`}>Label</label>
+        <select
+          id={`${uid}-genre-label`}
+          className="select"
+          value={config.genreBadgeLabel}
+          onChange={e => onUpdate('genreBadgeLabel', e.target.value)}
+        >
+          {GENRE_LABEL_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+        </select>
+        <p className="hint">
+          {GENRE_LABEL_OPTIONS.find(o => o.id === config.genreBadgeLabel)?.desc}
+        </p>
+      </div>
       <NumField id={`${uid}-genre-scale`} label="Scale (%)" value={config.genreBadgeScale}
         onChange={v => onUpdate('genreBadgeScale', v)} min={70} max={200} step={5} />
       <div className="numfield-pair">

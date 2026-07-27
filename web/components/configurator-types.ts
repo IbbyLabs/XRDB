@@ -195,6 +195,18 @@ export const GENRE_STYLE_OPTIONS = [
   { id: 'tile',    label: 'Tile'   },
 ] as const;
 
+export const GENRE_ACCENT_OPTIONS = [
+  { id: 'default', label: 'Per style', desc: 'Square caps the label, the others carry no accent' },
+  { id: 'left',    label: 'Left edge', desc: 'A stripe down the left of the plate, the way v2 drew it' },
+  { id: 'top',     label: 'Above',     desc: 'A short bar centred above the label' },
+  { id: 'none',    label: 'None',      desc: 'No accent' },
+] as const;
+
+export const GENRE_LABEL_OPTIONS = [
+  { id: 'default', label: 'Genre list', desc: 'Up to three genres, as the source spells them' },
+  { id: 'primary', label: 'First only', desc: 'The strongest genre alone, in capitals, the way v2 read' },
+] as const;
+
 export const AGGREGATE_SOURCE_OPTIONS = [
   { id: 'overall',  label: 'Overall'  },
   { id: 'critics',  label: 'Critics'  },
@@ -344,6 +356,8 @@ export interface ConfigState {
   qualityBadgesStyle: string; // 'default' | plain | tile
   qualityBadgesTileAccentColor: string;
   genreBadgeStyle: string; // 'default' | glass | square | plain | clean | tile
+  genreBadgeAccent: string; // 'default' | left | top | none
+  genreBadgeLabel: string;  // 'default' (list) | primary
   genreBadgeMode: string;  // 'default' (text) | icon | both
   genreBadgeAnimeGrouping: string; // 'default' (split) | animation | secondary
   aggregateAccentColor: string; // '' = auto score-band
@@ -455,6 +469,8 @@ export const DEFAULT_CONFIG: ConfigState = {
   qualityBadgesStyle: 'default',
   qualityBadgesTileAccentColor: '',
   genreBadgeStyle: 'default',
+  genreBadgeAccent: 'default',
+  genreBadgeLabel: 'default',
   genreBadgeMode: 'default',
   genreBadgeAnimeGrouping: 'default',
   aggregateAccentColor: '',

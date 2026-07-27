@@ -223,6 +223,8 @@ export function ConfiguratorClient() {
       qualityBadgesTileAccentColor: cfg.qualityBadgesTileAccentColor,
       genreBadgeStyle: cfg.genreBadgeStyle === 'default' ? '' : cfg.genreBadgeStyle,
       genreBadgeMode: cfg.genreBadgeMode === 'default' ? '' : cfg.genreBadgeMode,
+      genreBadgeAccent: cfg.genreBadgeAccent === 'default' ? '' : cfg.genreBadgeAccent,
+      genreBadgeLabel: cfg.genreBadgeLabel === 'default' ? '' : cfg.genreBadgeLabel,
       genreBadgeAnimeGrouping: cfg.genreBadgeAnimeGrouping === 'default' ? '' : cfg.genreBadgeAnimeGrouping,
       aggregateAccentColor: cfg.aggregateAccentColor,
       aggregateAccentMode: cfg.aggregateAccentMode,

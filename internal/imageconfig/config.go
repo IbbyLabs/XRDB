@@ -458,6 +458,12 @@ type GenreBadgeConfig struct {
 	GenreBadgeBorderWidth       float64 `json:"genreBadgeBorderWidth,omitempty"`       // px; 0 = default hairline
 	GenreBadgeBackgroundOpacity int     `json:"genreBadgeBackgroundOpacity,omitempty"` // 0-100; 0 = default
 	GenreBadgeTileAccentColor   string  `json:"genreBadgeTileAccentColor,omitempty"`   // "#RRGGBB" for the tile style
+	// GenreBadgeAccent places the accent on the plate. v2 ran it down the left
+	// edge; "" keeps each style's own placement.
+	GenreBadgeAccent string `json:"genreBadgeAccent,omitempty"` // left | top | none; "" = per style
+	// GenreBadgeLabel picks what the plate says. v2 printed the first genre on
+	// its own in capitals; "" keeps the list.
+	GenreBadgeLabel string `json:"genreBadgeLabel,omitempty"` // primary | list; "" = list
 }
 
 // Default returns a Config populated with production defaults.
@@ -549,6 +555,8 @@ type rawGenre struct {
 	GenreBadgeBorderWidth       *float64 `json:"genreBadgeBorderWidth"`
 	GenreBadgeBackgroundOpacity *int     `json:"genreBadgeBackgroundOpacity"`
 	GenreBadgeTileAccentColor   *string  `json:"genreBadgeTileAccentColor"`
+	GenreBadgeAccent            *string  `json:"genreBadgeAccent"`
+	GenreBadgeLabel             *string  `json:"genreBadgeLabel"`
 }
 
 // rawQuality and rawTrending mirror their config groups for parsing.
@@ -1397,6 +1405,25 @@ func parseGenre(cfg *Config, r *raw) {
 	}
 	if r.GenreBadgeTileAccentColor != nil && isHexColor(*r.GenreBadgeTileAccentColor) {
 		cfg.GenreBadgeTileAccentColor = strings.TrimSpace(*r.GenreBadgeTileAccentColor)
+	}
+	if r.GenreBadgeAccent != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.GenreBadgeAccent)); v {
+		// "side" and "bar" are what a v2 config calls the left stripe.
+		case "left", "side", "bar":
+			cfg.GenreBadgeAccent = "left"
+		case "top", "cap":
+			cfg.GenreBadgeAccent = "top"
+		case "none", "off":
+			cfg.GenreBadgeAccent = "none"
+		}
+	}
+	if r.GenreBadgeLabel != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.GenreBadgeLabel)); v {
+		case "primary", "first", "single":
+			cfg.GenreBadgeLabel = "primary"
+		case "list", "all":
+			cfg.GenreBadgeLabel = "list"
+		}
 	}
 }
 

@@ -939,6 +939,8 @@ type genreBadgeOpts struct {
 	borderWidth  float64 // px border on the tile; 0 = default hairline
 	outlineColor string  // "#RRGGBB" outline for the plain style; "" = default shadow
 	outlineWidth int     // px outline width for the plain style; 0 = default
+	accent       string  // "" | left | top | none; where the accent sits on the plate
+	labelMode    string  // "" | list | primary; primary prints the first genre alone
 }
 
 // drawLabelWithOutline draws label at the given baseline with a text outline.
@@ -972,6 +974,8 @@ func genreOptsFromConfig(cfg imageconfig.Config, isAnime bool) genreBadgeOpts {
 		isAnime:      isAnime,
 		grouping:     cfg.GenreBadgeAnimeGrouping,
 		style:        cfg.GenreBadgeStyle,
+		accent:       cfg.GenreBadgeAccent,
+		labelMode:    cfg.GenreBadgeLabel,
 		tileColor:    cfg.GenreBadgeTileAccentColor,
 		borderWidth:  cfg.GenreBadgeBorderWidth,
 		outlineColor: cfg.NoBackgroundBadgeOutlineColor,
@@ -1003,6 +1007,10 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		shown = shown[:3]
 	}
 	label := strings.Join(shown, " · ")
+	// v2 named the title by its first genre alone, in capitals.
+	if opts.labelMode == "primary" {
+		label = strings.ToUpper(genres[0])
+	}
 
 	// The icon modes label the badge with the resolved family ("SCI FI") rather
 	// than the raw genre list, and tint it with that family's accent. The clean
@@ -1027,10 +1035,22 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	edgeY := s(12)
 	radius := s(5)
 
-	// The square style carries an accent cap above the label.
-	capRoom := 0
-	if opts.style == "square" {
+	// Where the accent sits. The square style caps the label by default and the
+	// others carry none, so an unset config draws what it always did.
+	accentMode := opts.accent
+	if accentMode == "" {
+		accentMode = "none"
+		if opts.style == "square" {
+			accentMode = "top"
+		}
+	}
+	capRoom, stripeRoom, stripeW := 0, 0, 0
+	switch accentMode {
+	case "top":
 		capRoom = s(7)
+	case "left":
+		stripeW = maxInt(2, s(4))
+		stripeRoom = stripeW + s(7)
 	}
 
 	fm := face.Metrics()
@@ -1049,6 +1069,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		iconSize = maxInt(1, (ascent+descent)*95/100)
 		bw = padX*2 + iconSize
 	}
+	bw += stripeRoom
 
 	resolvedPos := pos
 	if resolvedPos == "" || resolvedPos == "inherit" {
@@ -1061,7 +1082,47 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		r = r.Add(image.Pt(opts.offsetX, opts.offsetY))
 	}
 	textColor := color.NRGBA{R: 225, G: 225, B: 228, A: 255}
-	tx, ty := r.Min.X+padX, r.Min.Y+capRoom+padY+ascent
+	tx, ty := r.Min.X+padX+stripeRoom, r.Min.Y+capRoom+padY+ascent
+
+	// accentColor is the family accent, overridden by a configured tile colour.
+	// accentColorFrom is the family's colour, overridden by a configured tile
+	// colour. Passing nil yields the neutral default.
+	accentColorFrom := func(f *genreFamily) color.NRGBA {
+		c := color.NRGBA{R: 235, G: 235, B: 238, A: 235}
+		if f != nil {
+			if a, err := parseHexColor(f.accent); err == nil {
+				a.A = 235
+				c = a
+			}
+		}
+		if h, err := parseHexColor(opts.tileColor); opts.tileColor != "" && err == nil {
+			h.A = 235
+			c = h
+		}
+		return c
+	}
+
+	// drawLeftStripe runs the accent down the inside of the plate's left edge,
+	// which is where v2 put it.
+	drawLeftStripe := func() {
+		if stripeW <= 0 {
+			return
+		}
+		inset := s(3)
+		x0 := r.Min.X + inset
+		y0, y1 := r.Min.Y+inset, r.Max.Y-inset
+		if y1 <= y0 {
+			return
+		}
+		// The text modes resolve no family for the label, but v2 still coloured
+		// this stripe by genre, so look one up for the colour alone.
+		f := fam
+		if f == nil {
+			f = resolveGenreFamilyGrouped(genres, opts.isAnime, opts.grouping)
+		}
+		drawSoftTile(base, image.Rect(x0, y0, x0+stripeW, y1), stripeW/2,
+			tileChrome{fill: accentColorFrom(f)})
+	}
 
 	// drawIcon paints the family glyph and reports the accent to tint the label.
 	drawIcon := func() color.NRGBA {
@@ -1073,16 +1134,16 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			return textColor
 		}
 		accent.A = 255
-		iconX := r.Min.X + padX
+		iconX := r.Min.X + padX + stripeRoom
 		if mode == "icon" {
-			iconX = r.Min.X + (bw-iconSize)/2
+			iconX = r.Min.X + stripeRoom + (bw-stripeRoom-iconSize)/2
 		}
 		drawGenreIcon(base, fam.id, accent, color.NRGBA{R: 5, G: 7, B: 11, A: 255},
 			iconX, r.Min.Y+capRoom+(bh-capRoom-iconSize)/2, iconSize)
 		return accent
 	}
 	if mode == "both" {
-		tx = r.Min.X + padX + iconSize + iconGap
+		tx = r.Min.X + padX + stripeRoom + iconSize + iconGap
 	}
 	switch opts.style {
 	case "plain":
@@ -1108,6 +1169,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			fill = c
 		}
 		drawSoftTile(base, r, radius, tileChrome{fill: fill, shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 70}})
+		drawLeftStripe()
 		drawText(base, face, tx, ty, color.White, label)
 		return
 	case "clean":
@@ -1136,23 +1198,15 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			borderWidth: maxInt(1, s(1)),
 			shadow:      color.NRGBA{R: 0, G: 0, B: 0, A: 70},
 		})
-		capCol := color.NRGBA{R: 235, G: 235, B: 238, A: 235}
-		if fam != nil {
-			if a, err := parseHexColor(fam.accent); err == nil {
-				a.A = 235
-				capCol = a
-			}
+		if capRoom > 0 {
+			capW := maxInt(s(16), bw*34/100)
+			capH := maxInt(2, capRoom*60/100)
+			capX := r.Min.X + (bw-capW)/2
+			capY := r.Min.Y + maxInt(1, s(3))
+			drawSoftTile(base, image.Rect(capX, capY, capX+capW, capY+capH), capH/2,
+				tileChrome{fill: accentColorFrom(fam)})
 		}
-		if c, err := parseHexColor(opts.tileColor); opts.tileColor != "" && err == nil {
-			c.A = 235
-			capCol = c
-		}
-		capW := maxInt(s(16), bw*34/100)
-		capH := maxInt(2, capRoom*60/100)
-		capX := r.Min.X + (bw-capW)/2
-		capY := r.Min.Y + maxInt(1, s(3))
-		drawSoftTile(base, image.Rect(capX, capY, capX+capW, capY+capH), capH/2,
-			tileChrome{fill: capCol})
+		drawLeftStripe()
 		if accent := drawIcon(); mode != "text" {
 			textColor = accent
 		}
@@ -1179,6 +1233,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		borderWidth: borderW,
 		shadow:      color.NRGBA{R: 0, G: 0, B: 0, A: 70},
 	})
+	drawLeftStripe()
 	if accent := drawIcon(); mode != "text" {
 		textColor = accent
 	}
