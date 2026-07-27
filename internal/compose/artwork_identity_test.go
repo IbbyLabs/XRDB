@@ -14,29 +14,29 @@ import (
 // identifyingStub stands in for TMDB, which can say what an external id names.
 type identifyingStub struct {
 	provider.StubProvider
-	title       string
+	tmdbID      string
 	contentType string
 	identifies  int32
 }
 
 func (s *identifyingStub) IdentifyID(context.Context, string) (string, string, error) {
 	atomic.AddInt32(&s.identifies, 1)
-	return s.title, s.contentType, nil
+	return s.tmdbID, s.contentType, nil
 }
 
 func (s *identifyingStub) Identifies() int { return int(atomic.LoadInt32(&s.identifies)) }
 
-// recordingArtworkStub records the content type and title it was queried with.
+// recordingArtworkStub records the content type and id it was queried with.
 type recordingArtworkStub struct {
 	provider.StubProvider
-	mu       sync.Mutex
-	gotType  string
-	gotTitle string
+	mu      sync.Mutex
+	gotType string
+	gotID   string
 }
 
 func (s *recordingArtworkStub) FetchArtwork(_ context.Context, mediaType, _ string, opts provider.ArtworkOptions) (*provider.MediaMeta, error) {
 	s.mu.Lock()
-	s.gotType, s.gotTitle = mediaType, opts.Title
+	s.gotType, s.gotID = mediaType, opts.TMDBID
 	s.mu.Unlock()
 	return s.Meta, s.Err
 }
@@ -44,7 +44,7 @@ func (s *recordingArtworkStub) FetchArtwork(_ context.Context, mediaType, _ stri
 func (s *recordingArtworkStub) seen() (string, string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return s.gotType, s.gotTitle
+	return s.gotType, s.gotID
 }
 
 // A bare /poster/tt... carries no content type, and with Fanart configured it
@@ -61,7 +61,7 @@ func TestFanartFirstIsGivenTheResolvedIdentity(t *testing.T) {
 			ProviderName: "tmdb",
 			Meta:         &provider.MediaMeta{Title: "Monster", PosterURL: "http://tmdb/poster.jpg"},
 		},
-		title:       "Monster",
+		tmdbID:      "30981",
 		contentType: "series",
 	}
 	reg := provider.NewRegistry()
@@ -75,12 +75,12 @@ func TestFanartFirstIsGivenTheResolvedIdentity(t *testing.T) {
 		t.Fatalf("Render: %v", err)
 	}
 
-	gotType, gotTitle := fanart.seen()
+	gotType, gotID := fanart.seen()
 	if gotType != "series" {
 		t.Errorf("content type = %q, want series", gotType)
 	}
-	if gotTitle != "Monster" {
-		t.Errorf("title = %q, want Monster", gotTitle)
+	if gotID != "30981" {
+		t.Errorf("tmdb id = %q, want 30981", gotID)
 	}
 	if tmdb.Identifies() != 1 {
 		t.Errorf("identify calls = %d, want 1", tmdb.Identifies())
@@ -94,7 +94,7 @@ func TestIdentityLookupSkippedWhenSourceResolvesItsOwnIDs(t *testing.T) {
 			ProviderName: "tmdb",
 			Meta:         &provider.MediaMeta{Title: "Monster", PosterURL: "http://tmdb/poster.jpg"},
 		},
-		title:       "Monster",
+		tmdbID:      "30981",
 		contentType: "series",
 	}
 	reg := provider.NewRegistry()
@@ -122,7 +122,7 @@ func TestIdentityLookupSkippedForNonExternalID(t *testing.T) {
 	}
 	tmdb := &identifyingStub{
 		StubProvider: provider.StubProvider{ProviderName: "tmdb", Meta: &provider.MediaMeta{}},
-		title:        "Monster",
+		tmdbID:       "30981",
 		contentType:  "series",
 	}
 	reg := provider.NewRegistry()

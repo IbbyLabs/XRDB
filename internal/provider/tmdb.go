@@ -187,10 +187,10 @@ func (t *TMDB) findByExternalID(ctx context.Context, externalID, source string) 
 	return externalMatch{}, false, nil
 }
 
-// IdentifyID reports what an IMDb tt-id or TVDB id actually names, so a source
-// matched through a third-party id index can be checked against it. contentType
-// is "movie" or "series".
-func (t *TMDB) IdentifyID(ctx context.Context, id string) (title, contentType string, err error) {
+// IdentifyID resolves an IMDb tt-id or TVDB id to TMDB's own id and content
+// type, so a source matched through a third-party id index can be checked
+// against it. contentType is "movie" or "series".
+func (t *TMDB) IdentifyID(ctx context.Context, id string) (tmdbID, contentType string, err error) {
 	id = strings.TrimSpace(id)
 	source := "imdb_id"
 	if rest, ok := stripPrefix(id, "tvdb:"); ok {
@@ -206,9 +206,9 @@ func (t *TMDB) IdentifyID(ctx context.Context, id string) (title, contentType st
 		return "", "", fmt.Errorf("tmdb: no match for external id %q", id)
 	}
 	if match.ContentType == "tv" {
-		return match.Title, "series", nil
+		return match.ID, "series", nil
 	}
-	return match.Title, "movie", nil
+	return match.ID, "movie", nil
 }
 
 // EpisodeInfo holds the per-episode data resolved from TMDB: the episode still
@@ -366,6 +366,7 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		Overview:      result.Overview,
 		Language:      "en",
 		IMDbID:        imdbID,
+		TMDBID:        id,
 	}
 
 	// Source resolution: w780/w1280 are plenty for normal output, but large

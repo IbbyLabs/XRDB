@@ -9,9 +9,10 @@ type ArtworkOptions struct {
 	// Empty means US.
 	WatchProvidersCountry string
 	Language              string // preferred artwork language code, e.g. "en", "ja"
-	// Title is the title the caller already resolved, when it has one. Sources
-	// matched through a third-party id index check their record against it.
-	Title          string
+	// TMDBID is TMDB's id for the requested title, when the caller resolved one.
+	// Sources matched through a third-party id index check their record against
+	// it. Release names diverge between sources; ids do not.
+	TMDBID         string
 	TextPreference string // original | clean | textless | alternative | random
 	Size           string // normal | large | 4k — drives source resolution
 	// Filters applied when TextPreference is "random".
@@ -34,5 +35,5 @@ type ArtworkFetcher interface {
 // TitleIdentifier resolves what an external id (an IMDb tt-id or "tvdb:") names.
 // contentType is "movie" or "series".
 type TitleIdentifier interface {
-	IdentifyID(ctx context.Context, id string) (title, contentType string, err error)
+	IdentifyID(ctx context.Context, id string) (tmdbID, contentType string, err error)
 }

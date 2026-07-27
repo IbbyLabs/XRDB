@@ -135,7 +135,8 @@ func fanartStub(t *testing.T, record map[string]any) (*Fanart, *[]string) {
 
 func tibetanDogRecord() map[string]any {
 	return map[string]any{
-		"name":    "The Tibetan Dog",
+		"name":    "Tibetan Dog",
+		"tmdb_id": "80079",
 		"imdb_id": "tt0434706",
 		"movieposter": []map[string]string{
 			{"url": "https://example.com/tibetan.jpg", "lang": "en", "id": "1"},
@@ -216,19 +217,20 @@ func TestFanartUnknownTypeStillFallsBackToTV(t *testing.T) {
 	}
 }
 
-func TestFanartRejectsRecordNamingAnotherTitle(t *testing.T) {
+func TestFanartRejectsRecordForAnotherWork(t *testing.T) {
 	f, _ := fanartStub(t, tibetanDogRecord())
 
-	_, err := f.FetchArtwork(context.Background(), "", "tt0434706", ArtworkOptions{Title: "Monster"})
+	// Monster resolves to TMDB 30981; the record Fanart returns is movie 80079.
+	_, err := f.FetchArtwork(context.Background(), "", "tt0434706", ArtworkOptions{TMDBID: "30981"})
 	if err == nil {
-		t.Fatal("a record named The Tibetan Dog was accepted for Monster")
+		t.Fatal("a record for another work was accepted")
 	}
 }
 
-func TestFanartKeepsRecordMatchingTheTitle(t *testing.T) {
+func TestFanartKeepsRecordWithTheSameID(t *testing.T) {
 	f, _ := fanartStub(t, tibetanDogRecord())
 
-	meta, err := f.FetchArtwork(context.Background(), "", "tt2411128", ArtworkOptions{Title: "The Tibetan Dog"})
+	meta, err := f.FetchArtwork(context.Background(), "", "tt2411128", ArtworkOptions{TMDBID: "80079"})
 	if err != nil {
 		t.Fatalf("FetchArtwork: %v", err)
 	}
@@ -237,37 +239,51 @@ func TestFanartKeepsRecordMatchingTheTitle(t *testing.T) {
 	}
 }
 
-// Fanart is not an authority on the title, and MediaMeta.Title feeds title-keyed
-// rating lookups.
-func TestFanartDoesNotPublishRecordName(t *testing.T) {
-	f, _ := fanartStub(t, tibetanDogRecord())
+// Release names diverge between sources: TMDB calls tt0087544 "Warriors of the
+// Wind" and Fanart calls it "Nausicaä of the Valley of the Wind". Both hold
+// TMDB id 81, so the record is the same work and its art must survive.
+func TestFanartKeepsRecordWhoseNameDiffers(t *testing.T) {
+	f, _ := fanartStub(t, map[string]any{
+		"name":    "Nausicaä of the Valley of the Wind",
+		"tmdb_id": "81",
+		"imdb_id": "tt0087544",
+		"movieposter": []map[string]string{
+			{"url": "https://example.com/nausicaa.jpg", "lang": "en", "id": "1"},
+		},
+	})
 
-	meta, err := f.FetchArtwork(context.Background(), "", "tt2411128", ArtworkOptions{})
+	meta, err := f.FetchArtwork(context.Background(), "movie", "tt0087544", ArtworkOptions{TMDBID: "81"})
 	if err != nil {
-		t.Fatalf("FetchArtwork: %v", err)
+		t.Fatalf("a differently-named record for the same work was rejected: %v", err)
 	}
-	if meta.Title != "" {
-		t.Errorf("Title = %q, want empty", meta.Title)
+	if meta.PosterURL != "https://example.com/nausicaa.jpg" {
+		t.Errorf("PosterURL = %q", meta.PosterURL)
 	}
 }
 
-func TestTitlesMatch(t *testing.T) {
-	cases := []struct {
-		a, b string
-		want bool
-	}{
-		{"The Tibetan Dog", "Monster", false},
-		{"Monster", "Monster", true},
-		{"monster", "  Monster  ", true},
-		{"Monster: The Movie", "Monster", true},
-		{"Spider-Man", "Spider Man", true},
-		{"WALL·E", "WALL-E", true},
-		{"", "Monster", true},
-		{"Monster", "", true},
-	}
-	for _, c := range cases {
-		if got := titlesMatch(c.a, c.b); got != c.want {
-			t.Errorf("titlesMatch(%q, %q) = %v, want %v", c.a, c.b, got, c.want)
+// Fanart sends tmdb_id as a string, but a bare number must not break the check.
+func TestFanartRecordTMDBIDAcceptsBothJSONShapes(t *testing.T) {
+	for _, raw := range []string{`{"tmdb_id":"81"}`, `{"tmdb_id":81}`, `{}`, `{"tmdb_id":null}`} {
+		var m map[string]json.RawMessage
+		if err := json.Unmarshal([]byte(raw), &m); err != nil {
+			t.Fatalf("setup %s: %v", raw, err)
 		}
+		got := fanartRecordTMDBID(m)
+		want := "81"
+		if raw == `{}` || raw == `{"tmdb_id":null}` {
+			want = ""
+		}
+		if got != want {
+			t.Errorf("fanartRecordTMDBID(%s) = %q, want %q", raw, got, want)
+		}
+	}
+}
+
+// Without a resolved id there is nothing to compare, and the record stands.
+func TestFanartKeepsRecordWhenNoIDResolved(t *testing.T) {
+	f, _ := fanartStub(t, tibetanDogRecord())
+
+	if _, err := f.FetchArtwork(context.Background(), "", "tt0434706", ArtworkOptions{}); err != nil {
+		t.Fatalf("FetchArtwork: %v", err)
 	}
 }

@@ -93,10 +93,11 @@ func (f *Fanart) FetchArtwork(ctx context.Context, mediaType, id string, opts Ar
 	}
 
 	// Fanart's id index is the only thing tying this record to the request, and
-	// it carries wrong tt-ids. The record's own name is the check on it.
-	name := fanartRecordName(raw)
-	if want := strings.TrimSpace(opts.Title); want != "" && !titlesMatch(name, want) {
-		return nil, fmt.Errorf("fanart: record %q does not match requested title %q for id %q", name, want, id)
+	// it carries wrong tt-ids. Its own TMDB id is the check on the match.
+	if want := strings.TrimSpace(opts.TMDBID); want != "" {
+		if got := fanartRecordTMDBID(raw); got != "" && got != want {
+			return nil, fmt.Errorf("fanart: record is tmdb %s, not %s, for id %q", got, want, id)
+		}
 	}
 
 	lang := strings.ToLower(strings.TrimSpace(opts.Language))
@@ -144,28 +145,22 @@ func (f *Fanart) fetchRecord(ctx context.Context, mediaType, id string) (map[str
 	return raw, err
 }
 
-// fanartRecordName reads the title Fanart holds for the record, or "".
-func fanartRecordName(raw map[string]json.RawMessage) string {
-	data, ok := raw["name"]
+// fanartRecordTMDBID reads the TMDB id Fanart holds for the record, or "".
+// Fanart sends it as a string, but tolerate a bare number.
+func fanartRecordTMDBID(raw map[string]json.RawMessage) string {
+	data, ok := raw["tmdb_id"]
 	if !ok {
 		return ""
 	}
-	var name string
-	if err := json.Unmarshal(data, &name); err != nil {
-		return ""
+	var asString string
+	if err := json.Unmarshal(data, &asString); err == nil {
+		return strings.TrimSpace(asString)
 	}
-	return strings.TrimSpace(name)
-}
-
-// titlesMatch reports whether two titles plausibly name the same work.
-// Lenient on purpose: it only has to catch a record that is plainly something
-// else, and a false rejection drops artwork that was correct.
-func titlesMatch(a, b string) bool {
-	na, nb := foldTitle(a), foldTitle(b)
-	if na == "" || nb == "" {
-		return true
+	var asNumber json.Number
+	if err := json.Unmarshal(data, &asNumber); err == nil {
+		return asNumber.String()
 	}
-	return strings.Contains(na, nb) || strings.Contains(nb, na)
+	return ""
 }
 
 func (f *Fanart) fetchRaw(ctx context.Context, base, id string) (map[string]json.RawMessage, error) {

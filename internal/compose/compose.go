@@ -701,7 +701,7 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 	// provider's metadata for overlays, backfilling image URLs it lacked.
 	var baseMeta *provider.MediaMeta
 	order := p.artworkOrder(string(req.Config.ArtworkSource), req.MediaType)
-	knownTitle, knownType := p.identify(ctx, req, order)
+	knownID, knownType := p.identify(ctx, req, order)
 	contentType := req.ContentType
 	if contentType == "" {
 		contentType = knownType
@@ -719,12 +719,12 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 		// Providers are queried by content type (movie/series), never by the
 		// artwork surface; the surface only decides which image URL we pick.
 		if af, ok := prov.(provider.ArtworkFetcher); ok {
-			// A title from a source already consulted lets the next one verify
-			// that its own id lookup landed on the same work.
+			// An id from a source already consulted lets the next one verify that
+			// its own lookup landed on the same work, without spending a call.
 			srcOpts := opts
-			srcOpts.Title = knownTitle
-			if baseMeta != nil && baseMeta.Title != "" {
-				srcOpts.Title = baseMeta.Title
+			srcOpts.TMDBID = knownID
+			if baseMeta != nil && baseMeta.TMDBID != "" {
+				srcOpts.TMDBID = baseMeta.TMDBID
 			}
 			meta, err = af.FetchArtwork(ctx, contentType, req.MediaID, srcOpts)
 		} else {
@@ -765,13 +765,13 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 	return nil, baseMeta, req.MediaID, fmt.Errorf("no artwork URL in metadata")
 }
 
-// identify asks an id-authoritative source what MediaID actually names.
+// identify asks an id-authoritative source what MediaID actually resolves to.
 //
 // Fanart is matched through a third-party id index that carries wrong tt-ids,
 // so when it answers before any other source there is nothing to check its
-// record against. One lookup buys both the title and the content type. Sources
+// record against. One lookup buys both the id and the content type. Sources
 // that resolve ids themselves need neither, so nothing is spent on them.
-func (p *Pipeline) identify(ctx context.Context, req Request, order []string) (title, contentType string) {
+func (p *Pipeline) identify(ctx context.Context, req Request, order []string) (tmdbID, contentType string) {
 	if !strings.HasPrefix(req.MediaID, "tt") && !strings.HasPrefix(req.MediaID, "tvdb:") {
 		return "", ""
 	}
@@ -786,13 +786,13 @@ func (p *Pipeline) identify(ctx context.Context, req Request, order []string) (t
 	if !ok {
 		return "", ""
 	}
-	title, contentType, err := ident.IdentifyID(ctx, req.MediaID)
+	tmdbID, contentType, err := ident.IdentifyID(ctx, req.MediaID)
 	if err != nil {
 		p.log().DebugContext(ctx, "Could not identify the title before fetching artwork",
 			"id", logging.RequestID(ctx), "media_id", req.MediaID, "error", err)
 		return "", ""
 	}
-	return title, contentType
+	return tmdbID, contentType
 }
 
 // firstReady names the first provider in order that can be queried.

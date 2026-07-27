@@ -31,7 +31,10 @@ type MediaMeta struct {
 	// IMDbID is the title's IMDb tt-id when the source knows it. Rating sources
 	// are keyed by it, so a request arriving under another scheme needs it to
 	// reach them.
-	IMDbID         string
+	IMDbID string
+	// TMDBID is TMDB's own id for the title, when the source knows it. Sources
+	// matched through a third-party id index are checked against it.
+	TMDBID         string
 	ContentRating  string          // e.g. "TV-MA", "R", "PG-13" (may be empty)
 	ReleaseStatus  string          // "digital" | "cinemas" (may be empty; movies only)
 	Genres         []string        // e.g. ["Action","Drama"] (may be empty)
