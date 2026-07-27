@@ -6,6 +6,7 @@ package compose
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"image"
 	"image/color"
@@ -1034,9 +1035,12 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 				"media_id", req.MediaID, "took_ms", time.Since(started).Milliseconds(),
 				"ratings", len(ratingsOf(meta)), "error", err)
 			if err != nil {
-				// The fallback to a remembered value has already been tried, so
-				// an error here means this badge is missing from the render.
-				degraded.Store(true)
+				// Only a throttled source counts. A scraped source reports "no
+				// match" as an error too, and that is a permanent fact about the
+				// title rather than something a later render would find.
+				if errors.Is(err, provider.ErrRateLimited) {
+					degraded.Store(true)
+				}
 				return
 			}
 			if meta == nil {

@@ -2,6 +2,7 @@ package compose
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -61,6 +62,23 @@ func TestASourceWithNoRatingForTheTitleIsNotDegraded(t *testing.T) {
 
 	if degradedFor(t, p, ratingReq("simkl")) {
 		t.Error("a source with nothing to say about this title was treated as a failure")
+	}
+}
+
+// AlloCiné and Filmweb report a title they do not carry as an error. That is a
+// permanent fact about the title, not a source to wait for, and putting those
+// renders on the short TTL would re-render most of the catalogue every 20
+// minutes for nothing.
+func TestASourceThatDoesNotCarryTheTitleIsNotDegraded(t *testing.T) {
+	src := &provider.StubProvider{
+		ProviderName: "filmweb",
+		Err:          errors.New("filmweb: no match for \"Some Title\""),
+	}
+	p := &Pipeline{providers: testRegistry(src), fetcher: &stubImageFetcher{}}
+	p.SetHealthTracker(provider.NewHealthTracker(10, time.Hour))
+
+	if degradedFor(t, p, ratingReq("filmweb")) {
+		t.Error("a title the source does not carry was treated as a degraded render")
 	}
 }
 
