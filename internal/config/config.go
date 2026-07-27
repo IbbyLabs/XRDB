@@ -31,6 +31,7 @@ type Config struct {
 	DBPath          string
 	CacheDir        string
 	CacheTTL        time.Duration
+	RatingsCacheTTL time.Duration
 	CacheMaxEntries int   // hot tier entry cap
 	CacheMaxBytes   int64 // hot tier byte cap
 	TMDBAPIKey      string
@@ -183,6 +184,14 @@ func Load() Config {
 			cacheTTL = d
 		}
 	}
+	// Ratings are per title, so they outlive any one render config. Zero
+	// disables the cache.
+	ratingsCacheTTL := 6 * time.Hour
+	if raw := os.Getenv("XRDB_RATINGS_CACHE_TTL_HOURS"); raw != "" {
+		if d, err := time.ParseDuration(raw + "h"); err == nil && d >= 0 {
+			ratingsCacheTTL = d
+		}
+	}
 	cacheMaxEntries := 300
 	if raw := os.Getenv("XRDB_CACHE_MAX_ENTRIES"); raw != "" {
 		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
@@ -228,6 +237,7 @@ func Load() Config {
 		Version:               version,
 		DBPath:                dbPath,
 		CacheDir:              cacheDir,
+		RatingsCacheTTL:       ratingsCacheTTL,
 		CacheTTL:              cacheTTL,
 		CacheMaxEntries:       cacheMaxEntries,
 		CacheMaxBytes:         cacheMaxBytes,

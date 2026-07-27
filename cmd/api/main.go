@@ -172,6 +172,7 @@ func main() {
 	var pipeline *compose.Pipeline
 	if len(reg.Names()) > 0 {
 		pipeline = compose.New(reg)
+		pipeline.SetRatingsCacheTTL(cfg.RatingsCacheTTL)
 		// Lets the genre badge tell anime apart from animation generally. The
 		// mapper answers from an in-memory index, so this costs no request time.
 		pipeline.SetAnimeResolver(animeMapper)

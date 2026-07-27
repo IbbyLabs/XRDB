@@ -14,6 +14,7 @@ settings store and take precedence on restart).
 | `XRDB_DB` | `xrdb.db` | SQLite database path for profiles. Use `/data/xrdb.db` in Docker. A `<path>.settings` sidecar holds integration keys saved via the UI. |
 | `XRDB_CACHE_DIR` | `xrdb-cache` | Directory for the rendered-image disk cache. Use `/data/cache` in Docker. |
 | `XRDB_CACHE_TTL_HOURS` | `72` | Default time rendered images stay cached, in hours (fractions allowed). |
+| `XRDB_RATINGS_CACHE_TTL_HOURS` | `6` | How long one rating source's answer for one title is reused, in hours (fractions allowed). Ratings depend on the title rather than the render config, so this spares a repeat lookup when the same title is rendered under a different config. `0` disables it. |
 | `XRDB_RENDER_CONCURRENCY` | `2x CPU cores` | Maximum simultaneous renders. Bounds memory when a client loads a full catalogue at once; lower it on memory-constrained hosts. |
 | `XRDB_MEMORY_LIMIT_MB` | unset | Soft heap limit in MiB (`debug.SetMemoryLimit`). Set to roughly the container memory limit so the runtime GCs before a kernel OOM-kill. `GOMEMLIMIT` also works. |
 | `XRDB_LOG_LEVEL` | `info` | Log verbosity: `debug`, `info`, `warn`, or `error`. Logs are structured JSON on stdout: startup config, per-request access lines, and provider/render warnings. `debug` adds per-request and per-provider detail. Sets the starting level only — the admin dashboard (Admin → Logs) changes it on the running server without a restart, and that choice persists and overrides this variable until cleared. |

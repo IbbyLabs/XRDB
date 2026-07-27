@@ -66,6 +66,9 @@ type Pipeline struct {
 	health *provider.HealthTracker
 	// trending reports whether a title is trending. Optional: nil draws no badge.
 	trending trendingResolver
+	// ratings remembers what each source said about a title, so the same title
+	// under a different config is not fetched twice. Optional: nil disables it.
+	ratings *ratingsCache
 }
 
 // trendingResolver is satisfied by *provider.TrendingIndex.
@@ -280,6 +283,19 @@ func (p *Pipeline) fetchRatings(ctx context.Context, prov provider.Provider, req
 // the pipeline behaves as it did before, dropping a failed source silently.
 func (p *Pipeline) SetHealthTracker(h *provider.HealthTracker) { p.health = h }
 
+// SetRatingsCacheTTL replaces the ratings cache with one using the given TTL.
+// A TTL of zero or less disables the cache.
+func (p *Pipeline) SetRatingsCacheTTL(ttl time.Duration) {
+	if ttl <= 0 {
+		p.ratings = nil
+		return
+	}
+	p.ratings = newRatingsCache(ttl)
+}
+
+// CachedRatings reports how many source answers are held.
+func (p *Pipeline) CachedRatings() int { return p.ratings.Len() }
+
 // Health returns the attached tracker, or nil.
 func (p *Pipeline) Health() *provider.HealthTracker { return p.health }
 
@@ -300,11 +316,14 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 		}
 		return nil, fmt.Errorf("%s: rate limited, cooling off: %w", prov.Name(), provider.ErrRateLimited)
 	}
-	meta, err := p.fetchRatings(ctx, prov, req, artwork)
+	cacheKey := provider.GoodKey(prov.Name(), req.ContentType, req.MediaID)
+	meta, err := p.ratings.do(ctx, cacheKey, func() (*provider.MediaMeta, error) {
+		return p.fetchRatings(ctx, prov, req, artwork)
+	})
 	if p.health == nil {
 		return meta, err
 	}
-	key := provider.GoodKey(prov.Name(), req.ContentType, req.MediaID)
+	key := cacheKey
 
 	if err == nil && meta != nil && len(meta.Ratings) > 0 {
 		p.health.Success(prov.Name(), key, meta)
@@ -346,6 +365,7 @@ func New(reg *provider.Registry) *Pipeline {
 		providers: reg,
 		fetcher:   &httpFetcher{client: &http.Client{Timeout: 15 * time.Second}},
 		logger:    slog.Default(),
+		ratings:   newRatingsCache(DefaultRatingsCacheTTL),
 	}
 }
 
@@ -911,10 +931,14 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 		seen[r.Source] = true
 	}
 
-	var mu sync.Mutex
+	// Several providers can supply the same source: MDBList carries a Trakt
+	// score and so does Trakt. Whichever answer is merged first is the one the
+	// badge shows, so the merge runs in provider-name order after every call has
+	// returned rather than in the order the network happened to answer.
 	var wg sync.WaitGroup
 	var contributors []string
 	artworkSource := string(req.Config.ArtworkSource)
+	var called []provider.Provider
 	for _, name := range p.providers.Names() {
 		if name == artworkSource {
 			continue
@@ -929,8 +953,13 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 		if !providerWanted(prov, req.Config) {
 			continue
 		}
+		called = append(called, prov)
+	}
+
+	answers := make([]*provider.MediaMeta, len(called))
+	for i, prov := range called {
 		wg.Add(1)
-		go func(prov provider.Provider) {
+		go func(i int, prov provider.Provider) {
 			defer wg.Done()
 			started := time.Now()
 			meta, err := p.fetchRatingsResilient(ctx, prov, req, artwork)
@@ -941,27 +970,32 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 			if err != nil || meta == nil {
 				return
 			}
-			mu.Lock()
-			defer mu.Unlock()
-			// The rank arrives from whichever provider computes it, not from the
-			// artwork source, so carry it across onto the meta the badges read.
-			if meta.TopRatedRank > 0 && artwork.TopRatedRank == 0 {
-				artwork.TopRatedRank = meta.TopRatedRank
-			}
-			contributed := false
-			for _, r := range meta.Ratings {
-				if !seen[r.Source] {
-					seen[r.Source] = true
-					all = append(all, r)
-					contributed = true
-				}
-			}
-			if contributed {
-				contributors = append(contributors, prov.Name())
-			}
-		}(prov)
+			answers[i] = meta
+		}(i, prov)
 	}
 	wg.Wait()
+
+	for i, meta := range answers {
+		if meta == nil {
+			continue
+		}
+		// The rank arrives from whichever provider computes it, not from the
+		// artwork source, so carry it across onto the meta the badges read.
+		if meta.TopRatedRank > 0 && artwork.TopRatedRank == 0 {
+			artwork.TopRatedRank = meta.TopRatedRank
+		}
+		contributed := false
+		for _, r := range meta.Ratings {
+			if !seen[r.Source] {
+				seen[r.Source] = true
+				all = append(all, r)
+				contributed = true
+			}
+		}
+		if contributed {
+			contributors = append(contributors, called[i].Name())
+		}
+	}
 	return all, contributors
 }
 
