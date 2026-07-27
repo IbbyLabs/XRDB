@@ -28,7 +28,14 @@ type SIMKL struct {
 	clientID   string
 	baseURL    string // overrides simklBaseURL; set in tests
 	httpClient *http.Client
+	// idCache maps an IMDb id to its SIMKL id. The mapping is fixed, so it is
+	// held for the life of the process.
+	idCache map[string]string
 }
+
+// simklIDCacheMax bounds the id cache. Reached in practice only by a library
+// far larger than one process serves.
+const simklIDCacheMax = 50_000
 
 // UpdateCredentials swaps the live credential so a value saved in the UI takes
 // effect without a restart.
@@ -189,8 +196,44 @@ func (s *SIMKL) fetchSegment(ctx context.Context, segment, simklID, origID strin
 	return meta, nil
 }
 
-// lookupByIMDB resolves an IMDb ID to a SIMKL numeric ID.
+// lookupByIMDB resolves an IMDb ID to a SIMKL numeric ID. A title's SIMKL id
+// never changes, so resolving it once spares the second of the two requests
+// every rating fetch would otherwise cost against a daily allowance.
 func (s *SIMKL) lookupByIMDB(ctx context.Context, imdbID string) (string, error) {
+	if id, ok := s.cachedID(imdbID); ok {
+		return id, nil
+	}
+	id, err := s.fetchIDByIMDB(ctx, imdbID)
+	if err != nil {
+		return "", err
+	}
+	s.rememberID(imdbID, id)
+	return id, nil
+}
+
+// cachedID returns a remembered SIMKL id for an IMDb id.
+func (s *SIMKL) cachedID(imdbID string) (string, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	id, ok := s.idCache[imdbID]
+	return id, ok
+}
+
+// rememberID stores a mapping, clearing the cache wholesale once it grows past
+// its bound. The mapping is stable, so the only reason to drop entries is size.
+func (s *SIMKL) rememberID(imdbID, simklID string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.idCache == nil {
+		s.idCache = make(map[string]string, simklIDCacheMax)
+	}
+	if len(s.idCache) >= simklIDCacheMax {
+		s.idCache = make(map[string]string, simklIDCacheMax)
+	}
+	s.idCache[imdbID] = simklID
+}
+
+func (s *SIMKL) fetchIDByIMDB(ctx context.Context, imdbID string) (string, error) {
 	base := simklBaseURL
 	if s.baseURL != "" {
 		base = s.baseURL
