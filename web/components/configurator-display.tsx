@@ -415,6 +415,14 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
               <span className="count-pill">{config.badges.length}</span>
             )}
           </legend>
+          {/* The row above reads the title's own data and skips when there is
+              none. This one cannot: a release format belongs to a file, not to
+              a title, and no metadata source knows it. */}
+          <span className="hint" style={{ marginBottom: 'var(--sp-2)' }}>
+            Labels you pick, drawn on every poster. XRDB is given a title, not
+            your indexers, so it can&apos;t tell what quality a release is
+            actually available in.
+          </span>
           <ToggleRow
             label="Show quality badges"
             hint="Turn them all off without losing which ones you picked"
