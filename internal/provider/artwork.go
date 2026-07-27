@@ -1,6 +1,20 @@
 package provider
 
-import "context"
+import (
+	"context"
+	"strings"
+)
+
+// OriginalLanguage asks for artwork in whichever language the title itself was
+// made in, resolved per title rather than fixed in the config. Seven Samurai
+// renders Japanese, The Matrix renders English, from one setting.
+const OriginalLanguage = "original"
+
+// IsOriginalLanguage reports whether a language selection means "the title's
+// own", rather than a specific code.
+func IsOriginalLanguage(v string) bool {
+	return strings.EqualFold(strings.TrimSpace(v), OriginalLanguage)
+}
 
 // ArtworkOptions carries the config-driven artwork preferences a provider can
 // honor when selecting which image variant to return.
@@ -8,7 +22,9 @@ type ArtworkOptions struct {
 	// WatchProvidersCountry is the ISO 3166-1 region for streaming availability.
 	// Empty means US.
 	WatchProvidersCountry string
-	Language              string // preferred artwork language code, e.g. "en", "ja"
+	// Language is an artwork language code such as "en" or "ja", or
+	// OriginalLanguage for the title's own.
+	Language string
 	// TMDBID is TMDB's id for the requested title, when the caller resolved one.
 	// Sources matched through a third-party id index check their record against
 	// it. Release names diverge between sources; ids do not.

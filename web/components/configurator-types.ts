@@ -33,7 +33,45 @@ export const TEXT_PREF_OPTIONS = [
   { id: 'random',      label: 'Random',      desc: 'A different pick on each render' },
 ] as const;
 
-export const LANG_OPTIONS = ['en','de','fr','es','pt','it','ja','ko','zh'] as const;
+// 'original' resolves per title from the language it was made in, so Seven
+// Samurai renders Japanese art and The Matrix renders English from one setting.
+export const ORIGINAL_LANGUAGE = 'original';
+
+export const LANG_OPTIONS: { id: string; label: string }[] = [
+  { id: ORIGINAL_LANGUAGE, label: "Original (the title's own)" },
+  { id: 'en', label: 'English'    },
+  { id: 'ar', label: 'Arabic'     },
+  { id: 'bg', label: 'Bulgarian'  },
+  { id: 'cs', label: 'Czech'      },
+  { id: 'da', label: 'Danish'     },
+  { id: 'nl', label: 'Dutch'      },
+  { id: 'fi', label: 'Finnish'    },
+  { id: 'fr', label: 'French'     },
+  { id: 'de', label: 'German'     },
+  { id: 'el', label: 'Greek'      },
+  { id: 'he', label: 'Hebrew'     },
+  { id: 'hi', label: 'Hindi'      },
+  { id: 'hu', label: 'Hungarian'  },
+  { id: 'id', label: 'Indonesian' },
+  { id: 'it', label: 'Italian'    },
+  { id: 'ja', label: 'Japanese'   },
+  { id: 'ko', label: 'Korean'     },
+  { id: 'no', label: 'Norwegian'  },
+  { id: 'fa', label: 'Persian'    },
+  { id: 'pl', label: 'Polish'     },
+  { id: 'pt', label: 'Portuguese' },
+  { id: 'ro', label: 'Romanian'   },
+  { id: 'ru', label: 'Russian'    },
+  { id: 'zh', label: 'Chinese'    },
+  { id: 'es', label: 'Spanish'    },
+  { id: 'sv', label: 'Swedish'    },
+  { id: 'ta', label: 'Tamil'      },
+  { id: 'te', label: 'Telugu'     },
+  { id: 'th', label: 'Thai'       },
+  { id: 'tr', label: 'Turkish'    },
+  { id: 'uk', label: 'Ukrainian'  },
+  { id: 'vi', label: 'Vietnamese' },
+];
 
 export const LAYOUT_OPTIONS = [
   { id: 'bottom',     label: 'Bottom'       },

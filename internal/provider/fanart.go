@@ -101,6 +101,11 @@ func (f *Fanart) FetchArtwork(ctx context.Context, mediaType, id string, opts Ar
 	}
 
 	lang := strings.ToLower(strings.TrimSpace(opts.Language))
+	// Fanart records carry no original-language marker, so there is nothing here
+	// to resolve it against; the usual English-then-any order applies.
+	if IsOriginalLanguage(lang) {
+		lang = ""
+	}
 	// Fanart.tv tags language-neutral (textless) art with lang "00".
 	switch opts.TextPreference {
 	case "textless", "clean":

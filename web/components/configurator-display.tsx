@@ -3,7 +3,7 @@
 import { Check, AlertCircle } from 'lucide-react';
 import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
-  ARTWORK_OPTIONS, SIZE_OPTIONS, TEXT_PREF_OPTIONS, LANG_OPTIONS,
+  ARTWORK_OPTIONS, SIZE_OPTIONS, TEXT_PREF_OPTIONS, LANG_OPTIONS, ORIGINAL_LANGUAGE,
   AGE_POS_OPTIONS, SIX_POS_OPTIONS, GENRE_POS_OPTIONS, QUALITY_BADGE_OPTIONS, TREND_STYLE_OPTIONS,
   suppressedQualityBadges,
 } from './configurator-types';
@@ -209,14 +209,25 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           </select>
         </Field>
 
-        <Field label="Language" htmlFor={`${uid}-lang`} hint="Preferred language for posters and metadata">
+        <Field
+          label="Language"
+          htmlFor={`${uid}-lang`}
+          hint={config.language === ORIGINAL_LANGUAGE
+            ? 'Artwork in whichever language each title was made in'
+            : 'Preferred language for artwork, falling back to English'}
+        >
           <select
             id={`${uid}-lang`}
             className="select"
             value={config.language}
             onChange={e => onUpdate('language', e.target.value)}
           >
-            {LANG_OPTIONS.map(o => <option key={o} value={o}>{o.toUpperCase()}</option>)}
+            {/* The renderer accepts any code, so one set by hand has to appear
+                here too, or the select shows blank and overwrites it. */}
+            {!LANG_OPTIONS.some(o => o.id === config.language) && config.language && (
+              <option value={config.language}>{config.language.toUpperCase()}</option>
+            )}
+            {LANG_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
           </select>
         </Field>
 

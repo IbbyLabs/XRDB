@@ -23,6 +23,16 @@ type TMDB struct {
 	apiKey     string
 	readToken  string
 	httpClient *http.Client
+	// baseURL overrides the public API root for tests. Empty means tmdbBaseURL.
+	baseURL string
+}
+
+// base returns the API root for this client.
+func (t *TMDB) base() string {
+	if t.baseURL != "" {
+		return t.baseURL
+	}
+	return tmdbBaseURL
 }
 
 // NewTMDB creates a TMDB provider. Provide either apiKey or readToken (readToken preferred).
@@ -162,7 +172,7 @@ type externalMatch struct {
 // to a TMDB id via TMDB's /find endpoint. found is false when TMDB returns no
 // match; err is non-nil only on a transport/decoding failure.
 func (t *TMDB) findByExternalID(ctx context.Context, externalID, source string) (match externalMatch, found bool, err error) {
-	path := tmdbBaseURL + "/find/" + url.PathEscape(externalID) + "?external_source=" + source
+	path := t.base() + "/find/" + url.PathEscape(externalID) + "?external_source=" + source
 	var result struct {
 		MovieResults []struct {
 			ID    int    `json:"id"`
@@ -234,7 +244,7 @@ func (t *TMDB) FetchEpisode(ctx context.Context, seriesID string, season, episod
 		return nil, fmt.Errorf("tmdb: resolve series %q: %w", seriesID, err)
 	}
 	path := fmt.Sprintf("%s/tv/%s/season/%d/episode/%d?append_to_response=external_ids",
-		tmdbBaseURL, tmdbID, season, episode)
+		t.base(), tmdbID, season, episode)
 	var result struct {
 		Name        string  `json:"name"`
 		StillPath   string  `json:"still_path"`
@@ -268,20 +278,30 @@ func (t *TMDB) FetchEpisode(ctx context.Context, seriesID string, season, episod
 
 func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts ArtworkOptions) (*MediaMeta, error) {
 	lang := strings.ToLower(strings.TrimSpace(opts.Language))
+	wantOriginal := IsOriginalLanguage(lang)
 	// Pull image variants in the preferred language plus English and
 	// language-neutral (textless) art so selection has candidates.
 	imgLangs := "en,null"
 	if lang != "" && lang != "en" {
 		imgLangs = lang + ",en,null"
 	}
-	path := tmdbBaseURL + "/" + mediaType + "/" + id +
-		"?append_to_response=images,release_dates,content_ratings,watch%2Fproviders,external_ids" +
-		"&include_image_language=" + imgLangs
+	path := t.base() + "/" + mediaType + "/" + id +
+		"?append_to_response=images,release_dates,content_ratings,watch%2Fproviders,external_ids"
+	if wantOriginal {
+		// The title's own language is only known once TMDB answers, and there is
+		// no wildcard for the filter. Omitting it returns every language.
+		lang = ""
+	} else {
+		path += "&include_image_language=" + imgLangs
+	}
 	var result struct {
 		Title         string `json:"title"`
 		Name          string `json:"name"` // TV
 		OriginalTitle string `json:"original_title"`
 		OriginalName  string `json:"original_name"` // TV
+		// OriginalLanguage is the language the title was made in, which is what
+		// a request for the original language resolves to.
+		OriginalLanguage string `json:"original_language"`
 		Overview      string `json:"overview"`
 		// Movies carry imdb_id at the top level, series only under external_ids.
 		IMDbID      string `json:"imdb_id"`
@@ -359,12 +379,19 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 	if imdbID == "" {
 		imdbID = strings.TrimSpace(result.ExternalIDs.IMDbID)
 	}
+	if wantOriginal {
+		lang = strings.ToLower(strings.TrimSpace(result.OriginalLanguage))
+	}
+	artLang := lang
+	if artLang == "" {
+		artLang = "en"
+	}
 	meta := &MediaMeta{
 		Title:         title,
 		OriginalTitle: originalTitle,
 		Year:          year,
 		Overview:      result.Overview,
-		Language:      "en",
+		Language:      artLang,
 		IMDbID:        imdbID,
 		TMDBID:        id,
 	}
@@ -664,7 +691,7 @@ func (t *TMDB) SearchTitles(ctx context.Context, query string) ([]TitleResult, e
 	var result struct {
 		Results []tmdbListItem `json:"results"`
 	}
-	path := tmdbBaseURL + "/search/multi?include_adult=false&query=" + url.QueryEscape(query)
+	path := t.base() + "/search/multi?include_adult=false&query=" + url.QueryEscape(query)
 	if err := t.get(ctx, path, &result); err != nil {
 		return nil, err
 	}
@@ -676,7 +703,7 @@ func (t *TMDB) TrendingTitles(ctx context.Context) ([]TitleResult, error) {
 	var result struct {
 		Results []tmdbListItem `json:"results"`
 	}
-	if err := t.get(ctx, tmdbBaseURL+"/trending/all/week", &result); err != nil {
+	if err := t.get(ctx, t.base()+"/trending/all/week", &result); err != nil {
 		return nil, err
 	}
 	return toTitleResults(result.Results, 20), nil
@@ -687,7 +714,7 @@ func (t *TMDB) LookupIMDbID(ctx context.Context, mediaType string, tmdbID int) (
 	var result struct {
 		IMDbID string `json:"imdb_id"`
 	}
-	path := tmdbBaseURL + "/" + mediaType + "/" + strconv.Itoa(tmdbID) + "/external_ids"
+	path := t.base() + "/" + mediaType + "/" + strconv.Itoa(tmdbID) + "/external_ids"
 	if err := t.get(ctx, path, &result); err != nil {
 		return "", err
 	}
