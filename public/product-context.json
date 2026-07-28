@@ -1,0 +1,127 @@
+{
+  "artifactType": "xrdb-product-context",
+  "schemaVersion": "1",
+  "xrdbTag": "v3.11.0",
+  "generatedAt": "2026-07-28T12:43:54Z",
+  "productName": "XRDB",
+  "expandedName": "eXtended Ratings DataBase",
+  "ownerName": "IbbyLabs",
+  "liveUrl": "https://extendedratings.com",
+  "serverInvite": "https://discord.gg/wPY2pcqjmm",
+  "introLines": [
+    "XRDB renders poster, backdrop, logo and episode-thumbnail artwork on demand, drawing ratings and metadata onto the image.",
+    "It is used mainly through Stremio-style addons, and also writes artwork to folders for Plex and Jellyfin.",
+    "A render is described entirely by its config, so the same title can look different in two libraries at once.",
+    "Renders are cached; a render missing a badge because a source failed is cached only briefly so it corrects itself once the source recovers."
+  ],
+  "sections": [
+    {
+      "heading": "What XRDB is",
+      "lines": [
+        "XRDB renders poster, backdrop, logo and episode-thumbnail artwork on demand, drawing ratings and metadata onto the image.",
+        "It is used mainly through Stremio-style addons, and also writes artwork to folders for Plex and Jellyfin.",
+        "A render is described entirely by its config, so the same title can look different in two libraries at once.",
+        "Renders are cached; a render missing a badge because a source failed is cached only briefly so it corrects itself once the source recovers."
+      ]
+    },
+    {
+      "heading": "Ratings",
+      "lines": [
+        "Ratings come from IMDb, TMDB, MDBList, OMDb, Trakt, SIMKL, MyAnimeList, AniList, Kitsu, AlloCiné and Filmweb.",
+        "Only the sources a config actually asks for are fetched, which is what keeps a cold render fast.",
+        "Anime titles resolve through MAL, AniList and Kitsu ids, so anime keeps its ratings.",
+        "A source that is rate-limited or erroring falls back to its last good answer rather than dropping its badge."
+      ]
+    },
+    {
+      "heading": "Quality badges",
+      "lines": [
+        "Quality badges are labels the user picks: 4K, HD, HDR, HDR10, HDR10+, Dolby Vision, DTS, Atmos, IMAX, Blu-ray, Remux and BD Remux.",
+        "Turning on \"Only show what's available\" checks each title against a stream addon and drops the badges it has no release in.",
+        "The check filters and never adds. The chips stay the user's pick, so it cannot introduce a badge nobody chose, and picking nothing still draws nothing.",
+        "It needs a stream addon configured on the server. Without one the switch does nothing.",
+        "Worked example: Oppenheimer keeps 4K, IMAX, DTS and Remux because it genuinely has all four; Citizen Kane drops IMAX and keeps the rest.",
+        "Detection on its own would be useless: almost every popular title has some release in every format, so \"show what exists\" would paint every badge on everything. The user's pick is what gives the row meaning.",
+        "Any older answer saying XRDB is handed a title and cannot know what quality exists is out of date."
+      ]
+    },
+    {
+      "heading": "Other overlays",
+      "lines": [
+        "Age rating, release status, top-rated rank, genre, trending and streaming-provider chips are each their own switch.",
+        "Position, scale, style and a per-overlay cap are configurable, and a hidden switch turns a row off without losing the selection.",
+        "Artwork can come from TMDB, Fanart, Cinemeta or the anime sources, with a fallback order so a surface missing from one is filled from another.",
+        "Artwork language can be set per render, including `original` for the title's own language."
+      ]
+    },
+    {
+      "heading": "Migrating from v2",
+      "lines": [
+        "v2 profiles import and keep every original key; anything that cannot be translated is carried rather than dropped.",
+        "v2's `streamBadges` becomes the quality availability check. It previously turned on the streaming-service chips instead, so an imported profile could gain service logos nobody chose.",
+        "v2's \"glass\" rating style is XRDB's Pill.",
+        "v2 spellings of config keys are still accepted on import."
+      ]
+    },
+    {
+      "heading": "Answering questions",
+      "lines": [
+        "Check the running version at `https://extendedratings.com/healthz` before telling anyone a fix is live.",
+        "The developer build is `https://dev.extendedratings.com` and moves ahead of the stable one.",
+        "Point bug reports at `/bug report` and feature requests at `/feat submit` rather than collecting them in chat."
+      ]
+    },
+    {
+      "heading": "Config keys the renderer accepts",
+      "lines": [
+        "Generated from the config struct, so this list is what the build accepts rather than what was last written down.",
+        "A key not listed here is not read, whatever an older answer or a v2 guide says.",
+        "ageRating, ageRatingBadgeStyle, ageRatingPos, ageRatingTileColor, aggregateAccentBarOffset, aggregateAccentBarVisible, aggregateAccentColor, aggregateAccentMode, aggregateAudienceAccentColor, aggregateAudienceValueColor, aggregateBar, aggregateBarOffset, aggregateBarPos, aggregateCriticsAccentColor, aggregateCriticsValueColor, aggregateDynamicStops, aggregateFillByScore, aggregateRatingSource, aggregateValueColor, artworkSource, backdropAsPoster, backdropLogo, badgeStyle, badgeTheme, badges, bottomRatingsRow, episodeArtworkMode, genre, genreBadgeAccent, genreBadgeAnimeGrouping, genreBadgeBackgroundOpacity, genreBadgeBorderWidth, genreBadgeLabel, genreBadgeMode, genreBadgeOffsetX, genreBadgeOffsetY, genreBadgeScale, genreBadgeStyle, genreBadgeTileAccentColor, genrePos, iconShape, language, logoBackground, networkTileColor, noBackgroundBadgeOutlineColor, noBackgroundBadgeOutlineWidth, outputFormat, outputQuality, posterEdgeOffset, providers, providersCountry, qualityBadgeOffsetX, qualityBadgeOffsetY, qualityBadgeScale, qualityBadgesDetect, qualityBadgesHidden, qualityBadgesMax, qualityBadgesPos, qualityBadgesStyle, qualityBadgesTileAccentColor, randomPosterFallback, randomPosterLanguage, randomPosterMinHeight, randomPosterMinVoteAverage, randomPosterMinVoteCount, randomPosterMinWidth, randomPosterText, ratingBadgeOffsetX, ratingBadgeOffsetY, ratingBadgeScale, ratingIconHidden, ratingPresentation, ratingProviderIconScale, ratingProviderOverrides, ratingProviderWeights, ratingRing, ratingRingColor, ratingRingPos, ratingValueMode, ratingVoteCounts, ratingXOffsetPillGlass, ratingXOffsetSquare, ratingYOffsetPillGlass, ratingYOffsetSquare, ratings, ratingsLayout, ratingsMax, ratingsMaxPerSide, releaseStatus, releaseStatusBadgeStyle, releaseStatusPos, releaseStatusTileColor, ringAudiencePriority, ringCenterOpacity, ringCriticsPriority, ringProgressSource, ringValueSource, scorebarHighColor, scorebarHighThreshold, scorebarLowColor, scorebarLowThreshold, scorebarMidColor, scorebarStyle, sideRatingsOffset, sideRatingsPosition, size, stackedLineHidden, textPreference, topRated, topRatedBadgeStyle, topRatedPos, topRatedTileColor, trending, trendingPos, trendingStyle, trendingTagStyle, trendingTextColor"
+      ]
+    },
+    {
+      "heading": "Server environment variables",
+      "lines": [
+        "Read from variables.md, so these are the variables this build reads.",
+        "These are set by whoever runs the server, not by a user's config.",
+        "XRDB_ADDR (default :8787)",
+        "XRDB_VERSION (default dev)",
+        "XRDB_DB (default xrdb.db)",
+        "XRDB_CACHE_DIR (default xrdb-cache)",
+        "XRDB_CACHE_TTL_HOURS (default 72)",
+        "XRDB_DEGRADED_CACHE_TTL_MINUTES (default 20)",
+        "XRDB_RATINGS_CACHE_TTL_HOURS (default 6)",
+        "XRDB_STREAM_ADDON_URL (unset by default)",
+        "XRDB_STREAM_TIMEOUT_MS (default 4000)",
+        "XRDB_STREAM_CACHE_TTL_HOURS (default 24)",
+        "XRDB_RENDER_CONCURRENCY (default 2x CPU cores)",
+        "XRDB_MEMORY_LIMIT_MB (unset by default)",
+        "XRDB_LOG_LEVEL (default info)",
+        "XRDB_ADMIN_KEY (default _(unset)_)",
+        "XRDB_API_KEY (default _(unset)_)",
+        "XRDB_TRUSTED_PROXIES (default loopback + private ranges)",
+        "XRDB_TRUST_PROXY_HEADERS (default false)",
+        "XRDB_TMDB_READ_TOKEN (default TMDB v4 read token (preferred). Artwork, metadata, genres, age ratings, watch providers, title search.)",
+        "XRDB_TMDB_API_KEY (default TMDB v3 key (legacy alternative to the read token).)",
+        "XRDB_MDBLIST_API_KEY (default MDBList — IMDb, Rotten Tomatoes, Metacritic, Letterboxd, Trakt scores in one call.)",
+        "XRDB_OMDB_API_KEY (default OMDB supplemental ratings.)",
+        "XRDB_FANART_API_KEY (default Fanart.tv HD artwork and logos.)",
+        "XRDB_TRAKT_CLIENT_ID (default Trakt community ratings.)",
+        "XRDB_SIMKL_CLIENT_ID (default SIMKL community ratings.)",
+        "XRDB_IMDB_DATASET_DIR (default Directory for the local IMDb ratings dataset; unset disables it.)",
+        "XRDB_ANIME_MAP_URL (default Fribb anime-lists (GitHub raw, jsDelivr mirror))",
+        "XRDB_ANIME_MAP_FALLBACK_URL (default https://arm.haglund.dev/api/v2)",
+        "XRDB_ANIME_MAP_REFRESH_HOURS (default 168` (7 days))",
+        "XRDB_IMDB_TOP_RATED (default false)",
+        "XRDB_FOLDER_WRITER (default false)",
+        "XRDB_LIBRARY_ROOTS (default _(unset)_)",
+        "XRDB_FOLDER_WRITER_PROFILE (default _(unset)_)",
+        "XRDB_FOLDER_WRITER_SURFACES (default poster,backdrop)",
+        "XRDB_FOLDER_WRITER_OVERWRITE (default false)",
+        "XRDB_FOLDER_WRITER_PACE_MS (default 250)",
+        "XRDB_FOLDER_WRITER_INTERVAL_H (default 0)",
+        "NEXT_PUBLIC_API_BASE_URL (default API origin the web app calls. Unset in the single-container image (same origin). Set for split deployments or local dev (`http://localhost:8787`).)"
+      ]
+    }
+  ]
+}

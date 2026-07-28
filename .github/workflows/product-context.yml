@@ -1,0 +1,62 @@
+name: Product context
+run-name: Refresh the product context for ${{ github.sha }}
+
+# The community bot answers from public/product-context.json, fetched from the
+# newest tag. Regenerating it on every push keeps the render options and the
+# environment variables it quotes in step with the code, so the bot stops
+# describing options that were renamed and starts describing ones that were
+# added. The prose half lives in docs/product-context.md and is not touched.
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/product-context.md"
+      - "variables.md"
+      - "internal/imageconfig/**"
+      - "cmd/product-context/**"
+      - ".github/workflows/product-context.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: product-context-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    name: Regenerate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          # The generator stamps the newest tag, which a shallow clone lacks.
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5.3.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Regenerate
+        run: go run ./cmd/product-context -root .
+
+      - name: Commit when it changed
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- public/product-context.json; then
+            echo "Already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/product-context.json
+          # GITHUB_TOKEN pushes do not start another workflow, so this cannot
+          # trigger itself.
+          git commit -m "chore(context): refresh the product context"
+          git push
