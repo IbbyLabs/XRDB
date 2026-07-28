@@ -215,7 +215,6 @@ export function ConfiguratorClient() {
       noBackgroundBadgeOutlineColor: cfg.noBackgroundBadgeOutlineColor,
       noBackgroundBadgeOutlineWidth: cfg.noBackgroundBadgeOutlineWidth,
       qualityBadgesHidden: cfg.qualityBadgesHidden || undefined,
-      qualityBadgesDetect: cfg.qualityBadgesDetect || undefined,
       qualityBadgesPos: cfg.qualityBadgesPos,
       qualityBadgeScale: cfg.qualityBadgeScale,
       qualityBadgeOffsetX: cfg.qualityBadgeOffsetX,

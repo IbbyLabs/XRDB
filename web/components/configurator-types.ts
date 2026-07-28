@@ -386,7 +386,6 @@ export interface ConfigState {
   noBackgroundBadgeOutlineColor: string; // '#RRGGBB' outline for plain badges; '' = default
   noBackgroundBadgeOutlineWidth: number; // px; 0 = default shadow
   qualityBadgesHidden: boolean; // draw none, keeping the chip selection
-  qualityBadgesDetect: boolean; // keep only the picked badges a release exists in
   qualityBadgesPos: string; // 'inherit' | six positions
   qualityBadgeScale: number;
   qualityBadgesMax: number; // 0 = show all
@@ -500,7 +499,6 @@ export const DEFAULT_CONFIG: ConfigState = {
   noBackgroundBadgeOutlineColor: '',
   noBackgroundBadgeOutlineWidth: 0,
   qualityBadgesHidden: false,
-  qualityBadgesDetect: false,
   qualityBadgesPos: 'inherit',
   qualityBadgeScale: 0,
   qualityBadgesMax: 0,

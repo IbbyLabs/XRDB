@@ -416,23 +416,17 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
             )}
           </legend>
           {/* A release format belongs to a file, not to a title, so no metadata
-              source carries it. Checking means asking a stream addon. */}
+              source carries it. Checking means asking a stream addon, which the
+              instance either has or does not. */}
           <span className="hint" style={{ marginBottom: 'var(--sp-2)' }}>
-            {config.qualityBadgesDetect
-              ? 'Labels you pick, drawn on a poster only when that quality is actually out there.'
-              : 'Labels you pick, drawn on every poster whether or not that quality exists.'}
+            Pick the formats you care about. Each one is drawn on a title only
+            when that title is actually available in it.
           </span>
           <ToggleRow
             label="Show quality badges"
             hint="Turn them all off without losing which ones you picked"
             checked={!config.qualityBadgesHidden}
             onChange={() => onUpdate('qualityBadgesHidden', !config.qualityBadgesHidden)}
-          />
-          <ToggleRow
-            label="Only show what's available"
-            hint="Checks each title against a stream addon and drops the badges it has no release in. Needs one set up on the server."
-            checked={config.qualityBadgesDetect}
-            onChange={() => onUpdate('qualityBadgesDetect', !config.qualityBadgesDetect)}
           />
           <div className="chip-row" style={config.qualityBadgesHidden ? { opacity: 0.45 } : undefined}>
             {QUALITY_BADGE_OPTIONS.map(b => {

@@ -26,18 +26,20 @@ func credential(names ...string) string {
 }
 
 type Config struct {
-	Address         string
-	Version         string
-	DBPath          string
-	CacheDir        string
-	CacheTTL        time.Duration
+	Address  string
+	Version  string
+	DBPath   string
+	CacheDir string
+	CacheTTL time.Duration
 	// DegradedCacheTTL caps how long a render that lost a badge to a failing
 	// source is cached.
 	DegradedCacheTTL time.Duration
 	RatingsCacheTTL  time.Duration
 	// StreamAddonURL is a Stremio stream addon (Comet, Torrentio) asked which
 	// release qualities a title has, so a quality badge stands for something
-	// that exists. Empty leaves quality badges as the plain labels they are.
+	// that exists rather than a label someone ticked. Defaults to a public
+	// Comet instance so this holds on an instance nobody configured; "off"
+	// disables the check and draws the picks as they are.
 	// A URL carrying a debrid token narrows the answer to that account, so it
 	// is treated as a secret and never logged past its host.
 	StreamAddonURL string
@@ -46,7 +48,7 @@ type Config struct {
 	StreamTimeout time.Duration
 	// StreamCacheTTL is how long a title's detected qualities stand. Availability
 	// moves far more slowly than a render config changes.
-	StreamCacheTTL time.Duration
+	StreamCacheTTL  time.Duration
 	CacheMaxEntries int   // hot tier entry cap
 	CacheMaxBytes   int64 // hot tier byte cap
 	TMDBAPIKey      string
@@ -169,6 +171,26 @@ func resolveVersion() string {
 	return "dev"
 }
 
+// DefaultStreamAddonURL is asked which qualities a title is available in when
+// no addon is configured. It is a public Comet instance: Comet aggregates
+// Torrentio and its own sources, and the check drops a badge it cannot find, so
+// a thinner source does not just miss detail, it removes badges that are true.
+const DefaultStreamAddonURL = "https://comet.stremio.ru"
+
+// streamAddonURL resolves the addon to ask. Unset takes the default so the
+// check holds on an instance nobody configured; "off" turns it off for an
+// operator who would rather not call out at all.
+func streamAddonURL() string {
+	raw := strings.TrimSpace(os.Getenv("XRDB_STREAM_ADDON_URL"))
+	switch strings.ToLower(raw) {
+	case "":
+		return DefaultStreamAddonURL
+	case "off", "none", "disabled", "false":
+		return ""
+	}
+	return raw
+}
+
 func Load() Config {
 	trendingDepth := 100
 	if raw := os.Getenv("XRDB_TRENDING_DEPTH"); raw != "" {
@@ -281,7 +303,7 @@ func Load() Config {
 		DBPath:                dbPath,
 		CacheDir:              cacheDir,
 		RatingsCacheTTL:       ratingsCacheTTL,
-		StreamAddonURL:        strings.TrimSpace(os.Getenv("XRDB_STREAM_ADDON_URL")),
+		StreamAddonURL:        streamAddonURL(),
 		StreamTimeout:         streamTimeout,
 		StreamCacheTTL:        streamCacheTTL,
 		CacheTTL:              cacheTTL,

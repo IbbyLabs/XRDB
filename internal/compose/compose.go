@@ -411,7 +411,6 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 
 	badgeCfg := imageconfigBadges{
 		badges: req.Config.Badges,
-		detect: req.Config.QualityBadgesDetect,
 		hidden: req.Config.QualityBadgesHidden,
 	}
 	// A request that already names an IMDb id needs nothing from the artwork

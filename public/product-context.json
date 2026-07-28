@@ -1,8 +1,8 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": "1",
-  "xrdbTag": "v3.11.0",
-  "generatedAt": "2026-07-28T12:48:05Z",
+  "xrdbTag": "v3.12.0",
+  "generatedAt": "2026-07-28T13:38:59Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -36,13 +36,14 @@
     {
       "heading": "Quality badges",
       "lines": [
-        "Quality badges are labels the user picks: 4K, HD, HDR, HDR10, HDR10+, Dolby Vision, DTS, Atmos, IMAX, Blu-ray, Remux and BD Remux.",
-        "Turning on \"Only show what's available\" checks each title against a stream addon and drops the badges it has no release in.",
+        "Quality badges are formats the user picks: 4K, HD, HDR, HDR10, HDR10+, Dolby Vision, DTS, Atmos, IMAX, Blu-ray, Remux and BD Remux.",
+        "Each picked badge is drawn on a title only when that title is actually available in that format. There is no switch for this and it cannot be turned off per render: a badge that is not true of the title is decoration.",
         "The check filters and never adds. The chips stay the user's pick, so it cannot introduce a badge nobody chose, and picking nothing still draws nothing.",
-        "It needs a stream addon configured on the server. Without one the switch does nothing.",
         "Worked example: Oppenheimer keeps 4K, IMAX, DTS and Remux because it genuinely has all four; Citizen Kane drops IMAX and keeps the rest.",
-        "Detection on its own would be useless: almost every popular title has some release in every format, so \"show what exists\" would paint every badge on everything. The user's pick is what gives the row meaning.",
-        "Any older answer saying XRDB is handed a title and cannot know what quality exists is out of date."
+        "Checking means asking a stream addon. One is configured by default (a public Comet instance), so this holds without any setup; an operator can point `XRDB_STREAM_ADDON_URL` at their own or set it to `off`.",
+        "If the addon is unreachable the picks are drawn unchecked rather than blanked, and that render is cached only briefly so it corrects itself.",
+        "Detecting without picking would be useless: almost every popular title has some release in every format, so \"show everything that exists\" paints every badge on everything. The pick is what gives the row meaning.",
+        "Any older answer saying XRDB is handed a title and cannot know what quality exists is out of date, as is any answer describing an \"Only show what's available\" toggle."
       ]
     },
     {
@@ -58,7 +59,7 @@
       "heading": "Migrating from v2",
       "lines": [
         "v2 profiles import and keep every original key; anything that cannot be translated is carried rather than dropped.",
-        "v2's `streamBadges` becomes the quality availability check. It previously turned on the streaming-service chips instead, so an imported profile could gain service logos nobody chose.",
+        "v2's `streamBadges` switched its torrent-index lookup on and off. There is no equivalent here because the check is not optional, so the key is carried but no longer drives anything. It used to be read as the streaming-service chips, which gave imported profiles service logos nobody chose.",
         "v2's \"glass\" rating style is XRDB's Pill.",
         "v2 spellings of config keys are still accepted on import."
       ]
@@ -76,7 +77,7 @@
       "lines": [
         "Generated from the config struct, so this list is what the build accepts rather than what was last written down.",
         "A key not listed here is not read, whatever an older answer or a v2 guide says.",
-        "ageRating, ageRatingBadgeStyle, ageRatingPos, ageRatingTileColor, aggregateAccentBarOffset, aggregateAccentBarVisible, aggregateAccentColor, aggregateAccentMode, aggregateAudienceAccentColor, aggregateAudienceValueColor, aggregateBar, aggregateBarOffset, aggregateBarPos, aggregateCriticsAccentColor, aggregateCriticsValueColor, aggregateDynamicStops, aggregateFillByScore, aggregateRatingSource, aggregateValueColor, artworkSource, backdropAsPoster, backdropLogo, badgeStyle, badgeTheme, badges, bottomRatingsRow, episodeArtworkMode, genre, genreBadgeAccent, genreBadgeAnimeGrouping, genreBadgeBackgroundOpacity, genreBadgeBorderWidth, genreBadgeLabel, genreBadgeMode, genreBadgeOffsetX, genreBadgeOffsetY, genreBadgeScale, genreBadgeStyle, genreBadgeTileAccentColor, genrePos, iconShape, language, logoBackground, networkTileColor, noBackgroundBadgeOutlineColor, noBackgroundBadgeOutlineWidth, outputFormat, outputQuality, posterEdgeOffset, providers, providersCountry, qualityBadgeOffsetX, qualityBadgeOffsetY, qualityBadgeScale, qualityBadgesDetect, qualityBadgesHidden, qualityBadgesMax, qualityBadgesPos, qualityBadgesStyle, qualityBadgesTileAccentColor, randomPosterFallback, randomPosterLanguage, randomPosterMinHeight, randomPosterMinVoteAverage, randomPosterMinVoteCount, randomPosterMinWidth, randomPosterText, ratingBadgeOffsetX, ratingBadgeOffsetY, ratingBadgeScale, ratingIconHidden, ratingPresentation, ratingProviderIconScale, ratingProviderOverrides, ratingProviderWeights, ratingRing, ratingRingColor, ratingRingPos, ratingValueMode, ratingVoteCounts, ratingXOffsetPillGlass, ratingXOffsetSquare, ratingYOffsetPillGlass, ratingYOffsetSquare, ratings, ratingsLayout, ratingsMax, ratingsMaxPerSide, releaseStatus, releaseStatusBadgeStyle, releaseStatusPos, releaseStatusTileColor, ringAudiencePriority, ringCenterOpacity, ringCriticsPriority, ringProgressSource, ringValueSource, scorebarHighColor, scorebarHighThreshold, scorebarLowColor, scorebarLowThreshold, scorebarMidColor, scorebarStyle, sideRatingsOffset, sideRatingsPosition, size, stackedLineHidden, textPreference, topRated, topRatedBadgeStyle, topRatedPos, topRatedTileColor, trending, trendingPos, trendingStyle, trendingTagStyle, trendingTextColor"
+        "ageRating, ageRatingBadgeStyle, ageRatingPos, ageRatingTileColor, aggregateAccentBarOffset, aggregateAccentBarVisible, aggregateAccentColor, aggregateAccentMode, aggregateAudienceAccentColor, aggregateAudienceValueColor, aggregateBar, aggregateBarOffset, aggregateBarPos, aggregateCriticsAccentColor, aggregateCriticsValueColor, aggregateDynamicStops, aggregateFillByScore, aggregateRatingSource, aggregateValueColor, artworkSource, backdropAsPoster, backdropLogo, badgeStyle, badgeTheme, badges, bottomRatingsRow, episodeArtworkMode, genre, genreBadgeAccent, genreBadgeAnimeGrouping, genreBadgeBackgroundOpacity, genreBadgeBorderWidth, genreBadgeLabel, genreBadgeMode, genreBadgeOffsetX, genreBadgeOffsetY, genreBadgeScale, genreBadgeStyle, genreBadgeTileAccentColor, genrePos, iconShape, language, logoBackground, networkTileColor, noBackgroundBadgeOutlineColor, noBackgroundBadgeOutlineWidth, outputFormat, outputQuality, posterEdgeOffset, providers, providersCountry, qualityBadgeOffsetX, qualityBadgeOffsetY, qualityBadgeScale, qualityBadgesHidden, qualityBadgesMax, qualityBadgesPos, qualityBadgesStyle, qualityBadgesTileAccentColor, randomPosterFallback, randomPosterLanguage, randomPosterMinHeight, randomPosterMinVoteAverage, randomPosterMinVoteCount, randomPosterMinWidth, randomPosterText, ratingBadgeOffsetX, ratingBadgeOffsetY, ratingBadgeScale, ratingIconHidden, ratingPresentation, ratingProviderIconScale, ratingProviderOverrides, ratingProviderWeights, ratingRing, ratingRingColor, ratingRingPos, ratingValueMode, ratingVoteCounts, ratingXOffsetPillGlass, ratingXOffsetSquare, ratingYOffsetPillGlass, ratingYOffsetSquare, ratings, ratingsLayout, ratingsMax, ratingsMaxPerSide, releaseStatus, releaseStatusBadgeStyle, releaseStatusPos, releaseStatusTileColor, ringAudiencePriority, ringCenterOpacity, ringCriticsPriority, ringProgressSource, ringValueSource, scorebarHighColor, scorebarHighThreshold, scorebarLowColor, scorebarLowThreshold, scorebarMidColor, scorebarStyle, sideRatingsOffset, sideRatingsPosition, size, stackedLineHidden, textPreference, topRated, topRatedBadgeStyle, topRatedPos, topRatedTileColor, trending, trendingPos, trendingStyle, trendingTagStyle, trendingTextColor"
       ]
     },
     {
@@ -91,7 +92,7 @@
         "XRDB_CACHE_TTL_HOURS (default 72)",
         "XRDB_DEGRADED_CACHE_TTL_MINUTES (default 20)",
         "XRDB_RATINGS_CACHE_TTL_HOURS (default 6)",
-        "XRDB_STREAM_ADDON_URL (unset by default)",
+        "XRDB_STREAM_ADDON_URL (default https://comet.stremio.ru)",
         "XRDB_STREAM_TIMEOUT_MS (default 4000)",
         "XRDB_STREAM_CACHE_TTL_HOURS (default 24)",
         "XRDB_RENDER_CONCURRENCY (default 2x CPU cores)",

@@ -2,7 +2,6 @@ package imageconfig
 
 import (
 	"encoding/json"
-	"strings"
 	"testing"
 )
 
@@ -40,27 +39,5 @@ func TestANegativeCapIsIgnored(t *testing.T) {
 	}
 	if cfg.QualityBadgesMax != nil {
 		t.Errorf("QualityBadgesMax = %d, want nil", *cfg.QualityBadgesMax)
-	}
-}
-
-// The availability check changes what is drawn, so it has to change the cache
-// key. It is also omitempty, so a config that never sets it hashes exactly as
-// it did before the field existed rather than orphaning every cached render.
-func TestAvailabilityCheckKeysSeparately(t *testing.T) {
-	base := Default()
-	base.Badges = []string{"4k", "hdr"}
-	withDetect := base
-	withDetect.QualityBadgesDetect = true
-
-	if CacheKey(base) == CacheKey(withDetect) {
-		t.Error("the availability check does not change the cache key")
-	}
-
-	encoded, err := json.Marshal(base.QualityBadgeConfig)
-	if err != nil {
-		t.Fatalf("marshal: %v", err)
-	}
-	if strings.Contains(string(encoded), "qualityBadgesDetect") {
-		t.Errorf("an unset availability check still serialises: %s", encoded)
 	}
 }

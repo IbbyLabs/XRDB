@@ -107,10 +107,6 @@ func (p *Pipeline) SetQualityDetector(d qualityDetector, ttl time.Duration) {
 	p.qualityCache = newQualityCache(ttl)
 }
 
-// HasQualityDetector reports whether the server can verify quality badges, so
-// the configurator can say whether the switch does anything.
-func (p *Pipeline) HasQualityDetector() bool { return p.quality != nil }
-
 // streamContentType maps a render onto the addon's own vocabulary. An id
 // carrying a season and episode is a series whatever the caller said.
 func streamContentType(contentType, id string) string {
@@ -130,8 +126,13 @@ type qualityResolver func() (badges []string, verified bool)
 // startQualityDetect kicks off the addon lookup so it runs alongside the rating
 // fan-out rather than after it. It returns nil when there is nothing to verify,
 // which is the common case and costs nothing.
+//
+// There is no per-render switch: a quality badge that is not true of the title
+// is decoration, so the row is always checked where it can be. An instance with
+// no addon configured has nothing to check against and draws the picks as they
+// are, which is what every instance did before the check existed.
 func (p *Pipeline) startQualityDetect(ctx context.Context, cfg imageconfigBadges, contentType, id string) qualityResolver {
-	if p.quality == nil || !cfg.detect || len(cfg.badges) == 0 || cfg.hidden {
+	if p.quality == nil || len(cfg.badges) == 0 || cfg.hidden {
 		return nil
 	}
 	if !strings.HasPrefix(id, "tt") {
@@ -173,10 +174,9 @@ func (p *Pipeline) startQualityDetect(ctx context.Context, cfg imageconfigBadges
 }
 
 // imageconfigBadges is the slice of render config the lookup depends on, so the
-// decision to run is made from four fields rather than the whole config.
+// decision to run is made from two fields rather than the whole config.
 type imageconfigBadges struct {
 	badges []string
-	detect bool
 	hidden bool
 }
 

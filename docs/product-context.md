@@ -27,13 +27,14 @@ ignored, so this header text costs nothing.
 
 ## Quality badges
 
-- Quality badges are labels the user picks: 4K, HD, HDR, HDR10, HDR10+, Dolby Vision, DTS, Atmos, IMAX, Blu-ray, Remux and BD Remux.
-- Turning on "Only show what's available" checks each title against a stream addon and drops the badges it has no release in.
+- Quality badges are formats the user picks: 4K, HD, HDR, HDR10, HDR10+, Dolby Vision, DTS, Atmos, IMAX, Blu-ray, Remux and BD Remux.
+- Each picked badge is drawn on a title only when that title is actually available in that format. There is no switch for this and it cannot be turned off per render: a badge that is not true of the title is decoration.
 - The check filters and never adds. The chips stay the user's pick, so it cannot introduce a badge nobody chose, and picking nothing still draws nothing.
-- It needs a stream addon configured on the server. Without one the switch does nothing.
 - Worked example: Oppenheimer keeps 4K, IMAX, DTS and Remux because it genuinely has all four; Citizen Kane drops IMAX and keeps the rest.
-- Detection on its own would be useless: almost every popular title has some release in every format, so "show what exists" would paint every badge on everything. The user's pick is what gives the row meaning.
-- Any older answer saying XRDB is handed a title and cannot know what quality exists is out of date.
+- Checking means asking a stream addon. One is configured by default (a public Comet instance), so this holds without any setup; an operator can point `XRDB_STREAM_ADDON_URL` at their own or set it to `off`.
+- If the addon is unreachable the picks are drawn unchecked rather than blanked, and that render is cached only briefly so it corrects itself.
+- Detecting without picking would be useless: almost every popular title has some release in every format, so "show everything that exists" paints every badge on everything. The pick is what gives the row meaning.
+- Any older answer saying XRDB is handed a title and cannot know what quality exists is out of date, as is any answer describing an "Only show what's available" toggle.
 
 ## Other overlays
 
@@ -45,7 +46,7 @@ ignored, so this header text costs nothing.
 ## Migrating from v2
 
 - v2 profiles import and keep every original key; anything that cannot be translated is carried rather than dropped.
-- v2's `streamBadges` becomes the quality availability check. It previously turned on the streaming-service chips instead, so an imported profile could gain service logos nobody chose.
+- v2's `streamBadges` switched its torrent-index lookup on and off. There is no equivalent here because the check is not optional, so the key is carried but no longer drives anything. It used to be read as the streaming-service chips, which gave imported profiles service logos nobody chose.
 - v2's "glass" rating style is XRDB's Pill.
 - v2 spellings of config keys are still accepted on import.
 

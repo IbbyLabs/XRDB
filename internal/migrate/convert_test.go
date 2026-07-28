@@ -315,34 +315,14 @@ func TestASurfaceOfNothingButBadValuesStillLeavesTheProfileIntact(t *testing.T) 
 	}
 }
 
-// v2's streamBadges asked a torrent index which qualities a title was out in.
-// It is the availability check here, not the streaming-service chips: those
-// come from the badge list, where v2 also kept them.
-func TestStreamBadgesBecomeTheAvailabilityCheck(t *testing.T) {
-	for _, mode := range []string{"on", "auto"} {
+// v2's streamBadges switched a torrent-index lookup on and off. The lookup is
+// not optional here, so the key has nothing to map onto. It must not turn on
+// the streaming-service chips, which is what it used to do.
+func TestStreamBadgesNoLongerTurnsOnStreamingChips(t *testing.T) {
+	for _, mode := range []string{"on", "auto", "off"} {
 		cfg := surfaceOf(t, convert(t, `{"posterStreamBadges":"`+mode+`"}`), "poster")
-		if !cfg.QualityBadgesDetect {
-			t.Errorf("streamBadges %q should turn the availability check on", mode)
-		}
 		if cfg.Providers {
-			t.Errorf("streamBadges %q should not turn streaming-service chips on", mode)
-		}
-	}
-	off := surfaceOf(t, convert(t, `{"posterStreamBadges":"off"}`), "poster")
-	if off.QualityBadgesDetect {
-		t.Error("streamBadges off should leave the availability check off")
-	}
-	if off.Providers {
-		t.Error("streamBadges off should leave streaming-service chips off")
-	}
-}
-
-// The unprefixed key applied to every surface in v2.
-func TestUnprefixedStreamBadgesReachesEverySurface(t *testing.T) {
-	out := convert(t, `{"streamBadges":"on"}`)
-	for _, surface := range []string{"poster", "backdrop", "thumbnail", "logo"} {
-		if !surfaceOf(t, out, surface).QualityBadgesDetect {
-			t.Errorf("surface %q did not get the availability check", surface)
+			t.Errorf("streamBadges %q turned streaming-service chips on", mode)
 		}
 	}
 }

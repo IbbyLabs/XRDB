@@ -60,7 +60,6 @@ func TestTheAddonIsAskedWhileTheArtworkIsStillFetching(t *testing.T) {
 
 	cfg := imageconfig.Default()
 	cfg.Badges = []string{"4k", "remux"}
-	cfg.QualityBadgesDetect = true
 
 	done := make(chan error, 1)
 	go func() {
@@ -107,7 +106,7 @@ func TestATMDBIDIsOnlyAskedAboutOnceResolved(t *testing.T) {
 	p := pipelineWithDetector(det)
 
 	if r := p.startQualityDetect(context.Background(), imageconfigBadges{
-		badges: []string{"4k"}, detect: true,
+		badges: []string{"4k"},
 	}, "movie", "550"); r != nil {
 		t.Error("a raw TMDB id was sent to the addon")
 	}

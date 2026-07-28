@@ -26,8 +26,7 @@ func TestConfigKeysCoverTheEmbeddedGroups(t *testing.T) {
 		"ratings",          // top level
 		"badges",           // top level
 		"qualityBadgesPos", // QualityBadgeConfig, embedded
-		"qualityBadgesDetect",
-		"genreBadgeStyle", // GenreBadgeConfig, embedded
+		"genreBadgeStyle",  // GenreBadgeConfig, embedded
 	} {
 		if !index[want] {
 			t.Errorf("key %q missing from the derived list", want)

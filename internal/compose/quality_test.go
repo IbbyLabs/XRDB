@@ -32,7 +32,6 @@ func TestDetectKeepsOnlyThePickedBadgesThatExist(t *testing.T) {
 
 	resolve := p.startQualityDetect(context.Background(), imageconfigBadges{
 		badges: []string{"4k", "remux", "hdr"},
-		detect: true,
 	}, "movie", "tt0111161")
 	if resolve == nil {
 		t.Fatal("no resolver returned")
@@ -52,7 +51,6 @@ func TestATitleWithNothingAvailableDrawsNoQualityBadges(t *testing.T) {
 	p := pipelineWithDetector(&stubDetector{tokens: map[string]bool{}})
 	got, verified := p.startQualityDetect(context.Background(), imageconfigBadges{
 		badges: []string{"4k", "hdr"},
-		detect: true,
 	}, "movie", "tt0111161")()
 	if !verified {
 		t.Error("verified = false, want true: an empty answer is still an answer")
@@ -69,7 +67,6 @@ func TestAFailingAddonDrawsThePickedBadgesUnverified(t *testing.T) {
 	picked := []string{"4k", "hdr"}
 	got, verified := p.startQualityDetect(context.Background(), imageconfigBadges{
 		badges: picked,
-		detect: true,
 	}, "movie", "tt0111161")()
 	if verified {
 		t.Error("verified = true, want false")
@@ -85,10 +82,9 @@ func TestDetectIsSkippedWhenItCannotChangeTheOutcome(t *testing.T) {
 		cfg  imageconfigBadges
 		id   string
 	}{
-		{"the switch is off", imageconfigBadges{badges: []string{"4k"}}, "tt1"},
-		{"no badges were picked", imageconfigBadges{detect: true}, "tt1"},
-		{"the row is hidden", imageconfigBadges{badges: []string{"4k"}, detect: true, hidden: true}, "tt1"},
-		{"the title has no IMDb id", imageconfigBadges{badges: []string{"4k"}, detect: true}, "12345"},
+		{"no badges were picked", imageconfigBadges{}, "tt1"},
+		{"the row is hidden", imageconfigBadges{badges: []string{"4k"}, hidden: true}, "tt1"},
+		{"the title has no IMDb id", imageconfigBadges{badges: []string{"4k"}}, "12345"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -108,7 +104,7 @@ func TestDetectIsSkippedWhenItCannotChangeTheOutcome(t *testing.T) {
 func TestNoAddonMeansNoDetection(t *testing.T) {
 	p := &Pipeline{}
 	if r := p.startQualityDetect(context.Background(), imageconfigBadges{
-		badges: []string{"4k"}, detect: true,
+		badges: []string{"4k"},
 	}, "movie", "tt1"); r != nil {
 		t.Error("a resolver was returned with no addon configured")
 	}
@@ -120,7 +116,7 @@ func TestATitleIsOnlyAskedAboutOnce(t *testing.T) {
 	p := pipelineWithDetector(det)
 	for range 20 {
 		p.startQualityDetect(context.Background(), imageconfigBadges{
-			badges: []string{"4k"}, detect: true,
+			badges: []string{"4k"},
 		}, "movie", "tt0111161")()
 	}
 	if n := det.calls.Load(); n != 1 {
@@ -135,7 +131,7 @@ func TestAFailureIsNotCached(t *testing.T) {
 	p := pipelineWithDetector(det)
 	for range 3 {
 		p.startQualityDetect(context.Background(), imageconfigBadges{
-			badges: []string{"4k"}, detect: true,
+			badges: []string{"4k"},
 		}, "movie", "tt0111161")()
 	}
 	if n := det.calls.Load(); n != 3 {
