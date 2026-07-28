@@ -152,8 +152,13 @@ func (s *StreamQuality) Detect(ctx context.Context, contentType, id string) (map
 
 	var payload struct {
 		Streams []struct {
-			Name          string `json:"name"`
-			Title         string `json:"title"`
+			Name  string `json:"name"`
+			Title string `json:"title"`
+			// Description is where the Stremio addon SDK moved the detail line
+			// that older addons put in Title, and where Comet writes its own
+			// parse of the release. A bare filename says nothing; that line
+			// still names the resolution and the audio format.
+			Description   string `json:"description"`
 			BehaviorHints struct {
 				Filename string `json:"filename"`
 			} `json:"behaviorHints"`
@@ -163,9 +168,9 @@ func (s *StreamQuality) Detect(ctx context.Context, contentType, id string) (map
 		return nil, fmt.Errorf("streams: decode: %w", err)
 	}
 
-	names := make([]string, 0, len(payload.Streams)*2)
+	names := make([]string, 0, len(payload.Streams)*3)
 	for _, st := range payload.Streams {
-		for _, candidate := range []string{st.BehaviorHints.Filename, st.Title, st.Name} {
+		for _, candidate := range []string{st.BehaviorHints.Filename, st.Title, st.Description, st.Name} {
 			if candidate = strings.TrimSpace(candidate); candidate != "" {
 				names = append(names, candidate)
 			}

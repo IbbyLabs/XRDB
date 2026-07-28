@@ -203,3 +203,26 @@ func TestAnUnreachableAddonDoesNotLeakItsPath(t *testing.T) {
 		t.Errorf("error leaked the addon path: %q", got)
 	}
 }
+
+// Comet writes its own parse into description and leaves title empty, so a
+// reader that only looks at title and filename throws half the answer away.
+func TestDetectReadsTheDescriptionLine(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"streams":[{
+			"name":"[TORRENT] Comet 2160p",
+			"description":"Citizen Kane\n hevc • DV • HDR | DTS Lossless • 2.0\n BluRay REMUX | ONLY\n 74.0 GB",
+			"behaviorHints":{"filename":"Citizen Kane"}
+		}]}`))
+	}))
+	defer srv.Close()
+
+	got, err := NewStreamQuality(srv.URL, 5*time.Second).Detect(context.Background(), "movie", "tt0033467")
+	if err != nil {
+		t.Fatalf("Detect: %v", err)
+	}
+	for _, token := range []string{"4k", "dv", "hdr", "dts", "bluray", "remux", "bdremux"} {
+		if !got[token] {
+			t.Errorf("token %q missing; the description line was not read: %v", token, got)
+		}
+	}
+}
