@@ -185,13 +185,49 @@ func TestRegeneratingWithNoChangesKeepsTheTimestamp(t *testing.T) {
 	}
 }
 
-// The repo carries workflow bookkeeping tags; the summary must name a release.
-func TestTheStampedTagIsARelease(t *testing.T) {
-	got := newestTag("../..")
+// The version comes from the manifest rather than the newest tag, which on main
+// is always the previous release. release-please rewrites this same field in its
+// release PR, so the two must agree on the format or they overwrite each other.
+func TestTheVersionComesFromTheReleaseManifest(t *testing.T) {
+	got := releaseVersion("../..")
 	if got == "untagged" {
-		t.Skip("no release tag reachable")
+		t.Skip("no manifest to read")
 	}
-	if !strings.HasPrefix(got, "v") {
-		t.Errorf("tag = %q, want a v-prefixed release tag", got)
+	if strings.HasPrefix(got, "v") {
+		t.Errorf("version = %q, want the bare version release-please writes", got)
+	}
+	raw, err := os.ReadFile(filepath.Join("..", "..", ".release-please-manifest.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var manifest map[string]string
+	if err := json.Unmarshal(raw, &manifest); err != nil {
+		t.Fatal(err)
+	}
+	if got != manifest["."] {
+		t.Errorf("version = %q, want the manifest's %q", got, manifest["."])
+	}
+}
+
+// A checkout without a manifest still produces a usable artifact.
+func TestAMissingManifestDoesNotBreakGeneration(t *testing.T) {
+	if got := releaseVersion(t.TempDir()); got != "untagged" {
+		t.Errorf("got %q, want a placeholder", got)
+	}
+}
+
+// release-please rewrites $.xrdbTag in the release PR, so the field has to be
+// there for its updater to find.
+func TestTheArtifactCarriesTheFieldReleasePleaseUpdates(t *testing.T) {
+	raw, err := os.ReadFile(filepath.Join("..", "..", "public", "product-context.json"))
+	if err != nil {
+		t.Skip("no committed artifact")
+	}
+	var doc map[string]any
+	if err := json.Unmarshal(raw, &doc); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := doc["xrdbTag"]; !ok {
+		t.Error("xrdbTag missing; the release-please extra-files updater would fail")
 	}
 }

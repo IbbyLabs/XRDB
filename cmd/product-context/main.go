@@ -14,7 +14,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -65,7 +64,7 @@ func main() {
 		*out = filepath.Join(*root, "public", "product-context.json")
 	}
 	if *version == "" {
-		*version = newestTag(*root)
+		*version = releaseVersion(*root)
 	}
 	generatedAt := *stamp
 	if generatedAt == "" {
@@ -224,17 +223,27 @@ func envVarSection(path string) *section {
 	}
 }
 
-// newestTag stamps the release the summary describes. The match keeps it to
-// release tags: the repo also carries workflow bookkeeping tags, and the newest
-// of those is not a version. A build with no release tag reachable still
-// produces a usable artifact.
-func newestTag(root string) string {
-	cmd := exec.Command("git", "-C", root, "describe", "--tags", "--abbrev=0", "--match", "v[0-9]*")
-	out, err := cmd.Output()
+// releaseVersion reads the version release-please is tracking.
+//
+// Not the newest git tag: on main that is always the *previous* release, since
+// the tag for the release being prepared does not exist yet, which left the
+// artifact naming a version behind the one it was published under.
+// release-please rewrites this same field in its release PR, so both sides read
+// the manifest and agree on the format — a mismatch would have the two
+// overwriting each other on every run.
+func releaseVersion(root string) string {
+	raw, err := os.ReadFile(filepath.Join(root, ".release-please-manifest.json"))
 	if err != nil {
 		return "untagged"
 	}
-	return strings.TrimSpace(string(out))
+	var manifest map[string]string
+	if err := json.Unmarshal(raw, &manifest); err != nil {
+		return "untagged"
+	}
+	if v := strings.TrimSpace(manifest["."]); v != "" {
+		return v
+	}
+	return "untagged"
 }
 
 // keepTimestampIfUnchanged reuses the previous generatedAt when nothing else

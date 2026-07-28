@@ -43,6 +43,13 @@
           "section": "Chores",
           "hidden": true
         }
+      ],
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "public/product-context.json",
+          "jsonpath": "$.xrdbTag"
+        }
       ]
     }
   },
