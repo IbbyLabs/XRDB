@@ -46,8 +46,6 @@ var v2BaseRenames = map[string]string{
 	// glass and square and ignores the three it has no layout for, which
 	// leaves those profiles on the default rather than on something wrong.
 	"ratingStyle": "badgeStyle",
-	// v2 switched streaming badges with a word, XRDB with a flag.
-	"streamBadges": "providers",
 	// v2's quality badge list; XRDB spells the same list "badges".
 	"qualityBadges": "badges",
 }
@@ -60,7 +58,7 @@ var v2WordFlags = map[string]bool{"providers": true}
 // v2DecodeSourceKeys are v2 keys XRDB does not model directly but decodes into
 // keys it does. They are seeded into each surface so the per-surface decoders
 // can read them, then removed again so only the decoded result remains.
-var v2DecodeSourceKeys = map[string]bool{"providerAppearance": true, "qualityBadgesSide": true}
+var v2DecodeSourceKeys = map[string]bool{"providerAppearance": true, "qualityBadgesSide": true, "streamBadges": true}
 
 // v2SourceRenames maps v2's rating source ids to XRDB's. Every other id is
 // shared between the two, including the AlloCiné and Filmweb sources.
@@ -145,6 +143,7 @@ func ConvertConfig(raw json.RawMessage) (json.RawMessage, ConvertStats, error) {
 		convertGenreBadge(surfaces[s])
 		convertProviderAppearance(surfaces[s])
 		convertQualityBadgesSide(surfaces[s])
+		convertStreamBadges(surfaces[s])
 		convertRatingStyle(surfaces[s])
 		convertWeights(surfaces[s])
 		for _, key := range pruneUnreadable(surfaces[s]) {
@@ -341,6 +340,33 @@ func convertQualityBadgesSide(surface map[string]json.RawMessage) {
 	}
 	if encoded, err := json.Marshal(pos); err == nil {
 		surface["qualityBadgesPos"] = encoded
+	}
+}
+
+// convertStreamBadges maps v2's streamBadges switch onto the availability
+// check. v2 spelled it "on" (wait for the answer) and "auto" (draw what is
+// already known and warm the rest); both mean the badges were meant to reflect
+// what a title is actually out in, which is the one switch here.
+func convertStreamBadges(surface map[string]json.RawMessage) {
+	raw, ok := surface["streamBadges"]
+	if !ok {
+		return
+	}
+	var mode string
+	if err := json.Unmarshal(raw, &mode); err != nil {
+		return
+	}
+	delete(surface, "streamBadges")
+	switch strings.ToLower(strings.TrimSpace(mode)) {
+	case "on", "auto":
+	default:
+		return
+	}
+	if _, set := surface["qualityBadgesDetect"]; set {
+		return
+	}
+	if encoded, err := json.Marshal(true); err == nil {
+		surface["qualityBadgesDetect"] = encoded
 	}
 }
 
