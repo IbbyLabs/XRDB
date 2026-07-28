@@ -102,6 +102,29 @@ func RequestID(ctx context.Context) string {
 	return ""
 }
 
+// RedactURL reduces a URL to scheme and host. Some services carry their
+// credential in the path rather than the query — a Stremio addon install link
+// puts the whole configuration, debrid token included, in the first segment —
+// so naming the host is as much as can be logged safely.
+func RedactURL(raw string) string {
+	if raw == "" {
+		return ""
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.Host == "" {
+		// Unparseable or host-less: say nothing rather than guess at a boundary.
+		return "REDACTED"
+	}
+	host := parsed.Host
+	if parsed.Scheme != "" {
+		host = parsed.Scheme + "://" + host
+	}
+	if parsed.Path != "" && parsed.Path != "/" {
+		return host + "/…"
+	}
+	return host
+}
+
 // sensitiveParams are query keys whose values must never appear in a log.
 var sensitiveParams = map[string]struct{}{
 	"key": {}, "apikey": {}, "api_key": {}, "token": {},

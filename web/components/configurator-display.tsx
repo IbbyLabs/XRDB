@@ -415,19 +415,24 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
               <span className="count-pill">{config.badges.length}</span>
             )}
           </legend>
-          {/* The row above reads the title's own data and skips when there is
-              none. This one cannot: a release format belongs to a file, not to
-              a title, and no metadata source knows it. */}
+          {/* A release format belongs to a file, not to a title, so no metadata
+              source carries it. Checking means asking a stream addon. */}
           <span className="hint" style={{ marginBottom: 'var(--sp-2)' }}>
-            Labels you pick, drawn on every poster. XRDB is given a title, not
-            your indexers, so it can&apos;t tell what quality a release is
-            actually available in.
+            {config.qualityBadgesDetect
+              ? 'Labels you pick, drawn on a poster only when that quality is actually out there.'
+              : 'Labels you pick, drawn on every poster whether or not that quality exists.'}
           </span>
           <ToggleRow
             label="Show quality badges"
             hint="Turn them all off without losing which ones you picked"
             checked={!config.qualityBadgesHidden}
             onChange={() => onUpdate('qualityBadgesHidden', !config.qualityBadgesHidden)}
+          />
+          <ToggleRow
+            label="Only show what's available"
+            hint="Checks each title against a stream addon and drops the badges it has no release in. Needs one set up on the server."
+            checked={config.qualityBadgesDetect}
+            onChange={() => onUpdate('qualityBadgesDetect', !config.qualityBadgesDetect)}
           />
           <div className="chip-row" style={config.qualityBadgesHidden ? { opacity: 0.45 } : undefined}>
             {QUALITY_BADGE_OPTIONS.map(b => {

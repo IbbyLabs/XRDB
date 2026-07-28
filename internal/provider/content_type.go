@@ -32,6 +32,9 @@ func isSeriesType(t string) bool {
 	}
 }
 
+// IsSeriesContentType is isSeriesType for callers outside the package.
+func IsSeriesContentType(t string) bool { return isSeriesType(t) }
+
 // isMovieType reports whether a content-type hint commits to a movie. An empty
 // or unrecognised hint does not.
 func isMovieType(t string) bool {

@@ -76,6 +76,10 @@ type Pipeline struct {
 	// ratings remembers what each source said about a title, so the same title
 	// under a different config is not fetched twice. Optional: nil disables it.
 	ratings *ratingsCache
+	// quality reports which release qualities a title has, so a quality badge
+	// can stand for something. Optional: nil draws the picked badges as-is.
+	quality      qualityDetector
+	qualityCache *qualityCache
 }
 
 // trendingResolver is satisfied by *provider.TrendingIndex.
@@ -434,6 +438,13 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// req.MediaID for episodes, so per-episode ratings resolve correctly.
 	ratingReq := req
 	ratingReq.MediaID = ratingIDForSources(ratingID, meta)
+	// Started before the rating fan-out so the addon call overlaps it instead of
+	// being added to it; awaited only once the badge row is about to be drawn.
+	resolveQuality := p.startQualityDetect(ctx, imageconfigBadges{
+		badges: req.Config.Badges,
+		detect: req.Config.QualityBadgesDetect,
+		hidden: req.Config.QualityBadgesHidden,
+	}, req.ContentType, ratingReq.MediaID)
 	allRatings, ratingProviders, degraded := p.collectRatingsWithProviders(ctx, ratingReq, meta)
 	timings.mark("ratings")
 	result.ContributingProviders = append([]string{string(req.Config.ArtworkSource)}, ratingProviders...)
@@ -548,7 +559,21 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		}
 	}
 	if showQualityBadges(req.Config) {
-		drawQualityBadges(composed, req.Config.Badges, scale, occ, qualityOptsFromConfig(req.Config))
+		badges := req.Config.Badges
+		if resolveQuality != nil {
+			var verified bool
+			badges, verified = resolveQuality()
+			timings.mark("quality")
+			// An unverified row is the picked badges drawn on trust. Holding it
+			// for the full TTL would keep an addon's outage on the poster long
+			// after the addon came back.
+			if !verified {
+				result.Degraded = true
+			}
+		}
+		if len(badges) > 0 {
+			drawQualityBadges(composed, badges, scale, occ, qualityOptsFromConfig(req.Config))
+		}
 	}
 	if req.Config.AgeRating && meta.ContentRating != "" {
 		drawAgeRatingBadge(composed, meta.ContentRating, req.Config.AgeRatingPos, scale, occ, ageOptsFromConfig(req.Config))

@@ -397,6 +397,10 @@ type QualityBadgeConfig struct {
 	// QualityBadgesHidden draws none of them while leaving the selection alone,
 	// so turning them back on does not mean picking every badge again.
 	QualityBadgesHidden bool `json:"qualityBadgesHidden,omitempty"`
+	// QualityBadgesDetect keeps only the picked badges a release actually exists
+	// in, asking the configured stream addon. Off, every picked badge is drawn
+	// on every poster. Needs a server-side addon; without one it does nothing.
+	QualityBadgesDetect bool `json:"qualityBadgesDetect,omitempty"`
 }
 
 // RatingRingConfig groups the compact rating-ring options beyond the existing
@@ -569,6 +573,7 @@ type rawQuality struct {
 	QualityBadgesMax             *int    `json:"qualityBadgesMax"`
 	QualityBadgesTileAccentColor *string `json:"qualityBadgesTileAccentColor"`
 	QualityBadgesHidden          *bool   `json:"qualityBadgesHidden"`
+	QualityBadgesDetect          *bool   `json:"qualityBadgesDetect"`
 }
 
 type rawTrending struct {
@@ -1002,6 +1007,9 @@ func parseQuality(cfg *Config, r *raw) {
 	}
 	if r.QualityBadgesHidden != nil {
 		cfg.QualityBadgesHidden = *r.QualityBadgesHidden
+	}
+	if r.QualityBadgesDetect != nil {
+		cfg.QualityBadgesDetect = *r.QualityBadgesDetect
 	}
 	if r.QualityBadgesTileAccentColor != nil && isHexColor(*r.QualityBadgesTileAccentColor) {
 		cfg.QualityBadgesTileAccentColor = strings.TrimSpace(*r.QualityBadgesTileAccentColor)

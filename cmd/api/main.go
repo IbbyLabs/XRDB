@@ -185,6 +185,15 @@ func main() {
 		// Keeps the last good answer per source, so a source that breaks or gets
 		// throttled falls back instead of quietly dropping its badge.
 		pipeline.SetHealthTracker(provider.NewHealthTracker(0, 0))
+		// Lets a quality badge stand for a release that exists rather than a
+		// label that was picked.
+		if cfg.StreamAddonURL != "" {
+			sq := provider.NewStreamQuality(cfg.StreamAddonURL, cfg.StreamTimeout)
+			pipeline.SetQualityDetector(sq, cfg.StreamCacheTTL)
+			logger.Info("Quality badges will be checked against a stream addon",
+				"addon", logging.RedactURL(sq.BaseURL()),
+				"timeout", cfg.StreamTimeout, "cache_ttl", cfg.StreamCacheTTL)
+		}
 	}
 
 	renderCache, err := cache.New(cfg.CacheDir, cfg.CacheTTL, cfg.CacheMaxEntries, cfg.CacheMaxBytes)

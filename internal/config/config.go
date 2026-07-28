@@ -35,6 +35,18 @@ type Config struct {
 	// source is cached.
 	DegradedCacheTTL time.Duration
 	RatingsCacheTTL  time.Duration
+	// StreamAddonURL is a Stremio stream addon (Comet, Torrentio) asked which
+	// release qualities a title has, so a quality badge stands for something
+	// that exists. Empty leaves quality badges as the plain labels they are.
+	// A URL carrying a debrid token narrows the answer to that account, so it
+	// is treated as a secret and never logged past its host.
+	StreamAddonURL string
+	// StreamTimeout bounds the addon call. It runs alongside the rating
+	// sources, so this is a ceiling on the render, not an addition to it.
+	StreamTimeout time.Duration
+	// StreamCacheTTL is how long a title's detected qualities stand. Availability
+	// moves far more slowly than a render config changes.
+	StreamCacheTTL time.Duration
 	CacheMaxEntries int   // hot tier entry cap
 	CacheMaxBytes   int64 // hot tier byte cap
 	TMDBAPIKey      string
@@ -199,6 +211,22 @@ func Load() Config {
 	if degradedCacheTTL > cacheTTL {
 		degradedCacheTTL = cacheTTL
 	}
+	// A title's available qualities move slowly, so they are held far longer
+	// than a rating and well past the render that first asked for them.
+	streamCacheTTL := 24 * time.Hour
+	if raw := os.Getenv("XRDB_STREAM_CACHE_TTL_HOURS"); raw != "" {
+		if d, err := time.ParseDuration(raw + "h"); err == nil && d >= 0 {
+			streamCacheTTL = d
+		}
+	}
+	// The addon answers alongside the rating sources, so this bounds the wait
+	// rather than adding to it. Past this the render goes out without the row.
+	streamTimeout := 4 * time.Second
+	if raw := os.Getenv("XRDB_STREAM_TIMEOUT_MS"); raw != "" {
+		if d, err := time.ParseDuration(raw + "ms"); err == nil && d > 0 {
+			streamTimeout = d
+		}
+	}
 	// Ratings are per title, so they outlive any one render config. Zero
 	// disables the cache.
 	ratingsCacheTTL := 6 * time.Hour
@@ -253,6 +281,9 @@ func Load() Config {
 		DBPath:                dbPath,
 		CacheDir:              cacheDir,
 		RatingsCacheTTL:       ratingsCacheTTL,
+		StreamAddonURL:        strings.TrimSpace(os.Getenv("XRDB_STREAM_ADDON_URL")),
+		StreamTimeout:         streamTimeout,
+		StreamCacheTTL:        streamCacheTTL,
 		CacheTTL:              cacheTTL,
 		DegradedCacheTTL:      degradedCacheTTL,
 		CacheMaxEntries:       cacheMaxEntries,
