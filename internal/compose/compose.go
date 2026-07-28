@@ -409,6 +409,20 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		ContentType: "image/png",
 	}
 
+	badgeCfg := imageconfigBadges{
+		badges: req.Config.Badges,
+		detect: req.Config.QualityBadgesDetect,
+		hidden: req.Config.QualityBadgesHidden,
+	}
+	// A request that already names an IMDb id needs nothing from the artwork
+	// fetch, so the addon is asked alongside it rather than after it. That fetch
+	// is serial and, on a title no source has cached, the longest phase of the
+	// render. A TMDB id has to wait: resolving it is what the fetch does.
+	var resolveQuality qualityResolver
+	if strings.HasPrefix(req.MediaID, "tt") {
+		resolveQuality = p.startQualityDetect(ctx, badgeCfg, req.ContentType, req.MediaID)
+	}
+
 	sourceBytes, meta, ratingID, err := p.fetchSourceImageAndMeta(ctx, req)
 	timings.mark("artwork")
 	if err != nil || len(sourceBytes) == 0 {
@@ -438,13 +452,12 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// req.MediaID for episodes, so per-episode ratings resolve correctly.
 	ratingReq := req
 	ratingReq.MediaID = ratingIDForSources(ratingID, meta)
-	// Started before the rating fan-out so the addon call overlaps it instead of
-	// being added to it; awaited only once the badge row is about to be drawn.
-	resolveQuality := p.startQualityDetect(ctx, imageconfigBadges{
-		badges: req.Config.Badges,
-		detect: req.Config.QualityBadgesDetect,
-		hidden: req.Config.QualityBadgesHidden,
-	}, req.ContentType, ratingReq.MediaID)
+	// A TMDB id only becomes an IMDb one here, so this is the earliest the addon
+	// can be asked about it. Either way the call overlaps the rating fan-out and
+	// is awaited only once the badge row is about to be drawn.
+	if resolveQuality == nil {
+		resolveQuality = p.startQualityDetect(ctx, badgeCfg, req.ContentType, ratingReq.MediaID)
+	}
 	allRatings, ratingProviders, degraded := p.collectRatingsWithProviders(ctx, ratingReq, meta)
 	timings.mark("ratings")
 	result.ContributingProviders = append([]string{string(req.Config.ArtworkSource)}, ratingProviders...)
