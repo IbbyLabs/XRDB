@@ -97,6 +97,8 @@ func main() {
 		Sections:      sections,
 	}
 
+	doc = keepTimestampIfUnchanged(*out, doc)
+
 	encoded, err := json.MarshalIndent(doc, "", "  ")
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "product-context:", err)
@@ -222,13 +224,36 @@ func envVarSection(path string) *section {
 	}
 }
 
-// newestTag stamps the release the summary describes. A build with no tags
-// reachable still produces a usable artifact.
+// newestTag stamps the release the summary describes. The match keeps it to
+// release tags: the repo also carries workflow bookkeeping tags, and the newest
+// of those is not a version. A build with no release tag reachable still
+// produces a usable artifact.
 func newestTag(root string) string {
-	cmd := exec.Command("git", "-C", root, "describe", "--tags", "--abbrev=0")
+	cmd := exec.Command("git", "-C", root, "describe", "--tags", "--abbrev=0", "--match", "v[0-9]*")
 	out, err := cmd.Output()
 	if err != nil {
 		return "untagged"
 	}
 	return strings.TrimSpace(string(out))
+}
+
+// keepTimestampIfUnchanged reuses the previous generatedAt when nothing else
+// moved. The field changes on every run by definition, so without this the
+// artifact differs every time and CI commits a new timestamp on each trigger.
+func keepTimestampIfUnchanged(path string, doc artifact) artifact {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return doc
+	}
+	var previous artifact
+	if err := json.Unmarshal(raw, &previous); err != nil {
+		return doc
+	}
+	was := doc.GeneratedAt
+	doc.GeneratedAt = previous.GeneratedAt
+	if reflect.DeepEqual(doc, previous) {
+		return doc
+	}
+	doc.GeneratedAt = was
+	return doc
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -150,5 +151,48 @@ func TestTheCommittedArtifactIsCurrent(t *testing.T) {
 		if !strings.Contains(string(raw), `"`+want+`"`) && !strings.Contains(string(raw), want+",") && !strings.Contains(string(raw), want+`"`) {
 			t.Errorf("config key %q is missing from the committed artifact; regenerate it", want)
 		}
+	}
+}
+
+// Running the generator twice with nothing else changed must not produce a
+// diff, or CI commits a fresh timestamp on every trigger.
+func TestRegeneratingWithNoChangesKeepsTheTimestamp(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "product-context.json")
+	base := artifact{
+		ArtifactType: artifactType, SchemaVersion: schemaVersion, XRDBTag: "v1.0.0",
+		GeneratedAt: "2026-01-01T00:00:00Z", ProductName: productName, ExpandedName: expandedName,
+		OwnerName: ownerName, LiveURL: liveURL, ServerInvite: serverInvite,
+		IntroLines: []string{"a"}, Sections: []section{{Heading: "H", Lines: []string{"a"}}},
+	}
+	raw, err := json.MarshalIndent(base, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, raw, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	again := base
+	again.GeneratedAt = "2026-06-06T12:00:00Z"
+	if got := keepTimestampIfUnchanged(path, again); got.GeneratedAt != base.GeneratedAt {
+		t.Errorf("generatedAt = %q, want the previous %q", got.GeneratedAt, base.GeneratedAt)
+	}
+
+	changed := base
+	changed.GeneratedAt = "2026-06-06T12:00:00Z"
+	changed.Sections = []section{{Heading: "H", Lines: []string{"a", "b"}}}
+	if got := keepTimestampIfUnchanged(path, changed); got.GeneratedAt != "2026-06-06T12:00:00Z" {
+		t.Errorf("generatedAt = %q, want the new one when content moved", got.GeneratedAt)
+	}
+}
+
+// The repo carries workflow bookkeeping tags; the summary must name a release.
+func TestTheStampedTagIsARelease(t *testing.T) {
+	got := newestTag("../..")
+	if got == "untagged" {
+		t.Skip("no release tag reachable")
+	}
+	if !strings.HasPrefix(got, "v") {
+		t.Errorf("tag = %q, want a v-prefixed release tag", got)
 	}
 }
