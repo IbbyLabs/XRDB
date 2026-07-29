@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.16.0](https://github.com/IbbyLabs/XRDB/compare/v3.15.1...v3.16.0) (2026-07-29)
+
+
+### Added
+
+* **providers:** size and place the where to watch chips ([6fcd788](https://github.com/IbbyLabs/XRDB/commit/6fcd788f7bc1f94212538bf406c655b7b9f4cb2e))
+
+
+### Fixed
+
+* **cache:** key the render cache on the provider chip controls ([ccbd5c1](https://github.com/IbbyLabs/XRDB/commit/ccbd5c1c8ccf1fbdf93d830a4a343c9a294aa64b))
+
 ## [3.15.1](https://github.com/IbbyLabs/XRDB/compare/v3.15.0...v3.15.1) (2026-07-29)
 
 
