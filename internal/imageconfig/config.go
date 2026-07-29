@@ -133,7 +133,14 @@ type Config struct {
 	GenrePos         string         `json:"genrePos,omitempty"`
 	Providers        bool           `json:"providers"`
 	ProvidersCountry string         `json:"providersCountry,omitempty"`
-	NetworkTileColor string         `json:"networkTileColor,omitempty"` // "#RRGGBB" tile behind provider chips
+	// The streaming-provider chips take the same placement and sizing controls
+	// as every other badge family. ProvidersPos is tl|tr|bl|br|tc|bc; "" keeps
+	// the wide strip centred along the bottom edge.
+	ProvidersPos         string `json:"providersPos,omitempty"`
+	ProviderBadgeScale   int    `json:"providerBadgeScale,omitempty"`
+	ProviderBadgeOffsetX int    `json:"providerBadgeOffsetX,omitempty"`
+	ProviderBadgeOffsetY int    `json:"providerBadgeOffsetY,omitempty"`
+	NetworkTileColor     string `json:"networkTileColor,omitempty"` // "#RRGGBB" tile behind provider chips
 	// Outline for background-less ("plain") badge text.
 	NoBackgroundBadgeOutlineColor string        `json:"noBackgroundBadgeOutlineColor,omitempty"` // "#RRGGBB"; "" = default shadow
 	NoBackgroundBadgeOutlineWidth int           `json:"noBackgroundBadgeOutlineWidth,omitempty"` // px; 0 = default
@@ -520,6 +527,10 @@ type raw struct {
 	Providers                     *bool     `json:"providers"`
 	ProvidersCountry              *string   `json:"providersCountry"`
 	NetworkTileColor              *string   `json:"networkTileColor"`
+	ProvidersPos                  *string   `json:"providersPos"`
+	ProviderBadgeScale            *int      `json:"providerBadgeScale"`
+	ProviderBadgeOffsetX          *int      `json:"providerBadgeOffsetX"`
+	ProviderBadgeOffsetY          *int      `json:"providerBadgeOffsetY"`
 	NoBackgroundBadgeOutlineColor *string   `json:"noBackgroundBadgeOutlineColor"`
 	NoBackgroundBadgeOutlineWidth *int      `json:"noBackgroundBadgeOutlineWidth"`
 	AggregateBar                  *bool     `json:"aggregateBar"`
@@ -863,6 +874,20 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.NetworkTileColor != nil && isHexColor(*r.NetworkTileColor) {
 		cfg.NetworkTileColor = strings.TrimSpace(*r.NetworkTileColor)
+	}
+	if r.ProvidersPos != nil {
+		if p := sixPos(*r.ProvidersPos); p != "" {
+			cfg.ProvidersPos = p
+		}
+	}
+	if r.ProviderBadgeScale != nil && *r.ProviderBadgeScale != 0 {
+		cfg.ProviderBadgeScale = clampInt(*r.ProviderBadgeScale, 70, 200)
+	}
+	if r.ProviderBadgeOffsetX != nil {
+		cfg.ProviderBadgeOffsetX = clampInt(*r.ProviderBadgeOffsetX, -320, 320)
+	}
+	if r.ProviderBadgeOffsetY != nil {
+		cfg.ProviderBadgeOffsetY = clampInt(*r.ProviderBadgeOffsetY, -320, 320)
 	}
 	if r.NoBackgroundBadgeOutlineColor != nil && isHexColor(*r.NoBackgroundBadgeOutlineColor) {
 		cfg.NoBackgroundBadgeOutlineColor = strings.TrimSpace(*r.NoBackgroundBadgeOutlineColor)

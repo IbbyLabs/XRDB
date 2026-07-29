@@ -703,10 +703,34 @@ func dedupeProviders(providers []provider.WatchProvider) []provider.WatchProvide
 // provider name is rendered as text. Storefront duplicates are collapsed and
 // at most 5 brands are shown. The strip is placed through occ so it stacks
 // clear of the ratings band and any corner badges already reserved.
-func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, scale float64, occ *occupancy, tileColor string) {
+// providerBadgeOpts carries per-config streaming-chip styling. Its zero value
+// keeps the original look: a strip centred along the bottom edge, unscaled.
+type providerBadgeOpts struct {
+	pos          string // "" = the centred bottom strip
+	scalePercent int    // 0 = 100
+	offsetX      int
+	offsetY      int
+	tileColor    string // "#RRGGBB" behind the chips
+}
+
+func providerOptsFromConfig(cfg imageconfig.Config) providerBadgeOpts {
+	return providerBadgeOpts{
+		pos:          cfg.ProvidersPos,
+		scalePercent: cfg.ProviderBadgeScale,
+		offsetX:      cfg.ProviderBadgeOffsetX,
+		offsetY:      cfg.ProviderBadgeOffsetY,
+		tileColor:    cfg.NetworkTileColor,
+	}
+}
+
+func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, scale float64, occ *occupancy, opts providerBadgeOpts) {
 	if len(providers) == 0 {
 		return
 	}
+	if opts.scalePercent != 0 {
+		scale *= float64(opts.scalePercent) / 100
+	}
+	tileColor := opts.tileColor
 	ensureFaces()
 	face := labelFaceFor(scale)
 	if face == nil {
@@ -802,8 +826,17 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 
 	// Place the whole strip through the occupancy tracker so it stacks above
 	// the ratings band and clears corner badges instead of drawing over them.
-	strip := occ.placeCentered(totalW, tileH, edgeX, edgeY, s(8))
-	x, y := strip.Min.X, strip.Min.Y
+	// Unplaced it keeps the wide centred strip, which is not one of the six
+	// anchors; a chosen position hands it to the shared corner placement.
+	// placeCentered and place both reserve what they hand back, so exactly one
+	// of them runs.
+	var strip image.Rectangle
+	if opts.pos == "" {
+		strip = occ.placeCentered(totalW, tileH, edgeX, edgeY, s(8))
+	} else {
+		strip = occ.place(opts.pos, totalW, tileH, edgeX, edgeY, s(8))
+	}
+	x, y := strip.Min.X+opts.offsetX, strip.Min.Y+opts.offsetY
 
 	shadow := color.NRGBA{R: 0, G: 0, B: 0, A: 80}
 	shOff := maxInt(1, tileH/16)

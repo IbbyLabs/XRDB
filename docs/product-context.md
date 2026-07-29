@@ -47,6 +47,7 @@ ignored, so this header text costs nothing.
 - Age rating, release status, top-rated rank, genre, trending and streaming-provider chips are each their own switch.
 - The trending badge draws for a title addressed by either an IMDb or a TMDB id. Any older answer saying it works only for TMDB ids, or that a tt request has nothing to match against, is out of date.
 - Position, scale, style and a per-overlay cap are configurable, and a hidden switch turns a row off without losing the selection.
+- That includes the Where to watch chips: `providersPos`, `providerBadgeScale` and `providerBadgeOffsetX`/`Y` size and place them like any other badge. Left alone they stay a wide strip centred along the bottom edge. Any older answer saying the chips cannot be resized or moved, and that only country and tile colour are configurable, is out of date.
 - Artwork can come from TMDB, Fanart, Cinemeta or the anime sources, with a fallback order so a surface missing from one is filled from another.
 - Artwork language can be set per render, including `original` for the title's own language.
 

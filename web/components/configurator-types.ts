@@ -353,6 +353,10 @@ export interface ConfigState {
   providers: boolean;
   providersCountry: string; // ISO country for watch providers; '' = default
   networkTileColor: string; // '#RRGGBB' tile behind provider chips; '' = default
+  providersPos: string; // 'inherit' | six positions
+  providerBadgeScale: number;
+  providerBadgeOffsetX: number;
+  providerBadgeOffsetY: number;
   aggregateBar: boolean;
   aggregateBarPos: string;
   trending: boolean;
@@ -469,6 +473,10 @@ export const DEFAULT_CONFIG: ConfigState = {
   providers: false,
   providersCountry: '',
   networkTileColor: '',
+  providersPos: 'inherit',
+  providerBadgeScale: 0,
+  providerBadgeOffsetX: 0,
+  providerBadgeOffsetY: 0,
   aggregateBar: false,
   aggregateBarPos: 'bottom',
   trending: false,

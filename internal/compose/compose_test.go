@@ -710,7 +710,7 @@ func TestOverlayFunctionsAtLargeScales(t *testing.T) {
 
 			// drawProviderBadges: must change pixels
 			beforeProv := clonePixels(img)
-			drawProviderBadges(img, []provider.WatchProvider{{ID: 8, Name: "Netflix"}}, scale, newOccupancy(img.Bounds()), "")
+			drawProviderBadges(img, []provider.WatchProvider{{ID: 8, Name: "Netflix"}}, scale, newOccupancy(img.Bounds()), providerBadgeOpts{})
 			if clonePixels(img) == beforeProv {
 				t.Errorf("drawProviderBadges had no effect at scale %.1f", scale)
 			}

@@ -845,6 +845,22 @@ export function ReleaseStatusFine({ uid, config, onUpdate }: GroupProps) {
   );
 }
 
+export function ProvidersFine({ uid, config, onUpdate }: GroupProps) {
+  return (
+    <FineGroup label="Where to watch chips">
+      <PosSelect id={`${uid}-provider-pos`} label="Position" value={config.providersPos}
+        onChange={v => onUpdate('providersPos', v)} />
+      <NumField id={`${uid}-provider-scale`} label="Scale (%)" value={config.providerBadgeScale}
+        onChange={v => onUpdate('providerBadgeScale', v)} min={70} max={200} step={5}
+        hint="70\u2013200. Blank keeps the default size." />
+      <NumField id={`${uid}-provider-offset-x`} label="Offset X (px)" value={config.providerBadgeOffsetX}
+        onChange={v => onUpdate('providerBadgeOffsetX', v)} min={-320} max={320} zeroIsDefault={false} />
+      <NumField id={`${uid}-provider-offset-y`} label="Offset Y (px)" value={config.providerBadgeOffsetY}
+        onChange={v => onUpdate('providerBadgeOffsetY', v)} min={-320} max={320} zeroIsDefault={false} />
+    </FineGroup>
+  );
+}
+
 export function AgeFine({ uid, config, onUpdate }: GroupProps) {
   return (
     <FineGroup label="Age rating badge">
