@@ -2,6 +2,23 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.14.0](https://github.com/IbbyLabs/XRDB/compare/v3.13.0...v3.14.0) (2026-07-29)
+
+
+### Added
+
+* **ratings:** let the score pills take scale, offsets and a position ([f252599](https://github.com/IbbyLabs/XRDB/commit/f252599d001708cd9d27c2e09c2724e0d32138f2))
+
+
+### Fixed
+
+* **trending:** match a trending title requested by its IMDb id ([c6b31d2](https://github.com/IbbyLabs/XRDB/commit/c6b31d218804a665aabbe8f69142e49ad9b6d203))
+
+
+### Documentation
+
+* **context:** cover pill fine tuning and trending by tt id ([8948578](https://github.com/IbbyLabs/XRDB/commit/894857816dcc0a74b9787029cd2791dca2fa373c))
+
 ## [3.13.0](https://github.com/IbbyLabs/XRDB/compare/v3.12.0...v3.13.0) (2026-07-28)
 
 
