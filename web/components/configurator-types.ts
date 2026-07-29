@@ -164,6 +164,12 @@ export const SIX_POS_OPTIONS = [
   { id: 'br',      label: 'Bottom right'  },
 ] as const;
 
+// How an accent colour marks a pill that carries no label.
+export const ACCENT_SHAPE_OPTIONS = [
+  { id: 'outline', label: 'Outline', desc: 'Trace the pill in the accent colour and keep the body dark' },
+  { id: 'strip',   label: 'Top strip', desc: 'A centred bar along the top edge of the pill' },
+] as const;
+
 export const RATING_PRESENTATION_OPTIONS = [
   { id: 'standard',  label: 'Standard',  desc: 'A row of individual rating badges' },
   { id: 'minimal',   label: 'Minimal',   desc: 'One pill with the overall average score' },
@@ -403,6 +409,7 @@ export interface ConfigState {
   aggregateBarOffset: number; // px inward nudge, -12..12; 0 = flush
   aggregateRatingSource: string; // overall | critics | audience
   aggregatePillPos: string; // 'inherit' | six positions
+  aggregateAccentShape: string; // outline | strip
   aggregateValueColor: string; // '' = white
   aggregateCriticsAccentColor: string; // '' = falls back to aggregateAccentColor
   aggregateAudienceAccentColor: string;
@@ -517,6 +524,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   aggregateBarOffset: 0,
   aggregateRatingSource: 'overall',
   aggregatePillPos: 'inherit',
+  aggregateAccentShape: 'outline',
   aggregateValueColor: '',
   aggregateCriticsAccentColor: '',
   aggregateAudienceAccentColor: '',

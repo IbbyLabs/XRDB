@@ -118,22 +118,37 @@ func blendPixel(dst *image.NRGBA, x, y int, c color.NRGBA) {
 }
 
 // drawRectBorder draws a 1px border around a rounded rectangle.
-// drawRectBorderWidth strokes the outline inward from r, so a wider border
-// keeps the same outer edge.
-func drawRectBorderWidth(dst *image.NRGBA, r image.Rectangle, radius int, c color.NRGBA, width int) {
+// strokeRoundedRect strokes a band of the given width inward from the rounded
+// outline of r. drawRectBorder walks only the four straight edges and clips
+// them against the corner radius, so it cannot draw the curve itself; on a
+// capsule that leaves a bar top and bottom and a stub at each end. This follows
+// the outline the fill uses.
+func strokeRoundedRect(dst *image.NRGBA, r image.Rectangle, radius, width int, c color.NRGBA) {
 	if width < 1 {
 		width = 1
 	}
-	for i := 0; i < width; i++ {
-		inner := r.Inset(i)
-		if inner.Empty() {
-			return
+	cx := float64(r.Min.X+r.Max.X) / 2
+	cy := float64(r.Min.Y+r.Max.Y) / 2
+	hw, hh := float64(r.Dx())/2, float64(r.Dy())/2
+	rr := math.Min(float64(radius), math.Min(hw, hh))
+	w := float64(width)
+	b := dst.Bounds()
+	for y := r.Min.Y; y < r.Max.Y; y++ {
+		for x := r.Min.X; x < r.Max.X; x++ {
+			if !image.Pt(x, y).In(b) {
+				continue
+			}
+			// Signed distance to the rounded outline: zero on it, negative in.
+			qx := math.Abs(float64(x)+0.5-cx) - (hw - rr)
+			qy := math.Abs(float64(y)+0.5-cy) - (hh - rr)
+			mx, my := math.Max(qx, 0), math.Max(qy, 0)
+			d := math.Sqrt(mx*mx+my*my) + math.Min(math.Max(qx, qy), 0) - rr
+			cov := math.Min(1, math.Max(0, 0.5-d)) * math.Min(1, math.Max(0, d+w+0.5))
+			if cov <= 0 {
+				continue
+			}
+			blendPixel(dst, x, y, color.NRGBA{R: c.R, G: c.G, B: c.B, A: uint8(float64(c.A)*cov + 0.5)})
 		}
-		ring := radius - i
-		if ring < 0 {
-			ring = 0
-		}
-		drawRectBorder(dst, inner, ring, c)
 	}
 }
 

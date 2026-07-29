@@ -229,6 +229,7 @@ export function ConfiguratorClient() {
       aggregateAccentColor: cfg.aggregateAccentColor,
       aggregateAccentMode: cfg.aggregateAccentMode,
       aggregatePillPos: cfg.aggregatePillPos,
+      aggregateAccentShape: cfg.aggregateAccentShape === 'outline' ? '' : cfg.aggregateAccentShape,
       aggregateBarOffset: cfg.aggregateBarOffset,
       aggregateValueColor: cfg.aggregateValueColor,
       aggregateCriticsAccentColor: cfg.aggregateCriticsAccentColor,

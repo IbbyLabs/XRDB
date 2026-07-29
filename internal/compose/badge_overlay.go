@@ -1390,6 +1390,9 @@ type scorePillStyle struct {
 	// built-in per-role default. A label-less pill has no rail for the accent to
 	// fill, so it takes the capsule outline instead.
 	accentSet bool
+	// accentTopStrip draws the accent as a centred bar along the top edge
+	// instead of outlining the capsule.
+	accentTopStrip bool
 	// fill replaces the dark capsule body. Zero alpha keeps the default.
 	fill color.NRGBA
 	// valueSet marks an explicitly configured value colour, which wins over the
@@ -1418,11 +1421,12 @@ func scorePillRadius(style imageconfig.BadgeStyle) func(int) int {
 // built-in accent for that source.
 func aggregatePillStyle(cfg imageconfig.Config, source string, genres []string, isAnime bool, score float64, fallback color.NRGBA) scorePillStyle {
 	style := scorePillStyle{
-		accent:       fallback,
-		value:        color.NRGBA{R: 255, G: 255, B: 255, A: 255},
-		accentShown:  cfg.AggregateAccentBarVisible == nil || *cfg.AggregateAccentBarVisible,
-		accentOffset: cfg.AggregateAccentBarOffset,
-		radius:       scorePillRadius(cfg.BadgeStyle),
+		accent:         fallback,
+		value:          color.NRGBA{R: 255, G: 255, B: 255, A: 255},
+		accentShown:    cfg.AggregateAccentBarVisible == nil || *cfg.AggregateAccentBarVisible,
+		accentOffset:   cfg.AggregateAccentBarOffset,
+		accentTopStrip: cfg.AggregateAccentShape == "strip",
+		radius:         scorePillRadius(cfg.BadgeStyle),
 	}
 
 	accentHex := ""
@@ -1522,8 +1526,14 @@ func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, style s
 	// With a label the accent fills the rail behind it. Without one there is no
 	// rail, so it outlines the capsule and the body stays dark. A filled body
 	// already carries the colour.
-	if label == "" && style.accentSet && style.accentShown && style.fill.A == 0 {
-		drawRectBorderWidth(base, rect, radius, style.accent, s(2))
+	if label == "" && style.accentSet && style.accentShown && style.fill.A == 0 && style.accentTopStrip {
+		drawRectBorder(base, rect, radius, color.NRGBA{R: 255, G: 255, B: 255, A: 28})
+		barH := s(4)
+		barW := capW / 2
+		bar := image.Rect(cx-barW/2, topY+s(3), cx+barW/2, topY+s(3)+barH)
+		fillRoundedRect(base, bar, barH/2, style.accent)
+	} else if label == "" && style.accentSet && style.accentShown && style.fill.A == 0 {
+		strokeRoundedRect(base, rect, radius, s(2), style.accent)
 	} else {
 		drawRectBorder(base, rect, radius, color.NRGBA{R: 255, G: 255, B: 255, A: 28})
 	}

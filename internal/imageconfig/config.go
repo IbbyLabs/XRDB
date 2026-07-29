@@ -361,6 +361,11 @@ type AggregateConfig struct {
 	// position stacks a dual pair together at that corner, critics above
 	// audience.
 	AggregatePillPos string `json:"aggregatePillPos,omitempty"`
+	// AggregateAccentShape decides how an accent colour lands on a pill that
+	// carries no label, so has no rail to fill. "outline" traces the capsule and
+	// leaves the body dark; "strip" draws a centred bar along the top edge.
+	// "" is outline.
+	AggregateAccentShape string `json:"aggregateAccentShape,omitempty"`
 	// Critics and audience carry their own accent and value colours, so a dual
 	// presentation can tell the two scores apart. Each falls back to the shared
 	// colour above when it is unset.
@@ -637,6 +642,7 @@ type rawAggregate struct {
 	AggregateBarOffset    *int    `json:"aggregateBarOffset"`
 	AggregateRatingSource *string `json:"aggregateRatingSource"`
 	AggregatePillPos      *string `json:"aggregatePillPos"`
+	AggregateAccentShape  *string `json:"aggregateAccentShape"`
 
 	AggregateCriticsAccentColor  *string `json:"aggregateCriticsAccentColor"`
 	AggregateAudienceAccentColor *string `json:"aggregateAudienceAccentColor"`
@@ -1262,6 +1268,12 @@ func parseAggregate(cfg *Config, r *raw) {
 	if r.AggregatePillPos != nil {
 		if p := sixPos(*r.AggregatePillPos); p != "" {
 			cfg.AggregatePillPos = p
+		}
+	}
+	if r.AggregateAccentShape != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.AggregateAccentShape)); v {
+		case "outline", "strip":
+			cfg.AggregateAccentShape = v
 		}
 	}
 	if r.AggregateCriticsAccentColor != nil && isHexColor(*r.AggregateCriticsAccentColor) {

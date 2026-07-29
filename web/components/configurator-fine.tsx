@@ -7,7 +7,7 @@ import {
   GENRE_ACCENT_OPTIONS, GENRE_LABEL_OPTIONS,
   AGGREGATE_SOURCE_OPTIONS, AGGREGATE_ACCENT_MODE_OPTIONS, SCOREBAR_STYLE_OPTIONS,
   RATING_PRESENTATION_OPTIONS, RATING_VALUE_MODE_OPTIONS, RELEASE_STATUS_STYLE_OPTIONS,
-  ICON_SHAPE_OPTIONS, TREND_TAG_STYLE_OPTIONS,
+  ICON_SHAPE_OPTIONS, TREND_TAG_STYLE_OPTIONS, ACCENT_SHAPE_OPTIONS,
   DEFAULT_CRITICS_PRIORITY, DEFAULT_AUDIENCE_PRIORITY,
 } from './configurator-types';
 import { resolveShares, rebalance } from '@/lib/shares';
@@ -339,6 +339,10 @@ function ProviderWeights({ uid, config, onUpdate }: GroupProps) {
 // The presentations that draw score pills rather than the badge strip, so they
 // are the ones the pill placement reaches.
 const PILL_PRESENTATIONS: string[] = ['minimal', 'average', 'dual', 'dual-minimal'];
+
+// Of those, the ones whose pills carry no label, so an accent colour has no
+// rail to fill and marks the capsule itself.
+const LABELLESS_PRESENTATIONS: string[] = ['minimal', 'dual-minimal'];
 
 export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
   return (
@@ -785,9 +789,20 @@ export function AggregateFine({ uid, config, onUpdate }: GroupProps) {
           <ToggleField id={`${uid}-agg-rail`} label="Accent rail"
             checked={config.aggregateAccentBarVisible}
             onChange={v => onUpdate('aggregateAccentBarVisible', v)}
-            hint="The colour block behind a critics or audience label. On a presentation with no labels it outlines the pill instead." />
+            hint="The colour block behind a critics or audience label. On a presentation with no labels it marks the pill instead." />
           <NumField id={`${uid}-agg-rail-offset`} label="Rail offset (px)" value={config.aggregateAccentBarOffset}
             onChange={v => onUpdate('aggregateAccentBarOffset', v)} min={-40} max={40} zeroIsDefault={false} />
+          {LABELLESS_PRESENTATIONS.includes(config.ratingPresentation) && (
+            <StyleGrid
+              id={`${uid}-agg-accent-shape-label`}
+              label="Accent shape"
+              options={ACCENT_SHAPE_OPTIONS}
+              value={config.aggregateAccentShape}
+              onChange={v => onUpdate('aggregateAccentShape', v)}
+              columns={2}
+              hint={ACCENT_SHAPE_OPTIONS.find(o => o.id === config.aggregateAccentShape)?.desc}
+            />
+          )}
         </div>
       </details>
       <details className="adv-details">

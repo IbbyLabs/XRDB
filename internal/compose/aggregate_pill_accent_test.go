@@ -103,3 +103,56 @@ func TestALabelledPillStillFillsItsRail(t *testing.T) {
 		t.Errorf("critics accent did not reach the label rail, %d red px", got)
 	}
 }
+
+// The outline is a stroke of the capsule, so it must reach the far left and
+// right of the pill. Walking only the bounding rectangle's straight edges left
+// the curved ends unpainted and bled two stubs out at mid-height instead.
+func TestTheOutlineFollowsTheCapsuleRatherThanItsBoundingBox(t *testing.T) {
+	img := renderDual(customAccentConfig(), false)
+
+	isAccent := func(x, y int) bool {
+		p := img.NRGBAAt(x, y)
+		return p.A > 100 && p.R > 200 && p.G < 90 && p.B < 90
+	}
+
+	minX, maxX, minY, maxY := img.Bounds().Max.X, -1, img.Bounds().Max.Y, -1
+	for y := img.Bounds().Min.Y; y < img.Bounds().Max.Y; y++ {
+		for x := img.Bounds().Min.X; x < img.Bounds().Max.X; x++ {
+			if !isAccent(x, y) {
+				continue
+			}
+			minX, maxX = min(minX, x), max(maxX, x)
+			minY, maxY = min(minY, y), max(maxY, y)
+		}
+	}
+	if maxX < 0 {
+		t.Fatal("no outline was drawn at all")
+	}
+
+	// The curved end is where the two approaches diverge. Tracing the capsule
+	// paints the whole arc; walking the bounding box painted only the few rows
+	// of the straight left edge that survived the corner clip.
+	end := 0
+	for y := minY; y <= maxY; y++ {
+		for x := minX; x <= minX+(maxX-minX)/8; x++ {
+			if isAccent(x, y) {
+				end++
+			}
+		}
+	}
+	if end < 40 {
+		t.Errorf("only %d px of the pill's curved end are painted, so it is bleeding stubs rather than tracing the capsule", end)
+	}
+}
+
+// The accent shape picks between tracing the capsule and a bar along the top.
+func TestTheAccentShapeChoosesBetweenOutlineAndStrip(t *testing.T) {
+	strip := customAccentConfig()
+	strip.AggregateAccentShape = "strip"
+	if !imagesDiffer(renderDual(customAccentConfig(), false), renderDual(strip, false)) {
+		t.Error("the top strip rendered the same as the outline")
+	}
+	if got := countNear(renderDual(strip, false), color.NRGBA{R: 255, A: 255}); got < 20 {
+		t.Errorf("the top strip did not carry the accent colour, %d red px", got)
+	}
+}
