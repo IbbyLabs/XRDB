@@ -290,3 +290,16 @@ func TestLogoBackgroundRoundTrips(t *testing.T) {
 		t.Error("invalid logoBackground accepted")
 	}
 }
+
+// The pill placement reaches the renderer through the config URL, so it has to
+// survive parsing. "inherit" is what the configurator sends for Auto.
+func TestAggregatePillPosParses(t *testing.T) {
+	if got := Parse(json.RawMessage(`{"aggregatePillPos":"tr"}`)).AggregatePillPos; got != "tr" {
+		t.Errorf("AggregatePillPos = %q, want tr", got)
+	}
+	for _, in := range []string{`{}`, `{"aggregatePillPos":"inherit"}`, `{"aggregatePillPos":"sideways"}`} {
+		if got := Parse(json.RawMessage(in)).AggregatePillPos; got != "" {
+			t.Errorf("%s: AggregatePillPos = %q, want the presentation default", in, got)
+		}
+	}
+}

@@ -355,6 +355,12 @@ type AggregateConfig struct {
 	AggregateValueColor   string `json:"aggregateValueColor,omitempty"`   // "#RRGGBB" value text; "" = default
 	AggregateBarOffset    int    `json:"aggregateBarOffset,omitempty"`    // px nudge inward from the edge; 0 = flush
 	AggregateRatingSource string `json:"aggregateRatingSource,omitempty"` // overall | critics | audience; "" = overall
+	// AggregatePillPos anchors the score pills the minimal, average and dual
+	// presentations draw. tl|tr|bl|br|tc|bc; "" keeps each presentation's own
+	// default (dual splits top and bottom, the rest sit top centre). A set
+	// position stacks a dual pair together at that corner, critics above
+	// audience.
+	AggregatePillPos string `json:"aggregatePillPos,omitempty"`
 	// Critics and audience carry their own accent and value colours, so a dual
 	// presentation can tell the two scores apart. Each falls back to the shared
 	// colour above when it is unset.
@@ -630,6 +636,7 @@ type rawAggregate struct {
 	AggregateValueColor   *string `json:"aggregateValueColor"`
 	AggregateBarOffset    *int    `json:"aggregateBarOffset"`
 	AggregateRatingSource *string `json:"aggregateRatingSource"`
+	AggregatePillPos      *string `json:"aggregatePillPos"`
 
 	AggregateCriticsAccentColor  *string `json:"aggregateCriticsAccentColor"`
 	AggregateAudienceAccentColor *string `json:"aggregateAudienceAccentColor"`
@@ -1251,6 +1258,11 @@ func parseAggregate(cfg *Config, r *raw) {
 	}
 	if r.AggregateBarOffset != nil {
 		cfg.AggregateBarOffset = clampInt(*r.AggregateBarOffset, -12, 12)
+	}
+	if r.AggregatePillPos != nil {
+		if p := sixPos(*r.AggregatePillPos); p != "" {
+			cfg.AggregatePillPos = p
+		}
 	}
 	if r.AggregateCriticsAccentColor != nil && isHexColor(*r.AggregateCriticsAccentColor) {
 		cfg.AggregateCriticsAccentColor = strings.TrimSpace(*r.AggregateCriticsAccentColor)

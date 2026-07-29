@@ -402,6 +402,7 @@ export interface ConfigState {
   aggregateAccentMode: string;  // '' = auto score-band
   aggregateBarOffset: number; // px inward nudge, -12..12; 0 = flush
   aggregateRatingSource: string; // overall | critics | audience
+  aggregatePillPos: string; // 'inherit' | six positions
   aggregateValueColor: string; // '' = white
   aggregateCriticsAccentColor: string; // '' = falls back to aggregateAccentColor
   aggregateAudienceAccentColor: string;
@@ -515,6 +516,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   aggregateAccentMode: '',
   aggregateBarOffset: 0,
   aggregateRatingSource: 'overall',
+  aggregatePillPos: 'inherit',
   aggregateValueColor: '',
   aggregateCriticsAccentColor: '',
   aggregateAudienceAccentColor: '',

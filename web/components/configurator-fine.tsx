@@ -336,6 +336,10 @@ function ProviderWeights({ uid, config, onUpdate }: GroupProps) {
   );
 }
 
+// The presentations that draw score pills rather than the badge strip, so they
+// are the ones the pill placement reaches.
+const PILL_PRESENTATIONS: string[] = ['minimal', 'average', 'dual', 'dual-minimal'];
+
 export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
   return (
     <FineGroup label="Rating badges">
@@ -347,6 +351,11 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
         onChange={v => onUpdate('ratingPresentation', v)}
         hint={RATING_PRESENTATION_OPTIONS.find(o => o.id === config.ratingPresentation)?.desc}
       />
+      {PILL_PRESENTATIONS.includes(config.ratingPresentation) && (
+        <PosSelect id={`${uid}-aggregate-pill-pos`} label="Pill position"
+          value={config.aggregatePillPos}
+          onChange={v => onUpdate('aggregatePillPos', v)} />
+      )}
       <StyleGrid
         id={`${uid}-rating-value-mode-label`}
         label="Value scale"

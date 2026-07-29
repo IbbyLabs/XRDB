@@ -1465,6 +1465,19 @@ func aggregatePillStyle(cfg imageconfig.Config, source string, genres []string, 
 	return style
 }
 
+// scorePillWidth is the capsule width for a label/score pair at the given
+// scale. Kept alongside scorePillHeight so a pill can be anchored to an edge
+// before it is drawn.
+func scorePillWidth(label, score string, scale float64) int {
+	ensureFaces()
+	s := func(v float64) int { return int(v*scale + 0.5) }
+	labelW := 0
+	if label != "" {
+		labelW = textWidth(labelFaceFor(scale), label) + s(9)*2 + s(9)
+	}
+	return labelW + textWidth(valueFaceFor(scale*1.25), score) + s(12)*2
+}
+
 func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, style scorePillStyle, scale float64, occ *occupancy) {
 	ensureFaces()
 	s := func(v float64) int { return int(v*scale + 0.5) }
@@ -1480,12 +1493,7 @@ func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, style s
 	if label != "" {
 		labelW = textWidth(labelFace, label) + labelPad*2
 	}
-	scoreW := textWidth(valueFace, score)
-	contentW := labelW + scoreW
-	if label != "" {
-		contentW += innerGap
-	}
-	capW := contentW + padX*2
+	capW := scorePillWidth(label, score, scale)
 	x0 := cx - capW/2
 	rect := image.Rect(x0, topY, x0+capW, topY+capH)
 
@@ -1540,52 +1548,108 @@ func drawMinimalRating(base *image.NRGBA, ratings []provider.Rating, genres []st
 	if !ok {
 		return
 	}
-	b := base.Bounds()
 	style := aggregatePillStyle(cfg, "overall", genres, isAnime, avg, color.NRGBA{})
-	drawScorePill(base, b.Min.X+b.Dx()/2, b.Min.Y+int(14*scale+0.5),
-		"", formatRatingValue(avg, cfg.RatingValueMode), style, scale, occ)
+	drawAggregatePills(base, cfg, scale, occ, false, aggregatePill{
+		score: formatRatingValue(avg, cfg.RatingValueMode), style: style,
+	})
 }
 
-// drawDualRating shows a critics pill at the top and an audience pill at the
-// bottom, each an averaged score for its provider group.
-// drawAverageRating shows a single centred pill labelled "AVG" with the overall
+// drawAverageRating shows a single pill labelled "AVG" with the overall
 // average — like minimal, but explicitly named.
 func drawAverageRating(base *image.NRGBA, ratings []provider.Rating, genres []string, isAnime bool, cfg imageconfig.Config, scale float64, occ *occupancy) {
 	avg, ok := ratingRingAverage(ratings, cfg)
 	if !ok {
 		return
 	}
-	b := base.Bounds()
 	accent := color.NRGBA{R: 90, G: 98, B: 112, A: 255} // neutral slate label
 	style := aggregatePillStyle(cfg, "overall", genres, isAnime, avg, accent)
-	drawScorePill(base, b.Min.X+b.Dx()/2, b.Min.Y+int(14*scale+0.5),
-		"AVG", formatRatingValue(avg, cfg.RatingValueMode), style, scale, occ)
+	drawAggregatePills(base, cfg, scale, occ, false, aggregatePill{
+		label: "AVG", score: formatRatingValue(avg, cfg.RatingValueMode), style: style,
+	})
 }
 
-// drawDualRating shows a critics pill (top) and an audience pill (bottom). When
+// drawDualRating shows a critics pill and an audience pill, each an averaged
+// score for its provider group. Unplaced they sit against the top and bottom
+// edges; aggregatePillPos stacks them together at one corner instead. When
 // labeled is false the pills carry just the score (the "dual-minimal" mode).
 func drawDualRating(base *image.NRGBA, ratings []provider.Rating, genres []string, isAnime bool, cfg imageconfig.Config, scale float64, occ *occupancy, labeled bool) {
 	critics, audience, hasC, hasA := splitCriticsAudience(ratings, cfg)
-	b := base.Bounds()
-	cx := b.Min.X + b.Dx()/2
-	pad := int(14*scale + 0.5)
 	criticsAccent := color.NRGBA{R: 39, G: 174, B: 96, A: 255}   // green
 	audienceAccent := color.NRGBA{R: 52, G: 152, B: 219, A: 255} // blue
 	criticsLabel, audienceLabel := "", ""
 	if labeled {
 		criticsLabel, audienceLabel = "CRITICS", "AUDIENCE"
 	}
+	var pills []aggregatePill
 	if hasC {
-		style := aggregatePillStyle(cfg, "critics", genres, isAnime, critics, criticsAccent)
-		drawScorePill(base, cx, b.Min.Y+pad, criticsLabel,
-			formatRatingValue(critics, cfg.RatingValueMode), style, scale, occ)
+		pills = append(pills, aggregatePill{
+			label: criticsLabel,
+			score: formatRatingValue(critics, cfg.RatingValueMode),
+			style: aggregatePillStyle(cfg, "critics", genres, isAnime, critics, criticsAccent),
+		})
 	}
 	if hasA {
-		style := aggregatePillStyle(cfg, "audience", genres, isAnime, audience, audienceAccent)
-		topY := b.Max.Y - scorePillHeight(scale) - pad
-		drawScorePill(base, cx, topY, audienceLabel,
-			formatRatingValue(audience, cfg.RatingValueMode), style, scale, occ)
+		pills = append(pills, aggregatePill{
+			label: audienceLabel,
+			score: formatRatingValue(audience, cfg.RatingValueMode),
+			style: aggregatePillStyle(cfg, "audience", genres, isAnime, audience, audienceAccent),
+		})
 	}
+	drawAggregatePills(base, cfg, scale, occ, hasC && hasA, pills...)
+}
+
+// aggregatePill is one score capsule awaiting placement.
+type aggregatePill struct {
+	label string
+	score string
+	style scorePillStyle
+}
+
+// drawAggregatePills places the capsules the minimal, average and dual
+// presentations share, honouring the rating strip's scale and offsets. split
+// keeps an unplaced pair against opposite edges, which is the dual look.
+func drawAggregatePills(base *image.NRGBA, cfg imageconfig.Config, scale float64, occ *occupancy, split bool, pills ...aggregatePill) {
+	if len(pills) == 0 {
+		return
+	}
+	if cfg.RatingBadgeScale != 0 {
+		scale *= float64(cfg.RatingBadgeScale) / 100
+	}
+	b := base.Bounds()
+	pad := int(14*scale + 0.5)
+	gap := int(8*scale + 0.5)
+	h := scorePillHeight(scale)
+
+	for i, p := range pills {
+		cx, topY := aggregatePillAnchor(b, cfg.AggregatePillPos, split,
+			scorePillWidth(p.label, p.score, scale), h, pad, gap, i, len(pills))
+		drawScorePill(base, cx+cfg.RatingBadgeOffsetX, topY+cfg.RatingBadgeOffsetY,
+			p.label, p.score, p.style, scale, occ)
+	}
+}
+
+// aggregatePillAnchor returns the centre x and top y for pill i of n. An empty
+// pos centres horizontally and stacks from the top, except for a split pair
+// which takes one edge each. A corner pos stacks downward from the top or
+// upward from the bottom, so the first pill stays above the last either way.
+func aggregatePillAnchor(b image.Rectangle, pos string, split bool, w, h, pad, gap, i, n int) (cx, topY int) {
+	switch pos {
+	case "tl", "bl":
+		cx = b.Min.X + pad + w/2
+	case "tr", "br":
+		cx = b.Max.X - pad - w/2
+	default:
+		cx = b.Min.X + b.Dx()/2
+	}
+	switch {
+	case pos == "" && split && i == n-1:
+		topY = b.Max.Y - h - pad
+	case pos == "bl", pos == "bc", pos == "br":
+		topY = b.Max.Y - pad - (n-i)*h - (n-i-1)*gap
+	default:
+		topY = b.Min.Y + pad + i*(h+gap)
+	}
+	return cx, topY
 }
 
 // ── Aggregate rating bar ──────────────────────────────────────────────────────

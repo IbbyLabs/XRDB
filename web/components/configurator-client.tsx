@@ -228,6 +228,7 @@ export function ConfiguratorClient() {
       genreBadgeAnimeGrouping: cfg.genreBadgeAnimeGrouping === 'default' ? '' : cfg.genreBadgeAnimeGrouping,
       aggregateAccentColor: cfg.aggregateAccentColor,
       aggregateAccentMode: cfg.aggregateAccentMode,
+      aggregatePillPos: cfg.aggregatePillPos,
       aggregateBarOffset: cfg.aggregateBarOffset,
       aggregateValueColor: cfg.aggregateValueColor,
       aggregateCriticsAccentColor: cfg.aggregateCriticsAccentColor,
