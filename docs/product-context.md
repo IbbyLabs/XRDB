@@ -24,6 +24,9 @@ ignored, so this header text costs nothing.
 - Only the sources a config actually asks for are fetched, which is what keeps a cold render fast.
 - Anime titles resolve through MAL, AniList and Kitsu ids, so anime keeps its ratings.
 - A source that is rate-limited or erroring falls back to its last good answer rather than dropping its badge.
+- The minimal, average, dual and dual-minimal presentations draw score pills rather than the badge row. They take the rating scale and offsets like every other overlay, and `aggregatePillPos` anchors them to any of the six positions. Any older answer saying the fine tuning cannot reach them is out of date.
+- Left unplaced, a dual pair keeps one pill against the top edge and one against the bottom. Setting a position stacks the pair together at that corner, critics above audience, which is the v2 layout.
+- Separate critics and audience colours exist as `aggregateCriticsAccentColor` and `aggregateAudienceAccentColor`. The configurator only shows the pickers once the accent mode is set to Custom, so they look absent until then.
 
 ## Quality badges
 
@@ -39,6 +42,7 @@ ignored, so this header text costs nothing.
 ## Other overlays
 
 - Age rating, release status, top-rated rank, genre, trending and streaming-provider chips are each their own switch.
+- The trending badge draws for a title addressed by either an IMDb or a TMDB id. Any older answer saying it works only for TMDB ids, or that a tt request has nothing to match against, is out of date.
 - Position, scale, style and a per-overlay cap are configurable, and a hidden switch turns a row off without losing the selection.
 - Artwork can come from TMDB, Fanart, Cinemeta or the anime sources, with a fallback order so a surface missing from one is filled from another.
 - Artwork language can be set per render, including `original` for the title's own language.
