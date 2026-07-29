@@ -84,7 +84,7 @@ type Pipeline struct {
 
 // trendingResolver is satisfied by *provider.TrendingIndex.
 type trendingResolver interface {
-	IsTrending(ctx context.Context, tmdbID, imdbID string) bool
+	IsTrending(ctx context.Context, ids ...string) bool
 }
 
 // SetTrendingResolver attaches the trending index.
@@ -95,11 +95,13 @@ func (p *Pipeline) isTrending(ctx context.Context, req Request, meta *provider.M
 	if p.trending == nil {
 		return false
 	}
-	imdbID := ""
+	ids := []string{req.MediaID}
 	if meta != nil {
-		imdbID = meta.IMDbID
+		// The index holds TMDB ids, so a tt request reaches it only through the
+		// TMDB id the metadata fetch already resolved.
+		ids = append(ids, meta.TMDBID, meta.IMDbID)
 	}
-	return p.trending.IsTrending(ctx, req.MediaID, imdbID)
+	return p.trending.IsTrending(ctx, ids...)
 }
 
 // animeResolver reports whether a media ID belongs to a known anime. Satisfied

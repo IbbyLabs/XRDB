@@ -61,8 +61,11 @@ func NewTrendingIndex(tmdb *TMDB, opts TrendingOptions) *TrendingIndex {
 	return &TrendingIndex{tmdb: tmdb, window: window, depth: depth, ttl: ttl, ids: map[string]bool{}}
 }
 
-// IsTrending matches on the TMDB id and, when known, the IMDb id.
-func (t *TrendingIndex) IsTrending(ctx context.Context, tmdbID, imdbID string) bool {
+// IsTrending matches any of the ids the caller holds for a title. The list TMDB
+// serves carries no external ids, so the index is keyed by TMDB id alone and a
+// request made under an IMDb id only matches once its TMDB id is passed here
+// too.
+func (t *TrendingIndex) IsTrending(ctx context.Context, ids ...string) bool {
 	if t == nil || t.tmdb == nil {
 		return false
 	}
@@ -72,8 +75,8 @@ func (t *TrendingIndex) IsTrending(ctx context.Context, tmdbID, imdbID string) b
 	if t.failed {
 		return false
 	}
-	for _, key := range []string{normalizeTrendingKey(tmdbID), strings.ToLower(strings.TrimSpace(imdbID))} {
-		if key != "" && t.ids[key] {
+	for _, id := range ids {
+		if key := normalizeTrendingKey(id); key != "" && t.ids[key] {
 			return true
 		}
 	}
@@ -126,7 +129,7 @@ func (t *TrendingIndex) refreshIfStale(ctx context.Context) {
 	}
 	t.failed = false
 	t.ids = ids
-	slog.InfoContext(ctx, "Refreshed the trending list", "window", t.window, "titles", len(ids)/2)
+	slog.InfoContext(ctx, "Refreshed the trending list", "window", t.window, "titles", len(ids))
 }
 
 // fetch pages the list until depth is reached.

@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"testing"
+	"time"
 )
 
 // The badge was drawn from the config flag alone, so it appeared on every
@@ -45,5 +46,27 @@ func TestTrendingOptionsClampToSaneValues(t *testing.T) {
 	}
 	if d := NewTrendingIndex(nil, TrendingOptions{Depth: 99999}).depth; d != trendingPageSize*maxTrendingPages {
 		t.Errorf("depth = %d, want it clamped", d)
+	}
+}
+
+// The index is keyed by TMDB id, so the caller passes every id it holds and any
+// one of them may match.
+func TestTrendingIndexMatchesOnAnyIDTheCallerHolds(t *testing.T) {
+	idx := NewTrendingIndex(&TMDB{}, TrendingOptions{})
+	idx.ids = map[string]bool{"1368337": true}
+	idx.refreshed = time.Now()
+
+	ctx := context.Background()
+	if !idx.IsTrending(ctx, "tt33764258", "1368337", "tt33764258") {
+		t.Error("a resolved TMDB id alongside a tt id did not match")
+	}
+	if idx.IsTrending(ctx, "tt33764258") {
+		t.Error("a tt id alone matched an index that holds only TMDB ids")
+	}
+	if idx.IsTrending(ctx, "", "") {
+		t.Error("an empty id matched")
+	}
+	if idx.IsTrending(ctx) {
+		t.Error("no ids at all matched")
 	}
 }
