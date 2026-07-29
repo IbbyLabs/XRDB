@@ -118,6 +118,25 @@ func blendPixel(dst *image.NRGBA, x, y int, c color.NRGBA) {
 }
 
 // drawRectBorder draws a 1px border around a rounded rectangle.
+// drawRectBorderWidth strokes the outline inward from r, so a wider border
+// keeps the same outer edge.
+func drawRectBorderWidth(dst *image.NRGBA, r image.Rectangle, radius int, c color.NRGBA, width int) {
+	if width < 1 {
+		width = 1
+	}
+	for i := 0; i < width; i++ {
+		inner := r.Inset(i)
+		if inner.Empty() {
+			return
+		}
+		ring := radius - i
+		if ring < 0 {
+			ring = 0
+		}
+		drawRectBorder(dst, inner, ring, c)
+	}
+}
+
 func drawRectBorder(dst *image.NRGBA, r image.Rectangle, radius int, c color.NRGBA) {
 	b := dst.Bounds()
 	for x := r.Min.X; x < r.Max.X; x++ {

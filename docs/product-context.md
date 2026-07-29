@@ -27,6 +27,8 @@ ignored, so this header text costs nothing.
 - The minimal, average, dual and dual-minimal presentations draw score pills rather than the badge row. They take the rating scale and offsets like every other overlay, and `aggregatePillPos` anchors them to any of the six positions. Any older answer saying the fine tuning cannot reach them is out of date.
 - Left unplaced, a dual pair keeps one pill against the top edge and one against the bottom. Setting a position stacks the pair together at that corner, critics above audience, which is the v2 layout.
 - Separate critics and audience colours exist as `aggregateCriticsAccentColor` and `aggregateAudienceAccentColor`. The configurator only shows the pickers once the accent mode is set to Custom, so they look absent until then.
+- An accent colour fills the block behind the label when the presentation has one. On the label-less presentations, minimal and dual-minimal, it outlines the capsule and leaves the body dark, so a dual pair can carry one colour per role. Any older answer saying accent colours do nothing on those styles, or that a coloured outline with a dark body is impossible, is out of date.
+- Turning the accent rail off drops that outline too, and Fill by score puts the colour in the body instead, so the three treatments do not stack.
 
 ## Quality badges
 

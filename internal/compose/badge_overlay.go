@@ -1386,6 +1386,10 @@ type scorePillStyle struct {
 	// plain dark capsule.
 	accentShown  bool
 	accentOffset int // px nudge of the rail along the pill
+	// accentSet marks an accent resolved from the config rather than the
+	// built-in per-role default. A label-less pill has no rail for the accent to
+	// fill, so it takes the capsule outline instead.
+	accentSet bool
 	// fill replaces the dark capsule body. Zero alpha keeps the default.
 	fill color.NRGBA
 	// valueSet marks an explicitly configured value colour, which wins over the
@@ -1442,6 +1446,7 @@ func aggregatePillStyle(cfg imageconfig.Config, source string, genres []string, 
 	}
 	if c, err := parseHexColor(accentHex); accentHex != "" && err == nil {
 		style.accent = c
+		style.accentSet = true
 		if cfg.AggregateFillByScore {
 			c.A = 235
 			style.fill = c
@@ -1514,7 +1519,14 @@ func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, style s
 	shadow := rect.Add(image.Pt(0, s(2)))
 	fillRoundedRect(base, shadow, radius, color.NRGBA{A: 90})
 	fillRoundedRect(base, rect, radius, body)
-	drawRectBorder(base, rect, radius, color.NRGBA{R: 255, G: 255, B: 255, A: 28})
+	// With a label the accent fills the rail behind it. Without one there is no
+	// rail, so it outlines the capsule and the body stays dark. A filled body
+	// already carries the colour.
+	if label == "" && style.accentSet && style.accentShown && style.fill.A == 0 {
+		drawRectBorderWidth(base, rect, radius, style.accent, s(2))
+	} else {
+		drawRectBorder(base, rect, radius, color.NRGBA{R: 255, G: 255, B: 255, A: 28})
+	}
 
 	cursor := x0 + padX
 	if label != "" {

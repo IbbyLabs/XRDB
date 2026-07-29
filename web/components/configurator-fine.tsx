@@ -785,7 +785,7 @@ export function AggregateFine({ uid, config, onUpdate }: GroupProps) {
           <ToggleField id={`${uid}-agg-rail`} label="Accent rail"
             checked={config.aggregateAccentBarVisible}
             onChange={v => onUpdate('aggregateAccentBarVisible', v)}
-            hint="The colour block behind a critics or audience label." />
+            hint="The colour block behind a critics or audience label. On a presentation with no labels it outlines the pill instead." />
           <NumField id={`${uid}-agg-rail-offset`} label="Rail offset (px)" value={config.aggregateAccentBarOffset}
             onChange={v => onUpdate('aggregateAccentBarOffset', v)} min={-40} max={40} zeroIsDefault={false} />
         </div>
