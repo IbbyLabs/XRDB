@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.15.0](https://github.com/IbbyLabs/XRDB/compare/v3.14.0...v3.15.0) (2026-07-29)
+
+
+### Added
+
+* **ratings:** outline a label-less score pill in its accent colour ([abd3928](https://github.com/IbbyLabs/XRDB/commit/abd3928771c8d68c337781bf085338d65f3485d6))
+
 ## [3.14.0](https://github.com/IbbyLabs/XRDB/compare/v3.13.0...v3.14.0) (2026-07-29)
 
 
