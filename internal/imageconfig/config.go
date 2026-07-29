@@ -1570,6 +1570,10 @@ func CacheKey(cfg Config) string {
 		GenrePos                      string         `json:"genrePos"`
 		Providers                     bool           `json:"providers"`
 		ProvidersCountry              string         `json:"providersCountry"`
+		ProvidersPos                  string         `json:"providersPos"`
+		ProviderBadgeScale            int            `json:"providerBadgeScale"`
+		ProviderBadgeOffsetX          int            `json:"providerBadgeOffsetX"`
+		ProviderBadgeOffsetY          int            `json:"providerBadgeOffsetY"`
 		NetworkTileColor              string         `json:"networkTileColor"`
 		NoBackgroundBadgeOutlineColor string         `json:"noBackgroundBadgeOutlineColor"`
 		NoBackgroundBadgeOutlineWidth int            `json:"noBackgroundBadgeOutlineWidth"`
@@ -1623,6 +1627,10 @@ func CacheKey(cfg Config) string {
 		GenrePos:                      cfg.GenrePos,
 		Providers:                     cfg.Providers,
 		ProvidersCountry:              cfg.ProvidersCountry,
+		ProvidersPos:                  cfg.ProvidersPos,
+		ProviderBadgeScale:            cfg.ProviderBadgeScale,
+		ProviderBadgeOffsetX:          cfg.ProviderBadgeOffsetX,
+		ProviderBadgeOffsetY:          cfg.ProviderBadgeOffsetY,
 		NetworkTileColor:              cfg.NetworkTileColor,
 		NoBackgroundBadgeOutlineColor: cfg.NoBackgroundBadgeOutlineColor,
 		NoBackgroundBadgeOutlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
