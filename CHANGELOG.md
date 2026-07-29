@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.15.1](https://github.com/IbbyLabs/XRDB/compare/v3.15.0...v3.15.1) (2026-07-29)
+
+
+### Fixed
+
+* **ratings:** trace the pill outline instead of its bounding box ([54d2a2d](https://github.com/IbbyLabs/XRDB/commit/54d2a2df619b22fbbca77fb0e5b920225ef10507))
+
 ## [3.15.0](https://github.com/IbbyLabs/XRDB/compare/v3.14.0...v3.15.0) (2026-07-29)
 
 
