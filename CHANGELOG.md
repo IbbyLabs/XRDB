@@ -2,6 +2,26 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.18.0](https://github.com/IbbyLabs/XRDB/compare/v3.17.2...v3.18.0) (2026-07-30)
+
+
+### Added
+
+* **ratings:** add ringScale to resize the rating ring (BUG-164) ([5b89f8a](https://github.com/IbbyLabs/XRDB/commit/5b89f8aecf8a5b666f3c783751caa8cb27daa2ed))
+* **ratings:** outline provider logos so they read on any art (BUG-155) ([850c5e3](https://github.com/IbbyLabs/XRDB/commit/850c5e33096ad1ba5d7cdff9a3f54e832f2c999c))
+
+
+### Fixed
+
+* **artwork:** match images on the base language subtag (BUG-163) ([2d32568](https://github.com/IbbyLabs/XRDB/commit/2d3256844f2d93a95ae637a86fa8e766da3b1f7e))
+* **cache:** key ratings and badges by configured order (BUG-167) ([0cd20f5](https://github.com/IbbyLabs/XRDB/commit/0cd20f57db274630aef0ea06ea76720872934908))
+* **configurator:** escape the logo outline hint ([a39084d](https://github.com/IbbyLabs/XRDB/commit/a39084d25a29020ac55c50f2b23cfc65afd1f2d5))
+
+
+### Documentation
+
+* **context:** record rating order, badge caps and language tags ([a1be3fa](https://github.com/IbbyLabs/XRDB/commit/a1be3fa59ffaa6f30d194e42ff5dd4c4f2112bbb))
+
 ## [3.17.2](https://github.com/IbbyLabs/XRDB/compare/v3.17.1...v3.17.2) (2026-07-30)
 
 
