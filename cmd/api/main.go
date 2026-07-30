@@ -13,6 +13,11 @@ import (
 	"strings"
 	"syscall"
 	"time"
+	// The runtime image is Alpine, which ships no zoneinfo database. Without it
+	// TZ resolves to nothing and every timestamp falls back to UTC, an hour off
+	// the host through summer. Embedding the database costs ~450KB and survives
+	// a change of base image, which installing a package does not.
+	_ "time/tzdata"
 
 	"xrdb_rewrite/internal/cache"
 	"xrdb_rewrite/internal/compose"
