@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.17.1](https://github.com/IbbyLabs/XRDB/compare/v3.17.0...v3.17.1) (2026-07-30)
+
+
+### Fixed
+
+* **artwork:** stop drawing the logo over art that has a title (BUG-171) ([776e91f](https://github.com/IbbyLabs/XRDB/commit/776e91fb5fc5d32df398b7e8f571c2087dd9c92a))
+* **logging:** embed tzdata so timestamps use the configured zone ([bdb6a5b](https://github.com/IbbyLabs/XRDB/commit/bdb6a5b43fdc07fe0397be39a1370ccc85b25ff8))
+
 ## [3.17.0](https://github.com/IbbyLabs/XRDB/compare/v3.16.1...v3.17.0) (2026-07-30)
 
 
