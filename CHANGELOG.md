@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.29.0](https://github.com/IbbyLabs/XRDB/compare/v3.28.0...v3.29.0) (2026-07-30)
+
+
+### Added
+
+* **cache:** warm an addon's catalogues on a schedule (FR-114) ([e3d15a2](https://github.com/IbbyLabs/XRDB/commit/e3d15a2701e8651ba75ff21ecb124dde838b49fa))
+
 ## [3.28.0](https://github.com/IbbyLabs/XRDB/compare/v3.27.0...v3.28.0) (2026-07-30)
 
 
