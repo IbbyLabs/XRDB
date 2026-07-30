@@ -141,6 +141,10 @@ type Config struct {
 	ProviderBadgeOffsetX int    `json:"providerBadgeOffsetX,omitempty"`
 	ProviderBadgeOffsetY int    `json:"providerBadgeOffsetY,omitempty"`
 	NetworkTileColor     string `json:"networkTileColor,omitempty"` // "#RRGGBB" tile behind provider chips
+	// Outline traced around a rating provider's mark, for artwork the mark would
+	// otherwise disappear into.
+	IconOutlineColor string `json:"iconOutlineColor,omitempty"` // "#RRGGBB"; "" = none
+	IconOutlineWidth int    `json:"iconOutlineWidth,omitempty"` // px at 1x; 0 = none
 	// Outline for background-less ("plain") badge text.
 	NoBackgroundBadgeOutlineColor string        `json:"noBackgroundBadgeOutlineColor,omitempty"` // "#RRGGBB"; "" = default shadow
 	NoBackgroundBadgeOutlineWidth int           `json:"noBackgroundBadgeOutlineWidth,omitempty"` // px; 0 = default
@@ -540,6 +544,8 @@ type raw struct {
 	ProviderBadgeScale            *int      `json:"providerBadgeScale"`
 	ProviderBadgeOffsetX          *int      `json:"providerBadgeOffsetX"`
 	ProviderBadgeOffsetY          *int      `json:"providerBadgeOffsetY"`
+	IconOutlineColor              *string   `json:"iconOutlineColor"`
+	IconOutlineWidth              *int      `json:"iconOutlineWidth"`
 	NoBackgroundBadgeOutlineColor *string   `json:"noBackgroundBadgeOutlineColor"`
 	NoBackgroundBadgeOutlineWidth *int      `json:"noBackgroundBadgeOutlineWidth"`
 	AggregateBar                  *bool     `json:"aggregateBar"`
@@ -902,6 +908,12 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.ProviderBadgeOffsetY != nil {
 		cfg.ProviderBadgeOffsetY = clampInt(*r.ProviderBadgeOffsetY, -320, 320)
+	}
+	if r.IconOutlineColor != nil && isHexColor(*r.IconOutlineColor) {
+		cfg.IconOutlineColor = strings.TrimSpace(*r.IconOutlineColor)
+	}
+	if r.IconOutlineWidth != nil && *r.IconOutlineWidth != 0 {
+		cfg.IconOutlineWidth = clampInt(*r.IconOutlineWidth, 1, 6)
 	}
 	if r.NoBackgroundBadgeOutlineColor != nil && isHexColor(*r.NoBackgroundBadgeOutlineColor) {
 		cfg.NoBackgroundBadgeOutlineColor = strings.TrimSpace(*r.NoBackgroundBadgeOutlineColor)
@@ -1620,6 +1632,8 @@ func CacheKey(cfg Config) string {
 		ProviderBadgeOffsetX          int            `json:"providerBadgeOffsetX"`
 		ProviderBadgeOffsetY          int            `json:"providerBadgeOffsetY"`
 		NetworkTileColor              string         `json:"networkTileColor"`
+		IconOutlineColor              string         `json:"iconOutlineColor"`
+		IconOutlineWidth              int            `json:"iconOutlineWidth"`
 		NoBackgroundBadgeOutlineColor string         `json:"noBackgroundBadgeOutlineColor"`
 		NoBackgroundBadgeOutlineWidth int            `json:"noBackgroundBadgeOutlineWidth"`
 		AggregateBar                  bool           `json:"aggregateBar"`
@@ -1679,6 +1693,8 @@ func CacheKey(cfg Config) string {
 		ProviderBadgeOffsetX:          cfg.ProviderBadgeOffsetX,
 		ProviderBadgeOffsetY:          cfg.ProviderBadgeOffsetY,
 		NetworkTileColor:              cfg.NetworkTileColor,
+		IconOutlineColor:              cfg.IconOutlineColor,
+		IconOutlineWidth:              cfg.IconOutlineWidth,
 		NoBackgroundBadgeOutlineColor: cfg.NoBackgroundBadgeOutlineColor,
 		NoBackgroundBadgeOutlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
 		AggregateBar:                  cfg.AggregateBar,

@@ -697,6 +697,31 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
       </div>
       <NumField id={`${uid}-plain-outline-w`} label="Outline width (px)" value={config.noBackgroundBadgeOutlineWidth}
         onChange={v => onUpdate('noBackgroundBadgeOutlineWidth', v)} min={0} max={6} placeholder="default" />
+      <div className="field">
+        <label className="label" htmlFor={`${uid}-icon-outline`}>Logo outline</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+          <input
+            id={`${uid}-icon-outline`}
+            type="color"
+            value={config.iconOutlineColor || '#000000'}
+            onChange={e => onUpdate('iconOutlineColor', e.target.value)}
+            className="color-swatch"
+          />
+          <button
+            className={`opt-btn${!config.iconOutlineColor ? ' opt-btn--active' : ''}`}
+            onClick={() => onUpdate('iconOutlineColor', '')}
+            aria-pressed={!config.iconOutlineColor}
+            style={{ flex: 1 }}
+          >
+            None
+          </button>
+        </div>
+        <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>
+          Traces each rating provider's logo, for artwork it would blend into.
+        </span>
+      </div>
+      <NumField id={`${uid}-icon-outline-w`} label="Logo outline width (px)" value={config.iconOutlineWidth}
+        onChange={v => onUpdate('iconOutlineWidth', v)} min={0} max={6} placeholder="none" />
     </FineGroup>
   );
 }

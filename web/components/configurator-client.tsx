@@ -216,6 +216,8 @@ export function ConfiguratorClient() {
       genreBadgeOffsetY: cfg.genreBadgeOffsetY,
       genreBadgeBackgroundOpacity: cfg.genreBadgeBackgroundOpacity,
       genreBadgeBorderWidth: cfg.genreBadgeBorderWidth,
+      iconOutlineColor: cfg.iconOutlineColor,
+      iconOutlineWidth: cfg.iconOutlineWidth,
       noBackgroundBadgeOutlineColor: cfg.noBackgroundBadgeOutlineColor,
       noBackgroundBadgeOutlineWidth: cfg.noBackgroundBadgeOutlineWidth,
       qualityBadgesHidden: cfg.qualityBadgesHidden || undefined,

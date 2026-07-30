@@ -73,7 +73,7 @@ func TestIconShapesAreVisiblyDistinctWhenDrawn(t *testing.T) {
 			}
 		}
 		accent := color.NRGBA{R: 245, G: 197, B: 24, A: 255}
-		drawBrandIcon(dst, image.Rect(8, 8, 72, 72), opaqueSquare(64), shape, accent)
+		drawBrandIcon(dst, image.Rect(8, 8, 72, 72), opaqueSquare(64), shape, accent, color.NRGBA{}, 0)
 		return dst
 	}
 
