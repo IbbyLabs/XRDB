@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.30.0](https://github.com/IbbyLabs/XRDB/compare/v3.29.4...v3.30.0) (2026-07-30)
+
+
+### Added
+
+* **observability:** log when a ratings source is rate-limited ([df086f8](https://github.com/IbbyLabs/XRDB/commit/df086f8b151323986a55e5fc706a8521af892051))
+
 ## [3.29.4](https://github.com/IbbyLabs/XRDB/compare/v3.29.3...v3.29.4) (2026-07-30)
 
 
