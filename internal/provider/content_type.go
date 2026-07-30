@@ -16,6 +16,13 @@ import (
 // series, the provider self-corrects rather than silently returning nothing.
 var errNotFound = errors.New("provider: title not found for content type")
 
+// ErrNotApplicable is a sentinel returned when a source cannot apply to a title
+// at all, rather than failing to answer for it. An anime source asked about a
+// non-anime is the case: "this is not an anime" is a permanent fact about the
+// title, not an outage, so it must not count against the source's health or a
+// genuine failure would be lost in the noise.
+var ErrNotApplicable = errors.New("provider: source does not apply to this title")
+
 // isSeriesType reports whether a content-type hint denotes a series/TV title.
 //
 // It intentionally does NOT treat artwork surface names (poster, backdrop,

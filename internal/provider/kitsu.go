@@ -57,7 +57,7 @@ func (k *Kitsu) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, er
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, fmt.Errorf("kitsu: anime not found for id %q", id)
+		return nil, fmt.Errorf("kitsu: anime not found for id %q: %w", id, ErrNotApplicable)
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("kitsu: http %d", resp.StatusCode)

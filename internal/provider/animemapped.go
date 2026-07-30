@@ -59,11 +59,11 @@ func (w *AnimeMapped) Fetch(ctx context.Context, mediaType, id string) (*MediaMe
 	}
 	ids, ok := w.mapper.Resolve(ctx, mediaType, id)
 	if !ok {
-		return nil, fmt.Errorf("%s: no anime mapping for id %q", w.inner.Name(), id)
+		return nil, fmt.Errorf("%s: no anime mapping for id %q: %w", w.inner.Name(), id, ErrNotApplicable)
 	}
 	n := w.pick(ids)
 	if n == 0 {
-		return nil, fmt.Errorf("%s: mapping has no %s id for %q", w.inner.Name(), w.inner.Name(), id)
+		return nil, fmt.Errorf("%s: mapping has no %s id for %q: %w", w.inner.Name(), w.inner.Name(), id, ErrNotApplicable)
 	}
 	return w.inner.Fetch(ctx, mediaType, fmt.Sprintf("%s%d", w.prefix, n))
 }

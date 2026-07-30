@@ -136,7 +136,7 @@ func (h *HealthTracker) Success(source, key string, meta *MediaMeta) {
 // Failure records a failed fetch. A plain not-found is not a health problem:
 // the source answered, the title simply is not there.
 func (h *HealthTracker) Failure(source string, err error) {
-	if h == nil || errors.Is(err, errNotFound) {
+	if h == nil || errors.Is(err, errNotFound) || errors.Is(err, ErrNotApplicable) {
 		return
 	}
 	h.mu.Lock()

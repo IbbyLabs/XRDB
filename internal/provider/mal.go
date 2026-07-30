@@ -64,7 +64,7 @@ func (m *MAL) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, erro
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, fmt.Errorf("mal: anime not found for id %q", id)
+		return nil, fmt.Errorf("mal: anime not found for id %q: %w", id, ErrNotApplicable)
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("mal: http %d", resp.StatusCode)
