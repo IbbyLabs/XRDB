@@ -146,6 +146,11 @@ type Config struct {
 	NetworkTileColor     string `json:"networkTileColor,omitempty"` // "#RRGGBB" tile behind provider chips
 	// RatingBadgeDensity scales the padding inside a rating badge and the gap
 	// between its mark and value, as a percent; 0 = 100. Lower hugs the contents.
+	// MetaLine draws one centred line under the artwork — age rating, year and
+	// genre — over a gradient, the way the streaming apps present it.
+	MetaLine bool `json:"metaLine,omitempty"`
+	// MetaLineScale sizes that line as a percent; 0 = 100.
+	MetaLineScale int `json:"metaLineScale,omitempty"`
 	// AggregateAccentWidth is the stroke width of the score pill's accent
 	// outline, in px at 1x; 0 keeps the default.
 	AggregateAccentWidth int `json:"aggregateAccentWidth,omitempty"`
@@ -557,6 +562,8 @@ type raw struct {
 	ProviderBadgeScale            *int      `json:"providerBadgeScale"`
 	ProviderBadgeOffsetX          *int      `json:"providerBadgeOffsetX"`
 	ProviderBadgeOffsetY          *int      `json:"providerBadgeOffsetY"`
+	MetaLine                      *bool     `json:"metaLine"`
+	MetaLineScale                 *int      `json:"metaLineScale"`
 	AggregateAccentWidth          *int      `json:"aggregateAccentWidth"`
 	RatingBadgeDensity            *int      `json:"ratingBadgeDensity"`
 	RatingBadgeBorderColor        *string   `json:"ratingBadgeBorderColor"`
@@ -930,6 +937,12 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.ProviderBadgeOffsetY != nil {
 		cfg.ProviderBadgeOffsetY = clampInt(*r.ProviderBadgeOffsetY, -320, 320)
+	}
+	if r.MetaLine != nil {
+		cfg.MetaLine = *r.MetaLine
+	}
+	if r.MetaLineScale != nil && *r.MetaLineScale != 0 {
+		cfg.MetaLineScale = clampInt(*r.MetaLineScale, 60, 200)
 	}
 	if r.AggregateAccentWidth != nil && *r.AggregateAccentWidth != 0 {
 		cfg.AggregateAccentWidth = clampInt(*r.AggregateAccentWidth, 1, 8)
@@ -1667,6 +1680,8 @@ func CacheKey(cfg Config) string {
 		ProviderBadgeOffsetX          int            `json:"providerBadgeOffsetX"`
 		ProviderBadgeOffsetY          int            `json:"providerBadgeOffsetY"`
 		NetworkTileColor              string         `json:"networkTileColor"`
+		MetaLine                      bool           `json:"metaLine"`
+		MetaLineScale                 int            `json:"metaLineScale"`
 		AggregateAccentWidth          int            `json:"aggregateAccentWidth"`
 		RatingBadgeDensity            int            `json:"ratingBadgeDensity"`
 		RatingBadgeBorderColor        string         `json:"ratingBadgeBorderColor"`
@@ -1733,6 +1748,8 @@ func CacheKey(cfg Config) string {
 		ProviderBadgeOffsetX:          cfg.ProviderBadgeOffsetX,
 		ProviderBadgeOffsetY:          cfg.ProviderBadgeOffsetY,
 		NetworkTileColor:              cfg.NetworkTileColor,
+		MetaLine:                      cfg.MetaLine,
+		MetaLineScale:                 cfg.MetaLineScale,
 		AggregateAccentWidth:          cfg.AggregateAccentWidth,
 		RatingBadgeDensity:            cfg.RatingBadgeDensity,
 		RatingBadgeBorderColor:        cfg.RatingBadgeBorderColor,

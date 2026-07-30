@@ -515,6 +515,13 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
         )}
 
         <ToggleRow
+          label="Info line"
+          hint="Age rating, year and genre on one line at the foot of the artwork"
+          checked={config.metaLine}
+          onChange={() => onUpdate('metaLine', !config.metaLine)}
+        />
+
+        <ToggleRow
           label="Trending badge"
           hint="Show a trending badge in the top-left corner"
           checked={config.trending}

@@ -53,6 +53,7 @@ ignored, so this header text costs nothing.
 ## Other overlays
 
 - Age rating, release status, top-rated rank, genre, trending and streaming-provider chips are each their own switch.
+- `metaLine` draws one centred line at the foot of the artwork carrying the age rating, year and a genre, over a gradient that fades upward, the way the streaming apps present it. `metaLineScale` sizes it. It is off by default.
 - The trending badge draws for a title addressed by either an IMDb or a TMDB id. Any older answer saying it works only for TMDB ids, or that a tt request has nothing to match against, is out of date.
 - Position, scale, style and a per-overlay cap are configurable, and a hidden switch turns a row off without losing the selection.
 - Provider chips and quality tiles scale to 400 percent, matching the rating badges. Any older answer capping them at 200 is out of date; 200 was too small to read on a large or 4k poster.

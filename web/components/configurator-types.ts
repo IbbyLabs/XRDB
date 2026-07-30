@@ -441,6 +441,8 @@ export interface ConfigState {
   logoBackground: string; // 'transparent' | 'dark'
   episodeArtworkMode: string; // 'still' | 'series' | 'streaming' (thumbnail/backdrop episodes)
   fallbackLanguage: string; // '' = none
+  metaLine: boolean;
+  metaLineScale: number; // percent; 0 = 100
   aggregateAccentWidth: number; // px; 0 = default
   ratingBadgeDensity: number; // percent of default padding; 0 = 100
   ratingBadgeBorderColor: string; // '' = per style
@@ -572,6 +574,8 @@ export const DEFAULT_CONFIG: ConfigState = {
   logoBackground: 'transparent',
   episodeArtworkMode: 'still',
   fallbackLanguage: '',
+  metaLine: false,
+  metaLineScale: 0,
   aggregateAccentWidth: 0,
   ratingBadgeDensity: 0,
   ratingBadgeBorderColor: '',
