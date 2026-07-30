@@ -447,8 +447,12 @@ export async function renderIDFor(t: TitleResult): Promise<string> {
   try {
     const imdb = await lookupIMDbID(t.mediaType, t.tmdbId);
     if (imdb) return imdb;
-  } catch { /* fall back to TMDB id */ }
-  return String(t.tmdbId);
+  } catch (err) {
+    console.warn('IMDb lookup failed, falling back to the TMDB id', err);
+  }
+  // A bare number is read as a TMDB movie id, so a series would render whatever
+  // movie shares its number. The scheme carries the content type.
+  return `tmdb:${t.mediaType === 'tv' ? 'series' : 'movie'}:${t.tmdbId}`;
 }
 
 // ── AIOMetadata install ────────────────────────────────────────────────────

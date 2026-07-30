@@ -5,7 +5,7 @@ import { Search, Shuffle, Pin, X } from 'lucide-react';
 import { searchTitles, trendingTitles, renderIDFor, ApiError, type TitleResult } from '@/lib/api';
 
 export interface PinnedItem {
-  id: string;    // render ID (tt-ID or TMDB numeric)
+  id: string;    // render ID (tt-ID, or "tmdb:movie:123" / "tmdb:series:123")
   title: string;
 }
 
@@ -16,7 +16,7 @@ function readPins(): PinnedItem[] {
   try { return JSON.parse(localStorage.getItem(PINS_KEY) ?? '[]') as PinnedItem[]; } catch { return []; }
 }
 
-const DIRECT_ID_RE = /^(tt\d+|\d+)$/;
+const DIRECT_ID_RE = /^(tt\d+|\d+|tmdb:(?:movie|series|tv):\d+)$/i;
 
 interface MediaSearchProps {
   mediaId: string;
