@@ -2,6 +2,21 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.22.0](https://github.com/IbbyLabs/XRDB/compare/v3.21.0...v3.22.0) (2026-07-30)
+
+
+### Added
+
+* **overlays:** add an info line with age rating, year and genre ([9d4c62f](https://github.com/IbbyLabs/XRDB/commit/9d4c62f00d9f9d3a9064a64e017ceaf278266915))
+* **ratings:** allow rating sources per kind of title ([5207312](https://github.com/IbbyLabs/XRDB/commit/5207312e42eccb4a949969e5835ab5a0aa44458b))
+
+
+### Fixed
+
+* **overlays:** stack the info line above the rating strip ([d0a4b86](https://github.com/IbbyLabs/XRDB/commit/d0a4b863749a99d8cf179d605e969358547ed1c0))
+* **ratings:** fetch every source a per-type override may name ([7a52777](https://github.com/IbbyLabs/XRDB/commit/7a52777bb3f2ec557ee6014701bfc5bbd81ad94a))
+* **ratings:** key a render by the title kind for per-type overrides ([38370d2](https://github.com/IbbyLabs/XRDB/commit/38370d256ac88315b1e8233b153ea76a814550d5))
+
 ## [3.21.0](https://github.com/IbbyLabs/XRDB/compare/v3.20.0...v3.21.0) (2026-07-30)
 
 
