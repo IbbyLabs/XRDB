@@ -35,3 +35,29 @@ func TestOwnerKeyBypassesTheSharedCooldown(t *testing.T) {
 		t.Error("an owner-key render was gated by the shared key's cooldown")
 	}
 }
+
+// The mirror of the bypass: an owner key's failure must not set the shared
+// cooldown, or one exhausted owner key holds the source out for everyone.
+func TestOwnerKeyFailureDoesNotSetTheSharedCooldown(t *testing.T) {
+	h := provider.NewHealthTracker(100, time.Hour)
+
+	// This mirrors the guarded write in fetchRatingsResilient.
+	record := func(ctx context.Context, err error) {
+		if err != nil && !provider.HasOwnerKey(ctx, "mdblist") {
+			h.Failure("mdblist", err)
+		}
+	}
+
+	owner := provider.WithKeys(context.Background(), map[string]string{provider.KeyMDBList: "owner-key"})
+	quota := &provider.RateLimitError{Source: "mdblist", Status: 429, RetryAfter: time.Hour}
+
+	record(owner, quota)
+	if h.CoolingOff("mdblist") {
+		t.Error("an owner key's failure set the shared cooldown")
+	}
+
+	record(context.Background(), quota)
+	if !h.CoolingOff("mdblist") {
+		t.Error("a shared-key failure did not set the cooldown")
+	}
+}

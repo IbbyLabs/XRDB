@@ -423,7 +423,10 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 		p.health.Success(prov.Name(), key, meta)
 		return meta, nil
 	}
-	if err != nil {
+	if err != nil && !ownerKeyed {
+		// An owner key failing says nothing about the shared source's health: it
+		// is a different credential with its own allowance. Recording it would let
+		// one exhausted owner key set the shared cooldown for every other render.
 		p.health.Failure(prov.Name(), err)
 	}
 	if good, ok := p.health.LastGood(prov.Name(), key); ok {
