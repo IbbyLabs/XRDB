@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.24.0](https://github.com/IbbyLabs/XRDB/compare/v3.23.0...v3.24.0) (2026-07-30)
+
+
+### Added
+
+* **ratings:** anchor the badge row to its edge (FR-99) ([84a6f08](https://github.com/IbbyLabs/XRDB/commit/84a6f0826f3ef8b8ccb5c6c969e1d1bbe4fd4404))
+
+
+### Fixed
+
+* **ratings:** resolve the anime kind when an anime override is set ([60c18d2](https://github.com/IbbyLabs/XRDB/commit/60c18d2b3c186b457229c72bbd9be46b471544cd))
+
 ## [3.23.0](https://github.com/IbbyLabs/XRDB/compare/v3.22.0...v3.23.0) (2026-07-30)
 
 
