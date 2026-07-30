@@ -141,6 +141,12 @@ type Config struct {
 	ProviderBadgeOffsetX int    `json:"providerBadgeOffsetX,omitempty"`
 	ProviderBadgeOffsetY int    `json:"providerBadgeOffsetY,omitempty"`
 	NetworkTileColor     string `json:"networkTileColor,omitempty"` // "#RRGGBB" tile behind provider chips
+	// RatingBadgeDensity scales the padding inside a rating badge and the gap
+	// between its mark and value, as a percent; 0 = 100. Lower hugs the contents.
+	RatingBadgeDensity int `json:"ratingBadgeDensity,omitempty"`
+	// Border traced around the rating badge capsule itself.
+	RatingBadgeBorderColor   string `json:"ratingBadgeBorderColor,omitempty"`   // "#RRGGBB"; "" = per style
+	RatingBadgeBorderOpacity int    `json:"ratingBadgeBorderOpacity,omitempty"` // 0-100; 0 = default
 	// Outline traced around a rating provider's mark, for artwork the mark would
 	// otherwise disappear into.
 	IconOutlineColor string `json:"iconOutlineColor,omitempty"` // "#RRGGBB"; "" = none
@@ -544,6 +550,9 @@ type raw struct {
 	ProviderBadgeScale            *int      `json:"providerBadgeScale"`
 	ProviderBadgeOffsetX          *int      `json:"providerBadgeOffsetX"`
 	ProviderBadgeOffsetY          *int      `json:"providerBadgeOffsetY"`
+	RatingBadgeDensity            *int      `json:"ratingBadgeDensity"`
+	RatingBadgeBorderColor        *string   `json:"ratingBadgeBorderColor"`
+	RatingBadgeBorderOpacity      *int      `json:"ratingBadgeBorderOpacity"`
 	IconOutlineColor              *string   `json:"iconOutlineColor"`
 	IconOutlineWidth              *int      `json:"iconOutlineWidth"`
 	NoBackgroundBadgeOutlineColor *string   `json:"noBackgroundBadgeOutlineColor"`
@@ -908,6 +917,15 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.ProviderBadgeOffsetY != nil {
 		cfg.ProviderBadgeOffsetY = clampInt(*r.ProviderBadgeOffsetY, -320, 320)
+	}
+	if r.RatingBadgeDensity != nil && *r.RatingBadgeDensity != 0 {
+		cfg.RatingBadgeDensity = clampInt(*r.RatingBadgeDensity, 60, 140)
+	}
+	if r.RatingBadgeBorderColor != nil && isHexColor(*r.RatingBadgeBorderColor) {
+		cfg.RatingBadgeBorderColor = strings.TrimSpace(*r.RatingBadgeBorderColor)
+	}
+	if r.RatingBadgeBorderOpacity != nil && *r.RatingBadgeBorderOpacity != 0 {
+		cfg.RatingBadgeBorderOpacity = clampInt(*r.RatingBadgeBorderOpacity, 1, 100)
 	}
 	if r.IconOutlineColor != nil && isHexColor(*r.IconOutlineColor) {
 		cfg.IconOutlineColor = strings.TrimSpace(*r.IconOutlineColor)
@@ -1632,6 +1650,9 @@ func CacheKey(cfg Config) string {
 		ProviderBadgeOffsetX          int            `json:"providerBadgeOffsetX"`
 		ProviderBadgeOffsetY          int            `json:"providerBadgeOffsetY"`
 		NetworkTileColor              string         `json:"networkTileColor"`
+		RatingBadgeDensity            int            `json:"ratingBadgeDensity"`
+		RatingBadgeBorderColor        string         `json:"ratingBadgeBorderColor"`
+		RatingBadgeBorderOpacity      int            `json:"ratingBadgeBorderOpacity"`
 		IconOutlineColor              string         `json:"iconOutlineColor"`
 		IconOutlineWidth              int            `json:"iconOutlineWidth"`
 		NoBackgroundBadgeOutlineColor string         `json:"noBackgroundBadgeOutlineColor"`
@@ -1693,6 +1714,9 @@ func CacheKey(cfg Config) string {
 		ProviderBadgeOffsetX:          cfg.ProviderBadgeOffsetX,
 		ProviderBadgeOffsetY:          cfg.ProviderBadgeOffsetY,
 		NetworkTileColor:              cfg.NetworkTileColor,
+		RatingBadgeDensity:            cfg.RatingBadgeDensity,
+		RatingBadgeBorderColor:        cfg.RatingBadgeBorderColor,
+		RatingBadgeBorderOpacity:      cfg.RatingBadgeBorderOpacity,
 		IconOutlineColor:              cfg.IconOutlineColor,
 		IconOutlineWidth:              cfg.IconOutlineWidth,
 		NoBackgroundBadgeOutlineColor: cfg.NoBackgroundBadgeOutlineColor,

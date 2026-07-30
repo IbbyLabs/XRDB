@@ -558,6 +558,15 @@ func chromeFor(cfg imageconfig.Config) badgeChrome {
 		v.A = 255
 		c.valueColor = v
 	}
+	// Last, so it reaches every style including the ones that draw no border of
+	// their own.
+	if b, err := parseHexColor(cfg.RatingBadgeBorderColor); cfg.RatingBadgeBorderColor != "" && err == nil {
+		b.A = 255
+		if o := cfg.RatingBadgeBorderOpacity; o > 0 {
+			b.A = uint8(maxInt(1, o*255/100))
+		}
+		c.border = b
+	}
 	return c
 }
 
@@ -678,14 +687,21 @@ type ratingStripDims struct {
 	accentW, padX, padY, iconSize, iconGap, badgeGap, rowGap, edgeX, edgeY int
 }
 
-func ratingStripDimsFor(scale float64) ratingStripDims {
+func ratingStripDimsFor(scale float64, cfg imageconfig.Config) ratingStripDims {
 	s := func(v float64) int { return int(v*scale + 0.5) }
+	// Density moves the space inside a badge, not the mark or the type, so a
+	// tighter setting hugs the same contents rather than shrinking them.
+	dens := scale
+	if cfg.RatingBadgeDensity != 0 {
+		dens *= float64(cfg.RatingBadgeDensity) / 100
+	}
+	d := func(v float64) int { return maxInt(1, int(v*dens+0.5)) }
 	return ratingStripDims{
 		accentW:  s(4),
-		padX:     s(14),
-		padY:     s(10),
+		padX:     d(14),
+		padY:     d(10),
 		iconSize: s(34),
-		iconGap:  s(8),
+		iconGap:  d(8),
 		badgeGap: s(11),
 		rowGap:   s(11),
 		edgeX:    s(16),
@@ -729,7 +745,7 @@ func ratingsBandHeight(frameW, frameH int, ratings []provider.Rating, cfg imagec
 	face := valueFaceFor(scale)
 	fm := face.Metrics()
 	valH := fm.Ascent.Ceil() + fm.Descent.Ceil()
-	d := ratingStripDimsFor(scale)
+	d := ratingStripDimsFor(scale, cfg)
 	accentW, padX, iconSize, iconGap, badgeGap := d.accentW, d.padX, d.iconSize, d.iconGap, d.badgeGap
 	padY, rowGap, edgeX, edgeY := d.padY, d.rowGap, d.edgeX, d.edgeY
 	// The configured edge offset pushes the strip further in from the edge it
@@ -810,7 +826,7 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 	valDescent := fm.Descent.Ceil()
 	valH := valAscent + valDescent
 
-	d := ratingStripDimsFor(scale)
+	d := ratingStripDimsFor(scale, cfg)
 	accentW, padX, padY, iconSize := d.accentW, d.padX, d.padY, d.iconSize
 	iconGap, badgeGap, rowGap, edgeX, edgeY := d.iconGap, d.badgeGap, d.rowGap, d.edgeX, d.edgeY
 
@@ -1231,7 +1247,7 @@ func drawStackedBadge(out *image.NRGBA, sp badgeSpec, y, innerH, iconSize int, f
 // widestBadgeAt measures the widest single badge the strip would draw at scale.
 func widestBadgeAt(scale float64, ratings []provider.Rating, cfg imageconfig.Config) int {
 	face := valueFaceFor(scale)
-	d := ratingStripDimsFor(scale)
+	d := ratingStripDimsFor(scale, cfg)
 	stacked := cfg.BadgeStyle == imageconfig.BadgeStacked
 	widest := 0
 	for _, r := range ratings {
@@ -1287,7 +1303,7 @@ func fitBadgeScale(scale float64, frameW, frameH int, ratings []provider.Rating,
 	// A few passes is enough to bring any requested size inside the frame, and
 	// bounds the work.
 	for i := 0; i < 6; i++ {
-		d := ratingStripDimsFor(scale)
+		d := ratingStripDimsFor(scale, cfg)
 		availW := frameW - d.edgeX*2
 		if share := int(float64(frameW)*maxBadgeWidthShare + 0.5); share < availW {
 			availW = share
@@ -1335,7 +1351,7 @@ func badgeHeightAt(scale float64, cfg imageconfig.Config) int {
 	face := valueFaceFor(scale)
 	fm := face.Metrics()
 	valH := fm.Ascent.Ceil() + fm.Descent.Ceil()
-	d := ratingStripDimsFor(scale)
+	d := ratingStripDimsFor(scale, cfg)
 	if cfg.BadgeStyle == imageconfig.BadgeStacked {
 		return stackedBadgeInnerH(d, valH, cfg.RatingIconHidden, cfg.StackedLineHidden)
 	}

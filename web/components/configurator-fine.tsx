@@ -697,6 +697,34 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
       </div>
       <NumField id={`${uid}-plain-outline-w`} label="Outline width (px)" value={config.noBackgroundBadgeOutlineWidth}
         onChange={v => onUpdate('noBackgroundBadgeOutlineWidth', v)} min={0} max={6} placeholder="default" />
+      <NumField id={`${uid}-badge-density`} label="Badge density (%)" value={config.ratingBadgeDensity}
+        onChange={v => onUpdate('ratingBadgeDensity', v)} min={60} max={140} step={5}
+        hint="Padding inside each badge and the gap to its logo. Lower hugs the contents." />
+      <div className="field">
+        <label className="label" htmlFor={`${uid}-badge-border`}>Badge outline</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+          <input
+            id={`${uid}-badge-border`}
+            type="color"
+            value={config.ratingBadgeBorderColor || '#ffffff'}
+            onChange={e => onUpdate('ratingBadgeBorderColor', e.target.value)}
+            className="color-swatch"
+          />
+          <button
+            className={`opt-btn${!config.ratingBadgeBorderColor ? ' opt-btn--active' : ''}`}
+            onClick={() => onUpdate('ratingBadgeBorderColor', '')}
+            aria-pressed={!config.ratingBadgeBorderColor}
+            style={{ flex: 1 }}
+          >
+            Per style
+          </button>
+        </div>
+        <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>
+          Traces the capsule itself, so it reads as a defined chip.
+        </span>
+      </div>
+      <NumField id={`${uid}-badge-border-op`} label="Badge outline opacity (%)" value={config.ratingBadgeBorderOpacity}
+        onChange={v => onUpdate('ratingBadgeBorderOpacity', v)} min={5} max={100} step={5} placeholder="solid" />
       <div className="field">
         <label className="label" htmlFor={`${uid}-icon-outline`}>Logo outline</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
