@@ -2,6 +2,20 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.20.0](https://github.com/IbbyLabs/XRDB/compare/v3.19.0...v3.20.0) (2026-07-30)
+
+
+### Added
+
+* **artwork:** add a fallback artwork language (FR-120) ([9ce23a6](https://github.com/IbbyLabs/XRDB/commit/9ce23a6e7e1aa616a541e1c875ede8c3d09ab893))
+
+
+### Fixed
+
+* **anime:** accept a type token in front of an anime id ([6871f9a](https://github.com/IbbyLabs/XRDB/commit/6871f9aebd1c177664a1130cce8ae69012b0b6d6))
+* **anime:** strip the type token before the episode tail split ([261e594](https://github.com/IbbyLabs/XRDB/commit/261e594354e5255a0f84dd4cff2af5d3cab63136))
+* **artwork:** accept the scheme and type token in either order ([cde12d6](https://github.com/IbbyLabs/XRDB/commit/cde12d68555e87fcb96b03414ebb875c993c3c35))
+
 ## [3.19.0](https://github.com/IbbyLabs/XRDB/compare/v3.18.1...v3.19.0) (2026-07-30)
 
 
