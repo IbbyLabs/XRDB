@@ -178,6 +178,9 @@ func main() {
 	if len(reg.Names()) > 0 {
 		pipeline = compose.New(reg)
 		pipeline.SetRatingsCacheTTL(cfg.RatingsCacheTTL)
+		// Ratings are metered by the request upstream, and one source meters by the
+		// day, so what was already fetched is kept across restarts.
+		pipeline.SetRatingsCachePath(cfg.CacheDir, logger)
 		// Lets the genre badge tell anime apart from animation generally. The
 		// mapper answers from an in-memory index, so this costs no request time.
 		pipeline.SetAnimeResolver(animeMapper)
@@ -230,6 +233,7 @@ func main() {
 	defer stopSchedule()
 	server.StartFolderWriterSchedule(scheduleCtx, cfg, pipeline, store, logger)
 	server.StartCacheWarmSchedule(scheduleCtx, cfg, pipeline, renderCache, logger)
+	server.StartRatingsCacheSnapshots(scheduleCtx, pipeline, logger)
 
 	srv := &http.Server{
 		Addr:              cfg.Address,

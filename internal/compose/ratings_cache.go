@@ -2,6 +2,11 @@ package compose
 
 import (
 	"context"
+	"encoding/json"
+	"log/slog"
+	"os"
+	"path/filepath"
+	"sort"
 	"sync"
 	"time"
 
@@ -25,6 +30,11 @@ const ratingsCacheMax = 20_000
 // opening on twenty copies of a title still asks once.
 type ratingsCache struct {
 	ttl time.Duration
+	// path is where the remembered answers are kept across restarts. The render
+	// cache is already two-tier; this one was memory-only, so every restart threw
+	// away a quarter of a day of metered lookups and paid for them again. Empty
+	// disables persistence.
+	path string
 
 	mu       sync.Mutex
 	entries  map[string]ratingsEntry
@@ -32,8 +42,8 @@ type ratingsCache struct {
 }
 
 type ratingsEntry struct {
-	meta      *provider.MediaMeta
-	expiresAt time.Time
+	Meta      *provider.MediaMeta `json:"meta"`
+	ExpiresAt time.Time           `json:"expiresAt"`
 }
 
 type ratingsCall struct {
@@ -63,9 +73,9 @@ func (c *ratingsCache) do(ctx context.Context, key string, fetch func() (*provid
 	}
 
 	c.mu.Lock()
-	if e, ok := c.entries[key]; ok && time.Now().Before(e.expiresAt) {
+	if e, ok := c.entries[key]; ok && time.Now().Before(e.ExpiresAt) {
 		c.mu.Unlock()
-		return e.meta, nil
+		return e.Meta, nil
 	}
 	if call, ok := c.inflight[key]; ok {
 		c.mu.Unlock()
@@ -86,9 +96,9 @@ func (c *ratingsCache) do(ctx context.Context, key string, fetch func() (*provid
 	delete(c.inflight, key)
 	if call.err == nil && call.meta != nil && len(call.meta.Ratings) > 0 {
 		if len(c.entries) >= ratingsCacheMax {
-			c.entries = make(map[string]ratingsEntry, ratingsCacheMax)
+			c.evictLocked()
 		}
-		c.entries[key] = ratingsEntry{meta: call.meta, expiresAt: time.Now().Add(c.ttl)}
+		c.entries[key] = ratingsEntry{Meta: call.meta, ExpiresAt: time.Now().Add(c.ttl)}
 	}
 	c.mu.Unlock()
 
@@ -105,3 +115,110 @@ func (c *ratingsCache) Len() int {
 	defer c.mu.Unlock()
 	return len(c.entries)
 }
+
+// evictLocked makes room at the cap. Expired entries go first; if that is not
+// enough, the entries closest to expiry go next. Dropping the whole map instead
+// meant crossing the cap refetched every title still in use, in one burst,
+// against sources that meter by the request.
+func (c *ratingsCache) evictLocked() {
+	now := time.Now()
+	for k, e := range c.entries {
+		if now.After(e.ExpiresAt) {
+			delete(c.entries, k)
+		}
+	}
+	if len(c.entries) < ratingsCacheMax {
+		return
+	}
+	type aged struct {
+		key string
+		at  time.Time
+	}
+	all := make([]aged, 0, len(c.entries))
+	for k, e := range c.entries {
+		all = append(all, aged{k, e.ExpiresAt})
+	}
+	sort.Slice(all, func(i, j int) bool { return all[i].at.Before(all[j].at) })
+	// A tenth at a time, so the cap is not hit again on the very next write.
+	for i := 0; i < len(all)/10+1; i++ {
+		delete(c.entries, all[i].key)
+	}
+}
+
+// ratingsCacheFile is the name the snapshot takes inside the cache directory.
+const ratingsCacheFile = "ratings-cache.json"
+
+// load reads a previous snapshot, discarding anything already expired. A
+// missing or unreadable file is not an error: the cache simply starts empty.
+func (c *ratingsCache) load(logger *slog.Logger) {
+	if c == nil || c.path == "" {
+		return
+	}
+	data, err := os.ReadFile(c.path)
+	if err != nil {
+		return
+	}
+	var stored map[string]ratingsEntry
+	if err := json.Unmarshal(data, &stored); err != nil {
+		logger.Warn("Could not read the remembered ratings; starting empty",
+			"path", c.path, "error", err)
+		return
+	}
+	now := time.Now()
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for k, e := range stored {
+		if e.Meta != nil && now.Before(e.ExpiresAt) {
+			c.entries[k] = e
+		}
+	}
+	logger.Info("Restored remembered ratings from disk",
+		"kept", len(c.entries), "stored", len(stored))
+}
+
+// Save writes the unexpired answers so a restart does not refetch them. It is
+// called on a timer and at shutdown, and writes through a temporary file so a
+// kill mid-write cannot leave a corrupt snapshot behind.
+func (c *ratingsCache) Save() error {
+	if c == nil || c.path == "" {
+		return nil
+	}
+	now := time.Now()
+	c.mu.Lock()
+	live := make(map[string]ratingsEntry, len(c.entries))
+	for k, e := range c.entries {
+		if now.Before(e.ExpiresAt) {
+			live[k] = e
+		}
+	}
+	c.mu.Unlock()
+
+	data, err := json.Marshal(live)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(c.path), 0o755); err != nil {
+		return err
+	}
+	tmp := c.path + ".tmp"
+	if err := os.WriteFile(tmp, data, 0o644); err != nil {
+		return err
+	}
+	return os.Rename(tmp, c.path)
+}
+
+// SetRatingsCachePath points the ratings cache at a file and loads whatever is
+// already there.
+func (p *Pipeline) SetRatingsCachePath(dir string, logger *slog.Logger) {
+	if p.ratings == nil || dir == "" {
+		return
+	}
+	if logger == nil {
+		logger = slog.Default()
+	}
+	p.ratings.path = filepath.Join(dir, ratingsCacheFile)
+	p.ratings.load(logger)
+}
+
+// SaveRatingsCache writes the remembered answers to disk.
+func (p *Pipeline) SaveRatingsCache() error { return p.ratings.Save() }
