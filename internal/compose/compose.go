@@ -199,6 +199,14 @@ func needsAnimeFlag(cfg imageconfig.Config) bool {
 	return false
 }
 
+// fillContentRating takes an age rating from a rating source for a title the
+// artwork source had no certification for. It fills a gap, never replaces one.
+func fillContentRating(artwork *provider.MediaMeta, rating string) {
+	if rating != "" && artwork.ContentRating == "" {
+		artwork.ContentRating = rating
+	}
+}
+
 // isAnimeTitle reports whether the requested title is a known anime.
 func (p *Pipeline) isAnimeTitle(ctx context.Context, req Request) bool {
 	if p.anime == nil || !needsAnimeFlag(req.Config) {
@@ -1150,6 +1158,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 		if meta.TopRatedRank > 0 && artwork.TopRatedRank == 0 {
 			artwork.TopRatedRank = meta.TopRatedRank
 		}
+		fillContentRating(artwork, meta.ContentRating)
 		contributed := false
 		for _, r := range meta.Ratings {
 			if !seen[r.Source] {

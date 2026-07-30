@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -122,13 +123,37 @@ func (m *MDBList) fetchType(ctx context.Context, mdbType, id string) (*MediaMeta
 	}
 
 	return &MediaMeta{
-		Ratings: parseMDBListRatings(payload),
+		Ratings:       parseMDBListRatings(payload),
+		ContentRating: commonSenseAge(payload),
 	}, nil
 }
 
 type mdblistPayload struct {
-	Score   float64         `json:"score"`
-	Ratings []mdblistRating `json:"ratings"`
+	Score       float64         `json:"score"`
+	Ratings     []mdblistRating `json:"ratings"`
+	AgeRating   *int            `json:"age_rating"`
+	CommonSense *struct {
+		CommonSense *int `json:"common_sense"`
+	} `json:"commonsense_media"`
+}
+
+// commonSenseAge renders the Common Sense recommended minimum age as an age
+// rating, e.g. "9+". MDBList reports it at the top level and inside the
+// commonsense_media object; either will do.
+func commonSenseAge(p mdblistPayload) string {
+	age := 0
+	switch {
+	case p.AgeRating != nil && *p.AgeRating > 0:
+		age = *p.AgeRating
+	case p.CommonSense != nil && p.CommonSense.CommonSense != nil && *p.CommonSense.CommonSense > 0:
+		age = *p.CommonSense.CommonSense
+	default:
+		return ""
+	}
+	if age > 21 {
+		return ""
+	}
+	return strconv.Itoa(age) + "+"
 }
 
 type mdblistRating struct {

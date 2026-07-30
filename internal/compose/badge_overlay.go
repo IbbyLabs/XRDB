@@ -1647,7 +1647,7 @@ func drawAverageRating(base *image.NRGBA, ratings []provider.Rating, genres []st
 	style := aggregatePillStyle(cfg, "overall", genres, isAnime, avg, accent)
 	drawAggregatePills(base, cfg, scale, occ, false, aggregatePill{
 		label: "AVG", score: formatRatingValue(avg, cfg.RatingValueMode),
-		icon:  pillMark(cfg.AggregatePillIcon), style: style,
+		icon: pillMark(cfg.AggregatePillIcon), style: style,
 	})
 }
 

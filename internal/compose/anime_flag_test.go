@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"xrdb_rewrite/internal/imageconfig"
+	"xrdb_rewrite/internal/provider"
 )
 
 // The anime rating override is resolved from the anime flag, so asking for one
@@ -26,5 +27,21 @@ func TestAnAnimeRatingOverrideRequestsTheAnimeLookup(t *testing.T) {
 	movieOnly.RatingsMovie = []string{"imdb"}
 	if needsAnimeFlag(movieOnly) {
 		t.Error("a movie override asked for the anime lookup")
+	}
+}
+
+// A rating source can supply an age rating for a title the artwork source has
+// no certification for, but it must never overwrite one that is already there.
+func TestARatingSourceOnlyFillsAMissingAgeRating(t *testing.T) {
+	empty := &provider.MediaMeta{}
+	fillContentRating(empty, "9+")
+	if empty.ContentRating != "9+" {
+		t.Errorf("a missing age rating was not filled: %q", empty.ContentRating)
+	}
+
+	certified := &provider.MediaMeta{ContentRating: "R"}
+	fillContentRating(certified, "9+")
+	if certified.ContentRating != "R" {
+		t.Errorf("an existing certification was overwritten: %q", certified.ContentRating)
 	}
 }

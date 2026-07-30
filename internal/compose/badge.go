@@ -463,7 +463,7 @@ type badgeChrome struct {
 	// stacked draws the badge as an accent rail above a centred mark with the
 	// value beneath. The remaining fields are its vertical metrics, filled in
 	// once the strip's scale is known.
-	stacked       bool
+	stacked bool
 	// squared keeps the corners on one edge square, for the anchored strip.
 	squared       squaredCorners
 	stackRailH    int
@@ -882,16 +882,16 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 			bw = stackedBadgeWidth(d, vw, chrome.hideIcon)
 		}
 		specs = append(specs, badgeSpec{
-			value:     value,
-			valW:      vw,
-			icon:      icon,
-			colored:   ratingIconColored[r.Source],
-			iconShape: cfg.IconShape,
-			iconScale: cfg.RatingProviderIconScale[r.Source],
+			value:            value,
+			valW:             vw,
+			icon:             icon,
+			colored:          ratingIconColored[r.Source],
+			iconShape:        cfg.IconShape,
+			iconScale:        cfg.RatingProviderIconScale[r.Source],
 			iconOutline:      iconOutlineColor(cfg),
 			iconOutlineWidth: cfg.IconOutlineWidth,
-			w:         bw,
-			accent:    resolveProviderAccent(cfg, r.Source),
+			w:                bw,
+			accent:           resolveProviderAccent(cfg, r.Source),
 		})
 	}
 
