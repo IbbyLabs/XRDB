@@ -119,6 +119,9 @@ func (f *Fanart) FetchArtwork(ctx context.Context, mediaType, id string, opts Ar
 	// lookups read MediaMeta.Title, and this one is not an authority on it.
 	meta := &MediaMeta{}
 	meta.PosterURL = pickFanartURL(raw, lang, skip, "movieposter", "tvposter")
+	// pickFanartURL falls back through language buckets, so a "00" request can
+	// still come back as English art with the title on it. Report what arrived.
+	meta.PosterTextless = fanartURLIsLang(raw, meta.PosterURL, "00", "movieposter", "tvposter")
 	meta.BackdropURL = pickFanartURL(raw, lang, skip, "moviebackground", "showbackground")
 	meta.LogoURL = pickFanartURL(raw, lang, 0, "hdmovielogo", "hdtvlogo", "movielogo", "clearlogo")
 
@@ -210,6 +213,32 @@ func bestFanartURL(raw map[string]json.RawMessage, lang string, keys ...string) 
 // pickFanartURL picks a URL from the given image type keys, preferring the
 // requested language, then English, then any. skip selects a later entry in
 // the preferred bucket (for "alternative" art) when one exists.
+// fanartURLIsLang reports whether url is tagged with lang in the record. Fanart
+// tags language-neutral art "00", which is how textless art is identified. An
+// unknown url counts as not matching, so the logo overlay stays off art nothing
+// has confirmed is bare.
+func fanartURLIsLang(raw map[string]json.RawMessage, url, lang string, keys ...string) bool {
+	if url == "" {
+		return false
+	}
+	for _, key := range keys {
+		data, ok := raw[key]
+		if !ok {
+			continue
+		}
+		var images []fanartImage
+		if err := json.Unmarshal(data, &images); err != nil {
+			continue
+		}
+		for _, img := range images {
+			if img.URL == url {
+				return img.Lang == lang
+			}
+		}
+	}
+	return false
+}
+
 func pickFanartURL(raw map[string]json.RawMessage, lang string, skip int, keys ...string) string {
 	for _, key := range keys {
 		data, ok := raw[key]

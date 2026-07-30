@@ -34,7 +34,13 @@ type MediaMeta struct {
 	IMDbID string
 	// TMDBID is TMDB's own id for the title, when the source knows it. Sources
 	// matched through a third-party id index are checked against it.
-	TMDBID         string
+	TMDBID string
+	// PosterTextless reports that the poster returned is language-neutral, with
+	// no title baked into the art. A "clean" request that no source could honour
+	// comes back as ordinary art, and compositing the title logo onto that
+	// prints the title twice — so the overlay asks this rather than trusting
+	// what was requested. False whenever a source cannot tell.
+	PosterTextless bool
 	ContentRating  string          // e.g. "TV-MA", "R", "PG-13" (may be empty)
 	ReleaseStatus  string          // "digital" | "cinemas" (may be empty; movies only)
 	Genres         []string        // e.g. ["Action","Drama"] (may be empty)

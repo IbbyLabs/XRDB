@@ -2,7 +2,7 @@
   "artifactType": "xrdb-product-context",
   "schemaVersion": "1",
   "xrdbTag": "3.17.0",
-  "generatedAt": "2026-07-30T02:54:11Z",
+  "generatedAt": "2026-07-30T03:14:41Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -61,6 +61,7 @@
         "Position, scale, style and a per-overlay cap are configurable, and a hidden switch turns a row off without losing the selection.",
         "That includes the Where to watch chips: `providersPos`, `providerBadgeScale` and `providerBadgeOffsetX`/`Y` size and place them like any other badge. Left alone they stay a wide strip centred along the bottom edge. Any older answer saying the chips cannot be resized or moved, and that only country and tile colour are configurable, is out of date.",
         "Artwork can come from TMDB, Fanart, Cinemeta or the anime sources, with a fallback order so a surface missing from one is filled from another.",
+        "Clean artwork is the textless poster with the title logo drawn back on. When no source has a textless poster for a title, the logo is no longer drawn, because compositing it onto art that already carries its title printed the title twice. Any older answer saying to use textless as the workaround for a doubled title is out of date; clean now falls back to the art as-is.",
         "Artwork language can be set per render, including `original` for the title's own language.",
         "The title logo drawn on clean posters and on a backdrop-as-poster takes `logoWidth`, `logoHeight` and `logoPos` as percentages, plus `logoAnchor: bottom`. Any older answer saying its size and position are fixed is out of date. `logoPos` is where the logo's centre sits, so resizing does not also move it; the bottom anchor pins the lower edge instead so a larger logo grows upward. Aspect ratio is always preserved — the logo fits inside the box and never stretches, so no separate control is needed for that. These are per surface, like every other config key."
       ]

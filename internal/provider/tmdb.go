@@ -470,6 +470,7 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 	posterPath := selectImagePath(result.Images.Posters, result.PosterPath, lang, opts)
 	if posterPath != "" {
 		meta.PosterURL = tmdbImageBase + posterRes + posterPath
+		meta.PosterTextless = pathIsTextless(result.Images.Posters, posterPath)
 	}
 	backdropPath := selectImagePath(result.Images.Backdrops, result.BackdropPath, lang, opts)
 	if backdropPath != "" {
@@ -702,6 +703,23 @@ func selectImagePath(images []tmdbImage, defaultPath, lang string, opts ArtworkO
 		return defaultPath
 	}
 	return bestBy(func(tmdbImage) bool { return true })
+}
+
+// pathIsTextless reports whether path names one of TMDB's language-neutral
+// candidates. TMDB tags art carrying a title with its language, so an absent or
+// empty iso_639_1 is the signal. An unknown path counts as not textless, which
+// keeps the logo overlay off art nothing has confirmed is bare.
+func pathIsTextless(images []tmdbImage, path string) bool {
+	if path == "" {
+		return false
+	}
+	for _, img := range images {
+		if img.FilePath != path {
+			continue
+		}
+		return img.Iso639 == nil || strings.TrimSpace(*img.Iso639) == ""
+	}
+	return false
 }
 
 // TitleResult is one search/trending hit.

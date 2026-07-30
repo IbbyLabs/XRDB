@@ -625,8 +625,17 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// on top — that logo overlay is exactly what distinguishes it from plain
 	// "textless", which leaves the art bare. (Not on the logo surface, whose
 	// base image is already the wordmark.)
-	wantsLogoOverlay := req.Config.BackdropLogo ||
-		(req.Config.TextPreference == imageconfig.TextClean && req.MediaType != "logo") ||
+	// A "clean" request no source could honour comes back as ordinary art with
+	// the title baked in. Compositing the logo onto that prints the title twice,
+	// so the overlay asks what actually arrived rather than what was asked for.
+	// Only art taken from the poster can carry a baked-in title; a backdrop is
+	// language-neutral by nature.
+	cleanOverlay := req.Config.TextPreference == imageconfig.TextClean && req.MediaType != "logo"
+	if cleanOverlay && meta.PosterURL != "" &&
+		selectSurfaceURL(meta, req.MediaType, req.Config) == meta.PosterURL {
+		cleanOverlay = meta.PosterTextless
+	}
+	wantsLogoOverlay := req.Config.BackdropLogo || cleanOverlay ||
 		(req.MediaType == "poster" && req.Config.BackdropAsPoster && meta.BackdropURL != "")
 	timings.mark("overlays")
 	if wantsLogoOverlay && meta.LogoURL != "" {

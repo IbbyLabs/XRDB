@@ -1012,6 +1012,9 @@ func TestCleanTextPreferenceAppliesLogoOverlay(t *testing.T) {
 		Meta: &provider.MediaMeta{
 			PosterURL: "http://fake/poster.jpg",
 			LogoURL:   "http://fake/logo.png",
+			// The source honoured the request, so the art is bare and the logo
+			// is what puts the title back.
+			PosterTextless: true,
 		},
 	}
 	p := &Pipeline{providers: testRegistry(stub), fetcher: fetcher}
