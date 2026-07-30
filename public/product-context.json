@@ -2,7 +2,7 @@
   "artifactType": "xrdb-product-context",
   "schemaVersion": "1",
   "xrdbTag": "3.17.1",
-  "generatedAt": "2026-07-30T03:14:41Z",
+  "generatedAt": "2026-07-30T04:41:37Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -63,6 +63,7 @@
         "Artwork can come from TMDB, Fanart, Cinemeta or the anime sources, with a fallback order so a surface missing from one is filled from another.",
         "Clean artwork is the textless poster with the title logo drawn back on. When no source has a textless poster for a title, the logo is no longer drawn, because compositing it onto art that already carries its title printed the title twice. Any older answer saying to use textless as the workaround for a doubled title is out of date; clean now falls back to the art as-is.",
         "Artwork language can be set per render, including `original` for the title's own language.",
+        "Under `original`, the logo now matches the title's own language on English-original titles too. It previously took the highest-voted logo in any language for those, so an English show could render a Portuguese or Chinese wordmark. A language-neutral logo is preferred over one tagged for a language nobody asked for.",
         "The title logo drawn on clean posters and on a backdrop-as-poster takes `logoWidth`, `logoHeight` and `logoPos` as percentages, plus `logoAnchor: bottom`. Any older answer saying its size and position are fixed is out of date. `logoPos` is where the logo's centre sits, so resizing does not also move it; the bottom anchor pins the lower edge instead so a larger logo grows upward. Aspect ratio is always preserved — the logo fits inside the box and never stretches, so no separate control is needed for that. These are per surface, like every other config key."
       ]
     },

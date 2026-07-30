@@ -702,6 +702,23 @@ func selectImagePath(images []tmdbImage, defaultPath, lang string, opts ArtworkO
 	if defaultPath != "" {
 		return defaultPath
 	}
+
+	// No canonical pick to fall back on — logos have none. The pool is only
+	// pre-filtered to the requested language when one was sent to the API, and
+	// the original-language request cannot send one, so it comes back in every
+	// language. Picking the top vote out of that lands a Portuguese wordmark on
+	// an English title; the language still has to be honoured here, including
+	// "en", which the guard above deliberately skips.
+	if lang != "" {
+		if p := bestBy(inLang); p != "" {
+			return p
+		}
+	}
+	// A language-neutral wordmark reads correctly anywhere, so it beats art
+	// tagged for a language nobody asked for.
+	if p := bestBy(textless); p != "" {
+		return p
+	}
 	return bestBy(func(tmdbImage) bool { return true })
 }
 
