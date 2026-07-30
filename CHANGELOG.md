@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.25.0](https://github.com/IbbyLabs/XRDB/compare/v3.24.0...v3.25.0) (2026-07-30)
+
+
+### Added
+
+* **artwork:** pick the art provider per kind of title (FR-18) ([db28c59](https://github.com/IbbyLabs/XRDB/commit/db28c5913de4279858a7b84f668349aab7b9fe87))
+
 ## [3.24.0](https://github.com/IbbyLabs/XRDB/compare/v3.23.0...v3.24.0) (2026-07-30)
 
 
