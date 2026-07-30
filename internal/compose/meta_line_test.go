@@ -81,3 +81,39 @@ func TestMetaLineScrimReachesTheBottomEdge(t *testing.T) {
 		t.Errorf("bottom row (%d) is not darker than the top (%d); the scrim did not reach the edge", bottom.R, top.R)
 	}
 }
+
+// The rating strip owns the bottom band, so the info line has to stack above it
+// rather than print through it.
+func TestMetaLineClearsAReservedBottomBand(t *testing.T) {
+	ensureFaces()
+	cfg := imageconfig.Default()
+	cfg.MetaLine = true
+
+	meta := provider.MediaMeta{Year: 1994, ContentRating: "R", Genres: []string{"Thriller"}}
+
+	free := image.NewNRGBA(image.Rect(0, 0, 340, 500))
+	drawMetaLine(free, meta, cfg, 1.0, &occupancy{})
+
+	occupied := &occupancy{}
+	band := image.Rect(0, 420, 340, 500)
+	occupied.reserve(band)
+	blocked := image.NewNRGBA(image.Rect(0, 0, 340, 500))
+	drawMetaLine(blocked, meta, cfg, 1.0, occupied)
+
+	inkRow := func(img *image.NRGBA) int {
+		for y := img.Bounds().Max.Y - 1; y >= 0; y-- {
+			for x := 0; x < img.Bounds().Max.X; x++ {
+				if img.NRGBAAt(x, y).A > 0 {
+					return y
+				}
+			}
+		}
+		return -1
+	}
+	if got := inkRow(blocked); got >= band.Min.Y {
+		t.Errorf("the info line drew into the reserved band: lowest ink at y=%d, band starts at %d", got, band.Min.Y)
+	}
+	if inkRow(free) <= inkRow(blocked) {
+		t.Error("the reserved band did not move the info line up")
+	}
+}

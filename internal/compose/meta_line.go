@@ -76,14 +76,34 @@ func drawMetaLine(base *image.NRGBA, meta provider.MediaMeta, cfg imageconfig.Co
 
 	b := base.Bounds()
 	edgeY := px(16)
-	y := b.Max.Y - edgeY - lineH
 	x := b.Min.X + (b.Dx()-lineW)/2
+	line := image.Rect(x, b.Max.Y-edgeY-lineH, x+lineW, b.Max.Y-edgeY)
+	if occ != nil {
+		// The rating strip owns the bottom band on most layouts, so the line
+		// stacks above it instead of printing through it.
+		line = occ.resolve(line, false, px(10))
+	}
+	y := line.Min.Y
 
-	// The scrim is what makes it legible on bright art. It fades upward from the
-	// bottom edge so it reads as part of the poster rather than a bar.
+	// The scrim is what makes it legible on bright art. Against the bottom edge
+	// it fades upward; pushed clear of it, it fades out on both sides so it
+	// reads as a lens around the line rather than a bar across the poster.
+	bottomAnchored := line.Max.Y+edgeY >= b.Max.Y
 	scrimTop := maxInt(b.Min.Y, y-px(28))
-	for py := scrimTop; py < b.Max.Y; py++ {
-		frac := float64(py-scrimTop) / float64(maxInt(1, b.Max.Y-scrimTop))
+	scrimBottom := b.Max.Y
+	if !bottomAnchored && line.Max.Y+px(24) < b.Max.Y {
+		scrimBottom = line.Max.Y + px(24)
+	}
+	for py := scrimTop; py < scrimBottom; py++ {
+		var frac float64
+		switch {
+		case bottomAnchored:
+			frac = float64(py-scrimTop) / float64(maxInt(1, b.Max.Y-scrimTop))
+		case py < line.Max.Y:
+			frac = float64(py-scrimTop) / float64(maxInt(1, line.Max.Y-scrimTop))
+		default:
+			frac = 1 - float64(py-line.Max.Y)/float64(maxInt(1, scrimBottom-line.Max.Y))
+		}
 		alpha := uint8(frac * 190)
 		for pxx := b.Min.X; pxx < b.Max.X; pxx++ {
 			base.SetNRGBA(pxx, py, blendScrim(base.NRGBAAt(pxx, py), alpha))
@@ -103,7 +123,7 @@ func drawMetaLine(base *image.NRGBA, meta provider.MediaMeta, cfg imageconfig.Co
 	}
 
 	if occ != nil {
-		occ.reserve(image.Rect(b.Min.X, scrimTop, b.Max.X, b.Max.Y))
+		occ.reserve(image.Rect(b.Min.X, scrimTop, b.Max.X, scrimBottom))
 	}
 }
 
