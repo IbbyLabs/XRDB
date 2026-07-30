@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.28.0](https://github.com/IbbyLabs/XRDB/compare/v3.27.0...v3.28.0) (2026-07-30)
+
+
+### Added
+
+* **artwork:** allow Kitsu as an artwork source for anime (FR-63) ([e819ded](https://github.com/IbbyLabs/XRDB/commit/e819ded2c8cc6b1ee4083d3c25e0e9020089c492))
+
 ## [3.27.0](https://github.com/IbbyLabs/XRDB/compare/v3.26.0...v3.27.0) (2026-07-30)
 
 
