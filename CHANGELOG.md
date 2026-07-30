@@ -2,6 +2,15 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.29.3](https://github.com/IbbyLabs/XRDB/compare/v3.29.2...v3.29.3) (2026-07-30)
+
+
+### Fixed
+
+* **health:** stop counting non-anime titles as source failures ([7989a8c](https://github.com/IbbyLabs/XRDB/commit/7989a8c1262dc9651740919f9fed7635309013b8))
+* **ratings:** don't let an owner key's failure set the shared cooldown ([e1f8f26](https://github.com/IbbyLabs/XRDB/commit/e1f8f26ea902f92197f140360d7c559595effa4c))
+* **ratings:** let an owner key bypass the shared key's cooldown ([151d4c9](https://github.com/IbbyLabs/XRDB/commit/151d4c9268b82486162fbbb66d060f79f4afefc2))
+
 ## [3.29.2](https://github.com/IbbyLabs/XRDB/compare/v3.29.1...v3.29.2) (2026-07-30)
 
 
