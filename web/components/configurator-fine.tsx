@@ -717,7 +717,7 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
           </button>
         </div>
         <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>
-          Traces each rating provider's logo, for artwork it would blend into.
+          Traces each rating logo, for artwork it would blend into.
         </span>
       </div>
       <NumField id={`${uid}-icon-outline-w`} label="Logo outline width (px)" value={config.iconOutlineWidth}
