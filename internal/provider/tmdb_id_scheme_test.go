@@ -25,6 +25,12 @@ func TestBareTMDBIDResolvesAsAMovieAndTheSchemeCarriesTheType(t *testing.T) {
 		{"tmdb:series:1396", "1396", "tv"},
 		{"tmdb:tv:1396", "1396", "tv"},
 		{"series:1396", "1396", "tv"},
+		// AIOMetadata's {type}:{id} produces the tokens in this order when {id}
+		// already carries the scheme. Stripping them in a fixed order left the
+		// scheme embedded and the id 404d as a literal.
+		{"series:tmdb:1396", "1396", "tv"},
+		{"movie:tmdb:1396", "1396", "movie"},
+		{"tmdb:series:tmdb:1396", "1396", "tv"},
 	} {
 		gotID, gotType, err := tm.resolveID(context.Background(), "", tc.id)
 		if err != nil {

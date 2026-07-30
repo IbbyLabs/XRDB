@@ -120,14 +120,26 @@ func (t *TMDB) resolveID(ctx context.Context, mediaType, id string) (string, str
 	// The scheme and content-type token come off first. An id can carry an
 	// external id after the token ("series:tt0903747"), and testing for one
 	// before stripping left it to be read as a TMDB number.
+	// The scheme and the content-type token arrive in either order —
+	// "tmdb:series:1396" from one caller, "series:tmdb:1396" from another — so
+	// both are stripped until neither is left. Taking them in a fixed order left
+	// whichever came second embedded in the id, which then 404s as a literal.
 	rest := id
-	if r, ok := stripPrefix(rest, "tmdb:"); ok {
-		rest = r
-	}
-	for _, tok := range []string{"movie:", "series:", "tv:"} {
-		if r, ok := stripPrefix(rest, tok); ok {
-			mediaType = strings.TrimSuffix(tok, ":")
+	for {
+		if r, ok := stripPrefix(rest, "tmdb:"); ok {
 			rest = r
+			continue
+		}
+		matched := false
+		for _, tok := range []string{"movie:", "series:", "tv:"} {
+			if r, ok := stripPrefix(rest, tok); ok {
+				mediaType = strings.TrimSuffix(tok, ":")
+				rest = r
+				matched = true
+				break
+			}
+		}
+		if !matched {
 			break
 		}
 	}
