@@ -858,6 +858,32 @@ export function ReleaseStatusFine({ uid, config, onUpdate }: GroupProps) {
   );
 }
 
+/**
+ * The title logo drawn over clean posters and backdrops. Its box and placement
+ * were three constants in the renderer, so nothing a config said could reach
+ * them. Position is the logo's centre, which keeps it still while the size
+ * slider moves.
+ */
+export function TitleLogoFine({ uid, config, onUpdate }: GroupProps) {
+  return (
+    <FineGroup label="Title logo">
+      <NumField id={`${uid}-logo-width`} label="Width (%)" value={config.logoWidth}
+        onChange={v => onUpdate('logoWidth', v)} min={10} max={100} step={5}
+        hint="Share of the artwork width the logo may fill. Blank keeps the default." />
+      <NumField id={`${uid}-logo-height`} label="Height (%)" value={config.logoHeight}
+        onChange={v => onUpdate('logoHeight', v)} min={5} max={60} step={5}
+        hint="Its aspect ratio is kept, so the logo fits inside the box and never stretches." />
+      <NumField id={`${uid}-logo-pos`} label="Position (%)" value={config.logoPos}
+        onChange={v => onUpdate('logoPos', v)} min={1} max={100} step={1}
+        hint="How far down the artwork the logo sits. Blank keeps the default." />
+      <ToggleField id={`${uid}-logo-anchor`} label="Anchor to bottom"
+        checked={config.logoAnchor === 'bottom'}
+        onChange={v => onUpdate('logoAnchor', v ? 'bottom' : '')}
+        hint="Pin the lower edge at that position, so a bigger logo grows upward instead of both ways." />
+    </FineGroup>
+  );
+}
+
 export function ProvidersFine({ uid, config, onUpdate }: GroupProps) {
   return (
     <FineGroup label="Where to watch chips">

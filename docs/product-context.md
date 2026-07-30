@@ -51,6 +51,7 @@ ignored, so this header text costs nothing.
 - That includes the Where to watch chips: `providersPos`, `providerBadgeScale` and `providerBadgeOffsetX`/`Y` size and place them like any other badge. Left alone they stay a wide strip centred along the bottom edge. Any older answer saying the chips cannot be resized or moved, and that only country and tile colour are configurable, is out of date.
 - Artwork can come from TMDB, Fanart, Cinemeta or the anime sources, with a fallback order so a surface missing from one is filled from another.
 - Artwork language can be set per render, including `original` for the title's own language.
+- The title logo drawn on clean posters and on a backdrop-as-poster takes `logoWidth`, `logoHeight` and `logoPos` as percentages, plus `logoAnchor: bottom`. Any older answer saying its size and position are fixed is out of date. `logoPos` is where the logo's centre sits, so resizing does not also move it; the bottom anchor pins the lower edge instead so a larger logo grows upward. Aspect ratio is always preserved — the logo fits inside the box and never stretches, so no separate control is needed for that. These are per surface, like every other config key.
 
 ## Migrating from v2
 

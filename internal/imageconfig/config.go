@@ -150,9 +150,17 @@ type Config struct {
 	TrendingStyle                 TrendingStyle `json:"trendingStyle"`
 	BackdropAsPoster              bool          `json:"backdropAsPoster,omitempty"`
 	BackdropLogo                  bool          `json:"backdropLogo,omitempty"`
-	RatingRing                    bool          `json:"ratingRing,omitempty"`
-	RatingRingPos                 string        `json:"ratingRingPos,omitempty"`   // "tl" | "tr" | "bl" | "br"
-	RatingRingColor               string        `json:"ratingRingColor,omitempty"` // "" = auto (green/amber/red), else "#RRGGBB"
+	// The title-logo overlay's box and placement, as percentages. Zero keeps the
+	// built-in look. LogoPos is where the logo's centre sits down the usable
+	// height, so growing the logo does not move it; LogoAnchor "bottom" pins the
+	// lower edge instead, which is what a wide logo near the bottom needs.
+	LogoWidth       int    `json:"logoWidth,omitempty"`  // % of width;  0 = 65
+	LogoHeight      int    `json:"logoHeight,omitempty"` // % of height; 0 = 20
+	LogoPos         int    `json:"logoPos,omitempty"`    // % down the usable height; 0 = 68
+	LogoAnchor      string `json:"logoAnchor,omitempty"` // "" = centre on LogoPos | "bottom"
+	RatingRing      bool   `json:"ratingRing,omitempty"`
+	RatingRingPos   string `json:"ratingRingPos,omitempty"`   // "tl" | "tr" | "bl" | "br"
+	RatingRingColor string `json:"ratingRingColor,omitempty"` // "" = auto (green/amber/red), else "#RRGGBB"
 
 	OutputFormat  OutputFormat `json:"outputFormat,omitempty"`
 	OutputQuality int          `json:"outputQuality,omitempty"` // JPEG quality 40-100; 0 = default
@@ -539,6 +547,10 @@ type raw struct {
 	TrendingStyle                 *string   `json:"trendingStyle"`
 	BackdropAsPoster              *bool     `json:"backdropAsPoster"`
 	BackdropLogo                  *bool     `json:"backdropLogo"`
+	LogoWidth                     *int      `json:"logoWidth"`
+	LogoHeight                    *int      `json:"logoHeight"`
+	LogoPos                       *int      `json:"logoPos"`
+	LogoAnchor                    *string   `json:"logoAnchor"`
 	RatingRing                    *bool     `json:"ratingRing"`
 	RatingRingPos                 *string   `json:"ratingRingPos"`
 	RatingRingColor               *string   `json:"ratingRingColor"`
@@ -917,6 +929,22 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.BackdropLogo != nil {
 		cfg.BackdropLogo = *r.BackdropLogo
+	}
+	if r.LogoWidth != nil && *r.LogoWidth != 0 {
+		cfg.LogoWidth = clampInt(*r.LogoWidth, 10, 100)
+	}
+	if r.LogoHeight != nil && *r.LogoHeight != 0 {
+		cfg.LogoHeight = clampInt(*r.LogoHeight, 5, 60)
+	}
+	if r.LogoPos != nil && *r.LogoPos != 0 {
+		cfg.LogoPos = clampInt(*r.LogoPos, 1, 100)
+	}
+	if r.LogoAnchor != nil {
+		if v := strings.ToLower(strings.TrimSpace(*r.LogoAnchor)); v == "bottom" || v == "center" || v == "centre" {
+			if v == "bottom" {
+				cfg.LogoAnchor = "bottom"
+			}
+		}
 	}
 	if r.RatingRing != nil {
 		cfg.RatingRing = *r.RatingRing
@@ -1583,6 +1611,10 @@ func CacheKey(cfg Config) string {
 		TrendingStyle                 TrendingStyle  `json:"trendingStyle"`
 		BackdropAsPoster              bool           `json:"backdropAsPoster"`
 		BackdropLogo                  bool           `json:"backdropLogo"`
+		LogoWidth                     int            `json:"logoWidth"`
+		LogoHeight                    int            `json:"logoHeight"`
+		LogoPos                       int            `json:"logoPos"`
+		LogoAnchor                    string         `json:"logoAnchor"`
 		RatingRing                    bool           `json:"ratingRing"`
 		RatingRingPos                 string         `json:"ratingRingPos"`
 		RatingRingColor               string         `json:"ratingRingColor"`
@@ -1640,6 +1672,10 @@ func CacheKey(cfg Config) string {
 		TrendingStyle:                 cfg.TrendingStyle,
 		BackdropAsPoster:              cfg.BackdropAsPoster,
 		BackdropLogo:                  cfg.BackdropLogo,
+		LogoWidth:                     cfg.LogoWidth,
+		LogoHeight:                    cfg.LogoHeight,
+		LogoPos:                       cfg.LogoPos,
+		LogoAnchor:                    cfg.LogoAnchor,
 		RatingRing:                    cfg.RatingRing,
 		RatingRingPos:                 cfg.RatingRingPos,
 		RatingRingColor:               cfg.RatingRingColor,

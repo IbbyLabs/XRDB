@@ -362,6 +362,10 @@ export interface ConfigState {
   trending: boolean;
   trendingStyle: string;
   backdropAsPoster: boolean;
+  logoWidth: number;
+  logoHeight: number;
+  logoPos: number;
+  logoAnchor: string; // \'\' = centre on the position | \'bottom\'
   ratingRing: boolean;
   ratingRingPos: string;
   ratingRingColor: string;
@@ -482,6 +486,10 @@ export const DEFAULT_CONFIG: ConfigState = {
   trending: false,
   trendingStyle: 'arrow-word',
   backdropAsPoster: false,
+  logoWidth: 0,
+  logoHeight: 0,
+  logoPos: 0,
+  logoAnchor: '',
   ratingRing: false,
   ratingRingPos: 'br',
   ratingRingColor: '',

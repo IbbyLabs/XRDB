@@ -7,7 +7,7 @@ import {
   AGE_POS_OPTIONS, SIX_POS_OPTIONS, GENRE_POS_OPTIONS, QUALITY_BADGE_OPTIONS, TREND_STYLE_OPTIONS,
   suppressedQualityBadges,
 } from './configurator-types';
-import { QualityFine, GenreFine, AggregateFine, AgeFine, ProvidersFine, ReleaseStatusFine, TrendingFine } from './configurator-fine';
+import { QualityFine, GenreFine, AggregateFine, AgeFine, ProvidersFine, TitleLogoFine, ReleaseStatusFine, TrendingFine } from './configurator-fine';
 
 // An unset position falls back to the top right, matching the renderer.
 function qualityPosLabel(pos: string): string {
@@ -253,6 +253,15 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
             checked={config.backdropAsPoster}
             onChange={() => onUpdate('backdropAsPoster', !config.backdropAsPoster)}
           />
+        )}
+
+        {/* The title logo is drawn on a backdrop-as-poster and on clean artwork,
+            so its controls appear on exactly the surfaces that carry one. */}
+        {fine && (
+          (mediaType === 'poster' && (config.backdropAsPoster || config.textPreference === 'clean'))
+          || (mediaType === 'backdrop' && config.textPreference === 'clean')
+        ) && (
+          <TitleLogoFine uid={uid} config={config} onUpdate={onUpdate} />
         )}
 
         {mediaType === 'logo' && (

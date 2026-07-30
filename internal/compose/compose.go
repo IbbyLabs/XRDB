@@ -631,7 +631,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	timings.mark("overlays")
 	if wantsLogoOverlay && meta.LogoURL != "" {
 		if logoBytes, err := p.fetcher.Fetch(ctx, meta.LogoURL); err == nil {
-			drawBackdropLogoOverlay(composed, logoBytes, ratingsH)
+			drawBackdropLogoOverlay(composed, logoBytes, ratingsH, logoOptsFromConfig(req.Config))
 		}
 		timings.mark("logo_overlay")
 	}

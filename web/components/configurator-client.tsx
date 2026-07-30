@@ -186,6 +186,10 @@ export function ConfiguratorClient() {
       aggregateBarPos: cfg.aggregateBarPos, trending: cfg.trending,
       trendingStyle: cfg.trendingStyle,
       backdropAsPoster: cfg.backdropAsPoster,
+      logoWidth: cfg.logoWidth,
+      logoHeight: cfg.logoHeight,
+      logoPos: cfg.logoPos,
+      logoAnchor: cfg.logoAnchor,
       ratingRing: cfg.ratingRing,
       ratingRingPos: cfg.ratingRingPos, ratingRingColor: cfg.ratingRingColor,
       // Advanced styling. Zero-valued numbers mean "default" and are harmless to

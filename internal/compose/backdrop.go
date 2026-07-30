@@ -6,6 +6,8 @@ import (
 	"image/draw"
 
 	xdraw "golang.org/x/image/draw"
+
+	"xrdb_rewrite/internal/imageconfig"
 )
 
 // saliencyCropOffset returns the (x, y) pixel offset into img that captures
@@ -171,7 +173,33 @@ func resizeContain(src image.Image, maxW, maxH int) image.Image {
 // strip + provider chips). A semi-transparent gradient scrim is drawn behind
 // the logo so it remains legible over bright backdrops.
 // ratingsH is the pixel height consumed by the ratings strip at the bottom.
-func drawBackdropLogoOverlay(base *image.NRGBA, logoData []byte, ratingsH int) {
+// logoOverlayOpts carries the title-logo box and placement. Its zero value is
+// the built-in look, so an unset config renders exactly as before.
+type logoOverlayOpts struct {
+	widthPercent  int    // of base width;  0 = 65
+	heightPercent int    // of base height; 0 = 20
+	posPercent    int    // down the usable height; 0 = 68
+	anchor        string // "" = centre on pos | "bottom" = pin the lower edge
+}
+
+func logoOptsFromConfig(cfg imageconfig.Config) logoOverlayOpts {
+	return logoOverlayOpts{
+		widthPercent:  cfg.LogoWidth,
+		heightPercent: cfg.LogoHeight,
+		posPercent:    cfg.LogoPos,
+		anchor:        cfg.LogoAnchor,
+	}
+}
+
+// pct returns the configured percentage of total, or fallback when unset.
+func pct(total, percent, fallback int) int {
+	if percent <= 0 {
+		percent = fallback
+	}
+	return int(float64(total) * float64(percent) / 100)
+}
+
+func drawBackdropLogoOverlay(base *image.NRGBA, logoData []byte, ratingsH int, opts logoOverlayOpts) {
 	if len(logoData) == 0 {
 		return
 	}
@@ -183,8 +211,8 @@ func drawBackdropLogoOverlay(base *image.NRGBA, logoData []byte, ratingsH int) {
 	bounds := base.Bounds()
 	baseW, baseH := bounds.Dx(), bounds.Dy()
 
-	maxLogoW := int(float64(baseW) * 0.65)
-	maxLogoH := int(float64(baseH) * 0.20)
+	maxLogoW := pct(baseW, opts.widthPercent, 65)
+	maxLogoH := pct(baseH, opts.heightPercent, 20)
 
 	lB := logoImg.Bounds()
 	lW, lH := lB.Dx(), lB.Dy()
@@ -218,8 +246,14 @@ func drawBackdropLogoOverlay(base *image.NRGBA, logoData []byte, ratingsH int) {
 		usableH = dstH
 	}
 
-	// Centre the logo in the lower-third of the usable area (≈68% from top).
-	logoTopY := int(float64(usableH)*0.68) - dstH/2
+	// The position is where the logo's centre sits, so resizing it does not also
+	// move it. A bottom anchor pins the lower edge there instead, which is what
+	// keeps a wide logo clear of the bottom edge as it grows.
+	mark := pct(usableH, opts.posPercent, 68)
+	logoTopY := mark - dstH/2
+	if opts.anchor == "bottom" {
+		logoTopY = mark - dstH
+	}
 	if logoTopY < 0 {
 		logoTopY = 0
 	}
