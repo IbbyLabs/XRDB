@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.18.1](https://github.com/IbbyLabs/XRDB/compare/v3.18.0...v3.18.1) (2026-07-30)
+
+
+### Fixed
+
+* **configurator:** keep the content type when IMDb lookup finds nothing ([59c446c](https://github.com/IbbyLabs/XRDB/commit/59c446ce9a0fda99e41987e3e89f8215cb15c384))
+
 ## [3.18.0](https://github.com/IbbyLabs/XRDB/compare/v3.17.2...v3.18.0) (2026-07-30)
 
 
