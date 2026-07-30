@@ -96,11 +96,30 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		// profileLoaded tracks whether we loaded a real profile (affects cache key).
 		imgCfg := imageconfig.Default()
 		profileLoaded := false
+		// A change to the owner's provider keys changes the render (a working key
+		// makes a source available that was not), so it has to move the cache key.
+		// The config bytes do not carry the keys, so a fingerprint of them joins
+		// the key explicitly. Empty when no owner keys apply.
+		ownerKeyFP := ""
 		if configParam != "default" {
 			if len(configParam) > 0 && configParam[0] == '{' {
 				// Inline JSON config — used by the live preview without a saved profile.
 				imgCfg = imageconfig.ParseSurface(json.RawMessage(configParam), mediaType)
 				profileLoaded = true
+				// The preview renders unsaved edits as inline JSON, so it carries
+				// no profile to attach provider keys from. When editing a saved
+				// profile the configurator names it in ?pk= purely so its stored
+				// keys apply here, and the preview reflects what the owner set.
+				// Gated to the same-origin preview: borrowing another profile's
+				// keys for an arbitrary config would spend its metered allowance.
+				if store != nil && sameOriginRender(r) {
+					if pk := queryValue(raw, "pk", ""); pk != "" {
+						if p, err := store.Resolve(pk); err == nil && len(p.ProviderKeys) > 0 {
+							r = r.WithContext(provider.WithKeys(r.Context(), p.ProviderKeys))
+							ownerKeyFP = provider.KeysFingerprint(p.ProviderKeys)
+						}
+					}
+				}
 			} else if store != nil {
 				// configParam may be a profile ID or a memorable alias.
 				// Rendering is intentionally public: artwork URLs are pasted
@@ -116,6 +135,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 					// the providers built at startup are reused as they are.
 					if len(p.ProviderKeys) > 0 {
 						r = r.WithContext(provider.WithKeys(r.Context(), p.ProviderKeys))
+						ownerKeyFP = provider.KeysFingerprint(p.ProviderKeys)
 					}
 				}
 			}
@@ -134,6 +154,9 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		if !profileLoaded {
 			h := sha256.Sum256([]byte(configParam))
 			cfgKeyInput = cfgKeyInput + ":" + hex.EncodeToString(h[:8])
+		}
+		if ownerKeyFP != "" {
+			cfgKeyInput = cfgKeyInput + ":pk=" + ownerKeyFP
 		}
 		// Hash the cache-buster so unbounded user input can't inflate the key.
 		if cb := queryValue(raw, "cb", ""); cb != "" {

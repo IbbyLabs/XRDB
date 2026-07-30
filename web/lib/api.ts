@@ -86,12 +86,22 @@ export async function fetchHealth(): Promise<HealthResponse> {
   return res.json() as Promise<HealthResponse>;
 }
 
-export function renderUrl(type: MediaType, id: string, config?: string, key?: string): string {
+export function renderUrl(
+  type: MediaType,
+  id: string,
+  config?: string,
+  key?: string,
+  keysFrom?: string,
+): string {
   const params = new URLSearchParams();
   if (config) params.set('config', config);
   // On an instance with XRDB_API_KEY set, render routes require the key.
   // URLSearchParams appends it as a proper &key= arg — no double-? footgun.
   if (key) params.set('key', key);
+  // When previewing unsaved edits to a saved profile, name it so the server
+  // applies that profile's own provider keys to this inline render. The preview
+  // is same-origin, which is where the server accepts this.
+  if (keysFrom) params.set('pk', keysFrom);
   const qs = params.toString();
   return `${base()}/${type}/${encodeURIComponent(id)}${qs ? `?${qs}` : ''}`;
 }

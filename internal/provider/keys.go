@@ -2,6 +2,8 @@ package provider
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"sort"
 	"strings"
 )
@@ -77,6 +79,28 @@ func WithKeys(ctx context.Context, keys map[string]string) context.Context {
 		return ctx
 	}
 	return context.WithValue(ctx, keysCtxKey{}, keys)
+}
+
+// KeysFingerprint returns a short, stable digest of an owner's key set. It goes
+// into the render cache key so a key change refreshes the render, without the
+// secret values appearing anywhere: it is an 8-byte SHA-256 prefix, not the keys.
+func KeysFingerprint(keys map[string]string) string {
+	if len(keys) == 0 {
+		return ""
+	}
+	names := make([]string, 0, len(keys))
+	for k := range keys {
+		names = append(names, k)
+	}
+	sort.Strings(names)
+	h := sha256.New()
+	for _, k := range names {
+		h.Write([]byte(k))
+		h.Write([]byte{0})
+		h.Write([]byte(keys[k]))
+		h.Write([]byte{0})
+	}
+	return hex.EncodeToString(h.Sum(nil)[:8])
 }
 
 // HasOwnerKey reports whether the render carries an owner-supplied credential

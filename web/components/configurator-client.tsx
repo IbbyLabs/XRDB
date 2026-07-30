@@ -293,8 +293,11 @@ export function ConfiguratorClient() {
     }
     if (cfg.ringCriticsPriority.length > 0) payload.ringCriticsPriority = cfg.ringCriticsPriority;
     if (cfg.ringAudiencePriority.length > 0) payload.ringAudiencePriority = cfg.ringAudiencePriority;
-    return renderUrl(type, id || 'tt0468569', JSON.stringify(payload), renderKey);
-  }, [renderKey]);
+    // Name the loaded profile so the preview applies its stored provider keys
+    // to these unsaved edits; without it the preview always uses the shared key.
+    const keysFrom = loadedProfile ? (loadedProfile.alias || loadedProfile.id) : undefined;
+    return renderUrl(type, id || 'tt0468569', JSON.stringify(payload), renderKey, keysFrom);
+  }, [renderKey, loadedProfile]);
 
   const applyRenderKey = useCallback((value: string) => {
     setRenderKeyState(value);
