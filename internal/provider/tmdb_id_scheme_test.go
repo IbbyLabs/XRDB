@@ -2,6 +2,9 @@ package provider
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -30,6 +33,40 @@ func TestBareTMDBIDResolvesAsAMovieAndTheSchemeCarriesTheType(t *testing.T) {
 		if gotID != tc.wantID || gotType != tc.wantType {
 			t.Errorf("resolveID(%q) = (%q, %q), want (%q, %q)",
 				tc.id, gotID, gotType, tc.wantID, tc.wantType)
+		}
+	}
+}
+
+// A composite id can carry an external id after its content-type token. Testing
+// for the tt prefix before stripping the token left "series:tt0903747" to be
+// read as a TMDB number, which names a different title or nothing at all.
+func TestATokenPrefixedIMDbIDIsStillResolvedAsAnIMDbID(t *testing.T) {
+	var asked []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		asked = append(asked, r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"tv_results":[{"id":1396,"name":"Breaking Bad","popularity":9}]}`))
+	}))
+	defer srv.Close()
+
+	for _, id := range []string{"series:tt0903747", "tmdb:series:tt0903747", "tt0903747"} {
+		tm := NewTMDB("key", "")
+		tm.baseURL = srv.URL
+		asked = nil
+
+		gotID, gotType, err := tm.resolveID(context.Background(), "", id)
+		if err != nil {
+			t.Fatalf("resolveID(%q): %v", id, err)
+		}
+		if len(asked) == 0 {
+			t.Errorf("resolveID(%q) never called the find endpoint, so the tt id was read as a TMDB number", id)
+			continue
+		}
+		if !strings.Contains(asked[0], "tt0903747") {
+			t.Errorf("resolveID(%q) looked up %q, want the tt id", id, asked[0])
+		}
+		if gotID != "1396" || gotType != "tv" {
+			t.Errorf("resolveID(%q) = (%q, %q), want (\"1396\", \"tv\")", id, gotID, gotType)
 		}
 	}
 }

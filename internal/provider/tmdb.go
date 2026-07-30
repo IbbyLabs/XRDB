@@ -117,34 +117,9 @@ func (t *TMDB) FetchArtwork(ctx context.Context, mediaType, id string, opts Artw
 func (t *TMDB) resolveID(ctx context.Context, mediaType, id string) (string, string, error) {
 	id = strings.TrimSpace(id)
 
-	// IMDB tt-IDs need the find endpoint to get a TMDB ID.
-	if strings.HasPrefix(id, "tt") {
-		match, found, err := t.findByExternalID(ctx, id, "imdb_id", preferredBucket(mediaType))
-		if err != nil {
-			return "", "", err
-		}
-		if found {
-			return match.ID, match.ContentType, nil
-		}
-		return "", "", fmt.Errorf("no TMDB match for IMDB id %q", id)
-	}
-
-	// TVDB IDs (emitted by AIOMetadata's imdb-less art fallback, e.g.
-	// "tvdb:81189") resolve via TMDB's find endpoint keyed on the TVDB source.
-	if rest, ok := stripPrefix(id, "tvdb:"); ok {
-		match, found, err := t.findByExternalID(ctx, rest, "tvdb_id", preferredBucket(mediaType))
-		if err != nil {
-			return "", "", err
-		}
-		if found {
-			return match.ID, match.ContentType, nil
-		}
-		return "", "", fmt.Errorf("no TMDB match for TVDB id %q", id)
-	}
-
-	// Native TMDB IDs may arrive bare ("1396"), scheme-prefixed ("tmdb:1396"),
-	// or carrying a content-type token ("tmdb:series:1396", "series:1396") —
-	// the composite forms AIOMetadata emits when it has no IMDb id for a title.
+	// The scheme and content-type token come off first. An id can carry an
+	// external id after the token ("series:tt0903747"), and testing for one
+	// before stripping left it to be read as a TMDB number.
 	rest := id
 	if r, ok := stripPrefix(rest, "tmdb:"); ok {
 		rest = r
@@ -156,6 +131,34 @@ func (t *TMDB) resolveID(ctx context.Context, mediaType, id string) (string, str
 			break
 		}
 	}
+
+	// IMDB tt-IDs need the find endpoint to get a TMDB ID.
+	if strings.HasPrefix(rest, "tt") {
+		match, found, err := t.findByExternalID(ctx, rest, "imdb_id", preferredBucket(mediaType))
+		if err != nil {
+			return "", "", err
+		}
+		if found {
+			return match.ID, match.ContentType, nil
+		}
+		return "", "", fmt.Errorf("no TMDB match for IMDB id %q", id)
+	}
+
+	// TVDB IDs (emitted by AIOMetadata's imdb-less art fallback, e.g.
+	// "tvdb:81189") resolve via TMDB's find endpoint keyed on the TVDB source.
+	if r, ok := stripPrefix(rest, "tvdb:"); ok {
+		match, found, err := t.findByExternalID(ctx, r, "tvdb_id", preferredBucket(mediaType))
+		if err != nil {
+			return "", "", err
+		}
+		if found {
+			return match.ID, match.ContentType, nil
+		}
+		return "", "", fmt.Errorf("no TMDB match for TVDB id %q", id)
+	}
+
+	// What remains is a native TMDB id, bare ("1396") or from the composite
+	// forms AIOMetadata emits when it has no IMDb id for a title.
 
 	// Normalize media type. Only movie/series are meaningful here; artwork
 	// surface names (poster/backdrop/logo) are not content-type hints.
