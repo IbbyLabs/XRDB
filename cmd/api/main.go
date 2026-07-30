@@ -262,6 +262,12 @@ func main() {
 	if err := srv.Shutdown(ctx); err != nil {
 		logger.Error("Graceful shutdown failed", "error", err)
 	}
+	// Written here rather than left to the snapshot goroutine: cancelling the
+	// schedule races the process exiting, and a lost snapshot costs a full
+	// repopulation of metered lookups on the next start.
+	if err := pipeline.SaveRatingsCache(); err != nil {
+		logger.Error("Could not write the remembered ratings at shutdown", "error", err)
+	}
 }
 
 // logProviderReadiness reports which providers hold credentials. Keyless
