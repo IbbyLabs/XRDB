@@ -921,7 +921,9 @@ func Parse(data json.RawMessage) Config {
 		}
 	}
 	if r.ProviderBadgeScale != nil && *r.ProviderBadgeScale != 0 {
-		cfg.ProviderBadgeScale = clampInt(*r.ProviderBadgeScale, 70, 200)
+		// 200 was not enough on a large or 4k poster, where the chips still read
+		// as small. Rating badges already go to 400.
+		cfg.ProviderBadgeScale = clampInt(*r.ProviderBadgeScale, 70, 400)
 	}
 	if r.ProviderBadgeOffsetX != nil {
 		cfg.ProviderBadgeOffsetX = clampInt(*r.ProviderBadgeOffsetX, -320, 320)
@@ -1105,7 +1107,7 @@ func parseQuality(cfg *Config, r *raw) {
 		}
 	}
 	if r.QualityBadgeScale != nil && *r.QualityBadgeScale != 0 {
-		cfg.QualityBadgeScale = clampInt(*r.QualityBadgeScale, 70, 200)
+		cfg.QualityBadgeScale = clampInt(*r.QualityBadgeScale, 70, 400)
 	}
 	if r.QualityBadgeOffsetX != nil {
 		cfg.QualityBadgeOffsetX = clampInt(*r.QualityBadgeOffsetX, -320, 320)

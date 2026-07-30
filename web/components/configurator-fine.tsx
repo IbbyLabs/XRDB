@@ -564,7 +564,7 @@ export function QualityFine({ uid, config, onUpdate }: GroupProps) {
       <PosSelect id={`${uid}-quality-pos`} label="Position" value={config.qualityBadgesPos}
         onChange={v => onUpdate('qualityBadgesPos', v)} />
       <NumField id={`${uid}-quality-scale`} label="Scale (%)" value={config.qualityBadgeScale}
-        onChange={v => onUpdate('qualityBadgeScale', v)} min={70} max={200} step={5} />
+        onChange={v => onUpdate('qualityBadgeScale', v)} min={70} max={400} step={5} />
       <NumField id={`${uid}-quality-max`} label="Max badges" value={config.qualityBadgesMax}
         onChange={v => onUpdate('qualityBadgesMax', v)} min={0} max={12} placeholder="all"
         hint="0 shows every badge you selected." />
@@ -949,7 +949,7 @@ export function ProvidersFine({ uid, config, onUpdate }: GroupProps) {
       <PosSelect id={`${uid}-provider-pos`} label="Position" value={config.providersPos}
         onChange={v => onUpdate('providersPos', v)} />
       <NumField id={`${uid}-provider-scale`} label="Scale (%)" value={config.providerBadgeScale}
-        onChange={v => onUpdate('providerBadgeScale', v)} min={70} max={200} step={5}
+        onChange={v => onUpdate('providerBadgeScale', v)} min={70} max={400} step={5}
         hint="70\u2013200. Blank keeps the default size." />
       <NumField id={`${uid}-provider-offset-x`} label="Offset X (px)" value={config.providerBadgeOffsetX}
         onChange={v => onUpdate('providerBadgeOffsetX', v)} min={-320} max={320} zeroIsDefault={false} />

@@ -74,9 +74,10 @@ func TestProviderControlsParse(t *testing.T) {
 	if cfg.ProvidersPos != "tl" || cfg.ProviderBadgeScale != 150 || cfg.ProviderBadgeOffsetX != -20 || cfg.ProviderBadgeOffsetY != 30 {
 		t.Errorf("provider controls did not parse: %+v", providerOptsFromConfig(cfg))
 	}
-	// Out-of-range values clamp rather than reaching the renderer.
-	if s := imageconfig.Parse([]byte(`{"providerBadgeScale":9000}`)).ProviderBadgeScale; s != 200 {
-		t.Errorf("scale clamped to %d, want 200", s)
+	// Out-of-range values clamp rather than reaching the renderer. The ceiling is
+	// 400, matching the rating badges: 200 was still small on a large poster.
+	if s := imageconfig.Parse([]byte(`{"providerBadgeScale":9000}`)).ProviderBadgeScale; s != 400 {
+		t.Errorf("scale clamped to %d, want 400", s)
 	}
 	if p := imageconfig.Parse([]byte(`{"providersPos":"sideways"}`)).ProvidersPos; p != "" {
 		t.Errorf("an unknown position survived as %q", p)
