@@ -229,6 +229,7 @@ func main() {
 	scheduleCtx, stopSchedule := context.WithCancel(context.Background())
 	defer stopSchedule()
 	server.StartFolderWriterSchedule(scheduleCtx, cfg, pipeline, store, logger)
+	server.StartCacheWarmSchedule(scheduleCtx, cfg, pipeline, renderCache, logger)
 
 	srv := &http.Server{
 		Addr:              cfg.Address,

@@ -25,12 +25,75 @@ func credential(names ...string) string {
 	return ""
 }
 
+// CacheWarm describes the scheduled pre-render of an addon's catalogues, so a
+// catalogue that is browsed often is served from cache rather than rendered on
+// first sight. Each surface names its own addon; an empty URL warms nothing for
+// that surface.
+type CacheWarm struct {
+	Enabled      bool
+	PostersURL   string
+	BackdropsURL string
+	LogosURL     string
+	// MaxItems caps how many titles are taken from one addon per surface.
+	MaxItems int
+	// Interval is how often the run repeats. The first run is at startup.
+	Interval time.Duration
+}
+
+// cacheWarmFromEnv reads the warm schedule. Everything is off unless
+// XRDB_CACHE_WARM_ENABLED says otherwise, so an instance nobody configured
+// spends nothing on it.
+func cacheWarmFromEnv() CacheWarm {
+	w := CacheWarm{
+		Enabled:      envTruthy("XRDB_CACHE_WARM_ENABLED"),
+		PostersURL:   os.Getenv("XRDB_CACHE_WARM_POSTERS_URL"),
+		BackdropsURL: os.Getenv("XRDB_CACHE_WARM_BACKDROPS_URL"),
+		LogosURL:     os.Getenv("XRDB_CACHE_WARM_LOGOS_URL"),
+		MaxItems:     200,
+		Interval:     24 * time.Hour,
+	}
+	if raw := os.Getenv("XRDB_CACHE_WARM_MAX_ITEMS"); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+			w.MaxItems = n
+		}
+	}
+	if raw := os.Getenv("XRDB_CACHE_WARM_INTERVAL_HOURS"); raw != "" {
+		if h, err := strconv.ParseFloat(raw, 64); err == nil && h > 0 {
+			w.Interval = time.Duration(h * float64(time.Hour))
+		}
+	}
+	return w
+}
+
+func envTruthy(name string) bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv(name))) {
+	case "1", "true", "yes", "on":
+		return true
+	}
+	return false
+}
+
+// Surfaces returns the addon URL for each surface that has one.
+func (w CacheWarm) Surfaces() map[string]string {
+	out := make(map[string]string, 3)
+	for surface, url := range map[string]string{
+		"poster": w.PostersURL, "backdrop": w.BackdropsURL, "logo": w.LogosURL,
+	} {
+		if strings.TrimSpace(url) != "" {
+			out[surface] = url
+		}
+	}
+	return out
+}
+
 type Config struct {
-	Address  string
-	Version  string
-	DBPath   string
-	CacheDir string
-	CacheTTL time.Duration
+	// CacheWarm pre-renders an addon's catalogues on a schedule.
+	CacheWarm CacheWarm
+	Address   string
+	Version   string
+	DBPath    string
+	CacheDir  string
+	CacheTTL  time.Duration
 	// DegradedCacheTTL caps how long a render that lost a badge to a failing
 	// source is cached.
 	DegradedCacheTTL time.Duration
@@ -298,6 +361,7 @@ func Load() Config {
 		}
 	}
 	return Config{
+		CacheWarm:             cacheWarmFromEnv(),
 		Address:               addr,
 		Version:               version,
 		DBPath:                dbPath,
