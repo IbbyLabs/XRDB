@@ -1095,8 +1095,13 @@ func scoreThreshold(v *float64) (float64, bool) {
 // selection happens before the anime lookup answers, so it cannot know which
 // list will apply; fetching the union keeps an overridden source available for
 // the moment the kind is known. Without overrides this is exactly Ratings.
+// HasPerTypeRatings reports whether any per-kind override is set.
+func HasPerTypeRatings(cfg Config) bool {
+	return len(cfg.RatingsMovie) > 0 || len(cfg.RatingsSeries) > 0 || len(cfg.RatingsAnime) > 0
+}
+
 func RatingsCandidates(cfg Config) []string {
-	if len(cfg.RatingsMovie) == 0 && len(cfg.RatingsSeries) == 0 && len(cfg.RatingsAnime) == 0 {
+	if !HasPerTypeRatings(cfg) {
 		return cfg.Ratings
 	}
 	seen := make(map[string]bool, len(cfg.Ratings))

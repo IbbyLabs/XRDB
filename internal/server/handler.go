@@ -125,6 +125,12 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		// different inline configs produce different cache keys without allowing
 		// attackers to poison the cache with unbounded unique raw strings.
 		cfgKeyInput := imageconfig.CacheKey(imgCfg)
+		// A per-type override makes the render depend on the kind of title, so
+		// the kind joins the key. Configs without one keep their existing keys.
+		reqContentType := normalizeContentType(queryValue(raw, "type", ""))
+		if imageconfig.HasPerTypeRatings(imgCfg) {
+			cfgKeyInput = cfgKeyInput + ":ct=" + reqContentType
+		}
 		if !profileLoaded {
 			h := sha256.Sum256([]byte(configParam))
 			cfgKeyInput = cfgKeyInput + ":" + hex.EncodeToString(h[:8])
@@ -163,7 +169,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			if pipeline != nil {
 				renderResult, _ = pipeline.Render(r.Context(), compose.Request{
 					MediaType:   mediaType,
-					ContentType: normalizeContentType(queryValue(raw, "type", "")),
+					ContentType: reqContentType,
 					MediaID:     id,
 					Config:      imgCfg,
 				})
