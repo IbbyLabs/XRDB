@@ -781,7 +781,7 @@ func Parse(data json.RawMessage) Config {
 		}
 	}
 	if r.Language != nil && strings.TrimSpace(*r.Language) != "" {
-		cfg.Language = strings.ToLower(strings.TrimSpace(*r.Language))
+		cfg.Language = imageLanguage(*r.Language)
 	}
 	if r.TextPreference != nil {
 		if v := normalizeTextPreference(*r.TextPreference); v != "" {
@@ -1010,6 +1010,18 @@ func scoreThreshold(v *float64) (float64, bool) {
 		return 0, false
 	}
 	return f, true
+}
+
+// imageLanguage reduces a language tag to the base subtag that TMDB and Fanart
+// tag images with. v2 profiles carry region-qualified tags such as fr-FR, which
+// match no image language. "original" passes through unchanged.
+func imageLanguage(v string) string {
+	s := strings.ToLower(strings.TrimSpace(strings.ReplaceAll(v, "_", "-")))
+	base, _, _ := strings.Cut(s, "-")
+	if base == "us" {
+		return "en"
+	}
+	return base
 }
 
 // qualityBadgesPos normalizes the quality-badge placement. v2 offers this one
