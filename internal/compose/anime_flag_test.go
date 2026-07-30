@@ -6,43 +6,25 @@ import (
 	"xrdb_rewrite/internal/imageconfig"
 )
 
-// Resolving the flag costs a mapper lookup, so it has to be tied to the things
-// that actually read it.
-func TestAnimeFlagIsResolvedOnlyWhenSomethingReadsIt(t *testing.T) {
-	base := imageconfig.Default()
-	base.Genre = false
-	base.AggregateBar = false
-	base.RatingPresentation = ""
-
-	if needsAnimeFlag(base) {
-		t.Error("a config that draws neither the genre badge nor an anime-aware rating asked for the lookup")
+// The anime rating override is resolved from the anime flag, so asking for one
+// has to be reason enough to run the lookup. Without this the override is dead
+// unless some other anime-dependent option happens to be on.
+func TestAnAnimeRatingOverrideRequestsTheAnimeLookup(t *testing.T) {
+	plain := imageconfig.Default()
+	if needsAnimeFlag(plain) {
+		t.Fatal("a plain config asked for the anime lookup")
 	}
 
-	genre := base
-	genre.Genre = true
-	if !needsAnimeFlag(genre) {
-		t.Error("the genre badge separates anime from animation and needs the flag")
+	withOverride := plain
+	withOverride.RatingsAnime = []string{"mal"}
+	if !needsAnimeFlag(withOverride) {
+		t.Error("an anime rating override did not ask for the anime lookup")
 	}
 
-	bar := base
-	bar.AggregateBar = true
-	if !needsAnimeFlag(bar) {
-		t.Error("the aggregate bar reads the flag")
-	}
-
-	for _, mode := range []string{"minimal", "dual", "dual-minimal", "average", "scorebar"} {
-		c := base
-		c.RatingPresentation = mode
-		if !needsAnimeFlag(c) {
-			t.Errorf("presentation %q reads the flag", mode)
-		}
-	}
-
-	for _, mode := range []string{"", "none", "editorial"} {
-		c := base
-		c.RatingPresentation = mode
-		if needsAnimeFlag(c) {
-			t.Errorf("presentation %q does not read the flag", mode)
-		}
+	// A movie or series override needs no lookup: the kind comes from the request.
+	movieOnly := plain
+	movieOnly.RatingsMovie = []string{"imdb"}
+	if needsAnimeFlag(movieOnly) {
+		t.Error("a movie override asked for the anime lookup")
 	}
 }

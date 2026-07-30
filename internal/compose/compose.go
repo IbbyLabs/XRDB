@@ -187,6 +187,10 @@ func needsAnimeFlag(cfg imageconfig.Config) bool {
 	if cfg.Genre || cfg.AggregateBar {
 		return true
 	}
+	// The anime rating override is only reachable once the kind is known.
+	if len(cfg.RatingsAnime) > 0 {
+		return true
+	}
 	switch cfg.RatingPresentation {
 	case "minimal", "dual", "dual-minimal", "average", "scorebar":
 		return true
