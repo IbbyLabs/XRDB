@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.23.0](https://github.com/IbbyLabs/XRDB/compare/v3.22.0...v3.23.0) (2026-07-30)
+
+
+### Added
+
+* **ratings:** glyph marks on the aggregate pills (FR-7, FR-89) ([fb56895](https://github.com/IbbyLabs/XRDB/commit/fb56895f2895cdd7f5ece7fda270af50f025b71d))
+
 ## [3.22.0](https://github.com/IbbyLabs/XRDB/compare/v3.21.0...v3.22.0) (2026-07-30)
 
 
