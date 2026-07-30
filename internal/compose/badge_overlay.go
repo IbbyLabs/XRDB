@@ -1596,8 +1596,8 @@ func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, style s
 }
 
 // drawMinimalRating shows a single centred pill with the overall average score
-// at the top of the artwork. The pill carries no label segment, so it stays a
-// clean dark capsule regardless of accent config.
+// at the top of the artwork. The pill carries no label segment, so a configured
+// accent marks the capsule itself rather than filling a rail.
 func drawMinimalRating(base *image.NRGBA, ratings []provider.Rating, genres []string, isAnime bool, cfg imageconfig.Config, scale float64, occ *occupancy) {
 	avg, ok := ratingRingAverage(ratings, cfg)
 	if !ok {
