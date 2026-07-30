@@ -207,6 +207,43 @@ func fillContentRating(artwork *provider.MediaMeta, rating string) {
 	}
 }
 
+// resolveContentKind answers whether the title is a movie or a series when the
+// request did not say. A per-type override is meaningless without it, and the
+// common artwork URLs carry no ?type=. Only configs that set an override pay
+// for the lookup.
+func (p *Pipeline) resolveContentKind(ctx context.Context, req Request) string {
+	if req.ContentType != "" {
+		return req.ContentType
+	}
+	// A TMDB id names the kind already, so it costs nothing to read.
+	if rest, ok := strings.CutPrefix(req.MediaID, "tmdb:"); ok {
+		switch {
+		case strings.HasPrefix(rest, "movie:"):
+			return "movie"
+		case strings.HasPrefix(rest, "series:"), strings.HasPrefix(rest, "tv:"):
+			return "series"
+		}
+	}
+	if p.providers == nil {
+		return ""
+	}
+	tmdb := p.providers.Get("tmdb")
+	if tmdb == nil || !providerReady(tmdb) {
+		return ""
+	}
+	ident, ok := tmdb.(provider.TitleIdentifier)
+	if !ok {
+		return ""
+	}
+	_, kind, err := ident.IdentifyID(ctx, req.MediaID, "")
+	if err != nil {
+		p.log().DebugContext(ctx, "Could not resolve the kind of title for a per-type override",
+			"id", logging.RequestID(ctx), "media_id", req.MediaID, "error", err)
+		return ""
+	}
+	return kind
+}
+
 // kitsuID maps the requested title onto the Kitsu id Kitsu answers to. A title
 // the anime map does not carry has no Kitsu entry to find.
 func (p *Pipeline) kitsuID(ctx context.Context, req Request) (string, bool) {
@@ -469,11 +506,17 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// is carried forward so the lookup runs once.
 	animeKnown := false
 	isAnime := false
+	// The kind is resolved once and reused: both per-type overrides read it, and
+	// a bare /poster/tt... request carries no ?type= for either to work from.
+	contentKind := req.ContentType
+	if imageconfig.HasPerTypeArtwork(req.Config) || imageconfig.HasPerTypeRatings(req.Config) {
+		contentKind = p.resolveContentKind(ctx, req)
+		timings.mark("content_kind")
+	}
 	if imageconfig.HasPerTypeArtwork(req.Config) {
 		isAnime = p.isAnimeTitle(ctx, req)
 		animeKnown = true
-		req.Config.ArtworkSource = imageconfig.ArtworkSourceFor(req.Config, req.ContentType, isAnime)
-		timings.mark("artwork_kind")
+		req.Config.ArtworkSource = imageconfig.ArtworkSourceFor(req.Config, contentKind, isAnime)
 	}
 
 	sourceBytes, meta, ratingID, err := p.fetchSourceImageAndMeta(ctx, req)
@@ -525,7 +568,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// The kind of title is only known once the anime lookup has answered, so the
 	// per-type rating override is resolved here and every consumer below reads
 	// the one list. Without an override this is exactly cfg.Ratings.
-	req.Config.Ratings = imageconfig.RatingsFor(req.Config, req.ContentType, meta.IsAnime)
+	req.Config.Ratings = imageconfig.RatingsFor(req.Config, contentKind, meta.IsAnime)
 
 	// Use saliency-aware cropping when a backdrop is the source so that
 	// off-centre subjects are not clipped by a naive centre crop.
