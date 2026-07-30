@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.29.2](https://github.com/IbbyLabs/XRDB/compare/v3.29.1...v3.29.2) (2026-07-30)
+
+
+### Fixed
+
+* **ratings:** keep remembered ratings across restarts ([863a616](https://github.com/IbbyLabs/XRDB/commit/863a616895ec896a3836eecdb9212cb0f5ee818f))
+* **ratings:** write the ratings snapshot before the process exits ([b410859](https://github.com/IbbyLabs/XRDB/commit/b410859faf3115014c6e3dce071f5298ddb1313b))
+
 ## [3.29.1](https://github.com/IbbyLabs/XRDB/compare/v3.29.0...v3.29.1) (2026-07-30)
 
 
