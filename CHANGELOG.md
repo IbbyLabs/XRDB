@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.26.0](https://github.com/IbbyLabs/XRDB/compare/v3.25.0...v3.26.0) (2026-07-30)
+
+
+### Added
+
+* **ratings:** take the Common Sense age rating from MDBList (FR-107) ([70c9683](https://github.com/IbbyLabs/XRDB/commit/70c9683687269da30511fe6e2207585d829f39b2))
+
 ## [3.25.0](https://github.com/IbbyLabs/XRDB/compare/v3.24.0...v3.25.0) (2026-07-30)
 
 
