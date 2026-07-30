@@ -146,6 +146,12 @@ type Config struct {
 	NetworkTileColor     string `json:"networkTileColor,omitempty"` // "#RRGGBB" tile behind provider chips
 	// RatingBadgeDensity scales the padding inside a rating badge and the gap
 	// between its mark and value, as a percent; 0 = 100. Lower hugs the contents.
+	// RatingsMovie, RatingsSeries and RatingsAnime override Ratings for that kind
+	// of title. Empty means the title uses Ratings, so a config that does not
+	// care about the distinction is unaffected.
+	RatingsMovie  []string `json:"ratingsMovie,omitempty"`
+	RatingsSeries []string `json:"ratingsSeries,omitempty"`
+	RatingsAnime  []string `json:"ratingsAnime,omitempty"`
 	// MetaLine draws one centred line under the artwork — age rating, year and
 	// genre — over a gradient, the way the streaming apps present it.
 	MetaLine bool `json:"metaLine,omitempty"`
@@ -562,6 +568,9 @@ type raw struct {
 	ProviderBadgeScale            *int      `json:"providerBadgeScale"`
 	ProviderBadgeOffsetX          *int      `json:"providerBadgeOffsetX"`
 	ProviderBadgeOffsetY          *int      `json:"providerBadgeOffsetY"`
+	RatingsMovie                  []string  `json:"ratingsMovie"`
+	RatingsSeries                 []string  `json:"ratingsSeries"`
+	RatingsAnime                  []string  `json:"ratingsAnime"`
 	MetaLine                      *bool     `json:"metaLine"`
 	MetaLineScale                 *int      `json:"metaLineScale"`
 	AggregateAccentWidth          *int      `json:"aggregateAccentWidth"`
@@ -938,6 +947,15 @@ func Parse(data json.RawMessage) Config {
 	if r.ProviderBadgeOffsetY != nil {
 		cfg.ProviderBadgeOffsetY = clampInt(*r.ProviderBadgeOffsetY, -320, 320)
 	}
+	if len(r.RatingsMovie) > 0 {
+		cfg.RatingsMovie = dedupeStrings(r.RatingsMovie)
+	}
+	if len(r.RatingsSeries) > 0 {
+		cfg.RatingsSeries = dedupeStrings(r.RatingsSeries)
+	}
+	if len(r.RatingsAnime) > 0 {
+		cfg.RatingsAnime = dedupeStrings(r.RatingsAnime)
+	}
 	if r.MetaLine != nil {
 		cfg.MetaLine = *r.MetaLine
 	}
@@ -1071,6 +1089,27 @@ func scoreThreshold(v *float64) (float64, bool) {
 		return 0, false
 	}
 	return f, true
+}
+
+// RatingsFor returns the rating sources a title of this kind should show. An
+// anime override wins over the series/movie one, because an anime is also a
+// series and the more specific answer is the one asked for. An unset override
+// falls through to Ratings, so configs that do not distinguish are unaffected.
+func RatingsFor(cfg Config, contentType string, isAnime bool) []string {
+	if isAnime && len(cfg.RatingsAnime) > 0 {
+		return cfg.RatingsAnime
+	}
+	switch strings.ToLower(strings.TrimSpace(contentType)) {
+	case "series", "tv":
+		if len(cfg.RatingsSeries) > 0 {
+			return cfg.RatingsSeries
+		}
+	case "movie":
+		if len(cfg.RatingsMovie) > 0 {
+			return cfg.RatingsMovie
+		}
+	}
+	return cfg.Ratings
 }
 
 // imageLanguage reduces a language tag to the base subtag that TMDB and Fanart
@@ -1680,6 +1719,9 @@ func CacheKey(cfg Config) string {
 		ProviderBadgeOffsetX          int            `json:"providerBadgeOffsetX"`
 		ProviderBadgeOffsetY          int            `json:"providerBadgeOffsetY"`
 		NetworkTileColor              string         `json:"networkTileColor"`
+		RatingsMovie                  []string       `json:"ratingsMovie"`
+		RatingsSeries                 []string       `json:"ratingsSeries"`
+		RatingsAnime                  []string       `json:"ratingsAnime"`
 		MetaLine                      bool           `json:"metaLine"`
 		MetaLineScale                 int            `json:"metaLineScale"`
 		AggregateAccentWidth          int            `json:"aggregateAccentWidth"`
@@ -1748,6 +1790,9 @@ func CacheKey(cfg Config) string {
 		ProviderBadgeOffsetX:          cfg.ProviderBadgeOffsetX,
 		ProviderBadgeOffsetY:          cfg.ProviderBadgeOffsetY,
 		NetworkTileColor:              cfg.NetworkTileColor,
+		RatingsMovie:                  cfg.RatingsMovie,
+		RatingsSeries:                 cfg.RatingsSeries,
+		RatingsAnime:                  cfg.RatingsAnime,
 		MetaLine:                      cfg.MetaLine,
 		MetaLineScale:                 cfg.MetaLineScale,
 		AggregateAccentWidth:          cfg.AggregateAccentWidth,

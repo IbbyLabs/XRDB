@@ -21,6 +21,7 @@ ignored, so this header text costs nothing.
 ## Ratings
 
 - Ratings come from IMDb, TMDB, MDBList, OMDb, Trakt, SIMKL, MyAnimeList, AniList, Kitsu, AlloCiné and Filmweb.
+- `ratingsMovie`, `ratingsSeries` and `ratingsAnime` override the rating sources for that kind of title, so a film can show IMDb and Rotten Tomatoes while an anime shows MAL and AniList in the same config. An anime override wins over the series one. Leaving them empty keeps the single `ratings` list for everything, so nothing changes for a config that does not use them.
 - Only the sources a config actually asks for are fetched, which is what keeps a cold render fast.
 - Anime titles resolve through MAL, AniList and Kitsu ids, so anime keeps its ratings.
 - A source that is rate-limited or erroring falls back to its last good answer rather than dropping its badge.

@@ -476,6 +476,11 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	meta.IsAnime = p.isAnimeTitle(ctx, req)
 	timings.mark("anime_lookup")
 
+	// The kind of title is only known once the anime lookup has answered, so the
+	// per-type rating override is resolved here and every consumer below reads
+	// the one list. Without an override this is exactly cfg.Ratings.
+	req.Config.Ratings = imageconfig.RatingsFor(req.Config, req.ContentType, meta.IsAnime)
+
 	// Use saliency-aware cropping when a backdrop is the source so that
 	// off-centre subjects are not clipped by a naive centre crop.
 	usesBackdrop := req.MediaType == "backdrop" ||

@@ -441,6 +441,9 @@ export interface ConfigState {
   logoBackground: string; // 'transparent' | 'dark'
   episodeArtworkMode: string; // 'still' | 'series' | 'streaming' (thumbnail/backdrop episodes)
   fallbackLanguage: string; // '' = none
+  ratingsMovie: string[];
+  ratingsSeries: string[];
+  ratingsAnime: string[];
   metaLine: boolean;
   metaLineScale: number; // percent; 0 = 100
   aggregateAccentWidth: number; // px; 0 = default
@@ -574,6 +577,9 @@ export const DEFAULT_CONFIG: ConfigState = {
   logoBackground: 'transparent',
   episodeArtworkMode: 'still',
   fallbackLanguage: '',
+  ratingsMovie: [],
+  ratingsSeries: [],
+  ratingsAnime: [],
   metaLine: false,
   metaLineScale: 0,
   aggregateAccentWidth: 0,
@@ -685,6 +691,9 @@ function coerceConfig(raw: unknown): ConfigState {
     ...DEFAULT_CONFIG,
     ...(raw as Partial<ConfigState>),
     ratings: coerceStringArray(input.ratings, DEFAULT_CONFIG.ratings),
+    ratingsMovie: coerceStringArray(input.ratingsMovie, []),
+    ratingsSeries: coerceStringArray(input.ratingsSeries, []),
+    ratingsAnime: coerceStringArray(input.ratingsAnime, []),
     badges: canonicaliseBadges(coerceStringArray(input.badges, DEFAULT_CONFIG.badges)),
     ratingProviderOverrides: coerceStringMap(input.ratingProviderOverrides),
     ratingProviderWeights: coerceNumberMap(input.ratingProviderWeights),
