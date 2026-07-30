@@ -343,14 +343,34 @@ func (t *TMDB) FetchEpisode(ctx context.Context, seriesID string, season, episod
 	return info, nil
 }
 
+// imageLanguageOf reduces a tag to the base subtag the sources tag images with,
+// the same way the config does, so a fallback set as "pt-BR" still matches.
+func imageLanguageOf(v string) string {
+	v = strings.ToLower(strings.TrimSpace(strings.ReplaceAll(v, "_", "-")))
+	base, _, _ := strings.Cut(v, "-")
+	if base == "us" {
+		return "en"
+	}
+	return base
+}
+
 func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts ArtworkOptions) (*MediaMeta, error) {
 	lang := strings.ToLower(strings.TrimSpace(opts.Language))
 	wantOriginal := IsOriginalLanguage(lang)
 	// Pull image variants in the preferred language plus English and
 	// language-neutral (textless) art so selection has candidates.
+	fallback := imageLanguageOf(opts.FallbackLanguage)
+	if fallback == lang {
+		fallback = ""
+	}
 	imgLangs := "en,null"
 	if lang != "" && lang != "en" {
 		imgLangs = lang + ",en,null"
+	}
+	// The fallback has to be in the fetch filter or there are no candidates in
+	// it to fall back to.
+	if fallback != "" && fallback != "en" {
+		imgLangs = strings.TrimSuffix(imgLangs, ",en,null") + "," + fallback + ",en,null"
 	}
 	path := t.base() + "/" + mediaType + "/" + id +
 		"?append_to_response=images,release_dates,content_ratings,watch%2Fproviders,external_ids"
@@ -699,6 +719,13 @@ func selectImagePath(images []tmdbImage, defaultPath, lang string, opts ArtworkO
 	// requested non-English language wins over TMDB's canonical pick.
 	if lang != "" && lang != "en" {
 		if p := bestBy(inLang); p != "" {
+			return p
+		}
+	}
+	// Nothing in the requested language, so try the fallback before falling
+	// through to TMDB's canonical pick, which is usually English.
+	if fb := imageLanguageOf(opts.FallbackLanguage); fb != "" && fb != lang {
+		if p := bestBy(func(img tmdbImage) bool { return langOf(img) == fb }); p != "" {
 			return p
 		}
 	}

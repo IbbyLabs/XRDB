@@ -216,6 +216,7 @@ export function ConfiguratorClient() {
       genreBadgeOffsetY: cfg.genreBadgeOffsetY,
       genreBadgeBackgroundOpacity: cfg.genreBadgeBackgroundOpacity,
       genreBadgeBorderWidth: cfg.genreBadgeBorderWidth,
+      fallbackLanguage: cfg.fallbackLanguage,
       ratingBadgeDensity: cfg.ratingBadgeDensity,
       ratingBadgeBorderColor: cfg.ratingBadgeBorderColor,
       ratingBadgeBorderOpacity: cfg.ratingBadgeBorderOpacity,

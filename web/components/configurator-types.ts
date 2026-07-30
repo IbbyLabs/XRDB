@@ -440,6 +440,7 @@ export interface ConfigState {
   trendingPos: string; // 'inherit' | six positions
   logoBackground: string; // 'transparent' | 'dark'
   episodeArtworkMode: string; // 'still' | 'series' | 'streaming' (thumbnail/backdrop episodes)
+  fallbackLanguage: string; // '' = none
   ratingBadgeDensity: number; // percent of default padding; 0 = 100
   ratingBadgeBorderColor: string; // '' = per style
   ratingBadgeBorderOpacity: number; // 0 = default
@@ -569,6 +570,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   trendingPos: 'inherit',
   logoBackground: 'transparent',
   episodeArtworkMode: 'still',
+  fallbackLanguage: '',
   ratingBadgeDensity: 0,
   ratingBadgeBorderColor: '',
   ratingBadgeBorderOpacity: 0,

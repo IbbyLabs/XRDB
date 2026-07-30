@@ -25,6 +25,8 @@ type ArtworkOptions struct {
 	// Language is an artwork language code such as "en" or "ja", or
 	// OriginalLanguage for the title's own.
 	Language string
+	// FallbackLanguage is tried when Language finds no art, before English.
+	FallbackLanguage string
 	// TMDBID is TMDB's id for the requested title, when the caller resolved one.
 	// Sources matched through a third-party id index check their record against
 	// it. Release names diverge between sources; ids do not.

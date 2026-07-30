@@ -114,9 +114,12 @@ const (
 // Config is the canonical, normalized render config for a media request.
 // All fields carry explicit defaults; zero values are never used in render logic.
 type Config struct {
-	Size             MediaSize      `json:"size"`
-	ArtworkSource    ArtworkSource  `json:"artworkSource"`
-	Language         string         `json:"language"`
+	Size          MediaSize     `json:"size"`
+	ArtworkSource ArtworkSource `json:"artworkSource"`
+	Language      string        `json:"language"`
+	// FallbackLanguage is tried when the requested language has no art for a
+	// title, before the English/canonical pick.
+	FallbackLanguage string         `json:"fallbackLanguage,omitempty"`
 	TextPreference   TextPreference `json:"textPreference"`
 	Ratings          []string       `json:"ratings"`
 	RatingsLayout    RatingsLayout  `json:"ratingsLayout"`
@@ -529,6 +532,7 @@ type raw struct {
 	Size                          *string   `json:"size"`
 	ArtworkSource                 *string   `json:"artworkSource"`
 	Language                      *string   `json:"language"`
+	FallbackLanguage              *string   `json:"fallbackLanguage"`
 	TextPreference                *string   `json:"textPreference"`
 	Ratings                       *[]string `json:"ratings"`
 	RatingsLayout                 *string   `json:"ratingsLayout"`
@@ -799,6 +803,9 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.Language != nil && strings.TrimSpace(*r.Language) != "" {
 		cfg.Language = imageLanguage(*r.Language)
+	}
+	if r.FallbackLanguage != nil && strings.TrimSpace(*r.FallbackLanguage) != "" {
+		cfg.FallbackLanguage = imageLanguage(*r.FallbackLanguage)
 	}
 	if r.TextPreference != nil {
 		if v := normalizeTextPreference(*r.TextPreference); v != "" {
@@ -1629,6 +1636,7 @@ func CacheKey(cfg Config) string {
 		Size                          MediaSize      `json:"size"`
 		ArtworkSource                 ArtworkSource  `json:"artworkSource"`
 		Language                      string         `json:"language"`
+		FallbackLanguage              string         `json:"fallbackLanguage"`
 		TextPreference                TextPreference `json:"textPreference"`
 		Ratings                       []string       `json:"ratings"`
 		RatingsLayout                 RatingsLayout  `json:"ratingsLayout"`
@@ -1693,6 +1701,7 @@ func CacheKey(cfg Config) string {
 		Size:                          cfg.Size,
 		ArtworkSource:                 cfg.ArtworkSource,
 		Language:                      cfg.Language,
+		FallbackLanguage:              cfg.FallbackLanguage,
 		TextPreference:                cfg.TextPreference,
 		Ratings:                       ratings,
 		RatingsLayout:                 cfg.RatingsLayout,

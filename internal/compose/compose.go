@@ -704,8 +704,9 @@ func (p *Pipeline) fetchEpisode(ctx context.Context, req Request, series string,
 	}
 	seriesID := strings.TrimPrefix(series, "tmdb:")
 	info, err := tmdb.FetchEpisode(ctx, seriesID, season, episode, provider.ArtworkOptions{
-		Language: req.Config.Language,
-		Size:     string(req.Config.Size),
+		Language:         req.Config.Language,
+		FallbackLanguage: req.Config.FallbackLanguage,
+		Size:             string(req.Config.Size),
 	})
 	if err != nil || info == nil || info.StillURL == "" {
 		return nil, nil, "", false
@@ -739,6 +740,7 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 	}
 	opts := provider.ArtworkOptions{
 		Language:           req.Config.Language,
+		FallbackLanguage:   req.Config.FallbackLanguage,
 		TextPreference:     string(req.Config.TextPreference),
 		Size:               string(req.Config.Size),
 		RandomText:         req.Config.RandomPosterText,

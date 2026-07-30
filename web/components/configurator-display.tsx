@@ -214,7 +214,9 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           htmlFor={`${uid}-lang`}
           hint={config.language === ORIGINAL_LANGUAGE
             ? 'Artwork in whichever language each title was made in'
-            : 'Preferred language for artwork, falling back to English'}
+            : config.fallbackLanguage
+              ? 'Preferred language for artwork, then the fallback below'
+              : 'Preferred language for artwork, falling back to English'}
         >
           <select
             id={`${uid}-lang`}
@@ -228,6 +230,24 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
               <option value={config.language}>{config.language.toUpperCase()}</option>
             )}
             {LANG_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+          </select>
+        </Field>
+
+        <Field
+          label="Fallback language"
+          htmlFor={`${uid}-fallback-lang`}
+          hint="Tried when a title has no artwork in the language above, before English."
+        >
+          <select
+            id={`${uid}-fallback-lang`}
+            className="select"
+            value={config.fallbackLanguage}
+            onChange={e => onUpdate('fallbackLanguage', e.target.value)}
+          >
+            <option value="">None</option>
+            {LANG_OPTIONS.filter(o => o.id !== ORIGINAL_LANGUAGE).map(o => (
+              <option key={o.id} value={o.id}>{o.label}</option>
+            ))}
           </select>
         </Field>
 
