@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 
 	"xrdb_rewrite/internal/config"
@@ -61,11 +62,35 @@ type stremioMeta struct {
 	Background string `json:"background,omitempty"`
 }
 
+// manifestVersion renders a build string as the semver Stremio requires. It
+// rejects anything else outright, so a leading "v" or a dated dev build makes
+// the addon refuse to install rather than degrade.
+func manifestVersion(v string) string {
+	v = strings.TrimSpace(v)
+	v = strings.TrimPrefix(strings.TrimPrefix(v, "v"), "V")
+	if semverRelease.MatchString(v) {
+		return v
+	}
+	// No release number to show, so the build goes in a prerelease tag, which
+	// keeps it visible and still parses.
+	build := nonSemver.ReplaceAllString(v, ".")
+	build = strings.Trim(build, ".")
+	if build == "" {
+		return "0.0.0"
+	}
+	return "0.0.0-" + build
+}
+
+var (
+	semverRelease = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$`)
+	nonSemver     = regexp.MustCompile(`[^0-9A-Za-z-]+`)
+)
+
 // stremioManifestFor builds the addon manifest.
 func stremioManifestFor(cfg config.Config) stremioManifest {
 	return stremioManifest{
 		ID:          "com.ibbylabs.xrdb",
-		Version:     cfg.Version,
+		Version:     manifestVersion(cfg.Version),
 		Name:        "XRDB",
 		Description: "Enhanced movie and series artwork powered by XRDB — overlaid ratings, quality badges, and more.",
 		Resources:   []string{"meta"},
