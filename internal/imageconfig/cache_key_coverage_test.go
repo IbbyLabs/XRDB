@@ -53,6 +53,37 @@ func TestEveryConfigFieldReachesTheCacheKey(t *testing.T) {
 	}
 }
 
+// The renderer draws ratings and quality badges in configured order and the row
+// caps keep the first N, so two configs differing only in order render
+// differently and must not share a cached image.
+func TestReorderingRatingsAndBadgesChangesTheCacheKey(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		first  func(*Config)
+		second func(*Config)
+	}{
+		{
+			name:   "ratings",
+			first:  func(c *Config) { c.Ratings = []string{"imdb", "tmdb", "trakt"} },
+			second: func(c *Config) { c.Ratings = []string{"trakt", "tmdb", "imdb"} },
+		},
+		{
+			name:   "badges",
+			first:  func(c *Config) { c.Badges = []string{"4k", "hdr", "atmos"} },
+			second: func(c *Config) { c.Badges = []string{"atmos", "hdr", "4k"} },
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			a, b := Default(), Default()
+			tc.first(&a)
+			tc.second(&b)
+			if CacheKey(a) == CacheKey(b) {
+				t.Errorf("reordering %s does not change the cache key, so the reordered config is served the previous image", tc.name)
+			}
+		})
+	}
+}
+
 func fieldByPath(v reflect.Value, path string) reflect.Value {
 	for _, part := range strings.Split(path, ".") {
 		v = v.FieldByName(part)

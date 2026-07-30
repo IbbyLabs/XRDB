@@ -211,16 +211,6 @@ func TestCacheKeyStableForSameConfig(t *testing.T) {
 	}
 }
 
-func TestCacheKeyIndependentOfRatingsOrder(t *testing.T) {
-	cfg1 := Default()
-	cfg1.Ratings = []string{"tmdb", "imdb", "rt"}
-	cfg2 := Default()
-	cfg2.Ratings = []string{"rt", "tmdb", "imdb"}
-	if CacheKey(cfg1) != CacheKey(cfg2) {
-		t.Error("CacheKey should be independent of ratings order (sorted before hashing)")
-	}
-}
-
 func TestCacheKeyDiffersForDifferentConfigs(t *testing.T) {
 	c1 := Default()
 	c2 := Default()

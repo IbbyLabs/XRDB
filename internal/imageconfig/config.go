@@ -1571,7 +1571,7 @@ func isHexColor(s string) bool {
 // Bump this whenever a change alters rendered pixels for an unchanged config.
 // It costs a full re-render, so it is not for changes that only affect configs
 // whose own key already moved.
-const renderVersion = "r8"
+const renderVersion = "r9"
 
 // CacheKey returns a deterministic hex string for the config, suitable for use
 // as part of a render cache key. The key is stable: same logical config always
@@ -1632,12 +1632,10 @@ func CacheKey(cfg Config) string {
 		RatingRingConfig
 		RandomPosterConfig
 	}
-	ratings := make([]string, len(cfg.Ratings))
-	copy(ratings, cfg.Ratings)
-	sort.Strings(ratings)
-	badges := make([]string, len(cfg.Badges))
-	copy(badges, cfg.Badges)
-	sort.Strings(badges)
+	// Ratings and quality badges draw in configured order, and the row caps keep
+	// the first N, so the order belongs in the key.
+	ratings := cfg.Ratings
+	badges := cfg.Badges
 
 	c := canonical{
 		Size:                          cfg.Size,
@@ -1703,19 +1701,10 @@ func CacheKey(cfg Config) string {
 }
 
 // CanonicalJSON returns the canonical JSON representation of cfg, suitable for
-// export and import round-trips. Ratings and Badges are sorted for stable output.
+// export and import round-trips. Ratings and Badges keep their configured order,
+// which is the order they draw in.
 func CanonicalJSON(cfg Config) (json.RawMessage, error) {
 	out := cfg
-	if len(out.Ratings) > 0 {
-		out.Ratings = make([]string, len(cfg.Ratings))
-		copy(out.Ratings, cfg.Ratings)
-		sort.Strings(out.Ratings)
-	}
-	if len(out.Badges) > 0 {
-		out.Badges = make([]string, len(cfg.Badges))
-		copy(out.Badges, cfg.Badges)
-		sort.Strings(out.Badges)
-	}
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)
 	enc.SetEscapeHTML(false)
