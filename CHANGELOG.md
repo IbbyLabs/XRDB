@@ -2,6 +2,21 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.16.1](https://github.com/IbbyLabs/XRDB/compare/v3.16.0...v3.16.1) (2026-07-30)
+
+
+### Fixed
+
+* **ui:** keep the pill controls when the badge strip is hidden ([a892305](https://github.com/IbbyLabs/XRDB/commit/a892305611f26c1425a09b2b94d2e7ec5c234fea))
+* **ui:** name the real cause when search or shuffle fails ([60071a2](https://github.com/IbbyLabs/XRDB/commit/60071a26a62a57d840890b1ff1e44be0f6daf203))
+* **ui:** reach the score colour controls without the aggregate bar ([904ba25](https://github.com/IbbyLabs/XRDB/commit/904ba25fd1993e98ff0cc397e36328a367f36598))
+
+
+### Documentation
+
+* **compose:** correct the minimal pill accent comment ([6717ddc](https://github.com/IbbyLabs/XRDB/commit/6717ddca357c8787c77d0895fa7b7a64af1f5b44))
+* **context:** say where the pill controls live ([a62ae38](https://github.com/IbbyLabs/XRDB/commit/a62ae38570b51497f87faedeab748271b484a22c))
+
 ## [3.16.0](https://github.com/IbbyLabs/XRDB/compare/v3.15.1...v3.16.0) (2026-07-29)
 
 
