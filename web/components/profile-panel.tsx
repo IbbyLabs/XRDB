@@ -209,7 +209,7 @@ export function ProfilePanel({
     }
   };
 
-  const handleUpdate = async () => {
+  const handleUpdate = async (silent = false) => {
     if (!loaded) return;
     setBusy(true);
     try {
@@ -230,13 +230,26 @@ export function ProfilePanel({
       setLoaded({ ...loaded, versionToken: updated.versionToken ?? '', keysSet: updated.keysSet ?? loaded.keysSet });
       setProviderKeys({});
       setSavedSnapshot(JSON.stringify(configs));
-      flash('success', 'Profile updated');
+      if (!silent) flash('success', 'Profile updated');
     } catch (e) {
       flash('error', (e as Error).message);
     } finally {
       setBusy(false);
     }
   };
+
+  // A loaded profile saves itself: editing it is the intent, so there is
+  // nothing to press. The write is debounced so dragging a slider stores one
+  // revision rather than one per frame, and stays quiet so the panel does not
+  // flash on every edit. Creating a profile still needs the button, because
+  // that takes a name.
+  const autoSave = useRef(handleUpdate);
+  useEffect(() => { autoSave.current = handleUpdate; });
+  useEffect(() => {
+    if (!isDirty || busy) return;
+    const timer = setTimeout(() => { void autoSave.current(true); }, 1500);
+    return () => clearTimeout(timer);
+  }, [isDirty, busy, configs]);
 
   const handleDelete = async () => {
     if (!loaded) return;
@@ -303,12 +316,12 @@ export function ProfilePanel({
           <div className="profile-banner">
             <span className="profile-banner-name">
               {loaded.name || loaded.alias || loaded.id}
-              {isDirty && <span className="profile-dirty"> · Unsaved changes</span>}
+              {isDirty && <span className="profile-dirty"> · Saving…</span>}
             </span>
             <span className="hint" style={{ marginTop: 0 }}>
               {isDirty
-                ? 'You have unsaved edits — press Update to save them to this profile.'
-                : 'Editing this profile — changes apply when you press Update.'}
+                ? 'Storing your changes to this profile.'
+                : 'Editing this profile — changes are saved as you make them.'}
             </span>
           </div>
 
@@ -377,7 +390,7 @@ export function ProfilePanel({
           </div>
 
           <div className="cfg-actions">
-            <button className="btn btn-primary" onClick={handleUpdate} disabled={busy}>
+            <button className="btn btn-primary" onClick={() => void handleUpdate()} disabled={busy}>
               <RefreshCw size={13} aria-hidden />
               Update profile
             </button>
