@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.29.1](https://github.com/IbbyLabs/XRDB/compare/v3.29.0...v3.29.1) (2026-07-30)
+
+
+### Fixed
+
+* **ratings:** resolve the title kind when the request omits type ([25c97bc](https://github.com/IbbyLabs/XRDB/commit/25c97bc6c244282ff30218df9c9021c05a611b3a))
+
 ## [3.29.0](https://github.com/IbbyLabs/XRDB/compare/v3.28.0...v3.29.0) (2026-07-30)
 
 
