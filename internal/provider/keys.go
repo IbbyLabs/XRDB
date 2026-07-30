@@ -79,6 +79,14 @@ func WithKeys(ctx context.Context, keys map[string]string) context.Context {
 	return context.WithValue(ctx, keysCtxKey{}, keys)
 }
 
+// HasOwnerKey reports whether the render carries an owner-supplied credential
+// for the named provider. The key names match the provider names, so a provider
+// can ask with its own Name(). An owner key has its own upstream allowance, so
+// it must not be gated out by the shared key's rate-limit cooldown.
+func HasOwnerKey(ctx context.Context, name string) bool {
+	return keyFrom(ctx, name) != ""
+}
+
 // keyFrom returns the owner-supplied credential for name, or "" when the render
 // should use the server's.
 func keyFrom(ctx context.Context, name string) string {

@@ -396,7 +396,12 @@ func (p *Pipeline) Health() *provider.HealthTracker { return p.health }
 // real answer is what silently erased a badge from every render. Both fall back
 // to the previous good answer for the same title when one is remembered.
 func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Provider, req Request, artwork *provider.MediaMeta) (*provider.MediaMeta, error) {
-	if p.health != nil && p.health.CoolingOff(prov.Name()) {
+	// A render carrying the owner's own credential for this source has its own
+	// upstream allowance, so the shared key's cooldown does not apply to it. This
+	// is the whole point of a per-profile key: it is exactly the render that must
+	// still reach the source when the shared key is exhausted.
+	ownerKeyed := provider.HasOwnerKey(ctx, prov.Name())
+	if !ownerKeyed && p.health != nil && p.health.CoolingOff(prov.Name()) {
 		// The source is refusing on rate-limit grounds. Waiting for it to say so
 		// again costs the render seconds, so take the remembered value instead.
 		key := provider.GoodKey(prov.Name(), req.ContentType, req.MediaID)

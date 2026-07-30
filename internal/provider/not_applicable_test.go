@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -39,5 +40,18 @@ func TestARealFailureStillCounts(t *testing.T) {
 		if s.Source == "kitsu" && (s.Healthy || s.Failures != 1) {
 			t.Errorf("a real failure was not recorded: healthy=%v failures=%d", s.Healthy, s.Failures)
 		}
+	}
+}
+
+func TestHasOwnerKey(t *testing.T) {
+	ctx := WithKeys(context.Background(), map[string]string{KeyMDBList: "k"})
+	if !HasOwnerKey(ctx, "mdblist") {
+		t.Error("an owner mdblist key was not detected")
+	}
+	if HasOwnerKey(ctx, "omdb") {
+		t.Error("an omdb key was reported when only mdblist was set")
+	}
+	if HasOwnerKey(context.Background(), "mdblist") {
+		t.Error("a bare context reported an owner key")
 	}
 }
