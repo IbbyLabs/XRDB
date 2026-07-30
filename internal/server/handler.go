@@ -128,7 +128,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		// A per-type override makes the render depend on the kind of title, so
 		// the kind joins the key. Configs without one keep their existing keys.
 		reqContentType := normalizeContentType(queryValue(raw, "type", ""))
-		if imageconfig.HasPerTypeRatings(imgCfg) {
+		if imageconfig.HasPerTypeRatings(imgCfg) || imageconfig.HasPerTypeArtwork(imgCfg) {
 			cfgKeyInput = cfgKeyInput + ":ct=" + reqContentType
 		}
 		if !profileLoaded {

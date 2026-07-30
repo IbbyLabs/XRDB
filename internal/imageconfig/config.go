@@ -116,6 +116,12 @@ const (
 type Config struct {
 	Size          MediaSize     `json:"size"`
 	ArtworkSource ArtworkSource `json:"artworkSource"`
+	// ArtworkSourceMovie, ArtworkSourceSeries and ArtworkSourceAnime override
+	// ArtworkSource for that kind of title. An anime override wins over the
+	// series one. Unset falls through to ArtworkSource.
+	ArtworkSourceMovie  ArtworkSource `json:"artworkSourceMovie,omitempty"`
+	ArtworkSourceSeries ArtworkSource `json:"artworkSourceSeries,omitempty"`
+	ArtworkSourceAnime  ArtworkSource `json:"artworkSourceAnime,omitempty"`
 	Language      string        `json:"language"`
 	// FallbackLanguage is tried when the requested language has no art for a
 	// title, before the English/canonical pick.
@@ -556,6 +562,9 @@ type raw struct {
 	OutputQuality                 *int      `json:"outputQuality"`
 	Size                          *string   `json:"size"`
 	ArtworkSource                 *string   `json:"artworkSource"`
+	ArtworkSourceMovie            *string   `json:"artworkSourceMovie"`
+	ArtworkSourceSeries           *string   `json:"artworkSourceSeries"`
+	ArtworkSourceAnime            *string   `json:"artworkSourceAnime"`
 	Language                      *string   `json:"language"`
 	FallbackLanguage              *string   `json:"fallbackLanguage"`
 	TextPreference                *string   `json:"textPreference"`
@@ -833,6 +842,21 @@ func Parse(data json.RawMessage) Config {
 	if r.ArtworkSource != nil {
 		if v := normalizeArtworkSource(*r.ArtworkSource); v != "" {
 			cfg.ArtworkSource = v
+		}
+	}
+	if r.ArtworkSourceMovie != nil {
+		if v := normalizeArtworkSource(*r.ArtworkSourceMovie); v != "" {
+			cfg.ArtworkSourceMovie = v
+		}
+	}
+	if r.ArtworkSourceSeries != nil {
+		if v := normalizeArtworkSource(*r.ArtworkSourceSeries); v != "" {
+			cfg.ArtworkSourceSeries = v
+		}
+	}
+	if r.ArtworkSourceAnime != nil {
+		if v := normalizeArtworkSource(*r.ArtworkSourceAnime); v != "" {
+			cfg.ArtworkSourceAnime = v
 		}
 	}
 	if r.Language != nil && strings.TrimSpace(*r.Language) != "" {
@@ -1150,6 +1174,31 @@ func RatingsFor(cfg Config, contentType string, isAnime bool) []string {
 		}
 	}
 	return cfg.Ratings
+}
+
+// HasPerTypeArtwork reports whether any per-kind artwork override is set.
+func HasPerTypeArtwork(cfg Config) bool {
+	return cfg.ArtworkSourceMovie != "" || cfg.ArtworkSourceSeries != "" || cfg.ArtworkSourceAnime != ""
+}
+
+// ArtworkSourceFor returns the provider that should supply the base artwork for
+// a title of this kind, following the same precedence as RatingsFor: an anime
+// override beats the series one, and an unset override falls through.
+func ArtworkSourceFor(cfg Config, contentType string, isAnime bool) ArtworkSource {
+	if isAnime && cfg.ArtworkSourceAnime != "" {
+		return cfg.ArtworkSourceAnime
+	}
+	switch strings.ToLower(strings.TrimSpace(contentType)) {
+	case "series", "tv":
+		if cfg.ArtworkSourceSeries != "" {
+			return cfg.ArtworkSourceSeries
+		}
+	case "movie":
+		if cfg.ArtworkSourceMovie != "" {
+			return cfg.ArtworkSourceMovie
+		}
+	}
+	return cfg.ArtworkSource
 }
 
 // imageLanguage reduces a language tag to the base subtag that TMDB and Fanart
@@ -1745,6 +1794,9 @@ func CacheKey(cfg Config) string {
 	type canonical struct {
 		Size                          MediaSize      `json:"size"`
 		ArtworkSource                 ArtworkSource  `json:"artworkSource"`
+		ArtworkSourceMovie            ArtworkSource  `json:"artworkSourceMovie"`
+		ArtworkSourceSeries           ArtworkSource  `json:"artworkSourceSeries"`
+		ArtworkSourceAnime            ArtworkSource  `json:"artworkSourceAnime"`
 		Language                      string         `json:"language"`
 		FallbackLanguage              string         `json:"fallbackLanguage"`
 		TextPreference                TextPreference `json:"textPreference"`
@@ -1816,6 +1868,9 @@ func CacheKey(cfg Config) string {
 	c := canonical{
 		Size:                          cfg.Size,
 		ArtworkSource:                 cfg.ArtworkSource,
+		ArtworkSourceMovie:            cfg.ArtworkSourceMovie,
+		ArtworkSourceSeries:           cfg.ArtworkSourceSeries,
+		ArtworkSourceAnime:            cfg.ArtworkSourceAnime,
 		Language:                      cfg.Language,
 		FallbackLanguage:              cfg.FallbackLanguage,
 		TextPreference:                cfg.TextPreference,

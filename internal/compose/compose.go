@@ -187,8 +187,9 @@ func needsAnimeFlag(cfg imageconfig.Config) bool {
 	if cfg.Genre || cfg.AggregateBar {
 		return true
 	}
-	// The anime rating override is only reachable once the kind is known.
-	if len(cfg.RatingsAnime) > 0 {
+	// The anime rating and artwork overrides are only reachable once the kind is
+	// known.
+	if len(cfg.RatingsAnime) > 0 || cfg.ArtworkSourceAnime != "" {
 		return true
 	}
 	switch cfg.RatingPresentation {
@@ -438,6 +439,19 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		resolveQuality = p.startQualityDetect(ctx, badgeCfg, req.ContentType, req.MediaID)
 	}
 
+	// Which provider supplies the artwork can depend on the kind of title, and
+	// the fetch below is what would otherwise settle that first. When an
+	// override is configured the kind is resolved here instead, and the answer
+	// is carried forward so the lookup runs once.
+	animeKnown := false
+	isAnime := false
+	if imageconfig.HasPerTypeArtwork(req.Config) {
+		isAnime = p.isAnimeTitle(ctx, req)
+		animeKnown = true
+		req.Config.ArtworkSource = imageconfig.ArtworkSourceFor(req.Config, req.ContentType, isAnime)
+		timings.mark("artwork_kind")
+	}
+
 	sourceBytes, meta, ratingID, err := p.fetchSourceImageAndMeta(ctx, req)
 	timings.mark("artwork")
 	if err != nil || len(sourceBytes) == 0 {
@@ -477,7 +491,11 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	timings.mark("ratings")
 	result.ContributingProviders = append([]string{string(req.Config.ArtworkSource)}, ratingProviders...)
 	result.Degraded = degraded
-	meta.IsAnime = p.isAnimeTitle(ctx, req)
+	if animeKnown {
+		meta.IsAnime = isAnime
+	} else {
+		meta.IsAnime = p.isAnimeTitle(ctx, req)
+	}
 	timings.mark("anime_lookup")
 
 	// The kind of title is only known once the anime lookup has answered, so the
