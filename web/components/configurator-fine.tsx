@@ -698,26 +698,15 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
   );
 }
 
-export function AggregateFine({ uid, config, onUpdate }: GroupProps) {
+/**
+ * Colour controls for the score pills and the aggregate bar. These used to live
+ * inside the Aggregate bar group, which is only rendered once that bar is
+ * switched on, so every colour setting for the pill presentations was unreachable
+ * without enabling a bar the user did not want drawn.
+ */
+export function ScoreColourFine({ uid, config, onUpdate }: GroupProps) {
   return (
-    <FineGroup label="Aggregate bar">
-      <div className="field">
-        <label className="label" htmlFor={`${uid}-agg-source`}>Rating source</label>
-        <select id={`${uid}-agg-source`} className="select" value={config.aggregateRatingSource}
-          onChange={e => onUpdate('aggregateRatingSource', e.target.value)} style={{ maxWidth: '12rem' }}>
-          {AGGREGATE_SOURCE_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
-        </select>
-      </div>
-      <StyleGrid
-        id={`${uid}-scorebar-style-label`}
-        label="Bar style"
-        options={SCOREBAR_STYLE_OPTIONS}
-        value={config.scorebarStyle}
-        onChange={v => onUpdate('scorebarStyle', v)}
-      />
-      <NumField id={`${uid}-agg-offset`} label="Bar offset (px)" value={config.aggregateBarOffset}
-        onChange={v => onUpdate('aggregateBarOffset', v)} min={-12} max={12} zeroIsDefault={false}
-        hint="Nudge the bar inward from its edge (−12 to 12)." />
+    <FineGroup label="Score colours">
       <StyleGrid
         id={`${uid}-agg-accent-mode-label`}
         label="Accent source"
@@ -725,7 +714,7 @@ export function AggregateFine({ uid, config, onUpdate }: GroupProps) {
         value={config.aggregateAccentMode || 'default'}
         onChange={v => onUpdate('aggregateAccentMode', v === 'default' ? '' : v)}
         columns={2}
-        hint="Genre colors the bar by the title's genre; Source colors it by the chosen rating source."
+        hint="Applies to the score pills and the aggregate bar. Genre colours by the title's genre; Source colours by the chosen rating source."
       />
       {config.aggregateAccentMode === 'custom' && (
         <div className="field">
@@ -805,6 +794,30 @@ export function AggregateFine({ uid, config, onUpdate }: GroupProps) {
           )}
         </div>
       </details>
+    </FineGroup>
+  );
+}
+
+export function AggregateFine({ uid, config, onUpdate }: GroupProps) {
+  return (
+    <FineGroup label="Aggregate bar">
+      <div className="field">
+        <label className="label" htmlFor={`${uid}-agg-source`}>Rating source</label>
+        <select id={`${uid}-agg-source`} className="select" value={config.aggregateRatingSource}
+          onChange={e => onUpdate('aggregateRatingSource', e.target.value)} style={{ maxWidth: '12rem' }}>
+          {AGGREGATE_SOURCE_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+        </select>
+      </div>
+      <StyleGrid
+        id={`${uid}-scorebar-style-label`}
+        label="Bar style"
+        options={SCOREBAR_STYLE_OPTIONS}
+        value={config.scorebarStyle}
+        onChange={v => onUpdate('scorebarStyle', v)}
+      />
+      <NumField id={`${uid}-agg-offset`} label="Bar offset (px)" value={config.aggregateBarOffset}
+        onChange={v => onUpdate('aggregateBarOffset', v)} min={-12} max={12} zeroIsDefault={false}
+        hint="Nudge the bar inward from its edge (−12 to 12)." />
       <details className="adv-details">
         <summary>Scorebar bands (when accent is auto)</summary>
         <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>

@@ -8,7 +8,7 @@ import {
   LAYOUT_OPTIONS, RATING_OPTIONS, BADGE_STYLE_OPTIONS, BADGE_THEME_OPTIONS, RING_POS_OPTIONS,
   SIDE_LAYOUTS,
 } from './configurator-types';
-import { RatingBadgesFine, RatingRingFine } from './configurator-fine';
+import { RatingBadgesFine, ScoreColourFine, RatingRingFine } from './configurator-fine';
 
 // ── Template strip ────────────────────────────────────────────────────────────
 
@@ -173,6 +173,7 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
             </div>
 
             {fine && <RatingBadgesFine uid={uid} config={config} onUpdate={onUpdate} />}
+            {fine && <ScoreColourFine uid={uid} config={config} onUpdate={onUpdate} />}
           </>
         )}
 
