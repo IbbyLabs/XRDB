@@ -420,14 +420,23 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 	key := cacheKey
 
 	if err == nil && meta != nil && len(meta.Ratings) > 0 {
-		p.health.Success(prov.Name(), key, meta)
+		if p.health.Success(prov.Name(), key, meta) {
+			p.log().WarnContext(ctx, "A ratings source recovered and is answering again",
+				"id", logging.RequestID(ctx), "source", prov.Name())
+		}
 		return meta, nil
 	}
 	if err != nil && !ownerKeyed {
 		// An owner key failing says nothing about the shared source's health: it
 		// is a different credential with its own allowance. Recording it would let
 		// one exhausted owner key set the shared cooldown for every other render.
-		p.health.Failure(prov.Name(), err)
+		if p.health.Failure(prov.Name(), err) {
+			// The transition into cooldown, logged once, is what makes an
+			// exhausted metered source visible instead of silently dropping its
+			// badge from every render.
+			p.log().WarnContext(ctx, "A ratings source is rate-limited and held out until it recovers",
+				"id", logging.RequestID(ctx), "source", prov.Name(), "error", err)
+		}
 	}
 	if good, ok := p.health.LastGood(prov.Name(), key); ok {
 		p.log().WarnContext(ctx, "A ratings source is degraded; serving its last known good result",

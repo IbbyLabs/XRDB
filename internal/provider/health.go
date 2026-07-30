@@ -97,21 +97,25 @@ func GoodKey(source, mediaType, id string) string {
 // Success records a healthy fetch and remembers its result. A result carrying
 // no ratings is not remembered: it is exactly what a broken scrape produces,
 // and storing it would overwrite the good answer we still want to fall back to.
-func (h *HealthTracker) Success(source, key string, meta *MediaMeta) {
+// Success records a successful fetch and reports whether it recovered a source
+// that was previously held out, so the caller can log the recovery once.
+func (h *HealthTracker) Success(source, key string, meta *MediaMeta) (recovered bool) {
 	if h == nil {
-		return
+		return false
 	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
 	st := h.stateLocked(source)
+	recovered = !st.healthy || time.Now().Before(st.cooldownUntil)
 	st.healthy = true
+	st.cooldownUntil = time.Time{}
 	st.lastSuccess = time.Now()
 	st.consecutiveFail = 0
 	st.successes++
 
 	if meta == nil || len(meta.Ratings) == 0 {
-		return
+		return recovered
 	}
 	if el, ok := h.entries[key]; ok {
 		h.lru.Remove(el)
@@ -131,18 +135,22 @@ func (h *HealthTracker) Success(source, key string, meta *MediaMeta) {
 		h.lru.Remove(front)
 		delete(h.entries, ge.key)
 	}
+	return recovered
 }
 
-// Failure records a failed fetch. A plain not-found is not a health problem:
-// the source answered, the title simply is not there.
-func (h *HealthTracker) Failure(source string, err error) {
+// Failure records a failed fetch and reports whether this call newly put the
+// source into a rate-limit cooldown, so the caller can log that transition once
+// rather than on every refused render. A plain not-found is not a health
+// problem: the source answered, the title simply is not there.
+func (h *HealthTracker) Failure(source string, err error) (enteredCooldown bool) {
 	if h == nil || errors.Is(err, errNotFound) || errors.Is(err, ErrNotApplicable) {
-		return
+		return false
 	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
 	st := h.stateLocked(source)
+	wasCooling := time.Now().Before(st.cooldownUntil)
 	st.healthy = false
 	st.lastFailure = time.Now()
 	st.consecutiveFail++
@@ -175,7 +183,9 @@ func (h *HealthTracker) Failure(source string, err error) {
 			st.cooldownUntil = until
 			st.cooldowns++
 		}
+		enteredCooldown = !wasCooling && time.Now().Before(st.cooldownUntil)
 	}
+	return enteredCooldown
 }
 
 // Cooldown durations bound how long a rate-limited source is held out. The
