@@ -428,6 +428,7 @@ type QualityBadgeConfig struct {
 // RatingRingConfig groups the compact rating-ring options beyond the existing
 // flat RatingRing/RatingRingPos/RatingRingColor fields.
 type RatingRingConfig struct {
+	RingScale          int    `json:"ringScale,omitempty"`          // percent of the default ring size; 0 = 100
 	RingCenterOpacity  int    `json:"ringCenterOpacity,omitempty"`  // 0-100 opacity of the centre disk; 0 = default
 	RingValueSource    string `json:"ringValueSource,omitempty"`    // "" / "overall" = average, else a provider (e.g. "imdb")
 	RingProgressSource string `json:"ringProgressSource,omitempty"` // source for the arc fill; same values
@@ -626,6 +627,7 @@ type rawSurface struct {
 }
 
 type rawRing struct {
+	RingScale            *int     `json:"ringScale"`
 	RingCenterOpacity    *int     `json:"ringCenterOpacity"`
 	RingValueSource      *string  `json:"ringValueSource"`
 	RingProgressSource   *string  `json:"ringProgressSource"`
@@ -1237,6 +1239,9 @@ func parseRating(cfg *Config, r *raw) {
 const maxProviderWeight = 100
 
 func parseRing(cfg *Config, r *raw) {
+	if r.RingScale != nil && *r.RingScale != 0 {
+		cfg.RingScale = clampInt(*r.RingScale, 70, 250)
+	}
 	if r.RingCenterOpacity != nil && *r.RingCenterOpacity != 0 {
 		cfg.RingCenterOpacity = clampInt(*r.RingCenterOpacity, 1, 100)
 	}

@@ -521,6 +521,9 @@ function PriorityList({
 export function RatingRingFine({ uid, config, onUpdate }: GroupProps) {
   return (
     <FineGroup label="Rating ring">
+      <NumField id={`${uid}-ring-scale`} label="Ring size (%)" value={config.ringScale}
+        onChange={v => onUpdate('ringScale', v)} min={70} max={250} step={5}
+        hint="Size of the ring and the number inside it. Blank keeps the default." />
       <NumField id={`${uid}-ring-center-op`} label="Center opacity (%)" value={config.ringCenterOpacity}
         onChange={v => onUpdate('ringCenterOpacity', v)} min={0} max={100} step={5}
         hint="Opacity of the disc behind the ring's number. Blank keeps the default." />

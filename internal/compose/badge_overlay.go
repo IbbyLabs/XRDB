@@ -2119,10 +2119,17 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 		pos = "br"
 	}
 
-	ensureFaces()
-	valueFace := valueFaceFor(scale * ringValueFontScale)
+	// The ring and the value inside it scale together; sizing the ring alone
+	// leaves the number the same size in a larger circle.
+	ringScale := scale
+	if cfg.RingScale != 0 {
+		ringScale *= float64(cfg.RingScale) / 100
+	}
 
-	outerR := s(32)
+	ensureFaces()
+	valueFace := valueFaceFor(ringScale * ringValueFontScale)
+
+	outerR := int(32*ringScale + 0.5)
 	// Place the ring's bounding box, dodging any overlay already reserved in
 	// the requested corner (age/genre badges, provider chips, ratings strip).
 	d := outerR * 2

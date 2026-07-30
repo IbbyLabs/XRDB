@@ -440,6 +440,7 @@ export interface ConfigState {
   trendingPos: string; // 'inherit' | six positions
   logoBackground: string; // 'transparent' | 'dark'
   episodeArtworkMode: string; // 'still' | 'series' | 'streaming' (thumbnail/backdrop episodes)
+  ringScale: number; // percent of the default ring size; 0 = 100
   ringCenterOpacity: number; // 0 = default
   ringValueSource: string; // 'overall' | provider id
   ringProgressSource: string;
@@ -563,6 +564,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   trendingPos: 'inherit',
   logoBackground: 'transparent',
   episodeArtworkMode: 'still',
+  ringScale: 0,
   ringCenterOpacity: 0,
   ringValueSource: 'overall',
   ringProgressSource: 'overall',

@@ -263,6 +263,7 @@ export function ConfiguratorClient() {
       trendingPos: cfg.trendingPos,
       logoBackground: cfg.logoBackground,
       episodeArtworkMode: cfg.episodeArtworkMode === 'still' ? '' : cfg.episodeArtworkMode,
+      ringScale: cfg.ringScale,
       ringCenterOpacity: cfg.ringCenterOpacity,
       ringValueSource: cfg.ringValueSource === 'overall' ? '' : cfg.ringValueSource,
       ringProgressSource: cfg.ringProgressSource === 'overall' ? '' : cfg.ringProgressSource,
