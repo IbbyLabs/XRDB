@@ -52,20 +52,6 @@ jobs:
             --repo "${GITHUB_REPOSITORY}" \
             --ref "${TAG}"
 
-      # Same GITHUB_TOKEN limitation as the build above: the published release
-      # fires no `release` trigger, so the announcement is dispatched by tag.
-      - name: Announce the release on Discord
-        if: ${{ steps.release.outputs.release_created == 'true' }}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.release.outputs.tag_name }}
-        run: |
-          set -euo pipefail
-          echo "Dispatching the Discord announcement for ${TAG}"
-          gh workflow run notify-discord-on-release.yml \
-            --repo "${GITHUB_REPOSITORY}" \
-            --field tag="${TAG}"
-
       - name: Summary
         if: ${{ steps.release.outputs.release_created == 'true' }}
         env:
@@ -75,5 +61,7 @@ jobs:
             echo "Released \`${TAG}\`."
             echo ""
             echo "The image build was dispatched against that tag; the \`:latest\`"
-            echo "promotion follows once it succeeds."
+            echo "promotion follows once it succeeds, and the Discord"
+            echo "announcement is the build's own last job so it cannot run"
+            echo "before the image exists."
           } >> "$GITHUB_STEP_SUMMARY"

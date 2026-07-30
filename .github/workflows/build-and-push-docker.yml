@@ -350,3 +350,29 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git tag --force "${CHECKPOINT_TAG}" "${GITHUB_SHA}"
           git push --force origin "refs/tags/${CHECKPOINT_TAG}"
+
+  # The release announcement is the last thing that happens, gated on the merge
+  # job, so Discord never says a version is out before its image exists. It used
+  # to be dispatched by release-please alongside the build rather than after it,
+  # which announced a tag while the multi-arch build was still running and left
+  # anyone who pulled straight away on the previous image.
+  notify-release:
+    name: Notify Discord (release)
+    runs-on: ubuntu-latest
+    needs: [version, merge]
+    if: ${{ github.ref_type == 'tag' && needs.version.outputs.publish_latest == 'true' }}
+    permissions:
+      contents: read
+      # Dispatching the announcement workflow.
+      actions: write
+    steps:
+      - name: Announce the release on Discord
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          echo "The image for ${TAG} is published; announcing it."
+          gh workflow run notify-discord-on-release.yml \
+            --repo "${GITHUB_REPOSITORY}" \
+            --field tag="${TAG}"
