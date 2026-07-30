@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.17.2](https://github.com/IbbyLabs/XRDB/compare/v3.17.1...v3.17.2) (2026-07-30)
+
+
+### Fixed
+
+* **artwork:** match the logo language on English originals (BUG-172) ([908846a](https://github.com/IbbyLabs/XRDB/commit/908846abd6239483c681c4a7313ad1bc0c563357))
+
 ## [3.17.1](https://github.com/IbbyLabs/XRDB/compare/v3.17.0...v3.17.1) (2026-07-30)
 
 
