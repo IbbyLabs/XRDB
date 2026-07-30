@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.29.4](https://github.com/IbbyLabs/XRDB/compare/v3.29.3...v3.29.4) (2026-07-30)
+
+
+### Fixed
+
+* **preview:** apply a profile's provider keys, refresh on a key change ([c71818f](https://github.com/IbbyLabs/XRDB/commit/c71818f49371bb7afad51e8a08152e15ba52aad9))
+
 ## [3.29.3](https://github.com/IbbyLabs/XRDB/compare/v3.29.2...v3.29.3) (2026-07-30)
 
 
