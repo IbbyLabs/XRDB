@@ -136,7 +136,17 @@ func (p *Pipeline) resolveAnimeID(ctx context.Context, req Request) Request {
 	if !ok || resolver == nil {
 		return req
 	}
-	service, num, ok := animemap.ParseAnimeID(req.MediaID)
+	// A leading content-type token comes off first. The tail split below counts
+	// colons from the start, so "series:mal:21" would otherwise read its own
+	// number as a season and episode.
+	rawID := req.MediaID
+	for _, tok := range []string{"movie:", "series:", "tv:"} {
+		if r, found := strings.CutPrefix(rawID, tok); found {
+			rawID = r
+			break
+		}
+	}
+	service, num, ok := animemap.ParseAnimeID(rawID)
 	if !ok {
 		return req
 	}
@@ -144,7 +154,7 @@ func (p *Pipeline) resolveAnimeID(ctx context.Context, req Request) Request {
 	// Anything after the service and number is a season and episode. Split on
 	// the raw id rather than the rebuilt head, which differs for aliases.
 	tail := ""
-	if parts := strings.SplitN(req.MediaID, ":", 3); len(parts) == 3 {
+	if parts := strings.SplitN(rawID, ":", 3); len(parts) == 3 {
 		tail = ":" + parts[2]
 	}
 	target, ok := resolver.ResolveTarget(ctx, head)

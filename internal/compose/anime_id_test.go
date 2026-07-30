@@ -37,6 +37,12 @@ func TestResolveAnimeIDRewritesTheRequest(t *testing.T) {
 		{"anilist to tmdb series", "anilist:5", "tmdb:series:37854"},
 		{"kitsu to tmdb movie", "kitsu:900", "tmdb:movie:129"},
 		{"episode tail is carried across", "kitsu:12:1:5", "tt0388629:1:5"},
+		// AIOMetadata's {type}:{id} puts the content type in front. The tail
+		// split counts colons from the start, so the id's own number was read
+		// as a season and episode and the request 404d.
+		{"type token in front of mal", "series:mal:21", "tt0388629"},
+		{"type token in front of kitsu", "movie:kitsu:900", "tmdb:movie:129"},
+		{"type token with an episode tail", "series:kitsu:12:1:5", "tt0388629:1:5"},
 		{"unmapped anime id is left alone", "kitsu:4242", "kitsu:4242"},
 		{"imdb id is left alone", "tt0468569", "tt0468569"},
 		{"tmdb id is left alone", "tmdb:series:1396", "tmdb:series:1396"},
