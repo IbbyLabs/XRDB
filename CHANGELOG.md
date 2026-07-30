@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.17.0](https://github.com/IbbyLabs/XRDB/compare/v3.16.1...v3.17.0) (2026-07-30)
+
+
+### Added
+
+* **logo:** size and place the title logo overlay (FR-126) ([598a680](https://github.com/IbbyLabs/XRDB/commit/598a680193fec8dc5e0e0c54589479b237df2cb3))
+
 ## [3.16.1](https://github.com/IbbyLabs/XRDB/compare/v3.16.0...v3.16.1) (2026-07-30)
 
 
