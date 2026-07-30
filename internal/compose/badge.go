@@ -464,6 +464,8 @@ type badgeChrome struct {
 	// value beneath. The remaining fields are its vertical metrics, filled in
 	// once the strip's scale is known.
 	stacked       bool
+	// squared keeps the corners on one edge square, for the anchored strip.
+	squared       squaredCorners
 	stackRailH    int
 	stackRailGap  int
 	stackValueGap int
@@ -607,6 +609,18 @@ func drawIconOutline(dst *image.NRGBA, rect image.Rectangle, mask *image.NRGBA, 
 	}
 }
 
+// anchoredEdges zeroes the inset on the edge the strip hangs from, leaving the
+// other axis alone. A top row loses its top gap, a side column its side gap.
+func anchoredEdges(cfg imageconfig.Config, edgeX, edgeY int) (int, int) {
+	switch cfg.RatingsLayout {
+	case imageconfig.LayoutTop, imageconfig.LayoutBottom, imageconfig.LayoutTopBottom:
+		return edgeX, 0
+	case imageconfig.LayoutLeft, imageconfig.LayoutRight, imageconfig.LayoutSplitSide:
+		return 0, edgeY
+	}
+	return edgeX, edgeY
+}
+
 // drawRatingRow renders a horizontal slice of badge specs at row y.
 func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSize, iconGap, accentW int, face font.Face, chrome badgeChrome) {
 	radius := chrome.radius(innerH)
@@ -618,7 +632,7 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 	for _, sp := range specs {
 		bRect := image.Rect(sp.x, y, sp.x+sp.w, y+innerH)
 		if chrome.bg.A > 0 {
-			fillRoundedRect(out, bRect, radius, chrome.bg)
+			fillRoundedRectSquared(out, bRect, radius, chrome.squared, chrome.bg)
 		}
 		if chrome.border.A > 0 {
 			drawRectBorder(out, bRect, radius, chrome.border)
@@ -753,6 +767,9 @@ func ratingsBandHeight(frameW, frameH int, ratings []provider.Rating, cfg imagec
 	edgeInset := int(float64(cfg.PosterEdgeOffset)*scale + 0.5)
 	edgeX += edgeInset
 	edgeY += edgeInset
+	if cfg.RatingsAnchored {
+		edgeX, edgeY = anchoredEdges(cfg, edgeX, edgeY)
+	}
 	innerH := padY*2 + maxInt(valH, iconSize)
 	stacked := cfg.BadgeStyle == imageconfig.BadgeStacked
 	hideIcon := cfg.RatingIconHidden
@@ -829,9 +846,15 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 	d := ratingStripDimsFor(scale, cfg)
 	accentW, padX, padY, iconSize := d.accentW, d.padX, d.padY, d.iconSize
 	iconGap, badgeGap, rowGap, edgeX, edgeY := d.iconGap, d.badgeGap, d.rowGap, d.edgeX, d.edgeY
+	if cfg.RatingsAnchored {
+		edgeX, edgeY = anchoredEdges(cfg, edgeX, edgeY)
+	}
 
 	innerH := padY*2 + maxInt(valH, iconSize)
 	chrome := chromeFor(cfg)
+	if cfg.RatingsAnchored {
+		chrome.squared = squaredCornersFor(string(cfg.RatingsLayout))
+	}
 	if chrome.stacked {
 		innerH = stackedBadgeInnerH(d, valH, chrome.hideIcon, chrome.hideStackRail)
 		chrome.stackRailH = d.accentW

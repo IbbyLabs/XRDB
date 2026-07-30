@@ -10,11 +10,63 @@ import (
 )
 
 // fillRoundedRect fills a rounded rectangle onto dst.
+// squaredCorners names the edge a shape is anchored against. The two corners on
+// that edge are drawn square, which is what makes a badge read as attached to
+// the edge rather than floating near it.
+type squaredCorners uint8
+
+const (
+	squareNone squaredCorners = iota
+	squareTop
+	squareBottom
+	squareLeft
+	squareRight
+)
+
+// squaredCornersFor maps a ratings layout to the edge its strip hangs from.
+func squaredCornersFor(layout string) squaredCorners {
+	switch layout {
+	case "top":
+		return squareTop
+	case "bottom":
+		return squareBottom
+	case "left":
+		return squareLeft
+	case "right":
+		return squareRight
+	}
+	return squareNone
+}
+
+// onSquaredEdge reports whether (x, y) sits in a corner zone that sq keeps
+// square.
+func onSquaredEdge(x, y int, r image.Rectangle, radius int, sq squaredCorners) bool {
+	switch sq {
+	case squareTop:
+		return y < r.Min.Y+radius
+	case squareBottom:
+		return y >= r.Max.Y-radius
+	case squareLeft:
+		return x < r.Min.X+radius
+	case squareRight:
+		return x >= r.Max.X-radius
+	}
+	return false
+}
+
 func fillRoundedRect(dst *image.NRGBA, r image.Rectangle, radius int, c color.NRGBA) {
+	fillRoundedRectSquared(dst, r, radius, squareNone, c)
+}
+
+func fillRoundedRectSquared(dst *image.NRGBA, r image.Rectangle, radius int, sq squaredCorners, c color.NRGBA) {
 	bounds := dst.Bounds()
 	r = r.Intersect(bounds)
 	for y := r.Min.Y; y < r.Max.Y; y++ {
 		for x := r.Min.X; x < r.Max.X; x++ {
+			if sq != squareNone && onSquaredEdge(x, y, r, radius, sq) {
+				dst.SetNRGBA(x, y, c)
+				continue
+			}
 			cov, skip := cornerCoverage(x, y, r, radius)
 			if skip {
 				continue

@@ -334,6 +334,10 @@ type RatingBadgeConfig struct {
 	RatingOffsetYPillGlass int `json:"ratingYOffsetPillGlass,omitempty"`
 	RatingOffsetXSquare    int `json:"ratingXOffsetSquare,omitempty"`
 	RatingOffsetYSquare    int `json:"ratingYOffsetSquare,omitempty"`
+	// RatingsAnchored drops the strip's inset from the edge it sits against and
+	// squares the badge corners on that edge, so the row reads as hanging off
+	// the edge rather than floating near it.
+	RatingsAnchored bool `json:"ratingsAnchored,omitempty"`
 	// PosterEdgeOffset pushes the whole badge strip further in from the edge it
 	// sits against. 0 keeps the built-in inset.
 	PosterEdgeOffset int `json:"posterEdgeOffset,omitempty"`
@@ -693,6 +697,7 @@ type rawRating struct {
 	RatingOffsetXSquare     *int               `json:"ratingXOffsetSquare"`
 	RatingOffsetYSquare     *int               `json:"ratingYOffsetSquare"`
 	PosterEdgeOffset        *int               `json:"posterEdgeOffset"`
+	RatingsAnchored         *bool              `json:"ratingsAnchored"`
 	BottomRatingsRow        *bool              `json:"bottomRatingsRow"`
 	RatingPresentation      *string            `json:"ratingPresentation"`
 	RatingValueMode         *string            `json:"ratingValueMode"`
@@ -1274,6 +1279,9 @@ func parseRating(cfg *Config, r *raw) {
 	}
 	if r.PosterEdgeOffset != nil {
 		cfg.PosterEdgeOffset = clampInt(*r.PosterEdgeOffset, 0, 80)
+	}
+	if r.RatingsAnchored != nil {
+		cfg.RatingsAnchored = *r.RatingsAnchored
 	}
 	if r.BottomRatingsRow != nil {
 		cfg.BottomRatingsRow = *r.BottomRatingsRow
