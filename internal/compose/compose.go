@@ -283,7 +283,7 @@ func providerWanted(p provider.Provider, cfg imageconfig.Config) bool {
 		}
 	}
 	for _, source := range sourcer.RatingSources() {
-		for _, want := range cfg.Ratings {
+		for _, want := range imageconfig.RatingsCandidates(cfg) {
 			if source == want {
 				return true
 			}

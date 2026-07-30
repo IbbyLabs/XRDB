@@ -59,3 +59,41 @@ func TestPerTypeRatingsReachTheCacheKey(t *testing.T) {
 		t.Error("ratingsAnime does not change the cache key")
 	}
 }
+
+// Provider selection runs before the kind of title is known, so it has to fetch
+// every source any list might ask for. Fetching only cfg.Ratings meant an
+// override named a source that was never fetched, and the badge silently
+// vanished instead of changing.
+func TestRatingsCandidatesCoversEveryList(t *testing.T) {
+	cfg := Default()
+	cfg.Ratings = []string{"imdb"}
+	cfg.RatingsMovie = []string{"imdb", "rt"}
+	cfg.RatingsAnime = []string{"mal", "anilist"}
+
+	got := RatingsCandidates(cfg)
+	for _, want := range []string{"imdb", "rt", "mal", "anilist"} {
+		found := false
+		for _, g := range got {
+			if g == want {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("%q is in an override but not among the candidates %v", want, got)
+		}
+	}
+	if len(got) != 4 {
+		t.Errorf("candidates = %v, want four distinct sources", got)
+	}
+}
+
+// A config with no overrides must return the plain list untouched, so nothing
+// extra is fetched for the configs that do not use this.
+func TestRatingsCandidatesIsThePlainListWithoutOverrides(t *testing.T) {
+	cfg := Default()
+	cfg.Ratings = []string{"imdb", "tmdb"}
+	if got := RatingsCandidates(cfg); !reflect.DeepEqual(got, cfg.Ratings) {
+		t.Errorf("got %v, want the plain list %v", got, cfg.Ratings)
+	}
+}

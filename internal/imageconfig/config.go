@@ -1091,6 +1091,27 @@ func scoreThreshold(v *float64) (float64, bool) {
 	return f, true
 }
 
+// RatingsCandidates is every source any kind of title might ask for. Provider
+// selection happens before the anime lookup answers, so it cannot know which
+// list will apply; fetching the union keeps an overridden source available for
+// the moment the kind is known. Without overrides this is exactly Ratings.
+func RatingsCandidates(cfg Config) []string {
+	if len(cfg.RatingsMovie) == 0 && len(cfg.RatingsSeries) == 0 && len(cfg.RatingsAnime) == 0 {
+		return cfg.Ratings
+	}
+	seen := make(map[string]bool, len(cfg.Ratings))
+	out := make([]string, 0, len(cfg.Ratings))
+	for _, list := range [][]string{cfg.Ratings, cfg.RatingsMovie, cfg.RatingsSeries, cfg.RatingsAnime} {
+		for _, r := range list {
+			if r != "" && !seen[r] {
+				seen[r] = true
+				out = append(out, r)
+			}
+		}
+	}
+	return out
+}
+
 // RatingsFor returns the rating sources a title of this kind should show. An
 // anime override wins over the series/movie one, because an anime is also a
 // series and the more specific answer is the one asked for. An unset override
