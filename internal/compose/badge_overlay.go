@@ -1426,6 +1426,8 @@ type scorePillStyle struct {
 	// accentTopStrip draws the accent as a centred bar along the top edge
 	// instead of outlining the capsule.
 	accentTopStrip bool
+	// accentWidth strokes the capsule outline at this px width at 1x; 0 = 2.
+	accentWidth int
 	// fill replaces the dark capsule body. Zero alpha keeps the default.
 	fill color.NRGBA
 	// valueSet marks an explicitly configured value colour, which wins over the
@@ -1459,6 +1461,7 @@ func aggregatePillStyle(cfg imageconfig.Config, source string, genres []string, 
 		accentShown:    cfg.AggregateAccentBarVisible == nil || *cfg.AggregateAccentBarVisible,
 		accentOffset:   cfg.AggregateAccentBarOffset,
 		accentTopStrip: cfg.AggregateAccentShape == "strip",
+		accentWidth:    cfg.AggregateAccentWidth,
 		radius:         scorePillRadius(cfg.BadgeStyle),
 	}
 
@@ -1566,7 +1569,11 @@ func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, style s
 		bar := image.Rect(cx-barW/2, topY+s(3), cx+barW/2, topY+s(3)+barH)
 		fillRoundedRect(base, bar, barH/2, style.accent)
 	} else if label == "" && style.accentSet && style.accentShown && style.fill.A == 0 {
-		strokeRoundedRect(base, rect, radius, s(2), style.accent)
+		outlineW := 2
+		if style.accentWidth > 0 {
+			outlineW = style.accentWidth
+		}
+		strokeRoundedRect(base, rect, radius, s(float64(outlineW)), style.accent)
 	} else {
 		drawRectBorder(base, rect, radius, color.NRGBA{R: 255, G: 255, B: 255, A: 28})
 	}

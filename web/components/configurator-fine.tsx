@@ -697,6 +697,9 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
       </div>
       <NumField id={`${uid}-plain-outline-w`} label="Outline width (px)" value={config.noBackgroundBadgeOutlineWidth}
         onChange={v => onUpdate('noBackgroundBadgeOutlineWidth', v)} min={0} max={6} placeholder="default" />
+      <NumField id={`${uid}-accent-width`} label="Accent outline width (px)" value={config.aggregateAccentWidth}
+        onChange={v => onUpdate('aggregateAccentWidth', v)} min={1} max={8} placeholder="2"
+        hint="Thickness of the score pill's accent outline." />
       <NumField id={`${uid}-badge-density`} label="Badge density (%)" value={config.ratingBadgeDensity}
         onChange={v => onUpdate('ratingBadgeDensity', v)} min={60} max={140} step={5}
         hint="Padding inside each badge and the gap to its logo. Lower hugs the contents." />

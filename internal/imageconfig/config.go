@@ -146,7 +146,10 @@ type Config struct {
 	NetworkTileColor     string `json:"networkTileColor,omitempty"` // "#RRGGBB" tile behind provider chips
 	// RatingBadgeDensity scales the padding inside a rating badge and the gap
 	// between its mark and value, as a percent; 0 = 100. Lower hugs the contents.
-	RatingBadgeDensity int `json:"ratingBadgeDensity,omitempty"`
+	// AggregateAccentWidth is the stroke width of the score pill's accent
+	// outline, in px at 1x; 0 keeps the default.
+	AggregateAccentWidth int `json:"aggregateAccentWidth,omitempty"`
+	RatingBadgeDensity   int `json:"ratingBadgeDensity,omitempty"`
 	// Border traced around the rating badge capsule itself.
 	RatingBadgeBorderColor   string `json:"ratingBadgeBorderColor,omitempty"`   // "#RRGGBB"; "" = per style
 	RatingBadgeBorderOpacity int    `json:"ratingBadgeBorderOpacity,omitempty"` // 0-100; 0 = default
@@ -554,6 +557,7 @@ type raw struct {
 	ProviderBadgeScale            *int      `json:"providerBadgeScale"`
 	ProviderBadgeOffsetX          *int      `json:"providerBadgeOffsetX"`
 	ProviderBadgeOffsetY          *int      `json:"providerBadgeOffsetY"`
+	AggregateAccentWidth          *int      `json:"aggregateAccentWidth"`
 	RatingBadgeDensity            *int      `json:"ratingBadgeDensity"`
 	RatingBadgeBorderColor        *string   `json:"ratingBadgeBorderColor"`
 	RatingBadgeBorderOpacity      *int      `json:"ratingBadgeBorderOpacity"`
@@ -924,6 +928,9 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.ProviderBadgeOffsetY != nil {
 		cfg.ProviderBadgeOffsetY = clampInt(*r.ProviderBadgeOffsetY, -320, 320)
+	}
+	if r.AggregateAccentWidth != nil && *r.AggregateAccentWidth != 0 {
+		cfg.AggregateAccentWidth = clampInt(*r.AggregateAccentWidth, 1, 8)
 	}
 	if r.RatingBadgeDensity != nil && *r.RatingBadgeDensity != 0 {
 		cfg.RatingBadgeDensity = clampInt(*r.RatingBadgeDensity, 60, 140)
@@ -1658,6 +1665,7 @@ func CacheKey(cfg Config) string {
 		ProviderBadgeOffsetX          int            `json:"providerBadgeOffsetX"`
 		ProviderBadgeOffsetY          int            `json:"providerBadgeOffsetY"`
 		NetworkTileColor              string         `json:"networkTileColor"`
+		AggregateAccentWidth          int            `json:"aggregateAccentWidth"`
 		RatingBadgeDensity            int            `json:"ratingBadgeDensity"`
 		RatingBadgeBorderColor        string         `json:"ratingBadgeBorderColor"`
 		RatingBadgeBorderOpacity      int            `json:"ratingBadgeBorderOpacity"`
@@ -1723,6 +1731,7 @@ func CacheKey(cfg Config) string {
 		ProviderBadgeOffsetX:          cfg.ProviderBadgeOffsetX,
 		ProviderBadgeOffsetY:          cfg.ProviderBadgeOffsetY,
 		NetworkTileColor:              cfg.NetworkTileColor,
+		AggregateAccentWidth:          cfg.AggregateAccentWidth,
 		RatingBadgeDensity:            cfg.RatingBadgeDensity,
 		RatingBadgeBorderColor:        cfg.RatingBadgeBorderColor,
 		RatingBadgeBorderOpacity:      cfg.RatingBadgeBorderOpacity,

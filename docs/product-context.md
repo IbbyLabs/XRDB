@@ -36,6 +36,7 @@ ignored, so this header text costs nothing.
 - Where the pill controls live: Ratings tab, with Fine tuning switched on. Presentation, Pill position and scale sit under Rating badges; accent source, the critics and audience colours, Fill by score, Accent rail and Accent shape sit under Score colours just below. Any older answer telling someone to enable the Aggregate bar first, or describing that as a workaround, is out of date — the colour controls no longer live inside the bar's own group. Only Bar style, Bar offset and the scorebar bands do.
 - An accent colour fills the block behind the label when the presentation has one. On the label-less presentations, minimal and dual-minimal, it marks the capsule itself, so a dual pair can carry one colour per role. Any older answer saying accent colours do nothing on those styles, or that a coloured outline with a dark body is impossible, is out of date.
 - `aggregateAccentShape` picks how it is marked: `outline` traces the pill and keeps the body dark, `strip` draws a centred bar along the top edge. Outline is the default.
+- `aggregateAccentWidth` sets how thick that outline is drawn, in pixels. Any older answer saying its thickness is fixed is out of date.
 - Turning the accent rail off drops that outline too, and Fill by score puts the colour in the body instead, so the three treatments do not stack.
 
 ## Quality badges
