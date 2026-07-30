@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useId, useCallback, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { Search, Shuffle, Pin, X } from 'lucide-react';
-import { searchTitles, trendingTitles, renderIDFor, type TitleResult } from '@/lib/api';
+import { searchTitles, trendingTitles, renderIDFor, ApiError, type TitleResult } from '@/lib/api';
 
 export interface PinnedItem {
   id: string;    // render ID (tt-ID or TMDB numeric)
@@ -23,6 +23,21 @@ interface MediaSearchProps {
   mediaTitle: string;
   onSelect: (id: string, title: string) => void;
   onError: (message: string) => void;
+}
+
+
+/**
+ * Names the cause the server actually reported. 503 is the only answer that
+ * means the TMDB key is missing; 502 is TMDB itself failing, and no status at
+ * all is the instance being unreachable. One message for all three sent people
+ * to inspect a key that was fine.
+ */
+function tmdbError(action: string, err: unknown): string {
+  const status = err instanceof ApiError ? err.status : 0;
+  if (status === 503) return `${action} needs a TMDB key configured on this instance.`;
+  if (status === 502) return `${action} could not reach TMDB. Try again shortly.`;
+  if (status === 0) return `${action} could not reach this instance.`;
+  return `${action} is unavailable (HTTP ${status}).`;
 }
 
 export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSearchProps) {
@@ -107,8 +122,8 @@ export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSea
         setResults(hits);
         setActiveIndex(-1);
         setOpen(hits.length > 0);
-      } catch {
-        onError('Search is unavailable — check the TMDB key on this instance.');
+      } catch (err) {
+        onError(tmdbError('Search', err));
       } finally {
         setSearching(false);
       }
@@ -173,8 +188,8 @@ export function MediaSearch({ mediaId, mediaTitle, onSelect, onError }: MediaSea
       } else {
         onSelect(id, pick.year ? `${pick.title} (${pick.year})` : pick.title);
       }
-    } catch {
-      onError('Shuffle is unavailable — check the TMDB key on this instance.');
+    } catch (err) {
+      onError(tmdbError('Shuffle', err));
     } finally {
       setShuffling(false);
     }

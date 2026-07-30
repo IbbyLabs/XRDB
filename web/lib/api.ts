@@ -407,15 +407,31 @@ export interface TitleResult {
   year: number;
 }
 
+/**
+ * An error carrying the HTTP status, so a caller can tell one failure from
+ * another. The trending and lookup endpoints answer 503 when no TMDB key is
+ * configured and 502 when the request to TMDB itself failed; collapsing those
+ * into one message sends a self-hoster to check a key that is working.
+ */
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+  }
+}
+
 export async function searchTitles(q: string): Promise<TitleResult[]> {
   const res = await fetch(`${base()}/api/search?q=${encodeURIComponent(q)}`);
-  if (!res.ok) throw new Error(`search failed: ${res.status}`);
+  if (!res.ok) throw new ApiError(`search failed: ${res.status}`, res.status);
   return res.json() as Promise<TitleResult[]>;
 }
 
 export async function trendingTitles(): Promise<TitleResult[]> {
   const res = await fetch(`${base()}/api/trending`);
-  if (!res.ok) throw new Error(`trending failed: ${res.status}`);
+  if (!res.ok) throw new ApiError(`trending failed: ${res.status}`, res.status);
   return res.json() as Promise<TitleResult[]>;
 }
 
