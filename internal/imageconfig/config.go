@@ -423,6 +423,13 @@ type AggregateConfig struct {
 	// AggregateFillByScore fills the whole pill with the resolved accent instead
 	// of tinting only the accent rail.
 	AggregateFillByScore bool `json:"aggregateFillByScore,omitempty"`
+	// AggregatePillIcon names a bundled rating mark to draw inside the
+	// single-score pills the minimal and average presentations use. "" draws
+	// none.
+	AggregatePillIcon string `json:"aggregatePillIcon,omitempty"`
+	// AggregateDualIcons marks the dual pills with the critics and audience
+	// glyphs, which tells the pair apart without the CRITICS/AUDIENCE text.
+	AggregateDualIcons bool `json:"aggregateDualIcons,omitempty"`
 	// The accent rail is the colour bar on an aggregate badge. Nil visibility
 	// means shown; the offset nudges it along the badge.
 	AggregateAccentBarVisible *bool  `json:"aggregateAccentBarVisible,omitempty"`
@@ -714,6 +721,8 @@ type rawAggregate struct {
 	AggregateAudienceValueColor  *string `json:"aggregateAudienceValueColor"`
 	AggregateDynamicStops        *string `json:"aggregateDynamicStops"`
 	AggregateFillByScore         *bool   `json:"aggregateFillByScore"`
+	AggregatePillIcon            *string `json:"aggregatePillIcon"`
+	AggregateDualIcons           *bool   `json:"aggregateDualIcons"`
 	AggregateAccentBarVisible    *bool   `json:"aggregateAccentBarVisible"`
 	AggregateAccentBarOffset     *int    `json:"aggregateAccentBarOffset"`
 
@@ -1489,6 +1498,12 @@ func parseAggregate(cfg *Config, r *raw) {
 	}
 	if r.AggregateFillByScore != nil {
 		cfg.AggregateFillByScore = *r.AggregateFillByScore
+	}
+	if r.AggregatePillIcon != nil {
+		cfg.AggregatePillIcon = strings.ToLower(strings.TrimSpace(*r.AggregatePillIcon))
+	}
+	if r.AggregateDualIcons != nil {
+		cfg.AggregateDualIcons = *r.AggregateDualIcons
 	}
 	if r.AggregateAccentBarVisible != nil {
 		visible := *r.AggregateAccentBarVisible

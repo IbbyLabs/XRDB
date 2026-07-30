@@ -1513,17 +1513,27 @@ func aggregatePillStyle(cfg imageconfig.Config, source string, genres []string, 
 // scorePillWidth is the capsule width for a label/score pair at the given
 // scale. Kept alongside scorePillHeight so a pill can be anchored to an edge
 // before it is drawn.
-func scorePillWidth(label, score string, scale float64) int {
+func scorePillWidth(label, score string, icon image.Image, scale float64) int {
 	ensureFaces()
 	s := func(v float64) int { return int(v*scale + 0.5) }
 	labelW := 0
 	if label != "" {
 		labelW = textWidth(labelFaceFor(scale), label) + s(9)*2 + s(9)
 	}
-	return labelW + textWidth(valueFaceFor(scale*1.25), score) + s(12)*2
+	iconW := 0
+	if icon != nil {
+		iconW = pillIconSize(scale) + s(7)
+	}
+	return labelW + iconW + textWidth(valueFaceFor(scale*1.25), score) + s(12)*2
 }
 
-func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, style scorePillStyle, scale float64, occ *occupancy) {
+// pillIconSize is the box a pill mark is fitted into, sized off the capsule so
+// it tracks the badge scale.
+func pillIconSize(scale float64) int {
+	return int(float64(scorePillHeight(scale))*0.52 + 0.5)
+}
+
+func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, icon image.Image, style scorePillStyle, scale float64, occ *occupancy) {
 	ensureFaces()
 	s := func(v float64) int { return int(v*scale + 0.5) }
 	labelFace := labelFaceFor(scale)
@@ -1538,7 +1548,7 @@ func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, style s
 	if label != "" {
 		labelW = textWidth(labelFace, label) + labelPad*2
 	}
-	capW := scorePillWidth(label, score, scale)
+	capW := scorePillWidth(label, score, icon, scale)
 	x0 := cx - capW/2
 	rect := image.Rect(x0, topY, x0+capW, topY+capH)
 
@@ -1592,6 +1602,15 @@ func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, style s
 		cursor += labelW + innerGap
 	}
 
+	if icon != nil {
+		box := pillIconSize(scale)
+		slot := image.Rect(cursor, topY+(capH-box)/2, cursor+box, topY+(capH-box)/2+box)
+		if glyph, at := scaleIconToFit(icon, slot); glyph != nil {
+			xdraw.Draw(base, at, glyph, image.Point{}, xdraw.Over)
+		}
+		cursor += box + s(7)
+	}
+
 	vm := valueFace.Metrics()
 	vy := topY + (capH-vm.Height.Ceil())/2 + vm.Ascent.Ceil()
 	drawText(base, valueFace, cursor+s(1), vy+s(1), color.NRGBA{A: 150}, score)
@@ -1612,7 +1631,8 @@ func drawMinimalRating(base *image.NRGBA, ratings []provider.Rating, genres []st
 	}
 	style := aggregatePillStyle(cfg, "overall", genres, isAnime, avg, color.NRGBA{})
 	drawAggregatePills(base, cfg, scale, occ, false, aggregatePill{
-		score: formatRatingValue(avg, cfg.RatingValueMode), style: style,
+		score: formatRatingValue(avg, cfg.RatingValueMode),
+		icon:  pillMark(cfg.AggregatePillIcon), style: style,
 	})
 }
 
@@ -1626,7 +1646,8 @@ func drawAverageRating(base *image.NRGBA, ratings []provider.Rating, genres []st
 	accent := color.NRGBA{R: 90, G: 98, B: 112, A: 255} // neutral slate label
 	style := aggregatePillStyle(cfg, "overall", genres, isAnime, avg, accent)
 	drawAggregatePills(base, cfg, scale, occ, false, aggregatePill{
-		label: "AVG", score: formatRatingValue(avg, cfg.RatingValueMode), style: style,
+		label: "AVG", score: formatRatingValue(avg, cfg.RatingValueMode),
+		icon:  pillMark(cfg.AggregatePillIcon), style: style,
 	})
 }
 
@@ -1643,10 +1664,15 @@ func drawDualRating(base *image.NRGBA, ratings []provider.Rating, genres []strin
 		criticsLabel, audienceLabel = "CRITICS", "AUDIENCE"
 	}
 	var pills []aggregatePill
+	criticsIcon, audienceIcon := image.Image(nil), image.Image(nil)
+	if cfg.AggregateDualIcons {
+		criticsIcon, audienceIcon = pillMark("rt"), pillMark("rtaudience")
+	}
 	if hasC {
 		pills = append(pills, aggregatePill{
 			label: criticsLabel,
 			score: formatRatingValue(critics, cfg.RatingValueMode),
+			icon:  criticsIcon,
 			style: aggregatePillStyle(cfg, "critics", genres, isAnime, critics, criticsAccent),
 		})
 	}
@@ -1654,16 +1680,28 @@ func drawDualRating(base *image.NRGBA, ratings []provider.Rating, genres []strin
 		pills = append(pills, aggregatePill{
 			label: audienceLabel,
 			score: formatRatingValue(audience, cfg.RatingValueMode),
+			icon:  audienceIcon,
 			style: aggregatePillStyle(cfg, "audience", genres, isAnime, audience, audienceAccent),
 		})
 	}
 	drawAggregatePills(base, cfg, scale, occ, hasC && hasA, pills...)
 }
 
+// pillMark returns the bundled rating mark of that name, or nil when the name
+// is empty or unknown.
+func pillMark(name string) image.Image {
+	if name == "" {
+		return nil
+	}
+	ensureIcons()
+	return ratingIcons[name]
+}
+
 // aggregatePill is one score capsule awaiting placement.
 type aggregatePill struct {
 	label string
 	score string
+	icon  image.Image
 	style scorePillStyle
 }
 
@@ -1684,9 +1722,9 @@ func drawAggregatePills(base *image.NRGBA, cfg imageconfig.Config, scale float64
 
 	for i, p := range pills {
 		cx, topY := aggregatePillAnchor(b, cfg.AggregatePillPos, split,
-			scorePillWidth(p.label, p.score, scale), h, pad, gap, i, len(pills))
+			scorePillWidth(p.label, p.score, p.icon, scale), h, pad, gap, i, len(pills))
 		drawScorePill(base, cx+cfg.RatingBadgeOffsetX, topY+cfg.RatingBadgeOffsetY,
-			p.label, p.score, p.style, scale, occ)
+			p.label, p.score, p.icon, p.style, scale, occ)
 	}
 }
 
