@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.21.0](https://github.com/IbbyLabs/XRDB/compare/v3.20.0...v3.21.0) (2026-07-30)
+
+
+### Added
+
+* **badges:** raise the provider and quality scale ceiling to 400 ([7d9b5ff](https://github.com/IbbyLabs/XRDB/commit/7d9b5fff20c2038941a0a9b224e5e759f602af29))
+* **ratings:** make the score pill accent outline width configurable ([6763295](https://github.com/IbbyLabs/XRDB/commit/67632953e479039b0019237512961c02e676d782))
+
 ## [3.20.0](https://github.com/IbbyLabs/XRDB/compare/v3.19.0...v3.20.0) (2026-07-30)
 
 
