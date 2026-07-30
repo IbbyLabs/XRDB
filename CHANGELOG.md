@@ -2,6 +2,19 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.19.0](https://github.com/IbbyLabs/XRDB/compare/v3.18.1...v3.19.0) (2026-07-30)
+
+
+### Added
+
+* **ratings:** expose badge density and capsule outline ([156b8e4](https://github.com/IbbyLabs/XRDB/commit/156b8e45f650c96b36145738ae47b341af571370))
+
+
+### Fixed
+
+* **artwork:** resolve a token-prefixed IMDb id as an IMDb id ([575e711](https://github.com/IbbyLabs/XRDB/commit/575e711d1e026427ac052ee2c0c93dcff12e6268))
+* **stremio:** emit a semver manifest version (BUG-173) ([1db5d3b](https://github.com/IbbyLabs/XRDB/commit/1db5d3b8afec4548b24a49aae716385e97bdf858))
+
 ## [3.18.1](https://github.com/IbbyLabs/XRDB/compare/v3.18.0...v3.18.1) (2026-07-30)
 
 
