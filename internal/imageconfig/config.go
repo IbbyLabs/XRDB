@@ -49,6 +49,7 @@ const (
 	ArtworkCinemeta ArtworkSource = "cinemeta"
 	ArtworkOMDB     ArtworkSource = "omdb"
 	ArtworkRandom   ArtworkSource = "random"
+	ArtworkKitsu    ArtworkSource = "kitsu"
 )
 
 // TextPreference controls which poster text variant is selected.
@@ -2002,6 +2003,8 @@ func normalizeArtworkSource(v string) ArtworkSource {
 		return ArtworkOMDB
 	case "random":
 		return ArtworkRandom
+	case "kitsu":
+		return ArtworkKitsu
 	}
 	return ""
 }

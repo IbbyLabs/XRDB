@@ -207,6 +207,22 @@ func fillContentRating(artwork *provider.MediaMeta, rating string) {
 	}
 }
 
+// kitsuID maps the requested title onto the Kitsu id Kitsu answers to. A title
+// the anime map does not carry has no Kitsu entry to find.
+func (p *Pipeline) kitsuID(ctx context.Context, req Request) (string, bool) {
+	if strings.HasPrefix(req.MediaID, "kitsu:") {
+		return req.MediaID, true
+	}
+	if p.anime == nil {
+		return "", false
+	}
+	ids, ok := p.anime.Resolve(ctx, req.MediaType, req.MediaID)
+	if !ok || ids.Kitsu == 0 {
+		return "", false
+	}
+	return "kitsu:" + strconv.Itoa(ids.Kitsu), true
+}
+
 // isAnimeTitle reports whether the requested title is a known anime.
 func (p *Pipeline) isAnimeTitle(ctx context.Context, req Request) bool {
 	if p.anime == nil || !needsAnimeFlag(req.Config) {
@@ -820,6 +836,17 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 		if !providerReady(prov) {
 			continue
 		}
+		// Kitsu is keyed on its own ids, so a mainstream id reaches it only
+		// through the anime map. A title with no mapping is not an anime Kitsu
+		// knows, and the next source in the order covers it.
+		providerID := req.MediaID
+		if name == string(imageconfig.ArtworkKitsu) {
+			id, ok := p.kitsuID(ctx, req)
+			if !ok {
+				continue
+			}
+			providerID = id
+		}
 		var meta *provider.MediaMeta
 		var err error
 		// Providers are queried by content type (movie/series), never by the
@@ -832,9 +859,9 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 			if baseMeta != nil && baseMeta.TMDBID != "" {
 				srcOpts.TMDBID = baseMeta.TMDBID
 			}
-			meta, err = af.FetchArtwork(ctx, contentType, req.MediaID, srcOpts)
+			meta, err = af.FetchArtwork(ctx, contentType, providerID, srcOpts)
 		} else {
-			meta, err = prov.Fetch(ctx, contentType, req.MediaID)
+			meta, err = prov.Fetch(ctx, contentType, providerID)
 		}
 		if err != nil || meta == nil {
 			p.log().DebugContext(ctx, "A metadata provider returned no result",
