@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.27.0](https://github.com/IbbyLabs/XRDB/compare/v3.26.0...v3.27.0) (2026-07-30)
+
+
+### Added
+
+* **configurator:** save an open profile as it is edited (FR-71) ([4a0ec50](https://github.com/IbbyLabs/XRDB/commit/4a0ec5030021806a99163e9e34997466fb5a8f1f))
+
 ## [3.26.0](https://github.com/IbbyLabs/XRDB/compare/v3.25.0...v3.26.0) (2026-07-30)
 
 
