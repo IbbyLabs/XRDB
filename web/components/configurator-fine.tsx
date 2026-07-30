@@ -338,7 +338,7 @@ function ProviderWeights({ uid, config, onUpdate }: GroupProps) {
 
 // The presentations that draw score pills rather than the badge strip, so they
 // are the ones the pill placement reaches.
-const PILL_PRESENTATIONS: string[] = ['minimal', 'average', 'dual', 'dual-minimal'];
+export const PILL_PRESENTATIONS: string[] = ['minimal', 'average', 'dual', 'dual-minimal'];
 
 // Of those, the ones whose pills carry no label, so an accent colour has no
 // rail to fill and marks the capsule itself.

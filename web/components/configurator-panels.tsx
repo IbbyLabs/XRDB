@@ -8,7 +8,7 @@ import {
   LAYOUT_OPTIONS, RATING_OPTIONS, BADGE_STYLE_OPTIONS, BADGE_THEME_OPTIONS, RING_POS_OPTIONS,
   SIDE_LAYOUTS,
 } from './configurator-types';
-import { RatingBadgesFine, ScoreColourFine, RatingRingFine } from './configurator-fine';
+import { RatingBadgesFine, ScoreColourFine, RatingRingFine, PILL_PRESENTATIONS } from './configurator-fine';
 
 // ── Template strip ────────────────────────────────────────────────────────────
 
@@ -172,8 +172,15 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
               </div>
             </div>
 
-            {fine && <RatingBadgesFine uid={uid} config={config} onUpdate={onUpdate} />}
-            {fine && <ScoreColourFine uid={uid} config={config} onUpdate={onUpdate} />}
+          </>
+        )}
+
+        {/* The pill presentations draw whatever the layout says, so hiding the
+            badge strip must not take their controls with it. */}
+        {fine && (config.ratingsLayout !== 'none' || PILL_PRESENTATIONS.includes(config.ratingPresentation)) && (
+          <>
+            <RatingBadgesFine uid={uid} config={config} onUpdate={onUpdate} />
+            <ScoreColourFine uid={uid} config={config} onUpdate={onUpdate} />
           </>
         )}
 
