@@ -55,6 +55,15 @@ func (t Target) empty() bool { return t.IMDb == "" && t.TMDB == 0 }
 // or "movie" segment after the number.
 func ParseAnimeID(id string) (service string, num int, ok bool) {
 	id = strings.ToLower(strings.TrimSpace(id))
+	// A caller may put the content type in front ("series:mal:21"), which is the
+	// shape AIOMetadata emits from {type}:{id}. The type says nothing about
+	// which anime service the id belongs to, so it is dropped before the lookup.
+	for _, tok := range []string{"movie:", "series:", "tv:"} {
+		if r, ok := strings.CutPrefix(id, tok); ok {
+			id = r
+			break
+		}
+	}
 	prefix, rest, found := strings.Cut(id, ":")
 	if !found {
 		return "", 0, false
