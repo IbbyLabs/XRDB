@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.36.1](https://github.com/IbbyLabs/XRDB/compare/v3.36.0...v3.36.1) (2026-07-31)
+
+
+### Fixed
+
+* **badge:** scale the badge on wide-but-short surfaces like logos ([75141ae](https://github.com/IbbyLabs/XRDB/commit/75141ae923c36c2f78d78a7174e25cda41583795))
+* **logo:** prefer English over an untrusted textless logo ([93521ee](https://github.com/IbbyLabs/XRDB/commit/93521ee4e441cd03698310cd91e0d3b9e1596dad))
+
 ## [3.36.0](https://github.com/IbbyLabs/XRDB/compare/v3.35.3...v3.36.0) (2026-07-31)
 
 
