@@ -180,11 +180,25 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			// Only real renders are gated; cache hits above pass freely, so a
 			// warm catalogue reload isn't throttled. If the client hangs up or
 			// the request times out while queued, drop it without spending a slot.
-			if !renderLimiter.acquire(r.Context()) {
-				logger.WarnContext(r.Context(), "Render aborted while waiting for a free render slot",
+			if !renderLimiter.acquireWithin(r.Context(), cfg.RenderQueueWait) {
+				// Either the caller gave up, or the queue is deeper than the
+				// render throughput can clear. Turning the request away keeps the
+				// wait bounded for everyone behind it; a caller that has cached
+				// art of its own falls back to it rather than showing a gap.
+				if r.Context().Err() != nil {
+					logger.DebugContext(r.Context(), "Render abandoned by the caller while queued",
+						"id", logging.RequestID(r.Context()),
+						"media_type", mediaType, "media_id", id)
+					ms.Record("/"+mediaType, 499, latMs(start))
+					return
+				}
+				logger.WarnContext(r.Context(), "Shed a render because the queue was full",
 					"id", logging.RequestID(r.Context()),
 					"media_type", mediaType, "media_id", id,
-					"reason", "the client disconnected or all render slots were busy")
+					"waited_ms", cfg.RenderQueueWait.Milliseconds())
+				w.Header().Set("Retry-After", "5")
+				w.Header().Set("Cache-Control", "no-store")
+				http.Error(w, "busy: too many renders queued", http.StatusServiceUnavailable)
 				ms.Record("/"+mediaType, http.StatusServiceUnavailable, latMs(start))
 				return
 			}

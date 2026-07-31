@@ -143,6 +143,9 @@ type Config struct {
 	ConfigEncryptionKey string
 	APIKey              string // if set, required on all render routes
 	RenderConcurrency   int    // max simultaneous renders; caps memory under bursts
+	// RenderQueueWait bounds how long a render waits for a slot before the
+	// request is shed. Zero waits forever, which is what produced 144s renders.
+	RenderQueueWait time.Duration
 	MemoryLimitBytes    int64  // soft heap limit (debug.SetMemoryLimit); 0 = unset
 	LogLevel            string // debug|info|warn|error (default info)
 	// TrustedProxies is a comma-separated list of CIDRs or addresses whose
@@ -347,6 +350,16 @@ func Load() Config {
 			renderConcurrency = n
 		}
 	}
+	// How long a render may sit waiting for a slot before it is turned away. A
+	// burst that outruns throughput otherwise queues without bound, and the queue
+	// is what turns a short burst into minutes of latency for everyone behind it.
+	// 0 restores the old unbounded wait.
+	renderQueueWait := 8 * time.Second
+	if raw := os.Getenv("XRDB_RENDER_QUEUE_WAIT_SECONDS"); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n >= 0 {
+			renderQueueWait = time.Duration(n) * time.Second
+		}
+	}
 	// Optional soft heap limit so the Go runtime GCs harder before the container
 	// cgroup cap triggers a kernel OOM-kill. Set to roughly the container limit.
 	var memoryLimitBytes int64
@@ -397,6 +410,7 @@ func Load() Config {
 		APIKey:                os.Getenv("XRDB_API_KEY"),
 		ConfigEncryptionKey:   os.Getenv("XRDB_CONFIG_ENCRYPTION_KEY"),
 		RenderConcurrency:     renderConcurrency,
+		RenderQueueWait:       renderQueueWait,
 		MemoryLimitBytes:      memoryLimitBytes,
 		LogLevel:              logLevel,
 		TrustedProxies:        os.Getenv("XRDB_TRUSTED_PROXIES"),

@@ -1,6 +1,9 @@
 package server
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // concurrencyLimiter bounds how many renders run at once. A catalogue view
 // fires a burst of artwork requests; without a cap each one spawns a full image
@@ -29,6 +32,30 @@ func (l *concurrencyLimiter) acquire(ctx context.Context) bool {
 	select {
 	case l.slots <- struct{}{}:
 		return true
+	case <-ctx.Done():
+		return false
+	}
+}
+
+// acquireWithin is acquire with a deadline. It returns false once wait elapses,
+// so a burst that outruns the render throughput is turned away quickly instead
+// of queueing without bound: waiting three minutes for a poster is worse for the
+// caller than being told to come back, and the queue itself is what turns a
+// short burst into minutes of latency for everyone behind it.
+func (l *concurrencyLimiter) acquireWithin(ctx context.Context, wait time.Duration) bool {
+	if l == nil {
+		return true
+	}
+	if wait <= 0 {
+		return l.acquire(ctx)
+	}
+	timer := time.NewTimer(wait)
+	defer timer.Stop()
+	select {
+	case l.slots <- struct{}{}:
+		return true
+	case <-timer.C:
+		return false
 	case <-ctx.Done():
 		return false
 	}
