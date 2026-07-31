@@ -5,6 +5,7 @@ import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   ARTWORK_OPTIONS, SIZE_OPTIONS, TEXT_PREF_OPTIONS, LANG_OPTIONS, ORIGINAL_LANGUAGE,
   AGE_POS_OPTIONS, SIX_POS_OPTIONS, GENRE_POS_OPTIONS, QUALITY_BADGE_OPTIONS, TREND_STYLE_OPTIONS,
+  OUTPUT_FORMAT_OPTIONS, TOP_RATED_STYLE_OPTIONS,
   suppressedQualityBadges,
 } from './configurator-types';
 import { QualityFine, GenreFine, AggregateFine, AgeFine, ProvidersFine, TitleLogoFine, ReleaseStatusFine, TrendingFine } from './configurator-fine';
@@ -124,6 +125,64 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
             {ARTWORK_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
           </select>
         </Field>
+
+        <fieldset style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 'var(--sp-3)', margin: 0 }}>
+          <legend className="label" style={{ padding: '0 var(--sp-1)' }}>Per type artwork source</legend>
+          <div className="cfg-fields">
+            <Field label="Movies" htmlFor={`${uid}-artwork-movie`} hint="Overrides the artwork source for films.">
+              <select id={`${uid}-artwork-movie`} className="select" value={config.artworkSourceMovie}
+                onChange={e => onUpdate('artworkSourceMovie', e.target.value)}>
+                <option value="">Same as default</option>
+                {ARTWORK_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+              </select>
+            </Field>
+            <Field label="Series" htmlFor={`${uid}-artwork-series`} hint="Overrides the artwork source for TV.">
+              <select id={`${uid}-artwork-series`} className="select" value={config.artworkSourceSeries}
+                onChange={e => onUpdate('artworkSourceSeries', e.target.value)}>
+                <option value="">Same as default</option>
+                {ARTWORK_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+              </select>
+            </Field>
+            <Field label="Anime" htmlFor={`${uid}-artwork-anime`} hint="Overrides the artwork source for anime.">
+              <select id={`${uid}-artwork-anime`} className="select" value={config.artworkSourceAnime}
+                onChange={e => onUpdate('artworkSourceAnime', e.target.value)}>
+                <option value="">Same as default</option>
+                {ARTWORK_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+              </select>
+            </Field>
+          </div>
+        </fieldset>
+
+        <fieldset style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 'var(--sp-3)', margin: 0 }}>
+          <legend className="label" style={{ padding: '0 var(--sp-1)' }}>Output</legend>
+          <div className="cfg-fields">
+            <Field label="Format" htmlFor={`${uid}-output-format`} hint="Auto picks the best encoding for the artwork.">
+              <select id={`${uid}-output-format`} className="select" value={config.outputFormat}
+                onChange={e => onUpdate('outputFormat', e.target.value)} style={{ maxWidth: '10rem' }}>
+                {OUTPUT_FORMAT_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+              </select>
+            </Field>
+            <Field label="JPEG quality" htmlFor={`${uid}-output-quality`} hint="40–100. Blank keeps the default.">
+              <input id={`${uid}-output-quality`} className="input" type="number" inputMode="numeric" min={40} max={100}
+                value={config.outputQuality || ''} placeholder="default" style={{ maxWidth: '7rem' }}
+                onChange={e => onUpdate('outputQuality', e.target.value === '' ? 0 : Number(e.target.value))} />
+            </Field>
+          </div>
+        </fieldset>
+
+        <ToggleRow
+          label="Hide Cinemeta rating"
+          hint="Serve Cinemeta metadata without its own rating"
+          checked={config.hideCinemetaRating}
+          onChange={() => onUpdate('hideCinemetaRating', !config.hideCinemetaRating)}
+        />
+
+        <ToggleRow
+          label="Backdrop logo"
+          hint="Overlay the title logo on the backdrop"
+          checked={config.backdropLogo}
+          onChange={() => onUpdate('backdropLogo', !config.backdropLogo)}
+        />
 
         {config.artworkSource === 'random' && (
           <fieldset style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 'var(--sp-3)', margin: 0 }}>
@@ -345,6 +404,72 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
               className="select"
               value={config.topRatedPos}
               onChange={e => onUpdate('topRatedPos', e.target.value)}
+            >
+              {SIX_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+            </select>
+          </Field>
+        )}
+
+        {config.topRated && fine && (
+          <>
+            <Field label="Top rated badge style" htmlFor={`${uid}-topstyle`}>
+              <select
+                id={`${uid}-topstyle`}
+                className="select"
+                value={config.topRatedBadgeStyle}
+                onChange={e => onUpdate('topRatedBadgeStyle', e.target.value)}
+              >
+                {TOP_RATED_STYLE_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+              </select>
+            </Field>
+            {config.topRatedBadgeStyle === 'tile' && (
+              <Field label="Top rated tile color" htmlFor={`${uid}-toptile`}>
+                <input
+                  id={`${uid}-toptile`}
+                  type="color"
+                  value={config.topRatedTileColor || '#3355ff'}
+                  onChange={e => onUpdate('topRatedTileColor', e.target.value)}
+                  className="color-swatch"
+                />
+              </Field>
+            )}
+          </>
+        )}
+
+        <ToggleRow
+          label="Awards badge"
+          hint="Oscar/Emmy win or nomination"
+          checked={config.awards}
+          onChange={() => onUpdate('awards', !config.awards)}
+        />
+
+        {config.awards && (
+          <Field label="Awards badge position" htmlFor={`${uid}-awardspos`}>
+            <select
+              id={`${uid}-awardspos`}
+              className="select"
+              value={config.awardsPos}
+              onChange={e => onUpdate('awardsPos', e.target.value)}
+            >
+              {SIX_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+            </select>
+          </Field>
+        )}
+
+        <ToggleRow
+          label="Stinger badge"
+          hint="After/during-credits scene"
+          checked={config.stinger}
+          onChange={() => onUpdate('stinger', !config.stinger)}
+        />
+
+        {config.stinger && (
+          <Field label="Stinger badge position" htmlFor={`${uid}-stingerpos`}>
+            <select
+              id={`${uid}-stingerpos`}
+              className="select"
+              value={config.stingerPos}
+              onChange={e => onUpdate('stingerPos', e.target.value)}
             >
               {SIX_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
             </select>

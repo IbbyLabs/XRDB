@@ -25,6 +25,21 @@ export const SIZE_OPTIONS = [
   { id: '4k',     label: '4K'     },
 ] as const;
 
+export const OUTPUT_FORMAT_OPTIONS = [
+  { id: '',     label: 'Auto' },
+  { id: 'jpeg', label: 'JPEG' },
+  { id: 'png',  label: 'PNG'  },
+] as const;
+
+export const TOP_RATED_STYLE_OPTIONS = [
+  { id: '',       label: 'Default' },
+  { id: 'glass',  label: 'Glass'   },
+  { id: 'square', label: 'Square'  },
+  { id: 'plain',  label: 'Plain'   },
+  { id: 'tile',   label: 'Tile'    },
+  { id: 'silver', label: 'Silver'  },
+] as const;
+
 export const TEXT_PREF_OPTIONS = [
   { id: 'original',    label: 'Original',    desc: 'The poster as-is, including its title text' },
   { id: 'clean',       label: 'Clean',       desc: 'Prefer artwork with minimal text' },
@@ -325,7 +340,12 @@ export const PREVIEW_DEBOUNCE_MS = 500;
 
 export interface ConfigState {
   size: string;
+  outputFormat: string; // '' = auto | jpeg | png
+  outputQuality: number; // JPEG quality 40-100; 0 = default
   artworkSource: string;
+  artworkSourceMovie: string; // '' = fall back to artworkSource
+  artworkSourceSeries: string;
+  artworkSourceAnime: string;
   randomPosterText: string; // any | text | textless
   randomPosterLanguage: string; // any | requested
   randomPosterMinVoteCount: number;
@@ -344,9 +364,20 @@ export interface ConfigState {
   releaseStatusPos: string;
   topRated: boolean;
   topRatedPos: string;
+  topRatedBadgeStyle: string; // '' = default | glass | square | plain | tile | silver
+  topRatedTileColor: string; // '#RRGGBB' for the tile style
+  awards: boolean;
+  awardsPos: string; // 'inherit' | six positions
+  stinger: boolean;
+  stingerPos: string; // 'inherit' | six positions
   releaseStatusBadgeStyle: string; // glass | square | plain | tile | silver
   releaseStatusTileColor: string; // '#RRGGBB' for the tile style
   ageRatingPos: string;
+  ageRatingScale: number; // percent; 0 = default (100%)
+  ageRatingOffsetX: number; // px nudge; 0 = default
+  ageRatingOffsetY: number;
+  hideCinemetaRating: boolean;
+  backdropLogo: boolean;
   genre: boolean;
   genrePos: string;
   badges: string[];
@@ -382,6 +413,7 @@ export interface ConfigState {
   ratingYOffsetSquare: number;
   posterEdgeOffset: number; // 0..80 extra inset from the edge
   bottomRatingsRow: boolean; // keep every badge on one bottom row
+  ratingsAnchored: boolean; // flush the row to the poster edge with squared corners
   ratingPresentation: string; // standard|editorial|none
   ratingValueMode: string; // native|normalized|normalizedclean|normalized100
   ratingVoteCounts: boolean;
@@ -408,6 +440,7 @@ export interface ConfigState {
   qualityBadgesStyle: string; // 'default' | plain | tile
   qualityBadgesTileAccentColor: string;
   genreBadgeStyle: string; // 'default' | glass | square | plain | clean | tile
+  genreBadgeTileAccentColor: string; // '#RRGGBB' for the tile style; '' = default
   genreBadgeAccent: string; // 'default' | left | top | none
   genreBadgeLabel: string;  // 'default' (list) | primary
   genreBadgeMode: string;  // 'default' (text) | icon | both
@@ -425,6 +458,8 @@ export interface ConfigState {
   aggregateAudienceValueColor: string;
   aggregateDynamicStops: string; // 'score:#RRGGBB' pairs on a 0-100 scale; '' = built-in bands
   aggregateFillByScore: boolean; // fill the whole pill with the accent, not just the rail
+  aggregatePillIcon: string; // rating mark drawn inside single-score pills; '' = none
+  aggregateDualIcons: boolean; // mark dual pills with critics/audience glyphs
   aggregateAccentBarVisible: boolean; // the colour rail on an aggregate pill
   aggregateAccentBarOffset: number; // px nudge of that rail
   scorebarStyle: string; // progress | solid | gradient
@@ -454,6 +489,8 @@ export interface ConfigState {
   iconOutlineWidth: number; // 0 = none
   ringScale: number; // percent of the default ring size; 0 = 100
   ringCenterOpacity: number; // 0 = default
+  ringOffsetX: number; // px nudge; 0 = default
+  ringOffsetY: number;
   ringValueSource: string; // 'overall' | provider id
   ringProgressSource: string;
   ringCriticsPriority: string[]; // order 'Top critic' walks; [] = built-in
@@ -462,7 +499,12 @@ export interface ConfigState {
 
 export const DEFAULT_CONFIG: ConfigState = {
   size: 'normal',
+  outputFormat: '',
+  outputQuality: 0,
   artworkSource: 'tmdb',
+  artworkSourceMovie: '',
+  artworkSourceSeries: '',
+  artworkSourceAnime: '',
   randomPosterText: 'any',
   randomPosterLanguage: 'any',
   randomPosterMinVoteCount: 0,
@@ -480,10 +522,21 @@ export const DEFAULT_CONFIG: ConfigState = {
   releaseStatus: false,
   topRated: false,
   topRatedPos: 'inherit',
+  topRatedBadgeStyle: '',
+  topRatedTileColor: '',
+  awards: false,
+  awardsPos: 'inherit',
+  stinger: false,
+  stingerPos: 'inherit',
   releaseStatusBadgeStyle: '',
   releaseStatusTileColor: '',
   releaseStatusPos: 'inherit',
   ageRatingPos: 'inherit',
+  ageRatingScale: 0,
+  ageRatingOffsetX: 0,
+  ageRatingOffsetY: 0,
+  hideCinemetaRating: false,
+  backdropLogo: false,
   genre: false,
   genrePos: 'inherit',
   badges: [],
@@ -518,6 +571,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingYOffsetSquare: 0,
   posterEdgeOffset: 0,
   bottomRatingsRow: false,
+  ratingsAnchored: false,
   ratingPresentation: 'standard',
   ratingValueMode: 'native',
   ratingVoteCounts: false,
@@ -544,6 +598,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   qualityBadgesStyle: 'default',
   qualityBadgesTileAccentColor: '',
   genreBadgeStyle: 'default',
+  genreBadgeTileAccentColor: '',
   genreBadgeAccent: 'default',
   genreBadgeLabel: 'default',
   genreBadgeMode: 'default',
@@ -561,6 +616,8 @@ export const DEFAULT_CONFIG: ConfigState = {
   aggregateAudienceValueColor: '',
   aggregateDynamicStops: '',
   aggregateFillByScore: false,
+  aggregatePillIcon: '',
+  aggregateDualIcons: false,
   aggregateAccentBarVisible: true,
   aggregateAccentBarOffset: 0,
   scorebarStyle: 'progress',
@@ -590,6 +647,8 @@ export const DEFAULT_CONFIG: ConfigState = {
   iconOutlineWidth: 0,
   ringScale: 0,
   ringCenterOpacity: 0,
+  ringOffsetX: 0,
+  ringOffsetY: 0,
   ringValueSource: 'overall',
   ringProgressSource: 'overall',
   ringCriticsPriority: [],

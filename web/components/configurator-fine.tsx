@@ -405,6 +405,10 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
         checked={config.bottomRatingsRow}
         onChange={v => onUpdate('bottomRatingsRow', v)}
         hint="Keep every badge on one row along the bottom edge." />
+      <ToggleField id={`${uid}-ratings-anchored`} label="Anchor badges to the edge"
+        checked={config.ratingsAnchored}
+        onChange={v => onUpdate('ratingsAnchored', v)}
+        hint="Row flush to the poster edge with squared corners." />
       <NumField id={`${uid}-edge-offset`} label="Edge inset (px)" value={config.posterEdgeOffset}
         onChange={v => onUpdate('posterEdgeOffset', v)} min={0} max={80}
         hint="Push the strip further in from the edge it sits against." />
@@ -527,6 +531,12 @@ export function RatingRingFine({ uid, config, onUpdate }: GroupProps) {
       <NumField id={`${uid}-ring-center-op`} label="Center opacity (%)" value={config.ringCenterOpacity}
         onChange={v => onUpdate('ringCenterOpacity', v)} min={0} max={100} step={5}
         hint="Opacity of the disc behind the ring's number. Blank keeps the default." />
+      <div className="numfield-pair">
+        <NumField id={`${uid}-ring-ox`} label="Offset X (px)" value={config.ringOffsetX}
+          onChange={v => onUpdate('ringOffsetX', v)} min={-320} max={320} zeroIsDefault={false} />
+        <NumField id={`${uid}-ring-oy`} label="Offset Y (px)" value={config.ringOffsetY}
+          onChange={v => onUpdate('ringOffsetY', v)} min={-320} max={320} zeroIsDefault={false} />
+      </div>
       <RingSourceSelect id={`${uid}-ring-value-src`} label="Value source"
         value={config.ringValueSource} onChange={v => onUpdate('ringValueSource', v)} />
       <RingSourceSelect id={`${uid}-ring-prog-src`} label="Fill source"
@@ -631,6 +641,12 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
         value={config.genreBadgeStyle}
         onChange={v => onUpdate('genreBadgeStyle', v)}
       />
+      {config.genreBadgeStyle === 'tile' && (
+        <ColorField id={`${uid}-genre-tile-color`} label="Tile color"
+          value={config.genreBadgeTileAccentColor}
+          onChange={v => onUpdate('genreBadgeTileAccentColor', v)}
+          fallback="#3355ff" resetLabel="Auto" />
+      )}
       <div className="field">
         <label className="label" htmlFor={`${uid}-genre-accent`}>Accent</label>
         <select
@@ -670,8 +686,8 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
       <NumField id={`${uid}-genre-op`} label="Background opacity (%)" value={config.genreBadgeBackgroundOpacity}
         onChange={v => onUpdate('genreBadgeBackgroundOpacity', v)} min={5} max={100} step={5} />
       <NumField id={`${uid}-genre-border`} label="Border width (px)" value={config.genreBadgeBorderWidth}
-        onChange={v => onUpdate('genreBadgeBorderWidth', v)} min={0} max={6} placeholder="hairline"
-        hint="Outline thickness on the genre tile." />
+        onChange={v => onUpdate('genreBadgeBorderWidth', v)} min={-1} max={6} placeholder="hairline"
+        hint="0 = hairline, -1 = off." />
       <div className="field">
         <label className="label" htmlFor={`${uid}-plain-outline`}>Plain-style outline</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
@@ -775,6 +791,24 @@ export function ScoreColourFine({ uid, config, onUpdate }: GroupProps) {
         columns={2}
         hint="Applies to the score pills and the aggregate bar. Genre colours by the title's genre; Source colours by the chosen rating source."
       />
+      <div className="field">
+        <label className="label" htmlFor={`${uid}-agg-pill-icon`}>Pill icon</label>
+        <select
+          id={`${uid}-agg-pill-icon`}
+          className="select"
+          value={config.aggregatePillIcon}
+          onChange={e => onUpdate('aggregatePillIcon', e.target.value)}
+          style={{ maxWidth: '12rem' }}
+        >
+          <option value="">None</option>
+          {RATING_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+        </select>
+        <p className="hint">A rating mark drawn inside the single-score minimal and average pills.</p>
+      </div>
+      <ToggleField id={`${uid}-agg-dual-icons`} label="Dual icons"
+        checked={config.aggregateDualIcons}
+        onChange={v => onUpdate('aggregateDualIcons', v)}
+        hint="Mark the dual critics and audience pills with their glyphs instead of text labels." />
       {config.aggregateAccentMode === 'custom' && (
         <div className="field">
           <label className="label" htmlFor={`${uid}-agg-color`}>Accent color</label>
@@ -982,6 +1016,14 @@ export function AgeFine({ uid, config, onUpdate }: GroupProps) {
           />
         </div>
       )}
+      <NumField id={`${uid}-age-scale`} label="Scale (%)" value={config.ageRatingScale}
+        onChange={v => onUpdate('ageRatingScale', v)} min={50} max={300} step={5} />
+      <div className="numfield-pair">
+        <NumField id={`${uid}-age-ox`} label="Offset X (px)" value={config.ageRatingOffsetX}
+          onChange={v => onUpdate('ageRatingOffsetX', v)} min={-320} max={320} zeroIsDefault={false} />
+        <NumField id={`${uid}-age-oy`} label="Offset Y (px)" value={config.ageRatingOffsetY}
+          onChange={v => onUpdate('ageRatingOffsetY', v)} min={-320} max={320} zeroIsDefault={false} />
+      </div>
     </FineGroup>
   );
 }
