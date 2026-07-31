@@ -51,3 +51,24 @@ func TestAwardLabel(t *testing.T) {
 		}
 	}
 }
+
+// BUG-174: with the primary language "original" (empty) and a fallback set, logo
+// selection must honour the fallback instead of falling through to the
+// highest-voted logo of any language.
+func TestFallbackLanguageReachesSelection(t *testing.T) {
+	zh, en := "zh", "en"
+	imgs := []tmdbImage{
+		{FilePath: "/zh.png", Iso639: &zh, VoteAverage: 9, VoteCount: 100},
+		{FilePath: "/en.png", Iso639: &en, VoteAverage: 3, VoteCount: 5},
+	}
+	// lang empty (original), fallback en: the English logo must win despite the
+	// Chinese one being higher voted.
+	got := selectImagePath(imgs, "", "", ArtworkOptions{FallbackLanguage: "en"})
+	if got != "/en.png" {
+		t.Errorf("selectImagePath fallback = %q, want /en.png", got)
+	}
+	// Without a fallback, the highest-voted of any language wins (the old path).
+	if got := selectImagePath(imgs, "", "", ArtworkOptions{}); got != "/zh.png" {
+		t.Errorf("no-fallback = %q, want /zh.png", got)
+	}
+}

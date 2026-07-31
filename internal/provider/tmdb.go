@@ -531,7 +531,7 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		meta.BackdropURL = tmdbImageBase + backdropRes + backdropPath
 	}
 	// Logos never use the random text/quality filters.
-	if logoPath := selectImagePath(result.Images.Logos, "", lang, ArtworkOptions{}); logoPath != "" {
+	if logoPath := selectImagePath(result.Images.Logos, "", lang, ArtworkOptions{FallbackLanguage: opts.FallbackLanguage}); logoPath != "" {
 		meta.LogoURL = tmdbImageBase + "/w780" + logoPath
 	}
 	if result.VoteAverage > 0 {

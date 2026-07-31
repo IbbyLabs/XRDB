@@ -2175,12 +2175,17 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 	valueFace := valueFaceFor(ringScale * ringValueFontScale)
 
 	outerR := int(32*ringScale + 0.5)
-	// Place the ring's bounding box, dodging any overlay already reserved in
+	// drawProgressRing draws a soft glow pad pixels beyond outerR (matched here),
+	// so the reserved box is the full visual extent. Reserving only outerR*2 let
+	// the glow spill past the canvas edge in a corner, clipping the ring.
+	pad := int(math.Max(9, float64(outerR)*2*0.17)) + 1
+	fullR := outerR + pad
+	// Place the ring's full bounding box, dodging any overlay already reserved in
 	// the requested corner (age/genre badges, provider chips, ratings strip).
-	d := outerR * 2
+	d := fullR * 2
 	r := occ.place(pos, d, d, edgeX, edgeY, s(8))
-	cx := r.Min.X + outerR
-	cy := r.Min.Y + outerR
+	cx := r.Min.X + fullR
+	cy := r.Min.Y + fullR
 	label := strconv.Itoa(int(math.Round(value * 10)))
 	drawProgressRing(base, cx, cy, outerR, progress/10.0, fillColor, valueFace, label, cfg.RingCenterOpacity)
 }
