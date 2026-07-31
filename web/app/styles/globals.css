@@ -1339,6 +1339,13 @@ textarea.input { min-height: 0; line-height: 1.5; }
   gap: var(--sp-4);
 }
 
+/* Keep the preview in view while the settings column scrolls (FR-2 / FR-128). */
+.cfg-col-preview {
+  position: sticky;
+  top: 4rem;
+  align-self: start;
+}
+
 .cfg-fields {
   display: flex;
   flex-direction: column;
@@ -1950,6 +1957,7 @@ textarea.input { min-height: 0; line-height: 1.5; }
 
 @media (max-width: 1020px) {
   .cfg-layout { grid-template-columns: minmax(0, 1fr); }
+  .cfg-col-preview { position: static; top: auto; }
 }
 
 @media (max-width: 768px) {

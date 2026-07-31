@@ -571,7 +571,7 @@ export function ConfiguratorClient() {
       <div className="cfg-layout">
 
         {/* ── Preview column ───────────────────────────────────────── */}
-        <div className="cfg-col">
+        <div className="cfg-col cfg-col-preview">
           <div role="tablist" aria-label="Media type" className="seg" onKeyDown={tablistKeyNav}>
             {MEDIA_TYPES.map(t => (
               <button
