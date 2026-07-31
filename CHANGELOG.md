@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.34.0](https://github.com/IbbyLabs/XRDB/compare/v3.33.1...v3.34.0) (2026-07-31)
+
+
+### Added
+
+* **badges:** add a mid/post-credits stinger badge (FR-100) ([be0b2a8](https://github.com/IbbyLabs/XRDB/commit/be0b2a80073701bccbb17a57e1def4e1194c4022))
+
 ## [3.33.1](https://github.com/IbbyLabs/XRDB/compare/v3.33.0...v3.33.1) (2026-07-31)
 
 
