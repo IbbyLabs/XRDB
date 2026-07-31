@@ -14,6 +14,10 @@ func TestParseAwards(t *testing.T) {
 		{"Nominated: Outstanding Comedy Series (Emmy, 2020).", "emmy", false},
 		{"", "", false},
 		{"Won 3 BAFTA awards", "", false}, // neither Oscar nor Emmy
+		{"Nominated for 7 Oscars. 21 wins & 43 nominations total.", "oscar", false},
+		{"Won 3 Oscars. 15 wins & 20 nominations total.", "oscar", true},
+		{"Nominated: Best Picture (Oscars, 2020). Plus 3 wins & 2 nominations.", "oscar", false},
+		{"Won: Best Costume (BAFTA, 1985). Plus 1 Oscar nomination.", "", false},
 	}
 	for _, c := range cases {
 		got := ParseAwards(c.in)

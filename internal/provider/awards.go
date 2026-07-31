@@ -14,18 +14,26 @@ func ParseAwards(s string) AwardSummary {
 	if l == "" {
 		return AwardSummary{}
 	}
+	// Verdict and award are both in the leading clause: "Won: Best Picture
+	// (Oscars, 1973)…" / "Nominated for 7 Oscars. 21 wins…". Reading the whole
+	// line lets a win counted elsewhere ("Plus 3 wins", "21 wins total") mislabel
+	// a nomination as a win — a false claim on the artwork, which is worse than a
+	// missed badge. So both signals come from the leading clause only.
+	lead := l
+	if i := strings.IndexAny(lead, ".;"); i > 0 {
+		lead = lead[:i]
+	}
 	var kind string
 	switch {
-	case strings.Contains(l, "oscar") || strings.Contains(l, "academy award"):
+	case strings.Contains(lead, "oscar") || strings.Contains(lead, "academy award"):
 		kind = "oscar"
-	case strings.Contains(l, "emmy"):
+	case strings.Contains(lead, "emmy"):
 		kind = "emmy"
 	default:
 		return AwardSummary{}
 	}
-	// "won" anywhere means at least one was won; MDBList leads with the verdict
-	// and only says "won" when something was actually won.
-	won := strings.HasPrefix(l, "won") || strings.Contains(l, " won") || strings.Contains(l, "wins")
+	// Only a leading "won" is a win; anything else is treated as a nomination.
+	won := strings.HasPrefix(lead, "won")
 	return AwardSummary{Kind: kind, Won: won}
 }
 
