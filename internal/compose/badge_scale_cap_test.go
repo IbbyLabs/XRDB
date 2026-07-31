@@ -35,7 +35,7 @@ func TestBadgeScaleControlWorksOnAThumbnail(t *testing.T) {
 func TestBadgeCapCeilingHolds(t *testing.T) {
 	cfg := imageconfig.Default()
 	cfg.RatingBadgeScale = 1000
-	w, h := badgeShareCaps(cfg)
+	w, h := badgeShareCaps(cfg, 320)
 	if w > hardBadgeWidthShare || h > hardBadgeHeightShare {
 		t.Errorf("caps exceeded the ceiling: w=%.2f h=%.2f", w, h)
 	}
@@ -46,7 +46,7 @@ func TestBadgeCapCeilingHolds(t *testing.T) {
 func TestBadgeCapsUnchangedAtDefault(t *testing.T) {
 	cfg := imageconfig.Default()
 	cfg.RatingBadgeScale = 100
-	w, h := badgeShareCaps(cfg)
+	w, h := badgeShareCaps(cfg, 320)
 	if w != maxBadgeWidthShare || h != maxBadgeHeightShare {
 		t.Errorf("default caps changed: w=%.2f h=%.2f", w, h)
 	}

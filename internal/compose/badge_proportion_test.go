@@ -42,13 +42,16 @@ func TestBadgesStayProportionalOnEveryMediaType(t *testing.T) {
 			h := badgeHeightAt(scale, cfg)
 			w := widestBadgeAt(scale, ratings, cfg)
 
-			if hShare := float64(h) / float64(dim.Height); hShare > maxBadgeHeightShare+0.01 {
+			// The effective cap grows with the configured scale on small surfaces,
+			// so a badge must stay within that cap, not the base one.
+			capW, capH := badgeShareCaps(cfg, dim.Width)
+			if hShare := float64(h) / float64(dim.Height); hShare > capH+0.01 {
 				t.Errorf("%s@%d%%: badge %dpx is %.1f%% of the %dpx height, cap is %.0f%%",
-					mt, pct, h, hShare*100, dim.Height, maxBadgeHeightShare*100)
+					mt, pct, h, hShare*100, dim.Height, capH*100)
 			}
-			if wShare := float64(w) / float64(dim.Width); wShare > maxBadgeWidthShare+0.01 {
+			if wShare := float64(w) / float64(dim.Width); wShare > capW+0.01 {
 				t.Errorf("%s@%d%%: badge %dpx is %.1f%% of the %dpx width, cap is %.0f%%",
-					mt, pct, w, wShare*100, dim.Width, maxBadgeWidthShare*100)
+					mt, pct, w, wShare*100, dim.Width, capW*100)
 			}
 		}
 	}
