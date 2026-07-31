@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.38.0](https://github.com/IbbyLabs/XRDB/compare/v3.37.2...v3.38.0) (2026-07-31)
+
+
+### Added
+
+* **rpdb:** answer the poster key check AIOStreams makes ([7c5591f](https://github.com/IbbyLabs/XRDB/commit/7c5591f79cf63e154e41d6b25852e397f8e94677))
+
+
+### Fixed
+
+* **mdblist:** stop re-paying the wrong-endpoint lookup on every render ([a287e85](https://github.com/IbbyLabs/XRDB/commit/a287e858c6f0c65eb0bd672ecb6956923e369f98))
+
 ## [3.37.2](https://github.com/IbbyLabs/XRDB/compare/v3.37.1...v3.37.2) (2026-07-31)
 
 
