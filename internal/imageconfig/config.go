@@ -542,7 +542,7 @@ type GenreBadgeConfig struct {
 	GenreBadgeScale             int     `json:"genreBadgeScale,omitempty"`             // percent 70-200; 0 = 100
 	GenreBadgeOffsetX           int     `json:"genreBadgeOffsetX,omitempty"`           // px nudge from the resolved corner
 	GenreBadgeOffsetY           int     `json:"genreBadgeOffsetY,omitempty"`           //
-	GenreBadgeBorderWidth       float64 `json:"genreBadgeBorderWidth,omitempty"`       // px; 0 = default hairline
+	GenreBadgeBorderWidth       float64 `json:"genreBadgeBorderWidth,omitempty"`       // px; 0 = default hairline, <0 = off
 	GenreBadgeBackgroundOpacity int     `json:"genreBadgeBackgroundOpacity,omitempty"` // 0-100; 0 = default
 	GenreBadgeTileAccentColor   string  `json:"genreBadgeTileAccentColor,omitempty"`   // "#RRGGBB" for the tile style
 	// GenreBadgeAccent places the accent on the plate. v2 ran it down the left
@@ -1743,12 +1743,16 @@ func parseGenre(cfg *Config, r *raw) {
 	if r.GenreBadgeOffsetY != nil {
 		cfg.GenreBadgeOffsetY = clampInt(*r.GenreBadgeOffsetY, -320, 320)
 	}
-	if r.GenreBadgeBorderWidth != nil && *r.GenreBadgeBorderWidth > 0 {
-		w := *r.GenreBadgeBorderWidth
-		if w > 8 {
-			w = 8
+	if r.GenreBadgeBorderWidth != nil {
+		switch w := *r.GenreBadgeBorderWidth; {
+		case w < 0:
+			cfg.GenreBadgeBorderWidth = -1 // sentinel: border off
+		case w > 0:
+			if w > 8 {
+				w = 8
+			}
+			cfg.GenreBadgeBorderWidth = w
 		}
-		cfg.GenreBadgeBorderWidth = w
 	}
 	if r.GenreBadgeBackgroundOpacity != nil && *r.GenreBadgeBackgroundOpacity != 0 {
 		cfg.GenreBadgeBackgroundOpacity = clampInt(*r.GenreBadgeBackgroundOpacity, 1, 100)
@@ -1844,7 +1848,7 @@ func isHexColor(s string) bool {
 // Bump this whenever a change alters rendered pixels for an unchanged config.
 // It costs a full re-render, so it is not for changes that only affect configs
 // whose own key already moved.
-const renderVersion = "r9"
+const renderVersion = "r10"
 
 // CacheKey returns a deterministic hex string for the config, suitable for use
 // as part of a render cache key. The key is stable: same logical config always

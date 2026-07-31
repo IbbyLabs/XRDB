@@ -195,17 +195,15 @@ func TestGenreBadgeStylesChangeRender(t *testing.T) {
 		rendered[name] = img
 	}
 
-	// "glass" is the id the default option carries, so the two match by design.
-	names := []string{"default", "square", "plain", "clean", "tile"}
+	// Every style renders distinctly; "glass" is a translucent plate, no longer
+	// an alias of the opaque default.
+	names := []string{"default", "glass", "square", "plain", "clean", "tile"}
 	for i, a := range names {
 		for _, b := range names[i+1:] {
 			if !imagesDiffer(rendered[a], rendered[b]) {
 				t.Errorf("genre styles %q and %q render identically", a, b)
 			}
 		}
-	}
-	if imagesDiffer(rendered["default"], rendered["glass"]) {
-		t.Error(`genre style "glass" should match the default`)
 	}
 }
 
@@ -364,5 +362,34 @@ func TestProviderAccentOverrideChangesRender(t *testing.T) {
 	drawBadgesInPlace(img, ratings, ov)
 	if !imagesDiffer(def, img) {
 		t.Error("provider accent override did not change the render")
+	}
+}
+
+// Glass must be a translucent plate whose opacity is controllable, and every
+// bordered style must be able to turn its border off with a negative width.
+func TestGenreBadgeGlassAndBorderControls(t *testing.T) {
+	genres := []string{"Action", "Drama"}
+	fillBase := func() *image.NRGBA {
+		img := genreTestImage()
+		for i := 0; i < len(img.Pix); i += 4 {
+			img.Pix[i], img.Pix[i+1], img.Pix[i+2], img.Pix[i+3] = 210, 120, 40, 255
+		}
+		return img
+	}
+
+	light, heavy := fillBase(), fillBase()
+	drawGenreBadge(light, genres, "bl", 1.0, newOccupancy(light.Bounds()), genreBadgeOpts{style: "glass", bgOpacity: 25})
+	drawGenreBadge(heavy, genres, "bl", 1.0, newOccupancy(heavy.Bounds()), genreBadgeOpts{style: "glass", bgOpacity: 90})
+	if !imagesDiffer(light, heavy) {
+		t.Error("glass background opacity did not change the render")
+	}
+
+	for _, style := range []string{"glass", "square", ""} {
+		def, off := fillBase(), fillBase()
+		drawGenreBadge(def, genres, "bl", 1.0, newOccupancy(def.Bounds()), genreBadgeOpts{style: style})
+		drawGenreBadge(off, genres, "bl", 1.0, newOccupancy(off.Bounds()), genreBadgeOpts{style: style, borderWidth: -1})
+		if !imagesDiffer(def, off) {
+			t.Errorf("style %q: border-off (-1) did not change the render", style)
+		}
 	}
 }

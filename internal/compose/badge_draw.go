@@ -80,6 +80,25 @@ func fillRoundedRectSquared(dst *image.NRGBA, r image.Rectangle, radius int, sq 
 	}
 }
 
+// blendRoundedRect alpha-composites c over dst inside a rounded rect, so a
+// translucent fill lets the artwork read through instead of replacing it.
+func blendRoundedRect(dst *image.NRGBA, r image.Rectangle, radius int, c color.NRGBA) {
+	r = r.Intersect(dst.Bounds())
+	for y := r.Min.Y; y < r.Max.Y; y++ {
+		for x := r.Min.X; x < r.Max.X; x++ {
+			cov, skip := cornerCoverage(x, y, r, radius)
+			if skip {
+				continue
+			}
+			a := float64(c.A)
+			if cov < 1 {
+				a *= cov
+			}
+			blendPixel(dst, x, y, color.NRGBA{R: c.R, G: c.G, B: c.B, A: uint8(a)})
+		}
+	}
+}
+
 func inCornerZone(x, y int, r image.Rectangle, radius int) bool {
 	return (x < r.Min.X+radius || x >= r.Max.X-radius) &&
 		(y < r.Min.Y+radius || y >= r.Max.Y-radius)

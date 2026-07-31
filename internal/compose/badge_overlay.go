@@ -1229,15 +1229,52 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		}
 		drawText(base, face, tx, ty, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, label)
 		return
+	case "glass":
+		// A translucent dark tint blended over the artwork so the poster reads
+		// through it. bgOpacity is the tint's opacity; unset is a middle default.
+		tintA := 130
+		if opts.bgOpacity != 0 {
+			tintA = opts.bgOpacity * 255 / 100
+		}
+		blendRoundedRect(base, r.Add(image.Pt(0, maxInt(1, r.Dy()/16))), radius, color.NRGBA{A: 46})
+		blendRoundedRect(base, r, radius, color.NRGBA{R: 14, G: 16, B: 22, A: uint8(tintA)})
+		if opts.borderWidth >= 0 {
+			bw := maxInt(1, s(1))
+			if opts.borderWidth > 0 {
+				bw = maxInt(1, int(opts.borderWidth*scale+0.5))
+			}
+			for i := 0; i < bw; i++ {
+				rr := r.Inset(i)
+				if rr.Dx() <= 0 || rr.Dy() <= 0 {
+					break
+				}
+				drawRectBorder(base, rr, maxInt(0, radius-i), color.NRGBA{R: 255, G: 255, B: 255, A: 48})
+			}
+		}
+		drawLeftStripe()
+		if accent := drawIcon(); mode != "text" {
+			textColor = accent
+		}
+		if mode != "icon" {
+			drawText(base, face, tx, ty, textColor, label)
+		}
+		return
 	case "square":
 		fill := color.NRGBA{R: 8, G: 11, B: 16, A: 224}
 		if opts.bgOpacity != 0 {
 			fill.A = uint8(opts.bgOpacity * 255 / 100)
 		}
+		sqBorder := color.NRGBA{R: 255, G: 255, B: 255, A: 24}
+		sqBorderW := maxInt(1, s(1))
+		if opts.borderWidth < 0 {
+			sqBorder.A = 0
+		} else if opts.borderWidth > 0 {
+			sqBorderW = maxInt(1, int(opts.borderWidth*scale+0.5))
+		}
 		drawSoftTile(base, r, maxInt(1, s(2)), tileChrome{
 			fill:        fill,
-			border:      color.NRGBA{R: 255, G: 255, B: 255, A: 24},
-			borderWidth: maxInt(1, s(1)),
+			border:      sqBorder,
+			borderWidth: sqBorderW,
 			shadow:      color.NRGBA{R: 0, G: 0, B: 0, A: 70},
 		})
 		if capRoom > 0 {
@@ -1263,7 +1300,9 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	}
 	border := color.NRGBA{R: 255, G: 255, B: 255, A: 28}
 	borderW := 0
-	if opts.borderWidth > 0 {
+	if opts.borderWidth < 0 {
+		border.A = 0
+	} else if opts.borderWidth > 0 {
 		// A configured border reads as a deliberate outline, so make it opaque
 		// enough to see and scale its width with the output.
 		border.A = 150
