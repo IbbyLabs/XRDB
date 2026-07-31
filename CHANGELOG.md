@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.34.1](https://github.com/IbbyLabs/XRDB/compare/v3.34.0...v3.34.1) (2026-07-31)
+
+
+### Fixed
+
+* **ratings:** version the ratings cache by MediaMeta shape ([aa25ef5](https://github.com/IbbyLabs/XRDB/commit/aa25ef558676402565316b31b8d3d63653c70a78))
+
 ## [3.34.0](https://github.com/IbbyLabs/XRDB/compare/v3.33.1...v3.34.0) (2026-07-31)
 
 
