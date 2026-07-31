@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.41.0](https://github.com/IbbyLabs/XRDB/compare/v3.40.0...v3.41.0) (2026-07-31)
+
+
+### Added
+
+* **genre:** outline the icon on plain style, and a glow option (FR-131) ([2d1cb9f](https://github.com/IbbyLabs/XRDB/commit/2d1cb9f8db9e8bee16e8e4b9c61c178e4c7dc751))
+
 ## [3.40.0](https://github.com/IbbyLabs/XRDB/compare/v3.39.0...v3.40.0) (2026-07-31)
 
 
