@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.43.0](https://github.com/IbbyLabs/XRDB/compare/v3.42.0...v3.43.0) (2026-07-31)
+
+
+### Added
+
+* **cache:** make the disk tier bounds configurable ([362c6f3](https://github.com/IbbyLabs/XRDB/commit/362c6f34f55315d890b4127a37f7ad3238963138))
+
 ## [3.42.0](https://github.com/IbbyLabs/XRDB/compare/v3.41.1...v3.42.0) (2026-07-31)
 
 
