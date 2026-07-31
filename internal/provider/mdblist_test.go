@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"math"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -253,5 +254,39 @@ func TestMDBListSeriesHintHitsShowDirectly(t *testing.T) {
 	}
 	if len(paths) != 1 || !strings.Contains(paths[0], "/imdb/show/") {
 		t.Fatalf("series hint should hit show directly, got %v", paths)
+	}
+}
+
+// MDBList does not report every source on the same scale, and reading one wrong
+// prints a plainly false score on the artwork: TMDB arrives as a 0-100
+// percentage while its own site shows 0-10, and Metacritic's user score is out
+// of 10 while its critic score is out of 100. Values are real MDBList responses
+// (Iron Man, The Dark Knight, Inception).
+func TestMDBListNormalizesEachSourceToItsRealScale(t *testing.T) {
+	cases := []struct {
+		source    string
+		raw       float64
+		wantValue float64
+		wantLabel string
+	}{
+		{"imdb", 7.9, 7.9, "7.9"},
+		{"tmdb", 76, 7.6, "7.6"},
+		{"tmdb", 85, 8.5, "8.5"},
+		{"metacritic", 79, 7.9, "79"},
+		{"metacriticuser", 8.3, 8.3, "8.3"},
+		{"metacriticuser", 9.1, 9.1, "9.1"},
+		{"rt", 94, 9.4, "94%"},
+		{"letterboxd", 3.8, 7.6, "3.8"},
+		{"trakt", 82, 8.2, "82"},
+	}
+	for _, c := range cases {
+		got, label := mdblistNormalize(c.source, c.raw)
+		if math.Abs(got-c.wantValue) > 0.001 || label != c.wantLabel {
+			t.Errorf("%s %v: got (%.2f, %q), want (%.2f, %q)",
+				c.source, c.raw, got, label, c.wantValue, c.wantLabel)
+		}
+		if got > 10.001 {
+			t.Errorf("%s %v normalized to %.2f, which is off the 0-10 scale", c.source, c.raw, got)
+		}
 	}
 }

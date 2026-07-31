@@ -259,15 +259,22 @@ func normalizeMDBSource(raw string) string {
 // a display label appropriate for that provider.
 func mdblistNormalize(source string, value float64) (float64, string) {
 	switch source {
-	case "imdb", "tmdb":
+	case "imdb":
 		// Already 0–10 scale
 		return value, fmt.Sprintf("%.1f", value)
+	case "tmdb":
+		// MDBList reports TMDB as a 0–100 percentage, while TMDB itself shows a
+		// 0–10 score, so 76 here is the 7.6 a viewer expects to read.
+		return value / 10, fmt.Sprintf("%.1f", value/10)
 	case "rt", "rtaudience":
 		// 0–100 percentage
 		return value / 10, fmt.Sprintf("%.0f%%", value)
-	case "metacritic", "metacriticuser":
+	case "metacritic":
 		// 0–100 score
 		return value / 10, fmt.Sprintf("%.0f", value)
+	case "metacriticuser":
+		// Metacritic's user score is out of 10, unlike its critic score.
+		return value, fmt.Sprintf("%.1f", value)
 	case "letterboxd":
 		// 0–5 scale → normalise to 0–10
 		return value * 2, fmt.Sprintf("%.1f", value)
