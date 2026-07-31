@@ -844,6 +844,9 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		(req.MediaType == "poster" && req.Config.BackdropAsPoster && meta.BackdropURL != "")
 	timings.mark("overlays")
 	if wantsLogoOverlay && meta.LogoURL != "" {
+		p.log().DebugContext(ctx, "Overlaying a title logo",
+			"id", logging.RequestID(ctx), "logo_url", meta.LogoURL,
+			"language", req.Config.Language, "clean", cleanOverlay)
 		if logoBytes, err := p.fetcher.Fetch(ctx, meta.LogoURL); err == nil {
 			drawBackdropLogoOverlay(composed, logoBytes, ratingsH, logoOptsFromConfig(req.Config))
 		}
