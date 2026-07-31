@@ -2,6 +2,19 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.36.0](https://github.com/IbbyLabs/XRDB/compare/v3.35.3...v3.36.0) (2026-07-31)
+
+
+### Added
+
+* **overlays:** size control for the age rating badge (FR-127) ([850316e](https://github.com/IbbyLabs/XRDB/commit/850316e45aa3adc3c433ccaf3be0df13d95a6a38))
+* **overlays:** X/Y offsets for the rating ring and age badge (FR-127) ([e01a3b8](https://github.com/IbbyLabs/XRDB/commit/e01a3b885686ab49736d598bf3dd025a0f4ce2fc))
+
+
+### Fixed
+
+* **logo:** prefer English when the requested language has no logo ([24cc04b](https://github.com/IbbyLabs/XRDB/commit/24cc04b12826c1242361aae612e1e045b7523c0b))
+
 ## [3.35.3](https://github.com/IbbyLabs/XRDB/compare/v3.35.2...v3.35.3) (2026-07-31)
 
 
