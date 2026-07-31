@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.32.0](https://github.com/IbbyLabs/XRDB/compare/v3.31.0...v3.32.0) (2026-07-31)
+
+
+### Added
+
+* **badges:** add an Oscar/Emmy awards badge (FR-90) ([c3c41e0](https://github.com/IbbyLabs/XRDB/commit/c3c41e0e4c01762f7c075946b7be0609b386a504))
+
 ## [3.31.0](https://github.com/IbbyLabs/XRDB/compare/v3.30.1...v3.31.0) (2026-07-31)
 
 
