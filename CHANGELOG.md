@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.40.0](https://github.com/IbbyLabs/XRDB/compare/v3.39.0...v3.40.0) (2026-07-31)
+
+
+### Added
+
+* **anime:** accept anidb ids ([2ee498b](https://github.com/IbbyLabs/XRDB/commit/2ee498b207fe3b01d2286f76000f2303b21b8cfb))
+
 ## [3.39.0](https://github.com/IbbyLabs/XRDB/compare/v3.38.0...v3.39.0) (2026-07-31)
 
 
