@@ -1299,7 +1299,34 @@ func widestBadgeAt(scale float64, ratings []provider.Rating, cfg imageconfig.Con
 const (
 	maxBadgeHeightShare = 0.12
 	maxBadgeWidthShare  = 0.33
+	// Hard ceilings: however large the configured scale, a badge never swallows
+	// the frame. These bound the scale-aware caps below.
+	hardBadgeHeightShare = 0.34
+	hardBadgeWidthShare  = 0.70
 )
+
+// badgeShareCaps grow the frame-share caps with the user's configured badge
+// scale, bounded by the hard ceilings. On a small surface (an episode
+// thumbnail) one badge already meets the base cap at 100%, so without this the
+// scale control is inert there — every value collapses to the same size. Scaling
+// the cap lets a higher percentage still grow the badge, just not past the
+// ceiling. At 100% the caps are unchanged, so posters and backdrops are
+// unaffected.
+func badgeShareCaps(cfg imageconfig.Config) (widthShare, heightShare float64) {
+	factor := 1.0
+	if cfg.RatingBadgeScale > 100 {
+		factor = float64(cfg.RatingBadgeScale) / 100
+	}
+	widthShare = maxBadgeWidthShare * factor
+	if widthShare > hardBadgeWidthShare {
+		widthShare = hardBadgeWidthShare
+	}
+	heightShare = maxBadgeHeightShare * factor
+	if heightShare > hardBadgeHeightShare {
+		heightShare = hardBadgeHeightShare
+	}
+	return widthShare, heightShare
+}
 
 // nominalOverlayTileH is the height of a corner-overlay tile at scale 1.
 const nominalOverlayTileH = 34.0
@@ -1325,17 +1352,18 @@ func fitBadgeScale(scale float64, frameW, frameH int, ratings []provider.Rating,
 	}
 	// A few passes is enough to bring any requested size inside the frame, and
 	// bounds the work.
+	widthShare, heightShare := badgeShareCaps(cfg)
 	for i := 0; i < 6; i++ {
 		d := ratingStripDimsFor(scale, cfg)
 		availW := frameW - d.edgeX*2
-		if share := int(float64(frameW)*maxBadgeWidthShare + 0.5); share < availW {
+		if share := int(float64(frameW)*widthShare + 0.5); share < availW {
 			availW = share
 		}
 		// A badge taller than the artwork pushes its own value off the edge, so
 		// height is checked alongside width. One row is the floor: below that
 		// there is nothing left to show.
 		availH := frameH - d.edgeY*2
-		if share := int(float64(frameH)*maxBadgeHeightShare + 0.5); share < availH {
+		if share := int(float64(frameH)*heightShare + 0.5); share < availH {
 			availH = share
 		}
 		widest := widestBadgeAt(scale, ratings, cfg)
