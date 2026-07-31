@@ -780,6 +780,12 @@ func selectImagePath(images []tmdbImage, defaultPath, lang string, opts ArtworkO
 	if p := bestBy(textless); p != "" {
 		return p
 	}
+	// English is the fetch filter's universal second choice, so it is already in
+	// the pool. A wordmark most viewers can read beats the highest-voted logo in
+	// an arbitrary language (a Swedish request landing a Ukrainian logo).
+	if p := bestBy(func(img tmdbImage) bool { return langOf(img) == "en" }); p != "" {
+		return p
+	}
 	return bestBy(func(tmdbImage) bool { return true })
 }
 

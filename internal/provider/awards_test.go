@@ -67,8 +67,29 @@ func TestFallbackLanguageReachesSelection(t *testing.T) {
 	if got != "/en.png" {
 		t.Errorf("selectImagePath fallback = %q, want /en.png", got)
 	}
-	// Without a fallback, the highest-voted of any language wins (the old path).
-	if got := selectImagePath(imgs, "", "", ArtworkOptions{}); got != "/zh.png" {
-		t.Errorf("no-fallback = %q, want /zh.png", got)
+	// Without a fallback, English is now preferred over an arbitrary higher-voted
+	// language (see TestLogoPrefersEnglishOverArbitraryLanguage).
+	if got := selectImagePath(imgs, "", "", ArtworkOptions{}); got != "/en.png" {
+		t.Errorf("no-fallback = %q, want /en.png (English preferred)", got)
+	}
+}
+
+// A logo requested in a language that has none, with no fallback, must prefer
+// English (always in the fetch pool) over the highest-voted arbitrary language.
+func TestLogoPrefersEnglishOverArbitraryLanguage(t *testing.T) {
+	sv, uk, en := "sv", "uk", "en"
+	imgs := []tmdbImage{
+		{FilePath: "/uk.png", Iso639: &uk, VoteAverage: 9, VoteCount: 200}, // highest voted
+		{FilePath: "/en.png", Iso639: &en, VoteAverage: 4, VoteCount: 20},
+	}
+	// Swedish requested (no sv logo), no fallback, no textless -> English, not Ukrainian.
+	got := selectImagePath(imgs, "", sv, ArtworkOptions{})
+	if got != "/en.png" {
+		t.Errorf("got %q, want /en.png (English preferred over arbitrary language)", got)
+	}
+	// When English is absent too, the highest-voted remains the last resort.
+	only := []tmdbImage{{FilePath: "/uk.png", Iso639: &uk, VoteAverage: 9}}
+	if got := selectImagePath(only, "", sv, ArtworkOptions{}); got != "/uk.png" {
+		t.Errorf("got %q, want /uk.png as last resort", got)
 	}
 }
