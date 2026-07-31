@@ -2,7 +2,9 @@ package compose
 
 import (
 	"context"
+	"encoding/json"
 	"log/slog"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -107,5 +109,28 @@ func TestSaveIsANoOpWithoutAPath(t *testing.T) {
 	var nilCache *ratingsCache
 	if err := nilCache.Save(); err != nil {
 		t.Errorf("Save on a nil cache errored: %v", err)
+	}
+}
+
+// An older-shape snapshot is discarded on load, so a title cached before a
+// MediaMeta field existed is refetched rather than served without the field.
+func TestAnOlderShapeSnapshotIsDiscarded(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, ratingsCacheFile)
+
+	// Hand-write a snapshot claiming an older shape.
+	old := ratingsSnapshot{Shape: ratingsCacheShape - 1, Entries: map[string]ratingsEntry{
+		"tt1:imdb": {Meta: metaWith("imdb"), ExpiresAt: time.Now().Add(time.Hour)},
+	}}
+	data, _ := json.Marshal(old)
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	c := newRatingsCache(time.Hour)
+	c.path = path
+	c.load(slog.New(slog.DiscardHandler))
+	if c.Len() != 0 {
+		t.Errorf("an older-shape snapshot was loaded: %d entries kept", c.Len())
 	}
 }

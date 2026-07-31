@@ -148,6 +148,18 @@ func (c *ratingsCache) evictLocked() {
 // ratingsCacheFile is the name the snapshot takes inside the cache directory.
 const ratingsCacheFile = "ratings-cache.json"
 
+// ratingsCacheShape versions the stored MediaMeta shape. Bump it whenever a
+// field is added to MediaMeta that a render reads, so entries fetched by older
+// code — which cannot carry the new field — are discarded on load rather than
+// serving a title with the field silently empty. (2: added Awards and Stinger.)
+const ratingsCacheShape = 2
+
+// ratingsSnapshot is the on-disk form: the shape version plus the entries.
+type ratingsSnapshot struct {
+	Shape   int                     `json:"shape"`
+	Entries map[string]ratingsEntry `json:"entries"`
+}
+
 // load reads a previous snapshot, discarding anything already expired. A
 // missing or unreadable file is not an error: the cache simply starts empty.
 func (c *ratingsCache) load(logger *slog.Logger) {
@@ -158,22 +170,30 @@ func (c *ratingsCache) load(logger *slog.Logger) {
 	if err != nil {
 		return
 	}
-	var stored map[string]ratingsEntry
-	if err := json.Unmarshal(data, &stored); err != nil {
+	var snap ratingsSnapshot
+	if err := json.Unmarshal(data, &snap); err != nil {
 		logger.Warn("Could not read the remembered ratings; starting empty",
 			"path", c.path, "error", err)
+		return
+	}
+	if snap.Shape != ratingsCacheShape {
+		// A different shape means the entries were fetched by code that read a
+		// different MediaMeta; discard them rather than serve titles with a new
+		// field silently empty.
+		logger.Info("Discarded remembered ratings from an older shape",
+			"stored_shape", snap.Shape, "current_shape", ratingsCacheShape)
 		return
 	}
 	now := time.Now()
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	for k, e := range stored {
+	for k, e := range snap.Entries {
 		if e.Meta != nil && now.Before(e.ExpiresAt) {
 			c.entries[k] = e
 		}
 	}
 	logger.Info("Restored remembered ratings from disk",
-		"kept", len(c.entries), "stored", len(stored))
+		"kept", len(c.entries), "stored", len(snap.Entries))
 }
 
 // Save writes the unexpired answers so a restart does not refetch them. It is
@@ -193,7 +213,7 @@ func (c *ratingsCache) Save() error {
 	}
 	c.mu.Unlock()
 
-	data, err := json.Marshal(live)
+	data, err := json.Marshal(ratingsSnapshot{Shape: ratingsCacheShape, Entries: live})
 	if err != nil {
 		return err
 	}
