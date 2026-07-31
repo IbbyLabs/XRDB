@@ -604,6 +604,11 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	if imageconfig.HasPerTypeArtwork(req.Config) || imageconfig.HasPerTypeRatings(req.Config) {
 		contentKind = p.resolveContentKind(ctx, req)
 		timings.mark("content_kind")
+		// Hand the resolved kind down to the rating sources. Without it a series
+		// spends a wasted lookup on every source that keys by type.
+		if req.ContentType == "" && contentKind != "" {
+			req.ContentType = contentKind
+		}
 	}
 	if imageconfig.HasPerTypeArtwork(req.Config) {
 		isAnime = p.isAnimeTitle(ctx, req)

@@ -105,7 +105,7 @@ export const SIDE_LAYOUTS: readonly string[] = ['split-side', 'left', 'right'];
 export const BADGE_STYLE_OPTIONS = [
   { id: 'pill',    label: 'Pill'          },
   { id: 'square',  label: 'Square'        },
-  { id: 'glass',   label: 'Outline'       },
+  { id: 'glass',   label: 'Glass'         },
   { id: 'tile',    label: 'Tile'          },
   { id: 'stacked', label: 'Stacked'       },
   { id: 'plain',   label: 'No background' },

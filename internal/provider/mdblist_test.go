@@ -306,3 +306,38 @@ func TestMDBListMapsEverySourceKeyTheAPISends(t *testing.T) {
 		}
 	}
 }
+
+// A bare /poster/tt... request carries no content type, so MDBList guesses the
+// movie endpoint first. A series must not pay that guaranteed 404 on every
+// render against the one source that meters by the day.
+func TestMDBListRemembersWhichEndpointHoldsATitle(t *testing.T) {
+	var movieHits, showHits int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case strings.Contains(r.URL.Path, "/movie/"):
+			movieHits++
+			w.WriteHeader(http.StatusNotFound)
+		case strings.Contains(r.URL.Path, "/show/"):
+			showHits++
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"title":"Breaking Bad","ratings":[{"source":"imdb","value":9.5}]}`))
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	m := NewMDBList("k")
+	m.baseURL = srv.URL
+	for i := 0; i < 4; i++ {
+		if _, err := m.Fetch(context.Background(), "", "tt0903747"); err != nil {
+			t.Fatalf("fetch %d: %v", i, err)
+		}
+	}
+	if movieHits != 1 {
+		t.Errorf("hit the wrong endpoint %d times across 4 renders, want 1: the type is not being remembered", movieHits)
+	}
+	if showHits != 4 {
+		t.Errorf("show endpoint hit %d times, want 4", showHits)
+	}
+}

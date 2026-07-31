@@ -23,6 +23,11 @@ type MDBList struct {
 	apiKey     string
 	baseURL    string // overrides mdblistBase; set in tests
 	httpClient *http.Client
+	// knownType remembers which endpoint answered for a title. A bare
+	// /poster/tt... request carries no content type, so a series would otherwise
+	// spend a guaranteed 404 on the movie endpoint every single render, against
+	// the one source that meters by the day.
+	knownType sync.Map // imdb id -> "movie" | "show"
 }
 
 // NewMDBList creates an MDBList provider.
@@ -77,9 +82,25 @@ func (m *MDBList) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, 
 	if isSeriesType(mediaType) {
 		primary, secondary = "show", "movie"
 	}
+	// A previous lookup already learned which endpoint holds this title.
+	if remembered, ok := m.knownType.Load(id); ok {
+		if kind, _ := remembered.(string); kind == "movie" || kind == "show" {
+			primary = kind
+			secondary = "show"
+			if kind == "show" {
+				secondary = "movie"
+			}
+		}
+	}
 	meta, err := m.fetchType(ctx, primary, id)
 	if errors.Is(err, errNotFound) {
-		meta, err = m.fetchType(ctx, secondary, id)
+		if meta, err = m.fetchType(ctx, secondary, id); err == nil {
+			m.knownType.Store(id, secondary)
+		}
+		return meta, err
+	}
+	if err == nil {
+		m.knownType.Store(id, primary)
 	}
 	return meta, err
 }
