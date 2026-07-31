@@ -2,6 +2,19 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.37.0](https://github.com/IbbyLabs/XRDB/compare/v3.36.2...v3.37.0) (2026-07-31)
+
+
+### Added
+
+* **configurator:** surface every render setting in the UI, with a guard ([b3910ae](https://github.com/IbbyLabs/XRDB/commit/b3910ae99081bae7a202a4ec2741dcce8bba2e7f))
+* **profile:** revert a profile to its last saved settings (FR-56) ([f66957f](https://github.com/IbbyLabs/XRDB/commit/f66957fa5c6c7c9c4eb4a8334dd8d76e807c5311))
+
+
+### Fixed
+
+* **stinger:** keep the badge when artwork comes from another source ([5316105](https://github.com/IbbyLabs/XRDB/commit/5316105981d177ed64b6aefc7ebcaf9c450f35cd))
+
 ## [3.36.2](https://github.com/IbbyLabs/XRDB/compare/v3.36.1...v3.36.2) (2026-07-31)
 
 
