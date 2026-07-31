@@ -461,3 +461,20 @@ func countDir(dir string) (nFiles int64, nBytes int64) {
 	}
 	return nFiles, nBytes
 }
+
+// DiskBoundsInfo reports the disk tier limits in force, so startup can log what
+// actually took effect rather than what was requested.
+type DiskBoundsInfo struct {
+	Files int
+	Bytes int64
+}
+
+// DiskBounds returns the limits currently applied to the disk tier.
+func (c *Cache) DiskBounds() DiskBoundsInfo {
+	if c == nil {
+		return DiskBoundsInfo{}
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return DiskBoundsInfo{Files: c.maxDiskFiles, Bytes: c.maxDiskBytes}
+}

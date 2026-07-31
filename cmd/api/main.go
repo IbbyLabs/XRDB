@@ -179,7 +179,7 @@ func main() {
 	if len(reg.Names()) > 0 {
 		pipeline = compose.New(reg)
 		pipeline.SetMediuxKey(cfg.MediuxAPIKey)
-	pipeline.SetRatingsCacheTTL(cfg.RatingsCacheTTL)
+		pipeline.SetRatingsCacheTTL(cfg.RatingsCacheTTL)
 		// Ratings are metered by the request upstream, and one source meters by the
 		// day, so what was already fetched is kept across restarts.
 		pipeline.SetRatingsCachePath(cfg.CacheDir, logger)
@@ -222,6 +222,10 @@ func main() {
 		"memory_limit_mb", cfg.MemoryLimitBytes>>20,
 		"cache_max_entries", cfg.CacheMaxEntries,
 		"cache_max_mb", cfg.CacheMaxBytes>>20,
+		// The disk tier is the one a catalogue re-read hits, so an operator
+		// tuning it needs to see which bound actually took effect.
+		"cache_disk_max_files", renderCache.DiskBounds().Files,
+		"cache_disk_max_mb", renderCache.DiskBounds().Bytes>>20,
 		"providers", reg.Names(),
 		"imdb_dataset", cfg.IMDbDatasetDir != "",
 		"imdb_top_rated", cfg.IMDbTopRated,
