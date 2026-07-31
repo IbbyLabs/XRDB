@@ -30,12 +30,35 @@ func TestBadgeScaleControlWorksOnAThumbnail(t *testing.T) {
 	}
 }
 
+// A logo surface is wide but short (~800x200), so the height cap binds while the
+// width cap has room. The scale control must still grow the badge there — the
+// width-only smallness test left it inert.
+func TestBadgeScaleControlWorksOnALogo(t *testing.T) {
+	ensureFaces()
+	ensureIcons()
+	ratings := []provider.Rating{{Source: "imdb", Value: 8.4, Label: "8.4"}}
+
+	base := imageconfig.Default()
+	base.Ratings = []string{"imdb"}
+	base.RatingBadgeScale = 100
+	big := base
+	big.RatingBadgeScale = 300
+
+	const logoW, logoH = 800, 200
+	small := fitBadgeScale(resolveBadgeScale(base, logoW, logoH, ratings), logoW, logoH, ratings, base)
+	large := fitBadgeScale(resolveBadgeScale(big, logoW, logoH, ratings), logoW, logoH, ratings, big)
+
+	if large <= small {
+		t.Errorf("scale 300 (%.2f) did not exceed scale 100 (%.2f) on a logo", large, small)
+	}
+}
+
 // The hard ceiling still applies: an absurd scale cannot make the badge swallow
 // the frame.
 func TestBadgeCapCeilingHolds(t *testing.T) {
 	cfg := imageconfig.Default()
 	cfg.RatingBadgeScale = 1000
-	w, h := badgeShareCaps(cfg, 320)
+	w, h := badgeShareCaps(cfg, 320, 180)
 	if w > hardBadgeWidthShare || h > hardBadgeHeightShare {
 		t.Errorf("caps exceeded the ceiling: w=%.2f h=%.2f", w, h)
 	}
@@ -46,7 +69,7 @@ func TestBadgeCapCeilingHolds(t *testing.T) {
 func TestBadgeCapsUnchangedAtDefault(t *testing.T) {
 	cfg := imageconfig.Default()
 	cfg.RatingBadgeScale = 100
-	w, h := badgeShareCaps(cfg, 320)
+	w, h := badgeShareCaps(cfg, 320, 180)
 	if w != maxBadgeWidthShare || h != maxBadgeHeightShare {
 		t.Errorf("default caps changed: w=%.2f h=%.2f", w, h)
 	}

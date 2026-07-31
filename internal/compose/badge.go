@@ -1312,22 +1312,28 @@ const (
 // the cap lets a higher percentage still grow the badge, just not past the
 // ceiling. At 100% the caps are unchanged, so posters and backdrops are
 // unaffected.
-func badgeShareCaps(cfg imageconfig.Config, frameW int) (widthShare, heightShare float64) {
+func badgeShareCaps(cfg imageconfig.Config, frameW, frameH int) (widthShare, heightShare float64) {
 	widthShare, heightShare = maxBadgeWidthShare, maxBadgeHeightShare
-	// Only small surfaces need the relaxation. On a poster the base cap already
-	// leaves the scale control room to work, so keeping the tight cap there keeps
-	// large-scale poster badges proportional; a thumbnail's badge meets the cap
-	// at 100%, so without this the control is inert on it.
-	const smallFrameW = 500 // episode thumbnails are ~320px wide; posters 780+.
-	if frameW >= smallFrameW || cfg.RatingBadgeScale <= 100 {
+	if cfg.RatingBadgeScale <= 100 {
 		return widthShare, heightShare
 	}
+	// Relax each axis on its own, because a surface can be small in one dimension
+	// and large in the other. A thumbnail is small both ways; a logo is wide but
+	// short, so only its height binds and only the height cap should grow. A
+	// poster and a backdrop are large both ways and keep the tight base caps, so
+	// large-scale badges stay proportional there.
+	const smallFrameW = 500 // episode thumbnails ~320px wide; posters/backdrops 780+.
+	const smallFrameH = 700 // logos ~200 tall, thumbnails ~180; backdrops 720+.
 	factor := float64(cfg.RatingBadgeScale) / 100
-	if widthShare = maxBadgeWidthShare * factor; widthShare > hardBadgeWidthShare {
-		widthShare = hardBadgeWidthShare
+	if frameW < smallFrameW {
+		if widthShare = maxBadgeWidthShare * factor; widthShare > hardBadgeWidthShare {
+			widthShare = hardBadgeWidthShare
+		}
 	}
-	if heightShare = maxBadgeHeightShare * factor; heightShare > hardBadgeHeightShare {
-		heightShare = hardBadgeHeightShare
+	if frameH < smallFrameH {
+		if heightShare = maxBadgeHeightShare * factor; heightShare > hardBadgeHeightShare {
+			heightShare = hardBadgeHeightShare
+		}
 	}
 	return widthShare, heightShare
 }
@@ -1356,7 +1362,7 @@ func fitBadgeScale(scale float64, frameW, frameH int, ratings []provider.Rating,
 	}
 	// A few passes is enough to bring any requested size inside the frame, and
 	// bounds the work.
-	widthShare, heightShare := badgeShareCaps(cfg, frameW)
+	widthShare, heightShare := badgeShareCaps(cfg, frameW, frameH)
 	for i := 0; i < 6; i++ {
 		d := ratingStripDimsFor(scale, cfg)
 		availW := frameW - d.edgeX*2
