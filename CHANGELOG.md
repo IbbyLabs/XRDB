@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.37.1](https://github.com/IbbyLabs/XRDB/compare/v3.37.0...v3.37.1) (2026-07-31)
+
+
+### Fixed
+
+* **ratings:** discard cached scores read on the wrong scale ([b0a32f0](https://github.com/IbbyLabs/XRDB/commit/b0a32f08a32a84bd75a9ab3c143164ce979af98e))
+* **ratings:** read the TMDB and Metacritic user scales MDBList sends ([4737163](https://github.com/IbbyLabs/XRDB/commit/47371639ddf36c00475cb00bc64e604bbfb5f208))
+
 ## [3.37.0](https://github.com/IbbyLabs/XRDB/compare/v3.36.2...v3.37.0) (2026-07-31)
 
 
