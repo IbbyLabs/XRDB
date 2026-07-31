@@ -420,7 +420,12 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 	key := cacheKey
 
 	if err == nil && meta != nil && len(meta.Ratings) > 0 {
-		if p.health.Success(prov.Name(), key, meta) {
+		if ownerKeyed {
+			// The owner's key succeeding against its own allowance says nothing
+			// about the shared key's health, so it only caches the result and
+			// must not clear the shared cooldown.
+			p.health.Remember(key, meta)
+		} else if p.health.Success(prov.Name(), key, meta) {
 			p.log().WarnContext(ctx, "A ratings source recovered and is answering again",
 				"id", logging.RequestID(ctx), "source", prov.Name())
 		}
@@ -444,9 +449,10 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 			"media_id", req.MediaID, "error", err)
 		return good, nil
 	}
-	if err == nil && meta != nil && len(meta.Ratings) == 0 {
+	if err == nil && meta != nil && len(meta.Ratings) == 0 && !ownerKeyed {
 		// Nothing remembered and nothing returned. Record it so a source that
-		// starts answering empty still shows up as unhealthy.
+		// starts answering empty still shows up as unhealthy. Skipped for an
+		// owner-keyed render, which does not speak for the shared source.
 		p.health.Success(prov.Name(), key, meta)
 	}
 	return meta, err

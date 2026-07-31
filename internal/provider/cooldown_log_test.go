@@ -45,3 +45,25 @@ func TestSuccessReportsRecoveryOnce(t *testing.T) {
 type errStub string
 
 func (e errStub) Error() string { return string(e) }
+
+// An owner key's success must not clear the shared key's cooldown, or the
+// shared source flaps between exhausted and "recovered" while any owner-keyed
+// user browses. Remember caches the result without touching health.
+func TestRememberDoesNotClearTheSharedCooldown(t *testing.T) {
+	h := NewHealthTracker(100, time.Hour)
+	h.Failure("mdblist", &RateLimitError{Source: "mdblist", Status: 429, RetryAfter: time.Hour})
+	if !h.CoolingOff("mdblist") {
+		t.Fatal("mdblist should be cooling off")
+	}
+
+	// The owner-keyed path: cache a good result.
+	h.Remember(GoodKey("mdblist", "movie", "tt1"), &MediaMeta{Ratings: []Rating{{Source: "mdblist", Value: 8}}})
+
+	if !h.CoolingOff("mdblist") {
+		t.Error("Remember cleared the shared cooldown")
+	}
+	// And it still cached the value for the fallback path.
+	if _, ok := h.LastGood("mdblist", GoodKey("mdblist", "movie", "tt1")); !ok {
+		t.Error("Remember did not cache the good result")
+	}
+}

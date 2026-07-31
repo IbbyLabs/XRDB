@@ -114,8 +114,26 @@ func (h *HealthTracker) Success(source, key string, meta *MediaMeta) (recovered 
 	st.consecutiveFail = 0
 	st.successes++
 
+	h.rememberLocked(key, meta)
+	return recovered
+}
+
+// Remember caches a good result without touching the source's health. It is the
+// path for an owner-keyed render: the rating is a property of the title, so it
+// is worth remembering, but the owner's key succeeding says nothing about the
+// shared key's health and must not clear its cooldown.
+func (h *HealthTracker) Remember(key string, meta *MediaMeta) {
+	if h == nil {
+		return
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.rememberLocked(key, meta)
+}
+
+func (h *HealthTracker) rememberLocked(key string, meta *MediaMeta) {
 	if meta == nil || len(meta.Ratings) == 0 {
-		return recovered
+		return
 	}
 	if el, ok := h.entries[key]; ok {
 		h.lru.Remove(el)
@@ -135,7 +153,6 @@ func (h *HealthTracker) Success(source, key string, meta *MediaMeta) (recovered 
 		h.lru.Remove(front)
 		delete(h.entries, ge.key)
 	}
-	return recovered
 }
 
 // Failure records a failed fetch and reports whether this call newly put the
