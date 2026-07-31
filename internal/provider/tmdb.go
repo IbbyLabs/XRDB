@@ -385,7 +385,7 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		imgLangs = strings.TrimSuffix(imgLangs, ",en,null") + "," + fallback + ",en,null"
 	}
 	path := t.base() + "/" + mediaType + "/" + id +
-		"?append_to_response=images,release_dates,content_ratings,watch%2Fproviders,external_ids"
+		"?append_to_response=images,release_dates,content_ratings,watch%2Fproviders,external_ids,keywords"
 	if wantOriginal {
 		// The title's own language is only known once TMDB answers, and there is
 		// no wildcard for the filter. Omitting it returns every language.
@@ -451,6 +451,16 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 				} `json:"rent"`
 			} `json:"results"`
 		} `json:"watch/providers"`
+		// Movie keywords live under keywords.keywords; TV under keywords.results.
+		// XRDB reads them only to detect the mid/post-credits stinger tags.
+		Keywords struct {
+			Keywords []struct {
+				Name string `json:"name"`
+			} `json:"keywords"`
+			Results []struct {
+				Name string `json:"name"`
+			} `json:"results"`
+		} `json:"keywords"`
 	}
 	if err := t.get(ctx, path, &result); err != nil {
 		return nil, err
@@ -485,6 +495,14 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 	if artLang == "" {
 		artLang = "en"
 	}
+	kwNames := make([]string, 0, len(result.Keywords.Keywords)+len(result.Keywords.Results))
+	for _, k := range result.Keywords.Keywords {
+		kwNames = append(kwNames, k.Name)
+	}
+	for _, k := range result.Keywords.Results {
+		kwNames = append(kwNames, k.Name)
+	}
+
 	meta := &MediaMeta{
 		Title:         title,
 		OriginalTitle: originalTitle,
@@ -493,6 +511,7 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		Language:      artLang,
 		IMDbID:        imdbID,
 		TMDBID:        id,
+		Stinger:       stingerFromKeywords(kwNames),
 	}
 
 	// Source resolution: w780/w1280 are plenty for normal output, but large

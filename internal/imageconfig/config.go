@@ -141,6 +141,8 @@ type Config struct {
 	TopRatedPos      string         `json:"topRatedPos,omitempty"`
 	Awards           bool           `json:"awards,omitempty"`
 	AwardsPos        string         `json:"awardsPos,omitempty"`
+	Stinger          bool           `json:"stinger,omitempty"`
+	StingerPos       string         `json:"stingerPos,omitempty"`
 	Genre            bool           `json:"genre"`
 	GenrePos         string         `json:"genrePos,omitempty"`
 	Providers        bool           `json:"providers"`
@@ -589,6 +591,8 @@ type raw struct {
 	TopRatedPos                   *string   `json:"topRatedPos"`
 	Awards                        *bool     `json:"awards"`
 	AwardsPos                     *string   `json:"awardsPos"`
+	Stinger                       *bool     `json:"stinger"`
+	StingerPos                    *string   `json:"stingerPos"`
 	Genre                         *bool     `json:"genre"`
 	GenrePos                      *string   `json:"genrePos"`
 	Providers                     *bool     `json:"providers"`
@@ -969,6 +973,14 @@ func Parse(data json.RawMessage) Config {
 	if r.AwardsPos != nil {
 		if p := badgePos(*r.AwardsPos); p != "" {
 			cfg.AwardsPos = p
+		}
+	}
+	if r.Stinger != nil {
+		cfg.Stinger = *r.Stinger
+	}
+	if r.StingerPos != nil {
+		if p := badgePos(*r.StingerPos); p != "" {
+			cfg.StingerPos = p
 		}
 	}
 	if r.Genre != nil {
@@ -1834,6 +1846,8 @@ func CacheKey(cfg Config) string {
 		TopRatedPos                   string         `json:"topRatedPos,omitempty"`
 		Awards                        bool           `json:"awards,omitempty"`
 		AwardsPos                     string         `json:"awardsPos,omitempty"`
+		Stinger                       bool           `json:"stinger,omitempty"`
+		StingerPos                    string         `json:"stingerPos,omitempty"`
 		ReleaseStatusPos              string         `json:"releaseStatusPos"`
 		Genre                         bool           `json:"genre"`
 		GenrePos                      string         `json:"genrePos"`
@@ -1910,6 +1924,8 @@ func CacheKey(cfg Config) string {
 		TopRatedPos:                   cfg.TopRatedPos,
 		Awards:                        cfg.Awards,
 		AwardsPos:                     cfg.AwardsPos,
+		Stinger:                       cfg.Stinger,
+		StingerPos:                    cfg.StingerPos,
 		ReleaseStatusPos:              cfg.ReleaseStatusPos,
 		Genre:                         cfg.Genre,
 		GenrePos:                      cfg.GenrePos,

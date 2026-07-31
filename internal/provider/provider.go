@@ -53,7 +53,19 @@ type MediaMeta struct {
 	// Awards summarises major-award recognition (Oscars, Emmys) when a source
 	// reports it. Empty when unknown or none.
 	Awards AwardSummary
+	// Stinger reports mid/post-credits scenes, read from TMDB's stinger keywords.
+	Stinger StingerInfo
 }
+
+// StingerInfo records whether a title has a scene during or after the credits,
+// from TMDB's "duringcreditsstinger"/"aftercreditsstinger" keyword tags.
+type StingerInfo struct {
+	MidCredits  bool
+	PostCredits bool
+}
+
+// Has reports whether either kind of stinger is present.
+func (s StingerInfo) Has() bool { return s.MidCredits || s.PostCredits }
 
 // AwardSummary is a compact reading of a title's major-award recognition,
 // parsed from a source's free-text awards line.

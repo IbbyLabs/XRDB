@@ -738,6 +738,9 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	if req.Config.Awards && meta.Awards.Has() {
 		drawAwardsBadge(composed, meta.Awards, req.Config.AwardsPos, scale, occ)
 	}
+	if req.Config.Stinger && meta.Stinger.Has() {
+		drawStingerBadge(composed, meta.Stinger, req.Config.StingerPos, scale, occ)
+	}
 	if req.Config.Genre && len(meta.Genres) > 0 {
 		drawGenreBadge(composed, meta.Genres, req.Config.GenrePos, scale, occ, genreOptsFromConfig(req.Config, meta.IsAnime))
 	}
