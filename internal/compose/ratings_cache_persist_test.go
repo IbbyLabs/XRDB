@@ -3,6 +3,7 @@ package compose
 import (
 	"context"
 	"encoding/json"
+	"io"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -132,5 +133,72 @@ func TestAnOlderShapeSnapshotIsDiscarded(t *testing.T) {
 	c.load(slog.New(slog.DiscardHandler))
 	if c.Len() != 0 {
 		t.Errorf("an older-shape snapshot was loaded: %d entries kept", c.Len())
+	}
+}
+
+// Fixing how one source is read must not throw away every other source's
+// remembered answers. It used to: one counter covered them all, so correcting
+// MDBList's Metacritic spelling discarded IMDb, Trakt and Cinemeta as well, and
+// each repopulation is paid for against a source that meters by the day.
+func TestOnlyTheChangedSourceLosesItsRememberedRatings(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "ratings.json")
+
+	live := map[string]ratingsEntry{
+		provider.GoodKey("mdblist", "movie", "tt1"): {Meta: &provider.MediaMeta{Title: "A"}, ExpiresAt: time.Now().Add(time.Hour)},
+		provider.GoodKey("imdb", "movie", "tt1"):    {Meta: &provider.MediaMeta{Title: "A"}, ExpiresAt: time.Now().Add(time.Hour)},
+		provider.GoodKey("trakt", "movie", "tt1"):   {Meta: &provider.MediaMeta{Title: "A"}, ExpiresAt: time.Now().Add(time.Hour)},
+	}
+	// Written when mdblist was one version behind; every other source current.
+	old := map[string]int{}
+	for k, v := range ratingsSourceShape {
+		old[k] = v
+	}
+	old["mdblist"] = ratingsSourceShape["mdblist"] - 1
+	data, err := json.Marshal(ratingsSnapshot{Shape: ratingsCacheShape, SourceShapes: old, Entries: live})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	c := newRatingsCache(time.Hour)
+	c.path = path
+	c.load(slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+	if _, ok := c.entries[provider.GoodKey("mdblist", "movie", "tt1")]; ok {
+		t.Error("the changed source's entry survived, so a parser fix would serve the old reading")
+	}
+	for _, src := range []string{"imdb", "trakt"} {
+		if _, ok := c.entries[provider.GoodKey(src, "movie", "tt1")]; !ok {
+			t.Errorf("%s was discarded for a change to a different source", src)
+		}
+	}
+}
+
+// A file written before per-source versions existed carries none. It must keep
+// every source that has not changed since, rather than being discarded whole.
+func TestLegacySnapshotKeepsUnchangedSources(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "ratings.json")
+	live := map[string]ratingsEntry{
+		provider.GoodKey("imdb", "movie", "tt1"):    {Meta: &provider.MediaMeta{Title: "A"}, ExpiresAt: time.Now().Add(time.Hour)},
+		provider.GoodKey("mdblist", "movie", "tt1"): {Meta: &provider.MediaMeta{Title: "A"}, ExpiresAt: time.Now().Add(time.Hour)},
+	}
+	// No SourceShapes at all, as an older build wrote it.
+	data, _ := json.Marshal(ratingsSnapshot{Shape: ratingsCacheShape, Entries: live})
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	c := newRatingsCache(time.Hour)
+	c.path = path
+	c.load(slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+	if _, ok := c.entries[provider.GoodKey("imdb", "movie", "tt1")]; !ok {
+		t.Error("an unchanged source was discarded, so the upgrade costs a full refetch")
+	}
+	if _, ok := c.entries[provider.GoodKey("mdblist", "movie", "tt1")]; ok {
+		t.Error("a source whose reading changed survived the upgrade")
 	}
 }

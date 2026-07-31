@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -148,19 +149,46 @@ func (c *ratingsCache) evictLocked() {
 // ratingsCacheFile is the name the snapshot takes inside the cache directory.
 const ratingsCacheFile = "ratings-cache.json"
 
-// ratingsCacheShape versions the stored MediaMeta shape. Bump it whenever a
-// field is added to MediaMeta that a render reads OR the interpretation of an
-// existing field changes (e.g. a parser fix), so entries produced by older code
-// are discarded on load rather than serving a stale reading.
+// ratingsCacheShape versions the stored MediaMeta shape itself. Bump it only
+// when a field a render reads is added or removed, because every remembered
+// answer is discarded when it moves.
 // (2: added Awards and Stinger. 3: awards win/nominate parser fix.
 // 4: MDBList TMDB and Metacritic user scale fix.
 // 5: MDBList metacriticuser source key was being dropped.)
+//
+// Per-source reading changes live in ratingsSourceShape below, not here. A file
+// written before that existed carries no source versions, so it reads as 0 and
+// only the sources that have since moved are dropped.
 const ratingsCacheShape = 5
 
-// ratingsSnapshot is the on-disk form: the shape version plus the entries.
+// ratingsSourceShape versions how one source's answer is read. A parser fix
+// touches one source, so bumping its number discards that source's entries and
+// leaves every other source's alone. Before this, fixing MDBList's Metacritic
+// spelling threw away IMDb, Trakt and Cinemeta too, and each full repopulation
+// is paid for against the source that meters by the day.
+//
+// A source absent from this map is version 0 and is never invalidated here.
+var ratingsSourceShape = map[string]int{
+	// 1: TMDB and Metacritic user read on the wrong scale, and the
+	// metacriticuser key was dropped entirely.
+	"mdblist": 1,
+}
+
+// ratingsSnapshot is the on-disk form: the shape version, the per-source
+// versions the entries were written under, and the entries.
 type ratingsSnapshot struct {
-	Shape   int                     `json:"shape"`
-	Entries map[string]ratingsEntry `json:"entries"`
+	Shape        int                     `json:"shape"`
+	SourceShapes map[string]int          `json:"sourceShapes,omitempty"`
+	Entries      map[string]ratingsEntry `json:"entries"`
+}
+
+// sourceOfRatingsKey reads the source back off a cache key, which
+// provider.GoodKey builds as "source|mediaType|id".
+func sourceOfRatingsKey(key string) string {
+	if i := strings.IndexByte(key, '|'); i > 0 {
+		return key[:i]
+	}
+	return ""
 }
 
 // load reads a previous snapshot, discarding anything already expired. A
@@ -188,15 +216,24 @@ func (c *ratingsCache) load(logger *slog.Logger) {
 		return
 	}
 	now := time.Now()
+	stale := 0
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	for k, e := range snap.Entries {
-		if e.Meta != nil && now.Before(e.ExpiresAt) {
-			c.entries[k] = e
+		if e.Meta == nil || !now.Before(e.ExpiresAt) {
+			continue
 		}
+		// Only the sources whose reading changed are dropped; the rest of the
+		// file is still good and re-fetching it costs a metered lookup.
+		src := sourceOfRatingsKey(k)
+		if snap.SourceShapes[src] != ratingsSourceShape[src] {
+			stale++
+			continue
+		}
+		c.entries[k] = e
 	}
 	logger.Info("Restored remembered ratings from disk",
-		"kept", len(c.entries), "stored", len(snap.Entries))
+		"kept", len(c.entries), "stored", len(snap.Entries), "dropped_stale_source", stale)
 }
 
 // Save writes the unexpired answers so a restart does not refetch them. It is
@@ -216,7 +253,9 @@ func (c *ratingsCache) Save() error {
 	}
 	c.mu.Unlock()
 
-	data, err := json.Marshal(ratingsSnapshot{Shape: ratingsCacheShape, Entries: live})
+	data, err := json.Marshal(ratingsSnapshot{
+		Shape: ratingsCacheShape, SourceShapes: ratingsSourceShape, Entries: live,
+	})
 	if err != nil {
 		return err
 	}
