@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.35.1](https://github.com/IbbyLabs/XRDB/compare/v3.35.0...v3.35.1) (2026-07-31)
+
+
+### Fixed
+
+* **awards:** tie the Oscar/Emmy win to the specific award ([e105be1](https://github.com/IbbyLabs/XRDB/commit/e105be1a7eb63b15e66631b760269979a43af59e))
+
 ## [3.35.0](https://github.com/IbbyLabs/XRDB/compare/v3.34.1...v3.35.0) (2026-07-31)
 
 
