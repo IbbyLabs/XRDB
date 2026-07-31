@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.30.1](https://github.com/IbbyLabs/XRDB/compare/v3.30.0...v3.30.1) (2026-07-31)
+
+
+### Fixed
+
+* **ratings:** don't let an owner key's success clear the shared cooldown ([30d9baf](https://github.com/IbbyLabs/XRDB/commit/30d9baf1bfd5742b3008f1a8ebacaa1657253a4b))
+
 ## [3.30.0](https://github.com/IbbyLabs/XRDB/compare/v3.29.4...v3.30.0) (2026-07-30)
 
 
