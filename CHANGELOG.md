@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.31.0](https://github.com/IbbyLabs/XRDB/compare/v3.30.1...v3.31.0) (2026-07-31)
+
+
+### Added
+
+* **templates:** add Cinematic and Library presets (FR-84, FR-33) ([380cf8d](https://github.com/IbbyLabs/XRDB/commit/380cf8df76fe6be131d6f4e8f2c2177c8fa46566))
+
 ## [3.30.1](https://github.com/IbbyLabs/XRDB/compare/v3.30.0...v3.30.1) (2026-07-31)
 
 
