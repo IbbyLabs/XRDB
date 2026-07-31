@@ -1381,3 +1381,27 @@ func TestTopRatedIsInTheCacheKey(t *testing.T) {
 		t.Error("moving the top-rated badge did not change the cache key")
 	}
 }
+
+// A TMDB w780 poster arrives at exactly the size a poster render wants.
+// Interpolating it costs as much as a real resize and changes nothing, so the
+// pixels must come back identical rather than round-tripped through a scaler.
+func TestResizeFitSkipsWorkWhenTheSourceIsAlreadyTheRightSize(t *testing.T) {
+	const w, h = 780, 1170
+	src := image.NewNRGBA(image.Rect(0, 0, w, h))
+	for y := 0; y < h; y += 7 {
+		for x := 0; x < w; x += 5 {
+			src.SetNRGBA(x, y, color.NRGBA{R: uint8(x), G: uint8(y), B: 90, A: 255})
+		}
+	}
+	out := resizeFit(src, w, h)
+	got, ok := out.(*image.NRGBA)
+	if !ok {
+		t.Fatalf("got %T, want *image.NRGBA", out)
+	}
+	if got.Bounds().Dx() != w || got.Bounds().Dy() != h {
+		t.Fatalf("got %v, want %dx%d", got.Bounds(), w, h)
+	}
+	if !bytes.Equal(got.Pix, src.Pix) {
+		t.Error("pixels changed even though the source was already the target size")
+	}
+}

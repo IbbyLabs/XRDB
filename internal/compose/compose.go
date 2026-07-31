@@ -1240,6 +1240,18 @@ func resizeFit(src image.Image, maxW, maxH int) image.Image {
 		return image.NewNRGBA(image.Rect(0, 0, maxW, maxH))
 	}
 
+	// The source is often already the output size: a TMDB w780 poster is exactly
+	// the 780x1170 a poster render wants. Interpolating that costs as much as a
+	// real resize and changes nothing, so hand it back untouched.
+	if srcW == maxW && srcH == maxH {
+		if n, ok := src.(*image.NRGBA); ok {
+			return n
+		}
+		exact := image.NewNRGBA(image.Rect(0, 0, maxW, maxH))
+		draw.Draw(exact, exact.Bounds(), src, srcB.Min, draw.Src)
+		return exact
+	}
+
 	scaleX := float64(maxW) / float64(srcW)
 	scaleY := float64(maxH) / float64(srcH)
 	scale := scaleX
