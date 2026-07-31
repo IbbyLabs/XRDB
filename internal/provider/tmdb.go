@@ -775,15 +775,16 @@ func selectImagePath(images []tmdbImage, defaultPath, lang string, opts ArtworkO
 			return p
 		}
 	}
-	// A language-neutral wordmark reads correctly anywhere, so it beats art
-	// tagged for a language nobody asked for.
-	if p := bestBy(textless); p != "" {
+	// English is preferred before a language-neutral pick, because TMDB's "no
+	// language" tag is unreliable: it marks both genuine wordmarks and untagged
+	// foreign logos, so a Cyrillic logo can arrive tagged neutral. A known
+	// English wordmark most viewers can read beats trusting that tag.
+	if p := bestBy(func(img tmdbImage) bool { return langOf(img) == "en" }); p != "" {
 		return p
 	}
-	// English is the fetch filter's universal second choice, so it is already in
-	// the pool. A wordmark most viewers can read beats the highest-voted logo in
-	// an arbitrary language (a Swedish request landing a Ukrainian logo).
-	if p := bestBy(func(img tmdbImage) bool { return langOf(img) == "en" }); p != "" {
+	// No English either: a language-neutral wordmark still beats art tagged for a
+	// language nobody asked for.
+	if p := bestBy(textless); p != "" {
 		return p
 	}
 	return bestBy(func(tmdbImage) bool { return true })

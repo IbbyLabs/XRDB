@@ -93,3 +93,23 @@ func TestLogoPrefersEnglishOverArbitraryLanguage(t *testing.T) {
 		t.Errorf("got %q, want /uk.png as last resort", got)
 	}
 }
+
+// TMDB mis-tags some foreign logos as language-neutral (null iso_639_1), so a
+// null-tagged logo can carry Cyrillic text. English is preferred over a
+// null-tagged pick so a Swedish request does not land a mis-tagged Cyrillic logo.
+func TestEnglishBeatsAMistaggedNullLogo(t *testing.T) {
+	en := "en"
+	imgs := []tmdbImage{
+		{FilePath: "/mistagged-cyrillic.png", Iso639: nil, VoteAverage: 0}, // "textless" but actually foreign
+		{FilePath: "/en.png", Iso639: &en, VoteAverage: 3},
+	}
+	got := selectImagePath(imgs, "", "sv", ArtworkOptions{})
+	if got != "/en.png" {
+		t.Errorf("got %q, want /en.png (English preferred over a null-tagged logo)", got)
+	}
+	// With no English, the null-tagged one is still the fallback.
+	onlyNull := []tmdbImage{{FilePath: "/neutral.png", Iso639: nil, VoteAverage: 0}}
+	if got := selectImagePath(onlyNull, "", "sv", ArtworkOptions{}); got != "/neutral.png" {
+		t.Errorf("got %q, want /neutral.png when no English exists", got)
+	}
+}
