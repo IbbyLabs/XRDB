@@ -66,3 +66,28 @@ func TestAgeRatingOffsetMovesTheBadge(t *testing.T) {
 		t.Errorf("age badge offset did not move it: base (%d,%d) shifted (%d,%d)", ax, ay, bx, by)
 	}
 }
+
+func TestAgeRatingScaleResizesTheBadge(t *testing.T) {
+	ensureFaces()
+	base := imageconfig.Default()
+	big := base
+	big.AgeRatingScale = 200
+
+	measure := func(cfg imageconfig.Config) int {
+		img := image.NewNRGBA(image.Rect(0, 0, 400, 600))
+		drawAgeRatingBadge(img, "PG-13", "tl", 2.0, newOccupancy(img.Bounds()), ageOptsFromConfig(cfg))
+		n := 0
+		b := img.Bounds()
+		for y := b.Min.Y; y < b.Max.Y; y++ {
+			for x := b.Min.X; x < b.Max.X; x++ {
+				if img.NRGBAAt(x, y).A > 60 {
+					n++
+				}
+			}
+		}
+		return n
+	}
+	if measure(big) <= measure(base) {
+		t.Error("ageRatingScale 200 did not enlarge the badge")
+	}
+}

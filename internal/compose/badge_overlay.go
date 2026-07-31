@@ -429,16 +429,20 @@ type ageRatingOpts struct {
 	tileColor  string // "#RRGGBB" for the tile style
 	offsetX    int
 	offsetY    int
+	scale      int // percent; 0 = 100
 }
 
 func ageOptsFromConfig(cfg imageconfig.Config) ageRatingOpts {
 	return ageRatingOpts{style: cfg.AgeRatingBadgeStyle, tileColor: cfg.AgeRatingTileColor,
-		offsetX: cfg.AgeRatingOffsetX, offsetY: cfg.AgeRatingOffsetY}
+		offsetX: cfg.AgeRatingOffsetX, offsetY: cfg.AgeRatingOffsetY, scale: cfg.AgeRatingScale}
 }
 
 func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale float64, occ *occupancy, opts ageRatingOpts) {
 	if rating == "" {
 		return
+	}
+	if opts.scale > 0 {
+		scale *= float64(opts.scale) / 100
 	}
 	ensureFaces()
 	face := labelFaceFor(scale)

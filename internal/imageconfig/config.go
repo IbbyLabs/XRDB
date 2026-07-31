@@ -138,6 +138,7 @@ type Config struct {
 	AgeRatingPos     string         `json:"ageRatingPos,omitempty"`
 	AgeRatingOffsetX int            `json:"ageRatingOffsetX,omitempty"` // px nudge from the corner
 	AgeRatingOffsetY int            `json:"ageRatingOffsetY,omitempty"`
+	AgeRatingScale   int            `json:"ageRatingScale,omitempty"`   // percent of default size; 0 = 100
 	ReleaseStatus    bool           `json:"releaseStatus,omitempty"`
 	ReleaseStatusPos string         `json:"releaseStatusPos,omitempty"`
 	TopRated         bool           `json:"topRated,omitempty"`
@@ -592,6 +593,7 @@ type raw struct {
 	AgeRatingPos                  *string   `json:"ageRatingPos"`
 	AgeRatingOffsetX              *int      `json:"ageRatingOffsetX"`
 	AgeRatingOffsetY              *int      `json:"ageRatingOffsetY"`
+	AgeRatingScale                *int      `json:"ageRatingScale"`
 	ReleaseStatus                 *bool     `json:"releaseStatus"`
 	ReleaseStatusPos              *string   `json:"releaseStatusPos"`
 	TopRated                      *bool     `json:"topRated"`
@@ -1487,6 +1489,9 @@ func parseRing(cfg *Config, r *raw) {
 	if r.AgeRatingOffsetY != nil {
 		cfg.AgeRatingOffsetY = clampInt(*r.AgeRatingOffsetY, -320, 320)
 	}
+	if r.AgeRatingScale != nil && *r.AgeRatingScale != 0 {
+		cfg.AgeRatingScale = clampInt(*r.AgeRatingScale, 50, 300)
+	}
 	if r.RingCenterOpacity != nil && *r.RingCenterOpacity != 0 {
 		cfg.RingCenterOpacity = clampInt(*r.RingCenterOpacity, 1, 100)
 	}
@@ -1864,6 +1869,7 @@ func CacheKey(cfg Config) string {
 		AgeRatingPos                  string         `json:"ageRatingPos"`
 		AgeRatingOffsetX              int            `json:"ageRatingOffsetX,omitempty"`
 		AgeRatingOffsetY              int            `json:"ageRatingOffsetY,omitempty"`
+		AgeRatingScale                int            `json:"ageRatingScale,omitempty"`
 		ReleaseStatus                 bool           `json:"releaseStatus"`
 		TopRated                      bool           `json:"topRated,omitempty"`
 		TopRatedPos                   string         `json:"topRatedPos,omitempty"`
@@ -1944,6 +1950,7 @@ func CacheKey(cfg Config) string {
 		AgeRatingPos:                  cfg.AgeRatingPos,
 		AgeRatingOffsetX:              cfg.AgeRatingOffsetX,
 		AgeRatingOffsetY:              cfg.AgeRatingOffsetY,
+		AgeRatingScale:                cfg.AgeRatingScale,
 		ReleaseStatus:                 cfg.ReleaseStatus,
 		TopRated:                      cfg.TopRated,
 		TopRatedPos:                   cfg.TopRatedPos,
