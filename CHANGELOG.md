@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.33.1](https://github.com/IbbyLabs/XRDB/compare/v3.33.0...v3.33.1) (2026-07-31)
+
+
+### Fixed
+
+* **awards:** read the win/nominate verdict from the leading clause only ([5891b23](https://github.com/IbbyLabs/XRDB/commit/5891b23803d9c876c7aa2d525aa1db8b6cd6b526))
+
 ## [3.33.0](https://github.com/IbbyLabs/XRDB/compare/v3.32.0...v3.33.0) (2026-07-31)
 
 
