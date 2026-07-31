@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.35.0](https://github.com/IbbyLabs/XRDB/compare/v3.34.1...v3.35.0) (2026-07-31)
+
+
+### Added
+
+* **artwork:** add MediUX as a curated artwork source (FR-95) ([73383d2](https://github.com/IbbyLabs/XRDB/commit/73383d249694c90a5619bab4d77e15bb86a2164e))
+
 ## [3.34.1](https://github.com/IbbyLabs/XRDB/compare/v3.34.0...v3.34.1) (2026-07-31)
 
 
