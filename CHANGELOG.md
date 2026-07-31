@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.42.0](https://github.com/IbbyLabs/XRDB/compare/v3.41.1...v3.42.0) (2026-07-31)
+
+
+### Added
+
+* **render:** shed queued renders instead of waiting without bound ([0b7467f](https://github.com/IbbyLabs/XRDB/commit/0b7467f93f499f92adbf6dfc5bec82248acaff99))
+
+
+### Performance
+
+* **render:** skip the resize when the source is already the output size ([340d5de](https://github.com/IbbyLabs/XRDB/commit/340d5de60dc7cc114301efa7c253e1a54f973635))
+
 ## [3.41.1](https://github.com/IbbyLabs/XRDB/compare/v3.41.0...v3.41.1) (2026-07-31)
 
 
