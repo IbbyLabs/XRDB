@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.36.2](https://github.com/IbbyLabs/XRDB/compare/v3.36.1...v3.36.2) (2026-07-31)
+
+
+### Fixed
+
+* **configurator:** keep the preview in view when scrolling (FR-128) ([5113ae0](https://github.com/IbbyLabs/XRDB/commit/5113ae06c59af410e4627ec617ed3f856de72576))
+* **genre:** make the glass badge translucent and allow the border off ([49b4af2](https://github.com/IbbyLabs/XRDB/commit/49b4af2633e78425a31612ffe39c76051ea82db6))
+
 ## [3.36.1](https://github.com/IbbyLabs/XRDB/compare/v3.36.0...v3.36.1) (2026-07-31)
 
 
