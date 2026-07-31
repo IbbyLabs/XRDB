@@ -125,12 +125,14 @@ func (m *MDBList) fetchType(ctx context.Context, mdbType, id string) (*MediaMeta
 	return &MediaMeta{
 		Ratings:       parseMDBListRatings(payload),
 		ContentRating: commonSenseAge(payload),
+		Awards:        ParseAwards(payload.Awards),
 	}, nil
 }
 
 type mdblistPayload struct {
 	Score       float64         `json:"score"`
 	Ratings     []mdblistRating `json:"ratings"`
+	Awards      string          `json:"awards"`
 	AgeRating   *int            `json:"age_rating"`
 	CommonSense *struct {
 		CommonSense *int `json:"common_sense"`
@@ -213,6 +215,10 @@ func (m *MDBList) RatingSources() []string {
 		"mdblist", "trakt", "tmdb", "rogerebert", "commonsense", "mal", "anilist",
 	}
 }
+
+// ProvidesAwards marks MDBList as a source of the awards summary, so a render
+// that wants the awards badge fetches it even when no MDBList rating is shown.
+func (m *MDBList) ProvidesAwards() bool { return true }
 
 // normalizeMDBSource maps MDBList source strings to canonical source identifiers.
 func normalizeMDBSource(raw string) string {

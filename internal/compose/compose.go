@@ -348,6 +348,13 @@ func providerWanted(p provider.Provider, cfg imageconfig.Config) bool {
 			return true
 		}
 	}
+	// The awards badge rides along with a provider that reports awards, so that
+	// source stays in even when none of its scores are shown.
+	if cfg.Awards {
+		if a, ok := p.(interface{ ProvidesAwards() bool }); ok && a.ProvidesAwards() {
+			return true
+		}
+	}
 	for _, source := range sourcer.RatingSources() {
 		for _, want := range imageconfig.RatingsCandidates(cfg) {
 			if source == want {
@@ -727,6 +734,9 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	}
 	if req.Config.TopRated && meta.TopRatedRank > 0 {
 		drawTopRatedBadge(composed, meta.TopRatedRank, req.Config.TopRatedPos, scale, occ, topRatedOptsFromConfig(req.Config))
+	}
+	if req.Config.Awards && meta.Awards.Has() {
+		drawAwardsBadge(composed, meta.Awards, req.Config.AwardsPos, scale, occ)
 	}
 	if req.Config.Genre && len(meta.Genres) > 0 {
 		drawGenreBadge(composed, meta.Genres, req.Config.GenrePos, scale, occ, genreOptsFromConfig(req.Config, meta.IsAnime))
@@ -1252,6 +1262,9 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 			artwork.TopRatedRank = meta.TopRatedRank
 		}
 		fillContentRating(artwork, meta.ContentRating)
+		if meta.Awards.Has() && !artwork.Awards.Has() {
+			artwork.Awards = meta.Awards
+		}
 		contributed := false
 		for _, r := range meta.Ratings {
 			if !seen[r.Source] {

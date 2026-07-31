@@ -139,6 +139,8 @@ type Config struct {
 	ReleaseStatusPos string         `json:"releaseStatusPos,omitempty"`
 	TopRated         bool           `json:"topRated,omitempty"`
 	TopRatedPos      string         `json:"topRatedPos,omitempty"`
+	Awards           bool           `json:"awards,omitempty"`
+	AwardsPos        string         `json:"awardsPos,omitempty"`
 	Genre            bool           `json:"genre"`
 	GenrePos         string         `json:"genrePos,omitempty"`
 	Providers        bool           `json:"providers"`
@@ -580,6 +582,8 @@ type raw struct {
 	ReleaseStatusPos              *string   `json:"releaseStatusPos"`
 	TopRated                      *bool     `json:"topRated"`
 	TopRatedPos                   *string   `json:"topRatedPos"`
+	Awards                        *bool     `json:"awards"`
+	AwardsPos                     *string   `json:"awardsPos"`
 	Genre                         *bool     `json:"genre"`
 	GenrePos                      *string   `json:"genrePos"`
 	Providers                     *bool     `json:"providers"`
@@ -951,6 +955,14 @@ func Parse(data json.RawMessage) Config {
 	if r.TopRatedPos != nil {
 		if p := badgePos(*r.TopRatedPos); p != "" {
 			cfg.TopRatedPos = p
+		}
+	}
+	if r.Awards != nil {
+		cfg.Awards = *r.Awards
+	}
+	if r.AwardsPos != nil {
+		if p := badgePos(*r.AwardsPos); p != "" {
+			cfg.AwardsPos = p
 		}
 	}
 	if r.Genre != nil {
@@ -1811,6 +1823,8 @@ func CacheKey(cfg Config) string {
 		ReleaseStatus                 bool           `json:"releaseStatus"`
 		TopRated                      bool           `json:"topRated,omitempty"`
 		TopRatedPos                   string         `json:"topRatedPos,omitempty"`
+		Awards                        bool           `json:"awards,omitempty"`
+		AwardsPos                     string         `json:"awardsPos,omitempty"`
 		ReleaseStatusPos              string         `json:"releaseStatusPos"`
 		Genre                         bool           `json:"genre"`
 		GenrePos                      string         `json:"genrePos"`
@@ -1885,6 +1899,8 @@ func CacheKey(cfg Config) string {
 		ReleaseStatus:                 cfg.ReleaseStatus,
 		TopRated:                      cfg.TopRated,
 		TopRatedPos:                   cfg.TopRatedPos,
+		Awards:                        cfg.Awards,
+		AwardsPos:                     cfg.AwardsPos,
 		ReleaseStatusPos:              cfg.ReleaseStatusPos,
 		Genre:                         cfg.Genre,
 		GenrePos:                      cfg.GenrePos,

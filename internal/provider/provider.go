@@ -50,7 +50,20 @@ type MediaMeta struct {
 	// ranking, or 0 when it does not place. See imdb_toprated.go for why this
 	// is XRDB's own ranking rather than IMDb's published list.
 	TopRatedRank int
+	// Awards summarises major-award recognition (Oscars, Emmys) when a source
+	// reports it. Empty when unknown or none.
+	Awards AwardSummary
 }
+
+// AwardSummary is a compact reading of a title's major-award recognition,
+// parsed from a source's free-text awards line.
+type AwardSummary struct {
+	Kind string // "oscar" | "emmy" | "" (none/unknown)
+	Won  bool   // true = won at least one; false = nominated only
+}
+
+// Has reports whether any recognition was found.
+func (a AwardSummary) Has() bool { return a.Kind != "" }
 
 // Rating is a single provider rating observation.
 type Rating struct {
