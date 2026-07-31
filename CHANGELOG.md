@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.37.2](https://github.com/IbbyLabs/XRDB/compare/v3.37.1...v3.37.2) (2026-07-31)
+
+
+### Fixed
+
+* **ratings:** keep the Metacritic user score MDBList sends ([16ab0d7](https://github.com/IbbyLabs/XRDB/commit/16ab0d7d36fb218bbd57e4613def4c482e63b42b))
+
 ## [3.37.1](https://github.com/IbbyLabs/XRDB/compare/v3.37.0...v3.37.1) (2026-07-31)
 
 
