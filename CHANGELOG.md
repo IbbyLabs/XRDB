@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.41.1](https://github.com/IbbyLabs/XRDB/compare/v3.41.0...v3.41.1) (2026-07-31)
+
+
+### Performance
+
+* **ratings:** drop only the source whose reading changed ([cd78591](https://github.com/IbbyLabs/XRDB/commit/cd785919b58530893cb8b6d6da83aa00d89b95fa))
+
 ## [3.41.0](https://github.com/IbbyLabs/XRDB/compare/v3.40.0...v3.41.0) (2026-07-31)
 
 
