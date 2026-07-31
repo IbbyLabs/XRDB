@@ -658,3 +658,69 @@ func TestEveryRenderFieldAffectsTheImage(t *testing.T) {
 			strings.Join(inert, ", "))
 	}
 }
+
+// artworkOnlyProvider is a non-TMDB artwork source as one really behaves: it
+// hands back art and nothing else. Overlay metadata (age rating, genres, watch
+// providers, stinger) is TMDB's, so a render sourcing art from here has to top
+// it up or the badge silently disappears — which is exactly how the stinger
+// badge went missing for anyone who set artworkSource away from TMDB.
+type artworkOnlyProvider struct{ name string }
+
+func (a *artworkOnlyProvider) Name() string { return a.name }
+
+func (a *artworkOnlyProvider) artOnly() *provider.MediaMeta {
+	m := richMeta()
+	stripped := provider.MediaMeta{
+		Title: m.Title, Year: m.Year, IMDbID: m.IMDbID, TMDBID: m.TMDBID,
+		PosterURL: "http://art/" + a.name + "/poster",
+		BackdropURL: "http://art/" + a.name + "/backdrop",
+		LogoURL: "http://art/" + a.name + "/logo",
+	}
+	return &stripped
+}
+
+func (a *artworkOnlyProvider) Fetch(_ context.Context, _, _ string) (*provider.MediaMeta, error) {
+	return a.artOnly(), nil
+}
+
+func (a *artworkOnlyProvider) FetchArtwork(_ context.Context, _, _ string, _ provider.ArtworkOptions) (*provider.MediaMeta, error) {
+	return a.artOnly(), nil
+}
+
+// A setting must keep working when the artwork comes from somewhere other than
+// TMDB. The guard's other sweep renders from one source, so a badge that depends
+// on metadata only TMDB supplies can pass there and still be dead in the field.
+func TestOverlayMetadataSurvivesEveryArtworkSource(t *testing.T) {
+	reg := provider.NewRegistry()
+	reg.Register(&effectProvider{name: "tmdb"}) // the metadata source, art included
+	for _, name := range []string{"fanart", "cinemeta", "omdb"} {
+		reg.Register(&artworkOnlyProvider{name: name})
+	}
+	p := &Pipeline{providers: reg, fetcher: &distinctFetcher{}}
+	p.SetAnimeResolver(alwaysAnime{})
+	p.SetTrendingResolver(alwaysTrending{})
+
+	// Each toggle draws from metadata the artwork source does not carry.
+	toggles := map[string]func(*imageconfig.Config, bool){
+		"ageRating": func(c *imageconfig.Config, on bool) { c.AgeRating = on },
+		"genre":     func(c *imageconfig.Config, on bool) { c.Genre = on },
+		"providers": func(c *imageconfig.Config, on bool) { c.Providers = on },
+		"stinger":   func(c *imageconfig.Config, on bool) { c.Stinger = on },
+	}
+
+	for _, src := range []string{"fanart", "cinemeta", "omdb"} {
+		for name, set := range toggles {
+			off, on := maximalConfig(), maximalConfig()
+			off.ArtworkSource = imageconfig.ArtworkSource(src)
+			on.ArtworkSource = imageconfig.ArtworkSource(src)
+			set(&off, false)
+			set(&on, true)
+			if bytes.Equal(
+				renderOne(t, p, off, "movie", "poster"),
+				renderOne(t, p, on, "movie", "poster"),
+			) {
+				t.Errorf("%s draws nothing when artwork comes from %q, so the setting is dead for anyone not on TMDB", name, src)
+			}
+		}
+	}
+}

@@ -233,7 +233,9 @@ func normalizeMDBSource(raw string) string {
 		return "rtaudience"
 	case "metacritic":
 		return "metacritic"
-	case "metacritic_user":
+	case "metacritic_user", "metacriticuser", "metacriticusers":
+		// The API sends "metacriticuser"; the underscored spelling is kept for
+		// compatibility. Missing it dropped the score before it reached a badge.
 		return "metacriticuser"
 	case "letterboxd":
 		return "letterboxd"

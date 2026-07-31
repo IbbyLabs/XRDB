@@ -290,3 +290,19 @@ func TestMDBListNormalizesEachSourceToItsRealScale(t *testing.T) {
 		}
 	}
 }
+
+// The source keys MDBList actually sends. A key that maps to "" is dropped
+// before it can reach a badge, which is how the Metacritic user score went
+// missing while its icon and colour sat unused in the renderer.
+func TestMDBListMapsEverySourceKeyTheAPISends(t *testing.T) {
+	// Observed in live responses (Iron Man, The Dark Knight, Inception).
+	live := []string{
+		"imdb", "metacritic", "metacriticuser", "trakt", "tomatoes",
+		"popcorn", "tmdb", "letterboxd", "rogerebert", "myanimelist",
+	}
+	for _, key := range live {
+		if got := normalizeMDBSource(key); got == "" {
+			t.Errorf("MDBList source %q maps to nothing, so its rating is silently dropped", key)
+		}
+	}
+}

@@ -153,8 +153,9 @@ const ratingsCacheFile = "ratings-cache.json"
 // existing field changes (e.g. a parser fix), so entries produced by older code
 // are discarded on load rather than serving a stale reading.
 // (2: added Awards and Stinger. 3: awards win/nominate parser fix.
-// 4: MDBList TMDB and Metacritic user scale fix.)
-const ratingsCacheShape = 4
+// 4: MDBList TMDB and Metacritic user scale fix.
+// 5: MDBList metacriticuser source key was being dropped.)
+const ratingsCacheShape = 5
 
 // ratingsSnapshot is the on-disk form: the shape version plus the entries.
 type ratingsSnapshot struct {
