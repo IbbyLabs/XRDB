@@ -981,28 +981,58 @@ type genreBadgeOpts struct {
 	borderWidth  float64 // px border on the tile; 0 = default hairline
 	outlineColor string  // "#RRGGBB" outline for the plain style; "" = default shadow
 	outlineWidth int     // px outline width for the plain style; 0 = default
+	outlineGlow  bool    // fade the outline outward instead of a hard edge
 	accent       string  // "" | left | top | none; where the accent sits on the plate
 	labelMode    string  // "" | list | primary; primary prints the first genre alone
 }
 
-// drawLabelWithOutline draws label at the given baseline with a text outline.
-// With outlineW <= 0 it falls back to a single soft drop shadow — the original
-// "plain" look. Used by the background-less badge styles.
-func drawLabelWithOutline(base *image.NRGBA, face font.Face, x, y int, textCol, outlineCol color.Color, outlineW int, label string) {
+// drawLabelOutlined traces a label at the given baseline. A hard outline stamps
+// the colour at full strength around the glyphs; a glow fades it outward over
+// the same radius, so the label lifts off busy art without a drawn edge. With
+// outlineW <= 0 it falls back to a single soft drop shadow.
+func drawLabelOutlined(base *image.NRGBA, face font.Face, x, y int, textCol, outlineCol color.Color, outlineW int, glow bool, label string) {
 	if outlineW <= 0 {
 		drawText(base, face, x+1, y+1, color.NRGBA{A: 180}, label)
 		drawText(base, face, x, y, textCol, label)
 		return
 	}
+	oc := toNRGBAColor(outlineCol)
 	for dx := -outlineW; dx <= outlineW; dx++ {
 		for dy := -outlineW; dy <= outlineW; dy++ {
 			if dx == 0 && dy == 0 {
 				continue
 			}
-			drawText(base, face, x+dx, y+dy, outlineCol, label)
+			col := oc
+			if glow {
+				// Alpha falls with distance, so the ring reads as a halo rather
+				// than an edge. The furthest ring is faint, not absent.
+				d := math.Hypot(float64(dx), float64(dy)) / (float64(outlineW) + 1)
+				if d > 1 {
+					continue
+				}
+				col.A = uint8(float64(oc.A) * (1 - d) * 0.85)
+				if col.A == 0 {
+					continue
+				}
+			}
+			drawText(base, face, x+dx, y+dy, col, label)
 		}
 	}
 	drawText(base, face, x, y, textCol, label)
+}
+
+// toNRGBAColor narrows a color.Color to NRGBA so alpha can be scaled.
+func toNRGBAColor(c color.Color) color.NRGBA {
+	if n, ok := c.(color.NRGBA); ok {
+		return n
+	}
+	r, g, b, a := c.RGBA()
+	if a == 0 {
+		return color.NRGBA{}
+	}
+	return color.NRGBA{
+		R: uint8(r * 255 / a), G: uint8(g * 255 / a), B: uint8(b * 255 / a), A: uint8(a >> 8),
+	}
 }
 
 // genreOptsFromConfig extracts the genre-badge styling from a resolved Config.
@@ -1022,6 +1052,7 @@ func genreOptsFromConfig(cfg imageconfig.Config, isAnime bool) genreBadgeOpts {
 		borderWidth:  cfg.GenreBadgeBorderWidth,
 		outlineColor: cfg.NoBackgroundBadgeOutlineColor,
 		outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
+		outlineGlow:  cfg.NoBackgroundBadgeOutlineGlow,
 	}
 }
 
@@ -1197,11 +1228,21 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			ow = maxInt(1, int(float64(opts.outlineWidth)*scale+0.5))
 		}
 		labelCol := color.NRGBA{R: 255, G: 255, B: 255, A: 255}
+		// The glyph is traced before it is drawn, so a mark on plain gets the
+		// same edge the label does rather than sitting bare on the artwork.
+		if ow > 0 && fam != nil && iconSize > 0 && mode != "text" {
+			iconX := r.Min.X + padX + stripeRoom
+			if mode == "icon" {
+				iconX = r.Min.X + stripeRoom + (bw-stripeRoom-iconSize)/2
+			}
+			iconY := r.Min.Y + capRoom + (bh-capRoom-iconSize)/2
+			drawGenreIconOutline(base, fam.id, oc, iconX, iconY, iconSize, ow, opts.outlineGlow)
+		}
 		if accent := drawIcon(); mode != "text" {
 			labelCol = accent
 		}
 		if mode != "icon" {
-			drawLabelWithOutline(base, face, tx, ty, labelCol, oc, ow, label)
+			drawLabelOutlined(base, face, tx, ty, labelCol, oc, ow, opts.outlineGlow, label)
 		}
 		return
 	case "tile":

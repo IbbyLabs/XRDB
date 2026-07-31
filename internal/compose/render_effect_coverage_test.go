@@ -457,6 +457,13 @@ func keyMutations() map[string]keyOverride {
 		// so each key sets its partner as the precondition.
 		"iconOutlineColor":              {pre: func(c *imageconfig.Config) { c.IconOutlineWidth = 4 }, mut: setColor(func(c *imageconfig.Config, v string) { c.IconOutlineColor = v })},
 		"iconOutlineWidth":              {pre: func(c *imageconfig.Config) { c.IconOutlineColor = "#00ffff" }, mut: func(c *imageconfig.Config) { c.IconOutlineWidth = 5 }},
+		// The glow softens an outline that is already being drawn, so it needs a
+		// plain-style badge with a colour and width set before it shows.
+		"noBackgroundBadgeOutlineGlow": {pre: func(c *imageconfig.Config) {
+			c.GenreBadgeStyle = "plain"
+			c.NoBackgroundBadgeOutlineColor = "#00ffff"
+			c.NoBackgroundBadgeOutlineWidth = 4
+		}, mut: func(c *imageconfig.Config) { c.NoBackgroundBadgeOutlineGlow = true }},
 		"noBackgroundBadgeOutlineColor": {pre: stylePlain, mut: setColor(func(c *imageconfig.Config, v string) { c.NoBackgroundBadgeOutlineColor = v })},
 		"noBackgroundBadgeOutlineWidth": {pre: stylePlain, mut: func(c *imageconfig.Config) { c.NoBackgroundBadgeOutlineWidth = 5 }},
 		"stackedLineHidden":             {pre: styleStacked},

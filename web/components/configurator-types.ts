@@ -433,7 +433,8 @@ export interface ConfigState {
   genreBadgeBackgroundOpacity: number; // 0 = default
   genreBadgeBorderWidth: number; // px tile border; 0 = default hairline
   noBackgroundBadgeOutlineColor: string; // '#RRGGBB' outline for plain badges; '' = default
-  noBackgroundBadgeOutlineWidth: number; // px; 0 = default shadow
+  noBackgroundBadgeOutlineWidth: number;
+  noBackgroundBadgeOutlineGlow: boolean;
   qualityBadgesHidden: boolean; // draw none, keeping the chip selection
   qualityBadgesPos: string; // 'inherit' | six positions
   qualityBadgeScale: number;
@@ -593,6 +594,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   genreBadgeBorderWidth: 0,
   noBackgroundBadgeOutlineColor: '',
   noBackgroundBadgeOutlineWidth: 0,
+  noBackgroundBadgeOutlineGlow: false,
   qualityBadgesHidden: false,
   qualityBadgesPos: 'inherit',
   qualityBadgeScale: 0,

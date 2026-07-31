@@ -248,6 +248,7 @@ export function ConfiguratorClient() {
       iconOutlineWidth: cfg.iconOutlineWidth,
       noBackgroundBadgeOutlineColor: cfg.noBackgroundBadgeOutlineColor,
       noBackgroundBadgeOutlineWidth: cfg.noBackgroundBadgeOutlineWidth,
+      noBackgroundBadgeOutlineGlow: cfg.noBackgroundBadgeOutlineGlow,
       qualityBadgesHidden: cfg.qualityBadgesHidden || undefined,
       providersPos: cfg.providersPos,
       providerBadgeScale: cfg.providerBadgeScale,

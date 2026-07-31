@@ -339,3 +339,31 @@ func drawGenreIcon(dst *image.NRGBA, familyID string, accent color.NRGBA, darkCo
 		}
 	}
 }
+
+// drawGenreIconOutline traces a family glyph in one flat colour before the glyph
+// itself is drawn, so a mark on the plain style carries the same edge its label
+// does. A glow fades the trace outward over the same radius.
+func drawGenreIconOutline(dst *image.NRGBA, familyID string, outline color.NRGBA, x, y, size, width int, glow bool) {
+	if size <= 0 || width <= 0 || outline.A == 0 {
+		return
+	}
+	for dx := -width; dx <= width; dx++ {
+		for dy := -width; dy <= width; dy++ {
+			if dx == 0 && dy == 0 {
+				continue
+			}
+			col := outline
+			if glow {
+				d := math.Hypot(float64(dx), float64(dy)) / (float64(width) + 1)
+				if d > 1 {
+					continue
+				}
+				col.A = uint8(float64(outline.A) * (1 - d) * 0.85)
+				if col.A == 0 {
+					continue
+				}
+			}
+			drawGenreIcon(dst, familyID, col, col, x+dx, y+dy, size)
+		}
+	}
+}

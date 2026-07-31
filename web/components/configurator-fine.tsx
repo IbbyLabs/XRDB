@@ -713,6 +713,10 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
       </div>
       <NumField id={`${uid}-plain-outline-w`} label="Outline width (px)" value={config.noBackgroundBadgeOutlineWidth}
         onChange={v => onUpdate('noBackgroundBadgeOutlineWidth', v)} min={0} max={6} placeholder="default" />
+      <ToggleField id={`${uid}-plain-outline-glow`} label="Soften the outline into a glow"
+        hint="Fades the outline outward instead of a hard edge. Applies to the genre label, its icon and no-background rating badges."
+        checked={config.noBackgroundBadgeOutlineGlow}
+        onChange={() => onUpdate('noBackgroundBadgeOutlineGlow', !config.noBackgroundBadgeOutlineGlow)} />
       <NumField id={`${uid}-accent-width`} label="Accent outline width (px)" value={config.aggregateAccentWidth}
         onChange={v => onUpdate('aggregateAccentWidth', v)} min={1} max={8} placeholder="2"
         hint="Thickness of the score pill's accent outline." />

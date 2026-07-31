@@ -186,6 +186,9 @@ type Config struct {
 	// Outline for background-less ("plain") badge text.
 	NoBackgroundBadgeOutlineColor string        `json:"noBackgroundBadgeOutlineColor,omitempty"` // "#RRGGBB"; "" = default shadow
 	NoBackgroundBadgeOutlineWidth int           `json:"noBackgroundBadgeOutlineWidth,omitempty"` // px; 0 = default
+	// NoBackgroundBadgeOutlineGlow softens the outline into a halo that fades
+	// outward, instead of a hard edge at full strength.
+	NoBackgroundBadgeOutlineGlow bool `json:"noBackgroundBadgeOutlineGlow,omitempty"`
 	AggregateBar                  bool          `json:"aggregateBar"`
 	AggregateBarPos               string        `json:"aggregateBarPos,omitempty"` // "top" | "bottom"
 	Trending                      bool          `json:"trending"`
@@ -629,6 +632,7 @@ type raw struct {
 	IconOutlineWidth              *int      `json:"iconOutlineWidth"`
 	NoBackgroundBadgeOutlineColor *string   `json:"noBackgroundBadgeOutlineColor"`
 	NoBackgroundBadgeOutlineWidth *int      `json:"noBackgroundBadgeOutlineWidth"`
+	NoBackgroundBadgeOutlineGlow  *bool     `json:"noBackgroundBadgeOutlineGlow"`
 	AggregateBar                  *bool     `json:"aggregateBar"`
 	AggregateBarPos               *string   `json:"aggregateBarPos"`
 	Trending                      *bool     `json:"trending"`
@@ -1073,6 +1077,9 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.NoBackgroundBadgeOutlineWidth != nil {
 		cfg.NoBackgroundBadgeOutlineWidth = clampInt(*r.NoBackgroundBadgeOutlineWidth, 0, 6)
+	}
+	if r.NoBackgroundBadgeOutlineGlow != nil {
+		cfg.NoBackgroundBadgeOutlineGlow = *r.NoBackgroundBadgeOutlineGlow
 	}
 	if r.AggregateBar != nil {
 		cfg.AggregateBar = *r.AggregateBar
@@ -1856,7 +1863,7 @@ func isHexColor(s string) bool {
 // Bump this whenever a change alters rendered pixels for an unchanged config.
 // It costs a full re-render, so it is not for changes that only affect configs
 // whose own key already moved.
-const renderVersion = "r13"
+const renderVersion = "r14"
 
 // CacheKey returns a deterministic hex string for the config, suitable for use
 // as part of a render cache key. The key is stable: same logical config always
@@ -1912,6 +1919,7 @@ func CacheKey(cfg Config) string {
 		IconOutlineWidth              int            `json:"iconOutlineWidth"`
 		NoBackgroundBadgeOutlineColor string         `json:"noBackgroundBadgeOutlineColor"`
 		NoBackgroundBadgeOutlineWidth int            `json:"noBackgroundBadgeOutlineWidth"`
+		NoBackgroundBadgeOutlineGlow  bool           `json:"noBackgroundBadgeOutlineGlow"`
 		AggregateBar                  bool           `json:"aggregateBar"`
 		AggregateBarPos               string         `json:"aggregateBarPos"`
 		Trending                      bool           `json:"trending"`
@@ -1993,6 +2001,7 @@ func CacheKey(cfg Config) string {
 		IconOutlineWidth:              cfg.IconOutlineWidth,
 		NoBackgroundBadgeOutlineColor: cfg.NoBackgroundBadgeOutlineColor,
 		NoBackgroundBadgeOutlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
+		NoBackgroundBadgeOutlineGlow:  cfg.NoBackgroundBadgeOutlineGlow,
 		AggregateBar:                  cfg.AggregateBar,
 		AggregateBarPos:               cfg.AggregateBarPos,
 		Trending:                      cfg.Trending,
