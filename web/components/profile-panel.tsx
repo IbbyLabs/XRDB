@@ -104,7 +104,20 @@ export function ProfilePanel({
   // Serialized configs as last saved to / loaded from the server, so the panel
   // can tell the user when the current edit diverges from the stored profile.
   const [savedSnapshot, setSavedSnapshot] = useState('');
+  // The config as it was loaded, created, or last saved by hand. Autosave does
+  // not move it, so it stays a checkpoint worth returning to; the snapshot above
+  // tracks the autosaved state and is only a fraction of a second behind.
+  const [checkpoint, setCheckpoint] = useState('');
   const isDirty = loaded !== null && savedSnapshot !== '' && JSON.stringify(configs) !== savedSnapshot;
+  // Autosave means there is no unsaved state to warn about, so the useful offer
+  // is a way back to the checkpoint rather than a prompt to save.
+  const canRevert = loaded !== null && checkpoint !== '' && JSON.stringify(configs) !== checkpoint;
+
+  const handleRevert = () => {
+    if (!canRevert) return;
+    onLoadConfigs(JSON.parse(checkpoint) as SurfaceConfigs);
+    flash('info', 'Settings put back to the last saved version');
+  };
 
   // Restored after mount — localStorage reads during the first render
   // mismatch the statically prerendered HTML (React #418).
@@ -149,6 +162,7 @@ export function ProfilePanel({
       });
       setName(''); setAlias(''); setPassword('');
       setSavedSnapshot(JSON.stringify(configs));
+      setCheckpoint(JSON.stringify(configs));
       setRecents(r => pushRecent(r, {
         key: created.alias || created.id,
         name: created.name || created.alias || created.id,
@@ -170,6 +184,7 @@ export function ProfilePanel({
       const loadedCfgs = fromStoredConfig(p.config);
       onLoadConfigs(loadedCfgs);
       setSavedSnapshot(JSON.stringify(loadedCfgs));
+      setCheckpoint(JSON.stringify(loadedCfgs));
       setLoaded({
         id: p.id,
         alias: p.alias ?? '',
@@ -230,6 +245,9 @@ export function ProfilePanel({
       setLoaded({ ...loaded, versionToken: updated.versionToken ?? '', keysSet: updated.keysSet ?? loaded.keysSet });
       setProviderKeys({});
       setSavedSnapshot(JSON.stringify(configs));
+      // Only a deliberate save moves the checkpoint; the autosave must not, or
+      // there would be nothing left to revert to.
+      if (!silent) setCheckpoint(JSON.stringify(configs));
       if (!silent) flash('success', 'Profile updated');
     } catch (e) {
       flash('error', (e as Error).message);
@@ -323,6 +341,18 @@ export function ProfilePanel({
                 ? 'Storing your changes to this profile.'
                 : 'Editing this profile — changes are saved as you make them.'}
             </span>
+            {canRevert && (
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={handleRevert}
+                disabled={busy}
+                title="Put the settings back to how they were when you opened this profile"
+              >
+                <History size={13} aria-hidden />
+                Revert changes
+              </button>
+            )}
           </div>
 
           <div className="field">
