@@ -425,12 +425,15 @@ func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64, occ *o
 // or quality badges (TR).
 // ageRatingOpts carries the age-rating badge styling. Zero value = default.
 type ageRatingOpts struct {
-	style     string // "" | glass | plain | tile
-	tileColor string // "#RRGGBB" for the tile style
+	style      string // "" | glass | plain | tile
+	tileColor  string // "#RRGGBB" for the tile style
+	offsetX    int
+	offsetY    int
 }
 
 func ageOptsFromConfig(cfg imageconfig.Config) ageRatingOpts {
-	return ageRatingOpts{style: cfg.AgeRatingBadgeStyle, tileColor: cfg.AgeRatingTileColor}
+	return ageRatingOpts{style: cfg.AgeRatingBadgeStyle, tileColor: cfg.AgeRatingTileColor,
+		offsetX: cfg.AgeRatingOffsetX, offsetY: cfg.AgeRatingOffsetY}
 }
 
 func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale float64, occ *occupancy, opts ageRatingOpts) {
@@ -471,6 +474,7 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 		bhM := padY*2 + eAsc + eDesc + gap + ascent + descent
 		bwM := maxInt(padX*2+textWidth(face, rating), padX*2+textWidth(ef, "AGE"))
 		r := occ.place(resolvedPos, bwM, bhM, edgeX, edgeY, s(7))
+		r = r.Add(image.Pt(opts.offsetX, opts.offsetY))
 		drawSoftTile(base, r, s(6), tileChrome{
 			fill:   color.NRGBA{R: 17, G: 24, B: 39, A: 214},
 			border: color.NRGBA{R: 255, G: 247, B: 237, A: 240},
@@ -493,6 +497,7 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 	}
 
 	r := occ.place(resolvedPos, bw, bh, edgeX, edgeY, s(7))
+	r = r.Add(image.Pt(opts.offsetX, opts.offsetY))
 	tx, ty := r.Min.X+padX, r.Min.Y+padY+ascent
 	if opts.style == "plain" {
 		drawText(base, face, tx+maxInt(1, s(1)), ty+maxInt(1, s(1)), color.NRGBA{R: 0, G: 0, B: 0, A: 180}, rating)
@@ -2184,8 +2189,8 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 	// the requested corner (age/genre badges, provider chips, ratings strip).
 	d := fullR * 2
 	r := occ.place(pos, d, d, edgeX, edgeY, s(8))
-	cx := r.Min.X + fullR
-	cy := r.Min.Y + fullR
+	cx := r.Min.X + fullR + cfg.RingOffsetX
+	cy := r.Min.Y + fullR + cfg.RingOffsetY
 	label := strconv.Itoa(int(math.Round(value * 10)))
 	drawProgressRing(base, cx, cy, outerR, progress/10.0, fillColor, valueFace, label, cfg.RingCenterOpacity)
 }

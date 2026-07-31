@@ -136,6 +136,8 @@ type Config struct {
 	Badges           []string       `json:"badges,omitempty"`
 	AgeRating        bool           `json:"ageRating"`
 	AgeRatingPos     string         `json:"ageRatingPos,omitempty"`
+	AgeRatingOffsetX int            `json:"ageRatingOffsetX,omitempty"` // px nudge from the corner
+	AgeRatingOffsetY int            `json:"ageRatingOffsetY,omitempty"`
 	ReleaseStatus    bool           `json:"releaseStatus,omitempty"`
 	ReleaseStatusPos string         `json:"releaseStatusPos,omitempty"`
 	TopRated         bool           `json:"topRated,omitempty"`
@@ -484,6 +486,8 @@ type QualityBadgeConfig struct {
 // flat RatingRing/RatingRingPos/RatingRingColor fields.
 type RatingRingConfig struct {
 	RingScale          int    `json:"ringScale,omitempty"`          // percent of the default ring size; 0 = 100
+	RingOffsetX        int    `json:"ringOffsetX,omitempty"`        // px nudge from the corner
+	RingOffsetY        int    `json:"ringOffsetY,omitempty"`
 	RingCenterOpacity  int    `json:"ringCenterOpacity,omitempty"`  // 0-100 opacity of the centre disk; 0 = default
 	RingValueSource    string `json:"ringValueSource,omitempty"`    // "" / "overall" = average, else a provider (e.g. "imdb")
 	RingProgressSource string `json:"ringProgressSource,omitempty"` // source for the arc fill; same values
@@ -586,6 +590,8 @@ type raw struct {
 	Badges                        []string  `json:"badges"`
 	AgeRating                     *bool     `json:"ageRating"`
 	AgeRatingPos                  *string   `json:"ageRatingPos"`
+	AgeRatingOffsetX              *int      `json:"ageRatingOffsetX"`
+	AgeRatingOffsetY              *int      `json:"ageRatingOffsetY"`
 	ReleaseStatus                 *bool     `json:"releaseStatus"`
 	ReleaseStatusPos              *string   `json:"releaseStatusPos"`
 	TopRated                      *bool     `json:"topRated"`
@@ -703,6 +709,8 @@ type rawSurface struct {
 
 type rawRing struct {
 	RingScale            *int     `json:"ringScale"`
+	RingOffsetX          *int     `json:"ringOffsetX"`
+	RingOffsetY          *int     `json:"ringOffsetY"`
 	RingCenterOpacity    *int     `json:"ringCenterOpacity"`
 	RingValueSource      *string  `json:"ringValueSource"`
 	RingProgressSource   *string  `json:"ringProgressSource"`
@@ -1467,6 +1475,18 @@ func parseRing(cfg *Config, r *raw) {
 	if r.RingScale != nil && *r.RingScale != 0 {
 		cfg.RingScale = clampInt(*r.RingScale, 70, 250)
 	}
+	if r.RingOffsetX != nil {
+		cfg.RingOffsetX = clampInt(*r.RingOffsetX, -320, 320)
+	}
+	if r.RingOffsetY != nil {
+		cfg.RingOffsetY = clampInt(*r.RingOffsetY, -320, 320)
+	}
+	if r.AgeRatingOffsetX != nil {
+		cfg.AgeRatingOffsetX = clampInt(*r.AgeRatingOffsetX, -320, 320)
+	}
+	if r.AgeRatingOffsetY != nil {
+		cfg.AgeRatingOffsetY = clampInt(*r.AgeRatingOffsetY, -320, 320)
+	}
 	if r.RingCenterOpacity != nil && *r.RingCenterOpacity != 0 {
 		cfg.RingCenterOpacity = clampInt(*r.RingCenterOpacity, 1, 100)
 	}
@@ -1842,6 +1862,8 @@ func CacheKey(cfg Config) string {
 		Badges                        []string       `json:"badges"`
 		AgeRating                     bool           `json:"ageRating"`
 		AgeRatingPos                  string         `json:"ageRatingPos"`
+		AgeRatingOffsetX              int            `json:"ageRatingOffsetX,omitempty"`
+		AgeRatingOffsetY              int            `json:"ageRatingOffsetY,omitempty"`
 		ReleaseStatus                 bool           `json:"releaseStatus"`
 		TopRated                      bool           `json:"topRated,omitempty"`
 		TopRatedPos                   string         `json:"topRatedPos,omitempty"`
@@ -1920,6 +1942,8 @@ func CacheKey(cfg Config) string {
 		Badges:                        badges,
 		AgeRating:                     cfg.AgeRating,
 		AgeRatingPos:                  cfg.AgeRatingPos,
+		AgeRatingOffsetX:              cfg.AgeRatingOffsetX,
+		AgeRatingOffsetY:              cfg.AgeRatingOffsetY,
 		ReleaseStatus:                 cfg.ReleaseStatus,
 		TopRated:                      cfg.TopRated,
 		TopRatedPos:                   cfg.TopRatedPos,
