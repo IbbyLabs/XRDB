@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.39.0](https://github.com/IbbyLabs/XRDB/compare/v3.38.0...v3.39.0) (2026-07-31)
+
+
+### Added
+
+* **badges:** genre pill style and tinted outlines (FR-129, FR-130) ([18e7d0a](https://github.com/IbbyLabs/XRDB/commit/18e7d0a638516bb18f3673590db787393c8e5494))
+
 ## [3.38.0](https://github.com/IbbyLabs/XRDB/compare/v3.37.2...v3.38.0) (2026-07-31)
 
 
