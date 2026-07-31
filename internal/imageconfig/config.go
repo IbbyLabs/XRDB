@@ -339,6 +339,10 @@ func mergeLegacy(marshalled []byte, legacy map[string]json.RawMessage) ([]byte, 
 // theme, layout, and the ratings allow-list remain flat fields on Config.
 type RatingBadgeConfig struct {
 	RatingBadgeScale int `json:"ratingBadgeScale,omitempty"` // percent 70-400; 0 = 100
+	// RatingBadgeBorderSourceTint draws each badge's outline in that rating
+	// site's own colour instead of one colour for the row, which is the look v2
+	// paired with the glass style.
+	RatingBadgeBorderSourceTint bool `json:"ratingBadgeBorderSourceTint,omitempty"`
 	// StackedLineHidden drops the accent rail above the mark in the stacked
 	// style. Named for what it hides so the zero value keeps the rail.
 	StackedLineHidden bool `json:"stackedLineHidden,omitempty"`
@@ -618,6 +622,7 @@ type raw struct {
 	MetaLineScale                 *int      `json:"metaLineScale"`
 	AggregateAccentWidth          *int      `json:"aggregateAccentWidth"`
 	RatingBadgeDensity            *int      `json:"ratingBadgeDensity"`
+	RatingBadgeBorderSourceTint   *bool     `json:"ratingBadgeBorderSourceTint"`
 	RatingBadgeBorderColor        *string   `json:"ratingBadgeBorderColor"`
 	RatingBadgeBorderOpacity      *int      `json:"ratingBadgeBorderOpacity"`
 	IconOutlineColor              *string   `json:"iconOutlineColor"`
@@ -1047,6 +1052,9 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.RatingBadgeDensity != nil && *r.RatingBadgeDensity != 0 {
 		cfg.RatingBadgeDensity = clampInt(*r.RatingBadgeDensity, 60, 140)
+	}
+	if r.RatingBadgeBorderSourceTint != nil {
+		cfg.RatingBadgeBorderSourceTint = *r.RatingBadgeBorderSourceTint
 	}
 	if r.RatingBadgeBorderColor != nil && isHexColor(*r.RatingBadgeBorderColor) {
 		cfg.RatingBadgeBorderColor = strings.TrimSpace(*r.RatingBadgeBorderColor)
@@ -1730,7 +1738,7 @@ func parseGenre(cfg *Config, r *raw) {
 	}
 	if r.GenreBadgeStyle != nil {
 		switch v := strings.ToLower(strings.TrimSpace(*r.GenreBadgeStyle)); v {
-		case "glass", "square", "plain", "clean", "tile":
+		case "glass", "square", "plain", "clean", "tile", "pill":
 			cfg.GenreBadgeStyle = v
 		}
 	}
@@ -1848,7 +1856,7 @@ func isHexColor(s string) bool {
 // Bump this whenever a change alters rendered pixels for an unchanged config.
 // It costs a full re-render, so it is not for changes that only affect configs
 // whose own key already moved.
-const renderVersion = "r12"
+const renderVersion = "r13"
 
 // CacheKey returns a deterministic hex string for the config, suitable for use
 // as part of a render cache key. The key is stable: same logical config always

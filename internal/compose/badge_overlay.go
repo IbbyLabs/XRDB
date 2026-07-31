@@ -1229,6 +1229,39 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		}
 		drawText(base, face, tx, ty, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, label)
 		return
+	case "pill":
+		// A capsule matching the rating badges, so the two rows read as one set.
+		// Solid rather than tinted: the pill rating badge is opaque too.
+		pillR := bh / 2
+		fill := color.NRGBA{R: 8, G: 9, B: 12, A: 235}
+		if opts.bgOpacity != 0 {
+			fill.A = uint8(opts.bgOpacity * 255 / 100)
+		}
+		drawSoftTile(base, r, pillR, tileChrome{
+			fill:   fill,
+			shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 70},
+		})
+		if opts.borderWidth >= 0 {
+			bw := maxInt(1, s(1))
+			if opts.borderWidth > 0 {
+				bw = maxInt(1, int(opts.borderWidth*scale+0.5))
+			}
+			for i := 0; i < bw; i++ {
+				rr := r.Inset(i)
+				if rr.Dx() <= 0 || rr.Dy() <= 0 {
+					break
+				}
+				drawRectBorder(base, rr, maxInt(0, pillR-i), color.NRGBA{R: 255, G: 255, B: 255, A: 48})
+			}
+		}
+		drawLeftStripe()
+		if accent := drawIcon(); mode != "text" {
+			textColor = accent
+		}
+		if mode != "icon" {
+			drawText(base, face, tx, ty, textColor, label)
+		}
+		return
 	case "glass":
 		// A translucent dark tint blended over the artwork so the poster reads
 		// through it. bgOpacity is the tint's opacity; unset is a middle default.

@@ -742,6 +742,10 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
           Traces the capsule itself, so it reads as a defined chip.
         </span>
       </div>
+      <ToggleField id={`${uid}-badge-border-tint`} label="Outline in each rating site's colour"
+        hint="Draws every badge's outline in that site's own colour. Pairs with the Glass style."
+        checked={config.ratingBadgeBorderSourceTint}
+        onChange={() => onUpdate('ratingBadgeBorderSourceTint', !config.ratingBadgeBorderSourceTint)} />
       <NumField id={`${uid}-badge-border-op`} label="Badge outline opacity (%)" value={config.ratingBadgeBorderOpacity}
         onChange={v => onUpdate('ratingBadgeBorderOpacity', v)} min={5} max={100} step={5} placeholder="solid" />
       <div className="field">

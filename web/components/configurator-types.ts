@@ -153,11 +153,13 @@ export const AGE_POS_OPTIONS = [
 ] as const;
 
 export const GENRE_POS_OPTIONS = [
-  { id: 'inherit', label: 'Auto'         },
-  { id: 'bl',      label: 'Bottom left'  },
-  { id: 'br',      label: 'Bottom right' },
-  { id: 'tl',      label: 'Top left'     },
-  { id: 'tr',      label: 'Top right'    },
+  { id: 'inherit', label: 'Auto'          },
+  { id: 'tl',      label: 'Top left'      },
+  { id: 'tc',      label: 'Top center'    },
+  { id: 'tr',      label: 'Top right'     },
+  { id: 'bl',      label: 'Bottom left'   },
+  { id: 'bc',      label: 'Bottom center' },
+  { id: 'br',      label: 'Bottom right'  },
 ] as const;
 
 export const RING_POS_OPTIONS = [
@@ -248,6 +250,7 @@ export const GENRE_MODE_OPTIONS = [
 
 export const GENRE_STYLE_OPTIONS = [
   { id: 'default', label: 'Glass'  },
+  { id: 'pill',    label: 'Pill'   },
   { id: 'square',  label: 'Square' },
   { id: 'plain',   label: 'Plain'  },
   { id: 'clean',   label: 'Clean'  },
@@ -439,7 +442,7 @@ export interface ConfigState {
   qualityBadgeOffsetY: number;
   qualityBadgesStyle: string; // 'default' | plain | tile
   qualityBadgesTileAccentColor: string;
-  genreBadgeStyle: string; // 'default' | glass | square | plain | clean | tile
+  genreBadgeStyle: string; // 'default' | glass | pill | square | plain | clean | tile
   genreBadgeTileAccentColor: string; // '#RRGGBB' for the tile style; '' = default
   genreBadgeAccent: string; // 'default' | left | top | none
   genreBadgeLabel: string;  // 'default' (list) | primary
@@ -483,6 +486,7 @@ export interface ConfigState {
   metaLineScale: number; // percent; 0 = 100
   aggregateAccentWidth: number; // px; 0 = default
   ratingBadgeDensity: number; // percent of default padding; 0 = 100
+  ratingBadgeBorderSourceTint: boolean;
   ratingBadgeBorderColor: string; // '' = per style
   ratingBadgeBorderOpacity: number; // 0 = default
   iconOutlineColor: string; // '' = none
@@ -641,6 +645,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   metaLineScale: 0,
   aggregateAccentWidth: 0,
   ratingBadgeDensity: 0,
+  ratingBadgeBorderSourceTint: false,
   ratingBadgeBorderColor: '',
   ratingBadgeBorderOpacity: 0,
   iconOutlineColor: '',

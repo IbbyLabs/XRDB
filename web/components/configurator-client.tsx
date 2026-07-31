@@ -241,6 +241,7 @@ export function ConfiguratorClient() {
       metaLineScale: cfg.metaLineScale,
       aggregateAccentWidth: cfg.aggregateAccentWidth,
       ratingBadgeDensity: cfg.ratingBadgeDensity,
+      ratingBadgeBorderSourceTint: cfg.ratingBadgeBorderSourceTint,
       ratingBadgeBorderColor: cfg.ratingBadgeBorderColor,
       ratingBadgeBorderOpacity: cfg.ratingBadgeBorderOpacity,
       iconOutlineColor: cfg.iconOutlineColor,

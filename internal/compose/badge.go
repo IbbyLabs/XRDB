@@ -447,6 +447,9 @@ type badgeChrome struct {
 	radius     func(innerH int) int
 	bg         color.NRGBA
 	border     color.NRGBA // zero alpha = no border
+	// borderSourceTint recolours each badge's outline with that source's own
+	// brand colour instead of the one border colour for the whole row.
+	borderSourceTint bool
 	valueColor color.NRGBA
 	iconColor  color.NRGBA
 	// outline is drawn behind the value when there is no tile to separate it
@@ -505,6 +508,7 @@ func chromeFor(cfg imageconfig.Config) badgeChrome {
 		iconColor:  color.NRGBA{R: 235, G: 235, B: 240, A: 255},
 	}
 	c.hideIcon = cfg.RatingIconHidden
+	c.borderSourceTint = cfg.RatingBadgeBorderSourceTint
 	c.hideStackRail = cfg.StackedLineHidden
 	switch cfg.BadgeStyle {
 	case imageconfig.BadgeSquare:
@@ -634,8 +638,13 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 		if chrome.bg.A > 0 {
 			fillRoundedRectSquared(out, bRect, radius, chrome.squared, chrome.bg)
 		}
-		if chrome.border.A > 0 {
-			drawRectBorder(out, bRect, radius, chrome.border)
+		if border := chrome.border; border.A > 0 {
+			// Tinted per source, the outline reads as that site's badge rather
+			// than one anonymous row.
+			if chrome.borderSourceTint && sp.accent.A > 0 {
+				border = color.NRGBA{R: sp.accent.R, G: sp.accent.G, B: sp.accent.B, A: border.A}
+			}
+			drawRectBorder(out, bRect, radius, border)
 		}
 
 		if chrome.stacked {
