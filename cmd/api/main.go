@@ -211,6 +211,7 @@ func main() {
 		logger.Error("Failed to open the render cache", "error", err)
 		os.Exit(1)
 	}
+	renderCache.SetDiskBounds(cfg.CacheDiskMaxFiles, cfg.CacheDiskMaxBytes)
 	defer renderCache.Close()
 
 	logger.Info("Starting XRDB",

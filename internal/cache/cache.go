@@ -26,10 +26,14 @@ type Entry struct {
 // directory only shrinks when an expired key happens to be read again, so a
 // long-lived instance accumulates files without limit.
 const (
-	sweepInterval    = 10 * time.Minute
-	maxDiskFiles     = 20_000
-	maxDiskBytes     = 2 << 30 // 2 GiB
-	expiryHeaderSize = 8
+	sweepInterval = 10 * time.Minute
+	// Defaults for the disk tier when nothing is configured. Two GiB holds only
+	// a few thousand renders, and a catalogue is far larger than that, so an
+	// instance with disk to spare should raise them: every evicted entry is a
+	// render paid for again.
+	defaultMaxDiskFiles = 20_000
+	defaultMaxDiskBytes = 2 << 30 // 2 GiB
+	expiryHeaderSize    = 8
 )
 
 type hotEntry struct {
@@ -45,6 +49,10 @@ type Cache struct {
 	ttl        time.Duration
 	maxEntries int
 	maxBytes   int64
+	// Disk tier bounds. Separate from the hot tier above: the hot tier is memory
+	// and stays small, the disk tier is what a catalogue re-read actually hits.
+	maxDiskFiles int
+	maxDiskBytes int64
 
 	mu       sync.Mutex
 	hot      map[string]*list.Element // value: *hotEntry
@@ -75,17 +83,35 @@ func New(dir string, ttl time.Duration, maxEntries int, maxBytes int64) (*Cache,
 		return nil, fmt.Errorf("cache mkdir: %w", err)
 	}
 	c := &Cache{
-		dir:        dir,
-		ttl:        ttl,
-		maxEntries: maxEntries,
-		maxBytes:   maxBytes,
-		hot:        make(map[string]*list.Element, maxEntries),
-		lru:        list.New(),
-		stop:       make(chan struct{}),
-		done:       make(chan struct{}),
+		dir:          dir,
+		ttl:          ttl,
+		maxEntries:   maxEntries,
+		maxBytes:     maxBytes,
+		maxDiskFiles: defaultMaxDiskFiles,
+		maxDiskBytes: defaultMaxDiskBytes,
+		hot:          make(map[string]*list.Element, maxEntries),
+		lru:          list.New(),
+		stop:         make(chan struct{}),
+		done:         make(chan struct{}),
 	}
 	go c.sweepLoop()
 	return c, nil
+}
+
+// SetDiskBounds raises or lowers the disk tier's limits. Values <= 0 leave the
+// corresponding bound at its default. Call before the cache is used.
+func (c *Cache) SetDiskBounds(files int, bytes int64) {
+	if c == nil {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if files > 0 {
+		c.maxDiskFiles = files
+	}
+	if bytes > 0 {
+		c.maxDiskBytes = bytes
+	}
 }
 
 // Close stops the background disk sweep and waits for it to exit.
@@ -257,7 +283,7 @@ func (c *Cache) Purge() int {
 	}
 	// Re-derive the counters from what survived rather than assuming the
 	// directory is now empty: a concurrent Set may have written during the walk.
-	c.sweepWithBounds(maxDiskFiles, maxDiskBytes)
+	c.sweepWithBounds(c.maxDiskFiles, c.maxDiskBytes)
 	return removed
 }
 
@@ -333,7 +359,7 @@ func (c *Cache) sweepLoop() {
 // sweep removes expired disk entries, enforces the disk bounds oldest-first,
 // and reconciles the counters that back Stats.
 func (c *Cache) sweep() {
-	c.sweepWithBounds(maxDiskFiles, maxDiskBytes)
+	c.sweepWithBounds(c.maxDiskFiles, c.maxDiskBytes)
 }
 
 func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {

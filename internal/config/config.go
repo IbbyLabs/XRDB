@@ -114,6 +114,10 @@ type Config struct {
 	StreamCacheTTL  time.Duration
 	CacheMaxEntries int   // hot tier entry cap
 	CacheMaxBytes   int64 // hot tier byte cap
+	// Disk tier caps. The disk tier is what a catalogue re-read hits, so a small
+	// one means re-rendering titles that were rendered hours ago. 0 = default.
+	CacheDiskMaxFiles int
+	CacheDiskMaxBytes int64
 	TMDBAPIKey      string
 	TMDBReadToken   string
 	MDBListAPIKey   string
@@ -330,6 +334,18 @@ func Load() Config {
 			cacheMaxEntries = n
 		}
 	}
+	var cacheDiskMaxFiles int
+	if raw := os.Getenv("XRDB_CACHE_DISK_MAX_FILES"); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+			cacheDiskMaxFiles = n
+		}
+	}
+	var cacheDiskMaxBytes int64
+	if raw := os.Getenv("XRDB_CACHE_DISK_MAX_MB"); raw != "" {
+		if n, err := strconv.ParseInt(raw, 10, 64); err == nil && n > 0 && n <= math.MaxInt64>>20 {
+			cacheDiskMaxBytes = n << 20
+		}
+	}
 	var cacheMaxBytes int64 = 256 << 20
 	if raw := os.Getenv("XRDB_CACHE_MAX_MB"); raw != "" {
 		// Bound before shifting: values above MaxInt64>>20 MiB would overflow
@@ -387,6 +403,8 @@ func Load() Config {
 		CacheTTL:              cacheTTL,
 		DegradedCacheTTL:      degradedCacheTTL,
 		CacheMaxEntries:       cacheMaxEntries,
+		CacheDiskMaxFiles:     cacheDiskMaxFiles,
+		CacheDiskMaxBytes:     cacheDiskMaxBytes,
 		CacheMaxBytes:         cacheMaxBytes,
 		TMDBAPIKey:            credential("XRDB_TMDB_API_KEY", "TMDB_API_KEY"),
 		TMDBReadToken:         credential("XRDB_TMDB_READ_TOKEN", "TMDB_READ_TOKEN"),

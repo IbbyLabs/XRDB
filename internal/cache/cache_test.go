@@ -163,3 +163,27 @@ func TestStats(t *testing.T) {
 		t.Errorf("expected hot bytes %d, got %d", len("data"), s.HotBytes)
 	}
 }
+
+// The disk tier is what a catalogue re-read hits, so a 2 GiB default holding a
+// few thousand renders means re-rendering titles rendered hours ago. An instance
+// with disk to spare must be able to raise it.
+func TestSetDiskBoundsOverridesTheDefaults(t *testing.T) {
+	c, err := New(t.TempDir(), time.Hour, 10, 1<<20)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+
+	if c.maxDiskBytes != defaultMaxDiskBytes || c.maxDiskFiles != defaultMaxDiskFiles {
+		t.Fatalf("defaults not applied: files=%d bytes=%d", c.maxDiskFiles, c.maxDiskBytes)
+	}
+	c.SetDiskBounds(50_000, 20<<30)
+	if c.maxDiskFiles != 50_000 || c.maxDiskBytes != 20<<30 {
+		t.Errorf("bounds not raised: files=%d bytes=%d", c.maxDiskFiles, c.maxDiskBytes)
+	}
+	// Zero and negative leave a bound alone, so one can be set without the other.
+	c.SetDiskBounds(0, -1)
+	if c.maxDiskFiles != 50_000 || c.maxDiskBytes != 20<<30 {
+		t.Errorf("a non-positive value overwrote a bound: files=%d bytes=%d", c.maxDiskFiles, c.maxDiskBytes)
+	}
+}
