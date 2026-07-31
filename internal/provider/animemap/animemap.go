@@ -34,9 +34,12 @@ type IDs struct {
 	MAL     int
 	AniList int
 	Kitsu   int
+	AniDB   int
 }
 
-func (ids IDs) empty() bool { return ids.MAL == 0 && ids.AniList == 0 && ids.Kitsu == 0 }
+func (ids IDs) empty() bool {
+	return ids.MAL == 0 && ids.AniList == 0 && ids.Kitsu == 0 && ids.AniDB == 0
+}
 
 // Target is the mainstream identifier an anime id maps back to. Artwork and
 // most rating sources are keyed on IMDb or TMDB, so an anime id has to be
@@ -75,6 +78,8 @@ func ParseAnimeID(id string) (service string, num int, ok bool) {
 		service = "anilist"
 	case "kitsu":
 		service = "kitsu"
+	case "anidb":
+		service = "anidb"
 	default:
 		return "", 0, false
 	}
@@ -105,6 +110,9 @@ func reverseKeys(ids IDs) []string {
 	}
 	if ids.Kitsu != 0 {
 		keys = append(keys, animeKey("kitsu", ids.Kitsu))
+	}
+	if ids.AniDB != 0 {
+		keys = append(keys, animeKey("anidb", ids.AniDB))
 	}
 	return keys
 }
@@ -593,6 +601,7 @@ type datasetEntry struct {
 	MALID     flexInt   `json:"mal_id"`
 	AniListID flexInt   `json:"anilist_id"`
 	KitsuID   flexInt   `json:"kitsu_id"`
+	AniDBID   flexInt   `json:"anidb_id"`
 	IMDbID    []string  `json:"imdb_id"`
 	TMDBID    tmdbRef   `json:"themoviedb_id"`
 	Season    seasonRef `json:"season"`
@@ -614,7 +623,7 @@ func buildIndexes(data []byte) (indexes, error) {
 	}
 	ranks := make(map[string]int)
 	for _, e := range entries {
-		ids := IDs{MAL: int(e.MALID), AniList: int(e.AniListID), Kitsu: int(e.KitsuID)}
+		ids := IDs{MAL: int(e.MALID), AniList: int(e.AniListID), Kitsu: int(e.KitsuID), AniDB: int(e.AniDBID)}
 		if ids.empty() {
 			continue
 		}

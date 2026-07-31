@@ -475,3 +475,15 @@ func TestResolveTargetFromDataset(t *testing.T) {
 		})
 	}
 }
+
+// AIOMetadata emits anidb ids for some titles. Every other namespace it can hand
+// out resolves, so an unrecognised one leaves those requests with no artwork at
+// all rather than the wrong artwork.
+func TestParseAnimeIDAcceptsAniDB(t *testing.T) {
+	for _, id := range []string{"anidb:23", "series:anidb:23", "AniDB:23"} {
+		service, num, ok := ParseAnimeID(id)
+		if !ok || service != "anidb" || num != 23 {
+			t.Errorf("ParseAnimeID(%q) = (%q, %d, %v), want (anidb, 23, true)", id, service, num, ok)
+		}
+	}
+}
