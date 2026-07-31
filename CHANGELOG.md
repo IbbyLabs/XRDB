@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.35.3](https://github.com/IbbyLabs/XRDB/compare/v3.35.2...v3.35.3) (2026-07-31)
+
+
+### Fixed
+
+* **ratings:** bump cache shape so the awards parser fix takes effect ([4ec232b](https://github.com/IbbyLabs/XRDB/commit/4ec232bde56b7027ae306240d3809e365a750a92))
+
 ## [3.35.2](https://github.com/IbbyLabs/XRDB/compare/v3.35.1...v3.35.2) (2026-07-31)
 
 
