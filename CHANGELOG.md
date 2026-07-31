@@ -2,6 +2,15 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.35.2](https://github.com/IbbyLabs/XRDB/compare/v3.35.1...v3.35.2) (2026-07-31)
+
+
+### Fixed
+
+* **badges:** let the rating badge scale grow badges on small surfaces ([42c147e](https://github.com/IbbyLabs/XRDB/commit/42c147e1719bc4b478aa5249f476d1e9367266dc))
+* **badges:** scope the scale-aware cap to small surfaces ([11bc3ea](https://github.com/IbbyLabs/XRDB/commit/11bc3ea71cb89addb83b58a504e6aad67b300a0b))
+* **overlays:** keep the rating ring in-frame, restore logo fallback ([bb8366c](https://github.com/IbbyLabs/XRDB/commit/bb8366cc012057fd2251588dd703b2f376a5f409))
+
 ## [3.35.1](https://github.com/IbbyLabs/XRDB/compare/v3.35.0...v3.35.1) (2026-07-31)
 
 
