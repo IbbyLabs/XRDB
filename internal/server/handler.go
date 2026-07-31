@@ -348,7 +348,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		mux.HandleFunc("/", staticFileHandler(staticFS[0]))
 	}
 
-	return accessLogMiddleware(logger, trust, corsMiddleware(mux))
+	return accessLogMiddleware(logger, trust, corsMiddleware(rpdbIsValidMiddleware(store, mux)))
 }
 
 // statusRecorder captures the response status and byte count for access logging.

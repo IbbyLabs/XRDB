@@ -1,8 +1,10 @@
 package server
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"xrdb_rewrite/internal/config"
@@ -128,5 +130,39 @@ func TestRPDBRejectsNonGET(t *testing.T) {
 	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/mylook/imdb/poster-default/tt1.jpg", nil))
 	if rr.Code != http.StatusMethodNotAllowed {
 		t.Errorf("got %d, want 405", rr.Code)
+	}
+}
+
+// AIOStreams validates a poster key before it will use the source, and parses
+// the body as {"valid": bool}. Without this route the request fell through to
+// the web app and came back as HTML, which surfaced to users as
+// "Unexpected token '<' ... is not valid JSON" and made XRDB unselectable.
+func TestRPDBIsValidAnswersJSON(t *testing.T) {
+	h := renderingHandler(t)
+	for _, tc := range []struct {
+		key  string
+		want bool
+	}{
+		{"default", true},
+		{"no-such-profile-here", false},
+	} {
+		rr := httptest.NewRecorder()
+		h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/"+tc.key+"/isValid", nil))
+
+		if rr.Code != http.StatusOK {
+			t.Fatalf("%s: got %d, want 200 (a non-2xx makes AIOStreams reject the key outright)", tc.key, rr.Code)
+		}
+		if ct := rr.Header().Get("Content-Type"); !strings.Contains(ct, "application/json") {
+			t.Errorf("%s: Content-Type = %q, want JSON", tc.key, ct)
+		}
+		var body struct {
+			Valid bool `json:"valid"`
+		}
+		if err := json.Unmarshal(rr.Body.Bytes(), &body); err != nil {
+			t.Fatalf("%s: body is not JSON (%v): %s", tc.key, err, rr.Body.String())
+		}
+		if body.Valid != tc.want {
+			t.Errorf("%s: valid = %v, want %v", tc.key, body.Valid, tc.want)
+		}
 	}
 }

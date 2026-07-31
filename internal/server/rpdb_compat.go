@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"xrdb_rewrite/internal/profile"
 )
 
 // RPDB-compatible URL shim.
@@ -73,6 +75,7 @@ func rpdbMediaID(source, raw string) (id string, contentType string, ok bool) {
 // rewritten into the app's own render URL and served through the same mux, so
 // there is one render path rather than two that can drift apart.
 func registerRPDBCompat(mux *http.ServeMux) {
+
 	// source is a literal in each pattern rather than a wildcard, so it is
 	// passed in rather than read back off the request.
 	handlerFor := func(source string) http.HandlerFunc {
@@ -119,4 +122,23 @@ func registerRPDBCompat(mux *http.ServeMux) {
 	for _, source := range []string{"imdb", "tmdb"} {
 		mux.HandleFunc("/{key}/"+source+"/{resource}/{id}", handlerFor(source))
 	}
+}
+
+// rpdbIsValidMiddleware answers the key check AIOStreams makes before it will
+// use a poster source. It sits ahead of the mux because "/{key}/isValid" and
+// "/poster/{id}" are equally specific to Go's router, which refuses the pair.
+func rpdbIsValidMiddleware(store *profile.Store, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		key, ok := strings.CutSuffix(strings.TrimPrefix(r.URL.Path, "/"), "/isValid")
+		if !ok || key == "" || strings.Contains(key, "/") || r.Method != http.MethodGet {
+			next.ServeHTTP(w, r)
+			return
+		}
+		valid := key == "default"
+		if !valid && store != nil {
+			_, err := store.Resolve(key)
+			valid = err == nil
+		}
+		writeJSON(w, http.StatusOK, map[string]bool{"valid": valid})
+	})
 }
