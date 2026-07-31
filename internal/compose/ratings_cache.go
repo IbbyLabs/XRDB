@@ -152,8 +152,9 @@ const ratingsCacheFile = "ratings-cache.json"
 // field is added to MediaMeta that a render reads OR the interpretation of an
 // existing field changes (e.g. a parser fix), so entries produced by older code
 // are discarded on load rather than serving a stale reading.
-// (2: added Awards and Stinger. 3: awards win/nominate parser fix.)
-const ratingsCacheShape = 3
+// (2: added Awards and Stinger. 3: awards win/nominate parser fix.
+// 4: MDBList TMDB and Metacritic user scale fix.)
+const ratingsCacheShape = 4
 
 // ratingsSnapshot is the on-disk form: the shape version plus the entries.
 type ratingsSnapshot struct {
