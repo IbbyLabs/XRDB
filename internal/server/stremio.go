@@ -27,10 +27,16 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 
 	"xrdb_rewrite/internal/config"
+	"xrdb_rewrite/internal/imageconfig"
 	"xrdb_rewrite/internal/profile"
 )
+
+// cinemetaClient fetches upstream meta for the rating-strip path. Bounded so a
+// slow Cinemeta cannot hang a meta request.
+var cinemetaClient = &http.Client{Timeout: 6 * time.Second}
 
 // stremioManifest is the Stremio addon manifest shape (subset used by XRDB).
 type stremioManifest struct {
@@ -192,6 +198,20 @@ func serveStremioMeta(w http.ResponseWriter, r *http.Request, cfg config.Config,
 	posterURL := fmt.Sprintf("%s/%s/%s?%s", base, xrdbType, id, q.Encode())
 	backdropURL := fmt.Sprintf("%s/backdrop/%s?%s", base, id, q.Encode())
 
+	// When the profile asks to hide Cinemeta's rating, XRDB serves the upstream
+	// meta with the IMDb rating stripped and its own artwork overlaid, so every
+	// other field still reaches Stremio. A fetch failure falls back to the
+	// minimal meta below rather than dropping the title.
+	if hideCinemetaRating(store, configKey) {
+		if meta, err := fetchCinemetaMeta(r.Context(), cinemetaClient, "", mediaType, id); err == nil {
+			meta = stripImdbRating(meta)
+			meta["poster"] = posterURL
+			meta["background"] = backdropURL
+			writeJSON(w, http.StatusOK, map[string]any{"meta": meta})
+			return
+		}
+	}
+
 	writeJSON(w, http.StatusOK, stremioMetaResponse{
 		Meta: stremioMeta{
 			ID:         id,
@@ -200,6 +220,19 @@ func serveStremioMeta(w http.ResponseWriter, r *http.Request, cfg config.Config,
 			Background: backdropURL,
 		},
 	})
+}
+
+// hideCinemetaRating reports whether the named profile asked for the Cinemeta
+// IMDb rating to be stripped from its Stremio meta.
+func hideCinemetaRating(store *profile.Store, configKey string) bool {
+	if store == nil || configKey == "" {
+		return false
+	}
+	p, err := store.Resolve(configKey)
+	if err != nil {
+		return false
+	}
+	return imageconfig.ParseSurface(p.Config, "poster").HideCinemetaRating
 }
 
 // stremioMiddleware wraps a handler with CORS headers required by Stremio.

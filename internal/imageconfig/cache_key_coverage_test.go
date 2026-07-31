@@ -11,6 +11,12 @@ import (
 // differ only in that field share a cached image and the setting silently does
 // nothing. This walks every field and fails on the ones that do not move the
 // key.
+// metaOnlyField lists config that changes a served response other than the
+// image (e.g. the Stremio meta), so it must not be in the render cache key.
+var metaOnlyField = map[string]bool{
+	"HideCinemetaRating": true,
+}
+
 func TestEveryConfigFieldReachesTheCacheKey(t *testing.T) {
 	base := Default()
 	baseKey := CacheKey(base)
@@ -27,6 +33,11 @@ func TestEveryConfigFieldReachesTheCacheKey(t *testing.T) {
 			name := f.Name
 			if path != "" {
 				name = path + "." + f.Name
+			}
+			// Meta-only fields affect a served response, not the rendered image,
+			// so they are correctly absent from the render cache key.
+			if metaOnlyField[name] {
+				continue
 			}
 			// Grouped sub-configs are embedded in the canonical struct whole, so
 			// descend and check their leaves individually.

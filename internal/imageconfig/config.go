@@ -185,6 +185,11 @@ type Config struct {
 	Trending                      bool          `json:"trending"`
 	TrendingStyle                 TrendingStyle `json:"trendingStyle"`
 	BackdropAsPoster              bool          `json:"backdropAsPoster,omitempty"`
+	// HideCinemetaRating strips the IMDb rating from the Stremio meta XRDB serves
+	// (both the imdbRating field and the "imdb" link), so Cinemeta's own rating
+	// does not sit beside XRDB's overlaid one. It affects the meta response, not
+	// the rendered image, so it is deliberately absent from the render cache key.
+	HideCinemetaRating            bool          `json:"hideCinemetaRating,omitempty"`
 	BackdropLogo                  bool          `json:"backdropLogo,omitempty"`
 	// The title-logo overlay's box and placement, as percentages. Zero keeps the
 	// built-in look. LogoPos is where the logo's centre sits down the usable
@@ -611,6 +616,7 @@ type raw struct {
 	Trending                      *bool     `json:"trending"`
 	TrendingStyle                 *string   `json:"trendingStyle"`
 	BackdropAsPoster              *bool     `json:"backdropAsPoster"`
+	HideCinemetaRating            *bool     `json:"hideCinemetaRating"`
 	BackdropLogo                  *bool     `json:"backdropLogo"`
 	LogoWidth                     *int      `json:"logoWidth"`
 	LogoHeight                    *int      `json:"logoHeight"`
@@ -1056,6 +1062,9 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.BackdropAsPoster != nil {
 		cfg.BackdropAsPoster = *r.BackdropAsPoster
+	}
+	if r.HideCinemetaRating != nil {
+		cfg.HideCinemetaRating = *r.HideCinemetaRating
 	}
 	if r.BackdropLogo != nil {
 		cfg.BackdropLogo = *r.BackdropLogo
