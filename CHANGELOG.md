@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.33.0](https://github.com/IbbyLabs/XRDB/compare/v3.32.0...v3.33.0) (2026-07-31)
+
+
+### Added
+
+* **stremio:** option to strip Cinemeta's IMDb rating (FR-82) ([2622739](https://github.com/IbbyLabs/XRDB/commit/262273944923cc97d735aa9a2a62cc039ac076b9))
+
 ## [3.32.0](https://github.com/IbbyLabs/XRDB/compare/v3.31.0...v3.32.0) (2026-07-31)
 
 
