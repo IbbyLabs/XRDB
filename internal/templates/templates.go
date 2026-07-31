@@ -109,6 +109,20 @@ var builtins = []Template{
 		Category:    "cinema",
 		Config:      cfg(`{"artworkSource":"fanart","ratings":["imdb"],"ratingsLayout":"bottom","ageRating":true,"ageRatingPos":"tl","genre":false,"providers":false,"badges":["4k","hdr","atmos"]}`),
 	},
+	{
+		ID:          "cinematic",
+		Name:        "Cinematic",
+		Description: "Backdrop artwork with the title logo placed low over a soft fade, and one quiet rating at the foot.",
+		Category:    "cinema",
+		Config:      cfg(`{"backdropAsPoster":true,"logoWidth":72,"logoPos":62,"ratings":["imdb"],"ratingPresentation":"minimal","aggregatePillPos":"bc","providers":false,"badges":[]}`),
+	},
+	{
+		ID:          "library-quality",
+		Name:        "Library quality",
+		Description: "Kometa-style: stacked 4K/HDR/Atmos badges with a compact rating row, the way a Plex or Jellyfin library reads.",
+		Category:    "cinema",
+		Config:      cfg(`{"artworkSource":"fanart","ratings":["imdb","rt"],"ratingsLayout":"bottom","badgeStyle":"stacked","badges":["4k","hdr","atmos"],"ageRating":true,"ageRatingPos":"tl","genre":false,"providers":false}`),
+	},
 
 	// ── Streaming ─────────────────────────────────────────────────────────────
 	{
