@@ -144,6 +144,7 @@ func main() {
 	reg.Register(provider.NewFanart(cfg.FanartAPIKey))
 	reg.Register(provider.NewTrakt(cfg.TraktClientID))
 	reg.Register(provider.NewSIMKL(cfg.SIMKLClientID))
+	reg.Register(provider.NewMediUX(cfg.MediuxAPIKey))
 	// IMDb local dataset — enabled when XRDB_IMDB_DATASET_DIR is set.
 	if cfg.IMDbDatasetDir != "" {
 		imdbDataset := provider.NewIMDbDataset(cfg.IMDbDatasetDir)
@@ -177,7 +178,8 @@ func main() {
 	var pipeline *compose.Pipeline
 	if len(reg.Names()) > 0 {
 		pipeline = compose.New(reg)
-		pipeline.SetRatingsCacheTTL(cfg.RatingsCacheTTL)
+		pipeline.SetMediuxKey(cfg.MediuxAPIKey)
+	pipeline.SetRatingsCacheTTL(cfg.RatingsCacheTTL)
 		// Ratings are metered by the request upstream, and one source meters by the
 		// day, so what was already fetched is kept across restarts.
 		pipeline.SetRatingsCachePath(cfg.CacheDir, logger)

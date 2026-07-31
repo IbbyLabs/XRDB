@@ -117,6 +117,7 @@ type Config struct {
 	TMDBAPIKey      string
 	TMDBReadToken   string
 	MDBListAPIKey   string
+	MediuxAPIKey          string
 	OMDBAPIKey      string
 	FanartAPIKey    string
 	TraktClientID   string
@@ -377,6 +378,7 @@ func Load() Config {
 		TMDBAPIKey:            credential("XRDB_TMDB_API_KEY", "TMDB_API_KEY"),
 		TMDBReadToken:         credential("XRDB_TMDB_READ_TOKEN", "TMDB_READ_TOKEN"),
 		MDBListAPIKey:         credential("XRDB_MDBLIST_API_KEY", "MDBLIST_API_KEY"),
+		MediuxAPIKey:          credential("XRDB_MEDIUX_API_KEY", "MEDIUX_API_KEY"),
 		OMDBAPIKey:            credential("XRDB_OMDB_API_KEY", "OMDB_API_KEY", "OMDB_KEY"),
 		FanartAPIKey:          credential("XRDB_FANART_API_KEY", "FANART_API_KEY"),
 		TraktClientID:         credential("XRDB_TRAKT_CLIENT_ID", "TRAKT_CLIENT_ID"),

@@ -25,6 +25,7 @@ type keysCtxKey struct{}
 const (
 	KeyTMDB    = "tmdb"
 	KeyMDBList = "mdblist"
+	KeyMediux  = "mediux"
 	KeyOMDB    = "omdb"
 	KeyFanart  = "fanart"
 	KeyTrakt   = "trakt"
@@ -32,7 +33,7 @@ const (
 )
 
 // SupportedKeys are the providers that read an owner-supplied credential.
-var SupportedKeys = []string{KeyTMDB, KeyMDBList, KeyOMDB, KeyFanart, KeyTrakt, KeySIMKL}
+var SupportedKeys = []string{KeyTMDB, KeyMDBList, KeyMediux, KeyOMDB, KeyFanart, KeyTrakt, KeySIMKL}
 
 // SupportsKey reports whether name is a provider a key can be supplied for.
 func SupportsKey(name string) bool {
@@ -109,6 +110,15 @@ func KeysFingerprint(keys map[string]string) string {
 // it must not be gated out by the shared key's rate-limit cooldown.
 func HasOwnerKey(ctx context.Context, name string) bool {
 	return keyFrom(ctx, name) != ""
+}
+
+// MediuxTokenFor returns the MediUX token for a render: the owner's own if the
+// context carries one, else the given instance default.
+func MediuxTokenFor(ctx context.Context, instanceKey string) string {
+	if k := keyFrom(ctx, KeyMediux); k != "" {
+		return k
+	}
+	return instanceKey
 }
 
 // keyFrom returns the owner-supplied credential for name, or "" when the render

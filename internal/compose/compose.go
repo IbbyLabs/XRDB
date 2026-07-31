@@ -244,6 +244,49 @@ func (p *Pipeline) resolveContentKind(ctx context.Context, req Request) string {
 	return kind
 }
 
+// isNumericID reports whether s is a non-empty run of digits.
+func isNumericID(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// tmdbNumericID resolves the request to a numeric TMDB id, which MediUX is keyed
+// on. A tmdb: id or a known id already in hand is used directly; a tt-id is
+// resolved through the TMDB provider.
+func (p *Pipeline) tmdbNumericID(ctx context.Context, req Request, known string) (string, bool) {
+	if isNumericID(known) {
+		return known, true
+	}
+	if rest, ok := strings.CutPrefix(req.MediaID, "tmdb:"); ok {
+		// tmdb:movie:1726 / tmdb:1726 — take the trailing number.
+		parts := strings.Split(rest, ":")
+		last := parts[len(parts)-1]
+		if isNumericID(last) {
+			return last, true
+		}
+	}
+	tmdb := p.providers.Get("tmdb")
+	if tmdb == nil {
+		return "", false
+	}
+	ident, ok := tmdb.(provider.TitleIdentifier)
+	if !ok {
+		return "", false
+	}
+	id, _, err := ident.IdentifyID(ctx, req.MediaID, req.ContentType)
+	if err != nil || !isNumericID(id) {
+		return "", false
+	}
+	return id, true
+}
+
 // kitsuID maps the requested title onto the Kitsu id Kitsu answers to. A title
 // the anime map does not carry has no Kitsu entry to find.
 func (p *Pipeline) kitsuID(ctx context.Context, req Request) (string, bool) {
@@ -279,12 +322,23 @@ const maxImageBytes = 20 * 1024 * 1024 // 20 MiB
 // httpFetcher is the production imageFetcher.
 type httpFetcher struct {
 	client *http.Client
+	// mediuxKey is the instance MediUX token used for images.mediux.io asset
+	// fetches when the render carries no owner token. MediUX gates every asset
+	// behind the Bearer header.
+	mediuxKey string
 }
 
 func (f *httpFetcher) Fetch(ctx context.Context, url string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
+	}
+	// MediUX serves its assets only to an authenticated request, so the token
+	// (owner's own, else the instance default) rides the image fetch too.
+	if strings.Contains(url, "images.mediux.io") {
+		if tok := provider.MediuxTokenFor(ctx, f.mediuxKey); tok != "" {
+			req.Header.Set("Authorization", "Bearer "+tok)
+		}
 	}
 	resp, err := f.client.Do(req)
 	if err != nil {
@@ -485,6 +539,14 @@ func New(reg *provider.Registry) *Pipeline {
 		fetcher:   &httpFetcher{client: &http.Client{Timeout: 15 * time.Second}},
 		logger:    slog.Default(),
 		ratings:   newRatingsCache(DefaultRatingsCacheTTL),
+	}
+}
+
+// SetMediuxKey gives the image fetcher the instance MediUX token for asset
+// fetches. No-op when the fetcher is a test double.
+func (p *Pipeline) SetMediuxKey(key string) {
+	if f, ok := p.fetcher.(*httpFetcher); ok {
+		f.mediuxKey = key
 	}
 }
 
@@ -921,6 +983,15 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 		providerID := req.MediaID
 		if name == string(imageconfig.ArtworkKitsu) {
 			id, ok := p.kitsuID(ctx, req)
+			if !ok {
+				continue
+			}
+			providerID = id
+		}
+		// MediUX is keyed on the numeric TMDB id, so a tt-id is resolved first.
+		// A title that cannot be resolved falls through to the next source.
+		if name == string(imageconfig.ArtworkMediux) {
+			id, ok := p.tmdbNumericID(ctx, req, knownID)
 			if !ok {
 				continue
 			}
