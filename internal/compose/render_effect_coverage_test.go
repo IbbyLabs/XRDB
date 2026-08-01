@@ -451,9 +451,7 @@ func keyMutations() map[string]keyOverride {
 		// tunes that border's alpha, so it needs the colour present to be visible.
 		"ratingBadgeBorderColor":   str(setColor(func(c *imageconfig.Config, v string) { c.RatingBadgeBorderColor = v })),
 		"ratingBadgeBorderOpacity": {pre: func(c *imageconfig.Config) { c.RatingBadgeBorderColor = "#00ffff" }, mut: func(c *imageconfig.Config) { c.RatingBadgeBorderOpacity = 50 }},
-		// The per-source tint recolours an outline that is already being drawn, so
-		// it needs a border to exist before it can change anything.
-		"ratingBadgeBorderSourceTint": {pre: func(c *imageconfig.Config) { c.RatingBadgeBorderColor = "#ffffff" }, mut: func(c *imageconfig.Config) { c.RatingBadgeBorderSourceTint = true }},
+		"ratingBadgeBorderSourceTint": {mut: func(c *imageconfig.Config) { c.RatingBadgeBorderSourceTint = true }},
 		// The icon outline is a colour + a width; each is inert without the other,
 		// so each key sets its partner as the precondition.
 		"iconOutlineColor": {pre: func(c *imageconfig.Config) { c.IconOutlineWidth = 4 }, mut: setColor(func(c *imageconfig.Config, v string) { c.IconOutlineColor = v })},

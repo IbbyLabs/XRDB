@@ -81,6 +81,59 @@ func resolveGenreFamilyGrouped(genres []string, isAnime bool, grouping string) *
 	return primary
 }
 
+// groupAnimeGenres applies the same anime grouping to a raw genre list that
+// resolveGenreFamilyGrouped applies to a family, so a badge labelled by its
+// genres answers the control too.
+func groupAnimeGenres(genres []string, isAnime bool, grouping string) []string {
+	animated := func(g string) bool {
+		n := normalizeGenreName(g)
+		return n == "anime" || n == "animation" || n == "animated"
+	}
+	out := make([]string, 0, len(genres))
+	seen := make(map[string]bool, len(genres))
+	add := func(g string) {
+		n := normalizeGenreName(g)
+		if n == "" || seen[n] {
+			return
+		}
+		seen[n] = true
+		out = append(out, g)
+	}
+	switch grouping {
+	case "secondary":
+		for _, g := range genres {
+			if !animated(g) {
+				add(g)
+			}
+		}
+		if len(out) == 0 {
+			return genres
+		}
+		return out
+	case "animation":
+		for _, g := range genres {
+			if animated(g) {
+				g = "Animation"
+			}
+			add(g)
+		}
+	default:
+		if !isAnime {
+			return genres
+		}
+		for _, g := range genres {
+			if animated(g) {
+				g = "Anime"
+			}
+			add(g)
+		}
+	}
+	if len(out) == 0 {
+		return genres
+	}
+	return out
+}
+
 func resolveFamilyPass(genres []string, includeAnimated, isAnime bool, grouping string) *genreFamily {
 	names := make(map[string]bool, len(genres))
 	for _, g := range genres {

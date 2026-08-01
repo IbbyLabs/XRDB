@@ -1134,14 +1134,16 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		return
 	}
 
-	shown := genres
+	// The anime control names families in the glyph modes and genres here.
+	named := groupAnimeGenres(genres, opts.isAnime, opts.grouping)
+	shown := named
 	if len(shown) > 3 {
 		shown = shown[:3]
 	}
 	label := strings.Join(shown, " · ")
 	// v2 named the title by its first genre alone, in capitals.
 	if opts.labelMode == "primary" {
-		label = strings.ToUpper(genres[0])
+		label = strings.ToUpper(named[0])
 	}
 
 	// The icon modes label the badge with the resolved family ("SCI FI") rather

@@ -598,6 +598,16 @@ func chromeFor(cfg imageconfig.Config) badgeChrome {
 		}
 		c.border = b
 	}
+	// Source tinting recolours an outline, so a style that draws none needs one
+	// before the control has anything to act on. The plain style carries its
+	// stroke on the glyphs instead and is tinted there.
+	if c.borderSourceTint && c.border.A == 0 && cfg.BadgeStyle != imageconfig.BadgePlain {
+		a := uint8(200)
+		if o := cfg.RatingBadgeBorderOpacity; o > 0 {
+			a = uint8(maxInt(1, o*255/100))
+		}
+		c.border = color.NRGBA{R: 255, G: 255, B: 255, A: a}
+	}
 	return c
 }
 
@@ -712,7 +722,11 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 		}
 
 		valY := y + (innerH-valH)/2 + valAscent
-		if chrome.outline.A > 0 && chrome.outlineWidth > 0 {
+		outlineCol := chrome.outline
+		if chrome.borderSourceTint && sp.accent.A > 0 && outlineCol.A > 0 {
+			outlineCol = color.NRGBA{R: sp.accent.R, G: sp.accent.G, B: sp.accent.B, A: outlineCol.A}
+		}
+		if outlineCol.A > 0 && chrome.outlineWidth > 0 {
 			// Ring the glyphs rather than offsetting once, so the value stays
 			// legible whichever way the artwork is bright behind it.
 			for dy := -chrome.outlineWidth; dy <= chrome.outlineWidth; dy++ {
@@ -720,7 +734,7 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 					if dx == 0 && dy == 0 {
 						continue
 					}
-					drawText(out, face, contentX+dx, valY+dy, chrome.outline, sp.value)
+					drawText(out, face, contentX+dx, valY+dy, outlineCol, sp.value)
 				}
 			}
 		}
@@ -943,8 +957,8 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 		return drawBadgesTopBottom(out, specs, innerH, badgeGap, edgeX, edgeY, padX, iconSize, iconGap, accentW, face, chrome, bounds, offsetX, offsetY)
 	}
 
-	// One bottom row keeps every badge on a single line along the bottom edge, so
-	// the strip reads as one band rather than wrapping into a block.
+	// One row keeps every badge on a single line, so the strip reads as one band
+	// rather than wrapping into a block. Where that line sits is the layout's.
 	var rows [][]badgeSpec
 	if cfg.BottomRatingsRow {
 		rows = [][]badgeSpec{specs}
@@ -974,7 +988,7 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 	totalH := len(rows)*innerH + (len(rows)-1)*rowGap
 
 	startY := bounds.Max.Y - edgeY - totalH
-	if cfg.RatingsLayout == imageconfig.LayoutTop && !cfg.BottomRatingsRow {
+	if cfg.RatingsLayout == imageconfig.LayoutTop {
 		startY = bounds.Min.Y + edgeY
 	}
 	if startY < bounds.Min.Y+edgeY {

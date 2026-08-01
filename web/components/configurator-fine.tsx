@@ -402,10 +402,10 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
         checked={config.ratingVoteCounts}
         onChange={v => onUpdate('ratingVoteCounts', v)}
         hint="Append the number of votes to each score. Only IMDb, MDBList and TMDB report one; other sources show the score alone." />
-      <ToggleField id={`${uid}-bottom-row`} label="Single bottom row"
+      <ToggleField id={`${uid}-bottom-row`} label="Single row"
         checked={config.bottomRatingsRow}
         onChange={v => onUpdate('bottomRatingsRow', v)}
-        hint="Keep every badge on one row along the bottom edge." />
+        hint="Keep every badge on one row instead of wrapping. The row follows the ratings layout." />
       <ToggleField id={`${uid}-ratings-anchored`} label="Anchor badges to the edge"
         checked={config.ratingsAnchored}
         onChange={v => onUpdate('ratingsAnchored', v)}

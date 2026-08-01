@@ -429,7 +429,7 @@ export interface ConfigState {
   ratingXOffsetSquare: number;
   ratingYOffsetSquare: number;
   posterEdgeOffset: number; // 0..80 extra inset from the edge
-  bottomRatingsRow: boolean; // keep every badge on one bottom row
+  bottomRatingsRow: boolean; // keep every badge on one row instead of wrapping
   ratingsAnchored: boolean; // flush the row to the poster edge with squared corners
   ratingPresentation: string; // standard|editorial|none
   ratingValueMode: string; // native|normalized|normalizedclean|normalized100

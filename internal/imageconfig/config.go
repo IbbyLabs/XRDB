@@ -381,8 +381,8 @@ type RatingBadgeConfig struct {
 	// PosterEdgeOffset pushes the whole badge strip further in from the edge it
 	// sits against. 0 keeps the built-in inset.
 	PosterEdgeOffset int `json:"posterEdgeOffset,omitempty"`
-	// BottomRatingsRow keeps every badge on one row along the bottom edge
-	// instead of wrapping them or placing them by the layout's region.
+	// BottomRatingsRow keeps every badge on one row instead of wrapping them
+	// into a block. The row sits wherever RatingsLayout puts it.
 	BottomRatingsRow   bool   `json:"bottomRatingsRow,omitempty"`
 	RatingPresentation string `json:"ratingPresentation,omitempty"` // standard|editorial|none (others modeled)
 	// RatingValueMode picks the scale rating values are drawn on. "native" (the
