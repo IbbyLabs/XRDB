@@ -642,8 +642,8 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
         value={config.genreBadgeStyle}
         onChange={v => onUpdate('genreBadgeStyle', v)}
       />
-      {config.genreBadgeStyle === 'tile' && (
-        <ColorField id={`${uid}-genre-tile-color`} label="Tile color"
+      {(config.genreBadgeStyle === 'tile' || config.genreBadgeStyle === 'pill') && (
+        <ColorField id={`${uid}-genre-tile-color`} label="Accent colour"
           value={config.genreBadgeTileAccentColor}
           onChange={v => onUpdate('genreBadgeTileAccentColor', v)}
           fallback="#3355ff" resetLabel="Auto" />
