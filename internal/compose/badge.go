@@ -279,6 +279,12 @@ func accentFor(source string) color.NRGBA {
 	return color.NRGBA{R: 160, G: 160, B: 160, A: 255}
 }
 
+// brandColoursSurvive reports whether a mark keeps the colours baked into its
+// asset. A filled plate is painted the source's own accent, and eight of the
+// marks are that same colour, so on a filled plate they are drawn as a
+// silhouette in contrasting ink instead — which is how v2 showed them.
+func brandColoursSurvive(colored, plateFilled bool) bool { return colored && !plateFilled }
+
 // drawTintedIcon paints icon (a white-on-transparent glyph) into dst at rect,
 // recolored to tint, using the glyph's alpha as the mask. The glyph is trimmed
 // of transparent padding and scaled with its aspect ratio preserved, so marks
@@ -765,7 +771,7 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 			}
 			iconTop := y + (innerH-drawSize)/2
 			iRect := image.Rect(contentX, iconTop, contentX+drawSize, iconTop+drawSize)
-			if sp.colored {
+			if brandColoursSurvive(sp.colored, sp.plateFilled) {
 				drawBrandIcon(out, iRect, sp.icon, sp.iconShape, sp.accent, sp.iconOutline, sp.iconOutlineWidth, sp.plateFilled)
 			} else {
 				drawTintedIcon(out, iRect, sp.icon, iconTint, sp.iconShape, sp.accent, sp.iconOutline, sp.iconOutlineWidth, sp.plateFilled)
@@ -1364,7 +1370,7 @@ func drawStackedBadge(out *image.NRGBA, sp badgeSpec, y, innerH, iconSize int, f
 	}
 	if sp.icon != nil && !chrome.hideIcon {
 		iRect := image.Rect(sp.x+(sp.w-drawSize)/2, iconTop, sp.x+(sp.w+drawSize)/2, iconTop+drawSize)
-		if sp.colored {
+		if brandColoursSurvive(sp.colored, sp.plateFilled) {
 			drawBrandIcon(out, iRect, sp.icon, sp.iconShape, sp.accent, sp.iconOutline, sp.iconOutlineWidth, sp.plateFilled)
 		} else {
 			drawTintedIcon(out, iRect, sp.icon, chrome.iconColor, sp.iconShape, sp.accent, sp.iconOutline, sp.iconOutlineWidth, sp.plateFilled)

@@ -439,3 +439,30 @@ func TestIconPlateTakesTheSourceColour(t *testing.T) {
 		t.Errorf("the filled plate carries %d source-coloured pixels against %d unfilled, which is an edge not a body", body, edgeOnly)
 	}
 }
+
+// Eight rating marks carry their own brand colours, and a filled plate is
+// painted that same accent, so drawing them as-is puts a yellow IMDb mark on a
+// yellow plate. On a filled plate they become a silhouette instead (FR-135).
+func TestFilledPlateSilhouettesBrandMarks(t *testing.T) {
+	for _, tc := range []struct {
+		colored, filled, want bool
+	}{
+		{colored: true, filled: false, want: true},   // untouched: dark plate, brand mark
+		{colored: true, filled: true, want: false},   // silhouette, or it vanishes
+		{colored: false, filled: false, want: false}, // already a silhouette
+		{colored: false, filled: true, want: false},
+	} {
+		if got := brandColoursSurvive(tc.colored, tc.filled); got != tc.want {
+			t.Errorf("brandColoursSurvive(colored=%v, filled=%v) = %v, want %v", tc.colored, tc.filled, got, tc.want)
+		}
+	}
+
+	// The silhouette has to read against the plate it sits on. IMDb's accent is
+	// the worst case: the mark and the plate are the same yellow.
+	imdb := color.NRGBA{R: 245, G: 197, B: 24, A: 255}
+	ink := contrastingInk(imdb)
+	lum := func(c color.NRGBA) int { return (int(c.R)*299 + int(c.G)*587 + int(c.B)*114) / 1000 }
+	if diff := lum(imdb) - lum(ink); diff < 80 && diff > -80 {
+		t.Errorf("the mark's ink is only %d luminance from the plate, so it will not read", diff)
+	}
+}
