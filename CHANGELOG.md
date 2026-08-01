@@ -2,6 +2,20 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.49.0](https://github.com/IbbyLabs/XRDB/compare/v3.48.0...v3.49.0) (2026-08-01)
+
+
+### Added
+
+* **logo:** add an emboss style that lights the mark's own edges ([0c7aacd](https://github.com/IbbyLabs/XRDB/commit/0c7aacd18e8a82062eb8a5843b7e8d1bb14e32e6))
+* **logo:** add shadow offset, colour and style controls ([273e6a0](https://github.com/IbbyLabs/XRDB/commit/273e6a08b924bdc2a0535de5e3061ce34f3d3ab5))
+
+
+### Fixed
+
+* **logo:** make the shadow styles tell each other apart ([e5c5a8e](https://github.com/IbbyLabs/XRDB/commit/e5c5a8e430fe788941d92cab7368c281a1973d8f))
+* **provider:** pace MDBList from its reported daily allowance ([4b4fb29](https://github.com/IbbyLabs/XRDB/commit/4b4fb29715600983cfc522bf44f0741cd0c04975))
+
 ## [3.48.0](https://github.com/IbbyLabs/XRDB/compare/v3.47.1...v3.48.0) (2026-08-01)
 
 
