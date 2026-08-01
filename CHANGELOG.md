@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.49.2](https://github.com/IbbyLabs/XRDB/compare/v3.49.1...v3.49.2) (2026-08-01)
+
+
+### Fixed
+
+* **ratings:** keep owner-supplied keys out of the shared rate budget ([4647235](https://github.com/IbbyLabs/XRDB/commit/4647235aa459e0d1e895c0ef6d30415dd6e8718a))
+
 ## [3.49.1](https://github.com/IbbyLabs/XRDB/compare/v3.49.0...v3.49.1) (2026-08-01)
 
 
