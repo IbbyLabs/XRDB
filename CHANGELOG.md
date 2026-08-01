@@ -2,6 +2,19 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.47.0](https://github.com/IbbyLabs/XRDB/compare/v3.46.1...v3.47.0) (2026-08-01)
+
+
+### Added
+
+* **logging:** log the user agent on each request ([2049a87](https://github.com/IbbyLabs/XRDB/commit/2049a87fadbc854ac226dfc67279a35e2ad729e6))
+
+
+### Fixed
+
+* **logo:** never draw a logo over art that already has the title ([67034f0](https://github.com/IbbyLabs/XRDB/commit/67034f09b2a40986edc7074e8420902324ce1f01))
+* **quality:** stop asking a stream addon that has stopped answering ([82f724b](https://github.com/IbbyLabs/XRDB/commit/82f724b9c4602512036fa075a22eb0954569f163))
+
 ## [3.46.1](https://github.com/IbbyLabs/XRDB/compare/v3.46.0...v3.46.1) (2026-08-01)
 
 
