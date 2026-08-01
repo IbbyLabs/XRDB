@@ -1205,6 +1205,20 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	}
 	bw += stripeRoom
 
+	// Three genres fit or overflow depending on how long their names are, and
+	// nothing measured the result against the artwork, so a wide list ran off
+	// both edges. Drop the trailing genre until the plate fits, keeping the
+	// first even when it does not. Only the genre list is trimmed: the glyph
+	// modes label the badge with a short family name.
+	if mode == "text" && opts.labelMode != "primary" && len(shown) > 1 {
+		room := base.Bounds().Dx() - edgeX*2
+		for len(shown) > 1 && bw > room {
+			shown = shown[:len(shown)-1]
+			label = strings.Join(shown, " · ")
+			bw = padX*2 + textWidth(face, label) + stripeRoom
+		}
+	}
+
 	resolvedPos := pos
 	if resolvedPos == "" || resolvedPos == "inherit" {
 		resolvedPos = "bl"

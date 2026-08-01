@@ -234,3 +234,39 @@ func TestGroupAnimeGenres(t *testing.T) {
 		})
 	}
 }
+
+// A genre list is capped at three by count, so three long names ran off both
+// edges of the poster while three short ones fitted (FR-138).
+func TestGenreListDropsGenresRatherThanOverflow(t *testing.T) {
+	long := []string{"Action & Adventure", "Animation", "Sci-Fi & Fantasy"}
+
+	widest := func(img *image.NRGBA) (int, int) {
+		lo, hi := -1, -1
+		b := img.Bounds()
+		for x := b.Min.X; x < b.Max.X; x++ {
+			for y := b.Min.Y; y < b.Max.Y; y++ {
+				if img.NRGBAAt(x, y).A > 0 {
+					if lo < 0 {
+						lo = x
+					}
+					hi = x
+					break
+				}
+			}
+		}
+		return lo, hi
+	}
+
+	const w = 400
+	img := image.NewNRGBA(image.Rect(0, 0, w, 600))
+	drawGenreBadge(img, long, "bl", 1, newOccupancy(img.Bounds()), genreBadgeOpts{mode: "text"})
+	lo, hi := widest(img)
+	if lo < 0 {
+		t.Fatal("the genre badge drew nothing")
+	}
+	// Overflow is clipped at the frame, so ink in the outermost column is the
+	// signal: a badge that fits stops short of it.
+	if lo == 0 || hi == w-1 {
+		t.Errorf("the genre badge spans x=%d..%d on a %dpx poster, so it is clipped at the edge", lo, hi, w)
+	}
+}
