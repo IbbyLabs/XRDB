@@ -33,9 +33,16 @@ type tileChrome struct {
 func drawSoftTile(base *image.NRGBA, r image.Rectangle, radius int, ch tileChrome) {
 	if ch.shadow.A > 0 {
 		off := maxInt(1, r.Dy()/18)
-		fillRoundedRect(base, r.Add(image.Pt(0, off)), radius, ch.shadow)
+		blendRoundedRect(base, r.Add(image.Pt(0, off)), radius, ch.shadow)
 	}
-	fillRoundedRect(base, r, radius, ch.fill)
+	// A translucent fill has to composite over the artwork. Writing the pixel
+	// outright discarded what was underneath, so lowering the opacity darkened
+	// the badge towards black instead of letting the poster through.
+	if ch.fill.A < 255 {
+		blendRoundedRect(base, r, radius, ch.fill)
+	} else {
+		fillRoundedRect(base, r, radius, ch.fill)
+	}
 	if ch.border.A > 0 {
 		bw := maxInt(1, ch.borderWidth)
 		// Thicken inward with concentric 1px strokes so corners stay rounded.
@@ -1259,9 +1266,13 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		}
 		return
 	case "tile":
-		fill := color.NRGBA{R: 8, G: 9, B: 12, A: 235}
+		tileA := uint8(235)
+		if opts.bgOpacity != 0 {
+			tileA = uint8(opts.bgOpacity * 255 / 100)
+		}
+		fill := color.NRGBA{R: 8, G: 9, B: 12, A: tileA}
 		if c, err := parseHexColor(opts.tileColor); opts.tileColor != "" && err == nil {
-			c.A = 235
+			c.A = tileA
 			fill = c
 		}
 		drawSoftTile(base, r, radius, tileChrome{fill: fill, shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 70}})

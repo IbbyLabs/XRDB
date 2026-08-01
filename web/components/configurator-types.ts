@@ -256,12 +256,13 @@ export const GENRE_MODE_OPTIONS = [
 ] as const;
 
 export const GENRE_STYLE_OPTIONS = [
-  { id: 'default', label: 'Glass'  },
-  { id: 'pill',    label: 'Pill'   },
-  { id: 'square',  label: 'Square' },
-  { id: 'plain',   label: 'Plain'  },
-  { id: 'clean',   label: 'Clean'  },
-  { id: 'tile',    label: 'Tile'   },
+  { id: 'default', label: 'Default' },
+  { id: 'glass',   label: 'Glass'   },
+  { id: 'pill',    label: 'Pill'    },
+  { id: 'square',  label: 'Square'  },
+  { id: 'plain',   label: 'Plain'   },
+  { id: 'clean',   label: 'Clean'   },
+  { id: 'tile',    label: 'Tile'    },
 ] as const;
 
 export const GENRE_ACCENT_OPTIONS = [
