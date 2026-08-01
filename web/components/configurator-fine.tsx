@@ -643,13 +643,13 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
         onChange={v => onUpdate('genreBadgeStyle', v)}
       />
       {(config.genreBadgeStyle === 'tile' || config.genreBadgeStyle === 'pill') && (
-        <ColorField id={`${uid}-genre-tile-color`} label="Accent colour"
+        <ColorField id={`${uid}-genre-tile-color`} label="Badge colour"
           value={config.genreBadgeTileAccentColor}
           onChange={v => onUpdate('genreBadgeTileAccentColor', v)}
           fallback="#3355ff" resetLabel="Auto" />
       )}
       <div className="field">
-        <label className="label" htmlFor={`${uid}-genre-accent`}>Accent</label>
+        <label className="label" htmlFor={`${uid}-genre-accent`}>Accent stripe</label>
         <select
           id={`${uid}-genre-accent`}
           className="select"
