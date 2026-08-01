@@ -5,6 +5,11 @@ All notable changes to XRDB are documented here.
 ## [3.49.3](https://github.com/IbbyLabs/XRDB/compare/v3.49.2...v3.49.3) (2026-08-01)
 
 
+### Reverted
+
+* **ratings:** the owner-supplied key change released in 3.49.2 is reverted ([46278bd](https://github.com/IbbyLabs/XRDB/commit/46278bd)). Exempting owner-keyed requests from the shared rate budget removed the throttle in front of MDBList, and requests then timed out instead of being paced, so ratings went missing. 3.49.3 restores the 3.49.1 behaviour. Do not run 3.49.2.
+
+
 ### Documentation
 
 * **render:** trim the renderVersion note to the fact ([f939794](https://github.com/IbbyLabs/XRDB/commit/f939794c4b2d2c089caf745f68df298dc44bec82))
