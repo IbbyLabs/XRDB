@@ -19,8 +19,8 @@ func valueModeRatings() []provider.Rating {
 
 func TestNativeModeKeepsEverySourceOnItsOwnScale(t *testing.T) {
 	want := map[string]string{
-		"letterboxd": "3.4",
-		"rogerebert": "3.5",
+		"letterboxd": "3.4/5",
+		"rogerebert": "3.5/4",
 		"rt":         "82%",
 		"imdb":       "8.0",
 	}

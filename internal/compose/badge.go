@@ -1152,12 +1152,22 @@ func formatRatingValue(value float64, mode string) string {
 // mode keeps the provider's own label, so Letterboxd stays out of five and
 // Rotten Tomatoes keeps its percent sign; the normalized modes put every source
 // on one scale so the badges in a row can be read against each other.
+// nativeScaleSuffix marks a native value a reader would otherwise take for a
+// ten-point score. Percent labels and hundred-point scores read as their own
+// scale, so only the five- and four-point ones are marked.
+var nativeScaleSuffix = map[string]string{
+	"letterboxd":    "/5",
+	"allocine":      "/5",
+	"allocinepress": "/5",
+	"rogerebert":    "/4",
+}
+
 func ratingBadgeValue(r provider.Rating, mode string) string {
 	switch mode {
 	case "normalized", "normalizedclean", "normalized100":
 		return formatRatingValue(r.Value, mode)
 	default:
-		return r.Label
+		return r.Label + nativeScaleSuffix[r.Source]
 	}
 }
 
