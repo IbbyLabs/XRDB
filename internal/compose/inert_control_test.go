@@ -81,6 +81,25 @@ func TestSingleRowKeepsTheTopLayout(t *testing.T) {
 	}
 }
 
+func TestEdgeInsetMovesTheRatingStrip(t *testing.T) {
+	ratings := []provider.Rating{
+		{Source: "imdb", Value: 8.4, Label: "8.4"},
+		{Source: "tmdb", Value: 7.9, Label: "7.9"},
+	}
+
+	draw := func(inset int) []byte {
+		cfg := imageconfig.Default()
+		cfg.PosterEdgeOffset = inset
+		img := image.NewNRGBA(image.Rect(0, 0, 500, 750))
+		drawBadgesInPlace(img, ratings, cfg)
+		return img.Pix
+	}
+
+	if bytes.Equal(draw(0), draw(30)) {
+		t.Error("edge inset does not move the rating strip on a poster")
+	}
+}
+
 func TestAnimeGroupingReachesTheGenreList(t *testing.T) {
 	genres := []string{"Animation", "Action", "Drama"}
 
@@ -100,6 +119,22 @@ func TestAnimeGroupingReachesTheGenreList(t *testing.T) {
 	}
 	if bytes.Equal(split, secondary) {
 		t.Error("anime grouping 'next genre' draws the same genre list as 'own badge'")
+	}
+}
+
+func TestGenreBorderWidthReachesTheTileStyle(t *testing.T) {
+	draw := func(width float64) []byte {
+		img := image.NewNRGBA(image.Rect(0, 0, 400, 600))
+		drawGenreBadge(img, []string{"Action"}, "bl", 1, newOccupancy(img.Bounds()), genreBadgeOpts{
+			mode:        "text",
+			style:       "tile",
+			borderWidth: width,
+		})
+		return img.Pix
+	}
+
+	if bytes.Equal(draw(0), draw(4)) {
+		t.Error("genre border width changes nothing on the tile style")
 	}
 }
 

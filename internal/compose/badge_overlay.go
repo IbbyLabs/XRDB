@@ -1326,7 +1326,20 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			c.A = tileA
 			fill = c
 		}
-		drawSoftTile(base, r, radius, tileChrome{fill: fill, shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 70}})
+		// The tile carries no border of its own, so one is drawn only where the
+		// width asks for it.
+		var tileBorder color.NRGBA
+		tileBorderW := 0
+		if opts.borderWidth > 0 {
+			tileBorder = borderTint(color.NRGBA{R: 255, G: 255, B: 255, A: 24})
+			tileBorderW = maxInt(1, int(opts.borderWidth*scale+0.5))
+		}
+		drawSoftTile(base, r, radius, tileChrome{
+			fill:        fill,
+			border:      tileBorder,
+			borderWidth: tileBorderW,
+			shadow:      color.NRGBA{R: 0, G: 0, B: 0, A: 70},
+		})
 		drawLeftStripe()
 		drawText(base, face, tx, ty, color.White, label)
 		return

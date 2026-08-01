@@ -894,6 +894,11 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 	d := ratingStripDimsFor(scale, cfg)
 	accentW, padX, padY, iconSize := d.accentW, d.padX, d.padY, d.iconSize
 	iconGap, badgeGap, rowGap, edgeX, edgeY := d.iconGap, d.badgeGap, d.rowGap, d.edgeX, d.edgeY
+	// The configured edge offset pushes the strip further in from the edge it
+	// sits against, on top of the built-in inset.
+	edgeInset := int(float64(cfg.PosterEdgeOffset)*scale + 0.5)
+	edgeX += edgeInset
+	edgeY += edgeInset
 	if cfg.RatingsAnchored {
 		edgeX, edgeY = anchoredEdges(cfg, edgeX, edgeY)
 	}
