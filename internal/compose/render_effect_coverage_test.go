@@ -449,8 +449,8 @@ func keyMutations() map[string]keyOverride {
 		"iconShape":          {mut: func(c *imageconfig.Config) { c.IconShape = "circle" }},
 		// The rating-badge border only draws when a border colour is set; opacity
 		// tunes that border's alpha, so it needs the colour present to be visible.
-		"ratingBadgeBorderColor":   str(setColor(func(c *imageconfig.Config, v string) { c.RatingBadgeBorderColor = v })),
-		"ratingBadgeBorderOpacity": {pre: func(c *imageconfig.Config) { c.RatingBadgeBorderColor = "#00ffff" }, mut: func(c *imageconfig.Config) { c.RatingBadgeBorderOpacity = 50 }},
+		"ratingBadgeBorderColor":      str(setColor(func(c *imageconfig.Config, v string) { c.RatingBadgeBorderColor = v })),
+		"ratingBadgeBorderOpacity":    {pre: func(c *imageconfig.Config) { c.RatingBadgeBorderColor = "#00ffff" }, mut: func(c *imageconfig.Config) { c.RatingBadgeBorderOpacity = 50 }},
 		"ratingBadgeBorderSourceTint": {mut: func(c *imageconfig.Config) { c.RatingBadgeBorderSourceTint = true }},
 		// The icon outline is a colour + a width; each is inert without the other,
 		// so each key sets its partner as the precondition.

@@ -1339,11 +1339,14 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			fill = c
 		}
 		// The tile carries no border of its own, so one is drawn only where the
-		// width asks for it.
+		// width asks for it. Colour and weight match the shared plate path, so
+		// the same setting reads the same on either style.
 		var tileBorder color.NRGBA
 		tileBorderW := 0
 		if opts.borderWidth > 0 {
-			tileBorder = borderTint(color.NRGBA{R: 255, G: 255, B: 255, A: 24})
+			tileBorder = accentColorFrom(colourFam)
+			tileBorder.A = 150
+			tileBorder = borderTint(tileBorder)
 			tileBorderW = maxInt(1, int(opts.borderWidth*scale+0.5))
 		}
 		drawSoftTile(base, r, radius, tileChrome{

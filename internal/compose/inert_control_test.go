@@ -124,18 +124,39 @@ func TestAnimeGroupingReachesTheGenreList(t *testing.T) {
 }
 
 func TestGenreBorderWidthReachesTheTileStyle(t *testing.T) {
-	draw := func(width float64) []byte {
+	draw := func(style string, width float64) *image.NRGBA {
 		img := image.NewNRGBA(image.Rect(0, 0, 400, 600))
-		drawGenreBadge(img, []string{"Action"}, "bl", 1, newOccupancy(img.Bounds()), genreBadgeOpts{
+		drawGenreBadge(img, []string{"Horror"}, "bl", 1, newOccupancy(img.Bounds()), genreBadgeOpts{
 			mode:        "text",
-			style:       "tile",
+			style:       style,
 			borderWidth: width,
 		})
-		return img.Pix
+		return img
 	}
 
-	if bytes.Equal(draw(0), draw(4)) {
+	if bytes.Equal(draw("tile", 0).Pix, draw("tile", 4).Pix) {
 		t.Error("genre border width changes nothing on the tile style")
+	}
+
+	// A border draws at partial alpha over the plate, so its pixels are a blend
+	// rather than the accent exactly. Count red-dominant pixels instead: the
+	// white border it used to draw is neutral and contributes none.
+	countAccent := func(img *image.NRGBA) int {
+		n := 0
+		b := img.Bounds()
+		for y := b.Min.Y; y < b.Max.Y; y++ {
+			for x := b.Min.X; x < b.Max.X; x++ {
+				c := img.NRGBAAt(x, y)
+				if c.A > 0 && int(c.R) > int(c.G)+40 && int(c.R) > int(c.B)+40 {
+					n++
+				}
+			}
+		}
+		return n
+	}
+	bare, bordered := countAccent(draw("tile", 0)), countAccent(draw("tile", 4))
+	if bordered <= bare {
+		t.Errorf("a border on the tile style adds no pixels in the genre's colour (%d with, %d without)", bordered, bare)
 	}
 }
 
