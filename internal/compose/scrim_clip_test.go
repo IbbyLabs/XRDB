@@ -14,7 +14,7 @@ func scrimPeakRow(t *testing.T, baseH, logoTopY, dstH, scrimSize int) int {
 	for i := range base.Pix {
 		base.Pix[i] = 255
 	}
-	drawScrimBand(base, logoTopY, dstH, scrimSize, 100)
+	drawScrimBand(base, logoTopY, 4, dstH, scrimSize, 100)
 
 	peak, darkest := -1, 255
 	for y := 0; y < baseH; y++ {
@@ -62,5 +62,45 @@ func TestTheScrimPeakStaysOnTheLogoAtAnEdge(t *testing.T) {
 				t.Errorf("darkest row %d, want the logo centre %d (+/-%d)", got, want, c.tolerance)
 			}
 		})
+	}
+}
+
+// A band that darkens the whole width evenly reads as a bar laid over the
+// picture on flat pale artwork. It has to fade out towards the edges.
+func TestTheScrimFadesOutTowardsTheEdges(t *testing.T) {
+	const baseW, baseH, dstW, dstH = 400, 200, 80, 40
+	base := image.NewNRGBA(image.Rect(0, 0, baseW, baseH))
+	for i := range base.Pix {
+		base.Pix[i] = 255
+	}
+	drawScrimBand(base, 80, dstW, dstH, 50, 100)
+
+	row := 80 + dstH/2 // the darkest row, on the logo
+	centre := int(base.NRGBAAt(baseW/2, row).R)
+	edge := int(base.NRGBAAt(2, row).R)
+
+	if centre >= edge {
+		t.Fatalf("want the centre darker than the edge, got centre %d edge %d", centre, edge)
+	}
+	if edge < 250 {
+		t.Errorf("want the far edge left nearly untouched, got %d", edge)
+	}
+}
+
+// Behind the logo itself the shading must stay at full strength, or the thing
+// it exists to make readable loses its backing.
+func TestTheScrimIsFullStrengthBehindTheLogo(t *testing.T) {
+	const baseW, baseH, dstW, dstH = 400, 200, 80, 40
+	base := image.NewNRGBA(image.Rect(0, 0, baseW, baseH))
+	for i := range base.Pix {
+		base.Pix[i] = 255
+	}
+	drawScrimBand(base, 80, dstW, dstH, 50, 100)
+
+	row := 80 + dstH/2
+	centre := int(base.NRGBAAt(baseW/2, row).R)
+	logoEdge := int(base.NRGBAAt(baseW/2-dstW/2, row).R)
+	if logoEdge != centre {
+		t.Errorf("want even shading across the logo, centre %d vs logo edge %d", centre, logoEdge)
 	}
 }

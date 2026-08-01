@@ -267,17 +267,39 @@ func drawBackdropLogoOverlay(base *image.NRGBA, logoData []byte, ratingsH int, o
 	}
 
 	// Vertical gradient scrim behind the logo for legibility over bright areas.
-	drawScrimBand(base, logoTopY, dstH, opts.scrimSize, opts.scrimOpacity)
+	drawScrimBand(base, logoTopY, dstW, dstH, opts.scrimSize, opts.scrimOpacity)
 
 	logoRect := image.Rect(x, logoTopY, x+dstW, logoTopY+dstH)
 	draw.Draw(base, logoRect, scaled, image.Point{}, draw.Over)
+}
+
+// horizontalFalloff is 1 across the logo and eases to 0 at the canvas edges.
+func horizontalFalloff(col, baseW, dstW, pad int) float64 {
+	full := dstW/2 + pad
+	edge := baseW / 2
+	if full >= edge {
+		return 1
+	}
+	dx := col - edge
+	if dx < 0 {
+		dx = -dx
+	}
+	if dx <= full {
+		return 1
+	}
+	t := float64(dx-full) / float64(edge-full)
+	if t > 1 {
+		t = 1
+	}
+	// Cosine ease: no corner where the falloff begins, unlike a linear ramp.
+	return math.Cos(t * math.Pi / 2)
 }
 
 // drawScrimBand shades a band behind the title logo so it stays legible over
 // bright artwork. scrimSize is how far the band reaches past the logo as a
 // percent of the logo's height, scrimPeak its strongest opacity as a percent;
 // zero means the built-in default for either.
-func drawScrimBand(base *image.NRGBA, logoTopY, dstH, scrimSize, scrimPeak int) {
+func drawScrimBand(base *image.NRGBA, logoTopY, dstW, dstH, scrimSize, scrimPeak int) {
 	bounds := base.Bounds()
 	baseW, baseH := bounds.Dx(), bounds.Dy()
 	if scrimSize == 0 {
@@ -310,8 +332,12 @@ func drawScrimBand(base *image.NRGBA, logoTopY, dstH, scrimSize, scrimPeak int) 
 			// the same peak with no turn, and sits above the triangle
 			// everywhere between the edges, so the logo keeps its contrast.
 			t := math.Sin(math.Pi * rel)
-			alpha := uint8(t * scrimMax)
 			for col := 0; col < baseW; col++ {
+				// Vertical falloff alone darkens the full width evenly, which on
+				// flat pale artwork reads as a bar laid over the picture rather
+				// than shading under a logo. Ease it out horizontally too, at
+				// full strength across the logo and gone by the edges.
+				alpha := uint8(t * horizontalFalloff(col, baseW, dstW, scrimPad) * scrimMax)
 				py := bounds.Min.Y + scrimTop + row
 				px := bounds.Min.X + col
 				existing := base.NRGBAAt(px, py)
