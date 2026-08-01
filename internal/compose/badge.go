@@ -426,20 +426,45 @@ func scaleIconToFit(icon image.Image, rect image.Rectangle) (*image.NRGBA, image
 func isBrandColored(icon image.Image) bool {
 	img := toNRGBA(icon)
 	b := img.Bounds()
+	var opaque, colored int
 	for y := b.Min.Y; y < b.Max.Y; y++ {
 		for x := b.Min.X; x < b.Max.X; x++ {
 			c := img.NRGBAAt(x, y)
 			if c.A < 24 {
 				continue
 			}
-			// Anti-aliased edges of a white glyph stay near-white, so allow a
-			// little drift before calling a mark colored.
-			if c.R < 232 || c.G < 232 || c.B < 232 {
-				return true
+			opaque++
+			// Chroma, not brightness. A glyph meant to be recoloured is grey
+			// wherever it is not white, so its channels stay level; a brand mark
+			// carries real colour somewhere. Judging on darkness alone called a
+			// grey mark coloured on its first anti-aliased pixel and left it
+			// untinted.
+			hi := maxU8(c.R, maxU8(c.G, c.B))
+			lo := minU8(c.R, minU8(c.G, c.B))
+			if int(hi)-int(lo) > 30 {
+				colored++
 			}
 		}
 	}
-	return false
+	if opaque == 0 {
+		return false
+	}
+	// A stray coloured pixel is an artefact of the asset, not a brand mark.
+	return colored*100 >= opaque*2
+}
+
+func maxU8(a, b uint8) uint8 {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func minU8(a, b uint8) uint8 {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 // badgeChrome bundles the style/theme-resolved drawing parameters.
