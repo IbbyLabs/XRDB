@@ -2,6 +2,32 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.50.0](https://github.com/IbbyLabs/XRDB/compare/v3.49.5...v3.50.0) (2026-08-01)
+
+
+### Added
+
+* **badges:** let the genre pill border take the accent colour ([12de1c3](https://github.com/IbbyLabs/XRDB/commit/12de1c37037a22c3908c64c9f7ba5073bea4402b))
+* **badges:** outline the age rating plain style (FR-133) ([b8dd5cc](https://github.com/IbbyLabs/XRDB/commit/b8dd5cc81e58379ad8973c9083b28a53b8e8d608))
+
+
+### Fixed
+
+* **badges:** draw the icon plate border around the shape (BUG-177) ([a41ff16](https://github.com/IbbyLabs/XRDB/commit/a41ff16df0ba7160ab7c47d2d3df0871c28b9681))
+* **badges:** make glass selectable and honour opacity (BUG-178) ([bb39b07](https://github.com/IbbyLabs/XRDB/commit/bb39b071abe7ef4c502823e250129780af4f99ac))
+* **badges:** tint a grey source mark rather than draw it as-is (BUG-176) ([3f6df19](https://github.com/IbbyLabs/XRDB/commit/3f6df19749d9492ef5cdb2fdf6af9f5e621439bf))
+* **compose:** make badge fill/border/outline exposure consistent ([df8a2bc](https://github.com/IbbyLabs/XRDB/commit/df8a2bcc1cba19703af3c0ebaffd8485f08a6dd1))
+* **configurator:** name the genre colour and stripe controls apart ([5f3b1d9](https://github.com/IbbyLabs/XRDB/commit/5f3b1d93fd139d94a5823701e7b136831af6d87a))
+* **configurator:** say what the artwork URL is for ([1501fc2](https://github.com/IbbyLabs/XRDB/commit/1501fc2aac66bba1fec1f1c644fa77263d80971f))
+* **configurator:** show the genre accent colour on the pill style too ([59740f8](https://github.com/IbbyLabs/XRDB/commit/59740f86dcaae1fb2b2c9a6e4ed64014e445522c))
+* **logo:** check the surface being drawn for a baked-in title ([b81e86d](https://github.com/IbbyLabs/XRDB/commit/b81e86da0b5426634d768fdc0f07bb1a99e1fd75))
+
+
+### Performance
+
+* **ratings:** keep a title's ratings for a day, not six hours ([a992dcb](https://github.com/IbbyLabs/XRDB/commit/a992dcb1b6541c7d2e61d43f2e08b3850715cb5a))
+* **ratings:** refuse a paced source rather than queue past the timeout ([368086d](https://github.com/IbbyLabs/XRDB/commit/368086d3fc8d2b7d9415ebfecce7f916b00499a1))
+
 ## [3.49.5](https://github.com/IbbyLabs/XRDB/compare/v3.49.4...v3.49.5) (2026-08-01)
 
 
