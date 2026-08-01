@@ -425,16 +425,19 @@ func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64, occ *o
 // or quality badges (TR).
 // ageRatingOpts carries the age-rating badge styling. Zero value = default.
 type ageRatingOpts struct {
-	style     string // "" | glass | plain | tile
-	tileColor string // "#RRGGBB" for the tile style
-	offsetX   int
-	offsetY   int
-	scale     int // percent; 0 = 100
+	style        string // "" | glass | plain | tile
+	tileColor    string // "#RRGGBB" for the tile style
+	offsetX      int
+	offsetY      int
+	scale        int    // percent; 0 = 100
+	outlineColor string // "#RRGGBB" outline for the plain style; "" = drop shadow
+	outlineWidth int    // px outline width for the plain style; 0 = 1
 }
 
 func ageOptsFromConfig(cfg imageconfig.Config) ageRatingOpts {
 	return ageRatingOpts{style: cfg.AgeRatingBadgeStyle, tileColor: cfg.AgeRatingTileColor,
-		offsetX: cfg.AgeRatingOffsetX, offsetY: cfg.AgeRatingOffsetY, scale: cfg.AgeRatingScale}
+		offsetX: cfg.AgeRatingOffsetX, offsetY: cfg.AgeRatingOffsetY, scale: cfg.AgeRatingScale,
+		outlineColor: cfg.NoBackgroundBadgeOutlineColor, outlineWidth: cfg.NoBackgroundBadgeOutlineWidth}
 }
 
 func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale float64, occ *occupancy, opts ageRatingOpts) {
@@ -504,6 +507,16 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 	r = r.Add(image.Pt(opts.offsetX, opts.offsetY))
 	tx, ty := r.Min.X+padX, r.Min.Y+padY+ascent
 	if opts.style == "plain" {
+		// The plain style answers the same outline controls the other plain
+		// badges do. Without one it keeps its drop shadow.
+		if c, err := parseHexColor(opts.outlineColor); opts.outlineColor != "" && err == nil {
+			w := opts.outlineWidth
+			if w <= 0 {
+				w = 1
+			}
+			drawLabelOutlined(base, face, tx, ty, color.White, c, maxInt(1, s(float64(w))), false, rating)
+			return
+		}
 		drawText(base, face, tx+maxInt(1, s(1)), ty+maxInt(1, s(1)), color.NRGBA{R: 0, G: 0, B: 0, A: 180}, rating)
 		drawText(base, face, tx, ty, color.White, rating)
 		return

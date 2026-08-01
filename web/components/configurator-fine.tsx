@@ -677,7 +677,7 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
         </p>
       </div>
       <NumField id={`${uid}-genre-scale`} label="Scale (%)" value={config.genreBadgeScale}
-        onChange={v => onUpdate('genreBadgeScale', v)} min={70} max={200} step={5} />
+        onChange={v => onUpdate('genreBadgeScale', v)} min={70} max={300} step={5} />
       <div className="numfield-pair">
         <NumField id={`${uid}-genre-ox`} label="Offset X" value={config.genreBadgeOffsetX}
           onChange={v => onUpdate('genreBadgeOffsetX', v)} min={-320} max={320} zeroIsDefault={false} />

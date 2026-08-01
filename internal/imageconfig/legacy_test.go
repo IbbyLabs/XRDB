@@ -210,8 +210,8 @@ func TestGenreBadgeValidationClampsAndRejects(t *testing.T) {
 	if cfg.GenreBadgeMode != "" {
 		t.Errorf("invalid mode accepted: %q", cfg.GenreBadgeMode)
 	}
-	if cfg.GenreBadgeScale != 200 {
-		t.Errorf("scale not clamped to 200: %d", cfg.GenreBadgeScale)
+	if cfg.GenreBadgeScale != 300 {
+		t.Errorf("scale not clamped to 300: %d", cfg.GenreBadgeScale)
 	}
 	if cfg.GenreBadgeBackgroundOpacity != 100 {
 		t.Errorf("opacity not clamped to 100: %d", cfg.GenreBadgeBackgroundOpacity)

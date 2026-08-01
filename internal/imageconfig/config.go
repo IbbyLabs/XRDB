@@ -559,7 +559,7 @@ type GenreBadgeConfig struct {
 	GenreBadgeAnimeGrouping     string  `json:"genreBadgeAnimeGrouping,omitempty"`     // split | animation | secondary; "" = split
 	GenreBadgeMode              string  `json:"genreBadgeMode,omitempty"`              // off | text | icon | both
 	GenreBadgeStyle             string  `json:"genreBadgeStyle,omitempty"`             // glass | square | plain | clean | tile
-	GenreBadgeScale             int     `json:"genreBadgeScale,omitempty"`             // percent 70-200; 0 = 100
+	GenreBadgeScale             int     `json:"genreBadgeScale,omitempty"`             // percent 70-300; 0 = 100
 	GenreBadgeOffsetX           int     `json:"genreBadgeOffsetX,omitempty"`           // px nudge from the resolved corner
 	GenreBadgeOffsetY           int     `json:"genreBadgeOffsetY,omitempty"`           //
 	GenreBadgeBorderWidth       float64 `json:"genreBadgeBorderWidth,omitempty"`       // px; 0 = default hairline, <0 = off
@@ -1794,7 +1794,7 @@ func parseGenre(cfg *Config, r *raw) {
 		}
 	}
 	if r.GenreBadgeScale != nil && *r.GenreBadgeScale != 0 {
-		cfg.GenreBadgeScale = clampInt(*r.GenreBadgeScale, 70, 200)
+		cfg.GenreBadgeScale = clampInt(*r.GenreBadgeScale, 70, 300)
 	}
 	if r.GenreBadgeOffsetX != nil {
 		cfg.GenreBadgeOffsetX = clampInt(*r.GenreBadgeOffsetX, -320, 320)
