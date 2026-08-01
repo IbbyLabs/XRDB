@@ -11,12 +11,12 @@ import (
 // it. A full queue must give up quickly instead.
 func TestAFullQueueShedsInsteadOfWaitingForever(t *testing.T) {
 	l := newConcurrencyLimiter(1)
-	if !l.acquire(context.Background()) {
+	if !l.acquire(context.Background(), 1) {
 		t.Fatal("first acquire should take the only slot")
 	}
 
 	start := time.Now()
-	if l.acquireWithin(context.Background(), 80*time.Millisecond) {
+	if l.acquireWithin(context.Background(), 80*time.Millisecond, 1) {
 		t.Fatal("acquired a slot that was already held")
 	}
 	waited := time.Since(start)
@@ -25,8 +25,8 @@ func TestAFullQueueShedsInsteadOfWaitingForever(t *testing.T) {
 	}
 
 	// Freeing the slot lets the next caller straight through.
-	l.release()
-	if !l.acquireWithin(context.Background(), time.Second) {
+	l.release(1)
+	if !l.acquireWithin(context.Background(), time.Second, 1) {
 		t.Error("a freed slot was not handed to the next caller")
 	}
 }
@@ -36,10 +36,10 @@ func TestZeroWaitKeepsTheUnboundedBehaviour(t *testing.T) {
 	l := newConcurrencyLimiter(1)
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Millisecond)
 	defer cancel()
-	if !l.acquire(context.Background()) {
+	if !l.acquire(context.Background(), 1) {
 		t.Fatal("first acquire failed")
 	}
-	if l.acquireWithin(ctx, 0) {
+	if l.acquireWithin(ctx, 0, 1) {
 		t.Error("acquired a held slot")
 	}
 	if ctx.Err() == nil {

@@ -67,7 +67,9 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	// are not captured by a generic wildcard.
 	renderHandler := func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		if r.Method != http.MethodGet {
+		// HEAD is how a client checks a poster exists. net/http discards the body
+		// for it, so the same path serves both.
+		if r.Method != http.MethodGet && r.Method != http.MethodHead {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			ms.Record(r.URL.Path, http.StatusMethodNotAllowed, latMs(start))
 			return
@@ -142,6 +144,12 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			}
 		}
 
+		// A capped route renders smaller than the profile asked for, so the cap
+		// is applied before the key is built rather than at encode time.
+		if cap := sizeCapFrom(r.Context()); cap != "" {
+			imgCfg.Size = imageconfig.ClampSize(imgCfg.Size, cap)
+		}
+
 		// Include a fingerprint of configParam when no profile was loaded so
 		// different inline configs produce different cache keys without allowing
 		// attackers to poison the cache with unbounded unique raw strings.
@@ -185,10 +193,13 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			placeholder = true
 		}
 		if !fromCache && !placeholder {
+			// A render costs the budget in proportion to its output size, so a
+			// burst of 4K posters cannot take every slot at the price of one.
+			weight := renderWeight(imgCfg.Size)
 			// Only real renders are gated; cache hits above pass freely, so a
 			// warm catalogue reload isn't throttled. If the client hangs up or
 			// the request times out while queued, drop it without spending a slot.
-			if !renderLimiter.acquireWithin(r.Context(), cfg.RenderQueueWait) {
+			if !renderLimiter.acquireWithin(r.Context(), cfg.RenderQueueWait, weight) {
 				// Either the caller gave up, or the queue is deeper than the
 				// render throughput can clear. Turning the request away keeps the
 				// wait bounded for everyone behind it; a caller that has cached
@@ -254,7 +265,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			}
 			// Free the slot before writing to the client so a slow consumer
 			// doesn't hold a render slot for the duration of the download.
-			renderLimiter.release()
+			renderLimiter.release(weight)
 		}
 		if contentType == "" {
 			// Cache entries carry no format marker, and an entry written by an
@@ -367,7 +378,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	// GET /stremio/manifest.json
 	// GET /stremio/meta/{type}/{id}.json
 	registerStremioAddon(mux, cfg, store, trust)
-	registerRPDBCompat(mux)
+	registerRPDBCompat(mux, imageconfig.ParseSize(cfg.RPDBMaxSize))
 	registerMigrateRoutes(mux, cfg)
 	registerFolderWriterRoutes(mux, cfg, pipeline, store)
 

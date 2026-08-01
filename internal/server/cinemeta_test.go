@@ -9,8 +9,8 @@ import (
 
 func TestStripImdbRatingRemovesBothPlaces(t *testing.T) {
 	meta := map[string]any{
-		"name":       "Test",
-		"imdbRating": "9.3",
+		"name":        "Test",
+		"imdbRating":  "9.3",
 		"description": "keep me",
 		"links": []any{
 			map[string]any{"category": "imdb", "name": "9.3", "url": "https://imdb.com/x"},

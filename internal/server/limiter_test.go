@@ -19,7 +19,7 @@ func TestConcurrencyLimiterBoundsInFlight(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if !l.acquire(context.Background()) {
+			if !l.acquire(context.Background(), 1) {
 				t.Errorf("acquire returned false with a background context")
 				return
 			}
@@ -32,7 +32,7 @@ func TestConcurrencyLimiterBoundsInFlight(t *testing.T) {
 			}
 			time.Sleep(time.Millisecond)
 			atomic.AddInt32(&inFlight, -1)
-			l.release()
+			l.release(1)
 		}()
 	}
 	wg.Wait()
@@ -44,16 +44,16 @@ func TestConcurrencyLimiterBoundsInFlight(t *testing.T) {
 
 func TestConcurrencyLimiterAbortsWhenSaturated(t *testing.T) {
 	l := newConcurrencyLimiter(1)
-	if !l.acquire(context.Background()) {
+	if !l.acquire(context.Background(), 1) {
 		t.Fatal("first acquire should succeed")
 	}
 	// The only slot is taken; a done context must abort rather than block.
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if l.acquire(ctx) {
+	if l.acquire(ctx, 1) {
 		t.Fatal("acquire should return false when saturated and ctx is done")
 	}
-	l.release()
+	l.release(1)
 }
 
 func TestNilConcurrencyLimiterIsUnbounded(t *testing.T) {
@@ -61,8 +61,8 @@ func TestNilConcurrencyLimiterIsUnbounded(t *testing.T) {
 	if got := newConcurrencyLimiter(0); got != nil {
 		t.Fatalf("newConcurrencyLimiter(0) = %v, want nil", got)
 	}
-	if !l.acquire(context.Background()) {
+	if !l.acquire(context.Background(), 1) {
 		t.Fatal("nil limiter acquire should always return true")
 	}
-	l.release() // must not panic
+	l.release(1) // must not panic
 }

@@ -3,7 +3,9 @@ package server
 import (
 	"net/http"
 	"net/url"
+
 	"strings"
+	"xrdb_rewrite/internal/imageconfig"
 
 	"xrdb_rewrite/internal/profile"
 )
@@ -74,13 +76,15 @@ func rpdbMediaID(source, raw string) (id string, contentType string, ok bool) {
 // registerRPDBCompat mounts the RPDB-shaped routes. A matching request is
 // rewritten into the app's own render URL and served through the same mux, so
 // there is one render path rather than two that can drift apart.
-func registerRPDBCompat(mux *http.ServeMux) {
+func registerRPDBCompat(mux *http.ServeMux, maxSize imageconfig.MediaSize) {
 
 	// source is a literal in each pattern rather than a wildcard, so it is
 	// passed in rather than read back off the request.
 	handlerFor := func(source string) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			if r.Method != http.MethodGet {
+			// HEAD is how a client checks a poster exists before fetching it.
+			// Answering 405 makes an ordinary existence check look like a fault.
+			if r.Method != http.MethodGet && r.Method != http.MethodHead {
 				http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 				return
 			}
@@ -112,7 +116,11 @@ func registerRPDBCompat(mux *http.ServeMux) {
 				}
 			}
 
-			rewritten := r.Clone(r.Context())
+			ctx := r.Context()
+			if maxSize != "" {
+				ctx = withSizeCap(ctx, maxSize)
+			}
+			rewritten := r.Clone(ctx)
 			rewritten.URL = &url.URL{Path: "/" + mediaType + "/" + id, RawQuery: q.Encode()}
 			rewritten.RequestURI = ""
 			mux.ServeHTTP(w, rewritten)

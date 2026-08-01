@@ -94,6 +94,11 @@ type Config struct {
 	DBPath    string
 	CacheDir  string
 	CacheTTL  time.Duration
+	// RPDBMaxSize caps the output size on the RPDB compatibility route. Stremio
+	// caps a meta poster at 100KB, and a 4K one is ten times that, so the route
+	// caps what the profile behind it asked for. Empty caps nothing.
+	RPDBMaxSize string
+
 	// NotFoundTTL is how long a render that produced no artwork is remembered,
 	// so a burst over one title does not repeat the full provider sweep per
 	// request. Zero disables it.
@@ -309,6 +314,10 @@ func Load() Config {
 	if degradedCacheTTL > cacheTTL {
 		degradedCacheTTL = cacheTTL
 	}
+	rpdbMaxSize := "small"
+	if raw := os.Getenv("XRDB_RPDB_MAX_SIZE"); raw != "" {
+		rpdbMaxSize = strings.ToLower(strings.TrimSpace(raw))
+	}
 	// Short by design: it collapses a burst without outliving the outage behind
 	// it, so artwork appearing upstream is still picked up within the minute.
 	notFoundTTL := 60 * time.Second
@@ -416,6 +425,7 @@ func Load() Config {
 		CacheTTL:              cacheTTL,
 		DegradedCacheTTL:      degradedCacheTTL,
 		NotFoundTTL:           notFoundTTL,
+		RPDBMaxSize:           rpdbMaxSize,
 		CacheMaxEntries:       cacheMaxEntries,
 		CacheDiskMaxFiles:     cacheDiskMaxFiles,
 		CacheDiskMaxBytes:     cacheDiskMaxBytes,
