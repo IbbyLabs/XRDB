@@ -845,17 +845,60 @@ func resolveBadgeScale(cfg imageconfig.Config, frameW, frameH int, ratings []pro
 // short surface readable instead of merely fitted.
 const legibleBadgeScale = 0.5
 
-// rowWidthAt measures the whole strip laid out on one row at scale.
-func rowWidthAt(scale float64, ratings []provider.Rating, cfg imageconfig.Config) int {
-	d := ratingStripDimsFor(scale, cfg)
-	total := 0
-	for i, r := range ratings {
-		if i > 0 {
-			total += d.badgeGap
-		}
-		total += widestBadgeAt(scale, []provider.Rating{r}, cfg)
+// stripRowsAt reports how many rows the strip wraps into at scale, mirroring the
+// greedy wrap the draw performs. A single-row layout never wraps.
+func stripRowsAt(scale float64, ratings []provider.Rating, cfg imageconfig.Config, availW int) int {
+	if cfg.BottomRatingsRow {
+		return 1
 	}
-	return total
+	d := ratingStripDimsFor(scale, cfg)
+	rowW, rows := 0, 1
+	for _, r := range ratings {
+		bw := widestBadgeAt(scale, []provider.Rating{r}, cfg)
+		need := bw
+		if rowW > 0 {
+			need += d.badgeGap
+		}
+		if rowW > 0 && rowW+need > availW {
+			rows++
+			rowW = bw
+			continue
+		}
+		rowW += need
+	}
+	return rows
+}
+
+// stripFitsAt reports whether the whole strip sits inside the frame at scale,
+// laid out the way it will actually be drawn. A wrapping layout is measured
+// across its rows rather than as one line, or badges are dropped that a second
+// row would have held.
+func stripFitsAt(scale float64, ratings []provider.Rating, cfg imageconfig.Config, frameW, frameH int) bool {
+	d := ratingStripDimsFor(scale, cfg)
+	availW := frameW - d.edgeX*2
+	availH := frameH - d.edgeY*2
+	if availW <= 0 || availH <= 0 {
+		return false
+	}
+	// One badge wider than the frame never fits, wrapped or not.
+	if widestBadgeAt(scale, ratings, cfg) > availW {
+		return false
+	}
+	rows := stripRowsAt(scale, ratings, cfg, availW)
+	if cfg.BottomRatingsRow {
+		total := 0
+		for i, r := range ratings {
+			if i > 0 {
+				total += d.badgeGap
+			}
+			total += widestBadgeAt(scale, []provider.Rating{r}, cfg)
+		}
+		if total > availW {
+			return false
+		}
+	}
+	innerH := badgeHeightAt(scale, cfg)
+	return rows*innerH+(rows-1)*d.rowGap <= availH
 }
 
 // fitBadgesToFrame decides how much of the strip to draw and at what size.
@@ -863,8 +906,8 @@ func rowWidthAt(scale float64, ratings []provider.Rating, cfg imageconfig.Config
 // Fitting by shrinking alone bottoms out at an unreadable scale on a wide, short
 // surface, where the height cap binds and taking badges away never buys height.
 // So below the legibility floor the type is held there and badges are taken away
-// to fit the width instead, which is how v2 fitted the same row. The last badge
-// is never dropped, and a row that cannot fit even at a readable size falls back
+// until what remains fits, which is how v2 fitted the same row. The last badge is
+// never dropped, and a strip that cannot fit even at a readable size falls back
 // to shrinking, since something legible-but-clipped is worse than something small.
 func fitBadgesToFrame(cfg imageconfig.Config, frameW, frameH int, ratings []provider.Rating) ([]provider.Rating, float64) {
 	scale := resolveBadgeScale(cfg, frameW, frameH, ratings)
@@ -873,11 +916,10 @@ func fitBadgesToFrame(cfg imageconfig.Config, frameW, frameH int, ratings []prov
 	}
 
 	shown := ratings
-	availW := frameW - ratingStripDimsFor(legibleBadgeScale, cfg).edgeX*2
-	for len(shown) > 1 && rowWidthAt(legibleBadgeScale, shown, cfg) > availW {
+	for len(shown) > 1 && !stripFitsAt(legibleBadgeScale, shown, cfg, frameW, frameH) {
 		shown = shown[:len(shown)-1]
 	}
-	if rowWidthAt(legibleBadgeScale, shown, cfg) > availW {
+	if !stripFitsAt(legibleBadgeScale, shown, cfg, frameW, frameH) {
 		return ratings, scale
 	}
 	return shown, legibleBadgeScale

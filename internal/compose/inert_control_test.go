@@ -499,3 +499,56 @@ func TestBadgesDropRatherThanShrinkPastLegibility(t *testing.T) {
 		t.Errorf("dropped badges on a frame with room for all six: kept %d", len(all))
 	}
 }
+
+// The strip wraps unless BottomRatingsRow forces one line, so the fit has to be
+// measured across those rows. Measured as a single line it drops badges a second
+// row would have held; measured properly the wrap absorbs them and the scale is
+// what rises instead.
+func TestBadgeTrimMeasuresTheWrappedLayout(t *testing.T) {
+	ensureFaces()
+	six := []provider.Rating{
+		{Source: "imdb", Label: "8.4"}, {Source: "tmdb", Label: "7.9"},
+		{Source: "rt", Label: "91%"}, {Source: "metacritic", Label: "74"},
+		{Source: "letterboxd", Label: "4.1"}, {Source: "trakt", Label: "8.0"},
+	}
+	cfg := imageconfig.Default()
+	cfg.Ratings = []string{"imdb", "tmdb", "rt", "metacritic", "letterboxd", "trakt"}
+
+	// The logo surface from the report: wide, short, and the case where fitting
+	// by shrinking alone bottomed out far below readable.
+	const w, h = 640, 120
+	if raw := resolveBadgeScale(cfg, w, h, six); raw >= legibleBadgeScale {
+		t.Fatalf("fixture no longer constrained: raw scale %.2f already clears the floor", raw)
+	}
+	shown, scale := fitBadgesToFrame(cfg, w, h, six)
+	if scale < legibleBadgeScale {
+		t.Errorf("strip drawn at %.2f, below the %.2f legibility floor", scale, legibleBadgeScale)
+	}
+	if len(shown) != len(six) {
+		t.Errorf("dropped %d badges the wrap had room for", len(six)-len(shown))
+	}
+}
+
+func TestStripFitsAtMeasuresRows(t *testing.T) {
+	ensureFaces()
+	six := []provider.Rating{
+		{Source: "imdb", Label: "8.4"}, {Source: "tmdb", Label: "7.9"},
+		{Source: "rt", Label: "91%"}, {Source: "metacritic", Label: "74"},
+		{Source: "letterboxd", Label: "4.1"}, {Source: "trakt", Label: "8.0"},
+	}
+	cfg := imageconfig.Default()
+	cfg.Ratings = []string{"imdb", "tmdb", "rt", "metacritic", "letterboxd", "trakt"}
+
+	// Narrow enough to force several rows, so the row count is what decides.
+	narrow := 260
+	rows := stripRowsAt(legibleBadgeScale, six, cfg, narrow)
+	if rows < 2 {
+		t.Fatalf("fixture no longer wraps: %d row(s) at width %d", rows, narrow)
+	}
+	if !stripFitsAt(legibleBadgeScale, six, cfg, narrow+40, 900) {
+		t.Error("a tall frame with room for every row was reported as not fitting")
+	}
+	if stripFitsAt(legibleBadgeScale, six, cfg, narrow+40, 30) {
+		t.Error("a frame far too short for those rows was reported as fitting")
+	}
+}
