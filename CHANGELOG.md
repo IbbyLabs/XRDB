@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.50.2](https://github.com/IbbyLabs/XRDB/compare/v3.50.1...v3.50.2) (2026-08-01)
+
+
+### Fixed
+
+* **badges:** colour the genre label and plate border by family (BUG-185) ([6dcd197](https://github.com/IbbyLabs/XRDB/commit/6dcd197012a39621526fb01c91ad7c6c18cb2856))
+* **badges:** match the tile border to the shared plate (BUG-184) ([21f95a0](https://github.com/IbbyLabs/XRDB/commit/21f95a065734cf9d2837d524555d0e5f0e1c0797))
+
 ## [3.50.1](https://github.com/IbbyLabs/XRDB/compare/v3.50.0...v3.50.1) (2026-08-01)
 
 
