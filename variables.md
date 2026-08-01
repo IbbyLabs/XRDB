@@ -91,6 +91,23 @@ on disk. See [docs/setup/folder-writing.md](docs/setup/folder-writing.md).
 A title is only written when a `.nfo` beside it carries an IMDb or TMDB id.
 Anything else is reported and skipped rather than guessed at.
 
+## MDBList daily allowance
+
+MDBList meters by the day, not by the second. The allowance goes by plan —
+1,000/day free, up to 250,000 on the top tier — and every response reports what
+is left of it. XRDB reads those headers and paces itself to spend
+what is left evenly over the rest of the day, holding a reserve back so an
+unusual burst — a cache invalidation, a catalogue crawl — does not finish the
+day's budget. Short bursts still go straight out; only a sustained flood is
+paced. Once the reserve is reached the rate drops to a floor of 0.2/s rather
+than stopping.
+
+| Variable | Default | Description |
+|---|---|---|
+| `XRDB_MDBLIST_RESERVE_PCT` | `25` | Percentage of the daily allowance held back as headroom. On a 100,000/day plan that keeps 25,000 spare. |
+| `XRDB_MDBLIST_MAX_RPS` | `5` | Ceiling on the paced rate. Self-imposed rather than published: MDBList documents a daily allowance and no per-second rate, but its edge protection answers a fast burst with a 429. |
+| `XRDB_MDBLIST_BURST` | `30` | How many requests may go out at once before pacing applies, so a catalogue page of a few dozen titles is not spread over minutes. |
+
 ## Cache tuning
 
 | Variable | Default | Description |

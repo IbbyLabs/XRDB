@@ -64,10 +64,13 @@ type RateLimit struct {
 //     path, so it is held to roughly one request a second.
 //   - AniList publishes 90 requests/minute but drops to 30 in degraded
 //     windows, so it is paced for the degraded number rather than the happy one.
+//
+// MDBList carries no interval because it meters by the day: budgetGovernor
+// paces it from the allowance its responses report.
 var rateLimits = map[string]RateLimit{
 	"mal":     {MinInterval: time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
 	"anilist": {MinInterval: 2 * time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
-	"mdblist": {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
+	"mdblist": {MaxRetries: 3, MaxRetryWait: renderRetryBudget},
 	"trakt":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
 	"simkl":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
 	"kitsu":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
@@ -131,7 +134,10 @@ type throttledTransport struct {
 	source string
 	policy RateLimit
 	pacer  *pacer
-	logger *slog.Logger
+	// governor is set for sources that meter by the day and report what is
+	// left of the allowance on every response.
+	governor *budgetGovernor
+	logger   *slog.Logger
 }
 
 func (t *throttledTransport) log() *slog.Logger {
@@ -158,6 +164,9 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 		if err := t.pacer.wait(req.Context().Done()); err != nil {
 			return nil, err
 		}
+		if err := t.governor.wait(req.Context().Done()); err != nil {
+			return nil, err
+		}
 
 		attemptReq := req
 		if attempt > 0 && req.GetBody != nil {
@@ -173,6 +182,7 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 		if err != nil {
 			return nil, err
 		}
+		t.governor.observe(req.Context(), resp.Header)
 		if !isThrottleStatus(resp.StatusCode) {
 			return resp, nil
 		}
@@ -306,12 +316,13 @@ func drain(resp *http.Response) {
 // the pacing and retry policy for that source.
 func newHTTPClient(source string, timeout time.Duration) *http.Client {
 	policy := rateLimitFor(source)
-	return &http.Client{
-		Timeout: timeout,
-		Transport: &throttledTransport{
-			source: source,
-			policy: policy,
-			pacer:  &pacer{interval: policy.MinInterval},
-		},
+	transport := &throttledTransport{
+		source: source,
+		policy: policy,
+		pacer:  &pacer{interval: policy.MinInterval},
 	}
+	if source == "mdblist" {
+		transport.governor = newBudgetGovernor(source)
+	}
+	return &http.Client{Timeout: timeout, Transport: transport}
 }
