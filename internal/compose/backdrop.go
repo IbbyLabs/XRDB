@@ -267,7 +267,10 @@ func drawBackdropLogoOverlay(base *image.NRGBA, logoData []byte, ratingsH int, o
 	}
 
 	// Vertical gradient scrim behind the logo for legibility over bright areas.
-	drawScrimBand(base, logoTopY, dstW, dstH, opts.scrimSize, opts.scrimOpacity)
+	// The shadow follows the logo's own alpha, so only the glyphs cast anything.
+	// A box-derived scrim darkened the empty space in a wordmark too, which read
+	// as a shadow cast by an invisible rectangle.
+	drawGlyphShadow(base, scaled, x, logoTopY, opts.scrimSize, opts.scrimOpacity)
 
 	logoRect := image.Rect(x, logoTopY, x+dstW, logoTopY+dstH)
 	draw.Draw(base, logoRect, scaled, image.Point{}, draw.Over)
