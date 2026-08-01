@@ -18,6 +18,12 @@ import (
 // for another fetch of the same title.
 const DefaultRatingsCacheTTL = 6 * time.Hour
 
+// PartialRatingsCacheTTL is how long an answer stands when it carries fewer
+// sources than the same title carried before. A metered source that has spent
+// its allowance drops sources without failing, so the thin answer is cached
+// briefly and re-asked rather than held for the full term.
+const PartialRatingsCacheTTL = 10 * time.Minute
+
 // ratingsCacheMax bounds the number of remembered answers.
 const ratingsCacheMax = 20_000
 
@@ -48,9 +54,10 @@ type ratingsEntry struct {
 }
 
 type ratingsCall struct {
-	done chan struct{}
-	meta *provider.MediaMeta
-	err  error
+	done     chan struct{}
+	meta     *provider.MediaMeta
+	complete bool
+	err      error
 }
 
 func newRatingsCache(ttl time.Duration) *ratingsCache {
@@ -68,9 +75,14 @@ func newRatingsCache(ttl time.Duration) *ratingsCache {
 // Only successful answers carrying ratings are remembered: a failure is the
 // case the health tracker's fallback exists for, and caching an empty answer
 // would hold a source's outage past its end.
-func (c *ratingsCache) do(ctx context.Context, key string, fetch func() (*provider.MediaMeta, error)) (*provider.MediaMeta, error) {
+//
+// fetch reports whether the answer is complete. An incomplete one is still
+// remembered, because re-asking on every render is what exhausts the allowance
+// in the first place, but it takes the shorter term.
+func (c *ratingsCache) do(ctx context.Context, key string, fetch func() (*provider.MediaMeta, bool, error)) (*provider.MediaMeta, error) {
 	if c == nil {
-		return fetch()
+		meta, _, err := fetch()
+		return meta, err
 	}
 
 	c.mu.Lock()
@@ -91,7 +103,7 @@ func (c *ratingsCache) do(ctx context.Context, key string, fetch func() (*provid
 	c.inflight[key] = call
 	c.mu.Unlock()
 
-	call.meta, call.err = fetch()
+	call.meta, call.complete, call.err = fetch()
 
 	c.mu.Lock()
 	delete(c.inflight, key)
@@ -99,7 +111,11 @@ func (c *ratingsCache) do(ctx context.Context, key string, fetch func() (*provid
 		if len(c.entries) >= ratingsCacheMax {
 			c.evictLocked()
 		}
-		c.entries[key] = ratingsEntry{Meta: call.meta, ExpiresAt: time.Now().Add(c.ttl)}
+		ttl := c.ttl
+		if !call.complete && PartialRatingsCacheTTL < ttl {
+			ttl = PartialRatingsCacheTTL
+		}
+		c.entries[key] = ratingsEntry{Meta: call.meta, ExpiresAt: time.Now().Add(ttl)}
 	}
 	c.mu.Unlock()
 

@@ -456,6 +456,21 @@ func (p *Pipeline) Health() *provider.HealthTracker { return p.health }
 // what a scraped source produces the day its markup changes; treating that as a
 // real answer is what silently erased a badge from every render. Both fall back
 // to the previous good answer for the same title when one is remembered.
+// answerKeptItsSources reports whether an answer carries at least as many
+// ratings as the same title carried last time. A source metered by the day
+// stops filling fields rather than failing once its allowance is spent, so a
+// thinner answer than before is the shape that outage takes.
+func (p *Pipeline) answerKeptItsSources(source, key string, meta *provider.MediaMeta) bool {
+	if p.health == nil || meta == nil {
+		return true
+	}
+	prev, ok := p.health.LastGood(source, key)
+	if !ok || prev == nil {
+		return true
+	}
+	return len(meta.Ratings) >= len(prev.Ratings)
+}
+
 func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Provider, req Request, artwork *provider.MediaMeta) (*provider.MediaMeta, error) {
 	// A render carrying the owner's own credential for this source has its own
 	// upstream allowance, so the shared key's cooldown does not apply to it. This
@@ -472,8 +487,9 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 		return nil, fmt.Errorf("%s: rate limited, cooling off: %w", prov.Name(), provider.ErrRateLimited)
 	}
 	cacheKey := provider.GoodKey(prov.Name(), req.ContentType, req.MediaID)
-	meta, err := p.ratings.do(ctx, cacheKey, func() (*provider.MediaMeta, error) {
-		return p.fetchRatings(ctx, prov, req, artwork)
+	meta, err := p.ratings.do(ctx, cacheKey, func() (*provider.MediaMeta, bool, error) {
+		m, ferr := p.fetchRatings(ctx, prov, req, artwork)
+		return m, p.answerKeptItsSources(prov.Name(), cacheKey, m), ferr
 	})
 	if p.health == nil {
 		return meta, err
