@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.49.3](https://github.com/IbbyLabs/XRDB/compare/v3.49.2...v3.49.3) (2026-08-01)
+
+
+### Documentation
+
+* **render:** trim the renderVersion note to the fact ([f939794](https://github.com/IbbyLabs/XRDB/commit/f939794c4b2d2c089caf745f68df298dc44bec82))
+
 ## [3.49.2](https://github.com/IbbyLabs/XRDB/compare/v3.49.1...v3.49.2) (2026-08-01)
 
 
