@@ -2,6 +2,21 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.52.0](https://github.com/IbbyLabs/XRDB/compare/v3.51.0...v3.52.0) (2026-08-01)
+
+
+### Added
+
+* **badges:** add a rating badge border width control (FR-140) ([1f5007a](https://github.com/IbbyLabs/XRDB/commit/1f5007a8c119b39e50068d50094f65c01f9e101a))
+* **badges:** drop badges rather than shrink past legibility (FR-136) ([e4270b0](https://github.com/IbbyLabs/XRDB/commit/e4270b06a24d3c7e3e2a986b40a366cd82121a5d))
+* **badges:** fill the icon plate with the source's colour (FR-135) ([4576dee](https://github.com/IbbyLabs/XRDB/commit/4576dee03d3eca203864f115713f083396018865))
+
+
+### Fixed
+
+* **badges:** measure the wrapped strip when trimming (FR-136) ([bdcfc90](https://github.com/IbbyLabs/XRDB/commit/bdcfc90eecd20f1024013b80f9e2bd3caeb23e2d))
+* **badges:** silhouette a brand mark on a filled plate (FR-135) ([a3aec40](https://github.com/IbbyLabs/XRDB/commit/a3aec401d2229484ff170db3561f622594dd36f9))
+
 ## [3.51.0](https://github.com/IbbyLabs/XRDB/compare/v3.50.2...v3.51.0) (2026-08-01)
 
 
