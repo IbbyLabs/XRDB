@@ -41,11 +41,16 @@ type MediaMeta struct {
 	// prints the title twice — so the overlay asks this rather than trusting
 	// what was requested. False whenever a source cannot tell.
 	PosterTextless bool
-	ContentRating  string          // e.g. "TV-MA", "R", "PG-13" (may be empty)
-	ReleaseStatus  string          // "digital" | "cinemas" (may be empty; movies only)
-	Genres         []string        // e.g. ["Action","Drama"] (may be empty)
-	IsAnime        bool            // the title matched the anime ID mapping
-	WatchProviders []WatchProvider // streaming/rental services (may be empty)
+	// BackdropHasTitle reports that the backdrop returned carries text, so a
+	// logo overlay onto it would print the title twice. Positive rather than
+	// inverted: most backdrops carry no title, and "cannot tell" must not read
+	// as "has one" or every backdrop loses its overlay.
+	BackdropHasTitle bool
+	ContentRating    string          // e.g. "TV-MA", "R", "PG-13" (may be empty)
+	ReleaseStatus    string          // "digital" | "cinemas" (may be empty; movies only)
+	Genres           []string        // e.g. ["Action","Drama"] (may be empty)
+	IsAnime          bool            // the title matched the anime ID mapping
+	WatchProviders   []WatchProvider // streaming/rental services (may be empty)
 	// TopRatedRank is the title's place in the locally computed top-rated film
 	// ranking, or 0 when it does not place. See imdb_toprated.go for why this
 	// is XRDB's own ranking rather than IMDb's published list.

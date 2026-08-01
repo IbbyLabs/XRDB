@@ -568,6 +568,23 @@ func newArtFetchTransport() *http.Transport {
 	return t
 }
 
+// artworkCarriesTitle reports whether the surface being drawn already has the
+// title in the picture, so the logo overlay would print it twice. It asks the
+// surface actually chosen: backdrops usually carry no title, some do.
+func artworkCarriesTitle(meta *provider.MediaMeta, mediaType string, cfg imageconfig.Config) bool {
+	if meta == nil || mediaType == "logo" {
+		return false
+	}
+	surface := selectSurfaceURL(meta, mediaType, cfg)
+	if meta.PosterURL != "" && surface == meta.PosterURL {
+		return !meta.PosterTextless
+	}
+	if meta.BackdropURL != "" && surface == meta.BackdropURL {
+		return meta.BackdropHasTitle
+	}
+	return false
+}
+
 // New creates a Pipeline with the given provider registry.
 func New(reg *provider.Registry) *Pipeline {
 	return &Pipeline{
@@ -892,11 +909,9 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// language-neutral by nature.
 	cleanOverlay := req.Config.TextPreference == imageconfig.TextClean && req.MediaType != "logo"
 	// Whether the title is already in the artwork is a property of the artwork,
-	// not of the switch that asked for the logo. A backdrop never carries one,
-	// so this only ever holds back an overlay onto poster art.
-	titleAlreadyDrawn := req.MediaType != "logo" && meta.PosterURL != "" &&
-		selectSurfaceURL(meta, req.MediaType, req.Config) == meta.PosterURL &&
-		!meta.PosterTextless
+	// not of the switch that asked for the logo, and it is asked of whichever
+	// surface is actually being drawn. Backdrops usually carry no title; some do.
+	titleAlreadyDrawn := artworkCarriesTitle(meta, req.MediaType, req.Config)
 	wantsLogoOverlay := (req.Config.BackdropLogo || cleanOverlay ||
 		(req.MediaType == "poster" && req.Config.BackdropAsPoster && meta.BackdropURL != "")) &&
 		!titleAlreadyDrawn

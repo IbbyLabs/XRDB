@@ -529,6 +529,7 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 	backdropPath := selectImagePath(result.Images.Backdrops, result.BackdropPath, lang, opts)
 	if backdropPath != "" {
 		meta.BackdropURL = tmdbImageBase + backdropRes + backdropPath
+		meta.BackdropHasTitle = pathHasLanguage(result.Images.Backdrops, backdropPath)
 	}
 	// Logos never use the random text/quality filters.
 	if logoPath := selectImagePath(result.Images.Logos, "", lang, ArtworkOptions{FallbackLanguage: opts.FallbackLanguage}); logoPath != "" {
@@ -818,6 +819,21 @@ func pathIsTextless(images []tmdbImage, path string) bool {
 			continue
 		}
 		return img.Iso639 == nil || strings.TrimSpace(*img.Iso639) == ""
+	}
+	return false
+}
+
+// pathHasLanguage reports that TMDB tagged this image with a language, which is
+// how it marks artwork carrying text. Absent or unknown returns false.
+func pathHasLanguage(images []tmdbImage, path string) bool {
+	if path == "" {
+		return false
+	}
+	for _, img := range images {
+		if img.FilePath != path {
+			continue
+		}
+		return img.Iso639 != nil && strings.TrimSpace(*img.Iso639) != ""
 	}
 	return false
 }
