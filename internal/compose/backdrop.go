@@ -299,6 +299,12 @@ func drawBackdropLogoOverlay(base *image.NRGBA, logoData []byte, ratingsH int, o
 
 	logoRect := image.Rect(x, logoTopY, x+dstW, logoTopY+dstH)
 	draw.Draw(base, logoRect, scaled, image.Point{}, draw.Over)
+
+	// The emboss rim goes on last. It lights the mark's own edges, so it has to
+	// sit over the mark rather than under it like every other treatment.
+	if o := glyphShadowOptsFrom(opts); o.style == logoShadowEmboss {
+		drawEmbossRim(base, scaled, x, logoTopY, o)
+	}
 }
 
 // horizontalFalloff is 1 across the logo and eases to 0 at the canvas edges.

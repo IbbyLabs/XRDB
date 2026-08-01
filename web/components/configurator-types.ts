@@ -230,6 +230,7 @@ export const RELEASE_STATUS_STYLE_OPTIONS = [
 export const LOGO_SHADOW_STYLE_OPTIONS = [
   { id: '',        label: 'Shadow'  },
   { id: 'extrude', label: 'Extrude' },
+  { id: 'emboss', label: 'Emboss' },
   { id: 'gel',     label: 'Gel'     },
 ] as const;
 
@@ -407,7 +408,7 @@ export interface ConfigState {
   logoScrimOpacity: number;
   logoShadowOffsetX: number;
   logoShadowOffsetY: number;
-  logoShadowStyle: string; // '' = shadow | 'extrude' | 'gel'
+  logoShadowStyle: string; // '' = shadow | 'extrude' | 'gel' | 'emboss'
   logoShadowColor: string;
   logoHeight: number;
   logoPos: number;

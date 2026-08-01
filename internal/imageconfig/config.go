@@ -219,7 +219,7 @@ type Config struct {
 	LogoShadowOffsetY int `json:"logoShadowOffsetY,omitempty"` // -200..200
 	// LogoShadowStyle picks how the shadow is drawn: a blurred drop shadow, a
 	// solid 3D extrusion, or the raised gel look of a moulded number plate.
-	LogoShadowStyle string `json:"logoShadowStyle,omitempty"` // "" = shadow | "extrude" | "gel"
+	LogoShadowStyle string `json:"logoShadowStyle,omitempty"` // "" = shadow | "extrude" | "gel" | "emboss"
 	LogoShadowColor string `json:"logoShadowColor,omitempty"` // "#RRGGBB"; "" = black
 	RatingRing      bool   `json:"ratingRing,omitempty"`
 	RatingRingPos   string `json:"ratingRingPos,omitempty"`   // "tl" | "tr" | "bl" | "br"
@@ -1148,7 +1148,7 @@ func Parse(data json.RawMessage) Config {
 		// "shadow" and the empty string are one value, so a profile naming the
 		// default keeps the same cache key as one leaving it unset.
 		switch v := strings.ToLower(strings.TrimSpace(*r.LogoShadowStyle)); v {
-		case "extrude", "gel":
+		case "extrude", "gel", "emboss":
 			cfg.LogoShadowStyle = v
 		case "shadow", "":
 			cfg.LogoShadowStyle = ""

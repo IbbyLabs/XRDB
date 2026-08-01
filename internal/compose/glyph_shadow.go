@@ -10,6 +10,7 @@ import (
 const (
 	logoShadowExtrude = "extrude" // stacked copies reading as depth
 	logoShadowGel     = "gel"     // tight shadow plus an opposite highlight
+	logoShadowEmboss  = "emboss"  // lit and shadowed rims on the mark's own edges
 )
 
 // glyphShadowOpts is the treatment drawn behind a title logo. It is taken from
@@ -64,6 +65,9 @@ func drawGlyphShadow(base *image.NRGBA, logo *image.NRGBA, originX, originY int,
 		drawExtrudedShadow(base, logo, originX, originY, offX, offY, strength, tint)
 	case logoShadowGel:
 		drawGelShadow(base, logo, originX, originY, radius, offX, offY, strength, tint)
+	case logoShadowEmboss:
+		// Nothing underneath: the whole effect is the rim drawn over the mark.
+		return
 	default: // the drop shadow, and anything the parser did not recognise
 		drawSoftShadow(base, logo, originX, originY, radius, offX, offY, strength, tint)
 	}
@@ -302,4 +306,69 @@ func clampIdx(i, n int) int {
 		return n - 1
 	}
 	return i
+}
+
+// drawEmbossRim lights the mark's own edges instead of casting anything behind
+// it: the side facing the light gets a bright rim, the opposite side a dark one,
+// and the face is left alone. It is what makes carved lettering read as carved.
+//
+// This draws OVER the logo. Every other treatment here goes underneath and is
+// then covered by the mark, which is exactly why none of them could produce a
+// bevel — the effect lives on the glyph's own edge, not around it.
+func drawEmbossRim(base, logo *image.NRGBA, originX, originY int, o glyphShadowOpts) {
+	if logo == nil {
+		return
+	}
+	lb := logo.Bounds()
+	spread := o.spread
+	if spread == 0 {
+		spread = 50
+	}
+	depth := lb.Dy() * spread / 400 / 2
+	if depth < 1 {
+		depth = 1
+	}
+	if depth > 12 {
+		depth = 12
+	}
+	strength := o.strength
+	if strength == 0 {
+		strength = 63
+	}
+
+	pad := depth + 2
+	mask, mw, mh := glyphMask(logo, pad)
+
+	// The lit rim is what the mark covers but its own shadow-side copy does not,
+	// so it falls on the edge facing the light. The dark rim is the mirror.
+	lit := rimBand(mask, mw, mh, depth, depth)
+	dark := rimBand(mask, mw, mh, -depth, -depth)
+
+	// One pass only. Blurring a rim past a pixel or two turns a carved edge back
+	// into the glow this style exists to avoid.
+	lit = boxBlur(lit, mw, mh, 1)
+	dark = boxBlur(dark, mw, mh, 1)
+
+	white := color.NRGBA{R: 255, G: 255, B: 255, A: 255}
+	blendLayer(base, dark, mw, mh, originX-pad, originY-pad, o.color, float64(strength)/100)
+	blendLayer(base, lit, mw, mh, originX-pad, originY-pad, white, float64(strength)*0.85/100)
+}
+
+// rimBand returns the part of mask that the same mask shifted by (dx, dy) does
+// not cover — the band along one side of every stroke.
+func rimBand(mask []float64, w, h, dx, dy int) []float64 {
+	out := make([]float64, len(mask))
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			sx, sy := x-dx, y-dy
+			var shifted float64
+			if sx >= 0 && sx < w && sy >= 0 && sy < h {
+				shifted = mask[sy*w+sx]
+			}
+			if v := mask[y*w+x] - shifted; v > 0 {
+				out[y*w+x] = v
+			}
+		}
+	}
+	return out
 }
