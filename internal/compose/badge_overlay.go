@@ -1236,6 +1236,18 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		return c
 	}
 
+	// The colour family, resolved even in the text modes, which name the badge by
+	// its genres and so leave fam nil. v2 coloured the label and the plate border
+	// by genre on every style but clean; both read from here.
+	colourFam := fam
+	if colourFam == nil {
+		colourFam = resolveGenreFamilyGrouped(genres, opts.isAnime, opts.grouping)
+	}
+	if opts.style != "clean" {
+		textColor = accentColorFrom(colourFam)
+		textColor.A = 255
+	}
+
 	// drawLeftStripe runs the accent down the inside of the plate's left edge,
 	// which is where v2 put it.
 	drawLeftStripe := func() {
@@ -1298,7 +1310,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			oc = c
 			ow = maxInt(1, int(float64(opts.outlineWidth)*scale+0.5))
 		}
-		labelCol := color.NRGBA{R: 255, G: 255, B: 255, A: 255}
+		labelCol := textColor
 		// The glyph is traced before it is drawn, so a mark on plain gets the
 		// same edge the label does rather than sitting bare on the artwork.
 		if ow > 0 && fam != nil && iconSize > 0 && mode != "text" {
@@ -1341,7 +1353,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			shadow:      color.NRGBA{R: 0, G: 0, B: 0, A: 70},
 		})
 		drawLeftStripe()
-		drawText(base, face, tx, ty, color.White, label)
+		drawText(base, face, tx, ty, textColor, label)
 		return
 	case "clean":
 		// No tile: a soft strip under the label carries it over the artwork.
@@ -1467,7 +1479,10 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	if opts.bgOpacity != 0 {
 		fill.A = uint8(opts.bgOpacity * 255 / 100)
 	}
-	border := color.NRGBA{R: 255, G: 255, B: 255, A: 28}
+	// The plate border carries the genre's own colour, as v2's did. Alpha is
+	// unchanged: a hairline stays a hairline until a width asks for more.
+	border := accentColorFrom(colourFam)
+	border.A = 28
 	borderW := 0
 	if opts.borderWidth < 0 {
 		border.A = 0

@@ -2,6 +2,7 @@ package compose
 
 import (
 	"bytes"
+	"fmt"
 	"image"
 	"testing"
 
@@ -135,6 +136,51 @@ func TestGenreBorderWidthReachesTheTileStyle(t *testing.T) {
 
 	if bytes.Equal(draw(0), draw(4)) {
 		t.Error("genre border width changes nothing on the tile style")
+	}
+}
+
+// v2 coloured the genre label with the family's own accent on every style but
+// clean (lib/imageRouteGenreBadge.ts: `isClean ? '#ffffff' : accentColor`), and
+// gave the plate border the same colour.
+func TestGenreLabelTakesTheFamilyAccent(t *testing.T) {
+	// Comparing two genres proves nothing here: the labels are different words,
+	// so the pixels differ whatever colour they are. Sample the drawn colours
+	// instead and look for the family's own accent.
+	const grey = "e1e1e4" // the fixed label colour these styles used to draw
+	horror := "ef4444"    // familyHorror's accent
+
+	drawn := func(style string) map[string]bool {
+		img := image.NewNRGBA(image.Rect(0, 0, 400, 600))
+		drawGenreBadge(img, []string{"Horror"}, "bl", 1, newOccupancy(img.Bounds()), genreBadgeOpts{
+			mode:  "text",
+			style: style,
+		})
+		seen := map[string]bool{}
+		b := img.Bounds()
+		for y := b.Min.Y; y < b.Max.Y; y++ {
+			for x := b.Min.X; x < b.Max.X; x++ {
+				if c := img.NRGBAAt(x, y); c.A == 255 {
+					seen[fmt.Sprintf("%02x%02x%02x", c.R, c.G, c.B)] = true
+				}
+			}
+		}
+		return seen
+	}
+
+	for _, style := range []string{"", "tile", "square", "plain"} {
+		name := style
+		if name == "" {
+			name = "capsule"
+		}
+		t.Run(name, func(t *testing.T) {
+			seen := drawn(style)
+			if !seen[horror] {
+				t.Errorf("the %s genre badge never draws familyHorror's accent #%s, so the label is not taking it", name, horror)
+			}
+			if seen[grey] {
+				t.Errorf("the %s genre badge still draws the fixed grey #%s", name, grey)
+			}
+		})
 	}
 }
 
