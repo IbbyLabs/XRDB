@@ -225,25 +225,35 @@ func strokeRoundedRect(dst *image.NRGBA, r image.Rectangle, radius, width int, c
 
 func drawRectBorder(dst *image.NRGBA, r image.Rectangle, radius int, c color.NRGBA) {
 	b := dst.Bounds()
-	for x := r.Min.X; x < r.Max.X; x++ {
-		onEdge := x == r.Min.X || x == r.Max.X-1
-		for y := r.Min.Y; y < r.Max.Y; y++ {
-			if !onEdge && y != r.Min.Y && y != r.Max.Y-1 {
-				continue
-			}
+	// The border is the shape minus the same shape one pixel in. Walking the
+	// bounding box instead only meets the outline where the two touch, which on a
+	// circle is four points and on a squircle is four short arcs.
+	inner := r.Inset(1)
+	innerRadius := maxInt(0, radius-1)
+	for y := r.Min.Y; y < r.Max.Y; y++ {
+		for x := r.Min.X; x < r.Max.X; x++ {
 			pt := image.Pt(x, y)
 			if !pt.In(b) {
 				continue
 			}
-			cov, skip := cornerCoverage(x, y, r, radius)
-			if skip {
+			outer, skip := cornerCoverage(x, y, r, radius)
+			if skip || outer <= 0 {
 				continue
 			}
-			if cov < 1 {
-				blendPixel(dst, x, y, color.NRGBA{R: c.R, G: c.G, B: c.B, A: uint8(float64(c.A) * cov)})
+			var in float64
+			if pt.In(inner) {
+				if cov, s := cornerCoverage(x, y, inner, innerRadius); !s {
+					in = cov
+				}
+			}
+			cov := outer - in
+			if cov <= 0 {
 				continue
 			}
-			dst.SetNRGBA(x, y, c)
+			if cov > 1 {
+				cov = 1
+			}
+			blendPixel(dst, x, y, color.NRGBA{R: c.R, G: c.G, B: c.B, A: uint8(float64(c.A)*cov + 0.5)})
 		}
 	}
 }
