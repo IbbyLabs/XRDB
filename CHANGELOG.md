@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.49.5](https://github.com/IbbyLabs/XRDB/compare/v3.49.4...v3.49.5) (2026-08-01)
+
+
+### Fixed
+
+* **ratings:** back off further each time a source keeps failing ([1e77c0c](https://github.com/IbbyLabs/XRDB/commit/1e77c0c1cf248ab6f6d549492415285407b13dd4))
+
 ## [3.49.4](https://github.com/IbbyLabs/XRDB/compare/v3.49.3...v3.49.4) (2026-08-01)
 
 
