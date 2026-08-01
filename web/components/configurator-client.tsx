@@ -298,6 +298,7 @@ export function ConfiguratorClient() {
       scorebarHighThreshold: cfg.scorebarHighThreshold,
       trendingTextColor: cfg.trendingTextColor,
       trendingTagStyle: cfg.trendingTagStyle,
+      trendingAccentColor: cfg.trendingAccentColor,
       ageRatingBadgeStyle: cfg.ageRatingBadgeStyle === 'default' ? '' : cfg.ageRatingBadgeStyle,
       ageRatingTileColor: cfg.ageRatingTileColor,
       trendingPos: cfg.trendingPos,

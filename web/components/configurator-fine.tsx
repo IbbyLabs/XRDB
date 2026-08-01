@@ -592,18 +592,12 @@ export function QualityFine({ uid, config, onUpdate }: GroupProps) {
         value={config.qualityBadgesStyle}
         onChange={v => onUpdate('qualityBadgesStyle', v)}
       />
-      {config.qualityBadgesStyle === 'tile' && (
-        <div className="field">
-          <label className="label" htmlFor={`${uid}-quality-tile-color`}>Tile color</label>
-          <input
-            id={`${uid}-quality-tile-color`}
-            type="color"
-            value={config.qualityBadgesTileAccentColor || '#3355ff'}
-            onChange={e => onUpdate('qualityBadgesTileAccentColor', e.target.value)}
-            className="color-swatch"
-          />
-        </div>
-      )}
+      <ColorField id={`${uid}-quality-tile-color`}
+        label={config.qualityBadgesStyle === 'tile' ? 'Tile color' : 'Accent color'}
+        value={config.qualityBadgesTileAccentColor}
+        onChange={v => onUpdate('qualityBadgesTileAccentColor', v)}
+        fallback="#3355ff" resetLabel="Default"
+      />
     </FineGroup>
   );
 }
@@ -642,8 +636,9 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
         value={config.genreBadgeStyle}
         onChange={v => onUpdate('genreBadgeStyle', v)}
       />
-      {(config.genreBadgeStyle === 'tile' || config.genreBadgeStyle === 'pill') && (
-        <ColorField id={`${uid}-genre-tile-color`} label="Badge colour"
+      {config.genreBadgeStyle !== 'plain' && config.genreBadgeStyle !== 'clean' && (
+        <ColorField id={`${uid}-genre-tile-color`}
+          label={config.genreBadgeStyle === 'tile' ? 'Tile colour' : 'Border/accent colour'}
           value={config.genreBadgeTileAccentColor}
           onChange={v => onUpdate('genreBadgeTileAccentColor', v)}
           fallback="#3355ff" resetLabel="Auto" />
@@ -709,13 +704,14 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
           </button>
         </div>
         <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>
-          Text outline for background-less (plain) badges.
+          Text outline for background-less (plain) badges — genre, age rating,
+          release status, top rated and trending.
         </span>
       </div>
       <NumField id={`${uid}-plain-outline-w`} label="Outline width (px)" value={config.noBackgroundBadgeOutlineWidth}
         onChange={v => onUpdate('noBackgroundBadgeOutlineWidth', v)} min={0} max={6} placeholder="default" />
       <ToggleField id={`${uid}-plain-outline-glow`} label="Soften the outline into a glow"
-        hint="Fades the outline outward instead of a hard edge. Applies to the genre label, its icon and no-background rating badges."
+        hint="Fades the outline outward instead of a hard edge. Applies to every plain-style badge and no-background rating badges."
         checked={config.noBackgroundBadgeOutlineGlow}
         onChange={() => onUpdate('noBackgroundBadgeOutlineGlow', !config.noBackgroundBadgeOutlineGlow)} />
       <NumField id={`${uid}-accent-width`} label="Accent outline width (px)" value={config.aggregateAccentWidth}
@@ -950,8 +946,9 @@ export function ReleaseStatusFine({ uid, config, onUpdate }: GroupProps) {
         columns={3}
         hint="Accent keeps the coloured border that marks cinema and digital releases."
       />
-      {config.releaseStatusBadgeStyle === 'tile' && (
-        <ColorField id={`${uid}-release-tile-color`} label="Tile colour"
+      {config.releaseStatusBadgeStyle !== 'plain' && (
+        <ColorField id={`${uid}-release-tile-color`}
+          label={config.releaseStatusBadgeStyle === 'tile' ? 'Tile colour' : 'Border colour'}
           value={config.releaseStatusTileColor}
           onChange={v => onUpdate('releaseStatusTileColor', v)}
           fallback="#38bdf8" resetLabel="Auto" />
@@ -1031,17 +1028,12 @@ export function AgeFine({ uid, config, onUpdate }: GroupProps) {
         onChange={v => onUpdate('ageRatingBadgeStyle', v)}
         columns={2}
       />
-      {config.ageRatingBadgeStyle === 'tile' && (
-        <div className="field">
-          <label className="label" htmlFor={`${uid}-age-tile-color`}>Tile color</label>
-          <input
-            id={`${uid}-age-tile-color`}
-            type="color"
-            value={config.ageRatingTileColor || '#3355ff'}
-            onChange={e => onUpdate('ageRatingTileColor', e.target.value)}
-            className="color-swatch"
-          />
-        </div>
+      {config.ageRatingBadgeStyle !== 'plain' && config.ageRatingBadgeStyle !== 'media' && (
+        <ColorField id={`${uid}-age-tile-color`}
+          label={config.ageRatingBadgeStyle === 'tile' ? 'Tile color' : 'Border color'}
+          value={config.ageRatingTileColor}
+          onChange={v => onUpdate('ageRatingTileColor', v)}
+          fallback="#3355ff" resetLabel="Default" />
       )}
       <NumField id={`${uid}-age-scale`} label="Scale (%)" value={config.ageRatingScale}
         onChange={v => onUpdate('ageRatingScale', v)} min={50} max={300} step={5} />
@@ -1070,6 +1062,10 @@ export function TrendingFine({ uid, config, onUpdate }: GroupProps) {
         onChange={v => onUpdate('trendingPos', v)} />
       <ColorField id={`${uid}-trending-color`} label="Text color" value={config.trendingTextColor}
         onChange={v => onUpdate('trendingTextColor', v)} fallback="#fff4ee" resetLabel="Default" />
+      {config.trendingTagStyle !== 'plain' && (
+        <ColorField id={`${uid}-trending-accent`} label="Border color" value={config.trendingAccentColor}
+          onChange={v => onUpdate('trendingAccentColor', v)} fallback="#ff7e2a" resetLabel="Default" />
+      )}
     </FineGroup>
   );
 }

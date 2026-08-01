@@ -548,6 +548,9 @@ type TrendingConfig struct {
 	// choice above: glass (the default warm capsule), square (sharp corners) or
 	// plain (glyph and label with no surface).
 	TrendingTagStyle string `json:"trendingTagStyle,omitempty"`
+	// TrendingAccentColor tints the capsule/square surface's hairline border.
+	// "" keeps the built-in warm orange hairline.
+	TrendingAccentColor string `json:"trendingAccentColor,omitempty"`
 }
 
 // GenreBadgeConfig groups the genre-badge styling controls. v2 exposed these
@@ -718,9 +721,10 @@ type rawQuality struct {
 }
 
 type rawTrending struct {
-	TrendingTagStyle  *string `json:"trendingTagStyle"`
-	TrendingPos       *string `json:"trendingPos"`
-	TrendingTextColor *string `json:"trendingTextColor"`
+	TrendingTagStyle    *string `json:"trendingTagStyle"`
+	TrendingPos         *string `json:"trendingPos"`
+	TrendingTextColor   *string `json:"trendingTextColor"`
+	TrendingAccentColor *string `json:"trendingAccentColor"`
 }
 
 type rawAge struct {
@@ -1393,6 +1397,9 @@ func parseTrending(cfg *Config, r *raw) {
 		case "glass", "square", "plain":
 			cfg.TrendingTagStyle = v
 		}
+	}
+	if r.TrendingAccentColor != nil && isHexColor(*r.TrendingAccentColor) {
+		cfg.TrendingAccentColor = strings.TrimSpace(*r.TrendingAccentColor)
 	}
 }
 

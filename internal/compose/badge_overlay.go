@@ -331,17 +331,28 @@ func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64, occ *o
 		border: color.NRGBA{R: 255, G: 255, B: 255, A: 38},
 		shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 90},
 	}
+	accent, accentErr := parseHexColor(opts.tileColor)
+	hasAccent := opts.tileColor != "" && accentErr == nil
 	switch opts.style {
 	case "tile":
-		if c, err := parseHexColor(opts.tileColor); opts.tileColor != "" && err == nil {
-			c.A = 220
-			chrome.fill = c
+		if hasAccent {
+			accent.A = 220
+			chrome.fill = accent
 		}
 	case "plain":
 		// A lighter, near-transparent tile so the white logos and text stay
 		// legible without the full frosted chrome.
 		chrome.fill.A = 70
 		chrome.border.A = 60
+		if hasAccent {
+			chrome.border = color.NRGBA{R: accent.R, G: accent.G, B: accent.B, A: chrome.border.A}
+		}
+	default:
+		// The frosted default keeps its own fixed fill, but the hairline border
+		// answers the same accent the tile style's fill does.
+		if hasAccent {
+			chrome.border = color.NRGBA{R: accent.R, G: accent.G, B: accent.B, A: chrome.border.A}
+		}
 	}
 
 	type tile struct {
@@ -432,19 +443,21 @@ func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64, occ *o
 // or quality badges (TR).
 // ageRatingOpts carries the age-rating badge styling. Zero value = default.
 type ageRatingOpts struct {
-	style        string // "" | glass | plain | tile
-	tileColor    string // "#RRGGBB" for the tile style
+	style        string // "" | glass | plain | tile | silver | square | media
+	tileColor    string // "#RRGGBB"; fills the tile style, tints the border on glass/square/silver
 	offsetX      int
 	offsetY      int
 	scale        int    // percent; 0 = 100
 	outlineColor string // "#RRGGBB" outline for the plain style; "" = drop shadow
 	outlineWidth int    // px outline width for the plain style; 0 = 1
+	outlineGlow  bool   // fade the outline outward instead of a hard edge
 }
 
 func ageOptsFromConfig(cfg imageconfig.Config) ageRatingOpts {
 	return ageRatingOpts{style: cfg.AgeRatingBadgeStyle, tileColor: cfg.AgeRatingTileColor,
 		offsetX: cfg.AgeRatingOffsetX, offsetY: cfg.AgeRatingOffsetY, scale: cfg.AgeRatingScale,
-		outlineColor: cfg.NoBackgroundBadgeOutlineColor, outlineWidth: cfg.NoBackgroundBadgeOutlineWidth}
+		outlineColor: cfg.NoBackgroundBadgeOutlineColor, outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
+		outlineGlow: cfg.NoBackgroundBadgeOutlineGlow}
 }
 
 func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale float64, occ *occupancy, opts ageRatingOpts) {
@@ -521,7 +534,7 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 			if w <= 0 {
 				w = 1
 			}
-			drawLabelOutlined(base, face, tx, ty, color.White, c, maxInt(1, s(float64(w))), false, rating)
+			drawLabelOutlined(base, face, tx, ty, color.White, c, maxInt(1, s(float64(w))), opts.outlineGlow, rating)
 			return
 		}
 		drawText(base, face, tx+maxInt(1, s(1)), ty+maxInt(1, s(1)), color.NRGBA{R: 0, G: 0, B: 0, A: 180}, rating)
@@ -546,6 +559,10 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 			chrome.fill = c
 			chrome.border = color.NRGBA{}
 		}
+	} else if c, err := parseHexColor(opts.tileColor); opts.tileColor != "" && err == nil {
+		// Every bordered style (glass, square, silver) answers the same accent
+		// the tile style's fill does, tinting its own border instead.
+		chrome.border = color.NRGBA{R: c.R, G: c.G, B: c.B, A: chrome.border.A}
 	}
 	rad := radius
 	if opts.style == "square" {
@@ -570,12 +587,17 @@ func releaseStatusLabel(status string) (string, color.NRGBA, bool) {
 // releaseStatusOpts carries the release-status badge styling. Zero value keeps
 // the accent-bordered plate the badge has always drawn.
 type releaseStatusOpts struct {
-	style     string // "" | glass | square | plain | tile | silver
-	tileColor string // "#RRGGBB" for the tile style
+	style        string // "" | glass | square | plain | tile | silver
+	tileColor    string // "#RRGGBB"; fills the tile style, tints the border on glass/square/silver
+	outlineColor string // "#RRGGBB" outline for the plain style; "" = drop shadow
+	outlineWidth int    // px outline width for the plain style; 0 = 1
+	outlineGlow  bool   // fade the outline outward instead of a hard edge
 }
 
 func releaseStatusOptsFromConfig(cfg imageconfig.Config) releaseStatusOpts {
-	return releaseStatusOpts{style: cfg.ReleaseStatusBadgeStyle, tileColor: cfg.ReleaseStatusTileColor}
+	return releaseStatusOpts{style: cfg.ReleaseStatusBadgeStyle, tileColor: cfg.ReleaseStatusTileColor,
+		outlineColor: cfg.NoBackgroundBadgeOutlineColor, outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
+		outlineGlow: cfg.NoBackgroundBadgeOutlineGlow}
 }
 
 // drawReleaseStatusBadge marks whether a title is in cinemas or out on digital.
@@ -607,6 +629,16 @@ func drawReleaseStatusBadge(base *image.NRGBA, status string, pos string, scale 
 	tx, ty := r.Min.X+padX, r.Min.Y+padY+ascent
 
 	if opts.style == "plain" {
+		// The plain style answers the same outline controls the other plain
+		// badges do. Without one it keeps its drop shadow.
+		if c, err := parseHexColor(opts.outlineColor); opts.outlineColor != "" && err == nil {
+			w := opts.outlineWidth
+			if w <= 0 {
+				w = 1
+			}
+			drawLabelOutlined(base, face, tx, ty, accent, c, maxInt(1, s(float64(w))), opts.outlineGlow, label)
+			return
+		}
 		drawText(base, face, tx+maxInt(1, s(1)), ty+maxInt(1, s(1)), color.NRGBA{R: 0, G: 0, B: 0, A: 180}, label)
 		drawText(base, face, tx, ty, accent, label)
 		return
@@ -631,6 +663,13 @@ func drawReleaseStatusBadge(base *image.NRGBA, status string, pos string, scale 
 			chrome.fill = c
 			chrome.border = color.NRGBA{}
 			textCol = color.NRGBA{R: 255, G: 255, B: 255, A: 255}
+		}
+	}
+	if opts.style != "tile" {
+		// Every bordered style (glass, square, silver) answers the same accent
+		// the tile style's fill does, tinting its own border instead.
+		if c, err := parseHexColor(opts.tileColor); opts.tileColor != "" && err == nil {
+			chrome.border = color.NRGBA{R: c.R, G: c.G, B: c.B, A: chrome.border.A}
 		}
 	}
 	radius := s(5)
@@ -1217,6 +1256,16 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			tileChrome{fill: accentColorFrom(f)})
 	}
 
+	// borderTint recolours a style's own border with the configured accent, so
+	// every bordered style answers the same control the pill capsule already
+	// did rather than only some of them.
+	borderTint := func(base color.NRGBA) color.NRGBA {
+		if c, err := parseHexColor(opts.tileColor); opts.tileColor != "" && err == nil {
+			return color.NRGBA{R: c.R, G: c.G, B: c.B, A: 255}
+		}
+		return base
+	}
+
 	// drawIcon paints the family glyph and reports the accent to tint the label.
 	drawIcon := func() color.NRGBA {
 		if fam == nil || iconSize <= 0 {
@@ -1313,10 +1362,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			}
 			// The accent colour, when set, borders the capsule. Without one the
 			// pill keeps its faint white hairline.
-			border := color.NRGBA{R: 255, G: 255, B: 255, A: 48}
-			if c, err := parseHexColor(opts.tileColor); opts.tileColor != "" && err == nil {
-				border = color.NRGBA{R: c.R, G: c.G, B: c.B, A: 255}
-			}
+			border := borderTint(color.NRGBA{R: 255, G: 255, B: 255, A: 48})
 			for i := 0; i < bw; i++ {
 				rr := r.Inset(i)
 				if rr.Dx() <= 0 || rr.Dy() <= 0 {
@@ -1347,12 +1393,13 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			if opts.borderWidth > 0 {
 				bw = maxInt(1, int(opts.borderWidth*scale+0.5))
 			}
+			border := borderTint(color.NRGBA{R: 255, G: 255, B: 255, A: 48})
 			for i := 0; i < bw; i++ {
 				rr := r.Inset(i)
 				if rr.Dx() <= 0 || rr.Dy() <= 0 {
 					break
 				}
-				drawRectBorder(base, rr, maxInt(0, radius-i), color.NRGBA{R: 255, G: 255, B: 255, A: 48})
+				drawRectBorder(base, rr, maxInt(0, radius-i), border)
 			}
 		}
 		drawLeftStripe()
@@ -1372,8 +1419,11 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		sqBorderW := maxInt(1, s(1))
 		if opts.borderWidth < 0 {
 			sqBorder.A = 0
-		} else if opts.borderWidth > 0 {
-			sqBorderW = maxInt(1, int(opts.borderWidth*scale+0.5))
+		} else {
+			if opts.borderWidth > 0 {
+				sqBorderW = maxInt(1, int(opts.borderWidth*scale+0.5))
+			}
+			sqBorder = borderTint(sqBorder)
 		}
 		drawSoftTile(base, r, maxInt(1, s(2)), tileChrome{
 			fill:        fill,
@@ -1406,11 +1456,14 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	borderW := 0
 	if opts.borderWidth < 0 {
 		border.A = 0
-	} else if opts.borderWidth > 0 {
-		// A configured border reads as a deliberate outline, so make it opaque
-		// enough to see and scale its width with the output.
-		border.A = 150
-		borderW = maxInt(1, int(opts.borderWidth*scale+0.5))
+	} else {
+		if opts.borderWidth > 0 {
+			// A configured border reads as a deliberate outline, so make it
+			// opaque enough to see and scale its width with the output.
+			border.A = 150
+			borderW = maxInt(1, int(opts.borderWidth*scale+0.5))
+		}
+		border = borderTint(border)
 	}
 	drawSoftTile(base, r, radius, tileChrome{
 		fill:        fill,
@@ -2169,6 +2222,27 @@ func trendingStyleFromConfig(s imageconfig.TrendingStyle) trendingStyle {
 	}
 }
 
+// trendingBadgeOpts carries the trending-tag styling not already threaded
+// through as positional params. Its zero value keeps the original fixed
+// hairline and the plain surface's original shadow-free label.
+type trendingBadgeOpts struct {
+	accentColor  string // "#RRGGBB" border/hairline tint for the capsule/square surfaces
+	outlineColor string // "#RRGGBB" outline for the plain surface; "" = none
+	outlineWidth int    // px outline width for the plain surface; 0 = none
+	outlineGlow  bool   // fade the outline outward instead of a hard edge
+}
+
+// trendingOptsFromConfig extracts the trending-badge styling from a resolved
+// Config.
+func trendingOptsFromConfig(cfg imageconfig.Config) trendingBadgeOpts {
+	return trendingBadgeOpts{
+		accentColor:  cfg.TrendingAccentColor,
+		outlineColor: cfg.NoBackgroundBadgeOutlineColor,
+		outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
+		outlineGlow:  cfg.NoBackgroundBadgeOutlineGlow,
+	}
+}
+
 // drawTrendingBadge draws a premium "TRENDING" pill at the top-left corner: a
 // dark frosted capsule with a warm accent glyph, bold label, and a soft drop
 // shadow. Placed via occ so it never overlaps other overlays.
@@ -2180,13 +2254,13 @@ func drawTrendingBadge(base *image.NRGBA, scale float64, occ *occupancy) {
 // The public drawTrendingBadge wraps it with defaultTrendingStyle; the extra
 // seam lets the visual-preview harness render every option from one code path.
 func drawTrendingBadgeStyled(base *image.NRGBA, scale float64, occ *occupancy, style trendingStyle, pos, textColor string) {
-	drawTrendingBadgeSurfaced(base, scale, occ, style, pos, textColor, "")
+	drawTrendingBadgeSurfaced(base, scale, occ, style, pos, textColor, "", trendingBadgeOpts{})
 }
 
 // drawTrendingBadgeSurfaced adds the tag's surface treatment on top of the glyph
 // composition: "square" swaps the capsule for a sharp-cornered tile, "plain"
 // drops the surface entirely, and anything else keeps the warm frosted capsule.
-func drawTrendingBadgeSurfaced(base *image.NRGBA, scale float64, occ *occupancy, style trendingStyle, pos, textColor, surface string) {
+func drawTrendingBadgeSurfaced(base *image.NRGBA, scale float64, occ *occupancy, style trendingStyle, pos, textColor, surface string, opts trendingBadgeOpts) {
 	if pos == "" {
 		pos = "tl"
 	}
@@ -2248,7 +2322,11 @@ func drawTrendingBadgeSurfaced(base *image.NRGBA, scale float64, occ *occupancy,
 		off := maxInt(1, bh/12)
 		fillRoundedRect(base, r.Add(image.Pt(0, off)), radius, color.NRGBA{R: 0, G: 0, B: 0, A: 105})
 		fillRoundedRect(base, r, radius, color.NRGBA{R: 18, G: 20, B: 26, A: 233})
-		drawRectBorder(base, r, radius, color.NRGBA{R: 255, G: 150, B: 92, A: 66}) // warm hairline
+		border := color.NRGBA{R: 255, G: 150, B: 92, A: 66} // warm hairline
+		if c, err := parseHexColor(opts.accentColor); opts.accentColor != "" && err == nil {
+			border = color.NRGBA{R: c.R, G: c.G, B: c.B, A: 220}
+		}
+		drawRectBorder(base, r, radius, border)
 	}
 
 	// Warm accent glyph, vertically centered to the cap height.
@@ -2273,6 +2351,18 @@ func drawTrendingBadgeSurfaced(base *image.NRGBA, scale float64, occ *occupancy,
 		labelCol := color.NRGBA{R: 255, G: 244, B: 238, A: 255}
 		if c, err := parseHexColor(textColor); textColor != "" && err == nil {
 			labelCol = c
+		}
+		// The plain surface has no tile to separate the label from the artwork,
+		// so it answers the same outline controls the other plain badges do.
+		if surface == "plain" {
+			if c, err := parseHexColor(opts.outlineColor); opts.outlineColor != "" && err == nil {
+				w := opts.outlineWidth
+				if w <= 0 {
+					w = 1
+				}
+				drawLabelOutlined(base, face, tx, ty, labelCol, c, maxInt(1, s(float64(w))), opts.outlineGlow, label)
+				return
+			}
 		}
 		drawText(base, face, tx, ty, labelCol, label)
 	}
@@ -2614,12 +2704,17 @@ func drawProgressRing(base *image.NRGBA, cx, cy, outerR int, sweepFrac float64, 
 // ── Top-rated rank badge ──────────────────────────────────────────────────────
 
 type topRatedOpts struct {
-	style     string // "" | glass | square | plain | tile | silver
-	tileColor string // "#RRGGBB" for the tile style
+	style        string // "" | glass | square | plain | tile | silver
+	tileColor    string // "#RRGGBB"; fills the tile style, tints the border on glass/square/silver
+	outlineColor string // "#RRGGBB" outline for the plain style; "" = drop shadow
+	outlineWidth int    // px outline width for the plain style; 0 = 1
+	outlineGlow  bool   // fade the outline outward instead of a hard edge
 }
 
 func topRatedOptsFromConfig(cfg imageconfig.Config) topRatedOpts {
-	return topRatedOpts{style: cfg.TopRatedBadgeStyle, tileColor: cfg.TopRatedTileColor}
+	return topRatedOpts{style: cfg.TopRatedBadgeStyle, tileColor: cfg.TopRatedTileColor,
+		outlineColor: cfg.NoBackgroundBadgeOutlineColor, outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
+		outlineGlow: cfg.NoBackgroundBadgeOutlineGlow}
 }
 
 // topRatedAccent is the gold this badge is drawn in. Rank is the one badge that
@@ -2658,6 +2753,16 @@ func drawTopRatedBadge(base *image.NRGBA, rank int, pos string, scale float64, o
 	tx, ty := r.Min.X+padX, r.Min.Y+padY+ascent
 
 	if opts.style == "plain" {
+		// The plain style answers the same outline controls the other plain
+		// badges do. Without one it keeps its drop shadow.
+		if c, err := parseHexColor(opts.outlineColor); opts.outlineColor != "" && err == nil {
+			w := opts.outlineWidth
+			if w <= 0 {
+				w = 1
+			}
+			drawLabelOutlined(base, face, tx, ty, topRatedAccent, c, maxInt(1, s(float64(w))), opts.outlineGlow, label)
+			return
+		}
 		drawText(base, face, tx+maxInt(1, s(1)), ty+maxInt(1, s(1)), color.NRGBA{R: 0, G: 0, B: 0, A: 180}, label)
 		drawText(base, face, tx, ty, topRatedAccent, label)
 		return
@@ -2682,6 +2787,13 @@ func drawTopRatedBadge(base *image.NRGBA, rank int, pos string, scale float64, o
 			chrome.fill = c
 			chrome.border = color.NRGBA{}
 			textCol = color.NRGBA{R: 255, G: 255, B: 255, A: 255}
+		}
+	}
+	if opts.style != "tile" {
+		// Every bordered style (glass, square, silver) answers the same accent
+		// the tile style's fill does, tinting its own border instead.
+		if c, err := parseHexColor(opts.tileColor); opts.tileColor != "" && err == nil {
+			chrome.border = color.NRGBA{R: c.R, G: c.G, B: c.B, A: chrome.border.A}
 		}
 	}
 	radius := s(5)

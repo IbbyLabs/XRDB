@@ -488,6 +488,7 @@ export interface ConfigState {
   scorebarHighThreshold: number; // 0 = default 8
   trendingTextColor: string;
   trendingTagStyle: string; // '' = glass; square | plain
+  trendingAccentColor: string; // '#RRGGBB' border/hairline tint; '' = default warm orange
   ageRatingBadgeStyle: string; // 'default' | plain | tile
   ageRatingTileColor: string;
   trendingPos: string; // 'inherit' | six positions
@@ -654,6 +655,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   scorebarHighThreshold: 0,
   trendingTextColor: '',
   trendingTagStyle: '',
+  trendingAccentColor: '',
   ageRatingBadgeStyle: 'default',
   ageRatingTileColor: '',
   trendingPos: 'inherit',

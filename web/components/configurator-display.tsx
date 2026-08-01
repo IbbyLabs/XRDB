@@ -422,8 +422,8 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
                 {TOP_RATED_STYLE_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
               </select>
             </Field>
-            {config.topRatedBadgeStyle === 'tile' && (
-              <Field label="Top rated tile color" htmlFor={`${uid}-toptile`}>
+            {config.topRatedBadgeStyle !== 'plain' && (
+              <Field label={config.topRatedBadgeStyle === 'tile' ? 'Top rated tile color' : 'Top rated border color'} htmlFor={`${uid}-toptile`}>
                 <input
                   id={`${uid}-toptile`}
                   type="color"

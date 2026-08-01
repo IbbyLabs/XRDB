@@ -421,9 +421,10 @@ func keyMutations() map[string]keyOverride {
 		"logoAnchor":       {mut: func(c *imageconfig.Config) { c.LogoAnchor = "bottom" }},
 
 		// Trending styling.
-		"trendingStyle":     {mut: func(c *imageconfig.Config) { c.TrendingStyle = imageconfig.TrendingFlame }},
-		"trendingTextColor": str(setColor(func(c *imageconfig.Config, v string) { c.TrendingTextColor = v })),
-		"trendingTagStyle":  {mut: func(c *imageconfig.Config) { c.TrendingTagStyle = "square" }},
+		"trendingStyle":       {mut: func(c *imageconfig.Config) { c.TrendingStyle = imageconfig.TrendingFlame }},
+		"trendingTextColor":   str(setColor(func(c *imageconfig.Config, v string) { c.TrendingTextColor = v })),
+		"trendingTagStyle":    {mut: func(c *imageconfig.Config) { c.TrendingTagStyle = "square" }},
+		"trendingAccentColor": str(setColor(func(c *imageconfig.Config, v string) { c.TrendingAccentColor = v })),
 
 		// Logo background is only meaningful on the logo surface.
 		"logoBackground": {mut: func(c *imageconfig.Config) { c.LogoBackground = "dark" }},
