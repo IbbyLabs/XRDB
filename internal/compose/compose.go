@@ -859,12 +859,15 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// Only art taken from the poster can carry a baked-in title; a backdrop is
 	// language-neutral by nature.
 	cleanOverlay := req.Config.TextPreference == imageconfig.TextClean && req.MediaType != "logo"
-	if cleanOverlay && meta.PosterURL != "" &&
-		selectSurfaceURL(meta, req.MediaType, req.Config) == meta.PosterURL {
-		cleanOverlay = meta.PosterTextless
-	}
-	wantsLogoOverlay := req.Config.BackdropLogo || cleanOverlay ||
-		(req.MediaType == "poster" && req.Config.BackdropAsPoster && meta.BackdropURL != "")
+	// Whether the title is already in the artwork is a property of the artwork,
+	// not of the switch that asked for the logo. A backdrop never carries one,
+	// so this only ever holds back an overlay onto poster art.
+	titleAlreadyDrawn := req.MediaType != "logo" && meta.PosterURL != "" &&
+		selectSurfaceURL(meta, req.MediaType, req.Config) == meta.PosterURL &&
+		!meta.PosterTextless
+	wantsLogoOverlay := (req.Config.BackdropLogo || cleanOverlay ||
+		(req.MediaType == "poster" && req.Config.BackdropAsPoster && meta.BackdropURL != "")) &&
+		!titleAlreadyDrawn
 	timings.mark("overlays")
 	if wantsLogoOverlay && meta.LogoURL != "" {
 		p.log().DebugContext(ctx, "Overlaying a title logo",
