@@ -22,10 +22,10 @@ func stingerInk(img *image.NRGBA) int {
 
 func TestStingerLabel(t *testing.T) {
 	cases := map[provider.StingerInfo]string{
-		{PostCredits: true}:              "POST-CREDITS",
-		{MidCredits: true}:               "MID-CREDITS",
+		{PostCredits: true}:                   "POST-CREDITS",
+		{MidCredits: true}:                    "MID-CREDITS",
 		{MidCredits: true, PostCredits: true}: "STINGER",
-		{}:                               "",
+		{}:                                    "",
 	}
 	for s, want := range cases {
 		if got := stingerLabel(s); got != want {

@@ -78,7 +78,9 @@ type Pipeline struct {
 	ratings *ratingsCache
 	// quality reports which release qualities a title has, so a quality badge
 	// can stand for something. Optional: nil draws the picked badges as-is.
-	quality      qualityDetector
+	quality qualityDetector
+	// streamBreak stops asking a stream addon that has stopped answering.
+	streamBreak  streamBreaker
 	qualityCache *qualityCache
 }
 

@@ -455,8 +455,8 @@ func keyMutations() map[string]keyOverride {
 		"ratingBadgeBorderSourceTint": {pre: func(c *imageconfig.Config) { c.RatingBadgeBorderColor = "#ffffff" }, mut: func(c *imageconfig.Config) { c.RatingBadgeBorderSourceTint = true }},
 		// The icon outline is a colour + a width; each is inert without the other,
 		// so each key sets its partner as the precondition.
-		"iconOutlineColor":              {pre: func(c *imageconfig.Config) { c.IconOutlineWidth = 4 }, mut: setColor(func(c *imageconfig.Config, v string) { c.IconOutlineColor = v })},
-		"iconOutlineWidth":              {pre: func(c *imageconfig.Config) { c.IconOutlineColor = "#00ffff" }, mut: func(c *imageconfig.Config) { c.IconOutlineWidth = 5 }},
+		"iconOutlineColor": {pre: func(c *imageconfig.Config) { c.IconOutlineWidth = 4 }, mut: setColor(func(c *imageconfig.Config, v string) { c.IconOutlineColor = v })},
+		"iconOutlineWidth": {pre: func(c *imageconfig.Config) { c.IconOutlineColor = "#00ffff" }, mut: func(c *imageconfig.Config) { c.IconOutlineWidth = 5 }},
 		// The glow softens an outline that is already being drawn, so it needs a
 		// plain-style badge with a colour and width set before it shows.
 		"noBackgroundBadgeOutlineGlow": {pre: func(c *imageconfig.Config) {
@@ -682,9 +682,9 @@ func (a *artworkOnlyProvider) artOnly() *provider.MediaMeta {
 	m := richMeta()
 	stripped := provider.MediaMeta{
 		Title: m.Title, Year: m.Year, IMDbID: m.IMDbID, TMDBID: m.TMDBID,
-		PosterURL: "http://art/" + a.name + "/poster",
+		PosterURL:   "http://art/" + a.name + "/poster",
 		BackdropURL: "http://art/" + a.name + "/backdrop",
-		LogoURL: "http://art/" + a.name + "/logo",
+		LogoURL:     "http://art/" + a.name + "/logo",
 	}
 	return &stripped
 }

@@ -444,14 +444,14 @@ func isBrandColored(icon image.Image) bool {
 
 // badgeChrome bundles the style/theme-resolved drawing parameters.
 type badgeChrome struct {
-	radius     func(innerH int) int
-	bg         color.NRGBA
-	border     color.NRGBA // zero alpha = no border
+	radius func(innerH int) int
+	bg     color.NRGBA
+	border color.NRGBA // zero alpha = no border
 	// borderSourceTint recolours each badge's outline with that source's own
 	// brand colour instead of the one border colour for the whole row.
 	borderSourceTint bool
-	valueColor color.NRGBA
-	iconColor  color.NRGBA
+	valueColor       color.NRGBA
+	iconColor        color.NRGBA
 	// outline is drawn behind the value when there is no tile to separate it
 	// from the artwork. Zero alpha = no outline.
 	outline      color.NRGBA

@@ -425,11 +425,11 @@ func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64, occ *o
 // or quality badges (TR).
 // ageRatingOpts carries the age-rating badge styling. Zero value = default.
 type ageRatingOpts struct {
-	style      string // "" | glass | plain | tile
-	tileColor  string // "#RRGGBB" for the tile style
-	offsetX    int
-	offsetY    int
-	scale      int // percent; 0 = 100
+	style     string // "" | glass | plain | tile
+	tileColor string // "#RRGGBB" for the tile style
+	offsetX   int
+	offsetY   int
+	scale     int // percent; 0 = 100
 }
 
 func ageOptsFromConfig(cfg imageconfig.Config) ageRatingOpts {

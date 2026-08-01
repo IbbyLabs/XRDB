@@ -135,6 +135,11 @@ func (p *Pipeline) startQualityDetect(ctx context.Context, cfg imageconfigBadges
 	if p.quality == nil || len(cfg.badges) == 0 || cfg.hidden {
 		return nil
 	}
+	// The addon is not answering. Drawing the picks unverified is the same
+	// answer its timeout would give, without spending the timeout to get there.
+	if p.streamBreak.shut() {
+		return nil
+	}
 	if !strings.HasPrefix(id, "tt") {
 		// Every addon keys on IMDb, so a title we could not resolve to one is
 		// drawn as picked rather than held back.
@@ -154,6 +159,11 @@ func (p *Pipeline) startQualityDetect(ctx context.Context, cfg imageconfigBadges
 		tokens, err := p.qualityCache.do(ctx, key, func() (map[string]bool, error) {
 			return p.quality.Detect(ctx, streamType, id)
 		})
+		if err != nil {
+			p.streamBreak.failed()
+		} else {
+			p.streamBreak.answered()
+		}
 		ch <- outcome{tokens, err}
 	}()
 
