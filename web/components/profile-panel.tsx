@@ -372,6 +372,10 @@ export function ProfilePanel({
               <code className="urlbar-code" title={sampleUrl}>{sampleUrl}</code>
               <CopyButton text={sampleUrl} label="Copy artwork URL" />
             </div>
+            <span className="hint">
+              One example image, for previewing or sharing. This is not the value your
+              addon wants — that is the config key above.
+            </span>
           </div>
 
           <div className="field" style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-4)' }}>
