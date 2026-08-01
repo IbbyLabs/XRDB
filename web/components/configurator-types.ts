@@ -512,6 +512,7 @@ export interface ConfigState {
   ratingBadgeBorderColor: string; // '' = per style
   ratingBadgeBorderOpacity: number; // 0 = default
   ratingBadgeBackgroundOpacity: number; // 0 = whatever the style and theme picked
+  ratingBadgeBorderWidth: number; // -1 = off, 0 = hairline
   iconOutlineColor: string; // '' = none
   iconOutlineWidth: number; // 0 = none
   ringScale: number; // percent of the default ring size; 0 = 100
@@ -680,6 +681,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingBadgeBorderColor: '',
   ratingBadgeBorderOpacity: 0,
   ratingBadgeBackgroundOpacity: 0,
+  ratingBadgeBorderWidth: 0,
   iconOutlineColor: '',
   iconOutlineWidth: 0,
   ringScale: 0,

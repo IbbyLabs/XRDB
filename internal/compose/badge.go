@@ -495,6 +495,9 @@ type badgeChrome struct {
 	// blendFill composites the badge body over the artwork instead of replacing
 	// it, so a configured opacity lets the poster through.
 	blendFill bool
+	// borderWidth thickens the capsule outline inward. 0 draws the single-pixel
+	// stroke every style carried before the control existed.
+	borderWidth int
 	// squared keeps the corners on one edge square, for the anchored strip.
 	squared       squaredCorners
 	stackRailH    int
@@ -617,6 +620,21 @@ func chromeFor(cfg imageconfig.Config) badgeChrome {
 		}
 		c.border = color.NRGBA{R: 255, G: 255, B: 255, A: a}
 	}
+	// Last of all, so switching the outline off beats every rule that would draw
+	// one, the source tint included. Asking for a width asks for an outline, so
+	// a style carrying none gets one to thicken.
+	if w := cfg.RatingBadgeBorderWidth; w < 0 {
+		c.border.A = 0
+	} else if w > 0 {
+		c.borderWidth = w
+		if c.border.A == 0 {
+			a := uint8(200)
+			if o := cfg.RatingBadgeBorderOpacity; o > 0 {
+				a = uint8(maxInt(1, o*255/100))
+			}
+			c.border = color.NRGBA{R: 255, G: 255, B: 255, A: a}
+		}
+	}
 	return c
 }
 
@@ -692,7 +710,15 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 			if chrome.borderSourceTint && sp.accent.A > 0 {
 				border = color.NRGBA{R: sp.accent.R, G: sp.accent.G, B: sp.accent.B, A: border.A}
 			}
-			drawRectBorder(out, bRect, radius, border)
+			// Thicken inward with concentric strokes so the corners stay rounded,
+			// as the genre plate does.
+			for i := 0; i < maxInt(1, chrome.borderWidth); i++ {
+				rr := bRect.Inset(i)
+				if rr.Dx() <= 0 || rr.Dy() <= 0 {
+					break
+				}
+				drawRectBorder(out, rr, maxInt(0, radius-i), border)
+			}
 		}
 
 		if chrome.stacked {

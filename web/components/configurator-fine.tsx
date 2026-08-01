@@ -351,9 +351,10 @@ export const drawsBadgeStrip = (presentation: string) =>
 // rail to fill and marks the capsule itself.
 const LABELLESS_PRESENTATIONS: string[] = ['minimal', 'dual-minimal'];
 
-// The stored width doubles as an off switch at -1 and a hairline at 0, which a
-// box labelled in pixels does not suggest. The picker names the three states and
-// reveals the number only when one is being chosen.
+// A stored width doubles as an off switch at -1 and a hairline at 0, which a box
+// labelled in pixels does not suggest. The picker names the three states and
+// reveals the number only when one is being chosen. Shared by both badge
+// families so they read the same.
 function genreBorderMode(width: number): string {
   if (width < 0) return 'off';
   if (width === 0) return 'hairline';
@@ -790,6 +791,17 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
         onChange={() => onUpdate('ratingBadgeBorderSourceTint', !config.ratingBadgeBorderSourceTint)} />
       <NumField id={`${uid}-badge-border-op`} label="Badge outline opacity (%)" value={config.ratingBadgeBorderOpacity}
         onChange={v => onUpdate('ratingBadgeBorderOpacity', v)} min={5} max={100} step={5} placeholder="solid" />
+      <StyleGrid
+        id={`${uid}-badge-border-mode-label`}
+        label="Badge border"
+        options={GENRE_BORDER_OPTIONS}
+        value={genreBorderMode(config.ratingBadgeBorderWidth)}
+        onChange={v => onUpdate('ratingBadgeBorderWidth', v === 'off' ? -1 : v === 'hairline' ? 0 : 2)}
+      />
+      {genreBorderMode(config.ratingBadgeBorderWidth) === 'custom' && (
+        <NumField id={`${uid}-badge-border-w`} label="Badge border width (px)" value={config.ratingBadgeBorderWidth}
+          onChange={v => onUpdate('ratingBadgeBorderWidth', v)} min={1} max={6} zeroIsDefault={false} />
+      )}
       <NumField id={`${uid}-badge-bg-op`} label="Badge background opacity (%)" value={config.ratingBadgeBackgroundOpacity}
         onChange={v => onUpdate('ratingBadgeBackgroundOpacity', v)} min={5} max={100} step={5} placeholder="per style"
         hint="How much artwork shows through the badge body. Blank keeps what the style and theme picked." />

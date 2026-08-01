@@ -367,3 +367,36 @@ func TestScorePillOpacityShowsArtworkNotItsOwnShadow(t *testing.T) {
 		t.Errorf("%d near-black pixels against %d carrying the artwork, so the shadow is covering the poster", dark, red)
 	}
 }
+
+// Rating badges had a border colour and opacity but no width, so the outline
+// was always a hairline while genre badges offered Off / Hairline / Custom.
+func TestRatingBadgeBorderWidth(t *testing.T) {
+	p := effectPipeline()
+
+	render := func(width int) []byte {
+		cfg := maximalConfig()
+		cfg.RatingBadgeBorderColor = "#00ffff"
+		cfg.RatingBadgeBorderWidth = width
+		return renderOne(t, p, cfg, "movie", "poster")
+	}
+
+	hairline, thick, off := render(0), render(5), render(-1)
+	if bytes.Equal(hairline, thick) {
+		t.Error("a 5px badge border draws the same as the hairline")
+	}
+	if bytes.Equal(hairline, off) {
+		t.Error("switching the badge border off draws the same as the hairline")
+	}
+
+	// Off has to beat the source tint, which otherwise supplies a border for
+	// every style that draws none of its own.
+	tinted := maximalConfig()
+	tinted.RatingBadgeBorderColor = ""
+	tinted.RatingBadgeBorderSourceTint = true
+	tinted.RatingBadgeBorderWidth = -1
+	plain := tinted
+	plain.RatingBadgeBorderSourceTint = false
+	if !bytes.Equal(renderOne(t, p, tinted, "movie", "poster"), renderOne(t, p, plain, "movie", "poster")) {
+		t.Error("the source tint draws a border after the width control switched it off")
+	}
+}
