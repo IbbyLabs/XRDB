@@ -4,7 +4,7 @@ import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   RATING_OPTIONS, SIX_POS_OPTIONS, QUALITY_STYLE_OPTIONS, GENRE_STYLE_OPTIONS,
   AGE_STYLE_OPTIONS, GENRE_MODE_OPTIONS, ANIME_GROUPING_OPTIONS,
-  GENRE_ACCENT_OPTIONS, GENRE_LABEL_OPTIONS,
+  GENRE_ACCENT_OPTIONS, GENRE_LABEL_OPTIONS, GENRE_BORDER_OPTIONS,
   AGGREGATE_SOURCE_OPTIONS, AGGREGATE_ACCENT_MODE_OPTIONS, SCOREBAR_STYLE_OPTIONS,
   RATING_PRESENTATION_OPTIONS, RATING_VALUE_MODE_OPTIONS, RELEASE_STATUS_STYLE_OPTIONS,
   ICON_SHAPE_OPTIONS, TREND_TAG_STYLE_OPTIONS, ACCENT_SHAPE_OPTIONS,
@@ -350,6 +350,15 @@ export const drawsBadgeStrip = (presentation: string) =>
 // Of those, the ones whose pills carry no label, so an accent colour has no
 // rail to fill and marks the capsule itself.
 const LABELLESS_PRESENTATIONS: string[] = ['minimal', 'dual-minimal'];
+
+// The stored width doubles as an off switch at -1 and a hairline at 0, which a
+// box labelled in pixels does not suggest. The picker names the three states and
+// reveals the number only when one is being chosen.
+function genreBorderMode(width: number): string {
+  if (width < 0) return 'off';
+  if (width === 0) return 'hairline';
+  return 'custom';
+}
 
 export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
   const strip = drawsBadgeStrip(config.ratingPresentation);
@@ -705,9 +714,17 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
       </div>
       <NumField id={`${uid}-genre-op`} label="Background opacity (%)" value={config.genreBadgeBackgroundOpacity}
         onChange={v => onUpdate('genreBadgeBackgroundOpacity', v)} min={5} max={100} step={5} />
-      <NumField id={`${uid}-genre-border`} label="Border width (px)" value={config.genreBadgeBorderWidth}
-        onChange={v => onUpdate('genreBadgeBorderWidth', v)} min={-1} max={6} placeholder="hairline"
-        hint="0 = hairline, -1 = off." />
+      <StyleGrid
+        id={`${uid}-genre-border-mode-label`}
+        label="Border"
+        options={GENRE_BORDER_OPTIONS}
+        value={genreBorderMode(config.genreBadgeBorderWidth)}
+        onChange={v => onUpdate('genreBadgeBorderWidth', v === 'off' ? -1 : v === 'hairline' ? 0 : 2)}
+      />
+      {genreBorderMode(config.genreBadgeBorderWidth) === 'custom' && (
+        <NumField id={`${uid}-genre-border`} label="Border width (px)" value={config.genreBadgeBorderWidth}
+          onChange={v => onUpdate('genreBadgeBorderWidth', v)} min={1} max={6} zeroIsDefault={false} />
+      )}
       <div className="field">
         <label className="label" htmlFor={`${uid}-plain-outline`}>Plain-style outline</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>

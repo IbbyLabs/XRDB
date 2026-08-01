@@ -249,6 +249,12 @@ export const ANIME_GROUPING_OPTIONS = [
   { id: 'secondary', label: 'Next genre', desc: 'Anime and animation defer to the next strongest genre' },
 ] as const;
 
+export const GENRE_BORDER_OPTIONS = [
+  { id: 'off',      label: 'Off' },
+  { id: 'hairline', label: 'Hairline' },
+  { id: 'custom',   label: 'Custom' },
+] as const;
+
 export const GENRE_MODE_OPTIONS = [
   { id: 'default', label: 'Text' },
   { id: 'icon',    label: 'Icon' },
