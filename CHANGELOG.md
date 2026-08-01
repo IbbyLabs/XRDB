@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.47.1](https://github.com/IbbyLabs/XRDB/compare/v3.47.0...v3.47.1) (2026-08-01)
+
+
+### Fixed
+
+* **logo:** fade the title scrim out towards the artwork edges ([2b9b3f7](https://github.com/IbbyLabs/XRDB/commit/2b9b3f72495bbbbc0d82e95d6a13423e137c0928))
+
 ## [3.47.0](https://github.com/IbbyLabs/XRDB/compare/v3.46.1...v3.47.0) (2026-08-01)
 
 
