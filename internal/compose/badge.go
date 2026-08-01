@@ -492,6 +492,9 @@ type badgeChrome struct {
 	// value beneath. The remaining fields are its vertical metrics, filled in
 	// once the strip's scale is known.
 	stacked bool
+	// blendFill composites the badge body over the artwork instead of replacing
+	// it, so a configured opacity lets the poster through.
+	blendFill bool
 	// squared keeps the corners on one edge square, for the anchored strip.
 	squared       squaredCorners
 	stackRailH    int
@@ -598,6 +601,12 @@ func chromeFor(cfg imageconfig.Config) badgeChrome {
 		}
 		c.border = b
 	}
+	// Applied after the style and theme have chosen a fill, so it tunes whichever
+	// one is in force. The plain and glass styles carry no fill to tune.
+	if o := cfg.RatingBadgeBackgroundOpacity; o > 0 && c.bg.A > 0 {
+		c.bg.A = uint8(maxInt(1, o*255/100))
+		c.blendFill = true
+	}
 	// Source tinting recolours an outline, so a style that draws none needs one
 	// before the control has anything to act on. The plain style carries its
 	// stroke on the glyphs instead and is tinted there.
@@ -671,7 +680,11 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 	for _, sp := range specs {
 		bRect := image.Rect(sp.x, y, sp.x+sp.w, y+innerH)
 		if chrome.bg.A > 0 {
-			fillRoundedRectSquared(out, bRect, radius, chrome.squared, chrome.bg)
+			if chrome.blendFill {
+				blendRoundedRectSquared(out, bRect, radius, chrome.squared, chrome.bg)
+			} else {
+				fillRoundedRectSquared(out, bRect, radius, chrome.squared, chrome.bg)
+			}
 		}
 		if border := chrome.border; border.A > 0 {
 			// Tinted per source, the outline reads as that site's badge rather

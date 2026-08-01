@@ -270,3 +270,42 @@ func TestGenreListDropsGenresRatherThanOverflow(t *testing.T) {
 		t.Errorf("the genre badge spans x=%d..%d on a %dpx poster, so it is clipped at the edge", lo, hi, w)
 	}
 }
+
+// A translucent badge body has to composite over the artwork. Writing the pixel
+// outright replaces it, so the badge shows the viewer's background rather than
+// the poster underneath (FR-134).
+func TestBadgeBackgroundOpacityLetsTheArtworkThrough(t *testing.T) {
+	ratings := []provider.Rating{{Source: "imdb", Value: 8.4, Label: "8.4"}}
+
+	draw := func(opacity int) *image.NRGBA {
+		cfg := imageconfig.Default()
+		cfg.RatingBadgeBackgroundOpacity = opacity
+		img := image.NewNRGBA(image.Rect(0, 0, 500, 750))
+		// Opaque red stands in for artwork; anything the badge lets through
+		// keeps a red channel the badge's own dark fill does not have.
+		for i := 0; i < len(img.Pix); i += 4 {
+			img.Pix[i], img.Pix[i+1], img.Pix[i+2], img.Pix[i+3] = 255, 0, 0, 255
+		}
+		drawBadgesInPlace(img, ratings, cfg)
+		return img
+	}
+
+	// Every pixel starts opaque, so a hole is the failure: replacing the body
+	// with a translucent fill drops the alpha.
+	transparent, blended := 0, 0
+	img := draw(30)
+	for i := 0; i < len(img.Pix); i += 4 {
+		if img.Pix[i+3] < 255 {
+			transparent++
+		}
+		if r, g, b := img.Pix[i], img.Pix[i+1], img.Pix[i+2]; r > 40 && r < 250 && g < 60 && b < 60 {
+			blended++
+		}
+	}
+	if transparent > 0 {
+		t.Errorf("%d badge pixels became translucent, so the body replaced the artwork instead of compositing over it", transparent)
+	}
+	if blended == 0 {
+		t.Error("no badge pixel carries the artwork's colour, so nothing showed through")
+	}
+}

@@ -58,6 +58,32 @@ func fillRoundedRect(dst *image.NRGBA, r image.Rectangle, radius int, c color.NR
 	fillRoundedRectSquared(dst, r, radius, squareNone, c)
 }
 
+// blendRoundedRectSquared composites c over what is already there, keeping the
+// squared corners fillRoundedRectSquared honours. Writing the pixel outright
+// replaces the artwork, so a translucent badge shows the viewer's background
+// rather than the poster underneath it.
+func blendRoundedRectSquared(dst *image.NRGBA, r image.Rectangle, radius int, sq squaredCorners, c color.NRGBA) {
+	bounds := dst.Bounds()
+	r = r.Intersect(bounds)
+	for y := r.Min.Y; y < r.Max.Y; y++ {
+		for x := r.Min.X; x < r.Max.X; x++ {
+			if sq != squareNone && onSquaredEdge(x, y, r, radius, sq) {
+				blendPixel(dst, x, y, c)
+				continue
+			}
+			cov, skip := cornerCoverage(x, y, r, radius)
+			if skip {
+				continue
+			}
+			a := c.A
+			if cov < 1 {
+				a = uint8(float64(c.A) * cov)
+			}
+			blendPixel(dst, x, y, color.NRGBA{R: c.R, G: c.G, B: c.B, A: a})
+		}
+	}
+}
+
 func fillRoundedRectSquared(dst *image.NRGBA, r image.Rectangle, radius int, sq squaredCorners, c color.NRGBA) {
 	bounds := dst.Bounds()
 	r = r.Intersect(bounds)

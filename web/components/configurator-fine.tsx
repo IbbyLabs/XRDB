@@ -773,6 +773,9 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
         onChange={() => onUpdate('ratingBadgeBorderSourceTint', !config.ratingBadgeBorderSourceTint)} />
       <NumField id={`${uid}-badge-border-op`} label="Badge outline opacity (%)" value={config.ratingBadgeBorderOpacity}
         onChange={v => onUpdate('ratingBadgeBorderOpacity', v)} min={5} max={100} step={5} placeholder="solid" />
+      <NumField id={`${uid}-badge-bg-op`} label="Badge background opacity (%)" value={config.ratingBadgeBackgroundOpacity}
+        onChange={v => onUpdate('ratingBadgeBackgroundOpacity', v)} min={5} max={100} step={5} placeholder="per style"
+        hint="How much artwork shows through the badge body. Blank keeps what the style and theme picked." />
       <div className="field">
         <label className="label" htmlFor={`${uid}-icon-outline`}>Logo outline</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
