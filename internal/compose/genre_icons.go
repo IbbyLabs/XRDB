@@ -4,6 +4,8 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"strconv"
+	"sync"
 )
 
 // Genre icons are defined as vector primitives on a 24x24 grid and rasterised
@@ -294,43 +296,80 @@ func genreIconShapes(familyID string) []iconShape {
 // small shapes smooth without a meaningful cost at badge sizes.
 const genreIconSubsamples = 4
 
-// drawGenreIcon rasterises a family's icon into a size x size box at (x, y),
-// tinted with the family accent. darkCol punches out the interior details.
-func drawGenreIcon(dst *image.NRGBA, familyID string, accent color.NRGBA, darkCol color.NRGBA, x, y, size int) {
-	if size <= 0 {
-		return
+// shapeCoverage is one shape's per-pixel coverage over a size x size box, with
+// the colour choice that shape makes. float32 halves the cache against float64
+// and still round-trips to the same uint8 alpha.
+type shapeCoverage struct {
+	dark  bool
+	alpha float64
+	cov   []float32
+}
+
+// genreIconCoverage caches the expensive half of drawing a glyph. Coverage is
+// fixed by family and size, and the outline redraws the same glyph up to 49
+// times for one badge, so rasterising per draw repeated identical work: about
+// 11 million subsample tests for a single outlined badge at size 60.
+var genreIconCoverage sync.Map // "family|size" -> []shapeCoverage
+
+func genreIconCoverageFor(familyID string, size int) []shapeCoverage {
+	key := familyID + "|" + strconv.Itoa(size)
+	if v, ok := genreIconCoverage.Load(key); ok {
+		return v.([]shapeCoverage)
 	}
 	shapes := genreIconShapes(familyID)
 	scale := float64(size) / genreIconViewBox
 	step := 1.0 / float64(genreIconSubsamples)
 	weight := 1.0 / float64(genreIconSubsamples*genreIconSubsamples)
 
+	out := make([]shapeCoverage, 0, len(shapes))
 	for _, sh := range shapes {
 		alpha := sh.alpha
 		if alpha == 0 {
 			alpha = 1
 		}
+		cov := make([]float32, size*size)
+		for py := 0; py < size; py++ {
+			for px := 0; px < size; px++ {
+				c := 0.0
+				for sy := 0; sy < genreIconSubsamples; sy++ {
+					for sx := 0; sx < genreIconSubsamples; sx++ {
+						gx := (float64(px) + (float64(sx)+0.5)*step) / scale
+						gy := (float64(py) + (float64(sy)+0.5)*step) / scale
+						if sh.prim.covers(gx, gy) {
+							c += weight
+						}
+					}
+				}
+				cov[py*size+px] = float32(c)
+			}
+		}
+		out = append(out, shapeCoverage{dark: sh.dark, alpha: alpha, cov: cov})
+	}
+	genreIconCoverage.Store(key, out)
+	return out
+}
+
+// drawGenreIcon rasterises a family's icon into a size x size box at (x, y),
+// tinted with the family accent. darkCol punches out the interior details.
+// Shapes are blended in order, so an overlap compounds exactly as it did when
+// the coverage was computed inline.
+func drawGenreIcon(dst *image.NRGBA, familyID string, accent color.NRGBA, darkCol color.NRGBA, x, y, size int) {
+	if size <= 0 {
+		return
+	}
+	for _, sh := range genreIconCoverageFor(familyID, size) {
 		col := accent
 		if sh.dark {
 			col = darkCol
 		}
 		for py := 0; py < size; py++ {
 			for px := 0; px < size; px++ {
-				cov := 0.0
-				for sy := 0; sy < genreIconSubsamples; sy++ {
-					for sx := 0; sx < genreIconSubsamples; sx++ {
-						gx := (float64(px) + (float64(sx)+0.5)*step) / scale
-						gy := (float64(py) + (float64(sy)+0.5)*step) / scale
-						if sh.prim.covers(gx, gy) {
-							cov += weight
-						}
-					}
-				}
+				cov := float64(sh.cov[py*size+px])
 				if cov <= 0 {
 					continue
 				}
 				c := col
-				c.A = uint8(math.Round(float64(col.A) * alpha * cov))
+				c.A = uint8(math.Round(float64(col.A) * sh.alpha * cov))
 				if c.A == 0 {
 					continue
 				}
