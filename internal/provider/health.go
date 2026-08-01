@@ -36,6 +36,9 @@ type sourceState struct {
 	// renders skip it until then and serve the remembered value instead.
 	cooldownUntil time.Time
 	cooldowns     int64
+	// breakerTrips counts how many times in a row the failure breaker has held
+	// this source out without a success in between. It lengthens the next hold.
+	breakerTrips int
 }
 
 type goodEntry struct {
@@ -112,6 +115,7 @@ func (h *HealthTracker) Success(source, key string, meta *MediaMeta) (recovered 
 	st.cooldownUntil = time.Time{}
 	st.lastSuccess = time.Now()
 	st.consecutiveFail = 0
+	st.breakerTrips = 0
 	st.successes++
 
 	h.rememberLocked(key, meta)
@@ -208,10 +212,19 @@ func (h *HealthTracker) Failure(source string, err error) (enteredCooldown bool)
 	// and the next render pays the same wait again. Hold a repeatedly failing
 	// source out the same way, whatever it failed with.
 	if st.consecutiveFail >= failureBreakerThreshold {
-		until := time.Now().Add(failureCooldown)
+		// Each hold that ends in another round of failures doubles the next one, so
+		// a source that cannot serve the current demand settles instead of being
+		// probed every cooldown. A success resets it, so one that genuinely comes
+		// back is picked up at full speed.
+		wait := failureCooldown << min(st.breakerTrips, failureBackoffShifts)
+		if wait > maxCooldown {
+			wait = maxCooldown
+		}
+		until := time.Now().Add(wait)
 		if until.After(st.cooldownUntil) {
 			st.cooldownUntil = until
 			st.cooldowns++
+			st.breakerTrips++
 		}
 		enteredCooldown = !wasCooling && time.Now().Before(st.cooldownUntil)
 	}
@@ -233,6 +246,9 @@ const (
 	// still costs every render its timeout until it is held out.
 	failureBreakerThreshold = 5
 	failureCooldown         = 30 * time.Second
+	// failureBackoffShifts caps the doubling at 30s<<3 = 4 minutes, under the
+	// five-minute ceiling every other cooldown answers to.
+	failureBackoffShifts = 3
 )
 
 // CoolingOff reports whether a source is being held out after refusing on

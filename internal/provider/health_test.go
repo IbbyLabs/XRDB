@@ -206,3 +206,41 @@ func TestRepeatedPlainFailuresHoldTheSourceOut(t *testing.T) {
 		t.Error("source still held out after answering again")
 	}
 }
+
+// A source that cannot serve the current demand should settle rather than be
+// probed on every cooldown, so each hold that ends in more failures is longer
+// than the last. One success puts it straight back to the short hold.
+func TestBreakerHoldsLongerEachTimeItTripsAgain(t *testing.T) {
+	h := NewHealthTracker(16, time.Hour)
+	plain := errors.New("Client.Timeout exceeded")
+	trip := func() time.Duration {
+		for i := 0; i < failureBreakerThreshold; i++ {
+			h.Failure("mdblist", plain)
+		}
+		h.mu.Lock()
+		defer h.mu.Unlock()
+		return time.Until(h.sources["mdblist"].cooldownUntil).Round(time.Second)
+	}
+
+	first := trip()
+	if first < 29*time.Second || first > 31*time.Second {
+		t.Fatalf("first hold = %s, want ~%s", first, failureCooldown)
+	}
+	// Clear the clock-based gate so the next trip is measured from now.
+	h.mu.Lock()
+	h.sources["mdblist"].cooldownUntil = time.Time{}
+	h.mu.Unlock()
+
+	second := trip()
+	if second <= first {
+		t.Errorf("second hold = %s, want longer than the first (%s)", second, first)
+	}
+
+	h.Success("mdblist", GoodKey("mdblist", "movie", "tt1"), &MediaMeta{Ratings: []Rating{{Source: "imdb", Value: 8}}})
+	h.mu.Lock()
+	trips := h.sources["mdblist"].breakerTrips
+	h.mu.Unlock()
+	if trips != 0 {
+		t.Errorf("breakerTrips = %d after a success, want 0 so a recovered source is picked up fast", trips)
+	}
+}
