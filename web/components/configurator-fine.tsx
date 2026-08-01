@@ -400,6 +400,12 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
           hint="Trim each provider's mark to a shape. Original keeps its own outline."
         />
       )}
+      {strip && (
+        <ToggleField id={`${uid}-icon-plate-filled`} label="Fill the mark's plate"
+          checked={config.iconPlateFilled}
+          onChange={v => onUpdate('iconPlateFilled', v)}
+          hint="Fills the shape behind each provider mark with that site's own colour. Needs an icon shape other than Original." />
+      )}
       {(strip || pills) && (
         <NumField id={`${uid}-rating-scale`} label="Scale (%)" value={config.ratingBadgeScale}
           onChange={v => onUpdate('ratingBadgeScale', v)} min={70} max={400} step={5}

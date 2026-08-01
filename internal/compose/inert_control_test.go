@@ -400,3 +400,42 @@ func TestRatingBadgeBorderWidth(t *testing.T) {
 		t.Error("the source tint draws a border after the width control switched it off")
 	}
 }
+
+// v2 filled the shaped plate behind each provider mark with that source's own
+// colour, so MAL sat on blue and IMDb on yellow, with the mark on top. v3 filled
+// a fixed dark navy and tinted only the edge (FR-135).
+func TestIconPlateTakesTheSourceColour(t *testing.T) {
+	accent := color.NRGBA{R: 250, G: 50, B: 10, A: 255} // Rotten Tomatoes red
+	box := image.Rect(8, 8, 72, 72)
+
+	plateColours := func(filled bool) (source, navy int) {
+		dst := image.NewNRGBA(image.Rect(0, 0, 80, 80))
+		drawIconPlate(dst, box, "circle", accent, filled)
+		for y := box.Min.Y; y < box.Max.Y; y++ {
+			for x := box.Min.X; x < box.Max.X; x++ {
+				c := dst.NRGBAAt(x, y)
+				switch {
+				case c.R == accent.R && c.G == accent.G && c.B == accent.B && c.A > 200:
+					source++
+				case c.R == 15 && c.G == 23 && c.B == 42:
+					navy++
+				}
+			}
+		}
+		return
+	}
+
+	// Unfilled draws the accent on the edge only, so the fill has to grow by far
+	// more than a border's worth for this to mean the plate itself changed.
+	edgeOnly, navyBefore := plateColours(false)
+	body, navyAfter := plateColours(true)
+	if navyBefore == 0 {
+		t.Fatal("the unfilled plate drew no dark body, so the fixture is wrong")
+	}
+	if navyAfter != 0 {
+		t.Errorf("%d dark pixels remain, so the filled plate kept its navy body", navyAfter)
+	}
+	if body <= edgeOnly*4 {
+		t.Errorf("the filled plate carries %d source-coloured pixels against %d unfilled, which is an edge not a body", body, edgeOnly)
+	}
+}

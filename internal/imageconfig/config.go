@@ -185,6 +185,9 @@ type Config struct {
 	// RatingBadgeBorderWidth thickens the capsule outline. -1 draws none, 0 the
 	// hairline each style carries, matching the genre badge's control.
 	RatingBadgeBorderWidth int `json:"ratingBadgeBorderWidth,omitempty"` // -1..6; 0 = hairline
+	// IconPlateFilled fills the shaped plate behind a provider mark with that
+	// source's own colour instead of tinting only its edge, as v2 did.
+	IconPlateFilled bool `json:"iconPlateFilled,omitempty"`
 	// Outline traced around a rating provider's mark, for artwork the mark would
 	// otherwise disappear into.
 	IconOutlineColor string `json:"iconOutlineColor,omitempty"` // "#RRGGBB"; "" = none
@@ -652,6 +655,7 @@ type raw struct {
 	RatingBadgeBorderOpacity      *int      `json:"ratingBadgeBorderOpacity"`
 	RatingBadgeBackgroundOpacity  *int      `json:"ratingBadgeBackgroundOpacity"`
 	RatingBadgeBorderWidth        *int      `json:"ratingBadgeBorderWidth"`
+	IconPlateFilled               *bool     `json:"iconPlateFilled"`
 	IconOutlineColor              *string   `json:"iconOutlineColor"`
 	IconOutlineWidth              *int      `json:"iconOutlineWidth"`
 	NoBackgroundBadgeOutlineColor *string   `json:"noBackgroundBadgeOutlineColor"`
@@ -1102,6 +1106,9 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.RatingBadgeBorderWidth != nil && *r.RatingBadgeBorderWidth != 0 {
 		cfg.RatingBadgeBorderWidth = clampInt(*r.RatingBadgeBorderWidth, -1, 6)
+	}
+	if r.IconPlateFilled != nil {
+		cfg.IconPlateFilled = *r.IconPlateFilled
 	}
 	if r.IconOutlineColor != nil && isHexColor(*r.IconOutlineColor) {
 		cfg.IconOutlineColor = strings.TrimSpace(*r.IconOutlineColor)
@@ -1986,6 +1993,7 @@ func CacheKey(cfg Config) string {
 		RatingBadgeBorderOpacity      int            `json:"ratingBadgeBorderOpacity"`
 		RatingBadgeBackgroundOpacity  int            `json:"ratingBadgeBackgroundOpacity"`
 		RatingBadgeBorderWidth        int            `json:"ratingBadgeBorderWidth"`
+		IconPlateFilled               bool           `json:"iconPlateFilled"`
 		IconOutlineColor              string         `json:"iconOutlineColor"`
 		IconOutlineWidth              int            `json:"iconOutlineWidth"`
 		NoBackgroundBadgeOutlineColor string         `json:"noBackgroundBadgeOutlineColor"`
@@ -2076,6 +2084,7 @@ func CacheKey(cfg Config) string {
 		RatingBadgeBorderOpacity:      cfg.RatingBadgeBorderOpacity,
 		RatingBadgeBackgroundOpacity:  cfg.RatingBadgeBackgroundOpacity,
 		RatingBadgeBorderWidth:        cfg.RatingBadgeBorderWidth,
+		IconPlateFilled:               cfg.IconPlateFilled,
 		IconOutlineColor:              cfg.IconOutlineColor,
 		IconOutlineWidth:              cfg.IconOutlineWidth,
 		NoBackgroundBadgeOutlineColor: cfg.NoBackgroundBadgeOutlineColor,

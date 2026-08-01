@@ -26,10 +26,10 @@ func TestIconOutlineDrawsAroundTheMark(t *testing.T) {
 	box := image.Rect(16, 16, 80, 80)
 
 	plain := image.NewNRGBA(image.Rect(0, 0, 96, 96))
-	drawBrandIcon(plain, box, opaqueSquare(48), "", color.NRGBA{}, color.NRGBA{}, 0)
+	drawBrandIcon(plain, box, opaqueSquare(48), "", color.NRGBA{}, color.NRGBA{}, 0, false)
 
 	outlined := image.NewNRGBA(image.Rect(0, 0, 96, 96))
-	drawBrandIcon(outlined, box, opaqueSquare(48), "", color.NRGBA{}, outline, outlineWidth)
+	drawBrandIcon(outlined, box, opaqueSquare(48), "", color.NRGBA{}, outline, outlineWidth, false)
 
 	if got := countColor(plain, outline); got != 0 {
 		t.Errorf("no outline was requested but %d pixels carry the outline color", got)
@@ -46,7 +46,7 @@ func TestIconOutlineDrawsAroundTheMark(t *testing.T) {
 	}
 
 	wider := image.NewNRGBA(image.Rect(0, 0, 96, 96))
-	drawBrandIcon(wider, box, opaqueSquare(48), "", color.NRGBA{}, outline, outlineWidth+2)
+	drawBrandIcon(wider, box, opaqueSquare(48), "", color.NRGBA{}, outline, outlineWidth+2, false)
 	if got := countColor(wider, outline); got <= drawn {
 		t.Errorf("a wider outline painted %d pixels, want more than %d", got, drawn)
 	}

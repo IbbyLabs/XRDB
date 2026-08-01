@@ -283,8 +283,13 @@ func accentFor(source string) color.NRGBA {
 // recolored to tint, using the glyph's alpha as the mask. The glyph is trimmed
 // of transparent padding and scaled with its aspect ratio preserved, so marks
 // fill the box instead of being squeezed to its shape.
-func drawTintedIcon(dst *image.NRGBA, rect image.Rectangle, icon image.Image, tint color.NRGBA, shape string, accent color.NRGBA, outline color.NRGBA, outlineWidth int) {
-	drawIconPlate(dst, rect, shape, accent)
+func drawTintedIcon(dst *image.NRGBA, rect image.Rectangle, icon image.Image, tint color.NRGBA, shape string, accent color.NRGBA, outline color.NRGBA, outlineWidth int, plateFilled bool) {
+	drawIconPlate(dst, rect, shape, accent, plateFilled)
+	// A mark tinted with the same accent that now fills the plate would vanish
+	// into it, so it takes the ink that reads against the plate instead.
+	if plateFilled && accent.A > 0 {
+		tint = contrastingInk(accent)
+	}
 	rect = insetForPlate(rect, shape)
 	scaled, rect := scaleIconToFit(icon, rect)
 	if scaled == nil {
@@ -316,8 +321,8 @@ func insetForPlate(rect image.Rectangle, shape string) image.Rectangle {
 // drawBrandIcon paints a full-color brand mark as it is, so marks built from
 // several colors (Letterboxd's three dots, IMDb's black-on-yellow wordmark)
 // keep them instead of flattening to one silhouette.
-func drawBrandIcon(dst *image.NRGBA, rect image.Rectangle, icon image.Image, shape string, accent color.NRGBA, outline color.NRGBA, outlineWidth int) {
-	drawIconPlate(dst, rect, shape, accent)
+func drawBrandIcon(dst *image.NRGBA, rect image.Rectangle, icon image.Image, shape string, accent color.NRGBA, outline color.NRGBA, outlineWidth int, plateFilled bool) {
+	drawIconPlate(dst, rect, shape, accent, plateFilled)
 	rect = insetForPlate(rect, shape)
 	scaled, rect := scaleIconToFit(icon, rect)
 	if scaled == nil {
@@ -347,13 +352,19 @@ func iconShapeRadius(shape string) float64 {
 // show a shape, because the marks already sit inside one; the plate is what
 // makes circle, squircle and rounded tell apart. accent tints its edge so the
 // plate reads as part of the source rather than a grey box.
-func drawIconPlate(dst *image.NRGBA, rect image.Rectangle, shape string, accent color.NRGBA) {
+func drawIconPlate(dst *image.NRGBA, rect image.Rectangle, shape string, accent color.NRGBA, filled bool) {
 	frac := iconShapeRadius(shape)
 	if frac == 0 {
 		return
 	}
 	r := int(frac*math.Min(float64(rect.Dx()), float64(rect.Dy())) + 0.5)
-	fillRoundedRect(dst, rect, r, color.NRGBA{R: 15, G: 23, B: 42, A: 235})
+	// Filled, the plate carries the source's own colour and the mark reads
+	// against it; otherwise it stays dark and only its edge is tinted.
+	plate := color.NRGBA{R: 15, G: 23, B: 42, A: 235}
+	if filled && accent.A > 0 {
+		plate = color.NRGBA{R: accent.R, G: accent.G, B: accent.B, A: 235}
+	}
+	fillRoundedRect(dst, rect, r, plate)
 	if accent.A > 0 {
 		drawRectBorder(dst, rect, r, color.NRGBA{R: accent.R, G: accent.G, B: accent.B, A: 200})
 	}
@@ -650,6 +661,8 @@ type badgeSpec struct {
 	iconShape string
 	// iconScale sizes the mark within the badge box, as a percent; 0 = 100.
 	iconScale int
+	// plateFilled fills the mark's shaped plate with the source's own colour.
+	plateFilled bool
 	// iconOutline traces the mark's own edge; zero alpha or width draws none.
 	iconOutline      color.NRGBA
 	iconOutlineWidth int
@@ -753,9 +766,9 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 			iconTop := y + (innerH-drawSize)/2
 			iRect := image.Rect(contentX, iconTop, contentX+drawSize, iconTop+drawSize)
 			if sp.colored {
-				drawBrandIcon(out, iRect, sp.icon, sp.iconShape, sp.accent, sp.iconOutline, sp.iconOutlineWidth)
+				drawBrandIcon(out, iRect, sp.icon, sp.iconShape, sp.accent, sp.iconOutline, sp.iconOutlineWidth, sp.plateFilled)
 			} else {
-				drawTintedIcon(out, iRect, sp.icon, iconTint, sp.iconShape, sp.accent, sp.iconOutline, sp.iconOutlineWidth)
+				drawTintedIcon(out, iRect, sp.icon, iconTint, sp.iconShape, sp.accent, sp.iconOutline, sp.iconOutlineWidth, sp.plateFilled)
 			}
 			contentX += iconSize + iconGap
 		}
@@ -982,6 +995,7 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 			iconScale:        cfg.RatingProviderIconScale[r.Source],
 			iconOutline:      iconOutlineColor(cfg),
 			iconOutlineWidth: cfg.IconOutlineWidth,
+			plateFilled:      cfg.IconPlateFilled,
 			w:                bw,
 			accent:           resolveProviderAccent(cfg, r.Source),
 		})
@@ -1351,9 +1365,9 @@ func drawStackedBadge(out *image.NRGBA, sp badgeSpec, y, innerH, iconSize int, f
 	if sp.icon != nil && !chrome.hideIcon {
 		iRect := image.Rect(sp.x+(sp.w-drawSize)/2, iconTop, sp.x+(sp.w+drawSize)/2, iconTop+drawSize)
 		if sp.colored {
-			drawBrandIcon(out, iRect, sp.icon, sp.iconShape, sp.accent, sp.iconOutline, sp.iconOutlineWidth)
+			drawBrandIcon(out, iRect, sp.icon, sp.iconShape, sp.accent, sp.iconOutline, sp.iconOutlineWidth, sp.plateFilled)
 		} else {
-			drawTintedIcon(out, iRect, sp.icon, chrome.iconColor, sp.iconShape, sp.accent, sp.iconOutline, sp.iconOutlineWidth)
+			drawTintedIcon(out, iRect, sp.icon, chrome.iconColor, sp.iconShape, sp.accent, sp.iconOutline, sp.iconOutlineWidth, sp.plateFilled)
 		}
 	}
 

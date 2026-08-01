@@ -513,6 +513,7 @@ export interface ConfigState {
   ratingBadgeBorderOpacity: number; // 0 = default
   ratingBadgeBackgroundOpacity: number; // 0 = whatever the style and theme picked
   ratingBadgeBorderWidth: number; // -1 = off, 0 = hairline
+  iconPlateFilled: boolean; // fill the mark's plate with the source's colour
   iconOutlineColor: string; // '' = none
   iconOutlineWidth: number; // 0 = none
   ringScale: number; // percent of the default ring size; 0 = 100
@@ -682,6 +683,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingBadgeBorderOpacity: 0,
   ratingBadgeBackgroundOpacity: 0,
   ratingBadgeBorderWidth: 0,
+  iconPlateFilled: false,
   iconOutlineColor: '',
   iconOutlineWidth: 0,
   ringScale: 0,
