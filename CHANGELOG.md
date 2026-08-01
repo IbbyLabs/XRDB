@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.48.0](https://github.com/IbbyLabs/XRDB/compare/v3.47.1...v3.48.0) (2026-08-01)
+
+
+### Added
+
+* **logo:** cast the title shadow from the glyphs, not a box ([19abdaf](https://github.com/IbbyLabs/XRDB/commit/19abdaff77826a234a5892047ae01b61aa49ec56))
+
 ## [3.47.1](https://github.com/IbbyLabs/XRDB/compare/v3.47.0...v3.47.1) (2026-08-01)
 
 
