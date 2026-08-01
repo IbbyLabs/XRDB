@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.44.0](https://github.com/IbbyLabs/XRDB/compare/v3.43.0...v3.44.0) (2026-07-31)
+
+
+### Added
+
+* **cache:** log the disk tier bounds at startup ([395adff](https://github.com/IbbyLabs/XRDB/commit/395adffe3908293263b6596e6e782f3507229353))
+
+
+### Fixed
+
+* **config:** document every environment variable the server reads ([22dd0d9](https://github.com/IbbyLabs/XRDB/commit/22dd0d966bbd1b3c0b88f80f287e6b3e3da4f00c))
+
 ## [3.43.0](https://github.com/IbbyLabs/XRDB/compare/v3.42.0...v3.43.0) (2026-07-31)
 
 
