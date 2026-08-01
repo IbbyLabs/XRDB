@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"image"
+	"image/color"
 	"testing"
 
 	"xrdb_rewrite/internal/imageconfig"
@@ -326,5 +327,43 @@ func TestBadgeBackgroundOpacityReachesTheScorePills(t *testing.T) {
 				t.Errorf("badge background opacity changes nothing on the %s presentation", presentation)
 			}
 		})
+	}
+}
+
+// The pill's drop shadow sits under nearly all of its body. Drawn opaquely it
+// replaces the artwork, so a translucent capsule reveals a black slab rather
+// than the poster the control exists to show.
+func TestScorePillOpacityShowsArtworkNotItsOwnShadow(t *testing.T) {
+	cfg := imageconfig.Default()
+	cfg.RatingBadgeBackgroundOpacity = 20
+
+	img := image.NewNRGBA(image.Rect(0, 0, 500, 750))
+	for i := 0; i < len(img.Pix); i += 4 {
+		img.Pix[i], img.Pix[i+1], img.Pix[i+2], img.Pix[i+3] = 255, 0, 0, 255
+	}
+	style := aggregatePillStyle(cfg, "overall", nil, false, 8.4, color.NRGBA{R: 80, G: 80, B: 90, A: 255})
+	drawAggregatePills(img, cfg, 1, newOccupancy(img.Bounds()), false, aggregatePill{
+		score: "8.4", style: style,
+	})
+
+	// Anywhere the capsule sits, red should still dominate at 20% opacity. A
+	// replaced pixel is near-black and loses it.
+	red, dark := 0, 0
+	for i := 0; i < len(img.Pix); i += 4 {
+		r, g, b := img.Pix[i], img.Pix[i+1], img.Pix[i+2]
+		if r == 255 && g == 0 && b == 0 {
+			continue // untouched artwork
+		}
+		if int(r) > int(g)+30 && int(r) > int(b)+30 {
+			red++
+		} else if r < 60 && g < 60 && b < 60 {
+			dark++
+		}
+	}
+	if red == 0 {
+		t.Error("no drawn pixel keeps the artwork's colour, so the capsule and its shadow replaced it")
+	}
+	if dark > red {
+		t.Errorf("%d near-black pixels against %d carrying the artwork, so the shadow is covering the poster", dark, red)
 	}
 }

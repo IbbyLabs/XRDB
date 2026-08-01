@@ -1829,12 +1829,18 @@ func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, icon im
 		blendBody = true
 	}
 
-	// Drop shadow, then the capsule.
+	// Drop shadow, then the capsule. The shadow sits under nearly all of the
+	// body, so it has to composite too or a translucent capsule reveals a black
+	// slab where the artwork should be. A capsule you can see through also casts
+	// a fainter shadow.
 	shadow := rect.Add(image.Pt(0, s(2)))
-	fillRoundedRect(base, shadow, radius, color.NRGBA{A: 90})
+	shadowCol := color.NRGBA{A: 90}
 	if blendBody {
+		shadowCol.A = uint8(maxInt(1, int(shadowCol.A)*style.bodyOpacity/100))
+		blendRoundedRect(base, shadow, radius, shadowCol)
 		blendRoundedRect(base, rect, radius, body)
 	} else {
+		fillRoundedRect(base, shadow, radius, shadowCol)
 		fillRoundedRect(base, rect, radius, body)
 	}
 	// With a label the accent fills the rail behind it. Without one there is no
