@@ -626,6 +626,24 @@ type tmdbImage struct {
 	Height      int     `json:"height"`
 }
 
+// passesQualityFloor reports whether an image clears the configured vote and
+// size floors. Zero means no floor, so an unset config admits everything.
+func passesQualityFloor(img tmdbImage, opts ArtworkOptions) bool {
+	if img.VoteCount < opts.RandomMinVoteCount {
+		return false
+	}
+	if img.VoteAverage < opts.RandomMinVoteAvg {
+		return false
+	}
+	if opts.RandomMinWidth > 0 && img.Width < opts.RandomMinWidth {
+		return false
+	}
+	if opts.RandomMinHeight > 0 && img.Height < opts.RandomMinHeight {
+		return false
+	}
+	return true
+}
+
 // selectImagePath picks an image variant according to language and text
 // preference. defaultPath is TMDB's canonical pick (poster_path etc.) and is
 // the fallback whenever no candidate matches.
@@ -688,6 +706,12 @@ func selectImagePath(images []tmdbImage, defaultPath, lang string, opts ArtworkO
 			if !isRenderable(img.FilePath) || img.FilePath == base {
 				continue
 			}
+			// Same quality floors as the random path. Both reach past the
+			// canonical poster into community uploads, which are downvoted
+			// rather than removed when they are wrong for the title.
+			if !passesQualityFloor(img, opts) {
+				continue
+			}
 			if lang == "" || inLang(img) || langOf(img) == "en" || textless(img) {
 				candidates = append(candidates, img)
 			}
@@ -720,16 +744,7 @@ func selectImagePath(images []tmdbImage, defaultPath, lang string, opts ArtworkO
 			if opts.RandomLanguage == "requested" && lang != "" && !inLang(img) {
 				continue
 			}
-			if img.VoteCount < opts.RandomMinVoteCount {
-				continue
-			}
-			if img.VoteAverage < opts.RandomMinVoteAvg {
-				continue
-			}
-			if opts.RandomMinWidth > 0 && img.Width < opts.RandomMinWidth {
-				continue
-			}
-			if opts.RandomMinHeight > 0 && img.Height < opts.RandomMinHeight {
+			if !passesQualityFloor(img, opts) {
 				continue
 			}
 			candidates = append(candidates, img)
