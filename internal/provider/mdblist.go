@@ -5,12 +5,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"xrdb_rewrite/internal/logging"
 )
 
 const mdblistBase = "https://api.mdblist.com"
@@ -143,12 +146,30 @@ func (m *MDBList) fetchType(ctx context.Context, mdbType, id string) (*MediaMeta
 		return nil, fmt.Errorf("mdblist: decode response: %w", err)
 	}
 
-	return &MediaMeta{
+	meta := &MediaMeta{
 		Ratings:       parseMDBListRatings(payload),
 		ContentRating: commonSenseAge(payload),
 		Awards:        ParseAwards(payload.Awards),
-	}, nil
+	}
+	// Raw sources alongside the kept ones: a name the parser does not recognise
+	// is dropped, so the kept list alone cannot show that it arrived.
+	if m.log().Enabled(ctx, slog.LevelDebug) {
+		raw := make([]string, 0, len(payload.Ratings))
+		for _, r := range payload.Ratings {
+			raw = append(raw, r.Source)
+		}
+		kept := make([]string, 0, len(meta.Ratings))
+		for _, r := range meta.Ratings {
+			kept = append(kept, r.Source)
+		}
+		m.log().DebugContext(ctx, "MDBList answered",
+			"id", logging.RequestID(ctx), "media_id", id, "media_type", mdbType,
+			"raw_sources", raw, "kept_sources", kept, "raw_awards", payload.Awards)
+	}
+	return meta, nil
 }
+
+func (m *MDBList) log() *slog.Logger { return slog.Default() }
 
 type mdblistPayload struct {
 	Score       float64         `json:"score"`
