@@ -341,11 +341,19 @@ function ProviderWeights({ uid, config, onUpdate }: GroupProps) {
 // are the ones the pill placement reaches.
 export const PILL_PRESENTATIONS: string[] = ['minimal', 'average', 'dual', 'dual-minimal'];
 
+// Only the standard presentation draws the badge strip. Every other one puts
+// something else in its place, and the strip's own controls stop reaching the
+// image, so they are not offered.
+export const drawsBadgeStrip = (presentation: string) =>
+  presentation === '' || presentation === 'standard';
+
 // Of those, the ones whose pills carry no label, so an accent colour has no
 // rail to fill and marks the capsule itself.
 const LABELLESS_PRESENTATIONS: string[] = ['minimal', 'dual-minimal'];
 
 export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
+  const strip = drawsBadgeStrip(config.ratingPresentation);
+  const pills = PILL_PRESENTATIONS.includes(config.ratingPresentation);
   return (
     <FineGroup label="Rating badges">
       <StyleGrid
@@ -361,76 +369,92 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
           value={config.aggregatePillPos}
           onChange={v => onUpdate('aggregatePillPos', v)} />
       )}
-      <StyleGrid
-        id={`${uid}-rating-value-mode-label`}
-        label="Value scale"
-        options={RATING_VALUE_MODE_OPTIONS}
-        value={config.ratingValueMode}
-        onChange={v => onUpdate('ratingValueMode', v)}
-        hint={RATING_VALUE_MODE_OPTIONS.find(o => o.id === config.ratingValueMode)?.desc}
-      />
-      <StyleGrid
-        id={`${uid}-icon-shape-label`}
-        label="Icon shape"
-        options={ICON_SHAPE_OPTIONS}
-        value={config.iconShape}
-        onChange={v => onUpdate('iconShape', v)}
-        columns={4}
-        hint="Trim each provider's mark to a shape. Original keeps its own outline."
-      />
-      <NumField id={`${uid}-rating-scale`} label="Scale (%)" value={config.ratingBadgeScale}
-        onChange={v => onUpdate('ratingBadgeScale', v)} min={70} max={400} step={5}
-        hint="70–400. Blank keeps the default size." />
-      <ToggleField id={`${uid}-rating-hide-icon`} label="Hide provider marks"
-        checked={config.ratingIconHidden}
-        onChange={v => onUpdate('ratingIconHidden', v)}
-        hint="Show the score on its own, without the provider's logo." />
-      <ToggleField id={`${uid}-stacked-line`} label="Hide the stacked accent bar"
-        checked={config.stackedLineHidden}
-        onChange={v => onUpdate('stackedLineHidden', v)}
-        hint="Drops the coloured bar above the mark in the stacked style." />
-      <NumField id={`${uid}-ratings-max`} label="Max badges" value={config.ratingsMax}
-        onChange={v => onUpdate('ratingsMax', v)} min={0} max={20} placeholder="no cap"
-        hint="0 shows all selected sources that have data." />
-      <div className="numfield-pair">
-        <NumField id={`${uid}-rating-ox`} label="Offset X" value={config.ratingBadgeOffsetX}
-          onChange={v => onUpdate('ratingBadgeOffsetX', v)} min={-320} max={320} zeroIsDefault={false} />
-        <NumField id={`${uid}-rating-oy`} label="Offset Y" value={config.ratingBadgeOffsetY}
-          onChange={v => onUpdate('ratingBadgeOffsetY', v)} min={-320} max={320} zeroIsDefault={false} />
-      </div>
-      <ToggleField id={`${uid}-vote-counts`} label="Show vote counts"
-        checked={config.ratingVoteCounts}
-        onChange={v => onUpdate('ratingVoteCounts', v)}
-        hint="Append the number of votes to each score. Only IMDb, MDBList and TMDB report one; other sources show the score alone." />
-      <ToggleField id={`${uid}-bottom-row`} label="Single row"
-        checked={config.bottomRatingsRow}
-        onChange={v => onUpdate('bottomRatingsRow', v)}
-        hint="Keep every badge on one row instead of wrapping. The row follows the ratings layout." />
-      <ToggleField id={`${uid}-ratings-anchored`} label="Anchor badges to the edge"
-        checked={config.ratingsAnchored}
-        onChange={v => onUpdate('ratingsAnchored', v)}
-        hint="Row flush to the poster edge with squared corners." />
-      <NumField id={`${uid}-edge-offset`} label="Edge inset (px)" value={config.posterEdgeOffset}
-        onChange={v => onUpdate('posterEdgeOffset', v)} min={0} max={80}
-        hint="Push the strip further in from the edge it sits against." />
-      <details className="adv-details">
-        <summary>Per-style nudges</summary>
-        <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>
-          <p className="hint">A nudge kept separately for each badge style, so switching style keeps both positions.</p>
-          <div className="numfield-pair">
-            <NumField id={`${uid}-off-x-glass`} label="Glass/pill X" value={config.ratingXOffsetPillGlass}
-              onChange={v => onUpdate('ratingXOffsetPillGlass', v)} min={-320} max={320} zeroIsDefault={false} />
-            <NumField id={`${uid}-off-y-glass`} label="Glass/pill Y" value={config.ratingYOffsetPillGlass}
-              onChange={v => onUpdate('ratingYOffsetPillGlass', v)} min={-320} max={320} zeroIsDefault={false} />
-          </div>
-          <div className="numfield-pair">
-            <NumField id={`${uid}-off-x-square`} label="Square X" value={config.ratingXOffsetSquare}
-              onChange={v => onUpdate('ratingXOffsetSquare', v)} min={-320} max={320} zeroIsDefault={false} />
-            <NumField id={`${uid}-off-y-square`} label="Square Y" value={config.ratingYOffsetSquare}
-              onChange={v => onUpdate('ratingYOffsetSquare', v)} min={-320} max={320} zeroIsDefault={false} />
-          </div>
+      {config.ratingPresentation !== 'scorebar' && (
+        <StyleGrid
+          id={`${uid}-rating-value-mode-label`}
+          label="Value scale"
+          options={RATING_VALUE_MODE_OPTIONS}
+          value={config.ratingValueMode}
+          onChange={v => onUpdate('ratingValueMode', v)}
+          hint={RATING_VALUE_MODE_OPTIONS.find(o => o.id === config.ratingValueMode)?.desc}
+        />
+      )}
+      {strip && (
+        <StyleGrid
+          id={`${uid}-icon-shape-label`}
+          label="Icon shape"
+          options={ICON_SHAPE_OPTIONS}
+          value={config.iconShape}
+          onChange={v => onUpdate('iconShape', v)}
+          columns={4}
+          hint="Trim each provider's mark to a shape. Original keeps its own outline."
+        />
+      )}
+      {(strip || pills) && (
+        <NumField id={`${uid}-rating-scale`} label="Scale (%)" value={config.ratingBadgeScale}
+          onChange={v => onUpdate('ratingBadgeScale', v)} min={70} max={400} step={5}
+          hint="70–400. Blank keeps the default size." />
+      )}
+      {strip && (
+        <>
+          <ToggleField id={`${uid}-rating-hide-icon`} label="Hide provider marks"
+            checked={config.ratingIconHidden}
+            onChange={v => onUpdate('ratingIconHidden', v)}
+            hint="Show the score on its own, without the provider's logo." />
+          <ToggleField id={`${uid}-stacked-line`} label="Hide the stacked accent bar"
+            checked={config.stackedLineHidden}
+            onChange={v => onUpdate('stackedLineHidden', v)}
+            hint="Drops the coloured bar above the mark in the stacked style." />
+          <NumField id={`${uid}-ratings-max`} label="Max badges" value={config.ratingsMax}
+            onChange={v => onUpdate('ratingsMax', v)} min={0} max={20} placeholder="no cap"
+            hint="0 shows all selected sources that have data." />
+        </>
+      )}
+      {(strip || pills) && (
+        <div className="numfield-pair">
+          <NumField id={`${uid}-rating-ox`} label="Offset X" value={config.ratingBadgeOffsetX}
+            onChange={v => onUpdate('ratingBadgeOffsetX', v)} min={-320} max={320} zeroIsDefault={false} />
+          <NumField id={`${uid}-rating-oy`} label="Offset Y" value={config.ratingBadgeOffsetY}
+            onChange={v => onUpdate('ratingBadgeOffsetY', v)} min={-320} max={320} zeroIsDefault={false} />
         </div>
-      </details>
+      )}
+      {strip && (
+        <>
+          <ToggleField id={`${uid}-vote-counts`} label="Show vote counts"
+            checked={config.ratingVoteCounts}
+            onChange={v => onUpdate('ratingVoteCounts', v)}
+            hint="Append the number of votes to each score. Only IMDb, MDBList and TMDB report one; other sources show the score alone." />
+          <ToggleField id={`${uid}-bottom-row`} label="Single row"
+            checked={config.bottomRatingsRow}
+            onChange={v => onUpdate('bottomRatingsRow', v)}
+            hint="Keep every badge on one row instead of wrapping. The row follows the ratings layout." />
+          <ToggleField id={`${uid}-ratings-anchored`} label="Anchor badges to the edge"
+            checked={config.ratingsAnchored}
+            onChange={v => onUpdate('ratingsAnchored', v)}
+            hint="Row flush to the poster edge with squared corners." />
+          <NumField id={`${uid}-edge-offset`} label="Edge inset (px)" value={config.posterEdgeOffset}
+            onChange={v => onUpdate('posterEdgeOffset', v)} min={0} max={80}
+            hint="Push the strip further in from the edge it sits against." />
+          <details className="adv-details">
+            <summary>Per-style nudges</summary>
+            <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>
+              <p className="hint">A nudge kept separately for each badge style, so switching style keeps both positions.</p>
+              <div className="numfield-pair">
+                <NumField id={`${uid}-off-x-glass`} label="Other styles X" value={config.ratingXOffsetPillGlass}
+                  onChange={v => onUpdate('ratingXOffsetPillGlass', v)} min={-320} max={320} zeroIsDefault={false} />
+                <NumField id={`${uid}-off-y-glass`} label="Other styles Y" value={config.ratingYOffsetPillGlass}
+                  onChange={v => onUpdate('ratingYOffsetPillGlass', v)} min={-320} max={320} zeroIsDefault={false} />
+              </div>
+              <div className="numfield-pair">
+                <NumField id={`${uid}-off-x-square`} label="Square X" value={config.ratingXOffsetSquare}
+                  onChange={v => onUpdate('ratingXOffsetSquare', v)} min={-320} max={320} zeroIsDefault={false} />
+                <NumField id={`${uid}-off-y-square`} label="Square Y" value={config.ratingYOffsetSquare}
+                  onChange={v => onUpdate('ratingYOffsetSquare', v)} min={-320} max={320} zeroIsDefault={false} />
+              </div>
+            </div>
+          </details>
+        </>
+      )}
       <ProviderOverrides uid={uid} config={config} onUpdate={onUpdate} />
       <ProviderWeights uid={uid} config={config} onUpdate={onUpdate} />
     </FineGroup>

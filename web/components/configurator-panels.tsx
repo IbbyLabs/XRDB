@@ -8,7 +8,7 @@ import {
   LAYOUT_OPTIONS, RATING_OPTIONS, BADGE_STYLE_OPTIONS, BADGE_THEME_OPTIONS, RING_POS_OPTIONS,
   SIDE_LAYOUTS,
 } from './configurator-types';
-import { RatingBadgesFine, ScoreColourFine, RatingRingFine, PILL_PRESENTATIONS } from './configurator-fine';
+import { RatingBadgesFine, ScoreColourFine, RatingRingFine, PILL_PRESENTATIONS, drawsBadgeStrip } from './configurator-fine';
 
 // ── Template strip ────────────────────────────────────────────────────────────
 
@@ -85,23 +85,27 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
   return (
     <div className="panel">
       <div className="panel-body cfg-fields">
-        <div className="field">
-          <span className="label" id={`${uid}-layout-label`}>Position</span>
-          <div className="opt-grid" role="group" aria-labelledby={`${uid}-layout-label`}>
-            {LAYOUT_OPTIONS.map(o => (
-              <button
-                key={o.id}
-                className={`opt-btn${config.ratingsLayout === o.id ? ' opt-btn--active' : ''}`}
-                onClick={() => onUpdate('ratingsLayout', o.id)}
-                aria-pressed={config.ratingsLayout === o.id}
-              >
-                {o.label}
-              </button>
-            ))}
+        {/* Only the badge strip is placed by this; the other presentations carry
+            their own position control. */}
+        {drawsBadgeStrip(config.ratingPresentation) && (
+          <div className="field">
+            <span className="label" id={`${uid}-layout-label`}>Position</span>
+            <div className="opt-grid" role="group" aria-labelledby={`${uid}-layout-label`}>
+              {LAYOUT_OPTIONS.map(o => (
+                <button
+                  key={o.id}
+                  className={`opt-btn${config.ratingsLayout === o.id ? ' opt-btn--active' : ''}`}
+                  onClick={() => onUpdate('ratingsLayout', o.id)}
+                  aria-pressed={config.ratingsLayout === o.id}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        {SIDE_LAYOUTS.includes(config.ratingsLayout) && (
+        {drawsBadgeStrip(config.ratingPresentation) && SIDE_LAYOUTS.includes(config.ratingsLayout) && (
           <>
             <div className="field">
               <label className="label" htmlFor={`${uid}-side-pos`}>Side ratings vertical</label>
@@ -134,7 +138,8 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
           </>
         )}
 
-        {config.ratingsLayout !== 'none' && (
+        {((drawsBadgeStrip(config.ratingPresentation) && config.ratingsLayout !== 'none')
+          || PILL_PRESENTATIONS.includes(config.ratingPresentation)) && (
           <>
             <div className="field">
               <span className="label" id={`${uid}-bstyle-label`}>Badge style</span>
