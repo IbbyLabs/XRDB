@@ -535,6 +535,12 @@ func keyMutations() map[string]keyOverride {
 		// tall logo image is height-bound, so widening the height cap lets the width
 		// cap bind and LogoWidth take effect.
 		"logoWidth": {pre: func(c *imageconfig.Config) { c.LogoHeight = 90 }, mut: func(c *imageconfig.Config) { c.LogoWidth = 40 }},
+
+		// Title-logo shadow. The style and colour need a known-valid alternate;
+		// the offsets take the generic 0 -> 200 flip, which carries the shadow
+		// clear of where it started.
+		"logoShadowStyle": {mut: func(c *imageconfig.Config) { c.LogoShadowStyle = "extrude" }},
+		"logoShadowColor": str(setColor(func(c *imageconfig.Config, v string) { c.LogoShadowColor = v })),
 	}
 }
 

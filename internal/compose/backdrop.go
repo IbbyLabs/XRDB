@@ -181,8 +181,12 @@ type logoOverlayOpts struct {
 	heightPercent int    // of base height; 0 = 20
 	posPercent    int    // down the usable height; 0 = 68
 	anchor        string // "" = centre on pos | "bottom" = pin the lower edge
-	scrimSize     int    // % of logo height the scrim reaches past it; 0 = 50
-	scrimOpacity  int    // peak, 0-100; 0 = 63
+	shadowSpread  int    // % of logo height the shadow reaches past it; 0 = 50
+	shadowOpacity int    // peak, 0-100; 0 = 63
+	shadowOffsetX int    // px, may be negative; both zero takes the style's own drop
+	shadowOffsetY int    // px, may be negative
+	shadowColor   string // "#RRGGBB"; "" = black
+	shadowStyle   string // "" = shadow | "extrude" | "gel"
 }
 
 func logoOptsFromConfig(cfg imageconfig.Config) logoOverlayOpts {
@@ -191,8 +195,31 @@ func logoOptsFromConfig(cfg imageconfig.Config) logoOverlayOpts {
 		heightPercent: cfg.LogoHeight,
 		posPercent:    cfg.LogoPos,
 		anchor:        cfg.LogoAnchor,
-		scrimSize:     cfg.LogoScrimSize,
-		scrimOpacity:  cfg.LogoScrimOpacity,
+		shadowSpread:  cfg.LogoScrimSize,
+		shadowOpacity: cfg.LogoScrimOpacity,
+		shadowOffsetX: cfg.LogoShadowOffsetX,
+		shadowOffsetY: cfg.LogoShadowOffsetY,
+		shadowColor:   cfg.LogoShadowColor,
+		shadowStyle:   cfg.LogoShadowStyle,
+	}
+}
+
+// glyphShadowOptsFrom turns the overlay's shadow settings into the draw opts,
+// falling back to black on a colour the parser let through but hex cannot read.
+func glyphShadowOptsFrom(o logoOverlayOpts) glyphShadowOpts {
+	tint := color.NRGBA{A: 255}
+	if o.shadowColor != "" {
+		if c, err := parseHexColor(o.shadowColor); err == nil {
+			tint = c
+		}
+	}
+	return glyphShadowOpts{
+		spread:   o.shadowSpread,
+		strength: o.shadowOpacity,
+		offsetX:  o.shadowOffsetX,
+		offsetY:  o.shadowOffsetY,
+		color:    tint,
+		style:    o.shadowStyle,
 	}
 }
 
@@ -266,11 +293,9 @@ func drawBackdropLogoOverlay(base *image.NRGBA, logoData []byte, ratingsH int, o
 		logoTopY = usableH - dstH
 	}
 
-	// Vertical gradient scrim behind the logo for legibility over bright areas.
-	// The shadow follows the logo's own alpha, so only the glyphs cast anything.
-	// A box-derived scrim darkened the empty space in a wordmark too, which read
-	// as a shadow cast by an invisible rectangle.
-	drawGlyphShadow(base, scaled, x, logoTopY, opts.scrimSize, opts.scrimOpacity)
+	// The shadow behind the logo, for legibility over bright areas. It follows
+	// the logo's own alpha, so only the glyphs cast anything.
+	drawGlyphShadow(base, scaled, x, logoTopY, glyphShadowOptsFrom(opts))
 
 	logoRect := image.Rect(x, logoTopY, x+dstW, logoTopY+dstH)
 	draw.Draw(base, logoRect, scaled, image.Point{}, draw.Over)

@@ -8,6 +8,7 @@ import {
   AGGREGATE_SOURCE_OPTIONS, AGGREGATE_ACCENT_MODE_OPTIONS, SCOREBAR_STYLE_OPTIONS,
   RATING_PRESENTATION_OPTIONS, RATING_VALUE_MODE_OPTIONS, RELEASE_STATUS_STYLE_OPTIONS,
   ICON_SHAPE_OPTIONS, TREND_TAG_STYLE_OPTIONS, ACCENT_SHAPE_OPTIONS,
+  LOGO_SHADOW_STYLE_OPTIONS,
   DEFAULT_CRITICS_PRIORITY, DEFAULT_AUDIENCE_PRIORITY,
 } from './configurator-types';
 import { resolveShares, rebalance } from '@/lib/shares';
@@ -977,12 +978,24 @@ export function TitleLogoFine({ uid, config, onUpdate }: GroupProps) {
       <NumField id={`${uid}-logo-pos`} label="Position (%)" value={config.logoPos}
         onChange={v => onUpdate('logoPos', v)} min={1} max={100} step={1}
         hint="How far down the artwork the logo sits. Blank keeps the default." />
-      <NumField id={`${uid}-logo-scrim-size`} label="Backdrop size (%)" value={config.logoScrimSize}
+      <StyleGrid id={`${uid}-logo-shadow-style`} label="Shadow style"
+        options={LOGO_SHADOW_STYLE_OPTIONS} value={config.logoShadowStyle}
+        onChange={v => onUpdate('logoShadowStyle', v)}
+        hint="Shadow is a soft drop shadow, Extrude a solid 3D stack behind the letters, Gel a raised edge with a lit highlight." />
+      <NumField id={`${uid}-logo-scrim-size`} label="Shadow spread (%)" value={config.logoScrimSize}
         onChange={v => onUpdate('logoScrimSize', v)} min={0} max={200} step={10}
-        hint="How far the shading behind the logo reaches past it, as a share of the logo's height." />
-      <NumField id={`${uid}-logo-scrim-opacity`} label="Backdrop strength (%)" value={config.logoScrimOpacity}
+        hint="How far the shadow reaches past the logo, as a share of the logo's height." />
+      <NumField id={`${uid}-logo-scrim-opacity`} label="Shadow strength (%)" value={config.logoScrimOpacity}
         onChange={v => onUpdate('logoScrimOpacity', v)} min={0} max={100} step={5}
-        hint="How dark the shading gets at its strongest. Lower it on pale artwork, raise it when the logo is hard to read." />
+        hint="How dark the shadow gets at its strongest. Lower it on pale artwork, raise it when the logo is hard to read." />
+      <NumField id={`${uid}-logo-shadow-x`} label="Shadow offset X (px)" value={config.logoShadowOffsetX}
+        onChange={v => onUpdate('logoShadowOffsetX', v)} min={-200} max={200} step={1}
+        hint="Negative moves it left, positive right. Leave both offsets blank for the style's own drop." />
+      <NumField id={`${uid}-logo-shadow-y`} label="Shadow offset Y (px)" value={config.logoShadowOffsetY}
+        onChange={v => onUpdate('logoShadowOffsetY', v)} min={-200} max={200} step={1}
+        hint="Negative moves it up, positive down." />
+      <ColorField id={`${uid}-logo-shadow-color`} label="Shadow colour" value={config.logoShadowColor}
+        onChange={v => onUpdate('logoShadowColor', v)} fallback="#000000" resetLabel="Black" />
       <ToggleField id={`${uid}-logo-anchor`} label="Anchor to bottom"
         checked={config.logoAnchor === 'bottom'}
         onChange={v => onUpdate('logoAnchor', v ? 'bottom' : '')}

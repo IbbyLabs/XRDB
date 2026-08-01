@@ -208,13 +208,22 @@ type Config struct {
 	LogoHeight int    `json:"logoHeight,omitempty"` // % of height; 0 = 20
 	LogoPos    int    `json:"logoPos,omitempty"`    // % down the usable height; 0 = 68
 	LogoAnchor string `json:"logoAnchor,omitempty"` // "" = centre on LogoPos | "bottom"
-	// The scrim behind a clean-poster logo. Size is how far it reaches past the
-	// logo as a percent of the logo's height; opacity is its peak, 0-100.
-	LogoScrimSize    int    `json:"logoScrimSize,omitempty"`    // 0 = 50
-	LogoScrimOpacity int    `json:"logoScrimOpacity,omitempty"` // 0 = 63
-	RatingRing       bool   `json:"ratingRing,omitempty"`
-	RatingRingPos    string `json:"ratingRingPos,omitempty"`   // "tl" | "tr" | "bl" | "br"
-	RatingRingColor  string `json:"ratingRingColor,omitempty"` // "" = auto (green/amber/red), else "#RRGGBB"
+	// The shadow behind a clean-poster logo, cast from the mark's own glyphs.
+	// Size is how far it reaches past them as a percent of the logo's height;
+	// opacity is its peak, 0-100. The keys predate the treatment.
+	LogoScrimSize    int `json:"logoScrimSize,omitempty"`    // 0 = 50
+	LogoScrimOpacity int `json:"logoScrimOpacity,omitempty"` // 0 = 63
+	// Where the shadow sits relative to the mark, in pixels. Both zero takes the
+	// drop the chosen style defines for itself.
+	LogoShadowOffsetX int `json:"logoShadowOffsetX,omitempty"` // -200..200
+	LogoShadowOffsetY int `json:"logoShadowOffsetY,omitempty"` // -200..200
+	// LogoShadowStyle picks how the shadow is drawn: a blurred drop shadow, a
+	// solid 3D extrusion, or the raised gel look of a moulded number plate.
+	LogoShadowStyle string `json:"logoShadowStyle,omitempty"` // "" = shadow | "extrude" | "gel"
+	LogoShadowColor string `json:"logoShadowColor,omitempty"` // "#RRGGBB"; "" = black
+	RatingRing      bool   `json:"ratingRing,omitempty"`
+	RatingRingPos   string `json:"ratingRingPos,omitempty"`   // "tl" | "tr" | "bl" | "br"
+	RatingRingColor string `json:"ratingRingColor,omitempty"` // "" = auto (green/amber/red), else "#RRGGBB"
 
 	OutputFormat  OutputFormat `json:"outputFormat,omitempty"`
 	OutputQuality int          `json:"outputQuality,omitempty"` // JPEG quality 40-100; 0 = default
@@ -650,6 +659,10 @@ type raw struct {
 	LogoAnchor                    *string   `json:"logoAnchor"`
 	LogoScrimSize                 *int      `json:"logoScrimSize"`
 	LogoScrimOpacity              *int      `json:"logoScrimOpacity"`
+	LogoShadowOffsetX             *int      `json:"logoShadowOffsetX"`
+	LogoShadowOffsetY             *int      `json:"logoShadowOffsetY"`
+	LogoShadowStyle               *string   `json:"logoShadowStyle"`
+	LogoShadowColor               *string   `json:"logoShadowColor"`
 	RatingRing                    *bool     `json:"ratingRing"`
 	RatingRingPos                 *string   `json:"ratingRingPos"`
 	RatingRingColor               *string   `json:"ratingRingColor"`
@@ -1124,6 +1137,25 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.LogoScrimOpacity != nil && *r.LogoScrimOpacity != 0 {
 		cfg.LogoScrimOpacity = clampInt(*r.LogoScrimOpacity, 0, 100)
+	}
+	if r.LogoShadowOffsetX != nil {
+		cfg.LogoShadowOffsetX = clampInt(*r.LogoShadowOffsetX, -200, 200)
+	}
+	if r.LogoShadowOffsetY != nil {
+		cfg.LogoShadowOffsetY = clampInt(*r.LogoShadowOffsetY, -200, 200)
+	}
+	if r.LogoShadowStyle != nil {
+		// "shadow" and the empty string are one value, so a profile naming the
+		// default keeps the same cache key as one leaving it unset.
+		switch v := strings.ToLower(strings.TrimSpace(*r.LogoShadowStyle)); v {
+		case "extrude", "gel":
+			cfg.LogoShadowStyle = v
+		case "shadow", "":
+			cfg.LogoShadowStyle = ""
+		}
+	}
+	if r.LogoShadowColor != nil && isHexColor(strings.TrimSpace(*r.LogoShadowColor)) {
+		cfg.LogoShadowColor = strings.TrimSpace(*r.LogoShadowColor)
 	}
 	if r.LogoPos != nil && *r.LogoPos != 0 {
 		cfg.LogoPos = clampInt(*r.LogoPos, 1, 100)
@@ -1875,7 +1907,7 @@ func isHexColor(s string) bool {
 // Bump this whenever a change alters rendered pixels for an unchanged config.
 // It costs a full re-render, so it is not for changes that only affect configs
 // whose own key already moved.
-const renderVersion = "r20"
+const renderVersion = "r21"
 
 // CacheKey returns a deterministic hex string for the config, suitable for use
 // as part of a render cache key. The key is stable: same logical config always
@@ -1944,6 +1976,10 @@ func CacheKey(cfg Config) string {
 		LogoAnchor                    string         `json:"logoAnchor"`
 		LogoScrimSize                 int            `json:"logoScrimSize,omitempty"`
 		LogoScrimOpacity              int            `json:"logoScrimOpacity,omitempty"`
+		LogoShadowOffsetX             int            `json:"logoShadowOffsetX,omitempty"`
+		LogoShadowOffsetY             int            `json:"logoShadowOffsetY,omitempty"`
+		LogoShadowStyle               string         `json:"logoShadowStyle,omitempty"`
+		LogoShadowColor               string         `json:"logoShadowColor,omitempty"`
 		RatingRing                    bool           `json:"ratingRing"`
 		RatingRingPos                 string         `json:"ratingRingPos"`
 		RatingRingColor               string         `json:"ratingRingColor"`
@@ -2024,6 +2060,10 @@ func CacheKey(cfg Config) string {
 		BackdropLogo:                  cfg.BackdropLogo,
 		LogoScrimSize:                 cfg.LogoScrimSize,
 		LogoScrimOpacity:              cfg.LogoScrimOpacity,
+		LogoShadowOffsetX:             cfg.LogoShadowOffsetX,
+		LogoShadowOffsetY:             cfg.LogoShadowOffsetY,
+		LogoShadowStyle:               cfg.LogoShadowStyle,
+		LogoShadowColor:               cfg.LogoShadowColor,
 		LogoWidth:                     cfg.LogoWidth,
 		LogoHeight:                    cfg.LogoHeight,
 		LogoPos:                       cfg.LogoPos,

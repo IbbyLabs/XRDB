@@ -227,6 +227,12 @@ export const RELEASE_STATUS_STYLE_OPTIONS = [
   { id: 'tile',   label: 'Tile'    },
 ] as const;
 
+export const LOGO_SHADOW_STYLE_OPTIONS = [
+  { id: '',        label: 'Shadow'  },
+  { id: 'extrude', label: 'Extrude' },
+  { id: 'gel',     label: 'Gel'     },
+] as const;
+
 export const AGE_STYLE_OPTIONS = [
   { id: 'default', label: 'Glass'  },
   { id: 'square',  label: 'Square' },
@@ -399,6 +405,10 @@ export interface ConfigState {
   logoWidth: number;
   logoScrimSize: number;
   logoScrimOpacity: number;
+  logoShadowOffsetX: number;
+  logoShadowOffsetY: number;
+  logoShadowStyle: string; // '' = shadow | 'extrude' | 'gel'
+  logoShadowColor: string;
   logoHeight: number;
   logoPos: number;
   logoAnchor: string; // \'\' = centre on the position | \'bottom\'
@@ -562,6 +572,10 @@ export const DEFAULT_CONFIG: ConfigState = {
   logoWidth: 0,
   logoScrimSize: 0,
   logoScrimOpacity: 0,
+  logoShadowOffsetX: 0,
+  logoShadowOffsetY: 0,
+  logoShadowStyle: '',
+  logoShadowColor: '',
   logoHeight: 0,
   logoPos: 0,
   logoAnchor: '',
