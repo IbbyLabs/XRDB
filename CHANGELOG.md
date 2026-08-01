@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.46.0](https://github.com/IbbyLabs/XRDB/compare/v3.45.0...v3.46.0) (2026-08-01)
+
+
+### Added
+
+* **render:** cap size on the RPDB route and weight renders by size ([7aab652](https://github.com/IbbyLabs/XRDB/commit/7aab652aa0a6a9969a3017c2e5a59567bf790d84))
+
 ## [3.45.0](https://github.com/IbbyLabs/XRDB/compare/v3.44.0...v3.45.0) (2026-08-01)
 
 
