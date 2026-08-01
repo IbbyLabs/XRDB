@@ -94,6 +94,11 @@ type Config struct {
 	DBPath    string
 	CacheDir  string
 	CacheTTL  time.Duration
+	// NotFoundTTL is how long a render that produced no artwork is remembered,
+	// so a burst over one title does not repeat the full provider sweep per
+	// request. Zero disables it.
+	NotFoundTTL time.Duration
+
 	// DegradedCacheTTL caps how long a render that lost a badge to a failing
 	// source is cached.
 	DegradedCacheTTL time.Duration
@@ -118,15 +123,15 @@ type Config struct {
 	// one means re-rendering titles that were rendered hours ago. 0 = default.
 	CacheDiskMaxFiles int
 	CacheDiskMaxBytes int64
-	TMDBAPIKey      string
-	TMDBReadToken   string
-	MDBListAPIKey   string
-	MediuxAPIKey          string
-	OMDBAPIKey      string
-	FanartAPIKey    string
-	TraktClientID   string
-	SIMKLClientID   string
-	IMDbDatasetDir  string // directory for cached IMDb dataset file; empty = disabled
+	TMDBAPIKey        string
+	TMDBReadToken     string
+	MDBListAPIKey     string
+	MediuxAPIKey      string
+	OMDBAPIKey        string
+	FanartAPIKey      string
+	TraktClientID     string
+	SIMKLClientID     string
+	IMDbDatasetDir    string // directory for cached IMDb dataset file; empty = disabled
 	// IMDbTopRated enables the locally computed top-rated film ranking. It is
 	// separate from IMDbDatasetDir because building it streams a second, much
 	// larger dataset on each refresh.
@@ -149,9 +154,9 @@ type Config struct {
 	RenderConcurrency   int    // max simultaneous renders; caps memory under bursts
 	// RenderQueueWait bounds how long a render waits for a slot before the
 	// request is shed. Zero waits forever, which is what produced 144s renders.
-	RenderQueueWait time.Duration
-	MemoryLimitBytes    int64  // soft heap limit (debug.SetMemoryLimit); 0 = unset
-	LogLevel            string // debug|info|warn|error (default info)
+	RenderQueueWait  time.Duration
+	MemoryLimitBytes int64  // soft heap limit (debug.SetMemoryLimit); 0 = unset
+	LogLevel         string // debug|info|warn|error (default info)
 	// TrustedProxies is a comma-separated list of CIDRs or addresses whose
 	// X-Forwarded-* and CF-Connecting-IP headers may be believed. Empty means
 	// loopback plus the private ranges, which covers the usual reverse-proxy
@@ -304,6 +309,14 @@ func Load() Config {
 	if degradedCacheTTL > cacheTTL {
 		degradedCacheTTL = cacheTTL
 	}
+	// Short by design: it collapses a burst without outliving the outage behind
+	// it, so artwork appearing upstream is still picked up within the minute.
+	notFoundTTL := 60 * time.Second
+	if raw := os.Getenv("XRDB_NOT_FOUND_TTL_SECONDS"); raw != "" {
+		if d, err := time.ParseDuration(raw + "s"); err == nil && d >= 0 {
+			notFoundTTL = d
+		}
+	}
 	// A title's available qualities move slowly, so they are held far longer
 	// than a rating and well past the render that first asked for them.
 	streamCacheTTL := 24 * time.Hour
@@ -402,6 +415,7 @@ func Load() Config {
 		StreamCacheTTL:        streamCacheTTL,
 		CacheTTL:              cacheTTL,
 		DegradedCacheTTL:      degradedCacheTTL,
+		NotFoundTTL:           notFoundTTL,
 		CacheMaxEntries:       cacheMaxEntries,
 		CacheDiskMaxFiles:     cacheDiskMaxFiles,
 		CacheDiskMaxBytes:     cacheDiskMaxBytes,

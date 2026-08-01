@@ -43,6 +43,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	renderLimiter := newConcurrencyLimiter(cfg.RenderConcurrency)
 	ttls := newTTLStore(cfg.ProviderTTLs)
 	ttls.setDegradedTTL(cfg.DegradedCacheTTL)
+	notFound := newNotFoundCache(cfg.NotFoundTTL)
 	// Forwarded headers are client input unless the peer is a known proxy.
 	trust := newProxyTrust(cfg.TrustedProxies, cfg.TrustProxyHeaders)
 
@@ -176,7 +177,14 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			}
 		}
 		placeholder := false
-		if !fromCache {
+		if !fromCache && notFound.Has(cacheKey) {
+			// Asked for recently and there was nothing. Answer from that rather
+			// than sweeping every provider again, which is what makes a
+			// catalogue of a title with no art cost one sweep per episode.
+			pngBytes = render.PlaceholderPNG(mediaType)
+			placeholder = true
+		}
+		if !fromCache && !placeholder {
 			// Only real renders are gated; cache hits above pass freely, so a
 			// warm catalogue reload isn't throttled. If the client hangs up or
 			// the request times out while queued, drop it without spending a slot.
@@ -224,6 +232,12 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			// frozen for the whole TTL, and downstream caches that key on a 200
 			// (e.g. an nginx proxy_cache) would pin the broken image for as long
 			// as they hold it. Only real artwork is cached.
+			if placeholder {
+				notFound.Remember(cacheKey)
+			} else {
+				// Artwork appeared, so stop answering from the remembered gap.
+				notFound.Forget(cacheKey)
+			}
 			if !placeholder {
 				ttl := effectiveTTL(renderResult, ttls)
 				if renderCache != nil {
