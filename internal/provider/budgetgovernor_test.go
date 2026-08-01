@@ -304,3 +304,38 @@ func TestTransportFeedsTheGovernor(t *testing.T) {
 		t.Error("the governor was not shown the response headers")
 	}
 }
+
+// A render carrying an owner-supplied credential spends that owner's allowance,
+// not the instance's. If the shared governor learned from those responses, one
+// visitor on a free 1,000-a-day key would pace every other render on the server
+// down to the floor.
+func TestOwnerKeyedResponseDoesNotTeachTheSharedGovernor(t *testing.T) {
+	g, clock, _ := newTestGovernor(t)
+	// A free-tier allowance: tiny limit, almost none of it usable.
+	stub := &headerTransport{header: allowanceHeaders(1000, 999, clock.t.Add(24*time.Hour))}
+	c := &http.Client{Transport: &throttledTransport{
+		base:     stub,
+		source:   "mdblist",
+		policy:   RateLimit{MaxRetries: 1, MaxRetryWait: time.Second},
+		pacer:    &pacer{},
+		governor: g,
+	}}
+
+	before := g.currentRate()
+
+	req, err := http.NewRequestWithContext(
+		WithKeys(context.Background(), map[string]string{KeyMDBList: "an-owner-key"}),
+		http.MethodGet, "https://api.mdblist.com/", nil)
+	if err != nil {
+		t.Fatalf("build request: %v", err)
+	}
+	resp, err := c.Do(req)
+	if err != nil {
+		t.Fatalf("request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if got := g.currentRate(); !closeEnough(got, before) {
+		t.Errorf("shared rate = %v after an owner-keyed response, want it unchanged at %v", got, before)
+	}
+}

@@ -164,8 +164,13 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 		if err := t.pacer.wait(req.Context().Done()); err != nil {
 			return nil, err
 		}
-		if err := t.governor.wait(req.Context().Done()); err != nil {
-			return nil, err
+		// An owner-supplied credential spends its own allowance, not the
+		// instance's, so it neither waits on the shared budget nor teaches it.
+		ownerKeyed := HasOwnerKey(req.Context(), t.source)
+		if !ownerKeyed {
+			if err := t.governor.wait(req.Context().Done()); err != nil {
+				return nil, err
+			}
 		}
 
 		attemptReq := req
@@ -182,7 +187,9 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 		if err != nil {
 			return nil, err
 		}
-		t.governor.observe(req.Context(), resp.Header)
+		if !ownerKeyed {
+			t.governor.observe(req.Context(), resp.Header)
+		}
 		if !isThrottleStatus(resp.StatusCode) {
 			return resp, nil
 		}
