@@ -20,6 +20,20 @@ import (
 // last good ratings instead of silently dropping the badge.
 var ErrRateLimited = errors.New("rate limited")
 
+// pacerMaxWait is how long a render will queue for a paced source before the
+// request is refused. The default is well under the per-source client timeouts,
+// which cover the queue wait as well as the call.
+func pacerMaxWait() time.Duration {
+	secs := envFloat("XRDB_RATINGS_MAX_QUEUE_SECONDS", 2, 0.1, 30)
+	return time.Duration(secs * float64(time.Second))
+}
+
+// ErrPacerBacklog reports that the queue in front of a paced source is longer
+// than the caller can wait for, so the request was refused rather than started.
+// It is a rate-limit refusal: the source is healthy, we are simply over its
+// allowance for the moment.
+var ErrPacerBacklog = fmt.Errorf("paced source backlog: %w", ErrRateLimited)
+
 // RateLimitError carries which source refused and how long it asked us to wait.
 type RateLimitError struct {
 	Source     string
@@ -95,6 +109,29 @@ type pacer struct {
 	mu       sync.Mutex
 	interval time.Duration
 	next     time.Time
+	// maxWait bounds how long a caller will queue for a slot. Past it the
+	// request is refused instead of taking a slot it would not live to use: the
+	// client timeout covers the queue wait as well as the call, so a long queue
+	// cancelled every request in it before any of them were sent.
+	maxWait time.Duration
+}
+
+// reserve takes the next slot and reports how long to hold before using it. It
+// refuses before reserving, so a shed request does not hold a slot that its own
+// timeout would have thrown away.
+func (p *pacer) reserve() (time.Duration, error) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	now := time.Now()
+	slot := p.next
+	if slot.Before(now) {
+		slot = now
+	}
+	if p.maxWait > 0 && slot.Sub(now) > p.maxWait {
+		return 0, ErrPacerBacklog
+	}
+	p.next = slot.Add(p.interval)
+	return slot.Sub(now), nil
 }
 
 // wait blocks until the next request may go out, or the request is cancelled.
@@ -104,16 +141,10 @@ func (p *pacer) wait(done <-chan struct{}) error {
 	if p == nil || p.interval <= 0 {
 		return nil
 	}
-	p.mu.Lock()
-	now := time.Now()
-	slot := p.next
-	if slot.Before(now) {
-		slot = now
+	delay, err := p.reserve()
+	if err != nil {
+		return err
 	}
-	p.next = slot.Add(p.interval)
-	p.mu.Unlock()
-
-	delay := time.Until(slot)
 	if delay <= 0 {
 		return nil
 	}
@@ -319,7 +350,7 @@ func newHTTPClient(source string, timeout time.Duration) *http.Client {
 	transport := &throttledTransport{
 		source: source,
 		policy: policy,
-		pacer:  &pacer{interval: policy.MinInterval},
+		pacer:  &pacer{interval: policy.MinInterval, maxWait: pacerMaxWait()},
 	}
 	if source == "mdblist" {
 		transport.governor = newBudgetGovernor(source)
