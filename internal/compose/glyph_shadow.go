@@ -74,11 +74,21 @@ func drawGlyphShadow(base *image.NRGBA, logo *image.NRGBA, originX, originY int,
 func defaultShadowOffset(style string, radius int) (int, int) {
 	switch style {
 	case logoShadowExtrude:
-		return radius, radius
+		// Extrusion has to read as depth at a glance, so it throws several times
+		// further than a shadow would. At the shadow's own offset the two styles
+		// were indistinguishable, which made the choice pointless.
+		d := radius * 5 / 2
+		if d < 6 {
+			d = 6
+		}
+		return d, d
 	case logoShadowGel:
-		d := radius / 3
-		if d < 1 {
-			d = 1
+		// A moulded edge sits proud of the surface: the offset has to clear the
+		// glyph's own blur or the highlight lands on the letter and disappears
+		// into it, which is what happens on light artwork.
+		d := radius
+		if d < 3 {
+			d = 3
 		}
 		return d, d
 	default:
@@ -172,13 +182,14 @@ func drawGelShadow(base, logo *image.NRGBA, originX, originY, radius, offX, offY
 	// The lit edge of a moulded surface is crisper than the shadow it throws, so
 	// the highlight takes half the blur. It only has to suggest the light: at
 	// full strength it reads as a white outline instead.
-	crisp := blurR / 2
-	if crisp < 1 {
-		crisp = 1
-	}
+	// One pixel of blur, so the lit edge is a hard rim rather than a glow. Half
+	// the shadow's blur still read as a smudge and vanished on pale artwork.
+	crisp := 1
 	highlight := color.NRGBA{R: 255, G: 255, B: 255, A: 255}
-	blendLayer(base, boxBlur(mask, mw, mh, crisp), mw, mh, originX-pad-offX, originY-pad-offY, highlight, float64(strength)*0.45/100)
+	// The shadow goes down first so the rim sits on top of it where they meet,
+	// which is what makes the edge look raised instead of merely outlined.
 	blendLayer(base, soft, mw, mh, originX-pad+offX, originY-pad+offY, tint, float64(strength)/100)
+	blendLayer(base, boxBlur(mask, mw, mh, crisp), mw, mh, originX-pad-offX, originY-pad-offY, highlight, float64(strength)*0.9/100)
 }
 
 // glyphMask copies the logo's alpha channel into a padded single-channel buffer.
