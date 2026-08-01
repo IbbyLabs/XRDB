@@ -309,3 +309,22 @@ func TestBadgeBackgroundOpacityLetsTheArtworkThrough(t *testing.T) {
 		t.Error("no badge pixel carries the artwork's colour, so nothing showed through")
 	}
 }
+
+// The pill presentations draw their own capsule body, so the badge strip's
+// opacity control has to reach them too or it is live on Standard and inert
+// everywhere else — the shape BUG-183 was about.
+func TestBadgeBackgroundOpacityReachesTheScorePills(t *testing.T) {
+	p := effectPipeline()
+	for _, presentation := range []string{"minimal", "average", "dual", "dual-minimal"} {
+		t.Run(presentation, func(t *testing.T) {
+			off := maximalConfig()
+			off.RatingPresentation = presentation
+			on := off
+			on.RatingBadgeBackgroundOpacity = 30
+
+			if bytes.Equal(renderOne(t, p, off, "movie", "poster"), renderOne(t, p, on, "movie", "poster")) {
+				t.Errorf("badge background opacity changes nothing on the %s presentation", presentation)
+			}
+		})
+	}
+}

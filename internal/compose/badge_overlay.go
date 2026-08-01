@@ -1682,6 +1682,9 @@ type scorePillStyle struct {
 	accentWidth int
 	// fill replaces the dark capsule body. Zero alpha keeps the default.
 	fill color.NRGBA
+	// bodyOpacity tunes how much artwork shows through the capsule body, as a
+	// percent. 0 keeps whatever the style picked.
+	bodyOpacity int
 	// valueSet marks an explicitly configured value colour, which wins over the
 	// contrast pick made for a filled body.
 	valueSet bool
@@ -1713,6 +1716,7 @@ func aggregatePillStyle(cfg imageconfig.Config, source string, genres []string, 
 		accentShown:    cfg.AggregateAccentBarVisible == nil || *cfg.AggregateAccentBarVisible,
 		accentOffset:   cfg.AggregateAccentBarOffset,
 		accentTopStrip: cfg.AggregateAccentShape == "strip",
+		bodyOpacity:    cfg.RatingBadgeBackgroundOpacity,
 		accentWidth:    cfg.AggregateAccentWidth,
 		radius:         scorePillRadius(cfg.BadgeStyle),
 	}
@@ -1816,11 +1820,23 @@ func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, icon im
 			valueCol = contrastingInk(body)
 		}
 	}
+	// The same control the badge strip answers. Compositing rather than writing
+	// the pixel is what lets the poster through instead of the viewer's
+	// background.
+	blendBody := false
+	if o := style.bodyOpacity; o > 0 && body.A > 0 {
+		body.A = uint8(maxInt(1, o*255/100))
+		blendBody = true
+	}
 
 	// Drop shadow, then the capsule.
 	shadow := rect.Add(image.Pt(0, s(2)))
 	fillRoundedRect(base, shadow, radius, color.NRGBA{A: 90})
-	fillRoundedRect(base, rect, radius, body)
+	if blendBody {
+		blendRoundedRect(base, rect, radius, body)
+	} else {
+		fillRoundedRect(base, rect, radius, body)
+	}
 	// With a label the accent fills the rail behind it. Without one there is no
 	// rail, so it outlines the capsule and the body stays dark. A filled body
 	// already carries the colour.
