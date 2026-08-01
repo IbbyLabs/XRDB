@@ -1300,12 +1300,18 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			if opts.borderWidth > 0 {
 				bw = maxInt(1, int(opts.borderWidth*scale+0.5))
 			}
+			// The accent colour, when set, borders the capsule. Without one the
+			// pill keeps its faint white hairline.
+			border := color.NRGBA{R: 255, G: 255, B: 255, A: 48}
+			if c, err := parseHexColor(opts.tileColor); opts.tileColor != "" && err == nil {
+				border = color.NRGBA{R: c.R, G: c.G, B: c.B, A: 255}
+			}
 			for i := 0; i < bw; i++ {
 				rr := r.Inset(i)
 				if rr.Dx() <= 0 || rr.Dy() <= 0 {
 					break
 				}
-				drawRectBorder(base, rr, maxInt(0, pillR-i), color.NRGBA{R: 255, G: 255, B: 255, A: 48})
+				drawRectBorder(base, rr, maxInt(0, pillR-i), border)
 			}
 		}
 		drawLeftStripe()
