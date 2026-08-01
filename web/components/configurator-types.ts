@@ -397,6 +397,8 @@ export interface ConfigState {
   trendingStyle: string;
   backdropAsPoster: boolean;
   logoWidth: number;
+  logoScrimSize: number;
+  logoScrimOpacity: number;
   logoHeight: number;
   logoPos: number;
   logoAnchor: string; // \'\' = centre on the position | \'bottom\'
@@ -558,6 +560,8 @@ export const DEFAULT_CONFIG: ConfigState = {
   trendingStyle: 'arrow-word',
   backdropAsPoster: false,
   logoWidth: 0,
+  logoScrimSize: 0,
+  logoScrimOpacity: 0,
   logoHeight: 0,
   logoPos: 0,
   logoAnchor: '',

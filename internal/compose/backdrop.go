@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 	"image/draw"
+	"math"
 
 	xdraw "golang.org/x/image/draw"
 
@@ -180,6 +181,8 @@ type logoOverlayOpts struct {
 	heightPercent int    // of base height; 0 = 20
 	posPercent    int    // down the usable height; 0 = 68
 	anchor        string // "" = centre on pos | "bottom" = pin the lower edge
+	scrimSize     int    // % of logo height the scrim reaches past it; 0 = 50
+	scrimOpacity  int    // peak, 0-100; 0 = 63
 }
 
 func logoOptsFromConfig(cfg imageconfig.Config) logoOverlayOpts {
@@ -188,6 +191,8 @@ func logoOptsFromConfig(cfg imageconfig.Config) logoOverlayOpts {
 		heightPercent: cfg.LogoHeight,
 		posPercent:    cfg.LogoPos,
 		anchor:        cfg.LogoAnchor,
+		scrimSize:     cfg.LogoScrimSize,
+		scrimOpacity:  cfg.LogoScrimOpacity,
 	}
 }
 
@@ -262,7 +267,16 @@ func drawBackdropLogoOverlay(base *image.NRGBA, logoData []byte, ratingsH int, o
 	}
 
 	// Vertical gradient scrim behind the logo for legibility over bright areas.
-	scrimPad := dstH / 2
+	scrimSize := opts.scrimSize
+	if scrimSize == 0 {
+		scrimSize = 50
+	}
+	scrimPeak := opts.scrimOpacity
+	if scrimPeak == 0 {
+		scrimPeak = 63
+	}
+	scrimMax := float64(scrimPeak) * 255 / 100
+	scrimPad := dstH * scrimSize / 100
 	scrimTop := logoTopY - scrimPad
 	if scrimTop < 0 {
 		scrimTop = 0
@@ -275,13 +289,12 @@ func drawBackdropLogoOverlay(base *image.NRGBA, logoData []byte, ratingsH int, o
 	if scrimH > 0 {
 		for row := 0; row < scrimH; row++ {
 			rel := float64(row) / float64(scrimH)
-			var t float64
-			if rel < 0.5 {
-				t = rel * 2
-			} else {
-				t = (1 - rel) * 2
-			}
-			alpha := uint8(t * 160)
+			// A triangular ramp turns at its peak, and that corner draws as a
+			// hard horizontal line across bright artwork. A half sine reaches
+			// the same peak with no turn, and sits above the triangle
+			// everywhere between the edges, so the logo keeps its contrast.
+			t := math.Sin(math.Pi * rel)
+			alpha := uint8(t * scrimMax)
 			for col := 0; col < baseW; col++ {
 				py := bounds.Min.Y + scrimTop + row
 				px := bounds.Min.X + col

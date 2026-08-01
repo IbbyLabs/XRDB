@@ -977,6 +977,12 @@ export function TitleLogoFine({ uid, config, onUpdate }: GroupProps) {
       <NumField id={`${uid}-logo-pos`} label="Position (%)" value={config.logoPos}
         onChange={v => onUpdate('logoPos', v)} min={1} max={100} step={1}
         hint="How far down the artwork the logo sits. Blank keeps the default." />
+      <NumField id={`${uid}-logo-scrim-size`} label="Backdrop size (%)" value={config.logoScrimSize}
+        onChange={v => onUpdate('logoScrimSize', v)} min={0} max={200} step={10}
+        hint="How far the shading behind the logo reaches past it, as a share of the logo's height." />
+      <NumField id={`${uid}-logo-scrim-opacity`} label="Backdrop strength (%)" value={config.logoScrimOpacity}
+        onChange={v => onUpdate('logoScrimOpacity', v)} min={0} max={100} step={5}
+        hint="How dark the shading gets at its strongest. Lower it on pale artwork, raise it when the logo is hard to read." />
       <ToggleField id={`${uid}-logo-anchor`} label="Anchor to bottom"
         checked={config.logoAnchor === 'bottom'}
         onChange={v => onUpdate('logoAnchor', v ? 'bottom' : '')}

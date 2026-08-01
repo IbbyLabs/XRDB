@@ -124,7 +124,7 @@ type Config struct {
 	ArtworkSourceMovie  ArtworkSource `json:"artworkSourceMovie,omitempty"`
 	ArtworkSourceSeries ArtworkSource `json:"artworkSourceSeries,omitempty"`
 	ArtworkSourceAnime  ArtworkSource `json:"artworkSourceAnime,omitempty"`
-	Language      string        `json:"language"`
+	Language            string        `json:"language"`
 	// FallbackLanguage is tried when the requested language has no art for a
 	// title, before the English/canonical pick.
 	FallbackLanguage string         `json:"fallbackLanguage,omitempty"`
@@ -138,7 +138,7 @@ type Config struct {
 	AgeRatingPos     string         `json:"ageRatingPos,omitempty"`
 	AgeRatingOffsetX int            `json:"ageRatingOffsetX,omitempty"` // px nudge from the corner
 	AgeRatingOffsetY int            `json:"ageRatingOffsetY,omitempty"`
-	AgeRatingScale   int            `json:"ageRatingScale,omitempty"`   // percent of default size; 0 = 100
+	AgeRatingScale   int            `json:"ageRatingScale,omitempty"` // percent of default size; 0 = 100
 	ReleaseStatus    bool           `json:"releaseStatus,omitempty"`
 	ReleaseStatusPos string         `json:"releaseStatusPos,omitempty"`
 	TopRated         bool           `json:"topRated,omitempty"`
@@ -184,33 +184,37 @@ type Config struct {
 	IconOutlineColor string `json:"iconOutlineColor,omitempty"` // "#RRGGBB"; "" = none
 	IconOutlineWidth int    `json:"iconOutlineWidth,omitempty"` // px at 1x; 0 = none
 	// Outline for background-less ("plain") badge text.
-	NoBackgroundBadgeOutlineColor string        `json:"noBackgroundBadgeOutlineColor,omitempty"` // "#RRGGBB"; "" = default shadow
-	NoBackgroundBadgeOutlineWidth int           `json:"noBackgroundBadgeOutlineWidth,omitempty"` // px; 0 = default
+	NoBackgroundBadgeOutlineColor string `json:"noBackgroundBadgeOutlineColor,omitempty"` // "#RRGGBB"; "" = default shadow
+	NoBackgroundBadgeOutlineWidth int    `json:"noBackgroundBadgeOutlineWidth,omitempty"` // px; 0 = default
 	// NoBackgroundBadgeOutlineGlow softens the outline into a halo that fades
 	// outward, instead of a hard edge at full strength.
-	NoBackgroundBadgeOutlineGlow bool `json:"noBackgroundBadgeOutlineGlow,omitempty"`
-	AggregateBar                  bool          `json:"aggregateBar"`
-	AggregateBarPos               string        `json:"aggregateBarPos,omitempty"` // "top" | "bottom"
-	Trending                      bool          `json:"trending"`
-	TrendingStyle                 TrendingStyle `json:"trendingStyle"`
-	BackdropAsPoster              bool          `json:"backdropAsPoster,omitempty"`
+	NoBackgroundBadgeOutlineGlow bool          `json:"noBackgroundBadgeOutlineGlow,omitempty"`
+	AggregateBar                 bool          `json:"aggregateBar"`
+	AggregateBarPos              string        `json:"aggregateBarPos,omitempty"` // "top" | "bottom"
+	Trending                     bool          `json:"trending"`
+	TrendingStyle                TrendingStyle `json:"trendingStyle"`
+	BackdropAsPoster             bool          `json:"backdropAsPoster,omitempty"`
 	// HideCinemetaRating strips the IMDb rating from the Stremio meta XRDB serves
 	// (both the imdbRating field and the "imdb" link), so Cinemeta's own rating
 	// does not sit beside XRDB's overlaid one. It affects the meta response, not
 	// the rendered image, so it is deliberately absent from the render cache key.
-	HideCinemetaRating            bool          `json:"hideCinemetaRating,omitempty"`
-	BackdropLogo                  bool          `json:"backdropLogo,omitempty"`
+	HideCinemetaRating bool `json:"hideCinemetaRating,omitempty"`
+	BackdropLogo       bool `json:"backdropLogo,omitempty"`
 	// The title-logo overlay's box and placement, as percentages. Zero keeps the
 	// built-in look. LogoPos is where the logo's centre sits down the usable
 	// height, so growing the logo does not move it; LogoAnchor "bottom" pins the
 	// lower edge instead, which is what a wide logo near the bottom needs.
-	LogoWidth       int    `json:"logoWidth,omitempty"`  // % of width;  0 = 65
-	LogoHeight      int    `json:"logoHeight,omitempty"` // % of height; 0 = 20
-	LogoPos         int    `json:"logoPos,omitempty"`    // % down the usable height; 0 = 68
-	LogoAnchor      string `json:"logoAnchor,omitempty"` // "" = centre on LogoPos | "bottom"
-	RatingRing      bool   `json:"ratingRing,omitempty"`
-	RatingRingPos   string `json:"ratingRingPos,omitempty"`   // "tl" | "tr" | "bl" | "br"
-	RatingRingColor string `json:"ratingRingColor,omitempty"` // "" = auto (green/amber/red), else "#RRGGBB"
+	LogoWidth  int    `json:"logoWidth,omitempty"`  // % of width;  0 = 65
+	LogoHeight int    `json:"logoHeight,omitempty"` // % of height; 0 = 20
+	LogoPos    int    `json:"logoPos,omitempty"`    // % down the usable height; 0 = 68
+	LogoAnchor string `json:"logoAnchor,omitempty"` // "" = centre on LogoPos | "bottom"
+	// The scrim behind a clean-poster logo. Size is how far it reaches past the
+	// logo as a percent of the logo's height; opacity is its peak, 0-100.
+	LogoScrimSize    int    `json:"logoScrimSize,omitempty"`    // 0 = 50
+	LogoScrimOpacity int    `json:"logoScrimOpacity,omitempty"` // 0 = 63
+	RatingRing       bool   `json:"ratingRing,omitempty"`
+	RatingRingPos    string `json:"ratingRingPos,omitempty"`   // "tl" | "tr" | "bl" | "br"
+	RatingRingColor  string `json:"ratingRingColor,omitempty"` // "" = auto (green/amber/red), else "#RRGGBB"
 
 	OutputFormat  OutputFormat `json:"outputFormat,omitempty"`
 	OutputQuality int          `json:"outputQuality,omitempty"` // JPEG quality 40-100; 0 = default
@@ -493,8 +497,8 @@ type QualityBadgeConfig struct {
 // RatingRingConfig groups the compact rating-ring options beyond the existing
 // flat RatingRing/RatingRingPos/RatingRingColor fields.
 type RatingRingConfig struct {
-	RingScale          int    `json:"ringScale,omitempty"`          // percent of the default ring size; 0 = 100
-	RingOffsetX        int    `json:"ringOffsetX,omitempty"`        // px nudge from the corner
+	RingScale          int    `json:"ringScale,omitempty"`   // percent of the default ring size; 0 = 100
+	RingOffsetX        int    `json:"ringOffsetX,omitempty"` // px nudge from the corner
 	RingOffsetY        int    `json:"ringOffsetY,omitempty"`
 	RingCenterOpacity  int    `json:"ringCenterOpacity,omitempty"`  // 0-100 opacity of the centre disk; 0 = default
 	RingValueSource    string `json:"ringValueSource,omitempty"`    // "" / "overall" = average, else a provider (e.g. "imdb")
@@ -644,6 +648,8 @@ type raw struct {
 	LogoHeight                    *int      `json:"logoHeight"`
 	LogoPos                       *int      `json:"logoPos"`
 	LogoAnchor                    *string   `json:"logoAnchor"`
+	LogoScrimSize                 *int      `json:"logoScrimSize"`
+	LogoScrimOpacity              *int      `json:"logoScrimOpacity"`
 	RatingRing                    *bool     `json:"ratingRing"`
 	RatingRingPos                 *string   `json:"ratingRingPos"`
 	RatingRingColor               *string   `json:"ratingRingColor"`
@@ -1112,6 +1118,12 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.LogoHeight != nil && *r.LogoHeight != 0 {
 		cfg.LogoHeight = clampInt(*r.LogoHeight, 5, 60)
+	}
+	if r.LogoScrimSize != nil && *r.LogoScrimSize != 0 {
+		cfg.LogoScrimSize = clampInt(*r.LogoScrimSize, 0, 200)
+	}
+	if r.LogoScrimOpacity != nil && *r.LogoScrimOpacity != 0 {
+		cfg.LogoScrimOpacity = clampInt(*r.LogoScrimOpacity, 0, 100)
 	}
 	if r.LogoPos != nil && *r.LogoPos != 0 {
 		cfg.LogoPos = clampInt(*r.LogoPos, 1, 100)
@@ -1863,7 +1875,7 @@ func isHexColor(s string) bool {
 // Bump this whenever a change alters rendered pixels for an unchanged config.
 // It costs a full re-render, so it is not for changes that only affect configs
 // whose own key already moved.
-const renderVersion = "r15"
+const renderVersion = "r16"
 
 // CacheKey returns a deterministic hex string for the config, suitable for use
 // as part of a render cache key. The key is stable: same logical config always
@@ -1930,6 +1942,8 @@ func CacheKey(cfg Config) string {
 		LogoHeight                    int            `json:"logoHeight"`
 		LogoPos                       int            `json:"logoPos"`
 		LogoAnchor                    string         `json:"logoAnchor"`
+		LogoScrimSize                 int            `json:"logoScrimSize,omitempty"`
+		LogoScrimOpacity              int            `json:"logoScrimOpacity,omitempty"`
 		RatingRing                    bool           `json:"ratingRing"`
 		RatingRingPos                 string         `json:"ratingRingPos"`
 		RatingRingColor               string         `json:"ratingRingColor"`
@@ -2008,6 +2022,8 @@ func CacheKey(cfg Config) string {
 		TrendingStyle:                 cfg.TrendingStyle,
 		BackdropAsPoster:              cfg.BackdropAsPoster,
 		BackdropLogo:                  cfg.BackdropLogo,
+		LogoScrimSize:                 cfg.LogoScrimSize,
+		LogoScrimOpacity:              cfg.LogoScrimOpacity,
 		LogoWidth:                     cfg.LogoWidth,
 		LogoHeight:                    cfg.LogoHeight,
 		LogoPos:                       cfg.LogoPos,

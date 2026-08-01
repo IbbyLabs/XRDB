@@ -203,6 +203,8 @@ export function ConfiguratorClient() {
       trendingStyle: cfg.trendingStyle,
       backdropAsPoster: cfg.backdropAsPoster,
       logoWidth: cfg.logoWidth,
+      logoScrimSize: cfg.logoScrimSize,
+      logoScrimOpacity: cfg.logoScrimOpacity,
       logoHeight: cfg.logoHeight,
       logoPos: cfg.logoPos,
       logoAnchor: cfg.logoAnchor,
