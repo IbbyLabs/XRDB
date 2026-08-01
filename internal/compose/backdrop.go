@@ -267,17 +267,33 @@ func drawBackdropLogoOverlay(base *image.NRGBA, logoData []byte, ratingsH int, o
 	}
 
 	// Vertical gradient scrim behind the logo for legibility over bright areas.
-	scrimSize := opts.scrimSize
+	drawScrimBand(base, logoTopY, dstH, opts.scrimSize, opts.scrimOpacity)
+
+	logoRect := image.Rect(x, logoTopY, x+dstW, logoTopY+dstH)
+	draw.Draw(base, logoRect, scaled, image.Point{}, draw.Over)
+}
+
+// drawScrimBand shades a band behind the title logo so it stays legible over
+// bright artwork. scrimSize is how far the band reaches past the logo as a
+// percent of the logo's height, scrimPeak its strongest opacity as a percent;
+// zero means the built-in default for either.
+func drawScrimBand(base *image.NRGBA, logoTopY, dstH, scrimSize, scrimPeak int) {
+	bounds := base.Bounds()
+	baseW, baseH := bounds.Dx(), bounds.Dy()
 	if scrimSize == 0 {
 		scrimSize = 50
 	}
-	scrimPeak := opts.scrimOpacity
 	if scrimPeak == 0 {
 		scrimPeak = 63
 	}
 	scrimMax := float64(scrimPeak) * 255 / 100
 	scrimPad := dstH * scrimSize / 100
-	scrimTop := logoTopY - scrimPad
+	// The band is measured unclamped and then clipped to the canvas. Measuring
+	// it after the clip would put the peak at the middle of whatever survived,
+	// so a band running past an edge would drag the darkest point off the logo.
+	spanTop := logoTopY - scrimPad
+	spanH := dstH + 2*scrimPad
+	scrimTop := spanTop
 	if scrimTop < 0 {
 		scrimTop = 0
 	}
@@ -286,9 +302,9 @@ func drawBackdropLogoOverlay(base *image.NRGBA, logoData []byte, ratingsH int, o
 		scrimBot = baseH
 	}
 	scrimH := scrimBot - scrimTop
-	if scrimH > 0 {
+	if scrimH > 0 && spanH > 0 {
 		for row := 0; row < scrimH; row++ {
-			rel := float64(row) / float64(scrimH)
+			rel := float64(scrimTop+row-spanTop) / float64(spanH)
 			// A triangular ramp turns at its peak, and that corner draws as a
 			// hard horizontal line across bright artwork. A half sine reaches
 			// the same peak with no turn, and sits above the triangle
@@ -303,9 +319,6 @@ func drawBackdropLogoOverlay(base *image.NRGBA, logoData []byte, ratingsH int, o
 			}
 		}
 	}
-
-	logoRect := image.Rect(x, logoTopY, x+dstW, logoTopY+dstH)
-	draw.Draw(base, logoRect, scaled, image.Point{}, draw.Over)
 }
 
 // blendScrim darkens a pixel by compositing a semi-transparent black scrim
