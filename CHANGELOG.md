@@ -2,6 +2,15 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.50.1](https://github.com/IbbyLabs/XRDB/compare/v3.50.0...v3.50.1) (2026-08-01)
+
+
+### Fixed
+
+* **badges:** draw three stored controls (BUG-179, BUG-180, BUG-181) ([b756d70](https://github.com/IbbyLabs/XRDB/commit/b756d70d990536d58fa8d98b786b355082ce99c3))
+* **badges:** honour the edge inset and tile border (BUG-182, BUG-184) ([8cb9c78](https://github.com/IbbyLabs/XRDB/commit/8cb9c783e7c959624439feb2f6fe275f3888fe97))
+* **configurator:** show only the live strip controls (BUG-183) ([b7373f1](https://github.com/IbbyLabs/XRDB/commit/b7373f171289657378639c7449647b2a47aa5c69))
+
 ## [3.50.0](https://github.com/IbbyLabs/XRDB/compare/v3.49.5...v3.50.0) (2026-08-01)
 
 
