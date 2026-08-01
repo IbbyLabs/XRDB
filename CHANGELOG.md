@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.46.1](https://github.com/IbbyLabs/XRDB/compare/v3.46.0...v3.46.1) (2026-08-01)
+
+
+### Fixed
+
+* **logo:** keep the scrim peak on the logo at a poster edge (BUG-175) ([8293fec](https://github.com/IbbyLabs/XRDB/commit/8293fec86de02852ef0973e4db633ab5ecc25e75))
+
 ## [3.46.0](https://github.com/IbbyLabs/XRDB/compare/v3.45.0...v3.46.0) (2026-08-01)
 
 
