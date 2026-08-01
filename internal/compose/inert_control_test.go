@@ -466,3 +466,36 @@ func TestFilledPlateSilhouettesBrandMarks(t *testing.T) {
 		t.Errorf("the mark's ink is only %d luminance from the plate, so it will not read", diff)
 	}
 }
+
+// v2 fitted a constrained row by removing badges; v3 shrank the whole row to a
+// 0.2 floor, so a wide short surface ended up unreadable rather than shorter
+// (FR-136).
+func TestBadgesDropRatherThanShrinkPastLegibility(t *testing.T) {
+	six := []provider.Rating{
+		{Source: "imdb", Label: "8.4"}, {Source: "tmdb", Label: "7.9"},
+		{Source: "rt", Label: "91%"}, {Source: "metacritic", Label: "74"},
+		{Source: "letterboxd", Label: "4.1"}, {Source: "trakt", Label: "8.0"},
+	}
+	ensureFaces() // both production callers do this before measuring
+	cfg := imageconfig.Default()
+	cfg.Ratings = []string{"imdb", "tmdb", "rt", "metacritic", "letterboxd", "trakt"}
+
+	// A logo surface: wide, short, and the case the report describes.
+	const w, h = 640, 120
+	shown, scale := fitBadgesToFrame(cfg, w, h, six)
+
+	if len(shown) == len(six) && scale < legibleBadgeScale {
+		t.Errorf("kept all %d badges at scale %.2f, below the %.2f legibility floor", len(shown), scale, legibleBadgeScale)
+	}
+	if len(shown) == 0 {
+		t.Fatal("every badge was dropped; the row should never empty")
+	}
+	if bare := resolveBadgeScale(cfg, w, h, six); scale < bare {
+		t.Errorf("trimming left the row smaller (%.2f) than not trimming at all (%.2f)", scale, bare)
+	}
+
+	// A frame with room for all six must not drop any.
+	if all, _ := fitBadgesToFrame(cfg, 1400, 900, six); len(all) != len(six) {
+		t.Errorf("dropped badges on a frame with room for all six: kept %d", len(all))
+	}
+}

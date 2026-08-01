@@ -840,6 +840,49 @@ func resolveBadgeScale(cfg imageconfig.Config, frameW, frameH int, ratings []pro
 	return fitBadgeScale(scale, frameW, frameH, ratings, cfg)
 }
 
+// legibleBadgeScale is the smallest scale a badge's value still reads at. Below
+// it v2 dropped badges rather than shrinking further, which is what keeps a wide,
+// short surface readable instead of merely fitted.
+const legibleBadgeScale = 0.5
+
+// rowWidthAt measures the whole strip laid out on one row at scale.
+func rowWidthAt(scale float64, ratings []provider.Rating, cfg imageconfig.Config) int {
+	d := ratingStripDimsFor(scale, cfg)
+	total := 0
+	for i, r := range ratings {
+		if i > 0 {
+			total += d.badgeGap
+		}
+		total += widestBadgeAt(scale, []provider.Rating{r}, cfg)
+	}
+	return total
+}
+
+// fitBadgesToFrame decides how much of the strip to draw and at what size.
+//
+// Fitting by shrinking alone bottoms out at an unreadable scale on a wide, short
+// surface, where the height cap binds and taking badges away never buys height.
+// So below the legibility floor the type is held there and badges are taken away
+// to fit the width instead, which is how v2 fitted the same row. The last badge
+// is never dropped, and a row that cannot fit even at a readable size falls back
+// to shrinking, since something legible-but-clipped is worse than something small.
+func fitBadgesToFrame(cfg imageconfig.Config, frameW, frameH int, ratings []provider.Rating) ([]provider.Rating, float64) {
+	scale := resolveBadgeScale(cfg, frameW, frameH, ratings)
+	if scale >= legibleBadgeScale || len(ratings) < 2 {
+		return ratings, scale
+	}
+
+	shown := ratings
+	availW := frameW - ratingStripDimsFor(legibleBadgeScale, cfg).edgeX*2
+	for len(shown) > 1 && rowWidthAt(legibleBadgeScale, shown, cfg) > availW {
+		shown = shown[:len(shown)-1]
+	}
+	if rowWidthAt(legibleBadgeScale, shown, cfg) > availW {
+		return ratings, scale
+	}
+	return shown, legibleBadgeScale
+}
+
 // ratingsBandHeight returns the vertical space (strip plus edge margins) the
 // rating strip occupies for a frameW x frameH frame, so the logo can be
 // letterboxed above a clear band.
@@ -861,7 +904,7 @@ func ratingsBandHeight(frameW, frameH int, ratings []provider.Rating, cfg imagec
 	if faceValue == nil {
 		return 0
 	}
-	scale := resolveBadgeScale(cfg, frameW, frameH, filtered)
+	filtered, scale := fitBadgesToFrame(cfg, frameW, frameH, filtered)
 	face := valueFaceFor(scale)
 	fm := face.Metrics()
 	valH := fm.Ascent.Ceil() + fm.Descent.Ceil()
@@ -941,7 +984,7 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 		filtered = filtered[:*cfg.RatingsMax]
 	}
 
-	scale := resolveBadgeScale(cfg, out.Bounds().Dx(), out.Bounds().Dy(), filtered)
+	filtered, scale := fitBadgesToFrame(cfg, out.Bounds().Dx(), out.Bounds().Dy(), filtered)
 
 	face := valueFaceFor(scale)
 	fm := face.Metrics()
