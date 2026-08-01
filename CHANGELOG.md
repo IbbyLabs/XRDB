@@ -2,6 +2,21 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.51.0](https://github.com/IbbyLabs/XRDB/compare/v3.50.2...v3.51.0) (2026-08-01)
+
+
+### Added
+
+* **badges:** drop genres that would run off the artwork (FR-138) ([a1bf4e9](https://github.com/IbbyLabs/XRDB/commit/a1bf4e93708cae9f593925653ff3960ae4611fc8))
+* **badges:** expose the rating badge background opacity (FR-134) ([67f4ae2](https://github.com/IbbyLabs/XRDB/commit/67f4ae2c1f4f6fa36084fdf1eb0b35eb1b59e6ef))
+
+
+### Fixed
+
+* **badges:** composite the score pill's drop shadow (FR-134) ([ae1322e](https://github.com/IbbyLabs/XRDB/commit/ae1322ecafa0ef2034e5698bb0118a80d2cf77db))
+* **badges:** reach the score pills with the background opacity (FR-134) ([ce9474c](https://github.com/IbbyLabs/XRDB/commit/ce9474c00080f83db515f669f8e1614485a5340d))
+* **configurator:** name the genre border states instead of a -1 width ([1066ee0](https://github.com/IbbyLabs/XRDB/commit/1066ee079584776e4417f0c86df7738f29558b6e))
+
 ## [3.50.2](https://github.com/IbbyLabs/XRDB/compare/v3.50.1...v3.50.2) (2026-08-01)
 
 
