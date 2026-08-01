@@ -439,8 +439,22 @@ func accessLogMiddleware(logger *slog.Logger, trust proxyTrust, next http.Handle
 			slog.Int64("latency_ms", time.Since(start).Milliseconds()),
 			slog.Int("bytes", rec.bytes),
 			slog.String("client_ip", clientIP(r, trust)),
+			// Which integration is driving the traffic. A catalogue crawl is
+			// otherwise indistinguishable from ordinary use, and attributing one
+			// took an hour of inference for want of this field.
+			slog.String("user_agent", truncateUA(r.UserAgent())),
 		)
 	})
+}
+
+// truncateUA bounds the logged user agent. It is client-supplied, so an
+// unbounded one would let a caller pad every log line at will.
+func truncateUA(ua string) string {
+	const max = 120
+	if len(ua) > max {
+		return ua[:max] + "…"
+	}
+	return ua
 }
 
 // corsMiddleware allows the web frontend to call the API cross-origin —
