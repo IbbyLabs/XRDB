@@ -2,6 +2,22 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.45.0](https://github.com/IbbyLabs/XRDB/compare/v3.44.0...v3.45.0) (2026-08-01)
+
+
+### Added
+
+* **cache:** remember a not-found render briefly ([2a3b4a0](https://github.com/IbbyLabs/XRDB/commit/2a3b4a00e3e149632eea9318e6f32dcfd62d4281))
+* **logging:** log MDBList's sources and raw awards string at debug ([7d07543](https://github.com/IbbyLabs/XRDB/commit/7d07543685ffd694ead4f49d8a424cf3f4bd0b94))
+* **logo:** add scrim size and strength controls (FR-132) ([782bb26](https://github.com/IbbyLabs/XRDB/commit/782bb26a67602e158b489a00619679b8d5c28a53))
+* **ratings:** mark the scale on sources not scored out of ten ([34cc531](https://github.com/IbbyLabs/XRDB/commit/34cc5311226c8a438f77d0685fce7b0b69a2fe26))
+
+
+### Fixed
+
+* **artwork:** apply the vote and size floors to the alternative path ([a09a0aa](https://github.com/IbbyLabs/XRDB/commit/a09a0aa763fa889096be12b3ba3eec2da22c6260))
+* **ratings:** shorten the cache term for an answer that lost sources ([f5eee27](https://github.com/IbbyLabs/XRDB/commit/f5eee274b3405bd16d1f5bf73e3cc87785696618))
+
 ## [3.44.0](https://github.com/IbbyLabs/XRDB/compare/v3.43.0...v3.44.0) (2026-07-31)
 
 
