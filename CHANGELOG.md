@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.49.1](https://github.com/IbbyLabs/XRDB/compare/v3.49.0...v3.49.1) (2026-08-01)
+
+
+### Performance
+
+* **render:** fail art fetches fast and pool their connections ([52e13aa](https://github.com/IbbyLabs/XRDB/commit/52e13aa6e9c4945143a7413463d86cbcb19daefd))
+
 ## [3.49.0](https://github.com/IbbyLabs/XRDB/compare/v3.48.0...v3.49.0) (2026-08-01)
 
 
