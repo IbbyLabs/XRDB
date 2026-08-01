@@ -180,3 +180,29 @@ func TestKeysAreScopedPerSourceAndTitle(t *testing.T) {
 		t.Error("a different source must not reuse another source's result")
 	}
 }
+
+// A timeout answers nothing and carries no Retry-After, so the rate-limit branch
+// never fires. Without a breaker on plain failures the source is called again on
+// the very next render and every render pays the timeout.
+func TestRepeatedPlainFailuresHoldTheSourceOut(t *testing.T) {
+	h := NewHealthTracker(16, time.Hour)
+	plain := errors.New("Get \"https://api.example.com/x\": context deadline exceeded (Client.Timeout exceeded)")
+
+	for i := 0; i < failureBreakerThreshold-1; i++ {
+		h.Failure("mdblist", plain)
+	}
+	if h.CoolingOff("mdblist") {
+		t.Fatalf("source held out after %d failures, want it still tried", failureBreakerThreshold-1)
+	}
+
+	h.Failure("mdblist", plain)
+	if !h.CoolingOff("mdblist") {
+		t.Errorf("source still being called after %d consecutive timeouts, want it held out", failureBreakerThreshold)
+	}
+
+	// A success clears it, so a source that comes back is used again.
+	h.Success("mdblist", GoodKey("mdblist", "movie", "tt1"), &MediaMeta{Ratings: []Rating{{Source: "imdb", Value: 8}}})
+	if h.CoolingOff("mdblist") {
+		t.Error("source still held out after answering again")
+	}
+}

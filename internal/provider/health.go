@@ -202,6 +202,19 @@ func (h *HealthTracker) Failure(source string, err error) (enteredCooldown bool)
 		}
 		enteredCooldown = !wasCooling && time.Now().Before(st.cooldownUntil)
 	}
+
+	// A source can fail without ever refusing on rate-limit grounds: a timeout
+	// answers nothing and carries no Retry-After, so the branch above never fires
+	// and the next render pays the same wait again. Hold a repeatedly failing
+	// source out the same way, whatever it failed with.
+	if st.consecutiveFail >= failureBreakerThreshold {
+		until := time.Now().Add(failureCooldown)
+		if until.After(st.cooldownUntil) {
+			st.cooldownUntil = until
+			st.cooldowns++
+		}
+		enteredCooldown = !wasCooling && time.Now().Before(st.cooldownUntil)
+	}
 	return enteredCooldown
 }
 
@@ -215,6 +228,11 @@ const (
 	// quotaCooldown applies when the allowance itself is spent rather than the
 	// moment being busy. The window it waits on is usually a day.
 	quotaCooldown = time.Hour
+	// failureBreakerThreshold is how many consecutive failures of any kind hold a
+	// source out, and failureCooldown is for how long. A source answering nothing
+	// still costs every render its timeout until it is held out.
+	failureBreakerThreshold = 5
+	failureCooldown         = 30 * time.Second
 )
 
 // CoolingOff reports whether a source is being held out after refusing on
