@@ -346,9 +346,11 @@ func Load() Config {
 			streamTimeout = d
 		}
 	}
-	// Ratings are per title, so they outlive any one render config. Zero
-	// disables the cache.
-	ratingsCacheTTL := 6 * time.Hour
+	// Ratings are per title, so they outlive any one render config, and they
+	// barely move day to day. A day's term keeps the paced sources off the render
+	// path for titles already seen. Zero disables the cache. The stored shape is
+	// versioned, so a MediaMeta change still invalidates regardless of term.
+	ratingsCacheTTL := 24 * time.Hour
 	if raw := os.Getenv("XRDB_RATINGS_CACHE_TTL_HOURS"); raw != "" {
 		if d, err := time.ParseDuration(raw + "h"); err == nil && d >= 0 {
 			ratingsCacheTTL = d
