@@ -178,6 +178,7 @@ func main() {
 	var pipeline *compose.Pipeline
 	if len(reg.Names()) > 0 {
 		pipeline = compose.New(reg)
+		pipeline.SetArtFetchTimeout(cfg.ArtFetchTimeout)
 		pipeline.SetMediuxKey(cfg.MediuxAPIKey)
 		pipeline.SetRatingsCacheTTL(cfg.RatingsCacheTTL)
 		// Ratings are metered by the request upstream, and one source meters by the
@@ -219,6 +220,7 @@ func main() {
 		"addr", cfg.Address,
 		"log_level", cfg.LogLevel,
 		"render_concurrency", cfg.RenderConcurrency,
+		"art_fetch_timeout", cfg.ArtFetchTimeout,
 		"memory_limit_mb", cfg.MemoryLimitBytes>>20,
 		"cache_max_entries", cfg.CacheMaxEntries,
 		"cache_max_mb", cfg.CacheMaxBytes>>20,

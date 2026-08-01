@@ -550,13 +550,45 @@ func ratingIDForSources(id string, meta *provider.MediaMeta) string {
 	return meta.IMDbID
 }
 
+// defaultArtFetchTimeout bounds the source-artwork fetch absent an override
+// from config. A normal fetch runs around a second; a stalled one otherwise
+// holds a render slot idle, deepening the queue for everything behind it.
+const defaultArtFetchTimeout = 5 * time.Second
+
+// newArtFetchTransport is tuned for many concurrent renders fetching from a
+// small set of art CDNs. The default transport's two idle connections per host
+// serialize those renders behind a handful of sockets under load.
+func newArtFetchTransport() *http.Transport {
+	t := http.DefaultTransport.(*http.Transport).Clone()
+	t.MaxIdleConns = 100
+	t.MaxIdleConnsPerHost = 16
+	t.MaxConnsPerHost = 32
+	t.IdleConnTimeout = 90 * time.Second
+	t.ForceAttemptHTTP2 = true
+	return t
+}
+
 // New creates a Pipeline with the given provider registry.
 func New(reg *provider.Registry) *Pipeline {
 	return &Pipeline{
 		providers: reg,
-		fetcher:   &httpFetcher{client: &http.Client{Timeout: 15 * time.Second}},
-		logger:    slog.Default(),
-		ratings:   newRatingsCache(DefaultRatingsCacheTTL),
+		fetcher: &httpFetcher{client: &http.Client{
+			Timeout:   defaultArtFetchTimeout,
+			Transport: newArtFetchTransport(),
+		}},
+		logger:  slog.Default(),
+		ratings: newRatingsCache(DefaultRatingsCacheTTL),
+	}
+}
+
+// SetArtFetchTimeout overrides the source-artwork fetch timeout. No-op when
+// the fetcher is a test double or d is not positive.
+func (p *Pipeline) SetArtFetchTimeout(d time.Duration) {
+	if d <= 0 {
+		return
+	}
+	if f, ok := p.fetcher.(*httpFetcher); ok {
+		f.client.Timeout = d
 	}
 }
 

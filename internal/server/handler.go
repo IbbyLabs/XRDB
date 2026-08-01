@@ -185,6 +185,9 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			}
 		}
 		placeholder := false
+		// queueWaitMs stays zero for a cache hit or a remembered not-found, neither
+		// of which touches the render limiter.
+		var queueWaitMs int64
 		if !fromCache && notFound.Has(cacheKey) {
 			// Asked for recently and there was nothing. Answer from that rather
 			// than sweeping every provider again, which is what makes a
@@ -199,28 +202,30 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			// Only real renders are gated; cache hits above pass freely, so a
 			// warm catalogue reload isn't throttled. If the client hangs up or
 			// the request times out while queued, drop it without spending a slot.
+			queueStart := time.Now()
 			if !renderLimiter.acquireWithin(r.Context(), cfg.RenderQueueWait, weight) {
 				// Either the caller gave up, or the queue is deeper than the
 				// render throughput can clear. Turning the request away keeps the
 				// wait bounded for everyone behind it; a caller that has cached
 				// art of its own falls back to it rather than showing a gap.
+				waitedMs := time.Since(queueStart).Milliseconds()
 				if r.Context().Err() != nil {
 					logger.DebugContext(r.Context(), "Render abandoned by the caller while queued",
 						"id", logging.RequestID(r.Context()),
-						"media_type", mediaType, "media_id", id)
+						"media_type", mediaType, "media_id", id, "waited_ms", waitedMs)
 					ms.Record("/"+mediaType, 499, latMs(start))
 					return
 				}
 				logger.WarnContext(r.Context(), "Shed a render because the queue was full",
 					"id", logging.RequestID(r.Context()),
-					"media_type", mediaType, "media_id", id,
-					"waited_ms", cfg.RenderQueueWait.Milliseconds())
+					"media_type", mediaType, "media_id", id, "waited_ms", waitedMs)
 				w.Header().Set("Retry-After", "5")
 				w.Header().Set("Cache-Control", "no-store")
 				http.Error(w, "busy: too many renders queued", http.StatusServiceUnavailable)
 				ms.Record("/"+mediaType, http.StatusServiceUnavailable, latMs(start))
 				return
 			}
+			queueWaitMs = time.Since(queueStart).Milliseconds()
 			var renderResult *compose.Result
 			if pipeline != nil {
 				renderResult, _ = pipeline.Render(r.Context(), compose.Request{
@@ -311,7 +316,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			"id", logging.RequestID(r.Context()),
 			"media_type", mediaType, "media_id", id,
 			"status", status, "from_cache", fromCache, "placeholder", placeholder,
-			"bytes", len(pngBytes), "latency_ms", int64(latMs(start)))
+			"bytes", len(pngBytes), "latency_ms", int64(latMs(start)), "queue_wait_ms", queueWaitMs)
 		ms.Record("/"+mediaType, status, latMs(start))
 	}
 	for _, mt := range imageconfig.Surfaces {

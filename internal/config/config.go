@@ -159,7 +159,11 @@ type Config struct {
 	RenderConcurrency   int    // max simultaneous renders; caps memory under bursts
 	// RenderQueueWait bounds how long a render waits for a slot before the
 	// request is shed. Zero waits forever, which is what produced 144s renders.
-	RenderQueueWait  time.Duration
+	RenderQueueWait time.Duration
+	// ArtFetchTimeout bounds the source-artwork HTTP fetch. A stalled fetch
+	// otherwise holds a render slot doing nothing until it elapses, starving
+	// the renders queued behind it.
+	ArtFetchTimeout  time.Duration
 	MemoryLimitBytes int64  // soft heap limit (debug.SetMemoryLimit); 0 = unset
 	LogLevel         string // debug|info|warn|error (default info)
 	// TrustedProxies is a comma-separated list of CIDRs or addresses whose
@@ -398,6 +402,16 @@ func Load() Config {
 			renderQueueWait = time.Duration(n) * time.Second
 		}
 	}
+	// Bounds the source-artwork fetch. A normal fetch runs around a second, so
+	// this is generous while still failing fast: a stalled fetch that ran the
+	// old 15s default held a render slot idle, which deepened the queue for
+	// every render behind it under load.
+	artFetchTimeout := 5 * time.Second
+	if raw := os.Getenv("XRDB_ART_FETCH_TIMEOUT_SECONDS"); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+			artFetchTimeout = time.Duration(n) * time.Second
+		}
+	}
 	// Optional soft heap limit so the Go runtime GCs harder before the container
 	// cgroup cap triggers a kernel OOM-kill. Set to roughly the container limit.
 	var memoryLimitBytes int64
@@ -453,6 +467,7 @@ func Load() Config {
 		ConfigEncryptionKey:   os.Getenv("XRDB_CONFIG_ENCRYPTION_KEY"),
 		RenderConcurrency:     renderConcurrency,
 		RenderQueueWait:       renderQueueWait,
+		ArtFetchTimeout:       artFetchTimeout,
 		MemoryLimitBytes:      memoryLimitBytes,
 		LogLevel:              logLevel,
 		TrustedProxies:        os.Getenv("XRDB_TRUSTED_PROXIES"),
