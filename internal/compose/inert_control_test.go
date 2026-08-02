@@ -699,3 +699,64 @@ func TestGenreFitRunsWhereverTheListIsShown(t *testing.T) {
 		}
 	}
 }
+
+// Picking one genre and shouting it were the same switch, so a first-only label
+// could not be had without the capitals. Case is now its own control, and an
+// unset value keeps what each label mode did on its own (FR-141).
+func TestGenreCaseIsSeparateFromTheLabelChoice(t *testing.T) {
+	genres := []string{"Horror", "Comedy", "Thriller"}
+
+	draw := func(labelMode, labelCase string) []byte {
+		img := image.NewNRGBA(image.Rect(0, 0, 500, 600))
+		drawGenreBadge(img, genres, "bl", 1, newOccupancy(img.Bounds()), genreBadgeOpts{
+			mode: "text", labelMode: labelMode, labelCase: labelCase,
+		})
+		return img.Pix
+	}
+
+	// Unset keeps today's behaviour on both label modes.
+	if !bytes.Equal(draw("primary", ""), draw("primary", "upper")) {
+		t.Error("first-only stopped capitalising by default")
+	}
+	if !bytes.Equal(draw("", ""), draw("", "normal")) {
+		t.Error("the genre list stopped using the source's spelling by default")
+	}
+	// And each case is reachable from the other label mode, which is the point.
+	if bytes.Equal(draw("primary", ""), draw("primary", "normal")) {
+		t.Error("first-only cannot be had without the capitals")
+	}
+	if bytes.Equal(draw("", ""), draw("", "upper")) {
+		t.Error("the genre list cannot be capitalised")
+	}
+}
+
+// A fixed count is an editorial choice, not a fitting one: "Horror · Comedy"
+// against "Horror · Thriller" is about which genre carries the meaning (FR-141).
+func TestGenreCountDialCapsTheList(t *testing.T) {
+	genres := []string{"Horror", "Comedy", "Thriller"}
+
+	widthOf := func(maxGenres int) int {
+		img := image.NewNRGBA(image.Rect(0, 0, 900, 600))
+		drawGenreBadge(img, genres, "bl", 1, newOccupancy(img.Bounds()), genreBadgeOpts{
+			mode: "text", maxGenres: maxGenres,
+		})
+		lo, hi := -1, -1
+		for x := 0; x < 900; x++ {
+			for y := img.Bounds().Min.Y; y < img.Bounds().Max.Y; y++ {
+				if img.NRGBAAt(x, y).A > 0 {
+					if lo < 0 {
+						lo = x
+					}
+					hi = x
+					break
+				}
+			}
+		}
+		return hi - lo
+	}
+
+	auto, one, two := widthOf(0), widthOf(1), widthOf(2)
+	if one >= two || two >= auto {
+		t.Errorf("the count dial does not narrow the plate in order: one=%d two=%d auto=%d", one, two, auto)
+	}
+}

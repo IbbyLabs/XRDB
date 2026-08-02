@@ -583,6 +583,13 @@ type GenreBadgeConfig struct {
 	// GenreBadgeLabel picks what the plate says. v2 printed the first genre on
 	// its own in capitals; "" keeps the list.
 	GenreBadgeLabel string `json:"genreBadgeLabel,omitempty"` // primary | list | family; "" = list
+	// GenreBadgeCase sets the label's casing independently of which label was
+	// chosen. "" keeps what each label mode did on its own: capitals for the
+	// first-only label, the source's spelling otherwise.
+	GenreBadgeCase string `json:"genreBadgeCase,omitempty"` // upper | normal; "" = per label
+	// GenreBadgeMaxGenres caps how many genres the list names. 0 lets the fit
+	// check decide, which is a different job: a fixed count is editorial.
+	GenreBadgeMaxGenres int `json:"genreBadgeMaxGenres,omitempty"` // 0 = auto; 1-3
 }
 
 // Default returns a Config populated with production defaults.
@@ -718,6 +725,8 @@ type rawGenre struct {
 	GenreBadgeTileAccentColor   *string  `json:"genreBadgeTileAccentColor"`
 	GenreBadgeAccent            *string  `json:"genreBadgeAccent"`
 	GenreBadgeLabel             *string  `json:"genreBadgeLabel"`
+	GenreBadgeCase              *string  `json:"genreBadgeCase"`
+	GenreBadgeMaxGenres         *int     `json:"genreBadgeMaxGenres"`
 }
 
 // rawQuality and rawTrending mirror their config groups for parsing.
@@ -1867,6 +1876,17 @@ func parseGenre(cfg *Config, r *raw) {
 		case "family", "group":
 			cfg.GenreBadgeLabel = "family"
 		}
+	}
+	if r.GenreBadgeCase != nil {
+		switch v := strings.ToLower(strings.TrimSpace(*r.GenreBadgeCase)); v {
+		case "upper", "caps", "uppercase":
+			cfg.GenreBadgeCase = "upper"
+		case "normal", "source", "as-written":
+			cfg.GenreBadgeCase = "normal"
+		}
+	}
+	if r.GenreBadgeMaxGenres != nil && *r.GenreBadgeMaxGenres != 0 {
+		cfg.GenreBadgeMaxGenres = clampInt(*r.GenreBadgeMaxGenres, 1, 3)
 	}
 }
 

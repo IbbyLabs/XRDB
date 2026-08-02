@@ -5,6 +5,7 @@ import {
   RATING_OPTIONS, SIX_POS_OPTIONS, QUALITY_STYLE_OPTIONS, GENRE_STYLE_OPTIONS,
   AGE_STYLE_OPTIONS, GENRE_MODE_OPTIONS, ANIME_GROUPING_OPTIONS,
   GENRE_ACCENT_OPTIONS, GENRE_LABEL_OPTIONS, GENRE_BORDER_OPTIONS,
+  GENRE_CASE_OPTIONS, GENRE_COUNT_OPTIONS,
   AGGREGATE_SOURCE_OPTIONS, AGGREGATE_ACCENT_MODE_OPTIONS, SCOREBAR_STYLE_OPTIONS,
   RATING_PRESENTATION_OPTIONS, RATING_VALUE_MODE_OPTIONS, RELEASE_STATUS_STYLE_OPTIONS,
   ICON_SHAPE_OPTIONS, TREND_TAG_STYLE_OPTIONS, ACCENT_SHAPE_OPTIONS,
@@ -711,6 +712,23 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
           {GENRE_LABEL_OPTIONS.find(o => o.id === config.genreBadgeLabel)?.desc}
         </p>
       </div>
+      <StyleGrid
+        id={`${uid}-genre-case-label`}
+        label="Case"
+        options={GENRE_CASE_OPTIONS}
+        value={config.genreBadgeCase || 'default'}
+        onChange={v => onUpdate('genreBadgeCase', v === 'default' ? '' : v)}
+        hint={GENRE_CASE_OPTIONS.find(o => o.id === (config.genreBadgeCase || 'default'))?.desc}
+      />
+      <StyleGrid
+        id={`${uid}-genre-count-label`}
+        label="How many genres"
+        options={GENRE_COUNT_OPTIONS}
+        value={config.genreBadgeMaxGenres ? String(config.genreBadgeMaxGenres) : 'default'}
+        onChange={v => onUpdate('genreBadgeMaxGenres', v === 'default' ? 0 : Number(v))}
+        columns={4}
+        hint={GENRE_COUNT_OPTIONS.find(o => o.id === (config.genreBadgeMaxGenres ? String(config.genreBadgeMaxGenres) : 'default'))?.desc}
+      />
       <NumField id={`${uid}-genre-scale`} label="Scale (%)" value={config.genreBadgeScale}
         onChange={v => onUpdate('genreBadgeScale', v)} min={70} max={300} step={5} />
       <div className="numfield-pair">

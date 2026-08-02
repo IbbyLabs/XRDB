@@ -1042,7 +1042,9 @@ type genreBadgeOpts struct {
 	outlineWidth int     // px outline width for the plain style; 0 = default
 	outlineGlow  bool    // fade the outline outward instead of a hard edge
 	accent       string  // "" | left | top | none; where the accent sits on the plate
-	labelMode    string  // "" | list | primary; primary prints the first genre alone
+	labelMode    string  // "" | list | primary | family; primary prints the first genre alone
+	labelCase    string  // "" | upper | normal; "" keeps what each label mode did alone
+	maxGenres    int     // cap on how many genres the list names; 0 = fit decides
 }
 
 // drawLabelOutlined traces a label at the given baseline. A hard outline stamps
@@ -1107,6 +1109,8 @@ func genreOptsFromConfig(cfg imageconfig.Config, isAnime bool) genreBadgeOpts {
 		style:        cfg.GenreBadgeStyle,
 		accent:       cfg.GenreBadgeAccent,
 		labelMode:    cfg.GenreBadgeLabel,
+		labelCase:    cfg.GenreBadgeCase,
+		maxGenres:    cfg.GenreBadgeMaxGenres,
 		tileColor:    cfg.GenreBadgeTileAccentColor,
 		borderWidth:  cfg.GenreBadgeBorderWidth,
 		outlineColor: cfg.NoBackgroundBadgeOutlineColor,
@@ -1137,13 +1141,19 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	// The anime control names families in the glyph modes and genres here.
 	named := groupAnimeGenres(genres, opts.isAnime, opts.grouping)
 	shown := named
-	if len(shown) > 3 {
-		shown = shown[:3]
+	// A fixed count is an editorial choice, so it is applied before the fit
+	// check, which answers a different question: whether what is left fits.
+	cap := 3
+	if opts.maxGenres > 0 && opts.maxGenres < cap {
+		cap = opts.maxGenres
+	}
+	if len(shown) > cap {
+		shown = shown[:cap]
 	}
 	label := strings.Join(shown, " · ")
-	// v2 named the title by its first genre alone, in capitals.
+	// v2 named the title by its first genre alone.
 	if opts.labelMode == "primary" {
-		label = strings.ToUpper(named[0])
+		label = named[0]
 	}
 
 	// The glyph modes need a family resolved, for the mark itself and its accent.
@@ -1173,6 +1183,18 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		}
 		if named != nil {
 			label = named.label
+		}
+	}
+	// Casing is its own control. Picking one genre and shouting it used to be the
+	// same switch, so a first-only label could not be had without the capitals.
+	// An unset value keeps what each label mode did on its own.
+	switch opts.labelCase {
+	case "upper":
+		label = strings.ToUpper(label)
+	case "normal":
+	default:
+		if opts.labelMode == "primary" {
+			label = strings.ToUpper(label)
 		}
 	}
 

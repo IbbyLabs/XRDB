@@ -437,7 +437,9 @@ func keyMutations() map[string]keyOverride {
 		"genreBadgeAccent":          {mut: func(c *imageconfig.Config) { c.GenreBadgeAccent = "left" }},
 		// In the icon/both modes the drawn label is the resolved genre-family name,
 		// which overrides the primary/list choice; the text mode is where it shows.
-		"genreBadgeLabel": {pre: func(c *imageconfig.Config) { c.GenreBadgeMode = "text" }, mut: func(c *imageconfig.Config) { c.GenreBadgeLabel = "primary" }},
+		"genreBadgeLabel":     {pre: func(c *imageconfig.Config) { c.GenreBadgeMode = "text" }, mut: func(c *imageconfig.Config) { c.GenreBadgeLabel = "primary" }},
+		"genreBadgeCase":      {pre: func(c *imageconfig.Config) { c.GenreBadgeMode = "text" }, mut: func(c *imageconfig.Config) { c.GenreBadgeCase = "upper" }},
+		"genreBadgeMaxGenres": {pre: func(c *imageconfig.Config) { c.GenreBadgeMode = "text" }, mut: func(c *imageconfig.Config) { c.GenreBadgeMaxGenres = 1 }},
 
 		// Quality badge family.
 		"qualityBadgesStyle":           {mut: func(c *imageconfig.Config) { c.QualityBadgesStyle = "plain" }},

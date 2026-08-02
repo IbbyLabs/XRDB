@@ -249,6 +249,19 @@ export const ANIME_GROUPING_OPTIONS = [
   { id: 'secondary', label: 'Next genre', desc: 'Anime and animation defer to the next strongest genre' },
 ] as const;
 
+export const GENRE_CASE_OPTIONS = [
+  { id: 'default', label: 'Auto',       desc: 'Capitals for First only, the source\u2019s spelling otherwise' },
+  { id: 'upper',   label: 'Capitals',   desc: 'Shout the label whichever one is chosen' },
+  { id: 'normal',  label: 'As written', desc: 'Keep the spelling as the source has it' },
+] as const;
+
+export const GENRE_COUNT_OPTIONS = [
+  { id: 'default', label: 'Auto', desc: 'Up to three, trimmed to whatever fits the artwork' },
+  { id: '1',       label: 'One',  desc: 'The strongest genre only' },
+  { id: '2',       label: 'Two',  desc: 'Two genres, where the second carries the meaning' },
+  { id: '3',       label: 'Three', desc: 'Three, still trimmed if they do not fit' },
+] as const;
+
 export const GENRE_BORDER_OPTIONS = [
   { id: 'off',      label: 'Off' },
   { id: 'hairline', label: 'Hairline' },
@@ -467,7 +480,9 @@ export interface ConfigState {
   genreBadgeStyle: string; // 'default' | glass | pill | square | plain | clean | tile
   genreBadgeTileAccentColor: string; // '#RRGGBB' for the tile style; '' = default
   genreBadgeAccent: string; // 'default' | left | top | none
-  genreBadgeLabel: string;  // 'default' (list) | primary
+  genreBadgeLabel: string;
+  genreBadgeCase: string;
+  genreBadgeMaxGenres: number;  // 'default' (list) | primary
   genreBadgeMode: string;  // 'default' (text) | icon | both
   genreBadgeAnimeGrouping: string; // 'default' (split) | animation | secondary
   aggregateAccentColor: string; // '' = auto score-band
@@ -638,6 +653,8 @@ export const DEFAULT_CONFIG: ConfigState = {
   genreBadgeTileAccentColor: '',
   genreBadgeAccent: 'default',
   genreBadgeLabel: 'default',
+  genreBadgeCase: '',
+  genreBadgeMaxGenres: 0,
   genreBadgeMode: 'default',
   genreBadgeAnimeGrouping: 'default',
   aggregateAccentColor: '',
