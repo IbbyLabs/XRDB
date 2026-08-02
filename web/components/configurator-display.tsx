@@ -606,7 +606,7 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
             {supersededLabels.length > 0 &&
               ` ${supersededLabels.join(' and ')} ${supersededLabels.length > 1 ? 'are' : 'is'} already covered by a higher format you picked, so ${supersededLabels.length > 1 ? 'they are' : 'it is'} not drawn.`}
           </span>
-          {fine && config.badges.length > 0 && (
+          {fine && !config.qualityBadgesHidden && config.badges.length > 0 && (
             <QualityFine uid={uid} config={config} onUpdate={onUpdate} />
           )}
         </fieldset>
