@@ -16,6 +16,9 @@ func TestNoProviderCredentialSurvivesTheAccessLog(t *testing.T) {
 		"mdblistKey", "tmdbKey", "fanartKey", "omdbKey", "xrdbKey",
 		"simklClientId", "traktClientId",
 		"key", "apikey", "api_key", "token", "password", "admin_key", "client_secret",
+		// Not parameters today. The rule is meant to hold for ones nobody has
+		// invented yet, and each costs a word.
+		"sig", "signature", "hmac", "session", "cookie", "bearer",
 	} {
 		q := url.Values{name: {secret}, "id": {"tt0118615"}}
 		got := RedactQuery(q.Encode())
