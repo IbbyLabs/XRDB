@@ -1222,9 +1222,13 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	// Three genres fit or overflow depending on how long their names are, and
 	// nothing measured the result against the artwork, so a wide list ran off
 	// both edges. Drop the trailing genre until the plate fits, keeping the
-	// first even when it does not. Only the genre list is trimmed: the glyph
-	// modes label the badge with a short family name.
-	if mode == "text" && opts.labelMode != "primary" && len(shown) > 1 {
+	// first even when it does not.
+	//
+	// Gated on the label being the genre list, not on the mode: a glyph beside
+	// the list still leaves a list to trim, and gating on text alone let Both
+	// mode overflow the moment the label control started reaching it.
+	labelIsList := opts.labelMode != "primary" && opts.labelMode != "family"
+	if labelIsList && len(shown) > 1 {
 		// The nudge is applied after placement, so the room it eats has to come
 		// off here. Measuring without it approves a label that fits at the corner
 		// and is then moved past the edge, which is the clipping a nudged badge
@@ -1237,7 +1241,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		for len(shown) > 1 && bw > room {
 			shown = shown[:len(shown)-1]
 			label = strings.Join(shown, " · ")
-			bw = padX*2 + textWidth(face, label) + stripeRoom
+			bw = padX*2 + iconSize + iconGap + textWidth(face, label) + stripeRoom
 		}
 	}
 
