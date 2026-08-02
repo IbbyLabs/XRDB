@@ -86,22 +86,22 @@ func TestALongGenreListLeavesTheRingOnItsCorner(t *testing.T) {
 // which it is.
 var inelasticOverlays = []string{
 	// Fixed circle: it can neither narrow nor change corner.
-	"drawAverageRatingRing(composed",
+	"drawAverageRatingRing",
 	// Fixed-size, corner-anchored plates. Each claims its place through the
 	// occupancy map and none of them can drop content to fit.
-	"drawAgeRatingBadge(composed",
-	"drawAwardsBadge(composed",
-	"drawEditorialRating(composed",
-	"drawMetaLine(composed",
-	"drawQualityBadges(composed",
-	"drawReleaseStatusBadge(composed",
-	"drawStingerBadge(composed",
-	"drawTopRatedBadge(composed",
+	"drawAgeRatingBadge",
+	"drawAwardsBadge",
+	"drawEditorialRating",
+	"drawMetaLine",
+	"drawQualityBadges",
+	"drawReleaseStatusBadge",
+	"drawStingerBadge",
+	"drawTopRatedBadge",
 }
 
 var elasticOverlays = []string{
-	"drawGenreBadge(composed",     // drops a genre
-	"drawProviderBadges(composed", // drops a chip
+	"drawGenreBadge",     // drops a genre
+	"drawProviderBadges", // drops a chip
 }
 
 // knownOutOfOrder names an inelastic overlay still drawn after an elastic one.
@@ -115,18 +115,18 @@ var elasticOverlays = []string{
 // the entry to go. An overlay added out of order is not covered by this and
 // fails as a violation.
 var knownOutOfOrder = map[string]string{
-	"drawTrendingBadgeSurfaced(composed": "pre-existing; needs its own blast-radius sweep",
+	"drawTrendingBadgeSurfaced": "pre-existing; needs its own blast-radius sweep",
 }
 
 // unrankedOverlays never touch the occupancy map: they are centred, drawn into
 // a box another overlay already reserved, or the artwork itself.
 var unrankedOverlays = []string{
-	"drawAggregateBar(composed",
-	"drawAverageRating(composed",
-	"drawBackdropLogoOverlay(composed",
-	"drawBadgesInPlace(composed",
-	"drawDualRating(composed",
-	"drawMinimalRating(composed",
+	"drawAggregateBar",
+	"drawAverageRating",
+	"drawBackdropLogoOverlay",
+	"drawBadgesInPlace",
+	"drawDualRating",
+	"drawMinimalRating",
 }
 
 func TestThePipelineReservesInelasticOverlaysFirst(t *testing.T) {
@@ -134,7 +134,19 @@ func TestThePipelineReservesInelasticOverlaysFirst(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cannot read the pipeline: %v", err)
 	}
+	// Scoped to Render and matched on the call rather than on its first
+	// argument. Keying off a literal "composed" would let an overlay added as
+	// drawFoo(out, ...) land in no list and fail nothing, so the completeness
+	// check would rest on a naming habit instead of on something checked.
 	body := string(src)
+	start := regexp.MustCompile(`(?m)^func \(p \*Pipeline\) Render\(`).FindStringIndex(body)
+	if start == nil {
+		t.Fatal("Render is no longer here; this guard cannot run")
+	}
+	body = body[start[0]:]
+	if end := regexp.MustCompile(`(?m)^func `).FindStringIndex(body[1:]); end != nil {
+		body = body[:end[0]+1]
+	}
 
 	known := map[string]bool{}
 	for _, set := range [][]string{inelasticOverlays, elasticOverlays, unrankedOverlays} {
@@ -145,32 +157,20 @@ func TestThePipelineReservesInelasticOverlaysFirst(t *testing.T) {
 	for name := range knownOutOfOrder {
 		known[name] = true
 	}
-	for _, found := range regexp.MustCompile(`draw[A-Za-z]+\(composed`).FindAllString(body, -1) {
-		if !known[found] {
+
+	sites := map[string][]int{}
+	for _, m := range regexp.MustCompile(`\bdraw[A-Za-z]+\(`).FindAllStringIndex(body, -1) {
+		name := strings.TrimSuffix(body[m[0]:m[1]], "(")
+		sites[name] = append(sites[name], m[0])
+		if !known[name] {
 			t.Errorf("%s is drawn here and is in none of the overlay lists. Decide whether it can "+
-				"shrink: one that cannot has to reserve before one that can", found)
+				"shrink: one that cannot has to reserve before one that can", name)
 		}
 	}
 
-	// Every call site, not the first: an overlay drawn in two places is only
-	// half-checked otherwise, and drawAggregateBar is drawn twice.
-	sites := func(name string) []int {
-		var out []int
-		for i := strings.Index(body, name); i >= 0; {
-			out = append(out, i)
-			next := strings.Index(body[i+1:], name)
-			if next < 0 {
-				break
-			}
-			i += 1 + next
-		}
-		return out
-	}
-
-	firstElastic := -1
-	lastElastic := -1
+	firstElastic, lastElastic := -1, -1
 	for _, gives := range elasticOverlays {
-		at := sites(gives)
+		at := sites[gives]
 		if len(at) == 0 {
 			t.Errorf("%s is listed but no longer drawn here", gives)
 			continue
@@ -182,21 +182,22 @@ func TestThePipelineReservesInelasticOverlaysFirst(t *testing.T) {
 			lastElastic = at[len(at)-1]
 		}
 	}
+
 	for name, why := range knownOutOfOrder {
-		at := sites(name)
+		at := sites[name]
 		if len(at) == 0 {
 			t.Errorf("%s is listed as out of order but no longer drawn here", name)
 			continue
 		}
 		if at[len(at)-1] > lastElastic {
-			continue // still out of order, as recorded
+			continue // still after the strips, as recorded
 		}
-		t.Errorf("%s now reserves before the elastic overlays (%s); move it into "+
-			"inelasticOverlays and drop this entry", name, why)
+		t.Errorf("%s no longer sits after every overlay that can shrink (%s); check where it "+
+			"landed, move it into inelasticOverlays and drop this entry", name, why)
 	}
 
 	for _, fixed := range inelasticOverlays {
-		at := sites(fixed)
+		at := sites[fixed]
 		if len(at) == 0 {
 			t.Errorf("%s is listed but no longer drawn here", fixed)
 			continue
