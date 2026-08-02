@@ -2,6 +2,23 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.55.0](https://github.com/IbbyLabs/XRDB/compare/v3.54.2...v3.55.0) (2026-08-02)
+
+
+### Added
+
+* **badges:** add a control to hide the rating accent stripe (FR-144) ([d5a88d8](https://github.com/IbbyLabs/XRDB/commit/d5a88d82975e94ba50d41b107750351a93f44d4e))
+* **badges:** scale and offset on the remaining corner badges (FR-143) ([5ae4745](https://github.com/IbbyLabs/XRDB/commit/5ae4745ab877f5fb36375f22e66509cb44fb91d4))
+* **configurator:** let each media type pick its own rating sources ([130ab33](https://github.com/IbbyLabs/XRDB/commit/130ab33ccd866d43768cff5373730823080e0e0e))
+* **genre:** lead with the family genre so the trim keeps it (FR-145) ([5cb17bc](https://github.com/IbbyLabs/XRDB/commit/5cb17bce9d5d5086585c4c1a878ca441f2d03320))
+* **info-line:** add horizontal and vertical offset controls ([1d2db97](https://github.com/IbbyLabs/XRDB/commit/1d2db97b5d7eeefde2dd9b8e822c21b7bd2af60a))
+
+
+### Fixed
+
+* **configurator:** fold the quality badge detail when badges are hidden ([43c923c](https://github.com/IbbyLabs/XRDB/commit/43c923c354dbd5e05921f9b0d73c04be06a0bb72))
+* **configurator:** show the info line scale control when it is enabled ([ef7b204](https://github.com/IbbyLabs/XRDB/commit/ef7b2046d106e2c2b2a16d24301050f03998b4ac))
+
 ## [3.54.2](https://github.com/IbbyLabs/XRDB/compare/v3.54.1...v3.54.2) (2026-08-02)
 
 
