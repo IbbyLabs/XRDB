@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.57.1](https://github.com/IbbyLabs/XRDB/compare/v3.57.0...v3.57.1) (2026-08-02)
+
+
+### Fixed
+
+* **compose:** score-pill body tint needs a resolved accent ([6f7c83e](https://github.com/IbbyLabs/XRDB/commit/6f7c83e071fb635b791193da07caddaa438d4ddc))
+
 ## [3.57.0](https://github.com/IbbyLabs/XRDB/compare/v3.56.0...v3.57.0) (2026-08-02)
 
 
