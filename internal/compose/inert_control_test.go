@@ -760,3 +760,23 @@ func TestGenreCountDialCapsTheList(t *testing.T) {
 		t.Errorf("the count dial does not narrow the plate in order: one=%d two=%d auto=%d", one, two, auto)
 	}
 }
+
+// The fit check rebuilds the label from the trimmed list, which dropped the
+// casing the Case control had applied — so capitals survived only while nothing
+// needed trimming (FR-141).
+func TestGenreCaseSurvivesTheFitTrim(t *testing.T) {
+	// Long enough that the fit check has to drop a genre on this frame.
+	long := []string{"Action & Adventure", "Science Fiction", "War & Politics"}
+
+	draw := func(labelCase string) []byte {
+		img := image.NewNRGBA(image.Rect(0, 0, 380, 600))
+		drawGenreBadge(img, long, "bl", 1, newOccupancy(img.Bounds()), genreBadgeOpts{
+			mode: "text", labelCase: labelCase,
+		})
+		return img.Pix
+	}
+
+	if bytes.Equal(draw("upper"), draw("normal")) {
+		t.Error("capitals and as-written draw identically once the list is trimmed, so the case was lost")
+	}
+}

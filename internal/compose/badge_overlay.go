@@ -1119,6 +1119,22 @@ func genreOptsFromConfig(cfg imageconfig.Config, isAnime bool) genreBadgeOpts {
 	}
 }
 
+// applyLabelCase is the one place casing is decided, so a label rebuilt by the
+// fit check comes back cased the same way the first one was. An unset value
+// keeps what each label mode did on its own.
+func applyLabelCase(label, labelCase, labelMode string) string {
+	switch labelCase {
+	case "upper":
+		return strings.ToUpper(label)
+	case "normal":
+		return label
+	}
+	if labelMode == "primary" {
+		return strings.ToUpper(label)
+	}
+	return label
+}
+
 func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float64, occ *occupancy, opts genreBadgeOpts) {
 	if len(genres) == 0 {
 		return
@@ -1188,15 +1204,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	// Casing is its own control. Picking one genre and shouting it used to be the
 	// same switch, so a first-only label could not be had without the capitals.
 	// An unset value keeps what each label mode did on its own.
-	switch opts.labelCase {
-	case "upper":
-		label = strings.ToUpper(label)
-	case "normal":
-	default:
-		if opts.labelMode == "primary" {
-			label = strings.ToUpper(label)
-		}
-	}
+	label = applyLabelCase(label, opts.labelCase, opts.labelMode)
 
 	s := func(v float64) int { return int(v*scale + 0.5) }
 	padX := s(10)
@@ -1262,7 +1270,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		room := base.Bounds().Dx() - edgeX*2 - nudge
 		for len(shown) > 1 && bw > room {
 			shown = shown[:len(shown)-1]
-			label = strings.Join(shown, " · ")
+			label = applyLabelCase(strings.Join(shown, " · "), opts.labelCase, opts.labelMode)
 			bw = padX*2 + iconSize + iconGap + textWidth(face, label) + stripeRoom
 		}
 	}
