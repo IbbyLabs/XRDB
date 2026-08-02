@@ -26,9 +26,9 @@ func TestAwardsBadgeDrawsWinAndNominationDistinctly(t *testing.T) {
 	ensureFaces()
 
 	win := image.NewNRGBA(image.Rect(0, 0, 400, 200))
-	drawAwardsBadge(win, provider.AwardSummary{Kind: "oscar", Won: true}, "tr", 1.0, newOccupancy(image.Rect(0, 0, 400, 200)))
+	drawAwardsBadge(win, provider.AwardSummary{Kind: "oscar", Won: true}, "tr", 1.0, newOccupancy(image.Rect(0, 0, 400, 200)), awardsBadgeOpts{})
 	nom := image.NewNRGBA(image.Rect(0, 0, 400, 200))
-	drawAwardsBadge(nom, provider.AwardSummary{Kind: "oscar", Won: false}, "tr", 1.0, newOccupancy(image.Rect(0, 0, 400, 200)))
+	drawAwardsBadge(nom, provider.AwardSummary{Kind: "oscar", Won: false}, "tr", 1.0, newOccupancy(image.Rect(0, 0, 400, 200)), awardsBadgeOpts{})
 
 	if awardInk(win) == 0 {
 		t.Fatal("the winner badge drew nothing")
@@ -55,7 +55,7 @@ func TestAwardsBadgeDrawsWinAndNominationDistinctly(t *testing.T) {
 // An empty summary draws nothing.
 func TestAwardsBadgeEmptyDrawsNothing(t *testing.T) {
 	img := image.NewNRGBA(image.Rect(0, 0, 400, 200))
-	drawAwardsBadge(img, provider.AwardSummary{}, "tr", 1.0, newOccupancy(image.Rect(0, 0, 400, 200)))
+	drawAwardsBadge(img, provider.AwardSummary{}, "tr", 1.0, newOccupancy(image.Rect(0, 0, 400, 200)), awardsBadgeOpts{})
 	if awardInk(img) != 0 {
 		t.Error("an empty award summary drew a badge")
 	}

@@ -582,6 +582,9 @@ func releaseStatusLabel(status string) (string, color.NRGBA, bool) {
 // releaseStatusOpts carries the release-status badge styling. Zero value keeps
 // the accent-bordered plate the badge has always drawn.
 type releaseStatusOpts struct {
+	scalePercent int
+	offsetX      int
+	offsetY      int
 	style        string // "" | glass | square | plain | tile | silver
 	tileColor    string // "#RRGGBB"; fills the tile style, tints the border on glass/square/silver
 	outlineColor string // "#RRGGBB" outline for the plain style; "" = drop shadow
@@ -590,7 +593,8 @@ type releaseStatusOpts struct {
 }
 
 func releaseStatusOptsFromConfig(cfg imageconfig.Config) releaseStatusOpts {
-	return releaseStatusOpts{style: cfg.ReleaseStatusBadgeStyle, tileColor: cfg.ReleaseStatusTileColor,
+	return releaseStatusOpts{scalePercent: cfg.ReleaseStatusScale, offsetX: cfg.ReleaseStatusOffsetX, offsetY: cfg.ReleaseStatusOffsetY,
+		style: cfg.ReleaseStatusBadgeStyle, tileColor: cfg.ReleaseStatusTileColor,
 		outlineColor: cfg.NoBackgroundBadgeOutlineColor, outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
 		outlineGlow: cfg.NoBackgroundBadgeOutlineGlow}
 }
@@ -600,6 +604,9 @@ func drawReleaseStatusBadge(base *image.NRGBA, status string, pos string, scale 
 	label, accent, ok := releaseStatusLabel(status)
 	if !ok {
 		return
+	}
+	if opts.scalePercent != 0 {
+		scale *= float64(opts.scalePercent) / 100
 	}
 	ensureFaces()
 	face := labelFaceFor(scale)
@@ -620,7 +627,7 @@ func drawReleaseStatusBadge(base *image.NRGBA, status string, pos string, scale 
 		resolvedPos = "tr"
 	}
 
-	r := occ.place(resolvedPos, bw, bh, s(12), s(12), s(7))
+	r := occ.placeNudged(resolvedPos, bw, bh, s(12), s(12), s(7), opts.offsetX, opts.offsetY)
 	tx, ty := r.Min.X+padX, r.Min.Y+padY+ascent
 
 	if opts.style == "plain" {
@@ -2361,6 +2368,9 @@ func trendingStyleFromConfig(s imageconfig.TrendingStyle) trendingStyle {
 // through as positional params. Its zero value keeps the original fixed
 // hairline and the plain surface's original shadow-free label.
 type trendingBadgeOpts struct {
+	scalePercent int
+	offsetX      int
+	offsetY      int
 	accentColor  string // "#RRGGBB" border/hairline tint for the capsule/square surfaces
 	outlineColor string // "#RRGGBB" outline for the plain surface; "" = none
 	outlineWidth int    // px outline width for the plain surface; 0 = none
@@ -2371,6 +2381,9 @@ type trendingBadgeOpts struct {
 // Config.
 func trendingOptsFromConfig(cfg imageconfig.Config) trendingBadgeOpts {
 	return trendingBadgeOpts{
+		scalePercent: cfg.TrendingScale,
+		offsetX:      cfg.TrendingOffsetX,
+		offsetY:      cfg.TrendingOffsetY,
 		accentColor:  cfg.TrendingAccentColor,
 		outlineColor: cfg.NoBackgroundBadgeOutlineColor,
 		outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
@@ -2398,6 +2411,9 @@ func drawTrendingBadgeStyled(base *image.NRGBA, scale float64, occ *occupancy, s
 func drawTrendingBadgeSurfaced(base *image.NRGBA, scale float64, occ *occupancy, style trendingStyle, pos, textColor, surface string, opts trendingBadgeOpts) {
 	if pos == "" {
 		pos = "tl"
+	}
+	if opts.scalePercent != 0 {
+		scale *= float64(opts.scalePercent) / 100
 	}
 	ensureFaces()
 	face := badgeFaceFor(scale)
@@ -2444,7 +2460,7 @@ func drawTrendingBadgeSurfaced(base *image.NRGBA, scale float64, occ *occupancy,
 	bw += tw
 	radius := bh / 2 // full capsule
 
-	r := occ.place(pos, bw, bh, edgeX, edgeY, s(7))
+	r := occ.placeNudged(pos, bw, bh, edgeX, edgeY, s(7), opts.offsetX, opts.offsetY)
 
 	// Dark frosted capsule that matches the quality-badge tiles — understated,
 	// not a loud bright pill. The warmth comes from the accent glyph, not the
@@ -2839,6 +2855,9 @@ func drawProgressRing(base *image.NRGBA, cx, cy, outerR int, sweepFrac float64, 
 // ── Top-rated rank badge ──────────────────────────────────────────────────────
 
 type topRatedOpts struct {
+	scalePercent int
+	offsetX      int
+	offsetY      int
 	style        string // "" | glass | square | plain | tile | silver
 	tileColor    string // "#RRGGBB"; fills the tile style, tints the border on glass/square/silver
 	outlineColor string // "#RRGGBB" outline for the plain style; "" = drop shadow
@@ -2847,7 +2866,8 @@ type topRatedOpts struct {
 }
 
 func topRatedOptsFromConfig(cfg imageconfig.Config) topRatedOpts {
-	return topRatedOpts{style: cfg.TopRatedBadgeStyle, tileColor: cfg.TopRatedTileColor,
+	return topRatedOpts{scalePercent: cfg.TopRatedScale, offsetX: cfg.TopRatedOffsetX, offsetY: cfg.TopRatedOffsetY,
+		style: cfg.TopRatedBadgeStyle, tileColor: cfg.TopRatedTileColor,
 		outlineColor: cfg.NoBackgroundBadgeOutlineColor, outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
 		outlineGlow: cfg.NoBackgroundBadgeOutlineGlow}
 }
@@ -2862,6 +2882,9 @@ var topRatedAccent = color.NRGBA{R: 245, G: 197, B: 66, A: 255}
 func drawTopRatedBadge(base *image.NRGBA, rank int, pos string, scale float64, occ *occupancy, opts topRatedOpts) {
 	if rank <= 0 {
 		return
+	}
+	if opts.scalePercent != 0 {
+		scale *= float64(opts.scalePercent) / 100
 	}
 	ensureFaces()
 	face := labelFaceFor(scale)
@@ -2884,7 +2907,7 @@ func drawTopRatedBadge(base *image.NRGBA, rank int, pos string, scale float64, o
 		resolvedPos = "tl"
 	}
 
-	r := occ.place(resolvedPos, bw, bh, s(12), s(12), s(7))
+	r := occ.placeNudged(resolvedPos, bw, bh, s(12), s(12), s(7), opts.offsetX, opts.offsetY)
 	tx, ty := r.Min.X+padX, r.Min.Y+padY+ascent
 
 	if opts.style == "plain" {

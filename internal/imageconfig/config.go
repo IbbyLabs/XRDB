@@ -127,30 +127,42 @@ type Config struct {
 	Language            string        `json:"language"`
 	// FallbackLanguage is tried when the requested language has no art for a
 	// title, before the English/canonical pick.
-	FallbackLanguage string         `json:"fallbackLanguage,omitempty"`
-	TextPreference   TextPreference `json:"textPreference"`
-	Ratings          []string       `json:"ratings"`
-	RatingsLayout    RatingsLayout  `json:"ratingsLayout"`
-	BadgeStyle       BadgeStyle     `json:"badgeStyle"`
-	BadgeTheme       BadgeTheme     `json:"badgeTheme"`
-	Badges           []string       `json:"badges,omitempty"`
-	AgeRating        bool           `json:"ageRating"`
-	AgeRatingPos     string         `json:"ageRatingPos,omitempty"`
-	AgeRatingOffsetX int            `json:"ageRatingOffsetX,omitempty"` // px nudge from the corner
-	AgeRatingOffsetY int            `json:"ageRatingOffsetY,omitempty"`
-	AgeRatingScale   int            `json:"ageRatingScale,omitempty"` // percent of default size; 0 = 100
-	ReleaseStatus    bool           `json:"releaseStatus,omitempty"`
-	ReleaseStatusPos string         `json:"releaseStatusPos,omitempty"`
-	TopRated         bool           `json:"topRated,omitempty"`
-	TopRatedPos      string         `json:"topRatedPos,omitempty"`
-	Awards           bool           `json:"awards,omitempty"`
-	AwardsPos        string         `json:"awardsPos,omitempty"`
-	Stinger          bool           `json:"stinger,omitempty"`
-	StingerPos       string         `json:"stingerPos,omitempty"`
-	Genre            bool           `json:"genre"`
-	GenrePos         string         `json:"genrePos,omitempty"`
-	Providers        bool           `json:"providers"`
-	ProvidersCountry string         `json:"providersCountry,omitempty"`
+	FallbackLanguage     string         `json:"fallbackLanguage,omitempty"`
+	TextPreference       TextPreference `json:"textPreference"`
+	Ratings              []string       `json:"ratings"`
+	RatingsLayout        RatingsLayout  `json:"ratingsLayout"`
+	BadgeStyle           BadgeStyle     `json:"badgeStyle"`
+	BadgeTheme           BadgeTheme     `json:"badgeTheme"`
+	Badges               []string       `json:"badges,omitempty"`
+	AgeRating            bool           `json:"ageRating"`
+	AgeRatingPos         string         `json:"ageRatingPos,omitempty"`
+	AgeRatingOffsetX     int            `json:"ageRatingOffsetX,omitempty"` // px nudge from the corner
+	AgeRatingOffsetY     int            `json:"ageRatingOffsetY,omitempty"`
+	AgeRatingScale       int            `json:"ageRatingScale,omitempty"` // percent of default size; 0 = 100
+	ReleaseStatus        bool           `json:"releaseStatus,omitempty"`
+	ReleaseStatusPos     string         `json:"releaseStatusPos,omitempty"`
+	ReleaseStatusOffsetX int            `json:"releaseStatusOffsetX,omitempty"`
+	ReleaseStatusOffsetY int            `json:"releaseStatusOffsetY,omitempty"`
+	ReleaseStatusScale   int            `json:"releaseStatusScale,omitempty"`
+	TopRated             bool           `json:"topRated,omitempty"`
+	TopRatedPos          string         `json:"topRatedPos,omitempty"`
+	TopRatedOffsetX      int            `json:"topRatedOffsetX,omitempty"`
+	TopRatedOffsetY      int            `json:"topRatedOffsetY,omitempty"`
+	TopRatedScale        int            `json:"topRatedScale,omitempty"`
+	Awards               bool           `json:"awards,omitempty"`
+	AwardsPos            string         `json:"awardsPos,omitempty"`
+	AwardsOffsetX        int            `json:"awardsOffsetX,omitempty"`
+	AwardsOffsetY        int            `json:"awardsOffsetY,omitempty"`
+	AwardsScale          int            `json:"awardsScale,omitempty"`
+	Stinger              bool           `json:"stinger,omitempty"`
+	StingerPos           string         `json:"stingerPos,omitempty"`
+	StingerOffsetX       int            `json:"stingerOffsetX,omitempty"`
+	StingerOffsetY       int            `json:"stingerOffsetY,omitempty"`
+	StingerScale         int            `json:"stingerScale,omitempty"`
+	Genre                bool           `json:"genre"`
+	GenrePos             string         `json:"genrePos,omitempty"`
+	Providers            bool           `json:"providers"`
+	ProvidersCountry     string         `json:"providersCountry,omitempty"`
 	// The streaming-provider chips take the same placement and sizing controls
 	// as every other badge family. ProvidersPos is tl|tr|bl|br|tc|bc; "" keeps
 	// the wide strip centred along the bottom edge.
@@ -559,7 +571,10 @@ type AgeRatingConfig struct {
 // TrendingConfig groups the trending-tag styling not already covered by the
 // existing Trending/TrendingStyle fields.
 type TrendingConfig struct {
-	TrendingPos       string `json:"trendingPos,omitempty"`       // tl|tr|bl|br|tc|bc; "" = tl
+	TrendingPos       string `json:"trendingPos,omitempty"` // tl|tr|bl|br|tc|bc; "" = tl
+	TrendingOffsetX   int    `json:"trendingOffsetX,omitempty"`
+	TrendingOffsetY   int    `json:"trendingOffsetY,omitempty"`
+	TrendingScale     int    `json:"trendingScale,omitempty"`
 	TrendingTextColor string `json:"trendingTextColor,omitempty"` // "#RRGGBB" for the trending label text
 	// TrendingTagStyle is the tag's surface treatment, separate from the glyph
 	// choice above: glass (the default warm capsule), square (sharp corners) or
@@ -646,12 +661,24 @@ type raw struct {
 	AgeRatingScale                *int      `json:"ageRatingScale"`
 	ReleaseStatus                 *bool     `json:"releaseStatus"`
 	ReleaseStatusPos              *string   `json:"releaseStatusPos"`
+	ReleaseStatusOffsetX          *int      `json:"releaseStatusOffsetX"`
+	ReleaseStatusOffsetY          *int      `json:"releaseStatusOffsetY"`
+	ReleaseStatusScale            *int      `json:"releaseStatusScale"`
 	TopRated                      *bool     `json:"topRated"`
 	TopRatedPos                   *string   `json:"topRatedPos"`
+	TopRatedOffsetX               *int      `json:"topRatedOffsetX"`
+	TopRatedOffsetY               *int      `json:"topRatedOffsetY"`
+	TopRatedScale                 *int      `json:"topRatedScale"`
 	Awards                        *bool     `json:"awards"`
 	AwardsPos                     *string   `json:"awardsPos"`
+	AwardsOffsetX                 *int      `json:"awardsOffsetX"`
+	AwardsOffsetY                 *int      `json:"awardsOffsetY"`
+	AwardsScale                   *int      `json:"awardsScale"`
 	Stinger                       *bool     `json:"stinger"`
 	StingerPos                    *string   `json:"stingerPos"`
+	StingerOffsetX                *int      `json:"stingerOffsetX"`
+	StingerOffsetY                *int      `json:"stingerOffsetY"`
+	StingerScale                  *int      `json:"stingerScale"`
 	Genre                         *bool     `json:"genre"`
 	GenrePos                      *string   `json:"genrePos"`
 	Providers                     *bool     `json:"providers"`
@@ -758,6 +785,9 @@ type rawQuality struct {
 type rawTrending struct {
 	TrendingTagStyle    *string `json:"trendingTagStyle"`
 	TrendingPos         *string `json:"trendingPos"`
+	TrendingOffsetX     *int    `json:"trendingOffsetX"`
+	TrendingOffsetY     *int    `json:"trendingOffsetY"`
+	TrendingScale       *int    `json:"trendingScale"`
 	TrendingTextColor   *string `json:"trendingTextColor"`
 	TrendingAccentColor *string `json:"trendingAccentColor"`
 }
@@ -1612,6 +1642,51 @@ func parseRing(cfg *Config, r *raw) {
 	if r.AgeRatingScale != nil && *r.AgeRatingScale != 0 {
 		cfg.AgeRatingScale = clampInt(*r.AgeRatingScale, 50, 300)
 	}
+	if r.ReleaseStatusOffsetX != nil {
+		cfg.ReleaseStatusOffsetX = clampInt(*r.ReleaseStatusOffsetX, -320, 320)
+	}
+	if r.ReleaseStatusOffsetY != nil {
+		cfg.ReleaseStatusOffsetY = clampInt(*r.ReleaseStatusOffsetY, -320, 320)
+	}
+	if r.ReleaseStatusScale != nil && *r.ReleaseStatusScale != 0 {
+		cfg.ReleaseStatusScale = clampInt(*r.ReleaseStatusScale, 70, 400)
+	}
+	if r.TopRatedOffsetX != nil {
+		cfg.TopRatedOffsetX = clampInt(*r.TopRatedOffsetX, -320, 320)
+	}
+	if r.TopRatedOffsetY != nil {
+		cfg.TopRatedOffsetY = clampInt(*r.TopRatedOffsetY, -320, 320)
+	}
+	if r.TopRatedScale != nil && *r.TopRatedScale != 0 {
+		cfg.TopRatedScale = clampInt(*r.TopRatedScale, 70, 400)
+	}
+	if r.AwardsOffsetX != nil {
+		cfg.AwardsOffsetX = clampInt(*r.AwardsOffsetX, -320, 320)
+	}
+	if r.AwardsOffsetY != nil {
+		cfg.AwardsOffsetY = clampInt(*r.AwardsOffsetY, -320, 320)
+	}
+	if r.AwardsScale != nil && *r.AwardsScale != 0 {
+		cfg.AwardsScale = clampInt(*r.AwardsScale, 70, 400)
+	}
+	if r.StingerOffsetX != nil {
+		cfg.StingerOffsetX = clampInt(*r.StingerOffsetX, -320, 320)
+	}
+	if r.StingerOffsetY != nil {
+		cfg.StingerOffsetY = clampInt(*r.StingerOffsetY, -320, 320)
+	}
+	if r.StingerScale != nil && *r.StingerScale != 0 {
+		cfg.StingerScale = clampInt(*r.StingerScale, 70, 400)
+	}
+	if r.TrendingOffsetX != nil {
+		cfg.TrendingOffsetX = clampInt(*r.TrendingOffsetX, -320, 320)
+	}
+	if r.TrendingOffsetY != nil {
+		cfg.TrendingOffsetY = clampInt(*r.TrendingOffsetY, -320, 320)
+	}
+	if r.TrendingScale != nil && *r.TrendingScale != 0 {
+		cfg.TrendingScale = clampInt(*r.TrendingScale, 70, 400)
+	}
 	if r.RingCenterOpacity != nil && *r.RingCenterOpacity != 0 {
 		cfg.RingCenterOpacity = clampInt(*r.RingCenterOpacity, 1, 100)
 	}
@@ -2014,6 +2089,18 @@ func CacheKey(cfg Config) string {
 		AgeRatingOffsetX              int            `json:"ageRatingOffsetX,omitempty"`
 		AgeRatingOffsetY              int            `json:"ageRatingOffsetY,omitempty"`
 		AgeRatingScale                int            `json:"ageRatingScale,omitempty"`
+		ReleaseStatusOffsetX          int            `json:"releaseStatusOffsetX,omitempty"`
+		ReleaseStatusOffsetY          int            `json:"releaseStatusOffsetY,omitempty"`
+		ReleaseStatusScale            int            `json:"releaseStatusScale,omitempty"`
+		TopRatedOffsetX               int            `json:"topRatedOffsetX,omitempty"`
+		TopRatedOffsetY               int            `json:"topRatedOffsetY,omitempty"`
+		TopRatedScale                 int            `json:"topRatedScale,omitempty"`
+		AwardsOffsetX                 int            `json:"awardsOffsetX,omitempty"`
+		AwardsOffsetY                 int            `json:"awardsOffsetY,omitempty"`
+		AwardsScale                   int            `json:"awardsScale,omitempty"`
+		StingerOffsetX                int            `json:"stingerOffsetX,omitempty"`
+		StingerOffsetY                int            `json:"stingerOffsetY,omitempty"`
+		StingerScale                  int            `json:"stingerScale,omitempty"`
 		ReleaseStatus                 bool           `json:"releaseStatus"`
 		TopRated                      bool           `json:"topRated,omitempty"`
 		TopRatedPos                   string         `json:"topRatedPos,omitempty"`
@@ -2107,6 +2194,18 @@ func CacheKey(cfg Config) string {
 		AgeRatingOffsetX:              cfg.AgeRatingOffsetX,
 		AgeRatingOffsetY:              cfg.AgeRatingOffsetY,
 		AgeRatingScale:                cfg.AgeRatingScale,
+		ReleaseStatusOffsetX:          cfg.ReleaseStatusOffsetX,
+		ReleaseStatusOffsetY:          cfg.ReleaseStatusOffsetY,
+		ReleaseStatusScale:            cfg.ReleaseStatusScale,
+		TopRatedOffsetX:               cfg.TopRatedOffsetX,
+		TopRatedOffsetY:               cfg.TopRatedOffsetY,
+		TopRatedScale:                 cfg.TopRatedScale,
+		AwardsOffsetX:                 cfg.AwardsOffsetX,
+		AwardsOffsetY:                 cfg.AwardsOffsetY,
+		AwardsScale:                   cfg.AwardsScale,
+		StingerOffsetX:                cfg.StingerOffsetX,
+		StingerOffsetY:                cfg.StingerOffsetY,
+		StingerScale:                  cfg.StingerScale,
 		ReleaseStatus:                 cfg.ReleaseStatus,
 		TopRated:                      cfg.TopRated,
 		TopRatedPos:                   cfg.TopRatedPos,

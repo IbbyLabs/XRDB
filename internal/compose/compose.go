@@ -868,10 +868,10 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		drawTopRatedBadge(composed, meta.TopRatedRank, req.Config.TopRatedPos, scale, occ, topRatedOptsFromConfig(req.Config))
 	}
 	if req.Config.Awards && meta.Awards.Has() {
-		drawAwardsBadge(composed, meta.Awards, req.Config.AwardsPos, scale, occ)
+		drawAwardsBadge(composed, meta.Awards, req.Config.AwardsPos, scale, occ, awardsOptsFromConfig(req.Config))
 	}
 	if req.Config.Stinger && meta.Stinger.Has() {
-		drawStingerBadge(composed, meta.Stinger, req.Config.StingerPos, scale, occ)
+		drawStingerBadge(composed, meta.Stinger, req.Config.StingerPos, scale, occ, stingerOptsFromConfig(req.Config))
 	}
 	// The ring claims its corner before the strips do. It is a fixed circle that
 	// can neither narrow nor move, while a genre strip can drop a genre and a

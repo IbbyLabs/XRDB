@@ -1022,6 +1022,34 @@ export function AggregateFine({ uid, config, onUpdate }: GroupProps) {
   );
 }
 
+// NumericConfigKey is a config key whose value is a number, so a shared scale or
+// offset control can bind to it without losing type safety.
+type NumericConfigKey = { [K in keyof ConfigState]: ConfigState[K] extends number ? K : never }[keyof ConfigState];
+
+// ScaleOffsetFields renders the Scale/Offset X/Offset Y trio a corner badge
+// carries, so every badge exposes the same controls rather than each rolling its
+// own.
+export function ScaleOffsetFields({ uid, config, onUpdate, scaleKey, offXKey, offYKey }: {
+  uid: string;
+  config: ConfigState;
+  onUpdate: UpdateConfigFn;
+  scaleKey: NumericConfigKey;
+  offXKey: NumericConfigKey;
+  offYKey: NumericConfigKey;
+}) {
+  return (
+    <>
+      <NumField id={`${uid}-${scaleKey}`} label="Scale (%)" value={config[scaleKey]}
+        onChange={v => onUpdate(scaleKey, v)} min={70} max={400} step={5}
+        hint="70–400. Blank keeps the default size." />
+      <NumField id={`${uid}-${offXKey}`} label="Offset X" value={config[offXKey]}
+        onChange={v => onUpdate(offXKey, v)} min={-320} max={320} zeroIsDefault={false} />
+      <NumField id={`${uid}-${offYKey}`} label="Offset Y" value={config[offYKey]}
+        onChange={v => onUpdate(offYKey, v)} min={-320} max={320} zeroIsDefault={false} />
+    </>
+  );
+}
+
 export function ReleaseStatusFine({ uid, config, onUpdate }: GroupProps) {
   return (
     <FineGroup label="Release status badge">
@@ -1041,6 +1069,8 @@ export function ReleaseStatusFine({ uid, config, onUpdate }: GroupProps) {
           onChange={v => onUpdate('releaseStatusTileColor', v)}
           fallback="#38bdf8" resetLabel="Auto" />
       )}
+      <ScaleOffsetFields uid={uid} config={config} onUpdate={onUpdate}
+        scaleKey="releaseStatusScale" offXKey="releaseStatusOffsetX" offYKey="releaseStatusOffsetY" />
     </FineGroup>
   );
 }
@@ -1154,6 +1184,8 @@ export function TrendingFine({ uid, config, onUpdate }: GroupProps) {
         <ColorField id={`${uid}-trending-accent`} label="Border color" value={config.trendingAccentColor}
           onChange={v => onUpdate('trendingAccentColor', v)} fallback="#ff7e2a" resetLabel="Default" />
       )}
+      <ScaleOffsetFields uid={uid} config={config} onUpdate={onUpdate}
+        scaleKey="trendingScale" offXKey="trendingOffsetX" offYKey="trendingOffsetY" />
     </FineGroup>
   );
 }

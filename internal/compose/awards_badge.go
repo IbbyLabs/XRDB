@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 
+	"xrdb_rewrite/internal/imageconfig"
 	"xrdb_rewrite/internal/provider"
 )
 
@@ -17,10 +18,23 @@ var (
 // drawAwardsBadge places a small "OSCAR WINNER" / "EMMY NOMINEE" chip in a
 // corner. A win is gold, a nomination silver, so the distinction survives a
 // thumbnail where the words are too small to read.
-func drawAwardsBadge(base *image.NRGBA, a provider.AwardSummary, pos string, scale float64, occ *occupancy) {
+type awardsBadgeOpts struct {
+	scalePercent int
+	offsetX      int
+	offsetY      int
+}
+
+func awardsOptsFromConfig(cfg imageconfig.Config) awardsBadgeOpts {
+	return awardsBadgeOpts{scalePercent: cfg.AwardsScale, offsetX: cfg.AwardsOffsetX, offsetY: cfg.AwardsOffsetY}
+}
+
+func drawAwardsBadge(base *image.NRGBA, a provider.AwardSummary, pos string, scale float64, occ *occupancy, opts awardsBadgeOpts) {
 	label := a.Label()
 	if label == "" {
 		return
+	}
+	if opts.scalePercent != 0 {
+		scale *= float64(opts.scalePercent) / 100
 	}
 	ensureFaces()
 	face := labelFaceFor(scale)
@@ -39,7 +53,7 @@ func drawAwardsBadge(base *image.NRGBA, a provider.AwardSummary, pos string, sca
 	if resolvedPos == "" || resolvedPos == "inherit" {
 		resolvedPos = "tr"
 	}
-	r := occ.place(resolvedPos, bw, bh, s(12), s(12), s(7))
+	r := occ.placeNudged(resolvedPos, bw, bh, s(12), s(12), s(7), opts.offsetX, opts.offsetY)
 	tx, ty := r.Min.X+padX, r.Min.Y+padY+ascent
 
 	accent := awardGold

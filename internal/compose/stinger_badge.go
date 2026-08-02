@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 
+	"xrdb_rewrite/internal/imageconfig"
 	"xrdb_rewrite/internal/provider"
 )
 
@@ -14,10 +15,23 @@ var stingerAccent = color.NRGBA{R: 245, G: 158, B: 66, A: 255}
 // drawStingerBadge marks a title that has a scene during or after the credits.
 // "MID-CREDITS", "POST-CREDITS", or "STINGER" when both, so a viewer knows to
 // stay. The data is TMDB's stinger keywords, not a scrape.
-func drawStingerBadge(base *image.NRGBA, s provider.StingerInfo, pos string, scale float64, occ *occupancy) {
+type stingerBadgeOpts struct {
+	scalePercent int
+	offsetX      int
+	offsetY      int
+}
+
+func stingerOptsFromConfig(cfg imageconfig.Config) stingerBadgeOpts {
+	return stingerBadgeOpts{scalePercent: cfg.StingerScale, offsetX: cfg.StingerOffsetX, offsetY: cfg.StingerOffsetY}
+}
+
+func drawStingerBadge(base *image.NRGBA, s provider.StingerInfo, pos string, scale float64, occ *occupancy, opts stingerBadgeOpts) {
 	label := stingerLabel(s)
 	if label == "" {
 		return
+	}
+	if opts.scalePercent != 0 {
+		scale *= float64(opts.scalePercent) / 100
 	}
 	ensureFaces()
 	face := labelFaceFor(scale)
@@ -36,7 +50,7 @@ func drawStingerBadge(base *image.NRGBA, s provider.StingerInfo, pos string, sca
 	if resolvedPos == "" || resolvedPos == "inherit" {
 		resolvedPos = "bl"
 	}
-	r := occ.place(resolvedPos, bw, bh, px(12), px(12), px(7))
+	r := occ.placeNudged(resolvedPos, bw, bh, px(12), px(12), px(7), opts.offsetX, opts.offsetY)
 	tx, ty := r.Min.X+padX, r.Min.Y+padY+ascent
 
 	border := stingerAccent

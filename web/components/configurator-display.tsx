@@ -8,7 +8,7 @@ import {
   OUTPUT_FORMAT_OPTIONS, TOP_RATED_STYLE_OPTIONS,
   suppressedQualityBadges,
 } from './configurator-types';
-import { QualityFine, GenreFine, AggregateFine, AgeFine, ProvidersFine, TitleLogoFine, ReleaseStatusFine, TrendingFine } from './configurator-fine';
+import { QualityFine, GenreFine, AggregateFine, AgeFine, ProvidersFine, TitleLogoFine, ReleaseStatusFine, TrendingFine, ScaleOffsetFields } from './configurator-fine';
 
 // An unset position falls back to the top right, matching the renderer.
 function qualityPosLabel(pos: string): string {
@@ -433,6 +433,8 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
                 />
               </Field>
             )}
+            <ScaleOffsetFields uid={uid} config={config} onUpdate={onUpdate}
+              scaleKey="topRatedScale" offXKey="topRatedOffsetX" offYKey="topRatedOffsetY" />
           </>
         )}
 
@@ -456,6 +458,11 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           </Field>
         )}
 
+        {config.awards && fine && (
+          <ScaleOffsetFields uid={uid} config={config} onUpdate={onUpdate}
+            scaleKey="awardsScale" offXKey="awardsOffsetX" offYKey="awardsOffsetY" />
+        )}
+
         <ToggleRow
           label="Stinger badge"
           hint="After/during-credits scene"
@@ -474,6 +481,11 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
               {SIX_POS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
             </select>
           </Field>
+        )}
+
+        {config.stinger && fine && (
+          <ScaleOffsetFields uid={uid} config={config} onUpdate={onUpdate}
+            scaleKey="stingerScale" offXKey="stingerOffsetX" offYKey="stingerOffsetY" />
         )}
 
         {config.ageRating && (

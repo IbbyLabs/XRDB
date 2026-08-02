@@ -393,14 +393,26 @@ export interface ConfigState {
   ageRating: boolean;
   releaseStatus: boolean;
   releaseStatusPos: string;
+  releaseStatusScale: number;
+  releaseStatusOffsetX: number;
+  releaseStatusOffsetY: number;
   topRated: boolean;
   topRatedPos: string;
+  topRatedScale: number;
+  topRatedOffsetX: number;
+  topRatedOffsetY: number;
   topRatedBadgeStyle: string; // '' = default | glass | square | plain | tile | silver
   topRatedTileColor: string; // '#RRGGBB' for the tile style
   awards: boolean;
   awardsPos: string; // 'inherit' | six positions
+  awardsScale: number;
+  awardsOffsetX: number;
+  awardsOffsetY: number;
   stinger: boolean;
   stingerPos: string; // 'inherit' | six positions
+  stingerScale: number;
+  stingerOffsetX: number;
+  stingerOffsetY: number;
   releaseStatusBadgeStyle: string; // glass | square | plain | tile | silver
   releaseStatusTileColor: string; // '#RRGGBB' for the tile style
   ageRatingPos: string;
@@ -516,6 +528,9 @@ export interface ConfigState {
   ageRatingBadgeStyle: string; // 'default' | plain | tile
   ageRatingTileColor: string;
   trendingPos: string; // 'inherit' | six positions
+  trendingScale: number;
+  trendingOffsetX: number;
+  trendingOffsetY: number;
   logoBackground: string; // 'transparent' | 'dark'
   episodeArtworkMode: string; // 'still' | 'series' | 'streaming' (thumbnail/backdrop episodes)
   fallbackLanguage: string; // '' = none
@@ -571,15 +586,27 @@ export const DEFAULT_CONFIG: ConfigState = {
   releaseStatus: false,
   topRated: false,
   topRatedPos: 'inherit',
+  topRatedScale: 0,
+  topRatedOffsetX: 0,
+  topRatedOffsetY: 0,
   topRatedBadgeStyle: '',
   topRatedTileColor: '',
   awards: false,
   awardsPos: 'inherit',
+  awardsScale: 0,
+  awardsOffsetX: 0,
+  awardsOffsetY: 0,
   stinger: false,
   stingerPos: 'inherit',
+  stingerScale: 0,
+  stingerOffsetX: 0,
+  stingerOffsetY: 0,
   releaseStatusBadgeStyle: '',
   releaseStatusTileColor: '',
   releaseStatusPos: 'inherit',
+  releaseStatusScale: 0,
+  releaseStatusOffsetX: 0,
+  releaseStatusOffsetY: 0,
   ageRatingPos: 'inherit',
   ageRatingScale: 0,
   ageRatingOffsetX: 0,
@@ -692,6 +719,9 @@ export const DEFAULT_CONFIG: ConfigState = {
   ageRatingBadgeStyle: 'default',
   ageRatingTileColor: '',
   trendingPos: 'inherit',
+  trendingScale: 0,
+  trendingOffsetX: 0,
+  trendingOffsetY: 0,
   logoBackground: 'transparent',
   episodeArtworkMode: 'still',
   fallbackLanguage: '',
