@@ -1211,7 +1211,15 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	// first even when it does not. Only the genre list is trimmed: the glyph
 	// modes label the badge with a short family name.
 	if mode == "text" && opts.labelMode != "primary" && len(shown) > 1 {
-		room := base.Bounds().Dx() - edgeX*2
+		// The nudge is applied after placement, so the room it eats has to come
+		// off here. Measuring without it approves a label that fits at the corner
+		// and is then moved past the edge, which is the clipping a nudged badge
+		// showed. Trimming one more genre keeps the nudge the user asked for.
+		nudge := opts.offsetX
+		if nudge < 0 {
+			nudge = -nudge
+		}
+		room := base.Bounds().Dx() - edgeX*2 - nudge
 		for len(shown) > 1 && bw > room {
 			shown = shown[:len(shown)-1]
 			label = strings.Join(shown, " · ")
@@ -1225,9 +1233,25 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	}
 
 	r := occ.place(resolvedPos, bw, bh, edgeX, edgeY, s(7))
-	// Manual offset nudge, applied after corner placement.
+	// Manual offset nudge, applied after corner placement, then held inside the
+	// frame. Trimming the label answers a nudge toward the far edge; a nudge past
+	// the edge the badge is anchored to cannot be trimmed back on, so the part
+	// that would leave the frame is dropped instead of drawn off it.
 	if opts.offsetX != 0 || opts.offsetY != 0 {
 		r = r.Add(image.Pt(opts.offsetX, opts.offsetY))
+		b := base.Bounds()
+		if d := r.Max.X - b.Max.X; d > 0 {
+			r = r.Sub(image.Pt(d, 0))
+		}
+		if d := b.Min.X - r.Min.X; d > 0 {
+			r = r.Add(image.Pt(d, 0))
+		}
+		if d := r.Max.Y - b.Max.Y; d > 0 {
+			r = r.Sub(image.Pt(0, d))
+		}
+		if d := b.Min.Y - r.Min.Y; d > 0 {
+			r = r.Add(image.Pt(0, d))
+		}
 	}
 	textColor := color.NRGBA{R: 225, G: 225, B: 228, A: 255}
 	tx, ty := r.Min.X+padX+stripeRoom, r.Min.Y+capRoom+padY+ascent

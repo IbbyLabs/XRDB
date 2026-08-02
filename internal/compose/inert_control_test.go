@@ -552,3 +552,46 @@ func TestStripFitsAtMeasuresRows(t *testing.T) {
 		t.Error("a frame far too short for those rows was reported as fitting")
 	}
 }
+
+// The fit check runs before the manual offset is applied, so a label approved at
+// the corner was then nudged past the edge with nothing rechecking it (BUG-187).
+func TestGenreFitAccountsForTheManualOffset(t *testing.T) {
+	const w = 420
+
+	// Ink is the test, not position: a badge held flush against the edge is fine,
+	// a badge with pixels cut off it is not. One short genre on a wide frame so
+	// the auto-trim never fires — trimming also lowers the ink count, and that is
+	// intended, so it would mask the clipping this is looking for.
+	ink := func(genres []string, offsetX int) int {
+		img := image.NewNRGBA(image.Rect(0, 0, w, 600))
+		drawGenreBadge(img, genres, "bl", 1, newOccupancy(img.Bounds()), genreBadgeOpts{
+			mode:    "text",
+			offsetX: offsetX,
+		})
+		n := 0
+		for i := 3; i < len(img.Pix); i += 4 {
+			if img.Pix[i] > 0 {
+				n++
+			}
+		}
+		return n
+	}
+
+	short := []string{"Horror"}
+	base := ink(short, 0)
+	if base == 0 {
+		t.Fatal("the fixture drew nothing")
+	}
+	for _, offset := range []int{60, 150, 320, -60, -150} {
+		if got := ink(short, offset); got != base {
+			t.Errorf("offset %d drew %d pixels against %d un-nudged, so part of the label was cut off", offset, got, base)
+		}
+	}
+
+	// A nudge toward the far edge is answered by trimming rather than clamping,
+	// so a long list nudged right still fits without losing a partial glyph.
+	long := []string{"Action & Adventure", "Animation", "Science Fiction"}
+	if ink(long, 120) == 0 {
+		t.Error("a nudged long list drew nothing at all")
+	}
+}
