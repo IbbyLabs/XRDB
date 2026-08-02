@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"log/slog"
 	"net/url"
 	"os"
@@ -125,11 +126,33 @@ func RedactURL(raw string) string {
 	return host
 }
 
-// sensitiveParams are query keys whose values must never appear in a log.
-var sensitiveParams = map[string]struct{}{
-	"key": {}, "apikey": {}, "api_key": {}, "token": {},
-	"password": {}, "pass": {}, "admin_key": {}, "adminkey": {}, "secret": {},
-	"client_id": {}, "client_secret": {},
+// sensitiveFragments match a query key whose value must never appear in a log.
+// Matching on a fragment rather than on an exact name is what makes this safe by
+// default: XRDB accepts a provider credential per provider (mdblistKey, tmdbKey,
+// fanartKey, omdbKey, xrdbKey, simklClientId, traktClientId) and a list of exact
+// names silently passes every one it has not been told about.
+var sensitiveFragments = []string{
+	"key", "token", "secret", "password", "pass", "clientid", "client_id", "credential", "auth",
+}
+
+// notSensitive names query keys that contain a fragment above and carry nothing
+// secret. Without it, a search term or a passthrough flag would be redacted and
+// the log would lose something useful.
+var notSensitive = map[string]struct{}{
+	"keywords": {}, "keyword": {}, "passthrough": {},
+}
+
+func isSensitiveParam(name string) bool {
+	lower := strings.ToLower(name)
+	if _, fine := notSensitive[lower]; fine {
+		return false
+	}
+	for _, frag := range sensitiveFragments {
+		if strings.Contains(lower, frag) {
+			return true
+		}
+	}
+	return false
 }
 
 // RedactQuery returns rawQuery with sensitive values replaced by "REDACTED".
@@ -143,11 +166,44 @@ func RedactQuery(rawQuery string) string {
 		return ""
 	}
 	for k := range values {
-		if _, bad := sensitiveParams[strings.ToLower(k)]; bad {
-			for i := range values[k] {
+		for i := range values[k] {
+			if isSensitiveParam(k) {
 				values[k][i] = "REDACTED"
+				continue
 			}
+			// A v2 profile keeps its credentials inside the config blob, so a
+			// parameter with an innocent name can still carry one.
+			values[k][i] = redactJSONCredentials(values[k][i])
 		}
 	}
 	return values.Encode()
+}
+
+// redactJSONCredentials replaces the value of any credential-named field in a
+// JSON object, leaving the rest readable. A value that is not a JSON object is
+// returned unchanged.
+func redactJSONCredentials(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if !strings.HasPrefix(trimmed, "{") {
+		return value
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(trimmed), &fields); err != nil {
+		return value
+	}
+	touched := false
+	for k := range fields {
+		if isSensitiveParam(k) {
+			fields[k] = json.RawMessage(`"REDACTED"`)
+			touched = true
+		}
+	}
+	if !touched {
+		return value
+	}
+	out, err := json.Marshal(fields)
+	if err != nil {
+		return "REDACTED"
+	}
+	return string(out)
 }
