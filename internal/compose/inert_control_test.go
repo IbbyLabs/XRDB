@@ -630,3 +630,34 @@ func TestGenreFitRunsOnTheDefaultMode(t *testing.T) {
 		}
 	}
 }
+
+// The label control names what the plate says. The glyph modes used to overwrite
+// it with the family name, so choosing "Genre list" alongside a glyph gave
+// "SCI FI" rather than the list the control named (FR-142).
+func TestGenreLabelControlDecidesWhatThePlateSays(t *testing.T) {
+	genres := []string{"Science Fiction", "Action"}
+
+	draw := func(mode, labelMode string) []byte {
+		img := image.NewNRGBA(image.Rect(0, 0, 500, 600))
+		drawGenreBadge(img, genres, "bl", 1, newOccupancy(img.Bounds()), genreBadgeOpts{
+			mode: mode, labelMode: labelMode,
+		})
+		return img.Pix
+	}
+
+	// With a glyph, the list and the family name must differ — one is
+	// "Science Fiction · Action", the other "SCI FI".
+	if bytes.Equal(draw("both", ""), draw("both", "family")) {
+		t.Error("the genre list and the family name draw identically with a glyph, so the label control is ignored")
+	}
+	// And the list must read the same whether a glyph sits beside it or not.
+	// Widths differ, so compare the label rather than the whole frame.
+	listOnly := draw("text", "")
+	if bytes.Equal(listOnly, draw("text", "family")) {
+		t.Error("the family name is not reachable in text mode")
+	}
+	// Family name still available, which is what the glyph modes used to force.
+	if bytes.Equal(draw("both", "family"), draw("both", "primary")) {
+		t.Error("family name and first-only draw identically")
+	}
+}

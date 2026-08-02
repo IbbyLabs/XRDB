@@ -1146,9 +1146,8 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		label = strings.ToUpper(named[0])
 	}
 
-	// The icon modes label the badge with the resolved family ("SCI FI") rather
-	// than the raw genre list, and tint it with that family's accent. The clean
-	// and tile styles have no room for a glyph, so they stay text-only.
+	// The glyph modes need a family resolved, for the mark itself and its accent.
+	// The clean and tile styles have no room for a glyph, so they stay text-only.
 	//
 	// An unset mode is text, and has to be spelled that way here: the fit check
 	// and the glyph branches below both test for "text" by name.
@@ -1160,8 +1159,20 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	if mode == "icon" || mode == "both" {
 		if fam = resolveGenreFamilyGrouped(genres, opts.isAnime, opts.grouping); fam == nil {
 			mode = "text"
-		} else {
-			label = fam.label
+		}
+	}
+	// What the plate says is the label control's business, not the mode's. The
+	// glyph modes used to overwrite it with the family name, so choosing "Genre
+	// list" and a glyph gave "SCI FI" instead of the list it named.
+	if opts.labelMode == "family" {
+		// Resolved here as well as for the glyph: naming the family is a label
+		// choice, and it should not depend on whether a mark is shown beside it.
+		named := fam
+		if named == nil {
+			named = resolveGenreFamilyGrouped(genres, opts.isAnime, opts.grouping)
+		}
+		if named != nil {
+			label = named.label
 		}
 	}
 

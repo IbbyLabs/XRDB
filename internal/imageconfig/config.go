@@ -582,7 +582,7 @@ type GenreBadgeConfig struct {
 	GenreBadgeAccent string `json:"genreBadgeAccent,omitempty"` // left | top | none; "" = per style
 	// GenreBadgeLabel picks what the plate says. v2 printed the first genre on
 	// its own in capitals; "" keeps the list.
-	GenreBadgeLabel string `json:"genreBadgeLabel,omitempty"` // primary | list; "" = list
+	GenreBadgeLabel string `json:"genreBadgeLabel,omitempty"` // primary | list | family; "" = list
 }
 
 // Default returns a Config populated with production defaults.
@@ -1864,6 +1864,8 @@ func parseGenre(cfg *Config, r *raw) {
 			cfg.GenreBadgeLabel = "primary"
 		case "list", "all":
 			cfg.GenreBadgeLabel = "list"
+		case "family", "group":
+			cfg.GenreBadgeLabel = "family"
 		}
 	}
 }

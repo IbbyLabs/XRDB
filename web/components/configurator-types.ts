@@ -281,6 +281,7 @@ export const GENRE_ACCENT_OPTIONS = [
 export const GENRE_LABEL_OPTIONS = [
   { id: 'default', label: 'Genre list', desc: 'Up to three genres, as the source spells them' },
   { id: 'primary', label: 'First only', desc: 'The strongest genre alone, in capitals, the way v2 read' },
+  { id: 'family',  label: 'Family name', desc: 'The group the genres resolve to, e.g. SCI FI, matching the glyph' },
 ] as const;
 
 export const AGGREGATE_SOURCE_OPTIONS = [
