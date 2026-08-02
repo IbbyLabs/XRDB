@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.54.2](https://github.com/IbbyLabs/XRDB/compare/v3.54.1...v3.54.2) (2026-08-02)
+
+
+### Fixed
+
+* **layout:** reserve an offset badge where it is drawn (BUG-191) ([cc21582](https://github.com/IbbyLabs/XRDB/commit/cc215822efeb60972b165fc3494803e8afe501cc))
+* **layout:** shift the ratings band with the strip offset (BUG-191) ([3aee00a](https://github.com/IbbyLabs/XRDB/commit/3aee00a58b048e05675e9e9f44e62848270904a1))
+
 ## [3.54.1](https://github.com/IbbyLabs/XRDB/compare/v3.54.0...v3.54.1) (2026-08-02)
 
 
