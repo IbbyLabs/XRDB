@@ -963,6 +963,11 @@ export function ScoreColourFine({ uid, config, onUpdate }: GroupProps) {
             checked={config.aggregateFillByScore}
             onChange={v => onUpdate('aggregateFillByScore', v)}
             hint="Colour the whole pill with the accent instead of only the rail. With Accent source set to Dynamic this tints the badge by the score." />
+          <NumField id={`${uid}-agg-body-tint`} label="Body tint (%)"
+            value={config.aggregatePillBodyTint}
+            onChange={v => onUpdate('aggregatePillBodyTint', v)}
+            min={0} max={100} step={5} zeroIsDefault={true}
+            hint="Blends the accent into the dark body short of the full fill: a dark-accent capsule that keeps a bright rail. 0 keeps the body dark. Ignored when Fill by score is on." />
           <ToggleField id={`${uid}-agg-rail`} label="Accent rail"
             checked={config.aggregateAccentBarVisible}
             onChange={v => onUpdate('aggregateAccentBarVisible', v)}

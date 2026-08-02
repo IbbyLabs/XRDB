@@ -512,6 +512,7 @@ export interface ConfigState {
   aggregateAudienceValueColor: string;
   aggregateDynamicStops: string; // 'score:#RRGGBB' pairs on a 0-100 scale; '' = built-in bands
   aggregateFillByScore: boolean; // fill the whole pill with the accent, not just the rail
+  aggregatePillBodyTint: number; // 0-100: blend the accent into the dark body short of the full fill
   aggregatePillIcon: string; // rating mark drawn inside single-score pills; '' = none
   aggregateDualIcons: boolean; // mark dual pills with critics/audience glyphs
   aggregateAccentBarVisible: boolean; // the colour rail on an aggregate pill
@@ -703,6 +704,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   aggregateAudienceValueColor: '',
   aggregateDynamicStops: '',
   aggregateFillByScore: false,
+  aggregatePillBodyTint: 0,
   aggregatePillIcon: '',
   aggregateDualIcons: false,
   aggregateAccentBarVisible: true,

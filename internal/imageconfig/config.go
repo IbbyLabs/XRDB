@@ -496,6 +496,11 @@ type AggregateConfig struct {
 	// AggregateFillByScore fills the whole pill with the resolved accent instead
 	// of tinting only the accent rail.
 	AggregateFillByScore bool `json:"aggregateFillByScore,omitempty"`
+	// AggregatePillBodyTint blends the accent into the dark pill body at this
+	// strength (0-100), leaving the rail its own colour: a dark-accent capsule
+	// with a bright edge. 0 keeps the body dark; AggregateFillByScore is the
+	// separate full-strength fill.
+	AggregatePillBodyTint int `json:"aggregatePillBodyTint,omitempty"`
 	// AggregatePillIcon names a bundled rating mark to draw inside the
 	// single-score pills the minimal and average presentations use. "" draws
 	// none.
@@ -859,6 +864,7 @@ type rawAggregate struct {
 	AggregateAudienceValueColor  *string `json:"aggregateAudienceValueColor"`
 	AggregateDynamicStops        *string `json:"aggregateDynamicStops"`
 	AggregateFillByScore         *bool   `json:"aggregateFillByScore"`
+	AggregatePillBodyTint        *int    `json:"aggregatePillBodyTint"`
 	AggregatePillIcon            *string `json:"aggregatePillIcon"`
 	AggregateDualIcons           *bool   `json:"aggregateDualIcons"`
 	AggregateAccentBarVisible    *bool   `json:"aggregateAccentBarVisible"`
@@ -1810,6 +1816,9 @@ func parseAggregate(cfg *Config, r *raw) {
 	}
 	if r.AggregateFillByScore != nil {
 		cfg.AggregateFillByScore = *r.AggregateFillByScore
+	}
+	if r.AggregatePillBodyTint != nil {
+		cfg.AggregatePillBodyTint = clampInt(*r.AggregatePillBodyTint, 0, 100)
 	}
 	if r.AggregatePillIcon != nil {
 		cfg.AggregatePillIcon = strings.ToLower(strings.TrimSpace(*r.AggregatePillIcon))

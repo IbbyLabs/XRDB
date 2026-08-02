@@ -1755,6 +1755,10 @@ type scorePillStyle struct {
 	accentWidth int
 	// fill replaces the dark capsule body. Zero alpha keeps the default.
 	fill color.NRGBA
+	// bodyTint blends the accent into the dark body at this strength (0-100),
+	// short of the full fill, so the capsule reads as a dark accent behind a
+	// bright rail. Applies only when fill is unset.
+	bodyTint int
 	// bodyOpacity tunes how much artwork shows through the capsule body, as a
 	// percent. 0 keeps whatever the style picked.
 	bodyOpacity int
@@ -1791,6 +1795,7 @@ func aggregatePillStyle(cfg imageconfig.Config, source string, genres []string, 
 		accentTopStrip: cfg.AggregateAccentShape == "strip",
 		bodyOpacity:    cfg.RatingBadgeBackgroundOpacity,
 		accentWidth:    cfg.AggregateAccentWidth,
+		bodyTint:       cfg.AggregatePillBodyTint,
 		radius:         scorePillRadius(cfg.BadgeStyle),
 	}
 
@@ -1891,6 +1896,20 @@ func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, icon im
 		body = style.fill
 		if !style.valueSet {
 			valueCol = contrastingInk(body)
+		}
+	} else if style.bodyTint > 0 {
+		// Blend the accent into the dark body short of the full fill, so the
+		// capsule reads as a dark accent while the rail keeps its bright edge.
+		t := style.bodyTint
+		if t > 100 {
+			t = 100
+		}
+		f := float64(t) / 100 * 0.6
+		body = color.NRGBA{
+			R: uint8(float64(body.R)*(1-f) + float64(style.accent.R)*f + 0.5),
+			G: uint8(float64(body.G)*(1-f) + float64(style.accent.G)*f + 0.5),
+			B: uint8(float64(body.B)*(1-f) + float64(style.accent.B)*f + 0.5),
+			A: body.A,
 		}
 	}
 	// The same control the badge strip answers. Compositing rather than writing

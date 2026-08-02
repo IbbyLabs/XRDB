@@ -498,6 +498,7 @@ func keyMutations() map[string]keyOverride {
 		"aggregatePillPos":             {pre: presMinimal, mut: func(c *imageconfig.Config) { c.AggregatePillPos = "br" }},
 		"aggregateAccentShape":         {pre: aggMinimalCustom, mut: func(c *imageconfig.Config) { c.AggregateAccentShape = "strip" }},
 		"aggregateFillByScore":         {pre: aggMinimalCustom},
+		"aggregatePillBodyTint":        {pre: aggMinimalCustom},
 		"aggregatePillIcon":            {pre: presMinimal, mut: func(c *imageconfig.Config) { c.AggregatePillIcon = "imdb" }},
 		"aggregateAccentBarVisible":    {pre: aggDual, mut: func(c *imageconfig.Config) { f := false; c.AggregateAccentBarVisible = &f }},
 		"aggregateAccentBarOffset":     {pre: aggDual},
