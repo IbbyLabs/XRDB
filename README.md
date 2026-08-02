@@ -46,6 +46,21 @@ Open `http://localhost:8787`, add your provider keys under **Integrations**
 (TMDB at minimum), then build your look in the **Configurator** and save it
 as a profile. Or with compose: `docker compose up --build`.
 
+> [!TIP]
+> **Behind a reverse proxy on more than one Docker network?** Tell the proxy
+> which one to use. A container attached to several networks gives Traefik a
+> choice it cannot make, and picking the wrong one answers `502` with nothing
+> useful in the log. On the XRDB service:
+>
+> ```yaml
+> labels:
+>   - "traefik.docker.network=your-proxy-network"
+> ```
+>
+> This is ordinary Traefik behaviour rather than anything XRDB does, but the
+> symptom points here, so it is worth knowing before you go looking. Adding a
+> second network for egress is the usual way to end up in this state.
+
 Per-client setup: [Stremio](docs/setup/stremio.md) ·
 [AIOMetadata](docs/setup/aiometadata.md) ·
 [Jellyfin](docs/setup/jellyfin.md) ·
