@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.58.0](https://github.com/IbbyLabs/XRDB/compare/v3.57.1...v3.58.0) (2026-08-02)
+
+
+### Added
+
+* **ratings:** name degraded sources in a response header (BUG-196) ([dcb7b13](https://github.com/IbbyLabs/XRDB/commit/dcb7b137439bff66653c43849ba2de64b4c4392a))
+
 ## [3.57.1](https://github.com/IbbyLabs/XRDB/compare/v3.57.0...v3.57.1) (2026-08-02)
 
 
