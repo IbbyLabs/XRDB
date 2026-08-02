@@ -646,6 +646,16 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           onChange={() => onUpdate('metaLine', !config.metaLine)}
         />
 
+        {config.metaLine && (
+          <Field label="Info line scale (%)" htmlFor={`${uid}-metaline-scale`}
+            hint="60–200. Blank keeps the default size.">
+            <input id={`${uid}-metaline-scale`} className="input" type="number" inputMode="numeric"
+              min={60} max={200} step={5} value={config.metaLineScale || ''} placeholder="default"
+              style={{ maxWidth: '7rem' }}
+              onChange={e => onUpdate('metaLineScale', e.target.value === '' ? 0 : Number(e.target.value))} />
+          </Field>
+        )}
+
         <ToggleRow
           label="Trending badge"
           hint="Show a trending badge in the top-left corner"
