@@ -515,10 +515,17 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 		// is a different credential with its own allowance. Recording it would let
 		// one exhausted owner key set the shared cooldown for every other render.
 		if p.health.Failure(prov.Name(), err) {
-			// The transition into cooldown, logged once, is what makes an
-			// exhausted metered source visible instead of silently dropping its
-			// badge from every render.
-			p.log().WarnContext(ctx, "A ratings source is rate-limited and held out until it recovers",
+			// The transition into cooldown, logged once, is what makes a failing
+			// source visible instead of silently dropping its badge from every
+			// render. Naming the reason matters as much: reporting a rejected
+			// key or a malformed reply as a rate limit sends whoever reads this
+			// to the wrong place.
+			var rl *provider.RateLimitError
+			reason := "is failing"
+			if errors.As(err, &rl) {
+				reason = "is rate-limited"
+			}
+			p.log().WarnContext(ctx, "A ratings source "+reason+" and is held out until it recovers",
 				"id", logging.RequestID(ctx), "source", prov.Name(), "error", err)
 		}
 	}

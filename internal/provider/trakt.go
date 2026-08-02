@@ -107,6 +107,12 @@ func (t *Trakt) fetchSegment(ctx context.Context, segment, id string) (*MediaMet
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("trakt: %s not found for id %q: %w", segment, id, errNotFound)
 	}
+	// 204 is Trakt answering that it holds no rating for this title. It is an
+	// empty result, not a fault, and treating it as one held the whole source
+	// out for every other render.
+	if resp.StatusCode == http.StatusNoContent {
+		return nil, fmt.Errorf("trakt: %s has no rating for id %q: %w", segment, id, errNotFound)
+	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("trakt: http %d", resp.StatusCode)
 	}

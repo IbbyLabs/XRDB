@@ -2,6 +2,7 @@ package provider
 
 import (
 	"container/list"
+	"context"
 	"errors"
 	"strings"
 	"sync"
@@ -165,6 +166,14 @@ func (h *HealthTracker) rememberLocked(key string, meta *MediaMeta) {
 // problem: the source answered, the title simply is not there.
 func (h *HealthTracker) Failure(source string, err error) (enteredCooldown bool) {
 	if h == nil || errors.Is(err, errNotFound) || errors.Is(err, ErrNotApplicable) {
+		return false
+	}
+	// A cancelled request says nothing about the source. The caller walked away
+	// — the viewer closed the tab, or the render gave up — and the source may
+	// have been about to answer. Counting it holds the source out for every
+	// other render, so one abandoned request takes a working source off every
+	// poster until it recovers.
+	if errors.Is(err, context.Canceled) {
 		return false
 	}
 	h.mu.Lock()
