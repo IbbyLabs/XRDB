@@ -172,6 +172,10 @@ type Config struct {
 	MetaLine bool `json:"metaLine,omitempty"`
 	// MetaLineScale sizes that line as a percent; 0 = 100.
 	MetaLineScale int `json:"metaLineScale,omitempty"`
+	// MetaLineOffsetX and MetaLineOffsetY nudge the info line from its centred
+	// foot position, in output pixels.
+	MetaLineOffsetX int `json:"metaLineOffsetX,omitempty"`
+	MetaLineOffsetY int `json:"metaLineOffsetY,omitempty"`
 	// AggregateAccentWidth is the stroke width of the score pill's accent
 	// outline, in px at 1x; 0 keeps the default.
 	AggregateAccentWidth int `json:"aggregateAccentWidth,omitempty"`
@@ -662,6 +666,8 @@ type raw struct {
 	RatingsAnime                  []string  `json:"ratingsAnime"`
 	MetaLine                      *bool     `json:"metaLine"`
 	MetaLineScale                 *int      `json:"metaLineScale"`
+	MetaLineOffsetX               *int      `json:"metaLineOffsetX"`
+	MetaLineOffsetY               *int      `json:"metaLineOffsetY"`
 	AggregateAccentWidth          *int      `json:"aggregateAccentWidth"`
 	RatingBadgeDensity            *int      `json:"ratingBadgeDensity"`
 	RatingBadgeBorderSourceTint   *bool     `json:"ratingBadgeBorderSourceTint"`
@@ -1103,6 +1109,12 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.MetaLineScale != nil && *r.MetaLineScale != 0 {
 		cfg.MetaLineScale = clampInt(*r.MetaLineScale, 60, 200)
+	}
+	if r.MetaLineOffsetX != nil {
+		cfg.MetaLineOffsetX = clampInt(*r.MetaLineOffsetX, -320, 320)
+	}
+	if r.MetaLineOffsetY != nil {
+		cfg.MetaLineOffsetY = clampInt(*r.MetaLineOffsetY, -320, 320)
 	}
 	if r.AggregateAccentWidth != nil && *r.AggregateAccentWidth != 0 {
 		cfg.AggregateAccentWidth = clampInt(*r.AggregateAccentWidth, 1, 8)
@@ -2024,6 +2036,8 @@ func CacheKey(cfg Config) string {
 		RatingsAnime                  []string       `json:"ratingsAnime"`
 		MetaLine                      bool           `json:"metaLine"`
 		MetaLineScale                 int            `json:"metaLineScale"`
+		MetaLineOffsetX               int            `json:"metaLineOffsetX,omitempty"`
+		MetaLineOffsetY               int            `json:"metaLineOffsetY,omitempty"`
 		AggregateAccentWidth          int            `json:"aggregateAccentWidth"`
 		RatingBadgeDensity            int            `json:"ratingBadgeDensity"`
 		RatingBadgeBorderColor        string         `json:"ratingBadgeBorderColor"`
@@ -2115,6 +2129,8 @@ func CacheKey(cfg Config) string {
 		RatingsAnime:                  cfg.RatingsAnime,
 		MetaLine:                      cfg.MetaLine,
 		MetaLineScale:                 cfg.MetaLineScale,
+		MetaLineOffsetX:               cfg.MetaLineOffsetX,
+		MetaLineOffsetY:               cfg.MetaLineOffsetY,
 		AggregateAccentWidth:          cfg.AggregateAccentWidth,
 		RatingBadgeDensity:            cfg.RatingBadgeDensity,
 		RatingBadgeBorderColor:        cfg.RatingBadgeBorderColor,

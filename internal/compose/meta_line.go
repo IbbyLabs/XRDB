@@ -83,6 +83,12 @@ func drawMetaLine(base *image.NRGBA, meta provider.MediaMeta, cfg imageconfig.Co
 		// stacks above it instead of printing through it.
 		line = occ.resolve(line, false, px(10))
 	}
+	// A manual nudge moves the line, its scrim, and the band it reserves
+	// together, so an overlay drawn after it still clears where it actually is.
+	if cfg.MetaLineOffsetX != 0 || cfg.MetaLineOffsetY != 0 {
+		line = keepInside(line.Add(image.Pt(cfg.MetaLineOffsetX, cfg.MetaLineOffsetY)), b)
+	}
+	x = line.Min.X
 	y := line.Min.Y
 
 	// The scrim is what makes it legible on bright art. Against the bottom edge

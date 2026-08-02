@@ -647,13 +647,29 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
         />
 
         {config.metaLine && (
-          <Field label="Info line scale (%)" htmlFor={`${uid}-metaline-scale`}
-            hint="60–200. Blank keeps the default size.">
-            <input id={`${uid}-metaline-scale`} className="input" type="number" inputMode="numeric"
-              min={60} max={200} step={5} value={config.metaLineScale || ''} placeholder="default"
-              style={{ maxWidth: '7rem' }}
-              onChange={e => onUpdate('metaLineScale', e.target.value === '' ? 0 : Number(e.target.value))} />
-          </Field>
+          <>
+            <Field label="Info line scale (%)" htmlFor={`${uid}-metaline-scale`}
+              hint="60–200. Blank keeps the default size.">
+              <input id={`${uid}-metaline-scale`} className="input" type="number" inputMode="numeric"
+                min={60} max={200} step={5} value={config.metaLineScale || ''} placeholder="default"
+                style={{ maxWidth: '7rem' }}
+                onChange={e => onUpdate('metaLineScale', e.target.value === '' ? 0 : Number(e.target.value))} />
+            </Field>
+            <Field label="Info line offset X" htmlFor={`${uid}-metaline-ox`}
+              hint="-320 to 320. Blank stays centred.">
+              <input id={`${uid}-metaline-ox`} className="input" type="number" inputMode="numeric"
+                min={-320} max={320} value={config.metaLineOffsetX || ''} placeholder="0"
+                style={{ maxWidth: '7rem' }}
+                onChange={e => onUpdate('metaLineOffsetX', e.target.value === '' ? 0 : Number(e.target.value))} />
+            </Field>
+            <Field label="Info line offset Y" htmlFor={`${uid}-metaline-oy`}
+              hint="-320 to 320. Blank stays at the foot.">
+              <input id={`${uid}-metaline-oy`} className="input" type="number" inputMode="numeric"
+                min={-320} max={320} value={config.metaLineOffsetY || ''} placeholder="0"
+                style={{ maxWidth: '7rem' }}
+                onChange={e => onUpdate('metaLineOffsetY', e.target.value === '' ? 0 : Number(e.target.value))} />
+            </Field>
+          </>
         )}
 
         <ToggleRow

@@ -523,7 +523,9 @@ export interface ConfigState {
   ratingsSeries: string[];
   ratingsAnime: string[];
   metaLine: boolean;
-  metaLineScale: number; // percent; 0 = 100
+  metaLineScale: number;
+  metaLineOffsetX: number;
+  metaLineOffsetY: number; // percent; 0 = 100
   aggregateAccentWidth: number; // px; 0 = default
   ratingBadgeDensity: number; // percent of default padding; 0 = 100
   ratingBadgeBorderSourceTint: boolean;
@@ -698,6 +700,8 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingsAnime: [],
   metaLine: false,
   metaLineScale: 0,
+  metaLineOffsetX: 0,
+  metaLineOffsetY: 0,
   aggregateAccentWidth: 0,
   ratingBadgeDensity: 0,
   ratingBadgeBorderSourceTint: false,
