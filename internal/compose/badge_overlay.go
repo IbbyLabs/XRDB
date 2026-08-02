@@ -1897,9 +1897,11 @@ func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, icon im
 		if !style.valueSet {
 			valueCol = contrastingInk(body)
 		}
-	} else if style.bodyTint > 0 {
+	} else if style.bodyTint > 0 && style.accentSet {
 		// Blend the accent into the dark body short of the full fill, so the
 		// capsule reads as a dark accent while the rail keeps its bright edge.
+		// Gated on a resolved accent: with none the accent is zero-value black
+		// and the tint would only darken the body.
 		t := style.bodyTint
 		if t > 100 {
 			t = 100
