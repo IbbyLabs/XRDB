@@ -2,6 +2,15 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.54.1](https://github.com/IbbyLabs/XRDB/compare/v3.54.0...v3.54.1) (2026-08-02)
+
+
+### Fixed
+
+* **logging:** redact every provider credential from the access log ([c5ae5e3](https://github.com/IbbyLabs/XRDB/commit/c5ae5e3bd123d000a488ea99408d2f98afdc830c))
+* **logging:** redact signature and session parameters too ([1745029](https://github.com/IbbyLabs/XRDB/commit/1745029ef9f1d7bd2ddd4be9b7f12e2886d1fedf))
+* **ratings:** stop a cancelled request holding a source out (BUG-190) ([fe9c1c6](https://github.com/IbbyLabs/XRDB/commit/fe9c1c65cb9ea2baedd38b9bf8b64576f4598ea6))
+
 ## [3.54.0](https://github.com/IbbyLabs/XRDB/compare/v3.53.0...v3.54.0) (2026-08-02)
 
 
