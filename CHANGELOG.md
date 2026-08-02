@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.55.2](https://github.com/IbbyLabs/XRDB/compare/v3.55.1...v3.55.2) (2026-08-02)
+
+
+### Fixed
+
+* **ratings:** keep a brand mark's colours on a filled plate (BUG-193) ([eb34419](https://github.com/IbbyLabs/XRDB/commit/eb34419c10080285922b1a19b7ee80946efb4f29))
+
 ## [3.55.1](https://github.com/IbbyLabs/XRDB/compare/v3.55.0...v3.55.1) (2026-08-02)
 
 
