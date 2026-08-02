@@ -44,6 +44,10 @@ func (o *occupancy) overlaps(r image.Rectangle) bool {
 //
 // A reservation covering the anchor itself reports the full width. There is no
 // room to trim into there, and shifting is the right answer.
+//
+// The measurement is of the anchor row. place may then shift the box to a row
+// with more room, so a stacked frame can trim a genre it turned out not to
+// need. It never clips or displaces, so the direction is the safe one.
 func (o *occupancy) freeWidthAt(corner string, h, edgeX, edgeY, gap int) int {
 	b := o.boundsOrZero()
 	full := b.Dx() - edgeX*2

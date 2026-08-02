@@ -878,7 +878,8 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// The ring claims its corner before the strips do. It is a fixed circle that
 	// can neither narrow nor move, while a genre strip can drop a genre and a
 	// provider row can drop a chip, so reserving it first is what leaves the
-	// elastic overlays something to measure against.
+	// elastic overlays something to measure against. It also now precedes the
+	// trending tag and the aggregate bar, both of which can move and it cannot.
 	if req.Config.RatingRing {
 		drawAverageRatingRing(composed, allRatings, req.Config, scale, occ)
 	}

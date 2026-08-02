@@ -3,6 +3,7 @@ package compose
 import (
 	"image"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -71,30 +72,83 @@ func TestALongGenreListLeavesTheRingOnItsCorner(t *testing.T) {
 	}
 }
 
-// The unit checks above supply the order themselves, so they cannot see it
-// change in the pipeline, and the property is an ordering rather than a shape:
-// a render only shows it where the two happen to contend. So this reads the
-// order the pipeline is written in. Measured over a sweep of every genre and
-// ring position, moving the ring ahead of the strips changed 112 of 1152
-// renders and every one of them had the ring turned on.
-func TestThePipelineReservesTheRingBeforeTheStrips(t *testing.T) {
+// The unit checks above supply the order themselves, so they cannot see the
+// order change in the pipeline, and the property is an ordering rather than a
+// shape: a render only exposes it where two overlays happen to contend, which
+// makes any single config a coverage claim to defend. So this reads the order
+// the pipeline is written in. The behavioural evidence is a sweep of every
+// genre and ring position: moving the ring ahead of the strips changed 112 of
+// 1152 renders and every one of them had the ring turned on.
+//
+// The rule, not this ordering. An overlay that cannot shrink has to claim its
+// place before one that can, whichever gets added next. A draw call in neither
+// list fails here, so a new overlay cannot arrive without someone deciding
+// which it is.
+var inelasticOverlays = []string{
+	// Fixed circle: it can neither narrow nor change corner.
+	"drawAverageRatingRing(composed",
+}
+
+var elasticOverlays = []string{
+	"drawGenreBadge(composed",     // drops a genre
+	"drawProviderBadges(composed", // drops a chip
+}
+
+// unrankedOverlays neither shrink nor contend for a corner with the two sets
+// above: they are centred, full-width, drawn into a reserved box, or the
+// artwork itself.
+var unrankedOverlays = []string{
+	"drawAgeRatingBadge(composed",
+	"drawAggregateBar(composed",
+	"drawAverageRating(composed",
+	"drawAwardsBadge(composed",
+	"drawBackdropLogoOverlay(composed",
+	"drawBadgesInPlace(composed",
+	"drawDualRating(composed",
+	"drawEditorialRating(composed",
+	"drawMetaLine(composed",
+	"drawMinimalRating(composed",
+	"drawQualityBadges(composed",
+	"drawReleaseStatusBadge(composed",
+	"drawStingerBadge(composed",
+	"drawTopRatedBadge(composed",
+	"drawTrendingBadgeSurfaced(composed",
+}
+
+func TestThePipelineReservesInelasticOverlaysFirst(t *testing.T) {
 	src, err := os.ReadFile("compose.go")
 	if err != nil {
 		t.Fatalf("cannot read the pipeline: %v", err)
 	}
 	body := string(src)
-	ring := strings.Index(body, "drawAverageRatingRing(composed")
-	if ring < 0 {
-		t.Fatal("the ring is no longer drawn here; this guard cannot run")
-	}
-	for _, elastic := range []string{"drawGenreBadge(composed", "drawProviderBadges(composed"} {
-		at := strings.Index(body, elastic)
-		if at < 0 {
-			t.Fatalf("%s is no longer drawn here; this guard cannot run", elastic)
+
+	known := map[string]bool{}
+	for _, set := range [][]string{inelasticOverlays, elasticOverlays, unrankedOverlays} {
+		for _, name := range set {
+			known[name] = true
 		}
-		if at < ring {
-			t.Errorf("%s reserves before the ring, so the ring is what gets displaced. The ring "+
-				"cannot narrow or change corner and the strips can, so it claims its place first", elastic)
+	}
+	for _, found := range regexp.MustCompile(`draw[A-Za-z]+\(composed`).FindAllString(body, -1) {
+		if !known[found] {
+			t.Errorf("%s is drawn here and is in none of the overlay lists. Decide whether it can "+
+				"shrink: one that cannot has to reserve before one that can", found)
+		}
+	}
+
+	at := func(name string) int {
+		i := strings.Index(body, name)
+		if i < 0 {
+			t.Errorf("%s is listed but no longer drawn here", name)
+		}
+		return i
+	}
+	for _, fixed := range inelasticOverlays {
+		f := at(fixed)
+		for _, gives := range elasticOverlays {
+			if g := at(gives); f >= 0 && g >= 0 && g < f {
+				t.Errorf("%s reserves before %s, so the one that cannot shrink is what gets "+
+					"displaced", gives, fixed)
+			}
 		}
 	}
 }
