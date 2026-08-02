@@ -2,6 +2,24 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.54.0](https://github.com/IbbyLabs/XRDB/compare/v3.53.0...v3.54.0) (2026-08-02)
+
+
+### Added
+
+* **genre:** add short genre names behind a toggle (FR-142) ([c33c619](https://github.com/IbbyLabs/XRDB/commit/c33c6191ccdccc1434271a2d8ddcf7464e201252))
+
+
+### Fixed
+
+* **configurator:** derive the render payload from the defaults (BUG-188) ([5a24f5e](https://github.com/IbbyLabs/XRDB/commit/5a24f5eb0f45802d34c82be5da265f15ab10b22c))
+* **layout:** trim the genre strip beside the ring (BUG-189) ([e7232e2](https://github.com/IbbyLabs/XRDB/commit/e7232e2603eeeccc5ad376e30a16f0d11c26778e))
+
+
+### Documentation
+
+* name the proxy network when XRDB is on more than one ([24809ac](https://github.com/IbbyLabs/XRDB/commit/24809acdbb3c4f1547a3d8f4547697a01a160f26))
+
 ## [3.53.0](https://github.com/IbbyLabs/XRDB/compare/v3.52.1...v3.53.0) (2026-08-02)
 
 
