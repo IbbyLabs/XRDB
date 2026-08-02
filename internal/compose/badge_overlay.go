@@ -1045,6 +1045,7 @@ type genreBadgeOpts struct {
 	labelMode    string  // "" | list | primary | family; primary prints the first genre alone
 	labelCase    string  // "" | upper | normal; "" keeps what each label mode did alone
 	maxGenres    int     // cap on how many genres the list names; 0 = fit decides
+	shortNames   bool    // rename the long genres to their short forms
 }
 
 // drawLabelOutlined traces a label at the given baseline. A hard outline stamps
@@ -1111,6 +1112,7 @@ func genreOptsFromConfig(cfg imageconfig.Config, isAnime bool) genreBadgeOpts {
 		labelMode:    cfg.GenreBadgeLabel,
 		labelCase:    cfg.GenreBadgeCase,
 		maxGenres:    cfg.GenreBadgeMaxGenres,
+		shortNames:   cfg.GenreBadgeShortNames,
 		tileColor:    cfg.GenreBadgeTileAccentColor,
 		borderWidth:  cfg.GenreBadgeBorderWidth,
 		outlineColor: cfg.NoBackgroundBadgeOutlineColor,
@@ -1156,6 +1158,9 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 
 	// The anime control names families in the glyph modes and genres here.
 	named := groupAnimeGenres(genres, opts.isAnime, opts.grouping)
+	if opts.shortNames {
+		named = shortenGenres(named)
+	}
 	shown := named
 	// A fixed count is an editorial choice, so it is applied before the fit
 	// check, which answers a different question: whether what is left fits.

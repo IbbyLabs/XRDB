@@ -4,7 +4,7 @@ import "testing"
 
 func TestStingerFromKeywords(t *testing.T) {
 	cases := []struct {
-		names            []string
+		names          []string
 		mid, post, has bool
 	}{
 		{[]string{"aftercreditsstinger"}, false, true, true},

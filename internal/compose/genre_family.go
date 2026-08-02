@@ -18,7 +18,7 @@ var (
 	familyComedy      = genreFamily{"comedy", "COMEDY", "#facc15"}
 	familyRomance     = genreFamily{"romance", "ROMANCE", "#fb7185"}
 	familyAction      = genreFamily{"action", "ACTION", "#fb923c"}
-	familySciFi       = genreFamily{"scifi", "SCI FI", "#22d3ee"}
+	familySciFi       = genreFamily{"scifi", "SCI-FI", "#22d3ee"}
 	familyFantasy     = genreFamily{"fantasy", "FANTASY", "#34d399"}
 	familyCrime       = genreFamily{"crime", "CRIME", "#60a5fa"}
 	familyDrama       = genreFamily{"drama", "DRAMA", "#818cf8"}
@@ -79,6 +79,32 @@ func resolveGenreFamilyGrouped(genres []string, isAnime bool, grouping string) *
 		return secondary
 	}
 	return primary
+}
+
+// shortGenreNames renames only where the source is long and the shorter form
+// resolves to the same family, so the word on the plate cannot disagree with the
+// glyph beside it. War & Politics is deliberately absent: TMDB's movie "War"
+// resolves to the action family and its TV compound to the war family, so
+// collapsing it would put one word on two different marks.
+var shortGenreNames = map[string]string{
+	"action & adventure": "Action",
+	"sci-fi & fantasy":   "Sci-Fi",
+	"sci fi & fantasy":   "Sci-Fi",
+	"science fiction":    "Sci-Fi",
+}
+
+// shortenGenres rewrites a genre list to its short forms. Names with no short
+// form are left exactly as the source spells them.
+func shortenGenres(genres []string) []string {
+	out := make([]string, 0, len(genres))
+	for _, g := range genres {
+		if short, ok := shortGenreNames[normalizeGenreName(g)]; ok {
+			out = append(out, short)
+			continue
+		}
+		out = append(out, g)
+	}
+	return out
 }
 
 // groupAnimeGenres applies the same anime grouping to a raw genre list that

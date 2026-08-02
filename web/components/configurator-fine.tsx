@@ -720,6 +720,10 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
         onChange={v => onUpdate('genreBadgeCase', v === 'default' ? '' : v)}
         hint={GENRE_CASE_OPTIONS.find(o => o.id === (config.genreBadgeCase || 'default'))?.desc}
       />
+      <ToggleField id={`${uid}-genre-short`} label="Short genre names"
+        checked={config.genreBadgeShortNames}
+        onChange={v => onUpdate('genreBadgeShortNames', v)}
+        hint="Science Fiction reads Sci-Fi, Action &amp; Adventure reads Action. Off keeps the source's own spelling." />
       <StyleGrid
         id={`${uid}-genre-count-label`}
         label="How many genres"

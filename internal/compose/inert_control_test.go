@@ -780,3 +780,41 @@ func TestGenreCaseSurvivesTheFitTrim(t *testing.T) {
 		t.Error("capitals and as-written draw identically once the list is trimmed, so the case was lost")
 	}
 }
+
+// Shorthand renames only where the shorter form resolves to the same family, so
+// the word on the plate cannot disagree with the glyph beside it (FR-142).
+func TestShortGenreNamesAgreeWithTheGlyph(t *testing.T) {
+	for _, tc := range []struct{ long, short string }{
+		{"Action & Adventure", "Action"},
+		{"Sci-Fi & Fantasy", "Sci-Fi"},
+		{"Science Fiction", "Sci-Fi"},
+	} {
+		got := shortenGenres([]string{tc.long})
+		if len(got) != 1 || got[0] != tc.short {
+			t.Errorf("shortenGenres(%q) = %v, want %q", tc.long, got, tc.short)
+		}
+		// The whole rule: a renamed genre must land on the same family, or the
+		// label and the mark say different things about one title.
+		before := resolveGenreFamily([]string{tc.long})
+		after := resolveGenreFamily([]string{tc.short})
+		if before == nil || after == nil || before.id != after.id {
+			t.Errorf("%q resolves to %v but %q resolves to %v", tc.long, before, tc.short, after)
+		}
+	}
+
+	// War is left long on purpose: its two TMDB genres resolve to different
+	// families, so one shortened word would appear on two different marks.
+	if got := shortenGenres([]string{"War & Politics"}); got[0] != "War & Politics" {
+		t.Errorf("War & Politics was shortened to %q, which collides with the movie genre War", got[0])
+	}
+	if a, b := resolveGenreFamily([]string{"War"}), resolveGenreFamily([]string{"War & Politics"}); a.id == b.id {
+		t.Skip("War and War & Politics now share a family; shortening it would be safe")
+	}
+
+	// Everything short enough is left exactly as the source spells it.
+	for _, keep := range []string{"Horror", "Drama", "Documentary", "TV Movie", "Reality"} {
+		if got := shortenGenres([]string{keep}); got[0] != keep {
+			t.Errorf("%q was rewritten to %q", keep, got[0])
+		}
+	}
+}

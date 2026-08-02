@@ -590,6 +590,9 @@ type GenreBadgeConfig struct {
 	// GenreBadgeMaxGenres caps how many genres the list names. 0 lets the fit
 	// check decide, which is a different job: a fixed count is editorial.
 	GenreBadgeMaxGenres int `json:"genreBadgeMaxGenres,omitempty"` // 0 = auto; 1-3
+	// GenreBadgeShortNames renames the long genres to their short forms, so a
+	// list reads cleanly. Off keeps the source's own spelling.
+	GenreBadgeShortNames bool `json:"genreBadgeShortNames,omitempty"`
 }
 
 // Default returns a Config populated with production defaults.
@@ -727,6 +730,7 @@ type rawGenre struct {
 	GenreBadgeLabel             *string  `json:"genreBadgeLabel"`
 	GenreBadgeCase              *string  `json:"genreBadgeCase"`
 	GenreBadgeMaxGenres         *int     `json:"genreBadgeMaxGenres"`
+	GenreBadgeShortNames        *bool    `json:"genreBadgeShortNames"`
 }
 
 // rawQuality and rawTrending mirror their config groups for parsing.
@@ -1887,6 +1891,9 @@ func parseGenre(cfg *Config, r *raw) {
 	}
 	if r.GenreBadgeMaxGenres != nil && *r.GenreBadgeMaxGenres != 0 {
 		cfg.GenreBadgeMaxGenres = clampInt(*r.GenreBadgeMaxGenres, 1, 3)
+	}
+	if r.GenreBadgeShortNames != nil {
+		cfg.GenreBadgeShortNames = *r.GenreBadgeShortNames
 	}
 }
 

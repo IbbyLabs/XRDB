@@ -2,8 +2,8 @@ package provider
 
 import (
 	"context"
-	"math"
 	"encoding/json"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"strings"

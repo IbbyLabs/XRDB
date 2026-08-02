@@ -77,9 +77,9 @@ type mediuxResponse struct {
 }
 
 type mediuxSet struct {
-	Popularity float64        `json:"popularity"`
-	Poster     []mediuxAsset  `json:"movie_poster"`
-	Backdrop   []mediuxAsset  `json:"movie_backdrop"`
+	Popularity float64       `json:"popularity"`
+	Poster     []mediuxAsset `json:"movie_poster"`
+	Backdrop   []mediuxAsset `json:"movie_backdrop"`
 }
 
 type mediuxAsset struct {

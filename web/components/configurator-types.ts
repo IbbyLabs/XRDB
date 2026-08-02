@@ -482,7 +482,8 @@ export interface ConfigState {
   genreBadgeAccent: string; // 'default' | left | top | none
   genreBadgeLabel: string;
   genreBadgeCase: string;
-  genreBadgeMaxGenres: number;  // 'default' (list) | primary
+  genreBadgeMaxGenres: number;
+  genreBadgeShortNames: boolean;  // 'default' (list) | primary
   genreBadgeMode: string;  // 'default' (text) | icon | both
   genreBadgeAnimeGrouping: string; // 'default' (split) | animation | secondary
   aggregateAccentColor: string; // '' = auto score-band
@@ -655,6 +656,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   genreBadgeLabel: 'default',
   genreBadgeCase: '',
   genreBadgeMaxGenres: 0,
+  genreBadgeShortNames: false,
   genreBadgeMode: 'default',
   genreBadgeAnimeGrouping: 'default',
   aggregateAccentColor: '',
