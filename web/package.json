@@ -9,7 +9,8 @@
     "start": "next start -p 3001",
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "gen:icons": "node scripts/gen-rating-icons.mjs"
   },
   "dependencies": {
     "lucide-react": "^0.553.0",
@@ -26,6 +27,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9.39.4",
     "eslint-config-next": "^16.2.9",
+    "sharp": "^0.34.5",
     "tailwindcss": "4.1.11",
     "typescript": "5.9.3"
   }
