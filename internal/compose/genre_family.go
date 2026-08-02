@@ -244,3 +244,31 @@ func resolveFamilyPass(genres []string, includeAnimated, isAnime bool, grouping 
 	}
 	return &familyOther
 }
+
+// leadWithFamily moves the genres that belong to the resolved family to the
+// front, keeping the rest in order. The glyph and accent are chosen from the
+// whole list regardless of position, so without this the count trim could drop
+// the very genre the mark is drawn from and leave the words disagreeing with
+// it. The resolved family is unchanged, since resolution reads a set and ignores
+// order. When the family has no genre word to promote — anime, resolved from a
+// flag rather than a name, or a family that needs a combination no single genre
+// carries — the order is left as it was.
+func leadWithFamily(genres []string, isAnime bool, grouping string) []string {
+	fam := resolveGenreFamilyGrouped(genres, isAnime, grouping)
+	if fam == nil {
+		return genres
+	}
+	lead := make([]string, 0, len(genres))
+	rest := make([]string, 0, len(genres))
+	for _, g := range genres {
+		if f := resolveGenreFamilyGrouped([]string{g}, isAnime, grouping); f != nil && f.id == fam.id {
+			lead = append(lead, g)
+		} else {
+			rest = append(rest, g)
+		}
+	}
+	if len(lead) == 0 || len(rest) == 0 {
+		return genres
+	}
+	return append(lead, rest...)
+}

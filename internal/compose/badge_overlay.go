@@ -1151,6 +1151,10 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		return
 	}
 
+	// Lead with the genre the mark is drawn from, so the count trim below can
+	// never drop it and leave the words disagreeing with the glyph beside them.
+	genres = leadWithFamily(genres, opts.isAnime, opts.grouping)
+
 	// The anime control names families in the glyph modes and genres here.
 	named := groupAnimeGenres(genres, opts.isAnime, opts.grouping)
 	if opts.shortNames {
