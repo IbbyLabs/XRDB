@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.56.0](https://github.com/IbbyLabs/XRDB/compare/v3.55.2...v3.56.0) (2026-08-02)
+
+
+### Added
+
+* **configurator:** widen badge offset range to 1200px (FR-152) ([6e9aac8](https://github.com/IbbyLabs/XRDB/commit/6e9aac88a5f702188a0912b7009e1b06fb8d26a5))
+
+
+### Fixed
+
+* **configurator:** render the fine-tuning group headings (FR-150) ([daa05a5](https://github.com/IbbyLabs/XRDB/commit/daa05a5285737a51b0e18441969a38a63e74fe0c))
+
 ## [3.55.2](https://github.com/IbbyLabs/XRDB/compare/v3.55.1...v3.55.2) (2026-08-02)
 
 
