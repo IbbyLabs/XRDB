@@ -2,6 +2,21 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.53.0](https://github.com/IbbyLabs/XRDB/compare/v3.52.1...v3.53.0) (2026-08-02)
+
+
+### Added
+
+* **genre:** split case off the label, add a count dial (FR-141) ([8538962](https://github.com/IbbyLabs/XRDB/commit/8538962cbb1cd228e01f65fb7e663f3118aac040))
+
+
+### Fixed
+
+* **genre:** keep the label case when the fit check trims (FR-141) ([b1a906f](https://github.com/IbbyLabs/XRDB/commit/b1a906f6bcd27f34a6046647b25b4a4856697e30))
+* **genre:** let the label control decide what the plate says (FR-142) ([f01a378](https://github.com/IbbyLabs/XRDB/commit/f01a3787c9c6e9e627ddf2f862d184f3106d17e2))
+* **genre:** restore the fit gate lost from b551c83 (FR-142) ([5df6b52](https://github.com/IbbyLabs/XRDB/commit/5df6b522fa38255c65681a195ccbb879fe5bd86a))
+* **genre:** run the fit check wherever the list is shown (FR-142) ([b551c83](https://github.com/IbbyLabs/XRDB/commit/b551c834b70989f2d7ddb85f4c266c1d1da8e3a2))
+
 ## [3.52.1](https://github.com/IbbyLabs/XRDB/compare/v3.52.0...v3.52.1) (2026-08-02)
 
 
