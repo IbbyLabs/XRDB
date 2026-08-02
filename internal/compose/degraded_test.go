@@ -12,7 +12,7 @@ import (
 
 func degradedFor(t *testing.T, p *Pipeline, req Request) bool {
 	t.Helper()
-	_, _, degraded := p.collectRatingsWithProviders(context.Background(), req, &provider.MediaMeta{})
+	_, _, degraded, _ := p.collectRatingsWithProviders(context.Background(), req, &provider.MediaMeta{})
 	return degraded
 }
 
@@ -89,5 +89,48 @@ func TestAHealthySourceIsNotDegraded(t *testing.T) {
 
 	if degradedFor(t, p, ratingReq("simkl")) {
 		t.Error("a source that answered normally was marked degraded")
+	}
+}
+
+func degradedSourcesFor(t *testing.T, p *Pipeline, req Request) []string {
+	t.Helper()
+	_, _, _, sources := p.collectRatingsWithProviders(context.Background(), req, &provider.MediaMeta{})
+	return sources
+}
+
+// The attribution the header carries: a rate-limited source is named, so a check
+// against the render can tell it was down rather than absent for the title.
+func TestARateLimitedSourceIsNamedInDegradedSources(t *testing.T) {
+	src := &countingLimiter{name: "simkl"}
+	src.refusing.Store(true)
+	p := &Pipeline{providers: testRegistry(src), fetcher: &stubImageFetcher{}}
+	p.SetHealthTracker(provider.NewHealthTracker(10, time.Hour))
+
+	got := degradedSourcesFor(t, p, ratingReq("simkl"))
+	if len(got) != 1 || got[0] != "simkl" {
+		t.Errorf("expected [simkl] named degraded, got %v", got)
+	}
+}
+
+func TestAnAbsentSourceIsNotNamedDegraded(t *testing.T) {
+	src := &provider.StubProvider{ProviderName: "simkl", Meta: &provider.MediaMeta{}}
+	p := &Pipeline{providers: testRegistry(src), fetcher: &stubImageFetcher{}}
+	p.SetHealthTracker(provider.NewHealthTracker(10, time.Hour))
+
+	if got := degradedSourcesFor(t, p, ratingReq("simkl")); len(got) != 0 {
+		t.Errorf("a source with no rating for the title was named degraded: %v", got)
+	}
+}
+
+func TestANoMatchErrorIsNotNamedDegraded(t *testing.T) {
+	src := &provider.StubProvider{
+		ProviderName: "filmweb",
+		Err:          errors.New("filmweb: no match for \"Some Title\""),
+	}
+	p := &Pipeline{providers: testRegistry(src), fetcher: &stubImageFetcher{}}
+	p.SetHealthTracker(provider.NewHealthTracker(10, time.Hour))
+
+	if got := degradedSourcesFor(t, p, ratingReq("filmweb")); len(got) != 0 {
+		t.Errorf("a no-match error was named degraded: %v", got)
 	}
 }

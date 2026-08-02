@@ -58,6 +58,11 @@ type Result struct {
 	// is real and worth caching, but only briefly: the full TTL would hold the
 	// missing badge long after the source recovers.
 	Degraded bool
+	// DegradedSources names the wanted rating sources skipped for this render
+	// because they were rate-limited, so a check against the render can tell a
+	// source that was down from one that genuinely has no rating for the title.
+	// Never drawn on the artwork.
+	DegradedSources []string
 }
 
 // Pipeline orchestrates metadata fetch + image composition.
@@ -725,10 +730,11 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	if resolveQuality == nil {
 		resolveQuality = p.startQualityDetect(ctx, badgeCfg, req.ContentType, ratingReq.MediaID)
 	}
-	allRatings, ratingProviders, degraded := p.collectRatingsWithProviders(ctx, ratingReq, meta)
+	allRatings, ratingProviders, degraded, degradedSources := p.collectRatingsWithProviders(ctx, ratingReq, meta)
 	timings.mark("ratings")
 	result.ContributingProviders = append([]string{string(req.Config.ArtworkSource)}, ratingProviders...)
 	result.Degraded = degraded
+	result.DegradedSources = degradedSources
 	if animeKnown {
 		meta.IsAnime = isAnime
 	} else {
@@ -1358,7 +1364,7 @@ func resizeFit(src image.Image, maxW, maxH int) image.Image {
 // A source that answers with no rating is not degraded: most titles genuinely
 // lack a score on most sources, and treating that as a failure would put every
 // render on the short TTL.
-func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request, artwork *provider.MediaMeta) ([]provider.Rating, []string, bool) {
+func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request, artwork *provider.MediaMeta) ([]provider.Rating, []string, bool, []string) {
 	if artwork == nil {
 		artwork = &provider.MediaMeta{}
 	}
@@ -1396,6 +1402,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 
 	answers := make([]*provider.MediaMeta, len(called))
 	var degraded atomic.Bool
+	degradedFlags := make([]bool, len(called))
 	for i, prov := range called {
 		wg.Add(1)
 		go func(i int, prov provider.Provider) {
@@ -1412,6 +1419,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 				// title rather than something a later render would find.
 				if errors.Is(err, provider.ErrRateLimited) {
 					degraded.Store(true)
+					degradedFlags[i] = true
 				}
 				return
 			}
@@ -1448,7 +1456,13 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 			contributors = append(contributors, called[i].Name())
 		}
 	}
-	return all, contributors, degraded.Load()
+	var degradedSources []string
+	for i, f := range degradedFlags {
+		if f {
+			degradedSources = append(degradedSources, called[i].Name())
+		}
+	}
+	return all, contributors, degraded.Load(), degradedSources
 }
 
 // toNRGBA converts any image.Image to *image.NRGBA for in-place drawing.

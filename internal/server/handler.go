@@ -177,6 +177,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		contentType := ""
 		fromCache := false
 		var expiresAt time.Time
+		var degradedSources []string
 		if renderCache != nil {
 			if e, ok := renderCache.Get(cacheKey); ok {
 				pngBytes = e.Data
@@ -238,6 +239,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 					pngBytes = renderResult.ImageBytes
 					placeholder = renderResult.Placeholder
 					contentType = renderResult.ContentType
+					degradedSources = renderResult.DegradedSources
 				}
 			}
 			if len(pngBytes) == 0 {
@@ -280,6 +282,13 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		}
 		w.Header().Set("Content-Type", contentType)
 		w.Header().Set("X-Cache-Key", cacheKey)
+		// Name the wanted rating sources this render skipped because they were
+		// degraded, so a check can tell a source that was down from one with no
+		// rating for the title. Only a fresh render carries this; a cache hit does
+		// not recompute it.
+		if len(degradedSources) > 0 {
+			w.Header().Set("X-Degraded-Sources", strings.Join(degradedSources, ","))
+		}
 		status := http.StatusOK
 		if !placeholder {
 			// The cache key is a digest of everything that determines these
