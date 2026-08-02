@@ -372,10 +372,14 @@ type RatingBadgeConfig struct {
 	// style. Named for what it hides so the zero value keeps the rail.
 	StackedLineHidden bool `json:"stackedLineHidden,omitempty"`
 	// RatingIconHidden draws the value on its own, with no provider mark.
-	RatingIconHidden   bool `json:"ratingIconHidden,omitempty"`
-	RatingsMax         *int `json:"ratingsMax,omitempty"`         // cap on badge count; nil = no cap
-	RatingBadgeOffsetX int  `json:"ratingBadgeOffsetX,omitempty"` // px nudge of the whole strip
-	RatingBadgeOffsetY int  `json:"ratingBadgeOffsetY,omitempty"`
+	RatingIconHidden bool `json:"ratingIconHidden,omitempty"`
+	// RatingAccentBarHidden drops the leading provider-colour stripe on the
+	// styles that carry one (tile, pill, square, glass). Named for what it hides
+	// so the zero value keeps the stripe.
+	RatingAccentBarHidden bool `json:"ratingAccentBarHidden,omitempty"`
+	RatingsMax            *int `json:"ratingsMax,omitempty"`         // cap on badge count; nil = no cap
+	RatingBadgeOffsetX    int  `json:"ratingBadgeOffsetX,omitempty"` // px nudge of the whole strip
+	RatingBadgeOffsetY    int  `json:"ratingBadgeOffsetY,omitempty"`
 	// Per-style nudges, added to the offsets above. Each badge style sits
 	// differently on the artwork, so a position tuned for one is wrong for the
 	// next; keeping a nudge per style means switching style keeps both.
@@ -781,6 +785,7 @@ type rawRating struct {
 	RatingBadgeScale        *int               `json:"ratingBadgeScale"`
 	StackedLineHidden       *bool              `json:"stackedLineHidden"`
 	RatingIconHidden        *bool              `json:"ratingIconHidden"`
+	RatingAccentBarHidden   *bool              `json:"ratingAccentBarHidden"`
 	RatingsMax              *int               `json:"ratingsMax"`
 	RatingBadgeOffsetX      *int               `json:"ratingBadgeOffsetX"`
 	RatingBadgeOffsetY      *int               `json:"ratingBadgeOffsetY"`
@@ -1443,6 +1448,9 @@ func parseRating(cfg *Config, r *raw) {
 	}
 	if r.StackedLineHidden != nil {
 		cfg.StackedLineHidden = *r.StackedLineHidden
+	}
+	if r.RatingAccentBarHidden != nil {
+		cfg.RatingAccentBarHidden = *r.RatingAccentBarHidden
 	}
 	if r.RatingIconHidden != nil {
 		cfg.RatingIconHidden = *r.RatingIconHidden

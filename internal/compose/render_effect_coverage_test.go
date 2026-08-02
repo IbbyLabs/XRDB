@@ -469,6 +469,7 @@ func keyMutations() map[string]keyOverride {
 		"noBackgroundBadgeOutlineColor": {pre: stylePlain, mut: setColor(func(c *imageconfig.Config, v string) { c.NoBackgroundBadgeOutlineColor = v })},
 		"noBackgroundBadgeOutlineWidth": {pre: stylePlain, mut: func(c *imageconfig.Config) { c.NoBackgroundBadgeOutlineWidth = 5 }},
 		"stackedLineHidden":             {pre: styleStacked},
+		"ratingAccentBarHidden":         {pre: func(c *imageconfig.Config) { c.BadgeStyle = imageconfig.BadgeTile }},
 		"ratingXOffsetSquare":           {pre: styleSquare},
 		"ratingYOffsetSquare":           {pre: styleSquare},
 		"sideRatingsPosition":           {pre: splitSide, mut: func(c *imageconfig.Config) { c.SideRatingsPosition = "top" }},

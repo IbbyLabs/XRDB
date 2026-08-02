@@ -441,6 +441,7 @@ export interface ConfigState {
   ratingBadgeScale: number;
   ratingIconHidden: boolean;
   stackedLineHidden: boolean;
+  ratingAccentBarHidden: boolean;
   ratingsMax: number; // 0 = no cap
   ratingBadgeOffsetX: number;
   ratingBadgeOffsetY: number;
@@ -614,6 +615,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingBadgeScale: 0,
   ratingIconHidden: false,
   stackedLineHidden: false,
+  ratingAccentBarHidden: false,
   ratingsMax: 0,
   ratingBadgeOffsetX: 0,
   ratingBadgeOffsetY: 0,

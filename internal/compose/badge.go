@@ -595,6 +595,10 @@ func chromeFor(cfg imageconfig.Config) badgeChrome {
 		c.stacked = true
 		c.hideAccentBar = true
 	}
+	// A stripe-carrying style can be asked to drop it without changing shape.
+	if cfg.RatingAccentBarHidden {
+		c.hideAccentBar = true
+	}
 	if cfg.BadgeTheme == imageconfig.ThemeLight {
 		if cfg.BadgeStyle == imageconfig.BadgeGlass {
 			c.bg = color.NRGBA{A: 0}

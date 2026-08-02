@@ -422,6 +422,10 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
             checked={config.stackedLineHidden}
             onChange={v => onUpdate('stackedLineHidden', v)}
             hint="Drops the coloured bar above the mark in the stacked style." />
+          <ToggleField id={`${uid}-rating-accent-bar`} label="Hide the accent stripe"
+            checked={config.ratingAccentBarHidden}
+            onChange={v => onUpdate('ratingAccentBarHidden', v)}
+            hint="Drops the coloured stripe down the left edge, keeping the badge shape." />
           <NumField id={`${uid}-ratings-max`} label="Max badges" value={config.ratingsMax}
             onChange={v => onUpdate('ratingsMax', v)} min={0} max={20} placeholder="no cap"
             hint="0 shows all selected sources that have data." />
