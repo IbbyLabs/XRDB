@@ -450,6 +450,7 @@ func keyMutations() map[string]keyOverride {
 		"ratingPresentation": {mut: func(c *imageconfig.Config) { c.RatingPresentation = "minimal" }},
 		"ratingValueMode":    {mut: func(c *imageconfig.Config) { c.RatingValueMode = "normalized100" }},
 		"iconShape":          {mut: func(c *imageconfig.Config) { c.IconShape = "circle" }},
+		"iconPlateFilled":    {pre: func(c *imageconfig.Config) { c.IconShape = "circle" }},
 		// The rating-badge border only draws when a border colour is set; opacity
 		// tunes that border's alpha, so it needs the colour present to be visible.
 		"ratingBadgeBorderColor":      str(setColor(func(c *imageconfig.Config, v string) { c.RatingBadgeBorderColor = v })),

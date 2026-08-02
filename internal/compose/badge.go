@@ -280,17 +280,17 @@ func accentFor(source string) color.NRGBA {
 }
 
 // brandColoursSurvive reports whether a mark keeps the colours baked into its
-// asset. A filled plate is painted the source's own accent, and eight of the
-// marks are that same colour, so on a filled plate they are drawn as a
-// silhouette in contrasting ink instead — which is how v2 showed them.
-func brandColoursSurvive(colored, plateFilled bool) bool { return colored && !plateFilled }
+// asset. A brand mark keeps its colours even on a filled plate; the plate is
+// then painted to contrast the mark rather than the mark tinted to contrast the
+// plate, which flattened multi-colour marks (IMDb, Letterboxd) to a solid disc.
+func brandColoursSurvive(colored, plateFilled bool) bool { return colored }
 
 // drawTintedIcon paints icon (a white-on-transparent glyph) into dst at rect,
 // recolored to tint, using the glyph's alpha as the mask. The glyph is trimmed
 // of transparent padding and scaled with its aspect ratio preserved, so marks
 // fill the box instead of being squeezed to its shape.
 func drawTintedIcon(dst *image.NRGBA, rect image.Rectangle, icon image.Image, tint color.NRGBA, shape string, accent color.NRGBA, outline color.NRGBA, outlineWidth int, plateFilled bool) {
-	drawIconPlate(dst, rect, shape, accent, plateFilled)
+	drawIconPlate(dst, rect, shape, accent, plateFilled, color.NRGBA{R: accent.R, G: accent.G, B: accent.B, A: 235})
 	// A mark tinted with the same accent that now fills the plate would vanish
 	// into it, so it takes the ink that reads against the plate instead.
 	if plateFilled && accent.A > 0 {
@@ -328,7 +328,7 @@ func insetForPlate(rect image.Rectangle, shape string) image.Rectangle {
 // several colors (Letterboxd's three dots, IMDb's black-on-yellow wordmark)
 // keep them instead of flattening to one silhouette.
 func drawBrandIcon(dst *image.NRGBA, rect image.Rectangle, icon image.Image, shape string, accent color.NRGBA, outline color.NRGBA, outlineWidth int, plateFilled bool) {
-	drawIconPlate(dst, rect, shape, accent, plateFilled)
+	drawIconPlate(dst, rect, shape, accent, plateFilled, contrastPlateForMark(icon))
 	rect = insetForPlate(rect, shape)
 	scaled, rect := scaleIconToFit(icon, rect)
 	if scaled == nil {
@@ -358,22 +358,32 @@ func iconShapeRadius(shape string) float64 {
 // show a shape, because the marks already sit inside one; the plate is what
 // makes circle, squircle and rounded tell apart. accent tints its edge so the
 // plate reads as part of the source rather than a grey box.
-func drawIconPlate(dst *image.NRGBA, rect image.Rectangle, shape string, accent color.NRGBA, filled bool) {
+func drawIconPlate(dst *image.NRGBA, rect image.Rectangle, shape string, accent color.NRGBA, filled bool, fill color.NRGBA) {
 	frac := iconShapeRadius(shape)
 	if frac == 0 {
 		return
 	}
 	r := int(frac*math.Min(float64(rect.Dx()), float64(rect.Dy())) + 0.5)
-	// Filled, the plate carries the source's own colour and the mark reads
-	// against it; otherwise it stays dark and only its edge is tinted.
+	// Filled, the plate takes the caller's fill and the mark reads against it;
+	// otherwise it stays dark and only its edge is tinted.
 	plate := color.NRGBA{R: 15, G: 23, B: 42, A: 235}
-	if filled && accent.A > 0 {
-		plate = color.NRGBA{R: accent.R, G: accent.G, B: accent.B, A: 235}
+	if filled && fill.A > 0 {
+		plate = fill
 	}
 	fillRoundedRect(dst, rect, r, plate)
 	if accent.A > 0 {
 		drawRectBorder(dst, rect, r, color.NRGBA{R: accent.R, G: accent.G, B: accent.B, A: 200})
 	}
+}
+
+// contrastPlateForMark returns a filled-plate colour a brand mark reads against:
+// a dark plate for a light mark, a light one for a dark mark. The source accent
+// cannot be used, since a mark carrying that same colour would vanish into it.
+func contrastPlateForMark(icon image.Image) color.NRGBA {
+	if meanLuminance(toNRGBA(icon)) > 0.5 {
+		return color.NRGBA{R: 20, G: 22, B: 28, A: 235}
+	}
+	return color.NRGBA{R: 236, G: 238, B: 243, A: 235}
 }
 
 // clipIconToShape clears the alpha outside the requested shape, trimming a mark

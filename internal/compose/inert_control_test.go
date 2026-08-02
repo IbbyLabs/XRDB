@@ -410,7 +410,7 @@ func TestIconPlateTakesTheSourceColour(t *testing.T) {
 
 	plateColours := func(filled bool) (source, navy int) {
 		dst := image.NewNRGBA(image.Rect(0, 0, 80, 80))
-		drawIconPlate(dst, box, "circle", accent, filled)
+		drawIconPlate(dst, box, "circle", accent, filled, color.NRGBA{R: accent.R, G: accent.G, B: accent.B, A: 235})
 		for y := box.Min.Y; y < box.Max.Y; y++ {
 			for x := box.Min.X; x < box.Max.X; x++ {
 				c := dst.NRGBAAt(x, y)
@@ -443,22 +443,11 @@ func TestIconPlateTakesTheSourceColour(t *testing.T) {
 // Eight rating marks carry their own brand colours, and a filled plate is
 // painted that same accent, so drawing them as-is puts a yellow IMDb mark on a
 // yellow plate. On a filled plate they become a silhouette instead (FR-135).
-func TestFilledPlateSilhouettesBrandMarks(t *testing.T) {
-	for _, tc := range []struct {
-		colored, filled, want bool
-	}{
-		{colored: true, filled: false, want: true},   // untouched: dark plate, brand mark
-		{colored: true, filled: true, want: false},   // silhouette, or it vanishes
-		{colored: false, filled: false, want: false}, // already a silhouette
-		{colored: false, filled: true, want: false},
-	} {
-		if got := brandColoursSurvive(tc.colored, tc.filled); got != tc.want {
-			t.Errorf("brandColoursSurvive(colored=%v, filled=%v) = %v, want %v", tc.colored, tc.filled, got, tc.want)
-		}
-	}
-
-	// The silhouette has to read against the plate it sits on. IMDb's accent is
-	// the worst case: the mark and the plate are the same yellow.
+func TestATintedSilhouetteReadsAgainstItsPlate(t *testing.T) {
+	// A greyscale mark is tinted to a silhouette on a filled plate and must read
+	// against it. IMDb's accent is the worst case: the mark and the plate are
+	// the same yellow. (A brand-coloured mark keeps its colours instead — see
+	// TestABrandMarkKeepsItsColoursOnAFilledPlate.)
 	imdb := color.NRGBA{R: 245, G: 197, B: 24, A: 255}
 	ink := contrastingInk(imdb)
 	lum := func(c color.NRGBA) int { return (int(c.R)*299 + int(c.G)*587 + int(c.B)*114) / 1000 }
