@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.57.0](https://github.com/IbbyLabs/XRDB/compare/v3.56.0...v3.57.0) (2026-08-02)
+
+
+### Added
+
+* **configurator:** tint the score-pill body with the accent (FR-146) ([2c36fe2](https://github.com/IbbyLabs/XRDB/commit/2c36fe2c0f32abf50231d876b6d629912aea8c10))
+
 ## [3.56.0](https://github.com/IbbyLabs/XRDB/compare/v3.55.2...v3.56.0) (2026-08-02)
 
 
