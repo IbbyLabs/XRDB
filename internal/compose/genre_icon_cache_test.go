@@ -117,3 +117,37 @@ func BenchmarkGenreIconOutlineUncached(b *testing.B) {
 		}
 	}
 }
+
+// Entry cost grows with size squared and size follows the badge scale, which
+// spans 70 to 300 percent across several surfaces. Left uncapped a public
+// instance serving many profiles walks that space, and this service runs under a
+// 512MB default limit.
+func TestGenreIconCacheStaysInsideItsBudget(t *testing.T) {
+	genreIconCacheMu.Lock()
+	genreIconCache = map[string][]shapeCoverage{}
+	genreIconCacheBytes = 0
+	genreIconCacheMu.Unlock()
+
+	// Walk a wide spread of sizes across several families, as varied profiles do.
+	for _, family := range []string{"scifi", "horror", "comedy", "action", "fantasy"} {
+		for size := 40; size <= 200; size += 2 {
+			genreIconCoverageFor(family, size)
+
+			genreIconCacheMu.RLock()
+			bytesHeld := genreIconCacheBytes
+			genreIconCacheMu.RUnlock()
+			if bytesHeld > genreIconCacheBudgetBytes {
+				t.Fatalf("cache holds %d bytes, over the %d budget", bytesHeld, genreIconCacheBudgetBytes)
+			}
+		}
+	}
+
+	// Still serving: a drop must not leave a family unable to draw.
+	dst := image.NewNRGBA(image.Rect(0, 0, 80, 80))
+	want := image.NewNRGBA(image.Rect(0, 0, 80, 80))
+	drawGenreIcon(dst, "scifi", color.NRGBA{R: 250, A: 255}, color.NRGBA{A: 255}, 4, 4, 60)
+	referenceGenreIcon(want, "scifi", color.NRGBA{R: 250, A: 255}, color.NRGBA{A: 255}, 4, 4, 60)
+	if !bytes.Equal(dst.Pix, want.Pix) {
+		t.Error("a glyph drawn after the cache was dropped differs from the rasteriser")
+	}
+}

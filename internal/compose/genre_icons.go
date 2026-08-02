@@ -306,16 +306,52 @@ type shapeCoverage struct {
 }
 
 // genreIconCoverage caches the expensive half of drawing a glyph. Coverage is
-// fixed by family and size, and the outline redraws the same glyph up to 49
-// times for one badge, so rasterising per draw repeated identical work: about
-// 11 million subsample tests for a single outlined badge at size 60.
-var genreIconCoverage sync.Map // "family|size" -> []shapeCoverage
+// fixed by family and size, and the outline redraws the same glyph up to 25
+// times for one badge, so rasterising per draw repeated identical work.
+//
+// An entry costs shapes x size^2 float32, and size follows the badge scale,
+// which users set anywhere from 70 to 300 percent across several surfaces. A
+// public instance serving many profiles walks that space, so the cache is held
+// to a byte budget rather than left to grow: this service runs under a 512MB
+// default limit and has been OOMed by catalogue bursts before.
+const genreIconCacheBudgetBytes = 32 << 20
+
+var (
+	genreIconCacheMu    sync.RWMutex
+	genreIconCache      = map[string][]shapeCoverage{}
+	genreIconCacheBytes int
+)
 
 func genreIconCoverageFor(familyID string, size int) []shapeCoverage {
 	key := familyID + "|" + strconv.Itoa(size)
-	if v, ok := genreIconCoverage.Load(key); ok {
-		return v.([]shapeCoverage)
+	genreIconCacheMu.RLock()
+	cached, ok := genreIconCache[key]
+	genreIconCacheMu.RUnlock()
+	if ok {
+		return cached
 	}
+
+	built := buildGenreIconCoverage(familyID, size)
+	cost := 0
+	for _, sh := range built {
+		cost += len(sh.cov) * 4
+	}
+
+	genreIconCacheMu.Lock()
+	defer genreIconCacheMu.Unlock()
+	// Dropping everything is cruder than evicting least-recently-used, and it is
+	// enough: a rebuild is one rasterisation per glyph actually in use, and at
+	// this budget a real instance never reaches it.
+	if genreIconCacheBytes+cost > genreIconCacheBudgetBytes {
+		genreIconCache = map[string][]shapeCoverage{}
+		genreIconCacheBytes = 0
+	}
+	genreIconCache[key] = built
+	genreIconCacheBytes += cost
+	return built
+}
+
+func buildGenreIconCoverage(familyID string, size int) []shapeCoverage {
 	shapes := genreIconShapes(familyID)
 	scale := float64(size) / genreIconViewBox
 	step := 1.0 / float64(genreIconSubsamples)
@@ -345,7 +381,6 @@ func genreIconCoverageFor(familyID string, size int) []shapeCoverage {
 		}
 		out = append(out, shapeCoverage{dark: sh.dark, alpha: alpha, cov: cov})
 	}
-	genreIconCoverage.Store(key, out)
 	return out
 }
 
