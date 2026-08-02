@@ -379,9 +379,6 @@ func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64, occ *o
 	}
 
 	paint := func(t tile, r image.Rectangle) {
-		if opts.offsetX != 0 || opts.offsetY != 0 {
-			r = r.Add(image.Pt(opts.offsetX, opts.offsetY))
-		}
 		drawSoftTile(base, r, radius, chrome)
 		if t.logo != nil {
 			lb := t.logo.Bounds()
@@ -419,7 +416,7 @@ func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64, occ *o
 			for _, t := range row {
 				w += gap + t.w
 			}
-			r := occ.place(pos, w, tileH, edgeX, edgeY, gap)
+			r := occ.placeNudged(pos, w, tileH, edgeX, edgeY, gap, opts.offsetX, opts.offsetY)
 			x := r.Min.X
 			for _, t := range row {
 				paint(t, image.Rect(x, r.Min.Y, x+t.w, r.Min.Y+tileH))
@@ -430,7 +427,7 @@ func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64, occ *o
 	}
 
 	for _, t := range tiles {
-		paint(t, occ.place(pos, t.w, tileH, edgeX, edgeY, gap))
+		paint(t, occ.placeNudged(pos, t.w, tileH, edgeX, edgeY, gap, opts.offsetX, opts.offsetY))
 	}
 	return len(tiles)
 }
@@ -500,8 +497,7 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 		gap := s(2)
 		bhM := padY*2 + eAsc + eDesc + gap + ascent + descent
 		bwM := maxInt(padX*2+textWidth(face, rating), padX*2+textWidth(ef, "AGE"))
-		r := occ.place(resolvedPos, bwM, bhM, edgeX, edgeY, s(7))
-		r = r.Add(image.Pt(opts.offsetX, opts.offsetY))
+		r := occ.placeNudged(resolvedPos, bwM, bhM, edgeX, edgeY, s(7), opts.offsetX, opts.offsetY)
 		drawSoftTile(base, r, s(6), tileChrome{
 			fill:   color.NRGBA{R: 17, G: 24, B: 39, A: 214},
 			border: color.NRGBA{R: 255, G: 247, B: 237, A: 240},
@@ -523,8 +519,7 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 		return
 	}
 
-	r := occ.place(resolvedPos, bw, bh, edgeX, edgeY, s(7))
-	r = r.Add(image.Pt(opts.offsetX, opts.offsetY))
+	r := occ.placeNudged(resolvedPos, bw, bh, edgeX, edgeY, s(7), opts.offsetX, opts.offsetY)
 	tx, ty := r.Min.X+padX, r.Min.Y+padY+ascent
 	if opts.style == "plain" {
 		// The plain style answers the same outline controls the other plain
@@ -896,15 +891,15 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 	// the ratings band and clears corner badges instead of drawing over them.
 	// Unplaced it keeps the wide centred strip, which is not one of the six
 	// anchors; a chosen position hands it to the shared corner placement.
-	// placeCentered and place both reserve what they hand back, so exactly one
-	// of them runs.
+	// The centred and corner forms both reserve what they hand back, so exactly
+	// one of them runs.
 	var strip image.Rectangle
 	if opts.pos == "" {
-		strip = occ.placeCentered(totalW, tileH, edgeX, edgeY, s(8))
+		strip = occ.placeCenteredNudged(totalW, tileH, edgeX, edgeY, s(8), opts.offsetX, opts.offsetY)
 	} else {
-		strip = occ.place(opts.pos, totalW, tileH, edgeX, edgeY, s(8))
+		strip = occ.placeNudged(opts.pos, totalW, tileH, edgeX, edgeY, s(8), opts.offsetX, opts.offsetY)
 	}
-	x, y := strip.Min.X+opts.offsetX, strip.Min.Y+opts.offsetY
+	x, y := strip.Min.X, strip.Min.Y
 
 	shadow := color.NRGBA{R: 0, G: 0, B: 0, A: 80}
 	shOff := maxInt(1, tileH/16)
@@ -1291,27 +1286,11 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		}
 	}
 
-	r := occ.place(resolvedPos, bw, bh, edgeX, edgeY, s(7))
-	// Manual offset nudge, applied after corner placement, then held inside the
-	// frame. Trimming the label answers a nudge toward the far edge; a nudge past
-	// the edge the badge is anchored to cannot be trimmed back on, so the part
-	// that would leave the frame is dropped instead of drawn off it.
-	if opts.offsetX != 0 || opts.offsetY != 0 {
-		r = r.Add(image.Pt(opts.offsetX, opts.offsetY))
-		b := base.Bounds()
-		if d := r.Max.X - b.Max.X; d > 0 {
-			r = r.Sub(image.Pt(d, 0))
-		}
-		if d := b.Min.X - r.Min.X; d > 0 {
-			r = r.Add(image.Pt(d, 0))
-		}
-		if d := r.Max.Y - b.Max.Y; d > 0 {
-			r = r.Sub(image.Pt(0, d))
-		}
-		if d := b.Min.Y - r.Min.Y; d > 0 {
-			r = r.Add(image.Pt(0, d))
-		}
-	}
+	// The offset is honoured before the rectangle is reserved and the result is
+	// held inside the frame. The label trim above already answers a nudge toward
+	// the far edge; this keeps a nudge past the anchored edge from drawing off
+	// the poster.
+	r := occ.placeNudged(resolvedPos, bw, bh, edgeX, edgeY, s(7), opts.offsetX, opts.offsetY)
 	textColor := color.NRGBA{R: 225, G: 225, B: 228, A: 255}
 	tx, ty := r.Min.X+padX+stripeRoom, r.Min.Y+capRoom+padY+ascent
 
@@ -2577,9 +2556,9 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 	// Place the ring's full bounding box, dodging any overlay already reserved in
 	// the requested corner (age/genre badges, provider chips, ratings strip).
 	d := fullR * 2
-	r := occ.place(pos, d, d, edgeX, edgeY, s(8))
-	cx := r.Min.X + fullR + cfg.RingOffsetX
-	cy := r.Min.Y + fullR + cfg.RingOffsetY
+	r := occ.placeNudged(pos, d, d, edgeX, edgeY, s(8), cfg.RingOffsetX, cfg.RingOffsetY)
+	cx := r.Min.X + fullR
+	cy := r.Min.Y + fullR
 	label := strconv.Itoa(int(math.Round(value * 10)))
 	drawProgressRing(base, cx, cy, outerR, progress/10.0, fillColor, valueFace, label, cfg.RingCenterOpacity)
 }

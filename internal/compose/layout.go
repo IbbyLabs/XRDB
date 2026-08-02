@@ -105,6 +105,15 @@ func (o *occupancy) freeWidthAt(corner string, h, edgeX, edgeY, gap int) int {
 // kept between the placed box and any box it would otherwise overlap. A nil
 // tracker simply returns the anchored rectangle without collision handling.
 func (o *occupancy) place(corner string, w, h, edgeX, edgeY, gap int) image.Rectangle {
+	r := o.anchor(corner, w, h, edgeX, edgeY, gap)
+	o.reserve(r)
+	return r
+}
+
+// anchor computes the resolved rectangle for a corner-placed w×h box without
+// reserving it. A caller that then nudges the box reserves where it actually
+// lands, via placeNudged, rather than where it anchored.
+func (o *occupancy) anchor(corner string, w, h, edgeX, edgeY, gap int) image.Rectangle {
 	b := o.boundsOrZero()
 	centreX := b.Min.X + (b.Dx()-w)/2
 	var x, y int
@@ -127,16 +136,53 @@ func (o *occupancy) place(corner string, w, h, edgeX, edgeY, gap int) image.Rect
 		return r
 	}
 	towardTop := corner == "tl" || corner == "tr" || corner == "tc"
-	r = o.resolve(r, towardTop, gap)
+	return o.resolve(r, towardTop, gap)
+}
+
+// placeNudged places a box, applies a manual offset, keeps the result inside the
+// frame, and reserves where the box actually lands. place reserved the anchored
+// rectangle and the caller drew at the offset, so an offset badge was recorded
+// where it was not drawn: a second badge sharing the corner overlapped it, and
+// nothing downstream avoided its real position.
+func (o *occupancy) placeNudged(corner string, w, h, edgeX, edgeY, gap, offX, offY int) image.Rectangle {
+	r := o.anchor(corner, w, h, edgeX, edgeY, gap)
+	// With no offset this is place: same rectangle, same reservation. The clamp
+	// only applies to a nudge, since that is the only way a corner-anchored box
+	// leaves the frame, and clamping unconditionally would pull an unrelated
+	// badge in on a small surface.
+	if offX != 0 || offY != 0 {
+		r = r.Add(image.Pt(offX, offY))
+		if o != nil {
+			r = keepInside(r, o.boundsOrZero())
+		}
+	}
 	o.reserve(r)
 	return r
 }
 
-// placeCentered positions a w×h box horizontally centred, anchored edgeY above
+// keepInside shifts r back within b on any edge it crosses. A box larger than b
+// keeps its top-left corner visible.
+func keepInside(r, b image.Rectangle) image.Rectangle {
+	if d := r.Max.X - b.Max.X; d > 0 {
+		r = r.Sub(image.Pt(d, 0))
+	}
+	if d := b.Min.X - r.Min.X; d > 0 {
+		r = r.Add(image.Pt(d, 0))
+	}
+	if d := r.Max.Y - b.Max.Y; d > 0 {
+		r = r.Sub(image.Pt(0, d))
+	}
+	if d := b.Min.Y - r.Min.Y; d > 0 {
+		r = r.Add(image.Pt(0, d))
+	}
+	return r
+}
+
+// anchorCentered positions a w×h box horizontally centred, anchored edgeY above
 // the bottom edge, then shifts it upward until it clears previously reserved
-// rectangles. The chosen rectangle is reserved and returned. Used for wide
-// bottom strips (provider chips) that are not corner-anchored.
-func (o *occupancy) placeCentered(w, h, edgeX, edgeY, gap int) image.Rectangle {
+// rectangles, without reserving. Used for wide bottom strips (provider chips)
+// that are not corner-anchored; placeCenteredNudged reserves after nudging.
+func (o *occupancy) anchorCentered(w, h, edgeX, edgeY, gap int) image.Rectangle {
 	b := o.boundsOrZero()
 	x := b.Min.X + (b.Dx()-w)/2
 	if x < b.Min.X+edgeX {
@@ -146,7 +192,20 @@ func (o *occupancy) placeCentered(w, h, edgeX, edgeY, gap int) image.Rectangle {
 	if o == nil {
 		return r
 	}
-	r = o.resolve(r, false, gap)
+	return o.resolve(r, false, gap)
+}
+
+// placeCenteredNudged is placeCentered with a manual offset applied before the
+// rectangle is reserved and kept inside the frame, so the strip is recorded
+// where it is drawn.
+func (o *occupancy) placeCenteredNudged(w, h, edgeX, edgeY, gap, offX, offY int) image.Rectangle {
+	r := o.anchorCentered(w, h, edgeX, edgeY, gap)
+	if offX != 0 || offY != 0 {
+		r = r.Add(image.Pt(offX, offY))
+		if o != nil {
+			r = keepInside(r, o.boundsOrZero())
+		}
+	}
 	o.reserve(r)
 	return r
 }
