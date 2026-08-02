@@ -827,24 +827,15 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 			ratingsH = drawBadgesInPlace(composed, allRatings, req.Config)
 		}
 	}
-	{
-		if ratingsH > 0 {
-			// Reserve the full-width band the ratings strip occupies so corner
-			// overlays (notably the ring) float clear of it.
-			b := composed.Bounds()
-			band := int(20*scale + 0.5)
-			switch req.Config.RatingsLayout {
-			case imageconfig.LayoutTop:
-				occ.reserve(image.Rect(b.Min.X, b.Min.Y, b.Max.X, b.Min.Y+ratingsH+band))
-			case imageconfig.LayoutTopBottom:
-				// Occupies a row against each edge, so both bands are spoken for.
-				occ.reserve(image.Rect(b.Min.X, b.Min.Y, b.Max.X, b.Min.Y+ratingsH+band))
-				occ.reserve(image.Rect(b.Min.X, b.Max.Y-ratingsH-band, b.Max.X, b.Max.Y))
-			case imageconfig.LayoutSplitSide, imageconfig.LayoutLeft, imageconfig.LayoutRight:
-				// Side-anchored: corner overlays rarely conflict — left unreserved.
-			default:
-				occ.reserve(image.Rect(b.Min.X, b.Max.Y-ratingsH-band, b.Max.X, b.Max.Y))
-			}
+	if ratingsH > 0 {
+		// Reserve the full-width band the ratings strip occupies so corner
+		// overlays (notably the ring) float clear of it. The strip is drawn with
+		// its own vertical offset, so the band carries the same offset or a
+		// corner overlay avoids where the strip is not.
+		_, stripOffsetY := ratingStripOffsets(req.Config)
+		band := int(20*scale + 0.5)
+		for _, r := range ratingBands(composed.Bounds(), ratingsH, band, stripOffsetY, req.Config.RatingsLayout) {
+			occ.reserve(r)
 		}
 	}
 	if showQualityBadges(req.Config) {

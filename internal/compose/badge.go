@@ -1625,3 +1625,27 @@ func badgeHeightAt(scale float64, cfg imageconfig.Config) int {
 	}
 	return d.padY*2 + maxInt(valH, d.iconSize)
 }
+
+// ratingBands returns the full-width regions the ratings strip occupies, shifted
+// by the strip's own vertical offset. The strip is drawn at a computed y that
+// carries this offset; reserving the unshifted band let a corner overlay avoid
+// where the strip was not, and cross where it was. band is the clearance kept
+// between the strip and a corner overlay. Side layouts are left unreserved, as
+// corner overlays rarely conflict with them.
+func ratingBands(b image.Rectangle, ratingsH, band, offsetY int, layout imageconfig.RatingsLayout) []image.Rectangle {
+	if ratingsH <= 0 {
+		return nil
+	}
+	top := image.Rect(b.Min.X, b.Min.Y+offsetY, b.Max.X, b.Min.Y+ratingsH+band+offsetY)
+	bottom := image.Rect(b.Min.X, b.Max.Y-ratingsH-band+offsetY, b.Max.X, b.Max.Y+offsetY)
+	switch layout {
+	case imageconfig.LayoutTop:
+		return []image.Rectangle{top}
+	case imageconfig.LayoutTopBottom:
+		return []image.Rectangle{top, bottom}
+	case imageconfig.LayoutSplitSide, imageconfig.LayoutLeft, imageconfig.LayoutRight:
+		return nil
+	default:
+		return []image.Rectangle{bottom}
+	}
+}
