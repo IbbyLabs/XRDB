@@ -54,6 +54,9 @@ func TestOmittingAConfiguratorDefaultChangesNothing(t *testing.T) {
 	// rather than "the defaults agree". maximalConfig is the fixture the effect
 	// coverage test already keeps current; this reuses it instead of starting a
 	// second one that would have to be kept in step by hand.
+	// The bound: this proves agreement under the maximal fixture, not across
+	// every combination. A disagreement that only surfaces when something
+	// maximal turns on is off would still pass.
 	rich := flatRequest(maximalConfig())
 	rendererDefaults := flatRequest(imageconfig.Default())
 
@@ -107,14 +110,10 @@ func TestOmittingAConfiguratorDefaultChangesNothing(t *testing.T) {
 		}
 		{
 			// Agreement and invisibility both land here, and a guard that cannot
-			// tell them apart reports coverage it does not have. The two values
-			// differ, so an identical render means this fixture cannot see the
-			// key and nothing here establishes the two defaults interchangeable.
-			// Identical renders from differing configs mean one of two things,
-			// and a guard that cannot separate them reports coverage it does not
-			// have. Move the key to a third value: if the picture changes, this
-			// render can see the key, so the two defaults drawing the same thing
-			// is evidence they agree. If it does not, nothing was measured.
+			// separate them reports coverage it does not have. Move the key to a
+			// third value: if the picture changes this render can see the key, so
+			// the two defaults drawing alike is evidence. If it does not, nothing
+			// was measured.
 			ov := muts[key]
 			still, probe := richCfg, richCfg
 			if ov.pre != nil {
