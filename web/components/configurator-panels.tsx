@@ -79,6 +79,31 @@ interface RatingsPanelProps {
   fine: boolean;
 }
 
+function SourceRow({ r, active, failed, onToggle, onLogoError }: {
+  r: { id: string; label: string; icon?: string; accent: string };
+  active: boolean;
+  failed: boolean;
+  onToggle: () => void;
+  onLogoError: () => void;
+}) {
+  return (
+    <button
+      className={`src-row${active ? ' src-row--active' : ''}`}
+      onClick={onToggle}
+      aria-pressed={active}
+    >
+      {r.icon && !failed ? (
+        <img className="src-logo" src={r.icon} alt="" aria-hidden width={18} height={18}
+          loading="lazy" onError={onLogoError} />
+      ) : (
+        <span className="src-dot" style={{ background: r.accent }} aria-hidden />
+      )}
+      <span className="src-label">{r.label}</span>
+      <span className="src-check" aria-hidden>{active ? <Check size={12} /> : null}</span>
+    </button>
+  );
+}
+
 export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRating, fine }: RatingsPanelProps) {
   // Track source logos that fail to load so we fall back to the accent dot.
   const [logoFailed, setLogoFailed] = useState<Record<string, boolean>>({});
@@ -273,36 +298,16 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
             <div key={group.key} style={{ marginBottom: 'var(--sp-2)' }}>
               <span className="hint" style={{ marginTop: 0, marginBottom: 'var(--sp-1)' }}>{group.label}</span>
               <div className="src-list" role="group" aria-label={`${group.label} rating sources`}>
-                {group.items.map(r => {
-                  const active = config.ratings.includes(r.id);
-                  return (
-                    <button
-                      key={r.id}
-                      className={`src-row${active ? ' src-row--active' : ''}`}
-                      onClick={() => onToggleRating(r.id)}
-                      aria-pressed={active}
-                    >
-                      {r.icon && !logoFailed[r.id] ? (
-                        <img
-                          className="src-logo"
-                          src={r.icon}
-                          alt=""
-                          aria-hidden
-                          width={18}
-                          height={18}
-                          loading="lazy"
-                          onError={() => setLogoFailed(prev => ({ ...prev, [r.id]: true }))}
-                        />
-                      ) : (
-                        <span className="src-dot" style={{ background: r.accent }} aria-hidden />
-                      )}
-                      <span className="src-label">{r.label}</span>
-                      <span className="src-check" aria-hidden>
-                        {active ? <Check size={12} /> : null}
-                      </span>
-                    </button>
-                  );
-                })}
+                {group.items.map(r => (
+                  <SourceRow
+                    key={r.id}
+                    r={r}
+                    active={config.ratings.includes(r.id)}
+                    failed={!!logoFailed[r.id]}
+                    onToggle={() => onToggleRating(r.id)}
+                    onLogoError={() => setLogoFailed(prev => ({ ...prev, [r.id]: true }))}
+                  />
+                ))}
               </div>
             </div>
           ))}
@@ -364,6 +369,45 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
             </div>
           )}
         </fieldset>
+
+        {fine && (
+          <fieldset style={{ border: 'none', padding: 0, margin: 0 }}>
+            <legend className="label" style={{ marginBottom: 'var(--sp-2)' }}>Per-type sources</legend>
+            <span className="hint" style={{ marginTop: 0, marginBottom: 'var(--sp-2)' }}>
+              Pick different sources for a media type. Leave a type empty to use
+              the sources above.
+            </span>
+            {([
+              { key: 'ratingsMovie' as const, label: 'Movies' },
+              { key: 'ratingsSeries' as const, label: 'Series' },
+              { key: 'ratingsAnime' as const, label: 'Anime' },
+            ]).map(t => (
+              <div key={t.key} style={{ marginBottom: 'var(--sp-2)' }}>
+                <span className="hint" style={{ marginTop: 0, marginBottom: 'var(--sp-1)' }}>
+                  {t.label}
+                  {config[t.key].length > 0 && (
+                    <span className="count-pill">{config[t.key].length}</span>
+                  )}
+                </span>
+                <div className="src-list" role="group" aria-label={`${t.label} rating source override`}>
+                  {RATING_OPTIONS.map(r => (
+                    <SourceRow
+                      key={r.id}
+                      r={r}
+                      active={config[t.key].includes(r.id)}
+                      failed={!!logoFailed[r.id]}
+                      onToggle={() => {
+                        const cur = config[t.key];
+                        onUpdate(t.key, cur.includes(r.id) ? cur.filter(x => x !== r.id) : [...cur, r.id]);
+                      }}
+                      onLogoError={() => setLogoFailed(prev => ({ ...prev, [r.id]: true }))}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </fieldset>
+        )}
       </div>
     </div>
   );
