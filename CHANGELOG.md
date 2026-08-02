@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.55.1](https://github.com/IbbyLabs/XRDB/compare/v3.55.0...v3.55.1) (2026-08-02)
+
+
+### Fixed
+
+* **ratings:** draw branded rating logos from one shared source (BUG-192) ([5390644](https://github.com/IbbyLabs/XRDB/commit/53906447db6f6bbf6faee18925fbf6c56b99e146))
+
 ## [3.55.0](https://github.com/IbbyLabs/XRDB/compare/v3.54.2...v3.55.0) (2026-08-02)
 
 
