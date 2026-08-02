@@ -87,6 +87,16 @@ func TestALongGenreListLeavesTheRingOnItsCorner(t *testing.T) {
 var inelasticOverlays = []string{
 	// Fixed circle: it can neither narrow nor change corner.
 	"drawAverageRatingRing(composed",
+	// Fixed-size, corner-anchored plates. Each claims its place through the
+	// occupancy map and none of them can drop content to fit.
+	"drawAgeRatingBadge(composed",
+	"drawAwardsBadge(composed",
+	"drawEditorialRating(composed",
+	"drawMetaLine(composed",
+	"drawQualityBadges(composed",
+	"drawReleaseStatusBadge(composed",
+	"drawStingerBadge(composed",
+	"drawTopRatedBadge(composed",
 }
 
 var elasticOverlays = []string{
@@ -94,25 +104,29 @@ var elasticOverlays = []string{
 	"drawProviderBadges(composed", // drops a chip
 }
 
-// unrankedOverlays neither shrink nor contend for a corner with the two sets
-// above: they are centred, full-width, drawn into a reserved box, or the
-// artwork itself.
+// knownOutOfOrder names an inelastic overlay still drawn after an elastic one.
+// The trending tag claims a corner and cannot shrink, so a long genre list or a
+// wide provider row can push it down rather than the strip trimming to fit
+// beside it — BUG-189 with a different victim. Moving it changes every poster
+// carrying trending plus a strip, so it wants its own sweep rather than riding
+// along with the ring.
+//
+// It is asserted to still be out of order, so fixing it fails here and asks for
+// the entry to go. An overlay added out of order is not covered by this and
+// fails as a violation.
+var knownOutOfOrder = map[string]string{
+	"drawTrendingBadgeSurfaced(composed": "pre-existing; needs its own blast-radius sweep",
+}
+
+// unrankedOverlays never touch the occupancy map: they are centred, drawn into
+// a box another overlay already reserved, or the artwork itself.
 var unrankedOverlays = []string{
-	"drawAgeRatingBadge(composed",
 	"drawAggregateBar(composed",
 	"drawAverageRating(composed",
-	"drawAwardsBadge(composed",
 	"drawBackdropLogoOverlay(composed",
 	"drawBadgesInPlace(composed",
 	"drawDualRating(composed",
-	"drawEditorialRating(composed",
-	"drawMetaLine(composed",
 	"drawMinimalRating(composed",
-	"drawQualityBadges(composed",
-	"drawReleaseStatusBadge(composed",
-	"drawStingerBadge(composed",
-	"drawTopRatedBadge(composed",
-	"drawTrendingBadgeSurfaced(composed",
 }
 
 func TestThePipelineReservesInelasticOverlaysFirst(t *testing.T) {
@@ -128,6 +142,9 @@ func TestThePipelineReservesInelasticOverlaysFirst(t *testing.T) {
 			known[name] = true
 		}
 	}
+	for name := range knownOutOfOrder {
+		known[name] = true
+	}
 	for _, found := range regexp.MustCompile(`draw[A-Za-z]+\(composed`).FindAllString(body, -1) {
 		if !known[found] {
 			t.Errorf("%s is drawn here and is in none of the overlay lists. Decide whether it can "+
@@ -135,20 +152,58 @@ func TestThePipelineReservesInelasticOverlaysFirst(t *testing.T) {
 		}
 	}
 
-	at := func(name string) int {
-		i := strings.Index(body, name)
-		if i < 0 {
-			t.Errorf("%s is listed but no longer drawn here", name)
-		}
-		return i
-	}
-	for _, fixed := range inelasticOverlays {
-		f := at(fixed)
-		for _, gives := range elasticOverlays {
-			if g := at(gives); f >= 0 && g >= 0 && g < f {
-				t.Errorf("%s reserves before %s, so the one that cannot shrink is what gets "+
-					"displaced", gives, fixed)
+	// Every call site, not the first: an overlay drawn in two places is only
+	// half-checked otherwise, and drawAggregateBar is drawn twice.
+	sites := func(name string) []int {
+		var out []int
+		for i := strings.Index(body, name); i >= 0; {
+			out = append(out, i)
+			next := strings.Index(body[i+1:], name)
+			if next < 0 {
+				break
 			}
+			i += 1 + next
+		}
+		return out
+	}
+
+	firstElastic := -1
+	lastElastic := -1
+	for _, gives := range elasticOverlays {
+		at := sites(gives)
+		if len(at) == 0 {
+			t.Errorf("%s is listed but no longer drawn here", gives)
+			continue
+		}
+		if firstElastic < 0 || at[0] < firstElastic {
+			firstElastic = at[0]
+		}
+		if at[len(at)-1] > lastElastic {
+			lastElastic = at[len(at)-1]
+		}
+	}
+	for name, why := range knownOutOfOrder {
+		at := sites(name)
+		if len(at) == 0 {
+			t.Errorf("%s is listed as out of order but no longer drawn here", name)
+			continue
+		}
+		if at[len(at)-1] > lastElastic {
+			continue // still out of order, as recorded
+		}
+		t.Errorf("%s now reserves before the elastic overlays (%s); move it into "+
+			"inelasticOverlays and drop this entry", name, why)
+	}
+
+	for _, fixed := range inelasticOverlays {
+		at := sites(fixed)
+		if len(at) == 0 {
+			t.Errorf("%s is listed but no longer drawn here", fixed)
+			continue
+		}
+		if firstElastic >= 0 && at[len(at)-1] > firstElastic {
+			t.Errorf("%s is drawn after an overlay that can shrink, so the one that cannot is "+
+				"what gets displaced", fixed)
 		}
 	}
 }
