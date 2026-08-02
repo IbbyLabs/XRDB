@@ -1149,8 +1149,11 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	// The icon modes label the badge with the resolved family ("SCI FI") rather
 	// than the raw genre list, and tint it with that family's accent. The clean
 	// and tile styles have no room for a glyph, so they stay text-only.
+	//
+	// An unset mode is text, and has to be spelled that way here: the fit check
+	// and the glyph branches below both test for "text" by name.
 	mode := opts.mode
-	if opts.style == "clean" || opts.style == "tile" {
+	if mode == "" || opts.style == "clean" || opts.style == "tile" {
 		mode = "text"
 	}
 	var fam *genreFamily

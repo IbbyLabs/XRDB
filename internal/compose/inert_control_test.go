@@ -595,3 +595,38 @@ func TestGenreFitAccountsForTheManualOffset(t *testing.T) {
 		t.Error("a nudged long list drew nothing at all")
 	}
 }
+
+// The configurator's default genre mode is the empty string. The fit check tests
+// for "text" by name, so the default skipped it and only the clean and tile
+// styles, which rewrite the mode, trimmed a list that ran off (BUG-187).
+func TestGenreFitRunsOnTheDefaultMode(t *testing.T) {
+	genres := []string{"Action", "Fantasy", "Science Fiction"}
+
+	right := func(mode, style string) int {
+		img := image.NewNRGBA(image.Rect(0, 0, 300, 450))
+		drawGenreBadge(img, genres, "tl", 1, newOccupancy(img.Bounds()), genreBadgeOpts{
+			mode: mode, style: style,
+		})
+		for x := img.Bounds().Max.X - 1; x >= 0; x-- {
+			for y := 0; y < img.Bounds().Max.Y; y++ {
+				if img.NRGBAAt(x, y).A > 0 {
+					return x
+				}
+			}
+		}
+		return -1
+	}
+
+	for _, style := range []string{"plain", "glass", "square", "clean", "tile"} {
+		got := right("", style)
+		if got < 0 {
+			t.Fatalf("%s drew nothing", style)
+		}
+		if got >= 299 {
+			t.Errorf("%s reached x=%d, so the label ran to the frame edge untrimmed", style, got)
+		}
+		if want := right("text", style); got != want {
+			t.Errorf("%s: the default mode ended at x=%d and text at x=%d, so they trim differently", style, got, want)
+		}
+	}
+}
