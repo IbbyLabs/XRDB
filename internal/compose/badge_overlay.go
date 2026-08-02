@@ -1262,6 +1262,11 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	// Gated on the label being the genre list, not on the mode: a glyph beside
 	// the list still leaves a list to trim, and gating on text alone let Both
 	// mode overflow the moment the label control started reaching it.
+	resolvedPos := pos
+	if resolvedPos == "" || resolvedPos == "inherit" {
+		resolvedPos = "bl"
+	}
+
 	labelIsList := opts.labelMode != "primary" && opts.labelMode != "family"
 	if labelIsList && len(shown) > 1 {
 		// The nudge is applied after placement, so the room it eats has to come
@@ -1273,16 +1278,17 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			nudge = -nudge
 		}
 		room := base.Bounds().Dx() - edgeX*2 - nudge
+		// The frame is not the only thing in the way. Anything already reserved
+		// on this row — the rating ring holds a corner and can neither shrink
+		// nor move — leaves the strip a gap rather than the width.
+		if free := occ.freeWidthAt(resolvedPos, bh, edgeX, edgeY, s(7)) - nudge; free < room {
+			room = free
+		}
 		for len(shown) > 1 && bw > room {
 			shown = shown[:len(shown)-1]
 			label = applyLabelCase(strings.Join(shown, " · "), opts.labelCase, opts.labelMode)
 			bw = padX*2 + iconSize + iconGap + textWidth(face, label) + stripeRoom
 		}
-	}
-
-	resolvedPos := pos
-	if resolvedPos == "" || resolvedPos == "inherit" {
-		resolvedPos = "bl"
 	}
 
 	r := occ.place(resolvedPos, bw, bh, edgeX, edgeY, s(7))

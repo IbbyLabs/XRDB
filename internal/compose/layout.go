@@ -36,6 +36,60 @@ func (o *occupancy) overlaps(r image.Rectangle) bool {
 	return false
 }
 
+// freeWidthAt reports the horizontal room an h-tall box has on the row it would
+// anchor to for the given corner, stopping at whatever is already reserved on
+// the side it grows toward. An overlay that can shrink asks before it is
+// placed: place only ever shifts a box that does not fit, so a strip measured
+// against the full frame slides off its row instead of narrowing to the gap.
+//
+// A reservation covering the anchor itself reports the full width. There is no
+// room to trim into there, and shifting is the right answer.
+func (o *occupancy) freeWidthAt(corner string, h, edgeX, edgeY, gap int) int {
+	b := o.boundsOrZero()
+	full := b.Dx() - edgeX*2
+	if o == nil || len(o.rects) == 0 || full <= 0 {
+		return full
+	}
+
+	y0 := b.Max.Y - edgeY - h
+	if corner == "tl" || corner == "tr" || corner == "tc" {
+		y0 = b.Min.Y + edgeY
+	}
+	y1 := y0 + h
+
+	lo, hi := b.Min.X+edgeX, b.Max.X-edgeX
+	anchor := lo
+	switch corner {
+	case "tr", "br":
+		anchor = hi - 1
+	case "tc", "bc":
+		anchor = b.Min.X + b.Dx()/2
+	}
+
+	for _, e := range o.rects {
+		if e.Empty() || e.Max.Y <= y0 || e.Min.Y >= y1 {
+			continue // a different row
+		}
+		left, right := e.Min.X-gap, e.Max.X+gap
+		switch {
+		case right <= anchor:
+			if right > lo {
+				lo = right
+			}
+		case left > anchor:
+			if left < hi {
+				hi = left
+			}
+		default:
+			return full
+		}
+	}
+	if hi-lo < 0 {
+		return 0
+	}
+	return hi - lo
+}
+
 // place positions a w×h box anchored at the given position, then shifts it
 // along the vertical axis — away from the anchored edge — until it no longer
 // collides with previously reserved rectangles. The chosen rectangle is

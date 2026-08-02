@@ -875,6 +875,13 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	if req.Config.Stinger && meta.Stinger.Has() {
 		drawStingerBadge(composed, meta.Stinger, req.Config.StingerPos, scale, occ)
 	}
+	// The ring claims its corner before the strips do. It is a fixed circle that
+	// can neither narrow nor move, while a genre strip can drop a genre and a
+	// provider row can drop a chip, so reserving it first is what leaves the
+	// elastic overlays something to measure against.
+	if req.Config.RatingRing {
+		drawAverageRatingRing(composed, allRatings, req.Config, scale, occ)
+	}
 	if req.Config.Genre && len(meta.Genres) > 0 {
 		drawGenreBadge(composed, meta.Genres, req.Config.GenrePos, scale, occ, genreOptsFromConfig(req.Config, meta.IsAnime))
 	}
@@ -886,9 +893,6 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	}
 	if req.Config.Trending && p.isTrending(ctx, req, meta) {
 		drawTrendingBadgeSurfaced(composed, scale, occ, trendingStyleFromConfig(req.Config.TrendingStyle), req.Config.TrendingPos, req.Config.TrendingTextColor, req.Config.TrendingTagStyle, trendingOptsFromConfig(req.Config))
-	}
-	if req.Config.RatingRing {
-		drawAverageRatingRing(composed, allRatings, req.Config, scale, occ)
 	}
 	// Show the logo overlay when explicitly requested OR when the user has
 	// chosen to use the backdrop as a poster (backdrop images don't carry
