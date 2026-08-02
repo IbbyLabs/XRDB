@@ -47,6 +47,31 @@ const CONFIG_TABS = [
 
 type TabId = (typeof SURFACE_TABS)[number]['id'] | (typeof CONFIG_TABS)[number]['id'];
 
+// The configurator and the renderer disagree on these three defaults, so leaving
+// one out would change what everyone renders rather than saying nothing: size is
+// normal here and small there, ageRating is off here and on there, and ratings
+// carries the same two sources in the opposite order. Sent explicitly until the
+// two sides are aligned, which is a product decision rather than a fix.
+const ALWAYS_SEND = new Set(['size', 'ageRating', 'ratings']);
+
+// Structural comparison: several config values are arrays or objects, where
+// identity would report every render as a change.
+function sameConfigValue(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.length === b.length && a.every((v, i) => sameConfigValue(v, b[i]));
+  }
+  if (a && b && typeof a === 'object' && typeof b === 'object') {
+    const ka = Object.keys(a as object);
+    const kb = Object.keys(b as object);
+    if (ka.length !== kb.length) return false;
+    return ka.every(k =>
+      Object.prototype.hasOwnProperty.call(b, k) &&
+      sameConfigValue((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k]));
+  }
+  return false;
+}
+
 export function ConfiguratorClient() {
   const uid = useId();
 
@@ -162,168 +187,18 @@ export function ConfiguratorClient() {
   useEffect(() => { configsRef.current = configs; }, [configs]);
 
   const buildSrc = useCallback((type: MediaType, id: string, cfg: ConfigState) => {
-    const payload: Record<string, unknown> = {
-      size: cfg.size, artworkSource: cfg.artworkSource, language: cfg.language,
-      outputFormat: cfg.outputFormat,
-      outputQuality: cfg.outputQuality,
-      artworkSourceMovie: cfg.artworkSourceMovie,
-      artworkSourceSeries: cfg.artworkSourceSeries,
-      artworkSourceAnime: cfg.artworkSourceAnime,
-      randomPosterText: cfg.randomPosterText === 'any' ? '' : cfg.randomPosterText,
-      randomPosterLanguage: cfg.randomPosterLanguage === 'any' ? '' : cfg.randomPosterLanguage,
-      randomPosterMinVoteCount: cfg.randomPosterMinVoteCount,
-      randomPosterMinVoteAverage: cfg.randomPosterMinVoteAverage,
-      randomPosterMinWidth: cfg.randomPosterMinWidth,
-      randomPosterMinHeight: cfg.randomPosterMinHeight,
-      randomPosterFallback: cfg.randomPosterFallback === 'best' ? '' : cfg.randomPosterFallback,
-      textPreference: cfg.textPreference, ratingsLayout: cfg.ratingsLayout,
-      badgeStyle: cfg.badgeStyle, badgeTheme: cfg.badgeTheme,
-      ratings: cfg.ratings, ageRating: cfg.ageRating, ageRatingPos: cfg.ageRatingPos,
-      ageRatingScale: cfg.ageRatingScale,
-      ageRatingOffsetX: cfg.ageRatingOffsetX,
-      ageRatingOffsetY: cfg.ageRatingOffsetY,
-      hideCinemetaRating: cfg.hideCinemetaRating,
-      backdropLogo: cfg.backdropLogo,
-      awards: cfg.awards,
-      awardsPos: cfg.awardsPos,
-      stinger: cfg.stinger,
-      stingerPos: cfg.stingerPos,
-      releaseStatus: cfg.releaseStatus,
-      topRated: cfg.topRated,
-      topRatedPos: cfg.topRatedPos === 'inherit' ? '' : cfg.topRatedPos,
-      topRatedBadgeStyle: cfg.topRatedBadgeStyle,
-      topRatedTileColor: cfg.topRatedTileColor,
-      releaseStatusPos: cfg.releaseStatusPos === 'inherit' ? '' : cfg.releaseStatusPos,
-      releaseStatusBadgeStyle: cfg.releaseStatusBadgeStyle,
-      releaseStatusTileColor: cfg.releaseStatusTileColor,
-      genre: cfg.genre, genrePos: cfg.genrePos, badges: cfg.badges,
-      providers: cfg.providers, providersCountry: cfg.providersCountry,
-      networkTileColor: cfg.networkTileColor, aggregateBar: cfg.aggregateBar,
-      aggregateBarPos: cfg.aggregateBarPos, trending: cfg.trending,
-      trendingStyle: cfg.trendingStyle,
-      backdropAsPoster: cfg.backdropAsPoster,
-      logoWidth: cfg.logoWidth,
-      logoScrimSize: cfg.logoScrimSize,
-      logoScrimOpacity: cfg.logoScrimOpacity,
-      logoShadowOffsetX: cfg.logoShadowOffsetX,
-      logoShadowOffsetY: cfg.logoShadowOffsetY,
-      logoShadowStyle: cfg.logoShadowStyle,
-      logoShadowColor: cfg.logoShadowColor,
-      logoHeight: cfg.logoHeight,
-      logoPos: cfg.logoPos,
-      logoAnchor: cfg.logoAnchor,
-      ratingRing: cfg.ratingRing,
-      ratingRingPos: cfg.ratingRingPos, ratingRingColor: cfg.ratingRingColor,
-      // Advanced styling. Zero-valued numbers mean "default" and are harmless to
-      // send; ratingsMax is the exception — 0 there would cap to zero badges, so
-      // it is only included when the user set a real cap.
-      ratingBadgeScale: cfg.ratingBadgeScale,
-      ratingBadgeOffsetX: cfg.ratingBadgeOffsetX,
-      ratingBadgeOffsetY: cfg.ratingBadgeOffsetY,
-      ratingXOffsetPillGlass: cfg.ratingXOffsetPillGlass,
-      ratingYOffsetPillGlass: cfg.ratingYOffsetPillGlass,
-      ratingXOffsetSquare: cfg.ratingXOffsetSquare,
-      ratingYOffsetSquare: cfg.ratingYOffsetSquare,
-      posterEdgeOffset: cfg.posterEdgeOffset,
-      bottomRatingsRow: cfg.bottomRatingsRow || undefined,
-      ratingsAnchored: cfg.ratingsAnchored || undefined,
-      ratingPresentation: cfg.ratingPresentation === 'standard' ? '' : cfg.ratingPresentation,
-      ratingValueMode: cfg.ratingValueMode === 'native' ? '' : cfg.ratingValueMode,
-      ratingVoteCounts: cfg.ratingVoteCounts,
-      iconShape: cfg.iconShape,
-      sideRatingsPosition: cfg.sideRatingsPosition === 'middle' ? '' : cfg.sideRatingsPosition,
-      sideRatingsOffset: cfg.sideRatingsOffset,
-      ratingsMaxPerSide: cfg.ratingsMaxPerSide,
-      genreBadgeScale: cfg.genreBadgeScale,
-      genreBadgeOffsetX: cfg.genreBadgeOffsetX,
-      genreBadgeOffsetY: cfg.genreBadgeOffsetY,
-      genreBadgeBackgroundOpacity: cfg.genreBadgeBackgroundOpacity,
-      genreBadgeBorderWidth: cfg.genreBadgeBorderWidth,
-      fallbackLanguage: cfg.fallbackLanguage,
-      ratingsMovie: cfg.ratingsMovie,
-      ratingsSeries: cfg.ratingsSeries,
-      ratingsAnime: cfg.ratingsAnime,
-      metaLine: cfg.metaLine,
-      metaLineScale: cfg.metaLineScale,
-      aggregateAccentWidth: cfg.aggregateAccentWidth,
-      ratingBadgeDensity: cfg.ratingBadgeDensity,
-      ratingBadgeBorderSourceTint: cfg.ratingBadgeBorderSourceTint,
-      ratingBadgeBorderColor: cfg.ratingBadgeBorderColor,
-      ratingBadgeBorderOpacity: cfg.ratingBadgeBorderOpacity,
-      iconOutlineColor: cfg.iconOutlineColor,
-      iconOutlineWidth: cfg.iconOutlineWidth,
-      noBackgroundBadgeOutlineColor: cfg.noBackgroundBadgeOutlineColor,
-      noBackgroundBadgeOutlineWidth: cfg.noBackgroundBadgeOutlineWidth,
-      noBackgroundBadgeOutlineGlow: cfg.noBackgroundBadgeOutlineGlow,
-      qualityBadgesHidden: cfg.qualityBadgesHidden || undefined,
-      providersPos: cfg.providersPos,
-      providerBadgeScale: cfg.providerBadgeScale,
-      providerBadgeOffsetX: cfg.providerBadgeOffsetX,
-      providerBadgeOffsetY: cfg.providerBadgeOffsetY,
-      qualityBadgesPos: cfg.qualityBadgesPos,
-      qualityBadgeScale: cfg.qualityBadgeScale,
-      qualityBadgeOffsetX: cfg.qualityBadgeOffsetX,
-      qualityBadgeOffsetY: cfg.qualityBadgeOffsetY,
-      qualityBadgesStyle: cfg.qualityBadgesStyle === 'default' ? '' : cfg.qualityBadgesStyle,
-      qualityBadgesTileAccentColor: cfg.qualityBadgesTileAccentColor,
-      genreBadgeStyle: cfg.genreBadgeStyle === 'default' ? '' : cfg.genreBadgeStyle,
-      genreBadgeTileAccentColor: cfg.genreBadgeTileAccentColor,
-      genreBadgeMode: cfg.genreBadgeMode === 'default' ? '' : cfg.genreBadgeMode,
-      genreBadgeAccent: cfg.genreBadgeAccent === 'default' ? '' : cfg.genreBadgeAccent,
-      genreBadgeLabel: cfg.genreBadgeLabel === 'default' ? '' : cfg.genreBadgeLabel,
-      genreBadgeAnimeGrouping: cfg.genreBadgeAnimeGrouping === 'default' ? '' : cfg.genreBadgeAnimeGrouping,
-      aggregateAccentColor: cfg.aggregateAccentColor,
-      aggregateAccentMode: cfg.aggregateAccentMode,
-      aggregatePillPos: cfg.aggregatePillPos,
-      aggregateAccentShape: cfg.aggregateAccentShape === 'outline' ? '' : cfg.aggregateAccentShape,
-      aggregateBarOffset: cfg.aggregateBarOffset,
-      aggregateValueColor: cfg.aggregateValueColor,
-      aggregateCriticsAccentColor: cfg.aggregateCriticsAccentColor,
-      aggregateAudienceAccentColor: cfg.aggregateAudienceAccentColor,
-      aggregateCriticsValueColor: cfg.aggregateCriticsValueColor,
-      aggregateAudienceValueColor: cfg.aggregateAudienceValueColor,
-      aggregateDynamicStops: cfg.aggregateDynamicStops,
-      aggregateFillByScore: cfg.aggregateFillByScore || undefined,
-      aggregatePillIcon: cfg.aggregatePillIcon,
-      aggregateDualIcons: cfg.aggregateDualIcons || undefined,
-      // Only sent when turned off, so a default config stays free of the key.
-      aggregateAccentBarVisible: cfg.aggregateAccentBarVisible ? undefined : false,
-      aggregateAccentBarOffset: cfg.aggregateAccentBarOffset,
-      aggregateRatingSource: cfg.aggregateRatingSource === 'overall' ? '' : cfg.aggregateRatingSource,
-      scorebarStyle: cfg.scorebarStyle === 'progress' ? '' : cfg.scorebarStyle,
-      scorebarLowColor: cfg.scorebarLowColor,
-      scorebarMidColor: cfg.scorebarMidColor,
-      scorebarHighColor: cfg.scorebarHighColor,
-      scorebarLowThreshold: cfg.scorebarLowThreshold,
-      scorebarHighThreshold: cfg.scorebarHighThreshold,
-      trendingTextColor: cfg.trendingTextColor,
-      trendingTagStyle: cfg.trendingTagStyle,
-      trendingAccentColor: cfg.trendingAccentColor,
-      ageRatingBadgeStyle: cfg.ageRatingBadgeStyle === 'default' ? '' : cfg.ageRatingBadgeStyle,
-      ageRatingTileColor: cfg.ageRatingTileColor,
-      trendingPos: cfg.trendingPos,
-      logoBackground: cfg.logoBackground,
-      episodeArtworkMode: cfg.episodeArtworkMode === 'still' ? '' : cfg.episodeArtworkMode,
-      ringScale: cfg.ringScale,
-      ringCenterOpacity: cfg.ringCenterOpacity,
-      ringOffsetX: cfg.ringOffsetX,
-      ringOffsetY: cfg.ringOffsetY,
-      ringValueSource: cfg.ringValueSource === 'overall' ? '' : cfg.ringValueSource,
-      ringProgressSource: cfg.ringProgressSource === 'overall' ? '' : cfg.ringProgressSource,
-    };
-    if (cfg.ratingsMax > 0) payload.ratingsMax = cfg.ratingsMax;
-    if (cfg.qualityBadgesMax > 0) payload.qualityBadgesMax = cfg.qualityBadgesMax;
-    if (Object.keys(cfg.ratingProviderOverrides).length > 0) {
-      payload.ratingProviderOverrides = cfg.ratingProviderOverrides;
+    // Send what differs from the defaults, rather than naming each key. The
+    // list this replaced had to be edited whenever a control was added, and it
+    // was not: six keys reached the configurator and never reached a render.
+    // Deriving the payload means a new key works with no change here at all.
+    const payload: Record<string, unknown> = {};
+    for (const key of Object.keys(cfg) as (keyof ConfigState)[]) {
+      const value = cfg[key];
+      const fallback = DEFAULT_CONFIG[key];
+      if (ALWAYS_SEND.has(key as string) || !sameConfigValue(value, fallback)) {
+        payload[key as string] = value;
+      }
     }
-    if (Object.keys(cfg.ratingProviderIconScale).length > 0) {
-      payload.ratingProviderIconScale = cfg.ratingProviderIconScale;
-    }
-    if (Object.keys(cfg.ratingProviderWeights).length > 0) {
-      payload.ratingProviderWeights = cfg.ratingProviderWeights;
-    }
-    if (cfg.ringCriticsPriority.length > 0) payload.ringCriticsPriority = cfg.ringCriticsPriority;
-    if (cfg.ringAudiencePriority.length > 0) payload.ringAudiencePriority = cfg.ringAudiencePriority;
     // Name the loaded profile so the preview applies its stored provider keys
     // to these unsaved edits; without it the preview always uses the shared key.
     const keysFrom = loadedProfile ? (loadedProfile.alias || loadedProfile.id) : undefined;
