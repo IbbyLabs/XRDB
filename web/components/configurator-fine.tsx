@@ -436,9 +436,9 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
       {(strip || pills) && (
         <div className="numfield-pair">
           <NumField id={`${uid}-rating-ox`} label="Offset X" value={config.ratingBadgeOffsetX}
-            onChange={v => onUpdate('ratingBadgeOffsetX', v)} min={-320} max={320} zeroIsDefault={false} />
+            onChange={v => onUpdate('ratingBadgeOffsetX', v)} min={-1200} max={1200} zeroIsDefault={false} />
           <NumField id={`${uid}-rating-oy`} label="Offset Y" value={config.ratingBadgeOffsetY}
-            onChange={v => onUpdate('ratingBadgeOffsetY', v)} min={-320} max={320} zeroIsDefault={false} />
+            onChange={v => onUpdate('ratingBadgeOffsetY', v)} min={-1200} max={1200} zeroIsDefault={false} />
         </div>
       )}
       {strip && (
@@ -464,15 +464,15 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
               <p className="hint">A nudge kept separately for each badge style, so switching style keeps both positions.</p>
               <div className="numfield-pair">
                 <NumField id={`${uid}-off-x-glass`} label="Other styles X" value={config.ratingXOffsetPillGlass}
-                  onChange={v => onUpdate('ratingXOffsetPillGlass', v)} min={-320} max={320} zeroIsDefault={false} />
+                  onChange={v => onUpdate('ratingXOffsetPillGlass', v)} min={-1200} max={1200} zeroIsDefault={false} />
                 <NumField id={`${uid}-off-y-glass`} label="Other styles Y" value={config.ratingYOffsetPillGlass}
-                  onChange={v => onUpdate('ratingYOffsetPillGlass', v)} min={-320} max={320} zeroIsDefault={false} />
+                  onChange={v => onUpdate('ratingYOffsetPillGlass', v)} min={-1200} max={1200} zeroIsDefault={false} />
               </div>
               <div className="numfield-pair">
                 <NumField id={`${uid}-off-x-square`} label="Square X" value={config.ratingXOffsetSquare}
-                  onChange={v => onUpdate('ratingXOffsetSquare', v)} min={-320} max={320} zeroIsDefault={false} />
+                  onChange={v => onUpdate('ratingXOffsetSquare', v)} min={-1200} max={1200} zeroIsDefault={false} />
                 <NumField id={`${uid}-off-y-square`} label="Square Y" value={config.ratingYOffsetSquare}
-                  onChange={v => onUpdate('ratingYOffsetSquare', v)} min={-320} max={320} zeroIsDefault={false} />
+                  onChange={v => onUpdate('ratingYOffsetSquare', v)} min={-1200} max={1200} zeroIsDefault={false} />
               </div>
             </div>
           </details>
@@ -581,9 +581,9 @@ export function RatingRingFine({ uid, config, onUpdate }: GroupProps) {
         hint="Opacity of the disc behind the ring's number. Blank keeps the default." />
       <div className="numfield-pair">
         <NumField id={`${uid}-ring-ox`} label="Offset X (px)" value={config.ringOffsetX}
-          onChange={v => onUpdate('ringOffsetX', v)} min={-320} max={320} zeroIsDefault={false} />
+          onChange={v => onUpdate('ringOffsetX', v)} min={-1200} max={1200} zeroIsDefault={false} />
         <NumField id={`${uid}-ring-oy`} label="Offset Y (px)" value={config.ringOffsetY}
-          onChange={v => onUpdate('ringOffsetY', v)} min={-320} max={320} zeroIsDefault={false} />
+          onChange={v => onUpdate('ringOffsetY', v)} min={-1200} max={1200} zeroIsDefault={false} />
       </div>
       <RingSourceSelect id={`${uid}-ring-value-src`} label="Value source"
         value={config.ringValueSource} onChange={v => onUpdate('ringValueSource', v)} />
@@ -628,9 +628,9 @@ export function QualityFine({ uid, config, onUpdate }: GroupProps) {
         hint="0 shows every badge you selected." />
       <div className="numfield-pair">
         <NumField id={`${uid}-quality-ox`} label="Offset X" value={config.qualityBadgeOffsetX}
-          onChange={v => onUpdate('qualityBadgeOffsetX', v)} min={-320} max={320} zeroIsDefault={false} />
+          onChange={v => onUpdate('qualityBadgeOffsetX', v)} min={-1200} max={1200} zeroIsDefault={false} />
         <NumField id={`${uid}-quality-oy`} label="Offset Y" value={config.qualityBadgeOffsetY}
-          onChange={v => onUpdate('qualityBadgeOffsetY', v)} min={-320} max={320} zeroIsDefault={false} />
+          onChange={v => onUpdate('qualityBadgeOffsetY', v)} min={-1200} max={1200} zeroIsDefault={false} />
       </div>
       <StyleGrid
         id={`${uid}-quality-style-label`}
@@ -743,9 +743,9 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
         onChange={v => onUpdate('genreBadgeScale', v)} min={70} max={300} step={5} />
       <div className="numfield-pair">
         <NumField id={`${uid}-genre-ox`} label="Offset X" value={config.genreBadgeOffsetX}
-          onChange={v => onUpdate('genreBadgeOffsetX', v)} min={-320} max={320} zeroIsDefault={false} />
+          onChange={v => onUpdate('genreBadgeOffsetX', v)} min={-1200} max={1200} zeroIsDefault={false} />
         <NumField id={`${uid}-genre-oy`} label="Offset Y" value={config.genreBadgeOffsetY}
-          onChange={v => onUpdate('genreBadgeOffsetY', v)} min={-320} max={320} zeroIsDefault={false} />
+          onChange={v => onUpdate('genreBadgeOffsetY', v)} min={-1200} max={1200} zeroIsDefault={false} />
       </div>
       <NumField id={`${uid}-genre-op`} label="Background opacity (%)" value={config.genreBadgeBackgroundOpacity}
         onChange={v => onUpdate('genreBadgeBackgroundOpacity', v)} min={5} max={100} step={5} />
@@ -1045,9 +1045,9 @@ export function ScaleOffsetFields({ uid, config, onUpdate, scaleKey, offXKey, of
         onChange={v => onUpdate(scaleKey, v)} min={70} max={400} step={5}
         hint="70–400. Blank keeps the default size." />
       <NumField id={`${uid}-${offXKey}`} label="Offset X" value={config[offXKey]}
-        onChange={v => onUpdate(offXKey, v)} min={-320} max={320} zeroIsDefault={false} />
+        onChange={v => onUpdate(offXKey, v)} min={-1200} max={1200} zeroIsDefault={false} />
       <NumField id={`${uid}-${offYKey}`} label="Offset Y" value={config[offYKey]}
-        onChange={v => onUpdate(offYKey, v)} min={-320} max={320} zeroIsDefault={false} />
+        onChange={v => onUpdate(offYKey, v)} min={-1200} max={1200} zeroIsDefault={false} />
     </>
   );
 }
@@ -1130,9 +1130,9 @@ export function ProvidersFine({ uid, config, onUpdate }: GroupProps) {
         onChange={v => onUpdate('providerBadgeScale', v)} min={70} max={400} step={5}
         hint="70\u2013200. Blank keeps the default size." />
       <NumField id={`${uid}-provider-offset-x`} label="Offset X (px)" value={config.providerBadgeOffsetX}
-        onChange={v => onUpdate('providerBadgeOffsetX', v)} min={-320} max={320} zeroIsDefault={false} />
+        onChange={v => onUpdate('providerBadgeOffsetX', v)} min={-1200} max={1200} zeroIsDefault={false} />
       <NumField id={`${uid}-provider-offset-y`} label="Offset Y (px)" value={config.providerBadgeOffsetY}
-        onChange={v => onUpdate('providerBadgeOffsetY', v)} min={-320} max={320} zeroIsDefault={false} />
+        onChange={v => onUpdate('providerBadgeOffsetY', v)} min={-1200} max={1200} zeroIsDefault={false} />
     </FineGroup>
   );
 }
@@ -1159,9 +1159,9 @@ export function AgeFine({ uid, config, onUpdate }: GroupProps) {
         onChange={v => onUpdate('ageRatingScale', v)} min={50} max={300} step={5} />
       <div className="numfield-pair">
         <NumField id={`${uid}-age-ox`} label="Offset X (px)" value={config.ageRatingOffsetX}
-          onChange={v => onUpdate('ageRatingOffsetX', v)} min={-320} max={320} zeroIsDefault={false} />
+          onChange={v => onUpdate('ageRatingOffsetX', v)} min={-1200} max={1200} zeroIsDefault={false} />
         <NumField id={`${uid}-age-oy`} label="Offset Y (px)" value={config.ageRatingOffsetY}
-          onChange={v => onUpdate('ageRatingOffsetY', v)} min={-320} max={320} zeroIsDefault={false} />
+          onChange={v => onUpdate('ageRatingOffsetY', v)} min={-1200} max={1200} zeroIsDefault={false} />
       </div>
     </FineGroup>
   );

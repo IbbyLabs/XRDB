@@ -668,16 +668,16 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
                 onChange={e => onUpdate('metaLineScale', e.target.value === '' ? 0 : Number(e.target.value))} />
             </Field>
             <Field label="Info line offset X" htmlFor={`${uid}-metaline-ox`}
-              hint="-320 to 320. Blank stays centred.">
+              hint="-1200 to 1200. Blank stays centred.">
               <input id={`${uid}-metaline-ox`} className="input" type="number" inputMode="numeric"
-                min={-320} max={320} value={config.metaLineOffsetX || ''} placeholder="0"
+                min={-1200} max={1200} value={config.metaLineOffsetX || ''} placeholder="0"
                 style={{ maxWidth: '7rem' }}
                 onChange={e => onUpdate('metaLineOffsetX', e.target.value === '' ? 0 : Number(e.target.value))} />
             </Field>
             <Field label="Info line offset Y" htmlFor={`${uid}-metaline-oy`}
-              hint="-320 to 320. Blank stays at the foot.">
+              hint="-1200 to 1200. Blank stays at the foot.">
               <input id={`${uid}-metaline-oy`} className="input" type="number" inputMode="numeric"
-                min={-320} max={320} value={config.metaLineOffsetY || ''} placeholder="0"
+                min={-1200} max={1200} value={config.metaLineOffsetY || ''} placeholder="0"
                 style={{ maxWidth: '7rem' }}
                 onChange={e => onUpdate('metaLineOffsetY', e.target.value === '' ? 0 : Number(e.target.value))} />
             </Field>

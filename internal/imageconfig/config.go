@@ -1120,10 +1120,10 @@ func Parse(data json.RawMessage) Config {
 		cfg.ProviderBadgeScale = clampInt(*r.ProviderBadgeScale, 70, 400)
 	}
 	if r.ProviderBadgeOffsetX != nil {
-		cfg.ProviderBadgeOffsetX = clampInt(*r.ProviderBadgeOffsetX, -320, 320)
+		cfg.ProviderBadgeOffsetX = clampInt(*r.ProviderBadgeOffsetX, -1200, 1200)
 	}
 	if r.ProviderBadgeOffsetY != nil {
-		cfg.ProviderBadgeOffsetY = clampInt(*r.ProviderBadgeOffsetY, -320, 320)
+		cfg.ProviderBadgeOffsetY = clampInt(*r.ProviderBadgeOffsetY, -1200, 1200)
 	}
 	if len(r.RatingsMovie) > 0 {
 		cfg.RatingsMovie = dedupeStrings(r.RatingsMovie)
@@ -1141,10 +1141,10 @@ func Parse(data json.RawMessage) Config {
 		cfg.MetaLineScale = clampInt(*r.MetaLineScale, 60, 200)
 	}
 	if r.MetaLineOffsetX != nil {
-		cfg.MetaLineOffsetX = clampInt(*r.MetaLineOffsetX, -320, 320)
+		cfg.MetaLineOffsetX = clampInt(*r.MetaLineOffsetX, -1200, 1200)
 	}
 	if r.MetaLineOffsetY != nil {
-		cfg.MetaLineOffsetY = clampInt(*r.MetaLineOffsetY, -320, 320)
+		cfg.MetaLineOffsetY = clampInt(*r.MetaLineOffsetY, -1200, 1200)
 	}
 	if r.AggregateAccentWidth != nil && *r.AggregateAccentWidth != 0 {
 		cfg.AggregateAccentWidth = clampInt(*r.AggregateAccentWidth, 1, 8)
@@ -1440,10 +1440,10 @@ func parseQuality(cfg *Config, r *raw) {
 		cfg.QualityBadgeScale = clampInt(*r.QualityBadgeScale, 70, 400)
 	}
 	if r.QualityBadgeOffsetX != nil {
-		cfg.QualityBadgeOffsetX = clampInt(*r.QualityBadgeOffsetX, -320, 320)
+		cfg.QualityBadgeOffsetX = clampInt(*r.QualityBadgeOffsetX, -1200, 1200)
 	}
 	if r.QualityBadgeOffsetY != nil {
-		cfg.QualityBadgeOffsetY = clampInt(*r.QualityBadgeOffsetY, -320, 320)
+		cfg.QualityBadgeOffsetY = clampInt(*r.QualityBadgeOffsetY, -1200, 1200)
 	}
 	if r.QualityBadgesStyle != nil {
 		switch v := strings.ToLower(strings.TrimSpace(*r.QualityBadgesStyle)); v {
@@ -1504,22 +1504,22 @@ func parseRating(cfg *Config, r *raw) {
 		cfg.RatingsMax = &m
 	}
 	if r.RatingBadgeOffsetX != nil {
-		cfg.RatingBadgeOffsetX = clampInt(*r.RatingBadgeOffsetX, -320, 320)
+		cfg.RatingBadgeOffsetX = clampInt(*r.RatingBadgeOffsetX, -1200, 1200)
 	}
 	if r.RatingBadgeOffsetY != nil {
-		cfg.RatingBadgeOffsetY = clampInt(*r.RatingBadgeOffsetY, -320, 320)
+		cfg.RatingBadgeOffsetY = clampInt(*r.RatingBadgeOffsetY, -1200, 1200)
 	}
 	if r.RatingOffsetXPillGlass != nil {
-		cfg.RatingOffsetXPillGlass = clampInt(*r.RatingOffsetXPillGlass, -320, 320)
+		cfg.RatingOffsetXPillGlass = clampInt(*r.RatingOffsetXPillGlass, -1200, 1200)
 	}
 	if r.RatingOffsetYPillGlass != nil {
-		cfg.RatingOffsetYPillGlass = clampInt(*r.RatingOffsetYPillGlass, -320, 320)
+		cfg.RatingOffsetYPillGlass = clampInt(*r.RatingOffsetYPillGlass, -1200, 1200)
 	}
 	if r.RatingOffsetXSquare != nil {
-		cfg.RatingOffsetXSquare = clampInt(*r.RatingOffsetXSquare, -320, 320)
+		cfg.RatingOffsetXSquare = clampInt(*r.RatingOffsetXSquare, -1200, 1200)
 	}
 	if r.RatingOffsetYSquare != nil {
-		cfg.RatingOffsetYSquare = clampInt(*r.RatingOffsetYSquare, -320, 320)
+		cfg.RatingOffsetYSquare = clampInt(*r.RatingOffsetYSquare, -1200, 1200)
 	}
 	if r.PosterEdgeOffset != nil {
 		cfg.PosterEdgeOffset = clampInt(*r.PosterEdgeOffset, 0, 80)
@@ -1628,61 +1628,61 @@ func parseRing(cfg *Config, r *raw) {
 		cfg.RingScale = clampInt(*r.RingScale, 70, 250)
 	}
 	if r.RingOffsetX != nil {
-		cfg.RingOffsetX = clampInt(*r.RingOffsetX, -320, 320)
+		cfg.RingOffsetX = clampInt(*r.RingOffsetX, -1200, 1200)
 	}
 	if r.RingOffsetY != nil {
-		cfg.RingOffsetY = clampInt(*r.RingOffsetY, -320, 320)
+		cfg.RingOffsetY = clampInt(*r.RingOffsetY, -1200, 1200)
 	}
 	if r.AgeRatingOffsetX != nil {
-		cfg.AgeRatingOffsetX = clampInt(*r.AgeRatingOffsetX, -320, 320)
+		cfg.AgeRatingOffsetX = clampInt(*r.AgeRatingOffsetX, -1200, 1200)
 	}
 	if r.AgeRatingOffsetY != nil {
-		cfg.AgeRatingOffsetY = clampInt(*r.AgeRatingOffsetY, -320, 320)
+		cfg.AgeRatingOffsetY = clampInt(*r.AgeRatingOffsetY, -1200, 1200)
 	}
 	if r.AgeRatingScale != nil && *r.AgeRatingScale != 0 {
 		cfg.AgeRatingScale = clampInt(*r.AgeRatingScale, 50, 300)
 	}
 	if r.ReleaseStatusOffsetX != nil {
-		cfg.ReleaseStatusOffsetX = clampInt(*r.ReleaseStatusOffsetX, -320, 320)
+		cfg.ReleaseStatusOffsetX = clampInt(*r.ReleaseStatusOffsetX, -1200, 1200)
 	}
 	if r.ReleaseStatusOffsetY != nil {
-		cfg.ReleaseStatusOffsetY = clampInt(*r.ReleaseStatusOffsetY, -320, 320)
+		cfg.ReleaseStatusOffsetY = clampInt(*r.ReleaseStatusOffsetY, -1200, 1200)
 	}
 	if r.ReleaseStatusScale != nil && *r.ReleaseStatusScale != 0 {
 		cfg.ReleaseStatusScale = clampInt(*r.ReleaseStatusScale, 70, 400)
 	}
 	if r.TopRatedOffsetX != nil {
-		cfg.TopRatedOffsetX = clampInt(*r.TopRatedOffsetX, -320, 320)
+		cfg.TopRatedOffsetX = clampInt(*r.TopRatedOffsetX, -1200, 1200)
 	}
 	if r.TopRatedOffsetY != nil {
-		cfg.TopRatedOffsetY = clampInt(*r.TopRatedOffsetY, -320, 320)
+		cfg.TopRatedOffsetY = clampInt(*r.TopRatedOffsetY, -1200, 1200)
 	}
 	if r.TopRatedScale != nil && *r.TopRatedScale != 0 {
 		cfg.TopRatedScale = clampInt(*r.TopRatedScale, 70, 400)
 	}
 	if r.AwardsOffsetX != nil {
-		cfg.AwardsOffsetX = clampInt(*r.AwardsOffsetX, -320, 320)
+		cfg.AwardsOffsetX = clampInt(*r.AwardsOffsetX, -1200, 1200)
 	}
 	if r.AwardsOffsetY != nil {
-		cfg.AwardsOffsetY = clampInt(*r.AwardsOffsetY, -320, 320)
+		cfg.AwardsOffsetY = clampInt(*r.AwardsOffsetY, -1200, 1200)
 	}
 	if r.AwardsScale != nil && *r.AwardsScale != 0 {
 		cfg.AwardsScale = clampInt(*r.AwardsScale, 70, 400)
 	}
 	if r.StingerOffsetX != nil {
-		cfg.StingerOffsetX = clampInt(*r.StingerOffsetX, -320, 320)
+		cfg.StingerOffsetX = clampInt(*r.StingerOffsetX, -1200, 1200)
 	}
 	if r.StingerOffsetY != nil {
-		cfg.StingerOffsetY = clampInt(*r.StingerOffsetY, -320, 320)
+		cfg.StingerOffsetY = clampInt(*r.StingerOffsetY, -1200, 1200)
 	}
 	if r.StingerScale != nil && *r.StingerScale != 0 {
 		cfg.StingerScale = clampInt(*r.StingerScale, 70, 400)
 	}
 	if r.TrendingOffsetX != nil {
-		cfg.TrendingOffsetX = clampInt(*r.TrendingOffsetX, -320, 320)
+		cfg.TrendingOffsetX = clampInt(*r.TrendingOffsetX, -1200, 1200)
 	}
 	if r.TrendingOffsetY != nil {
-		cfg.TrendingOffsetY = clampInt(*r.TrendingOffsetY, -320, 320)
+		cfg.TrendingOffsetY = clampInt(*r.TrendingOffsetY, -1200, 1200)
 	}
 	if r.TrendingScale != nil && *r.TrendingScale != 0 {
 		cfg.TrendingScale = clampInt(*r.TrendingScale, 70, 400)
@@ -1933,10 +1933,10 @@ func parseGenre(cfg *Config, r *raw) {
 		cfg.GenreBadgeScale = clampInt(*r.GenreBadgeScale, 70, 300)
 	}
 	if r.GenreBadgeOffsetX != nil {
-		cfg.GenreBadgeOffsetX = clampInt(*r.GenreBadgeOffsetX, -320, 320)
+		cfg.GenreBadgeOffsetX = clampInt(*r.GenreBadgeOffsetX, -1200, 1200)
 	}
 	if r.GenreBadgeOffsetY != nil {
-		cfg.GenreBadgeOffsetY = clampInt(*r.GenreBadgeOffsetY, -320, 320)
+		cfg.GenreBadgeOffsetY = clampInt(*r.GenreBadgeOffsetY, -1200, 1200)
 	}
 	if r.GenreBadgeBorderWidth != nil {
 		switch w := *r.GenreBadgeBorderWidth; {
