@@ -2,6 +2,21 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.52.1](https://github.com/IbbyLabs/XRDB/compare/v3.52.0...v3.52.1) (2026-08-02)
+
+
+### Fixed
+
+* **badges:** keep a nudged genre badge inside the frame (BUG-187) ([ed77421](https://github.com/IbbyLabs/XRDB/commit/ed77421c9dd0980601fbd7eeac694ed0f539a03e))
+* **genre:** count a coverage entry once when renders race (BUG-186) ([cb3ef01](https://github.com/IbbyLabs/XRDB/commit/cb3ef0188e50d13a698baacd660f3ffd14aabfa5))
+* **genre:** fit the list on the default badge mode (BUG-187) ([11b18fc](https://github.com/IbbyLabs/XRDB/commit/11b18fce9e63cd1e09c7d60593beead5692fa1ae))
+* **genre:** hold the glyph coverage cache to a byte budget (BUG-186) ([fbf106e](https://github.com/IbbyLabs/XRDB/commit/fbf106e5ca933d78fcfb67d2641a2b9bc7db1219))
+
+
+### Performance
+
+* **genre:** cache glyph coverage across outline offsets (BUG-186) ([c0dda32](https://github.com/IbbyLabs/XRDB/commit/c0dda32582a916f421566cb6121a7a9d32f8ec5c))
+
 ## [3.52.0](https://github.com/IbbyLabs/XRDB/compare/v3.51.0...v3.52.0) (2026-08-01)
 
 
