@@ -661,3 +661,41 @@ func TestGenreLabelControlDecidesWhatThePlateSays(t *testing.T) {
 		t.Error("family name and first-only draw identically")
 	}
 }
+
+// The fit check was gated on text mode, which was right while only text mode
+// showed the genre list. Once the label control could put the list beside a
+// glyph, Both mode overflowed with nothing trimming it.
+func TestGenreFitRunsWhereverTheListIsShown(t *testing.T) {
+	long := []string{"Action & Adventure", "Science Fiction", "War & Politics"}
+	const w = 420
+
+	edge := func(mode string) (lo, hi int) {
+		img := image.NewNRGBA(image.Rect(0, 0, w, 600))
+		drawGenreBadge(img, long, "bl", 1, newOccupancy(img.Bounds()), genreBadgeOpts{
+			mode: mode,
+		})
+		lo, hi = -1, -1
+		for x := 0; x < w; x++ {
+			for y := img.Bounds().Min.Y; y < img.Bounds().Max.Y; y++ {
+				if img.NRGBAAt(x, y).A > 0 {
+					if lo < 0 {
+						lo = x
+					}
+					hi = x
+					break
+				}
+			}
+		}
+		return
+	}
+
+	for _, mode := range []string{"text", "both"} {
+		lo, hi := edge(mode)
+		if lo < 0 {
+			t.Fatalf("%s mode drew nothing", mode)
+		}
+		if lo == 0 || hi == w-1 {
+			t.Errorf("%s mode spans x=%d..%d on a %dpx poster, so the list is clipped at the edge", mode, lo, hi, w)
+		}
+	}
+}
