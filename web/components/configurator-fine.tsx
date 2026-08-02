@@ -28,15 +28,17 @@ interface GroupProps {
 }
 
 /**
- * The shell every fine-tuning group shares. The indent and hairline tie the
- * controls to the one above them visually; the label does the same for screen
- * readers, which can't see the indent.
+ * The shell every fine-tuning group shares: a bordered box with the group's name
+ * as a legend, matching the other panel sections so the fine groups read as
+ * distinct rather than one long column. The legend is the accessible name too,
+ * so a screen reader announces the boundary a sighted user now also sees.
  */
 function FineGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="fine-group" role="group" aria-label={`${label} fine tuning`}>
+    <fieldset className="fine-group">
+      <legend className="fine-group-legend label">{label}</legend>
       {children}
-    </div>
+    </fieldset>
   );
 }
 

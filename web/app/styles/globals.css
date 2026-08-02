@@ -814,9 +814,15 @@ textarea.input { min-height: 0; line-height: 1.5; }
   display: flex;
   flex-direction: column;
   gap: var(--sp-3);
-  margin-left: var(--sp-2);
-  padding-left: var(--sp-3);
-  border-left: 1px solid var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-3);
+  margin: 0;
+  min-width: 0;
+}
+
+.fine-group-legend {
+  padding: 0 var(--sp-1);
 }
 
 /* Nested disclosures inside a fine-tuning group. They carry the same
