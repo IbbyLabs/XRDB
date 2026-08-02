@@ -339,6 +339,12 @@ func genreIconCoverageFor(familyID string, size int) []shapeCoverage {
 
 	genreIconCacheMu.Lock()
 	defer genreIconCacheMu.Unlock()
+	// Two renders can miss the same key at once and both build it. Counting the
+	// second one's cost against a map that holds a single entry drifts the total
+	// above what is really held, flushing earlier than the budget requires.
+	if existing, ok := genreIconCache[key]; ok {
+		return existing
+	}
 	// Dropping everything is cruder than evicting least-recently-used, and it is
 	// enough: a rebuild is one rasterisation per glyph actually in use, and at
 	// this budget a real instance never reaches it.

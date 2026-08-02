@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"sync"
 	"testing"
 )
 
@@ -149,5 +150,36 @@ func TestGenreIconCacheStaysInsideItsBudget(t *testing.T) {
 	referenceGenreIcon(want, "scifi", color.NRGBA{R: 250, A: 255}, color.NRGBA{A: 255}, 4, 4, 60)
 	if !bytes.Equal(dst.Pix, want.Pix) {
 		t.Error("a glyph drawn after the cache was dropped differs from the rasteriser")
+	}
+}
+
+// Two renders can miss the same key at once and both build it. Counting both
+// against a map holding one entry drifts the total above what is really held.
+func TestGenreIconCacheCountsEachEntryOnce(t *testing.T) {
+	genreIconCacheMu.Lock()
+	genreIconCache = map[string][]shapeCoverage{}
+	genreIconCacheBytes = 0
+	genreIconCacheMu.Unlock()
+
+	var wg sync.WaitGroup
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			genreIconCoverageFor("scifi", 48)
+		}()
+	}
+	wg.Wait()
+
+	genreIconCacheMu.RLock()
+	defer genreIconCacheMu.RUnlock()
+	held := 0
+	for _, entry := range genreIconCache {
+		for _, sh := range entry {
+			held += len(sh.cov) * 4
+		}
+	}
+	if genreIconCacheBytes != held {
+		t.Errorf("counter says %d bytes, the map holds %d", genreIconCacheBytes, held)
 	}
 }
