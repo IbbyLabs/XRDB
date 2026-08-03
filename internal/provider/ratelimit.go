@@ -213,7 +213,15 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 		if err != nil {
 			return nil, err
 		}
-		t.governor.observe(req.Context(), resp.Header)
+		// An owner-keyed render carries a foreign credential with its own
+		// allowance. Its rate-limit headers describe that key, not the server's,
+		// so feeding them to the shared governor would pace every other render
+		// from one user's free-tier limit. wait() above stays unconditional —
+		// that is the load shedding — but the budget must not learn a stranger's
+		// allowance. Owner-keyed renders never mutate shared source state.
+		if !HasOwnerKey(req.Context(), t.source) {
+			t.governor.observe(req.Context(), resp.Header)
+		}
 		if !isThrottleStatus(resp.StatusCode) {
 			return resp, nil
 		}
