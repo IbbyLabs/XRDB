@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.60.1](https://github.com/IbbyLabs/XRDB/compare/v3.60.0...v3.60.1) (2026-08-03)
+
+
+### Fixed
+
+* **ratings:** stop an owner key re-pacing the shared MDBList governor ([73c911a](https://github.com/IbbyLabs/XRDB/commit/73c911a7efa15a6309b2302321062481e35661b9))
+* **render:** log degraded sources and never cache a degraded render ([fe02b9d](https://github.com/IbbyLabs/XRDB/commit/fe02b9de724bb6bba9274692e262276c088ce9f0))
+
 ## [3.60.0](https://github.com/IbbyLabs/XRDB/compare/v3.59.6...v3.60.0) (2026-08-03)
 
 
