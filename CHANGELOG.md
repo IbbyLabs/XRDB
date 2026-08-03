@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.59.0](https://github.com/IbbyLabs/XRDB/compare/v3.58.0...v3.59.0) (2026-08-03)
+
+
+### Added
+
+* **ratings:** replace rating marks with branded logos (BUG-192) ([b92b479](https://github.com/IbbyLabs/XRDB/commit/b92b479ff871d2f82448cdc770c627baaa781280))
+
+
+### Fixed
+
+* **ratings:** leave Roger Ebert as-is for the draw-path work ([ab4d4a4](https://github.com/IbbyLabs/XRDB/commit/ab4d4a451829f27bdf2ebcbd0d9ef02591d8bd56))
+
 ## [3.58.0](https://github.com/IbbyLabs/XRDB/compare/v3.57.1...v3.58.0) (2026-08-02)
 
 
