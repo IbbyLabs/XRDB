@@ -22,7 +22,12 @@ jobs:
       - name: Post on a red/green transition
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          # Deliberately not the shared WEBHOOK_URL: that one posts to #updates,
+          # an announcement channel members follow for release news, and its
+          # notices carry a role ping. A red build is developer news and belongs
+          # beside the commit and build activity instead. Until CI_WEBHOOK_URL
+          # exists this step does nothing rather than posting to the wrong place.
+          CI_WEBHOOK_URL: ${{ secrets.CI_WEBHOOK_URL }}
           REPO: ${{ github.repository }}
           RUN_ID: ${{ github.event.workflow_run.id }}
           CURRENT: ${{ github.event.workflow_run.conclusion }}
@@ -30,8 +35,8 @@ jobs:
           RUN_URL: ${{ github.event.workflow_run.html_url }}
         run: |
           set -euo pipefail
-          if [ -z "${WEBHOOK_URL}" ]; then
-            echo "WEBHOOK_URL is not configured; nothing to post."
+          if [ -z "${CI_WEBHOOK_URL}" ]; then
+            echo "CI_WEBHOOK_URL is not configured; nothing to post."
             exit 0
           fi
 
@@ -46,20 +51,22 @@ jobs:
           # Only a change is news. Same-to-same is the state that trained everyone
           # to ignore the gate, so it stays silent.
           if [ "${previous}" = "success" ] && [ "${CURRENT}" = "failure" ]; then
-            text=":red_circle: **CI has gone red on main.** Previous run passed, this one failed."
+            headline=":red_circle: **CI has gone red on main.** The previous run passed."
           elif [ "${previous}" = "failure" ] && [ "${CURRENT}" = "success" ]; then
-            text=":green_circle: **CI is green again on main.** Previous run failed, this one passed."
+            headline=":green_circle: **CI is green again on main.** The previous run failed."
           else
             echo "No transition (${previous:-none} -> ${CURRENT}); staying quiet."
             exit 0
           fi
 
-          body=$(python3 -c 'import json,sys; print(json.dumps({"content": sys.argv[1]}))' \
-            "${text}
-\`${SHA}\`
-${RUN_URL}")
+          body=$(HEADLINE="${headline}" SHA="${SHA}" RUN_URL="${RUN_URL}" python3 -c '
+          import json, os
+          text = "{}\n`{}`\n{}".format(
+              os.environ["HEADLINE"], os.environ["SHA"], os.environ["RUN_URL"])
+          print(json.dumps({"content": text}))
+          ')
           code=$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
-            -H 'Content-Type: application/json' "${WEBHOOK_URL}" --data "${body}")
+            -H 'Content-Type: application/json' "${CI_WEBHOOK_URL}" --data "${body}")
           case "${code}" in
             2*) echo "posted (${code})" ;;
             *)  echo "post failed: http ${code}" >&2; exit 1 ;;
