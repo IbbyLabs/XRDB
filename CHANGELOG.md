@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.60.0](https://github.com/IbbyLabs/XRDB/compare/v3.59.6...v3.60.0) (2026-08-03)
+
+
+### Added
+
+* **ratings:** score-dependent RT and Metacritic marks (FR-137) ([8aa1726](https://github.com/IbbyLabs/XRDB/commit/8aa1726bb4f21760f0ef74e7aa25c1cb738467ea))
+
+
+### Fixed
+
+* **configurator:** remove the Image URL field (BUG-205) ([092f572](https://github.com/IbbyLabs/XRDB/commit/092f572ba1f772c67026c5c007944e29acd56568))
+
 ## [3.59.6](https://github.com/IbbyLabs/XRDB/compare/v3.59.5...v3.59.6) (2026-08-03)
 
 
