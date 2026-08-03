@@ -78,3 +78,43 @@ func TestScoreBandMarksDrawInColour(t *testing.T) {
 		}
 	}
 }
+
+// FR-157: an award tier claims a title is well reviewed, not merely well scored,
+// and the review count arrives with the rating. Metacritic publishes Must-See as
+// 81+ from at least 15 publications, so that tier becomes exact rather than
+// approximated; Certified Fresh gets a review floor it did not have.
+func TestAwardMarksNeedTheReviewCount(t *testing.T) {
+	cases := []struct {
+		name   string
+		source string
+		value  float64
+		votes  int
+		want   string
+	}{
+		// The property named in the request: same score, different review counts.
+		{"metacritic thinly reviewed", "metacritic", 8.5, 9, ""},
+		{"metacritic broadly reviewed", "metacritic", 8.5, 20, "metacritic-award-deepgold"},
+		{"metacritic exactly at the floor", "metacritic", 8.5, 15, "metacritic-award-deepgold"},
+		{"metacritic one short", "metacritic", 8.5, 14, ""},
+
+		{"rt certified needs its floor", "rt", 9.0, 39, "critics-fresh"},
+		{"rt certified clears its floor", "rt", 9.0, 40, "critics-certified-fresh"},
+
+		// A count of zero means the source sent none, not that the title has none.
+		// Treating it as a shortfall would strip the mark wherever the figure is
+		// simply absent.
+		{"metacritic with no count falls back to score", "metacritic", 8.5, 0, "metacritic-award-deepgold"},
+		{"rt with no count falls back to score", "rt", 9.0, 0, "critics-certified-fresh"},
+
+		// Non-award tiers never depended on the count and must not start to.
+		{"plain tomato ignores the count", "rt", 7.0, 3, "critics-fresh"},
+		{"splat ignores the count", "rt", 3.0, 1, "critics-rotten"},
+		{"audience ignores the count", "rtaudience", 9.0, 2, "audience-upright"},
+	}
+	for _, c := range cases {
+		if got := markStateFor(provider.Rating{Source: c.source, Value: c.value, Votes: c.votes}); got != c.want {
+			t.Errorf("%s: markStateFor(%s %.1f, %d votes) = %q, want %q",
+				c.name, c.source, c.value, c.votes, got, c.want)
+		}
+	}
+}

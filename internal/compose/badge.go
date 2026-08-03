@@ -170,6 +170,32 @@ func ensureIcons() {
 	})
 }
 
+// An award tier is a claim about how well reviewed a title is, not only how well
+// scored, and the review count arrives with the rating: MDBList reports the exact
+// figure the source publishes. Without it a thinly reviewed title takes the same
+// mark as a broadly acclaimed one.
+const (
+	// Metacritic publishes Must-See as 81+ from at least 15 publications, so this
+	// tier is exact rather than approximated.
+	minMustSeeReviews = 15
+	// Rotten Tomatoes requires 80 reviews for a wide release and 40 for a limited
+	// or streaming one, and nothing we receive says which a title is. 40 is the
+	// forgiving end: it lets some non-certified wide releases through rather than
+	// denying the mark to every genuine limited release. Certified Fresh also
+	// needs five Top Critics, which no source we read carries, so this remains an
+	// approximation — a tighter one.
+	minCertifiedFreshReviews = 40
+)
+
+// enoughReviews reports whether a count clears a tier's floor. A count of zero
+// means the source did not send one rather than that the title has none, so it
+// falls back to the score alone: absence of evidence is not evidence the title
+// falls short, and treating it as such would strip the mark from every source
+// that omits the figure.
+func enoughReviews(votes, floor int) bool {
+	return votes <= 0 || votes >= floor
+}
+
 // markStateFor names the score-dependent mark for a rating, or "" when the
 // source has a single fixed mark. Rotten Tomatoes and Metacritic ship a mark per
 // score band; every other source has one. Value is normalized 0–10, so the
@@ -182,7 +208,7 @@ func markStateFor(r provider.Rating) string {
 	switch r.Source {
 	case "rt":
 		switch {
-		case score >= 75:
+		case score >= 75 && enoughReviews(r.Votes, minCertifiedFreshReviews):
 			return "critics-certified-fresh"
 		case score >= 60:
 			return "critics-fresh"
@@ -198,7 +224,7 @@ func markStateFor(r provider.Rating) string {
 		}
 		return "audience-spilled"
 	case "metacritic":
-		if score >= 81 {
+		if score >= 81 && enoughReviews(r.Votes, minMustSeeReviews) {
 			return "metacritic-award-deepgold"
 		}
 	}
