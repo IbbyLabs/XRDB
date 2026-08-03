@@ -41,6 +41,11 @@ type Request struct {
 	ContentType string
 	MediaID     string // media identifier (IMDB tt-ID or TMDB numeric ID)
 	Config      imageconfig.Config
+	// artworkFrom names the provider whose artwork was actually used, set once
+	// the artwork is fetched. The ratings pass skips that provider because it has
+	// already answered; the configured source is not it when the source could not
+	// serve this id and the fallback took over.
+	artworkFrom string
 }
 
 // Result holds the composed image bytes and metadata.
@@ -696,7 +701,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		req.Config.ArtworkSource = imageconfig.ArtworkSourceFor(req.Config, contentKind, isAnime)
 	}
 
-	sourceBytes, meta, ratingID, err := p.fetchSourceImageAndMeta(ctx, req)
+	sourceBytes, meta, ratingID, artworkFrom, err := p.fetchSourceImageAndMeta(ctx, req)
 	timings.mark("artwork")
 	if err != nil || len(sourceBytes) == 0 {
 		p.log().WarnContext(ctx, "No source artwork was available; serving a placeholder",
@@ -725,6 +730,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// req.MediaID for episodes, so per-episode ratings resolve correctly.
 	ratingReq := req
 	ratingReq.MediaID = ratingIDForSources(ratingID, meta)
+	ratingReq.artworkFrom = artworkFrom
 	// A TMDB id only becomes an IMDb one here, so this is the earliest the addon
 	// can be asked about it. Either way the call overlaps the rating fan-out and
 	// is awaited only once the badge row is about to be drawn.
@@ -1034,13 +1040,17 @@ func (p *Pipeline) fetchEpisode(ctx context.Context, req Request, series string,
 // fetchSourceImageAndMeta fetches the artwork bytes and metadata from the
 // configured provider. The returned string is the id under which ratings
 // should be collected — normally req.MediaID, but the episode's own IMDb tconst
-// for a series-episode request so ratings resolve per-episode.
-func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]byte, *provider.MediaMeta, string, error) {
+// for a series-episode request so ratings resolve per-episode. The second string
+// names the provider whose artwork was actually used, which is not always the
+// configured source: a source that cannot serve this id falls through to the
+// next, and the ratings pass must not skip a source that never answered.
+func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]byte, *provider.MediaMeta, string, string, error) {
 	// Series-episode requests (thumbnails from AIOMetadata) resolve the episode
 	// still + per-episode ratings instead of the series-level artwork.
 	if series, season, episode, ok := parseEpisodeID(req.MediaID); ok {
 		if data, meta, ratingID, handled := p.fetchEpisode(ctx, req, series, season, episode); handled {
-			return data, meta, ratingID, nil
+			// The episode still comes from TMDB whatever the configured source is.
+			return data, meta, ratingID, "tmdb", nil
 		}
 	}
 	opts := provider.ArtworkOptions{
@@ -1063,6 +1073,7 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 	// logo) is filled from wherever it exists. baseMeta keeps the first
 	// provider's metadata for overlays, backfilling image URLs it lacked.
 	var baseMeta *provider.MediaMeta
+	var baseFrom string
 	order := p.artworkOrder(string(req.Config.ArtworkSource), req.MediaType)
 	knownID, knownType := p.identify(ctx, req, order)
 	contentType := req.ContentType
@@ -1121,7 +1132,7 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 			continue
 		}
 		if baseMeta == nil {
-			baseMeta = meta
+			baseMeta, baseFrom = meta, name
 		} else {
 			mergeArtworkURLs(baseMeta, meta)
 		}
@@ -1130,22 +1141,22 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 		if url := selectSurfaceURL(meta, req.MediaType, req.Config); url != "" {
 			if data, ferr := p.fetcher.Fetch(ctx, url); ferr == nil && len(data) > 0 {
 				p.enrichMetaForOverlays(ctx, req, baseMeta)
-				return data, baseMeta, req.MediaID, nil
+				return data, baseMeta, req.MediaID, name, nil
 			}
 		}
 	}
 	if baseMeta == nil {
-		return nil, nil, req.MediaID, fmt.Errorf("no artwork provider returned metadata")
+		return nil, nil, req.MediaID, "", fmt.Errorf("no artwork provider returned metadata")
 	}
 	// No provider had the exact surface. Last resort allows a poster to stand in
 	// for a missing logo/thumbnail, using art merged from every source tried.
 	p.enrichMetaForOverlays(ctx, req, baseMeta)
 	if url := selectArtworkURL(baseMeta, req.MediaType, req.Config); url != "" {
 		if data, err := p.fetcher.Fetch(ctx, url); err == nil && len(data) > 0 {
-			return data, baseMeta, req.MediaID, nil
+			return data, baseMeta, req.MediaID, baseFrom, nil
 		}
 	}
-	return nil, baseMeta, req.MediaID, fmt.Errorf("no artwork URL in metadata")
+	return nil, baseMeta, req.MediaID, baseFrom, fmt.Errorf("no artwork URL in metadata")
 }
 
 // identify asks an id-authoritative source what MediaID actually resolves to.
@@ -1396,10 +1407,16 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 	// returned rather than in the order the network happened to answer.
 	var wg sync.WaitGroup
 	var contributors []string
-	artworkSource := string(req.Config.ArtworkSource)
+	// Skip the provider that actually supplied the artwork, not the one that was
+	// configured to. A source that cannot serve this id — Cinemeta given a raw
+	// episode id — fails, the fallback supplies the artwork, and skipping the
+	// configured source anyway drops a rating it could have answered for, since
+	// the ratings pass queries by a resolved id rather than the artwork one.
+	// Before the artwork is fetched artworkFrom is empty, so nothing is skipped.
+	artworkSource := req.artworkFrom
 	var called []provider.Provider
 	for _, name := range p.providers.Names() {
-		if name == artworkSource {
+		if name != "" && name == artworkSource {
 			continue
 		}
 		prov := p.providers.Get(name)

@@ -813,6 +813,11 @@ func TestCollectRatingsSkipsArtworkProvider(t *testing.T) {
 	cfg.ArtworkSource = "tmdb"
 	pipe := &Pipeline{providers: reg, fetcher: &stubImageFetcher{}}
 	req := Request{MediaType: "poster", MediaID: "tt1", Config: cfg}
+	// Render sets this to whichever provider's artwork was used, which here is
+	// the configured source because it answered. The skip keys on that rather
+	// than on the configuration, so a source that failed is still asked for
+	// ratings.
+	req.artworkFrom = "tmdb"
 
 	initial := &provider.MediaMeta{Ratings: []provider.Rating{{Source: "tmdb", Value: 7.5}}}
 	all, _, _, _ := pipe.collectRatingsWithProviders(context.Background(), req, initial)
