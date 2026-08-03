@@ -128,7 +128,20 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				// Rendering is intentionally public: artwork URLs are pasted
 				// into media apps that can't send credentials. The profile
 				// password protects editing (PUT/DELETE), not viewing.
-				if p, err := store.Resolve(configParam); err == nil {
+				p, err := store.Resolve(configParam)
+				if err != nil {
+					// Rendering the default here is deliberate: a poster URL
+					// carrying a deleted profile is pasted into a media app, and
+					// breaking the artwork is worse than showing something. But
+					// saying nothing made a working feature look broken — every
+					// unrecognised value renders byte-identically, so a caller
+					// reads "the parameter is ignored" as "the setting does
+					// nothing". An inline config must start with '{'; anything
+					// else is looked up as an id or alias.
+					logger.WarnContext(r.Context(), "The requested config could not be resolved; rendering the default",
+						"id", logging.RequestID(r.Context()), "config", configParam, "error", err)
+				}
+				if err == nil {
 					// A profile config can style each surface independently;
 					// resolve the one for this request's media type.
 					imgCfg = imageconfig.ParseSurface(p.Config, mediaType)
