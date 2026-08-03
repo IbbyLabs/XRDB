@@ -123,3 +123,48 @@ func TestSIMKLFallsBackToTVOnMovie404(t *testing.T) {
 		t.Fatalf("expected movies then tv, got %v", paths)
 	}
 }
+
+// BUG-207: SIMKL sends genres as objects {"genre":"X"} or as bare strings "X".
+// Typing the field as one shape failed the whole decode on the other, which lost
+// the rating along with the genres. The rating must survive both, and genres must
+// be extracted from both.
+func TestSIMKLDecodesGenresInEitherShape(t *testing.T) {
+	cases := []struct {
+		name   string
+		genres any
+	}{
+		{"objects", []map[string]string{{"genre": "Action"}, {"genre": "Drama"}}},
+		{"strings", []string{"Action", "Drama"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_ = json.NewEncoder(w).Encode(map[string]any{
+					"title":   "Attack on Titan",
+					"genres":  tc.genres,
+					"ratings": map[string]any{"simkl": map[string]any{"rating": 89.0, "votes": 50000}},
+				})
+			}))
+			defer srv.Close()
+
+			k := &SIMKL{clientID: "k", baseURL: srv.URL, httpClient: srv.Client()}
+			meta, err := k.fetchSegment(context.Background(), "movies", "123", "tt123")
+			if err != nil {
+				t.Fatalf("%s-shaped genres failed the decode, dropping the rating: %v", tc.name, err)
+			}
+			var rating float64
+			for _, r := range meta.Ratings {
+				if r.Source == "simkl" {
+					rating = r.Value
+				}
+			}
+			if rating == 0 {
+				t.Errorf("%s: the SIMKL rating was lost; the whole response failed to parse", tc.name)
+			}
+			if len(meta.Genres) != 2 || meta.Genres[0] != "Action" || meta.Genres[1] != "Drama" {
+				t.Errorf("%s: genres = %v, want [Action Drama]", tc.name, meta.Genres)
+			}
+		})
+	}
+}

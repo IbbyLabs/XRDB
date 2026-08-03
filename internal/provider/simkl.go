@@ -116,6 +116,27 @@ func (s *SIMKL) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, er
 	return meta, err
 }
 
+// simklGenre reads either shape SIMKL uses for a genre: an object {"genre":"X"}
+// or a bare string "X". Typing it as one or the other failed the whole decode on
+// the shape it did not expect, which dropped the ratings with it.
+type simklGenre struct{ Genre string }
+
+func (g *simklGenre) UnmarshalJSON(b []byte) error {
+	var s string
+	if err := json.Unmarshal(b, &s); err == nil {
+		g.Genre = s
+		return nil
+	}
+	var obj struct {
+		Genre string `json:"genre"`
+	}
+	if err := json.Unmarshal(b, &obj); err != nil {
+		return err
+	}
+	g.Genre = obj.Genre
+	return nil
+}
+
 // fetchSegment queries one SIMKL segment ("movies" or "tv"). origID is the
 // caller's original ID, used only for error messages. It returns a wrapped
 // errNotFound on a 404 so Fetch can retry the other segment.
@@ -146,9 +167,7 @@ func (s *SIMKL) fetchSegment(ctx context.Context, segment, simklID, origID strin
 	var result struct {
 		Title  string `json:"title"`
 		Year   int    `json:"year"`
-		Genres []struct {
-			Genre string `json:"genre"`
-		} `json:"genres"`
+		Genres []simklGenre `json:"genres"`
 		Ratings struct {
 			Simkl struct {
 				Rating float64 `json:"rating"` // 0–100
