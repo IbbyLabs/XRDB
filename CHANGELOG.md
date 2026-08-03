@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.59.2](https://github.com/IbbyLabs/XRDB/compare/v3.59.1...v3.59.2) (2026-08-03)
+
+
+### Fixed
+
+* **configurator:** source-tint hint points at Tile, not Glass (FR-155) ([e0e1671](https://github.com/IbbyLabs/XRDB/commit/e0e1671bca7a06358e2d01b746da0efb2a52ef1d))
+* **ratings:** clamp the per-style badge Y offset to the canvas (BUG-199) ([cabb923](https://github.com/IbbyLabs/XRDB/commit/cabb92355ebb3beacd6d04dcbf83941ad1974387))
+
 ## [3.59.1](https://github.com/IbbyLabs/XRDB/compare/v3.59.0...v3.59.1) (2026-08-03)
 
 
