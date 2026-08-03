@@ -178,6 +178,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		fromCache := false
 		var expiresAt time.Time
 		var degradedSources []string
+		var degraded bool
 		if renderCache != nil {
 			if e, ok := renderCache.Get(cacheKey); ok {
 				pngBytes = e.Data
@@ -240,6 +241,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 					placeholder = renderResult.Placeholder
 					contentType = renderResult.ContentType
 					degradedSources = renderResult.DegradedSources
+					degraded = renderResult.Degraded
 				}
 			}
 			if len(pngBytes) == 0 {
@@ -256,7 +258,12 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				// Artwork appeared, so stop answering from the remembered gap.
 				notFound.Forget(cacheKey)
 			}
-			if !placeholder {
+			// A degraded render is missing a wanted piece through a transient
+			// failure. Storing it lets a later cache hit serve it with normal
+			// freshness headers, since a hit does not recompute the degraded flag,
+			// which is how one blip froze across a CDN for days. It is not stored
+			// and carries no-store below, so every serve is a fresh attempt.
+			if !placeholder && !degraded {
 				ttl := effectiveTTL(renderResult, ttls)
 				if renderCache != nil {
 					_ = renderCache.SetWithTTL(cacheKey, pngBytes, ttl)
@@ -295,18 +302,26 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			// bytes, so it doubles as a strong validator.
 			etag := `"` + cacheKey + `"`
 			w.Header().Set("ETag", etag)
-			// Let downstream caches hold the render exactly as long as we will.
-			// The URL carries a profile-version token (see profileVersionToken),
-			// so an edited profile is a different URL and cannot be served stale
-			// from a downstream cache.
-			if maxAge := int(time.Until(expiresAt).Seconds()); maxAge > 0 {
-				w.Header().Set("Cache-Control", "public, max-age="+strconv.Itoa(maxAge))
-			}
-			if match := r.Header.Get("If-None-Match"); match != "" && etagMatches(match, etag) {
-				w.Header().Set("X-Cache", "HIT")
-				w.WriteHeader(http.StatusNotModified)
-				ms.Record("/"+mediaType, http.StatusNotModified, latMs(start))
-				return
+			if degraded {
+				// Tell every layer at once — our cache, a CDN, the browser, the
+				// client — not to hold a render known to be missing a piece. A
+				// short TTL fixes only our side; no-store keeps a transient failure
+				// from being frozen anywhere.
+				w.Header().Set("Cache-Control", "no-store")
+			} else {
+				// Let downstream caches hold the render exactly as long as we will.
+				// The URL carries a profile-version token (see profileVersionToken),
+				// so an edited profile is a different URL and cannot be served stale
+				// from a downstream cache.
+				if maxAge := int(time.Until(expiresAt).Seconds()); maxAge > 0 {
+					w.Header().Set("Cache-Control", "public, max-age="+strconv.Itoa(maxAge))
+				}
+				if match := r.Header.Get("If-None-Match"); match != "" && etagMatches(match, etag) {
+					w.Header().Set("X-Cache", "HIT")
+					w.WriteHeader(http.StatusNotModified)
+					ms.Record("/"+mediaType, http.StatusNotModified, latMs(start))
+					return
+				}
 			}
 		}
 		if placeholder {

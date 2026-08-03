@@ -53,10 +53,11 @@ type Result struct {
 	// real artwork — the caller must not cache it (a transient failure would
 	// otherwise be frozen for the whole TTL) and should signal that downstream.
 	Placeholder bool
-	// Degraded is true when a wanted rating source was asked and answered with
-	// an error, leaving its badge off artwork that is otherwise fine. The render
-	// is real and worth caching, but only briefly: the full TTL would hold the
-	// missing badge long after the source recovers.
+	// Degraded is true when the render is missing something it wanted through a
+	// transient failure: a rating source that answered with an error and left its
+	// badge off, or a title logo overlay whose fetch failed. The render is real
+	// and worth caching, but only briefly: the full TTL would hold the missing
+	// piece long after the cause recovers.
 	Degraded bool
 	// DegradedSources names the wanted rating sources skipped for this render
 	// because they were rate-limited, so a check against the render can tell a
@@ -931,8 +932,22 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 			"language", req.Config.Language, "clean", cleanOverlay)
 		if logoBytes, err := p.fetcher.Fetch(ctx, meta.LogoURL); err == nil {
 			drawBackdropLogoOverlay(composed, logoBytes, ratingsH, logoOptsFromConfig(req.Config))
+		} else {
+			// The poster is served titleless, indistinguishable from deliberate
+			// textless art. Marking it degraded caps its cache TTL so a transient
+			// fetch failure is not frozen for the full retention.
+			p.log().WarnContext(ctx, "The title logo could not be fetched; serving the poster without it",
+				"id", logging.RequestID(ctx),
+				"media_id", req.MediaID, "logo_url", meta.LogoURL, "error", err)
+			result.Degraded = true
 		}
 		timings.mark("logo_overlay")
+	} else if wantsLogoOverlay {
+		// Wanted an overlay but no logo URL arrived. Usually permanent for a
+		// title, so it is not marked degraded; logged apart from a fetch failure
+		// because the two share a symptom.
+		p.log().DebugContext(ctx, "A title logo overlay was wanted but no logo URL was available",
+			"id", logging.RequestID(ctx), "media_id", req.MediaID)
 	}
 
 	data, contentType, err := render.Encode(composed, req.MediaType, string(req.Config.Size),
@@ -1420,6 +1435,11 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 				if errors.Is(err, provider.ErrRateLimited) {
 					degraded.Store(true)
 					degradedFlags[i] = true
+					// The per-request drop is otherwise invisible: the badge is
+					// gone from the poster and only a debug line records why, so a
+					// source missing from most renders leaves no warn to act on.
+					p.log().WarnContext(ctx, "A ratings source was rate-limited and dropped from this render; its badge is missing",
+						"id", logging.RequestID(ctx), "source", prov.Name(), "media_id", req.MediaID)
 				}
 				return
 			}
