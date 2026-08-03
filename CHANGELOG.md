@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.59.3](https://github.com/IbbyLabs/XRDB/compare/v3.59.2...v3.59.3) (2026-08-03)
+
+
+### Fixed
+
+* **render:** serialise access to shared font faces (BUG-200) ([e58661c](https://github.com/IbbyLabs/XRDB/commit/e58661c7bd36387d49663108ea98b398b60033dd))
+
 ## [3.59.2](https://github.com/IbbyLabs/XRDB/compare/v3.59.1...v3.59.2) (2026-08-03)
 
 
