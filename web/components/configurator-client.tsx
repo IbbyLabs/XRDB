@@ -440,6 +440,13 @@ export function ConfiguratorClient() {
     }
   };
 
+  // The Image URL box is copied to paste elsewhere, so it needs a full address.
+  // The render URL is same-origin relative, which goes nowhere off the site.
+  const previewUrl =
+    previewSrc.startsWith('/') && typeof window !== 'undefined'
+      ? window.location.origin + previewSrc
+      : previewSrc;
+
   return (
     <div className="page-inner">
       <div className="page-head">
@@ -577,10 +584,10 @@ export function ConfiguratorClient() {
             <div>
               <span className="label" id={`${uid}-url-label`}>Image URL</span>
               <div className="urlbar" aria-labelledby={`${uid}-url-label`}>
-                <code className="urlbar-code" title={previewSrc}>
-                  {previewSrc}
+                <code className="urlbar-code" title={previewUrl}>
+                  {previewUrl}
                 </code>
-                <CopyButton text={previewSrc} label="Copy image URL" />
+                <CopyButton text={previewUrl} label="Copy image URL" />
               </div>
             </div>
           )}
