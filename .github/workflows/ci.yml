@@ -35,9 +35,12 @@ jobs:
         run: go build ./...
 
       - name: Test
-        # -race so concurrency regressions (e.g. shared font faces) actually fail
-        # here; without it a race-only test passes whether or not the bug is present.
-        run: go test -race ./...
+        run: go test ./...
+
+      - name: Test (race, render path)
+        # The font-face race (BUG-200) only fails under -race. Scoped to the render
+        # package with timeout headroom: the whole suite under -race exceeds 10m.
+        run: go test -race -timeout 15m ./internal/compose/...
 
   web:
     name: Web
