@@ -48,7 +48,7 @@ func (o *occupancy) overlaps(r image.Rectangle) bool {
 // The measurement is of the anchor row. place may then shift the box to a row
 // with more room, so a stacked frame can trim a genre it turned out not to
 // need. It never clips or displaces, so the direction is the safe one.
-func (o *occupancy) freeWidthAt(corner string, h, edgeX, edgeY, gap int) int {
+func (o *occupancy) freeWidthAt(corner string, h, edgeX, edgeY, gap, offY int) int {
 	b := o.boundsOrZero()
 	full := b.Dx() - edgeX*2
 	if o == nil || len(o.rects) == 0 || full <= 0 {
@@ -59,6 +59,10 @@ func (o *occupancy) freeWidthAt(corner string, h, edgeX, edgeY, gap int) int {
 	if corner == "tl" || corner == "tr" || corner == "tc" {
 		y0 = b.Min.Y + edgeY
 	}
+	// The badge is drawn at this row plus its vertical nudge, so measure the row
+	// it actually occupies: a nudge that lands the strip in the ring's row must
+	// see the ring, or the label is approved at a width it does not have there.
+	y0 += offY
 	y1 := y0 + h
 
 	lo, hi := b.Min.X+edgeX, b.Max.X-edgeX

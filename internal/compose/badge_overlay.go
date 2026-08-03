@@ -1316,7 +1316,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		// The frame is not the only thing in the way. Anything already reserved
 		// on this row — the rating ring holds a corner and can neither shrink
 		// nor move — leaves the strip a gap rather than the width.
-		if free := occ.freeWidthAt(resolvedPos, bh, edgeX, edgeY, s(7)) - nudge; free < room {
+		if free := occ.freeWidthAt(resolvedPos, bh, edgeX, edgeY, s(7), opts.offsetY) - nudge; free < room {
 			room = free
 		}
 		for len(shown) > 1 && bw > room {
