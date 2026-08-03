@@ -820,7 +820,7 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
         </span>
       </div>
       <ToggleField id={`${uid}-badge-border-tint`} label="Outline in each rating site's colour"
-        hint="Draws every badge's outline in that site's own colour. Pairs with the Glass style."
+        hint="Draws every badge's outline in that site's own colour. On the Tile style this gives the classic outlined chip; on Glass it's a floating coloured ring."
         checked={config.ratingBadgeBorderSourceTint}
         onChange={() => onUpdate('ratingBadgeBorderSourceTint', !config.ratingBadgeBorderSourceTint)} />
       <NumField id={`${uid}-badge-border-op`} label="Badge outline opacity (%)" value={config.ratingBadgeBorderOpacity}
