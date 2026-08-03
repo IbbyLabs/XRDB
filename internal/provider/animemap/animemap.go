@@ -41,6 +41,31 @@ func (ids IDs) empty() bool {
 	return ids.MAL == 0 && ids.AniList == 0 && ids.Kitsu == 0 && ids.AniDB == 0
 }
 
+// ratingComplete reports whether the three ids the rating providers key on are
+// all present, so a lookup can stop before consulting a slower source.
+func (ids IDs) ratingComplete() bool {
+	return ids.MAL != 0 && ids.AniList != 0 && ids.Kitsu != 0
+}
+
+// mergeIDs fills a's zero fields from b, so a partial hit from one source has its
+// gaps filled by the next. a's non-zero values win, keeping the earlier (more
+// authoritative) source's ids where it has them.
+func mergeIDs(a, b IDs) IDs {
+	if a.MAL == 0 {
+		a.MAL = b.MAL
+	}
+	if a.AniList == 0 {
+		a.AniList = b.AniList
+	}
+	if a.Kitsu == 0 {
+		a.Kitsu = b.Kitsu
+	}
+	if a.AniDB == 0 {
+		a.AniDB = b.AniDB
+	}
+	return a
+}
+
 // Target is the mainstream identifier an anime id maps back to. Artwork and
 // most rating sources are keyed on IMDb or TMDB, so an anime id has to be
 // translated before anything else can be fetched for it.
@@ -286,15 +311,32 @@ func (m *Mapper) Resolve(ctx context.Context, mediaType, id string) (IDs, bool) 
 	if id == "" {
 		return IDs{}, false
 	}
+	// Merge across sources rather than returning the first hit. A source can hold
+	// a partial mapping — a Kitsu id but no MAL or AniList — and returning it would
+	// shadow the complete answer a later source has. Each source fills the gaps the
+	// previous left, and the search stops once the rating ids are all present.
+	var out IDs
+	found := false
 	if ids, ok := m.primary.lookup(mediaType, id); ok {
-		return ids, true
+		out = mergeIDs(out, ids)
+		found = true
 	}
-	if m.supplement != nil {
+	if !out.ratingComplete() && m.supplement != nil {
 		if ids, ok := m.supplement.lookup(mediaType, id); ok {
-			return ids, true
+			out = mergeIDs(out, ids)
+			found = true
 		}
 	}
-	return m.resolveFallback(ctx, id)
+	if !out.ratingComplete() {
+		if ids, ok := m.resolveFallback(ctx, id); ok {
+			out = mergeIDs(out, ids)
+			found = true
+		}
+	}
+	if found {
+		return out, true
+	}
+	return IDs{}, false
 }
 
 // ResolveTarget maps an anime-service id back to its IMDb/TMDB identifier.
@@ -813,11 +855,31 @@ func (m *Mapper) fetchFallback(ctx context.Context, url string) (IDs, bool, erro
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&results); err != nil {
 		return IDs{}, false, err
 	}
+	// The API returns an array whose elements can be different seasons, some
+	// carrying only a partial set of ids. Return the most complete element rather
+	// than the first non-empty one, so which element happens to come first does not
+	// decide what the caller gets. Elements are not merged: that would pair ids
+	// belonging to different seasons.
+	var best IDs
+	bestScore := 0
 	for _, r := range results {
 		ids := IDs{MAL: int(r.MAL), AniList: int(r.AniList), Kitsu: int(r.Kitsu)}
-		if !ids.empty() {
-			return ids, true, nil
+		score := 0
+		if ids.MAL != 0 {
+			score++
 		}
+		if ids.AniList != 0 {
+			score++
+		}
+		if ids.Kitsu != 0 {
+			score++
+		}
+		if score > bestScore {
+			best, bestScore = ids, score
+		}
+	}
+	if bestScore > 0 {
+		return best, true, nil
 	}
 	return IDs{}, false, nil
 }
