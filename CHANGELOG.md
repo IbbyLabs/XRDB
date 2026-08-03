@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.60.5](https://github.com/IbbyLabs/XRDB/compare/v3.60.4...v3.60.5) (2026-08-03)
+
+
+### Fixed
+
+* **cache:** read the disk bounds under the lock (BUG-201) ([09fa760](https://github.com/IbbyLabs/XRDB/commit/09fa7601b92cc98098274800bc0b84120a651760))
+
 ## [3.60.4](https://github.com/IbbyLabs/XRDB/compare/v3.60.3...v3.60.4) (2026-08-03)
 
 
