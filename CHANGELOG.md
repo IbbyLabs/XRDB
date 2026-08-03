@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.61.0](https://github.com/IbbyLabs/XRDB/compare/v3.60.5...v3.61.0) (2026-08-03)
+
+
+### Added
+
+* **ratings:** award marks need the review count too (FR-157) ([e86d27e](https://github.com/IbbyLabs/XRDB/commit/e86d27e4f9c615e228fcec68b54dbce044f3eb58))
+
 ## [3.60.5](https://github.com/IbbyLabs/XRDB/compare/v3.60.4...v3.60.5) (2026-08-03)
 
 
