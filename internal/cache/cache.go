@@ -98,6 +98,15 @@ func New(dir string, ttl time.Duration, maxEntries int, maxBytes int64) (*Cache,
 	return c, nil
 }
 
+// diskBounds reads the disk limits under the lock. SetDiskBounds can run while
+// a sweep is deciding what to evict, so reading the fields directly is a data
+// race — the writer holds c.mu and these readers did not.
+func (c *Cache) diskBounds() (int, int64) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.maxDiskFiles, c.maxDiskBytes
+}
+
 // SetDiskBounds raises or lowers the disk tier's limits. Values <= 0 leave the
 // corresponding bound at its default. Call before the cache is used.
 func (c *Cache) SetDiskBounds(files int, bytes int64) {
@@ -283,7 +292,8 @@ func (c *Cache) Purge() int {
 	}
 	// Re-derive the counters from what survived rather than assuming the
 	// directory is now empty: a concurrent Set may have written during the walk.
-	c.sweepWithBounds(c.maxDiskFiles, c.maxDiskBytes)
+	files, bytes := c.diskBounds()
+	c.sweepWithBounds(files, bytes)
 	return removed
 }
 
@@ -359,7 +369,8 @@ func (c *Cache) sweepLoop() {
 // sweep removes expired disk entries, enforces the disk bounds oldest-first,
 // and reconciles the counters that back Stats.
 func (c *Cache) sweep() {
-	c.sweepWithBounds(c.maxDiskFiles, c.maxDiskBytes)
+	files, bytes := c.diskBounds()
+	c.sweepWithBounds(files, bytes)
 }
 
 func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
