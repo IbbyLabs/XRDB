@@ -44,7 +44,7 @@ func TestSIMKLParseRatingsResponse(t *testing.T) {
 			},
 			"ratings": map[string]any{
 				"simkl": map[string]any{
-					"rating": 89.0,
+					"rating": 8.9,
 					"votes":  50000,
 				},
 			},
@@ -55,12 +55,22 @@ func TestSIMKLParseRatingsResponse(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	k := &SIMKL{clientID: "testkey", httpClient: srv.Client()}
-	_ = k
-
-	// Verify normalization: 89.0 / 10 = 8.9
-	if 89.0/10.0 != 8.9 {
-		t.Error("unexpected normalization result")
+	k := &SIMKL{clientID: "testkey", baseURL: srv.URL, httpClient: srv.Client()}
+	meta, err := k.fetchSegment(context.Background(), "anime", "1", "tt2560140")
+	if err != nil {
+		t.Fatalf("fetchSegment: %v", err)
+	}
+	if meta.Title != "Attack on Titan" {
+		t.Errorf("title = %q, want \"Attack on Titan\"", meta.Title)
+	}
+	if meta.Year != 2013 {
+		t.Errorf("year = %d, want 2013", meta.Year)
+	}
+	// The response carries a poster key, not a URL; the full address is built
+	// around it.
+	wantPoster := "https://wsrv.nl/?url=simkl.in/posters/abc123_m.jpg"
+	if meta.PosterURL != wantPoster {
+		t.Errorf("poster = %q, want %q", meta.PosterURL, wantPoster)
 	}
 }
 
