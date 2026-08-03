@@ -1,0 +1,66 @@
+name: Notify CI transition
+run-name: CI transition check for ${{ github.event.workflow_run.head_sha }}
+
+# A build that fails, then fails again, produces no news. GitHub's own run-failed
+# mail fires on every red run, so it reads as noise and stops being read — which is
+# how CI stayed red for twelve hours with nobody noticing the gate was open. This
+# posts only when the state CHANGES, so a message here always means something is
+# different from the last run rather than the same thing again.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+jobs:
+  transition:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Post on a red/green transition
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          CURRENT: ${{ github.event.workflow_run.conclusion }}
+          SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          set -euo pipefail
+          if [ -z "${WEBHOOK_URL}" ]; then
+            echo "WEBHOOK_URL is not configured; nothing to post."
+            exit 0
+          fi
+
+          # The run before this one on the same branch. Only completed runs count:
+          # an in-progress run has no conclusion and would read as a change.
+          previous=$(gh api \
+            "repos/${REPO}/actions/workflows/ci.yml/runs?branch=main&status=completed&per_page=10" \
+            --jq "[.workflow_runs[] | select(.id != ${RUN_ID})] | .[0].conclusion // \"\"")
+
+          echo "previous=${previous:-none} current=${CURRENT}"
+
+          # Only a change is news. Same-to-same is the state that trained everyone
+          # to ignore the gate, so it stays silent.
+          if [ "${previous}" = "success" ] && [ "${CURRENT}" = "failure" ]; then
+            text=":red_circle: **CI has gone red on main.** Previous run passed, this one failed."
+          elif [ "${previous}" = "failure" ] && [ "${CURRENT}" = "success" ]; then
+            text=":green_circle: **CI is green again on main.** Previous run failed, this one passed."
+          else
+            echo "No transition (${previous:-none} -> ${CURRENT}); staying quiet."
+            exit 0
+          fi
+
+          body=$(python3 -c 'import json,sys; print(json.dumps({"content": sys.argv[1]}))' \
+            "${text}
+\`${SHA}\`
+${RUN_URL}")
+          code=$(curl -sS -o /dev/null -w '%{http_code}' -X POST \
+            -H 'Content-Type: application/json' "${WEBHOOK_URL}" --data "${body}")
+          case "${code}" in
+            2*) echo "posted (${code})" ;;
+            *)  echo "post failed: http ${code}" >&2; exit 1 ;;
+          esac
