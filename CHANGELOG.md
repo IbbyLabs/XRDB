@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.59.6](https://github.com/IbbyLabs/XRDB/compare/v3.59.5...v3.59.6) (2026-08-03)
+
+
+### Fixed
+
+* **animemap:** merge partial id mappings across sources (BUG-206) ([0058c96](https://github.com/IbbyLabs/XRDB/commit/0058c96c88550915bd7248f02bcbf5c1d80dfe68))
+
 ## [3.59.5](https://github.com/IbbyLabs/XRDB/compare/v3.59.4...v3.59.5) (2026-08-03)
 
 
