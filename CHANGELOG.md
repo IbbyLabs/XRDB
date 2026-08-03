@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.59.1](https://github.com/IbbyLabs/XRDB/compare/v3.59.0...v3.59.1) (2026-08-03)
+
+
+### Fixed
+
+* **genre:** render glass, square, pill, clean distinctly (BUG-194) ([50d241a](https://github.com/IbbyLabs/XRDB/commit/50d241a10f7dea31f7afb640ac7f15a6b1922894))
+
 ## [3.59.0](https://github.com/IbbyLabs/XRDB/compare/v3.58.0...v3.59.0) (2026-08-03)
 
 
