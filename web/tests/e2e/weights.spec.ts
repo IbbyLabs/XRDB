@@ -33,7 +33,7 @@ async function shares(group: ReturnType<Page['getByRole']>): Promise<number[]> {
       Promise.resolve([] as number[]));
 }
 
-const renderUrl = (page: Page) => page.locator('.urlbar-code').first();
+const renderUrl = (page: Page) => page.locator('.preview-img').first();
 
 test('the weighting starts as an even split that adds up to 100', async ({ page }) => {
   await openFineTuning(page);
@@ -44,7 +44,7 @@ test('the weighting starts as an even split that adds up to 100', async ({ page 
   expect(values.reduce((a, b) => a + b, 0)).toBe(100);
   // An untouched split is the renderer's own default, so it should not need
   // spelling out in the URL.
-  await expect(renderUrl(page)).not.toContainText('ratingProviderWeights');
+  await expect(renderUrl(page)).not.toHaveAttribute('src', /ratingProviderWeights/);
   await expect(group).toContainText('100%');
 });
 
@@ -53,7 +53,7 @@ test('moving one source rebalances the rest to keep the total at 100', async ({ 
   const group = await openWeighting(page);
 
   await group.getByRole('spinbutton', { name: 'IMDb (%)' }).fill('70');
-  await expect(renderUrl(page)).toContainText('ratingProviderWeights');
+  await expect(renderUrl(page)).toHaveAttribute('src', /ratingProviderWeights/);
 
   const values = await shares(group);
   expect(values.reduce((a, b) => a + b, 0)).toBe(100);
@@ -80,10 +80,10 @@ test('even split clears the weighting from the URL again', async ({ page }) => {
   const group = await openWeighting(page);
 
   await group.getByRole('spinbutton', { name: 'IMDb (%)' }).fill('65');
-  await expect(renderUrl(page)).toContainText('ratingProviderWeights');
+  await expect(renderUrl(page)).toHaveAttribute('src', /ratingProviderWeights/);
 
   await group.getByRole('button', { name: 'Even split' }).click();
-  await expect(renderUrl(page)).not.toContainText('ratingProviderWeights');
+  await expect(renderUrl(page)).not.toHaveAttribute('src', /ratingProviderWeights/);
   expect((await shares(group)).reduce((a, b) => a + b, 0)).toBe(100);
 });
 
@@ -98,9 +98,9 @@ test('reordering the critics list reaches the render URL', async ({ page }) => {
 
   await critics.getByRole('button', { name: /move metacritic up/i }).click();
   await expect(critics.getByRole('listitem').first()).toContainText('Metacritic');
-  await expect(renderUrl(page)).toContainText('ringCriticsPriority');
+  await expect(renderUrl(page)).toHaveAttribute('src', /ringCriticsPriority/);
 
   await critics.getByRole('button', { name: 'Default order' }).click();
   await expect(critics.getByRole('listitem').first()).toContainText('RT critics');
-  await expect(renderUrl(page)).not.toContainText('ringCriticsPriority');
+  await expect(renderUrl(page)).not.toHaveAttribute('src', /ringCriticsPriority/);
 });

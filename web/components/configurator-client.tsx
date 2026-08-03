@@ -18,7 +18,6 @@ import { TemplateStrip, RatingsPanel } from './configurator-panels';
 import { ProfilePanel, type LoadedProfile } from './profile-panel';
 import { InstallPanel } from './install-panel';
 import { MediaSearch } from './media-search';
-import { CopyButton } from './copy-button';
 import { tablistKeyNav } from './tablist';
 import { BRAND_DISCORD_URL } from '@/lib/brand';
 
@@ -440,13 +439,6 @@ export function ConfiguratorClient() {
     }
   };
 
-  // The Image URL box is copied to paste elsewhere, so it needs a full address.
-  // The render URL is same-origin relative, which goes nowhere off the site.
-  const previewUrl =
-    previewSrc.startsWith('/') && typeof window !== 'undefined'
-      ? window.location.origin + previewSrc
-      : previewSrc;
-
   return (
     <div className="page-inner">
       <div className="page-head">
@@ -577,18 +569,6 @@ export function ConfiguratorClient() {
                 <Redo2 size={13} aria-hidden />
                 Redo
               </button>
-            </div>
-          )}
-
-          {previewSrc && (
-            <div>
-              <span className="label" id={`${uid}-url-label`}>Image URL</span>
-              <div className="urlbar" aria-labelledby={`${uid}-url-label`}>
-                <code className="urlbar-code" title={previewUrl}>
-                  {previewUrl}
-                </code>
-                <CopyButton text={previewUrl} label="Copy image URL" />
-              </div>
             </div>
           )}
 
