@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.62.0](https://github.com/IbbyLabs/XRDB/compare/v3.61.1...v3.62.0) (2026-08-03)
+
+
+### Added
+
+* **cache:** report what each render-cache sweep removed ([c5aa279](https://github.com/IbbyLabs/XRDB/commit/c5aa279b52ee87a03f6cc5173d094dad3652afea))
+
+
+### Fixed
+
+* **ratings:** draw the Roger Ebert mark, not a disc (BUG-195) ([59d15fb](https://github.com/IbbyLabs/XRDB/commit/59d15fba02453dd01e30ae03fdb02efdcb378c20))
+
 ## [3.61.1](https://github.com/IbbyLabs/XRDB/compare/v3.61.0...v3.61.1) (2026-08-03)
 
 
