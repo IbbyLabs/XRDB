@@ -17,10 +17,16 @@ const src = join(here, '..', 'public', 'rating-logos');
 const out = join(here, '..', '..', 'internal', 'compose', 'assets', 'ratings');
 const SIZE = 256;
 
+// Roger Ebert is a monochrome mark the renderer tints, and it renders as a flat
+// disc until the draw path changes rather than the asset. Leave its render asset
+// as committed so a regeneration does not churn it or imply a fix that is not one.
+const skip = new Set(['rogerebert']);
+
 mkdirSync(out, { recursive: true });
 let svg = 0, png = 0;
 for (const f of readdirSync(src).sort()) {
   const name = f.replace(/\.(svg|png)$/, '');
+  if (skip.has(name)) continue;
   if (f.endsWith('.svg')) {
     await sharp(join(src, f), { density: 384 })
       .resize(SIZE, SIZE, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
