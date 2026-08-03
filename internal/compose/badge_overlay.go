@@ -347,6 +347,35 @@ func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64, occ *o
 		if hasAccent {
 			chrome.border = color.NRGBA{R: accent.R, G: accent.G, B: accent.B, A: chrome.border.A}
 		}
+	case "square":
+		// Sharp corners, frosted chrome otherwise.
+		radius = 0
+		if hasAccent {
+			chrome.border = color.NRGBA{R: accent.R, G: accent.G, B: accent.B, A: chrome.border.A}
+		}
+	case "pill":
+		// A fully rounded capsule.
+		radius = tileH / 2
+		if hasAccent {
+			chrome.border = color.NRGBA{R: accent.R, G: accent.G, B: accent.B, A: chrome.border.A}
+		}
+	case "glass":
+		// A lighter, more translucent body under a brighter edge, so it reads as
+		// frosted glass rather than the solid default plate.
+		chrome.fill = color.NRGBA{R: 40, G: 44, B: 54, A: 120}
+		chrome.border = color.NRGBA{R: 255, G: 255, B: 255, A: 96}
+		if hasAccent {
+			chrome.border = color.NRGBA{R: accent.R, G: accent.G, B: accent.B, A: 200}
+		}
+	case "clean":
+		// No border or shadow and only a whisper of fill, so the marks sit nearly
+		// on the artwork itself.
+		chrome.fill.A = 40
+		chrome.border.A = 0
+		chrome.shadow.A = 0
+		if hasAccent {
+			chrome.fill = color.NRGBA{R: accent.R, G: accent.G, B: accent.B, A: 48}
+		}
 	default:
 		// The frosted default keeps its own fixed fill, but the hairline border
 		// answers the same accent the tile style's fill does.
@@ -1037,7 +1066,7 @@ type genreBadgeOpts struct {
 	mode         string  // "" | text | icon | both; icon modes label by genre family
 	isAnime      bool    // the title matched the anime ID mapping
 	grouping     string  // "" | split | animation | secondary
-	style        string  // "" | glass | square | plain | clean | tile
+	style        string  // "" | glass | square | pill | plain | clean | tile
 	tileColor    string  // "#RRGGBB" for the tile style
 	borderWidth  float64 // px border on the tile; 0 = default hairline
 	outlineColor string  // "#RRGGBB" outline for the plain style; "" = default shadow

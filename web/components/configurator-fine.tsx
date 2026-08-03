@@ -683,7 +683,7 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
         value={config.genreBadgeStyle}
         onChange={v => onUpdate('genreBadgeStyle', v)}
       />
-      {config.genreBadgeStyle !== 'plain' && config.genreBadgeStyle !== 'clean' && (
+      {config.genreBadgeStyle !== 'plain' && (
         <ColorField id={`${uid}-genre-tile-color`}
           label={config.genreBadgeStyle === 'tile' ? 'Tile colour' : 'Border/accent colour'}
           value={config.genreBadgeTileAccentColor}
