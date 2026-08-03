@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.60.2](https://github.com/IbbyLabs/XRDB/compare/v3.60.1...v3.60.2) (2026-08-03)
+
+
+### Fixed
+
+* **logging:** count owner-key governor skips and reword the drop warn ([6cdb7a7](https://github.com/IbbyLabs/XRDB/commit/6cdb7a76b057a5de96247c8e00ed3bc5e4c7b70c))
+* **ratings:** decode SIMKL genres in either shape (BUG-207) ([60d9284](https://github.com/IbbyLabs/XRDB/commit/60d92842da906d9f42a08246bfdfe76bc68f5eba))
+
 ## [3.60.1](https://github.com/IbbyLabs/XRDB/compare/v3.60.0...v3.60.1) (2026-08-03)
 
 
