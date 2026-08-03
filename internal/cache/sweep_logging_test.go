@@ -1,0 +1,95 @@
+package cache
+
+import (
+	"bytes"
+	"encoding/json"
+	"log/slog"
+	"os"
+	"strings"
+	"testing"
+	"time"
+)
+
+// captureSlog swaps the default logger for one writing JSON to a buffer, at the
+// given level, and restores it afterwards.
+func captureSlog(t *testing.T, level slog.Level) *bytes.Buffer {
+	t.Helper()
+	buf := &bytes.Buffer{}
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(buf, &slog.HandlerOptions{Level: level})))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+	return buf
+}
+
+func lines(buf *bytes.Buffer) []map[string]any {
+	var out []map[string]any
+	for _, l := range strings.Split(strings.TrimSpace(buf.String()), "\n") {
+		if l == "" {
+			continue
+		}
+		var m map[string]any
+		if json.Unmarshal([]byte(l), &m) == nil {
+			out = append(out, m)
+		}
+	}
+	return out
+}
+
+// A sweep that removes nothing and a sweep that never ran are indistinguishable
+// unless the sweep says so. This is the whole reason the line exists, so an idle
+// pass has to be observable at debug.
+func TestAnIdleSweepStillReportsItself(t *testing.T) {
+	buf := captureSlog(t, slog.LevelDebug)
+	c, err := New(t.TempDir(), time.Minute, 10, 1<<20)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	defer c.Close()
+
+	c.sweepWithBounds(1000, 1<<30)
+
+	got := lines(buf)
+	if len(got) == 0 {
+		t.Fatal("an idle sweep logged nothing, so a dead sweeper would look identical")
+	}
+	last := got[len(got)-1]
+	if last["evicted"] != float64(0) || last["expired"] != float64(0) {
+		t.Errorf("idle sweep reported removals: %v", last)
+	}
+}
+
+// Being over the bound after a sweep means the sweeper is not keeping up, which
+// is the one outcome an operator has to be told about rather than have to go
+// looking for.
+func TestASweepStillOverItsBoundWarns(t *testing.T) {
+	dir := t.TempDir()
+	c, err := New(dir, time.Minute, 10, 1<<20)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	defer c.Close()
+	for i := 0; i < 4; i++ {
+		_ = c.Set(string(rune('a'+i)), bytes.Repeat([]byte("x"), 512))
+	}
+
+	// The sweep can always reach a bound by deleting more, so the only way it
+	// ends over one is when the deletions fail. A read-execute directory still
+	// lists and reads but refuses unlink, which is that case.
+	if err := os.Chmod(dir, 0o500); err != nil {
+		t.Fatalf("chmod: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(dir, 0o755) })
+
+	buf := captureSlog(t, slog.LevelDebug)
+	c.sweepWithBounds(0, 0)
+
+	var warned bool
+	for _, l := range lines(buf) {
+		if l["level"] == "WARN" {
+			warned = true
+		}
+	}
+	if !warned {
+		t.Error("a sweep that left the cache over its byte bound did not warn")
+	}
+}

@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"sort"
@@ -385,6 +386,7 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 		mtime time.Time
 	}
 	files := make([]diskFile, 0, len(dirEntries))
+	var expired, evicted int
 	now := time.Now().UnixNano()
 	for _, de := range dirEntries {
 		if de.IsDir() || filepath.Ext(de.Name()) != ".bin" {
@@ -396,7 +398,9 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 			continue
 		}
 		if exp, ok := readExpiry(path); ok && now > exp {
-			_ = os.Remove(path)
+			if os.Remove(path) == nil {
+				expired++
+			}
 			continue
 		}
 		files = append(files, diskFile{path: path, size: info.Size(), mtime: info.ModTime()})
@@ -415,6 +419,7 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 		if os.Remove(f.path) == nil {
 			remaining--
 			totalBytes -= f.size
+			evicted++
 		}
 	}
 
@@ -426,6 +431,22 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 	c.diskFiles.Store(nFiles)
 	c.diskBytes.Store(nBytes)
 	c.diskMu.Unlock()
+
+	// A sweep that removes nothing and one that never ran look identical from
+	// outside, so every pass says what it did and what it left behind.
+	attrs := []any{
+		"expired", expired, "evicted", evicted,
+		"files", nFiles, "bytes", nBytes,
+		"file_bound", fileBound, "byte_bound", byteBound,
+	}
+	switch {
+	case nFiles > int64(fileBound) || nBytes > byteBound:
+		slog.Warn("The render cache is still over its bounds after a sweep", attrs...)
+	case expired > 0 || evicted > 0:
+		slog.Info("Swept the render cache", attrs...)
+	default:
+		slog.Debug("Swept the render cache, nothing to remove", attrs...)
+	}
 }
 
 // readExpiry reads the expiry header without loading the payload.
