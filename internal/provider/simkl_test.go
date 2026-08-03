@@ -168,3 +168,41 @@ func TestSIMKLDecodesGenresInEitherShape(t *testing.T) {
 		})
 	}
 }
+
+// BUG-209: SIMKL's rating is already 0–10. It was divided by ten on the belief
+// that it was 0–100, so every SIMKL badge rendered under 1 (Shawshank as 0.9).
+// The fixture is the shape a real response has — a simkl rating beside an imdb
+// one, both on the same scale — because the bug was a wrong belief about the API
+// rather than a coding slip.
+func TestSIMKLRatingIsAlreadyOutOfTen(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"title": "The Shawshank Redemption",
+			"ratings": map[string]any{
+				"simkl": map[string]any{"rating": 8.2, "votes": 1508},
+				"imdb":  map[string]any{"rating": 8.3, "votes": 175763},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	k := &SIMKL{clientID: "k", baseURL: srv.URL, httpClient: srv.Client()}
+	meta, err := k.fetchSegment(context.Background(), "movies", "53506", "tt0111161")
+	if err != nil {
+		t.Fatalf("fetchSegment: %v", err)
+	}
+	var got float64
+	var label string
+	for _, r := range meta.Ratings {
+		if r.Source == "simkl" {
+			got, label = r.Value, r.Label
+		}
+	}
+	if got != 8.2 {
+		t.Errorf("SIMKL rating = %v, want 8.2 (a tenth of it means the 0-100 division is back)", got)
+	}
+	if label != "8.2" {
+		t.Errorf("SIMKL label = %q, want \"8.2\"", label)
+	}
+}

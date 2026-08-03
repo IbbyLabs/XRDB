@@ -170,7 +170,7 @@ func (s *SIMKL) fetchSegment(ctx context.Context, segment, simklID, origID strin
 		Genres []simklGenre `json:"genres"`
 		Ratings struct {
 			Simkl struct {
-				Rating float64 `json:"rating"` // 0–100
+				Rating float64 `json:"rating"` // 0–10, like the imdb rating beside it
 				Votes  int     `json:"votes"`
 			} `json:"simkl"`
 		} `json:"ratings"`
@@ -203,12 +203,13 @@ func (s *SIMKL) fetchSegment(ctx context.Context, segment, simklID, origID strin
 
 	sr := result.Ratings.Simkl
 	if sr.Rating > 0 && sr.Votes > 0 {
-		// SIMKL ratings are 0–100; normalize to 0–10.
-		normalized := sr.Rating / 10.0
+		// Already 0–10, alongside an imdb rating on the same scale in the same
+		// object. It was being divided by ten on the belief that it was 0–100,
+		// which rendered every SIMKL score under 1.
 		meta.Ratings = []Rating{{
 			Source: "simkl",
-			Value:  normalized,
-			Label:  fmt.Sprintf("%.1f", normalized),
+			Value:  sr.Rating,
+			Label:  fmt.Sprintf("%.1f", sr.Rating),
 		}}
 	}
 
