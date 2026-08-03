@@ -1158,7 +1158,7 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 		startY = bounds.Min.Y + edgeY
 	}
 	offsetX, offsetY := ratingStripOffsets(cfg)
-	startY += offsetY
+	startY = clampStripY(startY+offsetY, totalH, bounds, edgeY)
 
 	y := startY
 	for _, r := range rows {
@@ -1225,8 +1225,8 @@ func drawBadgesTopBottom(out *image.NRGBA, specs []badgeSpec, innerH, badgeGap, 
 		}
 		drawRatingRow(out, row, y, innerH, padX, iconSize, iconGap, accentW, face, chrome)
 	}
-	drawRow(specs[:mid], bounds.Min.Y+edgeY+offsetY)
-	drawRow(specs[mid:], bounds.Max.Y-edgeY-innerH+offsetY)
+	drawRow(specs[:mid], clampStripY(bounds.Min.Y+edgeY+offsetY, innerH, bounds, edgeY))
+	drawRow(specs[mid:], clampStripY(bounds.Max.Y-edgeY-innerH+offsetY, innerH, bounds, edgeY))
 	return innerH
 }
 
@@ -1415,6 +1415,24 @@ func ratingStripOffsets(cfg imageconfig.Config) (int, int) {
 		y += cfg.RatingOffsetYPillGlass
 	}
 	return x, y
+}
+
+// clampStripY keeps a rating row of height h on the canvas: a large per-style
+// vertical nudge stops at the inset edge rather than pushing the row out of the
+// image, which renders 200 with the badges silently gone.
+func clampStripY(y, h int, bounds image.Rectangle, edgeY int) int {
+	lo := bounds.Min.Y + edgeY
+	hi := bounds.Max.Y - edgeY - h
+	if hi < lo {
+		hi = lo
+	}
+	if y < lo {
+		return lo
+	}
+	if y > hi {
+		return hi
+	}
+	return y
 }
 
 // filterRatings returns only the ratings whose source is in the want list.
