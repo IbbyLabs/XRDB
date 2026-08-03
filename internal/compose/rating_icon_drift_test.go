@@ -1,6 +1,8 @@
 package compose
 
 import (
+	"image"
+	"image/color"
 	"os"
 	"path/filepath"
 	"strings"
@@ -57,22 +59,46 @@ func TestRatingIconsStayInStepWithTheBrandedSet(t *testing.T) {
 		}
 	}
 
-	// A render asset generated from a vector logo must carry that logo's colour.
-	// This is the BUG-192 regression check: a greyscale asset for an SVG source
-	// means the regeneration was skipped and the renderer is back to tinting a
-	// silhouette. PNG sources (a logo with no vector, e.g. rogerebert) are
-	// whatever they are and exempt.
+	// The BUG-192 regression was a branded mark collapsing to a single colour
+	// (18 distinct down to 1), which the old "is it greyscale" check missed: a
+	// flat one-colour glyph is not greyscale and passed. This measures the result
+	// instead — a mark must not flatten to near one colour. The marks the renderer
+	// tints from a single-colour glyph are legitimately low-colour, so they are
+	// listed rather than caught; adding a new one is a deliberate line here, not a
+	// silent pass.
+	monochromeMarks := map[string]bool{
+		"allocine": true, "kitsu": true, "simkl": true, "trakt": true, "rt": true,
+	}
 	ensureIcons()
-	for name, ext := range webSource {
-		if ext != ".svg" {
+	for name := range render {
+		img, ok := ratingIcons[name]
+		if !ok {
+			continue // the parity check above already reports a load failure
+		}
+		if monochromeMarks[name] {
 			continue
 		}
-		if _, loaded := ratingIcons[name]; !loaded {
-			t.Errorf("%q is a branded logo but its render asset did not load", name)
-			continue
-		}
-		if !ratingIconColored[name] {
-			t.Errorf("%q comes from a vector logo but its render asset is greyscale — regenerate with `npm run gen:icons`", name)
+		if c := distinctColorBuckets(img); c < 3 {
+			t.Errorf("%q has collapsed to %d distinct colours — a branded mark must not flatten to one; if it is intentionally monochrome (tinted at render) add it to monochromeMarks and say why", name, c)
 		}
 	}
+}
+
+// distinctColorBuckets counts the distinct colours in a mark, quantised into a
+// coarse grid and ignoring near-transparent edge pixels, so anti-aliasing does
+// not inflate the count. It is a collapse detector, not a palette measure.
+func distinctColorBuckets(img image.Image) int {
+	const quant, alphaMin = 48, 40
+	seen := map[[3]uint8]bool{}
+	b := img.Bounds()
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			c := color.NRGBAModel.Convert(img.At(x, y)).(color.NRGBA)
+			if c.A < alphaMin {
+				continue
+			}
+			seen[[3]uint8{c.R / quant, c.G / quant, c.B / quant}] = true
+		}
+	}
+	return len(seen)
 }

@@ -5,10 +5,10 @@
 // tinted greyscale while the site showed the branded mark.
 //
 // Run after changing any logo:  npm run gen:icons   (from web/)
-// A .svg is rasterised; a .png (a source with no vector, e.g. filmweb, rogerebert)
-// is copied through unchanged.
+// A .svg is rasterised and a .png (a source with no vector) is fit into the same
+// square, both padded rather than stretched so proportions hold.
 import sharp from 'sharp';
-import { readdirSync, copyFileSync, mkdirSync } from 'fs';
+import { readdirSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -27,8 +27,13 @@ for (const f of readdirSync(src).sort()) {
       .png({ compressionLevel: 9 }).toFile(join(out, name + '.png'));
     svg++;
   } else if (f.endsWith('.png')) {
-    copyFileSync(join(src, f), join(out, name + '.png'));
+    // Fit the mark into the square rather than copy it through: the source PNGs
+    // come at assorted sizes and aspect ratios (a wide dots mark, a tall glyph),
+    // and padding into the square keeps proportions where stretching would not.
+    await sharp(join(src, f))
+      .resize(SIZE, SIZE, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .png({ compressionLevel: 9 }).toFile(join(out, name + '.png'));
     png++;
   }
 }
-console.log(`gen:icons — rasterised ${svg} svg, copied ${png} png into internal/compose/assets/ratings`);
+console.log(`gen:icons — rasterised ${svg} svg, fit ${png} png into internal/compose/assets/ratings`);
