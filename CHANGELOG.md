@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.60.3](https://github.com/IbbyLabs/XRDB/compare/v3.60.2...v3.60.3) (2026-08-03)
+
+
+### Fixed
+
+* **ratings:** skip the artwork provider that answered (BUG-208) ([d420638](https://github.com/IbbyLabs/XRDB/commit/d420638fb97e7ce140cee40bd168efbac2d3ddea))
+
 ## [3.60.2](https://github.com/IbbyLabs/XRDB/compare/v3.60.1...v3.60.2) (2026-08-03)
 
 
