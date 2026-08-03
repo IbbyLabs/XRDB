@@ -35,7 +35,9 @@ jobs:
         run: go build ./...
 
       - name: Test
-        run: go test ./...
+        # -race so concurrency regressions (e.g. shared font faces) actually fail
+        # here; without it a race-only test passes whether or not the bug is present.
+        run: go test -race ./...
 
   web:
     name: Web
