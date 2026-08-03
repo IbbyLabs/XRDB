@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.60.4](https://github.com/IbbyLabs/XRDB/compare/v3.60.3...v3.60.4) (2026-08-03)
+
+
+### Fixed
+
+* **ratings:** SIMKL scores are already out of ten (BUG-209) ([4065c8a](https://github.com/IbbyLabs/XRDB/commit/4065c8a559e775458d89b597b3d5e55543e1246b))
+
 ## [3.60.3](https://github.com/IbbyLabs/XRDB/compare/v3.60.2...v3.60.3) (2026-08-03)
 
 
