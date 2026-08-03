@@ -11,6 +11,9 @@ import (
 // it — tile and square. Hiding it must change those and leave the fully-rounded
 // styles, which never drew one, untouched.
 func TestHidingTheRatingAccentStripe(t *testing.T) {
+	if testing.Short() {
+		t.Skip("render sweep: skipped under -short, runs in the ordinary test pass")
+	}
 	p := effectPipeline()
 	draws := map[imageconfig.BadgeStyle]bool{
 		imageconfig.BadgeTile:   true,

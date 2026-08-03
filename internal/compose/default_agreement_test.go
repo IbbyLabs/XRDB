@@ -45,6 +45,14 @@ var equivalentSentinels = map[string]string{
 }
 
 func TestOmittingAConfiguratorDefaultChangesNothing(t *testing.T) {
+	// A full render per config key, which is most of this package's runtime and
+	// far more again under -race, where every pixel write is instrumented. CI
+	// runs the race pass with -short so the concurrency tests keep their
+	// detector coverage without this sweep blowing the budget; the ordinary
+	// pass runs it in full.
+	if testing.Short() {
+		t.Skip("render sweep: skipped under -short, runs in the ordinary test pass")
+	}
 	uiDefaults := configuratorDefaults(t)
 	p := effectPipeline()
 

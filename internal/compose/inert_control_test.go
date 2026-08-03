@@ -16,6 +16,9 @@ import (
 // the three that were reported together.
 
 func TestSourceTintOutlinesEveryBadgeStyle(t *testing.T) {
+	if testing.Short() {
+		t.Skip("render sweep: skipped under -short, runs in the ordinary test pass")
+	}
 	p := effectPipeline()
 	styles := []imageconfig.BadgeStyle{
 		imageconfig.BadgePill,
@@ -315,6 +318,9 @@ func TestBadgeBackgroundOpacityLetsTheArtworkThrough(t *testing.T) {
 // opacity control has to reach them too or it is live on Standard and inert
 // everywhere else — the shape BUG-183 was about.
 func TestBadgeBackgroundOpacityReachesTheScorePills(t *testing.T) {
+	if testing.Short() {
+		t.Skip("render sweep: skipped under -short, runs in the ordinary test pass")
+	}
 	p := effectPipeline()
 	for _, presentation := range []string{"minimal", "average", "dual", "dual-minimal"} {
 		t.Run(presentation, func(t *testing.T) {
@@ -371,6 +377,9 @@ func TestScorePillOpacityShowsArtworkNotItsOwnShadow(t *testing.T) {
 // Rating badges had a border colour and opacity but no width, so the outline
 // was always a hairline while genre badges offered Off / Hairline / Custom.
 func TestRatingBadgeBorderWidth(t *testing.T) {
+	if testing.Short() {
+		t.Skip("render sweep: skipped under -short, runs in the ordinary test pass")
+	}
 	p := effectPipeline()
 
 	render := func(width int) []byte {

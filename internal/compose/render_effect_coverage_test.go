@@ -586,6 +586,13 @@ func renderAllSurfaces(t *testing.T, p *Pipeline, cfg imageconfig.Config, conten
 }
 
 func TestEveryRenderFieldAffectsTheImage(t *testing.T) {
+	// A full render per config key per surface, base against mutated. Same
+	// reason as the sweep in default_agreement_test: too slow to run under the
+	// race detector, and it exercises no concurrency, so -short drops it there
+	// and the ordinary pass keeps it.
+	if testing.Short() {
+		t.Skip("render sweep: skipped under -short, runs in the ordinary test pass")
+	}
 	p := effectPipeline()
 
 	// The whole test is meaningless unless a render is deterministic for a fixed
@@ -712,6 +719,9 @@ func (a *artworkOnlyProvider) FetchArtwork(_ context.Context, _, _ string, _ pro
 // TMDB. The guard's other sweep renders from one source, so a badge that depends
 // on metadata only TMDB supplies can pass there and still be dead in the field.
 func TestOverlayMetadataSurvivesEveryArtworkSource(t *testing.T) {
+	if testing.Short() {
+		t.Skip("render sweep: skipped under -short, runs in the ordinary test pass")
+	}
 	reg := provider.NewRegistry()
 	reg.Register(&effectProvider{name: "tmdb"}) // the metadata source, art included
 	for _, name := range []string{"fanart", "cinemeta", "omdb"} {
