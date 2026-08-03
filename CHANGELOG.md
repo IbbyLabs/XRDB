@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.61.1](https://github.com/IbbyLabs/XRDB/compare/v3.61.0...v3.61.1) (2026-08-03)
+
+
+### Fixed
+
+* **logging:** say when a requested config could not be resolved ([614225d](https://github.com/IbbyLabs/XRDB/commit/614225d3cc7a8e7b8ba39b7a4982ff22afb66de2))
+
 ## [3.61.0](https://github.com/IbbyLabs/XRDB/compare/v3.60.5...v3.61.0) (2026-08-03)
 
 
