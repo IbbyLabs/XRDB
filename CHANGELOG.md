@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.59.5](https://github.com/IbbyLabs/XRDB/compare/v3.59.4...v3.59.5) (2026-08-03)
+
+
+### Fixed
+
+* **configurator:** copy the image URL as an absolute address (BUG-204) ([3e9c868](https://github.com/IbbyLabs/XRDB/commit/3e9c868be3966de770d042b5a9e74b860b516b7f))
+* **configurator:** thumbnail preview fills its box (BUG-203) ([b58f75b](https://github.com/IbbyLabs/XRDB/commit/b58f75b2e77f49bd903e5a14cce317b50eb51470))
+
 ## [3.59.4](https://github.com/IbbyLabs/XRDB/compare/v3.59.3...v3.59.4) (2026-08-03)
 
 
