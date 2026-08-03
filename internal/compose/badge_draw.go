@@ -180,18 +180,24 @@ func fillRect(dst *image.NRGBA, r image.Rectangle, c color.NRGBA) {
 
 // drawText renders s onto dst at the given baseline (x, y) using face.
 func drawText(dst *image.NRGBA, face font.Face, x, y int, c color.Color, s string) {
-	d := &font.Drawer{
-		Dst:  dst,
-		Src:  image.NewUniform(c),
-		Face: face,
-		Dot:  fixed.P(x, y),
-	}
-	d.DrawString(s)
+	withFace(face, func(f font.Face) {
+		d := &font.Drawer{
+			Dst:  dst,
+			Src:  image.NewUniform(c),
+			Face: f,
+			Dot:  fixed.P(x, y),
+		}
+		d.DrawString(s)
+	})
 }
 
 // textWidth returns the rendered pixel width of s using face.
 func textWidth(face font.Face, s string) int {
-	return font.MeasureString(face, s).Ceil()
+	w := 0
+	withFace(face, func(f font.Face) {
+		w = font.MeasureString(f, s).Ceil()
+	})
+	return w
 }
 
 // blendPixel alpha-blends color c over the existing pixel at (x, y).

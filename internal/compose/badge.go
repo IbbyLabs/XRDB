@@ -18,6 +18,7 @@ import (
 	"golang.org/x/image/font/gofont/gobold"
 	"golang.org/x/image/font/gofont/goregular"
 	"golang.org/x/image/font/opentype"
+	"golang.org/x/image/math/fixed"
 
 	"xrdb_rewrite/internal/imageconfig"
 	"xrdb_rewrite/internal/provider"
@@ -54,6 +55,67 @@ var (
 	scaledEyebrowFaces sync.Map
 )
 
+// lockedFace serialises access to a font.Face. golang.org/x/image faces reuse
+// internal glyph and metric buffers between calls, so two renders drawing text
+// through the same cached face corrupt each other's output; every use takes the
+// lock. All cached faces are wrapped in one, so a whole draw or measure is atomic.
+type lockedFace struct {
+	mu    sync.Mutex
+	inner font.Face
+}
+
+func (f *lockedFace) Close() error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.inner.Close()
+}
+
+func (f *lockedFace) Glyph(dot fixed.Point26_6, r rune) (image.Rectangle, image.Image, image.Point, fixed.Int26_6, bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.inner.Glyph(dot, r)
+}
+
+func (f *lockedFace) GlyphBounds(r rune) (fixed.Rectangle26_6, fixed.Int26_6, bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.inner.GlyphBounds(r)
+}
+
+func (f *lockedFace) GlyphAdvance(r rune) (fixed.Int26_6, bool) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.inner.GlyphAdvance(r)
+}
+
+func (f *lockedFace) Kern(r0, r1 rune) fixed.Int26_6 {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.inner.Kern(r0, r1)
+}
+
+func (f *lockedFace) Metrics() font.Metrics {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.inner.Metrics()
+}
+
+// withFace runs fn while holding the face's lock, passing the unwrapped face so a
+// whole DrawString or MeasureString is atomic rather than each glyph fetch. The
+// two text primitives call it; nothing else builds a font.Drawer.
+func withFace(face font.Face, fn func(font.Face)) {
+	if face == nil {
+		return
+	}
+	if lf, ok := face.(*lockedFace); ok {
+		lf.mu.Lock()
+		defer lf.mu.Unlock()
+		fn(lf.inner)
+		return
+	}
+	fn(face)
+}
+
 func ensureFaces() {
 	onceFaces.Do(func() {
 		if tt, err := opentype.Parse(gobold.TTF); err != nil {
@@ -65,7 +127,7 @@ func ensureFaces() {
 			}); err != nil {
 				slog.Warn("Failed to create the bold font face", "error", err)
 			} else {
-				faceValue = f
+				faceValue = &lockedFace{inner: f}
 			}
 		}
 		if tt, err := opentype.Parse(goregular.TTF); err != nil {
@@ -77,7 +139,7 @@ func ensureFaces() {
 			}); err != nil {
 				slog.Warn("Failed to create the regular font face", "error", err)
 			} else {
-				faceLabel = f
+				faceLabel = &lockedFace{inner: f}
 			}
 		}
 	})
@@ -123,8 +185,9 @@ func valueFaceFor(scale float64) font.Face {
 	if err != nil {
 		return faceValue
 	}
-	scaledValueFaces.Store(key, f)
-	return f
+	lf := &lockedFace{inner: f}
+	scaledValueFaces.Store(key, lf)
+	return lf
 }
 
 // labelFaceFor returns a regular face scaled for the output size.
@@ -143,8 +206,9 @@ func labelFaceFor(scale float64) font.Face {
 	if err != nil {
 		return faceLabel
 	}
-	scaledLabelFaces.Store(key, f)
-	return f
+	lf := &lockedFace{inner: f}
+	scaledLabelFaces.Store(key, lf)
+	return lf
 }
 
 // eyebrowFaceFor returns a small bold face for the "AGE" kicker above a media
@@ -164,8 +228,9 @@ func eyebrowFaceFor(scale float64) font.Face {
 	if err != nil {
 		return faceLabel
 	}
-	scaledEyebrowFaces.Store(key, f)
-	return f
+	lf := &lockedFace{inner: f}
+	scaledEyebrowFaces.Store(key, lf)
+	return lf
 }
 
 // ensureBadgeLogos lazily loads the quality-badge brand logos (IMAX, Dolby
@@ -210,8 +275,9 @@ func badgeFaceFor(scale float64) font.Face {
 	if err != nil {
 		return faceValue
 	}
-	scaledBadgeFaces.Store(key, f)
-	return f
+	lf := &lockedFace{inner: f}
+	scaledBadgeFaces.Store(key, lf)
+	return lf
 }
 
 // outputScale maps the configured size to a badge scale factor so overlays
