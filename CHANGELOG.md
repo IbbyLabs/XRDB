@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.59.4](https://github.com/IbbyLabs/XRDB/compare/v3.59.3...v3.59.4) (2026-08-03)
+
+
+### Fixed
+
+* **genre:** trim measures the nudged row, not the anchor (BUG-197) ([5104ae1](https://github.com/IbbyLabs/XRDB/commit/5104ae19c633746aeab045287c073a31322d5b3c))
+
 ## [3.59.3](https://github.com/IbbyLabs/XRDB/compare/v3.59.2...v3.59.3) (2026-08-03)
 
 
