@@ -66,8 +66,12 @@ func TestRatingIconsStayInStepWithTheBrandedSet(t *testing.T) {
 	// tints from a single-colour glyph are legitimately low-colour, so they are
 	// listed rather than caught; adding a new one is a deliberate line here, not a
 	// silent pass.
+	// critics-rotten is the exception that is low-colour by design rather than by
+	// tinting: the Rotten Tomatoes splat is a flat single green drawn as-is, so it
+	// sits at one bucket with nothing to collapse from.
 	monochromeMarks := map[string]bool{
 		"allocine": true, "kitsu": true, "simkl": true, "trakt": true, "rt": true,
+		"critics-rotten": true,
 	}
 	ensureIcons()
 	for name := range render {

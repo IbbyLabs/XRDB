@@ -170,6 +170,63 @@ func ensureIcons() {
 	})
 }
 
+// markStateFor names the score-dependent mark for a rating, or "" when the
+// source has a single fixed mark. Rotten Tomatoes and Metacritic ship a mark per
+// score band; every other source has one. Value is normalized 0–10, so the
+// integer percentage (RT) or score (Metacritic) is Value*10 rounded.
+func markStateFor(r provider.Rating) string {
+	if r.Value <= 0 {
+		return ""
+	}
+	score := int(math.Round(r.Value * 10))
+	switch r.Source {
+	case "rt":
+		switch {
+		case score >= 75:
+			return "critics-certified-fresh"
+		case score >= 60:
+			return "critics-fresh"
+		default:
+			return "critics-rotten"
+		}
+	case "rtaudience":
+		// audience-verified-hot is staged but unreachable: RT's Verified Hot tier
+		// keys on the count of verified-purchaser ratings, which the popcorn source
+		// does not carry, so it cannot be told apart from a plain high score.
+		if score >= 60 {
+			return "audience-upright"
+		}
+		return "audience-spilled"
+	case "metacritic":
+		if score >= 81 {
+			return "metacritic-award-deepgold"
+		}
+	}
+	return ""
+}
+
+// ratingMark returns the mark to draw for a rating, resolving the score-dependent
+// state where one exists and falling back to the source's fixed mark otherwise.
+func ratingMark(r provider.Rating) image.Image {
+	if name := markStateFor(r); name != "" {
+		if img := ratingIcons[name]; img != nil {
+			return img
+		}
+	}
+	return ratingIcons[r.Source]
+}
+
+// ratingMarkColored reports whether ratingMark's chosen mark is drawn as-is
+// rather than tinted with the accent.
+func ratingMarkColored(r provider.Rating) bool {
+	if name := markStateFor(r); name != "" {
+		if _, ok := ratingIcons[name]; ok {
+			return ratingIconColored[name]
+		}
+	}
+	return ratingIconColored[r.Source]
+}
+
 // valueFaceFor returns a bold face scaled for the output size.
 func valueFaceFor(scale float64) font.Face {
 	if scale == 1 || fontBoldParsed == nil {
@@ -1055,7 +1112,7 @@ func ratingsBandHeight(frameW, frameH int, ratings []provider.Rating, cfg imagec
 			value = "N/A"
 		}
 		bw := accentW + padX + textWidth(face, value) + padX
-		if ratingIcons[r.Source] != nil && !hideIcon {
+		if ratingMark(r) != nil && !hideIcon {
 			bw += iconSize + iconGap
 		}
 		if stacked {
@@ -1149,7 +1206,7 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 			value = "N/A"
 		}
 		vw := textWidth(face, value)
-		icon := ratingIcons[r.Source]
+		icon := ratingMark(r)
 		bw := accentW + padX + vw + padX
 		if icon != nil && !chrome.hideIcon {
 			bw += iconSize + iconGap
@@ -1161,7 +1218,7 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 			value:            value,
 			valW:             vw,
 			icon:             icon,
-			colored:          ratingIconColored[r.Source],
+			colored:          ratingMarkColored(r),
 			iconShape:        cfg.IconShape,
 			iconScale:        cfg.RatingProviderIconScale[r.Source],
 			iconOutline:      iconOutlineColor(cfg),
@@ -1589,7 +1646,7 @@ func widestBadgeAt(scale float64, ratings []provider.Rating, cfg imageconfig.Con
 			bw = stackedBadgeWidth(d, vw, cfg.RatingIconHidden)
 		} else {
 			bw = d.accentW + d.padX + vw + d.padX
-			if ratingIcons[r.Source] != nil && !cfg.RatingIconHidden {
+			if ratingMark(r) != nil && !cfg.RatingIconHidden {
 				bw += d.iconSize + d.iconGap
 			}
 		}
