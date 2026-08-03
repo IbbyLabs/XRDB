@@ -1438,7 +1438,10 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 					// The per-request drop is otherwise invisible: the badge is
 					// gone from the poster and only a debug line records why, so a
 					// source missing from most renders leaves no warn to act on.
-					p.log().WarnContext(ctx, "A ratings source was rate-limited and dropped from this render; its badge is missing",
+					// "Held out" names what happened to the badge without asserting
+					// the cause: the refusal is a rate limit, but the source may be
+					// in cooldown for another reason entirely.
+					p.log().WarnContext(ctx, "A ratings source was held out and dropped from this render; its badge is missing",
 						"id", logging.RequestID(ctx), "source", prov.Name(), "media_id", req.MediaID)
 				}
 				return

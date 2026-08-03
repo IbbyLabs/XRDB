@@ -1,8 +1,11 @@
 package provider
 
 import (
+	"bytes"
 	"context"
+	"log/slog"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 )
@@ -92,5 +95,104 @@ func TestOwnerKeyStillWaitsOnTheGovernor(t *testing.T) {
 	}
 	if elapsed := time.Since(start); elapsed > time.Second {
 		t.Errorf("the wait took %s to honour cancellation", elapsed)
+	}
+}
+
+// The withheld counter counts owner-keyed responses kept out of the governor, so
+// a log read since process start can tell "the guard fired N times" from "no
+// foreign traffic occurred". A server-keyed request must not touch it.
+func TestWithheldCounterCountsOwnerKeyedGovernorSkips(t *testing.T) {
+	g, clock, _ := newTestGovernor(t)
+	tt := &throttledTransport{
+		base:     &headerTransport{header: allowanceHeaders(1000, 995, clock.t.Add(24*time.Hour))},
+		source:   "mdblist",
+		policy:   RateLimit{MaxRetries: 1, MaxRetryWait: time.Second},
+		pacer:    &pacer{},
+		governor: g,
+	}
+	c := &http.Client{Transport: tt}
+
+	ctx := WithKeys(context.Background(), map[string]string{KeyMDBList: "visitor-free-key"})
+	for i := 0; i < 3; i++ {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://example.invalid/x", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp, err := c.Do(req)
+		if err != nil {
+			t.Fatalf("owner-keyed request %d: %v", i, err)
+		}
+		resp.Body.Close()
+	}
+	if got := tt.withheld.Load(); got != 3 {
+		t.Errorf("withheld counter = %d after three owner-keyed responses, want 3", got)
+	}
+	if g.seen {
+		t.Error("the governor was fed despite the owner key")
+	}
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://example.invalid/x", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := c.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if got := tt.withheld.Load(); got != 3 {
+		t.Errorf("a server-keyed request moved the withheld counter to %d, want it left at 3", got)
+	}
+}
+
+func TestIsPowerOfTen(t *testing.T) {
+	for _, n := range []int64{10, 100, 1000, 10000} {
+		if !isPowerOfTen(n) {
+			t.Errorf("isPowerOfTen(%d) = false, want true", n)
+		}
+	}
+	for _, n := range []int64{0, 1, 2, 9, 11, 20, 50, 99, 101, 1001} {
+		if isPowerOfTen(n) {
+			t.Errorf("isPowerOfTen(%d) = true, want false", n)
+		}
+	}
+}
+
+// Clause 1 of the after-read depends on the withhold line actually reaching the
+// log; if it silently did not, a clean window would read as "no foreign traffic"
+// rather than "fix verified". So assert the line emits at info with the total.
+func TestWithholdingLogsOnFirstOccurrence(t *testing.T) {
+	g, clock, _ := newTestGovernor(t)
+	var buf bytes.Buffer
+	tt := &throttledTransport{
+		base:     &headerTransport{header: allowanceHeaders(1000, 995, clock.t.Add(24*time.Hour))},
+		source:   "mdblist",
+		policy:   RateLimit{MaxRetries: 1, MaxRetryWait: time.Second},
+		pacer:    &pacer{},
+		governor: g,
+		logger:   slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelInfo})),
+	}
+	c := &http.Client{Transport: tt}
+
+	ctx := WithKeys(context.Background(), map[string]string{KeyMDBList: "visitor-free-key"})
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://example.invalid/x", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := c.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+
+	out := buf.String()
+	if !strings.Contains(out, "Withheld an owner-keyed response from the shared governor") {
+		t.Errorf("first withhold did not log at info; got: %q", out)
+	}
+	if !strings.Contains(out, `"total":1`) {
+		t.Errorf("withhold log line missing total=1; got: %q", out)
+	}
+	if !strings.Contains(out, `"source":"mdblist"`) {
+		t.Errorf("withhold log line missing source; got: %q", out)
 	}
 }

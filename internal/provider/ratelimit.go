@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -168,6 +169,10 @@ type throttledTransport struct {
 	// governor is set for sources that meter by the day and report what is
 	// left of the allowance on every response.
 	governor *budgetGovernor
+	// withheld counts owner-keyed responses kept out of the governor, so a log
+	// read since process start can confirm the guard actually fired rather than
+	// the source simply having no foreign traffic.
+	withheld atomic.Int64
 	logger   *slog.Logger
 }
 
@@ -221,6 +226,17 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 		// allowance. Owner-keyed renders never mutate shared source state.
 		if !HasOwnerKey(req.Context(), t.source) {
 			t.governor.observe(req.Context(), resp.Header)
+		} else if t.governor != nil {
+			// Record that the guard fired. Logging the first and then each
+			// order-of-magnitude keeps a hot path quiet while leaving a line a
+			// read since process start can always find: the count proves foreign
+			// traffic was present, so a governor that never left its own rate was
+			// spared, not merely untested.
+			n := t.withheld.Add(1)
+			if n == 1 || isPowerOfTen(n) {
+				t.log().InfoContext(req.Context(), "Withheld an owner-keyed response from the shared governor",
+					"source", t.source, "total", n)
+			}
 		}
 		if !isThrottleStatus(resp.StatusCode) {
 			return resp, nil
@@ -349,6 +365,18 @@ func drain(resp *http.Response) {
 	}
 	_, _ = io.CopyN(io.Discard, resp.Body, 4<<10)
 	_ = resp.Body.Close()
+}
+
+// isPowerOfTen reports whether n is 10, 100, 1000, … — the milestones at which a
+// running total earns another log line.
+func isPowerOfTen(n int64) bool {
+	if n < 10 {
+		return false
+	}
+	for n%10 == 0 {
+		n /= 10
+	}
+	return n == 1
 }
 
 // newHTTPClient builds the client a provider should use: its own timeout, plus
