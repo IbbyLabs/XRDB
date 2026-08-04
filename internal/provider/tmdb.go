@@ -552,7 +552,9 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 				genres = append(genres, g.Name)
 			}
 		}
-		meta.Genres = genres
+		// Television's "Sci-Fi & Fantasy" is one genre where film has two, so it
+		// is narrowed here, before anything downstream buckets or labels it.
+		meta.Genres = narrowCompoundGenres(genres, kwNames, id)
 	}
 
 	// Release status. Any region counts — a title out on digital somewhere is no

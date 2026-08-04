@@ -222,3 +222,34 @@ func TestAggregateValueColorOverridesBadgeText(t *testing.T) {
 		t.Errorf("unexpected value colour %+v", got.valueColor)
 	}
 }
+
+// TMDB's television compound made fantasy unreachable on three separate
+// surfaces, and the narrowing has to fix all of them or the Short names toggle
+// silently puts "Sci-Fi" back on a fantasy series (FR-147).
+func TestNarrowedCompoundReachesEveryGenreSurface(t *testing.T) {
+	compound := []string{"Sci-Fi & Fantasy", "Drama", "Action & Adventure"}
+	narrowed := []string{"Fantasy", "Drama", "Action & Adventure"}
+
+	// 1. The family, which picks the glyph and the accent colour.
+	if fam := resolveGenreFamily(compound); fam == nil || fam.id != "scifi" {
+		t.Fatalf("the compound no longer resolves to sci-fi, so this test is not measuring the defect")
+	}
+	fam := resolveGenreFamily(narrowed)
+	if fam == nil || fam.id != "fantasy" {
+		t.Errorf("narrowed genres resolve to %v, want the fantasy family", fam)
+	}
+
+	// 2. The full label is the genre name itself, so narrowing carries it.
+	if narrowed[0] != "Fantasy" {
+		t.Errorf("the leading genre is %q, want Fantasy", narrowed[0])
+	}
+
+	// 3. The short label. This is the one that hides: it only runs with Short
+	// names on, and it maps the compound to "Sci-Fi" regardless of the family.
+	if got := shortenGenres(compound)[0]; got != "Sci-Fi" {
+		t.Fatalf("the compound's short name is %q, so this test is not measuring the defect", got)
+	}
+	if got := shortenGenres(narrowed)[0]; got != "Fantasy" {
+		t.Errorf("the narrowed genre's short name is %q, want it left as Fantasy", got)
+	}
+}
