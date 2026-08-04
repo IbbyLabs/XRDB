@@ -435,6 +435,10 @@ func keyMutations() map[string]keyOverride {
 		"genreBadgeStyle":           {mut: func(c *imageconfig.Config) { c.GenreBadgeStyle = "tile" }},
 		"genreBadgeTileAccentColor": {pre: genreTile, mut: setColor(func(c *imageconfig.Config, v string) { c.GenreBadgeTileAccentColor = v })},
 		"genreBadgeAccent":          {mut: func(c *imageconfig.Config) { c.GenreBadgeAccent = "left" }},
+		// The colour keys need a real hex; a blind mutation is rejected by the
+		// parser and reads as an inert control (FR-148).
+		"genreBadgeLabelColor":  {mut: setColor(func(c *imageconfig.Config, v string) { c.GenreBadgeLabelColor = v })},
+		"genreBadgeBorderColor": {mut: setColor(func(c *imageconfig.Config, v string) { c.GenreBadgeBorderColor = v })},
 		// In the icon/both modes the drawn label is the resolved genre-family name,
 		// which overrides the primary/list choice; the text mode is where it shows.
 		"genreBadgeLabel":      {pre: func(c *imageconfig.Config) { c.GenreBadgeMode = "text" }, mut: func(c *imageconfig.Config) { c.GenreBadgeLabel = "primary" }},

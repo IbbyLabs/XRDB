@@ -1077,6 +1077,12 @@ type genreBadgeOpts struct {
 	labelCase    string  // "" | upper | normal; "" keeps what each label mode did alone
 	maxGenres    int     // cap on how many genres the list names; 0 = fit decides
 	shortNames   bool    // rename the long genres to their short forms
+	// One accent used to reach the label and the border together. These aim it
+	// per element and fall back to tileColor, so an existing config is unchanged.
+	labelColor       string // "#RRGGBB"; "" = the family accent
+	borderColor      string // "#RRGGBB"; "" = the style's own border
+	borderOpacity    int    // 0-100; 0 = the style's own alpha
+	borderSourceTint bool   // the border takes the genre family's colour
 }
 
 // drawLabelOutlined traces a label at the given baseline. A hard outline stamps
@@ -1146,6 +1152,11 @@ func genreOptsFromConfig(cfg imageconfig.Config, isAnime bool) genreBadgeOpts {
 		shortNames:   cfg.GenreBadgeShortNames,
 		tileColor:    cfg.GenreBadgeTileAccentColor,
 		borderWidth:  cfg.GenreBadgeBorderWidth,
+
+		labelColor:       cfg.GenreBadgeLabelColor,
+		borderColor:      cfg.GenreBadgeBorderColor,
+		borderOpacity:    cfg.GenreBadgeBorderOpacity,
+		borderSourceTint: cfg.GenreBadgeBorderSourceTint,
 		outlineColor: cfg.NoBackgroundBadgeOutlineColor,
 		outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
 		outlineGlow:  cfg.NoBackgroundBadgeOutlineGlow,
@@ -1363,6 +1374,30 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		textColor = accentColorFrom(colourFam)
 		textColor.A = 255
 	}
+	// The tile puts the accent on its own fill, so a label inheriting the same
+	// value renders white on white. It takes its contrast instead, the way a
+	// filled score pill picks its value colour.
+	if opts.style == "tile" && opts.tileColor != "" {
+		if fill, err := parseHexColor(opts.tileColor); err == nil {
+			textColor = contrastingInk(fill)
+		}
+	}
+	// An explicit label colour beats every fallback, which is the point of
+	// splitting them: it aims at the label without moving the border.
+	labelOverride, labelSet := color.NRGBA{}, false
+	if c, err := parseHexColor(opts.labelColor); opts.labelColor != "" && err == nil {
+		c.A = 255
+		labelOverride, labelSet = c, true
+		textColor = c
+	}
+	// The icon modes recolour the label from the glyph's accent further down, so
+	// the override is re-applied after that rather than before it.
+	inkFor := func(c color.NRGBA) color.NRGBA {
+		if labelSet {
+			return labelOverride
+		}
+		return c
+	}
 
 	// drawLeftStripe runs the accent down the inside of the plate's left edge,
 	// which is where v2 put it.
@@ -1389,11 +1424,31 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	// borderTint recolours a style's own border with the configured accent, so
 	// every bordered style answers the same control the pill capsule already
 	// did rather than only some of them.
+	// The border group is inert on a style that draws no border, which is the
+	// BUG-210 shape. Styles carrying none give it something to act on instead:
+	// the tile gains a hairline, plain tints the glyph outline, clean tints the
+	// strip under the label.
+	borderAsked := opts.borderColor != "" || opts.borderSourceTint || opts.borderOpacity > 0
+
 	borderTint := func(base color.NRGBA) color.NRGBA {
+		out := base
+		// Least specific first, so each one overrides the last: the tile accent
+		// is the legacy shared value, a source tint asks for the family's own
+		// colour, and an explicit border colour beats both.
 		if c, err := parseHexColor(opts.tileColor); opts.tileColor != "" && err == nil {
-			return color.NRGBA{R: c.R, G: c.G, B: c.B, A: 255}
+			out = color.NRGBA{R: c.R, G: c.G, B: c.B, A: 255}
 		}
-		return base
+		if opts.borderSourceTint {
+			f := accentColorFrom(colourFam)
+			out = color.NRGBA{R: f.R, G: f.G, B: f.B, A: 255}
+		}
+		if c, err := parseHexColor(opts.borderColor); opts.borderColor != "" && err == nil {
+			out = color.NRGBA{R: c.R, G: c.G, B: c.B, A: 255}
+		}
+		if o := opts.borderOpacity; o > 0 {
+			out.A = uint8(maxInt(1, o*255/100))
+		}
+		return out
 	}
 
 	// drawIcon paints the family glyph and reports the accent to tint the label.
@@ -1426,6 +1481,12 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			oc = c
 			ow = maxInt(1, int(float64(opts.outlineWidth)*scale+0.5))
 		}
+		if borderAsked {
+			oc = borderTint(color.NRGBA{R: 255, G: 255, B: 255, A: 255})
+			if ow == 0 {
+				ow = maxInt(1, s(1))
+			}
+		}
 		labelCol := textColor
 		// The glyph is traced before it is drawn, so a mark on plain gets the
 		// same edge the label does rather than sitting bare on the artwork.
@@ -1440,6 +1501,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		if accent := drawIcon(); mode != "text" {
 			labelCol = accent
 		}
+		labelCol = inkFor(labelCol)
 		if mode != "icon" {
 			drawLabelOutlined(base, face, tx, ty, labelCol, oc, ow, opts.outlineGlow, label)
 		}
@@ -1459,6 +1521,10 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		// the same setting reads the same on either style.
 		var tileBorder color.NRGBA
 		tileBorderW := 0
+		if opts.borderWidth == 0 && borderAsked {
+			tileBorder = borderTint(color.NRGBA{R: 255, G: 255, B: 255, A: 150})
+			tileBorderW = maxInt(1, s(1))
+		}
 		if opts.borderWidth > 0 {
 			tileBorder = accentColorFrom(colourFam)
 			tileBorder.A = 150
@@ -1482,12 +1548,16 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		stripW := maxInt(s(18), textWidth(face, label)+s(6))
 		stripX := tx - s(3)
 		stripY := ty + s(4)
+		strip := color.NRGBA{A: 110}
+		if borderAsked {
+			strip = borderTint(color.NRGBA{R: 255, G: 255, B: 255, A: 110})
+		}
 		for y := stripY; y < stripY+stripH; y++ {
 			for x := stripX; x < stripX+stripW; x++ {
-				blendPixel(base, x, y, color.NRGBA{A: 110})
+				blendPixel(base, x, y, strip)
 			}
 		}
-		drawText(base, face, tx, ty, color.NRGBA{R: 255, G: 255, B: 255, A: 255}, label)
+		drawText(base, face, tx, ty, textColor, label)
 		return
 	case "pill":
 		// A capsule matching the rating badges, so the two rows read as one set.
@@ -1521,6 +1591,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		if accent := drawIcon(); mode != "text" {
 			textColor = accent
 		}
+		textColor = inkFor(textColor)
 		if mode != "icon" {
 			drawText(base, face, tx, ty, textColor, label)
 		}
@@ -1552,6 +1623,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		if accent := drawIcon(); mode != "text" {
 			textColor = accent
 		}
+		textColor = inkFor(textColor)
 		if mode != "icon" {
 			drawText(base, face, tx, ty, textColor, label)
 		}
@@ -1589,6 +1661,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		if accent := drawIcon(); mode != "text" {
 			textColor = accent
 		}
+		textColor = inkFor(textColor)
 		if mode != "icon" {
 			drawText(base, face, tx, ty, textColor, label)
 		}
@@ -1624,6 +1697,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	if accent := drawIcon(); mode != "text" {
 		textColor = accent
 	}
+	textColor = inkFor(textColor)
 	if mode != "icon" {
 		drawText(base, face, tx, ty, textColor, label)
 	}

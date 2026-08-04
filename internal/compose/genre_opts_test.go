@@ -393,3 +393,88 @@ func TestGenreBadgeGlassAndBorderControls(t *testing.T) {
 		}
 	}
 }
+
+// One accent reached the label and the border together, so a colour could be
+// changed but not aimed. These four take an element each (FR-148). The failure
+// mode is BUG-210's: a control live on one style and inert on the rest.
+func TestGenreColourControlsReachEveryStyle(t *testing.T) {
+	styles := []string{"", "glass", "pill", "square", "plain", "clean", "tile"}
+	controls := []struct {
+		name string
+		set  func(*genreBadgeOpts)
+	}{
+		{"label colour", func(o *genreBadgeOpts) { o.labelColor = "#ff0000" }},
+		{"border colour", func(o *genreBadgeOpts) { o.borderColor = "#ff0000" }},
+		{"border opacity", func(o *genreBadgeOpts) { o.borderColor = "#ff0000"; o.borderOpacity = 20 }},
+		{"source tint", func(o *genreBadgeOpts) { o.borderSourceTint = true }},
+	}
+	draw := func(o genreBadgeOpts) *image.NRGBA {
+		img := image.NewNRGBA(image.Rect(0, 0, 400, 600))
+		drawGenreBadge(img, []string{"Horror"}, "bl", 1, newOccupancy(img.Bounds()), o)
+		return img
+	}
+	for _, style := range styles {
+		for _, c := range controls {
+			name := style
+			if name == "" {
+				name = "default"
+			}
+			t.Run(name+"/"+c.name, func(t *testing.T) {
+				off := genreBadgeOpts{mode: "text", style: style}
+				on := off
+				c.set(&on)
+				if !imagesDiffer(draw(off), draw(on)) {
+					t.Errorf("genre %s changes nothing on the %s style", c.name, name)
+				}
+			})
+		}
+	}
+}
+
+// The split is the whole request: before it, one value moved both. A suite that
+// only asserts "the colour changed" passes against the old code.
+func TestGenreLabelAndBorderMoveIndependently(t *testing.T) {
+	draw := func(o genreBadgeOpts) *image.NRGBA {
+		img := image.NewNRGBA(image.Rect(0, 0, 400, 600))
+		drawGenreBadge(img, []string{"Horror"}, "bl", 1, newOccupancy(img.Bounds()), o)
+		return img
+	}
+	base := genreBadgeOpts{mode: "text", style: "", borderWidth: 3}
+
+	labelOnly := base
+	labelOnly.labelColor = "#00ff00"
+	borderOnly := base
+	borderOnly.borderColor = "#00ff00"
+
+	if !imagesDiffer(draw(base), draw(labelOnly)) {
+		t.Fatal("the label colour changed nothing, so this test is not measuring the split")
+	}
+	if !imagesDiffer(draw(base), draw(borderOnly)) {
+		t.Fatal("the border colour changed nothing, so this test is not measuring the split")
+	}
+	// Aimed at different elements, they cannot produce the same image.
+	if !imagesDiffer(draw(labelOnly), draw(borderOnly)) {
+		t.Error("colouring the label and colouring the border render identically, so one value still moves both")
+	}
+}
+
+// Setting the tile's fill white used to take the label with it, giving white on
+// white with nothing on screen to explain it.
+func TestTileLabelTakesItsContrastFromTheFill(t *testing.T) {
+	img := image.NewNRGBA(image.Rect(0, 0, 400, 600))
+	drawGenreBadge(img, []string{"Horror"}, "bl", 1, newOccupancy(img.Bounds()), genreBadgeOpts{
+		mode: "text", style: "tile", tileColor: "#ffffff",
+	})
+	dark := 0
+	b := img.Bounds()
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			if c := img.NRGBAAt(x, y); c.A > 200 && c.R < 80 && c.G < 80 && c.B < 80 {
+				dark++
+			}
+		}
+	}
+	if dark == 0 {
+		t.Error("a white tile drew no dark pixels, so the label is white on white")
+	}
+}

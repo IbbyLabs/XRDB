@@ -605,6 +605,14 @@ type GenreBadgeConfig struct {
 	GenreBadgeBorderWidth       float64 `json:"genreBadgeBorderWidth,omitempty"`       // px; 0 = default hairline, <0 = off
 	GenreBadgeBackgroundOpacity int     `json:"genreBadgeBackgroundOpacity,omitempty"` // 0-100; 0 = default
 	GenreBadgeTileAccentColor   string  `json:"genreBadgeTileAccentColor,omitempty"`   // "#RRGGBB" for the tile style
+	// One accent used to reach the label and the border together, so a colour
+	// could be changed but not aimed. These four take an element each and fall
+	// back to the tile accent, which keeps every existing config rendering as
+	// it did.
+	GenreBadgeLabelColor       string `json:"genreBadgeLabelColor,omitempty"`       // "#RRGGBB"; "" = the family accent
+	GenreBadgeBorderColor      string `json:"genreBadgeBorderColor,omitempty"`      // "#RRGGBB"; "" = the style's own
+	GenreBadgeBorderOpacity    int    `json:"genreBadgeBorderOpacity,omitempty"`    // 0-100; 0 = the style's own
+	GenreBadgeBorderSourceTint bool   `json:"genreBadgeBorderSourceTint,omitempty"` // border takes the genre family's colour
 	// GenreBadgeAccent places the accent on the plate. v2 ran it down the left
 	// edge; "" keeps each style's own placement.
 	GenreBadgeAccent string `json:"genreBadgeAccent,omitempty"` // left | top | none; "" = per style
@@ -768,6 +776,10 @@ type rawGenre struct {
 	GenreBadgeBorderWidth       *float64 `json:"genreBadgeBorderWidth"`
 	GenreBadgeBackgroundOpacity *int     `json:"genreBadgeBackgroundOpacity"`
 	GenreBadgeTileAccentColor   *string  `json:"genreBadgeTileAccentColor"`
+	GenreBadgeLabelColor        *string  `json:"genreBadgeLabelColor"`
+	GenreBadgeBorderColor       *string  `json:"genreBadgeBorderColor"`
+	GenreBadgeBorderOpacity     *int     `json:"genreBadgeBorderOpacity"`
+	GenreBadgeBorderSourceTint  *bool    `json:"genreBadgeBorderSourceTint"`
 	GenreBadgeAccent            *string  `json:"genreBadgeAccent"`
 	GenreBadgeLabel             *string  `json:"genreBadgeLabel"`
 	GenreBadgeCase              *string  `json:"genreBadgeCase"`
@@ -1963,6 +1975,18 @@ func parseGenre(cfg *Config, r *raw) {
 	}
 	if r.GenreBadgeTileAccentColor != nil && isHexColor(*r.GenreBadgeTileAccentColor) {
 		cfg.GenreBadgeTileAccentColor = strings.TrimSpace(*r.GenreBadgeTileAccentColor)
+	}
+	if r.GenreBadgeLabelColor != nil && isHexColor(*r.GenreBadgeLabelColor) {
+		cfg.GenreBadgeLabelColor = strings.TrimSpace(*r.GenreBadgeLabelColor)
+	}
+	if r.GenreBadgeBorderColor != nil && isHexColor(*r.GenreBadgeBorderColor) {
+		cfg.GenreBadgeBorderColor = strings.TrimSpace(*r.GenreBadgeBorderColor)
+	}
+	if r.GenreBadgeBorderOpacity != nil && *r.GenreBadgeBorderOpacity != 0 {
+		cfg.GenreBadgeBorderOpacity = clampInt(*r.GenreBadgeBorderOpacity, 1, 100)
+	}
+	if r.GenreBadgeBorderSourceTint != nil {
+		cfg.GenreBadgeBorderSourceTint = *r.GenreBadgeBorderSourceTint
 	}
 	if r.GenreBadgeAccent != nil {
 		switch v := strings.ToLower(strings.TrimSpace(*r.GenreBadgeAccent)); v {

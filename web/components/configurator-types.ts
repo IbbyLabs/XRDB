@@ -492,6 +492,10 @@ export interface ConfigState {
   qualityBadgesTileAccentColor: string;
   genreBadgeStyle: string; // 'default' | glass | pill | square | plain | clean | tile
   genreBadgeTileAccentColor: string; // '#RRGGBB' for the tile style; '' = default
+  genreBadgeLabelColor: string; // '#RRGGBB'; '' = the genre family's colour
+  genreBadgeBorderColor: string; // '#RRGGBB'; '' = the style's own border
+  genreBadgeBorderOpacity: number; // 0-100; 0 = the style's own
+  genreBadgeBorderSourceTint: boolean; // border takes the genre family's colour
   genreBadgeAccent: string; // 'default' | left | top | none
   genreBadgeLabel: string;
   genreBadgeCase: string;
@@ -684,6 +688,10 @@ export const DEFAULT_CONFIG: ConfigState = {
   qualityBadgesTileAccentColor: '',
   genreBadgeStyle: 'default',
   genreBadgeTileAccentColor: '',
+  genreBadgeLabelColor: '',
+  genreBadgeBorderColor: '',
+  genreBadgeBorderOpacity: 0,
+  genreBadgeBorderSourceTint: false,
   genreBadgeAccent: 'default',
   genreBadgeLabel: 'default',
   genreBadgeCase: '',

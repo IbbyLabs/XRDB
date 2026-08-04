@@ -952,6 +952,22 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
         <NumField id={`${uid}-genre-border`} label="Border width (px)" value={config.genreBadgeBorderWidth}
           onChange={v => onUpdate('genreBadgeBorderWidth', v)} min={1} max={6} zeroIsDefault={false} />
       )}
+      <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
+        <ColorField id={`${uid}-genre-label-color`} label="Label colour" value={config.genreBadgeLabelColor}
+          onChange={v => onUpdate('genreBadgeLabelColor', v)} fallback="#ffffff" resetLabel="By genre" />
+        <ColorField id={`${uid}-genre-border-color`} label="Border colour" value={config.genreBadgeBorderColor}
+          onChange={v => onUpdate('genreBadgeBorderColor', v)} fallback="#ffffff" resetLabel="Per style" />
+      </div>
+      <ToggleField id={`${uid}-genre-border-tint`} label="Outline in the genre's colour"
+        hint="Draws the border in the family's own colour, so the outline reads by genre while the label stays where you put it."
+        checked={config.genreBadgeBorderSourceTint}
+        onChange={() => onUpdate('genreBadgeBorderSourceTint', !config.genreBadgeBorderSourceTint)} />
+      <NumField id={`${uid}-genre-border-op`} label="Border opacity (%)" value={config.genreBadgeBorderOpacity}
+        onChange={v => onUpdate('genreBadgeBorderOpacity', v)} min={5} max={100} step={5} placeholder="per style" />
+      <p className="hint">
+        The label and the border take their colour separately. Blank leaves each
+        following the genre family, which is what one shared accent used to do.
+      </p>
       <div className="field">
         <label className="label" htmlFor={`${uid}-plain-outline`}>Plain-style outline</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
