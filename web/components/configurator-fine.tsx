@@ -478,6 +478,52 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
           </details>
         </>
       )}
+      <NumField id={`${uid}-badge-density`} label="Badge density (%)" value={config.ratingBadgeDensity}
+        onChange={v => onUpdate('ratingBadgeDensity', v)} min={60} max={140} step={5}
+        hint="Padding inside each badge and the gap to its logo. Lower hugs the contents." />
+      <div className="field">
+        <label className="label" htmlFor={`${uid}-badge-border`}>Badge outline</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+          <input
+            id={`${uid}-badge-border`}
+            type="color"
+            value={config.ratingBadgeBorderColor || '#ffffff'}
+            onChange={e => onUpdate('ratingBadgeBorderColor', e.target.value)}
+            className="color-swatch"
+          />
+          <button
+            className={`opt-btn${!config.ratingBadgeBorderColor ? ' opt-btn--active' : ''}`}
+            onClick={() => onUpdate('ratingBadgeBorderColor', '')}
+            aria-pressed={!config.ratingBadgeBorderColor}
+            style={{ flex: 1 }}
+          >
+            Per style
+          </button>
+        </div>
+        <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>
+          Traces the capsule itself, so it reads as a defined chip.
+        </span>
+      </div>
+      <ToggleField id={`${uid}-badge-border-tint`} label="Outline in each rating site's colour"
+        hint="Draws every badge's outline in that site's own colour. On the Tile style this gives the classic outlined chip; on Glass it's a floating coloured ring."
+        checked={config.ratingBadgeBorderSourceTint}
+        onChange={() => onUpdate('ratingBadgeBorderSourceTint', !config.ratingBadgeBorderSourceTint)} />
+      <NumField id={`${uid}-badge-border-op`} label="Badge outline opacity (%)" value={config.ratingBadgeBorderOpacity}
+        onChange={v => onUpdate('ratingBadgeBorderOpacity', v)} min={5} max={100} step={5} placeholder="solid" />
+      <StyleGrid
+        id={`${uid}-badge-border-mode-label`}
+        label="Badge border"
+        options={GENRE_BORDER_OPTIONS}
+        value={genreBorderMode(config.ratingBadgeBorderWidth)}
+        onChange={v => onUpdate('ratingBadgeBorderWidth', v === 'off' ? -1 : v === 'hairline' ? 0 : 2)}
+      />
+      {genreBorderMode(config.ratingBadgeBorderWidth) === 'custom' && (
+        <NumField id={`${uid}-badge-border-w`} label="Badge border width (px)" value={config.ratingBadgeBorderWidth}
+          onChange={v => onUpdate('ratingBadgeBorderWidth', v)} min={1} max={6} zeroIsDefault={false} />
+      )}
+      <NumField id={`${uid}-badge-bg-op`} label="Badge background opacity (%)" value={config.ratingBadgeBackgroundOpacity}
+        onChange={v => onUpdate('ratingBadgeBackgroundOpacity', v)} min={5} max={100} step={5} placeholder="per style"
+        hint="How much artwork shows through the badge body. Blank keeps what the style and theme picked." />
       <ProviderOverrides uid={uid} config={config} onUpdate={onUpdate} />
       <ProviderWeights uid={uid} config={config} onUpdate={onUpdate} />
     </FineGroup>
@@ -793,52 +839,6 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
       <NumField id={`${uid}-accent-width`} label="Accent outline width (px)" value={config.aggregateAccentWidth}
         onChange={v => onUpdate('aggregateAccentWidth', v)} min={1} max={8} placeholder="2"
         hint="Thickness of the score pill's accent outline." />
-      <NumField id={`${uid}-badge-density`} label="Badge density (%)" value={config.ratingBadgeDensity}
-        onChange={v => onUpdate('ratingBadgeDensity', v)} min={60} max={140} step={5}
-        hint="Padding inside each badge and the gap to its logo. Lower hugs the contents." />
-      <div className="field">
-        <label className="label" htmlFor={`${uid}-badge-border`}>Badge outline</label>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
-          <input
-            id={`${uid}-badge-border`}
-            type="color"
-            value={config.ratingBadgeBorderColor || '#ffffff'}
-            onChange={e => onUpdate('ratingBadgeBorderColor', e.target.value)}
-            className="color-swatch"
-          />
-          <button
-            className={`opt-btn${!config.ratingBadgeBorderColor ? ' opt-btn--active' : ''}`}
-            onClick={() => onUpdate('ratingBadgeBorderColor', '')}
-            aria-pressed={!config.ratingBadgeBorderColor}
-            style={{ flex: 1 }}
-          >
-            Per style
-          </button>
-        </div>
-        <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>
-          Traces the capsule itself, so it reads as a defined chip.
-        </span>
-      </div>
-      <ToggleField id={`${uid}-badge-border-tint`} label="Outline in each rating site's colour"
-        hint="Draws every badge's outline in that site's own colour. On the Tile style this gives the classic outlined chip; on Glass it's a floating coloured ring."
-        checked={config.ratingBadgeBorderSourceTint}
-        onChange={() => onUpdate('ratingBadgeBorderSourceTint', !config.ratingBadgeBorderSourceTint)} />
-      <NumField id={`${uid}-badge-border-op`} label="Badge outline opacity (%)" value={config.ratingBadgeBorderOpacity}
-        onChange={v => onUpdate('ratingBadgeBorderOpacity', v)} min={5} max={100} step={5} placeholder="solid" />
-      <StyleGrid
-        id={`${uid}-badge-border-mode-label`}
-        label="Badge border"
-        options={GENRE_BORDER_OPTIONS}
-        value={genreBorderMode(config.ratingBadgeBorderWidth)}
-        onChange={v => onUpdate('ratingBadgeBorderWidth', v === 'off' ? -1 : v === 'hairline' ? 0 : 2)}
-      />
-      {genreBorderMode(config.ratingBadgeBorderWidth) === 'custom' && (
-        <NumField id={`${uid}-badge-border-w`} label="Badge border width (px)" value={config.ratingBadgeBorderWidth}
-          onChange={v => onUpdate('ratingBadgeBorderWidth', v)} min={1} max={6} zeroIsDefault={false} />
-      )}
-      <NumField id={`${uid}-badge-bg-op`} label="Badge background opacity (%)" value={config.ratingBadgeBackgroundOpacity}
-        onChange={v => onUpdate('ratingBadgeBackgroundOpacity', v)} min={5} max={100} step={5} placeholder="per style"
-        hint="How much artwork shows through the badge body. Blank keeps what the style and theme picked." />
       <div className="field">
         <label className="label" htmlFor={`${uid}-icon-outline`}>Logo outline</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
