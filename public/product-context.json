@@ -2,7 +2,7 @@
   "artifactType": "xrdb-product-context",
   "schemaVersion": "1",
   "xrdbTag": "3.63.0",
-  "generatedAt": "2026-08-02T03:02:23Z",
+  "generatedAt": "2026-08-04T11:49:52Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -37,6 +37,7 @@
         "Renders are weighted by output size, so a burst of 4K posters cannot take every render slot at the price of one. Ordinary renders are unaffected.",
         "A title with no artwork at all is remembered for a minute, so a catalogue of one does not re-ask every provider per episode. Artwork added upstream appears on the next render after that, not up to a full cache TTL later. Self-hosters can change it with `XRDB_NOT_FOUND_TTL_SECONDS`, or set 0 to switch it off.",
         "Sources scored out of five or four carry their scale on the badge: Letterboxd and AlloCine draw as `4.2/5`, Roger Ebert as `3.5/4`. Sources already out of ten, and percentages, are unmarked. Set the rating value mode to one of the normalized options to put every source on ten instead. Any older answer saying a Letterboxd score is drawn bare, or that its scale is only distinguishable by knowing the source, is out of date.",
+        "A film Roger Ebert wrote a Great Movies essay on draws a gold mark in place of the plain Roger Ebert logo. The essay earns it, not the score, so a film he gave three and a half stars can carry the mark while a four-star film he never wrote up does not. The list closed when he died in 2013 and ships with the build, so it costs no request and never goes stale. It is keyed on IMDb ids, so a title identified only by a TMDB id keeps the plain mark. Any older answer saying every Roger Ebert badge draws the same logo, or that the mark tracks the star rating, is out of date.",
         "The order the rating sources are listed in is the order they draw, and the row cap keeps the first ones, so reordering changes which ratings appear. Reordering a saved profile now returns new artwork. Any older answer saying order is cosmetic, or that a reordered profile keeps showing the same image, is out of date.",
         "The title logo is never drawn over artwork that already has the title printed on it, whichever setting asked for it. Backdrop logo therefore draws nothing on a poster whose art carries its own title, and still draws on backdrops and on textless poster art, which is what it is for. Any older answer saying Backdrop logo always composites a logo is out of date.",
         "The shading behind a clean-poster title logo fades smoothly to its peak instead of turning at it, so it no longer draws a horizontal line across pale artwork. `logoScrimSize` sets how far it reaches past the logo and `logoScrimOpacity` how dark it gets, both under Title logo in Fine tuning as \"Shadow spread\" and \"Shadow strength\". Any older answer saying the shading is fixed, or that the line through bright posters cannot be helped, is out of date.",
@@ -53,7 +54,9 @@
         "An accent colour fills the block behind the label when the presentation has one. On the label-less presentations, minimal and dual-minimal, it marks the capsule itself, so a dual pair can carry one colour per role. Any older answer saying accent colours do nothing on those styles, or that a coloured outline with a dark body is impossible, is out of date.",
         "`aggregateAccentShape` picks how it is marked: `outline` traces the pill and keeps the body dark, `strip` draws a centred bar along the top edge. Outline is the default.",
         "`aggregateAccentWidth` sets how thick that outline is drawn, in pixels. Any older answer saying its thickness is fixed is out of date.",
-        "Turning the accent rail off drops that outline too, and Fill by score puts the colour in the body instead, so the three treatments do not stack."
+        "Turning the accent rail off drops that outline too, and Fill by score puts the colour in the body instead, so the three treatments do not stack.",
+        "The badge outline controls under Rating badges reach the pill presentations as well as the per-source badges: `ratingBadgeBorderColor`, `ratingBadgeBorderWidth`, `ratingBadgeBorderOpacity` and the source tint all draw on the capsule, so an outline set on Standard follows when the presentation changes. Any older answer saying those four do nothing on minimal, average or dual, or offering an accent colour as the way to outline a pill, is out of date.",
+        "On a label-less pill the accent and the outline want the same edge, and a typed outline colour wins it. The accent then draws as a strip along the top instead of as the ring, so a By-score colour still tracks the score and is still on the pill. Setting an outline colour therefore changes a By-score ring into a strip; clearing it puts the ring back."
       ]
     },
     {
