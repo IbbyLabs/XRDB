@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.65.1](https://github.com/IbbyLabs/XRDB/compare/v3.65.0...v3.65.1) (2026-08-04)
+
+
+### Fixed
+
+* **omdb:** a declined title is not a health failure (BUG-214) ([3e1e7ae](https://github.com/IbbyLabs/XRDB/commit/3e1e7ae052f48ad8156a39ecca4a2ca8ad497fa0))
+* **providers:** a per-title miss is not a health failure (BUG-214) ([b177414](https://github.com/IbbyLabs/XRDB/commit/b17741407b55e36575fbb121eb88143cc544a51c))
+
 ## [3.65.0](https://github.com/IbbyLabs/XRDB/compare/v3.64.0...v3.65.0) (2026-08-04)
 
 
