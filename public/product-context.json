@@ -2,7 +2,7 @@
   "artifactType": "xrdb-product-context",
   "schemaVersion": "1",
   "xrdbTag": "3.63.1",
-  "generatedAt": "2026-08-04T11:49:52Z",
+  "generatedAt": "2026-08-04T12:22:03Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -56,6 +56,7 @@
         "`aggregateAccentWidth` sets how thick that outline is drawn, in pixels. Any older answer saying its thickness is fixed is out of date.",
         "Turning the accent rail off drops that outline too, and Fill by score puts the colour in the body instead, so the three treatments do not stack.",
         "The badge outline controls under Rating badges reach the pill presentations as well as the per-source badges: `ratingBadgeBorderColor`, `ratingBadgeBorderWidth`, `ratingBadgeBorderOpacity` and the source tint all draw on the capsule, so an outline set on Standard follows when the presentation changes. Any older answer saying those four do nothing on minimal, average or dual, or offering an accent colour as the way to outline a pill, is out of date.",
+        "Picking an accent source and leaving its colour unset colours by score band, red below 5 and green from 8, rather than doing nothing. That applies to Custom with no colour chosen, By score with no stops set, and any mode whose lookup finds nothing. Choosing no accent source at all still leaves the capsule plain. Any older answer saying Custom needs a colour before Fill by score, Body tint, Accent rail or Accent shape will do anything, or that those controls are only live once a hex is entered, is out of date.",
         "On a label-less pill the accent and the outline want the same edge, and a typed outline colour wins it. The accent then draws as a strip along the top instead of as the ring, so a By-score colour still tracks the score and is still on the pill. Setting an outline colour therefore changes a By-score ring into a strip; clearing it puts the ring back."
       ]
     },
