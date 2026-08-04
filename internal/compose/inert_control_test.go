@@ -57,7 +57,7 @@ func TestSingleRowKeepsTheTopLayout(t *testing.T) {
 		cfg.RatingsLayout = layout
 		cfg.BottomRatingsRow = true
 		img := image.NewNRGBA(image.Rect(0, 0, 500, 750))
-		drawBadgesInPlace(img, ratings, cfg)
+		drawBadgesInPlace(img, ratings, cfg, titleFacts{})
 
 		top, bottom := -1, -1
 		for y := img.Bounds().Min.Y; y < img.Bounds().Max.Y; y++ {
@@ -96,7 +96,7 @@ func TestEdgeInsetMovesTheRatingStrip(t *testing.T) {
 		cfg := imageconfig.Default()
 		cfg.PosterEdgeOffset = inset
 		img := image.NewNRGBA(image.Rect(0, 0, 500, 750))
-		drawBadgesInPlace(img, ratings, cfg)
+		drawBadgesInPlace(img, ratings, cfg, titleFacts{})
 		return img.Pix
 	}
 
@@ -290,7 +290,7 @@ func TestBadgeBackgroundOpacityLetsTheArtworkThrough(t *testing.T) {
 		for i := 0; i < len(img.Pix); i += 4 {
 			img.Pix[i], img.Pix[i+1], img.Pix[i+2], img.Pix[i+3] = 255, 0, 0, 255
 		}
-		drawBadgesInPlace(img, ratings, cfg)
+		drawBadgesInPlace(img, ratings, cfg, titleFacts{})
 		return img
 	}
 
@@ -480,7 +480,7 @@ func TestBadgesDropRatherThanShrinkPastLegibility(t *testing.T) {
 
 	// A logo surface: wide, short, and the case the report describes.
 	const w, h = 640, 120
-	shown, scale := fitBadgesToFrame(cfg, w, h, six)
+	shown, scale := fitBadgesToFrame(cfg, w, h, six, titleFacts{})
 
 	if len(shown) == len(six) && scale < legibleBadgeScale {
 		t.Errorf("kept all %d badges at scale %.2f, below the %.2f legibility floor", len(shown), scale, legibleBadgeScale)
@@ -488,12 +488,12 @@ func TestBadgesDropRatherThanShrinkPastLegibility(t *testing.T) {
 	if len(shown) == 0 {
 		t.Fatal("every badge was dropped; the row should never empty")
 	}
-	if bare := resolveBadgeScale(cfg, w, h, six); scale < bare {
+	if bare := resolveBadgeScale(cfg, w, h, six, titleFacts{}); scale < bare {
 		t.Errorf("trimming left the row smaller (%.2f) than not trimming at all (%.2f)", scale, bare)
 	}
 
 	// A frame with room for all six must not drop any.
-	if all, _ := fitBadgesToFrame(cfg, 1400, 900, six); len(all) != len(six) {
+	if all, _ := fitBadgesToFrame(cfg, 1400, 900, six, titleFacts{}); len(all) != len(six) {
 		t.Errorf("dropped badges on a frame with room for all six: kept %d", len(all))
 	}
 }
@@ -515,10 +515,10 @@ func TestBadgeTrimMeasuresTheWrappedLayout(t *testing.T) {
 	// The logo surface from the report: wide, short, and the case where fitting
 	// by shrinking alone bottomed out far below readable.
 	const w, h = 640, 120
-	if raw := resolveBadgeScale(cfg, w, h, six); raw >= legibleBadgeScale {
+	if raw := resolveBadgeScale(cfg, w, h, six, titleFacts{}); raw >= legibleBadgeScale {
 		t.Fatalf("fixture no longer constrained: raw scale %.2f already clears the floor", raw)
 	}
-	shown, scale := fitBadgesToFrame(cfg, w, h, six)
+	shown, scale := fitBadgesToFrame(cfg, w, h, six, titleFacts{})
 	if scale < legibleBadgeScale {
 		t.Errorf("strip drawn at %.2f, below the %.2f legibility floor", scale, legibleBadgeScale)
 	}
@@ -539,14 +539,14 @@ func TestStripFitsAtMeasuresRows(t *testing.T) {
 
 	// Narrow enough to force several rows, so the row count is what decides.
 	narrow := 260
-	rows := stripRowsAt(legibleBadgeScale, six, cfg, narrow)
+	rows := stripRowsAt(legibleBadgeScale, six, cfg, narrow, titleFacts{})
 	if rows < 2 {
 		t.Fatalf("fixture no longer wraps: %d row(s) at width %d", rows, narrow)
 	}
-	if !stripFitsAt(legibleBadgeScale, six, cfg, narrow+40, 900) {
+	if !stripFitsAt(legibleBadgeScale, six, cfg, narrow+40, 900, titleFacts{}) {
 		t.Error("a tall frame with room for every row was reported as not fitting")
 	}
-	if stripFitsAt(legibleBadgeScale, six, cfg, narrow+40, 30) {
+	if stripFitsAt(legibleBadgeScale, six, cfg, narrow+40, 30, titleFacts{}) {
 		t.Error("a frame far too short for those rows was reported as fitting")
 	}
 }

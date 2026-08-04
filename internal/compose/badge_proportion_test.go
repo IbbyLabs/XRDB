@@ -38,9 +38,9 @@ func TestBadgesStayProportionalOnEveryMediaType(t *testing.T) {
 		for _, pct := range []int{100, 400} {
 			dim := render.DimensionsForSize(mt, "small")
 			cfg := proportionConfig(pct)
-			scale := resolveBadgeScale(cfg, dim.Width, dim.Height, ratings)
+			scale := resolveBadgeScale(cfg, dim.Width, dim.Height, ratings, titleFacts{})
 			h := badgeHeightAt(scale, cfg)
-			w := widestBadgeAt(scale, ratings, cfg)
+			w := widestBadgeAt(scale, ratings, cfg, titleFacts{})
 
 			// The effective cap grows with the configured scale on small surfaces,
 			// so a badge must stay within that cap, not the base one.
@@ -66,7 +66,7 @@ func TestPosterAndBackdropKeepTheirScale(t *testing.T) {
 
 	for _, mt := range []string{"poster", "backdrop"} {
 		dim := render.DimensionsForSize(mt, "small")
-		if got := resolveBadgeScale(proportionConfig(100), dim.Width, dim.Height, ratings); got != 1 {
+		if got := resolveBadgeScale(proportionConfig(100), dim.Width, dim.Height, ratings, titleFacts{}); got != 1 {
 			t.Errorf("%s scale = %v, want 1 (unreduced)", mt, got)
 		}
 	}

@@ -22,8 +22,8 @@ func TestBadgeScaleControlWorksOnAThumbnail(t *testing.T) {
 	big.RatingBadgeScale = 300
 
 	const thumbW, thumbH = 320, 180
-	small := fitBadgeScale(resolveBadgeScale(base, thumbW, thumbH, ratings), thumbW, thumbH, ratings, base)
-	large := fitBadgeScale(resolveBadgeScale(big, thumbW, thumbH, ratings), thumbW, thumbH, ratings, big)
+	small := fitBadgeScale(resolveBadgeScale(base, thumbW, thumbH, ratings, titleFacts{}), thumbW, thumbH, ratings, base, titleFacts{})
+	large := fitBadgeScale(resolveBadgeScale(big, thumbW, thumbH, ratings, titleFacts{}), thumbW, thumbH, ratings, big, titleFacts{})
 
 	if large <= small {
 		t.Errorf("scale 300 (%.2f) did not exceed scale 100 (%.2f) on a thumbnail", large, small)
@@ -45,8 +45,8 @@ func TestBadgeScaleControlWorksOnALogo(t *testing.T) {
 	big.RatingBadgeScale = 300
 
 	const logoW, logoH = 800, 200
-	small := fitBadgeScale(resolveBadgeScale(base, logoW, logoH, ratings), logoW, logoH, ratings, base)
-	large := fitBadgeScale(resolveBadgeScale(big, logoW, logoH, ratings), logoW, logoH, ratings, big)
+	small := fitBadgeScale(resolveBadgeScale(base, logoW, logoH, ratings, titleFacts{}), logoW, logoH, ratings, base, titleFacts{})
+	large := fitBadgeScale(resolveBadgeScale(big, logoW, logoH, ratings, titleFacts{}), logoW, logoH, ratings, big, titleFacts{})
 
 	if large <= small {
 		t.Errorf("scale 300 (%.2f) did not exceed scale 100 (%.2f) on a logo", large, small)

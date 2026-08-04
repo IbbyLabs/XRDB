@@ -50,8 +50,8 @@ func TestTighterDensityDrawsANarrowerRow(t *testing.T) {
 	tight := base
 	tight.RatingBadgeDensity = 60
 
-	wide := widestBadgeAt(2.0, ratings, base)
-	narrow := widestBadgeAt(2.0, ratings, tight)
+	wide := widestBadgeAt(2.0, ratings, base, titleFacts{})
+	narrow := widestBadgeAt(2.0, ratings, tight, titleFacts{})
 	if narrow >= wide {
 		t.Errorf("density 60 measured %d wide, want less than the default %d", narrow, wide)
 	}

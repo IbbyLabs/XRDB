@@ -20,6 +20,7 @@ import (
 	"golang.org/x/image/font/opentype"
 	"golang.org/x/image/math/fixed"
 
+	"xrdb_rewrite/internal/curated"
 	"xrdb_rewrite/internal/imageconfig"
 	"xrdb_rewrite/internal/provider"
 )
@@ -200,7 +201,20 @@ func enoughReviews(votes, floor int) bool {
 // source has a single fixed mark. Rotten Tomatoes and Metacritic ship a mark per
 // score band; every other source has one. Value is normalized 0–10, so the
 // integer percentage (RT) or score (Metacritic) is Value*10 rounded.
-func markStateFor(r provider.Rating) string {
+// titleFacts carries what the draw path needs to know about the title itself,
+// as answers rather than as identifiers. The render layer never learns that a
+// bundled list exists; whoever holds the title's id does the lookup and passes
+// the result down. A film is a Great Movie whether or not an Ebert rating was
+// fetched, so this belongs to the title and not to a Rating.
+type titleFacts struct {
+	// isGreatMovie is only meaningful when greatMovieKnown is true. A title
+	// identified by a TMDB id cannot be looked up in a tt-keyed list, and
+	// treating that as "no" would drop a mark with no symptom.
+	isGreatMovie    bool
+	greatMovieKnown bool
+}
+
+func markStateFor(r provider.Rating, facts titleFacts) string {
 	if r.Value <= 0 {
 		return ""
 	}
@@ -223,6 +237,15 @@ func markStateFor(r provider.Rating) string {
 			return "audience-upright"
 		}
 		return "audience-spilled"
+	case "rogerebert":
+		// The mark says Ebert wrote a Great Movies essay on this film, which is a
+		// different claim from a high score: plenty of films took four stars and
+		// far fewer took an essay. Unknown is not the same as no — a title we
+		// could not look up keeps the plain mark rather than being denied one.
+		if facts.greatMovieKnown && facts.isGreatMovie {
+			return "rogerebert-great-movie"
+		}
+		return ""
 	case "metacritic":
 		if score >= 81 && enoughReviews(r.Votes, minMustSeeReviews) {
 			return "metacritic-award-deepgold"
@@ -233,8 +256,8 @@ func markStateFor(r provider.Rating) string {
 
 // ratingMark returns the mark to draw for a rating, resolving the score-dependent
 // state where one exists and falling back to the source's fixed mark otherwise.
-func ratingMark(r provider.Rating) image.Image {
-	if name := markStateFor(r); name != "" {
+func ratingMark(r provider.Rating, facts titleFacts) image.Image {
+	if name := markStateFor(r, facts); name != "" {
 		if img := ratingIcons[name]; img != nil {
 			return img
 		}
@@ -244,8 +267,8 @@ func ratingMark(r provider.Rating) image.Image {
 
 // ratingMarkColored reports whether ratingMark's chosen mark is drawn as-is
 // rather than tinted with the accent.
-func ratingMarkColored(r provider.Rating) bool {
-	if name := markStateFor(r); name != "" {
+func ratingMarkColored(r provider.Rating, facts titleFacts) bool {
+	if name := markStateFor(r, facts); name != "" {
 		if _, ok := ratingIcons[name]; ok {
 			return ratingIconColored[name]
 		}
@@ -995,12 +1018,12 @@ func ratingStripDimsFor(scale float64, cfg imageconfig.Config) ratingStripDims {
 // resolveBadgeScale returns the scale the rating strip draws at: output scale
 // for the size, the configured percentage, then reduced to fit the frame.
 // Measuring and drawing share it so a reserved band matches its contents.
-func resolveBadgeScale(cfg imageconfig.Config, frameW, frameH int, ratings []provider.Rating) float64 {
+func resolveBadgeScale(cfg imageconfig.Config, frameW, frameH int, ratings []provider.Rating, facts titleFacts) float64 {
 	scale := outputScale(cfg.Size)
 	if cfg.RatingBadgeScale != 0 {
 		scale *= float64(cfg.RatingBadgeScale) / 100
 	}
-	return fitBadgeScale(scale, frameW, frameH, ratings, cfg)
+	return fitBadgeScale(scale, frameW, frameH, ratings, cfg, facts)
 }
 
 // legibleBadgeScale is the smallest scale a badge's value still reads at. Below
@@ -1010,14 +1033,14 @@ const legibleBadgeScale = 0.5
 
 // stripRowsAt reports how many rows the strip wraps into at scale, mirroring the
 // greedy wrap the draw performs. A single-row layout never wraps.
-func stripRowsAt(scale float64, ratings []provider.Rating, cfg imageconfig.Config, availW int) int {
+func stripRowsAt(scale float64, ratings []provider.Rating, cfg imageconfig.Config, availW int, facts titleFacts) int {
 	if cfg.BottomRatingsRow {
 		return 1
 	}
 	d := ratingStripDimsFor(scale, cfg)
 	rowW, rows := 0, 1
 	for _, r := range ratings {
-		bw := widestBadgeAt(scale, []provider.Rating{r}, cfg)
+		bw := widestBadgeAt(scale, []provider.Rating{r}, cfg, facts)
 		need := bw
 		if rowW > 0 {
 			need += d.badgeGap
@@ -1036,7 +1059,7 @@ func stripRowsAt(scale float64, ratings []provider.Rating, cfg imageconfig.Confi
 // laid out the way it will actually be drawn. A wrapping layout is measured
 // across its rows rather than as one line, or badges are dropped that a second
 // row would have held.
-func stripFitsAt(scale float64, ratings []provider.Rating, cfg imageconfig.Config, frameW, frameH int) bool {
+func stripFitsAt(scale float64, ratings []provider.Rating, cfg imageconfig.Config, frameW, frameH int, facts titleFacts) bool {
 	d := ratingStripDimsFor(scale, cfg)
 	availW := frameW - d.edgeX*2
 	availH := frameH - d.edgeY*2
@@ -1044,17 +1067,17 @@ func stripFitsAt(scale float64, ratings []provider.Rating, cfg imageconfig.Confi
 		return false
 	}
 	// One badge wider than the frame never fits, wrapped or not.
-	if widestBadgeAt(scale, ratings, cfg) > availW {
+	if widestBadgeAt(scale, ratings, cfg, facts) > availW {
 		return false
 	}
-	rows := stripRowsAt(scale, ratings, cfg, availW)
+	rows := stripRowsAt(scale, ratings, cfg, availW, facts)
 	if cfg.BottomRatingsRow {
 		total := 0
 		for i, r := range ratings {
 			if i > 0 {
 				total += d.badgeGap
 			}
-			total += widestBadgeAt(scale, []provider.Rating{r}, cfg)
+			total += widestBadgeAt(scale, []provider.Rating{r}, cfg, facts)
 		}
 		if total > availW {
 			return false
@@ -1072,17 +1095,17 @@ func stripFitsAt(scale float64, ratings []provider.Rating, cfg imageconfig.Confi
 // until what remains fits, which is how v2 fitted the same row. The last badge is
 // never dropped, and a strip that cannot fit even at a readable size falls back
 // to shrinking, since something legible-but-clipped is worse than something small.
-func fitBadgesToFrame(cfg imageconfig.Config, frameW, frameH int, ratings []provider.Rating) ([]provider.Rating, float64) {
-	scale := resolveBadgeScale(cfg, frameW, frameH, ratings)
+func fitBadgesToFrame(cfg imageconfig.Config, frameW, frameH int, ratings []provider.Rating, facts titleFacts) ([]provider.Rating, float64) {
+	scale := resolveBadgeScale(cfg, frameW, frameH, ratings, facts)
 	if scale >= legibleBadgeScale || len(ratings) < 2 {
 		return ratings, scale
 	}
 
 	shown := ratings
-	for len(shown) > 1 && !stripFitsAt(legibleBadgeScale, shown, cfg, frameW, frameH) {
+	for len(shown) > 1 && !stripFitsAt(legibleBadgeScale, shown, cfg, frameW, frameH, facts) {
 		shown = shown[:len(shown)-1]
 	}
-	if !stripFitsAt(legibleBadgeScale, shown, cfg, frameW, frameH) {
+	if !stripFitsAt(legibleBadgeScale, shown, cfg, frameW, frameH, facts) {
 		return ratings, scale
 	}
 	return shown, legibleBadgeScale
@@ -1091,7 +1114,7 @@ func fitBadgesToFrame(cfg imageconfig.Config, frameW, frameH int, ratings []prov
 // ratingsBandHeight returns the vertical space (strip plus edge margins) the
 // rating strip occupies for a frameW x frameH frame, so the logo can be
 // letterboxed above a clear band.
-func ratingsBandHeight(frameW, frameH int, ratings []provider.Rating, cfg imageconfig.Config) int {
+func ratingsBandHeight(frameW, frameH int, ratings []provider.Rating, cfg imageconfig.Config, facts titleFacts) int {
 	// Side-anchored layouts sit in a column against one edge, so they clear no
 	// full-width band for the logo to be letterboxed above.
 	if cfg.RatingsLayout == imageconfig.LayoutNone || isSideRatingsLayout(cfg.RatingsLayout) {
@@ -1109,7 +1132,7 @@ func ratingsBandHeight(frameW, frameH int, ratings []provider.Rating, cfg imagec
 	if faceValue == nil {
 		return 0
 	}
-	filtered, scale := fitBadgesToFrame(cfg, frameW, frameH, filtered)
+	filtered, scale := fitBadgesToFrame(cfg, frameW, frameH, filtered, facts)
 	face := valueFaceFor(scale)
 	fm := face.Metrics()
 	valH := fm.Ascent.Ceil() + fm.Descent.Ceil()
@@ -1138,7 +1161,7 @@ func ratingsBandHeight(frameW, frameH int, ratings []provider.Rating, cfg imagec
 			value = "N/A"
 		}
 		bw := accentW + padX + textWidth(face, value) + padX
-		if ratingMark(r) != nil && !hideIcon {
+		if ratingMark(r, facts) != nil && !hideIcon {
 			bw += iconSize + iconGap
 		}
 		if stacked {
@@ -1166,7 +1189,7 @@ func ratingsBandHeight(frameW, frameH int, ratings []provider.Rating, cfg imagec
 
 // drawBadgesInPlace composites rating badges onto out according to the render config.
 // Returns the pixel height consumed (zero when layout is none).
-func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config) int {
+func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, facts titleFacts) int {
 	if cfg.RatingsLayout == imageconfig.LayoutNone {
 		return 0
 	}
@@ -1189,7 +1212,7 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 		filtered = filtered[:*cfg.RatingsMax]
 	}
 
-	filtered, scale := fitBadgesToFrame(cfg, out.Bounds().Dx(), out.Bounds().Dy(), filtered)
+	filtered, scale := fitBadgesToFrame(cfg, out.Bounds().Dx(), out.Bounds().Dy(), filtered, facts)
 
 	face := valueFaceFor(scale)
 	fm := face.Metrics()
@@ -1232,7 +1255,7 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 			value = "N/A"
 		}
 		vw := textWidth(face, value)
-		icon := ratingMark(r)
+		icon := ratingMark(r, facts)
 		bw := accentW + padX + vw + padX
 		if icon != nil && !chrome.hideIcon {
 			bw += iconSize + iconGap
@@ -1244,7 +1267,7 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 			value:            value,
 			valW:             vw,
 			icon:             icon,
-			colored:          ratingMarkColored(r),
+			colored:          ratingMarkColored(r, facts),
 			iconShape:        cfg.IconShape,
 			iconScale:        cfg.RatingProviderIconScale[r.Source],
 			iconOutline:      iconOutlineColor(cfg),
@@ -1656,7 +1679,7 @@ func drawStackedBadge(out *image.NRGBA, sp badgeSpec, y, innerH, iconSize int, f
 }
 
 // widestBadgeAt measures the widest single badge the strip would draw at scale.
-func widestBadgeAt(scale float64, ratings []provider.Rating, cfg imageconfig.Config) int {
+func widestBadgeAt(scale float64, ratings []provider.Rating, cfg imageconfig.Config, facts titleFacts) int {
 	face := valueFaceFor(scale)
 	d := ratingStripDimsFor(scale, cfg)
 	stacked := cfg.BadgeStyle == imageconfig.BadgeStacked
@@ -1672,7 +1695,7 @@ func widestBadgeAt(scale float64, ratings []provider.Rating, cfg imageconfig.Con
 			bw = stackedBadgeWidth(d, vw, cfg.RatingIconHidden)
 		} else {
 			bw = d.accentW + d.padX + vw + d.padX
-			if ratingMark(r) != nil && !cfg.RatingIconHidden {
+			if ratingMark(r, facts) != nil && !cfg.RatingIconHidden {
 				bw += d.iconSize + d.iconGap
 			}
 		}
@@ -1744,7 +1767,7 @@ func overlayScale(scale float64, frameH int) float64 {
 
 // fitBadgeScale reduces scale until the widest badge fits inside the frame.
 // It never grows the scale, so a strip that already fits is left alone.
-func fitBadgeScale(scale float64, frameW, frameH int, ratings []provider.Rating, cfg imageconfig.Config) float64 {
+func fitBadgeScale(scale float64, frameW, frameH int, ratings []provider.Rating, cfg imageconfig.Config, facts titleFacts) float64 {
 	if frameW <= 0 || frameH <= 0 || len(ratings) == 0 {
 		return scale
 	}
@@ -1764,7 +1787,7 @@ func fitBadgeScale(scale float64, frameW, frameH int, ratings []provider.Rating,
 		if share := int(float64(frameH)*heightShare + 0.5); share < availH {
 			availH = share
 		}
-		widest := widestBadgeAt(scale, ratings, cfg)
+		widest := widestBadgeAt(scale, ratings, cfg, facts)
 		tallest := badgeHeightAt(scale, cfg)
 		if availW <= 0 || availH <= 0 {
 			return scale
@@ -1829,4 +1852,20 @@ func ratingBands(b image.Rectangle, ratingsH, band, offsetY int, layout imagecon
 	default:
 		return []image.Rectangle{bottom}
 	}
+}
+
+// titleFactsFor answers what the draw path may ask about a title.
+//
+// It prefers the id a source actually resolved over the one the request was made
+// with: req.MediaID is an IMDb tt-id or a TMDB number depending on how the caller
+// addressed the title, while MediaMeta.IMDbID is what a provider confirmed. When
+// neither is a tt-id the answer is "not known" rather than "no", because a Great
+// Movie rendering without its mark produces no symptom for anyone to report.
+func titleFactsFor(meta *provider.MediaMeta, requestedID string) titleFacts {
+	id := requestedID
+	if meta != nil && meta.IMDbID != "" {
+		id = meta.IMDbID
+	}
+	on, known := curated.Contains(curated.GreatMovies, id)
+	return titleFacts{isGreatMovie: on, greatMovieKnown: known}
 }

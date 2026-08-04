@@ -29,9 +29,9 @@ func TestMarkStateForPicksTheScoreBand(t *testing.T) {
 		{"rt", 0, ""},
 	}
 	for _, c := range cases {
-		got := markStateFor(provider.Rating{Source: c.source, Value: c.value})
+		got := markStateFor(provider.Rating{Source: c.source, Value: c.value}, titleFacts{})
 		if got != c.want {
-			t.Errorf("markStateFor(%s @ %.1f) = %q, want %q", c.source, c.value, got, c.want)
+			t.Errorf("markStateFor(%s @ %.1f, titleFacts{}) = %q, want %q", c.source, c.value, got, c.want)
 		}
 	}
 }
@@ -41,16 +41,16 @@ func TestMarkStateForPicksTheScoreBand(t *testing.T) {
 // lookup returns the same mark for both and fails here.
 func TestRatingMarkDiffersByScore(t *testing.T) {
 	ensureIcons()
-	fresh := ratingMark(provider.Rating{Source: "rt", Value: 9.0})
-	rotten := ratingMark(provider.Rating{Source: "rt", Value: 3.0})
+	fresh := ratingMark(provider.Rating{Source: "rt", Value: 9.0}, titleFacts{})
+	rotten := ratingMark(provider.Rating{Source: "rt", Value: 3.0}, titleFacts{})
 	if fresh == nil || rotten == nil {
 		t.Fatal("RT marks did not load")
 	}
 	if fresh == rotten {
 		t.Error("a fresh and a rotten RT score resolved to the same mark")
 	}
-	award := ratingMark(provider.Rating{Source: "metacritic", Value: 8.5})
-	plain := ratingMark(provider.Rating{Source: "metacritic", Value: 7.0})
+	award := ratingMark(provider.Rating{Source: "metacritic", Value: 8.5}, titleFacts{})
+	plain := ratingMark(provider.Rating{Source: "metacritic", Value: 7.0}, titleFacts{})
 	if award == nil || plain == nil {
 		t.Fatal("Metacritic marks did not load")
 	}
@@ -73,7 +73,7 @@ func TestScoreBandMarksDrawInColour(t *testing.T) {
 		{Source: "metacritic", Value: 8.5},
 	}
 	for _, r := range drawnInColour {
-		if !ratingMarkColored(r) {
+		if !ratingMarkColored(r, titleFacts{}) {
 			t.Errorf("%s @ %.1f would be tinted with the accent instead of drawn in colour", r.Source, r.Value)
 		}
 	}
@@ -112,8 +112,8 @@ func TestAwardMarksNeedTheReviewCount(t *testing.T) {
 		{"audience ignores the count", "rtaudience", 9.0, 2, "audience-upright"},
 	}
 	for _, c := range cases {
-		if got := markStateFor(provider.Rating{Source: c.source, Value: c.value, Votes: c.votes}); got != c.want {
-			t.Errorf("%s: markStateFor(%s %.1f, %d votes) = %q, want %q",
+		if got := markStateFor(provider.Rating{Source: c.source, Value: c.value, Votes: c.votes}, titleFacts{}); got != c.want {
+			t.Errorf("%s: markStateFor(%s %.1f, %d votes, titleFacts{}) = %q, want %q",
 				c.name, c.source, c.value, c.votes, got, c.want)
 		}
 	}

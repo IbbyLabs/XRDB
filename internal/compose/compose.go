@@ -739,6 +739,9 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	}
 	allRatings, ratingProviders, degraded, degradedSources := p.collectRatingsWithProviders(ctx, ratingReq, meta)
 	timings.mark("ratings")
+	// Resolved here, where the title's identity is, so the draw path receives an
+	// answer rather than an id and never needs to know a bundled list exists.
+	facts := titleFactsFor(meta, req.MediaID)
 	result.ContributingProviders = append([]string{string(req.Config.ArtworkSource)}, ratingProviders...)
 	result.Degraded = degraded
 	result.DegradedSources = degradedSources
@@ -768,7 +771,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		// rating/age overlays sit beneath the wordmark instead of cropping it.
 		// The logo is still letterboxed, never cover-cropped.
 		logoH := dim.Height
-		if band := ratingsBandHeight(dim.Width, dim.Height, allRatings, req.Config); band > 0 {
+		if band := ratingsBandHeight(dim.Width, dim.Height, allRatings, req.Config, facts); band > 0 {
 			if maxBand := dim.Height / 2; band > maxBand {
 				band = maxBand
 			}
@@ -837,7 +840,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		}
 	default:
 		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
-			ratingsH = drawBadgesInPlace(composed, allRatings, req.Config)
+			ratingsH = drawBadgesInPlace(composed, allRatings, req.Config, facts)
 		}
 	}
 	if ratingsH > 0 {

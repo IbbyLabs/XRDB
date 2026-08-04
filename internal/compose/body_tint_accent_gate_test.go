@@ -15,7 +15,7 @@ func TestBodyTintIsInertWithoutAResolvedAccent(t *testing.T) {
 
 	base := maximalConfig()
 	base.RatingPresentation = "minimal" // draws the single-score pill
-	base.AggregateAccentMode = ""        // nothing resolves an accent
+	base.AggregateAccentMode = ""       // nothing resolves an accent
 	base.AggregatePillBodyTint = 0
 
 	tinted := base

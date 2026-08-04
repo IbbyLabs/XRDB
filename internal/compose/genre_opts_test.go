@@ -99,11 +99,11 @@ func TestRatingScaleAndAggregateColorChangeRender(t *testing.T) {
 	base := imageconfig.Config{Ratings: []string{"imdb", "tmdb"}, RatingsLayout: imageconfig.LayoutBottom}
 
 	img1 := genreTestImage()
-	drawBadgesInPlace(img1, ratings, base)
+	drawBadgesInPlace(img1, ratings, base, titleFacts{})
 	scaled := base
 	scaled.RatingBadgeScale = 170
 	img2 := genreTestImage()
-	drawBadgesInPlace(img2, ratings, scaled)
+	drawBadgesInPlace(img2, ratings, scaled, titleFacts{})
 	if !imagesDiffer(img1, img2) {
 		t.Error("rating badge scale did not change the render")
 	}
@@ -163,9 +163,9 @@ func TestRatingsMaxCapsBadges(t *testing.T) {
 	capped := imageconfig.Config{Ratings: []string{"imdb", "tmdb", "rt"}, RatingsLayout: imageconfig.LayoutBottom, RatingBadgeConfig: imageconfig.RatingBadgeConfig{RatingsMax: &one}}
 	full := imageconfig.Config{Ratings: []string{"imdb", "tmdb", "rt"}, RatingsLayout: imageconfig.LayoutBottom}
 	imgCap := genreTestImage()
-	hCap := drawBadgesInPlace(imgCap, ratings, capped)
+	hCap := drawBadgesInPlace(imgCap, ratings, capped, titleFacts{})
 	imgFull := genreTestImage()
-	hFull := drawBadgesInPlace(imgFull, ratings, full)
+	hFull := drawBadgesInPlace(imgFull, ratings, full, titleFacts{})
 	if hCap == 0 || hFull == 0 {
 		t.Fatal("expected both to draw a strip")
 	}
@@ -295,12 +295,12 @@ func TestRatingBadgeOffsetChangesRender(t *testing.T) {
 	ratings := []provider.Rating{{Source: "imdb", Value: 8.5, Label: "8.5"}, {Source: "tmdb", Value: 7.9, Label: "7.9"}}
 	base := imageconfig.Config{Ratings: []string{"imdb", "tmdb"}, RatingsLayout: imageconfig.LayoutBottom}
 	def := genreTestImage()
-	drawBadgesInPlace(def, ratings, base)
+	drawBadgesInPlace(def, ratings, base, titleFacts{})
 	off := base
 	off.RatingBadgeOffsetX = -40
 	off.RatingBadgeOffsetY = -50
 	img := genreTestImage()
-	drawBadgesInPlace(img, ratings, off)
+	drawBadgesInPlace(img, ratings, off, titleFacts{})
 	if !imagesDiffer(def, img) {
 		t.Error("rating badge offset did not change the render")
 	}
@@ -341,7 +341,7 @@ func TestEditorialPresentationRenders(t *testing.T) {
 	drawEditorialRating(img, ratings, []string{"Crime"}, cfg, 2.0, newOccupancy(img.Bounds()))
 	// Editorial draws (non-empty) and differs from the standard strip.
 	std := genreTestImage()
-	drawBadgesInPlace(std, ratings, imageconfig.Config{Ratings: []string{"imdb", "tmdb"}, RatingsLayout: imageconfig.LayoutBottom})
+	drawBadgesInPlace(std, ratings, imageconfig.Config{Ratings: []string{"imdb", "tmdb"}, RatingsLayout: imageconfig.LayoutBottom}, titleFacts{})
 	if !imagesDiffer(img, std) {
 		t.Error("editorial presentation matched the standard strip")
 	}
@@ -355,11 +355,11 @@ func TestProviderAccentOverrideChangesRender(t *testing.T) {
 	ratings := []provider.Rating{{Source: "imdb", Value: 8.5, Label: "8.5"}}
 	base := imageconfig.Config{Ratings: []string{"imdb"}, RatingsLayout: imageconfig.LayoutBottom}
 	def := genreTestImage()
-	drawBadgesInPlace(def, ratings, base)
+	drawBadgesInPlace(def, ratings, base, titleFacts{})
 	ov := base
 	ov.RatingProviderOverrides = map[string]string{"imdb": "#8b5cf6"}
 	img := genreTestImage()
-	drawBadgesInPlace(img, ratings, ov)
+	drawBadgesInPlace(img, ratings, ov, titleFacts{})
 	if !imagesDiffer(def, img) {
 		t.Error("provider accent override did not change the render")
 	}
