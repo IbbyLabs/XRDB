@@ -1796,6 +1796,59 @@ type scorePillStyle struct {
 	valueSet bool
 	// radius maps the capsule height to its corner radius. Nil means a capsule.
 	radius func(int) int
+	// border carries the badge outline group onto the capsule. Zero alpha leaves
+	// the hairline the style would draw.
+	border color.NRGBA
+	// borderSet marks an outline colour typed into the config, which takes the
+	// capsule outline from the accent when the two want it.
+	borderSet bool
+	// borderWidth strokes at this px width at 1x. Negative switches the outline
+	// off; 0 keeps whatever the branch would draw.
+	borderWidth int
+}
+
+// drawPillOutline strokes the capsule edge. A negative width is the outline
+// switched off, which beats every rule that would draw one, as it does on the
+// per-source badges.
+func drawPillOutline(base *image.NRGBA, rect image.Rectangle, radius int, col color.NRGBA, width int, s func(float64) int) {
+	if width < 0 || col.A == 0 {
+		return
+	}
+	if width == 0 {
+		drawRectBorder(base, rect, radius, col)
+		return
+	}
+	strokeRoundedRect(base, rect, radius, s(float64(width)), col)
+}
+
+// pillBorderAlpha is the outline group's opacity as an alpha, matching what the
+// per-source badges do with the same control.
+func pillBorderAlpha(cfg imageconfig.Config, fallback uint8) uint8 {
+	if o := cfg.RatingBadgeBorderOpacity; o > 0 {
+		return uint8(maxInt(1, o*255/100))
+	}
+	return fallback
+}
+
+// applyPillBorder carries the badge outline group onto an aggregate pill. The
+// pills draw one capsule rather than per-source badges, so without this the
+// group is live on Standard and dead on every pill presentation.
+func applyPillBorder(style *scorePillStyle, cfg imageconfig.Config) {
+	if b, err := parseHexColor(cfg.RatingBadgeBorderColor); cfg.RatingBadgeBorderColor != "" && err == nil {
+		b.A = pillBorderAlpha(cfg, 255)
+		style.border = b
+		style.borderSet = true
+	}
+	// A pill carries one aggregate score rather than a named site, so the
+	// source's colour here is the accent the pill already resolved.
+	if cfg.RatingBadgeBorderSourceTint && !style.borderSet {
+		tint := style.accent
+		tint.A = pillBorderAlpha(cfg, 200)
+		style.border = tint
+	}
+	if w := cfg.RatingBadgeBorderWidth; w != 0 {
+		style.borderWidth = w
+	}
 }
 
 // scorePillRadius maps the configured badge style onto the aggregate pill, so
@@ -1870,6 +1923,8 @@ func aggregatePillStyle(cfg imageconfig.Config, source string, genres []string, 
 		style.value = c
 		style.valueSet = true
 	}
+	// After the accent, because a source-tinted outline takes its colour.
+	applyPillBorder(&style, cfg)
 	return style
 }
 
@@ -1969,20 +2024,32 @@ func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, icon im
 	// With a label the accent fills the rail behind it. Without one there is no
 	// rail, so it outlines the capsule and the body stays dark. A filled body
 	// already carries the colour.
-	if label == "" && style.accentSet && style.accentShown && style.fill.A == 0 && style.accentTopStrip {
-		drawRectBorder(base, rect, radius, color.NRGBA{R: 255, G: 255, B: 255, A: 28})
+	accentOwnsOutline := label == "" && style.accentSet && style.accentShown && style.fill.A == 0
+	// An outline colour typed into the config takes the capsule from the accent,
+	// which then keeps its strip so the score colour is still on the pill.
+	accentToStrip := style.accentTopStrip || (accentOwnsOutline && style.borderSet)
+	hairline := color.NRGBA{R: 255, G: 255, B: 255, A: 28}
+	if style.border.A > 0 {
+		hairline = style.border
+	}
+	switch {
+	case accentOwnsOutline && accentToStrip:
+		drawPillOutline(base, rect, radius, hairline, style.borderWidth, s)
 		barH := s(4)
 		barW := capW / 2
 		bar := image.Rect(cx-barW/2, topY+s(3), cx+barW/2, topY+s(3)+barH)
 		fillRoundedRect(base, bar, barH/2, style.accent)
-	} else if label == "" && style.accentSet && style.accentShown && style.fill.A == 0 {
+	case accentOwnsOutline:
 		outlineW := 2
 		if style.accentWidth > 0 {
 			outlineW = style.accentWidth
 		}
+		if style.borderWidth > 0 {
+			outlineW = style.borderWidth
+		}
 		strokeRoundedRect(base, rect, radius, s(float64(outlineW)), style.accent)
-	} else {
-		drawRectBorder(base, rect, radius, color.NRGBA{R: 255, G: 255, B: 255, A: 28})
+	default:
+		drawPillOutline(base, rect, radius, hairline, style.borderWidth, s)
 	}
 
 	cursor := x0 + padX

@@ -816,3 +816,88 @@ func TestShortGenreNamesAgreeWithTheGlyph(t *testing.T) {
 		}
 	}
 }
+
+// The pill presentations draw one capsule instead of the per-source badges, so
+// the badge outline group has to reach that capsule too. BUG-183 fixed the
+// opacity control for exactly this shape and the border group beside it was left
+// behind, which is BUG-210.
+func TestBadgeOutlineReachesTheScorePills(t *testing.T) {
+	if testing.Short() {
+		t.Skip("render sweep: skipped under -short, runs in the ordinary test pass")
+	}
+	p := effectPipeline()
+	controls := []struct {
+		name string
+		set  func(*imageconfig.Config)
+	}{
+		{"colour", func(c *imageconfig.Config) { c.RatingBadgeBorderColor = "#ff0000" }},
+		{"width", func(c *imageconfig.Config) { c.RatingBadgeBorderWidth = 3 }},
+		{"opacity", func(c *imageconfig.Config) {
+			c.RatingBadgeBorderColor = "#ff0000"
+			c.RatingBadgeBorderOpacity = 20
+		}},
+		{"source tint", func(c *imageconfig.Config) { c.RatingBadgeBorderSourceTint = true }},
+	}
+	for _, presentation := range []string{"minimal", "average", "dual", "dual-minimal"} {
+		for _, control := range controls {
+			t.Run(presentation+"/"+control.name, func(t *testing.T) {
+				off := maximalConfig()
+				off.RatingPresentation = presentation
+				on := off
+				control.set(&on)
+
+				if bytes.Equal(renderOne(t, p, off, "movie", "poster"), renderOne(t, p, on, "movie", "poster")) {
+					t.Errorf("badge outline %s changes nothing on the %s presentation", control.name, presentation)
+				}
+			})
+		}
+	}
+}
+
+// By-score accents draw the capsule outline on a label-less pill, so an outline
+// colour typed into the config takes that slot. The score colour has to survive
+// the move rather than the ring going static: it keeps the pill by moving to the
+// strip. Two scores far apart under the same stops must still render differently.
+func TestScorePillKeepsItsScoreColourWhenAnOutlineTakesTheCapsule(t *testing.T) {
+	stops := "40:#f97316,60:#f97316,90:#3b82f6,100:#3b82f6"
+	draw := func(score float64, border string) *image.NRGBA {
+		cfg := imageconfig.Default()
+		cfg.AggregateAccentMode = "dynamic"
+		cfg.AggregateDynamicStops = stops
+		cfg.RatingBadgeBorderColor = border
+
+		img := image.NewNRGBA(image.Rect(0, 0, 500, 750))
+		style := aggregatePillStyle(cfg, "overall", nil, false, score, color.NRGBA{R: 80, G: 80, B: 90, A: 255})
+		drawAggregatePills(img, cfg, 1, newOccupancy(img.Bounds()), false, aggregatePill{
+			score: formatRatingValue(score, cfg.RatingValueMode), style: style,
+		})
+		return img
+	}
+
+	// Comparing whole renders would pass on the score text alone, since "6.2"
+	// and "9.1" draw different glyphs whatever the accent does. Count the stop
+	// colours instead, which is the thing that has to survive.
+	orange := color.NRGBA{R: 249, G: 115, B: 22, A: 255} // the 6.2 stop
+	blue := color.NRGBA{R: 59, G: 130, B: 246, A: 255}   // the 9.1 stop
+	red := color.NRGBA{R: 255, G: 0, B: 0, A: 255}       // the typed outline
+
+	// Without an outline colour the accent owns the capsule: the By-score ring.
+	if n := countNear(draw(6.2, ""), orange); n == 0 {
+		t.Error("no pixel carries the 6.2 stop colour, so the by-score ring is not drawn")
+	}
+	if n := countNear(draw(9.1, ""), blue); n == 0 {
+		t.Error("no pixel carries the 9.1 stop colour, so the ring stopped following the score")
+	}
+	// With one, the typed colour takes the capsule and the accent moves to the
+	// strip. Both have to be on the pill; losing either is the failure.
+	low, high := draw(6.2, "#ff0000"), draw(9.1, "#ff0000")
+	if n := countNear(low, red); n == 0 {
+		t.Error("the typed outline colour is absent, so the border still does not reach the pill")
+	}
+	if n := countNear(low, orange); n == 0 {
+		t.Error("the 6.2 stop colour vanished once an outline was set, so the score colour was dropped rather than moved to the strip")
+	}
+	if n := countNear(high, blue); n == 0 {
+		t.Error("the 9.1 stop colour vanished once an outline was set, so the score colour was dropped rather than moved to the strip")
+	}
+}

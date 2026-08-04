@@ -48,6 +48,8 @@ ignored, so this header text costs nothing.
 - `aggregateAccentShape` picks how it is marked: `outline` traces the pill and keeps the body dark, `strip` draws a centred bar along the top edge. Outline is the default.
 - `aggregateAccentWidth` sets how thick that outline is drawn, in pixels. Any older answer saying its thickness is fixed is out of date.
 - Turning the accent rail off drops that outline too, and Fill by score puts the colour in the body instead, so the three treatments do not stack.
+- The badge outline controls under Rating badges reach the pill presentations as well as the per-source badges: `ratingBadgeBorderColor`, `ratingBadgeBorderWidth`, `ratingBadgeBorderOpacity` and the source tint all draw on the capsule, so an outline set on Standard follows when the presentation changes. Any older answer saying those four do nothing on minimal, average or dual, or offering an accent colour as the way to outline a pill, is out of date.
+- On a label-less pill the accent and the outline want the same edge, and a typed outline colour wins it. The accent then draws as a strip along the top instead of as the ring, so a By-score colour still tracks the score and is still on the pill. Setting an outline colour therefore changes a By-score ring into a strip; clearing it puts the ring back.
 
 ## Quality badges
 
