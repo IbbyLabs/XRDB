@@ -83,7 +83,7 @@ func (s *SIMKL) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, er
 	case strings.HasPrefix(id, "simkl:"):
 		raw, ok := stripPrefix(id, "simkl:")
 		if !ok {
-			return nil, fmt.Errorf("simkl: empty id in %q", id)
+			return nil, fmt.Errorf("simkl: empty id in %q: %w", id, ErrNotApplicable)
 		}
 		if !simklNumericIDRe.MatchString(raw) {
 			return nil, fmt.Errorf("simkl: non-numeric id %q", id)

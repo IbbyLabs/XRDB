@@ -125,7 +125,7 @@ func (t *Trakt) fetchSegment(ctx context.Context, segment, id string) (*MediaMet
 		return nil, fmt.Errorf("trakt: decode: %w", err)
 	}
 	if result.Rating <= 0 || result.Votes == 0 {
-		return nil, fmt.Errorf("trakt: no rating data for id %q", id)
+		return nil, fmt.Errorf("trakt: no rating data for id %q: %w", id, errNotFound)
 	}
 
 	return &MediaMeta{

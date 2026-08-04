@@ -38,7 +38,7 @@ func (a *AlloCine) RatingSources() []string { return []string{"allocine", "alloc
 // Fetch satisfies Provider. AlloCiné cannot be looked up by IMDb or TMDB id, so
 // an id on its own is not enough; the pipeline calls FetchByTitle instead.
 func (a *AlloCine) Fetch(context.Context, string, string) (*MediaMeta, error) {
-	return nil, fmt.Errorf("allocine: needs a title, not an id")
+	return nil, fmt.Errorf("allocine: needs a title, not an id: %w", ErrNotApplicable)
 }
 
 func (a *AlloCine) base() string {
@@ -64,7 +64,7 @@ func (a *AlloCine) FetchByTitle(ctx context.Context, mediaType, title, originalT
 
 	path := a.findPath(ctx, mediaType, variants, year)
 	if path == "" {
-		return nil, fmt.Errorf("allocine: no match for %q", variants[0])
+		return nil, fmt.Errorf("allocine: no match for %q: %w", variants[0], errNotFound)
 	}
 
 	page, err := fetchText(ctx, a.httpClient, a.base()+path, allocineHeaders)
@@ -73,7 +73,7 @@ func (a *AlloCine) FetchByTitle(ctx context.Context, mediaType, title, originalT
 	}
 	ratings := parseAllocineRatings(page)
 	if len(ratings) == 0 {
-		return nil, fmt.Errorf("allocine: no scores on %s", path)
+		return nil, fmt.Errorf("allocine: no scores on %s: %w", path, errNotFound)
 	}
 	return &MediaMeta{Ratings: ratings}, nil
 }

@@ -36,7 +36,7 @@ func (f *Filmweb) RatingSources() []string { return []string{"filmweb"} }
 // Fetch satisfies Provider. Filmweb cannot be looked up by IMDb or TMDB id, so
 // the pipeline calls FetchByTitle instead.
 func (f *Filmweb) Fetch(context.Context, string, string) (*MediaMeta, error) {
-	return nil, fmt.Errorf("filmweb: needs a title, not an id")
+	return nil, fmt.Errorf("filmweb: needs a title, not an id: %w", ErrNotApplicable)
 }
 
 func (f *Filmweb) base() string {
@@ -62,12 +62,12 @@ type filmwebCandidate struct {
 func (f *Filmweb) FetchByTitle(ctx context.Context, mediaType, title, originalTitle string, year int) (*MediaMeta, error) {
 	variants := titleVariants(title, originalTitle)
 	if len(variants) == 0 {
-		return nil, fmt.Errorf("filmweb: no title to search for")
+		return nil, fmt.Errorf("filmweb: no title to search for: %w", ErrNotApplicable)
 	}
 	// A Filmweb page URL embeds the release year, so without one there is no
 	// address to fetch even after the title is matched.
 	if year <= 0 {
-		return nil, fmt.Errorf("filmweb: no release year for %q", variants[0])
+		return nil, fmt.Errorf("filmweb: no release year for %q: %w", variants[0], ErrNotApplicable)
 	}
 
 	kind := "film"
@@ -76,7 +76,7 @@ func (f *Filmweb) FetchByTitle(ctx context.Context, mediaType, title, originalTi
 	}
 	candidate, ok := f.search(ctx, kind, variants)
 	if !ok {
-		return nil, fmt.Errorf("filmweb: no match for %q", variants[0])
+		return nil, fmt.Errorf("filmweb: no match for %q: %w", variants[0], errNotFound)
 	}
 
 	// Filmweb's own URLs are "/film/<title>-<year>-<id>"; the title part is
@@ -88,7 +88,7 @@ func (f *Filmweb) FetchByTitle(ctx context.Context, mediaType, title, originalTi
 	}
 	value, ok := parseFilmwebRating(page)
 	if !ok {
-		return nil, fmt.Errorf("filmweb: no score for %q", candidate.title)
+		return nil, fmt.Errorf("filmweb: no score for %q: %w", candidate.title, errNotFound)
 	}
 	return &MediaMeta{Ratings: []Rating{{
 		Source: "filmweb",

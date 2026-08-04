@@ -86,7 +86,7 @@ func (d *IMDbDataset) Fetch(ctx context.Context, mediaType, id string) (*MediaMe
 	d.mu.RUnlock()
 
 	if !ok {
-		return nil, fmt.Errorf("imdb_local: id %q not found in dataset", id)
+		return nil, fmt.Errorf("imdb_local: id %q not found in dataset: %w", id, errNotFound)
 	}
 
 	return &MediaMeta{

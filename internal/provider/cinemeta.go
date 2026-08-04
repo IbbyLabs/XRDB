@@ -111,7 +111,7 @@ func (c *Cinemeta) fetchMeta(ctx context.Context, contentType, id string) (*Medi
 	}
 	m := result.Meta
 	if m.Name == "" && m.Poster == "" {
-		return nil, fmt.Errorf("cinemeta: empty meta for %s", id)
+		return nil, fmt.Errorf("cinemeta: empty meta for %s: %w", id, errNotFound)
 	}
 
 	meta := &MediaMeta{
