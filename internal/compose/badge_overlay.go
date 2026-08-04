@@ -1864,6 +1864,73 @@ func scorePillRadius(style imageconfig.BadgeStyle) func(int) int {
 	}
 }
 
+// aggregateAccentHex resolves the configured accent to a hex for one aggregate
+// score. The pills and the scorebar share it so a mode added to one cannot go
+// missing from the other, which is how "source" ended up live on the scorebar
+// and dead on every pill. An empty return means the mode resolved nothing.
+func aggregateAccentHex(cfg imageconfig.Config, role string, genres []string, isAnime bool, score float64) string {
+	switch cfg.AggregateAccentMode {
+	case "dynamic":
+		return dynamicAccentHex(score, cfg.AggregateDynamicStops)
+	case "genre":
+		if fam := resolveGenreFamilyGrouped(genres, isAnime, cfg.GenreBadgeAnimeGrouping); fam != nil {
+			return fam.accent
+		}
+		return ""
+	case "source":
+		switch strings.ToLower(role) {
+		case "critics":
+			return "#22c55e"
+		case "audience":
+			return "#38bdf8"
+		default:
+			return "#f59e0b"
+		}
+	case "custom":
+		switch role {
+		case "critics":
+			if cfg.AggregateCriticsAccentColor != "" {
+				return cfg.AggregateCriticsAccentColor
+			}
+		case "audience":
+			if cfg.AggregateAudienceAccentColor != "" {
+				return cfg.AggregateAudienceAccentColor
+			}
+		}
+		return cfg.AggregateAccentColor
+	}
+	// No mode set: a bare accent colour behaves as custom.
+	return cfg.AggregateAccentColor
+}
+
+// scoreBandColor is the low/mid/high colour for a score, the fallback the
+// scorebar has always used when no accent resolves.
+func scoreBandColor(cfg imageconfig.Config, score float64, alpha uint8) color.NRGBA {
+	lowT, highT := 5.0, 8.0
+	if cfg.ScorebarLowThreshold > 0 {
+		lowT = cfg.ScorebarLowThreshold
+	}
+	if cfg.ScorebarHighThreshold > 0 {
+		highT = cfg.ScorebarHighThreshold
+	}
+	band := func(override string, def color.NRGBA) color.NRGBA {
+		if c, err := parseHexColor(override); override != "" && err == nil {
+			c.A = alpha
+			return c
+		}
+		def.A = alpha
+		return def
+	}
+	switch {
+	case score >= highT:
+		return band(cfg.ScorebarHighColor, color.NRGBA{R: 39, G: 174, B: 96})
+	case score >= lowT:
+		return band(cfg.ScorebarMidColor, color.NRGBA{R: 230, G: 126, B: 34})
+	default:
+		return band(cfg.ScorebarLowColor, color.NRGBA{R: 192, G: 57, B: 43})
+	}
+}
+
 // aggregatePillStyle resolves how one aggregate pill is coloured. Critics and
 // audience take their own colours when set so a dual presentation can tell the
 // two apart, and fall back to the shared aggregate colours, then to the
@@ -1881,31 +1948,22 @@ func aggregatePillStyle(cfg imageconfig.Config, source string, genres []string, 
 		radius:         scorePillRadius(cfg.BadgeStyle),
 	}
 
-	accentHex := ""
-	switch cfg.AggregateAccentMode {
-	case "dynamic":
-		accentHex = dynamicAccentHex(score, cfg.AggregateDynamicStops)
-	case "genre":
-		if fam := resolveGenreFamilyGrouped(genres, isAnime, cfg.GenreBadgeAnimeGrouping); fam != nil {
-			accentHex = fam.accent
-		}
-	case "custom":
-		switch source {
-		case "critics":
-			accentHex = cfg.AggregateCriticsAccentColor
-		case "audience":
-			accentHex = cfg.AggregateAudienceAccentColor
-		}
-		if accentHex == "" {
-			accentHex = cfg.AggregateAccentColor
-		}
+	accentHex := aggregateAccentHex(cfg, source, genres, isAnime, score)
+	accent, err := parseHexColor(accentHex)
+	resolved := accentHex != "" && err == nil
+	// Picking a mode and leaving its colour unset resolved nothing, which took
+	// the accent, the fill, the body tint and the shape down with it. A chosen
+	// mode falls back to the score bands, as the scorebar already did. Choosing
+	// no mode still leaves the capsule plain.
+	if !resolved && cfg.AggregateAccentMode != "" {
+		accent, resolved = scoreBandColor(cfg, score, 255), true
 	}
-	if c, err := parseHexColor(accentHex); accentHex != "" && err == nil {
-		style.accent = c
+	if resolved {
+		style.accent = accent
 		style.accentSet = true
 		if cfg.AggregateFillByScore {
-			c.A = 235
-			style.fill = c
+			accent.A = 235
+			style.fill = accent
 		}
 	}
 
@@ -2297,28 +2355,9 @@ func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imagecon
 
 	// An accent overrides the score-band colour for the single-fill styles. The
 	// mode picks where that accent comes from; a bare accent colour with no mode
-	// set behaves as "custom".
-	accentHex := cfg.AggregateAccentColor
-	switch cfg.AggregateAccentMode {
-	case "dynamic":
-		// Colour by score: a configured stop ramp if there is one, otherwise the
-		// score-band fallback below.
-		accentHex = dynamicAccentHex(avg, cfg.AggregateDynamicStops)
-	case "genre":
-		accentHex = ""
-		if fam := resolveGenreFamilyGrouped(genres, isAnime, cfg.GenreBadgeAnimeGrouping); fam != nil {
-			accentHex = fam.accent
-		}
-	case "source":
-		switch strings.ToLower(cfg.AggregateRatingSource) {
-		case "critics":
-			accentHex = "#22c55e"
-		case "audience":
-			accentHex = "#38bdf8"
-		default:
-			accentHex = "#f59e0b"
-		}
-	}
+	// set behaves as "custom". Dynamic with no stop ramp resolves nothing and
+	// takes the score-band fallback below.
+	accentHex := aggregateAccentHex(cfg, cfg.AggregateRatingSource, genres, isAnime, avg)
 
 	fillColor := highC
 	hasAccent := false

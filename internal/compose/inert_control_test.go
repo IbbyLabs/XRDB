@@ -901,3 +901,108 @@ func TestScorePillKeepsItsScoreColourWhenAnOutlineTakesTheCapsule(t *testing.T) 
 		t.Error("the 9.1 stop colour vanished once an outline was set, so the score colour was dropped rather than moved to the strip")
 	}
 }
+
+// Picking an accent mode and leaving its colour unset left every control in the
+// Score colours panel inert: accent, fill, body tint and shape are all gated on
+// a hex that never resolved. The scorebar presentation already falls back to the
+// score bands here, so the pills were the odd one out (BUG-211).
+func TestChosenAccentModeAlwaysColoursTheScorePills(t *testing.T) {
+	if testing.Short() {
+		t.Skip("render sweep: skipped under -short, runs in the ordinary test pass")
+	}
+	p := effectPipeline()
+	modes := []struct {
+		name string
+		set  func(*imageconfig.Config)
+	}{
+		{"custom with no colour", func(c *imageconfig.Config) { c.AggregateAccentMode = "custom" }},
+		{"custom with fill by score", func(c *imageconfig.Config) {
+			c.AggregateAccentMode = "custom"
+			c.AggregateFillByScore = true
+		}},
+		{"dynamic with no stops", func(c *imageconfig.Config) { c.AggregateAccentMode = "dynamic" }},
+		{"source", func(c *imageconfig.Config) { c.AggregateAccentMode = "source" }},
+	}
+	for _, presentation := range []string{"minimal", "average", "dual", "dual-minimal"} {
+		for _, mode := range modes {
+			t.Run(presentation+"/"+mode.name, func(t *testing.T) {
+				off := maximalConfig()
+				off.RatingPresentation = presentation
+				on := off
+				mode.set(&on)
+
+				if bytes.Equal(renderOne(t, p, off, "movie", "poster"), renderOne(t, p, on, "movie", "poster")) {
+					t.Errorf("accent mode %q changes nothing on the %s presentation", mode.name, presentation)
+				}
+			})
+		}
+	}
+}
+
+// The fallback belongs to a mode the user picked. Choosing none has to keep the
+// plain capsule, or every pill gains a coloured ring nobody asked for.
+func TestNoAccentModeLeavesTheScorePillPlain(t *testing.T) {
+	draw := func(mode string) *image.NRGBA {
+		cfg := imageconfig.Default()
+		cfg.AggregateAccentMode = mode
+		img := image.NewNRGBA(image.Rect(0, 0, 500, 750))
+		style := aggregatePillStyle(cfg, "overall", nil, false, 8.4, color.NRGBA{R: 80, G: 80, B: 90, A: 255})
+		drawAggregatePills(img, cfg, 1, newOccupancy(img.Bounds()), false, aggregatePill{
+			score: "8.4", style: style,
+		})
+		return img
+	}
+	green := color.NRGBA{R: 39, G: 174, B: 96, A: 255} // the high score band
+	if n := countNear(draw(""), green); n > 0 {
+		t.Errorf("%d pixels carry the score band with no accent mode chosen, so the capsule stopped being plain", n)
+	}
+	if n := countNear(draw("custom"), green); n == 0 {
+		t.Error("choosing custom with no colour draws no score band, so the panel is still inert")
+	}
+}
+
+// The pills and the scorebar resolve their accent through one function, so a
+// mode cannot be live on one and dead on the other. Pin what each mode returns:
+// the render-level tests above do not reach every branch, and a wrong colour
+// here is invisible to them.
+func TestAggregateAccentHexPerMode(t *testing.T) {
+	base := imageconfig.Default()
+	base.AggregateAccentColor = "#123456"
+	base.AggregateCriticsAccentColor = "#aa0000"
+	base.AggregateAudienceAccentColor = "#0000aa"
+	base.AggregateDynamicStops = "40:#f97316,90:#3b82f6"
+
+	tests := []struct {
+		mode, role, want string
+	}{
+		{"", "overall", "#123456"},        // a bare colour behaves as custom
+		{"custom", "overall", "#123456"},  //
+		{"custom", "critics", "#aa0000"},  // per-role colour wins
+		{"custom", "audience", "#0000aa"}, //
+		{"source", "critics", "#22c55e"},
+		{"source", "audience", "#38bdf8"},
+		{"source", "overall", "#f59e0b"},
+		{"genre", "overall", ""}, // no genres given, so nothing resolves
+	}
+	for _, tc := range tests {
+		t.Run(tc.mode+"/"+tc.role, func(t *testing.T) {
+			cfg := base
+			cfg.AggregateAccentMode = tc.mode
+			if got := aggregateAccentHex(cfg, tc.role, nil, false, 8.4); got != tc.want {
+				t.Errorf("accent mode %q for %q resolved %q, want %q", tc.mode, tc.role, got, tc.want)
+			}
+		})
+	}
+
+	// Dynamic reads the ramp, and resolves nothing without one so the caller
+	// falls back to the score bands.
+	cfg := base
+	cfg.AggregateAccentMode = "dynamic"
+	if got := aggregateAccentHex(cfg, "overall", nil, false, 9.5); got != "#3b82f6" {
+		t.Errorf("dynamic at 9.5 resolved %q, want the top stop", got)
+	}
+	cfg.AggregateDynamicStops = ""
+	if got := aggregateAccentHex(cfg, "overall", nil, false, 9.5); got != "" {
+		t.Errorf("dynamic with no ramp resolved %q, want nothing so the bands take over", got)
+	}
+}
