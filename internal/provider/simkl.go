@@ -165,9 +165,9 @@ func (s *SIMKL) fetchSegment(ctx context.Context, segment, simklID, origID strin
 	}
 
 	var result struct {
-		Title  string `json:"title"`
-		Year   int    `json:"year"`
-		Genres []simklGenre `json:"genres"`
+		Title   string       `json:"title"`
+		Year    int          `json:"year"`
+		Genres  []simklGenre `json:"genres"`
 		Ratings struct {
 			Simkl struct {
 				Rating float64 `json:"rating"` // 0–10, like the imdb rating beside it

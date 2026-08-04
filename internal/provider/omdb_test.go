@@ -155,11 +155,42 @@ func TestOMDbAnsweringWithNoRatingsIsNotAHealthFailure(t *testing.T) {
 	}
 }
 
-// The other branch, and it depends on matching text OMDb owns rather than a code
-// we control. If they reword it this silently goes back to counting as a failure,
-// so the strings are pinned here where a change is visible.
+// A rejected key fails every title, so it is the source's own problem and has to
+// keep counting. OMDb reports it with HTTP 200 and Response=False, the same shape
+// as a title it does not carry, so only the message separates them.
+func TestOMDbRejectingTheKeyStillMarksTheSourceUnhealthy(t *testing.T) {
+	for _, upstream := range []string{"Invalid API key!", "No API key provided.", "Request limit reached!"} {
+		t.Run(upstream, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				_, _ = fmt.Fprintf(w, `{"Response":"False","Error":%q}`, upstream)
+			}))
+			defer srv.Close()
+			o := &OMDB{apiKey: "test", httpClient: srv.Client(), baseURL: srv.URL + "/"}
+
+			_, err := o.Fetch(context.Background(), "movie", "tt0468569")
+			if err == nil {
+				t.Fatal("expected an error")
+			}
+			h := NewHealthTracker(10, time.Hour)
+			h.Failure("omdb", err)
+			healthy := true
+			for _, s := range h.Snapshot() {
+				if s.Source == "omdb" {
+					healthy = s.Healthy
+				}
+			}
+			if healthy {
+				t.Errorf("a rejected key left OMDb healthy: %v", err)
+			}
+		})
+	}
+}
+
+// Any Response=False on a 200 is OMDb answering about the title. The previous
+// gate matched two phrasings and missed this one, which production emits: 77
+// counted failures in half an hour, each holding OMDb out of unrelated renders.
 func TestOMDbRejectingATitleIsNotAHealthFailure(t *testing.T) {
-	for _, upstream := range []string{"Incorrect IMDb ID.", "Error getting data. Movie not found!"} {
+	for _, upstream := range []string{"Incorrect IMDb ID.", "Error getting data. Movie not found!", "Error getting data."} {
 		t.Run(upstream, func(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				_, _ = fmt.Fprintf(w, `{"Response":"False","Error":%q}`, upstream)

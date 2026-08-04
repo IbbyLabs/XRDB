@@ -103,12 +103,15 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 		return nil, fmt.Errorf("omdb: decode response: %w", err)
 	}
 	if result.Response != "True" {
-		if strings.Contains(result.Error, "Incorrect IMDb ID") || strings.Contains(result.Error, "not found") {
-			// OMDb answering "I do not have this title" is about the title, not
-			// about OMDb. Counting it holds the source out for every render.
-			return nil, fmt.Errorf("omdb: API error: %s: %w", result.Error, errNotFound)
+		// A 200 carrying Response=False is OMDb answering about the title, so it
+		// is the title that is missing rather than OMDb that is unwell. A source
+		// fault arrives as a transport error or a non-200 and is counted above.
+		// The exception is the credential: a rejected key fails every title and
+		// is the source's own problem.
+		if omdbKeyRejected(result.Error) {
+			return nil, fmt.Errorf("omdb: API error: %s", result.Error)
 		}
-		return nil, fmt.Errorf("omdb: API error: %s", result.Error)
+		return nil, fmt.Errorf("omdb: API error: %s: %w", result.Error, errNotFound)
 	}
 
 	meta := &MediaMeta{}
@@ -145,6 +148,14 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 		return nil, fmt.Errorf("omdb: no ratings found for %s: %w", id, errNotFound)
 	}
 	return meta, nil
+}
+
+// omdbKeyRejected reports whether an OMDb error message is about the key rather
+// than the title. OMDb returns these with HTTP 200 and Response=False, the same
+// shape it uses for a title it does not carry.
+func omdbKeyRejected(msg string) bool {
+	m := strings.ToLower(msg)
+	return strings.Contains(m, "api key") || strings.Contains(m, "request limit")
 }
 
 // parsePercent parses "XX%" → float64 (0-10 scale). Returns -1 on failure.
