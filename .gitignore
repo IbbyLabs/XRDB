@@ -8,6 +8,9 @@ web/.next/
 web/out/
 web/node_modules/
 internal/ui/dist/*
+# Load bearing: the only tracked file under dist/. `//go:embed all:dist` in
+# internal/ui needs the directory to exist in a clean checkout, so deleting this
+# stops the binary compiling. A build that clears dist takes it too.
 !internal/ui/dist/.keep
 web/test-results/
 web/playwright-report/
