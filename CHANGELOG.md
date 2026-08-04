@@ -2,6 +2,25 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.63.0](https://github.com/IbbyLabs/XRDB/compare/v3.62.0...v3.63.0) (2026-08-04)
+
+
+### Added
+
+* **curated:** bundle Roger Ebert's Great Movies list (FR-159) ([1c8571d](https://github.com/IbbyLabs/XRDB/commit/1c8571dc1e1f4956245246bc44d39780ff804323))
+* **ratings:** mark Roger Ebert's Great Movies (FR-159) ([6bd5345](https://github.com/IbbyLabs/XRDB/commit/6bd53451732d33dcd1a5cf07fde21e8b4195c47f))
+
+
+### Fixed
+
+* **configurator:** move rating badge controls out of the genre panel ([5f9af04](https://github.com/IbbyLabs/XRDB/commit/5f9af043527728a0978f9ff198ead492e42ba100))
+
+
+### Documentation
+
+* **product-context:** describe the Great Movies mark (FR-159) ([624d45c](https://github.com/IbbyLabs/XRDB/commit/624d45ce6ee6feebe9b9dcdf12b6759e4eacd842))
+* **test:** state what the fine-group guard does not cover ([8e394c7](https://github.com/IbbyLabs/XRDB/commit/8e394c710587a21022d37268afd3934655f92d43))
+
 ## [3.62.0](https://github.com/IbbyLabs/XRDB/compare/v3.61.1...v3.62.0) (2026-08-03)
 
 
