@@ -598,7 +598,7 @@ type TrendingConfig struct {
 type GenreBadgeConfig struct {
 	GenreBadgeAnimeGrouping     string  `json:"genreBadgeAnimeGrouping,omitempty"`     // split | animation | secondary; "" = split
 	GenreBadgeMode              string  `json:"genreBadgeMode,omitempty"`              // off | text | icon | both
-	GenreBadgeStyle             string  `json:"genreBadgeStyle,omitempty"`             // glass | square | plain | clean | tile
+	GenreBadgeStyle             string  `json:"genreBadgeStyle,omitempty"`             // glass | square | plain | clean | tile | pill; "" = default
 	GenreBadgeScale             int     `json:"genreBadgeScale,omitempty"`             // percent 70-300; 0 = 100
 	GenreBadgeOffsetX           int     `json:"genreBadgeOffsetX,omitempty"`           // px nudge from the resolved corner
 	GenreBadgeOffsetY           int     `json:"genreBadgeOffsetY,omitempty"`           //
