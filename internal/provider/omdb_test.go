@@ -3,9 +3,11 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestOMDBName(t *testing.T) {
@@ -123,4 +125,59 @@ func TestOMDBAPIErrorResponse(t *testing.T) {
 
 func TestOMDBImplementsProvider(t *testing.T) {
 	var _ Provider = NewOMDB("key")
+}
+
+// The case that took OMDb off unrelated posters, and the one the prefix-rejection
+// tests miss entirely: a VALID tt-id, OMDb answers, and the answer carries no
+// ratings. That is OMDb reporting on the title, not OMDb being unwell — but it
+// reached the health tracker as a failure and opened the breaker (BUG-214).
+//
+// Reproduced on production against tt41111628, where rendering one title with no
+// IMDb score dropped the IMDb badge from every other render.
+func TestOMDbAnsweringWithNoRatingsIsNotAHealthFailure(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// A real OMDb reply for a title it knows and has no score for.
+		fmt.Fprint(w, `{"Response":"True","Title":"The Truthers","imdbRating":"N/A","Ratings":[]}`)
+	}))
+	defer srv.Close()
+	o := &OMDB{apiKey: "test", httpClient: srv.Client(), baseURL: srv.URL + "/"}
+
+	_, err := o.Fetch(context.Background(), "movie", "tt41111628")
+	if err == nil {
+		t.Fatal("expected an error when the reply carries no ratings")
+	}
+	h := NewHealthTracker(10, time.Hour)
+	h.Failure("omdb", err)
+	for _, s := range h.Snapshot() {
+		if s.Source == "omdb" && !s.Healthy {
+			t.Errorf("a title with no ratings marked OMDb unhealthy: %v", err)
+		}
+	}
+}
+
+// The other branch, and it depends on matching text OMDb owns rather than a code
+// we control. If they reword it this silently goes back to counting as a failure,
+// so the strings are pinned here where a change is visible.
+func TestOMDbRejectingATitleIsNotAHealthFailure(t *testing.T) {
+	for _, upstream := range []string{"Incorrect IMDb ID.", "Error getting data. Movie not found!"} {
+		t.Run(upstream, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprintf(w, `{"Response":"False","Error":%q}`, upstream)
+			}))
+			defer srv.Close()
+			o := &OMDB{apiKey: "test", httpClient: srv.Client(), baseURL: srv.URL + "/"}
+
+			_, err := o.Fetch(context.Background(), "movie", "tt0000001")
+			if err == nil {
+				t.Fatal("expected an error")
+			}
+			h := NewHealthTracker(10, time.Hour)
+			h.Failure("omdb", err)
+			for _, s := range h.Snapshot() {
+				if s.Source == "omdb" && !s.Healthy {
+					t.Errorf("OMDb rejecting a title marked the source unhealthy: %v", err)
+				}
+			}
+		})
+	}
 }
