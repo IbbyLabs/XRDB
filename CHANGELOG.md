@@ -2,6 +2,27 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.65.0](https://github.com/IbbyLabs/XRDB/compare/v3.64.0...v3.65.0) (2026-08-04)
+
+
+### Added
+
+* **genres:** colour the label and border separately (FR-148) ([b6e15a8](https://github.com/IbbyLabs/XRDB/commit/b6e15a8cdf7421a63319a7b0e554cd7d120e8c5b))
+* **genres:** narrow TMDB's Sci-Fi & Fantasy compound (FR-147) ([b09f999](https://github.com/IbbyLabs/XRDB/commit/b09f9996d1c22e3fe2bb997cf600820db5630bb2))
+
+
+### Fixed
+
+* **build:** restore the dist placeholder for go:embed ([0096322](https://github.com/IbbyLabs/XRDB/commit/0096322b65065673e14a5f7a8ecdcf4a7687f841))
+* **genres:** match genre keywords whole, not as substrings (FR-147) ([a4bee85](https://github.com/IbbyLabs/XRDB/commit/a4bee85ab6134f7012632a4faf01a72fb395fe1d))
+* **providers:** an unusable id is not a health failure (BUG-214) ([1e8a245](https://github.com/IbbyLabs/XRDB/commit/1e8a245d4dcc814f1e547bdc00f28b82f42ce36b))
+
+
+### Documentation
+
+* **config:** the genre badge style comment omitted pill ([69f6bef](https://github.com/IbbyLabs/XRDB/commit/69f6bef0710c3b8bf689317ed72cb7f93bb7032a))
+* **product-context:** the genre glyph keeps its family colour (FR-148) ([07d67e3](https://github.com/IbbyLabs/XRDB/commit/07d67e33e32c106de688747358831bf5899412d6))
+
 ## [3.64.0](https://github.com/IbbyLabs/XRDB/compare/v3.63.1...v3.64.0) (2026-08-04)
 
 
