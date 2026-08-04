@@ -59,7 +59,7 @@ var allocineHeaders = map[string]string{
 func (a *AlloCine) FetchByTitle(ctx context.Context, mediaType, title, originalTitle string, year int) (*MediaMeta, error) {
 	variants := titleVariants(title, originalTitle)
 	if len(variants) == 0 {
-		return nil, fmt.Errorf("allocine: no title to search for")
+		return nil, fmt.Errorf("allocine: no title to search for: %w", ErrNotApplicable)
 	}
 
 	path := a.findPath(ctx, mediaType, variants, year)

@@ -73,7 +73,7 @@ func (m *MDBList) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, 
 		return nil, fmt.Errorf("mdblist: no api key configured")
 	}
 	if !strings.HasPrefix(id, "tt") {
-		return nil, fmt.Errorf("mdblist: requires imdb tt-id, got %q", id)
+		return nil, fmt.Errorf("mdblist: requires imdb tt-id, got %q: %w", id, ErrNotApplicable)
 	}
 
 	// MDBList serves movies and shows from distinct endpoints, but the artwork

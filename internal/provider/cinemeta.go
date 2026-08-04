@@ -52,7 +52,7 @@ func (c *Cinemeta) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta,
 // metahub image URLs (small/medium/large variants).
 func (c *Cinemeta) FetchArtwork(ctx context.Context, mediaType, id string, opts ArtworkOptions) (*MediaMeta, error) {
 	if !strings.HasPrefix(id, "tt") {
-		return nil, fmt.Errorf("cinemeta: only IMDb tt-IDs supported, got %q", id)
+		return nil, fmt.Errorf("cinemeta: only IMDb tt-IDs supported, got %q: %w", id, ErrNotApplicable)
 	}
 
 	// Cinemeta needs a content type; the render media type doesn't tell us

@@ -67,7 +67,7 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 		return nil, fmt.Errorf("omdb: no api key configured")
 	}
 	if !strings.HasPrefix(id, "tt") {
-		return nil, fmt.Errorf("omdb: only IMDb tt-IDs are supported, got %q", id)
+		return nil, fmt.Errorf("omdb: only IMDb tt-IDs are supported, got %q: %w", id, ErrNotApplicable)
 	}
 
 	base := omdbBaseURL
@@ -103,6 +103,11 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 		return nil, fmt.Errorf("omdb: decode response: %w", err)
 	}
 	if result.Response != "True" {
+		if strings.Contains(result.Error, "Incorrect IMDb ID") || strings.Contains(result.Error, "not found") {
+			// OMDb answering "I do not have this title" is about the title, not
+			// about OMDb. Counting it holds the source out for every render.
+			return nil, fmt.Errorf("omdb: API error: %s: %w", result.Error, errNotFound)
+		}
 		return nil, fmt.Errorf("omdb: API error: %s", result.Error)
 	}
 
@@ -137,7 +142,7 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 		}
 	}
 	if len(meta.Ratings) == 0 {
-		return nil, fmt.Errorf("omdb: no ratings found for %s", id)
+		return nil, fmt.Errorf("omdb: no ratings found for %s: %w", id, errNotFound)
 	}
 	return meta, nil
 }

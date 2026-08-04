@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -242,5 +243,45 @@ func TestBreakerHoldsLongerEachTimeItTripsAgain(t *testing.T) {
 	h.mu.Unlock()
 	if trips != 0 {
 		t.Errorf("breakerTrips = %d after a success, want 0 so a recovered source is picked up fast", trips)
+	}
+}
+
+// A title this source cannot be asked about says nothing about whether the
+// source is up. Recording it holds the source out for every other render, so a
+// single tmdb-only id takes MDBList off every poster until the cooldown expires
+// (BUG-214). Measured on production: about a third of hold-out events were this
+// shape rather than a provider being unwell.
+func TestAnUnusableIDIsNotAHealthFailure(t *testing.T) {
+	cases := []struct {
+		name string
+		call func() error
+	}{
+		{"mdblist given a tmdb id", func() error {
+			_, err := NewMDBList("k").Fetch(context.Background(), "movie", "tmdb:movie:1234945")
+			return err
+		}},
+		{"omdb given a tmdb id", func() error {
+			_, err := NewOMDB("k").Fetch(context.Background(), "tv", "tmdb:tv:135444")
+			return err
+		}},
+		{"cinemeta given a tmdb id", func() error {
+			_, err := NewCinemeta().Fetch(context.Background(), "tv", "tmdb:tv:135444")
+			return err
+		}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.call()
+			if err == nil {
+				t.Fatal("expected an error for an id this source cannot use")
+			}
+			h := NewHealthTracker(10, time.Hour)
+			h.Failure("src", err)
+			for _, s := range h.Snapshot() {
+				if s.Source == "src" && !s.Healthy {
+					t.Errorf("an unusable id marked the source unhealthy: %v", err)
+				}
+			}
+		})
 	}
 }
