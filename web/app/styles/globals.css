@@ -2088,3 +2088,31 @@ textarea.input { min-height: 0; line-height: 1.5; }
   }
   .spin { animation: none; opacity: 0.5; }
 }
+
+/* Colour stops, edited as rows rather than as the string they are stored in. */
+.stops-preview {
+  height: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin-bottom: var(--sp-2);
+}
+.stops-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+  flex-wrap: wrap;
+}
+.stops-score { max-width: 5.5rem; flex: 0 0 auto; }
+/* The shared swatch is 28px tall, which is a small target in a row meant to be
+   tapped repeatedly. Match the other controls in the row instead. */
+.stops-row .color-swatch {
+  width: 3rem;
+  height: 2.5rem;
+}
+.stops-remove { flex: 0 0 auto; margin-left: auto; }
+.stops-actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}

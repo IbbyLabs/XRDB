@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   RATING_OPTIONS, SIX_POS_OPTIONS, QUALITY_STYLE_OPTIONS, GENRE_STYLE_OPTIONS,
@@ -107,6 +108,151 @@ function NumField({
 }
 
 /** A labelled color field with an "auto/none" reset when a fallback exists. */
+type ScoreStop = { id: number; score: number; color: string };
+
+const STOP_HEX_RE = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+
+/**
+ * The renderer's own rules: comma-separated `score:#hex`, score 0-100, and a
+ * part it cannot read is dropped rather than failing the whole string.
+ */
+function parseScoreStops(raw: string): { score: number; color: string }[] {
+  return (raw || '').split(',').flatMap(part => {
+    const at = part.indexOf(':');
+    if (at < 0) return [];
+    const score = Number(part.slice(0, at).trim());
+    const color = part.slice(at + 1).trim();
+    if (!Number.isFinite(score) || score < 0 || score > 100) return [];
+    if (!STOP_HEX_RE.test(color)) return [];
+    return [{ score, color }];
+  });
+}
+
+function serializeScoreStops(rows: ScoreStop[]): string {
+  return rows.map(r => `${Number(r.score.toFixed(2))}:${r.color}`).join(',');
+}
+
+/** The ramp as CSS, which is the same interpolation the renderer does. */
+function stopsGradient(rows: ScoreStop[]): string {
+  const sorted = [...rows].sort((a, b) => a.score - b.score);
+  if (sorted.length === 0) return '';
+  if (sorted.length === 1) return sorted[0].color;
+  return `linear-gradient(to right, ${sorted.map(r => `${r.color} ${r.score}%`).join(', ')})`;
+}
+
+function seedStops(raw: string, start: number) {
+  const parsed = parseScoreStops(raw);
+  return {
+    rows: parsed.map((s, i) => ({ ...s, id: start + i })),
+    nextId: start + parsed.length,
+    written: raw,
+  };
+}
+
+/**
+ * Colour stops as rows rather than as the string they are stored in. The format
+ * is unchanged, so an existing config still loads and a shared link still works.
+ *
+ * The preview bar is the point of it: one stop per band reads as correct and
+ * renders a gradient, and the bar shows that before a render does.
+ */
+function ScoreStopsField({ uid, value, onChange }: {
+  uid: string; value: string; onChange: (v: string) => void;
+}) {
+  const [state, setState] = useState(() => seedStops(value, 0));
+  // A preset, an undo or a shared link replaces the string from outside. React
+  // allows adjusting state during render for exactly this, and it avoids the
+  // round trip an effect would add.
+  if (value !== state.written) setState(seedStops(value, state.nextId));
+
+  const { rows } = state;
+  const commit = (next: ScoreStop[], nextId = state.nextId) => {
+    const raw = serializeScoreStops(next);
+    setState({ rows: next, nextId, written: raw });
+    onChange(raw);
+  };
+  const lastScore = rows.length ? rows[rows.length - 1].score : -10;
+  const nextScore = Math.min(100, Math.max(0, lastScore + 10));
+  const addStops = (added: { score: number; color: string }[]) =>
+    commit(
+      [...rows, ...added.map((s, i) => ({ ...s, id: state.nextId + i }))],
+      state.nextId + added.length,
+    );
+
+  const gradient = stopsGradient(rows);
+  return (
+    <div className="field" role="group" aria-labelledby={`${uid}-stops-label`}>
+      <span className="label" id={`${uid}-stops-label`}>Colour stops</span>
+      {rows.length > 0 && (
+        <div
+          className="stops-preview"
+          style={gradient.startsWith('linear-gradient') ? { backgroundImage: gradient } : { background: gradient }}
+          aria-hidden="true"
+        />
+      )}
+      {rows.map((row, i) => (
+        <div className="stops-row" key={row.id}>
+          <input
+            className="input stops-score"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={100}
+            step={1}
+            value={row.score}
+            aria-label={`Stop ${i + 1} score`}
+            onChange={e => {
+              const n = Number(e.target.value);
+              commit(rows.map(r => (r.id === row.id
+                ? { ...r, score: Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : 0 }
+                : r)));
+            }}
+          />
+          <input
+            className="color-swatch"
+            type="color"
+            value={row.color}
+            aria-label={`Stop ${i + 1} colour`}
+            onChange={e => commit(rows.map(r => (r.id === row.id ? { ...r, color: e.target.value } : r)))}
+          />
+          <button
+            type="button"
+            className="opt-btn stops-remove"
+            aria-label={`Remove stop ${i + 1}`}
+            onClick={() => commit(rows.filter(r => r.id !== row.id))}
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+      <div className="stops-actions">
+        <button
+          type="button"
+          className="opt-btn"
+          onClick={() => addStops([{ score: nextScore, color: '#3355ff' }])}
+        >
+          Add stop
+        </button>
+        <button
+          type="button"
+          className="opt-btn"
+          onClick={() => addStops([
+            { score: nextScore, color: '#3355ff' },
+            { score: Math.min(100, nextScore + 9), color: '#3355ff' },
+          ])}
+        >
+          Add flat band
+        </button>
+      </div>
+      <p className="hint">
+        Score to colour, on a 0–100 scale, so 4 out of 10 is 40. Colours blend
+        between stops: a band of one flat colour needs the same colour at both
+        ends, which is what Add flat band does. Blank uses the built-in bands.
+      </p>
+    </div>
+  );
+}
+
 function ColorField({
   id, label, value, onChange, fallback = '#3355ff', resetLabel,
 }: {
@@ -935,18 +1081,11 @@ export function ScoreColourFine({ uid, config, onUpdate }: GroupProps) {
         </div>
       )}
       {config.aggregateAccentMode === 'dynamic' && (
-        <div className="field">
-          <label className="label" htmlFor={`${uid}-agg-stops`}>Colour stops</label>
-          <input
-            id={`${uid}-agg-stops`}
-            type="text"
-            className="input"
-            value={config.aggregateDynamicStops}
-            placeholder="0:#7f1d1d,40:#dc2626,75:#84cc16"
-            onChange={e => onUpdate('aggregateDynamicStops', e.target.value)}
-          />
-          <p className="hint">Score to colour, on a 0–100 scale. Colours blend between stops. Blank uses the built-in bands.</p>
-        </div>
+        <ScoreStopsField
+          uid={uid}
+          value={config.aggregateDynamicStops}
+          onChange={v => onUpdate('aggregateDynamicStops', v)}
+        />
       )}
       <details className="adv-details">
         <summary>Score value colours</summary>
