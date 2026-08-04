@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.63.1](https://github.com/IbbyLabs/XRDB/compare/v3.63.0...v3.63.1) (2026-08-04)
+
+
+### Fixed
+
+* **ratings:** carry the badge outline to the score pills (BUG-210) ([49b795c](https://github.com/IbbyLabs/XRDB/commit/49b795c0e742ddfa85d975ebd61fc57ad9d81fcd))
+* **ratings:** score-band fallback for an unset accent (BUG-211) ([d647c46](https://github.com/IbbyLabs/XRDB/commit/d647c46bbc3e208da421d1e946e90fa213bd88c4))
+
 ## [3.63.0](https://github.com/IbbyLabs/XRDB/compare/v3.62.0...v3.63.0) (2026-08-04)
 
 
