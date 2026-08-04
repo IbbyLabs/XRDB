@@ -93,3 +93,39 @@ func TestCompoundSpellings(t *testing.T) {
 		}
 	}
 }
+
+// Good Omens carries no fantasy keyword. Under substring matching it resolved
+// Fantasy on "witch" found inside "witch hunt" — the right answer for a reason
+// that would not survive TMDB editing the keyword. This is the case that tells
+// whole-word matching from substring matching: any title that resolves the same
+// way under both proves nothing about which is implemented.
+var kwGoodOmens = []string{"angel", "prophecy", "anti-christ", "armageddon", "demon", "witch hunt"}
+
+func TestWholeWordMatchingDoesNotFindTermsInsideKeywords(t *testing.T) {
+	if got := narrowSciFiFantasy(kwGoodOmens, ""); got != "" {
+		t.Errorf("resolved %q from keywords carrying no fantasy term; "+
+			"'witch' inside 'witch hunt' means matching is still on substrings", got)
+	}
+	// With the override it resolves, which is why the title still reads Fantasy.
+	if got := narrowSciFiFantasy(kwGoodOmens, "71915"); got != genreFantasy {
+		t.Errorf("Good Omens with its override resolved %q, want %q", got, genreFantasy)
+	}
+}
+
+// The case whole-word matching could plausibly break, and the reason substring
+// matching was chosen first: Willow's only signal is the phrase "high fantasy".
+func TestPhraseKeywordsStillMatch(t *testing.T) {
+	for _, phrase := range []string{"high fantasy", "dark fantasy", "urban fantasy", "fantasy world", "sword and sorcery"} {
+		if got := narrowSciFiFantasy([]string{phrase}, ""); got != genreFantasy {
+			t.Errorf("keyword %q resolved %q, want %q", phrase, got, genreFantasy)
+		}
+	}
+}
+
+// A hyphenated bucket term has to survive the same folding the keyword gets, or
+// it can never match anything.
+func TestHyphenatedTermsMatch(t *testing.T) {
+	if got := narrowSciFiFantasy([]string{"post apocalyptic"}, ""); got != genreSciFi {
+		t.Errorf("a post-apocalyptic keyword resolved %q, want %q", got, genreSciFi)
+	}
+}

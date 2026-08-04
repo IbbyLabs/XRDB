@@ -14,9 +14,15 @@ import "strings"
 
 // The buckets are tam's. "folklore" and "supernatural" were considered and
 // rejected as false-positive magnets.
+//
+// A keyword matches when it EQUALS an entry, so the phrases are enumerated
+// rather than relying on a short entry being found inside a longer keyword.
+// Substring matching resolved Good Omens on "witch" inside "witch hunt" — the
+// right answer for a reason that would not survive the keyword being edited.
 var (
 	compoundFantasyKeywords = []string{
-		"fantasy", "magic", "dragon", "sword", "sorcery", "sword and sorcery",
+		"fantasy", "fantasy world", "urban fantasy", "high fantasy", "dark fantasy",
+		"magic", "dragon", "sword", "sorcery", "sword and sorcery",
 		"witchcraft", "witch", "witches", "wizard", "vampire", "werewolf",
 		"mythology", "fairy", "fairy tale",
 	}
@@ -34,12 +40,15 @@ var (
 //	56570 Outlander    — matched BOTH buckets (magic vs time travel)
 //	90027 Carnival Row — matched BOTH buckets (fairy, fantasy vs steampunk)
 //	63174 Lucifer      — matched NEITHER, no signal at all
+//	71915 Good Omens   — matched NEITHER once matching became whole-word; its
+//	                     keywords are angel, prophecy, anti-christ, armageddon
 //
 // Keyed on TMDB id rather than title, because titles repeat across years.
 var compoundOverrides = map[string]string{
 	"56570": genreFantasy,
 	"90027": genreFantasy,
 	"63174": genreFantasy,
+	"71915": genreFantasy,
 }
 
 const (
@@ -59,14 +68,16 @@ func isSciFiFantasyCompound(genre string) bool {
 	return normalizeCompoundName(genre) == "sci fi & fantasy"
 }
 
-// matchesBucket reports whether any keyword carries any of the bucket's terms.
-// Substring rather than whole-name matching, because Willow's only signal is
-// "high fantasy" and an exact comparison drops it.
+// matchesBucket reports whether any keyword is one of the bucket's terms.
+// Whole-keyword rather than substring: "high fantasy" matches because it is a
+// term in its own right, while "witch hunt" no longer matches "witch".
 func matchesBucket(keywords, bucket []string) bool {
 	for _, kw := range keywords {
 		low := normalizeCompoundName(kw)
 		for _, term := range bucket {
-			if strings.Contains(low, term) {
+			// The term is normalised too: the keyword side folds hyphens, so a
+			// term written "post-apocalyptic" could never equal one.
+			if low == normalizeCompoundName(term) {
 				return true
 			}
 		}
