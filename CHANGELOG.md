@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.64.0](https://github.com/IbbyLabs/XRDB/compare/v3.63.1...v3.64.0) (2026-08-04)
+
+
+### Added
+
+* **configurator:** edit colour stops as rows (FR-160) ([d795b99](https://github.com/IbbyLabs/XRDB/commit/d795b992f739a217df90ff5addc29eb0b6b5ee40))
+
+
+### Fixed
+
+* **build:** restore the dist placeholder for go:embed ([d7d4e0b](https://github.com/IbbyLabs/XRDB/commit/d7d4e0b6ff8d2e7a096214030268936deaeb1cd1))
+
 ## [3.63.1](https://github.com/IbbyLabs/XRDB/compare/v3.63.0...v3.63.1) (2026-08-04)
 
 
