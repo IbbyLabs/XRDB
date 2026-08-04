@@ -137,7 +137,7 @@ func TestOMDBImplementsProvider(t *testing.T) {
 func TestOMDbAnsweringWithNoRatingsIsNotAHealthFailure(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// A real OMDb reply for a title it knows and has no score for.
-		fmt.Fprint(w, `{"Response":"True","Title":"The Truthers","imdbRating":"N/A","Ratings":[]}`)
+		_, _ = fmt.Fprint(w, `{"Response":"True","Title":"The Truthers","imdbRating":"N/A","Ratings":[]}`)
 	}))
 	defer srv.Close()
 	o := &OMDB{apiKey: "test", httpClient: srv.Client(), baseURL: srv.URL + "/"}
@@ -162,7 +162,7 @@ func TestOMDbRejectingATitleIsNotAHealthFailure(t *testing.T) {
 	for _, upstream := range []string{"Incorrect IMDb ID.", "Error getting data. Movie not found!"} {
 		t.Run(upstream, func(t *testing.T) {
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				fmt.Fprintf(w, `{"Response":"False","Error":%q}`, upstream)
+				_, _ = fmt.Fprintf(w, `{"Response":"False","Error":%q}`, upstream)
 			}))
 			defer srv.Close()
 			o := &OMDB{apiKey: "test", httpClient: srv.Client(), baseURL: srv.URL + "/"}
