@@ -34,6 +34,15 @@ var keyUse = regexp.MustCompile(`config\.([A-Za-z0-9_]+)|onUpdate\('([A-Za-z0-9_
 // and only the second one is what a user experiences; the coverage guard next
 // door asserts the first, and passed for months while six controls sat behind a
 // toggle that has nothing to do with them.
+//
+// WHAT THIS DOES NOT COVER, because a green run here is not full coverage and
+// reading it as such is the same mistake the test exists to stop. It judges the
+// two groups in groupOwnsPrefix against the three prefixes in isFeatureKey.
+// Every other fine group is unguarded, and a key whose prefix is not one of
+// those three is ignored rather than guessed at. Widening it means reading each
+// group's render site for the condition it sits behind — the gate is in
+// configurator-display.tsx and configurator-panels.tsx, not here — and adding
+// the group to the map only once that gate is known.
 func TestFineGroupsOnlyOwnTheirOwnKeys(t *testing.T) {
 	// Overridable so the guard can be proved against a known-bad copy without
 	// editing the file the repository is using.
