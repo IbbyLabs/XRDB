@@ -46,7 +46,7 @@ func TestTheSplitStillSeparatesFantasyFromSciFi(t *testing.T) {
 func deltaE76(hexA, hexB string) float64 {
 	toLab := func(h string) (float64, float64, float64) {
 		var r8, g8, b8 int
-		fmt.Sscanf(strings.TrimPrefix(h, "#"), "%02x%02x%02x", &r8, &g8, &b8)
+		_, _ = fmt.Sscanf(strings.TrimPrefix(h, "#"), "%02x%02x%02x", &r8, &g8, &b8)
 		lin := func(c int) float64 {
 			v := float64(c) / 255
 			if v <= 0.04045 {
