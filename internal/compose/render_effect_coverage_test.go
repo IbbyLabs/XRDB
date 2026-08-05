@@ -521,8 +521,12 @@ func keyMutations() map[string]keyOverride {
 
 		// Age / release / top-rated badge styling. "plain" (no background) reads
 		// clearly different from the default plate, whatever the default is.
-		"ageRatingBadgeStyle":     {mut: func(c *imageconfig.Config) { c.AgeRatingBadgeStyle = "plain" }},
-		"ageRatingTileColor":      {pre: ageTile, mut: setColor(func(c *imageconfig.Config, v string) { c.AgeRatingTileColor = v })},
+		"ageRatingBadgeStyle": {mut: func(c *imageconfig.Config) { c.AgeRatingBadgeStyle = "plain" }},
+		"ageRatingTileColor":  {pre: ageTile, mut: setColor(func(c *imageconfig.Config, v string) { c.AgeRatingTileColor = v })},
+		// The colour keys need a valid value: a blind mutation is rejected by the
+		// parser and reads as the key doing nothing.
+		"ageRatingBorderColor":    {mut: setColor(func(c *imageconfig.Config, v string) { c.AgeRatingBorderColor = v })},
+		"ageRatingLabelColor":     {mut: setColor(func(c *imageconfig.Config, v string) { c.AgeRatingLabelColor = v })},
 		"topRatedBadgeStyle":      {mut: func(c *imageconfig.Config) { c.TopRatedBadgeStyle = "plain" }},
 		"topRatedTileColor":       {pre: topTile, mut: setColor(func(c *imageconfig.Config, v string) { c.TopRatedTileColor = v })},
 		"releaseStatusBadgeStyle": {mut: func(c *imageconfig.Config) { c.ReleaseStatusBadgeStyle = "plain" }},
