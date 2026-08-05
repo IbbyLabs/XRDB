@@ -713,6 +713,7 @@ type badgeChrome struct {
 	// from the artwork. Zero alpha = no outline.
 	outline      color.NRGBA
 	outlineWidth int
+	outlineGlow  bool
 	// hideAccentBar suppresses the leading accent stripe for styles that have
 	// no tile for it to sit against; the provider colour goes on the mark.
 	hideAccentBar bool
@@ -800,6 +801,7 @@ func chromeFor(cfg imageconfig.Config) badgeChrome {
 			o.A = 255
 			c.outline = o
 		}
+		c.outlineGlow = cfg.NoBackgroundBadgeOutlineGlow
 	case imageconfig.BadgeTile:
 		// Dark rounded tile, squarer than the pill.
 		c.radius = func(innerH int) int { return maxInt(2, innerH/5) }
@@ -1004,18 +1006,13 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 			outlineCol = color.NRGBA{R: sp.accent.R, G: sp.accent.G, B: sp.accent.B, A: outlineCol.A}
 		}
 		if outlineCol.A > 0 && chrome.outlineWidth > 0 {
-			// Ring the glyphs rather than offsetting once, so the value stays
-			// legible whichever way the artwork is bright behind it.
-			for dy := -chrome.outlineWidth; dy <= chrome.outlineWidth; dy++ {
-				for dx := -chrome.outlineWidth; dx <= chrome.outlineWidth; dx++ {
-					if dx == 0 && dy == 0 {
-						continue
-					}
-					drawText(out, face, contentX+dx, valY+dy, outlineCol, sp.value)
-				}
-			}
+			// The same tracer every other background-less badge uses, so the
+			// glow setting reaches this one too rather than stopping short of it.
+			drawLabelOutlined(out, face, contentX, valY, chrome.valueColor, outlineCol,
+				chrome.outlineWidth, chrome.outlineGlow, sp.value)
+		} else {
+			drawText(out, face, contentX, valY, chrome.valueColor, sp.value)
 		}
-		drawText(out, face, contentX, valY, chrome.valueColor, sp.value)
 	}
 }
 

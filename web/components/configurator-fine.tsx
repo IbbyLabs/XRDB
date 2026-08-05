@@ -999,7 +999,7 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
         </div>
         <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>
           Text outline for background-less (plain) badges — genre, age rating,
-          release status, top rated and trending.
+          release status, top rated, trending, and the rating badges themselves.
         </span>
       </div>
       <NumField id={`${uid}-plain-outline-w`} label="Outline width (px)" value={config.noBackgroundBadgeOutlineWidth}
