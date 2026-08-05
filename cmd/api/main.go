@@ -149,12 +149,14 @@ func main() {
 	reg.Register(provider.NewSIMKL(cfg.SIMKLClientID))
 	reg.Register(provider.NewMediUX(cfg.MediuxAPIKey))
 	// IMDb local dataset — enabled when XRDB_IMDB_DATASET_DIR is set.
+	var imdbRefresher *provider.IMDbDataset
 	if cfg.IMDbDatasetDir != "" {
 		imdbDataset := provider.NewIMDbDataset(cfg.IMDbDatasetDir)
 		if cfg.IMDbTopRated {
 			imdbDataset.EnableTopRated()
 		}
 		reg.Register(imdbDataset)
+		imdbRefresher = imdbDataset
 	}
 	// Anime providers — public APIs, no key required. Wrapped with the anime
 	// ID mapper so IMDb/TMDB render IDs resolve to MAL/AniList/Kitsu IDs.
@@ -255,6 +257,9 @@ func main() {
 	server.StartCacheWarmSchedule(scheduleCtx, cfg, pipeline, renderCache, logger)
 	server.StartRatingsCacheSnapshots(scheduleCtx, pipeline, logger)
 	server.StartSIMKLIDCacheSnapshots(scheduleCtx, simklProvider, logger)
+	// The dataset's own age check only ever runs on the first Fetch, so without
+	// this a long-running container serves what it downloaded at startup.
+	imdbRefresher.StartRefresh(scheduleCtx, cfg.IMDbRefresh, logger)
 
 	srv := &http.Server{
 		Addr:              cfg.Address,

@@ -34,6 +34,8 @@ type imdbEntry struct {
 type IMDbDataset struct {
 	dataDir    string
 	httpClient *http.Client
+	// ratingsURL overrides the published dataset URL; set in tests.
+	ratingsURL string
 
 	// topRated is opt-in: building it streams a second, much larger dataset,
 	// which is not a cost to impose on an operator who does not want the badge.
@@ -142,28 +144,99 @@ func (d *IMDbDataset) ensureLoaded(ctx context.Context) error {
 
 // Download re-downloads the dataset from IMDb. Public so callers (e.g. a CLI
 // warm-up command) can force a refresh outside of a Fetch call.
-func (d *IMDbDataset) Download(ctx context.Context) error {
+func (d *IMDbDataset) Download(ctx context.Context) error { return d.refresh(ctx) }
+
+// refresh downloads the dataset and rebuilds the index, swapping the live one
+// only once the replacement has parsed. A failed refresh leaves the previous
+// index serving: stale ratings beat none.
+func (d *IMDbDataset) refresh(ctx context.Context) error {
 	if err := os.MkdirAll(d.dataDir, 0o755); err != nil {
 		return fmt.Errorf("mkdir: %w", err)
 	}
 	path := filepath.Join(d.dataDir, imdbDatasetFile)
 	if err := d.download(ctx, path); err != nil {
-		return err
+		return fmt.Errorf("download: %w", err)
 	}
-	// Invalidate the index so the next Fetch re-parses.
+	idx, err := parseRatingsTSV(path)
+	if err != nil {
+		return fmt.Errorf("parse: %w", err)
+	}
+
+	var ranks map[string]int
+	if d.topRatedEnabled {
+		// A failure here must not take the ratings down with it: the rank is a
+		// garnish, the ratings are the point.
+		if r, rankErr := buildTopRated(ctx, d.httpClient, idx); rankErr != nil {
+			slog.WarnContext(ctx, "Could not rebuild the top-rated ranking; ratings are unaffected",
+				"error", rankErr)
+		} else {
+			ranks = r
+		}
+	}
+
 	d.mu.Lock()
-	d.loaded = false
-	d.index = nil
+	d.index = idx
+	d.loaded = true
 	d.loadErr = nil
+	if ranks != nil {
+		d.topRated = ranks
+	}
 	d.mu.Unlock()
 	return nil
+}
+
+// Titles reports how many titles the live index holds, for logging and the
+// admin surface.
+func (d *IMDbDataset) Titles() int {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return len(d.index)
+}
+
+// StartRefresh rebuilds the index on a timer for the life of the process.
+//
+// The age check in ensureLoaded is only ever consulted on the first Fetch, so
+// without this a long-running container serves whatever it downloaded at start
+// and drifts further from IMDb the longer it stays up.
+func (d *IMDbDataset) StartRefresh(ctx context.Context, every time.Duration, logger *slog.Logger) {
+	if d == nil || every <= 0 {
+		return
+	}
+	if logger == nil {
+		logger = slog.Default()
+	}
+	go func() {
+		ticker := time.NewTicker(every)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				before := d.Titles()
+				if err := d.refresh(ctx); err != nil {
+					// The old index is still serving, so this is degraded rather
+					// than lost. Logged because nothing else would show it.
+					logger.WarnContext(ctx, "Could not refresh the IMDb dataset; the previous copy is still serving",
+						"titles", before, "error", err)
+					continue
+				}
+				logger.InfoContext(ctx, "Refreshed the IMDb dataset",
+					"titles_before", before, "titles_after", d.Titles())
+			}
+		}
+	}()
 }
 
 func (d *IMDbDataset) download(ctx context.Context, dest string) error {
 	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 		return fmt.Errorf("mkdir: %w", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, imdbRatingsURL, nil)
+	url := imdbRatingsURL
+	if d.ratingsURL != "" {
+		url = d.ratingsURL
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)
 	}

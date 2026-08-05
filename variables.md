@@ -66,6 +66,12 @@ back to a live per-ID lookup.
 | `XRDB_ANIME_MAP_FALLBACK_URL` | `https://arm.haglund.dev/api/v2` | Live per-ID mapping API for titles the dataset misses. Set to `off` to disable. |
 | `XRDB_ANIME_MAP_REFRESH_HOURS` | `168` (7 days) | How old the cached dataset may get before a background re-download. Refreshes never block renders; a failed refresh keeps the existing copy. |
 
+## IMDb dataset refresh
+
+| Variable | Default | Description |
+|---|---|---|
+| `XRDB_IMDB_REFRESH_HOURS` | `168` (7 days) | How often the local IMDb ratings index is rebuilt while the process runs. The dataset's own age check is only consulted on the first lookup, so without this a long-running container serves whatever it downloaded at startup and drifts further from IMDb the longer uptime is good. The rebuild happens in the background and the live index is only swapped once the replacement has parsed; a failed refresh leaves the previous copy serving. `0` turns it off. |
+
 ## Top-rated ranking
 
 | Variable | Default | Description |

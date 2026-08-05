@@ -149,6 +149,7 @@ type Config struct {
 	// AnimeMapSupplementURL is the secondary anime mapping dataset (nattadasu);
 	// "" uses the built-in default, "off" disables it.
 	AnimeMapSupplementURL string
+	IMDbRefresh           time.Duration            // IMDb dataset rebuild interval while running
 	AnimeMapRefresh       time.Duration            // anime mapping dataset refresh interval; 0 = default (7 days)
 	ProviderTTLs          map[string]time.Duration // per-provider TTL overrides; key = provider name
 	AdminKey              string                   // protects /api/admin/* routes
@@ -428,6 +429,14 @@ func Load() Config {
 			animeMapRefresh = time.Duration(h * float64(time.Hour))
 		}
 	}
+	// Matches the weekly age check the dataset was written with. Zero turns the
+	// background rebuild off and leaves the index as it was at startup.
+	imdbRefresh := 7 * 24 * time.Hour
+	if raw := os.Getenv("XRDB_IMDB_REFRESH_HOURS"); raw != "" {
+		if h, err := strconv.ParseFloat(raw, 64); err == nil && h >= 0 {
+			imdbRefresh = time.Duration(h * float64(time.Hour))
+		}
+	}
 	return Config{
 		CacheWarm:             cacheWarmFromEnv(),
 		Address:               addr,
@@ -463,6 +472,7 @@ func Load() Config {
 		AnimeMapFallbackURL:   os.Getenv("XRDB_ANIME_MAP_FALLBACK_URL"),
 		AnimeMapSupplementURL: os.Getenv("XRDB_ANIME_MAP_SUPPLEMENT_URL"),
 		AnimeMapRefresh:       animeMapRefresh,
+		IMDbRefresh:           imdbRefresh,
 		ProviderTTLs:          loadProviderTTLs(cacheTTL),
 		AdminKey:              os.Getenv("XRDB_ADMIN_KEY"),
 		APIKey:                os.Getenv("XRDB_API_KEY"),
