@@ -649,7 +649,40 @@ func isBrandColored(icon image.Image) bool {
 		return false
 	}
 	// A stray coloured pixel is an artefact of the asset, not a brand mark.
-	return colored*100 >= opaque*2
+	if colored*100 >= opaque*2 {
+		return true
+	}
+	// A mark that brings its own dark backdrop is already legible and already
+	// separated from the poster, which is the whole job of the tint. Recolouring
+	// it floods the backdrop with the accent and the artwork inside disappears.
+	// Measured across the bundled set: the marks with their own disc sit at 69%
+	// and 89% dark, every other asset under 40%, and no asset below the chroma
+	// threshold has a dark backdrop at all — so this can only catch one that is
+	// deliberately drawn that way.
+	return isSelfBacked(img)
+}
+
+// isSelfBacked reports whether an icon carries its own dark backdrop rather than
+// being a glyph on transparency.
+func isSelfBacked(img *image.NRGBA) bool {
+	b := img.Bounds()
+	var opaque, dark int
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			c := img.NRGBAAt(x, y)
+			if c.A < 24 {
+				continue
+			}
+			opaque++
+			if (int(c.R)*299+int(c.G)*587+int(c.B)*114)/1000 < 60 {
+				dark++
+			}
+		}
+	}
+	if opaque == 0 {
+		return false
+	}
+	return dark*100 >= opaque*55
 }
 
 func maxU8(a, b uint8) uint8 {
