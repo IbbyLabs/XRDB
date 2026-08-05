@@ -191,6 +191,30 @@ func genreIconShapes(familyID string) []iconShape {
 			{prim: ipCircle{12, 12, 3.2}, alpha: 0.92},
 			{prim: ipCircle{18.2, 8.8, 1.4}},
 		}
+	case "scifantasy":
+		// tam's sword-rocket: the nose cone doubles as the blade, the fins as the
+		// crossguard. Transcribed from his SVG, with the two amendments that
+		// shortened the hilt and lifted the pommel clear of the viewBox edge.
+		// Its curves are cubic beziers; sampled rather than eyeballed, six segments
+		// on the blade and four per fin curve.
+		return []iconShape{
+			{prim: ipPoly{[][2]float64{
+				{12, 2}, {12.67, 3.29}, {13.19, 4.63}, {13.56, 6}, {13.81, 7.37},
+				{13.96, 8.71}, {14, 10}, {10, 10}, {10.04, 8.71}, {10.19, 7.37},
+				{10.44, 6}, {10.81, 4.63}, {11.33, 3.29},
+			}}, alpha: 0.97},
+			{prim: ipRRect{10, 10, 4, 6, 0}, alpha: 0.97},
+			{prim: ipPolyStroke{pts: [][2]float64{
+				{6, 16}, {7.33, 15.83}, {8.38, 15.38}, {9.23, 14.73}, {10, 14},
+				{14, 14}, {14.77, 14.73}, {15.62, 15.38}, {16.67, 15.83}, {18, 16},
+				{16.53, 16.95}, {15.25, 17.56}, {14.34, 17.9}, {14, 18},
+				{10, 18}, {9.66, 17.9}, {8.75, 17.56}, {7.47, 16.95},
+			}, w: 2, closed: true}},
+			{prim: ipRRect{11, 18, 2, 2.5, 0.5}, alpha: 0.97},
+			{prim: ipPoly{[][2]float64{
+				{12, 20.5}, {11, 21.6}, {12, 22.75}, {13, 21.6},
+			}}, alpha: 0.97},
+		}
 	case "fantasy":
 		return []iconShape{
 			{prim: ipPoly{[][2]float64{
