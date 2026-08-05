@@ -18,7 +18,7 @@ func TestACancelledRequestDoesNotHoldASourceOut(t *testing.T) {
 	h.Success("mdblist", key, sampleMeta("mdblist", 6.5))
 
 	err := fmt.Errorf("mdblist: request: %w", context.Canceled)
-	if h.Failure("mdblist", err) {
+	if h.Failure("mdblist", err, CallerInteractive) {
 		t.Error("a cancelled request put the source into cooldown")
 	}
 	for _, sh := range h.Snapshot() {
@@ -32,7 +32,7 @@ func TestACancelledRequestDoesNotHoldASourceOut(t *testing.T) {
 // would have bought quiet by disabling the tracker.
 func TestARealFailureStillHoldsASourceOut(t *testing.T) {
 	h := NewHealthTracker(10, time.Hour)
-	h.Failure("mdblist", errors.New("mdblist: http 500"))
+	h.Failure("mdblist", errors.New("mdblist: http 500"), CallerInteractive)
 	for _, sh := range h.Snapshot() {
 		if sh.Source == "mdblist" && sh.Healthy {
 			t.Error("a real failure left the source marked healthy")

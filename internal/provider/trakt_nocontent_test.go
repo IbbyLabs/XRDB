@@ -30,7 +30,7 @@ func TestTraktNoContentIsAnEmptyResultNotAFailure(t *testing.T) {
 	}
 
 	h := NewHealthTracker(10, 0)
-	if h.Failure("trakt", err) {
+	if h.Failure("trakt", err, CallerInteractive) {
 		t.Error("a title Trakt has no rating for put the whole source into cooldown")
 	}
 }

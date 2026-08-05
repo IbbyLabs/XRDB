@@ -17,7 +17,7 @@ func TestLastGoodSurvivesAFailure(t *testing.T) {
 	key := GoodKey("rt", "movie", "tt1")
 
 	h.Success("rt", key, sampleMeta("rt", 9.1))
-	h.Failure("rt", errors.New("markup changed"))
+	h.Failure("rt", errors.New("markup changed"), CallerInteractive)
 
 	got, ok := h.LastGood("rt", key)
 	if !ok {
@@ -79,7 +79,7 @@ func TestLastGoodIsBounded(t *testing.T) {
 func TestNotFoundIsNotAHealthFailure(t *testing.T) {
 	h := NewHealthTracker(10, time.Hour)
 	h.Success("mdblist", GoodKey("mdblist", "movie", "tt1"), sampleMeta("imdb", 7.0))
-	h.Failure("mdblist", fmt.Errorf("mdblist: nope: %w", errNotFound))
+	h.Failure("mdblist", fmt.Errorf("mdblist: nope: %w", errNotFound), CallerInteractive)
 
 	for _, s := range h.Snapshot() {
 		if s.Source == "mdblist" && !s.Healthy {
@@ -90,7 +90,7 @@ func TestNotFoundIsNotAHealthFailure(t *testing.T) {
 
 func TestFailureMarksUnhealthyAndSuccessRecovers(t *testing.T) {
 	h := NewHealthTracker(10, time.Hour)
-	h.Failure("rt", errors.New("boom"))
+	h.Failure("rt", errors.New("boom"), CallerInteractive)
 
 	snap := h.Snapshot()
 	if len(snap) != 1 || snap[0].Healthy {
@@ -128,7 +128,7 @@ func TestSnapshotPutsUnhealthySourcesFirst(t *testing.T) {
 	h := NewHealthTracker(10, time.Hour)
 	h.Success("aaa", GoodKey("aaa", "movie", "tt1"), sampleMeta("aaa", 1))
 	h.Success("bbb", GoodKey("bbb", "movie", "tt1"), sampleMeta("bbb", 1))
-	h.Failure("zzz", errors.New("down"))
+	h.Failure("zzz", errors.New("down"), CallerInteractive)
 
 	snap := h.Snapshot()
 	if len(snap) != 3 {
@@ -148,7 +148,7 @@ func TestLongErrorsAreTruncated(t *testing.T) {
 	for i := 0; i < 500; i++ {
 		long += "x"
 	}
-	h.Failure("rt", errors.New(long))
+	h.Failure("rt", errors.New(long), CallerInteractive)
 	if got := len(h.Snapshot()[0].LastError); got > 210 {
 		t.Errorf("stored error is %d chars, expected it truncated", got)
 	}
@@ -158,7 +158,7 @@ func TestLongErrorsAreTruncated(t *testing.T) {
 func TestNilTrackerIsSafe(t *testing.T) {
 	var h *HealthTracker
 	h.Success("rt", "k", sampleMeta("rt", 1))
-	h.Failure("rt", errors.New("x"))
+	h.Failure("rt", errors.New("x"), CallerInteractive)
 	if _, ok := h.LastGood("rt", "k"); ok {
 		t.Error("a nil tracker should never report a remembered result")
 	}
@@ -190,20 +190,20 @@ func TestRepeatedPlainFailuresHoldTheSourceOut(t *testing.T) {
 	plain := errors.New("Get \"https://api.example.com/x\": context deadline exceeded (Client.Timeout exceeded)")
 
 	for i := 0; i < failureBreakerThreshold-1; i++ {
-		h.Failure("mdblist", plain)
+		h.Failure("mdblist", plain, CallerInteractive)
 	}
-	if h.CoolingOff("mdblist") {
+	if h.CoolingOff("mdblist", CallerInteractive) {
 		t.Fatalf("source held out after %d failures, want it still tried", failureBreakerThreshold-1)
 	}
 
-	h.Failure("mdblist", plain)
-	if !h.CoolingOff("mdblist") {
+	h.Failure("mdblist", plain, CallerInteractive)
+	if !h.CoolingOff("mdblist", CallerInteractive) {
 		t.Errorf("source still being called after %d consecutive timeouts, want it held out", failureBreakerThreshold)
 	}
 
 	// A success clears it, so a source that comes back is used again.
 	h.Success("mdblist", GoodKey("mdblist", "movie", "tt1"), &MediaMeta{Ratings: []Rating{{Source: "imdb", Value: 8}}})
-	if h.CoolingOff("mdblist") {
+	if h.CoolingOff("mdblist", CallerInteractive) {
 		t.Error("source still held out after answering again")
 	}
 }
@@ -216,11 +216,11 @@ func TestBreakerHoldsLongerEachTimeItTripsAgain(t *testing.T) {
 	plain := errors.New("Client.Timeout exceeded")
 	trip := func() time.Duration {
 		for i := 0; i < failureBreakerThreshold; i++ {
-			h.Failure("mdblist", plain)
+			h.Failure("mdblist", plain, CallerInteractive)
 		}
 		h.mu.Lock()
 		defer h.mu.Unlock()
-		return time.Until(h.sources["mdblist"].cooldownUntil).Round(time.Second)
+		return time.Until(h.sources["mdblist"].cooldownUntil[CallerInteractive]).Round(time.Second)
 	}
 
 	first := trip()
@@ -229,7 +229,7 @@ func TestBreakerHoldsLongerEachTimeItTripsAgain(t *testing.T) {
 	}
 	// Clear the clock-based gate so the next trip is measured from now.
 	h.mu.Lock()
-	h.sources["mdblist"].cooldownUntil = time.Time{}
+	h.sources["mdblist"].cooldownUntil = [2]time.Time{}
 	h.mu.Unlock()
 
 	second := trip()
@@ -276,7 +276,7 @@ func TestAnUnusableIDIsNotAHealthFailure(t *testing.T) {
 				t.Fatal("expected an error for an id this source cannot use")
 			}
 			h := NewHealthTracker(10, time.Hour)
-			h.Failure("src", err)
+			h.Failure("src", err, CallerInteractive)
 			for _, s := range h.Snapshot() {
 				if s.Source == "src" && !s.Healthy {
 					t.Errorf("an unusable id marked the source unhealthy: %v", err)

@@ -147,7 +147,7 @@ func TestOMDbAnsweringWithNoRatingsIsNotAHealthFailure(t *testing.T) {
 		t.Fatal("expected an error when the reply carries no ratings")
 	}
 	h := NewHealthTracker(10, time.Hour)
-	h.Failure("omdb", err)
+	h.Failure("omdb", err, CallerInteractive)
 	for _, s := range h.Snapshot() {
 		if s.Source == "omdb" && !s.Healthy {
 			t.Errorf("a title with no ratings marked OMDb unhealthy: %v", err)
@@ -172,7 +172,7 @@ func TestOMDbRejectingTheKeyStillMarksTheSourceUnhealthy(t *testing.T) {
 				t.Fatal("expected an error")
 			}
 			h := NewHealthTracker(10, time.Hour)
-			h.Failure("omdb", err)
+			h.Failure("omdb", err, CallerInteractive)
 			healthy := true
 			for _, s := range h.Snapshot() {
 				if s.Source == "omdb" {
@@ -203,7 +203,7 @@ func TestOMDbRejectingATitleIsNotAHealthFailure(t *testing.T) {
 				t.Fatal("expected an error")
 			}
 			h := NewHealthTracker(10, time.Hour)
-			h.Failure("omdb", err)
+			h.Failure("omdb", err, CallerInteractive)
 			for _, s := range h.Snapshot() {
 				if s.Source == "omdb" && !s.Healthy {
 					t.Errorf("OMDb rejecting a title marked the source unhealthy: %v", err)

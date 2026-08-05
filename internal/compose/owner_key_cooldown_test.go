@@ -14,8 +14,8 @@ import (
 func TestOwnerKeyBypassesTheSharedCooldown(t *testing.T) {
 	h := provider.NewHealthTracker(100, time.Hour)
 	// Exhaust the shared MDBList allowance.
-	h.Failure("mdblist", &provider.RateLimitError{Source: "mdblist", Status: 429, RetryAfter: time.Hour})
-	if !h.CoolingOff("mdblist") {
+	h.Failure("mdblist", &provider.RateLimitError{Source: "mdblist", Status: 429, RetryAfter: time.Hour}, provider.CallerInteractive)
+	if !h.CoolingOff("mdblist", provider.CallerInteractive) {
 		t.Fatal("mdblist should be cooling off after a 429")
 	}
 
@@ -25,7 +25,7 @@ func TestOwnerKeyBypassesTheSharedCooldown(t *testing.T) {
 	// gated reproduces the guard: skip only when there is no owner key AND the
 	// source is cooling off.
 	gated := func(ctx context.Context) bool {
-		return !provider.HasOwnerKey(ctx, "mdblist") && h.CoolingOff("mdblist")
+		return !provider.HasOwnerKey(ctx, "mdblist") && h.CoolingOff("mdblist", provider.CallerInteractive)
 	}
 
 	if !gated(shared) {
@@ -44,7 +44,7 @@ func TestOwnerKeyFailureDoesNotSetTheSharedCooldown(t *testing.T) {
 	// This mirrors the guarded write in fetchRatingsResilient.
 	record := func(ctx context.Context, err error) {
 		if err != nil && !provider.HasOwnerKey(ctx, "mdblist") {
-			h.Failure("mdblist", err)
+			h.Failure("mdblist", err, provider.CallerInteractive)
 		}
 	}
 
@@ -52,12 +52,12 @@ func TestOwnerKeyFailureDoesNotSetTheSharedCooldown(t *testing.T) {
 	quota := &provider.RateLimitError{Source: "mdblist", Status: 429, RetryAfter: time.Hour}
 
 	record(owner, quota)
-	if h.CoolingOff("mdblist") {
+	if h.CoolingOff("mdblist", provider.CallerInteractive) {
 		t.Error("an owner key's failure set the shared cooldown")
 	}
 
 	record(context.Background(), quota)
-	if !h.CoolingOff("mdblist") {
+	if !h.CoolingOff("mdblist", provider.CallerInteractive) {
 		t.Error("a shared-key failure did not set the cooldown")
 	}
 }

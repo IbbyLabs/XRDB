@@ -12,10 +12,10 @@ func TestFailureReportsTheCooldownTransitionOnce(t *testing.T) {
 	h := NewHealthTracker(100, time.Hour)
 	rl := &RateLimitError{Source: "mdblist", Status: 429, RetryAfter: time.Hour}
 
-	if !h.Failure("mdblist", rl) {
+	if !h.Failure("mdblist", rl, CallerInteractive) {
 		t.Error("the first rate-limit failure did not report entering cooldown")
 	}
-	if h.Failure("mdblist", rl) {
+	if h.Failure("mdblist", rl, CallerInteractive) {
 		t.Error("a second failure while already cooling off reported the transition again")
 	}
 }
@@ -23,7 +23,7 @@ func TestFailureReportsTheCooldownTransitionOnce(t *testing.T) {
 // A plain error is not a cooldown, so it must not report the transition.
 func TestAPlainFailureIsNotACooldownTransition(t *testing.T) {
 	h := NewHealthTracker(100, time.Hour)
-	if h.Failure("tmdb", errStub("http 500")) {
+	if h.Failure("tmdb", errStub("http 500"), CallerInteractive) {
 		t.Error("a non-rate-limit failure reported a cooldown transition")
 	}
 }
@@ -31,7 +31,7 @@ func TestAPlainFailureIsNotACooldownTransition(t *testing.T) {
 // Recovery is reported once, when a held-out source answers again.
 func TestSuccessReportsRecoveryOnce(t *testing.T) {
 	h := NewHealthTracker(100, time.Hour)
-	h.Failure("mdblist", &RateLimitError{Source: "mdblist", Status: 429, RetryAfter: time.Hour})
+	h.Failure("mdblist", &RateLimitError{Source: "mdblist", Status: 429, RetryAfter: time.Hour}, CallerInteractive)
 
 	meta := &MediaMeta{Ratings: []Rating{{Source: "mdblist", Value: 8}}}
 	if !h.Success("mdblist", "k", meta) {
@@ -51,15 +51,15 @@ func (e errStub) Error() string { return string(e) }
 // user browses. Remember caches the result without touching health.
 func TestRememberDoesNotClearTheSharedCooldown(t *testing.T) {
 	h := NewHealthTracker(100, time.Hour)
-	h.Failure("mdblist", &RateLimitError{Source: "mdblist", Status: 429, RetryAfter: time.Hour})
-	if !h.CoolingOff("mdblist") {
+	h.Failure("mdblist", &RateLimitError{Source: "mdblist", Status: 429, RetryAfter: time.Hour}, CallerInteractive)
+	if !h.CoolingOff("mdblist", CallerInteractive) {
 		t.Fatal("mdblist should be cooling off")
 	}
 
 	// The owner-keyed path: cache a good result.
 	h.Remember(GoodKey("mdblist", "movie", "tt1"), &MediaMeta{Ratings: []Rating{{Source: "mdblist", Value: 8}}})
 
-	if !h.CoolingOff("mdblist") {
+	if !h.CoolingOff("mdblist", CallerInteractive) {
 		t.Error("Remember cleared the shared cooldown")
 	}
 	// And it still cached the value for the fallback path.

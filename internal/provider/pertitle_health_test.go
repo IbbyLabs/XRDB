@@ -76,7 +76,7 @@ func TestAPerTitleMissDoesNotMarkASourceUnhealthy(t *testing.T) {
 			}
 
 			h := NewHealthTracker(10, time.Hour)
-			h.Failure(tc.source, err)
+			h.Failure(tc.source, err, CallerInteractive)
 			for _, s := range h.Snapshot() {
 				if s.Source == tc.source && !s.Healthy {
 					t.Errorf("%s: a per-title miss marked the source unhealthy: %v", tc.source, err)

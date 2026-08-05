@@ -95,9 +95,9 @@ func TestQuotaMarkersAreRecognised(t *testing.T) {
 func TestQuotaRefusalCoolsOffForLonger(t *testing.T) {
 	h := NewHealthTracker(10, time.Hour)
 	h.Failure("simkl", &RateLimitError{Source: "simkl", RetryAfter: 2 * time.Second,
-		Status: 429, QuotaExhausted: true})
+		Status: 429, QuotaExhausted: true}, CallerInteractive)
 	h.mu.Lock()
-	until := h.sources["simkl"].cooldownUntil
+	until := h.sources["simkl"].cooldownUntil[CallerInteractive]
 	h.mu.Unlock()
 	if d := time.Until(until); d < 30*time.Minute {
 		t.Errorf("a spent allowance cooled off for only %s", d)

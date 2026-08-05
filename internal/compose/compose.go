@@ -490,7 +490,8 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 	// is the whole point of a per-profile key: it is exactly the render that must
 	// still reach the source when the shared key is exhausted.
 	ownerKeyed := provider.HasOwnerKey(ctx, prov.Name())
-	if !ownerKeyed && p.health != nil && p.health.CoolingOff(prov.Name()) {
+	callerClass := provider.CallerClassFrom(ctx)
+	if !ownerKeyed && p.health != nil && p.health.CoolingOff(prov.Name(), callerClass) {
 		// The source is refusing on rate-limit grounds. Waiting for it to say so
 		// again costs the render seconds, so take the remembered value instead.
 		key := provider.GoodKey(prov.Name(), req.ContentType, req.MediaID)
@@ -539,7 +540,7 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 		// An owner key failing says nothing about the shared source's health: it
 		// is a different credential with its own allowance. Recording it would let
 		// one exhausted owner key set the shared cooldown for every other render.
-		if p.health.Failure(prov.Name(), err) {
+		if p.health.Failure(prov.Name(), err, callerClass) {
 			// The transition into cooldown, logged once, is what makes a failing
 			// source visible instead of silently dropping its badge from every
 			// render. Naming the reason matters as much: reporting a rejected

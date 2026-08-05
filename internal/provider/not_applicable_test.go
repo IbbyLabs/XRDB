@@ -17,7 +17,7 @@ func TestNotApplicableDoesNotDamageHealth(t *testing.T) {
 	wrapped := fmt.Errorf("kitsu: no anime mapping for id %q: %w", "tt0111161", ErrNotApplicable)
 
 	for i := 0; i < 50; i++ {
-		h.Failure("kitsu", wrapped)
+		h.Failure("kitsu", wrapped, CallerInteractive)
 	}
 
 	for _, s := range h.Snapshot() {
@@ -35,7 +35,7 @@ func TestNotApplicableDoesNotDamageHealth(t *testing.T) {
 // A real error still counts, so an actual outage is still visible.
 func TestARealFailureStillCounts(t *testing.T) {
 	h := NewHealthTracker(100, time.Hour)
-	h.Failure("kitsu", errors.New("kitsu: http 503"))
+	h.Failure("kitsu", errors.New("kitsu: http 503"), CallerInteractive)
 	for _, s := range h.Snapshot() {
 		if s.Source == "kitsu" && (s.Healthy || s.Failures != 1) {
 			t.Errorf("a real failure was not recorded: healthy=%v failures=%d", s.Healthy, s.Failures)

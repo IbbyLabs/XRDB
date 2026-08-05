@@ -70,7 +70,7 @@ func TestHoldingBulkOffDoesNotCoolTheSourceOffForEveryone(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		ratingsForCaller(t, p, req, provider.CallerBulk)
 	}
-	if p.Health().CoolingOff("simkl") {
+	if p.Health().CoolingOff("simkl", provider.CallerInteractive) {
 		t.Fatal("holding bulk callers back put the source into cooldown for every caller")
 	}
 

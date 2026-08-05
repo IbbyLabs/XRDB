@@ -35,7 +35,13 @@ type sourceState struct {
 	staleServes     int64
 	// cooldownUntil is set when a source refuses for rate-limit reasons. Live
 	// renders skip it until then and serve the remembered value instead.
-	cooldownUntil time.Time
+	//
+	// Held per caller class. A catalogue sweep can drive a source into refusing
+	// it while the source still answers a person perfectly well, and one shared
+	// timer let the sweep take the source off everyone's poster. Remember()
+	// already keeps one caller's success from speaking for another's health;
+	// this is the same rule for failure. Indexed by CallerClass.
+	cooldownUntil [2]time.Time
 	cooldowns     int64
 	// breakerTrips counts how many times in a row the failure breaker has held
 	// this source out without a success in between. It lengthens the next hold.
@@ -68,6 +74,9 @@ type SourceHealth struct {
 	// refusing on rate-limit grounds. Cooldowns counts how often that started.
 	CoolingOff bool  `json:"coolingOff"`
 	Cooldowns  int64 `json:"cooldowns"`
+	// CoolingOffBulk is the hold a catalogue sweep is under. It can be set while
+	// the source still answers people normally, which is the whole point.
+	CoolingOffBulk bool `json:"coolingOffBulk"`
 }
 
 const (
@@ -111,9 +120,10 @@ func (h *HealthTracker) Success(source, key string, meta *MediaMeta) (recovered 
 	defer h.mu.Unlock()
 
 	st := h.stateLocked(source)
-	recovered = !st.healthy || time.Now().Before(st.cooldownUntil)
+	recovered = !st.healthy || time.Now().Before(st.cooldownUntil[CallerInteractive]) ||
+		time.Now().Before(st.cooldownUntil[CallerBulk])
 	st.healthy = true
-	st.cooldownUntil = time.Time{}
+	st.cooldownUntil = [2]time.Time{}
 	st.lastSuccess = time.Now()
 	st.consecutiveFail = 0
 	st.breakerTrips = 0
@@ -164,7 +174,7 @@ func (h *HealthTracker) rememberLocked(key string, meta *MediaMeta) {
 // source into a rate-limit cooldown, so the caller can log that transition once
 // rather than on every refused render. A plain not-found is not a health
 // problem: the source answered, the title simply is not there.
-func (h *HealthTracker) Failure(source string, err error) (enteredCooldown bool) {
+func (h *HealthTracker) Failure(source string, err error, class CallerClass) (enteredCooldown bool) {
 	if h == nil || errors.Is(err, errNotFound) || errors.Is(err, ErrNotApplicable) {
 		return false
 	}
@@ -180,7 +190,24 @@ func (h *HealthTracker) Failure(source string, err error) (enteredCooldown bool)
 	defer h.mu.Unlock()
 
 	st := h.stateLocked(source)
-	wasCooling := time.Now().Before(st.cooldownUntil)
+	wasCooling := time.Now().Before(st.cooldownUntil[class])
+	// A refusal a sweep provoked holds the sweep off. A refusal a person hit
+	// holds everyone off: if the source will not answer an ordinary render it
+	// will not answer a crawl either.
+	hold := func(until time.Time) bool {
+		classes := []CallerClass{class}
+		if class == CallerInteractive {
+			classes = []CallerClass{CallerInteractive, CallerBulk}
+		}
+		set := false
+		for _, c := range classes {
+			if until.After(st.cooldownUntil[c]) {
+				st.cooldownUntil[c] = until
+				set = true
+			}
+		}
+		return set
+	}
 	st.healthy = false
 	st.lastFailure = time.Now()
 	st.consecutiveFail++
@@ -208,12 +235,10 @@ func (h *HealthTracker) Failure(source string, err error) (enteredCooldown bool)
 		if rl.QuotaExhausted {
 			wait = quotaCooldown
 		}
-		until := time.Now().Add(wait)
-		if until.After(st.cooldownUntil) {
-			st.cooldownUntil = until
+		if hold(time.Now().Add(wait)) {
 			st.cooldowns++
 		}
-		enteredCooldown = !wasCooling && time.Now().Before(st.cooldownUntil)
+		enteredCooldown = !wasCooling && time.Now().Before(st.cooldownUntil[class])
 	}
 
 	// A source can fail without ever refusing on rate-limit grounds: a timeout
@@ -229,13 +254,11 @@ func (h *HealthTracker) Failure(source string, err error) (enteredCooldown bool)
 		if wait > maxCooldown {
 			wait = maxCooldown
 		}
-		until := time.Now().Add(wait)
-		if until.After(st.cooldownUntil) {
-			st.cooldownUntil = until
+		if hold(time.Now().Add(wait)) {
 			st.cooldowns++
 			st.breakerTrips++
 		}
-		enteredCooldown = !wasCooling && time.Now().Before(st.cooldownUntil)
+		enteredCooldown = !wasCooling && time.Now().Before(st.cooldownUntil[class])
 	}
 	return enteredCooldown
 }
@@ -262,14 +285,14 @@ const (
 
 // CoolingOff reports whether a source is being held out after refusing on
 // rate-limit grounds, and must not be called by a live render.
-func (h *HealthTracker) CoolingOff(source string) bool {
+func (h *HealthTracker) CoolingOff(source string, class CallerClass) bool {
 	if h == nil {
 		return false
 	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	st, ok := h.sources[source]
-	return ok && time.Now().Before(st.cooldownUntil)
+	return ok && time.Now().Before(st.cooldownUntil[class])
 }
 
 // LastGood returns a remembered result for key, if one is still valid. It
@@ -316,8 +339,11 @@ func (h *HealthTracker) Snapshot() []SourceHealth {
 			Successes:       st.successes,
 			Failures:        st.failures,
 			StaleServes:     st.staleServes,
-			CoolingOff:      time.Now().Before(st.cooldownUntil),
-			Cooldowns:       st.cooldowns,
+			// The admin view reports the interactive hold: it is the one that
+			// means a person's render is losing the source.
+			CoolingOff:     time.Now().Before(st.cooldownUntil[CallerInteractive]),
+			CoolingOffBulk: time.Now().Before(st.cooldownUntil[CallerBulk]),
+			Cooldowns:      st.cooldowns,
 		}
 		if !st.lastSuccess.IsZero() {
 			sh.LastSuccess = st.lastSuccess.UTC().Format(time.RFC3339)
