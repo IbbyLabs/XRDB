@@ -52,8 +52,9 @@ var compoundOverrides = map[string]string{
 }
 
 const (
-	genreFantasy = "Fantasy"
-	genreSciFi   = "Science Fiction"
+	genreFantasy    = "Fantasy"
+	genreSciFi      = "Science Fiction"
+	genreSciFantasy = "Sci-Fantasy"
 )
 
 // normalizeCompoundName folds case and separators so "Sci-Fi & Fantasy" and
@@ -100,7 +101,10 @@ func narrowSciFiFantasy(keywords []string, tmdbID string) string {
 	case scifi && !fantasy:
 		return genreSciFi
 	default:
-		return ""
+		// Both buckets or neither. The compound is genuinely both, so it gets its
+		// own family rather than falling back to the raw "Sci-Fi & Fantasy" name,
+		// which resolved to the sci-fi colour and said nothing about the title.
+		return genreSciFantasy
 	}
 }
 

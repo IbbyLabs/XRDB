@@ -27,9 +27,11 @@ func TestNarrowSciFiFantasyPicksASide(t *testing.T) {
 		// "high fantasy" is the case that settles substring matching: an exact
 		// comparison against "fantasy" drops it.
 		{"a compound keyword still counts", kwWillow, genreFantasy},
-		{"both buckets leaves it alone", kwOutlander, ""},
-		{"no signal leaves it alone", kwLucifer, ""},
-		{"no keywords at all leaves it alone", nil, ""},
+		// Both buckets or neither now resolves to its own family rather than being
+		// left as TMDB's compound (FR-163).
+		{"both buckets is genuinely both", kwOutlander, genreSciFantasy},
+		{"no signal is unsettled either way", kwLucifer, genreSciFantasy},
+		{"no keywords at all", nil, genreSciFantasy},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -51,8 +53,11 @@ func TestCompoundOverridesSettleWhatKeywordsCannot(t *testing.T) {
 	}
 	// An unlisted title with the same ambiguity keeps the compound, so the
 	// override list is doing the work rather than the ambiguity resolving itself.
-	if got := narrowSciFiFantasy(kwOutlander, "999999"); got != "" {
-		t.Errorf("an unlisted tie resolved %q, want the compound left alone", got)
+	// The claim is that the LIST settles it, not the ambiguity: an unlisted tie
+	// must not reach Fantasy on its own. It now lands on the both-buckets family
+	// instead of the raw compound, which still separates the two cases.
+	if got := narrowSciFiFantasy(kwOutlander, "999999"); got != genreSciFantasy {
+		t.Errorf("an unlisted tie resolved %q, want %q", got, genreSciFantasy)
 	}
 }
 
@@ -73,9 +78,12 @@ func TestNarrowCompoundGenresLeavesOtherListsAlone(t *testing.T) {
 	}
 	// A title the rule cannot settle keeps the compound, which is what makes this
 	// unable to make any title worse than it is today.
+	// An unsettled title used to keep TMDB's compound. It now names the family that
+	// says it is both, which is the half FR-147 left unbuilt.
 	tie := []string{"Sci-Fi & Fantasy", "Drama"}
-	if got := narrowCompoundGenres(tie, kwOutlander, "999999"); !slices.Equal(got, tie) {
-		t.Errorf("an unsettled title came back as %v, want the compound kept", got)
+	wantTie := []string{genreSciFantasy, "Drama"}
+	if got := narrowCompoundGenres(tie, kwOutlander, "999999"); !slices.Equal(got, wantTie) {
+		t.Errorf("an unsettled title came back as %v, want %v", got, wantTie)
 	}
 }
 
@@ -102,7 +110,10 @@ func TestCompoundSpellings(t *testing.T) {
 var kwGoodOmens = []string{"angel", "prophecy", "anti-christ", "armageddon", "demon", "witch hunt"}
 
 func TestWholeWordMatchingDoesNotFindTermsInsideKeywords(t *testing.T) {
-	if got := narrowSciFiFantasy(kwGoodOmens, ""); got != "" {
+	// Still discriminates: substring matching would find "witch" in "witch hunt"
+	// and answer Fantasy. Whole-word matching finds neither bucket, so the title
+	// lands on the both-or-neither family.
+	if got := narrowSciFiFantasy(kwGoodOmens, ""); got != genreSciFantasy {
 		t.Errorf("resolved %q from keywords carrying no fantasy term; "+
 			"'witch' inside 'witch hunt' means matching is still on substrings", got)
 	}

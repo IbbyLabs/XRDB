@@ -12,14 +12,18 @@ type genreFamily struct {
 }
 
 var (
-	familyAnime       = genreFamily{"anime", "ANIME", "#f59e0b"}
-	familyAnimation   = genreFamily{"animation", "ANIMATION", "#38bdf8"}
-	familyHorror      = genreFamily{"horror", "HORROR", "#ef4444"}
-	familyComedy      = genreFamily{"comedy", "COMEDY", "#facc15"}
-	familyRomance     = genreFamily{"romance", "ROMANCE", "#fb7185"}
-	familyAction      = genreFamily{"action", "ACTION", "#fb923c"}
-	familySciFi       = genreFamily{"scifi", "SCI-FI", "#22d3ee"}
-	familyFantasy     = genreFamily{"fantasy", "FANTASY", "#34d399"}
+	familyAnime     = genreFamily{"anime", "ANIME", "#f59e0b"}
+	familyAnimation = genreFamily{"animation", "ANIMATION", "#38bdf8"}
+	familyHorror    = genreFamily{"horror", "HORROR", "#ef4444"}
+	familyComedy    = genreFamily{"comedy", "COMEDY", "#facc15"}
+	familyRomance   = genreFamily{"romance", "ROMANCE", "#fb7185"}
+	familyAction    = genreFamily{"action", "ACTION", "#fb923c"}
+	familySciFi     = genreFamily{"scifi", "SCI-FI", "#22d3ee"}
+	familyFantasy   = genreFamily{"fantasy", "FANTASY", "#34d399"}
+	// TMDB's television compound where the keywords settle on both buckets or
+	// neither: the title genuinely is both, so it gets its own family rather than
+	// being filed under one of them.
+	familySciFantasy  = genreFamily{"scifantasy", "Sci-Fantasy", "#2bd3c4"}
 	familyCrime       = genreFamily{"crime", "CRIME", "#60a5fa"}
 	familyDrama       = genreFamily{"drama", "DRAMA", "#818cf8"}
 	familyDocumentary = genreFamily{"documentary", "DOC", "#a3e635"}
@@ -29,7 +33,7 @@ var (
 	familyHistory     = genreFamily{"history", "HISTORY", "#94a3b8"}
 	familyKids        = genreFamily{"kids", "KIDS", "#f472b6"}
 	familyNews        = genreFamily{"news", "NEWS", "#64748b"}
-	familySoap        = genreFamily{"soap", "SOAP", "#2dd4bf"}
+	familySoap        = genreFamily{"soap", "SOAP", "#d946ef"}
 	familyTalk        = genreFamily{"talk", "TALK", "#a78bfa"}
 	familyTVMovie     = genreFamily{"tvmovie", "TV", "#f59e0b"}
 	familyWarPolitics = genreFamily{"warpolitics", "WAR", "#f87171"}
@@ -202,6 +206,10 @@ func resolveFamilyPass(genres []string, includeAnimated, isAnime bool, grouping 
 		return &familyComedy
 	case has("romance"):
 		return &familyRomance
+	}
+
+	if has("sci fantasy") {
+		return &familySciFantasy
 	}
 
 	// Fantasy outranks sci-fi unless the title is explicitly science fiction,
