@@ -274,7 +274,7 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
                     </button>
                   </div>
                   <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>
-                    Auto uses green / amber / red based on the score. Pick a color to override.
+                    Auto follows your Score colours when you have set any, and green / amber / red otherwise. Pick a color to override.
                   </span>
                 </div>
 
