@@ -477,13 +477,53 @@ type ageRatingOpts struct {
 	outlineColor string // "#RRGGBB" outline for the plain style; "" = drop shadow
 	outlineWidth int    // px outline width for the plain style; 0 = 1
 	outlineGlow  bool   // fade the outline outward instead of a hard edge
+
+	bgOpacity     int     // 0-100; 0 = the style's own
+	borderWidth   float64 // px; 0 = the style's own, <0 = no border
+	borderColor   string  // "#RRGGBB"; "" = the style's own
+	borderOpacity int     // 0-100; 0 = the style's own
+	labelColor    string  // "#RRGGBB"; "" = the style's own
+}
+
+// applyAgeChrome lays the styling controls over whatever the chosen style built.
+// Both the standard plate and the taller media plate go through here, so a
+// control cannot reach one and miss the other.
+func applyAgeChrome(ch tileChrome, textCol color.NRGBA, opts ageRatingOpts, scale float64) (tileChrome, color.NRGBA) {
+	if opts.bgOpacity > 0 {
+		ch.fill.A = uint8(opts.bgOpacity * 255 / 100)
+	}
+	if c, err := parseHexColor(opts.borderColor); opts.borderColor != "" && err == nil {
+		ch.border = color.NRGBA{R: c.R, G: c.G, B: c.B, A: ch.border.A}
+		if ch.border.A == 0 {
+			ch.border.A = 255
+		}
+	}
+	if opts.borderOpacity > 0 {
+		ch.border.A = uint8(opts.borderOpacity * 255 / 100)
+	}
+	switch {
+	case opts.borderWidth < 0:
+		ch.border = color.NRGBA{}
+	case opts.borderWidth > 0:
+		ch.borderWidth = maxInt(1, int(opts.borderWidth*scale+0.5))
+		if ch.border.A == 0 {
+			ch.border = color.NRGBA{R: 235, G: 235, B: 240, A: 150}
+		}
+	}
+	if c, err := parseHexColor(opts.labelColor); opts.labelColor != "" && err == nil {
+		textCol = color.NRGBA{R: c.R, G: c.G, B: c.B, A: textCol.A}
+	}
+	return ch, textCol
 }
 
 func ageOptsFromConfig(cfg imageconfig.Config) ageRatingOpts {
 	return ageRatingOpts{style: cfg.AgeRatingBadgeStyle, tileColor: cfg.AgeRatingTileColor,
 		offsetX: cfg.AgeRatingOffsetX, offsetY: cfg.AgeRatingOffsetY, scale: cfg.AgeRatingScale,
 		outlineColor: cfg.NoBackgroundBadgeOutlineColor, outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
-		outlineGlow: cfg.NoBackgroundBadgeOutlineGlow}
+		outlineGlow: cfg.NoBackgroundBadgeOutlineGlow,
+		bgOpacity:   cfg.AgeRatingBackgroundOpacity, borderWidth: cfg.AgeRatingBorderWidth,
+		borderColor: cfg.AgeRatingBorderColor, borderOpacity: cfg.AgeRatingBorderOpacity,
+		labelColor: cfg.AgeRatingLabelColor}
 }
 
 func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale float64, occ *occupancy, opts ageRatingOpts) {
@@ -527,18 +567,19 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 		bhM := padY*2 + eAsc + eDesc + gap + ascent + descent
 		bwM := maxInt(padX*2+textWidth(face, rating), padX*2+textWidth(ef, "AGE"))
 		r := occ.placeNudged(resolvedPos, bwM, bhM, edgeX, edgeY, s(7), opts.offsetX, opts.offsetY)
-		drawSoftTile(base, r, s(6), tileChrome{
+		mediaChrome, mediaText := applyAgeChrome(tileChrome{
 			fill:   color.NRGBA{R: 17, G: 24, B: 39, A: 214},
 			border: color.NRGBA{R: 255, G: 247, B: 237, A: 240},
 			shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 90},
-		})
+		}, color.NRGBA{R: 255, G: 250, B: 245, A: 255}, opts, scale)
+		drawSoftTile(base, r, s(6), mediaChrome)
 		// A thin sheen along the very top edge of the plate.
 		hlInset := s(3)
 		fillRect(base, image.Rect(r.Min.X+hlInset, r.Min.Y+hlInset,
 			r.Max.X-hlInset, r.Min.Y+bhM*16/100), color.NRGBA{R: 255, G: 255, B: 255, A: 16})
 		cx := r.Min.X + bwM/2
 		eyebrowCol := color.NRGBA{R: 255, G: 250, B: 245, A: 220}
-		valueCol := color.NRGBA{R: 255, G: 250, B: 245, A: 255}
+		valueCol := mediaText
 		ey := r.Min.Y + padY + eAsc
 		// A soft shadow keeps the kicker legible over the sheen.
 		drawText(base, ef, cx-textWidth(ef, "AGE")/2+1, ey+1, color.NRGBA{A: 150}, "AGE")
@@ -592,6 +633,7 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 		// the tile style's fill does, tinting its own border instead.
 		chrome.border = color.NRGBA{R: c.R, G: c.G, B: c.B, A: chrome.border.A}
 	}
+	chrome, textCol = applyAgeChrome(chrome, textCol, opts, scale)
 	rad := radius
 	if opts.style == "square" {
 		rad = 0 // sharp-cornered tile

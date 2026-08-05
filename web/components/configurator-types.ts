@@ -532,6 +532,11 @@ export interface ConfigState {
   trendingAccentColor: string; // '#RRGGBB' border/hairline tint; '' = default warm orange
   ageRatingBadgeStyle: string; // 'default' | plain | tile
   ageRatingTileColor: string;
+  ageRatingBackgroundOpacity: number; // 0 = the style's own
+  ageRatingBorderWidth: number;       // 0 = the style's own, <0 = off
+  ageRatingBorderColor: string;
+  ageRatingBorderOpacity: number;     // 0 = the style's own
+  ageRatingLabelColor: string;
   trendingPos: string; // 'inherit' | six positions
   trendingScale: number;
   trendingOffsetX: number;
@@ -728,6 +733,11 @@ export const DEFAULT_CONFIG: ConfigState = {
   trendingAccentColor: '',
   ageRatingBadgeStyle: 'default',
   ageRatingTileColor: '',
+  ageRatingBackgroundOpacity: 0,
+  ageRatingBorderWidth: 0,
+  ageRatingBorderColor: '',
+  ageRatingBorderOpacity: 0,
+  ageRatingLabelColor: '',
   trendingPos: 'inherit',
   trendingScale: 0,
   trendingOffsetX: 0,

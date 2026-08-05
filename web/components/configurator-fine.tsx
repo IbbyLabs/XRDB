@@ -1325,6 +1325,32 @@ export function AgeFine({ uid, config, onUpdate }: GroupProps) {
           onChange={v => onUpdate('ageRatingTileColor', v)}
           fallback="#3355ff" resetLabel="Default" />
       )}
+      {config.ageRatingBadgeStyle !== 'plain' && (
+        <>
+          <NumField id={`${uid}-age-op`} label="Background opacity (%)" value={config.ageRatingBackgroundOpacity}
+            onChange={v => onUpdate('ageRatingBackgroundOpacity', v)} min={5} max={100} step={5}
+            placeholder="per style" />
+          <StyleGrid
+            id={`${uid}-age-border-mode-label`}
+            label="Border"
+            options={GENRE_BORDER_OPTIONS}
+            value={genreBorderMode(config.ageRatingBorderWidth)}
+            onChange={v => onUpdate('ageRatingBorderWidth', v === 'off' ? -1 : v === 'hairline' ? 0 : 2)}
+          />
+          {genreBorderMode(config.ageRatingBorderWidth) === 'custom' && (
+            <NumField id={`${uid}-age-border`} label="Border width (px)" value={config.ageRatingBorderWidth}
+              onChange={v => onUpdate('ageRatingBorderWidth', v)} min={1} max={6} zeroIsDefault={false} />
+          )}
+          <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
+            <ColorField id={`${uid}-age-label-color`} label="Label colour" value={config.ageRatingLabelColor}
+              onChange={v => onUpdate('ageRatingLabelColor', v)} fallback="#ffffff" resetLabel="Per style" />
+            <ColorField id={`${uid}-age-border-color`} label="Border colour" value={config.ageRatingBorderColor}
+              onChange={v => onUpdate('ageRatingBorderColor', v)} fallback="#ffffff" resetLabel="Per style" />
+          </div>
+          <NumField id={`${uid}-age-border-op`} label="Border opacity (%)" value={config.ageRatingBorderOpacity}
+            onChange={v => onUpdate('ageRatingBorderOpacity', v)} min={5} max={100} step={5} placeholder="per style" />
+        </>
+      )}
       <NumField id={`${uid}-age-scale`} label="Scale (%)" value={config.ageRatingScale}
         onChange={v => onUpdate('ageRatingScale', v)} min={50} max={300} step={5} />
       <div className="numfield-pair">

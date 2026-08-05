@@ -565,6 +565,14 @@ type PerSurfaceBaseConfig struct {
 type AgeRatingConfig struct {
 	AgeRatingBadgeStyle string `json:"ageRatingBadgeStyle,omitempty"` // glass | plain | tile
 	AgeRatingTileColor  string `json:"ageRatingTileColor,omitempty"`  // "#RRGGBB" for the tile style
+	// The genre badge exposes these; the age rating badge did not, so its glass
+	// style could not be tuned at all and its border could not be aimed. Same
+	// names and same defaults, so a blank field renders as it always has.
+	AgeRatingBackgroundOpacity int     `json:"ageRatingBackgroundOpacity,omitempty"` // 0-100; 0 = the style's own
+	AgeRatingBorderWidth       float64 `json:"ageRatingBorderWidth,omitempty"`       // px; 0 = the style's own, <0 = off
+	AgeRatingBorderColor       string  `json:"ageRatingBorderColor,omitempty"`       // "#RRGGBB"; "" = the style's own
+	AgeRatingBorderOpacity     int     `json:"ageRatingBorderOpacity,omitempty"`     // 0-100; 0 = the style's own
+	AgeRatingLabelColor        string  `json:"ageRatingLabelColor,omitempty"`        // "#RRGGBB"; "" = the style's own
 	// The release-status badge takes the same treatments as the age badge, so
 	// the two corner plates can be styled to match.
 	TopRatedBadgeStyle      string `json:"topRatedBadgeStyle,omitempty"`      // glass|square|plain|tile|silver
@@ -810,12 +818,17 @@ type rawTrending struct {
 }
 
 type rawAge struct {
-	TopRatedBadgeStyle      *string `json:"topRatedBadgeStyle"`
-	TopRatedTileColor       *string `json:"topRatedTileColor"`
-	ReleaseStatusBadgeStyle *string `json:"releaseStatusBadgeStyle"`
-	ReleaseStatusTileColor  *string `json:"releaseStatusTileColor"`
-	AgeRatingBadgeStyle     *string `json:"ageRatingBadgeStyle"`
-	AgeRatingTileColor      *string `json:"ageRatingTileColor"`
+	TopRatedBadgeStyle         *string  `json:"topRatedBadgeStyle"`
+	TopRatedTileColor          *string  `json:"topRatedTileColor"`
+	ReleaseStatusBadgeStyle    *string  `json:"releaseStatusBadgeStyle"`
+	ReleaseStatusTileColor     *string  `json:"releaseStatusTileColor"`
+	AgeRatingBadgeStyle        *string  `json:"ageRatingBadgeStyle"`
+	AgeRatingTileColor         *string  `json:"ageRatingTileColor"`
+	AgeRatingBackgroundOpacity *int     `json:"ageRatingBackgroundOpacity"`
+	AgeRatingBorderWidth       *float64 `json:"ageRatingBorderWidth"`
+	AgeRatingBorderColor       *string  `json:"ageRatingBorderColor"`
+	AgeRatingBorderOpacity     *int     `json:"ageRatingBorderOpacity"`
+	AgeRatingLabelColor        *string  `json:"ageRatingLabelColor"`
 }
 
 type rawSurface struct {
@@ -1759,6 +1772,21 @@ func parseAge(cfg *Config, r *raw) {
 	}
 	if r.AgeRatingTileColor != nil && isHexColor(*r.AgeRatingTileColor) {
 		cfg.AgeRatingTileColor = strings.TrimSpace(*r.AgeRatingTileColor)
+	}
+	if r.AgeRatingBackgroundOpacity != nil && *r.AgeRatingBackgroundOpacity != 0 {
+		cfg.AgeRatingBackgroundOpacity = clampInt(*r.AgeRatingBackgroundOpacity, 1, 100)
+	}
+	if r.AgeRatingBorderWidth != nil {
+		cfg.AgeRatingBorderWidth = *r.AgeRatingBorderWidth
+	}
+	if r.AgeRatingBorderColor != nil && isHexColor(*r.AgeRatingBorderColor) {
+		cfg.AgeRatingBorderColor = strings.TrimSpace(*r.AgeRatingBorderColor)
+	}
+	if r.AgeRatingBorderOpacity != nil && *r.AgeRatingBorderOpacity != 0 {
+		cfg.AgeRatingBorderOpacity = clampInt(*r.AgeRatingBorderOpacity, 1, 100)
+	}
+	if r.AgeRatingLabelColor != nil && isHexColor(*r.AgeRatingLabelColor) {
+		cfg.AgeRatingLabelColor = strings.TrimSpace(*r.AgeRatingLabelColor)
 	}
 	if r.TopRatedBadgeStyle != nil {
 		switch v := strings.ToLower(strings.TrimSpace(*r.TopRatedBadgeStyle)); v {
