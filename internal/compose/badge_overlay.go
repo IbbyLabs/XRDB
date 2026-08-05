@@ -25,7 +25,9 @@ type tileChrome struct {
 	border      color.NRGBA // zero alpha = no border
 	borderWidth int         // px; 0/1 = single hairline
 	borderGlow  bool        // bloom the border outward instead of a hard edge
-	shadow      color.NRGBA // zero alpha = no shadow
+	// borderGlowStrength is 0-100; 0 = the built-in default reach and intensity.
+	borderGlowStrength int
+	shadow             color.NRGBA // zero alpha = no shadow
 }
 
 // drawSoftTile draws a rounded "frosted" tile: an offset drop shadow, a fill,
@@ -45,23 +47,55 @@ func drawSoftTile(base *image.NRGBA, r image.Rectangle, radius int, ch tileChrom
 		fillRoundedRect(base, r, radius, ch.fill)
 	}
 	if ch.border.A > 0 {
-		strokeRoundedBorder(base, r, radius, ch.borderWidth, ch.border, ch.borderGlow)
+		strokeRoundedBorder(base, r, radius, ch.borderWidth, ch.border, ch.borderGlow, ch.borderGlowStrength)
 	}
 }
 
-// strokeBloomRings is how far a bloomed border reaches beyond its own edge.
-const strokeBloomRings = 4
+const (
+	// strokeBloomRings and strokeBloomAlpha are the default reach and intensity
+	// of a bloomed border.
+	strokeBloomRings = 4
+	strokeBloomAlpha = 0.55
+	// strokeBloomDefaultStrength is the dial position the defaults correspond
+	// to, so a strength set to it renders exactly as an unset one.
+	strokeBloomDefaultStrength = 50
+	strokeBloomMaxRings        = 12
+)
+
+// bloomFor resolves a 0-100 strength to a reach and an intensity. Zero means
+// the built-in default, as it does for every other 0-100 key here.
+//
+// Both move together: alpha alone at a fixed reach reads as a fatter smudge
+// rather than as more glow.
+func bloomFor(strength int) (rings int, alpha float64) {
+	if strength <= 0 {
+		return strokeBloomRings, strokeBloomAlpha
+	}
+	f := float64(strength) / strokeBloomDefaultStrength
+	rings = int(math.Round(float64(strokeBloomRings) * f))
+	if rings < 1 {
+		rings = 1
+	}
+	if rings > strokeBloomMaxRings {
+		rings = strokeBloomMaxRings
+	}
+	if alpha = strokeBloomAlpha * f; alpha > 1 {
+		alpha = 1
+	}
+	return rings, alpha
+}
 
 // strokeRoundedBorder draws a rounded-rect border, thickening inward with
 // concentric 1px strokes so the corners stay rounded. A bloom adds fainter
 // strokes outward from the edge, so a tinted border reads as a halo around the
 // badge rather than a thicker line.
-func strokeRoundedBorder(dst *image.NRGBA, r image.Rectangle, radius, width int, col color.NRGBA, bloom bool) {
+func strokeRoundedBorder(dst *image.NRGBA, r image.Rectangle, radius, width int, col color.NRGBA, bloom bool, strength int) {
 	if bloom {
-		for i := 1; i <= strokeBloomRings; i++ {
-			d := float64(i) / float64(strokeBloomRings+1)
+		rings, intensity := bloomFor(strength)
+		for i := 1; i <= rings; i++ {
+			d := float64(i) / float64(rings+1)
 			c := col
-			c.A = uint8(float64(col.A) * (1 - d) * 0.55)
+			c.A = uint8(float64(col.A) * (1 - d) * intensity)
 			if c.A == 0 {
 				continue
 			}

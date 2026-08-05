@@ -387,6 +387,9 @@ type RatingBadgeConfig struct {
 	// RatingBadgeBorderGlow blooms the badge outline outward instead of drawing a
 	// hard edge, so a source-tinted border reads as a halo around the badge.
 	RatingBadgeBorderGlow bool `json:"ratingBadgeBorderGlow,omitempty"`
+	// RatingBadgeBorderGlowStrength sets how far the bloom reaches and how
+	// strongly it reads, 0-100. 0 keeps the built-in default.
+	RatingBadgeBorderGlowStrength int `json:"ratingBadgeBorderGlowStrength,omitempty"`
 	// StackedLineHidden drops the accent rail above the mark in the stacked
 	// style. Named for what it hides so the zero value keeps the rail.
 	StackedLineHidden bool `json:"stackedLineHidden,omitempty"`
@@ -723,6 +726,7 @@ type raw struct {
 	RatingBadgeDensity            *int      `json:"ratingBadgeDensity"`
 	RatingBadgeBorderSourceTint   *bool     `json:"ratingBadgeBorderSourceTint"`
 	RatingBadgeBorderGlow         *bool     `json:"ratingBadgeBorderGlow"`
+	RatingBadgeBorderGlowStrength *int      `json:"ratingBadgeBorderGlowStrength"`
 	RatingBadgeBorderColor        *string   `json:"ratingBadgeBorderColor"`
 	RatingBadgeBorderOpacity      *int      `json:"ratingBadgeBorderOpacity"`
 	RatingBadgeBackgroundOpacity  *int      `json:"ratingBadgeBackgroundOpacity"`
@@ -1189,6 +1193,9 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.RatingBadgeBorderGlow != nil {
 		cfg.RatingBadgeBorderGlow = *r.RatingBadgeBorderGlow
+	}
+	if r.RatingBadgeBorderGlowStrength != nil && *r.RatingBadgeBorderGlowStrength != 0 {
+		cfg.RatingBadgeBorderGlowStrength = clampInt(*r.RatingBadgeBorderGlowStrength, 1, 100)
 	}
 	if r.RatingBadgeBorderSourceTint != nil {
 		cfg.RatingBadgeBorderSourceTint = *r.RatingBadgeBorderSourceTint

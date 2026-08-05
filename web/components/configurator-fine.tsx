@@ -668,6 +668,13 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
         hint="Fades the outline outward instead of a hard edge, so a source-tinted border reads as a halo around the badge."
         checked={config.ratingBadgeBorderGlow}
         onChange={() => onUpdate('ratingBadgeBorderGlow', !config.ratingBadgeBorderGlow)} />
+      {config.ratingBadgeBorderGlow && (
+        <NumField id={`${uid}-badge-border-glow-strength`} label="Bloom strength (%)"
+          value={config.ratingBadgeBorderGlowStrength}
+          onChange={v => onUpdate('ratingBadgeBorderGlowStrength', v)}
+          min={5} max={100} step={5} placeholder="default"
+          hint="How far the bloom reaches and how strongly it reads. Blank keeps the default." />
+      )}
       <NumField id={`${uid}-badge-border-op`} label="Badge outline opacity (%)" value={config.ratingBadgeBorderOpacity}
         onChange={v => onUpdate('ratingBadgeBorderOpacity', v)} min={5} max={100} step={5} placeholder="solid" />
       <StyleGrid

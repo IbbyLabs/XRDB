@@ -555,6 +555,7 @@ export interface ConfigState {
   ratingBadgeDensity: number; // percent of default padding; 0 = 100
   ratingBadgeBorderSourceTint: boolean;
   ratingBadgeBorderGlow: boolean;
+  ratingBadgeBorderGlowStrength: number; // 0 = built-in default
   ratingBadgeBorderColor: string; // '' = per style
   ratingBadgeBorderOpacity: number; // 0 = default
   ratingBadgeBackgroundOpacity: number; // 0 = whatever the style and theme picked
@@ -757,6 +758,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingBadgeDensity: 0,
   ratingBadgeBorderSourceTint: false,
   ratingBadgeBorderGlow: false,
+  ratingBadgeBorderGlowStrength: 0,
   ratingBadgeBorderColor: '',
   ratingBadgeBorderOpacity: 0,
   ratingBadgeBackgroundOpacity: 0,

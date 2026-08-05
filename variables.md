@@ -66,6 +66,13 @@ back to a live per-ID lookup.
 | `XRDB_ANIME_MAP_FALLBACK_URL` | `https://arm.haglund.dev/api/v2` | Live per-ID mapping API for titles the dataset misses. Set to `off` to disable. |
 | `XRDB_ANIME_MAP_REFRESH_HOURS` | `168` (7 days) | How old the cached dataset may get before a background re-download. Refreshes never block renders; a failed refresh keeps the existing copy. |
 
+## Rating badge bloom
+
+| Variable | Default | Description |
+|---|---|---|
+| `ratingBadgeBorderGlow` | off | Config key, not an environment variable. Blooms the badge outline outward instead of drawing a hard edge, so an outline tinted per rating site reads as a halo around the badge. |
+| `ratingBadgeBorderGlowStrength` | `0` | Config key. How far the bloom reaches and how strongly it reads, 1-100. `0` keeps the built-in default; reach and intensity move together, so a higher value is a wider halo rather than a denser one. |
+
 ## IMDb dataset refresh
 
 | Variable | Default | Description |

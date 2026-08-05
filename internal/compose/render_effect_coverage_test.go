@@ -521,6 +521,13 @@ func keyMutations() map[string]keyOverride {
 
 		// Age / release / top-rated badge styling. "plain" (no background) reads
 		// clearly different from the default plate, whatever the default is.
+		"ratingBadgeBorderGlowStrength": {pre: func(c *imageconfig.Config) {
+			c.BadgeStyle = imageconfig.BadgeTile
+			c.RatingBadgeBorderColor = "#22d3ee"
+			c.RatingBadgeBorderWidth = 2
+			c.RatingBadgeBorderGlow = true
+		}, mut: func(c *imageconfig.Config) { c.RatingBadgeBorderGlowStrength = 100 }},
+
 		// A bloomed border only shows where a border is drawn at all.
 		"ratingBadgeBorderGlow": {pre: func(c *imageconfig.Config) {
 			c.BadgeStyle = imageconfig.BadgeTile
