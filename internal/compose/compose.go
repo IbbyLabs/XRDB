@@ -665,6 +665,50 @@ func (p *Pipeline) log() *slog.Logger {
 
 // Render executes the composition pipeline for the given request.
 // Falls back to a type-colored placeholder if any step fails.
+// unavailableSources turns the providers held out of a render into the rating
+// sources the strip is filtered by. The two are the same string only by
+// coincidence: MDBList alone answers thirteen sources and no provider is called
+// "imdb", so naming the provider drew one badge nobody had configured and left
+// the rest silently missing.
+//
+// A source another provider answered is not unavailable — if OMDb served imdb
+// while MDBList was down, imdb has its score and must not be crossed out.
+func (p *Pipeline) unavailableSources(degradedProviders, wanted []string, got []provider.Rating) []string {
+	if len(degradedProviders) == 0 || len(wanted) == 0 {
+		return nil
+	}
+	answered := make(map[string]bool, len(got))
+	for _, r := range got {
+		answered[strings.ToLower(r.Source)] = true
+	}
+	want := make(map[string]bool, len(wanted))
+	for _, s := range wanted {
+		want[strings.ToLower(s)] = true
+	}
+
+	seen := make(map[string]bool)
+	var out []string
+	for _, name := range degradedProviders {
+		// The provider's own name is the fallback for one that does not declare
+		// its sources.
+		sources := []string{name}
+		if prov := p.providers.Get(name); prov != nil {
+			if rs, ok := prov.(provider.RatingSourcer); ok {
+				sources = rs.RatingSources()
+			}
+		}
+		for _, src := range sources {
+			key := strings.ToLower(src)
+			if !want[key] || answered[key] || seen[key] {
+				continue
+			}
+			seen[key] = true
+			out = append(out, src)
+		}
+	}
+	return out
+}
+
 func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	timings := newRenderTimings()
 	defer func() { timings.log(ctx, p.log(), req) }()
@@ -763,7 +807,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// Kept out of allRatings deliberately: that list feeds the average, the
 	// ring and the score bar, and a placeholder carries no score to average.
 	stripRatings := allRatings
-	for _, name := range degradedSources {
+	for _, name := range p.unavailableSources(degradedSources, req.Config.Ratings, allRatings) {
 		stripRatings = append(stripRatings, provider.Rating{Source: name, Unavailable: true})
 	}
 	if animeKnown {
@@ -860,7 +904,10 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 			drawAggregateBar(composed, allRatings, req.Config, meta.Genres, meta.IsAnime)
 		}
 	default:
-		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
+		// Gated on the list it draws, not on allRatings. An outage that takes
+		// every configured source leaves allRatings empty, and gating on that
+		// drew nothing in the one case this exists for.
+		if len(stripRatings) > 0 && len(req.Config.Ratings) > 0 {
 			ratingsH = drawBadgesInPlace(composed, stripRatings, req.Config, facts)
 		}
 	}
