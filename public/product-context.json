@@ -2,7 +2,7 @@
   "artifactType": "xrdb-product-context",
   "schemaVersion": "1",
   "xrdbTag": "3.66.0",
-  "generatedAt": "2026-08-05T13:19:14Z",
+  "generatedAt": "2026-08-05T13:53:57Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -164,7 +164,7 @@
         "XRDB_MDBLIST_MAX_RPS (default 5)",
         "XRDB_MDBLIST_BURST (default 30)",
         "XRDB_SIMKL_DAILY_LIMIT (default 10000)",
-        "XRDB_SIMKL_BULK_RESERVE (default 3000)",
+        "XRDB_SIMKL_BULK_RESERVE (default 6000)",
         "NEXT_PUBLIC_API_BASE_URL (default API origin the web app calls. Unset in the single-container image (same origin). Set for split deployments or local dev (`http://localhost:8787`).)"
       ]
     }
