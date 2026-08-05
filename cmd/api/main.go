@@ -175,6 +175,7 @@ func main() {
 
 	logProviderReadiness(reg)
 
+	var simklProvider *provider.SIMKL
 	var pipeline *compose.Pipeline
 	if len(reg.Names()) > 0 {
 		pipeline = compose.New(reg)
@@ -184,6 +185,13 @@ func main() {
 		// Ratings are metered by the request upstream, and one source meters by the
 		// day, so what was already fetched is kept across restarts.
 		pipeline.SetRatingsCachePath(cfg.CacheDir, logger)
+		// SIMKL's search endpoint is not cached upstream and a resolved id never
+		// changes, so the mappings are kept permanently rather than re-searched
+		// on every restart.
+		if simkl, ok := reg.Get("simkl").(*provider.SIMKL); ok && simkl != nil {
+			simkl.SetIDCachePath(cfg.CacheDir, logger)
+			simklProvider = simkl
+		}
 		// Lets the genre badge tell anime apart from animation generally. The
 		// mapper answers from an in-memory index, so this costs no request time.
 		pipeline.SetAnimeResolver(animeMapper)
@@ -243,6 +251,7 @@ func main() {
 	server.StartFolderWriterSchedule(scheduleCtx, cfg, pipeline, store, logger)
 	server.StartCacheWarmSchedule(scheduleCtx, cfg, pipeline, renderCache, logger)
 	server.StartRatingsCacheSnapshots(scheduleCtx, pipeline, logger)
+	server.StartSIMKLIDCacheSnapshots(scheduleCtx, simklProvider, logger)
 
 	srv := &http.Server{
 		Addr:              cfg.Address,

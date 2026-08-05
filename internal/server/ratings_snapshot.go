@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"xrdb_rewrite/internal/compose"
+	"xrdb_rewrite/internal/provider"
 )
 
 // ratingsSnapshotInterval is how often the remembered ratings are written out.
@@ -23,21 +24,48 @@ func StartRatingsCacheSnapshots(ctx context.Context, pipeline *compose.Pipeline,
 	if logger == nil {
 		logger = slog.Default()
 	}
+	startSnapshotLoop(ctx, logger, "the remembered ratings", pipeline.SaveRatingsCache)
+}
+
+// StartSIMKLIDCacheSnapshots persists the resolved IMDb-to-SIMKL id mappings.
+// SIMKL's search endpoint is not cached upstream, so a restart that discarded
+// them made the service re-search the whole catalogue.
+func StartSIMKLIDCacheSnapshots(ctx context.Context, simkl *provider.SIMKL, logger *slog.Logger) {
+	if simkl == nil {
+		return
+	}
+	if logger == nil {
+		logger = slog.Default()
+	}
+	startSnapshotLoop(ctx, logger, "the remembered SIMKL ids", func() error {
+		// Logged with the write so the saving is observable. Nothing else reports
+		// how many searches the service makes.
+		st := simkl.IDCacheStats()
+		logger.Info("SIMKL id lookups so far",
+			"ids_held", st.IDs, "misses_held", st.Misses,
+			"answered_from_cache", st.Hits, "answered_as_no_match", st.NoMatch,
+			"searches_sent", st.Searches)
+		return simkl.SaveIDCache()
+	})
+}
+
+// startSnapshotLoop writes a cache out on a timer and once more on shutdown.
+func startSnapshotLoop(ctx context.Context, logger *slog.Logger, what string, save func() error) {
 	go func() {
 		ticker := time.NewTicker(ratingsSnapshotInterval)
 		defer ticker.Stop()
-		save := func(why string) {
-			if err := pipeline.SaveRatingsCache(); err != nil {
-				logger.Warn("Could not write the remembered ratings", "when", why, "error", err)
+		write := func(why string) {
+			if err := save(); err != nil {
+				logger.Warn("Could not write "+what, "when", why, "error", err)
 			}
 		}
 		for {
 			select {
 			case <-ctx.Done():
-				save("shutdown")
+				write("shutdown")
 				return
 			case <-ticker.C:
-				save("timer")
+				write("timer")
 			}
 		}
 	}()

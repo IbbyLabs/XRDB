@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -29,13 +30,34 @@ type SIMKL struct {
 	baseURL    string // overrides simklBaseURL; set in tests
 	httpClient *http.Client
 	// idCache maps an IMDb id to its SIMKL id. The mapping is fixed, so it is
-	// held for the life of the process.
-	idCache map[string]string
+	// kept across restarts; see simkl_idcache.go.
+	idCache     map[string]string
+	idCachePath string
+	// idMisses records titles SIMKL has no entry for. Unlike a resolved id this
+	// is not permanent, so it carries the time it was recorded and expires.
+	idMisses map[string]time.Time
+	// nowFn is swapped in tests so no test waits on a real clock.
+	nowFn func() time.Time
+
+	idHits     atomic.Int64
+	idSearches atomic.Int64
+	idNoMatch  atomic.Int64
 }
+
+// simklIDMissTTL is how long a title SIMKL has no entry for is left alone. A
+// miss re-searched on every render never settles, and a sweep walks exactly the
+// obscure and newly-released titles SIMKL is least likely to carry. It expires
+// because SIMKL may add the title later.
+const simklIDMissTTL = 7 * 24 * time.Hour
 
 // simklIDCacheMax bounds the id cache. Reached in practice only by a library
 // far larger than one process serves.
 const simklIDCacheMax = 50_000
+
+// simklIDCacheEvict is how much of the cache is dropped once it is full. The
+// mapping is never invalid, so the only reason to drop any of it is size, and
+// clearing it wholesale threw away every resolution one insert too late.
+const simklIDCacheEvict = simklIDCacheMax / 10
 
 // UpdateCredentials swaps the live credential so a value saved in the UI takes
 // effect without a restart.
@@ -223,6 +245,9 @@ func (s *SIMKL) lookupByIMDB(ctx context.Context, imdbID string) (string, error)
 	if id, ok := s.cachedID(imdbID); ok {
 		return id, nil
 	}
+	if s.recentlyMissed(imdbID) {
+		return "", fmt.Errorf("simkl: no match for imdb id %q", imdbID)
+	}
 	id, err := s.fetchIDByIMDB(ctx, imdbID)
 	if err != nil {
 		return "", err
@@ -231,16 +256,53 @@ func (s *SIMKL) lookupByIMDB(ctx context.Context, imdbID string) (string, error)
 	return id, nil
 }
 
+// now reports the current time, or the test clock when one is set.
+func (s *SIMKL) now() time.Time {
+	if s.nowFn != nil {
+		return s.nowFn()
+	}
+	return time.Now()
+}
+
+// recentlyMissed reports whether SIMKL has already said it has no entry for a
+// title, recently enough to take its word for it.
+func (s *SIMKL) recentlyMissed(imdbID string) bool {
+	s.mu.RLock()
+	at, ok := s.idMisses[imdbID]
+	s.mu.RUnlock()
+	if !ok {
+		return false
+	}
+	if s.now().Sub(at) >= simklIDMissTTL {
+		return false
+	}
+	s.idNoMatch.Add(1)
+	return true
+}
+
+// rememberMiss records that SIMKL has no entry for a title.
+func (s *SIMKL) rememberMiss(imdbID string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.idMisses == nil {
+		s.idMisses = make(map[string]time.Time)
+	}
+	s.idMisses[imdbID] = s.now()
+}
+
 // cachedID returns a remembered SIMKL id for an IMDb id.
 func (s *SIMKL) cachedID(imdbID string) (string, bool) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	id, ok := s.idCache[imdbID]
+	if ok {
+		s.idHits.Add(1)
+	}
 	return id, ok
 }
 
-// rememberID stores a mapping, clearing the cache wholesale once it grows past
-// its bound. The mapping is stable, so the only reason to drop entries is size.
+// rememberID stores a mapping, dropping a slice of the cache once it is full.
+// The mapping is stable, so the only reason to drop entries is size.
 func (s *SIMKL) rememberID(imdbID, simklID string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -248,12 +310,19 @@ func (s *SIMKL) rememberID(imdbID, simklID string) {
 		s.idCache = make(map[string]string, simklIDCacheMax)
 	}
 	if len(s.idCache) >= simklIDCacheMax {
-		s.idCache = make(map[string]string, simklIDCacheMax)
+		dropped := 0
+		for k := range s.idCache {
+			delete(s.idCache, k)
+			if dropped++; dropped >= simklIDCacheEvict {
+				break
+			}
+		}
 	}
 	s.idCache[imdbID] = simklID
 }
 
 func (s *SIMKL) fetchIDByIMDB(ctx context.Context, imdbID string) (string, error) {
+	s.idSearches.Add(1)
 	base := simklBaseURL
 	if s.baseURL != "" {
 		base = s.baseURL
@@ -283,6 +352,7 @@ func (s *SIMKL) fetchIDByIMDB(ctx context.Context, imdbID string) (string, error
 		return "", fmt.Errorf("simkl lookup: decode: %w", err)
 	}
 	if len(results) == 0 || results[0].IDs.Simkl == 0 {
+		s.rememberMiss(imdbID)
 		return "", fmt.Errorf("simkl: no match for imdb id %q", imdbID)
 	}
 
