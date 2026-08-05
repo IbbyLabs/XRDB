@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.67.1](https://github.com/IbbyLabs/XRDB/compare/v3.67.0...v3.67.1) (2026-08-05)
+
+
+### Performance
+
+* **simkl:** move the id cache to its own SQLite store ([43cb986](https://github.com/IbbyLabs/XRDB/commit/43cb9862fcb2ed20eccafe1b47a7d4668ebd66f4))
+
 ## [3.67.0](https://github.com/IbbyLabs/XRDB/compare/v3.66.0...v3.67.0) (2026-08-05)
 
 
