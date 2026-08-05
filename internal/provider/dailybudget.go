@@ -16,7 +16,12 @@ import (
 // them once it is spent. dailyBudget counts a source's calls over the day and
 // holds back a reserve only interactive callers may spend.
 const (
-	simklDefaultDailyLimit  = 10000
+	// simklDefaultDailyLimit is SIMKL's number rather than ours. They raised it
+	// from 10000 to 15000 and nothing announced it, so it can move again without
+	// warning; XRDB_SIMKL_DAILY_LIMIT is how an operator corrects it without a
+	// release. A stale value here silently narrows the reserve, because the
+	// bulk cut-off is limit minus reserve.
+	simklDefaultDailyLimit  = 15000
 	simklDefaultBulkReserve = 6000
 )
 
