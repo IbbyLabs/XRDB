@@ -2780,7 +2780,7 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 		progress = v
 	}
 
-	fillColor := ratingRingFillColor(value, cfg.RatingRingColor)
+	fillColor := ratingRingFillColor(value, cfg.RatingRingColor, cfg.AggregateDynamicStops)
 
 	s := func(v float64) int { return int(v*scale + 0.5) }
 	edgeX := s(12)
@@ -2931,11 +2931,20 @@ func ratingRingAverage(ratings []provider.Rating, cfg imageconfig.Config) (float
 	return weightedMean(ratings, cfg, nil)
 }
 
-// ratingRingFillColor returns the arc fill colour: a custom hex when provided,
-// otherwise a five-band score palette (deep red → red → amber → lime → green).
-func ratingRingFillColor(avg float64, hexColor string) color.NRGBA {
+// ratingRingFillColor returns the arc fill colour. An explicit hex wins, then the
+// configured score stops, then a five-band palette (deep red → red → amber → lime
+// → green). The stops already drive the aggregate pill; the ring ignored them, so
+// a title could show one colour on the pill and another on the ring beside it.
+func ratingRingFillColor(avg float64, hexColor string, stops string) color.NRGBA {
 	if hexColor != "" {
 		if c, err := parseHexColor(hexColor); err == nil {
+			return c
+		}
+	}
+	// Empty stops fall through to the bands, so a config that never set them
+	// renders exactly as before.
+	if hex := dynamicAccentHex(avg, stops); hex != "" {
+		if c, err := parseHexColor(hex); err == nil {
 			return c
 		}
 	}

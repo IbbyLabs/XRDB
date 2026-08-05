@@ -46,7 +46,7 @@ func TestRatingRingStyles(t *testing.T) {
 	render := func(avg float64, hex string) *image.NRGBA {
 		card := image.NewNRGBA(image.Rect(0, 0, tile, tile))
 		paintBackdropGradient(card)
-		fill := ratingRingFillColor(avg, hex)
+		fill := ratingRingFillColor(avg, hex, "")
 		label := strconv.Itoa(int(math.Round(avg * 10)))
 		drawProgressRing(card, tile/2, tile/2, outerR, avg/10.0, fill, face, label, 0)
 		return card
