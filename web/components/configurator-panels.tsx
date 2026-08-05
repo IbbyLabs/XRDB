@@ -8,7 +8,7 @@ import {
   LAYOUT_OPTIONS, RATING_OPTIONS, BADGE_STYLE_OPTIONS, BADGE_THEME_OPTIONS, RING_POS_OPTIONS,
   SIDE_LAYOUTS,
 } from './configurator-types';
-import { RatingBadgesFine, ScoreColourFine, RatingRingFine, PILL_PRESENTATIONS, drawsBadgeStrip } from './configurator-fine';
+import { RatingBadgesFine, ScoreColourFine, RatingRingFine, PILL_PRESENTATIONS, drawsBadgeStrip, hasAnyRatingSource } from './configurator-fine';
 
 // ── Template strip ────────────────────────────────────────────────────────────
 
@@ -214,7 +214,7 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
           </>
         )}
 
-        {config.ratings.length > 0 && (
+        {hasAnyRatingSource(config) && (
           <>
             <div className="field">
               <span className="label" id={`${uid}-ring-label`}>Average ring</span>

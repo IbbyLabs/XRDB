@@ -496,6 +496,16 @@ export const PILL_PRESENTATIONS: string[] = ['minimal', 'average', 'dual', 'dual
 export const drawsBadgeStrip = (presentation: string) =>
   presentation === '' || presentation === 'standard';
 
+// A rating source can be chosen on the general list or on any of the per-type
+// lists, and the renderer reads all four. A control gated on the general list
+// alone disappears for a config the backend supports, with nothing on screen
+// saying why. Go answers this with RatingsCandidates; this is the same question.
+export const hasAnyRatingSource = (config: ConfigState) =>
+  config.ratings.length > 0 ||
+  config.ratingsMovie.length > 0 ||
+  config.ratingsSeries.length > 0 ||
+  config.ratingsAnime.length > 0;
+
 // Of those, the ones whose pills carry no label, so an accent colour has no
 // rail to fill and marks the capsule itself.
 const LABELLESS_PRESENTATIONS: string[] = ['minimal', 'dual-minimal'];

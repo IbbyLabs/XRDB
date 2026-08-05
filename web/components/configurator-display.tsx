@@ -8,7 +8,7 @@ import {
   OUTPUT_FORMAT_OPTIONS, TOP_RATED_STYLE_OPTIONS,
   suppressedQualityBadges,
 } from './configurator-types';
-import { QualityFine, GenreFine, AggregateFine, AgeFine, ProvidersFine, TitleLogoFine, ReleaseStatusFine, TrendingFine, ScaleOffsetFields } from './configurator-fine';
+import { QualityFine, GenreFine, AggregateFine, AgeFine, ProvidersFine, TitleLogoFine, ReleaseStatusFine, TrendingFine, ScaleOffsetFields, hasAnyRatingSource } from './configurator-fine';
 
 // An unset position falls back to the top right, matching the renderer.
 function qualityPosLabel(pos: string): string {
@@ -623,7 +623,7 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           )}
         </fieldset>
 
-        {config.ratings.length > 0 && (
+        {hasAnyRatingSource(config) && (
           <>
             <ToggleRow
               label="Aggregate bar"
