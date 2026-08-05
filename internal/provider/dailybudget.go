@@ -1,8 +1,10 @@
 package provider
 
 import (
+	"encoding/json"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -119,4 +121,107 @@ func envInt(name string, fallback, low, high int) int {
 		return fallback
 	}
 	return v
+}
+
+// SIMKL meters per application, so its pool survives our restarts and our count
+// of it must too. Holding spent in memory handed bulk callers a fresh allowance
+// on every deploy, against a pool that had not refilled — so the reserve
+// protected less the more often the service shipped.
+const (
+	dailyBudgetFile  = "daily-budgets.json"
+	dailyBudgetShape = 1
+)
+
+type dailyBudgetSnapshot struct {
+	Shape int `json:"shape"`
+	// Day is the UTC day the counts belong to. A count from an earlier day is
+	// discarded rather than resumed.
+	Day   time.Time      `json:"day"`
+	Spent map[string]int `json:"spent"`
+}
+
+var dailyBudgetPath struct {
+	mu   sync.Mutex
+	path string
+}
+
+// SetDailyBudgetPath points the daily counters at a file and resumes today's
+// count from it. A count stored under an earlier day is dropped.
+func SetDailyBudgetPath(dir string, logger *slog.Logger) {
+	if dir == "" {
+		return
+	}
+	if logger == nil {
+		logger = slog.Default()
+	}
+	path := filepath.Join(dir, dailyBudgetFile)
+	dailyBudgetPath.mu.Lock()
+	dailyBudgetPath.path = path
+	dailyBudgetPath.mu.Unlock()
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			logger.Warn("Could not read the stored daily allowance counts; they restart from zero",
+				"path", path, "error", err)
+		}
+		return
+	}
+	var snap dailyBudgetSnapshot
+	if err := json.Unmarshal(data, &snap); err != nil || snap.Shape != dailyBudgetShape {
+		logger.Warn("Could not use the stored daily allowance counts; they restart from zero",
+			"path", path, "stored_shape", snap.Shape, "error", err)
+		return
+	}
+
+	today := time.Now().UTC().Truncate(dailyWindow)
+	if !snap.Day.UTC().Truncate(dailyWindow).Equal(today) {
+		logger.Info("Discarded daily allowance counts from an earlier day",
+			"stored_day", snap.Day.UTC().Format("2006-01-02"))
+		return
+	}
+	for source, spent := range snap.Spent {
+		b := dailyBudgetFor(source)
+		if b == nil || spent <= 0 {
+			continue
+		}
+		b.mu.Lock()
+		b.rollLocked(b.now())
+		b.spent = spent
+		b.mu.Unlock()
+		logger.Info("Resumed a source's daily allowance count", "source", source, "spent", spent)
+	}
+}
+
+// SaveDailyBudgets writes the counts so a restart resumes the day rather than
+// starting it again.
+func SaveDailyBudgets() error {
+	dailyBudgetPath.mu.Lock()
+	path := dailyBudgetPath.path
+	dailyBudgetPath.mu.Unlock()
+	if path == "" {
+		return nil
+	}
+
+	now := time.Now().UTC().Truncate(dailyWindow)
+	spent := make(map[string]int)
+	for source, b := range dailyBudgets() {
+		b.mu.Lock()
+		b.rollLocked(b.now())
+		spent[source] = b.spent
+		b.mu.Unlock()
+	}
+
+	data, err := json.Marshal(dailyBudgetSnapshot{Shape: dailyBudgetShape, Day: now, Spent: spent})
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return err
+	}
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, data, 0o644); err != nil {
+		return err
+	}
+	return os.Rename(tmp, path)
 }

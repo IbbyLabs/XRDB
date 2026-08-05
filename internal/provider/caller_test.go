@@ -2,6 +2,11 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
+	"io"
+	"log/slog"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -113,3 +118,83 @@ func TestSourceWithoutADailyAllowanceIsReachable(t *testing.T) {
 	}
 	dailyBudgetFor("tmdb").spend() // must not panic
 }
+
+// The reserve is only protection if the day's count survives a deploy. SIMKL
+// meters per application, so its pool does not reset when we restart and ours
+// must not either.
+//
+// The assertion is the refusal, not the number: a test that only checks the
+// count reloads passes even if the reserve is never consulted afterwards.
+func TestABulkCallerIsStillRefusedAfterARestart(t *testing.T) {
+	dir := t.TempDir()
+	SetDailyBudgetPath(dir, quietProviderLogger())
+
+	b := dailyBudgetFor("simkl")
+	if b == nil {
+		t.Fatal("simkl has no daily budget")
+	}
+	t.Cleanup(func() {
+		b.mu.Lock()
+		b.spent, b.inReserve = 0, false
+		b.mu.Unlock()
+	})
+
+	// Spend past the reserve, so a bulk caller is refused.
+	b.mu.Lock()
+	b.rollLocked(b.now())
+	b.spent = b.limit - b.reserve + 1
+	spentBefore := b.spent
+	b.mu.Unlock()
+	if b.allowsBulk() {
+		t.Fatal("a bulk caller was allowed past the reserve, so the test proves nothing")
+	}
+	if err := SaveDailyBudgets(); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+
+	// The restart: the count goes back to zero exactly as a new process starts.
+	b.mu.Lock()
+	b.spent, b.inReserve, b.day = 0, false, time.Time{}
+	b.mu.Unlock()
+	if !b.allowsBulk() {
+		t.Fatal("a fresh counter refuses bulk callers, so reloading cannot be what does it")
+	}
+
+	SetDailyBudgetPath(dir, quietProviderLogger())
+	if b.allowsBulk() {
+		t.Errorf("a bulk caller was allowed after a restart; the day's count did not resume (was %d)", spentBefore)
+	}
+}
+
+// A count from an earlier day is not resumed, or a quiet night would carry
+// yesterday's spend into a fresh allowance.
+func TestYesterdaysCountIsNotResumed(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, dailyBudgetFile)
+	stale := dailyBudgetSnapshot{
+		Shape: dailyBudgetShape,
+		Day:   time.Now().UTC().Add(-48 * time.Hour).Truncate(dailyWindow),
+		Spent: map[string]int{"simkl": 9000},
+	}
+	data, _ := json.Marshal(stale)
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	b := dailyBudgetFor("simkl")
+	b.mu.Lock()
+	b.spent, b.inReserve = 0, false
+	b.mu.Unlock()
+	t.Cleanup(func() {
+		b.mu.Lock()
+		b.spent, b.inReserve = 0, false
+		b.mu.Unlock()
+	})
+
+	SetDailyBudgetPath(dir, quietProviderLogger())
+	if !b.allowsBulk() {
+		t.Error("yesterday's count was resumed into today's allowance")
+	}
+}
+
+func quietProviderLogger() *slog.Logger { return slog.New(slog.NewTextHandler(io.Discard, nil)) }

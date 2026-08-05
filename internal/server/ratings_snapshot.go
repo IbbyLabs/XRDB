@@ -45,6 +45,9 @@ func StartSIMKLIDCacheSnapshots(ctx context.Context, simkl *provider.SIMKL, logg
 			"ids_held", st.IDs, "misses_held", st.Misses,
 			"answered_from_cache", st.Hits, "answered_as_no_match", st.NoMatch,
 			"searches_sent", st.Searches)
+		if err := provider.SaveDailyBudgets(); err != nil {
+			logger.Warn("Could not write the daily allowance counts", "error", err)
+		}
 		return simkl.SaveIDCache()
 	})
 }

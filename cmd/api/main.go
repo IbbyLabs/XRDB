@@ -195,6 +195,9 @@ func main() {
 		// on every restart.
 		if simkl, ok := reg.Get("simkl").(*provider.SIMKL); ok && simkl != nil {
 			simkl.SetIDCachePath(cfg.CacheDir, logger)
+			// SIMKL meters per application, so the day's count has to survive a
+			// restart or every deploy hands bulk callers a fresh allowance.
+			provider.SetDailyBudgetPath(cfg.CacheDir, logger)
 			simklProvider = simkl
 		}
 		// Lets the genre badge tell anime apart from animation generally. The
