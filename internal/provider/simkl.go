@@ -46,9 +46,47 @@ type SIMKL struct {
 
 // simklIDMissTTL is how long a title SIMKL has no entry for is left alone. A
 // miss re-searched on every render never settles, and a sweep walks exactly the
-// obscure and newly-released titles SIMKL is least likely to carry. It expires
-// because SIMKL may add the title later.
-const simklIDMissTTL = 7 * 24 * time.Hour
+// obscure and newly-released titles SIMKL is least likely to carry. One day is
+// SIMKL's own figure, and it bounds how long a title they add stays invisible.
+const simklIDMissTTL = 24 * time.Hour
+
+// SIMKL asks every request to name the application and its version and to carry
+// a user agent, alongside the client id.
+const simklAppName = "xrdb"
+
+var simklAppVersion atomic.Pointer[string]
+
+// SetSIMKLAppVersion records the running version for SIMKL's app-version
+// parameter and user agent.
+func SetSIMKLAppVersion(v string) {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return
+	}
+	simklAppVersion.Store(&v)
+}
+
+func simklVersion() string {
+	if p := simklAppVersion.Load(); p != nil {
+		return *p
+	}
+	return "0"
+}
+
+// simklAppParams are appended to every SIMKL URL.
+func simklAppParams() string {
+	return "&app-name=" + simklAppName + "&app-version=" + url.QueryEscape(simklVersion())
+}
+
+// simklRequest builds a SIMKL request carrying the user agent they asked for.
+func simklRequest(ctx context.Context, u string) (*http.Request, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", "XRDB/"+simklVersion())
+	return req, nil
+}
 
 // simklIDCacheMax bounds the id cache. Reached in practice only by a library
 // far larger than one process serves.
@@ -167,9 +205,11 @@ func (s *SIMKL) fetchSegment(ctx context.Context, segment, simklID, origID strin
 	if s.baseURL != "" {
 		base = s.baseURL
 	}
-	u := fmt.Sprintf("%s/%s/%s?client_id=%s&extended=full",
-		base, segment, simklID, url.QueryEscape(s.cred(ctx)))
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+	// extended=full is not sent: SIMKL's CDN copy already carries every field
+	// parsed here, and the parameter only creates a second cache key for it.
+	u := fmt.Sprintf("%s/%s/%s?client_id=%s%s",
+		base, segment, simklID, url.QueryEscape(s.cred(ctx)), simklAppParams())
+	req, err := simklRequest(ctx, u)
 	if err != nil {
 		return nil, fmt.Errorf("simkl: build request: %w", err)
 	}
@@ -327,9 +367,9 @@ func (s *SIMKL) fetchIDByIMDB(ctx context.Context, imdbID string) (string, error
 	if s.baseURL != "" {
 		base = s.baseURL
 	}
-	u := fmt.Sprintf("%s/search/id?client_id=%s&imdb=%s",
-		base, url.QueryEscape(s.cred(ctx)), imdbID)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u, nil)
+	u := fmt.Sprintf("%s/search/id?client_id=%s&imdb=%s%s",
+		base, url.QueryEscape(s.cred(ctx)), imdbID, simklAppParams())
+	req, err := simklRequest(ctx, u)
 	if err != nil {
 		return "", fmt.Errorf("simkl lookup: build request: %w", err)
 	}
