@@ -578,10 +578,14 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 		textCol = color.NRGBA{R: 244, G: 244, B: 245, A: 245}
 	}
 	if opts.style == "tile" {
+		// A tile is a solid borderless plate, whether or not a colour was named.
+		// Deriving it only from the colour left the style identical to glass until
+		// a second setting was found, so picking it appeared to do nothing.
+		chrome.fill = color.NRGBA{R: 22, G: 24, B: 30, A: 235}
+		chrome.border = color.NRGBA{}
 		if c, err := parseHexColor(opts.tileColor); opts.tileColor != "" && err == nil {
 			c.A = 235
 			chrome.fill = c
-			chrome.border = color.NRGBA{}
 		}
 	} else if c, err := parseHexColor(opts.tileColor); opts.tileColor != "" && err == nil {
 		// Every bordered style (glass, square, silver) answers the same accent
@@ -1157,9 +1161,9 @@ func genreOptsFromConfig(cfg imageconfig.Config, isAnime bool) genreBadgeOpts {
 		borderColor:      cfg.GenreBadgeBorderColor,
 		borderOpacity:    cfg.GenreBadgeBorderOpacity,
 		borderSourceTint: cfg.GenreBadgeBorderSourceTint,
-		outlineColor: cfg.NoBackgroundBadgeOutlineColor,
-		outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
-		outlineGlow:  cfg.NoBackgroundBadgeOutlineGlow,
+		outlineColor:     cfg.NoBackgroundBadgeOutlineColor,
+		outlineWidth:     cfg.NoBackgroundBadgeOutlineWidth,
+		outlineGlow:      cfg.NoBackgroundBadgeOutlineGlow,
 	}
 }
 
