@@ -199,12 +199,22 @@ func (d *IMDbDataset) Titles() int {
 // without this a long-running container serves whatever it downloaded at start
 // and drifts further from IMDb the longer it stays up.
 func (d *IMDbDataset) StartRefresh(ctx context.Context, every time.Duration, logger *slog.Logger) {
-	if d == nil || every <= 0 {
-		return
-	}
 	if logger == nil {
 		logger = slog.Default()
 	}
+	// A silent return leaves an operator unable to tell a scheduled refresh from
+	// a disabled one from a dataset that is switched off, because all three
+	// produce no output at all until the first interval elapses — a week at the
+	// default.
+	if d == nil {
+		logger.Info("The IMDb dataset is not configured, so no refresh is scheduled")
+		return
+	}
+	if every <= 0 {
+		logger.Info("The IMDb dataset refresh is disabled by a zero interval")
+		return
+	}
+	logger.Info("Scheduled the IMDb dataset refresh", "every", every.String())
 	go func() {
 		ticker := time.NewTicker(every)
 		defer ticker.Stop()

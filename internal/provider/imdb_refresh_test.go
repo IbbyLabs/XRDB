@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -175,3 +176,45 @@ func TestStartRefreshIgnoresAZeroInterval(t *testing.T) {
 }
 
 func quietDatasetLogger() *slog.Logger { return slog.New(slog.NewTextHandler(io.Discard, nil)) }
+
+// capture returns a logger writing into buf, for asserting on what was said.
+func capture(buf *strings.Builder) *slog.Logger {
+	return slog.New(slog.NewTextHandler(buf, nil))
+}
+
+// A scheduled refresh, a disabled one and a dataset that is switched off all
+// produced the same silence, so an operator could not tell which they had until
+// the first interval elapsed — a week at the default.
+func TestStartRefreshSaysWhatItDid(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var armed strings.Builder
+	d := NewIMDbDataset(t.TempDir())
+	d.StartRefresh(ctx, time.Hour, capture(&armed))
+	if !strings.Contains(armed.String(), "Scheduled the IMDb dataset refresh") ||
+		!strings.Contains(armed.String(), "1h0m0s") {
+		t.Errorf("arming said: %q", armed.String())
+	}
+
+	// The control: the two silent cases must say something different, or the
+	// assertion above passes for a line printed unconditionally.
+	var off strings.Builder
+	var nilDataset *IMDbDataset
+	nilDataset.StartRefresh(ctx, time.Hour, capture(&off))
+	if !strings.Contains(off.String(), "not configured") {
+		t.Errorf("a dataset that is off said: %q", off.String())
+	}
+	if strings.Contains(off.String(), "Scheduled") {
+		t.Error("a dataset that is off reported a scheduled refresh")
+	}
+
+	var zero strings.Builder
+	NewIMDbDataset(t.TempDir()).StartRefresh(ctx, 0, capture(&zero))
+	if !strings.Contains(zero.String(), "disabled by a zero interval") {
+		t.Errorf("a zero interval said: %q", zero.String())
+	}
+	if strings.Contains(zero.String(), "Scheduled") {
+		t.Error("a zero interval reported a scheduled refresh")
+	}
+}
