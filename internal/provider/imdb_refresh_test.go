@@ -8,7 +8,9 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
+	"time"
 )
 
 // gzTSV builds a ratings dataset body with one title at the given rating.
@@ -100,10 +102,76 @@ func TestAFailedRefreshKeepsTheOldIndexServing(t *testing.T) {
 	}
 }
 
-// An interval of zero turns the rebuild off rather than spinning.
-func TestStartRefreshIgnoresAZeroInterval(t *testing.T) {
+// The defect being fixed was unreachable code: an age check that was correct,
+// tested, and never called again after the first lookup. A test suite that
+// drives refresh directly would leave that same hole one level up — the ticker
+// could never fire and nothing would notice.
+func TestTheTimerRebuildsWithoutBeingCalled(t *testing.T) {
+	var mu sync.Mutex
+	rating := "9.3"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		body := gzTSV(t, rating)
+		mu.Unlock()
+		_, _ = w.Write(body)
+	}))
+	defer srv.Close()
+
 	d := NewIMDbDataset(t.TempDir())
+	d.httpClient = srv.Client()
+	d.ratingsURL = srv.URL
+	if got := ratingOf(t, d); got != 9.3 {
+		t.Fatalf("first load gave %v, want 9.3", got)
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	d.StartRefresh(ctx, 0, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	d.StartRefresh(ctx, 5*time.Millisecond, quietDatasetLogger())
+
+	mu.Lock()
+	rating = "8.1"
+	mu.Unlock()
+
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		if ratingOf(t, d) == 8.1 {
+			return
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	t.Error("the index never rebuilt on its own; the timer does not reach refresh")
 }
+
+// An interval of zero turns the rebuild off rather than spinning, and must not
+// rebuild on its own.
+func TestStartRefreshIgnoresAZeroInterval(t *testing.T) {
+	var mu sync.Mutex
+	rating := "9.3"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		body := gzTSV(t, rating)
+		mu.Unlock()
+		_, _ = w.Write(body)
+	}))
+	defer srv.Close()
+
+	d := NewIMDbDataset(t.TempDir())
+	d.httpClient = srv.Client()
+	d.ratingsURL = srv.URL
+	_ = ratingOf(t, d)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	d.StartRefresh(ctx, 0, quietDatasetLogger())
+
+	mu.Lock()
+	rating = "8.1"
+	mu.Unlock()
+	time.Sleep(50 * time.Millisecond)
+
+	if got := ratingOf(t, d); got != 9.3 {
+		t.Errorf("a zero interval rebuilt anyway: the index now serves %v", got)
+	}
+}
+
+func quietDatasetLogger() *slog.Logger { return slog.New(slog.NewTextHandler(io.Discard, nil)) }
