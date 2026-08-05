@@ -31,11 +31,10 @@ type SIMKL struct {
 	httpClient *http.Client
 	// idCache maps an IMDb id to its SIMKL id. The mapping is fixed, so it is
 	// kept across restarts; see simkl_idcache.go.
-	idCache     map[string]string
+	// store is the backing database. The in-memory maps below are gone: an id
+	// map that only grows must not be held whole in a 768 MB process.
+	store       *simklIDStore
 	idCachePath string
-	// idMisses records titles SIMKL has no entry for. Unlike a resolved id this
-	// is not permanent, so it carries the time it was recorded and expires.
-	idMisses map[string]time.Time
 	// nowFn is swapped in tests so no test waits on a real clock.
 	nowFn func() time.Time
 
@@ -46,12 +45,12 @@ type SIMKL struct {
 
 // simklIDMissTTL is how long a title SIMKL has no entry for is left alone. A
 // miss re-searched on every render never settles, and a sweep walks exactly the
-// obscure and newly-released titles SIMKL is least likely to carry. One day is
-// SIMKL's own figure, and it bounds how long a title they add stays invisible.
+// obscure and newly-released titles the source is least likely to carry. A day
+// bounds how long a title added upstream stays invisible here.
 const simklIDMissTTL = 24 * time.Hour
 
-// SIMKL asks every request to name the application and its version and to carry
-// a user agent, alongside the client id.
+// Requests carry the application name, its version and a user agent alongside
+// the client id.
 const simklAppName = "xrdb"
 
 var simklAppVersion atomic.Pointer[string]
@@ -88,15 +87,6 @@ func simklRequest(ctx context.Context, u string) (*http.Request, error) {
 	return req, nil
 }
 
-// simklIDCacheMax bounds the id cache. Reached in practice only by a library
-// far larger than one process serves.
-const simklIDCacheMax = 50_000
-
-// simklIDCacheEvict is how much of the cache is dropped once it is full. The
-// mapping is never invalid, so the only reason to drop any of it is size, and
-// clearing it wholesale threw away every resolution one insert too late.
-const simklIDCacheEvict = simklIDCacheMax / 10
-
 // UpdateCredentials swaps the live credential so a value saved in the UI takes
 // effect without a restart.
 func (s *SIMKL) UpdateCredentials(clientID string) {
@@ -125,6 +115,8 @@ func NewSIMKL(clientID string) *SIMKL {
 	return &SIMKL{
 		clientID:   clientID,
 		httpClient: newHTTPClient("simkl", 10*time.Second),
+		// Replaced by the on-disk store once a cache directory is set.
+		store: openMemorySIMKLIDStore(),
 	}
 }
 
@@ -308,12 +300,9 @@ func (s *SIMKL) now() time.Time {
 // title, recently enough to take its word for it.
 func (s *SIMKL) recentlyMissed(imdbID string) bool {
 	s.mu.RLock()
-	at, ok := s.idMisses[imdbID]
+	store := s.store
 	s.mu.RUnlock()
-	if !ok {
-		return false
-	}
-	if s.now().Sub(at) >= simklIDMissTTL {
+	if !store.missedRecently(imdbID, s.now()) {
 		return false
 	}
 	s.idNoMatch.Add(1)
@@ -322,43 +311,31 @@ func (s *SIMKL) recentlyMissed(imdbID string) bool {
 
 // rememberMiss records that SIMKL has no entry for a title.
 func (s *SIMKL) rememberMiss(imdbID string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.idMisses == nil {
-		s.idMisses = make(map[string]time.Time)
-	}
-	s.idMisses[imdbID] = s.now()
+	s.mu.RLock()
+	store := s.store
+	s.mu.RUnlock()
+	store.rememberMiss(imdbID, s.now())
 }
 
 // cachedID returns a remembered SIMKL id for an IMDb id.
 func (s *SIMKL) cachedID(imdbID string) (string, bool) {
 	s.mu.RLock()
-	defer s.mu.RUnlock()
-	id, ok := s.idCache[imdbID]
+	store := s.store
+	s.mu.RUnlock()
+	id, ok := store.lookup(imdbID)
 	if ok {
 		s.idHits.Add(1)
 	}
 	return id, ok
 }
 
-// rememberID stores a mapping, dropping a slice of the cache once it is full.
-// The mapping is stable, so the only reason to drop entries is size.
+// rememberID stores a mapping. Nothing evicts: an id never changes, the row is
+// a few dozen bytes, and the store is on disk rather than in the heap.
 func (s *SIMKL) rememberID(imdbID, simklID string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.idCache == nil {
-		s.idCache = make(map[string]string, simklIDCacheMax)
-	}
-	if len(s.idCache) >= simklIDCacheMax {
-		dropped := 0
-		for k := range s.idCache {
-			delete(s.idCache, k)
-			if dropped++; dropped >= simklIDCacheEvict {
-				break
-			}
-		}
-	}
-	s.idCache[imdbID] = simklID
+	s.mu.RLock()
+	store := s.store
+	s.mu.RUnlock()
+	store.remember(imdbID, simklID)
 }
 
 func (s *SIMKL) fetchIDByIMDB(ctx context.Context, imdbID string) (string, error) {

@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"net/http"
@@ -145,9 +146,9 @@ func TestAMissIsRememberedAcrossARestartAndThenExpires(t *testing.T) {
 	}
 }
 
-// An expired miss must not be written back out, or the file grows without bound
-// with entries that are already dead.
-func TestAnExpiredMissIsNotPersisted(t *testing.T) {
+// An expired miss must not survive, or the store grows with entries that are
+// already dead and a title added upstream stays invisible.
+func TestAnExpiredMissIsNotKept(t *testing.T) {
 	lookups := 0
 	srv := simklCountingServer(t, false, &lookups)
 	dir := t.TempDir()
@@ -157,33 +158,101 @@ func TestAnExpiredMissIsNotPersisted(t *testing.T) {
 	s.nowFn = func() time.Time { return now }
 	s.SetIDCachePath(dir, quietLogger())
 	_, _ = s.Fetch(context.Background(), "movie", "tt9999999")
+	if s.IDCacheStats().Misses != 1 {
+		t.Fatalf("the miss was not recorded, so its expiry proves nothing")
+	}
 
 	s.nowFn = func() time.Time { return now.Add(simklIDMissTTL + time.Hour) }
 	if err := s.SaveIDCache(); err != nil {
 		t.Fatalf("save: %v", err)
 	}
-
-	raw, err := os.ReadFile(filepath.Join(dir, simklIDCacheFile))
-	if err != nil {
-		t.Fatalf("read: %v", err)
-	}
-	if strings.Contains(string(raw), "tt9999999") {
-		t.Error("an expired miss was written to disk")
+	if got := s.IDCacheStats().Misses; got != 0 {
+		t.Errorf("%d expired misses are still stored", got)
 	}
 }
 
-// Filling the cache must not throw away every resolution, which is what clearing
-// it wholesale did one insert too late.
-func TestAFullIDCacheKeepsMostOfWhatItHas(t *testing.T) {
+// Nothing evicts. An id never changes, so a resolution dropped is a search paid
+// for twice, and the store is on disk rather than in the heap.
+func TestNoResolutionIsEverEvicted(t *testing.T) {
 	s := NewSIMKL("cid")
-	for i := 0; i < simklIDCacheMax; i++ {
-		s.rememberID("tt"+strconv.Itoa(i), "1")
+	s.SetIDCachePath(t.TempDir(), quietLogger())
+
+	const n = 5000
+	for i := 0; i < n; i++ {
+		s.rememberID("tt"+strconv.Itoa(i), strconv.Itoa(i))
 	}
-	if got := len(s.idCache); got != simklIDCacheMax {
-		t.Fatalf("the cache holds %d before the bound, want %d", got, simklIDCacheMax)
+	if got := s.IDCacheStats().IDs; got != n {
+		t.Fatalf("the store holds %d of %d resolutions", got, n)
 	}
-	s.rememberID("tt-one-more", "1")
-	if got := len(s.idCache); got <= simklIDCacheMax/2 {
-		t.Errorf("one insert past the bound dropped the cache to %d entries", got)
+	// The first one written is still there, which is the entry an eviction
+	// scheme would have taken.
+	if id, ok := s.cachedID("tt0"); !ok || id != "0" {
+		t.Errorf("the oldest resolution was lost: %q %v", id, ok)
+	}
+}
+
+// The store replaced a JSON file. Whatever an older release left behind has to
+// come across, or the first start after the upgrade re-searches everything.
+func TestTheOldJSONFileIsMigrated(t *testing.T) {
+	lookups := 0
+	srv := simklCountingServer(t, true, &lookups)
+	dir := t.TempDir()
+
+	snap := simklIDSnapshot{
+		Shape:  simklIDCacheShape,
+		IDs:    map[string]string{"tt0111161": "12345"},
+		Misses: map[string]time.Time{"tt9999999": time.Now()},
+	}
+	data, _ := json.Marshal(snap)
+	if err := os.WriteFile(filepath.Join(dir, simklIDCacheFile), data, 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	s := simklAgainst(srv)
+	s.SetIDCachePath(dir, quietLogger())
+
+	if st := s.IDCacheStats(); st.IDs != 1 || st.Misses != 1 {
+		t.Fatalf("migration brought across %d ids and %d misses, want 1 and 1", st.IDs, st.Misses)
+	}
+	// The check that matters is the search count, not the row count: rows that
+	// nothing reads would satisfy the assertion above.
+	if _, err := s.Fetch(context.Background(), "movie", "tt0111161"); err != nil {
+		t.Fatalf("fetch: %v", err)
+	}
+	if lookups != 0 {
+		t.Errorf("a migrated id was searched for anyway: %d searches", lookups)
+	}
+	// And the old file is out of the way, so it is not read again.
+	if _, err := os.Stat(filepath.Join(dir, simklIDCacheFile)); !os.IsNotExist(err) {
+		t.Error("the old JSON file is still in place after migration")
+	}
+}
+
+// The property the whole store exists for, asserted on searches rather than on
+// rows: a title resolved before a restart is not searched for again after one.
+func TestAResolvedIDSurvivesARestartInTheStore(t *testing.T) {
+	lookups := 0
+	srv := simklCountingServer(t, true, &lookups)
+	dir := t.TempDir()
+
+	first := simklAgainst(srv)
+	first.SetIDCachePath(dir, quietLogger())
+	if _, err := first.Fetch(context.Background(), "movie", "tt0111161"); err != nil {
+		t.Fatalf("first fetch: %v", err)
+	}
+	if lookups != 1 {
+		t.Fatalf("the first fetch made %d searches, want 1", lookups)
+	}
+
+	second := simklAgainst(srv) // a new process
+	second.SetIDCachePath(dir, quietLogger())
+	if _, err := second.Fetch(context.Background(), "movie", "tt0111161"); err != nil {
+		t.Fatalf("fetch after restart: %v", err)
+	}
+	if lookups != 1 {
+		t.Errorf("searches_sent climbed for a title already known: %d", lookups)
+	}
+	if st := second.IDCacheStats(); st.Hits == 0 {
+		t.Error("the answer did not come from the store")
 	}
 }
