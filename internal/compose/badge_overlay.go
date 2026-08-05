@@ -24,6 +24,7 @@ type tileChrome struct {
 	fill        color.NRGBA
 	border      color.NRGBA // zero alpha = no border
 	borderWidth int         // px; 0/1 = single hairline
+	borderGlow  bool        // bloom the border outward instead of a hard edge
 	shadow      color.NRGBA // zero alpha = no shadow
 }
 
@@ -44,15 +45,35 @@ func drawSoftTile(base *image.NRGBA, r image.Rectangle, radius int, ch tileChrom
 		fillRoundedRect(base, r, radius, ch.fill)
 	}
 	if ch.border.A > 0 {
-		bw := maxInt(1, ch.borderWidth)
-		// Thicken inward with concentric 1px strokes so corners stay rounded.
-		for i := 0; i < bw; i++ {
-			rr := r.Inset(i)
-			if rr.Dx() <= 0 || rr.Dy() <= 0 {
-				break
+		strokeRoundedBorder(base, r, radius, ch.borderWidth, ch.border, ch.borderGlow)
+	}
+}
+
+// strokeBloomRings is how far a bloomed border reaches beyond its own edge.
+const strokeBloomRings = 4
+
+// strokeRoundedBorder draws a rounded-rect border, thickening inward with
+// concentric 1px strokes so the corners stay rounded. A bloom adds fainter
+// strokes outward from the edge, so a tinted border reads as a halo around the
+// badge rather than a thicker line.
+func strokeRoundedBorder(dst *image.NRGBA, r image.Rectangle, radius, width int, col color.NRGBA, bloom bool) {
+	if bloom {
+		for i := 1; i <= strokeBloomRings; i++ {
+			d := float64(i) / float64(strokeBloomRings+1)
+			c := col
+			c.A = uint8(float64(col.A) * (1 - d) * 0.55)
+			if c.A == 0 {
+				continue
 			}
-			drawRectBorder(base, rr, maxInt(0, radius-i), ch.border)
+			drawRectBorder(dst, r.Inset(-i), radius+i, c)
 		}
+	}
+	for i := 0; i < maxInt(1, width); i++ {
+		rr := r.Inset(i)
+		if rr.Dx() <= 0 || rr.Dy() <= 0 {
+			break
+		}
+		drawRectBorder(dst, rr, maxInt(0, radius-i), col)
 	}
 }
 

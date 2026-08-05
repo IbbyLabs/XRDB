@@ -714,6 +714,7 @@ type badgeChrome struct {
 	outline      color.NRGBA
 	outlineWidth int
 	outlineGlow  bool
+	borderGlow   bool
 	// hideAccentBar suppresses the leading accent stripe for styles that have
 	// no tile for it to sit against; the provider colour goes on the mark.
 	hideAccentBar bool
@@ -773,6 +774,7 @@ func chromeFor(cfg imageconfig.Config) badgeChrome {
 	}
 	c.hideIcon = cfg.RatingIconHidden
 	c.borderSourceTint = cfg.RatingBadgeBorderSourceTint
+	c.borderGlow = cfg.RatingBadgeBorderGlow
 	c.hideStackRail = cfg.StackedLineHidden
 	switch cfg.BadgeStyle {
 	case imageconfig.BadgeSquare:
@@ -950,15 +952,7 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 			if chrome.borderSourceTint && sp.accent.A > 0 {
 				border = color.NRGBA{R: sp.accent.R, G: sp.accent.G, B: sp.accent.B, A: border.A}
 			}
-			// Thicken inward with concentric strokes so the corners stay rounded,
-			// as the genre plate does.
-			for i := 0; i < maxInt(1, chrome.borderWidth); i++ {
-				rr := bRect.Inset(i)
-				if rr.Dx() <= 0 || rr.Dy() <= 0 {
-					break
-				}
-				drawRectBorder(out, rr, maxInt(0, radius-i), border)
-			}
+			strokeRoundedBorder(out, bRect, radius, chrome.borderWidth, border, chrome.borderGlow)
 		}
 
 		if chrome.stacked {

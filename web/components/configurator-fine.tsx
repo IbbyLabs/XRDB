@@ -664,6 +664,10 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
         hint="Draws every badge's outline in that site's own colour. On the Tile style this gives the classic outlined chip; on Glass it's a floating coloured ring."
         checked={config.ratingBadgeBorderSourceTint}
         onChange={() => onUpdate('ratingBadgeBorderSourceTint', !config.ratingBadgeBorderSourceTint)} />
+      <ToggleField id={`${uid}-badge-border-glow`} label="Bloom the badge outline"
+        hint="Fades the outline outward instead of a hard edge, so a source-tinted border reads as a halo around the badge."
+        checked={config.ratingBadgeBorderGlow}
+        onChange={() => onUpdate('ratingBadgeBorderGlow', !config.ratingBadgeBorderGlow)} />
       <NumField id={`${uid}-badge-border-op`} label="Badge outline opacity (%)" value={config.ratingBadgeBorderOpacity}
         onChange={v => onUpdate('ratingBadgeBorderOpacity', v)} min={5} max={100} step={5} placeholder="solid" />
       <StyleGrid
