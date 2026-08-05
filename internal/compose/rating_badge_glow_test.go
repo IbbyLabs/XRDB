@@ -23,9 +23,27 @@ func plainRatingBadge(glow bool) *image.NRGBA {
 	return img
 }
 
+// Asserted by magnitude rather than by inequality. A single changed subpixel
+// satisfies "not identical" while leaving the setting invisible, which is the
+// state this whole item exists to end.
 func TestTheGlowSettingReachesTheRatingBadge(t *testing.T) {
-	if identical(plainRatingBadge(false), plainRatingBadge(true)) {
-		t.Error("the glow setting does not change the rating badge outline")
+	hard, glow := plainRatingBadge(false), plainRatingBadge(true)
+	maxDiff, changed := 0, 0
+	for i := range hard.Pix {
+		d := int(hard.Pix[i]) - int(glow.Pix[i])
+		if d < 0 {
+			d = -d
+		}
+		if d > maxDiff {
+			maxDiff = d
+		}
+		if d > 12 {
+			changed++
+		}
+	}
+	if maxDiff < 40 || changed < 100 {
+		t.Errorf("the glow barely reaches the rating badge: max channel diff %d over %d subpixels",
+			maxDiff, changed)
 	}
 }
 
