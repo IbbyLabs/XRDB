@@ -218,6 +218,9 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 		if err != nil {
 			return nil, err
 		}
+		// Counted here rather than at the call site so retries and refusals are
+		// charged too. The allowance meters requests, not answers.
+		dailyBudgetFor(t.source).spend()
 		// An owner-keyed render carries a foreign credential with its own
 		// allowance. Its rate-limit headers describe that key, not the server's,
 		// so feeding them to the shared governor would pace every other render

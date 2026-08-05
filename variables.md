@@ -108,6 +108,20 @@ than stopping.
 | `XRDB_MDBLIST_MAX_RPS` | `5` | Ceiling on the paced rate. Self-imposed rather than published: MDBList documents a daily allowance and no per-second rate, but its edge protection answers a fast burst with a 429. |
 | `XRDB_MDBLIST_BURST` | `30` | How many requests may go out at once before pacing applies, so a catalogue page of a few dozen titles is not spread over minutes. |
 
+## SIMKL daily allowance
+
+SIMKL meters by the day against the application rather than the key, so every
+caller draws on one pool and the badge disappears for all of them once it is
+spent. XRDB keeps a reserve that only interactive callers may spend. A caller is
+bulk only when it identifies itself as sweeping the catalogue; one that does not
+identify itself counts as interactive, because overspending is visible and a
+missing badge is not.
+
+| Variable | Default | Description |
+|---|---|---|
+| `XRDB_SIMKL_DAILY_LIMIT` | `10000` | The day's allowance. |
+| `XRDB_SIMKL_BULK_RESERVE` | `3000` | How much of the allowance is kept for interactive callers. Setting it to the limit holds bulk callers off SIMKL entirely. |
+
 ## Cache tuning
 
 | Variable | Default | Description |

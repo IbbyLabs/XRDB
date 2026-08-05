@@ -499,6 +499,20 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 		}
 		return nil, fmt.Errorf("%s: rate limited, cooling off: %w", prov.Name(), provider.ErrRateLimited)
 	}
+	// A catalogue sweep draws on the same daily allowance a person's render
+	// needs, and the source answers nobody once it is spent. Bulk callers are
+	// held out of the last of it. This skips the source rather than failing it:
+	// a recorded failure cools the source off for every caller, which is the
+	// outcome the reserve exists to prevent.
+	if !ownerKeyed && provider.CallerClassFrom(ctx) == provider.CallerBulk && !provider.BulkCallerMayReach(prov.Name()) {
+		key := provider.GoodKey(prov.Name(), req.ContentType, req.MediaID)
+		if p.health != nil {
+			if good, ok := p.health.LastGood(prov.Name(), key); ok {
+				return good, nil
+			}
+		}
+		return nil, fmt.Errorf("%s: daily allowance held for interactive callers: %w", prov.Name(), provider.ErrRateLimited)
+	}
 	cacheKey := provider.GoodKey(prov.Name(), req.ContentType, req.MediaID)
 	meta, err := p.ratings.do(ctx, cacheKey, func() (*provider.MediaMeta, bool, error) {
 		m, ferr := p.fetchRatings(ctx, prov, req, artwork)
