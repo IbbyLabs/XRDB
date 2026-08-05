@@ -45,11 +45,21 @@ func StartSIMKLIDCacheSnapshots(ctx context.Context, simkl *provider.SIMKL, logg
 			"ids_held", st.IDs, "misses_held", st.Misses,
 			"answered_from_cache", st.Hits, "answered_as_no_match", st.NoMatch,
 			"searches_sent", st.Searches)
-		if err := provider.SaveDailyBudgets(); err != nil {
-			logger.Warn("Could not write the daily allowance counts", "error", err)
-		}
 		return simkl.SaveIDCache()
 	})
+}
+
+// StartDailyBudgetSnapshots persists the per-source daily allowance counts.
+//
+// Deliberately its own loop rather than riding on the SIMKL one. SIMKL is the
+// only metered source today, so folding it in would work and would quietly
+// stop the moment a second source gained an allowance without a SIMKL provider
+// being configured.
+func StartDailyBudgetSnapshots(ctx context.Context, logger *slog.Logger) {
+	if logger == nil {
+		logger = slog.Default()
+	}
+	startSnapshotLoop(ctx, logger, "the daily allowance counts", provider.SaveDailyBudgets)
 }
 
 // startSnapshotLoop writes a cache out on a timer and once more on shutdown.

@@ -190,14 +190,15 @@ func main() {
 		// Ratings are metered by the request upstream, and one source meters by the
 		// day, so what was already fetched is kept across restarts.
 		pipeline.SetRatingsCachePath(cfg.CacheDir, logger)
+		// A metered source's day is counted per application upstream, so the
+		// count has to survive a restart or every deploy hands bulk callers a
+		// fresh allowance against a pool that has not refilled.
+		provider.SetDailyBudgetPath(cfg.CacheDir, logger)
 		// SIMKL's search endpoint is not cached upstream and a resolved id never
 		// changes, so the mappings are kept permanently rather than re-searched
 		// on every restart.
 		if simkl, ok := reg.Get("simkl").(*provider.SIMKL); ok && simkl != nil {
 			simkl.SetIDCachePath(cfg.CacheDir, logger)
-			// SIMKL meters per application, so the day's count has to survive a
-			// restart or every deploy hands bulk callers a fresh allowance.
-			provider.SetDailyBudgetPath(cfg.CacheDir, logger)
 			simklProvider = simkl
 		}
 		// Lets the genre badge tell anime apart from animation generally. The
@@ -260,6 +261,7 @@ func main() {
 	server.StartCacheWarmSchedule(scheduleCtx, cfg, pipeline, renderCache, logger)
 	server.StartRatingsCacheSnapshots(scheduleCtx, pipeline, logger)
 	server.StartSIMKLIDCacheSnapshots(scheduleCtx, simklProvider, logger)
+	server.StartDailyBudgetSnapshots(scheduleCtx, logger)
 	// The dataset's own age check only ever runs on the first Fetch, so without
 	// this a long-running container serves what it downloaded at startup.
 	imdbRefresher.StartRefresh(scheduleCtx, cfg.IMDbRefresh, logger)
