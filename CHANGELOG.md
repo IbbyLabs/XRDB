@@ -2,6 +2,19 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.66.0](https://github.com/IbbyLabs/XRDB/compare/v3.65.1...v3.66.0) (2026-08-05)
+
+
+### Added
+
+* **genres:** Sci-Fantasy family for the unsettled compound (FR-163) ([42fae72](https://github.com/IbbyLabs/XRDB/commit/42fae723e403cab48913ca659b117bb7c6745fa0))
+* **genres:** the sword-rocket glyph for Sci-Fantasy (FR-163) ([4362ebc](https://github.com/IbbyLabs/XRDB/commit/4362ebc3707c39f68bb4d3ec8b830a18d1cc099f))
+
+
+### Fixed
+
+* **agerating:** tile no longer needs a colour to differ (BUG-212) ([3297cad](https://github.com/IbbyLabs/XRDB/commit/3297cadd4e032cdcae6dd551328340cd4cf09309))
+
 ## [3.65.1](https://github.com/IbbyLabs/XRDB/compare/v3.65.0...v3.65.1) (2026-08-04)
 
 
