@@ -759,6 +759,13 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	result.ContributingProviders = append([]string{string(req.Config.ArtworkSource)}, ratingProviders...)
 	result.Degraded = degraded
 	result.DegradedSources = degradedSources
+	// A held-out source keeps its place in the strip so the gap is visible.
+	// Kept out of allRatings deliberately: that list feeds the average, the
+	// ring and the score bar, and a placeholder carries no score to average.
+	stripRatings := allRatings
+	for _, name := range degradedSources {
+		stripRatings = append(stripRatings, provider.Rating{Source: name, Unavailable: true})
+	}
 	if animeKnown {
 		meta.IsAnime = isAnime
 	} else {
@@ -785,7 +792,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		// rating/age overlays sit beneath the wordmark instead of cropping it.
 		// The logo is still letterboxed, never cover-cropped.
 		logoH := dim.Height
-		if band := ratingsBandHeight(dim.Width, dim.Height, allRatings, req.Config, facts); band > 0 {
+		if band := ratingsBandHeight(dim.Width, dim.Height, stripRatings, req.Config, facts); band > 0 {
 			if maxBand := dim.Height / 2; band > maxBand {
 				band = maxBand
 			}
@@ -854,7 +861,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		}
 	default:
 		if len(allRatings) > 0 && len(req.Config.Ratings) > 0 {
-			ratingsH = drawBadgesInPlace(composed, allRatings, req.Config, facts)
+			ratingsH = drawBadgesInPlace(composed, stripRatings, req.Config, facts)
 		}
 	}
 	if ratingsH > 0 {

@@ -88,6 +88,11 @@ type Rating struct {
 	Value  float64 // normalized 0–10
 	Votes  int     // vote count, 0 if unavailable
 	Label  string  // display string, e.g. "8.4"
+	// Unavailable marks a source that was wanted and held out, rather than one
+	// with no rating for the title. It carries no value and must never reach an
+	// average; it exists so the badge can say the source is unreachable instead
+	// of vanishing and reading as "this title has no score".
+	Unavailable bool
 }
 
 // Provider is the interface all metadata providers must satisfy.

@@ -880,9 +880,12 @@ func chromeFor(cfg imageconfig.Config) badgeChrome {
 
 // badgeSpec holds pre-computed layout info for a single rating badge.
 type badgeSpec struct {
-	value string
-	valW  int
-	icon  image.Image
+	// unavailable draws the X in place of a value: the source was wanted and
+	// held out, rather than having no rating for this title.
+	unavailable bool
+	value       string
+	valW        int
+	icon        image.Image
 	// colored marks an icon that carries its own brand colors, so it is drawn
 	// as it is instead of being recolored to match the badge.
 	colored bool
@@ -939,14 +942,20 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 
 	for _, sp := range specs {
 		bRect := image.Rect(sp.x, y, sp.x+sp.w, y+innerH)
-		if chrome.bg.A > 0 {
+		bg, borderCol := chrome.bg, chrome.border
+		if sp.unavailable {
+			// The plate recedes without disappearing. Gone entirely reads as a
+			// rendering fault, which is the impression this exists to remove.
+			bg, borderCol = dimmed(bg, unavailableDim), dimmed(borderCol, unavailableDim)
+		}
+		if bg.A > 0 {
 			if chrome.blendFill {
-				blendRoundedRectSquared(out, bRect, radius, chrome.squared, chrome.bg)
+				blendRoundedRectSquared(out, bRect, radius, chrome.squared, bg)
 			} else {
-				fillRoundedRectSquared(out, bRect, radius, chrome.squared, chrome.bg)
+				fillRoundedRectSquared(out, bRect, radius, chrome.squared, bg)
 			}
 		}
-		if border := chrome.border; border.A > 0 {
+		if border := borderCol; border.A > 0 {
 			// Tinted per source, the outline reads as that site's badge rather
 			// than one anonymous row.
 			if chrome.borderSourceTint && sp.accent.A > 0 {
@@ -999,7 +1008,12 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 		if chrome.borderSourceTint && sp.accent.A > 0 && outlineCol.A > 0 {
 			outlineCol = color.NRGBA{R: sp.accent.R, G: sp.accent.G, B: sp.accent.B, A: outlineCol.A}
 		}
-		if outlineCol.A > 0 && chrome.outlineWidth > 0 {
+		if sp.unavailable {
+			// The mark is left at full strength; it is what says which site is
+			// unavailable rather than that something failed to draw.
+			box := image.Rect(contentX, y+innerH/4, contentX+sp.valW, y+innerH*3/4)
+			drawUnavailableX(out, box, chrome.valueColor, math.Max(1, float64(innerH)/14))
+		} else if outlineCol.A > 0 && chrome.outlineWidth > 0 {
 			// The same tracer every other background-less badge uses, so the
 			// glow setting reaches this one too rather than stopping short of it.
 			drawLabelOutlined(out, face, contentX, valY, chrome.valueColor, outlineCol,
@@ -1279,6 +1293,12 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 			value = "N/A"
 		}
 		vw := textWidth(face, value)
+		if r.Unavailable {
+			// No text, but the badge keeps a value-sized box so the strip does
+			// not reflow when a source goes down.
+			value = ""
+			vw = textWidth(face, "8.8")
+		}
 		icon := ratingMark(r, facts)
 		bw := accentW + padX + vw + padX
 		if icon != nil && !chrome.hideIcon {
@@ -1288,6 +1308,7 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 			bw = stackedBadgeWidth(d, vw, chrome.hideIcon)
 		}
 		specs = append(specs, badgeSpec{
+			unavailable:      r.Unavailable,
 			value:            value,
 			valW:             vw,
 			icon:             icon,
