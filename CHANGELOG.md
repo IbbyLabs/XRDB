@@ -2,6 +2,43 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.67.0](https://github.com/IbbyLabs/XRDB/compare/v3.66.0...v3.67.0) (2026-08-05)
+
+
+### Added
+
+* **age-badge:** expose background, border and label styling (FR-164) ([d654068](https://github.com/IbbyLabs/XRDB/commit/d6540685bfdcd5821b7c64d080d3bd8109a5df13))
+* **rating-badge:** add a bloom strength dial (FR-156) ([42a53f6](https://github.com/IbbyLabs/XRDB/commit/42a53f6d12e1d64e406a1f3f9c99ceea4bc9e690))
+* **rating-badge:** bloom the badge outline (FR-156) ([1657158](https://github.com/IbbyLabs/XRDB/commit/1657158b676e2036c5ac0bf6fcc64276f17e630b))
+* **ratings:** a held-out source keeps a dimmed badge (FR-162) ([6dd29d5](https://github.com/IbbyLabs/XRDB/commit/6dd29d5cdcaa9ecc49064485ad235d79b5536f59))
+* **ratings:** the average ring follows the colour stops (FR-166) ([52490f7](https://github.com/IbbyLabs/XRDB/commit/52490f72c33aedd4b4eb10f9081ce911b97bf133))
+* **ratings:** whiten the Roger Ebert thumbs (FR-165) ([1985949](https://github.com/IbbyLabs/XRDB/commit/1985949846ded68211af517989c1f52c6b6079d2))
+
+
+### Fixed
+
+* **configurator:** ring controls follow per-type sources (BUG-216) ([5cb82dc](https://github.com/IbbyLabs/XRDB/commit/5cb82dc6d7d7b2e147e89debc4dc6f91dcf65a8e))
+* **health:** cool a source off per caller class ([71287f6](https://github.com/IbbyLabs/XRDB/commit/71287f686e00017a2ac58a224984fbcc02c0d8a5))
+* **imdb:** rebuild the dataset index while running (FR-167) ([40ab1df](https://github.com/IbbyLabs/XRDB/commit/40ab1df41c4cceab9b667800aa29c0bc1c3e1b9b))
+* **omdb:** report a spent allowance as a rate limit ([28c359c](https://github.com/IbbyLabs/XRDB/commit/28c359cc5adfffc33e24c23035cf7b8dce83516e))
+* **rating-badge:** honour the outline glow setting (FR-156) ([2f5f822](https://github.com/IbbyLabs/XRDB/commit/2f5f822195119f781b18f58b25453a812f059362))
+* **ratings:** expand held-out providers to their rating sources (FR-162) ([0e1387a](https://github.com/IbbyLabs/XRDB/commit/0e1387aa5565afc7eba9228aeab9605d10b9a84d))
+* **ratings:** hold a SIMKL reserve for interactive callers (BUG-215) ([496de0f](https://github.com/IbbyLabs/XRDB/commit/496de0f69f7279961d5a92fca79004405c67b317))
+* **simkl:** keep resolved ids and misses across restarts (BUG-215) ([63a6f7b](https://github.com/IbbyLabs/XRDB/commit/63a6f7baa07bb90a52fc832a2cdf3621071e8cb6))
+* **simkl:** raise the default interactive reserve to 6000 ([d015fad](https://github.com/IbbyLabs/XRDB/commit/d015fad160a4460e6fa572efe5bb7d3e303d8b8b))
+* **simkl:** resume the day's allowance count after a restart ([91d420b](https://github.com/IbbyLabs/XRDB/commit/91d420b7c69422434af4ffecbb658cd7e3cd26bf))
+* **simkl:** send app identity, drop extended, cache a miss for a day ([618eaec](https://github.com/IbbyLabs/XRDB/commit/618eaec5f0b56a8aff6e90915fcc135deb0bf488))
+
+
+### Changed
+
+* **simkl:** persist the allowance count independently (BUG-215) ([78e54e4](https://github.com/IbbyLabs/XRDB/commit/78e54e4a61d46ff64df76a68a1b8f592d448f050))
+
+
+### Documentation
+
+* **configurator:** the ring hint names the score colours ([5747ae5](https://github.com/IbbyLabs/XRDB/commit/5747ae58b1d1612deff89a15bacdb2a0ae1d716b))
+
 ## [3.66.0](https://github.com/IbbyLabs/XRDB/compare/v3.65.1...v3.66.0) (2026-08-05)
 
 
