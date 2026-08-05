@@ -15,7 +15,7 @@ import (
 // holds back a reserve only interactive callers may spend.
 const (
 	simklDefaultDailyLimit  = 10000
-	simklDefaultBulkReserve = 3000
+	simklDefaultBulkReserve = 6000
 )
 
 type dailyBudget struct {

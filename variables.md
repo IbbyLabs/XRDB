@@ -120,7 +120,7 @@ missing badge is not.
 | Variable | Default | Description |
 |---|---|---|
 | `XRDB_SIMKL_DAILY_LIMIT` | `10000` | The day's allowance. |
-| `XRDB_SIMKL_BULK_RESERVE` | `3000` | How much of the allowance is kept for interactive callers. Setting it to the limit holds bulk callers off SIMKL entirely. |
+| `XRDB_SIMKL_BULK_RESERVE` | `6000` | How much of the allowance is kept for interactive callers. Setting it to the limit holds bulk callers off SIMKL entirely. |
 
 ## Cache tuning
 
