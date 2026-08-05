@@ -108,6 +108,18 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 		// fault arrives as a transport error or a non-200 and is counted above.
 		// The exception is the credential: a rejected key fails every title and
 		// is the source's own problem.
+		// A spent allowance is a rate limit, not a bad key, and OMDb reports both
+		// with HTTP 200 in the same envelope it uses for a title it does not
+		// carry. Reported as a plain error it reached none of the machinery that
+		// already exists: never flagged degraded, never cooled off, so the source
+		// is called for the rest of the day achieving nothing. The day it runs
+		// out is the day we would find we could not tell.
+		if omdbAllowanceSpent(result.Error) {
+			return nil, &RateLimitError{
+				Source: "omdb", Status: http.StatusOK,
+				QuotaExhausted: true, RetryAfter: quotaCooldown,
+			}
+		}
 		if omdbKeyRejected(result.Error) {
 			return nil, fmt.Errorf("omdb: API error: %s", result.Error)
 		}
@@ -153,6 +165,14 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 // omdbKeyRejected reports whether an OMDb error message is about the key rather
 // than the title. OMDb returns these with HTTP 200 and Response=False, the same
 // shape it uses for a title it does not carry.
+// omdbAllowanceSpent reports the day's quota being gone, as distinct from the
+// key being wrong. Kept separate from omdbKeyRejected because they need
+// different answers: a spent allowance recovers when the window rolls over, a
+// rejected key never does.
+func omdbAllowanceSpent(msg string) bool {
+	return strings.Contains(strings.ToLower(msg), "request limit")
+}
+
 func omdbKeyRejected(msg string) bool {
 	m := strings.ToLower(msg)
 	return strings.Contains(m, "api key") || strings.Contains(m, "request limit")
