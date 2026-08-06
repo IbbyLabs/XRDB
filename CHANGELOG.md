@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.68.0](https://github.com/IbbyLabs/XRDB/compare/v3.67.1...v3.68.0) (2026-08-06)
+
+
+### Added
+
+* **logging:** record a ratings source that answered at info ([1be863e](https://github.com/IbbyLabs/XRDB/commit/1be863ec0ceec775399c17f87d5f59365f0d419a))
+
+
+### Fixed
+
+* **imdb:** say whether the dataset refresh was scheduled (FR-167) ([2876bf1](https://github.com/IbbyLabs/XRDB/commit/2876bf19ba7444c8622c6adcab9c54a8bc16f123))
+
 ## [3.67.1](https://github.com/IbbyLabs/XRDB/compare/v3.67.0...v3.67.1) (2026-08-05)
 
 
