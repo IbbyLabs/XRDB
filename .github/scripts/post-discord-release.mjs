@@ -7,6 +7,28 @@ const MAX_RELEASE_LOOKUP_ATTEMPTS = Number(process.env.RELEASE_LOOKUP_ATTEMPTS |
 const RELEASE_LOOKUP_DELAY_SECONDS = Number(process.env.RELEASE_LOOKUP_DELAY_SECONDS || 2);
 const MAX_EMBED_FIELD_LENGTH = 1024;
 const MAX_EMBED_DESCRIPTION_LENGTH = 4096;
+// A components message caps the text across every display at 4000, where an
+// embed description alone allowed 4096. The container's own heading, byline,
+// link line and footer come out of the same budget, so a block is split well
+// short of it. Measured: the chrome runs about 300 characters.
+const MAX_PANEL_BLOCK_LENGTH = 3500;
+// What a components message allows across every text display, where an embed
+// description alone allowed 4096.
+const MAX_PANEL_TEXT_LENGTH = 4000;
+
+// The text a components payload actually carries, which is what Discord counts.
+function panelTextLength(node) {
+  if (Array.isArray(node)) {
+    return node.reduce((total, child) => total + panelTextLength(child), 0);
+  }
+  if (!node || typeof node !== 'object') {
+    return 0;
+  }
+  let total = typeof node.content === 'string' ? node.content.length : 0;
+  total += panelTextLength(node.components);
+  total += panelTextLength(node.accessory);
+  return total;
+}
 const MAX_SUMMARY_INTRO_LENGTH = 320;
 const MAX_SUMMARY_SECTION_COUNT = 3;
 const AVATAR_URL = 'https://raw.githubusercontent.com/IbbyLabs/xrdb/main/public/favicon-96x96.png';
@@ -202,6 +224,8 @@ export function resolveDiscordWebhookPostUrl(webhookUrl) {
   try {
     const url = new URL(normalized);
     url.searchParams.set('wait', 'true');
+    // Without this Discord ignores the components array entirely.
+    url.searchParams.set('with_components', 'true');
     return url.toString();
   } catch {
     return normalized;
@@ -700,7 +724,7 @@ function buildContinuationDescriptions(body) {
   const descriptions = [];
 
   if (intro.length > MAX_SUMMARY_INTRO_LENGTH) {
-    descriptions.push(...splitPlainTextIntoBlocks(intro, MAX_EMBED_DESCRIPTION_LENGTH));
+    descriptions.push(...splitPlainTextIntoBlocks(intro, MAX_PANEL_BLOCK_LENGTH));
   }
 
   sections.forEach((section, index) => {
@@ -714,7 +738,7 @@ function buildContinuationDescriptions(body) {
       return;
     }
 
-    descriptions.push(...splitDetailedSectionIntoBlocks(section.title, section.items, MAX_EMBED_DESCRIPTION_LENGTH));
+    descriptions.push(...splitDetailedSectionIntoBlocks(section.title, section.items, MAX_PANEL_BLOCK_LENGTH));
   });
 
   return descriptions;
@@ -786,12 +810,83 @@ function buildLinksField({ releaseUrl, compareUrl, repositoryUrl, packageUrl }) 
   return trimField(lines.join('\n'));
 }
 
+// Components V2. A message carrying this flag has no `content` and no embeds,
+// so the role ping moves inside the container — left in `content` it would be
+// rejected outright, and a mention only notifies with allowed_mentions set too.
+const COMPONENTS_V2_FLAG = 1 << 15;
+
+// A markdown link inside a "##" heading renders as literal text, brackets and
+// URL and all. The heading stays plain and the link goes on its own line.
+function buildReleaseContainer({
+  mention = '',
+  title,
+  titleUrl = '',
+  body = '',
+  fields = [],
+  footer = '',
+  publishedAt = '',
+  repositoryUrl = '',
+  withThumbnail = false,
+}) {
+  const publishedTimestamp = Number.isFinite(Date.parse(publishedAt))
+    ? Math.floor(Date.parse(publishedAt) / 1000)
+    : null;
+
+  const heading = [];
+  if (mention) {
+    heading.push({ type: 10, content: mention });
+  }
+  heading.push({ type: 10, content: `-# [XRDB, eXtended Ratings DataBase](${repositoryUrl})` });
+  heading.push({ type: 10, content: `## ${title}` });
+
+  const children = [];
+  if (withThumbnail) {
+    // A section takes at most three text displays beside its accessory.
+    children.push({
+      type: 9,
+      components: heading.slice(0, 3),
+      accessory: { type: 11, media: { url: AVATAR_URL } },
+    });
+    children.push(...heading.slice(3));
+  } else {
+    children.push(...heading);
+  }
+
+  const intro = [body, titleUrl ? `[View the release](${titleUrl})` : '']
+    .filter(Boolean)
+    .join('\n');
+  if (intro) {
+    children.push({ type: 10, content: intro });
+  }
+
+  const shown = fields.filter((field) => field && field.value);
+  if (shown.length) {
+    children.push({ type: 14 });
+    for (const field of shown) {
+      children.push({ type: 10, content: `**${field.name}**\n${field.value}` });
+    }
+  }
+
+  const footerParts = [footer, publishedTimestamp ? `<t:${publishedTimestamp}:R>` : '']
+    .filter(Boolean)
+    .join(' • ');
+  if (footerParts) {
+    children.push({ type: 14 });
+    children.push({ type: 10, content: `-# ${footerParts}` });
+  }
+
+  return { type: 17, accent_color: DISCORD_EMBED_COLOR, components: children };
+}
+
 export function buildDiscordReleasePayload({
   repository,
   release,
   previousReleaseTag = '',
   isTagFallback = false,
   discordRoleId = '',
+  // A body long enough to split puts its first block here. The section fields
+  // repeat that block, so they are dropped when it is set.
+  bodyOverride = '',
 }) {
   const repositoryUrl = `https://github.com/${repository}`;
   const compareUrl = resolveCompareUrl(repository, release.tag_name, previousReleaseTag);
@@ -841,37 +936,29 @@ export function buildDiscordReleasePayload({
       inline: true,
     },
     ...buildSectionFields(release.body || ''),
-  ].filter((field) => field.value);
+  ].filter((field) => field.value)
+    .filter((field) => !bodyOverride || ['Tag', 'Published', 'Links', 'Summary'].includes(field.name));
 
   return {
-    ...(mentionContent ? { content: mentionContent } : {}),
     username: 'XRDB Releases',
     allowed_mentions: normalizedRoleId
       ? { roles: [normalizedRoleId] }
       : { parse: [] },
-    embeds: [
-      {
-        author: {
-          name: 'XRDB, eXtended Ratings DataBase',
-          url: repositoryUrl,
-          icon_url: AVATAR_URL,
-        },
+    flags: COMPONENTS_V2_FLAG,
+    components: [
+      buildReleaseContainer({
+        mention: mentionContent,
         title: release.name || release.tag_name || 'XRDB Release',
-        url: release.html_url || repositoryUrl,
-        description: isTagFallback
+        titleUrl: release.html_url || repositoryUrl,
+        body: bodyOverride || (isTagFallback
           ? `New XRDB tag published for \`${release.tag_name}\`.`
-          : `New XRDB release published for \`${release.tag_name}\`.`,
-        color: DISCORD_EMBED_COLOR,
-        thumbnail: {
-          url: AVATAR_URL,
-        },
+          : `New XRDB release published for \`${release.tag_name}\`.`),
         fields,
-        footer: {
-          text: `${repository} • ${isTagFallback ? 'tag' : 'release'}`,
-          icon_url: AVATAR_URL,
-        },
-        ...(publishedAt ? { timestamp: publishedAt } : {}),
-      },
+        footer: `${repository} • ${isTagFallback ? 'tag' : 'release'}`,
+        publishedAt,
+        repositoryUrl,
+        withThumbnail: true,
+      }),
     ],
   };
 }
@@ -889,27 +976,21 @@ function buildDiscordContinuationPayloads({ repository, release, descriptions })
   return descriptions.map((description, index) => ({
     username: 'XRDB Releases',
     allowed_mentions: { parse: [] },
-    embeds: [
-      {
-        author: {
-          name: 'XRDB, eXtended Ratings DataBase',
-          url: repositoryUrl,
-          icon_url: AVATAR_URL,
-        },
+    flags: COMPONENTS_V2_FLAG,
+    components: [
+      buildReleaseContainer({
         title: total > 1
           ? `${releaseName} release notes continued ${index + 1}/${total}`
           : `${releaseName} release notes continued`,
-        url: release.html_url || repositoryUrl,
-        description,
-        color: DISCORD_EMBED_COLOR,
-        footer: {
-          text: total > 1
-            ? `${repository} • release notes ${index + 1}/${total}`
-            : `${repository} • release notes`,
-          icon_url: AVATAR_URL,
-        },
-        ...(publishedAt ? { timestamp: publishedAt } : {}),
-      },
+        titleUrl: release.html_url || repositoryUrl,
+        body: description,
+        fields: [],
+        footer: total > 1
+          ? `${repository} • release notes ${index + 1}/${total}`
+          : `${repository} • release notes`,
+        publishedAt,
+        repositoryUrl,
+      }),
     ],
   }));
 }
@@ -921,23 +1002,26 @@ export function buildDiscordReleasePayloads({
   isTagFallback = false,
   discordRoleId = '',
 }) {
-  const summaryPayload = buildDiscordReleasePayload({
+  const descriptions = buildContinuationDescriptions(release.body || '');
+  const build = (bodyOverride) => buildDiscordReleasePayload({
     repository,
     release,
     previousReleaseTag,
     isTagFallback,
     discordRoleId,
+    bodyOverride,
   });
-  const descriptions = buildContinuationDescriptions(release.body || '');
 
-  if (descriptions.length) {
-    const firstEmbed = summaryPayload.embeds?.[0];
-    if (firstEmbed) {
-      firstEmbed.description = descriptions[0];
-      firstEmbed.fields = (Array.isArray(firstEmbed.fields) ? firstEmbed.fields : []).filter((field) =>
-        ['Tag', 'Published', 'Links', 'Summary'].includes(field?.name),
-      );
-    }
+  // The first block rides in the summary panel, which carries more chrome than
+  // a continuation does: a byline, a release link and four fields, all counting
+  // against the same 4000. The blocks are one size, so whether it fits depends
+  // on the tag and release name. Measured rather than assumed; where it does
+  // not fit the block goes out as a continuation instead of being trimmed.
+  let summaryPayload = build(descriptions[0] || '');
+  let folded = Boolean(descriptions[0]);
+  if (folded && panelTextLength(summaryPayload.components) > MAX_PANEL_TEXT_LENGTH) {
+    summaryPayload = build('');
+    folded = false;
   }
 
   return [
@@ -945,7 +1029,7 @@ export function buildDiscordReleasePayloads({
     ...buildDiscordContinuationPayloads({
       repository,
       release,
-      descriptions: descriptions.slice(1),
+      descriptions: folded ? descriptions.slice(1) : descriptions,
     }),
   ];
 }

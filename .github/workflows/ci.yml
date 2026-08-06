@@ -75,6 +75,21 @@ jobs:
       - name: Build
         run: npm run build
 
+  release-notice:
+    name: Release notice
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4.3.0
+        with:
+          node-version: 22
+
+      - name: Test
+        run: node --test .github/scripts/post-discord-release.test.mjs
+
   jellyfin-plugin:
     name: Jellyfin plugin
     runs-on: ubuntu-latest
