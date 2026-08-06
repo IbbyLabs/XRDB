@@ -1513,10 +1513,22 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 			defer wg.Done()
 			started := time.Now()
 			meta, err := p.fetchRatingsResilient(ctx, prov, req, artwork)
-			p.log().DebugContext(ctx, "A ratings source answered",
-				"id", logging.RequestID(ctx), "source", prov.Name(),
-				"media_id", req.MediaID, "took_ms", time.Since(started).Milliseconds(),
-				"ratings", len(ratingsOf(meta)), "error", err)
+			// Info, because a held-out source is only meaningful against the
+			// number of renders that reached the source at all. Without it a
+			// window with no warning is indistinguishable from a window that
+			// asked for nothing. Logged only where the source did answer, so
+			// the count means what its name says.
+			if err != nil {
+				p.log().DebugContext(ctx, "A ratings source did not answer",
+					"id", logging.RequestID(ctx), "source", prov.Name(),
+					"media_id", req.MediaID, "took_ms", time.Since(started).Milliseconds(),
+					"error", err)
+			} else {
+				p.log().InfoContext(ctx, "A ratings source answered",
+					"id", logging.RequestID(ctx), "source", prov.Name(),
+					"media_id", req.MediaID, "took_ms", time.Since(started).Milliseconds(),
+					"ratings", len(ratingsOf(meta)))
+			}
 			if err != nil {
 				// Only a throttled source counts. A scraped source reports "no
 				// match" as an error too, and that is a permanent fact about the
