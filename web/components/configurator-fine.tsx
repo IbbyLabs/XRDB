@@ -989,6 +989,19 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
         The label and the border take their colour separately. Blank leaves each
         following the genre family, which is what one shared accent used to do.
       </p>
+    </FineGroup>
+  );
+}
+
+/**
+ * Outline controls that cross badge families: the plain-style text outline, the
+ * score pill's accent width, and the rating logo trace. They are rendered
+ * outside any badge's own toggle, since each reaches badges other than the one
+ * it would otherwise sit under.
+ */
+export function OutlineFine({ uid, config, onUpdate }: GroupProps) {
+  return (
+    <FineGroup label="Outlines">
       <div className="field">
         <label className="label" htmlFor={`${uid}-plain-outline`}>Plain-style outline</label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>

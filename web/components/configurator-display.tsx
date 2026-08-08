@@ -8,7 +8,7 @@ import {
   OUTPUT_FORMAT_OPTIONS, TOP_RATED_STYLE_OPTIONS,
   suppressedQualityBadges,
 } from './configurator-types';
-import { QualityFine, GenreFine, AggregateFine, AgeFine, ProvidersFine, TitleLogoFine, ReleaseStatusFine, TrendingFine, ScaleOffsetFields, hasAnyRatingSource } from './configurator-fine';
+import { QualityFine, GenreFine, OutlineFine, AggregateFine, AgeFine, ProvidersFine, TitleLogoFine, ReleaseStatusFine, TrendingFine, ScaleOffsetFields, hasAnyRatingSource } from './configurator-fine';
 
 // An unset position falls back to the top right, matching the renderer.
 function qualityPosLabel(pos: string): string {
@@ -706,6 +706,8 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
             {fine && <TrendingFine uid={uid} config={config} onUpdate={onUpdate} />}
           </>
         )}
+
+        {fine && <OutlineFine uid={uid} config={config} onUpdate={onUpdate} />}
 
         <div>
           <button

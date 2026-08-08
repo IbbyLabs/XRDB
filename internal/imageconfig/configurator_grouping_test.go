@@ -35,14 +35,18 @@ var keyUse = regexp.MustCompile(`config\.([A-Za-z0-9_]+)|onUpdate\('([A-Za-z0-9_
 // door asserts the first, and passed for months while six controls sat behind a
 // toggle that has nothing to do with them.
 //
+// Inside a guarded group every key is judged, not a shortlist of prefixes. A
+// shortlist ignores what it does not recognise, which is how six outline
+// controls — noBackgroundBadgeOutline*, iconOutline*, aggregateAccentWidth —
+// sat in GenreFine while this passed. A control that genuinely spans badge
+// families belongs in OutlineFine, which no feature toggle gates.
+//
 // WHAT THIS DOES NOT COVER, because a green run here is not full coverage and
-// reading it as such is the same mistake the test exists to stop. It judges the
-// two groups in groupOwnsPrefix against the three prefixes in isFeatureKey.
-// Every other fine group is unguarded, and a key whose prefix is not one of
-// those three is ignored rather than guessed at. Widening it means reading each
-// group's render site for the condition it sits behind — the gate is in
-// configurator-display.tsx and configurator-panels.tsx, not here — and adding
-// the group to the map only once that gate is known.
+// reading it as such is the same mistake the test exists to stop. Only the
+// groups in groupOwnsPrefix are judged; every other fine group is unguarded.
+// Widening it means reading each group's render site for the condition it sits
+// behind — the gate is in configurator-display.tsx and configurator-panels.tsx,
+// not here — and adding the group to the map only once that gate is known.
 func TestFineGroupsOnlyOwnTheirOwnKeys(t *testing.T) {
 	// Overridable so the guard can be proved against a known-bad copy without
 	// editing the file the repository is using.
@@ -92,7 +96,7 @@ func TestFineGroupsOnlyOwnTheirOwnKeys(t *testing.T) {
 				if key == "" {
 					key = m[2]
 				}
-				if key == "" || !isFeatureKey(key) {
+				if key == "" {
 					continue
 				}
 				if ownsKey(owned, key) {
@@ -111,17 +115,6 @@ func TestFineGroupsOnlyOwnTheirOwnKeys(t *testing.T) {
 		t.Fatalf("checked %d of %d guarded groups; a rename would silently disable this test",
 			checked, len(groupOwnsPrefix))
 	}
-}
-
-// isFeatureKey reports whether a key names a feature area this guard can judge.
-// Keys outside the known prefixes are ignored rather than guessed at.
-func isFeatureKey(key string) bool {
-	for _, p := range []string{"genre", "quality", "rating"} {
-		if strings.HasPrefix(key, p) {
-			return true
-		}
-	}
-	return false
 }
 
 func ownsKey(prefixes []string, key string) bool {
