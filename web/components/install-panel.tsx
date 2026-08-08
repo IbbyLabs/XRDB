@@ -158,6 +158,14 @@ export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyCh
           </span>
         </div>
 
+        <p className="hint" style={{ marginTop: 0 }}>
+          XRDB can also run on your own machine, with your own API keys and no
+          shared rate limits.{' '}
+          <a href="https://github.com/IbbyLabs/XRDB" target="_blank" rel="noreferrer">
+            Run your own instance
+          </a>.
+        </p>
+
         {!configKey && (
           <p className="hint" style={{ marginTop: 0 }}>
             Save a profile first in the <strong>Profile</strong> tab. The
