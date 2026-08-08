@@ -30,14 +30,26 @@ type tileChrome struct {
 	shadow             color.NRGBA // zero alpha = no shadow
 }
 
-// drawSoftTile draws a rounded "frosted" tile: an offset drop shadow, a fill,
-// and an optional border (1px by default, thicker via borderWidth). Callers
-// draw content inside r afterwards.
-func drawSoftTile(base *image.NRGBA, r image.Rectangle, radius int, ch tileChrome) {
-	if ch.shadow.A > 0 {
-		off := maxInt(1, r.Dy()/18)
-		blendRoundedRect(base, r.Add(image.Pt(0, off)), radius, ch.shadow)
+// drawTileShadow draws a drop shadow below r, fading to nothing over its last
+// rows. Zero alpha draws nothing.
+func drawTileShadow(base *image.NRGBA, r image.Rectangle, radius int, col color.NRGBA) {
+	if col.A == 0 {
+		return
 	}
+	steps := maxInt(1, r.Dy()/18) + maxInt(2, r.Dy()/12)
+	per := uint8(maxInt(1, int(col.A)/steps))
+	for i := 1; i <= steps; i++ {
+		c := col
+		c.A = per
+		blendRoundedRect(base, r.Add(image.Pt(0, i)), radius, c)
+	}
+}
+
+// drawSoftTile draws a rounded "frosted" tile: a drop shadow, a fill, and an
+// optional border (1px by default, thicker via borderWidth). Callers draw
+// content inside r afterwards.
+func drawSoftTile(base *image.NRGBA, r image.Rectangle, radius int, ch tileChrome) {
+	drawTileShadow(base, r, radius, ch.shadow)
 	// A translucent fill has to composite over the artwork. Writing the pixel
 	// outright discarded what was underneath, so lowering the opacity darkened
 	// the badge towards black instead of letting the poster through.
@@ -1039,10 +1051,9 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 	x, y := strip.Min.X, strip.Min.Y
 
 	shadow := color.NRGBA{R: 0, G: 0, B: 0, A: 80}
-	shOff := maxInt(1, tileH/16)
 	for _, c := range chips {
 		r := image.Rect(x, y, x+c.w, y+tileH)
-		fillRoundedRect(base, r.Add(image.Pt(0, shOff)), radius, shadow)
+		drawTileShadow(base, r, radius, shadow)
 
 		switch {
 		case c.baked:
@@ -1704,7 +1715,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		if opts.bgOpacity != 0 {
 			tintA = opts.bgOpacity * 255 / 100
 		}
-		blendRoundedRect(base, r.Add(image.Pt(0, maxInt(1, r.Dy()/16))), radius, color.NRGBA{A: 46})
+		drawTileShadow(base, r, radius, color.NRGBA{A: 46})
 		blendRoundedRect(base, r, radius, color.NRGBA{R: 14, G: 16, B: 22, A: uint8(tintA)})
 		if opts.borderWidth >= 0 {
 			bw := maxInt(1, s(1))
@@ -2801,8 +2812,7 @@ func drawTrendingBadgeSurfaced(base *image.NRGBA, scale float64, occ *occupancy,
 		radius = s(5)
 	}
 	if surface != "plain" {
-		off := maxInt(1, bh/12)
-		fillRoundedRect(base, r.Add(image.Pt(0, off)), radius, color.NRGBA{R: 0, G: 0, B: 0, A: 105})
+		drawTileShadow(base, r, radius, color.NRGBA{R: 0, G: 0, B: 0, A: 105})
 		fillRoundedRect(base, r, radius, color.NRGBA{R: 18, G: 20, B: 26, A: 233})
 		border := color.NRGBA{R: 255, G: 150, B: 92, A: 66} // warm hairline
 		if c, err := parseHexColor(opts.accentColor); opts.accentColor != "" && err == nil {
