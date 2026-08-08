@@ -185,6 +185,11 @@ func (h *HealthTracker) Failure(source string, err error, class CallerClass) (en
 	if h == nil || errors.Is(err, errNotFound) || errors.Is(err, ErrNotApplicable) {
 		return false
 	}
+	// A source whose own upstream refused it for one title is answering
+	// perfectly well for every other title.
+	if errors.Is(err, ErrUpstreamUnavailable) {
+		return false
+	}
 	// A cancelled request says nothing about the source. The caller walked away
 	// — the viewer closed the tab, or the render gave up — and the source may
 	// have been about to answer. Counting it holds the source out for every

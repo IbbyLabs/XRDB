@@ -23,6 +23,14 @@ var errNotFound = errors.New("provider: title not found for content type")
 // genuine failure would be lost in the noise.
 var ErrNotApplicable = errors.New("provider: source does not apply to this title")
 
+// ErrUpstreamUnavailable reports that a source answered and its own upstream did
+// not. Jikan returns it per title: a broken anime id 504s in about 130ms with
+// "MyAnimeList may be down/unavailable or refuses to connect" while other ids
+// answer 200 in the same second. It is a fact about the title, so it must not be
+// recorded against the source: five broken ids in a row would otherwise take the
+// source off every poster, including the titles that work.
+var ErrUpstreamUnavailable = errors.New("provider: the source's own upstream is unavailable")
+
 // isSeriesType reports whether a content-type hint denotes a series/TV title.
 //
 // It intentionally does NOT treat artwork surface names (poster, backdrop,

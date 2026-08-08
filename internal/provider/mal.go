@@ -66,6 +66,9 @@ func (m *MAL) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, erro
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("mal: anime not found for id %q: %w", id, ErrNotApplicable)
 	}
+	if resp.StatusCode == http.StatusGatewayTimeout {
+		return nil, fmt.Errorf("mal: http %d for id %q: %w", resp.StatusCode, id, ErrUpstreamUnavailable)
+	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("mal: http %d", resp.StatusCode)
 	}
