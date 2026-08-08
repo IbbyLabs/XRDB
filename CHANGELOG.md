@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.72.0](https://github.com/IbbyLabs/XRDB/compare/v3.71.0...v3.72.0) (2026-08-08)
+
+
+### Added
+
+* **ratings:** log a gateway error from a source ([ad118f9](https://github.com/IbbyLabs/XRDB/commit/ad118f9bb52d294ad39882edaa19e67d3a058e08))
+
 ## [3.71.0](https://github.com/IbbyLabs/XRDB/compare/v3.70.0...v3.71.0) (2026-08-08)
 
 
