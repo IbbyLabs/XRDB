@@ -599,8 +599,14 @@ func (t *tmdbRef) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// seasonlessRank is the rank of a supplement row: it carries neither a type nor
+// a season, so it loses to any typed row and the first seen wins among its own.
+const seasonlessRank = typeRankUnknown * seasonRanks
+
 // seasonRef decodes Fribb's season field ({"tvdb":1,"tmdb":1}, a number, or a
-// string) into a rank: 0 = no season info, 1 = first season, 2 = later season.
+// string) into a rank, lowest wins: 0 = first season, 1 = later season, 2 =
+// season 0 or absent. Season 0 is where the dataset files specials and OVAs,
+// and several of those share the series' IMDb id.
 type seasonRef struct{ rank int }
 
 func (s *seasonRef) UnmarshalJSON(b []byte) error {
@@ -629,9 +635,9 @@ func (s *seasonRef) UnmarshalJSON(b []byte) error {
 		season = int(n)
 	}
 	switch {
-	case season <= 0:
-		s.rank = 0
 	case season == 1:
+		s.rank = 0
+	case season >= 2:
 		s.rank = 1
 	default:
 		s.rank = 2
@@ -639,7 +645,39 @@ func (s *seasonRef) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+// Type ranks, lowest wins. What an entry *is* decides which row owns a shared
+// IMDb id: a franchise files its specials and OVAs against the series' id, and
+// a season number only correlates with the answer.
+const (
+	typeRankTV = iota
+	typeRankONA
+	typeRankMovie
+	typeRankOVA
+	typeRankSpecial
+	typeRankUnknown
+	// seasonRanks is how many season ranks fit under one type rank, so type
+	// decides first and season breaks ties within a type.
+	seasonRanks = 3
+)
+
+func rankForType(t string) int {
+	switch strings.ToUpper(strings.TrimSpace(t)) {
+	case "TV":
+		return typeRankTV
+	case "ONA":
+		return typeRankONA
+	case "MOVIE":
+		return typeRankMovie
+	case "OVA":
+		return typeRankOVA
+	case "SPECIAL":
+		return typeRankSpecial
+	}
+	return typeRankUnknown
+}
+
 type datasetEntry struct {
+	Type      string    `json:"type"`
 	MALID     flexInt   `json:"mal_id"`
 	AniListID flexInt   `json:"anilist_id"`
 	KitsuID   flexInt   `json:"kitsu_id"`
@@ -669,7 +707,8 @@ func buildIndexes(data []byte) (indexes, error) {
 		if ids.empty() {
 			continue
 		}
-		item := indexed{ids: ids, rank: e.Season.rank}
+		rank := rankForType(e.Type)*seasonRanks + e.Season.rank
+		item := indexed{ids: ids, rank: rank}
 		var target Target
 		for _, imdbID := range e.IMDbID {
 			if imdbID != "" {
@@ -691,7 +730,7 @@ func buildIndexes(data []byte) (indexes, error) {
 				target.TMDB, target.TMDBType = e.TMDBID.TV, "tv"
 			}
 		}
-		insertTarget(idx.reverse, ranks, ids, target, e.Season.rank)
+		insertTarget(idx.reverse, ranks, ids, target, rank)
 	}
 	return idx, nil
 }
@@ -744,9 +783,9 @@ func buildSupplementIndexes(data []byte) (indexes, error) {
 		if ids.empty() {
 			continue
 		}
-		// The supplement has no season field; rank 0 means first-seen wins on
-		// the rare duplicate key, matching insert's tie-break.
-		item := indexed{ids: ids, rank: 0}
+		// The supplement has no season field, so every row ranks as season-less
+		// and the first seen wins a duplicate key, matching insert's tie-break.
+		item := indexed{ids: ids, rank: seasonlessRank}
 		var target Target
 		if strings.HasPrefix(e.IMDb, "tt") {
 			insert(imdb, e.IMDb, item)
@@ -766,7 +805,7 @@ func buildSupplementIndexes(data []byte) (indexes, error) {
 				insert(movie, n, item)
 			}
 		}
-		insertTarget(reverse, ranks, ids, target, 0)
+		insertTarget(reverse, ranks, ids, target, seasonlessRank)
 	}
 	if len(imdb) == 0 && len(movie) == 0 && len(tv) == 0 {
 		return indexes{}, fmt.Errorf("supplement dataset has no usable mappings")
