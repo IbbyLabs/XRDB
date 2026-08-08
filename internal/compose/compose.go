@@ -70,6 +70,10 @@ type Result struct {
 	// chose not to ask for, so it is worth storing; a render that lost a source
 	// to a failure is not.
 	DegradedByUs bool
+	// DegradedByQueue is true when one of those gates was a request queue rather
+	// than the daily reserve. A queue clears in seconds and the reserve stands
+	// for hours, so the two are worth caching for different lengths of time.
+	DegradedByQueue bool
 	// DegradedSources names the wanted rating sources skipped for this render
 	// because they were rate-limited, so a check against the render can tell a
 	// source that was down from one that genuinely has no rating for the title.
@@ -829,7 +833,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	if resolveQuality == nil {
 		resolveQuality = p.startQualityDetect(ctx, badgeCfg, req.ContentType, ratingReq.MediaID)
 	}
-	allRatings, ratingProviders, degraded, sourceFault, degradedSources := p.collectRatingsWithProviders(ctx, ratingReq, meta)
+	allRatings, ratingProviders, degraded, sourceFault, queueHeld, degradedSources := p.collectRatingsWithProviders(ctx, ratingReq, meta)
 	timings.mark("ratings")
 	// Resolved here, where the title's identity is, so the draw path receives an
 	// answer rather than an id and never needs to know a bundled list exists.
@@ -837,6 +841,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	result.ContributingProviders = append([]string{string(req.Config.ArtworkSource)}, ratingProviders...)
 	result.Degraded = degraded
 	result.DegradedByUs = degraded && !sourceFault
+	result.DegradedByQueue = result.DegradedByUs && queueHeld
 	result.DegradedSources = degradedSources
 	// A held-out source keeps its place in the strip so the gap is visible.
 	// Kept out of allRatings deliberately: that list feeds the average, the
@@ -1501,7 +1506,7 @@ func resizeFit(src image.Image, maxW, maxH int) image.Image {
 // The third and fourth results are whether the render lost a wanted source, and
 // whether any of those losses was the source's own doing rather than one of our
 // gates.
-func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request, artwork *provider.MediaMeta) ([]provider.Rating, []string, bool, bool, []string) {
+func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request, artwork *provider.MediaMeta) ([]provider.Rating, []string, bool, bool, bool, []string) {
 	if artwork == nil {
 		artwork = &provider.MediaMeta{}
 	}
@@ -1544,7 +1549,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 	}
 
 	answers := make([]*provider.MediaMeta, len(called))
-	var degraded, sourceFault atomic.Bool
+	var degraded, sourceFault, queueHeld atomic.Bool
 	degradedFlags := make([]bool, len(called))
 	for i, prov := range called {
 		wg.Add(1)
@@ -1587,6 +1592,9 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 					gate := provider.HoldOutGate(err)
 					if !provider.GateIsOurOwn(gate) {
 						sourceFault.Store(true)
+					}
+					if provider.GateIsAQueue(gate) {
+						queueHeld.Store(true)
 					}
 					attrs := []any{"id", logging.RequestID(ctx), "source", prov.Name(),
 						"media_id", req.MediaID, "gate", gate}
@@ -1638,7 +1646,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 			degradedSources = append(degradedSources, called[i].Name())
 		}
 	}
-	return all, contributors, degraded.Load(), sourceFault.Load(), degradedSources
+	return all, contributors, degraded.Load(), sourceFault.Load(), queueHeld.Load(), degradedSources
 }
 
 // toNRGBA converts any image.Image to *image.NRGBA for in-place drawing.

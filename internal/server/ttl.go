@@ -19,6 +19,9 @@ type ttlStore struct {
 	// heldOut caps renders whose only missing badge was held back by one of our
 	// own gates. Zero leaves them on the normal TTL.
 	heldOut time.Duration
+	// queueHeld caps renders held back by one of our request queues, which
+	// clear far sooner than the daily reserve does.
+	queueHeld time.Duration
 }
 
 func newTTLStore(seed map[string]time.Duration) *ttlStore {
@@ -86,6 +89,21 @@ func (s *ttlStore) heldOutTTL() time.Duration {
 func (s *ttlStore) setHeldOutTTL(d time.Duration) {
 	s.mu.Lock()
 	s.heldOut = d
+	s.mu.Unlock()
+}
+
+// queueHeldTTL returns the cap for renders held back by a request queue, or
+// zero if unset.
+func (s *ttlStore) queueHeldTTL() time.Duration {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.queueHeld
+}
+
+// setQueueHeldTTL sets the cap for renders held back by a request queue.
+func (s *ttlStore) setQueueHeldTTL(d time.Duration) {
+	s.mu.Lock()
+	s.queueHeld = d
 	s.mu.Unlock()
 }
 

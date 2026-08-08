@@ -79,6 +79,17 @@ const (
 // rather than on anything the source did. Unrecognised gates are not ours: a
 // gate this does not know about may be a source failing, and treating it as
 // ours would make a broken render look sound.
+// GateIsAQueue reports whether a gate is one of our request queues, which can
+// clear in seconds, rather than the daily reserve, which is a decision that
+// stands for hours.
+func GateIsAQueue(gate string) bool {
+	switch gate {
+	case GatePacerBacklog, GateGovernorBacklog:
+		return true
+	}
+	return false
+}
+
 func GateIsOurOwn(gate string) bool {
 	switch gate {
 	case GateBulkAllowance, GatePacerBacklog, GateGovernorBacklog:

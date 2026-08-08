@@ -111,7 +111,11 @@ type Config struct {
 	// one of our own gates — a quota reserve or a pacing queue. Nothing failed,
 	// so the render is stored and served normally, for less than the full TTL.
 	HeldOutCacheTTL time.Duration
-	RatingsCacheTTL time.Duration
+	// QueueHeldCacheTTL caps a render held back by one of our request queues.
+	// A queue clears in seconds where the daily reserve stands for hours, so it
+	// is held for much less than HeldOutCacheTTL.
+	QueueHeldCacheTTL time.Duration
+	RatingsCacheTTL   time.Duration
 	// StreamAddonURL is a Stremio stream addon (Comet, Torrentio) asked which
 	// release qualities a title has, so a quality badge stands for something
 	// that exists rather than a label someone ticked. Defaults to a public
@@ -336,6 +340,17 @@ func Load() Config {
 	if heldOutCacheTTL > cacheTTL {
 		heldOutCacheTTL = cacheTTL
 	}
+	// A pacing or budget queue clears in seconds, so a render it held back is
+	// worth keeping only long enough to spare the repeat work.
+	queueHeldCacheTTL := 15 * time.Minute
+	if raw := os.Getenv("XRDB_QUEUE_HELD_CACHE_TTL_MINUTES"); raw != "" {
+		if d, err := time.ParseDuration(raw + "m"); err == nil && d >= 0 {
+			queueHeldCacheTTL = d
+		}
+	}
+	if queueHeldCacheTTL > cacheTTL {
+		queueHeldCacheTTL = cacheTTL
+	}
 	rpdbMaxSize := "small"
 	if raw := os.Getenv("XRDB_RPDB_MAX_SIZE"); raw != "" {
 		rpdbMaxSize = strings.ToLower(strings.TrimSpace(raw))
@@ -467,6 +482,7 @@ func Load() Config {
 		CacheTTL:              cacheTTL,
 		DegradedCacheTTL:      degradedCacheTTL,
 		HeldOutCacheTTL:       heldOutCacheTTL,
+		QueueHeldCacheTTL:     queueHeldCacheTTL,
 		NotFoundTTL:           notFoundTTL,
 		RPDBMaxSize:           rpdbMaxSize,
 		CacheMaxEntries:       cacheMaxEntries,

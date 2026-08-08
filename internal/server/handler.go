@@ -44,6 +44,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	ttls := newTTLStore(cfg.ProviderTTLs)
 	ttls.setDegradedTTL(cfg.DegradedCacheTTL)
 	ttls.setHeldOutTTL(cfg.HeldOutCacheTTL)
+	ttls.setQueueHeldTTL(cfg.QueueHeldCacheTTL)
 	notFound := newNotFoundCache(cfg.NotFoundTTL)
 	// Forwarded headers are client input unless the peer is a known proxy.
 	trust := newProxyTrust(cfg.TrustedProxies, cfg.TrustProxyHeaders)

@@ -49,9 +49,10 @@ func renderWithRatingError(t *testing.T, err error) (*httptest.ResponseRecorder,
 	}
 	t.Cleanup(c.Close)
 	h := NewHandler("test", store, nil, pipeline, c, config.Config{
-		DegradedCacheTTL: 20 * time.Minute,
-		HeldOutCacheTTL:  3 * time.Hour,
-		CacheTTL:         72 * time.Hour,
+		DegradedCacheTTL:  20 * time.Minute,
+		HeldOutCacheTTL:   3 * time.Hour,
+		QueueHeldCacheTTL: 15 * time.Minute,
+		CacheTTL:          72 * time.Hour,
 	})
 	p := &profile.Profile{ID: "held-out-cfg", Type: "poster", Config: json.RawMessage(`{"ratings":["imdb"]}`)}
 	if serr := store.Save(p); serr != nil {
@@ -144,9 +145,10 @@ func TestOneFailedSourceIsEnoughToKeepARenderOutOfEveryCache(t *testing.T) {
 	}
 	t.Cleanup(c.Close)
 	h := NewHandler("test", store, nil, pipeline, c, config.Config{
-		DegradedCacheTTL: 20 * time.Minute,
-		HeldOutCacheTTL:  3 * time.Hour,
-		CacheTTL:         72 * time.Hour,
+		DegradedCacheTTL:  20 * time.Minute,
+		HeldOutCacheTTL:   3 * time.Hour,
+		QueueHeldCacheTTL: 15 * time.Minute,
+		CacheTTL:          72 * time.Hour,
 	})
 	p := &profile.Profile{ID: "mixed-cfg", Type: "poster",
 		Config: json.RawMessage(`{"ratings":["imdb","tmdb_rating"]}`)}
@@ -211,9 +213,10 @@ func TestAFailedLogoKeepsARenderOutOfEveryCacheEvenBehindOurOwnGate(t *testing.T
 	}
 	t.Cleanup(c.Close)
 	h := NewHandler("test", store, nil, pipeline, c, config.Config{
-		DegradedCacheTTL: 20 * time.Minute,
-		HeldOutCacheTTL:  3 * time.Hour,
-		CacheTTL:         72 * time.Hour,
+		DegradedCacheTTL:  20 * time.Minute,
+		HeldOutCacheTTL:   3 * time.Hour,
+		QueueHeldCacheTTL: 15 * time.Minute,
+		CacheTTL:          72 * time.Hour,
 	})
 	p := &profile.Profile{ID: "logo-and-gate", Type: "poster",
 		Config: json.RawMessage(`{"ratings":["imdb"],"backdropLogo":true}`)}
@@ -233,5 +236,45 @@ func TestAFailedLogoKeepsARenderOutOfEveryCacheEvenBehindOurOwnGate(t *testing.T
 		if _, ok := c.Get(key); ok {
 			t.Error("a render whose logo fetch failed was stored")
 		}
+	}
+}
+
+// A queue clears in seconds and the daily reserve stands for hours, so the two
+// take different windows even though both are ours.
+func TestAQueueHeldRenderTakesTheShorterTTL(t *testing.T) {
+	ttls := newTTLStore(nil)
+	ttls.setDegradedTTL(20 * time.Minute)
+	ttls.setHeldOutTTL(3 * time.Hour)
+	ttls.setQueueHeldTTL(15 * time.Minute)
+
+	for _, tc := range []struct {
+		name string
+		res  *compose.Result
+		want time.Duration
+	}{
+		{"a pacing queue", &compose.Result{Degraded: true, DegradedByUs: true, DegradedByQueue: true}, 15 * time.Minute},
+		{"the daily reserve", &compose.Result{Degraded: true, DegradedByUs: true}, 3 * time.Hour},
+		{"a failed source", &compose.Result{Degraded: true}, 20 * time.Minute},
+		{"nothing missing", &compose.Result{}, 0},
+	} {
+		if got := effectiveTTL(tc.res, ttls); got != tc.want {
+			t.Errorf("%s: TTL = %s, want %s", tc.name, got, tc.want)
+		}
+	}
+}
+
+// A render that hit both a queue and the reserve takes the shorter window: the
+// queue is the part that will have cleared.
+func TestARenderHeldByBothTakesTheQueueWindow(t *testing.T) {
+	rr, c, key := renderWithRatingError(t, provider.ErrGovernorBacklog)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("got %d, want 200", rr.Code)
+	}
+	cc := rr.Header().Get("Cache-Control")
+	if !strings.Contains(cc, "max-age=899") {
+		t.Errorf("Cache-Control = %q, want a 15 minute window", cc)
+	}
+	if _, ok := c.Get(key); !ok {
+		t.Error("a queue-held render was not stored")
 	}
 }
