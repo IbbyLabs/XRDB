@@ -36,12 +36,26 @@ func drawTileShadow(base *image.NRGBA, r image.Rectangle, radius int, col color.
 	if col.A == 0 {
 		return
 	}
-	steps := maxInt(1, r.Dy()/18) + maxInt(2, r.Dy()/12)
-	per := uint8(maxInt(1, int(col.A)/steps))
-	for i := 1; i <= steps; i++ {
-		c := col
-		c.A = per
-		blendRoundedRect(base, r.Add(image.Pt(0, i)), radius, c)
+	body := r.Add(image.Pt(0, maxInt(1, r.Dy()/18)))
+	blendRoundedRect(base, body, radius, col)
+
+	// The fade takes its width from the same rect shifted below the body, so the
+	// bottom arcs keep their shape as the alpha falls away.
+	feather := maxInt(3, r.Dy()/12)
+	smear := body.Add(image.Pt(0, feather)).Intersect(base.Bounds())
+	for k := 0; k < feather; k++ {
+		y := body.Max.Y + k
+		if y < smear.Min.Y || y >= smear.Max.Y {
+			continue
+		}
+		a := float64(col.A) * float64(feather-k) / float64(feather+1)
+		for x := smear.Min.X; x < smear.Max.X; x++ {
+			cov, skip := cornerCoverage(x, y, smear, radius)
+			if skip {
+				continue
+			}
+			blendPixel(base, x, y, color.NRGBA{R: col.R, G: col.G, B: col.B, A: uint8(a * cov)})
+		}
 	}
 }
 

@@ -48,3 +48,32 @@ func TestTileShadowFadesOutBelowTheTile(t *testing.T) {
 		t.Errorf("shadow steps %d levels at y=%d, want it to fade (<=20 per row)", worst, at)
 	}
 }
+
+// The same shadow alpha has to read the same weight on a small badge and a large
+// one, so a tile does not lighten as it scales.
+func TestTileShadowWeightDoesNotVaryWithTileSize(t *testing.T) {
+	const bg = 232
+	darkest := func(h int) int {
+		w, ih := h*4, h*3
+		base := image.NewNRGBA(image.Rect(0, 0, w, ih))
+		for y := 0; y < ih; y++ {
+			for x := 0; x < w; x++ {
+				base.SetNRGBA(x, y, color.NRGBA{R: bg, G: bg, B: bg, A: 255})
+			}
+		}
+		r := image.Rect(h, h/2, w-h, h/2+h)
+		drawTileShadow(base, r, h/2, color.NRGBA{A: 70})
+		lo := bg
+		for y := r.Max.Y; y < ih; y++ {
+			if v := int(base.NRGBAAt(w/2, y).R); v < lo {
+				lo = v
+			}
+		}
+		return lo
+	}
+
+	small, large := darkest(36), darkest(180)
+	if d := small - large; d > 6 || d < -6 {
+		t.Errorf("darkest shadow row is %d on a 36px tile and %d on a 180px one, want them within 6", small, large)
+	}
+}
