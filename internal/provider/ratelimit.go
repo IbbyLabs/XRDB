@@ -322,6 +322,15 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 			}
 		}
 		if !isThrottleStatus(resp.StatusCode) {
+			// A gateway fault is not retried and carries no Retry-After, so it
+			// leaves no other trace: the caller turns it into a plain error and
+			// five of those hold the source out. The path carries no query, so
+			// no credential reaches the log.
+			if resp.StatusCode >= 500 {
+				t.log().WarnContext(req.Context(), "A ratings source returned a gateway error",
+					"source", t.source, "status", resp.StatusCode,
+					"path", req.URL.Path, "attempt", attempt+1)
+			}
 			return resp, nil
 		}
 
