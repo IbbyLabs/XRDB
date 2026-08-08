@@ -3,6 +3,7 @@ package compose
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,34 +16,18 @@ import (
 // DeadlineExceeded while the text still says "canceled". Five of those trip the
 // failure breaker and take a working source off every poster.
 func TestAnAbandonedRenderDoesNotCountAgainstTheSource(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		<-r.Context().Done()
-	}))
-	defer srv.Close()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	// The shape Go produces when the HTTP client's timer fires at the same
+	// moment the render context is cancelled: the context is gone, and the
+	// error satisfies DeadlineExceeded rather than Canceled.
+	err := fmt.Errorf("Get \"http://source\": context canceled (Client.Timeout exceeded while awaiting headers): %w", context.DeadlineExceeded)
 
-	client := &http.Client{Timeout: 50 * time.Millisecond}
-	var abandoned error
-	var abandonedCtx context.Context
-	// Race the cancellation against the client timer until the shape that
-	// defeats an error-only guard comes up.
-	for i := range 40 {
-		ctx, cancel := context.WithCancel(context.Background())
-		time.AfterFunc(time.Duration(48+i%5)*time.Millisecond, cancel)
-		req, _ := http.NewRequestWithContext(ctx, "GET", srv.URL, nil)
-		_, err := client.Do(req)
-		if err != nil && ctx.Err() != nil && !errors.Is(err, context.Canceled) {
-			abandoned, abandonedCtx = err, ctx
-			cancel()
-			break
-		}
-		cancel()
+	if errors.Is(err, context.Canceled) {
+		t.Fatal("the fixture no longer reproduces the shape that defeats an error-only guard")
 	}
-	if abandoned == nil {
-		t.Skip("could not produce a cancellation racing the client timeout on this machine")
-	}
-
-	if recordsAgainstTheSource(abandonedCtx, abandoned) {
-		t.Errorf("an abandoned render was recorded against the source: %v", abandoned)
+	if recordsAgainstTheSource(ctx, err) {
+		t.Error("an abandoned render was recorded against the source")
 	}
 }
 
