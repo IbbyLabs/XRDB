@@ -1272,7 +1272,7 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 		// Strict per-surface selection: no logo→poster substitution yet, so the
 		// loop keeps trying other providers for a real logo first.
 		if url := selectSurfaceURL(meta, req.MediaType, req.Config); url != "" {
-			url = p.posterURLFor(meta, url)
+			url = p.posterURLFor(ctx, meta, url)
 			if data, ferr := p.fetcher.Fetch(ctx, url); ferr == nil && len(data) > 0 {
 				data = p.betterPoster(ctx, req, meta, url, data)
 				p.enrichMetaForOverlays(ctx, req, baseMeta)

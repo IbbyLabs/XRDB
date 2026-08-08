@@ -90,14 +90,19 @@ func judgePoster(data []byte, want image.Point) posterVerdict {
 
 // posterURLFor swaps in the alternate when the preferred file has already lost
 // once for this title, so a known-bad file is not fetched again.
-func (p *Pipeline) posterURLFor(meta *provider.MediaMeta, url string) string {
+func (p *Pipeline) posterURLFor(ctx context.Context, meta *provider.MediaMeta, url string) string {
 	if meta == nil || meta.PosterAltURL == "" || url != meta.PosterURL {
 		return url
 	}
-	if p.badPosters.has(url) {
-		return meta.PosterAltURL
+	if !p.badPosters.has(url) {
+		return url
 	}
-	return url
+	// Logged as well as the swap that first made the decision. Without this the
+	// choice announces itself once per process and is silent for the rest of it,
+	// so a render cannot be told from one where the alternate was never used.
+	p.log().DebugContext(ctx, "Went straight to the alternate poster file, the preferred one lost before",
+		"id", logging.RequestID(ctx), "url", meta.PosterAltURL)
+	return meta.PosterAltURL
 }
 
 // betterPoster returns the artwork to use, fetching the alternate only when the
