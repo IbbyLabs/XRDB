@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.71.0](https://github.com/IbbyLabs/XRDB/compare/v3.70.0...v3.71.0) (2026-08-08)
+
+
+### Added
+
+* **cache:** cache renders whose only gap is a quota or pacing hold-out ([c296dd6](https://github.com/IbbyLabs/XRDB/commit/c296dd69cd5af7790ac56b143180bb93fbc14789))
+
 ## [3.70.0](https://github.com/IbbyLabs/XRDB/compare/v3.69.6...v3.70.0) (2026-08-08)
 
 
