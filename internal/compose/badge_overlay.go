@@ -1097,7 +1097,7 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 			if hasNetTile {
 				fill = color.NRGBA{R: netTile.R, G: netTile.G, B: netTile.B, A: 235}
 			}
-			fillRoundedRect(base, r, radius, fill)
+			blendRoundedRect(base, r, radius, fill)
 			drawRectBorder(base, r, radius, border)
 			band := image.Rect(r.Min.X+padIn, r.Min.Y+(tileH-c.innerH)/2, r.Max.X-padIn, r.Min.Y+(tileH-c.innerH)/2+c.innerH)
 			drawLogoScaled(base, c.logo, fitRect(c.logo.Bounds().Dx(), c.logo.Bounds().Dy(), band))
@@ -1107,7 +1107,7 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 			if hasNetTile {
 				textFill = color.NRGBA{R: netTile.R, G: netTile.G, B: netTile.B, A: 235}
 			}
-			fillRoundedRect(base, r, radius, textFill)
+			blendRoundedRect(base, r, radius, textFill)
 			drawRectBorder(base, r, radius, color.NRGBA{R: 255, G: 255, B: 255, A: 30})
 			ty := r.Min.Y + (tileH-(ascent+descent))/2 + ascent
 			drawText(base, face, r.Min.X+textPadX, ty, color.NRGBA{R: 240, G: 240, B: 245, A: 255}, c.label)
@@ -2270,18 +2270,16 @@ func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, icon im
 		blendBody = true
 	}
 
-	// Drop shadow, then the capsule. The shadow sits under nearly all of the
-	// body, so it has to composite too or a translucent capsule reveals a black
-	// slab where the artwork should be. A capsule you can see through also casts
-	// a fainter shadow.
-	shadow := rect.Add(image.Pt(0, s(2)))
+	// Drop shadow, then the capsule. A capsule you can see through casts a
+	// fainter shadow.
 	shadowCol := color.NRGBA{A: 90}
 	if blendBody {
 		shadowCol.A = uint8(maxInt(1, int(shadowCol.A)*style.bodyOpacity/100))
-		blendRoundedRect(base, shadow, radius, shadowCol)
+	}
+	drawTileShadow(base, rect, radius, shadowCol)
+	if blendBody || body.A < 255 {
 		blendRoundedRect(base, rect, radius, body)
 	} else {
-		fillRoundedRect(base, shadow, radius, shadowCol)
 		fillRoundedRect(base, rect, radius, body)
 	}
 	// With a label the accent fills the rail behind it. Without one there is no
@@ -2832,7 +2830,7 @@ func drawTrendingBadgeSurfaced(base *image.NRGBA, scale float64, occ *occupancy,
 	}
 	if surface != "plain" {
 		drawTileShadow(base, r, radius, color.NRGBA{R: 0, G: 0, B: 0, A: 105})
-		fillRoundedRect(base, r, radius, color.NRGBA{R: 18, G: 20, B: 26, A: 233})
+		blendRoundedRect(base, r, radius, color.NRGBA{R: 18, G: 20, B: 26, A: 233})
 		border := color.NRGBA{R: 255, G: 150, B: 92, A: 66} // warm hairline
 		if c, err := parseHexColor(opts.accentColor); opts.accentColor != "" && err == nil {
 			border = color.NRGBA{R: c.R, G: c.G, B: c.B, A: 220}

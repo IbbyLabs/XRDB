@@ -120,7 +120,7 @@ func drawMetaLine(base *image.NRGBA, meta provider.MediaMeta, cfg imageconfig.Co
 	baseline := y + face.Metrics().Ascent.Ceil() + (lineH-face.Metrics().Height.Ceil())/2
 	if age != "" {
 		chip := image.Rect(x, y+(lineH-chipH)/2, x+chipW, y+(lineH-chipH)/2+chipH)
-		fillRoundedRect(base, chip, px(4), color.NRGBA{R: 0, G: 0, B: 0, A: 170})
+		blendRoundedRect(base, chip, px(4), color.NRGBA{R: 0, G: 0, B: 0, A: 170})
 		drawText(base, face, x+px(5), baseline, ink, age)
 		x += chipW + gap
 	}
