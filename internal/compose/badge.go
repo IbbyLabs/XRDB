@@ -542,7 +542,11 @@ func drawIconPlate(dst *image.NRGBA, rect image.Rectangle, shape string, accent 
 	if filled && fill.A > 0 {
 		plate = fill
 	}
-	fillRoundedRect(dst, rect, r, plate)
+	if plate.A < 255 {
+		blendRoundedRect(dst, rect, r, plate)
+	} else {
+		fillRoundedRect(dst, rect, r, plate)
+	}
 	if accent.A > 0 {
 		drawRectBorder(dst, rect, r, color.NRGBA{R: accent.R, G: accent.G, B: accent.B, A: 200})
 	}
@@ -952,7 +956,7 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 			bg, borderCol = dimmed(bg, unavailableDim), dimmed(borderCol, unavailableDim)
 		}
 		if bg.A > 0 {
-			if chrome.blendFill {
+			if chrome.blendFill || bg.A < 255 {
 				blendRoundedRectSquared(out, bRect, radius, chrome.squared, bg)
 			} else {
 				fillRoundedRectSquared(out, bRect, radius, chrome.squared, bg)

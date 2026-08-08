@@ -418,15 +418,33 @@ func TestIconPlateTakesTheSourceColour(t *testing.T) {
 	box := image.Rect(8, 8, 72, 72)
 
 	plateColours := func(filled bool) (source, navy int) {
+		// Opaque, as a poster is: a translucent plate composites over the
+		// artwork, so its colour is only well defined against one.
 		dst := image.NewNRGBA(image.Rect(0, 0, 80, 80))
+		for y := 0; y < 80; y++ {
+			for x := 0; x < 80; x++ {
+				dst.SetNRGBA(x, y, color.NRGBA{A: 255})
+			}
+		}
 		drawIconPlate(dst, box, "circle", accent, filled, color.NRGBA{R: accent.R, G: accent.G, B: accent.B, A: 235})
+		// A translucent plate composites, so it lands near its colour rather than
+		// exactly on it. Classify by which of the two it is closer to.
+		near := func(c, want color.NRGBA) bool {
+			d := func(a, b uint8) int {
+				if a > b {
+					return int(a) - int(b)
+				}
+				return int(b) - int(a)
+			}
+			return d(c.R, want.R) <= 24 && d(c.G, want.G) <= 24 && d(c.B, want.B) <= 24
+		}
 		for y := box.Min.Y; y < box.Max.Y; y++ {
 			for x := box.Min.X; x < box.Max.X; x++ {
 				c := dst.NRGBAAt(x, y)
 				switch {
-				case c.R == accent.R && c.G == accent.G && c.B == accent.B && c.A > 200:
+				case near(c, accent) && c.A > 200:
 					source++
-				case c.R == 15 && c.G == 23 && c.B == 42:
+				case near(c, color.NRGBA{R: 15, G: 23, B: 42}):
 					navy++
 				}
 			}

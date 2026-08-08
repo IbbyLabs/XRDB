@@ -5,6 +5,7 @@ import (
 	"image/color"
 	"testing"
 
+	"xrdb_rewrite/internal/imageconfig"
 	"xrdb_rewrite/internal/provider"
 )
 
@@ -60,6 +61,43 @@ func TestBadgesLeaveThePosterOpaque(t *testing.T) {
 		"score-pill": func(b *image.NRGBA) {
 			drawScorePill(b, 200, 480, "IMDb", "8.4", nil, scorePillStyle{}, 1, newOccupancy(b.Bounds()))
 		},
+	}
+
+	// The bottom ratings strip, in each badge style it offers.
+	strip := []provider.Rating{
+		{Source: "imdb", Value: 8.5, Label: "8.5"},
+		{Source: "tmdb", Value: 7.9, Label: "7.9"},
+	}
+	// A configured icon shape draws a plate behind each mark, which is a fill of
+	// its own and so needs the same check.
+	for _, shape := range []string{"circle", "squircle", "rounded"} {
+		cases["ratings-icon-"+shape] = func(b *image.NRGBA) {
+			drawBadgesInPlace(b, strip, imageconfig.Config{
+				Ratings:           []string{"imdb", "tmdb"},
+				RatingsLayout:     imageconfig.LayoutBottom,
+				BadgeStyle:        imageconfig.BadgePill,
+				BadgeTheme:        imageconfig.ThemeDark,
+				RatingBadgeConfig: imageconfig.RatingBadgeConfig{IconShape: shape},
+			}, titleFacts{})
+		}
+	}
+
+	// Every BadgeStyle in imageconfig, against both themes. A style added there
+	// and not added here goes unchecked, so keep the two lists together.
+	for _, style := range []imageconfig.BadgeStyle{
+		imageconfig.BadgePill, imageconfig.BadgeSquare, imageconfig.BadgeGlass,
+		imageconfig.BadgePlain, imageconfig.BadgeTile, imageconfig.BadgeStacked,
+	} {
+		for _, theme := range []imageconfig.BadgeTheme{imageconfig.ThemeDark, imageconfig.ThemeLight} {
+			cases["ratings-"+string(style)+"-"+string(theme)] = func(b *image.NRGBA) {
+				drawBadgesInPlace(b, strip, imageconfig.Config{
+					Ratings:       []string{"imdb", "tmdb"},
+					RatingsLayout: imageconfig.LayoutBottom,
+					BadgeStyle:    style,
+					BadgeTheme:    theme,
+				}, titleFacts{})
+			}
+		}
 	}
 
 	for name, draw := range cases {
