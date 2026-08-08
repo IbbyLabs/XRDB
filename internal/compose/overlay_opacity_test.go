@@ -82,12 +82,8 @@ func TestBadgesLeaveThePosterOpaque(t *testing.T) {
 		}
 	}
 
-	// Every BadgeStyle in imageconfig, against both themes. A style added there
-	// and not added here goes unchecked, so keep the two lists together.
-	for _, style := range []imageconfig.BadgeStyle{
-		imageconfig.BadgePill, imageconfig.BadgeSquare, imageconfig.BadgeGlass,
-		imageconfig.BadgePlain, imageconfig.BadgeTile, imageconfig.BadgeStacked,
-	} {
+	// Every BadgeStyle the config accepts, against both themes.
+	for _, style := range imageconfig.BadgeStyles {
 		for _, theme := range []imageconfig.BadgeTheme{imageconfig.ThemeDark, imageconfig.ThemeLight} {
 			cases["ratings-"+string(style)+"-"+string(theme)] = func(b *image.NRGBA) {
 				drawBadgesInPlace(b, strip, imageconfig.Config{

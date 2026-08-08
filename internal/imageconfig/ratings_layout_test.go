@@ -125,7 +125,7 @@ func TestParseAcceptsLegacyBadgeStyles(t *testing.T) {
 // cached image.
 func TestBadgeStylesProduceDistinctCacheKeys(t *testing.T) {
 	seen := map[string]BadgeStyle{}
-	for _, s := range []BadgeStyle{BadgePill, BadgeSquare, BadgeGlass, BadgePlain, BadgeTile} {
+	for _, s := range BadgeStyles {
 		cfg := Default()
 		cfg.BadgeStyle = s
 		key := CacheKey(cfg)

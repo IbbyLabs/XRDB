@@ -20,14 +20,7 @@ func TestSourceTintOutlinesEveryBadgeStyle(t *testing.T) {
 		t.Skip("render sweep: skipped under -short, runs in the ordinary test pass")
 	}
 	p := effectPipeline()
-	styles := []imageconfig.BadgeStyle{
-		imageconfig.BadgePill,
-		imageconfig.BadgeSquare,
-		imageconfig.BadgeTile,
-		imageconfig.BadgeStacked,
-		imageconfig.BadgeGlass,
-		imageconfig.BadgePlain,
-	}
+	styles := imageconfig.BadgeStyles
 	for _, style := range styles {
 		t.Run(string(style), func(t *testing.T) {
 			off := maximalConfig()

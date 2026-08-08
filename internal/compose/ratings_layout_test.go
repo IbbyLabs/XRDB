@@ -193,10 +193,7 @@ func TestStackedBadgeStyleIsTallerThanTheRowStyles(t *testing.T) {
 // Every rating style must render distinguishably, or picking one does nothing.
 func TestEachBadgeStyleRendersDistinctly(t *testing.T) {
 	ratings := layoutTestRatings()
-	styles := []imageconfig.BadgeStyle{
-		imageconfig.BadgePill, imageconfig.BadgeSquare, imageconfig.BadgeGlass,
-		imageconfig.BadgePlain, imageconfig.BadgeTile, imageconfig.BadgeStacked,
-	}
+	styles := imageconfig.BadgeStyles
 	rendered := map[imageconfig.BadgeStyle]*image.NRGBA{}
 	for _, st := range styles {
 		cfg := layoutTestConfig(imageconfig.LayoutBottom)

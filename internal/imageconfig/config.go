@@ -80,6 +80,13 @@ const (
 	BadgeStacked BadgeStyle = "stacked"
 )
 
+// BadgeStyles is every style the config accepts. Guards that must cover all of
+// them range over this rather than their own copy, so a style added above is
+// covered the day it lands.
+var BadgeStyles = []BadgeStyle{
+	BadgePill, BadgeSquare, BadgeGlass, BadgePlain, BadgeTile, BadgeStacked,
+}
+
 // BadgeTheme controls the rating badge color scheme.
 type BadgeTheme string
 
