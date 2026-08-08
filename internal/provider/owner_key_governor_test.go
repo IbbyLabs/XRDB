@@ -73,7 +73,7 @@ func TestOwnerKeyStillWaitsOnTheGovernor(t *testing.T) {
 	g := newBudgetGovernor("mdblist")
 	g.rate = 0.001 // a wait no request would sit through
 	for range int(g.burst) + 1 {
-		g.take() // spend the burst so the next caller must wait
+		g.take(-1) // spend the burst so the next caller must wait
 	}
 	c := &http.Client{Transport: &throttledTransport{
 		base:     &headerTransport{header: make(http.Header)},

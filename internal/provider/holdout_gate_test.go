@@ -19,6 +19,7 @@ func TestHoldOutGateNamesEveryPath(t *testing.T) {
 		{"transport refusal", &RateLimitError{Source: "simkl", Status: 429}, GateUpstreamRefusal},
 		{"wrapped transport refusal", fmt.Errorf("simkl: %w", &RateLimitError{Source: "simkl", Status: 429}), GateUpstreamRefusal},
 		{"pacer backlog", fmt.Errorf("simkl: %w", ErrPacerBacklog), GatePacerBacklog},
+		{"governor backlog", fmt.Errorf("mdblist: %w", ErrGovernorBacklog), GateGovernorBacklog},
 		{"cooldown", fmt.Errorf("simkl: %w", ErrCoolingOff), GateCooldown},
 		{"failure breaker", fmt.Errorf("simkl: %w", ErrFailureBreaker), GateFailureBreaker},
 		{"bulk allowance", fmt.Errorf("simkl: %w", ErrBulkAllowanceHeld), GateBulkAllowance},
@@ -44,6 +45,7 @@ func TestEachGateReportsADistinctName(t *testing.T) {
 	}{
 		{"transport refusal", &RateLimitError{Source: "simkl", Status: 429}},
 		{"pacer backlog", ErrPacerBacklog},
+		{"governor backlog", ErrGovernorBacklog},
 		{"cooldown", ErrCoolingOff},
 		{"failure breaker", ErrFailureBreaker},
 		{"bulk allowance", ErrBulkAllowanceHeld},

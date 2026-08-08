@@ -89,13 +89,28 @@ func (g *budgetGovernor) log() *slog.Logger {
 	return g.logger
 }
 
-// wait blocks until this request's turn, or until the request is cancelled.
-func (g *budgetGovernor) wait(done <-chan struct{}) error {
+// minCallBudget is how much of a request's own timeout must survive the queue
+// for the request to be worth queueing at all.
+const minCallBudget = 1500 * time.Millisecond
+
+// wait blocks until this request's turn, or until the request is cancelled. It
+// refuses a turn that would arrive too late to use: the client timeout covers
+// this queue as well as the call, so sleeping through it cancels the request
+// inside our own queue and the source is recorded as having timed out.
+func (g *budgetGovernor) wait(ctx context.Context) error {
 	if g == nil {
 		return nil
 	}
-	if delay := g.take(); delay > 0 {
-		return g.sleep(delay, done)
+	budget := time.Duration(-1)
+	if deadline, ok := ctx.Deadline(); ok {
+		budget = deadline.Sub(g.now()) - minCallBudget
+	}
+	delay, ok := g.take(budget)
+	if !ok {
+		return ErrGovernorBacklog
+	}
+	if delay > 0 {
+		return g.sleep(delay, ctx.Done())
 	}
 	return nil
 }
@@ -103,7 +118,11 @@ func (g *budgetGovernor) wait(done <-chan struct{}) error {
 // take claims one token and reports how long the caller must hold off for it.
 // A claim beyond what the bucket holds leaves the balance negative, so
 // concurrent callers queue in order rather than all waking together.
-func (g *budgetGovernor) take() time.Duration {
+//
+// budget bounds the wait the caller can use; a negative budget is unbounded.
+// The token is claimed only when the wait fits, so a refused request does not
+// hold a slot the queue behind it could have used.
+func (g *budgetGovernor) take(budget time.Duration) (time.Duration, bool) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
@@ -119,11 +138,16 @@ func (g *budgetGovernor) take() time.Duration {
 	if g.tokens > g.burst {
 		g.tokens = g.burst
 	}
-	g.tokens--
-	if g.tokens >= 0 {
-		return 0
+	remaining := g.tokens - 1
+	delay := time.Duration(0)
+	if remaining < 0 {
+		delay = time.Duration(-remaining / g.rate * float64(time.Second))
 	}
-	return time.Duration(-g.tokens / g.rate * float64(time.Second))
+	if budget >= 0 && delay > budget {
+		return 0, false
+	}
+	g.tokens = remaining
+	return delay, true
 }
 
 // observe recomputes the rate from a response's allowance headers. A response

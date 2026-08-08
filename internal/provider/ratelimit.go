@@ -35,6 +35,11 @@ func pacerMaxWait() time.Duration {
 // allowance for the moment.
 var ErrPacerBacklog = fmt.Errorf("paced source backlog: %w", ErrRateLimited)
 
+// ErrGovernorBacklog reports that the daily-budget queue in front of a source
+// would not reach this request before its own timeout, so it was refused rather
+// than left to expire in the queue and be recorded as the source timing out.
+var ErrGovernorBacklog = fmt.Errorf("source budget backlog: %w", ErrRateLimited)
+
 // ErrCoolingOff reports that a source was skipped because an earlier refusal
 // left it in cooldown. It did not refuse this request.
 var ErrCoolingOff = fmt.Errorf("source cooling off: %w", ErrRateLimited)
@@ -57,6 +62,9 @@ const (
 	// GateFailureBreaker is a hold-out from the breaker that trips after five
 	// consecutive failures of any kind. The source never refused.
 	GateFailureBreaker = "failure_breaker"
+	// GateGovernorBacklog is a hold-out from our own daily-budget pacing, not
+	// from anything the source did.
+	GateGovernorBacklog = "governor_backlog"
 	// GateUnattributed marks a rate-limit refusal none of the gates claims. It
 	// is a gap in this function, not a fifth way to be held out.
 	GateUnattributed = "unattributed"
@@ -74,6 +82,8 @@ func HoldOutGate(err error) string {
 		return GateUpstreamRefusal
 	case errors.Is(err, ErrPacerBacklog):
 		return GatePacerBacklog
+	case errors.Is(err, ErrGovernorBacklog):
+		return GateGovernorBacklog
 	case errors.Is(err, ErrFailureBreaker):
 		return GateFailureBreaker
 	case errors.Is(err, ErrCoolingOff):
@@ -251,7 +261,7 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 		if err := t.pacer.wait(req.Context().Done()); err != nil {
 			return nil, err
 		}
-		if err := t.governor.wait(req.Context().Done()); err != nil {
+		if err := t.governor.wait(req.Context()); err != nil {
 			return nil, err
 		}
 
