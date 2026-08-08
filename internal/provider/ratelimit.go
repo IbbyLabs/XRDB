@@ -15,6 +15,11 @@ import (
 	"time"
 )
 
+// upstreamMsHeader carries how long the source itself took to answer, set on a
+// gateway error so a caller can tell an instant refusal from a real timeout
+// without timing our own queues.
+const upstreamMsHeader = "X-Xrdb-Upstream-Ms"
+
 // ErrRateLimited reports that a source refused the request for rate-limit
 // reasons and did not recover within the retry budget. Callers use it to tell a
 // throttled source apart from a missing title, so a render can fall back to the
@@ -294,10 +299,15 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 			attemptReq.Body = body
 		}
 
+		sent := time.Now()
 		resp, err := base.RoundTrip(attemptReq)
 		if err != nil {
 			return nil, err
 		}
+		// Measured here rather than around the whole call: the pacer and the
+		// governor wait above, inside this same timeout, so a caller timing the
+		// request would be timing our queue.
+		upstream := time.Since(sent)
 		// Counted here rather than at the call site so retries and refusals are
 		// charged too. The allowance meters requests, not answers.
 		dailyBudgetFor(t.source).spend()
@@ -327,9 +337,11 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 			// five of those hold the source out. The path carries no query, so
 			// no credential reaches the log.
 			if resp.StatusCode >= 500 {
+				resp.Header.Set(upstreamMsHeader, strconv.FormatInt(upstream.Milliseconds(), 10))
 				t.log().WarnContext(req.Context(), "A ratings source returned a gateway error",
 					"source", t.source, "status", resp.StatusCode,
-					"path", req.URL.Path, "attempt", attempt+1)
+					"path", req.URL.Path, "attempt", attempt+1,
+					"upstream_ms", upstream.Milliseconds())
 			}
 			return resp, nil
 		}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -34,6 +35,22 @@ func NewMALWithURL(baseURL string) *MAL {
 		httpClient: newHTTPClient("mal", 10*time.Second),
 		baseURL:    baseURL,
 	}
+}
+
+// instantRefusal bounds how quickly a gateway error must arrive to be read as a
+// statement about one title rather than a gateway timing out. Jikan's per-title
+// 504 lands in about 130ms.
+const instantRefusal = time.Second
+
+// answeredFast reports whether the source itself answered inside
+// instantRefusal. An unmeasured response is treated as slow: a gateway that
+// genuinely times out must still count against the source.
+func answeredFast(resp *http.Response) bool {
+	ms, err := strconv.ParseInt(resp.Header.Get(upstreamMsHeader), 10, 64)
+	if err != nil {
+		return false
+	}
+	return time.Duration(ms)*time.Millisecond < instantRefusal
 }
 
 func (m *MAL) Name() string { return "mal" }
@@ -66,7 +83,7 @@ func (m *MAL) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, erro
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, fmt.Errorf("mal: anime not found for id %q: %w", id, ErrNotApplicable)
 	}
-	if resp.StatusCode == http.StatusGatewayTimeout {
+	if resp.StatusCode == http.StatusGatewayTimeout && answeredFast(resp) {
 		return nil, fmt.Errorf("mal: http %d for id %q: %w", resp.StatusCode, id, ErrUpstreamUnavailable)
 	}
 	if resp.StatusCode != http.StatusOK {

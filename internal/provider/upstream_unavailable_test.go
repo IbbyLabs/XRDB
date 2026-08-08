@@ -70,3 +70,45 @@ func TestAnOrdinaryServerErrorStillCountsAgainstTheSource(t *testing.T) {
 		t.Error("a source returning 500 to everything was not held out")
 	}
 }
+
+// The reasoning rests on the refusal being instant. A gateway that genuinely
+// times out is slow by definition, and it must still count: otherwise a
+// universal outage costs every render the full timeout with nothing holding the
+// source out.
+func TestASlowGatewayErrorStillCountsAgainstTheSource(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(1200 * time.Millisecond)
+		w.WriteHeader(http.StatusGatewayTimeout)
+	}))
+	defer srv.Close()
+
+	m := NewMALWithURL(srv.URL + "/")
+	h := NewHealthTracker(10, time.Hour)
+	for range failureBreakerThreshold {
+		_, err := m.Fetch(context.Background(), "series", "mal:9253")
+		if errors.Is(err, ErrUpstreamUnavailable) {
+			t.Fatalf("a slow gateway timeout was read as a broken title: %v", err)
+		}
+		h.Failure("mal", err, CallerInteractive)
+	}
+	if !h.CoolingOff("mal", CallerInteractive) {
+		t.Error("a gateway timing out on everything was not held out")
+	}
+}
+
+// A response nobody measured is treated as slow, so an unmeasured path cannot
+// silently disable the breaker.
+func TestAnUnmeasuredGatewayErrorIsNotATitleFact(t *testing.T) {
+	resp := &http.Response{StatusCode: http.StatusGatewayTimeout, Header: make(http.Header)}
+	if answeredFast(resp) {
+		t.Error("a response with no upstream timing was read as an instant refusal")
+	}
+	resp.Header.Set(upstreamMsHeader, "130")
+	if !answeredFast(resp) {
+		t.Error("a 130ms answer was not read as instant")
+	}
+	resp.Header.Set(upstreamMsHeader, "4000")
+	if answeredFast(resp) {
+		t.Error("a four-second answer was read as instant")
+	}
+}
