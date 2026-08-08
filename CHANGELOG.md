@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.73.1](https://github.com/IbbyLabs/XRDB/compare/v3.73.0...v3.73.1) (2026-08-08)
+
+
+### Fixed
+
+* **anime:** rank a shared IMDb id by entry type (BUG-222) ([2203388](https://github.com/IbbyLabs/XRDB/commit/2203388b1a45696cc3ffccdcfbc6c0553d4833a3))
+
 ## [3.73.0](https://github.com/IbbyLabs/XRDB/compare/v3.72.1...v3.73.0) (2026-08-08)
 
 
