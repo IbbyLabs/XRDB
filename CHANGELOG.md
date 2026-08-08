@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.69.3](https://github.com/IbbyLabs/XRDB/compare/v3.69.2...v3.69.3) (2026-08-08)
+
+
+### Fixed
+
+* **ratings:** stop counting a remembered rating as a source answering ([7ec1ad3](https://github.com/IbbyLabs/XRDB/commit/7ec1ad30a8e9a093fcd8baf1b01edf1b8914a036))
+
 ## [3.69.2](https://github.com/IbbyLabs/XRDB/compare/v3.69.1...v3.69.2) (2026-08-08)
 
 
