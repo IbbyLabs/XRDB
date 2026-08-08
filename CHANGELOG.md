@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.69.5](https://github.com/IbbyLabs/XRDB/compare/v3.69.4...v3.69.5) (2026-08-08)
+
+
+### Fixed
+
+* **ratings:** refuse a budget queue wait the request cannot outlive ([7ac0c50](https://github.com/IbbyLabs/XRDB/commit/7ac0c50fb8a05c8e44601eaf3f6f3322697e24a1))
+
 ## [3.69.4](https://github.com/IbbyLabs/XRDB/compare/v3.69.3...v3.69.4) (2026-08-08)
 
 
