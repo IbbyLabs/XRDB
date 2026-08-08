@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 )
@@ -110,5 +111,32 @@ func TestAnUnmeasuredGatewayErrorIsNotATitleFact(t *testing.T) {
 	resp.Header.Set(upstreamMsHeader, "4000")
 	if answeredFast(resp) {
 		t.Error("a four-second answer was read as instant")
+	}
+}
+
+// Which Jikan instance is in use is otherwise invisible: an unset override
+// falls back to the public API silently, and the only evidence is a latency
+// difference someone has to notice.
+func TestJikanHostNamesTheInstance(t *testing.T) {
+	for _, tc := range []struct{ in, want string }{
+		{"", "api.jikan.moe"},
+		{"http://jikan_rest:8080/v4/anime/", "jikan_rest:8080"},
+		{"https://api.jikan.moe/v4/anime/", "api.jikan.moe"},
+		{"://nonsense", "unparseable"},
+	} {
+		if got := JikanHost(tc.in); got != tc.want {
+			t.Errorf("JikanHost(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}
+
+// A credential in an override must not reach the log.
+func TestJikanHostDropsPathAndQuery(t *testing.T) {
+	got := JikanHost("https://jikan.example/secret-path/v4/anime/?token=SECRET123")
+	if strings.Contains(got, "SECRET123") || strings.Contains(got, "secret-path") {
+		t.Errorf("JikanHost leaked the path or query: %q", got)
+	}
+	if got != "jikan.example" {
+		t.Errorf("JikanHost = %q, want jikan.example", got)
 	}
 }

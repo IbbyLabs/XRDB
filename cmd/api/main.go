@@ -178,7 +178,7 @@ func main() {
 	reg.Register(provider.NewAlloCine())
 	reg.Register(provider.NewFilmweb())
 
-	logProviderReadiness(reg)
+	logProviderReadiness(reg, cfg.JikanURL)
 
 	var simklProvider *provider.SIMKL
 	var pipeline *compose.Pipeline
@@ -303,7 +303,7 @@ func main() {
 
 // logProviderReadiness reports which providers hold credentials. Keyless
 // providers are always ready.
-func logProviderReadiness(reg *provider.Registry) {
+func logProviderReadiness(reg *provider.Registry, jikanURL string) {
 	var ready, waiting []string
 	for _, name := range reg.Names() {
 		p := reg.Get(name)
@@ -322,7 +322,10 @@ func logProviderReadiness(reg *provider.Registry) {
 	}
 	slog.Info("Registered the rating providers",
 		"ready", strings.Join(ready, ","),
-		"waiting_for_a_key", strings.Join(waiting, ","))
+		"waiting_for_a_key", strings.Join(waiting, ","),
+		// Host only: an override may carry a credential in its path or query,
+		// and the host is what a check of which instance is in use needs.
+		"jikan_host", provider.JikanHost(jikanURL))
 	if len(waiting) > 0 {
 		slog.Warn("Some providers have no credentials, so the sources they serve will not appear",
 			"providers", strings.Join(waiting, ","))

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -51,6 +52,19 @@ func answeredFast(resp *http.Response) bool {
 		return false
 	}
 	return time.Duration(ms)*time.Millisecond < instantRefusal
+}
+
+// JikanHost names the Jikan instance a base URL points at, or the public one
+// when the override is empty. Host only, never the path or query.
+func JikanHost(baseURL string) string {
+	if baseURL == "" {
+		baseURL = jikanBaseURL
+	}
+	u, err := url.Parse(baseURL)
+	if err != nil || u.Host == "" {
+		return "unparseable"
+	}
+	return u.Host
 }
 
 func (m *MAL) Name() string { return "mal" }
