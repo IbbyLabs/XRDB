@@ -498,7 +498,7 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 		if good, ok := p.health.LastGood(prov.Name(), key); ok {
 			return good, nil
 		}
-		return nil, fmt.Errorf("%s: rate limited, cooling off: %w", prov.Name(), provider.ErrRateLimited)
+		return nil, fmt.Errorf("%s: %w", prov.Name(), provider.ErrCoolingOff)
 	}
 	// A catalogue sweep draws on the same daily allowance a person's render
 	// needs, and the source answers nobody once it is spent. Bulk callers are
@@ -512,7 +512,7 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 				return good, nil
 			}
 		}
-		return nil, fmt.Errorf("%s: daily allowance held for interactive callers: %w", prov.Name(), provider.ErrRateLimited)
+		return nil, fmt.Errorf("%s: %w", prov.Name(), provider.ErrBulkAllowanceHeld)
 	}
 	cacheKey := provider.GoodKey(prov.Name(), req.ContentType, req.MediaID)
 	meta, err := p.ratings.do(ctx, cacheKey, func() (*provider.MediaMeta, bool, error) {
@@ -1539,11 +1539,11 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 					// The per-request drop is otherwise invisible: the badge is
 					// gone from the poster and only a debug line records why, so a
 					// source missing from most renders leaves no warn to act on.
-					// "Held out" names what happened to the badge without asserting
-					// the cause: the refusal is a rate limit, but the source may be
-					// in cooldown for another reason entirely.
+					// "gate" names which of the four hold-out paths fired; only
+					// upstream_refusal means the source refused this request.
 					p.log().WarnContext(ctx, "A ratings source was held out and dropped from this render; its badge is missing",
-						"id", logging.RequestID(ctx), "source", prov.Name(), "media_id", req.MediaID)
+						"id", logging.RequestID(ctx), "source", prov.Name(), "media_id", req.MediaID,
+						"gate", provider.HoldOutGate(err))
 				}
 				return
 			}

@@ -35,6 +35,47 @@ func pacerMaxWait() time.Duration {
 // allowance for the moment.
 var ErrPacerBacklog = fmt.Errorf("paced source backlog: %w", ErrRateLimited)
 
+// ErrCoolingOff reports that a source was skipped because an earlier refusal
+// left it in cooldown. It did not refuse this request.
+var ErrCoolingOff = fmt.Errorf("source cooling off: %w", ErrRateLimited)
+
+// ErrBulkAllowanceHeld reports that a bulk caller was held out of the last of a
+// source's daily allowance, which is reserved for interactive renders.
+var ErrBulkAllowanceHeld = fmt.Errorf("daily allowance held for interactive callers: %w", ErrRateLimited)
+
+// Gate names, as they appear in the "gate" field of a hold-out log line.
+const (
+	GateUpstreamRefusal = "upstream_refusal"
+	GateCooldown        = "cooldown"
+	GatePacerBacklog    = "pacer_backlog"
+	GateBulkAllowance   = "bulk_allowance"
+	// GateUnattributed marks a rate-limit refusal none of the gates claims. It
+	// is a gap in this function, not a fifth way to be held out.
+	GateUnattributed = "unattributed"
+)
+
+// HoldOutGate names which gate dropped a source from a render. Only
+// GateUpstreamRefusal means the source itself refused.
+func HoldOutGate(err error) string {
+	if err == nil {
+		return ""
+	}
+	var rl *RateLimitError
+	switch {
+	case errors.As(err, &rl):
+		return GateUpstreamRefusal
+	case errors.Is(err, ErrPacerBacklog):
+		return GatePacerBacklog
+	case errors.Is(err, ErrCoolingOff):
+		return GateCooldown
+	case errors.Is(err, ErrBulkAllowanceHeld):
+		return GateBulkAllowance
+	case errors.Is(err, ErrRateLimited):
+		return GateUnattributed
+	}
+	return ""
+}
+
 // RateLimitError carries which source refused and how long it asked us to wait.
 type RateLimitError struct {
 	Source     string
