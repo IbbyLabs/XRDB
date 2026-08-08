@@ -1593,7 +1593,24 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 		if !provider.SourceApplies(ctx, prov, req.ContentType, req.MediaID) {
 			continue
 		}
-		meta, _, err := p.fetchRatingsResilient(ctx, prov, req, artwork)
+		started := time.Now()
+		meta, fromMemory, err := p.fetchRatingsResilient(ctx, prov, req, artwork)
+		// Logged exactly as a source in the fan-out is. A supplier consulted on
+		// a different path and left out of the record is invisible, and a render
+		// where it answered cannot be told from one where it was never asked.
+		switch {
+		case err != nil:
+			p.log().DebugContext(ctx, "A ratings source did not answer",
+				"id", logging.RequestID(ctx), "source", prov.Name(),
+				"media_id", req.MediaID, "took_ms", time.Since(started).Milliseconds(),
+				"error", err)
+		case fromMemory:
+		default:
+			p.log().InfoContext(ctx, "A ratings source answered",
+				"id", logging.RequestID(ctx), "source", prov.Name(),
+				"media_id", req.MediaID, "took_ms", time.Since(started).Milliseconds(),
+				"ratings", len(ratingsOf(meta)))
+		}
 		if err != nil || meta == nil {
 			continue
 		}
@@ -1605,7 +1622,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 	}
 	skip := redundantAfter(called, covered, req.Config, req.ContentType, done)
 	if len(skip) > 0 {
-		p.log().DebugContext(ctx, "Skipped rating suppliers a free source already answered for",
+		p.log().InfoContext(ctx, "Skipped rating suppliers a free source already answered for",
 			"id", logging.RequestID(ctx), "media_id", req.MediaID, "skipped", len(skip))
 	}
 
