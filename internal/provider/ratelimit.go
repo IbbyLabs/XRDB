@@ -39,6 +39,11 @@ var ErrPacerBacklog = fmt.Errorf("paced source backlog: %w", ErrRateLimited)
 // left it in cooldown. It did not refuse this request.
 var ErrCoolingOff = fmt.Errorf("source cooling off: %w", ErrRateLimited)
 
+// ErrFailureBreaker reports a source held out by the breaker that trips after
+// five consecutive failures of any kind. Nothing refused the request; the
+// source is erroring, most often by timing out.
+var ErrFailureBreaker = fmt.Errorf("source held out by the failure breaker: %w", ErrRateLimited)
+
 // ErrBulkAllowanceHeld reports that a bulk caller was held out of the last of a
 // source's daily allowance, which is reserved for interactive renders.
 var ErrBulkAllowanceHeld = fmt.Errorf("daily allowance held for interactive callers: %w", ErrRateLimited)
@@ -49,6 +54,9 @@ const (
 	GateCooldown        = "cooldown"
 	GatePacerBacklog    = "pacer_backlog"
 	GateBulkAllowance   = "bulk_allowance"
+	// GateFailureBreaker is a hold-out from the breaker that trips after five
+	// consecutive failures of any kind. The source never refused.
+	GateFailureBreaker = "failure_breaker"
 	// GateUnattributed marks a rate-limit refusal none of the gates claims. It
 	// is a gap in this function, not a fifth way to be held out.
 	GateUnattributed = "unattributed"
@@ -66,6 +74,8 @@ func HoldOutGate(err error) string {
 		return GateUpstreamRefusal
 	case errors.Is(err, ErrPacerBacklog):
 		return GatePacerBacklog
+	case errors.Is(err, ErrFailureBreaker):
+		return GateFailureBreaker
 	case errors.Is(err, ErrCoolingOff):
 		return GateCooldown
 	case errors.Is(err, ErrBulkAllowanceHeld):

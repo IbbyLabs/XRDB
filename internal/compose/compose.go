@@ -487,6 +487,18 @@ func (p *Pipeline) answerKeptItsSources(source, key string, meta *provider.Media
 // The bool reports a result served from memory rather than fetched. A render
 // carrying one is not evidence the source answered, and counting it as one
 // inflates the denominator every hold-out warning is read against.
+// recordsAgainstTheSource reports whether a failed fetch says anything about the
+// source. It must not be decided from the returned error alone: when the HTTP
+// client's own timer fires at the same moment the render context is cancelled,
+// Go returns an error that satisfies DeadlineExceeded rather than Canceled, so
+// an abandoned render reads as the source timing out. The context is the
+// reliable signal.
+//
+// A timeout with a live context is the source failing and does count.
+func recordsAgainstTheSource(ctx context.Context, err error) bool {
+	return ctx.Err() == nil && !errors.Is(err, context.Canceled)
+}
+
 func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Provider, req Request, artwork *provider.MediaMeta) (*provider.MediaMeta, bool, error) {
 	// A render carrying the owner's own credential for this source has its own
 	// upstream allowance, so the shared key's cooldown does not apply to it. This
@@ -495,17 +507,21 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 	ownerKeyed := provider.HasOwnerKey(ctx, prov.Name())
 	callerClass := provider.CallerClassFrom(ctx)
 	if !ownerKeyed && p.health != nil && p.health.CoolingOff(prov.Name(), callerClass) {
+		gate, heldOut := provider.GateCooldown, provider.ErrCoolingOff
+		if p.health.CooldownReason(prov.Name(), callerClass) == provider.CooldownFailureBreaker {
+			gate, heldOut = provider.GateFailureBreaker, provider.ErrFailureBreaker
+		}
 		// The source is refusing on rate-limit grounds. Waiting for it to say so
 		// again costs the render seconds, so take the remembered value instead.
 		key := provider.GoodKey(prov.Name(), req.ContentType, req.MediaID)
 		if good, age, ok := p.health.LastGoodAge(prov.Name(), key); ok {
 			p.log().InfoContext(ctx, "A ratings source is held out; serving a remembered rating",
 				"id", logging.RequestID(ctx), "source", prov.Name(),
-				"media_id", req.MediaID, "gate", provider.GateCooldown,
+				"media_id", req.MediaID, "gate", gate,
 				"age_ms", age.Milliseconds())
 			return good, true, nil
 		}
-		return nil, false, fmt.Errorf("%s: %w", prov.Name(), provider.ErrCoolingOff)
+		return nil, false, fmt.Errorf("%s: %w", prov.Name(), heldOut)
 	}
 	// A catalogue sweep draws on the same daily allowance a person's render
 	// needs, and the source answers nobody once it is spent. Bulk callers are
@@ -551,7 +567,7 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 		// An owner key failing says nothing about the shared source's health: it
 		// is a different credential with its own allowance. Recording it would let
 		// one exhausted owner key set the shared cooldown for every other render.
-		if p.health.Failure(prov.Name(), err, callerClass) {
+		if recordsAgainstTheSource(ctx, err) && p.health.Failure(prov.Name(), err, callerClass) {
 			// The transition into cooldown, logged once, is what makes a failing
 			// source visible instead of silently dropping its badge from every
 			// render. Naming the reason matters as much: reporting a rejected

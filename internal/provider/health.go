@@ -42,7 +42,11 @@ type sourceState struct {
 	// already keeps one caller's success from speaking for another's health;
 	// this is the same rule for failure. Indexed by CallerClass.
 	cooldownUntil [2]time.Time
-	cooldowns     int64
+	// cooldownReason names what set the timer in force, per caller class. The
+	// two causes want opposite responses: one is throttling, the other is a
+	// source erroring.
+	cooldownReason [2]string
+	cooldowns      int64
 	// breakerTrips counts how many times in a row the failure breaker has held
 	// this source out without a success in between. It lengthens the next hold.
 	breakerTrips int
@@ -125,6 +129,7 @@ func (h *HealthTracker) Success(source, key string, meta *MediaMeta) (recovered 
 		time.Now().Before(st.cooldownUntil[CallerBulk])
 	st.healthy = true
 	st.cooldownUntil = [2]time.Time{}
+	st.cooldownReason = [2]string{}
 	st.lastSuccess = time.Now()
 	st.consecutiveFail = 0
 	st.breakerTrips = 0
@@ -196,7 +201,7 @@ func (h *HealthTracker) Failure(source string, err error, class CallerClass) (en
 	// A refusal a sweep provoked holds the sweep off. A refusal a person hit
 	// holds everyone off: if the source will not answer an ordinary render it
 	// will not answer a crawl either.
-	hold := func(until time.Time) bool {
+	hold := func(until time.Time, reason string) bool {
 		classes := []CallerClass{class}
 		if class == CallerInteractive {
 			classes = []CallerClass{CallerInteractive, CallerBulk}
@@ -205,6 +210,7 @@ func (h *HealthTracker) Failure(source string, err error, class CallerClass) (en
 		for _, c := range classes {
 			if until.After(st.cooldownUntil[c]) {
 				st.cooldownUntil[c] = until
+				st.cooldownReason[c] = reason
 				set = true
 			}
 		}
@@ -237,7 +243,7 @@ func (h *HealthTracker) Failure(source string, err error, class CallerClass) (en
 		if rl.QuotaExhausted {
 			wait = quotaCooldown
 		}
-		if hold(time.Now().Add(wait)) {
+		if hold(time.Now().Add(wait), CooldownRateLimit) {
 			st.cooldowns++
 		}
 		enteredCooldown = !wasCooling && time.Now().Before(st.cooldownUntil[class])
@@ -256,7 +262,7 @@ func (h *HealthTracker) Failure(source string, err error, class CallerClass) (en
 		if wait > maxCooldown {
 			wait = maxCooldown
 		}
-		if hold(time.Now().Add(wait)) {
+		if hold(time.Now().Add(wait), CooldownFailureBreaker) {
 			st.cooldowns++
 			st.breakerTrips++
 		}
@@ -284,6 +290,29 @@ const (
 	// five-minute ceiling every other cooldown answers to.
 	failureBackoffShifts = 3
 )
+
+// Why a source is being held out. A rate-limit cooldown means the source
+// refused; the failure breaker means it failed five times in a row for any
+// reason, most often a timeout, and never refused at all.
+const (
+	CooldownRateLimit      = "rate_limit"
+	CooldownFailureBreaker = "failure_breaker"
+)
+
+// CooldownReason names what put a source in cooldown, or "" if it is not in
+// one.
+func (h *HealthTracker) CooldownReason(source string, class CallerClass) string {
+	if h == nil {
+		return ""
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	st, ok := h.sources[source]
+	if !ok || !time.Now().Before(st.cooldownUntil[class]) {
+		return ""
+	}
+	return st.cooldownReason[class]
+}
 
 // CoolingOff reports whether a source is being held out after refusing on
 // rate-limit grounds, and must not be called by a live render.

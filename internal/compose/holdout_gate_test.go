@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"image/color"
 	"log/slog"
 	"strings"
@@ -78,5 +79,49 @@ func TestAHeldOutSourceNamesTheGateThatDroppedIt(t *testing.T) {
 	}
 	if gates[1] != provider.GateCooldown {
 		t.Errorf("a hold-out from the cooldown left by an earlier refusal reported gate %q, want %q", gates[1], provider.GateCooldown)
+	}
+}
+
+// The breaker that trips after five plain failures holds a source out through
+// the same path a 429 does. Reporting both as a cooldown sends whoever reads it
+// to check a quota for a source that is timing out.
+func TestTheFailureBreakerIsNotReportedAsARateLimitCooldown(t *testing.T) {
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelInfo}))
+
+	reg := provider.NewRegistry()
+	reg.Register(&provider.StubProvider{
+		ProviderName: "tmdb",
+		Meta:         &provider.MediaMeta{Title: "T", PosterURL: "http://tmdb/poster.jpg"},
+	})
+	reg.Register(&alwaysFailing{name: "imdb"})
+
+	health := provider.NewHealthTracker(10, time.Hour)
+	for range 5 {
+		health.Failure("imdb", errors.New("http 504"), provider.CallerInteractive)
+	}
+	if !health.CoolingOff("imdb", provider.CallerInteractive) {
+		t.Fatal("five plain failures did not hold the source out")
+	}
+
+	p := &Pipeline{providers: reg, logger: logger,
+		fetcher: &stubImageFetcher{data: makeTestPNG(600, 900, color.NRGBA{20, 20, 20, 255})}}
+	p.SetHealthTracker(health)
+	cfg := imageconfig.Default()
+	cfg.ArtworkSource = imageconfig.ArtworkTMDB
+	cfg.Ratings = []string{"imdb"}
+
+	if _, err := p.Render(context.Background(), Request{
+		MediaType: "poster", ContentType: "movie", MediaID: "tt9", Config: cfg,
+	}); err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+
+	line := hasMsg(logLinesFrom(t, &buf), holdOutMsg)
+	if line == nil {
+		t.Fatal("a source held out by the failure breaker left no warning")
+	}
+	if line["gate"] != provider.GateFailureBreaker {
+		t.Errorf("gate = %v, want %v", line["gate"], provider.GateFailureBreaker)
 	}
 }
