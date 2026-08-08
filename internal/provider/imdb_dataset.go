@@ -102,6 +102,24 @@ func (d *IMDbDataset) Fetch(ctx context.Context, mediaType, id string) (*MediaMe
 	}, nil
 }
 
+// FreeToAsk reports that a lookup costs nothing: the dataset is held in memory
+// and answering is a map read. The one-off load is paid on the first fetch
+// either way.
+func (d *IMDbDataset) FreeToAsk() bool { return true }
+
+// Ready reports whether the dataset can be relied on to answer.
+//
+// True before anything has been loaded, because the load happens on the first
+// fetch: a provider that called itself unready until then would never be asked
+// and would never load. It goes false once a load has failed, which is what
+// takes a broken dataset out of the running to supply a rating so the next
+// provider covers it.
+func (d *IMDbDataset) Ready() bool {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return d.loadErr == nil
+}
+
 // ensureLoaded loads or downloads the dataset if not already in memory.
 func (d *IMDbDataset) ensureLoaded(ctx context.Context) error {
 	d.mu.RLock()
@@ -121,7 +139,11 @@ func (d *IMDbDataset) ensureLoaded(ctx context.Context) error {
 	path := filepath.Join(d.dataDir, imdbDatasetFile)
 	if needsRefresh(path, imdbDatasetMaxAge) {
 		if err := d.download(ctx, path); err != nil {
-			return fmt.Errorf("download: %w", err)
+			// Recorded as well as returned. A caller asking whether this source
+			// can be relied on reads loadErr, and a download that failed
+			// without leaving a trace there reads as a dataset that is fine.
+			d.loadErr = fmt.Errorf("download: %w", err)
+			return d.loadErr
 		}
 	}
 

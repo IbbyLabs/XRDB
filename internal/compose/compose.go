@@ -406,6 +406,13 @@ func (p *Pipeline) Provider(name string) provider.Provider {
 // front and simply skip the ones without a key, so a key saved at runtime
 // activates its provider without a restart or re-registration.
 func providerReady(p provider.Provider) bool {
+	// A provider can be registered and not yet usable. Credentials are one way
+	// of being unusable; a local dataset that failed to load is another, and it
+	// carries no credentials at all, so asking only about those reports a
+	// broken dataset as ready and lets it win a source it cannot answer for.
+	if r, ok := p.(interface{ Ready() bool }); ok && !r.Ready() {
+		return false
+	}
 	if hc, ok := p.(interface{ HasCredentials() bool }); ok {
 		return hc.HasCredentials()
 	}
@@ -417,7 +424,7 @@ func providerReady(p provider.Provider) bool {
 // selected, which keeps a source that costs a site lookup from being fetched on
 // every render just to be discarded. Providers that declare nothing are always
 // called, as they were before.
-func providerWanted(p provider.Provider, cfg imageconfig.Config) bool {
+func providerWanted(p provider.Provider, cfg imageconfig.Config, contentType string) bool {
 	sourcer, ok := p.(provider.RatingSourcer)
 	if !ok {
 		return true
@@ -437,7 +444,7 @@ func providerWanted(p provider.Provider, cfg imageconfig.Config) bool {
 		}
 	}
 	for _, source := range sourcer.RatingSources() {
-		for _, want := range imageconfig.RatingsCandidates(cfg) {
+		for _, want := range imageconfig.RatingsCandidatesForType(cfg, contentType) {
 			if source == want {
 				return true
 			}
@@ -1564,7 +1571,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 		if !providerReady(prov) {
 			continue
 		}
-		if !providerWanted(prov, req.Config) {
+		if !providerWanted(prov, req.Config, req.ContentType) {
 			continue
 		}
 		called = append(called, prov)
@@ -1573,7 +1580,39 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 	answers := make([]*provider.MediaMeta, len(called))
 	var degraded, sourceFault, queueHeld atomic.Bool
 	degradedFlags := make([]bool, len(called))
+
+	// A supplier that costs nothing to consult is asked before the rest. Where
+	// it has the title, the sources it answered for need no other supplier and
+	// theirs are never called. Where it does not, nothing has been spent and
+	// every supplier runs as before — coverage is per title, so which of the two
+	// it is cannot be known until it has answered.
+	done := make(map[int]bool)
+	covered := make(map[string]bool)
+	for _, i := range freePreferredSuppliers(called, req.Config, req.ContentType) {
+		prov := called[i]
+		if !provider.SourceApplies(ctx, prov, req.ContentType, req.MediaID) {
+			continue
+		}
+		meta, _, err := p.fetchRatingsResilient(ctx, prov, req, artwork)
+		if err != nil || meta == nil {
+			continue
+		}
+		answers[i] = meta
+		done[i] = true
+		for _, r := range meta.Ratings {
+			covered[strings.ToLower(r.Source)] = true
+		}
+	}
+	skip := redundantAfter(called, covered, req.Config, req.ContentType, done)
+	if len(skip) > 0 {
+		p.log().DebugContext(ctx, "Skipped rating suppliers a free source already answered for",
+			"id", logging.RequestID(ctx), "media_id", req.MediaID, "skipped", len(skip))
+	}
+
 	for i, prov := range called {
+		if done[i] || skip[i] {
+			continue
+		}
 		wg.Add(1)
 		go func(i int, prov provider.Provider) {
 			defer wg.Done()
@@ -1653,6 +1692,11 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 	}
 	wg.Wait()
 
+	// Which provider supplies a source is a preference, not the order the
+	// registry happens to sort names in. Resolved per source, because a
+	// provider can be the preferred supplier of one and not of another.
+	winner := preferredSuppliers(called, answers)
+
 	for i, meta := range answers {
 		if meta == nil {
 			continue
@@ -1668,6 +1712,9 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 		}
 		contributed := false
 		for _, r := range meta.Ratings {
+			if w, ok := winner[r.Source]; ok && w != called[i].Name() {
+				continue
+			}
 			if !seen[r.Source] {
 				seen[r.Source] = true
 				all = append(all, r)

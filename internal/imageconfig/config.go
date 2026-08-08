@@ -1396,6 +1396,41 @@ func RatingsCandidates(cfg Config) []string {
 	return out
 }
 
+// RatingsCandidatesForType narrows the candidate sources to those a title of
+// this content type could end up showing. Whether the title is an anime is not
+// known until after the ratings are fetched, so the anime override stays in the
+// set; the movie and series lists are mutually exclusive and the one that
+// cannot apply is dropped.
+//
+// An unrecognised or empty content type narrows nothing, so a caller that does
+// not know the type still gets every candidate rather than silently fewer.
+func RatingsCandidatesForType(cfg Config, contentType string) []string {
+	if !HasPerTypeRatings(cfg) {
+		return cfg.Ratings
+	}
+	lists := [][]string{cfg.Ratings, cfg.RatingsAnime}
+	switch strings.ToLower(strings.TrimSpace(contentType)) {
+	case "series", "tv":
+		lists = append(lists, cfg.RatingsSeries)
+	case "movie":
+		lists = append(lists, cfg.RatingsMovie)
+	default:
+		lists = append(lists, cfg.RatingsMovie, cfg.RatingsSeries)
+	}
+
+	seen := make(map[string]bool, len(cfg.Ratings))
+	out := make([]string, 0, len(cfg.Ratings))
+	for _, list := range lists {
+		for _, r := range list {
+			if r != "" && !seen[r] {
+				seen[r] = true
+				out = append(out, r)
+			}
+		}
+	}
+	return out
+}
+
 // RatingsFor returns the rating sources a title of this kind should show. An
 // anime override wins over the series/movie one, because an anime is also a
 // series and the more specific answer is the one asked for. An unset override
