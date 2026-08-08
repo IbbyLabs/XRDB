@@ -552,10 +552,21 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 		return nil, false, fmt.Errorf("%s: %w", prov.Name(), provider.ErrBulkAllowanceHeld)
 	}
 	cacheKey := provider.GoodKey(prov.Name(), req.ContentType, req.MediaID)
+	// Concurrent renders of one title share a single fetch, so a follower's
+	// elapsed time is the leader's whole round trip and costs the source
+	// nothing. Timed apart from the fetch: the two are the same number to a
+	// caller and only one of them is work.
+	fetched, waitStart := false, time.Now()
 	meta, err := p.ratings.do(ctx, cacheKey, func() (*provider.MediaMeta, bool, error) {
+		fetched = true
 		m, ferr := p.fetchRatings(ctx, prov, req, artwork)
 		return m, p.answerKeptItsSources(prov.Name(), cacheKey, m), ferr
 	})
+	if !fetched {
+		p.log().DebugContext(ctx, "A ratings source's answer was waited on rather than fetched",
+			"id", logging.RequestID(ctx), "source", prov.Name(),
+			"media_id", req.MediaID, "waited_ms", time.Since(waitStart).Milliseconds())
+	}
 	if p.health == nil {
 		return meta, false, err
 	}

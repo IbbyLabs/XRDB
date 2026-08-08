@@ -269,7 +269,10 @@ type throttledTransport struct {
 	// read since process start can confirm the guard actually fired rather than
 	// the source simply having no foreign traffic.
 	withheld atomic.Int64
-	logger   *slog.Logger
+	// queued counts requests that waited in our own queue rather than going out
+	// at once, so the wait is countable without a debug level.
+	queued atomic.Int64
+	logger *slog.Logger
 }
 
 func (t *throttledTransport) log() *slog.Logger {
@@ -296,9 +299,11 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 		if err := t.pacer.wait(req.Context().Done()); err != nil {
 			return nil, err
 		}
+		queued := time.Now()
 		if err := t.governor.wait(req.Context()); err != nil {
 			return nil, err
 		}
+		inQueue := time.Since(queued)
 
 		attemptReq := req
 		if attempt > 0 && req.GetBody != nil {
@@ -340,6 +345,18 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 			if n == 1 || isPowerOfTen(n) {
 				t.log().InfoContext(req.Context(), "Withheld an owner-keyed response from the shared governor",
 					"source", t.source, "total", n)
+			}
+		}
+		// A slow source and a long queue in front of a fast one are the same
+		// number to the caller, and they want opposite responses. Reported once
+		// per order of magnitude so a hot path stays quiet while a read since
+		// process start always finds the shape.
+		if inQueue >= time.Millisecond {
+			n := t.queued.Add(1)
+			if n == 1 || isPowerOfTen(n) {
+				t.log().InfoContext(req.Context(), "A ratings source's requests are waiting in our own queue",
+					"source", t.source, "queue_ms", inQueue.Milliseconds(),
+					"upstream_ms", upstream.Milliseconds(), "total", n)
 			}
 		}
 		if !isThrottleStatus(resp.StatusCode) {
