@@ -810,6 +810,13 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 
 	sourceBytes, meta, ratingID, artworkFrom, err := p.fetchSourceImageAndMeta(ctx, req)
 	timings.mark("artwork")
+	if meta != nil {
+		// A provider or a memo can hand the same object to concurrent renders of
+		// one title, and the fields below are written per render.
+		local := *meta
+		meta = &local
+	}
+
 	if err != nil || len(sourceBytes) == 0 {
 		p.log().WarnContext(ctx, "No source artwork was available; serving a placeholder",
 			"id", logging.RequestID(ctx),
