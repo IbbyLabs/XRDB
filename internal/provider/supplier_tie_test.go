@@ -4,8 +4,10 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"os"
 	"sort"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -18,15 +20,27 @@ import (
 // cmd/api, which a package test cannot import.
 func declaredRatingSources(t *testing.T) map[string][]string {
 	t.Helper()
-	fset := token.NewFileSet()
-	pkgs, err := parser.ParseDir(fset, ".", nil, 0)
+	entries, err := os.ReadDir(".")
 	if err != nil {
-		t.Fatalf("parsing the provider package: %v", err)
+		t.Fatalf("reading the provider package: %v", err)
+	}
+	fset := token.NewFileSet()
+	var files []*ast.File
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() || !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
+			continue
+		}
+		file, err := parser.ParseFile(fset, name, nil, 0)
+		if err != nil {
+			t.Fatalf("parsing %s: %v", name, err)
+		}
+		files = append(files, file)
 	}
 
 	out := make(map[string][]string)
-	for _, pkg := range pkgs {
-		for _, file := range pkg.Files {
+	{
+		for _, file := range files {
 			for _, decl := range file.Decls {
 				fn, ok := decl.(*ast.FuncDecl)
 				if !ok || fn.Name.Name != "RatingSources" || fn.Recv == nil {

@@ -155,16 +155,3 @@ func preferredByWantedSource(called []provider.Provider, wanted map[string]bool)
 	}
 	return best
 }
-
-func suppliesNoWantedSource(prov provider.Provider, wanted map[string]bool) bool {
-	s, ok := prov.(provider.RatingSourcer)
-	if !ok {
-		return true
-	}
-	for _, src := range s.RatingSources() {
-		if wanted[strings.ToLower(src)] {
-			return false
-		}
-	}
-	return true
-}
