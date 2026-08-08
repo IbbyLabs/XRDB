@@ -2,6 +2,17 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.74.1](https://github.com/IbbyLabs/XRDB/compare/v3.74.0...v3.74.1) (2026-08-08)
+
+
+### Fixed
+
+* **artwork:** log the remembered poster swap ([9d8e7f4](https://github.com/IbbyLabs/XRDB/commit/9d8e7f407753f6bdd554a95e1a94e516723b9c57))
+* **artwork:** pick the better of Kitsu's two poster files ([f886596](https://github.com/IbbyLabs/XRDB/commit/f886596ce0c400c9c8eaa4ee56199a146491c852))
+* **ratings:** decide applicability before availability ([a64ea3e](https://github.com/IbbyLabs/XRDB/commit/a64ea3e3d69879331f941230cea2d2fca4c349f4))
+* **ratings:** log the free supplier like every other ([9e1b42f](https://github.com/IbbyLabs/XRDB/commit/9e1b42f8aa0dea187c2de9b3acb3944be590c232))
+* **ratings:** prefer the dedicated source over the aggregator ([e2601a6](https://github.com/IbbyLabs/XRDB/commit/e2601a651b8d4974b11c66ac24dfb8b6f2db9ffa))
+
 ## [3.74.0](https://github.com/IbbyLabs/XRDB/compare/v3.73.1...v3.74.0) (2026-08-08)
 
 
