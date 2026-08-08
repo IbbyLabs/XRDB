@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.70.0](https://github.com/IbbyLabs/XRDB/compare/v3.69.6...v3.70.0) (2026-08-08)
+
+
+### Added
+
+* **ratings:** log the pacer interval on a queue hold-out ([ba65ab0](https://github.com/IbbyLabs/XRDB/commit/ba65ab080cb3cdd950dbb36297eedf1b5f816ad2))
+
 ## [3.69.6](https://github.com/IbbyLabs/XRDB/compare/v3.69.5...v3.69.6) (2026-08-08)
 
 
