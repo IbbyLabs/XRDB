@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.69.1](https://github.com/IbbyLabs/XRDB/compare/v3.69.0...v3.69.1) (2026-08-08)
+
+
+### Fixed
+
+* **configurator:** ungate the shared outline controls (BUG-225) ([a4264a7](https://github.com/IbbyLabs/XRDB/commit/a4264a70fdc76600abd31a81c88f56b5b4d1c061))
+
 ## [3.69.0](https://github.com/IbbyLabs/XRDB/compare/v3.68.0...v3.69.0) (2026-08-08)
 
 
