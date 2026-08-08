@@ -18,6 +18,12 @@ import (
 // inline has no profile at all, belongs to the caller of allow: this only counts.
 type callerLimiter struct {
 	perMinute float64
+	// burst is how many a caller may ask for at once. Held above perMinute
+	// deliberately: a page loading fifty posters is one caller arriving in a
+	// bunch, not a caller exceeding a sustained rate, and tying the two
+	// together would clip it for the shape of its traffic rather than its
+	// volume.
+	burst float64
 	// idle is how long a key with no requests is kept before it is dropped, so
 	// a crawler walking a catalogue does not grow the map without bound.
 	idle time.Duration
@@ -38,8 +44,21 @@ func newCallerLimiter(perMinute int) *callerLimiter {
 	if perMinute <= 0 {
 		return nil
 	}
+	return newCallerLimiterWithBurst(perMinute, perMinute*2)
+}
+
+// newCallerLimiterWithBurst is newCallerLimiter with the burst named, for a
+// caller that wants them different or a test that wants them equal.
+func newCallerLimiterWithBurst(perMinute, burst int) *callerLimiter {
+	if perMinute <= 0 {
+		return nil
+	}
+	if burst < perMinute {
+		burst = perMinute
+	}
 	return &callerLimiter{
 		perMinute: float64(perMinute),
+		burst:     float64(burst),
 		idle:      5 * time.Minute,
 		now:       time.Now,
 		buckets:   make(map[string]*callerBucket),
@@ -90,7 +109,7 @@ func (l *callerLimiter) allow(keys ...string) bool {
 func (l *callerLimiter) tokensLocked(key string, now time.Time) float64 {
 	b, ok := l.buckets[key]
 	if !ok {
-		b = &callerBucket{tokens: l.perMinute, last: now}
+		b = &callerBucket{tokens: l.burst, last: now}
 		l.buckets[key] = b
 		return b.tokens
 	}
@@ -98,8 +117,8 @@ func (l *callerLimiter) tokensLocked(key string, now time.Time) float64 {
 		b.tokens += elapsed.Seconds() * l.perMinute / 60
 		b.last = now
 	}
-	if b.tokens > l.perMinute {
-		b.tokens = l.perMinute
+	if b.tokens > l.burst {
+		b.tokens = l.burst
 	}
 	return b.tokens
 }

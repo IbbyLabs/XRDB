@@ -166,6 +166,13 @@ type Config struct {
 	ConfigEncryptionKey string
 	APIKey              string // if set, required on all render routes
 	RenderConcurrency   int    // max simultaneous renders; caps memory under bursts
+	// RenderCapPerMinute bounds how many fresh renders one caller may ask for
+	// each minute. Zero disables the cap.
+	RenderCapPerMinute int
+	// SharedProfileAliases names profiles several unrelated people use, which
+	// are capped by address instead: a limit on the profile would hit a crowd.
+	SharedProfileAliases []string
+
 	// RenderQueueWait bounds how long a render waits for a slot before the
 	// request is shed. Zero waits forever, which is what produced 144s renders.
 	RenderQueueWait time.Duration
@@ -431,6 +438,25 @@ func Load() Config {
 	// burst that outruns throughput otherwise queues without bound, and the queue
 	// is what turns a short burst into minutes of latency for everyone behind it.
 	// 0 restores the old unbounded wait.
+	// A crawler walking a catalogue arrives faster than the renderer can serve,
+	// and the queue it builds is paid for by everyone behind it. 30 clears the
+	// busiest real user measured, so the cap lands on the crawl rather than on
+	// somebody scrolling a large library.
+	renderCapPerMinute := 30
+	if raw := os.Getenv("XRDB_RENDER_CAP_PER_MINUTE"); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n >= 0 {
+			renderCapPerMinute = n
+		}
+	}
+	sharedProfileAliases := []string{"aios", "cimofam"}
+	if raw := os.Getenv("XRDB_SHARED_PROFILE_ALIASES"); raw != "" {
+		sharedProfileAliases = nil
+		for _, a := range strings.Split(raw, ",") {
+			if a = strings.ToLower(strings.TrimSpace(a)); a != "" {
+				sharedProfileAliases = append(sharedProfileAliases, a)
+			}
+		}
+	}
 	renderQueueWait := 8 * time.Second
 	if raw := os.Getenv("XRDB_RENDER_QUEUE_WAIT_SECONDS"); raw != "" {
 		if n, err := strconv.Atoi(raw); err == nil && n >= 0 {
@@ -513,6 +539,8 @@ func Load() Config {
 		ConfigEncryptionKey:   os.Getenv("XRDB_CONFIG_ENCRYPTION_KEY"),
 		RenderConcurrency:     renderConcurrency,
 		RenderQueueWait:       renderQueueWait,
+		RenderCapPerMinute:    renderCapPerMinute,
+		SharedProfileAliases:  sharedProfileAliases,
 		ArtFetchTimeout:       artFetchTimeout,
 		MemoryLimitBytes:      memoryLimitBytes,
 		LogLevel:              logLevel,

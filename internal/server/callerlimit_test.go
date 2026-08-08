@@ -26,7 +26,7 @@ func (c *testClock) advance(d time.Duration) {
 func newTestLimiter(t *testing.T, perMinute int) (*callerLimiter, *testClock) {
 	t.Helper()
 	clock := &testClock{t: time.Date(2026, 8, 8, 12, 0, 0, 0, time.UTC)}
-	l := newCallerLimiter(perMinute)
+	l := newCallerLimiterWithBurst(perMinute, perMinute)
 	if l == nil {
 		t.Fatal("newCallerLimiter returned nil for a positive rate")
 	}
@@ -158,10 +158,64 @@ func TestIdleKeysAreDropped(t *testing.T) {
 	}
 }
 
+// A page loading many posters at once is one caller arriving in a bunch. The
+// burst is held above the rate so its shape does not cost it posters, while its
+// sustained rate is still held to the limit.
+func TestABurstIsAllowedAboveTheSustainedRate(t *testing.T) {
+	clock := &testClock{t: time.Date(2026, 8, 8, 12, 0, 0, 0, time.UTC)}
+	l := newCallerLimiter(30) // burst defaults above the rate
+	l.now = clock.now
+
+	allowed := 0
+	for range 100 {
+		if l.allow("ip:1.2.3.4") {
+			allowed++
+		}
+	}
+	if allowed <= 30 {
+		t.Errorf("a burst of 100 got %d through, want more than the per-minute rate", allowed)
+	}
+	if allowed >= 100 {
+		t.Errorf("a burst of 100 got %d through, want the burst bounded", allowed)
+	}
+
+	// The sustained rate is still the rate: a minute buys 30, not the burst.
+	clock.advance(time.Minute)
+	refilled := 0
+	for range 100 {
+		if l.allow("ip:1.2.3.4") {
+			refilled++
+		}
+	}
+	if refilled != 30 {
+		t.Errorf("a minute of refill bought %d requests, want 30", refilled)
+	}
+}
+
+// A burst below the rate is nonsense and must not shrink the allowance.
+func TestABurstBelowTheRateIsRaisedToIt(t *testing.T) {
+	l := newCallerLimiterWithBurst(30, 5)
+	if l == nil {
+		t.Fatal("nil limiter")
+	}
+	allowed := 0
+	for range 30 {
+		if l.allow("ip:1.2.3.4") {
+			allowed++
+		}
+	}
+	if allowed != 30 {
+		t.Errorf("a burst under the rate cut the allowance to %d, want 30", allowed)
+	}
+}
+
 // Zero disables the cap, and a disabled limiter refuses nothing.
 func TestADisabledLimiterAllowsEverything(t *testing.T) {
 	if l := newCallerLimiter(0); l != nil {
 		t.Error("zero per minute built a limiter")
+	}
+	if l := newCallerLimiterWithBurst(0, 100); l != nil {
+		t.Error("zero per minute with a burst built a limiter")
 	}
 	var l *callerLimiter
 	for range 1000 {

@@ -41,6 +41,14 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	logger := slog.Default()
 	mux := http.NewServeMux()
 	renderLimiter := newConcurrencyLimiter(cfg.RenderConcurrency)
+	// Refuses at the door rather than after the queue: a request turned away by
+	// the concurrency limiter has already waited the full queue window for its
+	// refusal, which is a worse answer than the same refusal given at once.
+	callerCap := newCallerLimiter(cfg.RenderCapPerMinute)
+	sharedAliases := make(map[string]bool, len(cfg.SharedProfileAliases))
+	for _, a := range cfg.SharedProfileAliases {
+		sharedAliases[strings.ToLower(a)] = true
+	}
 	ttls := newTTLStore(cfg.ProviderTTLs)
 	ttls.setDegradedTTL(cfg.DegradedCacheTTL)
 	ttls.setHeldOutTTL(cfg.HeldOutCacheTTL)
@@ -106,6 +114,9 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		// The config bytes do not carry the keys, so a fingerprint of them joins
 		// the key explicitly. Empty when no owner keys apply.
 		ownerKeyFP := ""
+		// Empty for an inline config, which carries no profile at all, and for a
+		// shared alias. Either way the caller is held to its address instead.
+		capProfileKey := ""
 		if configParam != "default" {
 			if len(configParam) > 0 && configParam[0] == '{' {
 				// Inline JSON config — used by the live preview without a saved profile.
@@ -144,6 +155,14 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 						"id", logging.RequestID(r.Context()), "config", configParam, "error", err)
 				}
 				if err == nil {
+					// The canonical id rather than what the caller typed: an
+					// alias and the id it resolves to are one profile, and
+					// alternating them must not buy a second allowance.
+					// A profile several people share is capped by address
+					// instead, since a limit on it would hit a crowd.
+					if !sharedAliases[strings.ToLower(configParam)] && !sharedAliases[strings.ToLower(p.ID)] {
+						capProfileKey = "profile:" + p.ID
+					}
 					// A profile config can style each surface independently;
 					// resolve the one for this request's media type.
 					imgCfg = imageconfig.ParseSurface(p.Config, mediaType)
@@ -213,6 +232,17 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			placeholder = true
 		}
 		if !fromCache && !placeholder {
+			// Only fresh renders are counted. A warm catalogue reload costs a
+			// cache read and is not what the queue is made of.
+			if !callerCap.allow(capProfileKey, "ip:"+clientIP(r, trust)) {
+				logger.InfoContext(r.Context(), "A caller asked for more renders than its allowance and was turned away",
+					"id", logging.RequestID(r.Context()), "media_id", id,
+					"per_minute", cfg.RenderCapPerMinute)
+				w.Header().Set("Retry-After", "60")
+				w.Header().Set("Cache-Control", "no-store")
+				http.Error(w, "too many renders; try again shortly", http.StatusTooManyRequests)
+				return
+			}
 			// A render costs the budget in proportion to its output size, so a
 			// burst of 4K posters cannot take every slot at the price of one.
 			weight := renderWeight(imgCfg.Size)
