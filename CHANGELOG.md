@@ -2,6 +2,22 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.69.0](https://github.com/IbbyLabs/XRDB/compare/v3.68.0...v3.69.0) (2026-08-08)
+
+
+### Added
+
+* **ci:** post release and dev-build notices as Components V2 panels ([8161b1c](https://github.com/IbbyLabs/XRDB/commit/8161b1c1205b52427fd5a62fc2f15d337b512bd1))
+
+
+### Fixed
+
+* **badges:** composite translucent badge fills instead of writing them ([59a9682](https://github.com/IbbyLabs/XRDB/commit/59a96820f25539a5fa1eb3b768e4404e6563496e))
+* **badges:** fade out the tile drop shadow (BUG-224) ([8968185](https://github.com/IbbyLabs/XRDB/commit/89681852a90f9ce8806100f4937cdfd1a9607380))
+* **badges:** fade the tile shadow to nothing at every alpha (BUG-224) ([4bcbbe5](https://github.com/IbbyLabs/XRDB/commit/4bcbbe5e5bc9dfa14625ea8b450e10d1914d2400))
+* **badges:** keep the tile shadow weight even as tiles scale (BUG-224) ([8c6fa75](https://github.com/IbbyLabs/XRDB/commit/8c6fa75eedfa652d3c80f877d0f31335c9c32136))
+* **ratings:** composite the rating badge plate over the poster ([cff6a6b](https://github.com/IbbyLabs/XRDB/commit/cff6a6b83b6e86b0e0be918d8fb435c6e69861fd))
+
 ## [3.68.0](https://github.com/IbbyLabs/XRDB/compare/v3.67.1...v3.68.0) (2026-08-06)
 
 
