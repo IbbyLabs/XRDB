@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.69.2](https://github.com/IbbyLabs/XRDB/compare/v3.69.1...v3.69.2) (2026-08-08)
+
+
+### Fixed
+
+* **ratings:** name the gate that held a source out of a render ([0b3fb47](https://github.com/IbbyLabs/XRDB/commit/0b3fb4777fbf380f3c62ea02c876d1d95e71e25e))
+
 ## [3.69.1](https://github.com/IbbyLabs/XRDB/compare/v3.69.0...v3.69.1) (2026-08-08)
 
 
