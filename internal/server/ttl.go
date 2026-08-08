@@ -16,6 +16,9 @@ type ttlStore struct {
 	// degraded caps renders that lost a badge to a failing source. Zero leaves
 	// them on the normal TTL.
 	degraded time.Duration
+	// heldOut caps renders whose only missing badge was held back by one of our
+	// own gates. Zero leaves them on the normal TTL.
+	heldOut time.Duration
 }
 
 func newTTLStore(seed map[string]time.Duration) *ttlStore {
@@ -68,6 +71,21 @@ func (s *ttlStore) degradedTTL() time.Duration {
 func (s *ttlStore) setDegradedTTL(d time.Duration) {
 	s.mu.Lock()
 	s.degraded = d
+	s.mu.Unlock()
+}
+
+// heldOutTTL returns the cap for renders that lost a badge to one of our own
+// gates, or zero if unset.
+func (s *ttlStore) heldOutTTL() time.Duration {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.heldOut
+}
+
+// setHeldOutTTL sets the cap for renders that lost a badge to one of our gates.
+func (s *ttlStore) setHeldOutTTL(d time.Duration) {
+	s.mu.Lock()
+	s.heldOut = d
 	s.mu.Unlock()
 }
 

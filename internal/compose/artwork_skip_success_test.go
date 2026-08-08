@@ -37,14 +37,14 @@ func TestRatingsPassSkipsTheProviderThatSuppliedTheArtwork(t *testing.T) {
 	// The artwork came from tmdb: cinemeta was configured but could not serve the
 	// id, so the fallback supplied it. cinemeta must still be asked for ratings.
 	req.artworkFrom = "tmdb"
-	got, _, _, _ := p.collectRatingsWithProviders(context.Background(), req, &provider.MediaMeta{})
+	got, _, _, _, _ := p.collectRatingsWithProviders(context.Background(), req, &provider.MediaMeta{})
 	if !hasSource(got, "imdb") {
 		t.Error("the configured artwork source failed and fell through, but was skipped in the ratings pass anyway, losing its rating")
 	}
 
 	// When it did supply the artwork it is skipped, because it already answered.
 	req.artworkFrom = "cinemeta"
-	got, _, _, _ = p.collectRatingsWithProviders(context.Background(), req, &provider.MediaMeta{})
+	got, _, _, _, _ = p.collectRatingsWithProviders(context.Background(), req, &provider.MediaMeta{})
 	if hasSource(got, "imdb") {
 		t.Error("the provider that supplied the artwork was queried again in the ratings pass")
 	}

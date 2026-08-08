@@ -64,6 +64,12 @@ type Result struct {
 	// and worth caching, but only briefly: the full TTL would hold the missing
 	// piece long after the cause recovers.
 	Degraded bool
+	// DegradedByUs is true when everything the render lost was held back by one
+	// of our own gates — a quota reserve, a pacing queue — rather than by a
+	// source refusing or failing. The render is complete apart from a piece we
+	// chose not to ask for, so it is worth storing; a render that lost a source
+	// to a failure is not.
+	DegradedByUs bool
 	// DegradedSources names the wanted rating sources skipped for this render
 	// because they were rate-limited, so a check against the render can tell a
 	// source that was down from one that genuinely has no rating for the title.
@@ -823,13 +829,14 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	if resolveQuality == nil {
 		resolveQuality = p.startQualityDetect(ctx, badgeCfg, req.ContentType, ratingReq.MediaID)
 	}
-	allRatings, ratingProviders, degraded, degradedSources := p.collectRatingsWithProviders(ctx, ratingReq, meta)
+	allRatings, ratingProviders, degraded, sourceFault, degradedSources := p.collectRatingsWithProviders(ctx, ratingReq, meta)
 	timings.mark("ratings")
 	// Resolved here, where the title's identity is, so the draw path receives an
 	// answer rather than an id and never needs to know a bundled list exists.
 	facts := titleFactsFor(meta, req.MediaID)
 	result.ContributingProviders = append([]string{string(req.Config.ArtworkSource)}, ratingProviders...)
 	result.Degraded = degraded
+	result.DegradedByUs = degraded && !sourceFault
 	result.DegradedSources = degradedSources
 	// A held-out source keeps its place in the strip so the gap is visible.
 	// Kept out of allRatings deliberately: that list feeds the average, the
@@ -961,6 +968,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 			// after the addon came back.
 			if !verified {
 				result.Degraded = true
+				result.DegradedByUs = false
 			}
 		}
 		if len(badges) > 0 {
@@ -1045,6 +1053,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 				"id", logging.RequestID(ctx),
 				"media_id", req.MediaID, "logo_url", meta.LogoURL, "error", err)
 			result.Degraded = true
+			result.DegradedByUs = false
 		}
 		timings.mark("logo_overlay")
 	} else if wantsLogoOverlay {
@@ -1489,7 +1498,10 @@ func resizeFit(src image.Image, maxW, maxH int) image.Image {
 // A source that answers with no rating is not degraded: most titles genuinely
 // lack a score on most sources, and treating that as a failure would put every
 // render on the short TTL.
-func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request, artwork *provider.MediaMeta) ([]provider.Rating, []string, bool, []string) {
+// The third and fourth results are whether the render lost a wanted source, and
+// whether any of those losses was the source's own doing rather than one of our
+// gates.
+func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request, artwork *provider.MediaMeta) ([]provider.Rating, []string, bool, bool, []string) {
 	if artwork == nil {
 		artwork = &provider.MediaMeta{}
 	}
@@ -1532,7 +1544,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 	}
 
 	answers := make([]*provider.MediaMeta, len(called))
-	var degraded atomic.Bool
+	var degraded, sourceFault atomic.Bool
 	degradedFlags := make([]bool, len(called))
 	for i, prov := range called {
 		wg.Add(1)
@@ -1573,6 +1585,9 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 					// "gate" names which of the four hold-out paths fired; only
 					// upstream_refusal means the source refused this request.
 					gate := provider.HoldOutGate(err)
+					if !provider.GateIsOurOwn(gate) {
+						sourceFault.Store(true)
+					}
 					attrs := []any{"id", logging.RequestID(ctx), "source", prov.Name(),
 						"media_id", req.MediaID, "gate", gate}
 					if gate == provider.GatePacerBacklog {
@@ -1623,7 +1638,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 			degradedSources = append(degradedSources, called[i].Name())
 		}
 	}
-	return all, contributors, degraded.Load(), degradedSources
+	return all, contributors, degraded.Load(), sourceFault.Load(), degradedSources
 }
 
 // toNRGBA converts any image.Image to *image.NRGBA for in-place drawing.

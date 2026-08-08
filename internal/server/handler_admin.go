@@ -685,7 +685,13 @@ func effectiveTTL(result *compose.Result, ttls *ttlStore) time.Duration {
 		}
 	}
 	if result.Degraded {
-		if capTTL := ttls.degradedTTL(); capTTL > 0 && (min == 0 || capTTL < min) {
+		// A render held back by one of our own gates lost nothing to a failure,
+		// so it takes the longer of the two caps.
+		capTTL := ttls.degradedTTL()
+		if result.DegradedByUs {
+			capTTL = ttls.heldOutTTL()
+		}
+		if capTTL > 0 && (min == 0 || capTTL < min) {
 			min = capTTL
 		}
 	}

@@ -43,6 +43,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	renderLimiter := newConcurrencyLimiter(cfg.RenderConcurrency)
 	ttls := newTTLStore(cfg.ProviderTTLs)
 	ttls.setDegradedTTL(cfg.DegradedCacheTTL)
+	ttls.setHeldOutTTL(cfg.HeldOutCacheTTL)
 	notFound := newNotFoundCache(cfg.NotFoundTTL)
 	// Forwarded headers are client input unless the peer is a known proxy.
 	trust := newProxyTrust(cfg.TrustedProxies, cfg.TrustProxyHeaders)
@@ -191,7 +192,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		fromCache := false
 		var expiresAt time.Time
 		var degradedSources []string
-		var degraded bool
+		var degraded, degradedByUs bool
 		if renderCache != nil {
 			if e, ok := renderCache.Get(cacheKey); ok {
 				pngBytes = e.Data
@@ -255,6 +256,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 					contentType = renderResult.ContentType
 					degradedSources = renderResult.DegradedSources
 					degraded = renderResult.Degraded
+					degradedByUs = renderResult.DegradedByUs
 				}
 			}
 			if len(pngBytes) == 0 {
@@ -276,7 +278,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			// freshness headers, since a hit does not recompute the degraded flag,
 			// which is how one blip froze across a CDN for days. It is not stored
 			// and carries no-store below, so every serve is a fresh attempt.
-			if !placeholder && !degraded {
+			if !placeholder && (!degraded || degradedByUs) {
 				ttl := effectiveTTL(renderResult, ttls)
 				if renderCache != nil {
 					_ = renderCache.SetWithTTL(cacheKey, pngBytes, ttl)
@@ -315,7 +317,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			// bytes, so it doubles as a strong validator.
 			etag := `"` + cacheKey + `"`
 			w.Header().Set("ETag", etag)
-			if degraded {
+			if degraded && !degradedByUs {
 				// Tell every layer at once — our cache, a CDN, the browser, the
 				// client — not to hold a render known to be missing a piece. A
 				// short TTL fixes only our side; no-store keeps a transient failure

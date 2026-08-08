@@ -107,7 +107,11 @@ type Config struct {
 	// DegradedCacheTTL caps how long a render that lost a badge to a failing
 	// source is cached.
 	DegradedCacheTTL time.Duration
-	RatingsCacheTTL  time.Duration
+	// HeldOutCacheTTL caps a render whose only missing badge was held back by
+	// one of our own gates — a quota reserve or a pacing queue. Nothing failed,
+	// so the render is stored and served normally, for less than the full TTL.
+	HeldOutCacheTTL time.Duration
+	RatingsCacheTTL time.Duration
 	// StreamAddonURL is a Stremio stream addon (Comet, Torrentio) asked which
 	// release qualities a title has, so a quality badge stands for something
 	// that exists rather than a label someone ticked. Defaults to a public
@@ -319,6 +323,19 @@ func Load() Config {
 	if degradedCacheTTL > cacheTTL {
 		degradedCacheTTL = cacheTTL
 	}
+	// A render that lost a badge to our own pacing is complete apart from a
+	// piece nobody asked for, so it is cached rather than recomputed on every
+	// request. Shorter than the full TTL: the gate it hit usually clears well
+	// inside the window.
+	heldOutCacheTTL := 3 * time.Hour
+	if raw := os.Getenv("XRDB_HELD_OUT_CACHE_TTL_HOURS"); raw != "" {
+		if d, err := time.ParseDuration(raw + "h"); err == nil && d >= 0 {
+			heldOutCacheTTL = d
+		}
+	}
+	if heldOutCacheTTL > cacheTTL {
+		heldOutCacheTTL = cacheTTL
+	}
 	rpdbMaxSize := "small"
 	if raw := os.Getenv("XRDB_RPDB_MAX_SIZE"); raw != "" {
 		rpdbMaxSize = strings.ToLower(strings.TrimSpace(raw))
@@ -449,6 +466,7 @@ func Load() Config {
 		StreamCacheTTL:        streamCacheTTL,
 		CacheTTL:              cacheTTL,
 		DegradedCacheTTL:      degradedCacheTTL,
+		HeldOutCacheTTL:       heldOutCacheTTL,
 		NotFoundTTL:           notFoundTTL,
 		RPDBMaxSize:           rpdbMaxSize,
 		CacheMaxEntries:       cacheMaxEntries,

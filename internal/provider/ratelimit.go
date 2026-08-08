@@ -70,6 +70,18 @@ const (
 	GateUnattributed = "unattributed"
 )
 
+// GateIsOurOwn reports whether a gate held the source back on our own decision
+// rather than on anything the source did. Unrecognised gates are not ours: a
+// gate this does not know about may be a source failing, and treating it as
+// ours would make a broken render look sound.
+func GateIsOurOwn(gate string) bool {
+	switch gate {
+	case GateBulkAllowance, GatePacerBacklog, GateGovernorBacklog:
+		return true
+	}
+	return false
+}
+
 // HoldOutGate names which gate dropped a source from a render. Only
 // GateUpstreamRefusal means the source itself refused.
 func HoldOutGate(err error) string {

@@ -22,7 +22,7 @@ func holdBulkOff(t *testing.T, held bool) {
 func ratingsForCaller(t *testing.T, p *Pipeline, req Request, class provider.CallerClass) []provider.Rating {
 	t.Helper()
 	ctx := provider.WithCallerClass(context.Background(), class)
-	all, _, _, _ := p.collectRatingsWithProviders(ctx, req, &provider.MediaMeta{})
+	all, _, _, _, _ := p.collectRatingsWithProviders(ctx, req, &provider.MediaMeta{})
 	return all
 }
 

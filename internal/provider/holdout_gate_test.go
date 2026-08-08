@@ -96,3 +96,26 @@ func TestRecoveryClearsTheCooldownReason(t *testing.T) {
 		t.Errorf("a recovered source still reports cooldown reason %q", got)
 	}
 }
+
+// Which gates are ours decides whether a render missing a badge may be cached,
+// so an unrecognised gate has to fall on the side that caches nothing.
+func TestOnlyOurOwnGatesAreOurs(t *testing.T) {
+	for _, tc := range []struct {
+		gate string
+		want bool
+	}{
+		{GateBulkAllowance, true},
+		{GatePacerBacklog, true},
+		{GateGovernorBacklog, true},
+		{GateUpstreamRefusal, false},
+		{GateCooldown, false},
+		{GateFailureBreaker, false},
+		{GateUnattributed, false},
+		{"a gate added later", false},
+		{"", false},
+	} {
+		if got := GateIsOurOwn(tc.gate); got != tc.want {
+			t.Errorf("GateIsOurOwn(%q) = %v, want %v", tc.gate, got, tc.want)
+		}
+	}
+}

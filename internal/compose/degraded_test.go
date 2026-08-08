@@ -12,7 +12,7 @@ import (
 
 func degradedFor(t *testing.T, p *Pipeline, req Request) bool {
 	t.Helper()
-	_, _, degraded, _ := p.collectRatingsWithProviders(context.Background(), req, &provider.MediaMeta{})
+	_, _, degraded, _, _ := p.collectRatingsWithProviders(context.Background(), req, &provider.MediaMeta{})
 	return degraded
 }
 
@@ -94,7 +94,7 @@ func TestAHealthySourceIsNotDegraded(t *testing.T) {
 
 func degradedSourcesFor(t *testing.T, p *Pipeline, req Request) []string {
 	t.Helper()
-	_, _, _, sources := p.collectRatingsWithProviders(context.Background(), req, &provider.MediaMeta{})
+	_, _, _, _, sources := p.collectRatingsWithProviders(context.Background(), req, &provider.MediaMeta{})
 	return sources
 }
 

@@ -136,8 +136,8 @@ func TestRatingsMatchAcrossPosterAndBackdrop(t *testing.T) {
 		poster := Request{MediaType: "poster", ContentType: ct, MediaID: "tt2250192", Config: cfg}
 		backdrop := Request{MediaType: "backdrop", ContentType: ct, MediaID: "tt2250192", Config: cfg}
 
-		pr, _, _, _ := p.collectRatingsWithProviders(context.Background(), poster, nil)
-		br, _, _, _ := p.collectRatingsWithProviders(context.Background(), backdrop, nil)
+		pr, _, _, _, _ := p.collectRatingsWithProviders(context.Background(), poster, nil)
+		br, _, _, _, _ := p.collectRatingsWithProviders(context.Background(), backdrop, nil)
 
 		if len(pr) == 0 || len(br) == 0 {
 			t.Fatalf("ct=%q: expected ratings on both surfaces, got poster=%d backdrop=%d", ct, len(pr), len(br))
@@ -321,7 +321,7 @@ func TestCollectRatingsMergesProviders(t *testing.T) {
 	req := Request{MediaType: "poster", MediaID: "tt1234567", Config: cfg}
 
 	artwork := &provider.MediaMeta{Ratings: []provider.Rating{{Source: "tmdb", Value: 7.5, Label: "7.5"}}}
-	all, _, _, _ := p.collectRatingsWithProviders(context.Background(), req, artwork)
+	all, _, _, _, _ := p.collectRatingsWithProviders(context.Background(), req, artwork)
 
 	bySource := make(map[string]provider.Rating)
 	for _, r := range all {
@@ -367,7 +367,7 @@ func TestCollectRatingsDeduplicatesAcrossProviders(t *testing.T) {
 	req := Request{MediaType: "poster", MediaID: "tt1234567", Config: cfg}
 
 	artwork := &provider.MediaMeta{Ratings: []provider.Rating{{Source: "imdb", Value: 7.0, Label: "7.0"}}}
-	all, _, _, _ := pipe.collectRatingsWithProviders(context.Background(), req, artwork)
+	all, _, _, _, _ := pipe.collectRatingsWithProviders(context.Background(), req, artwork)
 
 	var imdbCount int
 	for _, r := range all {
@@ -820,7 +820,7 @@ func TestCollectRatingsSkipsArtworkProvider(t *testing.T) {
 	req.artworkFrom = "tmdb"
 
 	initial := &provider.MediaMeta{Ratings: []provider.Rating{{Source: "tmdb", Value: 7.5}}}
-	all, _, _, _ := pipe.collectRatingsWithProviders(context.Background(), req, initial)
+	all, _, _, _, _ := pipe.collectRatingsWithProviders(context.Background(), req, initial)
 
 	// should only have the artwork ratings, artwork provider not called again
 	if artworkProv.Calls > 0 {
@@ -1248,7 +1248,7 @@ func (f *flakyProvider) Fetch(context.Context, string, string) (*provider.MediaM
 
 func ratingsFor(t *testing.T, p *Pipeline, req Request) []provider.Rating {
 	t.Helper()
-	all, _, _, _ := p.collectRatingsWithProviders(context.Background(), req, &provider.MediaMeta{})
+	all, _, _, _, _ := p.collectRatingsWithProviders(context.Background(), req, &provider.MediaMeta{})
 	return all
 }
 
@@ -1352,7 +1352,7 @@ func TestTopRatedRankReachesTheBadgeMeta(t *testing.T) {
 
 	artwork := &provider.MediaMeta{}
 	req := Request{MediaType: "poster", ContentType: "movie", MediaID: "tt1", Config: cfg}
-	if _, _, _, _ = p.collectRatingsWithProviders(context.Background(), req, artwork); artwork.TopRatedRank != 42 {
+	if _, _, _, _, _ = p.collectRatingsWithProviders(context.Background(), req, artwork); artwork.TopRatedRank != 42 {
 		t.Errorf("TopRatedRank = %d, want 42 carried onto the artwork meta", artwork.TopRatedRank)
 	}
 }
@@ -1365,7 +1365,7 @@ func TestUnrankedTitleCarriesNoRank(t *testing.T) {
 
 	artwork := &provider.MediaMeta{}
 	req := Request{MediaType: "poster", ContentType: "movie", MediaID: "tt1", Config: cfg}
-	if _, _, _, _ = p.collectRatingsWithProviders(context.Background(), req, artwork); artwork.TopRatedRank != 0 {
+	if _, _, _, _, _ = p.collectRatingsWithProviders(context.Background(), req, artwork); artwork.TopRatedRank != 0 {
 		t.Errorf("TopRatedRank = %d, want 0", artwork.TopRatedRank)
 	}
 }
