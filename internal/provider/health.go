@@ -51,6 +51,7 @@ type sourceState struct {
 type goodEntry struct {
 	key       string
 	meta      *MediaMeta
+	storedAt  time.Time
 	expiresAt time.Time
 }
 
@@ -157,6 +158,7 @@ func (h *HealthTracker) rememberLocked(key string, meta *MediaMeta) {
 	h.entries[key] = h.lru.PushBack(&goodEntry{
 		key:       key,
 		meta:      meta,
+		storedAt:  time.Now(),
 		expiresAt: time.Now().Add(h.ttl),
 	})
 	for len(h.entries) > h.max {
@@ -299,25 +301,33 @@ func (h *HealthTracker) CoolingOff(source string, class CallerClass) bool {
 // counts the fallback against the source so an operator can see that renders
 // are only still correct because they are being served from memory.
 func (h *HealthTracker) LastGood(source, key string) (*MediaMeta, bool) {
+	meta, _, ok := h.LastGoodAge(source, key)
+	return meta, ok
+}
+
+// LastGoodAge is LastGood with how long ago the result was remembered. A render
+// served from memory is only as correct as that age.
+func (h *HealthTracker) LastGoodAge(source, key string) (*MediaMeta, time.Duration, bool) {
 	if h == nil {
-		return nil, false
+		return nil, 0, false
 	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
 	el, ok := h.entries[key]
 	if !ok {
-		return nil, false
+		return nil, 0, false
 	}
 	ge := el.Value.(*goodEntry)
-	if time.Now().After(ge.expiresAt) {
+	now := time.Now()
+	if now.After(ge.expiresAt) {
 		h.lru.Remove(el)
 		delete(h.entries, key)
-		return nil, false
+		return nil, 0, false
 	}
 	h.lru.MoveToBack(el)
 	h.stateLocked(source).staleServes++
-	return ge.meta, true
+	return ge.meta, now.Sub(ge.storedAt), true
 }
 
 // Snapshot returns per-source health, sources with the most recent trouble

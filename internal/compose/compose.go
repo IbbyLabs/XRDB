@@ -484,7 +484,10 @@ func (p *Pipeline) answerKeptItsSources(source, key string, meta *provider.Media
 	return len(meta.Ratings) >= len(prev.Ratings)
 }
 
-func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Provider, req Request, artwork *provider.MediaMeta) (*provider.MediaMeta, error) {
+// The bool reports a result served from memory rather than fetched. A render
+// carrying one is not evidence the source answered, and counting it as one
+// inflates the denominator every hold-out warning is read against.
+func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Provider, req Request, artwork *provider.MediaMeta) (*provider.MediaMeta, bool, error) {
 	// A render carrying the owner's own credential for this source has its own
 	// upstream allowance, so the shared key's cooldown does not apply to it. This
 	// is the whole point of a per-profile key: it is exactly the render that must
@@ -495,10 +498,14 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 		// The source is refusing on rate-limit grounds. Waiting for it to say so
 		// again costs the render seconds, so take the remembered value instead.
 		key := provider.GoodKey(prov.Name(), req.ContentType, req.MediaID)
-		if good, ok := p.health.LastGood(prov.Name(), key); ok {
-			return good, nil
+		if good, age, ok := p.health.LastGoodAge(prov.Name(), key); ok {
+			p.log().InfoContext(ctx, "A ratings source is held out; serving a remembered rating",
+				"id", logging.RequestID(ctx), "source", prov.Name(),
+				"media_id", req.MediaID, "gate", provider.GateCooldown,
+				"age_ms", age.Milliseconds())
+			return good, true, nil
 		}
-		return nil, fmt.Errorf("%s: %w", prov.Name(), provider.ErrCoolingOff)
+		return nil, false, fmt.Errorf("%s: %w", prov.Name(), provider.ErrCoolingOff)
 	}
 	// A catalogue sweep draws on the same daily allowance a person's render
 	// needs, and the source answers nobody once it is spent. Bulk callers are
@@ -508,11 +515,15 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 	if !ownerKeyed && provider.CallerClassFrom(ctx) == provider.CallerBulk && !provider.BulkCallerMayReach(prov.Name()) {
 		key := provider.GoodKey(prov.Name(), req.ContentType, req.MediaID)
 		if p.health != nil {
-			if good, ok := p.health.LastGood(prov.Name(), key); ok {
-				return good, nil
+			if good, age, ok := p.health.LastGoodAge(prov.Name(), key); ok {
+				p.log().InfoContext(ctx, "A ratings source is held out; serving a remembered rating",
+					"id", logging.RequestID(ctx), "source", prov.Name(),
+					"media_id", req.MediaID, "gate", provider.GateBulkAllowance,
+					"age_ms", age.Milliseconds())
+				return good, true, nil
 			}
 		}
-		return nil, fmt.Errorf("%s: %w", prov.Name(), provider.ErrBulkAllowanceHeld)
+		return nil, false, fmt.Errorf("%s: %w", prov.Name(), provider.ErrBulkAllowanceHeld)
 	}
 	cacheKey := provider.GoodKey(prov.Name(), req.ContentType, req.MediaID)
 	meta, err := p.ratings.do(ctx, cacheKey, func() (*provider.MediaMeta, bool, error) {
@@ -520,7 +531,7 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 		return m, p.answerKeptItsSources(prov.Name(), cacheKey, m), ferr
 	})
 	if p.health == nil {
-		return meta, err
+		return meta, false, err
 	}
 	key := cacheKey
 
@@ -534,7 +545,7 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 			p.log().WarnContext(ctx, "A ratings source recovered and is answering again",
 				"id", logging.RequestID(ctx), "source", prov.Name())
 		}
-		return meta, nil
+		return meta, false, nil
 	}
 	if err != nil && !ownerKeyed {
 		// An owner key failing says nothing about the shared source's health: it
@@ -555,11 +566,11 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 				"id", logging.RequestID(ctx), "source", prov.Name(), "error", err)
 		}
 	}
-	if good, ok := p.health.LastGood(prov.Name(), key); ok {
+	if good, age, ok := p.health.LastGoodAge(prov.Name(), key); ok {
 		p.log().WarnContext(ctx, "A ratings source is degraded; serving its last known good result",
 			"id", logging.RequestID(ctx), "source", prov.Name(),
-			"media_id", req.MediaID, "error", err)
-		return good, nil
+			"media_id", req.MediaID, "age_ms", age.Milliseconds(), "error", err)
+		return good, true, nil
 	}
 	if err == nil && meta != nil && len(meta.Ratings) == 0 && !ownerKeyed {
 		// Nothing remembered and nothing returned. Record it so a source that
@@ -567,7 +578,7 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 		// owner-keyed render, which does not speak for the shared source.
 		p.health.Success(prov.Name(), key, meta)
 	}
-	return meta, err
+	return meta, false, err
 }
 
 // ratingIDForSources swaps a non-IMDb id for the IMDb id the artwork source
@@ -1512,18 +1523,22 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 		go func(i int, prov provider.Provider) {
 			defer wg.Done()
 			started := time.Now()
-			meta, err := p.fetchRatingsResilient(ctx, prov, req, artwork)
+			meta, fromMemory, err := p.fetchRatingsResilient(ctx, prov, req, artwork)
 			// Info, because a held-out source is only meaningful against the
 			// number of renders that reached the source at all. Without it a
 			// window with no warning is indistinguishable from a window that
 			// asked for nothing. Logged only where the source did answer, so
 			// the count means what its name says.
-			if err != nil {
+			switch {
+			case err != nil:
 				p.log().DebugContext(ctx, "A ratings source did not answer",
 					"id", logging.RequestID(ctx), "source", prov.Name(),
 					"media_id", req.MediaID, "took_ms", time.Since(started).Milliseconds(),
 					"error", err)
-			} else {
+			case fromMemory:
+				// Already logged where the memory was read, with the gate and
+				// the age. Logging it here as well would count it as an answer.
+			default:
 				p.log().InfoContext(ctx, "A ratings source answered",
 					"id", logging.RequestID(ctx), "source", prov.Name(),
 					"media_id", req.MediaID, "took_ms", time.Since(started).Milliseconds(),
