@@ -23,11 +23,16 @@ type MediaMeta struct {
 	OriginalTitle string
 	Year          int
 	Overview      string
-	PosterURL     string   // canonical poster image URL
-	BackdropURL   string   // canonical backdrop image URL
-	LogoURL       string   // logo image URL (may be empty)
-	Ratings       []Rating // from this provider
-	Language      string   // language of the returned artwork
+	PosterURL     string // canonical poster image URL
+	// PosterAltURL is a second poster file to use when PosterURL turns out to be
+	// unusable. Kitsu publishes an "original" whose file is often smaller than
+	// its "large", and sometimes landscape, and says nothing about either in the
+	// API, so which is better is only knowable from the bytes.
+	PosterAltURL string
+	BackdropURL  string   // canonical backdrop image URL
+	LogoURL      string   // logo image URL (may be empty)
+	Ratings      []Rating // from this provider
+	Language     string   // language of the returned artwork
 	// IMDbID is the title's IMDb tt-id when the source knows it. Rating sources
 	// are keyed by it, so a request arriving under another scheme needs it to
 	// reach them.

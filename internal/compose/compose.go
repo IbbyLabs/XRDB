@@ -100,6 +100,10 @@ type Pipeline struct {
 	// quality reports which release qualities a title has, so a quality badge
 	// can stand for something. Optional: nil draws the picked badges as-is.
 	quality qualityDetector
+	// badPosters remembers a source's preferred poster file that lost to its own
+	// alternate, so the comparison costs one extra fetch per title rather than
+	// one per render.
+	badPosters badPosters
 	// streamBreak stops asking a stream addon that has stopped answering.
 	streamBreak  streamBreaker
 	qualityCache *qualityCache
@@ -1268,7 +1272,9 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 		// Strict per-surface selection: no logo→poster substitution yet, so the
 		// loop keeps trying other providers for a real logo first.
 		if url := selectSurfaceURL(meta, req.MediaType, req.Config); url != "" {
+			url = p.posterURLFor(meta, url)
 			if data, ferr := p.fetcher.Fetch(ctx, url); ferr == nil && len(data) > 0 {
+				data = p.betterPoster(ctx, req, meta, url, data)
 				p.enrichMetaForOverlays(ctx, req, baseMeta)
 				return data, baseMeta, req.MediaID, name, nil
 			}

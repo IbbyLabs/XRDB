@@ -126,6 +126,9 @@ func (k *Kitsu) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, er
 		posterURL = attr.PosterImage.Small
 	}
 	meta.PosterURL = posterURL
+	if alt := attr.PosterImage.Large; alt != "" && alt != posterURL {
+		meta.PosterAltURL = alt
+	}
 
 	backdropURL := attr.CoverImage.Original
 	if backdropURL == "" {
