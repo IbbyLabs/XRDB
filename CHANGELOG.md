@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.72.1](https://github.com/IbbyLabs/XRDB/compare/v3.72.0...v3.72.1) (2026-08-08)
+
+
+### Fixed
+
+* **ratings:** treat a per-title gateway refusal as a title fact ([c0f4ca4](https://github.com/IbbyLabs/XRDB/commit/c0f4ca40137bae5bef56ddff88526693e6e0170e))
+
 ## [3.72.0](https://github.com/IbbyLabs/XRDB/compare/v3.71.0...v3.72.0) (2026-08-08)
 
 
