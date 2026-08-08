@@ -70,12 +70,15 @@ func newCallerLimiterWithBurst(perMinute, burst int) *callerLimiter {
 // refused, and no key is charged when one refuses: a request that was turned
 // away has not spent anyone's allowance.
 //
+// The second result names the key that refused, so a refusal can say whether it
+// landed on a profile or an address. It is empty when the request is allowed.
+//
 // Empty keys are ignored, so a caller with nothing to identify it is not
 // refused by an empty string it shares with every other such caller. A nil
 // limiter allows everything.
-func (l *callerLimiter) allow(keys ...string) bool {
+func (l *callerLimiter) allow(keys ...string) (bool, string) {
 	if l == nil {
-		return true
+		return true, ""
 	}
 	present := make([]string, 0, len(keys))
 	for _, k := range keys {
@@ -84,7 +87,7 @@ func (l *callerLimiter) allow(keys ...string) bool {
 		}
 	}
 	if len(present) == 0 {
-		return true
+		return true, ""
 	}
 
 	l.mu.Lock()
@@ -94,14 +97,14 @@ func (l *callerLimiter) allow(keys ...string) bool {
 
 	for _, k := range present {
 		if l.tokensLocked(k, now) < 1 {
-			return false
+			return false, k
 		}
 	}
 	for _, k := range present {
 		b := l.buckets[k]
 		b.tokens--
 	}
-	return true
+	return true, ""
 }
 
 // tokensLocked refills a key's bucket to the present moment and returns what it

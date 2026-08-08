@@ -16,14 +16,15 @@ func reqFrom(remoteAddr string, headers map[string]string) *http.Request {
 }
 
 // The point of the gate: a client that is not a known proxy cannot dictate the
-// address we record for it.
+// address we record for it. The port is dropped — it changes per connection, so
+// an address carrying one identifies a connection rather than a caller.
 func TestUntrustedPeerCannotSpoofItsAddress(t *testing.T) {
 	trust := newProxyTrust("", false)
 	r := reqFrom("203.0.113.7:5555", map[string]string{
 		"X-Forwarded-For":  "1.2.3.4",
 		"CF-Connecting-Ip": "5.6.7.8",
 	})
-	if got := clientIP(r, trust); got != "203.0.113.7:5555" {
+	if got := clientIP(r, trust); got != "203.0.113.7" {
 		t.Errorf("client_ip = %q; a public peer must not be able to claim another address", got)
 	}
 }
@@ -65,7 +66,7 @@ func TestExplicitListReplacesTheDefaults(t *testing.T) {
 		t.Errorf("listed peer: client_ip = %q, want 1.2.3.4", got)
 	}
 	// A private peer is no longer trusted once an explicit list is given.
-	if got := clientIP(reqFrom("10.0.0.1:1", map[string]string{"X-Forwarded-For": "1.2.3.4"}), trust); got != "10.0.0.1:1" {
+	if got := clientIP(reqFrom("10.0.0.1:1", map[string]string{"X-Forwarded-For": "1.2.3.4"}), trust); got != "10.0.0.1" {
 		t.Errorf("unlisted private peer: client_ip = %q, want the peer address", got)
 	}
 }
@@ -75,7 +76,7 @@ func TestBareAddressInTheListIsAccepted(t *testing.T) {
 	if got := clientIP(reqFrom("198.51.100.5:1", map[string]string{"X-Forwarded-For": "1.2.3.4"}), trust); got != "1.2.3.4" {
 		t.Errorf("client_ip = %q, want 1.2.3.4", got)
 	}
-	if got := clientIP(reqFrom("198.51.100.6:1", map[string]string{"X-Forwarded-For": "1.2.3.4"}), trust); got != "198.51.100.6:1" {
+	if got := clientIP(reqFrom("198.51.100.6:1", map[string]string{"X-Forwarded-For": "1.2.3.4"}), trust); got != "198.51.100.6" {
 		t.Errorf("a neighbouring address must not be trusted, got %q", got)
 	}
 }
@@ -90,7 +91,7 @@ func TestTrustAllBelievesEveryPeer(t *testing.T) {
 // One typo must not silently widen trust; it should narrow it.
 func TestUnparseableEntriesAreSkippedAndFailClosed(t *testing.T) {
 	trust := newProxyTrust("not-an-ip, also/bad", false)
-	if got := clientIP(reqFrom("10.0.0.1:1", map[string]string{"X-Forwarded-For": "1.2.3.4"}), trust); got != "10.0.0.1:1" {
+	if got := clientIP(reqFrom("10.0.0.1:1", map[string]string{"X-Forwarded-For": "1.2.3.4"}), trust); got != "10.0.0.1" {
 		t.Errorf("client_ip = %q; an all-garbage list must trust nothing", got)
 	}
 	trust = newProxyTrust("garbage, 10.0.0.0/8", false)

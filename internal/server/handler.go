@@ -234,10 +234,13 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		if !fromCache && !placeholder {
 			// Only fresh renders are counted. A warm catalogue reload costs a
 			// cache read and is not what the queue is made of.
-			if !callerCap.allow(capProfileKey, "ip:"+clientIP(r, trust)) {
+			if ok, over := callerCap.allow(capProfileKey, "ip:"+clientIP(r, trust)); !ok {
+				// Naming the key is the whole safety net: a cap shipped on by
+				// default needs to say whether it landed on a crawl or on
+				// somebody's library.
 				logger.InfoContext(r.Context(), "A caller asked for more renders than its allowance and was turned away",
 					"id", logging.RequestID(r.Context()), "media_id", id,
-					"per_minute", cfg.RenderCapPerMinute)
+					"over", over, "per_minute", cfg.RenderCapPerMinute)
 				w.Header().Set("Retry-After", "60")
 				w.Header().Set("Cache-Control", "no-store")
 				http.Error(w, "too many renders; try again shortly", http.StatusTooManyRequests)

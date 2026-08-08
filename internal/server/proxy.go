@@ -104,12 +104,25 @@ func parseHostAddr(remoteAddr string) (netip.Addr, bool) {
 	return addr.Unmap(), true
 }
 
+// bareHost strips the port a peer address carries. The port changes with every
+// TCP connection, so an address keyed with one identifies a connection rather
+// than a caller.
+func bareHost(remoteAddr string) string {
+	if addr, ok := parseHostAddr(remoteAddr); ok {
+		return addr.String()
+	}
+	if h, _, err := net.SplitHostPort(remoteAddr); err == nil {
+		return h
+	}
+	return remoteAddr
+}
+
 // clientIP returns the originating client address. Forwarded headers are only
 // consulted when the immediate peer is a trusted proxy; otherwise the peer
 // address is the truth, because anything else is caller-supplied.
 func clientIP(r *http.Request, trust proxyTrust) string {
 	if !trust.trusts(r.RemoteAddr) {
-		return r.RemoteAddr
+		return bareHost(r.RemoteAddr)
 	}
 	if cf := r.Header.Get("CF-Connecting-Ip"); cf != "" {
 		return cf
@@ -122,7 +135,7 @@ func clientIP(r *http.Request, trust proxyTrust) string {
 		}
 		return strings.TrimSpace(fwd)
 	}
-	return r.RemoteAddr
+	return bareHost(r.RemoteAddr)
 }
 
 // forwardedScheme returns the scheme the client actually used, falling back to

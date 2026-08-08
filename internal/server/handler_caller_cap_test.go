@@ -132,3 +132,43 @@ func TestNoCapConfiguredRefusesNothing(t *testing.T) {
 		}
 	}
 }
+
+// A peer address carries a port that changes with every connection. Keying on
+// it identifies a connection rather than a caller, so every request mints a
+// fresh bucket and the cap counts nothing while looking installed.
+func TestTheAddressCapSurvivesAChangingPort(t *testing.T) {
+	h, p := capHandler(t, 1) // burst 2, so the third is refused
+
+	codes := []int{}
+	for i := range 4 {
+		rr := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet,
+			"/poster/tt400"+string(rune('1'+i))+"?config=", nil)
+		// Same caller, a new source port each time, which is what a fresh TCP
+		// connection looks like.
+		req.RemoteAddr = "198.51.100.7:" + string(rune('1'+i)) + "0000"
+		h.ServeHTTP(rr, req)
+		codes = append(codes, rr.Code)
+	}
+	_ = p
+	if codes[2] != http.StatusTooManyRequests || codes[3] != http.StatusTooManyRequests {
+		t.Errorf("a caller reconnecting on a new port was never capped: %v", codes)
+	}
+}
+
+// The same, straight at the helper: two peers differing only in port are one
+// caller.
+func TestAPeerAddressLosesItsPort(t *testing.T) {
+	var trust proxyTrust
+	for _, tc := range []struct{ in, want string }{
+		{"78.88.5.164:54321", "78.88.5.164"},
+		{"78.88.5.164:1", "78.88.5.164"},
+		{"[2606:4700::1]:443", "2606:4700::1"},
+	} {
+		r := httptest.NewRequest(http.MethodGet, "/poster/tt1", nil)
+		r.RemoteAddr = tc.in
+		if got := clientIP(r, trust); got != tc.want {
+			t.Errorf("clientIP(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}

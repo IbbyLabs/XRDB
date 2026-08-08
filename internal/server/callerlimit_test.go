@@ -23,6 +23,13 @@ func (c *testClock) advance(d time.Duration) {
 	c.mu.Unlock()
 }
 
+// mustAllow drops the key naming for the tests that only care whether a
+// request passed.
+func mustAllow(l *callerLimiter, keys ...string) bool {
+	ok, _ := l.allow(keys...)
+	return ok
+}
+
 func newTestLimiter(t *testing.T, perMinute int) (*callerLimiter, *testClock) {
 	t.Helper()
 	clock := &testClock{t: time.Date(2026, 8, 8, 12, 0, 0, 0, time.UTC)}
@@ -37,11 +44,11 @@ func newTestLimiter(t *testing.T, perMinute int) (*callerLimiter, *testClock) {
 func TestACallerGetsItsAllowanceAndNoMore(t *testing.T) {
 	l, _ := newTestLimiter(t, 30)
 	for i := range 30 {
-		if !l.allow("profile:a") {
+		if !mustAllow(l, "profile:a") {
 			t.Fatalf("request %d of the allowance was refused", i+1)
 		}
 	}
-	if l.allow("profile:a") {
+	if mustAllow(l, "profile:a") {
 		t.Error("a request past the allowance was allowed")
 	}
 }
@@ -49,23 +56,23 @@ func TestACallerGetsItsAllowanceAndNoMore(t *testing.T) {
 func TestTheAllowanceRefillsOverTheMinute(t *testing.T) {
 	l, clock := newTestLimiter(t, 30)
 	for range 30 {
-		l.allow("profile:a")
+		mustAllow(l, "profile:a")
 	}
-	if l.allow("profile:a") {
+	if mustAllow(l, "profile:a") {
 		t.Fatal("the allowance was not spent")
 	}
 
 	clock.advance(2 * time.Second) // one token at 30/min
-	if !l.allow("profile:a") {
+	if !mustAllow(l, "profile:a") {
 		t.Error("two seconds bought no allowance back")
 	}
-	if l.allow("profile:a") {
+	if mustAllow(l, "profile:a") {
 		t.Error("two seconds bought more than one request back")
 	}
 
 	clock.advance(time.Minute)
 	for i := range 30 {
-		if !l.allow("profile:a") {
+		if !mustAllow(l, "profile:a") {
 			t.Fatalf("a full minute did not restore the allowance (failed at %d)", i+1)
 		}
 	}
@@ -76,16 +83,16 @@ func TestTheAllowanceRefillsOverTheMinute(t *testing.T) {
 func TestEitherKeyCanRefuseARequest(t *testing.T) {
 	l, _ := newTestLimiter(t, 30)
 	for range 30 {
-		l.allow("profile:a", "ip:1.2.3.4")
+		mustAllow(l, "profile:a", "ip:1.2.3.4")
 	}
 
-	if l.allow("profile:b", "ip:1.2.3.4") {
+	if mustAllow(l, "profile:b", "ip:1.2.3.4") {
 		t.Error("a fresh profile from an exhausted address was allowed")
 	}
-	if l.allow("profile:a", "ip:5.6.7.8") {
+	if mustAllow(l, "profile:a", "ip:5.6.7.8") {
 		t.Error("an exhausted profile from a fresh address was allowed")
 	}
-	if !l.allow("profile:b", "ip:5.6.7.8") {
+	if !mustAllow(l, "profile:b", "ip:5.6.7.8") {
 		t.Error("a caller sharing neither key was refused")
 	}
 }
@@ -95,15 +102,15 @@ func TestEitherKeyCanRefuseARequest(t *testing.T) {
 func TestARefusedRequestChargesNobody(t *testing.T) {
 	l, _ := newTestLimiter(t, 30)
 	for range 30 {
-		l.allow("ip:1.2.3.4")
+		mustAllow(l, "ip:1.2.3.4")
 	}
 	for range 5 {
-		if l.allow("profile:a", "ip:1.2.3.4") {
+		if mustAllow(l, "profile:a", "ip:1.2.3.4") {
 			t.Fatal("a request over the address limit was allowed")
 		}
 	}
 	for i := range 30 {
-		if !l.allow("profile:a", "ip:5.6.7.8") {
+		if !mustAllow(l, "profile:a", "ip:5.6.7.8") {
 			t.Fatalf("the profile was charged for refused requests (failed at %d)", i+1)
 		}
 	}
@@ -115,12 +122,12 @@ func TestARefusedRequestChargesNobody(t *testing.T) {
 func TestAnUnidentifiedCallerIsNotRefused(t *testing.T) {
 	l, _ := newTestLimiter(t, 30)
 	for i := range 100 {
-		if !l.allow("", "") {
+		if !mustAllow(l, "", "") {
 			t.Fatalf("a caller with no keys was refused at request %d", i+1)
 		}
 	}
 	// And it did not spend anyone else's allowance on the way.
-	if !l.allow("profile:a") {
+	if !mustAllow(l, "profile:a") {
 		t.Error("an unidentified caller charged a real key")
 	}
 }
@@ -129,14 +136,14 @@ func TestAnUnidentifiedCallerIsNotRefused(t *testing.T) {
 func TestAnEmptyKeyIsIgnoredBesideARealOne(t *testing.T) {
 	l, _ := newTestLimiter(t, 30)
 	for range 30 {
-		if !l.allow("profile:a", "") {
+		if !mustAllow(l, "profile:a", "") {
 			t.Fatal("a request inside the allowance was refused")
 		}
 	}
-	if l.allow("profile:a", "") {
+	if mustAllow(l, "profile:a", "") {
 		t.Error("the real key was not counted")
 	}
-	if !l.allow("profile:b", "") {
+	if !mustAllow(l, "profile:b", "") {
 		t.Error("the empty key was shared between callers")
 	}
 }
@@ -146,13 +153,13 @@ func TestAnEmptyKeyIsIgnoredBesideARealOne(t *testing.T) {
 func TestIdleKeysAreDropped(t *testing.T) {
 	l, clock := newTestLimiter(t, 30)
 	for i := range 500 {
-		l.allow(string(rune('a'+i%26)) + ":" + time.Duration(i).String())
+		mustAllow(l, string(rune('a'+i%26))+":"+time.Duration(i).String())
 	}
 	if l.tracked() == 0 {
 		t.Fatal("nothing was tracked")
 	}
 	clock.advance(10 * time.Minute)
-	l.allow("profile:a")
+	mustAllow(l, "profile:a")
 	if got := l.tracked(); got > 1 {
 		t.Errorf("%d keys survived a ten-minute idle period, want the one just used", got)
 	}
@@ -168,7 +175,7 @@ func TestABurstIsAllowedAboveTheSustainedRate(t *testing.T) {
 
 	allowed := 0
 	for range 100 {
-		if l.allow("ip:1.2.3.4") {
+		if mustAllow(l, "ip:1.2.3.4") {
 			allowed++
 		}
 	}
@@ -183,7 +190,7 @@ func TestABurstIsAllowedAboveTheSustainedRate(t *testing.T) {
 	clock.advance(time.Minute)
 	refilled := 0
 	for range 100 {
-		if l.allow("ip:1.2.3.4") {
+		if mustAllow(l, "ip:1.2.3.4") {
 			refilled++
 		}
 	}
@@ -200,7 +207,7 @@ func TestABurstBelowTheRateIsRaisedToIt(t *testing.T) {
 	}
 	allowed := 0
 	for range 30 {
-		if l.allow("ip:1.2.3.4") {
+		if mustAllow(l, "ip:1.2.3.4") {
 			allowed++
 		}
 	}
@@ -219,7 +226,7 @@ func TestADisabledLimiterAllowsEverything(t *testing.T) {
 	}
 	var l *callerLimiter
 	for range 1000 {
-		if !l.allow("profile:a", "ip:1.2.3.4") {
+		if !mustAllow(l, "profile:a", "ip:1.2.3.4") {
 			t.Fatal("a disabled limiter refused a request")
 		}
 	}
@@ -237,7 +244,7 @@ func TestConcurrentCallersGetExactlyTheAllowance(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			if l.allow("profile:a", "ip:1.2.3.4") {
+			if mustAllow(l, "profile:a", "ip:1.2.3.4") {
 				mu.Lock()
 				allowed++
 				mu.Unlock()
@@ -247,5 +254,39 @@ func TestConcurrentCallersGetExactlyTheAllowance(t *testing.T) {
 	wg.Wait()
 	if allowed != 30 {
 		t.Errorf("100 concurrent requests got %d through, want exactly 30", allowed)
+	}
+}
+
+// The key that refused has to be named, or a refusal cannot say whether it
+// landed on a crawl or on somebody's library.
+func TestARefusalNamesTheKeyThatTripped(t *testing.T) {
+	l, _ := newTestLimiter(t, 2)
+	for range 2 {
+		l.allow("profile:a", "ip:1.2.3.4")
+	}
+	ok, over := l.allow("profile:a", "ip:1.2.3.4")
+	if ok {
+		t.Fatal("a request past the allowance was allowed")
+	}
+	if over != "profile:a" {
+		t.Errorf("refused on %q, want the profile that ran out", over)
+	}
+
+	// And when only the address is exhausted, it is the address that is named.
+	l2, _ := newTestLimiter(t, 2)
+	for range 2 {
+		l2.allow("ip:5.6.7.8")
+	}
+	if ok, over := l2.allow("profile:fresh", "ip:5.6.7.8"); ok || over != "ip:5.6.7.8" {
+		t.Errorf("refused on %q (allowed=%v), want the address", over, ok)
+	}
+}
+
+// An allowed request names nothing, so an empty value in the log means allowed
+// rather than "we could not tell".
+func TestAnAllowedRequestNamesNoKey(t *testing.T) {
+	l, _ := newTestLimiter(t, 30)
+	if ok, over := l.allow("profile:a", "ip:1.2.3.4"); !ok || over != "" {
+		t.Errorf("allowed=%v over=%q, want true and empty", ok, over)
 	}
 }
