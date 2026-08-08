@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"image/color"
 	"log/slog"
 	"strings"
@@ -124,4 +125,91 @@ func TestTheFailureBreakerIsNotReportedAsARateLimitCooldown(t *testing.T) {
 	if line["gate"] != provider.GateFailureBreaker {
 		t.Errorf("gate = %v, want %v", line["gate"], provider.GateFailureBreaker)
 	}
+}
+
+// A pacer_backlog hold-out means two different things: a deliberately
+// conservative interval meeting ordinary volume, or demand outrunning a normal
+// one. The gate name alone cannot separate them, so it carries the interval.
+func TestAPacerBacklogHoldOutCarriesTheConfiguredInterval(t *testing.T) {
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelInfo}))
+
+	reg := provider.NewRegistry()
+	reg.Register(&provider.StubProvider{
+		ProviderName: "tmdb",
+		Meta:         &provider.MediaMeta{Title: "T", PosterURL: "http://tmdb/poster.jpg"},
+	})
+	reg.Register(&backloggedPacer{name: "anilist"})
+
+	p := &Pipeline{providers: reg, logger: logger,
+		fetcher: &stubImageFetcher{data: makeTestPNG(600, 900, color.NRGBA{20, 20, 20, 255})}}
+	p.SetHealthTracker(provider.NewHealthTracker(10, time.Hour))
+	cfg := imageconfig.Default()
+	cfg.ArtworkSource = imageconfig.ArtworkTMDB
+	cfg.Ratings = []string{"anilist"}
+
+	if _, err := p.Render(context.Background(), Request{
+		MediaType: "poster", ContentType: "movie", MediaID: "tt5", Config: cfg,
+	}); err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+
+	line := hasMsg(logLinesFrom(t, &buf), holdOutMsg)
+	if line == nil {
+		t.Fatal("a source refused by the pacer left no warning")
+	}
+	if line["gate"] != provider.GatePacerBacklog {
+		t.Fatalf("gate = %v, want %v", line["gate"], provider.GatePacerBacklog)
+	}
+	want := float64(provider.PacedInterval("anilist").Milliseconds())
+	if want == 0 {
+		t.Fatal("anilist has no configured interval, so the field would carry nothing")
+	}
+	if line["min_interval_ms"] != want {
+		t.Errorf("min_interval_ms = %v, want %v", line["min_interval_ms"], want)
+	}
+}
+
+// Other gates do not carry it: the interval says nothing about why a cooldown or
+// a quota reserve fired.
+func TestOnlyAPacerBacklogCarriesTheInterval(t *testing.T) {
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelInfo}))
+
+	reg := provider.NewRegistry()
+	reg.Register(&provider.StubProvider{
+		ProviderName: "tmdb",
+		Meta:         &provider.MediaMeta{Title: "T", PosterURL: "http://tmdb/poster.jpg"},
+	})
+	reg.Register(&alwaysFailing{name: "imdb"})
+
+	p := &Pipeline{providers: reg, logger: logger,
+		fetcher: &stubImageFetcher{data: makeTestPNG(600, 900, color.NRGBA{20, 20, 20, 255})}}
+	p.SetHealthTracker(provider.NewHealthTracker(10, time.Hour))
+	cfg := imageconfig.Default()
+	cfg.ArtworkSource = imageconfig.ArtworkTMDB
+	cfg.Ratings = []string{"imdb"}
+
+	if _, err := p.Render(context.Background(), Request{
+		MediaType: "poster", ContentType: "movie", MediaID: "tt6", Config: cfg,
+	}); err != nil {
+		t.Fatalf("Render: %v", err)
+	}
+	line := hasMsg(logLinesFrom(t, &buf), holdOutMsg)
+	if line == nil {
+		t.Fatal("a refused source left no warning")
+	}
+	if _, ok := line["min_interval_ms"]; ok {
+		t.Errorf("a %v hold-out carried the pacer interval", line["gate"])
+	}
+}
+
+// backloggedPacer stands in for a source whose pacer queue is longer than the
+// caller can wait for.
+type backloggedPacer struct{ name string }
+
+func (b *backloggedPacer) Name() string            { return b.name }
+func (b *backloggedPacer) RatingSources() []string { return []string{b.name} }
+func (b *backloggedPacer) Fetch(context.Context, string, string) (*provider.MediaMeta, error) {
+	return nil, fmt.Errorf("%s: request: %w", b.name, provider.ErrPacerBacklog)
 }

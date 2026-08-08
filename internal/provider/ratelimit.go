@@ -159,6 +159,13 @@ const renderRetryBudget = time.Second
 var defaultRateLimit = RateLimit{MaxRetries: 2, MaxRetryWait: renderRetryBudget}
 
 // rateLimitFor returns the policy for a source.
+// PacedInterval is the floor between two requests to a source. A pacer_backlog
+// hold-out means a deliberately conservative interval where this is large, and
+// demand outrunning an ordinary one where it is small.
+func PacedInterval(source string) time.Duration {
+	return rateLimitFor(source).MinInterval
+}
+
 func rateLimitFor(source string) RateLimit {
 	if rl, ok := rateLimits[source]; ok {
 		return rl

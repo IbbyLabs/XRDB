@@ -1572,9 +1572,15 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 					// source missing from most renders leaves no warn to act on.
 					// "gate" names which of the four hold-out paths fired; only
 					// upstream_refusal means the source refused this request.
+					gate := provider.HoldOutGate(err)
+					attrs := []any{"id", logging.RequestID(ctx), "source", prov.Name(),
+						"media_id", req.MediaID, "gate", gate}
+					if gate == provider.GatePacerBacklog {
+						attrs = append(attrs, "min_interval_ms",
+							provider.PacedInterval(prov.Name()).Milliseconds())
+					}
 					p.log().WarnContext(ctx, "A ratings source was held out and dropped from this render; its badge is missing",
-						"id", logging.RequestID(ctx), "source", prov.Name(), "media_id", req.MediaID,
-						"gate", provider.HoldOutGate(err))
+						attrs...)
 				}
 				return
 			}
