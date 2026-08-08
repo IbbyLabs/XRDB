@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.69.6](https://github.com/IbbyLabs/XRDB/compare/v3.69.5...v3.69.6) (2026-08-08)
+
+
+### Fixed
+
+* **ratings:** do not record our own queue refusals against a source ([dfcfef7](https://github.com/IbbyLabs/XRDB/commit/dfcfef7c1f8a81c4cefce9c64b04e117af3bf038))
+
 ## [3.69.5](https://github.com/IbbyLabs/XRDB/compare/v3.69.4...v3.69.5) (2026-08-08)
 
 
