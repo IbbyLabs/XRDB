@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.69.4](https://github.com/IbbyLabs/XRDB/compare/v3.69.3...v3.69.4) (2026-08-08)
+
+
+### Fixed
+
+* **ratings:** separate the failure breaker from a rate-limit cooldown ([5dacca6](https://github.com/IbbyLabs/XRDB/commit/5dacca66ba60c900adafa39acda67fd927d69154))
+
 ## [3.69.3](https://github.com/IbbyLabs/XRDB/compare/v3.69.2...v3.69.3) (2026-08-08)
 
 
