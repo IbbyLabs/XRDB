@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.73.0](https://github.com/IbbyLabs/XRDB/compare/v3.72.1...v3.73.0) (2026-08-08)
+
+
+### Added
+
+* **ratings:** log which Jikan instance is in use at startup ([a64ceb4](https://github.com/IbbyLabs/XRDB/commit/a64ceb4a419d9fc1eeeb0734b7c1c03f486f187b))
+
+
+### Fixed
+
+* **ratings:** only read an instant gateway refusal as a title fact ([f88bef8](https://github.com/IbbyLabs/XRDB/commit/f88bef81441937754199d3b4118cb33ff4fdba8b))
+
 ## [3.72.1](https://github.com/IbbyLabs/XRDB/compare/v3.72.0...v3.72.1) (2026-08-08)
 
 
