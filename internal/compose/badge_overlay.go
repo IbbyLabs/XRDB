@@ -30,6 +30,9 @@ type tileChrome struct {
 	shadow             color.NRGBA // zero alpha = no shadow
 }
 
+// shadowAlphaPerRow is the largest alpha a tile shadow may drop in one row.
+const shadowAlphaPerRow = 16
+
 // drawTileShadow draws a drop shadow below r, fading to nothing over its last
 // rows. Zero alpha draws nothing.
 func drawTileShadow(base *image.NRGBA, r image.Rectangle, radius int, col color.NRGBA) {
@@ -40,8 +43,10 @@ func drawTileShadow(base *image.NRGBA, r image.Rectangle, radius int, col color.
 	blendRoundedRect(base, body, radius, col)
 
 	// The fade takes its width from the same rect shifted below the body, so the
-	// bottom arcs keep their shape as the alpha falls away.
-	feather := maxInt(3, r.Dy()/12)
+	// bottom arcs keep their shape as the alpha falls away. Every row drops by
+	// col.A/(feather+1), so a darker shadow needs more rows to land on the same
+	// step as a fainter one.
+	feather := maxInt(maxInt(3, int(col.A)/shadowAlphaPerRow), r.Dy()/12)
 	smear := body.Add(image.Pt(0, feather)).Intersect(base.Bounds())
 	for k := 0; k < feather; k++ {
 		y := body.Max.Y + k

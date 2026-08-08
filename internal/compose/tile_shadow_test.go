@@ -6,46 +6,55 @@ import (
 	"testing"
 )
 
-// A tile's drop shadow used to be one offset copy of the tile, so it ended on a
-// hard edge a couple of pixels below the tile's own outline. Two crisp edges
-// that close together read as one misplaced outline.
+// A tile's drop shadow ends on an edge unless it fades, and two crisp edges a
+// couple of pixels apart read as one misplaced outline.
+//
+// Every alpha the callers pass is covered: a darker shadow has further to fall
+// and steps harder over the same number of rows.
 func TestTileShadowFadesOutBelowTheTile(t *testing.T) {
 	const bg = 232
-	base := image.NewNRGBA(image.Rect(0, 0, 120, 90))
-	for y := 0; y < 90; y++ {
-		for x := 0; x < 120; x++ {
-			base.SetNRGBA(x, y, color.NRGBA{R: bg, G: bg, B: bg, A: 255})
-		}
-	}
-	r := image.Rect(20, 20, 100, 56)
-	drawSoftTile(base, r, r.Dy()/2, tileChrome{
-		fill:        color.NRGBA{R: 8, G: 9, B: 12, A: 235},
-		border:      color.NRGBA{R: 255, G: 255, B: 255, A: 48},
-		borderWidth: 2,
-		shadow:      color.NRGBA{R: 0, G: 0, B: 0, A: 70},
-	})
+	// The shadow alphas in use: the glass genre tile, drawSoftTile, the provider
+	// chips and the trending badge.
+	for _, alpha := range []uint8{46, 70, 80, 105} {
+		for _, h := range []int{20, 36, 180} {
+			w, ih := h*6, h*4
+			base := image.NewNRGBA(image.Rect(0, 0, w, ih))
+			for y := 0; y < ih; y++ {
+				for x := 0; x < w; x++ {
+					base.SetNRGBA(x, y, color.NRGBA{R: bg, G: bg, B: bg, A: 255})
+				}
+			}
+			r := image.Rect(h, h, w-h, h*2)
+			drawSoftTile(base, r, r.Dy()/2, tileChrome{
+				fill:        color.NRGBA{R: 8, G: 9, B: 12, A: 235},
+				border:      color.NRGBA{R: 255, G: 255, B: 255, A: 48},
+				borderWidth: 2,
+				shadow:      color.NRGBA{A: alpha},
+			})
 
-	x := (r.Min.X + r.Max.X) / 2
-	if got := base.NRGBAAt(x, r.Max.Y).R; got >= bg {
-		t.Fatalf("row below the tile is %d, want it darkened by a shadow (<%d)", got, bg)
-	}
+			x := (r.Min.X + r.Max.X) / 2
+			if got := base.NRGBAAt(x, r.Max.Y).R; got >= bg {
+				t.Fatalf("alpha %d, %dpx tile: row below the tile is %d, want it darkened (<%d)", alpha, h, got, bg)
+			}
 
-	// Walk the shadow band out to clean artwork. The largest step between
-	// adjacent rows is what the eye reads as an edge.
-	worst, at := 0, 0
-	prev := int(base.NRGBAAt(x, r.Max.Y).R)
-	for y := r.Max.Y + 1; y < 90; y++ {
-		cur := int(base.NRGBAAt(x, y).R)
-		if d := cur - prev; d > worst {
-			worst, at = d, y
+			// Walk the shadow band out to clean artwork. The largest step between
+			// adjacent rows is what the eye reads as an edge.
+			worst, at := 0, 0
+			prev := int(base.NRGBAAt(x, r.Max.Y).R)
+			for y := r.Max.Y + 1; y < ih; y++ {
+				cur := int(base.NRGBAAt(x, y).R)
+				if d := cur - prev; d > worst {
+					worst, at = d, y
+				}
+				prev = cur
+				if cur >= bg {
+					break
+				}
+			}
+			if worst > 20 {
+				t.Errorf("alpha %d, %dpx tile: shadow steps %d levels at y=%d, want <=20 per row", alpha, h, worst, at)
+			}
 		}
-		prev = cur
-		if cur >= bg {
-			break
-		}
-	}
-	if worst > 20 {
-		t.Errorf("shadow steps %d levels at y=%d, want it to fade (<=20 per row)", worst, at)
 	}
 }
 
