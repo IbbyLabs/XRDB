@@ -125,3 +125,47 @@ func TestAStarvedGovernorRefusesInsteadOfTimingOut(t *testing.T) {
 		t.Errorf("the request sat in the queue for %s before being refused", elapsed)
 	}
 }
+
+// Our own queues refusing a request must not count against the source. Five of
+// them tripped the failure breaker and held a source nobody had contacted out
+// of every render.
+func TestOurOwnQueueRefusalsDoNotCountAgainstTheSource(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		err  error
+	}{
+		{"governor backlog", ErrGovernorBacklog},
+		{"pacer backlog", ErrPacerBacklog},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := NewHealthTracker(10, time.Hour)
+			for range failureBreakerThreshold + 2 {
+				if h.Failure("mdblist", wrapped(tc.err), CallerInteractive) {
+					t.Fatal("a refusal from our own queue reported a cooldown transition")
+				}
+			}
+			if h.CoolingOff("mdblist", CallerInteractive) {
+				t.Error("our own load shedding held the source out")
+			}
+		})
+	}
+
+	// Control: a real failure still trips it, so the guard cannot pass by
+	// swallowing everything.
+	h := NewHealthTracker(10, time.Hour)
+	for range failureBreakerThreshold {
+		h.Failure("mdblist", errStub("http 504"), CallerInteractive)
+	}
+	if !h.CoolingOff("mdblist", CallerInteractive) {
+		t.Error("five real failures no longer trip the breaker")
+	}
+}
+
+func wrapped(err error) error {
+	return &wrapErr{err}
+}
+
+type wrapErr struct{ err error }
+
+func (w *wrapErr) Error() string { return "mdblist: request: " + w.err.Error() }
+func (w *wrapErr) Unwrap() error { return w.err }

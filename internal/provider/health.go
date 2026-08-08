@@ -193,6 +193,12 @@ func (h *HealthTracker) Failure(source string, err error, class CallerClass) (en
 	if errors.Is(err, context.Canceled) {
 		return false
 	}
+	// Our own queues refusing a request says nothing about the source, which
+	// never saw it. Counting them trips the failure breaker on our own load
+	// shedding and holds a healthy source off every poster.
+	if errors.Is(err, ErrPacerBacklog) || errors.Is(err, ErrGovernorBacklog) {
+		return false
+	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
