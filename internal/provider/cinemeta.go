@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -48,10 +47,13 @@ func (c *Cinemeta) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta,
 	return c.FetchArtwork(ctx, mediaType, id, ArtworkOptions{})
 }
 
+// AppliesTo reports whether the id is one Cinemeta can answer for.
+func (c *Cinemeta) AppliesTo(_ context.Context, _, id string) bool { return isIMDbTitleID(id) }
+
 // FetchArtwork retrieves Cinemeta metadata, honoring the size preference for
 // metahub image URLs (small/medium/large variants).
 func (c *Cinemeta) FetchArtwork(ctx context.Context, mediaType, id string, opts ArtworkOptions) (*MediaMeta, error) {
-	if !strings.HasPrefix(id, "tt") {
+	if !isIMDbTitleID(id) {
 		return nil, fmt.Errorf("cinemeta: only IMDb tt-IDs supported, got %q: %w", id, ErrNotApplicable)
 	}
 

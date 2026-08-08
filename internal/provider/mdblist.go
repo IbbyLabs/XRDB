@@ -67,12 +67,15 @@ func (m *MDBList) key(ctx context.Context) string {
 }
 
 // Fetch retrieves multi-provider ratings from MDBList for the given IMDB tt-ID.
+// AppliesTo reports whether the id is one MDBList can answer for.
+func (m *MDBList) AppliesTo(_ context.Context, _, id string) bool { return isIMDbTitleID(id) }
+
 // Returns an error (not a fatal failure) when the ID is not an IMDb tt-ID.
 func (m *MDBList) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, error) {
 	if m.key(ctx) == "" {
 		return nil, fmt.Errorf("mdblist: no api key configured")
 	}
-	if !strings.HasPrefix(id, "tt") {
+	if !isIMDbTitleID(id) {
 		return nil, fmt.Errorf("mdblist: requires imdb tt-id, got %q: %w", id, ErrNotApplicable)
 	}
 

@@ -1,6 +1,7 @@
 package provider
 
 import (
+	"context"
 	"errors"
 	"strings"
 )
@@ -22,6 +23,30 @@ var errNotFound = errors.New("provider: title not found for content type")
 // title, not an outage, so it must not count against the source's health or a
 // genuine failure would be lost in the noise.
 var ErrNotApplicable = errors.New("provider: source does not apply to this title")
+
+// Applicability is implemented by a source that can tell, from the title's
+// identity, whether it can answer for it at all. The render asks this of a
+// source before it asks whether that source is available, so an answer of false
+// keeps the title out of every hold-out gate.
+//
+// It is asked inside the render's per-source goroutine and may do the same
+// lookup the fetch would, including one that reaches a network. It must not be
+// moved in front of the fan-out.
+type Applicability interface {
+	AppliesTo(ctx context.Context, mediaType, id string) bool
+}
+
+// SourceApplies reports whether prov can answer for this title. A source that
+// does not declare applicability applies to everything, so a source that cannot
+// decide is still tried rather than silently dropped.
+func SourceApplies(ctx context.Context, prov Provider, mediaType, id string) bool {
+	a, ok := prov.(Applicability)
+	return !ok || a.AppliesTo(ctx, mediaType, id)
+}
+
+// isIMDbTitleID reports whether id is an IMDb title id. Sources keyed on IMDb
+// answer for nothing else.
+func isIMDbTitleID(id string) bool { return strings.HasPrefix(id, "tt") }
 
 // ErrUpstreamUnavailable reports that a source answered and its own upstream did
 // not. Jikan returns it per title: a broken anime id 504s in about 130ms with

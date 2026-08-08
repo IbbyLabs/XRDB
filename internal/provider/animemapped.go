@@ -52,18 +52,36 @@ func (w *AnimeMapped) RatingSources() []string {
 	return nil
 }
 
-// Fetch translates id to the wrapped service's ID space and delegates.
-func (w *AnimeMapped) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, error) {
+// translate resolves id into the wrapped service's ID space. The mapping is a
+// local dataset lookup, so both Fetch and AppliesTo can afford to ask.
+func (w *AnimeMapped) translate(ctx context.Context, mediaType, id string) (string, error) {
 	if strings.HasPrefix(id, w.prefix) {
-		return w.inner.Fetch(ctx, mediaType, id)
+		return id, nil
 	}
 	ids, ok := w.mapper.Resolve(ctx, mediaType, id)
 	if !ok {
-		return nil, fmt.Errorf("%s: no anime mapping for id %q: %w", w.inner.Name(), id, ErrNotApplicable)
+		return "", fmt.Errorf("%s: no anime mapping for id %q: %w", w.inner.Name(), id, ErrNotApplicable)
 	}
 	n := w.pick(ids)
 	if n == 0 {
-		return nil, fmt.Errorf("%s: mapping has no %s id for %q: %w", w.inner.Name(), w.inner.Name(), id, ErrNotApplicable)
+		return "", fmt.Errorf("%s: mapping has no %s id for %q: %w", w.inner.Name(), w.inner.Name(), id, ErrNotApplicable)
 	}
-	return w.inner.Fetch(ctx, mediaType, fmt.Sprintf("%s%d", w.prefix, n))
+	return fmt.Sprintf("%s%d", w.prefix, n), nil
+}
+
+// AppliesTo reports whether the title has a mapping into this service. Asked
+// before the render decides whether the source is available, so a title that is
+// not an anime never counts as a source the render lost.
+func (w *AnimeMapped) AppliesTo(ctx context.Context, mediaType, id string) bool {
+	_, err := w.translate(ctx, mediaType, id)
+	return err == nil
+}
+
+// Fetch translates id to the wrapped service's ID space and delegates.
+func (w *AnimeMapped) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, error) {
+	translated, err := w.translate(ctx, mediaType, id)
+	if err != nil {
+		return nil, err
+	}
+	return w.inner.Fetch(ctx, mediaType, translated)
 }

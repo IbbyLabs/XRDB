@@ -1571,6 +1571,22 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 		wg.Add(1)
 		go func(i int, prov provider.Provider) {
 			defer wg.Done()
+			// What a source can answer for is settled before whether it is
+			// available. Every hold-out gate lives inside fetchRatingsResilient,
+			// and a gate marks what it refuses as degraded, which puts a
+			// placeholder on the poster. A source that cannot apply to this
+			// title is not a source the render lost.
+			//
+			// Asked here rather than where the provider list is built: a mapping
+			// lookup can reach a live API for a title the local dataset misses,
+			// and in front of the fan-out that would serialise one network call
+			// per anime source before any source is called at all.
+			if !provider.SourceApplies(ctx, prov, req.ContentType, req.MediaID) {
+				p.log().DebugContext(ctx, "A ratings source does not apply to this title",
+					"id", logging.RequestID(ctx), "source", prov.Name(),
+					"media_id", req.MediaID)
+				return
+			}
 			started := time.Now()
 			meta, fromMemory, err := p.fetchRatingsResilient(ctx, prov, req, artwork)
 			// Info, because a held-out source is only meaningful against the
