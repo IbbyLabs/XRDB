@@ -2,6 +2,24 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.74.0](https://github.com/IbbyLabs/XRDB/compare/v3.73.1...v3.74.0) (2026-08-08)
+
+
+### Added
+
+* **cache:** give a queue-held render a shorter window than the reserve ([f1a344b](https://github.com/IbbyLabs/XRDB/commit/f1a344befb3c8843e4fd8f41741174b706536d55))
+* **configurator:** link self-hosting from the Install tab ([4dbfa20](https://github.com/IbbyLabs/XRDB/commit/4dbfa20ed10b52043822d025b22b0a003b552c33))
+* **ratings:** time the queue wait and a shared fetch separately ([1b7aae5](https://github.com/IbbyLabs/XRDB/commit/1b7aae5947b0bd79cefb529fd340382b7ce8e3a6))
+* **server:** add a per-caller render rate limiter ([caab23e](https://github.com/IbbyLabs/XRDB/commit/caab23eaff381a763ece6e277f2b6e2fecc40147))
+* **server:** cap fresh renders per caller by profile and address ([201e99a](https://github.com/IbbyLabs/XRDB/commit/201e99ae51966ca6bac02f83d814bf85fddff5e4))
+
+
+### Fixed
+
+* **render:** copy the artwork metadata at the provider boundary ([2ddd0bc](https://github.com/IbbyLabs/XRDB/commit/2ddd0bcc580cf9485a5f79d69428eab2c696b324))
+* **render:** give each render its own copy of the artwork metadata ([1b39cb7](https://github.com/IbbyLabs/XRDB/commit/1b39cb7238beda41de37af511260b598e05451c3))
+* **server:** key the render cap on the address without its port ([c6051e9](https://github.com/IbbyLabs/XRDB/commit/c6051e9ff5aeaa6732e1ed259e73cdc1eafdc0ab))
+
 ## [3.73.1](https://github.com/IbbyLabs/XRDB/compare/v3.73.0...v3.73.1) (2026-08-08)
 
 
