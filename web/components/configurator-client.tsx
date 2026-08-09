@@ -557,7 +557,19 @@ export function ConfiguratorClient() {
                 // sits with the preview, which is where the work happens.
                 <button
                   className="btn btn-ghost btn-sm"
-                  onClick={() => setActiveTab('profile')}
+                  onClick={() => {
+                    setActiveTab('profile');
+                    // Switching the tab alone leaves the reader wherever the
+                    // page was scrolled, which on a long panel is the middle of
+                    // a form they did not ask for.
+                    requestAnimationFrame(() => {
+                      document.getElementById(`${uid}-panel-profile`)
+                        ?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+                      // Focus follows, or a keyboard caller is left on the
+                      // button they pressed with the panel changed behind them.
+                      document.querySelector<HTMLInputElement>('[data-register-username]')?.focus();
+                    });
+                  }}
                   title="Save these settings to a profile"
                 >
                   <Save size={13} aria-hidden />

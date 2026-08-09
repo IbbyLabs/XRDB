@@ -510,6 +510,7 @@ export function ProfilePanel({
           <label className="label" htmlFor={`${uid}-alias`}>Username</label>
           <input
             id={`${uid}-alias`}
+            data-register-username
             className="input"
             value={alias}
             onChange={e => setAlias(e.target.value.toLowerCase())}
