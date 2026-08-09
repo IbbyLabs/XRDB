@@ -268,7 +268,7 @@ func (p *Pipeline) resolveContentKind(ctx context.Context, req Request) string {
 	if !ok {
 		return ""
 	}
-	_, kind, err := ident.IdentifyID(ctx, req.MediaID, "")
+	_, kind, err := ident.IdentifyID(ctx, titleID(req.MediaID), "")
 	if err != nil {
 		p.log().DebugContext(ctx, "Could not resolve the kind of title for a per-type override",
 			"id", logging.RequestID(ctx), "media_id", req.MediaID, "error", err)
@@ -297,7 +297,7 @@ func (p *Pipeline) tmdbNumericID(ctx context.Context, req Request, known string)
 	if isNumericID(known) {
 		return known, true
 	}
-	if rest, ok := strings.CutPrefix(req.MediaID, "tmdb:"); ok {
+	if rest, ok := strings.CutPrefix(titleID(req.MediaID), "tmdb:"); ok {
 		// tmdb:movie:1726 / tmdb:1726 — take the trailing number.
 		parts := strings.Split(rest, ":")
 		last := parts[len(parts)-1]
@@ -313,11 +313,28 @@ func (p *Pipeline) tmdbNumericID(ctx context.Context, req Request, known string)
 	if !ok {
 		return "", false
 	}
-	id, _, err := ident.IdentifyID(ctx, req.MediaID, req.ContentType)
+	id, _, err := ident.IdentifyID(ctx, titleID(req.MediaID), req.ContentType)
 	if err != nil || !isNumericID(id) {
 		return "", false
 	}
 	return id, true
+}
+
+// titleID is the id that names the *title*, which for an episode is its series.
+//
+// Anything asking "what work is this" — is it an anime, which Kitsu entry is it,
+// which TMDB number is it — wants this rather than req.MediaID. An episode id
+// carries a season and an episode on the end, and every lookup keyed on titles
+// rejects the whole string, so passing it produces a confident "no" for a title
+// the source knows perfectly well.
+//
+// Read through parseEpisodeID, the same parser the episode path uses, so a shape
+// one of them accepts cannot be a shape the other does not.
+func titleID(mediaID string) string {
+	if series, _, _, ok := parseEpisodeID(mediaID); ok {
+		return series
+	}
+	return mediaID
 }
 
 // kitsuID maps the requested title onto the Kitsu id Kitsu answers to. A title
@@ -329,7 +346,7 @@ func (p *Pipeline) kitsuID(ctx context.Context, req Request) (string, bool) {
 	if p.anime == nil {
 		return "", false
 	}
-	ids, ok := p.anime.Resolve(ctx, req.MediaType, req.MediaID)
+	ids, ok := p.anime.Resolve(ctx, req.MediaType, titleID(req.MediaID))
 	if !ok || ids.Kitsu == 0 {
 		return "", false
 	}
@@ -341,7 +358,7 @@ func (p *Pipeline) isAnimeTitle(ctx context.Context, req Request) bool {
 	if p.anime == nil || !needsAnimeFlag(req.Config) {
 		return false
 	}
-	_, ok := p.anime.Resolve(ctx, req.MediaType, req.MediaID)
+	_, ok := p.anime.Resolve(ctx, req.MediaType, titleID(req.MediaID))
 	return ok
 }
 
@@ -1194,6 +1211,11 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 			// The episode still comes from TMDB whatever the configured source is.
 			return data, meta, ratingID, "tmdb", nil
 		}
+		// Not handled means the still was skipped — episodeArtworkMode "series",
+		// or TMDB having none — and the series artwork is what stands in. Every
+		// source below is keyed on titles, so carrying the episode id here asks
+		// all of them for something none of them has and ends as a placeholder.
+		req.MediaID = series
 	}
 	opts := provider.ArtworkOptions{
 		Language:           req.Config.Language,
@@ -1237,8 +1259,12 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 		if name == string(imageconfig.ArtworkKitsu) {
 			id, ok := p.kitsuID(ctx, req)
 			if !ok {
+				p.log().DebugContext(ctx, "No Kitsu id is mapped for this title, so Kitsu is skipped",
+					"id", logging.RequestID(ctx), "media_id", req.MediaID)
 				continue
 			}
+			p.log().DebugContext(ctx, "Resolved the title to a Kitsu id",
+				"id", logging.RequestID(ctx), "media_id", req.MediaID, "kitsu_id", id)
 			providerID = id
 		}
 		// MediUX is keyed on the numeric TMDB id, so a tt-id is resolved first.
@@ -1246,8 +1272,12 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]
 		if name == string(imageconfig.ArtworkMediux) {
 			id, ok := p.tmdbNumericID(ctx, req, knownID)
 			if !ok {
+				p.log().DebugContext(ctx, "No numeric TMDB id was resolved for this title, so MediUX is skipped",
+					"id", logging.RequestID(ctx), "media_id", req.MediaID)
 				continue
 			}
+			p.log().DebugContext(ctx, "Resolved the title to a numeric TMDB id",
+				"id", logging.RequestID(ctx), "media_id", req.MediaID, "tmdb_id", id)
 			providerID = id
 		}
 		var meta *provider.MediaMeta
