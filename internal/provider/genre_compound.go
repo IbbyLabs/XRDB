@@ -37,18 +37,16 @@ var (
 // compoundOverrides force a side for titles the keywords cannot settle. They are
 // two different cases and the distinction matters to anyone editing this:
 //
+//	56570 Outlander    — matched BOTH buckets (magic vs time travel)
+//	90027 Carnival Row — matched BOTH buckets (fairy, fantasy vs steampunk)
 //	63174 Lucifer      — matched NEITHER, no signal at all
 //	71915 Good Omens   — matched NEITHER once matching became whole-word; its
 //	                     keywords are angel, prophecy, anti-christ, armageddon
 //
-// Only the no-signal case is still forced. A title matching BOTH buckets is what
-// Sci-Fantasy is for, so Outlander (56570) and Carnival Row (90027) now reach it
-// on their keywords rather than being sent to Fantasy for want of anywhere else.
-// Matching neither is not the same thing: it is an absence of evidence, and
-// filing it as both would assert a both-ness nothing supports.
-//
 // Keyed on TMDB id rather than title, because titles repeat across years.
 var compoundOverrides = map[string]string{
+	"56570": genreFantasy,
+	"90027": genreFantasy,
 	"63174": genreFantasy,
 	"71915": genreFantasy,
 }
