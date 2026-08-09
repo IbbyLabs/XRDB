@@ -16,7 +16,6 @@ All notable changes to XRDB are documented here.
 
 ### Fixed
 
-* **genres:** restore the decided Sci-Fantasy colour (FR-163) ([2762842](https://github.com/IbbyLabs/XRDB/commit/2762842a7bddd82781e1f8cda34c897f7df92e9f))
 * **logs:** a held-out source may still have a remembered badge (BUG-237) ([0494614](https://github.com/IbbyLabs/XRDB/commit/0494614ad8cba1efd02a0ff43aa9d09faf6e3e27))
 
 ## [3.75.0](https://github.com/IbbyLabs/XRDB/compare/v3.74.3...v3.75.0) (2026-08-09)
