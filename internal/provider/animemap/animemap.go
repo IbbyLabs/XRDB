@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -191,6 +192,20 @@ type Mapper struct {
 	fallbackURL string
 	fbMu        sync.Mutex
 	fbCache     map[string]fallbackEntry
+	fbInflight  map[string]*fbCall
+}
+
+// fbCall is one in-progress fallback lookup. Three anime sources are asked
+// whether they apply to the same title concurrently, and each miss reaches the
+// live API, so callers arriving for a key already being fetched wait on that
+// fetch instead of starting their own. The fetch runs on a detached context;
+// one caller walking away must not abandon the others.
+type fbCall struct {
+	done    chan struct{}
+	cancel  context.CancelFunc
+	waiters int // guarded by Mapper.fbMu
+	ids     IDs
+	ok      bool
 }
 
 // indexed pairs resolved IDs with a season rank so first-season entries win
@@ -276,6 +291,7 @@ func New(opts Options) *Mapper {
 		httpClient:  opts.HTTPClient,
 		fallbackURL: strings.TrimRight(opts.FallbackURL, "/"),
 		fbCache:     make(map[string]fallbackEntry),
+		fbInflight:  make(map[string]*fbCall),
 		primary: &source{
 			url:        opts.DatasetURL,
 			mirror:     opts.MirrorURL,
@@ -837,7 +853,59 @@ func (m *Mapper) resolveFallback(ctx context.Context, id string) (IDs, bool) {
 		m.fbMu.Unlock()
 		return e.ids, e.ok
 	}
+	if call, ok := m.fbInflight[id]; ok {
+		call.waiters++
+		m.fbMu.Unlock()
+		defer func() {
+			m.fbMu.Lock()
+			call.waiters--
+			if call.waiters == 0 {
+				call.cancel()
+			}
+			m.fbMu.Unlock()
+		}()
+		m.log().Debug("Waiting on an anime mapping lookup already in flight",
+			"id", id)
+		select {
+		case <-call.done:
+			return call.ids, call.ok
+		case <-ctx.Done():
+			return IDs{}, false
+		}
+	}
+
+	callCtx, callCancel := context.WithTimeout(context.Background(), fallbackTimeout)
+	call := &fbCall{done: make(chan struct{}), cancel: callCancel, waiters: 1}
+	m.fbInflight[id] = call
 	m.fbMu.Unlock()
+
+	defer func() {
+		m.fbMu.Lock()
+		call.waiters--
+		if call.waiters == 0 {
+			call.cancel()
+		}
+		m.fbMu.Unlock()
+	}()
+
+	go m.runFallback(callCtx, id, call)
+
+	select {
+	case <-call.done:
+		return call.ids, call.ok
+	case <-ctx.Done():
+		return IDs{}, false
+	}
+}
+
+// runFallback performs the one outbound lookup the waiters are sharing.
+func (m *Mapper) runFallback(ctx context.Context, id string, call *fbCall) {
+	defer close(call.done)
+	defer func() {
+		m.fbMu.Lock()
+		delete(m.fbInflight, id)
+		m.fbMu.Unlock()
+	}()
 
 	source := "themoviedb"
 	if strings.HasPrefix(id, "tt") {
@@ -847,19 +915,28 @@ func (m *Mapper) resolveFallback(ctx context.Context, id string) (IDs, bool) {
 	// Construct URL with proper query parameter encoding
 	u, err := url.Parse(m.fallbackURL + "/" + source)
 	if err != nil {
-		return IDs{}, false
+		m.log().Warn("Failed to build the anime mapping lookup URL",
+			"id", id, "error", err)
+		return
 	}
 	q := u.Query()
 	q.Set("id", id)
 	q.Set("include", "myanimelist,anilist,kitsu")
 	u.RawQuery = q.Encode()
 
-	fctx, cancel := context.WithTimeout(ctx, fallbackTimeout)
-	defer cancel()
-	ids, found, err := m.fetchFallback(fctx, u.String())
+	m.log().Debug("Asking the live anime mapping API about a title",
+		"id", id, "source", source)
+
+	ids, found, err := m.fetchFallback(ctx, u.String())
 	if err != nil {
-		return IDs{}, false // transient failure: don't negative-cache
+		// Transient failure: don't negative-cache, and let the next render ask
+		// again rather than treating the title as settled.
+		m.log().Warn("The live anime mapping lookup failed",
+			"id", id, "source", source, "error", err)
+		return
 	}
+
+	call.ids, call.ok = ids, found
 
 	m.fbMu.Lock()
 	if len(m.fbCache) >= fallbackCacheLimit {
@@ -867,8 +944,12 @@ func (m *Mapper) resolveFallback(ctx context.Context, id string) (IDs, bool) {
 	}
 	m.fbCache[id] = fallbackEntry{ids: ids, ok: found, expires: time.Now().Add(fallbackCacheTTL)}
 	m.fbMu.Unlock()
-	return ids, found
+
+	m.log().Debug("The live anime mapping API answered",
+		"id", id, "mapped", found)
 }
+
+func (m *Mapper) log() *slog.Logger { return slog.Default() }
 
 func (m *Mapper) fetchFallback(ctx context.Context, url string) (IDs, bool, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
