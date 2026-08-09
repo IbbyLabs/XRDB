@@ -2,7 +2,7 @@
 
 Thanks for looking. Issues and pull requests are both welcome.
 
-For "how do I ..." questions, [Discord](https://discord.gg/wPY2pcqjmm) is
+For "how do I ..." questions, [Discord](https://discord.ibbylabs.dev) is
 usually faster than an issue.
 
 ## Getting it running

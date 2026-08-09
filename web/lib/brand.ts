@@ -4,6 +4,6 @@ export const BRAND_DISPLAY_NAME = `${BRAND_NAME} | ${BRAND_FULL_NAME}`;
 export const BRAND_GITHUB_URL = 'https://github.com/IbbyLabs/XRDB';
 export const BRAND_SUPPORT_URL = 'https://kofi.ibbylabs.dev';
 export const BRAND_UPTIME_URL = 'https://uptime.ibbylabs.dev';
-export const BRAND_DISCORD_URL = 'https://discord.gg/wPY2pcqjmm';
+export const BRAND_DISCORD_URL = 'https://discord.ibbylabs.dev';
 export const BRAND_DEVELOPER = 'IbbyLabs';
 export const BRAND_DEVELOPER_URL = 'https://ibbylabs.dev';

@@ -31,7 +31,7 @@ const (
 	expandedName  = "eXtended Ratings DataBase"
 	ownerName     = "IbbyLabs"
 	liveURL       = "https://extendedratings.com"
-	serverInvite  = "https://discord.gg/wPY2pcqjmm"
+	serverInvite  = "https://discord.ibbylabs.dev"
 )
 
 type section struct {

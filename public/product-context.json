@@ -7,7 +7,7 @@
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
   "liveUrl": "https://extendedratings.com",
-  "serverInvite": "https://discord.gg/wPY2pcqjmm",
+  "serverInvite": "https://discord.ibbylabs.dev",
   "introLines": [
     "XRDB renders poster, backdrop, logo and episode-thumbnail artwork on demand, drawing ratings and metadata onto the image.",
     "It is used mainly through Stremio-style addons, and also writes artwork to folders for Plex and Jellyfin.",

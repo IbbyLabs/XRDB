@@ -159,4 +159,4 @@ is unavailable, so XRDB reads each page far less often than once per render.
 
 XRDB by [IbbyLabs](https://github.com/IbbyLabs) ·
 [Support](https://kofi.ibbylabs.dev) ·
-[Discord](https://discord.gg/wPY2pcqjmm)
+[Discord](https://discord.ibbylabs.dev)
