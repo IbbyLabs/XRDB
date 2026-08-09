@@ -2,6 +2,26 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.74.3](https://github.com/IbbyLabs/XRDB/compare/v3.74.2...v3.74.3) (2026-08-09)
+
+
+### Fixed
+
+* **anime:** share one mapping lookup across sources (BUG-228) ([0dc0b05](https://github.com/IbbyLabs/XRDB/commit/0dc0b05aabb5ad4fd3da4a2aab0fee39fa0e1a79))
+* **compose:** read the content kind from the front of the id (BUG-234) ([8a9a926](https://github.com/IbbyLabs/XRDB/commit/8a9a926f1e74a2af47c337faad16d0d6f81cd1a0))
+* **mediux:** treat a per-title refusal as a miss (BUG-235) ([4f35bea](https://github.com/IbbyLabs/XRDB/commit/4f35bea30b38a0b29a250171028479ccd6408b9d))
+* **profiles:** send the profile password when exporting (BUG-229) ([394b8a3](https://github.com/IbbyLabs/XRDB/commit/394b8a3a9d0e13808eca983543172fbee0f41a65))
+
+
+### Performance
+
+* **anime:** reclaim expired mapping entries before clearing ([8f4648b](https://github.com/IbbyLabs/XRDB/commit/8f4648b1d8df767c93db58ce9178f084a1804140))
+
+
+### Documentation
+
+* **compose:** say why a kind-less tmdb id has no kind (BUG-232) ([6228941](https://github.com/IbbyLabs/XRDB/commit/6228941deef2712ac6a48ae34e2659dd87935117))
+
 ## [3.74.2](https://github.com/IbbyLabs/XRDB/compare/v3.74.1...v3.74.2) (2026-08-09)
 
 
