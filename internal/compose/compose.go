@@ -578,7 +578,7 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 			p.log().InfoContext(ctx, "A ratings source is held out; serving a remembered rating",
 				"id", logging.RequestID(ctx), "source", prov.Name(),
 				"media_id", req.MediaID, "gate", gate,
-				"age_ms", age.Milliseconds())
+				"outcome", outcomeRemembered, "age_ms", age.Milliseconds())
 			return good, true, nil
 		}
 		return nil, false, fmt.Errorf("%s: %w", prov.Name(), heldOut)
@@ -595,7 +595,7 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 				p.log().InfoContext(ctx, "A ratings source is held out; serving a remembered rating",
 					"id", logging.RequestID(ctx), "source", prov.Name(),
 					"media_id", req.MediaID, "gate", provider.GateBulkAllowance,
-					"age_ms", age.Milliseconds())
+					"outcome", outcomeRemembered, "age_ms", age.Milliseconds())
 				return good, true, nil
 			}
 		}
@@ -656,7 +656,8 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 	if good, age, ok := p.health.LastGoodAge(prov.Name(), key); ok {
 		p.log().WarnContext(ctx, "A ratings source is degraded; serving its last known good result",
 			"id", logging.RequestID(ctx), "source", prov.Name(),
-			"media_id", req.MediaID, "age_ms", age.Milliseconds(), "error", err)
+			"media_id", req.MediaID, "outcome", outcomeRemembered,
+			"age_ms", age.Milliseconds(), "error", err)
 		return good, true, nil
 	}
 	if err == nil && meta != nil && len(meta.Ratings) == 0 && !ownerKeyed {
@@ -764,6 +765,14 @@ func (p *Pipeline) log() *slog.Logger {
 
 // Render executes the composition pipeline for the given request.
 // Falls back to a type-colored placeholder if any step fails.
+// What became of a source on this render, as a value rather than a shape. A
+// reader that tells a hold-out from a remembered answer by which fields are
+// present breaks silently the first time someone adds one of them.
+const (
+	outcomeHeldOut    = "held_out"
+	outcomeRemembered = "remembered"
+)
+
 // unavailableSources turns the providers held out of a render into the rating
 // sources the strip is filtered by. The two are the same string only by
 // coincidence: MDBList alone answers thirteen sources and no provider is called
@@ -1747,7 +1756,8 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 						queueHeld.Store(true)
 					}
 					attrs := []any{"id", logging.RequestID(ctx), "source", prov.Name(),
-						"media_id", req.MediaID, "gate", gate}
+						"media_id", req.MediaID, "gate", gate,
+						"outcome", outcomeHeldOut}
 					if gate == provider.GatePacerBacklog {
 						attrs = append(attrs, "min_interval_ms",
 							provider.PacedInterval(prov.Name()).Milliseconds())
