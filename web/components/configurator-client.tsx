@@ -3,7 +3,7 @@
 import {
   useState, useCallback, useRef, useId, useEffect, useMemo,
 } from 'react';
-import { Settings2, Star, SlidersHorizontal, Film, Rocket, Link2, Maximize2, Undo2, Redo2, Check, X } from 'lucide-react';
+import { Settings2, Star, SlidersHorizontal, Film, Rocket, Link2, Maximize2, Undo2, Redo2, Check, X, Save } from 'lucide-react';
 import { renderUrl, type MediaType, type Template } from '@/lib/api';
 import { getRenderKey, setRenderKey } from '@/lib/render-key';
 import { copyText } from '@/lib/clipboard';
@@ -551,6 +551,19 @@ export function ConfiguratorClient() {
                   : shareState === 'failed' ? 'Copy failed'
                   : 'Share this look'}
               </button>
+              {!loadedProfile && (
+                // Save lived only inside the Profile tab, so someone who set up
+                // their whole look without opening it had nothing to keep. This
+                // sits with the preview, which is where the work happens.
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setActiveTab('profile')}
+                  title="Save these settings to a profile"
+                >
+                  <Save size={13} aria-hidden />
+                  Save
+                </button>
+              )}
               <button
                 className="btn btn-ghost btn-sm"
                 onClick={undo}

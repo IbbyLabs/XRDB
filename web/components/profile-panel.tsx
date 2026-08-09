@@ -179,7 +179,7 @@ export function ProfilePanel({
 
   const handleLoad = async (keyOverride?: string) => {
     const key = (keyOverride ?? loadKey).trim();
-    if (!key) { flash('error', 'Enter your username'); return; }
+    if (!key) { flash('error', 'Enter your username, or the profile ID if you made one before usernames'); return; }
     setBusy(true);
     try {
       const p = await getProfile(key, loadPassword || undefined);
@@ -467,13 +467,16 @@ export function ProfilePanel({
         <h3 className="label" style={{ margin: 0 }}>Sign in</h3>
         <div className="field">
           <label className="label" htmlFor={`${uid}-loadkey`}>Username</label>
+          <span className="hint" style={{ marginTop: 0, marginBottom: 'var(--sp-1)' }}>
+            A profile made before usernames signs in with its ID.
+          </span>
           <input
             id={`${uid}-loadkey`}
             className="input"
             value={loadKey}
             onChange={e => setLoadKey(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') void handleLoad(); }}
-            placeholder="your username"
+            placeholder="username or profile ID"
             spellCheck={false}
             autoComplete="username"
           />
