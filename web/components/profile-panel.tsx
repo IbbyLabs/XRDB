@@ -289,7 +289,7 @@ export function ProfilePanel({
   const handleExport = async () => {
     if (!loaded) return;
     try {
-      const envelope = await exportProfile(loaded.id);
+      const envelope = await exportProfile(loaded.id, loaded.password || undefined);
       const blob = new Blob([JSON.stringify(envelope, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');

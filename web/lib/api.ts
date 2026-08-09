@@ -113,8 +113,8 @@ export function renderAuthHeaders(): Record<string, string> {
   return key ? { Authorization: `Bearer ${key}` } : {};
 }
 
-// Shown when a profile route 401s. On a keyed instance the render key gate runs
-// before the profile-password check, so a 401 can mean either is missing.
+// The render key gate runs before the profile-password check, so only a route
+// that never reads an existing profile can attribute its 401 to the key alone.
 const NEEDS_RENDER_KEY =
   'Unauthorized — this instance has an API key set. Enter it under the Install tab.';
 const NEEDS_KEY_OR_PASSWORD =
@@ -191,11 +191,11 @@ export async function deleteProfile(id: string, password?: string): Promise<void
   }
 }
 
-export async function exportProfile(id: string): Promise<ExportEnvelope> {
+export async function exportProfile(id: string, password?: string): Promise<ExportEnvelope> {
   const res = await fetch(`${base()}/profile/${encodeURIComponent(id)}/export`, {
-    headers: renderAuthHeaders(),
+    headers: { ...renderAuthHeaders(), ...profilePasswordHeaders(password) },
   });
-  if (res.status === 401) throw new Error(NEEDS_RENDER_KEY);
+  if (res.status === 401) throw new Error(NEEDS_KEY_OR_PASSWORD);
   if (!res.ok) throw new Error(`export failed: ${res.status}`);
   return res.json() as Promise<ExportEnvelope>;
 }
