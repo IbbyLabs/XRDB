@@ -33,33 +33,50 @@ type tileChrome struct {
 // shadowAlphaPerRow is the largest alpha a tile shadow may drop in one row.
 const shadowAlphaPerRow = 16
 
-// drawTileShadow draws a drop shadow below r, fading to nothing over its last
-// rows. Zero alpha draws nothing.
+// drawTileShadow draws a drop shadow for r, offset below it and blurred on
+// every side. Zero alpha draws nothing.
 func drawTileShadow(base *image.NRGBA, r image.Rectangle, radius int, col color.NRGBA) {
 	if col.A == 0 {
 		return
 	}
-	body := r.Add(image.Pt(0, maxInt(1, r.Dy()/18)))
-	blendRoundedRect(base, body, radius, col)
+	// How far the shadow carries below the badge, split evenly between the
+	// offset and the blur radius. Offsetting by exactly the radius puts the
+	// badge's own bottom edge at full alpha, holds the top of the blur inside
+	// the badge so nothing above it is haloed, and fixes the weight at the
+	// bottom edge whatever the badge measures.
+	reach := maxInt(1, r.Dy()/18) + maxInt(maxInt(3, int(col.A)/shadowAlphaPerRow), r.Dy()/12)
+	offset := maxInt(1, reach/2)
 
-	// The fade takes its width from the same rect shifted below the body, so the
-	// bottom arcs keep their shape as the alpha falls away. Every row drops by
-	// col.A/(feather+1), so a darker shadow needs more rows to land on the same
-	// step as a fainter one.
-	feather := maxInt(maxInt(3, int(col.A)/shadowAlphaPerRow), r.Dy()/12)
-	smear := body.Add(image.Pt(0, feather)).Intersect(base.Bounds())
-	for k := 0; k < feather; k++ {
-		y := body.Max.Y + k
-		if y < smear.Min.Y || y >= smear.Max.Y {
-			continue
-		}
-		a := float64(col.A) * float64(feather-k) / float64(feather+1)
-		for x := smear.Min.X; x < smear.Max.X; x++ {
-			cov, skip := cornerCoverage(x, y, smear, radius)
-			if skip {
+	// The blur spans the shape's edge rather than starting at it: alpha is full
+	// half a span inside and nothing half a span outside. A shadow that is
+	// opaque up to its own outline reads as a bar the width of the badge.
+	span := float64(2 * offset)
+	body := r.Add(image.Pt(0, offset))
+
+	area := body.Inset(-offset).Intersect(base.Bounds())
+	cx := float64(body.Min.X+body.Max.X-1) / 2
+	cy := float64(body.Min.Y+body.Max.Y-1) / 2
+	// A capsule asks for a radius of half its height. Left unclamped the arms of
+	// the distance below go negative and the shadow reads lighter the smaller
+	// the badge is.
+	rad := math.Min(float64(radius), math.Min(float64(body.Dx()), float64(body.Dy()))/2)
+	halfX := math.Max(float64(body.Dx()-1)/2-rad, 0)
+	halfY := math.Max(float64(body.Dy()-1)/2-rad, 0)
+	for y := area.Min.Y; y < area.Max.Y; y++ {
+		for x := area.Min.X; x < area.Max.X; x++ {
+			qx := math.Abs(float64(x)-cx) - halfX
+			qy := math.Abs(float64(y)-cy) - halfY
+			// Distance to the rounded rect: positive outside, negative within.
+			dist := math.Hypot(math.Max(qx, 0), math.Max(qy, 0)) +
+				math.Min(math.Max(qx, qy), 0) - rad
+			a := (0.5 - dist/span) * float64(col.A)
+			if a <= 0 {
 				continue
 			}
-			blendPixel(base, x, y, color.NRGBA{R: col.R, G: col.G, B: col.B, A: uint8(a * cov)})
+			if a > float64(col.A) {
+				a = float64(col.A)
+			}
+			blendPixel(base, x, y, color.NRGBA{R: col.R, G: col.G, B: col.B, A: uint8(a)})
 		}
 	}
 }

@@ -577,9 +577,11 @@ func TestGenreFitAccountsForTheManualOffset(t *testing.T) {
 			mode:    "text",
 			offsetX: offsetX,
 		})
+		// Solid ink only. A badge flush against the frame loses the outer edge
+		// of its drop shadow, which is not the label being cut off.
 		n := 0
 		for i := 3; i < len(img.Pix); i += 4 {
-			if img.Pix[i] > 0 {
+			if img.Pix[i] > 128 {
 				n++
 			}
 		}
