@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"sort"
 	"strings"
@@ -72,7 +73,10 @@ type mediuxResponse struct {
 		} `json:"movies_by_id"`
 	} `json:"data"`
 	Errors []struct {
-		Message string `json:"message"`
+		Message    string `json:"message"`
+		Extensions struct {
+			Code string `json:"code"`
+		} `json:"extensions"`
 	} `json:"errors"`
 }
 
@@ -140,7 +144,7 @@ func (m *MediUX) FetchArtwork(ctx context.Context, mediaType, id string, opts Ar
 		return nil, fmt.Errorf("mediux: decode: %w", err)
 	}
 	if len(out.Errors) > 0 {
-		return nil, fmt.Errorf("mediux: %s", out.Errors[0].Message)
+		return nil, mediuxGraphQLError(tmdbID, out.Errors[0].Extensions.Code, out.Errors[0].Message)
 	}
 	if out.Data.Movie == nil || len(out.Data.Movie.Sets) == 0 {
 		return nil, fmt.Errorf("mediux: no set for %q: %w", tmdbID, errNotFound)
@@ -181,4 +185,22 @@ func isNumericID(s string) bool {
 		}
 	}
 	return true
+}
+
+// A credential or transport fault answers non-200 and never reaches here, so an
+// error alongside a 200 is the server's answer about one title. FORBIDDEN is
+// what MediUX returns for a record it will not serve, which is not-found from
+// where we stand.
+//
+// An unrecognised code is treated the same way but logged, because the cost of
+// calling a per-title fact a source failure is a healthy source held out of every
+// render, and the cost of the reverse is one title's artwork missing.
+func mediuxGraphQLError(tmdbID, code, message string) error {
+	switch strings.ToUpper(strings.TrimSpace(code)) {
+	case "FORBIDDEN", "NOT_FOUND", "RECORD_NOT_FOUND":
+	default:
+		slog.Default().Warn("MediUX answered with an unfamiliar error code",
+			"tmdb_id", tmdbID, "code", code, "message", message)
+	}
+	return fmt.Errorf("mediux: %s: %w", message, errNotFound)
 }
