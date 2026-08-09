@@ -101,7 +101,7 @@ func (m *MAL) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, erro
 		return nil, fmt.Errorf("mal: http %d for id %q: %w", resp.StatusCode, id, ErrUpstreamUnavailable)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("mal: http %d", resp.StatusCode)
+		return nil, HTTPFault("mal", resp.StatusCode)
 	}
 
 	var result struct {

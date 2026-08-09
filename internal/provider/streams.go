@@ -147,7 +147,7 @@ func (s *StreamQuality) Detect(ctx context.Context, contentType, id string) (map
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("streams: http %d for %s", resp.StatusCode, logging.RedactURL(url))
+		return nil, fmt.Errorf("%w for %s", HTTPFault("streams", resp.StatusCode), logging.RedactURL(url))
 	}
 
 	var payload struct {

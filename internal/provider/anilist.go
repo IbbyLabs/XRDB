@@ -89,7 +89,7 @@ func (a *AniList) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, 
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("anilist: http %d", resp.StatusCode)
+		return nil, HTTPFault("anilist", resp.StatusCode)
 	}
 
 	var result struct {

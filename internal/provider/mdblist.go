@@ -141,7 +141,7 @@ func (m *MDBList) fetchType(ctx context.Context, mdbType, id string) (*MediaMeta
 		return nil, fmt.Errorf("mdblist: %s not found for %q: %w", mdbType, id, errNotFound)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("mdblist: http %d", resp.StatusCode)
+		return nil, HTTPFault("mdblist", resp.StatusCode)
 	}
 
 	var payload mdblistPayload

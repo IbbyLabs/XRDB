@@ -185,10 +185,10 @@ func (f *Fanart) fetchRaw(ctx context.Context, base, id string) (map[string]json
 	defer resp.Body.Close()
 
 	if resp.StatusCode == http.StatusNotFound {
-		return nil, fmt.Errorf("fanart: media not found for id %q", id)
+		return nil, fmt.Errorf("fanart: media not found for id %q: %w", id, errNotFound)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("fanart: http %d", resp.StatusCode)
+		return nil, HTTPFault("fanart", resp.StatusCode)
 	}
 
 	var raw map[string]json.RawMessage

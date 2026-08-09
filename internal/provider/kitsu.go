@@ -60,7 +60,7 @@ func (k *Kitsu) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, er
 		return nil, fmt.Errorf("kitsu: anime not found for id %q: %w", id, ErrNotApplicable)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("kitsu: http %d", resp.StatusCode)
+		return nil, HTTPFault("kitsu", resp.StatusCode)
 	}
 
 	// Kitsu uses JSON:API format.

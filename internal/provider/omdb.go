@@ -90,7 +90,7 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("omdb: http %d", resp.StatusCode)
+		return nil, HTTPFault("omdb", resp.StatusCode)
 	}
 
 	var result struct {

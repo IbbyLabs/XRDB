@@ -132,7 +132,7 @@ func (m *MediUX) FetchArtwork(ctx context.Context, mediaType, id string, opts Ar
 		return nil, fmt.Errorf("mediux: unauthorized (check api token)")
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("mediux: http %d", resp.StatusCode)
+		return nil, HTTPFault("mediux", resp.StatusCode)
 	}
 
 	var out mediuxResponse

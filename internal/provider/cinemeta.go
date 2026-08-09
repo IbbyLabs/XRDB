@@ -92,8 +92,14 @@ func (c *Cinemeta) fetchMeta(ctx context.Context, contentType, id string) (*Medi
 		return nil, fmt.Errorf("cinemeta: %w", redactHTTPErr(err))
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusNotFound {
+		// A 404 from a title-keyed source is a fact about the title, not a
+		// fault in the source. Without the sentinel it counts as a failure,
+		// and five unknown titles hold the source off every render.
+		return nil, fmt.Errorf("cinemeta: no meta for %s: %w", id, errNotFound)
+	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("cinemeta: http %d for %s", resp.StatusCode, url)
+		return nil, fmt.Errorf("%w for %s", HTTPFault("cinemeta", resp.StatusCode), url)
 	}
 
 	var result struct {

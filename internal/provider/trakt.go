@@ -114,7 +114,7 @@ func (t *Trakt) fetchSegment(ctx context.Context, segment, id string) (*MediaMet
 		return nil, fmt.Errorf("trakt: %s has no rating for id %q: %w", segment, id, errNotFound)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("trakt: http %d", resp.StatusCode)
+		return nil, HTTPFault("trakt", resp.StatusCode)
 	}
 
 	var result struct {

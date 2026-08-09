@@ -215,7 +215,7 @@ func (s *SIMKL) fetchSegment(ctx context.Context, segment, simklID, origID strin
 		return nil, fmt.Errorf("simkl: %s not found for %q: %w", segment, origID, errNotFound)
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("simkl: http %d", resp.StatusCode)
+		return nil, HTTPFault("simkl", resp.StatusCode)
 	}
 
 	var result struct {
@@ -278,7 +278,7 @@ func (s *SIMKL) lookupByIMDB(ctx context.Context, imdbID string) (string, error)
 		return id, nil
 	}
 	if s.recentlyMissed(imdbID) {
-		return "", fmt.Errorf("simkl: no match for imdb id %q", imdbID)
+		return "", fmt.Errorf("simkl: no match for imdb id %q: %w", imdbID, errNotFound)
 	}
 	id, err := s.fetchIDByIMDB(ctx, imdbID)
 	if err != nil {
@@ -370,7 +370,7 @@ func (s *SIMKL) fetchIDByIMDB(ctx context.Context, imdbID string) (string, error
 	}
 	if len(results) == 0 || results[0].IDs.Simkl == 0 {
 		s.rememberMiss(imdbID)
-		return "", fmt.Errorf("simkl: no match for imdb id %q", imdbID)
+		return "", fmt.Errorf("simkl: no match for imdb id %q: %w", imdbID, errNotFound)
 	}
 
 	return fmt.Sprintf("%d", results[0].IDs.Simkl), nil

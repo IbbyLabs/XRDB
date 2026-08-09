@@ -201,7 +201,13 @@ func (h *HealthTracker) Failure(source string, err error, class CallerClass) (en
 	// Our own queues refusing a request says nothing about the source, which
 	// never saw it. Counting them trips the failure breaker on our own load
 	// shedding and holds a healthy source off every poster.
-	if errors.Is(err, ErrPacerBacklog) || errors.Is(err, ErrGovernorBacklog) {
+	// Every gate of our own, not just the two queues. A source already cooling
+	// off is refused by ErrCoolingOff before the request goes anywhere; counting
+	// that as a fresh failure lets a hold-out extend its own hold-out, which is
+	// a source punishing itself for being punished.
+	if errors.Is(err, ErrPacerBacklog) || errors.Is(err, ErrGovernorBacklog) ||
+		errors.Is(err, ErrCoolingOff) || errors.Is(err, ErrFailureBreaker) ||
+		errors.Is(err, ErrBulkAllowanceHeld) {
 		return false
 	}
 	h.mu.Lock()

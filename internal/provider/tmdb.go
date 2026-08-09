@@ -292,7 +292,7 @@ func (t *TMDB) IdentifyID(ctx context.Context, id, hint string) (tmdbID, content
 		return "", "", err
 	}
 	if !found {
-		return "", "", fmt.Errorf("tmdb: no match for external id %q", id)
+		return "", "", fmt.Errorf("tmdb: no match for external id %q: %w", id, errNotFound)
 	}
 	if match.ContentType == "tv" {
 		return match.ID, "series", nil
