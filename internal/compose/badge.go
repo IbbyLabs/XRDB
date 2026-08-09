@@ -887,6 +887,9 @@ func chromeFor(cfg imageconfig.Config) badgeChrome {
 
 // badgeSpec holds pre-computed layout info for a single rating badge.
 type badgeSpec struct {
+	// natW is the width the badge's own contents need. When every badge is
+	// padded to the widest, the difference is the space to distribute.
+	natW int
 	// unavailable draws the X in place of a value: the source was wanted and
 	// held out, rather than having no rating for this title.
 	unavailable bool
@@ -986,6 +989,11 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 			iconTint = sp.accent
 		}
 		contentX += padX
+		// Padding to a common width leaves the extra on one side unless it is
+		// shared, which reads as content shoved left in an oversized pill.
+		if sp.natW > 0 && sp.w > sp.natW {
+			contentX += (sp.w - sp.natW) / 2
+		}
 
 		if sp.icon != nil && !chrome.hideIcon {
 			// The mark scales within the shared box, so the row height holds even
@@ -1328,6 +1336,14 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 			w:                bw,
 			accent:           resolveProviderAccent(cfg, r.Source),
 		})
+	}
+
+	// Each badge is otherwise as wide as its own contents, so a column of them
+	// shows a different right edge per source — the marks differ in width before
+	// the value is drawn, which is why matching the value scale cannot close it.
+	// Padding every badge to the widest gives one edge.
+	if cfg.RatingsUniformWidth {
+		applyUniformWidth(specs)
 	}
 
 	if isSideRatingsLayout(cfg.RatingsLayout) {
@@ -1728,6 +1744,22 @@ func drawStackedBadge(out *image.NRGBA, sp badgeSpec, y, innerH, iconSize int, f
 		valY = bottom - (valH - valAscent)
 	}
 	drawText(out, face, sp.x+(sp.w-sp.valW)/2, valY, chrome.valueColor, sp.value)
+}
+
+// applyUniformWidth pads every badge to the width of the widest, so a column of
+// them shares one right edge. Each badge otherwise measures its own contents,
+// and the marks differ in width before the value is drawn — a wordmark against a
+// circle — which is why matching the value scale narrows the gap without closing
+// it. The natural width is kept so the contents can be centred in the space.
+func applyUniformWidth(specs []badgeSpec) {
+	widest := 0
+	for _, sp := range specs {
+		widest = maxInt(widest, sp.w)
+	}
+	for i := range specs {
+		specs[i].natW = specs[i].w
+		specs[i].w = widest
+	}
 }
 
 // widestBadgeAt measures the widest single badge the strip would draw at scale.

@@ -425,8 +425,14 @@ type RatingBadgeConfig struct {
 	PosterEdgeOffset int `json:"posterEdgeOffset,omitempty"`
 	// BottomRatingsRow keeps every badge on one row instead of wrapping them
 	// into a block. The row sits wherever RatingsLayout puts it.
-	BottomRatingsRow   bool   `json:"bottomRatingsRow,omitempty"`
-	RatingPresentation string `json:"ratingPresentation,omitempty"` // standard|editorial|none (others modeled)
+	BottomRatingsRow bool `json:"bottomRatingsRow,omitempty"`
+	// RatingsUniformWidth pads every rating badge to the width of the widest, so
+	// a column of them shares one right edge. The marks differ in width before
+	// the value is drawn — a wordmark against a circle — so matching the value
+	// scale narrows the gap without closing it. Costs horizontal space in a row,
+	// which is why it is a choice rather than the default.
+	RatingsUniformWidth bool   `json:"ratingsUniformWidth,omitempty"`
+	RatingPresentation  string `json:"ratingPresentation,omitempty"` // standard|editorial|none (others modeled)
 	// RatingValueMode picks the scale rating values are drawn on. "native" (the
 	// default) keeps every source on its own scale, so IMDb reads out of ten,
 	// Letterboxd out of five and Rotten Tomatoes as a percentage. The normalized
@@ -877,6 +883,7 @@ type rawRating struct {
 	PosterEdgeOffset        *int               `json:"posterEdgeOffset"`
 	RatingsAnchored         *bool              `json:"ratingsAnchored"`
 	BottomRatingsRow        *bool              `json:"bottomRatingsRow"`
+	RatingsUniformWidth     *bool              `json:"ratingsUniformWidth"`
 	RatingPresentation      *string            `json:"ratingPresentation"`
 	RatingValueMode         *string            `json:"ratingValueMode"`
 	RatingVoteCounts        *bool              `json:"ratingVoteCounts"`
@@ -1613,6 +1620,9 @@ func parseRating(cfg *Config, r *raw) {
 	}
 	if r.RatingsAnchored != nil {
 		cfg.RatingsAnchored = *r.RatingsAnchored
+	}
+	if r.RatingsUniformWidth != nil {
+		cfg.RatingsUniformWidth = *r.RatingsUniformWidth
 	}
 	if r.BottomRatingsRow != nil {
 		cfg.BottomRatingsRow = *r.BottomRatingsRow

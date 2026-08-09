@@ -607,6 +607,10 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
             checked={config.bottomRatingsRow}
             onChange={v => onUpdate('bottomRatingsRow', v)}
             hint="Keep every badge on one row instead of wrapping. The row follows the ratings layout." />
+          <ToggleField id={`${uid}-uniform-width`} label="Match badge widths"
+            checked={config.ratingsUniformWidth}
+            onChange={v => onUpdate('ratingsUniformWidth', v)}
+            hint="Pad every badge to the widest so they share one edge. Marks differ in width, so matching the value scale alone will not line them up. Costs a little width in a row." />
           <ToggleField id={`${uid}-ratings-anchored`} label="Anchor badges to the edge"
             checked={config.ratingsAnchored}
             onChange={v => onUpdate('ratingsAnchored', v)}
