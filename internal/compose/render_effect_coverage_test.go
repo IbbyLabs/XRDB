@@ -15,6 +15,7 @@ import (
 	"sync"
 	"testing"
 
+	"time"
 	"xrdb_rewrite/internal/imageconfig"
 	"xrdb_rewrite/internal/provider"
 	"xrdb_rewrite/internal/provider/animemap"
@@ -101,7 +102,10 @@ func maximalConfig() imageconfig.Config {
 	c.OutputFormat = imageconfig.OutputPNG
 	c.OutputQuality = 100
 
-	c.Ratings = []string{"imdb", "tmdb", "rt", "metacritic", "letterboxd", "trakt"}
+	// "mal" is wanted and never answered by richMeta, and its provider is held
+	// out below, so the strip carries one unavailable source. Without that, the
+	// unavailable mark has nothing to draw and reads as an inert key.
+	c.Ratings = []string{"imdb", "tmdb", "rt", "metacritic", "letterboxd", "trakt", "mal"}
 	c.RatingsLayout = imageconfig.LayoutBottom
 	c.BadgeStyle = imageconfig.BadgePill
 	c.BadgeTheme = imageconfig.ThemeDark
@@ -220,6 +224,14 @@ func effectPipeline() *Pipeline {
 	p := &Pipeline{providers: reg, fetcher: &distinctFetcher{}}
 	p.SetAnimeResolver(alwaysAnime{})
 	p.SetTrendingResolver(alwaysTrending{})
+	// Hold one source out so the strip has an unavailable badge to draw. The
+	// mark is the only key whose effect needs a degraded source to exist.
+	reg.Register(&effectProvider{name: "mal"})
+	health := provider.NewHealthTracker(10, time.Hour)
+	for range 6 {
+		health.Failure("mal", provider.HTTPFault("mal", 503), provider.CallerInteractive)
+	}
+	p.SetHealthTracker(health)
 	return p
 }
 
