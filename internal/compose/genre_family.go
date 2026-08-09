@@ -23,7 +23,7 @@ var (
 	// TMDB's television compound where the keywords settle on both buckets or
 	// neither: the title genuinely is both, so it gets its own family rather than
 	// being filed under one of them.
-	familySciFantasy  = genreFamily{"scifantasy", "Sci-Fantasy", "#2bd3c4"}
+	familySciFantasy  = genreFamily{"scifantasy", "Sci-Fantasy", "#b55fe6"}
 	familyCrime       = genreFamily{"crime", "CRIME", "#60a5fa"}
 	familyDrama       = genreFamily{"drama", "DRAMA", "#818cf8"}
 	familyDocumentary = genreFamily{"documentary", "DOC", "#a3e635"}

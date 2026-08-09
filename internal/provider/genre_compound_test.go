@@ -42,11 +42,12 @@ func TestNarrowSciFiFantasyPicksASide(t *testing.T) {
 	}
 }
 
-// The overrides exist for the two cases the keywords cannot settle, and they are
-// the only titles allowed to bypass the rule.
+// The overrides now exist for one case only: a title the keywords say nothing
+// about. Matching BOTH buckets is what Sci-Fantasy is for, so those titles reach
+// it on their own keywords rather than being forced aside.
 func TestCompoundOverridesSettleWhatKeywordsCannot(t *testing.T) {
-	if got := narrowSciFiFantasy(kwOutlander, "56570"); got != genreFantasy {
-		t.Errorf("Outlander with both buckets matched resolved %q, want the override to force %q", got, genreFantasy)
+	if got := narrowSciFiFantasy(kwOutlander, "56570"); got != genreSciFantasy {
+		t.Errorf("Outlander matches both buckets and resolved %q, want %q", got, genreSciFantasy)
 	}
 	if got := narrowSciFiFantasy(kwLucifer, "63174"); got != genreFantasy {
 		t.Errorf("Lucifer with no signal resolved %q, want the override to force %q", got, genreFantasy)
@@ -138,5 +139,32 @@ func TestPhraseKeywordsStillMatch(t *testing.T) {
 func TestHyphenatedTermsMatch(t *testing.T) {
 	if got := narrowSciFiFantasy([]string{"post apocalyptic"}, ""); got != genreSciFi {
 		t.Errorf("a post-apocalyptic keyword resolved %q, want %q", got, genreSciFi)
+	}
+}
+
+// The two cases the override list distinguishes, stated so a future edit that
+// collapses them fails here. Matching both buckets is evidence of both-ness;
+// matching neither is an absence of evidence, and filing that as both would
+// assert something nothing supports.
+func TestOnlyTheNoSignalTitlesAreStillForced(t *testing.T) {
+	for _, tc := range []struct {
+		name, id string
+		keywords []string
+		want     string
+	}{
+		{"Outlander matches both", "56570", kwOutlander, genreSciFantasy},
+		{"Lucifer matches neither", "63174", kwLucifer, genreFantasy},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := narrowSciFiFantasy(tc.keywords, tc.id); got != tc.want {
+				t.Errorf("resolved %q, want %q", got, tc.want)
+			}
+		})
+	}
+	if _, forced := compoundOverrides["56570"]; forced {
+		t.Error("Outlander is still in the override list; the family it needed now exists")
+	}
+	if _, forced := compoundOverrides["63174"]; !forced {
+		t.Error("Lucifer left the override list, but nothing settles it")
 	}
 }
