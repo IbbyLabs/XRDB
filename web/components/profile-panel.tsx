@@ -85,7 +85,6 @@ export function ProfilePanel({
   configs, mediaType, mediaId, loaded, setLoaded, onLoadConfigs, flash,
 }: ProfilePanelProps) {
   const uid = useId();
-  const [name, setName] = useState('');
   const [alias, setAlias] = useState('');
   const [password, setPassword] = useState('');
   // Typed-in keys only; a saved value is never sent back to the browser.
@@ -133,8 +132,12 @@ export function ProfilePanel({
     : '';
 
   const validateAlias = (value: string): boolean => {
-    if (value && !ALIAS_RE.test(value)) {
-      flash('error', 'Alias must be 3-32 lowercase letters (a-z only)');
+    if (!value) {
+      flash('error', 'Pick a username — it is what you sign in with');
+      return false;
+    }
+    if (!ALIAS_RE.test(value)) {
+      flash('error', 'Username must be 3-32 lowercase letters (a-z only)');
       return false;
     }
     return true;
@@ -146,8 +149,7 @@ export function ProfilePanel({
     setBusy(true);
     try {
       const created = await createProfile({
-        name: name.trim(),
-        alias: trimmedAlias || undefined,
+        alias: trimmedAlias,
         type: mediaType,
         config: toStoredConfig(configs),
         password: password || undefined,
@@ -160,7 +162,7 @@ export function ProfilePanel({
         password,
         versionToken: created.versionToken ?? '',
       });
-      setName(''); setAlias(''); setPassword('');
+      setAlias(''); setPassword('');
       setSavedSnapshot(JSON.stringify(configs));
       setCheckpoint(JSON.stringify(configs));
       setRecents(r => pushRecent(r, {
@@ -177,7 +179,7 @@ export function ProfilePanel({
 
   const handleLoad = async (keyOverride?: string) => {
     const key = (keyOverride ?? loadKey).trim();
-    if (!key) { flash('error', 'Enter a profile ID or alias'); return; }
+    if (!key) { flash('error', 'Enter your username'); return; }
     setBusy(true);
     try {
       const p = await getProfile(key, loadPassword || undefined);
@@ -462,19 +464,47 @@ export function ProfilePanel({
   return (
     <div className="panel">
       <div className="panel-body cfg-fields">
+        <h3 className="label" style={{ margin: 0 }}>Sign in</h3>
         <div className="field">
-          <label className="label" htmlFor={`${uid}-name`}>Name</label>
+          <label className="label" htmlFor={`${uid}-loadkey`}>Username</label>
           <input
-            id={`${uid}-name`}
+            id={`${uid}-loadkey`}
             className="input"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            placeholder="My living room setup"
+            value={loadKey}
+            onChange={e => setLoadKey(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') void handleLoad(); }}
+            placeholder="your username"
+            spellCheck={false}
+            autoComplete="username"
           />
+        </div>
+        <div className="field">
+          <label className="label" htmlFor={`${uid}-loadpw`}>Password</label>
+          <input
+            id={`${uid}-loadpw`}
+            className="input"
+            type="password"
+            value={loadPassword}
+            onChange={e => setLoadPassword(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') void handleLoad(); }}
+            autoComplete="current-password"
+          />
+        </div>
+        <button className="btn btn-ghost" onClick={() => void handleLoad()} disabled={busy}>
+          <FolderOpen size={13} aria-hidden />
+          {busy ? 'Signing in…' : 'Sign in'}
+        </button>
+
+        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-4)' }}>
+          <h3 className="label" style={{ margin: 0 }}>New here?</h3>
+          <span className="hint" style={{ marginTop: 'var(--sp-1)', display: 'block' }}>
+            Pick a username and a password, and the settings you have now are
+            saved under them.
+          </span>
         </div>
 
         <div className="field">
-          <label className="label" htmlFor={`${uid}-alias`}>Alias</label>
+          <label className="label" htmlFor={`${uid}-alias`}>Username</label>
           <input
             id={`${uid}-alias`}
             className="input"
@@ -482,11 +512,11 @@ export function ProfilePanel({
             onChange={e => setAlias(e.target.value.toLowerCase())}
             placeholder="myposters"
             spellCheck={false}
-            autoComplete="off"
+            autoComplete="username"
           />
           <span className="hint">
-            Optional memorable handle for URLs — lowercase letters only.
-            Without one you get a generated ID.
+            Three to thirty-two lowercase letters. This is what you sign in with
+            and what your config key becomes.
           </span>
         </div>
 
@@ -505,7 +535,7 @@ export function ProfilePanel({
 
         <button className="btn btn-primary" onClick={handleCreate} disabled={busy}>
           <Save size={13} aria-hidden />
-          {busy ? 'Saving…' : 'Save profile'}
+          {busy ? 'Creating…' : 'Create profile'}
         </button>
 
         <div className="field" style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-4)' }}>
@@ -553,34 +583,6 @@ export function ProfilePanel({
           </button>
         </div>
 
-        <div className="field" style={{ borderTop: '1px solid var(--border)', paddingTop: 'var(--sp-4)' }}>
-          <label className="label" htmlFor={`${uid}-loadkey`}>Load an existing profile</label>
-          <input
-            id={`${uid}-loadkey`}
-            className="input"
-            value={loadKey}
-            onChange={e => setLoadKey(e.target.value)}
-            placeholder="ID or alias"
-            spellCheck={false}
-            autoComplete="off"
-          />
-        </div>
-        <div className="field">
-          <label className="label" htmlFor={`${uid}-loadpw`}>Profile password</label>
-          <input
-            id={`${uid}-loadpw`}
-            className="input"
-            type="password"
-            value={loadPassword}
-            onChange={e => setLoadPassword(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') void handleLoad(); }}
-            autoComplete="off"
-          />
-        </div>
-        <button className="btn btn-ghost" onClick={() => void handleLoad()} disabled={busy}>
-          <FolderOpen size={13} aria-hidden />
-          {busy ? 'Loading…' : 'Load profile'}
-        </button>
 
         <input
           ref={fileInputRef}
