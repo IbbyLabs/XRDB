@@ -2,6 +2,15 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.74.2](https://github.com/IbbyLabs/XRDB/compare/v3.74.1...v3.74.2) (2026-08-09)
+
+
+### Fixed
+
+* **ratings:** ask title lookups for the series id (BUG-233) ([2640684](https://github.com/IbbyLabs/XRDB/commit/2640684d2ccbeedcb8429e1e86dc52489d3681bd))
+* **ratings:** read an episode id as a series (BUG-231) ([03420d3](https://github.com/IbbyLabs/XRDB/commit/03420d34b1bd9d1d731f9265021fdd9c32fc60f4))
+* **ratings:** stop counting a per-title miss as the source failing ([f20d8d0](https://github.com/IbbyLabs/XRDB/commit/f20d8d0b7859fe6d5d1685059249af97249f8379))
+
 ## [3.74.1](https://github.com/IbbyLabs/XRDB/compare/v3.74.0...v3.74.1) (2026-08-08)
 
 
