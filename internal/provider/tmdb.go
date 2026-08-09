@@ -28,6 +28,18 @@ type TMDB struct {
 	httpClient *http.Client
 	// baseURL overrides the public API root for tests. Empty means tmdbBaseURL.
 	baseURL string
+	kinds   *tmdbKindStore
+}
+
+// tmdbStatusError carries the status of a refused request, so a caller can tell
+// a record TMDB does not hold from one it declined to serve.
+type tmdbStatusError struct {
+	Code int
+	Path string
+}
+
+func (e *tmdbStatusError) Error() string {
+	return fmt.Sprintf("tmdb http %d for %s", e.Code, e.Path)
 }
 
 func (t *TMDB) log() *slog.Logger { return slog.Default() }
@@ -940,7 +952,7 @@ func (t *TMDB) get(ctx context.Context, path string, out any) error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("tmdb http %d for %s", resp.StatusCode, path)
+		return &tmdbStatusError{Code: resp.StatusCode, Path: path}
 	}
 	return json.NewDecoder(resp.Body).Decode(out)
 }

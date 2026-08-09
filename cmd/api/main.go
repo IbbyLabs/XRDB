@@ -205,6 +205,10 @@ func main() {
 		// mapper answers from an in-memory index, so this costs no request time.
 		pipeline.SetAnimeResolver(animeMapper)
 		if tmdb, ok := reg.Get("tmdb").(*provider.TMDB); ok && tmdb != nil {
+			// A bare TMDB id carries no kind and a per-type override needs one.
+			// The record answers it, and the answer never changes, so it is
+			// kept across restarts.
+			tmdb.SetKindCachePath(cfg.CacheDir, logger)
 			pipeline.SetTrendingResolver(provider.NewTrendingIndex(tmdb, provider.TrendingOptions{
 				Window: cfg.TrendingWindow,
 				Depth:  cfg.TrendingDepth,

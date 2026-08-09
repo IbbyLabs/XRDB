@@ -268,17 +268,29 @@ func (p *Pipeline) resolveContentKind(ctx context.Context, req Request) string {
 			return "series"
 		}
 	}
-	// A bare "tmdb:1726" names no kind, and TMDB's find-by-external-id cannot
-	// answer for it — a TMDB id is not external to TMDB. Resolving it would need
-	// a direct /movie/{id} or /tv/{id} probe and a guess about which to try
-	// first, so the kind stays unavailable for that shape and the config falls
-	// through to the unqualified list.
 	if p.providers == nil {
 		return ""
 	}
 	tmdb := p.providers.Get("tmdb")
 	if tmdb == nil || !providerReady(tmdb) {
 		return ""
+	}
+	// A bare "tmdb:1726" names no kind, and find-by-external-id cannot answer
+	// for it: a TMDB id is not external to TMDB. The record settles it instead,
+	// since it exists under exactly one of /movie and /tv. Answers are kept, so
+	// the probe is paid once per id rather than once per render.
+	if rest, ok := strings.CutPrefix(req.MediaID, "tmdb:"); ok && isNumericID(rest) {
+		byKind, ok := tmdb.(provider.KindIdentifier)
+		if !ok {
+			return ""
+		}
+		kind, err := byKind.KindOfTMDBID(ctx, rest)
+		if err != nil {
+			p.log().DebugContext(ctx, "Could not resolve the kind of a TMDB id for a per-type override",
+				"id", logging.RequestID(ctx), "media_id", req.MediaID, "error", err)
+			return ""
+		}
+		return kind
 	}
 	ident, ok := tmdb.(provider.TitleIdentifier)
 	if !ok {

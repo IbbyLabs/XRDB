@@ -56,3 +56,9 @@ type ArtworkFetcher interface {
 type TitleIdentifier interface {
 	IdentifyID(ctx context.Context, id, hint string) (tmdbID, contentType string, err error)
 }
+
+// KindIdentifier answers whether a bare TMDB id is a movie or a series. A TMDB
+// id is not external to TMDB, so find-by-external-id cannot resolve one.
+type KindIdentifier interface {
+	KindOfTMDBID(ctx context.Context, id string) (string, error)
+}
