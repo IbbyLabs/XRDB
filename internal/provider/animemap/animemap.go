@@ -939,14 +939,31 @@ func (m *Mapper) runFallback(ctx context.Context, id string, call *fbCall) {
 	call.ids, call.ok = ids, found
 
 	m.fbMu.Lock()
-	if len(m.fbCache) >= fallbackCacheLimit {
-		m.fbCache = make(map[string]fallbackEntry)
-	}
+	m.evictIfFullLocked()
 	m.fbCache[id] = fallbackEntry{ids: ids, ok: found, expires: time.Now().Add(fallbackCacheTTL)}
 	m.fbMu.Unlock()
 
 	m.log().Debug("The live anime mapping API answered",
 		"id", id, "mapped", found)
+}
+
+// evictIfFullLocked keeps the cache under its limit, reclaiming expired entries
+// before resorting to replacing the map. A wholesale clear discards titles asked
+// for seconds earlier along with the cold ones, sending the next renders back to
+// the API together. Callers hold fbMu.
+func (m *Mapper) evictIfFullLocked() {
+	if len(m.fbCache) < fallbackCacheLimit {
+		return
+	}
+	now := time.Now()
+	for id, e := range m.fbCache {
+		if now.After(e.expires) {
+			delete(m.fbCache, id)
+		}
+	}
+	if len(m.fbCache) >= fallbackCacheLimit {
+		m.fbCache = make(map[string]fallbackEntry)
+	}
 }
 
 func (m *Mapper) log() *slog.Logger { return slog.Default() }
