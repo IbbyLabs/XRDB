@@ -85,17 +85,6 @@ func TestGenreBadgeIconModes(t *testing.T) {
 	if imagesDiffer(empty, blank) {
 		t.Error("an empty genre list should draw no badge at all")
 	}
-
-	// The tile style has no room for a glyph: icon mode must match plain text.
-	tileText := genreTestImage()
-	drawGenreBadge(tileText, genres, "tl", 2.0, newOccupancy(tileText.Bounds()),
-		genreBadgeOpts{style: "tile"})
-	tileIcon := genreTestImage()
-	drawGenreBadge(tileIcon, genres, "tl", 2.0, newOccupancy(tileIcon.Bounds()),
-		genreBadgeOpts{style: "tile", mode: "both"})
-	if imagesDiffer(tileText, tileIcon) {
-		t.Error("the tile style should ignore the icon mode")
-	}
 }
 
 // OMDB only ever supplies a poster, so it may lead the order on the poster

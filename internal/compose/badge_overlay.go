@@ -1360,7 +1360,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	// An unset mode is text, and has to be spelled that way here: the fit check
 	// and the glyph branches below both test for "text" by name.
 	mode := opts.mode
-	if mode == "" || opts.style == "clean" || opts.style == "tile" {
+	if mode == "" {
 		mode = "text"
 	}
 	var fam *genreFamily
@@ -1669,12 +1669,27 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			shadow:      color.NRGBA{R: 0, G: 0, B: 0, A: 70},
 		})
 		drawLeftStripe()
-		drawText(base, face, tx, ty, textColor, label)
+		if accent := drawIcon(); mode != "text" {
+			textColor = accent
+		}
+		textColor = inkFor(textColor)
+		if mode != "icon" {
+			drawText(base, face, tx, ty, textColor, label)
+		}
 		return
 	case "clean":
 		// No tile: a soft strip under the label carries it over the artwork.
 		// Blended rather than filled: fillRoundedRect replaces pixels, so a
 		// translucent fill would cut a hole in the artwork.
+		if accent := drawIcon(); mode != "text" {
+			textColor = accent
+		}
+		textColor = inkFor(textColor)
+		if mode == "icon" {
+			return
+		}
+		// The strip underlines the label, so it is measured and placed from the
+		// text alone and a glyph beside it does not stretch it.
 		stripH := maxInt(2, s(3))
 		stripW := maxInt(s(18), textWidth(face, label)+s(6))
 		stripX := tx - s(3)

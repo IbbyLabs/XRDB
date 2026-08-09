@@ -1017,3 +1017,34 @@ func TestAggregateAccentHexPerMode(t *testing.T) {
 		t.Errorf("dynamic with no ramp resolved %q, want nothing so the bands take over", got)
 	}
 }
+
+// The tile style drew its label and returned, so the family glyph never
+// appeared on it: setting the badge to icon or both did nothing on that style
+// alone while working everywhere else. Checked across every style rather than
+// the one that was reported, because a control that reaches five of six is the
+// same defect with a smaller blast radius.
+func TestTheGenreIconReachesEveryStyle(t *testing.T) {
+	draw := func(style, mode string) []byte {
+		img := image.NewNRGBA(image.Rect(0, 0, 400, 600))
+		drawGenreBadge(img, []string{"Horror"}, "bl", 1, newOccupancy(img.Bounds()), genreBadgeOpts{
+			mode:  mode,
+			style: style,
+		})
+		return img.Pix
+	}
+
+	for _, style := range []string{"", "tile", "pill", "glass", "square", "clean", "plain"} {
+		name := style
+		if name == "" {
+			name = "(default)"
+		}
+		t.Run(name, func(t *testing.T) {
+			if bytes.Equal(draw(style, "text"), draw(style, "both")) {
+				t.Errorf("asking for the icon changes nothing on the %s style", name)
+			}
+			if bytes.Equal(draw(style, "text"), draw(style, "icon")) {
+				t.Errorf("icon-only draws the same as text-only on the %s style", name)
+			}
+		})
+	}
+}
