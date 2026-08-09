@@ -1,6 +1,7 @@
 import {
   BRAND_DEVELOPER,
   BRAND_DEVELOPER_URL,
+  BRAND_DISCORD_DM_URL,
   BRAND_DISCORD_URL,
   BRAND_GITHUB_URL,
   BRAND_SUPPORT_URL,
@@ -57,6 +58,15 @@ export function SiteFooter() {
           <a href={BRAND_GITHUB_URL} target="_blank" rel="noreferrer">GitHub</a>
           <span className="credit-sep" aria-hidden>·</span>
           <a href={BRAND_DISCORD_URL} target="_blank" rel="noreferrer">Discord</a>
+          <span className="credit-sep" aria-hidden>·</span>
+          <a
+            href={BRAND_DISCORD_DM_URL}
+            target="_blank"
+            rel="noreferrer"
+            title="Message the developer directly on Discord"
+          >
+            Direct message
+          </a>
           <span className="credit-sep" aria-hidden>·</span>
           <a href={BRAND_SUPPORT_URL} target="_blank" rel="noreferrer">Ko-fi</a>
         </div>
