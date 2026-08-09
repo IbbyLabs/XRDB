@@ -3,6 +3,7 @@ package provider
 import (
 	"container/list"
 	"errors"
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
@@ -195,6 +196,14 @@ func (h *HealthTracker) Failure(source string, err error, class CallerClass) (en
 	// being unwell. RecordsAgainstHealth says what counts, and why an
 	// unrecognised error now counts for nothing.
 	if !RecordsAgainstHealth(err) {
+		// Declining to count is the whole of this change and it leaves no other
+		// trace: the source stays healthy, nothing is held out, and no counter
+		// moves. Without a line here the fix is only observable as an absence,
+		// which is indistinguishable from it not running.
+		if err != nil {
+			slog.Default().Debug("Not counting an error against the source's health",
+				"source", source, "error", err)
+		}
 		return false
 	}
 	h.mu.Lock()

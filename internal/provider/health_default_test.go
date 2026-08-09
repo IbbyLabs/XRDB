@@ -1,9 +1,12 @@
 package provider
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"strings"
 	"testing"
 	"time"
 )
@@ -56,5 +59,31 @@ func TestAClassifiedFaultStillHoldsTheSourceOut(t *testing.T) {
 				t.Errorf("%v no longer holds an unwell source out", tc.err)
 			}
 		})
+	}
+}
+
+// The decision not to count leaves no other trace, so the line is the only way
+// to tell the fix running from the fix absent. A test for a log line is unusual;
+// this one earns it because the observable it creates is the only one there is.
+func TestDecliningToCountSaysSo(t *testing.T) {
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	defer slog.SetDefault(prev)
+
+	h := NewHealthTracker(10, time.Hour)
+	h.Failure("cinemeta", fmt.Errorf("cinemeta: no meta for tt1: %w", errNotFound), CallerInteractive)
+	if !strings.Contains(buf.String(), "Not counting an error against the source's health") {
+		t.Errorf("a declined error left no trace: %s", buf.String())
+	}
+	if !strings.Contains(buf.String(), "cinemeta") {
+		t.Error("the line does not name the source")
+	}
+
+	// A counted failure must not produce it, or the line says nothing.
+	buf.Reset()
+	h.Failure("cinemeta", HTTPFault("cinemeta", 500), CallerInteractive)
+	if strings.Contains(buf.String(), "Not counting an error") {
+		t.Errorf("a real fault was reported as declined: %s", buf.String())
 	}
 }
