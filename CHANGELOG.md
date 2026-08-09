@@ -2,6 +2,19 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.75.0](https://github.com/IbbyLabs/XRDB/compare/v3.74.3...v3.75.0) (2026-08-09)
+
+
+### Added
+
+* **health:** log the decision not to count an error (BUG-236) ([3517678](https://github.com/IbbyLabs/XRDB/commit/351767843cf849579c90db54b41167c9be81b567))
+
+
+### Fixed
+
+* **health:** count only a classified fault against a source (BUG-236) ([f66d6fb](https://github.com/IbbyLabs/XRDB/commit/f66d6fbfa0becbe6cdcf7905ec7156e9fac9a120))
+* **render:** turn the caller cap off by default (BUG-230) ([4ab8826](https://github.com/IbbyLabs/XRDB/commit/4ab8826743667ebef8a472f988861335aa03cefc))
+
 ## [3.74.3](https://github.com/IbbyLabs/XRDB/compare/v3.74.2...v3.74.3) (2026-08-09)
 
 
