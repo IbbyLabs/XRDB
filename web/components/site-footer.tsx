@@ -65,7 +65,7 @@ export function SiteFooter() {
             rel="noreferrer"
             title="Message the developer directly on Discord"
           >
-            Direct message
+            DM
           </a>
           <span className="credit-sep" aria-hidden>·</span>
           <a href={BRAND_SUPPORT_URL} target="_blank" rel="noreferrer">Ko-fi</a>
