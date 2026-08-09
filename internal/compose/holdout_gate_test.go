@@ -15,7 +15,7 @@ import (
 	"xrdb_rewrite/internal/provider"
 )
 
-const holdOutMsg = "A ratings source was held out and dropped from this render; its badge is missing"
+const holdOutMsg = "A ratings source was held out and did not answer; a remembered rating may still fill its badge"
 
 func logLinesFrom(t *testing.T, buf *bytes.Buffer) []map[string]any {
 	t.Helper()

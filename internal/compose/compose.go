@@ -1752,7 +1752,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 						attrs = append(attrs, "min_interval_ms",
 							provider.PacedInterval(prov.Name()).Milliseconds())
 					}
-					p.log().WarnContext(ctx, "A ratings source was held out and dropped from this render; its badge is missing",
+					p.log().WarnContext(ctx, "A ratings source was held out and did not answer; a remembered rating may still fill its badge",
 						attrs...)
 				}
 				return
