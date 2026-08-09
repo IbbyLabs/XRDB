@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"image/color"
 	"log/slog"
@@ -99,7 +98,7 @@ func TestTheFailureBreakerIsNotReportedAsARateLimitCooldown(t *testing.T) {
 
 	health := provider.NewHealthTracker(10, time.Hour)
 	for range 5 {
-		health.Failure("imdb", errors.New("http 504"), provider.CallerInteractive)
+		health.Failure("imdb", provider.HTTPFault("imdb", 504), provider.CallerInteractive)
 	}
 	if !health.CoolingOff("imdb", provider.CallerInteractive) {
 		t.Fatal("five plain failures did not hold the source out")

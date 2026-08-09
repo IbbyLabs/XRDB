@@ -1,6 +1,8 @@
 package provider
 
 import (
+	"net"
+	"net/url"
 	"testing"
 	"time"
 )
@@ -57,7 +59,7 @@ func TestABulkRefusalStillHoldsTheSweepBack(t *testing.T) {
 func TestTheFailureBreakerAlsoSplitsByCaller(t *testing.T) {
 	h := NewHealthTracker(10, time.Hour)
 	for i := 0; i < failureBreakerThreshold+1; i++ {
-		h.Failure("anilist", errStub("timeout"), CallerBulk)
+		h.Failure("anilist", timedOut(), CallerBulk)
 	}
 	if !h.CoolingOff("anilist", CallerBulk) {
 		t.Fatal("repeated bulk failures did not hold the sweep back")
@@ -80,3 +82,20 @@ func TestASuccessClearsBothHolds(t *testing.T) {
 		}
 	}
 }
+
+// A real timeout carries *url.Error, which satisfies net.Error and is what the
+// classifier recognises. A plain string error never did, so a stub standing for
+// a timeout stopped representing one.
+func timedOut() error {
+	return &url.Error{
+		Op:  "Get",
+		URL: "https://graphql.anilist.co",
+		Err: &net.OpError{Op: "dial", Err: &timeoutErr{}},
+	}
+}
+
+type timeoutErr struct{}
+
+func (*timeoutErr) Error() string   { return "i/o timeout" }
+func (*timeoutErr) Timeout() bool   { return true }
+func (*timeoutErr) Temporary() bool { return true }

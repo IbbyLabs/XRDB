@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 )
@@ -90,13 +91,13 @@ func TestNotFoundIsNotAHealthFailure(t *testing.T) {
 
 func TestFailureMarksUnhealthyAndSuccessRecovers(t *testing.T) {
 	h := NewHealthTracker(10, time.Hour)
-	h.Failure("rt", errors.New("boom"), CallerInteractive)
+	h.Failure("rt", HTTPFault("rt", 500), CallerInteractive)
 
 	snap := h.Snapshot()
 	if len(snap) != 1 || snap[0].Healthy {
 		t.Fatalf("expected rt to be unhealthy, got %+v", snap)
 	}
-	if snap[0].ConsecutiveFail != 1 || snap[0].LastError != "boom" {
+	if snap[0].ConsecutiveFail != 1 || !strings.Contains(snap[0].LastError, "http 500") {
 		t.Errorf("got %+v", snap[0])
 	}
 
@@ -128,7 +129,7 @@ func TestSnapshotPutsUnhealthySourcesFirst(t *testing.T) {
 	h := NewHealthTracker(10, time.Hour)
 	h.Success("aaa", GoodKey("aaa", "movie", "tt1"), sampleMeta("aaa", 1))
 	h.Success("bbb", GoodKey("bbb", "movie", "tt1"), sampleMeta("bbb", 1))
-	h.Failure("zzz", errors.New("down"), CallerInteractive)
+	h.Failure("zzz", HTTPFault("zzz", 503), CallerInteractive)
 
 	snap := h.Snapshot()
 	if len(snap) != 3 {
@@ -148,7 +149,7 @@ func TestLongErrorsAreTruncated(t *testing.T) {
 	for i := 0; i < 500; i++ {
 		long += "x"
 	}
-	h.Failure("rt", errors.New(long), CallerInteractive)
+	h.Failure("rt", fmt.Errorf("%s: %w", long, ErrSourceFault), CallerInteractive)
 	if got := len(h.Snapshot()[0].LastError); got > 210 {
 		t.Errorf("stored error is %d chars, expected it truncated", got)
 	}
@@ -187,7 +188,7 @@ func TestKeysAreScopedPerSourceAndTitle(t *testing.T) {
 // the very next render and every render pays the timeout.
 func TestRepeatedPlainFailuresHoldTheSourceOut(t *testing.T) {
 	h := NewHealthTracker(16, time.Hour)
-	plain := errors.New("Get \"https://api.example.com/x\": context deadline exceeded (Client.Timeout exceeded)")
+	plain := timedOut()
 
 	for i := 0; i < failureBreakerThreshold-1; i++ {
 		h.Failure("mdblist", plain, CallerInteractive)
@@ -213,14 +214,18 @@ func TestRepeatedPlainFailuresHoldTheSourceOut(t *testing.T) {
 // than the last. One success puts it straight back to the short hold.
 func TestBreakerHoldsLongerEachTimeItTripsAgain(t *testing.T) {
 	h := NewHealthTracker(16, time.Hour)
-	plain := errors.New("Client.Timeout exceeded")
+	plain := timedOut()
 	trip := func() time.Duration {
 		for i := 0; i < failureBreakerThreshold; i++ {
 			h.Failure("mdblist", plain, CallerInteractive)
 		}
 		h.mu.Lock()
 		defer h.mu.Unlock()
-		return time.Until(h.sources["mdblist"].cooldownUntil[CallerInteractive]).Round(time.Second)
+		src := h.sources["mdblist"]
+		if src == nil {
+			t.Fatal("no health entry for mdblist: the failures did not count at all")
+		}
+		return time.Until(src.cooldownUntil[CallerInteractive]).Round(time.Second)
 	}
 
 	first := trip()

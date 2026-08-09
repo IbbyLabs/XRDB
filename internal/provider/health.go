@@ -2,7 +2,6 @@ package provider
 
 import (
 	"container/list"
-	"context"
 	"errors"
 	"strings"
 	"sync"
@@ -182,32 +181,20 @@ func (h *HealthTracker) rememberLocked(key string, meta *MediaMeta) {
 // rather than on every refused render. A plain not-found is not a health
 // problem: the source answered, the title simply is not there.
 func (h *HealthTracker) Failure(source string, err error, class CallerClass) (enteredCooldown bool) {
-	if h == nil || errors.Is(err, errNotFound) || errors.Is(err, ErrNotApplicable) {
+	if h == nil {
 		return false
 	}
-	// A source whose own upstream refused it for one title is answering
-	// perfectly well for every other title.
-	if errors.Is(err, ErrUpstreamUnavailable) {
-		return false
-	}
-	// A cancelled request says nothing about the source. The caller walked away
-	// — the viewer closed the tab, or the render gave up — and the source may
-	// have been about to answer. Counting it holds the source out for every
-	// other render, so one abandoned request takes a working source off every
-	// poster until it recovers.
-	if errors.Is(err, context.Canceled) {
-		return false
-	}
-	// Our own queues refusing a request says nothing about the source, which
-	// never saw it. Counting them trips the failure breaker on our own load
-	// shedding and holds a healthy source off every poster.
-	// Every gate of our own, not just the two queues. A source already cooling
-	// off is refused by ErrCoolingOff before the request goes anywhere; counting
-	// that as a fresh failure lets a hold-out extend its own hold-out, which is
-	// a source punishing itself for being punished.
-	if errors.Is(err, ErrPacerBacklog) || errors.Is(err, ErrGovernorBacklog) ||
-		errors.Is(err, ErrCoolingOff) || errors.Is(err, ErrFailureBreaker) ||
-		errors.Is(err, ErrBulkAllowanceHeld) {
+	// Only an error that says something about the source counts against it.
+	// Everything else leaves its health alone: a title it does not have, a
+	// request the caller abandoned, one of our own queues refusing before the
+	// source ever saw it, or an error shape nobody has classified yet.
+	//
+	// This used to run the other way — count all but a listed few — and that
+	// default is what let a per-title miss hold a healthy source off every
+	// render, because any error nobody had thought about read as the source
+	// being unwell. RecordsAgainstHealth says what counts, and why an
+	// unrecognised error now counts for nothing.
+	if !RecordsAgainstHealth(err) {
 		return false
 	}
 	h.mu.Lock()

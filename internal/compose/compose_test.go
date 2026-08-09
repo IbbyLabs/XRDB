@@ -1236,7 +1236,9 @@ func (f *flakyProvider) Name() string { return f.name }
 func (f *flakyProvider) Fetch(context.Context, string, string) (*provider.MediaMeta, error) {
 	switch {
 	case f.broken:
-		return nil, fmt.Errorf("%s: upstream refused", f.name)
+		// A 502 rather than a bare string: the stub stands for the source being
+		// unwell, and only a classified fault says that.
+		return nil, provider.HTTPFault(f.name, 502)
 	case f.empty:
 		return &provider.MediaMeta{}, nil
 	default:

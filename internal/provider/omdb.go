@@ -124,7 +124,10 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 			}
 		}
 		if omdbKeyRejected(result.Error) {
-			return nil, fmt.Errorf("omdb: API error: %s", result.Error)
+			// A rejected key is the source refusing us for every title, not a
+			// fact about this one, so it has to be classified rather than left
+			// bare — an unclassified error counts for nothing.
+			return nil, fmt.Errorf("omdb: API error: %s: %w", result.Error, ErrSourceFault)
 		}
 		return nil, fmt.Errorf("omdb: API error: %s: %w", result.Error, errNotFound)
 	}

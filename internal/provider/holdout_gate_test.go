@@ -73,7 +73,7 @@ func TestACooldownNamesWhatSetIt(t *testing.T) {
 
 	h2 := NewHealthTracker(10, time.Hour)
 	for range failureBreakerThreshold {
-		h2.Failure("mal", errStub("http 504"), CallerInteractive)
+		h2.Failure("mal", HTTPFault("mal", 504), CallerInteractive)
 	}
 	if !h2.CoolingOff("mal", CallerInteractive) {
 		t.Fatal("five consecutive failures did not hold the source out")

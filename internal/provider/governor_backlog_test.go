@@ -154,7 +154,7 @@ func TestOurOwnQueueRefusalsDoNotCountAgainstTheSource(t *testing.T) {
 	// swallowing everything.
 	h := NewHealthTracker(10, time.Hour)
 	for range failureBreakerThreshold {
-		h.Failure("mdblist", errStub("http 504"), CallerInteractive)
+		h.Failure("mdblist", HTTPFault("mdblist", 504), CallerInteractive)
 	}
 	if !h.CoolingOff("mdblist", CallerInteractive) {
 		t.Error("five real failures no longer trip the breaker")
