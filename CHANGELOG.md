@@ -2,6 +2,20 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.77.0](https://github.com/IbbyLabs/XRDB/compare/v3.76.0...v3.77.0) (2026-08-09)
+
+
+### Added
+
+* **logs:** say what became of a held-out source ([4ad64d7](https://github.com/IbbyLabs/XRDB/commit/4ad64d7d45da484f87cd63b0177dd16474929158))
+
+
+### Fixed
+
+* **badges:** blur the drop shadow on every side (BUG-239) ([6bd1b2a](https://github.com/IbbyLabs/XRDB/commit/6bd1b2a7fb019fe918e542f6b4acfb587e7dd1d7))
+* **compose:** resolve a bare TMDB id for per-type overrides (BUG-232) ([9c60ec3](https://github.com/IbbyLabs/XRDB/commit/9c60ec399b2adb1c5fd80e6244a1e1e874ed2a0d))
+* **genre:** draw the family glyph on the clean and tile styles (BUG-238) ([dd91bed](https://github.com/IbbyLabs/XRDB/commit/dd91bede3301ec976f11ef99e4bbeb72dc567460))
+
 ## [3.76.0](https://github.com/IbbyLabs/XRDB/compare/v3.75.0...v3.76.0) (2026-08-09)
 
 
