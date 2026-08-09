@@ -909,8 +909,12 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// Kept out of allRatings deliberately: that list feeds the average, the
 	// ring and the score bar, and a placeholder carries no score to average.
 	stripRatings := allRatings
-	for _, name := range p.unavailableSources(degradedSources, req.Config.Ratings, allRatings) {
-		stripRatings = append(stripRatings, provider.Rating{Source: name, Unavailable: true})
+	// Turning the mark off leaves the source out of the strip entirely rather
+	// than drawing an empty dimmed plate, which would say less than nothing.
+	if req.Config.RatingUnavailableMark {
+		for _, name := range p.unavailableSources(degradedSources, req.Config.Ratings, allRatings) {
+			stripRatings = append(stripRatings, provider.Rating{Source: name, Unavailable: true})
+		}
 	}
 	if animeKnown {
 		meta.IsAnime = isAnime
