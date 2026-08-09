@@ -442,7 +442,12 @@ func Load() Config {
 	// and the queue it builds is paid for by everyone behind it. 30 clears the
 	// busiest real user measured, so the cap lands on the crawl rather than on
 	// somebody scrolling a large library.
-	renderCapPerMinute := 30
+	//
+	// Off by default. On a self-hosted instance the owner is the only caller, so
+	// a cap protects them from themselves — it turned a large library into 429s
+	// for the person who owns the box. A shared instance sets this in its own
+	// environment.
+	renderCapPerMinute := 0
 	if raw := os.Getenv("XRDB_RENDER_CAP_PER_MINUTE"); raw != "" {
 		if n, err := strconv.Atoi(raw); err == nil && n >= 0 {
 			renderCapPerMinute = n
