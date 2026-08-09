@@ -242,6 +242,12 @@ func (p *Pipeline) resolveContentKind(ctx context.Context, req Request) string {
 	if req.ContentType != "" {
 		return req.ContentType
 	}
+	// An id carrying a season and an episode is a series by construction. Read
+	// through the same parser the episode path uses, so a shape one of them
+	// accepts cannot be a shape the other does not.
+	if _, _, _, ok := parseEpisodeID(req.MediaID); ok {
+		return "series"
+	}
 	// A TMDB id names the kind already, so it costs nothing to read.
 	if rest, ok := strings.CutPrefix(req.MediaID, "tmdb:"); ok {
 		switch {
