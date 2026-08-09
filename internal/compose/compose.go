@@ -248,6 +248,17 @@ func (p *Pipeline) resolveContentKind(ctx context.Context, req Request) string {
 	if _, _, _, ok := parseEpisodeID(req.MediaID); ok {
 		return "series"
 	}
+	// The kind can also lead the id, which is the {type}:{id} shape AIOMetadata
+	// emits. Read before the tmdb: branch: "series:tmdb:330176" carries it here
+	// and nowhere else.
+	for _, tok := range []string{"movie:", "series:", "tv:"} {
+		if strings.HasPrefix(req.MediaID, tok) {
+			if tok == "movie:" {
+				return "movie"
+			}
+			return "series"
+		}
+	}
 	// A TMDB id names the kind already, so it costs nothing to read.
 	if rest, ok := strings.CutPrefix(req.MediaID, "tmdb:"); ok {
 		switch {
