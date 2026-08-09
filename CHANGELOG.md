@@ -2,6 +2,22 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.76.0](https://github.com/IbbyLabs/XRDB/compare/v3.75.0...v3.76.0) (2026-08-09)
+
+
+### Added
+
+* **profiles:** land the save button on the register form (FR-171) ([9c859de](https://github.com/IbbyLabs/XRDB/commit/9c859de8ceacba1e5cd81a0e524648ef3fb4ae1e))
+* **profiles:** reach save from the preview, name the ID path (FR-171) ([a1030de](https://github.com/IbbyLabs/XRDB/commit/a1030de5206eb6b1c77965e334deb0ea2bcf1c0b))
+* **profiles:** sign in first, one username, no unused name (FR-171) ([e050268](https://github.com/IbbyLabs/XRDB/commit/e050268dd078261ad197df303c8be15c72dae1a5))
+* **ratings:** let the unavailable mark be turned off (FR-174) ([3777583](https://github.com/IbbyLabs/XRDB/commit/377758317627010839d25bb8cbc5ed9105114304))
+* **ratings:** pad every badge to the widest so they line up (FR-176) ([1bfb055](https://github.com/IbbyLabs/XRDB/commit/1bfb055628ee66bd57056aa6e092460a61e7585e))
+
+
+### Fixed
+
+* **logs:** a held-out source may still have a remembered badge (BUG-237) ([0494614](https://github.com/IbbyLabs/XRDB/commit/0494614ad8cba1efd02a0ff43aa9d09faf6e3e27))
+
 ## [3.75.0](https://github.com/IbbyLabs/XRDB/compare/v3.74.3...v3.75.0) (2026-08-09)
 
 
