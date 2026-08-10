@@ -97,6 +97,10 @@ type Pipeline struct {
 	// ratings remembers what each source said about a title, so the same title
 	// under a different config is not fetched twice. Optional: nil disables it.
 	ratings *ratingsCache
+	// queueWait is how long the render queue in front of this pipeline is
+	// willing to wait for a slot. Zero leaves the artwork stage bounded by the
+	// fetch budget alone.
+	queueWait time.Duration
 	// quality reports which release qualities a title has, so a quality badge
 	// can stand for something. Optional: nil draws the picked badges as-is.
 	quality qualityDetector
@@ -746,11 +750,47 @@ func New(reg *provider.Registry) *Pipeline {
 // from the per-fetch budget so raising one raises the other and an operator has
 // a single knob rather than two that can contradict each other.
 func (p *Pipeline) artStageTimeout() time.Duration {
-	per := defaultArtFetchTimeout
-	if f, ok := p.fetcher.(*httpFetcher); ok && f.client != nil && f.client.Timeout > 0 {
-		per = f.client.Timeout
+	return p.artStageTimeoutFor(p.queueWait)
+}
+
+func (p *Pipeline) artStageTimeoutFor(queueWait time.Duration) time.Duration {
+	stage := 2 * p.artFetchTimeout()
+	// A stage that outlives the queue's patience guarantees shedding: the slot
+	// is still held by work that has not given up while everyone behind it is
+	// already being refused. Three quarters leaves room for the ratings and the
+	// compose that follow.
+	if queueWait > 0 {
+		if bound := queueWait * 3 / 4; bound < stage {
+			stage = bound
+		}
 	}
-	return 2 * per
+	return stage
+}
+
+// SetRenderQueueWait tells the pipeline how long the queue in front of it waits
+// for a slot, so the artwork stage can be held inside that window.
+//
+// The window wins even when it leaves less than one fetch: a render that cannot
+// finish before the callers behind it are refused is not worth the slot it
+// holds. That pairing is a misconfiguration rather than a trade-off, so it is
+// said out loud instead of being resolved silently.
+func (p *Pipeline) SetRenderQueueWait(d time.Duration) {
+	if d <= 0 {
+		return
+	}
+	p.queueWait = d
+	if stage := p.artStageTimeoutFor(d); stage < p.artFetchTimeout() {
+		p.log().Warn("The render queue gives up sooner than one artwork fetch can finish",
+			"queue_wait", d, "artwork_stage", stage, "artwork_fetch", p.artFetchTimeout())
+	}
+}
+
+// artFetchTimeout is the budget for a single artwork request.
+func (p *Pipeline) artFetchTimeout() time.Duration {
+	if f, ok := p.fetcher.(*httpFetcher); ok && f.client != nil && f.client.Timeout > 0 {
+		return f.client.Timeout
+	}
+	return defaultArtFetchTimeout
 }
 
 // SetArtFetchTimeout overrides the source-artwork fetch timeout. No-op when

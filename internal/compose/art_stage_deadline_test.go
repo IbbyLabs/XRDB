@@ -74,3 +74,31 @@ func TestTheStageBudgetFollowsTheFetchBudget(t *testing.T) {
 		t.Errorf("stage budget %v after raising the fetch budget, was %v", raised, base)
 	}
 }
+
+// A slot held longer than the queue is willing to wait guarantees shedding:
+// everyone behind it is refused while the holder has not yet given up.
+func TestTheStageFinishesInsideTheQueueWindow(t *testing.T) {
+	for _, wait := range []time.Duration{2 * time.Second, 8 * time.Second, 30 * time.Second} {
+		p := New(provider.NewRegistry())
+		p.SetRenderQueueWait(wait)
+		if stage := p.artStageTimeout(); stage >= wait {
+			t.Errorf("queue waits %v and the artwork stage may take %v", wait, stage)
+		}
+	}
+}
+
+// The window wins even when it leaves less than one fetch. Holding a slot past
+// the point everyone behind it is refused is not worth doing, so the stage is
+// cut and the pairing is reported rather than reconciled.
+func TestAShortQueueWindowCutsTheStageRatherThanOverrunning(t *testing.T) {
+	p := New(provider.NewRegistry())
+	p.SetArtFetchTimeout(5 * time.Second)
+	p.SetRenderQueueWait(100 * time.Millisecond)
+	stage := p.artStageTimeout()
+	if stage >= 100*time.Millisecond {
+		t.Errorf("stage %v against a 100ms queue window", stage)
+	}
+	if stage <= 0 {
+		t.Errorf("stage %v leaves no time to fetch anything at all", stage)
+	}
+}
