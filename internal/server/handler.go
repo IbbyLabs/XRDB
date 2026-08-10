@@ -54,6 +54,9 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	ttls.setHeldOutTTL(cfg.HeldOutCacheTTL)
 	ttls.setQueueHeldTTL(cfg.QueueHeldCacheTTL)
 	notFound := newNotFoundCache(cfg.NotFoundTTL)
+	// Concurrent requests for one key share a render instead of each taking a
+	// queue slot to produce the same bytes.
+	flight := newRenderFlight()
 	// Forwarded headers are client input unless the peer is a known proxy.
 	trust := newProxyTrust(cfg.TrustedProxies, cfg.TrustProxyHeaders)
 
@@ -231,7 +234,39 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			pngBytes = render.PlaceholderPNG(mediaType)
 			placeholder = true
 		}
+		// A render already under way for this key is waited on rather than
+		// repeated. The wait is bounded by the caller's own context, so giving up
+		// here costs the leader nothing.
+		var flightCall *renderCall
+		leadsFlight := true
 		if !fromCache && !placeholder {
+			flightCall, leadsFlight = flight.begin(cacheKey)
+			if !leadsFlight {
+				select {
+				case <-flightCall.done:
+					if flightCall.served {
+						pngBytes = flightCall.bytes
+						contentType = flightCall.contentType
+						placeholder = flightCall.placeholder
+						degraded = flightCall.degraded
+						degradedByUs = flightCall.degradedByUs
+						degradedSources = flightCall.degradedSources
+						expiresAt = flightCall.expiresAt
+						fromCache = true
+						logger.DebugContext(r.Context(), "Served a render from one already in flight",
+							"id", logging.RequestID(r.Context()),
+							"media_type", mediaType, "media_id", id)
+					}
+				case <-r.Context().Done():
+					ms.Record("/"+mediaType, 499, latMs(start))
+					return
+				}
+			}
+		}
+		if !fromCache && !placeholder {
+			if leadsFlight {
+				defer flight.finish(cacheKey, flightCall)
+			}
 			// Only fresh renders are counted. A warm catalogue reload costs a
 			// cache read and is not what the queue is made of.
 			if ok, over := callerCap.allow(capProfileKey, "ip:"+clientIP(r, trust)); !ok {
@@ -325,6 +360,19 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				if ttl > 0 {
 					expiresAt = time.Now().Add(ttl)
 				}
+			}
+			// Hand the result to anyone waiting on this same key. Published
+			// before the slot is freed so a waiter released by the next line
+			// finds the fields already written.
+			if leadsFlight && flightCall != nil {
+				flightCall.bytes = pngBytes
+				flightCall.contentType = contentType
+				flightCall.placeholder = placeholder
+				flightCall.degraded = degraded
+				flightCall.degradedByUs = degradedByUs
+				flightCall.degradedSources = degradedSources
+				flightCall.expiresAt = expiresAt
+				flightCall.served = len(pngBytes) > 0
 			}
 			// Free the slot before writing to the client so a slow consumer
 			// doesn't hold a render slot for the duration of the download.
