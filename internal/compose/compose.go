@@ -58,6 +58,10 @@ type Result struct {
 	// real artwork — the caller must not cache it (a transient failure would
 	// otherwise be frozen for the whole TTL) and should signal that downstream.
 	Placeholder bool
+	// PlaceholderIsOurs is true when the placeholder came from this pipeline
+	// giving up rather than from no source having artwork. Remembering it would
+	// keep answering with our own impatience after the reason for it is gone.
+	PlaceholderIsOurs bool
 	// Degraded is true when the render is missing something it wanted through a
 	// transient failure: a rating source that answered with an error and left its
 	// badge off, or a title logo overlay whose fetch failed. The render is real
@@ -698,6 +702,12 @@ func ratingIDForSources(id string, meta *provider.MediaMeta) string {
 	return meta.IMDbID
 }
 
+// errArtStageDeadline marks artwork that failed because this pipeline stopped
+// waiting, rather than because no source had any. The two produce the same
+// placeholder and must not be remembered the same way: a source with nothing is
+// a fact about the title, and our own impatience is not.
+var errArtStageDeadline = errors.New("artwork stage deadline")
+
 // defaultArtFetchTimeout bounds the source-artwork fetch absent an override
 // from config. A normal fetch runs around a second; a stalled one otherwise
 // holds a render slot idle, deepening the queue for everything behind it.
@@ -940,6 +950,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 			"artwork_source", string(req.Config.ArtworkSource), "error", err)
 		result.ImageBytes = render.PlaceholderPNG(req.MediaType)
 		result.Placeholder = true
+		result.PlaceholderIsOurs = errors.Is(err, errArtStageDeadline)
 		return result, nil
 	}
 
@@ -1295,18 +1306,30 @@ func (p *Pipeline) fetchEpisode(ctx context.Context, req Request, series string,
 // names the provider whose artwork was actually used, which is not always the
 // configured source: a source that cannot serve this id falls through to the
 // next, and the ratings pass must not skip a source that never answered.
-func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]byte, *provider.MediaMeta, string, string, error) {
+func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ []byte, _ *provider.MediaMeta, _ string, _ string, err error) {
 	// The fetch timeout below bounds one HTTP request, and this stage tries one
 	// per provider, so a title whose sources all hang costs as many timeouts as
 	// there are providers and holds a render slot for the sum. The stage gets
 	// its own bound: twice the per-fetch budget, which lets one slow source be
 	// answered by the next provider without letting a dead one be tried by all
 	// of them.
+	parent := ctx
+	var stageCtx context.Context
 	if d := p.artStageTimeout(); d > 0 {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, d)
+		stageCtx, cancel = context.WithTimeout(ctx, d)
 		defer cancel()
+		ctx = stageCtx
 	}
+	// A stage we cut short is a statement about us, not about the title, and the
+	// caller treats the two differently. The parent is checked as well, because
+	// a caller that gave up is neither.
+	defer func() {
+		if err != nil && stageCtx != nil &&
+			stageCtx.Err() == context.DeadlineExceeded && parent.Err() == nil {
+			err = fmt.Errorf("%w: %w", errArtStageDeadline, err)
+		}
+	}()
 	// Series-episode requests (thumbnails from AIOMetadata) resolve the episode
 	// still + per-episode ratings instead of the series-level artwork.
 	if series, season, episode, ok := parseEpisodeID(req.MediaID); ok {

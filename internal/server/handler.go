@@ -224,6 +224,10 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			}
 		}
 		placeholder := false
+		// A placeholder we produced by giving up is not evidence about the title,
+		// so it is not remembered: the next request tries the source again rather
+		// than being answered with our own impatience for the rest of the minute.
+		placeholderIsOurs := false
 		// queueWaitMs stays zero for a cache hit or a remembered not-found, neither
 		// of which touches the render limiter.
 		var queueWaitMs int64
@@ -322,6 +326,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				if renderResult != nil {
 					pngBytes = renderResult.ImageBytes
 					placeholder = renderResult.Placeholder
+					placeholderIsOurs = renderResult.PlaceholderIsOurs
 					contentType = renderResult.ContentType
 					degradedSources = renderResult.DegradedSources
 					degraded = renderResult.Degraded
@@ -336,7 +341,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			// frozen for the whole TTL, and downstream caches that key on a 200
 			// (e.g. an nginx proxy_cache) would pin the broken image for as long
 			// as they hold it. Only real artwork is cached.
-			if placeholder {
+			if placeholder && !placeholderIsOurs {
 				notFound.Remember(cacheKey)
 			} else {
 				// Artwork appeared, so stop answering from the remembered gap.

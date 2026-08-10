@@ -162,3 +162,53 @@ func TestTheFlightMapEmptiesAfterEachRender(t *testing.T) {
 		t.Error("finish did not release the waiters")
 	}
 }
+
+// A placeholder produced by our own deadline must not be remembered, or the
+// next request is answered with our impatience instead of trying the source
+// again.
+func TestOurOwnPlaceholderIsRetriedNotRemembered(t *testing.T) {
+	if testing.Short() {
+		t.Skip("times a real deadline")
+	}
+	hang := &hangingFetcher{}
+	reg := provider.NewRegistry()
+	reg.Register(&provider.StubProvider{
+		ProviderName: "tmdb",
+		Meta:         &provider.MediaMeta{Title: "T", PosterURL: "http://fake/poster.jpg"},
+	})
+	pipe := compose.NewWithFetcher(reg, hang)
+	pipe.SetRenderQueueWait(400 * time.Millisecond)
+
+	c, err := cache.New(filepath.Join(t.TempDir(), "cache"), time.Hour, 100, 8<<20)
+	if err != nil {
+		t.Fatalf("cache.New: %v", err)
+	}
+	t.Cleanup(c.Close)
+	// A zero TTL disables the not-found cache entirely, which would let this
+	// test pass whether or not the placeholder is remembered.
+	h := NewHandler("test", nil, nil, pipe, c, config.Config{NotFoundTTL: time.Minute})
+
+	const url = "/poster/tt0111161"
+	first := httptest.NewRecorder()
+	h.ServeHTTP(first, httptest.NewRequest(http.MethodGet, url, nil))
+	after := hang.calls.Load()
+	if after == 0 {
+		t.Fatal("the first request never reached the fetcher, so nothing was cut short")
+	}
+
+	second := httptest.NewRecorder()
+	h.ServeHTTP(second, httptest.NewRequest(http.MethodGet, url, nil))
+	t.Logf("calls after first=%d after second=%d; codes %d/%d", after, hang.calls.Load(), first.Code, second.Code)
+	if hang.calls.Load() <= after {
+		t.Error("the second request was answered from the remembered gap rather than trying the source again")
+	}
+}
+
+// hangingFetcher never answers and leaves only the deadline to end a fetch.
+type hangingFetcher struct{ calls atomic.Int64 }
+
+func (f *hangingFetcher) Fetch(ctx context.Context, _ string) ([]byte, error) {
+	f.calls.Add(1)
+	<-ctx.Done()
+	return nil, ctx.Err()
+}
