@@ -742,6 +742,17 @@ func New(reg *provider.Registry) *Pipeline {
 	}
 }
 
+// artStageTimeout is how long the whole source-artwork stage may take, derived
+// from the per-fetch budget so raising one raises the other and an operator has
+// a single knob rather than two that can contradict each other.
+func (p *Pipeline) artStageTimeout() time.Duration {
+	per := defaultArtFetchTimeout
+	if f, ok := p.fetcher.(*httpFetcher); ok && f.client != nil && f.client.Timeout > 0 {
+		per = f.client.Timeout
+	}
+	return 2 * per
+}
+
 // SetArtFetchTimeout overrides the source-artwork fetch timeout. No-op when
 // the fetcher is a test double or d is not positive.
 func (p *Pipeline) SetArtFetchTimeout(d time.Duration) {
@@ -1245,6 +1256,17 @@ func (p *Pipeline) fetchEpisode(ctx context.Context, req Request, series string,
 // configured source: a source that cannot serve this id falls through to the
 // next, and the ratings pass must not skip a source that never answered.
 func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) ([]byte, *provider.MediaMeta, string, string, error) {
+	// The fetch timeout below bounds one HTTP request, and this stage tries one
+	// per provider, so a title whose sources all hang costs as many timeouts as
+	// there are providers and holds a render slot for the sum. The stage gets
+	// its own bound: twice the per-fetch budget, which lets one slow source be
+	// answered by the next provider without letting a dead one be tried by all
+	// of them.
+	if d := p.artStageTimeout(); d > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, d)
+		defer cancel()
+	}
 	// Series-episode requests (thumbnails from AIOMetadata) resolve the episode
 	// still + per-episode ratings instead of the series-level artwork.
 	if series, season, episode, ok := parseEpisodeID(req.MediaID); ok {
