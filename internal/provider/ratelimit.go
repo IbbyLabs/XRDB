@@ -216,7 +216,7 @@ type pacer struct {
 // reserve takes the next slot and reports how long to hold before using it. It
 // refuses before reserving, so a shed request does not hold a slot that its own
 // timeout would have thrown away.
-func (p *pacer) reserve() (time.Duration, error) {
+func (p *pacer) reserve(budget time.Duration) (time.Duration, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	now := time.Now()
@@ -227,6 +227,13 @@ func (p *pacer) reserve() (time.Duration, error) {
 	if p.maxWait > 0 && slot.Sub(now) > p.maxWait {
 		return 0, ErrPacerBacklog
 	}
+	// A turn that arrives too late to use is worse than no turn: the client
+	// timeout covers this queue as well as the call, so sleeping through it
+	// cancels the request mid-flight and the cancellation is indistinguishable
+	// from the source failing to answer. Refusing instead is attributable.
+	if budget >= 0 && slot.Sub(now) > budget {
+		return 0, ErrPacerBacklog
+	}
 	p.next = slot.Add(p.interval)
 	return slot.Sub(now), nil
 }
@@ -234,14 +241,22 @@ func (p *pacer) reserve() (time.Duration, error) {
 // wait blocks until the next request may go out, or the request is cancelled.
 // It reserves its slot under the lock and sleeps outside it, so concurrent
 // callers queue in order instead of all waking at the same instant.
-func (p *pacer) wait(done <-chan struct{}) error {
+func (p *pacer) wait(ctx context.Context) error {
 	if p == nil || p.interval <= 0 {
 		return nil
 	}
-	delay, err := p.reserve()
+	// How much of the caller's budget may be spent queuing, leaving the call
+	// itself enough to complete. Negative means the caller set no deadline and
+	// the queue is bounded by maxWait alone.
+	budget := time.Duration(-1)
+	if deadline, ok := ctx.Deadline(); ok {
+		budget = time.Until(deadline) - minCallBudget
+	}
+	delay, err := p.reserve(budget)
 	if err != nil {
 		return err
 	}
+	done := ctx.Done()
 	if delay <= 0 {
 		return nil
 	}
@@ -296,7 +311,7 @@ func (t *throttledTransport) RoundTrip(req *http.Request) (*http.Response, error
 
 	var lastStatus int
 	for attempt := 0; ; attempt++ {
-		if err := t.pacer.wait(req.Context().Done()); err != nil {
+		if err := t.pacer.wait(req.Context()); err != nil {
 			return nil, err
 		}
 		queued := time.Now()

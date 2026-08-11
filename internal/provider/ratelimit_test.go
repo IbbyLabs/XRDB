@@ -173,7 +173,7 @@ func TestPacerSpacesRequests(t *testing.T) {
 	p := &pacer{interval: 40 * time.Millisecond}
 	start := time.Now()
 	for i := 0; i < 3; i++ {
-		if err := p.wait(nil); err != nil {
+		if err := p.wait(context.Background()); err != nil {
 			t.Fatalf("wait: %v", err)
 		}
 	}
@@ -187,7 +187,7 @@ func TestPacerIsANoOpWithoutAnInterval(t *testing.T) {
 	p := &pacer{}
 	start := time.Now()
 	for i := 0; i < 50; i++ {
-		if err := p.wait(nil); err != nil {
+		if err := p.wait(context.Background()); err != nil {
 			t.Fatalf("wait: %v", err)
 		}
 	}
@@ -198,13 +198,13 @@ func TestPacerIsANoOpWithoutAnInterval(t *testing.T) {
 
 func TestPacerRespectsCancellation(t *testing.T) {
 	p := &pacer{interval: 10 * time.Second}
-	if err := p.wait(nil); err != nil { // consume the first free slot
+	if err := p.wait(context.Background()); err != nil { // consume the first free slot
 		t.Fatalf("wait: %v", err)
 	}
-	done := make(chan struct{})
-	close(done)
+	cancelled, cancel := context.WithCancel(context.Background())
+	cancel()
 	start := time.Now()
-	if err := p.wait(done); err == nil {
+	if err := p.wait(cancelled); err == nil {
 		t.Error("expected cancellation to abort the wait")
 	}
 	if elapsed := time.Since(start); elapsed > time.Second {
