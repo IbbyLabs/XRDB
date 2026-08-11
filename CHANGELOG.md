@@ -2,6 +2,23 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.80.0](https://github.com/IbbyLabs/XRDB/compare/v3.79.0...v3.80.0) (2026-08-11)
+
+
+### Added
+
+* **ratings:** report what is left of a daily allowance on a clock ([5b8de6b](https://github.com/IbbyLabs/XRDB/commit/5b8de6bc9909d0f90eb7afbdd7e9103a8a8c9e0f))
+
+
+### Fixed
+
+* **ratings:** say what a hold-out did, not what it might have ([2426012](https://github.com/IbbyLabs/XRDB/commit/24260128614af61f1aecf2f5b475045d64edf0b7))
+
+
+### Documentation
+
+* **ratings:** name both routes that leave the remembered store empty ([c7c1b7c](https://github.com/IbbyLabs/XRDB/commit/c7c1b7c4b57f4d070b0780830f17f950086a2834))
+
 ## [3.79.0](https://github.com/IbbyLabs/XRDB/compare/v3.78.0...v3.79.0) (2026-08-11)
 
 
