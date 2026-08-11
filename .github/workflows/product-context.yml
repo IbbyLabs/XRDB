@@ -61,8 +61,13 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add public/product-context.json
-          # GITHUB_TOKEN pushes do not start another workflow, so this cannot
-          # trigger itself.
+          # Two guards stop this triggering itself, and either alone would
+          # hold: a GITHUB_TOKEN push starts no workflow, and
+          # public/product-context.json is not in this workflow's own path
+          # filter. The second is the one that survives a credential change —
+          # swapping in a PAT to make pushes trigger things, which is the
+          # standard fix and what our own CI notes reach for, deletes the first
+          # and leaves this relying entirely on the filter above.
           git commit -m "chore(context): refresh the product context"
           git push
           # This push starts nothing, so the checks that failed on the commit
