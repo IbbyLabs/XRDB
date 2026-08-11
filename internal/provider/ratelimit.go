@@ -216,7 +216,7 @@ type pacer struct {
 // reserve takes the next slot and reports how long to hold before using it. It
 // refuses before reserving, so a shed request does not hold a slot that its own
 // timeout would have thrown away.
-func (p *pacer) reserve(budget time.Duration) (time.Duration, error) {
+func (p *pacer) reserve(budget time.Duration, bounded bool) (time.Duration, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	now := time.Now()
@@ -231,7 +231,7 @@ func (p *pacer) reserve(budget time.Duration) (time.Duration, error) {
 	// timeout covers this queue as well as the call, so sleeping through it
 	// cancels the request mid-flight and the cancellation is indistinguishable
 	// from the source failing to answer. Refusing instead is attributable.
-	if budget >= 0 && slot.Sub(now) > budget {
+	if bounded && slot.Sub(now) > budget {
 		return 0, ErrPacerBacklog
 	}
 	p.next = slot.Add(p.interval)
@@ -248,11 +248,14 @@ func (p *pacer) wait(ctx context.Context) error {
 	// How much of the caller's budget may be spent queuing, leaving the call
 	// itself enough to complete. Negative means the caller set no deadline and
 	// the queue is bounded by maxWait alone.
-	budget := time.Duration(-1)
+	// bounded says whether budget means anything. A negative budget is a
+	// deadline already too close to leave the call its minimum, which is the
+	// case that most needs refusing rather than the one to wave through.
+	budget, bounded := time.Duration(0), false
 	if deadline, ok := ctx.Deadline(); ok {
-		budget = time.Until(deadline) - minCallBudget
+		budget, bounded = time.Until(deadline)-minCallBudget, true
 	}
-	delay, err := p.reserve(budget)
+	delay, err := p.reserve(budget, bounded)
 	if err != nil {
 		return err
 	}

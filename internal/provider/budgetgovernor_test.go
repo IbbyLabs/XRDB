@@ -155,11 +155,11 @@ func TestGovernorLetsABurstThrough(t *testing.T) {
 	g, _, _ := newTestGovernor(t)
 
 	for i := range int(mdblistDefaultBurst) {
-		if delay, _ := g.take(-1); delay != 0 {
+		if delay, _ := g.take(0, false); delay != 0 {
 			t.Fatalf("request %d in the burst waited %s", i+1, delay)
 		}
 	}
-	delay, _ := g.take(-1)
+	delay, _ := g.take(0, false)
 	want := time.Duration(float64(time.Second) / g.currentRate())
 	if delay <= 0 {
 		t.Fatal("the request past the burst was not paced")
@@ -175,17 +175,17 @@ func TestGovernorRefillsAtTheComputedRate(t *testing.T) {
 	g.observe(context.Background(), allowanceHeaders(100000, 100000, clock.t.Add(time.Minute))) // 5/s
 
 	for range int(mdblistDefaultBurst) {
-		if delay, _ := g.take(-1); delay != 0 {
+		if delay, _ := g.take(0, false); delay != 0 {
 			t.Fatal("a request inside the burst was paced")
 		}
 	}
 	clock.advance(2 * time.Second) // 10 tokens at 5/s
 	for i := range 10 {
-		if delay, _ := g.take(-1); delay != 0 {
+		if delay, _ := g.take(0, false); delay != 0 {
 			t.Fatalf("refilled request %d waited %s", i+1, delay)
 		}
 	}
-	if delay, _ := g.take(-1); delay <= 0 {
+	if delay, _ := g.take(0, false); delay <= 0 {
 		t.Error("the request past the refill was not paced")
 	}
 }
@@ -194,10 +194,10 @@ func TestGovernorRefillsAtTheComputedRate(t *testing.T) {
 func TestGovernorQueuesConcurrentCallers(t *testing.T) {
 	g, _, _ := newTestGovernor(t)
 	for range int(mdblistDefaultBurst) {
-		g.take(-1)
+		g.take(0, false)
 	}
-	first, _ := g.take(-1)
-	second, _ := g.take(-1)
+	first, _ := g.take(0, false)
+	second, _ := g.take(0, false)
 	gap := time.Duration(float64(time.Second) / g.currentRate())
 	if second-first < gap/2 {
 		t.Errorf("two queued requests are %s apart, want about %s", second-first, gap)
@@ -208,7 +208,7 @@ func TestGovernorWaitRespectsCancellation(t *testing.T) {
 	g := newBudgetGovernor("mdblist")
 	g.rate = 0.001 // a wait no test would sit through
 	for range int(g.burst) + 1 {
-		g.take(-1)
+		g.take(0, false)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()

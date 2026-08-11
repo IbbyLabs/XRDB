@@ -20,7 +20,7 @@ func TestAQueuedRequestReportsTheWaitApartFromTheCall(t *testing.T) {
 	g := newBudgetGovernor("mdblist")
 	g.rate = 4 // 250ms a token once the burst is gone
 	for range int(g.burst) + 1 {
-		g.take(-1)
+		g.take(0, false)
 	}
 	c := &http.Client{Transport: &throttledTransport{
 		base:     &headerTransport{header: make(http.Header)},

@@ -16,7 +16,7 @@ func TestTheGovernorRefusesAWaitLongerThanTheRequestHasLeft(t *testing.T) {
 	g := newBudgetGovernor("mdblist")
 	g.rate = 0.05 // 20s a token
 	for range int(g.burst) + 1 {
-		g.take(-1)
+		g.take(0, false)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -40,11 +40,11 @@ func TestARefusedRequestDoesNotClaimASlot(t *testing.T) {
 	g := newBudgetGovernor("mdblist")
 	g.rate = 0.05
 	for range int(g.burst) + 1 {
-		g.take(-1)
+		g.take(0, false)
 	}
 	before := g.tokens
 
-	if _, ok := g.take(time.Second); ok {
+	if _, ok := g.take(time.Second, true); ok {
 		t.Fatal("a wait far past the budget was allowed")
 	}
 	// The bucket still refills with elapsed time; what must not happen is the
@@ -55,7 +55,7 @@ func TestARefusedRequestDoesNotClaimASlot(t *testing.T) {
 
 	// Control: an allowed claim does move it, so the check above can fail.
 	before = g.tokens
-	if _, ok := g.take(-1); !ok {
+	if _, ok := g.take(0, false); !ok {
 		t.Fatal("an unbounded claim was refused")
 	}
 	if g.tokens > before-0.5 {
@@ -69,7 +69,7 @@ func TestAWaitThatFitsIsStillTaken(t *testing.T) {
 	g := newBudgetGovernor("mdblist")
 	g.rate = 5
 	for range int(g.burst) + 1 {
-		g.take(-1)
+		g.take(0, false)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -83,7 +83,7 @@ func TestAnUnboundedRequestIsNotRefused(t *testing.T) {
 	g := newBudgetGovernor("mdblist")
 	g.rate = 0.05
 	for range int(g.burst) + 1 {
-		g.take(-1)
+		g.take(0, false)
 	}
 	g.sleep = func(time.Duration, <-chan struct{}) error { return nil }
 	if err := g.wait(context.Background()); err != nil {
@@ -98,7 +98,7 @@ func TestAStarvedGovernorRefusesInsteadOfTimingOut(t *testing.T) {
 	g := newBudgetGovernor("mdblist")
 	g.rate = 0.05
 	for range int(g.burst) + 1 {
-		g.take(-1)
+		g.take(0, false)
 	}
 	c := &http.Client{
 		Timeout: 2 * time.Second,

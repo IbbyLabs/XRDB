@@ -101,11 +101,14 @@ func (g *budgetGovernor) wait(ctx context.Context) error {
 	if g == nil {
 		return nil
 	}
-	budget := time.Duration(-1)
+	// bounded says whether budget means anything. A negative budget is not "no
+	// deadline" — it is a deadline already too close to leave the call its
+	// minimum, which is the case that most needs refusing.
+	budget, bounded := time.Duration(0), false
 	if deadline, ok := ctx.Deadline(); ok {
-		budget = deadline.Sub(g.now()) - minCallBudget
+		budget, bounded = deadline.Sub(g.now())-minCallBudget, true
 	}
-	delay, ok := g.take(budget)
+	delay, ok := g.take(budget, bounded)
 	if !ok {
 		return ErrGovernorBacklog
 	}
@@ -122,7 +125,7 @@ func (g *budgetGovernor) wait(ctx context.Context) error {
 // budget bounds the wait the caller can use; a negative budget is unbounded.
 // The token is claimed only when the wait fits, so a refused request does not
 // hold a slot the queue behind it could have used.
-func (g *budgetGovernor) take(budget time.Duration) (time.Duration, bool) {
+func (g *budgetGovernor) take(budget time.Duration, bounded bool) (time.Duration, bool) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 
@@ -143,7 +146,7 @@ func (g *budgetGovernor) take(budget time.Duration) (time.Duration, bool) {
 	if remaining < 0 {
 		delay = time.Duration(-remaining / g.rate * float64(time.Second))
 	}
-	if budget >= 0 && delay > budget {
+	if bounded && delay > budget {
 		return 0, false
 	}
 	g.tokens = remaining
