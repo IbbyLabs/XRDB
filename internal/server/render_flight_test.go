@@ -69,6 +69,7 @@ func TestConcurrentRequestsForOneKeyRenderOnce(t *testing.T) {
 	shared := &countingFetcher{data: testSourcePNG(t, 400, 600), delay: 120 * time.Millisecond}
 	h := flightHandler(t, shared)
 	codes := make([]int, concurrent)
+	sources := make([]string, concurrent)
 	var wg sync.WaitGroup
 	for i := 0; i < concurrent; i++ {
 		wg.Add(1)
@@ -77,6 +78,7 @@ func TestConcurrentRequestsForOneKeyRenderOnce(t *testing.T) {
 			w := httptest.NewRecorder()
 			h.ServeHTTP(w, httptest.NewRequest(http.MethodGet, url, nil))
 			codes[i] = w.Code
+			sources[i] = w.Header().Get("X-Render-Source")
 			if w.Code == http.StatusOK && w.Body.Len() == 0 {
 				t.Errorf("request %d got 200 with an empty body", i)
 			}
@@ -92,6 +94,18 @@ func TestConcurrentRequestsForOneKeyRenderOnce(t *testing.T) {
 	if got := shared.calls.Load(); got > baseline {
 		t.Errorf("%d concurrent requests for one key cost %d fetches against %d for a single render",
 			concurrent, got, baseline)
+	}
+
+	// A render that joined another has to say so, or a production count of
+	// "flight" reads as zero coalescing when it may be a value nothing emits.
+	joined := 0
+	for _, s := range sources {
+		if s == "flight" {
+			joined++
+		}
+	}
+	if joined == 0 {
+		t.Errorf("no response reported X-Render-Source=flight, so the value is unobservable: got %v", sources)
 	}
 }
 
