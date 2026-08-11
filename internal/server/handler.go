@@ -223,6 +223,12 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				expiresAt = e.ExpiresAt
 			}
 		}
+		// Why this response cost what it cost. Without it a cache hit and a fresh
+		// render are one line apart in the log and only latency distinguishes
+		// them, which is a guess at a threshold rather than a fact.
+		if fromCache {
+			w.Header().Set("X-Render-Source", "hit")
+		}
 		placeholder := false
 		// A placeholder we produced by giving up is not evidence about the title,
 		// so it is not remembered: the next request tries the source again rather
@@ -237,6 +243,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			// catalogue of a title with no art cost one sweep per episode.
 			pngBytes = render.PlaceholderPNG(mediaType)
 			placeholder = true
+			w.Header().Set("X-Render-Source", "gap")
 		}
 		// A render already under way for this key is waited on rather than
 		// repeated. The wait is bounded by the caller's own context, so giving up
@@ -257,6 +264,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 						degradedSources = flightCall.degradedSources
 						expiresAt = flightCall.expiresAt
 						fromCache = true
+						w.Header().Set("X-Render-Source", "flight")
 						logger.DebugContext(r.Context(), "Served a render from one already in flight",
 							"id", logging.RequestID(r.Context()),
 							"media_type", mediaType, "media_id", id)
@@ -315,6 +323,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				return
 			}
 			queueWaitMs = time.Since(queueStart).Milliseconds()
+			w.Header().Set("X-Render-Source", "miss")
 			var renderResult *compose.Result
 			if pipeline != nil {
 				renderResult, _ = pipeline.Render(r.Context(), compose.Request{
@@ -575,6 +584,11 @@ func accessLogMiddleware(logger *slog.Logger, trust proxyTrust, next http.Handle
 			// otherwise indistinguishable from ordinary use, and attributing one
 			// took an hour of inference for want of this field.
 			slog.String("user_agent", truncateUA(r.UserAgent())),
+			// hit, flight, gap or miss: served from the render cache, from a
+			// render already under way, from a remembered absence of artwork, or
+			// composed here. Empty on anything that is not a render. Separate
+			// from X-Cache, which is a public HIT marker downstream caches read.
+			slog.String("render_source", rec.Header().Get("X-Render-Source")),
 		)
 	})
 }
