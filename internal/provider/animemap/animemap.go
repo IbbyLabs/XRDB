@@ -96,6 +96,47 @@ func withoutTypeToken(id string) string {
 	return id
 }
 
+// lookupTarget reduces an id to the bare identifier the live API takes, and
+// names the endpoint it belongs to.
+//
+// Ids arrive as <id>, <type>:<id> and <service>:<type>:<id>. Dropping one known
+// token from the front leaves the remaining segments in the query, and neither
+// endpoint can parse those. ok is false for a service the live API has no
+// endpoint for, so the call is skipped rather than sent to be refused.
+func lookupTarget(id string) (source, bare string, ok bool) {
+	typeToken := map[string]bool{"movie": true, "series": true, "tv": true, "show": true}
+	endpoint := map[string]string{
+		"imdb":       "imdb",
+		"tmdb":       "themoviedb",
+		"themoviedb": "themoviedb",
+	}
+	unsupported := map[string]bool{"mal": true, "myanimelist": true, "anilist": true, "kitsu": true}
+
+	for _, seg := range strings.Split(id, ":") {
+		lower := strings.ToLower(strings.TrimSpace(seg))
+		switch {
+		case lower == "":
+		case typeToken[lower]:
+		case unsupported[lower]:
+			return "", "", false
+		case endpoint[lower] != "":
+			source = endpoint[lower]
+		default:
+			bare = seg
+		}
+	}
+	if bare == "" {
+		return "", "", false
+	}
+	if source == "" {
+		source = "themoviedb"
+		if strings.HasPrefix(strings.ToLower(bare), "tt") {
+			source = "imdb"
+		}
+	}
+	return source, bare, true
+}
+
 // or "movie" segment after the number.
 func ParseAnimeID(id string) (service string, num int, ok bool) {
 	id = withoutTypeToken(strings.ToLower(strings.TrimSpace(id)))
@@ -916,10 +957,11 @@ func (m *Mapper) runFallback(ctx context.Context, id string, call *fbCall) {
 	// The id may still carry its type token, and an IMDb id behind one does not
 	// start with "tt" — it goes to the TMDB endpoint and is rejected, so the
 	// live lookup can never succeed for anything addressed as {type}:{id}.
-	lookupID := withoutTypeToken(id)
-	source := "themoviedb"
-	if strings.HasPrefix(lookupID, "tt") {
-		source = "imdb"
+	source, lookupID, ok := lookupTarget(id)
+	if !ok {
+		m.log().Debug("Skipping the live anime mapping lookup; the id names no endpoint it serves",
+			"id", id)
+		return
 	}
 
 	// Construct URL with proper query parameter encoding
