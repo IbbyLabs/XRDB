@@ -1,0 +1,105 @@
+package provider
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"log/slog"
+	"strings"
+	"testing"
+	"time"
+)
+
+// governorLines returns the decoded log records the governor wrote.
+func governorLines(buf *bytes.Buffer) []map[string]any {
+	var out []map[string]any
+	for _, line := range strings.Split(strings.TrimSpace(buf.String()), "\n") {
+		if line == "" {
+			continue
+		}
+		var rec map[string]any
+		if err := json.Unmarshal([]byte(line), &rec); err == nil {
+			out = append(out, rec)
+		}
+	}
+	return out
+}
+
+// A day's allowance can run most of the way down without the rate ever halving,
+// so a log that only speaks on a transition can go a whole day without naming a
+// number. Pacing comfortably and nearly exhausted then read identically.
+func TestTheGovernorReportsHeadroomBetweenGearChanges(t *testing.T) {
+	g, clock, _ := newTestGovernor(t)
+	var buf bytes.Buffer
+	g.logger = slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelInfo}))
+
+	reset := clock.t.Add(12 * time.Hour)
+	// The first response is a gear change, and is reported already.
+	g.observe(context.Background(), allowanceHeaders(100000, 80000, reset))
+	buf.Reset()
+
+	// Six hours of steady spending, never fast enough to halve the rate.
+	for i := range 12 {
+		clock.advance(30 * time.Minute)
+		g.observe(context.Background(), allowanceHeaders(100000, 79000-i*1000, reset))
+	}
+
+	lines := governorLines(&buf)
+	if len(lines) == 0 {
+		t.Fatal("six hours of spending produced no allowance line, so headroom cannot be read from the log")
+	}
+	last := lines[len(lines)-1]
+	if _, ok := last["remaining"]; !ok {
+		t.Error("the allowance line carries no absolute figure")
+	}
+	if _, ok := last["remaining_pct"]; !ok {
+		t.Error("the allowance line carries no percentage")
+	}
+}
+
+// Reporting on every response would put a line on a hot path.
+func TestTheGovernorReportsHeadroomNoFasterThanTheInterval(t *testing.T) {
+	g, clock, _ := newTestGovernor(t)
+	var buf bytes.Buffer
+	g.logger = slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelInfo}))
+
+	reset := clock.t.Add(12 * time.Hour)
+	g.observe(context.Background(), allowanceHeaders(100000, 80000, reset))
+	buf.Reset()
+
+	// A hundred responses inside one interval.
+	for range 100 {
+		clock.advance(time.Second)
+		g.observe(context.Background(), allowanceHeaders(100000, 80000, reset))
+	}
+	if n := len(governorLines(&buf)); n > 1 {
+		t.Errorf("a hundred responses inside one interval wrote %d lines", n)
+	}
+}
+
+// A hold-out reads the same whether the day is nearly spent or our own ceiling
+// is holding the rate down, and the two want opposite responses.
+func TestTheGovernorNamesTheConstraintHoldingTheRate(t *testing.T) {
+	g, _, _ := newTestGovernor(t)
+
+	for _, tc := range []struct {
+		name                       string
+		limit, remaining, secsLeft float64
+		want                       pacedBy
+	}{
+		// Plenty left and little of the day to spend it in: our own ceiling.
+		{"ceiling", 100000, 100000, 60, pacedByCeiling},
+		// A full day ahead of a full allowance: the budget sets the rate.
+		{"budget", 100000, 100000, dailyWindow.Seconds(), pacedByBudget},
+		// Spent into the reserve.
+		{"reserve", 100000, 10000, dailyWindow.Seconds(), pacedByReserve},
+		// Above the reserve but too little to matter over a long window.
+		{"floor", 100000, 25100, dailyWindow.Seconds(), pacedByFloor},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if _, _, got := g.rateFor(tc.limit, tc.remaining, tc.secsLeft); got != tc.want {
+				t.Errorf("rate held by %q, want %q", got, tc.want)
+			}
+		})
+	}
+}

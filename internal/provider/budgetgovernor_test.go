@@ -28,6 +28,7 @@ func newTestGovernor(t *testing.T) (*budgetGovernor, *fakeClock, *[]time.Duratio
 		reserveFrac: mdblistDefaultReservePct / 100.0,
 		maxRPS:      mdblistDefaultMaxRPS,
 		burst:       mdblistDefaultBurst,
+		reportEvery: time.Duration(mdblistDefaultReportSeconds) * time.Second,
 		now:         clock.now,
 		sleep: func(d time.Duration, _ <-chan struct{}) error {
 			slept = append(slept, d)
@@ -35,7 +36,7 @@ func newTestGovernor(t *testing.T) (*budgetGovernor, *fakeClock, *[]time.Duratio
 			return nil
 		},
 	}
-	g.rate, _ = g.rateFor(mdblistAssumedDailyLimit, mdblistAssumedDailyLimit, dailyWindow.Seconds())
+	g.rate, _, _ = g.rateFor(mdblistAssumedDailyLimit, mdblistAssumedDailyLimit, dailyWindow.Seconds())
 	return g, clock, &slept
 }
 
@@ -239,7 +240,7 @@ func TestGovernorSettingsComeFromTheEnvironment(t *testing.T) {
 		t.Fatalf("got reserve=%.2f max=%.1f burst=%.0f", g.reserveFrac, g.maxRPS, g.burst)
 	}
 	// 60,000 usable over a full day, well under the 2/s ceiling.
-	if got, _ := g.rateFor(100000, 100000, dailyWindow.Seconds()); !closeEnough(got, 60000.0/86400) {
+	if got, _, _ := g.rateFor(100000, 100000, dailyWindow.Seconds()); !closeEnough(got, 60000.0/86400) {
 		t.Errorf("rate = %.5f/s, want %.5f/s", got, 60000.0/86400)
 	}
 }

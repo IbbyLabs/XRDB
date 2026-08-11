@@ -38,7 +38,11 @@ const (
 	// mdblistFloorRPS is the rate a spent reserve drops to. A degraded source
 	// still answers; the health tracker handles one that does not.
 	mdblistFloorRPS float64 = 0.2
-	dailyWindow             = 24 * time.Hour
+	// mdblistDefaultReportSeconds is how often the remaining allowance is
+	// written to the log. Transitions are reported as they happen; this is for
+	// the long stretches between them.
+	mdblistDefaultReportSeconds float64 = 300
+	dailyWindow                         = 24 * time.Hour
 )
 
 // budgetGovernor paces one source from the daily allowance it reports.
@@ -61,7 +65,21 @@ type budgetGovernor struct {
 	inReserve  bool
 	loggedRate float64
 	seen       bool
+	// reported is when the headroom was last written to the log.
+	reported    time.Time
+	reportEvery time.Duration
 }
+
+// pacedBy names the constraint that set the current rate. A hold-out reads the
+// same whether the day is nearly spent or our own ceiling is the binding one.
+type pacedBy string
+
+const (
+	pacedByBudget  pacedBy = "budget"
+	pacedByCeiling pacedBy = "ceiling"
+	pacedByFloor   pacedBy = "floor"
+	pacedByReserve pacedBy = "reserve"
+)
 
 // newBudgetGovernor builds the governor for a source, reading its knobs from the
 // environment and falling back to the defaults above.
@@ -70,15 +88,18 @@ func newBudgetGovernor(source string) *budgetGovernor {
 	maxRPS := envFloat("XRDB_MDBLIST_MAX_RPS", mdblistDefaultMaxRPS, mdblistFloorRPS, 10)
 	burst := envFloat("XRDB_MDBLIST_BURST", mdblistDefaultBurst, 1, 1000)
 
+	reportEvery := envFloat("XRDB_MDBLIST_REPORT_SECONDS", mdblistDefaultReportSeconds, 10, 3600)
+
 	g := &budgetGovernor{
 		source:      source,
 		reserveFrac: reservePct / 100,
 		maxRPS:      maxRPS,
 		burst:       burst,
+		reportEvery: time.Duration(reportEvery * float64(time.Second)),
 		now:         time.Now,
 		sleep:       sleepUntil,
 	}
-	g.rate, _ = g.rateFor(mdblistAssumedDailyLimit, mdblistAssumedDailyLimit, dailyWindow.Seconds())
+	g.rate, _, _ = g.rateFor(mdblistAssumedDailyLimit, mdblistAssumedDailyLimit, dailyWindow.Seconds())
 	return g
 }
 
@@ -166,9 +187,10 @@ func (g *budgetGovernor) observe(ctx context.Context, h http.Header) {
 		return
 	}
 
+	now := g.now()
 	g.mu.Lock()
 	secondsLeft := reset - float64(g.now().Unix())
-	rate, inReserve := g.rateFor(limit, remaining, secondsLeft)
+	rate, inReserve, paced := g.rateFor(limit, remaining, secondsLeft)
 	previous, wasInReserve, wasSeen := g.loggedRate, g.inReserve, g.seen
 	g.rate, g.inReserve, g.seen = rate, inReserve, true
 	gearChanged := !wasSeen || inReserve != wasInReserve ||
@@ -176,27 +198,41 @@ func (g *budgetGovernor) observe(ctx context.Context, h http.Header) {
 	if gearChanged {
 		g.loggedRate = rate
 	}
+	// A gear change reports a transition. Between transitions the allowance can
+	// run most of the way down without a line, so the headroom is also reported
+	// on a clock.
+	due := now.Sub(g.reported) >= g.reportEvery
+	if due {
+		g.reported = now
+	}
 	g.mu.Unlock()
 
-	if !gearChanged {
+	fields := []any{
+		"source", g.source,
+		"requests_per_second", math.Round(rate*100) / 100,
+		"paced_by", string(paced),
+		"remaining", int64(remaining),
+		"remaining_pct", math.Round(remaining/limit*1000) / 10,
+		"limit", int64(limit),
+		"reserve", int64(limit * g.reserveFrac),
+		"resets_in", time.Duration(math.Max(secondsLeft, 0)) * time.Second,
+	}
+	if gearChanged {
+		message := "A ratings source's daily allowance is pacing it at a new rate"
+		if inReserve {
+			message = "A ratings source has spent its daily allowance down to the reserve; pacing at the floor"
+		}
+		g.log().InfoContext(ctx, message, fields...)
 		return
 	}
-	message := "A ratings source's daily allowance is pacing it at a new rate"
-	if inReserve {
-		message = "A ratings source has spent its daily allowance down to the reserve; pacing at the floor"
+	if due {
+		g.log().InfoContext(ctx, "Reporting what is left of a ratings source's daily allowance", fields...)
 	}
-	g.log().InfoContext(ctx, message,
-		"source", g.source,
-		"requests_per_second", math.Round(rate*100)/100,
-		"remaining", int64(remaining),
-		"limit", int64(limit),
-		"reserve", int64(limit*g.reserveFrac),
-		"resets_in", time.Duration(math.Max(secondsLeft, 0))*time.Second)
 }
 
 // rateFor spreads what is left of the allowance, less the reserve, over what is
 // left of the window, then clamps the result to the configured band.
-func (g *budgetGovernor) rateFor(limit, remaining, secondsLeft float64) (float64, bool) {
+func (g *budgetGovernor) rateFor(limit, remaining, secondsLeft float64) (float64, bool, pacedBy) {
 	if secondsLeft < 1 {
 		// The window is at or past its reset, so the allowance is about to
 		// refill and the clamp is the only thing left holding it back.
@@ -204,16 +240,16 @@ func (g *budgetGovernor) rateFor(limit, remaining, secondsLeft float64) (float64
 	}
 	usable := remaining - limit*g.reserveFrac
 	if usable <= 0 {
-		return mdblistFloorRPS, true
+		return mdblistFloorRPS, true, pacedByReserve
 	}
 	rate := usable / secondsLeft
 	if rate < mdblistFloorRPS {
-		rate = mdblistFloorRPS
+		return mdblistFloorRPS, false, pacedByFloor
 	}
 	if rate > g.maxRPS {
-		rate = g.maxRPS
+		return g.maxRPS, false, pacedByCeiling
 	}
-	return rate, false
+	return rate, false, pacedByBudget
 }
 
 // currentRate reports the rate in force, for tests and for callers that only
