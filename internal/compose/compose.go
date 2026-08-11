@@ -1869,11 +1869,12 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 						attrs = append(attrs, "paced_by", reason,
 							"owner_keyed", provider.HasOwnerKey(ctx, prov.Name()))
 					}
-					// Says what happened rather than what might. This branch has
-					// not consulted the remembered store — the remembered path
-					// returns before reaching here with its own line and its own
-					// outcome — so naming the possibility asserted something
-					// nothing had checked.
+					// Says what happened rather than what might. Every gate
+					// reaches this line only with an empty remembered store, by
+					// one of two routes: cooldown and bulk_allowance consult the
+					// store before the gate and return early on a hit, and the
+					// rest consult it after the fetch and return there. Naming
+					// the possibility asserted something nothing had checked.
 					p.log().WarnContext(ctx, "A ratings source was held out and did not answer; its badge is left empty",
 						attrs...)
 				}
