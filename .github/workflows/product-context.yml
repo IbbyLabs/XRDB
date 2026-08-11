@@ -25,6 +25,9 @@ concurrency:
 
 permissions:
   contents: write
+  # Dispatching ci.yml after the push needs this; contents alone returns 403
+  # and the re-run silently never happens.
+  actions: write
 
 jobs:
   refresh:
@@ -47,6 +50,8 @@ jobs:
         run: go run ./cmd/product-context -root .
 
       - name: Commit when it changed
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           if git diff --quiet -- public/product-context.json; then
@@ -60,3 +65,8 @@ jobs:
           # trigger itself.
           git commit -m "chore(context): refresh the product context"
           git push
+          # This push starts nothing, so the checks that failed on the commit
+          # before it stay failed against a tree that is now correct. An
+          # explicit dispatch is exempt from that rule and needs no PAT.
+          gh workflow run ci.yml --repo "${GITHUB_REPOSITORY}" --ref "${GITHUB_REF_NAME}"
+          echo "Regenerated, pushed, and asked CI to re-run."

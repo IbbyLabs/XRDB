@@ -11,6 +11,12 @@ on:
     branches:
       - main
   pull_request: {}
+  # A GITHUB_TOKEN push starts no workflow, which is what stops the product
+  # context refreshing itself in a loop — and what leaves the board red on a
+  # tree that push has already corrected. That workflow dispatches this one
+  # after it commits, so the result reflects the code rather than the moment
+  # before it was fixed.
+  workflow_dispatch: {}
 
 jobs:
   go:
