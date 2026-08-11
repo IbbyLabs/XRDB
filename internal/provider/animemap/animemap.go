@@ -81,18 +81,24 @@ func (t Target) empty() bool { return t.IMDb == "" && t.TMDB == 0 }
 
 // ParseAnimeID splits an anime-service id into its service and number.
 // Recognises mal, myanimelist, anilist and kitsu, with or without a "series"
-// or "movie" segment after the number.
-func ParseAnimeID(id string) (service string, num int, ok bool) {
-	id = strings.ToLower(strings.TrimSpace(id))
-	// A caller may put the content type in front ("series:mal:21"), which is the
-	// shape AIOMetadata emits from {type}:{id}. The type says nothing about
-	// which anime service the id belongs to, so it is dropped before the lookup.
+// withoutTypeToken drops a leading content-type token from an id.
+//
+// A caller may put the type in front ("series:mal:21", "movie:tt14967958"),
+// which is the shape AIOMetadata emits from {type}:{id}. The type says nothing
+// about which service the id belongs to, so anything deciding by the id's own
+// prefix has to strip it first or it reads the type instead of the id.
+func withoutTypeToken(id string) string {
 	for _, tok := range []string{"movie:", "series:", "tv:"} {
-		if r, ok := strings.CutPrefix(id, tok); ok {
-			id = r
-			break
+		if rest, ok := strings.CutPrefix(id, tok); ok {
+			return rest
 		}
 	}
+	return id
+}
+
+// or "movie" segment after the number.
+func ParseAnimeID(id string) (service string, num int, ok bool) {
+	id = withoutTypeToken(strings.ToLower(strings.TrimSpace(id)))
 	prefix, rest, found := strings.Cut(id, ":")
 	if !found {
 		return "", 0, false
@@ -907,8 +913,12 @@ func (m *Mapper) runFallback(ctx context.Context, id string, call *fbCall) {
 		m.fbMu.Unlock()
 	}()
 
+	// The id may still carry its type token, and an IMDb id behind one does not
+	// start with "tt" — it goes to the TMDB endpoint and is rejected, so the
+	// live lookup can never succeed for anything addressed as {type}:{id}.
+	lookupID := withoutTypeToken(id)
 	source := "themoviedb"
-	if strings.HasPrefix(id, "tt") {
+	if strings.HasPrefix(lookupID, "tt") {
 		source = "imdb"
 	}
 
@@ -920,7 +930,7 @@ func (m *Mapper) runFallback(ctx context.Context, id string, call *fbCall) {
 		return
 	}
 	q := u.Query()
-	q.Set("id", id)
+	q.Set("id", lookupID)
 	q.Set("include", "myanimelist,anilist,kitsu")
 	u.RawQuery = q.Encode()
 
