@@ -1869,7 +1869,12 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 						attrs = append(attrs, "paced_by", reason,
 							"owner_keyed", provider.HasOwnerKey(ctx, prov.Name()))
 					}
-					p.log().WarnContext(ctx, "A ratings source was held out and did not answer; a remembered rating may still fill its badge",
+					// Says what happened rather than what might. This branch has
+					// not consulted the remembered store — the remembered path
+					// returns before reaching here with its own line and its own
+					// outcome — so naming the possibility asserted something
+					// nothing had checked.
+					p.log().WarnContext(ctx, "A ratings source was held out and did not answer; its badge is left empty",
 						attrs...)
 				}
 				return

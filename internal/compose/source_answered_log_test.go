@@ -90,7 +90,7 @@ func TestASourceThatFailedIsNotRecordedAsAnswering(t *testing.T) {
 	if line := hasMsg(lines, "A ratings source answered"); line != nil {
 		t.Errorf("a refused source counted as an answer: %v", line)
 	}
-	if hasMsg(lines, "A ratings source was held out and did not answer; a remembered rating may still fill its badge") == nil {
+	if hasMsg(lines, "A ratings source was held out and did not answer; its badge is left empty") == nil {
 		t.Error("a refused source left no warning")
 	}
 }
