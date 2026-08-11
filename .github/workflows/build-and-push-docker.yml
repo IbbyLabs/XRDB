@@ -62,28 +62,39 @@ jobs:
           publish_latest="false"
           should_build="true"
 
-          # Commit types that never reach the binary. A push of only these would
-          # publish an image identical to the last one under a new tag. A deps
-          # scope is excluded: a dependency bump changes the binary whatever
-          # type it carries.
-          skip_re='^(docs|ci|chore|test|style)(\([^)]*\))?!?:'
-          deps_re='^[a-z]+\(deps[^)]*\)'
+          # Paths that cannot change the image. Everything else can, including
+          # files nobody thought of, so an unrecognised path builds rather than
+          # being silently dropped.
+          #
+          # Decided by what the push touched rather than by its commit type: a
+          # subject says what the author called the change, not what it edited,
+          # and `chore(lint):` editing internal/compose/preference.go reached
+          # production without ever being built for dev. 26 of 100 pushes were
+          # skipped this way and some of them shipped code.
+          # public/ is listed because the Dockerfile copies web, cmd, internal and
+          # the go files and nothing else — product-context.json is fetched from
+          # the tag by the bot rather than shipped in the image. Adding a COPY
+          # for a path listed here would make this wrong, so the list is a claim
+          # about the Dockerfile as much as about the paths.
+          skip_path_re='^(docs/|\.github/|public/|\.release-please-manifest\.json|README|CHANGELOG|LICENSE|NOTICE|\.gitignore|.*\.md$|.*_test\.go$)'
 
-          # True when any commit in the push could change the image. Subjects
-          # that match nothing known count as shippable, so an unconventional
-          # message builds rather than being silently dropped.
+          # True when any path in the push could change the image.
           push_ships_code() {
-            local subjects=""
+            local files=""
             if [ -n "${BEFORE_SHA:-}" ] && ! printf '%s' "${BEFORE_SHA}" | grep -Eq '^0+$'; then
-              subjects="$(git log --format=%s "${BEFORE_SHA}..HEAD" 2>/dev/null || true)"
+              files="$(git diff --name-only "${BEFORE_SHA}..HEAD" 2>/dev/null || true)"
             fi
-            if [ -z "${subjects}" ]; then
-              subjects="$(git log -1 --format=%s)"
+            if [ -z "${files}" ]; then
+              files="$(git show --name-only --format='' HEAD 2>/dev/null || true)"
             fi
-            printf '%s\n' "${subjects}" | while IFS= read -r subject; do
-              [ -z "${subject}" ] && continue
-              printf '%s' "${subject}" | grep -Eqi "${deps_re}" && exit 10
-              printf '%s' "${subject}" | grep -Eqi "${skip_re}" || exit 10
+            # No readable file list is not evidence that nothing shipped, so it
+            # builds. A shallow clone or a rewritten history lands here.
+            if [ -z "${files}" ]; then
+              return 0
+            fi
+            printf '%s\n' "${files}" | while IFS= read -r file; do
+              [ -z "${file}" ] && continue
+              printf '%s' "${file}" | grep -Eq "${skip_path_re}" || exit 10
             done
             [ $? -eq 10 ]
           }
