@@ -71,9 +71,11 @@ func TestOwnerKeyDoesNotRepaceTheSharedGovernor(t *testing.T) {
 // still enter the wait and abandon it, not skip it.
 func TestOwnerKeyStillWaitsOnTheGovernor(t *testing.T) {
 	g := newBudgetGovernor("mdblist")
-	g.rate = 0.001 // a wait no request would sit through
+	// The ceiling band is the one that paces an owner-keyed call; the daily
+	// budget models a quota such a call does not spend.
+	g.maxRPS = 0.001 // a wait no request would sit through
 	for range int(g.burst) + 1 {
-		g.take(0, false) // spend the burst so the next caller must wait
+		g.takeCeiling(0, false) // spend the burst so the next caller must wait
 	}
 	c := &http.Client{Transport: &throttledTransport{
 		base:     &headerTransport{header: make(http.Header)},

@@ -62,6 +62,10 @@ type budgetGovernor struct {
 	rate   float64
 	tokens float64
 	last   time.Time
+	// The ceiling band, metered separately so an owner-keyed call is paced by
+	// this box's limit without drawing on the quota bucket.
+	ceilTokens float64
+	ceilLast   time.Time
 	// inReserve and loggedRate hold the gear the last log line described.
 	inReserve  bool
 	loggedRate float64
@@ -153,14 +157,58 @@ func (g *budgetGovernor) wait(ctx context.Context) error {
 	if deadline, ok := ctx.Deadline(); ok {
 		budget, bounded = deadline.Sub(g.now())-minCallBudget, true
 	}
-	delay, ok := g.take(budget, bounded)
+	// The ceiling is this box's own rate band and applies to every call. The
+	// daily budget models the quota on our key, which an owner-keyed call does
+	// not spend, so it is not held against one.
+	delay, ok := g.takeCeiling(budget, bounded)
 	if !ok {
-		return &backlogReason{err: ErrGovernorBacklog, paced: g.pacedNow()}
+		return &backlogReason{err: ErrGovernorBacklog, paced: pacedByCeiling}
+	}
+	if !HasOwnerKey(ctx, g.source) {
+		budgetDelay, budgetOK := g.take(budget, bounded)
+		if !budgetOK {
+			return &backlogReason{err: ErrGovernorBacklog, paced: g.pacedNow()}
+		}
+		// Both tokens are claimed, so the wait is the later of the two rather
+		// than their sum.
+		if budgetDelay > delay {
+			delay = budgetDelay
+		}
 	}
 	if delay > 0 {
 		return g.sleep(delay, ctx.Done())
 	}
 	return nil
+}
+
+// takeCeiling claims one token from the band that protects this box, which every
+// call passes whichever key it carries.
+func (g *budgetGovernor) takeCeiling(budget time.Duration, bounded bool) (time.Duration, bool) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+
+	now := g.now()
+	if g.ceilLast.IsZero() {
+		g.ceilLast = now
+		g.ceilTokens = g.burst
+	}
+	if elapsed := now.Sub(g.ceilLast); elapsed > 0 {
+		g.ceilTokens += elapsed.Seconds() * g.maxRPS
+		g.ceilLast = now
+	}
+	if g.ceilTokens > g.burst {
+		g.ceilTokens = g.burst
+	}
+	remaining := g.ceilTokens - 1
+	delay := time.Duration(0)
+	if remaining < 0 {
+		delay = time.Duration(-remaining / g.maxRPS * float64(time.Second))
+	}
+	if bounded && delay > budget {
+		return 0, false
+	}
+	g.ceilTokens = remaining
+	return delay, true
 }
 
 // take claims one token and reports how long the caller must hold off for it.

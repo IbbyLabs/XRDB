@@ -142,3 +142,57 @@ func TestANonRateRefusalNamesNoConstraint(t *testing.T) {
 		t.Errorf("the failure breaker named %q as a pacing constraint", got)
 	}
 }
+
+// The daily budget models the quota on the server's key. A render carrying a
+// user's own key spends that user's allowance and none of ours, so a spent
+// shared quota is not a reason to refuse it. The box's own rate band still is.
+func TestASpentQuotaDoesNotRefuseAnOwnerKeyedCall(t *testing.T) {
+	drain := func(g *budgetGovernor) {
+		for range int(g.burst) + 1 {
+			_, _ = g.take(0, false)
+		}
+	}
+	deadline := func(clock *fakeClock) (context.Context, context.CancelFunc) {
+		return context.WithDeadline(context.Background(), clock.t.Add(2*time.Second))
+	}
+
+	// Control: the same drained quota refuses a call on the server's key.
+	g, clock, _ := newTestGovernor(t)
+	g.rate = 0.001
+	drain(g)
+	ctx, cancel := deadline(clock)
+	defer cancel()
+	if err := g.wait(ctx); err == nil {
+		t.Fatal("control: a spent quota did not refuse a call on the shared key")
+	}
+
+	g2, clock2, _ := newTestGovernor(t)
+	g2.rate = 0.001
+	drain(g2)
+	owner := WithKeys(context.Background(), map[string]string{KeyMDBList: "a-visitor-key"})
+	ctx2, cancel2 := context.WithDeadline(owner, clock2.t.Add(2*time.Second))
+	defer cancel2()
+	if err := g2.wait(ctx2); err != nil {
+		t.Errorf("a spent shared quota refused a call spending someone else's allowance: %v", err)
+	}
+}
+
+// The ceiling protects this box rather than a quota, so it applies whichever key
+// a call carries.
+func TestTheCeilingStillPacesAnOwnerKeyedCall(t *testing.T) {
+	g, clock, _ := newTestGovernor(t)
+	g.maxRPS = 0.001
+	for range int(g.burst) + 1 {
+		_, _ = g.takeCeiling(0, false)
+	}
+	owner := WithKeys(context.Background(), map[string]string{KeyMDBList: "a-visitor-key"})
+	ctx, cancel := context.WithDeadline(owner, clock.t.Add(2*time.Second))
+	defer cancel()
+	err := g.wait(ctx)
+	if err == nil {
+		t.Fatal("a drained ceiling did not pace an owner-keyed call")
+	}
+	if got := HoldOutReason(err); got != string(pacedByCeiling) {
+		t.Errorf("refusal names %q, want %q", got, pacedByCeiling)
+	}
+}
