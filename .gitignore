@@ -44,3 +44,7 @@ Thumbs.db
 
 # Impeccable critique snapshots (local design tooling)
 .impeccable/
+
+# Local MCP server config: points at a developer's own state directory and
+# credentials, so it is per-machine rather than part of the project.
+.mcp.json
