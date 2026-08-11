@@ -2,6 +2,25 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.79.0](https://github.com/IbbyLabs/XRDB/compare/v3.78.0...v3.79.0) (2026-08-11)
+
+
+### Added
+
+* **badges:** add the badge drop shadow switch (FR-168) ([6273d7c](https://github.com/IbbyLabs/XRDB/commit/6273d7c16bf0779c876d2552c496f717aedc045a))
+* **badges:** let the drop shadow be turned off (FR-168) ([a9d575b](https://github.com/IbbyLabs/XRDB/commit/a9d575be40f0fa214f98c0283d229e95c8772c23))
+* **configurator:** add the badge drop shadow switch (FR-168) ([4ec15e1](https://github.com/IbbyLabs/XRDB/commit/4ec15e130ca42f97687717cc440b4fd53d4b013c))
+
+
+### Fixed
+
+* **anime:** reduce a prefixed id to the bare one the API takes (BUG-244) ([a3d8439](https://github.com/IbbyLabs/XRDB/commit/a3d843935f8ca3cd45fb040874a64f17e886cc19))
+
+
+### Documentation
+
+* **anime:** say what a skipped lookup actually costs (BUG-244) ([e3e3606](https://github.com/IbbyLabs/XRDB/commit/e3e36069f2c51bbdddbc0618488471e1e879dfcb))
+
 ## [3.78.0](https://github.com/IbbyLabs/XRDB/compare/v3.77.0...v3.78.0) (2026-08-11)
 
 
