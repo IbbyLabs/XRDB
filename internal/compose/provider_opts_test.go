@@ -62,7 +62,10 @@ func TestProviderOptsComeFromTheConfig(t *testing.T) {
 	cfg.NetworkTileColor = "#123456"
 
 	got := providerOptsFromConfig(cfg)
-	want := providerBadgeOpts{pos: "tr", scalePercent: 150, offsetX: 12, offsetY: -8, tileColor: "#123456"}
+	// noShadow is true because this is a bare Config rather than Default(), where
+	// BadgeShadow is on. Same shape as RatingUnavailableMark: the key reads
+	// positively and its zero value is the off state.
+	want := providerBadgeOpts{pos: "tr", scalePercent: 150, offsetX: 12, offsetY: -8, tileColor: "#123456", noShadow: true}
 	if got != want {
 		t.Errorf("providerOptsFromConfig = %+v, want %+v", got, want)
 	}

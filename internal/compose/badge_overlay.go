@@ -28,6 +28,9 @@ type tileChrome struct {
 	// borderGlowStrength is 0-100; 0 = the built-in default reach and intensity.
 	borderGlowStrength int
 	shadow             color.NRGBA // zero alpha = no shadow
+	// noShadow suppresses the drop shadow whatever shadow holds. Named for the
+	// off state so a chrome literal that omits it keeps the shadow.
+	noShadow bool
 }
 
 // shadowAlphaPerRow is the largest alpha a tile shadow may drop in one row.
@@ -85,7 +88,9 @@ func drawTileShadow(base *image.NRGBA, r image.Rectangle, radius int, col color.
 // optional border (1px by default, thicker via borderWidth). Callers draw
 // content inside r afterwards.
 func drawSoftTile(base *image.NRGBA, r image.Rectangle, radius int, ch tileChrome) {
-	drawTileShadow(base, r, radius, ch.shadow)
+	if !ch.noShadow {
+		drawTileShadow(base, r, radius, ch.shadow)
+	}
 	// A translucent fill has to composite over the artwork. Writing the pixel
 	// outright discarded what was underneath, so lowering the opacity darkened
 	// the badge towards black instead of letting the poster through.
@@ -380,6 +385,7 @@ type qualityBadgeOpts struct {
 	max          *int   // cap on badge count; nil = no cap
 	style        string // "" | glass | plain | tile
 	tileColor    string // "#RRGGBB" for the tile style
+	noShadow     bool
 }
 
 func qualityOptsFromConfig(cfg imageconfig.Config) qualityBadgeOpts {
@@ -391,6 +397,7 @@ func qualityOptsFromConfig(cfg imageconfig.Config) qualityBadgeOpts {
 		max:          cfg.QualityBadgesMax,
 		style:        cfg.QualityBadgesStyle,
 		tileColor:    cfg.QualityBadgesTileAccentColor,
+		noShadow:     !cfg.BadgeShadow,
 	}
 }
 
@@ -430,9 +437,10 @@ func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64, occ *o
 	descent := fm.Descent.Ceil()
 
 	chrome := tileChrome{
-		fill:   color.NRGBA{R: 16, G: 18, B: 24, A: 180},
-		border: color.NRGBA{R: 255, G: 255, B: 255, A: 38},
-		shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 90},
+		noShadow: opts.noShadow,
+		fill:     color.NRGBA{R: 16, G: 18, B: 24, A: 180},
+		border:   color.NRGBA{R: 255, G: 255, B: 255, A: 38},
+		shadow:   color.NRGBA{R: 0, G: 0, B: 0, A: 90},
 	}
 	accent, accentErr := parseHexColor(opts.tileColor)
 	hasAccent := opts.tileColor != "" && accentErr == nil
@@ -586,6 +594,7 @@ type ageRatingOpts struct {
 	borderColor   string  // "#RRGGBB"; "" = the style's own
 	borderOpacity int     // 0-100; 0 = the style's own
 	labelColor    string  // "#RRGGBB"; "" = the style's own
+	noShadow      bool
 }
 
 // applyAgeChrome lays the styling controls over whatever the chosen style built.
@@ -626,7 +635,7 @@ func ageOptsFromConfig(cfg imageconfig.Config) ageRatingOpts {
 		outlineGlow: cfg.NoBackgroundBadgeOutlineGlow,
 		bgOpacity:   cfg.AgeRatingBackgroundOpacity, borderWidth: cfg.AgeRatingBorderWidth,
 		borderColor: cfg.AgeRatingBorderColor, borderOpacity: cfg.AgeRatingBorderOpacity,
-		labelColor: cfg.AgeRatingLabelColor}
+		labelColor: cfg.AgeRatingLabelColor, noShadow: !cfg.BadgeShadow}
 }
 
 func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale float64, occ *occupancy, opts ageRatingOpts) {
@@ -671,9 +680,10 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 		bwM := maxInt(padX*2+textWidth(face, rating), padX*2+textWidth(ef, "AGE"))
 		r := occ.placeNudged(resolvedPos, bwM, bhM, edgeX, edgeY, s(7), opts.offsetX, opts.offsetY)
 		mediaChrome, mediaText := applyAgeChrome(tileChrome{
-			fill:   color.NRGBA{R: 17, G: 24, B: 39, A: 214},
-			border: color.NRGBA{R: 255, G: 247, B: 237, A: 240},
-			shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 90},
+			noShadow: opts.noShadow,
+			fill:     color.NRGBA{R: 17, G: 24, B: 39, A: 214},
+			border:   color.NRGBA{R: 255, G: 247, B: 237, A: 240},
+			shadow:   color.NRGBA{R: 0, G: 0, B: 0, A: 90},
 		}, color.NRGBA{R: 255, G: 250, B: 245, A: 255}, opts, scale)
 		drawSoftTile(base, r, s(6), mediaChrome)
 		// A thin sheen along the very top edge of the plate.
@@ -710,9 +720,10 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 		return
 	}
 	chrome := tileChrome{
-		fill:   color.NRGBA{R: 22, G: 24, B: 30, A: 225},
-		border: color.NRGBA{R: 235, G: 235, B: 240, A: 150},
-		shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 80},
+		noShadow: opts.noShadow,
+		fill:     color.NRGBA{R: 22, G: 24, B: 30, A: 225},
+		border:   color.NRGBA{R: 235, G: 235, B: 240, A: 150},
+		shadow:   color.NRGBA{R: 0, G: 0, B: 0, A: 80},
 	}
 	textCol := color.NRGBA{R: 255, G: 255, B: 255, A: 255}
 	if opts.style == "silver" {
@@ -768,13 +779,14 @@ type releaseStatusOpts struct {
 	outlineColor string // "#RRGGBB" outline for the plain style; "" = drop shadow
 	outlineWidth int    // px outline width for the plain style; 0 = 1
 	outlineGlow  bool   // fade the outline outward instead of a hard edge
+	noShadow     bool
 }
 
 func releaseStatusOptsFromConfig(cfg imageconfig.Config) releaseStatusOpts {
 	return releaseStatusOpts{scalePercent: cfg.ReleaseStatusScale, offsetX: cfg.ReleaseStatusOffsetX, offsetY: cfg.ReleaseStatusOffsetY,
 		style: cfg.ReleaseStatusBadgeStyle, tileColor: cfg.ReleaseStatusTileColor,
 		outlineColor: cfg.NoBackgroundBadgeOutlineColor, outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
-		outlineGlow: cfg.NoBackgroundBadgeOutlineGlow}
+		outlineGlow: cfg.NoBackgroundBadgeOutlineGlow, noShadow: !cfg.BadgeShadow}
 }
 
 // drawReleaseStatusBadge marks whether a title is in cinemas or out on digital.
@@ -827,9 +839,10 @@ func drawReleaseStatusBadge(base *image.NRGBA, status string, pos string, scale 
 	border := accent
 	border.A = 220
 	chrome := tileChrome{
-		fill:   color.NRGBA{R: 10, G: 12, B: 18, A: 225},
-		border: border,
-		shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 80},
+		noShadow: opts.noShadow,
+		fill:     color.NRGBA{R: 10, G: 12, B: 18, A: 225},
+		border:   border,
+		shadow:   color.NRGBA{R: 0, G: 0, B: 0, A: 80},
 	}
 	textCol := accent
 	switch opts.style {
@@ -959,6 +972,7 @@ type providerBadgeOpts struct {
 	offsetX      int
 	offsetY      int
 	tileColor    string // "#RRGGBB" behind the chips
+	noShadow     bool
 }
 
 func providerOptsFromConfig(cfg imageconfig.Config) providerBadgeOpts {
@@ -968,6 +982,7 @@ func providerOptsFromConfig(cfg imageconfig.Config) providerBadgeOpts {
 		offsetX:      cfg.ProviderBadgeOffsetX,
 		offsetY:      cfg.ProviderBadgeOffsetY,
 		tileColor:    cfg.NetworkTileColor,
+		noShadow:     !cfg.BadgeShadow,
 	}
 }
 
@@ -1089,7 +1104,9 @@ func drawProviderBadges(base *image.NRGBA, providers []provider.WatchProvider, s
 	shadow := color.NRGBA{R: 0, G: 0, B: 0, A: 80}
 	for _, c := range chips {
 		r := image.Rect(x, y, x+c.w, y+tileH)
-		drawTileShadow(base, r, radius, shadow)
+		if !opts.noShadow {
+			drawTileShadow(base, r, radius, shadow)
+		}
 
 		switch {
 		case c.baked:
@@ -1231,6 +1248,7 @@ type genreBadgeOpts struct {
 	borderColor      string // "#RRGGBB"; "" = the style's own border
 	borderOpacity    int    // 0-100; 0 = the style's own alpha
 	borderSourceTint bool   // the border takes the genre family's colour
+	noShadow         bool
 }
 
 // drawLabelOutlined traces a label at the given baseline. A hard outline stamps
@@ -1308,6 +1326,7 @@ func genreOptsFromConfig(cfg imageconfig.Config, isAnime bool) genreBadgeOpts {
 		outlineColor:     cfg.NoBackgroundBadgeOutlineColor,
 		outlineWidth:     cfg.NoBackgroundBadgeOutlineWidth,
 		outlineGlow:      cfg.NoBackgroundBadgeOutlineGlow,
+		noShadow:         !cfg.BadgeShadow,
 	}
 }
 
@@ -1566,7 +1585,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			f = resolveGenreFamilyGrouped(genres, opts.isAnime, opts.grouping)
 		}
 		drawSoftTile(base, image.Rect(x0, y0, x0+stripeW, y1), stripeW/2,
-			tileChrome{fill: accentColorFrom(f)})
+			tileChrome{fill: accentColorFrom(f), noShadow: opts.noShadow})
 	}
 
 	// borderTint recolours a style's own border with the configured accent, so
@@ -1680,6 +1699,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			tileBorderW = maxInt(1, int(opts.borderWidth*scale+0.5))
 		}
 		drawSoftTile(base, r, radius, tileChrome{
+			noShadow:    opts.noShadow,
 			fill:        fill,
 			border:      tileBorder,
 			borderWidth: tileBorderW,
@@ -1731,8 +1751,9 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			fill.A = uint8(opts.bgOpacity * 255 / 100)
 		}
 		drawSoftTile(base, r, pillR, tileChrome{
-			fill:   fill,
-			shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 70},
+			noShadow: opts.noShadow,
+			fill:     fill,
+			shadow:   color.NRGBA{R: 0, G: 0, B: 0, A: 70},
 		})
 		if opts.borderWidth >= 0 {
 			bw := maxInt(1, s(1))
@@ -1766,7 +1787,9 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		if opts.bgOpacity != 0 {
 			tintA = opts.bgOpacity * 255 / 100
 		}
-		drawTileShadow(base, r, radius, color.NRGBA{A: 46})
+		if !opts.noShadow {
+			drawTileShadow(base, r, radius, color.NRGBA{A: 46})
+		}
 		blendRoundedRect(base, r, radius, color.NRGBA{R: 14, G: 16, B: 22, A: uint8(tintA)})
 		if opts.borderWidth >= 0 {
 			bw := maxInt(1, s(1))
@@ -1807,6 +1830,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			sqBorder = borderTint(sqBorder)
 		}
 		drawSoftTile(base, r, maxInt(1, s(2)), tileChrome{
+			noShadow:    opts.noShadow,
 			fill:        fill,
 			border:      sqBorder,
 			borderWidth: sqBorderW,
@@ -1818,7 +1842,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			capX := r.Min.X + (bw-capW)/2
 			capY := r.Min.Y + maxInt(1, s(3))
 			drawSoftTile(base, image.Rect(capX, capY, capX+capW, capY+capH), capH/2,
-				tileChrome{fill: accentColorFrom(fam)})
+				tileChrome{fill: accentColorFrom(fam), noShadow: opts.noShadow})
 		}
 		drawLeftStripe()
 		if accent := drawIcon(); mode != "text" {
@@ -1851,6 +1875,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		border = borderTint(border)
 	}
 	drawSoftTile(base, r, radius, tileChrome{
+		noShadow:    opts.noShadow,
 		fill:        fill,
 		border:      border,
 		borderWidth: borderW,
@@ -2042,6 +2067,7 @@ type scorePillStyle struct {
 	// borderWidth strokes at this px width at 1x. Negative switches the outline
 	// off; 0 keeps whatever the branch would draw.
 	borderWidth int
+	noShadow    bool
 }
 
 // drawPillOutline strokes the capsule edge. A negative width is the outline
@@ -2183,6 +2209,7 @@ func aggregatePillStyle(cfg imageconfig.Config, source string, genres []string, 
 		accentWidth:    cfg.AggregateAccentWidth,
 		bodyTint:       cfg.AggregatePillBodyTint,
 		radius:         scorePillRadius(cfg.BadgeStyle),
+		noShadow:       !cfg.BadgeShadow,
 	}
 
 	accentHex := aggregateAccentHex(cfg, source, genres, isAnime, score)
@@ -2308,7 +2335,9 @@ func drawScorePill(base *image.NRGBA, cx, topY int, label, score string, icon im
 	if blendBody {
 		shadowCol.A = uint8(maxInt(1, int(shadowCol.A)*style.bodyOpacity/100))
 	}
-	drawTileShadow(base, rect, radius, shadowCol)
+	if !style.noShadow {
+		drawTileShadow(base, rect, radius, shadowCol)
+	}
 	if blendBody || body.A < 255 {
 		blendRoundedRect(base, rect, radius, body)
 	} else {
@@ -2766,6 +2795,7 @@ type trendingBadgeOpts struct {
 	outlineColor string // "#RRGGBB" outline for the plain surface; "" = none
 	outlineWidth int    // px outline width for the plain surface; 0 = none
 	outlineGlow  bool   // fade the outline outward instead of a hard edge
+	noShadow     bool
 }
 
 // trendingOptsFromConfig extracts the trending-badge styling from a resolved
@@ -2779,6 +2809,7 @@ func trendingOptsFromConfig(cfg imageconfig.Config) trendingBadgeOpts {
 		outlineColor: cfg.NoBackgroundBadgeOutlineColor,
 		outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
 		outlineGlow:  cfg.NoBackgroundBadgeOutlineGlow,
+		noShadow:     !cfg.BadgeShadow,
 	}
 }
 
@@ -2861,7 +2892,9 @@ func drawTrendingBadgeSurfaced(base *image.NRGBA, scale float64, occ *occupancy,
 		radius = s(5)
 	}
 	if surface != "plain" {
-		drawTileShadow(base, r, radius, color.NRGBA{R: 0, G: 0, B: 0, A: 105})
+		if !opts.noShadow {
+			drawTileShadow(base, r, radius, color.NRGBA{R: 0, G: 0, B: 0, A: 105})
+		}
 		blendRoundedRect(base, r, radius, color.NRGBA{R: 18, G: 20, B: 26, A: 233})
 		border := color.NRGBA{R: 255, G: 150, B: 92, A: 66} // warm hairline
 		if c, err := parseHexColor(opts.accentColor); opts.accentColor != "" && err == nil {
@@ -3262,13 +3295,14 @@ type topRatedOpts struct {
 	outlineColor string // "#RRGGBB" outline for the plain style; "" = drop shadow
 	outlineWidth int    // px outline width for the plain style; 0 = 1
 	outlineGlow  bool   // fade the outline outward instead of a hard edge
+	noShadow     bool
 }
 
 func topRatedOptsFromConfig(cfg imageconfig.Config) topRatedOpts {
 	return topRatedOpts{scalePercent: cfg.TopRatedScale, offsetX: cfg.TopRatedOffsetX, offsetY: cfg.TopRatedOffsetY,
 		style: cfg.TopRatedBadgeStyle, tileColor: cfg.TopRatedTileColor,
 		outlineColor: cfg.NoBackgroundBadgeOutlineColor, outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
-		outlineGlow: cfg.NoBackgroundBadgeOutlineGlow}
+		outlineGlow: cfg.NoBackgroundBadgeOutlineGlow, noShadow: !cfg.BadgeShadow}
 }
 
 // topRatedAccent is the gold this badge is drawn in. Rank is the one badge that
@@ -3328,9 +3362,10 @@ func drawTopRatedBadge(base *image.NRGBA, rank int, pos string, scale float64, o
 	border := topRatedAccent
 	border.A = 220
 	chrome := tileChrome{
-		fill:   color.NRGBA{R: 10, G: 12, B: 18, A: 225},
-		border: border,
-		shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 80},
+		noShadow: opts.noShadow,
+		fill:     color.NRGBA{R: 10, G: 12, B: 18, A: 225},
+		border:   border,
+		shadow:   color.NRGBA{R: 0, G: 0, B: 0, A: 80},
 	}
 	textCol := topRatedAccent
 	switch opts.style {
