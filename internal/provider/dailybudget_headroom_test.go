@@ -106,3 +106,29 @@ func TestTheReportedCutOffIsTheReserveBoundary(t *testing.T) {
 		t.Errorf("bulk_cut_off = %v, want 9000 (limit 15000 less reserve 6000)", got)
 	}
 }
+
+// Interactive callers never reach allowsBulk and spend the same allowance, so a
+// day of ordinary traffic must still report what it has used.
+func TestSpendingAloneReportsTheHeadroom(t *testing.T) {
+	clock := &fakeClock{t: time.Date(2026, 8, 11, 12, 0, 0, 0, time.UTC)}
+	b := &dailyBudget{
+		source: "simkl", limit: 15000, reserve: 6000,
+		reportEvery: 60 * time.Second, now: clock.now,
+	}
+	var buf bytes.Buffer
+	b.logger = slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelInfo}))
+
+	// Only spend() — nothing here consults the bulk gate.
+	for range 5 {
+		clock.advance(30 * time.Second)
+		b.spend()
+	}
+
+	lines := budgetLines(&buf)
+	if len(lines) == 0 {
+		t.Fatal("spending alone reported no headroom, so an interactive-only day says nothing")
+	}
+	if got := lines[len(lines)-1]["spent"]; got == nil {
+		t.Error("the line carries no spent count")
+	}
+}

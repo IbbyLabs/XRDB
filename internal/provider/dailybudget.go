@@ -88,6 +88,7 @@ func (b *dailyBudget) spend() {
 	defer b.mu.Unlock()
 	b.rollLocked(b.now())
 	b.spent++
+	b.reportLocked(b.fieldsLocked())
 }
 
 // allowsBulk reports whether a bulk caller may still spend. Interactive callers
@@ -101,16 +102,7 @@ func (b *dailyBudget) allowsBulk() bool {
 	b.rollLocked(b.now())
 
 	ok := b.spent < b.limit-b.reserve
-	cutOff := b.limit - b.reserve
-	fields := []any{
-		"source", b.source,
-		"spent", b.spent,
-		"limit", b.limit,
-		"reserve", b.reserve,
-		"bulk_cut_off", cutOff,
-		"remaining", b.limit - b.spent,
-		"remaining_pct", math.Round(float64(b.limit-b.spent)/float64(b.limit)*1000) / 10,
-	}
+	fields := b.fieldsLocked()
 	if !ok != b.inReserve {
 		b.inReserve = !ok
 		if !ok {
@@ -118,14 +110,33 @@ func (b *dailyBudget) allowsBulk() bool {
 				fields...)
 		}
 	}
-	// The transition is reported once. Between transitions the day can run most
-	// of the way down with nothing saying so, and a hold-out line names the gate
-	// rather than the headroom — so the figure is also reported on a clock.
+	b.reportLocked(fields)
+	return ok
+}
+
+// fieldsLocked builds the figures a reader needs to tell pacing from exhaustion.
+// bulk_cut_off is the number a hold-out is about, not the limit.
+func (b *dailyBudget) fieldsLocked() []any {
+	return []any{
+		"source", b.source,
+		"spent", b.spent,
+		"limit", b.limit,
+		"reserve", b.reserve,
+		"bulk_cut_off", b.limit - b.reserve,
+		"remaining", b.limit - b.spent,
+		"remaining_pct", math.Round(float64(b.limit-b.spent)/float64(b.limit)*1000) / 10,
+	}
+}
+
+// reportLocked writes the headroom no more than once per interval. Called from
+// every spend rather than only where bulk callers are gated: a day of purely
+// interactive traffic spends the same allowance and would otherwise report none
+// of it.
+func (b *dailyBudget) reportLocked(fields []any) {
 	if now := b.now(); now.Sub(b.reported) >= b.reportEvery {
 		b.reported = now
 		b.log().Info("Reporting what is left of a source's daily allowance", fields...)
 	}
-	return ok
 }
 
 // dailyBudgets holds the sources metered by a daily application allowance.
