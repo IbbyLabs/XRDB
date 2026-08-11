@@ -3,6 +3,7 @@ package provider
 import (
 	"encoding/json"
 	"log/slog"
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -23,6 +24,10 @@ const (
 	// bulk cut-off is limit minus reserve.
 	simklDefaultDailyLimit  = 15000
 	simklDefaultBulkReserve = 6000
+	// dailyBudgetDefaultReportSeconds is how often the remaining allowance is
+	// written to the log. Crossing into the reserve is reported as it happens;
+	// this covers the stretch either side of it.
+	dailyBudgetDefaultReportSeconds float64 = 300
 )
 
 type dailyBudget struct {
@@ -33,16 +38,28 @@ type dailyBudget struct {
 	// now is swapped in tests so no test waits on a real clock.
 	now func() time.Time
 
-	mu     sync.Mutex
-	logger *slog.Logger
-	day    time.Time
-	spent  int
+	// reportEvery is how often the headroom is written to the log; reported is
+	// when it last was.
+	reportEvery time.Duration
+
+	mu       sync.Mutex
+	logger   *slog.Logger
+	day      time.Time
+	reported time.Time
+	spent    int
 	// inReserve holds the gear the last log line described.
 	inReserve bool
 }
 
 func newDailyBudget(source string, limit, reserve int) *dailyBudget {
-	return &dailyBudget{source: source, limit: limit, reserve: reserve, now: time.Now}
+	every := envFloat("XRDB_DAILY_BUDGET_REPORT_SECONDS", dailyBudgetDefaultReportSeconds, 10, 3600)
+	return &dailyBudget{
+		source:      source,
+		limit:       limit,
+		reserve:     reserve,
+		reportEvery: time.Duration(every * float64(time.Second)),
+		now:         time.Now,
+	}
 }
 
 func (b *dailyBudget) log() *slog.Logger {
@@ -84,12 +101,29 @@ func (b *dailyBudget) allowsBulk() bool {
 	b.rollLocked(b.now())
 
 	ok := b.spent < b.limit-b.reserve
+	cutOff := b.limit - b.reserve
+	fields := []any{
+		"source", b.source,
+		"spent", b.spent,
+		"limit", b.limit,
+		"reserve", b.reserve,
+		"bulk_cut_off", cutOff,
+		"remaining", b.limit - b.spent,
+		"remaining_pct", math.Round(float64(b.limit-b.spent)/float64(b.limit)*1000) / 10,
+	}
 	if !ok != b.inReserve {
 		b.inReserve = !ok
 		if !ok {
 			b.log().Warn("A source's daily allowance has reached its reserve; bulk callers are held out until it refills",
-				"source", b.source, "spent", b.spent, "limit", b.limit, "reserve", b.reserve)
+				fields...)
 		}
+	}
+	// The transition is reported once. Between transitions the day can run most
+	// of the way down with nothing saying so, and a hold-out line names the gate
+	// rather than the headroom — so the figure is also reported on a clock.
+	if now := b.now(); now.Sub(b.reported) >= b.reportEvery {
+		b.reported = now
+		b.log().Info("Reporting what is left of a source's daily allowance", fields...)
 	}
 	return ok
 }
