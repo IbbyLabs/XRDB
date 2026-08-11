@@ -71,12 +71,26 @@ jobs:
           # and `chore(lint):` editing internal/compose/preference.go reached
           # production without ever being built for dev. 26 of 100 pushes were
           # skipped this way and some of them shipped code.
-          # public/ is listed because the Dockerfile copies web, cmd, internal and
-          # the go files and nothing else — product-context.json is fetched from
-          # the tag by the bot rather than shipped in the image. Adding a COPY
-          # for a path listed here would make this wrong, so the list is a claim
-          # about the Dockerfile as much as about the paths.
-          skip_path_re='^(docs/|\.github/|public/|\.release-please-manifest\.json|README|CHANGELOG|LICENSE|NOTICE|\.gitignore|.*\.md$|.*_test\.go$)'
+          # Whether one path can change the image, decided in the order that
+          # makes each answer true by construction rather than by a fact about
+          # today's repo.
+          #
+          # A test file never ships: the language excludes it, not this list.
+          # Anything inside a tree the Dockerfile copies does ship, whatever its
+          # extension — `internal/` already embeds JSON and PNG, so a markdown
+          # template embedded there tomorrow needs no change here. Everything
+          # else is checked against paths that reach nothing, and an unknown path
+          # ships, because a file nobody anticipated is not evidence of safety.
+          skip_path_re='^(docs/|\.github/|public/|\.release-please-manifest\.json|README|CHANGELOG|LICENSE|NOTICE|\.gitignore|.*\.md$)'
+
+          path_ships_code() {
+            case "$1" in
+              *_test.go) return 1 ;;
+              internal/*|cmd/*|web/*|go.mod|go.sum|Dockerfile) return 0 ;;
+            esac
+            printf '%s' "$1" | grep -Eq "${skip_path_re}" && return 1
+            return 0
+          }
 
           # True when any path in the push could change the image.
           push_ships_code() {
@@ -94,7 +108,7 @@ jobs:
             fi
             printf '%s\n' "${files}" | while IFS= read -r file; do
               [ -z "${file}" ] && continue
-              printf '%s' "${file}" | grep -Eq "${skip_path_re}" || exit 10
+              path_ships_code "${file}" && exit 10
             done
             [ $? -eq 10 ]
           }
