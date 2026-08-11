@@ -1863,7 +1863,11 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 					// a configured ceiling produce the same gate and want opposite
 					// responses.
 					if reason := provider.HoldOutReason(err); reason != "" {
-						attrs = append(attrs, "paced_by", reason)
+						// An owner-keyed call spends the user's own allowance, so
+						// a budget or reserve refusal is about a quota it never
+						// touches.
+						attrs = append(attrs, "paced_by", reason,
+							"owner_keyed", provider.HasOwnerKey(ctx, prov.Name()))
 					}
 					p.log().WarnContext(ctx, "A ratings source was held out and did not answer; a remembered rating may still fill its badge",
 						attrs...)
