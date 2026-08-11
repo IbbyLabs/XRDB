@@ -2,6 +2,28 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.78.0](https://github.com/IbbyLabs/XRDB/compare/v3.77.0...v3.78.0) (2026-08-11)
+
+
+### Added
+
+* **logs:** say where each render was answered from ([856e4f1](https://github.com/IbbyLabs/XRDB/commit/856e4f1c7b1e852f818a8d63747c5dc6004ef654))
+* **ratings:** report what is left of a source's daily allowance (FR-180) ([5df56c4](https://github.com/IbbyLabs/XRDB/commit/5df56c4c0c200540466f41985c3f26abb31f10de))
+* **ratings:** say on a hold-out which constraint set the rate (FR-180) ([5327217](https://github.com/IbbyLabs/XRDB/commit/53272173b7c748515c3118e518c1a084b48afe17))
+* **ratings:** say whether a paced refusal carried an owner key (BUG-246) ([c00741c](https://github.com/IbbyLabs/XRDB/commit/c00741c8fff135a0b0e02b16d91eaa767002de67))
+
+
+### Fixed
+
+* **anime:** pick the endpoint from the id, not its type (BUG-244) ([199f95d](https://github.com/IbbyLabs/XRDB/commit/199f95d5db0b99eddadf08051d89cf0dc7f16bdc))
+* **compose:** bound the whole artwork stage, not each fetch (BUG-242) ([00d3a6a](https://github.com/IbbyLabs/XRDB/commit/00d3a6ad4afa2fc6d3950d6143aa24bcb4ad845c))
+* **compose:** hold the artwork stage inside the queue window (BUG-242) ([d8aee68](https://github.com/IbbyLabs/XRDB/commit/d8aee68333809caaf639eefd9fb19f1ba7a2bdd1))
+* **ratings:** pace an owner-keyed call by the ceiling, not our quota (BUG-246) ([4f161f1](https://github.com/IbbyLabs/XRDB/commit/4f161f1287628545733c48d8ac13b35111d6670f))
+* **ratings:** refuse a budget already too small to use (BUG-245) ([1f5186e](https://github.com/IbbyLabs/XRDB/commit/1f5186e890ed4c253bb5c77ee4702ff22c35f526))
+* **ratings:** stop the pacer spending the call's own timeout (BUG-245) ([545550f](https://github.com/IbbyLabs/XRDB/commit/545550f34e91a643f4807a435f46ae7884078530))
+* **server:** retry a placeholder we caused ourselves (BUG-243) ([5f58fe5](https://github.com/IbbyLabs/XRDB/commit/5f58fe5d52f48b91f4aaf7a35062bc1f813447e9))
+* **server:** share a render between identical requests (BUG-241) ([923e07f](https://github.com/IbbyLabs/XRDB/commit/923e07f0f31140ffeb26ac846332d084f4a039dd))
+
 ## [3.77.0](https://github.com/IbbyLabs/XRDB/compare/v3.76.0...v3.77.0) (2026-08-09)
 
 
