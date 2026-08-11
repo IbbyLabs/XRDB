@@ -145,35 +145,39 @@ type Config struct {
 	// RatingUnavailableMark draws the X in place of a value for a source that was
 	// wanted and held out. On by default: without it a missing rating reads as the
 	// provider being broken rather than one source being briefly unavailable.
-	RatingUnavailableMark bool   `json:"ratingUnavailableMark"`
-	AgeRatingPos          string `json:"ageRatingPos,omitempty"`
-	AgeRatingOffsetX      int    `json:"ageRatingOffsetX,omitempty"` // px nudge from the corner
-	AgeRatingOffsetY      int    `json:"ageRatingOffsetY,omitempty"`
-	AgeRatingScale        int    `json:"ageRatingScale,omitempty"` // percent of default size; 0 = 100
-	ReleaseStatus         bool   `json:"releaseStatus,omitempty"`
-	ReleaseStatusPos      string `json:"releaseStatusPos,omitempty"`
-	ReleaseStatusOffsetX  int    `json:"releaseStatusOffsetX,omitempty"`
-	ReleaseStatusOffsetY  int    `json:"releaseStatusOffsetY,omitempty"`
-	ReleaseStatusScale    int    `json:"releaseStatusScale,omitempty"`
-	TopRated              bool   `json:"topRated,omitempty"`
-	TopRatedPos           string `json:"topRatedPos,omitempty"`
-	TopRatedOffsetX       int    `json:"topRatedOffsetX,omitempty"`
-	TopRatedOffsetY       int    `json:"topRatedOffsetY,omitempty"`
-	TopRatedScale         int    `json:"topRatedScale,omitempty"`
-	Awards                bool   `json:"awards,omitempty"`
-	AwardsPos             string `json:"awardsPos,omitempty"`
-	AwardsOffsetX         int    `json:"awardsOffsetX,omitempty"`
-	AwardsOffsetY         int    `json:"awardsOffsetY,omitempty"`
-	AwardsScale           int    `json:"awardsScale,omitempty"`
-	Stinger               bool   `json:"stinger,omitempty"`
-	StingerPos            string `json:"stingerPos,omitempty"`
-	StingerOffsetX        int    `json:"stingerOffsetX,omitempty"`
-	StingerOffsetY        int    `json:"stingerOffsetY,omitempty"`
-	StingerScale          int    `json:"stingerScale,omitempty"`
-	Genre                 bool   `json:"genre"`
-	GenrePos              string `json:"genrePos,omitempty"`
-	Providers             bool   `json:"providers"`
-	ProvidersCountry      string `json:"providersCountry,omitempty"`
+	RatingUnavailableMark bool `json:"ratingUnavailableMark"`
+
+	// BadgeShadow draws the drop shadow under every badge. Off leaves the
+	// badges flat against the artwork.
+	BadgeShadow          bool   `json:"badgeShadow"`
+	AgeRatingPos         string `json:"ageRatingPos,omitempty"`
+	AgeRatingOffsetX     int    `json:"ageRatingOffsetX,omitempty"` // px nudge from the corner
+	AgeRatingOffsetY     int    `json:"ageRatingOffsetY,omitempty"`
+	AgeRatingScale       int    `json:"ageRatingScale,omitempty"` // percent of default size; 0 = 100
+	ReleaseStatus        bool   `json:"releaseStatus,omitempty"`
+	ReleaseStatusPos     string `json:"releaseStatusPos,omitempty"`
+	ReleaseStatusOffsetX int    `json:"releaseStatusOffsetX,omitempty"`
+	ReleaseStatusOffsetY int    `json:"releaseStatusOffsetY,omitempty"`
+	ReleaseStatusScale   int    `json:"releaseStatusScale,omitempty"`
+	TopRated             bool   `json:"topRated,omitempty"`
+	TopRatedPos          string `json:"topRatedPos,omitempty"`
+	TopRatedOffsetX      int    `json:"topRatedOffsetX,omitempty"`
+	TopRatedOffsetY      int    `json:"topRatedOffsetY,omitempty"`
+	TopRatedScale        int    `json:"topRatedScale,omitempty"`
+	Awards               bool   `json:"awards,omitempty"`
+	AwardsPos            string `json:"awardsPos,omitempty"`
+	AwardsOffsetX        int    `json:"awardsOffsetX,omitempty"`
+	AwardsOffsetY        int    `json:"awardsOffsetY,omitempty"`
+	AwardsScale          int    `json:"awardsScale,omitempty"`
+	Stinger              bool   `json:"stinger,omitempty"`
+	StingerPos           string `json:"stingerPos,omitempty"`
+	StingerOffsetX       int    `json:"stingerOffsetX,omitempty"`
+	StingerOffsetY       int    `json:"stingerOffsetY,omitempty"`
+	StingerScale         int    `json:"stingerScale,omitempty"`
+	Genre                bool   `json:"genre"`
+	GenrePos             string `json:"genrePos,omitempty"`
+	Providers            bool   `json:"providers"`
+	ProvidersCountry     string `json:"providersCountry,omitempty"`
 	// The streaming-provider chips take the same placement and sizing controls
 	// as every other badge family. ProvidersPos is tl|tr|bl|br|tc|bc; "" keeps
 	// the wide strip centred along the bottom edge.
@@ -677,6 +681,7 @@ func Default() Config {
 		BadgeTheme:            ThemeDark,
 		AgeRating:             true,
 		RatingUnavailableMark: true,
+		BadgeShadow:           true,
 		AgeRatingPos:          "inherit",
 		TrendingStyle:         TrendingArrowWord,
 	}
@@ -701,6 +706,7 @@ type raw struct {
 	Badges                        []string  `json:"badges"`
 	AgeRating                     *bool     `json:"ageRating"`
 	RatingUnavailableMark         *bool     `json:"ratingUnavailableMark"`
+	BadgeShadow                   *bool     `json:"badgeShadow"`
 	AgeRatingPos                  *string   `json:"ageRatingPos"`
 	AgeRatingOffsetX              *int      `json:"ageRatingOffsetX"`
 	AgeRatingOffsetY              *int      `json:"ageRatingOffsetY"`
@@ -1113,6 +1119,9 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.AgeRating != nil {
 		cfg.AgeRating = *r.AgeRating
+	}
+	if r.BadgeShadow != nil {
+		cfg.BadgeShadow = *r.BadgeShadow
 	}
 	if r.RatingUnavailableMark != nil {
 		cfg.RatingUnavailableMark = *r.RatingUnavailableMark
@@ -2222,6 +2231,7 @@ func CacheKey(cfg Config) string {
 		Badges                        []string       `json:"badges"`
 		AgeRating                     bool           `json:"ageRating"`
 		RatingUnavailableMark         bool           `json:"ratingUnavailableMark"`
+		BadgeShadow                   bool           `json:"badgeShadow"`
 		AgeRatingPos                  string         `json:"ageRatingPos"`
 		AgeRatingOffsetX              int            `json:"ageRatingOffsetX,omitempty"`
 		AgeRatingOffsetY              int            `json:"ageRatingOffsetY,omitempty"`
@@ -2328,6 +2338,7 @@ func CacheKey(cfg Config) string {
 		Badges:                        badges,
 		AgeRating:                     cfg.AgeRating,
 		RatingUnavailableMark:         cfg.RatingUnavailableMark,
+		BadgeShadow:                   cfg.BadgeShadow,
 		AgeRatingPos:                  cfg.AgeRatingPos,
 		AgeRatingOffsetX:              cfg.AgeRatingOffsetX,
 		AgeRatingOffsetY:              cfg.AgeRatingOffsetY,

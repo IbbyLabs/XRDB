@@ -334,6 +334,18 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           />
         )}
 
+        {/* Governs every badge rather than the ones on this tab, so it is gated on
+            fine tuning alone. Anything narrower — the badge-style block, say —
+            disappears when ratings are off while still governing genre badges. */}
+        {fine && (
+          <ToggleRow
+            label="Badge drop shadows"
+            hint="Applies to every badge, not just the ones on this tab. Off leaves them flat against the artwork."
+            checked={config.badgeShadow}
+            onChange={() => onUpdate('badgeShadow', !config.badgeShadow)}
+          />
+        )}
+
         {/* The title logo is drawn on a backdrop-as-poster and on clean artwork,
             so its controls appear on exactly the surfaces that carry one. */}
         {fine && (
