@@ -118,7 +118,7 @@ func TestARefusalNamesTheConstraintThatSetTheRate(t *testing.T) {
 	// Drain the bucket, then ask with too little budget left to wait.
 	for range int(mdblistDefaultBurst) + 1 {
 		ctx, cancel := context.WithDeadline(context.Background(), clock.t.Add(time.Hour))
-		g.wait(ctx)
+		_ = g.wait(ctx)
 		cancel()
 	}
 	ctx, cancel := context.WithDeadline(context.Background(), clock.t.Add(2*time.Second))
