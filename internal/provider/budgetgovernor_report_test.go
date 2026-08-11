@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log/slog"
 	"strings"
 	"testing"
@@ -101,5 +103,42 @@ func TestTheGovernorNamesTheConstraintHoldingTheRate(t *testing.T) {
 				t.Errorf("rate held by %q, want %q", got, tc.want)
 			}
 		})
+	}
+}
+
+// A hold-out at the budget gate reads the same whether the day is spent or the
+// configured ceiling is holding the rate down. Correlating it with the nearest
+// allowance report is a join across up to a whole report interval; the refusal
+// carries the answer itself.
+func TestARefusalNamesTheConstraintThatSetTheRate(t *testing.T) {
+	g, clock, _ := newTestGovernor(t)
+	// Spend the day into the reserve, so the rate is the floor.
+	g.observe(context.Background(), allowanceHeaders(100000, 1000, clock.t.Add(12*time.Hour)))
+
+	// Drain the bucket, then ask with too little budget left to wait.
+	for range int(mdblistDefaultBurst) + 1 {
+		ctx, cancel := context.WithDeadline(context.Background(), clock.t.Add(time.Hour))
+		g.wait(ctx)
+		cancel()
+	}
+	ctx, cancel := context.WithDeadline(context.Background(), clock.t.Add(2*time.Second))
+	defer cancel()
+	err := g.wait(ctx)
+	if err == nil {
+		t.Fatal("a drained bucket with two seconds of budget was not refused")
+	}
+	if !errors.Is(err, ErrGovernorBacklog) {
+		t.Fatalf("refusal is no longer the budget gate: %v", err)
+	}
+	if got := HoldOutReason(err); got != string(pacedByReserve) {
+		t.Errorf("refusal names %q as the constraint, want %q", got, pacedByReserve)
+	}
+}
+
+// A gate that is not rate-derived has no constraint to name, and must not
+// invent one.
+func TestANonRateRefusalNamesNoConstraint(t *testing.T) {
+	if got := HoldOutReason(fmt.Errorf("mdblist: %w", ErrFailureBreaker)); got != "" {
+		t.Errorf("the failure breaker named %q as a pacing constraint", got)
 	}
 }

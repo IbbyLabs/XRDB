@@ -1859,6 +1859,12 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 						attrs = append(attrs, "min_interval_ms",
 							provider.PacedInterval(prov.Name()).Milliseconds())
 					}
+					// Which constraint set the rate that refused. A spent day and
+					// a configured ceiling produce the same gate and want opposite
+					// responses.
+					if reason := provider.HoldOutReason(err); reason != "" {
+						attrs = append(attrs, "paced_by", reason)
+					}
 					p.log().WarnContext(ctx, "A ratings source was held out and did not answer; a remembered rating may still fill its badge",
 						attrs...)
 				}

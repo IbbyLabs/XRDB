@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"math"
 	"net/http"
@@ -65,9 +66,32 @@ type budgetGovernor struct {
 	inReserve  bool
 	loggedRate float64
 	seen       bool
+	// paced names the constraint that set the rate in force.
+	paced pacedBy
 	// reported is when the headroom was last written to the log.
 	reported    time.Time
 	reportEvery time.Duration
+}
+
+// backlogReason carries the constraint that set the rate a request was refused
+// by, so a hold-out line answers its own question rather than needing to be
+// joined to the nearest allowance report.
+type backlogReason struct {
+	err   error
+	paced pacedBy
+}
+
+func (b *backlogReason) Error() string { return b.err.Error() }
+func (b *backlogReason) Unwrap() error { return b.err }
+
+// HoldOutReason names the constraint that set the rate a hold-out was refused
+// by. Empty for gates whose refusal is not rate-derived.
+func HoldOutReason(err error) string {
+	var b *backlogReason
+	if errors.As(err, &b) {
+		return string(b.paced)
+	}
+	return ""
 }
 
 // pacedBy names the constraint that set the current rate. A hold-out reads the
@@ -99,7 +123,7 @@ func newBudgetGovernor(source string) *budgetGovernor {
 		now:         time.Now,
 		sleep:       sleepUntil,
 	}
-	g.rate, _, _ = g.rateFor(mdblistAssumedDailyLimit, mdblistAssumedDailyLimit, dailyWindow.Seconds())
+	g.rate, _, g.paced = g.rateFor(mdblistAssumedDailyLimit, mdblistAssumedDailyLimit, dailyWindow.Seconds())
 	return g
 }
 
@@ -131,7 +155,7 @@ func (g *budgetGovernor) wait(ctx context.Context) error {
 	}
 	delay, ok := g.take(budget, bounded)
 	if !ok {
-		return ErrGovernorBacklog
+		return &backlogReason{err: ErrGovernorBacklog, paced: g.pacedNow()}
 	}
 	if delay > 0 {
 		return g.sleep(delay, ctx.Done())
@@ -191,6 +215,7 @@ func (g *budgetGovernor) observe(ctx context.Context, h http.Header) {
 	g.mu.Lock()
 	secondsLeft := reset - float64(g.now().Unix())
 	rate, inReserve, paced := g.rateFor(limit, remaining, secondsLeft)
+	g.paced = paced
 	previous, wasInReserve, wasSeen := g.loggedRate, g.inReserve, g.seen
 	g.rate, g.inReserve, g.seen = rate, inReserve, true
 	gearChanged := !wasSeen || inReserve != wasInReserve ||
@@ -250,6 +275,13 @@ func (g *budgetGovernor) rateFor(limit, remaining, secondsLeft float64) (float64
 		return g.maxRPS, false, pacedByCeiling
 	}
 	return rate, false, pacedByBudget
+}
+
+// pacedNow reports the constraint that set the rate in force.
+func (g *budgetGovernor) pacedNow() pacedBy {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return g.paced
 }
 
 // currentRate reports the rate in force, for tests and for callers that only
