@@ -64,9 +64,9 @@ func TestTheLiveLookupPicksItsEndpointFromTheIDNotTheTypeToken(t *testing.T) {
 }
 
 // The live API serves IMDb and TMDB. An id naming a service it has no endpoint
-// for cannot be answered, so the call is skipped rather than sent to be
-// refused — a request that must fail costs a round trip and reads as the
-// source being unwell.
+// for gets a 404, which the fetch treats as not-found with a nil error — so the
+// call costs a round trip per render and tells us nothing. It is skipped
+// because it is useless, not because it was doing harm.
 func TestAnIDNamingAnUnservedServiceIsNotLookedUp(t *testing.T) {
 	for _, c := range []struct {
 		id      string
