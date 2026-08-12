@@ -217,3 +217,38 @@ func TestTheFiledDayKeepsItsMarks(t *testing.T) {
 		t.Errorf("filed marks = %+v, want the cut-off at hour 9", got[0].Marks)
 	}
 }
+
+// Today's exact case: the feature shipped after the day had already crossed, so
+// the crossing happened under a binary that could not see it. Recording the hour
+// the new process noticed would put a late-looking day in the fortnight that
+// nobody could tell from a real one.
+func TestABudgetStartingPastTheCutOffRecordsNoHour(t *testing.T) {
+	clock := &fakeClock{t: time.Date(2026, 8, 12, 16, 0, 0, 0, time.UTC)}
+	b := &dailyBudget{source: "simkl", limit: 15000, reserve: 6000, reportEvery: time.Hour, now: clock.now}
+	b.day = clock.now().UTC().Truncate(dailyWindow)
+	b.spent = 9089 // resumed from a file written before the field existed
+
+	b.spend()
+
+	if b.cutOffHour != nil {
+		t.Errorf("cut-off hour = %d, want absent — this process never saw the crossing", *b.cutOffHour)
+	}
+}
+
+// And the ordinary path still records, or the change would buy honesty by
+// recording nothing ever.
+func TestTheCrossingSpendStillRecordsTheHour(t *testing.T) {
+	clock := &fakeClock{t: time.Date(2026, 8, 12, 9, 0, 0, 0, time.UTC)}
+	b := &dailyBudget{source: "simkl", limit: 100, reserve: 40, reportEvery: time.Hour, now: clock.now}
+
+	for range 59 {
+		b.spend()
+	}
+	if b.cutOffHour != nil {
+		t.Fatalf("control: marked at %d before the threshold, so the rest of this test would be vacuous", *b.cutOffHour)
+	}
+	b.spend() // the 60th takes it to the cut-off
+	if b.cutOffHour == nil || *b.cutOffHour != 9 {
+		t.Errorf("cut-off hour = %v, want 9 recorded by the crossing spend", b.cutOffHour)
+	}
+}

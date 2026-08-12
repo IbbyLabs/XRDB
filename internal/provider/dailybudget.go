@@ -113,13 +113,23 @@ func (b *dailyBudget) spend() {
 // hurts, and a daily total is silent on it.
 func (b *dailyBudget) markLocked(now time.Time) {
 	hour := now.UTC().Hour()
-	if b.cutOffHour == nil && b.spent >= b.limit-b.reserve {
+	// Only the spend that takes the count past a threshold writes the mark. A
+	// process that starts already over never saw the crossing, and recording
+	// the hour it noticed would put a late-looking day in the history that
+	// nobody could tell from a real one. Absent is the honest answer.
+	if b.cutOffHour == nil && crossed(b.spent, b.limit-b.reserve) {
 		b.cutOffHour = &hour
 	}
-	if b.limitHour == nil && b.spent >= b.limit {
+	if b.limitHour == nil && crossed(b.spent, b.limit) {
 		h := hour
 		b.limitHour = &h
 	}
+}
+
+// crossed reports whether this spend is the one that passed the threshold,
+// rather than merely one taken while past it.
+func crossed(spent, threshold int) bool {
+	return spent >= threshold && spent-1 < threshold
 }
 
 // allowsBulk reports whether a bulk caller may still spend. Interactive callers
