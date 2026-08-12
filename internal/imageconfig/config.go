@@ -108,6 +108,10 @@ const (
 	LayoutNone      RatingsLayout = "none"
 )
 
+// RatingsNone marks a per-kind rating list as deliberately empty. No rating
+// source carries this name, so it cannot collide with one.
+const RatingsNone = "none"
+
 // TrendingStyle controls the composition of the trending badge: which accent
 // glyph it carries and whether the "TRENDING" wordmark is shown.
 type TrendingStyle string
@@ -1467,20 +1471,41 @@ func RatingsCandidatesForType(cfg Config, contentType string) []string {
 // series and the more specific answer is the one asked for. An unset override
 // falls through to Ratings, so configs that do not distinguish are unaffected.
 func RatingsFor(cfg Config, contentType string, isAnime bool) []string {
-	if isAnime && len(cfg.RatingsAnime) > 0 {
-		return cfg.RatingsAnime
+	if isAnime {
+		if list, set := ratingsOverride(cfg.RatingsAnime); set {
+			return list
+		}
 	}
 	switch strings.ToLower(strings.TrimSpace(contentType)) {
 	case "series", "tv":
-		if len(cfg.RatingsSeries) > 0 {
-			return cfg.RatingsSeries
+		if list, set := ratingsOverride(cfg.RatingsSeries); set {
+			return list
 		}
 	case "movie":
-		if len(cfg.RatingsMovie) > 0 {
-			return cfg.RatingsMovie
+		if list, set := ratingsOverride(cfg.RatingsMovie); set {
+			return list
 		}
 	}
 	return cfg.Ratings
+}
+
+// ratingsOverride reads a per-kind list, reporting whether one is configured at
+// all. "none" is an explicit empty: a blank list means inherit, so it cannot
+// also mean show nothing, and a kind that should show no ratings while another
+// kind shows some has no other spelling. It is a value rather than an absence
+// so it survives a round trip through the omitempty field.
+func ratingsOverride(list []string) ([]string, bool) {
+	if len(list) == 0 {
+		return nil, false
+	}
+	out := make([]string, 0, len(list))
+	for _, r := range list {
+		if strings.EqualFold(strings.TrimSpace(r), RatingsNone) {
+			continue
+		}
+		out = append(out, r)
+	}
+	return out, true
 }
 
 // HasPerTypeArtwork reports whether any per-kind artwork override is set.

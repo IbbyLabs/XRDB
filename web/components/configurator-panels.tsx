@@ -375,37 +375,54 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
             <legend className="label" style={{ marginBottom: 'var(--sp-2)' }}>Per-type sources</legend>
             <span className="hint" style={{ marginTop: 0, marginBottom: 'var(--sp-2)' }}>
               Pick different sources for a media type. Leave a type empty to use
-              the sources above.
+              the sources above, or choose No ratings to show none for that type
+              alone.
             </span>
             {([
               { key: 'ratingsMovie' as const, label: 'Movies' },
               { key: 'ratingsSeries' as const, label: 'Series' },
               { key: 'ratingsAnime' as const, label: 'Anime' },
-            ]).map(t => (
+            ]).map(t => {
+              // "none" is the stored spelling for a deliberately empty list; an
+              // empty one means inherit, so the two cannot be the same state.
+              const chosen = config[t.key].filter(x => x !== 'none');
+              const isNone = config[t.key].includes('none');
+              return (
               <div key={t.key} style={{ marginBottom: 'var(--sp-2)' }}>
                 <span className="hint" style={{ marginTop: 0, marginBottom: 'var(--sp-1)' }}>
                   {t.label}
-                  {config[t.key].length > 0 && (
-                    <span className="count-pill">{config[t.key].length}</span>
+                  {chosen.length > 0 && (
+                    <span className="count-pill">{chosen.length}</span>
                   )}
                 </span>
+                <button
+                  type="button"
+                  className={`opt-btn${isNone ? ' opt-btn--active' : ''}`}
+                  aria-pressed={isNone}
+                  onClick={() => onUpdate(t.key, isNone ? [] : ['none'])}
+                  style={{ marginBottom: 'var(--sp-1)' }}
+                >
+                  No ratings
+                </button>
                 <div className="src-list" role="group" aria-label={`${t.label} rating source override`}>
                   {RATING_OPTIONS.map(r => (
                     <SourceRow
                       key={r.id}
                       r={r}
-                      active={config[t.key].includes(r.id)}
+                      active={chosen.includes(r.id)}
                       failed={!!logoFailed[r.id]}
                       onToggle={() => {
-                        const cur = config[t.key];
-                        onUpdate(t.key, cur.includes(r.id) ? cur.filter(x => x !== r.id) : [...cur, r.id]);
+                        onUpdate(t.key, chosen.includes(r.id)
+                          ? chosen.filter(x => x !== r.id)
+                          : [...chosen, r.id]);
                       }}
                       onLogoError={() => setLogoFailed(prev => ({ ...prev, [r.id]: true }))}
                     />
                   ))}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </fieldset>
         )}
       </div>
