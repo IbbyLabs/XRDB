@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math/rand"
@@ -119,14 +120,35 @@ func (t *TMDB) FetchArtwork(ctx context.Context, mediaType, id string, opts Artw
 		return nil, fmt.Errorf("tmdb: no api key or read token configured")
 	}
 	// resolve IMDb ID → TMDB ID if needed
-	tmdbID, resolvedType, err := t.resolveID(ctx, mediaType, id)
+	tmdbID, resolvedType, guessed, err := t.resolveID(ctx, mediaType, id)
 	if err != nil {
 		return nil, fmt.Errorf("tmdb: resolve id %q: %w", id, err)
 	}
-	return t.fetchByTMDBID(ctx, resolvedType, tmdbID, opts)
+
+	meta, err := t.fetchByTMDBID(ctx, resolvedType, tmdbID, opts)
+	if err == nil || !guessed {
+		return meta, err
+	}
+
+	// A bare TMDB id carries no kind, so the guess above is right for films and
+	// wrong for every series. Asking the other endpoint costs one call and only
+	// on the renders that would otherwise have returned nothing at all. An id
+	// that exists as both keeps the film, because the guess answered first.
+	var status *tmdbStatusError
+	if !errors.As(err, &status) || status.Code != http.StatusNotFound {
+		return meta, err
+	}
+	other := otherContentType(resolvedType)
+	retried, retryErr := t.fetchByTMDBID(ctx, other, tmdbID, opts)
+	if retryErr != nil {
+		return meta, err
+	}
+	t.log().InfoContext(ctx, "A TMDB id with no kind resolved to the other one",
+		"id", id, "guessed", resolvedType, "resolved", other)
+	return retried, nil
 }
 
-func (t *TMDB) resolveID(ctx context.Context, mediaType, id string) (string, string, error) {
+func (t *TMDB) resolveID(ctx context.Context, mediaType, id string) (string, string, bool, error) {
 	id = strings.TrimSpace(id)
 
 	// The scheme and content-type token come off first. An id can carry an
@@ -160,12 +182,12 @@ func (t *TMDB) resolveID(ctx context.Context, mediaType, id string) (string, str
 	if strings.HasPrefix(rest, "tt") {
 		match, found, err := t.findByExternalID(ctx, rest, "imdb_id", preferredBucket(mediaType))
 		if err != nil {
-			return "", "", err
+			return "", "", false, err
 		}
 		if found {
-			return match.ID, match.ContentType, nil
+			return match.ID, match.ContentType, false, nil
 		}
-		return "", "", fmt.Errorf("no TMDB match for IMDB id %q", id)
+		return "", "", false, fmt.Errorf("no TMDB match for IMDB id %q", id)
 	}
 
 	// TVDB IDs (emitted by AIOMetadata's imdb-less art fallback, e.g.
@@ -173,24 +195,37 @@ func (t *TMDB) resolveID(ctx context.Context, mediaType, id string) (string, str
 	if r, ok := stripPrefix(rest, "tvdb:"); ok {
 		match, found, err := t.findByExternalID(ctx, r, "tvdb_id", preferredBucket(mediaType))
 		if err != nil {
-			return "", "", err
+			return "", "", false, err
 		}
 		if found {
-			return match.ID, match.ContentType, nil
+			return match.ID, match.ContentType, false, nil
 		}
-		return "", "", fmt.Errorf("no TMDB match for TVDB id %q", id)
+		return "", "", false, fmt.Errorf("no TMDB match for TVDB id %q", id)
 	}
 
 	// What remains is a native TMDB id, bare ("1396") or from the composite
 	// forms AIOMetadata emits when it has no IMDb id for a title.
 
 	// Normalize media type. Only movie/series are meaningful here; artwork
-	// surface names (poster/backdrop/logo) are not content-type hints.
+	// surface names (poster/backdrop/logo) are not content-type hints — so a
+	// bare "tmdb:1399" arrives with nothing saying which it is and becomes a
+	// movie. That guess is right for films and 404s for every series, which is
+	// why the caller is told it was a guess and can try the other one.
 	resolvedType := "movie"
+	guessed := true
 	if isSeriesType(mediaType) {
 		resolvedType = "tv"
+		guessed = false
 	}
-	return rest, resolvedType, nil
+	return rest, resolvedType, guessed, nil
+}
+
+// otherContentType is the kind a guess did not take.
+func otherContentType(kind string) string {
+	if kind == "tv" {
+		return "movie"
+	}
+	return "tv"
 }
 
 // externalMatch is what TMDB's /find endpoint says an external id names.
@@ -330,7 +365,7 @@ func (t *TMDB) FetchEpisode(ctx context.Context, seriesID string, season, episod
 	if apiKey == "" && readToken == "" {
 		return nil, fmt.Errorf("tmdb: no api key or read token configured")
 	}
-	tmdbID, _, err := t.resolveID(ctx, "series", seriesID)
+	tmdbID, _, _, err := t.resolveID(ctx, "series", seriesID)
 	if err != nil {
 		return nil, fmt.Errorf("tmdb: resolve series %q: %w", seriesID, err)
 	}

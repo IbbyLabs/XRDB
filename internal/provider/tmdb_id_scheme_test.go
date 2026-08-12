@@ -32,7 +32,7 @@ func TestBareTMDBIDResolvesAsAMovieAndTheSchemeCarriesTheType(t *testing.T) {
 		{"movie:tmdb:1396", "1396", "movie"},
 		{"tmdb:series:tmdb:1396", "1396", "tv"},
 	} {
-		gotID, gotType, err := tm.resolveID(context.Background(), "", tc.id)
+		gotID, gotType, _, err := tm.resolveID(context.Background(), "", tc.id)
 		if err != nil {
 			t.Fatalf("resolveID(%q): %v", tc.id, err)
 		}
@@ -60,7 +60,7 @@ func TestATokenPrefixedIMDbIDIsStillResolvedAsAnIMDbID(t *testing.T) {
 		tm.baseURL = srv.URL
 		asked = nil
 
-		gotID, gotType, err := tm.resolveID(context.Background(), "", id)
+		gotID, gotType, _, err := tm.resolveID(context.Background(), "", id)
 		if err != nil {
 			t.Fatalf("resolveID(%q): %v", id, err)
 		}
