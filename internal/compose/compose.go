@@ -1846,9 +1846,15 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 					if provider.GateIsAQueue(gate) {
 						queueHeld.Store(true)
 					}
+					// Whose allowance was spent, on every gate rather than only
+					// the paced ones. On an upstream refusal it is the field that
+					// separates a visitor's own exhausted key from ours, and
+					// reconstructing it afterwards means joining request ids back
+					// to their query strings.
 					attrs := []any{"id", logging.RequestID(ctx), "source", prov.Name(),
 						"media_id", req.MediaID, "gate", gate,
-						"outcome", outcomeHeldOut}
+						"outcome", outcomeHeldOut,
+						"owner_keyed", provider.HasOwnerKey(ctx, prov.Name())}
 					if gate == provider.GatePacerBacklog {
 						attrs = append(attrs, "min_interval_ms",
 							provider.PacedInterval(prov.Name()).Milliseconds())
@@ -1857,11 +1863,7 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 					// a configured ceiling produce the same gate and want opposite
 					// responses.
 					if reason := provider.HoldOutReason(err); reason != "" {
-						// An owner-keyed call spends the user's own allowance, so
-						// a budget or reserve refusal is about a quota it never
-						// touches.
-						attrs = append(attrs, "paced_by", reason,
-							"owner_keyed", provider.HasOwnerKey(ctx, prov.Name()))
+						attrs = append(attrs, "paced_by", reason)
 					}
 					// Says what happened rather than what might. Every gate
 					// reaches this line only with an empty remembered store, by
