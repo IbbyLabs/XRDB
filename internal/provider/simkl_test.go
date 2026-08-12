@@ -216,3 +216,29 @@ func TestSIMKLRatingIsAlreadyOutOfTen(t *testing.T) {
 		t.Errorf("SIMKL label = %q, want \"8.2\"", label)
 	}
 }
+
+// SIMKL sends a vote count beside the rating and the provider already requires
+// it to be non-zero. Carrying it through is what lets "Show vote counts" and a
+// confidence threshold see this source at all.
+func TestSIMKLCarriesItsVoteCount(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"title":   "Sword Art Online",
+			"ratings": map[string]any{"simkl": map[string]any{"rating": 8.9, "votes": 50000}},
+		})
+	}))
+	defer srv.Close()
+
+	k := &SIMKL{clientID: "k", baseURL: srv.URL, httpClient: srv.Client()}
+	meta, err := k.Fetch(context.Background(), "", "simkl:2012")
+	if err != nil {
+		t.Fatalf("Fetch: %v", err)
+	}
+	if len(meta.Ratings) != 1 {
+		t.Fatalf("ratings = %+v, want one", meta.Ratings)
+	}
+	if got := meta.Ratings[0].Votes; got != 50000 {
+		t.Errorf("Votes = %d, want 50000", got)
+	}
+}

@@ -132,6 +132,7 @@ func (t *Trakt) fetchSegment(ctx context.Context, segment, id string) (*MediaMet
 		Ratings: []Rating{{
 			Source: "trakt",
 			Value:  result.Rating,
+			Votes:  result.Votes,
 			Label:  fmt.Sprintf("%.1f", result.Rating),
 		}},
 	}, nil

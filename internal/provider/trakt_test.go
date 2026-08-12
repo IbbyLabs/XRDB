@@ -135,3 +135,25 @@ func TestTraktFallsBackToShowsOnMovie404(t *testing.T) {
 		t.Fatalf("expected movies then shows, got %v", paths)
 	}
 }
+
+// Trakt returns a vote count and the provider already reads it to reject an
+// unrated title. Dropping it before the Rating leaves "Show vote counts" blank
+// for this source and gives a confidence threshold nothing to measure.
+func TestTraktCarriesItsVoteCount(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{"rating": 8.1, "votes": 42000})
+	}))
+	defer srv.Close()
+
+	tr := &Trakt{clientID: "k", baseURL: srv.URL, httpClient: srv.Client()}
+	meta, err := tr.Fetch(context.Background(), "movie", "tt0111161")
+	if err != nil {
+		t.Fatalf("Fetch: %v", err)
+	}
+	if len(meta.Ratings) != 1 {
+		t.Fatalf("ratings = %+v, want one", meta.Ratings)
+	}
+	if got := meta.Ratings[0].Votes; got != 42000 {
+		t.Errorf("Votes = %d, want 42000", got)
+	}
+}

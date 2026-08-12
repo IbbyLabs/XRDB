@@ -263,6 +263,7 @@ func (s *SIMKL) fetchSegment(ctx context.Context, segment, simklID, origID strin
 		meta.Ratings = []Rating{{
 			Source: "simkl",
 			Value:  sr.Rating,
+			Votes:  sr.Votes,
 			Label:  fmt.Sprintf("%.1f", sr.Rating),
 		}}
 	}
