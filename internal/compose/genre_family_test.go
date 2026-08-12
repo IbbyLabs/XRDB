@@ -242,3 +242,39 @@ func TestNarrowedCompoundReachesEveryGenreSurface(t *testing.T) {
 		t.Errorf("the narrowed genre's short name is %q, want it left as Fantasy", got)
 	}
 }
+
+// A title whose only id is Kitsu's reaches the artwork stage as "kitsu:N", and
+// Kitsu is otherwise only tried when it is the chosen source — so without this
+// the rewrite hands that id to three providers that cannot read it and the
+// render 404s exactly as it did before (FR-182).
+func TestAKitsuIdPutsKitsuInTheArtworkOrder(t *testing.T) {
+	p := &Pipeline{}
+	order := p.artworkOrderFor("tmdb", "poster", "kitsu:50634")
+	if len(order) == 0 || order[0] != "kitsu" {
+		t.Fatalf("order = %v, want kitsu first for a kitsu id", order)
+	}
+
+	// The control: an ordinary id must not gain Kitsu, or every render tries a
+	// source that can only ever answer for anime.
+	plain := p.artworkOrderFor("tmdb", "poster", "tt0111161")
+	for _, name := range plain {
+		if name == "kitsu" {
+			t.Errorf("order = %v, want no kitsu for a mainstream id", plain)
+		}
+	}
+}
+
+// Choosing Kitsu already puts it first; the id must not add it twice.
+func TestKitsuIsNotAddedTwiceWhenItIsAlreadyChosen(t *testing.T) {
+	p := &Pipeline{}
+	order := p.artworkOrderFor("kitsu", "poster", "kitsu:50634")
+	seen := 0
+	for _, name := range order {
+		if name == "kitsu" {
+			seen++
+		}
+	}
+	if seen != 1 {
+		t.Errorf("order = %v, want kitsu exactly once", order)
+	}
+}

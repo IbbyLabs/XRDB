@@ -1377,7 +1377,7 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 	// provider's metadata for overlays, backfilling image URLs it lacked.
 	var baseMeta *provider.MediaMeta
 	var baseFrom string
-	order := p.artworkOrder(string(req.Config.ArtworkSource), req.MediaType)
+	order := p.artworkOrderFor(string(req.Config.ArtworkSource), req.MediaType, req.MediaID)
 	knownID, knownType := p.identify(ctx, req, order)
 	contentType := req.ContentType
 	if contentType == "" {
@@ -1520,6 +1520,12 @@ func firstReady(reg *provider.Registry, order []string) string {
 // then the remaining image-capable providers as fallbacks. Providers not
 // registered (e.g. Fanart without an API key) are skipped by the caller.
 func (p *Pipeline) artworkOrder(primary, surface string) []string {
+	return p.artworkOrderFor(primary, surface, "")
+}
+
+// artworkOrderFor is artworkOrder with the media id in hand. Kitsu answers only
+// for its own ids and is not in the fallback list, so a kitsu: id needs it added.
+func (p *Pipeline) artworkOrderFor(primary, surface, mediaID string) []string {
 	// OMDB only ever returns a poster, so on other surfaces it cannot be the
 	// primary; fall straight through to the general sources.
 	if primary == string(imageconfig.ArtworkOMDB) && surface != "poster" {
@@ -1533,6 +1539,9 @@ func (p *Pipeline) artworkOrder(primary, surface string) []string {
 		if name != primary {
 			order = append(order, name)
 		}
+	}
+	if strings.HasPrefix(mediaID, "kitsu:") && primary != string(imageconfig.ArtworkKitsu) {
+		order = append([]string{string(imageconfig.ArtworkKitsu)}, order...)
 	}
 	return order
 }
