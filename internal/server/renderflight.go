@@ -27,14 +27,13 @@ type renderFlight struct {
 type renderCall struct {
 	done chan struct{}
 
-	served          bool
-	bytes           []byte
-	contentType     string
-	placeholder     bool
-	degraded        bool
-	degradedByUs    bool
-	degradedSources []string
-	expiresAt       time.Time
+	served       bool
+	bytes        []byte
+	contentType  string
+	placeholder  bool
+	degraded     bool
+	degradedByUs bool
+	expiresAt    time.Time
 }
 
 func newRenderFlight() *renderFlight {

@@ -214,7 +214,6 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		contentType := ""
 		fromCache := false
 		var expiresAt time.Time
-		var degradedSources []string
 		var degraded, degradedByUs bool
 		if renderCache != nil {
 			if e, ok := renderCache.Get(cacheKey); ok {
@@ -261,7 +260,6 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 						placeholder = flightCall.placeholder
 						degraded = flightCall.degraded
 						degradedByUs = flightCall.degradedByUs
-						degradedSources = flightCall.degradedSources
 						expiresAt = flightCall.expiresAt
 						fromCache = true
 						w.Header().Set("X-Render-Source", "flight")
@@ -337,7 +335,6 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 					placeholder = renderResult.Placeholder
 					placeholderIsOurs = renderResult.PlaceholderIsOurs
 					contentType = renderResult.ContentType
-					degradedSources = renderResult.DegradedSources
 					degraded = renderResult.Degraded
 					degradedByUs = renderResult.DegradedByUs
 				}
@@ -384,7 +381,6 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				flightCall.placeholder = placeholder
 				flightCall.degraded = degraded
 				flightCall.degradedByUs = degradedByUs
-				flightCall.degradedSources = degradedSources
 				flightCall.expiresAt = expiresAt
 				flightCall.served = len(pngBytes) > 0
 			}
@@ -401,12 +397,6 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		w.Header().Set("Content-Type", contentType)
 		w.Header().Set("X-Cache-Key", cacheKey)
 		// Name the wanted rating sources this render skipped because they were
-		// degraded, so a check can tell a source that was down from one with no
-		// rating for the title. Only a fresh render carries this; a cache hit does
-		// not recompute it.
-		if len(degradedSources) > 0 {
-			w.Header().Set("X-Degraded-Sources", strings.Join(degradedSources, ","))
-		}
 		status := http.StatusOK
 		if !placeholder {
 			// The cache key is a digest of everything that determines these

@@ -78,11 +78,6 @@ type Result struct {
 	// than the daily reserve. A queue clears in seconds and the reserve stands
 	// for hours, so the two are worth caching for different lengths of time.
 	DegradedByQueue bool
-	// DegradedSources names the wanted rating sources skipped for this render
-	// because they were rate-limited, so a check against the render can tell a
-	// source that was down from one that genuinely has no rating for the title.
-	// Never drawn on the artwork.
-	DegradedSources []string
 }
 
 // Pipeline orchestrates metadata fetch + image composition.
@@ -987,7 +982,6 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	result.Degraded = degraded
 	result.DegradedByUs = degraded && !sourceFault
 	result.DegradedByQueue = result.DegradedByUs && queueHeld
-	result.DegradedSources = degradedSources
 	// A held-out source keeps its place in the strip so the gap is visible.
 	// Kept out of allRatings deliberately: that list feeds the average, the
 	// ring and the score bar, and a placeholder carries no score to average.

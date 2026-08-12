@@ -98,8 +98,8 @@ func degradedSourcesFor(t *testing.T, p *Pipeline, req Request) []string {
 	return sources
 }
 
-// The attribution the header carries: a rate-limited source is named, so a check
-// against the render can tell it was down rather than absent for the title.
+// A rate-limited source is named as degraded, which is what keeps its place in
+// the strip rather than closing the gap as if the title had no rating.
 func TestARateLimitedSourceIsNamedInDegradedSources(t *testing.T) {
 	src := &countingLimiter{name: "simkl"}
 	src.refusing.Store(true)
