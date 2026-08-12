@@ -402,6 +402,20 @@ export interface Template {
   config: Record<string, unknown>;
 }
 
+export interface GenreFamily {
+  id: string;
+  label: string;
+  accent: string;
+}
+
+// The families and their built-in accents come from the renderer's own table,
+// so a changed default reaches the configurator's swatches without an edit here.
+export async function fetchGenreFamilies(): Promise<GenreFamily[]> {
+  const res = await fetch(`${base()}/api/genre-families`);
+  if (!res.ok) throw new Error(`genre families fetch failed: ${res.status}`);
+  return res.json() as Promise<GenreFamily[]>;
+}
+
 export async function fetchTemplates(): Promise<Template[]> {
   const res = await fetch(`${base()}/api/templates`);
   if (!res.ok) throw new Error(`templates fetch failed: ${res.status}`);

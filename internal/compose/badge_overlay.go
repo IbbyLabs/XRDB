@@ -1227,21 +1227,22 @@ type genreBadgeOpts struct {
 	scalePercent int // 0 = 100 (no extra scaling)
 	offsetX      int // px nudge from the resolved corner
 	offsetY      int
-	bgOpacity    int     // 0 = default (200/255); else 1-100 mapped to alpha
-	mode         string  // "" | text | icon | both; icon modes label by genre family
-	isAnime      bool    // the title matched the anime ID mapping
-	grouping     string  // "" | split | animation | secondary
-	style        string  // "" | glass | square | pill | plain | clean | tile
-	tileColor    string  // "#RRGGBB" for the tile style
-	borderWidth  float64 // px border on the tile; 0 = default hairline
-	outlineColor string  // "#RRGGBB" outline for the plain style; "" = default shadow
-	outlineWidth int     // px outline width for the plain style; 0 = default
-	outlineGlow  bool    // fade the outline outward instead of a hard edge
-	accent       string  // "" | left | top | none; where the accent sits on the plate
-	labelMode    string  // "" | list | primary | family; primary prints the first genre alone
-	labelCase    string  // "" | upper | normal; "" keeps what each label mode did alone
-	maxGenres    int     // cap on how many genres the list names; 0 = fit decides
-	shortNames   bool    // rename the long genres to their short forms
+	bgOpacity    int               // 0 = default (200/255); else 1-100 mapped to alpha
+	mode         string            // "" | text | icon | both; icon modes label by genre family
+	isAnime      bool              // the title matched the anime ID mapping
+	familyColors map[string]string // family id -> "#RRGGBB" replacing the built-in accent
+	grouping     string            // "" | split | animation | secondary
+	style        string            // "" | glass | square | pill | plain | clean | tile
+	tileColor    string            // "#RRGGBB" for the tile style
+	borderWidth  float64           // px border on the tile; 0 = default hairline
+	outlineColor string            // "#RRGGBB" outline for the plain style; "" = default shadow
+	outlineWidth int               // px outline width for the plain style; 0 = default
+	outlineGlow  bool              // fade the outline outward instead of a hard edge
+	accent       string            // "" | left | top | none; where the accent sits on the plate
+	labelMode    string            // "" | list | primary | family; primary prints the first genre alone
+	labelCase    string            // "" | upper | normal; "" keeps what each label mode did alone
+	maxGenres    int               // cap on how many genres the list names; 0 = fit decides
+	shortNames   bool              // rename the long genres to their short forms
 	// One accent used to reach the label and the border together. These aim it
 	// per element and fall back to tileColor, so an existing config is unchanged.
 	labelColor       string // "#RRGGBB"; "" = the family accent
@@ -1303,6 +1304,7 @@ func toNRGBAColor(c color.Color) color.NRGBA {
 // genreOptsFromConfig extracts the genre-badge styling from a resolved Config.
 func genreOptsFromConfig(cfg imageconfig.Config, isAnime bool) genreBadgeOpts {
 	return genreBadgeOpts{
+		familyColors: cfg.GenreFamilyColors,
 		scalePercent: cfg.GenreBadgeScale,
 		offsetX:      cfg.GenreBadgeOffsetX,
 		offsetY:      cfg.GenreBadgeOffsetY,
@@ -1518,7 +1520,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	accentColorFrom := func(f *genreFamily) color.NRGBA {
 		c := color.NRGBA{R: 235, G: 235, B: 238, A: 235}
 		if f != nil {
-			if a, err := parseHexColor(f.accent); err == nil {
+			if a, err := parseHexColor(familyAccent(f, opts.familyColors)); err == nil {
 				a.A = 235
 				c = a
 			}
@@ -1623,7 +1625,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 		if fam == nil || iconSize <= 0 {
 			return textColor
 		}
-		accent, err := parseHexColor(fam.accent)
+		accent, err := parseHexColor(familyAccent(fam, opts.familyColors))
 		if err != nil {
 			return textColor
 		}
@@ -2137,7 +2139,7 @@ func aggregateAccentHex(cfg imageconfig.Config, role string, genres []string, is
 		return dynamicAccentHex(score, cfg.AggregateDynamicStops)
 	case "genre":
 		if fam := resolveGenreFamilyGrouped(genres, isAnime, cfg.GenreBadgeAnimeGrouping); fam != nil {
-			return fam.accent
+			return familyAccent(fam, cfg.GenreFamilyColors)
 		}
 		return ""
 	case "source":

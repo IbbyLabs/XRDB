@@ -280,3 +280,42 @@ func leadWithFamily(genres []string, isAnime bool, grouping string) []string {
 	}
 	return append(lead, rest...)
 }
+
+// familyAccent is the colour to draw a family in: the configured override when
+// one is set for that family, otherwise its built-in accent. An unset key keeps
+// the default, so clearing an override tracks later changes to it.
+func familyAccent(fam *genreFamily, overrides map[string]string) string {
+	if fam == nil {
+		return ""
+	}
+	if hex, ok := overrides[fam.id]; ok && hex != "" {
+		return hex
+	}
+	return fam.accent
+}
+
+// GenreFamilyOption describes one family for the configurator: the id a config
+// keys on, the label the badge draws, and the built-in accent a picker resets
+// to. Served rather than duplicated in the web bundle, so a changed default
+// cannot leave a stale swatch behind.
+type GenreFamilyOption struct {
+	ID     string `json:"id"`
+	Label  string `json:"label"`
+	Accent string `json:"accent"`
+}
+
+// GenreFamilies lists every family in declaration order.
+func GenreFamilies() []GenreFamilyOption {
+	all := []genreFamily{
+		familyAnime, familyAnimation, familyHorror, familyComedy, familyRomance,
+		familyAction, familySciFi, familyFantasy, familySciFantasy, familyCrime,
+		familyDrama, familyDocumentary, familyMusic, familyReality, familyFamily,
+		familyHistory, familyKids, familyNews, familySoap, familyTalk,
+		familyTVMovie, familyWarPolitics, familyOther,
+	}
+	out := make([]GenreFamilyOption, 0, len(all))
+	for _, f := range all {
+		out = append(out, GenreFamilyOption{ID: f.id, Label: f.label, Accent: f.accent})
+	}
+	return out
+}

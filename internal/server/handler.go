@@ -473,6 +473,17 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	registerAIOMRoutes(mux)
 	registerAdminRoutes(mux, ms, cfg, settingsStore, pipeline, renderCache, ttls)
 
+	// Genre families: GET /api/genre-families — the id, label and built-in
+	// accent of every family, so the configurator's colour pickers read the
+	// same table the renderer draws from.
+	mux.HandleFunc("/api/genre-families", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		writeJSON(w, http.StatusOK, compose.GenreFamilies())
+	})
+
 	// Templates: GET /api/templates — list all built-in templates.
 	// GET /api/templates/{id} — single template by ID.
 	mux.HandleFunc("/api/templates", func(w http.ResponseWriter, r *http.Request) {

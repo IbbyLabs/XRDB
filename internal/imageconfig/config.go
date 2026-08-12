@@ -631,15 +631,20 @@ type TrendingConfig struct {
 // surface. Zero values mean "use the built-in default", so an unset config
 // renders exactly as before these fields existed.
 type GenreBadgeConfig struct {
-	GenreBadgeAnimeGrouping     string  `json:"genreBadgeAnimeGrouping,omitempty"`     // split | animation | secondary; "" = split
-	GenreBadgeMode              string  `json:"genreBadgeMode,omitempty"`              // off | text | icon | both
-	GenreBadgeStyle             string  `json:"genreBadgeStyle,omitempty"`             // glass | square | plain | clean | tile | pill; "" = default
-	GenreBadgeScale             int     `json:"genreBadgeScale,omitempty"`             // percent 70-300; 0 = 100
-	GenreBadgeOffsetX           int     `json:"genreBadgeOffsetX,omitempty"`           // px nudge from the resolved corner
-	GenreBadgeOffsetY           int     `json:"genreBadgeOffsetY,omitempty"`           //
-	GenreBadgeBorderWidth       float64 `json:"genreBadgeBorderWidth,omitempty"`       // px; 0 = default hairline, <0 = off
-	GenreBadgeBackgroundOpacity int     `json:"genreBadgeBackgroundOpacity,omitempty"` // 0-100; 0 = default
-	GenreBadgeTileAccentColor   string  `json:"genreBadgeTileAccentColor,omitempty"`   // "#RRGGBB" for the tile style
+	// GenreFamilyColors maps a genre family id (e.g. "scifantasy") to a
+	// "#RRGGBB" accent that replaces the built-in one for that family. An
+	// absent key keeps the default, so clearing an entry tracks future changes
+	// to it.
+	GenreFamilyColors           map[string]string `json:"genreFamilyColors,omitempty"`
+	GenreBadgeAnimeGrouping     string            `json:"genreBadgeAnimeGrouping,omitempty"`     // split | animation | secondary; "" = split
+	GenreBadgeMode              string            `json:"genreBadgeMode,omitempty"`              // off | text | icon | both
+	GenreBadgeStyle             string            `json:"genreBadgeStyle,omitempty"`             // glass | square | plain | clean | tile | pill; "" = default
+	GenreBadgeScale             int               `json:"genreBadgeScale,omitempty"`             // percent 70-300; 0 = 100
+	GenreBadgeOffsetX           int               `json:"genreBadgeOffsetX,omitempty"`           // px nudge from the resolved corner
+	GenreBadgeOffsetY           int               `json:"genreBadgeOffsetY,omitempty"`           //
+	GenreBadgeBorderWidth       float64           `json:"genreBadgeBorderWidth,omitempty"`       // px; 0 = default hairline, <0 = off
+	GenreBadgeBackgroundOpacity int               `json:"genreBadgeBackgroundOpacity,omitempty"` // 0-100; 0 = default
+	GenreBadgeTileAccentColor   string            `json:"genreBadgeTileAccentColor,omitempty"`   // "#RRGGBB" for the tile style
 	// One accent used to reach the label and the border together, so a colour
 	// could be changed but not aimed. These four take an element each and fall
 	// back to the tile accent, which keeps every existing config rendering as
@@ -808,24 +813,25 @@ type rawRandom struct {
 // rawGenre is the loose parse shape for GenreBadgeConfig, embedded in raw so its
 // keys unmarshal from the same flat object.
 type rawGenre struct {
-	GenreBadgeAnimeGrouping     *string  `json:"genreBadgeAnimeGrouping"`
-	GenreBadgeMode              *string  `json:"genreBadgeMode"`
-	GenreBadgeStyle             *string  `json:"genreBadgeStyle"`
-	GenreBadgeScale             *int     `json:"genreBadgeScale"`
-	GenreBadgeOffsetX           *int     `json:"genreBadgeOffsetX"`
-	GenreBadgeOffsetY           *int     `json:"genreBadgeOffsetY"`
-	GenreBadgeBorderWidth       *float64 `json:"genreBadgeBorderWidth"`
-	GenreBadgeBackgroundOpacity *int     `json:"genreBadgeBackgroundOpacity"`
-	GenreBadgeTileAccentColor   *string  `json:"genreBadgeTileAccentColor"`
-	GenreBadgeLabelColor        *string  `json:"genreBadgeLabelColor"`
-	GenreBadgeBorderColor       *string  `json:"genreBadgeBorderColor"`
-	GenreBadgeBorderOpacity     *int     `json:"genreBadgeBorderOpacity"`
-	GenreBadgeBorderSourceTint  *bool    `json:"genreBadgeBorderSourceTint"`
-	GenreBadgeAccent            *string  `json:"genreBadgeAccent"`
-	GenreBadgeLabel             *string  `json:"genreBadgeLabel"`
-	GenreBadgeCase              *string  `json:"genreBadgeCase"`
-	GenreBadgeMaxGenres         *int     `json:"genreBadgeMaxGenres"`
-	GenreBadgeShortNames        *bool    `json:"genreBadgeShortNames"`
+	GenreFamilyColors           map[string]string `json:"genreFamilyColors"`
+	GenreBadgeAnimeGrouping     *string           `json:"genreBadgeAnimeGrouping"`
+	GenreBadgeMode              *string           `json:"genreBadgeMode"`
+	GenreBadgeStyle             *string           `json:"genreBadgeStyle"`
+	GenreBadgeScale             *int              `json:"genreBadgeScale"`
+	GenreBadgeOffsetX           *int              `json:"genreBadgeOffsetX"`
+	GenreBadgeOffsetY           *int              `json:"genreBadgeOffsetY"`
+	GenreBadgeBorderWidth       *float64          `json:"genreBadgeBorderWidth"`
+	GenreBadgeBackgroundOpacity *int              `json:"genreBadgeBackgroundOpacity"`
+	GenreBadgeTileAccentColor   *string           `json:"genreBadgeTileAccentColor"`
+	GenreBadgeLabelColor        *string           `json:"genreBadgeLabelColor"`
+	GenreBadgeBorderColor       *string           `json:"genreBadgeBorderColor"`
+	GenreBadgeBorderOpacity     *int              `json:"genreBadgeBorderOpacity"`
+	GenreBadgeBorderSourceTint  *bool             `json:"genreBadgeBorderSourceTint"`
+	GenreBadgeAccent            *string           `json:"genreBadgeAccent"`
+	GenreBadgeLabel             *string           `json:"genreBadgeLabel"`
+	GenreBadgeCase              *string           `json:"genreBadgeCase"`
+	GenreBadgeMaxGenres         *int              `json:"genreBadgeMaxGenres"`
+	GenreBadgeShortNames        *bool             `json:"genreBadgeShortNames"`
 }
 
 // rawQuality and rawTrending mirror their config groups for parsing.
@@ -2039,6 +2045,18 @@ func clampInt(v, lo, hi int) int {
 // parseGenre reads the genre-badge styling controls, validating enums and
 // clamping numeric ranges so a hostile or stale value can't distort a render.
 func parseGenre(cfg *Config, r *raw) {
+	if len(r.GenreFamilyColors) > 0 {
+		var m map[string]string
+		for k, v := range r.GenreFamilyColors {
+			if isHexColor(v) {
+				if m == nil {
+					m = make(map[string]string, len(r.GenreFamilyColors))
+				}
+				m[strings.ToLower(strings.TrimSpace(k))] = strings.TrimSpace(v)
+			}
+		}
+		cfg.GenreFamilyColors = m
+	}
 	if r.GenreBadgeAnimeGrouping != nil {
 		// The aliases are v2's own: it folded several spellings onto these three.
 		switch v := strings.ToLower(strings.TrimSpace(*r.GenreBadgeAnimeGrouping)); v {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ConfigState, UpdateConfigFn } from './configurator-types';
 import {
   RATING_OPTIONS, SIX_POS_OPTIONS, QUALITY_STYLE_OPTIONS, GENRE_STYLE_OPTIONS,
@@ -14,6 +14,7 @@ import {
   DEFAULT_CRITICS_PRIORITY, DEFAULT_AUDIENCE_PRIORITY,
 } from './configurator-types';
 import { resolveShares, rebalance } from '@/lib/shares';
+import { fetchGenreFamilies, type GenreFamily } from '@/lib/api';
 
 /**
  * The fine-tuning controls for one badge: scale, position, offset, opacity and
@@ -997,7 +998,97 @@ export function GenreFine({ uid, config, onUpdate }: GroupProps) {
         The label and the border take their colour separately. Blank leaves each
         following the genre family, which is what one shared accent used to do.
       </p>
+      <GenreFamilyColors uid={uid} config={config} onUpdate={onUpdate} />
     </FineGroup>
+  );
+}
+
+/**
+ * GenreFamilyColors lets a family be drawn in a chosen colour instead of its
+ * built-in accent. The families come from the renderer, so a swatch cannot
+ * disagree with what a poster draws.
+ *
+ * Only families that have been given a colour get a row; the rest are reached
+ * through the picker. Clearing one removes the entry rather than writing the
+ * built-in value, so it goes back to following the default.
+ */
+function GenreFamilyColors({ uid, config, onUpdate }: GroupProps) {
+  const [families, setFamilies] = useState<GenreFamily[]>([]);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    fetchGenreFamilies()
+      .then(f => { if (live) setFamilies(f); })
+      .catch(() => { if (live) setFailed(true); });
+    return () => { live = false; };
+  }, []);
+
+  const set = (id: string, hex: string) => {
+    onUpdate('genreFamilyColors', { ...config.genreFamilyColors, [id]: hex });
+  };
+  const clear = (id: string) => {
+    const next = { ...config.genreFamilyColors };
+    delete next[id];
+    onUpdate('genreFamilyColors', next);
+  };
+
+  const chosen = families.filter(f => config.genreFamilyColors[f.id] !== undefined);
+  const rest = families.filter(f => config.genreFamilyColors[f.id] === undefined);
+
+  return (
+    <details className="adv-details">
+      <summary>Genre family colours</summary>
+      <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>
+        <p className="hint" style={{ marginTop: 0 }}>
+          Give a family its own colour. Families left alone follow the built-in
+          palette, and keep following it if that palette changes.
+        </p>
+        {failed && (
+          <p className="hint" role="status">
+            The family list could not be loaded, so there is nothing to pick from.
+            Any colours already set are still in the config.
+          </p>
+        )}
+        {chosen.map(f => (
+          <div className="field" key={f.id}>
+            <label className="label" htmlFor={`${uid}-genrefam-${f.id}`}>{f.label}</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+              <input
+                id={`${uid}-genrefam-${f.id}`}
+                type="color"
+                value={config.genreFamilyColors[f.id] || f.accent}
+                onChange={e => set(f.id, e.target.value)}
+                className="color-swatch"
+              />
+              <button
+                type="button"
+                className="opt-btn"
+                onClick={() => clear(f.id)}
+                style={{ flex: 1 }}
+              >
+                Built-in default
+              </button>
+            </div>
+          </div>
+        ))}
+        {rest.length > 0 && (
+          <div className="field">
+            <label className="label" htmlFor={`${uid}-genrefam-add`}>Add a family</label>
+            <select
+              id={`${uid}-genrefam-add`}
+              className="select"
+              style={{ maxWidth: '12rem' }}
+              value=""
+              onChange={e => { const f = rest.find(x => x.id === e.target.value); if (f) set(f.id, f.accent); }}
+            >
+              <option value="">Choose a family…</option>
+              {rest.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+            </select>
+          </div>
+        )}
+      </div>
+    </details>
   );
 }
 

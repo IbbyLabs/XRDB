@@ -475,6 +475,7 @@ export interface ConfigState {
   sideRatingsOffset: number; // px vertical offset for the custom position
   ratingsMaxPerSide: number; // cap badges per side; 0 = no cap
   ratingProviderOverrides: Record<string, string>; // source id → hex accent; empty = none
+  genreFamilyColors: Record<string, string>; // family id → hex accent; absent = built-in default
   ratingProviderIconScale: Record<string, number>; // source id → icon scale percent 50-150; no entry = 100
   ratingProviderWeights: Record<string, number>; // source id → weight; no entry = 1, 0 = ignore
   genreBadgeScale: number;
@@ -681,6 +682,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   sideRatingsOffset: 0,
   ratingsMaxPerSide: 0,
   ratingProviderOverrides: {},
+  genreFamilyColors: {},
   ratingProviderIconScale: {},
   ratingProviderWeights: {},
   genreBadgeScale: 0,
@@ -882,6 +884,7 @@ function coerceConfig(raw: unknown): ConfigState {
     ratingsAnime: coerceStringArray(input.ratingsAnime, []),
     badges: canonicaliseBadges(coerceStringArray(input.badges, DEFAULT_CONFIG.badges)),
     ratingProviderOverrides: coerceStringMap(input.ratingProviderOverrides),
+    genreFamilyColors: coerceStringMap(input.genreFamilyColors),
     ratingProviderWeights: coerceNumberMap(input.ratingProviderWeights),
     ratingProviderIconScale: coerceNumberMap(input.ratingProviderIconScale),
     ringCriticsPriority: coerceStringArray(input.ringCriticsPriority, []),
