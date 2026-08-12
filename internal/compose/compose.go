@@ -150,6 +150,13 @@ type animeTargetResolver interface {
 	ResolveTarget(ctx context.Context, id string) (animemap.Target, bool)
 }
 
+// animeKitsuResolver answers for the titles animeTargetResolver cannot: a row
+// with a Kitsu id and no mainstream one. Separate interface so a resolver that
+// predates it still satisfies the first.
+type animeKitsuResolver interface {
+	ResolveKitsu(ctx context.Context, id string) (int, bool)
+}
+
 // showQualityBadges reports whether the quality row is drawn. The hidden switch
 // suppresses the row without touching the selection, so switching it back on
 // does not mean picking every badge again.
@@ -189,6 +196,18 @@ func (p *Pipeline) resolveAnimeID(ctx context.Context, req Request) Request {
 	}
 	target, ok := resolver.ResolveTarget(ctx, head)
 	if !ok {
+		// A season that has aired recently often carries a Kitsu id weeks before
+		// TMDB or IMDb list it. Passing the untranslated anime id on leaves every
+		// artwork and rating source with something none of them can read, so the
+		// render returns nothing at all; Kitsu can draw it.
+		if kitsuResolver, canKitsu := resolver.(animeKitsuResolver); canKitsu {
+			if kitsu, found := kitsuResolver.ResolveKitsu(ctx, head); found {
+				req.MediaID = "kitsu:" + strconv.Itoa(kitsu) + tail
+				p.log().DebugContext(ctx, "No mainstream id is mapped for this anime id; using its Kitsu sibling",
+					"id", logging.RequestID(ctx), "media_id", req.MediaID)
+				return req
+			}
+		}
 		p.log().DebugContext(ctx, "No mainstream id is mapped for this anime id",
 			"id", logging.RequestID(ctx), "media_id", req.MediaID)
 		return req

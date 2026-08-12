@@ -105,8 +105,8 @@ func TestTheReverseIndexPrefersTheSeriesToo(t *testing.T) {
 	if !ok {
 		t.Fatal("no reverse entry")
 	}
-	if tgt.TMDB != 21729 {
-		t.Errorf("TMDB = %d, want 21729 (the series)", tgt.TMDB)
+	if tgt.Target.TMDB != 21729 {
+		t.Errorf("TMDB = %d, want 21729 (the series)", tgt.Target.TMDB)
 	}
 }
 

@@ -77,6 +77,23 @@ type Target struct {
 	TMDBType string
 }
 
+// reverseEntry is what an anime id maps back to. Kitsu rides beside the target
+// because a seasonal title often has one for weeks before TMDB or IMDb catch
+// up, and Kitsu is the only anime service XRDB can draw artwork from — there is
+// no AniList artwork source to fall back to.
+type reverseEntry struct {
+	Target Target
+	Kitsu  int
+}
+
+// renderable reports whether a row can produce a poster by some route. A row
+// with no mainstream id and no Kitsu id cannot, under this fix or any other, so
+// indexing it costs memory for a render nobody can serve. In the current
+// dataset that is 20,384 rows of 42,868.
+func renderable(ids IDs, target Target) bool {
+	return !target.empty() || ids.Kitsu != 0
+}
+
 func (t Target) empty() bool { return t.IMDb == "" && t.TMDB == 0 }
 
 // ParseAnimeID splits an anime-service id into its service and number.
@@ -278,7 +295,7 @@ type indexes struct {
 	imdb    map[string]indexed
 	movie   map[int]indexed
 	tv      map[int]indexed
-	reverse map[string]Target
+	reverse map[string]reverseEntry
 }
 
 // source is one disk-cached dataset (primary or supplement) with its own
@@ -304,7 +321,7 @@ type source struct {
 	byIMDb      map[string]indexed
 	byTMDBMovie map[int]indexed
 	byTMDBTV    map[int]indexed
-	byAnimeID   map[string]Target
+	byAnimeID   map[string]reverseEntry
 }
 
 // New creates a Mapper. Datasets load lazily on first Resolve.
@@ -422,16 +439,45 @@ func (m *Mapper) ResolveTarget(ctx context.Context, id string) (Target, bool) {
 	return Target{}, false
 }
 
+// ResolveKitsu maps an anime-service id to its Kitsu sibling. It answers for
+// the titles ResolveTarget cannot: a recent season carries a Kitsu id for weeks
+// before TMDB or IMDb pick it up, and until then Kitsu is the only place a
+// poster can come from. Returns false when the id is already Kitsu's own, since
+// translating it to itself buys nothing.
+func (m *Mapper) ResolveKitsu(ctx context.Context, id string) (int, bool) {
+	service, num, ok := ParseAnimeID(id)
+	if !ok || service == "kitsu" {
+		return 0, false
+	}
+	key := animeKey(service, num)
+	if e, ok := m.primary.lookupReverse(key); ok && e.Kitsu != 0 {
+		return e.Kitsu, true
+	}
+	if m.supplement != nil {
+		if e, ok := m.supplement.lookupReverse(key); ok && e.Kitsu != 0 {
+			return e.Kitsu, true
+		}
+	}
+	return 0, false
+}
+
 // lookupTarget resolves an anime id against this source's reverse index.
 func (s *source) lookupTarget(key string) (Target, bool) {
+	e, ok := s.lookupReverse(key)
+	if !ok || e.Target.empty() {
+		return Target{}, false
+	}
+	return e.Target, true
+}
+
+// lookupReverse returns the whole entry, including a Kitsu id for a row that
+// has no mainstream one.
+func (s *source) lookupReverse(key string) (reverseEntry, bool) {
 	s.ensureLoaded()
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	t, ok := s.byAnimeID[key]
-	if !ok || t.empty() {
-		return Target{}, false
-	}
-	return t, true
+	e, ok := s.byAnimeID[key]
+	return e, ok
 }
 
 // lookup loads the source if needed, then resolves id against its indexes.
@@ -762,7 +808,7 @@ func buildIndexes(data []byte) (indexes, error) {
 		imdb:    make(map[string]indexed),
 		movie:   make(map[int]indexed),
 		tv:      make(map[int]indexed),
-		reverse: make(map[string]Target),
+		reverse: make(map[string]reverseEntry),
 	}
 	ranks := make(map[string]int)
 	for _, e := range entries {
@@ -801,15 +847,16 @@ func buildIndexes(data []byte) (indexes, error) {
 // insertTarget records the mainstream ids a title maps back to, under every
 // anime id it is known by. Ranking matches insert: an earlier season wins, and
 // the first row wins ties. ranks carries the rank each key was stored at.
-func insertTarget(rev map[string]Target, ranks map[string]int, ids IDs, target Target, rank int) {
-	if target.empty() {
+func insertTarget(rev map[string]reverseEntry, ranks map[string]int, ids IDs, target Target, rank int) {
+	if !renderable(ids, target) {
 		return
 	}
+	entry := reverseEntry{Target: target, Kitsu: ids.Kitsu}
 	for _, key := range reverseKeys(ids) {
 		if _, ok := rev[key]; ok && ranks[key] <= rank {
 			continue
 		}
-		rev[key] = target
+		rev[key] = entry
 		ranks[key] = rank
 	}
 }
@@ -839,7 +886,7 @@ func buildSupplementIndexes(data []byte) (indexes, error) {
 	imdb := make(map[string]indexed)
 	movie := make(map[int]indexed)
 	tv := make(map[int]indexed)
-	reverse := make(map[string]Target)
+	reverse := make(map[string]reverseEntry)
 	ranks := make(map[string]int)
 	for _, e := range entries {
 		ids := IDs{MAL: int(e.MAL), AniList: int(e.AniList), Kitsu: int(e.Kitsu)}
