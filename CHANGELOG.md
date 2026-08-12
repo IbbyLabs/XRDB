@@ -2,6 +2,27 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.84.0](https://github.com/IbbyLabs/XRDB/compare/v3.83.0...v3.84.0) (2026-08-12)
+
+
+### Added
+
+* **ratings:** hide a score backed by too few votes (FR-178) ([80f1780](https://github.com/IbbyLabs/XRDB/commit/80f178032df707c6ef36c67dc30df702e9752ffd))
+
+
+### Fixed
+
+* **ratings:** carry AlloCine and Filmweb rating counts (BUG-249) ([1a594f2](https://github.com/IbbyLabs/XRDB/commit/1a594f204741bee0e4e8cb4c71a180e4a7744693))
+* **ratings:** carry MAL and AniList vote counts (BUG-249) ([d55260f](https://github.com/IbbyLabs/XRDB/commit/d55260f83e68d25af1ec9de765a93b1a8321f431))
+* **ratings:** carry the IMDb vote count from OMDb (FR-178) ([05c433c](https://github.com/IbbyLabs/XRDB/commit/05c433caf7cd25f038246c57f970e604ced0e413))
+* **ratings:** carry Trakt and SIMKL vote counts (FR-178) ([7d71b8e](https://github.com/IbbyLabs/XRDB/commit/7d71b8eae8713e0c3509cb8c79f8df9bc42e3984))
+* **ratings:** mark a withheld score apart from a failed one (FR-178) ([4688dcd](https://github.com/IbbyLabs/XRDB/commit/4688dcd581ea4391b8c860465ff06840927253eb))
+
+
+### Documentation
+
+* **product-context:** describe the thin-rating threshold (FR-178) ([cb32971](https://github.com/IbbyLabs/XRDB/commit/cb3297198b5b09a2ceca78a6a6d14e1635f7f0fc))
+
 ## [3.83.0](https://github.com/IbbyLabs/XRDB/compare/v3.82.3...v3.83.0) (2026-08-12)
 
 
