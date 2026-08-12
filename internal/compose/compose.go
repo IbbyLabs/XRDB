@@ -1023,7 +1023,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// mark as a held-out one: the source was wanted and is not being shown.
 	if req.Config.RatingUnavailableMark {
 		for _, name := range thinSources {
-			stripRatings = append(stripRatings, provider.Rating{Source: name, Unavailable: true})
+			stripRatings = append(stripRatings, provider.Rating{Source: name, Unavailable: true, Withheld: true})
 		}
 	}
 	if animeKnown {

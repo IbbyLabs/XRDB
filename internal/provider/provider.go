@@ -98,6 +98,9 @@ type Rating struct {
 	// average; it exists so the badge can say the source is unreachable instead
 	// of vanishing and reading as "this title has no score".
 	Unavailable bool
+	// Withheld marks a source held back by a setting rather than by a fault, so
+	// the strip can say which without a second lookup.
+	Withheld bool
 }
 
 // Provider is the interface all metadata providers must satisfy.

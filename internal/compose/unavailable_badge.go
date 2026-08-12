@@ -42,13 +42,16 @@ func drawUnavailableX(dst *image.NRGBA, r image.Rectangle, col color.NRGBA, stro
 	h := float64(r.Dy()) / 2
 	dx := h * half
 
-	strokes := []ipSeg{
+	drawStrokes(dst, r, col, strokeW, []ipSeg{
 		{x1: cx - dx, y1: cy - h, x2: cx + dx, y2: cy + h, w: strokeW},
 		{x1: cx + dx, y1: cy - h, x2: cx - dx, y2: cy + h, w: strokeW},
-	}
+	})
+}
 
-	// The strokes cross, so coverage is computed per pixel over both before
-	// blending. Blending each in turn would double the alpha where they meet.
+// drawStrokes rasterises segments as one shape. Coverage is computed per pixel
+// over all of them before blending, since blending each in turn doubles the
+// alpha where they cross.
+func drawStrokes(dst *image.NRGBA, r image.Rectangle, col color.NRGBA, strokeW float64, strokes []ipSeg) {
 	pad := int(math.Ceil(strokeW))
 	area := image.Rect(r.Min.X-pad, r.Min.Y-pad, r.Max.X+pad, r.Max.Y+pad).Intersect(dst.Bounds())
 	step := 1.0 / float64(unavailableXSample)
@@ -59,8 +62,11 @@ func drawUnavailableX(dst *image.NRGBA, r image.Rectangle, col color.NRGBA, stro
 				for sx := 0; sx < unavailableXSample; sx++ {
 					px := float64(x) + (float64(sx)+0.5)*step
 					py := float64(y) + (float64(sy)+0.5)*step
-					if strokes[0].covers(px, py) || strokes[1].covers(px, py) {
-						hits++
+					for _, st := range strokes {
+						if st.covers(px, py) {
+							hits++
+							break
+						}
 					}
 				}
 			}

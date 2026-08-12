@@ -87,7 +87,9 @@ func richMeta() provider.MediaMeta {
 			{Source: "rt", Value: 7.2, Votes: 0, Label: "72%"},
 			{Source: "metacritic", Value: 7.4, Votes: 0, Label: "74"},
 			{Source: "letterboxd", Value: 4.1, Votes: 0, Label: "4.1"},
-			{Source: "trakt", Value: 8.0, Votes: 0, Label: "8.0"},
+			// Four votes: the shape FR-178 exists to hide, and the only rating
+			// here thin enough for a minimum to act on.
+			{Source: "trakt", Value: 8.0, Votes: 4, Label: "8.0"},
 		},
 	}
 }
@@ -450,6 +452,15 @@ func keyMutations() map[string]keyOverride {
 		// The icon mode draws the family accent. Every family is named so the
 		// colour lands whichever one the fixture's genres resolve to. A blind
 		// mutation is dropped by the same parser that drops non-colours.
+		// A map, so the blind mutation is not a value the parser accepts. The
+		// default already hides Trakt's four votes, so the override that shows
+		// it again is the one that changes the image.
+		"ratingMinVotesBySource": {
+			pre: func(c *imageconfig.Config) { c.RatingMinVotes = true },
+			mut: func(c *imageconfig.Config) {
+				c.RatingMinVotesBySource = map[string]int{"trakt": 0}
+			},
+		},
 		"genreFamilyColors": {
 			pre: func(c *imageconfig.Config) { c.GenreBadgeMode = "icon" },
 			mut: func(c *imageconfig.Config) {

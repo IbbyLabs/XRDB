@@ -1,6 +1,9 @@
 package compose
 
 import (
+	"bytes"
+	"image"
+	"image/color"
 	"testing"
 
 	"xrdb_rewrite/internal/imageconfig"
@@ -99,5 +102,33 @@ func TestAnOverrideBeatsTheDefaultAndZeroDisablesIt(t *testing.T) {
 	cfg.RatingMinVotesBySource = map[string]int{"trakt": 0}
 	if kept, _ := splitThinRatings(thinSample(), cfg); !sourceSet(kept)["trakt"] {
 		t.Error("a zero override should disable the threshold, not hide everything")
+	}
+}
+
+// A source held back by a setting and a source that failed must not draw the
+// same mark, or turning the threshold on costs the ability to see an outage.
+func TestAWithheldSourceIsMarkedApartFromAFailedOne(t *testing.T) {
+	withheld := badgeSpec{unavailable: true, withheld: true, valW: 40}
+	failed := badgeSpec{unavailable: true, valW: 40}
+
+	box := image.Rect(0, 0, 40, 40)
+	col := color.NRGBA{R: 255, G: 255, B: 255, A: 255}
+
+	a := image.NewNRGBA(box)
+	drawWithheldDash(a, box, col, 2)
+	b := image.NewNRGBA(box)
+	drawUnavailableX(b, box, col, 2)
+
+	if bytes.Equal(a.Pix, b.Pix) {
+		t.Error("the withheld mark and the unavailable X rasterise identically")
+	}
+	if !withheld.withheld || failed.withheld {
+		t.Error("the spec does not carry the distinction the draw path reads")
+	}
+
+	// The control: an empty draw is not what makes them differ.
+	blank := image.NewNRGBA(box)
+	if bytes.Equal(a.Pix, blank.Pix) {
+		t.Error("the withheld mark drew nothing at all")
 	}
 }

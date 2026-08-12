@@ -893,9 +893,11 @@ type badgeSpec struct {
 	// unavailable draws the X in place of a value: the source was wanted and
 	// held out, rather than having no rating for this title.
 	unavailable bool
-	value       string
-	valW        int
-	icon        image.Image
+	// withheld marks the held-out source as held back by a setting, not a fault.
+	withheld bool
+	value    string
+	valW     int
+	icon     image.Image
 	// colored marks an icon that carries its own brand colors, so it is drawn
 	// as it is instead of being recolored to match the badge.
 	colored bool
@@ -1027,7 +1029,11 @@ func drawRatingRow(out *image.NRGBA, specs []badgeSpec, y, innerH, padX, iconSiz
 			// The mark is left at full strength; it is what says which site is
 			// unavailable rather than that something failed to draw.
 			box := image.Rect(contentX, y+innerH/4, contentX+sp.valW, y+innerH*3/4)
-			drawUnavailableX(out, box, chrome.valueColor, math.Max(1, float64(innerH)/14))
+			if sp.withheld {
+				drawWithheldDash(out, box, chrome.valueColor, math.Max(1, float64(innerH)/14))
+			} else {
+				drawUnavailableX(out, box, chrome.valueColor, math.Max(1, float64(innerH)/14))
+			}
 		} else if outlineCol.A > 0 && chrome.outlineWidth > 0 {
 			// The same tracer every other background-less badge uses, so the
 			// glow setting reaches this one too rather than stopping short of it.
@@ -1324,6 +1330,7 @@ func drawBadgesInPlace(out *image.NRGBA, ratings []provider.Rating, cfg imagecon
 		}
 		specs = append(specs, badgeSpec{
 			unavailable:      r.Unavailable,
+			withheld:         r.Withheld,
 			value:            value,
 			valW:             vw,
 			icon:             icon,
