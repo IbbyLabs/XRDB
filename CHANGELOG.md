@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.83.0](https://github.com/IbbyLabs/XRDB/compare/v3.82.3...v3.83.0) (2026-08-12)
+
+
+### Added
+
+* **anime:** draw a title that only has a Kitsu id (FR-182) ([15a7536](https://github.com/IbbyLabs/XRDB/commit/15a75360715b91ce35da357da9b96bd5f228c04e))
+
+
+### Fixed
+
+* **anime:** try Kitsu artwork for a Kitsu-only title (FR-182) ([ed37d05](https://github.com/IbbyLabs/XRDB/commit/ed37d05e6cae8434c8047a2c8500fb529e6c8bfa))
+
 ## [3.82.3](https://github.com/IbbyLabs/XRDB/compare/v3.82.2...v3.82.3) (2026-08-12)
 
 
