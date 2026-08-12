@@ -2,6 +2,29 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.81.0](https://github.com/IbbyLabs/XRDB/compare/v3.80.0...v3.81.0) (2026-08-12)
+
+
+### Added
+
+* **genre:** let a genre family use a chosen colour ([58f695c](https://github.com/IbbyLabs/XRDB/commit/58f695c6bb36f37c9314cd6e8df0d71583566ae1))
+
+
+### Fixed
+
+* **genre:** cover the family colour key in the effect guard (FR-181) ([7e2f1dc](https://github.com/IbbyLabs/XRDB/commit/7e2f1dc71e44ff9daaea7b2bfba145561a7feb9f))
+* **ratings:** report the allowance from every spend, not the bulk gate ([079d051](https://github.com/IbbyLabs/XRDB/commit/079d051837f6c30a533cf2c986d426e68cc3e68d))
+
+
+### Performance
+
+* **ratings:** build the allowance fields only when logging ([9812803](https://github.com/IbbyLabs/XRDB/commit/9812803d9b20ff2494c432caf264487dce70cb20))
+
+
+### Changed
+
+* **server:** drop the unread degraded-sources header ([a0dd038](https://github.com/IbbyLabs/XRDB/commit/a0dd038561829595bbd1bf6b87535fa07d1d21b9))
+
 ## [3.80.0](https://github.com/IbbyLabs/XRDB/compare/v3.79.0...v3.80.0) (2026-08-11)
 
 
