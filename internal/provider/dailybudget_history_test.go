@@ -133,3 +133,87 @@ func TestSavingCarriesTheHistoryForward(t *testing.T) {
 		t.Errorf("filed %d, want 11500", snap.History[0].Spent["simkl"])
 	}
 }
+
+// The collision the whole design turns on: a day that crossed at midnight and a
+// day that never crossed must not read the same. An empty value doing double
+// duty as "unset" and "none" is the defect BUG-247 was opened for, one layer
+// over.
+func TestCrossingAtMidnightIsNotTheSameAsNeverCrossing(t *testing.T) {
+	midnight := 0
+	crossed := dailyBudgetMarks{CutOffHour: &midnight}
+	never := dailyBudgetMarks{}
+
+	a, err := json.Marshal(crossed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := json.Marshal(never)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(a) == string(b) {
+		t.Fatalf("both serialise to %s, so a midnight crossing is indistinguishable from none", a)
+	}
+
+	var back dailyBudgetMarks
+	if err := json.Unmarshal(a, &back); err != nil {
+		t.Fatal(err)
+	}
+	if back.CutOffHour == nil || *back.CutOffHour != 0 {
+		t.Errorf("a midnight crossing came back as %v, want hour 0", back.CutOffHour)
+	}
+	var none dailyBudgetMarks
+	if err := json.Unmarshal(b, &none); err != nil {
+		t.Fatal(err)
+	}
+	if none.CutOffHour != nil {
+		t.Errorf("a day that never crossed came back as %v, want absent", none.CutOffHour)
+	}
+}
+
+// The hour is recorded when the count first passes the cut-off, and not moved
+// by later spending — the question is when a day crossed, not when it last was
+// over.
+func TestTheCutOffHourIsTheFirstCrossing(t *testing.T) {
+	clock := &fakeClock{t: time.Date(2026, 8, 12, 9, 0, 0, 0, time.UTC)}
+	b := &dailyBudget{source: "simkl", limit: 100, reserve: 40, reportEvery: time.Hour, now: clock.now}
+
+	for range 60 {
+		b.spend()
+	}
+	if b.cutOffHour == nil || *b.cutOffHour != 9 {
+		t.Fatalf("cut-off hour = %v, want 9", b.cutOffHour)
+	}
+	if b.limitHour != nil {
+		t.Errorf("limit hour = %v, want absent — the limit was not reached", b.limitHour)
+	}
+
+	clock.advance(3 * time.Hour)
+	for range 40 {
+		b.spend()
+	}
+	if *b.cutOffHour != 9 {
+		t.Errorf("cut-off hour moved to %d, want the first crossing at 9", *b.cutOffHour)
+	}
+	if b.limitHour == nil || *b.limitHour != 12 {
+		t.Fatalf("limit hour = %v, want 12", b.limitHour)
+	}
+}
+
+// A finished day carries its marks into the history, or the fortnight records
+// totals again and answers the wrong question.
+func TestTheFiledDayKeepsItsMarks(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, dailyBudgetFile)
+	writeSnapshot(t, path, `{"shape":1,"day":"2026-08-11T00:00:00Z","spent":{"simkl":11500},`+
+		`"marks":{"simkl":{"cut_off_hour":9}}}`)
+
+	got := rollHistory(path, time.Date(2026, 8, 12, 0, 0, 0, 0, time.UTC))
+	if len(got) != 1 {
+		t.Fatalf("history = %v, want the finished day", got)
+	}
+	m, ok := got[0].Marks["simkl"]
+	if !ok || m.CutOffHour == nil || *m.CutOffHour != 9 {
+		t.Errorf("filed marks = %+v, want the cut-off at hour 9", got[0].Marks)
+	}
+}

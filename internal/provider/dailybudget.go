@@ -49,6 +49,12 @@ type dailyBudget struct {
 	spent    int
 	// inReserve holds the gear the last log line described.
 	inReserve bool
+	// cutOffHour and limitHour are the UTC hours the day crossed the bulk
+	// cut-off and reached the limit. A day that crossed at midnight and a day
+	// that never crossed must not read the same, so nil is "never" and 0 is a
+	// real hour rather than both meaning nothing.
+	cutOffHour *int
+	limitHour  *int
 }
 
 func newDailyBudget(source string, limit, reserve int) *dailyBudget {
@@ -84,6 +90,8 @@ func (b *dailyBudget) rollLocked(now time.Time) {
 		b.day = day
 		b.spent = 0
 		b.inReserve = false
+		b.cutOffHour = nil
+		b.limitHour = nil
 	}
 }
 
@@ -96,7 +104,22 @@ func (b *dailyBudget) spend() {
 	defer b.mu.Unlock()
 	b.rollLocked(b.now())
 	b.spent++
+	b.markLocked(b.now())
 	b.reportLocked()
+}
+
+// markLocked notes the hour a threshold was first passed. When a day spends its
+// allowance decides whether a reserve that shrinks with the clock helps or
+// hurts, and a daily total is silent on it.
+func (b *dailyBudget) markLocked(now time.Time) {
+	hour := now.UTC().Hour()
+	if b.cutOffHour == nil && b.spent >= b.limit-b.reserve {
+		b.cutOffHour = &hour
+	}
+	if b.limitHour == nil && b.spent >= b.limit {
+		h := hour
+		b.limitHour = &h
+	}
 }
 
 // allowsBulk reports whether a bulk caller may still spend. Interactive callers
@@ -204,13 +227,25 @@ type dailyBudgetSnapshot struct {
 	// shape change so a file written before it existed still loads, and a file
 	// carrying it still loads in a build that ignores it.
 	History []dailyBudgetDay `json:"history,omitempty"`
+	// Marks is today's crossings per source, so a restart mid-day does not
+	// forget when the cut-off went.
+	Marks map[string]dailyBudgetMarks `json:"marks,omitempty"`
+}
+
+// dailyBudgetMarks is when a day passed its thresholds, in UTC hours. Both are
+// absent rather than zero when the day never reached them: an hour of 0 is
+// midnight, and a day that crossed at midnight is not a day that never crossed.
+type dailyBudgetMarks struct {
+	CutOffHour *int `json:"cut_off_hour,omitempty"`
+	LimitHour  *int `json:"limit_hour,omitempty"`
 }
 
 // dailyBudgetDay is one finished day's total. Kept as a date string because it
 // is read by a person deciding what a typical day looks like.
 type dailyBudgetDay struct {
-	Day   string         `json:"day"`
-	Spent map[string]int `json:"spent"`
+	Day   string                      `json:"day"`
+	Spent map[string]int              `json:"spent"`
+	Marks map[string]dailyBudgetMarks `json:"marks,omitempty"`
 }
 
 // dailyBudgetHistoryDays bounds the file. Two weeks answers what a typical day
@@ -265,6 +300,10 @@ func SetDailyBudgetPath(dir string, logger *slog.Logger) {
 		b.mu.Lock()
 		b.rollLocked(b.now())
 		b.spent = spent
+		if m, ok := snap.Marks[source]; ok {
+			b.cutOffHour = m.CutOffHour
+			b.limitHour = m.LimitHour
+		}
 		b.mu.Unlock()
 		logger.Info("Resumed a source's daily allowance count", "source", source, "spent", spent)
 	}
@@ -282,15 +321,22 @@ func SaveDailyBudgets() error {
 
 	now := time.Now().UTC().Truncate(dailyWindow)
 	spent := make(map[string]int)
+	marks := make(map[string]dailyBudgetMarks)
 	for source, b := range dailyBudgets() {
 		b.mu.Lock()
 		b.rollLocked(b.now())
 		spent[source] = b.spent
+		if b.cutOffHour != nil || b.limitHour != nil {
+			marks[source] = dailyBudgetMarks{CutOffHour: b.cutOffHour, LimitHour: b.limitHour}
+		}
 		b.mu.Unlock()
+	}
+	if len(marks) == 0 {
+		marks = nil
 	}
 
 	data, err := json.Marshal(dailyBudgetSnapshot{
-		Shape: dailyBudgetShape, Day: now, Spent: spent,
+		Shape: dailyBudgetShape, Day: now, Spent: spent, Marks: marks,
 		History: rollHistory(path, now),
 	})
 	if err != nil {
@@ -335,7 +381,7 @@ func rollHistory(path string, today time.Time) []dailyBudgetDay {
 			}
 		}
 		if !seen {
-			history = append(history, dailyBudgetDay{Day: day, Spent: snap.Spent})
+			history = append(history, dailyBudgetDay{Day: day, Spent: snap.Spent, Marks: snap.Marks})
 		}
 	}
 	if len(history) > dailyBudgetHistoryDays {
