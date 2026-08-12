@@ -447,6 +447,24 @@ func keyMutations() map[string]keyOverride {
 		"genreBadgeStyle":           {mut: func(c *imageconfig.Config) { c.GenreBadgeStyle = "tile" }},
 		"genreBadgeTileAccentColor": {pre: genreTile, mut: setColor(func(c *imageconfig.Config, v string) { c.GenreBadgeTileAccentColor = v })},
 		"genreBadgeAccent":          {mut: func(c *imageconfig.Config) { c.GenreBadgeAccent = "left" }},
+		// The icon mode draws the family accent. Every family is named so the
+		// colour lands whichever one the fixture's genres resolve to. A blind
+		// mutation is dropped by the same parser that drops non-colours.
+		"genreFamilyColors": {
+			pre: func(c *imageconfig.Config) { c.GenreBadgeMode = "icon" },
+			mut: func(c *imageconfig.Config) {
+				c.GenreFamilyColors = map[string]string{
+					"anime": "#ff3366", "animation": "#ff3366", "horror": "#ff3366",
+					"comedy": "#ff3366", "romance": "#ff3366", "action": "#ff3366",
+					"scifi": "#ff3366", "fantasy": "#ff3366", "scifantasy": "#ff3366",
+					"crime": "#ff3366", "drama": "#ff3366", "documentary": "#ff3366",
+					"music": "#ff3366", "reality": "#ff3366", "family": "#ff3366",
+					"history": "#ff3366", "kids": "#ff3366", "news": "#ff3366",
+					"soap": "#ff3366", "talk": "#ff3366", "tvmovie": "#ff3366",
+					"warpolitics": "#ff3366", "other": "#ff3366",
+				}
+			},
+		},
 		// The colour keys need a real hex; a blind mutation is rejected by the
 		// parser and reads as an inert control (FR-148).
 		"genreBadgeLabelColor":  {mut: setColor(func(c *imageconfig.Config, v string) { c.GenreBadgeLabelColor = v })},
