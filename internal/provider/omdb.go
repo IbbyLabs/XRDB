@@ -97,7 +97,9 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 		Response string `json:"Response"` // "True" or "False"
 		Error    string `json:"Error,omitempty"`
 		Poster   string `json:"Poster"` // absolute URL, or "N/A" when absent
-		Ratings  []struct {
+		// Sent as a grouped decimal string, e.g. "3,221,305".
+		ImdbVotes string `json:"imdbVotes"`
+		Ratings   []struct {
 			Source string `json:"Source"`
 			Value  string `json:"Value"`
 		} `json:"Ratings"`
@@ -157,6 +159,7 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 				meta.Ratings = append(meta.Ratings, Rating{
 					Source: "imdb",
 					Value:  score,
+					Votes:  parseGroupedInt(result.ImdbVotes),
 					Label:  fmt.Sprintf("%.1f", score),
 				})
 			}
@@ -219,4 +222,25 @@ func omdbPosterURL(v string) string {
 		return u
 	}
 	return ""
+}
+
+// parseGroupedInt reads a grouped decimal such as "3,221,305". Anything that is
+// not a plain grouped number reads as no count, which the render treats as
+// unknown rather than as zero.
+func parseGroupedInt(s string) int {
+	var b strings.Builder
+	for _, r := range s {
+		switch {
+		case r >= '0' && r <= '9':
+			b.WriteRune(r)
+		case r == ',' || r == ' ':
+		default:
+			return 0
+		}
+	}
+	n, err := strconv.Atoi(b.String())
+	if err != nil {
+		return 0
+	}
+	return n
 }

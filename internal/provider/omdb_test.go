@@ -212,3 +212,45 @@ func TestOMDbRejectingATitleIsNotAHealthFailure(t *testing.T) {
 		})
 	}
 }
+
+// OMDb is the preferred supplier of the imdb source wherever the local dataset
+// is not configured, so a rating it hands over without a count leaves IMDb
+// unmeasurable: vote counts render blank and a minimum has nothing to act on.
+func TestOMDbCarriesTheIMDbVoteCount(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"Response":  "True",
+			"imdbVotes": "3,221,305",
+			"Ratings": []map[string]string{
+				{"Source": "Internet Movie Database", "Value": "9.3/10"},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	o := &OMDB{apiKey: "k", httpClient: srv.Client(), baseURL: srv.URL + "/"}
+	meta, err := o.Fetch(context.Background(), "movie", "tt0111161")
+	if err != nil {
+		t.Fatalf("Fetch: %v", err)
+	}
+	var got int
+	for _, r := range meta.Ratings {
+		if r.Source == "imdb" {
+			got = r.Votes
+		}
+	}
+	if got != 3221305 {
+		t.Errorf("Votes = %d, want 3221305", got)
+	}
+}
+
+func TestAGroupedCountThatIsNotANumberReadsAsUnknown(t *testing.T) {
+	for _, in := range []string{"N/A", "", "many"} {
+		if got := parseGroupedInt(in); got != 0 {
+			t.Errorf("parseGroupedInt(%q) = %d, want 0", in, got)
+		}
+	}
+	if got := parseGroupedInt("1,234"); got != 1234 {
+		t.Errorf("parseGroupedInt(\"1,234\") = %d, want 1234", got)
+	}
+}
