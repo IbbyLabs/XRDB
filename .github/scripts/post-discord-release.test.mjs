@@ -1,4 +1,4 @@
-// Run with: node --test .github/scripts/
+// Run with: node --test .github/scripts/post-discord-release.test.mjs
 //
 // These payloads are only ever built inside a workflow, so a mistake here
 // surfaces as a release notice that is silently wrong rather than as a failure.
@@ -146,4 +146,91 @@ test('no text display is empty and no section is overfull', () => {
       }
     });
   }
+});
+
+// A section earns a continuation block by being long, by being past the third,
+// or by carrying a body line. The block was then folded into the summary as a
+// description override, and an override drops every section field beside it —
+// so one long section took the others' place. Every release-please release
+// enters through the third door, because its own commit carries a trailer.
+function sectionBody(sections) {
+  return sections
+    .map(([title, items]) => `### ${title}\n` + items.map((i) => `* ${i}`).join('\n'))
+    .join('\n\n');
+}
+
+function sectionTitlesIn(payloads) {
+  const seen = [];
+  const collect = (node) => {
+    if (!node) return;
+    if (Array.isArray(node)) return node.forEach(collect);
+    if (typeof node.content === 'string') seen.push(node.content);
+    collect(node.components);
+    collect(node.accessory);
+  };
+  payloads.forEach((p) => collect(p.components));
+  return seen.join('\n');
+}
+
+function announced(sections) {
+  const payloads = buildDiscordReleasePayloads({
+    repository: 'IbbyLabs/XRDB',
+    release: {
+      tag_name: 'v9.9.9',
+      name: 'v9.9.9',
+      body: sectionBody(sections),
+      html_url: 'https://example.invalid/release',
+      published_at: '2026-08-12T09:00:00Z',
+    },
+  });
+  return sectionTitlesIn(payloads);
+}
+
+const TRAILER = 'chore(main): release 9.9.9\n\n  Co-authored-by: someone';
+
+test('a section carrying a body line does not take the others place', () => {
+  const text = announced([
+    ['Fixed', ['ratings: let a media type show no ratings']],
+    ['Changed', [TRAILER]],
+  ]);
+  assert.match(text, /Fixed/, 'the fix section was dropped by the section beside it');
+  assert.match(text, /Changed/);
+});
+
+test('the position of the details-bearing section does not matter', () => {
+  const text = announced([
+    ['Fixed', [TRAILER]],
+    ['Changed', ['server: drop the unread header']],
+  ]);
+  assert.match(text, /Fixed/);
+  assert.match(text, /Changed/, 'the later section was dropped');
+});
+
+test('a release with four sections announces all four', () => {
+  const text = announced([
+    ['Added', ['genre: a colour picker']],
+    ['Fixed', ['ratings: none for a type']],
+    ['Performance', ['ratings: fewer allocations']],
+    ['Changed', ['server: drop the unread header']],
+  ]);
+  for (const title of ['Added', 'Fixed', 'Performance', 'Changed']) {
+    assert.match(text, new RegExp(title), `${title} was dropped`);
+  }
+});
+
+// The control: with nothing to lose beside it, a single section still folds
+// into the summary rather than costing a second message.
+test('a lone section still rides in the summary', () => {
+  const payloads = buildDiscordReleasePayloads({
+    repository: 'IbbyLabs/XRDB',
+    release: {
+      tag_name: 'v9.9.9',
+      name: 'v9.9.9',
+      body: sectionBody([['Fixed', [TRAILER]]]),
+      html_url: 'https://example.invalid/release',
+      published_at: '2026-08-12T09:00:00Z',
+    },
+  });
+  assert.equal(payloads.length, 1);
+  assert.match(sectionTitlesIn(payloads), /Fixed/);
 });

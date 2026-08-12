@@ -1017,8 +1017,16 @@ export function buildDiscordReleasePayloads({
   // against the same 4000. The blocks are one size, so whether it fits depends
   // on the tag and release name. Measured rather than assumed; where it does
   // not fit the block goes out as a continuation instead of being trimmed.
-  let summaryPayload = build(descriptions[0] || '');
-  let folded = Boolean(descriptions[0]);
+  //
+  // A body override replaces the section fields rather than joining them, so
+  // folding is only lossless when the block is the whole release. With more
+  // than one section the others would be dropped, and a section earns a block
+  // by being long, being past the third, or carrying a body line — which every
+  // release-please release does, through its own commit.
+  const { sections: parsedSections } = parseReleaseBodySections(release.body || '');
+  const foldIsLossless = parsedSections.length <= 1;
+  let summaryPayload = build(foldIsLossless ? descriptions[0] || '' : '');
+  let folded = foldIsLossless && Boolean(descriptions[0]);
   if (folded && panelTextLength(summaryPayload.components) > MAX_PANEL_TEXT_LENGTH) {
     summaryPayload = build('');
     folded = false;
