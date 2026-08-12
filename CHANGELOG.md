@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.82.1](https://github.com/IbbyLabs/XRDB/compare/v3.82.0...v3.82.1) (2026-08-12)
+
+
+### Fixed
+
+* **ratings:** mark the crossing hour only when the crossing is seen ([2064ddc](https://github.com/IbbyLabs/XRDB/commit/2064ddc64878457cfb8a7905dfc0859bb1e743c3))
+
 ## [3.82.0](https://github.com/IbbyLabs/XRDB/compare/v3.81.0...v3.82.0) (2026-08-12)
 
 
