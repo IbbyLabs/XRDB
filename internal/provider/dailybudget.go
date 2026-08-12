@@ -73,6 +73,14 @@ func (b *dailyBudget) log() *slog.Logger {
 func (b *dailyBudget) rollLocked(now time.Time) {
 	day := now.UTC().Truncate(dailyWindow)
 	if !day.Equal(b.day) {
+		// The finished total is named on the way past. Without it the only
+		// record of what a day spent is whichever periodic line happened to be
+		// last, and that is lost with the container.
+		if !b.day.IsZero() && b.spent > 0 {
+			b.log().Info("A source's daily allowance rolled over to a new day",
+				"source", b.source, "finished_day", b.day.Format("2006-01-02"),
+				"spent", b.spent, "limit", b.limit)
+		}
 		b.day = day
 		b.spent = 0
 		b.inReserve = false
@@ -192,7 +200,22 @@ type dailyBudgetSnapshot struct {
 	// discarded rather than resumed.
 	Day   time.Time      `json:"day"`
 	Spent map[string]int `json:"spent"`
+	// History is the finished days, oldest first. It is additive rather than a
+	// shape change so a file written before it existed still loads, and a file
+	// carrying it still loads in a build that ignores it.
+	History []dailyBudgetDay `json:"history,omitempty"`
 }
+
+// dailyBudgetDay is one finished day's total. Kept as a date string because it
+// is read by a person deciding what a typical day looks like.
+type dailyBudgetDay struct {
+	Day   string         `json:"day"`
+	Spent map[string]int `json:"spent"`
+}
+
+// dailyBudgetHistoryDays bounds the file. Two weeks answers what a typical day
+// spends without the snapshot growing without limit.
+const dailyBudgetHistoryDays = 14
 
 var dailyBudgetPath struct {
 	mu   sync.Mutex
@@ -266,7 +289,10 @@ func SaveDailyBudgets() error {
 		b.mu.Unlock()
 	}
 
-	data, err := json.Marshal(dailyBudgetSnapshot{Shape: dailyBudgetShape, Day: now, Spent: spent})
+	data, err := json.Marshal(dailyBudgetSnapshot{
+		Shape: dailyBudgetShape, Day: now, Spent: spent,
+		History: rollHistory(path, now),
+	})
 	if err != nil {
 		return err
 	}
@@ -278,4 +304,42 @@ func SaveDailyBudgets() error {
 		return err
 	}
 	return os.Rename(tmp, path)
+}
+
+// rollHistory carries the stored history forward, moving the stored day into it
+// once that day is over. The figure is whatever the last save before midnight
+// recorded, which is the finest the ticker offers; a day already present is not
+// added twice.
+//
+// It reads the file rather than tracking the boundary in memory, so a restart
+// across midnight still files the finished day instead of losing it.
+func rollHistory(path string, today time.Time) []dailyBudgetDay {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	var snap dailyBudgetSnapshot
+	if err := json.Unmarshal(data, &snap); err != nil {
+		return nil
+	}
+
+	history := snap.History
+	stored := snap.Day.UTC().Truncate(dailyWindow)
+	if !stored.IsZero() && stored.Before(today) && len(snap.Spent) > 0 {
+		day := stored.Format("2006-01-02")
+		seen := false
+		for _, h := range history {
+			if h.Day == day {
+				seen = true
+				break
+			}
+		}
+		if !seen {
+			history = append(history, dailyBudgetDay{Day: day, Spent: snap.Spent})
+		}
+	}
+	if len(history) > dailyBudgetHistoryDays {
+		history = history[len(history)-dailyBudgetHistoryDays:]
+	}
+	return history
 }
