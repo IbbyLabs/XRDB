@@ -2,6 +2,20 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.82.0](https://github.com/IbbyLabs/XRDB/compare/v3.81.0...v3.82.0) (2026-08-12)
+
+
+### Added
+
+* **ratings:** keep a fortnight of daily allowance totals ([453b8b2](https://github.com/IbbyLabs/XRDB/commit/453b8b28bf7e71678b8fb2588ac698323a94e9fe))
+* **ratings:** record when a day crosses its allowance thresholds ([68bb443](https://github.com/IbbyLabs/XRDB/commit/68bb44320b0f37c01cccc6f4c597b78a5170710e))
+
+
+### Fixed
+
+* **ratings:** let a media type show no ratings (BUG-247) ([6afac2f](https://github.com/IbbyLabs/XRDB/commit/6afac2ff20e8e55f4b56846a401c1082976a9a11))
+* **release:** keep every section in the Discord announcement ([96dc1cd](https://github.com/IbbyLabs/XRDB/commit/96dc1cdeb9813674794f001ea98216f5d5aaa7f7))
+
 ## [3.81.0](https://github.com/IbbyLabs/XRDB/compare/v3.80.0...v3.81.0) (2026-08-12)
 
 
