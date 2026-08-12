@@ -88,7 +88,7 @@ func (b *dailyBudget) spend() {
 	defer b.mu.Unlock()
 	b.rollLocked(b.now())
 	b.spent++
-	b.reportLocked(b.fieldsLocked())
+	b.reportLocked()
 }
 
 // allowsBulk reports whether a bulk caller may still spend. Interactive callers
@@ -102,15 +102,14 @@ func (b *dailyBudget) allowsBulk() bool {
 	b.rollLocked(b.now())
 
 	ok := b.spent < b.limit-b.reserve
-	fields := b.fieldsLocked()
 	if !ok != b.inReserve {
 		b.inReserve = !ok
 		if !ok {
 			b.log().Warn("A source's daily allowance has reached its reserve; bulk callers are held out until it refills",
-				fields...)
+				b.fieldsLocked()...)
 		}
 	}
-	b.reportLocked(fields)
+	b.reportLocked()
 	return ok
 }
 
@@ -131,11 +130,16 @@ func (b *dailyBudget) fieldsLocked() []any {
 // reportLocked writes the headroom no more than once per interval. Called from
 // every spend rather than only where bulk callers are gated: a day of purely
 // interactive traffic spends the same allowance and would otherwise report none
-// of it.
-func (b *dailyBudget) reportLocked(fields []any) {
+// of it. The fields are built inside the interval check, so the cost follows the
+// logging rather than the traffic.
+//
+// The wording stays distinct from the rate governor's own allowance line: they
+// are separate mechanisms and a reader matching on the message must not
+// conflate them.
+func (b *dailyBudget) reportLocked() {
 	if now := b.now(); now.Sub(b.reported) >= b.reportEvery {
 		b.reported = now
-		b.log().Info("Reporting what is left of a source's daily allowance", fields...)
+		b.log().Info("Reporting a source's daily call budget and its bulk cut-off", b.fieldsLocked()...)
 	}
 }
 
