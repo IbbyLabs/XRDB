@@ -110,6 +110,7 @@ func (m *MAL) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, erro
 			Title        string  `json:"title"`
 			Synopsis     string  `json:"synopsis"`
 			Score        float64 `json:"score"`
+			ScoredBy     int     `json:"scored_by"`
 			Year         int     `json:"year"`
 			Genres       []struct {
 				Name string `json:"name"`
@@ -160,6 +161,7 @@ func (m *MAL) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, erro
 	if d.Score > 0 {
 		meta.Ratings = []Rating{{
 			Source: "mal",
+			Votes:  d.ScoredBy,
 			Value:  d.Score,
 			Label:  fmt.Sprintf("%.1f", d.Score),
 		}}
