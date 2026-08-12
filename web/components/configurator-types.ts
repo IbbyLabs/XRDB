@@ -470,6 +470,8 @@ export interface ConfigState {
   ratingPresentation: string; // standard|editorial|none
   ratingValueMode: string; // native|normalized|normalizedclean|normalized100
   ratingVoteCounts: boolean;
+  ratingMinVotes: boolean;
+  ratingMinVotesBySource: Record<string, number>; // source → minimum; absent = built-in default, 0 = no minimum
   iconShape: string; // '' = the mark's own outline; circle|squircle|rounded
   sideRatingsPosition: string; // top|middle|bottom|custom (split-side layout)
   sideRatingsOffset: number; // px vertical offset for the custom position
@@ -677,6 +679,8 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingPresentation: 'standard',
   ratingValueMode: 'native',
   ratingVoteCounts: false,
+  ratingMinVotes: false,
+  ratingMinVotesBySource: {},
   iconShape: '',
   sideRatingsPosition: 'middle',
   sideRatingsOffset: 0,
@@ -885,6 +889,8 @@ function coerceConfig(raw: unknown): ConfigState {
     badges: canonicaliseBadges(coerceStringArray(input.badges, DEFAULT_CONFIG.badges)),
     ratingProviderOverrides: coerceStringMap(input.ratingProviderOverrides),
     genreFamilyColors: coerceStringMap(input.genreFamilyColors),
+  ratingMinVotes: Boolean(input.ratingMinVotes),
+  ratingMinVotesBySource: coerceNumberMap(input.ratingMinVotesBySource),
     ratingProviderWeights: coerceNumberMap(input.ratingProviderWeights),
     ratingProviderIconScale: coerceNumberMap(input.ratingProviderIconScale),
     ringCriticsPriority: coerceStringArray(input.ringCriticsPriority, []),

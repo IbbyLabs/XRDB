@@ -16,6 +16,17 @@ import {
 import { resolveShares, rebalance } from '@/lib/shares';
 import { fetchGenreFamilies, type GenreFamily } from '@/lib/api';
 
+// The sources a vote minimum can act on. The rest either report no count or
+// count reviewing publications, where a minimum means nothing.
+const MIN_VOTE_SOURCES = [
+  { id: 'imdb', label: 'IMDb' },
+  { id: 'letterboxd', label: 'Letterboxd' },
+  { id: 'metacriticuser', label: 'Metacritic users' },
+  { id: 'trakt', label: 'Trakt' },
+  { id: 'tmdb', label: 'TMDB' },
+  { id: 'simkl', label: 'SIMKL' },
+];
+
 /**
  * The fine-tuning controls for one badge: scale, position, offset, opacity and
  * colour. They live directly beneath the badge they style, so a badge is
@@ -604,6 +615,31 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
             checked={config.ratingVoteCounts}
             onChange={v => onUpdate('ratingVoteCounts', v)}
             hint="Append the number of votes to each score. Only IMDb, MDBList and TMDB report one; other sources show the score alone." />
+          <ToggleField id={`${uid}-min-votes`} label="Hide thin ratings"
+            checked={config.ratingMinVotes}
+            onChange={v => onUpdate('ratingMinVotes', v)}
+            hint="Hide a score resting on too few votes to mean anything. Applies to IMDb, Letterboxd, Trakt, TMDB, SIMKL and Metacritic's user score. Metacritic, Rotten Tomatoes and Popcorn are never hidden: their counts measure how many critics reviewed a title, not how confident the score is. A source that reports no count is left alone." />
+          {config.ratingMinVotes && (
+            <details className="adv-details">
+              <summary>Minimum votes per source</summary>
+              <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>
+                <p className="hint" style={{ marginTop: 0 }}>
+                  Leave a source empty to follow the built-in minimum, or set 0 to
+                  stop hiding that source.
+                </p>
+                {MIN_VOTE_SOURCES.map(src => (
+                  <NumField key={src.id} id={`${uid}-minvotes-${src.id}`} label={src.label}
+                    value={config.ratingMinVotesBySource[src.id] ?? 0}
+                    onChange={v => {
+                      const next = { ...config.ratingMinVotesBySource };
+                      if (v === 0) delete next[src.id]; else next[src.id] = v;
+                      onUpdate('ratingMinVotesBySource', next);
+                    }}
+                    min={0} max={1000000} zeroIsDefault />
+                ))}
+              </div>
+            </details>
+          )}
           <ToggleField id={`${uid}-bottom-row`} label="Single row"
             checked={config.bottomRatingsRow}
             onChange={v => onUpdate('bottomRatingsRow', v)}

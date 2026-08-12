@@ -1004,11 +1004,25 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// A held-out source keeps its place in the strip so the gap is visible.
 	// Kept out of allRatings deliberately: that list feeds the average, the
 	// ring and the score bar, and a placeholder carries no score to average.
+	// A rating resting on a handful of votes claims more than it can support, so
+	// it is dropped before the average, the ring and the bar see it.
+	allRatings, thinSources := splitThinRatings(allRatings, req.Config)
+	for _, name := range thinSources {
+		p.log().DebugContext(ctx, "Hid a rating with too few votes to mean anything",
+			"source", name, "media_id", req.MediaID)
+	}
 	stripRatings := allRatings
 	// Turning the mark off leaves the source out of the strip entirely rather
 	// than drawing an empty dimmed plate, which would say less than nothing.
 	if req.Config.RatingUnavailableMark {
 		for _, name := range p.unavailableSources(degradedSources, req.Config.Ratings, allRatings) {
+			stripRatings = append(stripRatings, provider.Rating{Source: name, Unavailable: true})
+		}
+	}
+	// A rating hidden for thin votes keeps its place in the strip under the same
+	// mark as a held-out one: the source was wanted and is not being shown.
+	if req.Config.RatingUnavailableMark {
+		for _, name := range thinSources {
 			stripRatings = append(stripRatings, provider.Rating{Source: name, Unavailable: true})
 		}
 	}

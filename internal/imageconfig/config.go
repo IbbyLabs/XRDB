@@ -456,6 +456,12 @@ type RatingBadgeConfig struct {
 	// MDBList and TMDB report one, so the badges that have no count are left
 	// unchanged rather than padded with a zero.
 	RatingVoteCounts bool `json:"ratingVoteCounts,omitempty"`
+	// RatingMinVotes hides a rating whose vote count is too low to mean
+	// anything, drawing the held-out mark in its place when that is enabled.
+	RatingMinVotes bool `json:"ratingMinVotes,omitempty"`
+	// RatingMinVotesBySource overrides the built-in minimum for one source. A
+	// zero disables the threshold for that source.
+	RatingMinVotesBySource map[string]int `json:"ratingMinVotesBySource,omitempty"`
 	// IconShape clips a provider's mark to a shape: circle, squircle (a softly
 	// rounded tile) or rounded (a lightly rounded one). Empty leaves the mark
 	// its own outline.
@@ -909,6 +915,8 @@ type rawRating struct {
 	RatingPresentation      *string            `json:"ratingPresentation"`
 	RatingValueMode         *string            `json:"ratingValueMode"`
 	RatingVoteCounts        *bool              `json:"ratingVoteCounts"`
+	RatingMinVotes          *bool              `json:"ratingMinVotes"`
+	RatingMinVotesBySource  map[string]int     `json:"ratingMinVotesBySource"`
 	IconShape               *string            `json:"iconShape"`
 	SideRatingsPosition     *string            `json:"sideRatingsPosition"`
 	SideRatingsOffset       *int               `json:"sideRatingsOffset"`
@@ -1686,6 +1694,19 @@ func parseRating(cfg *Config, r *raw) {
 			cfg.RatingRing = true
 			cfg.RatingPresentation = "none"
 		}
+	}
+	if r.RatingMinVotes != nil {
+		cfg.RatingMinVotes = *r.RatingMinVotes
+	}
+	if len(r.RatingMinVotesBySource) > 0 {
+		m := make(map[string]int, len(r.RatingMinVotesBySource))
+		for k, v := range r.RatingMinVotesBySource {
+			if v < 0 {
+				continue
+			}
+			m[strings.ToLower(strings.TrimSpace(k))] = v
+		}
+		cfg.RatingMinVotesBySource = m
 	}
 	if r.RatingVoteCounts != nil {
 		cfg.RatingVoteCounts = *r.RatingVoteCounts
