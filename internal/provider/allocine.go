@@ -193,11 +193,17 @@ func parseAllocineRatings(page string) []Rating {
 			continue
 		}
 		seen[source] = true
-		out = append(out, Rating{
+		r := Rating{
 			Source: source,
 			Value:  value * 2,
 			Label:  fmt.Sprintf("%.1f", value),
-		})
+		}
+		// Only the audience row. The press row counts reviewing publications,
+		// which is not the quantity a vote count names.
+		if source == "allocine" {
+			r.Votes = parseAllocineVotes(page)
+		}
+		out = append(out, r)
 	}
 	return out
 }
@@ -237,4 +243,19 @@ func abs(v int) int {
 		return -v
 	}
 	return v
+}
+
+// allocineVotesRe reads the audience rating count. Read separately from the
+// score so a layout change costs the count rather than the rating.
+var allocineVotesRe = regexp.MustCompile(
+	`(?is)<span class="[^"]*\brating-title\b[^"]*">\s*Spectateurs\s*</span>.{0,800}?stareval-review[^>]*>\s*([0-9][0-9\s ,\.]*)\s*notes`)
+
+// parseAllocineVotes reads how many people rated a title, or 0 when the page
+// does not say.
+func parseAllocineVotes(page string) int {
+	m := allocineVotesRe.FindStringSubmatch(page)
+	if len(m) < 2 {
+		return 0
+	}
+	return parseGroupedInt(strings.TrimSpace(strings.ReplaceAll(m[1], "\u00a0", "")))
 }

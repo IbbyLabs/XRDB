@@ -93,6 +93,7 @@ func (f *Filmweb) FetchByTitle(ctx context.Context, mediaType, title, originalTi
 	return &MediaMeta{Ratings: []Rating{{
 		Source: "filmweb",
 		Value:  value,
+		Votes:  parseFilmwebVotes(page),
 		Label:  fmt.Sprintf("%.1f", value),
 	}}}, nil
 }
@@ -187,4 +188,27 @@ func parseFilmwebRating(page string) (float64, bool) {
 		}
 	}
 	return 0, false
+}
+
+// filmwebVoteRes read the number of ratings from the same payloads the score
+// comes from. Read separately from the score so a layout that moves the count
+// leaves the rating alone: no match is no count, which renders as unknown.
+var filmwebVoteRes = []*regexp.Regexp{
+	regexp.MustCompile(`(?is)setSource\('filmDataRating',\s*\{.{0,400}?"?count"?\s*:\s*"?([0-9][0-9\s,]*)"?`),
+	regexp.MustCompile(`(?is)setSource\('filmRating',\s*\{.{0,400}?"?count"?\s*:\s*"?([0-9][0-9\s,]*)"?`),
+	regexp.MustCompile(`(?is)itemprop="ratingCount"[^>]*>\s*([0-9][0-9\s,]*)\s*<`),
+	regexp.MustCompile(`(?is)itemprop="ratingCount"[^>]*content="([0-9]+)"`),
+}
+
+// parseFilmwebVotes reads how many people rated a title, or 0 when the page
+// does not say.
+func parseFilmwebVotes(page string) int {
+	for _, re := range filmwebVoteRes {
+		if m := re.FindStringSubmatch(page); len(m) > 1 {
+			if n := parseGroupedInt(strings.TrimSpace(m[1])); n > 0 {
+				return n
+			}
+		}
+	}
+	return 0
 }
