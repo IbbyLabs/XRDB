@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.82.2](https://github.com/IbbyLabs/XRDB/compare/v3.82.1...v3.82.2) (2026-08-12)
+
+
+### Fixed
+
+* **tmdb:** render a bare id that turns out to be a series (BUG-265) ([454a7ff](https://github.com/IbbyLabs/XRDB/commit/454a7ff4ac49007b6e78e1c4538d5fad2720c26f))
+
 ## [3.82.1](https://github.com/IbbyLabs/XRDB/compare/v3.82.0...v3.82.1) (2026-08-12)
 
 
