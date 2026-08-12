@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.82.3](https://github.com/IbbyLabs/XRDB/compare/v3.82.2...v3.82.3) (2026-08-12)
+
+
+### Fixed
+
+* **ratings:** say whose key a hold-out spent on every gate ([34dbe60](https://github.com/IbbyLabs/XRDB/commit/34dbe60794aebf83d097c2a59b8c85281a0868e4))
+
 ## [3.82.2](https://github.com/IbbyLabs/XRDB/compare/v3.82.1...v3.82.2) (2026-08-12)
 
 
