@@ -51,7 +51,13 @@ type budgetGovernor struct {
 	source      string
 	reserveFrac float64
 	maxRPS      float64
-	burst       float64
+	// burst is the budget arm's bucket, recomputed from the surplus on every
+	// allowance update. Never below mdblistDefaultBurst.
+	burst float64
+	// ceilBurst is the instantaneous allowance at the edge: how many calls may
+	// leave at once before maxRPS paces them. The budget arm has its own,
+	// because the two bound different things and one knob cannot serve both.
+	ceilBurst float64
 
 	// now and sleep are swapped in tests so no test waits on a real clock.
 	now   func() time.Time
@@ -114,7 +120,7 @@ const (
 func newBudgetGovernor(source string) *budgetGovernor {
 	reservePct := envFloat("XRDB_MDBLIST_RESERVE_PCT", mdblistDefaultReservePct, 0, 90)
 	maxRPS := envFloat("XRDB_MDBLIST_MAX_RPS", mdblistDefaultMaxRPS, mdblistFloorRPS, 10)
-	burst := envFloat("XRDB_MDBLIST_BURST", mdblistDefaultBurst, 1, 1000)
+	ceilBurst := envFloat("XRDB_MDBLIST_BURST", mdblistDefaultBurst, 1, 1000)
 
 	reportEvery := envFloat("XRDB_MDBLIST_REPORT_SECONDS", mdblistDefaultReportSeconds, 10, 3600)
 
@@ -122,12 +128,13 @@ func newBudgetGovernor(source string) *budgetGovernor {
 		source:      source,
 		reserveFrac: reservePct / 100,
 		maxRPS:      maxRPS,
-		burst:       burst,
+		ceilBurst:   ceilBurst,
 		reportEvery: time.Duration(reportEvery * float64(time.Second)),
 		now:         time.Now,
 		sleep:       sleepUntil,
 	}
 	g.rate, _, g.paced = g.rateFor(mdblistAssumedDailyLimit, mdblistAssumedDailyLimit, dailyWindow.Seconds())
+	g.burst = g.burstFor(mdblistAssumedDailyLimit, mdblistAssumedDailyLimit, dailyWindow.Seconds())
 	return g
 }
 
@@ -190,14 +197,14 @@ func (g *budgetGovernor) takeCeiling(budget time.Duration, bounded bool) (time.D
 	now := g.now()
 	if g.ceilLast.IsZero() {
 		g.ceilLast = now
-		g.ceilTokens = g.burst
+		g.ceilTokens = g.ceilBurst
 	}
 	if elapsed := now.Sub(g.ceilLast); elapsed > 0 {
 		g.ceilTokens += elapsed.Seconds() * g.maxRPS
 		g.ceilLast = now
 	}
-	if g.ceilTokens > g.burst {
-		g.ceilTokens = g.burst
+	if g.ceilTokens > g.ceilBurst {
+		g.ceilTokens = g.ceilBurst
 	}
 	remaining := g.ceilTokens - 1
 	delay := time.Duration(0)
@@ -263,9 +270,11 @@ func (g *budgetGovernor) observe(ctx context.Context, h http.Header) {
 	g.mu.Lock()
 	secondsLeft := reset - float64(g.now().Unix())
 	rate, inReserve, paced := g.rateFor(limit, remaining, secondsLeft)
+	burst := g.burstFor(limit, remaining, secondsLeft)
 	g.paced = paced
 	previous, wasInReserve, wasSeen := g.loggedRate, g.inReserve, g.seen
 	g.rate, g.inReserve, g.seen = rate, inReserve, true
+	g.burst = burst
 	gearChanged := !wasSeen || inReserve != wasInReserve ||
 		rate <= previous/2 || rate >= previous*2
 	if gearChanged {
@@ -323,6 +332,33 @@ func (g *budgetGovernor) rateFor(limit, remaining, secondsLeft float64) (float64
 		return g.maxRPS, false, pacedByCeiling
 	}
 	return rate, false, pacedByBudget
+}
+
+// burstFor sizes the budget arm's bucket from how far ahead of the even-spend
+// line we are. Spending the surplus only returns the day to the pace it would
+// have been on anyway, so lending it cannot overrun the allowance.
+//
+// The surplus is widest exactly when the sustained rate is tightest, because
+// both are driven by how much of the window is left: early in the day the rate
+// divides the budget over many seconds, and little has been spent.
+//
+// This bounds no throughput. maxRPS and ceilBurst are what MDBList sees.
+func (g *budgetGovernor) burstFor(limit, remaining, secondsLeft float64) float64 {
+	usable := limit - limit*g.reserveFrac
+	window := dailyWindow.Seconds()
+	elapsed := window - secondsLeft
+	if elapsed < 0 {
+		elapsed = 0
+	}
+	if elapsed > window {
+		elapsed = window
+	}
+	spent := limit - remaining
+	surplus := usable*(elapsed/window) - spent
+	if surplus < mdblistDefaultBurst {
+		return mdblistDefaultBurst
+	}
+	return surplus
 }
 
 // pacedNow reports the constraint that set the rate in force.

@@ -174,6 +174,11 @@ func TestGovernorLetsABurstThrough(t *testing.T) {
 func TestGovernorRefillsAtTheComputedRate(t *testing.T) {
 	g, clock, _ := newTestGovernor(t)
 	g.observe(context.Background(), allowanceHeaders(100000, 100000, clock.t.Add(time.Minute))) // 5/s
+	// A full allowance a minute from reset is far ahead of the even-spend line,
+	// so the derived bucket is thousands deep and would never empty. Pinned to
+	// the floor because the subject here is the refill, not the sizing, which
+	// TestGovernorBurstFollowsTheSurplus covers.
+	g.burst = mdblistDefaultBurst
 
 	for range int(mdblistDefaultBurst) {
 		if delay, _ := g.take(0, false); delay != 0 {
@@ -236,8 +241,10 @@ func TestGovernorSettingsComeFromTheEnvironment(t *testing.T) {
 	t.Setenv("XRDB_MDBLIST_BURST", "10")
 
 	g := newBudgetGovernor("mdblist")
-	if g.reserveFrac != 0.4 || g.maxRPS != 2 || g.burst != 10 {
-		t.Fatalf("got reserve=%.2f max=%.1f burst=%.0f", g.reserveFrac, g.maxRPS, g.burst)
+	// The env knob sets the ceiling burst. The budget arm's bucket is derived
+	// from the surplus and is not configurable.
+	if g.reserveFrac != 0.4 || g.maxRPS != 2 || g.ceilBurst != 10 {
+		t.Fatalf("got reserve=%.2f max=%.1f ceilBurst=%.0f", g.reserveFrac, g.maxRPS, g.ceilBurst)
 	}
 	// 60,000 usable over a full day, well under the 2/s ceiling.
 	if got, _, _ := g.rateFor(100000, 100000, dailyWindow.Seconds()); !closeEnough(got, 60000.0/86400) {
@@ -304,5 +311,62 @@ func TestTransportFeedsTheGovernor(t *testing.T) {
 	}
 	if !g.seen {
 		t.Error("the governor was not shown the response headers")
+	}
+}
+
+// The budget arm refused work while 99.7% of the day's allowance sat unspent,
+// because its rate divides the remaining budget by the seconds left and that is
+// smallest at the start of the window. The bucket follows the surplus instead:
+// how far under the even-spend line we are, which is widest exactly then.
+func TestGovernorBurstFollowsTheSurplus(t *testing.T) {
+	g, _, _ := newTestGovernor(t)
+	const limit = 100000
+	usable := float64(limit) * (1 - g.reserveFrac)
+
+	// 01:33, the measured case: 84,571s left, 334 spent.
+	got := g.burstFor(limit, limit-334, 84571)
+	want := usable*((dailyWindow.Seconds()-84571)/dailyWindow.Seconds()) - 334
+	if math.Abs(got-want) > 1 {
+		t.Errorf("burst = %.0f, want %.0f", got, want)
+	}
+	if got <= mdblistDefaultBurst {
+		t.Errorf("burst = %.0f, no better than the fixed bucket that refused 42 renders", got)
+	}
+
+	// Spending ahead of the line earns no surplus, so the bucket cannot grow
+	// past the floor for a caller that is already overspending.
+	if got := g.burstFor(limit, 1000, 43200); got != mdblistDefaultBurst {
+		t.Errorf("burst = %.0f for an overspending day, want the floor %.0f", got, mdblistDefaultBurst)
+	}
+
+	// The control: on the even-spend line exactly, there is nothing to lend.
+	half := usable / 2
+	if got := g.burstFor(limit, float64(limit)-half, dailyWindow.Seconds()/2); got != mdblistDefaultBurst {
+		t.Errorf("burst = %.0f on the line, want the floor %.0f", got, mdblistDefaultBurst)
+	}
+}
+
+// The two arms bound different things. One knob for both meant raising the
+// budget bucket also widened what may hit the source at once.
+func TestTheCeilingBurstIsSeparateFromTheBudgetBurst(t *testing.T) {
+	t.Setenv("XRDB_MDBLIST_BURST", "120")
+	g := newBudgetGovernor("mdblist")
+	if g.ceilBurst != 120 {
+		t.Errorf("ceilBurst = %.0f, want 120", g.ceilBurst)
+	}
+	// Derived, so a full allowance at the start of the window lends nothing.
+	if g.burst != mdblistDefaultBurst {
+		t.Errorf("budget burst = %.0f, want the floor %.0f; the env knob must not reach it",
+			g.burst, mdblistDefaultBurst)
+	}
+
+	// The fields being distinct proves nothing about the bucket that reads
+	// them: drive the ceiling and watch which number bounds it. With the arms
+	// sharing one field this paces at 30.
+	g.now = func() time.Time { return time.Unix(0, 0) }
+	for i := range 60 {
+		if delay, _ := g.takeCeiling(0, false); delay != 0 {
+			t.Fatalf("ceiling paced call %d; it is reading the budget bucket, not its own", i+1)
+		}
 	}
 }
