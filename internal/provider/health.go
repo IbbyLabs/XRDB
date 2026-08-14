@@ -33,6 +33,18 @@ type sourceState struct {
 	successes       int64
 	failures        int64
 	staleServes     int64
+	// heldOutEmpty counts renders that lost a rating: held out with nothing
+	// remembered, so the badge is left empty. Keyed by the gate that refused,
+	// because a source refusing us and our own pacing declining to spend do the
+	// same visible damage and want opposite responses. staleServes counts the
+	// rescues; these count the losses.
+	//
+	// Split by whose key was used. Both are real damage — a person is looking at
+	// a poster with no rating either way — but only the shared one is caused by
+	// how this server paces itself, so mixing them would hide a change in our own
+	// behaviour behind other people's spent allowances.
+	heldOutEmpty      map[string]int64
+	heldOutEmptyOwner map[string]int64
 	// cooldownUntil is set when a source refuses for rate-limit reasons. Live
 	// renders skip it until then and serve the remembered value instead.
 	//
@@ -87,6 +99,23 @@ type SourceHealth struct {
 	// CoolingOffBulk is the hold a catalogue sweep is under. It can be set while
 	// the source still answers people normally, which is the whole point.
 	CoolingOffBulk bool `json:"coolingOffBulk"`
+	// HeldOutEmpty counts renders on the SHARED key that lost a rating, keyed by
+	// the gate that refused. Unlike StaleServes these are the visible losses:
+	// nothing was remembered, so the badge came out empty. Split by gate because
+	// our own pacing and a source refusing us produce the same damage and want
+	// opposite responses.
+	//
+	// Owner-keyed renders are not in here. They are in HeldOutEmptyOwnerKeyed,
+	// and the damage is the sum of the two.
+	//
+	// An omitted map means none were lost, not that nothing was measured: a
+	// source appears in this list at all only once it has been asked, so its
+	// presence with no map here is a positive answer rather than a gap.
+	HeldOutEmpty map[string]int64 `json:"heldOutEmpty,omitempty"`
+	// HeldOutEmptyOwnerKeyed is the same count for renders carrying a caller's
+	// own key. Kept apart so a change in how this server paces itself is visible
+	// in HeldOutEmpty rather than buried under other people's spent allowances.
+	HeldOutEmptyOwnerKeyed map[string]int64 `json:"heldOutEmptyOwnerKeyed,omitempty"`
 }
 
 const (
@@ -377,6 +406,43 @@ func (h *HealthTracker) LastGoodAge(source, key string) (*MediaMeta, time.Durati
 	return ge.meta, now.Sub(ge.storedAt), true
 }
 
+// copyCounts returns a copy so a snapshot cannot be mutated into the tracker,
+// and nil for an empty map so the field is omitted rather than serialised as {}.
+func copyCounts(m map[string]int64) map[string]int64 {
+	if len(m) == 0 {
+		return nil
+	}
+	out := make(map[string]int64, len(m))
+	for k, v := range m {
+		out[k] = v
+	}
+	return out
+}
+
+// NoteHeldOutEmpty records a render that lost a rating because the source was
+// held out and nothing was remembered. gate names which constraint refused.
+//
+// ownerKeyed separates the two rather than discarding one: an owner-keyed render
+// with an empty badge is a person looking at a poster with no rating, so it is
+// real damage and belongs in the total. It is kept in its own tally because only
+// the shared count answers "did our own pacing get better".
+func (h *HealthTracker) NoteHeldOutEmpty(source, gate string, ownerKeyed bool) {
+	if h == nil || gate == "" {
+		return
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	st := h.stateLocked(source)
+	target := &st.heldOutEmpty
+	if ownerKeyed {
+		target = &st.heldOutEmptyOwner
+	}
+	if *target == nil {
+		*target = make(map[string]int64, 4)
+	}
+	(*target)[gate]++
+}
+
 // Snapshot returns per-source health, sources with the most recent trouble
 // first so a degraded one is not buried.
 func (h *HealthTracker) Snapshot() []SourceHealth {
@@ -398,9 +464,11 @@ func (h *HealthTracker) Snapshot() []SourceHealth {
 			StaleServes:     st.staleServes,
 			// The admin view reports the interactive hold: it is the one that
 			// means a person's render is losing the source.
-			CoolingOff:     time.Now().Before(st.cooldownUntil[CallerInteractive]),
-			CoolingOffBulk: time.Now().Before(st.cooldownUntil[CallerBulk]),
-			Cooldowns:      st.cooldowns,
+			CoolingOff:             time.Now().Before(st.cooldownUntil[CallerInteractive]),
+			CoolingOffBulk:         time.Now().Before(st.cooldownUntil[CallerBulk]),
+			Cooldowns:              st.cooldowns,
+			HeldOutEmpty:           copyCounts(st.heldOutEmpty),
+			HeldOutEmptyOwnerKeyed: copyCounts(st.heldOutEmptyOwner),
 		}
 		if !st.lastSuccess.IsZero() {
 			sh.LastSuccess = st.lastSuccess.UTC().Format(time.RFC3339)

@@ -1915,6 +1915,11 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 					// the possibility asserted something nothing had checked.
 					p.log().WarnContext(ctx, "A ratings source was held out and did not answer; its badge is left empty",
 						attrs...)
+					// Counted as well as logged: the log holds minutes, and the
+					// question "how many renders lost a rating today" needs an
+					// answer that outlives the window.
+					p.health.NoteHeldOutEmpty(prov.Name(), gate,
+						provider.HasOwnerKey(ctx, prov.Name()))
 				}
 				return
 			}
