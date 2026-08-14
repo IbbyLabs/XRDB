@@ -220,6 +220,11 @@ func main() {
 		// Keeps the last good answer per source, so a source that breaks or gets
 		// throttled falls back instead of quietly dropping its badge.
 		pipeline.SetHealthTracker(provider.NewHealthTracker(0, 0))
+		compose.SetRenderTimingSample(cfg.RenderTimingSample)
+		if cfg.RenderTimingSample > 1 {
+			logger.Info("Render phase timings will be reported for a sample of renders",
+				"one_render_in", cfg.RenderTimingSample)
+		}
 		// Lets a quality badge stand for a release that exists rather than a
 		// label that was picked.
 		if cfg.StreamAddonURL != "" {

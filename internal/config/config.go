@@ -128,6 +128,9 @@ type Config struct {
 	// scrape takes tens of seconds, so this is sized to let the answer arrive
 	// and be remembered, not to a render waiting for it.
 	StreamTimeout time.Duration
+	// RenderTimingSample reports one render in n phase breakdowns at info, so a
+	// live instance can be asked where its time goes without debug's volume.
+	RenderTimingSample int
 	// StreamBudget is how long a render waits for that call before drawing the
 	// picked badges unverified. Sized to an addon answering from its own cache;
 	// the call carries on without the render and warms the next one.
@@ -391,6 +394,15 @@ func Load() Config {
 			streamTimeout = d
 		}
 	}
+	// One render in n reports its phase breakdown at info. Zero or one leaves it
+	// at debug, where a live instance never sees it.
+	renderTimingSample := 0
+	if raw := os.Getenv("XRDB_RENDER_TIMING_SAMPLE"); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+			renderTimingSample = n
+		}
+	}
+
 	streamBudget := 300 * time.Millisecond
 	if raw := os.Getenv("XRDB_STREAM_BUDGET_MS"); raw != "" {
 		if d, err := time.ParseDuration(raw + "ms"); err == nil && d > 0 {
@@ -527,6 +539,7 @@ func Load() Config {
 		StreamAddonURL:        streamAddonURL(),
 		StreamTimeout:         streamTimeout,
 		StreamBudget:          streamBudget,
+		RenderTimingSample:    renderTimingSample,
 		StreamCacheTTL:        streamCacheTTL,
 		CacheTTL:              cacheTTL,
 		DegradedCacheTTL:      degradedCacheTTL,

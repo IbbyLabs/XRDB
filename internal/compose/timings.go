@@ -3,6 +3,7 @@ package compose
 import (
 	"context"
 	"log/slog"
+	"sync/atomic"
 	"time"
 
 	"xrdb_rewrite/internal/logging"
@@ -38,10 +39,39 @@ func ratingsOf(meta *provider.MediaMeta) []provider.Rating {
 	return meta.Ratings
 }
 
-// log emits the breakdown at debug. Phases are only meaningful together, so
-// they go out as one record rather than one line per phase.
+// renderTimingSampler decides which renders report their breakdown at info.
+// One record per render is an access log's volume; at info that is more than a
+// busy instance should carry, and at debug nobody sees it on a live one.
+var renderTimingSampler atomic.Int64
+
+// SetRenderTimingSample reports one render in n at info. Zero or one leaves the
+// breakdown at debug, which is where it was.
+func SetRenderTimingSample(n int) {
+	if n < 0 {
+		n = 0
+	}
+	renderTimingSampler.Store(int64(n))
+}
+
+var renderTimingCount atomic.Int64
+
+// sampledLevel is info for the renders that fall on the sample, debug for the
+// rest, so a breakdown is available on an instance nobody can turn debug on.
+func sampledLevel() slog.Level {
+	n := renderTimingSampler.Load()
+	if n <= 1 {
+		return slog.LevelDebug
+	}
+	if renderTimingCount.Add(1)%n == 0 {
+		return slog.LevelInfo
+	}
+	return slog.LevelDebug
+}
+
+// log emits the breakdown as one record: phases are only meaningful together.
 func (t *renderTimings) log(ctx context.Context, logger *slog.Logger, req Request) {
-	if !logger.Enabled(ctx, slog.LevelDebug) {
+	level := sampledLevel()
+	if !logger.Enabled(ctx, level) {
 		return
 	}
 	attrs := make([]any, 0, len(t.phases)+5)
@@ -54,5 +84,5 @@ func (t *renderTimings) log(ctx context.Context, logger *slog.Logger, req Reques
 	for _, a := range t.phases {
 		attrs = append(attrs, a)
 	}
-	logger.DebugContext(ctx, "Composed a render", attrs...)
+	logger.Log(ctx, level, "Composed a render", attrs...)
 }
