@@ -2,6 +2,23 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.85.0](https://github.com/IbbyLabs/XRDB/compare/v3.84.0...v3.85.0) (2026-08-14)
+
+
+### Added
+
+* **health:** count renders that lost a rating, per gate ([d5cf7dd](https://github.com/IbbyLabs/XRDB/commit/d5cf7ddfb3a3284db1a2e4809254cb61bd2cd67c))
+
+
+### Fixed
+
+* **mdblist:** size the budget burst from the unspent surplus ([28150d9](https://github.com/IbbyLabs/XRDB/commit/28150d9acab53a063bb61ce0f98237217cf580b1))
+
+
+### Documentation
+
+* **health:** say staleServes counts rescues, not losses ([5a496d2](https://github.com/IbbyLabs/XRDB/commit/5a496d24e3fa575e4b9ecc10949d1208ee741c60))
+
 ## [3.84.0](https://github.com/IbbyLabs/XRDB/compare/v3.83.0...v3.84.0) (2026-08-12)
 
 
