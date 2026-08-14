@@ -93,3 +93,34 @@ func TestASweepStillOverItsBoundWarns(t *testing.T) {
 		t.Error("a sweep that left the cache over its byte bound did not warn")
 	}
 }
+
+// The sweep's cost scales with the number of entries, not with what it removes,
+// because it opens every file to read the expiry header. Without a duration on
+// the line that cost can only be inferred from the entry count.
+func TestTheSweepReportsHowLongItTook(t *testing.T) {
+	buf := captureSlog(t, slog.LevelDebug)
+	c, err := New(t.TempDir(), time.Minute, 10, 1<<20)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	defer c.Close()
+
+	for i := 0; i < 8; i++ {
+		if err := c.Set(string(rune('a'+i)), []byte("payload")); err != nil {
+			t.Fatalf("Set: %v", err)
+		}
+	}
+	c.sweepWithBounds(1000, 1<<30)
+
+	got := lines(buf)
+	if len(got) == 0 {
+		t.Fatal("the sweep logged nothing")
+	}
+	last := got[len(got)-1]
+	if _, ok := last["took_ms"]; !ok {
+		t.Fatalf("no took_ms on the sweep line: %v", last)
+	}
+	if v, ok := last["took_ms"].(float64); !ok || v < 0 {
+		t.Fatalf("took_ms is not a usable duration: %v", last["took_ms"])
+	}
+}

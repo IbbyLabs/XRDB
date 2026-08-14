@@ -375,6 +375,10 @@ func (c *Cache) sweep() {
 }
 
 func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
+	// A sweep opens every file to read its expiry header, so its cost scales
+	// with the number of entries rather than with what it removes. Reported so
+	// that cost is a figure rather than an inference from the entry count.
+	sweepStart := time.Now()
 	dirEntries, err := os.ReadDir(c.dir)
 	if err != nil {
 		return
@@ -438,6 +442,7 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 		"expired", expired, "evicted", evicted,
 		"files", nFiles, "bytes", nBytes,
 		"file_bound", fileBound, "byte_bound", byteBound,
+		"took_ms", time.Since(sweepStart).Milliseconds(),
 	}
 	switch {
 	case nFiles > int64(fileBound) || nBytes > byteBound:
