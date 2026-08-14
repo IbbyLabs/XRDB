@@ -110,6 +110,15 @@ type Pipeline struct {
 	// streamBreak stops asking a stream addon that has stopped answering.
 	streamBreak  streamBreaker
 	qualityCache *qualityCache
+	// streamWarm bounds how many titles are being looked up in the background
+	// at once. A catalogue of distinct unseen titles would otherwise open one
+	// upstream request per poster.
+	streamWarm chan struct{}
+	// streamBudgetD bounds the render's wait; streamWarmTimeoutD bounds the
+	// lookup once the render has stopped waiting. Zero on either takes the
+	// package default.
+	streamBudgetD      time.Duration
+	streamWarmTimeoutD time.Duration
 }
 
 // trendingResolver is satisfied by *provider.TrendingIndex.

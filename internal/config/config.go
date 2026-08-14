@@ -124,9 +124,14 @@ type Config struct {
 	// A URL carrying a debrid token narrows the answer to that account, so it
 	// is treated as a secret and never logged past its host.
 	StreamAddonURL string
-	// StreamTimeout bounds the addon call. It runs alongside the rating
-	// sources, so this is a ceiling on the render, not an addition to it.
+	// StreamTimeout bounds the addon call itself. An addon that has to go and
+	// scrape takes tens of seconds, so this is sized to let the answer arrive
+	// and be remembered, not to a render waiting for it.
 	StreamTimeout time.Duration
+	// StreamBudget is how long a render waits for that call before drawing the
+	// picked badges unverified. Sized to an addon answering from its own cache;
+	// the call carries on without the render and warms the next one.
+	StreamBudget time.Duration
 	// StreamCacheTTL is how long a title's detected qualities stand. Availability
 	// moves far more slowly than a render config changes.
 	StreamCacheTTL  time.Duration
@@ -380,12 +385,24 @@ func Load() Config {
 	}
 	// The addon answers alongside the rating sources, so this bounds the wait
 	// rather than adding to it. Past this the render goes out without the row.
-	streamTimeout := 4 * time.Second
+	streamTimeout := 30 * time.Second
 	if raw := os.Getenv("XRDB_STREAM_TIMEOUT_MS"); raw != "" {
 		if d, err := time.ParseDuration(raw + "ms"); err == nil && d > 0 {
 			streamTimeout = d
 		}
 	}
+	streamBudget := 300 * time.Millisecond
+	if raw := os.Getenv("XRDB_STREAM_BUDGET_MS"); raw != "" {
+		if d, err := time.ParseDuration(raw + "ms"); err == nil && d > 0 {
+			streamBudget = d
+		}
+	}
+	// A budget at or above the call's own timeout is the behaviour this split
+	// exists to remove: the render would wait out the whole call again.
+	if streamBudget >= streamTimeout {
+		streamBudget = streamTimeout / 10
+	}
+
 	// Ratings are per title, so they outlive any one render config, and they
 	// barely move day to day. A day's term keeps the paced sources off the render
 	// path for titles already seen. Zero disables the cache. The stored shape is
@@ -509,6 +526,7 @@ func Load() Config {
 		RatingsCacheTTL:       ratingsCacheTTL,
 		StreamAddonURL:        streamAddonURL(),
 		StreamTimeout:         streamTimeout,
+		StreamBudget:          streamBudget,
 		StreamCacheTTL:        streamCacheTTL,
 		CacheTTL:              cacheTTL,
 		DegradedCacheTTL:      degradedCacheTTL,

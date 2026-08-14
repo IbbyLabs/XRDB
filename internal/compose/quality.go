@@ -105,6 +105,16 @@ func (c *qualityCache) do(ctx context.Context, key string, fetch func() (map[str
 func (p *Pipeline) SetQualityDetector(d qualityDetector, ttl time.Duration) {
 	p.quality = d
 	p.qualityCache = newQualityCache(ttl)
+	if p.streamWarm == nil {
+		p.streamWarm = make(chan struct{}, DefaultStreamWarmSlots)
+	}
+}
+
+// SetStreamBudgets sets how long a render waits for the quality check, and how
+// long the lookup may then run on its own. Zero on either keeps the default.
+func (p *Pipeline) SetStreamBudgets(budget, warm time.Duration) {
+	p.streamBudgetD = budget
+	p.streamWarmTimeoutD = warm
 }
 
 // streamContentType maps a render onto the addon's own vocabulary. An id
@@ -155,9 +165,21 @@ func (p *Pipeline) startQualityDetect(ctx context.Context, cfg imageconfigBadges
 		err    error
 	}
 	ch := make(chan outcome, 1)
+
+	// The lookup outlives the render that started it. An addon serving from its
+	// own cache answers in milliseconds; one that has to go and scrape takes
+	// tens of seconds, and a render cannot be held for that. So the render waits
+	// a short budget and the lookup carries on without it, which is what leaves
+	// the answer ready for the next render of the same title.
+	if !p.acquireWarmSlot() {
+		return nil
+	}
 	go func() {
-		tokens, err := p.qualityCache.do(ctx, key, func() (map[string]bool, error) {
-			return p.quality.Detect(ctx, streamType, id)
+		defer p.releaseWarmSlot()
+		fetchCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), p.streamWarmTimeout())
+		defer cancel()
+		tokens, err := p.qualityCache.do(fetchCtx, key, func() (map[string]bool, error) {
+			return p.quality.Detect(fetchCtx, streamType, id)
 		})
 		if err != nil {
 			p.streamBreak.failed()
@@ -168,7 +190,20 @@ func (p *Pipeline) startQualityDetect(ctx context.Context, cfg imageconfigBadges
 	}()
 
 	return func() ([]string, bool) {
-		res := <-ch
+		timer := time.NewTimer(p.streamBudget())
+		defer timer.Stop()
+
+		var res outcome
+		select {
+		case res = <-ch:
+		case <-timer.C:
+			p.log().DebugContext(ctx, "The quality check did not answer within its budget; drawing the picked badges unverified while the lookup finishes",
+				"id", logging.RequestID(ctx), "media_id", id, "content_type", streamType)
+			return selected, false
+		case <-ctx.Done():
+			return selected, false
+		}
+
 		if res.err != nil {
 			p.log().WarnContext(ctx, "Could not check which qualities a title is available in; drawing the picked badges unverified",
 				"id", logging.RequestID(ctx), "media_id", id,
@@ -200,4 +235,55 @@ func filterAvailableBadges(selected []string, available map[string]bool) []strin
 		}
 	}
 	return kept
+}
+
+// DefaultStreamBudget is how long a render waits for the quality check before
+// drawing the picked badges unverified. Sized to an addon answering from its own
+// cache, not to one going out to scrape.
+const DefaultStreamBudget = 300 * time.Millisecond
+
+// DefaultStreamWarmTimeout bounds a lookup once the render has stopped waiting
+// for it. Long enough for an addon to scrape and answer.
+const DefaultStreamWarmTimeout = 30 * time.Second
+
+// DefaultStreamWarmSlots bounds concurrent background lookups.
+const DefaultStreamWarmSlots = 4
+
+func (p *Pipeline) streamBudget() time.Duration {
+	if p.streamBudgetD > 0 {
+		return p.streamBudgetD
+	}
+	return DefaultStreamBudget
+}
+
+func (p *Pipeline) streamWarmTimeout() time.Duration {
+	if p.streamWarmTimeoutD > 0 {
+		return p.streamWarmTimeoutD
+	}
+	return DefaultStreamWarmTimeout
+}
+
+// acquireWarmSlot takes one of the background lookup slots. A render that finds
+// none free draws the picked badges as they are rather than queueing: the slots
+// being full already means a lookup is running for something.
+func (p *Pipeline) acquireWarmSlot() bool {
+	if p.streamWarm == nil {
+		return true
+	}
+	select {
+	case p.streamWarm <- struct{}{}:
+		return true
+	default:
+		return false
+	}
+}
+
+func (p *Pipeline) releaseWarmSlot() {
+	if p.streamWarm == nil {
+		return
+	}
+	select {
+	case <-p.streamWarm:
+	default:
+	}
 }

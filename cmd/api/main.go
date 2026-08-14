@@ -225,9 +225,11 @@ func main() {
 		if cfg.StreamAddonURL != "" {
 			sq := provider.NewStreamQuality(cfg.StreamAddonURL, cfg.StreamTimeout)
 			pipeline.SetQualityDetector(sq, cfg.StreamCacheTTL)
+			pipeline.SetStreamBudgets(cfg.StreamBudget, cfg.StreamTimeout)
 			logger.Info("Quality badges will be checked against a stream addon",
 				"addon", logging.RedactURL(sq.BaseURL()),
-				"timeout", cfg.StreamTimeout, "cache_ttl", cfg.StreamCacheTTL)
+				"render_budget", cfg.StreamBudget, "call_timeout", cfg.StreamTimeout,
+				"cache_ttl", cfg.StreamCacheTTL)
 		}
 	}
 
