@@ -71,9 +71,14 @@ type SourceHealth struct {
 	ConsecutiveFail int    `json:"consecutiveFailures"`
 	Successes       int64  `json:"successes"`
 	Failures        int64  `json:"failures"`
-	// StaleServes counts how often a render fell back to a remembered value
-	// because the live fetch failed. A rising number means a source is broken
-	// even while renders still look right.
+	// StaleServes counts how often a render fell back to a remembered value,
+	// for any reason: the live fetch failed, or the source was held out and
+	// never called. So it rises alongside Failures when a source is broken, and
+	// on its own when pacing or a cooldown declined to spend.
+	//
+	// It counts rescues, not losses. A hold-out with nothing remembered leaves
+	// the badge empty and never reaches here, so this number says nothing about
+	// how many renders lost a rating.
 	StaleServes int64 `json:"staleServes"`
 	// CoolingOff is true while the source is held out of live renders after
 	// refusing on rate-limit grounds. Cooldowns counts how often that started.
