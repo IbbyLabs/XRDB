@@ -22,6 +22,9 @@ type concurrencyLimiter struct {
 	capacity int64
 }
 
+// bulkPollInterval is how often a bulk caller re-checks for a free slot.
+const bulkPollInterval = 50 * time.Millisecond
+
 // renderWeight is what a render of this size costs against the budget, taken
 // from measured render times rather than pixel count, which overstates 4K.
 func renderWeight(size imageconfig.MediaSize) int64 {
@@ -79,6 +82,41 @@ func (l *concurrencyLimiter) acquireWithin(ctx context.Context, wait time.Durati
 	waitCtx, cancel := context.WithTimeout(ctx, wait)
 	defer cancel()
 	return l.sem.Acquire(waitCtx, l.weight(w)) == nil
+}
+
+// acquireBulk takes a slot for a caller sweeping the catalogue. It waits far
+// longer than an interactive request would, and it stands aside whenever one is
+// queued: a sweep has nobody watching it, so making it wait costs less than
+// turning away a request someone is looking at.
+//
+// Standing aside is TryAcquire's own rule: it declines while anything is queued,
+// and only interactive callers ever queue here. Polling it rather than joining
+// that queue is what keeps a sweep out of the way, because the queue is
+// first-in-first-out and a heavy bulk render at its head holds up every lighter
+// request behind it.
+func (l *concurrencyLimiter) acquireBulk(ctx context.Context, wait time.Duration, w int64) bool {
+	if l == nil {
+		return true
+	}
+	weight := l.weight(w)
+	if wait <= 0 {
+		return l.acquire(ctx, w)
+	}
+	waitCtx, cancel := context.WithTimeout(ctx, wait)
+	defer cancel()
+
+	ticker := time.NewTicker(bulkPollInterval)
+	defer ticker.Stop()
+	for {
+		if l.sem.TryAcquire(weight) {
+			return true
+		}
+		select {
+		case <-waitCtx.Done():
+			return false
+		case <-ticker.C:
+		}
+	}
 }
 
 // release frees a slot previously taken by a successful acquire. It is a no-op

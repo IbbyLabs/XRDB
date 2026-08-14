@@ -298,7 +298,15 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			// warm catalogue reload isn't throttled. If the client hangs up or
 			// the request times out while queued, drop it without spending a slot.
 			queueStart := time.Now()
-			if !renderLimiter.acquireWithin(r.Context(), cfg.RenderQueueWait, weight) {
+			// A sweep is made to wait; a person is not. Shedding a request
+			// somebody is looking at to admit one nobody is has it backwards.
+			admitted := false
+			if provider.CallerClassFrom(r.Context()) == provider.CallerBulk {
+				admitted = renderLimiter.acquireBulk(r.Context(), cfg.RenderQueueWaitBulk, weight)
+			} else {
+				admitted = renderLimiter.acquireWithin(r.Context(), cfg.RenderQueueWait, weight)
+			}
+			if !admitted {
 				// Either the caller gave up, or the queue is deeper than the
 				// render throughput can clear. Turning the request away keeps the
 				// wait bounded for everyone behind it; a caller that has cached

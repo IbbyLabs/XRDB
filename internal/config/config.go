@@ -184,6 +184,10 @@ type Config struct {
 	// RenderQueueWait bounds how long a render waits for a slot before the
 	// request is shed. Zero waits forever, which is what produced 144s renders.
 	RenderQueueWait time.Duration
+	// RenderQueueWaitBulk is the same bound for a caller sweeping the catalogue.
+	// Nobody is watching a sweep, so it waits rather than being turned away, and
+	// it stands aside while interactive requests are queued.
+	RenderQueueWaitBulk time.Duration
 	// ArtFetchTimeout bounds the source-artwork HTTP fetch. A stalled fetch
 	// otherwise holds a render slot doing nothing until it elapses, starving
 	// the renders queued behind it.
@@ -491,6 +495,14 @@ func Load() Config {
 			}
 		}
 	}
+	// A sweep has nobody waiting on it, so it is made to wait rather than shed.
+	renderQueueWaitBulk := 60 * time.Second
+	if raw := os.Getenv("XRDB_RENDER_QUEUE_WAIT_BULK_SECONDS"); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
+			renderQueueWaitBulk = time.Duration(n) * time.Second
+		}
+	}
+
 	renderQueueWait := 8 * time.Second
 	if raw := os.Getenv("XRDB_RENDER_QUEUE_WAIT_SECONDS"); raw != "" {
 		if n, err := strconv.Atoi(raw); err == nil && n >= 0 {
@@ -575,6 +587,7 @@ func Load() Config {
 		ConfigEncryptionKey:   os.Getenv("XRDB_CONFIG_ENCRYPTION_KEY"),
 		RenderConcurrency:     renderConcurrency,
 		RenderQueueWait:       renderQueueWait,
+		RenderQueueWaitBulk:   renderQueueWaitBulk,
 		RenderCapPerMinute:    renderCapPerMinute,
 		SharedProfileAliases:  sharedProfileAliases,
 		ArtFetchTimeout:       artFetchTimeout,
