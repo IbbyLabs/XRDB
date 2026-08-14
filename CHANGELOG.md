@@ -2,6 +2,24 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.86.0](https://github.com/IbbyLabs/XRDB/compare/v3.85.0...v3.86.0) (2026-08-14)
+
+
+### Added
+
+* **logging:** report a sample of render phase timings at info ([397f6f7](https://github.com/IbbyLabs/XRDB/commit/397f6f793a568a4bd1b89170163b7fa8b3362889))
+
+
+### Fixed
+
+* **logging:** draw the timing sample at random rather than every nth ([bc9d7c6](https://github.com/IbbyLabs/XRDB/commit/bc9d7c68a935a04a2ada92b78cfbaca5791a7663))
+
+
+### Performance
+
+* **quality:** stop a render waiting out an addon scrape ([6b83f3c](https://github.com/IbbyLabs/XRDB/commit/6b83f3ca7cb95d50b6b9f54a0c5a1de72f2579cd))
+* **render:** make a catalogue sweep yield to interactive traffic ([4d7e051](https://github.com/IbbyLabs/XRDB/commit/4d7e051386711ba2726cc062879007779175a88c))
+
 ## [3.85.0](https://github.com/IbbyLabs/XRDB/compare/v3.84.0...v3.85.0) (2026-08-14)
 
 
