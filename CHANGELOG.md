@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.87.0](https://github.com/IbbyLabs/XRDB/compare/v3.86.0...v3.87.0) (2026-08-14)
+
+
+### Added
+
+* **cache:** report how long a sweep took ([84f1e88](https://github.com/IbbyLabs/XRDB/commit/84f1e88d79f5c6464a79fe46e5e1c584b92d7732))
+
 ## [3.86.0](https://github.com/IbbyLabs/XRDB/compare/v3.85.0...v3.86.0) (2026-08-14)
 
 
