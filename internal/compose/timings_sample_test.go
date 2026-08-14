@@ -18,7 +18,6 @@ func countTimingRecords(t *testing.T, sample, n int) int {
 
 	SetRenderTimingSample(sample)
 	t.Cleanup(func() { SetRenderTimingSample(0) })
-	renderTimingCount.Store(0)
 
 	for i := 0; i < n; i++ {
 		tm := newRenderTimings()
@@ -55,10 +54,16 @@ func TestASampleReportsAtInfo(t *testing.T) {
 	}
 }
 
-func TestTheSampleRateIsRoughlyOneInN(t *testing.T) {
-	got := countTimingRecords(t, 10, 100)
-	if got != 10 {
-		t.Fatalf("one in 10 over 100 renders gave %d records", got)
+// Drawn at random, so the count is near one in n rather than exactly it. Over
+// 20,000 renders at 1-in-100 the expected 200 sits far outside the range either
+// a never-fires or an always-fires sampler would produce.
+func TestTheSampleRateIsNearOneInN(t *testing.T) {
+	const renders, rate = 20000, 100
+	got := countTimingRecords(t, rate, renders)
+	expected := renders / rate
+	if got < expected/2 || got > expected*2 {
+		t.Fatalf("one in %d over %d renders gave %d records, expected near %d",
+			rate, renders, got, expected)
 	}
 }
 

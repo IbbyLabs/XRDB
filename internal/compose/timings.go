@@ -3,6 +3,7 @@ package compose
 import (
 	"context"
 	"log/slog"
+	"math/rand/v2"
 	"sync/atomic"
 	"time"
 
@@ -53,16 +54,18 @@ func SetRenderTimingSample(n int) {
 	renderTimingSampler.Store(int64(n))
 }
 
-var renderTimingCount atomic.Int64
-
 // sampledLevel is info for the renders that fall on the sample, debug for the
 // rest, so a breakdown is available on an instance nobody can turn debug on.
+//
+// Drawn at random rather than every nth. Part of what a breakdown measures is
+// how many renders were already in front of this one, so a fixed stride can sit
+// at the same position in every burst and report that position as the norm.
 func sampledLevel() slog.Level {
 	n := renderTimingSampler.Load()
 	if n <= 1 {
 		return slog.LevelDebug
 	}
-	if renderTimingCount.Add(1)%n == 0 {
+	if rand.IntN(int(n)) == 0 {
 		return slog.LevelInfo
 	}
 	return slog.LevelDebug
