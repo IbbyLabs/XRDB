@@ -2,6 +2,7 @@ package cache
 
 import (
 	"bytes"
+	"fmt"
 	"encoding/json"
 	"log/slog"
 	"os"
@@ -280,5 +281,49 @@ func TestTheReportedSampleCountGrowsWithHistory(t *testing.T) {
 	}
 	if seen[0] == seen[len(seen)-1] {
 		t.Fatal("the sample count never changed, so it cannot signal thin history")
+	}
+}
+
+// A single total cannot say where a 29-second sweep went. The phases have to be
+// separable or the fix gets aimed at whichever part was assumed.
+func TestTheSweepAttributesItsTime(t *testing.T) {
+	buf := captureSlog(t, slog.LevelDebug)
+	c, err := New(t.TempDir(), time.Minute, 10, 1<<20)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	defer c.Close()
+
+	// Enough entries that the phases take measurable time. At eight files every
+	// phase rounds to zero and the arithmetic below cannot fail, which makes it
+	// decoration rather than a check.
+	for i := 0; i < 3000; i++ {
+		if err := c.Set(fmt.Sprintf("k%d", i), []byte("payload")); err != nil {
+			t.Fatalf("Set: %v", err)
+		}
+	}
+	c.sweepWithBounds(10, 1<<30)
+
+	got := lines(buf)
+	last := got[len(got)-1]
+	if last["took_ms"].(float64) == 0 {
+		t.Fatal("the sweep took no measurable time, so the arithmetic below proves nothing")
+	}
+	for _, field := range []string{"readdir_ms", "scan_ms", "expiry_reads_ms", "remove_ms"} {
+		if _, ok := last[field]; !ok {
+			t.Fatalf("no %s on the sweep line: %v", field, last)
+		}
+	}
+	// The parts cannot exceed the whole. A phase timer started in the wrong place
+	// shows up here rather than as a plausible-looking number in production.
+	total := last["took_ms"].(float64)
+	parts := last["readdir_ms"].(float64) + last["scan_ms"].(float64) + last["remove_ms"].(float64)
+	if parts > total+1 {
+		t.Fatalf("phases sum to %.0fms against a %.0fms total", parts, total)
+	}
+	// The expiry reads happen inside the scan, so they cannot exceed it.
+	if last["expiry_reads_ms"].(float64) > last["scan_ms"].(float64)+1 {
+		t.Fatalf("expiry reads %.0fms exceed the scan they happen inside, %.0fms",
+			last["expiry_reads_ms"], last["scan_ms"])
 	}
 }

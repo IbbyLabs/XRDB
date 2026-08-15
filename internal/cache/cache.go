@@ -390,6 +390,13 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 	if err != nil {
 		return
 	}
+	// Split so the cost can be attributed. The scan is the walk plus one stat and
+	// one expiry read per file; removal is the deletions. Optimising the opens is
+	// only worth doing if the scan is where the time goes, and a single total
+	// cannot say.
+	readDirMs := time.Since(sweepStart).Milliseconds()
+	scanStart := time.Now()
+	var expiryReadNs int64
 
 	type diskFile struct {
 		path  string
@@ -408,7 +415,10 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 		if err != nil {
 			continue
 		}
-		if exp, ok := readExpiry(path); ok && now > exp {
+		expiryStart := time.Now()
+		exp, okExp := readExpiry(path)
+		expiryReadNs += time.Since(expiryStart).Nanoseconds()
+		if okExp && now > exp {
 			if os.Remove(path) == nil {
 				expired++
 			}
@@ -417,6 +427,8 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 		files = append(files, diskFile{path: path, size: info.Size(), mtime: info.ModTime()})
 	}
 
+	scanMs := time.Since(scanStart).Milliseconds()
+	removeStart := time.Now()
 	sort.Slice(files, func(i, j int) bool { return files[i].mtime.Before(files[j].mtime) })
 	var totalBytes int64
 	for _, f := range files {
@@ -450,6 +462,10 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 		"files", nFiles, "bytes", nBytes,
 		"file_bound", fileBound, "byte_bound", byteBound,
 		"took_ms", time.Since(sweepStart).Milliseconds(),
+		"readdir_ms", readDirMs,
+		"scan_ms", scanMs,
+		"expiry_reads_ms", expiryReadNs / 1e6,
+		"remove_ms", time.Since(removeStart).Milliseconds(),
 	}
 	// A configured TTL and a byte ceiling are two limits on the same entries, and
 	// the ceiling wins silently: once the tier is full, entries leave by age
