@@ -35,6 +35,7 @@ func TestAReadEntrySurvivesAYoungerUnreadOne(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
+	settled(t, c)
 	defer c.Close()
 
 	mustSet(t, c, "read", "a")
@@ -61,6 +62,7 @@ func TestAgeDecidesAmongEntriesWithTheSameHistory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
+	settled(t, c)
 	defer c.Close()
 
 	mustSet(t, c, "older", "a")
@@ -84,6 +86,7 @@ func TestAHotHitProtectsTheDiskEntryBehindIt(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
+	settled(t, c)
 	defer c.Close()
 
 	mustSet(t, c, "hot", "a")
@@ -116,6 +119,7 @@ func TestRemovalForgetsTheReadMarker(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
+	settled(t, c)
 	defer c.Close()
 
 	mustSet(t, c, "k", "a")
@@ -141,6 +145,7 @@ func TestConcurrentReadsAndSweeps(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
+	settled(t, c)
 	defer c.Close()
 
 	for i := 0; i < 50; i++ {
@@ -178,6 +183,7 @@ func TestReadMarkersDoNotOutliveTheirFiles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
+	settled(t, c)
 	defer c.Close()
 
 	mustSet(t, c, "k", "a")
@@ -206,6 +212,7 @@ func TestLeastRecentlyReadGoesFirst(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
+	settled(t, c)
 	defer c.Close()
 
 	// Written newest-first, so write age and read recency disagree.

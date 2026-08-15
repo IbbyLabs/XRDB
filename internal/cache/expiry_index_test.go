@@ -20,6 +20,7 @@ func TestWritingAnEntryIndexesItsExpiry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
+	settled(t, c)
 	defer c.Close()
 
 	if err := c.Set("k", []byte("v")); err != nil {
@@ -41,6 +42,7 @@ func TestRemovalDropsTheEntryFromTheIndex(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
+	settled(t, c)
 	defer c.Close()
 
 	for i := 0; i < 20; i++ {
@@ -78,33 +80,46 @@ func TestAnUnindexedEntryIsReadOnceThenRemembered(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
+	settled(t, first)
 	if err := first.Set("k", []byte("v")); err != nil {
 		t.Fatalf("Set: %v", err)
 	}
 	first.Close()
 
-	// A fresh Cache over the same directory: the file exists, the index is empty.
+	// A fresh Cache over the same directory. The startup pass walks it, so the
+	// file's expiry is read once and held from then on.
 	second, err := New(dir, time.Hour, 10, 1<<20)
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
+	settled(t, second)
 	defer second.Close()
 
 	second.expiryMu.RLock()
 	n := len(second.expiryIndex)
 	second.expiryMu.RUnlock()
-	if n != 0 {
-		t.Fatalf("a fresh cache started with %d indexed entries", n)
+	if n != 1 {
+		t.Fatalf("the entry was not indexed by the startup pass: %d", n)
 	}
 
-	// A sweep that removes nothing still walks, so it reads and indexes.
+	// Every later sweep answers from the index. Reading the value back is what
+	// makes the difference between held and re-read observable at all.
+	name := filepath.Base(second.diskPath("k"))
+	second.expiryMu.RLock()
+	held := second.expiryIndex[name]
+	second.expiryMu.RUnlock()
+	if held == 0 {
+		t.Fatal("the index holds no expiry for the entry")
+	}
+
 	second.sweepWithBounds(1000, 1<<40)
 
 	second.expiryMu.RLock()
 	n = len(second.expiryIndex)
+	again := second.expiryIndex[name]
 	second.expiryMu.RUnlock()
-	if n != 1 {
-		t.Fatalf("the entry was not indexed after a sweep: %d", n)
+	if n != 1 || again != held {
+		t.Fatalf("a later sweep changed the held expiry: %d entries, %d then %d", n, held, again)
 	}
 }
 
@@ -118,6 +133,7 @@ func TestTheSweepDropsIndexKeysWithNoFile(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
+	settled(t, c)
 	defer c.Close()
 
 	for i := 0; i < 10; i++ {
@@ -213,5 +229,17 @@ func TestAWriteDuringASweepKeepsItsIndexEntry(t *testing.T) {
 		if missing != 0 {
 			t.Fatalf("attempt %d: %d of %d entries on disk lost their index entry to a concurrent sweep", attempt, missing, onDisk)
 		}
+	}
+}
+
+// New returns before the pass that builds the index has run, so a test that
+// inspects the index without waiting is racing that pass rather than measuring
+// the cache. It wins most of the time, which is worse than losing.
+func settled(t *testing.T, c *Cache) {
+	t.Helper()
+	select {
+	case <-c.swept:
+	case <-time.After(10 * time.Second):
+		t.Fatal("the startup index pass did not finish")
 	}
 }

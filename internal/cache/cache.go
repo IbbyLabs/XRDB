@@ -106,6 +106,9 @@ type Cache struct {
 	stop     chan struct{}
 	stopOnce sync.Once
 	done     chan struct{}
+	// swept closes after the pass that builds the expiry index. Anything reading
+	// the index has to wait for it: New returns before that pass has run.
+	swept chan struct{}
 }
 
 // New creates a Cache backed by dir, bounded in memory by maxEntries and
@@ -125,6 +128,7 @@ func New(dir string, ttl time.Duration, maxEntries int, maxBytes int64) (*Cache,
 		lru:          list.New(),
 		stop:         make(chan struct{}),
 		done:         make(chan struct{}),
+		swept:        make(chan struct{}),
 	}
 	go c.sweepLoop()
 	return c, nil
@@ -393,6 +397,7 @@ func (c *Cache) removeLocked(el *list.Element) {
 func (c *Cache) sweepLoop() {
 	defer close(c.done)
 	c.sweep()
+	close(c.swept)
 	ticker := time.NewTicker(sweepInterval)
 	defer ticker.Stop()
 	for {
