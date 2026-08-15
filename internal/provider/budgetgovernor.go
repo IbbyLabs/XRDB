@@ -112,7 +112,12 @@ const (
 	pacedByBudget  pacedBy = "budget"
 	pacedByCeiling pacedBy = "ceiling"
 	pacedByFloor   pacedBy = "floor"
-	pacedByReserve pacedBy = "reserve"
+	// The budget rate came out above the band and was clamped to it. Distinct
+	// from pacedByCeiling, which is the band refusing a call outright: the two
+	// mean different things to whoever reads a held-out and one string for both
+	// leaves them re-deriving which branch fired.
+	pacedByBudgetCeiling pacedBy = "budget_ceiling"
+	pacedByReserve       pacedBy = "reserve"
 )
 
 // newBudgetGovernor builds the governor for a source, reading its knobs from the
@@ -329,7 +334,7 @@ func (g *budgetGovernor) rateFor(limit, remaining, secondsLeft float64) (float64
 		return mdblistFloorRPS, false, pacedByFloor
 	}
 	if rate > g.maxRPS {
-		return g.maxRPS, false, pacedByCeiling
+		return g.maxRPS, false, pacedByBudgetCeiling
 	}
 	return rate, false, pacedByBudget
 }

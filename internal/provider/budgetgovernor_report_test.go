@@ -89,8 +89,10 @@ func TestTheGovernorNamesTheConstraintHoldingTheRate(t *testing.T) {
 		limit, remaining, secsLeft float64
 		want                       pacedBy
 	}{
-		// Plenty left and little of the day to spend it in: our own ceiling.
-		{"ceiling", 100000, 100000, 60, pacedByCeiling},
+		// Plenty left and little of the day to spend it in, so the budget rate
+		// comes out above the band and is clamped to it. Distinct from a refusal
+		// by the band itself, which reports "ceiling" — see the hold-out test.
+		{"budget clamped to the ceiling", 100000, 100000, 60, pacedByBudgetCeiling},
 		// A full day ahead of a full allowance: the budget sets the rate.
 		{"budget", 100000, 100000, dailyWindow.Seconds(), pacedByBudget},
 		// Spent into the reserve.
@@ -194,5 +196,18 @@ func TestTheCeilingStillPacesAnOwnerKeyedCall(t *testing.T) {
 	}
 	if got := HoldOutReason(err); got != string(pacedByCeiling) {
 		t.Errorf("refusal names %q, want %q", got, pacedByCeiling)
+	}
+}
+
+// A held-out call and a clamped rate both used to report "ceiling", so a reader
+// seeing it in a log could not tell which branch fired. They are different
+// conditions and want different answers.
+func TestTheTwoCeilingsAreDistinguishable(t *testing.T) {
+	if pacedByCeiling == pacedByBudgetCeiling {
+		t.Fatal("the band refusing a call and the budget rate being clamped report the same value")
+	}
+	g, _, _ := newTestGovernor(t)
+	if _, _, got := g.rateFor(100000, 100000, 60); got != pacedByBudgetCeiling {
+		t.Errorf("a clamped budget rate reports %q, want %q", got, pacedByBudgetCeiling)
 	}
 }
