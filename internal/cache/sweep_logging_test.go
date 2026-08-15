@@ -124,3 +124,57 @@ func TestTheSweepReportsHowLongItTook(t *testing.T) {
 		t.Fatalf("took_ms is not a usable duration: %v", last["took_ms"])
 	}
 }
+
+// A configured TTL and a byte ceiling both bound the same entries, and the
+// ceiling wins without saying so. An operator sizing a disk against
+// XRDB_CACHE_TTL_HOURS needs the term entries are actually getting.
+func TestASweepThatEvictsReportsTheEffectiveTTL(t *testing.T) {
+	buf := captureSlog(t, slog.LevelDebug)
+	c, err := New(t.TempDir(), 72*time.Hour, 10, 1<<20)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	defer c.Close()
+
+	for i := 0; i < 8; i++ {
+		if err := c.Set(string(rune('a'+i)), []byte("payload")); err != nil {
+			t.Fatalf("Set: %v", err)
+		}
+	}
+	// A file bound below what is held, so the sweep must evict.
+	c.sweepWithBounds(3, 1<<30)
+
+	got := lines(buf)
+	if len(got) == 0 {
+		t.Fatal("the sweep logged nothing")
+	}
+	last := got[len(got)-1]
+	if last["evicted"] == float64(0) {
+		t.Fatalf("nothing was evicted, so this measures nothing: %v", last)
+	}
+	if _, ok := last["effective_ttl_hours"]; !ok {
+		t.Fatalf("no effective_ttl_hours on a sweep that evicted: %v", last)
+	}
+	if _, ok := last["configured_ttl_hours"]; !ok {
+		t.Fatalf("the configured TTL was not reported alongside it: %v", last)
+	}
+}
+
+// Its control: a sweep that removes nothing has no turnover to report, so the
+// field must be absent rather than zero.
+func TestAnIdleSweepReportsNoEffectiveTTL(t *testing.T) {
+	buf := captureSlog(t, slog.LevelDebug)
+	c, err := New(t.TempDir(), 72*time.Hour, 10, 1<<20)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	defer c.Close()
+
+	c.sweepWithBounds(1000, 1<<30)
+
+	got := lines(buf)
+	last := got[len(got)-1]
+	if _, ok := last["effective_ttl_hours"]; ok {
+		t.Fatalf("an idle sweep reported a turnover: %v", last)
+	}
+}

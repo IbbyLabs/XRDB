@@ -444,6 +444,18 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 		"file_bound", fileBound, "byte_bound", byteBound,
 		"took_ms", time.Since(sweepStart).Milliseconds(),
 	}
+	// A configured TTL and a byte ceiling are two limits on the same entries, and
+	// the ceiling wins silently: once the tier is full, entries leave by age
+	// rather than by term and the TTL becomes unreachable. Reported as the term
+	// entries are actually getting, so an operator sizing a disk is comparing
+	// against what happens rather than against what they set.
+	if removed := expired + evicted; removed > 0 && nFiles > 0 {
+		turnover := time.Duration(float64(nFiles) / float64(removed) * float64(sweepInterval))
+		attrs = append(attrs, "effective_ttl_hours", turnover.Hours())
+		if c.ttl > 0 && turnover < c.ttl {
+			attrs = append(attrs, "configured_ttl_hours", c.ttl.Hours())
+		}
+	}
 	switch {
 	case nFiles > int64(fileBound) || nBytes > byteBound:
 		slog.Warn("The render cache is still over its bounds after a sweep", attrs...)
