@@ -197,3 +197,35 @@ func TestReadMarkersDoNotOutliveTheirFiles(t *testing.T) {
 		t.Error("the read marker survived a file that is gone from disk")
 	}
 }
+
+// Among entries that have all been read, the one asked for longest ago goes
+// first. A flag cannot express this: it would leave every read entry equal and
+// fall back to write age, which is the order a cache is meant to improve on.
+func TestLeastRecentlyReadGoesFirst(t *testing.T) {
+	c, err := New(t.TempDir(), time.Hour, 100, 1<<20)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	defer c.Close()
+
+	// Written newest-first, so write age and read recency disagree.
+	mustSet(t, c, "b", "b")
+	mustSet(t, c, "a", "a")
+
+	if _, ok := c.Get("a"); !ok {
+		t.Fatal("Get a: miss")
+	}
+	time.Sleep(5 * time.Millisecond)
+	if _, ok := c.Get("b"); !ok {
+		t.Fatal("Get b: miss")
+	}
+
+	c.sweepWithBounds(1, 1<<30)
+
+	if onDisk(t, c, "a") {
+		t.Error("the entry read longest ago survived")
+	}
+	if !onDisk(t, c, "b") {
+		t.Error("the most recently read entry was evicted")
+	}
+}
