@@ -666,19 +666,6 @@ func readRawHeader(path string) (int64, bool) {
 	return int64(binary.BigEndian.Uint64(hdr[:])), true
 }
 
-func readExpiry(path string) (int64, bool) {
-	f, err := os.Open(path)
-	if err != nil {
-		return 0, false
-	}
-	defer f.Close()
-	var hdr [expiryHeaderSize]byte
-	if _, err := io.ReadFull(f, hdr[:]); err != nil {
-		return 0, false
-	}
-	return decodeExpiry(hdr[:]), true
-}
-
 // The header's top bit marks a sweep-written large render. Unix nanoseconds use
 // about 62 bits and will until well past any life of this cache, so the bit is
 // free — and an entry written before this existed has it clear, which reads as
@@ -690,11 +677,6 @@ const bulkLargeBit uint64 = 1 << 63
 // than the raw header, or a marked entry reads as a negative time.
 func decodeExpiry(hdr []byte) int64 {
 	return int64(binary.BigEndian.Uint64(hdr) &^ bulkLargeBit)
-}
-
-// decodeBulkLarge reports whether the header marks a sweep's large render.
-func decodeBulkLarge(hdr []byte) bool {
-	return binary.BigEndian.Uint64(hdr)&bulkLargeBit != 0
 }
 
 func (c *Cache) diskPath(key string) string {
@@ -804,13 +786,13 @@ func (c *Cache) forgetExpiry(name string) {
 }
 
 // expiryOf reports an entry's expiry from the index, reading the file only when
-// the index has not seen it. Entries written before this process started are the
-// only ones that reach the file, and each is indexed once on the way past, so a
-// restart costs one pass rather than one per sweep.
-// expiryOf returns the entry's expiry, and adopts its bulk-large mark on the way
-// past. The index holds the raw header rather than the masked expiry, so the
-// flag costs no extra read: an entry written by an earlier process is marked the
-// first time its header is read, which is the same pass that indexes it.
+// the index has not seen it, and adopts the entry's bulk-large mark on the way
+// past. Entries written before this process started are the only ones that reach
+// the file, and each is indexed once, so a restart costs one pass rather than one
+// per sweep.
+//
+// The index holds the raw header rather than the masked expiry, so the mark
+// costs no extra read.
 func (c *Cache) expiryOf(name, path string) (int64, bool) {
 	c.expiryMu.RLock()
 	raw, ok := c.expiryIndex[name]
