@@ -340,6 +340,15 @@ func logProviderReadiness(reg *provider.Registry, jikanURL string) {
 		// Host only: an override may carry a credential in its path or query,
 		// and the host is what a check of which instance is in use needs.
 		"jikan_host", provider.JikanHost(jikanURL))
+	// The host above is visible either way, but nothing marks it as a default the
+	// operator inherited rather than a choice they made. It is somebody else's
+	// donated instance, so an operator with real traffic should know they are
+	// leaning on a favour rather than on us.
+	if jikanURL == "" {
+		slog.Warn("No Jikan instance is configured, so anime ratings use a public one donated for the purpose",
+			"host", provider.JikanHost(""),
+			"set", "XRDB_JIKAN_URL")
+	}
 	if len(waiting) > 0 {
 		slog.Warn("Some providers have no credentials, so the sources they serve will not appear",
 			"providers", strings.Join(waiting, ","))

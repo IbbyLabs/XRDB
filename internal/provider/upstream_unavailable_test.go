@@ -119,7 +119,7 @@ func TestAnUnmeasuredGatewayErrorIsNotATitleFact(t *testing.T) {
 // difference someone has to notice.
 func TestJikanHostNamesTheInstance(t *testing.T) {
 	for _, tc := range []struct{ in, want string }{
-		{"", "api.jikan.moe"},
+		{"", "jikanfortheweebs.midnightignite.me"},
 		{"http://jikan_rest:8080/v4/anime/", "jikan_rest:8080"},
 		{"https://api.jikan.moe/v4/anime/", "api.jikan.moe"},
 		{"://nonsense", "unparseable"},

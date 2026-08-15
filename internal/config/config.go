@@ -159,7 +159,7 @@ type Config struct {
 	IMDbTopRated        bool
 	TrendingWindow      string // TMDB trending period: day|week
 	TrendingDepth       int    // how many trending titles earn the badge
-	JikanURL            string // override Jikan API base URL; empty = public api.jikan.moe
+	JikanURL            string // override Jikan API base URL; empty = a donated public instance
 	AnimeMapURL         string // override anime ID mapping dataset URL; empty = default
 	AnimeMapFallbackURL string // live anime mapping API base URL; "off" disables
 	// AnimeMapSupplementURL is the secondary anime mapping dataset (nattadasu);

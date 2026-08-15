@@ -11,8 +11,14 @@ import (
 	"time"
 )
 
-// Jikan is the public unofficial MyAnimeList REST API (no auth required).
-const jikanBaseURL = "https://api.jikan.moe/v4/anime/"
+// jikanBaseURL is where anime ratings come from when nothing is configured.
+//
+// This is a public instance donated for the purpose, not an official endpoint
+// and not ours. Permission was asked and given. It replaced api.jikan.moe, whose
+// operators announced it is closing, and it can close too — an instance nobody
+// pays for is a favour rather than a dependency. XRDB_JIKAN_URL points at your
+// own, which is what any instance with real traffic should do.
+const jikanBaseURL = "https://jikanfortheweebs.midnightignite.me/v4/anime/"
 
 // MAL is the MyAnimeList metadata provider via the Jikan public API.
 // IDs must be prefixed with "mal:" e.g. "mal:20".
