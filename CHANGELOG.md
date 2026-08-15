@@ -2,6 +2,18 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.89.0](https://github.com/IbbyLabs/XRDB/compare/v3.88.2...v3.89.0) (2026-08-15)
+
+
+### Added
+
+* **healthz:** report which optional features the process enabled ([0d8273f](https://github.com/IbbyLabs/XRDB/commit/0d8273fdc68002e923c046f8e28dfc2529bd7bf1))
+
+
+### Fixed
+
+* **governor:** name the clamped budget rate apart from the band ([1c03b95](https://github.com/IbbyLabs/XRDB/commit/1c03b95628845e142ed77b10dd7d4fb037063fdf))
+
 ## [3.88.2](https://github.com/IbbyLabs/XRDB/compare/v3.88.1...v3.88.2) (2026-08-15)
 
 
