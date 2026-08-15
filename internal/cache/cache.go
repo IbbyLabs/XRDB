@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -396,7 +397,7 @@ func (c *Cache) removeLocked(el *list.Element) {
 
 func (c *Cache) sweepLoop() {
 	defer close(c.done)
-	c.sweep()
+	c.indexPass()
 	close(c.swept)
 	ticker := time.NewTicker(sweepInterval)
 	defer ticker.Stop()
@@ -408,6 +409,18 @@ func (c *Cache) sweepLoop() {
 			c.sweep()
 		}
 	}
+}
+
+// indexPass is the sweep run at startup. It indexes and drops expired entries
+// but does not enforce the volume bounds.
+//
+// No entry has been read yet, so every one of them sorts as unknown and
+// eviction falls back to write age — the rule read-aware eviction replaces. It
+// also runs before the configured bounds are applied, so what it enforced was
+// whichever of the default and configured limits won that race. A tick later
+// there is read history and one set of bounds.
+func (c *Cache) indexPass() {
+	c.sweepWithBounds(math.MaxInt, math.MaxInt64)
 }
 
 // sweep removes expired disk entries, enforces the disk bounds oldest-first,

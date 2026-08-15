@@ -236,3 +236,48 @@ func TestLeastRecentlyReadGoesFirst(t *testing.T) {
 		t.Error("the most recently read entry was evicted")
 	}
 }
+
+// At boot nothing has been read, so a volume eviction then sorts every entry
+// into the unknown group and falls back to write age — the rule read-aware
+// eviction exists to replace. The startup pass indexes and expires instead.
+func TestTheStartupPassDoesNotEvictByVolume(t *testing.T) {
+	dir := t.TempDir()
+
+	// Fill the directory past any bound, then let a fresh cache open it.
+	seed, err := New(dir, time.Hour, 100, 1<<20)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	settled(t, seed)
+	for i := 0; i < 20; i++ {
+		if err := seed.Set(fmt.Sprintf("k%d", i), []byte("vvvvvvvvvv")); err != nil {
+			t.Fatalf("Set: %v", err)
+		}
+	}
+	seed.Close()
+
+	before := countBins(t, dir)
+	if before != 20 {
+		t.Fatalf("seeded %d files, wanted 20", before)
+	}
+
+	c, err := New(dir, time.Hour, 100, 1<<20)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	settled(t, c)
+	c.SetDiskBounds(5, 1<<10)
+	defer c.Close()
+
+	// The pass sweepLoop runs at startup, now with a bound it would breach.
+	c.indexPass()
+	if got := countBins(t, dir); got != before {
+		t.Errorf("the startup pass evicted %d entries by volume", before-got)
+	}
+
+	// The bound still applies once there is history to sort by.
+	c.sweep()
+	if got := countBins(t, dir); got != 5 {
+		t.Errorf("a later sweep left %d files against a bound of 5", got)
+	}
+}
