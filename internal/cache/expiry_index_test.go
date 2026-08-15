@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 )
@@ -157,5 +158,60 @@ func TestTheSweepDropsIndexKeysWithNoFile(t *testing.T) {
 	c.expiryMu.RUnlock()
 	if after != 6 {
 		t.Fatalf("index holds %d after the sweep, wanted 6", after)
+	}
+}
+
+// A write that lands while a sweep is scanning must keep its index entry. The
+// window is widest on a near-empty directory: the scan finds few names, so a
+// prune list taken after it drops nearly everything written in between.
+func TestAWriteDuringASweepKeepsItsIndexEntry(t *testing.T) {
+	for attempt := 0; attempt < 40; attempt++ {
+		dir := t.TempDir()
+		c, err := New(dir, time.Hour, 500, 1<<22)
+		if err != nil {
+			t.Fatalf("New: %v", err)
+		}
+
+		var wg sync.WaitGroup
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			c.sweepWithBounds(10000, 1<<40)
+		}()
+		go func() {
+			defer wg.Done()
+			for i := 0; i < 10; i++ {
+				if err := c.Set(fmt.Sprintf("k%d", i), []byte("v")); err != nil {
+					t.Errorf("Set: %v", err)
+					return
+				}
+			}
+		}()
+		wg.Wait()
+
+		des, err := os.ReadDir(dir)
+		if err != nil {
+			t.Fatalf("ReadDir: %v", err)
+		}
+		onDisk, missing := 0, 0
+		c.expiryMu.RLock()
+		for _, de := range des {
+			if filepath.Ext(de.Name()) != ".bin" {
+				continue
+			}
+			onDisk++
+			if _, ok := c.expiryIndex[de.Name()]; !ok {
+				missing++
+			}
+		}
+		c.expiryMu.RUnlock()
+		c.Close()
+
+		if onDisk == 0 {
+			t.Fatal("no entries on disk, so the index check proves nothing")
+		}
+		if missing != 0 {
+			t.Fatalf("attempt %d: %d of %d entries on disk lost their index entry to a concurrent sweep", attempt, missing, onDisk)
+		}
 	}
 }

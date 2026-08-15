@@ -413,6 +413,10 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 	// with the number of entries rather than with what it removes. Reported so
 	// that cost is a figure rather than an inference from the entry count.
 	sweepStart := time.Now()
+	// Captured before the scan: a write that lands during it is in the scan but
+	// not in this list, and pruning against a list taken afterwards would drop
+	// the entry that write just indexed.
+	indexBefore := c.indexKeys()
 	dirEntries, err := os.ReadDir(c.dir)
 	if err != nil {
 		return
@@ -429,7 +433,6 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 	// directory by hand — otherwise stays in the index for the life of the
 	// process. Snapshotting first means an entry written during the walk is not
 	// mistaken for one of those.
-	indexBefore := c.indexKeys()
 	seen := make(map[string]struct{}, len(dirEntries))
 
 	type diskFile struct {
