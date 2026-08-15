@@ -2,6 +2,8 @@ package cache
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 )
@@ -102,5 +104,58 @@ func TestAnUnindexedEntryIsReadOnceThenRemembered(t *testing.T) {
 	second.expiryMu.RUnlock()
 	if n != 1 {
 		t.Fatalf("the entry was not indexed after a sweep: %d", n)
+	}
+}
+
+// A file removed outside the cache's own paths — a crash mid-write, someone
+// clearing the directory by hand — leaves its key behind. The sweep already
+// walks every file to reconcile the counters, so it can drop those in the same
+// pass.
+func TestTheSweepDropsIndexKeysWithNoFile(t *testing.T) {
+	dir := t.TempDir()
+	c, err := New(dir, time.Hour, 10, 1<<20)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	defer c.Close()
+
+	for i := 0; i < 10; i++ {
+		if err := c.Set(fmt.Sprintf("k%d", i), []byte("v")); err != nil {
+			t.Fatalf("Set: %v", err)
+		}
+	}
+
+	// Delete behind the cache's back, as an external process would.
+	des, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("ReadDir: %v", err)
+	}
+	removed := 0
+	for _, de := range des {
+		if filepath.Ext(de.Name()) != ".bin" || removed >= 4 {
+			continue
+		}
+		if err := os.Remove(filepath.Join(dir, de.Name())); err == nil {
+			removed++
+		}
+	}
+	if removed != 4 {
+		t.Fatalf("removed %d files behind the cache, wanted 4", removed)
+	}
+
+	c.expiryMu.RLock()
+	before := len(c.expiryIndex)
+	c.expiryMu.RUnlock()
+	if before != 10 {
+		t.Fatalf("index holds %d before the sweep, so the drop below proves nothing", before)
+	}
+
+	c.sweepWithBounds(1000, 1<<40)
+
+	c.expiryMu.RLock()
+	after := len(c.expiryIndex)
+	c.expiryMu.RUnlock()
+	if after != 6 {
+		t.Fatalf("index holds %d after the sweep, wanted 6", after)
 	}
 }

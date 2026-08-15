@@ -409,6 +409,13 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 	readDirMs := time.Since(sweepStart).Milliseconds()
 	scanStart := time.Now()
 	var expiryReadNs int64
+	// Snapshot before the walk, prune after it. A key whose file went away
+	// outside the cache's own paths — a crash mid-write, someone clearing the
+	// directory by hand — otherwise stays in the index for the life of the
+	// process. Snapshotting first means an entry written during the walk is not
+	// mistaken for one of those.
+	indexBefore := c.indexKeys()
+	seen := make(map[string]struct{}, len(dirEntries))
 
 	type diskFile struct {
 		path  string
@@ -423,6 +430,7 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 			continue
 		}
 		path := filepath.Join(c.dir, de.Name())
+		seen[de.Name()] = struct{}{}
 		info, err := de.Info()
 		if err != nil {
 			continue
@@ -440,6 +448,7 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 		files = append(files, diskFile{path: path, size: info.Size(), mtime: info.ModTime()})
 	}
 
+	orphans := c.pruneIndex(indexBefore, seen)
 	scanMs := time.Since(scanStart).Milliseconds()
 	removeStart := time.Now()
 	sort.Slice(files, func(i, j int) bool { return files[i].mtime.Before(files[j].mtime) })
@@ -480,6 +489,7 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 		"scan_ms", scanMs,
 		"expiry_reads_ms", expiryReadNs / 1e6,
 		"remove_ms", time.Since(removeStart).Milliseconds(),
+		"index_orphans_dropped", orphans,
 	}
 	// A configured TTL and a byte ceiling are two limits on the same entries, and
 	// the ceiling wins silently: once the tier is full, entries leave by age
@@ -637,4 +647,37 @@ func (c *Cache) expiryOf(name, path string) (int64, bool) {
 		c.noteExpiry(name, exp)
 	}
 	return exp, ok
+}
+
+// indexKeys snapshots the indexed filenames.
+func (c *Cache) indexKeys() []string {
+	c.expiryMu.RLock()
+	defer c.expiryMu.RUnlock()
+	out := make([]string, 0, len(c.expiryIndex))
+	for name := range c.expiryIndex {
+		out = append(out, name)
+	}
+	return out
+}
+
+// pruneIndex drops indexed names that the sweep did not find on disk, and
+// reports how many. Only names present before the walk are considered, so an
+// entry written while it ran is left alone.
+func (c *Cache) pruneIndex(before []string, seen map[string]struct{}) int {
+	if len(before) == 0 {
+		return 0
+	}
+	c.expiryMu.Lock()
+	defer c.expiryMu.Unlock()
+	dropped := 0
+	for _, name := range before {
+		if _, ok := seen[name]; ok {
+			continue
+		}
+		if _, ok := c.expiryIndex[name]; ok {
+			delete(c.expiryIndex, name)
+			dropped++
+		}
+	}
+	return dropped
 }
