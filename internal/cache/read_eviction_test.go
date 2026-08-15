@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"encoding/binary"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -485,5 +486,54 @@ func TestAMarkedEntryKeepsItsExpiry(t *testing.T) {
 	}
 	if time.Until(e.ExpiresAt) <= 0 {
 		t.Fatalf("a marked entry read as already expired: %v", e.ExpiresAt)
+	}
+}
+
+// What a rollback does to an entry this version marked. Older code does not
+// mask the bit, so it reads the header as a negative int64 — an expiry in 1969,
+// which drops the entry on the next sweep rather than keeping it forever.
+// Dropping is the benign direction, and these are the entries we would shed
+// anyway; the dangerous reading would have been a far-future expiry.
+func TestOlderCodeTreatsAMarkedEntryAsExpired(t *testing.T) {
+	dir := t.TempDir()
+	c, err := New(dir, time.Hour, 100, 1<<30)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	settled(t, c)
+	if err := c.SetFromBulk("marked", make([]byte, bulkLargeBytes+1), time.Hour); err != nil {
+		t.Fatalf("SetFromBulk: %v", err)
+	}
+	c.Close()
+
+	raw, err := os.ReadFile(c.diskPath("marked"))
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	// Exactly what the previous version's decodeExpiry did.
+	asOldCodeReadsIt := int64(binary.BigEndian.Uint64(raw[:expiryHeaderSize]))
+	if asOldCodeReadsIt >= 0 {
+		t.Fatalf("the mark did not make the header negative: %d", asOldCodeReadsIt)
+	}
+	if !time.Unix(0, asOldCodeReadsIt).Before(time.Now()) {
+		t.Error("older code would read a marked entry as unexpired, so it would never be dropped")
+	}
+
+	// The control: an unmarked entry is unaffected either way.
+	c2, err := New(dir, time.Hour, 100, 1<<30)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	settled(t, c2)
+	defer c2.Close()
+	if err := c2.SetWithTTL("plain", []byte("v"), time.Hour); err != nil {
+		t.Fatalf("SetWithTTL: %v", err)
+	}
+	plain, err := os.ReadFile(c2.diskPath("plain"))
+	if err != nil {
+		t.Fatalf("ReadFile: %v", err)
+	}
+	if v := int64(binary.BigEndian.Uint64(plain[:expiryHeaderSize])); v <= 0 {
+		t.Errorf("an unmarked entry does not read as a normal expiry: %d", v)
 	}
 }
