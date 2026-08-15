@@ -475,10 +475,10 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 	orphans := c.pruneIndex(indexBefore, seen)
 	scanMs := time.Since(scanStart).Milliseconds()
 	removeStart := time.Now()
-	// Never-read entries go first, oldest-written within each group. A catalogue
-	// sweep writes entries it does not come back to; a person's poster is asked
-	// for again. Age alone cannot tell those apart, which is what made a 72 hour
-	// term evict things people were still using.
+	// Entries with no known read go first, oldest-written among themselves;
+	// then the rest, least recently read first. A catalogue sweep writes entries
+	// it does not come back to; a person's poster is asked for again. Write age
+	// alone cannot tell those apart.
 	for i := range files {
 		files[i].readAt, files[i].read = c.lastRead(filepath.Base(files[i].path))
 	}
