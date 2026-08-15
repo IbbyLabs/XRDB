@@ -69,6 +69,18 @@ type Cache struct {
 	// so a sweep opens nothing. The read path is untouched.
 	expiryMu    sync.RWMutex
 	expiryIndex map[string]int64
+	// readSince holds the entries asked for again since this process started.
+	// Eviction takes never-read entries before read ones, which puts a sweep's
+	// one-off renders ahead of anything a person came back to.
+	//
+	// Not atime: the pass that builds the expiry index opens every existing
+	// entry, which sets atime on all of them — 97.5% of production entries read
+	// as re-read that way, and the signal dies at every restart.
+	//
+	// Absence means "not known to have been read", not "never read". Entries
+	// from before this process have no history here and stay in age order,
+	// which is what happens today.
+	readSince map[string]struct{}
 
 	mu       sync.Mutex
 	hot      map[string]*list.Element // value: *hotEntry
@@ -156,6 +168,7 @@ func (c *Cache) Get(key string) (*Entry, bool) {
 		if time.Now().Before(he.entry.ExpiresAt) {
 			c.lru.MoveToBack(el)
 			c.mu.Unlock()
+			c.noteRead(filepath.Base(c.diskPath(key)))
 			return he.entry, true
 		}
 		c.removeLocked(el)
@@ -192,12 +205,14 @@ func (c *Cache) Get(key string) (*Entry, bool) {
 		if time.Now().Before(he.entry.ExpiresAt) {
 			c.lru.MoveToBack(el)
 			c.mu.Unlock()
+			c.noteRead(filepath.Base(c.diskPath(key)))
 			return he.entry, true
 		}
 		c.removeLocked(el)
 	}
 	c.storeLocked(key, e)
 	c.mu.Unlock()
+	c.noteRead(filepath.Base(diskPath))
 	return e, true
 }
 
@@ -421,6 +436,7 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 		path  string
 		size  int64
 		mtime time.Time
+		read  bool
 	}
 	files := make([]diskFile, 0, len(dirEntries))
 	var expired, evicted int
@@ -451,11 +467,28 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 	orphans := c.pruneIndex(indexBefore, seen)
 	scanMs := time.Since(scanStart).Milliseconds()
 	removeStart := time.Now()
-	sort.Slice(files, func(i, j int) bool { return files[i].mtime.Before(files[j].mtime) })
+	// Never-read entries go first, oldest-written within each group. A catalogue
+	// sweep writes entries it does not come back to; a person's poster is asked
+	// for again. Age alone cannot tell those apart, which is what made a 72 hour
+	// term evict things people were still using.
+	for i := range files {
+		files[i].read = c.wasRead(filepath.Base(files[i].path))
+	}
+	sort.Slice(files, func(i, j int) bool {
+		if files[i].read != files[j].read {
+			return !files[i].read
+		}
+		return files[i].mtime.Before(files[j].mtime)
+	})
 	var totalBytes int64
+	unread := 0
 	for _, f := range files {
 		totalBytes += f.size
+		if !f.read {
+			unread++
+		}
 	}
+	evictedRead := 0
 	remaining := len(files)
 	for _, f := range files {
 		if remaining <= fileBound && totalBytes <= byteBound {
@@ -466,6 +499,9 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 			remaining--
 			totalBytes -= f.size
 			evicted++
+			if f.read {
+				evictedRead++
+			}
 		}
 	}
 
@@ -490,6 +526,8 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 		"expiry_reads_ms", expiryReadNs / 1e6,
 		"remove_ms", time.Since(removeStart).Milliseconds(),
 		"index_orphans_dropped", orphans,
+		"unread_on_disk", unread,
+		"evicted_read", evictedRead,
 	}
 	// A configured TTL and a byte ceiling are two limits on the same entries, and
 	// the ceiling wins silently: once the tier is full, entries leave by age
@@ -628,6 +666,7 @@ func (c *Cache) noteExpiry(name string, exp int64) {
 func (c *Cache) forgetExpiry(name string) {
 	c.expiryMu.Lock()
 	delete(c.expiryIndex, name)
+	delete(c.readSince, name)
 	c.expiryMu.Unlock()
 }
 
@@ -664,9 +703,6 @@ func (c *Cache) indexKeys() []string {
 // reports how many. Only names present before the walk are considered, so an
 // entry written while it ran is left alone.
 func (c *Cache) pruneIndex(before []string, seen map[string]struct{}) int {
-	if len(before) == 0 {
-		return 0
-	}
 	c.expiryMu.Lock()
 	defer c.expiryMu.Unlock()
 	dropped := 0
@@ -679,5 +715,37 @@ func (c *Cache) pruneIndex(before []string, seen map[string]struct{}) int {
 			dropped++
 		}
 	}
+	// Read markers for entries that are no longer on disk. Keyed off the index
+	// as well as the scan, so an entry written after the scan started keeps its
+	// marker.
+	for name := range c.readSince {
+		if _, ok := seen[name]; ok {
+			continue
+		}
+		if _, ok := c.expiryIndex[name]; ok {
+			continue
+		}
+		delete(c.readSince, name)
+	}
 	return dropped
+}
+
+// noteRead records that an entry was asked for again.
+func (c *Cache) noteRead(name string) {
+	c.expiryMu.Lock()
+	if c.readSince == nil {
+		c.readSince = make(map[string]struct{})
+	}
+	c.readSince[name] = struct{}{}
+	c.expiryMu.Unlock()
+}
+
+// wasRead reports whether an entry has been asked for since this process
+// started. False means "not known to have been read" — an entry from a previous
+// process has no history here.
+func (c *Cache) wasRead(name string) bool {
+	c.expiryMu.RLock()
+	_, ok := c.readSince[name]
+	c.expiryMu.RUnlock()
+	return ok
 }
