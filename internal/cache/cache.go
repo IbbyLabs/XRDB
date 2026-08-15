@@ -62,6 +62,14 @@ type Cache struct {
 	removedMu   sync.Mutex
 	removedRing []int
 
+	// expiryIndex holds each disk entry's expiry, keyed by filename. The sweep
+	// consulted the files themselves, which meant opening all 35,000 every ten
+	// minutes: measured at 97% of a sweep once the entries are out of page
+	// cache, and a 12.9GB cache on this box never fits in it. Held here instead
+	// so a sweep opens nothing. The read path is untouched.
+	expiryMu    sync.RWMutex
+	expiryIndex map[string]int64
+
 	mu       sync.Mutex
 	hot      map[string]*list.Element // value: *hotEntry
 	lru      *list.List               // front = least recently used
@@ -168,6 +176,7 @@ func (c *Cache) Get(key string) (*Entry, bool) {
 		c.diskMu.RLock()
 		if info, statErr := os.Stat(diskPath); statErr == nil {
 			if os.Remove(diskPath) == nil {
+				c.forgetExpiry(filepath.Base(diskPath))
 				c.diskFiles.Add(-1)
 				c.diskBytes.Add(-info.Size())
 			}
@@ -232,6 +241,7 @@ func (c *Cache) SetWithTTL(key string, data []byte, ttl time.Duration) error {
 	if err := os.WriteFile(diskPath, payload, 0o644); err != nil {
 		return fmt.Errorf("cache write: %w", err)
 	}
+	c.noteExpiry(filepath.Base(diskPath), exp.UnixNano())
 	if prevSize >= 0 {
 		c.diskBytes.Add(int64(len(payload)) - prevSize)
 	} else {
@@ -265,6 +275,7 @@ func (c *Cache) Delete(key string) bool {
 	c.diskMu.RLock()
 	if info, err := os.Stat(diskPath); err == nil {
 		if os.Remove(diskPath) == nil {
+			c.forgetExpiry(filepath.Base(diskPath))
 			c.diskFiles.Add(-1)
 			c.diskBytes.Add(-info.Size())
 			removed = true
@@ -295,6 +306,7 @@ func (c *Cache) Purge() int {
 			continue
 		}
 		if os.Remove(filepath.Join(dir, de.Name())) == nil {
+			c.forgetExpiry(de.Name())
 			removed++
 		}
 	}
@@ -416,10 +428,11 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 			continue
 		}
 		expiryStart := time.Now()
-		exp, okExp := readExpiry(path)
+		exp, okExp := c.expiryOf(de.Name(), path)
 		expiryReadNs += time.Since(expiryStart).Nanoseconds()
 		if okExp && now > exp {
 			if os.Remove(path) == nil {
+				c.forgetExpiry(de.Name())
 				expired++
 			}
 			continue
@@ -440,6 +453,7 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 			break
 		}
 		if os.Remove(f.path) == nil {
+			c.forgetExpiry(filepath.Base(f.path))
 			remaining--
 			totalBytes -= f.size
 			evicted++
@@ -588,4 +602,39 @@ func (c *Cache) noteRemoved(removed int) (int, int, bool) {
 		return 0, 0, false
 	}
 	return median, len(sorted), true
+}
+
+// noteExpiry records an entry's expiry against its filename.
+func (c *Cache) noteExpiry(name string, exp int64) {
+	c.expiryMu.Lock()
+	if c.expiryIndex == nil {
+		c.expiryIndex = make(map[string]int64)
+	}
+	c.expiryIndex[name] = exp
+	c.expiryMu.Unlock()
+}
+
+// forgetExpiry drops an entry that has left the disk.
+func (c *Cache) forgetExpiry(name string) {
+	c.expiryMu.Lock()
+	delete(c.expiryIndex, name)
+	c.expiryMu.Unlock()
+}
+
+// expiryOf reports an entry's expiry from the index, reading the file only when
+// the index has not seen it. Entries written before this process started are the
+// only ones that reach the file, and each is indexed once on the way past, so a
+// restart costs one pass rather than one per sweep.
+func (c *Cache) expiryOf(name, path string) (int64, bool) {
+	c.expiryMu.RLock()
+	exp, ok := c.expiryIndex[name]
+	c.expiryMu.RUnlock()
+	if ok {
+		return exp, true
+	}
+	exp, ok = readExpiry(path)
+	if ok {
+		c.noteExpiry(name, exp)
+	}
+	return exp, ok
 }

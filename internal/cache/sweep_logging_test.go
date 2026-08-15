@@ -7,22 +7,44 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
 
+// syncBuffer is the capture target. A Cache starts a sweep goroutine in New, so
+// the background sweeper writes to this while the test reads it — an unguarded
+// bytes.Buffer is a data race that only shows under -race and only when a test
+// happens to overlap a sweep.
+type syncBuffer struct {
+	mu  sync.Mutex
+	buf bytes.Buffer
+}
+
+func (b *syncBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.Write(p)
+}
+
+func (b *syncBuffer) String() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	return b.buf.String()
+}
+
 // captureSlog swaps the default logger for one writing JSON to a buffer, at the
 // given level, and restores it afterwards.
-func captureSlog(t *testing.T, level slog.Level) *bytes.Buffer {
+func captureSlog(t *testing.T, level slog.Level) *syncBuffer {
 	t.Helper()
-	buf := &bytes.Buffer{}
+	buf := &syncBuffer{}
 	prev := slog.Default()
 	slog.SetDefault(slog.New(slog.NewJSONHandler(buf, &slog.HandlerOptions{Level: level})))
 	t.Cleanup(func() { slog.SetDefault(prev) })
 	return buf
 }
 
-func lines(buf *bytes.Buffer) []map[string]any {
+func lines(buf *syncBuffer) []map[string]any {
 	var out []map[string]any
 	for _, l := range strings.Split(strings.TrimSpace(buf.String()), "\n") {
 		if l == "" {
