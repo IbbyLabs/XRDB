@@ -32,6 +32,17 @@ type statusResponse struct {
 	Service string `json:"service"`
 	Status  string `json:"status"`
 	Version string `json:"version"`
+	// Features reports what the process enabled, not what was asked for. A
+	// feature whose dependency is missing reads false here.
+	Features map[string]bool `json:"features,omitempty"`
+}
+
+// effectiveFeatures reports the features the process actually turned on.
+func effectiveFeatures(cfg config.Config) map[string]bool {
+	return map[string]bool{
+		"imdbDataset":  cfg.IMDbDatasetDir != "",
+		"imdbTopRated": cfg.IMDbTopRated && cfg.IMDbDatasetDir != "",
+	}
 }
 
 // NewHandler builds the HTTP mux. Pass a non-nil staticFS to serve an embedded
@@ -65,7 +76,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		writeJSON(w, http.StatusOK, statusResponse{Service: "xrdb-api", Status: "ok", Version: version})
+		writeJSON(w, http.StatusOK, statusResponse{Service: "xrdb-api", Status: "ok", Version: version, Features: effectiveFeatures(cfg)})
 	})
 
 	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
