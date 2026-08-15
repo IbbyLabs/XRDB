@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.89.1](https://github.com/IbbyLabs/XRDB/compare/v3.89.0...v3.89.1) (2026-08-15)
+
+
+### Fixed
+
+* **imdb:** build the top-rated ranking off the request that triggered it ([e1b77de](https://github.com/IbbyLabs/XRDB/commit/e1b77debdd118f249dc6459013cba7ff636af1f7))
+
 ## [3.89.0](https://github.com/IbbyLabs/XRDB/compare/v3.88.2...v3.89.0) (2026-08-15)
 
 
