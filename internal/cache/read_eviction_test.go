@@ -281,3 +281,38 @@ func TestTheStartupPassDoesNotEvictByVolume(t *testing.T) {
 		t.Errorf("a later sweep left %d files against a bound of 5", got)
 	}
 }
+
+// The startup pass expires but never evicts, so admitting its count to the
+// term estimate biases the median low and the reported term high — on a window
+// only removedMinSamples deep.
+func TestTheStartupPassIsNotInTheTermEstimate(t *testing.T) {
+	c, err := New(t.TempDir(), time.Hour, 100, 1<<20)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	settled(t, c)
+	defer c.Close()
+
+	c.removedMu.Lock()
+	c.removedRing = nil
+	c.removedMu.Unlock()
+
+	for i := 0; i < removedMinSamples*2; i++ {
+		c.noteRemoved(500, true)
+	}
+	c.removedMu.Lock()
+	n := len(c.removedRing)
+	c.removedMu.Unlock()
+	if n != 0 {
+		t.Fatalf("the startup pass contributed %d samples to the term estimate", n)
+	}
+
+	// A bounded sweep still does, or the estimate would never fill.
+	c.noteRemoved(500, false)
+	c.removedMu.Lock()
+	n = len(c.removedRing)
+	c.removedMu.Unlock()
+	if n != 1 {
+		t.Fatalf("a bounded sweep contributed %d samples, wanted 1", n)
+	}
+}

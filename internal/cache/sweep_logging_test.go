@@ -231,16 +231,16 @@ func TestTheEffectiveTermIgnoresASingleOutlyingSweep(t *testing.T) {
 	// A steady rate, then one sweep that removes sixteen times as much — the
 	// real spread seen on production.
 	for i := 0; i < removedSamples-1; i++ {
-		if _, _, ok := c.noteRemoved(54); ok && i < removedMinSamples-2 {
+		if _, _, ok := c.noteRemoved(54, false); ok && i < removedMinSamples-2 {
 			t.Fatalf("a term was reported after %d samples", i+1)
 		}
 	}
-	steady, _, ok := c.noteRemoved(54)
+	steady, _, ok := c.noteRemoved(54, false)
 	if !ok {
 		t.Fatal("no term once the ring is full")
 	}
 
-	spiked, _, ok := c.noteRemoved(896)
+	spiked, _, ok := c.noteRemoved(896, false)
 	if !ok {
 		t.Fatal("no term after the spike")
 	}
@@ -259,14 +259,14 @@ func TestTheEffectiveTermFollowsASustainedChange(t *testing.T) {
 	defer c.Close()
 
 	for i := 0; i < removedSamples; i++ {
-		c.noteRemoved(54)
+		c.noteRemoved(54, false)
 	}
-	steady, _, _ := c.noteRemoved(54)
+	steady, _, _ := c.noteRemoved(54, false)
 
 	for i := 0; i < removedSamples; i++ {
-		c.noteRemoved(896)
+		c.noteRemoved(896, false)
 	}
-	moved, _, ok := c.noteRemoved(896)
+	moved, _, ok := c.noteRemoved(896, false)
 	if !ok {
 		t.Fatal("no term after the sustained change")
 	}
@@ -287,7 +287,7 @@ func TestTheReportedSampleCountGrowsWithHistory(t *testing.T) {
 
 	var seen []int
 	for i := 0; i < removedSamples+2; i++ {
-		_, samples, ok := c.noteRemoved(54)
+		_, samples, ok := c.noteRemoved(54, false)
 		if ok {
 			seen = append(seen, samples)
 		}

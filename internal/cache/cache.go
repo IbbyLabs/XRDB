@@ -420,7 +420,7 @@ func (c *Cache) sweepLoop() {
 // whichever of the default and configured limits won that race. A tick later
 // there is read history and one set of bounds.
 func (c *Cache) indexPass() {
-	c.sweepWithBounds(math.MaxInt, math.MaxInt64)
+	c.sweepPass(math.MaxInt, math.MaxInt64, true)
 }
 
 // sweep removes expired disk entries, enforces the disk bounds oldest-first,
@@ -431,6 +431,14 @@ func (c *Cache) sweep() {
 }
 
 func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
+	c.sweepPass(fileBound, byteBound, false)
+}
+
+// sweepPass is one walk of the disk tier. startup marks the pass that runs
+// before any read has been recorded: it enforces no volume bound, so its
+// removal count is not comparable with a bounded sweep's and does not belong in
+// the term estimate.
+func (c *Cache) sweepPass(fileBound int, byteBound int64, startup bool) {
 	// A sweep opens every file to read its expiry header, so its cost scales
 	// with the number of entries rather than with what it removes. Reported so
 	// that cost is a figure rather than an inference from the entry count.
@@ -563,7 +571,7 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 	// rather than by term and the TTL becomes unreachable. Reported as the term
 	// entries are actually getting, so an operator sizing a disk is comparing
 	// against what happens rather than against what they set.
-	if median, samples, ok := c.noteRemoved(expired + evicted); ok && nFiles > 0 {
+	if median, samples, ok := c.noteRemoved(expired+evicted, startup); ok && nFiles > 0 {
 		turnover := time.Duration(float64(nFiles) / float64(median) * float64(sweepInterval))
 		attrs = append(attrs, "effective_ttl_hours", turnover.Hours(), "sweeps_sampled", samples)
 		if c.ttl > 0 && turnover < c.ttl {
@@ -571,6 +579,8 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 		}
 	}
 	switch {
+	case startup:
+		slog.Info("Built the render cache index at startup", attrs...)
 	case nFiles > int64(fileBound) || nBytes > byteBound:
 		slog.Warn("The render cache is still over its bounds after a sweep", attrs...)
 	case expired > 0 || evicted > 0:
@@ -660,11 +670,16 @@ const (
 // recent ones. It reports false until there is enough history to have a median
 // worth the name: with one sample the median is that sample, which is the
 // single-reading problem wearing a different word.
-func (c *Cache) noteRemoved(removed int) (int, int, bool) {
+func (c *Cache) noteRemoved(removed int, startup bool) (int, int, bool) {
 	c.removedMu.Lock()
 	defer c.removedMu.Unlock()
 
-	c.removedRing = append(c.removedRing, removed)
+	// The startup pass expires but never evicts, so its count is drawn from a
+	// different distribution. Admitting it would bias the median low and the
+	// reported term high, on a window only four samples deep.
+	if !startup {
+		c.removedRing = append(c.removedRing, removed)
+	}
 	if len(c.removedRing) > removedSamples {
 		c.removedRing = c.removedRing[len(c.removedRing)-removedSamples:]
 	}
