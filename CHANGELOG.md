@@ -2,6 +2,28 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.88.0](https://github.com/IbbyLabs/XRDB/compare/v3.87.0...v3.88.0) (2026-08-15)
+
+
+### Added
+
+* **cache:** attribute the sweep time to its phases ([b707e4d](https://github.com/IbbyLabs/XRDB/commit/b707e4d358dee7dcda3ea47b699fcc656b831e5b))
+* **cache:** report the term entries are actually getting ([fdedb8d](https://github.com/IbbyLabs/XRDB/commit/fdedb8d9a6b711a13f04ecaa7befdcfce2e5d9a2))
+
+
+### Fixed
+
+* **anime:** move the Jikan default off the instance that is closing ([ef0e792](https://github.com/IbbyLabs/XRDB/commit/ef0e792920f974e402303c51c8bdb8c32342bc87))
+* **cache:** constrain the cold-cache test to linux ([2075e54](https://github.com/IbbyLabs/XRDB/commit/2075e5469c9ee49bf404e396bf869c0783cf81d2))
+* **cache:** derive the effective term from recent sweeps, not the latest ([3662e2f](https://github.com/IbbyLabs/XRDB/commit/3662e2fb9a0d53ac7293ae97e38c8b24beae22da))
+* **cache:** drop index keys the sweep finds no file for ([044610a](https://github.com/IbbyLabs/XRDB/commit/044610a6afe20b0e18afed13cab60d80e8f7657c))
+* **cache:** report the effective term from four sweeps, and say how many ([f30ea26](https://github.com/IbbyLabs/XRDB/commit/f30ea26dc3b3c7e8c8d4efecba099fc17b69c65e))
+
+
+### Performance
+
+* **cache:** hold entry expiry in memory so a sweep opens nothing ([7e2523f](https://github.com/IbbyLabs/XRDB/commit/7e2523f4341a9531d10359e2b4fcf48553143df6))
+
 ## [3.87.0](https://github.com/IbbyLabs/XRDB/compare/v3.86.0...v3.87.0) (2026-08-14)
 
 
