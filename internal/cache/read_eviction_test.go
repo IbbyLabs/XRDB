@@ -316,3 +316,74 @@ func TestTheStartupPassIsNotInTheTermEstimate(t *testing.T) {
 		t.Fatalf("a bounded sweep contributed %d samples, wanted 1", n)
 	}
 }
+
+// Bulk AND large is the rule. Bulk alone is the highest-hit class measured, and
+// size alone is flat for people, so either half on its own evicts things
+// somebody wanted.
+func TestASweepsLargeRenderIsShedFirst(t *testing.T) {
+	c, err := New(t.TempDir(), time.Hour, 100, 1<<30)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	settled(t, c)
+	defer c.Close()
+
+	big := make([]byte, bulkLargeBytes+1)
+	small := []byte("small")
+
+	// The sweep's large render is written LAST, so age order would keep it and
+	// evict the person's. Only the shed rule reverses that — written oldest-first
+	// the test would pass on age alone and prove nothing.
+	if err := c.SetWithTTL("person-large", big, time.Hour); err != nil {
+		t.Fatalf("SetWithTTL: %v", err)
+	}
+	time.Sleep(10 * time.Millisecond)
+	if err := c.SetFromBulk("bulk-small", small, time.Hour); err != nil {
+		t.Fatalf("SetFromBulk: %v", err)
+	}
+	time.Sleep(10 * time.Millisecond)
+	if err := c.SetFromBulk("bulk-large", big, time.Hour); err != nil {
+		t.Fatalf("SetFromBulk: %v", err)
+	}
+
+	c.sweepWithBounds(2, 1<<30)
+
+	if onDisk(t, c, "bulk-large") {
+		t.Error("a sweep's large render survived")
+	}
+	if !onDisk(t, c, "bulk-small") {
+		t.Error("a sweep's small render was shed, though those are the most re-read")
+	}
+	if !onDisk(t, c, "person-large") {
+		t.Error("a person's large render was shed on size alone")
+	}
+}
+
+// A sweep's large render that somebody did come back for stops being the first
+// thing shed — the evidence for shedding it is that nobody re-reads it.
+func TestAReadSweepRenderLosesItsShedPriority(t *testing.T) {
+	c, err := New(t.TempDir(), time.Hour, 100, 1<<30)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	settled(t, c)
+	defer c.Close()
+
+	big := make([]byte, bulkLargeBytes+1)
+	if err := c.SetFromBulk("read-bulk-large", big, time.Hour); err != nil {
+		t.Fatalf("SetFromBulk: %v", err)
+	}
+	time.Sleep(10 * time.Millisecond)
+	if err := c.SetWithTTL("unread-small", []byte("x"), time.Hour); err != nil {
+		t.Fatalf("SetWithTTL: %v", err)
+	}
+	if _, ok := c.Get("read-bulk-large"); !ok {
+		t.Fatal("Get: miss")
+	}
+
+	c.sweepWithBounds(1, 1<<30)
+
+	if !onDisk(t, c, "read-bulk-large") {
+		t.Error("a sweep render somebody came back for was still shed first")
+	}
+}

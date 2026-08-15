@@ -369,7 +369,13 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			if !placeholder && (!degraded || degradedByUs) {
 				ttl := effectiveTTL(renderResult, ttls)
 				if renderCache != nil {
-					_ = renderCache.SetWithTTL(cacheKey, pngBytes, ttl)
+					// A sweep's large renders are shed first: they are the one
+					// class measured never to be re-read.
+					if provider.CallerClassFrom(r.Context()) == provider.CallerBulk {
+						_ = renderCache.SetFromBulk(cacheKey, pngBytes, ttl)
+					} else {
+						_ = renderCache.SetWithTTL(cacheKey, pngBytes, ttl)
+					}
 					if ttl <= 0 {
 						// Zero means "use the cache default"; resolve it so the
 						// freshness we advertise matches the one we apply.

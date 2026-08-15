@@ -86,6 +86,15 @@ type Cache struct {
 	// Absence means "not known to have been read", not "never read". Entries
 	// from before this process have no history here and fall back to write age.
 	readAt map[string]int64
+	// bulkLarge holds entries written by a catalogue sweep that are also big.
+	//
+	// The conjunction is the rule. Bulk alone is the highest-hit cell measured
+	// (57.8% under 300KB), so dropping it makes a sweep re-render what it warms.
+	// Large alone is flat for people — a person re-reads a big render as often as
+	// a small one — so a size cap penalises them. Only bulk AND large is both
+	// expensive and never re-read: 0% hit rate over 1MB, while filling most of
+	// the large buckets.
+	bulkLarge map[string]struct{}
 
 	mu       sync.Mutex
 	hot      map[string]*list.Element // value: *hotEntry
@@ -228,6 +237,33 @@ func (c *Cache) Get(key string) (*Entry, bool) {
 // Set stores data for key using the cache's default TTL.
 func (c *Cache) Set(key string, data []byte) error {
 	return c.SetWithTTL(key, data, 0)
+}
+
+/** Bytes above which a sweep-written entry is shed before anything else. */
+const bulkLargeBytes = 1 << 20
+
+// SetFromBulk stores an entry written by a catalogue sweep. Identical to
+// SetWithTTL except that a large one is marked for eviction ahead of the rest.
+func (c *Cache) SetFromBulk(key string, data []byte, ttl time.Duration) error {
+	if len(data) >= bulkLargeBytes {
+		name := filepath.Base(c.diskPath(key))
+		c.expiryMu.Lock()
+		if c.bulkLarge == nil {
+			c.bulkLarge = make(map[string]struct{})
+		}
+		c.bulkLarge[name] = struct{}{}
+		c.expiryMu.Unlock()
+	}
+	return c.SetWithTTL(key, data, ttl)
+}
+
+// shedFirst reports whether an entry is a sweep's large render, which is the
+// one class measured never to be re-read.
+func (c *Cache) shedFirst(name string) bool {
+	c.expiryMu.RLock()
+	_, ok := c.bulkLarge[name]
+	c.expiryMu.RUnlock()
+	return ok
 }
 
 // SetWithTTL stores data for key with an explicit TTL.
@@ -471,6 +507,7 @@ func (c *Cache) sweepPass(fileBound int, byteBound int64, startup bool) {
 		mtime  time.Time
 		read   bool
 		readAt int64
+		shed   bool
 	}
 	files := make([]diskFile, 0, len(dirEntries))
 	var expired, evicted int
@@ -506,9 +543,16 @@ func (c *Cache) sweepPass(fileBound int, byteBound int64, startup bool) {
 	// it does not come back to; a person's poster is asked for again. Write age
 	// alone cannot tell those apart.
 	for i := range files {
-		files[i].readAt, files[i].read = c.lastRead(filepath.Base(files[i].path))
+		name := filepath.Base(files[i].path)
+		files[i].readAt, files[i].read = c.lastRead(name)
+		files[i].shed = !files[i].read && c.shedFirst(name)
 	}
 	sort.Slice(files, func(i, j int) bool {
+		// A sweep's large render goes before anything else: nothing measured
+		// re-reads one, and they hold a disproportionate share of the bytes.
+		if files[i].shed != files[j].shed {
+			return files[i].shed
+		}
 		if files[i].read != files[j].read {
 			return !files[i].read
 		}
@@ -715,6 +759,7 @@ func (c *Cache) forgetExpiry(name string) {
 	c.expiryMu.Lock()
 	delete(c.expiryIndex, name)
 	delete(c.readAt, name)
+	delete(c.bulkLarge, name)
 	c.expiryMu.Unlock()
 }
 
@@ -774,6 +819,7 @@ func (c *Cache) pruneIndex(before []string, seen map[string]struct{}) int {
 			continue
 		}
 		delete(c.readAt, name)
+		delete(c.bulkLarge, name)
 	}
 	return dropped
 }
