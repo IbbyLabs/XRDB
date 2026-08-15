@@ -37,11 +37,26 @@ type statusResponse struct {
 	Features map[string]bool `json:"features,omitempty"`
 }
 
+// ranksTitles is the part of a provider that reports its ranking state.
+type ranksTitles interface{ TopRatedReady() bool }
+
 // effectiveFeatures reports the features the process actually turned on.
-func effectiveFeatures(cfg config.Config) map[string]bool {
+//
+// imdbTopRated says the ranking is switched on; imdbTopRatedReady says renders
+// are carrying it. They differ while the first build runs, and stay different
+// when it fails.
+func effectiveFeatures(cfg config.Config, pipeline *compose.Pipeline) map[string]bool {
+	on := cfg.IMDbTopRated && cfg.IMDbDatasetDir != ""
+	ready := false
+	if on && pipeline != nil {
+		if p, ok := pipeline.Provider("imdb_local").(ranksTitles); ok {
+			ready = p.TopRatedReady()
+		}
+	}
 	return map[string]bool{
-		"imdbDataset":  cfg.IMDbDatasetDir != "",
-		"imdbTopRated": cfg.IMDbTopRated && cfg.IMDbDatasetDir != "",
+		"imdbDataset":       cfg.IMDbDatasetDir != "",
+		"imdbTopRated":      on,
+		"imdbTopRatedReady": ready,
 	}
 }
 
@@ -76,7 +91,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		writeJSON(w, http.StatusOK, statusResponse{Service: "xrdb-api", Status: "ok", Version: version, Features: effectiveFeatures(cfg)})
+		writeJSON(w, http.StatusOK, statusResponse{Service: "xrdb-api", Status: "ok", Version: version, Features: effectiveFeatures(cfg, pipeline)})
 	})
 
 	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {

@@ -46,7 +46,19 @@ type IMDbDataset struct {
 	topRated map[string]int       // tconst → rank, 1-based
 	loaded   bool
 	loadErr  error
+	// Ranking build state. The build streams a second dataset, so it runs off
+	// the request path and at most one at a time.
+	rankBuilding bool
+	rankAttempt  time.Time
 }
+
+const (
+	// topRatedBuildTimeout bounds one ranking build. The basics dataset is a
+	// few hundred megabytes gzipped.
+	topRatedBuildTimeout = 20 * time.Minute
+	// topRatedRetryAfter is the wait before a failed ranking is attempted again.
+	topRatedRetryAfter = 30 * time.Minute
+)
 
 // EnableTopRated turns on the top-rated ranking. It costs one streamed pass
 // over IMDb's title-basics dataset per refresh, needed to tell films apart from
@@ -70,6 +82,14 @@ func (d *IMDbDataset) RatingSources() []string { return []string{"imdb"} }
 // RanksTitles reports that this provider also carries the top-rated rank.
 func (d *IMDbDataset) RanksTitles() bool { return d.topRatedEnabled }
 
+// TopRatedReady reports whether a ranking is loaded and renders carry it.
+// False while the first build runs, and after one that failed.
+func (d *IMDbDataset) TopRatedReady() bool {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return len(d.topRated) > 0
+}
+
 // Fetch returns an IMDb rating from the local dataset.
 // id must be a tt-prefixed IMDb ID (e.g. "tt0468569").
 // On first call the dataset is downloaded and parsed.
@@ -82,10 +102,15 @@ func (d *IMDbDataset) Fetch(ctx context.Context, mediaType, id string) (*MediaMe
 		return nil, fmt.Errorf("imdb_local: load dataset: %w", err)
 	}
 
-	d.mu.RLock()
+	d.mu.Lock()
 	entry, ok := d.index[id]
 	rank := d.topRated[id]
-	d.mu.RUnlock()
+	// The load path runs once, so a ranking that failed there would otherwise
+	// wait for the weekly refresh.
+	if d.topRated == nil {
+		d.startRankLocked(d.index)
+	}
+	d.mu.Unlock()
 
 	if !ok {
 		return nil, fmt.Errorf("imdb_local: id %q not found in dataset: %w", id, errNotFound)
@@ -151,17 +176,49 @@ func (d *IMDbDataset) ensureLoaded(ctx context.Context) error {
 	d.loaded = true
 	d.index = idx
 	d.loadErr = err
-	if err == nil && d.topRatedEnabled {
-		// A failure here must not take the ratings down with it: the rank is a
-		// garnish, the ratings are the point.
-		if ranks, rankErr := buildTopRated(ctx, d.httpClient, idx); rankErr != nil {
-			slog.WarnContext(ctx, "Could not build the top-rated ranking; ratings are unaffected",
-				"error", rankErr)
-		} else {
-			d.topRated = ranks
-		}
+	if err == nil {
+		d.startRankLocked(idx)
 	}
 	return err
+}
+
+// startRankLocked begins a ranking build for idx unless one is running or a
+// recent one failed. Caller holds d.mu.
+//
+// The build is detached from the caller: it streams a second, much larger
+// dataset, and a request that ends first would otherwise cancel it. A failure
+// must not take the ratings down with it either — the rank is a garnish, the
+// ratings are the point.
+func (d *IMDbDataset) startRankLocked(idx map[string]imdbEntry) {
+	if !d.topRatedEnabled || d.rankBuilding || time.Now().Before(d.rankAttempt) {
+		return
+	}
+	d.rankBuilding = true
+	d.rankAttempt = time.Now().Add(topRatedRetryAfter)
+	go d.buildRank(idx)
+}
+
+func (d *IMDbDataset) buildRank(idx map[string]imdbEntry) {
+	ctx, cancel := context.WithTimeout(context.Background(), topRatedBuildTimeout)
+	defer cancel()
+	started := time.Now()
+	ranks, err := buildTopRated(ctx, d.httpClient, idx)
+
+	d.mu.Lock()
+	d.rankBuilding = false
+	if err == nil {
+		d.topRated = ranks
+		d.rankAttempt = time.Time{}
+	}
+	d.mu.Unlock()
+
+	if err != nil {
+		slog.Warn("Could not build the top-rated ranking; ratings are unaffected",
+			"error", err, "retry_in", topRatedRetryAfter.String())
+		return
+	}
+	slog.Info("Built the top-rated ranking",
+		"titles", len(ranks), "took_ms", time.Since(started).Milliseconds())
 }
 
 // Download re-downloads the dataset from IMDb. Public so callers (e.g. a CLI
@@ -184,25 +241,14 @@ func (d *IMDbDataset) refresh(ctx context.Context) error {
 		return fmt.Errorf("parse: %w", err)
 	}
 
-	var ranks map[string]int
-	if d.topRatedEnabled {
-		// A failure here must not take the ratings down with it: the rank is a
-		// garnish, the ratings are the point.
-		if r, rankErr := buildTopRated(ctx, d.httpClient, idx); rankErr != nil {
-			slog.WarnContext(ctx, "Could not rebuild the top-rated ranking; ratings are unaffected",
-				"error", rankErr)
-		} else {
-			ranks = r
-		}
-	}
-
 	d.mu.Lock()
 	d.index = idx
 	d.loaded = true
 	d.loadErr = nil
-	if ranks != nil {
-		d.topRated = ranks
-	}
+	// A refresh is the point at which a stale or missing ranking gets another
+	// go, so it clears the retry wait rather than honouring it.
+	d.rankAttempt = time.Time{}
+	d.startRankLocked(idx)
 	d.mu.Unlock()
 	return nil
 }
