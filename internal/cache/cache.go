@@ -245,16 +245,20 @@ const bulkLargeBytes = 1 << 20
 // SetFromBulk stores an entry written by a catalogue sweep. Identical to
 // SetWithTTL except that a large one is marked for eviction ahead of the rest.
 func (c *Cache) SetFromBulk(key string, data []byte, ttl time.Duration) error {
-	if len(data) >= bulkLargeBytes {
-		name := filepath.Base(c.diskPath(key))
-		c.expiryMu.Lock()
-		if c.bulkLarge == nil {
-			c.bulkLarge = make(map[string]struct{})
-		}
-		c.bulkLarge[name] = struct{}{}
-		c.expiryMu.Unlock()
+	big := len(data) >= bulkLargeBytes
+	if big {
+		c.noteBulkLarge(filepath.Base(c.diskPath(key)))
 	}
-	return c.SetWithTTL(key, data, ttl)
+	return c.set(key, data, ttl, big)
+}
+
+func (c *Cache) noteBulkLarge(name string) {
+	c.expiryMu.Lock()
+	if c.bulkLarge == nil {
+		c.bulkLarge = make(map[string]struct{})
+	}
+	c.bulkLarge[name] = struct{}{}
+	c.expiryMu.Unlock()
 }
 
 // shedFirst reports whether an entry is a sweep's large render, which is the
@@ -269,6 +273,10 @@ func (c *Cache) shedFirst(name string) bool {
 // SetWithTTL stores data for key with an explicit TTL.
 // If ttl is zero the cache's default TTL is used.
 func (c *Cache) SetWithTTL(key string, data []byte, ttl time.Duration) error {
+	return c.set(key, data, ttl, false)
+}
+
+func (c *Cache) set(key string, data []byte, ttl time.Duration, bulkLarge bool) error {
 	if ttl <= 0 {
 		ttl = c.ttl
 	}
@@ -285,7 +293,11 @@ func (c *Cache) SetWithTTL(key string, data []byte, ttl time.Duration) error {
 
 	// Persist to disk — no lock held during filesystem I/O.
 	payload := make([]byte, expiryHeaderSize+len(data))
-	binary.BigEndian.PutUint64(payload[:expiryHeaderSize], uint64(exp.UnixNano()))
+	header := uint64(exp.UnixNano())
+	if bulkLarge {
+		header |= bulkLargeBit
+	}
+	binary.BigEndian.PutUint64(payload[:expiryHeaderSize], header)
 	copy(payload[expiryHeaderSize:], data)
 
 	// The write and the counter adjustment are one critical section against the
@@ -639,6 +651,21 @@ func (c *Cache) sweepPass(fileBound int, byteBound int64, startup bool) {
 }
 
 // readExpiry reads the expiry header without loading the payload.
+// readRawHeader returns the header word unmasked, so the caller can take both
+// the expiry and the flag from one read.
+func readRawHeader(path string) (int64, bool) {
+	f, err := os.Open(path)
+	if err != nil {
+		return 0, false
+	}
+	defer f.Close()
+	var hdr [expiryHeaderSize]byte
+	if _, err := io.ReadFull(f, hdr[:]); err != nil {
+		return 0, false
+	}
+	return int64(binary.BigEndian.Uint64(hdr[:])), true
+}
+
 func readExpiry(path string) (int64, bool) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -652,9 +679,22 @@ func readExpiry(path string) (int64, bool) {
 	return decodeExpiry(hdr[:]), true
 }
 
-// decodeExpiry parses the big-endian Unix nanosecond expiry header.
+// The header's top bit marks a sweep-written large render. Unix nanoseconds use
+// about 62 bits and will until well past any life of this cache, so the bit is
+// free — and an entry written before this existed has it clear, which reads as
+// "not marked" without needing a format version or a migration.
+const bulkLargeBit uint64 = 1 << 63
+
+// decodeExpiry parses the big-endian Unix nanosecond expiry header, masking off
+// the flag bit. A caller comparing this against a clock must use this rather
+// than the raw header, or a marked entry reads as a negative time.
 func decodeExpiry(hdr []byte) int64 {
-	return int64(binary.BigEndian.Uint64(hdr))
+	return int64(binary.BigEndian.Uint64(hdr) &^ bulkLargeBit)
+}
+
+// decodeBulkLarge reports whether the header marks a sweep's large render.
+func decodeBulkLarge(hdr []byte) bool {
+	return binary.BigEndian.Uint64(hdr)&bulkLargeBit != 0
 }
 
 func (c *Cache) diskPath(key string) string {
@@ -767,18 +807,27 @@ func (c *Cache) forgetExpiry(name string) {
 // the index has not seen it. Entries written before this process started are the
 // only ones that reach the file, and each is indexed once on the way past, so a
 // restart costs one pass rather than one per sweep.
+// expiryOf returns the entry's expiry, and adopts its bulk-large mark on the way
+// past. The index holds the raw header rather than the masked expiry, so the
+// flag costs no extra read: an entry written by an earlier process is marked the
+// first time its header is read, which is the same pass that indexes it.
 func (c *Cache) expiryOf(name, path string) (int64, bool) {
 	c.expiryMu.RLock()
-	exp, ok := c.expiryIndex[name]
+	raw, ok := c.expiryIndex[name]
 	c.expiryMu.RUnlock()
-	if ok {
-		return exp, true
+	if !ok {
+		raw, ok = readRawHeader(path)
+		if ok {
+			c.noteExpiry(name, raw)
+		}
 	}
-	exp, ok = readExpiry(path)
-	if ok {
-		c.noteExpiry(name, exp)
+	if !ok {
+		return 0, false
 	}
-	return exp, ok
+	if uint64(raw)&bulkLargeBit != 0 {
+		c.noteBulkLarge(name)
+	}
+	return int64(uint64(raw) &^ bulkLargeBit), true
 }
 
 // indexKeys snapshots the indexed filenames.

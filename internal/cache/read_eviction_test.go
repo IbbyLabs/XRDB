@@ -387,3 +387,103 @@ func TestAReadSweepRenderLosesItsShedPriority(t *testing.T) {
 		t.Error("a sweep render somebody came back for was still shed first")
 	}
 }
+
+// The in-memory mark is empty at every boot, and the cache turns over more
+// slowly than the process restarts — so a rule that only knew what this process
+// wrote would not reach most of the cache. The header carries it instead.
+func TestTheShedMarkSurvivesARestart(t *testing.T) {
+	dir := t.TempDir()
+	first, err := New(dir, time.Hour, 100, 1<<30)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	settled(t, first)
+	big := make([]byte, bulkLargeBytes+1)
+	// The person's entry is older, so age order would shed it. Only the mark
+	// surviving the restart reverses that.
+	if err := first.SetWithTTL("person-large", big, time.Hour); err != nil {
+		t.Fatalf("SetWithTTL: %v", err)
+	}
+	time.Sleep(10 * time.Millisecond)
+	if err := first.SetFromBulk("sweep-large", big, time.Hour); err != nil {
+		t.Fatalf("SetFromBulk: %v", err)
+	}
+	first.Close()
+
+	// A fresh process over the same directory knows nothing in memory.
+	second, err := New(dir, time.Hour, 100, 1<<30)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	settled(t, second)
+	defer second.Close()
+
+	second.sweepWithBounds(1, 1<<30)
+
+	if onDisk(t, second, "sweep-large") {
+		t.Error("a sweep's large render written before the restart was not shed first")
+	}
+	if !onDisk(t, second, "person-large") {
+		t.Error("a person's render was shed instead")
+	}
+}
+
+// An entry written before the flag existed has the bit clear, so it reads as
+// unmarked rather than as a corrupt expiry.
+func TestAnEntryWithoutTheFlagStillReadsItsExpiry(t *testing.T) {
+	c, err := New(t.TempDir(), time.Hour, 100, 1<<20)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	settled(t, c)
+	defer c.Close()
+
+	if err := c.SetWithTTL("plain", []byte("v"), time.Hour); err != nil {
+		t.Fatalf("SetWithTTL: %v", err)
+	}
+	e, ok := c.Get("plain")
+	if !ok {
+		t.Fatal("Get: miss")
+	}
+	if time.Until(e.ExpiresAt) <= 0 || time.Until(e.ExpiresAt) > time.Hour+time.Minute {
+		t.Fatalf("expiry came back wrong: %v", e.ExpiresAt)
+	}
+	if c.shedFirst(filepath.Base(c.diskPath("plain"))) {
+		t.Error("an unmarked entry was treated as a sweep's large render")
+	}
+}
+
+// A marked entry's expiry must survive the masking, or the flag turns every
+// sweep render into one that reads as expired long ago.
+func TestAMarkedEntryKeepsItsExpiry(t *testing.T) {
+	dir := t.TempDir()
+	c, err := New(dir, time.Hour, 100, 1<<30)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	settled(t, c)
+	defer c.Close()
+
+	big := make([]byte, bulkLargeBytes+1)
+	if err := c.SetFromBulk("marked", big, time.Hour); err != nil {
+		t.Fatalf("SetFromBulk: %v", err)
+	}
+	c.Close()
+
+	// A second process, so the read comes off disk rather than the hot tier —
+	// the masking only happens on the disk path.
+	again, err := New(dir, time.Hour, 100, 1<<30)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	settled(t, again)
+	defer again.Close()
+
+	e, ok := again.Get("marked")
+	if !ok {
+		t.Fatal("a marked entry could not be read back after a restart")
+	}
+	if time.Until(e.ExpiresAt) <= 0 {
+		t.Fatalf("a marked entry read as already expired: %v", e.ExpiresAt)
+	}
+}
