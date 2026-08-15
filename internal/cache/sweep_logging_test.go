@@ -167,7 +167,7 @@ func TestASweepThatEvictsReportsTheEffectiveTTL(t *testing.T) {
 		t.Fatalf("no effective_ttl_hours once the ring is full: %v", last)
 	}
 	if last["sweeps_sampled"] != float64(removedSamples) {
-		t.Fatalf("the sample count was not reported: %v", last)
+		t.Fatalf("a full ring did not report %d samples: %v", removedSamples, last)
 	}
 	if _, ok := last["configured_ttl_hours"]; !ok {
 		t.Fatalf("the configured TTL was not reported alongside it: %v", last)
@@ -208,16 +208,16 @@ func TestTheEffectiveTermIgnoresASingleOutlyingSweep(t *testing.T) {
 	// A steady rate, then one sweep that removes sixteen times as much — the
 	// real spread seen on production.
 	for i := 0; i < removedSamples-1; i++ {
-		if _, ok := c.noteRemoved(54); ok && i < removedSamples-2 {
+		if _, _, ok := c.noteRemoved(54); ok && i < removedMinSamples-2 {
 			t.Fatalf("a term was reported after %d samples", i+1)
 		}
 	}
-	steady, ok := c.noteRemoved(54)
+	steady, _, ok := c.noteRemoved(54)
 	if !ok {
 		t.Fatal("no term once the ring is full")
 	}
 
-	spiked, ok := c.noteRemoved(896)
+	spiked, _, ok := c.noteRemoved(896)
 	if !ok {
 		t.Fatal("no term after the spike")
 	}
@@ -238,16 +238,47 @@ func TestTheEffectiveTermFollowsASustainedChange(t *testing.T) {
 	for i := 0; i < removedSamples; i++ {
 		c.noteRemoved(54)
 	}
-	steady, _ := c.noteRemoved(54)
+	steady, _, _ := c.noteRemoved(54)
 
 	for i := 0; i < removedSamples; i++ {
 		c.noteRemoved(896)
 	}
-	moved, ok := c.noteRemoved(896)
+	moved, _, ok := c.noteRemoved(896)
 	if !ok {
 		t.Fatal("no term after the sustained change")
 	}
 	if moved == steady {
 		t.Fatalf("a sustained change did not move the estimate from %d", steady)
+	}
+}
+
+// The reported sample count has to vary, or it is a constant dressed as a depth
+// indicator: an operator seeing it would reasonably read a low value as "thin
+// history, do not trust this yet", and it must be able to say that.
+func TestTheReportedSampleCountGrowsWithHistory(t *testing.T) {
+	c, err := New(t.TempDir(), 72*time.Hour, 10, 1<<20)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	defer c.Close()
+
+	var seen []int
+	for i := 0; i < removedSamples+2; i++ {
+		_, samples, ok := c.noteRemoved(54)
+		if ok {
+			seen = append(seen, samples)
+		}
+	}
+	if len(seen) == 0 {
+		t.Fatal("nothing was ever reported")
+	}
+	if seen[0] != removedMinSamples {
+		t.Fatalf("first report used %d samples, want %d", seen[0], removedMinSamples)
+	}
+	if seen[len(seen)-1] != removedSamples {
+		t.Fatalf("last report used %d samples, want the full ring of %d", seen[len(seen)-1], removedSamples)
+	}
+	if seen[0] == seen[len(seen)-1] {
+		t.Fatal("the sample count never changed, so it cannot signal thin history")
 	}
 }

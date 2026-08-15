@@ -456,9 +456,9 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 	// rather than by term and the TTL becomes unreachable. Reported as the term
 	// entries are actually getting, so an operator sizing a disk is comparing
 	// against what happens rather than against what they set.
-	if median, ok := c.noteRemoved(expired + evicted); ok && nFiles > 0 {
+	if median, samples, ok := c.noteRemoved(expired + evicted); ok && nFiles > 0 {
 		turnover := time.Duration(float64(nFiles) / float64(median) * float64(sweepInterval))
-		attrs = append(attrs, "effective_ttl_hours", turnover.Hours(), "sweeps_sampled", removedSamples)
+		attrs = append(attrs, "effective_ttl_hours", turnover.Hours(), "sweeps_sampled", samples)
 		if c.ttl > 0 && turnover < c.ttl {
 			attrs = append(attrs, "configured_ttl_hours", c.ttl.Hours())
 		}
@@ -535,16 +535,25 @@ func (c *Cache) DiskBounds() DiskBoundsInfo {
 	return DiskBoundsInfo{Files: c.maxDiskFiles, Bytes: c.maxDiskBytes}
 }
 
-// removedSamples is how many sweeps the effective term is derived from. At a ten
-// minute interval this is two hours of history, which is enough that one heavy
-// or one quiet sweep does not move the answer.
-const removedSamples = 12
+// removedSamples is how many sweeps the effective term is derived from once the
+// ring is full: two hours of history at a ten minute interval, enough that one
+// heavy or one quiet sweep does not move the answer.
+//
+// removedMinSamples is when it starts reporting. Waiting for the full ring means
+// two hours of uptime, and a release restarts the container, so a metric that
+// only exists after two hours can be absent most of the time it is wanted. Four
+// is enough for a median to mean something, and the count is reported alongside
+// so a reader can see how thin it is rather than being asked to assume.
+const (
+	removedSamples    = 12
+	removedMinSamples = 4
+)
 
 // noteRemoved records this sweep's removal count and reports the median of the
 // recent ones. It reports false until there is enough history to have a median
 // worth the name: with one sample the median is that sample, which is the
 // single-reading problem wearing a different word.
-func (c *Cache) noteRemoved(removed int) (int, bool) {
+func (c *Cache) noteRemoved(removed int) (int, int, bool) {
 	c.removedMu.Lock()
 	defer c.removedMu.Unlock()
 
@@ -552,15 +561,15 @@ func (c *Cache) noteRemoved(removed int) (int, bool) {
 	if len(c.removedRing) > removedSamples {
 		c.removedRing = c.removedRing[len(c.removedRing)-removedSamples:]
 	}
-	if len(c.removedRing) < removedSamples {
-		return 0, false
+	if len(c.removedRing) < removedMinSamples {
+		return 0, 0, false
 	}
 
 	sorted := append([]int(nil), c.removedRing...)
 	sort.Ints(sorted)
 	median := sorted[len(sorted)/2]
 	if median <= 0 {
-		return 0, false
+		return 0, 0, false
 	}
-	return median, true
+	return median, len(sorted), true
 }
