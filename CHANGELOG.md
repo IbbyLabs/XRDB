@@ -2,6 +2,20 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.88.1](https://github.com/IbbyLabs/XRDB/compare/v3.88.0...v3.88.1) (2026-08-15)
+
+
+### Fixed
+
+* **cache:** evict never-read entries before ones people came back to ([7b99110](https://github.com/IbbyLabs/XRDB/commit/7b991102eb754b9f550f4339754438d578b527f3))
+* **cache:** keep the index entry of a write that lands during a sweep ([a26fe37](https://github.com/IbbyLabs/XRDB/commit/a26fe370ba1cd0089893ff74665a2fe60c8ef4af))
+* **cache:** order eviction by when an entry was last read, not whether ([3f77395](https://github.com/IbbyLabs/XRDB/commit/3f77395f7b4ad9fadf03b41f1fc8902891774ba2))
+
+
+### Documentation
+
+* **cache:** describe the eviction order the comparator implements ([e07e4a0](https://github.com/IbbyLabs/XRDB/commit/e07e4a08a8071093a4d86f1fccb57d74b331415a))
+
 ## [3.88.0](https://github.com/IbbyLabs/XRDB/compare/v3.87.0...v3.88.0) (2026-08-15)
 
 
