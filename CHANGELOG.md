@@ -2,6 +2,17 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.88.2](https://github.com/IbbyLabs/XRDB/compare/v3.88.1...v3.88.2) (2026-08-15)
+
+
+### Fixed
+
+* **cache:** carry the shed mark in the entry header so it survives a restart ([2a54e63](https://github.com/IbbyLabs/XRDB/commit/2a54e632ae3720c890bdd74ab0d34a50bc2b1671))
+* **cache:** index at startup without enforcing the volume bounds ([14d17bf](https://github.com/IbbyLabs/XRDB/commit/14d17bf93ac250148373d6911b7ed4ff4c3590e8))
+* **cache:** keep the startup pass out of the term estimate and name it in the log ([7fac7a6](https://github.com/IbbyLabs/XRDB/commit/7fac7a6a84fa2031f2153f1d89bc2692d9bd33ef))
+* **cache:** name the sweep counts by when they are sampled ([d35c50c](https://github.com/IbbyLabs/XRDB/commit/d35c50c91ccef880070c4609b9e80469408e3512))
+* **cache:** shed a sweep's large renders before anything else ([486f0de](https://github.com/IbbyLabs/XRDB/commit/486f0dedbed2d3eddf26a62d9938d25636b0dde0))
+
 ## [3.88.1](https://github.com/IbbyLabs/XRDB/compare/v3.88.0...v3.88.1) (2026-08-15)
 
 
