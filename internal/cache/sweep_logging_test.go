@@ -141,19 +141,33 @@ func TestASweepThatEvictsReportsTheEffectiveTTL(t *testing.T) {
 			t.Fatalf("Set: %v", err)
 		}
 	}
-	// A file bound below what is held, so the sweep must evict.
+	// One sweep is not enough history, so nothing should be derived yet.
 	c.sweepWithBounds(3, 1<<30)
-
-	got := lines(buf)
-	if len(got) == 0 {
+	first := lines(buf)
+	if len(first) == 0 {
 		t.Fatal("the sweep logged nothing")
 	}
-	last := got[len(got)-1]
-	if last["evicted"] == float64(0) {
-		t.Fatalf("nothing was evicted, so this measures nothing: %v", last)
+	if _, ok := first[len(first)-1]["effective_ttl_hours"]; ok {
+		t.Fatal("a term was derived from a single sweep")
 	}
+
+	// Fill the ring. Entries are re-added so each sweep has something to remove.
+	for i := 0; i < removedSamples; i++ {
+		for j := 0; j < 8; j++ {
+			if err := c.Set(string(rune('a'+j)), []byte("payload")); err != nil {
+				t.Fatalf("Set: %v", err)
+			}
+		}
+		c.sweepWithBounds(3, 1<<30)
+	}
+
+	got := lines(buf)
+	last := got[len(got)-1]
 	if _, ok := last["effective_ttl_hours"]; !ok {
-		t.Fatalf("no effective_ttl_hours on a sweep that evicted: %v", last)
+		t.Fatalf("no effective_ttl_hours once the ring is full: %v", last)
+	}
+	if last["sweeps_sampled"] != float64(removedSamples) {
+		t.Fatalf("the sample count was not reported: %v", last)
 	}
 	if _, ok := last["configured_ttl_hours"]; !ok {
 		t.Fatalf("the configured TTL was not reported alongside it: %v", last)
@@ -176,5 +190,64 @@ func TestAnIdleSweepReportsNoEffectiveTTL(t *testing.T) {
 	last := got[len(got)-1]
 	if _, ok := last["effective_ttl_hours"]; ok {
 		t.Fatalf("an idle sweep reported a turnover: %v", last)
+	}
+}
+
+// The estimator, not the field. A single sweep's removal count ranged 54 to 896
+// over six hours on production, so a term derived from the latest one reports
+// whichever sweep the reader happened to catch. This is the property the
+// field-presence tests above cannot see: they use fixed inputs, so they pass
+// whichever estimator is in there.
+func TestTheEffectiveTermIgnoresASingleOutlyingSweep(t *testing.T) {
+	c, err := New(t.TempDir(), 72*time.Hour, 10, 1<<20)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	defer c.Close()
+
+	// A steady rate, then one sweep that removes sixteen times as much — the
+	// real spread seen on production.
+	for i := 0; i < removedSamples-1; i++ {
+		if _, ok := c.noteRemoved(54); ok && i < removedSamples-2 {
+			t.Fatalf("a term was reported after %d samples", i+1)
+		}
+	}
+	steady, ok := c.noteRemoved(54)
+	if !ok {
+		t.Fatal("no term once the ring is full")
+	}
+
+	spiked, ok := c.noteRemoved(896)
+	if !ok {
+		t.Fatal("no term after the spike")
+	}
+	if spiked != steady {
+		t.Fatalf("one outlying sweep moved the estimate from %d to %d", steady, spiked)
+	}
+}
+
+// Its control: a sustained change must move it, or the test above would pass on
+// an estimator that returns a constant.
+func TestTheEffectiveTermFollowsASustainedChange(t *testing.T) {
+	c, err := New(t.TempDir(), 72*time.Hour, 10, 1<<20)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	defer c.Close()
+
+	for i := 0; i < removedSamples; i++ {
+		c.noteRemoved(54)
+	}
+	steady, _ := c.noteRemoved(54)
+
+	for i := 0; i < removedSamples; i++ {
+		c.noteRemoved(896)
+	}
+	moved, ok := c.noteRemoved(896)
+	if !ok {
+		t.Fatal("no term after the sustained change")
+	}
+	if moved == steady {
+		t.Fatalf("a sustained change did not move the estimate from %d", steady)
 	}
 }

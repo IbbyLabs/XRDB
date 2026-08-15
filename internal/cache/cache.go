@@ -55,6 +55,13 @@ type Cache struct {
 	maxDiskFiles int
 	maxDiskBytes int64
 
+	// Recent per-sweep removal counts, for reporting the term entries are
+	// actually getting. One sweep is not enough to derive it from: across six
+	// hours the count ranged 54 to 896, which is a 16x spread in the figure and
+	// would report whichever sweep an operator happened to read.
+	removedMu   sync.Mutex
+	removedRing []int
+
 	mu       sync.Mutex
 	hot      map[string]*list.Element // value: *hotEntry
 	lru      *list.List               // front = least recently used
@@ -449,9 +456,9 @@ func (c *Cache) sweepWithBounds(fileBound int, byteBound int64) {
 	// rather than by term and the TTL becomes unreachable. Reported as the term
 	// entries are actually getting, so an operator sizing a disk is comparing
 	// against what happens rather than against what they set.
-	if removed := expired + evicted; removed > 0 && nFiles > 0 {
-		turnover := time.Duration(float64(nFiles) / float64(removed) * float64(sweepInterval))
-		attrs = append(attrs, "effective_ttl_hours", turnover.Hours())
+	if median, ok := c.noteRemoved(expired + evicted); ok && nFiles > 0 {
+		turnover := time.Duration(float64(nFiles) / float64(median) * float64(sweepInterval))
+		attrs = append(attrs, "effective_ttl_hours", turnover.Hours(), "sweeps_sampled", removedSamples)
 		if c.ttl > 0 && turnover < c.ttl {
 			attrs = append(attrs, "configured_ttl_hours", c.ttl.Hours())
 		}
@@ -526,4 +533,34 @@ func (c *Cache) DiskBounds() DiskBoundsInfo {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return DiskBoundsInfo{Files: c.maxDiskFiles, Bytes: c.maxDiskBytes}
+}
+
+// removedSamples is how many sweeps the effective term is derived from. At a ten
+// minute interval this is two hours of history, which is enough that one heavy
+// or one quiet sweep does not move the answer.
+const removedSamples = 12
+
+// noteRemoved records this sweep's removal count and reports the median of the
+// recent ones. It reports false until there is enough history to have a median
+// worth the name: with one sample the median is that sample, which is the
+// single-reading problem wearing a different word.
+func (c *Cache) noteRemoved(removed int) (int, bool) {
+	c.removedMu.Lock()
+	defer c.removedMu.Unlock()
+
+	c.removedRing = append(c.removedRing, removed)
+	if len(c.removedRing) > removedSamples {
+		c.removedRing = c.removedRing[len(c.removedRing)-removedSamples:]
+	}
+	if len(c.removedRing) < removedSamples {
+		return 0, false
+	}
+
+	sorted := append([]int(nil), c.removedRing...)
+	sort.Ints(sorted)
+	median := sorted[len(sorted)/2]
+	if median <= 0 {
+		return 0, false
+	}
+	return median, true
 }
