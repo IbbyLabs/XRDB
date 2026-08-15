@@ -2,8 +2,8 @@ package cache
 
 import (
 	"bytes"
-	"fmt"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"os"
 	"strings"
