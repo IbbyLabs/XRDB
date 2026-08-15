@@ -563,7 +563,11 @@ func (c *Cache) sweepPass(fileBound int, byteBound int64, startup bool) {
 		"expiry_reads_ms", expiryReadNs / 1e6,
 		"remove_ms", time.Since(removeStart).Milliseconds(),
 		"index_orphans_dropped", orphans,
-		"unread_on_disk", unread,
+		// Both taken at the scan, before any removal. files is counted again
+		// afterwards and includes entries written during the sweep, so it and
+		// unread describe different populations and their ratio is meaningless.
+		"files_at_scan", len(files),
+		"unread_at_scan", unread,
 		"evicted_read", evictedRead,
 	}
 	// A configured TTL and a byte ceiling are two limits on the same entries, and

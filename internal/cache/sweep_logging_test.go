@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -348,4 +350,60 @@ func TestTheSweepAttributesItsTime(t *testing.T) {
 		t.Fatalf("expiry reads %.0fms exceed the scan they happen inside, %.0fms",
 			last["expiry_reads_ms"], last["scan_ms"])
 	}
+}
+
+// files_at_scan and unread_at_scan are the pair anyone will divide, so they
+// have to describe one population. files is recounted after the removals and
+// picks up entries written during the sweep, which is why it cannot be the
+// denominator.
+func TestTheUnreadRatioHasOnePopulation(t *testing.T) {
+	buf := captureSlog(t, slog.LevelDebug)
+
+	c, err := New(t.TempDir(), time.Hour, 200, 1<<20)
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	defer c.Close()
+
+	for i := 0; i < 30; i++ {
+		if err := c.Set(fmt.Sprintf("k%d", i), []byte("v")); err != nil {
+			t.Fatalf("Set: %v", err)
+		}
+	}
+	for i := 0; i < 10; i++ {
+		if _, ok := c.Get(fmt.Sprintf("k%d", i)); !ok {
+			t.Fatalf("Get k%d: miss", i)
+		}
+	}
+	// Below the number of unread entries, so a count taken after the removals
+	// would come out under unread_at_scan — the shape of the real defect.
+	c.sweepWithBounds(15, 1<<30)
+
+	line := buf.String()
+	scanned := logInt(t, line, "files_at_scan")
+	unread := logInt(t, line, "unread_at_scan")
+	if scanned == 0 {
+		t.Fatalf("no files_at_scan in the sweep line, so the ratio cannot be checked; line was: %s", line)
+	}
+	if unread > scanned {
+		t.Errorf("unread_at_scan %d exceeds files_at_scan %d, so the pair is not one population", unread, scanned)
+	}
+	if unread == scanned {
+		t.Errorf("unread_at_scan equals files_at_scan (%d) despite ten reads, so reads are not reflected", unread)
+	}
+}
+
+func logInt(t *testing.T, line, key string) int {
+	t.Helper()
+	// The startup pass logs first; the sweep under test is the last line.
+	all := regexp.MustCompile(`"`+key+`":(\d+)`).FindAllStringSubmatch(line, -1)
+	if len(all) == 0 {
+		return 0
+	}
+	m := all[len(all)-1]
+	n, err := strconv.Atoi(m[1])
+	if err != nil {
+		t.Fatalf("parsing %s: %v", key, err)
+	}
+	return n
 }
