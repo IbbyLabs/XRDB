@@ -82,6 +82,17 @@ func (d *IMDbDataset) RatingSources() []string { return []string{"imdb"} }
 // RanksTitles reports that this provider also carries the top-rated rank.
 func (d *IMDbDataset) RanksTitles() bool { return d.topRatedEnabled }
 
+// TopRatedRank returns a title's place in the ranking, or 0 when it has none.
+//
+// The draw path reads this rather than the rank on a cached MediaMeta: the
+// ranking is built after startup, so an entry cached before it existed carries
+// 0 and holds it for the ratings cache TTL.
+func (d *IMDbDataset) TopRatedRank(imdbID string) int {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	return d.topRated[imdbID]
+}
+
 // TopRatedReady reports whether a ranking is loaded and renders carry it.
 // False while the first build runs, and after one that failed.
 func (d *IMDbDataset) TopRatedReady() bool {

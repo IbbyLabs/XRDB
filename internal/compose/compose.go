@@ -482,6 +482,33 @@ func (p *Pipeline) Provider(name string) provider.Provider {
 	return p.providers.Get(name)
 }
 
+// titleRanker is the part of a provider that can place a title in the
+// top-rated ranking.
+type titleRanker interface {
+	RanksTitles() bool
+	TopRatedRank(imdbID string) int
+}
+
+// applyTopRatedRank sets meta's rank from the live ranking.
+//
+// It prefers the id a source resolved over the one the request was made with,
+// the same way titleFactsFor does: the ranking is tt-keyed and a request may
+// address a title by a TMDB number.
+func (p *Pipeline) applyTopRatedRank(meta *provider.MediaMeta, requestedID string) {
+	if meta == nil {
+		return
+	}
+	r, ok := p.Provider("imdb_local").(titleRanker)
+	if !ok || !r.RanksTitles() {
+		return
+	}
+	id := requestedID
+	if meta.IMDbID != "" {
+		id = meta.IMDbID
+	}
+	meta.TopRatedRank = r.TopRatedRank(id)
+}
+
 // providerReady reports whether a credential-gated provider is currently
 // configured. Keyless public providers (which do not implement HasCredentials)
 // are always ready. This lets the render path register every keyed provider up
@@ -1006,6 +1033,10 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// Resolved here, where the title's identity is, so the draw path receives an
 	// answer rather than an id and never needs to know a bundled list exists.
 	facts := titleFactsFor(meta, req.MediaID)
+	// The ranking finishes building after the process starts, so a meta cached
+	// before then carries rank 0 and keeps it for the ratings cache TTL. Read
+	// the live table instead of trusting what the cache handed back.
+	p.applyTopRatedRank(meta, req.MediaID)
 	result.ContributingProviders = append([]string{string(req.Config.ArtworkSource)}, ratingProviders...)
 	result.Degraded = degraded
 	result.DegradedByUs = degraded && !sourceFault
