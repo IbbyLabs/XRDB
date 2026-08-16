@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.89.2](https://github.com/IbbyLabs/XRDB/compare/v3.89.1...v3.89.2) (2026-08-16)
+
+
+### Fixed
+
+* **imdb:** read the top-rated rank live, not from cache (BUG-253) ([8e0d939](https://github.com/IbbyLabs/XRDB/commit/8e0d93910200a2d982a0a60f3539692dba523f43))
+
 ## [3.89.1](https://github.com/IbbyLabs/XRDB/compare/v3.89.0...v3.89.1) (2026-08-15)
 
 
