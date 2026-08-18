@@ -57,11 +57,16 @@ func (c *Cinemeta) FetchArtwork(ctx context.Context, mediaType, id string, opts 
 		return nil, fmt.Errorf("cinemeta: only IMDb tt-IDs supported, got %q: %w", id, ErrNotApplicable)
 	}
 
-	// Cinemeta needs a content type; the render media type doesn't tell us
-	// whether the title is a movie or a series, so try movie first.
-	meta, err := c.fetchMeta(ctx, "movie", id)
+	// Cinemeta needs the title kind. Callers pass ContentType where they have it,
+	// but it is optional and some pass an artwork surface, so only "series"
+	// reorders; anything else keeps movie-first with a series fallback.
+	first, second := "movie", "series"
+	if mediaType == "series" {
+		first, second = "series", "movie"
+	}
+	meta, err := c.fetchMeta(ctx, first, id)
 	if err != nil {
-		meta, err = c.fetchMeta(ctx, "series", id)
+		meta, err = c.fetchMeta(ctx, second, id)
 	}
 	if err != nil {
 		return nil, err

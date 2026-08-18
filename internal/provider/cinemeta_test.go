@@ -135,3 +135,30 @@ func TestSelectImagePathSkipsSVG(t *testing.T) {
 		t.Errorf("expected empty when only SVG available, got %q", got)
 	}
 }
+
+func TestCinemetaSeriesFirstWhenContentTypeKnown(t *testing.T) {
+	var paths []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		if r.URL.Path == "/meta/series/tt0903747.json" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"meta":{"name":"Breaking Bad","releaseInfo":"2008-2013"}}`))
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer srv.Close()
+
+	c := NewCinemetaWithBaseURL(srv.URL)
+	if _, err := c.FetchArtwork(context.Background(), "series", "tt0903747", ArtworkOptions{}); err != nil {
+		t.Fatalf("fetch: %v", err)
+	}
+	for _, p := range paths {
+		if p == "/meta/movie/tt0903747.json" {
+			t.Errorf("asked the movie endpoint for a known series: %v", paths)
+		}
+	}
+	if len(paths) != 1 {
+		t.Errorf("expected one request, got %v", paths)
+	}
+}
