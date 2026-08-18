@@ -185,13 +185,7 @@ func (p *Pipeline) resolveAnimeID(ctx context.Context, req Request) Request {
 	// A leading content-type token comes off first. The tail split below counts
 	// colons from the start, so "series:mal:21" would otherwise read its own
 	// number as a season and episode.
-	rawID := req.MediaID
-	for _, tok := range []string{"movie:", "series:", "tv:"} {
-		if r, found := strings.CutPrefix(rawID, tok); found {
-			rawID = r
-			break
-		}
-	}
+	rawID := stripContentKindPrefix(req.MediaID)
 	service, num, ok := animemap.ParseAnimeID(rawID)
 	if !ok {
 		return req
@@ -1448,7 +1442,7 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 		// Kitsu is keyed on its own ids, so a mainstream id reaches it only
 		// through the anime map. A title with no mapping is not an anime Kitsu
 		// knows, and the next source in the order covers it.
-		providerID := req.MediaID
+		providerID := stripContentKindPrefix(req.MediaID)
 		if name == string(imageconfig.ArtworkKitsu) {
 			id, ok := p.kitsuID(ctx, req)
 			if !ok {
@@ -1579,6 +1573,20 @@ func (p *Pipeline) artworkOrder(primary, surface string) []string {
 
 // artworkOrderFor is artworkOrder with the media id in hand. Kitsu answers only
 // for its own ids and is not in the fallback list, so a kitsu: id needs it added.
+// contentKindTokens lead an id in the {type}:{id} shape AIOMetadata emits.
+var contentKindTokens = []string{"movie:", "series:", "tv:"}
+
+// stripContentKindPrefix removes that token. resolveContentKind has already
+// read it, and no artwork provider parses it.
+func stripContentKindPrefix(id string) string {
+	for _, tok := range contentKindTokens {
+		if rest, found := strings.CutPrefix(id, tok); found {
+			return rest
+		}
+	}
+	return id
+}
+
 func (p *Pipeline) artworkOrderFor(primary, surface, mediaID string) []string {
 	// OMDB only ever returns a poster, so on other surfaces it cannot be the
 	// primary; fall straight through to the general sources.

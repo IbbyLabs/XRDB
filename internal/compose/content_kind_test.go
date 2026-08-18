@@ -173,3 +173,21 @@ func TestATitleTheMapDoesNotCarryIsNotAnime(t *testing.T) {
 		t.Error("a series the map does not carry was called anime")
 	}
 }
+
+func TestStripContentKindPrefixLeavesProvidersABareID(t *testing.T) {
+	for _, tc := range []struct {
+		in   string
+		want string
+	}{
+		{"series:tt31390543", "tt31390543"},
+		{"movie:tt11122698", "tt11122698"},
+		{"tv:tt0903747", "tt0903747"},
+		{"tt0903747", "tt0903747"},
+		{"series:tmdb:330176", "tmdb:330176"},
+		{"kitsu:21", "kitsu:21"},
+	} {
+		if got := stripContentKindPrefix(tc.in); got != tc.want {
+			t.Errorf("stripContentKindPrefix(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}
