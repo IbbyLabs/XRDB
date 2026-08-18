@@ -15,13 +15,6 @@ function normalizeSummary(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
 }
 
-// Commit text is not markdown. An env var name is the clearest case: the
-// underscores in XRDB_A_B are read as italics and it arrives as XRDBAB, a name
-// that does not exist and that a reader copies.
-export function escapeMarkdown(value) {
-  return String(value || '').replace(/([\\*_~`|])/g, '\\$1');
-}
-
 function classifyCommit(subject) {
   const normalized = normalizeSummary(subject).toLowerCase();
   if (normalized.startsWith('feat:') || normalized.startsWith('feat(')) {
@@ -41,13 +34,16 @@ function toDetailedItem(commit) {
     .map((line) => normalizeSummary(line))
     .filter(Boolean);
 
+  // Deliberately unescaped. This body is handed to buildDiscordReleasePayloads,
+  // whose stripMarkdown does the escaping; doing it here too yields a visible
+  // backslash before every underscore.
   return {
-    summary: escapeMarkdown(subject),
-    details: body.map((line) => escapeMarkdown(line)),
+    summary: subject,
+    details: body,
   };
 }
 
-function buildBodyFromCommits(commits, compareUrl, buildUrl, trackingTag) {
+export function buildBodyFromCommits(commits, compareUrl, buildUrl, trackingTag) {
   const groups = new Map([
     ['Added', []],
     ['Fixed', []],

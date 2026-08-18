@@ -1,29 +1,44 @@
 // Run with: node --test .github/scripts/post-discord-dev-build.test.mjs
 //
-// Commit text reaches Discord as the body of a message, so anything Discord
-// reads as formatting is consumed rather than shown. An env var name is the
-// case that bites: five underscores made XRDB_RENDER_QUEUE_WAIT_BURST_SECONDS
-// arrive as XRDBRENDERQUEUEWAITBURSTSECONDS, which is a name that does not
-// exist and which a reader copies.
+// This script assembles a body and hands it to buildDiscordReleasePayloads,
+// which escapes markdown on the way out. Escaping here as well put a visible
+// backslash before every underscore, so the body must leave this script raw.
 
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { escapeMarkdown } from './post-discord-dev-build.mjs';
+import { buildBodyFromCommits } from './post-discord-dev-build.mjs';
+import { buildDiscordReleasePayloads } from './post-discord-release.mjs';
 
-test('an env var name survives the trip intact', () => {
-  const name = 'XRDB_RENDER_QUEUE_WAIT_BURST_SECONDS';
-  const escaped = escapeMarkdown(name);
-  assert.ok(escaped.includes('\\_'), 'underscores must be escaped');
-  assert.equal(escaped.replaceAll('\\', ''), name, 'escaping must reverse to the original');
+const NAME = 'XRDB_RENDER_QUEUE_WAIT_BURST_SECONDS';
+
+function commit(message) {
+  return { id: 'abc1234567', url: 'https://example.invalid/c/abc1234', commit: { message } };
+}
+
+test('the assembled body leaves this script unescaped', () => {
+  const body = buildBodyFromCommits(
+    [commit(`fix(render): a change\n\nset ${NAME} to 1`)],
+    '', '', '',
+  );
+  assert.ok(body.includes(NAME), 'the name must appear verbatim');
+  assert.ok(!body.includes('\\_'), 'escaping belongs to the payload builder, not here');
 });
 
-test('every inline formatter Discord reads is escaped', () => {
-  for (const ch of ['*', '_', '~', '`', '|', '\\']) {
-    assert.ok(escapeMarkdown(`a${ch}b`).includes(`\\${ch}`), `${ch} must be escaped`);
-  }
-});
-
-test('text with no formatting is left alone', () => {
-  assert.equal(escapeMarkdown('fix(render): add a shorter queue wait'), 'fix(render): add a shorter queue wait');
+test('the name survives the whole path exactly once escaped', () => {
+  const body = buildBodyFromCommits(
+    [commit(`fix(render): a change\n\nset ${NAME} to 1`)],
+    '', '', '',
+  );
+  const text = JSON.stringify(buildDiscordReleasePayloads({
+    repository: 'IbbyLabs/xrdb',
+    release: {
+      tag_name: 'v3.90.0', name: 'v3.90.0', body,
+      html_url: 'https://example.invalid/releases/tag/v3.90.0',
+      published_at: '2026-08-18T20:00:00Z',
+    },
+    previousReleaseTag: 'v3.89.2',
+  }));
+  assert.ok(!text.includes('XRDBRENDERQUEUEWAITBURSTSECONDS'), 'underscores must not be deleted');
+  assert.ok(!text.includes('XRDB\\\\\\\\_'), 'and must not be escaped twice');
 });
