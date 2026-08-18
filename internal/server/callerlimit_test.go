@@ -290,3 +290,40 @@ func TestAnAllowedRequestNamesNoKey(t *testing.T) {
 		t.Errorf("allowed=%v over=%q, want true and empty", ok, over)
 	}
 }
+
+func TestCallerLimiterBurningTracksTheBurstAllowance(t *testing.T) {
+	l := newCallerLimiterWithBurst(10, 20)
+
+	if l.burning("ip:1.2.3.4") {
+		t.Errorf("a caller never seen before should not be burning")
+	}
+	if !l.allowAll(t, "ip:1.2.3.4", 5) {
+		t.Fatalf("first five should be allowed")
+	}
+	if l.burning("ip:1.2.3.4") {
+		t.Errorf("15 tokens left of a 10/min rate is not burning")
+	}
+	if !l.allowAll(t, "ip:1.2.3.4", 6) {
+		t.Fatalf("next six should be allowed")
+	}
+	if !l.burning("ip:1.2.3.4") {
+		t.Errorf("9 tokens left of a 10/min rate is burning")
+	}
+	if l.burning("ip:9.9.9.9") {
+		t.Errorf("an unrelated caller should not be burning")
+	}
+	var nilLimiter *callerLimiter
+	if nilLimiter.burning("ip:1.2.3.4") {
+		t.Errorf("a nil limiter should never report burning")
+	}
+}
+
+func (l *callerLimiter) allowAll(t *testing.T, key string, n int) bool {
+	t.Helper()
+	for i := 0; i < n; i++ {
+		if ok, _ := l.allow(key); !ok {
+			return false
+		}
+	}
+	return true
+}

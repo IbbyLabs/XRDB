@@ -327,9 +327,15 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			// A sweep is made to wait; a person is not. Shedding a request
 			// somebody is looking at to admit one nobody is has it backwards.
 			admitted := false
-			if provider.CallerClassFrom(r.Context()) == provider.CallerBulk {
+			switch {
+			case provider.CallerClassFrom(r.Context()) == provider.CallerBulk:
 				admitted = renderLimiter.acquireBulk(r.Context(), cfg.RenderQueueWaitBulk, weight)
-			} else {
+			case callerCap.burning(capProfileKey, "ip:"+clientIP(r, trust)):
+				// Already into its burst allowance, so the cap is turning some of
+				// its requests away. Holding a slot for the full ceiling on behalf
+				// of this one spends capacity nobody is waiting on.
+				admitted = renderLimiter.acquireWithin(r.Context(), cfg.RenderQueueWaitBurst, weight)
+			default:
 				admitted = renderLimiter.acquireWithin(r.Context(), cfg.RenderQueueWait, weight)
 			}
 			if !admitted {
