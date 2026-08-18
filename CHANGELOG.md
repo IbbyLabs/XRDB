@@ -2,6 +2,24 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.90.0](https://github.com/IbbyLabs/XRDB/compare/v3.89.2...v3.90.0) (2026-08-18)
+
+
+### Added
+
+* **render:** add a shorter queue wait for a bursting caller ([140028b](https://github.com/IbbyLabs/XRDB/commit/140028bcb2c4357a0fbd430d8dafc358ebf2f0b5))
+* **stremio:** say where the addon's badges appear (FR-193) ([76fdddf](https://github.com/IbbyLabs/XRDB/commit/76fdddf66e704b394c13ef95720ee7b4f81fe3bf))
+
+
+### Fixed
+
+* **ci:** escape commit text in the dev build notification ([93bc2a2](https://github.com/IbbyLabs/XRDB/commit/93bc2a2f688539fe63a714924d64bdc0378c0317))
+* **ci:** escape the dev build body once, in the payload builder ([f5cd5ac](https://github.com/IbbyLabs/XRDB/commit/f5cd5acacb3485c6db883592208d99166eb2cd97))
+* **ci:** keep underscores in release notes instead of deleting them ([6306aa2](https://github.com/IbbyLabs/XRDB/commit/6306aa293bebb524758c146e6db87f5bdf231572))
+* **cinemeta:** ask the endpoint the content type names (BUG-256) ([aec34a5](https://github.com/IbbyLabs/XRDB/commit/aec34a531ae05fc8e96c1c81a3087df61c3db63e))
+* **stremio:** describe what the addon serves (FR-193) ([5238dee](https://github.com/IbbyLabs/XRDB/commit/5238dee91140f24b1f161276af80558699b52596))
+* **stremio:** serve the full upstream meta, not artwork alone (FR-193) ([74b85c4](https://github.com/IbbyLabs/XRDB/commit/74b85c47ecd8e7de99abcd397cc94e9dc11e9e95))
+
 ## [3.89.2](https://github.com/IbbyLabs/XRDB/compare/v3.89.1...v3.89.2) (2026-08-16)
 
 
