@@ -232,10 +232,15 @@ export function resolveDiscordWebhookPostUrl(webhookUrl) {
   }
 }
 
+// Flattens changelog markdown to plain text for an embed field. Underscores are
+// kept and escaped rather than deleted: they are far more often part of an
+// identifier than an emphasis marker, and deleting them turns
+// XRDB_A_B into XRDBAB, a name that does not exist and that a reader copies.
 function stripMarkdown(value) {
   return String(value || '')
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/[`*_>#]/g, '')
+    .replace(/[`*>#]/g, '')
+    .replace(/_/g, '\\_')
     .replace(/\s+/g, ' ')
     .trim();
 }

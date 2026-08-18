@@ -234,3 +234,26 @@ test('a lone section still rides in the summary', () => {
   assert.equal(payloads.length, 1);
   assert.match(sectionTitlesIn(payloads), /Fixed/);
 });
+
+test('an env var name in a changelog line keeps its underscores', () => {
+  const payloads = buildDiscordReleasePayloads({
+    repository: 'IbbyLabs/xrdb',
+    release: {
+      tag_name: 'v3.90.0',
+      name: 'v3.90.0',
+      body: '## Bug Fixes\n\n* **render:** set XRDB_RENDER_QUEUE_WAIT_BURST_SECONDS to 1 ([abc1234](https://example.invalid/abc1234))\n',
+      html_url: 'https://example.invalid/releases/tag/v3.90.0',
+      published_at: '2026-08-18T20:00:00Z',
+    },
+    previousReleaseTag: 'v3.89.2',
+  });
+  const text = JSON.stringify(payloads);
+  assert.ok(
+    !text.includes('XRDBRENDERQUEUEWAITBURSTSECONDS'),
+    'the name must not arrive with its underscores removed',
+  );
+  assert.ok(
+    text.includes('XRDB\\\\_RENDER\\\\_QUEUE\\\\_WAIT\\\\_BURST\\\\_SECONDS'),
+    'the name must arrive with its underscores escaped',
+  );
+});
