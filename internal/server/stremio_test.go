@@ -235,3 +235,78 @@ func TestStremioUnknownProfileStillServesMeta(t *testing.T) {
 		t.Error("no version token should be emitted for an unresolvable profile")
 	}
 }
+
+// A response carrying only artwork gives a details page with no title and no
+// episodes when Stremio picks it, because Stremio renders the first ready meta
+// item and does not merge across addons.
+func TestStremioMetaCarriesUpstreamFields(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"meta":{"id":"tt0944947","type":"series","name":"Game of Thrones",` +
+			`"poster":"https://upstream/poster.jpg","background":"https://upstream/bg.jpg",` +
+			`"videos":[{"id":"tt0944947:1:1","season":1,"episode":1}]}}`))
+	}))
+	defer upstream.Close()
+
+	prev := stremioCinemetaBase
+	stremioCinemetaBase = upstream.URL
+	defer func() { stremioCinemetaBase = prev }()
+
+	h := NewHandler("test", nil, nil, nil, nil, config.Config{})
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/stremio/meta/series/tt0944947.json", nil))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+
+	var body struct {
+		Meta map[string]any `json:"meta"`
+	}
+	if err := json.NewDecoder(rr.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if body.Meta["name"] != "Game of Thrones" {
+		t.Errorf("name missing from meta: %v", body.Meta["name"])
+	}
+	if _, ok := body.Meta["videos"]; !ok {
+		t.Errorf("videos missing from meta, so a series page would have no episodes")
+	}
+	poster, _ := body.Meta["poster"].(string)
+	if !strings.Contains(poster, "tt0944947") || strings.Contains(poster, "upstream") {
+		t.Errorf("poster should be XRDB's render URL, got %q", poster)
+	}
+}
+
+// The control for the test above: with the upstream unreachable the response
+// falls back to artwork only, so those assertions are sensitive to whether
+// upstream fields were incorporated rather than passing on our own fields.
+func TestStremioMetaFallsBackWhenUpstreamFails(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "upstream down", http.StatusInternalServerError)
+	}))
+	defer upstream.Close()
+
+	prev := stremioCinemetaBase
+	stremioCinemetaBase = upstream.URL
+	defer func() { stremioCinemetaBase = prev }()
+
+	h := NewHandler("test", nil, nil, nil, nil, config.Config{})
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/stremio/meta/series/tt0944947.json", nil))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+	var body struct {
+		Meta map[string]any `json:"meta"`
+	}
+	if err := json.NewDecoder(rr.Body).Decode(&body); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if _, ok := body.Meta["name"]; ok {
+		t.Errorf("name present with upstream down, so the other test proves nothing")
+	}
+	poster, _ := body.Meta["poster"].(string)
+	if !strings.Contains(poster, "tt0944947") {
+		t.Errorf("artwork should still be served on the fallback path, got %q", poster)
+	}
+}

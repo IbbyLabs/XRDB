@@ -38,6 +38,10 @@ import (
 // slow Cinemeta cannot hang a meta request.
 var cinemetaClient = &http.Client{Timeout: 6 * time.Second}
 
+// stremioCinemetaBase is empty in production, meaning the default upstream.
+// Tests point it at a stub so the meta path can be exercised without network.
+var stremioCinemetaBase = ""
+
 // stremioManifest is the Stremio addon manifest shape (subset used by XRDB).
 type stremioManifest struct {
 	ID            string       `json:"id"`
@@ -200,18 +204,20 @@ func serveStremioMeta(w http.ResponseWriter, r *http.Request, cfg config.Config,
 	posterURL := fmt.Sprintf("%s/%s/%s?%s", base, xrdbType, id, q.Encode())
 	backdropURL := fmt.Sprintf("%s/backdrop/%s?%s", base, id, q.Encode())
 
-	// When the profile asks to hide Cinemeta's rating, XRDB serves the upstream
-	// meta with the IMDb rating stripped and its own artwork overlaid, so every
-	// other field still reaches Stremio. A fetch failure falls back to the
-	// minimal meta below rather than dropping the title.
-	if hideCinemetaRating(store, configKey) {
-		if meta, err := fetchCinemetaMeta(r.Context(), cinemetaClient, "", mediaType, id); err == nil {
+	// Stremio queries every addon that serves the resource and renders the first
+	// one that is ready, without merging, so a response carrying only artwork
+	// gives a details page with no title and no episodes when it wins. Serving
+	// the upstream meta with XRDB artwork overlaid makes winning harmless.
+	// A fetch failure falls back to the minimal meta below rather than dropping
+	// the title.
+	if meta, err := fetchCinemetaMeta(r.Context(), cinemetaClient, stremioCinemetaBase, mediaType, id); err == nil {
+		if hideCinemetaRating(store, configKey) {
 			meta = stripImdbRating(meta)
-			meta["poster"] = posterURL
-			meta["background"] = backdropURL
-			writeJSON(w, http.StatusOK, map[string]any{"meta": meta})
-			return
 		}
+		meta["poster"] = posterURL
+		meta["background"] = backdropURL
+		writeJSON(w, http.StatusOK, map[string]any{"meta": meta})
+		return
 	}
 
 	writeJSON(w, http.StatusOK, stremioMetaResponse{
