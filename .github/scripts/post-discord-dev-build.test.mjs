@@ -42,3 +42,16 @@ test('the name survives the whole path exactly once escaped', () => {
   assert.ok(!text.includes('XRDBRENDERQUEUEWAITBURSTSECONDS'), 'underscores must not be deleted');
   assert.ok(!text.includes('XRDB\\\\\\\\_'), 'and must not be escaped twice');
 });
+
+test('a hard-wrapped body becomes one bullet per paragraph', () => {
+  const body = buildBodyFromCommits(
+    [commit(`feat(render): add a shorter queue wait\n\nAdmission takes three paths: bulk, a caller drawing on its\nburst allowance, and everything else. The new bound is\n${NAME}, default 1.\n\nA second paragraph stays separate.`)],
+    '',
+    '',
+    '',
+  );
+
+  assert.match(body, /- Admission takes three paths: bulk, a caller drawing on its burst allowance, and everything else\. The new bound is XRDB_RENDER_QUEUE_WAIT_BURST_SECONDS, default 1\./);
+  assert.match(body, /- A second paragraph stays separate\./);
+  assert.doesNotMatch(body, /- burst allowance,/);
+});

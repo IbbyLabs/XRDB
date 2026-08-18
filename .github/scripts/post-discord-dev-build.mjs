@@ -28,10 +28,14 @@ function classifyCommit(subject) {
 
 function toDetailedItem(commit) {
   const subject = normalizeSummary(commit?.commit?.message?.split(/\r?\n/, 1)[0] || commit?.commit?.message || commit?.message || 'Update');
+  // Commit bodies are hard-wrapped, so one bullet per line splits sentences.
+  // Paragraphs are the unit; normalizeSummary collapses the wrap inside each.
   const body = String(commit?.commit?.message || commit?.message || '')
     .split(/\r?\n/)
     .slice(1)
-    .map((line) => normalizeSummary(line))
+    .join('\n')
+    .split(/\n[ \t]*\n+/)
+    .map((paragraph) => normalizeSummary(paragraph))
     .filter(Boolean);
 
   // Deliberately unescaped. This body is handed to buildDiscordReleasePayloads,
