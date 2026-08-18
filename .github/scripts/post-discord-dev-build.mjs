@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { buildDiscordReleasePayloads, resolveDiscordWebhookPostUrl } from './post-discord-release.mjs';
+import { pathToFileURL } from 'node:url';
 
 function requireEnv(name) {
   const value = String(process.env[name] || '').trim();
@@ -12,6 +13,13 @@ function requireEnv(name) {
 
 function normalizeSummary(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+// Commit text is not markdown. An env var name is the clearest case: the
+// underscores in XRDB_A_B are read as italics and it arrives as XRDBAB, a name
+// that does not exist and that a reader copies.
+export function escapeMarkdown(value) {
+  return String(value || '').replace(/([\\*_~`|])/g, '\\$1');
 }
 
 function classifyCommit(subject) {
@@ -34,8 +42,8 @@ function toDetailedItem(commit) {
     .filter(Boolean);
 
   return {
-    summary: subject,
-    details: body,
+    summary: escapeMarkdown(subject),
+    details: body.map((line) => escapeMarkdown(line)),
   };
 }
 
@@ -187,7 +195,12 @@ async function main() {
   console.log(`Sent Discord dev build notification for ${deploymentVersion} in ${payloads.length} message${payloads.length === 1 ? '' : 's'}`);
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : String(error));
-  process.exit(1);
-});
+// Guarded so the module can be imported by a test without posting anything,
+// matching post-discord-release.mjs beside it.
+const isDirectRun = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (isDirectRun) {
+  main().catch((error) => {
+    console.error(error instanceof Error ? error.message : String(error));
+    process.exit(1);
+  });
+}

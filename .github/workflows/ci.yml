@@ -94,7 +94,7 @@ jobs:
           node-version: 22
 
       - name: Test
-        run: node --test .github/scripts/post-discord-release.test.mjs
+        run: node --test .github/scripts/post-discord-release.test.mjs .github/scripts/post-discord-dev-build.test.mjs
 
   jellyfin-plugin:
     name: Jellyfin plugin
