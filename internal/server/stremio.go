@@ -95,10 +95,12 @@ var (
 // stremioManifestFor builds the addon manifest.
 func stremioManifestFor(cfg config.Config) stremioManifest {
 	return stremioManifest{
-		ID:          "com.ibbylabs.xrdb",
-		Version:     manifestVersion(cfg.Version),
-		Name:        "XRDB",
-		Description: "Enhanced movie and series artwork powered by XRDB — overlaid ratings, quality badges, and more.",
+		ID:      "com.ibbylabs.xrdb",
+		Version: manifestVersion(cfg.Version),
+		Name:    "XRDB",
+		// Stremio shows this in its addon list, which is where someone decides.
+		// Naming the scope here reaches them before the install rather than after.
+		Description: "Ratings and quality badges overlaid on movie and series artwork, on a title's detail page. Catalogue rows and your library keep the artwork their own source supplies.",
 		Resources:   []string{"meta"},
 		Types:       []string{"movie", "series"},
 		IDPrefixes:  []string{"tt"},

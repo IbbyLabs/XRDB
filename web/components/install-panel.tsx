@@ -278,10 +278,11 @@ export function InstallPanel({ configKey, renderKey, versionToken, onRenderKeyCh
           <span className="label">Stremio — install this profile directly</span>
           <span className="hint" style={{ marginTop: 0 }}>
             XRDB serves its own addon, so Stremio can use this profile without
-            AIOMetadata. It supplies poster and background art only, and it
-            answers for the same titles as Cinemeta — so install it below
-            Cinemeta, or stay with AIOMetadata above if you want logos, episode
-            thumbnails and full metadata.
+            AIOMetadata. It answers when you open a title, so badges appear on the
+            detail page — Popular, New and your library keep the posters their own
+            source supplied. Install it below Cinemeta for badges where you open
+            things, or stay with AIOMetadata above for badges on the rows you
+            browse, plus logos, episode thumbnails and full metadata.
           </span>
         </div>
 
