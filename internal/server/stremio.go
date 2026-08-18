@@ -100,7 +100,7 @@ func stremioManifestFor(cfg config.Config) stremioManifest {
 		Name:    "XRDB",
 		// Stremio shows this in its addon list, which is where someone decides.
 		// Naming the scope here reaches them before the install rather than after.
-		Description: "Ratings and quality badges overlaid on movie and series artwork, on a title's detail page. Catalogue rows and your library keep the artwork their own source supplies.",
+		Description: "Ratings and quality badges overlaid on movie and series artwork. Supplies metadata for a title you open and no catalogue rows of its own, so browse rows and your library keep the artwork their own source supplies.",
 		Resources:   []string{"meta"},
 		Types:       []string{"movie", "series"},
 		IDPrefixes:  []string{"tt"},
