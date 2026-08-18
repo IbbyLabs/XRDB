@@ -260,6 +260,11 @@ func main() {
 		"cache_disk_max_files", renderCache.DiskBounds().Files,
 		"cache_disk_max_mb", renderCache.DiskBounds().Bytes>>20,
 		"providers", reg.Names(),
+		// Three bounds decide when a caller's renders are shed rather than
+		// queued, so a shed render is unexplainable without them.
+		"render_queue_wait", cfg.RenderQueueWait,
+		"render_queue_wait_bulk", cfg.RenderQueueWaitBulk,
+		"render_queue_wait_burst", cfg.RenderQueueWaitBurst,
 		"imdb_dataset", cfg.IMDbDatasetDir != "",
 		"imdb_top_rated", cfg.IMDbTopRated,
 	)
