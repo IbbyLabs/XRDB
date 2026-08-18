@@ -2,6 +2,19 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.91.0](https://github.com/IbbyLabs/XRDB/compare/v3.90.0...v3.91.0) (2026-08-18)
+
+
+### Added
+
+* **logging:** report the render queue wait bounds at startup ([07a87e9](https://github.com/IbbyLabs/XRDB/commit/07a87e93ee7da76607f0bc0fcc2a0ffefb9de6bd))
+
+
+### Fixed
+
+* **ci:** keep a wrapped commit body in one bullet ([0291acd](https://github.com/IbbyLabs/XRDB/commit/0291acd0189a3aa956b98fa31496987fd7d4ab88))
+* **compose:** strip the type prefix before providers (BUG-257) ([75f5443](https://github.com/IbbyLabs/XRDB/commit/75f5443305a45c1fb6608add3c16b045a2841f98))
+
 ## [3.90.0](https://github.com/IbbyLabs/XRDB/compare/v3.89.2...v3.90.0) (2026-08-18)
 
 
