@@ -361,6 +361,9 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				return
 			}
 			queueWaitMs = time.Since(queueStart).Milliseconds()
+			if rec, ok := w.(*statusRecorder); ok {
+				rec.queueWaitMs = queueWaitMs
+			}
 			w.Header().Set("X-Render-Source", "miss")
 			var renderResult *compose.Result
 			if pipeline != nil {
@@ -582,6 +585,9 @@ type statusRecorder struct {
 	http.ResponseWriter
 	status int
 	bytes  int
+	// queueWaitMs is set by the render path. Bursts complete in seconds, so
+	// this rides the always-present access line rather than a sampled one.
+	queueWaitMs int64
 }
 
 func (r *statusRecorder) WriteHeader(code int) {
@@ -625,6 +631,7 @@ func accessLogMiddleware(logger *slog.Logger, trust proxyTrust, next http.Handle
 			slog.String("query", logging.RedactQuery(r.URL.RawQuery)),
 			slog.Int("status", status),
 			slog.Int64("latency_ms", time.Since(start).Milliseconds()),
+			slog.Int64("queue_wait_ms", rec.queueWaitMs),
 			slog.Int("bytes", rec.bytes),
 			slog.String("client_ip", clientIP(r, trust)),
 			// Which integration is driving the traffic. A catalogue crawl is
