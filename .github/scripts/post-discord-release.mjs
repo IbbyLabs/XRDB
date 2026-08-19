@@ -236,10 +236,14 @@ export function resolveDiscordWebhookPostUrl(webhookUrl) {
 // kept and escaped rather than deleted: they are far more often part of an
 // identifier than an emphasis marker, and deleting them turns
 // XRDB_A_B into XRDBAB, a name that does not exist and that a reader copies.
+// > and # mark a blockquote or heading only at the start of a line; anywhere
+// else they are content, and an address in angle brackets loses its closing
+// one otherwise.
 function stripMarkdown(value) {
   return String(value || '')
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/[`*>#]/g, '')
+    .replace(/^[>#]+[ \t]*/gm, '')
+    .replace(/[`*]/g, '')
     .replace(/_/g, '\\_')
     .replace(/\s+/g, ' ')
     .trim();

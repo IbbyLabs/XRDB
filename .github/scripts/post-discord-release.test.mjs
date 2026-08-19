@@ -257,3 +257,22 @@ test('an env var name in a changelog line keeps its underscores', () => {
     'the name must arrive with its underscores escaped',
   );
 });
+
+// An address in angle brackets lost its closing one, because > was stripped
+// wherever it appeared rather than only where it marks a blockquote.
+test('an angle-bracketed address keeps its closing bracket', () => {
+  const body = [
+    '- fix: something',
+    '',
+    'Co-authored-by: bot <41898282+github-actions[bot]@users.noreply.github.com>',
+  ].join('\n');
+  const payloads = buildDiscordReleasePayloads({
+    repository: 'IbbyLabs/XRDB',
+    release: { tag_name: 'v9.9.9', name: 'v9.9.9', body, html_url: 'https://example.invalid/r' },
+  });
+  const json = JSON.stringify(payloads);
+  assert.ok(
+    json.includes('users.noreply.github.com>'),
+    'the closing angle bracket was stripped from an address',
+  );
+});
