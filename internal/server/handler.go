@@ -362,7 +362,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			}
 			queueWaitMs = time.Since(queueStart).Milliseconds()
 			if rec, ok := w.(*statusRecorder); ok {
-				rec.queueWaitMs = queueWaitMs
+				rec.queueWaitMs, rec.queued = queueWaitMs, true
 			}
 			w.Header().Set("X-Render-Source", "miss")
 			var renderResult *compose.Result
@@ -587,7 +587,10 @@ type statusRecorder struct {
 	bytes  int
 	// queueWaitMs is set by the render path. Bursts complete in seconds, so
 	// this rides the always-present access line rather than a sampled one.
+	// queued distinguishes a genuine zero wait from a request that never
+	// reached the queue at all; without it both read as 0.
 	queueWaitMs int64
+	queued      bool
 }
 
 func (r *statusRecorder) WriteHeader(code int) {
@@ -624,14 +627,13 @@ func accessLogMiddleware(logger *slog.Logger, trust proxyTrust, next http.Handle
 		if status == 0 {
 			status = http.StatusOK
 		}
-		logger.LogAttrs(r.Context(), slog.LevelInfo, "Handled an HTTP request",
+		attrs := []slog.Attr{
 			slog.String("id", reqID),
 			slog.String("method", r.Method),
 			slog.String("path", r.URL.Path),
 			slog.String("query", logging.RedactQuery(r.URL.RawQuery)),
 			slog.Int("status", status),
 			slog.Int64("latency_ms", time.Since(start).Milliseconds()),
-			slog.Int64("queue_wait_ms", rec.queueWaitMs),
 			slog.Int("bytes", rec.bytes),
 			slog.String("client_ip", clientIP(r, trust)),
 			// Which integration is driving the traffic. A catalogue crawl is
@@ -643,7 +645,14 @@ func accessLogMiddleware(logger *slog.Logger, trust proxyTrust, next http.Handle
 			// composed here. Empty on anything that is not a render. Separate
 			// from X-Cache, which is a public HIT marker downstream caches read.
 			slog.String("render_source", rec.Header().Get("X-Render-Source")),
-		)
+		}
+		// Only when the request actually queued. A request served from cache
+		// never waited, and reporting that as a zero puts it in the same bucket
+		// as a render that found a slot immediately.
+		if rec.queued {
+			attrs = append(attrs, slog.Int64("queue_wait_ms", rec.queueWaitMs))
+		}
+		logger.LogAttrs(r.Context(), slog.LevelInfo, "Handled an HTTP request", attrs...)
 	})
 }
 
