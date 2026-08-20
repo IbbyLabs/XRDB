@@ -260,8 +260,10 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		// than being answered with our own impatience for the rest of the minute.
 		placeholderIsOurs := false
 		// queueWaitMs stays zero for a cache hit or a remembered not-found, neither
-		// of which touches the render limiter.
+		// of which touches the render limiter. didQueue separates that from a
+		// genuine zero wait.
 		var queueWaitMs int64
+		var didQueue bool
 		if !fromCache && notFound.Has(cacheKey) {
 			// Asked for recently and there was nothing. Answer from that rather
 			// than sweeping every provider again, which is what makes a
@@ -361,6 +363,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				return
 			}
 			queueWaitMs = time.Since(queueStart).Milliseconds()
+			didQueue = true
 			if rec, ok := w.(*statusRecorder); ok {
 				rec.queueWaitMs, rec.queued = queueWaitMs, true
 			}
@@ -486,11 +489,16 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		}
 		w.WriteHeader(status)
 		_, _ = w.Write(pngBytes)
-		logger.DebugContext(r.Context(), "Served an artwork render",
+		renderAttrs := []any{
 			"id", logging.RequestID(r.Context()),
 			"media_type", mediaType, "media_id", id,
 			"status", status, "from_cache", fromCache, "placeholder", placeholder,
-			"bytes", len(pngBytes), "latency_ms", int64(latMs(start)), "queue_wait_ms", queueWaitMs)
+			"bytes", len(pngBytes), "latency_ms", int64(latMs(start)),
+		}
+		if didQueue {
+			renderAttrs = append(renderAttrs, "queue_wait_ms", queueWaitMs)
+		}
+		logger.DebugContext(r.Context(), "Served an artwork render", renderAttrs...)
 		ms.Record("/"+mediaType, status, latMs(start))
 	}
 	for _, mt := range imageconfig.Surfaces {
