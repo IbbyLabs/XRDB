@@ -692,9 +692,20 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 			// about the shared key's health, so it only caches the result and
 			// must not clear the shared cooldown.
 			p.health.Remember(key, meta)
-		} else if p.health.Success(prov.Name(), key, meta) {
-			p.log().WarnContext(ctx, "A ratings source recovered and is answering again",
-				"id", logging.RequestID(ctx), "source", prov.Name())
+		} else {
+			// Read before the success clears it: the recovery line names the
+			// gate it lifted, so one search finds the trip and the clearing.
+			priorGate := p.health.LastCooldownReason(prov.Name(), callerClass)
+			// The hold-out lines report a rate-limit hold as GateCooldown, so
+			// the recovery has to use that word or one search misses the other.
+			if priorGate == provider.CooldownRateLimit {
+				priorGate = provider.GateCooldown
+			}
+			if p.health.Success(prov.Name(), key, meta) {
+				p.log().WarnContext(ctx, "A ratings source recovered and is answering again",
+					"id", logging.RequestID(ctx), "source", prov.Name(),
+					"gate", priorGate, "caller_class", callerClass.String())
+			}
 		}
 		return meta, false, nil
 	}
@@ -710,11 +721,16 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 			// to the wrong place.
 			var rl *provider.RateLimitError
 			reason := "is failing"
+			// Searching a mechanism's own name has to find the cause, not only
+			// its consequences on every later render.
+			gate := provider.GateFailureBreaker
 			if errors.As(err, &rl) {
 				reason = "is rate-limited"
+				gate = provider.GateCooldown
 			}
 			p.log().WarnContext(ctx, "A ratings source "+reason+" and is held out until it recovers",
-				"id", logging.RequestID(ctx), "source", prov.Name(), "error", err)
+				"id", logging.RequestID(ctx), "source", prov.Name(),
+				"gate", gate, "caller_class", callerClass.String(), "error", err)
 		}
 	}
 	if good, age, ok := p.health.LastGoodAge(prov.Name(), key); ok {
@@ -1944,6 +1960,9 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 					attrs := []any{"id", logging.RequestID(ctx), "source", prov.Name(),
 						"media_id", req.MediaID, "gate", gate,
 						"outcome", outcomeHeldOut,
+						// The hold is kept per caller class, so a line without
+						// the class cannot say which traffic was held.
+						"caller_class", provider.CallerClassFrom(ctx).String(),
 						"owner_keyed", provider.HasOwnerKey(ctx, prov.Name())}
 					if gate == provider.GatePacerBacklog {
 						attrs = append(attrs, "min_interval_ms",

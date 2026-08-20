@@ -124,6 +124,11 @@ func TestTheFailureBreakerIsNotReportedAsARateLimitCooldown(t *testing.T) {
 	if line["gate"] != provider.GateFailureBreaker {
 		t.Errorf("gate = %v, want %v", line["gate"], provider.GateFailureBreaker)
 	}
+	// The hold is kept per caller class, so a line that names only the gate
+	// cannot say which traffic was held out.
+	if line["caller_class"] != provider.CallerInteractive.String() {
+		t.Errorf("caller_class = %v, want %v", line["caller_class"], provider.CallerInteractive.String())
+	}
 }
 
 // A pacer_backlog hold-out means two different things: a deliberately

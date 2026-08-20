@@ -361,6 +361,22 @@ func (h *HealthTracker) CooldownReason(source string, class CallerClass) string 
 	return st.cooldownReason[class]
 }
 
+// LastCooldownReason returns the reason a source was last held out for class,
+// whether or not that hold is still in force. CooldownReason answers only while
+// the hold stands, so it cannot name the gate a recovery just cleared.
+func (h *HealthTracker) LastCooldownReason(source string, class CallerClass) string {
+	if h == nil {
+		return ""
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	st, ok := h.sources[source]
+	if !ok {
+		return ""
+	}
+	return st.cooldownReason[class]
+}
+
 // CoolingOff reports whether a source is being held out after refusing on
 // rate-limit grounds, and must not be called by a live render.
 func (h *HealthTracker) CoolingOff(source string, class CallerClass) bool {
