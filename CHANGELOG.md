@@ -2,6 +2,20 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.92.0](https://github.com/IbbyLabs/XRDB/compare/v3.91.0...v3.92.0) (2026-08-20)
+
+
+### Added
+
+* **logging:** carry the render queue wait on the access line ([68f6507](https://github.com/IbbyLabs/XRDB/commit/68f650798e2fe8a3afbea89c1a8badb0246df5e9))
+
+
+### Fixed
+
+* **ci:** keep angle brackets that are not blockquote markers ([b1aed1c](https://github.com/IbbyLabs/XRDB/commit/b1aed1c2429ada38ea0287428e8d0f9fd471fad2))
+* **logging:** omit the queue wait when the request never queued ([154912f](https://github.com/IbbyLabs/XRDB/commit/154912f2e36a8d2167f9289f04ade26a57b06b89))
+* **logging:** omit the render queue wait when nothing queued ([ee7a93a](https://github.com/IbbyLabs/XRDB/commit/ee7a93aa7518e5cd27554bad639a7483157dc87e))
+
 ## [3.91.0](https://github.com/IbbyLabs/XRDB/compare/v3.90.0...v3.91.0) (2026-08-18)
 
 
