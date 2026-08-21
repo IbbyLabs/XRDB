@@ -1512,6 +1512,10 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 			// writes into this one.
 			local := *meta
 			baseMeta, baseFrom = &local, name
+			p.log().DebugContext(ctx, "Resolved the artwork language for this render",
+				"id", logging.RequestID(ctx), "provider", name,
+				"media_type", req.MediaType, "media_id", req.MediaID,
+				"requested", req.Config.Language, "effective", local.Language)
 		} else {
 			mergeArtworkURLs(baseMeta, meta)
 		}
