@@ -290,13 +290,3 @@ func TestAnAllowedRequestNamesNoKey(t *testing.T) {
 		t.Errorf("allowed=%v over=%q, want true and empty", ok, over)
 	}
 }
-
-func (l *callerLimiter) allowAll(t *testing.T, key string, n int) bool {
-	t.Helper()
-	for i := 0; i < n; i++ {
-		if ok, _ := l.allow(key); !ok {
-			return false
-		}
-	}
-	return true
-}
