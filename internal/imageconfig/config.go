@@ -2272,7 +2272,7 @@ func isHexColor(s string) bool {
 // A bump wipes the entire render cache, every title, every config, at once, so
 // an instance under real traffic goes from warm to cold in one deploy. Bump it
 // only when pixel output actually changed.
-const renderVersion = "r21"
+const renderVersion = "r22"
 
 // CacheKey returns a deterministic hex string for the config, suitable for use
 // as part of a render cache key. The key is stable: same logical config always
