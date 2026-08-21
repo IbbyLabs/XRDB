@@ -315,7 +315,8 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				// somebody's library.
 				logger.InfoContext(r.Context(), "A caller asked for more renders than its allowance and was turned away",
 					"id", logging.RequestID(r.Context()), "media_id", id,
-					"over", over, "per_minute", cfg.RenderCapPerMinute)
+					"over", over, "per_minute", cfg.RenderCapPerMinute,
+					"caller_class", provider.CallerClassFrom(r.Context()).String())
 				w.Header().Set("Retry-After", "60")
 				w.Header().Set("Cache-Control", "no-store")
 				http.Error(w, "too many renders; try again shortly", http.StatusTooManyRequests)

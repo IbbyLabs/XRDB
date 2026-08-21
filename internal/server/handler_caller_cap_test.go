@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -234,5 +235,55 @@ func TestAShedNamesWhichCeilingTurnedItAway(t *testing.T) {
 	}
 	if strings.Contains(out, "Shed a render") && !strings.Contains(out, "queue_tier") {
 		t.Error("a shed was logged without naming which ceiling turned it away")
+	}
+}
+
+// The cap turns callers away before the queue reads their class, so the refusal
+// line is the only place that can say whether it landed on a sweep or on
+// somebody's library (FR-195). A user agent that names itself a sweep must come
+// through as one.
+func TestACapRefusalNamesTheCallerClass(t *testing.T) {
+	for _, tc := range []struct {
+		name      string
+		userAgent string
+		want      string
+	}{
+		{"a sweep that names itself", "AIOMetadata/2.13.0", "bulk"},
+		{"anything else", "Mozilla/5.0", "interactive"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var buf bytes.Buffer
+			prev := slog.Default()
+			slog.SetDefault(slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelInfo})))
+			t.Cleanup(func() { slog.SetDefault(prev) })
+
+			h, p := capHandler(t, 1) // burst 2, so the third is refused
+			for i := range 3 {
+				rr := httptest.NewRecorder()
+				req := httptest.NewRequest(http.MethodGet,
+					"/poster/tt000"+string(rune('1'+i))+"?config="+p.ID, nil)
+				req.RemoteAddr = "203.0.113.11:1234"
+				req.Header.Set("User-Agent", tc.userAgent)
+				h.ServeHTTP(rr, req)
+			}
+
+			var seen bool
+			for _, line := range strings.Split(strings.TrimSpace(buf.String()), "\n") {
+				var d map[string]any
+				if json.Unmarshal([]byte(line), &d) != nil {
+					continue
+				}
+				if !strings.Contains(fmt.Sprint(d["msg"]), "more renders than its allowance") {
+					continue
+				}
+				seen = true
+				if got := fmt.Sprint(d["caller_class"]); got != tc.want {
+					t.Errorf("caller_class = %q, want %q", got, tc.want)
+				}
+			}
+			if !seen {
+				t.Fatal("no cap refusal was logged, so the field could not be checked")
+			}
+		})
 	}
 }
