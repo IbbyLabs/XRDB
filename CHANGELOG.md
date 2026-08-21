@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.93.1](https://github.com/IbbyLabs/XRDB/compare/v3.93.0...v3.93.1) (2026-08-21)
+
+
+### Fixed
+
+* **render:** bump renderVersion to clear stale artwork (BUG-262) ([fb9359e](https://github.com/IbbyLabs/XRDB/commit/fb9359e462053ce4cb8b0c775e27597995fa1389))
+* **render:** give an over-cap caller the normal queue ceiling (BUG-261) ([9caa8d8](https://github.com/IbbyLabs/XRDB/commit/9caa8d88b9224951a9a830c79b0e8d66667f779c))
+
 ## [3.93.0](https://github.com/IbbyLabs/XRDB/compare/v3.92.0...v3.93.0) (2026-08-21)
 
 
