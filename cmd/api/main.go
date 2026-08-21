@@ -113,6 +113,10 @@ func main() {
 		logger.Warn("No XRDB_CONFIG_ENCRYPTION_KEY is set, so profiles cannot store their own provider API keys",
 			"effect", "requests to save a key are refused; every render uses the server's keys")
 	}
+	if os.Getenv("XRDB_RENDER_QUEUE_WAIT_BURST_SECONDS") != "" {
+		logger.Warn("XRDB_RENDER_QUEUE_WAIT_BURST_SECONDS is set but no longer read",
+			"effect", "an over-cap caller waits the ordinary XRDB_RENDER_QUEUE_WAIT_SECONDS")
+	}
 
 	settingsStore, err := settings.Open(cfg.DBPath + ".settings")
 	if err != nil {
@@ -260,11 +264,10 @@ func main() {
 		"cache_disk_max_files", renderCache.DiskBounds().Files,
 		"cache_disk_max_mb", renderCache.DiskBounds().Bytes>>20,
 		"providers", reg.Names(),
-		// Three bounds decide when a caller's renders are shed rather than
+		// Two bounds decide when a caller's renders are shed rather than
 		// queued, so a shed render is unexplainable without them.
 		"render_queue_wait", cfg.RenderQueueWait,
 		"render_queue_wait_bulk", cfg.RenderQueueWaitBulk,
-		"render_queue_wait_burst", cfg.RenderQueueWaitBurst,
 		"imdb_dataset", cfg.IMDbDatasetDir != "",
 		"imdb_top_rated", cfg.IMDbTopRated,
 	)

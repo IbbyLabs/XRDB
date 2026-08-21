@@ -188,10 +188,6 @@ type Config struct {
 	// Nobody is watching a sweep, so it waits rather than being turned away, and
 	// it stands aside while interactive requests are queued.
 	RenderQueueWaitBulk time.Duration
-	// RenderQueueWaitBurst is the bound for a caller drawing on its burst
-	// allowance. It is short: such a caller is refused rather than held a slot
-	// for, since the cap is already turning some of its requests away.
-	RenderQueueWaitBurst time.Duration
 	// ArtFetchTimeout bounds the source-artwork HTTP fetch. A stalled fetch
 	// otherwise holds a render slot doing nothing until it elapses, starving
 	// the renders queued behind it.
@@ -513,15 +509,6 @@ func Load() Config {
 			renderQueueWait = time.Duration(n) * time.Second
 		}
 	}
-	// A caller into its burst allowance is refused quickly rather than holding a
-	// slot: it still gets one whenever the queue is short, which is the common
-	// case, and stops occupying capacity when it is not.
-	renderQueueWaitBurst := time.Second
-	if raw := os.Getenv("XRDB_RENDER_QUEUE_WAIT_BURST_SECONDS"); raw != "" {
-		if n, err := strconv.Atoi(raw); err == nil && n > 0 {
-			renderQueueWaitBurst = time.Duration(n) * time.Second
-		}
-	}
 	// Bounds the source-artwork fetch. A normal fetch runs around a second, so
 	// this is generous while still failing fast: a stalled fetch that ran the
 	// old 15s default held a render slot idle, which deepened the queue for
@@ -601,7 +588,6 @@ func Load() Config {
 		RenderConcurrency:     renderConcurrency,
 		RenderQueueWait:       renderQueueWait,
 		RenderQueueWaitBulk:   renderQueueWaitBulk,
-		RenderQueueWaitBurst:  renderQueueWaitBurst,
 		RenderCapPerMinute:    renderCapPerMinute,
 		SharedProfileAliases:  sharedProfileAliases,
 		ArtFetchTimeout:       artFetchTimeout,

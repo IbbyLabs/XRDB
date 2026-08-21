@@ -107,31 +107,6 @@ func (l *callerLimiter) allow(keys ...string) (bool, string) {
 	return true, ""
 }
 
-// burning reports whether any of these keys has spent its steady rate and is
-// drawing on the burst allowance. Such a caller is bursting rather than
-// browsing, which is what decides how long it may hold a render slot. A key not
-// seen before is not burning, so a first request is never treated as one.
-func (l *callerLimiter) burning(keys ...string) bool {
-	if l == nil {
-		return false
-	}
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	now := l.now()
-	for _, k := range keys {
-		if k == "" {
-			continue
-		}
-		if _, seen := l.buckets[k]; !seen {
-			continue
-		}
-		if l.tokensLocked(k, now) < l.perMinute {
-			return true
-		}
-	}
-	return false
-}
-
 // tokensLocked refills a key's bucket to the present moment and returns what it
 // holds, creating it full on first sight.
 func (l *callerLimiter) tokensLocked(key string, now time.Time) float64 {
