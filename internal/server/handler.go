@@ -375,7 +375,10 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				logger.WarnContext(r.Context(), "Shed a render because the queue was full",
 					"id", logging.RequestID(r.Context()),
 					"media_type", mediaType, "media_id", id, "waited_ms", waitedMs,
-					"queue_tier", queueTier)
+					"queue_tier", queueTier,
+					// Both classes reach this line, so unlike on the cap refusal
+					// this one varies and can be read (FR-196).
+					"caller_class", provider.CallerClassFrom(r.Context()).String())
 				w.Header().Set("Retry-After", "5")
 				w.Header().Set("Cache-Control", "no-store")
 				http.Error(w, "busy: too many renders queued", http.StatusServiceUnavailable)

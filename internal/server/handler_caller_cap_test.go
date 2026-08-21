@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -338,4 +339,98 @@ func TestAnExemptSweepDoesNotSpendTheAddressAllowance(t *testing.T) {
 			t.Fatalf("request %d from a person was refused; the sweep spent the address allowance", i+1)
 		}
 	}
+}
+
+// Both classes reach the shed, so unlike the cap refusal this line's caller
+// class varies and can be read (FR-196). Citing its absence as evidence about
+// who was shed is what this exists to prevent.
+func TestAShedNamesTheCallerClass(t *testing.T) {
+	var buf bytes.Buffer
+	var mu sync.Mutex
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&lockedWriter{w: &buf, mu: &mu},
+		&slog.HandlerOptions{Level: slog.LevelDebug})))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+
+	h, p := shedHandler(t)
+
+	// One slot and a queue that will not wait, so whichever requests lose the
+	// race are shed rather than served.
+	var wg sync.WaitGroup
+	for i := range 8 {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			rr := httptest.NewRecorder()
+			req := httptest.NewRequest(http.MethodGet,
+				"/poster/tt900"+string(rune('1'+i))+"?config="+p.ID, nil)
+			req.RemoteAddr = "203.0.113.31:1234"
+			req.Header.Set("User-Agent", "Mozilla/5.0")
+			h.ServeHTTP(rr, req)
+		}(i)
+	}
+	wg.Wait()
+
+	mu.Lock()
+	out := buf.String()
+	mu.Unlock()
+
+	shed := 0
+	for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
+		var d map[string]any
+		if json.Unmarshal([]byte(line), &d) != nil {
+			continue
+		}
+		if !strings.HasPrefix(fmt.Sprint(d["msg"]), "Shed a render") {
+			continue
+		}
+		shed++
+		if got := fmt.Sprint(d["caller_class"]); got != "interactive" {
+			t.Errorf("shed line caller_class = %q, want interactive", got)
+		}
+	}
+	if shed == 0 {
+		t.Fatal("no render was shed, so this proves nothing about the field")
+	}
+}
+
+// lockedWriter serialises the log writes the concurrent requests above produce.
+type lockedWriter struct {
+	w  *bytes.Buffer
+	mu *sync.Mutex
+}
+
+func (l *lockedWriter) Write(p []byte) (int, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.w.Write(p)
+}
+
+// shedHandler builds a handler with one render slot and a queue that will not
+// wait, so a burst is shed rather than served.
+func shedHandler(t *testing.T) (http.Handler, *profile.Profile) {
+	t.Helper()
+	art := testSourcePNG(t, 300, 450)
+	reg := provider.NewRegistry()
+	reg.Register(&provider.StubProvider{
+		ProviderName: "tmdb",
+		Meta:         &provider.MediaMeta{Title: "Test", PosterURL: "http://fake/poster.jpg"},
+	})
+	pipeline := compose.NewWithFetcher(reg, logoFailingFetcher{data: art})
+	store := openTestStore(t)
+	c, err := cache.New(t.TempDir(), time.Hour, 100, 8<<20)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(c.Close)
+	h := NewHandler("test", store, nil, pipeline, c, config.Config{
+		RenderConcurrency: 1,
+		RenderQueueWait:   time.Millisecond,
+		CacheTTL:          72 * time.Hour,
+	})
+	p := &profile.Profile{ID: "shed-cfg", Type: "poster", Config: json.RawMessage(`{}`)}
+	if err := store.Save(p); err != nil {
+		t.Fatal(err)
+	}
+	return h, p
 }
