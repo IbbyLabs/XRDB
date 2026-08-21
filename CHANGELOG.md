@@ -17,9 +17,9 @@ All notable changes to XRDB are documented here.
 * **compose:** pass an id's own kind to the artwork fetch (BUG-260) ([2dd2893](https://github.com/IbbyLabs/XRDB/commit/2dd2893b1393be298d1af132337ac749a56ae025))
 * **logging:** name the gate and caller class on hold-out transitions ([497516d](https://github.com/IbbyLabs/XRDB/commit/497516d9f3d706b24ab95f58cf1a721f4fb03dca))
 * **logging:** say which artwork step failed, not always the metadata ([1d37677](https://github.com/IbbyLabs/XRDB/commit/1d37677a646b83865da5b7484d1acb4bcfcdf9f5))
-* **server:** key a bare TMDB id's render by the requested kind ([4660c15](https://github.com/IbbyLabs/XRDB/commit/4660c154c510087146388bc3b493afb7749ade38))
+* **server:** key a bare TMDB id's render by the requested kind (BUG-259) ([4660c15](https://github.com/IbbyLabs/XRDB/commit/4660c154c510087146388bc3b493afb7749ade38))
 * **server:** record a capped caller's refusal in metrics ([b6300a8](https://github.com/IbbyLabs/XRDB/commit/b6300a89d383965fdf553c40fb8b8850eea21250))
-* **tmdb:** try the other kind when a bare id's record has no artwork ([ac74dd6](https://github.com/IbbyLabs/XRDB/commit/ac74dd650ac324bcee1182c58aa07b945874296f))
+* **tmdb:** try the other kind when a bare id's record has no artwork (BUG-258) ([ac74dd6](https://github.com/IbbyLabs/XRDB/commit/ac74dd650ac324bcee1182c58aa07b945874296f))
 
 ## [3.92.0](https://github.com/IbbyLabs/XRDB/compare/v3.91.0...v3.92.0) (2026-08-20)
 
