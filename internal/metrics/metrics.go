@@ -21,10 +21,14 @@ type Snapshot struct {
 	TotalRequests int64            `json:"totalRequests"`
 	ByStatus      map[int]int64    `json:"byStatus"`
 	ByRoute       map[string]int64 `json:"byRoute"`
-	P50Ms         float64          `json:"p50Ms"`
-	P95Ms         float64          `json:"p95Ms"`
-	P99Ms         float64          `json:"p99Ms"`
-	UptimeSeconds float64          `json:"uptimeSeconds"`
+	// Route crossed with status. Both dimensions are already in the ring; without
+	// the cross a reader can see the 404 count and the poster count and cannot
+	// tell how many of one were the other.
+	ByRouteStatus map[string]map[int]int64 `json:"byRouteStatus"`
+	P50Ms         float64                  `json:"p50Ms"`
+	P95Ms         float64                  `json:"p95Ms"`
+	P99Ms         float64                  `json:"p99Ms"`
+	UptimeSeconds float64                  `json:"uptimeSeconds"`
 }
 
 // Store collects request metrics with a bounded ring buffer.
@@ -80,10 +84,15 @@ func (s *Store) Snapshot() Snapshot {
 
 	byStatus := make(map[int]int64)
 	byRoute := make(map[string]int64)
+	byRouteStatus := make(map[string]map[int]int64)
 	latencies := make([]float64, 0, n)
 	for _, r := range records {
 		byStatus[r.StatusCode]++
 		byRoute[r.Route]++
+		if byRouteStatus[r.Route] == nil {
+			byRouteStatus[r.Route] = make(map[int]int64)
+		}
+		byRouteStatus[r.Route][r.StatusCode]++
 		latencies = append(latencies, r.LatencyMs)
 	}
 
@@ -92,6 +101,7 @@ func (s *Store) Snapshot() Snapshot {
 		TotalRequests: total,
 		ByStatus:      byStatus,
 		ByRoute:       byRoute,
+		ByRouteStatus: byRouteStatus,
 		P50Ms:         percentile(latencies, 50),
 		P95Ms:         percentile(latencies, 95),
 		P99Ms:         percentile(latencies, 99),

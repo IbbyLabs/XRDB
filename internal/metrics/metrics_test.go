@@ -74,3 +74,28 @@ func TestRingBufferBoundedAtRingSize(t *testing.T) {
 		t.Errorf("ring snapshot should be bounded at %d, got %d", ringSize, count)
 	}
 }
+
+// byStatus and byRoute are separate dimensions, so a reader can see the 404
+// count and the poster count without being able to tell how many of one were
+// the other. Both values are already in the ring.
+func TestSnapshotCrossesRouteWithStatus(t *testing.T) {
+	s := New()
+	s.Record("/poster", 200, 10)
+	s.Record("/poster", 404, 11)
+	s.Record("/poster", 404, 12)
+	s.Record("/thumbnail", 404, 13)
+
+	snap := s.Snapshot()
+	if got := snap.ByStatus[404]; got != 3 {
+		t.Fatalf("byStatus 404 = %d, want 3 — the fixture is wrong, not the cross", got)
+	}
+	if got := snap.ByRouteStatus["/poster"][404]; got != 2 {
+		t.Errorf("poster 404s = %d, want 2", got)
+	}
+	if got := snap.ByRouteStatus["/poster"][200]; got != 1 {
+		t.Errorf("poster 200s = %d, want 1", got)
+	}
+	if got := snap.ByRouteStatus["/thumbnail"][404]; got != 1 {
+		t.Errorf("thumbnail 404s = %d, want 1", got)
+	}
+}
