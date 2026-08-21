@@ -37,14 +37,14 @@ func TestABareIdThatIsASeriesFallsBackToTheOtherKind(t *testing.T) {
 	}
 }
 
-// The control: a bare id that IS a film must cost exactly one call, or the fix
-// doubles the traffic on the case that already worked.
+// The control: a bare id that IS a film with artwork must cost exactly one
+// call, or the fix doubles the traffic on the case that already worked.
 func TestABareIdThatIsAFilmCostsOneCall(t *testing.T) {
 	var asked []string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		asked = append(asked, r.URL.Path)
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"id":27205,"title":"A Film","release_date":"2010-07-16"}`))
+		_, _ = w.Write([]byte(`{"id":27205,"title":"A Film","release_date":"2010-07-16","poster_path":"/f.jpg"}`))
 	}))
 	defer srv.Close()
 
@@ -73,5 +73,57 @@ func TestAnExplicitKindIsNotRetried(t *testing.T) {
 	}
 	if len(asked) != 1 {
 		t.Errorf("endpoints asked = %v, want one call — an explicit kind is not a guess", asked)
+	}
+}
+
+// /movie and /tv number independently, so one id can name a film with no
+// artwork and a series that has some. The film record answering is not the same
+// as the kind being settled.
+func TestABareIdWhoseFilmRecordHasNoArtworkTriesTheSeries(t *testing.T) {
+	var asked []string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		asked = append(asked, r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		if strings.HasPrefix(r.URL.Path, "/movie/") {
+			_, _ = w.Write([]byte(`{"id":279413,"title":"A Film With No Art"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"id":279413,"name":"A Series","poster_path":"/s.jpg"}`))
+	}))
+	defer srv.Close()
+
+	tm := &TMDB{apiKey: "k", baseURL: srv.URL, httpClient: srv.Client()}
+	meta, err := tm.FetchArtwork(context.Background(), "poster", "tmdb:279413", ArtworkOptions{})
+	if err != nil {
+		t.Fatalf("a bare id with an artwork-less film record failed: %v", err)
+	}
+	if meta == nil || meta.PosterURL == "" {
+		t.Fatal("no poster resolved, though the series record holds one")
+	}
+	if len(asked) != 2 || !strings.HasPrefix(asked[1], "/tv/") {
+		t.Errorf("endpoints asked = %v, want the film then the series", asked)
+	}
+}
+
+// When neither kind has artwork the guess stands, so an id is not reported as
+// the other kind on the strength of an equally empty record.
+func TestABareIdWithNoArtworkUnderEitherKindKeepsTheFilm(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if strings.HasPrefix(r.URL.Path, "/movie/") {
+			_, _ = w.Write([]byte(`{"id":5,"title":"A Film With No Art"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"id":5,"name":"A Series With No Art"}`))
+	}))
+	defer srv.Close()
+
+	tm := &TMDB{apiKey: "k", baseURL: srv.URL, httpClient: srv.Client()}
+	meta, err := tm.FetchArtwork(context.Background(), "poster", "tmdb:5", ArtworkOptions{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if meta == nil || meta.Title != "A Film With No Art" {
+		t.Errorf("meta = %+v, want the film the guess landed on", meta)
 	}
 }

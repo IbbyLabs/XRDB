@@ -126,21 +126,28 @@ func (t *TMDB) FetchArtwork(ctx context.Context, mediaType, id string, opts Artw
 	}
 
 	meta, err := t.fetchByTMDBID(ctx, resolvedType, tmdbID, opts)
-	if err == nil || !guessed {
+	if !guessed {
 		return meta, err
 	}
-
-	// A bare TMDB id carries no kind, so the guess above is right for films and
-	// wrong for every series. Asking the other endpoint costs one call and only
-	// on the renders that would otherwise have returned nothing at all. An id
-	// that exists as both keeps the film, because the guess answered first.
-	var status *tmdbStatusError
-	if !errors.As(err, &status) || status.Code != http.StatusNotFound {
+	// /movie and /tv number independently, so one id can hold a record under
+	// both with artwork under only one. A record carrying no artwork leaves the
+	// kind as unsettled as a 404 does.
+	answeredEmpty := err == nil && !metaHasArtwork(meta)
+	if err == nil && !answeredEmpty {
 		return meta, err
+	}
+	if err != nil {
+		var status *tmdbStatusError
+		if !errors.As(err, &status) || status.Code != http.StatusNotFound {
+			return meta, err
+		}
 	}
 	other := otherContentType(resolvedType)
 	retried, retryErr := t.fetchByTMDBID(ctx, other, tmdbID, opts)
 	if retryErr != nil {
+		return meta, err
+	}
+	if answeredEmpty && !metaHasArtwork(retried) {
 		return meta, err
 	}
 	t.log().InfoContext(ctx, "A TMDB id with no kind resolved to the other one",
@@ -218,6 +225,11 @@ func (t *TMDB) resolveID(ctx context.Context, mediaType, id string) (string, str
 		guessed = false
 	}
 	return rest, resolvedType, guessed, nil
+}
+
+// metaHasArtwork reports whether an answer carries any image to draw.
+func metaHasArtwork(m *MediaMeta) bool {
+	return m != nil && (m.PosterURL != "" || m.BackdropURL != "" || m.LogoURL != "")
 }
 
 // otherContentType is the kind a guess did not take.
