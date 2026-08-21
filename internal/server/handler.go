@@ -307,9 +307,19 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			if leadsFlight {
 				defer flight.finish(cacheKey, flightCall)
 			}
+			// A sweep that names itself is held by the queue's bulk ceiling,
+			// which makes it wait rather than turning it away. The cap refuses
+			// it before it reaches that ceiling, so a sweep is exempt here
+			// (BUG-263). The allowance is not spent either: the address bucket
+			// is shared with anyone behind the same address.
+			sweep := provider.CallerClassFrom(r.Context()) == provider.CallerBulk
 			// Only fresh renders are counted. A warm catalogue reload costs a
 			// cache read and is not what the queue is made of.
-			if ok, over := callerCap.allow(capProfileKey, "ip:"+clientIP(r, trust)); !ok {
+			ok, over := true, ""
+			if !sweep {
+				ok, over = callerCap.allow(capProfileKey, "ip:"+clientIP(r, trust))
+			}
+			if !ok {
 				// Naming the key is the whole safety net: a cap shipped on by
 				// default needs to say whether it landed on a crawl or on
 				// somebody's library.

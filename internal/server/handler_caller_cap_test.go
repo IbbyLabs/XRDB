@@ -243,13 +243,16 @@ func TestAShedNamesWhichCeilingTurnedItAway(t *testing.T) {
 // somebody's library (FR-195). A user agent that names itself a sweep must come
 // through as one.
 func TestACapRefusalNamesTheCallerClass(t *testing.T) {
+	// A recognised sweep is exempt from the cap (BUG-263), so it cannot produce
+	// a refusal to name. Everything that can be refused is interactive, which is
+	// what the field must say.
 	for _, tc := range []struct {
 		name      string
 		userAgent string
 		want      string
 	}{
-		{"a sweep that names itself", "AIOMetadata/2.13.0", "bulk"},
-		{"anything else", "Mozilla/5.0", "interactive"},
+		{"a browser", "Mozilla/5.0", "interactive"},
+		{"an unnamed client", "", "interactive"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var buf bytes.Buffer
@@ -285,5 +288,54 @@ func TestACapRefusalNamesTheCallerClass(t *testing.T) {
 				t.Fatal("no cap refusal was logged, so the field could not be checked")
 			}
 		})
+	}
+}
+
+// A sweep that names itself is carried by the queue's bulk ceiling, which makes
+// it wait. The cap sits in front of that ceiling, so capping the sweep refuses
+// the one caller the ceiling exists for (BUG-263).
+func TestARecognisedSweepIsNotCapped(t *testing.T) {
+	h, p := capHandler(t, 1) // burst 2, so an unexempt caller is refused at the third
+
+	for i := range 6 {
+		rr := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet,
+			"/poster/tt000"+string(rune('1'+i))+"?config="+p.ID, nil)
+		req.RemoteAddr = "203.0.113.21:1234"
+		req.Header.Set("User-Agent", "AIOMetadata/2.13.0")
+		h.ServeHTTP(rr, req)
+		if rr.Code == http.StatusTooManyRequests {
+			t.Fatalf("request %d of a recognised sweep was capped", i+1)
+		}
+	}
+}
+
+// And the exemption must not spend the allowance on its way past. The address
+// bucket is shared with everyone behind that address, so a sweep that drew it
+// down would refuse a person who never exceeded anything.
+func TestAnExemptSweepDoesNotSpendTheAddressAllowance(t *testing.T) {
+	h, p := capHandler(t, 1) // burst 2
+	const addr = "203.0.113.22:1234"
+
+	for i := range 6 {
+		rr := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet,
+			"/poster/tt100"+string(rune('1'+i))+"?config="+p.ID, nil)
+		req.RemoteAddr = addr
+		req.Header.Set("User-Agent", "AIOMetadata/2.13.0")
+		h.ServeHTTP(rr, req)
+	}
+
+	// Same address, a person this time. The burst of 2 must still be theirs.
+	for i := range 2 {
+		rr := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet,
+			"/poster/tt200"+string(rune('1'+i))+"?config="+p.ID, nil)
+		req.RemoteAddr = addr
+		req.Header.Set("User-Agent", "Mozilla/5.0")
+		h.ServeHTTP(rr, req)
+		if rr.Code == http.StatusTooManyRequests {
+			t.Fatalf("request %d from a person was refused; the sweep spent the address allowance", i+1)
+		}
 	}
 }
