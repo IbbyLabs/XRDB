@@ -320,9 +320,9 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				ok, over = callerCap.allow(capProfileKey, "ip:"+clientIP(r, trust))
 			}
 			if !ok {
-				// Naming the key is the whole safety net: a cap shipped on by
-				// default needs to say whether it landed on a crawl or on
-				// somebody's library.
+				// The key names which allowance ran out. caller_class is an
+				// invariant rather than a report: a recognised sweep is exempt
+				// above, so "bulk" here means the exemption has broken.
 				logger.InfoContext(r.Context(), "A caller asked for more renders than its allowance and was turned away",
 					"id", logging.RequestID(r.Context()), "media_id", id,
 					"over", over, "per_minute", cfg.RenderCapPerMinute,
