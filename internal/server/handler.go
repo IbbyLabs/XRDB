@@ -393,6 +393,12 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 					contentType = renderResult.ContentType
 					degraded = renderResult.Degraded
 					degradedByUs = renderResult.DegradedByUs
+					// Which source image this render drew (FR-194). A title can
+					// have several candidates and the bytes alone cannot say
+					// which was chosen; a cache hit draws nothing and sets none.
+					if renderResult.ArtworkURL != "" {
+						w.Header().Set("X-Artwork-Source", renderResult.ArtworkURL)
+					}
 				}
 			}
 			if len(pngBytes) == 0 {

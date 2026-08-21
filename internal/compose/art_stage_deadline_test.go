@@ -42,7 +42,7 @@ func TestTheArtworkStageIsBoundedByItsOwnDeadline(t *testing.T) {
 	}
 
 	start := time.Now()
-	_, _, _, _, err := p.fetchSourceImageAndMeta(context.Background(), Request{
+	_, _, _, _, _, err := p.fetchSourceImageAndMeta(context.Background(), Request{
 		MediaType: "poster", MediaID: "tt0111161", Config: imageconfig.Default(),
 	})
 	elapsed := time.Since(start)

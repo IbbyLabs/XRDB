@@ -107,11 +107,11 @@ func (p *Pipeline) posterURLFor(ctx context.Context, meta *provider.MediaMeta, u
 
 // betterPoster returns the artwork to use, fetching the alternate only when the
 // preferred file is not already good enough.
-func (p *Pipeline) betterPoster(ctx context.Context, req Request, meta *provider.MediaMeta, url string, data []byte) []byte {
+func (p *Pipeline) betterPoster(ctx context.Context, req Request, meta *provider.MediaMeta, url string, data []byte) ([]byte, string) {
 	// Tied to the poster: the alternate describes PosterURL, and another
 	// surface, or a poster merged in from a different provider, is not it.
 	if meta == nil || meta.PosterAltURL == "" || url != meta.PosterURL {
-		return data
+		return data, url
 	}
 
 	want := render.DeliveryFor(req.MediaType, string(req.Config.Size))
@@ -119,23 +119,23 @@ func (p *Pipeline) betterPoster(ctx context.Context, req Request, meta *provider
 
 	preferred := judgePoster(data, target)
 	if preferred.usable {
-		return data
+		return data, url
 	}
 
 	alt, err := p.fetcher.Fetch(ctx, meta.PosterAltURL)
 	if err != nil || len(alt) == 0 {
-		return data
+		return data, url
 	}
 	altVerdict := judgePoster(alt, target)
 	if !preferPoster(preferred, altVerdict) {
-		return data
+		return data, url
 	}
 	p.badPosters.remember(url)
 	p.log().DebugContext(ctx, "Took the alternate poster file, the preferred one was worse",
 		"id", logging.RequestID(ctx), "media_id", req.MediaID,
 		"preferred_w", preferred.bounds.X, "preferred_h", preferred.bounds.Y,
 		"alt_w", altVerdict.bounds.X, "alt_h", altVerdict.bounds.Y)
-	return alt
+	return alt, meta.PosterAltURL
 }
 
 // preferPoster reports whether the alternate should displace the preferred file.

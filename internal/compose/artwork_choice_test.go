@@ -59,7 +59,7 @@ func posterPipeline(t *testing.T, original, large []byte) (*Pipeline, *urlFetche
 
 func fetchedPoster(t *testing.T, p *Pipeline, req Request) image.Point {
 	t.Helper()
-	data, _, _, _, err := p.fetchSourceImageAndMeta(context.Background(), req)
+	data, _, _, _, _, err := p.fetchSourceImageAndMeta(context.Background(), req)
 	if err != nil {
 		t.Fatalf("fetchSourceImageAndMeta: %v", err)
 	}
@@ -199,5 +199,30 @@ func TestTheAlternateIsNotUsedForABackdrop(t *testing.T) {
 func TestJudgePosterRejectsBytesThatAreNotAnImage(t *testing.T) {
 	if v := judgePoster([]byte("not an image"), image.Point{X: 10, Y: 10}); v.usable {
 		t.Error("undecodable bytes were judged usable")
+	}
+}
+
+// The URL reported for a render has to be the file that was drawn, not the one
+// first chosen (FR-194). betterPoster can take the alternate, and a reported URL
+// naming the rejected file would send a reader to the wrong image.
+func TestTheReportedArtworkURLNamesTheFileActuallyDrawn(t *testing.T) {
+	// A landscape preferred file loses to a portrait alternate, so the swap runs.
+	p, _, req := posterPipeline(t, makeTestPNG(1600, 900, color.NRGBA{R: 255, A: 255}), makeTestPNG(550, 780, color.NRGBA{G: 255, A: 255}))
+	_, _, _, _, url, err := p.fetchSourceImageAndMeta(context.Background(), req)
+	if err != nil {
+		t.Fatalf("fetchSourceImageAndMeta: %v", err)
+	}
+	if url != altURL {
+		t.Errorf("reported artwork URL = %q, want the alternate %q", url, altURL)
+	}
+
+	// And when the preferred file stands, it is the one reported.
+	p2, _, req2 := posterPipeline(t, makeTestPNG(550, 780, color.NRGBA{G: 255, A: 255}), makeTestPNG(700, 1000, color.NRGBA{B: 255, A: 255}))
+	_, _, _, _, url2, err := p2.fetchSourceImageAndMeta(context.Background(), req2)
+	if err != nil {
+		t.Fatalf("fetchSourceImageAndMeta: %v", err)
+	}
+	if url2 != origURL {
+		t.Errorf("reported artwork URL = %q, want the preferred %q", url2, origURL)
 	}
 }

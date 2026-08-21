@@ -27,7 +27,7 @@ func TestTheArtworkErrorNamesWhichStepFailed(t *testing.T) {
 			ProviderName: "tmdb",
 			Meta:         &provider.MediaMeta{Title: "T"},
 		})
-		_, _, _, _, err := New(reg).fetchSourceImageAndMeta(context.Background(), Request{
+		_, _, _, _, _, err := New(reg).fetchSourceImageAndMeta(context.Background(), Request{
 			MediaType: "poster", MediaID: "tt0111161", Config: imageconfig.Default(),
 		})
 		if err == nil {
@@ -44,7 +44,7 @@ func TestTheArtworkErrorNamesWhichStepFailed(t *testing.T) {
 			ProviderName: "tmdb",
 			Meta:         &provider.MediaMeta{Title: "T", PosterURL: refuse.URL + "/poster.jpg"},
 		})
-		_, _, _, _, err := New(reg).fetchSourceImageAndMeta(context.Background(), Request{
+		_, _, _, _, _, err := New(reg).fetchSourceImageAndMeta(context.Background(), Request{
 			MediaType: "poster", MediaID: "tt0111161", Config: imageconfig.Default(),
 		})
 		if err == nil {
