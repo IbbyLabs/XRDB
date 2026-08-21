@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.94.1](https://github.com/IbbyLabs/XRDB/compare/v3.94.0...v3.94.1) (2026-08-21)
+
+
+### Fixed
+
+* **render:** exempt a recognised sweep from the caller cap (BUG-263) ([fc52bbd](https://github.com/IbbyLabs/XRDB/commit/fc52bbdaac641b6e030e93c6a165941c531f760c))
+
 ## [3.94.0](https://github.com/IbbyLabs/XRDB/compare/v3.93.1...v3.94.0) (2026-08-21)
 
 
