@@ -334,13 +334,19 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			// A sweep is made to wait; a person is not. Shedding a request
 			// somebody is looking at to admit one nobody is has it backwards.
 			admitted := false
+			// Which ceiling this request was given. A shed on the burst ceiling and
+			// a shed on the ordinary one have different causes, and the message
+			// alone cannot tell them apart.
+			queueTier := "normal"
 			switch {
 			case provider.CallerClassFrom(r.Context()) == provider.CallerBulk:
+				queueTier = "bulk"
 				admitted = renderLimiter.acquireBulk(r.Context(), cfg.RenderQueueWaitBulk, weight)
 			case callerCap.burning(capProfileKey, "ip:"+clientIP(r, trust)):
 				// Already into its burst allowance, so the cap is turning some of
 				// its requests away. Holding a slot for the full ceiling on behalf
 				// of this one spends capacity nobody is waiting on.
+				queueTier = "burst"
 				admitted = renderLimiter.acquireWithin(r.Context(), cfg.RenderQueueWaitBurst, weight)
 			default:
 				admitted = renderLimiter.acquireWithin(r.Context(), cfg.RenderQueueWait, weight)
@@ -354,13 +360,15 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				if r.Context().Err() != nil {
 					logger.DebugContext(r.Context(), "Render abandoned by the caller while queued",
 						"id", logging.RequestID(r.Context()),
-						"media_type", mediaType, "media_id", id, "waited_ms", waitedMs)
+						"media_type", mediaType, "media_id", id, "waited_ms", waitedMs,
+						"queue_tier", queueTier)
 					ms.Record("/"+mediaType, 499, latMs(start))
 					return
 				}
 				logger.WarnContext(r.Context(), "Shed a render because the queue was full",
 					"id", logging.RequestID(r.Context()),
-					"media_type", mediaType, "media_id", id, "waited_ms", waitedMs)
+					"media_type", mediaType, "media_id", id, "waited_ms", waitedMs,
+					"queue_tier", queueTier)
 				w.Header().Set("Retry-After", "5")
 				w.Header().Set("Cache-Control", "no-store")
 				http.Error(w, "busy: too many renders queued", http.StatusServiceUnavailable)

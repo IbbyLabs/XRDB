@@ -1,7 +1,9 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -205,5 +207,32 @@ func TestARefusedCallerIsRecordedInMetrics(t *testing.T) {
 	body := rr.Body.String()
 	if !strings.Contains(body, "429") {
 		t.Errorf("%d refusals were served and none reached the metrics surface: %s", refused, body)
+	}
+}
+
+// A shed on the burst ceiling and a shed on the ordinary one have different
+// causes. The message names one of them, so an alert reading the message alone
+// attributes every shed to a full queue.
+func TestAShedNamesWhichCeilingTurnedItAway(t *testing.T) {
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+
+	h, p := capHandler(t, 2)
+	for i := range 8 {
+		rr := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet,
+			"/poster/tt100"+string(rune('1'+i))+"?config="+p.ID, nil)
+		req.RemoteAddr = "203.0.113.9:1234"
+		h.ServeHTTP(rr, req)
+	}
+
+	out := buf.String()
+	if !strings.Contains(out, "allowance") {
+		t.Fatalf("no caller was refused, so this proves nothing about the field: %s", out)
+	}
+	if strings.Contains(out, "Shed a render") && !strings.Contains(out, "queue_tier") {
+		t.Error("a shed was logged without naming which ceiling turned it away")
 	}
 }
