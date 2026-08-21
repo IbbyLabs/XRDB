@@ -219,8 +219,10 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		cfgKeyInput := imageconfig.CacheKey(imgCfg)
 		// A per-type override makes the render depend on the kind of title, so
 		// the kind joins the key. Configs without one keep their existing keys.
+		// A bare TMDB id joins it too: there the kind picks which endpoint
+		// answers, so it selects the artwork rather than only styling it.
 		reqContentType := normalizeContentType(queryValue(raw, "type", ""))
-		if imageconfig.HasPerTypeRatings(imgCfg) || imageconfig.HasPerTypeArtwork(imgCfg) {
+		if imageconfig.HasPerTypeRatings(imgCfg) || imageconfig.HasPerTypeArtwork(imgCfg) || idKindIsAmbiguous(id) {
 			cfgKeyInput = cfgKeyInput + ":ct=" + reqContentType
 		}
 		if !profileLoaded {
@@ -856,6 +858,22 @@ func writeJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(payload)
+}
+
+// idKindIsAmbiguous reports whether an id names a TMDB record without saying
+// whether it is a film or a series. TMDB numbers /movie and /tv independently,
+// so one number can hold a record under both.
+func idKindIsAmbiguous(id string) bool {
+	rest, ok := strings.CutPrefix(id, "tmdb:")
+	if !ok || rest == "" {
+		return false
+	}
+	for _, c := range rest {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // normalizeContentType maps a content-type hint from the request (the optional
