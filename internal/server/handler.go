@@ -317,6 +317,11 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				w.Header().Set("Retry-After", "60")
 				w.Header().Set("Cache-Control", "no-store")
 				http.Error(w, "too many renders; try again shortly", http.StatusTooManyRequests)
+				// The metrics snapshot is the only view an operator has of what the
+				// service did. A refusal absent from it reads as a quiet minute, and
+				// a shed counted only where the queue is measured names the wrong
+				// cause.
+				ms.Record("/"+mediaType, http.StatusTooManyRequests, latMs(start))
 				return
 			}
 			// A render costs the budget in proportion to its output size, so a

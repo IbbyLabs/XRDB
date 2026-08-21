@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -170,5 +171,39 @@ func TestAPeerAddressLosesItsPort(t *testing.T) {
 		if got := clientIP(r, trust); got != tc.want {
 			t.Errorf("clientIP(%q) = %q, want %q", tc.in, got, tc.want)
 		}
+	}
+}
+
+// A refusal the caller sees has to reach the metrics surface too. Anything
+// reading /api/admin/metrics is the only view an operator or an alert has, and
+// a 429 missing from it reads as a quiet minute rather than as a caller being
+// turned away.
+func TestARefusedCallerIsRecordedInMetrics(t *testing.T) {
+	h, p := capHandler(t, 2)
+
+	refused := 0
+	for i := range 6 {
+		rr := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet,
+			"/poster/tt000"+string(rune('1'+i))+"?config="+p.ID, nil)
+		req.RemoteAddr = "203.0.113.9:1234"
+		h.ServeHTTP(rr, req)
+		if rr.Code == http.StatusTooManyRequests {
+			refused++
+		}
+	}
+	if refused == 0 {
+		t.Fatal("no request was refused, so this proves nothing about recording one")
+	}
+
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/api/admin/metrics", nil))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("metrics returned %d, want 200", rr.Code)
+	}
+
+	body := rr.Body.String()
+	if !strings.Contains(body, "429") {
+		t.Errorf("%d refusals were served and none reached the metrics surface: %s", refused, body)
 	}
 }
