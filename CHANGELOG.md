@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.94.0](https://github.com/IbbyLabs/XRDB/compare/v3.93.1...v3.94.0) (2026-08-21)
+
+
+### Added
+
+* **logging:** name the caller class on a cap refusal (FR-195) ([738b70a](https://github.com/IbbyLabs/XRDB/commit/738b70ac8afebea6524b8b77e2f13cb2e6f44faa))
+* **render:** report the source image a render drew (FR-194) ([debfb8b](https://github.com/IbbyLabs/XRDB/commit/debfb8b9d39abc0dead24461f49f580dcd7d5986))
+
 ## [3.93.1](https://github.com/IbbyLabs/XRDB/compare/v3.93.0...v3.93.1) (2026-08-21)
 
 
