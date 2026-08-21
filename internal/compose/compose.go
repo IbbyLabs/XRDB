@@ -1533,9 +1533,17 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 	// for a missing logo/thumbnail, using art merged from every source tried.
 	p.enrichMetaForOverlays(ctx, req, baseMeta)
 	if url := selectArtworkURL(baseMeta, req.MediaType, req.Config); url != "" {
-		if data, err := p.fetcher.Fetch(ctx, url); err == nil && len(data) > 0 {
+		data, err := p.fetcher.Fetch(ctx, url)
+		if err == nil && len(data) > 0 {
 			return data, baseMeta, req.MediaID, baseFrom, nil
 		}
+		// The URL was in the metadata and fetching it is what failed. Reporting
+		// that as a missing URL sends a reader to the provider's response when
+		// the fault is in the request that followed it.
+		if err != nil {
+			return nil, baseMeta, req.MediaID, baseFrom, fmt.Errorf("artwork fetch failed: %w", err)
+		}
+		return nil, baseMeta, req.MediaID, baseFrom, fmt.Errorf("artwork fetch returned no bytes")
 	}
 	return nil, baseMeta, req.MediaID, baseFrom, fmt.Errorf("no artwork URL in metadata")
 }
