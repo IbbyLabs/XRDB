@@ -191,3 +191,30 @@ func TestStripContentKindPrefixLeavesProvidersABareID(t *testing.T) {
 		}
 	}
 }
+
+// The kind token is stripped before providers see the id, so a request that
+// names its kind in the id has to carry it across as the content type or the
+// provider guesses. TMDB numbers /movie and /tv independently, so the guess
+// lands on the wrong title rather than on nothing.
+func TestContentKindFromIDReadsBothShapes(t *testing.T) {
+	for _, tc := range []struct {
+		in   string
+		want string
+	}{
+		{"series:tmdb:279413", "series"},
+		{"tv:tmdb:279413", "series"},
+		{"movie:tmdb:279413", "movie"},
+		{"tmdb:series:279413", "series"},
+		{"tmdb:tv:279413", "series"},
+		{"tmdb:movie:279413", "movie"},
+		{"tmdb:279413", ""},
+		{"tt0903747", ""},
+		{"series:tt0903747", "series"},
+		{"kitsu:21", ""},
+		{"", ""},
+	} {
+		if got := contentKindFromID(tc.in); got != tc.want {
+			t.Errorf("contentKindFromID(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}

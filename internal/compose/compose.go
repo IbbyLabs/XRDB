@@ -273,25 +273,8 @@ func (p *Pipeline) resolveContentKind(ctx context.Context, req Request) string {
 	if _, _, _, ok := parseEpisodeID(req.MediaID); ok {
 		return "series"
 	}
-	// The kind can also lead the id, which is the {type}:{id} shape AIOMetadata
-	// emits. Read before the tmdb: branch: "series:tmdb:330176" carries it here
-	// and nowhere else.
-	for _, tok := range []string{"movie:", "series:", "tv:"} {
-		if strings.HasPrefix(req.MediaID, tok) {
-			if tok == "movie:" {
-				return "movie"
-			}
-			return "series"
-		}
-	}
-	// A TMDB id names the kind already, so it costs nothing to read.
-	if rest, ok := strings.CutPrefix(req.MediaID, "tmdb:"); ok {
-		switch {
-		case strings.HasPrefix(rest, "movie:"):
-			return "movie"
-		case strings.HasPrefix(rest, "series:"), strings.HasPrefix(rest, "tv:"):
-			return "series"
-		}
+	if kind := contentKindFromID(req.MediaID); kind != "" {
+		return kind
 	}
 	if p.providers == nil {
 		return ""
@@ -1444,6 +1427,11 @@ func (p *Pipeline) fetchSourceImageAndMeta(ctx context.Context, req Request) (_ 
 	order := p.artworkOrderFor(string(req.Config.ArtworkSource), req.MediaType, req.MediaID)
 	knownID, knownType := p.identify(ctx, req, order)
 	contentType := req.ContentType
+	// The kind token is stripped off the id before providers see it, so an id
+	// that names its own kind has to hand it over here or it arrives as a guess.
+	if contentType == "" {
+		contentType = contentKindFromID(req.MediaID)
+	}
 	if contentType == "" {
 		contentType = knownType
 	}
@@ -1603,6 +1591,28 @@ func (p *Pipeline) artworkOrder(primary, surface string) []string {
 // for its own ids and is not in the fallback list, so a kitsu: id needs it added.
 // contentKindTokens lead an id in the {type}:{id} shape AIOMetadata emits.
 var contentKindTokens = []string{"movie:", "series:", "tv:"}
+
+// contentKindFromID reads the kind an id names in its own text, in either the
+// "series:tmdb:330176" or "tmdb:series:330176" shape. Empty when it names none.
+func contentKindFromID(id string) string {
+	for _, tok := range contentKindTokens {
+		if strings.HasPrefix(id, tok) {
+			if tok == "movie:" {
+				return "movie"
+			}
+			return "series"
+		}
+	}
+	if rest, ok := strings.CutPrefix(id, "tmdb:"); ok {
+		switch {
+		case strings.HasPrefix(rest, "movie:"):
+			return "movie"
+		case strings.HasPrefix(rest, "series:"), strings.HasPrefix(rest, "tv:"):
+			return "series"
+		}
+	}
+	return ""
+}
 
 // stripContentKindPrefix removes that token. resolveContentKind has already
 // read it, and no artwork provider parses it.
