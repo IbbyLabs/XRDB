@@ -55,3 +55,32 @@ test('a hard-wrapped body becomes one bullet per paragraph', () => {
   assert.match(body, /- A second paragraph stays separate\./);
   assert.doesNotMatch(body, /- burst allowance,/);
 });
+
+const SESSION_URL = 'https://claude.ai/code/session_01FAKEfakeFAKEfake00';
+
+test('an attribution trailer never reaches the assembled body', () => {
+  const body = buildBodyFromCommits(
+    [commit(`fix(render): a change\n\nthe prose that explains it\n\nClaude-Session: ${SESSION_URL}`)],
+    '', '', '',
+  );
+  assert.ok(body.includes('the prose that explains it'), 'the real body must survive');
+  assert.ok(!body.includes('Claude-Session'), 'the trailer key must not be published');
+  assert.ok(!body.includes('session_'), 'the session id must not be published');
+});
+
+test('a trailer sharing a paragraph with prose loses only the trailer', () => {
+  const body = buildBodyFromCommits(
+    [commit('fix(render): a change\n\nkept prose\nCo-Authored-By: Someone <s@example.invalid>')],
+    '', '', '',
+  );
+  assert.ok(body.includes('kept prose'));
+  assert.ok(!body.includes('Co-Authored-By'));
+});
+
+test('prose that merely starts with a word and a colon is kept', () => {
+  const body = buildBodyFromCommits(
+    [commit('fix(render): a change\n\nNote: the ceiling is per caller')],
+    '', '', '',
+  );
+  assert.ok(body.includes('Note: the ceiling is per caller'), 'only known trailers are dropped');
+});

@@ -15,6 +15,21 @@ function normalizeSummary(value) {
   return String(value || '').replace(/\s+/g, ' ').trim();
 }
 
+// Trailer lines are published verbatim by this notifier, so they are dropped
+// before the body is split into paragraphs.
+const DROPPED_TRAILER = /^(?:claude-session|co-authored-by|signed-off-by|generated-with)\s*:/i;
+const SESSION_URL = /claude\.ai\/code\/session_/i;
+
+function stripPublishedTrailers(message) {
+  return String(message || '')
+    .split(/\r?\n/)
+    .filter((line) => {
+      const trimmed = line.trim();
+      return !DROPPED_TRAILER.test(trimmed) && !SESSION_URL.test(trimmed);
+    })
+    .join('\n');
+}
+
 function classifyCommit(subject) {
   const normalized = normalizeSummary(subject).toLowerCase();
   if (normalized.startsWith('feat:') || normalized.startsWith('feat(')) {
@@ -30,10 +45,12 @@ function toDetailedItem(commit) {
   const subject = normalizeSummary(commit?.commit?.message?.split(/\r?\n/, 1)[0] || commit?.commit?.message || commit?.message || 'Update');
   // Commit bodies are hard-wrapped, so one bullet per line splits sentences.
   // Paragraphs are the unit; normalizeSummary collapses the wrap inside each.
-  const body = String(commit?.commit?.message || commit?.message || '')
-    .split(/\r?\n/)
-    .slice(1)
-    .join('\n')
+  const body = stripPublishedTrailers(
+    String(commit?.commit?.message || commit?.message || '')
+      .split(/\r?\n/)
+      .slice(1)
+      .join('\n'),
+  )
     .split(/\n[ \t]*\n+/)
     .map((paragraph) => normalizeSummary(paragraph))
     .filter(Boolean);
