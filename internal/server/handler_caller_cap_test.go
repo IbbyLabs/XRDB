@@ -245,15 +245,15 @@ func TestAShedNamesWhichCeilingTurnedItAway(t *testing.T) {
 // through as one.
 func TestACapRefusalNamesTheCallerClass(t *testing.T) {
 	// A recognised sweep is exempt from the cap (BUG-263), so it cannot produce
-	// a refusal to name. Everything that can be refused is interactive, which is
-	// what the field must say.
+	// a refusal to name. What is left is a caller that named itself and one that
+	// did not, and the field must tell them apart.
 	for _, tc := range []struct {
 		name      string
 		userAgent string
 		want      string
 	}{
 		{"a browser", "Mozilla/5.0", "interactive"},
-		{"an unnamed client", "", "interactive"},
+		{"an unnamed client", "", "unknown"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var buf bytes.Buffer

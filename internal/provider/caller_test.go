@@ -30,7 +30,8 @@ func TestClassifyUserAgentKeepsRealClientsInteractive(t *testing.T) {
 		{"another Stremio client", "ktor-client", CallerInteractive},
 		{"a browser", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36", CallerInteractive},
 		{"an unidentified CDN, which must not be guessed at", "Netlify ImageCDN/0e4cb37", CallerInteractive},
-		{"no user agent at all", "", CallerInteractive},
+		{"no user agent at all", "", CallerUnknown},
+		{"whitespace is no user agent either", "   ", CallerUnknown},
 		{"a name that merely contains the sweeper's", "MyProxy (via AIOMetadata/2.10.0)", CallerInteractive},
 	}
 	for _, tt := range tests {
@@ -42,9 +43,9 @@ func TestClassifyUserAgentKeepsRealClientsInteractive(t *testing.T) {
 	}
 }
 
-func TestCallerClassDefaultsToInteractive(t *testing.T) {
-	if got := CallerClassFrom(context.Background()); got != CallerInteractive {
-		t.Errorf("a context carrying no class reported %s; an unclassified caller must be interactive", got)
+func TestCallerClassDefaultsToUnknown(t *testing.T) {
+	if got := CallerClassFrom(context.Background()); got != CallerUnknown {
+		t.Errorf("a context carrying no class reported %s; it carries no caller, which is not a person", got)
 	}
 	ctx := WithCallerClass(context.Background(), CallerBulk)
 	if got := CallerClassFrom(ctx); got != CallerBulk {

@@ -234,7 +234,7 @@ func TestBreakerHoldsLongerEachTimeItTripsAgain(t *testing.T) {
 	}
 	// Clear the clock-based gate so the next trip is measured from now.
 	h.mu.Lock()
-	h.sources["mdblist"].cooldownUntil = [2]time.Time{}
+	h.sources["mdblist"].cooldownUntil = [callerClassCount]time.Time{}
 	h.mu.Unlock()
 
 	second := trip()

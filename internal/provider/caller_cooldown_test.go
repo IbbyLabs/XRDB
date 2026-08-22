@@ -99,3 +99,35 @@ type timeoutErr struct{}
 func (*timeoutErr) Error() string   { return "i/o timeout" }
 func (*timeoutErr) Timeout() bool   { return true }
 func (*timeoutErr) Temporary() bool { return true }
+
+// Unknown exists to be counted separately, not to be treated separately. A
+// caller that sent no user agent gets what a person gets, in both directions.
+func TestAnUnknownCallerIsHeldExactlyAsAPersonIs(t *testing.T) {
+	h := NewHealthTracker(10, time.Hour)
+	h.Failure("mdblist", rateLimited("mdblist"), CallerInteractive)
+
+	if !h.CoolingOff("mdblist", CallerUnknown) {
+		t.Error("a refusal a person hit left an unnamed caller still reaching the source")
+	}
+}
+
+func TestAnUnknownCallersRefusalHoldsEveryoneAsAPersonsDoes(t *testing.T) {
+	h := NewHealthTracker(10, time.Hour)
+	h.Failure("mdblist", rateLimited("mdblist"), CallerUnknown)
+
+	for _, class := range []CallerClass{CallerInteractive, CallerUnknown, CallerBulk} {
+		if !h.CoolingOff("mdblist", class) {
+			t.Errorf("a refusal an unnamed caller hit left %s still reaching the source", class)
+		}
+	}
+}
+
+// The sweep exemption is the one thing unknown must not inherit.
+func TestABulkRefusalDoesNotHoldTheSourceFromUnnamedCallers(t *testing.T) {
+	h := NewHealthTracker(10, time.Hour)
+	h.Failure("mdblist", rateLimited("mdblist"), CallerBulk)
+
+	if h.CoolingOff("mdblist", CallerUnknown) {
+		t.Error("a sweep's refusal cooled the source off for unnamed callers")
+	}
+}

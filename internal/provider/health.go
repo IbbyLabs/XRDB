@@ -53,11 +53,11 @@ type sourceState struct {
 	// timer let the sweep take the source off everyone's poster. Remember()
 	// already keeps one caller's success from speaking for another's health;
 	// this is the same rule for failure. Indexed by CallerClass.
-	cooldownUntil [2]time.Time
+	cooldownUntil [callerClassCount]time.Time
 	// cooldownReason names what set the timer in force, per caller class. The
 	// two causes want opposite responses: one is throttling, the other is a
 	// source erroring.
-	cooldownReason [2]string
+	cooldownReason [callerClassCount]string
 	cooldowns      int64
 	// breakerTrips counts how many times in a row the failure breaker has held
 	// this source out without a success in between. It lengthens the next hold.
@@ -159,11 +159,13 @@ func (h *HealthTracker) Success(source, key string, meta *MediaMeta) (recovered 
 	defer h.mu.Unlock()
 
 	st := h.stateLocked(source)
-	recovered = !st.healthy || time.Now().Before(st.cooldownUntil[CallerInteractive]) ||
-		time.Now().Before(st.cooldownUntil[CallerBulk])
+	recovered = !st.healthy
+	for _, until := range st.cooldownUntil {
+		recovered = recovered || time.Now().Before(until)
+	}
 	st.healthy = true
-	st.cooldownUntil = [2]time.Time{}
-	st.cooldownReason = [2]string{}
+	st.cooldownUntil = [callerClassCount]time.Time{}
+	st.cooldownReason = [callerClassCount]string{}
 	st.lastSuccess = time.Now()
 	st.consecutiveFail = 0
 	st.breakerTrips = 0
@@ -247,11 +249,12 @@ func (h *HealthTracker) Failure(source string, err error, class CallerClass) (en
 	wasCooling := time.Now().Before(st.cooldownUntil[class])
 	// A refusal a sweep provoked holds the sweep off. A refusal a person hit
 	// holds everyone off: if the source will not answer an ordinary render it
-	// will not answer a crawl either.
+	// will not answer a crawl either. Interactive and unknown always move
+	// together, which is what makes their treatment identical.
 	hold := func(until time.Time, reason string) bool {
-		classes := []CallerClass{class}
-		if class == CallerInteractive {
-			classes = []CallerClass{CallerInteractive, CallerBulk}
+		classes := []CallerClass{CallerBulk}
+		if class != CallerBulk {
+			classes = []CallerClass{CallerInteractive, CallerUnknown, CallerBulk}
 		}
 		set := false
 		for _, c := range classes {
@@ -478,9 +481,10 @@ func (h *HealthTracker) Snapshot() []SourceHealth {
 			Successes:       st.successes,
 			Failures:        st.failures,
 			StaleServes:     st.staleServes,
-			// The admin view reports the interactive hold: it is the one that
+			// The admin view reports the non-sweep hold: it is the one that
 			// means a person's render is losing the source.
-			CoolingOff:             time.Now().Before(st.cooldownUntil[CallerInteractive]),
+			CoolingOff: time.Now().Before(st.cooldownUntil[CallerInteractive]) ||
+				time.Now().Before(st.cooldownUntil[CallerUnknown]),
 			CoolingOffBulk:         time.Now().Before(st.cooldownUntil[CallerBulk]),
 			Cooldowns:              st.cooldowns,
 			HeldOutEmpty:           copyCounts(st.heldOutEmpty),

@@ -125,9 +125,11 @@ func TestTheFailureBreakerIsNotReportedAsARateLimitCooldown(t *testing.T) {
 		t.Errorf("gate = %v, want %v", line["gate"], provider.GateFailureBreaker)
 	}
 	// The hold is kept per caller class, so a line that names only the gate
-	// cannot say which traffic was held out.
-	if line["caller_class"] != provider.CallerInteractive.String() {
-		t.Errorf("caller_class = %v, want %v", line["caller_class"], provider.CallerInteractive.String())
+	// cannot say which traffic was held out. This render carries no caller, and
+	// it is held out by a failure recorded against interactive, which is the
+	// per-class hold moving the two together.
+	if line["caller_class"] != provider.CallerUnknown.String() {
+		t.Errorf("caller_class = %v, want %v", line["caller_class"], provider.CallerUnknown.String())
 	}
 }
 
