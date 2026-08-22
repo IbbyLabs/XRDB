@@ -7,7 +7,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { buildBodyFromCommits } from './post-discord-dev-build.mjs';
+import { readFileSync } from 'node:fs';
+
+import { ATTRIBUTION, buildBodyFromCommits } from './post-discord-dev-build.mjs';
 import { buildDiscordReleasePayloads } from './post-discord-release.mjs';
 
 const NAME = 'XRDB_RENDER_QUEUE_WAIT_BURST_SECONDS';
@@ -98,3 +100,14 @@ for (const [label, line] of [
     assert.ok(!/claude[-_ ]?session|claude\.ai\/(code\/)?session|generated with .*claude|anthropic/i.test(body), label);
   });
 }
+
+// The scan gates commits and this gates a backfill, so the two patterns are one
+// rule in two languages. A comment saying so is what drifts.
+test('the strip pattern is the CI scan pattern', () => {
+  const workflow = readFileSync(new URL('../workflows/attribution-scan.yml', import.meta.url), 'utf8');
+  const found = workflow.match(/PATTERN='([^']+)'/);
+  assert.ok(found, 'no PATTERN= in attribution-scan.yml, so this test read nothing');
+  const scan = found[1].replace(/\[\[:space:\]\]/g, String.raw`\s`);
+  const strip = ATTRIBUTION.source.replace(/\\\//g, '/');
+  assert.equal(strip, scan);
+});
