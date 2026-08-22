@@ -110,4 +110,7 @@ test('the strip pattern is the CI scan pattern', () => {
   const scan = found[1].replace(/\[\[:space:\]\]/g, String.raw`\s`);
   const strip = ATTRIBUTION.source.replace(/\\\//g, '/');
   assert.equal(strip, scan);
+  // Equal sources still diverge if one side stops ignoring case.
+  assert.ok(ATTRIBUTION.flags.includes('i'), 'the strip must be case-insensitive');
+  assert.match(workflow, /grep\s+-[a-z]*i[a-z]*E/, 'the scan must grep case-insensitively');
 });
