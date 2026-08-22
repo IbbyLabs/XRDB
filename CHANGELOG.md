@@ -2,6 +2,26 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.95.0](https://github.com/IbbyLabs/XRDB/compare/v3.94.1...v3.95.0) (2026-08-22)
+
+
+### Added
+
+* **logging:** count a caller that sent no user agent separately ([a57605e](https://github.com/IbbyLabs/XRDB/commit/a57605e862d3b1b33f32c85d403d39ffd17ac70a))
+* **logging:** name the caller class on a shed render (FR-196) ([573c479](https://github.com/IbbyLabs/XRDB/commit/573c4792fc2890363a9bc14cfee3575b20f92e0b))
+* **logging:** name the caller's agent where a cooldown opens ([bda271e](https://github.com/IbbyLabs/XRDB/commit/bda271ee60d754fb59230f3239dbd0703e6d67da))
+* **logging:** say how far over budget a governor refusal was ([f2e8716](https://github.com/IbbyLabs/XRDB/commit/f2e87169945b7814c64aca97ed5cb1706135911f))
+
+
+### Fixed
+
+* **ci:** drop attribution trailers from dev build Discord posts ([d2f8686](https://github.com/IbbyLabs/XRDB/commit/d2f86867c823d38178d39073c652d4ad9041bb4b))
+* **ci:** match the attribution scan pattern in the dev build strip ([eb2b3cc](https://github.com/IbbyLabs/XRDB/commit/eb2b3ccc81c77eb8ef5a767c1779d5b8f2c3d501))
+* **configurator:** ask for the password when a recent profile needs one (BUG-268) ([9b5f91d](https://github.com/IbbyLabs/XRDB/commit/9b5f91d96577b4d3699a450b2d365e074b913212))
+* **configurator:** keep the loaded profile across a page reload (BUG-267) ([bc12176](https://github.com/IbbyLabs/XRDB/commit/bc121763461a535d47f1701fe09ae852d366b04b))
+* **logging:** record 499 when a caller abandons a render (BUG-265) ([1ae2394](https://github.com/IbbyLabs/XRDB/commit/1ae239479dda5338e8e4c0cc90582b42a1b04163))
+* **profiles:** skip a re-imported profile that also collides on its alias (BUG-266) ([71824b8](https://github.com/IbbyLabs/XRDB/commit/71824b834803a22d807ee42d7b5f709cd21d24ac))
+
 ## [3.94.1](https://github.com/IbbyLabs/XRDB/compare/v3.94.0...v3.94.1) (2026-08-21)
 
 
