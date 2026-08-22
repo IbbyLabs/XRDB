@@ -84,3 +84,17 @@ test('prose that merely starts with a word and a colon is kept', () => {
   );
   assert.ok(body.includes('Note: the ceiling is per caller'), 'only known trailers are dropped');
 });
+
+// The shapes the CI scan stops at the commit but a backfill can still reach.
+for (const [label, line] of [
+  ['underscore key', 'Claude_Session: 01FAKEfakeFAKEfake00'],
+  ['url without /code/', 'see https://claude.ai/session_01FAKEfake for context'],
+  ['emoji footer', '\u{1F916} Generated with [Claude Code](https://claude.com/claude-code)'],
+  ['anthropic co-author', 'Co-Authored-By: Claude <noreply@anthropic.com>'],
+]) {
+  test(`attribution is stripped: ${label}`, () => {
+    const body = buildBodyFromCommits([commit(`fix(render): a change\n\nkept prose\n\n${line}`)], '', '', '');
+    assert.ok(body.includes('kept prose'), 'the real body must survive');
+    assert.ok(!/claude[-_ ]?session|claude\.ai\/(code\/)?session|generated with .*claude|anthropic/i.test(body), label);
+  });
+}

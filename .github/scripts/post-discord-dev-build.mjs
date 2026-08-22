@@ -17,15 +17,19 @@ function normalizeSummary(value) {
 
 // Trailer lines are published verbatim by this notifier, so they are dropped
 // before the body is split into paragraphs.
-const DROPPED_TRAILER = /^(?:claude-session|co-authored-by|signed-off-by|generated-with)\s*:/i;
-const SESSION_URL = /claude\.ai\/code\/session_/i;
+//
+// ATTRIBUTION mirrors PATTERN in attribution-scan.yml. That scan gates new
+// commits; this gates a backfill dispatched at a ref from before it existed,
+// where nothing else applies. The two must move together.
+export const ATTRIBUTION = /claude[-_ ]?session|claude\.ai\/(code\/)?session|co-authored-by:\s*claude|generated with .*claude/i;
+const DROPPED_TRAILER = /^(?:co-authored-by|signed-off-by)\s*:/i;
 
-function stripPublishedTrailers(message) {
+export function stripPublishedTrailers(message) {
   return String(message || '')
     .split(/\r?\n/)
     .filter((line) => {
       const trimmed = line.trim();
-      return !DROPPED_TRAILER.test(trimmed) && !SESSION_URL.test(trimmed);
+      return !ATTRIBUTION.test(trimmed) && !DROPPED_TRAILER.test(trimmed);
     })
     .join('\n');
 }
