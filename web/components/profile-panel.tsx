@@ -99,6 +99,8 @@ export function ProfilePanel({
   const [loadKey, setLoadKey] = useState('');
   const [loadPassword, setLoadPassword] = useState('');
   const [unlockPassword, setUnlockPassword] = useState('');
+  // The recent whose chip turned out to need a password, so the form can say so.
+  const [needsPasswordFor, setNeedsPasswordFor] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [recents, setRecents] = useState<RecentProfile[]>([]);
   // Serialized configs as last saved to / loaded from the server, so the panel
@@ -186,6 +188,10 @@ export function ProfilePanel({
 
   const handleLoad = async (keyOverride?: string) => {
     const key = (keyOverride ?? loadKey).trim();
+    // A recent chip carries only the key, so a protected profile refuses with no
+    // way for the user to see why. Put the key in the form and ask for the
+    // password rather than reporting an authorisation failure they cannot act on.
+    const fromChip = keyOverride !== undefined;
     if (!key) { flash('error', 'Enter your username, or the profile ID if you made one before usernames'); return; }
     setBusy(true);
     try {
@@ -203,14 +209,22 @@ export function ProfilePanel({
         versionToken: p.versionToken ?? '',
         keysSet: p.keysSet ?? [],
       });
-      setLoadKey(''); setLoadPassword('');
+      setLoadKey(''); setLoadPassword(''); setNeedsPasswordFor('');
       setRecents(r => pushRecent(r, {
         key: p.alias || p.id,
         name: p.name || p.alias || p.id,
       }));
       flash('success', `Loaded "${p.name || p.alias || p.id}" — you're now editing it`);
     } catch (e) {
-      flash('error', (e as Error).message);
+      const msg = (e as Error).message;
+      if (fromChip && !loadPassword && /unauthorized/i.test(msg)) {
+        setLoadKey(key);
+        setNeedsPasswordFor(key);
+        flash('info', `"${key}" is password-protected — enter its password to open it`);
+        requestAnimationFrame(() => document.getElementById(`${uid}-loadpw`)?.focus());
+      } else {
+        flash('error', msg);
+      }
     } finally {
       setBusy(false);
     }
@@ -545,7 +559,9 @@ export function ProfilePanel({
           />
         </div>
         <div className="field">
-          <label className="label" htmlFor={`${uid}-loadpw`}>Password</label>
+          <label className="label" htmlFor={`${uid}-loadpw`}>
+            Password{needsPasswordFor && needsPasswordFor === loadKey.trim() ? ' — required for this profile' : ''}
+          </label>
           <input
             id={`${uid}-loadpw`}
             className="input"
