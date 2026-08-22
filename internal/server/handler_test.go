@@ -1050,3 +1050,50 @@ func TestImportConvertsAV2ProfileOnTheWayIn(t *testing.T) {
 		t.Errorf("ratings = %v, want imdb and rt", cfg.Ratings)
 	}
 }
+
+func TestProfileImportSkipsDuplicateWithAlias(t *testing.T) {
+	store := openTestStore(t)
+	h := NewHandler("test", store, nil, nil, nil, config.Config{})
+	body := `{"version":1,"profiles":[{"id":"dupalias","type":"poster","alias":"myposters","config":{}}]}`
+	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/profile/import", strings.NewReader(body)))
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/profile/import", strings.NewReader(body)))
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rr.Code, rr.Body.String())
+	}
+	var res map[string]any
+	if err := json.Unmarshal(rr.Body.Bytes(), &res); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if res["skipped"] != float64(1) {
+		t.Errorf("expected 1 skipped, got %v (errors: %v)", res["skipped"], res["errors"])
+	}
+	if res["errors"] != nil {
+		t.Errorf("expected no errors, got %v", res["errors"])
+	}
+}
+
+func TestProfileImportRejectsAliasHeldByAnotherProfile(t *testing.T) {
+	store := openTestStore(t)
+	h := NewHandler("test", store, nil, nil, nil, config.Config{})
+	first := `{"version":1,"profiles":[{"id":"owner","type":"poster","alias":"shared","config":{}}]}`
+	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/profile/import", strings.NewReader(first)))
+	second := `{"version":1,"profiles":[{"id":"other","type":"poster","alias":"shared","config":{}}]}`
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, httptest.NewRequest(http.MethodPost, "/profile/import", strings.NewReader(second)))
+	var res map[string]any
+	if err := json.Unmarshal(rr.Body.Bytes(), &res); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if res["skipped"] != float64(0) || res["imported"] != float64(0) {
+		t.Fatalf("expected neither imported nor skipped, got %v", res)
+	}
+	errs, _ := res["errors"].([]any)
+	if len(errs) != 1 {
+		t.Fatalf("expected one error, got %v", res["errors"])
+	}
+	msg, _ := errs[0].(string)
+	if !strings.Contains(msg, "shared") || !strings.Contains(msg, "other") {
+		t.Errorf("error should name the profile and the alias, got %q", msg)
+	}
+}

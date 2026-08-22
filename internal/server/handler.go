@@ -556,7 +556,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		writeRenderPlaceholderJSON(w, mediaType, id, key)
 	})
 
-	registerProfileRoutes(mux, store, cfg)
+	registerProfileRoutes(mux, store, cfg, logger)
 	registerMediaRoutes(mux, pipeline)
 	registerAIOMRoutes(mux)
 	registerAdminRoutes(mux, ms, cfg, settingsStore, pipeline, renderCache, ttls)

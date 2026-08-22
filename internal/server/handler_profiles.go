@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"unicode"
@@ -12,6 +13,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"xrdb_rewrite/internal/config"
+	"xrdb_rewrite/internal/logging"
 	"xrdb_rewrite/internal/migrate"
 	"xrdb_rewrite/internal/profile"
 	"xrdb_rewrite/internal/provider"
@@ -29,7 +31,7 @@ func generateProfileID() string {
 }
 
 // registerProfileRoutes mounts all /profile/* handlers onto mux.
-func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.Config) {
+func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.Config, logger *slog.Logger) {
 	mux.HandleFunc("/profile", func(w http.ResponseWriter, r *http.Request) {
 		if cfg.APIKey != "" && !bearerMatches(r, cfg.APIKey) {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
@@ -396,16 +398,32 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 					res.Skipped++
 					continue
 				case !errors.Is(err, profile.ErrNotFound):
+					logger.ErrorContext(r.Context(), "Failed to check whether an imported profile already exists",
+						"id", logging.RequestID(r.Context()), "profile_id", p.ID, "error", err)
 					res.Errors = append(res.Errors, p.ID+": failed to check for an existing profile")
 					continue
 				}
 			}
 			if err := store.Save(p); err != nil {
-				if errors.Is(err, profile.ErrConflict) {
+				switch {
+				case errors.Is(err, profile.ErrConflict):
 					res.Skipped++
-					continue
+				case errors.Is(err, profile.ErrAliasTaken):
+					// The alias index is checked before the id index, so a
+					// profile colliding on both reports the alias.
+					if _, getErr := store.Get(p.ID); getErr == nil {
+						res.Skipped++
+						break
+					}
+					logger.WarnContext(r.Context(), "Refused an imported profile whose alias belongs to another profile",
+						"id", logging.RequestID(r.Context()), "profile_id", p.ID, "alias", p.Alias)
+					res.Errors = append(res.Errors,
+						p.ID+": alias \""+p.Alias+"\" is already used by a different profile")
+				default:
+					logger.ErrorContext(r.Context(), "Failed to save an imported profile",
+						"id", logging.RequestID(r.Context()), "profile_id", p.ID, "error", err)
+					res.Errors = append(res.Errors, p.ID+": failed to save")
 				}
-				res.Errors = append(res.Errors, p.ID+": failed to save")
 				continue
 			}
 			res.Imported++
@@ -414,6 +432,9 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 		if res.Imported == 0 && len(res.Errors) > 0 {
 			status = http.StatusUnprocessableEntity
 		}
+		logger.InfoContext(r.Context(), "Imported a profile export",
+			"id", logging.RequestID(r.Context()), "submitted", len(env.Profiles),
+			"imported", res.Imported, "skipped", res.Skipped, "errors", len(res.Errors))
 		writeJSON(w, status, res)
 	})
 }
