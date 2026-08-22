@@ -1,0 +1,63 @@
+name: Attribution scan
+
+# A commit-msg hook is advisory: `git -c core.hooksPath=<missing dir> commit`
+# runs no hooks and says nothing. This runs where the client cannot reach it.
+on:
+  push:
+    branches:
+      - main
+  pull_request: {}
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: Commit messages carry no assistant attribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan the commit messages in this change
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+
+          # A first push to a branch reports an all-zero base; fall back to the
+          # tip alone rather than scanning the whole history.
+          if [ -z "${BASE}" ] || [ "${BASE}" = "0000000000000000000000000000000000000000" ]; then
+            RANGE="${HEAD} -1"
+          else
+            RANGE="${BASE}..${HEAD}"
+          fi
+
+          PATTERN='claude[-_ ]?session|claude\.ai/(code/)?session|co-authored-by:[[:space:]]*claude|generated with .*claude'
+
+          # Proves the scan can see commits at all. A range that resolves to
+          # nothing would otherwise pass silently and read as a clean result.
+          COUNT=$(git log --format=%H ${RANGE} | wc -l)
+          echo "Scanning ${COUNT} commit(s)."
+          # Printing the count is not the same as acting on it. A range that
+          # resolves to nothing has scanned no messages, so it cannot report a
+          # clean result.
+          if [ "${COUNT}" -eq 0 ]; then
+            echo "::error::The commit range resolved to no commits, so nothing was scanned."
+            exit 1
+          fi
+
+          HITS=$(git log --format='%H%n%B%n--' ${RANGE} | grep -icE "${PATTERN}" || true)
+          if [ "${HITS}" -gt 0 ]; then
+            echo "::error::Assistant attribution found in a commit message."
+            git log --format='%h %s' ${RANGE} --grep="${PATTERN}" -i -E
+            echo
+            echo "Commit messages record the change. A session link or a"
+            echo "Co-Authored-By line is attribution and does not belong in"
+            echo "this repository's history. Amend or squash it out."
+            exit 1
+          fi
+
+          echo "No attribution found."
