@@ -298,6 +298,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 							"media_type", mediaType, "media_id", id)
 					}
 				case <-r.Context().Done():
+					markAbandoned(w)
 					ms.Record("/"+mediaType, 499, latMs(start))
 					return
 				}
@@ -369,6 +370,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 						"id", logging.RequestID(r.Context()),
 						"media_type", mediaType, "media_id", id, "waited_ms", waitedMs,
 						"queue_tier", queueTier)
+					markAbandoned(w)
 					ms.Record("/"+mediaType, 499, latMs(start))
 					return
 				}
@@ -615,6 +617,15 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	}
 
 	return accessLogMiddleware(logger, trust, corsMiddleware(rpdbIsValidMiddleware(store, mux)))
+}
+
+// markAbandoned records the 499 the render metrics already use for a caller that
+// went away. Nothing is written to the response, and an unwritten status reads
+// as 200 in the access log.
+func markAbandoned(w http.ResponseWriter) {
+	if rec, ok := w.(*statusRecorder); ok {
+		rec.status = 499
+	}
 }
 
 // statusRecorder captures the response status and byte count for access logging.
