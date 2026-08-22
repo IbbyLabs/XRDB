@@ -101,6 +101,7 @@ export function ConfiguratorClient() {
   // existed (e.g. badgeStyle/badgeTheme) complete.
   // A share link (#c=…) beats the stored session — someone sent this exact
   // look — and is consumed from the URL so refreshes fall back to the session.
+  const [loadedProfile, setLoadedProfile] = useState<LoadedProfile | null>(null);
   useEffect(() => {
     const shared = window.location.hash.startsWith('#c=')
       ? decodeShare(window.location.hash.slice(3))
@@ -129,13 +130,16 @@ export function ConfiguratorClient() {
         setConfigs(legacy ? cloneToAllSurfaces({ ...DEFAULT_CONFIG, ...legacy }) : DEFAULT_SURFACE_CONFIGS);
       }
     }
+    // The loaded profile is restored alongside the settings. Autosave is gated
+    // on it, so a reload that brought back every control but not the identity
+    // left the editor looking normal and writing nothing.
+    setLoadedProfile(readSession<LoadedProfile | null>('xrdb-loaded-profile', null));
     setRenderKeyState(getRenderKey());
     try { setFine(localStorage.getItem(FINE_KEY) === '1'); } catch { /* unavailable */ }
     setHydrated(true);
     /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
   const [appliedTemplate, setAppliedTemplate] = useState<string | null>(null);
-  const [loadedProfile, setLoadedProfile] = useState<LoadedProfile | null>(null);
   const [notice, setNotice] = useState<{ type: 'error' | 'success' | 'info'; message: string } | null>(null);
 
   const [previewSrc, setPreviewSrc] = useState('');
@@ -175,8 +179,15 @@ export function ConfiguratorClient() {
       sessionStorage.setItem('xrdb-media-id',   JSON.stringify(mediaId));
       sessionStorage.setItem('xrdb-media-title', JSON.stringify(mediaTitle));
       sessionStorage.setItem('xrdb-configs',     JSON.stringify(configs));
+      // The password is deliberately not stored: it is held for the lifetime of
+      // a tab and no longer. A restored profile that needs one comes back locked.
+      if (loadedProfile) {
+        sessionStorage.setItem('xrdb-loaded-profile', JSON.stringify({ ...loadedProfile, password: '' }));
+      } else {
+        sessionStorage.removeItem('xrdb-loaded-profile');
+      }
     } catch { /* unavailable */ }
-  }, [hydrated, mediaType, mediaId, mediaTitle, configs]);
+  }, [hydrated, mediaType, mediaId, mediaTitle, configs, loadedProfile]);
 
   useEffect(() => {
     if (!hydrated) return;

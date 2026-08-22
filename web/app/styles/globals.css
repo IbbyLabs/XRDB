@@ -1586,6 +1586,22 @@ textarea.input { min-height: 0; line-height: 1.5; }
 }
 
 .profile-dirty { color: var(--warn); }
+/* A stopped save and an in-flight one are opposite states, so they do not share
+   a colour. The words carry the meaning; the colour only reinforces it. */
+.profile-locked { color: var(--err); }
+
+.profile-unlock {
+  align-items: flex-start;
+  gap: var(--sp-3);
+  margin-top: var(--sp-2);
+}
+
+.profile-unlock > svg { flex: none; margin-top: var(--sp-1); color: var(--warn); }
+
+@media (max-width: 420px) {
+  .profile-unlock { flex-wrap: wrap; }
+  .profile-unlock .btn { width: 100%; }
+}
 
 /* ── Integrations ──────────────────────────────────────────────────── */
 

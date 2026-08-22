@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useId, useRef } from 'react';
-import { Save, Download, Upload, FolderOpen, Trash2, LogOut, RefreshCw, History, Wand2 } from 'lucide-react';
+import { Save, Download, Upload, FolderOpen, Trash2, LogOut, RefreshCw, History, Wand2, Lock } from 'lucide-react';
 import {
   createProfile, getProfile, updateProfile, deleteProfile, exportProfile, importProfiles,
   renderOrigin, type MediaType,
@@ -98,6 +98,7 @@ export function ProfilePanel({
 
   const [loadKey, setLoadKey] = useState('');
   const [loadPassword, setLoadPassword] = useState('');
+  const [unlockPassword, setUnlockPassword] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [recents, setRecents] = useState<RecentProfile[]>([]);
   // Serialized configs as last saved to / loaded from the server, so the panel
@@ -107,6 +108,12 @@ export function ProfilePanel({
   // not move it, so it stays a checkpoint worth returning to; the snapshot above
   // tracks the autosaved state and is only a fraction of a second behind.
   const [checkpoint, setCheckpoint] = useState('');
+  // A profile restored after a page reload comes back without the password it
+  // was unlocked with, so it cannot be written to until it is unlocked again.
+  const locked = loaded !== null && loaded.hasPassword && !loaded.password;
+  // The stored config is unknown until the panel has read it, which is the state
+  // a restored profile starts in. Nothing is written while it is unknown.
+  const reattaching = loaded !== null && savedSnapshot === '';
   const isDirty = loaded !== null && savedSnapshot !== '' && JSON.stringify(configs) !== savedSnapshot;
   // Autosave means there is no unsaved state to warn about, so the useful offer
   // is a way back to the checkpoint rather than a prompt to save.
@@ -263,13 +270,36 @@ export function ProfilePanel({
   // revision rather than one per frame, and stays quiet so the panel does not
   // flash on every edit. Creating a profile still needs the button, because
   // that takes a name.
+  // Reading the stored config back is what lets autosave resume: it is the
+  // comparison isDirty needs, and the edits made before the reload are written
+  // by the save that follows. The loaded config is deliberately not applied —
+  // that would replace the work this exists to rescue.
+  const reattachedRef = useRef('');
+  useEffect(() => {
+    if (!loaded || !reattaching || locked || busy) return;
+    if (reattachedRef.current === loaded.id) return;
+    reattachedRef.current = loaded.id;
+    void (async () => {
+      try {
+        const p = await getProfile(loaded.id, loaded.password || undefined);
+        const stored = JSON.stringify(fromStoredConfig(p.config));
+        setSavedSnapshot(stored);
+        setCheckpoint(stored);
+      } catch (e) {
+        reattachedRef.current = '';
+        if (loaded.hasPassword) setLoaded({ ...loaded, password: '' });
+        flash('error', `Could not reattach to "${loaded.name || loaded.id}" — ${(e as Error).message}`);
+      }
+    })();
+  }, [loaded, reattaching, locked, busy, flash, setLoaded]);
+
   const autoSave = useRef(handleUpdate);
   useEffect(() => { autoSave.current = handleUpdate; });
   useEffect(() => {
-    if (!isDirty || busy) return;
+    if (!isDirty || busy || locked) return;
     const timer = setTimeout(() => { void autoSave.current(true); }, 1500);
     return () => clearTimeout(timer);
-  }, [isDirty, busy, configs]);
+  }, [isDirty, busy, locked, configs]);
 
   const handleDelete = async () => {
     if (!loaded) return;
@@ -337,12 +367,45 @@ export function ProfilePanel({
             <span className="profile-banner-name">
               {loaded.name || loaded.alias || loaded.id}
               {isDirty && <span className="profile-dirty"> · Saving…</span>}
+              {locked && <span className="profile-locked"> · Locked</span>}
             </span>
-            <span className="hint" style={{ marginTop: 0 }}>
-              {isDirty
-                ? 'Storing your changes to this profile.'
-                : 'Editing this profile — changes are saved as you make them.'}
+            <span className="hint" style={{ marginTop: 0 }} role="status">
+              {locked
+                ? 'Nothing is being saved. Your password is not kept after a page reload.'
+                : reattaching
+                  ? 'Reconnecting to this profile…'
+                  : isDirty
+                    ? 'Storing your changes to this profile.'
+                    : 'Editing this profile — changes are saved as you make them.'}
             </span>
+            {locked && (
+              <form
+                className="notice notice-warn profile-unlock"
+                onSubmit={e => { e.preventDefault(); if (unlockPassword) setLoaded({ ...loaded, password: unlockPassword }); setUnlockPassword(''); }}
+              >
+                <Lock size={14} aria-hidden />
+                <div className="field" style={{ flex: 1, minWidth: 0 }}>
+                  <label className="label" htmlFor={`${uid}-unlock`}>
+                    Password for “{loaded.name || loaded.alias || loaded.id}”
+                  </label>
+                  <input
+                    id={`${uid}-unlock`}
+                    className="input"
+                    type="password"
+                    value={unlockPassword}
+                    onChange={e => setUnlockPassword(e.target.value)}
+                    autoComplete="current-password"
+                  />
+                  <span className="hint">
+                    Enter it to carry on where you left off. The edits you have made
+                    since are saved as soon as it unlocks.
+                  </span>
+                </div>
+                <button type="submit" className="btn btn-primary btn-sm" disabled={busy || !unlockPassword}>
+                  Unlock
+                </button>
+              </form>
+            )}
             {canRevert && (
               <button
                 type="button"
