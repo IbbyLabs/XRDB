@@ -664,6 +664,7 @@ func accessLogMiddleware(logger *slog.Logger, trust proxyTrust, next http.Handle
 		reqID := logging.NewRequestID()
 		ctx := logging.WithRequestID(r.Context(), reqID)
 		ctx = provider.WithCallerClass(ctx, provider.ClassifyUserAgent(r.UserAgent()))
+		ctx = provider.WithCallerAgent(ctx, truncateUA(r.UserAgent()))
 		w.Header().Set("X-Request-Id", reqID)
 		rec := &statusRecorder{ResponseWriter: w}
 		next.ServeHTTP(rec, r.WithContext(ctx))

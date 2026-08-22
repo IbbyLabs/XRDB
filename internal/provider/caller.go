@@ -59,3 +59,28 @@ func CallerClassFrom(ctx context.Context) CallerClass {
 	}
 	return CallerInteractive
 }
+
+type callerAgentKey struct{}
+
+// WithCallerAgent records the user agent the class was derived from.
+func WithCallerAgent(ctx context.Context, ua string) context.Context {
+	return context.WithValue(ctx, callerAgentKey{}, ua)
+}
+
+// CallerAgentFrom returns the recorded user agent, empty when none was recorded
+// or the caller sent none.
+func CallerAgentFrom(ctx context.Context) string {
+	ua, _ := ctx.Value(callerAgentKey{}).(string)
+	return ua
+}
+
+// CallerClassIdentified reports whether the class was set from a caller that
+// named itself. An unrecognised agent classifies as interactive, so the class
+// alone cannot separate a person from a sweep that did not say so.
+func CallerClassIdentified(ctx context.Context) bool {
+	_, ok := ctx.Value(callerClassKey{}).(CallerClass)
+	if !ok {
+		return false
+	}
+	return strings.TrimSpace(CallerAgentFrom(ctx)) != ""
+}

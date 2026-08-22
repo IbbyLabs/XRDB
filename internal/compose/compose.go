@@ -714,9 +714,14 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 				reason = "is rate-limited"
 				gate = provider.GateCooldown
 			}
+			// The class alone cannot say whether a person or an unnamed sweep
+			// opened the gate: an unrecognised agent classifies as interactive
+			// and widens the hold to both classes.
 			p.log().WarnContext(ctx, "A ratings source "+reason+" and is held out until it recovers",
 				"id", logging.RequestID(ctx), "source", prov.Name(),
-				"gate", gate, "caller_class", callerClass.String(), "error", err)
+				"gate", gate, "caller_class", callerClass.String(),
+				"caller_identified", provider.CallerClassIdentified(ctx),
+				"user_agent", provider.CallerAgentFrom(ctx), "error", err)
 		}
 	}
 	if good, age, ok := p.health.LastGoodAge(prov.Name(), key); ok {
