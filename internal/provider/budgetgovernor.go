@@ -89,10 +89,26 @@ type budgetGovernor struct {
 type backlogReason struct {
 	err   error
 	paced pacedBy
+	// wait is what the caller would have had to hold off for, and budget is what
+	// it had. A refusal is the subtraction of the two, and without them nobody
+	// can tell a band a fraction too slow from one saturated by an order of
+	// magnitude — which want opposite fixes.
+	wait   time.Duration
+	budget time.Duration
 }
 
 func (b *backlogReason) Error() string { return b.err.Error() }
 func (b *backlogReason) Unwrap() error { return b.err }
+
+// HoldOutWait reports the pacing delay a refused call would have had to wait and
+// the budget it had to spend, for a hold-out the governor refused.
+func HoldOutWait(err error) (wait, budget time.Duration, ok bool) {
+	var b *backlogReason
+	if errors.As(err, &b) && b.wait > 0 {
+		return b.wait, b.budget, true
+	}
+	return 0, 0, false
+}
 
 // HoldOutReason names the constraint that set the rate a hold-out was refused
 // by. Empty for gates whose refusal is not rate-derived.
@@ -174,12 +190,14 @@ func (g *budgetGovernor) wait(ctx context.Context) error {
 	// not spend, so it is not held against one.
 	delay, ok := g.takeCeiling(budget, bounded)
 	if !ok {
-		return &backlogReason{err: ErrGovernorBacklog, paced: pacedByCeiling}
+		return &backlogReason{err: ErrGovernorBacklog, paced: pacedByCeiling,
+			wait: delay, budget: budget}
 	}
 	if !HasOwnerKey(ctx, g.source) {
 		budgetDelay, budgetOK := g.take(budget, bounded)
 		if !budgetOK {
-			return &backlogReason{err: ErrGovernorBacklog, paced: g.pacedNow()}
+			return &backlogReason{err: ErrGovernorBacklog, paced: g.pacedNow(),
+				wait: budgetDelay, budget: budget}
 		}
 		// Both tokens are claimed, so the wait is the later of the two rather
 		// than their sum.
@@ -217,7 +235,7 @@ func (g *budgetGovernor) takeCeiling(budget time.Duration, bounded bool) (time.D
 		delay = time.Duration(-remaining / g.maxRPS * float64(time.Second))
 	}
 	if bounded && delay > budget {
-		return 0, false
+		return delay, false
 	}
 	g.ceilTokens = remaining
 	return delay, true
@@ -252,7 +270,7 @@ func (g *budgetGovernor) take(budget time.Duration, bounded bool) (time.Duration
 		delay = time.Duration(-remaining / g.rate * float64(time.Second))
 	}
 	if bounded && delay > budget {
-		return 0, false
+		return delay, false
 	}
 	g.tokens = remaining
 	return delay, true

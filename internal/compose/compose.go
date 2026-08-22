@@ -2006,6 +2006,13 @@ func (p *Pipeline) collectRatingsWithProviders(ctx context.Context, req Request,
 					if reason := provider.HoldOutReason(err); reason != "" {
 						attrs = append(attrs, "paced_by", reason)
 					}
+					// How far over the caller's budget the pacing delay was. A
+					// band a fraction too slow and one saturated by an order of
+					// magnitude produce the same gate and want opposite fixes.
+					if wait, budget, ok := provider.HoldOutWait(err); ok {
+						attrs = append(attrs, "wait_ms", wait.Milliseconds(),
+							"budget_ms", budget.Milliseconds())
+					}
 					// Says what happened rather than what might. Every gate
 					// reaches this line only with an empty remembered store, by
 					// one of two routes: cooldown and bulk_allowance consult the
