@@ -313,6 +313,11 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			// it before it reaches that ceiling, so a sweep is exempt here
 			// (BUG-263). The allowance is not spent either: the address bucket
 			// is shared with anyone behind the same address.
+			//
+			// This is the one site where being treated as a sweep LIFTS a
+			// limit. A caller-class rule applied everywhere else must skip it,
+			// or it hands the exemption to whichever class it meant to
+			// restrain. provider.TreatedAsBulk is deliberately not used here.
 			sweep := provider.CallerClassFrom(r.Context()) == provider.CallerBulk
 			// Only fresh renders are counted. A warm catalogue reload costs a
 			// cache read and is not what the queue is made of.
