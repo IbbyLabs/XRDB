@@ -117,3 +117,56 @@ func TestMetaLineClearsAReservedBottomBand(t *testing.T) {
 		t.Error("the reserved band did not move the info line up")
 	}
 }
+
+// BUG-273. Moving drawMetaLine out of the age rating badge's guard fixed the
+// line vanishing without the badge, and left the chip inside the line drawing
+// whatever AgeRating said. The line is meant to carry the certificate instead
+// of a badge, so the two are separate toggles rather than one.
+func TestTheAgeChipInTheLineHasItsOwnToggle(t *testing.T) {
+	meta := provider.MediaMeta{ContentRating: "PG-13", Year: 2020, Genres: []string{"Comedy"}}
+
+	cfg := imageconfig.Default()
+	cfg.MetaLine = true
+	if !cfg.MetaLineAgeRating {
+		t.Fatal("the chip should be on by default; the line exists to carry the certificate")
+	}
+
+	withChip := metaLineImage()
+	drawMetaLine(withChip, meta, cfg, 2.0, newOccupancy(withChip.Bounds()))
+
+	cfg.MetaLineAgeRating = false
+	withoutChip := metaLineImage()
+	drawMetaLine(withoutChip, meta, cfg, 2.0, newOccupancy(withoutChip.Bounds()))
+
+	on, off := paintedPixels(withChip), paintedPixels(withoutChip)
+	if on == 0 {
+		t.Fatal("nothing drew with the chip on, so the comparison below means nothing")
+	}
+	if off == 0 {
+		t.Fatal("the year and genre must still draw with only the chip turned off")
+	}
+	if off >= on {
+		t.Errorf("dropping the chip did not shrink the line: with %d px, without %d px", on, off)
+	}
+}
+
+// The badge's own toggle must not reach into the line. Someone adopting the
+// line turns the badge off and still expects the certificate in it.
+func TestTheBadgeToggleDoesNotGovernTheLine(t *testing.T) {
+	meta := provider.MediaMeta{ContentRating: "PG-13", Year: 2020, Genres: []string{"Comedy"}}
+
+	cfg := imageconfig.Default()
+	cfg.MetaLine = true
+	cfg.AgeRating = true
+	badgeOn := metaLineImage()
+	drawMetaLine(badgeOn, meta, cfg, 2.0, newOccupancy(badgeOn.Bounds()))
+
+	cfg.AgeRating = false
+	badgeOff := metaLineImage()
+	drawMetaLine(badgeOff, meta, cfg, 2.0, newOccupancy(badgeOff.Bounds()))
+
+	if paintedPixels(badgeOn) != paintedPixels(badgeOff) {
+		t.Errorf("the badge toggle changed the line: on %d px, off %d px",
+			paintedPixels(badgeOn), paintedPixels(badgeOff))
+	}
+}

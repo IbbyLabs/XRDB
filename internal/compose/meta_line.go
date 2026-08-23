@@ -39,6 +39,9 @@ func drawMetaLine(base *image.NRGBA, meta provider.MediaMeta, cfg imageconfig.Co
 		return
 	}
 	age, rest := metaLineParts(meta)
+	if !cfg.MetaLineAgeRating {
+		age = ""
+	}
 	if age == "" && len(rest) == 0 {
 		return
 	}
