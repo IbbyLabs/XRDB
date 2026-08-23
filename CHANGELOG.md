@@ -2,6 +2,22 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.95.2](https://github.com/IbbyLabs/XRDB/compare/v3.95.1...v3.95.2) (2026-08-23)
+
+
+### Fixed
+
+* **ratings:** hold enough remembered answers to cover a catalogue ([f0de8f6](https://github.com/IbbyLabs/XRDB/commit/f0de8f697b70b3383aa02c64978551a0211b147d))
+
+
+### Documentation
+
+* **product-context:** say what a poster does when a title has no id ([aee864c](https://github.com/IbbyLabs/XRDB/commit/aee864c51e914cac21878f925f7dbe0e4dd3ac62))
+* **product-context:** say when a self-hosted XRDB needs to be reachable ([8f959a4](https://github.com/IbbyLabs/XRDB/commit/8f959a47093a91e93ecc07afa4914006d8796d98))
+* **product-context:** stop naming a port XRDB may not be listening on ([d9889c9](https://github.com/IbbyLabs/XRDB/commit/d9889c9b112fa0007d655f9d42e0da5d97eeca2f))
+* **ratings:** say what the cache cap and the default TTL actually bind ([be647c0](https://github.com/IbbyLabs/XRDB/commit/be647c038031c6dd2c7d9d8fb008ffdbc4fb8648))
+* **variables:** say how large the ratings cache can get and what will not cap it ([0f556df](https://github.com/IbbyLabs/XRDB/commit/0f556df6bda447641248e4f5ce9529068bf64e23))
+
 ## [3.95.1](https://github.com/IbbyLabs/XRDB/compare/v3.95.0...v3.95.1) (2026-08-23)
 
 
