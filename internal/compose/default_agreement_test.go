@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"xrdb_rewrite/internal/imageconfig"
+	"xrdb_rewrite/internal/provider"
 )
 
 // The configurator used to name every key it sent, which meant it shouted its
@@ -188,7 +189,9 @@ func TestOmittingAConfiguratorDefaultChangesNothing(t *testing.T) {
 func drawsDifferently(t *testing.T, p *Pipeline, a, b imageconfig.Config) bool {
 	t.Helper()
 	for _, s := range effectSurfaces {
+		holdOutMal(p)
 		x := renderOne(t, p, a, "movie", s)
+		holdOutMal(p)
 		y := renderOne(t, p, b, "movie", s)
 		if x == nil || y == nil {
 			continue
@@ -198,6 +201,19 @@ func drawsDifferently(t *testing.T, p *Pipeline, a, b imageconfig.Config) bool {
 		}
 	}
 	return false
+}
+
+// holdOutMal re-arms the fixture's degraded source before a render.
+//
+// The breaker lifts about a minute after the failures that set it, and this
+// sweep runs longer than that. Left alone, the source recovers partway through
+// and the unavailable mark stops drawing, so the pair either side of that
+// moment differs for a reason that has nothing to do with the key under test —
+// and Go's map order decides which key that is.
+func holdOutMal(p *Pipeline) {
+	for range 6 {
+		p.health.Failure("mal", provider.HTTPFault("mal", 503), provider.CallerInteractive)
+	}
 }
 
 // flatRequest expresses a config in the shape the configurator posts: one flat
