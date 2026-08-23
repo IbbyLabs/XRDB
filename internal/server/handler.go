@@ -353,7 +353,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			// message alone cannot tell them apart.
 			queueTier := "normal"
 			switch {
-			case provider.CallerClassFrom(r.Context()) == provider.CallerBulk:
+			case provider.TreatedAsBulk(provider.CallerClassFrom(r.Context())):
 				queueTier = "bulk"
 				admitted = renderLimiter.acquireBulk(r.Context(), cfg.RenderQueueWaitBulk, weight)
 			default:
@@ -440,7 +440,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				if renderCache != nil {
 					// A sweep's large renders are shed first: they are the one
 					// class measured never to be re-read.
-					if provider.CallerClassFrom(r.Context()) == provider.CallerBulk {
+					if provider.TreatedAsBulk(provider.CallerClassFrom(r.Context())) {
 						_ = renderCache.SetFromBulk(cacheKey, pngBytes, ttl)
 					} else {
 						_ = renderCache.SetWithTTL(cacheKey, pngBytes, ttl)

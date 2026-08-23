@@ -60,6 +60,20 @@ func ClassifyUserAgent(ua string) CallerClass {
 	return CallerInteractive
 }
 
+// TreatedAsBulk reports whether a caller is held to a sweep's limits. An
+// unidentified caller is: a crawler that declines to name itself is
+// indistinguishable from a person with an unusual user agent, and the cost of
+// guessing runs one way. Guessing "person" hands an anonymous crawler the
+// capacity and the allowance that people depend on; guessing "sweep" gives a
+// real user with an unusual agent slower badges.
+//
+// It does not cover the per-address render cap. A recognised sweep is exempt
+// there because the bulk queue ceiling makes it wait instead, and extending the
+// exemption would lift a limit from anonymous callers rather than apply one.
+func TreatedAsBulk(class CallerClass) bool {
+	return class == CallerBulk || class == CallerUnknown
+}
+
 // WithCallerClass returns a context carrying how this request's caller is
 // classified.
 func WithCallerClass(ctx context.Context, class CallerClass) context.Context {
