@@ -2,6 +2,20 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.95.3](https://github.com/IbbyLabs/XRDB/compare/v3.95.2...v3.95.3) (2026-08-23)
+
+
+### Fixed
+
+* **tmdb:** resolve a bare id held under both kinds (BUG-270) ([f9b507c](https://github.com/IbbyLabs/XRDB/commit/f9b507ce25b6b23cb4946cc5296304efa7dfd4c7))
+
+
+### Documentation
+
+* **setup:** add an Authelia and auth-proxy bypass guide ([8e687ed](https://github.com/IbbyLabs/XRDB/commit/8e687ed1418cdeeba35f204e431ac77c5c285c99))
+* **setup:** cover AIOMetadata's poster cache on a self-hosted domain ([1e203da](https://github.com/IbbyLabs/XRDB/commit/1e203da93246b230175daaeac8f55c505117c557))
+* **setup:** require two_factor on the Authelia admin rule ([8a2def5](https://github.com/IbbyLabs/XRDB/commit/8a2def50fc312149b5b23c37e851bbcd1ce1fca3))
+
 ## [3.95.2](https://github.com/IbbyLabs/XRDB/compare/v3.95.1...v3.95.2) (2026-08-23)
 
 
