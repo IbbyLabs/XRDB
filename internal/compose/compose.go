@@ -1214,10 +1214,10 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 			drawQualityBadges(composed, badges, scale, occ, qualityOptsFromConfig(req.Config))
 		}
 	}
+	// Before the badges below, so the occupancy map keeps them clear of it.
+	// The age rating is one of its three parts; the line stands without it.
+	drawMetaLine(composed, *meta, req.Config, scale, occ)
 	if req.Config.AgeRating && meta.ContentRating != "" {
-		// Drawn before the badges so the occupancy map keeps them clear of it.
-		drawMetaLine(composed, *meta, req.Config, scale, occ)
-
 		drawAgeRatingBadge(composed, meta.ContentRating, req.Config.AgeRatingPos, scale, occ, ageOptsFromConfig(req.Config))
 	}
 	if req.Config.ReleaseStatus && meta.ReleaseStatus != "" {
