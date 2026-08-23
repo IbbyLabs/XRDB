@@ -100,9 +100,9 @@ func (*timeoutErr) Error() string   { return "i/o timeout" }
 func (*timeoutErr) Timeout() bool   { return true }
 func (*timeoutErr) Temporary() bool { return true }
 
-// Unknown exists to be counted separately, not to be treated separately. A
-// caller that sent no user agent gets what a person gets, in both directions.
-func TestAnUnknownCallerIsHeldExactlyAsAPersonIs(t *testing.T) {
+// A person's refusal still holds everyone, unknown included: if the source will
+// not answer an ordinary render it will not answer anything.
+func TestAPersonsRefusalStillHoldsUnnamedCallers(t *testing.T) {
 	h := NewHealthTracker(10, time.Hour)
 	h.Failure("mdblist", rateLimited("mdblist"), CallerInteractive)
 
@@ -111,23 +111,31 @@ func TestAnUnknownCallerIsHeldExactlyAsAPersonIs(t *testing.T) {
 	}
 }
 
-func TestAnUnknownCallersRefusalHoldsEveryoneAsAPersonsDoes(t *testing.T) {
+// An unidentified caller's refusal is held to the sweeps. A crawler that does
+// not name itself would otherwise stop every badge for the length of the
+// cooldown, and nothing in the request separates it from a person.
+func TestAnUnknownCallersRefusalHoldsOnlySweepsAndOtherUnknowns(t *testing.T) {
 	h := NewHealthTracker(10, time.Hour)
 	h.Failure("mdblist", rateLimited("mdblist"), CallerUnknown)
 
-	for _, class := range []CallerClass{CallerInteractive, CallerUnknown, CallerBulk} {
+	for _, class := range []CallerClass{CallerUnknown, CallerBulk} {
 		if !h.CoolingOff("mdblist", class) {
 			t.Errorf("a refusal an unnamed caller hit left %s still reaching the source", class)
 		}
 	}
+	if h.CoolingOff("mdblist", CallerInteractive) {
+		t.Error("a refusal an unnamed caller hit cooled the source off for people")
+	}
 }
 
-// The sweep exemption is the one thing unknown must not inherit.
-func TestABulkRefusalDoesNotHoldTheSourceFromUnnamedCallers(t *testing.T) {
+func TestABulkRefusalAlsoHoldsUnnamedCallers(t *testing.T) {
 	h := NewHealthTracker(10, time.Hour)
 	h.Failure("mdblist", rateLimited("mdblist"), CallerBulk)
 
-	if h.CoolingOff("mdblist", CallerUnknown) {
-		t.Error("a sweep's refusal cooled the source off for unnamed callers")
+	if !h.CoolingOff("mdblist", CallerUnknown) {
+		t.Error("a sweep's refusal left unnamed callers still reaching the source")
+	}
+	if h.CoolingOff("mdblist", CallerInteractive) {
+		t.Error("a sweep's refusal cooled the source off for people")
 	}
 }

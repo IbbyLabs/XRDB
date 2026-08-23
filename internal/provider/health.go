@@ -249,11 +249,17 @@ func (h *HealthTracker) Failure(source string, err error, class CallerClass) (en
 	wasCooling := time.Now().Before(st.cooldownUntil[class])
 	// A refusal a sweep provoked holds the sweep off. A refusal a person hit
 	// holds everyone off: if the source will not answer an ordinary render it
-	// will not answer a crawl either. Interactive and unknown always move
-	// together, which is what makes their treatment identical.
+	// will not answer a crawl either.
+	//
+	// An unidentified caller is held with the sweeps rather than with people. A
+	// sweep that does not name itself is indistinguishable from a person with an
+	// unusual user agent, and the cost of guessing wrong runs one way: treating
+	// it as a person lets one anonymous crawler stop every badge for five
+	// minutes. The price is that a real user with an unusual agent gets slower
+	// badges.
 	hold := func(until time.Time, reason string) bool {
-		classes := []CallerClass{CallerBulk}
-		if class != CallerBulk {
+		classes := []CallerClass{CallerBulk, CallerUnknown}
+		if class == CallerInteractive {
 			classes = []CallerClass{CallerInteractive, CallerUnknown, CallerBulk}
 		}
 		set := false
