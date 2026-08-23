@@ -2,6 +2,23 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.95.1](https://github.com/IbbyLabs/XRDB/compare/v3.95.0...v3.95.1) (2026-08-23)
+
+
+### Fixed
+
+* **compose:** hold an unidentified caller out of a source's daily reserve ([5c58013](https://github.com/IbbyLabs/XRDB/commit/5c5801388574023fb5dcd71c7433d45cf4eb4201))
+* **compose:** serve a placeholder for adult-flagged titles (BUG-260) ([570a069](https://github.com/IbbyLabs/XRDB/commit/570a069a5049099c80fb3dd50a34dc96da254078))
+* **health:** cool an unidentified caller off with the sweeps ([54b9849](https://github.com/IbbyLabs/XRDB/commit/54b984922a0ebb621c2320d7c2c6b2161aed247e))
+* **ratelimit:** pace Trakt under the rate that earns a refusal ([b5534a2](https://github.com/IbbyLabs/XRDB/commit/b5534a208352abfb0ed682e0304ebb56a52c4503))
+* **server:** queue and shed an unidentified caller as a sweep ([4fa34dd](https://github.com/IbbyLabs/XRDB/commit/4fa34dded0145255a9da4ddb23554c4b6779e8f9))
+
+
+### Documentation
+
+* **env:** document the Trakt minimum interval setting ([71bf98b](https://github.com/IbbyLabs/XRDB/commit/71bf98b5e1c5bf2b16906b0154900ca12424b5cd))
+* **server:** mark the render cap as the site a class rule must skip ([96e871c](https://github.com/IbbyLabs/XRDB/commit/96e871c71cee70770eccc4c79446940667de5203))
+
 ## [3.95.0](https://github.com/IbbyLabs/XRDB/compare/v3.94.1...v3.95.0) (2026-08-22)
 
 
