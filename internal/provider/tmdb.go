@@ -466,6 +466,10 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		ExternalIDs struct {
 			IMDbID string `json:"imdb_id"`
 		} `json:"external_ids"`
+		// Set on the title, not on its images. Only /search accepts
+		// include_adult, so a by-id fetch returns a flagged record either way and
+		// this field is the only thing that says so.
+		Adult        bool    `json:"adult"`
 		ReleaseDate  string  `json:"release_date"`
 		FirstAirDate string  `json:"first_air_date"`
 		VoteAverage  float64 `json:"vote_average"`
@@ -570,6 +574,7 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		Language:      artLang,
 		IMDbID:        imdbID,
 		TMDBID:        id,
+		Adult:         result.Adult,
 		Stinger:       stingerFromKeywords(kwNames),
 	}
 

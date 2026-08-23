@@ -995,6 +995,21 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	result.ArtworkURL = artworkURL
 	timings.mark("artwork")
 
+	// The flag is on the title, not on the image, and only search accepts a
+	// filter — so any path that fetches by id renders whatever artwork a flagged
+	// record carries. Substituted rather than refused: a rendered URL previews
+	// itself wherever it is pasted, so it has to fail as an image, and a 404
+	// fails invisibly and is retried.
+	if meta != nil && meta.Adult {
+		p.log().WarnContext(ctx, "The title is flagged adult; serving a placeholder in place of its artwork",
+			"id", logging.RequestID(ctx),
+			"media_type", req.MediaType, "media_id", req.MediaID,
+			"artwork_source", string(req.Config.ArtworkSource))
+		result.ImageBytes = render.PlaceholderPNG(req.MediaType)
+		result.Placeholder = true
+		return result, nil
+	}
+
 	if err != nil || len(sourceBytes) == 0 {
 		p.log().WarnContext(ctx, "No source artwork was available; serving a placeholder",
 			"id", logging.RequestID(ctx),
@@ -1691,6 +1706,12 @@ func mergeArtworkURLs(dst, src *provider.MediaMeta) {
 	if dst.LogoURL == "" {
 		dst.LogoURL = src.LogoURL
 	}
+	// Sticky rather than first-wins. The base is whichever provider answered
+	// first, and only TMDB carries this, so taking the base's value would drop
+	// the flag whenever TMDB is not the first source in the order.
+	if src.Adult {
+		dst.Adult = true
+	}
 }
 
 // enrichMetaForOverlays fills overlay metadata (content rating, genres, watch
@@ -1735,6 +1756,13 @@ func (p *Pipeline) enrichMetaForOverlays(ctx context.Context, req Request, meta 
 	}
 	if needsStinger {
 		meta.Stinger = extra.Stinger
+	}
+	// Carried whenever TMDB was consulted at all, since it is the only source
+	// that knows. This does not reach a render that needs no top-up: an adult
+	// title whose artwork comes from another source and whose config asks for
+	// none of the badges above is still served its own art.
+	if extra.Adult {
+		meta.Adult = true
 	}
 }
 

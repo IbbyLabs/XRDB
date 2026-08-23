@@ -51,6 +51,10 @@ type MediaMeta struct {
 	// inverted: most backdrops carry no title, and "cannot tell" must not read
 	// as "has one" or every backdrop loses its overlay.
 	BackdropHasTitle bool
+	// Adult reports that the source flags the title itself as adult. TMDB carries
+	// this per title rather than per image, so it says nothing about any
+	// individual poster or backdrop.
+	Adult            bool
 	ContentRating    string          // e.g. "TV-MA", "R", "PG-13" (may be empty)
 	ReleaseStatus    string          // "digital" | "cinemas" (may be empty; movies only)
 	Genres           []string        // e.g. ["Action","Drama"] (may be empty)
