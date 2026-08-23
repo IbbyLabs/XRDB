@@ -55,7 +55,7 @@ func TestResolveID_CompositeIDs(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			lastURL = ""
-			gotID, gotType, _, err := tmdb.resolveID(context.Background(), tc.mediaType, tc.id)
+			gotID, gotType, _, _, err := tmdb.resolveID(context.Background(), tc.mediaType, tc.id)
 			if err != nil {
 				t.Fatalf("resolveID(%q) error: %v", tc.id, err)
 			}
@@ -78,7 +78,7 @@ func TestResolveID_TVDBNoMatch(t *testing.T) {
 	tmdb.SetHTTPClient(&http.Client{Transport: rtFunc(func(r *http.Request) (*http.Response, error) {
 		return jsonResp(`{"movie_results":[],"tv_results":[]}`), nil
 	})})
-	if _, _, _, err := tmdb.resolveID(context.Background(), "", "tvdb:999999"); err == nil {
+	if _, _, _, _, err := tmdb.resolveID(context.Background(), "", "tvdb:999999"); err == nil {
 		t.Fatal("expected error when TMDB has no TVDB match, got nil")
 	}
 }

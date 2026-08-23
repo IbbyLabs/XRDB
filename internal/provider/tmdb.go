@@ -120,9 +120,24 @@ func (t *TMDB) FetchArtwork(ctx context.Context, mediaType, id string, opts Artw
 		return nil, fmt.Errorf("tmdb: no api key or read token configured")
 	}
 	// resolve IMDb ID → TMDB ID if needed
-	tmdbID, resolvedType, guessed, err := t.resolveID(ctx, mediaType, id)
+	tmdbID, resolvedType, guessed, stated, err := t.resolveID(ctx, mediaType, id)
 	if err != nil {
 		return nil, fmt.Errorf("tmdb: resolve id %q: %w", id, err)
+	}
+	// A bare number can hold a record under both kinds, so the default above is
+	// a guess. The store settles which one it names. guessed stays true, so the
+	// retry below still corrects a record that holds no image.
+	if !stated && isNumericID(tmdbID) {
+		if kind, kindErr := t.KindOfTMDBID(ctx, tmdbID); kindErr == nil {
+			if kind == "series" {
+				resolvedType = "tv"
+			} else {
+				resolvedType = "movie"
+			}
+		} else {
+			t.log().DebugContext(ctx, "Could not settle the kind of a bare TMDB id, falling back to the guess",
+				"tmdb_id", tmdbID, "error", kindErr)
+		}
 	}
 
 	meta, err := t.fetchByTMDBID(ctx, resolvedType, tmdbID, opts)
@@ -155,7 +170,9 @@ func (t *TMDB) FetchArtwork(ctx context.Context, mediaType, id string, opts Artw
 	return retried, nil
 }
 
-func (t *TMDB) resolveID(ctx context.Context, mediaType, id string) (string, string, bool, error) {
+// The fourth result reports whether a kind was stated, by the caller or by a
+// token in the id. Nothing stated is not the same as "movie".
+func (t *TMDB) resolveID(ctx context.Context, mediaType, id string) (string, string, bool, bool, error) {
 	id = strings.TrimSpace(id)
 
 	// The scheme and content-type token come off first. An id can carry an
@@ -189,12 +206,12 @@ func (t *TMDB) resolveID(ctx context.Context, mediaType, id string) (string, str
 	if strings.HasPrefix(rest, "tt") {
 		match, found, err := t.findByExternalID(ctx, rest, "imdb_id", preferredBucket(mediaType))
 		if err != nil {
-			return "", "", false, err
+			return "", "", false, true, err
 		}
 		if found {
-			return match.ID, match.ContentType, false, nil
+			return match.ID, match.ContentType, false, true, nil
 		}
-		return "", "", false, fmt.Errorf("no TMDB match for IMDB id %q", id)
+		return "", "", false, true, fmt.Errorf("no TMDB match for IMDB id %q", id)
 	}
 
 	// TVDB IDs (emitted by AIOMetadata's imdb-less art fallback, e.g.
@@ -202,12 +219,12 @@ func (t *TMDB) resolveID(ctx context.Context, mediaType, id string) (string, str
 	if r, ok := stripPrefix(rest, "tvdb:"); ok {
 		match, found, err := t.findByExternalID(ctx, r, "tvdb_id", preferredBucket(mediaType))
 		if err != nil {
-			return "", "", false, err
+			return "", "", false, true, err
 		}
 		if found {
-			return match.ID, match.ContentType, false, nil
+			return match.ID, match.ContentType, false, true, nil
 		}
-		return "", "", false, fmt.Errorf("no TMDB match for TVDB id %q", id)
+		return "", "", false, true, fmt.Errorf("no TMDB match for TVDB id %q", id)
 	}
 
 	// What remains is a native TMDB id, bare ("1396") or from the composite
@@ -224,7 +241,8 @@ func (t *TMDB) resolveID(ctx context.Context, mediaType, id string) (string, str
 		resolvedType = "tv"
 		guessed = false
 	}
-	return rest, resolvedType, guessed, nil
+	stated := isSeriesType(mediaType) || isMovieType(mediaType)
+	return rest, resolvedType, guessed, stated, nil
 }
 
 // metaHasArtwork reports whether an answer carries any image to draw.
@@ -377,7 +395,7 @@ func (t *TMDB) FetchEpisode(ctx context.Context, seriesID string, season, episod
 	if apiKey == "" && readToken == "" {
 		return nil, fmt.Errorf("tmdb: no api key or read token configured")
 	}
-	tmdbID, _, _, err := t.resolveID(ctx, "series", seriesID)
+	tmdbID, _, _, _, err := t.resolveID(ctx, "series", seriesID)
 	if err != nil {
 		return nil, fmt.Errorf("tmdb: resolve series %q: %w", seriesID, err)
 	}

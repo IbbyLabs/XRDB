@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -58,7 +59,10 @@ func TestAResolvedKindIsNotAskedForTwice(t *testing.T) {
 			t.Fatalf("resolving 550: %v", err)
 		}
 	}
-	if len(*paths) != 1 {
+	// Two probes, not one: both kinds are always asked, because a number can
+	// hold a record under both and the first hit alone cannot rule that out.
+	// Three lookups still cost those two, which is the caching this covers.
+	if len(*paths) != 2 {
 		t.Errorf("asked TMDB %d times for one id: %v", len(*paths), *paths)
 	}
 }
@@ -132,5 +136,52 @@ func TestARefusalIsNotRecordedAsAMissingTitle(t *testing.T) {
 	}
 	if len(*paths2) == 0 {
 		t.Error("the retry never reached TMDB")
+	}
+}
+
+// A stored kind is only as good as the probe that wrote it. Version 1 answered
+// every number holding a record under both kinds as a film (BUG-270), and a
+// wrong kind carries no expiry, so correcting the probe has to discard what the
+// old one wrote or production keeps serving the same wrong poster.
+func TestKindsWrittenByAnOlderProbeAreDiscarded(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, tmdbKindStoreFile)
+
+	store, err := openTMDBKindStore(path)
+	if err != nil {
+		t.Fatalf("opening the store: %v", err)
+	}
+	store.remember("65942", "movie")
+	if _, err := store.db.Exec(
+		`INSERT INTO tmdb_kind_meta (key, value) VALUES ('probe_version', '1')
+		 ON CONFLICT(key) DO UPDATE SET value = excluded.value`); err != nil {
+		t.Fatalf("stamping the old version: %v", err)
+	}
+	if err := store.Close(); err != nil {
+		t.Fatalf("closing: %v", err)
+	}
+
+	reopened, err := openTMDBKindStore(path)
+	if err != nil {
+		t.Fatalf("reopening the store: %v", err)
+	}
+	defer reopened.Close()
+	if kind, ok := reopened.lookup("65942"); ok {
+		t.Errorf("a kind written by probe version 1 survived the upgrade as %q", kind)
+	}
+
+	// And the answers the current probe writes are kept, or every restart would
+	// pay for every id again.
+	reopened.remember("1399", "series")
+	if err := reopened.Close(); err != nil {
+		t.Fatalf("closing: %v", err)
+	}
+	again, err := openTMDBKindStore(path)
+	if err != nil {
+		t.Fatalf("reopening again: %v", err)
+	}
+	defer again.Close()
+	if kind, ok := again.lookup("1399"); !ok || kind != "series" {
+		t.Errorf("a kind written by the current probe was discarded: %q %v", kind, ok)
 	}
 }
