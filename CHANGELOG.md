@@ -2,6 +2,14 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.95.4](https://github.com/IbbyLabs/XRDB/compare/v3.95.3...v3.95.4) (2026-08-23)
+
+
+### Fixed
+
+* **admin:** report an environment-supplied provider key as set (BUG-272) ([8e1a171](https://github.com/IbbyLabs/XRDB/commit/8e1a1713a81982f753f547096efb4467c0aed77e))
+* **compose:** draw the info line without the age rating badge (BUG-271) ([9dcf588](https://github.com/IbbyLabs/XRDB/commit/9dcf5882f216c73d27ca100418071c7754125574))
+
 ## [3.95.3](https://github.com/IbbyLabs/XRDB/compare/v3.95.2...v3.95.3) (2026-08-23)
 
 
