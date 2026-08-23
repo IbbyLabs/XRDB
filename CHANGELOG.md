@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.96.0](https://github.com/IbbyLabs/XRDB/compare/v3.95.4...v3.96.0) (2026-08-23)
+
+
+### Added
+
+* **compose:** give the info line's age rating its own switch (BUG-273) ([53016af](https://github.com/IbbyLabs/XRDB/commit/53016af0316570eebf2c2882ff1bff2b3ffeda77))
+
 ## [3.95.4](https://github.com/IbbyLabs/XRDB/compare/v3.95.3...v3.95.4) (2026-08-23)
 
 
