@@ -83,6 +83,12 @@ ignored, so this header text costs nothing.
 - Under `original`, the logo now matches the title's own language on English-original titles too. It previously took the highest-voted logo in any language for those, so an English show could render a Portuguese or Chinese wordmark. A language-neutral logo is preferred over one tagged for a language nobody asked for.
 - The title logo drawn on clean posters and on a backdrop-as-poster takes `logoWidth`, `logoHeight` and `logoPos` as percentages, plus `logoAnchor: bottom`. Any older answer saying its size and position are fixed is out of date. `logoPos` is where the logo's centre sits, so resizing does not also move it; the bottom anchor pins the lower edge instead so a larger logo grows upward. Aspect ratio is always preserved — the logo fits inside the box and never stretches, so no separate control is needed for that. These are per surface, like every other config key.
 
+## Self-hosting alongside AIOMetadata
+
+- XRDB does not have to be reachable from the internet when AIOMetadata is self-hosted next to it, but only when AIOMetadata's poster proxy is turned on. With the proxy on, AIOMetadata rewrites each artwork URL to its own address and fetches XRDB itself, so a container address such as `http://xrdb:8080` works as the artwork Custom URL provided both containers share a network.
+- With the poster proxy off, AIOMetadata hands the Custom URL straight to Stremio, and a container address fails on every poster because the player cannot reach it. Ask which setting is in use before suggesting an internal address.
+- Backdrop, landscape and logo artwork still fall back to the direct URL for a title carrying no IMDb, TMDB or TVDB id, whether or not the proxy is on, so an internal-only address is not safe for those surfaces even with the proxy enabled.
+
 ## Migrating from v2
 
 - v2 profiles import and keep every original key; anything that cannot be translated is carried rather than dropped.
