@@ -175,9 +175,26 @@ var rateLimits = map[string]RateLimit{
 	"mal":     {MinInterval: time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
 	"anilist": {MinInterval: 2 * time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
 	"mdblist": {MaxRetries: 3, MaxRetryWait: renderRetryBudget},
-	"trakt":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
+	"trakt":   {MinInterval: traktMinInterval(), MaxRetries: 3, MaxRetryWait: renderRetryBudget},
 	"simkl":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
 	"kitsu":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
+}
+
+// traktMinInterval paces Trakt under the rate that has been observed to earn a
+// refusal. Trakt answers an overrun with a 429 that cools the source off for
+// five minutes, which reaches every caller, so the cost of pacing too loosely
+// is not this request.
+//
+// Measured 2026-08-22: roughly 85 calls in a minute from a standing start was
+// enough, and 351 inside five minutes with the preceding 85 minutes empty. That
+// is a burst limit rather than an accumulated window. One second holds it to 60
+// a minute, under the lower of the two figures.
+//
+// One event, so it is tunable without a release: the number is a floor derived
+// from a single refusal, not a published limit.
+func traktMinInterval() time.Duration {
+	secs := envFloat("XRDB_TRAKT_MIN_INTERVAL_SECONDS", 1, 0.05, 10)
+	return time.Duration(secs * float64(time.Second))
 }
 
 // renderRetryBudget is how long a live render will sleep waiting for a source
