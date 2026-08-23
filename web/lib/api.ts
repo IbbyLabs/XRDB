@@ -360,6 +360,8 @@ export async function clearTTL(provider: string): Promise<TTLEntry[]> {
 export interface SettingStatus {
   key: string;
   set: boolean;
+  /** Where the value comes from: "stored" or "environment". Absent when unset. */
+  source?: string;
 }
 
 export async function fetchSettings(adminKey?: string): Promise<SettingStatus[]> {

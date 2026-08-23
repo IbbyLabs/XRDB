@@ -154,13 +154,15 @@ function Notice({
 // ── Key input row ─────────────────────────────────────────────────────────────
 
 function KeyRow({
-  keyDef, isSet, onSave, onDelete,
+  keyDef, isSet, source, onSave, onDelete,
 }: {
   keyDef: Integration['keys'][0];
   isSet: boolean;
+  source?: string;
   onSave: (value: string) => Promise<void>;
   onDelete: () => Promise<void>;
 }) {
+  const fromEnv = source === 'environment';
   const uid = useId();
   const [value, setValue] = useState('');
   const [show, setShow]   = useState(false);
@@ -199,7 +201,13 @@ function KeyRow({
             value={value}
             onChange={e => { setValue(e.target.value); setLocalError(''); }}
             onKeyDown={e => { if (e.key === 'Enter') handleSave(); }}
-            placeholder={isSet ? '••••••••  (set — enter new value to replace)' : keyDef.placeholder}
+            placeholder={
+              fromEnv
+                ? '••••••••  (set in the environment — saving here overrides it)'
+                : isSet
+                  ? '••••••••  (set — enter new value to replace)'
+                  : keyDef.placeholder
+            }
             autoComplete="off"
             spellCheck={false}
           />
@@ -220,7 +228,9 @@ function KeyRow({
         >
           {saving ? 'Saving…' : 'Save'}
         </button>
-        {isSet && (
+        {/* Nothing is stored for an environment value, so Remove would report
+            success and change nothing. */}
+        {isSet && !fromEnv && (
           <button
             className={`btn${confirmDelete ? ' btn-danger' : ' btn-ghost'}`}
             onClick={async () => {
@@ -243,6 +253,12 @@ function KeyRow({
           </button>
         )}
       </div>
+      {fromEnv && (
+        <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>
+          Set in the environment. Change it where the environment is defined, or
+          save a value here to override it.
+        </span>
+      )}
       {localError && (
         <span className="hint hint-error" role="alert">{localError}</span>
       )}
@@ -253,10 +269,11 @@ function KeyRow({
 // ── Provider row (progressive disclosure) ─────────────────────────────────────
 
 function ProviderRow({
-  integration, statuses, statusKnown, onSave, onDelete, defaultOpen, rowId,
+  integration, statuses, sources, statusKnown, onSave, onDelete, defaultOpen, rowId,
 }: {
   integration: Integration;
   statuses: Record<string, boolean>;
+  sources: Record<string, string>;
   statusKnown: boolean;
   onSave: (key: string, value: string) => Promise<void>;
   onDelete: (key: string) => Promise<void>;
@@ -304,6 +321,7 @@ function ProviderRow({
                 key={k.key}
                 keyDef={k}
                 isSet={!!statuses[k.key]}
+                source={sources[k.key]}
                 onSave={(value) => onSave(k.key, value)}
                 onDelete={() => onDelete(k.key)}
               />
@@ -329,6 +347,7 @@ function ProviderRow({
 // panel already has both, and a second page title reads as a nested page.
 export function IntegrationsClient({ embedded = false }: { embedded?: boolean } = {}) {
   const [statuses, setStatuses] = useState<Record<string, boolean>>({});
+  const [sources, setSources] = useState<Record<string, string>>({});
   const [loading, setLoading]   = useState(true);
   const [settingsUnauthorized, setSettingsUnauthorized] = useState(false);
   const [settingsLoadFailed, setSettingsLoadFailed] = useState(false);
@@ -362,8 +381,13 @@ export function IntegrationsClient({ embedded = false }: { embedded?: boolean } 
     try {
       const data = await fetchSettings();
       const map: Record<string, boolean> = {};
-      for (const s of data) map[s.key] = s.set;
+      const src: Record<string, string> = {};
+      for (const s of data) {
+        map[s.key] = s.set;
+        if (s.source) src[s.key] = s.source;
+      }
       setStatuses(map);
+      setSources(src);
       setSettingsUnauthorized(false);
       setSettingsLoadFailed(false);
     } catch (e) {
@@ -420,13 +444,18 @@ export function IntegrationsClient({ embedded = false }: { embedded?: boolean } 
   const handleSave = async (key: string, value: string) => {
     await setSetting(key, value);
     setStatuses(s => ({ ...s, [key]: true }));
+    setSources(s => ({ ...s, [key]: 'stored' }));
     flash('success', 'Key saved');
   };
 
   const handleDelete = async (key: string) => {
     await deleteSetting(key);
     setStatuses(s => ({ ...s, [key]: false }));
+    setSources(s => { const next = { ...s }; delete next[key]; return next; });
     flash('success', 'Key removed');
+    // A stored key can be sitting on top of an environment one, and only the
+    // server knows what is left underneath it.
+    await loadStatuses();
   };
 
   // When the settings fetch failed or was unauthorized, `statuses` is empty for
@@ -480,6 +509,7 @@ export function IntegrationsClient({ embedded = false }: { embedded?: boolean } 
               key={int.id}
               integration={int}
               statuses={statuses}
+              sources={sources}
               statusKnown={statusKnown}
               onSave={handleSave}
               onDelete={handleDelete}

@@ -28,36 +28,57 @@ import (
 // provider into its live client, so a key saved or cleared through the settings
 // API takes effect without a restart. Effective value is the stored key, or the
 // environment variable when none is stored — the same precedence as startup.
+const (
+	tmdbAPIKeySetting    = "tmdb_api_key"
+	tmdbReadTokenSetting = "tmdb_read_token"
+)
+
+// Every provider credential and the environment variable it falls back to when
+// nothing is stored. Both refreshProviderCredentials and the settings GET read
+// this list, so a credential is applied and reported from one definition.
+var providerCredentials = []struct{ Provider, SettingsKey, EnvVar string }{
+	{"tmdb", tmdbAPIKeySetting, "XRDB_TMDB_API_KEY"},
+	{"tmdb", tmdbReadTokenSetting, "XRDB_TMDB_READ_TOKEN"},
+	{"mdblist", "mdblist_api_key", "XRDB_MDBLIST_API_KEY"},
+	{"omdb", "omdb_api_key", "XRDB_OMDB_API_KEY"},
+	{"fanart", "fanart_api_key", "XRDB_FANART_API_KEY"},
+	{"trakt", "trakt_client_id", "XRDB_TRAKT_CLIENT_ID"},
+	{"simkl", "simkl_client_id", "XRDB_SIMKL_CLIENT_ID"},
+}
+
+func credentialEnvVar(settingsKey string) string {
+	for _, c := range providerCredentials {
+		if c.SettingsKey == settingsKey {
+			return c.EnvVar
+		}
+	}
+	return ""
+}
+
 func refreshProviderCredentials(pipeline *compose.Pipeline, settingsStore *settings.Store) {
 	if pipeline == nil || settingsStore == nil {
 		return
 	}
-	effective := func(settingsKey, envVar string) string {
+	effective := func(settingsKey string) string {
 		if v, err := settingsStore.Get(settingsKey); err == nil && v != "" {
 			return v
 		}
-		return os.Getenv(envVar)
+		return os.Getenv(credentialEnvVar(settingsKey))
 	}
 
 	// TMDB takes two credentials, so it does not fit the single-key shape below.
 	if tmdb := pipeline.TMDBClient(); tmdb != nil {
-		tmdb.UpdateCredentials(
-			effective("tmdb_api_key", "XRDB_TMDB_API_KEY"),
-			effective("tmdb_read_token", "XRDB_TMDB_READ_TOKEN"),
-		)
+		tmdb.UpdateCredentials(effective(tmdbAPIKeySetting), effective(tmdbReadTokenSetting))
 	}
 
 	// The remaining providers each take a single key or client id.
 	type singleKeyed interface{ UpdateCredentials(string) }
-	for _, m := range []struct{ provider, settingsKey, envVar string }{
-		{"mdblist", "mdblist_api_key", "XRDB_MDBLIST_API_KEY"},
-		{"omdb", "omdb_api_key", "XRDB_OMDB_API_KEY"},
-		{"fanart", "fanart_api_key", "XRDB_FANART_API_KEY"},
-		{"trakt", "trakt_client_id", "XRDB_TRAKT_CLIENT_ID"},
-		{"simkl", "simkl_client_id", "XRDB_SIMKL_CLIENT_ID"},
-	} {
-		if kp, ok := pipeline.Provider(m.provider).(singleKeyed); ok {
-			kp.UpdateCredentials(effective(m.settingsKey, m.envVar))
+	for _, c := range providerCredentials {
+		if c.Provider == "tmdb" {
+			continue
+		}
+		if kp, ok := pipeline.Provider(c.Provider).(singleKeyed); ok {
+			kp.UpdateCredentials(effective(c.SettingsKey))
 		}
 	}
 }
@@ -510,14 +531,36 @@ func registerAdminRoutes(
 				http.Error(w, "internal error", http.StatusInternalServerError)
 				return
 			}
-			// Mask values: return whether each key is set, not the actual value.
+			// Mask values: return whether each key is set and where it came
+			// from, never the value. A credential may be stored or supplied by
+			// the environment, and refreshProviderCredentials honours both.
 			type keyStatus struct {
-				Key string `json:"key"`
-				Set bool   `json:"set"`
+				Key    string `json:"key"`
+				Set    bool   `json:"set"`
+				Source string `json:"source,omitempty"`
 			}
-			out := make([]keyStatus, 0, len(all))
+			out := make([]keyStatus, 0, len(all)+len(providerCredentials))
+			listed := make(map[string]bool, len(providerCredentials))
+			for _, c := range providerCredentials {
+				listed[c.SettingsKey] = true
+				switch {
+				case all[c.SettingsKey] != "":
+					out = append(out, keyStatus{Key: c.SettingsKey, Set: true, Source: "stored"})
+				case os.Getenv(c.EnvVar) != "":
+					out = append(out, keyStatus{Key: c.SettingsKey, Set: true, Source: "environment"})
+				default:
+					out = append(out, keyStatus{Key: c.SettingsKey})
+				}
+			}
 			for k, v := range all {
-				out = append(out, keyStatus{Key: k, Set: v != ""})
+				if listed[k] {
+					continue
+				}
+				status := keyStatus{Key: k, Set: v != ""}
+				if status.Set {
+					status.Source = "stored"
+				}
+				out = append(out, status)
 			}
 			writeJSON(w, http.StatusOK, out)
 		case http.MethodPut:

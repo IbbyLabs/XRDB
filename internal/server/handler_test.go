@@ -1097,3 +1097,75 @@ func TestProfileImportRejectsAliasHeldByAnotherProfile(t *testing.T) {
 		t.Errorf("error should name the profile and the alias, got %q", msg)
 	}
 }
+
+// A key supplied only by the environment is live — refreshProviderCredentials
+// falls back to it — so the settings read has to report it as set. Reporting it
+// unset tells a working install it is broken, and the repair someone reaches for
+// is retyping the key into the UI, which moves where their config lives.
+func TestAdminSettingsReportsEnvironmentKeys(t *testing.T) {
+	t.Setenv("XRDB_MDBLIST_API_KEY", "from-env")
+	t.Setenv("XRDB_TMDB_API_KEY", "")
+	t.Setenv("XRDB_TMDB_READ_TOKEN", "")
+	t.Setenv("XRDB_OMDB_API_KEY", "")
+	t.Setenv("XRDB_FANART_API_KEY", "")
+	t.Setenv("XRDB_TRAKT_CLIENT_ID", "")
+	t.Setenv("XRDB_SIMKL_CLIENT_ID", "")
+
+	dir := t.TempDir()
+	settingsStore, err := settings.Open(filepath.Join(dir, "settings.db"))
+	if err != nil {
+		t.Fatalf("open settings store: %v", err)
+	}
+	t.Cleanup(func() { _ = settingsStore.Close() })
+	if err := settingsStore.Set("omdb_api_key", "from-store"); err != nil {
+		t.Fatalf("seed settings store: %v", err)
+	}
+
+	h := NewHandler("test", nil, settingsStore, compose.New(provider.NewRegistry()), nil, config.Config{AdminKey: "secret"})
+
+	req := httptest.NewRequest(http.MethodGet, "/api/admin/settings", nil)
+	req.Header.Set("Authorization", "Bearer secret")
+	rr := httptest.NewRecorder()
+	h.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200 from settings read, got %d: %s", rr.Code, rr.Body.String())
+	}
+
+	var got []struct {
+		Key    string `json:"key"`
+		Set    bool   `json:"set"`
+		Source string `json:"source"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &got); err != nil {
+		t.Fatalf("decode settings read: %v", err)
+	}
+	byKey := make(map[string]struct {
+		set    bool
+		source string
+	}, len(got))
+	for _, s := range got {
+		byKey[s.Key] = struct {
+			set    bool
+			source string
+		}{s.Set, s.Source}
+	}
+
+	for _, want := range []struct {
+		key    string
+		set    bool
+		source string
+	}{
+		{"mdblist_api_key", true, "environment"},
+		{"omdb_api_key", true, "stored"},
+		{"tmdb_api_key", false, ""},
+	} {
+		have, ok := byKey[want.key]
+		if !ok {
+			t.Fatalf("%s missing from the settings read", want.key)
+		}
+		if have.set != want.set || have.source != want.source {
+			t.Fatalf("%s: got set=%v source=%q, want set=%v source=%q",
+				want.key, have.set, have.source, want.set, want.source)
+		}
+	}
+}
