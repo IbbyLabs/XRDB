@@ -21,6 +21,9 @@ that cannot be pointed at a remote URL. It is off by default; see
 | Kodi | File | [kodi.md](kodi.md) |
 | Plex | File | [plex.md](plex.md) |
 
+Behind an auth proxy? Media clients cannot log in, so they need a bypass rule.
+See [authelia.md](authelia.md).
+
 Every guide assumes you have already built a look in the **Configurator** and
 saved it as a profile with an alias. The alias is what appears in URLs and in
 the folder-writer settings.
