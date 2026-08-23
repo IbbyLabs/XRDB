@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime/debug"
+	"sort"
 	"strconv"
 	"strings"
 	"syscall"
@@ -357,8 +358,47 @@ func logProviderReadiness(reg *provider.Registry, jikanURL string) {
 			"host", provider.JikanHost(""),
 			"set", "XRDB_JIKAN_URL")
 	}
-	if len(waiting) > 0 {
-		slog.Warn("Some providers have no credentials, so the sources they serve will not appear",
+	// Only sources nothing else supplies. A source a ready provider also
+	// declares still renders without the missing key, so naming it here sends
+	// an operator after a credential that changes nothing.
+	if lost := sourcesOnlyWaitingProvidersServe(reg, ready, waiting); len(lost) > 0 {
+		slog.Warn("Some sources have no provider with credentials, so they will not appear",
+			"sources", strings.Join(lost, ","),
 			"providers", strings.Join(waiting, ","))
 	}
+}
+
+// sourcesOnlyWaitingProvidersServe lists the rating sources declared by
+// providers without credentials and by no provider that has them.
+func sourcesOnlyWaitingProvidersServe(reg *provider.Registry, ready, waiting []string) []string {
+	declares := func(name string) []string {
+		p := reg.Get(name)
+		if p == nil {
+			return nil
+		}
+		rs, ok := p.(interface{ RatingSources() []string })
+		if !ok {
+			return nil
+		}
+		return rs.RatingSources()
+	}
+	covered := map[string]bool{}
+	for _, name := range ready {
+		for _, source := range declares(name) {
+			covered[source] = true
+		}
+	}
+	var lost []string
+	seen := map[string]bool{}
+	for _, name := range waiting {
+		for _, source := range declares(name) {
+			if covered[source] || seen[source] {
+				continue
+			}
+			seen[source] = true
+			lost = append(lost, source)
+		}
+	}
+	sort.Strings(lost)
+	return lost
 }
