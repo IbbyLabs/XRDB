@@ -87,7 +87,7 @@ ignored, so this header text costs nothing.
 
 - XRDB does not have to be reachable from the internet when AIOMetadata is self-hosted next to it, but only when AIOMetadata's poster proxy is turned on. With the proxy on, AIOMetadata rewrites each artwork URL to its own address and fetches XRDB itself, so a container address such as `http://xrdb:PORT`, where PORT is whatever that instance listens on, works as the artwork Custom URL provided both containers share a network. The default is 8787, but `XRDB_ADDR` changes it, so read the instance rather than assuming.
 - With the poster proxy off, AIOMetadata hands the Custom URL straight to Stremio, and a container address fails on every poster because the player cannot reach it. Ask which setting is in use before suggesting an internal address.
-- Backdrop, landscape and logo artwork still fall back to the direct URL for a title carrying no IMDb, TMDB or TVDB id, whether or not the proxy is on, so an internal-only address is not safe for those surfaces even with the proxy enabled.
+- Backdrop, landscape and logo artwork fall back to the direct URL for a title carrying no IMDb, TMDB or TVDB id, so an internal-only address fails for those three even with the proxy on. Posters differ in that case: AIOMetadata leaves its own artwork in place rather than substituting the custom URL, so nothing breaks but no XRDB poster appears.
 
 ## Migrating from v2
 
