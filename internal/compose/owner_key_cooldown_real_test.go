@@ -33,8 +33,13 @@ func TestOwnerKeyedFailureLeavesTheSharedCooldownAlone(t *testing.T) {
 	const source = "mdblist"
 	p, prov := rateLimitedPipeline(t, source)
 
-	ctx := provider.WithKeys(context.Background(),
-		map[string]string{provider.KeyMDBList: "owner-key"})
+	// The caller class is explicit here and in the control below: an unset
+	// context reads as unknown, which is held with the sweeps rather than with
+	// people, so neither assertion would see an interactive cooldown.
+	ctx := provider.WithCallerClass(
+		provider.WithKeys(context.Background(),
+			map[string]string{provider.KeyMDBList: "owner-key"}),
+		provider.CallerInteractive)
 	_, _, _ = p.fetchRatingsResilient(ctx, prov, Request{MediaID: "tt1"}, nil)
 
 	if p.health.CoolingOff(source, provider.CallerInteractive) {
@@ -49,7 +54,8 @@ func TestSharedKeyedFailureDoesSetTheCooldown(t *testing.T) {
 	const source = "mdblist"
 	p, prov := rateLimitedPipeline(t, source)
 
-	_, _, _ = p.fetchRatingsResilient(context.Background(), prov, Request{MediaID: "tt1"}, nil)
+	ctx := provider.WithCallerClass(context.Background(), provider.CallerInteractive)
+	_, _, _ = p.fetchRatingsResilient(ctx, prov, Request{MediaID: "tt1"}, nil)
 
 	if !p.health.CoolingOff(source, provider.CallerInteractive) {
 		t.Fatal("a shared-key 429 did not set the cooldown, so the guard above proves nothing")
