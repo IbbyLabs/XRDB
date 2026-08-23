@@ -21,7 +21,7 @@ access_control:
     - domain: 'xrdb.example.com'
       resources:
         - '^/api/admin(/.*)?$'
-      policy: 'one_factor'
+      policy: 'two_factor'
 
     ## What a media client fetches.
     - domain: 'xrdb.example.com'
