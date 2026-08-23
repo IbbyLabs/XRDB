@@ -165,7 +165,7 @@ func TestKindsWrittenByAnOlderProbeAreDiscarded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopening the store: %v", err)
 	}
-	defer reopened.Close()
+	defer func() { _ = reopened.Close() }()
 	if kind, ok := reopened.lookup("65942"); ok {
 		t.Errorf("a kind written by probe version 1 survived the upgrade as %q", kind)
 	}
@@ -180,7 +180,7 @@ func TestKindsWrittenByAnOlderProbeAreDiscarded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("reopening again: %v", err)
 	}
-	defer again.Close()
+	defer func() { _ = again.Close() }()
 	if kind, ok := again.lookup("1399"); !ok || kind != "series" {
 		t.Errorf("a kind written by the current probe was discarded: %q %v", kind, ok)
 	}
