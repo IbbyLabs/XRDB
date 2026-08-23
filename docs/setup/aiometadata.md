@@ -35,6 +35,32 @@ titles keep their plain artwork. XRDB reads `tt`, `tmdb:`, `tvdb:`, `kitsu:`,
 The **Install** tab shows these ready to copy, with your alias already in place
 and a version token appended so an edit is picked up.
 
+## Self-hosting XRDB on your own domain
+
+AIOMetadata caches the artwork it fetches, and it applies a per-domain policy to
+decide for how long. It ships one for `extendedratings.com` and cannot know
+about your host, so an unlisted domain falls to its default and your edits can
+sit behind an image AIOMetadata is still holding.
+
+Add your XRDB hostname under **your domains** in AIOMetadata's poster cache
+policies and set it to **Follow source**. XRDB sends `cache-control: public,
+max-age=<seconds>` on every render, counted from `XRDB_CACHE_TTL_HOURS` — the
+default 72 hours reads as `max-age=259199`. AIOMetadata then expires its copy in
+step with yours.
+
+Purge the poster cache once after adding it, to clear what was stored under the
+old policy.
+
+If a poster still looks stale, the three-way check tells you which cache holds
+it. Request the same title directly from XRDB, then again with `&cb=1`, then
+through AIOMetadata:
+
+```
+direct old, direct+cb new   XRDB's render cache
+direct new, via AIOM old    AIOMetadata's poster cache
+all three new               the client's own cache
+```
+
 If your instance sets `XRDB_API_KEY`, enter it at the top of the Install tab so
 it is woven into the patterns; AIOMetadata fetches server-side and cannot send
 a header.
