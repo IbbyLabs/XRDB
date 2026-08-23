@@ -638,7 +638,7 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 	// held out of the last of it. This skips the source rather than failing it:
 	// a recorded failure cools the source off for every caller, which is the
 	// outcome the reserve exists to prevent.
-	if !ownerKeyed && provider.CallerClassFrom(ctx) == provider.CallerBulk && !provider.BulkCallerMayReach(prov.Name()) {
+	if !ownerKeyed && provider.TreatedAsBulk(provider.CallerClassFrom(ctx)) && !provider.BulkCallerMayReach(prov.Name()) {
 		key := provider.GoodKey(prov.Name(), req.ContentType, req.MediaID)
 		if p.health != nil {
 			if good, age, ok := p.health.LastGoodAge(prov.Name(), key); ok {
