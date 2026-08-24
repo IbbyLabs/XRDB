@@ -367,6 +367,12 @@ export function suppressedQualityBadges(selected: readonly string[]): Record<str
 
 export const PREVIEW_DEBOUNCE_MS = 500;
 
+// The title the configurator opens on.
+export const DEFAULT_MEDIA_ID = 'tt0468569';
+
+// Keys the preview always sends, even at their default value.
+export const ALWAYS_SEND = new Set(['size', 'ageRating', 'ratings']);
+
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface ConfigState {
@@ -1009,4 +1015,15 @@ export function normalizeError(e: unknown): string {
   if (msg.includes('Failed to fetch') || msg.includes('NetworkError'))
     return 'Could not reach the backend.';
   return msg;
+}
+
+// The preview URL a first visit asks for. Built from the same constants the
+// client uses, so a change to DEFAULT_CONFIG or ALWAYS_SEND cannot leave a
+// preloaded URL pointing at an image the page will not display.
+export function defaultPreviewPayload(): string {
+  const payload: Record<string, unknown> = {};
+  for (const key of Object.keys(DEFAULT_CONFIG) as (keyof ConfigState)[]) {
+    if (ALWAYS_SEND.has(key as string)) payload[key as string] = DEFAULT_CONFIG[key];
+  }
+  return JSON.stringify(payload);
 }

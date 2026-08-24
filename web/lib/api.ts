@@ -86,7 +86,8 @@ export async function fetchHealth(): Promise<HealthResponse> {
   return res.json() as Promise<HealthResponse>;
 }
 
-export function renderUrl(
+/** The origin-relative part of a render URL. */
+export function renderPath(
   type: MediaType,
   id: string,
   config?: string,
@@ -103,7 +104,17 @@ export function renderUrl(
   // is same-origin, which is where the server accepts this.
   if (keysFrom) params.set('pk', keysFrom);
   const qs = params.toString();
-  return `${base()}/${type}/${encodeURIComponent(id)}${qs ? `?${qs}` : ''}`;
+  return `/${type}/${encodeURIComponent(id)}${qs ? `?${qs}` : ''}`;
+}
+
+export function renderUrl(
+  type: MediaType,
+  id: string,
+  config?: string,
+  key?: string,
+  keysFrom?: string,
+): string {
+  return `${base()}${renderPath(type, id, config, key, keysFrom)}`;
 }
 
 /** Authorization header carrying the instance render key, when the operator

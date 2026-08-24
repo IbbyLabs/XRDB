@@ -10,6 +10,7 @@ import { copyText } from '@/lib/clipboard';
 import { syncShares } from '@/lib/shares';
 import {
   MEDIA_TYPES, DEFAULT_CONFIG, DEFAULT_SURFACE_CONFIGS, PREVIEW_DEBOUNCE_MS,
+  ALWAYS_SEND, DEFAULT_MEDIA_ID,
   readSession, encodeShare, decodeShare, cloneToAllSurfaces, fromStoredConfig,
   type ConfigState, type SurfaceConfigs,
 } from './configurator-types';
@@ -51,7 +52,6 @@ type TabId = (typeof SURFACE_TABS)[number]['id'] | (typeof CONFIG_TABS)[number][
 // normal here and small there, ageRating is off here and on there, and ratings
 // carries the same two sources in the opposite order. Sent explicitly until the
 // two sides are aligned, which is a product decision rather than a fix.
-const ALWAYS_SEND = new Set(['size', 'ageRating', 'ratings']);
 
 // Structural comparison: several config values are arrays or objects, where
 // identity would report every render as a change.
@@ -75,7 +75,7 @@ export function ConfiguratorClient() {
   const uid = useId();
 
   const [mediaType, setMediaType] = useState<MediaType>('poster');
-  const [mediaId, setMediaId] = useState('tt0468569');
+  const [mediaId, setMediaId] = useState(DEFAULT_MEDIA_ID);
   const [previewEpisode, setPreviewEpisode] = useState({ season: 1, episode: 1 });
   const [mediaTitle, setMediaTitle] = useState('The Dark Knight (2008)');
   const [configs, setConfigs] = useState<SurfaceConfigs>(DEFAULT_SURFACE_CONFIGS);
@@ -118,7 +118,7 @@ export function ConfiguratorClient() {
       // corrupted session value would otherwise make the active config undefined.
       const storedType = readSession<string>('xrdb-media-type', 'poster');
       setMediaType(MEDIA_TYPES.some(t => t.id === storedType) ? (storedType as MediaType) : 'poster');
-      setMediaId(readSession<string>('xrdb-media-id', 'tt0468569'));
+      setMediaId(readSession<string>('xrdb-media-id', DEFAULT_MEDIA_ID));
       setMediaTitle(readSession<string>('xrdb-media-title', 'The Dark Knight (2008)'));
       // Prefer the per-surface store; fall back to (and migrate) the older
       // single-config session so a mid-session upgrade keeps the user's look.
@@ -212,7 +212,7 @@ export function ConfiguratorClient() {
     // Name the loaded profile so the preview applies its stored provider keys
     // to these unsaved edits; without it the preview always uses the shared key.
     const keysFrom = loadedProfile ? (loadedProfile.alias || loadedProfile.id) : undefined;
-    return renderUrl(type, id || 'tt0468569', JSON.stringify(payload), renderKey, keysFrom);
+    return renderUrl(type, id || DEFAULT_MEDIA_ID, JSON.stringify(payload), renderKey, keysFrom);
   }, [renderKey, loadedProfile]);
 
   const applyRenderKey = useCallback((value: string) => {
