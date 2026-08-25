@@ -583,6 +583,17 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	// Genre families: GET /api/genre-families — the id, label and built-in
 	// accent of every family, so the configurator's colour pickers read the
 	// same table the renderer draws from.
+	// Config defaults: GET /api/config/defaults. The configurator reads its
+	// starting values from here rather than carrying its own copy, which drifted
+	// from these on size, ratings order and ageRating.
+	mux.HandleFunc("/api/config/defaults", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		writeJSON(w, http.StatusOK, imageconfig.Default())
+	})
+
 	mux.HandleFunc("/api/genre-families", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
