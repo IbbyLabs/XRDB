@@ -184,6 +184,9 @@ func (l *concurrencyLimiter) release(w int64) {
 
 // occupancy reports the weight held and the total budget. A nil limiter is
 // unbounded, so it reports nothing held against no capacity.
+//
+// Taking a slot and counting it are two steps, so a render between them is
+// absent from this figure. It is a diagnostic, not an exact count.
 func (l *concurrencyLimiter) occupancy() (held, capacity int64) {
 	if l == nil {
 		return 0, 0
