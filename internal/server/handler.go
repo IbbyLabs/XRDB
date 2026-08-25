@@ -583,9 +583,15 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	// Genre families: GET /api/genre-families — the id, label and built-in
 	// accent of every family, so the configurator's colour pickers read the
 	// same table the renderer draws from.
-	// Config defaults: GET /api/config/defaults. The configurator reads its
-	// starting values from here rather than carrying its own copy, which drifted
-	// from these on size, ratings order and ageRating.
+	// Config defaults: GET /api/config/defaults, the values a render uses for
+	// anything a profile leaves unset.
+	//
+	// The configurator still carries its own copy in
+	// web/components/configurator-types.ts and does not read this yet, so the two
+	// disagree on size, ratings order and ageRating (BUG-274).
+	//
+	// A field left nil by Default() is omitted here, and its effective value
+	// lives at the render site rather than in this response.
 	mux.HandleFunc("/api/config/defaults", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
