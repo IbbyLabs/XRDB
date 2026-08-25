@@ -2,6 +2,31 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.97.0](https://github.com/IbbyLabs/XRDB/compare/v3.96.0...v3.97.0) (2026-08-25)
+
+
+### Added
+
+* **compose:** record the caller class on a completed render ([829ca12](https://github.com/IbbyLabs/XRDB/commit/829ca1293deeb72461b3c50e83defc920652f05c))
+* **server:** report what the render budget was holding on a shed line ([19d7848](https://github.com/IbbyLabs/XRDB/commit/19d7848035ae5c97132e50b5635c1f77cb8f81e8))
+
+
+### Fixed
+
+* **server:** log the render weight on a shed line (BUG-275) ([8b21942](https://github.com/IbbyLabs/XRDB/commit/8b21942fe9981594dd2b1ce6fd9714533dedf58d))
+* **server:** price renders by surface as well as size (BUG-275) ([5bf39b0](https://github.com/IbbyLabs/XRDB/commit/5bf39b0b3f3afddf8b746971d73fb56b171bfbc5))
+* **startup:** name only the sources no keyed provider covers ([be154a7](https://github.com/IbbyLabs/XRDB/commit/be154a7bf75901ead822a3b75363718512f430b9))
+
+
+### Performance
+
+* **configurator:** preload the preview poster on a first visit ([0e84a31](https://github.com/IbbyLabs/XRDB/commit/0e84a316129bf344c4119d080804a21567cf7010))
+
+
+### Documentation
+
+* **server:** say what the occupancy figure can miss ([be585ad](https://github.com/IbbyLabs/XRDB/commit/be585ad0d9ddebf6104494cc6dda93f2ccca4746))
+
 ## [3.96.0](https://github.com/IbbyLabs/XRDB/compare/v3.95.4...v3.96.0) (2026-08-23)
 
 
