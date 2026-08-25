@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"sync/atomic"
 	"time"
 
 	"golang.org/x/sync/semaphore"
@@ -20,6 +21,10 @@ import (
 type concurrencyLimiter struct {
 	sem      *semaphore.Weighted
 	capacity int64
+	// Weight currently held. semaphore.Weighted does not report its own
+	// occupancy, and a shed line that cannot say what the budget was holding
+	// leaves contention unanswerable after the fact.
+	held atomic.Int64
 }
 
 // bulkPollInterval is how often a bulk caller re-checks for a free slot.
@@ -100,7 +105,12 @@ func (l *concurrencyLimiter) acquire(ctx context.Context, w int64) bool {
 	if l == nil {
 		return true
 	}
-	return l.sem.Acquire(ctx, l.weight(w)) == nil
+	weight := l.weight(w)
+	if l.sem.Acquire(ctx, weight) != nil {
+		return false
+	}
+	l.held.Add(weight)
+	return true
 }
 
 // acquireWithin is acquire with a deadline. It returns false once wait elapses,
@@ -117,7 +127,12 @@ func (l *concurrencyLimiter) acquireWithin(ctx context.Context, wait time.Durati
 	}
 	waitCtx, cancel := context.WithTimeout(ctx, wait)
 	defer cancel()
-	return l.sem.Acquire(waitCtx, l.weight(w)) == nil
+	weight := l.weight(w)
+	if l.sem.Acquire(waitCtx, weight) != nil {
+		return false
+	}
+	l.held.Add(weight)
+	return true
 }
 
 // acquireBulk takes a slot for a caller sweeping the catalogue. It waits far
@@ -145,6 +160,7 @@ func (l *concurrencyLimiter) acquireBulk(ctx context.Context, wait time.Duration
 	defer ticker.Stop()
 	for {
 		if l.sem.TryAcquire(weight) {
+			l.held.Add(weight)
 			return true
 		}
 		select {
@@ -161,5 +177,16 @@ func (l *concurrencyLimiter) release(w int64) {
 	if l == nil {
 		return
 	}
-	l.sem.Release(l.weight(w))
+	weight := l.weight(w)
+	l.sem.Release(weight)
+	l.held.Add(-weight)
+}
+
+// occupancy reports the weight held and the total budget. A nil limiter is
+// unbounded, so it reports nothing held against no capacity.
+func (l *concurrencyLimiter) occupancy() (held, capacity int64) {
+	if l == nil {
+		return 0, 0
+	}
+	return l.held.Load(), l.capacity
 }

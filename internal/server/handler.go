@@ -373,6 +373,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				// wait bounded for everyone behind it; a caller that has cached
 				// art of its own falls back to it rather than showing a gap.
 				waitedMs := time.Since(queueStart).Milliseconds()
+				heldWeight, budget := renderLimiter.occupancy()
 				if r.Context().Err() != nil {
 					logger.DebugContext(r.Context(), "Render abandoned by the caller while queued",
 						"id", logging.RequestID(r.Context()),
@@ -391,6 +392,11 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 					// without it a shed count cannot be read against a change
 					// in pricing.
 					"weight", weight,
+					// What the budget was holding when this was turned away.
+					// Read from the limiter rather than inferred: the render
+					// timing line is sampled, so reconstructing occupancy from
+					// it covers a fraction of what was in flight.
+					"held_weight", heldWeight, "budget", budget,
 					// Both classes reach this line, so unlike on the cap refusal
 					// this one varies and can be read (FR-196).
 					"caller_class", provider.CallerClassFrom(r.Context()).String())
