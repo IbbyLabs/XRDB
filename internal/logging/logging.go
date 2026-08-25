@@ -128,9 +128,10 @@ func RedactURL(raw string) string {
 
 // sensitiveFragments match a query key whose value must never appear in a log.
 // Matching on a fragment rather than on an exact name is what makes this safe by
-// default: XRDB accepts a provider credential per provider (mdblistKey, tmdbKey,
-// fanartKey, omdbKey, xrdbKey, simklClientId, traktClientId) and a list of exact
-// names silently passes every one it has not been told about.
+// default: a migrated v2 profile still carries provider credentials in its config
+// blob (mdblistKey, tmdbKey, fanartKey, omdbKey, xrdbKey, simklClientId,
+// traktClientId), and a config blob can be rendered inline. A list of exact names
+// silently passes every name it has not been told about.
 var sensitiveFragments = []string{
 	"key", "token", "secret", "password", "pass", "clientid", "client_id", "credential", "auth",
 	"sig", "signature", "hmac", "session", "cookie", "bearer",
