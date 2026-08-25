@@ -83,6 +83,10 @@ func (t *renderTimings) log(ctx context.Context, logger *slog.Logger, req Reques
 		"media_type", req.MediaType,
 		"media_id", req.MediaID,
 		"total_ms", time.Since(t.start).Milliseconds(),
+		// Which class of caller this render served. The refusal lines already
+		// carry it; without it here the only requests that can be classified
+		// are the ones that were turned away.
+		"caller_class", provider.CallerClassFrom(ctx).String(),
 	)
 	for _, a := range t.phases {
 		attrs = append(attrs, a)
