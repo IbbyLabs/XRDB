@@ -66,7 +66,9 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	ms := metrics.New()
 	logger := slog.Default()
 	mux := http.NewServeMux()
-	renderLimiter := newConcurrencyLimiter(cfg.RenderConcurrency)
+	// The budget is in weight units and a normal poster costs weightUnit of
+	// them, so RenderConcurrency keeps meaning how many of those run at once.
+	renderLimiter := newConcurrencyLimiter(cfg.RenderConcurrency * weightUnit)
 	// Refuses at the door rather than after the queue: a request turned away by
 	// the concurrency limiter has already waited the full queue window for its
 	// refusal, which is a worse answer than the same refusal given at once.
@@ -343,9 +345,10 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				ms.Record("/"+mediaType, http.StatusTooManyRequests, latMs(start))
 				return
 			}
-			// A render costs the budget in proportion to its output size, so a
-			// burst of 4K posters cannot take every slot at the price of one.
-			weight := renderWeight(imgCfg.Size)
+			// A render costs the budget in proportion to what it draws, so a
+			// burst of 4K posters cannot take every slot at the price of one,
+			// and a thumbnail is not charged as if it were a poster.
+			weight := renderWeight(mediaType, imgCfg.Size)
 			// Only real renders are gated; cache hits above pass freely, so a
 			// warm catalogue reload isn't throttled. If the client hangs up or
 			// the request times out while queued, drop it without spending a slot.

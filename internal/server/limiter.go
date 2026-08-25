@@ -25,20 +25,56 @@ type concurrencyLimiter struct {
 // bulkPollInterval is how often a bulk caller re-checks for a free slot.
 const bulkPollInterval = 50 * time.Millisecond
 
-// renderWeight is what a render of this size costs against the budget, taken
-// from measured render times rather than pixel count, which overstates 4K.
-func renderWeight(size imageconfig.MediaSize) int64 {
-	switch size {
-	case imageconfig.Size4K:
-		return 7
-	case imageconfig.SizeLarge:
-		return 3
-	default:
-		return 1
+// weightUnit is how many budget units a normal poster costs. Weights are
+// integers, so pricing the smallest surface at 1 and scaling everything else
+// from it needs the unit above 1 to express the difference at all.
+const weightUnit = 4
+
+// renderWeight is what a render costs against the budget. Both the surface and
+// the size decide it: the canonical outputs in render/output.go differ by an
+// order of magnitude between a thumbnail at 320x180 and a poster at 780x1170,
+// and size multiplies the dimensions on top of that.
+//
+// The figures track delivered area with a floor rather than equalling it. Most
+// of a render is fetch, decode and compose, and the downsample is last, so a
+// thumbnail is cheaper than a poster but not by the sixteen-fold its pixel
+// count suggests.
+//
+// It is a pure function of (mediaType, size), and both are part of the render
+// cache key — size at imageconfig.CacheKey, media type at render.CacheKey — so
+// two requests that share a key always cost the same. Nothing per-caller
+// belongs here.
+func renderWeight(mediaType string, size imageconfig.MediaSize) int64 {
+	switch mediaType {
+	case "thumbnail":
+		switch size {
+		case imageconfig.Size4K:
+			return 2
+		default:
+			return 1
+		}
+	case "logo":
+		switch size {
+		case imageconfig.Size4K:
+			return 6
+		case imageconfig.SizeLarge:
+			return 2
+		default:
+			return 1
+		}
+	default: // poster, backdrop, and anything this does not recognise
+		switch size {
+		case imageconfig.Size4K:
+			return 36
+		case imageconfig.SizeLarge:
+			return 9
+		default:
+			return weightUnit
+		}
 	}
 }
 
-// newConcurrencyLimiter returns a limiter allowing n concurrent holders, or nil
+// newConcurrencyLimiter returns a limiter with a budget of n units, or nil
 // (unbounded) when n <= 0.
 func newConcurrencyLimiter(n int) *concurrencyLimiter {
 	if n <= 0 {
