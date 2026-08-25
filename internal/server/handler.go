@@ -386,6 +386,11 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 					"id", logging.RequestID(r.Context()),
 					"media_type", mediaType, "media_id", id, "waited_ms", waitedMs,
 					"queue_tier", queueTier,
+					// What this render cost the budget. Surface and size both
+					// decide it, and neither is otherwise on this line, so
+					// without it a shed count cannot be read against a change
+					// in pricing.
+					"weight", weight,
 					// Both classes reach this line, so unlike on the cap refusal
 					// this one varies and can be read (FR-196).
 					"caller_class", provider.CallerClassFrom(r.Context()).String())
