@@ -2,6 +2,13 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.98.1](https://github.com/IbbyLabs/XRDB/compare/v3.98.0...v3.98.1) (2026-08-26)
+
+
+### Fixed
+
+* **server:** gate the profile list behind the admin key ([137cbab](https://github.com/IbbyLabs/XRDB/commit/137cbab8003b4105537efca8b9e963e165f0736c))
+
 ## [3.98.0](https://github.com/IbbyLabs/XRDB/compare/v3.97.0...v3.98.0) (2026-08-26)
 
 
