@@ -43,6 +43,13 @@ func registerProfileRoutes(mux *http.ServeMux, store *profile.Store, cfg config.
 		}
 		switch r.Method {
 		case http.MethodGet:
+			// Listing every profile is an operator action and takes the admin key.
+			// It carries its own check because the gate above also covers the POST
+			// that creates a profile, which ordinary users reach.
+			if cfg.AdminKey == "" || !bearerMatches(r, cfg.AdminKey) {
+				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				return
+			}
 			profiles, err := store.List()
 			if err != nil {
 				http.Error(w, "internal error", http.StatusInternalServerError)

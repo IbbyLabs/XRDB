@@ -536,9 +536,12 @@ func TestProfileStoreUnavailable(t *testing.T) {
 }
 
 func TestProfileListEmpty(t *testing.T) {
-	h := NewHandler("test", openTestStore(t), nil, nil, nil, config.Config{})
+	// Listing every profile needs the admin key.
+	h := NewHandler("test", openTestStore(t), nil, nil, nil, config.Config{AdminKey: "sekrit"})
 	rr := httptest.NewRecorder()
-	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/profile", nil))
+	req := httptest.NewRequest(http.MethodGet, "/profile", nil)
+	req.Header.Set("Authorization", "Bearer sekrit")
+	h.ServeHTTP(rr, req)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("GET /profile: expected 200, got %d: %s", rr.Code, rr.Body.String())
 	}
@@ -552,14 +555,16 @@ func TestProfileListEmpty(t *testing.T) {
 }
 
 func TestProfileList(t *testing.T) {
-	h := NewHandler("test", openTestStore(t), nil, nil, nil, config.Config{})
+	h := NewHandler("test", openTestStore(t), nil, nil, nil, config.Config{AdminKey: "sekrit"})
 	for _, id := range []string{"a1", "b2", "c3"} {
 		body := `{"id":"` + id + `","type":"poster","config":{}}`
 		h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodPost, "/profile", strings.NewReader(body)))
 	}
 
 	rr := httptest.NewRecorder()
-	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/profile", nil))
+	req := httptest.NewRequest(http.MethodGet, "/profile", nil)
+	req.Header.Set("Authorization", "Bearer sekrit")
+	h.ServeHTTP(rr, req)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("GET /profile: expected 200, got %d: %s", rr.Code, rr.Body.String())
 	}
