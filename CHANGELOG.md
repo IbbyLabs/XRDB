@@ -2,6 +2,26 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.98.0](https://github.com/IbbyLabs/XRDB/compare/v3.97.0...v3.98.0) (2026-08-26)
+
+
+### Added
+
+* **compose:** log the render size on the timing line ([f65332b](https://github.com/IbbyLabs/XRDB/commit/f65332b1ab4b50ad8cc20a84dac90450e9020af1))
+* **server:** serve the config defaults the configurator should start from ([ffc081a](https://github.com/IbbyLabs/XRDB/commit/ffc081a05b9f11cc5b3fc3da74c1b15a46b939fe))
+
+
+### Changed
+
+* **provider:** take the cooldown hold set from TreatedAsBulk ([f5839bb](https://github.com/IbbyLabs/XRDB/commit/f5839bb1320d8026abfbce704debc04d81cc761a))
+
+
+### Documentation
+
+* **logging:** say which credentials the query redactor is guarding ([e50da20](https://github.com/IbbyLabs/XRDB/commit/e50da20900c8f2a2f3c271f01162210f7377f2d6))
+* **provider:** say an unidentified caller is held to a sweep's limits ([3a6e86c](https://github.com/IbbyLabs/XRDB/commit/3a6e86c9e11b6385e9bbf9121d46000b17732625))
+* **server:** say the configurator does not read the defaults endpoint yet ([e07f4c8](https://github.com/IbbyLabs/XRDB/commit/e07f4c8fef7c3b227f2d8437d5e8491cd4e4aa33))
+
 ## [3.97.0](https://github.com/IbbyLabs/XRDB/compare/v3.96.0...v3.97.0) (2026-08-25)
 
 
