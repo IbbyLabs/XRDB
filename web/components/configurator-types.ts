@@ -587,7 +587,7 @@ export interface ConfigState {
 }
 
 export const DEFAULT_CONFIG: ConfigState = {
-  size: 'normal',
+  size: 'small',
   outputFormat: '',
   outputQuality: 0,
   artworkSource: 'tmdb',
