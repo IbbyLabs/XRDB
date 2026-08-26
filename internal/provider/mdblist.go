@@ -133,8 +133,7 @@ func (m *MDBList) fetchType(ctx context.Context, mdbType, id string) (*MediaMeta
 
 	switch resp.StatusCode {
 	case http.StatusTooManyRequests, http.StatusServiceUnavailable:
-		return nil, &RateLimitError{Source: "mdblist", Status: resp.StatusCode,
-			RetryAfter: retryAfter(resp.Header.Get("Retry-After"))}
+		return nil, m.refusal(ctx, resp)
 	case http.StatusUnauthorized, http.StatusForbidden:
 		return nil, fmt.Errorf("mdblist: unauthorized (check api key)")
 	case http.StatusNotFound:
@@ -170,6 +169,39 @@ func (m *MDBList) fetchType(ctx context.Context, mdbType, id string) (*MediaMeta
 			"raw_sources", raw, "kept_sources", kept, "raw_awards", payload.Awards)
 	}
 	return meta, nil
+}
+
+// refusal classifies a rate-limit response. mdblist meters a daily allowance
+// rather than a per-second rate, so a spent allowance stands until the window
+// rolls over and every further request is spent being refused. QuotaExhausted
+// is what routes that into the longer cooldown; without it a spent day is
+// indistinguishable from an ordinary refusal.
+//
+// The header is the only thing that can tell them apart, and whether mdblist
+// sends it on a 429 is not established. When it is absent the refusal is logged
+// as unclassified rather than guessed at, which answers the question the next
+// time one arrives.
+func (m *MDBList) refusal(ctx context.Context, resp *http.Response) error {
+	err := &RateLimitError{
+		Source:     "mdblist",
+		Status:     resp.StatusCode,
+		RetryAfter: retryAfter(resp.Header.Get("Retry-After")),
+	}
+
+	remaining, ok := headerNumber(resp.Header, "X-RateLimit-Remaining")
+	switch {
+	case ok && remaining <= 0:
+		err.QuotaExhausted = true
+		m.log().WarnContext(ctx, "mdblist refused a request and its daily allowance is spent",
+			"status", resp.StatusCode, "remaining", remaining)
+	case ok:
+		m.log().WarnContext(ctx, "mdblist refused a request with allowance left",
+			"status", resp.StatusCode, "remaining", remaining)
+	default:
+		m.log().WarnContext(ctx, "mdblist refused a request without an allowance header, so it cannot be classified",
+			"status", resp.StatusCode)
+	}
+	return err
 }
 
 func (m *MDBList) log() *slog.Logger { return slog.Default() }
