@@ -13,10 +13,8 @@ const (
 	// CallerInteractive is a caller that named itself and is not a known sweep.
 	CallerInteractive CallerClass = iota
 	CallerBulk
-	// CallerUnknown is a caller that sent no user agent. It is treated exactly
-	// as CallerInteractive; a bulk fetcher that does not name itself spends
-	// allowance rather than losing badges, since overspending is visible and a
-	// missing badge is not. It is a separate value so a count of people is not
+	// CallerUnknown is a caller that sent no user agent. TreatedAsBulk holds it
+	// to a sweep's limits. It is a separate value so a count of people is not
 	// also a count of everything anonymous.
 	CallerUnknown
 )
