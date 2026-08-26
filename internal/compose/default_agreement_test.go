@@ -29,7 +29,6 @@ import (
 // Either align the two defaults, or send it explicitly from buildSrc's
 // ALWAYS_SEND and name it below.
 var sentExplicitly = map[string]string{
-	"size":      "configurator says normal, renderer says small",
 	"ageRating": "configurator says off, renderer says on",
 	"ratings":   "same two sources, opposite order",
 }

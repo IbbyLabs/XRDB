@@ -371,7 +371,7 @@ export const PREVIEW_DEBOUNCE_MS = 500;
 export const DEFAULT_MEDIA_ID = 'tt0468569';
 
 // Keys the preview always sends, even at their default value.
-export const ALWAYS_SEND = new Set(['size', 'ageRating', 'ratings']);
+export const ALWAYS_SEND = new Set(['ageRating', 'ratings']);
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
