@@ -77,11 +77,13 @@ func (t *renderTimings) log(ctx context.Context, logger *slog.Logger, req Reques
 	if !logger.Enabled(ctx, level) {
 		return
 	}
-	attrs := make([]any, 0, len(t.phases)+5)
+	attrs := make([]any, 0, len(t.phases)+6)
 	attrs = append(attrs,
 		"id", logging.RequestID(ctx),
 		"media_type", req.MediaType,
 		"media_id", req.MediaID,
+		// Not derivable from the other fields.
+		"size", string(req.Config.Size),
 		"total_ms", time.Since(t.start).Milliseconds(),
 		// Which class of caller this render served. The refusal lines already
 		// carry it; without it here the only requests that can be classified
