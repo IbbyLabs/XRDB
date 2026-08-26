@@ -251,16 +251,13 @@ func (h *HealthTracker) Failure(source string, err error, class CallerClass) (en
 	// holds everyone off: if the source will not answer an ordinary render it
 	// will not answer a crawl either.
 	//
-	// An unidentified caller is held with the sweeps rather than with people. A
-	// sweep that does not name itself is indistinguishable from a person with an
-	// unusual user agent, and the cost of guessing wrong runs one way: treating
-	// it as a person lets one anonymous crawler stop every badge for five
-	// minutes. The price is that a real user with an unusual agent gets slower
-	// badges.
+	// Which classes count as a sweep is TreatedAsBulk's to decide.
 	hold := func(until time.Time, reason string) bool {
-		classes := []CallerClass{CallerBulk, CallerUnknown}
-		if class == CallerInteractive {
-			classes = []CallerClass{CallerInteractive, CallerUnknown, CallerBulk}
+		classes := make([]CallerClass, 0, callerClassCount)
+		for c := CallerClass(0); int(c) < callerClassCount; c++ {
+			if class == CallerInteractive || TreatedAsBulk(c) {
+				classes = append(classes, c)
+			}
 		}
 		set := false
 		for _, c := range classes {
