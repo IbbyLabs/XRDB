@@ -28,8 +28,11 @@ const PartialRatingsCacheTTL = 10 * time.Minute
 
 // ratingsCacheMax bounds the number of remembered answers. An answer is one
 // source for one title, so the title coverage is this divided by the number of
-// sources a config asks for — measured at 2.5 on production, giving ~7,600
-// titles at 20,000 and ~120,000 at 300,000.
+// sources a config asks for: 3.63 on 2026-08-27, counted over the 73,988 answers
+// then resident, giving room for about 82,700 titles at 300,000.
+//
+// Recount before relying on it. The figure moves with which sources configs ask
+// for, and the ratio is what turns this bound into a title count.
 const ratingsCacheMax = 300_000
 
 // ratingsCache remembers what a source said about a title.
