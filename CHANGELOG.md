@@ -2,6 +2,26 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.99.0](https://github.com/IbbyLabs/XRDB/compare/v3.98.1...v3.99.0) (2026-08-30)
+
+
+### Added
+
+* **mdblist:** flag a refusal that spends the daily allowance ([d54b2cc](https://github.com/IbbyLabs/XRDB/commit/d54b2cc2dbb25ed1af6a84e5c1e127fdfa8222ee))
+
+
+### Fixed
+
+* **compose:** cap 4K and Large renders to the source resolution ([91f9a2a](https://github.com/IbbyLabs/XRDB/commit/91f9a2a57a36d3ff754c8805db56701a406a2e2b))
+* **compose:** use a tagged switch on the media type ([d094f5b](https://github.com/IbbyLabs/XRDB/commit/d094f5be8f660f44ffe98df43d5af45d05d00134))
+* **configurator:** default the render size to small ([f96be2c](https://github.com/IbbyLabs/XRDB/commit/f96be2cafa61e72abcd5ca647b06389c6d6aa576))
+* **configurator:** stop sending size explicitly now the defaults agree ([1e4ac98](https://github.com/IbbyLabs/XRDB/commit/1e4ac9888c11964b907360ef62615952209b52f4))
+
+
+### Documentation
+
+* **ratings:** give the measured sources-per-title and when it was counted ([f84c9d8](https://github.com/IbbyLabs/XRDB/commit/f84c9d8882aad9f2bec4143889e7c0b590cb708d))
+
 ## [3.98.1](https://github.com/IbbyLabs/XRDB/compare/v3.98.0...v3.98.1) (2026-08-26)
 
 
