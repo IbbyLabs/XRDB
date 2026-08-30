@@ -32,6 +32,14 @@ func (t *renderTimings) mark(phase string) {
 	t.last = now
 }
 
+// recordOverlapped names a phase that ran alongside an earlier one, so its
+// duration is measured rather than taken from the cursor. Phases stop summing to
+// the total once one is used.
+func (t *renderTimings) recordOverlapped(phase string, d time.Duration) {
+	t.phases = append(t.phases, slog.Int64(phase+"_ms", d.Milliseconds()))
+	t.last = time.Now()
+}
+
 // ratingsOf is nil-safe so the per-source log can report a count either way.
 func ratingsOf(meta *provider.MediaMeta) []provider.Rating {
 	if meta == nil {

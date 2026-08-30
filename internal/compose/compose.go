@@ -14,6 +14,7 @@ import (
 	_ "image/jpeg" // register JPEG decoding
 	"io"
 	"log/slog"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -1034,6 +1035,40 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		return result, nil
 	}
 
+	// A box larger than the source invents pixels: the artwork gains no detail
+	// and the scale costs the same as a real one. Logos are excluded because
+	// they letterbox rather than cover-crop, which is not the fit this measures.
+	if req.MediaType != "logo" {
+		dim = capToSource(dim, srcImg.Bounds(), render.DimensionsForSize(req.MediaType, "normal"))
+	}
+
+	// The scale reads only the source and the box, so every media type but logo
+	// runs it while the rating fan-out is in flight. The logo branch sizes a
+	// band from the rating strip and stays sequential.
+	usesBackdrop := req.MediaType == "backdrop" ||
+		(req.MediaType == "poster" && req.Config.BackdropAsPoster) ||
+		req.MediaType == "thumbnail"
+	var (
+		earlyResized image.Image
+		earlyTook    time.Duration
+		earlyDone    chan struct{}
+	)
+	if req.MediaType != "logo" {
+		earlyDone = make(chan struct{})
+		go func() {
+			defer close(earlyDone)
+			started := time.Now()
+			// Saliency-aware cropping for the backdrop family, so off-centre
+			// subjects are not clipped by a naive centre crop.
+			if usesBackdrop {
+				earlyResized = resizeFitSmart(srcImg, dim.Width, dim.Height)
+			} else {
+				earlyResized = resizeFit(srcImg, dim.Width, dim.Height)
+			}
+			earlyTook = time.Since(started)
+		}()
+	}
+
 	// Collect ratings up front so the logo letterbox can reserve a clear band
 	// for the rating strip beneath the wordmark. ratingID differs from
 	// req.MediaID for episodes, so per-episode ratings resolve correctly.
@@ -1096,15 +1131,8 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// the one list. Without an override this is exactly cfg.Ratings.
 	req.Config.Ratings = imageconfig.RatingsFor(req.Config, contentKind, meta.IsAnime)
 
-	// Use saliency-aware cropping when a backdrop is the source so that
-	// off-centre subjects are not clipped by a naive centre crop.
-	usesBackdrop := req.MediaType == "backdrop" ||
-		(req.MediaType == "poster" && req.Config.BackdropAsPoster) ||
-		req.MediaType == "thumbnail"
 	var resized image.Image
 	switch {
-	case usesBackdrop:
-		resized = resizeFitSmart(srcImg, dim.Width, dim.Height)
 	case req.MediaType == "logo":
 		// Letterbox the logo above a clear band reserved for the rating strip so
 		// rating/age overlays sit beneath the wordmark instead of cropping it.
@@ -1126,12 +1154,17 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		draw.Draw(canvas, image.Rect(0, 0, dim.Width, logoH), boxed, image.Point{}, draw.Over)
 		resized = canvas
 	default:
-		resized = resizeFit(srcImg, dim.Width, dim.Height)
+		<-earlyDone
+		resized = earlyResized
 	}
 
 	// Convert to NRGBA once — all overlay functions draw in-place.
 	composed := toNRGBA(resized)
-	timings.mark("resize")
+	if req.MediaType == "logo" {
+		timings.mark("resize")
+	} else {
+		timings.recordOverlapped("resize", earlyTook)
+	}
 
 	scale := overlayScale(outputScale(req.Config.Size), composed.Bounds().Dy())
 
@@ -1800,6 +1833,30 @@ func decodeImage(data []byte) (image.Image, error) {
 
 // resizeFit scales src to cover maxW×maxH using bilinear interpolation,
 // then center-crops to exact dimensions.
+// capToSource shrinks an output box so a render never scales its source up. The
+// box keeps its aspect ratio, and a source too small for the media type's base
+// dimensions yields those instead.
+func capToSource(dim render.Dimensions, src image.Rectangle, floor render.Dimensions) render.Dimensions {
+	srcW, srcH := src.Dx(), src.Dy()
+	if srcW <= 0 || srcH <= 0 || dim.Width <= 0 || dim.Height <= 0 {
+		return dim
+	}
+	// What a cover-crop would scale by. At or below 1 the source already carries
+	// every pixel the box wants.
+	cover := math.Max(float64(dim.Width)/float64(srcW), float64(dim.Height)/float64(srcH))
+	if cover <= 1 {
+		return dim
+	}
+	capped := render.Dimensions{
+		Width:  int(float64(dim.Width)/cover + 0.5),
+		Height: int(float64(dim.Height)/cover + 0.5),
+	}
+	if capped.Width < floor.Width || capped.Height < floor.Height {
+		return floor
+	}
+	return capped
+}
+
 func resizeFit(src image.Image, maxW, maxH int) image.Image {
 	srcB := src.Bounds()
 	srcW, srcH := srcB.Dx(), srcB.Dy()
@@ -1836,7 +1893,13 @@ func resizeFit(src image.Image, maxW, maxH int) image.Image {
 	}
 
 	scaled := image.NewNRGBA(image.Rect(0, 0, scaledW, scaledH))
-	xdraw.CatmullRom.Scale(scaled, scaled.Bounds(), src, srcB, xdraw.Over, nil)
+	if scaledW == srcW && scaledH == srcH {
+		// Cover needs no scale, only the crop below. Reached when the box shares
+		// the source's longer axis but rounds a pixel short on the other.
+		draw.Draw(scaled, scaled.Bounds(), src, srcB.Min, draw.Src)
+	} else {
+		xdraw.CatmullRom.Scale(scaled, scaled.Bounds(), src, srcB, xdraw.Over, nil)
+	}
 
 	offsetX := (scaledW - maxW) / 2
 	offsetY := (scaledH - maxH) / 2
