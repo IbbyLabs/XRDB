@@ -47,12 +47,6 @@ const CONFIG_TABS = [
 
 type TabId = (typeof SURFACE_TABS)[number]['id'] | (typeof CONFIG_TABS)[number]['id'];
 
-// The configurator and the renderer disagree on these three defaults, so leaving
-// one out would change what everyone renders rather than saying nothing: size is
-// normal here and small there, ageRating is off here and on there, and ratings
-// carries the same two sources in the opposite order. Sent explicitly until the
-// two sides are aligned, which is a product decision rather than a fix.
-
 // Structural comparison: several config values are arrays or objects, where
 // identity would report every render as a change.
 function sameConfigValue(a: unknown, b: unknown): boolean {
