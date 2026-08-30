@@ -1132,8 +1132,8 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	req.Config.Ratings = imageconfig.RatingsFor(req.Config, contentKind, meta.IsAnime)
 
 	var resized image.Image
-	switch {
-	case req.MediaType == "logo":
+	switch req.MediaType {
+	case "logo":
 		// Letterbox the logo above a clear band reserved for the rating strip so
 		// rating/age overlays sit beneath the wordmark instead of cropping it.
 		// The logo is still letterboxed, never cover-cropped.
@@ -1831,8 +1831,6 @@ func decodeImage(data []byte) (image.Image, error) {
 	return img, err
 }
 
-// resizeFit scales src to cover maxW×maxH using bilinear interpolation,
-// then center-crops to exact dimensions.
 // capToSource shrinks an output box so a render never scales its source up. The
 // box keeps its aspect ratio, and a source too small for the media type's base
 // dimensions yields those instead.
@@ -1857,6 +1855,8 @@ func capToSource(dim render.Dimensions, src image.Rectangle, floor render.Dimens
 	return capped
 }
 
+// resizeFit scales src to cover maxW×maxH using bilinear interpolation,
+// then center-crops to exact dimensions.
 func resizeFit(src image.Image, maxW, maxH int) image.Image {
 	srcB := src.Bounds()
 	srcW, srcH := srcB.Dx(), srcB.Dy()
