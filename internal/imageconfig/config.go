@@ -1971,7 +1971,7 @@ func parseAggregate(cfg *Config, r *raw) {
 		cfg.AggregateValueColor = strings.TrimSpace(*r.AggregateValueColor)
 	}
 	if r.AggregateBarOffset != nil {
-		cfg.AggregateBarOffset = clampInt(*r.AggregateBarOffset, -12, 12)
+		cfg.AggregateBarOffset = clampInt(*r.AggregateBarOffset, -1200, 1200)
 	}
 	if r.AggregatePillPos != nil {
 		if p := sixPos(*r.AggregatePillPos); p != "" {
