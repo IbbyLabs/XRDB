@@ -20,6 +20,7 @@ export const ARTWORK_OPTIONS = [
 ] as const;
 
 export const SIZE_OPTIONS = [
+  { id: 'small',  label: 'Small'  },
   { id: 'normal', label: 'Normal' },
   { id: 'large',  label: 'Large'  },
   { id: '4k',     label: '4K'     },

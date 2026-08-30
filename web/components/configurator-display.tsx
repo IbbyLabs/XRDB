@@ -257,7 +257,11 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           </Field>
         )}
 
-        <Field label="Resolution" htmlFor={`${uid}-size`}>
+        <Field
+          label="Resolution"
+          htmlFor={`${uid}-size`}
+          hint="Small is the default, and the only tier under Stremio's 100 KB poster limit"
+        >
           <select
             id={`${uid}-size`}
             className="select"
