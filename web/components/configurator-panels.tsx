@@ -8,7 +8,7 @@ import {
   LAYOUT_OPTIONS, RATING_OPTIONS, BADGE_STYLE_OPTIONS, BADGE_THEME_OPTIONS, RING_POS_OPTIONS,
   SIDE_LAYOUTS,
 } from './configurator-types';
-import { RatingBadgesFine, ScoreColourFine, RatingRingFine, PILL_PRESENTATIONS, drawsBadgeStrip, hasAnyRatingSource } from './configurator-fine';
+import { RatingBadgesFine, ScoreColourFine, RatingRingFine, PILL_PRESENTATIONS, scoreColoursHaveAReader, drawsBadgeStrip, hasAnyRatingSource } from './configurator-fine';
 
 // ── Template strip ────────────────────────────────────────────────────────────
 
@@ -208,10 +208,14 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
         {/* The pill presentations draw whatever the layout says, so hiding the
             badge strip must not take their controls with it. */}
         {fine && (config.ratingsLayout !== 'none' || PILL_PRESENTATIONS.includes(config.ratingPresentation)) && (
-          <>
-            <RatingBadgesFine uid={uid} config={config} onUpdate={onUpdate} />
-            <ScoreColourFine uid={uid} config={config} onUpdate={onUpdate} />
-          </>
+          <RatingBadgesFine uid={uid} config={config} onUpdate={onUpdate} />
+        )}
+
+        {/* Gated on its own readers rather than on the badge strip: the ring and
+            the aggregate bar read these colours too, and a ring with no badges
+            could not reach them. The mode gate inside the group is untouched. */}
+        {fine && scoreColoursHaveAReader(config) && (
+          <ScoreColourFine uid={uid} config={config} onUpdate={onUpdate} />
         )}
 
         {hasAnyRatingSource(config) && (

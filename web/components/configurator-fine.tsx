@@ -502,6 +502,17 @@ function ProviderWeights({ uid, config, onUpdate }: GroupProps) {
 // are the ones the pill placement reaches.
 export const PILL_PRESENTATIONS: string[] = ['minimal', 'average', 'dual', 'dual-minimal'];
 
+// Every element that reads the score colours. The group has to render when any
+// of them can draw: gating it on one consumer is what made the colours
+// unreachable for a ring with no badges, and hid them behind the aggregate bar
+// before that. Add a reader here when one starts consuming the stops.
+export function scoreColoursHaveAReader(config: ConfigState): boolean {
+  return config.ratingsLayout !== 'none'
+    || PILL_PRESENTATIONS.includes(config.ratingPresentation)
+    || config.aggregateBar
+    || config.ratingRing;
+}
+
 // Only the standard presentation draws the badge strip. Every other one puts
 // something else in its place, and the strip's own controls stop reaching the
 // image, so they are not offered.
