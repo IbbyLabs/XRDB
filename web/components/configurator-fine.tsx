@@ -1348,8 +1348,11 @@ export function AggregateFine({ uid, config, onUpdate }: GroupProps) {
         onChange={v => onUpdate('scorebarStyle', v)}
       />
       <NumField id={`${uid}-agg-offset`} label="Bar offset (px)" value={config.aggregateBarOffset}
-        onChange={v => onUpdate('aggregateBarOffset', v)} min={-12} max={12} zeroIsDefault={false}
-        hint="Nudge the bar inward from its edge (−12 to 12)." />
+        onChange={v => onUpdate('aggregateBarOffset', v)} min={-1200} max={1200} zeroIsDefault={false}
+        hint="Nudge the bar inward from its edge, in pixels of a normal-size render. The value is a share of the poster, so it lands in the same place at every size. Past the height of the image the bar leaves it entirely." />
+      <NumField id={`${uid}-agg-scale`} label="Bar thickness (%)" value={config.aggregateBarScale}
+        onChange={v => onUpdate('aggregateBarScale', v)} min={25} max={400} zeroIsDefault
+        hint="Height of the bar as a percent of its default. Blank or 0 leaves it at 100." />
       <details className="adv-details">
         <summary>Scorebar bands (when accent is auto)</summary>
         <div className="cfg-fields" style={{ marginTop: 'var(--sp-2)' }}>

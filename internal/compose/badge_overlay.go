@@ -2575,10 +2575,15 @@ func drawAggregateBar(base *image.NRGBA, ratings []provider.Rating, cfg imagecon
 	}
 
 	scale := outputScale(cfg.Size)
-	barH := int(10*scale + 0.5)
-	if barH < 4 {
-		barH = 4
+	// AggregateBarScale is a percent of the default height, 0 meaning 100. The
+	// parser clamps it to 25-400, which is the only bound: the old floor of 4
+	// could not be reached at any output scale and would now bind only on
+	// values the clamp already refuses.
+	barPct := cfg.AggregateBarScale
+	if barPct == 0 {
+		barPct = 100
 	}
+	barH := int(10*scale*float64(barPct)/100 + 0.5)
 
 	bounds := base.Bounds()
 	w := bounds.Dx()

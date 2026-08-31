@@ -517,6 +517,7 @@ type AggregateConfig struct {
 	AggregateAccentMode   string `json:"aggregateAccentMode,omitempty"`   // custom | genre | source; "" = auto 3-band
 	AggregateValueColor   string `json:"aggregateValueColor,omitempty"`   // "#RRGGBB" value text; "" = default
 	AggregateBarOffset    int    `json:"aggregateBarOffset,omitempty"`    // px nudge inward from the edge; 0 = flush
+	AggregateBarScale     int    `json:"aggregateBarScale,omitempty"`     // percent of the default bar height; 0 = 100
 	AggregateRatingSource string `json:"aggregateRatingSource,omitempty"` // overall | critics | audience; "" = overall
 	// AggregatePillPos anchors the score pills the minimal, average and dual
 	// presentations draw. tl|tr|bl|br|tc|bc; "" keeps each presentation's own
@@ -945,6 +946,7 @@ type rawAggregate struct {
 	AggregateAccentMode   *string `json:"aggregateAccentMode"`
 	AggregateValueColor   *string `json:"aggregateValueColor"`
 	AggregateBarOffset    *int    `json:"aggregateBarOffset"`
+	AggregateBarScale     *int    `json:"aggregateBarScale"`
 	AggregateRatingSource *string `json:"aggregateRatingSource"`
 	AggregatePillPos      *string `json:"aggregatePillPos"`
 	AggregateAccentShape  *string `json:"aggregateAccentShape"`
@@ -2032,6 +2034,9 @@ func parseAggregate(cfg *Config, r *raw) {
 	}
 	if r.AggregateBarOffset != nil {
 		cfg.AggregateBarOffset = clampInt(*r.AggregateBarOffset, -1200, 1200)
+	}
+	if r.AggregateBarScale != nil && *r.AggregateBarScale != 0 {
+		cfg.AggregateBarScale = clampInt(*r.AggregateBarScale, 25, 400)
 	}
 	if r.AggregatePillPos != nil {
 		if p := sixPos(*r.AggregatePillPos); p != "" {

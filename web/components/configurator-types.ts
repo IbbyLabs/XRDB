@@ -519,7 +519,8 @@ export interface ConfigState {
   genreBadgeAnimeGrouping: string; // 'default' (split) | animation | secondary
   aggregateAccentColor: string; // '' = auto score-band
   aggregateAccentMode: string;  // '' = auto score-band
-  aggregateBarOffset: number; // px inward nudge, -12..12; 0 = flush
+  aggregateBarOffset: number;
+  aggregateBarScale: number; // percent of the default bar height; 0 = 100 // px inward nudge, -12..12; 0 = flush
   aggregateRatingSource: string; // overall | critics | audience
   aggregatePillPos: string; // 'inherit' | six positions
   aggregateAccentShape: string; // outline | strip
@@ -731,6 +732,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   aggregateAccentColor: '',
   aggregateAccentMode: '',
   aggregateBarOffset: 0,
+  aggregateBarScale: 0,
   aggregateRatingSource: 'overall',
   aggregatePillPos: 'inherit',
   aggregateAccentShape: 'outline',
