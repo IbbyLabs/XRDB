@@ -24,18 +24,22 @@ func TestARejectedLanguageIsAnnouncedInAHeader(t *testing.T) {
 		{name: "accepted token", lang: "original", want: ""},
 		{name: "absent", lang: "", want: ""},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			h := NewHandler("test", nil, nil, nil, nil, config.Config{})
-			url := "/poster/tt0816692"
-			if tc.lang != "" {
-				url += "?lang=" + tc.lang
-			}
-			rr := httptest.NewRecorder()
-			h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, url, nil))
+		// Both spellings, so accepting only one leaves the other silent and this
+		// test says so rather than passing on the half that works.
+		for _, param := range []string{"lang", "language"} {
+			t.Run(param+"/"+tc.name, func(t *testing.T) {
+				h := NewHandler("test", nil, nil, nil, nil, config.Config{})
+				url := "/poster/tt0816692"
+				if tc.lang != "" {
+					url += "?" + param + "=" + tc.lang
+				}
+				rr := httptest.NewRecorder()
+				h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, url, nil))
 
-			if got := rr.Header().Get("X-Render-Language"); got != tc.want {
-				t.Errorf("X-Render-Language = %q, want %q (status %d)", got, tc.want, rr.Code)
-			}
-		})
+				if got := rr.Header().Get("X-Render-Language"); got != tc.want {
+					t.Errorf("X-Render-Language = %q, want %q (status %d)", got, tc.want, rr.Code)
+				}
+			})
+		}
 	}
 }

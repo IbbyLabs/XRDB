@@ -220,7 +220,14 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		// the key is derived from imgCfg and needs no term of its own. It moves
 		// the language alone, so a request asking for English says nothing about
 		// whether the caller wanted textless art.
-		if langRaw := queryValue(raw, "lang", ""); langRaw != "" {
+		// Both spellings, because the request asked for both and a name we do not
+		// accept is answered with the silence this override exists to remove.
+		// lang wins if a caller sends both, so the key stays deterministic.
+		langRaw := queryValue(raw, "lang", "")
+		if langRaw == "" {
+			langRaw = queryValue(raw, "language", "")
+		}
+		if langRaw != "" {
 			if !imageconfig.ApplyLanguageOverride(&imgCfg, langRaw) {
 				// Never an error: an artwork URL that fails leaves a hole in the
 				// caller's page, and a bad config renders anyway everywhere else.
