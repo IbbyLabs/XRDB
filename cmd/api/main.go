@@ -273,6 +273,13 @@ func main() {
 		"imdb_top_rated", cfg.IMDbTopRated,
 	)
 
+	// Admin routes refuse when no key is set, so an operator who never set one
+	// meets a 401 rather than an open door. Said at startup so the reason is in
+	// the log before the first request rather than inferred from a dashboard.
+	if cfg.AdminKey == "" {
+		logger.Warn("XRDB_ADMIN_KEY is not set, so every /api/admin route will refuse")
+	}
+
 	handler := server.NewHandler(cfg.Version, store, settingsStore, pipeline, renderCache, cfg, ui.FS())
 
 	// Re-render library artwork on a schedule, so a profile edit reaches the

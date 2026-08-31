@@ -122,7 +122,7 @@ func registerAdminRoutes(
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		if cfg.AdminKey != "" && !bearerMatches(r, cfg.AdminKey) {
+		if cfg.AdminKey == "" || !bearerMatches(r, cfg.AdminKey) {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -134,7 +134,7 @@ func registerAdminRoutes(
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		if cfg.AdminKey != "" && !bearerMatches(r, cfg.AdminKey) {
+		if cfg.AdminKey == "" || !bearerMatches(r, cfg.AdminKey) {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -174,7 +174,7 @@ func registerAdminRoutes(
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		if cfg.AdminKey != "" && !bearerMatches(r, cfg.AdminKey) {
+		if cfg.AdminKey == "" || !bearerMatches(r, cfg.AdminKey) {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}

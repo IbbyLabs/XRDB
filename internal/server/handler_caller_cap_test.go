@@ -40,6 +40,9 @@ func capHandler(t *testing.T, perMinute int) (http.Handler, *profile.Profile) {
 	h := NewHandler("test", store, nil, pipeline, c, config.Config{
 		RenderCapPerMinute: perMinute,
 		CacheTTL:           72 * time.Hour,
+		// The metrics route refuses without a key, and this helper's callers
+		// read metrics to check what was recorded.
+		AdminKey: "test-admin-key",
 	})
 	p := &profile.Profile{ID: "cap-cfg", Type: "poster", Config: json.RawMessage(`{}`)}
 	if err := store.Save(p); err != nil {
@@ -201,7 +204,9 @@ func TestARefusedCallerIsRecordedInMetrics(t *testing.T) {
 	}
 
 	rr := httptest.NewRecorder()
-	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/api/admin/metrics", nil))
+	metricsReq := httptest.NewRequest(http.MethodGet, "/api/admin/metrics", nil)
+	metricsReq.Header.Set("Authorization", "Bearer test-admin-key")
+	h.ServeHTTP(rr, metricsReq)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("metrics returned %d, want 200", rr.Code)
 	}

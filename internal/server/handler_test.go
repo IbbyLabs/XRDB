@@ -438,10 +438,12 @@ func TestProfileImportSkipsDuplicates(t *testing.T) {
 }
 
 func TestAdminMetricsOK(t *testing.T) {
-	h := NewHandler("test", nil, nil, nil, nil, config.Config{})
+	h := NewHandler("test", nil, nil, nil, nil, config.Config{AdminKey: "test-admin-key"})
 	h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/poster/tt0816692", nil))
 	rr := httptest.NewRecorder()
-	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/api/admin/metrics", nil))
+	req := httptest.NewRequest(http.MethodGet, "/api/admin/metrics", nil)
+	req.Header.Set("Authorization", "Bearer test-admin-key")
+	h.ServeHTTP(rr, req)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", rr.Code)
 	}
@@ -455,9 +457,11 @@ func TestAdminMetricsOK(t *testing.T) {
 }
 
 func TestAdminCacheOK(t *testing.T) {
-	h := NewHandler("test", nil, nil, nil, nil, config.Config{})
+	h := NewHandler("test", nil, nil, nil, nil, config.Config{AdminKey: "test-admin-key"})
 	rr := httptest.NewRecorder()
-	h.ServeHTTP(rr, httptest.NewRequest(http.MethodGet, "/api/admin/cache", nil))
+	req := httptest.NewRequest(http.MethodGet, "/api/admin/cache", nil)
+	req.Header.Set("Authorization", "Bearer test-admin-key")
+	h.ServeHTTP(rr, req)
 	if rr.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", rr.Code)
 	}
