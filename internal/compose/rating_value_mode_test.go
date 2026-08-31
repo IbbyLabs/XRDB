@@ -26,7 +26,7 @@ func TestNativeModeKeepsEverySourceOnItsOwnScale(t *testing.T) {
 	}
 	for _, mode := range []string{"", "native"} {
 		for _, r := range valueModeRatings() {
-			if got := ratingBadgeValue(r, mode); got != want[r.Source] {
+			if got := ratingBadgeValue(r, mode, false); got != want[r.Source] {
 				t.Errorf("mode %q: %s = %q, want %q", mode, r.Source, got, want[r.Source])
 			}
 		}
@@ -50,7 +50,7 @@ func TestNormalizedModesPutEverySourceOnOneScale(t *testing.T) {
 	}
 	for _, tc := range cases {
 		for _, r := range valueModeRatings() {
-			if got := ratingBadgeValue(r, tc.mode); got != tc.want[r.Source] {
+			if got := ratingBadgeValue(r, tc.mode, false); got != tc.want[r.Source] {
 				t.Errorf("mode %q: %s = %q, want %q", tc.mode, r.Source, got, tc.want[r.Source])
 			}
 		}

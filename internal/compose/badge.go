@@ -1611,11 +1611,14 @@ var nativeScaleSuffix = map[string]string{
 	"rogerebert":    "/4",
 }
 
-func ratingBadgeValue(r provider.Rating, mode string) string {
+func ratingBadgeValue(r provider.Rating, mode string, hideNativeScale bool) string {
 	switch mode {
 	case "normalized", "normalizedclean", "normalized100":
 		return formatRatingValue(r.Value, mode)
 	default:
+		if hideNativeScale {
+			return r.Label
+		}
 		return r.Label + nativeScaleSuffix[r.Source]
 	}
 }
@@ -1625,7 +1628,7 @@ func ratingBadgeValue(r provider.Rating, mode string) string {
 // badge without one is left alone rather than padded with a zero that would
 // read as "nobody voted".
 func ratingBadgeLabel(r provider.Rating, cfg imageconfig.Config) string {
-	value := ratingBadgeValue(r, cfg.RatingValueMode)
+	value := ratingBadgeValue(r, cfg.RatingValueMode, cfg.HideNativeScale)
 	if !cfg.RatingVoteCounts || r.Votes <= 0 {
 		return value
 	}

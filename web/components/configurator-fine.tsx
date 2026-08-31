@@ -615,6 +615,10 @@ export function RatingBadgesFine({ uid, config, onUpdate }: GroupProps) {
             checked={config.ratingVoteCounts}
             onChange={v => onUpdate('ratingVoteCounts', v)}
             hint="Append the number of votes to each score. Only IMDb, MDBList and TMDB report one; other sources show the score alone." />
+          <ToggleField id={`${uid}-hide-native-scale`} label="Hide the score's scale"
+            checked={config.hideNativeScale}
+            onChange={v => onUpdate('hideNativeScale', v)}
+            hint="Draw a five- or four-point score bare, so Letterboxd reads 4.6 rather than 4.6/5. The scale is what stops a high five-point score being read as a low ten-point one, so leave it on unless every source in your row shares a scale." />
           <ToggleField id={`${uid}-min-votes`} label="Hide thin ratings"
             checked={config.ratingMinVotes}
             onChange={v => onUpdate('ratingMinVotes', v)}

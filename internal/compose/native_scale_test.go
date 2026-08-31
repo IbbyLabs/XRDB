@@ -11,12 +11,12 @@ import (
 // the two.
 func TestANativeFivePointScoreIsMarked(t *testing.T) {
 	for _, source := range []string{"letterboxd", "allocine", "allocinepress"} {
-		got := ratingBadgeValue(provider.Rating{Source: source, Value: 8.4, Label: "4.2"}, "native")
+		got := ratingBadgeValue(provider.Rating{Source: source, Value: 8.4, Label: "4.2"}, "native", false)
 		if got != "4.2/5" {
 			t.Errorf("%s: want 4.2/5, got %q", source, got)
 		}
 	}
-	got := ratingBadgeValue(provider.Rating{Source: "rogerebert", Value: 8.75, Label: "3.5"}, "native")
+	got := ratingBadgeValue(provider.Rating{Source: "rogerebert", Value: 8.75, Label: "3.5"}, "native", false)
 	if got != "3.5/4" {
 		t.Errorf("rogerebert: want 3.5/4, got %q", got)
 	}
@@ -34,7 +34,7 @@ func TestATenPointScoreIsNotMarked(t *testing.T) {
 		"metacritic":     "76",
 	}
 	for source, label := range cases {
-		if got := ratingBadgeValue(provider.Rating{Source: source, Label: label}, "native"); got != label {
+		if got := ratingBadgeValue(provider.Rating{Source: source, Label: label}, "native", false); got != label {
 			t.Errorf("%s: want %q unchanged, got %q", source, label, got)
 		}
 	}
@@ -45,7 +45,7 @@ func TestATenPointScoreIsNotMarked(t *testing.T) {
 func TestTheNormalizedModesCarryNoScaleMarker(t *testing.T) {
 	r := provider.Rating{Source: "letterboxd", Value: 8.4, Label: "4.2"}
 	for _, mode := range []string{"normalized", "normalizedclean", "normalized100"} {
-		got := ratingBadgeValue(r, mode)
+		got := ratingBadgeValue(r, mode, false)
 		for _, marker := range []string{"/5", "/4"} {
 			if len(got) >= 2 && got[len(got)-2:] == marker {
 				t.Errorf("%s: want no scale marker, got %q", mode, got)

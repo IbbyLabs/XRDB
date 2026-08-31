@@ -477,6 +477,7 @@ export interface ConfigState {
   ratingPresentation: string; // standard|editorial|none
   ratingValueMode: string; // native|normalized|normalizedclean|normalized100
   ratingVoteCounts: boolean;
+  hideNativeScale: boolean; // drop the /5 or /4 a native-scale badge carries
   ratingMinVotes: boolean;
   ratingMinVotesBySource: Record<string, number>; // source → minimum; absent = built-in default, 0 = no minimum
   iconShape: string; // '' = the mark's own outline; circle|squircle|rounded
@@ -687,6 +688,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   ratingPresentation: 'standard',
   ratingValueMode: 'native',
   ratingVoteCounts: false,
+  hideNativeScale: false,
   ratingMinVotes: false,
   ratingMinVotesBySource: {},
   iconShape: '',

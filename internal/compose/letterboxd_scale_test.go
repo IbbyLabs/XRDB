@@ -11,10 +11,10 @@ import (
 // every source on one scale instead.
 func TestLetterboxdDisplayScale(t *testing.T) {
 	r := provider.Rating{Source: "letterboxd", Value: 7.6, Label: "3.8"}
-	if got := ratingBadgeValue(r, ""); got != "3.8/5" {
+	if got := ratingBadgeValue(r, "", false); got != "3.8/5" {
 		t.Errorf("native mode = %q, want the marked 3.8/5", got)
 	}
-	if got := ratingBadgeValue(r, "normalized"); got != "7.6" {
+	if got := ratingBadgeValue(r, "normalized", false); got != "7.6" {
 		t.Errorf("normalized mode = %q, want 7.6", got)
 	}
 }

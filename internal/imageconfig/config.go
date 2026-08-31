@@ -463,6 +463,10 @@ type RatingBadgeConfig struct {
 	// MDBList and TMDB report one, so the badges that have no count are left
 	// unchanged rather than padded with a zero.
 	RatingVoteCounts bool `json:"ratingVoteCounts,omitempty"`
+	// HideNativeScale drops the denominator a native-scale badge carries, so
+	// Letterboxd draws 4.6 rather than 4.6/5. The suffix is what stops a
+	// five-point score being read as a ten-point one, so this is opt-in.
+	HideNativeScale bool `json:"hideNativeScale,omitempty"`
 	// RatingMinVotes hides a rating whose vote count is too low to mean
 	// anything, drawing the held-out mark in its place when that is enabled.
 	RatingMinVotes bool `json:"ratingMinVotes,omitempty"`
@@ -924,6 +928,7 @@ type rawRating struct {
 	RatingPresentation      *string            `json:"ratingPresentation"`
 	RatingValueMode         *string            `json:"ratingValueMode"`
 	RatingVoteCounts        *bool              `json:"ratingVoteCounts"`
+	HideNativeScale         *bool              `json:"hideNativeScale"`
 	RatingMinVotes          *bool              `json:"ratingMinVotes"`
 	RatingMinVotesBySource  map[string]int     `json:"ratingMinVotesBySource"`
 	IconShape               *string            `json:"iconShape"`
@@ -1773,6 +1778,9 @@ func parseRating(cfg *Config, r *raw) {
 	}
 	if r.RatingVoteCounts != nil {
 		cfg.RatingVoteCounts = *r.RatingVoteCounts
+	}
+	if r.HideNativeScale != nil {
+		cfg.HideNativeScale = *r.HideNativeScale
 	}
 	if r.RatingValueMode != nil {
 		// v2 wrote several spellings of the same mode, so fold separators away
