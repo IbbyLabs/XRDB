@@ -215,6 +215,22 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			imgCfg.Size = imageconfig.ClampSize(imgCfg.Size, cap)
 		}
 
+		// A language on the URL overrides the profile's, for this render only.
+		// Applied before the key is built, for the same reason the cap above is:
+		// the key is derived from imgCfg and needs no term of its own. It moves
+		// the language alone, so a request asking for English says nothing about
+		// whether the caller wanted textless art.
+		if langRaw := queryValue(raw, "lang", ""); langRaw != "" {
+			if !imageconfig.ApplyLanguageOverride(&imgCfg, langRaw) {
+				// Never an error: an artwork URL that fails leaves a hole in the
+				// caller's page, and a bad config renders anyway everywhere else.
+				// The header is how a caller finds out without one.
+				w.Header().Set("X-Render-Language", "ignored")
+				logger.InfoContext(r.Context(), "Ignored an out-of-range language on a render URL",
+					"id", logging.RequestID(r.Context()), "media_type", mediaType, "media_id", id)
+			}
+		}
+
 		// Include a fingerprint of configParam when no profile was loaded so
 		// different inline configs produce different cache keys without allowing
 		// attackers to poison the cache with unbounded unique raw strings.

@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"math"
 	"reflect"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -1554,9 +1555,6 @@ func ArtworkSourceFor(cfg Config, contentType string, isAnime bool) ArtworkSourc
 	return cfg.ArtworkSource
 }
 
-// imageLanguage reduces a language tag to the base subtag that TMDB and Fanart
-// tag images with. v2 profiles carry region-qualified tags such as fr-FR, which
-// match no image language. "original" passes through unchanged.
 // reportDroppedRegion records a configured language that named a region, since
 // the region is discarded here and TMDB does tag artwork with one. At info
 // because the count is the point: the configurator only offers bare two-letter
@@ -1571,6 +1569,44 @@ func reportDroppedRegion(field, raw, kept string) {
 		"field", field, "requested", trimmed, "kept", kept)
 }
 
+// languageOverride bounds what a render URL may set the language to. The value
+// joins the render cache key, and unbounded distinct input inflates it — the
+// same reason the handler hashes an inline config and a cache-buster rather
+// than keying on them raw. A two-letter code with an optional region, or the
+// original-language token, caps the space at a few hundred values and matches
+// what the configurator offers.
+// OriginalLanguage asks for artwork in whichever language the title was made
+// in. provider.OriginalLanguage carries the same token for the fetch side and
+// a test pins the two together.
+const OriginalLanguage = "original"
+
+var languageOverride = regexp.MustCompile(`^[a-z]{2}(-[a-z]{2})?$`)
+
+// ApplyLanguageOverride sets cfg.Language from a render URL parameter, reporting
+// whether it did. It moves the language alone: a request asking for English says
+// nothing about whether the caller wanted textless art.
+//
+// Rejection is silent here by design. The caller decides what a rejected value
+// means, because this package knows nothing about HTTP.
+func ApplyLanguageOverride(cfg *Config, raw string) bool {
+	if cfg == nil {
+		return false
+	}
+	v := strings.ToLower(strings.TrimSpace(strings.ReplaceAll(raw, "_", "-")))
+	if v == "" {
+		return false
+	}
+	if v != OriginalLanguage && !languageOverride.MatchString(v) {
+		return false
+	}
+	cfg.Language = imageLanguage(v)
+	reportDroppedRegion("langOverride", v, cfg.Language)
+	return true
+}
+
+// imageLanguage reduces a language tag to the base subtag that TMDB and Fanart
+// tag images with. v2 profiles carry region-qualified tags such as fr-FR, which
+// match no image language. "original" passes through unchanged.
 func imageLanguage(v string) string {
 	s := strings.ToLower(strings.TrimSpace(strings.ReplaceAll(v, "_", "-")))
 	base, _, _ := strings.Cut(s, "-")
