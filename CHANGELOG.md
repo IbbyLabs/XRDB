@@ -2,6 +2,27 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.100.0](https://github.com/IbbyLabs/XRDB/compare/v3.99.0...v3.100.0) (2026-08-31)
+
+
+### Added
+
+* **configurator:** label the largest render size Largest ([7ff624a](https://github.com/IbbyLabs/XRDB/commit/7ff624a624b2fd88eb64c4ec552571137eabd494))
+* **ratings:** widen the aggregate bar offset range (FR-203) ([ae9dd75](https://github.com/IbbyLabs/XRDB/commit/ae9dd7514d4706f9004b05cffa675acfa07fe37c))
+* **server:** require an admin key on every admin route ([ca9fa42](https://github.com/IbbyLabs/XRDB/commit/ca9fa42732280a2f1942cdf821a97f31d42487d0))
+* **tmdb:** decode the artwork country and count discarded regions ([0971276](https://github.com/IbbyLabs/XRDB/commit/0971276fff4ef1a66b12785f905c058bd3dcdd4e))
+
+
+### Fixed
+
+* **configurator:** offer the small render size ([e902b58](https://github.com/IbbyLabs/XRDB/commit/e902b58721dcbc28c5eb0561e458c341b4e9c16c))
+* **server:** refuse admin routes when no admin key is configured ([bf47d29](https://github.com/IbbyLabs/XRDB/commit/bf47d290c018327336c511b582ebd8487286a9ec))
+
+
+### Documentation
+
+* **configurator:** describe ALWAYS_SEND only where it is defined ([13d712e](https://github.com/IbbyLabs/XRDB/commit/13d712e1eeb676f05f218ececfed9ce295b81b1a))
+
 ## [3.99.0](https://github.com/IbbyLabs/XRDB/compare/v3.98.1...v3.99.0) (2026-08-30)
 
 
