@@ -13,16 +13,6 @@ import (
 	"xrdb_rewrite/internal/config"
 )
 
-// Routes whose GET is deliberately readable without a key. The write half of
-// each already fails closed; the split is explicit in the handler. Listed here
-// so a route leaving this set fails the test rather than changing quietly.
-var adminGETOpenWithoutKey = map[string]bool{
-	"/api/admin/log-level":    true,
-	"/api/admin/memory-limit": true,
-	"/api/admin/ttls":         true,
-	"/api/admin/settings":     true,
-}
-
 var adminRoutePattern = regexp.MustCompile(`mux\.HandleFunc\("(/api/admin/[^"]+)"`)
 
 // The paths come from the source rather than from a list here. Four routes
@@ -81,12 +71,6 @@ func TestAdminRoutesFailClosedWithoutAKey(t *testing.T) {
 			}
 			probed++
 
-			if method == http.MethodGet && adminGETOpenWithoutKey[path] {
-				if rec.Code == http.StatusUnauthorized {
-					t.Errorf("%s GET now refuses without a key; remove it from adminGETOpenWithoutKey", path)
-				}
-				continue
-			}
 			if rec.Code != http.StatusUnauthorized {
 				t.Errorf("%s %s answered %d without an admin key, want 401", method, path, rec.Code)
 			}
@@ -100,5 +84,5 @@ func TestAdminRoutesFailClosedWithoutAKey(t *testing.T) {
 	if checked != len(paths) {
 		t.Fatalf("checked %d of %d routes", checked, len(paths))
 	}
-	t.Logf("checked %d admin routes, %d deliberately open on GET", checked, len(adminGETOpenWithoutKey))
+	t.Logf("checked %d admin routes, every one refusing without a key", checked)
 }

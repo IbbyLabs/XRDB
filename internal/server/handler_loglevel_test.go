@@ -168,15 +168,18 @@ func TestLogLevelWriteRequiresAdminKey(t *testing.T) {
 	}
 }
 
-// An instance with no admin key configured is readable but must stay read-only,
-// matching how the other admin routes behave.
-func TestLogLevelWriteBlockedWhenNoAdminKeyConfigured(t *testing.T) {
+// An instance with no admin key configured refuses every method, matching how
+// the other admin routes behave. The read used to be open here.
+func TestLogLevelRefusedWhenNoAdminKeyConfigured(t *testing.T) {
 	h, _ := levelHandler(t, "")
 
-	if got := getLevel(t, h, "").Level; got != "info" {
-		t.Errorf("GET on an open instance = %q, want info", got)
+	req := httptest.NewRequest(http.MethodGet, "/api/admin/log-level", nil)
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Errorf("GET with no key configured: got %d, want 401", rec.Code)
 	}
 	if rec := putLevel(t, h, "", "debug"); rec.Code != http.StatusUnauthorized {
-		t.Errorf("PUT on an open instance: got %d, want 401", rec.Code)
+		t.Errorf("PUT with no key configured: got %d, want 401", rec.Code)
 	}
 }

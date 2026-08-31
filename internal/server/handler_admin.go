@@ -207,12 +207,7 @@ func registerAdminRoutes(
 	// environment. Verbosity is deliberately changeable without a restart —
 	// restarting to debug a live problem discards the state being debugged.
 	mux.HandleFunc("/api/admin/log-level", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			if cfg.AdminKey == "" || !bearerMatches(r, cfg.AdminKey) {
-				http.Error(w, "unauthorized", http.StatusUnauthorized)
-				return
-			}
-		} else if cfg.AdminKey != "" && !bearerMatches(r, cfg.AdminKey) {
+		if cfg.AdminKey == "" || !bearerMatches(r, cfg.AdminKey) {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -307,12 +302,7 @@ func registerAdminRoutes(
 	// limit live lets an operator give a loaded instance headroom without the
 	// restart that would drop its warm cache.
 	mux.HandleFunc("/api/admin/memory-limit", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			if cfg.AdminKey == "" || !bearerMatches(r, cfg.AdminKey) {
-				http.Error(w, "unauthorized", http.StatusUnauthorized)
-				return
-			}
-		} else if cfg.AdminKey != "" && !bearerMatches(r, cfg.AdminKey) {
+		if cfg.AdminKey == "" || !bearerMatches(r, cfg.AdminKey) {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -407,12 +397,7 @@ func registerAdminRoutes(
 	// provider's TTL, so lowering one makes that source refresh sooner without a
 	// restart. Stored values win over env defaults on the next start.
 	mux.HandleFunc("/api/admin/ttls", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			if cfg.AdminKey == "" || !bearerMatches(r, cfg.AdminKey) {
-				http.Error(w, "unauthorized", http.StatusUnauthorized)
-				return
-			}
-		} else if cfg.AdminKey != "" && !bearerMatches(r, cfg.AdminKey) {
+		if cfg.AdminKey == "" || !bearerMatches(r, cfg.AdminKey) {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -509,14 +494,8 @@ func registerAdminRoutes(
 	// Settings: GET returns all keys (values masked), PUT upserts a single key,
 	// DELETE removes a key by ?key= query param.
 	mux.HandleFunc("/api/admin/settings", func(w http.ResponseWriter, r *http.Request) {
-		// Write operations require AdminKey to be configured and match.
-		// GET remains accessible when no key is set (read-only, values masked).
-		if r.Method != http.MethodGet {
-			if cfg.AdminKey == "" || !bearerMatches(r, cfg.AdminKey) {
-				http.Error(w, "unauthorized", http.StatusUnauthorized)
-				return
-			}
-		} else if cfg.AdminKey != "" && !bearerMatches(r, cfg.AdminKey) {
+		// Every method requires AdminKey to be configured and to match.
+		if cfg.AdminKey == "" || !bearerMatches(r, cfg.AdminKey) {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
