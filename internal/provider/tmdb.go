@@ -607,6 +607,13 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 	if posterPath != "" {
 		meta.PosterURL = tmdbImageBase + posterRes + posterPath
 		meta.PosterTextless = pathIsTextless(result.Images.Posters, posterPath)
+		// Which country's poster the language match landed on. Selection does
+		// not consider country, so this says what was delivered rather than
+		// what was wanted; the request's own region is stripped before it
+		// reaches here.
+		t.log().DebugContext(ctx, "Selected a TMDB poster",
+			"media_type", mediaType, "tmdb_id", id,
+			"language", lang, "country", countryOfPath(result.Images.Posters, posterPath))
 	}
 	backdropPath := selectImagePath(result.Images.Backdrops, result.BackdropPath, lang, opts)
 	if backdropPath != "" {
@@ -701,10 +708,27 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 	return meta, nil
 }
 
+// countryOfPath reports the country TMDB published one image for, empty when
+// the image carries none. Textless art carries neither a language nor a
+// country, so an empty answer is the ordinary case rather than a gap.
+func countryOfPath(images []tmdbImage, path string) string {
+	for _, img := range images {
+		if img.FilePath == path && img.Iso3166 != nil {
+			return *img.Iso3166
+		}
+	}
+	return ""
+}
+
 // tmdbImage is one entry in a TMDB images array.
 type tmdbImage struct {
-	FilePath    string  `json:"file_path"`
-	Iso639      *string `json:"iso_639_1"`
+	FilePath string  `json:"file_path"`
+	Iso639   *string `json:"iso_639_1"`
+	// Iso3166 is the country the artwork was published for. TMDB sets it on
+	// every image that carries a language, and four languages commonly span
+	// two countries (es ES/MX, pt BR/PT, zh CN/HK/TW, fr CA/FR). Nothing
+	// selects on it; it is decoded so a delivered country can be reported.
+	Iso3166     *string `json:"iso_3166_1"`
 	VoteAverage float64 `json:"vote_average"`
 	VoteCount   int     `json:"vote_count"`
 	Width       int     `json:"width"`

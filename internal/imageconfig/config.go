@@ -1076,9 +1076,11 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.Language != nil && strings.TrimSpace(*r.Language) != "" {
 		cfg.Language = imageLanguage(*r.Language)
+		reportDroppedRegion("language", *r.Language, cfg.Language)
 	}
 	if r.FallbackLanguage != nil && strings.TrimSpace(*r.FallbackLanguage) != "" {
 		cfg.FallbackLanguage = imageLanguage(*r.FallbackLanguage)
+		reportDroppedRegion("fallbackLanguage", *r.FallbackLanguage, cfg.FallbackLanguage)
 	}
 	if r.TextPreference != nil {
 		if v := normalizeTextPreference(*r.TextPreference); v != "" {
@@ -1555,6 +1557,20 @@ func ArtworkSourceFor(cfg Config, contentType string, isAnime bool) ArtworkSourc
 // imageLanguage reduces a language tag to the base subtag that TMDB and Fanart
 // tag images with. v2 profiles carry region-qualified tags such as fr-FR, which
 // match no image language. "original" passes through unchanged.
+// reportDroppedRegion records a configured language that named a region, since
+// the region is discarded here and TMDB does tag artwork with one. At info
+// because the count is the point: the configurator only offers bare two-letter
+// codes, so a region can only arrive from a hand-written config or a v2
+// profile, and a level production does not emit would answer nothing.
+func reportDroppedRegion(field, raw, kept string) {
+	trimmed := strings.ToLower(strings.TrimSpace(strings.ReplaceAll(raw, "_", "-")))
+	if trimmed == kept || !strings.Contains(trimmed, "-") {
+		return
+	}
+	slog.Info("Dropped the region from a configured language",
+		"field", field, "requested", trimmed, "kept", kept)
+}
+
 func imageLanguage(v string) string {
 	s := strings.ToLower(strings.TrimSpace(strings.ReplaceAll(v, "_", "-")))
 	base, _, _ := strings.Cut(s, "-")
