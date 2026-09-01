@@ -196,12 +196,50 @@ func (c *ratingsCache) runRefresh(ctx context.Context, key string, call *ratings
 	c.mu.Unlock()
 }
 
+// ratingsAgeTTLTiers scale the term by how long ago a title came out, oldest
+// first. A score moves most in the months after release and barely at all years
+// later, so the answer that changes least is kept longest and the most
+// expensive part of a render is paid for less often.
+//
+// The multipliers are deliberately small. This cache is clock-bound rather than
+// full, so resident entries scale with the term: 73,892 of a 300,000 cap when
+// it was measured on 2026-08-31, which a 3x ceiling stays inside. A larger one
+// makes it capacity-bound and evicts the answers the rule just decided to keep.
+//
+// The unit is the year because a rating source reports a year and not a date.
+var ratingsAgeTTLTiers = []struct {
+	olderThanYears int
+	multiplier     int
+}{
+	{olderThanYears: 3, multiplier: 3},
+	{olderThanYears: 1, multiplier: 2},
+}
+
+// ageScaledTTL returns the term for an answer about this title. A title with no
+// year takes the base term, as does one dated in the future.
+func ageScaledTTL(base time.Duration, meta *provider.MediaMeta) time.Duration {
+	if meta == nil || meta.Year <= 0 {
+		return base
+	}
+	age := time.Now().Year() - meta.Year
+	for _, tier := range ratingsAgeTTLTiers {
+		if age >= tier.olderThanYears {
+			return base * time.Duration(tier.multiplier)
+		}
+	}
+	return base
+}
+
 // storeLocked remembers an answer. Called with c.mu held.
 func (c *ratingsCache) storeLocked(key string, meta *provider.MediaMeta, complete bool) {
 	if len(c.entries) >= ratingsCacheMax {
 		c.evictLocked()
 	}
-	ttl := c.ttl
+	// The age rule decides how long a full answer is worth keeping; the partial
+	// rule decides that a thin one is not. The thin case wins, so an answer
+	// missing a source because an allowance ran out is re-asked in minutes
+	// rather than pinned for days by the title being old.
+	ttl := ageScaledTTL(c.ttl, meta)
 	if !complete && PartialRatingsCacheTTL < ttl {
 		ttl = PartialRatingsCacheTTL
 	}
