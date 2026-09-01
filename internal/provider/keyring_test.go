@@ -178,3 +178,50 @@ func TestALongPairOfKeysIsAccepted(t *testing.T) {
 		t.Error("a list with one bad entry was accepted")
 	}
 }
+
+// A list for a source that cannot rotate would be accepted and silently
+// truncated, which is the inert-setting shape: it looks like it took.
+func TestAListIsRefusedWhereItCannotRotate(t *testing.T) {
+	long := strings.Repeat("a", 40)
+
+	if err := ValidateKeys(map[string]string{KeyFanart: long + "," + long}); err == nil {
+		t.Error("a list was accepted for a source that never rotates")
+	}
+	// The control: the same list is fine on a source that does rotate, so the
+	// refusal is about the provider rather than about lists.
+	if err := ValidateKeys(map[string]string{KeySIMKL: long + "," + long}); err != nil {
+		t.Errorf("a list was refused on a rotating source: %v", err)
+	}
+	// And one key is still accepted everywhere.
+	if err := ValidateKeys(map[string]string{KeyFanart: long}); err != nil {
+		t.Errorf("a single key was refused: %v", err)
+	}
+}
+
+// The spent map is keyed on the credential, so it holds only keys refused in
+// the last hour rather than every list anyone has presented.
+func TestTheSpentMapHoldsOnlyRefusedKeys(t *testing.T) {
+	ownerSpent.mu.Lock()
+	ownerSpent.at = map[string]time.Time{}
+	ownerSpent.mu.Unlock()
+
+	ctx := WithKeys(context.Background(), map[string]string{KeySIMKL: "s1,s2"})
+	for range 50 {
+		_ = keyFrom(ctx, KeySIMKL)
+	}
+
+	ownerSpent.mu.Lock()
+	size := len(ownerSpent.at)
+	ownerSpent.mu.Unlock()
+	if size != 0 {
+		t.Errorf("reading a list %d times left %d entries behind", 50, size)
+	}
+
+	noteOwnerKeySpent(ctx, KeySIMKL, "s1")
+	ownerSpent.mu.Lock()
+	size = len(ownerSpent.at)
+	ownerSpent.mu.Unlock()
+	if size != 1 {
+		t.Errorf("a spent key left %d entries, want 1", size)
+	}
+}

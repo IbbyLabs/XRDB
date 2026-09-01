@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 )
 
 // A profile owner can supply their own provider credentials, which stand in for
@@ -145,36 +146,68 @@ func keyFrom(ctx context.Context, name string) string {
 	if !strings.Contains(raw, ",") {
 		return strings.TrimSpace(raw)
 	}
-	return ownerRing(name, raw).current()
+	return ownerCurrentKey(raw)
 }
 
-// ownerRings holds one ring per owner credential list, so a spent key rotates
-// for that owner alone. Keyed on the field's own text: two profiles pasting the
-// same keys share a ring, which is right, because they share the allowance.
-// Only a field holding several credentials reaches here, so an ordinary
-// single-key profile adds nothing.
-var ownerRings sync.Map // name + "\x00" + raw -> *keyRing
-
-func ownerRing(name, raw string) *keyRing {
-	k := name + "\x00" + raw
-	if r, ok := ownerRings.Load(k); ok {
-		return r.(*keyRing)
+// rotatesForOwner names the sources where several owner credentials are worth
+// having. Rotation multiplies a daily quota and does nothing for a per-second
+// rate, so a list anywhere else would be accepted and silently truncated.
+func rotatesForOwner(name string) bool {
+	switch name {
+	case KeyMDBList, KeyOMDB, KeySIMKL:
+		return true
 	}
-	r, _ := ownerRings.LoadOrStore(k, newKeyRing(raw))
-	return r.(*keyRing)
+	return false
+}
+
+// ownerSpent records credentials a source has said are spent, keyed on the
+// credential rather than on the list holding it. Keyed that way the map is
+// bounded by keys actually refused in the last hour rather than by every
+// distinct list anyone has ever sent, and two owners sharing a key share the
+// knowledge that it is gone, which is right because they share the allowance.
+var ownerSpent = struct {
+	mu sync.Mutex
+	at map[string]time.Time
+}{at: map[string]time.Time{}}
+
+// ownerCurrentKey returns the first credential in the list that is not marked
+// spent. When every one is marked the marks are dropped and the first is
+// returned, so an owner is never left with nothing to call.
+func ownerCurrentKey(raw string) string {
+	list := splitKeyList(raw)
+	ownerSpent.mu.Lock()
+	defer ownerSpent.mu.Unlock()
+	now := time.Now()
+	for key, at := range ownerSpent.at {
+		if now.Sub(at) >= keySpentFor {
+			delete(ownerSpent.at, key)
+		}
+	}
+	for _, key := range list {
+		if _, marked := ownerSpent.at[key]; !marked {
+			return key
+		}
+	}
+	for _, key := range list {
+		delete(ownerSpent.at, key)
+	}
+	return list[0]
 }
 
 // noteOwnerKeySpent moves an owner's list on when the source says that
 // credential's allowance is gone. The server's ring is untouched: a visitor
 // spending their own allowance says nothing about ours.
 func noteOwnerKeySpent(ctx context.Context, name, used string) {
-	if ctx == nil || used == "" {
+	if ctx == nil || used == "" || !rotatesForOwner(name) {
 		return
 	}
 	keys, _ := ctx.Value(keysCtxKey{}).(map[string]string)
-	raw := keys[name]
-	if !strings.Contains(raw, ",") {
+	if !strings.Contains(keys[name], ",") {
 		return
 	}
-	ownerRing(name, raw).markSpent(used)
+	ownerSpent.mu.Lock()
+	defer ownerSpent.mu.Unlock()
+	if _, known := ownerSpent.at[used]; !known {
+		ownerSpent.at[used] = time.Now()
+	}
 }
