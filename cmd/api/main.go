@@ -139,6 +139,7 @@ func main() {
 	}
 
 	provider.LogMinIntervalOverrides(logger)
+	provider.LogProxyOverrides(logger)
 
 	reg := provider.NewRegistry()
 	// Register every keyed provider unconditionally, even without a key at boot.

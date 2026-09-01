@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"math/rand/v2"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -585,6 +586,49 @@ func isPowerOfTen(n int64) bool {
 	return n == 1
 }
 
+// proxySuffix names the per-source proxy setting, XRDB_<SOURCE>_PROXY.
+const proxySuffix = "_PROXY"
+
+// proxyOverrides holds the proxy each source is reached through. Named per
+// source rather than as one setting with exclusions: a proxy is worth the
+// latency for a source that is blocked or rate-limited by address, and not for
+// the rest, and an exclusion list has to be edited whenever a source is added.
+//
+// Go's default transport already reads HTTP_PROXY and friends, which apply to
+// every outbound request. These override that for one source.
+var proxyOverrides = readProxyOverrides()
+
+func readProxyOverrides() map[string]*url.URL {
+	out := map[string]*url.URL{}
+	for _, kv := range os.Environ() {
+		name, value, ok := strings.Cut(kv, "=")
+		if !ok || !strings.HasPrefix(name, "XRDB_") || !strings.HasSuffix(name, proxySuffix) {
+			continue
+		}
+		source := strings.ToLower(strings.TrimSuffix(strings.TrimPrefix(name, "XRDB_"), proxySuffix))
+		raw := strings.TrimSpace(value)
+		if source == "" || raw == "" {
+			continue
+		}
+		u, err := url.Parse(raw)
+		if err != nil || u.Host == "" {
+			slog.Default().Warn("Ignoring an unreadable proxy setting and reaching the source directly",
+				"variable", name, "source", source)
+			continue
+		}
+		out[source] = u
+	}
+	return out
+}
+
+// LogProxyOverrides reports which sources are reached through a proxy. The URL
+// is redacted: a proxy address commonly carries credentials.
+func LogProxyOverrides(log *slog.Logger) {
+	for source, u := range proxyOverrides {
+		log.Info("A source is reached through a proxy", "source", source, "proxy", u.Redacted())
+	}
+}
+
 // newHTTPClient builds the client a provider should use: its own timeout, plus
 // the pacing and retry policy for that source.
 func newHTTPClient(source string, timeout time.Duration) *http.Client {
@@ -596,6 +640,13 @@ func newHTTPClient(source string, timeout time.Duration) *http.Client {
 	}
 	if source == "mdblist" {
 		transport.governor = newBudgetGovernor(source)
+	}
+	if u, ok := proxyOverrides[source]; ok {
+		// Cloned rather than shared, so one source's proxy does not become
+		// every source's, and so the connection pools stay separate.
+		base := http.DefaultTransport.(*http.Transport).Clone()
+		base.Proxy = http.ProxyURL(u)
+		transport.base = base
 	}
 	return &http.Client{Timeout: timeout, Transport: transport}
 }
