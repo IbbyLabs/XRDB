@@ -229,7 +229,7 @@ var dailyBudgets = sync.OnceValue(func() map[string]*dailyBudget {
 	// XRDB_MDBLIST_DAILY_LIMIT pins it for an instance whose responses carry no
 	// headers.
 	mdbLimit := envInt("XRDB_MDBLIST_DAILY_LIMIT", mdblistAssumedDailyLimit, 1, 10_000_000)
-	mdbReservePct := envFloat("XRDB_MDBLIST_BULK_RESERVE_PCT", mdblistDefaultBulkReservePct, 0, 100)
+	mdbReservePct := envFloat("XRDB_MDBLIST_SWEEP_RESERVE_PCT", mdblistDefaultBulkReservePct, 0, 100)
 	mdb := newDailyBudget("mdblist", mdbLimit, int(float64(mdbLimit)*mdbReservePct/100))
 	mdb.reservePct = mdbReservePct
 	return map[string]*dailyBudget{
