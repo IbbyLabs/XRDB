@@ -55,6 +55,9 @@ type Result struct {
 	ContentType           string
 	CacheKey              string
 	ContributingProviders []string // names of providers that returned data
+	// RatingProviders names the rating sources that answered. The render TTL is
+	// the minimum across these; the artwork source is not one of them.
+	RatingProviders []string
 	// Placeholder is true when ImageBytes is a fallback placeholder rather than
 	// real artwork — the caller must not cache it (a transient failure would
 	// otherwise be frozen for the whole TTL) and should signal that downstream.
@@ -1091,6 +1094,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// the live table instead of trusting what the cache handed back.
 	p.applyTopRatedRank(meta, req.MediaID)
 	result.ContributingProviders = append([]string{string(req.Config.ArtworkSource)}, ratingProviders...)
+	result.RatingProviders = ratingProviders
 	result.Degraded = degraded
 	result.DegradedByUs = degraded && !sourceFault
 	result.DegradedByQueue = result.DegradedByUs && queueHeld

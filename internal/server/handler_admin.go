@@ -687,8 +687,10 @@ func warmPosters(
 	}
 }
 
-// effectiveTTL returns the minimum TTL across all providers that contributed to
-// a render result. Falls back to 0 (cache default) when result or the store is
+// effectiveTTL returns the minimum TTL across the rating sources that answered
+// for a render. The artwork source is not one of them; a source that also
+// appears in the ratings list counts there.
+// Falls back to 0 (cache default) when result or the store is
 // nil. Reading from the live store means a TTL changed at runtime applies to the
 // next render without a restart.
 // A render that lost a badge to a failing source is capped shorter still, so a
@@ -699,7 +701,7 @@ func effectiveTTL(result *compose.Result, ttls *ttlStore) time.Duration {
 		return 0
 	}
 	var min time.Duration
-	for _, name := range result.ContributingProviders {
+	for _, name := range result.RatingProviders {
 		if t, ok := ttls.get(name); ok && t > 0 {
 			if min == 0 || t < min {
 				min = t

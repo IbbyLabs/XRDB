@@ -829,7 +829,7 @@ func TestEffectiveTTLNilResult(t *testing.T) {
 }
 
 func TestEffectiveTTLNilStore(t *testing.T) {
-	result := &compose.Result{ContributingProviders: []string{"tmdb"}}
+	result := &compose.Result{RatingProviders: []string{"tmdb"}}
 	if effectiveTTL(result, nil) != 0 {
 		t.Error("expected 0 for a nil ttl store")
 	}
@@ -843,7 +843,7 @@ func TestEffectiveTTLEmptyProviders(t *testing.T) {
 }
 
 func TestEffectiveTTLMinimum(t *testing.T) {
-	result := &compose.Result{ContributingProviders: []string{"tmdb", "mdblist"}}
+	result := &compose.Result{RatingProviders: []string{"tmdb", "mdblist"}}
 	ttls := newTTLStore(map[string]time.Duration{
 		"tmdb":    72 * time.Hour,
 		"mdblist": 4 * time.Hour,
@@ -890,7 +890,7 @@ func TestWarmEndpointEmptyIDs(t *testing.T) {
 }
 
 func TestEffectiveTTLMissingProvider(t *testing.T) {
-	result := &compose.Result{ContributingProviders: []string{"tmdb", "unknown"}}
+	result := &compose.Result{RatingProviders: []string{"tmdb", "unknown"}}
 	ttls := newTTLStore(map[string]time.Duration{"tmdb": 24 * time.Hour})
 	got := effectiveTTL(result, ttls)
 	if got != 24*time.Hour {
