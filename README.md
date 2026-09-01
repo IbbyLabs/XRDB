@@ -102,8 +102,8 @@ cd web && npm ci && npm run dev   # web on :3001
 | `GET` | `/api/trending` | Trending titles |
 | `GET` | `/api/lookup?type=&id=` | TMDB ID → IMDb ID |
 | `POST` | `/api/aiometadata/install` | One-click AIOMetadata setup |
-| `GET` | `/api/admin/metrics`, `/api/admin/cache` | Runtime metrics, cache stats † |
-| `DELETE` | `/api/admin/cache[?key=]` | Drop every render, or one by its `X-Cache-Key` † |
+| `GET` | `/api/admin/metrics`, `/api/admin/cache` | Runtime metrics, cache stats; `bySurface` splits the disk tier by poster, backdrop, thumbnail and logo † |
+| `DELETE` | `/api/admin/cache[?surface=][?key=]` | Drop every render, one surface, or one by its `X-Cache-Key` † |
 | `GET` | `/api/admin/sources` | Per-source health; `staleServes` flags a broken source † |
 | `POST` | `/api/admin/warm` | Pre-render IDs into the cache † |
 | `GET/PUT/DELETE` | `/api/admin/settings` | Integration keys † |
