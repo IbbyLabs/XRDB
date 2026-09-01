@@ -153,6 +153,11 @@ type Config struct {
 	GenrePlaceholder      bool `json:"genrePlaceholder,omitempty"`
 	AgeRatingPlaceholder  bool `json:"ageRatingPlaceholder,omitempty"`
 	RatingRingPlaceholder bool `json:"ratingRingPlaceholder,omitempty"`
+	// RatingRingPlaceholderColor fills an empty ring with a colour of its own,
+	// as "#RRGGBB". Empty leaves the faint track alone, which is what an empty
+	// ring has always drawn, so an existing config's placeholder does not change
+	// appearance.
+	RatingRingPlaceholderColor string `json:"ratingRingPlaceholderColor,omitempty"`
 	// PlaceholderStyle is what a placeholder draws when one of the three above
 	// is on: "value" fills the gap with something true, "marker" says there is
 	// nothing. Empty is "value".
@@ -750,6 +755,7 @@ type raw struct {
 	GenrePlaceholder              *bool     `json:"genrePlaceholder"`
 	AgeRatingPlaceholder          *bool     `json:"ageRatingPlaceholder"`
 	RatingRingPlaceholder         *bool     `json:"ratingRingPlaceholder"`
+	RatingRingPlaceholderColor    *string   `json:"ratingRingPlaceholderColor"`
 	PlaceholderStyle              *string   `json:"placeholderStyle"`
 	RatingUnavailableMark         *bool     `json:"ratingUnavailableMark"`
 	BadgeShadow                   *bool     `json:"badgeShadow"`
@@ -1244,6 +1250,9 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.ProvidersCountry != nil && strings.TrimSpace(*r.ProvidersCountry) != "" {
 		cfg.ProvidersCountry = strings.ToUpper(strings.TrimSpace(*r.ProvidersCountry))
+	}
+	if r.RatingRingPlaceholderColor != nil && isHexColor(*r.RatingRingPlaceholderColor) {
+		cfg.RatingRingPlaceholderColor = strings.TrimSpace(*r.RatingRingPlaceholderColor)
 	}
 	if r.NetworkTileColor != nil && isHexColor(*r.NetworkTileColor) {
 		cfg.NetworkTileColor = strings.TrimSpace(*r.NetworkTileColor)
@@ -2405,6 +2414,7 @@ func CacheKey(cfg Config) string {
 		GenrePlaceholder              bool           `json:"genrePlaceholder"`
 		AgeRatingPlaceholder          bool           `json:"ageRatingPlaceholder"`
 		RatingRingPlaceholder         bool           `json:"ratingRingPlaceholder"`
+		RatingRingPlaceholderColor    string         `json:"ratingRingPlaceholderColor"`
 		PlaceholderStyle              string         `json:"placeholderStyle"`
 		RatingUnavailableMark         bool           `json:"ratingUnavailableMark"`
 		BadgeShadow                   bool           `json:"badgeShadow"`
@@ -2517,6 +2527,7 @@ func CacheKey(cfg Config) string {
 		GenrePlaceholder:              cfg.GenrePlaceholder,
 		AgeRatingPlaceholder:          cfg.AgeRatingPlaceholder,
 		RatingRingPlaceholder:         cfg.RatingRingPlaceholder,
+		RatingRingPlaceholderColor:    cfg.RatingRingPlaceholderColor,
 		PlaceholderStyle:              cfg.PlaceholderStyle,
 		RatingUnavailableMark:         cfg.RatingUnavailableMark,
 		BadgeShadow:                   cfg.BadgeShadow,

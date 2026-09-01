@@ -3145,12 +3145,23 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 	if v, ok := ratingRingSourceValue(ratings, cfg.RingProgressSource, cfg); ok {
 		progress = v
 	}
+	placeholderFill, placeholderColoured := color.NRGBA{}, false
 	if empty {
 		// No arc and no number: the outline alone.
 		value, progress = 0, 0
+		// A placeholder colour fills the ring instead. The track is already a
+		// full circle, so a full sweep redraws the same shape in that colour
+		// and no drawing code changes. Empty keeps the faint track.
+		if c, err := parseHexColor(cfg.RatingRingPlaceholderColor); err == nil {
+			placeholderFill, placeholderColoured = c, true
+			progress = 10
+		}
 	}
 
 	fillColor := ratingRingFillColor(value, cfg.RatingRingColor, cfg.AggregateDynamicStops)
+	if placeholderColoured {
+		fillColor = placeholderFill
+	}
 
 	s := func(v float64) int { return int(v*scale + 0.5) }
 	edgeX := s(12)

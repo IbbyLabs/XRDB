@@ -282,6 +282,30 @@ export function RatingsPanel({ uid, config, onUpdate, onToggleRating, onMoveRati
                   </span>
                 </div>
 
+                <div className="field">
+                  <label className="label" htmlFor={`${uid}-ring-placeholder-color`}>Empty ring color</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+                    <input
+                      id={`${uid}-ring-placeholder-color`}
+                      type="color"
+                      value={config.ratingRingPlaceholderColor || '#7f8c8d'}
+                      onChange={e => onUpdate('ratingRingPlaceholderColor', e.target.value)}
+                      className="color-swatch"
+                    />
+                    <button
+                      className={`opt-btn${!config.ratingRingPlaceholderColor ? ' opt-btn--active' : ''}`}
+                      onClick={() => onUpdate('ratingRingPlaceholderColor', '')}
+                      aria-pressed={!config.ratingRingPlaceholderColor}
+                      style={{ flex: 1 }}
+                    >
+                      Faint outline
+                    </button>
+                  </div>
+                  <span className="hint" style={{ marginTop: 'var(--sp-1)' }}>
+                    The ring drawn for a title with no rating, when the empty ring placeholder is on. Faint outline is what it has always drawn.
+                  </span>
+                </div>
+
                 {fine && <RatingRingFine uid={uid} config={config} onUpdate={onUpdate} />}
               </>
             )}

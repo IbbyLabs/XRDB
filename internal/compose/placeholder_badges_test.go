@@ -328,3 +328,86 @@ func TestThePlaceholderDrawsTheKindTheCallerNamed(t *testing.T) {
 		t.Errorf("a series request drew %q, want SHOW", got)
 	}
 }
+
+// renderRing draws an empty placeholder ring and returns the pixels.
+func renderRing(cfg imageconfig.Config) *image.NRGBA {
+	base := image.NewNRGBA(image.Rect(0, 0, 400, 300))
+	bg := color.NRGBA{R: 90, G: 120, B: 150, A: 255}
+	for y := range 300 {
+		for x := range 400 {
+			base.SetNRGBA(x, y, bg)
+		}
+	}
+	drawAverageRatingRing(base, nil, cfg, 2, newOccupancy(base.Bounds()))
+	return base
+}
+
+func ringPixels(img *image.NRGBA) map[color.NRGBA]int {
+	out := map[color.NRGBA]int{}
+	for y := range 300 {
+		for x := range 400 {
+			out[img.NRGBAAt(x, y)]++
+		}
+	}
+	return out
+}
+
+// A filled arc is lit where the bare track is faint, so an existing config must
+// keep the appearance it has until someone asks for a colour (FR-206).
+func TestAnEmptyRingWithNoColourLooksExactlyAsItDid(t *testing.T) {
+	cfg := imageconfig.Default()
+	cfg.RatingRing = true
+	cfg.Ratings = []string{"imdb"}
+	cfg.RatingRingPlaceholder = true
+
+	before := renderRing(cfg)
+	cfg.RatingRingPlaceholderColor = ""
+	after := renderRing(cfg)
+
+	for y := range 300 {
+		for x := range 400 {
+			if before.NRGBAAt(x, y) != after.NRGBAAt(x, y) {
+				t.Fatalf("an empty placeholder colour changed the render at %d,%d", x, y)
+			}
+		}
+	}
+}
+
+func TestAColouredEmptyRingFillsItsArc(t *testing.T) {
+	cfg := imageconfig.Default()
+	cfg.RatingRing = true
+	cfg.Ratings = []string{"imdb"}
+	cfg.RatingRingPlaceholder = true
+
+	bare := ringPixels(renderRing(cfg))
+	cfg.RatingRingPlaceholderColor = "#FF00AA"
+	coloured := ringPixels(renderRing(cfg))
+
+	want := color.NRGBA{R: 255, G: 0, B: 170, A: 255}
+	if coloured[want] == 0 {
+		t.Error("the chosen colour is nowhere in the render")
+	}
+	if bare[want] != 0 {
+		t.Error("the colour was already there without being set, so the test proves nothing")
+	}
+}
+
+// An unreadable value must leave the ring as it was rather than drawing black.
+func TestAnUnreadablePlaceholderColourIsIgnored(t *testing.T) {
+	cfg := imageconfig.Default()
+	cfg.RatingRing = true
+	cfg.Ratings = []string{"imdb"}
+	cfg.RatingRingPlaceholder = true
+
+	bare := renderRing(cfg)
+	cfg.RatingRingPlaceholderColor = "not a colour"
+	after := renderRing(cfg)
+
+	for y := range 300 {
+		for x := range 400 {
+			if bare.NRGBAAt(x, y) != after.NRGBAAt(x, y) {
+				t.Fatalf("an unreadable colour changed the render at %d,%d", x, y)
+			}
+		}
+	}
+}

@@ -485,8 +485,13 @@ func keyMutations() map[string]keyOverride {
 		"placeholderStyle": {bare: true, pre: func(c *imageconfig.Config) {
 			c.GenrePlaceholder, c.AgeRatingPlaceholder = true, true
 		}, mut: func(c *imageconfig.Config) { c.PlaceholderStyle = "marker" }},
-		"ageRatingPlaceholder":      {bare: true, pre: func(c *imageconfig.Config) { c.AgeRating = true }},
-		"ratingRingPlaceholder":     {bare: true, pre: func(c *imageconfig.Config) { c.RatingRing = true }},
+		"ageRatingPlaceholder":  {bare: true, pre: func(c *imageconfig.Config) { c.AgeRating = true }},
+		"ratingRingPlaceholder": {bare: true, pre: func(c *imageconfig.Config) { c.RatingRing = true }},
+		// The colour fills an empty ring, so it needs both the ring and its
+		// placeholder on and a title with no ratings to be empty about.
+		"ratingRingPlaceholderColor": {bare: true, pre: func(c *imageconfig.Config) {
+			c.RatingRing, c.RatingRingPlaceholder = true, true
+		}, mut: setColor(func(c *imageconfig.Config, v string) { c.RatingRingPlaceholderColor = v })},
 		"genreBadgeTileAccentColor": {pre: genreTile, mut: setColor(func(c *imageconfig.Config, v string) { c.GenreBadgeTileAccentColor = v })},
 		"genreBadgeAccent":          {mut: func(c *imageconfig.Config) { c.GenreBadgeAccent = "left" }},
 		// The icon mode draws the family accent. Every family is named so the
