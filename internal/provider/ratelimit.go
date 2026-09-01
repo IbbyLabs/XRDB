@@ -189,8 +189,9 @@ var rateLimits = map[string]RateLimit{
 	// A SPARQL query is expensive to serve and the Wikidata Query Service
 	// throttles hard. The figure is conservative rather than measured: the cost
 	// of pacing too loosely here is an address blocked by policy, which does not
-	// clear the way a slow API does, and the cost of pacing too tightly is a
-	// badge that arrives later.
+	// clear the way a slow API does. The cost of pacing too tightly is an empty
+	// badge, not a late one. A render whose source is held out completes without
+	// it and is cached.
 	"wikidata": {MinInterval: time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
 }
 
