@@ -49,6 +49,18 @@ const weightUnit = 4
 // cache key — size at imageconfig.CacheKey, media type at render.CacheKey — so
 // two requests that share a key always cost the same. Nothing per-caller
 // belongs here.
+// capCost is what one render charges the per-caller allowance. It prices the
+// surface and not the size: a thumbnail grid is more tiles per screen than a row
+// of posters, so it reaches the cap while asking for less. Charging by size as
+// well would refuse a 4K caller more than the flat count already does, which was
+// considered and rejected.
+//
+// weightUnit is a poster, so a configured cap keeps meaning that many posters a
+// minute and only the cheaper surfaces gain.
+func capCost(mediaType string) int64 {
+	return renderWeight(mediaType, imageconfig.SizeNormal)
+}
+
 func renderWeight(mediaType string, size imageconfig.MediaSize) int64 {
 	switch mediaType {
 	case "thumbnail":

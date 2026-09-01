@@ -66,7 +66,7 @@ func newCallerLimiterWithBurst(perMinute, burst int) *callerLimiter {
 }
 
 // allow reports whether a request presenting these keys may proceed, and
-// charges each key that does. A caller over its limit on any one key is
+// charges each key that does the given cost. A caller over its limit on any one key is
 // refused, and no key is charged when one refuses: a request that was turned
 // away has not spent anyone's allowance.
 //
@@ -76,9 +76,12 @@ func newCallerLimiterWithBurst(perMinute, burst int) *callerLimiter {
 // Empty keys are ignored, so a caller with nothing to identify it is not
 // refused by an empty string it shares with every other such caller. A nil
 // limiter allows everything.
-func (l *callerLimiter) allow(keys ...string) (bool, string) {
+func (l *callerLimiter) allow(cost int64, keys ...string) (bool, string) {
 	if l == nil {
 		return true, ""
+	}
+	if cost < 1 {
+		cost = 1
 	}
 	present := make([]string, 0, len(keys))
 	for _, k := range keys {
@@ -96,13 +99,13 @@ func (l *callerLimiter) allow(keys ...string) (bool, string) {
 	l.sweepLocked(now)
 
 	for _, k := range present {
-		if l.tokensLocked(k, now) < 1 {
+		if l.tokensLocked(k, now) < float64(cost) {
 			return false, k
 		}
 	}
 	for _, k := range present {
 		b := l.buckets[k]
-		b.tokens--
+		b.tokens -= float64(cost)
 	}
 	return true, ""
 }

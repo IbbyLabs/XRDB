@@ -86,7 +86,10 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	// Refuses at the door rather than after the queue: a request turned away by
 	// the concurrency limiter has already waited the full queue window for its
 	// refusal, which is a worse answer than the same refusal given at once.
-	callerCap := newCallerLimiter(cfg.RenderCapPerMinute)
+	// The allowance is in weight units and a poster costs weightUnit of them, so
+	// RenderCapPerMinute keeps meaning how many posters a minute. The same move
+	// the concurrency limiter makes above.
+	callerCap := newCallerLimiter(cfg.RenderCapPerMinute * weightUnit)
 	sharedAliases := sharedAliasSet(cfg)
 	if cfg.DefaultProfile != "" {
 		// Resolved once here so a name that matches nothing is reported at
@@ -379,7 +382,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			// cache read and is not what the queue is made of.
 			ok, over := true, ""
 			if !sweep {
-				ok, over = callerCap.allow(capProfileKey, "ip:"+clientIP(r, trust))
+				ok, over = callerCap.allow(capCost(mediaType), capProfileKey, "ip:"+clientIP(r, trust))
 			}
 			if !ok {
 				// The key names which allowance ran out. caller_class is an

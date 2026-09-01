@@ -449,11 +449,14 @@ func TestACapRefusalNamesTheSurface(t *testing.T) {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})))
 	t.Cleanup(func() { slog.SetDefault(prev) })
 
+	// A thumbnail costs a quarter of a poster against the cap (FR-179), so this
+	// needs enough of them to spend the allowance rather than the eight a
+	// poster-priced cap would have taken.
 	h, p := capHandler(t, 2)
-	for i := range 8 {
+	for i := range 40 {
 		rr := httptest.NewRecorder()
 		req := httptest.NewRequest(http.MethodGet,
-			"/thumbnail/tt200"+string(rune('1'+i))+"?config="+p.ID, nil)
+			fmt.Sprintf("/thumbnail/tt2%05d?config=%s", i, p.ID), nil)
 		req.RemoteAddr = "203.0.113.11:1234"
 		h.ServeHTTP(rr, req)
 	}

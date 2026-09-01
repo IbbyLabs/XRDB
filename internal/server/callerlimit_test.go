@@ -26,7 +26,7 @@ func (c *testClock) advance(d time.Duration) {
 // mustAllow drops the key naming for the tests that only care whether a
 // request passed.
 func mustAllow(l *callerLimiter, keys ...string) bool {
-	ok, _ := l.allow(keys...)
+	ok, _ := l.allow(1, keys...)
 	return ok
 }
 
@@ -262,9 +262,9 @@ func TestConcurrentCallersGetExactlyTheAllowance(t *testing.T) {
 func TestARefusalNamesTheKeyThatTripped(t *testing.T) {
 	l, _ := newTestLimiter(t, 2)
 	for range 2 {
-		l.allow("profile:a", "ip:1.2.3.4")
+		l.allow(1, "profile:a", "ip:1.2.3.4")
 	}
-	ok, over := l.allow("profile:a", "ip:1.2.3.4")
+	ok, over := l.allow(1, "profile:a", "ip:1.2.3.4")
 	if ok {
 		t.Fatal("a request past the allowance was allowed")
 	}
@@ -275,9 +275,9 @@ func TestARefusalNamesTheKeyThatTripped(t *testing.T) {
 	// And when only the address is exhausted, it is the address that is named.
 	l2, _ := newTestLimiter(t, 2)
 	for range 2 {
-		l2.allow("ip:5.6.7.8")
+		l2.allow(1, "ip:5.6.7.8")
 	}
-	if ok, over := l2.allow("profile:fresh", "ip:5.6.7.8"); ok || over != "ip:5.6.7.8" {
+	if ok, over := l2.allow(1, "profile:fresh", "ip:5.6.7.8"); ok || over != "ip:5.6.7.8" {
 		t.Errorf("refused on %q (allowed=%v), want the address", over, ok)
 	}
 }
@@ -286,7 +286,7 @@ func TestARefusalNamesTheKeyThatTripped(t *testing.T) {
 // rather than "we could not tell".
 func TestAnAllowedRequestNamesNoKey(t *testing.T) {
 	l, _ := newTestLimiter(t, 30)
-	if ok, over := l.allow("profile:a", "ip:1.2.3.4"); !ok || over != "" {
+	if ok, over := l.allow(1, "profile:a", "ip:1.2.3.4"); !ok || over != "" {
 		t.Errorf("allowed=%v over=%q, want true and empty", ok, over)
 	}
 }
