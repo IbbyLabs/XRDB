@@ -19,15 +19,15 @@ func TestTheCertifiedMarkPrefersTheFileOverTheApproximation(t *testing.T) {
 	}
 
 	certified.SetForTest(t, map[string]certified.Title{
-		"tt0000001": {TopCritics: 9},
-		"tt0000002": {TopCritics: 1},
+		"tt0000001": {Certified: true},
+		"tt0000002": {Certified: false},
 	})
 
 	if got := markStateFor(high, titleFacts{imdbID: "tt0000001"}); got != "critics-certified-fresh" {
 		t.Errorf("a certified title = %q", got)
 	}
 	// The one the approximation gets wrong: a high score and plenty of reviews,
-	// but not enough Top Critics. It is fresh rather than certified.
+	// and Rotten Tomatoes has not certified it. Fresh rather than certified.
 	if got := markStateFor(high, titleFacts{imdbID: "tt0000002"}); got != "critics-fresh" {
 		t.Errorf("a title the file says is not certified = %q, want critics-fresh", got)
 	}
@@ -36,7 +36,7 @@ func TestTheCertifiedMarkPrefersTheFileOverTheApproximation(t *testing.T) {
 // A title with no IMDb id cannot be looked up, and that must read as "no answer"
 // rather than as "not certified".
 func TestATitleWithNoIMDbIdKeepsTheApproximation(t *testing.T) {
-	certified.SetForTest(t, map[string]certified.Title{"tt0000002": {TopCritics: 1}})
+	certified.SetForTest(t, map[string]certified.Title{"tt0000002": {Certified: false}})
 	high := provider.Rating{Source: "rt", Value: 9.1, Votes: 200}
 
 	if got := markStateFor(high, titleFacts{}); got != "critics-certified-fresh" {
