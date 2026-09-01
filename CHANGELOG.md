@@ -2,6 +2,65 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.101.0](https://github.com/IbbyLabs/XRDB/compare/v3.100.0...v3.101.0) (2026-09-01)
+
+
+### Added
+
+* **badges:** a hatched N/A placeholder style (FR-205) ([97b4bc7](https://github.com/IbbyLabs/XRDB/commit/97b4bc7f35638e27d0baa81a69c1896b8be135bf))
+* **badges:** genre labels in other languages (FR-149) ([bc73dfb](https://github.com/IbbyLabs/XRDB/commit/bc73dfb653750effb2536598938b5e7b96516945))
+* **badges:** give the digital date while in cinemas (FR-189) ([0f2ba84](https://github.com/IbbyLabs/XRDB/commit/0f2ba8418c7e04b1bfcd7411802b397f3d0c7d54))
+* **badges:** placeholders for a title with nothing to show (FR-204) ([d54022c](https://github.com/IbbyLabs/XRDB/commit/d54022ce8dc6474d610ac96ff1c8241da4fa793d))
+* **badges:** show the next release date on an unreleased title (FR-189) ([d31c7e6](https://github.com/IbbyLabs/XRDB/commit/d31c7e6e449714119bf144b1b0ed04f1764817a7))
+* **badges:** the contributed awards and wordmarks (FR-149) ([a03c69a](https://github.com/IbbyLabs/XRDB/commit/a03c69aab6305a47db73b3ce58812c88487f983c))
+* **cache:** take the render TTL from the rating sources alone (FR-202) ([02dd74c](https://github.com/IbbyLabs/XRDB/commit/02dd74c8e7ccdd6a8d47ed9ad1a21ea48b07c434))
+* **config:** XRDB_DEFAULT_PROFILE styles bare requests (FR-199) ([1b2c62c](https://github.com/IbbyLabs/XRDB/commit/1b2c62c6a071db01122098afe776cf03777c490c))
+* **limits:** price the render cap by surface (FR-179) ([a5e6c9f](https://github.com/IbbyLabs/XRDB/commit/a5e6c9f7f71e5d301689235560cf8122e1e720c1))
+* **logging:** name the surface on a cap refusal (FR-179) ([e9c3444](https://github.com/IbbyLabs/XRDB/commit/e9c3444977f48f7bc3829ac3eb84f727c3dfe466))
+* **mdblist:** hold sweeps off a share of the allowance (FR-186) ([10bcead](https://github.com/IbbyLabs/XRDB/commit/10bcead58d3a48a424c168ecca23e2c6eb0cce7b))
+* **providers:** per-source request intervals (FR-192, FR-177) ([3a09c56](https://github.com/IbbyLabs/XRDB/commit/3a09c5619a38f7cb3d11e643622069938e436e94))
+* **providers:** reach one source through a proxy (FR-190) ([be17cd5](https://github.com/IbbyLabs/XRDB/commit/be17cd5dd0d133b67d5c0a0c99a7304959795d58))
+* **ratings:** a refresher for the Certified Fresh file (FR-158, FR-161) ([3619f74](https://github.com/IbbyLabs/XRDB/commit/3619f745dbd776fafc541ca12ee53f1d67917d33))
+* **ratings:** let a native-scale score drop its denominator (FR-198) ([7a36fc6](https://github.com/IbbyLabs/XRDB/commit/7a36fc62d8fddb80ab002d50c12942cc63c57fed))
+* **ratings:** make the aggregate bar's thickness configurable (FR-203) ([a42e8aa](https://github.com/IbbyLabs/XRDB/commit/a42e8aac49459d0932f29afb46493b92eb7d7996))
+* **ratings:** read Certified Fresh from a dataset (FR-158, FR-161) ([98d8d25](https://github.com/IbbyLabs/XRDB/commit/98d8d25c5fb49b196d06988e8fecb96e48959408))
+* **ratings:** refresh a remembered answer before it expires (FR-201) ([4577ec8](https://github.com/IbbyLabs/XRDB/commit/4577ec826c2c145ef017862a4c4b2574c93f1d48))
+* **ratings:** seed the Certified Fresh file (FR-158, FR-161) ([6b02d8a](https://github.com/IbbyLabs/XRDB/commit/6b02d8a792f7e7fdd0950b3bb6d70df1feabf532))
+* **ratings:** Wikidata for Rotten Tomatoes and Metacritic (FR-187) ([c5b8523](https://github.com/IbbyLabs/XRDB/commit/c5b85235992e688b057bb84f32eaeaea8b3caf57))
+* **server:** accept language= alongside lang= on a render URL (FR-191) ([17ae951](https://github.com/IbbyLabs/XRDB/commit/17ae9517d50811f9eac4d5d200c0943a0d49a1ac))
+* **server:** let a render URL override the profile language (FR-191) ([85d3263](https://github.com/IbbyLabs/XRDB/commit/85d3263991e74ff27f82ac70a793fcf4cf950aa7))
+* **tmdb:** prefer artwork published for the render's country (FR-197) ([42c137a](https://github.com/IbbyLabs/XRDB/commit/42c137a92b7c4c31187deebbfa88a4527ed62329))
+
+
+### Fixed
+
+* **artwork:** use MAL's own image for an unmapped mal id (BUG-278) ([9f13578](https://github.com/IbbyLabs/XRDB/commit/9f13578780f21a2f88a56ce2f90c43a8dd21f462))
+* **badges:** draw the content kind the caller named ([25079cc](https://github.com/IbbyLabs/XRDB/commit/25079cc72a6cd310ba27b9b164861ddd8f77ab42))
+* **badges:** give the age badge a glass branch (FR-154) ([5f5744d](https://github.com/IbbyLabs/XRDB/commit/5f5744d197e450ef521f5326ee8267095252f4dc))
+* **badges:** give the quality badges the genre glass ([0ed3e22](https://github.com/IbbyLabs/XRDB/commit/0ed3e223f6ffc5ad4ef2c59cf08073473093bdc8))
+* **badges:** keep a contributor's label beside the short form (FR-149) ([a3fb14c](https://github.com/IbbyLabs/XRDB/commit/a3fb14c0c56029d7528d29a60b3645fbab42c133))
+* **badges:** no placeholder that is also a genre label (FR-205) ([e552d19](https://github.com/IbbyLabs/XRDB/commit/e552d197274e591abbbe23093f5984b2feda7acc))
+* **badges:** restore the accents in a Portuguese note (FR-149) ([d061253](https://github.com/IbbyLabs/XRDB/commit/d061253554b57c7513bb0364164ec7271be71f1d))
+* **configurator:** gate the score colours on their own readers (BUG-280) ([f9fa2b0](https://github.com/IbbyLabs/XRDB/commit/f9fa2b00a61c29de61f253514ca10aa4e1db2bcf))
+* **configurator:** keep the genre family list uppercase (FR-149) ([66e38b6](https://github.com/IbbyLabs/XRDB/commit/66e38b621fb5ae619d27814294741d08f405989c))
+* **configurator:** let the ring reach the score stops field (BUG-280) ([f8890b0](https://github.com/IbbyLabs/XRDB/commit/f8890b0d80010d6039109852fca8f809bdba0d5b))
+* **imdb:** wait for the refresh scheduler before a test's directory goes ([b8157d9](https://github.com/IbbyLabs/XRDB/commit/b8157d9983c8332244fbefb736f0571d2a891faa))
+* **mdblist:** hold sweeps off before the rate floor engages (FR-186) ([081f2bb](https://github.com/IbbyLabs/XRDB/commit/081f2bba51b6e4493315c8d1dd5328ac1d238d83))
+* **mdblist:** name the sweep reserve so it stops colliding (FR-186) ([16bd601](https://github.com/IbbyLabs/XRDB/commit/16bd601fa3ff1de48066a7d0aa860e79ac699692))
+* **product-context:** publish templated variable names ([1a9d4b1](https://github.com/IbbyLabs/XRDB/commit/1a9d4b18c36f9210459821c1df77f1130e221043))
+* **tmdb:** resolve an episode id to the series it belongs to (BUG-279) ([554d9cf](https://github.com/IbbyLabs/XRDB/commit/554d9cfa469d473ff4204ada49beac4666f18f5b))
+* **wikidata:** identify and pace the client (FR-187) ([8cc2132](https://github.com/IbbyLabs/XRDB/commit/8cc2132c9610270ff33fabd483c50e74d89d94d0))
+
+
+### Changed
+
+* **providers:** hold the running version outside one source's file ([6d7e044](https://github.com/IbbyLabs/XRDB/commit/6d7e044891988b51337a5d0361e6369389017155))
+
+
+### Documentation
+
+* **cache:** the per-surface count and delete (FR-184) ([81f479c](https://github.com/IbbyLabs/XRDB/commit/81f479c00c89d088b9d8bf1d443391bf91b11666))
+
 ## [3.100.0](https://github.com/IbbyLabs/XRDB/compare/v3.99.0...v3.100.0) (2026-08-31)
 
 
