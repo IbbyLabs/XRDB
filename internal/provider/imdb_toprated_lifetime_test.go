@@ -85,7 +85,11 @@ func TestTopRatedIsAttemptedAgainAfterAFailure(t *testing.T) {
 	if _, err := d.Fetch(context.Background(), "movie", "tt0468569"); err != nil {
 		t.Fatalf("fetch: %v", err)
 	}
-	waitFor(t, "the first attempt to fail", func() bool { return calls.Load() == 1 })
+	waitFor(t, "the first attempt to fail", func() bool {
+		d.mu.RLock()
+		defer d.mu.RUnlock()
+		return calls.Load() == 1 && !d.rankBuilding
+	})
 	if d.TopRatedReady() {
 		t.Fatal("ranking reported ready after a failed build")
 	}
