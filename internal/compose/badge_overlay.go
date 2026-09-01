@@ -643,11 +643,15 @@ func ageOptsFromConfig(cfg imageconfig.Config) ageRatingOpts {
 }
 
 func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale float64, occ *occupancy, opts ageRatingOpts) {
+	// The ruling says the badge holds nothing, so it follows the substitution
+	// rather than the setting that allows one.
+	drewPlaceholder := false
 	if rating == "" {
 		if opts.placeholder == "" {
 			return
 		}
 		rating = opts.placeholder
+		drewPlaceholder = true
 	}
 	if opts.scale > 0 {
 		scale *= float64(opts.scale) / 100
@@ -768,7 +772,7 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 		rad = 0 // sharp-cornered tile
 	}
 	drawSoftTile(base, r, rad, chrome)
-	if opts.hatched {
+	if opts.hatched && drewPlaceholder {
 		drawHatching(base, r, color.NRGBA{R: 255, G: 255, B: 255, A: 40})
 	}
 	drawText(base, face, tx, ty, textCol, rating)
@@ -1489,6 +1493,9 @@ func applyLabelCase(label, labelCase, labelMode string) string {
 }
 
 func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float64, occ *occupancy, opts genreBadgeOpts) {
+	// The ruling says the badge holds nothing, so it follows the substitution
+	// rather than the setting that allows one.
+	drewPlaceholder := false
 	if len(genres) == 0 {
 		// The media type rather than the "other" family: that family means the
 		// genres were not recognised, which is a different statement from there
@@ -1497,6 +1504,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			return
 		}
 		genres = []string{opts.placeholder}
+		drewPlaceholder = true
 	}
 	// A per-config scale multiplier (percent) rides on top of the output scale.
 	if opts.scalePercent != 0 {
@@ -1659,7 +1667,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	r := occ.placeNudged(resolvedPos, bw, bh, edgeX, edgeY, s(7), opts.offsetX, opts.offsetY)
 	// Every style returns from its own branch and one draws its plate after the
 	// switch, so the ruling is deferred rather than placed after any one of them.
-	if opts.hatched {
+	if opts.hatched && drewPlaceholder {
 		defer drawHatching(base, r, color.NRGBA{R: 255, G: 255, B: 255, A: 40})
 	}
 	textColor := color.NRGBA{R: 225, G: 225, B: 228, A: 255}
