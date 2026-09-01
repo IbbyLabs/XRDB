@@ -289,6 +289,10 @@ func (g *budgetGovernor) observe(ctx context.Context, h http.Header) {
 		return
 	}
 
+	// The service's own number, which is the only one that knows the plan. The
+	// bulk reserve holds against it rather than against a compiled-in guess.
+	noteObservedDailyLimit(g.source, int(limit))
+
 	now := g.now()
 	g.mu.Lock()
 	secondsLeft := reset - float64(g.now().Unix())

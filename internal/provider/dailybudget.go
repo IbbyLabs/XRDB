@@ -24,6 +24,10 @@ const (
 	// bulk cut-off is limit minus reserve.
 	simklDefaultDailyLimit  = 15000
 	simklDefaultBulkReserve = 6000
+	// mdblistDefaultBulkReservePct is the share of MDBList's daily allowance a
+	// catalogue sweep may not spend. A percentage rather than a count because
+	// the allowance goes by plan and is learned from the responses.
+	mdblistDefaultBulkReservePct float64 = 25
 	// dailyBudgetDefaultReportSeconds is how often the remaining allowance is
 	// written to the log. Crossing into the reserve is reported as it happens;
 	// this covers the stretch either side of it.
@@ -47,6 +51,9 @@ type dailyBudget struct {
 	day      time.Time
 	reported time.Time
 	spent    int
+	// reservePct scales the reserve with the limit for a source whose limit is
+	// discovered rather than known. Zero keeps reserve as given.
+	reservePct float64
 	// inReserve holds the gear the last log line described.
 	inReserve bool
 	// cutOffHour and limitHour are the UTC hours the day crossed the bulk
@@ -66,6 +73,33 @@ func newDailyBudget(source string, limit, reserve int) *dailyBudget {
 		reportEvery: time.Duration(every * float64(time.Second)),
 		now:         time.Now,
 	}
+}
+
+// setLimit records a limit the source reported. A limit that arrives from the
+// service is the only one worth holding a reserve against: the allowance goes by
+// plan, so a number compiled in is right for one plan and wrong for the rest.
+func (b *dailyBudget) setLimit(limit int) {
+	if b == nil || limit <= 0 {
+		return
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.limit == limit {
+		return
+	}
+	was := b.limit
+	b.limit = limit
+	if b.reservePct > 0 {
+		b.reserve = int(float64(limit) * b.reservePct / 100)
+	}
+	b.log().Info("A source reported its daily allowance",
+		"source", b.source, "limit", limit, "previous_limit", was, "reserve", b.reserve)
+}
+
+// noteObservedDailyLimit hands a limit read from a response to the source's
+// budget. Called from the governor, which sees the headers.
+func noteObservedDailyLimit(source string, limit int) {
+	dailyBudgetFor(source).setLimit(limit)
 }
 
 func (b *dailyBudget) log() *slog.Logger {
@@ -190,8 +224,17 @@ var dailyBudgets = sync.OnceValue(func() map[string]*dailyBudget {
 	limit := envInt("XRDB_SIMKL_DAILY_LIMIT", simklDefaultDailyLimit, 1, 10_000_000)
 	// A reserve equal to the limit holds bulk callers off the source entirely.
 	reserve := envInt("XRDB_SIMKL_BULK_RESERVE", simklDefaultBulkReserve, 0, limit)
+	// MDBList reports its own allowance on every response, so the limit here is
+	// a placeholder until one arrives and the reserve is a percentage of it.
+	// XRDB_MDBLIST_DAILY_LIMIT pins it for an instance whose responses carry no
+	// headers.
+	mdbLimit := envInt("XRDB_MDBLIST_DAILY_LIMIT", mdblistAssumedDailyLimit, 1, 10_000_000)
+	mdbReservePct := envFloat("XRDB_MDBLIST_BULK_RESERVE_PCT", mdblistDefaultBulkReservePct, 0, 100)
+	mdb := newDailyBudget("mdblist", mdbLimit, int(float64(mdbLimit)*mdbReservePct/100))
+	mdb.reservePct = mdbReservePct
 	return map[string]*dailyBudget{
-		"simkl": newDailyBudget("simkl", limit, reserve),
+		"simkl":   newDailyBudget("simkl", limit, reserve),
+		"mdblist": mdb,
 	}
 })
 
