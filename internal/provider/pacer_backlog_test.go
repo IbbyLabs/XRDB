@@ -15,12 +15,12 @@ func TestPacerRefusesRatherThanQueuePastTheBudget(t *testing.T) {
 
 	// Three callers fit inside the budget: slots at +0s, +1s, +2s.
 	for i := 0; i < 3; i++ {
-		if _, err := p.reserve(0, false); err != nil {
+		if _, err := p.reserve(0, false, p.maxWait); err != nil {
 			t.Fatalf("caller %d refused inside the budget: %v", i, err)
 		}
 	}
 	// The fourth would wait 3s, past the budget.
-	_, err := p.reserve(0, false)
+	_, err := p.reserve(0, false, p.maxWait)
 	if !errors.Is(err, ErrPacerBacklog) {
 		t.Fatalf("fourth caller err = %v, want ErrPacerBacklog", err)
 	}
@@ -33,11 +33,11 @@ func TestPacerRefusesRatherThanQueuePastTheBudget(t *testing.T) {
 // from requests that were never sent.
 func TestARefusedCallerDoesNotTakeASlot(t *testing.T) {
 	p := &pacer{interval: time.Second, maxWait: time.Second}
-	_, _ = p.reserve(0, false) // slot at now
-	_, _ = p.reserve(0, false) // slot at +1s, still inside the budget
+	_, _ = p.reserve(0, false, p.maxWait) // slot at now
+	_, _ = p.reserve(0, false, p.maxWait) // slot at +1s, still inside the budget
 
 	before := p.next
-	if _, err := p.reserve(0, false); !errors.Is(err, ErrPacerBacklog) {
+	if _, err := p.reserve(0, false, p.maxWait); !errors.Is(err, ErrPacerBacklog) {
 		t.Fatalf("expected a refusal, got %v", err)
 	}
 	if !p.next.Equal(before) {
@@ -53,18 +53,18 @@ func TestThePacerRefusesATurnItCannotUse(t *testing.T) {
 	p := &pacer{interval: time.Second, maxWait: 30 * time.Second}
 	// Push the next slot four seconds out.
 	for i := 0; i < 4; i++ {
-		if _, err := p.reserve(0, false); err != nil {
+		if _, err := p.reserve(0, false, p.maxWait); err != nil {
 			t.Fatalf("priming reserve %d: %v", i, err)
 		}
 	}
 
 	// Plenty of budget: the turn is worth taking.
-	if _, err := p.reserve(30*time.Second, true); err != nil {
+	if _, err := p.reserve(30*time.Second, true, p.maxWait); err != nil {
 		t.Errorf("refused a turn with 30s of budget: %v", err)
 	}
 
 	// Not enough left for the call: refuse rather than consume it.
-	if _, err := p.reserve(time.Second, true); !errors.Is(err, ErrPacerBacklog) {
+	if _, err := p.reserve(time.Second, true, p.maxWait); !errors.Is(err, ErrPacerBacklog) {
 		t.Errorf("took a turn arriving after the budget ran out, err %v", err)
 	}
 }
@@ -82,12 +82,12 @@ func TestThePacerStillWorksWithoutADeadline(t *testing.T) {
 // version read it as "no deadline" and waved it through (BUG-245).
 func TestABudgetAlreadySpentIsRefusedNotIgnored(t *testing.T) {
 	p := &pacer{interval: time.Second, maxWait: 30 * time.Second}
-	if _, err := p.reserve(0, false); err != nil {
+	if _, err := p.reserve(0, false, p.maxWait); err != nil {
 		t.Fatalf("priming: %v", err)
 	}
 	// One second until the next slot, and the budget is negative: the deadline
 	// is nearer than the call's own minimum.
-	if _, err := p.reserve(-500*time.Millisecond, true); !errors.Is(err, ErrPacerBacklog) {
+	if _, err := p.reserve(-500*time.Millisecond, true, p.maxWait); !errors.Is(err, ErrPacerBacklog) {
 		t.Errorf("a negative budget was treated as unbounded, err %v", err)
 	}
 }

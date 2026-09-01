@@ -272,14 +272,30 @@ type pacer struct {
 	// maxWait bounds how long a caller will queue for a slot. Past it the
 	// request is refused instead of taking a slot it would not live to use: the
 	// client timeout covers the queue wait as well as the call, so a long queue
-	// cancelled every request in it before any of them were sent.
+	// cancelled every request in it before any of them were sent. It is the
+	// ceiling for an interactive caller; bulkMaxWait narrows it for a sweep.
 	maxWait time.Duration
+}
+
+// bulkQueueShare is the fraction of the queue ceiling a sweep may use. The rest
+// is held for callers someone is waiting on.
+const bulkQueueShare = 4
+
+// bulkMaxWait is the ceiling for a caller class. Only a caller that names itself
+// as a sweep yields; an unidentified one keeps the full ceiling, because it is
+// indistinguishable from a person with an unusual user agent.
+func bulkMaxWait(class CallerClass, maxWait time.Duration) time.Duration {
+	if class == CallerBulk && maxWait > 0 {
+		return maxWait / bulkQueueShare
+	}
+	return maxWait
 }
 
 // reserve takes the next slot and reports how long to hold before using it. It
 // refuses before reserving, so a shed request does not hold a slot that its own
-// timeout would have thrown away.
-func (p *pacer) reserve(budget time.Duration, bounded bool) (time.Duration, error) {
+// timeout would have thrown away. maxWait is the caller's own ceiling rather
+// than the pacer's, so a sweep can be refused where a person is queued.
+func (p *pacer) reserve(budget time.Duration, bounded bool, maxWait time.Duration) (time.Duration, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	now := time.Now()
@@ -287,7 +303,7 @@ func (p *pacer) reserve(budget time.Duration, bounded bool) (time.Duration, erro
 	if slot.Before(now) {
 		slot = now
 	}
-	if p.maxWait > 0 && slot.Sub(now) > p.maxWait {
+	if maxWait > 0 && slot.Sub(now) > maxWait {
 		return 0, ErrPacerBacklog
 	}
 	// A turn that arrives too late to use is worse than no turn: the client
@@ -318,7 +334,7 @@ func (p *pacer) wait(ctx context.Context) error {
 	if deadline, ok := ctx.Deadline(); ok {
 		budget, bounded = time.Until(deadline)-minCallBudget, true
 	}
-	delay, err := p.reserve(budget, bounded)
+	delay, err := p.reserve(budget, bounded, bulkMaxWait(CallerClassFrom(ctx), p.maxWait))
 	if err != nil {
 		return err
 	}

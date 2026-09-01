@@ -255,3 +255,44 @@ func TestNewHTTPClientAppliesThePolicy(t *testing.T) {
 		t.Errorf("got source=%q interval=%s", tt.source, tt.pacer.interval)
 	}
 }
+
+func TestPacerRefusesASweepWhereAPersonIsQueued(t *testing.T) {
+	p := &pacer{interval: time.Second, maxWait: 2 * time.Second}
+	if _, err := p.reserve(0, false, p.maxWait); err != nil {
+		t.Fatalf("first reserve: %v", err)
+	}
+
+	if _, err := p.reserve(0, false, bulkMaxWait(CallerBulk, p.maxWait)); !errors.Is(err, ErrPacerBacklog) {
+		t.Fatalf("a sweep behind a queued request should be refused, got %v", err)
+	}
+	if _, err := p.reserve(0, false, bulkMaxWait(CallerInteractive, p.maxWait)); err != nil {
+		t.Fatalf("a person behind the same request should be served: %v", err)
+	}
+}
+
+func TestWaitTakesTheCeilingFromTheContextClass(t *testing.T) {
+	p := &pacer{interval: time.Second, maxWait: 2 * time.Second}
+	if _, err := p.reserve(0, false, p.maxWait); err != nil {
+		t.Fatalf("first reserve: %v", err)
+	}
+
+	if err := p.wait(WithCallerClass(context.Background(), CallerBulk)); !errors.Is(err, ErrPacerBacklog) {
+		t.Fatalf("wait should refuse a sweep from its context class, got %v", err)
+	}
+}
+
+func TestOnlyANamedSweepYieldsTheQueue(t *testing.T) {
+	const ceiling = 2 * time.Second
+	for _, tc := range []struct {
+		class CallerClass
+		want  time.Duration
+	}{
+		{CallerBulk, 500 * time.Millisecond},
+		{CallerInteractive, ceiling},
+		{CallerUnknown, ceiling},
+	} {
+		if got := bulkMaxWait(tc.class, ceiling); got != tc.want {
+			t.Errorf("%s: got %s, want %s", tc.class, got, tc.want)
+		}
+	}
+}
