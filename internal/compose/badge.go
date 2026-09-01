@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"xrdb_rewrite/internal/certified"
 
 	xdraw "golang.org/x/image/draw"
 	"golang.org/x/image/font"
@@ -182,9 +183,11 @@ const (
 	// Rotten Tomatoes requires 80 reviews for a wide release and 40 for a limited
 	// or streaming one, and nothing we receive says which a title is. 40 is the
 	// forgiving end: it lets some non-certified wide releases through rather than
-	// denying the mark to every genuine limited release. Certified Fresh also
-	// needs five Top Critics, which no source we read carries, so this remains an
-	// approximation — a tighter one.
+	// denying the mark to every genuine limited release.
+	//
+	// Only reached for a title internal/certified has no answer for. Where it
+	// does, the status is Rotten Tomatoes' own rather than approximated from a
+	// review count they do not use for it.
 	minCertifiedFreshReviews = 40
 )
 
@@ -207,6 +210,9 @@ func enoughReviews(votes, floor int) bool {
 // the result down. A film is a Great Movie whether or not an Ebert rating was
 // fetched, so this belongs to the title and not to a Rating.
 type titleFacts struct {
+	// imdbID is what the certified-fresh file is keyed on. Empty for a title
+	// identified some other way, which the file then has no answer for.
+	imdbID string
 	// isGreatMovie is only meaningful when greatMovieKnown is true. A title
 	// identified by a TMDB id cannot be looked up in a tt-keyed list, and
 	// treating that as "no" would drop a mark with no symptom.
@@ -221,6 +227,18 @@ func markStateFor(r provider.Rating, facts titleFacts) string {
 	score := int(math.Round(r.Value * 10))
 	switch r.Source {
 	case "rt":
+		if isCert, known := certified.Is(facts.imdbID); known {
+			// The file has an answer, so nothing is approximated. A title it
+			// names as not certified still gets the mark its score earns.
+			switch {
+			case isCert && score >= 75:
+				return "critics-certified-fresh"
+			case score >= 60:
+				return "critics-fresh"
+			default:
+				return "critics-rotten"
+			}
+		}
 		switch {
 		case score >= 75 && enoughReviews(r.Votes, minCertifiedFreshReviews):
 			return "critics-certified-fresh"
@@ -1961,5 +1979,11 @@ func titleFactsFor(meta *provider.MediaMeta, requestedID string) titleFacts {
 		id = meta.IMDbID
 	}
 	on, known := curated.Contains(curated.GreatMovies, id)
-	return titleFacts{isGreatMovie: on, greatMovieKnown: known}
+	// The certified-fresh file is keyed on IMDb ids, so a title identified some
+	// other way carries an empty one and the file has no answer for it.
+	imdb := ""
+	if strings.HasPrefix(strings.ToLower(id), "tt") {
+		imdb = id
+	}
+	return titleFacts{isGreatMovie: on, greatMovieKnown: known, imdbID: imdb}
 }
