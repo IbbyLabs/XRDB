@@ -439,3 +439,45 @@ func shedHandler(t *testing.T) (http.Handler, *profile.Profile) {
 	}
 	return h, p
 }
+
+// The cap charges one token per render whatever the render costs, and pricing
+// it by surface needs to know which surfaces are being refused. The refusal
+// line is the only record of a request that never reached the queue (FR-179).
+func TestACapRefusalNamesTheSurface(t *testing.T) {
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+
+	h, p := capHandler(t, 2)
+	for i := range 8 {
+		rr := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet,
+			"/thumbnail/tt200"+string(rune('1'+i))+"?config="+p.ID, nil)
+		req.RemoteAddr = "203.0.113.11:1234"
+		h.ServeHTTP(rr, req)
+	}
+
+	// Read the refusal line itself. Other lines carry a media type, so a search
+	// of the whole buffer passes whether or not this one has the field.
+	var refusal map[string]any
+	for _, line := range strings.Split(strings.TrimSpace(buf.String()), "\n") {
+		var rec map[string]any
+		if json.Unmarshal([]byte(line), &rec) != nil {
+			continue
+		}
+		if msg, _ := rec["msg"].(string); strings.Contains(msg, "more renders than its allowance") {
+			refusal = rec
+			break
+		}
+	}
+	if refusal == nil {
+		t.Fatalf("no caller was refused, so this proves nothing about the field: %s", buf.String())
+	}
+	if got, _ := refusal["media_type"].(string); got != "thumbnail" {
+		t.Errorf("cap refusal media_type = %q, want thumbnail", got)
+	}
+	if _, ok := refusal["size"]; !ok {
+		t.Error("the cap refusal does not name the size")
+	}
+}
