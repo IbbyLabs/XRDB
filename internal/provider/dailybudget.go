@@ -27,7 +27,13 @@ const (
 	// mdblistDefaultBulkReservePct is the share of MDBList's daily allowance a
 	// catalogue sweep may not spend. A percentage rather than a count because
 	// the allowance goes by plan and is learned from the responses.
-	mdblistDefaultBulkReservePct float64 = 25
+	//
+	// Larger than mdblistDefaultReservePct, which governs the rate every caller
+	// is paced at, so the two defences engage in cost order: sweeps stop at 40%
+	// remaining and cost a catalogue refresh a minute, and the rate floor at 25%
+	// costs a person waiting on a poster. Equal defaults fire them together and
+	// waste the cheaper one. The same 40% Simkl reserves.
+	mdblistDefaultBulkReservePct float64 = 40
 	// dailyBudgetDefaultReportSeconds is how often the remaining allowance is
 	// written to the log. Crossing into the reserve is reported as it happens;
 	// this covers the stretch either side of it.
