@@ -582,7 +582,7 @@ func (p *Pipeline) SetRatingsCacheTTL(ttl time.Duration) {
 		p.ratings = nil
 		return
 	}
-	p.ratings = newRatingsCache(ttl)
+	p.ratings = newRatingsCache(ttl, p.log())
 }
 
 // CachedRatings reports how many source answers are held.
@@ -822,7 +822,7 @@ func New(reg *provider.Registry) *Pipeline {
 			Transport: newArtFetchTransport(),
 		}},
 		logger:  slog.Default(),
-		ratings: newRatingsCache(DefaultRatingsCacheTTL),
+		ratings: newRatingsCache(DefaultRatingsCacheTTL, slog.Default()),
 	}
 }
 
@@ -914,6 +914,9 @@ func (p *Pipeline) log() *slog.Logger {
 const (
 	outcomeHeldOut    = "held_out"
 	outcomeRemembered = "remembered"
+	// A refresh that failed behind a served cache entry. Nobody lost a badge to
+	// it; it names spend and queue contention the render lines cannot show.
+	outcomeRefreshHeldOut = "refresh_held_out"
 )
 
 // unavailableSources turns the providers held out of a render into the rating

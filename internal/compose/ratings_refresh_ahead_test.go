@@ -1,7 +1,10 @@
 package compose
 
 import (
+	"bytes"
 	"context"
+	"log/slog"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -16,7 +19,7 @@ func ratedAt(v float64) *provider.MediaMeta {
 // A render inside the refresh window is served the remembered answer and does
 // not wait on the source; the fetch runs behind it (FR-201).
 func TestAnEntryNearExpiryIsRefreshedBehindTheRender(t *testing.T) {
-	c := newRatingsCache(time.Hour)
+	c := newRatingsCache(time.Hour, nil)
 	c.entries["k"] = ratingsEntry{Meta: ratedAt(1), ExpiresAt: time.Now().Add(time.Minute)}
 
 	var calls atomic.Int32
@@ -51,7 +54,7 @@ func TestAnEntryNearExpiryIsRefreshedBehindTheRender(t *testing.T) {
 // An entry with most of its term left must not be re-asked; that would spend a
 // metered source on every render.
 func TestAnEntryWellInsideItsTermIsNotRefreshed(t *testing.T) {
-	c := newRatingsCache(time.Hour)
+	c := newRatingsCache(time.Hour, nil)
 	c.entries["k"] = ratingsEntry{Meta: ratedAt(1), ExpiresAt: time.Now().Add(50 * time.Minute)}
 
 	var calls atomic.Int32
@@ -71,7 +74,7 @@ func TestAnEntryWellInsideItsTermIsNotRefreshed(t *testing.T) {
 
 // Concurrent renders inside the window share one refresh.
 func TestConcurrentRendersTriggerOneRefresh(t *testing.T) {
-	c := newRatingsCache(time.Hour)
+	c := newRatingsCache(time.Hour, nil)
 	c.entries["k"] = ratingsEntry{Meta: ratedAt(1), ExpiresAt: time.Now().Add(time.Minute)}
 
 	var calls atomic.Int32
@@ -95,7 +98,7 @@ func TestConcurrentRendersTriggerOneRefresh(t *testing.T) {
 // The render that triggers a refresh returns immediately, so a refresh on its
 // context would be cancelled before it reached the source.
 func TestARefreshOutlivesTheRenderThatTriggeredIt(t *testing.T) {
-	c := newRatingsCache(time.Hour)
+	c := newRatingsCache(time.Hour, nil)
 	c.entries["k"] = ratingsEntry{Meta: ratedAt(1), ExpiresAt: time.Now().Add(time.Minute)}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -131,4 +134,30 @@ func waitForNoInflight(t *testing.T, c *ratingsCache, key string) {
 		time.Sleep(10 * time.Millisecond)
 	}
 	t.Fatal("a refresh never finished")
+}
+
+// A refresh runs off the render path, so its refusal reaches no hold-out line
+// and no counter. Without this it is spend and contention with no trace.
+func TestAFailedRefreshIsLogged(t *testing.T) {
+	var buf bytes.Buffer
+	const key = "wikidata|movie|tt1"
+	c := newRatingsCache(time.Hour, slog.New(slog.NewJSONHandler(&buf, nil)))
+	c.entries[key] = ratingsEntry{Meta: ratedAt(1), ExpiresAt: time.Now().Add(time.Minute)}
+
+	done := make(chan struct{})
+	if _, err := c.do(t.Context(), key, func(context.Context) (*provider.MediaMeta, bool, error) {
+		defer close(done)
+		return nil, false, provider.ErrPacerBacklog
+	}); err != nil {
+		t.Fatal(err)
+	}
+	<-done
+	waitForNoInflight(t, c, key)
+
+	line := buf.String()
+	for _, want := range []string{"refresh_held_out", "pacer_backlog", "wikidata", "tt1"} {
+		if !strings.Contains(line, want) {
+			t.Errorf("the refusal line does not name %q: %s", want, line)
+		}
+	}
 }

@@ -19,7 +19,7 @@ func oneRating(source string) *provider.MediaMeta {
 // A render is keyed on its whole config but ratings depend only on the title,
 // so the second config must not pay for the same fetch again.
 func TestTheSameTitleIsFetchedOnce(t *testing.T) {
-	c := newRatingsCache(time.Hour)
+	c := newRatingsCache(time.Hour, nil)
 	var calls atomic.Int32
 	fetch := func(context.Context) (*provider.MediaMeta, bool, error) {
 		calls.Add(1)
@@ -37,7 +37,7 @@ func TestTheSameTitleIsFetchedOnce(t *testing.T) {
 
 // Different titles are different answers.
 func TestDifferentTitlesAreNotConflated(t *testing.T) {
-	c := newRatingsCache(time.Hour)
+	c := newRatingsCache(time.Hour, nil)
 	var calls atomic.Int32
 	fetch := func(context.Context) (*provider.MediaMeta, bool, error) {
 		calls.Add(1)
@@ -52,7 +52,7 @@ func TestDifferentTitlesAreNotConflated(t *testing.T) {
 
 // A catalogue opening on many copies of one title must still ask once.
 func TestConcurrentMissesShareOneFetch(t *testing.T) {
-	c := newRatingsCache(time.Hour)
+	c := newRatingsCache(time.Hour, nil)
 	var calls atomic.Int32
 	release := make(chan struct{})
 	fetch := func(context.Context) (*provider.MediaMeta, bool, error) {
@@ -79,7 +79,7 @@ func TestConcurrentMissesShareOneFetch(t *testing.T) {
 // Caching a failure would hold a source's outage past its end, and the health
 // tracker's fallback already covers that case.
 func TestFailuresAreNotRemembered(t *testing.T) {
-	c := newRatingsCache(time.Hour)
+	c := newRatingsCache(time.Hour, nil)
 	var calls atomic.Int32
 	fetch := func(context.Context) (*provider.MediaMeta, bool, error) {
 		calls.Add(1)
@@ -96,7 +96,7 @@ func TestFailuresAreNotRemembered(t *testing.T) {
 // An answer carrying no ratings is the shape a scraped source takes when its
 // markup changes; remembering it would freeze the gap in place.
 func TestEmptyAnswersAreNotRemembered(t *testing.T) {
-	c := newRatingsCache(time.Hour)
+	c := newRatingsCache(time.Hour, nil)
 	var calls atomic.Int32
 	fetch := func(context.Context) (*provider.MediaMeta, bool, error) {
 		calls.Add(1)
@@ -111,7 +111,7 @@ func TestEmptyAnswersAreNotRemembered(t *testing.T) {
 }
 
 func TestEntriesExpire(t *testing.T) {
-	c := newRatingsCache(10 * time.Millisecond)
+	c := newRatingsCache(10*time.Millisecond, nil)
 	var calls atomic.Int32
 	fetch := func(context.Context) (*provider.MediaMeta, bool, error) {
 		calls.Add(1)
@@ -140,7 +140,7 @@ func TestNilCacheStillFetches(t *testing.T) {
 func TestPipelineDoesNotRefetchAcrossConfigs(t *testing.T) {
 	src := &countingLimiter{name: "simkl"}
 	p := &Pipeline{providers: testRegistry(src), fetcher: &stubImageFetcher{},
-		ratings: newRatingsCache(time.Hour)}
+		ratings: newRatingsCache(time.Hour, nil)}
 
 	for _, ratings := range [][]string{{"simkl"}, {"simkl", "imdb"}, {"simkl", "tmdb"}} {
 		cfg := imageconfig.Default()

@@ -146,6 +146,16 @@ func GoodKey(source, mediaType, id string) string {
 	return source + "|" + mediaType + "|" + id
 }
 
+// SplitGoodKey takes a key apart into the three fields GoodKey joined. A key
+// that is not in that shape returns empty strings rather than a partial guess.
+func SplitGoodKey(key string) (source, mediaType, id string) {
+	parts := strings.SplitN(key, "|", 3)
+	if len(parts) != 3 {
+		return "", "", ""
+	}
+	return parts[0], parts[1], parts[2]
+}
+
 // Success records a healthy fetch and remembers its result. A result carrying
 // no ratings is not remembered: it is exactly what a broken scrape produces,
 // and storing it would overwrite the good answer we still want to fall back to.

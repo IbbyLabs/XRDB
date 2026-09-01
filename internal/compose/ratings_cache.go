@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"xrdb_rewrite/internal/logging"
 	"xrdb_rewrite/internal/provider"
 )
 
@@ -60,9 +61,18 @@ type ratingsCache struct {
 	// disables persistence.
 	path string
 
+	logger *slog.Logger
+
 	mu       sync.Mutex
 	entries  map[string]ratingsEntry
 	inflight map[string]*ratingsCall
+}
+
+func (c *ratingsCache) log() *slog.Logger {
+	if c == nil || c.logger == nil {
+		return slog.Default()
+	}
+	return c.logger
 }
 
 type ratingsEntry struct {
@@ -77,12 +87,13 @@ type ratingsCall struct {
 	err      error
 }
 
-func newRatingsCache(ttl time.Duration) *ratingsCache {
+func newRatingsCache(ttl time.Duration, logger *slog.Logger) *ratingsCache {
 	if ttl <= 0 {
 		ttl = DefaultRatingsCacheTTL
 	}
 	return &ratingsCache{
 		ttl:      ttl,
+		logger:   logger,
 		entries:  make(map[string]ratingsEntry),
 		inflight: make(map[string]*ratingsCall),
 	}
@@ -164,6 +175,18 @@ func (c *ratingsCache) runRefresh(ctx context.Context, key string, call *ratings
 	defer cancel()
 
 	call.meta, call.complete, call.err = fetch(rctx)
+	// A refresh runs off the render path, so its refusal reaches no hold-out
+	// line and no counter. Unlogged it is spend and contention with no trace.
+	if call.err != nil {
+		source, contentType, id := provider.SplitGoodKey(key)
+		c.log().WarnContext(rctx, "A ratings refresh did not answer; the remembered answer still stands",
+			"triggered_by", logging.RequestID(rctx), "source", source,
+			"content_type", contentType, "media_id", id,
+			"gate", provider.HoldOutGate(call.err),
+			"outcome", outcomeRefreshHeldOut,
+			"caller_class", provider.CallerClassFrom(rctx).String(),
+			"error", call.err)
+	}
 
 	c.mu.Lock()
 	delete(c.inflight, key)

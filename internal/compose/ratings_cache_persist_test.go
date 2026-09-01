@@ -22,7 +22,7 @@ func TestRememberedRatingsSurviveARestart(t *testing.T) {
 	dir := t.TempDir()
 	logger := slog.New(slog.DiscardHandler)
 
-	first := newRatingsCache(time.Hour)
+	first := newRatingsCache(time.Hour, nil)
 	first.path = filepath.Join(dir, ratingsCacheFile)
 	if _, err := first.do(context.Background(), "tt1:imdb", func(context.Context) (*provider.MediaMeta, bool, error) {
 		return metaWith("imdb"), true, nil
@@ -34,7 +34,7 @@ func TestRememberedRatingsSurviveARestart(t *testing.T) {
 	}
 
 	// A fresh process, same directory.
-	second := newRatingsCache(time.Hour)
+	second := newRatingsCache(time.Hour, nil)
 	second.path = filepath.Join(dir, ratingsCacheFile)
 	second.load(logger)
 
@@ -57,7 +57,7 @@ func TestRememberedRatingsSurviveARestart(t *testing.T) {
 // An entry past its TTL must not come back from disk.
 func TestExpiredAnswersAreNotRestored(t *testing.T) {
 	dir := t.TempDir()
-	c := newRatingsCache(time.Hour)
+	c := newRatingsCache(time.Hour, nil)
 	c.path = filepath.Join(dir, ratingsCacheFile)
 	c.entries["stale"] = ratingsEntry{Meta: metaWith("rt"), ExpiresAt: time.Now().Add(-time.Minute)}
 	c.entries["fresh"] = ratingsEntry{Meta: metaWith("imdb"), ExpiresAt: time.Now().Add(time.Hour)}
@@ -65,7 +65,7 @@ func TestExpiredAnswersAreNotRestored(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	next := newRatingsCache(time.Hour)
+	next := newRatingsCache(time.Hour, nil)
 	next.path = c.path
 	next.load(slog.New(slog.DiscardHandler))
 	if _, ok := next.entries["stale"]; ok {
@@ -79,7 +79,7 @@ func TestExpiredAnswersAreNotRestored(t *testing.T) {
 // Hitting the cap used to discard everything, which refetched every title still
 // in use in one burst against metered sources.
 func TestTheCapEvictsRatherThanEmptying(t *testing.T) {
-	c := newRatingsCache(time.Hour)
+	c := newRatingsCache(time.Hour, nil)
 	now := time.Now()
 	for i := 0; i < ratingsCacheMax; i++ {
 		c.entries[string(rune(i))+"k"] = ratingsEntry{
@@ -104,7 +104,7 @@ func TestTheCapEvictsRatherThanEmptying(t *testing.T) {
 
 // Persistence is optional: with no path set nothing is written and nothing errors.
 func TestSaveIsANoOpWithoutAPath(t *testing.T) {
-	if err := newRatingsCache(time.Hour).Save(); err != nil {
+	if err := newRatingsCache(time.Hour, nil).Save(); err != nil {
 		t.Errorf("Save without a path errored: %v", err)
 	}
 	var nilCache *ratingsCache
@@ -128,7 +128,7 @@ func TestAnOlderShapeSnapshotIsDiscarded(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	c := newRatingsCache(time.Hour)
+	c := newRatingsCache(time.Hour, nil)
 	c.path = path
 	c.load(slog.New(slog.DiscardHandler))
 	if c.Len() != 0 {
@@ -163,7 +163,7 @@ func TestOnlyTheChangedSourceLosesItsRememberedRatings(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	c := newRatingsCache(time.Hour)
+	c := newRatingsCache(time.Hour, nil)
 	c.path = path
 	c.load(slog.New(slog.NewTextHandler(io.Discard, nil)))
 
@@ -191,7 +191,7 @@ func TestLegacySnapshotKeepsUnchangedSources(t *testing.T) {
 	if err := os.WriteFile(path, data, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	c := newRatingsCache(time.Hour)
+	c := newRatingsCache(time.Hour, nil)
 	c.path = path
 	c.load(slog.New(slog.NewTextHandler(io.Discard, nil)))
 

@@ -12,7 +12,7 @@ import (
 // allowance is spent. Held for the full term, one thin answer decides what the
 // title looks like until the term runs out, long after the allowance resets.
 func TestAPartialAnswerTakesTheShorterTerm(t *testing.T) {
-	c := newRatingsCache(6 * time.Hour)
+	c := newRatingsCache(6*time.Hour, nil)
 
 	_, err := c.do(context.Background(), "mdblist|movie|tt1", func(context.Context) (*provider.MediaMeta, bool, error) {
 		return oneRating("imdb"), false, nil
@@ -32,7 +32,7 @@ func TestAPartialAnswerTakesTheShorterTerm(t *testing.T) {
 }
 
 func TestACompleteAnswerTakesTheFullTerm(t *testing.T) {
-	c := newRatingsCache(6 * time.Hour)
+	c := newRatingsCache(6*time.Hour, nil)
 
 	if _, err := c.do(context.Background(), "mdblist|movie|tt2", func(context.Context) (*provider.MediaMeta, bool, error) {
 		return oneRating("imdb"), true, nil
@@ -49,7 +49,7 @@ func TestACompleteAnswerTakesTheFullTerm(t *testing.T) {
 // The shorter term is a cap, not a floor: an instance configured with a TTL
 // below it keeps its own.
 func TestTheShorterTermNeverExtendsAConfiguredTTL(t *testing.T) {
-	c := newRatingsCache(time.Minute)
+	c := newRatingsCache(time.Minute, nil)
 
 	if _, err := c.do(context.Background(), "mdblist|movie|tt3", func(context.Context) (*provider.MediaMeta, bool, error) {
 		return oneRating("imdb"), false, nil
