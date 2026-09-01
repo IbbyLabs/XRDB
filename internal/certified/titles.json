@@ -1,4 +1,1065 @@
 {
-  "readAt": "",
-  "titles": {}
+  "readAt": "2026-09-01T08:29:26Z",
+  "titles": {
+    "tt0050083": {
+      "certified": true,
+      "score": 100
+    },
+    "tt0068646": {
+      "certified": true,
+      "score": 97
+    },
+    "tt0088930": {
+      "certified": false,
+      "score": 73
+    },
+    "tt0094625": {
+      "certified": true,
+      "score": 91
+    },
+    "tt0098384": {
+      "certified": false,
+      "score": 73
+    },
+    "tt0098904": {
+      "certified": false,
+      "score": 89
+    },
+    "tt0099371": {
+      "certified": false,
+      "score": 38
+    },
+    "tt0108052": {
+      "certified": true,
+      "score": 98
+    },
+    "tt0111161": {
+      "certified": true,
+      "score": 89
+    },
+    "tt0114746": {
+      "certified": true,
+      "score": 88
+    },
+    "tt0120382": {
+      "certified": true,
+      "score": 94
+    },
+    "tt0120623": {
+      "certified": true,
+      "score": 92
+    },
+    "tt0141842": {
+      "certified": false,
+      "score": 92
+    },
+    "tt0149460": {
+      "certified": false,
+      "score": 88
+    },
+    "tt0213338": {
+      "certified": false,
+      "score": 100
+    },
+    "tt0245429": {
+      "certified": true,
+      "score": 96
+    },
+    "tt0264464": {
+      "certified": true,
+      "score": 96
+    },
+    "tt0266543": {
+      "certified": true,
+      "score": 99
+    },
+    "tt0279077": {
+      "certified": false,
+      "score": 100
+    },
+    "tt0286486": {
+      "certified": false,
+      "score": 90
+    },
+    "tt0306414": {
+      "certified": false,
+      "score": 94
+    },
+    "tt0312172": {
+      "certified": false,
+      "score": 89
+    },
+    "tt0386676": {
+      "certified": false,
+      "score": 81
+    },
+    "tt0412142": {
+      "certified": false,
+      "score": 89
+    },
+    "tt0416449": {
+      "certified": false,
+      "score": 61
+    },
+    "tt0417299": {
+      "certified": false,
+      "score": 100
+    },
+    "tt0427340": {
+      "certified": false,
+      "score": 67
+    },
+    "tt0434665": {
+      "certified": false,
+      "score": 100
+    },
+    "tt0460681": {
+      "certified": false,
+      "score": 93
+    },
+    "tt0468569": {
+      "certified": true,
+      "score": 94
+    },
+    "tt0472954": {
+      "certified": false,
+      "score": 94
+    },
+    "tt0482571": {
+      "certified": true,
+      "score": 77
+    },
+    "tt0770828": {
+      "certified": false,
+      "score": 57
+    },
+    "tt0773262": {
+      "certified": false,
+      "score": 71
+    },
+    "tt0796366": {
+      "certified": true,
+      "score": 94
+    },
+    "tt0804484": {
+      "certified": false,
+      "score": 87
+    },
+    "tt0813715": {
+      "certified": false,
+      "score": 52
+    },
+    "tt0816692": {
+      "certified": true,
+      "score": 73
+    },
+    "tt0877057": {
+      "certified": false,
+      "score": 100
+    },
+    "tt0903747": {
+      "certified": false,
+      "score": 96
+    },
+    "tt0914387": {
+      "certified": false,
+      "score": 91
+    },
+    "tt0926084": {
+      "certified": true,
+      "score": 77
+    },
+    "tt0944947": {
+      "certified": false,
+      "score": 89
+    },
+    "tt10293938": {
+      "certified": false,
+      "score": 83
+    },
+    "tt10577736": {
+      "certified": false,
+      "score": 92
+    },
+    "tt10872600": {
+      "certified": true,
+      "score": 93
+    },
+    "tt10986410": {
+      "certified": false,
+      "score": 89
+    },
+    "tt11126994": {
+      "certified": false,
+      "score": 100
+    },
+    "tt11147852": {
+      "certified": false,
+      "score": 100
+    },
+    "tt11198330": {
+      "certified": false,
+      "score": 88
+    },
+    "tt11280740": {
+      "certified": false,
+      "score": 95
+    },
+    "tt11378946": {
+      "certified": false,
+      "score": 38
+    },
+    "tt11379026": {
+      "certified": false,
+      "score": 97
+    },
+    "tt11561116": {
+      "certified": false,
+      "score": 47
+    },
+    "tt11691774": {
+      "certified": false,
+      "score": 95
+    },
+    "tt11794812": {
+      "certified": false,
+      "score": 85
+    },
+    "tt11846996": {
+      "certified": false,
+      "score": 67
+    },
+    "tt1190634": {
+      "certified": false,
+      "score": 92
+    },
+    "tt11958610": {
+      "certified": false,
+      "score": 81
+    },
+    "tt12042730": {
+      "certified": true,
+      "score": 95
+    },
+    "tt1211837": {
+      "certified": true,
+      "score": 89
+    },
+    "tt1219024": {
+      "certified": false,
+      "score": 82
+    },
+    "tt12300742": {
+      "certified": true,
+      "score": 87
+    },
+    "tt12593682": {
+      "certified": false,
+      "score": 53
+    },
+    "tt1305826": {
+      "certified": false,
+      "score": 100
+    },
+    "tt13111078": {
+      "certified": false,
+      "score": 76
+    },
+    "tt13210838": {
+      "certified": false,
+      "score": 75
+    },
+    "tt1333644": {
+      "certified": false,
+      "score": 29
+    },
+    "tt1341338": {
+      "certified": true,
+      "score": 82
+    },
+    "tt13443470": {
+      "certified": false,
+      "score": 80
+    },
+    "tt1355642": {
+      "certified": false,
+      "score": 100
+    },
+    "tt13918776": {
+      "certified": false,
+      "score": 82
+    },
+    "tt1399664": {
+      "certified": false,
+      "score": 88
+    },
+    "tt14173636": {
+      "certified": true,
+      "score": 96
+    },
+    "tt14263564": {
+      "certified": false,
+      "score": 92
+    },
+    "tt14331144": {
+      "certified": true,
+      "score": 96
+    },
+    "tt14403178": {
+      "certified": false,
+      "score": 93
+    },
+    "tt14452776": {
+      "certified": false,
+      "score": 93
+    },
+    "tt14513804": {
+      "certified": false,
+      "score": 46
+    },
+    "tt14688458": {
+      "certified": false,
+      "score": 92
+    },
+    "tt14824792": {
+      "certified": false,
+      "score": 87
+    },
+    "tt15017118": {
+      "certified": false,
+      "score": 100
+    },
+    "tt15047880": {
+      "certified": true,
+      "score": 79
+    },
+    "tt1519931": {
+      "certified": false,
+      "score": 63
+    },
+    "tt1520211": {
+      "certified": false,
+      "score": 79
+    },
+    "tt15245268": {
+      "certified": false,
+      "score": 92
+    },
+    "tt15398776": {
+      "certified": true,
+      "score": 93
+    },
+    "tt1591095": {
+      "certified": false,
+      "score": 66
+    },
+    "tt16026746": {
+      "certified": false,
+      "score": 98
+    },
+    "tt16294384": {
+      "certified": false,
+      "score": 76
+    },
+    "tt1630029": {
+      "certified": true,
+      "score": 76
+    },
+    "tt16428256": {
+      "certified": true,
+      "score": 96
+    },
+    "tt16431404": {
+      "certified": false,
+      "score": 68
+    },
+    "tt17490712": {
+      "certified": false,
+      "score": 64
+    },
+    "tt1751634": {
+      "certified": false,
+      "score": 81
+    },
+    "tt1756855": {
+      "certified": true,
+      "score": 96
+    },
+    "tt1825683": {
+      "certified": true,
+      "score": 96
+    },
+    "tt18259538": {
+      "certified": true,
+      "score": 90
+    },
+    "tt1830617": {
+      "certified": false,
+      "score": 89
+    },
+    "tt1839578": {
+      "certified": false,
+      "score": 92
+    },
+    "tt1844624": {
+      "certified": false,
+      "score": 77
+    },
+    "tt18546730": {
+      "certified": false,
+      "score": 78
+    },
+    "tt1865718": {
+      "certified": false,
+      "score": 100
+    },
+    "tt1872181": {
+      "certified": false,
+      "score": 50
+    },
+    "tt1877368": {
+      "certified": false,
+      "score": 87
+    },
+    "tt1910272": {
+      "certified": false,
+      "score": 100
+    },
+    "tt19231492": {
+      "certified": false,
+      "score": 87
+    },
+    "tt1979376": {
+      "certified": true,
+      "score": 96
+    },
+    "tt2012616": {
+      "certified": false,
+      "score": 63
+    },
+    "tt2013293": {
+      "certified": true,
+      "score": 88
+    },
+    "tt20969586": {
+      "certified": true,
+      "score": 88
+    },
+    "tt21191806": {
+      "certified": false,
+      "score": 31
+    },
+    "tt21285562": {
+      "certified": false,
+      "score": 39
+    },
+    "tt22084616": {
+      "certified": true,
+      "score": 89
+    },
+    "tt22091076": {
+      "certified": false,
+      "score": 98
+    },
+    "tt22248376": {
+      "certified": false,
+      "score": 100
+    },
+    "tt23724682": {
+      "certified": false,
+      "score": 27
+    },
+    "tt2395427": {
+      "certified": true,
+      "score": 75
+    },
+    "tt2397535": {
+      "certified": true,
+      "score": 84
+    },
+    "tt2543164": {
+      "certified": true,
+      "score": 94
+    },
+    "tt2560140": {
+      "certified": false,
+      "score": 96
+    },
+    "tt26443616": {
+      "certified": true,
+      "score": 94
+    },
+    "tt26471411": {
+      "certified": false,
+      "score": 100
+    },
+    "tt26545992": {
+      "certified": false,
+      "score": 92
+    },
+    "tt26576161": {
+      "certified": false,
+      "score": 75
+    },
+    "tt26657236": {
+      "certified": true,
+      "score": 87
+    },
+    "tt26862142": {
+      "certified": false,
+      "score": 48
+    },
+    "tt27047903": {
+      "certified": false,
+      "score": 30
+    },
+    "tt27165187": {
+      "certified": true,
+      "score": 86
+    },
+    "tt27200708": {
+      "certified": false,
+      "score": 69
+    },
+    "tt27419466": {
+      "certified": false,
+      "score": 32
+    },
+    "tt27497393": {
+      "certified": false,
+      "score": 77
+    },
+    "tt27530512": {
+      "certified": false,
+      "score": 28
+    },
+    "tt27543562": {
+      "certified": false,
+      "score": 56
+    },
+    "tt27543632": {
+      "certified": true,
+      "score": 74
+    },
+    "tt27681354": {
+      "certified": false,
+      "score": 52
+    },
+    "tt27799594": {
+      "certified": false,
+      "score": 100
+    },
+    "tt27811632": {
+      "certified": true,
+      "score": 96
+    },
+    "tt27844906": {
+      "certified": false,
+      "score": 17
+    },
+    "tt28363783": {
+      "certified": false,
+      "score": 22
+    },
+    "tt2861424": {
+      "certified": false,
+      "score": 91
+    },
+    "tt28650488": {
+      "certified": false,
+      "score": 42
+    },
+    "tt29355505": {
+      "certified": true,
+      "score": 93
+    },
+    "tt29356163": {
+      "certified": false,
+      "score": 81
+    },
+    "tt29552248": {
+      "certified": false,
+      "score": 69
+    },
+    "tt30017619": {
+      "certified": true,
+      "score": 88
+    },
+    "tt30217403": {
+      "certified": false,
+      "score": 100
+    },
+    "tt3032476": {
+      "certified": false,
+      "score": 98
+    },
+    "tt30343126": {
+      "certified": false,
+      "score": 88
+    },
+    "tt30460310": {
+      "certified": false,
+      "score": 92
+    },
+    "tt30472557": {
+      "certified": false,
+      "score": 96
+    },
+    "tt30825738": {
+      "certified": false,
+      "score": 60
+    },
+    "tt30827810": {
+      "certified": true,
+      "score": 92
+    },
+    "tt31170389": {
+      "certified": false,
+      "score": 71
+    },
+    "tt31195136": {
+      "certified": true,
+      "score": 77
+    },
+    "tt31425731": {
+      "certified": false,
+      "score": 23
+    },
+    "tt31434030": {
+      "certified": false,
+      "score": 54
+    },
+    "tt31510819": {
+      "certified": false,
+      "score": 77
+    },
+    "tt31938062": {
+      "certified": false,
+      "score": 96
+    },
+    "tt32020831": {
+      "certified": false,
+      "score": 54
+    },
+    "tt32093575": {
+      "certified": false,
+      "score": 24
+    },
+    "tt32104007": {
+      "certified": false,
+      "score": 60
+    },
+    "tt32140872": {
+      "certified": false,
+      "score": 94
+    },
+    "tt32252772": {
+      "certified": false,
+      "score": 70
+    },
+    "tt32260680": {
+      "certified": false,
+      "score": 69
+    },
+    "tt32267691": {
+      "certified": true,
+      "score": 88
+    },
+    "tt32267726": {
+      "certified": false,
+      "score": 88
+    },
+    "tt32268156": {
+      "certified": false,
+      "score": 22
+    },
+    "tt32278481": {
+      "certified": false,
+      "score": 65
+    },
+    "tt32332915": {
+      "certified": true,
+      "score": 91
+    },
+    "tt32338669": {
+      "certified": false,
+      "score": 49
+    },
+    "tt32357218": {
+      "certified": false,
+      "score": 64
+    },
+    "tt32362890": {
+      "certified": false,
+      "score": 45
+    },
+    "tt32393988": {
+      "certified": false,
+      "score": 57
+    },
+    "tt32499466": {
+      "certified": true,
+      "score": 88
+    },
+    "tt32547691": {
+      "certified": true,
+      "score": 86
+    },
+    "tt32565993": {
+      "certified": true,
+      "score": 95
+    },
+    "tt32612507": {
+      "certified": false,
+      "score": 45
+    },
+    "tt32820897": {
+      "certified": false,
+      "score": 98
+    },
+    "tt32890033": {
+      "certified": true,
+      "score": 89
+    },
+    "tt33049767": {
+      "certified": false,
+      "score": 88
+    },
+    "tt33071426": {
+      "certified": true,
+      "score": 76
+    },
+    "tt33095251": {
+      "certified": true,
+      "score": 93
+    },
+    "tt33246591": {
+      "certified": false,
+      "score": 72
+    },
+    "tt33253070": {
+      "certified": false,
+      "score": 62
+    },
+    "tt33296751": {
+      "certified": true,
+      "score": 94
+    },
+    "tt33305867": {
+      "certified": false,
+      "score": 34
+    },
+    "tt33311069": {
+      "certified": true,
+      "score": 98
+    },
+    "tt33332385": {
+      "certified": false,
+      "score": 98
+    },
+    "tt33499146": {
+      "certified": true,
+      "score": 75
+    },
+    "tt33546863": {
+      "certified": false,
+      "score": 92
+    },
+    "tt33612209": {
+      "certified": true,
+      "score": 78
+    },
+    "tt33763941": {
+      "certified": false,
+      "score": 46
+    },
+    "tt33764258": {
+      "certified": true,
+      "score": 94
+    },
+    "tt3385516": {
+      "certified": false,
+      "score": 47
+    },
+    "tt33978029": {
+      "certified": true,
+      "score": 75
+    },
+    "tt34379307": {
+      "certified": true,
+      "score": 97
+    },
+    "tt34385135": {
+      "certified": true,
+      "score": 80
+    },
+    "tt34675596": {
+      "certified": false,
+      "score": 75
+    },
+    "tt34771210": {
+      "certified": false,
+      "score": 64
+    },
+    "tt34809853": {
+      "certified": false,
+      "score": 90
+    },
+    "tt34866681": {
+      "certified": false,
+      "score": 79
+    },
+    "tt34966562": {
+      "certified": true,
+      "score": 95
+    },
+    "tt34991493": {
+      "certified": false,
+      "score": 89
+    },
+    "tt3501632": {
+      "certified": true,
+      "score": 93
+    },
+    "tt3502248": {
+      "certified": false,
+      "score": 97
+    },
+    "tt35050712": {
+      "certified": false,
+      "score": 73
+    },
+    "tt35114460": {
+      "certified": true,
+      "score": 71
+    },
+    "tt35298123": {
+      "certified": true,
+      "score": 94
+    },
+    "tt35519455": {
+      "certified": true,
+      "score": 93
+    },
+    "tt35618070": {
+      "certified": false,
+      "score": 91
+    },
+    "tt35674521": {
+      "certified": true,
+      "score": 92
+    },
+    "tt3581920": {
+      "certified": false,
+      "score": 94
+    },
+    "tt35946742": {
+      "certified": false,
+      "score": 93
+    },
+    "tt36042156": {
+      "certified": true,
+      "score": 73
+    },
+    "tt36303968": {
+      "certified": false,
+      "score": 98
+    },
+    "tt36352591": {
+      "certified": false,
+      "score": 65
+    },
+    "tt36590417": {
+      "certified": true,
+      "score": 93
+    },
+    "tt36629665": {
+      "certified": false,
+      "score": 41
+    },
+    "tt37287335": {
+      "certified": true,
+      "score": 93
+    },
+    "tt37692332": {
+      "certified": false,
+      "score": 100
+    },
+    "tt37853455": {
+      "certified": false,
+      "score": 44
+    },
+    "tt38650409": {
+      "certified": false,
+      "score": 82
+    },
+    "tt3896198": {
+      "certified": true,
+      "score": 85
+    },
+    "tt39143902": {
+      "certified": true,
+      "score": 92
+    },
+    "tt40792117": {
+      "certified": false,
+      "score": 80
+    },
+    "tt4124758": {
+      "certified": false,
+      "score": 54
+    },
+    "tt41367695": {
+      "certified": false,
+      "score": 50
+    },
+    "tt4154796": {
+      "certified": true,
+      "score": 94
+    },
+    "tt42863533": {
+      "certified": false,
+      "score": 92
+    },
+    "tt43476716": {
+      "certified": false,
+      "score": 75
+    },
+    "tt4574334": {
+      "certified": false,
+      "score": 90
+    },
+    "tt4687880": {
+      "certified": false,
+      "score": 86
+    },
+    "tt5011816": {
+      "certified": false,
+      "score": 96
+    },
+    "tt5311514": {
+      "certified": true,
+      "score": 98
+    },
+    "tt5323662": {
+      "certified": false,
+      "score": 95
+    },
+    "tt5420376": {
+      "certified": false,
+      "score": 81
+    },
+    "tt5626028": {
+      "certified": false,
+      "score": 100
+    },
+    "tt5675620": {
+      "certified": false,
+      "score": 64
+    },
+    "tt5753856": {
+      "certified": false,
+      "score": 95
+    },
+    "tt5822112": {
+      "certified": false,
+      "score": 76
+    },
+    "tt6110648": {
+      "certified": false,
+      "score": 42
+    },
+    "tt6320628": {
+      "certified": true,
+      "score": 91
+    },
+    "tt6439752": {
+      "certified": false,
+      "score": 92
+    },
+    "tt6587046": {
+      "certified": true,
+      "score": 96
+    },
+    "tt6723592": {
+      "certified": false,
+      "score": 70
+    },
+    "tt6741278": {
+      "certified": false,
+      "score": 99
+    },
+    "tt6743524": {
+      "certified": false,
+      "score": 90
+    },
+    "tt6751668": {
+      "certified": true,
+      "score": 99
+    },
+    "tt6791350": {
+      "certified": true,
+      "score": 82
+    },
+    "tt7235466": {
+      "certified": false,
+      "score": 86
+    },
+    "tt7366338": {
+      "certified": false,
+      "score": 95
+    },
+    "tt7631058": {
+      "certified": false,
+      "score": 84
+    },
+    "tt7661390": {
+      "certified": false,
+      "score": 84
+    },
+    "tt7734244": {
+      "certified": true,
+      "score": 79
+    },
+    "tt7772588": {
+      "certified": false,
+      "score": 91
+    },
+    "tt8036976": {
+      "certified": true,
+      "score": 92
+    },
+    "tt8134470": {
+      "certified": false,
+      "score": 75
+    },
+    "tt8814476": {
+      "certified": false,
+      "score": 53
+    },
+    "tt8879928": {
+      "certified": true,
+      "score": 81
+    },
+    "tt9018736": {
+      "certified": false,
+      "score": 66
+    },
+    "tt9140554": {
+      "certified": false,
+      "score": 87
+    },
+    "tt9288030": {
+      "certified": false,
+      "score": 95
+    },
+    "tt9419884": {
+      "certified": false,
+      "score": 73
+    },
+    "tt9794044": {
+      "certified": false,
+      "score": 63
+    }
+  }
 }

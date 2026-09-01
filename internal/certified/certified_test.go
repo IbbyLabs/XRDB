@@ -6,17 +6,30 @@ import "testing"
 // "not found" and "not certified" are different answers and a caller has to be
 // able to tell them apart (FR-158/161).
 func TestNotFoundAndNotCertifiedAreDifferentAnswers(t *testing.T) {
-	// The shipped file is empty until a refresh runs, which is the state that
-	// matters most: nothing must be certified from an empty file, and nothing
-	// must claim to know.
-	if _, known := Is("tt0111161"); known {
-		t.Error("an empty file claims to know about a title")
+	// tt0000000 is not an id any title holds, so no refresh can add it.
+	const absent = "tt0000000"
+
+	if _, known := Is(absent); known {
+		t.Error("a title the file does not name claims to be known")
 	}
-	if isCert, _ := Is("tt0111161"); isCert {
-		t.Error("an empty file certified a title")
+	if isCert, _ := Is(absent); isCert {
+		t.Error("a title the file does not name was certified")
 	}
 	if _, known := Is(""); known {
 		t.Error("an empty id was answered")
+	}
+
+	// The control. A miss must mean absence rather than a file that never
+	// loaded; the id comes from the file so this holds at any coverage.
+	load()
+	if len(loaded.Titles) == 0 {
+		t.Skip("the file names no titles, so the control cannot run")
+	}
+	for id := range loaded.Titles {
+		if _, known := Is(id); !known {
+			t.Errorf("%s is in the file and was not found", id)
+		}
+		break
 	}
 }
 
