@@ -60,6 +60,20 @@ func effectiveFeatures(cfg config.Config, pipeline *compose.Pipeline) map[string
 	}
 }
 
+// sharedAliasSet names the profiles held to their caller's address rather than
+// to a profile bucket. The instance default is the most shared profile there
+// can be: a profile key would put every request to the instance in one bucket.
+func sharedAliasSet(cfg config.Config) map[string]bool {
+	set := make(map[string]bool, len(cfg.SharedProfileAliases)+1)
+	for _, a := range cfg.SharedProfileAliases {
+		set[strings.ToLower(a)] = true
+	}
+	if cfg.DefaultProfile != "" {
+		set[strings.ToLower(cfg.DefaultProfile)] = true
+	}
+	return set
+}
+
 // NewHandler builds the HTTP mux. Pass a non-nil staticFS to serve an embedded
 // frontend (SPA) at the root; nil disables static file serving.
 func NewHandler(version string, store *profile.Store, settingsStore *settings.Store, pipeline *compose.Pipeline, renderCache *cache.Cache, cfg config.Config, staticFS ...fs.FS) http.Handler {
@@ -73,9 +87,21 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 	// the concurrency limiter has already waited the full queue window for its
 	// refusal, which is a worse answer than the same refusal given at once.
 	callerCap := newCallerLimiter(cfg.RenderCapPerMinute)
-	sharedAliases := make(map[string]bool, len(cfg.SharedProfileAliases))
-	for _, a := range cfg.SharedProfileAliases {
-		sharedAliases[strings.ToLower(a)] = true
+	sharedAliases := sharedAliasSet(cfg)
+	if cfg.DefaultProfile != "" {
+		// Resolved once here so a name that matches nothing is reported at
+		// startup. The render path warns per request, which for an instance
+		// setting is one line for every bare render.
+		if store == nil {
+			logger.Warn("XRDB_DEFAULT_PROFILE is set with no profile store configured, so bare requests take the stock defaults",
+				"profile", cfg.DefaultProfile)
+		} else if p, err := store.Resolve(cfg.DefaultProfile); err != nil {
+			logger.Warn("XRDB_DEFAULT_PROFILE names a profile that cannot be resolved, so bare requests take the stock defaults",
+				"profile", cfg.DefaultProfile, "error", err)
+		} else {
+			logger.Info("Bare requests take an instance default profile",
+				"profile", cfg.DefaultProfile, "resolved_id", p.ID)
+		}
 	}
 	ttls := newTTLStore(cfg.ProviderTTLs)
 	ttls.setDegradedTTL(cfg.DegradedCacheTTL)
@@ -125,6 +151,11 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		id := normalizeLegacyMediaID(r.PathValue("id"))
 		raw := r.URL.RawQuery
 		configParam := queryValue(raw, "config", "default")
+		// A request naming no config takes the instance default where one is
+		// set. A config in the URL never reaches this.
+		if configParam == "default" && cfg.DefaultProfile != "" {
+			configParam = cfg.DefaultProfile
+		}
 		uuid := queryValue(raw, "uuid", "none")
 
 		// Enforce global API key if configured. Accept via Authorization: Bearer

@@ -215,6 +215,11 @@ type Config struct {
 	// FolderWriterProfile is the profile id or alias whose look library
 	// artwork takes; empty uses the defaults.
 	FolderWriterProfile string
+	// DefaultProfile is the profile id or alias a request with no config of its
+	// own resolves to; empty serves the stock defaults. An explicit config in
+	// the URL still wins. The profile is capped by address rather than as a
+	// profile, the way a shared alias is.
+	DefaultProfile string
 	// FolderWriterOverwrite replaces artwork already present. Off by default so
 	// a curated poster is not silently replaced.
 	FolderWriterOverwrite bool
@@ -599,6 +604,7 @@ func Load() Config {
 		LibraryRoots:          listEnv("XRDB_LIBRARY_ROOTS"),
 		FolderWriterSurfaces:  listEnv("XRDB_FOLDER_WRITER_SURFACES"),
 		FolderWriterProfile:   os.Getenv("XRDB_FOLDER_WRITER_PROFILE"),
+		DefaultProfile:        strings.TrimSpace(os.Getenv("XRDB_DEFAULT_PROFILE")),
 		FolderWriterOverwrite: boolEnv("XRDB_FOLDER_WRITER_OVERWRITE"),
 		FolderWriterPace:      durationEnv("XRDB_FOLDER_WRITER_PACE_MS", time.Millisecond, 250*time.Millisecond),
 		FolderWriterInterval:  durationEnv("XRDB_FOLDER_WRITER_INTERVAL_H", time.Hour, 0),
