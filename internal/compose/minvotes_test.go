@@ -16,7 +16,10 @@ func thinSample() []provider.Rating {
 		{Source: "trakt", Value: 7.0, Votes: 5},
 		{Source: "tmdb", Value: 7.1, Votes: 6},
 		{Source: "metacritic", Value: 8.2, Votes: 22},
-		{Source: "popcorn", Value: 9.8, Votes: 13},
+		// rt and rtaudience are the ids a Rating carries. MDBList's "tomatoes"
+		// and "popcorn" are inputs and are mapped before one exists.
+		{Source: "rt", Value: 9.4, Votes: 31},
+		{Source: "rtaudience", Value: 9.8, Votes: 13},
 		{Source: "rogerebert", Value: 3.5, Votes: 0},
 		// Carries a default threshold and no count, which is the case that
 		// distinguishes "unknown" from "below the line".
@@ -52,20 +55,20 @@ func TestThinRatingsAreHidden(t *testing.T) {
 	}
 }
 
-// Metacritic counts publications and Popcorn is unreliable per title (Citizen
-// Kane reports 13), so a threshold on either deletes good data.
+// Metacritic counts publications and the audience score is unreliable per title
+// (Citizen Kane reports 13), so a threshold on either deletes good data.
 func TestExemptSourcesAreNeverHidden(t *testing.T) {
 	// Set through the override, which is the only way to put a number on these
 	// at all. Without it the assertion passes whether the exemption exists or
 	// not, since neither source carries a built-in default.
 	cfg := imageconfig.Config{RatingBadgeConfig: imageconfig.RatingBadgeConfig{
 		RatingMinVotes:         true,
-		RatingMinVotesBySource: map[string]int{"metacritic": 500, "popcorn": 500},
+		RatingMinVotesBySource: map[string]int{"metacritic": 500, "rt": 500, "rtaudience": 500},
 	}}
 	kept, _ := splitThinRatings(thinSample(), cfg)
 	got := sourceSet(kept)
 
-	for _, s := range []string{"metacritic", "popcorn"} {
+	for _, s := range []string{"metacritic", "rt", "rtaudience"} {
 		if !got[s] {
 			t.Errorf("%s was hidden, but its count does not measure confidence", s)
 		}

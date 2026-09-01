@@ -22,10 +22,12 @@ var defaultMinVotes = map[string]int{
 // reviewing publications, which is bounded and grows with the year rather than
 // with confidence. Popcorn's count is unreliable per title: Citizen Kane
 // reports 13, the same as a film nobody has heard of.
+// Keyed on the id a Rating carries, not on the spelling a config may use for
+// the same source.
 var minVotesExempt = map[string]bool{
 	"metacritic": true,
-	"tomatoes":   true,
-	"popcorn":    true,
+	"rt":         true,
+	"rtaudience": true,
 }
 
 // minVotesFor returns the threshold for a source and whether one applies.
