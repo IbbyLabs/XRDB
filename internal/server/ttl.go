@@ -22,6 +22,28 @@ type ttlStore struct {
 	// queueHeld caps renders held back by one of our request queues, which
 	// clear far sooner than the daily reserve does.
 	queueHeld time.Duration
+	// surfaces overrides the TTL for one artwork surface. A surface with no
+	// entry keeps the minimum across the rating sources that answered.
+	surfaces map[string]time.Duration
+}
+
+// setSurfaces replaces the per-surface overrides.
+func (s *ttlStore) setSurfaces(in map[string]time.Duration) {
+	m := make(map[string]time.Duration, len(in))
+	for k, v := range in {
+		m[k] = v
+	}
+	s.mu.Lock()
+	s.surfaces = m
+	s.mu.Unlock()
+}
+
+// surfaceTTL returns the TTL set for one surface and whether one is set.
+func (s *ttlStore) surfaceTTL(name string) (time.Duration, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	v, ok := s.surfaces[name]
+	return v, ok
 }
 
 func newTTLStore(seed map[string]time.Duration) *ttlStore {

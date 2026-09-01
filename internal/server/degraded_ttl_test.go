@@ -19,7 +19,7 @@ func TestDegradedRenderTakesTheShortTTL(t *testing.T) {
 	result := &compose.Result{RatingProviders: []string{"tmdb"}, Degraded: true}
 	ttls := degradedStore(20*time.Minute, map[string]time.Duration{"tmdb": 72 * time.Hour})
 
-	if got := effectiveTTL(result, ttls); got != 20*time.Minute {
+	if got := effectiveTTL(result, ttls, "poster"); got != 20*time.Minute {
 		t.Errorf("effectiveTTL = %v, want 20m", got)
 	}
 }
@@ -30,7 +30,7 @@ func TestDegradedRenderWithNoProviderTTLStillCapped(t *testing.T) {
 	result := &compose.Result{RatingProviders: []string{"tmdb"}, Degraded: true}
 	ttls := degradedStore(20*time.Minute, nil)
 
-	if got := effectiveTTL(result, ttls); got != 20*time.Minute {
+	if got := effectiveTTL(result, ttls, "poster"); got != 20*time.Minute {
 		t.Errorf("effectiveTTL = %v, want 20m", got)
 	}
 }
@@ -39,7 +39,7 @@ func TestWholeRenderKeepsItsNormalTTL(t *testing.T) {
 	result := &compose.Result{RatingProviders: []string{"tmdb"}}
 	ttls := degradedStore(20*time.Minute, map[string]time.Duration{"tmdb": 72 * time.Hour})
 
-	if got := effectiveTTL(result, ttls); got != 72*time.Hour {
+	if got := effectiveTTL(result, ttls, "poster"); got != 72*time.Hour {
 		t.Errorf("effectiveTTL = %v, want 72h", got)
 	}
 }
@@ -49,7 +49,7 @@ func TestDegradedRenderKeepsAShorterProviderTTL(t *testing.T) {
 	result := &compose.Result{RatingProviders: []string{"mdblist"}, Degraded: true}
 	ttls := degradedStore(20*time.Minute, map[string]time.Duration{"mdblist": 5 * time.Minute})
 
-	if got := effectiveTTL(result, ttls); got != 5*time.Minute {
+	if got := effectiveTTL(result, ttls, "poster"); got != 5*time.Minute {
 		t.Errorf("effectiveTTL = %v, want 5m", got)
 	}
 }
@@ -59,7 +59,7 @@ func TestDegradedCapOfZeroChangesNothing(t *testing.T) {
 	result := &compose.Result{RatingProviders: []string{"tmdb"}, Degraded: true}
 	ttls := degradedStore(0, map[string]time.Duration{"tmdb": 72 * time.Hour})
 
-	if got := effectiveTTL(result, ttls); got != 72*time.Hour {
+	if got := effectiveTTL(result, ttls, "poster"); got != 72*time.Hour {
 		t.Errorf("effectiveTTL = %v, want 72h", got)
 	}
 }

@@ -179,11 +179,11 @@ func TestAHeldOutRenderTakesTheHeldOutTTL(t *testing.T) {
 	ttls.setHeldOutTTL(3 * time.Hour)
 
 	held := &compose.Result{Degraded: true, DegradedByUs: true}
-	if got := effectiveTTL(held, ttls); got != 3*time.Hour {
+	if got := effectiveTTL(held, ttls, "poster"); got != 3*time.Hour {
 		t.Errorf("held-out render TTL = %s, want 3h", got)
 	}
 	failed := &compose.Result{Degraded: true}
-	if got := effectiveTTL(failed, ttls); got != 20*time.Minute {
+	if got := effectiveTTL(failed, ttls, "poster"); got != 20*time.Minute {
 		t.Errorf("failed-source render TTL = %s, want 20m", got)
 	}
 }
@@ -257,7 +257,7 @@ func TestAQueueHeldRenderTakesTheShorterTTL(t *testing.T) {
 		{"a failed source", &compose.Result{Degraded: true}, 20 * time.Minute},
 		{"nothing missing", &compose.Result{}, 0},
 	} {
-		if got := effectiveTTL(tc.res, ttls); got != tc.want {
+		if got := effectiveTTL(tc.res, ttls, "poster"); got != tc.want {
 			t.Errorf("%s: TTL = %s, want %s", tc.name, got, tc.want)
 		}
 	}

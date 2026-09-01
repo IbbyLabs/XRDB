@@ -150,6 +150,7 @@ missing badge is not.
 | Variable | Default | Description |
 |---|---|---|
 | `XRDB_TTL_<PROVIDER>` | global TTL | Per-provider cache TTL in hours. A render is cached for the *minimum* TTL among the providers that contributed to it. Providers: `TMDB`, `MDBLIST`, `OMDB`, `FANART`, `TRAKT`, `SIMKL`, `MAL`, `ANILIST`, `KITSU`, `IMDBLOCAL`. Example: `XRDB_TTL_MDBLIST=4`. |
+| `XRDB_TTL_SURFACE_<SURFACE>` | unset | Cache TTL in hours for one artwork surface: `POSTER`, `BACKDROP`, `THUMBNAIL` or `LOGO`. Set, it replaces the per-provider minimum for that surface rather than capping it, so a surface can be kept longer than its rating sources would allow as well as shorter. Unset, the surface keeps the minimum. A render that lost a badge is still capped by the degraded TTLs whatever surface it is. |
 
 ## Web (build/dev only)
 

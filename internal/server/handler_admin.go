@@ -683,7 +683,7 @@ func warmPosters(
 				slog.Warn("Skipped warming an item", "media_type", mediaType, "media_id", id, "error", err)
 				return
 			}
-			ttl := effectiveTTL(result, ttls)
+			ttl := effectiveTTL(result, ttls, mediaType)
 			if err := renderCache.SetWithTTL(cacheKey, result.ImageBytes, ttl); err != nil {
 				slog.Warn("Failed to cache a warmed render", "media_type", mediaType, "media_id", id, "error", err)
 			}
@@ -697,14 +697,15 @@ func warmPosters(
 
 // effectiveTTL returns the minimum TTL across the rating sources that answered
 // for a render. The artwork source is not one of them; a source that also
-// appears in the ratings list counts there.
+// appears in the ratings list counts there. A surface with a TTL of its own
+// takes that instead of the minimum.
 // Falls back to 0 (cache default) when result or the store is
 // nil. Reading from the live store means a TTL changed at runtime applies to the
 // next render without a restart.
 // A render that lost a badge to a failing source is capped shorter still, so a
 // cooldown costs one render rather than a catalogue held that way until the TTL
 // runs out.
-func effectiveTTL(result *compose.Result, ttls *ttlStore) time.Duration {
+func effectiveTTL(result *compose.Result, ttls *ttlStore, surface string) time.Duration {
 	if result == nil || ttls == nil {
 		return 0
 	}
@@ -715,6 +716,13 @@ func effectiveTTL(result *compose.Result, ttls *ttlStore) time.Duration {
 				min = t
 			}
 		}
+	}
+	// A surface set on its own replaces that minimum rather than capping it, so
+	// a thumbnail can be kept longer than the sources behind it would allow as
+	// well as shorter. The caps below still apply: a render that lost a badge is
+	// short-lived whatever surface it was.
+	if t, ok := ttls.surfaceTTL(surface); ok && t > 0 {
+		min = t
 	}
 	if result.Degraded {
 		// A render held back by one of our own gates lost nothing to a failure,

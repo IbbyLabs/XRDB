@@ -107,6 +107,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		}
 	}
 	ttls := newTTLStore(cfg.ProviderTTLs)
+	ttls.setSurfaces(cfg.SurfaceTTLs)
 	ttls.setDegradedTTL(cfg.DegradedCacheTTL)
 	ttls.setHeldOutTTL(cfg.HeldOutCacheTTL)
 	ttls.setQueueHeldTTL(cfg.QueueHeldCacheTTL)
@@ -544,7 +545,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			// which is how one blip froze across a CDN for days. It is not stored
 			// and carries no-store below, so every serve is a fresh attempt.
 			if !placeholder && (!degraded || degradedByUs) {
-				ttl := effectiveTTL(renderResult, ttls)
+				ttl := effectiveTTL(renderResult, ttls, mediaType)
 				if renderCache != nil {
 					// A sweep's large renders are shed first: they are the one
 					// class measured never to be re-read.

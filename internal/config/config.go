@@ -168,7 +168,10 @@ type Config struct {
 	IMDbRefresh           time.Duration            // IMDb dataset rebuild interval while running
 	AnimeMapRefresh       time.Duration            // anime mapping dataset refresh interval; 0 = default (7 days)
 	ProviderTTLs          map[string]time.Duration // per-provider TTL overrides; key = provider name
-	AdminKey              string                   // protects /api/admin/* routes
+	// SurfaceTTLs overrides the render TTL for one artwork surface. A surface
+	// with no entry keeps the minimum across its rating sources.
+	SurfaceTTLs map[string]time.Duration
+	AdminKey    string // protects /api/admin/* routes
 	// ConfigEncryptionKey encrypts owner-supplied provider credentials at rest.
 	// Unset means the server will not accept them.
 	ConfigEncryptionKey string
@@ -246,6 +249,35 @@ var TTLProviders = []string{
 // cache TTL, e.g. "tmdb" -> "XRDB_TTL_TMDB", "imdb_local" -> "XRDB_TTL_IMDBLOCAL".
 func ProviderTTLEnvVar(name string) string {
 	return "XRDB_TTL_" + strings.ToUpper(strings.ReplaceAll(name, "_", ""))
+}
+
+// TTLSurfaces lists the artwork surfaces whose cache TTL can be set on its own.
+// The names are the ones a render URL uses.
+var TTLSurfaces = []string{"poster", "backdrop", "thumbnail", "logo"}
+
+// SurfaceTTLEnvVar returns the environment variable that sets one surface's
+// cache TTL, e.g. "thumbnail" -> "XRDB_TTL_SURFACE_THUMBNAIL". Prefixed apart
+// from the provider variables so a surface name can never be read as a provider
+// or the other way about.
+func SurfaceTTLEnvVar(name string) string {
+	return "XRDB_TTL_SURFACE_" + strings.ToUpper(name)
+}
+
+// loadSurfaceTTLs reads the per-surface overrides. Only a surface someone set
+// appears: an absent one leaves the render on the minimum across its rating
+// sources, which is what every render did before this existed.
+func loadSurfaceTTLs() map[string]time.Duration {
+	out := map[string]time.Duration{}
+	for _, name := range TTLSurfaces {
+		raw := os.Getenv(SurfaceTTLEnvVar(name))
+		if raw == "" {
+			continue
+		}
+		if h, err := strconv.ParseFloat(raw, 64); err == nil && h > 0 {
+			out[name] = time.Duration(h * float64(time.Hour))
+		}
+	}
+	return out
 }
 
 // ProviderEnvTTL returns a provider's TTL from its environment variable, or
@@ -587,6 +619,7 @@ func Load() Config {
 		AnimeMapRefresh:       animeMapRefresh,
 		IMDbRefresh:           imdbRefresh,
 		ProviderTTLs:          loadProviderTTLs(cacheTTL),
+		SurfaceTTLs:           loadSurfaceTTLs(),
 		AdminKey:              os.Getenv("XRDB_ADMIN_KEY"),
 		APIKey:                os.Getenv("XRDB_API_KEY"),
 		ConfigEncryptionKey:   os.Getenv("XRDB_CONFIG_ENCRYPTION_KEY"),

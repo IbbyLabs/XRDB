@@ -19,7 +19,7 @@ func TestArtworkSourceDoesNotFloorTheTTL(t *testing.T) {
 		"mal":  30 * 24 * time.Hour,
 	})
 
-	if got := effectiveTTL(result, ttls); got != 30*24*time.Hour {
+	if got := effectiveTTL(result, ttls, "poster"); got != 30*24*time.Hour {
 		t.Errorf("effectiveTTL = %v, want 720h", got)
 	}
 }
@@ -35,7 +35,7 @@ func TestArtworkSourceInTheRatingsListStillFloors(t *testing.T) {
 		"mal":  30 * 24 * time.Hour,
 	})
 
-	if got := effectiveTTL(result, ttls); got != time.Hour {
+	if got := effectiveTTL(result, ttls, "poster"); got != time.Hour {
 		t.Errorf("effectiveTTL = %v, want 1h", got)
 	}
 }

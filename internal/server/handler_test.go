@@ -823,21 +823,21 @@ func TestProfileAliasFlow(t *testing.T) {
 // ── effectiveTTL ──────────────────────────────────────────────────────────────
 
 func TestEffectiveTTLNilResult(t *testing.T) {
-	if effectiveTTL(nil, newTTLStore(map[string]time.Duration{"tmdb": time.Hour})) != 0 {
+	if effectiveTTL(nil, newTTLStore(map[string]time.Duration{"tmdb": time.Hour}), "poster") != 0 {
 		t.Error("expected 0 for nil result")
 	}
 }
 
 func TestEffectiveTTLNilStore(t *testing.T) {
 	result := &compose.Result{RatingProviders: []string{"tmdb"}}
-	if effectiveTTL(result, nil) != 0 {
+	if effectiveTTL(result, nil, "poster") != 0 {
 		t.Error("expected 0 for a nil ttl store")
 	}
 }
 
 func TestEffectiveTTLEmptyProviders(t *testing.T) {
 	result := &compose.Result{}
-	if effectiveTTL(result, newTTLStore(map[string]time.Duration{"tmdb": time.Hour})) != 0 {
+	if effectiveTTL(result, newTTLStore(map[string]time.Duration{"tmdb": time.Hour}), "poster") != 0 {
 		t.Error("expected 0 when no contributing providers")
 	}
 }
@@ -848,7 +848,7 @@ func TestEffectiveTTLMinimum(t *testing.T) {
 		"tmdb":    72 * time.Hour,
 		"mdblist": 4 * time.Hour,
 	})
-	got := effectiveTTL(result, ttls)
+	got := effectiveTTL(result, ttls, "poster")
 	if got != 4*time.Hour {
 		t.Errorf("expected 4h (minimum), got %v", got)
 	}
@@ -892,7 +892,7 @@ func TestWarmEndpointEmptyIDs(t *testing.T) {
 func TestEffectiveTTLMissingProvider(t *testing.T) {
 	result := &compose.Result{RatingProviders: []string{"tmdb", "unknown"}}
 	ttls := newTTLStore(map[string]time.Duration{"tmdb": 24 * time.Hour})
-	got := effectiveTTL(result, ttls)
+	got := effectiveTTL(result, ttls, "poster")
 	if got != 24*time.Hour {
 		t.Errorf("expected 24h (only known provider), got %v", got)
 	}

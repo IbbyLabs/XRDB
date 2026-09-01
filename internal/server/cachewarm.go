@@ -69,6 +69,7 @@ func StartCacheWarmSchedule(
 	// handler, so a warmed entry uses the configured TTLs. A TTL changed
 	// through the admin API applies from the next warm run.
 	ttls := newTTLStore(cfg.ProviderTTLs)
+	ttls.setSurfaces(cfg.SurfaceTTLs)
 
 	go func() {
 		logger.InfoContext(ctx, "Cache warming is on",
