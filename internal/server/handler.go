@@ -243,6 +243,26 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			}
 		}
 
+		// v2 let a caller supply their own TMDB key on the URL, and those requests
+		// still arrive. Unread, the render spends the instance's key while the
+		// caller believes it is spending theirs. Merged over any profile keys, so
+		// a URL naming one credential leaves the rest alone.
+		if urlKey := strings.TrimSpace(queryValue(raw, "tmdbKey", "")); urlKey != "" {
+			if err := provider.ValidateKey(provider.KeyTMDB, urlKey); err == nil {
+				keys := provider.KeysFrom(r.Context())
+				keys[provider.KeyTMDB] = urlKey
+				r = r.WithContext(provider.WithKeys(r.Context(), keys))
+				ownerKeyFP = provider.KeysFingerprint(keys)
+			} else {
+				// Never an error, for the reason the language override is not: a
+				// failed artwork URL leaves a hole in the caller's page. The
+				// header is how they find out.
+				w.Header().Set("X-Render-Tmdb-Key", "ignored")
+				logger.InfoContext(r.Context(), "Ignored a TMDB key on a render URL that is not a TMDB credential",
+					"id", logging.RequestID(r.Context()), "media_type", mediaType, "media_id", id)
+			}
+		}
+
 		// A capped route renders smaller than the profile asked for, so the cap
 		// is applied before the key is built rather than at encode time.
 		if cap := sizeCapFrom(r.Context()); cap != "" {
@@ -270,6 +290,17 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 				logger.InfoContext(r.Context(), "Ignored an out-of-range language on a render URL",
 					"id", logging.RequestID(r.Context()), "media_type", mediaType, "media_id", id)
 			}
+		}
+
+		// v2 put each setting in its own query parameter. Live clients still send
+		// those URLs, and until they were read the whole configuration was
+		// discarded while the poster rendered as if nothing were wrong. Applied
+		// here for the same reason the language override above is: before the
+		// cache key, which is derived from imgCfg.
+		if applied := applyV2QueryParams(&imgCfg, raw, mediaType); len(applied) > 0 {
+			logger.InfoContext(r.Context(), "Applied v2 query parameters to a render",
+				"id", logging.RequestID(r.Context()), "media_type", mediaType,
+				"media_id", id, "parameters", strings.Join(applied, ","))
 		}
 
 		// Include a fingerprint of configParam when no profile was loaded so

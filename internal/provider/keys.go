@@ -82,6 +82,18 @@ func WithKeys(ctx context.Context, keys map[string]string) context.Context {
 	return context.WithValue(ctx, keysCtxKey{}, keys)
 }
 
+// KeysFrom returns a copy of the credentials a render carries. A copy because
+// the map may be a stored profile's own, and adding a key to that would give it
+// to every later render of that profile.
+func KeysFrom(ctx context.Context) map[string]string {
+	keys, _ := ctx.Value(keysCtxKey{}).(map[string]string)
+	out := make(map[string]string, len(keys)+1)
+	for name, value := range keys {
+		out[name] = value
+	}
+	return out
+}
+
 // KeysFingerprint returns a short, stable digest of an owner's key set. It goes
 // into the render cache key so a key change refreshes the render, without the
 // secret values appearing anywhere: it is an 8-byte SHA-256 prefix, not the keys.
