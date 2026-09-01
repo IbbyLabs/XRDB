@@ -1258,11 +1258,13 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		drawAgeRatingBadge(composed, meta.ContentRating, req.Config.AgeRatingPos, scale, occ, ageOptsFromConfig(req.Config))
 	}
 	if req.Config.ReleaseStatus {
-		// A title that has landed says so; one that has not gives the date it
-		// will. The two can never both apply, so they share the badge.
-		label, accent, ok := releaseStatusLabel(meta.ReleaseStatus)
+		// The badge names the next thing that happens to a title, and falls back
+		// to the last thing that did. A film in cinemas with a digital date
+		// still ahead answers when it reaches home rather than repeating where
+		// it is now.
+		label, accent, ok := upcomingReleaseLabel(meta.UpcomingRelease)
 		if !ok {
-			label, accent, ok = upcomingReleaseLabel(meta.UpcomingRelease)
+			label, accent, ok = releaseStatusLabel(meta.ReleaseStatus)
 		}
 		if ok {
 			drawReleaseBadge(composed, label, accent, req.Config.ReleaseStatusPos, scale, occ, releaseStatusOptsFromConfig(req.Config))

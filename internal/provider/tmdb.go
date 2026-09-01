@@ -659,7 +659,7 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		// A date is region-scoped where the status is not. A digital date in one
 		// country says nothing to a viewer in another, and a wrong date reads as
 		// authoritative where a missing badge does not.
-		if meta.ReleaseStatus == "" {
+		if meta.ReleaseStatus != "digital" {
 			var regional []releaseEntry
 			for _, r := range result.ReleaseDates.Results {
 				if !strings.EqualFold(r.Iso3166, releaseRegion(opts.WatchProvidersCountry)) {
@@ -669,7 +669,14 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 					regional = append(regional, releaseEntry{kind: d.Type, date: d.ReleaseDate})
 				}
 			}
-			meta.UpcomingRelease = nextRelease(regional, time.Now())
+			// A title in cinemas has one question left, which is when it reaches
+			// home. A theatrical date still ahead there is another region's or a
+			// re-release and is not that answer.
+			kinds := allBadgeReleaseKinds
+			if meta.ReleaseStatus == "cinemas" {
+				kinds = []int{releaseTypeDigital}
+			}
+			meta.UpcomingRelease = nextRelease(regional, time.Now(), kinds...)
 		}
 	}
 
@@ -1112,12 +1119,21 @@ func releaseRegion(country string) string {
 	return "US"
 }
 
-// nextRelease returns the soonest release still ahead, across the kinds the
-// badge names. An undated entry counts as landed, as it does for the status, so
+// allBadgeReleaseKinds are the TMDB release types the badge can name.
+var allBadgeReleaseKinds = []int{releaseTypeTheatricalLimited, releaseTypeTheatrical, releaseTypeDigital}
+
+// nextRelease returns the soonest release still ahead, across the given kinds. An undated entry counts as landed, as it does for the status, so
 // a title TMDB cannot date draws nothing.
-func nextRelease(entries []releaseEntry, now time.Time) UpcomingRelease {
+func nextRelease(entries []releaseEntry, now time.Time, kinds ...int) UpcomingRelease {
+	want := map[int]bool{}
+	for _, k := range kinds {
+		want[k] = true
+	}
 	var out UpcomingRelease
 	for _, e := range entries {
+		if !want[e.kind] {
+			continue
+		}
 		var kind string
 		switch e.kind {
 		case releaseTypeDigital:

@@ -16,7 +16,7 @@ func TestNextReleaseTakesTheSoonestAhead(t *testing.T) {
 		{kind: releaseTypeTheatrical, date: at("2026-04-20")},
 	}
 
-	got := nextRelease(entries, now)
+	got := nextRelease(entries, now, allBadgeReleaseKinds...)
 	if got.Kind != "cinemas" {
 		t.Errorf("kind = %q, want cinemas", got.Kind)
 	}
@@ -29,7 +29,7 @@ func TestNextReleaseTakesTheSoonestAhead(t *testing.T) {
 func TestNextReleaseAnswersWithOneDate(t *testing.T) {
 	now := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
 
-	got := nextRelease([]releaseEntry{{kind: releaseTypeDigital, date: at("2026-06-10")}}, now)
+	got := nextRelease([]releaseEntry{{kind: releaseTypeDigital, date: at("2026-06-10")}}, now, allBadgeReleaseKinds...)
 	if got.Kind != "digital" || got.Date.IsZero() {
 		t.Errorf("got %+v, want the digital date", got)
 	}
@@ -44,7 +44,7 @@ func TestNextReleaseIgnoresPastAndUndatedEntries(t *testing.T) {
 		{kind: releaseTypeDigital, date: ""},
 	}
 
-	if got := nextRelease(entries, now); got.Kind != "" || !got.Date.IsZero() {
+	if got := nextRelease(entries, now, allBadgeReleaseKinds...); got.Kind != "" || !got.Date.IsZero() {
 		t.Errorf("got %+v, want nothing ahead", got)
 	}
 }
@@ -53,7 +53,7 @@ func TestNextReleaseIgnoresPastAndUndatedEntries(t *testing.T) {
 func TestNextReleaseIgnoresKindsTheBadgeCannotName(t *testing.T) {
 	now := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
 
-	if got := nextRelease([]releaseEntry{{kind: 5, date: at("2026-09-09")}}, now); got.Kind != "" {
+	if got := nextRelease([]releaseEntry{{kind: 5, date: at("2026-09-09")}}, now, allBadgeReleaseKinds...); got.Kind != "" {
 		t.Errorf("got %+v, want nothing for a physical release", got)
 	}
 }
@@ -63,5 +63,26 @@ func TestReleaseRegionDefaultsToUS(t *testing.T) {
 		if got := releaseRegion(in); got != want {
 			t.Errorf("releaseRegion(%q) = %q, want %q", in, got, want)
 		}
+	}
+}
+
+// A film already in cinemas has one question left, and a theatrical date still
+// ahead in the region is not the answer to it (FR-189).
+func TestNextReleaseCanBeNarrowedToDigital(t *testing.T) {
+	now := time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC)
+	entries := []releaseEntry{
+		{kind: releaseTypeTheatrical, date: at("2026-05-20")},
+		{kind: releaseTypeDigital, date: at("2026-07-01")},
+	}
+
+	got := nextRelease(entries, now, releaseTypeDigital)
+	if got.Kind != "digital" {
+		t.Fatalf("kind = %q, want digital", got.Kind)
+	}
+	if want := time.Date(2026, 7, 1, 0, 0, 0, 0, time.UTC); !got.Date.Equal(want) {
+		t.Errorf("date = %v, want %v", got.Date, want)
+	}
+	if all := nextRelease(entries, now, allBadgeReleaseKinds...); all.Kind != "cinemas" {
+		t.Errorf("unnarrowed kind = %q, want cinemas; the narrowing is doing nothing", all.Kind)
 	}
 }
