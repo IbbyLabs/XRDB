@@ -46,7 +46,7 @@ func TestMDBListParsesRatings(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	m := &MDBList{apiKey: "testkey", httpClient: srv.Client()}
+	m := &MDBList{keys: newKeyRing("testkey"), httpClient: srv.Client()}
 	// patch base URL
 	origBase := mdblistBase
 	defer func() { _ = origBase }() // can't patch const; use server directly
@@ -162,7 +162,7 @@ func TestMDBListHTTPErrors(t *testing.T) {
 			}))
 			defer srv.Close()
 
-			m := &MDBList{apiKey: "key", httpClient: srv.Client()}
+			m := &MDBList{keys: newKeyRing("key"), httpClient: srv.Client()}
 			req, _ := http.NewRequestWithContext(context.Background(), http.MethodGet,
 				srv.URL+"/imdb/movie/tt1234567?apikey=key", nil)
 			resp, err := m.httpClient.Do(req)
@@ -220,7 +220,7 @@ func TestMDBListFallsBackToShowOnMovie404(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	m := &MDBList{apiKey: "k", baseURL: srv.URL, httpClient: srv.Client()}
+	m := &MDBList{keys: newKeyRing("k"), baseURL: srv.URL, httpClient: srv.Client()}
 	meta, err := m.Fetch(context.Background(), "", "tt2250192")
 	if err != nil {
 		t.Fatalf("Fetch: %v", err)
@@ -248,7 +248,7 @@ func TestMDBListSeriesHintHitsShowDirectly(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	m := &MDBList{apiKey: "k", baseURL: srv.URL, httpClient: srv.Client()}
+	m := &MDBList{keys: newKeyRing("k"), baseURL: srv.URL, httpClient: srv.Client()}
 	if _, err := m.Fetch(context.Background(), "series", "tt2250192"); err != nil {
 		t.Fatalf("Fetch: %v", err)
 	}

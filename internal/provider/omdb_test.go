@@ -46,7 +46,7 @@ func TestOMDBParsesRatings(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	o := &OMDB{apiKey: "test", httpClient: srv.Client(), baseURL: srv.URL + "/"}
+	o := &OMDB{keys: newKeyRing("test"), httpClient: srv.Client(), baseURL: srv.URL + "/"}
 	meta, err := o.Fetch(context.Background(), "movie", "tt0468569")
 	if err != nil {
 		t.Fatalf("Fetch: %v", err)
@@ -96,7 +96,7 @@ func TestOMDBHTTPError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	o := &OMDB{apiKey: "bad", httpClient: srv.Client(), baseURL: srv.URL + "/"}
+	o := &OMDB{keys: newKeyRing("bad"), httpClient: srv.Client(), baseURL: srv.URL + "/"}
 	_, err := o.Fetch(context.Background(), "movie", "tt0468569")
 	if err == nil {
 		t.Error("expected error for HTTP 401 response")
@@ -113,7 +113,7 @@ func TestOMDBAPIErrorResponse(t *testing.T) {
 	defer srv.Close()
 
 	o := &OMDB{
-		apiKey:     "test",
+		keys:       newKeyRing("test"),
 		httpClient: srv.Client(),
 		baseURL:    srv.URL + "/",
 	}
@@ -140,7 +140,7 @@ func TestOMDbAnsweringWithNoRatingsIsNotAHealthFailure(t *testing.T) {
 		_, _ = fmt.Fprint(w, `{"Response":"True","Title":"The Truthers","imdbRating":"N/A","Ratings":[]}`)
 	}))
 	defer srv.Close()
-	o := &OMDB{apiKey: "test", httpClient: srv.Client(), baseURL: srv.URL + "/"}
+	o := &OMDB{keys: newKeyRing("test"), httpClient: srv.Client(), baseURL: srv.URL + "/"}
 
 	_, err := o.Fetch(context.Background(), "movie", "tt41111628")
 	if err == nil {
@@ -165,7 +165,7 @@ func TestOMDbRejectingTheKeyStillMarksTheSourceUnhealthy(t *testing.T) {
 				_, _ = fmt.Fprintf(w, `{"Response":"False","Error":%q}`, upstream)
 			}))
 			defer srv.Close()
-			o := &OMDB{apiKey: "test", httpClient: srv.Client(), baseURL: srv.URL + "/"}
+			o := &OMDB{keys: newKeyRing("test"), httpClient: srv.Client(), baseURL: srv.URL + "/"}
 
 			_, err := o.Fetch(context.Background(), "movie", "tt0468569")
 			if err == nil {
@@ -196,7 +196,7 @@ func TestOMDbRejectingATitleIsNotAHealthFailure(t *testing.T) {
 				_, _ = fmt.Fprintf(w, `{"Response":"False","Error":%q}`, upstream)
 			}))
 			defer srv.Close()
-			o := &OMDB{apiKey: "test", httpClient: srv.Client(), baseURL: srv.URL + "/"}
+			o := &OMDB{keys: newKeyRing("test"), httpClient: srv.Client(), baseURL: srv.URL + "/"}
 
 			_, err := o.Fetch(context.Background(), "movie", "tt0000001")
 			if err == nil {
@@ -228,7 +228,7 @@ func TestOMDbCarriesTheIMDbVoteCount(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	o := &OMDB{apiKey: "k", httpClient: srv.Client(), baseURL: srv.URL + "/"}
+	o := &OMDB{keys: newKeyRing("k"), httpClient: srv.Client(), baseURL: srv.URL + "/"}
 	meta, err := o.Fetch(context.Background(), "movie", "tt0111161")
 	if err != nil {
 		t.Fatalf("Fetch: %v", err)

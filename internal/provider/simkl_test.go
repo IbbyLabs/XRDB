@@ -55,7 +55,7 @@ func TestSIMKLParseRatingsResponse(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	k := &SIMKL{clientID: "testkey", baseURL: srv.URL, httpClient: srv.Client()}
+	k := &SIMKL{keys: newKeyRing("testkey"), baseURL: srv.URL, httpClient: srv.Client()}
 	meta, err := k.fetchSegment(context.Background(), "anime", "1", "tt2560140")
 	if err != nil {
 		t.Fatalf("fetchSegment: %v", err)
@@ -97,7 +97,7 @@ func TestSIMKLHTTP404(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	k := &SIMKL{clientID: "testkey", httpClient: srv.Client()}
+	k := &SIMKL{keys: newKeyRing("testkey"), httpClient: srv.Client()}
 	_ = k
 }
 
@@ -121,7 +121,7 @@ func TestSIMKLFallsBackToTVOnMovie404(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	k := &SIMKL{clientID: "k", baseURL: srv.URL, httpClient: srv.Client()}
+	k := &SIMKL{keys: newKeyRing("k"), baseURL: srv.URL, httpClient: srv.Client()}
 	meta, err := k.Fetch(context.Background(), "", "simkl:2012")
 	if err != nil {
 		t.Fatalf("Fetch: %v", err)
@@ -158,7 +158,7 @@ func TestSIMKLDecodesGenresInEitherShape(t *testing.T) {
 			}))
 			defer srv.Close()
 
-			k := &SIMKL{clientID: "k", baseURL: srv.URL, httpClient: srv.Client()}
+			k := &SIMKL{keys: newKeyRing("k"), baseURL: srv.URL, httpClient: srv.Client()}
 			meta, err := k.fetchSegment(context.Background(), "movies", "123", "tt123")
 			if err != nil {
 				t.Fatalf("%s-shaped genres failed the decode, dropping the rating: %v", tc.name, err)
@@ -197,7 +197,7 @@ func TestSIMKLRatingIsAlreadyOutOfTen(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	k := &SIMKL{clientID: "k", baseURL: srv.URL, httpClient: srv.Client()}
+	k := &SIMKL{keys: newKeyRing("k"), baseURL: srv.URL, httpClient: srv.Client()}
 	meta, err := k.fetchSegment(context.Background(), "movies", "53506", "tt0111161")
 	if err != nil {
 		t.Fatalf("fetchSegment: %v", err)
@@ -230,7 +230,7 @@ func TestSIMKLCarriesItsVoteCount(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	k := &SIMKL{clientID: "k", baseURL: srv.URL, httpClient: srv.Client()}
+	k := &SIMKL{keys: newKeyRing("k"), baseURL: srv.URL, httpClient: srv.Client()}
 	meta, err := k.Fetch(context.Background(), "", "simkl:2012")
 	if err != nil {
 		t.Fatalf("Fetch: %v", err)

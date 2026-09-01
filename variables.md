@@ -51,11 +51,11 @@ protect editing that profile (rendering with a profile stays public).
 |---|---|
 | `XRDB_TMDB_READ_TOKEN` | TMDB v4 read token (preferred). Artwork, metadata, genres, age ratings, watch providers, title search. |
 | `XRDB_TMDB_API_KEY` | TMDB v3 key (legacy alternative to the read token). |
-| `XRDB_MDBLIST_API_KEY` | MDBList — IMDb, Rotten Tomatoes, Metacritic, Letterboxd, Trakt scores in one call. |
-| `XRDB_OMDB_API_KEY` | OMDB supplemental ratings. |
+| `XRDB_MDBLIST_API_KEY` | MDBList — IMDb, Rotten Tomatoes, Metacritic, Letterboxd, Trakt scores in one call. Several keys may be given, separated by commas: when MDBList reports one allowance spent, the next is used. |
+| `XRDB_OMDB_API_KEY` | OMDB supplemental ratings. Several keys may be given, separated by commas: when OMDb reports one allowance spent, the next is used. |
 | `XRDB_FANART_API_KEY` | Fanart.tv HD artwork and logos. |
 | `XRDB_TRAKT_CLIENT_ID` | Trakt community ratings. |
-| `XRDB_SIMKL_CLIENT_ID` | SIMKL community ratings. |
+| `XRDB_SIMKL_CLIENT_ID` | SIMKL community ratings. Several ids may be given, separated by commas: when SIMKL reports one allowance spent, the next is used. |
 | `XRDB_IMDB_DATASET_DIR` | Directory for the local IMDb ratings dataset; unset disables it. |
 
 No key is required for: Cinemeta artwork (Stremio/metahub), MyAnimeList,

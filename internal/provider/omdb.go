@@ -18,16 +18,16 @@ const omdbBaseURL = "https://www.omdbapi.com/"
 // It returns Rotten Tomatoes and Metacritic ratings for movies and TV.
 type OMDB struct {
 	mu         sync.RWMutex
-	apiKey     string
+	keys       *keyRing
 	httpClient *http.Client
 	baseURL    string // overrides omdbBaseURL; used in tests
 }
 
-// UpdateCredentials swaps the live credential so a value saved in the UI takes
-// effect without a restart.
+// UpdateCredentials swaps the live credentials so a value saved in the UI takes
+// effect without a restart. Several may be given, separated by commas.
 func (o *OMDB) UpdateCredentials(apiKey string) {
 	o.mu.Lock()
-	o.apiKey = apiKey
+	o.keys.set(apiKey)
 	o.mu.Unlock()
 }
 
@@ -43,13 +43,13 @@ func (o *OMDB) cred(ctx context.Context) string {
 	}
 	o.mu.RLock()
 	defer o.mu.RUnlock()
-	return o.apiKey
+	return o.keys.current()
 }
 
 // NewOMDB creates an OMDB provider.
 func NewOMDB(apiKey string) *OMDB {
 	return &OMDB{
-		apiKey:     apiKey,
+		keys:       newKeyRing(apiKey),
 		httpClient: newHTTPClient("omdb", 10*time.Second),
 	}
 }
@@ -77,7 +77,8 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 	if o.baseURL != "" {
 		base = o.baseURL
 	}
-	params := url.Values{"i": {id}, "tomatoes": {"true"}, "apikey": {o.cred(ctx)}}
+	used := o.cred(ctx)
+	params := url.Values{"i": {id}, "tomatoes": {"true"}, "apikey": {used}}
 	reqURL := base + "?" + params.Encode()
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, reqURL, nil)
 	if err != nil {
@@ -120,6 +121,11 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 		// is called for the rest of the day achieving nothing. The day it runs
 		// out is the day we would find we could not tell.
 		if omdbAllowanceSpent(result.Error) {
+			// An owner-supplied credential has its own allowance; spending it
+			// says nothing about ours and must not move the server's ring.
+			if !HasOwnerKey(ctx, KeyOMDB) {
+				o.keys.markSpent(used)
+			}
 			return nil, &RateLimitError{
 				Source: "omdb", Status: http.StatusOK,
 				QuotaExhausted: true, RetryAfter: quotaCooldown,

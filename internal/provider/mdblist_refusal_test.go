@@ -32,7 +32,7 @@ func TestMDBListRefusalClassification(t *testing.T) {
 			resp := &http.Response{StatusCode: http.StatusTooManyRequests, Header: h}
 
 			m := &MDBList{}
-			err := m.refusal(context.Background(), resp)
+			err := m.refusal(context.Background(), resp, "k")
 
 			var rl *RateLimitError
 			if !errors.As(err, &rl) {
@@ -56,7 +56,7 @@ func TestMDBListAbsentHeaderIsNotTreatedAsExhausted(t *testing.T) {
 	err := m.refusal(context.Background(), &http.Response{
 		StatusCode: http.StatusTooManyRequests,
 		Header:     http.Header{},
-	})
+	}, "k")
 
 	var rl *RateLimitError
 	if !errors.As(err, &rl) {

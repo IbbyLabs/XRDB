@@ -23,7 +23,7 @@ const mdblistBase = "https://api.mdblist.com"
 // (IMDb, Rotten Tomatoes, Metacritic, Letterboxd, Trakt, and MDBList's own aggregate).
 type MDBList struct {
 	mu         sync.RWMutex
-	apiKey     string
+	keys       *keyRing
 	baseURL    string // overrides mdblistBase; set in tests
 	httpClient *http.Client
 	// knownType remembers which endpoint answered for a title. A bare
@@ -36,18 +36,18 @@ type MDBList struct {
 // NewMDBList creates an MDBList provider.
 func NewMDBList(apiKey string) *MDBList {
 	return &MDBList{
-		apiKey:     apiKey,
+		keys:       newKeyRing(apiKey),
 		httpClient: newHTTPClient("mdblist", 10*time.Second),
 	}
 }
 
 func (m *MDBList) Name() string { return "mdblist" }
 
-// UpdateCredentials swaps the live API key so a key saved in the UI takes effect
-// without a restart.
+// UpdateCredentials swaps the live API keys so a key saved in the UI takes
+// effect without a restart. Several may be given, separated by commas.
 func (m *MDBList) UpdateCredentials(apiKey string) {
 	m.mu.Lock()
-	m.apiKey = apiKey
+	m.keys.set(apiKey)
 	m.mu.Unlock()
 }
 
@@ -63,7 +63,7 @@ func (m *MDBList) key(ctx context.Context) string {
 	}
 	m.mu.RLock()
 	defer m.mu.RUnlock()
-	return m.apiKey
+	return m.keys.current()
 }
 
 // Fetch retrieves multi-provider ratings from MDBList for the given IMDB tt-ID.
@@ -118,7 +118,8 @@ func (m *MDBList) fetchType(ctx context.Context, mdbType, id string) (*MediaMeta
 	if m.baseURL != "" {
 		base = m.baseURL
 	}
-	params := url.Values{"apikey": {m.key(ctx)}}
+	used := m.key(ctx)
+	params := url.Values{"apikey": {used}}
 	endpoint := fmt.Sprintf("%s/imdb/%s/%s?%s", base, mdbType, id, params.Encode())
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
@@ -133,7 +134,7 @@ func (m *MDBList) fetchType(ctx context.Context, mdbType, id string) (*MediaMeta
 
 	switch resp.StatusCode {
 	case http.StatusTooManyRequests, http.StatusServiceUnavailable:
-		return nil, m.refusal(ctx, resp)
+		return nil, m.refusal(ctx, resp, used)
 	case http.StatusUnauthorized, http.StatusForbidden:
 		return nil, fmt.Errorf("mdblist: unauthorized (check api key)")
 	case http.StatusNotFound:
@@ -181,7 +182,7 @@ func (m *MDBList) fetchType(ctx context.Context, mdbType, id string) (*MediaMeta
 // sends it on a 429 is not established. When it is absent the refusal is logged
 // as unclassified rather than guessed at, which answers the question the next
 // time one arrives.
-func (m *MDBList) refusal(ctx context.Context, resp *http.Response) error {
+func (m *MDBList) refusal(ctx context.Context, resp *http.Response, used string) error {
 	err := &RateLimitError{
 		Source:     "mdblist",
 		Status:     resp.StatusCode,
@@ -192,8 +193,13 @@ func (m *MDBList) refusal(ctx context.Context, resp *http.Response) error {
 	switch {
 	case ok && remaining <= 0:
 		err.QuotaExhausted = true
+		// An owner-supplied credential has its own allowance; spending it says
+		// nothing about ours and must not move the server's ring.
+		if !HasOwnerKey(ctx, KeyMDBList) {
+			m.keys.markSpent(used)
+		}
 		m.log().WarnContext(ctx, "mdblist refused a request and its daily allowance is spent",
-			"status", resp.StatusCode, "remaining", remaining)
+			"status", resp.StatusCode, "remaining", remaining, "keys", m.keys.size())
 	case ok:
 		m.log().WarnContext(ctx, "mdblist refused a request with allowance left",
 			"status", resp.StatusCode, "remaining", remaining)
