@@ -20,20 +20,17 @@ func TestNotFoundAndNotCertifiedAreDifferentAnswers(t *testing.T) {
 	}
 }
 
-// Rotten Tomatoes' own threshold is applied here rather than at refresh time,
-// so the file records what was read and this decides what it means.
-func TestTheThresholdIsAppliedOnRead(t *testing.T) {
+// The status is read from the page rather than computed, so the file holds the
+// answer and this hands it back unchanged.
+func TestTheFileAnswerIsUsedAsGiven(t *testing.T) {
 	load()
 	prev := loaded
 	t.Cleanup(func() { loaded = prev })
 
 	loaded = file{Titles: map[string]Title{
-		"tt0000001": {TopCritics: MinTopCritics},
-		"tt0000002": {TopCritics: MinTopCritics - 1},
-		"TT0000003": {TopCritics: 40},
+		"tt0000001": {Certified: true},
+		"tt0000002": {Certified: false},
 	}}
-	// Normalisation happens at load, so a raw map needs its own lowering here;
-	// what this asserts is the threshold rather than the casing.
 	for id, want := range map[string]bool{"tt0000001": true, "tt0000002": false} {
 		got, known := Is(id)
 		if !known {

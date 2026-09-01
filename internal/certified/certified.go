@@ -7,9 +7,11 @@
 // the total review count, which is a different number, so the mark was applied
 // to titles that never earned it and withheld from titles that did.
 //
-// This holds the answer rather than the inputs. A title the file does not name
-// is not certified as far as XRDB is concerned: the mark is Rotten Tomatoes'
-// own and a guess at it is worse than a plainer badge.
+// This holds Rotten Tomatoes' own answer, read from their page rather than
+// computed. A title the file does not name gets no answer from here at all —
+// Is reports known=false and the caller keeps whatever it did before, because
+// the file's coverage grows by demand and an empty file must not strip a mark
+// from every title at once.
 //
 // Unlike internal/curated, whose source is closed because Roger Ebert died, this
 // list moves. cmd/rt-refresh rewrites it; nothing here reads the network.
@@ -26,13 +28,15 @@ import (
 //go:embed titles.json
 var titlesJSON []byte
 
-// Title is one certified title, keyed by IMDb id in the file.
+// Title is one title's Certified Fresh state, keyed by IMDb id in the file.
 type Title struct {
-	// TopCritics is the count Rotten Tomatoes printed. Kept rather than reduced
-	// to a boolean so a later change to the threshold needs no re-read.
-	TopCritics int `json:"topCritics"`
-	// Score is the Tomatometer at the time of reading, for a reader comparing
-	// the file against a live score.
+	// Certified is Rotten Tomatoes' own answer, read from the page rather than
+	// computed. Their rule needs a Top Critics count and a release breadth we
+	// cannot see, so anything we derived ourselves would be a guess wearing
+	// their name.
+	Certified bool `json:"certified"`
+	// Score is the Tomatometer at the time of reading, so a reader can see how
+	// far the file has drifted from a live score.
 	Score int `json:"score"`
 }
 
@@ -82,12 +86,8 @@ func Is(imdbID string) (certified, known bool) {
 	if !ok {
 		return false, false
 	}
-	return t.TopCritics >= MinTopCritics, true
+	return t.Certified, true
 }
-
-// MinTopCritics is Rotten Tomatoes' own threshold. Applied here rather than at
-// refresh time so the file records what was read and this decides what it means.
-const MinTopCritics = 5
 
 // ReadAt is when the bundled file was last written, or the zero time when it
 // carries no date. A caller reporting freshness should say so rather than
