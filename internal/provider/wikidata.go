@@ -140,7 +140,7 @@ func (w *Wikidata) Fetch(ctx context.Context, _, id string) (*MediaMeta, error) 
 
 // wikidataUserAgent identifies XRDB and its operator, per Wikimedia's policy.
 func wikidataUserAgent() string {
-	return "XRDB/" + simklVersion() + " (https://github.com/IbbyLabs/XRDB; ibby@ibbylabs.dev)"
+	return "XRDB/" + version() + " (https://github.com/IbbyLabs/XRDB; ibby@ibbylabs.dev)"
 }
 
 // isIMDbID reports whether a string is tt followed by digits and nothing else.

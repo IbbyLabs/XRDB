@@ -153,7 +153,7 @@ func main() {
 	reg.Register(provider.NewTrakt(cfg.TraktClientID))
 	// SIMKL asks every request to carry the application name, its version and a
 	// user agent alongside the client id.
-	provider.SetSIMKLAppVersion(cfg.Version)
+	provider.SetAppVersion(cfg.Version)
 	reg.Register(provider.NewSIMKL(cfg.SIMKLClientID))
 	reg.Register(provider.NewMediUX(cfg.MediuxAPIKey))
 	// IMDb local dataset — enabled when XRDB_IMDB_DATASET_DIR is set.

@@ -53,28 +53,9 @@ const simklIDMissTTL = 24 * time.Hour
 // the client id.
 const simklAppName = "xrdb"
 
-var simklAppVersion atomic.Pointer[string]
-
-// SetSIMKLAppVersion records the running version for SIMKL's app-version
-// parameter and user agent.
-func SetSIMKLAppVersion(v string) {
-	v = strings.TrimSpace(v)
-	if v == "" {
-		return
-	}
-	simklAppVersion.Store(&v)
-}
-
-func simklVersion() string {
-	if p := simklAppVersion.Load(); p != nil {
-		return *p
-	}
-	return "0"
-}
-
 // simklAppParams are appended to every SIMKL URL.
 func simklAppParams() string {
-	return "&app-name=" + simklAppName + "&app-version=" + url.QueryEscape(simklVersion())
+	return "&app-name=" + simklAppName + "&app-version=" + url.QueryEscape(version())
 }
 
 // simklRequest builds a SIMKL request carrying the user agent they asked for.
@@ -83,7 +64,7 @@ func simklRequest(ctx context.Context, u string) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "XRDB/"+simklVersion())
+	req.Header.Set("User-Agent", "XRDB/"+version())
 	return req, nil
 }
 

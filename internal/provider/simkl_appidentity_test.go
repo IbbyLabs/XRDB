@@ -34,7 +34,7 @@ func TestEverySIMKLRequestCarriesTheAppIdentity(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	SetSIMKLAppVersion("3.67.0")
+	SetAppVersion("3.67.0")
 	s := NewSIMKL("cid")
 	s.baseURL = srv.URL
 	s.httpClient = srv.Client()
