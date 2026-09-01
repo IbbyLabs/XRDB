@@ -471,10 +471,10 @@ func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64, occ *o
 			chrome.border = color.NRGBA{R: accent.R, G: accent.G, B: accent.B, A: chrome.border.A}
 		}
 	case "glass":
-		// A lighter, more translucent body under a brighter edge, so it reads as
-		// frosted glass rather than the solid default plate.
-		chrome.fill = color.NRGBA{R: 40, G: 44, B: 54, A: 120}
-		chrome.border = color.NRGBA{R: 255, G: 255, B: 255, A: 96}
+		// A translucent tint the artwork reads through. The values are the genre
+		// badge's, which the age badge also takes.
+		chrome.fill = color.NRGBA{R: 14, G: 16, B: 22, A: 130}
+		chrome.border = color.NRGBA{R: 255, G: 255, B: 255, A: 48}
 		if hasAccent {
 			chrome.border = color.NRGBA{R: accent.R, G: accent.G, B: accent.B, A: 200}
 		}
