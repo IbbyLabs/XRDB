@@ -3,6 +3,7 @@ package compose
 import (
 	"image"
 	"image/color"
+	"path/filepath"
 	"testing"
 
 	"xrdb_rewrite/internal/imageconfig"
@@ -65,7 +66,9 @@ func TestTheGenrePlaceholderIsTheMediaType(t *testing.T) {
 		kind    string
 		want    string
 	}{
-		{true, "series", "ANIME"},
+		// ANIME is a genre family, so the placeholder says nothing rather than
+		// drawing a word that means something else on a title that has genres.
+		{true, "series", "N/A"},
 		{false, "series", "SHOW"},
 		{false, "movie", "MOVIE"},
 		{false, "", "MOVIE"},
@@ -233,5 +236,67 @@ func TestTheHatchSurvivesASmallBadge(t *testing.T) {
 			t.Errorf("scale %.1f: %d light-dark transitions across a %dpx plate; the hatch has closed up",
 				scale, transitions, maxX-minX)
 		}
+	}
+}
+
+// ANIME is a genre family. With the value placeholder on, a title classified as
+// anime and a title we know nothing about would draw the same badge with
+// opposite meanings, and Romaa reported the blank ones are mostly anime OVAs —
+// so it is the common case rather than an edge (FR-205 followup).
+func TestAPlaceholderNeverDrawsAWordThatIsAlsoAGenre(t *testing.T) {
+	cfg := imageconfig.Default()
+	cfg.GenrePlaceholder = true
+
+	if got := genrePlaceholderFor(cfg, true, "series"); got != "N/A" {
+		t.Errorf("an anime with no genres gave %q; ANIME is a family label", got)
+	}
+	// MOVIE and SHOW are not families, so they still say something true.
+	if got := genrePlaceholderFor(cfg, false, "movie"); got != "MOVIE" {
+		t.Errorf("a film gave %q, want MOVIE", got)
+	}
+	if got := genrePlaceholderFor(cfg, false, "series"); got != "SHOW" {
+		t.Errorf("a series gave %q, want SHOW", got)
+	}
+}
+
+// The collision a reader sees is between two drawn strings, so it is judged in
+// the render's language rather than in English. A language whose word for a
+// media type differs from the family's has no collision to avoid.
+func TestTheCollisionIsJudgedInTheRenderLanguage(t *testing.T) {
+	dir := t.TempDir()
+	// "anime" as a family is Anime; the media-type word is deliberately not.
+	write(t, filepath.Join(dir, "xx.json"),
+		`{"anime": "Anime", "_ui": {"placeholder_anime": "Desenho", "placeholder_none": "N/D"}}`)
+	t.Setenv(labelLanguagesDirEnv, dir)
+	resetFamilyLabels(t)
+
+	cfg := imageconfig.Default()
+	cfg.GenrePlaceholder = true
+	cfg.Language = "xx"
+	if got := genrePlaceholderFor(cfg, true, "series"); got != "Desenho" {
+		t.Errorf("got %q; the words differ in this language so there is no collision", got)
+	}
+
+	// The control: make them match and the marker comes back, so the comparison
+	// is doing the work rather than the language being ignored.
+	write(t, filepath.Join(dir, "xx.json"),
+		`{"anime": "Desenho", "_ui": {"placeholder_anime": "Desenho", "placeholder_none": "N/D"}}`)
+	resetFamilyLabels(t)
+	if got := genrePlaceholderFor(cfg, true, "series"); got != "N/D" {
+		t.Errorf("got %q, want the marker once the words match", got)
+	}
+}
+
+// Derived from the family table rather than naming the words that collide, so a
+// family added later is covered without anyone remembering this.
+func TestTheCollisionCheckReadsTheFamilyTable(t *testing.T) {
+	resetFamilyLabels(t)
+	for _, f := range genreFamilies() {
+		if !labelIsAFamily(f.label, "en") {
+			t.Errorf("%q is a family label and the check does not see it", f.label)
+		}
+	}
+	if labelIsAFamily("MOVIE", "en") || labelIsAFamily("SHOW", "en") {
+		t.Error("a media type that is not a family was treated as one")
 	}
 }

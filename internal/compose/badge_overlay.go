@@ -1362,6 +1362,23 @@ func agePlaceholderFor(cfg imageconfig.Config) string {
 	return UIString("placeholder_age", cfg.Language, "NR")
 }
 
+// labelIsAFamily reports whether a word would be drawn identically to one of the
+// genre families in this language. Derived from the family table rather than
+// naming the words that collide, so a family added later is covered without
+// anyone remembering this.
+func labelIsAFamily(word, lang string) bool {
+	word = strings.TrimSpace(word)
+	if word == "" {
+		return false
+	}
+	for _, f := range genreFamilies() {
+		if strings.EqualFold(familyLabelIn(&f, lang), word) {
+			return true
+		}
+	}
+	return false
+}
+
 // placeholderIsMarker reports whether a placeholder says there is nothing
 // rather than filling the gap with something true.
 func placeholderIsMarker(cfg imageconfig.Config) bool {
@@ -1393,17 +1410,31 @@ func genrePlaceholderFor(cfg imageconfig.Config, isAnime bool, contentKind strin
 	if !cfg.GenrePlaceholder {
 		return ""
 	}
+	marker := UIString("placeholder_none", cfg.Language, "N/A")
 	if placeholderIsMarker(cfg) {
-		return UIString("placeholder_none", cfg.Language, "N/A")
+		return marker
 	}
+	var word string
 	switch {
 	case isAnime:
-		return UIString("placeholder_anime", cfg.Language, "ANIME")
+		word = UIString("placeholder_anime", cfg.Language, "ANIME")
 	case contentKind == "series":
-		return UIString("placeholder_show", cfg.Language, "SHOW")
+		word = UIString("placeholder_show", cfg.Language, "SHOW")
 	default:
-		return UIString("placeholder_movie", cfg.Language, "MOVIE")
+		word = UIString("placeholder_movie", cfg.Language, "MOVIE")
 	}
+	// A media type that is also a genre family draws the same badge for "we
+	// classified this as anime" and "we know nothing about this", and nothing on
+	// the poster separates them. Where the word collides, say nothing instead.
+	//
+	// Compared against the labels as they will be drawn rather than against the
+	// family ids: the collision a reader sees is between two strings, and a
+	// language whose word for a media type differs from the family's has no
+	// collision to avoid.
+	if labelIsAFamily(word, cfg.Language) {
+		return marker
+	}
+	return word
 }
 
 func genreOptsFromConfig(cfg imageconfig.Config, isAnime bool, contentKind string) genreBadgeOpts {

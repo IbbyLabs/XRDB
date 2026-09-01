@@ -307,15 +307,21 @@ type GenreFamilyOption struct {
 	Accent string `json:"accent"`
 }
 
-// GenreFamilies lists every family in declaration order.
-func GenreFamilies() []GenreFamilyOption {
-	all := []genreFamily{
+// genreFamilies lists every family in declaration order. One list, so anything
+// that needs to know what the families are cannot go stale against another copy.
+func genreFamilies() []genreFamily {
+	return []genreFamily{
 		familyAnime, familyAnimation, familyHorror, familyComedy, familyRomance,
 		familyAction, familySciFi, familyFantasy, familySciFantasy, familyCrime,
 		familyDrama, familyDocumentary, familyMusic, familyReality, familyFamily,
 		familyHistory, familyKids, familyNews, familySoap, familyTalk,
 		familyTVMovie, familyWarPolitics, familyOther,
 	}
+}
+
+// GenreFamilies lists every family in declaration order.
+func GenreFamilies() []GenreFamilyOption {
+	all := genreFamilies()
 	out := make([]GenreFamilyOption, 0, len(all))
 	for _, f := range all {
 		out = append(out, GenreFamilyOption{ID: f.id, Label: f.label, Accent: f.accent})
