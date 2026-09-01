@@ -26,6 +26,15 @@ const DefaultRatingsCacheTTL = 6 * time.Hour
 // briefly and re-asked rather than held for the full term.
 const PartialRatingsCacheTTL = 10 * time.Minute
 
+// ratingsRefreshAheadFrac is how much of an entry's term is spent in its refresh
+// window. Inside it a render is served the remembered answer and a fetch runs
+// behind it, so the next render does not wait on the source. A fraction rather
+// than a duration because the term is configurable.
+const ratingsRefreshAheadFrac = 0.1
+
+// ratingsRefreshTimeout bounds a refresh nobody is waiting on.
+const ratingsRefreshTimeout = 30 * time.Second
+
 // ratingsCacheMax bounds the number of remembered answers. An answer is one
 // source for one title, so the title coverage is this divided by the number of
 // sources a config asks for: 3.63 on 2026-08-27, counted over the 73,988 answers
@@ -87,14 +96,15 @@ func newRatingsCache(ttl time.Duration) *ratingsCache {
 // fetch reports whether the answer is complete. An incomplete one is still
 // remembered, because re-asking on every render is what exhausts the allowance
 // in the first place, but it takes the shorter term.
-func (c *ratingsCache) do(ctx context.Context, key string, fetch func() (*provider.MediaMeta, bool, error)) (*provider.MediaMeta, error) {
+func (c *ratingsCache) do(ctx context.Context, key string, fetch ratingsFetch) (*provider.MediaMeta, error) {
 	if c == nil {
-		meta, _, err := fetch()
+		meta, _, err := fetch(ctx)
 		return meta, err
 	}
 
 	c.mu.Lock()
 	if e, ok := c.entries[key]; ok && time.Now().Before(e.ExpiresAt) {
+		c.refreshAheadLocked(ctx, key, e, fetch)
 		c.mu.Unlock()
 		return e.Meta, nil
 	}
@@ -111,24 +121,68 @@ func (c *ratingsCache) do(ctx context.Context, key string, fetch func() (*provid
 	c.inflight[key] = call
 	c.mu.Unlock()
 
-	call.meta, call.complete, call.err = fetch()
+	call.meta, call.complete, call.err = fetch(ctx)
 
 	c.mu.Lock()
 	delete(c.inflight, key)
 	if call.err == nil && call.meta != nil && len(call.meta.Ratings) > 0 {
-		if len(c.entries) >= ratingsCacheMax {
-			c.evictLocked()
-		}
-		ttl := c.ttl
-		if !call.complete && PartialRatingsCacheTTL < ttl {
-			ttl = PartialRatingsCacheTTL
-		}
-		c.entries[key] = ratingsEntry{Meta: call.meta, ExpiresAt: time.Now().Add(ttl)}
+		c.storeLocked(key, call.meta, call.complete)
 	}
 	c.mu.Unlock()
 
 	close(call.done)
 	return call.meta, call.err
+}
+
+// ratingsFetch asks a source for a title. It takes a context because a refresh
+// runs after the request that triggered it has gone, and cannot use that
+// request's.
+type ratingsFetch func(context.Context) (*provider.MediaMeta, bool, error)
+
+// refreshAheadLocked starts a fetch behind a still-valid entry that is close to
+// expiring. Called with c.mu held.
+//
+// The refresh takes the caller's context values and not its cancellation: the
+// render that triggered it returns immediately, and a refresh on that context
+// would be cancelled before it reached the source.
+func (c *ratingsCache) refreshAheadLocked(ctx context.Context, key string, e ratingsEntry, fetch ratingsFetch) {
+	window := time.Duration(float64(c.ttl) * ratingsRefreshAheadFrac)
+	if window <= 0 || time.Until(e.ExpiresAt) > window {
+		return
+	}
+	if _, running := c.inflight[key]; running {
+		return
+	}
+	call := &ratingsCall{done: make(chan struct{})}
+	c.inflight[key] = call
+	go c.runRefresh(ctx, key, call, fetch)
+}
+
+func (c *ratingsCache) runRefresh(ctx context.Context, key string, call *ratingsCall, fetch ratingsFetch) {
+	defer close(call.done)
+	rctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), ratingsRefreshTimeout)
+	defer cancel()
+
+	call.meta, call.complete, call.err = fetch(rctx)
+
+	c.mu.Lock()
+	delete(c.inflight, key)
+	if call.err == nil && call.meta != nil && len(call.meta.Ratings) > 0 {
+		c.storeLocked(key, call.meta, call.complete)
+	}
+	c.mu.Unlock()
+}
+
+// storeLocked remembers an answer. Called with c.mu held.
+func (c *ratingsCache) storeLocked(key string, meta *provider.MediaMeta, complete bool) {
+	if len(c.entries) >= ratingsCacheMax {
+		c.evictLocked()
+	}
+	ttl := c.ttl
+	if !complete && PartialRatingsCacheTTL < ttl {
+		ttl = PartialRatingsCacheTTL
+	}
+	c.entries[key] = ratingsEntry{Meta: meta, ExpiresAt: time.Now().Add(ttl)}
 }
 
 // Len reports how many answers are held, for the admin surface.

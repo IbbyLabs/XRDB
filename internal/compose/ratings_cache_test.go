@@ -21,7 +21,7 @@ func oneRating(source string) *provider.MediaMeta {
 func TestTheSameTitleIsFetchedOnce(t *testing.T) {
 	c := newRatingsCache(time.Hour)
 	var calls atomic.Int32
-	fetch := func() (*provider.MediaMeta, bool, error) {
+	fetch := func(context.Context) (*provider.MediaMeta, bool, error) {
 		calls.Add(1)
 		return oneRating("simkl"), true, nil
 	}
@@ -39,7 +39,7 @@ func TestTheSameTitleIsFetchedOnce(t *testing.T) {
 func TestDifferentTitlesAreNotConflated(t *testing.T) {
 	c := newRatingsCache(time.Hour)
 	var calls atomic.Int32
-	fetch := func() (*provider.MediaMeta, bool, error) {
+	fetch := func(context.Context) (*provider.MediaMeta, bool, error) {
 		calls.Add(1)
 		return oneRating("simkl"), true, nil
 	}
@@ -55,7 +55,7 @@ func TestConcurrentMissesShareOneFetch(t *testing.T) {
 	c := newRatingsCache(time.Hour)
 	var calls atomic.Int32
 	release := make(chan struct{})
-	fetch := func() (*provider.MediaMeta, bool, error) {
+	fetch := func(context.Context) (*provider.MediaMeta, bool, error) {
 		calls.Add(1)
 		<-release
 		return oneRating("simkl"), true, nil
@@ -81,7 +81,7 @@ func TestConcurrentMissesShareOneFetch(t *testing.T) {
 func TestFailuresAreNotRemembered(t *testing.T) {
 	c := newRatingsCache(time.Hour)
 	var calls atomic.Int32
-	fetch := func() (*provider.MediaMeta, bool, error) {
+	fetch := func(context.Context) (*provider.MediaMeta, bool, error) {
 		calls.Add(1)
 		return nil, true, errors.New("refused")
 	}
@@ -98,7 +98,7 @@ func TestFailuresAreNotRemembered(t *testing.T) {
 func TestEmptyAnswersAreNotRemembered(t *testing.T) {
 	c := newRatingsCache(time.Hour)
 	var calls atomic.Int32
-	fetch := func() (*provider.MediaMeta, bool, error) {
+	fetch := func(context.Context) (*provider.MediaMeta, bool, error) {
 		calls.Add(1)
 		return &provider.MediaMeta{}, true, nil
 	}
@@ -113,7 +113,7 @@ func TestEmptyAnswersAreNotRemembered(t *testing.T) {
 func TestEntriesExpire(t *testing.T) {
 	c := newRatingsCache(10 * time.Millisecond)
 	var calls atomic.Int32
-	fetch := func() (*provider.MediaMeta, bool, error) {
+	fetch := func(context.Context) (*provider.MediaMeta, bool, error) {
 		calls.Add(1)
 		return oneRating("simkl"), true, nil
 	}
@@ -128,7 +128,7 @@ func TestEntriesExpire(t *testing.T) {
 // A nil cache is the disabled case and must not swallow the fetch.
 func TestNilCacheStillFetches(t *testing.T) {
 	var c *ratingsCache
-	got, err := c.do(context.Background(), "k", func() (*provider.MediaMeta, bool, error) {
+	got, err := c.do(context.Background(), "k", func(context.Context) (*provider.MediaMeta, bool, error) {
 		return oneRating("simkl"), true, nil
 	})
 	if err != nil || got == nil || len(got.Ratings) != 1 {

@@ -661,9 +661,9 @@ func (p *Pipeline) fetchRatingsResilient(ctx context.Context, prov provider.Prov
 	// nothing. Timed apart from the fetch: the two are the same number to a
 	// caller and only one of them is work.
 	fetched, waitStart := false, time.Now()
-	meta, err := p.ratings.do(ctx, cacheKey, func() (*provider.MediaMeta, bool, error) {
+	meta, err := p.ratings.do(ctx, cacheKey, func(fctx context.Context) (*provider.MediaMeta, bool, error) {
 		fetched = true
-		m, ferr := p.fetchRatings(ctx, prov, req, artwork)
+		m, ferr := p.fetchRatings(fctx, prov, req, artwork)
 		return m, p.answerKeptItsSources(prov.Name(), cacheKey, m), ferr
 	})
 	if !fetched {

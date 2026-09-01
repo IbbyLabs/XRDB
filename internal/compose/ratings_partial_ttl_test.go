@@ -14,7 +14,7 @@ import (
 func TestAPartialAnswerTakesTheShorterTerm(t *testing.T) {
 	c := newRatingsCache(6 * time.Hour)
 
-	_, err := c.do(context.Background(), "mdblist|movie|tt1", func() (*provider.MediaMeta, bool, error) {
+	_, err := c.do(context.Background(), "mdblist|movie|tt1", func(context.Context) (*provider.MediaMeta, bool, error) {
 		return oneRating("imdb"), false, nil
 	})
 	if err != nil {
@@ -34,7 +34,7 @@ func TestAPartialAnswerTakesTheShorterTerm(t *testing.T) {
 func TestACompleteAnswerTakesTheFullTerm(t *testing.T) {
 	c := newRatingsCache(6 * time.Hour)
 
-	if _, err := c.do(context.Background(), "mdblist|movie|tt2", func() (*provider.MediaMeta, bool, error) {
+	if _, err := c.do(context.Background(), "mdblist|movie|tt2", func(context.Context) (*provider.MediaMeta, bool, error) {
 		return oneRating("imdb"), true, nil
 	}); err != nil {
 		t.Fatal(err)
@@ -51,7 +51,7 @@ func TestACompleteAnswerTakesTheFullTerm(t *testing.T) {
 func TestTheShorterTermNeverExtendsAConfiguredTTL(t *testing.T) {
 	c := newRatingsCache(time.Minute)
 
-	if _, err := c.do(context.Background(), "mdblist|movie|tt3", func() (*provider.MediaMeta, bool, error) {
+	if _, err := c.do(context.Background(), "mdblist|movie|tt3", func(context.Context) (*provider.MediaMeta, bool, error) {
 		return oneRating("imdb"), false, nil
 	}); err != nil {
 		t.Fatal(err)
