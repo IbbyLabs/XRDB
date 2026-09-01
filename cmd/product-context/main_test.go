@@ -151,6 +151,30 @@ func TestTheCommittedArtifactIsCurrent(t *testing.T) {
 			t.Errorf("config key %q is missing from the committed artifact; regenerate it", want)
 		}
 	}
+
+	// The env-var half of the same artifact. A variable documented in
+	// variables.md and absent here is one the bot answers "there is no way to"
+	// about. Decoded rather than searched: a name carrying a placeholder is
+	// stored with < and > escaped, so a substring search never finds it.
+	env := envVarSection(filepath.Join("..", "..", "variables.md"))
+	if env == nil {
+		t.Fatal("variables.md parsed to nothing, so this checks the artifact against an empty list")
+	}
+	var art artifact
+	if err := json.Unmarshal(raw, &art); err != nil {
+		t.Fatalf("cannot decode the committed artifact: %v", err)
+	}
+	published := map[string]bool{}
+	for _, sec := range art.Sections {
+		for _, line := range sec.Lines {
+			published[line] = true
+		}
+	}
+	for _, want := range env.Lines {
+		if !published[want] {
+			t.Errorf("environment variable line %q is missing from the committed artifact; regenerate it", want)
+		}
+	}
 }
 
 // Running the generator twice with nothing else changed must not produce a

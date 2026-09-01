@@ -189,7 +189,9 @@ func jsonKeys(t reflect.Type, seen map[reflect.Type]bool) []string {
 	return keys
 }
 
-var envRowRe = regexp.MustCompile("^\\|\\s*`([A-Z0-9_]+)`\\s*\\|\\s*([^|]*?)\\s*\\|")
+// A name may carry a placeholder segment: XRDB_TTL_<PROVIDER> and
+// XRDB_<SOURCE>_MIN_INTERVAL_SECONDS name a family rather than one variable.
+var envRowRe = regexp.MustCompile("^\\|\\s*`([A-Z0-9_]*(?:<[A-Z]+>[A-Z0-9_]*)*)`\\s*\\|\\s*([^|]*?)\\s*\\|")
 
 // envVarSection reads the variable table in variables.md, which is the file the
 // operator docs already keep current.
