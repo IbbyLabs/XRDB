@@ -99,6 +99,10 @@ func (w *Wikidata) Fetch(ctx context.Context, _, id string) (*MediaMeta, error) 
 		return nil, fmt.Errorf("wikidata: %w", err)
 	}
 	req.Header.Set("Accept", "application/sparql-results+json")
+	// Wikimedia's user-agent policy asks an automated client to name itself and
+	// a way to reach its operator, and throttles or refuses requests that do
+	// not. A block there is not the kind that clears on its own.
+	req.Header.Set("User-Agent", wikidataUserAgent())
 
 	res, err := w.httpClient.Do(req)
 	if err != nil {
@@ -132,6 +136,11 @@ func (w *Wikidata) Fetch(ctx context.Context, _, id string) (*MediaMeta, error) 
 		meta.Ratings = append(meta.Ratings, Rating{Source: source, Value: value})
 	}
 	return meta, nil
+}
+
+// wikidataUserAgent identifies XRDB and its operator, per Wikimedia's policy.
+func wikidataUserAgent() string {
+	return "XRDB/" + simklVersion() + " (https://github.com/IbbyLabs/XRDB; ibby@ibbylabs.dev)"
 }
 
 // isIMDbID reports whether a string is tt followed by digits and nothing else.
