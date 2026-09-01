@@ -1715,6 +1715,13 @@ func (p *Pipeline) artworkOrderFor(primary, surface, mediaID string) []string {
 	if strings.HasPrefix(mediaID, "kitsu:") && primary != string(imageconfig.ArtworkKitsu) {
 		order = append([]string{string(imageconfig.ArtworkKitsu)}, order...)
 	}
+	// A mal: id is only answerable by the general sources once the anime map
+	// knows its TMDB id, and a title exists before that mapping does. MAL's own
+	// image server has the artwork for exactly that window, so it goes last
+	// rather than first: a mapped title still takes the configured source.
+	if strings.HasPrefix(stripContentKindPrefix(mediaID), "mal:") {
+		order = append(order, "mal")
+	}
 	return order
 }
 
