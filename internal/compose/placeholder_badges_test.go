@@ -126,3 +126,112 @@ func TestTheEmptyRingDrawsWithoutAValue(t *testing.T) {
 		t.Error("a ring with ratings drew nothing")
 	}
 }
+
+// A placeholder that fills the gap with something true and one that says there
+// is nothing are different answers, and absence and still-loading look the same
+// on a poster without the second (FR-205).
+func TestTheMarkerStyleSaysThereIsNothing(t *testing.T) {
+	cfg := imageconfig.Default()
+	cfg.GenrePlaceholder = true
+	cfg.AgeRatingPlaceholder = true
+
+	// Default is the value style, so nothing changes for a config written before
+	// this setting existed.
+	if got := genrePlaceholderFor(cfg, false, "movie"); got != "MOVIE" {
+		t.Errorf("default genre placeholder = %q, want MOVIE", got)
+	}
+	if got := agePlaceholderFor(cfg); got != "NR" {
+		t.Errorf("default age placeholder = %q, want NR", got)
+	}
+
+	cfg.PlaceholderStyle = "marker"
+	for _, tc := range []struct{ name, got string }{
+		{"genre", genrePlaceholderFor(cfg, false, "movie")},
+		{"anime genre", genrePlaceholderFor(cfg, true, "series")},
+		{"age", agePlaceholderFor(cfg)},
+	} {
+		if tc.got != "N/A" {
+			t.Errorf("marker %s = %q, want N/A", tc.name, tc.got)
+		}
+	}
+}
+
+// The hatching is what makes a marker unmistakably no-value rather than a
+// colour a reader could take for a genre, so it has to reach the plate.
+func TestTheMarkerPlateIsHatched(t *testing.T) {
+	cfg := imageconfig.Default()
+	cfg.GenrePlaceholder = true
+	cfg.AgeRatingPlaceholder = true
+
+	plain := ageOptsFromConfig(cfg)
+	if plain.hatched {
+		t.Error("the value style hatches its plate")
+	}
+	cfg.PlaceholderStyle = "marker"
+	if !ageOptsFromConfig(cfg).hatched {
+		t.Error("the marker style does not hatch the age plate")
+	}
+	if !genreOptsFromConfig(cfg, false, "movie").hatched {
+		t.Error("the marker style does not hatch the genre plate")
+	}
+
+	// And it draws differently, rather than the flag being carried and ignored.
+	marked := drawsSomething(func(b *image.NRGBA, occ *occupancy) {
+		drawAgeRatingBadge(b, "", "tl", 2, occ, ageOptsFromConfig(cfg))
+	})
+	if !marked {
+		t.Error("the marker age badge drew nothing")
+	}
+}
+
+// A thumbnail draws these at a fraction of a poster's size, and thin diagonal
+// lines are the first thing to disappear at that scale. The hatch spacing is in
+// output pixels rather than scaled for that reason: a hatch that closes into a
+// grey smear says less than no hatch at all.
+func TestTheHatchSurvivesASmallBadge(t *testing.T) {
+	cfg := imageconfig.Default()
+	cfg.AgeRatingPlaceholder = true
+	cfg.PlaceholderStyle = "marker"
+	bg := color.NRGBA{R: 120, G: 160, B: 200, A: 255}
+
+	for _, scale := range []float64{0.5, 1, 2} {
+		base := image.NewNRGBA(image.Rect(0, 0, 400, 200))
+		for y := range 200 {
+			for x := range 400 {
+				base.SetNRGBA(x, y, bg)
+			}
+		}
+		drawAgeRatingBadge(base, "", "tl", scale, newOccupancy(base.Bounds()), ageOptsFromConfig(cfg))
+
+		minX, maxX, lastY := 400, 0, 0
+		for y := range 200 {
+			for x := range 400 {
+				if base.NRGBAAt(x, y) != bg {
+					if x < minX {
+						minX = x
+					}
+					if x > maxX {
+						maxX = x
+					}
+					lastY = y
+				}
+			}
+		}
+		transitions, prev := 0, -1
+		for x := minX + 2; x < maxX-2; x++ {
+			c := base.NRGBAAt(x, lastY/2)
+			cur := 0
+			if (int(c.R)+int(c.G)+int(c.B))/3 > 60 {
+				cur = 1
+			}
+			if prev >= 0 && cur != prev {
+				transitions++
+			}
+			prev = cur
+		}
+		if transitions < 6 {
+			t.Errorf("scale %.1f: %d light-dark transitions across a %dpx plate; the hatch has closed up",
+				scale, transitions, maxX-minX)
+		}
+	}
+}

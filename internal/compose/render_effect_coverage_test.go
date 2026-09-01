@@ -478,10 +478,13 @@ func keyMutations() map[string]keyOverride {
 		"logoBackground": {mut: func(c *imageconfig.Config) { c.LogoBackground = "dark" }},
 
 		// Genre badge family.
-		"genreBadgeAnimeGrouping":   {mut: func(c *imageconfig.Config) { c.GenreBadgeAnimeGrouping = "animation" }},
-		"genreBadgeMode":            {mut: func(c *imageconfig.Config) { c.GenreBadgeMode = "icon" }},
-		"genreBadgeStyle":           {mut: func(c *imageconfig.Config) { c.GenreBadgeStyle = "tile" }},
-		"genrePlaceholder":          {bare: true},
+		"genreBadgeAnimeGrouping": {mut: func(c *imageconfig.Config) { c.GenreBadgeAnimeGrouping = "animation" }},
+		"genreBadgeMode":          {mut: func(c *imageconfig.Config) { c.GenreBadgeMode = "icon" }},
+		"genreBadgeStyle":         {mut: func(c *imageconfig.Config) { c.GenreBadgeStyle = "tile" }},
+		"genrePlaceholder":        {bare: true},
+		"placeholderStyle": {bare: true, pre: func(c *imageconfig.Config) {
+			c.GenrePlaceholder, c.AgeRatingPlaceholder = true, true
+		}, mut: func(c *imageconfig.Config) { c.PlaceholderStyle = "marker" }},
 		"ageRatingPlaceholder":      {bare: true, pre: func(c *imageconfig.Config) { c.AgeRating = true }},
 		"ratingRingPlaceholder":     {bare: true, pre: func(c *imageconfig.Config) { c.RatingRing = true }},
 		"genreBadgeTileAccentColor": {pre: genreTile, mut: setColor(func(c *imageconfig.Config, v string) { c.GenreBadgeTileAccentColor = v })},

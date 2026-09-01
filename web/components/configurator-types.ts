@@ -401,6 +401,7 @@ export interface ConfigState {
   genrePlaceholder: boolean;
   ageRatingPlaceholder: boolean;
   ratingRingPlaceholder: boolean;
+  placeholderStyle: string;
   releaseStatus: boolean;
   releaseStatusPos: string;
   releaseStatusScale: number;
@@ -617,6 +618,7 @@ export const DEFAULT_CONFIG: ConfigState = {
   genrePlaceholder: false,
   ageRatingPlaceholder: false,
   ratingRingPlaceholder: false,
+  placeholderStyle: '',
   releaseStatus: false,
   topRated: false,
   topRatedPos: 'inherit',

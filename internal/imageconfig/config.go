@@ -153,6 +153,10 @@ type Config struct {
 	GenrePlaceholder      bool `json:"genrePlaceholder,omitempty"`
 	AgeRatingPlaceholder  bool `json:"ageRatingPlaceholder,omitempty"`
 	RatingRingPlaceholder bool `json:"ratingRingPlaceholder,omitempty"`
+	// PlaceholderStyle is what a placeholder draws when one of the three above
+	// is on: "value" fills the gap with something true, "marker" says there is
+	// nothing. Empty is "value".
+	PlaceholderStyle string `json:"placeholderStyle,omitempty"`
 	// RatingUnavailableMark draws the X in place of a value for a source that was
 	// wanted and held out. On by default: without it a missing rating reads as the
 	// provider being broken rather than one source being briefly unavailable.
@@ -742,6 +746,7 @@ type raw struct {
 	GenrePlaceholder              *bool     `json:"genrePlaceholder"`
 	AgeRatingPlaceholder          *bool     `json:"ageRatingPlaceholder"`
 	RatingRingPlaceholder         *bool     `json:"ratingRingPlaceholder"`
+	PlaceholderStyle              *string   `json:"placeholderStyle"`
 	RatingUnavailableMark         *bool     `json:"ratingUnavailableMark"`
 	BadgeShadow                   *bool     `json:"badgeShadow"`
 	AgeRatingPos                  *string   `json:"ageRatingPos"`
@@ -1173,6 +1178,11 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.RatingRingPlaceholder != nil {
 		cfg.RatingRingPlaceholder = *r.RatingRingPlaceholder
+	}
+	if r.PlaceholderStyle != nil {
+		if v := strings.ToLower(strings.TrimSpace(*r.PlaceholderStyle)); v == "value" || v == "marker" {
+			cfg.PlaceholderStyle = v
+		}
 	}
 	if r.BadgeShadow != nil {
 		cfg.BadgeShadow = *r.BadgeShadow
@@ -2391,6 +2401,7 @@ func CacheKey(cfg Config) string {
 		GenrePlaceholder              bool           `json:"genrePlaceholder"`
 		AgeRatingPlaceholder          bool           `json:"ageRatingPlaceholder"`
 		RatingRingPlaceholder         bool           `json:"ratingRingPlaceholder"`
+		PlaceholderStyle              string         `json:"placeholderStyle"`
 		RatingUnavailableMark         bool           `json:"ratingUnavailableMark"`
 		BadgeShadow                   bool           `json:"badgeShadow"`
 		AgeRatingPos                  string         `json:"ageRatingPos"`
@@ -2502,6 +2513,7 @@ func CacheKey(cfg Config) string {
 		GenrePlaceholder:              cfg.GenrePlaceholder,
 		AgeRatingPlaceholder:          cfg.AgeRatingPlaceholder,
 		RatingRingPlaceholder:         cfg.RatingRingPlaceholder,
+		PlaceholderStyle:              cfg.PlaceholderStyle,
 		RatingUnavailableMark:         cfg.RatingUnavailableMark,
 		BadgeShadow:                   cfg.BadgeShadow,
 		AgeRatingPos:                  cfg.AgeRatingPos,

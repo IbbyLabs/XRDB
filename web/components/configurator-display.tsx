@@ -407,6 +407,20 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           onChange={() => onUpdate('ratingRingPlaceholder', !config.ratingRingPlaceholder)}
         />
 
+        {(config.genrePlaceholder || config.ageRatingPlaceholder || config.ratingRingPlaceholder) && (
+          <Field label="Placeholder style" htmlFor={`${uid}-phstyle`}>
+            <select
+              id={`${uid}-phstyle`}
+              className="select"
+              value={config.placeholderStyle || 'value'}
+              onChange={e => onUpdate('placeholderStyle', e.target.value)}
+            >
+              <option value="value">Fill the gap (ANIME, NR, an empty ring)</option>
+              <option value="marker">Mark it as nothing (hatched N/A)</option>
+            </select>
+          </Field>
+        )}
+
         <ToggleRow
           label="Release status badge"
           hint="Mark films that are in cinemas or out on digital"

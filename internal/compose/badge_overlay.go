@@ -580,6 +580,7 @@ func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64, occ *o
 // or quality badges (TR).
 // ageRatingOpts carries the age-rating badge styling. Zero value = default.
 type ageRatingOpts struct {
+	hatched      bool   // rule the plate so it cannot be read as a value
 	placeholder  string // drawn when a title has no certificate; empty draws nothing
 	lang         string // config language for the fixed wording this badge draws
 	style        string // "" | glass | plain | tile | silver | square | media
@@ -631,7 +632,8 @@ func applyAgeChrome(ch tileChrome, textCol color.NRGBA, opts ageRatingOpts, scal
 }
 
 func ageOptsFromConfig(cfg imageconfig.Config) ageRatingOpts {
-	return ageRatingOpts{lang: cfg.Language, placeholder: agePlaceholderFor(cfg), style: cfg.AgeRatingBadgeStyle, tileColor: cfg.AgeRatingTileColor,
+	return ageRatingOpts{lang: cfg.Language, placeholder: agePlaceholderFor(cfg),
+		hatched: cfg.AgeRatingPlaceholder && placeholderIsMarker(cfg), style: cfg.AgeRatingBadgeStyle, tileColor: cfg.AgeRatingTileColor,
 		offsetX: cfg.AgeRatingOffsetX, offsetY: cfg.AgeRatingOffsetY, scale: cfg.AgeRatingScale,
 		outlineColor: cfg.NoBackgroundBadgeOutlineColor, outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
 		outlineGlow: cfg.NoBackgroundBadgeOutlineGlow,
@@ -766,6 +768,9 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 		rad = 0 // sharp-cornered tile
 	}
 	drawSoftTile(base, r, rad, chrome)
+	if opts.hatched {
+		drawHatching(base, r, color.NRGBA{R: 255, G: 255, B: 255, A: 40})
+	}
 	drawText(base, face, tx, ty, textCol, rating)
 }
 
@@ -1263,6 +1268,7 @@ func drawLogoRoundClipped(dst, src *image.NRGBA, dstRect image.Rectangle, radius
 // reproduces the original fixed appearance, so an unconfigured render is
 // unchanged.
 type genreBadgeOpts struct {
+	hatched      bool   // rule the plate so it cannot be read as a genre
 	placeholder  string // drawn when a title has no genres; empty draws nothing
 	scalePercent int    // 0 = 100 (no extra scaling)
 	offsetX      int    // px nudge from the resolved corner
@@ -1350,7 +1356,34 @@ func agePlaceholderFor(cfg imageconfig.Config) string {
 	if !cfg.AgeRatingPlaceholder {
 		return ""
 	}
+	if placeholderIsMarker(cfg) {
+		return UIString("placeholder_none", cfg.Language, "N/A")
+	}
 	return UIString("placeholder_age", cfg.Language, "NR")
+}
+
+// placeholderIsMarker reports whether a placeholder says there is nothing
+// rather than filling the gap with something true.
+func placeholderIsMarker(cfg imageconfig.Config) bool {
+	return strings.EqualFold(strings.TrimSpace(cfg.PlaceholderStyle), "marker")
+}
+
+// drawHatching rules thin diagonal lines across a plate so it cannot be read as
+// a value. The spacing and thickness are in output pixels rather than scaled: at
+// a thumbnail's quarter size a scaled hatch closes up into a grey smear, which
+// says less than no hatch at all.
+func drawHatching(base *image.NRGBA, r image.Rectangle, tint color.NRGBA) {
+	const gap = 5
+	clip := r.Intersect(base.Bounds())
+	for x := clip.Min.X - clip.Dy(); x < clip.Max.X; x += gap {
+		for dy := range clip.Dy() {
+			px := x + dy
+			if px < clip.Min.X || px >= clip.Max.X {
+				continue
+			}
+			blendPixel(base, px, clip.Min.Y+dy, tint)
+		}
+	}
 }
 
 // genrePlaceholderFor is the word drawn when a title has no genres. The media
@@ -1359,6 +1392,9 @@ func agePlaceholderFor(cfg imageconfig.Config) string {
 func genrePlaceholderFor(cfg imageconfig.Config, isAnime bool, contentKind string) string {
 	if !cfg.GenrePlaceholder {
 		return ""
+	}
+	if placeholderIsMarker(cfg) {
+		return UIString("placeholder_none", cfg.Language, "N/A")
 	}
 	switch {
 	case isAnime:
@@ -1373,6 +1409,7 @@ func genrePlaceholderFor(cfg imageconfig.Config, isAnime bool, contentKind strin
 func genreOptsFromConfig(cfg imageconfig.Config, isAnime bool, contentKind string) genreBadgeOpts {
 	return genreBadgeOpts{
 		placeholder:  genrePlaceholderFor(cfg, isAnime, contentKind),
+		hatched:      cfg.GenrePlaceholder && placeholderIsMarker(cfg),
 		familyColors: cfg.GenreFamilyColors,
 		scalePercent: cfg.GenreBadgeScale,
 		offsetX:      cfg.GenreBadgeOffsetX,
@@ -1589,6 +1626,11 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 	// the far edge; this keeps a nudge past the anchored edge from drawing off
 	// the poster.
 	r := occ.placeNudged(resolvedPos, bw, bh, edgeX, edgeY, s(7), opts.offsetX, opts.offsetY)
+	// Every style returns from its own branch and one draws its plate after the
+	// switch, so the ruling is deferred rather than placed after any one of them.
+	if opts.hatched {
+		defer drawHatching(base, r, color.NRGBA{R: 255, G: 255, B: 255, A: 40})
+	}
 	textColor := color.NRGBA{R: 225, G: 225, B: 228, A: 255}
 	tx, ty := r.Min.X+padX+stripeRoom, r.Min.Y+capRoom+padY+ascent
 
@@ -3104,7 +3146,12 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 	cy := r.Min.Y + fullR
 	label := strconv.Itoa(int(math.Round(value * 10)))
 	if empty {
+		// The empty circle already reads as no value, so the marker style names
+		// it rather than hatching a ring that has no plate to hatch.
 		label = ""
+		if placeholderIsMarker(cfg) {
+			label = UIString("placeholder_none", cfg.Language, "N/A")
+		}
 	}
 	drawProgressRing(base, cx, cy, outerR, progress/10.0, fillColor, valueFace, label, cfg.RingCenterOpacity)
 }
