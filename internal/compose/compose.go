@@ -266,6 +266,21 @@ func fillContentRating(artwork *provider.MediaMeta, rating string) {
 	}
 }
 
+// statedContentKind is the kind the caller named, from the type field or from
+// the id's own prefix. It never looks anything up: the placeholder draws what
+// the caller said, and a caller that said nothing gets the default rather than
+// a lookup nobody asked for.
+//
+// req.ContentType is empty unless a per-type override made the render resolve
+// it, so a "series:mal:64844" request reached the genre placeholder as no kind
+// at all and drew MOVIE.
+func statedContentKind(req Request) string {
+	if req.ContentType != "" {
+		return req.ContentType
+	}
+	return contentKindFromID(req.MediaID)
+}
+
 // resolveContentKind answers whether the title is a movie or a series when the
 // request did not say. A per-type override is meaningless without it, and the
 // common artwork URLs carry no ?type=. Only configs that set an override pay
@@ -1288,7 +1303,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		drawAverageRatingRing(composed, allRatings, req.Config, scale, occ)
 	}
 	if req.Config.Genre && (len(meta.Genres) > 0 || req.Config.GenrePlaceholder) {
-		drawGenreBadge(composed, meta.Genres, req.Config.GenrePos, scale, occ, genreOptsFromConfig(req.Config, meta.IsAnime, req.ContentType))
+		drawGenreBadge(composed, meta.Genres, req.Config.GenrePos, scale, occ, genreOptsFromConfig(req.Config, meta.IsAnime, statedContentKind(req)))
 	}
 	if req.Config.Providers && len(meta.WatchProviders) > 0 {
 		drawProviderBadges(composed, meta.WatchProviders, scale, occ, providerOptsFromConfig(req.Config))

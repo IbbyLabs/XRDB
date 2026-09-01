@@ -300,3 +300,31 @@ func TestTheCollisionCheckReadsTheFamilyTable(t *testing.T) {
 		t.Error("a media type that is not a family was treated as one")
 	}
 }
+
+// The caller says what the title is, in the type field or in the id's own
+// prefix. req.ContentType is only filled when a per-type override made the
+// render resolve it, so a "series:" request reached the placeholder as no kind
+// at all and drew MOVIE.
+func TestThePlaceholderDrawsTheKindTheCallerNamed(t *testing.T) {
+	for _, tc := range []struct {
+		req  Request
+		want string
+	}{
+		{Request{ContentType: "series", MediaID: "tt0903747"}, "series"},
+		{Request{MediaID: "series:mal:64844"}, "series"},
+		{Request{MediaID: "movie:mal:64844"}, "movie"},
+		{Request{MediaID: "tmdb:series:1396"}, "series"},
+		// A caller that named nothing gets nothing, rather than a lookup.
+		{Request{MediaID: "tt0111161"}, ""},
+	} {
+		if got := statedContentKind(tc.req); got != tc.want {
+			t.Errorf("%+v gave %q, want %q", tc.req, got, tc.want)
+		}
+	}
+
+	cfg := imageconfig.Default()
+	cfg.GenrePlaceholder = true
+	if got := genrePlaceholderFor(cfg, false, statedContentKind(Request{MediaID: "series:mal:64844"})); got != "SHOW" {
+		t.Errorf("a series request drew %q, want SHOW", got)
+	}
+}
