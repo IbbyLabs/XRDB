@@ -288,6 +288,14 @@ func (t *TMDB) findByExternalID(ctx context.Context, externalID, source, prefer 
 			Name       string  `json:"name"`
 			Popularity float64 `json:"popularity"`
 		} `json:"tv_results"`
+		// An episode's external id comes back here and in neither list above, so
+		// without this field the decode succeeds, both lists are empty, and the
+		// id reads as one TMDB has never heard of. The entry names its show, so
+		// the episode resolves to the series it belongs to without a second
+		// request — which is the only thing every other source can answer about.
+		TVEpisodeResults []struct {
+			ShowID int `json:"show_id"`
+		} `json:"tv_episode_results"`
 	}
 	if err := t.get(ctx, path, &result); err != nil {
 		return externalMatch{}, false, err
@@ -300,6 +308,16 @@ func (t *TMDB) findByExternalID(ctx context.Context, externalID, source, prefer 
 	if len(result.TVResults) > 0 {
 		s := result.TVResults[0]
 		tv = &externalMatch{ID: strconv.Itoa(s.ID), ContentType: "tv", Title: s.Name, Popularity: s.Popularity}
+	}
+	// An episode id belongs to its show. Every source XRDB asks indexes shows
+	// and none indexes episodes, so this is what turns four simultaneous
+	// failures into four answers.
+	if movie == nil && tv == nil && len(result.TVEpisodeResults) > 0 {
+		if showID := result.TVEpisodeResults[0].ShowID; showID > 0 {
+			t.log().InfoContext(ctx, "An episode id was resolved to the series it belongs to",
+				"id", logging.RequestID(ctx), "external_id", externalID, "series", showID)
+			return externalMatch{ID: strconv.Itoa(showID), ContentType: "tv"}, true, nil
+		}
 	}
 	switch {
 	case movie == nil && tv == nil:
