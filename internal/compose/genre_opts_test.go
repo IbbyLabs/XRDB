@@ -50,7 +50,7 @@ func TestGenreBadgeOptsChangeRender(t *testing.T) {
 // genreOptsFromConfig must map the config fields through unchanged.
 func TestGenreOptsFromConfig(t *testing.T) {
 	cfg := imageconfig.Parse([]byte(`{"genreBadgeScale":150,"genreBadgeOffsetX":10,"genreBadgeOffsetY":-5,"genreBadgeBackgroundOpacity":60}`))
-	opts := genreOptsFromConfig(cfg, false)
+	opts := genreOptsFromConfig(cfg, false, "movie")
 	if opts.scalePercent != 150 || opts.offsetX != 10 || opts.offsetY != -5 || opts.bgOpacity != 60 {
 		t.Errorf("opts mismatch: %+v", opts)
 	}

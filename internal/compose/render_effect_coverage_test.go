@@ -148,13 +148,30 @@ func maximalConfig() imageconfig.Config {
 // fetcher then returns different bytes for a different URL, so a config key that
 // only steers which source/variant/language is fetched still moves the rendered
 // pixels — proving the key reaches ArtworkOptions rather than being dropped.
-type effectProvider struct{ name string }
+type effectProvider struct {
+	name string
+	// bare empties the fields a placeholder fills, so a key whose only effect
+	// is on an empty title has a fixture that shows it.
+	bare bool
+}
 
 func (e *effectProvider) Name() string { return e.name }
 
 func (e *effectProvider) Fetch(_ context.Context, _, _ string) (*provider.MediaMeta, error) {
 	m := richMeta()
+	e.strip(&m)
 	return &m, nil
+}
+
+// strip empties what a placeholder stands in for: genres, the certificate and
+// every rating.
+func (e *effectProvider) strip(m *provider.MediaMeta) {
+	if !e.bare {
+		return
+	}
+	m.Genres = nil
+	m.ContentRating = ""
+	m.Ratings = nil
 }
 
 func (e *effectProvider) FetchArtwork(_ context.Context, _, _ string, opts provider.ArtworkOptions) (*provider.MediaMeta, error) {
@@ -167,6 +184,7 @@ func (e *effectProvider) FetchArtwork(_ context.Context, _, _ string, opts provi
 	m.PosterURL = "http://art/poster?" + fp
 	m.BackdropURL = "http://art/backdrop?" + fp
 	m.LogoURL = "http://art/logo?" + fp
+	e.strip(&m)
 	return &m, nil
 }
 
@@ -215,6 +233,18 @@ func (alwaysAnime) Resolve(_ context.Context, _, _ string) (animemap.IDs, bool) 
 type alwaysTrending struct{}
 
 func (alwaysTrending) IsTrending(_ context.Context, _ ...string) bool { return true }
+
+// bareEffectPipeline renders a title with nothing for the placeholder badges to
+// replace, which is the only state in which they draw.
+func bareEffectPipeline() *Pipeline {
+	p := effectPipeline()
+	reg := provider.NewRegistry()
+	for _, name := range []string{"tmdb", "fanart", "cinemeta", "omdb", "mal"} {
+		reg.Register(&effectProvider{name: name, bare: true})
+	}
+	p.providers = reg
+	return p
+}
 
 func effectPipeline() *Pipeline {
 	reg := provider.NewRegistry()
@@ -320,6 +350,10 @@ type keyOverride struct {
 	contentType string                    // request content type this key needs to be live
 	pre         func(*imageconfig.Config) // applied to BOTH base and mutated to make the field live
 	mut         func(*imageconfig.Config) // applied to mutated only; nil = genericMutate
+	// bare renders against a title with no genres, no certificate and no
+	// ratings. A placeholder draws only there, so the rich fixture cannot show
+	// its effect.
+	bare bool
 }
 
 func setColor(set func(*imageconfig.Config, string)) func(*imageconfig.Config) {
@@ -447,6 +481,9 @@ func keyMutations() map[string]keyOverride {
 		"genreBadgeAnimeGrouping":   {mut: func(c *imageconfig.Config) { c.GenreBadgeAnimeGrouping = "animation" }},
 		"genreBadgeMode":            {mut: func(c *imageconfig.Config) { c.GenreBadgeMode = "icon" }},
 		"genreBadgeStyle":           {mut: func(c *imageconfig.Config) { c.GenreBadgeStyle = "tile" }},
+		"genrePlaceholder":          {bare: true},
+		"ageRatingPlaceholder":      {bare: true, pre: func(c *imageconfig.Config) { c.AgeRating = true }},
+		"ratingRingPlaceholder":     {bare: true, pre: func(c *imageconfig.Config) { c.RatingRing = true }},
 		"genreBadgeTileAccentColor": {pre: genreTile, mut: setColor(func(c *imageconfig.Config, v string) { c.GenreBadgeTileAccentColor = v })},
 		"genreBadgeAccent":          {mut: func(c *imageconfig.Config) { c.GenreBadgeAccent = "left" }},
 		// The icon mode draws the family accent. Every family is named so the
@@ -657,6 +694,7 @@ func TestEveryRenderFieldAffectsTheImage(t *testing.T) {
 		t.Skip("render sweep: skipped under -short, runs in the ordinary test pass")
 	}
 	p := effectPipeline()
+	barePipe := bareEffectPipeline()
 
 	// The whole test is meaningless unless a render is deterministic for a fixed
 	// config: nondeterminism would make every mutation look like it "had an
@@ -708,7 +746,11 @@ func TestEveryRenderFieldAffectsTheImage(t *testing.T) {
 		if ct == "" {
 			ct = "movie"
 		}
-		shareBase := ov.pre == nil && ct == "movie"
+		shareBase := ov.pre == nil && ct == "movie" && !ov.bare
+		pipe := p
+		if ov.bare {
+			pipe = barePipe
+		}
 
 		// Lazily render each surface, stopping at the first that differs. Base
 		// surfaces are the shared maximal render unless this key carries a
@@ -722,13 +764,13 @@ func TestEveryRenderFieldAffectsTheImage(t *testing.T) {
 			if b, ok := localBase[s]; ok {
 				return b
 			}
-			b := renderOne(t, p, baseCfg, ct, s)
+			b := renderOne(t, pipe, baseCfg, ct, s)
 			localBase[s] = b
 			return b
 		}
 		changed := false
 		for _, s := range effectSurfaces {
-			if !bytes.Equal(baseFor(s), renderOne(t, p, mutCfg, ct, s)) {
+			if !bytes.Equal(baseFor(s), renderOne(t, pipe, mutCfg, ct, s)) {
 				changed = true
 				break
 			}

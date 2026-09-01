@@ -580,6 +580,7 @@ func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64, occ *o
 // or quality badges (TR).
 // ageRatingOpts carries the age-rating badge styling. Zero value = default.
 type ageRatingOpts struct {
+	placeholder  string // drawn when a title has no certificate; empty draws nothing
 	lang         string // config language for the fixed wording this badge draws
 	style        string // "" | glass | plain | tile | silver | square | media
 	tileColor    string // "#RRGGBB"; fills the tile style, tints the border on glass/square/silver
@@ -630,7 +631,7 @@ func applyAgeChrome(ch tileChrome, textCol color.NRGBA, opts ageRatingOpts, scal
 }
 
 func ageOptsFromConfig(cfg imageconfig.Config) ageRatingOpts {
-	return ageRatingOpts{lang: cfg.Language, style: cfg.AgeRatingBadgeStyle, tileColor: cfg.AgeRatingTileColor,
+	return ageRatingOpts{lang: cfg.Language, placeholder: agePlaceholderFor(cfg), style: cfg.AgeRatingBadgeStyle, tileColor: cfg.AgeRatingTileColor,
 		offsetX: cfg.AgeRatingOffsetX, offsetY: cfg.AgeRatingOffsetY, scale: cfg.AgeRatingScale,
 		outlineColor: cfg.NoBackgroundBadgeOutlineColor, outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
 		outlineGlow: cfg.NoBackgroundBadgeOutlineGlow,
@@ -641,7 +642,10 @@ func ageOptsFromConfig(cfg imageconfig.Config) ageRatingOpts {
 
 func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale float64, occ *occupancy, opts ageRatingOpts) {
 	if rating == "" {
-		return
+		if opts.placeholder == "" {
+			return
+		}
+		rating = opts.placeholder
 	}
 	if opts.scale > 0 {
 		scale *= float64(opts.scale) / 100
@@ -1259,8 +1263,9 @@ func drawLogoRoundClipped(dst, src *image.NRGBA, dstRect image.Rectangle, radius
 // reproduces the original fixed appearance, so an unconfigured render is
 // unchanged.
 type genreBadgeOpts struct {
-	scalePercent int // 0 = 100 (no extra scaling)
-	offsetX      int // px nudge from the resolved corner
+	placeholder  string // drawn when a title has no genres; empty draws nothing
+	scalePercent int    // 0 = 100 (no extra scaling)
+	offsetX      int    // px nudge from the resolved corner
 	offsetY      int
 	bgOpacity    int               // 0 = default (200/255); else 1-100 mapped to alpha
 	mode         string            // "" | text | icon | both; icon modes label by genre family
@@ -1338,8 +1343,36 @@ func toNRGBAColor(c color.Color) color.NRGBA {
 }
 
 // genreOptsFromConfig extracts the genre-badge styling from a resolved Config.
-func genreOptsFromConfig(cfg imageconfig.Config, isAnime bool) genreBadgeOpts {
+// agePlaceholderFor is the certificate drawn when a title has none. Fixed rather
+// than settable: free text here would be drawn as though a source had supplied
+// it.
+func agePlaceholderFor(cfg imageconfig.Config) string {
+	if !cfg.AgeRatingPlaceholder {
+		return ""
+	}
+	return UIString("placeholder_age", cfg.Language, "NR")
+}
+
+// genrePlaceholderFor is the word drawn when a title has no genres. The media
+// type is something known for certain about every title, so the placeholder is
+// never a guess.
+func genrePlaceholderFor(cfg imageconfig.Config, isAnime bool, contentKind string) string {
+	if !cfg.GenrePlaceholder {
+		return ""
+	}
+	switch {
+	case isAnime:
+		return UIString("placeholder_anime", cfg.Language, "ANIME")
+	case contentKind == "series":
+		return UIString("placeholder_show", cfg.Language, "SHOW")
+	default:
+		return UIString("placeholder_movie", cfg.Language, "MOVIE")
+	}
+}
+
+func genreOptsFromConfig(cfg imageconfig.Config, isAnime bool, contentKind string) genreBadgeOpts {
 	return genreBadgeOpts{
+		placeholder:  genrePlaceholderFor(cfg, isAnime, contentKind),
 		familyColors: cfg.GenreFamilyColors,
 		scalePercent: cfg.GenreBadgeScale,
 		offsetX:      cfg.GenreBadgeOffsetX,
@@ -1389,7 +1422,13 @@ func applyLabelCase(label, labelCase, labelMode string) string {
 
 func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float64, occ *occupancy, opts genreBadgeOpts) {
 	if len(genres) == 0 {
-		return
+		// The media type rather than the "other" family: that family means the
+		// genres were not recognised, which is a different statement from there
+		// being none. One badge saying both would be false about one of them.
+		if opts.placeholder == "" {
+			return
+		}
+		genres = []string{opts.placeholder}
 	}
 	// A per-config scale multiplier (percent) rides on top of the output scale.
 	if opts.scalePercent != 0 {
@@ -2996,13 +3035,22 @@ func drawTrendingBadgeSurfaced(base *image.NRGBA, scale float64, occ *occupancy,
 // corner. The ring shows the average of the selected rating sources as a
 // progress arc coloured green/amber/red or a custom hex colour.
 func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg imageconfig.Config, scale float64, occ *occupancy) {
-	if !cfg.RatingRing || len(ratings) == 0 || len(cfg.Ratings) == 0 {
+	if !cfg.RatingRing || len(cfg.Ratings) == 0 {
 		return
 	}
-
+	// An empty ring keeps a grid's shape where a title has no ratings at all. It
+	// draws the circle and no value, so it reads as nothing to show rather than
+	// as a score of zero.
+	empty := len(ratings) == 0
 	avg, ok := ratingRingAverage(ratings, cfg)
 	if !ok {
-		return
+		empty = true
+	}
+	if empty {
+		if !cfg.RatingRingPlaceholder {
+			return
+		}
+		avg = 0
 	}
 
 	// The centre value and the arc fill can each draw from a specific provider
@@ -3015,6 +3063,10 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 	progress := avg
 	if v, ok := ratingRingSourceValue(ratings, cfg.RingProgressSource, cfg); ok {
 		progress = v
+	}
+	if empty {
+		// No arc and no number: the outline alone.
+		value, progress = 0, 0
 	}
 
 	fillColor := ratingRingFillColor(value, cfg.RatingRingColor, cfg.AggregateDynamicStops)
@@ -3051,6 +3103,9 @@ func drawAverageRatingRing(base *image.NRGBA, ratings []provider.Rating, cfg ima
 	cx := r.Min.X + fullR
 	cy := r.Min.Y + fullR
 	label := strconv.Itoa(int(math.Round(value * 10)))
+	if empty {
+		label = ""
+	}
 	drawProgressRing(base, cx, cy, outerR, progress/10.0, fillColor, valueFace, label, cfg.RingCenterOpacity)
 }
 

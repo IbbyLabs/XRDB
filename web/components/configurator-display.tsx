@@ -384,6 +384,29 @@ export function DisplayPanel({ uid, mediaType, config, onUpdate, onToggleBadge, 
           onChange={() => onUpdate('ageRating', !config.ageRating)}
         />
 
+        {config.ageRating && (
+          <ToggleRow
+            label="Placeholder certificate"
+            hint="Draw NR where a title has no rating, so a grid keeps its shape"
+            checked={config.ageRatingPlaceholder}
+            onChange={() => onUpdate('ageRatingPlaceholder', !config.ageRatingPlaceholder)}
+          />
+        )}
+
+        <ToggleRow
+          label="Placeholder genre badge"
+          hint="Draw the media type where a title has no genres"
+          checked={config.genrePlaceholder}
+          onChange={() => onUpdate('genrePlaceholder', !config.genrePlaceholder)}
+        />
+
+        <ToggleRow
+          label="Placeholder rating ring"
+          hint="Draw an empty ring where a title has no ratings"
+          checked={config.ratingRingPlaceholder}
+          onChange={() => onUpdate('ratingRingPlaceholder', !config.ratingRingPlaceholder)}
+        />
+
         <ToggleRow
           label="Release status badge"
           hint="Mark films that are in cinemas or out on digital"

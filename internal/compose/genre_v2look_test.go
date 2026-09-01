@@ -17,7 +17,7 @@ func TestPrimaryLabelPrintsOneGenreInCaps(t *testing.T) {
 	}
 	base := image.NewNRGBA(image.Rect(0, 0, 400, 600))
 	occ := newOccupancy(base.Bounds())
-	opts := genreOptsFromConfig(cfg, false)
+	opts := genreOptsFromConfig(cfg, false, "movie")
 	// Drawing is the only way to observe the label, so assert it does not panic
 	// and that the plate lands where a single short label would.
 	drawGenreBadge(base, []string{"Sci-Fi & Fantasy", "Drama"}, "tl", 1, occ, opts)
@@ -65,7 +65,7 @@ func TestLeftStripeWidensThePlate(t *testing.T) {
 		cfg.GenreBadgeAccent = accent
 		base := image.NewNRGBA(image.Rect(0, 0, 400, 600))
 		occ := newOccupancy(base.Bounds())
-		drawGenreBadge(base, genres, "tl", 1, occ, genreOptsFromConfig(cfg, false))
+		drawGenreBadge(base, genres, "tl", 1, occ, genreOptsFromConfig(cfg, false, "movie"))
 		return nonTransparentBounds(base)
 	}
 	plain := measure("none")

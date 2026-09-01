@@ -147,6 +147,12 @@ type Config struct {
 	BadgeTheme       BadgeTheme     `json:"badgeTheme"`
 	Badges           []string       `json:"badges,omitempty"`
 	AgeRating        bool           `json:"ageRating"`
+	// The placeholder fields fill a badge that would otherwise not draw, so a
+	// grid of posters keeps its shape. Off by default: on, every poster with
+	// nothing to show gains a badge it has never had.
+	GenrePlaceholder      bool `json:"genrePlaceholder,omitempty"`
+	AgeRatingPlaceholder  bool `json:"ageRatingPlaceholder,omitempty"`
+	RatingRingPlaceholder bool `json:"ratingRingPlaceholder,omitempty"`
 	// RatingUnavailableMark draws the X in place of a value for a source that was
 	// wanted and held out. On by default: without it a missing rating reads as the
 	// provider being broken rather than one source being briefly unavailable.
@@ -733,6 +739,9 @@ type raw struct {
 	BadgeTheme                    *string   `json:"badgeTheme"`
 	Badges                        []string  `json:"badges"`
 	AgeRating                     *bool     `json:"ageRating"`
+	GenrePlaceholder              *bool     `json:"genrePlaceholder"`
+	AgeRatingPlaceholder          *bool     `json:"ageRatingPlaceholder"`
+	RatingRingPlaceholder         *bool     `json:"ratingRingPlaceholder"`
 	RatingUnavailableMark         *bool     `json:"ratingUnavailableMark"`
 	BadgeShadow                   *bool     `json:"badgeShadow"`
 	AgeRatingPos                  *string   `json:"ageRatingPos"`
@@ -1155,6 +1164,15 @@ func Parse(data json.RawMessage) Config {
 	}
 	if r.AgeRating != nil {
 		cfg.AgeRating = *r.AgeRating
+	}
+	if r.GenrePlaceholder != nil {
+		cfg.GenrePlaceholder = *r.GenrePlaceholder
+	}
+	if r.AgeRatingPlaceholder != nil {
+		cfg.AgeRatingPlaceholder = *r.AgeRatingPlaceholder
+	}
+	if r.RatingRingPlaceholder != nil {
+		cfg.RatingRingPlaceholder = *r.RatingRingPlaceholder
 	}
 	if r.BadgeShadow != nil {
 		cfg.BadgeShadow = *r.BadgeShadow
@@ -2370,6 +2388,9 @@ func CacheKey(cfg Config) string {
 		BadgeTheme                    BadgeTheme     `json:"badgeTheme"`
 		Badges                        []string       `json:"badges"`
 		AgeRating                     bool           `json:"ageRating"`
+		GenrePlaceholder              bool           `json:"genrePlaceholder"`
+		AgeRatingPlaceholder          bool           `json:"ageRatingPlaceholder"`
+		RatingRingPlaceholder         bool           `json:"ratingRingPlaceholder"`
 		RatingUnavailableMark         bool           `json:"ratingUnavailableMark"`
 		BadgeShadow                   bool           `json:"badgeShadow"`
 		AgeRatingPos                  string         `json:"ageRatingPos"`
@@ -2478,6 +2499,9 @@ func CacheKey(cfg Config) string {
 		BadgeTheme:                    cfg.BadgeTheme,
 		Badges:                        badges,
 		AgeRating:                     cfg.AgeRating,
+		GenrePlaceholder:              cfg.GenrePlaceholder,
+		AgeRatingPlaceholder:          cfg.AgeRatingPlaceholder,
+		RatingRingPlaceholder:         cfg.RatingRingPlaceholder,
 		RatingUnavailableMark:         cfg.RatingUnavailableMark,
 		BadgeShadow:                   cfg.BadgeShadow,
 		AgeRatingPos:                  cfg.AgeRatingPos,

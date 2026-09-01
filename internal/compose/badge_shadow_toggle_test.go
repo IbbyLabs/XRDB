@@ -103,7 +103,7 @@ func TestTheConfigKeyReachesTheDrawersWithTheRightSign(t *testing.T) {
 		on   bool
 		off  bool
 	}{
-		{"genre", genreOptsFromConfig(shadowOn, false).noShadow, genreOptsFromConfig(shadowOff, false).noShadow},
+		{"genre", genreOptsFromConfig(shadowOn, false, "movie").noShadow, genreOptsFromConfig(shadowOff, false, "movie").noShadow},
 		{"provider", providerOptsFromConfig(shadowOn).noShadow, providerOptsFromConfig(shadowOff).noShadow},
 		{"quality", qualityOptsFromConfig(shadowOn).noShadow, qualityOptsFromConfig(shadowOff).noShadow},
 		{"age rating", ageOptsFromConfig(shadowOn).noShadow, ageOptsFromConfig(shadowOff).noShadow},

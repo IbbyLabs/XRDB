@@ -16,6 +16,9 @@
     "top_rated": "TOP",
     "trending": "EM ALTA"
   },
+  "_ui_gaps": {
+    "placeholders": "placeholder_anime, placeholder_movie, placeholder_show and placeholder_age have no Portuguese: the placeholders were added after this contribution and fall back to English."
+  },
   "_ui_notes": {
     "age_kicker": "IDADE, not CLASSIFICAÇÃO INDICATIVA. The contributor changed it himself after seeing the plate: it is a kicker over the certificate, and the plate widens to whichever line is wider.",
     "stinger_both": "The English is kept in brackets on purpose, for recognisability. His call, not an oversight."

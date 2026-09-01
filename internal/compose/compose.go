@@ -1254,7 +1254,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	// Before the badges below, so the occupancy map keeps them clear of it.
 	// The age rating is one of its three parts; the line stands without it.
 	drawMetaLine(composed, *meta, req.Config, scale, occ)
-	if req.Config.AgeRating && meta.ContentRating != "" {
+	if req.Config.AgeRating && (meta.ContentRating != "" || req.Config.AgeRatingPlaceholder) {
 		drawAgeRatingBadge(composed, meta.ContentRating, req.Config.AgeRatingPos, scale, occ, ageOptsFromConfig(req.Config))
 	}
 	if req.Config.ReleaseStatus {
@@ -1287,8 +1287,8 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	if req.Config.RatingRing {
 		drawAverageRatingRing(composed, allRatings, req.Config, scale, occ)
 	}
-	if req.Config.Genre && len(meta.Genres) > 0 {
-		drawGenreBadge(composed, meta.Genres, req.Config.GenrePos, scale, occ, genreOptsFromConfig(req.Config, meta.IsAnime))
+	if req.Config.Genre && (len(meta.Genres) > 0 || req.Config.GenrePlaceholder) {
+		drawGenreBadge(composed, meta.Genres, req.Config.GenrePos, scale, occ, genreOptsFromConfig(req.Config, meta.IsAnime, req.ContentType))
 	}
 	if req.Config.Providers && len(meta.WatchProviders) > 0 {
 		drawProviderBadges(composed, meta.WatchProviders, scale, occ, providerOptsFromConfig(req.Config))
