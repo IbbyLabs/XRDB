@@ -95,7 +95,7 @@ func TestMDBListRotatesOnlyWhenTheAllowanceIsSpent(t *testing.T) {
 				h.Set("X-RateLimit-Remaining", tc.remaining)
 			}
 
-			m.refusal(context.Background(), &http.Response{
+			_ = m.refusal(context.Background(), &http.Response{
 				StatusCode: http.StatusTooManyRequests, Header: h,
 			}, "first")
 
@@ -114,7 +114,7 @@ func TestAnOwnerKeyBeingSpentDoesNotMoveTheServerRing(t *testing.T) {
 	h := http.Header{}
 	h.Set("X-RateLimit-Remaining", "0")
 
-	m.refusal(ctx, &http.Response{StatusCode: http.StatusTooManyRequests, Header: h}, "theirs")
+	_ = m.refusal(ctx, &http.Response{StatusCode: http.StatusTooManyRequests, Header: h}, "theirs")
 
 	if got := m.keys.current(); got != "first" {
 		t.Errorf("current = %q, want first", got)

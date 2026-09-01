@@ -97,16 +97,6 @@ func (r *keyRing) set(raw string) {
 	r.keys, r.spent = next.keys, kept
 }
 
-// configured reports whether the ring holds any credential.
-func (r *keyRing) configured() bool {
-	if r == nil {
-		return false
-	}
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	return len(r.keys) > 0
-}
-
 // size reports how many credentials the ring holds, for the admin surface.
 func (r *keyRing) size() int {
 	if r == nil {
