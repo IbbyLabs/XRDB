@@ -1266,6 +1266,7 @@ type genreBadgeOpts struct {
 	grouping     string            // "" | split | animation | secondary
 	style        string            // "" | glass | square | pill | plain | clean | tile
 	tileColor    string            // "#RRGGBB" for the tile style
+	labelLang    string            // language for a family label; "" or "en" is the built-in
 	borderWidth  float64           // px border on the tile; 0 = default hairline
 	outlineColor string            // "#RRGGBB" outline for the plain style; "" = default shadow
 	outlineWidth int               // px outline width for the plain style; 0 = default
@@ -1347,6 +1348,7 @@ func genreOptsFromConfig(cfg imageconfig.Config, isAnime bool) genreBadgeOpts {
 		style:        cfg.GenreBadgeStyle,
 		accent:       cfg.GenreBadgeAccent,
 		labelMode:    cfg.GenreBadgeLabel,
+		labelLang:    cfg.Language,
 		labelCase:    cfg.GenreBadgeCase,
 		maxGenres:    cfg.GenreBadgeMaxGenres,
 		shortNames:   cfg.GenreBadgeShortNames,
@@ -1374,7 +1376,9 @@ func applyLabelCase(label, labelCase, labelMode string) string {
 	case "normal":
 		return label
 	}
-	if labelMode == "primary" {
+	// Family labels are stored in their natural case so "normal" can return it.
+	// Unset keeps the capitals they have always drawn in.
+	if labelMode == "primary" || labelMode == "family" {
 		return strings.ToUpper(label)
 	}
 	return label
@@ -1450,7 +1454,7 @@ func drawGenreBadge(base *image.NRGBA, genres []string, pos string, scale float6
 			named = resolveGenreFamilyGrouped(genres, opts.isAnime, opts.grouping)
 		}
 		if named != nil {
-			label = named.label
+			label = familyLabelIn(named, opts.labelLang)
 		}
 	}
 	// Casing is its own control. Picking one genre and shouting it used to be the

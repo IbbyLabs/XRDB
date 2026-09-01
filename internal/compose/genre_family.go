@@ -3,6 +3,9 @@ package compose
 import "strings"
 
 // genreFamily is a genre bucket: a short display label and an accent colour.
+// The label is stored in its natural case. applyLabelCase is the one place
+// casing is decided, and a label stored shouting makes its "normal" setting
+// return the same shouting.
 // A title's genre list resolves to exactly one family, which drives both the
 // genre badge's icon/label and the "genre" aggregate accent mode.
 type genreFamily struct {
@@ -12,32 +15,32 @@ type genreFamily struct {
 }
 
 var (
-	familyAnime     = genreFamily{"anime", "ANIME", "#f59e0b"}
-	familyAnimation = genreFamily{"animation", "ANIMATION", "#38bdf8"}
-	familyHorror    = genreFamily{"horror", "HORROR", "#ef4444"}
-	familyComedy    = genreFamily{"comedy", "COMEDY", "#facc15"}
-	familyRomance   = genreFamily{"romance", "ROMANCE", "#fb7185"}
-	familyAction    = genreFamily{"action", "ACTION", "#fb923c"}
-	familySciFi     = genreFamily{"scifi", "SCI-FI", "#22d3ee"}
-	familyFantasy   = genreFamily{"fantasy", "FANTASY", "#34d399"}
+	familyAnime     = genreFamily{"anime", "Anime", "#f59e0b"}
+	familyAnimation = genreFamily{"animation", "Animation", "#38bdf8"}
+	familyHorror    = genreFamily{"horror", "Horror", "#ef4444"}
+	familyComedy    = genreFamily{"comedy", "Comedy", "#facc15"}
+	familyRomance   = genreFamily{"romance", "Romance", "#fb7185"}
+	familyAction    = genreFamily{"action", "Action", "#fb923c"}
+	familySciFi     = genreFamily{"scifi", "Sci-Fi", "#22d3ee"}
+	familyFantasy   = genreFamily{"fantasy", "Fantasy", "#34d399"}
 	// TMDB's television compound where the keywords settle on both buckets or
 	// neither: the title genuinely is both, so it gets its own family rather than
 	// being filed under one of them.
 	familySciFantasy  = genreFamily{"scifantasy", "Sci-Fantasy", "#2bd3c4"}
-	familyCrime       = genreFamily{"crime", "CRIME", "#60a5fa"}
-	familyDrama       = genreFamily{"drama", "DRAMA", "#818cf8"}
-	familyDocumentary = genreFamily{"documentary", "DOC", "#a3e635"}
-	familyMusic       = genreFamily{"music", "MUSIC", "#c084fc"}
-	familyReality     = genreFamily{"reality", "REALITY", "#fbbf24"}
-	familyFamily      = genreFamily{"family", "FAMILY", "#4ade80"}
-	familyHistory     = genreFamily{"history", "HISTORY", "#94a3b8"}
-	familyKids        = genreFamily{"kids", "KIDS", "#f472b6"}
-	familyNews        = genreFamily{"news", "NEWS", "#64748b"}
-	familySoap        = genreFamily{"soap", "SOAP", "#d946ef"}
-	familyTalk        = genreFamily{"talk", "TALK", "#a78bfa"}
+	familyCrime       = genreFamily{"crime", "Crime", "#60a5fa"}
+	familyDrama       = genreFamily{"drama", "Drama", "#818cf8"}
+	familyDocumentary = genreFamily{"documentary", "Doc", "#a3e635"}
+	familyMusic       = genreFamily{"music", "Music", "#c084fc"}
+	familyReality     = genreFamily{"reality", "Reality", "#fbbf24"}
+	familyFamily      = genreFamily{"family", "Family", "#4ade80"}
+	familyHistory     = genreFamily{"history", "History", "#94a3b8"}
+	familyKids        = genreFamily{"kids", "Kids", "#f472b6"}
+	familyNews        = genreFamily{"news", "News", "#64748b"}
+	familySoap        = genreFamily{"soap", "Soap", "#d946ef"}
+	familyTalk        = genreFamily{"talk", "Talk", "#a78bfa"}
 	familyTVMovie     = genreFamily{"tvmovie", "TV", "#f59e0b"}
-	familyWarPolitics = genreFamily{"warpolitics", "WAR", "#f87171"}
-	familyOther       = genreFamily{"other", "OTHER", "#9ca3af"}
+	familyWarPolitics = genreFamily{"warpolitics", "War", "#f87171"}
+	familyOther       = genreFamily{"other", "Other", "#9ca3af"}
 )
 
 // normalizeGenreName lowercases and folds separators so "Sci-Fi_Fantasy" and
