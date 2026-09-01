@@ -1103,7 +1103,7 @@ function GenreFamilyColors({ uid, config, onUpdate }: GroupProps) {
         )}
         {chosen.map(f => (
           <div className="field" key={f.id}>
-            <label className="label" htmlFor={`${uid}-genrefam-${f.id}`}>{f.label}</label>
+            <label className="label" htmlFor={`${uid}-genrefam-${f.id}`} style={{ textTransform: 'uppercase' }}>{f.label}</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
               <input
                 id={`${uid}-genrefam-${f.id}`}
@@ -1134,7 +1134,7 @@ function GenreFamilyColors({ uid, config, onUpdate }: GroupProps) {
               onChange={e => { const f = rest.find(x => x.id === e.target.value); if (f) set(f.id, f.accent); }}
             >
               <option value="">Choose a family…</option>
-              {rest.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+              {rest.map(f => <option key={f.id} value={f.id}>{f.label.toUpperCase()}</option>)}
             </select>
           </div>
         )}
