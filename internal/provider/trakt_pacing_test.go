@@ -33,12 +33,15 @@ func TestTraktIsPacedUnderTheRateThatEarnedARefusal(t *testing.T) {
 // The number came from one refusal, so it has to be movable without a release.
 func TestTraktPacingIsTunableWithoutARelease(t *testing.T) {
 	t.Setenv("XRDB_TRAKT_MIN_INTERVAL_SECONDS", "2.5")
-	if got := traktMinInterval(); got != 2500*time.Millisecond {
+	if got := readMinIntervalOverrides()["trakt"]; got != 2500*time.Millisecond {
 		t.Errorf("env override ignored: got %v", got)
 	}
-	// Out of range falls back to the default rather than to the unpaced case.
+	// Out of range keeps the table's interval rather than the unpaced case.
 	t.Setenv("XRDB_TRAKT_MIN_INTERVAL_SECONDS", "0")
-	if got := traktMinInterval(); got < time.Second {
+	prev := minIntervalOverrides
+	minIntervalOverrides = readMinIntervalOverrides()
+	t.Cleanup(func() { minIntervalOverrides = prev })
+	if got := rateLimitFor("trakt").MinInterval; got < time.Second {
 		t.Errorf("an out-of-range override left trakt paced at %v, looser than the default", got)
 	}
 }

@@ -138,6 +138,8 @@ func main() {
 		debug.SetMemoryLimit(cfg.MemoryLimitBytes)
 	}
 
+	provider.LogMinIntervalOverrides(logger)
+
 	reg := provider.NewRegistry()
 	// Register every keyed provider unconditionally, even without a key at boot.
 	// Each stays dormant until it has a credential (the render path skips a

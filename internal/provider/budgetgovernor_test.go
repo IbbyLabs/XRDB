@@ -281,8 +281,8 @@ func TestMDBListIsGovernedRatherThanPaced(t *testing.T) {
 	if other.governor != nil {
 		t.Error("trakt was given a budget governor it does not report an allowance for")
 	}
-	if other.pacer.interval != traktMinInterval() {
-		t.Errorf("trakt interval = %s, want %s", other.pacer.interval, traktMinInterval())
+	if want := rateLimitFor("trakt").MinInterval; other.pacer.interval != want {
+		t.Errorf("trakt interval = %s, want %s", other.pacer.interval, want)
 	}
 }
 

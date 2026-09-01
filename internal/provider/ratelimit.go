@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"math/rand/v2"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -168,6 +169,12 @@ type RateLimit struct {
 //     path, so it is held to roughly one request a second.
 //   - AniList publishes 90 requests/minute but drops to 30 in degraded
 //     windows, so it is paced for the degraded number rather than the happy one.
+//   - Trakt answers an overrun with a 429 that cools the source off for five
+//     minutes for every caller. Measured 2026-08-22: roughly 85 calls in a
+//     minute from a standing start earned one, and 351 inside five minutes
+//     with the preceding 85 empty, so it is a burst limit rather than an
+//     accumulated window. One second holds it to 60 a minute. The figure is a
+//     floor derived from a single refusal, not a published limit.
 //
 // MDBList carries no interval because it meters by the day: budgetGovernor
 // paces it from the allowance its responses report.
@@ -175,26 +182,54 @@ var rateLimits = map[string]RateLimit{
 	"mal":     {MinInterval: time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
 	"anilist": {MinInterval: 2 * time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
 	"mdblist": {MaxRetries: 3, MaxRetryWait: renderRetryBudget},
-	"trakt":   {MinInterval: traktMinInterval(), MaxRetries: 3, MaxRetryWait: renderRetryBudget},
+	"trakt":   {MinInterval: time.Second, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
 	"simkl":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
 	"kitsu":   {MinInterval: 100 * time.Millisecond, MaxRetries: 3, MaxRetryWait: renderRetryBudget},
 }
 
-// traktMinInterval paces Trakt under the rate that has been observed to earn a
-// refusal. Trakt answers an overrun with a 429 that cools the source off for
-// five minutes, which reaches every caller, so the cost of pacing too loosely
-// is not this request.
+// minIntervalSuffix names the per-source pacing override,
+// XRDB_<SOURCE>_MIN_INTERVAL_SECONDS.
+const minIntervalSuffix = "_MIN_INTERVAL_SECONDS"
+
+// minIntervalOverrides holds the intervals set for individual sources. The
+// interval in the table protects a host, and a source's host is movable:
+// XRDB_JIKAN_URL points the MAL source at a self-hosted Jikan, which the name
+// alone cannot tell from the public service.
 //
-// Measured 2026-08-22: roughly 85 calls in a minute from a standing start was
-// enough, and 351 inside five minutes with the preceding 85 minutes empty. That
-// is a burst limit rather than an accumulated window. One second holds it to 60
-// a minute, under the lower of the two figures.
-//
-// One event, so it is tunable without a release: the number is a floor derived
-// from a single refusal, not a published limit.
-func traktMinInterval() time.Duration {
-	secs := envFloat("XRDB_TRAKT_MIN_INTERVAL_SECONDS", 1, 0.05, 10)
-	return time.Duration(secs * float64(time.Second))
+// Read from the environment rather than a list of known sources, so a source
+// gains an override without being enumerated here. Bounds are Trakt's: an
+// unbounded value either removes the pacing or stalls every render behind it.
+var minIntervalOverrides = readMinIntervalOverrides()
+
+func readMinIntervalOverrides() map[string]time.Duration {
+	out := map[string]time.Duration{}
+	for _, kv := range os.Environ() {
+		name, _, ok := strings.Cut(kv, "=")
+		if !ok || !strings.HasPrefix(name, "XRDB_") || !strings.HasSuffix(name, minIntervalSuffix) {
+			continue
+		}
+		source := strings.ToLower(strings.TrimSuffix(strings.TrimPrefix(name, "XRDB_"), minIntervalSuffix))
+		if source == "" {
+			continue
+		}
+		secs := envFloat(name, -1, 0.05, 10)
+		if secs < 0 {
+			continue
+		}
+		out[source] = time.Duration(secs * float64(time.Second))
+	}
+	return out
+}
+
+// LogMinIntervalOverrides reports the per-source pacing in force. A name that
+// matches no source is accepted silently by the environment, so the parsed set
+// is worth stating at startup.
+func LogMinIntervalOverrides(log *slog.Logger) {
+	for source, d := range minIntervalOverrides {
+		_, known := rateLimits[source]
+		log.Info("A source's request interval is set from the environment",
+			"source", source, "interval_ms", d.Milliseconds(), "in_default_table", known)
+	}
 }
 
 // renderRetryBudget is how long a live render will sleep waiting for a source
@@ -212,10 +247,14 @@ func PacedInterval(source string) time.Duration {
 }
 
 func rateLimitFor(source string) RateLimit {
-	if rl, ok := rateLimits[source]; ok {
-		return rl
+	rl, ok := rateLimits[source]
+	if !ok {
+		rl = defaultRateLimit
 	}
-	return defaultRateLimit
+	if d, set := minIntervalOverrides[source]; set {
+		rl.MinInterval = d
+	}
+	return rl
 }
 
 // pacer enforces a minimum gap between requests to one source.
