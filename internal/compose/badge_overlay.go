@@ -742,7 +742,14 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 			c.A = 235
 			chrome.fill = c
 		}
-	} else if c, err := parseHexColor(opts.tileColor); opts.tileColor != "" && err == nil {
+	}
+	if opts.style == "glass" {
+		// A translucent tint the artwork reads through. The values are the genre
+		// badge's.
+		chrome.fill = color.NRGBA{R: 14, G: 16, B: 22, A: 130}
+		chrome.border = color.NRGBA{R: 255, G: 255, B: 255, A: 48}
+	}
+	if c, err := parseHexColor(opts.tileColor); opts.style != "tile" && opts.tileColor != "" && err == nil {
 		// Every bordered style (glass, square, silver) answers the same accent
 		// the tile style's fill does, tinting its own border instead.
 		chrome.border = color.NRGBA{R: c.R, G: c.G, B: c.B, A: chrome.border.A}

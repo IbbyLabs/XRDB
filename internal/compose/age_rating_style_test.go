@@ -74,3 +74,14 @@ func TestAnUnreadableAgeRatingColourIsIgnored(t *testing.T) {
 		}
 	}
 }
+
+// Glass is offered for the age badge and has to draw as itself. A style with no
+// branch falls through to the default plate, which is what glass did (FR-154).
+func TestAgeRatingGlassIsNotTheDefaultPlate(t *testing.T) {
+	glass := drawAgeRating(ageRatingOpts{style: "glass"})
+	fallthroughStyle := drawAgeRating(ageRatingOpts{style: "no-such-style"})
+
+	if identical(glass, fallthroughStyle) {
+		t.Error("the glass age badge draws the default plate")
+	}
+}
