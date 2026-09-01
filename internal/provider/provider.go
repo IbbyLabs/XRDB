@@ -7,6 +7,12 @@ import (
 	"time"
 )
 
+// UpcomingRelease is a release a title has not reached yet.
+type UpcomingRelease struct {
+	Kind string    // "digital" | "cinemas"
+	Date time.Time // in the region the config asked for
+}
+
 // WatchProvider is a streaming/rental service that carries a media item.
 type WatchProvider struct {
 	ID       int    // TMDB provider_id
@@ -54,12 +60,16 @@ type MediaMeta struct {
 	// Adult reports that the source flags the title itself as adult. TMDB carries
 	// this per title rather than per image, so it says nothing about any
 	// individual poster or backdrop.
-	Adult          bool
-	ContentRating  string          // e.g. "TV-MA", "R", "PG-13" (may be empty)
-	ReleaseStatus  string          // "digital" | "cinemas" (may be empty; movies only)
-	Genres         []string        // e.g. ["Action","Drama"] (may be empty)
-	IsAnime        bool            // the title matched the anime ID mapping
-	WatchProviders []WatchProvider // streaming/rental services (may be empty)
+	Adult         bool
+	ContentRating string // e.g. "TV-MA", "R", "PG-13" (may be empty)
+	ReleaseStatus string // "digital" | "cinemas" (may be empty; movies only)
+	// UpcomingRelease is the next release still ahead of a title, empty once
+	// anything has landed. Scoped to one region: a date from elsewhere reads as
+	// authoritative and is not the viewer's.
+	UpcomingRelease UpcomingRelease
+	Genres          []string        // e.g. ["Action","Drama"] (may be empty)
+	IsAnime         bool            // the title matched the anime ID mapping
+	WatchProviders  []WatchProvider // streaming/rental services (may be empty)
 	// TopRatedRank is the title's place in the locally computed top-rated film
 	// ranking, or 0 when it does not place. See imdb_toprated.go for why this
 	// is XRDB's own ranking rather than IMDb's published list.

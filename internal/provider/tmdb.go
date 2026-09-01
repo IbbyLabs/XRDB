@@ -656,6 +656,21 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 			}
 		}
 		meta.ReleaseStatus = resolveReleaseStatus(entries, time.Now())
+		// A date is region-scoped where the status is not. A digital date in one
+		// country says nothing to a viewer in another, and a wrong date reads as
+		// authoritative where a missing badge does not.
+		if meta.ReleaseStatus == "" {
+			var regional []releaseEntry
+			for _, r := range result.ReleaseDates.Results {
+				if !strings.EqualFold(r.Iso3166, releaseRegion(opts.WatchProvidersCountry)) {
+					continue
+				}
+				for _, d := range r.Dates {
+					regional = append(regional, releaseEntry{kind: d.Type, date: d.ReleaseDate})
+				}
+			}
+			meta.UpcomingRelease = nextRelease(regional, time.Now())
+		}
 	}
 
 	// Content rating — prefer US certification
@@ -1085,6 +1100,42 @@ func releaseLanded(entries []releaseEntry, now time.Time, kinds ...int) bool {
 		}
 	}
 	return false
+}
+
+// releaseRegion is the country a release date is read for. It reuses the
+// streaming region rather than adding a second country for a user to keep in
+// step with the first.
+func releaseRegion(country string) string {
+	if r := strings.ToUpper(strings.TrimSpace(country)); r != "" {
+		return r
+	}
+	return "US"
+}
+
+// nextRelease returns the soonest release still ahead, across the kinds the
+// badge names. An undated entry counts as landed, as it does for the status, so
+// a title TMDB cannot date draws nothing.
+func nextRelease(entries []releaseEntry, now time.Time) UpcomingRelease {
+	var out UpcomingRelease
+	for _, e := range entries {
+		var kind string
+		switch e.kind {
+		case releaseTypeDigital:
+			kind = "digital"
+		case releaseTypeTheatricalLimited, releaseTypeTheatrical:
+			kind = "cinemas"
+		default:
+			continue
+		}
+		ts, err := time.Parse("2006-01-02T15:04:05.000Z", e.date)
+		if err != nil || !ts.After(now) {
+			continue
+		}
+		if out.Date.IsZero() || ts.Before(out.Date) {
+			out = UpcomingRelease{Kind: kind, Date: ts}
+		}
+	}
+	return out
 }
 
 // resolveReleaseStatus picks the badge-worthy release state, preferring digital

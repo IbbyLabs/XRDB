@@ -1257,8 +1257,16 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 	if req.Config.AgeRating && meta.ContentRating != "" {
 		drawAgeRatingBadge(composed, meta.ContentRating, req.Config.AgeRatingPos, scale, occ, ageOptsFromConfig(req.Config))
 	}
-	if req.Config.ReleaseStatus && meta.ReleaseStatus != "" {
-		drawReleaseStatusBadge(composed, meta.ReleaseStatus, req.Config.ReleaseStatusPos, scale, occ, releaseStatusOptsFromConfig(req.Config))
+	if req.Config.ReleaseStatus {
+		// A title that has landed says so; one that has not gives the date it
+		// will. The two can never both apply, so they share the badge.
+		label, accent, ok := releaseStatusLabel(meta.ReleaseStatus)
+		if !ok {
+			label, accent, ok = upcomingReleaseLabel(meta.UpcomingRelease)
+		}
+		if ok {
+			drawReleaseBadge(composed, label, accent, req.Config.ReleaseStatusPos, scale, occ, releaseStatusOptsFromConfig(req.Config))
+		}
 	}
 	if req.Config.TopRated && meta.TopRatedRank > 0 {
 		drawTopRatedBadge(composed, meta.TopRatedRank, req.Config.TopRatedPos, scale, occ, topRatedOptsFromConfig(req.Config))

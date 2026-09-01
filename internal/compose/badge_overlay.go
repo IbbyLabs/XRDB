@@ -775,6 +775,23 @@ func releaseStatusLabel(status string) (string, color.NRGBA, bool) {
 	return "", color.NRGBA{}, false
 }
 
+// upcomingReleaseLabel names a release still ahead of a title. It takes the
+// same accents as the landed states, so one badge reads as one thing.
+func upcomingReleaseLabel(u provider.UpcomingRelease) (string, color.NRGBA, bool) {
+	if u.Kind == "" || u.Date.IsZero() {
+		return "", color.NRGBA{}, false
+	}
+	_, accent, ok := releaseStatusLabel(u.Kind)
+	if !ok {
+		return "", color.NRGBA{}, false
+	}
+	word := "CINEMAS"
+	if u.Kind == "digital" {
+		word = "DIGITAL"
+	}
+	return word + " " + strings.ToUpper(u.Date.Format("2 Jan 2006")), accent, true
+}
+
 // releaseStatusOpts carries the release-status badge styling. Zero value keeps
 // the accent-bordered plate the badge has always drawn.
 type releaseStatusOpts struct {
@@ -800,6 +817,14 @@ func releaseStatusOptsFromConfig(cfg imageconfig.Config) releaseStatusOpts {
 func drawReleaseStatusBadge(base *image.NRGBA, status string, pos string, scale float64, occ *occupancy, opts releaseStatusOpts) {
 	label, accent, ok := releaseStatusLabel(status)
 	if !ok {
+		return
+	}
+	drawReleaseBadge(base, label, accent, pos, scale, occ, opts)
+}
+
+// drawReleaseBadge draws one release state: landed, or the date of the next one.
+func drawReleaseBadge(base *image.NRGBA, label string, accent color.NRGBA, pos string, scale float64, occ *occupancy, opts releaseStatusOpts) {
+	if label == "" {
 		return
 	}
 	if opts.scalePercent != 0 {

@@ -94,7 +94,7 @@ var inelasticOverlays = []string{
 	"drawEditorialRating",
 	"drawMetaLine",
 	"drawQualityBadges",
-	"drawReleaseStatusBadge",
+	"drawReleaseBadge",
 	"drawStingerBadge",
 	"drawTopRatedBadge",
 }
