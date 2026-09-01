@@ -185,6 +185,11 @@ func main() {
 	// of them is selected, so an unused source costs nothing.
 	reg.Register(provider.NewAlloCine())
 	reg.Register(provider.NewFilmweb())
+	// Rotten Tomatoes and Metacritic have no free API between them, so Wikidata
+	// is the only source for either that costs nothing and needs no key. Its
+	// values are hand-edited snapshots, so it fills a gap a metered source did
+	// not answer rather than standing in front of one that did.
+	reg.Register(provider.NewWikidata())
 
 	logProviderReadiness(reg, cfg.JikanURL)
 
