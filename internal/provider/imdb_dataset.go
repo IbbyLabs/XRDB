@@ -277,7 +277,11 @@ func (d *IMDbDataset) Titles() int {
 // The age check in ensureLoaded is only ever consulted on the first Fetch, so
 // without this a long-running container serves whatever it downloaded at start
 // and drifts further from IMDb the longer it stays up.
-func (d *IMDbDataset) StartRefresh(ctx context.Context, every time.Duration, logger *slog.Logger) {
+// StartRefresh schedules the refresh and returns a channel closed once the
+// scheduler has stopped. A caller that does not wait can ignore it; a test that
+// writes into a temporary directory must, or cleanup races the last write.
+func (d *IMDbDataset) StartRefresh(ctx context.Context, every time.Duration, logger *slog.Logger) <-chan struct{} {
+	stopped := make(chan struct{})
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -287,14 +291,17 @@ func (d *IMDbDataset) StartRefresh(ctx context.Context, every time.Duration, log
 	// default.
 	if d == nil {
 		logger.Info("The IMDb dataset is not configured, so no refresh is scheduled")
-		return
+		close(stopped)
+		return stopped
 	}
 	if every <= 0 {
 		logger.Info("The IMDb dataset refresh is disabled by a zero interval")
-		return
+		close(stopped)
+		return stopped
 	}
 	logger.Info("Scheduled the IMDb dataset refresh", "every", every.String())
 	go func() {
+		defer close(stopped)
 		ticker := time.NewTicker(every)
 		defer ticker.Stop()
 		for {
@@ -315,6 +322,7 @@ func (d *IMDbDataset) StartRefresh(ctx context.Context, every time.Duration, log
 			}
 		}
 	}()
+	return stopped
 }
 
 func (d *IMDbDataset) download(ctx context.Context, dest string) error {

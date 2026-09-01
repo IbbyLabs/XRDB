@@ -126,8 +126,14 @@ func TestTheTimerRebuildsWithoutBeingCalled(t *testing.T) {
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	d.StartRefresh(ctx, 5*time.Millisecond, quietDatasetLogger())
+	stopped := d.StartRefresh(ctx, 5*time.Millisecond, quietDatasetLogger())
+	// Registered after t.TempDir's own cleanup so it runs first: the refresher
+	// writes into that directory and a rebuild in flight when it is removed
+	// fails the test with "directory not empty".
+	t.Cleanup(func() {
+		cancel()
+		<-stopped
+	})
 
 	mu.Lock()
 	rating = "8.1"
