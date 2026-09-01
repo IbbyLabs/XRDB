@@ -1,7 +1,7 @@
 {
   "artifactType": "xrdb-product-context",
   "schemaVersion": "1",
-  "xrdbTag": "3.101.0",
+  "xrdbTag": "3.102.0",
   "generatedAt": "2026-09-01T14:46:44Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
@@ -151,8 +151,8 @@
         "XRDB_SHARED_PROFILE_ALIASES (default aios,cimofam)",
         "XRDB_DEFAULT_PROFILE (unset by default)",
         "XRDB_LABEL_LANGUAGES_DIR (unset by default)",
-        "XRDB_\u003cSOURCE\u003e_PROXY (unset by default)",
-        "XRDB_\u003cSOURCE\u003e_MIN_INTERVAL_SECONDS (default per source)",
+        "XRDB_<SOURCE>_PROXY (unset by default)",
+        "XRDB_<SOURCE>_MIN_INTERVAL_SECONDS (default per source)",
         "XRDB_MDBLIST_SWEEP_RESERVE_PCT (default 40)",
         "XRDB_MDBLIST_DAILY_LIMIT (default reported)",
         "XRDB_RATINGS_CACHE_TTL_HOURS (default 24)",
@@ -191,8 +191,8 @@
         "XRDB_MDBLIST_BURST (default 30)",
         "XRDB_SIMKL_DAILY_LIMIT (default 15000)",
         "XRDB_SIMKL_BULK_RESERVE (default 6000)",
-        "XRDB_TTL_\u003cPROVIDER\u003e (default global TTL)",
-        "XRDB_TTL_SURFACE_\u003cSURFACE\u003e (unset by default)",
+        "XRDB_TTL_<PROVIDER> (default global TTL)",
+        "XRDB_TTL_SURFACE_<SURFACE> (unset by default)",
         "NEXT_PUBLIC_API_BASE_URL (default API origin the web app calls. Unset in the single-container image (same origin). Set for split deployments or local dev (`http://localhost:8787`).)"
       ]
     }

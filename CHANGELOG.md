@@ -2,6 +2,32 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.102.0](https://github.com/IbbyLabs/XRDB/compare/v3.101.0...v3.102.0) (2026-09-01)
+
+
+### Added
+
+* **cache:** set a render TTL per artwork surface (FR-202) ([a9fc104](https://github.com/IbbyLabs/XRDB/commit/a9fc10437e5a1853a3d8b3d05042383249a58eee))
+* **providers:** rotate to the next key when a daily allowance is spent (FR-186) ([916bc02](https://github.com/IbbyLabs/XRDB/commit/916bc023a59be33f4bfddc0afeea6b5c88052397))
+* **ratings:** colour the empty rating ring placeholder (FR-206) ([e8407de](https://github.com/IbbyLabs/XRDB/commit/e8407de29adaaf4e5d75e131ed8233c8a96d91ef))
+* **ratings:** keep an older title's ratings for longer (FR-201) ([a205c14](https://github.com/IbbyLabs/XRDB/commit/a205c142770d396398012e26c52943150f924f6c))
+
+
+### Fixed
+
+* **badges:** rule only the badge a placeholder filled (FR-205) ([1e90f19](https://github.com/IbbyLabs/XRDB/commit/1e90f199790bafaedb97c17c844efae31d58e5ee))
+* **configurator:** declare the empty ring colour on the config type ([c2aa4fa](https://github.com/IbbyLabs/XRDB/commit/c2aa4faea857b44c2a148922e5415926d3bfdb7a))
+* **ratings:** exempt the source ids a rating carries ([c588f8a](https://github.com/IbbyLabs/XRDB/commit/c588f8af8d338d3a66ae182248eac5588a5e4140))
+* **ratings:** let a catalogue sweep yield the source queue ([17e036f](https://github.com/IbbyLabs/XRDB/commit/17e036f98b08177c3bce4404e7f2ba2c05712a48))
+* **ratings:** log a refresh that did not answer ([ab43a65](https://github.com/IbbyLabs/XRDB/commit/ab43a65699e2def2671c010c74c636b511e36509))
+* **render:** accept the v2 query parameters live clients still send ([cb8c067](https://github.com/IbbyLabs/XRDB/commit/cb8c067ec695bc6dccc987f158d1bec6cd5929ab))
+
+
+### Documentation
+
+* **ratings:** describe source pacing as an interval, not a concurrency limit ([310fa58](https://github.com/IbbyLabs/XRDB/commit/310fa58d8aa8f192ed1bc5b150f53b3ccedd68b0))
+* **ratings:** say the age rule compares years, not dates ([8424f32](https://github.com/IbbyLabs/XRDB/commit/8424f32490272e205d25d077f4fd18bedf93d8ae))
+
 ## [3.101.0](https://github.com/IbbyLabs/XRDB/compare/v3.100.0...v3.101.0) (2026-09-01)
 
 
