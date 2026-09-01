@@ -815,6 +815,10 @@ func accessLogMiddleware(logger *slog.Logger, trust proxyTrust, next http.Handle
 			// otherwise indistinguishable from ordinary use, and attributing one
 			// took an hour of inference for want of this field.
 			slog.String("user_agent", truncateUA(r.UserAgent())),
+			// The class the pipeline was given, not a second reading of the
+			// agent. A monitor counting renders here and hold-outs on the
+			// compose lines reads one classification.
+			slog.String("caller_class", provider.CallerClassFrom(ctx).String()),
 			// hit, flight, gap or miss: served from the render cache, from a
 			// render already under way, from a remembered absence of artwork, or
 			// composed here. Empty on anything that is not a render. Separate
