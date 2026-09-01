@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -357,6 +358,52 @@ func (c *Cache) Delete(key string) bool {
 	return removed
 }
 
+// DeleteSurface drops every entry for one surface and returns how many disk
+// entries went. The hot tier is walked by key rather than by file name, since a
+// memory entry has no file until it is written.
+//
+// An entry written before the surface was carried matches no surface and is left
+// to age out, which is what makes this safe to ship: it removes less than asked
+// rather than more.
+func (c *Cache) DeleteSurface(surface string) int {
+	if surface == "" {
+		return 0
+	}
+	c.mu.Lock()
+	for key, el := range c.hot {
+		if keyType(key) == surface {
+			c.removeLocked(el)
+		}
+	}
+	dir := c.dir
+	c.mu.Unlock()
+
+	c.diskMu.Lock()
+	defer c.diskMu.Unlock()
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return 0
+	}
+	removed := 0
+	for _, de := range entries {
+		if de.IsDir() || filepath.Ext(de.Name()) != ".bin" || typeOfFile(de.Name()) != surface {
+			continue
+		}
+		info, err := de.Info()
+		if err != nil {
+			continue
+		}
+		if os.Remove(filepath.Join(dir, de.Name())) != nil {
+			continue
+		}
+		c.forgetExpiry(de.Name())
+		c.diskFiles.Add(-1)
+		c.diskBytes.Add(-info.Size())
+		removed++
+	}
+	return removed
+}
+
 // Purge empties both tiers and returns the number of disk entries removed.
 // Renders are reproducible from their sources, so dropping them all costs
 // latency on the next request rather than data.
@@ -405,6 +452,7 @@ func (c *Cache) Stats() Stats {
 		DiskBytes:   c.diskBytes.Load(),
 		Dir:         dir,
 		TTL:         ttl.String(),
+		BySurface:   countBySurface(dir),
 	}
 }
 
@@ -416,6 +464,44 @@ type Stats struct {
 	DiskBytes   int64  `json:"diskBytes"`
 	Dir         string `json:"dir"`
 	TTL         string `json:"ttl"`
+	// BySurface counts what is on disk per surface. Read from the directory
+	// rather than kept as counters: a counter has to be decremented at every
+	// eviction and expiry, and one missed decrement reports confidently wrong
+	// numbers for as long as the process lives. Absent for entries written
+	// before the surface was in the file name.
+	BySurface map[string]SurfaceStats `json:"bySurface,omitempty"`
+}
+
+// SurfaceStats is one surface's share of the disk tier.
+type SurfaceStats struct {
+	Entries int   `json:"entries"`
+	Bytes   int64 `json:"bytes"`
+}
+
+// countBySurface totals the disk tier per surface. One directory listing, no
+// file is opened, and an entry whose name carries no surface is counted under
+// the empty key rather than dropped.
+func countBySurface(dir string) map[string]SurfaceStats {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	out := map[string]SurfaceStats{}
+	for _, de := range entries {
+		if de.IsDir() || filepath.Ext(de.Name()) != ".bin" {
+			continue
+		}
+		info, err := de.Info()
+		if err != nil {
+			continue
+		}
+		t := typeOfFile(de.Name())
+		s := out[t]
+		s.Entries++
+		s.Bytes += info.Size()
+		out[t] = s
+	}
+	return out
 }
 
 // storeLocked inserts key at the most-recently-used position and evicts from
@@ -679,9 +765,42 @@ func decodeExpiry(hdr []byte) int64 {
 	return int64(binary.BigEndian.Uint64(hdr) &^ bulkLargeBit)
 }
 
+// diskPath names an entry's file. The surface leads the name where the key
+// carries one, so the directory listing answers a per-surface count and a
+// per-surface delete without opening anything. A key with no surface keeps the
+// bare name it always had.
 func (c *Cache) diskPath(key string) string {
 	sum := sha256.Sum256([]byte(key))
-	return filepath.Join(c.dir, hex.EncodeToString(sum[:])+".bin")
+	name := hex.EncodeToString(sum[:])
+	if t := keyType(key); t != "" {
+		name = t + "_" + name
+	}
+	return filepath.Join(c.dir, name+".bin")
+}
+
+// keyType reads the surface a key carries, and nothing else: only a leading
+// token of lowercase letters counts, so a key whose text happens to hold a colon
+// cannot invent a surface or a path separator.
+func keyType(key string) string {
+	i := strings.Index(key, ":")
+	if i <= 0 {
+		return ""
+	}
+	for _, r := range key[:i] {
+		if r < 'a' || r > 'z' {
+			return ""
+		}
+	}
+	return key[:i]
+}
+
+// typeOfFile reads the surface back off a file name.
+func typeOfFile(name string) string {
+	i := strings.Index(name, "_")
+	if i <= 0 {
+		return ""
+	}
+	return name[:i]
 }
 
 // countDir totals the cache entries on disk. Called only by the sweep's

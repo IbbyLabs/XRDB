@@ -2220,5 +2220,5 @@ func toNRGBA(src image.Image) *image.NRGBA {
 
 func buildCacheKey(req Request) string {
 	cfgKey := imageconfig.CacheKey(req.Config)
-	return render.CacheKey(req.MediaType, req.MediaID, cfgKey)
+	return render.TypedCacheKey(req.MediaType, req.MediaID, cfgKey)
 }

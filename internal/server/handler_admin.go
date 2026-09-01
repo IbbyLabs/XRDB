@@ -146,9 +146,17 @@ func registerAdminRoutes(
 			return
 		}
 		if r.Method == http.MethodDelete {
-			// DELETE /api/admin/cache            — drop every render
-			// DELETE /api/admin/cache?key=<hex>  — drop one, by the X-Cache-Key
-			//                                      value the render responses carry
+			// DELETE /api/admin/cache                 — drop every render
+			// DELETE /api/admin/cache?surface=poster  — drop one surface
+			// DELETE /api/admin/cache?key=<key>       — drop one, by the
+			//                                           X-Cache-Key a render carries
+			if surface := strings.TrimSpace(r.URL.Query().Get("surface")); surface != "" {
+				removed := renderCache.DeleteSurface(surface)
+				slog.InfoContext(r.Context(), "Dropped one surface from the render cache",
+					"id", logging.RequestID(r.Context()), "surface", surface, "entries_removed", removed)
+				writeJSON(w, http.StatusOK, map[string]any{"surface": surface, "removed": removed})
+				return
+			}
 			if key := strings.TrimSpace(r.URL.Query().Get("key")); key != "" {
 				removed := renderCache.Delete(key)
 				slog.InfoContext(r.Context(), "Dropped a single render from the cache",
@@ -664,7 +672,7 @@ func warmPosters(
 		go func(id string) {
 			defer func() { <-sem }()
 			req := compose.Request{MediaType: mediaType, MediaID: id, Config: imgCfg}
-			cacheKey := render.CacheKey(mediaType, id, imageconfig.CacheKey(imgCfg), "")
+			cacheKey := render.TypedCacheKey(mediaType, id, imageconfig.CacheKey(imgCfg), "")
 			if _, ok := renderCache.Get(cacheKey); ok {
 				return // already cached
 			}

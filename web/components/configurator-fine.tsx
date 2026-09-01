@@ -513,6 +513,13 @@ export function scoreColoursHaveAReader(config: ConfigState): boolean {
     || config.ratingRing;
 }
 
+// Every element that reads the score stops themselves, as opposed to the group
+// that contains them. The ring reads them whatever the accent mode says, so the
+// field has to render for it. Add a reader here when one starts consuming them.
+export function scoreStopsHaveAReader(config: ConfigState): boolean {
+  return config.ratingRing;
+}
+
 // Only the standard presentation draws the badge strip. Every other one puts
 // something else in its place, and the strip's own controls stop reaching the
 // image, so they are not offered.
@@ -1280,7 +1287,11 @@ export function ScoreColourFine({ uid, config, onUpdate }: GroupProps) {
             onChange={v => onUpdate('aggregateAudienceAccentColor', v)} fallback="#38bdf8" resetLabel="Shared" />
         </div>
       )}
-      {config.aggregateAccentMode === 'dynamic' && (
+      {/* The same question the group asks. The ring reads the stops directly —
+          ratingRingFillColor takes AggregateDynamicStops and never looks at the
+          accent mode — so gating the field on that mode left a ring-only user
+          setting a control for the aggregate pill to reach one for the ring. */}
+      {(config.aggregateAccentMode === 'dynamic' || scoreStopsHaveAReader(config)) && (
         <ScoreStopsField
           uid={uid}
           value={config.aggregateDynamicStops}

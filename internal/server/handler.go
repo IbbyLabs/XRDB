@@ -296,7 +296,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 			hcb := sha256.Sum256([]byte(cb))
 			cfgKeyInput = cfgKeyInput + ":cb=" + hex.EncodeToString(hcb[:8])
 		}
-		cacheKey := render.CacheKey(mediaType, id, cfgKeyInput, uuid)
+		cacheKey := render.TypedCacheKey(mediaType, id, cfgKeyInput, uuid)
 		var pngBytes []byte
 		contentType := ""
 		fromCache := false
@@ -624,7 +624,7 @@ func NewHandler(version string, store *profile.Store, settingsStore *settings.St
 		config := queryValue(raw, "config", "default")
 		uuid := queryValue(raw, "uuid", "none")
 		simulate := queryValue(raw, "simulate", "0")
-		key := render.CacheKey(mediaType, id, config, uuid)
+		key := render.TypedCacheKey(mediaType, id, config, uuid)
 		if level, ok := simulationLevel(simulate); ok {
 			score := render.SimulateCompositionCostTier(mediaType, id, config, uuid, level)
 			writeRenderPlaceholderJSONWithSimulation(w, mediaType, id, key, level, score)
