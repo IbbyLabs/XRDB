@@ -45,7 +45,7 @@ func loadFamilyLabels() map[string]map[string]string {
 			slog.Default().Warn("Could not read a genre label language file", "file", name, "error", err)
 			return
 		}
-		var labels map[string]string
+		var labels map[string]json.RawMessage
 		if err := json.Unmarshal(raw, &labels); err != nil {
 			slog.Default().Warn("Ignoring a genre label language file that is not readable JSON",
 				"file", name, "error", err)
@@ -54,13 +54,21 @@ func loadFamilyLabels() map[string]map[string]string {
 		if out[lang] == nil {
 			out[lang] = map[string]string{}
 		}
-		for id, label := range labels {
+		for id, entry := range labels {
 			// A file carries its credit and its gaps as _-prefixed keys, which
 			// name no family.
-			if strings.HasPrefix(id, "_") || strings.TrimSpace(label) == "" {
+			if strings.HasPrefix(id, "_") {
 				continue
 			}
-			out[lang][strings.ToLower(id)] = label
+			label, short := decodeLabelEntry(entry)
+			if label == "" {
+				continue
+			}
+			key := strings.ToLower(id)
+			out[lang][key] = label
+			if short != "" {
+				out[lang][key+shortSuffix] = short
+			}
 		}
 	}
 
@@ -93,6 +101,32 @@ func langOfLabelFile(name string) string {
 	return strings.ToLower(strings.TrimSuffix(filepath.Base(name), ".json"))
 }
 
+// shortSuffix keys a family's short form beside its label in the same map.
+const shortSuffix = "\x00short"
+
+// decodeLabelEntry reads either form a language file may use for a family:
+//
+//	"horror": "Terror"
+//	"scifi":  { "label": "Ficção Científica", "short": "Ficção" }
+//
+// The full label is the contributor's; the short is what the build draws where
+// the label does not fit. Shortening to fit is the build's job and not the
+// translator's, which is why both are kept rather than only the one that fits.
+func decodeLabelEntry(raw json.RawMessage) (label, short string) {
+	var plain string
+	if err := json.Unmarshal(raw, &plain); err == nil {
+		return strings.TrimSpace(plain), ""
+	}
+	var pair struct {
+		Label string `json:"label"`
+		Short string `json:"short"`
+	}
+	if err := json.Unmarshal(raw, &pair); err != nil {
+		return "", ""
+	}
+	return strings.TrimSpace(pair.Label), strings.TrimSpace(pair.Short)
+}
+
 // familyLabelIn returns a family's label in the given language, falling back to
 // the English one per label rather than per language.
 func familyLabelIn(f *genreFamily, lang string) string {
@@ -104,20 +138,30 @@ func familyLabelIn(f *genreFamily, lang string) string {
 		return f.label
 	}
 	byLang := familyLabels()
-	if labels, ok := byLang[lang]; ok {
+	for _, l := range []string{lang, baseLanguage(lang)} {
+		labels, ok := byLang[l]
+		if !ok {
+			continue
+		}
+		// The short form is drawn wherever one exists. The genre badge has no
+		// fit guard yet, so a long label would widen the plate with nothing to
+		// catch it; the contributor's full label is kept in the file and is what
+		// a guard will reach for.
+		if v, ok := labels[f.id+shortSuffix]; ok {
+			return v
+		}
 		if v, ok := labels[f.id]; ok {
 			return v
 		}
 	}
-	// "pt-br" falls back to "pt" before it falls back to English.
-	if base, _, cut := strings.Cut(lang, "-"); cut {
-		if labels, ok := byLang[base]; ok {
-			if v, ok := labels[f.id]; ok {
-				return v
-			}
-		}
-	}
 	return f.label
+}
+
+// baseLanguage drops a region: pt-br falls back to pt before it falls back to
+// English.
+func baseLanguage(lang string) string {
+	base, _, _ := strings.Cut(lang, "-")
+	return base
 }
 
 // LabelLanguages names the languages genre labels can be drawn in, for the

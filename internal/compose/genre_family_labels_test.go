@@ -143,3 +143,25 @@ func TestThePortugueseContributionIsLoaded(t *testing.T) {
 		t.Errorf("pt scifantasy = %q, want the English %q", got, familySciFantasy.label)
 	}
 }
+
+// The contributor asked that his labels not be shortened to fit, and the build
+// has no fit guard yet. Both forms are kept: his wording in the file, the short
+// on the badge, so a guard has something to reach for (FR-149).
+func TestALanguageFileKeepsBothTheLabelAndItsShort(t *testing.T) {
+	resetFamilyLabels(t)
+	pt := familyLabels()["pt"]
+
+	if got := pt["scifi"]; got != "Ficção Científica" {
+		t.Errorf("stored label = %q, want the contributor's own wording", got)
+	}
+	if got := pt["scifi"+shortSuffix]; got != "Ficção" {
+		t.Errorf("stored short = %q, want Ficção", got)
+	}
+	if got := familyLabelIn(&familySciFi, "pt"); got != "Ficção" {
+		t.Errorf("drawn label = %q, want the short while there is no fit guard", got)
+	}
+	// A family with no short is drawn as its label, so the short is not required.
+	if got := familyLabelIn(&familyHorror, "pt"); got != "Terror" {
+		t.Errorf("drawn label = %q, want Terror", got)
+	}
+}
