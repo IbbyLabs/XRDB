@@ -28,7 +28,7 @@ func TestStingerLabel(t *testing.T) {
 		{}:                                    "",
 	}
 	for s, want := range cases {
-		if got := stingerLabel(s); got != want {
+		if got := stingerLabel(s, ""); got != want {
 			t.Errorf("%+v -> %q, want %q", s, got, want)
 		}
 	}

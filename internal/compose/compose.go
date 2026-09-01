@@ -1264,7 +1264,7 @@ func (p *Pipeline) Render(ctx context.Context, req Request) (*Result, error) {
 		// it is now.
 		label, accent, ok := upcomingReleaseLabel(meta.UpcomingRelease)
 		if !ok {
-			label, accent, ok = releaseStatusLabel(meta.ReleaseStatus)
+			label, accent, ok = releaseStatusLabel(meta.ReleaseStatus, req.Config.Language)
 		}
 		if ok {
 			drawReleaseBadge(composed, label, accent, req.Config.ReleaseStatusPos, scale, occ, releaseStatusOptsFromConfig(req.Config))

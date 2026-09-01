@@ -580,6 +580,7 @@ func drawQualityBadges(base *image.NRGBA, tokens []string, scale float64, occ *o
 // or quality badges (TR).
 // ageRatingOpts carries the age-rating badge styling. Zero value = default.
 type ageRatingOpts struct {
+	lang         string // config language for the fixed wording this badge draws
 	style        string // "" | glass | plain | tile | silver | square | media
 	tileColor    string // "#RRGGBB"; fills the tile style, tints the border on glass/square/silver
 	offsetX      int
@@ -629,7 +630,7 @@ func applyAgeChrome(ch tileChrome, textCol color.NRGBA, opts ageRatingOpts, scal
 }
 
 func ageOptsFromConfig(cfg imageconfig.Config) ageRatingOpts {
-	return ageRatingOpts{style: cfg.AgeRatingBadgeStyle, tileColor: cfg.AgeRatingTileColor,
+	return ageRatingOpts{lang: cfg.Language, style: cfg.AgeRatingBadgeStyle, tileColor: cfg.AgeRatingTileColor,
 		offsetX: cfg.AgeRatingOffsetX, offsetY: cfg.AgeRatingOffsetY, scale: cfg.AgeRatingScale,
 		outlineColor: cfg.NoBackgroundBadgeOutlineColor, outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
 		outlineGlow: cfg.NoBackgroundBadgeOutlineGlow,
@@ -677,7 +678,8 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 		eAsc, eDesc := efm.Ascent.Ceil(), efm.Descent.Ceil()
 		gap := s(2)
 		bhM := padY*2 + eAsc + eDesc + gap + ascent + descent
-		bwM := maxInt(padX*2+textWidth(face, rating), padX*2+textWidth(ef, "AGE"))
+		kicker := UIString("age_kicker", opts.lang, "AGE")
+		bwM := maxInt(padX*2+textWidth(face, rating), padX*2+textWidth(ef, kicker))
 		r := occ.placeNudged(resolvedPos, bwM, bhM, edgeX, edgeY, s(7), opts.offsetX, opts.offsetY)
 		mediaChrome, mediaText := applyAgeChrome(tileChrome{
 			noShadow: opts.noShadow,
@@ -695,8 +697,8 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 		valueCol := mediaText
 		ey := r.Min.Y + padY + eAsc
 		// A soft shadow keeps the kicker legible over the sheen.
-		drawText(base, ef, cx-textWidth(ef, "AGE")/2+1, ey+1, color.NRGBA{A: 150}, "AGE")
-		drawText(base, ef, cx-textWidth(ef, "AGE")/2, ey, eyebrowCol, "AGE")
+		drawText(base, ef, cx-textWidth(ef, kicker)/2+1, ey+1, color.NRGBA{A: 150}, kicker)
+		drawText(base, ef, cx-textWidth(ef, kicker)/2, ey, eyebrowCol, kicker)
 		vy := ey + eDesc + gap + ascent
 		drawText(base, face, cx-textWidth(face, rating)/2, vy, valueCol, rating)
 		return
@@ -765,12 +767,12 @@ func drawAgeRatingBadge(base *image.NRGBA, rating string, pos string, scale floa
 
 // releaseStatusLabel maps a title's release state to its badge label and accent.
 // An unrecognised state draws nothing.
-func releaseStatusLabel(status string) (string, color.NRGBA, bool) {
+func releaseStatusLabel(status, lang string) (string, color.NRGBA, bool) {
 	switch status {
 	case "digital":
-		return "DIGITAL RELEASE", color.NRGBA{R: 56, G: 189, B: 248, A: 255}, true
+		return UIString("release_digital", lang, "DIGITAL RELEASE"), color.NRGBA{R: 56, G: 189, B: 248, A: 255}, true
 	case "cinemas":
-		return "IN CINEMAS", color.NRGBA{R: 249, G: 115, B: 22, A: 255}, true
+		return UIString("release_cinemas", lang, "IN CINEMAS"), color.NRGBA{R: 249, G: 115, B: 22, A: 255}, true
 	}
 	return "", color.NRGBA{}, false
 }
@@ -781,7 +783,7 @@ func upcomingReleaseLabel(u provider.UpcomingRelease) (string, color.NRGBA, bool
 	if u.Kind == "" || u.Date.IsZero() {
 		return "", color.NRGBA{}, false
 	}
-	_, accent, ok := releaseStatusLabel(u.Kind)
+	_, accent, ok := releaseStatusLabel(u.Kind, "")
 	if !ok {
 		return "", color.NRGBA{}, false
 	}
@@ -795,6 +797,7 @@ func upcomingReleaseLabel(u provider.UpcomingRelease) (string, color.NRGBA, bool
 // releaseStatusOpts carries the release-status badge styling. Zero value keeps
 // the accent-bordered plate the badge has always drawn.
 type releaseStatusOpts struct {
+	lang         string // config language for the fixed wording this badge draws
 	scalePercent int
 	offsetX      int
 	offsetY      int
@@ -810,12 +813,12 @@ func releaseStatusOptsFromConfig(cfg imageconfig.Config) releaseStatusOpts {
 	return releaseStatusOpts{scalePercent: cfg.ReleaseStatusScale, offsetX: cfg.ReleaseStatusOffsetX, offsetY: cfg.ReleaseStatusOffsetY,
 		style: cfg.ReleaseStatusBadgeStyle, tileColor: cfg.ReleaseStatusTileColor,
 		outlineColor: cfg.NoBackgroundBadgeOutlineColor, outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
-		outlineGlow: cfg.NoBackgroundBadgeOutlineGlow, noShadow: !cfg.BadgeShadow}
+		outlineGlow: cfg.NoBackgroundBadgeOutlineGlow, noShadow: !cfg.BadgeShadow, lang: cfg.Language}
 }
 
 // drawReleaseStatusBadge marks whether a title is in cinemas or out on digital.
 func drawReleaseStatusBadge(base *image.NRGBA, status string, pos string, scale float64, occ *occupancy, opts releaseStatusOpts) {
-	label, accent, ok := releaseStatusLabel(status)
+	label, accent, ok := releaseStatusLabel(status, opts.lang)
 	if !ok {
 		return
 	}
@@ -2831,6 +2834,7 @@ func trendingStyleFromConfig(s imageconfig.TrendingStyle) trendingStyle {
 // through as positional params. Its zero value keeps the original fixed
 // hairline and the plain surface's original shadow-free label.
 type trendingBadgeOpts struct {
+	lang         string // config language for the fixed wording this badge draws
 	scalePercent int
 	offsetX      int
 	offsetY      int
@@ -2845,6 +2849,7 @@ type trendingBadgeOpts struct {
 // Config.
 func trendingOptsFromConfig(cfg imageconfig.Config) trendingBadgeOpts {
 	return trendingBadgeOpts{
+		lang:         cfg.Language,
 		scalePercent: cfg.TrendingScale,
 		offsetX:      cfg.TrendingOffsetX,
 		offsetY:      cfg.TrendingOffsetY,
@@ -2886,7 +2891,7 @@ func drawTrendingBadgeSurfaced(base *image.NRGBA, scale float64, occ *occupancy,
 		return
 	}
 
-	const label = "TRENDING"
+	label := UIString("trending", opts.lang, "TRENDING")
 
 	s := func(v float64) int { return int(v*scale + 0.5) }
 	padX := s(13)
@@ -3330,6 +3335,7 @@ func drawProgressRing(base *image.NRGBA, cx, cy, outerR int, sweepFrac float64, 
 // ── Top-rated rank badge ──────────────────────────────────────────────────────
 
 type topRatedOpts struct {
+	lang         string // config language for the wording this badge draws
 	scalePercent int
 	offsetX      int
 	offsetY      int
@@ -3342,7 +3348,7 @@ type topRatedOpts struct {
 }
 
 func topRatedOptsFromConfig(cfg imageconfig.Config) topRatedOpts {
-	return topRatedOpts{scalePercent: cfg.TopRatedScale, offsetX: cfg.TopRatedOffsetX, offsetY: cfg.TopRatedOffsetY,
+	return topRatedOpts{lang: cfg.Language, scalePercent: cfg.TopRatedScale, offsetX: cfg.TopRatedOffsetX, offsetY: cfg.TopRatedOffsetY,
 		style: cfg.TopRatedBadgeStyle, tileColor: cfg.TopRatedTileColor,
 		outlineColor: cfg.NoBackgroundBadgeOutlineColor, outlineWidth: cfg.NoBackgroundBadgeOutlineWidth,
 		outlineGlow: cfg.NoBackgroundBadgeOutlineGlow, noShadow: !cfg.BadgeShadow}
@@ -3368,7 +3374,7 @@ func drawTopRatedBadge(base *image.NRGBA, rank int, pos string, scale float64, o
 		return
 	}
 	// "TOP" carries the meaning; the bare number alone would read as anything.
-	label := "TOP #" + strconv.Itoa(rank)
+	label := UIString("top_rated", opts.lang, "TOP") + " #" + strconv.Itoa(rank)
 
 	s := func(v float64) int { return int(v*scale + 0.5) }
 	padX, padY := s(9), s(5)

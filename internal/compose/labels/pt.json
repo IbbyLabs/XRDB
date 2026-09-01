@@ -1,13 +1,34 @@
 {
   "_credit": "Portuguese labels contributed by DanPagotto, 2026-08-02 (FR-149)",
-  "_note": "label is the contributor's own wording. short is what the build draws while the genre badge has no fit guard: shortening to fit is the build's job, not the translator's, so both are kept.",
   "_gap": "scifantasy has no Portuguese: the family was added after these were given, and it falls back to English per label",
+  "_note": "label is the contributor's own wording. short is what the build draws while the genre badge has no fit guard: shortening to fit is the build's job, not the translator's, so both are kept.",
+  "_ui": {
+    "age_kicker": "IDADE",
+    "emmy_nominee": "INDICADO AO EMMY",
+    "emmy_winner": "VENCEDOR DO EMMY",
+    "oscar_nominee": "INDICADO AO OSCAR",
+    "oscar_winner": "VENCEDOR DO OSCAR",
+    "release_cinemas": "LANÇAMENTO NOS CINEMAS",
+    "release_digital": "LANÇAMENTO DIGITAL",
+    "stinger_both": "CENA EXTRA (STINGER)",
+    "stinger_mid": "CENA NO MEIO DOS CRÉDITOS",
+    "stinger_post": "CENA PÓS-CRÉDITOS",
+    "top_rated": "TOP",
+    "trending": "EM ALTA"
+  },
+  "_ui_notes": {
+    "age_kicker": "IDADE, not CLASSIFICACAO INDICATIVA. The contributor changed it himself after seeing the plate: it is a kicker over the certificate, and the plate widens to whichever line is wider.",
+    "stinger_both": "The English is kept in brackets on purpose, for recognisability. His call, not an oversight."
+  },
   "action": "Ação",
   "animation": "Animação",
   "anime": "Anime",
   "comedy": "Comédia",
   "crime": "Policial",
-  "documentary": { "label": "Documentário", "short": "Doc" },
+  "documentary": {
+    "label": "Documentário",
+    "short": "Doc"
+  },
   "drama": "Drama",
   "family": "Família",
   "fantasy": "Fantasia",
@@ -17,11 +38,20 @@
   "music": "Musical",
   "news": "Notícias",
   "other": "Outros",
-  "reality": { "label": "Reality Show", "short": "Reality" },
+  "reality": {
+    "label": "Reality Show",
+    "short": "Reality"
+  },
   "romance": "Romance",
-  "scifi": { "label": "Ficção Científica", "short": "Ficção" },
+  "scifi": {
+    "label": "Ficção Científica",
+    "short": "Ficção"
+  },
   "soap": "Novela",
   "talk": "Talk Show",
-  "tvmovie": { "label": "Filme para TV", "short": "TV" },
+  "tvmovie": {
+    "label": "Filme para TV",
+    "short": "TV"
+  },
   "warpolitics": "Guerra"
 }

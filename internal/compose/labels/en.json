@@ -1,5 +1,19 @@
 {
   "_credit": "The built-in English labels. Copy this file to add a language; the file name is the language code.",
+  "_ui": {
+    "age_kicker": "AGE",
+    "emmy_nominee": "EMMY NOMINEE",
+    "emmy_winner": "EMMY WINNER",
+    "oscar_nominee": "OSCAR NOMINEE",
+    "oscar_winner": "OSCAR WINNER",
+    "release_cinemas": "IN CINEMAS",
+    "release_digital": "DIGITAL RELEASE",
+    "stinger_both": "STINGER",
+    "stinger_mid": "MID-CREDITS",
+    "stinger_post": "POST-CREDITS",
+    "top_rated": "TOP",
+    "trending": "TRENDING"
+  },
   "action": "Action",
   "animation": "Animation",
   "anime": "Anime",

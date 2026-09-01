@@ -19,7 +19,7 @@ func TestUpcomingReleaseLabelCarriesTheDate(t *testing.T) {
 	if label != "CINEMAS 20 APR 2026" {
 		t.Errorf("label = %q", label)
 	}
-	if _, want, _ := releaseStatusLabel("cinemas"); accent != want {
+	if _, want, _ := releaseStatusLabel("cinemas", ""); accent != want {
 		t.Errorf("accent = %v, want the landed cinemas accent %v", accent, want)
 	}
 }

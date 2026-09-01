@@ -55,6 +55,23 @@ func loadFamilyLabels() map[string]map[string]string {
 			out[lang] = map[string]string{}
 		}
 		for id, entry := range labels {
+			if id == uiStringsKey {
+				var ui map[string]string
+				if err := json.Unmarshal(entry, &ui); err != nil {
+					slog.Default().Warn("Ignoring an unreadable _ui block in a language file",
+						"file", name, "error", err)
+					continue
+				}
+				if uiStringsByLang[lang] == nil {
+					uiStringsByLang[lang] = map[string]string{}
+				}
+				for k, v := range ui {
+					if strings.TrimSpace(v) != "" {
+						uiStringsByLang[lang][k] = v
+					}
+				}
+				continue
+			}
 			// A file carries its credit and its gaps as _-prefixed keys, which
 			// name no family.
 			if strings.HasPrefix(id, "_") {
@@ -125,6 +142,34 @@ func decodeLabelEntry(raw json.RawMessage) (label, short string) {
 		return "", ""
 	}
 	return strings.TrimSpace(pair.Label), strings.TrimSpace(pair.Short)
+}
+
+// uiStringsKey is the reserved key a language file uses for the fixed wording
+// the badges draw, as opposed to a genre family. It is _-prefixed so the family
+// loader already skips it.
+const uiStringsKey = "_ui"
+
+// uiStrings holds each language's fixed badge wording, keyed by the ids in
+// en.json's _ui block.
+var uiStringsByLang = map[string]map[string]string{}
+
+// UIString returns a badge's fixed wording in the given language, falling back
+// to the English one per string rather than per language. The English text is
+// the caller's, so a language with no entry costs nothing.
+func UIString(id, lang, english string) string {
+	lang = strings.ToLower(strings.TrimSpace(lang))
+	if lang == "" || lang == "en" {
+		return english
+	}
+	familyLabels() // the same load fills uiStringsByLang
+	for _, l := range []string{lang, baseLanguage(lang)} {
+		if byID := uiStringsByLang[l]; byID != nil {
+			if v, ok := byID[id]; ok && v != "" {
+				return v
+			}
+		}
+	}
+	return english
 }
 
 // familyLabelIn returns a family's label in the given language, falling back to

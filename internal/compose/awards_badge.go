@@ -19,17 +19,18 @@ var (
 // corner. A win is gold, a nomination silver, so the distinction survives a
 // thumbnail where the words are too small to read.
 type awardsBadgeOpts struct {
+	lang         string // config language for the wording this badge draws
 	scalePercent int
 	offsetX      int
 	offsetY      int
 }
 
 func awardsOptsFromConfig(cfg imageconfig.Config) awardsBadgeOpts {
-	return awardsBadgeOpts{scalePercent: cfg.AwardsScale, offsetX: cfg.AwardsOffsetX, offsetY: cfg.AwardsOffsetY}
+	return awardsBadgeOpts{lang: cfg.Language, scalePercent: cfg.AwardsScale, offsetX: cfg.AwardsOffsetX, offsetY: cfg.AwardsOffsetY}
 }
 
 func drawAwardsBadge(base *image.NRGBA, a provider.AwardSummary, pos string, scale float64, occ *occupancy, opts awardsBadgeOpts) {
-	label := a.Label()
+	label := awardsLabel(a, opts.lang)
 	if label == "" {
 		return
 	}
@@ -68,4 +69,21 @@ func drawAwardsBadge(base *image.NRGBA, a provider.AwardSummary, pos string, sca
 		shadow: color.NRGBA{R: 0, G: 0, B: 0, A: 90},
 	})
 	drawText(base, face, tx, ty, accent, label)
+}
+
+// awardsLabel names an award and its outcome as one string. Portuguese puts the
+// outcome first and changes the preposition with it — DO for a win, AO for a
+// nomination — so a name joined to an outcome word cannot produce it.
+func awardsLabel(a provider.AwardSummary, lang string) string {
+	if !a.Has() {
+		return ""
+	}
+	id := "oscar_"
+	if a.Kind == "emmy" {
+		id = "emmy_"
+	}
+	if a.Won {
+		return UIString(id+"winner", lang, a.Label())
+	}
+	return UIString(id+"nominee", lang, a.Label())
 }

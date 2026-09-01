@@ -16,17 +16,18 @@ var stingerAccent = color.NRGBA{R: 245, G: 158, B: 66, A: 255}
 // "MID-CREDITS", "POST-CREDITS", or "STINGER" when both, so a viewer knows to
 // stay. The data is TMDB's stinger keywords, not a scrape.
 type stingerBadgeOpts struct {
+	lang         string // config language for the wording this badge draws
 	scalePercent int
 	offsetX      int
 	offsetY      int
 }
 
 func stingerOptsFromConfig(cfg imageconfig.Config) stingerBadgeOpts {
-	return stingerBadgeOpts{scalePercent: cfg.StingerScale, offsetX: cfg.StingerOffsetX, offsetY: cfg.StingerOffsetY}
+	return stingerBadgeOpts{lang: cfg.Language, scalePercent: cfg.StingerScale, offsetX: cfg.StingerOffsetX, offsetY: cfg.StingerOffsetY}
 }
 
 func drawStingerBadge(base *image.NRGBA, s provider.StingerInfo, pos string, scale float64, occ *occupancy, opts stingerBadgeOpts) {
-	label := stingerLabel(s)
+	label := stingerLabel(s, opts.lang)
 	if label == "" {
 		return
 	}
@@ -63,14 +64,14 @@ func drawStingerBadge(base *image.NRGBA, s provider.StingerInfo, pos string, sca
 	drawText(base, face, tx, ty, stingerAccent, label)
 }
 
-func stingerLabel(s provider.StingerInfo) string {
+func stingerLabel(s provider.StingerInfo, lang string) string {
 	switch {
 	case s.MidCredits && s.PostCredits:
-		return "STINGER"
+		return UIString("stinger_both", lang, "STINGER")
 	case s.MidCredits:
-		return "MID-CREDITS"
+		return UIString("stinger_mid", lang, "MID-CREDITS")
 	case s.PostCredits:
-		return "POST-CREDITS"
+		return UIString("stinger_post", lang, "POST-CREDITS")
 	}
 	return ""
 }
