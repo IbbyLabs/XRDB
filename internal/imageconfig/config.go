@@ -192,7 +192,11 @@ type Config struct {
 	Genre                bool   `json:"genre"`
 	GenrePos             string `json:"genrePos,omitempty"`
 	Providers            bool   `json:"providers"`
-	ProvidersCountry     string `json:"providersCountry,omitempty"`
+	// ProvidersCountry is the country the render is for. It picks the streaming
+	// services shown, the release date on an unreleased title, and which of a
+	// language'''s regional posters is preferred where TMDB has more than one.
+	// Empty is US.
+	ProvidersCountry string `json:"providersCountry,omitempty"`
 	// The streaming-provider chips take the same placement and sizing controls
 	// as every other badge family. ProvidersPos is tl|tr|bl|br|tc|bc; "" keeps
 	// the wide strip centred along the bottom edge.
