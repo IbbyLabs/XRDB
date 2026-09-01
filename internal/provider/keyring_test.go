@@ -225,3 +225,28 @@ func TestTheSpentMapHoldsOnlyRefusedKeys(t *testing.T) {
 		t.Errorf("a spent key left %d entries, want 1", size)
 	}
 }
+
+// The read path must not walk the whole map: it runs on every render for a
+// multi-key profile, and a popular one would otherwise pay for every other
+// owner's refusals.
+func TestReadingAListIgnoresOtherOwnersMarks(t *testing.T) {
+	ownerSpent.mu.Lock()
+	ownerSpent.at = map[string]time.Time{}
+	for i := range 200 {
+		ownerSpent.at[strings.Repeat("z", i%40+1)] = time.Now().Add(-2 * keySpentFor)
+	}
+	before := len(ownerSpent.at)
+	ownerSpent.mu.Unlock()
+
+	ctx := WithKeys(context.Background(), map[string]string{KeySIMKL: "mine1,mine2"})
+	if got := keyFrom(ctx, KeySIMKL); got != "mine1" {
+		t.Fatalf("keyFrom = %q, want mine1", got)
+	}
+
+	ownerSpent.mu.Lock()
+	after := len(ownerSpent.at)
+	ownerSpent.mu.Unlock()
+	if after != before {
+		t.Errorf("a read swept %d unrelated marks; the sweep belongs on the write path", before-after)
+	}
+}

@@ -175,16 +175,20 @@ var ownerSpent = struct {
 // returned, so an owner is never left with nothing to call.
 func ownerCurrentKey(raw string) string {
 	list := splitKeyList(raw)
+	now := time.Now()
 	ownerSpent.mu.Lock()
 	defer ownerSpent.mu.Unlock()
-	now := time.Now()
-	for key, at := range ownerSpent.at {
+	// Only this list's keys are looked at. This runs on the render path, and
+	// walking the whole map here would make a popular multi-key profile pay for
+	// every other owner's refusals. Stale marks are swept where they are
+	// written instead, which is rare.
+	for _, key := range list {
+		at, marked := ownerSpent.at[key]
+		if !marked {
+			return key
+		}
 		if now.Sub(at) >= keySpentFor {
 			delete(ownerSpent.at, key)
-		}
-	}
-	for _, key := range list {
-		if _, marked := ownerSpent.at[key]; !marked {
 			return key
 		}
 	}
@@ -205,9 +209,15 @@ func noteOwnerKeySpent(ctx context.Context, name, used string) {
 	if !strings.Contains(keys[name], ",") {
 		return
 	}
+	now := time.Now()
 	ownerSpent.mu.Lock()
 	defer ownerSpent.mu.Unlock()
+	for key, at := range ownerSpent.at {
+		if now.Sub(at) >= keySpentFor {
+			delete(ownerSpent.at, key)
+		}
+	}
 	if _, known := ownerSpent.at[used]; !known {
-		ownerSpent.at[used] = time.Now()
+		ownerSpent.at[used] = now
 	}
 }
