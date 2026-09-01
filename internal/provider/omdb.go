@@ -123,7 +123,9 @@ func (o *OMDB) Fetch(ctx context.Context, mediaType, id string) (*MediaMeta, err
 		if omdbAllowanceSpent(result.Error) {
 			// An owner-supplied credential has its own allowance; spending it
 			// says nothing about ours and must not move the server's ring.
-			if !HasOwnerKey(ctx, KeyOMDB) {
+			if HasOwnerKey(ctx, KeyOMDB) {
+				noteOwnerKeySpent(ctx, KeyOMDB, used)
+			} else {
 				o.keys.markSpent(used)
 			}
 			return nil, &RateLimitError{

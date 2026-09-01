@@ -475,6 +475,11 @@ export function ProfilePanel({
                   blank to keep using the server&rsquo;s key. Saved keys are never shown
                   again and never leave the server.
                 </span>
+                <span className="hint" style={{ marginTop: 0, marginBottom: 'var(--sp-2)' }}>
+                  MDBList, OMDb and SIMKL meter by the day, so those three accept
+                  several keys separated by commas. When one day&rsquo;s allowance runs
+                  out the next key is used.
+                </span>
                 {PROVIDER_KEY_FIELDS.map(f => (
                   <div className="field" key={f.id} style={{ marginBottom: 'var(--sp-2)' }}>
                     <label className="label" htmlFor={`${uid}-key-${f.id}`}>

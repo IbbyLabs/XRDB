@@ -82,9 +82,14 @@ func (s *SIMKL) UpdateCredentials(clientID string) {
 // not move the server's ring.
 func (s *SIMKL) noteQuota(ctx context.Context, used string, err error) {
 	var rl *RateLimitError
-	if errors.As(err, &rl) && rl.QuotaExhausted && !HasOwnerKey(ctx, KeySIMKL) {
-		s.keys.markSpent(used)
+	if !errors.As(err, &rl) || !rl.QuotaExhausted {
+		return
 	}
+	if HasOwnerKey(ctx, KeySIMKL) {
+		noteOwnerKeySpent(ctx, KeySIMKL, used)
+		return
+	}
+	s.keys.markSpent(used)
 }
 
 // HasCredentials reports whether the provider can make authenticated requests.

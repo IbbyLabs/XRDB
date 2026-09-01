@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"sort"
 	"strings"
+	"sync"
 )
 
 // A profile owner can supply their own provider credentials, which stand in for
@@ -140,5 +141,40 @@ func keyFrom(ctx context.Context, name string) string {
 		return ""
 	}
 	keys, _ := ctx.Value(keysCtxKey{}).(map[string]string)
-	return keys[name]
+	raw := keys[name]
+	if !strings.Contains(raw, ",") {
+		return strings.TrimSpace(raw)
+	}
+	return ownerRing(name, raw).current()
+}
+
+// ownerRings holds one ring per owner credential list, so a spent key rotates
+// for that owner alone. Keyed on the field's own text: two profiles pasting the
+// same keys share a ring, which is right, because they share the allowance.
+// Only a field holding several credentials reaches here, so an ordinary
+// single-key profile adds nothing.
+var ownerRings sync.Map // name + "\x00" + raw -> *keyRing
+
+func ownerRing(name, raw string) *keyRing {
+	k := name + "\x00" + raw
+	if r, ok := ownerRings.Load(k); ok {
+		return r.(*keyRing)
+	}
+	r, _ := ownerRings.LoadOrStore(k, newKeyRing(raw))
+	return r.(*keyRing)
+}
+
+// noteOwnerKeySpent moves an owner's list on when the source says that
+// credential's allowance is gone. The server's ring is untouched: a visitor
+// spending their own allowance says nothing about ours.
+func noteOwnerKeySpent(ctx context.Context, name, used string) {
+	if ctx == nil || used == "" {
+		return
+	}
+	keys, _ := ctx.Value(keysCtxKey{}).(map[string]string)
+	raw := keys[name]
+	if !strings.Contains(raw, ",") {
+		return
+	}
+	ownerRing(name, raw).markSpent(used)
 }

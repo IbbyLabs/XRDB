@@ -195,7 +195,9 @@ func (m *MDBList) refusal(ctx context.Context, resp *http.Response, used string)
 		err.QuotaExhausted = true
 		// An owner-supplied credential has its own allowance; spending it says
 		// nothing about ours and must not move the server's ring.
-		if !HasOwnerKey(ctx, KeyMDBList) {
+		if HasOwnerKey(ctx, KeyMDBList) {
+			noteOwnerKeySpent(ctx, KeyMDBList, used)
+		} else {
 			m.keys.markSpent(used)
 		}
 		m.log().WarnContext(ctx, "mdblist refused a request and its daily allowance is spent",

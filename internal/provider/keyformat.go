@@ -50,14 +50,34 @@ func ValidateKey(name, key string) error {
 }
 
 // ValidateKeys checks every supplied credential, naming the first that fails so
-// the caller can say which field to fix.
+// the caller can say which field to fix. A field may hold several credentials
+// separated by commas, and each is checked on its own: one bad entry in a list
+// is still a bad credential.
 func ValidateKeys(keys map[string]string) error {
 	for _, name := range SortedNames(keys) {
-		if err := ValidateKey(name, keys[name]); err != nil {
-			return err
+		for _, one := range splitKeyList(keys[name]) {
+			if err := ValidateKey(name, one); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
+}
+
+// splitKeyList takes a credential field apart. A field with no comma is a list
+// of one, so a single key behaves exactly as it always has.
+func splitKeyList(raw string) []string {
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part = strings.TrimSpace(part); part != "" {
+			out = append(out, part)
+		}
+	}
+	if len(out) == 0 {
+		return []string{""}
+	}
+	return out
 }
 
 func providerLabel(name string) string {

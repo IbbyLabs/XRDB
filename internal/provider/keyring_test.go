@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 )
@@ -118,5 +119,62 @@ func TestAnOwnerKeyBeingSpentDoesNotMoveTheServerRing(t *testing.T) {
 
 	if got := m.keys.current(); got != "first" {
 		t.Errorf("current = %q, want first", got)
+	}
+}
+
+// A profile field holding several credentials is a list, and a single one is a
+// list of one. Neither regex admits a comma, so a stored key cannot change
+// meaning under this.
+func TestAnOwnerKeyListRotatesForThatOwnerAlone(t *testing.T) {
+	ctx := WithKeys(context.Background(), map[string]string{KeyMDBList: "theirs1,theirs2"})
+
+	if got := keyFrom(ctx, KeyMDBList); got != "theirs1" {
+		t.Fatalf("keyFrom = %q, want theirs1", got)
+	}
+	noteOwnerKeySpent(ctx, KeyMDBList, "theirs1")
+	if got := keyFrom(ctx, KeyMDBList); got != "theirs2" {
+		t.Errorf("keyFrom = %q, want theirs2 after the first was spent", got)
+	}
+}
+
+func TestASingleOwnerKeyIsUnchanged(t *testing.T) {
+	ctx := WithKeys(context.Background(), map[string]string{KeyOMDB: " solo "})
+
+	if got := keyFrom(ctx, KeyOMDB); got != "solo" {
+		t.Fatalf("keyFrom = %q, want solo", got)
+	}
+	// Nothing to rotate to, and no ring is created for it.
+	noteOwnerKeySpent(ctx, KeyOMDB, "solo")
+	if got := keyFrom(ctx, KeyOMDB); got != "solo" {
+		t.Errorf("a single owner key stopped being served: %q", got)
+	}
+}
+
+// An owner spending their own allowance says nothing about the server's.
+func TestAnOwnerListDoesNotMoveTheServerRing(t *testing.T) {
+	m := &MDBList{keys: newKeyRing("ours1,ours2")}
+	ctx := WithKeys(context.Background(), map[string]string{KeyMDBList: "theirs1,theirs2"})
+	h := http.Header{}
+	h.Set("X-RateLimit-Remaining", "0")
+
+	_ = m.refusal(ctx, &http.Response{StatusCode: http.StatusTooManyRequests, Header: h}, "theirs1")
+
+	if got := m.keys.current(); got != "ours1" {
+		t.Errorf("the server ring moved to %q on an owner's spent key", got)
+	}
+	if got := keyFrom(ctx, KeyMDBList); got != "theirs2" {
+		t.Errorf("the owner's ring did not move: %q", got)
+	}
+}
+
+// The length bound has to apply per credential or a legitimate pair fails on
+// the length of the two together.
+func TestALongPairOfKeysIsAccepted(t *testing.T) {
+	long := strings.Repeat("a", 100)
+	if err := ValidateKeys(map[string]string{KeyMDBList: long + "," + long}); err != nil {
+		t.Errorf("a pair of 100-character keys was refused: %v", err)
+	}
+	if err := ValidateKeys(map[string]string{KeyMDBList: long + ",short"}); err == nil {
+		t.Error("a list with one bad entry was accepted")
 	}
 }
