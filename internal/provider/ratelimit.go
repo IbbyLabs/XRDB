@@ -285,11 +285,20 @@ const bulkQueueShare = 4
 // bulkMaxWait is the ceiling for a caller class. Only a caller that names itself
 // as a sweep yields; an unidentified one keeps the full ceiling, because it is
 // indistinguishable from a person with an unusual user agent.
-func bulkMaxWait(class CallerClass, maxWait time.Duration) time.Duration {
-	if class == CallerBulk && maxWait > 0 {
-		return maxWait / bulkQueueShare
+//
+// The share is floored at one interval. A fraction of the ceiling is smaller
+// than a slot on every source paced above 500ms, and a caller allowed to wait
+// less than the wait a slot requires is refused on arrival however idle the
+// source is — a queue nobody can join rather than a share of one.
+func bulkMaxWait(class CallerClass, maxWait, interval time.Duration) time.Duration {
+	if class != CallerBulk || maxWait <= 0 {
+		return maxWait
 	}
-	return maxWait
+	share := maxWait / bulkQueueShare
+	if share < interval {
+		return interval
+	}
+	return share
 }
 
 // reserve takes the next slot and reports how long to hold before using it. It
@@ -335,7 +344,7 @@ func (p *pacer) wait(ctx context.Context) error {
 	if deadline, ok := ctx.Deadline(); ok {
 		budget, bounded = time.Until(deadline)-minCallBudget, true
 	}
-	delay, err := p.reserve(budget, bounded, bulkMaxWait(CallerClassFrom(ctx), p.maxWait))
+	delay, err := p.reserve(budget, bounded, bulkMaxWait(CallerClassFrom(ctx), p.maxWait, p.interval))
 	if err != nil {
 		return err
 	}

@@ -258,15 +258,35 @@ func TestNewHTTPClientAppliesThePolicy(t *testing.T) {
 
 func TestPacerRefusesASweepWhereAPersonIsQueued(t *testing.T) {
 	p := &pacer{interval: time.Second, maxWait: 2 * time.Second}
+	// Two slots taken, so the next is two intervals out: past a sweep's ceiling
+	// and at a person's. One taken slot no longer separates them, because a
+	// sweep may now wait one interval rather than a fraction of one.
+	for i := range 2 {
+		if _, err := p.reserve(0, false, p.maxWait); err != nil {
+			t.Fatalf("reserve %d: %v", i, err)
+		}
+	}
+
+	if _, err := p.reserve(0, false, bulkMaxWait(CallerBulk, p.maxWait, p.interval)); !errors.Is(err, ErrPacerBacklog) {
+		t.Fatalf("a sweep two slots back should be refused, got %v", err)
+	}
+	if _, err := p.reserve(0, false, bulkMaxWait(CallerInteractive, p.maxWait, p.interval)); err != nil {
+		t.Fatalf("a person behind the same queue should be served: %v", err)
+	}
+}
+
+// A share of the ceiling smaller than one slot is a queue nobody can join: the
+// wait allowed is less than the wait a slot requires, so a sweep is refused on
+// arrival however idle the source is. Five of the seven paced sources sit above
+// that line, so the floor is the difference between a share and a ban.
+func TestASweepMayAlwaysWaitOneSlot(t *testing.T) {
+	p := &pacer{interval: 2 * time.Second, maxWait: 2 * time.Second}
 	if _, err := p.reserve(0, false, p.maxWait); err != nil {
 		t.Fatalf("first reserve: %v", err)
 	}
 
-	if _, err := p.reserve(0, false, bulkMaxWait(CallerBulk, p.maxWait)); !errors.Is(err, ErrPacerBacklog) {
-		t.Fatalf("a sweep behind a queued request should be refused, got %v", err)
-	}
-	if _, err := p.reserve(0, false, bulkMaxWait(CallerInteractive, p.maxWait)); err != nil {
-		t.Fatalf("a person behind the same request should be served: %v", err)
+	if _, err := p.reserve(0, false, bulkMaxWait(CallerBulk, p.maxWait, p.interval)); err != nil {
+		t.Errorf("a sweep was refused the very next slot on an idle source: %v", err)
 	}
 }
 
@@ -276,6 +296,9 @@ func TestWaitTakesTheCeilingFromTheContextClass(t *testing.T) {
 		t.Fatalf("first reserve: %v", err)
 	}
 
+	if _, err := p.reserve(0, false, p.maxWait); err != nil {
+		t.Fatalf("second reserve: %v", err)
+	}
 	if err := p.wait(WithCallerClass(context.Background(), CallerBulk)); !errors.Is(err, ErrPacerBacklog) {
 		t.Fatalf("wait should refuse a sweep from its context class, got %v", err)
 	}
@@ -283,6 +306,9 @@ func TestWaitTakesTheCeilingFromTheContextClass(t *testing.T) {
 
 func TestOnlyANamedSweepYieldsTheQueue(t *testing.T) {
 	const ceiling = 2 * time.Second
+	// A short interval, so the share is the larger of the two and the yielding
+	// is what is under test rather than the floor.
+	const interval = 100 * time.Millisecond
 	for _, tc := range []struct {
 		class CallerClass
 		want  time.Duration
@@ -291,8 +317,29 @@ func TestOnlyANamedSweepYieldsTheQueue(t *testing.T) {
 		{CallerInteractive, ceiling},
 		{CallerUnknown, ceiling},
 	} {
-		if got := bulkMaxWait(tc.class, ceiling); got != tc.want {
+		if got := bulkMaxWait(tc.class, ceiling, interval); got != tc.want {
 			t.Errorf("%s: got %s, want %s", tc.class, got, tc.want)
 		}
+	}
+}
+
+// The floor applies only where the share falls short, and only to a sweep.
+func TestTheFloorIsOneSlotAndOnlyForASweep(t *testing.T) {
+	const ceiling = 2 * time.Second
+	for _, tc := range []struct {
+		name     string
+		class    CallerClass
+		interval time.Duration
+		want     time.Duration
+	}{
+		{"a slot wider than the share", CallerBulk, time.Second, time.Second},
+		{"a slot narrower than the share", CallerBulk, 100 * time.Millisecond, 500 * time.Millisecond},
+		{"a person is not floored, they have the ceiling", CallerInteractive, 8 * time.Second, ceiling},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := bulkMaxWait(tc.class, ceiling, tc.interval); got != tc.want {
+				t.Errorf("got %s, want %s", got, tc.want)
+			}
+		})
 	}
 }
