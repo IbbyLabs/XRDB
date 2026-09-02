@@ -269,6 +269,12 @@ export const GENRE_BORDER_OPTIONS = [
   { id: 'custom',   label: 'Custom' },
 ] as const;
 
+export const RING_CENTER_OPTIONS = [
+  { id: 'default',   label: 'Default' },
+  { id: 'invisible', label: 'Invisible' },
+  { id: 'custom',    label: 'Custom' },
+] as const;
+
 export const GENRE_MODE_OPTIONS = [
   { id: 'default', label: 'Text' },
   { id: 'icon',    label: 'Icon' },

@@ -6,7 +6,7 @@ import {
   RATING_OPTIONS, SIX_POS_OPTIONS, QUALITY_STYLE_OPTIONS, GENRE_STYLE_OPTIONS,
   AGE_STYLE_OPTIONS, GENRE_MODE_OPTIONS, ANIME_GROUPING_OPTIONS,
   GENRE_ACCENT_OPTIONS, GENRE_LABEL_OPTIONS, GENRE_BORDER_OPTIONS,
-  GENRE_CASE_OPTIONS, GENRE_COUNT_OPTIONS,
+  GENRE_CASE_OPTIONS, GENRE_COUNT_OPTIONS, RING_CENTER_OPTIONS,
   AGGREGATE_SOURCE_OPTIONS, AGGREGATE_ACCENT_MODE_OPTIONS, SCOREBAR_STYLE_OPTIONS,
   RATING_PRESENTATION_OPTIONS, RATING_VALUE_MODE_OPTIONS, RELEASE_STATUS_STYLE_OPTIONS,
   ICON_SHAPE_OPTIONS, TREND_TAG_STYLE_OPTIONS, ACCENT_SHAPE_OPTIONS,
@@ -544,6 +544,14 @@ const LABELLESS_PRESENTATIONS: string[] = ['minimal', 'dual-minimal'];
 // labelled in pixels does not suggest. The picker names the three states and
 // reveals the number only when one is being chosen. Shared by both badge
 // families so they read the same.
+// -1 is an invisible centre and 0 is unset, so the two states a number field
+// cannot express get named instead.
+function ringCenterMode(opacity: number): string {
+  if (opacity < 0) return 'invisible';
+  if (opacity === 0) return 'default';
+  return 'custom';
+}
+
 function genreBorderMode(width: number): string {
   if (width < 0) return 'off';
   if (width === 0) return 'hairline';
@@ -856,9 +864,18 @@ export function RatingRingFine({ uid, config, onUpdate }: GroupProps) {
       <NumField id={`${uid}-ring-scale`} label="Ring size (%)" value={config.ringScale}
         onChange={v => onUpdate('ringScale', v)} min={70} max={250} step={5}
         hint="Size of the ring and the number inside it. Blank keeps the default." />
-      <NumField id={`${uid}-ring-center-op`} label="Center opacity (%)" value={config.ringCenterOpacity}
-        onChange={v => onUpdate('ringCenterOpacity', v)} min={0} max={100} step={5}
-        hint="Opacity of the disc behind the ring's number. Blank keeps the default." />
+      <StyleGrid
+        id={`${uid}-ring-center-mode-label`}
+        label="Center disc"
+        options={RING_CENTER_OPTIONS}
+        value={ringCenterMode(config.ringCenterOpacity)}
+        onChange={v => onUpdate('ringCenterOpacity', v === 'invisible' ? -1 : v === 'default' ? 0 : 50)}
+      />
+      {ringCenterMode(config.ringCenterOpacity) === 'custom' && (
+        <NumField id={`${uid}-ring-center-op`} label="Center opacity (%)" value={config.ringCenterOpacity}
+          onChange={v => onUpdate('ringCenterOpacity', v)} min={5} max={100} step={5} zeroIsDefault={false}
+          hint="Opacity of the disc behind the ring's number." />
+      )}
       <div className="numfield-pair">
         <NumField id={`${uid}-ring-ox`} label="Offset X (px)" value={config.ringOffsetX}
           onChange={v => onUpdate('ringOffsetX', v)} min={-1200} max={1200} zeroIsDefault={false} />

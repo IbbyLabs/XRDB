@@ -611,7 +611,7 @@ type RatingRingConfig struct {
 	RingScale          int    `json:"ringScale,omitempty"`   // percent of the default ring size; 0 = 100
 	RingOffsetX        int    `json:"ringOffsetX,omitempty"` // px nudge from the corner
 	RingOffsetY        int    `json:"ringOffsetY,omitempty"`
-	RingCenterOpacity  int    `json:"ringCenterOpacity,omitempty"`  // 0-100 opacity of the centre disk; 0 = default
+	RingCenterOpacity  int    `json:"ringCenterOpacity,omitempty"`  // opacity of the centre disk; -1 = invisible, 0 = default, 1-100 opacity
 	RingValueSource    string `json:"ringValueSource,omitempty"`    // "" / "overall" = average, else a provider (e.g. "imdb")
 	RingProgressSource string `json:"ringProgressSource,omitempty"` // source for the arc fill; same values
 	// RingCriticsPriority and RingAudiencePriority order the sources the
@@ -1969,7 +1969,9 @@ func parseRing(cfg *Config, r *raw) {
 		cfg.TrendingScale = clampInt(*r.TrendingScale, 70, 400)
 	}
 	if r.RingCenterOpacity != nil && *r.RingCenterOpacity != 0 {
-		cfg.RingCenterOpacity = clampInt(*r.RingCenterOpacity, 1, 100)
+		// -1 is an invisible centre. 0 already means unset, so the state needs a
+		// value of its own; the badge border spells the same thing the same way.
+		cfg.RingCenterOpacity = clampInt(*r.RingCenterOpacity, -1, 100)
 	}
 	if r.RingValueSource != nil && strings.TrimSpace(*r.RingValueSource) != "" {
 		cfg.RingValueSource = strings.ToLower(strings.TrimSpace(*r.RingValueSource))

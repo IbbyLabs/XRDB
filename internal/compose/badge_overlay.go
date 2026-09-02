@@ -3381,7 +3381,9 @@ func drawProgressRing(base *image.NRGBA, cx, cy, outerR int, sweepFrac float64, 
 
 	trackColor := color.NRGBA{R: 255, G: 255, B: 255, A: 46}
 	diskColor := color.NRGBA{R: 8, G: 11, B: 16, A: 219}
-	if centerOpacity != 0 {
+	if centerOpacity < 0 {
+		diskColor.A = 0
+	} else if centerOpacity > 0 {
 		diskColor.A = uint8(centerOpacity * 255 / 100)
 	}
 
