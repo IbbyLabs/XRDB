@@ -237,11 +237,26 @@ func readMinIntervalOverrides() map[string]time.Duration {
 // LogMinIntervalOverrides reports the per-source pacing in force. A name that
 // matches no source is accepted silently by the environment, so the parsed set
 // is worth stating at startup.
+//
+// An override on a source the table also paces is called out separately: it
+// wins, so a later change to the built-in interval does not reach an instance
+// carrying one.
 func LogMinIntervalOverrides(log *slog.Logger) {
 	for source, d := range minIntervalOverrides {
-		_, known := rateLimits[source]
-		log.Info("A source's request interval is set from the environment",
-			"source", source, "interval_ms", d.Milliseconds(), "in_default_table", known)
+		rl, known := rateLimits[source]
+		switch {
+		case known && rl.MinInterval != d:
+			log.Warn("A source's request interval is overridden away from the built-in one",
+				"source", source, "interval_ms", d.Milliseconds(),
+				"built_in_ms", rl.MinInterval.Milliseconds(),
+				"effect", "a change to the built-in pace will not reach this instance")
+		case known:
+			log.Info("A source's request interval is set from the environment to the built-in value",
+				"source", source, "interval_ms", d.Milliseconds(), "in_default_table", true)
+		default:
+			log.Info("A source's request interval is set from the environment",
+				"source", source, "interval_ms", d.Milliseconds(), "in_default_table", false)
+		}
 	}
 }
 

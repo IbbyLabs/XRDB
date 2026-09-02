@@ -1,6 +1,9 @@
 package provider
 
 import (
+	"bytes"
+	"encoding/json"
+	"log/slog"
 	"testing"
 	"time"
 )
@@ -38,5 +41,43 @@ func TestASweepStillNeverWaitsLongerThanAPersonOnAlloCine(t *testing.T) {
 		if bulk > maxWait {
 			t.Errorf("at a %v ceiling a sweep may wait %v against a person's %v", maxWait, bulk, maxWait)
 		}
+	}
+}
+
+// An override wins silently, so a later change to a built-in interval does not
+// reach an instance carrying one. The startup line has to separate the three
+// cases or the shadowing is invisible until someone wonders why a pace changed
+// everywhere but here.
+func TestAShadowingOverrideIsReportedAtStartup(t *testing.T) {
+	cases := []struct {
+		name      string
+		overrides map[string]time.Duration
+		wantLevel slog.Level
+		wantField string
+	}{
+		{"differs from the table", map[string]time.Duration{"allocine": 5 * time.Second}, slog.LevelWarn, "built_in_ms"},
+		{"matches the table", map[string]time.Duration{"allocine": 2 * time.Second}, slog.LevelInfo, "in_default_table"},
+		{"no table entry", map[string]time.Duration{"tmdb": time.Second}, slog.LevelInfo, "in_default_table"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			prev := minIntervalOverrides
+			minIntervalOverrides = tc.overrides
+			t.Cleanup(func() { minIntervalOverrides = prev })
+
+			buf := &bytes.Buffer{}
+			LogMinIntervalOverrides(slog.New(slog.NewJSONHandler(buf, &slog.HandlerOptions{Level: slog.LevelDebug})))
+
+			var rec map[string]any
+			if err := json.Unmarshal(bytes.TrimSpace(buf.Bytes()), &rec); err != nil {
+				t.Fatalf("no log line: %v (%q)", err, buf.String())
+			}
+			if got := rec["level"]; got != tc.wantLevel.String() {
+				t.Errorf("level %v, want %v", got, tc.wantLevel)
+			}
+			if _, ok := rec[tc.wantField]; !ok {
+				t.Errorf("line carries no %q: %v", tc.wantField, rec)
+			}
+		})
 	}
 }
