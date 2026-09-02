@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"xrdb_rewrite/internal/logging"
@@ -30,6 +31,11 @@ type TMDB struct {
 	// baseURL overrides the public API root for tests. Empty means tmdbBaseURL.
 	baseURL string
 	kinds   *tmdbKindStore
+	// substitutions counts country substitutions per requested->delivered pair.
+	// Keyed on the pair rather than globally: a rare fallback is the one someone
+	// reports, and a single counter would swallow its first occurrence behind a
+	// common one.
+	substitutions sync.Map
 }
 
 // tmdbStatusError carries the status of a refused request, so a caller can tell
@@ -682,9 +688,11 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		// than releaseRegion, which substitutes "US" when nothing is set.
 		want := artworkRegion(opts)
 		if want != "" && country != "" && !strings.EqualFold(want, country) {
-			t.log().InfoContext(ctx, "No artwork was published for the requested country, so another country's was used",
-				"media_type", mediaType, "tmdb_id", id, "language", lang,
-				"requested_country", want, "country", country)
+			if n := t.countSubstitution(want, country); n == 1 || isPowerOfTen(n) {
+				t.log().InfoContext(ctx, "No artwork was published for the requested country, so another country's was used",
+					"media_type", mediaType, "tmdb_id", id, "language", lang,
+					"requested_country", want, "country", country, "total", n)
+			}
 		}
 	}
 	backdropPath := selectImagePath(result.Images.Backdrops, result.BackdropPath, lang, opts)
@@ -800,6 +808,13 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 	}
 
 	return meta, nil
+}
+
+// countSubstitution records one requested->delivered pair and returns how many
+// times it has happened since start.
+func (t *TMDB) countSubstitution(requested, delivered string) int64 {
+	v, _ := t.substitutions.LoadOrStore(requested+"->"+delivered, new(atomic.Int64))
+	return v.(*atomic.Int64).Add(1)
 }
 
 // artworkRegion is the country whose artwork is preferred. An explicit setting

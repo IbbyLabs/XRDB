@@ -122,3 +122,43 @@ func TestARegionFromTheLanguageTagIsTracedToo(t *testing.T) {
 		t.Errorf("country = %v, want ES", lines[0]["country"])
 	}
 }
+
+// A common substitution must not swallow the first occurrence of a rare one:
+// the unusual fallback is the one somebody reports.
+func TestEachDistinctSubstitutionLogsItsFirst(t *testing.T) {
+	tmdb := NewTMDBAt("k", "", "http://unused")
+
+	seen := func(requested, delivered string) int64 {
+		return tmdb.countSubstitution(requested, delivered)
+	}
+
+	for i := 0; i < 50; i++ {
+		seen("PL", "US")
+	}
+	if n := seen("MX", "ES"); n != 1 {
+		t.Errorf("a first MX->ES substitution counted %d, want 1 — it would not be logged", n)
+	}
+	if n := seen("PL", "US"); n != 51 {
+		t.Errorf("PL->US counted %d, want its own running total", n)
+	}
+}
+
+// The bound has to keep logging as the count grows, or a rate is unreadable.
+func TestASubstitutionIsLoggedAtEachOrderOfMagnitude(t *testing.T) {
+	tmdb := NewTMDBAt("k", "", "http://unused")
+	var logged []int64
+	for i := 0; i < 1000; i++ {
+		if n := tmdb.countSubstitution("PL", "US"); n == 1 || isPowerOfTen(n) {
+			logged = append(logged, n)
+		}
+	}
+	want := []int64{1, 10, 100, 1000}
+	if len(logged) != len(want) {
+		t.Fatalf("logged at %v, want %v", logged, want)
+	}
+	for i := range want {
+		if logged[i] != want[i] {
+			t.Fatalf("logged at %v, want %v", logged, want)
+		}
+	}
+}
