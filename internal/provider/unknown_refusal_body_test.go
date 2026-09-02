@@ -107,12 +107,12 @@ func TestAServiceUnavailableBodyIsNotReported(t *testing.T) {
 // is not a named field and is not reached, which is why this is a filter rather
 // than a guarantee.
 func TestACredentialNamedFieldIsRedactedFromTheBody(t *testing.T) {
-	lines := reportRefusal(t, `{"error":"nope","api_key":"sk-live-abcdef123456"}`)
+	lines := reportRefusal(t, `{"error":"nope","api_key":"placeholder-value"}`)
 	if len(lines) != 1 {
 		t.Fatalf("got %d lines, want one: %v", len(lines), lines)
 	}
 	body, _ := lines[0]["body"].(string)
-	if strings.Contains(body, "sk-live-abcdef123456") {
+	if strings.Contains(body, "placeholder-value") {
 		t.Errorf("the credential reached the log: %q", body)
 	}
 	if !strings.Contains(body, "REDACTED") {

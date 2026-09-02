@@ -181,10 +181,11 @@ func RedactQuery(rawQuery string) string {
 	return values.Encode()
 }
 
-// RedactJSONObject replaces the value of any credential-named field in a JSON
-// object, leaving the rest readable. Input that is not a JSON object is returned
-// unchanged, so it is a filter on known field names rather than a guarantee: a
-// credential inside a message string is not a named field and survives it.
+// RedactJSONObject replaces the value of any credential-named field at the TOP
+// LEVEL of a JSON object, leaving the rest readable. It is a filter on known
+// field names, not a guarantee. Untouched: a nested object's keys, a credential
+// inside a message string, a JSON array, and anything that does not parse —
+// which includes an object truncated by a read cap.
 func RedactJSONObject(value string) string {
 	return redactJSONCredentials(value)
 }
