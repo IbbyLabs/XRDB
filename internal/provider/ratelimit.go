@@ -16,6 +16,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"xrdb_rewrite/internal/logging"
 )
 
 // upstreamMsHeader carries how long the source itself took to answer, set on a
@@ -628,13 +630,14 @@ func (t *throttledTransport) reportUnknownRefusal(ctx context.Context, status in
 	if t.reportedRefusal.Swap(true) {
 		return
 	}
+	// Credential-named fields are replaced. A credential inside a message string
+	// is not a named field and is not reached.
 	t.log().InfoContext(ctx, "A ratings source refused with a body none of the quota phrases match",
-		"source", t.source, "status", status, "body", string(trimmed),
+		"source", t.source, "status", status, "body", logging.RedactJSONObject(string(trimmed)),
 		"effect", "the refusal is retried as ordinary throttling; add the phrase to quotaMarkers if it names a spent allowance")
 }
 
 // quotaMarkers are the phrases a source uses to say the refusal is a spent
-// allowance rather than a moment of pressure.// quotaMarkers are the phrases a source uses to say the refusal is a spent
 // allowance rather than a moment of pressure. SIMKL answers a spent daily
 // allowance with {"error":"app_limit_exceeded", ...}.
 var quotaMarkers = []string{

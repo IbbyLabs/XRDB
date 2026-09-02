@@ -101,3 +101,24 @@ func TestAServiceUnavailableBodyIsNotReported(t *testing.T) {
 		t.Errorf("a 503 body was reported as quota evidence: %v", lines)
 	}
 }
+
+// A source echoing a credential back in its error JSON would otherwise reach the
+// log verbatim. Named fields are replaced; a credential inside a message string
+// is not a named field and is not reached, which is why this is a filter rather
+// than a guarantee.
+func TestACredentialNamedFieldIsRedactedFromTheBody(t *testing.T) {
+	lines := reportRefusal(t, `{"error":"nope","api_key":"sk-live-abcdef123456"}`)
+	if len(lines) != 1 {
+		t.Fatalf("got %d lines, want one: %v", len(lines), lines)
+	}
+	body, _ := lines[0]["body"].(string)
+	if strings.Contains(body, "sk-live-abcdef123456") {
+		t.Errorf("the credential reached the log: %q", body)
+	}
+	if !strings.Contains(body, "REDACTED") {
+		t.Errorf("body = %q, want the field replaced rather than dropped", body)
+	}
+	if !strings.Contains(body, "nope") {
+		t.Errorf("body = %q, want the rest of the wording kept", body)
+	}
+}

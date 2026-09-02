@@ -181,6 +181,14 @@ func RedactQuery(rawQuery string) string {
 	return values.Encode()
 }
 
+// RedactJSONObject replaces the value of any credential-named field in a JSON
+// object, leaving the rest readable. Input that is not a JSON object is returned
+// unchanged, so it is a filter on known field names rather than a guarantee: a
+// credential inside a message string is not a named field and survives it.
+func RedactJSONObject(value string) string {
+	return redactJSONCredentials(value)
+}
+
 // redactJSONCredentials replaces the value of any credential-named field in a
 // JSON object, leaving the rest readable. A value that is not a JSON object is
 // returned unchanged.
