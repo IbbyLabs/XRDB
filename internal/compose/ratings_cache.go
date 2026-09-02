@@ -311,6 +311,10 @@ var ratingsSourceShape = map[string]int{
 	// 1: TMDB and Metacritic user read on the wrong scale, and the
 	// metacriticuser key was dropped entirely.
 	"mdblist": 1,
+	// 1: the display string was not kept, so the badge drew N/A; and the
+	// Rotten Tomatoes average of rated reviews was taken where the tomatometer
+	// belongs. A remembered answer carries both faults.
+	"wikidata": 1,
 }
 
 // ratingsSnapshot is the on-disk form: the shape version, the per-source

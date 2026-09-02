@@ -202,3 +202,46 @@ func TestLegacySnapshotKeepsUnchangedSources(t *testing.T) {
 		t.Error("a source whose reading changed survived the upgrade")
 	}
 }
+
+// A remembered wikidata answer predates the tomatometer fix and carries the
+// wrong figure with no label, so the release has to discard it. Without the
+// bump the fix is invisible on any title already cached, for the whole TTL —
+// including the two the reporter named, which are the most likely to be cached
+// precisely because they were being looked at.
+func TestTheWikidataFixDiscardsRememberedWikidataAnswers(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "ratings.json")
+
+	live := map[string]ratingsEntry{
+		provider.GoodKey("wikidata", "movie", "tt1527186"): {Meta: &provider.MediaMeta{Title: "A"}, ExpiresAt: time.Now().Add(time.Hour)},
+		provider.GoodKey("omdb", "movie", "tt1527186"):     {Meta: &provider.MediaMeta{Title: "A"}, ExpiresAt: time.Now().Add(time.Hour)},
+	}
+	// Written by a build before the fix: wikidata absent from the map entirely,
+	// which reads as version 0.
+	old := map[string]int{}
+	for k, v := range ratingsSourceShape {
+		if k != "wikidata" {
+			old[k] = v
+		}
+	}
+	data, err := json.Marshal(ratingsSnapshot{Shape: ratingsCacheShape, SourceShapes: old, Entries: live})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	c := newRatingsCache(time.Hour, nil)
+	c.path = path
+	c.load(slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+	if _, ok := c.entries[provider.GoodKey("wikidata", "movie", "tt1527186")]; ok {
+		t.Error("a pre-fix wikidata answer survived, so the badge keeps the average for the TTL")
+	}
+	// The control: the bump must not cost every other source its answers, which
+	// is the whole reason the per-source version exists.
+	if _, ok := c.entries[provider.GoodKey("omdb", "movie", "tt1527186")]; !ok {
+		t.Error("omdb was discarded for a change to wikidata")
+	}
+}
