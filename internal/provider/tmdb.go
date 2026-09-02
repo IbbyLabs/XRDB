@@ -670,9 +670,19 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 		// not consider country, so this says what was delivered rather than
 		// what was wanted; the request's own region is stripped before it
 		// reaches here.
+		country := countryOfPath(result.Images.Posters, posterPath)
 		t.log().DebugContext(ctx, "Selected a TMDB poster",
 			"media_type", mediaType, "tmdb_id", id,
-			"language", lang, "country", countryOfPath(result.Images.Posters, posterPath))
+			"language", lang, "country", country)
+		// A region narrows within a language and the language wins, so one
+		// country's art can answer a request for another's. The raw setting
+		// rather than releaseRegion, which substitutes "US" when nothing is set.
+		want := strings.ToUpper(strings.TrimSpace(opts.WatchProvidersCountry))
+		if want != "" && country != "" && !strings.EqualFold(want, country) {
+			t.log().InfoContext(ctx, "No artwork was published for the requested country, so another country's was used",
+				"media_type", mediaType, "tmdb_id", id, "language", lang,
+				"requested_country", want, "country", country)
+		}
 	}
 	backdropPath := selectImagePath(result.Images.Backdrops, result.BackdropPath, lang, opts)
 	if backdropPath != "" {
