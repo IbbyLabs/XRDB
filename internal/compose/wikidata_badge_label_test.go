@@ -7,11 +7,16 @@ import (
 	"xrdb_rewrite/internal/provider"
 )
 
-// The default value mode draws the label, so a supplier that reports a value
-// without one puts N/A on the poster. Asserts the drawn text rather than the
-// Label field: the field could be set and the badge still not read it, and the
-// text is what the report was about.
-func TestABadgeDrawsTheNativeScoreRatherThanNA(t *testing.T) {
+// Locks the native mode to drawing the label verbatim. This is a behaviour
+// lock, not a regression test: it starts from a Rating that already carries a
+// label, so it passes on a build where the provider supplies none. The
+// regression for that lives in provider.TestWikidataKeepsTheDisplayStringForTheBadge,
+// which runs a fetch.
+//
+// What it does guard is the other half of the chain — a future change that
+// stops the native mode reading Label would draw N/A again with every provider
+// supplying one.
+func TestTheNativeModeDrawsTheLabelVerbatim(t *testing.T) {
 	cfg := imageconfig.Config{}
 
 	for _, tc := range []struct {
@@ -43,8 +48,8 @@ func TestABadgeDrawsTheNativeScoreRatherThanNA(t *testing.T) {
 }
 
 // The control: the normalized modes format the value and never read the label,
-// which is why they kept working throughout and why the workaround was to
-// switch to one. Without this, the test above would pass on a build that had
+// which is why they kept working throughout BUG-281 and why the workaround was
+// to switch to one. Without this, the test above would pass on a build that had
 // quietly moved every mode onto the value.
 func TestANormalizedBadgeIgnoresTheLabel(t *testing.T) {
 	cfg := imageconfig.Config{}
