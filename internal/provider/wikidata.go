@@ -133,7 +133,14 @@ func (w *Wikidata) Fetch(ctx context.Context, _, id string) (*MediaMeta, error) 
 		if !ok {
 			continue
 		}
-		meta.Ratings = append(meta.Ratings, Rating{Source: source, Value: value})
+		// The display string is what the native value mode draws. Without it the
+		// badge falls back to N/A, and this provider wins both sources from the
+		// ones that do supply it.
+		meta.Ratings = append(meta.Ratings, Rating{
+			Source: source,
+			Value:  value,
+			Label:  strings.TrimSpace(b.Score.Value),
+		})
 	}
 	return meta, nil
 }

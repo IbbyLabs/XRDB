@@ -129,3 +129,23 @@ func TestWikidataIsPaced(t *testing.T) {
 		t.Errorf("an unlisted source has an interval of %v", got)
 	}
 }
+
+// The default value mode draws the label, and this provider outranks the ones
+// that supply it, so a rating without one puts N/A on the poster where a score
+// belongs. Both raw forms, because the label is the display string verbatim.
+func TestWikidataKeepsTheDisplayStringForTheBadge(t *testing.T) {
+	meta, err := wikidataStub(t, wikidataBothScores).Fetch(context.Background(), "movie", "tt0111161")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := map[string]string{}
+	for _, r := range meta.Ratings {
+		got[r.Source] = r.Label
+	}
+	for source, want := range map[string]string{"rt": "91%", "metacritic": "81/100"} {
+		if got[source] != want {
+			t.Errorf("%s label = %q, want %q", source, got[source], want)
+		}
+	}
+}
