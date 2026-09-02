@@ -8,9 +8,9 @@ import (
 	"testing"
 )
 
-// The count of configs arriving with a region is what decides whether regional
-// artwork selection is worth building. A counter that cannot fire would report
-// "nobody asks" no matter who asked, so the bare-language case is the control.
+// A two-letter region now steers which country's artwork is preferred, so only a
+// region the parser cannot use is dropped. The bare-language case is the
+// control: a counter that cannot fire would report "nobody asks" whoever asked.
 func TestAConfiguredRegionIsReported(t *testing.T) {
 	for _, tc := range []struct {
 		name  string
@@ -18,10 +18,11 @@ func TestAConfiguredRegionIsReported(t *testing.T) {
 		want  bool
 		shows string
 	}{
-		{name: "regional", lang: "es-MX", want: true, shows: "es-mx"},
-		{name: "regional with an underscore", lang: "pt_BR", want: true, shows: "pt-br"},
+		{name: "a two-letter region is kept", lang: "es-MX", want: false},
+		{name: "an underscore is normalised and kept", lang: "pt_BR", want: false},
 		{name: "bare language", lang: "es", want: false},
-		{name: "en-US folds to en and is still a region", lang: "en-US", want: true, shows: "en-us"},
+		{name: "en-US keeps its region like any other", lang: "en-US", want: false},
+		{name: "a region that is not two letters is dropped", lang: "es-419", want: true, shows: "es-419"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var buf bytes.Buffer

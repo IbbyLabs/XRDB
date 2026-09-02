@@ -503,8 +503,11 @@ func imageLanguageOf(v string) string {
 }
 
 func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts ArtworkOptions) (*MediaMeta, error) {
-	lang := strings.ToLower(strings.TrimSpace(opts.Language))
-	wantOriginal := IsOriginalLanguage(lang)
+	// The configured language may name a region — "es-MX" — which selects a
+	// country's artwork rather than a language. Matching and the API's own
+	// filter take the base subtag.
+	lang := imageLanguageOf(opts.Language)
+	wantOriginal := IsOriginalLanguage(strings.ToLower(strings.TrimSpace(opts.Language)))
 	// Pull image variants in the preferred language plus English and
 	// language-neutral (textless) art so selection has candidates.
 	fallback := imageLanguageOf(opts.FallbackLanguage)
@@ -675,9 +678,9 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 			"media_type", mediaType, "tmdb_id", id,
 			"language", lang, "country", country)
 		// A region narrows within a language and the language wins, so one
-		// country's art can answer a request for another's. The raw setting
-		// rather than releaseRegion, which substitutes "US" when nothing is set.
-		want := strings.ToUpper(strings.TrimSpace(opts.WatchProvidersCountry))
+		// country's art can answer a request for another's. artworkRegion rather
+		// than releaseRegion, which substitutes "US" when nothing is set.
+		want := artworkRegion(opts)
 		if want != "" && country != "" && !strings.EqualFold(want, country) {
 			t.log().InfoContext(ctx, "No artwork was published for the requested country, so another country's was used",
 				"media_type", mediaType, "tmdb_id", id, "language", lang,
@@ -799,6 +802,26 @@ func (t *TMDB) fetchByTMDBID(ctx context.Context, mediaType, id string, opts Art
 	return meta, nil
 }
 
+// artworkRegion is the country whose artwork is preferred. An explicit setting
+// wins over a region named in the language: someone who set the country did so
+// deliberately, where a language tag's region is often just what a client sends.
+func artworkRegion(opts ArtworkOptions) string {
+	if c := strings.ToUpper(strings.TrimSpace(opts.WatchProvidersCountry)); c != "" {
+		return c
+	}
+	return languageRegionOf(opts.Language)
+}
+
+// languageRegionOf reports the region a language tag names, empty when it names
+// none.
+func languageRegionOf(v string) string {
+	_, region, ok := strings.Cut(strings.TrimSpace(strings.ReplaceAll(v, "_", "-")), "-")
+	if !ok {
+		return ""
+	}
+	return strings.ToUpper(region)
+}
+
 // countryOfPath reports the country TMDB published one image for, empty when
 // the image carries none. Textless art carries neither a language nor a
 // country, so an empty answer is the ordinary case rather than a gap.
@@ -895,7 +918,7 @@ func selectImagePath(images []tmdbImage, defaultPath, lang string, opts ArtworkO
 	// Textless art is never demoted by it: measured over 1483 posters on five
 	// titles, no image carries a country without a language, so a textless image
 	// has neither and never reaches this comparison.
-	region := releaseRegion(opts.WatchProvidersCountry)
+	region := artworkRegion(opts)
 	inLangAndRegion := func(img tmdbImage) bool {
 		return inLang(img) && img.Iso3166 != nil && strings.EqualFold(*img.Iso3166, region)
 	}

@@ -1657,11 +1657,29 @@ func ApplyLanguageOverride(cfg *Config, raw string) bool {
 // match no image language. "original" passes through unchanged.
 func imageLanguage(v string) string {
 	s := strings.ToLower(strings.TrimSpace(strings.ReplaceAll(v, "_", "-")))
-	base, _, _ := strings.Cut(s, "-")
+	base, region, _ := strings.Cut(s, "-")
 	if base == "us" {
 		return "en"
 	}
+	// A region steers which country's artwork is preferred and joins the render
+	// cache key, so only the two-letter shape is kept; anything else reduces to
+	// the base and keeps the key space capped.
+	if isTwoLetter(base) && isTwoLetter(region) {
+		return base + "-" + region
+	}
 	return base
+}
+
+func isTwoLetter(v string) bool {
+	if len(v) != 2 {
+		return false
+	}
+	for i := 0; i < len(v); i++ {
+		if v[i] < 'a' || v[i] > 'z' {
+			return false
+		}
+	}
+	return true
 }
 
 // qualityBadgesPos normalizes the quality-badge placement. v2 offers this one

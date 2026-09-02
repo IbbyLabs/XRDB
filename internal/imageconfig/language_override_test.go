@@ -15,9 +15,10 @@ func TestApplyLanguageOverride(t *testing.T) {
 		{raw: "fr", applied: true, want: "fr"},
 		{raw: "FR", applied: true, want: "fr"},
 		{raw: " ja ", applied: true, want: "ja"},
-		// A region is accepted and reduced, matching what a stored config does.
-		{raw: "es-MX", applied: true, want: "es"},
-		{raw: "pt_BR", applied: true, want: "pt"},
+		// A two-letter region is kept, matching what a stored config does; it
+		// selects a country's artwork.
+		{raw: "es-MX", applied: true, want: "es-mx"},
+		{raw: "pt_BR", applied: true, want: "pt-br"},
 		{raw: "original", applied: true, want: "original"},
 		// Rejected: unbounded or malformed input must not reach the key.
 		{raw: "", applied: false, want: "en"},

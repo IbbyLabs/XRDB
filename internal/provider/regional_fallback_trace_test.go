@@ -14,7 +14,7 @@ import (
 // A request for one country's artwork answered with another's is a substitution
 // nobody can see: the render succeeds and looks right. The report it generates
 // is "my region setting does nothing".
-func regionRender(t *testing.T, wantCountry string, posters []map[string]any) []map[string]any {
+func regionRender(t *testing.T, language, wantCountry string, posters []map[string]any) []map[string]any {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{
@@ -33,7 +33,7 @@ func regionRender(t *testing.T, wantCountry string, posters []map[string]any) []
 	tmdb.SetHTTPClient(srv.Client())
 
 	_, err := tmdb.FetchArtwork(context.Background(), "movie", "1", ArtworkOptions{
-		Language:              "es",
+		Language:              language,
 		WatchProvidersCountry: wantCountry,
 	})
 	if err != nil {
@@ -64,7 +64,7 @@ func substitutionLines(recs []map[string]any) []map[string]any {
 }
 
 func TestASubstitutedCountryIsRecordedWithBothHalves(t *testing.T) {
-	recs := regionRender(t, "MX", []map[string]any{
+	recs := regionRender(t, "es", "MX", []map[string]any{
 		{"file_path": "/es.jpg", "iso_639_1": "es", "iso_3166_1": "ES", "vote_average": 9.0},
 	})
 	lines := substitutionLines(recs)
@@ -84,7 +84,7 @@ func TestASubstitutedCountryIsRecordedWithBothHalves(t *testing.T) {
 }
 
 func TestTheRequestedCountryBeingDeliveredIsNotReported(t *testing.T) {
-	recs := regionRender(t, "MX", []map[string]any{
+	recs := regionRender(t, "es", "MX", []map[string]any{
 		{"file_path": "/mx.jpg", "iso_639_1": "es", "iso_3166_1": "MX", "vote_average": 9.0},
 		{"file_path": "/es.jpg", "iso_639_1": "es", "iso_3166_1": "ES", "vote_average": 8.0},
 	})
@@ -96,10 +96,29 @@ func TestTheRequestedCountryBeingDeliveredIsNotReported(t *testing.T) {
 // releaseRegion substitutes "US" when nothing is set, so reading the region
 // through it would report a substitution against a country nobody asked for.
 func TestNoCountryAskedForReportsNothing(t *testing.T) {
-	recs := regionRender(t, "", []map[string]any{
+	recs := regionRender(t, "es", "", []map[string]any{
 		{"file_path": "/es.jpg", "iso_639_1": "es", "iso_3166_1": "ES", "vote_average": 9.0},
 	})
 	if lines := substitutionLines(recs); len(lines) != 0 {
 		t.Errorf("a request naming no country reported a substitution: %v", lines)
+	}
+}
+
+// A region reaching selection through the language tag is the same substitution
+// by a different route, so it needs the same line or the feature reintroduces
+// the invisibility it was built beside.
+func TestARegionFromTheLanguageTagIsTracedToo(t *testing.T) {
+	recs := regionRender(t, "es-mx", "", []map[string]any{
+		{"file_path": "/es.jpg", "iso_639_1": "es", "iso_3166_1": "ES", "vote_average": 9.0},
+	})
+	lines := substitutionLines(recs)
+	if len(lines) != 1 {
+		t.Fatalf("got %d substitution lines, want one: %v", len(lines), recs)
+	}
+	if lines[0]["requested_country"] != "MX" {
+		t.Errorf("requested_country = %v, want MX from the language tag", lines[0]["requested_country"])
+	}
+	if lines[0]["country"] != "ES" {
+		t.Errorf("country = %v, want ES", lines[0]["country"])
 	}
 }
