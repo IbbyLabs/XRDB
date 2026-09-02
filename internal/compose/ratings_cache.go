@@ -78,6 +78,11 @@ func (c *ratingsCache) log() *slog.Logger {
 type ratingsEntry struct {
 	Meta      *provider.MediaMeta `json:"meta"`
 	ExpiresAt time.Time           `json:"expiresAt"`
+	// TTL is the term this entry was stored for. The age rule and the partial
+	// rule both move it away from the cache's base, and the refresh-ahead window
+	// is a fraction of the entry's own term rather than the base's. Absent on an
+	// entry written before this field, which reads as the base.
+	TTL time.Duration `json:"ttl,omitempty"`
 }
 
 type ratingsCall struct {
@@ -157,7 +162,11 @@ type ratingsFetch func(context.Context) (*provider.MediaMeta, bool, error)
 // render that triggered it returns immediately, and a refresh on that context
 // would be cancelled before it reached the source.
 func (c *ratingsCache) refreshAheadLocked(ctx context.Context, key string, e ratingsEntry, fetch ratingsFetch) {
-	window := time.Duration(float64(c.ttl) * ratingsRefreshAheadFrac)
+	term := e.TTL
+	if term <= 0 {
+		term = c.ttl
+	}
+	window := time.Duration(float64(term) * ratingsRefreshAheadFrac)
 	if window <= 0 || time.Until(e.ExpiresAt) > window {
 		return
 	}
@@ -243,7 +252,7 @@ func (c *ratingsCache) storeLocked(key string, meta *provider.MediaMeta, complet
 	if !complete && PartialRatingsCacheTTL < ttl {
 		ttl = PartialRatingsCacheTTL
 	}
-	c.entries[key] = ratingsEntry{Meta: meta, ExpiresAt: time.Now().Add(ttl)}
+	c.entries[key] = ratingsEntry{Meta: meta, ExpiresAt: time.Now().Add(ttl), TTL: ttl}
 }
 
 // Len reports how many answers are held, for the admin surface.
