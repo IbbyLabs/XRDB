@@ -343,3 +343,20 @@ func TestTheFloorIsOneSlotAndOnlyForASweep(t *testing.T) {
 		})
 	}
 }
+
+// A sweep must never outlast a person in the queue. The floor lifts bulk to one
+// slot, and a source paced slower than the ceiling would otherwise lift it past
+// interactive — an inversion of the whole share, reachable from one env var
+// since XRDB_<SOURCE>_MIN_INTERVAL_SECONDS accepts up to ten seconds.
+func TestASweepNeverWaitsLongerThanAPerson(t *testing.T) {
+	const ceiling = 2 * time.Second
+	for _, interval := range []time.Duration{
+		100 * time.Millisecond, time.Second, 2 * time.Second, 5 * time.Second, 10 * time.Second,
+	} {
+		bulk := bulkMaxWait(CallerBulk, ceiling, interval)
+		person := bulkMaxWait(CallerInteractive, ceiling, interval)
+		if bulk > person {
+			t.Errorf("interval %s: a sweep may wait %s against a person's %s", interval, bulk, person)
+		}
+	}
+}

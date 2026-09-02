@@ -296,6 +296,13 @@ func bulkMaxWait(class CallerClass, maxWait, interval time.Duration) time.Durati
 	}
 	share := maxWait / bulkQueueShare
 	if share < interval {
+		// Never past the ceiling everything else answers to. A source paced
+		// slower than that ceiling is one a sweep genuinely cannot queue for,
+		// and saying so is better than promoting bulk above the callers the
+		// share exists to protect.
+		if interval > maxWait {
+			return maxWait
+		}
 		return interval
 	}
 	return share
