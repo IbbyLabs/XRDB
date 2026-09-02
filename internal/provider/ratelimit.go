@@ -176,6 +176,10 @@ type RateLimit struct {
 //     with the preceding 85 empty, so it is a burst limit rather than an
 //     accumulated window. One second holds it to 60 a minute. The figure is a
 //     floor derived from a single refusal, not a published limit.
+//   - AlloCiné answers a burst and then refuses for a while. Measured
+//     2026-09-02: unpaced sweeps were refused on 54 to 72 percent of what was
+//     sent; at one request every two seconds, 209 answers in an hour and none
+//     refused.
 //
 // MDBList carries no interval because it meters by the day: budgetGovernor
 // paces it from the allowance its responses report.
@@ -193,6 +197,7 @@ var rateLimits = map[string]RateLimit{
 	// badge, not a late one. A render whose source is held out completes without
 	// it and is cached.
 	"wikidata": {MinInterval: time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
+	"allocine": {MinInterval: 2 * time.Second, MaxRetries: 2, MaxRetryWait: renderRetryBudget},
 }
 
 // minIntervalSuffix names the per-source pacing override,
