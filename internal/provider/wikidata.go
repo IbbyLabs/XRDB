@@ -20,6 +20,29 @@ const (
 	wikidataMetacritic     = "Q150248"
 )
 
+// Determination methods (P459). A reviewer can carry several scores for one
+// title measured different ways, so the reviewer alone does not identify the
+// figure a badge means. Rotten Tomatoes records both a tomatometer and an
+// average of rated reviews, and the average is the one that arrives first.
+const (
+	wikidataTomatometer = "Q108403393"
+	wikidataRTAverage   = "Q108403540"
+	wikidataMetascore   = "Q106515043"
+)
+
+// wikidataWantedMethod is the determination method a source's badge means.
+var wikidataWantedMethod = map[string]string{
+	"rt":         wikidataTomatometer,
+	"metacritic": wikidataMetascore,
+}
+
+// wikidataRejectedMethod is a method that is never the badge's figure, whatever
+// else the title carries. Kept apart from the wanted list so an unqualified
+// statement can still be a fallback while a known-wrong one cannot.
+var wikidataRejectedMethod = map[string]bool{
+	wikidataRTAverage: true,
+}
+
 // Wikidata supplies Rotten Tomatoes and Metacritic scores for titles that have
 // them. There is no free API for either — Rotten Tomatoes' own programme is
 // Fandango-gated and Metacritic publishes none — so this is the one source for
@@ -63,6 +86,7 @@ func wikidataQuery(imdbID string) string {
   ?item p:P444 ?statement .
   ?statement ps:P444 ?score .
   ?statement pq:P447 ?reviewer .
+  OPTIONAL { ?statement pq:P459 ?method . }
   VALUES ?reviewer { wd:` + wikidataRottenTomatoes + ` wd:` + wikidataMetacritic + ` }
 }`
 }
@@ -76,6 +100,9 @@ type wikidataResults struct {
 			Score struct {
 				Value string `json:"value"`
 			} `json:"score"`
+			Method struct {
+				Value string `json:"value"`
+			} `json:"method"`
 		} `json:"bindings"`
 	} `json:"results"`
 }
@@ -119,6 +146,11 @@ func (w *Wikidata) Fetch(ctx context.Context, _, id string) (*MediaMeta, error) 
 	}
 
 	meta := &MediaMeta{}
+	// A reviewer can carry several scores for one title, so the rows are picked
+	// over rather than appended as they arrive: the first row for a source is
+	// not the figure its badge means.
+	best := map[string]Rating{}
+	exact := map[string]bool{}
 	for _, b := range out.Results.Bindings {
 		source := ""
 		switch {
@@ -129,6 +161,17 @@ func (w *Wikidata) Fetch(ctx context.Context, _, id string) (*MediaMeta, error) 
 		default:
 			continue
 		}
+		method := b.Method.Value[strings.LastIndex(b.Method.Value, "/")+1:]
+		if wikidataRejectedMethod[method] {
+			continue
+		}
+		wanted := method != "" && method == wikidataWantedMethod[source]
+		// An unqualified statement is a fallback, not a rival: a title whose only
+		// score carries no method still gets a badge, and a named one always
+		// displaces it whichever order the rows arrive in.
+		if exact[source] && !wanted {
+			continue
+		}
 		value, ok := wikidataScore(b.Score.Value)
 		if !ok {
 			continue
@@ -136,11 +179,20 @@ func (w *Wikidata) Fetch(ctx context.Context, _, id string) (*MediaMeta, error) 
 		// The display string is what the native value mode draws. Without it the
 		// badge falls back to N/A, and this provider wins both sources from the
 		// ones that do supply it.
-		meta.Ratings = append(meta.Ratings, Rating{
+		best[source] = Rating{
 			Source: source,
 			Value:  value,
 			Label:  strings.TrimSpace(b.Score.Value),
-		})
+		}
+		if wanted {
+			exact[source] = true
+		}
+	}
+	// Stable order, since the query does not impose one and a map has none.
+	for _, source := range []string{"rt", "metacritic"} {
+		if r, ok := best[source]; ok {
+			meta.Ratings = append(meta.Ratings, r)
+		}
 	}
 	return meta, nil
 }

@@ -149,3 +149,113 @@ func TestWikidataKeepsTheDisplayStringForTheBadge(t *testing.T) {
 		}
 	}
 }
+
+// Rotten Tomatoes records both a tomatometer and an average of rated reviews on
+// the same title, under the same reviewer. The average arrives first, so taking
+// the first row drew 7.5/10 in a badge that means a percentage — a plausible
+// number in the wrong metric, which is worse on a poster than a missing one.
+const wikidataTwoRTScores = `{"results":{"bindings":[
+  {"reviewer":{"value":"http://www.wikidata.org/entity/Q105584"},"score":{"value":"7.5/10"},"method":{"value":"http://www.wikidata.org/entity/Q108403540"}},
+  {"reviewer":{"value":"http://www.wikidata.org/entity/Q105584"},"score":{"value":"80%"},"method":{"value":"http://www.wikidata.org/entity/Q108403393"}},
+  {"reviewer":{"value":"http://www.wikidata.org/entity/Q150248"},"score":{"value":"81/100"},"method":{"value":"http://www.wikidata.org/entity/Q106515043"}}
+]}}`
+
+func TestWikidataTakesTheTomatometerNotTheAverage(t *testing.T) {
+	meta, err := wikidataStub(t, wikidataTwoRTScores).Fetch(context.Background(), "movie", "tt1527186")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got := map[string]string{}
+	for _, r := range meta.Ratings {
+		if _, dup := got[r.Source]; dup {
+			t.Errorf("%s appeared twice; one source must yield one rating", r.Source)
+		}
+		got[r.Source] = r.Label
+	}
+	if got["rt"] != "80%" {
+		t.Errorf("rt = %q, want the tomatometer 80%% rather than the average", got["rt"])
+	}
+	if got["metacritic"] != "81/100" {
+		t.Errorf("metacritic = %q, want 81/100", got["metacritic"])
+	}
+}
+
+// The order the rows arrive in must not decide the winner, since the query
+// imposes none and SPARQL promises none.
+func TestWikidataPicksTheTomatometerWhicheverOrderItArrivesIn(t *testing.T) {
+	reversed := `{"results":{"bindings":[
+  {"reviewer":{"value":"http://www.wikidata.org/entity/Q105584"},"score":{"value":"80%"},"method":{"value":"http://www.wikidata.org/entity/Q108403393"}},
+  {"reviewer":{"value":"http://www.wikidata.org/entity/Q105584"},"score":{"value":"7.5/10"},"method":{"value":"http://www.wikidata.org/entity/Q108403540"}}
+]}}`
+	meta, err := wikidataStub(t, reversed).Fetch(context.Background(), "movie", "tt1527186")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(meta.Ratings) != 1 || meta.Ratings[0].Label != "80%" {
+		t.Errorf("ratings = %+v, want one rt rating labelled 80%%", meta.Ratings)
+	}
+}
+
+// A statement with no determination method still earns a badge: dropping it
+// would trade a wrong number for a missing one on any title Wikidata has not
+// qualified.
+func TestWikidataKeepsAnUnqualifiedScore(t *testing.T) {
+	body := `{"results":{"bindings":[
+  {"reviewer":{"value":"http://www.wikidata.org/entity/Q105584"},"score":{"value":"64%"}}
+]}}`
+	meta, err := wikidataStub(t, body).Fetch(context.Background(), "movie", "tt1527186")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(meta.Ratings) != 1 || meta.Ratings[0].Label != "64%" {
+		t.Errorf("ratings = %+v, want the unqualified score kept", meta.Ratings)
+	}
+}
+
+// The average is never the badge's figure, so a title carrying only the average
+// gets no tomatometer rather than a wrong one.
+func TestWikidataNeverFallsBackToTheAverage(t *testing.T) {
+	body := `{"results":{"bindings":[
+  {"reviewer":{"value":"http://www.wikidata.org/entity/Q105584"},"score":{"value":"7.5/10"},"method":{"value":"http://www.wikidata.org/entity/Q108403540"}}
+]}}`
+	meta, err := wikidataStub(t, body).Fetch(context.Background(), "movie", "tt1527186")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(meta.Ratings) != 0 {
+		t.Errorf("ratings = %+v, want none: the average is not a tomatometer", meta.Ratings)
+	}
+}
+
+// A named method displaces an unqualified statement whichever order they arrive
+// in. Without that, an unqualified score arriving after the tomatometer would
+// overwrite it, which is the same first-wins fault in a different disguise.
+func TestWikidataPrefersTheNamedMethodOverAnUnqualifiedOne(t *testing.T) {
+	for _, tc := range []struct{ name, body string }{
+		{
+			name: "the unqualified one arrives second",
+			body: `{"results":{"bindings":[
+  {"reviewer":{"value":"http://www.wikidata.org/entity/Q105584"},"score":{"value":"80%"},"method":{"value":"http://www.wikidata.org/entity/Q108403393"}},
+  {"reviewer":{"value":"http://www.wikidata.org/entity/Q105584"},"score":{"value":"64%"}}
+]}}`,
+		},
+		{
+			name: "the unqualified one arrives first",
+			body: `{"results":{"bindings":[
+  {"reviewer":{"value":"http://www.wikidata.org/entity/Q105584"},"score":{"value":"64%"}},
+  {"reviewer":{"value":"http://www.wikidata.org/entity/Q105584"},"score":{"value":"80%"},"method":{"value":"http://www.wikidata.org/entity/Q108403393"}}
+]}}`,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			meta, err := wikidataStub(t, tc.body).Fetch(context.Background(), "movie", "tt1527186")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(meta.Ratings) != 1 || meta.Ratings[0].Label != "80%" {
+				t.Errorf("ratings = %+v, want the named tomatometer 80%%", meta.Ratings)
+			}
+		})
+	}
+}
