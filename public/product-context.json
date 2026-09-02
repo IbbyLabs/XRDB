@@ -2,7 +2,7 @@
   "artifactType": "xrdb-product-context",
   "schemaVersion": "1",
   "xrdbTag": "3.103.0",
-  "generatedAt": "2026-09-01T15:52:52Z",
+  "generatedAt": "2026-09-02T18:05:44Z",
   "productName": "XRDB",
   "expandedName": "eXtended Ratings DataBase",
   "ownerName": "IbbyLabs",
@@ -34,6 +34,7 @@
         "A source that is rate-limited or erroring falls back to its last good answer rather than dropping its badge.",
         "MDBList meters by the day, so XRDB paces it from the allowance MDBList reports on every response: what is left is spread evenly over the rest of the day, with a quarter of the day's budget held in reserve so a catalogue crawl or a mass re-render cannot finish it. A page of a few dozen titles still goes out at once; only a sustained flood is paced. `XRDB_MDBLIST_RESERVE_PCT`, `XRDB_MDBLIST_MAX_RPS` and `XRDB_MDBLIST_BURST` tune it. Any older answer saying MDBList is paced at a fixed 10 requests a second is out of date.",
         "The empty rating ring drawn for a title with no score can take a colour of its own, set beside the ring colour in the configurator as **Empty ring color**. Left on **Faint outline** it draws the faint circle it always has, so a config that does not set it is unchanged.",
+        "A self-hosted instance can set a rating source's cache TTL in hours with `XRDB_TTL_\u003cSOURCE\u003e`. Twelve sources take one: TMDB, MDBList, OMDb, Fanart, Trakt, SIMKL, MAL, AniList, Kitsu, IMDb (`XRDB_TTL_IMDBLOCAL`), AlloCiné and Filmweb. A name outside that list and the four surface variables is written to the log as unread at startup, so a typo or an unsupported source no longer looks like a setting that took effect. Any older answer implying every provider takes one is out of date.",
         "A self-hosted instance can set how long each artwork surface is cached, separately from the rating sources behind it: `XRDB_TTL_SURFACE_POSTER`, `_BACKDROP`, `_THUMBNAIL` and `_LOGO`, in hours. A surface with one set uses it instead of the shortest TTL among its rating sources, so thumbnails can be kept longer than posters or the other way about. A render that lost a badge is still cached briefly whatever the surface.",
         "A profile's own API keys for MDBList, OMDb and SIMKL accept several credentials separated by commas. Those three meter by the day, so when one key's allowance is spent the next is used and the profile keeps its own limits rather than falling back to the server's. The other providers take a single key and refuse a list rather than accepting one and using only the first: rotation multiplies a daily quota and does nothing for a per-second rate.",
         "Ratings are remembered for a day, and longer for older titles: twice that once the release year is at least one year behind the current one, three times once it is at least three behind. The comparison is between years rather than dates, so a film released in December counts as a year older from the following January. A score barely moves years after release, which is what the longer term is for. An answer that is missing a source is kept for ten minutes whatever the title's age, so a source that ran out of its allowance is re-asked shortly rather than pinned for days.",
@@ -152,8 +153,8 @@
         "XRDB_SHARED_PROFILE_ALIASES (default aios,cimofam)",
         "XRDB_DEFAULT_PROFILE (unset by default)",
         "XRDB_LABEL_LANGUAGES_DIR (unset by default)",
-        "XRDB_<SOURCE>_PROXY (unset by default)",
-        "XRDB_<SOURCE>_MIN_INTERVAL_SECONDS (default per source)",
+        "XRDB_\u003cSOURCE\u003e_PROXY (unset by default)",
+        "XRDB_\u003cSOURCE\u003e_MIN_INTERVAL_SECONDS (default per source)",
         "XRDB_MDBLIST_SWEEP_RESERVE_PCT (default 40)",
         "XRDB_MDBLIST_DAILY_LIMIT (default reported)",
         "XRDB_RATINGS_CACHE_TTL_HOURS (default 24)",
@@ -192,8 +193,8 @@
         "XRDB_MDBLIST_BURST (default 30)",
         "XRDB_SIMKL_DAILY_LIMIT (default 15000)",
         "XRDB_SIMKL_BULK_RESERVE (default 6000)",
-        "XRDB_TTL_<PROVIDER> (default global TTL)",
-        "XRDB_TTL_SURFACE_<SURFACE> (unset by default)",
+        "XRDB_TTL_\u003cPROVIDER\u003e (default global TTL)",
+        "XRDB_TTL_SURFACE_\u003cSURFACE\u003e (unset by default)",
         "NEXT_PUBLIC_API_BASE_URL (default API origin the web app calls. Unset in the single-container image (same origin). Set for split deployments or local dev (`http://localhost:8787`).)"
       ]
     }
