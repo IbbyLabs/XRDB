@@ -53,7 +53,8 @@ func (t *TMDB) base() string {
 	return tmdbBaseURL
 }
 
-// NewTMDBAt is NewTMDB with the API root replaced.
+// NewTMDBAt is NewTMDB with the API root replaced. For tests; production wires
+// NewTMDB.
 func NewTMDBAt(apiKey, readToken, baseURL string) *TMDB {
 	t := NewTMDB(apiKey, readToken)
 	t.baseURL = baseURL
