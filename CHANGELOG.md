@@ -2,6 +2,38 @@
 
 All notable changes to XRDB are documented here.
 
+## [3.103.0](https://github.com/IbbyLabs/XRDB/compare/v3.102.0...v3.103.0) (2026-09-02)
+
+
+### Added
+
+* **logging:** name the caller class on the access log line ([9a08a1a](https://github.com/IbbyLabs/XRDB/commit/9a08a1aca1e7cfbef7abf9b94b22469134cc96a2))
+* **profiles:** accept several keys per metered provider (FR-186) ([00fe066](https://github.com/IbbyLabs/XRDB/commit/00fe066f7bc3b44468558e449fcda0d7845e490a))
+
+
+### Fixed
+
+* **artwork:** use an episode's own still when named by IMDb id (BUG-279) ([fbe7ece](https://github.com/IbbyLabs/XRDB/commit/fbe7ece94f1be62c6eb74ce72ae79b66e2e745f2))
+* **profiles:** bound the spent-key store and refuse a list that cannot rotate ([f47edf7](https://github.com/IbbyLabs/XRDB/commit/f47edf7ce27b0b3cd2e8640c2b672c7288cb8b13))
+* **ratelimit:** keep a sweep's floor under the shared ceiling ([f3c6bf4](https://github.com/IbbyLabs/XRDB/commit/f3c6bf48a27bc39e59b1d71300c7c1775a10b3de))
+* **ratelimit:** let a sweep wait one slot on a slowly paced source ([d6e8399](https://github.com/IbbyLabs/XRDB/commit/d6e839914720cca2fd6067a0a93f467f6795bd6f))
+* **ratings:** discard remembered Wikidata answers (BUG-281) ([e55b7be](https://github.com/IbbyLabs/XRDB/commit/e55b7becc31ba50c72f7cb85872699d6e75747f2))
+* **ratings:** keep Wikidata's display score for the badge (BUG-281) ([a039b38](https://github.com/IbbyLabs/XRDB/commit/a039b3831866d6eb5e0708555c7b35bb89126945))
+* **ratings:** rate the episode on every badge in series mode (BUG-279) ([de78fdb](https://github.com/IbbyLabs/XRDB/commit/de78fdb3271f9501bc9eeab45bc92eac83622bee))
+* **ratings:** take Wikidata's tomatometer, not its average (BUG-281) ([43f8892](https://github.com/IbbyLabs/XRDB/commit/43f889278dd47909be2f1cb17240136e2c7d2fbf))
+
+
+### Performance
+
+* **profiles:** keep the spent-key sweep off the render path ([0d04500](https://github.com/IbbyLabs/XRDB/commit/0d04500bb54b1236f1bf83c4daff05b009f75cd6))
+
+
+### Documentation
+
+* **provider:** note NewTMDBAt is a test seam ([c377e4f](https://github.com/IbbyLabs/XRDB/commit/c377e4f857fa2820ba5c14ef45603ba83ccb5f5d))
+* **ratelimit:** a held-out source gives an empty badge, not a late one ([dacaf3d](https://github.com/IbbyLabs/XRDB/commit/dacaf3d485b6d95968a98bbf1b68268c0c0593d0))
+* **ratings:** name what two unqualified Wikidata scores resolve to ([d47b4b7](https://github.com/IbbyLabs/XRDB/commit/d47b4b74ed8c005147be424b0799612cdb4aa668))
+
 ## [3.102.0](https://github.com/IbbyLabs/XRDB/compare/v3.101.0...v3.102.0) (2026-09-01)
 
 
